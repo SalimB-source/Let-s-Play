@@ -21,7 +21,7 @@ function App() {
   return (
     <main>
       <nav className="nav wrap">
-        <a className="brand" href="#top" aria-label="Let's Play, accueil"><span>LET’S</span><strong>PLAY</strong><i>+</i></a>
+        <a className="brand brand-logo" href="#top" aria-label="Let's Play, accueil"><span>Let’s</span><strong>Play</strong></a>
         <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Ouvrir le menu">MENU <span className={menuOpen ? 'dash open' : 'dash'}>—</span></button>
         <div className={menuOpen ? 'nav-links open' : 'nav-links'}>
           <a href="#show" onClick={() => setMenuOpen(false)}>L’émission</a>
@@ -63,7 +63,7 @@ function App() {
       <section className="latest wrap" id="latest"><div className="section-label"><span>03</span><span>À VOIR MAINTENANT</span></div><div className="latest-head"><h2>LE DERNIER<br /><em>TOUR.</em></h2><div className="filter-row">{filters.map((item) => <button key={item} className={filter === item ? 'filter active' : 'filter'} onClick={() => setFilter(item)}>{item}</button>)}</div></div><div className="video-grid">{visibleVideos.map((video) => <a className="video-card" href={video.href} target="_blank" rel="noreferrer" key={video.title}><div className="video-image"><img src={video.image} alt="" /><span className="play">▶</span></div><div className="video-meta"><span>{video.meta}</span><span>{video.tag}</span></div><h3>{video.title}</h3></a>)}</div></section>
 
       <section className="cta wrap"><div><p className="eyebrow">La prochaine partie commence ici</p><h2>ON SE RETROUVE<br /><em>EN LIGNE.</em></h2></div><a className="button button-dark" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Rejoindre la partie <Arrow /></a></section>
-      <footer className="footer wrap"><a className="brand" href="#top"><span>LET’S</span><strong>PLAY</strong><i>+</i></a><p>Une émission originale dédiée à la culture qui nous rassemble.</p><div className="footer-links"><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a><a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a><span>© 2026 Let’s Play</span></div></footer>
+      <footer className="footer wrap"><a className="brand brand-logo" href="#top"><span>Let’s</span><strong>Play</strong></a><p>Une émission originale dédiée à la culture qui nous rassemble.</p><div className="footer-links"><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a><a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a><span>© 2026 Let’s Play</span></div></footer>
     </main>
   );
 }
