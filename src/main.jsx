@@ -38,12 +38,9 @@ function App() {
           <p className="hero-text">Gaming, cinema, e-sports, tech and pop culture: we decode everything we love, with the energy of a generation that never stopped playing.</p>
           <div className="hero-actions"><a className="button button-yellow" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Watch the episodes <Arrow /></a><a className="text-link" href="#show">Discover Let’s Play <span>↓</span></a></div>
         </div>
-        <div className="hero-art" aria-label="Illustration graphique de l’univers Let’s Play">
-          <div className="art-grid" />
-          <div className="art-orb orb-one" /><div className="art-orb orb-two" />
-          <div className="controller">⌁</div>
-          <div className="art-caption"><span>LP / 2026</span><span>PLAY<br />LOUD</span></div>
-          <div className="art-sticker">NO<br />SPOILERS</div>
+        <div className="hero-art hero-visual" aria-label="Let’s Play fantasy gaming world">
+          <img src={`${import.meta.env.BASE_URL}hero-lets-play.png`} alt="Let’s Play logo floating above a fantasy gaming world" />
+          <div className="hero-visual-caption"><span>LP / 2026</span><span>PLAY<br />LOUD</span></div>
         </div>
       </section>
 
