@@ -16,3 +16,6 @@ body{background:#f4f5ef}.wrap{width:min(1240px,calc(100% - 56px))}.nav{width:min
 
 /* Instagram posts use the native portrait feed ratio */
 .social-slide img{aspect-ratio:4 / 5;height:auto;max-height:620px;object-fit:cover;object-position:center}.social-slide{padding-right:20px}.social-slide-overlay{right:20px}@media(max-width:800px){.social-slide{padding-right:12px}.social-slide img{aspect-ratio:4 / 5;height:auto;max-height:none}.social-slide-overlay{right:12px}}
+
+/* Show multiple portrait posts before advancing */
+.carousel-track{width:100%;gap:18px;transform:translateX(calc(var(--social-index) * -33.333%));transition:transform .42s cubic-bezier(.23,1,.32,1)}.social-slide{flex:0 0 calc((100% - 36px) / 3);width:auto;padding-right:0}.social-slide-overlay{right:0}@media(max-width:800px){.carousel-track{gap:12px;transform:translateX(calc(var(--social-index) * -100%))}.social-slide{flex-basis:100%;padding-right:0}.social-slide-overlay{right:0}}
