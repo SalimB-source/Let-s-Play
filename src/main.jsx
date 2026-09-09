@@ -81,7 +81,7 @@ function App() {
       <section className="social-carousel wrap" id="social">
         <div className="section-label"><span>02 / INSTAGRAM</span><span>FROM OUR FEED</span></div>
         <div className="carousel-head"><div><p className="eyebrow"><span className="live-dot" /> Follow the conversation</p><h2>THE FEED<br /><em>KEEPS MOVING.</em></h2></div><div className="carousel-controls"><button onClick={previousSocial} aria-label="Previous visual">←</button><span>{String(socialIndex + 1).padStart(2, '0')} / {String(socialVisuals.length).padStart(2, '0')}</span><button onClick={nextSocial} aria-label="Next visual">→</button></div></div>
-        <div className="carousel-window"><div className="carousel-track" style={{ '--social-index': socialIndex }}>{socialVisuals.map((visual) => <a className="social-slide" href={visual.url} target="_blank" rel="noreferrer" key={visual.title}><img src={visual.image} alt={visual.title} /><div className="social-slide-overlay"><span>{visual.label}</span><strong>{visual.title}</strong><i>↗</i></div></a>)}</div></div>
+        <div className="carousel-window"><div className="carousel-track" style={{ '--social-index': socialIndex }}>{socialVisuals.map((visual) => <a className="social-slide" href={visual.url} target="_blank" rel="noreferrer" key={visual.title}><div className="social-slide-media"><img src={visual.image} alt={visual.title} /></div><div className="social-slide-overlay"><span>{visual.label}</span><strong>{visual.title}</strong><i>↗</i></div></a>)}</div></div>
         <a className="arrow-link carousel-link" href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">See all posts on Instagram <Arrow /></a>
       </section>
 
