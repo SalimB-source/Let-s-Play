@@ -25,3 +25,7 @@ body{background:#f4f5ef}.wrap{width:min(1240px,calc(100% - 56px))}.nav{width:min
 
 .social-slide{display:flex;flex-direction:column;gap:14px}.social-slide-overlay{position:static;padding:0;color:var(--ink);background:none;display:block}.social-slide-overlay span{display:block;color:var(--purple);margin-bottom:6px}.social-slide-overlay strong{display:block;font-size:18px;line-height:1.1}.social-slide-overlay i{position:absolute;right:20px;bottom:18px;color:var(--purple)}
 @media(max-width:800px){.social-slide-overlay i{right:12px;bottom:12px}}
+
+
+/* Purple campaign theme inspired by the Let’s Play community artwork */
+body{background:#241449;color:#fff}.section-label{color:rgba(255,255,255,.82)}.manifesto,.formats,.latest{color:#fff}.manifesto-grid,.stats,.latest-head,.video-grid,.featured-grid,.social-carousel,.nav,.hero,.footer{color:var(--black)}.manifesto-grid .arrow-link,.manifesto-grid .arrow-link:hover{color:var(--black);border-color:var(--black)}.formats .section-label,.latest>.section-label{color:rgba(255,255,255,.82)}.carousel-link{color:#fff;border-color:#fff}.carousel-link:hover{color:var(--yellow)}.cta{color:var(--black)}

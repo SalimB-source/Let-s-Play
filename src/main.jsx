@@ -47,7 +47,7 @@ function App() {
         <div className="hero-copy">
           <p className="eyebrow"><span className="live-dot" /> The show that plays the game</p>
           <h1>WE DON’T SEE<br /><em>THE WORLD</em><br />THE SAME WAY.</h1>
-          <p className="hero-text">Gaming, cinema, e-sports, tech and pop culture: we decode everything we love, with the energy of a generation that never stopped playing.</p>
+          <p className="hero-text">A world of gaming and pop culture: discover the latest games, trends and techniques, with reviews, previews, expert tips and guides for the community that never stopped playing.</p>
           <div className="hero-actions"><a className="button button-yellow" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Watch the episodes <Arrow /></a><a className="text-link" href="#show">Discover Let’s Play <span>↓</span></a></div>
         </div>
         <div className="hero-art hero-visual" aria-label="Let’s Play fantasy gaming world">
@@ -62,7 +62,7 @@ function App() {
           <div className="featured-copy">
             <p className="eyebrow"><span className="live-dot" /> Featured episode</p>
             <h2>BLACK FLAG,<br /><em>FULL SAIL.</em></h2>
-            <p>Watch our Assassin’s Creed Black Flag Resynced review — a deep dive into the definitive pirate adventure.</p>
+            <p>Watch our Assassin’s Creed Black Flag Resynced review — deep dives, previews and expert perspectives for players who want to stay ahead of the game.</p>
             <a className="arrow-link" href="https://youtu.be/0e5yXxfchLA" target="_blank" rel="noreferrer">Open on YouTube <Arrow /></a>
           </div>
           <div className="featured-player">
@@ -87,13 +87,13 @@ function App() {
 
       <section className="manifesto wrap" id="show">
         <div className="section-label"><span>01</span><span>WHAT WE DO</span></div>
-        <div className="manifesto-grid"><h2>POP CULTURE,<br /><span>WE LIVE IT.</span></h2><div><p className="lead">Let’s Play is where passion becomes conversation.</p><p>A show for people who grew up with a controller in one hand and a movie reference in the other. We explore new releases, meet the people shaping today’s culture, and always leave room for fun.</p><a className="arrow-link" href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Follow us backstage <Arrow /></a></div></div>
+        <div className="manifesto-grid"><h2>GAMING,<br /><span>WE LIVE IT.</span></h2><div><p className="lead">Let’s Play is your world of gaming and pop culture.</p><p>Discover the latest games, explore movies, shows and comics, and join a community built around the stories, characters and moments we love. From in-depth reviews to hot news and practical guides, there is always another level to reach.</p><a className="arrow-link" href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Join the community <Arrow /></a></div></div>
         <div className="stats"><div><strong>15K<span>+</span></strong><small>YOUTUBE SUBSCRIBERS</small></div><div><strong>33K<span>+</span></strong><small>INSTAGRAM COMMUNITY</small></div><div><strong>∞</strong><small>REASONS TO PLAY</small></div></div>
       </section>
 
       <section className="formats wrap" id="formats">
         <div className="section-label"><span>02</span><span>OUR PLAYGROUNDS</span></div>
-        <div className="format-grid"><article className="format-card card-yellow"><span className="format-number">01</span><div className="format-icon">✦</div><h3>GAMING</h3><p>Reviews, discoveries and debates — no lives wasted.</p><a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Explore <Arrow /></a></article><article className="format-card card-pink"><span className="format-number">02</span><div className="format-icon">◎</div><h3>CINEMA</h3><p>The stories that stay with us, the scenes we never forget.</p><a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Explore <Arrow /></a></article><article className="format-card card-blue"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>POP CULTURE</h3><p>The trends, icons and ideas lighting up our screens.</p><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Explore <Arrow /></a></article></div>
+        <div className="format-grid"><article className="format-card card-yellow"><span className="format-number">01</span><div className="format-icon">✦</div><h3>GAMING</h3><p>Latest games, reviews, previews, expert tips and guides.</p><a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Explore <Arrow /></a></article><article className="format-card card-pink"><span className="format-number">02</span><div className="format-icon">◎</div><h3>MOVIES & COMICS</h3><p>In-depth film and series reviews, plus hot news from the comic world.</p><a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Explore <Arrow /></a></article><article className="format-card card-blue"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>COMMUNITY</h3><p>Join the Let’s Play community and dive into the fun together.</p><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Join us <Arrow /></a></article></div>
       </section>
 
       <section className="latest wrap" id="latest"><div className="section-label"><span>03</span><span>WATCH NOW</span></div><div className="latest-head"><h2>THE LATEST<br /><em>ROUND.</em></h2><div className="filter-row">{filters.map((item) => <button key={item} className={filter === item ? 'filter active' : 'filter'} onClick={() => setFilter(item)}>{item}</button>)}</div></div><div className="video-grid">{visibleVideos.map((video) => <a className="video-card" href={video.href} target="_blank" rel="noreferrer" key={video.title}><div className="video-image"><img src={video.image} alt="" /><span className="play">▶</span></div><div className="video-meta"><span>{video.meta}</span><span>{video.tag}</span></div><h3>{video.title}</h3></a>)}</div></section>
