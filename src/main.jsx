@@ -48,11 +48,10 @@ function App() {
         </a>
         <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Ouvrir le menu">MENU <span className={menuOpen ? 'dash open' : 'dash'}>—</span></button>
         <div className={menuOpen ? 'nav-links open' : 'nav-links'}>
-          <a href="#show" onClick={() => setMenuOpen(false)}>The show</a>
-          <a href="#formats" onClick={() => setMenuOpen(false)}>Formats</a>
-          <a href="#latest" onClick={() => setMenuOpen(false)}>Episodes</a>
-          <a href="#social" onClick={() => setMenuOpen(false)}>Feed</a>
-          <a className="nav-cta" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube <Arrow /></a>
+          <a href="#top" onClick={() => setMenuOpen(false)}>Home</a>
+          <a href="#latest" onClick={() => setMenuOpen(false)}>News</a>
+          <a href="#featured" onClick={() => setMenuOpen(false)}>Reviews</a>
+          <a href="#formats" onClick={() => setMenuOpen(false)}>Dossiers</a>
         </div>
       </nav>
 
