@@ -11,10 +11,10 @@ const videos = [
 
 const filters = ['View all', 'Gaming', 'Tech', 'Culture'];
 const socialVisuals = [
-  { image: `${import.meta.env.BASE_URL}instagram-01.jpg`, label: 'Behind the scenes', title: 'The people behind the play' },
-  { image: `${import.meta.env.BASE_URL}instagram-02.jpg`, label: 'Gaming news', title: 'The adventures we are waiting for' },
-  { image: `${import.meta.env.BASE_URL}instagram-03.jpg`, label: 'Let’s Play mood', title: 'The culture that keeps us playing' },
-  { image: `${import.meta.env.BASE_URL}hero-lets-play.png`, label: 'Our universe', title: 'Enter the world of Let’s Play' },
+  { image: `${import.meta.env.BASE_URL}instagram-post-1.jpg`, label: 'Instagram post · Gaming', title: '007 First Light', url: 'https://www.instagram.com/letsplay.officiel/p/Dbq3djhDgLH/' },
+  { image: `${import.meta.env.BASE_URL}instagram-post-2.jpg`, label: 'Instagram post · Community', title: 'Pragmata — a finalist', url: 'https://www.instagram.com/letsplay.officiel/p/C2KMgD7Ioyl/' },
+  { image: `${import.meta.env.BASE_URL}instagram-post-3.jpg`, label: 'Instagram reel · Cinema', title: 'Horror movies deep dive', url: 'https://www.instagram.com/letsplay.officiel/reel/CywTrpXKW_c/' },
+  { image: `${import.meta.env.BASE_URL}instagram-post-1.jpg`, label: 'Instagram post · Let’s Play', title: 'More from the feed', url: 'https://www.instagram.com/letsplay.officiel/' },
 ];
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
@@ -78,7 +78,7 @@ function App() {
       <section className="social-carousel wrap" id="social">
         <div className="section-label"><span>02 / INSTAGRAM</span><span>FROM OUR FEED</span></div>
         <div className="carousel-head"><div><p className="eyebrow"><span className="live-dot" /> Follow the conversation</p><h2>THE FEED<br /><em>KEEPS MOVING.</em></h2></div><div className="carousel-controls"><button onClick={previousSocial} aria-label="Previous visual">←</button><span>{String(socialIndex + 1).padStart(2, '0')} / {String(socialVisuals.length).padStart(2, '0')}</span><button onClick={nextSocial} aria-label="Next visual">→</button></div></div>
-        <div className="carousel-window"><div className="carousel-track" style={{ transform: `translateX(-${socialIndex * 25}%)` }}>{socialVisuals.map((visual) => <a className="social-slide" href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer" key={visual.title}><img src={visual.image} alt={visual.title} /><div className="social-slide-overlay"><span>{visual.label}</span><strong>{visual.title}</strong><i>↗</i></div></a>)}</div></div>
+        <div className="carousel-window"><div className="carousel-track" style={{ transform: `translateX(-${socialIndex * 25}%)` }}>{socialVisuals.map((visual) => <a className="social-slide" href={visual.url} target="_blank" rel="noreferrer" key={visual.title}><img src={visual.image} alt={visual.title} /><div className="social-slide-overlay"><span>{visual.label}</span><strong>{visual.title}</strong><i>↗</i></div></a>)}</div></div>
         <a className="arrow-link carousel-link" href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">See all posts on Instagram <Arrow /></a>
       </section>
 
