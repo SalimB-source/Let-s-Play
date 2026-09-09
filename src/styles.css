@@ -265,11 +265,12 @@ img{max-width:100%}
 .video-card h3{font-family:var(--body);font-weight:600;font-size:16.5px;line-height:1.25;letter-spacing:.01em;margin:8px 0 0;color:#fff;transition:color .2s}
 .video-card:hover h3{color:var(--yellow)}
 
-/* ============ SOCIAL CAROUSEL ============ */
+/* ============ SOCIAL CAROUSEL — 4:5 NOT CROPPED + MOUSE DRAG ============ */
 .social-carousel{padding:110px 0}
 .carousel-head{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;padding-top:52px}
 .carousel-head h2{font-family:var(--display);font-weight:800;font-size:clamp(38px,5vw,64px);line-height:1.05;letter-spacing:.005em;margin:20px 0 0;text-transform:uppercase}
 .carousel-head h2 em{font-style:normal;color:var(--cyan);text-shadow:0 0 24px rgba(34,211,238,.5)}
+.carousel-hint{font:500 10px var(--mono);letter-spacing:.16em;color:var(--dim);margin:14px 0 0;text-transform:uppercase;opacity:.9}
 .carousel-controls{display:flex;align-items:center;gap:14px;font:500 11px var(--mono);letter-spacing:.14em;color:var(--muted)}
 .carousel-controls button{
   width:44px;height:44px;border:1px solid var(--line);background:transparent;color:#fff;font-size:18px;cursor:pointer;
@@ -277,13 +278,111 @@ img{max-width:100%}
   transition:background .2s,color .2s,border-color .2s,box-shadow .2s;
 }
 .carousel-controls button:hover{background:var(--cyan);color:#05060f;border-color:var(--cyan);box-shadow:0 0 18px rgba(34,211,238,.4)}
-.carousel-window{overflow:hidden;margin-top:44px}
-.carousel-track{display:flex;gap:18px;transform:translateX(calc(var(--social-index) * -33.333%));transition:transform .45s cubic-bezier(.23,1,.32,1)}
-.social-slide{flex:0 0 calc((100% - 36px) / 3);display:flex;flex-direction:column;gap:14px}
-.social-slide-media{aspect-ratio:4/5;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:5%}
-.social-slide-media img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;display:block}
+.carousel-controls button:active{transform:scale(.96)}
+
+/* Scroll container — mouse drag, wheel, touch */
+.carousel-window{
+  margin-top:44px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  scroll-behavior:smooth;
+  -webkit-overflow-scrolling:touch;
+  cursor:grab;
+  user-select:none;
+  display:block;
+  padding-bottom:16px;
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+  border-bottom:1px solid transparent;
+  transition:border-color .2s;
+}
+.carousel-window::-webkit-scrollbar{display:none}
+.carousel-window:hover{border-bottom-color:var(--line)}
+.carousel-window.dragging{
+  cursor:grabbing;
+  scroll-snap-type:none;
+  scroll-behavior:auto;
+}
+.carousel-window.dragging .social-slide{pointer-events:none}
+.carousel-window.dragging .social-slide-media{border-color:var(--cyan)}
+
+.carousel-track{
+  display:flex;
+  gap:18px;
+  flex-wrap:nowrap;
+  width:max-content;
+  padding-right:18px;
+}
+
+/* Each slide — 4:5 Instagram format, NOT cropped */
+.social-slide{
+  flex:0 0 calc((100vw - 1240px)/2 + (1240px - 36px)/3); /* fallback */
+  flex:0 0 calc((100% - 36px) / 3);
+  scroll-snap-align:start;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  min-width:0;
+  text-decoration:none;
+}
+.social-slide-media{
+  position:relative;
+  aspect-ratio:4/5;
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  transition:border-color .22s,box-shadow .22s,transform .22s;
+}
+.social-slide-media img{
+  width:100%;
+  height:100%;
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain; /* NOT CROPPED — full 4:5 visible */
+  object-position:center;
+  display:block;
+  background:radial-gradient(80% 70% at 50% 30%, rgba(124,58,237,.12), transparent 60%), var(--panel-2);
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+.social-slide:hover .social-slide-media{
+  border-color:var(--cyan);
+  box-shadow:0 0 28px rgba(34,211,238,.18), 0 12px 32px -12px rgba(0,0,0,.8);
+  transform:translateY(-3px);
+}
+.insta-badge{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:2;
+  background:rgba(5,6,15,.78);
+  backdrop-filter:blur(8px);
+  border:1px solid rgba(148,130,255,.22);
+  color:var(--muted);
+  font:500 9px var(--mono);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  padding:6px 8px;
+  pointer-events:none;
+}
+.insta-gradient{
+  position:absolute;
+  inset:auto 0 0 0;
+  height:36%;
+  background:linear-gradient(180deg, transparent, rgba(5,6,15,.72));
+  pointer-events:none;
+  z-index:1;
+}
+.social-slide-overlay{position:relative;z-index:2;display:flex;flex-direction:column;gap:4px}
 .social-slide-overlay span{font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--cyan)}
-.social-slide-overlay strong{display:block;font-size:17px;font-weight:600;letter-spacing:.01em;margin-top:6px;color:#fff}
+.social-slide-overlay strong{display:block;font-size:17px;font-weight:600;letter-spacing:.01em;color:#fff;line-height:1.2}
+.insta-meta{font:500 9.5px var(--mono);letter-spacing:.12em;color:var(--dim);text-transform:uppercase;margin-top:2px}
 .carousel-link{margin-top:30px}
 
 /* ============ CTA ============ */
@@ -346,8 +445,10 @@ img{max-width:100%}
   .social-carousel{padding-top:70px;padding-bottom:70px}
   .carousel-head{display:block;padding-top:42px}
   .carousel-controls{margin-top:26px}
-  .carousel-track{gap:12px;transform:translateX(calc(var(--social-index) * -100%))}
-  .social-slide{flex-basis:100%}
+  .carousel-window{margin-top:32px}
+  .carousel-track{gap:12px;padding-right:12px}
+  .social-slide{flex:0 0 78%}
+  .carousel-hint{margin-top:12px}
   .cta{margin-top:70px;padding:44px 26px;flex-direction:column;align-items:flex-start}
   .footer{grid-template-columns:1fr;gap:20px;margin-top:70px}
   .footer-links{justify-content:flex-start;flex-wrap:wrap}
@@ -357,4 +458,5 @@ img{max-width:100%}
   .hero-actions{gap:12px}
   .button{padding:15px 20px;width:100%;justify-content:center}
   .stats strong{font-size:34px}
+  .social-slide{flex:0 0 88%}
 }
