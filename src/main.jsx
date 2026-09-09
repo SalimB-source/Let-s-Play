@@ -11,10 +11,12 @@ const videos = [
 
 const filters = ['View all', 'Gaming', 'Tech', 'Culture'];
 const socialVisuals = [
-  { image: `${import.meta.env.BASE_URL}instagram-post-1.jpg`, label: 'Instagram post · Gaming', title: '007 First Light', url: 'https://www.instagram.com/letsplay.officiel/p/Dbq3djhDgLH/' },
-  { image: `${import.meta.env.BASE_URL}instagram-post-2.jpg`, label: 'Instagram post · Community', title: 'Pragmata — a finalist', url: 'https://www.instagram.com/letsplay.officiel/p/C2KMgD7Ioyl/' },
-  { image: `${import.meta.env.BASE_URL}instagram-post-3.jpg`, label: 'Instagram reel · Cinema', title: 'Horror movies deep dive', url: 'https://www.instagram.com/letsplay.officiel/reel/CywTrpXKW_c/' },
-  { image: `${import.meta.env.BASE_URL}instagram-post-1.jpg`, label: 'Instagram post · Let’s Play', title: 'More from the feed', url: 'https://www.instagram.com/letsplay.officiel/' },
+  { image: `${import.meta.env.BASE_URL}instagram-DdB-S3glhsG.jpg`, label: 'Instagram post', title: 'Latest from Let’s Play', url: 'https://www.instagram.com/p/DdB-S3glhsG/' },
+  { image: `${import.meta.env.BASE_URL}instagram-DaI2RTBDoVA.jpg`, label: 'Instagram post', title: 'Gaming culture, on the feed', url: 'https://www.instagram.com/p/DaI2RTBDoVA/' },
+  { image: `${import.meta.env.BASE_URL}instagram-DZ-6b8mAGvb.jpg`, label: 'Instagram post', title: 'New worlds to discover', url: 'https://www.instagram.com/p/DZ-6b8mAGvb/' },
+  { image: `${import.meta.env.BASE_URL}instagram-DZ2weRDmm38.jpg`, label: 'Instagram post', title: 'The next big conversation', url: 'https://www.instagram.com/p/DZ2weRDmm38/' },
+  { image: `${import.meta.env.BASE_URL}instagram-DZngPVdoZPq.jpg`, label: 'Instagram post', title: 'Pop culture, our way', url: 'https://www.instagram.com/p/DZngPVdoZPq/' },
+  { image: `${import.meta.env.BASE_URL}instagram-DZX9rMwgSaH.jpg`, label: 'Instagram post', title: 'Play it loud', url: 'https://www.instagram.com/p/DZX9rMwgSaH/' },
 ];
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
