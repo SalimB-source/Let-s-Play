@@ -47,6 +47,26 @@ function App() {
         </div>
       </section>
 
+      <section className="featured wrap" id="featured">
+        <div className="section-label"><span>01 / FEATURED</span><span>NOW PLAYING</span></div>
+        <div className="featured-grid">
+          <div className="featured-copy">
+            <p className="eyebrow"><span className="live-dot" /> Featured episode</p>
+            <h2>BLACK FLAG,<br /><em>FULL SAIL.</em></h2>
+            <p>Watch our Assassin’s Creed Black Flag Resynced review — a deep dive into the definitive pirate adventure.</p>
+            <a className="arrow-link" href="https://youtu.be/0e5yXxfchLA" target="_blank" rel="noreferrer">Open on YouTube <Arrow /></a>
+          </div>
+          <div className="featured-player">
+            <iframe
+              src="https://www.youtube.com/embed/0e5yXxfchLA?rel=0&modestbranding=1"
+              title="Assassin’s Creed Black Flag Resynced — Let's Play review"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </section>
+
       <section className="ticker"><div className="ticker-track">GAMING <b>✦</b> CINEMA <b>✦</b> E-SPORT <b>✦</b> POP CULTURE <b>✦</b> TECH <b>✦</b> GAMING <b>✦</b> CINEMA <b>✦</b> E-SPORT <b>✦</b> POP CULTURE <b>✦</b> TECH <b>✦</b></div></section>
 
       <section className="manifesto wrap" id="show">
