@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
@@ -26,12 +26,122 @@ function Arrow() { return <span aria-hidden="true">↗</span>; }
 function App() {
   const [filter, setFilter] = useState('All');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [socialIndex, setSocialIndex] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-  const visibleSocialCount = typeof window !== 'undefined' && window.innerWidth <= 800 ? 1 : 3;
   const visibleVideos = filter === 'All' ? videos : videos.filter((video) => video.tag === filter);
-  const previousSocial = () => setSocialIndex((current) => (current - 1 + (socialVisuals.length - visibleSocialCount + 1)) % (socialVisuals.length - visibleSocialCount + 1));
-  const nextSocial = () => setSocialIndex((current) => (current + 1) % (socialVisuals.length - visibleSocialCount + 1));
+
+  // --- Instagram 4:5 carousel with mouse drag ---
+  const carouselRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollStart, setScrollStart] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const getCardWidth = () => {
+    const container = carouselRef.current;
+    if (!container) return 0;
+    const card = container.querySelector('.social-slide');
+    if (!card) return 0;
+    const track = container.querySelector('.carousel-track');
+    const gap = track ? parseFloat(getComputedStyle(track).gap) || 18 : 18;
+    return card.offsetWidth + gap;
+  };
+
+  const updateActiveIndex = () => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const cardWidth = getCardWidth();
+    if (cardWidth === 0) return;
+    const idx = Math.round(container.scrollLeft / cardWidth);
+    setActiveIndex(Math.max(0, Math.min(idx, socialVisuals.length - 1)));
+  };
+
+  const scrollToIndex = (index) => {
+    const container = carouselRef.current;
+    if (!container) return;
+    const cardWidth = getCardWidth();
+    container.scrollTo({ left: index * cardWidth, behavior: 'smooth' });
+    setActiveIndex(index);
+  };
+
+  const handlePrev = () => {
+    const newIdx = Math.max(0, activeIndex - 1);
+    scrollToIndex(newIdx);
+  };
+
+  const handleNext = () => {
+    const newIdx = Math.min(socialVisuals.length - 1, activeIndex + 1);
+    scrollToIndex(newIdx);
+  };
+
+  const onMouseDown = (e) => {
+    setIsDragging(true);
+    carouselRef.current?.classList.add('dragging');
+    setStartX(e.pageX - carouselRef.current.offsetLeft);
+    setScrollStart(carouselRef.current.scrollLeft);
+  };
+
+  const onMouseLeave = () => {
+    setIsDragging(false);
+    carouselRef.current?.classList.remove('dragging');
+  };
+
+  const onMouseUp = () => {
+    setIsDragging(false);
+    carouselRef.current?.classList.remove('dragging');
+  };
+
+  const onMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - carouselRef.current.offsetLeft;
+    const walk = (x - startX) * 1.8;
+    carouselRef.current.scrollLeft = scrollStart - walk;
+  };
+
+  const onTouchStart = (e) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].pageX - carouselRef.current.offsetLeft);
+    setScrollStart(carouselRef.current.scrollLeft);
+  };
+
+  const onTouchMove = (e) => {
+    if (!isDragging) return;
+    const x = e.touches[0].pageX - carouselRef.current.offsetLeft;
+    const walk = (x - startX) * 1.8;
+    carouselRef.current.scrollLeft = scrollStart - walk;
+  };
+
+  const onTouchEnd = () => {
+    setIsDragging(false);
+    updateActiveIndex();
+  };
+
+  const onWheel = (e) => {
+    const container = carouselRef.current;
+    if (!container) return;
+    // Translate vertical wheel to horizontal when carousel can scroll
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      const atStart = container.scrollLeft <= 2 && e.deltaY < 0;
+      const atEnd = Math.ceil(container.scrollLeft + container.clientWidth) >= container.scrollWidth - 2 && e.deltaY > 0;
+      if (!atStart && !atEnd) {
+        e.preventDefault();
+        container.scrollLeft += e.deltaY;
+      }
+    }
+  };
+
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const onScroll = () => updateActiveIndex();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    const onResize = () => updateActiveIndex();
+    window.addEventListener('resize', onResize);
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -152,24 +262,45 @@ function App() {
       </section>
 
       <section className="social-carousel wrap" id="social">
-        <div className="section-label"><span><b>05</b> / FEED</span><span>FROM OUR INSTAGRAM</span></div>
+        <div className="section-label"><span><b>05</b> / FEED</span><span>FROM OUR INSTAGRAM — 4:5 • DRAG TO SCROLL</span></div>
         <div className="carousel-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Follow the conversation</p>
             <h2>THE FEED<br /><em>KEEPS MOVING.</em></h2>
+            <p className="carousel-hint">↔ Drag with mouse • Scroll wheel • Swipe on mobile — 4:5 not cropped</p>
           </div>
           <div className="carousel-controls">
-            <button onClick={previousSocial} aria-label="Previous visual">←</button>
-            <span>{String(socialIndex + 1).padStart(2, '0')} / {String(socialVisuals.length).padStart(2, '0')}</span>
-            <button onClick={nextSocial} aria-label="Next visual">→</button>
+            <button onClick={handlePrev} aria-label="Previous visual">←</button>
+            <span>{String(activeIndex + 1).padStart(2, '0')} / {String(socialVisuals.length).padStart(2, '0')}</span>
+            <button onClick={handleNext} aria-label="Next visual">→</button>
           </div>
         </div>
-        <div className="carousel-window">
-          <div className="carousel-track" style={{ '--social-index': socialIndex }}>
+
+        <div
+          className="carousel-window"
+          ref={carouselRef}
+          onMouseDown={onMouseDown}
+          onMouseLeave={onMouseLeave}
+          onMouseUp={onMouseUp}
+          onMouseMove={onMouseMove}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          onWheel={onWheel}
+        >
+          <div className="carousel-track">
             {socialVisuals.map((visual) => (
-              <a className="social-slide" href={visual.url} target="_blank" rel="noreferrer" key={visual.title}>
-                <div className="social-slide-media"><img src={visual.image} alt={visual.title} /></div>
-                <div className="social-slide-overlay"><span>{visual.label}</span><strong>{visual.title}</strong></div>
+              <a className="social-slide" href={visual.url} target="_blank" rel="noreferrer" key={visual.title} draggable={false}>
+                <div className="social-slide-media">
+                  <img src={visual.image} alt={visual.title} draggable={false} loading="lazy" />
+                  <div className="insta-badge">4:5 • IG • NOT CROPPED</div>
+                  <div className="insta-gradient" aria-hidden="true" />
+                </div>
+                <div className="social-slide-overlay">
+                  <span>{visual.label}</span>
+                  <strong>{visual.title}</strong>
+                  <small className="insta-meta">1080×1350 • contain • drag to scroll</small>
+                </div>
               </a>
             ))}
           </div>
