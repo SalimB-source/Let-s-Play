@@ -21,7 +21,7 @@ export default function News(){
             <p className="page-hero-text">The stories moving games, tech and pop culture forward — rewritten with context, attitude and no filler.</p>
             <div className="page-hero-actions"><div className="filter-row">{filters.map(item => <button key={item} className={filter === item ? 'filter active' : 'filter'} onClick={() => setFilter(item)}>{t.filters[item]}</button>)}</div></div>
           </div>
-          <div className="page-hero-visual hud-frame"><div className="page-hero-visual-inner" style={{backgroundImage:`url(${base}hero-dragon.jpg)`}} /><div className="page-hero-visual-shade" /><div className="page-hero-visual-content"><strong>01</strong><small>FEATURED NEWS</small><span>Updated 10.09.2026</span></div></div>
+          <div className="page-hero-visual hud-frame"><div className="page-hero-visual-inner" style={{backgroundImage:`url(${base}hero-dragon.webp)`}} /><div className="page-hero-visual-shade" /><div className="page-hero-visual-content"><strong>01</strong><small>FEATURED NEWS</small><span>Updated 10.09.2026</span></div></div>
         </div>
       </section>
 
