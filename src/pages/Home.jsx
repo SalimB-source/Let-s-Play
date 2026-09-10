@@ -93,17 +93,7 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        <div className="hero-bg" style={{ backgroundImage: `url(${base}hero-dragon.jpg)` }} role="img" aria-label="Let’s Play dragon key art" />
-        <div className="hero-video" aria-hidden="true">
-          <iframe
-            src="https://www.youtube.com/embed/HzigJZOxz2o?autoplay=1&mute=1&loop=1&playlist=HzigJZOxz2o&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&disablekb=1&fs=0"
-            title="Let’s Play background video"
-            frameBorder="0"
-            allow="autoplay; fullscreen"
-            tabIndex={-1}
-          />
-        </div>
-        <div className="hero-video-overlay" aria-hidden="true" />
+        <div className="hero-bg" style={{ backgroundImage: `url(${base}hero-dragon.webp)` }} role="img" aria-label="Let’s Play dragon key art" />
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">

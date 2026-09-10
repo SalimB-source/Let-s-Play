@@ -131,23 +131,6 @@ img{max-width:100%}
   animation:hero-drift 24s ease-in-out infinite alternate;
 }
 @keyframes hero-drift{to{transform:scale(1.08)}}
-.hero-video{
-  position:absolute;inset:0;z-index:1;
-  overflow:hidden;
-  pointer-events:none;
-}
-.hero-video iframe{
-  position:absolute;
-  top:50%;left:50%;
-  width:100vw;height:56.25vw;
-  min-height:100vh;min-width:177.77vh;
-  transform:translate(-50%,-50%);
-  border:0;
-}
-.hero-video-overlay{
-  position:absolute;inset:0;z-index:2;
-  background:rgba(0,0,0,0.38);
-}
 .hero-shade{
   position:absolute;inset:0;z-index:3;
   background:
