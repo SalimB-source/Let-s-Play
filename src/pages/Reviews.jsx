@@ -1,41 +1,43 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { videos, baseUrl as base } from '../data';
+import { useLanguage } from '../i18n/LanguageContext';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
 export default function Reviews(){
+  const { t } = useLanguage();
   const gaming = videos.filter(v=>v.tag==='Gaming');
 
   return (
     <>
       <section className="page-hero wrap">
-        <div className="section-label"><span><b>PAGE</b> / REVIEWS</span><span>NO HYPE, JUST PLAY</span></div>
+        <div className="section-label"><span><b>{t.reviews.label1.split(' / ')[0]}</b> / {t.reviews.label1.split(' / ')[1]}</span><span>{t.reviews.label2}</span></div>
         <div className="page-hero-grid">
           <div>
-            <p className="eyebrow"><span className="live-dot" /> Critical hits</p>
-            <h1>REVIEWS<br/><em>THAT MATTER.</em></h1>
-            <p className="page-hero-text">We play it, break it, and tell you if it’s worth your time and money. No PR fluff — just the community’s verdict. Separate page, same energy.</p>
+            <p className="eyebrow"><span className="live-dot" /> {t.reviews.eyebrow}</p>
+            <h1>{t.reviews.h1a}<br/><em>{t.reviews.h1b}</em></h1>
+            <p className="page-hero-text">{t.reviews.text}</p>
           </div>
           <div className="page-hero-visual hud-frame">
             <div className="page-hero-visual-inner" style={{backgroundImage:`url(${base}instagram-post-2.jpg)`}} />
             <div className="page-hero-visual-shade" />
             <div className="page-hero-visual-content">
-              <strong>100%</strong><small>HONEST</small>
-              <span>Gaming • Tech • Cinema</span>
+              <strong>{t.reviews.honest}</strong><small>{t.reviews.honestLabel}</small>
+              <span>{t.reviews.categories}</span>
             </div>
           </div>
         </div>
       </section>
 
       <section className="featured wrap">
-        <div className="section-label"><span><b>01</b> / NOW PLAYING</span><span>FEATURED REVIEW</span></div>
+        <div className="section-label"><span><b>{t.reviews.featuredLabel1.split(' / ')[0]}</b> / {t.reviews.featuredLabel1.split(' / ')[1]}</span><span>{t.reviews.featuredLabel2}</span></div>
         <div className="featured-grid">
           <div className="featured-copy">
-            <p className="eyebrow"><span className="live-dot" /> Featured review</p>
-            <h2>BLACK FLAG,<br/><em>FULL SAIL.</em></h2>
-            <p>Assassin’s Creed Black Flag Resynced — our deep dive, performance test, and whether nostalgia holds up in 2026.</p>
-            <a className="arrow-link" href="https://youtu.be/0e5yXxfchLA" target="_blank" rel="noreferrer">Watch on YouTube <Arrow/></a>
+            <p className="eyebrow"><span className="live-dot" /> {t.reviews.featuredEyebrow}</p>
+            <h2>{t.reviews.h2a}<br/><em>{t.reviews.h2b}</em></h2>
+            <p>{t.reviews.featuredText}</p>
+            <a className="arrow-link" href="https://youtu.be/0e5yXxfchLA" target="_blank" rel="noreferrer">{t.reviews.watchYoutube} <Arrow/></a>
           </div>
           <div className="featured-player hud-frame">
             <iframe src="https://www.youtube.com/embed/0e5yXxfchLA?rel=0&modestbranding=1" title="Black Flag Review" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
@@ -44,19 +46,19 @@ export default function Reviews(){
       </section>
 
       <section className="latest wrap">
-        <div className="section-label"><span><b>02</b> / ARCHIVE</span><span>GAMING REVIEWS</span></div>
-        <h2 className="page-h2">MORE<br/><em>REVIEWS.</em></h2>
+        <div className="section-label"><span><b>{t.reviews.archiveLabel1.split(' / ')[0]}</b> / {t.reviews.archiveLabel1.split(' / ')[1]}</span><span>{t.reviews.archiveLabel2}</span></div>
+        <h2 className="page-h2">{t.reviews.moreA}<br/><em>{t.reviews.moreB}</em></h2>
         <div className="video-grid" style={{marginTop:32}}>
           {gaming.map(video=>(
             <a className="video-card" href={video.href} target="_blank" rel="noreferrer" key={video.title}>
               <div className="video-image"><img src={video.image} alt="" /><span className="play">▶</span></div>
-              <div className="video-meta"><span>{video.meta}</span><span>{video.tag}</span></div>
-              <h3>{video.title}</h3>
-              <p className="video-desc">{video.desc}</p>
+              <div className="video-meta"><span>{t.categories[video.category] || video.category} · {video.duration}</span><span>{t.filters[video.tag] || video.tag}</span></div>
+              <h3>{(t.videos[video.title] && t.videos[video.title].title) || video.title}</h3>
+              <p className="video-desc">{(t.videos[video.title] && t.videos[video.title].desc) || video.desc}</p>
             </a>
           ))}
         </div>
-        <Link className="arrow-link" to="/dossiers">Explore dossiers <Arrow/></Link>
+        <Link className="arrow-link" to="/dossiers">{t.reviews.exploreDossiers} <Arrow/></Link>
       </section>
     </>
   );

@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
+import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import News from './pages/News';
@@ -11,17 +12,19 @@ import NotFound from './pages/NotFound';
 
 function App() {
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/news" element={<News />} />
-          <Route path="/reviews" element={<Reviews />} />
-          <Route path="/dossiers" element={<Dossiers />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Layout>
-    </BrowserRouter>
+    <LanguageProvider>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/news" element={<News />} />
+            <Route path="/reviews" element={<Reviews />} />
+            <Route path="/dossiers" element={<Dossiers />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </LanguageProvider>
   );
 }
 

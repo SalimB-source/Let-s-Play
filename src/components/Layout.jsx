@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useLanguage } from '../i18n/LanguageContext';
+import LanguageSwitcher from './LanguageSwitcher';
 
 const base = import.meta.env.BASE_URL;
 
@@ -7,6 +9,7 @@ export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -29,15 +32,16 @@ export default function Layout({ children }) {
         <Link className="brand" to="/" aria-label="Let's Play, home">
           <img className="brand-logo" src={`${base}lets-play-logo.png`} alt="Let’s Play" />
         </Link>
-        <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label="Ouvrir le menu">
+        <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={t.nav.menuAria}>
           MENU <span className={menuOpen ? 'dash open' : 'dash'}>—</span>
         </button>
         <div className={menuOpen ? 'nav-links open' : 'nav-links'}>
-          <Link to="/" className={isActive('/') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Home</Link>
-          <Link to="/news" className={isActive('/news') ? 'active' : ''} onClick={() => setMenuOpen(false)}>News</Link>
-          <Link to="/reviews" className={isActive('/reviews') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Reviews</Link>
-          <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Dossiers</Link>
-          <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer" className="nav-cta" onClick={() => setMenuOpen(false)}>Watch ↗</a>
+          <Link to="/" className={isActive('/') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.home}</Link>
+          <Link to="/news" className={isActive('/news') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.news}</Link>
+          <Link to="/reviews" className={isActive('/reviews') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.reviews}</Link>
+          <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.dossiers}</Link>
+          <LanguageSwitcher variant="nav" />
+          <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer" className="nav-cta" onClick={() => setMenuOpen(false)}>{t.nav.watch} ↗</a>
         </div>
       </nav>
       <main>{children}</main>
@@ -45,15 +49,15 @@ export default function Layout({ children }) {
         <Link className="brand" to="/" aria-label="Let's Play, home">
           <img className="brand-logo" src={`${base}lets-play-logo.png`} alt="Let’s Play" />
         </Link>
-        <p>An original show dedicated to the culture that brings us together. Now multi-page.</p>
+        <p>{t.footer.tagline}</p>
         <div className="footer-links">
-          <Link to="/">Home</Link>
-          <Link to="/news">News</Link>
-          <Link to="/reviews">Reviews</Link>
-          <Link to="/dossiers">Dossiers</Link>
+          <Link to="/">{t.nav.home}</Link>
+          <Link to="/news">{t.nav.news}</Link>
+          <Link to="/reviews">{t.nav.reviews}</Link>
+          <Link to="/dossiers">{t.nav.dossiers}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>
-          <span>© 2026 Let’s Play</span>
+          <span>{t.footer.copyright}</span>
         </div>
       </footer>
     </>
