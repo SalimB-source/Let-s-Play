@@ -27,8 +27,8 @@ export default function News(){
 
       <section className="news-feature wrap">
         <Link className="news-feature-card" to="/news/physint">
-          <div className="news-feature-image"><img src={`${base}physint-news.jpg`} alt="PHYSINT artwork with PlayStation and Xbox branding" /><span className="news-feature-badge">BREAKING / GAMING</span><span className="news-feature-arrow">↗</span></div>
-          <div className="news-feature-copy"><span className="news-kicker">INDUSTRY SHIFT · 10 SEPTEMBER 2026</span><h2>PHYSINT SURVIVES THE SWITCH: KOJIMA’S NEXT GAME MOVES FROM PLAYSTATION TO XBOX</h2><p>PlayStation is stepping away from Kojima Productions’ stealth-action project. After a difficult summer, Hideo Kojima says Xbox will help keep the ambitious game alive.</p><span className="read-link">READ THE STORY <Arrow/></span></div>
+          <div className="news-feature-image"><img src={`${base}physint-news.jpg`} alt={t.news.featured.alt} /><span className="news-feature-badge">{t.news.featured.badge}</span><span className="news-feature-arrow">↗</span></div>
+          <div className="news-feature-copy"><span className="news-kicker">{t.news.featured.kicker}</span><h2>{t.news.featured.title}</h2><p>{t.news.featured.excerpt}</p><span className="read-link">{t.news.featured.read} <Arrow/></span></div>
         </Link>
       </section>
 
