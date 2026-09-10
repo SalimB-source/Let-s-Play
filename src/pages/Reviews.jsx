@@ -11,6 +11,17 @@ export default function Reviews(){
 
   return (
     <>
+      <section className="reviews-hero" id="top">
+        <div className="reviews-hero-bg" style={{ backgroundImage: `url(${base}chaft-soldier.png)` }} role="img" aria-label="Chaft soldier key art" />
+        <div className="reviews-hero-overlay" aria-hidden="true" />
+        <div className="reviews-hero-content">
+          <div className="section-label"><span><b>{t.reviews.label1.split(' / ')[0]}</b> / {t.reviews.label1.split(' / ')[1]}</span><span>{t.reviews.label2}</span></div>
+          <p className="eyebrow"><span className="live-dot" /> {t.reviews.eyebrow}</p>
+          <h1>{t.reviews.h1a}<br/><em>{t.reviews.h1b}</em></h1>
+          <p className="page-hero-text">{t.reviews.text}</p>
+        </div>
+      </section>
+
       <section className="featured wrap">
         <div className="section-label"><span><b>{t.reviews.featuredLabel1.split(' / ')[0]}</b> / {t.reviews.featuredLabel1.split(' / ')[1]}</span><span>{t.reviews.featuredLabel2}</span></div>
         <div className="featured-grid">
