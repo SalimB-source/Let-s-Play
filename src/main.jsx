@@ -6,6 +6,7 @@ import './news-article.css';
 import './auth/auth.css';
 import './news-carousel.css';
 import './news-view-toggle.css';
+import './daily-news.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -16,6 +17,7 @@ import WarDogs from './pages/WarDogs';
 import ZeldaOcarina from './pages/ZeldaOcarina';
 import Onimusha from './pages/Onimusha';
 import OnimushaMillion from './pages/OnimushaMillion';
+import Gta6DualSense from './pages/Gta6DualSense';
 import Reviews from './pages/Reviews';
 import Dossiers from './pages/Dossiers';
 import NotFound from './pages/NotFound';
@@ -37,6 +39,7 @@ function App() {
             <Route path="/news/zelda-ocarina" element={<ZeldaOcarina />} />
             <Route path="/reviews/onimusha" element={<Onimusha />} />
             <Route path="/news/onimusha-million" element={<OnimushaMillion />} />
+            <Route path="/news/gta6-dualsense" element={<Gta6DualSense />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/auth" element={<Auth />} />
