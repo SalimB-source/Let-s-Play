@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
 import './news-article.css';
+import './auth/auth.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -16,13 +17,16 @@ import OnimushaMillion from './pages/OnimushaMillion';
 import Reviews from './pages/Reviews';
 import Dossiers from './pages/Dossiers';
 import NotFound from './pages/NotFound';
+import Auth from './pages/Auth';
+import { AuthProvider } from './auth/AuthContext';
 
 function App() {
   return (
     <LanguageProvider>
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <Layout>
-          <Routes>
+      <AuthProvider>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <Layout>
+            <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/physint" element={<Physint />} />
@@ -33,10 +37,12 @@ function App() {
             <Route path="/news/onimusha-million" element={<OnimushaMillion />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
+            <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </AuthProvider>
     </LanguageProvider>
   );
 }
