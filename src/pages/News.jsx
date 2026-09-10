@@ -9,6 +9,7 @@ export default function News(){
   const { t } = useLanguage();
   const [filter, setFilter] = React.useState('All');
   const visible = filter === 'All' ? videos : videos.filter(video => video.tag === filter);
+  const million = t.news.million || t.news.featured;
 
   return (
     <>
@@ -43,8 +44,8 @@ export default function News(){
           <div className="news-feature-copy"><span className="news-kicker">{t.news.zelda.date} · {t.news.platforms}</span><h2>{t.news.zelda.title} {t.news.zelda.titleAccent}</h2><p>{t.news.zelda.dek}</p><span className="read-link">{t.news.zelda.back} <Arrow/></span></div>
         </Link>
         <Link className="news-feature-card news-feature-card-secondary" to="/news/onimusha-million">
-          <div className="news-feature-image"><img src={`${base}onimusha-million-news.jpg`} alt={t.news.million.coverAlt} /><span className="news-feature-badge">{t.news.million.eyebrow}</span><span className="news-feature-arrow">↗</span></div>
-          <div className="news-feature-copy"><span className="news-kicker">{t.news.million.date} · CAPCOM</span><h2>{t.news.million.title} {t.news.million.titleAccent}</h2><p>{t.news.million.dek}</p><span className="read-link">{t.news.million.back} <Arrow/></span></div>
+          <div className="news-feature-image"><img src={`${base}onimusha-million-news.jpg`} alt={million.coverAlt || million.alt} /><span className="news-feature-badge">{million.eyebrow || million.badge}</span><span className="news-feature-arrow">↗</span></div>
+          <div className="news-feature-copy"><span className="news-kicker">{million.date || million.kicker} · CAPCOM</span><h2>{million.title} {million.titleAccent || ''}</h2><p>{million.dek || million.excerpt}</p><span className="read-link">{million.back || million.read} <Arrow/></span></div>
         </Link>
       </section>
 
