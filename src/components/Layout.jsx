@@ -29,7 +29,7 @@ export default function Layout({ children }) {
   
   return (
     <>
-      <nav className={scrolled ? 'nav scrolled' : 'nav'}>
+      <nav className={`${scrolled ? 'nav scrolled' : 'nav'}${isHome ? ' nav-home' : ''}`}>
         <Link className="brand" to="/" aria-label="Let's Play, home">
           <img className="brand-logo" src={`${base}lets-play-logo.png`} alt="Let’s Play" />
         </Link>
