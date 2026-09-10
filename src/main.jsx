@@ -5,6 +5,7 @@ import './styles.css';
 import './news-article.css';
 import './auth/auth.css';
 import './news-carousel.css';
+import './news-view-toggle.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
