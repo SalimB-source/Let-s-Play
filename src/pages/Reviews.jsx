@@ -11,25 +11,6 @@ export default function Reviews(){
 
   return (
     <>
-      <section className="page-hero wrap">
-        <div className="section-label"><span><b>{t.reviews.label1.split(' / ')[0]}</b> / {t.reviews.label1.split(' / ')[1]}</span><span>{t.reviews.label2}</span></div>
-        <div className="page-hero-grid">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> {t.reviews.eyebrow}</p>
-            <h1>{t.reviews.h1a}<br/><em>{t.reviews.h1b}</em></h1>
-            <p className="page-hero-text">{t.reviews.text}</p>
-          </div>
-          <div className="page-hero-visual hud-frame">
-            <div className="page-hero-visual-inner" style={{backgroundImage:`url(${base}instagram-post-2.jpg)`}} />
-            <div className="page-hero-visual-shade" />
-            <div className="page-hero-visual-content">
-              <strong>{t.reviews.honest}</strong><small>{t.reviews.honestLabel}</small>
-              <span>{t.reviews.categories}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <section className="featured wrap">
         <div className="section-label"><span><b>{t.reviews.featuredLabel1.split(' / ')[0]}</b> / {t.reviews.featuredLabel1.split(' / ')[1]}</span><span>{t.reviews.featuredLabel2}</span></div>
         <div className="featured-grid">
