@@ -34,7 +34,7 @@ export default function Layout({ children }) {
           <img className="brand-logo" src={`${base}lets-play-logo.png`} alt="Let’s Play" />
         </Link>
         <button className="menu-button" onClick={() => setMenuOpen(!menuOpen)} aria-label={t.nav.menuAria}>
-          MENU <span className={menuOpen ? 'dash open' : 'dash'}>—</span>
+          {t.nav.menu} <span className={menuOpen ? 'dash open' : 'dash'}>—</span>
         </button>
         <div className={menuOpen ? 'nav-links open' : 'nav-links'}>
           <Link to="/" className={isActive('/') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.home}</Link>
