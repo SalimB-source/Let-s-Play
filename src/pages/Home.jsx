@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { videos, filters, socialVisuals, baseUrl as base } from '../data';
+import { useLanguage } from '../i18n/LanguageContext';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
 export default function Home() {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState('All');
   const visibleVideos = filter === 'All' ? videos : videos.filter((v) => v.tag === filter);
 
@@ -105,32 +107,32 @@ export default function Home() {
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">
-          <p className="eyebrow"><span className="live-dot" /> Algeria’s gaming &amp; pop culture show</p>
-          <h1>LEVEL UP<br /><em>YOUR REALITY.</em></h1>
-          <p className="hero-text">Reviews, previews, e-sport, tech and pop culture — the show for the community that never stopped playing. Every drop, every round, every story worth playing.</p>
+          <p className="eyebrow"><span className="live-dot" /> {t.home.eyebrow}</p>
+          <h1>{t.home.h1a}<br /><em>{t.home.h1b}</em></h1>
+          <p className="hero-text">{t.home.heroText}</p>
           <div className="hero-actions">
-            <a className="button button-yellow" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Watch the episodes <Arrow /></a>
-            <Link className="button button-ghost" to="/news">Enter the show <span aria-hidden="true">↓</span></Link>
+            <a className="button button-yellow" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.watchEpisodes} <Arrow /></a>
+            <Link className="button button-ghost" to="/news">{t.home.enterShow} <span aria-hidden="true">↓</span></Link>
           </div>
         </div>
         <div className="hero-hud">
-          <div><strong>15K+</strong><small>YOUTUBE SUBS</small></div>
-          <div><strong>33K+</strong><small>IG COMMUNITY</small></div>
-          <div><strong>∞</strong><small>REASONS TO PLAY</small></div>
-          <a className="scroll-cue" href="#featured" aria-label="Scroll to content">SCROLL<span /></a>
+          <div><strong>15K+</strong><small>{t.home.hud.subs}</small></div>
+          <div><strong>33K+</strong><small>{t.home.hud.community}</small></div>
+          <div><strong>∞</strong><small>{t.home.hud.reasons}</small></div>
+          <a className="scroll-cue" href="#featured" aria-label="Scroll to content">{t.home.hud.scroll}<span /></a>
         </div>
       </section>
 
-      <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>GAMING <b>✦</b> E-SPORT <b>✦</b> CINEMA <b>✦</b> TECH <b>✦</b> POP CULTURE <b>✦</b> </span>)}</div></section>
+      <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>{t.home.ticker.map((word, i) => <React.Fragment key={i}>{word} <b>✦</b> </React.Fragment>)}</span>)}</div></section>
 
       <section className="featured wrap" id="featured">
-        <div className="section-label"><span><b>01</b> / NOW PLAYING</span><span>FEATURED EPISODE</span></div>
+        <div className="section-label"><span><b>{t.home.featured.label1.split(' / ')[0]}</b> / {t.home.featured.label1.split(' / ')[1]}</span><span>{t.home.featured.label2}</span></div>
         <div className="featured-grid">
           <div className="featured-copy">
-            <p className="eyebrow"><span className="live-dot" /> Featured episode</p>
-            <h2>BLACK FLAG,<br /><em>FULL SAIL.</em></h2>
-            <p>Watch our Assassin’s Creed Black Flag Resynced review — deep dives, previews and expert perspectives for players who want to stay ahead of the meta.</p>
-            <Link className="arrow-link" to="/reviews">Open reviews <Arrow /></Link>
+            <p className="eyebrow"><span className="live-dot" /> {t.home.featured.eyebrow}</p>
+            <h2>{t.home.featured.h2a}<br /><em>{t.home.featured.h2b}</em></h2>
+            <p>{t.home.featured.text}</p>
+            <Link className="arrow-link" to="/reviews">{t.home.featured.cta} <Arrow /></Link>
           </div>
           <div className="featured-player hud-frame">
             <iframe src="https://www.youtube.com/embed/0e5yXxfchLA?rel=0&modestbranding=1" title="Assassin’s Creed Black Flag Resynced" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
@@ -139,56 +141,56 @@ export default function Home() {
       </section>
 
       <section className="show wrap" id="show">
-        <div className="section-label"><span><b>02</b> / THE SHOW</span><span>WHAT WE DO</span></div>
+        <div className="section-label"><span><b>{t.home.show.label1.split(' / ')[0]}</b> / {t.home.show.label1.split(' / ')[1]}</span><span>{t.home.show.label2}</span></div>
         <div className="manifesto-grid">
-          <h2 className="manifesto-h2">GAMING,<br /><span>WE LIVE IT.</span></h2>
+          <h2 className="manifesto-h2">{t.home.show.h2a}<br /><span>{t.home.show.h2b}</span></h2>
           <div>
-            <p className="lead">Let’s Play is your world of gaming and pop culture.</p>
-            <p>Discover the latest games, explore movies, shows and comics, and join a community built around the stories, characters and moments we love. From in-depth reviews to hot news and practical guides, there is always another level to reach.</p>
-            <Link className="arrow-link" to="/dossiers">Explore dossiers <Arrow /></Link>
+            <p className="lead">{t.home.show.lead}</p>
+            <p>{t.home.show.text}</p>
+            <Link className="arrow-link" to="/dossiers">{t.home.show.cta} <Arrow /></Link>
           </div>
         </div>
         <div className="stats">
-          <div><strong>15K<span>+</span></strong><small>YOUTUBE SUBSCRIBERS</small></div>
-          <div><strong>33K<span>+</span></strong><small>INSTAGRAM COMMUNITY</small></div>
-          <div><strong>∞</strong><small>REASONS TO PLAY</small></div>
+          <div><strong>15K<span>+</span></strong><small>{t.home.show.stats.subs}</small></div>
+          <div><strong>33K<span>+</span></strong><small>{t.home.show.stats.community}</small></div>
+          <div><strong>∞</strong><small>{t.home.show.stats.reasons}</small></div>
         </div>
       </section>
 
       <section className="formats wrap" id="formats">
-        <div className="section-label"><span><b>03</b> / FORMATS</span><span>OUR PLAYGROUNDS</span></div>
+        <div className="section-label"><span><b>{t.home.formats.label1.split(' / ')[0]}</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
         <div className="format-grid">
-          <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>GAMING</h3><p>Latest games, reviews, previews, expert tips and guides.</p><Link to="/reviews">Explore <Arrow /></Link></article>
-          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>MOVIES &amp; COMICS</h3><p>In-depth film and series reviews, plus hot news from the comic world.</p><Link to="/news">Explore <Arrow /></Link></article>
-          <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>COMMUNITY</h3><p>Join the Let’s Play community and dive into the fun together.</p><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Join us <Arrow /></a></article>
+          <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
+          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow /></Link></article>
+          <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.home.formats.communityText}</p><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">{t.home.formats.joinUs} <Arrow /></a></article>
         </div>
       </section>
 
       <section className="latest wrap" id="latest">
-        <div className="section-label"><span><b>04</b> / EPISODES</span><span>WATCH NOW</span></div>
+        <div className="section-label"><span><b>{t.home.latest.label1.split(' / ')[0]}</b> / {t.home.latest.label1.split(' / ')[1]}</span><span>{t.home.latest.label2}</span></div>
         <div className="latest-head">
-          <h2>THE LATEST<br /><em>ROUND.</em></h2>
-          <div className="filter-row">{filters.map((item) => <button key={item} className={filter === item ? 'filter active' : 'filter'} onClick={() => setFilter(item)}>{item}</button>)}</div>
+          <h2>{t.home.latest.h2a}<br /><em>{t.home.latest.h2b}</em></h2>
+          <div className="filter-row">{filters.map((item) => <button key={item} className={filter === item ? 'filter active' : 'filter'} onClick={() => setFilter(item)}>{t.filters[item]}</button>)}</div>
         </div>
         <div className="video-grid">
           {visibleVideos.slice(0,4).map((video) => (
             <a className="video-card" href={video.href} target="_blank" rel="noreferrer" key={video.title}>
               <div className="video-image"><img src={video.image} alt="" /><span className="play">▶</span></div>
-              <div className="video-meta"><span>{video.meta}</span><span>{video.tag}</span></div>
-              <h3>{video.title}</h3>
+              <div className="video-meta"><span>{t.categories[video.category] || video.category} · {video.duration}</span><span>{t.filters[video.tag] || video.tag}</span></div>
+              <h3>{(t.videos[video.title] && t.videos[video.title].title) || video.title}</h3>
             </a>
           ))}
         </div>
-        <Link className="arrow-link" to="/news">See all episodes <Arrow /></Link>
+        <Link className="arrow-link" to="/news">{t.home.latest.seeAll} <Arrow /></Link>
       </section>
 
       <section className="social-carousel wrap" id="social">
-        <div className="section-label"><span><b>05</b> / FEED</span><span>FROM OUR INSTAGRAM — 4:5 • DRAG TO SCROLL</span></div>
+        <div className="section-label"><span><b>{t.home.social.label1.split(' / ')[0]}</b> / {t.home.social.label1.split(' / ')[1]}</span><span>{t.home.social.label2}</span></div>
         <div className="carousel-head">
           <div>
-            <p className="eyebrow"><span className="live-dot" /> Follow the conversation</p>
-            <h2>THE FEED<br /><em>KEEPS MOVING.</em></h2>
-            <p className="carousel-hint">↔ Drag with mouse • Scroll wheel • Swipe on mobile — 4:5 not cropped</p>
+            <p className="eyebrow"><span className="live-dot" /> {t.home.social.eyebrow}</p>
+            <h2>{t.home.social.h2a}<br /><em>{t.home.social.h2b}</em></h2>
+            <p className="carousel-hint">{t.home.social.hint}</p>
           </div>
           <div className="carousel-controls">
             <button onClick={handlePrev} aria-label="Previous visual">←</button>
@@ -202,25 +204,25 @@ export default function Home() {
               <a className="social-slide" href={visual.url} target="_blank" rel="noreferrer" key={visual.title} draggable={false}>
                 <div className="social-slide-media">
                   <img src={visual.image} alt={visual.title} draggable={false} loading="lazy" />
-                  <div className="insta-badge">4:5 • IG • NOT CROPPED</div>
+                  <div className="insta-badge">{t.home.social.badge}</div>
                   <div className="insta-gradient" aria-hidden="true" />
                 </div>
                 <div className="social-slide-overlay">
-                  <span>{visual.label}</span><strong>{visual.title}</strong><small className="insta-meta">1080×1350 • contain • drag to scroll</small>
+                  <span>{t.home.social.postLabel}</span><strong>{visual.title}</strong><small className="insta-meta">{t.home.social.meta}</small>
                 </div>
               </a>
             ))}
           </div>
         </div>
-        <a className="arrow-link carousel-link" href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">See all posts on Instagram <Arrow /></a>
+        <a className="arrow-link carousel-link" href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">{t.home.social.seeAll} <Arrow /></a>
       </section>
 
       <section className="cta wrap">
         <div>
-          <p className="eyebrow"><span className="live-dot" /> The next round starts here</p>
-          <h2>READY, PLAYER<br /><em>ONE?</em></h2>
+          <p className="eyebrow"><span className="live-dot" /> {t.home.cta.eyebrow}</p>
+          <h2>{t.home.cta.h2a}<br /><em>{t.home.cta.h2b}</em></h2>
         </div>
-        <a className="button button-yellow" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">Join the game <Arrow /></a>
+        <a className="button button-yellow" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.cta.cta} <Arrow /></a>
       </section>
     </>
   );
