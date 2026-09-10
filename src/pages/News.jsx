@@ -42,6 +42,10 @@ export default function News(){
           <div className="news-feature-image"><img src={`${base}zelda-ocarina-news.jpg`} alt={t.news.zelda.coverAlt} /><span className="news-feature-badge">{t.news.zelda.eyebrow}</span><span className="news-feature-arrow">↗</span></div>
           <div className="news-feature-copy"><span className="news-kicker">{t.news.zelda.date} · {t.news.platforms}</span><h2>{t.news.zelda.title} {t.news.zelda.titleAccent}</h2><p>{t.news.zelda.dek}</p><span className="read-link">{t.news.zelda.back} <Arrow/></span></div>
         </Link>
+        <Link className="news-feature-card news-feature-card-secondary" to="/news/onimusha-million">
+          <div className="news-feature-image"><img src={`${base}onimusha-million-news.jpg`} alt={t.news.million.coverAlt} /><span className="news-feature-badge">{t.news.million.eyebrow}</span><span className="news-feature-arrow">↗</span></div>
+          <div className="news-feature-copy"><span className="news-kicker">{t.news.million.date} · CAPCOM</span><h2>{t.news.million.title} {t.news.million.titleAccent}</h2><p>{t.news.million.dek}</p><span className="read-link">{t.news.million.back} <Arrow/></span></div>
+        </Link>
       </section>
 
       <section className="latest wrap"><div className="section-label"><span><b>02</b> / {t.news.latestLabel}</span><span>{t.news.latestMeta}</span></div><div className="video-grid">{visible.map(video => <a className="video-card" href={video.href} target="_blank" rel="noreferrer" key={video.title}><div className="video-image"><img src={video.image} alt="" /><span className="play">▶</span></div><div className="video-meta"><span>{t.categories[video.category] || video.category} · {video.duration}</span><span>{t.filters[video.tag] || video.tag}</span></div><h3>{(t.videos[video.title] && t.videos[video.title].title) || video.title}</h3><p className="video-desc">{(t.videos[video.title] && t.videos[video.title].desc) || video.desc}</p></a>)}</div></section>
