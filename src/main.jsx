@@ -8,6 +8,7 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import News from './pages/News';
 import Physint from './pages/Physint';
+import MetroidRavenous from './pages/MetroidRavenous';
 import Reviews from './pages/Reviews';
 import Dossiers from './pages/Dossiers';
 import NotFound from './pages/NotFound';
@@ -21,6 +22,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/physint" element={<Physint />} />
+            <Route path="/news/metroid-ravenous" element={<MetroidRavenous />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="*" element={<NotFound />} />

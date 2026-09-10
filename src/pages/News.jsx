@@ -30,6 +30,10 @@ export default function News(){
           <div className="news-feature-image"><img src={`${base}physint-news.jpg`} alt={t.news.featured.alt} /><span className="news-feature-badge">{t.news.featured.badge}</span><span className="news-feature-arrow">↗</span></div>
           <div className="news-feature-copy"><span className="news-kicker">{t.news.featured.kicker}</span><h2>{t.news.featured.title}</h2><p>{t.news.featured.excerpt}</p><span className="read-link">{t.news.featured.read} <Arrow/></span></div>
         </Link>
+        <Link className="news-feature-card news-feature-card-secondary" to="/news/metroid-ravenous">
+          <div className="news-feature-image"><img src={`${base}metroid-ravenous-news.png`} alt={t.news.metroid.coverAlt} /><span className="news-feature-badge">{t.news.metroid.eyebrow}</span><span className="news-feature-arrow">↗</span></div>
+          <div className="news-feature-copy"><span className="news-kicker">{t.news.metroid.date} · SWITCH 2</span><h2>{t.news.metroid.title} {t.news.metroid.titleAccent}</h2><p>{t.news.metroid.dek}</p><span className="read-link">{t.news.metroid.back} <Arrow/></span></div>
+        </Link>
       </section>
 
       <section className="latest wrap"><div className="section-label"><span><b>02</b> / LATEST DROPS</span><span>VIDEO / CULTURE / TECH</span></div><div className="video-grid">{visible.map(video => <a className="video-card" href={video.href} target="_blank" rel="noreferrer" key={video.title}><div className="video-image"><img src={video.image} alt="" /><span className="play">▶</span></div><div className="video-meta"><span>{t.categories[video.category] || video.category} · {video.duration}</span><span>{t.filters[video.tag] || video.tag}</span></div><h3>{(t.videos[video.title] && t.videos[video.title].title) || video.title}</h3><p className="video-desc">{(t.videos[video.title] && t.videos[video.title].desc) || video.desc}</p></a>)}</div></section>
