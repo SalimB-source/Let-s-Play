@@ -11,6 +11,7 @@ import Physint from './pages/Physint';
 import MetroidRavenous from './pages/MetroidRavenous';
 import WarDogs from './pages/WarDogs';
 import ZeldaOcarina from './pages/ZeldaOcarina';
+import Onimusha from './pages/Onimusha';
 import Reviews from './pages/Reviews';
 import Dossiers from './pages/Dossiers';
 import NotFound from './pages/NotFound';
@@ -27,6 +28,7 @@ function App() {
             <Route path="/news/metroid-ravenous" element={<MetroidRavenous />} />
             <Route path="/news/wardogs" element={<WarDogs />} />
             <Route path="/news/zelda-ocarina" element={<ZeldaOcarina />} />
+            <Route path="/reviews/onimusha" element={<Onimusha />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="*" element={<NotFound />} />
