@@ -25,8 +25,15 @@ export default function News(){
 
   return (
     <>
+      <section className="daily-news wrap">
+        <div className="section-label"><span><b>01</b> / NEWS PRINCIPALE</span><span>10.09.2026 · HARDWARE</span></div>
+        <Link className="daily-news-card" to="/news/gta6-dualsense">
+          <div className="daily-news-image"><img src={`${base}gta6-dualsense-daily.jpg`} alt="Manette DualSense inspirée de GTA 6 dans une ambiance néon tropicale" /></div>
+          <div className="daily-news-copy"><p className="eyebrow"><span className="live-dot" /> NEWS PRINCIPALE DU JOUR</p><h2>LA DUALSENSE<br/><em>DE GTA 6.</em></h2><p>La manette officielle inspirée de Vice City ouvre ses précommandes. Un objet collector qui pourrait ne pas rester longtemps disponible.</p><span className="read-link">LIRE L’ARTICLE <Arrow/></span></div>
+        </Link>
+      </section>
       <section className="news-carousel-section wrap">
-        <div className="section-label"><span><b>01</b> / {t.news.featuredLabel}</span><span>{t.news.updatedLabel}</span></div>
+        <div className="section-label"><span><b>02</b> / {t.news.featuredLabel}</span><span>{t.news.updatedLabel}</span></div>
         <div className="news-carousel-head">
           <div><p className="eyebrow"><span className="live-dot" /> {t.news.eyebrow}</p><h1>{t.news.h1a}<br/><em>{t.news.h1b}</em></h1></div>
           <div className="news-view-tools">
