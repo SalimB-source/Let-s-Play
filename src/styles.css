@@ -59,7 +59,8 @@ img{max-width:100%}
   transition:background .25s,border-color .25s,backdrop-filter .25s;
 }
 .nav.scrolled{background:rgba(5,6,15,.82);backdrop-filter:blur(14px);border-bottom-color:var(--line)}
-      <nav className={`${scrolled ? 'nav scrolled' : 'nav'}${isHome ? ' nav-home' : ''}`}>
+     .nav.nav-home{background:transparent;backdrop-filter:none;border-bottom-color:transparent}
+.nav.nav-home.scrolled{background:rgba(5,6,15,.82);backdrop-filter:blur(14px);border-bottom-color:var(--line)}
 .brand{display:inline-flex;align-items:center}
 .brand-logo{height:46px;width:auto;display:block;transition:transform .2s}
 .brand-logo:hover{transform:scale(1.05)}
