@@ -75,7 +75,7 @@ export const translations = {
       cta: { eyebrow: 'The next round starts here', h2a: 'READY, PLAYER', h2b: 'ONE?', cta: 'Join the game' },
     },
     news: {
-      label1: 'PAGE / NEWS', label2: 'THE LATEST ROUND',
+      label1: 'PAGE / NEWS', label2: 'THE LATEST ROUND', comments: { section: 'COMMENTS', count: 'COMMENTS', title: 'JOIN THE CONVERSATION.', intro: 'Share your take on this story with the Let’s Play community.', name: 'Name', namePlaceholder: 'Your name', message: 'Comment', messagePlaceholder: 'What do you think?', submit: 'POST COMMENT' },
       eyebrow: 'Fresh drops', h1a: 'NEWS,', h1b: 'NO FILLER.',
       text: 'Every episode, every announcement, every story worth playing. Filter by Gaming, Tech, Culture — all in one place. This is the multi-page hub for Let’s Play.',
       episodes: 'EPISODES', updated: 'Updated weekly • Multi-page edition',
@@ -189,7 +189,7 @@ export const translations = {
       cta: { eyebrow: 'Le prochain round commence ici', h2a: 'PRÊT, JOUEUR', h2b: 'UN ?', cta: 'Rejoindre la partie' },
     },
     news: {
-      label1: 'PAGE / ACTUS', label2: 'LE DERNIER ROUND',
+      label1: 'PAGE / ACTUS', label2: 'LE DERNIER ROUND', comments: { section: 'COMMENTAIRES', count: 'COMMENTAIRES', title: 'REJOIGNEZ LA CONVERSATION.', intro: 'Partagez votre avis sur cette actu avec la communauté Let’s Play.', name: 'Nom', namePlaceholder: 'Votre nom', message: 'Commentaire', messagePlaceholder: 'Qu’en pensez-vous ?', submit: 'PUBLIER' },
       eyebrow: 'Nouveautés', h1a: 'ACTUS,', h1b: 'SANS BLABLA.',
       text: 'Chaque épisode, chaque annonce, chaque histoire qui mérite d’être jouée. Filtrez par Gaming, Tech, Culture — tout au même endroit. C’est le hub multi-pages de Let’s Play.',
       episodes: 'ÉPISODES', updated: 'Mis à jour chaque semaine • Édition multi-pages',
@@ -303,7 +303,7 @@ export const translations = {
       cta: { eyebrow: 'الجولة القادمة تبدأ هنا', h2a: 'هل أنت مستعد،', h2b: 'أيها اللاعب؟', cta: 'انضم إلى اللعبة' },
     },
     news: {
-      label1: 'الصفحة / الأخبار', label2: 'الجولة الأخيرة',
+      label1: 'الصفحة / الأخبار', label2: 'الجولة الأخيرة', comments: { section: 'التعليقات', count: 'تعليقات', title: 'انضم إلى النقاش.', intro: 'شارك رأيك حول هذا الخبر مع مجتمع Let’s Play.', name: 'الاسم', namePlaceholder: 'اسمك', message: 'التعليق', messagePlaceholder: 'ما رأيك؟', submit: 'نشر التعليق' },
       eyebrow: 'إصدارات جديدة', h1a: 'أخبار،', h1b: 'بلا حشو.',
       text: 'كل حلقة، كل إعلان، كل قصة تستحق أن تُلعب. صفِّ حسب الألعاب، التقنية، الثقافة — كل شيء في مكان واحد. هذا هو المركز متعدد الصفحات لـ Let’s Play.',
       episodes: 'حلقات', updated: 'يُحدَّث أسبوعيًا • نسخة متعددة الصفحات',
