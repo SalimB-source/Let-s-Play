@@ -25,7 +25,8 @@ export default function Layout({ children }) {
   }, [location.pathname]);
 
   const isActive = (path) => location.pathname === path;
-
+  const isHome = location.pathname === '/';
+  
   return (
     <>
       <nav className={scrolled ? 'nav scrolled' : 'nav'}>
