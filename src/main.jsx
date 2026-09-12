@@ -7,6 +7,7 @@ import './auth/auth.css';
 import './news-carousel.css';
 import './news-view-toggle.css';
 import './daily-news.css';
+import './monthly-releases.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
