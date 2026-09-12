@@ -49,15 +49,8 @@ export default function News(){
 
   return (
     <>
-      <section className="daily-news wrap">
-        <div className="section-label"><span><b>01</b> / NEWS PRINCIPALE</span><span>10.09.2026 · HARDWARE</span></div>
-        <div className="daily-news-card">
-          <div className="daily-news-image"><iframe src="https://www.youtube.com/embed/SKiTOBHyzmo?autoplay=1&mute=1&playsinline=1&rel=0" title="Présentation de la manette officielle GTA 6 DualSense" allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>
-          <Link className="daily-news-copy" to="/news/gta6-dualsense"><p className="eyebrow"><span className="live-dot" /> NEWS PRINCIPALE DU JOUR</p><h2>LA DUALSENSE<br/><em>DE GTA 6.</em></h2><p>La manette officielle inspirée de Vice City ouvre ses précommandes. Un objet collector qui pourrait ne pas rester longtemps disponible.</p><span className="read-link">LIRE L’ARTICLE <Arrow/></span></Link>
-        </div>
-      </section>
       <section className="news-carousel-section wrap">
-        <div className="section-label"><span><b>02</b> / {t.news.featuredLabel}</span><span>{t.news.updatedLabel}</span></div>
+        <div className="section-label"><span><b>01</b> / {t.news.featuredLabel}</span><span>{t.news.updatedLabel}</span></div>
         <div className="news-carousel-head">
           <div><p className="eyebrow"><span className="live-dot" /> {t.news.eyebrow}</p><h1>{t.news.h1a}<br/><em>{t.news.h1b}</em></h1></div>
           <div className="news-view-tools">
@@ -73,6 +66,13 @@ export default function News(){
             <div className="news-carousel-image"><img src={`${base}${article.image}`} alt={article.alt} /><span className="news-feature-badge">{article.badge}</span><span className="news-feature-arrow">↗</span></div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link>)}
+        </div>
+      </section>
+      <section className="daily-news wrap">
+        <div className="section-label"><span><b>02</b> / NEWS PRINCIPALE</span><span>10.09.2026 · HARDWARE</span></div>
+        <div className="daily-news-card">
+          <div className="daily-news-image"><iframe src="https://www.youtube.com/embed/SKiTOBHyzmo?autoplay=1&mute=1&playsinline=1&rel=0" title="Présentation de la manette officielle GTA 6 DualSense" allow="autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>
+          <Link className="daily-news-copy" to="/news/gta6-dualsense"><p className="eyebrow"><span className="live-dot" /> NEWS PRINCIPALE DU JOUR</p><h2>LA DUALSENSE<br/><em>DE GTA 6.</em></h2><p>La manette officielle inspirée de Vice City ouvre ses précommandes. Un objet collector qui pourrait ne pas rester longtemps disponible.</p><span className="read-link">LIRE L’ARTICLE <Arrow/></span></Link>
         </div>
       </section>
       <section className="monthly-releases wrap">
