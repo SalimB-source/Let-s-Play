@@ -25,6 +25,10 @@ export default function News(){
     { to: '/news/onimusha-million', image: 'onimusha-million-news.jpg', alt: million.coverAlt || million.alt, badge: million.eyebrow || million.badge, kicker: `${million.date || million.kicker} · CAPCOM`, title: `${million.title} ${million.titleAccent || ''}`, excerpt: million.dek || million.excerpt, read: million.back || million.read },
   ];
 
+  const septemberReleases = [
+    ['01 SEP', 'Crimson Moon', 'PC · PS5 · XBOX SERIES'], ['02 SEP', 'Moonlighter 2: The Endless Vault', 'PC · PS5 · XBOX SERIES · SWITCH 2'], ['03 SEP', 'The Blood of Dawnwalker', 'PC · PS5 · XBOX SERIES'], ['04 SEP', 'Onimusha: Way of the Sword', 'PC · PS5 · XBOX SERIES · SWITCH 2'], ['10 SEP', 'Wardogs', 'PC'], ['15 SEP', 'Marvel’s Wolverine', 'PS5'], ['17 SEP', 'Fire Emblem: Fortune’s Weave', 'SWITCH 2'], ['18 SEP', 'LEGO Batman: Legacy of the Dark Knight', 'SWITCH 2'], ['24 SEP', 'Control Resonant', 'PC · PS5 · XBOX SERIES'], ['24 SEP', 'Silent Hill Townfall', 'PC · PS5'], ['25 SEP', 'EA Sports FC 27', 'PC · PS5 · XBOX · SWITCH'], ['29 SEP', 'The Witcher 3: Wild Hunt – Remastered', 'PC · PS5 · XBOX SERIES · SWITCH 2'],
+  ];
+
   return (
     <>
       <section className="daily-news wrap">
@@ -52,6 +56,11 @@ export default function News(){
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link>)}
         </div>
+      </section>
+      <section className="monthly-releases wrap">
+        <div className="section-label"><span><b>03</b> / SORTIES DU MOIS</span><span>SEPTEMBRE 2026</span></div>
+        <div className="monthly-releases-head"><div><p className="eyebrow"><span className="live-dot" /> CALENDRIER GAMING</p><h2>SEPTEMBRE<br/><em>À JOUER.</em></h2></div><a className="arrow-link" href="https://www.actugaming.net/calendrier-sorties-jeux-video-septembre-2026-821860/" target="_blank" rel="noreferrer">VOIR LE CALENDRIER COMPLET <Arrow/></a></div>
+        <div className="release-grid">{septemberReleases.map(([date, title, platforms]) => <div className="release-card" key={`${date}-${title}`}><span className="release-date">{date}</span><h3>{title}</h3><span className="release-platforms">{platforms}</span></div>)}</div>
       </section>
       <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> {t.news.ctaEyebrow}</p><h2>{t.news.ctaH2a}<br/><em>{t.news.ctaH2b}</em></h2></div><Link className="button button-yellow" to="/reviews">{t.news.ctaBtn} <Arrow/></Link></section>
     </>
