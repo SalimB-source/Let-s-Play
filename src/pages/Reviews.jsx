@@ -10,10 +10,6 @@ const latestTests = [
   { title: 'ORBITALS — LE COOP QUI JOUE EN APESANTEUR', score: '8,5 / 10', date: '09.09.2026', platforms: 'SWITCH 2', image: `${base}hero-dragon.webp`, excerpt: 'Une aventure à deux qui transforme la coordination en véritable langage de jeu.' },
   { title: 'ZERO COMPANY — LA GALAXIE EN MODE TACTIQUE', score: '7,5 / 10', date: '01.09.2026', platforms: 'PC · PS5 · XBOX SERIES', image: `${base}physint-news.jpg`, excerpt: 'Star Wars troque les blasters pour le tour par tour et signe une campagne tactique solide, sans révolutionner la formule.' },
   { title: 'ONIMUSHA — LA LAME EST DE RETOUR', score: '8 / 10', date: '31.08.2026', platforms: 'PC · PS5 · XBOX · SWITCH 2', image: `${base}onimusha-review.jpg`, excerpt: 'Capcom retrouve le nerf de sa saga samouraï avec des combats précis et une aventure qui sait tenir son rythme.' },
-  { title: 'DAWNWALKER — UN MONDE OUVERT QUI TIENT DEBOUT', score: '8 / 10', date: '31.08.2026', platforms: 'PC · PS5 · XBOX SERIES', image: `${base}hero-lets-play.png`, excerpt: 'Un action-RPG ambitieux, sombre et imparfait, mais assez sûr de ses forces pour éviter le déjà-vu.' },
-  { title: 'BOOMERANG X — LE FPS QUI REFUSE DE RALENTIR', score: '8,5 / 10', date: '28.08.2026', platforms: 'PC · SWITCH', image: `${base}metroid-ravenous-news.png`, excerpt: 'Un shoot nerveux, précis et franchement singulier : ici, chaque déplacement devient une arme.' },
-  { title: 'RESONANCE — A PLAGUE TALE CHANGE DE VISAGE', score: '7,5 / 10', date: '26.08.2026', platforms: 'PC · PS5 · XBOX SERIES', image: `${base}zelda-ocarina-news.jpg`, excerpt: 'La série prend un virage inattendu : une prise de risque intéressante, encore en quête de son équilibre.' },
-  { title: 'DUSKFADE — LE RETOUR AUX PLATEFORMES QUI FONCTIONNE', score: '8 / 10', date: '21.08.2026', platforms: 'PC · PS5 · XBOX · SWITCH 2', image: `${base}monster-hunter-wilds-switch2.jpg`, excerpt: 'Un hommage coloré aux jeux d’action 3D des années 2000, avec suffisamment de personnalité pour dépasser la nostalgie.' },
 ];
 
 export default function Reviews(){
