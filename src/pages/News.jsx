@@ -2,8 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
+import { septemberReleases, releaseDate, releaseDayLabel, daysInReleaseMonth, isPastRelease, isReleaseToday, findRelease, RELEASE_YEAR, RELEASE_MONTH } from '../releasesData';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
+
+const wolverineRelease = findRelease('marvels-wolverine');
 
 export default function News(){
   const { t } = useLanguage();
@@ -13,7 +16,7 @@ export default function News(){
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
-    const target = new Date('2026-09-15T00:00:00');
+    const target = wolverineRelease ? releaseDate(wolverineRelease) : new Date(Date.now() + 86400000);
     const updateCountdown = () => {
       const remaining = Math.max(0, target.getTime() - Date.now());
       const totalSeconds = Math.floor(remaining / 1000);
@@ -43,17 +46,53 @@ export default function News(){
     { to: '/news/onimusha-million', image: 'onimusha-million-news.jpg', alt: million.coverAlt || million.alt, badge: million.eyebrow || million.badge, kicker: `${million.date || million.kicker} · CAPCOM`, title: `${million.title} ${million.titleAccent || ''}`, excerpt: million.dek || million.excerpt, read: million.back || million.read },
   ];
 
-  const septemberReleases = [
-    ['01 SEP', 'Crimson Moon', 'PC · PS5 · XBOX SERIES'], ['02 SEP', 'Moonlighter 2: The Endless Vault', 'PC · PS5 · XBOX SERIES · SWITCH 2'], ['03 SEP', 'The Blood of Dawnwalker', 'PC · PS5 · XBOX SERIES'], ['04 SEP', 'Onimusha: Way of the Sword', 'PC · PS5 · XBOX SERIES · SWITCH 2'], ['10 SEP', 'Wardogs', 'PC'], ['15 SEP', 'Marvel’s Wolverine', 'PS5'], ['17 SEP', 'Fire Emblem: Fortune’s Weave', 'SWITCH 2'], ['18 SEP', 'LEGO Batman: Legacy of the Dark Knight', 'SWITCH 2'], ['24 SEP', 'Control Resonant', 'PC · PS5 · XBOX SERIES'], ['24 SEP', 'Silent Hill Townfall', 'PC · PS5'], ['25 SEP', 'EA Sports FC 27', 'PC · PS5 · XBOX · SWITCH'], ['29 SEP', 'The Witcher 3: Wild Hunt – Remastered', 'PC · PS5 · XBOX SERIES · SWITCH 2'],
-  ];
+  const today = new Date();
+  const isReleaseMonth = today.getFullYear() === RELEASE_YEAR && today.getMonth() === RELEASE_MONTH - 1;
+  const todayDay = isReleaseMonth ? today.getDate() : null;
+  const pastReleases = septemberReleases.filter((release) => isPastRelease(release, today));
+  const todayReleases = septemberReleases.filter((release) => isReleaseToday(release, today));
+  const pastCount = pastReleases.length + todayReleases.length;
+  const upcomingCount = septemberReleases.length - pastCount;
+  const monthDays = daysInReleaseMonth();
+  // Un point par jour de sortie (les doublons du même jour s'empilent).
+  const timelineDays = [];
+  for (let day = 1; day <= monthDays; day += 1){
+    const onDay = septemberReleases.filter((release) => release.day === day);
+    if (onDay.length > 0) timelineDays.push({ day, releases: onDay, past: onDay.every((release) => isPastRelease(release, today)) });
+  }
 
   return (
     <>
       <section className="monthly-releases wrap">
         <div className="section-label"><span><b>01</b> / SORTIES DU MOIS</span><span>SEPTEMBRE 2026</span></div>
         <div className="monthly-releases-head"><div><p className="eyebrow"><span className="live-dot" /> CALENDRIER GAMING</p><h2>SEPTEMBRE<br/><em>À JOUER.</em></h2></div><span className="arrow-link">VOIR LE CALENDRIER COMPLET <Arrow/></span></div>
-        <div className="release-countdown"><div className="release-countdown-image"><img src={`${base}wolverine-countdown.jpg`} alt="Marvel’s Wolverine" /></div><div className="release-countdown-copy"><p className="eyebrow"><span className="live-dot" /> LE PLUS ATTENDU</p><h3>MARVEL’S <em>WOLVERINE</em></h3><p>Disponible le 15 septembre sur PS5.</p></div><div className="countdown-units" aria-label="Compte à rebours avant la sortie de Marvel's Wolverine">{[['JOURS', countdown.days], ['HEURES', countdown.hours], ['MIN', countdown.minutes], ['SEC', countdown.seconds]].map(([label, value]) => <div className="countdown-unit" key={label}><strong>{String(value).padStart(2, '0')}</strong><span>{label}</span></div>)}</div></div>
-        <div className="release-grid">{septemberReleases.map(([date, title, platforms]) => <div className="release-card" key={`${date}-${title}`}><span className="release-date">{date}</span><h3>{title}</h3><span className="release-platforms">{platforms}</span></div>)}</div>
+        <div className="release-timeline" role="img" aria-label={`Frise de septembre 2026 — ${pastCount} sorties déjà parues, ${upcomingCount} à venir${todayDay ? `, nous sommes le ${todayDay}` : ''}`}>
+          <div className="release-timeline-scale"><span>01</span><span>05</span><span>10</span><span>15</span><span>20</span><span>25</span><span>30</span></div>
+          <div className="release-timeline-track">
+            {timelineDays.map(({ day, releases, past }) => (
+              <span
+                key={day}
+                className={`release-timeline-dot${past ? ' is-past' : ''}${releases.length > 1 ? ' is-double' : ''}`}
+                style={{ left: `${((day - 0.5) / monthDays) * 100}%` }}
+                title={`${releaseDayLabel({ day })} — ${releases.map((release) => release.title).join(' · ')}`}
+              >{releases.length > 1 ? <b>{releases.length}</b> : null}</span>
+            ))}
+            {todayDay ? <span className="release-timeline-today" style={{ left: `${((todayDay - 0.5) / monthDays) * 100}%` }}><em>AUJOURD’HUI</em></span> : null}
+          </div>
+          <div className="release-timeline-meta">
+            <span className="release-timeline-counter"><b>{pastCount}</b> DÉJÀ SORTIS · <b>{upcomingCount}</b> À VENIR</span>
+          </div>
+        </div>
+        <div className="release-countdown"><div className="release-countdown-image"><img src={`${base}wolverine-countdown.jpg`} alt="Marvel’s Wolverine" /></div><div className="release-countdown-copy"><p className="eyebrow"><span className="live-dot" /> LE PLUS ATTENDU</p><h3>MARVEL’S <em>WOLVERINE</em></h3><p>Disponible le {wolverineRelease ? `${wolverineRelease.day} septembre` : '15 septembre'} sur PS5.</p></div><div className="countdown-units" aria-label="Compte à rebours avant la sortie de Marvel's Wolverine">{[['JOURS', countdown.days], ['HEURES', countdown.hours], ['MIN', countdown.minutes], ['SEC', countdown.seconds]].map(([label, value]) => <div className="countdown-unit" key={label}><strong>{String(value).padStart(2, '0')}</strong><span>{label}</span></div>)}</div></div>
+        <div className="release-grid">{septemberReleases.map((release) => {
+          const past = isPastRelease(release, today);
+          return (
+            <div className={`release-card${past ? ' is-past' : ''}`} key={release.slug}>
+              <div className="release-card-image"><img src={`${base}${release.image}`} alt={release.alt} loading="lazy" />{past ? <span className="release-past-badge">DÉJÀ SORTI</span> : null}</div>
+              <div className="release-card-body"><span className="release-date">{releaseDayLabel(release)}</span><h3>{release.title}</h3><span className="release-platforms">{release.platforms}</span></div>
+            </div>
+          );
+        })}</div>
       </section>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span><b>02</b> / {t.news.featuredLabel}</span><span>{t.news.updatedLabel}</span></div>
