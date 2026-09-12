@@ -28,6 +28,21 @@ export default function Dossiers(){
         </div>
       </section>
 
+      <section className="featured wrap" id="black-flag">
+        <div className="section-label"><span><b>{t.dossiers.featuredLabel1.split(' / ')[0]}</b> / {t.dossiers.featuredLabel1.split(' / ')[1]}</span><span>{t.dossiers.featuredLabel2}</span></div>
+        <div className="featured-grid">
+          <div className="featured-copy">
+            <p className="eyebrow"><span className="live-dot" /> {t.dossiers.featuredEyebrow}</p>
+            <h2>{t.dossiers.featuredH2a}<br/><em>{t.dossiers.featuredH2b}</em></h2>
+            <p>{t.dossiers.featuredText}</p>
+            <a className="arrow-link" href="https://youtu.be/0e5yXxfchLA" target="_blank" rel="noreferrer">{t.dossiers.watchYoutube} <Arrow/></a>
+          </div>
+          <div className="featured-player hud-frame">
+            <iframe src="https://www.youtube.com/embed/0e5yXxfchLA?rel=0&modestbranding=1" title="Black Flag Review" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+          </div>
+        </div>
+      </section>
+
       <section className="formats wrap">
         <div className="section-label"><span><b>{t.dossiers.formatsLabel1.split(' / ')[0]}</b> / {t.dossiers.formatsLabel1.split(' / ')[1]}</span><span>{t.dossiers.formatsLabel2}</span></div>
         <div className="format-grid">
