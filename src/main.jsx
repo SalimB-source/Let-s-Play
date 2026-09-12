@@ -22,6 +22,7 @@ import Gta6DualSense from './pages/Gta6DualSense';
 import Zelda40th from './pages/Zelda40th';
 import MonsterHunterWilds from './pages/MonsterHunterWilds';
 import Reviews from './pages/Reviews';
+import TestArticle from './pages/TestArticle';
 import Dossiers from './pages/Dossiers';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
@@ -40,7 +41,8 @@ function App() {
             <Route path="/news/metroid-ravenous" element={<MetroidRavenous />} />
             <Route path="/news/wardogs" element={<WarDogs />} />
             <Route path="/news/zelda-ocarina" element={<ZeldaOcarina />} />
-            <Route path="/reviews/onimusha" element={<Onimusha />} />
+              <Route path="/reviews/onimusha" element={<Onimusha />} />
+              <Route path="/reviews/:slug" element={<TestArticle />} />
             <Route path="/news/onimusha-million" element={<OnimushaMillion />} />
             <Route path="/news/gta6-dualsense" element={<Gta6DualSense />} />
             <Route path="/news/zelda-40th" element={<Zelda40th />} />
