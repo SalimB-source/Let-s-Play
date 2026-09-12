@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -10,6 +10,24 @@ export default function News(){
   const million = t.news.million || t.news.featured;
   const carouselRef = useRef(null);
   const [view, setView] = useState('carousel');
+  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const target = new Date('2026-09-15T00:00:00');
+    const updateCountdown = () => {
+      const remaining = Math.max(0, target.getTime() - Date.now());
+      const totalSeconds = Math.floor(remaining / 1000);
+      setCountdown({
+        days: Math.floor(totalSeconds / 86400),
+        hours: Math.floor((totalSeconds % 86400) / 3600),
+        minutes: Math.floor((totalSeconds % 3600) / 60),
+        seconds: totalSeconds % 60,
+      });
+    };
+    updateCountdown();
+    const timer = window.setInterval(updateCountdown, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const scrollCards = (direction) => {
     carouselRef.current?.scrollBy({ left: direction * carouselRef.current.clientWidth * 0.82, behavior: 'smooth' });
@@ -60,6 +78,7 @@ export default function News(){
       <section className="monthly-releases wrap">
         <div className="section-label"><span><b>03</b> / SORTIES DU MOIS</span><span>SEPTEMBRE 2026</span></div>
         <div className="monthly-releases-head"><div><p className="eyebrow"><span className="live-dot" /> CALENDRIER GAMING</p><h2>SEPTEMBRE<br/><em>À JOUER.</em></h2></div><a className="arrow-link" href="https://www.actugaming.net/calendrier-sorties-jeux-video-septembre-2026-821860/" target="_blank" rel="noreferrer">VOIR LE CALENDRIER COMPLET <Arrow/></a></div>
+        <div className="release-countdown"><div><p className="eyebrow"><span className="live-dot" /> LE PLUS ATTENDU</p><h3>MARVEL’S <em>WOLVERINE</em></h3><p>Disponible le 15 septembre sur PS5.</p></div><div className="countdown-units" aria-label="Compte à rebours avant la sortie de Marvel's Wolverine">{[['JOURS', countdown.days], ['HEURES', countdown.hours], ['MIN', countdown.minutes], ['SEC', countdown.seconds]].map(([label, value]) => <div className="countdown-unit" key={label}><strong>{String(value).padStart(2, '0')}</strong><span>{label}</span></div>)}</div></div>
         <div className="release-grid">{septemberReleases.map(([date, title, platforms]) => <div className="release-card" key={`${date}-${title}`}><span className="release-date">{date}</span><h3>{title}</h3><span className="release-platforms">{platforms}</span></div>)}</div>
       </section>
       <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> {t.news.ctaEyebrow}</p><h2>{t.news.ctaH2a}<br/><em>{t.news.ctaH2b}</em></h2></div><Link className="button button-yellow" to="/reviews">{t.news.ctaBtn} <Arrow/></Link></section>
