@@ -18,6 +18,8 @@ import ZeldaOcarina from './pages/ZeldaOcarina';
 import Onimusha from './pages/Onimusha';
 import OnimushaMillion from './pages/OnimushaMillion';
 import Gta6DualSense from './pages/Gta6DualSense';
+import Zelda40th from './pages/Zelda40th';
+import MonsterHunterWilds from './pages/MonsterHunterWilds';
 import Reviews from './pages/Reviews';
 import Dossiers from './pages/Dossiers';
 import NotFound from './pages/NotFound';
@@ -40,6 +42,8 @@ function App() {
             <Route path="/reviews/onimusha" element={<Onimusha />} />
             <Route path="/news/onimusha-million" element={<OnimushaMillion />} />
             <Route path="/news/gta6-dualsense" element={<Gta6DualSense />} />
+            <Route path="/news/zelda-40th" element={<Zelda40th />} />
+            <Route path="/news/monster-hunter-wilds" element={<MonsterHunterWilds />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/auth" element={<Auth />} />
