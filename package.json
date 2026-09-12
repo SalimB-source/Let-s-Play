@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build && cp dist/index.html dist/404.html",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "check:i18n": "node scripts/i18n-smoke.mjs"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",

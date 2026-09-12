@@ -3,6 +3,59 @@ import { translations, languages } from './translations';
 
 const STORAGE_KEY = 'letsplay-lang';
 
+// Dictionary used as the safety net when a key has not been translated yet.
+const BASE_LANG = 'en';
+
+function isPlainObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Deep-merges a language dictionary on top of the base dictionary so that any
+ * key missing from a translation falls back to the base language instead of
+ * being `undefined`.
+ *
+ * Without this, a partially translated dictionary crashes every page that reads
+ * the missing key (`t.news.million.coverAlt` throws when `t.news.million` is
+ * undefined), which is exactly how the News page went blank for FR / AR.
+ */
+function withBaseFallback(dict, base, path = '') {
+  if (!isPlainObject(dict)) return dict;
+  const hasBase = isPlainObject(base);
+  const merged = {};
+  // Walk the union of both key sets so keys absent from `dict` are inherited.
+  const keys = new Set([...Object.keys(dict), ...(hasBase ? Object.keys(base) : [])]);
+  for (const key of keys) {
+    const value = dict[key];
+    const fallback = hasBase ? base[key] : undefined;
+    const keyPath = path ? `${path}.${key}` : key;
+
+    if (isPlainObject(value) && isPlainObject(fallback)) {
+      merged[key] = withBaseFallback(value, fallback, keyPath);
+    } else if (value === undefined || value === null || value === '') {
+      if (fallback === undefined) {
+        merged[key] = value;
+        continue;
+      }
+      if (import.meta.env?.DEV) {
+        console.warn(`[i18n] "${keyPath}" is not translated — falling back to "${BASE_LANG}"`);
+      }
+      merged[key] = fallback;
+    } else {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+
+function buildDictionary(lang) {
+  const dict = translations[lang];
+  const base = translations[BASE_LANG];
+  if (!dict) return base;
+  if (!base || lang === BASE_LANG) return dict;
+  return withBaseFallback(dict, base);
+}
+
 function detectInitialLang() {
   if (typeof window === 'undefined') return 'en';
   try {
@@ -35,7 +88,7 @@ export function LanguageProvider({ children }) {
     lang,
     dir: meta.dir,
     setLang,
-    t: translations[lang],
+    t: buildDictionary(lang),
     languages,
   }), [lang, meta.dir]);
 
