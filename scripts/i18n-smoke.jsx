@@ -19,9 +19,12 @@ import ZeldaOcarina from '../src/pages/ZeldaOcarina';
 import Onimusha from '../src/pages/Onimusha';
 import OnimushaMillion from '../src/pages/OnimushaMillion';
 import Reviews from '../src/pages/Reviews';
+import TestArticle from '../src/pages/TestArticle';
 import Dossiers from '../src/pages/Dossiers';
 import NotFound from '../src/pages/NotFound';
+import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
+import { gameTests } from '../src/reviewsData';
 
 export { translations };
 
@@ -35,6 +38,7 @@ export const ROUTES = [
   ['/reviews/onimusha', Onimusha],
   ['/news/onimusha-million', OnimushaMillion],
   ['/reviews', Reviews],
+  ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle]),
   ['/dossiers', Dossiers],
   ['/unknown-page', NotFound],
 ];
@@ -52,15 +56,19 @@ export function renderAll(lang) {
           LanguageProvider,
           null,
           React.createElement(
-            MemoryRouter,
-            { initialEntries: [path] },
+            AuthProvider,
+            null,
             React.createElement(
-              Layout,
-              null,
+              MemoryRouter,
+              { initialEntries: [path] },
               React.createElement(
-                Routes,
+                Layout,
                 null,
-                React.createElement(Route, { path, element: React.createElement(Page) })
+                React.createElement(
+                  Routes,
+                  null,
+                  React.createElement(Route, { path, element: React.createElement(Page) })
+                )
               )
             )
           )

@@ -1,25 +1,20 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { videos, baseUrl as base } from '../data';
+import { videos } from '../data';
+import { gameTests, scoreTier, scoreLabel } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
-const latestTests = [
-  { title: 'WOLVERINE — DES GRIFFES, PAS ENCORE UNE LAME', score: '7 / 10', date: '12.09.2026', platforms: 'PS5', image: `${base}wolverine-countdown.jpg`, excerpt: 'Insomniac livre un blockbuster spectaculaire, mais quelques aspérités empêchent Logan de frapper au maximum.' },
-  { title: 'ORBITALS — LE COOP QUI JOUE EN APESANTEUR', score: '8,5 / 10', date: '09.09.2026', platforms: 'SWITCH 2', image: `${base}hero-dragon.webp`, excerpt: 'Une aventure à deux qui transforme la coordination en véritable langage de jeu.' },
-  { title: 'ZERO COMPANY — LA GALAXIE EN MODE TACTIQUE', score: '7,5 / 10', date: '01.09.2026', platforms: 'PC · PS5 · XBOX SERIES', image: `${base}physint-news.jpg`, excerpt: 'Star Wars troque les blasters pour le tour par tour et signe une campagne tactique solide, sans révolutionner la formule.' },
-  { title: 'ONIMUSHA — LA LAME EST DE RETOUR', score: '8 / 10', date: '31.08.2026', platforms: 'PC · PS5 · XBOX · SWITCH 2', image: `${base}onimusha-review.jpg`, excerpt: 'Capcom retrouve le nerf de sa saga samouraï avec des combats précis et une aventure qui sait tenir son rythme.' },
-];
-
 export default function Reviews(){
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const c = t.reviews.article;
   const gaming = videos.filter(v=>v.tag==='Gaming');
 
   return (
     <>
       <section className="reviews-hero" id="top">
-        <div className="reviews-hero-bg" style={{ backgroundImage: `url(${base}chaft-soldier.png)` }} role="img" aria-label="Chaft soldier key art" />
+        <div className="reviews-hero-bg" style={{ backgroundImage: `url(${import.meta.env.BASE_URL}chaft-soldier.png)` }} role="img" aria-label="Chaft soldier key art" />
         <div className="reviews-hero-overlay" aria-hidden="true" />
         <div className="reviews-hero-content">
           <div className="section-label"><span><b>{t.reviews.label1.split(' / ')[0]}</b> / {t.reviews.label1.split(' / ')[1]}</span><span>{t.reviews.label2}</span></div>
@@ -45,25 +40,24 @@ export default function Reviews(){
       </section>
 
       <section className="latest-tests wrap">
-        <div className="section-label"><span><b>02</b> / DERNIERS TESTS</span><span>SEPTEMBRE 2026</span></div>
-        <div className="latest-tests-head"><div><p className="eyebrow"><span className="live-dot" /> SÉLECTION DE LA RÉDACTION</p><h2>LES TESTS<br/><em>LES PLUS RÉCENTS.</em></h2></div></div>
+        <div className="section-label"><span><b>02</b> / {c.gridLabel}</span><span>{c.gridRange}</span></div>
+        <div className="latest-tests-head"><div><p className="eyebrow"><span className="live-dot" /> {c.gridEyebrow}</p><h2>{c.gridTitleA}<br/><em>{c.gridTitleB}</em></h2></div></div>
         <div className="latest-tests-grid">
-          {latestTests.map((test) => <article className="latest-test-card" key={test.title}>
-            <div className="latest-test-image"><img src={test.image} alt={test.title} /><span className="latest-test-score">{test.score}</span></div>
-            <div className="latest-test-meta"><span>{test.date}</span><span>{test.platforms}</span></div>
-            <h3>{test.title}</h3>
-            <p>{test.excerpt}</p>
-            <span className="read-link">LIRE LE TEST <Arrow/></span>
-          </article>)}
+          {gameTests.map((test) => (
+            <Link className="latest-test-card" to={test.route} key={test.slug}>
+              <div className="latest-test-image">
+                <img src={test.image} alt={test.alt} loading="lazy" />
+                <span className={`latest-test-score score-badge ${scoreTier(test.score)}`}>
+                  <b>{scoreLabel(test.score, lang)}</b><i>/10</i>
+                </span>
+              </div>
+              <div className="latest-test-meta"><span>{test.date}</span><span>{test.platforms.split(' · ')[0]}{test.platforms.includes('·') ? ' +' : ''}</span></div>
+              <h3>{test.cardTitle}</h3>
+              <p>{test.excerpt}</p>
+              <span className="read-link">{c.readTest} <Arrow/></span>
+            </Link>
+          ))}
         </div>
-      </section>
-
-      <section className="review-feature wrap">
-        <div className="section-label"><span><b>03</b> / {t.reviews.onimusha.label}</span><span>{t.reviews.onimusha.date}</span></div>
-        <Link className="review-feature-card" to="/reviews/onimusha">
-          <div className="review-feature-image"><img src={`${base}onimusha-review.jpg`} alt={t.reviews.onimusha.coverAlt} /><span className="news-feature-arrow">↗</span></div>
-          <div className="review-feature-copy"><span className="news-kicker">{t.reviews.onimusha.eyebrow} · {t.reviews.onimusha.averageScore} · LET’S PLAY {t.reviews.onimusha.score}</span><h2>{t.reviews.onimusha.title} <em>{t.reviews.onimusha.titleAccent}</em></h2><p>{t.reviews.onimusha.dek}</p><span className="read-link">{t.reviews.onimusha.back} <Arrow/></span></div>
-        </Link>
       </section>
 
       <section className="latest wrap">
