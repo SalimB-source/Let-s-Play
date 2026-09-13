@@ -29,7 +29,7 @@ export default function Reviews(){
       </section>
 
       <section className="latest-tests wrap">
-        <div className="section-label"><span><b>01</b> / {c.gridLabel}</span><span>{c.gridRange}</span></div>
+        <div className="section-label"><span><b>02</b> / {c.gridLabel}</span><span>{c.gridRange}</span></div>
         <div className="latest-tests-head"><div><p className="eyebrow"><span className="live-dot" /> {c.gridEyebrow}</p><h2>{c.gridTitleA}<br/><em>{c.gridTitleB}</em></h2></div></div>
         <div className="latest-tests-grid">
           {gameTests.map((test) => (
@@ -50,7 +50,7 @@ export default function Reviews(){
       </section>
 
       <section className="latest wrap">
-        <div className="section-label"><span><b>{t.reviews.archiveLabel1.split(' / ')[0]}</b> / {t.reviews.archiveLabel1.split(' / ')[1]}</span><span>{t.reviews.archiveLabel2}</span></div>
+        <div className="section-label"><span><b>03</b> / {t.reviews.archiveLabel1.split(' / ')[1]}</span><span>{t.reviews.archiveLabel2}</span></div>
         <h2 className="page-h2">{t.reviews.moreA}<br/><em>{t.reviews.moreB}</em></h2>
         <div className="video-grid" style={{marginTop:32}}>
           {gaming.map(video=>(
