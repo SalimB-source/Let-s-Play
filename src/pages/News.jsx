@@ -127,11 +127,11 @@ export default function News(){
         <div className="news-carousel-head">
           <div><p className="eyebrow"><span className="live-dot" /> {t.news.eyebrow}</p><h1>{t.news.h1a}<br/><em>{t.news.h1b}</em></h1></div>
           <div className="news-view-tools">
-            <div className="news-view-toggle" role="group" aria-label="News display mode">
+            <div className="news-view-toggle" role="group" aria-label={featured.mode}>
               <button type="button" className={view === 'carousel' ? 'active' : ''} onClick={() => setView('carousel')} aria-pressed={view === 'carousel'}>{featured.carousel}</button>
               <button type="button" className={view === 'grid' ? 'active' : ''} onClick={() => setView('grid')} aria-pressed={view === 'grid'}>{featured.grid}</button>
             </div>
-            {view === 'carousel' && <div className="news-carousel-controls" aria-label="News carousel controls"><button type="button" onClick={() => scrollCards(-1)} aria-label="Previous articles">←</button><button type="button" onClick={() => scrollCards(1)} aria-label="Next articles">→</button></div>}
+            {view === 'carousel' && <div className="news-carousel-controls" aria-label={featured.carousel}><button type="button" onClick={() => scrollCards(-1)} aria-label={lang === 'fr' ? 'Articles précédents' : lang === 'ar' ? 'المقالات السابقة' : 'Previous articles'}>←</button><button type="button" onClick={() => scrollCards(1)} aria-label={lang === 'fr' ? 'Articles suivants' : lang === 'ar' ? 'المقالات التالية' : 'Next articles'}>→</button></div>}
           </div>
         </div>
         <div className={`news-carousel${view === 'grid' ? ' is-grid' : ''}`} ref={carouselRef}>
