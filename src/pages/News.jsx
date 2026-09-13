@@ -9,7 +9,34 @@ function Arrow(){ return <span aria-hidden="true">↗</span>; }
 const wolverineRelease = findRelease('marvels-wolverine');
 
 export default function News(){
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const featuredCopy = {
+    en: {
+      cards: [
+        ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT GOES FPS.', 'Blizzard confirms an open-world shooter set at ground level in the StarCraft universe. It is not coming before 2030.'],
+        ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
+        ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
+        ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
+      ], read: 'READ THE STORY', carousel: 'Carousel', grid: 'Grid', mode: 'News display mode', label: 'FEATURED NEWS', updated: 'Updated 12.09.2026', section: 'FEATURED NEWS'
+    },
+    fr: {
+      cards: [
+        ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT PASSE AU FPS.', 'Blizzard officialise un shooter en monde ouvert situé au ras du champ de bataille. Le projet ne sortira pas avant 2030.'],
+        ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
+        ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
+        ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
+      ], read: 'LIRE L’ARTICLE', carousel: 'Carrousel', grid: 'Grille', mode: 'Mode d’affichage des actualités', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 12.09.2026', section: 'ACTUS À LA UNE'
+    },
+    ar: {
+      cards: [
+        ['STARCRAFT · تصويب', '12.09.2026 · بليزارد', 'STARCRAFT تتحول إلى تصويب.', 'تعلن بليزارد عن لعبة تصويب في عالم مفتوح داخل عالم StarCraft، ولن تصدر قبل عام 2030.'],
+        ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
+        ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
+        ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
+      ], read: 'اقرأ المقال', carousel: 'شريط', grid: 'شبكة', mode: 'طريقة عرض الأخبار', label: 'أبرز الأخبار', updated: 'آخر تحديث 12.09.2026', section: 'أبرز الأخبار'
+    }
+  }[lang] || null;
+  const featured = featuredCopy || null;
   const million = t.news.million || t.news.featured;
   const carouselRef = useRef(null);
   const [view, setView] = useState('grid');
@@ -37,10 +64,7 @@ export default function News(){
   };
 
   const articles = [
-    { to: '/news/starcraft-fps', image: 'starcraft-fps-news.jpeg', alt: 'Un soldat face à une armure dans l’univers StarCraft', badge: 'STARCRAFT · FPS', kicker: '12.09.2026 · BLIZZARD', title: 'STARCRAFT PASSE AU FPS.', excerpt: 'Blizzard officialise un shooter en monde ouvert situé au ras du champ de bataille. Le projet ne sortira pas avant 2030.', read: 'LIRE L’ARTICLE' },
-    { to: '/news/diablo-v', image: 'diablo-v-news.png', alt: 'Logo Diablo V et annonce du printemps 2029', badge: 'DIABLO V · BLIZZCON', kicker: '12.09.2026 · BLIZZARD', title: 'DIABLO V SE PRÉPARE.', excerpt: 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.', read: 'LIRE L’ARTICLE' },
-    { to: '/news/diablo-switch-2', image: 'diablo-switch2-news.jpg', alt: 'Diablo IV Age of Hatred Collection sur Nintendo Switch 2', badge: 'DIABLO IV · SWITCH 2', kicker: '12.09.2026 · BLIZZARD', title: 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', excerpt: 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.', read: 'LIRE L’ARTICLE' },
-    { to: '/news/diablo-netflix', image: 'diablo-netflix-news.webp', alt: 'Annonce d’une série animée Diablo pour Netflix', badge: 'DIABLO · NETFLIX', kicker: '12.09.2026 · BLIZZARD', title: 'DIABLO ÉTEND SON UNIVERS.', excerpt: 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.', read: 'LIRE L’ARTICLE' },
+    ...featured.cards.map(([badge, kicker, title, excerpt], index) => ({ to: ['/news/starcraft-fps', '/news/diablo-v', '/news/diablo-switch-2', '/news/diablo-netflix'][index], image: ['starcraft-fps-news.jpeg', 'diablo-v-news.png', 'diablo-switch2-news.jpg', 'diablo-netflix-news.webp'][index], alt: title, badge, kicker, title, excerpt, read: featured.read })),
     { to: '/news/monster-hunter-wilds', image: 'monster-hunter-wilds-switch2.jpg', alt: 'Monster Hunter Wilds sur Nintendo Switch 2', badge: 'MONSTER HUNTER · SWITCH 2', kicker: '09.09.2026 · CAPCOM', title: 'WILDS ARRIVE SUR SWITCH 2.', excerpt: 'Monster Hunter Wilds dévoile ses premières images sur Switch 2 et fixe sa sortie au 4 décembre 2026.', read: 'LIRE L’ARTICLE' },
     { to: '/news/zelda-40th', image: 'zelda-40th-switch2.jpg', alt: 'The Legend of Zelda Ocarina of Time sur Nintendo Switch 2', badge: 'ZELDA · 40 ANS', kicker: '08.09.2026 · NINTENDO', title: 'ZELDA FÊTE SES 40 ANS.', excerpt: 'Nintendo dévoile une Switch 2, une manette Pro et deux amiibo pour accompagner le retour d’Ocarina of Time.', read: 'LIRE L’ARTICLE' },
     { to: '/news/physint', image: 'physint-news.jpg', alt: t.news.featured.alt, badge: t.news.featured.badge, kicker: t.news.featured.kicker, title: t.news.featured.title, excerpt: t.news.featured.excerpt, read: t.news.featured.read },
@@ -99,13 +123,13 @@ export default function News(){
         })}</div>
       </section>
       <section className="news-carousel-section wrap">
-        <div className="section-label"><span><b>02</b> / {t.news.featuredLabel}</span><span>{t.news.updatedLabel}</span></div>
+        <div className="section-label"><span><b>02</b> / {featured.section}</span><span>{featured.updated}</span></div>
         <div className="news-carousel-head">
           <div><p className="eyebrow"><span className="live-dot" /> {t.news.eyebrow}</p><h1>{t.news.h1a}<br/><em>{t.news.h1b}</em></h1></div>
           <div className="news-view-tools">
             <div className="news-view-toggle" role="group" aria-label="News display mode">
-              <button type="button" className={view === 'carousel' ? 'active' : ''} onClick={() => setView('carousel')} aria-pressed={view === 'carousel'}>Carousel</button>
-              <button type="button" className={view === 'grid' ? 'active' : ''} onClick={() => setView('grid')} aria-pressed={view === 'grid'}>Grid</button>
+              <button type="button" className={view === 'carousel' ? 'active' : ''} onClick={() => setView('carousel')} aria-pressed={view === 'carousel'}>{featured.carousel}</button>
+              <button type="button" className={view === 'grid' ? 'active' : ''} onClick={() => setView('grid')} aria-pressed={view === 'grid'}>{featured.grid}</button>
             </div>
             {view === 'carousel' && <div className="news-carousel-controls" aria-label="News carousel controls"><button type="button" onClick={() => scrollCards(-1)} aria-label="Previous articles">←</button><button type="button" onClick={() => scrollCards(1)} aria-label="Next articles">→</button></div>}
           </div>
