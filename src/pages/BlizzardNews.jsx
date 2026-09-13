@@ -5,7 +5,7 @@ import Comments from '../components/Comments';
 
 const stories = {
   'starcraft-fps': {
-    date: '12.09.2026', category: 'BLIZZARD · PC / XBOX', image: 'physint-news.jpg', imageAlt: 'Un soldat dans un univers de science-fiction', cover: 'STARCRAFT',
+    date: '12.09.2026', category: 'BLIZZARD · PC / XBOX', image: 'starcraft-fps-news.jpeg', imageAlt: 'Un soldat face à une armure dans l’univers StarCraft', cover: 'STARCRAFT', video: '9eQUtOQXYgQ', videoTitle: 'STARCRAFT — bande-annonce d’annonce',
     title: 'STARCRAFT PASSE', accent: 'AU FPS.', dek: 'Blizzard transforme son univers de guerre interstellaire en shooter en monde ouvert. Un virage spectaculaire, mais il faudra patienter jusqu’en 2030.',
     lead: 'La BlizzCon 2026 a enfin levé le voile sur le projet StarCraft que Blizzard préparait dans le plus grand secret. Cette fois, la saga quitte la stratégie en vue aérienne pour placer le joueur au cœur du combat.',
     intro: 'Le studio a présenté un premier trailer cinématique, chargé d’installer l’ambiance et le contexte de cette nouvelle aventure. Aucun gameplay n’a encore été montré, mais la promesse est déjà claire : l’univers StarCraft se vivra désormais au ras du sol.',
@@ -15,7 +15,7 @@ const stories = {
     take: 'À RETENIR', takeText: 'StarCraft devient un FPS en monde ouvert, prévu pour 2030 sur PC et Xbox.'
   },
   'diablo-v': {
-    date: '12.09.2026', category: 'BLIZZARD · ACTION-RPG', image: 'onimusha-million-news.jpg', imageAlt: 'Illustration sombre d’un jeu d’action', cover: 'DIABLO V',
+    date: '12.09.2026', category: 'BLIZZARD · ACTION-RPG', image: 'diablo-v-news.png', imageAlt: 'Logo Diablo V et annonce du printemps 2029', cover: 'DIABLO V', video: 'GxCN_AKYtts', videoTitle: 'Diablo V — teaser officiel',
     title: 'DIABLO V', accent: 'SE PRÉPARE.', dek: 'Le prochain chapitre de la saga arrivera au printemps 2029. Blizzard promet un Sanctuaire en ruines, où les héros ont disparu.',
     lead: 'La BlizzCon 2026 a confirmé le retour de Diablo. Après plusieurs années d’attente, Blizzard a officialisé le cinquième épisode de sa série d’action-RPG.',
     intro: 'L’annonce reste volontairement mystérieuse. Le studio n’a partagé ni séquence de gameplay ni détail sur les classes jouables, préférant poser une atmosphère : celle d’un Sanctuaire tombé et privé de ses figures héroïques.',
@@ -25,7 +25,7 @@ const stories = {
     take: 'À RETENIR', takeText: 'Diablo V est prévu pour le printemps 2029, dans un Sanctuaire en ruines.'
   },
   'diablo-switch-2': {
-    date: '12.09.2026', category: 'BLIZZARD · SWITCH 2', image: 'zelda-40th-switch2.jpg', imageAlt: 'Console Nintendo Switch 2', cover: 'DIABLO IV',
+    date: '12.09.2026', category: 'BLIZZARD · SWITCH 2', image: 'diablo-switch2-news.jpg', imageAlt: 'Diablo IV Age of Hatred Collection sur Nintendo Switch 2', cover: 'DIABLO IV', video: 'yFWANy7OHR8', videoTitle: 'Diablo IV arrive sur Switch 2',
     title: 'DIABLO IV ARRIVE', accent: 'SUR SWITCH 2.', dek: 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.',
     lead: 'Le Sanctuaire s’apprête à devenir nomade. Blizzard a confirmé l’arrivée de Diablo IV sur Nintendo Switch 2 avec une collection pensée pour rassembler toute l’expérience actuelle.',
     intro: 'Cette version, baptisée Diablo IV: Age of Hatred Collection, comprend le jeu principal ainsi que ses deux extensions majeures. Une manière de proposer un point d’entrée complet aux joueurs qui découvrent la licence sur la nouvelle console.',
@@ -35,7 +35,7 @@ const stories = {
     take: 'À RETENIR', takeText: 'Diablo IV: Age of Hatred Collection sort le 15 septembre 2026 sur Switch 2.'
   },
   'diablo-netflix': {
-    date: '12.09.2026', category: 'BLIZZARD · NETFLIX', image: 'wardogs-news.jpg', imageAlt: 'Personnage dans un univers fantastique', cover: 'DIABLO',
+    date: '12.09.2026', category: 'BLIZZARD · NETFLIX', image: 'diablo-netflix-news.webp', imageAlt: 'Annonce d’une série animée Diablo pour Netflix', cover: 'DIABLO', video: 'MqBH8xUiy3E', videoTitle: 'Diablo — annonce de la série animée',
     title: 'DIABLO ÉTEND', accent: 'SON UNIVERS.', dek: 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie également d’autres adaptations.',
     lead: 'Les démons ne resteront pas confinés aux jeux vidéo. Blizzard a annoncé une nouvelle adaptation animée de Diablo, destinée à Netflix.',
     intro: 'Le projet a été révélé en ouverture de la BlizzCon 2026. Aucun casting, aucune date de diffusion et aucun synopsis détaillé n’ont encore été communiqués, mais la série devrait puiser dans l’univers sombre de Sanctuaire.',
@@ -52,7 +52,7 @@ export default function BlizzardNews(){
   const story = stories[useParams().slug] || stories['starcraft-fps'];
   return <>
     <section className="article-hero wrap"><div className="section-label"><span><b>01</b> / ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> RÉÉCRIT POUR LET’S PLAY</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>5 MIN DE LECTURE</span></div></div><div className="article-cover hud-frame"><img src={`${base}${story.image}`} alt={story.imageAlt} /><div><small>{story.category}</small><strong>{story.cover}</strong></div></div></div></section>
-    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{story.lead}</p><p>{story.intro}</p><h2>{story.h2}</h2><p>{story.p1}</p><div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div><p>{story.p2}</p><h2>{story.h2b}</h2><p>{story.p3}</p><p>{story.p4}</p><div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div></article><aside className="article-aside"><div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>LET’S PLAY ORIGINAL</strong></div><div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div></aside></main>
+    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{story.lead}</p><p>{story.intro}</p>{story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / TRAILER</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={`https://www.youtube.com/embed/${story.video}?rel=0`} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div></section> : null}<h2>{story.h2}</h2><p>{story.p1}</p><div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div><p>{story.p2}</p><h2>{story.h2b}</h2><p>{story.p3}</p><p>{story.p4}</p><div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div></article><aside className="article-aside"><div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>LET’S PLAY ORIGINAL</strong></div><div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div></aside></main>
     <Comments />
     <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> LA SUITE SUR LET’S PLAY</p><h2>RESTEZ DANS<br/><em>LE GAME.</em></h2></div><Link className="button button-yellow" to="/news">VOIR LES ACTUS <Arrow/></Link></section>
   </>;
