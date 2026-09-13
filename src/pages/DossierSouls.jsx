@@ -5,16 +5,16 @@ const videoId = 'OH51fSHznwg';
 const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
 const chapters = [
-  ['00:00', 'Introduction'],
-  ['01:30', 'Les jeux Souls'],
-  ['04:55', 'La difficulté'],
-  ['05:56', 'La dopamine de la victoire'],
-  ['07:56', 'L’expérience « YOU DIED »'],
-  ['09:23', 'Une narration cryptique et mystérieuse'],
-  ['13:11', 'Dark Souls 1 & 2'],
-  ['16:32', 'La communauté'],
-  ['20:10', 'Les conseils du joueur'],
-  ['22:41', 'Conclusion'],
+  ['00:00', 0, 'Introduction'],
+  ['01:30', 90, 'Les jeux Souls'],
+  ['04:55', 295, 'La difficulté'],
+  ['05:56', 356, 'La dopamine de la victoire'],
+  ['07:56', 476, 'L’expérience « YOU DIED »'],
+  ['09:23', 563, 'Une narration cryptique et mystérieuse'],
+  ['13:11', 791, 'Dark Souls 1 & 2'],
+  ['16:32', 992, 'La communauté'],
+  ['20:10', 1210, 'Les conseils du joueur'],
+  ['22:41', 1361, 'Conclusion'],
 ];
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
@@ -83,7 +83,7 @@ export default function DossierSouls() {
             <p className="dossier-kicker">DANS CET ÉPISODE</p>
             <h3>LE CHAPITRAGE</h3>
             <ol className="chapter-list">
-              {chapters.map(([time, label]) => <li key={time}><a href={`https://www.youtube.com/watch?v=${videoId}&t=${time.replace(':', 'm').replace(':', 's')}`} target="_blank" rel="noreferrer"><time>{time}</time><span>{label}</span><Arrow /></a></li>)}
+              {chapters.map(([time, seconds, label]) => <li key={time}><a href={`https://www.youtube.com/watch?v=${videoId}&t=${seconds}s`} target="_blank" rel="noreferrer"><time>{time}</time><span>{label}</span><Arrow /></a></li>)}
             </ol>
             <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
           </div>
