@@ -12,7 +12,7 @@ export default function News(){
   const { t } = useLanguage();
   const million = t.news.million || t.news.featured;
   const carouselRef = useRef(null);
-  const [view, setView] = useState('carousel');
+  const [view, setView] = useState('grid');
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   useEffect(() => {
