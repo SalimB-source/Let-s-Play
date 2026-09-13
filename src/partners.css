@@ -81,6 +81,8 @@
 .partner-detail-body h2{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.3vw,40px);line-height:1.02;margin:0 0 14px;text-transform:uppercase}
 .partner-detail-body p{margin:0 0 14px;font-size:15.5px;line-height:1.68;color:var(--muted)}
 .partner-detail-lead{font-size:17px !important;line-height:1.62 !important;color:var(--ink) !important}
+.partner-video{margin:26px 0 24px}
+.partner-video .section-label{margin-bottom:12px}
 .partner-detail-facts{margin-top:24px;padding:18px 20px;border:1px solid var(--line);background:rgba(11,13,30,.55)}
 .partner-detail-facts-label{display:block;margin-bottom:12px;font:500 10px var(--mono);letter-spacing:.22em;color:var(--yellow);text-transform:uppercase}
 .partner-detail-note{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px;font-size:14px;line-height:1.5;color:var(--muted)}
