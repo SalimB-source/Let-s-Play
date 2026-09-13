@@ -11,13 +11,13 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
-          <h2>POURQUOI<br/><em>LES SOULS ?</em></h2>
-          <p>Un épisode devient une lecture longue : difficulté, narration, dopamine de la victoire et communauté. Le premier template éditorial Let’s Play est en ligne.</p>
-          <Link className="arrow-link" to="/dossiers/pourquoi-les-souls">Lire le dossier <Arrow/></Link>
+          <h2>GOYA,<br/><em>LE PROCHAIN MONDE.</em></h2>
+          <p>Dans les coulisses de HicoSoft Studio : outils, projet GOYA, défis locaux et ambition pour la scène indépendante algérienne.</p>
+          <Link className="arrow-link" to="/dossiers/goya-hicosoft">Lire le dossier <Arrow/></Link>
         </div>
-        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/pourquoi-les-souls" aria-label="Lire le dossier Pourquoi les Souls">
-          <img src="https://i.ytimg.com/vi/OH51fSHznwg/hqdefault.jpg" alt="Pourquoi les Souls ?" />
-          <span>24:21 · ANALYSE GAMING</span>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/goya-hicosoft" aria-label="Lire le dossier GOYA et HicoSoft Studio">
+          <img src="https://i.ytimg.com/vi/aTs0zhm6Leg/hqdefault.jpg" alt="HicoSoft Studio et projet GOYA" />
+          <span>17:12 · INDUSTRIE INDÉ</span>
         </Link>
       </section>
 
