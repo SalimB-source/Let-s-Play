@@ -25,7 +25,7 @@ const stories = {
     take: 'À RETENIR', takeText: 'Diablo V est prévu pour le printemps 2029, dans un Sanctuaire en ruines.'
   },
   'diablo-switch-2': {
-    date: '12.09.2026', category: 'BLIZZARD · SWITCH 2', image: 'diablo-switch2-news.jpg', imageAlt: 'Diablo IV Age of Hatred Collection sur Nintendo Switch 2', cover: 'DIABLO IV', video: 'yFWANy7OHR8', videoTitle: 'Diablo IV arrive sur Switch 2',
+    date: '12.09.2026', category: 'BLIZZARD · SWITCH 2', image: 'diablo-switch2-news.jpg', imageAlt: 'Diablo IV Age of Hatred Collection sur Nintendo Switch 2', cover: 'DIABLO IV',
     title: 'DIABLO IV ARRIVE', accent: 'SUR SWITCH 2.', dek: 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.',
     lead: 'Le Sanctuaire s’apprête à devenir nomade. Blizzard a confirmé l’arrivée de Diablo IV sur Nintendo Switch 2 avec une collection pensée pour rassembler toute l’expérience actuelle.',
     intro: 'Cette version, baptisée Diablo IV: Age of Hatred Collection, comprend le jeu principal ainsi que ses deux extensions majeures. Une manière de proposer un point d’entrée complet aux joueurs qui découvrent la licence sur la nouvelle console.',
@@ -35,7 +35,7 @@ const stories = {
     take: 'À RETENIR', takeText: 'Diablo IV: Age of Hatred Collection sort le 15 septembre 2026 sur Switch 2.'
   },
   'diablo-netflix': {
-    date: '12.09.2026', category: 'BLIZZARD · NETFLIX', image: 'diablo-netflix-news.webp', imageAlt: 'Annonce d’une série animée Diablo pour Netflix', cover: 'DIABLO', video: 'MqBH8xUiy3E', videoTitle: 'Diablo — annonce de la série animée',
+    date: '12.09.2026', category: 'BLIZZARD · NETFLIX', image: 'diablo-netflix-news.webp', imageAlt: 'Annonce d’une série animée Diablo pour Netflix', cover: 'DIABLO',
     title: 'DIABLO ÉTEND', accent: 'SON UNIVERS.', dek: 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie également d’autres adaptations.',
     lead: 'Les démons ne resteront pas confinés aux jeux vidéo. Blizzard a annoncé une nouvelle adaptation animée de Diablo, destinée à Netflix.',
     intro: 'Le projet a été révélé en ouverture de la BlizzCon 2026. Aucun casting, aucune date de diffusion et aucun synopsis détaillé n’ont encore été communiqués, mais la série devrait puiser dans l’univers sombre de Sanctuaire.',
@@ -60,4 +60,3 @@ export default function BlizzardNews({ slug }){
 }
 
 export { stories };
-
