@@ -22,6 +22,7 @@ import OnimushaMillion from './pages/OnimushaMillion';
 import Gta6DualSense from './pages/Gta6DualSense';
 import Zelda40th from './pages/Zelda40th';
 import MonsterHunterWilds from './pages/MonsterHunterWilds';
+import BlizzardNews from './pages/BlizzardNews';
 import Reviews from './pages/Reviews';
 import TestArticle from './pages/TestArticle';
 import Dossiers from './pages/Dossiers';
@@ -49,6 +50,10 @@ function App() {
             <Route path="/news/gta6-dualsense" element={<Gta6DualSense />} />
             <Route path="/news/zelda-40th" element={<Zelda40th />} />
             <Route path="/news/monster-hunter-wilds" element={<MonsterHunterWilds />} />
+            <Route path="/news/starcraft-fps" element={<BlizzardNews />} />
+            <Route path="/news/diablo-v" element={<BlizzardNews />} />
+            <Route path="/news/diablo-switch-2" element={<BlizzardNews />} />
+            <Route path="/news/diablo-netflix" element={<BlizzardNews />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/partenaires" element={<Partners />} />
