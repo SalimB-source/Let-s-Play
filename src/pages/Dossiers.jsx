@@ -21,6 +21,19 @@ export default function Dossiers(){
         </Link>
       </section>
 
+      <section className="dossier-feature-card wrap dossier-feature-card-secondary">
+        <div className="dossier-feature-card-copy">
+          <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
+          <h2>LA CULTURE<br/><em>SE RÉUNIT.</em></h2>
+          <p>Games &amp; Comic Con Dzair 2026 : cosplay, invités, découvertes et communauté au même endroit.</p>
+          <Link className="arrow-link" to="/dossiers/games-comic-con-dzair">Lire le dossier <Arrow/></Link>
+        </div>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/games-comic-con-dzair" aria-label="Lire le dossier Games et Comic Con Dzair 2026">
+          <img src="https://i.ytimg.com/vi/HzigJZOxz2o/hqdefault.jpg" alt="Games & Comic Con Dzair 2026" />
+          <span>15:17 · CULTURE GAMING</span>
+        </Link>
+      </section>
+
       <section className="formats wrap">
         <div className="section-label"><span><b>{t.dossiers.formatsLabel1.split(' / ')[0]}</b> / {t.dossiers.formatsLabel1.split(' / ')[1]}</span><span>{t.dossiers.formatsLabel2}</span></div>
         <div className="format-grid">
