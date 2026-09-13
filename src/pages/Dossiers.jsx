@@ -52,6 +52,19 @@ export default function Dossiers(){
         </div>
       </section>
 
+      <section className="dossier-feature-card wrap">
+        <div className="dossier-feature-card-copy">
+          <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
+          <h2>POURQUOI<br/><em>LES SOULS ?</em></h2>
+          <p>Un épisode devient une lecture longue : difficulté, narration, dopamine de la victoire et communauté. Le premier template éditorial Let’s Play est en ligne.</p>
+          <Link className="arrow-link" to="/dossiers/pourquoi-les-souls">Lire le dossier <Arrow/></Link>
+        </div>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/pourquoi-les-souls" aria-label="Lire le dossier Pourquoi les Souls">
+          <img src="https://i.ytimg.com/vi/OH51fSHznwg/hqdefault.jpg" alt="Pourquoi les Souls ?" />
+          <span>24:21 · ANALYSE GAMING</span>
+        </Link>
+      </section>
+
       <section className="show wrap">
         <div className="section-label"><span><b>{t.dossiers.showLabel1.split(' / ')[0]}</b> / {t.dossiers.showLabel1.split(' / ')[1]}</span><span>{t.dossiers.showLabel2}</span></div>
         <div className="manifesto-grid">
