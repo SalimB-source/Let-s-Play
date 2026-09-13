@@ -7,7 +7,7 @@ function Arrow(){ return <span aria-hidden="true">↗</span>; }
 export default function Dossiers(){
   const { t } = useLanguage();
   return (
-    <>
+    <div className="dossiers-page">
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
@@ -28,6 +28,19 @@ export default function Dossiers(){
           <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.dossiers.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow/></Link></article>
           <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.dossiers.communityText}</p><Link to="/">{t.dossiers.backHome} <Arrow/></Link></article>
         </div>
+      </section>
+
+      <section className="dossier-feature-card wrap dossier-feature-card-secondary">
+        <div className="dossier-feature-card-copy">
+          <p className="eyebrow"><span className="live-dot" /> Dossier précédent</p>
+          <h2>POURQUOI<br/><em>LES SOULS ?</em></h2>
+          <p>Un épisode devient une lecture longue : difficulté, narration, dopamine de la victoire et communauté.</p>
+          <Link className="arrow-link" to="/dossiers/pourquoi-les-souls">Lire le dossier <Arrow/></Link>
+        </div>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/pourquoi-les-souls" aria-label="Lire le dossier Pourquoi les Souls">
+          <img src="https://i.ytimg.com/vi/OH51fSHznwg/hqdefault.jpg" alt="Pourquoi les Souls ?" />
+          <span>24:21 · ANALYSE GAMING</span>
+        </Link>
       </section>
 
       <section className="show wrap">
@@ -52,6 +65,6 @@ export default function Dossiers(){
         </div>
         <Link className="button button-yellow" to="/">{t.dossiers.backToHome} <Arrow/></Link>
       </section>
-    </>
+    </div>
   );
 }
