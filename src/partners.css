@@ -4,6 +4,14 @@
 .partner-card-telecom,.partner-detail-telecom,.partner-strip-telecom,.partner-mark-telecom{--brand:#2f6bd8;--brand-2:#19a75a;--glow:rgba(47,107,216,.42)}
 .partner-card-tcl,.partner-detail-tcl,.partner-strip-tcl,.partner-mark-tcl{--brand:#e64c3d;--brand-2:#ff7a5c;--glow:rgba(230,76,61,.4)}
 .partner-card-gccdz,.partner-detail-gccdz,.partner-strip-gccdz,.partner-mark-gccdz{--brand:#c026d3;--brand-2:#ffd619;--glow:rgba(192,38,211,.4)}
+.partner-card-ooredoo,.partner-detail-ooredoo,.partner-strip-ooredoo,.partner-mark-ooredoo{--brand:#e30613;--brand-2:#ff4d5a;--glow:rgba(227,6,19,.42)}
+.partner-card-djezzy,.partner-detail-djezzy,.partner-strip-djezzy,.partner-mark-djezzy{--brand:#ff6b00;--brand-2:#ffb000;--glow:rgba(255,107,0,.42)}
+.partner-card-ifa,.partner-detail-ifa,.partner-strip-ifa,.partner-mark-ifa{--brand:#1d4ed8;--brand-2:#60a5fa;--glow:rgba(29,78,216,.42)}
+.partner-card-lg,.partner-detail-lg,.partner-strip-lg,.partner-mark-lg{--brand:#a50034;--brand-2:#ed1c24;--glow:rgba(165,0,52,.42)}
+.partner-card-heddaf,.partner-detail-heddaf,.partner-strip-heddaf,.partner-mark-heddaf{--brand:#f97316;--brand-2:#facc15;--glow:rgba(249,115,22,.42)}
+.partner-card-tmv,.partner-detail-tmv,.partner-strip-tmv,.partner-mark-tmv{--brand:#22d3ee;--brand-2:#2563eb;--glow:rgba(34,211,238,.42)}
+.partner-card-arena,.partner-detail-arena,.partner-strip-arena,.partner-mark-arena{--brand:#a855f7;--brand-2:#ec4899;--glow:rgba(168,85,247,.42)}
+.partner-card-egor,.partner-detail-egor,.partner-strip-egor,.partner-mark-egor{--brand:#ef4444;--brand-2:#f97316;--glow:rgba(239,68,68,.42)}
 
 /* ---------- Marque ---------- */
 .partner-mark{display:flex;align-items:center;gap:14px}

@@ -56,6 +56,7 @@ function App() {
             <Route path="/news/diablo-netflix" element={<BlizzardNews slug="diablo-netflix" />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
+            <Route path="/events" element={<Partners />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
