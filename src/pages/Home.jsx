@@ -6,6 +6,13 @@ import PartnersSection from '../components/PartnersSection';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
+const reels = [
+  { id: '91eqLm2Hy9k', label: 'REEL 01' },
+  { id: 's4pqYSfL8oU', label: 'REEL 02' },
+  { id: '7sxxWC4zruM', label: 'REEL 03' },
+  { id: 'fscuzWcw-PA', label: 'REEL 04' },
+];
+
 export default function Home() {
   const { t } = useLanguage();
   const [filter, setFilter] = useState('All');
@@ -175,6 +182,25 @@ export default function Home() {
           ))}
         </div>
         <Link className="arrow-link" to="/news">{t.home.latest.seeAll} <Arrow /></Link>
+      </section>
+
+      <section className="reels-section wrap" id="reels">
+        <div className="section-label"><span><b>07</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="reels-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> Format court</p>
+            <h2>À VOIR<br /><em>EN BOUCLE.</em></h2>
+          </div>
+          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">Voir tous les reels <Arrow /></a>
+        </div>
+        <div className="reels-grid">
+          {reels.map((reel) => (
+            <div className="reel-card hud-frame" key={reel.id}>
+              <iframe src={`https://www.youtube.com/embed/${reel.id}?rel=0&modestbranding=1`} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="social-carousel wrap" id="social">
