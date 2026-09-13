@@ -21,6 +21,7 @@ import OnimushaMillion from '../src/pages/OnimushaMillion';
 import Reviews from '../src/pages/Reviews';
 import TestArticle from '../src/pages/TestArticle';
 import Dossiers from '../src/pages/Dossiers';
+import Partners from '../src/pages/Partners';
 import NotFound from '../src/pages/NotFound';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
@@ -40,6 +41,7 @@ export const ROUTES = [
   ['/reviews', Reviews],
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle]),
   ['/dossiers', Dossiers],
+  ['/partenaires', Partners],
   ['/unknown-page', NotFound],
 ];
 

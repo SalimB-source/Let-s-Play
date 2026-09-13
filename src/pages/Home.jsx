@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { videos, filters, socialVisuals, baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
+import PartnersSection from '../components/PartnersSection';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
@@ -155,6 +156,8 @@ export default function Home() {
           <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.home.formats.communityText}</p><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">{t.home.formats.joinUs} <Arrow /></a></article>
         </div>
       </section>
+
+      <PartnersSection />
 
       <section className="latest wrap" id="latest">
         <div className="section-label"><span><b>{t.home.latest.label1.split(' / ')[0]}</b> / {t.home.latest.label1.split(' / ')[1]}</span><span>{t.home.latest.label2}</span></div>
