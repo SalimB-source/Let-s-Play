@@ -28,6 +28,7 @@ import Reviews from './pages/Reviews';
 import TestArticle from './pages/TestArticle';
 import Dossiers from './pages/Dossiers';
 import DossierSouls from './pages/DossierSouls';
+import DossierGoya from './pages/DossierGoya';
 import Partners from './pages/Partners';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
@@ -59,6 +60,7 @@ function App() {
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />
+            <Route path="/dossiers/goya-hicosoft" element={<DossierGoya />} />
             <Route path="/events" element={<Partners />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/auth" element={<Auth />} />
