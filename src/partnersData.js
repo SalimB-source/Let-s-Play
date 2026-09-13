@@ -8,7 +8,7 @@ export const partners = [
   {
     id: 'ooredoo', tag: 'ooredoo', name: 'Ooredoo', nameNative: 'أوريدو', mark: 'O', tone: 'ooredoo',
     logo: 'partners/ooredoo.png', external: 'https://www.ooredoo.dz/', externalLabel: 'ooredoo.dz',
-    media: 'https://www.youtube.com/@letsplay.officiel', mediaLabel: 'Chaîne YouTube Let’s Play Official',
+    media: 'https://www.youtube.com/watch?v=0nHji4C-Mp4', mediaLabel: 'Upcoming Horror Games — Ooredoo Giveaway', video: '0nHji4C-Mp4',
     role: 'Annonceur', context: 'Partenariat visible sur la chaîne YouTube officielle Let’s Play, complété par une activation Ooredoo Algérie destinée à la communauté de l’émission.',
     confidence: 'Vérifié publiquement', source: 'https://www.youtube.com/@letsplay.officiel'
   },

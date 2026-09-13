@@ -66,6 +66,7 @@ export default function Partners() {
             <div className="partner-detail-body">
               <h2>{partner.name}</h2>
               <p className="partner-detail-lead">{partner.context}</p>
+              {partner.video ? <div className="partner-video"><div className="section-label"><span><b>VIDÉO</b> / {partner.mediaLabel}</span><span>{partner.role}</span></div><div className="article-video-frame"><iframe src={`https://www.youtube.com/embed/${partner.video}?rel=0`} title={partner.mediaLabel} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div></div> : null}
               <div className="partner-detail-facts"><span className="partner-detail-facts-label">{page.verified}</span><ul className="partner-facts"><li>{partner.role}</li><li>{partner.confidence}</li><li>{page.source}: {partner.source}</li></ul></div>
               <div className="partner-detail-note"><span className="live-dot" /><strong>{partner.confidence}</strong><span>{partner.context}</span></div>
             </div>
