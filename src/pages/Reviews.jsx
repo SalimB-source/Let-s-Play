@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { videos } from '../data';
 import { gameTests, scoreTier, scoreLabel } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
+import VideoModal from '../components/VideoModal';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
@@ -10,6 +11,12 @@ export default function Reviews(){
   const { t, lang } = useLanguage();
   const c = t.reviews.article;
   const gaming = videos.filter(v=>v.tag==='Gaming');
+  const [player, setPlayer] = useState(null);
+  const openVideo = (e, test) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPlayer(test);
+  };
 
   return (
     <>
@@ -39,6 +46,18 @@ export default function Reviews(){
                 <span className={`latest-test-score score-badge ${scoreTier(test.score)}`}>
                   <b>{scoreLabel(test.score, lang)}</b><i>/10</i>
                 </span>
+                {test.video && (
+                  <span
+                    className="test-video-btn"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`${c.watchVideo} — ${test.name}`}
+                    onClick={(e) => openVideo(e, test)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openVideo(e, test); }}
+                  >
+                    <i aria-hidden="true">▶</i> {c.videoShort}
+                  </span>
+                )}
               </div>
               <div className="latest-test-meta"><span>{test.date}</span><span>{test.platforms.split(' · ')[0]}{test.platforms.includes('·') ? ' +' : ''}</span></div>
               <h3>{test.cardTitle}</h3>
@@ -64,6 +83,17 @@ export default function Reviews(){
         </div>
         <Link className="arrow-link" to="/dossiers">{t.reviews.exploreDossiers} <Arrow/></Link>
       </section>
+
+      {player && player.video && (
+        <VideoModal
+          video={player.video}
+          title={player.name}
+          kicker={c.videoKicker}
+          watchLabel={c.watchOnYoutube}
+          closeLabel={c.closeVideo}
+          onClose={() => setPlayer(null)}
+        />
+      )}
     </>
   );
 }

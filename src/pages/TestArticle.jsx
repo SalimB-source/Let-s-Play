@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { getTest, scoreTier, scoreLabel } from '../reviewsData';
+import { getTest, scoreTier, scoreLabel, videoEmbedUrl, videoWatchUrl } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 import Comments from '../components/Comments';
 import NotFound from './NotFound';
@@ -58,6 +58,25 @@ export default function TestArticle(){
           <em>{a.verdictTitle}</em>
         </div>
         <p className="article-lead">{a.lead}</p>
+
+        {a.video && (
+          <figure className="article-video">
+            <div className="article-video-frame hud-frame">
+              <iframe
+                src={videoEmbedUrl(a.video.id)}
+                title={`${a.name} — ${c.videoKicker}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+            <figcaption>
+              <span className="article-video-badge"><span className="live-dot" /> {c.videoKicker}</span>
+              <strong className="article-video-title">{a.name}</strong>
+              <em className="article-video-sub">{a.video.label} · {a.video.channel}</em>
+              <a className="arrow-link" href={videoWatchUrl(a.video.id)} target="_blank" rel="noreferrer">{c.watchOnYoutube} <Arrow/></a>
+            </figcaption>
+          </figure>
+        )}
 
         {a.sections.map((section, index) => (
           <React.Fragment key={index}>

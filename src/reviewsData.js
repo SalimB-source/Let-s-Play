@@ -68,6 +68,7 @@ export const gameTests = [
     ],
     verdictTitle: 'GRATTÉ, PAS K.-O.',
     verdictText: 'À faire pour son histoire et sa violence jouissive, en pardonnant des arènes qui tabassent plus que de raison. Logan méritait sa revanche : la voilà, vivement la lame affûtée.',
+    video: { id: 'ZgLZE7LZZcc', label: 'Bande-annonce de lancement', channel: 'Marvel Entertainment' },
     sourceUrl: 'https://www.actugaming.net/test-marvels-wolverine-review-821408/',
   },
   {
@@ -129,6 +130,7 @@ export const gameTests = [
     ],
     verdictTitle: 'ÉQUIPAGE OBLIGATOIRE',
     verdictText: "Le jeu à lancer avec son pote, sa moitié ou son petit frère un dimanche soir. Une exclusivité Switch 2 qui justifie à elle seule de dépoussiérer les Joy-Con. Hazelight peut rester tranquille… et prendre des notes.",
+    video: { id: 'q2RU7o2S9Aw', label: 'Bande-annonce de lancement', channel: 'Shapefarm' },
     sourceUrl: 'https://www.actugaming.net/test-orbitals-review-823213/',
   },
   {
@@ -190,6 +192,7 @@ export const gameTests = [
     ],
     verdictTitle: 'À JOUER EN PATIENCE',
     verdictText: "Un très bon jeu tactique pour qui tient la distance. Les impatients peuvent passer leur chemin ; les amateurs de grille et de sabre laser, réservez votre semaine, la seconde moitié vaut le détour.",
+    video: { id: 'WxLUZ1omFA8', label: 'Bande-annonce gameplay', channel: 'EA Star Wars' },
     sourceUrl: 'https://www.actugaming.net/test-star-wars-zero-company-un-tres-bon-jeu-tactique-dans-lunivers-de-la-guerre-des-etoiles-821024/',
   },
   {
@@ -212,6 +215,7 @@ export const gameTests = [
     coverKicker: 'LA LAME SE SOUVIENT',
     excerpt: 'Capcom ressuscite sa saga samouraï avec une lame affûtée. Trente heures d’action précise, quelques finitions à reprendre et un final qui fait mouche.',
     dek: "Way of the Sword relance la saga avec des combats précis, un contenu généreux et une poignée d'aspérités. Le test complet vous attend dans son article dédié.",
+    video: { id: 'ifh_bOuaXVI', label: 'Bande-annonce officielle', channel: 'IGN' },
     sourceUrl: 'https://www.actugaming.net/test-onimusha-way-of-the-sword-review-818222/',
   },
   {
@@ -273,6 +277,7 @@ export const gameTests = [
     ],
     verdictTitle: 'À MORDRE, PATCH RECOMMANDÉ',
     verdictText: "Le pari est réussi, avec de béantes aspérités de finition. Si vous attendiez un RPG qui vous demande de choisir plutôt que de cocher des cases, foncez — de préférence après le patch day one.",
+    video: { id: 'K86Af9y312U', label: 'Bande-annonce gameplay', channel: 'IGN' },
     sourceUrl: 'https://www.actugaming.net/test-the-blood-of-dawnwalker-821035/',
   },
   {
@@ -335,6 +340,7 @@ export const gameTests = [
     ],
     verdictTitle: 'À LANCER D’URGENCE',
     verdictText: "Une pépite à faire d'une traite, souvent en promo sur l'eShop ou Steam. On donne rarement 8,5 à un jeu de deux heures et demie : celui-là les vaut largement — et c'est bien ça qui rend la fin de DANG si triste.",
+    video: { id: 'Q-Scz-Proo0', label: 'Bande-annonce de lancement', channel: 'GameTrailers' },
     sourceUrl: 'https://www.actugaming.net/test-boomerang-x-chef-doeuvre-dun-studio-mort-avant-la-gloire-812967/',
   },
   {
@@ -397,6 +403,7 @@ export const gameTests = [
     ],
     verdictTitle: 'SORTIR DU LABYRINTHE VAUT LE COUP',
     verdictText: "Un changement de direction courageux qui paie sur le fond mais trébuche sur ses phases d'action. Accrochez-vous pendant les premiers chapitres : la sortie du labyrinthe réserve de belles émotions aux amateurs de la série.",
+    video: { id: 'Brzu9xSSPYc', label: 'Bande-annonce story', channel: 'IGN' },
     sourceUrl: 'https://www.actugaming.net/test-resonance-a-plague-tale-legacy-819939/',
   },
   {
@@ -458,6 +465,7 @@ export const gameTests = [
     ],
     verdictTitle: 'UN RÉVEIL QUI VAUT LE DÉTOUR',
     verdictText: "Un tendre hommage aux jeux de notre enfance, avec un grand cœur et des trash mobs à reprendre. À faire pour sa plateforme, ses boss et sa petite larme : pour quatorze heures de dépaysement, le réveil sonne juste.",
+    video: { id: 'Reh1honhW14', label: 'Bande-annonce de lancement', channel: 'GameTrailers' },
     sourceUrl: 'https://www.actugaming.net/test-duskfade-review-817934/',
   },
   {
@@ -520,6 +528,7 @@ export const gameTests = [
     ],
     verdictTitle: 'INDISPENSABLE, MAIS SANS SURPRISE',
     verdictText: "Pour qui n'a jamais eu de PS3 ou de PSP, c'est un achat obligé, tant ces deux jeux comptent. Les collectionneurs qui attendaient un écrin à la hauteur des légendes resteront sur leur faim — comme avec le Vol. 1, Konami assure le minimum vital.",
+    video: { id: '0RQV2WaMr7Y', label: 'Bande-annonce de présentation', channel: 'IGN' },
     sourceUrl: 'https://www.actugaming.net/test-metal-gear-solid-master-collection-vol-2-review-817039/',
   },
   {
@@ -582,8 +591,14 @@ export const gameTests = [
     ],
     verdictTitle: 'BEAU COMME UN COMBAT, JUSTE COMME UN COMIC',
     verdictText: "Le versus Marvel qu'on attendait sur le fond, splendide et malin, qui pèche surtout par générosité. À privilégier sur PS5 en attendant que le roster — et le port PC — se renforcent.",
+    video: { id: 'sMTB83N6_XY', label: 'Opening cinématique', channel: 'GameSpot' },
     sourceUrl: 'https://www.actugaming.net/test-marvel-tokon-fighting-souls-review-817082/',
   },
 ];
 
 export const getTest = (slug) => gameTests.find((test) => test.slug === slug);
+
+// Vidéos officielles des jeux testés (bandes-annonces des éditeurs / presse).
+export const videoWatchUrl = (id) => `https://www.youtube.com/watch?v=${id}`;
+export const videoEmbedUrl = (id, autoplay = false) =>
+  `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1${autoplay ? '&autoplay=1' : ''}`;
