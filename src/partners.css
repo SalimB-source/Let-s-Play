@@ -1,0 +1,128 @@
+/* ============ PARTNERS & COLLABORATIONS ============ */
+
+/* Couleurs de marque : chaque bloc partenaire expose --brand / --brand-2 / --glow */
+.partner-card-telecom,.partner-detail-telecom,.partner-strip-telecom,.partner-mark-telecom{--brand:#2f6bd8;--brand-2:#19a75a;--glow:rgba(47,107,216,.42)}
+.partner-card-tcl,.partner-detail-tcl,.partner-strip-tcl,.partner-mark-tcl{--brand:#e64c3d;--brand-2:#ff7a5c;--glow:rgba(230,76,61,.4)}
+.partner-card-gccdz,.partner-detail-gccdz,.partner-strip-gccdz,.partner-mark-gccdz{--brand:#c026d3;--brand-2:#ffd619;--glow:rgba(192,38,211,.4)}
+
+/* ---------- Marque ---------- */
+.partner-mark{display:flex;align-items:center;gap:14px}
+.partner-mark-badge{
+  display:grid;place-items:center;width:58px;height:58px;flex:none;
+  font-family:var(--display);font-weight:800;font-size:18px;letter-spacing:.01em;color:#fff;
+  background:linear-gradient(135deg,var(--brand,#7c3aed),var(--brand-2,#a855f7));
+  clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
+  box-shadow:0 0 24px -8px var(--glow,rgba(124,58,237,.5));
+}
+.partner-mark-logo{height:46px;width:auto;display:block}
+.partner-mark-text{display:flex;flex-direction:column;gap:3px;line-height:1.1;min-width:0}
+.partner-mark-text b{font-family:var(--display);font-weight:700;font-size:15.5px;letter-spacing:.05em;text-transform:uppercase;color:#fff}
+.partner-mark-text i{font-style:normal;font:500 10px var(--mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.partner-mark-sm .partner-mark-badge{width:40px;height:40px;font-size:12.5px;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.partner-mark-sm .partner-mark-text b{font-size:12.5px}
+.partner-mark-sm .partner-mark-text i{font-size:9px}
+.partner-mark-sm .partner-mark-logo{height:32px}
+
+/* ---------- Étiquettes récurrentes ---------- */
+.partner-index{font:500 11px var(--mono);letter-spacing:.2em;color:var(--dim)}
+.partner-kicker{font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--brand-2,var(--cyan))}
+.partner-facts{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.partner-facts li{position:relative;padding-left:14px;font:500 11px/1.55 var(--mono);letter-spacing:.05em;color:var(--muted)}
+.partner-facts li::before{content:"";position:absolute;left:0;top:6px;width:5px;height:5px;background:var(--brand,#a855f7);box-shadow:0 0 8px var(--brand,#a855f7)}
+
+/* ---------- Section accueil ---------- */
+.partners{padding:100px 0 10px}
+.partners-head{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:end;padding:24px 0 44px}
+.partners-head h2{font-family:var(--display);font-weight:800;font-size:clamp(34px,4.6vw,58px);line-height:1;margin:16px 0 0;text-transform:uppercase}
+.partners-head h2 em{font-style:normal;color:var(--yellow);text-shadow:0 0 24px rgba(255,214,25,.45)}
+.partners-head-side{display:flex;flex-direction:column;gap:18px;align-items:flex-start}
+.partners-intro{margin:0;font-size:16.5px;line-height:1.62;color:var(--muted)}
+.partner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.partner-card{
+  position:relative;display:flex;flex-direction:column;gap:14px;padding:26px 24px 22px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(11,13,30,.92),rgba(11,13,30,.62));border:1px solid var(--line);
+  transition:transform .25s,border-color .25s,box-shadow .25s;
+}
+.partner-card::before{content:"";position:absolute;top:0;left:0;height:3px;width:100%;background:linear-gradient(90deg,var(--brand),transparent 72%)}
+.partner-card::after{content:"";position:absolute;right:-30%;bottom:-55%;width:230px;height:230px;background:radial-gradient(circle,var(--glow),transparent 70%);opacity:.55;pointer-events:none}
+.partner-card:hover{transform:translateY(-6px);border-color:var(--brand);box-shadow:0 24px 48px -20px var(--glow)}
+.partner-card-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.partner-card h3{position:relative;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.02em;margin:0;text-transform:uppercase}
+.partner-desc{position:relative;margin:0;font-size:14.5px;line-height:1.58;color:var(--muted)}
+.partner-card .partner-facts{position:relative;margin:2px 0 4px}
+.partner-link{
+  position:relative;margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding-top:14px;border-top:1px dashed var(--line-strong);
+  font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#fff;transition:color .2s;
+}
+.partner-link:hover{color:var(--brand-2,var(--yellow))}
+
+/* ---------- Bandeau de marques (page partenaires) ---------- */
+.partner-strip{display:flex;align-items:center;gap:28px;flex-wrap:wrap;padding:22px 26px;border:1px solid var(--line);background:rgba(11,13,30,.6)}
+.partner-strip-label{font:500 10px var(--mono);letter-spacing:.26em;text-transform:uppercase;color:var(--dim)}
+.partner-strip-marks{display:flex;gap:36px;flex-wrap:wrap}
+.partner-strip-item{display:inline-flex;opacity:.82;transition:opacity .2s,transform .2s}
+.partner-strip-item:hover{opacity:1;transform:translateY(-2px)}
+
+/* ---------- Détail (page partenaires) ---------- */
+.partners-detail{padding:84px 0 20px}
+.partner-detail{display:grid;grid-template-columns:.85fr 1.15fr;gap:48px;padding:40px 0;border-top:1px solid var(--line)}
+.partner-detail-side{position:relative;display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.partner-detail-side::before{content:"";position:absolute;top:-40px;left:0;width:64px;height:2px;background:linear-gradient(90deg,var(--brand),transparent)}
+.partner-detail-links{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.partner-detail-body h2{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.3vw,40px);line-height:1.02;margin:0 0 14px;text-transform:uppercase}
+.partner-detail-body p{margin:0 0 14px;font-size:15.5px;line-height:1.68;color:var(--muted)}
+.partner-detail-lead{font-size:17px !important;line-height:1.62 !important;color:var(--ink) !important}
+.partner-detail-facts{margin-top:24px;padding:18px 20px;border:1px solid var(--line);background:rgba(11,13,30,.55)}
+.partner-detail-facts-label{display:block;margin-bottom:12px;font:500 10px var(--mono);letter-spacing:.22em;color:var(--yellow);text-transform:uppercase}
+.partner-detail-note{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px;font-size:14px;line-height:1.5;color:var(--muted)}
+.partner-detail-note strong{font:500 10px var(--mono);letter-spacing:.18em;color:var(--cyan);text-transform:uppercase}
+
+/* ---------- Comment on collabore ---------- */
+.partners-how{padding:92px 0 10px}
+.partners-how-title{font-family:var(--display);font-weight:800;font-size:clamp(30px,4.2vw,52px);line-height:1.02;margin:22px 0 36px;text-transform:uppercase}
+.partners-how-title em{font-style:normal;color:var(--cyan);text-shadow:0 0 22px rgba(34,211,238,.4)}
+.partner-how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.partner-how-card{position:relative;padding:26px 22px;border:1px solid var(--line);background:rgba(11,13,30,.6)}
+.partner-how-card::before{content:"";position:absolute;top:-1px;left:0;width:34px;height:2px;background:var(--cyan)}
+.partner-how-card h3{font-family:var(--display);font-weight:700;font-size:18px;margin:14px 0 10px;text-transform:uppercase}
+.partner-how-card p{margin:0;font-size:14.5px;line-height:1.6;color:var(--muted)}
+.partner-how-tag{display:inline-block;margin-top:16px;font:500 10px var(--mono);letter-spacing:.16em;color:var(--cyan);text-transform:uppercase}
+
+/* ---------- Sources & retours ---------- */
+.partners-sources{padding:56px 0 110px}
+.partners-sources-list{list-style:none;margin:20px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
+.partners-sources-list li{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;padding:14px 16px;border:1px solid var(--line);background:rgba(11,13,30,.5)}
+.partners-sources-list a{font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#fff;transition:color .2s}
+.partners-sources-list a:hover{color:var(--yellow)}
+.partners-sources-list span{font-size:13.5px;color:var(--dim)}
+.partners-back{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
+.cta-note{position:relative;z-index:2;margin:16px 0 0;max-width:520px;font-size:15px;line-height:1.6;color:var(--muted)}
+
+/* ---------- RTL ---------- */
+[dir="rtl"] .partner-facts li{padding-left:0;padding-right:14px}
+[dir="rtl"] .partner-facts li::before{left:auto;right:0}
+[dir="rtl"] .partner-card::before{left:auto;right:0;background:linear-gradient(270deg,var(--brand),transparent 72%)}
+[dir="rtl"] .partner-card::after{right:auto;left:-30%}
+[dir="rtl"] .partner-detail-side::before{left:auto;right:0;background:linear-gradient(270deg,var(--brand),transparent)}
+[dir="rtl"] .partner-link,[dir="rtl"] .partner-mark{flex-direction:row-reverse}
+[dir="rtl"] .partner-card-top{flex-direction:row-reverse}
+[dir="rtl"] .partner-how-card::before{left:auto;right:0}
+
+/* ---------- Responsive ---------- */
+@media (max-width:1024px){
+  .partners-head{grid-template-columns:1fr;gap:22px;align-items:start;padding-bottom:34px}
+  .partner-grid{grid-template-columns:1fr 1fr}
+  .partner-detail{grid-template-columns:1fr;gap:26px}
+  .partner-how-grid{grid-template-columns:1fr 1fr}
+  .partners-detail{padding-top:66px}
+}
+@media (max-width:720px){
+  .partners{padding-top:76px}
+  .partner-grid,.partner-how-grid{grid-template-columns:1fr}
+  .partners-head h2{font-size:clamp(30px,9vw,40px)}
+  .partner-strip{gap:18px;padding:18px}
+  .partner-strip-marks{gap:20px}
+  .partners-sources{padding-bottom:80px}
+  .partner-detail{padding:30px 0}
+}

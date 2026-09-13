@@ -8,6 +8,7 @@ import './news-carousel.css';
 import './news-view-toggle.css';
 import './daily-news.css';
 import './monthly-releases.css';
+import './partners.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -24,6 +25,7 @@ import MonsterHunterWilds from './pages/MonsterHunterWilds';
 import Reviews from './pages/Reviews';
 import TestArticle from './pages/TestArticle';
 import Dossiers from './pages/Dossiers';
+import Partners from './pages/Partners';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import { AuthProvider } from './auth/AuthContext';
@@ -49,6 +51,7 @@ function App() {
             <Route path="/news/monster-hunter-wilds" element={<MonsterHunterWilds />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
+            <Route path="/partenaires" element={<Partners />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
