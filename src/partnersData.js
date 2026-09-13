@@ -8,9 +8,9 @@ export const partners = [
   {
     id: 'ooredoo', tag: 'ooredoo', name: 'Ooredoo', nameNative: 'أوريدو', mark: 'O', tone: 'ooredoo',
     logo: 'partners/ooredoo.png', external: 'https://www.ooredoo.dz/', externalLabel: 'ooredoo.dz',
-    media: 'https://www.instagram.com/ooredooalgerie/reel/CzecTPOLn76/', mediaLabel: 'Jeu-concours Let’s Play',
-    role: 'Annonceur', context: 'Activation de marque autour de Let’s Play : jeu-concours Ooredoo Algérie destiné à la communauté de l’émission.',
-    confidence: 'Vérifié publiquement', source: 'https://www.instagram.com/ooredooalgerie/reel/CzecTPOLn76/'
+    media: 'https://www.youtube.com/@letsplay.officiel', mediaLabel: 'Chaîne YouTube Let’s Play Official',
+    role: 'Annonceur', context: 'Partenariat visible sur la chaîne YouTube officielle Let’s Play, complété par une activation Ooredoo Algérie destinée à la communauté de l’émission.',
+    confidence: 'Vérifié publiquement', source: 'https://www.youtube.com/@letsplay.officiel'
   },
   {
     id: 'djezzy', tag: 'djezzy', name: 'Djezzy', nameNative: 'جازي', mark: 'Y', tone: 'djezzy',
