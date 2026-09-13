@@ -50,10 +50,10 @@ function App() {
             <Route path="/news/gta6-dualsense" element={<Gta6DualSense />} />
             <Route path="/news/zelda-40th" element={<Zelda40th />} />
             <Route path="/news/monster-hunter-wilds" element={<MonsterHunterWilds />} />
-            <Route path="/news/starcraft-fps" element={<BlizzardNews />} />
-            <Route path="/news/diablo-v" element={<BlizzardNews />} />
-            <Route path="/news/diablo-switch-2" element={<BlizzardNews />} />
-            <Route path="/news/diablo-netflix" element={<BlizzardNews />} />
+            <Route path="/news/starcraft-fps" element={<BlizzardNews slug="starcraft-fps" />} />
+            <Route path="/news/diablo-v" element={<BlizzardNews slug="diablo-v" />} />
+            <Route path="/news/diablo-switch-2" element={<BlizzardNews slug="diablo-switch-2" />} />
+            <Route path="/news/diablo-netflix" element={<BlizzardNews slug="diablo-netflix" />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/partenaires" element={<Partners />} />
