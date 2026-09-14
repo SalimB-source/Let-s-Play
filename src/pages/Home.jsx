@@ -19,7 +19,7 @@ const headlineEpisode = {
   id: 'aTs0zhm6Leg',
   href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg',
   title: 'HicoSoft Studio et le projet GOYA — Let’s Play Official',
-  sponsor: { mark: 'AT', href: 'https://www.algerietelecom.dz/' },
+  sponsor: { logo: 'partners/algerie-telecom.png', href: 'https://www.algerietelecom.dz/' },
 };
 
 export default function Home() {
@@ -66,7 +66,9 @@ export default function Home() {
           </div>
         </div>
         <div className="featured-sponsor">
-          <span className="featured-sponsor-mark" aria-hidden="true">{headlineEpisode.sponsor.mark}</span>
+          <span className="featured-sponsor-mark">
+            <img src={`${base}${headlineEpisode.sponsor.logo}`} alt="Algérie Télécom" />
+          </span>
           <div className="featured-sponsor-copy">
             <small>{t.home.featured.sponsorKicker}</small>
             <p>{t.home.featured.sponsorText}</p>
