@@ -18,6 +18,7 @@ npm run build
 ## Contenu
 
 - Hero éditorial avec CTA YouTube
+- Présentation de l’émission × Algérie Télécom avec l’épisode HicoSoft à la une (page d’accueil uniquement)
 - Présentation de l’émission et chiffres de communauté
 - Formats : Gaming, Cinéma et Pop Culture
 - Dernières vidéos YouTube avec filtres interactifs

@@ -13,6 +13,15 @@ const reels = [
   { id: 'fscuzWcw-PA', label: 'REEL 04' },
 ];
 
+// Épisode mis « à la une » de la présentation de l'émission × Algérie Télécom
+// (page d'accueil uniquement) : l'épisode HicoSoft Studio & le projet GOYA.
+const headlineEpisode = {
+  id: 'aTs0zhm6Leg',
+  href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg',
+  title: 'HicoSoft Studio et le projet GOYA — Let’s Play Official',
+  sponsor: { mark: 'AT', href: 'https://www.algerietelecom.dz/' },
+};
+
 export default function Home() {
   const { t } = useLanguage();
   return (
@@ -47,11 +56,22 @@ export default function Home() {
             <p className="eyebrow"><span className="live-dot" /> {t.home.featured.eyebrow}</p>
             <h2>{t.home.featured.h2a}<br /><em>{t.home.featured.h2b}</em></h2>
             <p>{t.home.featured.text}</p>
-            <Link className="arrow-link" to="/reviews">{t.home.featured.cta} <Arrow /></Link>
+            <div className="featured-ctas">
+              <Link className="arrow-link" to="/dossiers/goya-hicosoft">{t.home.featured.cta} <Arrow /></Link>
+              <a className="arrow-link" href={headlineEpisode.href} target="_blank" rel="noreferrer">{t.home.featured.watch} <Arrow /></a>
+            </div>
           </div>
           <div className="featured-player hud-frame">
-            <iframe src="https://www.youtube.com/embed/0e5yXxfchLA?rel=0&modestbranding=1" title="Assassin’s Creed Black Flag Resynced" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            <iframe src={`https://www.youtube.com/embed/${headlineEpisode.id}?rel=0&modestbranding=1`} title={headlineEpisode.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
+        </div>
+        <div className="featured-sponsor">
+          <span className="featured-sponsor-mark" aria-hidden="true">{headlineEpisode.sponsor.mark}</span>
+          <div className="featured-sponsor-copy">
+            <small>{t.home.featured.sponsorKicker}</small>
+            <p>{t.home.featured.sponsorText}</p>
+          </div>
+          <a className="arrow-link" href={headlineEpisode.sponsor.href} target="_blank" rel="noreferrer">{t.home.featured.sponsorLink} <Arrow /></a>
         </div>
       </section>
 
