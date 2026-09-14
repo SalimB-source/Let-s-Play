@@ -1,0 +1,42 @@
+import React from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { baseUrl as base } from '../data';
+import Comments from '../components/Comments';
+
+const stories = {
+  'persona-6-switch-2': {
+    date: '14.09.2026', category: 'SEGA · RPG', image: 'persona-6-news.svg', imageAlt: 'Persona 6 sur Nintendo Switch 2', cover: 'PERSONA 6',
+    title: 'PERSONA 6 ARRIVE', accent: 'EN PHYSIQUE.', dek: 'Le prochain épisode de la série Persona sortira aussi en version physique sur Switch 2. Une bonne nouvelle pour les joueurs qui aiment garder leurs RPG près d’eux.',
+    lead: 'SEGA avait déjà confirmé Persona 6 sur Switch 2, PS5, Xbox Series et PC. La console de Nintendo aura finalement droit à sa propre édition physique, en plus de la disponibilité numérique annoncée.',
+    intro: 'La date de sortie reste inconnue, mais le projet commence à préciser son contour. Après l’annonce de la version physique sur PS5, la Switch 2 rejoint donc la liste des machines qui accueilleront le prochain grand RPG de SEGA.',
+    h2: 'UNE CARTE QUI CHANGE TOUT', p1: 'Il faut toutefois garder une nuance importante : SEGA utilise régulièrement le format de la carte clé pour ses sorties physiques sur Switch 2. La boîte sera bien présente en magasin, mais le contenu pourrait nécessiter un téléchargement.',
+    quote: 'Une édition physique, oui. Une cartouche complète, pas forcément.', quoteBy: 'Let’s Play · Ce qu’il faut retenir',
+    h2b: 'LE GAME PASS DANS L’ÉQUATION', p2: 'Persona 6 sera également ajouté au Xbox Game Pass dès sa sortie. Une manière de toucher immédiatement un large public, alors que l’attente autour de la série dépasse depuis longtemps le cercle des habitués de Persona.', p3: 'Pour SEGA, le choix est cohérent : multiplier les portes d’entrée sans abandonner les collectionneurs. Les joueurs Switch 2 pourront choisir entre le confort du numérique et la présence d’une édition en boîte.', p4: 'Il reste maintenant à découvrir le jeu lui-même. Tant que la date, le prix et le contenu exact de la carte clé ne sont pas précisés, cette annonce doit surtout être lue comme un signe de confiance envers la nouvelle console.',
+    take: 'À RETENIR', takeText: 'Persona 6 est annoncé sur Switch 2, PS5, Xbox Series et PC, avec une édition physique prévue sur Switch 2.'
+  },
+  'last-of-us-ii-mod': {
+    date: '14.09.2026', category: 'PLAYSTATION · PC', image: 'last-of-us-mod-news.svg', imageAlt: 'The Last of Us Part II et son projet de mod multijoueur PC', cover: 'THE LAST OF US II',
+    title: 'LE MULTIJOUEUR', accent: 'RESTE AU GARAGE.', dek: 'Un projet de mod voulait offrir une expérience multijoueur à la version PC de The Last of Us Part II. Sony a demandé son arrêt avant sa sortie.',
+    lead: 'The Last of Us Part II Remastered est arrivé sur PC sans le mode multijoueur imaginé pendant le développement du jeu. Des fans ont tenté de combler ce manque avec un mod financé par leur communauté.',
+    intro: 'L’équipe Specizer travaillait depuis janvier sur cette composante en ligne, avec une sortie envisagée ce mois-ci. Le projet avait trouvé son public grâce à Patreon et à plusieurs extraits diffusés en ligne.',
+    h2: 'QUAND LES FANS REPRENNENT LE RELAIS', p1: 'L’histoire est révélatrice d’une attente qui n’a jamais vraiment disparu. Naughty Dog avait d’abord abandonné le multijoueur prévu pour The Last of Us Part II, avant de mettre fin à son projet connecté autonome. Les joueurs, eux, ont continué à imaginer ce que cet univers pouvait donner en ligne.',
+    quote: 'Le projet devait sortir ce mois-ci. Il ne verra finalement jamais le jour.', quoteBy: 'Specizer · Message à sa communauté',
+    h2b: 'UNE QUESTION DE DROITS, MAIS AUSSI DE CONTRÔLE', p2: 'Les moddeurs ont confirmé avoir reçu une lettre de Sony Interactive Entertainment leur demandant de ne pas publier le mod. Le contenu n’avait pas encore été officiellement lancé, mais ses images suffisaient à rendre le projet visible.', p3: 'La décision peut se comprendre du point de vue de l’éditeur : un mod non officiel qui reprend des éléments d’une licence protégée peut brouiller la frontière entre fan project et produit concurrent.', p4: 'Elle laisse malgré tout une frustration particulière. Après l’annulation du multijoueur officiel, cette tentative indépendante représentait l’une des rares façons de voir cette idée continuer à vivre. Les extraits encore disponibles témoignent surtout d’un projet qui n’aura pas eu le temps de rencontrer son public.',
+    take: 'À RETENIR', takeText: 'Sony a demandé l’arrêt du mod multijoueur PC de The Last of Us Part II avant sa publication.'
+  }
+};
+
+function Arrow(){ return <span aria-hidden="true">↗</span>; }
+
+export default function CurrentNews({ slug }) {
+  const routeSlug = useParams().slug;
+  const story = stories[slug || routeSlug] || stories['persona-6-switch-2'];
+  return <>
+    <section className="article-hero wrap"><div className="section-label"><span><b>01</b> / ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> RÉÉCRIT POUR LET’S PLAY</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>4 MIN DE LECTURE</span></div></div><div className="article-cover hud-frame"><img src={`${base}${story.image}`} alt={story.imageAlt} /><div><small>{story.category}</small><strong>{story.cover}</strong></div></div></div></section>
+    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{story.lead}</p><p>{story.intro}</p><h2>{story.h2}</h2><p>{story.p1}</p><div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div><p>{story.p2}</p><h2>{story.h2b}</h2><p>{story.p3}</p><p>{story.p4}</p><div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div></article><aside className="article-aside"><div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>LET’S PLAY ORIGINAL</strong></div><div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div></aside></main>
+    <Comments />
+    <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> LA SUITE SUR LET’S PLAY</p><h2>RESTEZ DANS<br/><em>LE GAME.</em></h2></div><Link className="button button-yellow" to="/news">VOIR LES ACTUS <Arrow/></Link></section>
+  </>;
+}
+
+export { stories };
