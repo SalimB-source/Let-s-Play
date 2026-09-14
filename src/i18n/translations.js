@@ -45,6 +45,13 @@ export const translations = {
         cta: 'Read the dossier', watch: 'Watch the episode',
         sponsorKicker: 'Broadcast partner', sponsorText: 'Let’s Play × Algérie Télécom: the operator backs the production and the release of every episode — from the Journal du Geek segment to the local studio interviews.', sponsorLink: 'Official website',
       },
+      featuredPartner: {
+        label1: '01 / PARTNER EPISODE', label2: 'FFAC2023 × OOREDOO',
+        eyebrow: 'Partner episode — Ooredoo', h2a: 'FFAC2023,', h2b: 'THE ALGERIAN CHAMPIONSHIP.',
+        text: 'Our championship video with Ooredoo: the FreeFire Algerian Championship 2023 in detail — mechanics, registration, prizes and the road to the final, backed by the operator.',
+        cta: 'See the partnerships', watch: 'Watch the episode',
+        sponsorKicker: 'Tournament partner', sponsorText: 'Let’s Play × Ooredoo: the operator supports the FFAC2023 championship, from the announcement to registration — and keeps the community connected for every round.', sponsorLink: 'Official website',
+      },
       show: {
         label1: '02 / THE SHOW', label2: 'WHAT WE DO',
         h2a: 'GAMING,', h2b: 'WE LIVE IT.',
@@ -244,6 +251,13 @@ export const translations = {
         cta: 'Lire le dossier', watch: 'Voir l’épisode',
         sponsorKicker: 'Partenaire de diffusion', sponsorText: 'Let’s Play × Algérie Télécom : l’opérateur accompagne la production et la sortie des épisodes, de la chronique Journal du Geek jusqu’aux rencontres avec les studios locaux.', sponsorLink: 'Site officiel',
       },
+      featuredPartner: {
+        label1: '01 / ÉPISODE PARTENAIRE', label2: 'FFAC2023 × OOREDOO',
+        eyebrow: 'Épisode partenaire — Ooredoo', h2a: 'FFAC2023,', h2b: 'LE CHAMPIONNAT D’ALGÉRIE.',
+        text: 'Notre vidéo de partenariat avec Ooredoo : le FreeFire Algerian Championship 2023 en détail — mécaniques, conditions d’inscription, récompenses et le chemin vers la finale, avec l’appui de l’opérateur.',
+        cta: 'Voir les partenariats', watch: 'Voir l’épisode',
+        sponsorKicker: 'Partenaire du tournoi', sponsorText: 'Let’s Play × Ooredoo : l’opérateur soutient le championnat FFAC2023, de l’annonce jusqu’à l’inscription — et garde la communauté connectée à chaque round.', sponsorLink: 'Site officiel',
+      },
       show: {
         label1: '02 / L’ÉMISSION', label2: 'CE QUE NOUS FAISONS',
         h2a: 'GAMING,', h2b: 'ON LE VIT.',
@@ -442,6 +456,13 @@ export const translations = {
         text: 'البرنامج يُقدَّم بالشراكة مع اتصالات الجزائر، وحلقتنا عن HicoSoft Studio تتصدّر الواجهة: استوديو جزائري لألعاب الأدوار يطمح إلى معايير عالمية، صُوِّر في إطار هذا التعاون.',
         cta: 'اقرأ الملف', watch: 'شاهد الحلقة',
         sponsorKicker: 'شريك البث', sponsorText: '‏Let’s Play × اتصالات الجزائر: يدعم المشغّل إنتاج الحلقات وطرحها، من فقرة Journal du Geek إلى اللقاءات مع الاستوديوهات المحلية.', sponsorLink: 'الموقع الرسمي',
+      },
+      featuredPartner: {
+        label1: '01 / حلقة الشراكة', label2: 'FFAC2023 × أوريدو',
+        eyebrow: 'حلقة الشراكة — أوريدو', h2a: 'FFAC2023،', h2b: 'بطولة الجزائر.',
+        text: 'فيديو شراكتنا مع أوريدو: بطولة الجزائر FreeFire 2023 بالتفصيل — الآليات، شروط التسجيل، الجوائز والطريق إلى النهائي، بدعم من المشغّل.',
+        cta: 'اكتشف الشراكات', watch: 'شاهد الحلقة',
+        sponsorKicker: 'شريك البطولة', sponsorText: '‏Let’s Play × أوريدو: يدعم المشغّل بطولة FFAC2023 من الإعلان حتى عملية التسجيل — ويُبقي المجتمع متصلاً في كل جولة.', sponsorLink: 'الموقع الرسمي',
       },
       show: {
         label1: '02 / البرنامج', label2: 'ماذا نفعل',

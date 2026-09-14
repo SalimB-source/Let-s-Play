@@ -239,6 +239,13 @@ img{max-width:100%}
 .featured-sponsor-copy small{display:block;margin-bottom:6px;font:500 10px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--cyan)}
 .featured-sponsor-copy p{margin:0;font-size:14.5px;line-height:1.55;color:var(--muted)}
 .featured-sponsor .arrow-link{margin-top:0;flex:none}
+/* featured episode × Ooredoo — FFAC2023 (accents marque, grille miroir) */
+.featured--ooredoo{--ooredoo:#e30613}
+.featured--ooredoo .featured-copy h2 em{color:var(--ooredoo);text-shadow:0 0 24px rgba(227,6,19,.5)}
+.featured--ooredoo .featured-player{box-shadow:0 0 44px -12px rgba(227,6,19,.38),0 24px 60px -30px rgba(0,0,0,.9)}
+.featured--ooredoo .featured-sponsor-copy small{color:var(--ooredoo)}
+.featured-grid--mirror .featured-copy{order:2}
+.featured-grid--mirror .featured-player{order:1}
 
 /* ============ SHOW / MANIFESTO ============ */
 .show{padding:110px 0 110px}
@@ -513,6 +520,7 @@ img{max-width:100%}
   .scroll-cue{display:none}
   .featured{padding-top:70px}
   .featured-grid{grid-template-columns:1fr;gap:36px;padding-top:40px}
+  .featured-grid--mirror .featured-copy,.featured-grid--mirror .featured-player{order:0}
   .show{padding-top:70px;padding-bottom:70px}
   .manifesto-grid{grid-template-columns:1fr;gap:34px;padding-top:44px}
   .stats{margin-top:54px;grid-template-columns:1fr 1fr}
