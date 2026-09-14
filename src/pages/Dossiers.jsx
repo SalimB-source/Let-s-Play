@@ -11,6 +11,19 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
+          <h2>LA PS2,<br/><em>LA REINE.</em></h2>
+          <p>Vingt-cinq ans après son lancement, retour sur la console qui a réuni DVD, rétrocompatibilité et une bibliothèque devenue légendaire.</p>
+          <Link className="arrow-link" to="/dossiers/25-ans-playstation-2">Lire le dossier <Arrow/></Link>
+        </div>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/25-ans-playstation-2" aria-label="Lire le dossier sur les 25 ans de la PlayStation 2">
+          <img src="https://i.ytimg.com/vi/A2VPhWOUMHI/hqdefault.jpg" alt="25 ans de PlayStation 2" />
+          <span>18:00 · HISTOIRE DU GAMING</span>
+        </Link>
+      </section>
+
+      <section className="dossier-feature-card wrap">
+        <div className="dossier-feature-card-copy">
+          <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>LA XBOX 360,<br/><em>UNE GÉNÉRATION.</em></h2>
           <p>Retour sur la console qui a installé la haute définition, Xbox Live et une nouvelle culture du jeu connecté, malgré le célèbre Red Ring of Death.</p>
           <Link className="arrow-link" to="/dossiers/20-ans-xbox-360">Lire le dossier <Arrow/></Link>
