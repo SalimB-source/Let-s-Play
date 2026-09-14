@@ -61,6 +61,7 @@ function App() {
             <Route path="/news/diablo-netflix" element={<BlizzardNews slug="diablo-netflix" />} />
             <Route path="/news/persona-6-switch-2" element={<CurrentNews slug="persona-6-switch-2" />} />
             <Route path="/news/last-of-us-ii-mod" element={<CurrentNews slug="last-of-us-ii-mod" />} />
+            <Route path="/news/cyberpunk-2077-battlenet" element={<CurrentNews slug="cyberpunk-2077-battlenet" />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />
