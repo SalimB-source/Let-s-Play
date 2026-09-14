@@ -11,6 +11,19 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
+          <h2>LA PLAYSTATION 1,<br/><em>UNE RÉVOLUTION.</em></h2>
+          <p>Retour sur la console qui a fait passer le jeu vidéo aux CD, à la 3D et à une nouvelle culture du souvenir, trente et un ans après son lancement.</p>
+          <Link className="arrow-link" to="/dossiers/heritage-playstation-1">Lire le dossier <Arrow/></Link>
+        </div>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/heritage-playstation-1" aria-label="Lire le dossier sur l’héritage de la PlayStation 1">
+          <img src="https://i.ytimg.com/vi/oOyW_rjiZ5w/hqdefault.jpg" alt="L’héritage de la PlayStation 1" />
+          <span>19:39 · HISTOIRE DU GAMING</span>
+        </Link>
+      </section>
+
+      <section className="dossier-feature-card wrap">
+        <div className="dossier-feature-card-copy">
+          <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>LES JEUX<br/><em>DE L’ANNÉE.</em></h2>
           <p>Les Let’s Play Awards 2025 passent en revue les jeux qui ont marqué l’année, de la prouesse technique à la surprise indépendante, jusqu’au choix du GOTY.</p>
           <Link className="arrow-link" to="/dossiers/let-play-awards-2025">Lire le dossier <Arrow/></Link>
