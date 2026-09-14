@@ -5,7 +5,7 @@ import Comments from '../components/Comments';
 
 const stories = {
   'persona-6-switch-2': {
-    date: '14.09.2026', category: 'SEGA · RPG', image: 'persona-6-news.svg', imageAlt: 'Persona 6 sur Nintendo Switch 2', cover: 'PERSONA 6',
+    date: '14.09.2026', category: 'SEGA · RPG', image: 'persona-6-news.png', imageAlt: 'Persona 6 sur Nintendo Switch 2', cover: 'PERSONA 6',
     title: 'PERSONA 6 ARRIVE', accent: 'EN PHYSIQUE.', dek: 'Le prochain épisode de la série Persona sortira aussi en version physique sur Switch 2. Une bonne nouvelle pour les joueurs qui aiment garder leurs RPG près d’eux.',
     lead: 'SEGA avait déjà confirmé Persona 6 sur Switch 2, PS5, Xbox Series et PC. La console de Nintendo aura finalement droit à sa propre édition physique, en plus de la disponibilité numérique annoncée.',
     intro: 'La date de sortie reste inconnue, mais le projet commence à préciser son contour. Après l’annonce de la version physique sur PS5, la Switch 2 rejoint donc la liste des machines qui accueilleront le prochain grand RPG de SEGA.',
@@ -15,7 +15,7 @@ const stories = {
     take: 'À RETENIR', takeText: 'Persona 6 est annoncé sur Switch 2, PS5, Xbox Series et PC, avec une édition physique prévue sur Switch 2.'
   },
   'last-of-us-ii-mod': {
-    date: '14.09.2026', category: 'PLAYSTATION · PC', image: 'last-of-us-mod-news.svg', imageAlt: 'The Last of Us Part II et son projet de mod multijoueur PC', cover: 'THE LAST OF US II',
+    date: '14.09.2026', category: 'PLAYSTATION · PC', image: 'last-of-us-mod-news.png', imageAlt: 'The Last of Us Part II et son projet de mod multijoueur PC', cover: 'THE LAST OF US II',
     title: 'LE MULTIJOUEUR', accent: 'RESTE AU GARAGE.', dek: 'Un projet de mod voulait offrir une expérience multijoueur à la version PC de The Last of Us Part II. Sony a demandé son arrêt avant sa sortie.',
     lead: 'The Last of Us Part II Remastered est arrivé sur PC sans le mode multijoueur imaginé pendant le développement du jeu. Des fans ont tenté de combler ce manque avec un mod financé par leur communauté.',
     intro: 'L’équipe Specizer travaillait depuis janvier sur cette composante en ligne, avec une sortie envisagée ce mois-ci. Le projet avait trouvé son public grâce à Patreon et à plusieurs extraits diffusés en ligne.',
@@ -25,7 +25,7 @@ const stories = {
     take: 'À RETENIR', takeText: 'Sony a demandé l’arrêt du mod multijoueur PC de The Last of Us Part II avant sa publication.'
   },
   'cyberpunk-2077-battlenet': {
-    date: '14.09.2026', category: 'CD PROJEKT RED · PC', image: 'cyberpunk-2077-battlenet-news.svg', imageAlt: 'Cyberpunk 2077 Ultimate Edition arrive sur Battle.net', cover: 'CYBERPUNK 2077',
+    date: '14.09.2026', category: 'CD PROJEKT RED · PC', image: 'cyberpunk-2077-battlenet-news.png', imageAlt: 'Cyberpunk 2077 Ultimate Edition arrive sur Battle.net', cover: 'CYBERPUNK 2077',
     title: 'CYBERPUNK 2077', accent: 'CHANGE DE QUARTIER.', dek: 'L’Ultimate Edition rejoindra Battle.net plus tard cette année. CD Projekt RED et Blizzard continuent d’élargir leur partenariat autour de leurs grands RPG.',
     lead: 'Après The Witcher 3: Wild Hunt — Remastered, c’est au tour de Cyberpunk 2077: Ultimate Edition de prendre la direction de Battle.net. La sortie est confirmée pour 2026, sans date précise pour le moment.',
     intro: 'L’annonce s’inscrit dans un partenariat officialisé le 26 août entre CD Projekt RED et Blizzard. Le premier rendez-vous est fixé au 29 septembre avec The Witcher 3: Wild Hunt — Remastered, avant l’arrivée de Night City sur le même écosystème.',
