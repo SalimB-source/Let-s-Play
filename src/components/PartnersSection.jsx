@@ -41,7 +41,9 @@ export default function PartnersSection() {
                 <span className="partner-kicker">{partner.role}</span>
               </div>
 
-              <PartnerMark partner={partner} />
+              <div className="partner-card-logo">
+                <PartnerMark partner={partner} size="xl" showText={false} />
+              </div>
 
               <h3>{partner.name}</h3><p className="partner-desc">{partner.context}</p>
 
