@@ -11,6 +11,19 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
+          <h2>LA XBOX 360,<br/><em>UNE GÉNÉRATION.</em></h2>
+          <p>Retour sur la console qui a installé la haute définition, Xbox Live et une nouvelle culture du jeu connecté, malgré le célèbre Red Ring of Death.</p>
+          <Link className="arrow-link" to="/dossiers/20-ans-xbox-360">Lire le dossier <Arrow/></Link>
+        </div>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/20-ans-xbox-360" aria-label="Lire le dossier sur les 20 ans de la Xbox 360">
+          <img src="https://i.ytimg.com/vi/8NqnTzVh5O0/hqdefault.jpg" alt="20 ans de Xbox 360" />
+          <span>21:00 · HISTOIRE DU GAMING</span>
+        </Link>
+      </section>
+
+      <section className="dossier-feature-card wrap">
+        <div className="dossier-feature-card-copy">
+          <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>LE CHOC<br/><em>DES GÉNÉRATIONS.</em></h2>
           <p>Avec Chaft et El Joueur, retour sur les consoles, les jeux et les communautés qui ont façonné la manière de jouer, de l’arcade à Discord.</p>
           <Link className="arrow-link" to="/dossiers/choc-generations-gaming">Lire le dossier <Arrow/></Link>
