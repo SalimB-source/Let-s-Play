@@ -21,7 +21,7 @@ export const partners = [
   },
   {
     id: 'djezzy', tag: 'djezzy', name: 'Djezzy', nameNative: 'جازي', mark: 'Y', tone: 'djezzy',
-    logo: 'partners/djezzy.jpg', external: 'https://www.djezzy.dz/', externalLabel: 'djezzy.dz',
+    logo: 'partners/djezzy.png', external: 'https://www.djezzy.dz/', externalLabel: 'djezzy.dz',
     media: 'https://www.youtube.com/@letsplay.officiel', mediaLabel: 'Chaîne Let’s Play',
     role: 'Annonceur — à confirmer', context: 'Présence demandée comme annonceur. Le cadre exact de la collaboration Let’s Play doit être confirmé par un support officiel dédié.',
     confidence: 'À confirmer', source: 'https://www.djezzy.dz/'
