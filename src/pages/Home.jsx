@@ -20,8 +20,51 @@ const headlineEpisode = {
   id: 'aTs0zhm6Leg',
   href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg',
   title: 'HicoSoft Studio et le projet GOYA — Let’s Play Official',
-  sponsor: { logo: 'partners/algerie-telecom.png', href: 'https://www.algerietelecom.dz/' },
+  sponsor: { name: 'Algérie Télécom', logo: 'partners/algerie-telecom.png', href: 'https://www.algerietelecom.dz/' },
 };
+
+// Épisode partenaire Ooredoo (page d'accueil uniquement) : le FreeFire Algerian
+// Championship 2023 — FFAC2023, présenté exactement comme l'épisode HicoSoft.
+const partnerEpisode = {
+  id: 'twbaM8fiXpo',
+  href: 'https://www.youtube.com/watch?v=twbaM8fiXpo',
+  title: 'FreeFire Algerian Championship 2023 (FFAC2023) — Let’s Play Official',
+  sponsor: { name: 'Ooredoo', logo: 'partners/ooredoo.png', href: 'https://www.ooredoo.dz/' },
+};
+
+// Bloc « épisode à la une » : copy + lecteur YouTube + bande sponsor partenaire.
+// Utilisé par l'épisode HicoSoft × Algérie Télécom puis l'épisode Ooredoo × FFAC2023.
+function FeaturedBlock({ episode, label, copy, cta, mirror = false }) {
+  return (
+    <section className={`featured wrap${mirror ? ' featured--ooredoo' : ''}`} id={mirror ? 'partner-episode' : 'featured'}>
+      <div className="section-label"><span><b>{label.split(' / ')[0]}</b> / {label.split(' / ')[1]}</span><span>{copy.label2}</span></div>
+      <div className={`featured-grid${mirror ? ' featured-grid--mirror' : ''}`}>
+        <div className="featured-copy">
+          <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p>
+          <h2>{copy.h2a}<br /><em>{copy.h2b}</em></h2>
+          <p>{copy.text}</p>
+          <div className="featured-ctas">
+            {cta && <Link className="arrow-link" to={cta.to}>{copy.cta} <Arrow /></Link>}
+            <a className="arrow-link" href={episode.href} target="_blank" rel="noreferrer">{copy.watch} <Arrow /></a>
+          </div>
+        </div>
+        <div className="featured-player hud-frame">
+          <iframe src={`https://www.youtube.com/embed/${episode.id}?rel=0&modestbranding=1`} title={episode.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+        </div>
+      </div>
+      <div className="featured-sponsor">
+        <span className="featured-sponsor-mark">
+          <img src={`${base}${episode.sponsor.logo}`} alt={episode.sponsor.name} />
+        </span>
+        <div className="featured-sponsor-copy">
+          <small>{copy.sponsorKicker}</small>
+          <p>{copy.sponsorText}</p>
+        </div>
+        <a className="arrow-link" href={episode.sponsor.href} target="_blank" rel="noreferrer">{copy.sponsorLink} <Arrow /></a>
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   const { t } = useLanguage();
@@ -50,33 +93,8 @@ export default function Home() {
 
       <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>{t.home.ticker.map((word, i) => <React.Fragment key={i}>{word} <b>✦</b> </React.Fragment>)}</span>)}</div></section>
 
-      <section className="featured wrap" id="featured">
-        <div className="section-label"><span><b>{t.home.featured.label1.split(' / ')[0]}</b> / {t.home.featured.label1.split(' / ')[1]}</span><span>{t.home.featured.label2}</span></div>
-        <div className="featured-grid">
-          <div className="featured-copy">
-            <p className="eyebrow"><span className="live-dot" /> {t.home.featured.eyebrow}</p>
-            <h2>{t.home.featured.h2a}<br /><em>{t.home.featured.h2b}</em></h2>
-            <p>{t.home.featured.text}</p>
-            <div className="featured-ctas">
-              <Link className="arrow-link" to="/dossiers/goya-hicosoft">{t.home.featured.cta} <Arrow /></Link>
-              <a className="arrow-link" href={headlineEpisode.href} target="_blank" rel="noreferrer">{t.home.featured.watch} <Arrow /></a>
-            </div>
-          </div>
-          <div className="featured-player hud-frame">
-            <iframe src={`https://www.youtube.com/embed/${headlineEpisode.id}?rel=0&modestbranding=1`} title={headlineEpisode.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-          </div>
-        </div>
-        <div className="featured-sponsor">
-          <span className="featured-sponsor-mark">
-            <img src={`${base}${headlineEpisode.sponsor.logo}`} alt="Algérie Télécom" />
-          </span>
-          <div className="featured-sponsor-copy">
-            <small>{t.home.featured.sponsorKicker}</small>
-            <p>{t.home.featured.sponsorText}</p>
-          </div>
-          <a className="arrow-link" href={headlineEpisode.sponsor.href} target="_blank" rel="noreferrer">{t.home.featured.sponsorLink} <Arrow /></a>
-        </div>
-      </section>
+      <FeaturedBlock episode={headlineEpisode} label={t.home.featured.label1} copy={t.home.featured} cta={{ to: '/dossiers/goya-hicosoft' }} />
+      <FeaturedBlock episode={partnerEpisode} label={t.home.featuredPartner.label1} copy={t.home.featuredPartner} cta={{ to: '/partenaires' }} mirror />
 
       <section className="formats wrap" id="formats">
         <div className="section-label"><span><b>02</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>

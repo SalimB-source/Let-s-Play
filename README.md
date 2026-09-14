@@ -19,6 +19,8 @@ npm run build
 
 - Hero éditorial avec CTA YouTube
 - Présentation de l’émission × Algérie Télécom avec l’épisode HicoSoft à la une (page d’accueil uniquement)
+- Épisode partenaire Ooredoo : le FreeFire Algerian Championship 2023 (FFAC2023) en lecteur YouTube,
+  présenté comme l’épisode HicoSoft — grille miroir, accents aux couleurs Ooredoo (page d’accueil uniquement)
 - Présentation de l’émission et chiffres de communauté
 - Formats : Gaming, Cinéma et Pop Culture
 - Dernières vidéos YouTube avec filtres interactifs
