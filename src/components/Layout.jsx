@@ -20,11 +20,17 @@ export default function Layout({ children }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close menu on route change and scroll to top
+  // Close menu on route change. A `#anchor` in the URL wins over the scroll to
+  // top so deep links such as /events#7ouma-arena-show land on the right block.
   useEffect(() => {
     setMenuOpen(false);
+    const target = location.hash ? document.getElementById(location.hash.slice(1)) : null;
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [location.pathname]);
+  }, [location.pathname, location.hash]);
 
   const isActive = (path) => location.pathname === path;
   const isHome = location.pathname === '/';

@@ -71,6 +71,7 @@
 .partner-card h3{position:relative;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.02em;margin:0;text-transform:uppercase}
 .partner-desc{position:relative;margin:0;font-size:14.5px;line-height:1.58;color:var(--muted)}
 .partner-card .partner-facts{position:relative;margin:2px 0 4px}
+.partner-card-link{position:relative;margin-top:2px;font-size:10px}
 .partner-link{
   position:relative;margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:10px;
   padding-top:14px;border-top:1px dashed var(--line-strong);
@@ -128,7 +129,71 @@
 .partners-back{display:flex;gap:12px;flex-wrap:wrap;margin-top:28px}
 .cta-note{position:relative;z-index:2;margin:16px 0 0;max-width:520px;font-size:15px;line-height:1.6;color:var(--muted)}
 
+/* ---------- 7ouma Arena — émission & tournoi (page Events) ---------- */
+.arena{position:relative;padding:88px 0 6px;scroll-margin-top:96px}
+.arena::before{
+  content:"";position:absolute;top:26px;left:50%;transform:translateX(-50%);
+  width:min(1240px,calc(100% - 56px));height:520px;pointer-events:none;
+  background:radial-gradient(56% 100% at 6% 0%,rgba(168,85,247,.22),transparent 68%),
+             radial-gradient(44% 86% at 98% 8%,rgba(255,107,0,.16),transparent 70%);
+}
+.arena>*{position:relative}
+.arena-hero{display:grid;grid-template-columns:1.18fr .82fr;gap:44px;align-items:stretch;padding:26px 0 0}
+.arena-hero h2{font-family:var(--display);font-weight:900;font-size:clamp(44px,7vw,92px);line-height:.9;margin:18px 0 22px;text-transform:uppercase}
+.arena-hero h2 em{font-style:normal;color:var(--yellow);text-shadow:0 0 30px rgba(255,214,25,.42)}
+.arena-lead{margin:0 0 18px;max-width:660px;font-size:21px;line-height:1.34;font-weight:600;color:#fff}
+.arena-text{margin:0;max-width:690px;font-size:16.5px;line-height:1.7;color:var(--muted)}
+.arena-pills{display:flex;flex-wrap:wrap;gap:10px;margin:26px 0 0;padding:0;list-style:none}
+.arena-pills li{padding:9px 14px;border:1px solid var(--line-strong);background:rgba(11,13,30,.62);font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--ink)}
+.arena-pills li:first-child{border-color:rgba(255,214,25,.5);color:var(--yellow)}
+.arena-by{
+  display:flex;flex-direction:column;gap:14px;justify-content:center;padding:30px 28px;
+  border:1px solid var(--line-strong);background:linear-gradient(160deg,rgba(255,107,0,.14),rgba(11,13,30,.72));
+  clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,0 100%);
+}
+.arena-by-label{font:500 10px var(--mono);letter-spacing:.24em;color:var(--yellow);text-transform:uppercase}
+.arena-by-logo{width:min(230px,72%);display:block;border:1px solid rgba(255,107,0,.4);box-shadow:0 0 34px -12px rgba(255,107,0,.75)}
+.arena-by strong{font-family:var(--display);font-weight:800;font-size:26px;line-height:1;text-transform:uppercase}
+.arena-by p{margin:0;font-size:14.5px;line-height:1.6;color:var(--muted)}
+.arena-by-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:4px;padding-top:14px;border-top:1px dashed var(--line-strong);font:500 10px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.arena-by-meta a{color:var(--yellow);transition:color .2s}
+.arena-by-meta a:hover{color:#fff}
+.arena-formats{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:56px}
+.arena-format{--accent:var(--violet);position:relative;display:flex;flex-direction:column;gap:14px;padding:28px 26px 24px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(11,13,30,.92),rgba(11,13,30,.6))}
+.arena-format::before{content:"";position:absolute;top:-1px;left:0;width:88px;height:3px;background:linear-gradient(90deg,var(--accent),transparent)}
+.arena-format-show{--accent:#a855f7}
+.arena-format-tournament{--accent:#ff6b00}
+.arena-format .partner-kicker{color:var(--accent)}
+.arena-format h3{font-family:var(--display);font-weight:800;font-size:clamp(24px,3vw,34px);line-height:1;margin:0;text-transform:uppercase}
+.arena-format p{margin:0;font-size:15.5px;line-height:1.68;color:var(--muted)}
+.arena-format .partner-facts{margin-top:auto;padding-top:16px;border-top:1px dashed var(--line-strong)}
+.arena-format .partner-facts li::before{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.arena-head{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:end;padding:64px 0 22px}
+.arena-head h2,.arena-head h3{font-family:var(--display);font-weight:800;font-size:clamp(30px,4.2vw,52px);line-height:1.02;margin:14px 0 0;text-transform:uppercase}
+.arena-head h2 em,.arena-head h3 em{font-style:normal;color:var(--cyan);text-shadow:0 0 24px rgba(34,211,238,.45)}
+.arena-head-side{margin:0 0 6px;font-size:16px;line-height:1.62;color:var(--muted)}
+.arena-roles{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.arena-role{--accent:var(--cyan);position:relative;display:flex;flex-direction:column;gap:12px;padding:26px 22px;border:1px solid var(--line);background:rgba(11,13,30,.6)}
+.arena-role::before{content:"";position:absolute;top:-1px;left:0;width:34px;height:2px;background:var(--accent)}
+.arena-role-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.arena-role-mark{display:flex;align-items:center;min-height:64px}
+.arena-role h3,.arena-role h4{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.05;margin:4px 0 0;text-transform:uppercase}
+.arena-role p{margin:0;font-size:14.5px;line-height:1.6;color:var(--muted)}
+.arena-role-logo{height:52px;width:auto;max-width:82%;object-fit:contain}
+.arena-how{padding:12px 0 0}
+.arena-how .partners-how-title{margin:14px 0 0}
+.arena-how .partner-how-grid{margin-top:22px}
+.arena-how .partner-how-card h3,.arena-how .partner-how-card h4{font-family:var(--display);font-weight:700;font-size:18px;line-height:1.1;margin:12px 0 10px;text-transform:uppercase}
+.arena-proof{margin-top:64px;padding:26px 26px 24px;border:1px solid var(--line-strong);background:rgba(11,13,30,.55)}
+.arena-proof-note{margin:18px 0 0;font-size:14.5px;line-height:1.62;color:var(--muted)}
+.arena-proof .partners-sources-list{margin-top:18px}
+.arena-proof .partners-sources-list li{background:rgba(11,13,30,.75)}
+
 /* ---------- RTL ---------- */
+[dir="rtl"] .arena-format::before,[dir="rtl"] .arena-role::before{left:auto;right:0;background:linear-gradient(270deg,var(--accent),transparent)}
+[dir="rtl"] .arena-by{clip-path:polygon(22px 0,100% 0,100% 100%,0 100%,0 22px)}
+[dir="rtl"] .arena-role-top{flex-direction:row-reverse}
+[dir="rtl"] .arena-role-mark{justify-content:flex-start}
 [dir="rtl"] .partner-facts li{padding-left:0;padding-right:14px}
 [dir="rtl"] .partner-facts li::before{left:auto;right:0}
 [dir="rtl"] .partner-card::before{left:auto;right:0;background:linear-gradient(270deg,var(--brand),transparent 72%)}
@@ -159,4 +224,22 @@
   .partner-detail-logo{min-height:112px;padding:16px}
   .partner-mark-xl .partner-mark-logo{height:68px}
   .partner-mark-xl .partner-mark-badge{width:72px;height:72px;font-size:24px;clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
+}
+
+@media (max-width:1024px){
+  .arena-hero{grid-template-columns:1fr;gap:32px}
+  .arena-by{max-width:560px}
+  .arena-head{grid-template-columns:1fr;gap:18px;align-items:start;padding-top:52px}
+  .arena-roles{grid-template-columns:1fr 1fr}
+}
+@media (max-width:720px){
+  .arena{padding-top:72px}
+  .arena-hero h2{font-size:clamp(40px,13vw,64px)}
+  .arena-lead{font-size:18.5px}
+  .arena-by{padding:24px 20px;max-width:none}
+  .arena-formats{grid-template-columns:1fr;margin-top:40px}
+  .arena-roles{grid-template-columns:1fr}
+  .arena-head{padding-top:44px}
+  .arena-head h2,.arena-head h3{font-size:clamp(27px,8.4vw,38px)}
+  .arena-proof{padding:22px 18px 20px;margin-top:48px}
 }
