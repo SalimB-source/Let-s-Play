@@ -43,6 +43,25 @@ correspondant dans `src/partnersData.js`, par exemple :
 { id: 'tcl', logo: 'partners/tcl.png' /* … */ }
 ```
 
+## 7ouma Arena (page Events)
+
+7ouma Arena est expliqué en tête de la page Events (`/events`, alias
+`/partenaires`) par le composant `src/components/ArenaShowcase.jsx` : le
+rendez-vous y est présenté comme **une émission et un tournoi** — « by Djezzy »
+pour la marque qui le présente, organisé par **EGOR Gaming avec l’équipe
+Let’s Play** pour la partie compétition. La section déroule les deux formats,
+les rôles de chacun, le contenu de l’émission puis ses sources.
+
+Les textes vivent dans les objets `copy` fr / en / ar du composant, et les
+fiches partenaires correspondantes (`djezzy`, `7ouma-arena`, `egor-gaming`) dans
+`src/partnersData.js` — elles alimentent aussi la carte d’accueil, qui renvoie
+vers la section via `partner.page` (`/events#7ouma-arena-show`).
+
+Trace publique utilisée : l’annonce de lancement du show
+(`arenaLaunchSource` dans `src/partnersData.js`), complétée par les sites
+officiels de Djezzy et d’EGOR Gaming. La participation de l’équipe Let’s Play
+est confirmée par l’équipe elle-même — c’est indiqué comme tel sur la page.
+
 ## Sources éditoriales
 
 - [Instagram @letsplay.officiel](https://www.instagram.com/letsplay.officiel/)

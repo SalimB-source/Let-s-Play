@@ -42,6 +42,7 @@ export const ROUTES = [
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle]),
   ['/dossiers', Dossiers],
   ['/partenaires', Partners],
+  ['/events', Partners],
   ['/unknown-page', NotFound],
 ];
 

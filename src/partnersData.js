@@ -4,6 +4,11 @@
 
 const base = import.meta.env.BASE_URL;
 
+// Trace publique de référence pour 7ouma Arena : l'annonce de lancement du show
+// (format, diffusion YouTube, sponsoring Djezzy, tournois organisés par EGOR
+// Gaming). Utilisée par la page Events et par les fiches partenaires liées.
+export const arenaLaunchSource = 'https://dz.linkedin.com/in/samy-charif-egorgaming';
+
 export const partners = [
   {
     id: 'algerie-telecom', tag: 'telecom', name: 'Algérie Télécom', nameNative: 'اتصالات الجزائر', mark: 'AT', tone: 'telecom',
@@ -22,9 +27,10 @@ export const partners = [
   {
     id: 'djezzy', tag: 'djezzy', name: 'Djezzy', nameNative: 'جازي', mark: 'Y', tone: 'djezzy',
     logo: 'partners/djezzy.png', external: 'https://www.djezzy.dz/', externalLabel: 'djezzy.dz',
-    media: 'https://www.youtube.com/@letsplay.officiel', mediaLabel: 'Chaîne Let’s Play',
-    role: 'Annonceur — à confirmer', context: 'Présence demandée comme annonceur. Le cadre exact de la collaboration Let’s Play doit être confirmé par un support officiel dédié.',
-    confidence: 'À confirmer', source: 'https://www.djezzy.dz/'
+    media: arenaLaunchSource, mediaLabel: 'Annonce du lancement — LinkedIn',
+    role: 'Marque présentatrice — 7ouma Arena',
+    context: 'Djezzy présente 7ouma Arena, l’émission et le tournoi gaming de l’écosystème algérien : la marque donne son nom au rendez-vous (« by Djezzy ») et l’articule à ses enjeux réseau — 5G, qualité du streaming, essor de l’esport.',
+    confidence: 'Vérifié publiquement', source: arenaLaunchSource
   },
   {
     id: 'ifa-constantine', tag: 'ifa', name: 'IFA Constantine', nameNative: 'المعهد الفرنسي قسنطينة', mark: 'IFA', tone: 'ifa',
@@ -57,16 +63,19 @@ export const partners = [
   {
     id: '7ouma-arena', tag: '7ouma-arena', name: '7ouma Arena', nameNative: '', mark: '7A', tone: 'arena',
     logo: null, external: 'https://www.instagram.com/letsplay.officiel/', externalLabel: 'Let’s Play Official',
-    media: null, mediaLabel: null,
-    role: 'Événement gaming — à confirmer', context: 'Événement et communauté gaming ajoutés au portefeuille Events ; les détails de l’activation Let’s Play restent à documenter publiquement.',
-    confidence: 'À confirmer', source: 'https://www.instagram.com/letsplay.officiel/'
+    media: arenaLaunchSource, mediaLabel: 'Annonce du lancement — LinkedIn',
+    role: 'Émission & tournoi — by Djezzy',
+    context: 'Deux formats sous une même bannière : une émission gaming & esport diffusée sur YouTube, présentée par Djezzy, et un tournoi esport organisé par EGOR Gaming avec l’équipe Let’s Play. Le détail est expliqué dans la section « Le show & le tournoi » de la page Events.',
+    page: '/events#7ouma-arena-show',
+    confidence: 'Confirmé par l’équipe Let’s Play', source: arenaLaunchSource
   },
   {
     id: 'egor-gaming', tag: 'egor-gaming', name: 'EGOR Gaming', nameNative: '', mark: 'EG', tone: 'egor',
     logo: 'partners/egor-gaming.png', external: 'https://egorgaming.com/', externalLabel: 'egorgaming.com',
     media: 'https://www.youtube.com/watch?v=r-E7cdhAAe8', mediaLabel: 'Journal du Geek — EGOR Gaming',
-    role: 'Partenaire gaming / esports', context: 'Mise en avant éditoriale dans Journal du Geek : Let’s Play a présenté EGOR Gaming comme un écosystème algérien dédié aux joueurs et à l’esport.',
-    confidence: 'Vérifié publiquement', source: 'https://www.youtube.com/watch?v=r-E7cdhAAe8'
+    role: 'Organisation des tournois — 7ouma Arena',
+    context: 'EGOR Gaming, structure esport algérienne, organise les tournois de 7ouma Arena avec l’équipe Let’s Play : formats, inscriptions, arbitrage et déroulé des matchs jusqu’aux finales. Let’s Play a présenté cet écosystème dans le Journal du Geek.',
+    confidence: 'Vérifié publiquement', source: arenaLaunchSource
   },
 ];
 
