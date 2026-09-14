@@ -26,7 +26,7 @@ export const partners = [
   },
   {
     id: 'djezzy', tag: 'djezzy', name: 'Djezzy', nameNative: 'جازي', mark: 'Y', tone: 'djezzy',
-    logo: 'partners/djezzy.jpg', external: 'https://www.djezzy.dz/', externalLabel: 'djezzy.dz',
+    logo: 'partners/djezzy.png', external: 'https://www.djezzy.dz/', externalLabel: 'djezzy.dz',
     media: arenaLaunchSource, mediaLabel: 'Annonce du lancement — LinkedIn',
     role: 'Marque présentatrice — 7ouma Arena',
     context: 'Djezzy présente 7ouma Arena, l’émission et le tournoi gaming de l’écosystème algérien : la marque donne son nom au rendez-vous (« by Djezzy ») et l’articule à ses enjeux réseau — 5G, qualité du streaming, essor de l’esport.',

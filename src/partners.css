@@ -22,14 +22,14 @@
   clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px);
   box-shadow:0 0 24px -8px var(--glow,rgba(124,58,237,.5));
 }
-.partner-mark-logo{height:46px;width:auto;display:block}
+.partner-mark-logo{height:46px;width:auto;max-width:170px;object-fit:contain;object-position:left center;display:block}
 .partner-mark-text{display:flex;flex-direction:column;gap:3px;line-height:1.1;min-width:0}
 .partner-mark-text b{font-family:var(--display);font-weight:700;font-size:15.5px;letter-spacing:.05em;text-transform:uppercase;color:#fff}
 .partner-mark-text i{font-style:normal;font:500 10px var(--mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
 .partner-mark-sm .partner-mark-badge{width:40px;height:40px;font-size:12.5px;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
 .partner-mark-sm .partner-mark-text b{font-size:12.5px}
 .partner-mark-sm .partner-mark-text i{font-size:9px}
-.partner-mark-sm .partner-mark-logo{height:32px}
+.partner-mark-sm .partner-mark-logo{height:32px;max-width:130px;object-fit:contain;object-position:left center}
 /* Grand format : logo seul, utilisé dans les cartes (le nom apparaît une seule fois, dans le titre) */
 .partner-mark-xl .partner-mark-logo{height:88px;max-width:82%;width:auto;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(0,0,0,.45))}
 .partner-mark-xl .partner-mark-badge{width:92px;height:92px;font-size:30px;clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);box-shadow:0 0 36px -6px var(--glow,rgba(124,58,237,.55))}
