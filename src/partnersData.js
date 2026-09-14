@@ -34,14 +34,14 @@ export const partners = [
   },
   {
     id: 'ifa-constantine', tag: 'ifa', name: 'IFA Constantine', nameNative: 'المعهد الفرنسي قسنطينة', mark: 'IFA', tone: 'ifa',
-    logo: null, external: 'https://www.institutfrancais-algerie.com/constantine/', externalLabel: 'Institut français de Constantine',
+    logo: 'partners/ifa-constantine.png', external: 'https://www.institutfrancais-algerie.com/constantine/', externalLabel: 'Institut français de Constantine',
     media: 'https://www.facebook.com/IFConstantine/', mediaLabel: 'Page officielle',
     role: 'Partenaire culturel — à confirmer', context: 'Relais culturel et territorial autour de Constantine. La nature exacte de la collaboration avec Let’s Play n’est pas documentée publiquement sur une page dédiée.',
     confidence: 'À confirmer', source: 'https://www.facebook.com/IFConstantine/'
   },
   {
     id: 'lg', tag: 'lg', name: 'LG', nameNative: '', mark: 'LG', tone: 'lg',
-    logo: null, external: 'https://www.lg.com/dz', externalLabel: 'lg.com/dz',
+    logo: 'partners/lg.png', external: 'https://www.lg.com/dz', externalLabel: 'lg.com/dz',
     media: 'https://www.lg.com/global/newsroom/news/corporate/lifes-good-lets-play-lg-introduces-korean-culture-to-young-parisians/', mediaLabel: 'LG — Life’s Good, Let’s Play',
     role: 'Annonceur — à confirmer', context: 'Marque annoncée comme partenaire de la page Events. Le dispositif LG x Let’s Play doit être précisé avant publication d’un intitulé plus affirmatif.',
     confidence: 'À confirmer', source: 'https://www.lg.com/dz'
@@ -55,7 +55,7 @@ export const partners = [
   },
   {
     id: 'tmv', tag: 'tmv', name: 'TMV Cinemas', nameNative: '', mark: 'TMV', tone: 'tmv',
-    logo: null, external: 'https://www.facebook.com/letsplay.officiel/posts/-tmv-cinemas-gadern-city-cinema-algeria-rending-popculture-alger/258015130520926/', externalLabel: 'Publication Let’s Play',
+    logo: 'partners/tmv.png', external: 'https://www.facebook.com/letsplay.officiel/posts/-tmv-cinemas-gadern-city-cinema-algeria-rending-popculture-alger/258015130520926/', externalLabel: 'Publication Let’s Play',
     media: null, mediaLabel: null,
     role: 'Partenaire cinéma — à confirmer', context: 'Collaboration éditoriale autour du cinéma et de la pop culture, avec une publication Let’s Play consacrée à TMV Cinemas.',
     confidence: 'Trace publique', source: 'https://www.facebook.com/letsplay.officiel/posts/-tmv-cinemas-gadern-city-cinema-algeria-rending-popculture-alger/258015130520926/'
