@@ -11,6 +11,19 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
+          <h2>LE CHOC<br/><em>DES GÉNÉRATIONS.</em></h2>
+          <p>Avec Chaft et El Joueur, retour sur les consoles, les jeux et les communautés qui ont façonné la manière de jouer, de l’arcade à Discord.</p>
+          <Link className="arrow-link" to="/dossiers/choc-generations-gaming">Lire le dossier <Arrow/></Link>
+        </div>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/choc-generations-gaming" aria-label="Lire le dossier Le Choc des Générations">
+          <img src="https://i.ytimg.com/vi/t1Re8ki_gsw/hqdefault.jpg" alt="Le Choc des Générations" />
+          <span>26:59 · CULTURE GAMING</span>
+        </Link>
+      </section>
+
+      <section className="dossier-feature-card wrap">
+        <div className="dossier-feature-card-copy">
+          <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>LA PLAYSTATION 1,<br/><em>UNE RÉVOLUTION.</em></h2>
           <p>Retour sur la console qui a fait passer le jeu vidéo aux CD, à la 3D et à une nouvelle culture du souvenir, trente et un ans après son lancement.</p>
           <Link className="arrow-link" to="/dossiers/heritage-playstation-1">Lire le dossier <Arrow/></Link>
