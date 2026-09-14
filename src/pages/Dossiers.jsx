@@ -11,6 +11,19 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
+          <h2>LES JEUX<br/><em>DE L’ANNÉE.</em></h2>
+          <p>Les Let’s Play Awards 2025 passent en revue les jeux qui ont marqué l’année, de la prouesse technique à la surprise indépendante, jusqu’au choix du GOTY.</p>
+          <Link className="arrow-link" to="/dossiers/let-play-awards-2025">Lire le dossier <Arrow/></Link>
+        </div>
+        <Link className="dossier-feature-card-media hud-frame" to="/dossiers/let-play-awards-2025" aria-label="Lire le dossier Let’s Play Awards 2025">
+          <img src="https://i.ytimg.com/vi/0ThNyFItASM/hqdefault.jpg" alt="Let’s Play Awards 2025" />
+          <span>27:14 · AWARDS GAMING</span>
+        </Link>
+      </section>
+
+      <section className="dossier-feature-card wrap">
+        <div className="dossier-feature-card-copy">
+          <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
           <h2>GOYA,<br/><em>LE PROCHAIN MONDE.</em></h2>
           <p>Dans les coulisses de HicoSoft Studio : outils, projet GOYA, défis locaux et ambition pour la scène indépendante algérienne.</p>
           <Link className="arrow-link" to="/dossiers/goya-hicosoft">Lire le dossier <Arrow/></Link>
