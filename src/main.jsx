@@ -35,6 +35,7 @@ import DossierAwards from './pages/DossierAwards';
 import DossierPlayStation1 from './pages/DossierPlayStation1';
 import DossierGenerations from './pages/DossierGenerations';
 import DossierXbox360 from './pages/DossierXbox360';
+import DossierPlayStation2 from './pages/DossierPlayStation2';
 import Partners from './pages/Partners';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
@@ -75,6 +76,7 @@ function App() {
             <Route path="/dossiers/heritage-playstation-1" element={<DossierPlayStation1 />} />
             <Route path="/dossiers/choc-generations-gaming" element={<DossierGenerations />} />
             <Route path="/dossiers/20-ans-xbox-360" element={<DossierXbox360 />} />
+            <Route path="/dossiers/25-ans-playstation-2" element={<DossierPlayStation2 />} />
             <Route path="/events" element={<Partners />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/auth" element={<Auth />} />
