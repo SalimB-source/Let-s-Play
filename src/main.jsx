@@ -31,6 +31,7 @@ import Dossiers from './pages/Dossiers';
 import DossierSouls from './pages/DossierSouls';
 import DossierGoya from './pages/DossierGoya';
 import DossierComicCon from './pages/DossierComicCon';
+import DossierAwards from './pages/DossierAwards';
 import Partners from './pages/Partners';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
@@ -67,6 +68,7 @@ function App() {
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />
             <Route path="/dossiers/goya-hicosoft" element={<DossierGoya />} />
             <Route path="/dossiers/games-comic-con-dzair" element={<DossierComicCon />} />
+            <Route path="/dossiers/let-play-awards-2025" element={<DossierAwards />} />
             <Route path="/events" element={<Partners />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/auth" element={<Auth />} />
