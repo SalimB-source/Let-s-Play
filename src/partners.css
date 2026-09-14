@@ -30,6 +30,9 @@
 .partner-mark-sm .partner-mark-text b{font-size:12.5px}
 .partner-mark-sm .partner-mark-text i{font-size:9px}
 .partner-mark-sm .partner-mark-logo{height:32px;max-width:130px;object-fit:contain;object-position:left center}
+/* Grand format : logo seul, utilisé dans les cartes (le nom apparaît une seule fois, dans le titre) */
+.partner-mark-xl .partner-mark-logo{height:88px;max-width:82%;width:auto;object-fit:contain;filter:drop-shadow(0 10px 24px rgba(0,0,0,.45))}
+.partner-mark-xl .partner-mark-badge{width:92px;height:92px;font-size:30px;clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);box-shadow:0 0 36px -6px var(--glow,rgba(124,58,237,.55))}
 
 /* ---------- Étiquettes récurrentes ---------- */
 .partner-index{font:500 11px var(--mono);letter-spacing:.2em;color:var(--dim)}
@@ -55,6 +58,16 @@
 .partner-card::after{content:"";position:absolute;right:-30%;bottom:-55%;width:230px;height:230px;background:radial-gradient(circle,var(--glow),transparent 70%);opacity:.55;pointer-events:none}
 .partner-card:hover{transform:translateY(-6px);border-color:var(--brand);box-shadow:0 24px 48px -20px var(--glow)}
 .partner-card-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.partner-card-logo{
+  position:relative;display:grid;place-items:center;min-height:158px;padding:22px;overflow:hidden;
+  border:1px solid var(--line);
+  background:radial-gradient(115% 125% at 50% -12%,var(--glow,rgba(124,58,237,.22)),rgba(11,13,30,.5) 64%);
+  transition:border-color .25s;
+}
+.partner-card:hover .partner-card-logo{border-color:var(--brand)}
+.partner-card-logo .partner-mark{justify-content:center}
+.partner-card-logo .partner-mark-logo{transition:transform .25s}
+.partner-card:hover .partner-card-logo .partner-mark-logo{transform:scale(1.05)}
 .partner-card h3{position:relative;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.02em;margin:0;text-transform:uppercase}
 .partner-desc{position:relative;margin:0;font-size:14.5px;line-height:1.58;color:var(--muted)}
 .partner-card .partner-facts{position:relative;margin:2px 0 4px}
@@ -77,6 +90,12 @@
 .partner-detail{display:grid;grid-template-columns:.85fr 1.15fr;gap:48px;padding:40px 0;border-top:1px solid var(--line)}
 .partner-detail-side{position:relative;display:flex;flex-direction:column;gap:16px;align-items:flex-start}
 .partner-detail-side::before{content:"";position:absolute;top:-40px;left:0;width:64px;height:2px;background:linear-gradient(90deg,var(--brand),transparent)}
+.partner-detail-logo{
+  position:relative;display:grid;place-items:center;align-self:stretch;width:100%;min-height:132px;padding:20px;overflow:hidden;
+  border:1px solid var(--line);
+  background:radial-gradient(120% 130% at 0% 0%,var(--glow,rgba(124,58,237,.22)),rgba(11,13,30,.5) 66%);
+}
+.partner-detail-logo .partner-mark{justify-content:center}
 .partner-detail-links{display:flex;flex-direction:column;gap:10px;margin-top:8px}
 .partner-detail-body h2{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.3vw,40px);line-height:1.02;margin:0 0 14px;text-transform:uppercase}
 .partner-detail-body p{margin:0 0 14px;font-size:15.5px;line-height:1.68;color:var(--muted)}
@@ -115,6 +134,7 @@
 [dir="rtl"] .partner-card::before{left:auto;right:0;background:linear-gradient(270deg,var(--brand),transparent 72%)}
 [dir="rtl"] .partner-card::after{right:auto;left:-30%}
 [dir="rtl"] .partner-detail-side::before{left:auto;right:0;background:linear-gradient(270deg,var(--brand),transparent)}
+[dir="rtl"] .partner-detail-logo{background:radial-gradient(120% 130% at 100% 0%,var(--glow,rgba(124,58,237,.22)),rgba(11,13,30,.5) 66%)}
 [dir="rtl"] .partner-link,[dir="rtl"] .partner-mark{flex-direction:row-reverse}
 [dir="rtl"] .partner-card-top{flex-direction:row-reverse}
 [dir="rtl"] .partner-how-card::before{left:auto;right:0}
@@ -135,4 +155,8 @@
   .partner-strip-marks{gap:20px}
   .partners-sources{padding-bottom:80px}
   .partner-detail{padding:30px 0}
+  .partner-card-logo{min-height:132px;padding:16px}
+  .partner-detail-logo{min-height:112px;padding:16px}
+  .partner-mark-xl .partner-mark-logo{height:68px}
+  .partner-mark-xl .partner-mark-badge{width:72px;height:72px;font-size:24px;clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
 }

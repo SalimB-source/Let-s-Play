@@ -56,7 +56,7 @@ export default function Partners() {
           <article className={`partner-detail partner-detail-${partner.tone}`} key={partner.id} id={partner.id}>
             <div className="partner-detail-side">
               <span className="partner-index">{String(index + 1).padStart(2, '0')}</span>
-              <PartnerMark partner={partner} />
+              <div className="partner-detail-logo"><PartnerMark partner={partner} size="xl" showText={false} /></div>
               <span className="partner-kicker">{partner.role}</span>
               <div className="partner-detail-links">
                 {partner.media ? <a className="arrow-link" href={partner.media} target="_blank" rel="noreferrer">{partner.mediaLabel} <Arrow external /></a> : null}
