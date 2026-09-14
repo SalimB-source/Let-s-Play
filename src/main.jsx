@@ -24,6 +24,7 @@ import Gta6DualSense from './pages/Gta6DualSense';
 import Zelda40th from './pages/Zelda40th';
 import MonsterHunterWilds from './pages/MonsterHunterWilds';
 import BlizzardNews from './pages/BlizzardNews';
+import CurrentNews from './pages/CurrentNews';
 import Reviews from './pages/Reviews';
 import TestArticle from './pages/TestArticle';
 import Dossiers from './pages/Dossiers';
@@ -58,6 +59,8 @@ function App() {
             <Route path="/news/diablo-v" element={<BlizzardNews slug="diablo-v" />} />
             <Route path="/news/diablo-switch-2" element={<BlizzardNews slug="diablo-switch-2" />} />
             <Route path="/news/diablo-netflix" element={<BlizzardNews slug="diablo-netflix" />} />
+            <Route path="/news/persona-6-switch-2" element={<CurrentNews slug="persona-6-switch-2" />} />
+            <Route path="/news/last-of-us-ii-mod" element={<CurrentNews slug="last-of-us-ii-mod" />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />
