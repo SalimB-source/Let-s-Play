@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
+import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = 'aTs0zhm6Leg';
 const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
@@ -20,6 +21,9 @@ const chapters = [
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
 export default function DossierGoya() {
+  const videoRef = useRef(null);
+  const { seekTo } = useChapterVideo(videoRef);
+
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
@@ -41,7 +45,7 @@ export default function DossierGoya() {
 
       <section className="dossier-reading wrap">
         <div className="dossier-main-column">
-          <div className="dossier-video hud-frame">
+          <div className="dossier-video hud-frame" ref={videoRef}>
             <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="HicoSoft Studio et le projet GOYA — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">La vidéo ouvre une fenêtre sur un studio, mais aussi sur tout un écosystème : les outils, les marchés et les communautés nécessaires pour faire exister un jeu depuis l’Algérie.</p>
@@ -83,7 +87,15 @@ export default function DossierGoya() {
             <p className="dossier-kicker">DANS CET ÉPISODE</p>
             <h3>LE CHAPITRAGE</h3>
             <ol className="chapter-list">
-              {chapters.map(([time, seconds, label]) => <li key={time}><a href={`https://www.youtube.com/watch?v=${videoId}&t=${seconds}s`} target="_blank" rel="noreferrer"><time>{time}</time><span>{label}</span><Arrow /></a></li>)}
+              {chapters.map(([time, seconds, label]) => (
+                <li key={time}>
+                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo du dossier à ${time} : ${label}`}>
+                    <time>{time}</time>
+                    <span>{label}</span>
+                    <span aria-hidden="true">▸</span>
+                  </button>
+                </li>
+              ))}
             </ol>
             <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
           </div>

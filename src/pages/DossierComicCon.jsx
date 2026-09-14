@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
+import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = 'HzigJZOxz2o';
 const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
@@ -7,6 +8,9 @@ const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
 export default function DossierComicCon() {
+  const videoRef = useRef(null);
+  const { seekTo } = useChapterVideo(videoRef);
+
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
@@ -28,7 +32,7 @@ export default function DossierComicCon() {
 
       <section className="dossier-reading wrap">
         <div className="dossier-main-column">
-          <div className="dossier-video hud-frame">
+          <div className="dossier-video hud-frame" ref={videoRef}>
             <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="Games & Comic Con Dzair 2026 — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Ce dossier accompagne le reportage vidéo et revient sur ce que raconte un événement pop culture lorsqu’il rassemble joueurs, créateurs, artistes et curieux dans un même espace.</p>
@@ -70,7 +74,11 @@ export default function DossierComicCon() {
             <p className="dossier-kicker">À VOIR DANS L’ÉPISODE</p>
             <h3>LE REPORTAGE</h3>
             <div className="chapter-list">
-              <div className="chapter-list a"><a href={`https://www.youtube.com/watch?v=${videoId}&t=0s`} target="_blank" rel="noreferrer"><time>00:00</time><span>Games & Comic Con Dzair 2026</span><Arrow /></a></div>
+              <button type="button" onClick={() => seekTo(0)} aria-label="Lire la vidéo du reportage depuis le début">
+                <time>00:00</time>
+                <span>Games &amp; Comic Con Dzair 2026</span>
+                <span aria-hidden="true">▸</span>
+              </button>
             </div>
             <p className="dossier-video-note">Les chapitres détaillés ne sont pas publiés sur cette vidéo. Le reportage se regarde comme une immersion continue dans l’événement.</p>
             <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir le reportage <Arrow /></a>
