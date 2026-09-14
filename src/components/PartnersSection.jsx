@@ -13,10 +13,10 @@ export default function PartnersSection() {
   const isFr = lang === 'fr';
   const isAr = lang === 'ar';
   const copy = isAr
-    ? { label: '02 / الفعاليات', meta: 'معلنون · إعلام · ألعاب', eyebrow: 'على أرض الواقع', titleA: 'العلامات،', titleB: 'والمجتمعات.', text: 'نستعرض هنا العلامات والقنوات والأحداث التي رافقت Let’s Play، مع توضيح إطار كل تعاون.', cta: 'كل الفعاليات', link: 'المصدر' }
+    ? { label: '03 / الفعاليات', meta: 'معلنون · إعلام · ألعاب', eyebrow: 'على أرض الواقع', titleA: 'العلامات،', titleB: 'والمجتمعات.', text: 'نستعرض هنا العلامات والقنوات والأحداث التي رافقت Let’s Play، مع توضيح إطار كل تعاون.', cta: 'كل الفعاليات', link: 'المصدر' }
     : isFr
-      ? { label: '02 / EVENTS', meta: 'ANNONCEURS · MÉDIAS · GAMING', eyebrow: 'Sur le terrain', titleA: 'LES MARQUES,', titleB: 'LES COMMUNAUTÉS.', text: 'Voici les marques, médias et événements qui ont accompagné Let’s Play, avec le cadre public de chaque collaboration.', cta: 'Tous les Events', link: 'Source' }
-      : { label: '02 / EVENTS', meta: 'ADVERTISERS · MEDIA · GAMING', eyebrow: 'On the ground', titleA: 'THE BRANDS,', titleB: 'THE COMMUNITIES.', text: 'These are the brands, media outlets and events connected to Let’s Play, with the public context of each collaboration.', cta: 'All Events', link: 'Source' };
+      ? { label: '03 / EVENTS', meta: 'ANNONCEURS · MÉDIAS · GAMING', eyebrow: 'Sur le terrain', titleA: 'LES MARQUES,', titleB: 'LES COMMUNAUTÉS.', text: 'Voici les marques, médias et événements qui ont accompagné Let’s Play, avec le cadre public de chaque collaboration.', cta: 'Tous les Events', link: 'Source' }
+      : { label: '03 / EVENTS', meta: 'ADVERTISERS · MEDIA · GAMING', eyebrow: 'On the ground', titleA: 'THE BRANDS,', titleB: 'THE COMMUNITIES.', text: 'These are the brands, media outlets and events connected to Let’s Play, with the public context of each collaboration.', cta: 'All Events', link: 'Source' };
 
   return (
     <section className="partners wrap" id="events">
