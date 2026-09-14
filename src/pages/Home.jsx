@@ -13,15 +13,6 @@ const reels = [
   { id: 'fscuzWcw-PA', label: 'REEL 04' },
 ];
 
-// Épisode mis « à la une » de la présentation de l'émission × Algérie Télécom
-// (page d'accueil uniquement) : l'épisode HicoSoft Studio & le projet GOYA.
-const headlineEpisode = {
-  id: 'aTs0zhm6Leg',
-  href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg',
-  title: 'HicoSoft Studio et le projet GOYA — Let’s Play Official',
-  sponsor: { logo: 'partners/algerie-telecom.png', href: 'https://www.algerietelecom.dz/' },
-};
-
 export default function Home() {
   const { t } = useLanguage();
   return (
@@ -43,42 +34,14 @@ export default function Home() {
           <div><strong>15K+</strong><small>{t.home.hud.subs}</small></div>
           <div><strong>33K+</strong><small>{t.home.hud.community}</small></div>
           <div><strong>∞</strong><small>{t.home.hud.reasons}</small></div>
-          <a className="scroll-cue" href="#featured" aria-label="Scroll to content">{t.home.hud.scroll}<span /></a>
+          <a className="scroll-cue" href="#formats" aria-label="Scroll to content">{t.home.hud.scroll}<span /></a>
         </div>
       </section>
 
       <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>{t.home.ticker.map((word, i) => <React.Fragment key={i}>{word} <b>✦</b> </React.Fragment>)}</span>)}</div></section>
 
-      <section className="featured wrap" id="featured">
-        <div className="section-label"><span><b>{t.home.featured.label1.split(' / ')[0]}</b> / {t.home.featured.label1.split(' / ')[1]}</span><span>{t.home.featured.label2}</span></div>
-        <div className="featured-grid">
-          <div className="featured-copy">
-            <p className="eyebrow"><span className="live-dot" /> {t.home.featured.eyebrow}</p>
-            <h2>{t.home.featured.h2a}<br /><em>{t.home.featured.h2b}</em></h2>
-            <p>{t.home.featured.text}</p>
-            <div className="featured-ctas">
-              <Link className="arrow-link" to="/dossiers/goya-hicosoft">{t.home.featured.cta} <Arrow /></Link>
-              <a className="arrow-link" href={headlineEpisode.href} target="_blank" rel="noreferrer">{t.home.featured.watch} <Arrow /></a>
-            </div>
-          </div>
-          <div className="featured-player hud-frame">
-            <iframe src={`https://www.youtube.com/embed/${headlineEpisode.id}?rel=0&modestbranding=1`} title={headlineEpisode.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-          </div>
-        </div>
-        <div className="featured-sponsor">
-          <span className="featured-sponsor-mark">
-            <img src={`${base}${headlineEpisode.sponsor.logo}`} alt="Algérie Télécom" />
-          </span>
-          <div className="featured-sponsor-copy">
-            <small>{t.home.featured.sponsorKicker}</small>
-            <p>{t.home.featured.sponsorText}</p>
-          </div>
-          <a className="arrow-link" href={headlineEpisode.sponsor.href} target="_blank" rel="noreferrer">{t.home.featured.sponsorLink} <Arrow /></a>
-        </div>
-      </section>
-
       <section className="formats wrap" id="formats">
-        <div className="section-label"><span><b>02</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
+        <div className="section-label"><span><b>01</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
           <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow /></Link></article>
@@ -89,7 +52,7 @@ export default function Home() {
       <PartnersSection />
 
       <section className="reels-section wrap" id="reels">
-        <div className="section-label"><span><b>04</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="section-label"><span><b>03</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
         <div className="reels-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Format court</p>

@@ -6,6 +6,13 @@ const base = import.meta.env.BASE_URL;
 
 export const partners = [
   {
+    id: 'algerie-telecom', tag: 'telecom', name: 'Algérie Télécom', nameNative: 'اتصالات الجزائر', mark: 'AT', tone: 'telecom',
+    logo: 'partners/algerie-telecom.png', external: 'https://www.algerietelecom.dz/', externalLabel: 'algerietelecom.dz',
+    media: 'https://www.youtube.com/watch?v=aTs0zhm6Leg', mediaLabel: 'HicoSoft Studio & GOYA — Let’s Play', video: 'aTs0zhm6Leg',
+    role: 'Partenaire de diffusion', context: 'Algérie Télécom accompagne la production et la diffusion de Let’s Play, de la chronique Journal du Geek aux rencontres avec les studios locaux.',
+    confidence: 'Vérifié publiquement', source: 'https://www.youtube.com/watch?v=aTs0zhm6Leg'
+  },
+  {
     id: 'ooredoo', tag: 'ooredoo', name: 'Ooredoo', nameNative: 'أوريدو', mark: 'O', tone: 'ooredoo',
     logo: 'partners/ooredoo.png', external: 'https://www.ooredoo.dz/', externalLabel: 'ooredoo.dz',
     media: 'https://www.youtube.com/watch?v=0nHji4C-Mp4', mediaLabel: 'Upcoming Horror Games — Ooredoo Giveaway', video: '0nHji4C-Mp4',
