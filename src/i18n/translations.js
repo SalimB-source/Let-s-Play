@@ -39,10 +39,11 @@ export const translations = {
       hud: { subs: 'YOUTUBE SUBS', community: 'IG COMMUNITY', reasons: 'REASONS TO PLAY', scroll: 'SCROLL' },
       ticker: ['GAMING', 'E-SPORT', 'CINEMA', 'TECH', 'POP CULTURE'],
       featured: {
-        label1: '01 / NOW PLAYING', label2: 'FEATURED EPISODE',
-        eyebrow: 'Featured episode', h2a: 'BLACK FLAG,', h2b: 'FULL SAIL.',
-        text: 'Watch our Assassin’s Creed Black Flag Resynced review — deep dives, previews and expert perspectives for players who want to stay ahead of the meta.',
-        cta: 'Open reviews',
+        label1: '01 / THE SHOW', label2: 'FEATURED EPISODE × ALGÉRIE TÉLÉCOM',
+        eyebrow: 'Featured episode — HicoSoft Studio', h2a: 'HICOSOFT,', h2b: 'GOYA, BEHIND THE SCENES.',
+        text: 'The show is presented with Algérie Télécom, and our episode on HicoSoft Studio takes the headline slot: an Algerian RPG studio aiming for international standards, filmed inside the partnership.',
+        cta: 'Read the dossier', watch: 'Watch the episode',
+        sponsorKicker: 'Broadcast partner', sponsorText: 'Let’s Play × Algérie Télécom: the operator backs the production and the release of every episode — from the Journal du Geek segment to the local studio interviews.', sponsorLink: 'Official website',
       },
       show: {
         label1: '02 / THE SHOW', label2: 'WHAT WE DO',
@@ -237,10 +238,11 @@ export const translations = {
       hud: { subs: 'ABONNÉS YOUTUBE', community: 'COMMUNAUTÉ IG', reasons: 'RAISONS DE JOUER', scroll: 'DÉFILER' },
       ticker: ['GAMING', 'E-SPORT', 'CINÉMA', 'TECH', 'POP CULTURE'],
       featured: {
-        label1: '01 / EN COURS', label2: 'ÉPISODE À LA UNE',
-        eyebrow: 'Épisode à la une', h2a: 'BLACK FLAG,', h2b: 'TOUTES VOILES DEHORS.',
-        text: 'Regardez notre test d’Assassin’s Creed Black Flag Resynced — analyses approfondies, avant-premières et avis d’experts pour les joueurs qui veulent garder une longueur d’avance.',
-        cta: 'Voir les tests',
+        label1: '01 / L’ÉMISSION', label2: 'ÉPISODE À LA UNE × ALGÉRIE TÉLÉCOM',
+        eyebrow: 'Épisode à la une — HicoSoft Studio', h2a: 'HICOSOFT,', h2b: 'EN CULISSES DU GOYA.',
+        text: 'L’émission est présentée avec Algérie Télécom, et notre épisode consacré à HicoSoft Studio passe à la une : un studio algérien de RPG qui vise les standards internationaux, filmé dans le cadre du partenariat.',
+        cta: 'Lire le dossier', watch: 'Voir l’épisode',
+        sponsorKicker: 'Partenaire de diffusion', sponsorText: 'Let’s Play × Algérie Télécom : l’opérateur accompagne la production et la sortie des épisodes, de la chronique Journal du Geek jusqu’aux rencontres avec les studios locaux.', sponsorLink: 'Site officiel',
       },
       show: {
         label1: '02 / L’ÉMISSION', label2: 'CE QUE NOUS FAISONS',
@@ -435,10 +437,11 @@ export const translations = {
       hud: { subs: 'مشتركو يوتيوب', community: 'مجتمع إنستغرام', reasons: 'أسباب للعب', scroll: 'مرر للأسفل' },
       ticker: ['ألعاب', 'رياضات إلكترونية', 'سينما', 'تقنية', 'ثقافة شعبية'],
       featured: {
-        label1: '01 / يُعرض الآن', label2: 'الحلقة المميزة',
-        eyebrow: 'الحلقة المميزة', h2a: 'بلاك فلاغ،', h2b: 'بأقصى سرعة.',
-        text: 'شاهد مراجعتنا للعبة Assassin’s Creed Black Flag Resynced — تحليلات معمّقة، عروض أولى ووجهات نظر الخبراء للاعبين الذين يريدون البقاء في المقدمة.',
-        cta: 'افتح المراجعات',
+        label1: '01 / البرنامج', label2: 'حلقة الواجهة × اتصالات الجزائر',
+        eyebrow: 'الحلقة المميزة — HicoSoft Studio', h2a: 'HICOSOFT،', h2b: 'خلف كواليس GOYA.',
+        text: 'البرنامج يُقدَّم بالشراكة مع اتصالات الجزائر، وحلقتنا عن HicoSoft Studio تتصدّر الواجهة: استوديو جزائري لألعاب الأدوار يطمح إلى معايير عالمية، صُوِّر في إطار هذا التعاون.',
+        cta: 'اقرأ الملف', watch: 'شاهد الحلقة',
+        sponsorKicker: 'شريك البث', sponsorText: '‏Let’s Play × اتصالات الجزائر: يدعم المشغّل إنتاج الحلقات وطرحها، من فقرة Journal du Geek إلى اللقاءات مع الاستوديوهات المحلية.', sponsorLink: 'الموقع الرسمي',
       },
       show: {
         label1: '02 / البرنامج', label2: 'ماذا نفعل',
