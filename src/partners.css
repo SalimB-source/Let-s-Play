@@ -5,12 +5,12 @@
 .partner-card-tcl,.partner-detail-tcl,.partner-strip-tcl,.partner-mark-tcl{--brand:#e64c3d;--brand-2:#ff7a5c;--glow:rgba(230,76,61,.4)}
 .partner-card-gccdz,.partner-detail-gccdz,.partner-strip-gccdz,.partner-mark-gccdz{--brand:#c026d3;--brand-2:#ffd619;--glow:rgba(192,38,211,.4)}
 .partner-card-ooredoo,.partner-detail-ooredoo,.partner-strip-ooredoo,.partner-mark-ooredoo{--brand:#e30613;--brand-2:#ff4d5a;--glow:rgba(227,6,19,.42)}
-.partner-card-djezzy,.partner-detail-djezzy,.partner-strip-djezzy,.partner-mark-djezzy{--brand:#ff6b00;--brand-2:#ffb000;--glow:rgba(255,107,0,.42)}
+.partner-card-djezzy,.partner-detail-djezzy,.partner-strip-djezzy,.partner-mark-djezzy{--brand:#e30613;--brand-2:#ff4d5a;--glow:rgba(227,6,19,.42)}
 .partner-card-ifa,.partner-detail-ifa,.partner-strip-ifa,.partner-mark-ifa{--brand:#1d4ed8;--brand-2:#60a5fa;--glow:rgba(29,78,216,.42)}
 .partner-card-lg,.partner-detail-lg,.partner-strip-lg,.partner-mark-lg{--brand:#a50034;--brand-2:#ed1c24;--glow:rgba(165,0,52,.42)}
 .partner-card-heddaf,.partner-detail-heddaf,.partner-strip-heddaf,.partner-mark-heddaf{--brand:#f97316;--brand-2:#facc15;--glow:rgba(249,115,22,.42)}
 .partner-card-tmv,.partner-detail-tmv,.partner-strip-tmv,.partner-mark-tmv{--brand:#22d3ee;--brand-2:#2563eb;--glow:rgba(34,211,238,.42)}
-.partner-card-arena,.partner-detail-arena,.partner-strip-arena,.partner-mark-arena{--brand:#a855f7;--brand-2:#ec4899;--glow:rgba(168,85,247,.42)}
+.partner-card-arena,.partner-detail-arena,.partner-strip-arena,.partner-mark-arena{--brand:#e30613;--brand-2:#1a1a1a;--glow:rgba(227,6,19,.45)}
 .partner-card-egor,.partner-detail-egor,.partner-strip-egor,.partner-mark-egor{--brand:#ef4444;--brand-2:#f97316;--glow:rgba(239,68,68,.42)}
 
 /* ---------- Marque ---------- */
@@ -134,8 +134,8 @@
 .arena::before{
   content:"";position:absolute;top:26px;left:50%;transform:translateX(-50%);
   width:min(1240px,calc(100% - 56px));height:520px;pointer-events:none;
-  background:radial-gradient(56% 100% at 6% 0%,rgba(168,85,247,.22),transparent 68%),
-             radial-gradient(44% 86% at 98% 8%,rgba(255,107,0,.16),transparent 70%);
+  background:radial-gradient(56% 100% at 6% 0%,rgba(227,6,19,.22),transparent 68%),
+             radial-gradient(44% 86% at 98% 8%,rgba(227,6,19,.18),transparent 70%);
 }
 .arena>*{position:relative}
 .arena-hero{display:grid;grid-template-columns:1.18fr .82fr;gap:44px;align-items:stretch;padding:26px 0 0}
@@ -148,11 +148,11 @@
 .arena-pills li:first-child{border-color:rgba(255,214,25,.5);color:var(--yellow)}
 .arena-by{
   display:flex;flex-direction:column;gap:14px;justify-content:center;padding:30px 28px;
-  border:1px solid var(--line-strong);background:linear-gradient(160deg,rgba(255,107,0,.14),rgba(11,13,30,.72));
+  border:1px solid var(--line-strong);background:linear-gradient(160deg,rgba(227,6,19,.14),rgba(11,13,30,.72));
   clip-path:polygon(0 0,calc(100% - 22px) 0,100% 22px,100% 100%,0 100%);
 }
 .arena-by-label{font:500 10px var(--mono);letter-spacing:.24em;color:var(--yellow);text-transform:uppercase}
-.arena-by-logo{width:min(230px,72%);display:block;border:1px solid rgba(255,107,0,.4);box-shadow:0 0 34px -12px rgba(255,107,0,.75)}
+.arena-by-logo{width:min(230px,72%);display:block;border:1px solid rgba(227,6,19,.4);box-shadow:0 0 34px -12px rgba(227,6,19,.75);background:#fff;border-radius:6px;padding:6px}
 .arena-by strong{font-family:var(--display);font-weight:800;font-size:26px;line-height:1;text-transform:uppercase}
 .arena-by p{margin:0;font-size:14.5px;line-height:1.6;color:var(--muted)}
 .arena-by-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:4px;padding-top:14px;border-top:1px dashed var(--line-strong);font:500 10px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
@@ -162,7 +162,7 @@
 .arena-format{--accent:var(--violet);position:relative;display:flex;flex-direction:column;gap:14px;padding:28px 26px 24px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(11,13,30,.92),rgba(11,13,30,.6))}
 .arena-format::before{content:"";position:absolute;top:-1px;left:0;width:88px;height:3px;background:linear-gradient(90deg,var(--accent),transparent)}
 .arena-format-show{--accent:#a855f7}
-.arena-format-tournament{--accent:#ff6b00}
+.arena-format-tournament{--accent:#e30613}
 .arena-format .partner-kicker{color:var(--accent)}
 .arena-format h3{font-family:var(--display);font-weight:800;font-size:clamp(24px,3vw,34px);line-height:1;margin:0;text-transform:uppercase}
 .arena-format p{margin:0;font-size:15.5px;line-height:1.68;color:var(--muted)}
