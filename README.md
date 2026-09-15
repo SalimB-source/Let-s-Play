@@ -28,7 +28,8 @@ npm run build
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
 
-Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants.
+Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
+(voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
 
 ## Partenaires
 
@@ -202,6 +203,61 @@ ne sont pas rechargés, un rechargement relançant leur lecture automatique.
   DOM simulé : un lecteur démarre → les autres reçoivent `pauseVideo`, le
   lecteur actif n'est pas touché, un état répété ne renvoie rien, les lecteurs
   retirés de la page sont oubliés.
+
+## Miniatures YouTube : aucune carte sans image
+
+YouTube ne publie pas toutes les qualités de miniature pour toutes les vidéos.
+`maxresdefault.jpg` (1280×720) n'existe que si la vidéo a été traitée en HD —
+sinon l'URL répond **404** et la carte reste vide. C'était le cas du FreeFire
+Algerian Championship 2023 (`twbaM8fiXpo`), épisode partenaire Ooredoo de
+l'accueil :
+
+| URL | Réponse |
+| --- | --- |
+| `https://i.ytimg.com/vi/twbaM8fiXpo/maxresdefault.jpg` | 404 |
+| `https://i.ytimg.com/vi/twbaM8fiXpo/hqdefault.jpg` | 200 · JPEG 480×360 |
+
+### La règle
+
+Tout passe par `src/lib/videoThumbnails.js`, seul endroit du site qui écrit une
+URL de miniature :
+
+- `youTubeThumbUrl(id, quality)` construit l'URL (alias `maxres`/`hd`, `sd`, `hq`) ;
+- `thumbFallbackChain(id, { quality })` donne l'échelle à essayer, de la
+  meilleure qualité vers la plus sûre : `maxresdefault → sddefault → hqdefault`,
+  le dernier barreau étant toujours publié par YouTube ;
+- `VIDEOS_WITHOUT_HD_THUMB` liste les vidéos dont YouTube ne publie aucune
+  miniature HD. **Ajouter un identifiant ici suffit** : la chaîne démarre alors
+  à `hqdefault`, aucune requête n'est envoyée vers un 404 connu. `twbaM8fiXpo`
+  y figure déjà, avec la trace de la mesure ;
+- `createThumbFallback()` pilote le repli (position dans l'échelle, échec final)
+  et `isThumbMissing()` reconnaît une image « chargée mais vide ».
+
+L'afficheur est `src/components/VideoThumb.jsx` : il descend l'échelle et, si
+aucune qualité ne répond, dessine un cadre Let's Play (`.video-thumb-fallback`)
+à la place de l'image — la grille ne présente jamais de trou. Le repli passe par
+deux chemins, parce qu'un seul ne suffit pas : `onError`, puis `isThumbMissing()`
+après chaque rendu — un 404 servi depuis le cache du navigateur peut se régler
+avant que React n'attache l'écouteur, et l'événement `error` est alors perdu.
+
+```jsx
+<VideoThumb className="featured-dossier-thumb" id={ep.id} alt={ep.title} />
+<VideoThumb id="A2VPhWOUMHI" alt="25 ans de PlayStation 2" quality="hq" />
+```
+
+`quality` fixe la qualité de départ (les cartes de `/dossiers` restent en
+`hqdefault`, comme avant) ; sans elle, le composant demande la meilleure
+qualité disponible pour cette vidéo.
+
+### Vérification
+
+- `npm run check:thumbs` — l'échelle des qualités et son dernier barreau, le
+  pilote rejoué avec une image simulée (chaque qualité manquante fait descendre
+  d'un cran, la dernière bascule sur le cadre de repli, aucune requête vers un
+  404 connu), le **rendu réel des pages** en SSR (accueil : trois vignettes,
+  `twbaM8fiXpo` en `hqdefault`, HicoSoft toujours en `maxresdefault` ; dossiers :
+  huit vignettes), et la source du site (aucune URL de miniature codée en dur
+  hors de `src/lib/videoThumbnails.js`, les deux chemins du repli présents).
 
 ## Sources éditoriales
 
