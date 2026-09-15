@@ -51,7 +51,7 @@
 .partners-head h2 em{font-style:normal;color:var(--yellow);text-shadow:0 0 24px rgba(255,214,25,.45)}
 .partners-head-side{display:flex;flex-direction:column;gap:18px;align-items:flex-start}
 .partners-intro{margin:0;font-size:16.5px;line-height:1.62;color:var(--muted)}
-.partner-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.partner-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:18px}
 .partner-card{
   position:relative;display:flex;flex-direction:column;gap:14px;padding:26px 24px 22px;overflow:hidden;
   background:linear-gradient(180deg,rgba(11,13,30,.92),rgba(11,13,30,.62));border:1px solid var(--line);
@@ -211,7 +211,7 @@
 /* ---------- Responsive ---------- */
 @media (max-width:1024px){
   .partners-head{grid-template-columns:1fr;gap:22px;align-items:start;padding-bottom:34px}
-  .partner-grid{grid-template-columns:1fr 1fr}
+  .partner-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .partner-detail{grid-template-columns:1fr;gap:26px}
   .partner-how-grid{grid-template-columns:1fr 1fr}
   .partners-detail{padding-top:66px}
