@@ -22,3 +22,67 @@
 @media (prefers-reduced-motion:reduce){
   .dossier-video.chapter-seek,.dossier-video.chapter-seek::after{animation:none}
 }
+
+/* Loader affiché pendant la recherche d'un timestamp : overlay sombre + spinner néon */
+.dossier-video-loader{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  display:grid;
+  place-items:center;
+  background:rgba(5,6,15,.72);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .22s ease;
+}
+.dossier-video.is-seeking .dossier-video-loader{
+  opacity:1;
+  pointer-events:auto;
+}
+.dossier-video-loader-inner{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:14px;
+  transform:translateY(4px) scale(.98);
+  transition:transform .28s cubic-bezier(.16,1,.3,1);
+}
+.dossier-video.is-seeking .dossier-video-loader-inner{
+  transform:translateY(0) scale(1);
+}
+.dossier-video-spinner{
+  width:46px;
+  height:46px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.16);
+  border-top-color:var(--cyan);
+  border-right-color:var(--yellow);
+  box-shadow:0 0 18px rgba(34,211,238,.35),0 0 32px rgba(255,214,25,.18);
+  animation:dossier-video-spin .9s linear infinite, dossier-video-spinner-pulse 1.6s ease-in-out infinite;
+}
+.dossier-video-loader-text{
+  font:700 10px var(--mono);
+  letter-spacing:.18em;
+  color:var(--cyan);
+  text-transform:uppercase;
+  text-shadow:0 0 12px rgba(34,211,238,.6);
+  animation:dossier-loader-text-fade .9s ease-in-out infinite alternate;
+}
+@keyframes dossier-video-spin{
+  to{transform:rotate(360deg)}
+}
+@keyframes dossier-video-spinner-pulse{
+  0%,100%{box-shadow:0 0 18px rgba(34,211,238,.35),0 0 32px rgba(255,214,25,.18)}
+  50%{box-shadow:0 0 26px rgba(34,211,238,.55),0 0 44px rgba(255,214,25,.28)}
+}
+@keyframes dossier-loader-text-fade{
+  0%{opacity:.75}
+  100%{opacity:1}
+}
+@media (prefers-reduced-motion:reduce){
+  .dossier-video-spinner{animation:none;border-top-color:var(--cyan);border-right-color:var(--cyan)}
+  .dossier-video-loader-text{animation:none}
+  .dossier-video-loader-inner{transition:none;transform:none}
+}
