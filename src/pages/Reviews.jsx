@@ -12,15 +12,16 @@ const tclFeature = {
   ar: { label: '01 / ملف مميز', meta: 'شريك الشاشة · TCL', eyebrow: 'مع TCL', titleA: 'AYA NGAMEW،', titleB: 'على الشاشة الكبيرة.', text: 'تستكشف Let’s Play تجربة Aya Ngamew مع تلفزيون TCL C6K QD-Mini LED، في جلسة عن اللعبة والصورة وما تضيفه تقنية العرض أثناء اللعب.', watch: 'شاهد الفيديو', title: 'Let’s Play Aya Ngamew Experience with TCL C6K QD-MiniLED' },
 };
 
-// Même affichage que la section « reels » de la page d'accueil : une seule
-// rangée de 4 cartes verticales YouTube Shorts (grille .reels-grid à 4 colonnes).
-// On affiche exactement les mêmes Shorts que sur la home pour garder la
-// cohérence entre / et /reviews.
+// Reels YouTube Shorts — page /reviews : 4 cartes 9:16
+// https://www.youtube.com/shorts/a09GGX9YN6U
+// https://www.youtube.com/shorts/Qlg19ADG-DE
+// https://www.youtube.com/shorts/s4pqYSfL8oU
+// https://www.youtube.com/shorts/ZA_LYwNCpp0
 const reels = [
-  { id: '91eqLm2Hy9k', label: 'REEL 01' },
-  { id: 's4pqYSfL8oU', label: 'REEL 02' },
-  { id: '7sxxWC4zruM', label: 'REEL 03' },
-  { id: 'fscuzWcw-PA', label: 'REEL 04' },
+  { id: 'a09GGX9YN6U', label: 'REEL 01' },
+  { id: 'Qlg19ADG-DE', label: 'REEL 02' },
+  { id: 's4pqYSfL8oU', label: 'REEL 03' },
+  { id: 'ZA_LYwNCpp0', label: 'REEL 04' },
 ];
 
 export default function Reviews(){
