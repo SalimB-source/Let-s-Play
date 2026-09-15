@@ -37,7 +37,7 @@ const djezzyEpisode = {
   id: '48U4aK0CnnI',
   href: 'https://www.youtube.com/watch?v=48U4aK0CnnI',
   title: '2026 World Cup changed mobile football games — 7ouma Arena by Djezzy',
-  sponsor: { name: 'Djezzy', href: 'https://www.djezzy.dz/' },
+  sponsor: { name: 'Djezzy', logo: 'partners/djezzy.png', href: 'https://www.djezzy.dz/' },
 };
 
 // Bloc « épisode à la une » : copy + lecteur YouTube + bande sponsor partenaire.
