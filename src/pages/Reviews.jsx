@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { reviewReels, instagramReelsUrl } from '../data';
 import { gameTests, scoreTier, scoreLabel } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 import VideoModal from '../components/VideoModal';
-import ReelsCarousel from '../components/ReelsCarousel';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
@@ -13,6 +11,13 @@ const tclFeature = {
   en: { label: '01 / FEATURED DOSSIER', meta: 'DISPLAY PARTNER · TCL', eyebrow: 'WITH TCL', titleA: 'AYA NGAMEW,', titleB: 'ON THE BIG SCREEN.', text: 'Let’s Play explores the Aya Ngamew experience with the TCL C6K QD-Mini LED TV — a session about the game, the picture and what display technology changes in actual play.', watch: 'WATCH THE VIDEO', title: 'Let’s Play Aya Ngamew Experience with TCL C6K QD-MiniLED' },
   ar: { label: '01 / ملف مميز', meta: 'شريك الشاشة · TCL', eyebrow: 'مع TCL', titleA: 'AYA NGAMEW،', titleB: 'على الشاشة الكبيرة.', text: 'تستكشف Let’s Play تجربة Aya Ngamew مع تلفزيون TCL C6K QD-Mini LED، في جلسة عن اللعبة والصورة وما تضيفه تقنية العرض أثناء اللعب.', watch: 'شاهد الفيديو', title: 'Let’s Play Aya Ngamew Experience with TCL C6K QD-MiniLED' },
 };
+
+const reels = [
+  { id: '91eqLm2Hy9k', label: 'REEL 01' },
+  { id: 's4pqYSfL8oU', label: 'REEL 02' },
+  { id: '7sxxWC4zruM', label: 'REEL 03' },
+  { id: 'fscuzWcw-PA', label: 'REEL 04' },
+];
 
 export default function Reviews(){
   const { t, lang } = useLanguage();
@@ -90,13 +95,24 @@ export default function Reviews(){
         </div>
       </section>
 
-      <ReelsCarousel
-        id="reels-tests"
-        index="04"
-        labels={t.reviews.reels}
-        reels={reviewReels}
-        seeAllHref={instagramReelsUrl}
-      />
+      <section className="reels-section wrap" id="reels-tests">
+        <div className="section-label"><span><b>04</b> / {t.reviews.reels.label1}</span><span>{t.reviews.reels.label2}</span></div>
+        <div className="reels-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {t.reviews.reels.eyebrow}</p>
+            <h2>{t.reviews.reels.h2a}<br /><em>{t.reviews.reels.h2b}</em></h2>
+          </div>
+          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">{t.reviews.reels.seeAll} <Arrow /></a>
+        </div>
+        <div className="reels-grid">
+          {reels.map((reel) => (
+            <div className="reel-card hud-frame" key={reel.id}>
+              <iframe src={`https://www.youtube.com/embed/${reel.id}?rel=0&modestbranding=1`} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {player && player.video && (
         <VideoModal
