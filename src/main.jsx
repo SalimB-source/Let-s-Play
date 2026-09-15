@@ -9,6 +9,7 @@ import './news-view-toggle.css';
 import './daily-news.css';
 import './monthly-releases.css';
 import './partners.css';
+import './reels-carousel.css';
 import './dossier-article.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
