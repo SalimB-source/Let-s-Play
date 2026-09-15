@@ -13,26 +13,28 @@ const reels = [
   { id: 'fscuzWcw-PA', label: 'REEL 04' },
 ];
 
-// Épisodes à la une — 3 colonnes, copy courte, logo partenaire sans légende.
+// Épisodes à la une — 3 colonnes, copy courte + texte descriptif.
+// Vignette statique : la lecture se fait sur YouTube via le lien "Voir l’épisode".
+// `tone` ne sert qu’à l’accent couleur de la carte (aucun logo partenaire affiché).
 const headlineEpisode = {
   id: 'aTs0zhm6Leg',
   href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg',
   title: 'HicoSoft Studio et le projet GOYA — Let’s Play Official',
-  sponsor: { name: 'Algérie Télécom', logo: 'partners/algerie-telecom.png', href: 'https://www.algerietelecom.dz/', tone: 'telecom' },
+  tone: 'telecom',
 };
 
 const partnerEpisode = {
   id: 'twbaM8fiXpo',
   href: 'https://www.youtube.com/watch?v=twbaM8fiXpo',
   title: 'FreeFire Algerian Championship 2023 (FFAC2023) — Let’s Play Official',
-  sponsor: { name: 'Ooredoo', logo: 'partners/ooredoo.png', href: 'https://www.ooredoo.dz/', tone: 'ooredoo' },
+  tone: 'ooredoo',
 };
 
 const djezzyEpisode = {
   id: '48U4aK0CnnI',
   href: 'https://www.youtube.com/watch?v=48U4aK0CnnI',
   title: '2026 World Cup changed mobile football games — 7ouma Arena by Djezzy',
-  sponsor: { name: 'Djezzy', logo: 'partners/djezzy.png', href: 'https://www.djezzy.dz/', tone: 'djezzy' },
+  tone: 'djezzy',
 };
 
 export default function Home() {
@@ -100,7 +102,7 @@ export default function Home() {
 
       <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>{t.home.ticker.map((word, i) => <React.Fragment key={i}>{word} <b>✦</b> </React.Fragment>)}</span>)}</div></section>
 
-      {/* 01 / ÉPISODES À LA UNE — 3 colonnes, titre court + logo partenaire */}
+      {/* 01 / ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
       <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured">
         <div className="section-label"><span><b>{labelNum}</b> / {labelTitle}</span><span>{head.label2}</span></div>
         <div className="featured-dossiers-head">
@@ -112,19 +114,25 @@ export default function Home() {
         </div>
         <div className="featured-dossiers-grid">
           {episodes.map((ep) => (
-            <article className={`featured-dossier featured-dossier--${ep.sponsor.tone}`} key={ep.id}>
+            <article className={`featured-dossier featured-dossier--${ep.tone}`} key={ep.id}>
               <div className="featured-dossier-player hud-frame">
-                <iframe src={`https://www.youtube.com/embed/${ep.id}?rel=0&modestbranding=1`} title={ep.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+                {/* Vignette statique : aucun lecteur, aucune commande, pas de lecture inline. */}
+                <img
+                  className="featured-dossier-thumb"
+                  src={`https://i.ytimg.com/vi/${ep.id}/maxresdefault.jpg`}
+                  alt=""
+                  loading="lazy"
+                  onError={(e) => {
+                    if (e.currentTarget.dataset.fallback) return;
+                    e.currentTarget.dataset.fallback = '1';
+                    e.currentTarget.src = `https://i.ytimg.com/vi/${ep.id}/hqdefault.jpg`;
+                  }}
+                />
+                <span className="featured-dossier-badge" aria-hidden="true">▶</span>
               </div>
               <div className="featured-dossier-copy">
                 <h3>{ep.copy.h2a}<br /><em>{ep.copy.h2b}</em></h3>
-                <a className="featured-dossier-sponsor featured-dossier-sponsor--logo" href={ep.sponsor.href} target="_blank" rel="noreferrer">
-                  <span className="featured-dossier-sponsor-mark">
-                    {ep.sponsor.logo
-                      ? <img src={`${base}${ep.sponsor.logo}`} alt={ep.sponsor.name} />
-                      : <strong className="featured-dossier-sponsor-text">{ep.sponsor.name}</strong>}
-                  </span>
-                </a>
+                <p className="featured-dossier-desc">{ep.copy.desc}</p>
                 <a className="arrow-link" href={ep.href} target="_blank" rel="noreferrer">{ep.copy.watch} <Arrow /></a>
               </div>
             </article>
