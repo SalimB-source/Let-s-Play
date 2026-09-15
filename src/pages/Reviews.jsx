@@ -7,9 +7,16 @@ import VideoModal from '../components/VideoModal';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
+const tclFeature = {
+  fr: { label: '01 / DOSSIER À LA UNE', meta: 'PARTENAIRE ÉCRAN · TCL', eyebrow: 'AVEC TCL', titleA: 'AYA NGAMEW,', titleB: 'SUR GRAND ÉCRAN.', text: 'Let’s Play teste l’expérience Aya Ngamew avec le téléviseur TCL C6K QD-Mini LED. Une session consacrée au jeu, à l’image et à ce que la technologie change réellement manette en main.', watch: 'REGARDER LA VIDÉO', title: 'Let’s Play Aya Ngamew Experience with TCL C6K QD-MiniLED' },
+  en: { label: '01 / FEATURED DOSSIER', meta: 'DISPLAY PARTNER · TCL', eyebrow: 'WITH TCL', titleA: 'AYA NGAMEW,', titleB: 'ON THE BIG SCREEN.', text: 'Let’s Play explores the Aya Ngamew experience with the TCL C6K QD-Mini LED TV — a session about the game, the picture and what display technology changes in actual play.', watch: 'WATCH THE VIDEO', title: 'Let’s Play Aya Ngamew Experience with TCL C6K QD-MiniLED' },
+  ar: { label: '01 / ملف مميز', meta: 'شريك الشاشة · TCL', eyebrow: 'مع TCL', titleA: 'AYA NGAMEW،', titleB: 'على الشاشة الكبيرة.', text: 'تستكشف Let’s Play تجربة Aya Ngamew مع تلفزيون TCL C6K QD-Mini LED، في جلسة عن اللعبة والصورة وما تضيفه تقنية العرض أثناء اللعب.', watch: 'شاهد الفيديو', title: 'Let’s Play Aya Ngamew Experience with TCL C6K QD-MiniLED' },
+};
+
 export default function Reviews(){
   const { t, lang } = useLanguage();
   const c = t.reviews.article;
+  const tcl = tclFeature[lang] || tclFeature.fr;
   const gaming = videos.filter(v=>v.tag==='Gaming');
   const [player, setPlayer] = useState(null);
   const openVideo = (e, test) => {
@@ -20,8 +27,23 @@ export default function Reviews(){
 
   return (
     <>
+      <section className="featured wrap" id="tcl-c6k">
+        <div className="section-label"><span><b>{tcl.label.split(' / ')[0]}</b> / {tcl.label.split(' / ')[1]}</span><span>{tcl.meta}</span></div>
+        <div className="featured-grid">
+          <div className="featured-copy">
+            <p className="eyebrow"><span className="live-dot" /> {tcl.eyebrow} · TCL</p>
+            <h2>{tcl.titleA}<br/><em>{tcl.titleB}</em></h2>
+            <p>{tcl.text}</p>
+            <a className="arrow-link" href="https://youtu.be/-kgkZrP5LrI" target="_blank" rel="noreferrer">{tcl.watch} <Arrow/></a>
+          </div>
+          <div className="featured-player hud-frame">
+            <iframe src="https://www.youtube.com/embed/-kgkZrP5LrI?rel=0&modestbranding=1" title={tcl.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+          </div>
+        </div>
+      </section>
+
       <section className="featured wrap" id="black-flag">
-        <div className="section-label"><span><b>{t.dossiers.featuredLabel1.split(' / ')[0]}</b> / {t.dossiers.featuredLabel1.split(' / ')[1]}</span><span>{t.dossiers.featuredLabel2}</span></div>
+        <div className="section-label"><span><b>02</b> / {t.dossiers.featuredLabel1.split(' / ')[1]}</span><span>{t.dossiers.featuredLabel2}</span></div>
         <div className="featured-grid">
           <div className="featured-copy">
             <p className="eyebrow"><span className="live-dot" /> {t.dossiers.featuredEyebrow}</p>
@@ -36,7 +58,7 @@ export default function Reviews(){
       </section>
 
       <section className="latest-tests wrap">
-        <div className="section-label"><span><b>02</b> / {c.gridLabel}</span><span>{c.gridRange}</span></div>
+        <div className="section-label"><span><b>03</b> / {c.gridLabel}</span><span>{c.gridRange}</span></div>
         <div className="latest-tests-head"><div><p className="eyebrow"><span className="live-dot" /> {c.gridEyebrow}</p><h2>{c.gridTitleA}<br/><em>{c.gridTitleB}</em></h2></div></div>
         <div className="latest-tests-grid">
           {gameTests.map((test) => (
@@ -69,7 +91,7 @@ export default function Reviews(){
       </section>
 
       <section className="latest wrap">
-        <div className="section-label"><span><b>03</b> / {t.reviews.archiveLabel1.split(' / ')[1]}</span><span>{t.reviews.archiveLabel2}</span></div>
+        <div className="section-label"><span><b>04</b> / {t.reviews.archiveLabel1.split(' / ')[1]}</span><span>{t.reviews.archiveLabel2}</span></div>
         <h2 className="page-h2">{t.reviews.moreA}<br/><em>{t.reviews.moreB}</em></h2>
         <div className="video-grid" style={{marginTop:32}}>
           {gaming.map(video=>(
