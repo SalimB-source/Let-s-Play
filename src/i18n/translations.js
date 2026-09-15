@@ -43,6 +43,7 @@ export const translations = {
         eyebrow: 'Featured episode — HicoSoft Studio', h2a: 'HICOSOFT,', h2b: 'GOYA, BEHIND THE SCENES.',
         text: 'The show is presented with Algérie Télécom, and our episode on HicoSoft Studio takes the headline slot: an Algerian RPG studio aiming for international standards, filmed inside the partnership.',
         cta: 'Read the dossier', watch: 'Watch the episode',
+        desc: 'Inside HicoSoft Studio: the GOYA project, its world and the ambitions behind an Algerian RPG.',
         sponsorKicker: 'Broadcast partner', sponsorText: 'Let’s Play × Algérie Télécom: the operator backs the production and the release of every episode — from the Journal du Geek segment to the local studio interviews.', sponsorLink: 'Official website',
       },
       featuredPartner: {
@@ -51,6 +52,7 @@ export const translations = {
         text: 'Our championship video with Ooredoo: the FreeFire Algerian Championship 2023 in detail — mechanics, registration, prizes and the road to the final, backed by the operator.',
         cta: 'See the partnerships', watch: 'Watch the episode',
         sponsorKicker: 'Tournament partner', sponsorText: 'Let’s Play × Ooredoo: the operator supports the FFAC2023 championship, from the announcement to registration — and keeps the community connected for every round.', sponsorLink: 'Official website',
+        desc: 'A look back at the FreeFire Algerian Championship 2023 — the format, registration and the road to the final.',
       },
       featuredDjezzy: {
         label1: '01 / FEATURED EPISODES', label2: '7OUMA ARENA × DJEZZY',
@@ -58,6 +60,7 @@ export const translations = {
         text: '7ouma Arena by Djezzy explores the rise of mobile football games, from FC Mobile and eFootball to the future of esports, 5G and the Djezzy Cup.',
         cta: 'See the partnerships', watch: 'Watch the episode',
         sponsorKicker: 'In collaboration with Djezzy', sponsorText: 'A 7ouma Arena episode about the football games played on smartphones — and the Algerian community building the next competitive scene.', sponsorLink: 'Official website',
+        desc: 'How 7ouma Arena by Djezzy captures the rise of mobile football, from FC Mobile all the way to the Djezzy Cup.',
       },
       show: {
         label1: '02 / THE SHOW', label2: 'WHAT WE DO',
@@ -303,6 +306,7 @@ export const translations = {
         eyebrow: 'Épisode à la une — HicoSoft Studio', h2a: 'HICOSOFT,', h2b: 'EN CULISSES DU GOYA.',
         text: 'L’émission est présentée avec Algérie Télécom, et notre épisode consacré à HicoSoft Studio passe à la une : un studio algérien de RPG qui vise les standards internationaux, filmé dans le cadre du partenariat.',
         cta: 'Lire le dossier', watch: 'Voir l’épisode',
+        desc: 'Dans les coulisses de HicoSoft Studio : le projet GOYA, son univers et les ambitions d’un RPG algérien.',
         sponsorKicker: 'Partenaire de diffusion', sponsorText: 'Let’s Play × Algérie Télécom : l’opérateur accompagne la production et la sortie des épisodes, de la chronique Journal du Geek jusqu’aux rencontres avec les studios locaux.', sponsorLink: 'Site officiel',
       },
       featuredPartner: {
@@ -311,6 +315,7 @@ export const translations = {
         text: 'Notre vidéo de partenariat avec Ooredoo : le FreeFire Algerian Championship 2023 en détail — mécaniques, conditions d’inscription, récompenses et le chemin vers la finale, avec l’appui de l’opérateur.',
         cta: 'Voir les partenariats', watch: 'Voir l’épisode',
         sponsorKicker: 'Partenaire du tournoi', sponsorText: 'Let’s Play × Ooredoo : l’opérateur soutient le championnat FFAC2023, de l’annonce jusqu’à l’inscription — et garde la communauté connectée à chaque round.', sponsorLink: 'Site officiel',
+        desc: 'Retour sur le FreeFire Algerian Championship 2023 : le format, les inscriptions et la route vers la finale.',
       },
       featuredDjezzy: {
         label1: '01 / ÉPISODES À LA UNE', label2: '7OUMA ARENA × DJEZZY',
@@ -318,6 +323,7 @@ export const translations = {
         text: '7ouma Arena by Djezzy explore l’essor des jeux de football sur mobile, de FC Mobile et eFootball jusqu’au futur de l’e-sport, de la 5G et de la Djezzy Cup.',
         cta: 'Voir les partenariats', watch: 'Voir l’épisode',
         sponsorKicker: 'En collaboration avec Djezzy', sponsorText: 'Un épisode de 7ouma Arena consacré aux jeux de football sur smartphone — et à la communauté algérienne qui construit la prochaine scène compétitive.', sponsorLink: 'Site officiel',
+        desc: 'Comment 7ouma Arena by Djezzy raconte l’essor du football mobile, de FC Mobile jusqu’à la Djezzy Cup.',
       },
       show: {
         label1: '02 / L’ÉMISSION', label2: 'CE QUE NOUS FAISONS',
@@ -561,6 +567,7 @@ export const translations = {
         eyebrow: 'الحلقة المميزة — HicoSoft Studio', h2a: 'HICOSOFT،', h2b: 'خلف كواليس GOYA.',
         text: 'البرنامج يُقدَّم بالشراكة مع اتصالات الجزائر، وحلقتنا عن HicoSoft Studio تتصدّر الواجهة: استوديو جزائري لألعاب الأدوار يطمح إلى معايير عالمية، صُوِّر في إطار هذا التعاون.',
         cta: 'اقرأ الملف', watch: 'شاهد الحلقة',
+        desc: 'خلف كواليس HicoSoft Studio: مشروع GOYA وعالمه وطموحات لعبة أدوار جزائرية.',
         sponsorKicker: 'شريك البث', sponsorText: '‏Let’s Play × اتصالات الجزائر: يدعم المشغّل إنتاج الحلقات وطرحها، من فقرة Journal du Geek إلى اللقاءات مع الاستوديوهات المحلية.', sponsorLink: 'الموقع الرسمي',
       },
       featuredPartner: {
@@ -569,6 +576,7 @@ export const translations = {
         text: 'فيديو شراكتنا مع أوريدو: بطولة الجزائر FreeFire 2023 بالتفصيل — الآليات، شروط التسجيل، الجوائز والطريق إلى النهائي، بدعم من المشغّل.',
         cta: 'اكتشف الشراكات', watch: 'شاهد الحلقة',
         sponsorKicker: 'شريك البطولة', sponsorText: '‏Let’s Play × أوريدو: يدعم المشغّل بطولة FFAC2023 من الإعلان حتى عملية التسجيل — ويُبقي المجتمع متصلاً في كل جولة.', sponsorLink: 'الموقع الرسمي',
+        desc: 'نظرة على بطولة الجزائر FreeFire 2023: النظام، التسجيل والطريق إلى النهائي.',
       },
       featuredDjezzy: {
         label1: '01 / الحلقات المميزة', label2: '7OUMA ARENA × DJEZZY',
@@ -576,6 +584,7 @@ export const translations = {
         text: 'تستكشف 7ouma Arena by Djezzy صعود ألعاب كرة القدم على الهاتف، من FC Mobile وeFootball إلى مستقبل الرياضات الإلكترونية والجيل الخامس وDjezzy Cup.',
         cta: 'اكتشف الشراكات', watch: 'شاهد الحلقة',
         sponsorKicker: 'بالتعاون مع Djezzy', sponsorText: 'حلقة من 7ouma Arena حول ألعاب كرة القدم على الهاتف — والمجتمع الجزائري الذي يبني المشهد التنافسي القادم.', sponsorLink: 'الموقع الرسمي',
+        desc: 'كيف تروي 7ouma Arena by Djezzy صعود كرة القدم على الهاتف، من FC Mobile حتى Djezzy Cup.',
       },
       show: {
         label1: '02 / البرنامج', label2: 'ماذا نفعل',

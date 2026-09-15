@@ -277,7 +277,7 @@ img{max-width:100%}
 .featured-dossier-copy h3 em{font-style:normal;color:var(--cyan);text-shadow:0 0 24px rgba(34,211,238,.5)}
 .featured-dossier-copy p:not(.eyebrow){font-size:16px;line-height:1.55;color:var(--muted);margin:0}
 
-/* Épisodes à la une — grille 3 colonnes, bande logo sans légende */
+/* Épisodes à la une — grille 3 colonnes, vignette statique + texte descriptif */
 .featured-dossiers--episodes .featured-dossiers-grid{
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:24px;
@@ -289,6 +289,24 @@ img{max-width:100%}
   margin:0 0 14px;
 }
 .featured-dossiers--episodes .featured-dossier-copy .arrow-link{margin-top:14px}
+
+/* Vignette non cliquable : simple image, aucun lecteur ni commande de lecture. */
+.featured-dossier-thumb{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;display:block;
+  cursor:default;user-select:none;-webkit-user-drag:none;
+}
+.featured-dossier-badge{
+  position:absolute;z-index:2;left:12px;bottom:12px;
+  display:grid;place-items:center;width:30px;height:30px;
+  font-size:11px;color:#fff;line-height:1;
+  background:rgba(5,6,15,.72);border:1px solid var(--line-strong);
+  backdrop-filter:blur(6px);pointer-events:none;
+}
+[dir="rtl"] .featured-dossier-badge{left:auto;right:12px}
+.featured-dossiers--episodes .featured-dossier-desc{
+  margin:0;font-size:14.5px;line-height:1.55;color:var(--muted);
+}
 .featured-dossier-sponsor{
   margin-top:22px;
   display:flex;
