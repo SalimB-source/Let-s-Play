@@ -39,6 +39,9 @@ import DossierGenerations from './pages/DossierGenerations';
 import DossierXbox360 from './pages/DossierXbox360';
 import DossierPlayStation2 from './pages/DossierPlayStation2';
 import Partners from './pages/Partners';
+import EventAlgerieTelecom from './pages/EventAlgerieTelecom';
+import EventOoredoo from './pages/EventOoredoo';
+import EventArena from './pages/EventArena';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import { AuthProvider } from './auth/AuthContext';
@@ -86,6 +89,9 @@ function App() {
             <Route path="/dossiers/20-ans-xbox-360" element={<DossierXbox360 />} />
             <Route path="/dossiers/25-ans-playstation-2" element={<DossierPlayStation2 />} />
             <Route path="/events" element={<Partners />} />
+            <Route path="/events/algerie-telecom" element={<EventAlgerieTelecom />} />
+            <Route path="/events/ooredoo" element={<EventOoredoo />} />
+            <Route path="/events/7ouma-arena" element={<EventArena />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
