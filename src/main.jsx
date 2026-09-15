@@ -71,6 +71,7 @@ function App() {
             <Route path="/news/rayman-legends-retold" element={<CurrentNews slug="rayman-legends-retold" />} />
             <Route path="/news/fire-emblem-fortunes-weave" element={<CurrentNews slug="fire-emblem-fortunes-weave" />} />
             <Route path="/news/wolverine-exclu-ps5" element={<CurrentNews slug="wolverine-exclu-ps5" />} />
+            <Route path="/news/kingdom-hearts-4-coco" element={<CurrentNews slug="kingdom-hearts-4-coco" />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />
