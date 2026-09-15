@@ -35,7 +35,7 @@ const pageMeta = {
   },
   '/news/kingdom-hearts-4-coco': {
     title: 'Kingdom Hearts 4 : pourquoi le monde de Coco colle à la saga — Let’s Play',
-    description: 'Le monde de Coco est confirmé dans Kingdom Hearts 4. Seconde mort, mémoire et symbolique du cœur : pourquoi ce choix de Disney et Tetsuya Nomura est bien plus cohérent qu’un simple coup marketing.',
+    description: 'Le monde de Coco est confirmé dans Kingdom Hearts 4, attendu fin 2027. Seconde mort, mémoire et symbolique du cœur : pourquoi ce choix de Disney et Tetsuya Nomura est bien plus cohérent qu’un simple coup marketing.',
     image: 'kingdom-hearts-4-coco-news.jpg', type: 'article', published: '2026-09-15', section: 'Actualités gaming',
   },
   '/news/wolverine-exclu-ps5': {
