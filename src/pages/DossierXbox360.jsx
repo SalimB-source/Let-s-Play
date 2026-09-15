@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = '8NqnTzVh5O0';
-const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -29,18 +28,11 @@ export default function DossierXbox360() {
     <article className="dossier-article">
       <header className="dossier-hero wrap">
         <div className="section-label"><span><b>04 / DOSSIER</b> / HISTOIRE DU GAMING</span><span>RÉTROSPECTIVE · 21 MIN</span></div>
-        <div className="dossier-hero-grid">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> 20 ans de Xbox 360</p>
-            <h1>LA CONSOLE<br /><em>D’UNE GÉNÉRATION.</em></h1>
-            <p className="dossier-dek">Retour sur la Xbox 360, la machine qui a installé la haute définition dans les salons, transformé le jeu en ligne et marqué l’ère HD malgré le traumatisme du Red Ring of Death.</p>
-            <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>27.11.2025</span></div>
-          </div>
-          <a className="dossier-cover hud-frame" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" aria-label="Regarder le dossier sur la Xbox 360">
-            <img src={thumbnail} alt="20 ans de Xbox 360" />
-            <span className="dossier-play">▶</span>
-            <span className="dossier-cover-caption">ÉPISODE 04 / 20 ANS DE XBOX 360</span>
-          </a>
+        <div className="dossier-hero-copy">
+          <p className="eyebrow"><span className="live-dot" /> 20 ans de Xbox 360</p>
+          <h1>LA CONSOLE<br /><em>D’UNE GÉNÉRATION.</em></h1>
+          <p className="dossier-dek">Retour sur la Xbox 360, la machine qui a installé la haute définition dans les salons, transformé le jeu en ligne et marqué l’ère HD malgré le traumatisme du Red Ring of Death.</p>
+          <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>27.11.2025</span></div>
         </div>
       </header>
 

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = 'A2VPhWOUMHI';
-const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -32,18 +31,11 @@ export default function DossierPlayStation2() {
     <article className="dossier-article">
       <header className="dossier-hero wrap">
         <div className="section-label"><span><b>05 / DOSSIER</b> / HISTOIRE DU GAMING</span><span>RÉTROSPECTIVE · 18 MIN</span></div>
-        <div className="dossier-hero-grid">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> 25 ans de PlayStation 2</p>
-            <h1>LA REINE<br /><em>DES CONSOLES.</em></h1>
-            <p className="dossier-dek">Vingt-cinq ans après son lancement, la PlayStation 2 reste une référence mondiale : un lecteur DVD, une bibliothèque immense et des souvenirs qui dépassent largement le jeu vidéo.</p>
-            <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>07.11.2025</span></div>
-          </div>
-          <a className="dossier-cover hud-frame" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" aria-label="Regarder le dossier sur les 25 ans de la PlayStation 2">
-            <img src={thumbnail} alt="25 ans de PlayStation 2" />
-            <span className="dossier-play">▶</span>
-            <span className="dossier-cover-caption">ÉPISODE 05 / 25 ANS DE PLAYSTATION 2</span>
-          </a>
+        <div className="dossier-hero-copy">
+          <p className="eyebrow"><span className="live-dot" /> 25 ans de PlayStation 2</p>
+          <h1>LA REINE<br /><em>DES CONSOLES.</em></h1>
+          <p className="dossier-dek">Vingt-cinq ans après son lancement, la PlayStation 2 reste une référence mondiale : un lecteur DVD, une bibliothèque immense et des souvenirs qui dépassent largement le jeu vidéo.</p>
+          <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>07.11.2025</span></div>
         </div>
       </header>
 

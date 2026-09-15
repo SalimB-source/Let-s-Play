@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = '0ThNyFItASM';
-const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -28,18 +27,11 @@ export default function DossierAwards() {
     <article className="dossier-article">
       <header className="dossier-hero wrap">
         <div className="section-label"><span><b>01 / DOSSIER</b> / GAMING</span><span>LECTURE LONGUE · 27 MIN</span></div>
-        <div className="dossier-hero-grid">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> Les choix de la rédaction</p>
-            <h1>LES JEUX<br /><em>DE L’ANNÉE.</em></h1>
-            <p className="dossier-dek">Les Let’s Play Awards 2025 passent en revue les jeux qui ont marqué l’année, de la prouesse technique à la surprise indépendante, jusqu’au choix du GOTY.</p>
-            <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>09.01.2026</span></div>
-          </div>
-          <a className="dossier-cover hud-frame" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" aria-label="Regarder l'épisode des Let’s Play Awards 2025">
-            <img src={thumbnail} alt="Let’s Play Awards 2025" />
-            <span className="dossier-play">▶</span>
-            <span className="dossier-cover-caption">ÉPISODE 01 / LET’S PLAY AWARDS 2025</span>
-          </a>
+        <div className="dossier-hero-copy">
+          <p className="eyebrow"><span className="live-dot" /> Les choix de la rédaction</p>
+          <h1>LES JEUX<br /><em>DE L’ANNÉE.</em></h1>
+          <p className="dossier-dek">Les Let’s Play Awards 2025 passent en revue les jeux qui ont marqué l’année, de la prouesse technique à la surprise indépendante, jusqu’au choix du GOTY.</p>
+          <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>09.01.2026</span></div>
         </div>
       </header>
 
