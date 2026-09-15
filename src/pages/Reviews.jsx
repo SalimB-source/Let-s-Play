@@ -13,14 +13,14 @@ const tclFeature = {
 };
 
 // Même affichage que la section « reels » de la page d'accueil : une seule
-// rangée de 4 cartes verticales (grille .reels-grid à 4 colonnes). On garde
-// donc 4 reels Instagram — un 5e passerait sur une deuxième ligne et casserait
-// l'alignement. À réafficher uniquement par 4 (ou en passant la grille à 5).
+// rangée de 4 cartes verticales YouTube Shorts (grille .reels-grid à 4 colonnes).
+// On affiche exactement les mêmes Shorts que sur la home pour garder la
+// cohérence entre / et /reviews.
 const reels = [
-  { id: 'DZX9rMwgSaH', label: 'REEL 01' },
-  { id: 'DYu1yYkCtTC', label: 'REEL 02' },
-  { id: 'DYkdcu5Api8', label: 'REEL 03' },
-  { id: 'DYnAO1mjfB8', label: 'REEL 04' },
+  { id: '91eqLm2Hy9k', label: 'REEL 01' },
+  { id: 's4pqYSfL8oU', label: 'REEL 02' },
+  { id: '7sxxWC4zruM', label: 'REEL 03' },
+  { id: 'fscuzWcw-PA', label: 'REEL 04' },
 ];
 
 export default function Reviews(){
@@ -106,13 +106,13 @@ export default function Reviews(){
             <p className="eyebrow"><span className="live-dot" /> {t.reviews.reels.eyebrow}</p>
             <h2>{t.reviews.reels.h2a}<br /><em>{t.reviews.reels.h2b}</em></h2>
           </div>
-          <a className="arrow-link" href="https://www.instagram.com/letsplay.officiel/reels/" target="_blank" rel="noreferrer">{t.reviews.reels.seeAll} <Arrow /></a>
+          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">{t.reviews.reels.seeAll} <Arrow /></a>
         </div>
         <div className="reels-grid">
           {reels.map((reel) => (
             <div className="reel-card hud-frame" key={reel.id}>
-              <iframe src={`https://www.instagram.com/reel/${reel.id}/embed/`} title={`${reel.label} — Instagram`} loading="lazy" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share" allowFullScreen />
-              <a className="reel-label" href={`https://www.instagram.com/letsplay.officiel/reel/${reel.id}/`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
+              <iframe src={`https://www.youtube.com/embed/${reel.id}?rel=0&modestbranding=1`} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
             </div>
           ))}
         </div>
