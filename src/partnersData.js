@@ -47,6 +47,13 @@ export const partners = [
     confidence: 'À confirmer', source: 'https://www.lg.com/dz'
   },
   {
+    id: 'tcl', tag: 'tcl', name: 'TCL', nameNative: '', mark: 'TCL', tone: 'tcl',
+    logo: 'partners/tcl.gif', external: 'https://www.tcl.com/global/en', externalLabel: 'tcl.com',
+    media: 'https://www.tcl.com/global/en/tv', mediaLabel: 'TCL — TV for Gaming',
+    role: 'Partenaire écran', context: 'TCL rejoint l’écosystème Let’s Play comme partenaire écran, avec un focus sur les téléviseurs et moniteurs pensés pour le gaming.',
+    confidence: 'Partenaire référencé', source: 'https://www.tcl.com/global/en'
+  },
+  {
     id: 'el-heddaf-tv', tag: 'el-heddaf-tv', name: 'El Heddaf TV', nameNative: 'الهداف TV', mark: 'TV', tone: 'heddaf',
     logo: 'partners/el-heddaf-tv.png', external: 'https://www.youtube.com/channel/UC8rOLwbg9yW9-Y6NAQSojJQ', externalLabel: 'Chaîne officielle El Heddaf TV',
     media: 'https://www.tiktok.com/@othmanerached0/video/7231894059353246982', mediaLabel: 'Passage dans Let’s Play',
@@ -93,5 +100,5 @@ export const partnerByTag = partners.reduce((acc, partner) => {
 // Aliases kept for the homepage modules that still reference the former
 // collaboration categories.
 partnerByTag.show = partnerByTag.ooredoo;
-partnerByTag.screen = partnerByTag.lg;
+partnerByTag.screen = partnerByTag.tcl;
 partnerByTag.event = partnerByTag['7ouma-arena'];
