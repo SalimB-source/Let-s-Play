@@ -48,7 +48,7 @@ export const partners = [
   },
   {
     id: 'tcl', tag: 'tcl', name: 'TCL', nameNative: '', mark: 'TCL', tone: 'tcl',
-    logo: 'partners/tcl.gif', external: 'https://www.tcl.com/global/en', externalLabel: 'tcl.com',
+    logo: 'partners/tcl.png', external: 'https://www.tcl.com/global/en', externalLabel: 'tcl.com',
     media: 'https://www.tcl.com/global/en/tv', mediaLabel: 'TCL — TV for Gaming',
     role: 'Partenaire écran', context: 'TCL rejoint l’écosystème Let’s Play comme partenaire écran, avec un focus sur les téléviseurs et moniteurs pensés pour le gaming.',
     confidence: 'Partenaire référencé', source: 'https://www.tcl.com/global/en'
