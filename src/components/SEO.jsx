@@ -38,6 +38,11 @@ const pageMeta = {
     description: 'Découvrez les événements, émissions et partenaires qui font vivre la scène gaming et e-sport algérienne.',
     type: 'website',
   },
+  '/news/kingdom-hearts-4-coco': {
+    title: 'Kingdom Hearts 4 : pourquoi le monde de Coco colle à la saga — Let’s Play',
+    description: 'Le monde de Coco est confirmé dans Kingdom Hearts 4, attendu fin 2027. Seconde mort, mémoire et symbolique du cœur : pourquoi ce choix de Disney et Tetsuya Nomura est bien plus cohérent qu’un simple coup marketing.',
+    image: 'kingdom-hearts-4-coco-news.jpg', type: 'article', published: '2026-09-15', section: 'Actualités gaming',
+  },
   '/news/wolverine-exclu-ps5': {
     title: 'Marvel’s Wolverine, l’exclu PS5 qui fait des jaloux — Let’s Play',
     description: 'Marvel’s Wolverine sort ce 15 septembre 2026, uniquement sur PS5. Deux heures de prise en main : récit original sans X-Men, combats bestiaux et mise en scène de cinéma — l’exclu que les joueurs PC et Xbox Series nous envient.',
