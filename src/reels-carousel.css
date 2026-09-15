@@ -90,7 +90,7 @@
 .reel-embed-mount{width:100%;min-width:0}
 .reel-embed .instagram-media,
 .reel-embed iframe{
-  min-width:0 !important;max-width:100% !important;
+  flex:1;min-width:0 !important;max-width:100% !important;height:100%;min-height:470px;
   width:100% !important;margin:0 !important;border:0 !important;
 }
 
@@ -122,7 +122,7 @@
   .reels-head-side{gap:18px;padding-top:22px}
   .reel-window{margin-top:26px;gap:14px}
   .reel-slide{flex-basis:min(88vw,340px)}
-  .reel-embed{min-height:420px}
+  .reel-embed{min-height:420px}.reel-embed iframe{min-height:420px}
 }
 @media(max-width:450px){
   .reel-nav button{width:42px;height:42px;font-size:19px}
@@ -130,5 +130,5 @@
   .reel-slide{flex-basis:min(92vw,340px)}
   .reel-slide-head{padding:12px 13px}
   .reel-slide-index,.reel-slide-open{font-size:9px;letter-spacing:.1em}
-  .reel-embed{min-height:380px}
+  .reel-embed{min-height:380px}.reel-embed iframe{min-height:380px}
 }
