@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { videos } from '../data';
+import { reviewReels, instagramReelsUrl } from '../data';
 import { gameTests, scoreTier, scoreLabel } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 import VideoModal from '../components/VideoModal';
+import ReelsCarousel from '../components/ReelsCarousel';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
 export default function Reviews(){
   const { t, lang } = useLanguage();
   const c = t.reviews.article;
-  const gaming = videos.filter(v=>v.tag==='Gaming');
   const [player, setPlayer] = useState(null);
   const openVideo = (e, test) => {
     e.preventDefault();
@@ -68,21 +68,13 @@ export default function Reviews(){
         </div>
       </section>
 
-      <section className="latest wrap">
-        <div className="section-label"><span><b>03</b> / {t.reviews.archiveLabel1.split(' / ')[1]}</span><span>{t.reviews.archiveLabel2}</span></div>
-        <h2 className="page-h2">{t.reviews.moreA}<br/><em>{t.reviews.moreB}</em></h2>
-        <div className="video-grid" style={{marginTop:32}}>
-          {gaming.map(video=>(
-            <a className="video-card" href={video.href} target="_blank" rel="noreferrer" key={video.title}>
-              <div className="video-image"><img src={video.image} alt="" /><span className="play">▶</span></div>
-              <div className="video-meta"><span>{t.categories[video.category] || video.category} · {video.duration}</span><span>{t.filters[video.tag] || video.tag}</span></div>
-              <h3>{(t.videos[video.title] && t.videos[video.title].title) || video.title}</h3>
-              <p className="video-desc">{(t.videos[video.title] && t.videos[video.title].desc) || video.desc}</p>
-            </a>
-          ))}
-        </div>
-        <Link className="arrow-link" to="/dossiers">{t.reviews.exploreDossiers} <Arrow/></Link>
-      </section>
+      <ReelsCarousel
+        id="reels-tests"
+        index="03"
+        labels={t.reviews.reels}
+        reels={reviewReels}
+        seeAllHref={instagramReelsUrl}
+      />
 
       {player && player.video && (
         <VideoModal

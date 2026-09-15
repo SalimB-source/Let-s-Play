@@ -5,6 +5,7 @@ import './styles.css';
 import './news-article.css';
 import './auth/auth.css';
 import './news-carousel.css';
+import './reels-carousel.css';
 import './news-view-toggle.css';
 import './daily-news.css';
 import './monthly-releases.css';
