@@ -18,6 +18,11 @@ const pageMeta = {
     description: 'Les dernières actualités du jeu vidéo, des consoles, du PC, de la tech et de la pop culture par la rédaction Let’s Play.',
     type: 'website',
   },
+  '/calendrier': {
+    title: 'Calendrier complet des sorties gaming — Let’s Play',
+    description: 'Toutes les sorties de jeux vidéo datées, mois par mois : septembre 2026 à avril 2027, plateformes et comptes à rebours, mis à jour dès qu’une date est confirmée.',
+    type: 'website',
+  },
   '/reviews': {
     title: 'Tests de jeux vidéo — Let’s Play',
     description: 'Retrouvez les tests et analyses de jeux vidéo de Let’s Play : gameplay, technique, direction artistique et verdict.',
@@ -67,6 +72,7 @@ const pageMeta = {
 
 const routeAliases = {
   '/partenaires': '/events',
+  '/calendar': '/calendrier',
 };
 
 function upsertMeta(attribute, value, content) {

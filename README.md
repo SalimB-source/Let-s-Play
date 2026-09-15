@@ -111,6 +111,31 @@ Faire suivre la saison :
   qui suit le dernier de septembre ;
 - `countdownImage` (optionnel) donne un visuel dédié au bloc « le plus attendu ».
 
+### La liste complète vit sur sa propre page : `/calendrier`
+
+La grille des sorties ne reste plus sur la page Actus : le lien
+« VOIR LE CALENDRIER COMPLET » (en tête de section et en bandeau sous le compte
+à rebours) ouvre la page interne `/calendrier` (alias `/calendar`, route
+`src/pages/Calendar.jsx`). Elle déroule **tous les mois ayant au moins une
+sortie datée** — septembre 2026 → avril 2027 — avec :
+
+- une barre de navigation collante (un chip par mois, avec le nombre de sorties) ;
+- pour chaque mois, la même frise et les mêmes cartes que la section Actus
+  (`MonthTimeline` / `ReleaseGrid`, composants partagés dans
+  `src/components/ReleasesCalendar.jsx`) ;
+- le compte à rebours « le plus attendu » en tête de page ;
+- les cartes dont l'entrée du calendrier fournit un visuel deviennent des liens
+  internes quand l'entrée renseigne `to` (ex. Zelda Ocarina → `/news/zelda-ocarina`).
+
+Une sortie sans key art déposé dans `public/releases/` s'affiche quand même,
+sous forme de vignette « ticket » (jour + mois, mention « VISUEL À VENIR ») :
+rien n'empêche d'ajouter un mois au calendrier en attendant son visuel.
+
+Ajouter un mois = pousser des entrées avec `month` / `year` dans
+`src/releasesData.js` : la page `/calendrier` le liste automatiquement
+(la barre de mois et les compteurs sont déduits de `calendarMonths()`), et la
+page Actus bascule dessus dès que le mois courant n'a plus rien au calendrier.
+
 ### Une heure de lancement exacte, si besoin
 
 Par défaut le décompte vise **minuit, heure locale du visiteur** — le basculement ne
@@ -135,7 +160,8 @@ l'horloge simulée avance à vitesse réelle) :
 ### Vérifications
 
 - `npm run check:countdown` — rejoue septembre, le passage de relais multi-mois,
-  `releaseAt`, l'ordre de la file, le décompte et les dates localisées.
+  `releaseAt`, l'ordre de la file, le décompte, les dates localisées et la liste
+  des mois de la page `/calendrier` (section 7/7).
 - `npm run check:i18n` — toutes les routes × FR / EN / AR, dont les trois états du bloc
   (les textes vivent dans `t.news.calendar` et `t.news.countdown`).
 

@@ -1,78 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
-import { activeMonth, gameReleases, releaseDay, releaseDayLabel, isPastRelease, isReleaseToday, monthHeadline, monthLabel, countdownParts, upcomingReleases, todaysReleases, releaseDateLabel } from '../releasesData';
+import { activeMonth, calendarMonths, gameReleases, monthHeadline, monthLabel } from '../releasesData';
+import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
 
-function Arrow(){ return <span aria-hidden="true">↗</span>; }
-
-/**
- * `?at=2026-09-15` (ou `?at=2026-09-15T23:59:30`) décale l'horloge de toute la
- * section : pratique pour montrer — ou tester — le basculement automatique du
- * compte à rebours le jour d'une sortie, sans attendre la vraie date.
- * Le décalage est figé à l'ouverture de la page : l'horloge simulée continue
- * ensuite de tourner à la vitesse réelle.
- */
-function clockOffset(){
-  if (typeof window === 'undefined') return 0;
-  let raw = null;
-  try {
-    raw = new URLSearchParams(window.location.search).get('at');
-  } catch (error) {
-    return 0;
-  }
-  if (!raw) return 0;
-  const parsed = Date.parse(raw.includes('T') ? raw : `${raw}T00:00:00`);
-  if (Number.isNaN(parsed)) return 0;
-  return parsed - Date.now();
-}
-
+// Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
+// partagé avec la page calendrier complet via clockOffset().
 const CLOCK_OFFSET = clockOffset();
-
-/** « Marvel’s Wolverine » → ['Marvel’s', 'Wolverine'] : le dernier mot passe en accent jaune. */
-function splitTitle(title){
-  const clean = String(title || '').trim();
-  const [head, ...rest] = clean.split(':');
-  if (rest.length > 0) return [`${head}:`, rest.join(':').trim()];
-  const words = clean.split(/\s+/);
-  if (words.length < 2) return [clean, ''];
-  return [words.slice(0, -1).join(' '), words[words.length - 1]];
-}
-
-/** Remplit un gabarit de traduction : fill('Sortie le {date}', { date }) */
-function fill(template, vars){
-  return Object.keys(vars).reduce((text, key) => text.split(`{${key}}`).join(vars[key]), String(template || ''));
-}
-
-// Filet de sécurité si un bloc `news.calendar` / `news.countdown` venait à manquer
-// dans une langue (le dictionnaire fusionne déjà sur l'anglais, ceci couvre le pire cas).
-const FALLBACK_CALENDAR = {
-  label: 'RELEASES THIS MONTH',
-  eyebrow: 'GAMING CALENDAR',
-  play: 'TO PLAY.',
-  full: 'SEE THE FULL CALENDAR',
-  today: 'TODAY',
-  alreadyOut: 'ALREADY OUT',
-  upcoming: 'TO COME',
-  outBadge: 'OUT',
-  emptyMonth: 'No release scheduled in this calendar yet — the next dates will appear here.',
-  timelineAria: '{month} timeline — {out} releases already out, {next} to come',
-  timelineToday: ', today is the {day}th',
-};
-
-const FALLBACK_COUNTDOWN = {
-  eyebrow: 'MOST AWAITED',
-  outToday: 'OUT TODAY',
-  units: { days: 'DAYS', hours: 'HOURS', minutes: 'MIN', seconds: 'SEC' },
-  outLine: 'Out {date} on {platforms}.',
-  justOut: '{title} is out today — the countdown has already moved on to {next}.',
-  outFinal: '{title} is available today on {platforms}. The calendar is up to date — next dates to be announced.',
-  emptyTitle: 'CALENDAR',
-  emptyTitleAccent: 'CLEAR.',
-  emptyLine: 'Every release on the calendar has landed. The next countdown starts as soon as the following dates are confirmed.',
-  aria: 'Countdown until {title} releases',
-  emptyAria: 'No release left to count down on this calendar',
-};
 
 export default function News(){
   const { t, lang } = useLanguage();
@@ -135,50 +70,22 @@ export default function News(){
   const month = activeMonth(today);
   const monthName = monthLabel(month.year, month.month, lang);
   const monthReleases = month.releases;
-  const pastCount = monthReleases.filter((release) => isPastRelease(release, today) || isReleaseToday(release, today)).length;
-  const upcomingCount = monthReleases.length - pastCount;
-  const scaleTicks = [1, 5, 10, 15, 20, 25].filter((day) => day < month.days).concat(month.days);
-  const timelineAria = fill(calendarCopy.timelineAria, { month: monthName, out: pastCount, next: upcomingCount })
-    + (month.todayDay ? fill(calendarCopy.timelineToday, { day: month.todayDay }) : '');
-  // Un point par jour de sortie (les doublons du même jour s'empilent).
-  const timelineDays = [];
-  for (let day = 1; day <= month.days; day += 1){
-    const onDay = monthReleases.filter((release) => releaseDay(release) === day);
-    if (onDay.length > 0) timelineDays.push({ day, releases: onDay, past: onDay.every((release) => isPastRelease(release, today)) });
-  }
+  // La liste complète des sorties (tous mois confondus) vit sur /calendrier :
+  // la page Actus n'en garde que la frise, le compte à rebours et ce teaser.
+  const allMonths = calendarMonths(today);
+  const totalGames = gameReleases.length;
 
   return (
     <>
       <section className="monthly-releases wrap">
         <div className="section-label"><span><b>01</b> / {calendarCopy.label}</span><span>{monthName}</span></div>
-        <div className="monthly-releases-head"><div><p className="eyebrow"><span className="live-dot" /> {calendarCopy.eyebrow}</p><h2>{monthHeadline(month.year, month.month, lang)}<br/><em>{calendarCopy.play}</em></h2></div><span className="arrow-link">{calendarCopy.full} <Arrow/></span></div>
-        <div className="release-timeline" role="img" aria-label={timelineAria}>
-          <div className="release-timeline-scale">{scaleTicks.map((day) => <span key={day}>{String(day).padStart(2, '0')}</span>)}</div>
-          <div className="release-timeline-track">
-            {timelineDays.map(({ day, releases, past }) => (
-              <span
-                key={day}
-                className={`release-timeline-dot${past ? ' is-past' : ''}${releases.length > 1 ? ' is-double' : ''}`}
-                style={{ left: `${((day - 0.5) / month.days) * 100}%` }}
-                title={`${releaseDayLabel(releases[0], lang)} — ${releases.map((release) => release.title).join(' · ')}`}
-              >{releases.length > 1 ? <b>{releases.length}</b> : null}</span>
-            ))}
-            {month.todayDay ? <span className="release-timeline-today" style={{ left: `${((month.todayDay - 0.5) / month.days) * 100}%` }}><em>{calendarCopy.today}</em></span> : null}
-          </div>
-          <div className="release-timeline-meta">
-            <span className="release-timeline-counter"><b>{pastCount}</b> {calendarCopy.alreadyOut} · <b>{upcomingCount}</b> {calendarCopy.upcoming}</span>
-          </div>
+        <div className="monthly-releases-head"><div><p className="eyebrow"><span className="live-dot" /> {calendarCopy.eyebrow}</p><h2>{monthHeadline(month.year, month.month, lang)}<br/><em>{calendarCopy.play}</em></h2></div><Link className="arrow-link" to="/calendrier">{calendarCopy.full} <Arrow/></Link></div>
+        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
+        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
+        <div className="calendar-teaser">
+          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
+          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
         </div>
-        <ReleaseCountdown lang={lang} copy={t.news.countdown} />
-        <div className="release-grid">{monthReleases.map((release) => {
-          const past = isPastRelease(release, today);
-          return (
-            <div className={`release-card${past ? ' is-past' : ''}`} key={release.slug}>
-              <div className="release-card-image"><img src={`${base}${release.image}`} alt={release.alt} loading="lazy" />{past ? <span className="release-past-badge">{calendarCopy.outBadge}</span> : null}</div>
-              <div className="release-card-body"><span className="release-date">{releaseDayLabel(release, lang)}</span><h3>{release.title}</h3><span className="release-platforms">{release.platforms}</span></div>
-            </div>
-          );
-        })}{monthReleases.length === 0 ? <p className="release-empty">{calendarCopy.emptyMonth}</p> : null}</div>
       </section>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span><b>02</b> / {featured.section}</span><span>{featured.updated}</span></div>
@@ -201,76 +108,5 @@ export default function News(){
       </section>
       <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> {t.news.ctaEyebrow}</p><h2>{t.news.ctaH2a}<br/><em>{t.news.ctaH2b}</em></h2></div><Link className="button button-yellow" to="/reviews">{t.news.ctaBtn} <Arrow/></Link></section>
     </>
-  );
-}
-
-/**
- * Bloc « le plus attendu » de la page Actus.
- *
- * Le jeu affiché n'est pas codé en dur : il suit la file `awaitedRank` du
- * calendrier (src/releasesData.js). Dès que le compte à rebours atteint zéro,
- * la file se décale et le bloc passe automatiquement sur la sortie suivante —
- * sans redéploiement ni intervention. Le décompte se fait à la seconde près,
- * donc le basculement a lieu même si un visiteur laisse l'onglet ouvert.
- */
-function ReleaseCountdown({ lang, copy }){
-  const [now, setNow] = useState(() => new Date(Date.now() + CLOCK_OFFSET));
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date(Date.now() + CLOCK_OFFSET)), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const target = upcomingReleases(now)[0] || null;  // jeu en cours de décompte (premier de la file)
-  const outToday = todaysReleases(now)[0] || null;  // jeu sorti le jour même, déjà disponible
-  const shown = target || outToday;
-  const parts = target ? countdownParts(target, now) : null;
-  const slug = shown ? shown.slug : null;
-
-  // Flash discret le jour où le bloc change de jeu.
-  const previous = useRef(slug);
-  const [switching, setSwitching] = useState(false);
-  useEffect(() => {
-    if (previous.current === slug) return undefined;
-    const hadPrevious = previous.current !== null;
-    previous.current = slug;
-    if (!hadPrevious) return undefined;
-    setSwitching(true);
-    const timer = window.setTimeout(() => setSwitching(false), 2800);
-    return () => window.clearTimeout(timer);
-  }, [slug]);
-
-  const safe = { ...FALLBACK_COUNTDOWN, ...(copy || {}), units: { ...FALLBACK_COUNTDOWN.units, ...(copy?.units || {}) } };
-  const units = [['days', safe.units.days], ['hours', safe.units.hours], ['minutes', safe.units.minutes], ['seconds', safe.units.seconds]];
-  // Le mois est écoulé : on garde la dernière clé du calendrier en visuel, le bloc ne reste pas vide.
-  const lastRelease = gameReleases[gameReleases.length - 1];
-  const visual = `${base}${(shown?.countdownImage || shown?.image) || lastRelease.image}`;
-  const titleParts = shown ? splitTitle(shown.title) : [safe.emptyTitle, safe.emptyTitleAccent];
-  const dateFor = (release) => fill(safe.outLine, { date: releaseDateLabel(release, lang), platforms: release.platforms });
-  const line = target ? dateFor(target) : (outToday ? fill(safe.outFinal, { title: outToday.title, platforms: outToday.platforms }) : safe.emptyLine);
-  const note = target && outToday ? fill(safe.justOut, { title: outToday.title, next: target.title }) : null;
-  const aria = target ? fill(safe.aria, { title: target.title }) : safe.emptyAria;
-
-  return (
-    <div className={`release-countdown${switching ? ' is-switching' : ''}${target ? '' : ' is-complete'}`}>
-      <div className="release-countdown-image"><img src={visual} alt={shown?.alt || lastRelease.alt} /></div>
-      <div className="release-countdown-copy">
-        <p className="eyebrow">
-          <span className="live-dot" /> {safe.eyebrow}
-          {outToday ? <span className="release-countdown-out">{safe.outToday}{target ? ` · ${outToday.title}` : ''}</span> : null}
-        </p>
-        <h3>{titleParts[0]}{titleParts[1] ? <>{' '}<em>{titleParts[1]}</em></> : null}</h3>
-        <p>{line}</p>
-        {note ? <p className="release-countdown-note">{note}</p> : null}
-      </div>
-      <div className="countdown-units" role="timer" aria-label={aria}>
-        {units.map(([key, label]) => (
-          <div className={`countdown-unit${parts ? '' : ' is-idle'}`} key={key}>
-            <strong>{parts ? String(parts[key]).padStart(2, '0') : '--'}</strong>
-            <span>{label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
