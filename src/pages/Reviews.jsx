@@ -12,12 +12,15 @@ const tclFeature = {
   ar: { label: '01 / ملف مميز', meta: 'شريك الشاشة · TCL', eyebrow: 'مع TCL', titleA: 'AYA NGAMEW،', titleB: 'على الشاشة الكبيرة.', text: 'تستكشف Let’s Play تجربة Aya Ngamew مع تلفزيون TCL C6K QD-Mini LED، في جلسة عن اللعبة والصورة وما تضيفه تقنية العرض أثناء اللعب.', watch: 'شاهد الفيديو', title: 'Let’s Play Aya Ngamew Experience with TCL C6K QD-MiniLED' },
 };
 
+// Même affichage que la section « reels » de la page d'accueil : une seule
+// rangée de 4 cartes verticales (grille .reels-grid à 4 colonnes). On garde
+// donc 4 reels Instagram — un 5e passerait sur une deuxième ligne et casserait
+// l'alignement. À réafficher uniquement par 4 (ou en passant la grille à 5).
 const reels = [
   { id: 'DZX9rMwgSaH', label: 'REEL 01' },
   { id: 'DYu1yYkCtTC', label: 'REEL 02' },
   { id: 'DYkdcu5Api8', label: 'REEL 03' },
   { id: 'DYnAO1mjfB8', label: 'REEL 04' },
-  { id: 'DYC_tTmFdlJ', label: 'REEL 05' },
 ];
 
 export default function Reviews(){
