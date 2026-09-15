@@ -21,8 +21,7 @@ export default function Layout({ children }) {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // Close menu on route change. A `#anchor` in the URL wins over the scroll to
-  // top so deep links such as /events#7ouma-arena-show land on the right block.
+  // Close menu on route change. A `#anchor` in the URL wins over the scroll to top.
   useEffect(() => {
     setMenuOpen(false);
     const target = location.hash ? document.getElementById(location.hash.slice(1)) : null;

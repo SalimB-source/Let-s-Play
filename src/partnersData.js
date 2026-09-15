@@ -73,7 +73,7 @@ export const partners = [
     media: arenaLaunchSource, mediaLabel: 'Annonce du lancement — LinkedIn',
     role: 'Émission & tournoi — by Djezzy',
     context: 'Deux formats sous une même bannière : une émission gaming & esport diffusée sur YouTube, présentée par Djezzy, et un tournoi esport organisé par EGOR Gaming avec l’équipe Let’s Play. Le détail est expliqué dans la section « Le show & le tournoi » de la page Events.',
-    page: '/events#7ouma-arena-show',
+    page: '/events/7ouma-arena',
     confidence: 'Confirmé par l’équipe Let’s Play', source: arenaLaunchSource
   },
   {

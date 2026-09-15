@@ -13,10 +13,10 @@ export default function PartnersSection() {
   const isFr = lang === 'fr';
   const isAr = lang === 'ar';
   const copy = isAr
-    ? { label: '03 / الفعاليات', meta: 'معلنون · إعلام · ألعاب', eyebrow: 'على أرض الواقع', titleA: 'العلامات،', titleB: 'والمجتمعات.', text: 'نستعرض هنا العلامات والقنوات والأحداث التي رافقت Let’s Play، مع توضيح إطار كل تعاون.', cta: 'كل الفعاليات', link: 'المصدر', explainer: 'تعرّف على 7ouma Arena' }
+    ? { label: '03 / الفعاليات', meta: 'معلنون · إعلام · ألعاب', eyebrow: 'على أرض الواقع', titleA: 'العلامات،', titleB: 'والمجتمعات.', text: 'اتصالات الجزائر، أوريدو، 7ouma Arena: لكل شراكة مقال. وسنضيف غيرها.', cta: 'كل الفعاليات', link: 'المصدر', explainer: 'تعرّف على 7ouma Arena' }
     : isFr
-      ? { label: '03 / EVENTS', meta: 'ANNONCEURS · MÉDIAS · GAMING', eyebrow: 'Sur le terrain', titleA: 'LES MARQUES,', titleB: 'LES COMMUNAUTÉS.', text: 'Voici les marques, médias et événements qui ont accompagné Let’s Play, avec le cadre public de chaque collaboration.', cta: 'Tous les Events', link: 'Source', explainer: 'Comprendre 7ouma Arena' }
-      : { label: '03 / EVENTS', meta: 'ADVERTISERS · MEDIA · GAMING', eyebrow: 'On the ground', titleA: 'THE BRANDS,', titleB: 'THE COMMUNITIES.', text: 'These are the brands, media outlets and events connected to Let’s Play, with the public context of each collaboration.', cta: 'All Events', link: 'Source', explainer: 'Understand 7ouma Arena' };
+      ? { label: '03 / EVENTS', meta: 'ANNONCEURS · MÉDIAS · GAMING', eyebrow: 'Sur le terrain', titleA: 'LES MARQUES,', titleB: 'LES COMMUNAUTÉS.', text: 'Algérie Télécom, Ooredoo, 7ouma Arena : chaque partenariat a son article. D’autres suivront.', cta: 'Tous les Events', link: 'Source', explainer: 'Comprendre 7ouma Arena' }
+      : { label: '03 / EVENTS', meta: 'ADVERTISERS · MEDIA · GAMING', eyebrow: 'On the ground', titleA: 'THE BRANDS,', titleB: 'THE COMMUNITIES.', text: 'Algérie Télécom, Ooredoo, 7ouma Arena: each partnership has its own article. More will follow.', cta: 'All Events', link: 'Source', explainer: 'Understand 7ouma Arena' };
 
   return (
     <section className="partners wrap" id="events">
