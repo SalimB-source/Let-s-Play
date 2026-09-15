@@ -106,7 +106,7 @@ export default function Home() {
       <FeaturedBlock episode={djezzyEpisode} label={t.home.featuredDjezzy.label1} copy={t.home.featuredDjezzy} cta={{ to: '/partenaires' }} />
 
       <section className="formats wrap" id="formats">
-        <div className="section-label"><span><b>02</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
+        <div className="section-label"><span><b>{t.home.formats.label1.split(' / ')[0]}</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
           <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow /></Link></article>
@@ -117,7 +117,7 @@ export default function Home() {
       <PartnersSection />
 
       <section className="reels-section wrap" id="reels">
-        <div className="section-label"><span><b>04</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="section-label"><span><b>06</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
         <div className="reels-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Format court</p>
