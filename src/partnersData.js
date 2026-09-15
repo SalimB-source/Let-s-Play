@@ -91,6 +91,13 @@ export const partners = [
     role: 'Partenaire gaming', context: 'Just Play It rejoint la sélection des partenaires et soutiens visibles de l’écosystème Let’s Play.',
     confidence: 'Référencé par l’équipe Let’s Play', source: 'https://www.instagram.com/letsplay.officiel/'
   },
+  {
+    id: 'esca', tag: 'esca', name: 'ESCA', nameNative: '', mark: 'ESCA', tone: 'esca',
+    logo: 'partners/esca.webp', external: 'https://www.instagram.com/letsplay.officiel/', externalLabel: 'Let’s Play Official',
+    media: null, mediaLabel: null,
+    role: 'Partenaire', context: 'ESCA rejoint la sélection des partenaires et soutiens visibles de l’écosystème Let’s Play.',
+    confidence: 'Référencé par l’équipe Let’s Play', source: 'https://www.instagram.com/letsplay.officiel/'
+  },
 ];
 
 export const partnerUrls = {
