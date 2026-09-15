@@ -58,3 +58,38 @@
 /* --- calendrier multi-mois : état vide + libellés localisés --- */
 .release-empty{grid-column:1 / -1;margin:0;padding:22px 16px;text-align:center;color:var(--muted);font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase;border:1px dashed var(--line-strong);background:rgba(11,13,30,.4)}
 @media(max-width:650px){.release-empty{padding:14px 10px;font-size:8px;letter-spacing:.08em}}
+
+/* --- page Actus : teaser vers le calendrier complet (la liste a déménagé) --- */
+.calendar-teaser{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:22px;padding:16px 18px;border:1px dashed var(--line-strong);background:rgba(11,13,30,.45)}
+.calendar-teaser p{margin:0;color:var(--muted);font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.calendar-teaser .button{margin:0;white-space:nowrap}
+@media(max-width:650px){.calendar-teaser{padding:13px 14px}.calendar-teaser p{font-size:9px;letter-spacing:.08em}.calendar-teaser .button{width:100%;justify-content:center}}
+
+/* --- page « calendrier complet » (/calendrier) --- */
+.calendar-page{padding-top:128px;padding-bottom:90px}
+.calendar-intro{max-width:760px;margin:0 0 26px;color:var(--muted);font-size:15px;line-height:1.65}
+.calendar-month-nav{position:sticky;top:64px;z-index:30;display:flex;gap:8px;flex-wrap:wrap;margin:26px 0 8px;padding:10px;background:rgba(5,6,15,.86);border:1px solid var(--line);backdrop-filter:blur(8px)}
+.calendar-month-nav a{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;color:var(--muted);font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;text-decoration:none;border:1px solid var(--line);transition:color .2s,border-color .2s,background .2s}
+.calendar-month-nav a b{color:var(--cyan);font-weight:700}
+.calendar-month-nav a:hover{color:var(--ink);border-color:var(--cyan)}
+.calendar-month-nav a.is-current{color:var(--yellow);border-color:var(--yellow);background:rgba(255,214,25,.08)}
+.calendar-month{margin:0 0 46px;scroll-margin-top:132px}
+.calendar-month-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:0 0 12px;padding-top:14px;border-top:1px solid var(--line-strong)}
+.calendar-month-head h3{display:flex;align-items:baseline;gap:12px;font-family:var(--display);font-size:clamp(24px,3.4vw,40px);line-height:1;margin:0;text-transform:uppercase}
+.calendar-month-head h3 span{color:var(--yellow);font:700 12px var(--mono);letter-spacing:.14em}
+.calendar-month-head h3 em{font-style:normal;color:var(--dim);font:500 12px var(--mono);letter-spacing:.14em}
+.calendar-month-now{padding:3px 8px;border:1px solid var(--yellow);background:rgba(255,214,25,.08);color:var(--yellow);font:700 9px var(--mono);letter-spacing:.12em}
+.calendar-month .release-timeline{margin-bottom:14px}
+.calendar-foot{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding-top:22px;border-top:1px solid var(--line)}
+.calendar-foot span{color:var(--dim);font:10px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+
+/* --- carte sans key art : vignette « ticket » date + mois --- */
+.release-card-image.is-placeholder{display:flex;align-items:center;justify-content:center;gap:10px;background:repeating-linear-gradient(135deg,rgba(148,130,255,.07) 0 9px,transparent 9px 18px),linear-gradient(160deg,rgba(14,17,38,.95),rgba(11,13,30,.7))}
+.release-card-image.is-placeholder.is-past{filter:grayscale(.6);opacity:.75}
+.release-placeholder-day{color:var(--cyan);font:700 clamp(30px,4vw,44px)/1 var(--display);text-shadow:0 0 18px rgba(34,211,238,.4)}
+.release-placeholder-month{color:var(--dim);font:700 12px var(--mono);letter-spacing:.18em}
+.release-card-image.is-placeholder em{position:absolute;left:10px;bottom:8px;font-style:normal;color:var(--dim);font:8px var(--mono);letter-spacing:.14em}
+.release-card.is-linked{display:flex;flex-direction:column;text-decoration:none;color:inherit}
+.release-card.is-linked:hover{border-color:var(--yellow)}
+@media(max-width:650px){.calendar-page{padding-top:104px;padding-bottom:60px}.calendar-month-nav{top:56px;gap:6px;padding:8px}.calendar-month-nav a{padding:6px 8px;font-size:8px;letter-spacing:.08em}.calendar-month{margin-bottom:34px;scroll-margin-top:120px}.calendar-month-head h3{gap:8px}.calendar-intro{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.calendar-month{scroll-behavior:auto}}
