@@ -33,6 +33,11 @@ const pageMeta = {
     description: 'Découvrez les événements, émissions et partenaires qui font vivre la scène gaming et e-sport algérienne.',
     type: 'website',
   },
+  '/news/wolverine-exclu-ps5': {
+    title: 'Marvel’s Wolverine, l’exclu PS5 qui fait des jaloux — Let’s Play',
+    description: 'Marvel’s Wolverine sort ce 15 septembre 2026, uniquement sur PS5. Deux heures de prise en main : récit original sans X-Men, combats bestiaux et mise en scène de cinéma — l’exclu que les joueurs PC et Xbox Series nous envient.',
+    image: 'wolverine-countdown.jpg', type: 'article', published: '2026-09-15', section: 'Actualités gaming',
+  },
   '/news/rayman-legends-retold': {
     title: 'Rayman Legends Retold reporté au 3 décembre 2026 — Let’s Play',
     description: 'Rayman Legends Retold est reporté au 3 décembre 2026 sur PS5, Xbox Series, Switch 2 et PC. Une vidéo de gameplay est annoncée le 22 septembre.',
