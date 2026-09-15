@@ -68,6 +68,7 @@ function App() {
             <Route path="/news/last-of-us-ii-mod" element={<CurrentNews slug="last-of-us-ii-mod" />} />
             <Route path="/news/cyberpunk-2077-battlenet" element={<CurrentNews slug="cyberpunk-2077-battlenet" />} />
             <Route path="/news/rayman-legends-retold" element={<CurrentNews slug="rayman-legends-retold" />} />
+            <Route path="/news/fire-emblem-fortunes-weave" element={<CurrentNews slug="fire-emblem-fortunes-weave" />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />

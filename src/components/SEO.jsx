@@ -38,6 +38,11 @@ const pageMeta = {
     description: 'Rayman Legends Retold est reporté au 3 décembre 2026 sur PS5, Xbox Series, Switch 2 et PC. Une vidéo de gameplay est annoncée le 22 septembre.',
     image: 'rayman-legends-retold-news.jpg', type: 'article', published: '2026-09-15', section: 'Actualités gaming',
   },
+  '/news/fire-emblem-fortunes-weave': {
+    title: 'Fire Emblem: Fortune’s Weave fait le point avant sa sortie — Let’s Play',
+    description: 'Fire Emblem: Fortune’s Weave sortira le 17 septembre 2026 sur Nintendo Switch 2. Quatre protagonistes et des scénarios à entrelacer sont au cœur de cette nouvelle aventure.',
+    image: 'fire-emblem-fortunes-weave-news.jpg', type: 'article', published: '2026-09-15', section: 'Actualités gaming',
+  },
   '/news/cyberpunk-2077-battlenet': {
     title: 'Cyberpunk 2077 arrive sur Battle.net — Let’s Play',
     description: 'Cyberpunk 2077: Ultimate Edition rejoindra Battle.net en 2026 dans le prolongement du partenariat entre CD PROJEKT RED et Blizzard.',
