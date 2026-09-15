@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = 'aTs0zhm6Leg';
-const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -28,18 +27,11 @@ export default function DossierGoya() {
     <article className="dossier-article">
       <header className="dossier-hero wrap">
         <div className="section-label"><span><b>02 / DOSSIER</b> / INDUSTRIE</span><span>LECTURE LONGUE · 17 MIN</span></div>
-        <div className="dossier-hero-grid">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> Scène indé algérienne</p>
-            <h1>GOYA,<br /><em>LE PROCHAIN MONDE.</em></h1>
-            <p className="dossier-dek">Dans les coulisses de HicoSoft Studio, une équipe algérienne construit ses outils, ses ambitions et une nouvelle façon de raconter le jeu vidéo local.</p>
-            <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>19.09.2025</span></div>
-          </div>
-          <a className="dossier-cover hud-frame" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" aria-label="Regarder l'épisode HicoSoft Studio et le projet GOYA">
-            <img src={thumbnail} alt="HicoSoft Studio et le projet GOYA" />
-            <span className="dossier-play">▶</span>
-            <span className="dossier-cover-caption">ÉPISODE 02 / HICOSOFT STUDIO</span>
-          </a>
+        <div className="dossier-hero-copy">
+          <p className="eyebrow"><span className="live-dot" /> Scène indé algérienne</p>
+          <h1>GOYA,<br /><em>LE PROCHAIN MONDE.</em></h1>
+          <p className="dossier-dek">Dans les coulisses de HicoSoft Studio, une équipe algérienne construit ses outils, ses ambitions et une nouvelle façon de raconter le jeu vidéo local.</p>
+          <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>19.09.2025</span></div>
         </div>
       </header>
 

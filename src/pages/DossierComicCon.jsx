@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = 'HzigJZOxz2o';
-const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
@@ -15,18 +14,11 @@ export default function DossierComicCon() {
     <article className="dossier-article">
       <header className="dossier-hero wrap">
         <div className="section-label"><span><b>03 / DOSSIER</b> / CULTURE</span><span>REPORTAGE · 15 MIN</span></div>
-        <div className="dossier-hero-grid">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> Culture gaming algérienne</p>
-            <h1>LA CULTURE<br /><em>SE RÉUNIT.</em></h1>
-            <p className="dossier-dek">À Games & Comic Con Dzair 2026, le jeu vidéo devient un lieu de rencontre : cosplay, invités, découvertes et communauté au même endroit.</p>
-            <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>2026</span></div>
-          </div>
-          <a className="dossier-cover hud-frame" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" aria-label="Regarder le reportage Games & Comic Con Dzair 2026">
-            <img src={thumbnail} alt="Games & Comic Con Dzair 2026" />
-            <span className="dossier-play">▶</span>
-            <span className="dossier-cover-caption">ÉPISODE 03 / GAMES & COMIC CON DZAIR</span>
-          </a>
+        <div className="dossier-hero-copy">
+          <p className="eyebrow"><span className="live-dot" /> Culture gaming algérienne</p>
+          <h1>LA CULTURE<br /><em>SE RÉUNIT.</em></h1>
+          <p className="dossier-dek">À Games & Comic Con Dzair 2026, le jeu vidéo devient un lieu de rencontre : cosplay, invités, découvertes et communauté au même endroit.</p>
+          <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>2026</span></div>
         </div>
       </header>
 

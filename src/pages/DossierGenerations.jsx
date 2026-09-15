@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = 't1Re8ki_gsw';
-const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -29,18 +28,11 @@ export default function DossierGenerations() {
     <article className="dossier-article">
       <header className="dossier-hero wrap">
         <div className="section-label"><span><b>03 / DOSSIER</b> / CULTURE GAMING</span><span>ENTRETIEN · 27 MIN</span></div>
-        <div className="dossier-hero-grid">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> Old school vs new school</p>
-            <h1>LE CHOC<br /><em>DES GÉNÉRATIONS.</em></h1>
-            <p className="dossier-dek">Avec Chaft et El Joueur, Let’s Play confronte deux façons de vivre le jeu vidéo : le souvenir des salles d’arcade et l’énergie des communautés en ligne.</p>
-            <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>04.12.2025</span></div>
-          </div>
-          <a className="dossier-cover hud-frame" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" aria-label="Regarder l'interview Old School vs New School Gamers">
-            <img src={thumbnail} alt="Old School vs New School Gamers" />
-            <span className="dossier-play">▶</span>
-            <span className="dossier-cover-caption">ÉPISODE 03 / OLD SCHOOL VS NEW SCHOOL</span>
-          </a>
+        <div className="dossier-hero-copy">
+          <p className="eyebrow"><span className="live-dot" /> Old school vs new school</p>
+          <h1>LE CHOC<br /><em>DES GÉNÉRATIONS.</em></h1>
+          <p className="dossier-dek">Avec Chaft et El Joueur, Let’s Play confronte deux façons de vivre le jeu vidéo : le souvenir des salles d’arcade et l’énergie des communautés en ligne.</p>
+          <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>04.12.2025</span></div>
         </div>
       </header>
 

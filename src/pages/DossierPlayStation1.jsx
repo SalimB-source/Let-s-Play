@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 
 const videoId = 'oOyW_rjiZ5w';
-const thumbnail = `https://i.ytimg.com/vi/${videoId}/maxresdefault.jpg`;
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -27,18 +26,11 @@ export default function DossierPlayStation1() {
     <article className="dossier-article">
       <header className="dossier-hero wrap">
         <div className="section-label"><span><b>02 / DOSSIER</b> / HISTOIRE DU GAMING</span><span>LECTURE LONGUE · 19 MIN</span></div>
-        <div className="dossier-hero-grid">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> Journal du Geek</p>
-            <h1>LA PLAYSTATION 1,<br /><em>UNE RÉVOLUTION.</em></h1>
-            <p className="dossier-dek">Trente et un ans après son lancement, la première PlayStation reste le symbole d’un changement de génération : des cartouches aux CD, de la 2D à la 3D, du jeu d’enfant à une culture de masse.</p>
-            <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>25.12.2025</span></div>
-          </div>
-          <a className="dossier-cover hud-frame" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer" aria-label="Regarder le dossier sur l'héritage de la PlayStation 1">
-            <img src={thumbnail} alt="L’héritage de la PlayStation 1" />
-            <span className="dossier-play">▶</span>
-            <span className="dossier-cover-caption">ÉPISODE 02 / L’HÉRITAGE DE LA PLAYSTATION 1</span>
-          </a>
+        <div className="dossier-hero-copy">
+          <p className="eyebrow"><span className="live-dot" /> Journal du Geek</p>
+          <h1>LA PLAYSTATION 1,<br /><em>UNE RÉVOLUTION.</em></h1>
+          <p className="dossier-dek">Trente et un ans après son lancement, la première PlayStation reste le symbole d’un changement de génération : des cartouches aux CD, de la 2D à la 3D, du jeu d’enfant à une culture de masse.</p>
+          <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>25.12.2025</span></div>
         </div>
       </header>
 
