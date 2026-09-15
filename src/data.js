@@ -20,4 +20,15 @@ export const socialVisuals = [
   { image: `${base}instagram-DZX9rMwgSaH.jpg`, label: 'Instagram post', title: 'Play it loud', url: 'https://www.instagram.com/p/DZX9rMwgSaH/' },
 ];
 
+
+export const reviewReels = [
+  { id: 'DYu1yYkCtTC', label: 'REEL 01', url: 'https://www.instagram.com/letsplay.officiel/reel/DYu1yYkCtTC/' },
+  { id: 'DYnAO1mjfB8', label: 'REEL 02', url: 'https://www.instagram.com/letsplay.officiel/reel/DYnAO1mjfB8/' },
+  { id: 'DYkdcu5Api8', label: 'REEL 03', url: 'https://www.instagram.com/letsplay.officiel/reel/DYkdcu5Api8/' },
+  { id: 'DYC_tTmFdlJ', label: 'REEL 04', url: 'https://www.instagram.com/letsplay.officiel/reel/DYC_tTmFdlJ/' },
+  { id: 'DXzv3Gxibpk', label: 'REEL 05', url: 'https://www.instagram.com/letsplay.officiel/reel/DXzv3Gxibpk/' },
+];
+
+export const instagramReelsUrl = 'https://www.instagram.com/letsplay.officiel/reels/';
+
 export const baseUrl = base;
