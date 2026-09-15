@@ -45,6 +45,7 @@ import EventArena from './pages/EventArena';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import { AuthProvider } from './auth/AuthContext';
+import { initSinglePlayback } from './lib/videoPlayback';
 
 function App() {
   return (
@@ -102,5 +103,9 @@ function App() {
     </LanguageProvider>
   );
 }
+
+// Une seule vidéo à la fois : dès qu'un lecteur YouTube démarre, le
+// coordinateur met en pause tous les autres lecteurs de la page.
+initSinglePlayback();
 
 createRoot(document.getElementById('root')).render(<App />);

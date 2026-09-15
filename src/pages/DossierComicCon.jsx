@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 const videoId = 'HzigJZOxz2o';
 
@@ -25,7 +26,7 @@ export default function DossierComicCon() {
       <section className="dossier-reading wrap">
         <div className="dossier-main-column">
           <div className="dossier-video hud-frame" ref={videoRef}>
-            <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="Games & Comic Con Dzair 2026 — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            <iframe src={youTubeEmbedUrl(videoId)} title="Games & Comic Con Dzair 2026 — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Ce dossier accompagne le reportage vidéo et revient sur ce que raconte un événement pop culture lorsqu’il rassemble joueurs, créateurs, artistes et curieux dans un même espace.</p>
 

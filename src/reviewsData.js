@@ -2,6 +2,7 @@
 // Les tests reprennent la sélection et les verdicts d'ActuGaming, reformulés
 // dans le ton maison par la rédaction Let's Play (source citée en bas d'article).
 import { baseUrl as base } from './data';
+import { youTubeEmbedUrl } from './lib/videoPlayback';
 
 const img = (file) => `${base}reviews/${file}`;
 
@@ -600,5 +601,7 @@ export const getTest = (slug) => gameTests.find((test) => test.slug === slug);
 
 // Vidéos officielles des jeux testés (bandes-annonces des éditeurs / presse).
 export const videoWatchUrl = (id) => `https://www.youtube.com/watch?v=${id}`;
-export const videoEmbedUrl = (id, autoplay = false) =>
-  `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1${autoplay ? '&autoplay=1' : ''}`;
+// L'URL d'embed vient de src/lib/videoPlayback.js : elle inclut enablejsapi=1,
+// indispensable pour que la règle « une seule vidéo à la fois » puisse mettre
+// ce lecteur en pause quand un autre démarre.
+export const videoEmbedUrl = (id, autoplay = false) => youTubeEmbedUrl(id, { autoplay });

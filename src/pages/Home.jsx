@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
@@ -163,7 +164,7 @@ export default function Home() {
         <div className="reels-grid">
           {reels.map((reel) => (
             <div className="reel-card hud-frame" key={reel.id}>
-              <iframe src={`https://www.youtube.com/embed/${reel.id}?rel=0&modestbranding=1`} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              <iframe src={youTubeEmbedUrl(reel.id)} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
               <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
             </div>
           ))}

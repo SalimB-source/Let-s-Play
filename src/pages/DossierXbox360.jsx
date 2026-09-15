@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 const videoId = '8NqnTzVh5O0';
 
@@ -39,7 +40,7 @@ export default function DossierXbox360() {
       <section className="dossier-reading wrap">
         <div className="dossier-main-column">
           <div className="dossier-video hud-frame" ref={videoRef}>
-            <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="20 سنة على Xbox 360: الأسطورة لي بدّلت عالم الألعاب — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            <iframe src={youTubeEmbedUrl(videoId)} title="20 سنة على Xbox 360: الأسطورة لي بدّلت عالم الألعاب — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Ce dossier accompagne l’épisode de <em>Journal du Geek</em> consacré aux vingt ans de la Xbox 360, avec Chaft et Rami.</p>
 

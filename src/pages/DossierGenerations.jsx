@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 const videoId = 't1Re8ki_gsw';
 
@@ -39,7 +40,7 @@ export default function DossierGenerations() {
       <section className="dossier-reading wrap">
         <div className="dossier-main-column">
           <div className="dossier-video hud-frame" ref={videoRef}>
-            <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="Old School vs New School Gamers — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            <iframe src={youTubeEmbedUrl(videoId)} title="Old School vs New School Gamers — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Ce dossier accompagne l’entretien de Chaft avec El Joueur, créateur de contenu et témoin d’une génération passée de la console familiale aux communautés numériques.</p>
 

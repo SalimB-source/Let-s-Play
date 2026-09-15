@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { gameTests, scoreTier, scoreLabel } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 import VideoModal from '../components/VideoModal';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
@@ -115,7 +116,7 @@ export default function Reviews(){
           {featuredDossiers.map((dossier) => (
             <article className="featured-dossier" id={dossier.id} key={dossier.id}>
               <div className="featured-dossier-player hud-frame">
-                <iframe src={`https://www.youtube.com/embed/${dossier.video}?rel=0&modestbranding=1`} title={dossier.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+                <iframe src={youTubeEmbedUrl(dossier.video)} title={dossier.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
               </div>
               <div className="featured-dossier-copy">
                 <span className="featured-dossier-meta">{dossier.meta}</span>
@@ -141,7 +142,7 @@ export default function Reviews(){
         <div className="reels-grid">
           {reels.map((reel) => (
             <div className="reel-card hud-frame" key={reel.id}>
-              <iframe src={`https://www.youtube.com/embed/${reel.id}?rel=0&modestbranding=1`} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              <iframe src={youTubeEmbedUrl(reel.id)} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
               <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
             </div>
           ))}
