@@ -38,8 +38,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  *
  * À chaque chapitre demandé, le conteneur vidéo reçoit brièvement la classe
  * « chapter-seek », qui déclenche une animation (halo néon + flash) définie
- * dans dossier-article.css. L'animation est relancée à chaque clic, même
- * rapprochés, et désactivée si l'utilisateur préfère réduire les animations.
+ * dans dossier-article.css. Un loader néon (classe « is-seeking » +
+ * .dossier-video-loader) s'affiche pendant la recherche du timestamp et
+ * disparaît dès que la lecture redémarre (ou après 6 s max). Les deux
+ * animations sont relancées à chaque clic et désactivées si l'utilisateur
+ * préfère réduire les animations.
  */
 
 // Délais (en ms) au-delà desquels on considère que l'API ne répond pas : un
@@ -129,7 +132,9 @@ export default function useChapterVideo(videoRef) {
   const readyTimerRef = useRef(null);
   const playbackTimerRef = useRef(null);
   const flashTimerRef = useRef(null); // retrait différé de la classe d'animation
+  const seekingTimerRef = useRef(null); // sécurité : retire le loader si YouTube ne répond jamais
   const [ready, setReady] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
 
   const clearTimer = useCallback((timerRef) => {
     if (timerRef.current) {
@@ -141,13 +146,70 @@ export default function useChapterVideo(videoRef) {
   const clearTimers = useCallback(() => {
     clearTimer(readyTimerRef);
     clearTimer(playbackTimerRef);
+    clearTimer(seekingTimerRef);
   }, [clearTimer]);
 
+  // Crée (si besoin) l'overlay de chargement à l'intérieur du conteneur vidéo.
+  const ensureLoader = useCallback((container) => {
+    if (!container || typeof document === 'undefined') return null;
+    let loader = container.querySelector('.dossier-video-loader');
+    if (loader) return loader;
+    loader = document.createElement('div');
+    loader.className = 'dossier-video-loader';
+    loader.setAttribute('aria-hidden', 'true');
+    loader.innerHTML =
+      '<div class="dossier-video-loader-inner"><div class="dossier-video-spinner" aria-hidden="true"></div><span class="dossier-video-loader-text">Chargement…</span></div>';
+    container.appendChild(loader);
+    return loader;
+  }, []);
+
+  const stopSeeking = useCallback(() => {
+    const videoEl = videoRef.current;
+    if (videoEl && videoEl.classList) {
+      videoEl.classList.remove('is-seeking');
+    }
+    clearTimer(seekingTimerRef);
+    setIsSeeking(false);
+  }, [videoRef, clearTimer]);
+
+  const startSeeking = useCallback(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+    ensureLoader(videoEl);
+    if (videoEl.classList) {
+      videoEl.classList.add('is-seeking');
+    }
+    setIsSeeking(true);
+    clearTimer(seekingTimerRef);
+    // Filet de sécurité : si YouTube ne déclenche jamais PLAYING (réseau lent,
+    // autoplay bloqué), on retire le loader au bout de 6 s.
+    seekingTimerRef.current = setTimeout(() => {
+      seekingTimerRef.current = null;
+      stopSeeking();
+    }, 6000);
+  }, [videoRef, ensureLoader, clearTimer, stopSeeking]);
+
   // Recharge l'embed avec ?start=<secondes>&autoplay=1 : la vidéo repart au bon
-  // moment, sans dépendre de l'API.
+  // moment, sans dépendre de l'API. Le loader reste visible jusqu'au load de
+  // l'iframe (ou jusqu'au timeout de sécurité).
   const seekViaFallback = useCallback(
-    (seconds) => Boolean(rebuildEmbed(videoRef.current, templateRef.current, baseSrcRef.current, seconds)),
-    [videoRef]
+    (seconds) => {
+      const container = videoRef.current;
+      const fresh = rebuildEmbed(container, templateRef.current, baseSrcRef.current, seconds);
+      if (fresh) {
+        const onLoad = () => {
+          fresh.removeEventListener('load', onLoad);
+          // Petite temporisation pour laisser YouTube afficher la nouvelle frame
+          setTimeout(() => stopSeeking(), 350);
+        };
+        fresh.addEventListener('load', onLoad);
+        // Si l'événement load ne se déclenche jamais, le timer de startSeeking
+        // nettoiera tout seul au bout de 6 s.
+        return true;
+      }
+      return false;
+    },
+    [videoRef, stopSeeking]
   );
 
   // L'API est bloquée, trop lente, ou la lecture ne démarre pas : on bascule sur
@@ -184,7 +246,8 @@ export default function useChapterVideo(videoRef) {
   );
 
   // Surveille le démarrage effectif de la lecture après un clic : si rien ne
-  // joue (API muette, lecture bloquée), on bascule sur le repli URL.
+  // joue (API muette, lecture bloquée), on bascule sur le repli URL. Si la
+  // lecture a bien démarré, on retire le loader.
   const watchPlayback = useCallback(
     (seconds) => {
       clearTimer(playbackTimerRef);
@@ -201,12 +264,15 @@ export default function useChapterVideo(videoRef) {
         }
         // 1 = en lecture, 2 = en pause (seek appliqué, lecture à confirmer),
         // 3 = mise en mémoire tampon : la lecture a démarré, pas de repli.
-        if (state === 1 || state === 2 || state === 3) return;
+        if (state === 1 || state === 2 || state === 3) {
+          stopSeeking();
+          return;
+        }
 
         switchToFallback(seconds);
       }, PLAYBACK_START_TIMEOUT);
     },
-    [clearTimer, switchToFallback]
+    [clearTimer, switchToFallback, stopSeeking]
   );
 
   // Fait pulser la vidéo pour signaler visuellement le changement de chapitre.
@@ -274,11 +340,18 @@ export default function useChapterVideo(videoRef) {
     };
 
     const handleStateChange = (event) => {
+      if (cancelled || fallbackRef.current) return;
+
+      // Dès que la lecture démarre vraiment, on retire le loader.
+      if (event.data === 1) {
+        clearTimer(playbackTimerRef);
+        stopSeeking();
+      }
+
       // YouTube ignore un seekTo() appelé pendant que la vidéo est au repos
       // (unstarted / cued / ended) : dès que la lecture démarre vraiment, on
       // réapplique le temps sélectionné.
-      if (cancelled || fallbackRef.current || event.data !== 1) return; // 1 = PLAYING
-      clearTimer(playbackTimerRef);
+      if (event.data !== 1) return; // 1 = PLAYING
       const pending = pendingSeekRef.current;
       if (!pending) return;
       pendingSeekRef.current = null;
@@ -321,6 +394,7 @@ export default function useChapterVideo(videoRef) {
       cancelled = true;
       clearTimers();
       clearTimer(flashTimerRef);
+      stopSeeking();
       apiReadyRef.current = false;
       pendingSeekRef.current = null;
       playerRef.current = null;
@@ -332,7 +406,7 @@ export default function useChapterVideo(videoRef) {
         }
       }
     };
-  }, [videoRef, clearTimer, clearTimers, switchToFallback, watchPlayback]);
+  }, [videoRef, clearTimer, clearTimers, switchToFallback, watchPlayback, stopSeeking]);
 
   const seekTo = useCallback(
     (seconds) => {
@@ -342,6 +416,7 @@ export default function useChapterVideo(videoRef) {
         videoEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       flashVideo();
+      startSeeking();
 
       // API inutilisable : on recharge l'embed avec start + autoplay, sans
       // aucun script externe.
@@ -380,8 +455,8 @@ export default function useChapterVideo(videoRef) {
       if (!(state === -1 || state === 0 || state === 5)) pendingSeekRef.current = null;
       watchPlayback(target);
     },
-    [videoRef, flashVideo, seekViaFallback, switchToFallback, watchPlayback]
+    [videoRef, flashVideo, startSeeking, seekViaFallback, switchToFallback, watchPlayback]
   );
 
-  return { seekTo, ready };
+  return { seekTo, ready, isSeeking };
 }
