@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://salimb-source.github.io/Let-s-Play/sitemap.xml

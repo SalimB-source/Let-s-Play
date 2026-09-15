@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
+import SEO from './SEO';
 
 const base = import.meta.env.BASE_URL;
 
@@ -37,6 +38,7 @@ export default function Layout({ children }) {
   
   return (
     <>
+      <SEO />
       <nav className={`${scrolled ? 'nav scrolled' : 'nav'}${isHome ? ' nav-home' : ''}`}>
         <Link className="brand" to="/" aria-label="Let's Play, home">
           <img className="brand-logo" src={`${base}lets-play-logo.png`} alt="Let’s Play" />
