@@ -277,7 +277,18 @@ img{max-width:100%}
 .featured-dossier-copy h3 em{font-style:normal;color:var(--cyan);text-shadow:0 0 24px rgba(34,211,238,.5)}
 .featured-dossier-copy p:not(.eyebrow){font-size:16px;line-height:1.55;color:var(--muted);margin:0}
 
-/* Épisodes à la une — même grille 2 colonnes que dossiers, avec bande sponsor compacte */
+/* Épisodes à la une — grille 3 colonnes, bande logo sans légende */
+.featured-dossiers--episodes .featured-dossiers-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:24px;
+  margin-top:36px;
+}
+.featured-dossiers--episodes .featured-dossier{gap:16px}
+.featured-dossiers--episodes .featured-dossier-copy h3{
+  font-size:clamp(18px,1.7vw,24px);
+  margin:0 0 14px;
+}
+.featured-dossiers--episodes .featured-dossier-copy .arrow-link{margin-top:14px}
 .featured-dossier-sponsor{
   margin-top:22px;
   display:flex;
@@ -315,11 +326,35 @@ img{max-width:100%}
 }
 .featured-dossier-sponsor-copy p{margin:0;font-size:13px;line-height:1.45;color:var(--muted)}
 .featured-dossier-sponsor .arrow-link{margin-top:0;flex:none}
+.featured-dossier-sponsor--logo{
+  margin-top:0;
+  justify-content:center;
+  padding:12px 18px;
+  min-height:76px;
+  background:#fff;
+  transition:border-color .2s,box-shadow .2s,transform .2s;
+}
+.featured-dossier-sponsor--logo .featured-dossier-sponsor-mark{width:min(168px,88%)}
+.featured-dossier-sponsor--logo .featured-dossier-sponsor-mark img{max-height:52px;width:auto;max-width:100%;margin:auto}
+.featured-dossier--djezzy .featured-dossier-sponsor--logo{min-height:92px}
+.featured-dossier--djezzy .featured-dossier-sponsor--logo .featured-dossier-sponsor-mark{width:min(92px,56%)}
+.featured-dossier--djezzy .featured-dossier-sponsor--logo .featured-dossier-sponsor-mark img{max-height:72px}
+.featured-dossier-sponsor--logo:hover{
+  border-color:var(--cyan);
+  box-shadow:0 0 22px -10px rgba(34,211,238,.45);
+  transform:translateY(-2px);
+}
 .featured-dossier-actions{display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:4px}
+.featured-dossier--telecom{--brand:#2f6bd8}
+.featured-dossier--telecom .featured-dossier-copy h3 em{color:#5b8eef;text-shadow:0 0 22px rgba(47,107,216,.45)}
+.featured-dossier--telecom .featured-dossier-player{box-shadow:0 0 44px -12px rgba(47,107,216,.38),0 24px 60px -30px rgba(0,0,0,.9)}
 .featured-dossier--ooredoo{--ooredoo:#e30613}
 .featured-dossier--ooredoo .featured-dossier-copy h3 em{color:var(--ooredoo);text-shadow:0 0 22px rgba(227,6,19,.45)}
 .featured-dossier--ooredoo .featured-dossier-player{box-shadow:0 0 44px -12px rgba(227,6,19,.38),0 24px 60px -30px rgba(0,0,0,.9)}
 .featured-dossier--ooredoo .featured-dossier-sponsor-copy small{color:var(--ooredoo)}
+.featured-dossier--djezzy{--djezzy:#e30613}
+.featured-dossier--djezzy .featured-dossier-copy h3 em{color:var(--djezzy);text-shadow:0 0 22px rgba(227,6,19,.45)}
+.featured-dossier--djezzy .featured-dossier-player{box-shadow:0 0 44px -12px rgba(227,6,19,.38),0 24px 60px -30px rgba(0,0,0,.9)}
 
 /* ============ SHOW / MANIFESTO ============ */
 .show{padding:110px 0 110px}
@@ -600,6 +635,7 @@ img{max-width:100%}
   .featured-dossiers-head{display:block;padding-top:30px}
   .featured-dossiers-head .arrow-link{display:inline-flex;margin-top:18px}
   .featured-dossiers-grid{grid-template-columns:1fr;gap:48px;margin-top:34px}
+  .featured-dossiers--episodes .featured-dossiers-grid{grid-template-columns:1fr;gap:36px;margin-top:34px}
   .featured-dossier{gap:22px}
   .show{padding-top:70px;padding-bottom:70px}
   .manifesto-grid{grid-template-columns:1fr;gap:34px;padding-top:44px}

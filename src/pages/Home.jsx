@@ -13,27 +13,26 @@ const reels = [
   { id: 'fscuzWcw-PA', label: 'REEL 04' },
 ];
 
-// Épisodes à la une — même données que précédemment, mais rendus en grille 2 colonnes
-// exactement comme la section 02/dossiers à la une de la page Tests (/reviews).
+// Épisodes à la une — 3 colonnes, copy courte, logo partenaire sans légende.
 const headlineEpisode = {
   id: 'aTs0zhm6Leg',
   href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg',
   title: 'HicoSoft Studio et le projet GOYA — Let’s Play Official',
-  sponsor: { name: 'Algérie Télécom', logo: 'partners/algerie-telecom.png', href: 'https://www.algerietelecom.dz/' },
+  sponsor: { name: 'Algérie Télécom', logo: 'partners/algerie-telecom.png', href: 'https://www.algerietelecom.dz/', tone: 'telecom' },
 };
 
 const partnerEpisode = {
   id: 'twbaM8fiXpo',
   href: 'https://www.youtube.com/watch?v=twbaM8fiXpo',
   title: 'FreeFire Algerian Championship 2023 (FFAC2023) — Let’s Play Official',
-  sponsor: { name: 'Ooredoo', logo: 'partners/ooredoo.png', href: 'https://www.ooredoo.dz/' },
+  sponsor: { name: 'Ooredoo', logo: 'partners/ooredoo.png', href: 'https://www.ooredoo.dz/', tone: 'ooredoo' },
 };
 
 const djezzyEpisode = {
   id: '48U4aK0CnnI',
   href: 'https://www.youtube.com/watch?v=48U4aK0CnnI',
   title: '2026 World Cup changed mobile football games — 7ouma Arena by Djezzy',
-  sponsor: { name: 'Djezzy', logo: 'partners/djezzy.png', href: 'https://www.djezzy.dz/' },
+  sponsor: { name: 'Djezzy', logo: 'partners/djezzy.png', href: 'https://www.djezzy.dz/', tone: 'djezzy' },
 };
 
 export default function Home() {
@@ -66,9 +65,9 @@ export default function Home() {
   const head = headMap[lang] || headMap.fr;
 
   const episodes = [
-    { ...headlineEpisode, copy: t.home.featured, to: '/dossiers/goya-hicosoft' },
-    { ...partnerEpisode, copy: t.home.featuredPartner, to: '/partenaires' },
-    { ...djezzyEpisode, copy: t.home.featuredDjezzy, to: '/partenaires' },
+    { ...headlineEpisode, copy: t.home.featured },
+    { ...partnerEpisode, copy: t.home.featuredPartner },
+    { ...djezzyEpisode, copy: t.home.featuredDjezzy },
   ];
 
   // On garde le split 01 / XXX de la trad existante pour le section-label
@@ -101,8 +100,8 @@ export default function Home() {
 
       <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>{t.home.ticker.map((word, i) => <React.Fragment key={i}>{word} <b>✦</b> </React.Fragment>)}</span>)}</div></section>
 
-      {/* 01 / ÉPISODES À LA UNE — layout 2 colonnes exactement comme .featured-dossiers de /reviews */}
-      <section className="featured-dossiers wrap" id="featured">
+      {/* 01 / ÉPISODES À LA UNE — 3 colonnes, titre court + logo partenaire */}
+      <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured">
         <div className="section-label"><span><b>{labelNum}</b> / {labelTitle}</span><span>{head.label2}</span></div>
         <div className="featured-dossiers-head">
           <div>
@@ -113,31 +112,20 @@ export default function Home() {
         </div>
         <div className="featured-dossiers-grid">
           {episodes.map((ep) => (
-            <article className={`featured-dossier${ep.sponsor.name === 'Ooredoo' ? ' featured-dossier--ooredoo' : ''}`} key={ep.id}>
+            <article className={`featured-dossier featured-dossier--${ep.sponsor.tone}`} key={ep.id}>
               <div className="featured-dossier-player hud-frame">
                 <iframe src={`https://www.youtube.com/embed/${ep.id}?rel=0&modestbranding=1`} title={ep.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
               </div>
               <div className="featured-dossier-copy">
-                <span className="featured-dossier-meta">{ep.copy.label2}</span>
-                <p className="eyebrow"><span className="live-dot" /> {ep.copy.eyebrow}</p>
                 <h3>{ep.copy.h2a}<br /><em>{ep.copy.h2b}</em></h3>
-                <p>{ep.copy.text}</p>
-
-                <div className="featured-dossier-sponsor">
+                <a className="featured-dossier-sponsor featured-dossier-sponsor--logo" href={ep.sponsor.href} target="_blank" rel="noreferrer">
                   <span className="featured-dossier-sponsor-mark">
-                    {ep.sponsor.logo ? <img src={`${base}${ep.sponsor.logo}`} alt={ep.sponsor.name} /> : <strong className="featured-dossier-sponsor-text">{ep.sponsor.name}</strong>}
+                    {ep.sponsor.logo
+                      ? <img src={`${base}${ep.sponsor.logo}`} alt={ep.sponsor.name} />
+                      : <strong className="featured-dossier-sponsor-text">{ep.sponsor.name}</strong>}
                   </span>
-                  <div className="featured-dossier-sponsor-copy">
-                    <small>{ep.copy.sponsorKicker}</small>
-                    <p>{ep.copy.sponsorText}</p>
-                  </div>
-                  <a className="arrow-link" href={ep.sponsor.href} target="_blank" rel="noreferrer">{ep.copy.sponsorLink} <Arrow /></a>
-                </div>
-
-                <div className="featured-dossier-actions">
-                  {ep.to && <Link className="arrow-link" to={ep.to}>{ep.copy.cta} <Arrow /></Link>}
-                  <a className="arrow-link" href={ep.href} target="_blank" rel="noreferrer">{ep.copy.watch} <Arrow /></a>
-                </div>
+                </a>
+                <a className="arrow-link" href={ep.href} target="_blank" rel="noreferrer">{ep.copy.watch} <Arrow /></a>
               </div>
             </article>
           ))}
