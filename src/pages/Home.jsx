@@ -32,6 +32,14 @@ const partnerEpisode = {
   sponsor: { name: 'Ooredoo', logo: 'partners/ooredoo.png', href: 'https://www.ooredoo.dz/' },
 };
 
+// Épisode 7ouma Arena × Djezzy mis à la une sur la page d'accueil.
+const djezzyEpisode = {
+  id: '48U4aK0CnnI',
+  href: 'https://www.youtube.com/watch?v=48U4aK0CnnI',
+  title: '2026 World Cup changed mobile football games — 7ouma Arena by Djezzy',
+  sponsor: { name: 'Djezzy', href: 'https://www.djezzy.dz/' },
+};
+
 // Bloc « épisode à la une » : copy + lecteur YouTube + bande sponsor partenaire.
 // Utilisé par l'épisode HicoSoft × Algérie Télécom puis l'épisode Ooredoo × FFAC2023.
 function FeaturedBlock({ episode, label, copy, cta, mirror = false }) {
@@ -54,7 +62,7 @@ function FeaturedBlock({ episode, label, copy, cta, mirror = false }) {
       </div>
       <div className="featured-sponsor">
         <span className="featured-sponsor-mark">
-          <img src={`${base}${episode.sponsor.logo}`} alt={episode.sponsor.name} />
+          {episode.sponsor.logo ? <img src={`${base}${episode.sponsor.logo}`} alt={episode.sponsor.name} /> : <strong className="featured-sponsor-text">{episode.sponsor.name}</strong>}
         </span>
         <div className="featured-sponsor-copy">
           <small>{copy.sponsorKicker}</small>
@@ -95,6 +103,7 @@ export default function Home() {
 
       <FeaturedBlock episode={headlineEpisode} label={t.home.featured.label1} copy={t.home.featured} cta={{ to: '/dossiers/goya-hicosoft' }} />
       <FeaturedBlock episode={partnerEpisode} label={t.home.featuredPartner.label1} copy={t.home.featuredPartner} cta={{ to: '/partenaires' }} mirror />
+      <FeaturedBlock episode={djezzyEpisode} label={t.home.featuredDjezzy.label1} copy={t.home.featuredDjezzy} cta={{ to: '/partenaires' }} />
 
       <section className="formats wrap" id="formats">
         <div className="section-label"><span><b>02</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>

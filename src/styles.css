@@ -235,6 +235,7 @@ img{max-width:100%}
   flex:none;width:clamp(126px,14vw,158px);display:grid;place-items:center;
 }
 .featured-sponsor-mark img{display:block;width:100%;height:auto;object-fit:contain}
+.featured-sponsor-text{display:block;font-family:var(--display);font-size:clamp(20px,2.4vw,30px);letter-spacing:.04em;color:#fff;text-shadow:0 0 18px rgba(34,211,238,.45)}
 .featured-sponsor-copy{flex:1;min-width:230px}
 .featured-sponsor-copy small{display:block;margin-bottom:6px;font:500 10px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--cyan)}
 .featured-sponsor-copy p{margin:0;font-size:14.5px;line-height:1.55;color:var(--muted)}
