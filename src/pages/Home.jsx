@@ -42,10 +42,10 @@ const djezzyEpisode = {
 
 // Bloc « épisode à la une » : copy + lecteur YouTube + bande sponsor partenaire.
 // Utilisé par l'épisode HicoSoft × Algérie Télécom puis l'épisode Ooredoo × FFAC2023.
-function FeaturedBlock({ episode, label, copy, cta, mirror = false }) {
+function FeaturedBlock({ episode, label, copy, cta, mirror = false, showSectionLabel = true }) {
   return (
     <section className={`featured wrap${mirror ? ' featured--ooredoo' : ''}`} id={mirror ? 'partner-episode' : 'featured'}>
-      <div className="section-label"><span><b>{label.split(' / ')[0]}</b> / {label.split(' / ')[1]}</span><span>{copy.label2}</span></div>
+      {showSectionLabel && <div className="section-label"><span><b>{label.split(' / ')[0]}</b> / {label.split(' / ')[1]}</span><span>{copy.label2}</span></div>}
       <div className={`featured-grid${mirror ? ' featured-grid--mirror' : ''}`}>
         <div className="featured-copy">
           <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p>
@@ -102,8 +102,8 @@ export default function Home() {
       <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>{t.home.ticker.map((word, i) => <React.Fragment key={i}>{word} <b>✦</b> </React.Fragment>)}</span>)}</div></section>
 
       <FeaturedBlock episode={headlineEpisode} label={t.home.featured.label1} copy={t.home.featured} cta={{ to: '/dossiers/goya-hicosoft' }} />
-      <FeaturedBlock episode={partnerEpisode} label={t.home.featuredPartner.label1} copy={t.home.featuredPartner} cta={{ to: '/partenaires' }} mirror />
-      <FeaturedBlock episode={djezzyEpisode} label={t.home.featuredDjezzy.label1} copy={t.home.featuredDjezzy} cta={{ to: '/partenaires' }} />
+      <FeaturedBlock episode={partnerEpisode} label={t.home.featuredPartner.label1} copy={t.home.featuredPartner} cta={{ to: '/partenaires' }} mirror showSectionLabel={false} />
+      <FeaturedBlock episode={djezzyEpisode} label={t.home.featuredDjezzy.label1} copy={t.home.featuredDjezzy} cta={{ to: '/partenaires' }} showSectionLabel={false} />
 
       <section className="formats wrap" id="formats">
         <div className="section-label"><span><b>{t.home.formats.label1.split(' / ')[0]}</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
