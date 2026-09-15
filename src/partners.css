@@ -33,6 +33,9 @@
 /* Grand format : logo seul, utilisé dans les cartes (le nom apparaît une seule fois, dans le titre) */
 .partner-mark-xl .partner-mark-logo{height:88px;width:230px;max-width:230px;object-fit:contain;object-position:center;filter:drop-shadow(0 10px 24px rgba(0,0,0,.45))}
 .partner-mark-xl .partner-mark-badge{width:92px;height:92px;font-size:30px;clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);box-shadow:0 0 36px -6px var(--glow,rgba(124,58,237,.55))}
+.partner-mark-arena .partner-mark-logo{transform:scale(1.35)}
+.partner-mark-arena.partner-mark-sm .partner-mark-logo{transform:scale(1.2)}
+.partner-mark-arena.partner-mark-xl .partner-mark-logo{transform:scale(1.5)}
 
 /* ---------- Étiquettes récurrentes ---------- */
 .partner-index{font:500 11px var(--mono);letter-spacing:.2em;color:var(--dim)}
@@ -68,6 +71,7 @@
 .partner-card-logo .partner-mark{justify-content:center}
 .partner-card-logo .partner-mark-logo{transition:transform .25s}
 .partner-card:hover .partner-card-logo .partner-mark-logo{transform:scale(1.05)}
+.partner-card-arena:hover .partner-card-logo .partner-mark-arena .partner-mark-logo{transform:scale(1.5)}
 .partner-card h3{position:relative;font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.02em;margin:0;text-transform:uppercase}
 .partner-desc{position:relative;margin:0;font-size:14.5px;line-height:1.58;color:var(--muted)}
 .partner-card .partner-facts{position:relative;margin:2px 0 4px}
