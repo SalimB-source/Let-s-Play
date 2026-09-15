@@ -84,6 +84,13 @@ export const partners = [
     context: 'EGOR Gaming, structure esport algérienne, organise les tournois de 7ouma Arena avec l’équipe Let’s Play : formats, inscriptions, arbitrage et déroulé des matchs jusqu’aux finales. Let’s Play a présenté cet écosystème dans le Journal du Geek.',
     confidence: 'Vérifié publiquement', source: arenaLaunchSource
   },
+  {
+    id: 'just-play-it', tag: 'just-play-it', name: 'Just Play It', nameNative: '', mark: 'JPI', tone: 'just-play-it',
+    logo: 'partners/just-play-it.png', external: 'https://www.instagram.com/letsplay.officiel/', externalLabel: 'Let’s Play Official',
+    media: null, mediaLabel: null,
+    role: 'Partenaire gaming', context: 'Just Play It rejoint la sélection des partenaires et soutiens visibles de l’écosystème Let’s Play.',
+    confidence: 'Référencé par l’équipe Let’s Play', source: 'https://www.instagram.com/letsplay.officiel/'
+  },
 ];
 
 export const partnerUrls = {
