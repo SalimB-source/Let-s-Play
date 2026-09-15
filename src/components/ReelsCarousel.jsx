@@ -78,48 +78,6 @@ function buildEmbedHtml(reel) {
 }
 
 function ReelSlide({ reel, labels }) {
-  const hostRef = useRef(null);
-  const [state, setState] = useState('loading'); // 'loading' | 'ready' | 'fallback'
-
-  useEffect(() => {
-    let cancelled = false;
-    const hasIframe = () => !!hostRef.current && !!hostRef.current.querySelector('iframe');
-    const markReady = () => {
-      if (!cancelled) setState('ready');
-    };
-
-    const poll = window.setInterval(() => {
-      if (hasIframe()) {
-        window.clearInterval(poll);
-        markReady();
-      }
-    }, 400);
-
-    const timeout = window.setTimeout(() => {
-      window.clearInterval(poll);
-      if (!cancelled && !hasIframe()) setState('fallback');
-    }, READY_TIMEOUT);
-
-    loadInstagramEmbeds()
-      .then((instgrm) => {
-        if (cancelled) return;
-        try {
-          instgrm.Embeds.process();
-        } catch (error) {
-          setState('fallback');
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setState('fallback');
-      });
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(poll);
-      window.clearTimeout(timeout);
-    };
-  }, []);
-
   return (
     <article className="reel-slide hud-frame">
       <header className="reel-slide-head">
@@ -128,25 +86,14 @@ function ReelSlide({ reel, labels }) {
           {labels.open} <span aria-hidden="true">↗</span>
         </a>
       </header>
-      <div className={`reel-embed${state === 'ready' ? ' is-ready' : ''}`} ref={hostRef}>
-        <div className="reel-embed-mount" dangerouslySetInnerHTML={{ __html: buildEmbedHtml(reel) }} />
-        {state !== 'ready' &&
-          (state === 'fallback' ? (
-            <a className="reel-overlay is-fallback" href={reel.url} target="_blank" rel="noreferrer">
-              <div>
-                <strong>{labels.fallbackTitle}</strong>
-                <span>{labels.fallbackText}</span>
-                <em>{labels.fallbackCta} <span aria-hidden="true">↗</span></em>
-              </div>
-            </a>
-          ) : (
-            <div className="reel-overlay is-loading" aria-hidden="true">
-              <div>
-                <strong>{reel.label}</strong>
-                <span>{labels.loading}</span>
-              </div>
-            </div>
-          ))}
+      <div className="reel-embed">
+        <iframe
+          src={`https://www.instagram.com/reel/${reel.id}/embed/`}
+          title={`${reel.label} — Instagram`}
+          loading="lazy"
+          allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+          allowFullScreen
+        />
       </div>
     </article>
   );
