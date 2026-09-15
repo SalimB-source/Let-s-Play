@@ -13,9 +13,8 @@ const reels = [
   { id: 'fscuzWcw-PA', label: 'REEL 04' },
 ];
 
-// Épisode mis « à la une » de la présentation de l'émission × Algérie Télécom
-// (page d'accueil uniquement) : l'épisode HicoSoft Studio & le projet GOYA,
-// avec le logo officiel du partenaire de diffusion.
+// Épisodes à la une — même données que précédemment, mais rendus en grille 2 colonnes
+// exactement comme la section 02/dossiers à la une de la page Tests (/reviews).
 const headlineEpisode = {
   id: 'aTs0zhm6Leg',
   href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg',
@@ -23,8 +22,6 @@ const headlineEpisode = {
   sponsor: { name: 'Algérie Télécom', logo: 'partners/algerie-telecom.png', href: 'https://www.algerietelecom.dz/' },
 };
 
-// Épisode partenaire Ooredoo (page d'accueil uniquement) : le FreeFire Algerian
-// Championship 2023 — FFAC2023, présenté exactement comme l'épisode HicoSoft.
 const partnerEpisode = {
   id: 'twbaM8fiXpo',
   href: 'https://www.youtube.com/watch?v=twbaM8fiXpo',
@@ -32,7 +29,6 @@ const partnerEpisode = {
   sponsor: { name: 'Ooredoo', logo: 'partners/ooredoo.png', href: 'https://www.ooredoo.dz/' },
 };
 
-// Épisode 7ouma Arena × Djezzy mis à la une sur la page d'accueil.
 const djezzyEpisode = {
   id: '48U4aK0CnnI',
   href: 'https://www.youtube.com/watch?v=48U4aK0CnnI',
@@ -40,42 +36,46 @@ const djezzyEpisode = {
   sponsor: { name: 'Djezzy', logo: 'partners/djezzy.png', href: 'https://www.djezzy.dz/' },
 };
 
-// Bloc « épisode à la une » : copy + lecteur YouTube + bande sponsor partenaire.
-// Utilisé par l'épisode HicoSoft × Algérie Télécom puis l'épisode Ooredoo × FFAC2023.
-function FeaturedBlock({ episode, label, copy, cta, mirror = false, showSectionLabel = true }) {
-  return (
-    <section className={`featured wrap${mirror ? ' featured--ooredoo' : ''}`} id={mirror ? 'partner-episode' : 'featured'}>
-      {showSectionLabel && <div className="section-label"><span><b>{label.split(' / ')[0]}</b> / {label.split(' / ')[1]}</span><span>{copy.label2}</span></div>}
-      <div className={`featured-grid${mirror ? ' featured-grid--mirror' : ''}`}>
-        <div className="featured-copy">
-          <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p>
-          <h2>{copy.h2a}<br /><em>{copy.h2b}</em></h2>
-          <p>{copy.text}</p>
-          <div className="featured-ctas">
-            {cta && <Link className="arrow-link" to={cta.to}>{copy.cta} <Arrow /></Link>}
-            <a className="arrow-link" href={episode.href} target="_blank" rel="noreferrer">{copy.watch} <Arrow /></a>
-          </div>
-        </div>
-        <div className="featured-player hud-frame">
-          <iframe src={`https://www.youtube.com/embed/${episode.id}?rel=0&modestbranding=1`} title={episode.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-        </div>
-      </div>
-      <div className="featured-sponsor">
-        <span className="featured-sponsor-mark">
-          {episode.sponsor.logo ? <img src={`${base}${episode.sponsor.logo}`} alt={episode.sponsor.name} /> : <strong className="featured-sponsor-text">{episode.sponsor.name}</strong>}
-        </span>
-        <div className="featured-sponsor-copy">
-          <small>{copy.sponsorKicker}</small>
-          <p>{copy.sponsorText}</p>
-        </div>
-        <a className="arrow-link" href={episode.sponsor.href} target="_blank" rel="noreferrer">{copy.sponsorLink} <Arrow /></a>
-      </div>
-    </section>
-  );
-}
-
 export default function Home() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+
+  // Head générique pour la section 01 — même structure que featured-dossiers de Reviews
+  const headMap = {
+    fr: {
+      eyebrow: 'Épisodes à la une',
+      h2a: 'LES ÉPISODES',
+      h2b: 'À LA UNE.',
+      seeAll: 'Voir tous les épisodes',
+      label2: 'ALGÉRIE TÉLÉCOM · OOREDOO · DJEZZY',
+    },
+    en: {
+      eyebrow: 'Featured episodes',
+      h2a: 'FEATURED',
+      h2b: 'EPISODES.',
+      seeAll: 'See all episodes',
+      label2: 'ALGÉRIE TÉLÉCOM · OOREDOO · DJEZZY',
+    },
+    ar: {
+      eyebrow: 'الحلقات المميزة',
+      h2a: 'الحلقات',
+      h2b: 'المميزة.',
+      seeAll: 'شاهد جميع الحلقات',
+      label2: 'اتصالات الجزائر · أوريدو · جازي',
+    },
+  };
+  const head = headMap[lang] || headMap.fr;
+
+  const episodes = [
+    { ...headlineEpisode, copy: t.home.featured, to: '/dossiers/goya-hicosoft' },
+    { ...partnerEpisode, copy: t.home.featuredPartner, to: '/partenaires' },
+    { ...djezzyEpisode, copy: t.home.featuredDjezzy, to: '/partenaires' },
+  ];
+
+  // On garde le split 01 / XXX de la trad existante pour le section-label
+  const labelParts = (t.home.featured.label1 || '01 / ÉPISODES À LA UNE').split(' / ');
+  const labelNum = labelParts[0] || '01';
+  const labelTitle = labelParts[1] || 'ÉPISODES À LA UNE';
+
   return (
     <>
       <section className="hero" id="top">
@@ -101,9 +101,48 @@ export default function Home() {
 
       <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>{t.home.ticker.map((word, i) => <React.Fragment key={i}>{word} <b>✦</b> </React.Fragment>)}</span>)}</div></section>
 
-      <FeaturedBlock episode={headlineEpisode} label={t.home.featured.label1} copy={t.home.featured} cta={{ to: '/dossiers/goya-hicosoft' }} />
-      <FeaturedBlock episode={partnerEpisode} label={t.home.featuredPartner.label1} copy={t.home.featuredPartner} cta={{ to: '/partenaires' }} mirror showSectionLabel={false} />
-      <FeaturedBlock episode={djezzyEpisode} label={t.home.featuredDjezzy.label1} copy={t.home.featuredDjezzy} cta={{ to: '/partenaires' }} showSectionLabel={false} />
+      {/* 01 / ÉPISODES À LA UNE — layout 2 colonnes exactement comme .featured-dossiers de /reviews */}
+      <section className="featured-dossiers wrap" id="featured">
+        <div className="section-label"><span><b>{labelNum}</b> / {labelTitle}</span><span>{head.label2}</span></div>
+        <div className="featured-dossiers-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {head.eyebrow}</p>
+            <h2>{head.h2a}<br /><em>{head.h2b}</em></h2>
+          </div>
+          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{head.seeAll} <Arrow /></a>
+        </div>
+        <div className="featured-dossiers-grid">
+          {episodes.map((ep) => (
+            <article className={`featured-dossier${ep.sponsor.name === 'Ooredoo' ? ' featured-dossier--ooredoo' : ''}`} key={ep.id}>
+              <div className="featured-dossier-player hud-frame">
+                <iframe src={`https://www.youtube.com/embed/${ep.id}?rel=0&modestbranding=1`} title={ep.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              </div>
+              <div className="featured-dossier-copy">
+                <span className="featured-dossier-meta">{ep.copy.label2}</span>
+                <p className="eyebrow"><span className="live-dot" /> {ep.copy.eyebrow}</p>
+                <h3>{ep.copy.h2a}<br /><em>{ep.copy.h2b}</em></h3>
+                <p>{ep.copy.text}</p>
+
+                <div className="featured-dossier-sponsor">
+                  <span className="featured-dossier-sponsor-mark">
+                    {ep.sponsor.logo ? <img src={`${base}${ep.sponsor.logo}`} alt={ep.sponsor.name} /> : <strong className="featured-dossier-sponsor-text">{ep.sponsor.name}</strong>}
+                  </span>
+                  <div className="featured-dossier-sponsor-copy">
+                    <small>{ep.copy.sponsorKicker}</small>
+                    <p>{ep.copy.sponsorText}</p>
+                  </div>
+                  <a className="arrow-link" href={ep.sponsor.href} target="_blank" rel="noreferrer">{ep.copy.sponsorLink} <Arrow /></a>
+                </div>
+
+                <div className="featured-dossier-actions">
+                  {ep.to && <Link className="arrow-link" to={ep.to}>{ep.copy.cta} <Arrow /></Link>}
+                  <a className="arrow-link" href={ep.href} target="_blank" rel="noreferrer">{ep.copy.watch} <Arrow /></a>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
 
       <section className="formats wrap" id="formats">
         <div className="section-label"><span><b>{t.home.formats.label1.split(' / ')[0]}</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
