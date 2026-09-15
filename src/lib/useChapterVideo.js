@@ -35,6 +35,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  *
  * L'attribut allow de l'iframe doit contenir « autoplay » pour que le repli
  * démarre la lecture sans second clic.
+ *
+ * À chaque chapitre demandé, le conteneur vidéo reçoit brièvement la classe
+ * « chapter-seek », qui déclenche une animation (halo néon + flash) définie
+ * dans dossier-article.css. L'animation est relancée à chaque clic, même
+ * rapprochés, et désactivée si l'utilisateur préfère réduire les animations.
  */
 
 // Délais (en ms) au-delà desquels on considère que l'API ne répond pas : un
@@ -123,6 +128,7 @@ export default function useChapterVideo(videoRef) {
   const pendingSeekRef = useRef(null); // { seconds, at }
   const readyTimerRef = useRef(null);
   const playbackTimerRef = useRef(null);
+  const flashTimerRef = useRef(null); // retrait différé de la classe d'animation
   const [ready, setReady] = useState(false);
 
   const clearTimer = useCallback((timerRef) => {
@@ -203,8 +209,29 @@ export default function useChapterVideo(videoRef) {
     [clearTimer, switchToFallback]
   );
 
+  // Fait pulser la vidéo pour signaler visuellement le changement de chapitre.
+  // La classe « chapter-seek » déclenche l'animation CSS (halo néon + flash
+  // par-dessus le lecteur) puis est retirée une fois l'animation terminée.
+  const flashVideo = useCallback(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl || !videoEl.classList) return;
+    clearTimer(flashTimerRef);
+    videoEl.classList.remove('chapter-seek');
+    // Force le recalcul du style pour relancer l'animation à chaque clic,
+    // même quand le précédent n'est pas terminé.
+    void videoEl.offsetWidth;
+    videoEl.classList.add('chapter-seek');
+    // Légèrement au-delà de la durée de l'animation (1,2 s) pour la laisser
+    // se terminer avant de nettoyer la classe.
+    flashTimerRef.current = setTimeout(() => {
+      flashTimerRef.current = null;
+      videoEl.classList.remove('chapter-seek');
+    }, 1300);
+  }, [videoRef, clearTimer]);
+
   useEffect(() => {
     clearTimers();
+    clearTimer(flashTimerRef);
     pendingSeekRef.current = null;
     apiReadyRef.current = false;
     fallbackRef.current = false;
@@ -293,6 +320,7 @@ export default function useChapterVideo(videoRef) {
     return () => {
       cancelled = true;
       clearTimers();
+      clearTimer(flashTimerRef);
       apiReadyRef.current = false;
       pendingSeekRef.current = null;
       playerRef.current = null;
@@ -313,6 +341,7 @@ export default function useChapterVideo(videoRef) {
       if (videoEl && typeof videoEl.scrollIntoView === 'function') {
         videoEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
+      flashVideo();
 
       // API inutilisable : on recharge l'embed avec start + autoplay, sans
       // aucun script externe.
@@ -351,7 +380,7 @@ export default function useChapterVideo(videoRef) {
       if (!(state === -1 || state === 0 || state === 5)) pendingSeekRef.current = null;
       watchPlayback(target);
     },
-    [videoRef, seekViaFallback, switchToFallback, watchPlayback]
+    [videoRef, flashVideo, seekViaFallback, switchToFallback, watchPlayback]
   );
 
   return { seekTo, ready };
