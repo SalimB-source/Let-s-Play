@@ -165,6 +165,44 @@ l'horloge simulée avance à vitesse réelle) :
 - `npm run check:i18n` — toutes les routes × FR / EN / AR, dont les trois états du bloc
   (les textes vivent dans `t.news.calendar` et `t.news.countdown`).
 
+## Une seule vidéo à la fois
+
+Plusieurs pages cumulent les lecteurs YouTube (accueil : 4 reels ; `/reviews` :
+dossiers + shorts ; `/events/…` : un épisode par partenaire). Dès qu'un lecteur
+démarre, tous les autres sont mis en pause : plus de vidéo qui continue hors
+écran pendant qu'on en regarde une autre.
+
+Le comportement vit dans `src/lib/videoPlayback.js` :
+
+- `youTubeEmbedUrl(id, { autoplay, start })` construit l'URL de tous les embeds
+  du site et ajoute `enablejsapi=1` — sans ce paramètre, un lecteur YouTube
+  reste muet et ne peut plus être piloté depuis la page ;
+- `initSinglePlayback()`, démarré dans `src/main.jsx`, repère les iframes
+  YouTube du DOM (MutationObserver compris, pour la modale et les embeds
+  reconstruits), s'abonne à chacune, puis envoie `pauseVideo` à toutes les
+  autres dès qu'un lecteur passe en lecture ;
+- `pauseAllPlayback()` coupe tout d'un coup — utilisé à l'ouverture de la modale
+  de test (`src/components/VideoModal.jsx`), dont l'autoplay peut être refusé
+  par le navigateur.
+
+Aucun script externe : le coordinateur parle directement le protocole
+postMessage de l'embed YouTube (`{"event":"listening"}` pour s'abonner,
+`{"event":"command","func":"pauseVideo"}` pour couper) et reconnaît le lecteur
+qui écrit par sa fenêtre (`event.source`). Il cohabite avec le chapitrage des
+dossiers (`src/lib/useChapterVideo.js`) : l'API IFrame et le coordinateur
+écoutent la même fenêtre.
+
+Les embeds tiers (Instagram, TikTok…) n'exposent aucun protocole de pause : ils
+ne sont pas rechargés, un rechargement relançant leur lecture automatique.
+
+### Vérification
+
+- `npm run check:videos` — l'URL partagée contient bien `enablejsapi=1`, aucun
+  composant ne construit son embed à la main, et le protocole est rejoué sur un
+  DOM simulé : un lecteur démarre → les autres reçoivent `pauseVideo`, le
+  lecteur actif n'est pas touché, un état répété ne renvoie rien, les lecteurs
+  retirés de la page sont oubliés.
+
 ## Sources éditoriales
 
 - [Instagram @letsplay.officiel](https://www.instagram.com/letsplay.officiel/)

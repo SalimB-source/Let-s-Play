@@ -26,12 +26,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  *   ...
  *   <div className="dossier-video" ref={videoRef}>
  *     <iframe
- *       src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+ *       src={youTubeEmbedUrl(videoId)}
  *       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
  *       allowFullScreen
  *     />
  *   </div>
  *   <button onClick={() => seekTo(389)}>06:29 — Le projet GOYA</button>
+ *
+ * L'URL vient de youTubeEmbedUrl() (src/lib/videoPlayback.js) : elle ajoute
+ * enablejsapi=1, ce qui permet aussi au coordinateur « une seule vidéo à la
+ * fois » de mettre ce lecteur en pause si une autre vidéo démarre ailleurs sur
+ * la page. Les deux écoutes (API IFrame ici, postMessage là) cohabitent.
  *
  * L'attribut allow de l'iframe doit contenir « autoplay » pour que le repli
  * démarre la lecture sans second clic.

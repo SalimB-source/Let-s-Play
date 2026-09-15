@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 const videoId = 'aTs0zhm6Leg';
 
@@ -38,7 +39,7 @@ export default function DossierGoya() {
       <section className="dossier-reading wrap">
         <div className="dossier-main-column">
           <div className="dossier-video hud-frame" ref={videoRef}>
-            <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="HicoSoft Studio et le projet GOYA — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            <iframe src={youTubeEmbedUrl(videoId)} title="HicoSoft Studio et le projet GOYA — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">La vidéo ouvre une fenêtre sur un studio, mais aussi sur tout un écosystème : les outils, les marchés et les communautés nécessaires pour faire exister un jeu depuis l’Algérie.</p>
 

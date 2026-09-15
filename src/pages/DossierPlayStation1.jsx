@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 const videoId = 'oOyW_rjiZ5w';
 
@@ -37,7 +38,7 @@ export default function DossierPlayStation1() {
       <section className="dossier-reading wrap">
         <div className="dossier-main-column">
           <div className="dossier-video hud-frame" ref={videoRef}>
-            <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="PlayStation 1, 31th anniversary: The Legacy Explained — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            <iframe src={youTubeEmbedUrl(videoId)} title="PlayStation 1, 31th anniversary: The Legacy Explained — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Ce dossier accompagne l’épisode spécial de Let’s Play consacré à la console qui a changé la manière dont une génération joue, regarde et parle du jeu vidéo.</p>
 

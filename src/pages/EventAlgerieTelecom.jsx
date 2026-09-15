@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 function Arrow() {
   return <span aria-hidden="true">↗</span>;
@@ -30,7 +31,7 @@ export default function EventAlgerieTelecom() {
       <section className="dossier-reading wrap">
         <div className="dossier-main-column">
           <div className="dossier-video hud-frame">
-            <iframe src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`} title="Let’s Play × Algérie Télécom" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+            <iframe src={youTubeEmbedUrl(videoId)} title="Let’s Play × Algérie Télécom" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Un an de plateau, de chroniques et de rencontres — dont l’épisode consacré à HicoSoft Studio et au projet GOYA.</p>
 
