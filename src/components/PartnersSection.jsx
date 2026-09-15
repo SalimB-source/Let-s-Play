@@ -35,26 +35,10 @@ export default function PartnersSection() {
 
       <div className="partner-grid">
         {partners.map((partner, index) => (
-            <article className={`partner-card partner-card-${partner.tone}`} key={partner.id}>
-              <div className="partner-card-top">
-                <span className="partner-index">{String(index + 1).padStart(2, '0')}</span>
-                <span className="partner-kicker">{partner.role}</span>
-              </div>
-
+            <article className={`partner-card partner-card-logo-only partner-card-${partner.tone}`} key={partner.id} aria-label={partner.name}>
               <div className="partner-card-logo">
                 <PartnerMark partner={partner} size="xl" showText={false} />
               </div>
-
-              <h3>{partner.name}</h3><p className="partner-desc">{partner.context}</p>
-              {partner.page ? <Link className="arrow-link partner-card-link" to={partner.page}>{copy.explainer} <Arrow /></Link> : null}
-
-              <ul className="partner-facts">
-                <li>{partner.confidence}</li><li>{partner.role}</li>
-              </ul>
-
-              <a className="partner-link" href={partner.source} target="_blank" rel="noreferrer">
-                {copy.link} <Arrow external />
-              </a>
             </article>
         ))}
       </div>
