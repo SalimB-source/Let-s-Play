@@ -117,7 +117,7 @@ export default function Home() {
       <PartnersSection />
 
       <section className="reels-section wrap" id="reels">
-        <div className="section-label"><span><b>06</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="section-label"><span><b>04</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
         <div className="reels-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Format court</p>
