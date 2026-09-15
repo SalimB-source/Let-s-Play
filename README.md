@@ -30,6 +30,17 @@ npm run build
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants.
 
+Sur la section « 01 / Épisodes à la une » de l'accueil, la miniature n'est pas un
+fichier unique mais une chaîne de repli (`EpisodeThumb`, `src/pages/Home.jsx`) :
+`maxresdefault.jpg` puis `maxres1.jpg`, `hq1.jpg`, `mqdefault.jpg`. Un épisode
+n'a pas toujours de miniature personnalisée — YouTube répond alors 404 sur
+`maxresdefault.jpg`, ce qui laissait la carte vide — et les variantes `16:9`
+générées par YouTube (`maxres1`, `hq1`) prennent le relais sans bandes noires,
+contrairement à `hqdefault`/`sddefault` qui sont du 4:3 letterboxé. Si aucune
+miniature ne passe, la carte affiche un poster « LET’S PLAY » plutôt qu'un cadre
+vide. Pour un épisode connu sans miniature personnalisée, `thumb: 'maxres1'`
+dans la fiche de l'épisode évite simplement le premier 404 (cas du FFAC2023).
+
 ## Partenaires
 
 Les partenaires sont déclarés dans `src/partnersData.js` (nom, liens, couleur de

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -6,6 +6,60 @@ import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
+
+/* ---------------------------------------------------------------- miniatures
+ * Chaîne de miniatures YouTube, de la plus belle au dernier repli. Un seul
+ * fichier ne suffit pas : `maxresdefault.jpg` est la miniature *personnalisée*
+ * du créateur, et YouTube répond 404 dès qu'un épisode n'en a pas importé
+ * (c'est le cas du FFAC2023). Les variantes qui suivent sont les images de
+ * référence générées par YouTube, toujours 16:9 et sans bandes noires.
+ *
+ *   maxresdefault — 1280×720, la vraie vignette de l'épisode quand elle existe
+ *   maxres1       — 1280×720, image de référence HD
+ *   hq1           — 480×270, même image en plus léger
+ *   mqdefault     — 320×180, existe pour toute vidéo publique
+ *
+ * `hqdefault` / `sddefault` sont écartés : ce sont des 4:3 encadrées de bandes
+ * noires, donc recadrées à l'aveugle par le navigateur.
+ */
+const THUMB_VARIANTS = ['maxresdefault', 'maxres1', 'hq1', 'mqdefault'];
+
+function thumbSources(id, preferred) {
+  const variants = [preferred, ...THUMB_VARIANTS].filter(Boolean);
+  return [...new Set(variants)].map(
+    (variant) => `https://i.ytimg.com/vi/${id}/${variant}.jpg`
+  );
+}
+
+/**
+ * Vignette statique d'un épisode : on descend la chaîne tant que YouTube ne
+ * répond pas, et si plus aucune miniature ne passe on affiche un poster de
+ * marque — une carte des à-la-une ne reste jamais un cadre vide.
+ */
+function EpisodeThumb({ id, preferred }) {
+  const sources = thumbSources(id, preferred);
+  const [step, setStep] = useState(0);
+  const source = sources[step];
+
+  if (!source) {
+    return (
+      <div className="featured-dossier-thumb featured-dossier-thumb--empty">
+        <span>LET’S PLAY</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      className="featured-dossier-thumb"
+      src={source}
+      alt=""
+      loading="lazy"
+      decoding="async"
+      onError={() => setStep((n) => n + 1)}
+    />
+  );
+}
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },
@@ -26,6 +80,10 @@ const headlineEpisode = {
 
 const partnerEpisode = {
   id: 'twbaM8fiXpo',
+  // Cet épisode n'a pas de miniature personnalisée sur YouTube (maxresdefault
+  // y répond 404) : on part directement sur l'image de référence HD 16:9, qui
+  // évite le 404 et les bandes noires du vieux hqdefault 4:3.
+  thumb: 'maxres1',
   href: 'https://www.youtube.com/watch?v=twbaM8fiXpo',
   title: 'FreeFire Algerian Championship 2023 (FFAC2023) — Let’s Play Official',
   tone: 'ooredoo',
@@ -118,17 +176,7 @@ export default function Home() {
             <article className={`featured-dossier featured-dossier--${ep.tone}`} key={ep.id}>
               <div className="featured-dossier-player hud-frame">
                 {/* Vignette statique : aucun lecteur, aucune commande, pas de lecture inline. */}
-                <img
-                  className="featured-dossier-thumb"
-                  src={`https://i.ytimg.com/vi/${ep.id}/maxresdefault.jpg`}
-                  alt=""
-                  loading="lazy"
-                  onError={(e) => {
-                    if (e.currentTarget.dataset.fallback) return;
-                    e.currentTarget.dataset.fallback = '1';
-                    e.currentTarget.src = `https://i.ytimg.com/vi/${ep.id}/hqdefault.jpg`;
-                  }}
-                />
+                <EpisodeThumb id={ep.id} preferred={ep.thumb} />
                 <span className="featured-dossier-badge" aria-hidden="true">▶</span>
               </div>
               <div className="featured-dossier-copy">

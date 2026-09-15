@@ -296,6 +296,17 @@ img{max-width:100%}
   object-fit:cover;display:block;
   cursor:default;user-select:none;-webkit-user-drag:none;
 }
+/* Dernier repli : YouTube n'a servi aucune miniature (vidéo retirée, réseau
+   bloqué…). On garde un poster de marque plutôt qu'un cadre vide. */
+.featured-dossier-thumb--empty{
+  display:grid;place-items:center;
+  background:
+    radial-gradient(130% 100% at 50% 0,rgba(34,211,238,.14),transparent 62%),
+    var(--panel);
+}
+.featured-dossier-thumb--empty span{
+  font:600 10px var(--mono);letter-spacing:.3em;color:var(--dim);
+}
 .featured-dossier-badge{
   position:absolute;z-index:2;left:12px;bottom:12px;
   display:grid;place-items:center;width:30px;height:30px;
