@@ -15,6 +15,7 @@ export const translations = {
       watch: 'Watch', menu: 'Menu',
       menuAria: 'Open menu',
       langAria: 'Change language',
+      search: { placeholder: 'Search…', submit: 'Search' },
     },
     footer: {
       tagline: 'An original show dedicated to the culture that brings us together. Now multi-page.',
@@ -284,6 +285,7 @@ export const translations = {
     nav: {
       home: 'Accueil', news: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', partners: 'Partenaires',
       watch: 'Regarder', menu: 'Menu', menuAria: 'Ouvrir le menu', langAria: 'Changer de langue',
+      search: { placeholder: 'Rechercher…', submit: 'Rechercher' },
     },
     footer: {
       tagline: 'Une émission originale dédiée à la culture qui nous rassemble. Maintenant multi-pages.',
@@ -545,6 +547,7 @@ export const translations = {
     nav: {
       home: 'الرئيسية', news: 'الأخبار', reviews: 'المراجعات', dossiers: 'الملفات', partners: 'الشركاء',
       watch: 'شاهد', menu: 'القائمة', menuAria: 'افتح القائمة', langAria: 'تغيير اللغة',
+      search: { placeholder: 'بحث…', submit: 'بحث' },
     },
     footer: {
       tagline: 'برنامج أصلي مكرّس للثقافة التي تجمعنا. الآن متعدد الصفحات.',

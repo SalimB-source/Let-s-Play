@@ -39,6 +39,7 @@ import DossierGenerations from './pages/DossierGenerations';
 import DossierXbox360 from './pages/DossierXbox360';
 import DossierPlayStation2 from './pages/DossierPlayStation2';
 import Partners from './pages/Partners';
+import Search from './pages/Search';
 import EventAlgerieTelecom from './pages/EventAlgerieTelecom';
 import EventOoredoo from './pages/EventOoredoo';
 import EventArena from './pages/EventArena';
@@ -94,6 +95,7 @@ function App() {
             <Route path="/events/ooredoo" element={<EventOoredoo />} />
             <Route path="/events/7ouma-arena" element={<EventArena />} />
             <Route path="/partenaires" element={<Partners />} />
+            <Route path="/search" element={<Search />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="*" element={<NotFound />} />
             </Routes>

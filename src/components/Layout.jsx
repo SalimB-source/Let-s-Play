@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
@@ -11,6 +11,7 @@ export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
 
@@ -34,6 +35,18 @@ export default function Layout({ children }) {
 
   const isActive = (path) => location.pathname === path;
   const isHome = location.pathname === '/';
+  const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
+
+  useEffect(() => {
+    setSearchValue(new URLSearchParams(location.search).get('q') || '');
+  }, [location.search]);
+
+  const submitSearch = (event) => {
+    event.preventDefault();
+    const query = searchValue.trim();
+    navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
+    setMenuOpen(false);
+  };
   
   return (
     <>
@@ -51,6 +64,11 @@ export default function Layout({ children }) {
           <Link to="/reviews" className={isActive('/reviews') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.reviews}</Link>
           <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.dossiers}</Link>
           <Link to="/events" className={isActive('/events') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Events</Link>
+          <form className="nav-search" onSubmit={submitSearch} role="search">
+            <label className="sr-only" htmlFor="nav-search-input">{t.search.placeholder}</label>
+            <input id="nav-search-input" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder={t.search.placeholder} />
+            <button type="submit" aria-label={t.search.submit}>⌕</button>
+          </form>
           <LanguageSwitcher variant="nav" />
           <Link to="/auth" className="nav-account" onClick={() => setMenuOpen(false)}>{user ? (user.email?.split('@')[0] || 'Account') : 'Join'}</Link>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer" className="nav-cta" onClick={() => setMenuOpen(false)}>{t.nav.watch} ↗</a>
