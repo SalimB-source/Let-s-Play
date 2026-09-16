@@ -221,7 +221,8 @@
 }
 @media (max-width:720px){
   .partners{padding-top:76px}
-  .partner-grid,.partner-how-grid{grid-template-columns:1fr}
+  .partner-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .partner-how-grid{grid-template-columns:1fr}
   .partners-head h2{font-size:clamp(30px,9vw,40px)}
   .partner-strip{gap:18px;padding:18px}
   .partner-strip-marks{gap:20px}
@@ -229,7 +230,9 @@
   .partner-detail{padding:30px 0}
   .partner-card-logo{min-height:132px;padding:16px}
   .partner-detail-logo{min-height:112px;padding:16px}
-  .partner-mark-xl .partner-mark-logo{height:68px}
+  .partner-card-logo-only{padding:10px;min-height:120px}
+  .partner-card-logo-only .partner-card-logo{min-height:96px;padding:6px}
+  .partner-mark-xl .partner-mark-logo{height:44px}
   .partner-mark-xl .partner-mark-badge{width:72px;height:72px;font-size:24px;clip-path:polygon(13px 0,100% 0,100% calc(100% - 13px),calc(100% - 13px) 100%,0 100%,0 13px)}
 }
 
