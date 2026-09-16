@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import VideoThumb from '../components/VideoThumb';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
@@ -16,7 +17,7 @@ export default function Dossiers(){
           <Link className="arrow-link" to="/dossiers/25-ans-playstation-2">Lire le dossier <Arrow/></Link>
         </div>
         <Link className="dossier-feature-card-media hud-frame" to="/dossiers/25-ans-playstation-2" aria-label="Lire le dossier sur les 25 ans de la PlayStation 2">
-          <img src="https://i.ytimg.com/vi/A2VPhWOUMHI/hqdefault.jpg" alt="25 ans de PlayStation 2" />
+          <VideoThumb id="A2VPhWOUMHI" alt="25 ans de PlayStation 2" quality="hq" />
           <span>18:00 · HISTOIRE DU GAMING</span>
         </Link>
       </section>
@@ -29,7 +30,7 @@ export default function Dossiers(){
           <Link className="arrow-link" to="/dossiers/20-ans-xbox-360">Lire le dossier <Arrow/></Link>
         </div>
         <Link className="dossier-feature-card-media hud-frame" to="/dossiers/20-ans-xbox-360" aria-label="Lire le dossier sur les 20 ans de la Xbox 360">
-          <img src="https://i.ytimg.com/vi/8NqnTzVh5O0/hqdefault.jpg" alt="20 ans de Xbox 360" />
+          <VideoThumb id="8NqnTzVh5O0" alt="20 ans de Xbox 360" quality="hq" />
           <span>21:00 · HISTOIRE DU GAMING</span>
         </Link>
       </section>
@@ -42,7 +43,7 @@ export default function Dossiers(){
           <Link className="arrow-link" to="/dossiers/choc-generations-gaming">Lire le dossier <Arrow/></Link>
         </div>
         <Link className="dossier-feature-card-media hud-frame" to="/dossiers/choc-generations-gaming" aria-label="Lire le dossier Le Choc des Générations">
-          <img src="https://i.ytimg.com/vi/t1Re8ki_gsw/hqdefault.jpg" alt="Le Choc des Générations" />
+          <VideoThumb id="t1Re8ki_gsw" alt="Le Choc des Générations" quality="hq" />
           <span>26:59 · CULTURE GAMING</span>
         </Link>
       </section>
@@ -55,7 +56,7 @@ export default function Dossiers(){
           <Link className="arrow-link" to="/dossiers/heritage-playstation-1">Lire le dossier <Arrow/></Link>
         </div>
         <Link className="dossier-feature-card-media hud-frame" to="/dossiers/heritage-playstation-1" aria-label="Lire le dossier sur l’héritage de la PlayStation 1">
-          <img src="https://i.ytimg.com/vi/oOyW_rjiZ5w/hqdefault.jpg" alt="L’héritage de la PlayStation 1" />
+          <VideoThumb id="oOyW_rjiZ5w" alt="L’héritage de la PlayStation 1" quality="hq" />
           <span>19:39 · HISTOIRE DU GAMING</span>
         </Link>
       </section>
@@ -68,7 +69,7 @@ export default function Dossiers(){
           <Link className="arrow-link" to="/dossiers/let-play-awards-2025">Lire le dossier <Arrow/></Link>
         </div>
         <Link className="dossier-feature-card-media hud-frame" to="/dossiers/let-play-awards-2025" aria-label="Lire le dossier Let’s Play Awards 2025">
-          <img src="https://i.ytimg.com/vi/0ThNyFItASM/hqdefault.jpg" alt="Let’s Play Awards 2025" />
+          <VideoThumb id="0ThNyFItASM" alt="Let’s Play Awards 2025" quality="hq" />
           <span>27:14 · AWARDS GAMING</span>
         </Link>
       </section>
@@ -81,7 +82,7 @@ export default function Dossiers(){
           <Link className="arrow-link" to="/dossiers/goya-hicosoft">Lire le dossier <Arrow/></Link>
         </div>
         <Link className="dossier-feature-card-media hud-frame" to="/dossiers/goya-hicosoft" aria-label="Lire le dossier GOYA et HicoSoft Studio">
-          <img src="https://i.ytimg.com/vi/aTs0zhm6Leg/hqdefault.jpg" alt="HicoSoft Studio et projet GOYA" />
+          <VideoThumb id="aTs0zhm6Leg" alt="HicoSoft Studio et projet GOYA" quality="hq" />
           <span>17:12 · INDUSTRIE INDÉ</span>
         </Link>
       </section>
@@ -94,7 +95,7 @@ export default function Dossiers(){
           <Link className="arrow-link" to="/dossiers/games-comic-con-dzair">Lire le dossier <Arrow/></Link>
         </div>
         <Link className="dossier-feature-card-media hud-frame" to="/dossiers/games-comic-con-dzair" aria-label="Lire le dossier Games et Comic Con Dzair 2026">
-          <img src="https://i.ytimg.com/vi/HzigJZOxz2o/hqdefault.jpg" alt="Games & Comic Con Dzair 2026" />
+          <VideoThumb id="HzigJZOxz2o" alt="Games & Comic Con Dzair 2026" quality="hq" />
           <span>15:17 · CULTURE GAMING</span>
         </Link>
       </section>
@@ -116,7 +117,7 @@ export default function Dossiers(){
           <Link className="arrow-link" to="/dossiers/pourquoi-les-souls">Lire le dossier <Arrow/></Link>
         </div>
         <Link className="dossier-feature-card-media hud-frame" to="/dossiers/pourquoi-les-souls" aria-label="Lire le dossier Pourquoi les Souls">
-          <img src="https://i.ytimg.com/vi/OH51fSHznwg/hqdefault.jpg" alt="Pourquoi les Souls ?" />
+          <VideoThumb id="OH51fSHznwg" alt="Pourquoi les Souls ?" quality="hq" />
           <span>24:21 · ANALYSE GAMING</span>
         </Link>
       </section>
