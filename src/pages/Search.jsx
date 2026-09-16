@@ -53,7 +53,7 @@ export default function Search() {
           <div className="search-results-grid">
             {items.map((item) => (
               <Link className="search-result-card" to={item.route} key={`${item.type}-${item.route}`}>
-                <img className="search-result-image" src={item.image} alt="" loading="lazy" />
+                {item.image ? <img className="search-result-image" src={item.image} alt="" loading="lazy" /> : <span className="search-result-image search-result-image-blank" aria-hidden="true" />}
                 <div className="search-result-top"><span>{t.types[item.type]}</span><span>{item.meta || '↗'}</span></div>
                 <h2>{item.title}</h2>
                 <p>{item.description}</p>
