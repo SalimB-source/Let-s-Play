@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -15,6 +15,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const searchRef = useRef(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -37,6 +38,7 @@ export default function Layout({ children }) {
   const isActive = (path) => location.pathname === path;
   const isHome = location.pathname === '/';
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
+  const [searchOpen, setSearchOpen] = useState(false);
   const liveSearchResults = useMemo(() => searchContent(searchValue).slice(0, 6), [searchValue]);
   const searchTypeLabels = { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release' };
 
@@ -44,11 +46,20 @@ export default function Layout({ children }) {
     setSearchValue(new URLSearchParams(location.search).get('q') || '');
   }, [location.search]);
 
+  useEffect(() => {
+    const closeOnOutsideClick = (event) => {
+      if (!searchRef.current?.contains(event.target)) setSearchOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, []);
+
   const submitSearch = (event) => {
     event.preventDefault();
     const query = searchValue.trim();
     navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
     setMenuOpen(false);
+    setSearchOpen(false);
   };
   
   return (
@@ -67,11 +78,11 @@ export default function Layout({ children }) {
           <Link to="/reviews" className={isActive('/reviews') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.reviews}</Link>
           <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.dossiers}</Link>
           <Link to="/events" className={isActive('/events') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Events</Link>
-          <form className="nav-search" onSubmit={submitSearch} role="search">
+          <form className="nav-search" ref={searchRef} onSubmit={submitSearch} onFocus={() => setSearchOpen(true)} role="search">
             <label className="sr-only" htmlFor="nav-search-input">{t.nav.search.placeholder}</label>
             <input id="nav-search-input" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder={t.nav.search.placeholder} />
             <button type="submit" aria-label={t.nav.search.submit}>⌕</button>
-            {searchValue.trim() && <div className="nav-search-results">
+            {searchOpen && searchValue.trim() && <div className="nav-search-results">
               {liveSearchResults.length > 0 ? liveSearchResults.map((item) => (
                 <Link className="nav-search-result" to={item.route} key={`${item.type}-${item.route}`} onClick={() => setMenuOpen(false)}>
                   {item.image ? <img src={item.image} alt="" /> : <span className="nav-search-result-blank" aria-hidden="true" />}
