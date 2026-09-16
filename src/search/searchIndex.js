@@ -58,12 +58,21 @@ export function searchContent(query) {
   const normalized = normalizeSearch(query);
   if (!normalized) return [];
   const terms = normalized.split(/\s+/).filter(Boolean);
-  return searchIndex.map((item) => {
+  const matchesToken = (tokens, term) => tokens.some((token) => token === term || (term.length >= 3 && token.startsWith(term)));
+  const matchesAll = (tokens) => terms.every((term) => matchesToken(tokens, term));
+  const scored = searchIndex.map((item) => {
     const title = normalizeSearch(item.title), description = normalizeSearch(item.description), keywords = normalizeSearch(item.keywords);
-    const searchable = `${title} ${description} ${keywords}`;
-    const score = terms.reduce((total, term) => total + (title.includes(term) ? 8 : 0) + (keywords.includes(term) ? 4 : 0) + (description.includes(term) ? 2 : 0), 0) + (title === normalized ? 10 : 0);
-    return { ...item, score, searchable };
-  }).filter((item) => terms.every((term) => item.searchable.includes(term))).sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
+    const titleTokens = title.split(' '), descriptionTokens = description.split(' '), keywordTokens = keywords.split(' ');
+    const titleMatch = matchesAll(titleTokens), keywordMatch = matchesAll(keywordTokens), metadataMatch = titleMatch || keywordMatch;
+    const descriptionMatch = matchesAll(descriptionTokens);
+    const score = terms.reduce((total, term) => (
+      total + (titleTokens.includes(term) ? 12 : 0) + (keywordTokens.includes(term) ? 6 : 0) + (descriptionTokens.includes(term) ? 1 : 0)
+    ), 0) + (title === normalized ? 20 : 0);
+    return { ...item, score, metadataMatch, descriptionMatch };
+  });
+  const strongMatches = scored.filter((item) => item.metadataMatch);
+  const matches = strongMatches.length ? strongMatches : scored.filter((item) => item.descriptionMatch);
+  return matches.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
 }
 
 export const searchCounts = { news: news.length, review: reviews.length, dossier: dossiers.length, release: releases.length };
