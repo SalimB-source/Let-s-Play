@@ -46,6 +46,21 @@ correspondant dans `src/partnersData.js`, par exemple :
 { id: 'tcl', logo: 'partners/tcl.png' /* … */ }
 ```
 
+### Grille des logos sur l'accueil
+
+La section 03 de la page d'accueil (`#events`, `src/components/PartnersSection.jsx`)
+affiche les logos en **3 colonnes sur mobile** (≤ 720 px, gap 10 px) et dès
+1024 px — 5 colonnes au-delà. Les 12 partenaires tiennent donc en 4 rangées de 3
+sur téléphone, avec des tuiles compactes (`min-height` 96 px, logos à 44 px de
+haut) pour rester lisibles dans des colonnes d'environ 90 px de large.
+
+Ces règles vivent dans `src/partners.css` (`@media (max-width:720px)`) :
+
+- `npm run check:partners` — reconstruit le bundle, lit la CSS réellement livrée
+  et rejoue la cascade à 9 largeurs (320 → 1440 px) : la grille doit rester à
+  3 colonnes sur mobile, et aucune feuille importée après `partners.css` ne doit
+  la repasser en colonne unique.
+
 ## 7ouma Arena (page Events)
 
 7ouma Arena est expliqué en tête de la page Events (`/events`, alias
