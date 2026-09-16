@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
+import { searchContent } from '../search/searchIndex';
 
 const base = import.meta.env.BASE_URL;
 
@@ -36,6 +37,8 @@ export default function Layout({ children }) {
   const isActive = (path) => location.pathname === path;
   const isHome = location.pathname === '/';
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
+  const liveSearchResults = useMemo(() => searchContent(searchValue).slice(0, 6), [searchValue]);
+  const searchTypeLabels = { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release' };
 
   useEffect(() => {
     setSearchValue(new URLSearchParams(location.search).get('q') || '');
@@ -68,6 +71,15 @@ export default function Layout({ children }) {
             <label className="sr-only" htmlFor="nav-search-input">{t.nav.search.placeholder}</label>
             <input id="nav-search-input" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder={t.nav.search.placeholder} />
             <button type="submit" aria-label={t.nav.search.submit}>⌕</button>
+            {searchValue.trim() && <div className="nav-search-results">
+              {liveSearchResults.length > 0 ? liveSearchResults.map((item) => (
+                <Link className="nav-search-result" to={item.route} key={`${item.type}-${item.route}`} onClick={() => setMenuOpen(false)}>
+                  <img src={item.image} alt="" />
+                  <span><small>{searchTypeLabels[item.type]}</small><strong>{item.title}</strong></span>
+                </Link>
+              )) : <span className="nav-search-empty">{t.nav.search.noResults}</span>}
+              {liveSearchResults.length > 0 && <button type="submit" className="nav-search-all">{t.nav.search.viewAll} ↗</button>}
+            </div>}
           </form>
           <LanguageSwitcher variant="nav" />
           <Link to="/auth" className="nav-account" onClick={() => setMenuOpen(false)}>{user ? (user.email?.split('@')[0] || 'Account') : 'Join'}</Link>
