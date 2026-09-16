@@ -4,6 +4,7 @@ import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
+import VideoThumb from '../components/VideoThumb';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
@@ -24,6 +25,9 @@ const headlineEpisode = {
   tone: 'telecom',
 };
 
+// YouTube ne publie aucune miniature HD pour cette vidéo (maxresdefault → 404) :
+// elle est listée dans VIDEOS_WITHOUT_HD_THUMB (src/lib/videoThumbnails.js), la
+// vignette démarre donc directement sur hqdefault au lieu d'attendre un 404.
 const partnerEpisode = {
   id: 'twbaM8fiXpo',
   href: 'https://www.youtube.com/watch?v=twbaM8fiXpo',
@@ -117,17 +121,13 @@ export default function Home() {
           {episodes.map((ep) => (
             <article className={`featured-dossier featured-dossier--${ep.tone}`} key={ep.id}>
               <div className="featured-dossier-player hud-frame">
-                {/* Vignette statique : aucun lecteur, aucune commande, pas de lecture inline. */}
-                <img
+                {/* Vignette statique : aucun lecteur, aucune commande, pas de lecture inline.
+                    VideoThumb descend l'échelle des qualités YouTube si l'une manque. */}
+                <VideoThumb
                   className="featured-dossier-thumb"
-                  src={`https://i.ytimg.com/vi/${ep.id}/maxresdefault.jpg`}
-                  alt=""
-                  loading="lazy"
-                  onError={(e) => {
-                    if (e.currentTarget.dataset.fallback) return;
-                    e.currentTarget.dataset.fallback = '1';
-                    e.currentTarget.src = `https://i.ytimg.com/vi/${ep.id}/hqdefault.jpg`;
-                  }}
+                  id={ep.id}
+                  alt={ep.title}
+                  fallbackLabel={ep.copy.label2 || ep.title}
                 />
                 <span className="featured-dossier-badge" aria-hidden="true">▶</span>
               </div>

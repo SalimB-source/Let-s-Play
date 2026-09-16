@@ -296,6 +296,28 @@ img{max-width:100%}
   object-fit:cover;display:block;
   cursor:default;user-select:none;-webkit-user-drag:none;
 }
+/* Repli d'une vignette YouTube absente : YouTube ne publie pas maxresdefault
+   pour toutes les vidéos (voir src/lib/videoThumbnails.js). Au lieu d'un carré
+   vide, on garde le cadre HUD de la carte avec la marque de l'émission. */
+.video-thumb-fallback{
+  position:absolute;inset:0;width:100%;height:100%;
+  display:grid;place-content:center;justify-items:center;gap:10px;
+  background:linear-gradient(140deg,rgba(34,211,238,.16),transparent 62%),var(--panel);
+  border:1px dashed var(--line-strong);
+}
+.video-thumb-fallback .video-thumb-fallback-mark{
+  position:static;display:grid;place-items:center;width:38px;height:38px;
+  font-size:12px;color:#fff;line-height:1;
+  background:rgba(5,6,15,.72);border:1px solid var(--line-strong);
+}
+.video-thumb-fallback .video-thumb-fallback-label{
+  position:static;padding:0 14px;text-align:center;
+  font:500 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+}
+/* Dans les cartes dossier, la règle `.dossier-feature-card-media span` vise tous
+   les descendants (caption en bas à gauche) : on rétablit le cadre ici, avec une
+   spécificité supérieure, pour que le repli remplisse bien la carte. */
+.dossier-feature-card-media .video-thumb-fallback{position:absolute;inset:0;width:100%;height:100%}
 .featured-dossier-badge{
   position:absolute;z-index:2;left:12px;bottom:12px;
   display:grid;place-items:center;width:30px;height:30px;
