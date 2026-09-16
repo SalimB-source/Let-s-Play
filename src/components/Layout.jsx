@@ -65,9 +65,9 @@ export default function Layout({ children }) {
           <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.dossiers}</Link>
           <Link to="/events" className={isActive('/events') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Events</Link>
           <form className="nav-search" onSubmit={submitSearch} role="search">
-            <label className="sr-only" htmlFor="nav-search-input">{t.search.placeholder}</label>
-            <input id="nav-search-input" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder={t.search.placeholder} />
-            <button type="submit" aria-label={t.search.submit}>⌕</button>
+            <label className="sr-only" htmlFor="nav-search-input">{t.nav.search.placeholder}</label>
+            <input id="nav-search-input" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder={t.nav.search.placeholder} />
+            <button type="submit" aria-label={t.nav.search.submit}>⌕</button>
           </form>
           <LanguageSwitcher variant="nav" />
           <Link to="/auth" className="nav-account" onClick={() => setMenuOpen(false)}>{user ? (user.email?.split('@')[0] || 'Account') : 'Join'}</Link>
