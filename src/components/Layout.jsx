@@ -74,7 +74,7 @@ export default function Layout({ children }) {
             {searchValue.trim() && <div className="nav-search-results">
               {liveSearchResults.length > 0 ? liveSearchResults.map((item) => (
                 <Link className="nav-search-result" to={item.route} key={`${item.type}-${item.route}`} onClick={() => setMenuOpen(false)}>
-                  <img src={item.image} alt="" />
+                  {item.image ? <img src={item.image} alt="" /> : <span className="nav-search-result-blank" aria-hidden="true" />}
                   <span><small>{searchTypeLabels[item.type]}</small><strong>{item.title}</strong></span>
                 </Link>
               )) : <span className="nav-search-empty">{t.nav.search.noResults}</span>}

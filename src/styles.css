@@ -834,3 +834,6 @@ img{max-width:100%}
 .search-result-card{overflow:hidden;padding:0 22px 22px}
 .search-result-image{display:block;width:calc(100% + 44px);height:150px;object-fit:cover;margin:0 -22px 20px;background:var(--panel-2)}
 @media(max-width:800px){.nav-search-results{position:absolute;top:calc(100% + 8px);left:0;right:auto;width:100%;max-width:none}.search-result-image{height:180px}}
+
+.nav-search-result-blank{width:62px;height:38px;display:block;flex:none;background:#070917;border:1px solid rgba(148,130,255,.12)}
+.search-result-image-blank{border:0;background:#070917}

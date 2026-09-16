@@ -45,7 +45,7 @@ const releases = gameReleases.map((game) => ({
   type: 'release', title: game.title, description: `${game.platforms} · sortie prévue au calendrier`,
   route: game.to || '/calendrier', keywords: game.platforms,
   meta: game.year ? `${game.day}/${game.month}/${game.year}` : `${game.day}/${game.month}/2026`,
-  image: game.image ? `${base}${game.image}` : `${base}hero-lets-play.png`,
+  image: game.image ? `${base}${game.image}` : null,
 }));
 
 export const searchIndex = [...news, ...reviews, ...dossiers, ...releases];
