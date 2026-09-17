@@ -163,7 +163,7 @@ export default function Home() {
           />
         </div>
         <div className="live-footer">
-          <span>{t.home.live.liveNow}</span>
+          <span>{t.home.live.channelEmbedLabel}</span>
           <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.live.channelCta} <Arrow /></a>
         </div>
       </section>
