@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -48,6 +48,34 @@ const liveChannelId = import.meta.env.VITE_YOUTUBE_CHANNEL_ID?.trim() || 'UCBi98
 
 export default function Home() {
   const { t, lang } = useLanguage();
+  const [liveStatus, setLiveStatus] = useState('unknown');
+
+  useEffect(() => {
+    let cancelled = false;
+    const checkLiveStatus = () => {
+      fetch('/api/youtube-live')
+        .then((response) => response.ok ? response.json() : { status: 'unknown' })
+        .then((data) => {
+          if (!cancelled) setLiveStatus(data.status || 'unknown');
+        })
+        .catch(() => {
+          if (!cancelled) setLiveStatus('unknown');
+        });
+    };
+
+    checkLiveStatus();
+    const interval = window.setInterval(checkLiveStatus, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+  const statusCopy = {
+    live: t.home.live.statusLive,
+    offline: t.home.live.statusOffline,
+    unknown: t.home.live.statusChecking,
+  }[liveStatus] || t.home.live.statusChecking;
 
   // Head générique pour la section 01 — même structure que featured-dossiers de Reviews
   const headMap = {
@@ -163,7 +191,7 @@ export default function Home() {
           />
         </div>
         <div className="live-footer">
-          <span>{t.home.live.channelEmbedLabel}</span>
+          <span className={`live-status live-status--${liveStatus}`}><i aria-hidden="true" /> {statusCopy}</span>
           <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.live.channelCta} <Arrow /></a>
         </div>
       </section>

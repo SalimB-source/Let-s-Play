@@ -66,7 +66,7 @@ export const translations = {
       live: {
         label: 'LIVE', eyebrow: 'Let’s Play en direct', h2a: 'ON AIR,', h2b: 'WHEN WE PLAY.',
         description: 'The next live session appears here as soon as the broadcast starts.', playerTitle: 'Let’s Play Official — live stream',
-        liveNow: 'LIVE NOW', channelEmbedLabel: 'YOUTUBE LIVE', offlineLabel: 'NO LIVE SCHEDULED', offlineTitle: 'No live in progress', offlineText: 'Check the official channel for the next broadcast.', channelCta: 'Open the YouTube channel',
+        liveNow: 'LIVE NOW', channelEmbedLabel: 'YOUTUBE LIVE', statusLive: 'LIVE NOW', statusOffline: 'NOT LIVE NOW', statusChecking: 'CHECKING LIVE STATUS', offlineLabel: 'NO LIVE SCHEDULED', offlineTitle: 'No live in progress', offlineText: 'Check the official channel for the next broadcast.', channelCta: 'Open the YouTube channel',
       },
       show: {
         label1: '02 / THE SHOW', label2: 'WHAT WE DO',
@@ -335,7 +335,7 @@ export const translations = {
       live: {
         label: 'DIRECT', eyebrow: 'Let’s Play en direct', h2a: 'ON AIR,', h2b: 'QUAND ON JOUE.',
         description: 'Le prochain live apparaît ici dès que la diffusion est lancée.', playerTitle: 'Let’s Play Official — diffusion en direct',
-        liveNow: 'EN DIRECT', channelEmbedLabel: 'YOUTUBE LIVE', offlineLabel: 'AUCUN LIVE PROGRAMMÉ', offlineTitle: 'Aucun live en cours', offlineText: 'Consultez la chaîne officielle pour connaître la prochaine diffusion.', channelCta: 'Ouvrir la chaîne YouTube',
+        liveNow: 'EN DIRECT', channelEmbedLabel: 'YOUTUBE LIVE', statusLive: 'EN DIRECT', statusOffline: 'HORS LIGNE', statusChecking: 'VÉRIFICATION DU LIVE', offlineLabel: 'AUCUN LIVE PROGRAMMÉ', offlineTitle: 'Aucun live en cours', offlineText: 'Consultez la chaîne officielle pour connaître la prochaine diffusion.', channelCta: 'Ouvrir la chaîne YouTube',
       },
       show: {
         label1: '02 / L’ÉMISSION', label2: 'CE QUE NOUS FAISONS',
@@ -602,7 +602,7 @@ export const translations = {
       live: {
         label: 'مباشر', eyebrow: 'Let’s Play على الهواء', h2a: 'على الهواء،', h2b: 'عندما نلعب.',
         description: 'سيظهر البث المباشر القادم هنا فور انطلاقه.', playerTitle: 'Let’s Play Official — بث مباشر',
-        liveNow: 'مباشر الآن', channelEmbedLabel: 'بث يوتيوب مباشر', offlineLabel: 'لا يوجد بث مجدول', offlineTitle: 'لا يوجد بث مباشر الآن', offlineText: 'تحقق من القناة الرسمية لمعرفة موعد البث القادم.', channelCta: 'فتح قناة يوتيوب',
+        liveNow: 'مباشر الآن', channelEmbedLabel: 'بث يوتيوب مباشر', statusLive: 'مباشر الآن', statusOffline: 'غير مباشر الآن', statusChecking: 'جارٍ التحقق من حالة البث', offlineLabel: 'لا يوجد بث مجدول', offlineTitle: 'لا يوجد بث مباشر الآن', offlineText: 'تحقق من القناة الرسمية لمعرفة موعد البث القادم.', channelCta: 'فتح قناة يوتيوب',
       },
       show: {
         label1: '02 / البرنامج', label2: 'ماذا نفعل',
