@@ -40,6 +40,17 @@ une diffusion programmée, copiez `.env.example` vers `.env.local` et renseignez
 partie située après `v=` dans son URL YouTube. Sans identifiant, le site affiche
 automatiquement un état « aucun live en cours » avec un lien vers la chaîne officielle.
 
+### Détection automatique sur Vercel
+
+Le fichier `api/youtube-live.js` détecte automatiquement un direct public de la
+chaîne via YouTube Data API v3. Dans les variables d’environnement Vercel, ajoutez
+`YOUTUBE_API_KEY` (clé Google Cloud gardée secrète) et `YOUTUBE_CHANNEL_ID` (ID
+numérique de la chaîne, actuellement `UCBi989OGXiGBjvB17Xh5GUQ`).
+`YOUTUBE_CHANNEL_HANDLE` est facultatif et vaut
+`@letsplay.officiel` par défaut. L’endpoint est mis en cache 60 secondes afin de
+réduire la consommation de quota YouTube. Après chaque modification des variables,
+relancez un déploiement Vercel.
+
 ## Partenaires
 
 Les partenaires sont déclarés dans `src/partnersData.js` (nom, liens, couleur de

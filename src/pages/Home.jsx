@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -42,12 +42,28 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Option 1: a manually configured YouTube live video. Set the ID when a live
-// broadcast is scheduled; without it the section remains a useful offline CTA.
-const liveVideoId = import.meta.env.VITE_YOUTUBE_LIVE_VIDEO_ID?.trim() || '';
+// Fallback kept for local previews and deployments that have not enabled the
+// Vercel endpoint yet. Production uses /api/youtube-live automatically.
+const fallbackLiveVideoId = import.meta.env.VITE_YOUTUBE_LIVE_VIDEO_ID?.trim() || '';
 
 export default function Home() {
   const { t, lang } = useLanguage();
+  const [liveData, setLiveData] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/youtube-live')
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (!cancelled && data?.isLive) setLiveData(data);
+      })
+      .catch(() => {
+        // Keep the offline/fallback state quiet if the endpoint is unavailable.
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  const liveVideoId = liveData?.videoId || fallbackLiveVideoId;
 
   // Head générique pour la section 01 — même structure que featured-dossiers de Reviews
   const headMap = {
@@ -158,7 +174,7 @@ export default function Home() {
           {liveVideoId ? (
             <iframe
               src={youTubeEmbedUrl(liveVideoId)}
-              title={t.home.live.playerTitle}
+              title={liveData?.title || t.home.live.playerTitle}
               allow="autoplay; encrypted-media; picture-in-picture; web-share"
               allowFullScreen
             />
@@ -171,7 +187,7 @@ export default function Home() {
           )}
         </div>
         <div className="live-footer">
-          <span>{liveVideoId ? t.home.live.liveNow : t.home.live.offlineLabel}</span>
+          <span>{liveData?.isLive || liveVideoId ? t.home.live.liveNow : t.home.live.offlineLabel}</span>
           <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.live.channelCta} <Arrow /></a>
         </div>
       </section>
