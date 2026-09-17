@@ -67,6 +67,18 @@ export function youTubeEmbedUrl(id, { autoplay = false, start = null } = {}) {
 }
 
 /**
+ * Permanent channel live embed. YouTube resolves it to the channel's active
+ * public broadcast without requiring the Data API or a server-side key.
+ *
+ * @param {string} channelId numeric YouTube channel ID
+ * @returns {string}
+ */
+export function youTubeLiveChannelEmbedUrl(channelId) {
+  const params = new URLSearchParams({ channel: channelId, rel: '0', modestbranding: '1' });
+  return `${YT_ORIGIN}/embed/live_stream?${params.toString()}`;
+}
+
+/**
  * Origine d'un embed YouTube à partir de son src, ou null si l'iframe n'est pas
  * un lecteur YouTube (l'origine sert de targetOrigin aux postMessage).
  */

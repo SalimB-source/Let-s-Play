@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
-import { youTubeEmbedUrl } from '../lib/videoPlayback';
+import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
@@ -42,28 +42,12 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Fallback kept for local previews and deployments that have not enabled the
-// Vercel endpoint yet. Production uses /api/youtube-live automatically.
-const fallbackLiveVideoId = import.meta.env.VITE_YOUTUBE_LIVE_VIDEO_ID?.trim() || '';
+// YouTube resolves this permanent channel URL to the channel's active live
+// broadcast, without requiring an API key or a server-side endpoint.
+const liveChannelId = import.meta.env.VITE_YOUTUBE_CHANNEL_ID?.trim() || 'UCBi989OGXiGBjvB17Xh5GUQ';
 
 export default function Home() {
   const { t, lang } = useLanguage();
-  const [liveData, setLiveData] = useState(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/youtube-live')
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => {
-        if (!cancelled && data?.isLive) setLiveData(data);
-      })
-      .catch(() => {
-        // Keep the offline/fallback state quiet if the endpoint is unavailable.
-      });
-    return () => { cancelled = true; };
-  }, []);
-
-  const liveVideoId = liveData?.videoId || fallbackLiveVideoId;
 
   // Head générique pour la section 01 — même structure que featured-dossiers de Reviews
   const headMap = {
@@ -170,24 +154,16 @@ export default function Home() {
           </div>
           <p className="live-description">{t.home.live.description}</p>
         </div>
-        <div className={`live-player hud-frame${liveVideoId ? '' : ' live-player--offline'}`}>
-          {liveVideoId ? (
-            <iframe
-              src={youTubeEmbedUrl(liveVideoId)}
-              title={liveData?.title || t.home.live.playerTitle}
-              allow="autoplay; encrypted-media; picture-in-picture; web-share"
-              allowFullScreen
-            />
-          ) : (
-            <div className="live-offline">
-              <span className="live-offline-icon" aria-hidden="true">▶</span>
-              <strong>{t.home.live.offlineTitle}</strong>
-              <span>{t.home.live.offlineText}</span>
-            </div>
-          )}
+        <div className="live-player hud-frame">
+          <iframe
+            src={youTubeLiveChannelEmbedUrl(liveChannelId)}
+            title={t.home.live.playerTitle}
+            allow="autoplay; encrypted-media; picture-in-picture; web-share"
+            allowFullScreen
+          />
         </div>
         <div className="live-footer">
-          <span>{liveData?.isLive || liveVideoId ? t.home.live.liveNow : t.home.live.offlineLabel}</span>
+          <span>{t.home.live.liveNow}</span>
           <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.live.channelCta} <Arrow /></a>
         </div>
       </section>

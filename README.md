@@ -34,22 +34,15 @@ Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des ép
 
 ## Live YouTube
 
-La page d’accueil contient un lecteur live YouTube manuel (option 1). Pour afficher
-une diffusion programmée, copiez `.env.example` vers `.env.local` et renseignez
-`VITE_YOUTUBE_LIVE_VIDEO_ID` avec l’identifiant de la vidéo live, c’est-à-dire la
-partie située après `v=` dans son URL YouTube. Sans identifiant, le site affiche
-automatiquement un état « aucun live en cours » avec un lien vers la chaîne officielle.
+La page d’accueil contient un lecteur live YouTube permanent basé sur l’ID de la
+chaîne. Copiez `.env.example` vers `.env.local` si nécessaire et vérifiez
+`VITE_YOUTUBE_CHANNEL_ID`. Pour Let’s Play Official, l’ID est
+`UCBi989OGXiGBjvB17Xh5GUQ`.
 
-### Détection automatique sur Vercel
+Cette intégration fonctionne sur un hébergement statique, sans Vercel, sans clé API
+et sans backend. YouTube résout automatiquement l’URL vers le direct public actif.
+Quand la chaîne n’est pas en direct, le lecteur YouTube affiche son état hors ligne.
 
-Le fichier `api/youtube-live.js` détecte automatiquement un direct public de la
-chaîne via YouTube Data API v3. Dans les variables d’environnement Vercel, ajoutez
-`YOUTUBE_API_KEY` (clé Google Cloud gardée secrète) et `YOUTUBE_CHANNEL_ID` (ID
-numérique de la chaîne, actuellement `UCBi989OGXiGBjvB17Xh5GUQ`).
-`YOUTUBE_CHANNEL_HANDLE` est facultatif et vaut
-`@letsplay.officiel` par défaut. L’endpoint est mis en cache 60 secondes afin de
-réduire la consommation de quota YouTube. Après chaque modification des variables,
-relancez un déploiement Vercel.
 
 ## Partenaires
 
