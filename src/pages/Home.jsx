@@ -180,7 +180,13 @@ export default function Home() {
             <p className="eyebrow"><span className="live-dot" /> {t.home.live.eyebrow}</p>
             <h2>{t.home.live.h2a}<br /><em>{t.home.live.h2b}</em></h2>
           </div>
-          <p className="live-description">{t.home.live.description}</p>
+          <div className="live-head-aside">
+            <p className="live-description">{t.home.live.description}</p>
+            <div className={`live-status-card live-status-card--${liveStatus}`}>
+              <span className={`live-status live-status--${liveStatus}`}><i aria-hidden="true" /> {statusCopy}</span>
+              <small>{t.home.live.autoRefresh}</small>
+            </div>
+          </div>
         </div>
         <div className="live-player hud-frame">
           <iframe
@@ -191,7 +197,7 @@ export default function Home() {
           />
         </div>
         <div className="live-footer">
-          <span className={`live-status live-status--${liveStatus}`}><i aria-hidden="true" /> {statusCopy}</span>
+          <span className="live-footer-note">{t.home.live.statusSupport}</span>
           <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.live.channelCta} <Arrow /></a>
         </div>
       </section>
