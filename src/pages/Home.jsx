@@ -42,6 +42,10 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
+// Option 1: a manually configured YouTube live video. Set the ID when a live
+// broadcast is scheduled; without it the section remains a useful offline CTA.
+const liveVideoId = import.meta.env.VITE_YOUTUBE_LIVE_VIDEO_ID?.trim() || '';
+
 export default function Home() {
   const { t, lang } = useLanguage();
 
@@ -138,6 +142,37 @@ export default function Home() {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="live-section wrap" id="live">
+        <div className="section-label"><span><b>02</b> / {t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
+        <div className="live-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {t.home.live.eyebrow}</p>
+            <h2>{t.home.live.h2a}<br /><em>{t.home.live.h2b}</em></h2>
+          </div>
+          <p className="live-description">{t.home.live.description}</p>
+        </div>
+        <div className={`live-player hud-frame${liveVideoId ? '' : ' live-player--offline'}`}>
+          {liveVideoId ? (
+            <iframe
+              src={youTubeEmbedUrl(liveVideoId)}
+              title={t.home.live.playerTitle}
+              allow="autoplay; encrypted-media; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          ) : (
+            <div className="live-offline">
+              <span className="live-offline-icon" aria-hidden="true">▶</span>
+              <strong>{t.home.live.offlineTitle}</strong>
+              <span>{t.home.live.offlineText}</span>
+            </div>
+          )}
+        </div>
+        <div className="live-footer">
+          <span>{liveVideoId ? t.home.live.liveNow : t.home.live.offlineLabel}</span>
+          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.live.channelCta} <Arrow /></a>
         </div>
       </section>
 

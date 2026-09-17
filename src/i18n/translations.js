@@ -63,6 +63,11 @@ export const translations = {
         sponsorKicker: 'In collaboration with Djezzy', sponsorText: 'A 7ouma Arena episode about the football games played on smartphones — and the Algerian community building the next competitive scene.', sponsorLink: 'Official website',
         desc: 'How 7ouma Arena by Djezzy captures the rise of mobile football, from FC Mobile all the way to the Djezzy Cup.',
       },
+      live: {
+        label: 'LIVE', eyebrow: 'Let’s Play en direct', h2a: 'ON AIR,', h2b: 'WHEN WE PLAY.',
+        description: 'The next live session appears here as soon as the broadcast starts.', playerTitle: 'Let’s Play Official — live stream',
+        liveNow: 'LIVE NOW', offlineLabel: 'NO LIVE SCHEDULED', offlineTitle: 'No live in progress', offlineText: 'Check the official channel for the next broadcast.', channelCta: 'Open the YouTube channel',
+      },
       show: {
         label1: '02 / THE SHOW', label2: 'WHAT WE DO',
         h2a: 'GAMING,', h2b: 'WE LIVE IT.',
@@ -327,6 +332,11 @@ export const translations = {
         sponsorKicker: 'En collaboration avec Djezzy', sponsorText: 'Un épisode de 7ouma Arena consacré aux jeux de football sur smartphone — et à la communauté algérienne qui construit la prochaine scène compétitive.', sponsorLink: 'Site officiel',
         desc: 'Comment 7ouma Arena by Djezzy raconte l’essor du football mobile, de FC Mobile jusqu’à la Djezzy Cup.',
       },
+      live: {
+        label: 'DIRECT', eyebrow: 'Let’s Play en direct', h2a: 'ON AIR,', h2b: 'QUAND ON JOUE.',
+        description: 'Le prochain live apparaît ici dès que la diffusion est lancée.', playerTitle: 'Let’s Play Official — diffusion en direct',
+        liveNow: 'EN DIRECT', offlineLabel: 'AUCUN LIVE PROGRAMMÉ', offlineTitle: 'Aucun live en cours', offlineText: 'Consultez la chaîne officielle pour connaître la prochaine diffusion.', channelCta: 'Ouvrir la chaîne YouTube',
+      },
       show: {
         label1: '02 / L’ÉMISSION', label2: 'CE QUE NOUS FAISONS',
         h2a: 'GAMING,', h2b: 'ON LE VIT.',
@@ -588,6 +598,11 @@ export const translations = {
         cta: 'اكتشف الشراكات', watch: 'شاهد الحلقة',
         sponsorKicker: 'بالتعاون مع Djezzy', sponsorText: 'حلقة من 7ouma Arena حول ألعاب كرة القدم على الهاتف — والمجتمع الجزائري الذي يبني المشهد التنافسي القادم.', sponsorLink: 'الموقع الرسمي',
         desc: 'كيف تروي 7ouma Arena by Djezzy صعود كرة القدم على الهاتف، من FC Mobile حتى Djezzy Cup.',
+      },
+      live: {
+        label: 'مباشر', eyebrow: 'Let’s Play على الهواء', h2a: 'على الهواء،', h2b: 'عندما نلعب.',
+        description: 'سيظهر البث المباشر القادم هنا فور انطلاقه.', playerTitle: 'Let’s Play Official — بث مباشر',
+        liveNow: 'مباشر الآن', offlineLabel: 'لا يوجد بث مجدول', offlineTitle: 'لا يوجد بث مباشر الآن', offlineText: 'تحقق من القناة الرسمية لمعرفة موعد البث القادم.', channelCta: 'فتح قناة يوتيوب',
       },
       show: {
         label1: '02 / البرنامج', label2: 'ماذا نفعل',

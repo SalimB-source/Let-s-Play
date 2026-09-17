@@ -25,11 +25,20 @@ npm run build
 - Formats : Gaming, Cinéma et Pop Culture
 - Dernières vidéos YouTube avec filtres interactifs
 - Liens vers les comptes officiels
+- Bloc de diffusion YouTube live configurable sur la page d’accueil
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
+
+## Live YouTube
+
+La page d’accueil contient un lecteur live YouTube manuel (option 1). Pour afficher
+une diffusion programmée, copiez `.env.example` vers `.env.local` et renseignez
+`VITE_YOUTUBE_LIVE_VIDEO_ID` avec l’identifiant de la vidéo live, c’est-à-dire la
+partie située après `v=` dans son URL YouTube. Sans identifiant, le site affiche
+automatiquement un état « aucun live en cours » avec un lien vers la chaîne officielle.
 
 ## Partenaires
 
