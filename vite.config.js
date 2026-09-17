@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/Let-s-Play/',
+  base: process.env.VERCEL ? '/' : '/Let-s-Play/',
   server: {
     allowedHosts: true,
   },
