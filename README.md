@@ -64,7 +64,35 @@ Vite embeds them at build time):
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for Production
    (and Preview if you want auth on preview deploys).
 
+**These values are read at build time.** Vite inlines them into the bundle, so
+adding a variable without rebuilding/redeploying changes nothing. Each target
+needs its own copy:
+
+| Where the site runs | Where to set the two values |
+| --- | --- |
+| Local `npm run dev` / Arena preview | `.env.local` at the repo root (never committed) |
+| Vercel | Settings → Environment Variables, or the Supabase marketplace integration |
+| GitHub Pages (`.github/workflows/deploy.yml`) | Settings → Secrets and variables → Actions → **Variables**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
+
+Repository *variables* (not secrets) are enough for Pages: both values are
+public by design — they ship inside the client bundle. The workflow accepts the
+`SUPABASE_URL` / `SUPABASE_ANON_KEY` names too. When they are absent, the build
+still deploys but `/auth` stays in demo-preview mode, and the workflow logs a
+warning (`Supabase non configuré`).
+
 If a variable is missing, `/auth` shows exactly which one under the form.
+
+### Troubleshooting
+
+| Symptom on `/auth` | Cause | Fix |
+| --- | --- | --- |
+| “Supabase authentication is not configured … Missing configuration: …” | The values were absent **at build time** for that deployment | Add them for that host (table above) and redeploy — this is what the GitHub Pages mirror showed before the workflow passed them |
+| “Unable to reach the Supabase server (…supabase.co) — Failed to fetch” | Wrong project URL/key, or the project is paused (free projects pause after a week of inactivity) | Check Settings → API, restore the project in the Supabase dashboard |
+| “Your email address is not confirmed yet” | Authentication → Sign Up → *Confirm email* is ON, and the confirmation mail never arrived | Configure a custom SMTP provider (Authentication → Emails) or turn *Confirm email* off |
+| Signup answers “check your inbox” but no mail ever arrives, or “Too many attempts” | Supabase's built-in mailer is for testing only (≈2–4 mails/hour, restricted recipients) | Connect Resend/SendGrid/… under Authentication → Emails |
+| Google / Microsoft returns to the site without a session | The redirect target is not whitelisted | Authentication → URL Configuration: Site URL = the deployed domain, Redirect URLs = `https://<domain>/**` |
+| “Unsupported provider: provider is not enabled” after clicking Google / Microsoft | That provider is disabled in the Supabase project (`google` / `azure` show up as `false` in `/auth/v1/settings`) | Authentication → Sign In / Up → enable Google / Azure, or hide the buttons |
+| Sign-in works on Vercel but not on the Pages mirror | Pages has no Supabase variables | See the table above |
 
 ### Supabase dashboard checklist
 
@@ -74,7 +102,9 @@ If a variable is missing, `/auth` shows exactly which one under the form.
 2. **URLs**: Dashboard → Authentication → URL Configuration →
    - Site URL: `https://<your-domain>` (your Vercel domain),
    - Redirect URLs: add `https://<your-domain>/**` (covers `/auth`, where
-     email confirmation, OAuth and password-recovery links land).
+     email confirmation, OAuth and password-recovery links land) **and** the
+     Pages mirror if you use it:
+     `https://salimb-source.github.io/Let-s-Play/**`.
    - The Supabase → Vercel integration keeps these redirect URIs in sync
      automatically, including preview deployments.
 3. **Email confirmation** (optional): Authentication → Sign Up → Confirm email

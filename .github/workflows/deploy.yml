@@ -17,6 +17,15 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Vite embeds these at build time (see vite.config.js). Declare them as
+    # repository variables (Settings → Secrets and variables → Actions →
+    # Variables) so the Pages build gets real Supabase auth; without them the
+    # site still deploys, but /auth stays in demo-preview mode. Repository
+    # variables are enough (unlike secrets) because both values are public:
+    # they already ship inside the client bundle.
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || vars.SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,6 +36,13 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Check Supabase configuration
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::warning title=Supabase non configuré::Ce build part sans clés Supabase : /auth restera en mode démo. Ajoutez les variables de dépôt VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY (Settings → Secrets and variables → Actions → Variables), puis relancez le déploiement."
+          else
+            echo "Supabase configuré pour ce build : $VITE_SUPABASE_URL"
+          fi
       - name: Build
         run: npm run build
       - name: Setup Pages
