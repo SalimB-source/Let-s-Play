@@ -16,7 +16,8 @@ export const COMMENT_PAGE_SIZE = 100;
 
 const COMMENT_COLUMNS = 'id, article_id, user_id, author_name, author_avatar, body, created_at';
 // Extended columns when the migration adding author_level/xp has been applied.
-// Selecting them on an older deployment fails with "column does not exist",
+// Selecting them on an older deployment fails with “column does not exist” or
+// with PGRST204 “Could not find the ... column ... in the schema cache”,
 // so fetchComments falls back to COMMENT_COLUMNS.
 const COMMENT_COLUMNS_WITH_LEVEL = 'id, article_id, user_id, author_name, author_avatar, author_level, author_xp, body, created_at';
 const DEMO_STORAGE_PREFIX = 'letsplay_demo_comments:';
@@ -48,6 +49,29 @@ export function isMissingTableError(error) {
     || /relation .*comments.* does not exist|could not find the table .*comments/i.test(message);
 }
 
+// True when the API does not know a column the app references: the migration
+// adding it has not been applied, or PostgREST's schema cache has not reloaded
+// yet. PostgREST answers with PGRST204 — “Could not find the 'author_level'
+// column of 'comments' in the schema cache” (the column name comes BEFORE the
+// word “column”, unlike the raw Postgres error “column comments.author_level
+// does not exist”). `names` narrows the check to those columns when given.
+export function isMissingColumnError(error, names = []) {
+  const message = error?.message || '';
+  const code = error?.code || '';
+  const schemaCacheMiss = code === 'PGRST204'
+    || /could not find the ['"][a-z0-9_]+['"] column of ['"][a-z0-9_]+['"] in the schema cache/i.test(message);
+  const postgresMiss = code === '42703'
+    || /column [^\n]* does not exist/i.test(message);
+  if (!schemaCacheMiss && !postgresMiss) return false;
+  if (!names.length) return true;
+  const wanted = new Set(names);
+  // PGRST204 quotes the column name (“the 'author_level' column”); the loose
+  // word test also covers the Postgres shape (“column comments.author_level
+  // does not exist”), where \blevel\b correctly stays inside author_level.
+  return [...message.matchAll(/['"]([a-zA-Z0-9_]+)['"]/g)].some((m) => wanted.has(m[1]))
+    || new RegExp(`\\b(?:${names.join('|')})\\b`, 'i').test(message);
+}
+
 export function describeCommentsError(error, copy, fallback) {
   const message = error?.message || '';
   const code = error?.code || '';
@@ -59,6 +83,9 @@ export function describeCommentsError(error, copy, fallback) {
   }
   if (isMissingTableError(error)) {
     return `${copy.errUnavailable}${details}`;
+  }
+  if (isMissingColumnError(error, ['author_level', 'author_xp'])) {
+    return `${copy.errMissingColumn}${details}`;
   }
   if (/comment_rate_limited/i.test(message)) {
     return copy.errRateLimited;
@@ -93,8 +120,8 @@ export async function fetchComments(articleId) {
       .order('created_at', { ascending: false })
       .limit(COMMENT_PAGE_SIZE);
     if (error) {
-      // column does not exist yet → retry without level
-      if (/column.*author_level|column.*author_xp does not exist/i.test(error.message || '')) throw new Error('retry_basic');
+      // migration not applied yet (or API schema cache stale) → retry without level
+      if (isMissingColumnError(error, ['author_level', 'author_xp'])) throw new Error('retry_basic');
       throw error;
     }
     return data || [];
@@ -131,7 +158,7 @@ export async function postComment(articleId, body, opts = {}) {
       .select(COMMENT_COLUMNS_WITH_LEVEL)
       .single();
     if (error) {
-      if (/column.*author_level|column.*author_xp does not exist/i.test(error.message || '')) throw new Error('retry_basic');
+      if (isMissingColumnError(error, ['author_level', 'author_xp'])) throw new Error('retry_basic');
       throw error;
     }
     return data;
@@ -279,7 +306,7 @@ export async function syncSupabaseProfileAndComments(userId, { name, avatar, lev
     try {
       // try with level/xp, fallback without if columns missing
       let { error } = await supabase.from('profiles').update(payloadProfile).eq('id', userId);
-      if (error && /column.*level|column.*xp|column.*updated_at/.test(error.message || '')) {
+      if (error && isMissingColumnError(error, ['level', 'xp', 'updated_at'])) {
         const fallback = {};
         if (payloadProfile.username) fallback.username = payloadProfile.username;
         if (payloadProfile.display_name) fallback.display_name = payloadProfile.display_name;
@@ -302,7 +329,7 @@ export async function syncSupabaseProfileAndComments(userId, { name, avatar, lev
   if (!Object.keys(payloadComments).length) return;
   try {
     let { error } = await supabase.from('comments').update(payloadComments).eq('user_id', userId);
-    if (error && /column.*author_level|column.*author_xp/.test(error.message || '')) {
+    if (error && isMissingColumnError(error, ['author_level', 'author_xp'])) {
       const fallback = {};
       if (payloadComments.author_name) fallback.author_name = payloadComments.author_name;
       if (payloadComments.author_avatar !== undefined) fallback.author_avatar = payloadComments.author_avatar;
