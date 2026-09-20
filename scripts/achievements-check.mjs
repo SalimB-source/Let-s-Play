@@ -24,11 +24,13 @@ import {
   dayKey,
   evaluate,
   levelFromXp,
+  levelUpBetween,
   mergeStates,
   metricValue,
   normalizeState,
   reduce,
   summarize,
+  totalXp,
 } from '../src/achievements/engine.js';
 import { ACHIEVEMENTS, GROUPS, RARITIES, achievementLabel } from '../src/achievements/catalog.js';
 import { describeRoute, linkedProviders } from '../src/achievements/routeActions.js';
@@ -138,6 +140,29 @@ check('0 XP = niveau 1', levelFromXp(0).level, 1);
 check('niveau 2 à 150 XP', levelFromXp(150).level, 2);
 check('XP restant dans le niveau', levelFromXp(150).xpInLevel, 0);
 ok('progression du niveau croissante', levelFromXp(2000).level > levelFromXp(400).level, `${levelFromXp(400).level} → ${levelFromXp(2000).level}`);
+
+// Passage de niveau : la fenêtre de déblocage l'annonce avec le succès qui l'a
+// déclenché (comparaison avant / après de l'XP des succès obtenus).
+const beforeLevel = createState();
+const afterLevel = reduce(beforeLevel, { type: 'comment_posted' }).state;
+check('aucun niveau gagné au premier succès commun', levelUpBetween(beforeLevel, afterLevel), null);
+const rewarded = evaluate(normalizeState({
+  ...createState(),
+  sets: {
+    articles_read: ['a', 'b', 'c', 'd', 'e'],
+    news_read: ['a', 'b', 'c', 'd', 'e'],
+    videos_watched: ['v1', 'v2', 'v3', 'v4', 'v5'],
+    sections_visited: ['home', 'news', 'reviews'],
+    languages_used: ['fr', 'en', 'ar'],
+    providers_linked: ['google'],
+  },
+})).state;
+const expectedXp = ['first-read', 'page-turner', 'news-wire', 'explorer', 'prime-time', 'binge-watcher', 'polyglot', 'trilingual', 'linked-player']
+  .reduce((sum, id) => sum + ACHIEVEMENTS.find((entry) => entry.id === id).xp, 0);
+check('l’XP total est la somme des succès obtenus', totalXp(rewarded), expectedXp);
+check('niveau gagné détecté entre deux états', levelUpBetween(beforeLevel, rewarded)?.from, 1);
+check('… avec les paliers franchis', levelUpBetween(beforeLevel, rewarded)?.to, levelFromXp(expectedXp).level);
+ok('… et un vrai saut de niveau', levelUpBetween(beforeLevel, rewarded)?.to > 1, `niveau ${levelUpBetween(beforeLevel, rewarded)?.to}`);
 
 // Navigation : chaque route du site doit se traduire en actions, sinon un
 // succès reste inaccessible même en visitant les bonnes pages.
@@ -249,7 +274,7 @@ execFileSync(
   { cwd: root, stdio: 'inherit' },
 );
 
-const { achievementsPage, authHub } = await import(path.join(outDir, 'achievements-smoke.js'));
+const { achievementsPage, authHub, achievementPopup } = await import(path.join(outDir, 'achievements-smoke.js'));
 
 for (const lang of LANGS) {
   const { html } = achievementsPage(lang);
@@ -286,6 +311,29 @@ ok('le hub joueur montre les succès du site', hub.html.includes('TES SUCCÈS SU
 ok('le hub joueur affiche le niveau', hub.html.includes('achievement-level'));
 ok('le hub joueur renvoie vers la page des succès', hub.html.includes('VOIR TOUS LES SUCCÈS'));
 
+// Fenêtre de déblocage : elle n'apparaît qu'après une action, on la rend donc
+// avec la file qu'un joueur verrait juste après avoir obtenu un succès.
+const popupLabels = { en: 'SEE ALL ACHIEVEMENTS', fr: 'VOIR TOUS LES SUCCÈS', ar: 'عرض كل الإنجازات' };
+// React insère des commentaires entre les nœuds de texte : on les retire avant
+// de chercher une phrase dans le rendu.
+const noComments = (html) => html.replace(/<!--[^>]*-->/g, '');
+for (const lang of LANGS) {
+  const html = noComments(achievementPopup(lang, {
+    notifications: [{ id: 'polyglot', levelUp: { from: 1, to: 3 } }, { id: 'first-read' }],
+  }));
+  const label = achievementLabel(ACHIEVEMENTS.find((entry) => entry.id === 'polyglot'), lang);
+  ok(`[${lang}] la fenêtre annonce le succès`, html.includes(label.name) && html.includes(label.desc));
+  ok(`[${lang}] … avec sa rareté et son XP`, html.includes('achievement-rarity rarity-rare') && html.includes('+100'));
+  ok(`[${lang}] … et le passage de niveau`, html.includes('achievement-popup-level'));
+  ok(`[${lang}] … le compteur de la file`, /achievement-popup-queue/.test(html));
+  ok(`[${lang}] … et le lien vers la page des succès`, html.includes(popupLabels[lang]));
+  ok(`[${lang}] la fenêtre est une boîte de dialogue accessible`, html.includes('aria-modal="true"') && html.includes('role="dialog"'));
+}
+const singlePopup = noComments(achievementPopup('fr', { notifications: [{ id: 'polyglot' }] }));
+ok('le dernier succès de la file propose de continuer', /CONTINUER/.test(singlePopup));
+check('… et n’affiche aucun compteur de file', /achievement-popup-queue/.test(singlePopup), false);
+check('pas de fenêtre sans succès à fêter', achievementPopup('fr', { notifications: [] }), '');
+
 // Les actions du site sont branchées sur le moteur (source du site, comme les
 // autres vérifications du dépôt : on lit ce qui est réellement livré).
 const read = (relative) => readFileSync(path.join(root, relative), 'utf8');
@@ -298,9 +346,19 @@ const sources = [
   ['src/achievements/AchievementTracker.jsx', "track('article_read'"],
   ['src/achievements/AchievementTracker.jsx', "track('video_played'"],
   ['src/achievements/AchievementTracker.jsx', 'VIDEO_PLAYED_EVENT'],
+  ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
+  ['src/achievements/AchievementPopup.jsx', 'dismissNotification(current.id)'],
+  ['src/main.jsx', '<AchievementPopup />'],
 ];
 const unwired = sources.filter(([file, needle]) => !read(file).includes(needle)).map(([file, needle]) => `${file} → ${needle}`);
 check('actions branchées sur le moteur', unwired.join(', ') || 'aucune', 'aucune');
+
+// La fenêtre a remplacé les notifications en coin : aucun reste de l'ancien
+// composant ne doit traîner dans la source.
+const leftovers = sourceFiles(path.join(root, 'src'))
+  .filter((file) => /AchievementToasts|toastCopy|achievement-toast/.test(readFileSync(file, 'utf8')))
+  .map((file) => path.relative(root, file));
+check('plus aucune trace des anciennes notifications', leftovers.join(', ') || 'aucune', 'aucune');
 
 const videoLib = read('src/lib/videoPlayback.js');
 ok('un lecteur qui démarre annonce la vidéo', videoLib.includes('dispatchEvent(new CustomEvent(VIDEO_PLAYED_EVENT'));

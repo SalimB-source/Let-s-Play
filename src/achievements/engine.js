@@ -329,6 +329,17 @@ export function totalXp(state, entries = ACHIEVEMENTS) {
   return entries.reduce((sum, achievement) => (unlocked[achievement.id] ? sum + (achievement.xp || 0) : sum), 0);
 }
 
+/**
+ * Palier de niveau franchi entre deux états, ou null si le joueur n'a pas
+ * changé de niveau. C'est ce que la fenêtre de déblocage affiche quand le ou
+ * les succès qui viennent de tomber font monter d'un niveau.
+ */
+export function levelUpBetween(previous, next) {
+  const before = levelFromXp(totalXp(previous)).level;
+  const after = levelFromXp(totalXp(next)).level;
+  return after > before ? { from: before, to: after } : null;
+}
+
 /* ------------------------------------------------------------------ */
 /* Lecture pour l'interface                                            */
 /* ------------------------------------------------------------------ */

@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { ACHIEVEMENTS, achievementLabel } from './catalog';
-import { createState, evaluate, mergeStates, normalizeState, reduce, statesMatch, summarize } from './engine';
+import { createState, evaluate, levelUpBetween, mergeStates, normalizeState, reduce, statesMatch, summarize } from './engine';
 import { REMOTE_META_KEY, clearStorage, readStorage, writeStorage } from './storage';
 
 /**
@@ -13,7 +13,8 @@ import { REMOTE_META_KEY, clearStorage, readStorage, writeStorage } from './stor
  *   - `track(type, payload)` — signale une action faite par le joueur
  *     (`article_read`, `video_played`, `comment_posted`, …). L'état est
  *     mis à jour, la progression enregistrée, et les succès nouvellement
- *     obtenus remontent dans `toasts` ;
+ *     obtenus remontent dans `notifications` — la file que la fenêtre de
+ *     déblocage (`AchievementPopup`) affiche un par un ;
  *   - `summary` — succès, progression, XP et niveau (déduit du catalogue) ;
  *   - `reset()` — efface la progression locale.
  *
@@ -26,12 +27,14 @@ const EMPTY_SUMMARY = summarize(createState());
 
 const noop = () => {};
 
-const AchievementsContext = createContext({
+// Exporté : il permet de monter un composant des succès (la fenêtre de
+// déblocage) avec une file d'attente donnée, dans les scripts de vérification.
+export const AchievementsContext = createContext({
   ready: false,
   state: createState(),
   summary: EMPTY_SUMMARY,
-  toasts: [],
-  dismissToast: noop,
+  notifications: [],
+  dismissNotification: noop,
   track: noop,
   reset: noop,
   synced: false,
@@ -44,7 +47,9 @@ export function AchievementProvider({ children }) {
   const accountId = !isDemo && user?.id ? user.id : null;
 
   const [state, setState] = useState(() => evaluate(normalizeState(readStorage())).state);
-  const [toasts, setToasts] = useState([]);
+  // File des succès à fêter : `{ id, levelUp }`, le premier de la file est
+  // celui que la fenêtre affiche.
+  const [notifications, setNotifications] = useState([]);
   const [synced, setSynced] = useState(false);
 
   // L'état courant est aussi gardé dans une ref : `track()` peut enchaîner
@@ -58,11 +63,16 @@ export function AchievementProvider({ children }) {
   const syncTimer = useRef(null);
   const lastSynced = useRef(null);
 
-  // Trois notifications au maximum à l'écran : une rafale de succès (premier
-  // passage sur une page riche en actions) ne masque jamais tout le site.
-  const pushToasts = useCallback((ids) => {
+  // Quatre fenêtres au maximum dans la file : une rafale de succès (premier
+  // passage sur une page riche en actions) ne se transforme pas en longue
+  // séance de clics. Les succès écartés restent obtenus et visibles sur la
+  // page /achievements.
+  const enqueueNotifications = useCallback((ids, levelUp) => {
     if (!ids.length) return;
-    setToasts((current) => [...current, ...ids].slice(-3));
+    setNotifications((current) => [
+      ...current,
+      ...ids.map((id) => ({ id, levelUp: levelUp || null })),
+    ].slice(-4));
   }, []);
 
   // Écriture différée côté compte : une seule requête pour une rafale
@@ -86,12 +96,15 @@ export function AchievementProvider({ children }) {
   }, [accountId]);
 
   const commit = useCallback((nextState, unlocked = []) => {
+    const previous = stateRef.current;
     stateRef.current = nextState;
     setState(nextState);
     writeStorage(nextState);
-    if (unlocked.length) pushToasts(unlocked);
+    // Le passage de niveau est calculé avant/après : la fenêtre de déblocage
+    // peut ainsi annoncer « NIVEAU 4 ATTEINT » avec le succès qui l'a déclenché.
+    if (unlocked.length) enqueueNotifications(unlocked, levelUpBetween(previous, nextState));
     scheduleRemoteSync(nextState);
-  }, [pushToasts, scheduleRemoteSync]);
+  }, [enqueueNotifications, scheduleRemoteSync]);
 
   const track = useCallback((type, payload = {}) => {
     if (!type) return;
@@ -129,13 +142,17 @@ export function AchievementProvider({ children }) {
   // l'appareil, sans la copie du compte précédent.
   useEffect(() => () => { if (syncTimer.current) clearTimeout(syncTimer.current); }, []);
 
-  const dismissToast = useCallback((id) => {
-    setToasts((current) => {
-      const index = current.indexOf(id);
+  // Fermer la fenêtre fait passer à la suivante ; `dismissAll` vide la file
+  // (utilisé par le lien « voir tous les succès », qui change de page).
+  const dismissNotification = useCallback((id) => {
+    setNotifications((current) => {
+      const index = current.findIndex((entry) => entry.id === id);
       if (index === -1) return current;
       return [...current.slice(0, index), ...current.slice(index + 1)];
     });
   }, []);
+
+  const dismissAllNotifications = useCallback(() => setNotifications([]), []);
 
   const reset = useCallback(() => {
     clearStorage();
@@ -144,7 +161,7 @@ export function AchievementProvider({ children }) {
     lastSynced.current = null;
     setSynced(false);
     setState(fresh);
-    setToasts([]);
+    setNotifications([]);
     if (accountId && supabase) {
       try {
         Promise.resolve(supabase.auth.updateUser({ data: { [REMOTE_META_KEY]: fresh } })).catch(() => {});
@@ -160,12 +177,13 @@ export function AchievementProvider({ children }) {
     ready: true,
     state,
     summary,
-    toasts,
-    dismissToast,
+    notifications,
+    dismissNotification,
+    dismissAllNotifications,
     track,
     reset,
     synced: Boolean(accountId) && synced,
-  }), [state, summary, toasts, dismissToast, track, reset, synced, accountId]);
+  }), [state, summary, notifications, dismissNotification, dismissAllNotifications, track, reset, synced, accountId]);
 
   return <AchievementsContext.Provider value={value}>{children}</AchievementsContext.Provider>;
 }
@@ -184,10 +202,17 @@ export function useAchievementAction() {
   return useAchievements().track;
 }
 
-/** Message prêt à afficher pour un succès nouvellement débloqué. */
-export function toastCopy(achievementId, lang = 'en') {
+/** Contenu prêt à afficher pour un succès nouvellement débloqué. */
+export function notificationCopy(achievementId, lang = 'en') {
   const achievement = ACHIEVEMENTS.find((entry) => entry.id === achievementId);
   if (!achievement) return null;
   const label = achievementLabel(achievement, lang);
-  return { id: achievement.id, icon: achievement.icon, name: label.name, desc: label.desc, xp: achievement.xp };
+  return {
+    id: achievement.id,
+    icon: achievement.icon,
+    name: label.name,
+    desc: label.desc,
+    xp: achievement.xp,
+    rarity: achievement.rarity,
+  };
 }

@@ -15,7 +15,8 @@ import { renderToString } from 'react-dom/server';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { AuthProvider } from '../src/auth/AuthContext';
-import { AchievementProvider } from '../src/achievements/AchievementContext';
+import { AchievementProvider, AchievementsContext } from '../src/achievements/AchievementContext';
+import AchievementPopup from '../src/achievements/AchievementPopup';
 import AchievementTracker from '../src/achievements/AchievementTracker';
 import Layout from '../src/components/Layout';
 import Achievements from '../src/pages/Achievements';
@@ -84,4 +85,54 @@ export function achievementsPage(lang, storedState = null) {
 /** Hub joueur /auth — `{ demo: true }` simule l'aperçu de démonstration. */
 export function authHub(lang, storedState = null, options = {}) {
   return render('/auth', Auth, lang, storedState, options);
+}
+
+/**
+ * Fenêtre de déblocage, montée avec une file donnée.
+ *
+ * La fenêtre ne s'ouvre qu'après une action (elle est alimentée par l'état
+ * React) : pour la vérifier en SSR, on la rend avec un contexte simulé qui
+ * contient exactement la file qu'un joueur verrait après une action.
+ *
+ * @param {string} lang langue de l'interface
+ * @param {{ notifications?: Array<{id: string, levelUp?: {from: number, to: number}|null}> }} [options]
+ */
+export function achievementPopup(lang, { notifications = [] } = {}) {
+  const store = new Map();
+  store.set('letsplay-lang', lang);
+  globalThis.window = {
+    localStorage: {
+      getItem: (key) => (store.has(key) ? store.get(key) : null),
+      setItem: (key, value) => store.set(key, String(value)),
+      removeItem: (key) => store.delete(key),
+    },
+  };
+
+  const value = {
+    ready: true,
+    state: {},
+    summary: {},
+    notifications,
+    dismissNotification() {},
+    dismissAllNotifications() {},
+    track() {},
+    reset() {},
+    synced: false,
+  };
+
+  return renderToString(
+    React.createElement(
+      LanguageProvider,
+      null,
+      React.createElement(
+        MemoryRouter,
+        { initialEntries: ['/news'] },
+        React.createElement(
+          AchievementsContext.Provider,
+          { value },
+          React.createElement(AchievementPopup, null)
+        )
+      )
+    )
+  );
 }

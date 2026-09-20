@@ -50,7 +50,7 @@ import Achievements from './pages/Achievements';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
-import AchievementToasts from './achievements/AchievementToasts';
+import AchievementPopup from './achievements/AchievementPopup';
 import { initSinglePlayback } from './lib/videoPlayback';
 
 function App() {
@@ -116,7 +116,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
-            <AchievementToasts />
+            <AchievementPopup />
           </AchievementProvider>
         </BrowserRouter>
       </AuthProvider>

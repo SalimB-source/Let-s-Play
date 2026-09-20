@@ -135,8 +135,16 @@ Où ça se voit :
 | --- | --- |
 | `/achievements` (alias `/succes`) | la page complète : niveau, XP, compteurs d'actions, catalogue filtrable (famille, débloqués / en cours / verrouillés) et bouton de réinitialisation |
 | `/auth` (hub joueur) | une section « succès » compacte : niveau, derniers succès obtenus, prochains objectifs, lien vers la page complète |
-| Toutes les pages | une notification « SUCCÈS DÉBLOQUÉ » en bas à droite (à gauche en arabe) dès qu'un succès tombe, avec un lien vers la page |
+| Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
 | Navigation et pied de page | le lien « Succès / Achievements / الإنجازات » |
+
+La fenêtre vit dans `src/achievements/AchievementPopup.jsx` et lit la file
+`notifications` du contexte. Plusieurs succès d'affilée sont présentés **un par
+un** (« 1 sur 3 », bouton « SUIVANT »), la file est plafonnée à quatre pour
+qu'une rafale ne se transforme pas en séance de clics. Elle se ferme au clic,
+avec Échap, par son bouton, ou toute seule après quelques secondes — le
+minuteur est suspendu tant que la souris la survole, pour laisser le temps de
+lire.
 
 ### Comment une action devient un succès
 
@@ -215,11 +223,14 @@ débloquent le nouvel objectif sans être rejouées.
   (identifiants uniques, trois langues, métriques connues, cibles et XP
   valides) ; comportement du moteur (contenus distincts, lecture de nuit,
   séries de jours, fusion appareil ↔ compte, données corrompues, courbe de
-  niveau) ; **scénario complet qui débloque les 26 succès** (donc aucun succès
-  inatteignable) ; rendu réel des pages en SSR (la page liste les 26 succès dans
-  les trois langues, reprend une progression enregistrée, le hub joueur affiche
-  sa section), plus la source du site (actions branchées, un seul module écrit
-  la progression locale).
+  niveau, détection du passage de niveau) ; **scénario complet qui débloque les
+  26 succès** (donc aucun succès inatteignable) ; rendu réel en SSR de la page,
+  du hub joueur et de la **fenêtre de déblocage** (montée avec la file qu'un
+  joueur verrait après une action : succès, rareté, XP, palier franchi,
+  compteur de file, boîte de dialogue accessible, rien sans succès à fêter),
+  plus la source du site (actions branchées, fenêtre montée dans `main.jsx`,
+  plus aucun reste des anciennes notifications, un seul module écrit la
+  progression locale).
 - `npm run check:i18n` — les routes × FR / EN / AR, dont `/achievements`.
 
 ## Live YouTube
