@@ -137,7 +137,20 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="ticker" aria-hidden="true"><div className="ticker-track">{[0, 1].map((half) => <span key={half}>{t.home.ticker.map((word, i) => <React.Fragment key={i}>{word} <b>✦</b> </React.Fragment>)}</span>)}</div></section>
+      {/* Ticker continu — chaque moitié est suffisamment longue (> viewport) pour éviter les trous sur desktop, même en 4K/5K */}
+      <section className="ticker" aria-hidden="true">
+        <div className="ticker-track">
+          {[0, 1].map((half) => (
+            <span key={half} className="ticker-group">
+              {Array.from({ length: 10 })
+                .flatMap(() => t.home.ticker)
+                .map((word, i) => (
+                  <React.Fragment key={`${half}-${i}`}>{word} <b>✦</b> </React.Fragment>
+                ))}
+            </span>
+          ))}
+        </div>
+      </section>
 
       {/* 01 / ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
       <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured">

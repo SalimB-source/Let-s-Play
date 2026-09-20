@@ -185,10 +185,25 @@ img{max-width:100%}
   background:linear-gradient(90deg, rgba(124,58,237,.24), rgba(34,211,238,.1));
   border-block:1px solid var(--line);
   font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.14em;white-space:nowrap;
+  width:100%;
 }
-.ticker-track{display:inline-flex;animation:marquee 30s linear infinite}
+.ticker-track{
+  display:flex;
+  width:max-content;
+  will-change:transform;
+  animation:marquee 90s linear infinite;
+}
+.ticker-group{
+  display:inline-flex;
+  align-items:center;
+  flex-shrink:0;
+  white-space:nowrap;
+}
 .ticker b{color:var(--yellow);margin:0 26px;text-shadow:0 0 12px rgba(255,214,25,.6)}
-@keyframes marquee{to{transform:translateX(-50%)}}
+@keyframes marquee{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
 
 /* ============ SECTION SCAFFOLD ============ */
 .section-label{
