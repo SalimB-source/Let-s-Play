@@ -6,6 +6,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { describeAuthError } from '../lib/authErrors';
 import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
 import { metricValue } from '../achievements/engine';
+import { levelTitle } from '../achievements/catalog';
 import AchievementsPanel from '../achievements/AchievementsPanel';
 
 /* ------------------------------------------------------------------ */
@@ -160,6 +161,7 @@ const copy = {
     tierLabel: 'TIER',
     xpLabel: 'PLAYER PROGRESSION',
     xpUnit: 'XP',
+    xpEarnedLabel: 'XP earned',
     toNextLvl: 'XP to next rank',
     statsHeading: 'COMMUNITY ACTIVITY',
     statRead: 'Articles Read',
@@ -262,6 +264,7 @@ const copy = {
     tierLabel: 'RANG',
     xpLabel: 'PROGRESSION DU JOUEUR',
     xpUnit: 'XP',
+    xpEarnedLabel: 'XP gagnés',
     toNextLvl: 'XP avant le prochain rang',
     statsHeading: 'ACTIVITÉ COMMUNAUTAIRE',
     statRead: 'Articles lus',
@@ -364,6 +367,7 @@ const copy = {
     tierLabel: 'الفئة',
     xpLabel: 'تقدم اللاعب',
     xpUnit: 'نقطة خبرة',
+    xpEarnedLabel: 'نقطة خبرة مكتسبة',
     toNextLvl: 'نقطة للمستوى القادم',
     statsHeading: 'نشاط المجتمع',
     statRead: 'المقالات المقروءة',
@@ -836,19 +840,30 @@ export default function Auth({ initialMode = 'signin' }) {
     const fullName = meta.fullName || meta.full_name || user.email || 'Let’s Play Player';
     const role = meta.role || 'COMMUNITY PLAYER';
     const tier = meta.tier || 'TIER I · MEMBER';
-    const rankTitle = meta.rankTitle || (isDemo ? 'Novice Gamer' : 'New Player');
-    const level = meta.level || 1;
-    const xp = meta.xp || 0;
-    const nextLevelXp = meta.nextLevelXp || 100;
+    // Niveau, rang et XP du hub : pour un compte réel ils viennent du moteur de
+    // succès (`summary`), la seule source d'XP du site — les métadonnées
+    // Supabase ne portent ni XP ni niveau, donc les lire laissait la barre
+    // principale à 0 % alors que celle de la section « succès » avançait. Les
+    // personas de démonstration gardent leurs chiffres scriptés : l'aperçu doit
+    // rester prévisualisable « rempli », sans backend.
+    const progression = summary.level; // { level, xpInLevel, xpForNextLevel, percent }
+    const level = isDemo ? (meta.level || 1) : progression.level;
+    const rankTitle = isDemo ? (meta.rankTitle || 'Novice Gamer') : levelTitle(level, lang);
+    const xp = isDemo ? (meta.xp || 0) : progression.xpInLevel;
+    const nextLevelXp = isDemo ? (meta.nextLevelXp || 100) : progression.xpForNextLevel;
     const xpPercentage = nextLevelXp > 0 ? Math.min(100, Math.round((xp / nextLevelXp) * 100)) : 0;
+    // XP gagné depuis le début (somme des succès débloqués) : c'est le chiffre
+    // que montre aussi la section « succès ».
+    const xpEarned = summary.xp;
     const joinedDate = meta.joinedDate || formatJoined(user.created_at) || '—';
     const location = meta.location || (isDemo ? 'Algeria' : '');
     const bio = meta.bio || (isDemo ? 'Exploring new gaming horizons with the Let’s Play community.' : '');
     const avatar = meta.avatar;
 
-    // Real accounts start at zero — 0 XP, level 1, no badges, no stats — and
-    // grow from real activity. Demo profiles ship fully populated so the hub
-    // can be previewed without a backend.
+    // Real accounts start from nothing — no badges, no stats — and grow from
+    // real activity; their XP and level are read from the achievements engine
+    // above. Demo profiles ship fully populated so the hub can be previewed
+    // without a backend.
     const stats = meta.stats || {
       articlesRead: 0,
       commentsPosted: 0,
@@ -969,10 +984,26 @@ export default function Auth({ initialMode = 'signin' }) {
                 </span>
                 <span className="player-xp-count">
                   {xp.toLocaleString()} / {nextLevelXp.toLocaleString()} {t.xpUnit} ({xpPercentage}%)
+                  {/* Les chiffres scriptés d'une persona n'ont pas d'XP « réel »
+                      à additionner : on ne l'affiche que pour un vrai compte. */}
+                  {!isDemo && (
+                    <>
+                      {' · '}
+                      {xpEarned.toLocaleString()} {t.xpEarnedLabel}
+                    </>
+                  )}
                 </span>
               </div>
               <div className="player-xp-bar-bg">
-                <div className="player-xp-bar-fill" style={{ width: `${xpPercentage}%` }} />
+                <div
+                  className="player-xp-bar-fill"
+                  style={{ width: `${xpPercentage}%` }}
+                  role="progressbar"
+                  aria-valuenow={xpPercentage}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${t.levelLabel} ${level} — ${rankTitle}`}
+                />
               </div>
             </div>
 

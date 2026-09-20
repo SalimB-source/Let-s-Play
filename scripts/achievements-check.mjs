@@ -32,9 +32,10 @@ import {
   summarize,
   totalXp,
 } from '../src/achievements/engine.js';
-import { ACHIEVEMENTS, GROUPS, RARITIES, achievementLabel } from '../src/achievements/catalog.js';
+import { ACHIEVEMENTS, GROUPS, RARITIES, achievementLabel, levelTitle } from '../src/achievements/catalog.js';
 import { describeRoute, linkedProviders } from '../src/achievements/routeActions.js';
 import { REMOTE_META_KEY } from '../src/achievements/storage.js';
+import { DEMO_PROFILES } from '../src/auth/demoProfiles.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['en', 'fr', 'ar'];
@@ -306,16 +307,69 @@ const counters = achievementsPage('fr', countersState);
 const counterValues = [...counters.html.matchAll(/class="player-stat-value">(\d+)</g)].map((match) => match[1]);
 check('les compteurs d’actions suivent la progression', counterValues.slice(0, 4).join(','), '2,1,3,1');
 
+// React insère des commentaires entre les nœuds de texte : on les retire avant
+// de chercher une phrase (ou un nombre) dans le rendu.
+const noComments = (html) => html.replace(/<!--[^>]*-->/g, '');
+/**
+ * Largeur d'une barre de progression dans le rendu : le style est porté par
+ * l'élément lui-même (barre d'XP du hub) ou par son premier `<span>` (barre de
+ * la section succès).
+ */
+function barFill(html, className) {
+  const from = html.indexOf(`class="${className}"`);
+  if (from < 0) return Number.NaN;
+  const match = /style="width:(\d+)%"/.exec(html.slice(from));
+  return match ? Number(match[1]) : Number.NaN;
+}
+
 const hub = authHub('fr', saved, { demo: true });
 ok('le hub joueur montre les succès du site', hub.html.includes('TES SUCCÈS SUR LE SITE'));
 ok('le hub joueur affiche le niveau', hub.html.includes('achievement-level'));
 ok('le hub joueur renvoie vers la page des succès', hub.html.includes('VOIR TOUS LES SUCCÈS'));
+const vortex = DEMO_PROFILES.vortex.user_metadata;
+check(
+  'l’aperçu démo garde ses chiffres scriptés',
+  barFill(hub.html, 'player-xp-bar-fill'),
+  Math.round((vortex.xp / vortex.nextLevelXp) * 100),
+);
+
+// Hub d'un compte réellement connecté : ses métadonnées Supabase ne portent ni
+// XP ni niveau (seule la progression des succès y est écrite), la barre
+// principale doit donc lire le moteur — sinon elle reste à 0 % pendant que la
+// barre de la section « succès » avance.
+const realHub = noComments(authHub('fr', scenario, { account: true }).html);
+const realSummary = summarize(scenario);
+check(
+  'la barre d’XP du hub connecté suit le moteur',
+  barFill(realHub, 'player-xp-bar-fill'),
+  realSummary.level.percent,
+);
+ok('… et elle se remplit', barFill(realHub, 'player-xp-bar-fill') > 0, `${realSummary.level.percent} % remplis`);
+check(
+  'les deux barres (hub et section succès) avancent ensemble',
+  barFill(realHub, 'player-xp-bar-fill'),
+  barFill(realHub, 'achievement-level-bar'),
+);
+check(
+  'le niveau affiché dans le hub vient du moteur',
+  Number(/player-xp-level-tag">[^0-9]*(\d+)/.exec(realHub)?.[1]),
+  realSummary.level.level,
+);
+ok(
+  '… avec le rang de ce niveau',
+  realHub.includes(`player-xp-level-tag">NIVEAU ${realSummary.level.level} — ${levelTitle(realSummary.level.level, 'fr')}`),
+);
+ok(
+  'l’XP total gagné est affiché',
+  new RegExp(`${realSummary.xp.toLocaleString()} XP gagnés`).test(realHub),
+);
+
+// Un compte qui débute remplit aussi la barre (25 XP sur 150 → 17 %).
+const beginner = noComments(authHub('fr', saved, { account: true }).html);
+check('un compte débutant progresse aussi', barFill(beginner, 'player-xp-bar-fill'), summarize(saved).level.percent);
 
 // Notification de déblocage : elle n'apparaît qu'après une action, on la rend
 // donc avec la file qu'un joueur verrait juste après avoir obtenu un succès.
-// React insère des commentaires entre les nœuds de texte : on les retire avant
-// de chercher une phrase dans le rendu.
-const noComments = (html) => html.replace(/<!--[^>]*-->/g, '');
 for (const lang of LANGS) {
   const html = noComments(achievementPopup(lang, {
     notifications: [{ id: 'polyglot', levelUp: { from: 1, to: 3 } }, { id: 'first-read' }],

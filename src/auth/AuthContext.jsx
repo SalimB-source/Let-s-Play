@@ -17,8 +17,14 @@ function getStoredDemoUser() {
   }
 }
 
-export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null);
+/**
+ * @param {object} [props.initialSession] session Supabase fournie au montage.
+ *   Hors navigateur (rendus SSR des scripts de vérification) Supabase n'existe
+ *   pas et la session n'arrive que par effet : cette entrée permet de rendre le
+ *   hub d'un compte réellement connecté. L'application ne la fournit jamais.
+ */
+export function AuthProvider({ children, initialSession = null }) {
+  const [session, setSession] = useState(initialSession);
   const [demoUser, setDemoUser] = useState(getStoredDemoUser);
   const [loading, setLoading] = useState(Boolean(supabase));
 
