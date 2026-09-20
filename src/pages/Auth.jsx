@@ -6,6 +6,9 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { GoogleLogo, MicrosoftLogo } from '../components/SocialLogos';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
 import { describeAuthError } from '../lib/authErrors';
+import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
+import { metricValue } from '../achievements/engine';
+import AchievementsPanel from '../achievements/AchievementsPanel';
 
 /* ------------------------------------------------------------------ */
 /* Small inline icons (no external deps, inherits currentColor)        */
@@ -123,7 +126,7 @@ const copy = {
     statRead: 'Articles Read',
     statComments: 'Comments',
     statSaved: 'Saved Stories',
-    statBadges: 'Badges Earned',
+    statBadges: 'Achievements unlocked',
     ssoHeading: 'LINKED ACCOUNTS & SSO',
     ssoSub: 'Manage your connected third-party gaming and social logins',
     googleAccount: 'Google Account',
@@ -138,8 +141,7 @@ const copy = {
     platformsHeading: 'GAMING HARDWARE & PLATFORMS',
     noPlatformsYet: 'No platforms added yet.',
     badgesHeading: 'UNLOCKED ACHIEVEMENTS & BADGES',
-    welcomeBadgeName: 'Welcome Aboard',
-    welcomeBadgeDesc: 'You just created your Let’s Play account',
+    demoBadgesNote: 'Persona medals shown by the demo preview — your own achievements are listed above.',
     savedStoriesHeading: 'SAVED STORIES & BOOKMARKS',
     noSavedYet: 'No saved stories yet — explore the news feed and bookmark what you like.',
     readStory: 'READ STORY',
@@ -229,7 +231,7 @@ const copy = {
     statRead: 'Articles lus',
     statComments: 'Commentaires',
     statSaved: 'Articles sauvés',
-    statBadges: 'Badges obtenus',
+    statBadges: 'Succès obtenus',
     ssoHeading: 'COMPTES CONNECTÉS & SSO',
     ssoSub: 'Gérez vos connexions tierces de jeu et réseaux',
     googleAccount: 'Compte Google',
@@ -244,8 +246,7 @@ const copy = {
     platformsHeading: 'ÉQUIPEMENT & PLATEFORMES DE JEU',
     noPlatformsYet: 'Aucune plateforme ajoutée pour l’instant.',
     badgesHeading: 'SUCCÈS DÉBLOQUÉS & BADGES',
-    welcomeBadgeName: 'Bienvenue',
-    welcomeBadgeDesc: 'Tu viens de créer ton compte Let’s Play',
+    demoBadgesNote: 'Médailles de la persona affichées par l’aperçu démo — tes propres succès sont listés plus haut.',
     savedStoriesHeading: 'FAVORIS & ARTICLES SAUVEGARDÉS',
     noSavedYet: 'Aucun article sauvegardé pour l’instant — explore le fil d’actus et mets en favori ce qui te plaît.',
     readStory: 'LIRE L’ARTICLE',
@@ -335,7 +336,7 @@ const copy = {
     statRead: 'المقالات المقروءة',
     statComments: 'التعليقات',
     statSaved: 'المقالات المحفوظة',
-    statBadges: 'الأوسمة المكتسبة',
+    statBadges: 'الإنجازات المفتوحة',
     ssoHeading: 'الحسابات المتصلة وتسجيل الدخول',
     ssoSub: 'إدارة حسابات تسجيل الدخول المرتبطة بالألعاب والخدمات الخارجية',
     googleAccount: 'حساب Google',
@@ -350,8 +351,7 @@ const copy = {
     platformsHeading: 'منصات وأجهزة اللعب',
     noPlatformsYet: 'لم تتم إضافة أي منصة بعد.',
     badgesHeading: 'الإنجازات والأوسمة المفتوحة',
-    welcomeBadgeName: 'أهلاً بك',
-    welcomeBadgeDesc: 'لقد أنشأت حساب Let’s Play الخاص بك للتو',
+    demoBadgesNote: 'أوسمة الشخصية في المعاينة التجريبية — إنجازاتك الخاصة معروضة في الأعلى.',
     savedStoriesHeading: 'المقالات المحفوظة للقراءة لاحقًا',
     noSavedYet: 'لا توجد مقالات محفوظة بعد — تصفح آخر الأخبار واحفظ ما يعجبك.',
     readStory: 'اقرأ المقال',
@@ -396,6 +396,8 @@ export default function Auth({ initialMode = 'signup' }) {
   } = useAuth();
   const { lang } = useLanguage();
   const navigate = useNavigate();
+  const { summary, state: achievementState } = useAchievements();
+  const track = useAchievementAction();
   const t = copy[lang] || copy.en;
 
   const [mode, setMode] = useState(initialMode === 'update' ? 'signin' : initialMode);
@@ -478,6 +480,7 @@ export default function Auth({ initialMode = 'signup' }) {
         if (signUpError) {
           setError(describeAuthError(signUpError, t, t.error));
         } else if (data.session) {
+          track('account_created');
           // Email confirmation disabled → already signed in.
           navigate('/auth');
           return;
@@ -486,6 +489,8 @@ export default function Auth({ initialMode = 'signup' }) {
           setMode('signin');
           setError(t.alreadyRegistered);
         } else {
+          // Compte créé, en attente de confirmation par e-mail.
+          track('account_created');
           setMessage(t.confirmation);
           setShowResend(true);
         }
@@ -497,6 +502,7 @@ export default function Auth({ initialMode = 'signup' }) {
         if (signInError) {
           setError(describeAuthError(signInError, t, t.error));
         } else {
+          track('signed_in');
           navigate('/auth');
           return;
         }
@@ -667,11 +673,10 @@ export default function Auth({ initialMode = 'signup' }) {
       : (isMicrosoftConnected ? joinedDate : '');
 
     const platforms = meta.platforms || [];
-    const badges = meta.badges || (isDemo
-      ? []
-      : [
-          { id: 'welcome', icon: '🎮', name: t.welcomeBadgeName, desc: t.welcomeBadgeDesc, rarity: 'Common' },
-        ]);
+    // Les badges de la persona n'existent que dans l'aperçu de démonstration :
+    // les succès réels d'un compte connecté sont ceux suivis par le site
+    // (section « succès » ci-dessous, alimentée par src/achievements).
+    const personaBadges = isDemo ? (meta.badges || []) : [];
 
     const savedArticles = meta.savedArticlesList || [];
 
@@ -760,11 +765,15 @@ export default function Auth({ initialMode = 'signup' }) {
           {/* COMMUNITY STATS GRID */}
           <div className="player-stats-grid">
             <div className="player-stat-card">
-              <div className="player-stat-value">{stats.articlesRead}</div>
+              <div className="player-stat-value">
+                {isDemo ? stats.articlesRead : metricValue(achievementState, 'articlesRead')}
+              </div>
               <div className="player-stat-label">{t.statRead}</div>
             </div>
             <div className="player-stat-card">
-              <div className="player-stat-value">{stats.commentsPosted}</div>
+              <div className="player-stat-value">
+                {isDemo ? stats.commentsPosted : metricValue(achievementState, 'commentsPosted')}
+              </div>
               <div className="player-stat-label">{t.statComments}</div>
             </div>
             <div className="player-stat-card">
@@ -772,9 +781,15 @@ export default function Auth({ initialMode = 'signup' }) {
               <div className="player-stat-label">{t.statSaved}</div>
             </div>
             <div className="player-stat-card">
-              <div className="player-stat-value">{stats.badgesUnlocked}</div>
+              <div className="player-stat-value">{summary.unlockedCount}</div>
               <div className="player-stat-label">{t.statBadges}</div>
             </div>
+          </div>
+
+          {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
+              commentaires, recherche, fidélité, compte) */}
+          <div className="player-section">
+            <AchievementsPanel variant="compact" />
           </div>
 
           {/* LINKED ACCOUNTS & SSO SECTION */}
@@ -895,23 +910,26 @@ export default function Auth({ initialMode = 'signup' }) {
             )}
           </div>
 
-          {/* UNLOCKED BADGES & ACHIEVEMENTS */}
-          <div className="player-section">
-            <div className="player-section-header">
-              <h2>{t.badgesHeading}</h2>
-            </div>
-            <div className="player-badges-grid">
-              {badges.map((badge) => (
-                <div key={badge.id} className="player-badge-item">
-                  <span className="player-badge-icon">{badge.icon}</span>
-                  <div className="player-badge-info">
-                    <h4>{badge.name}</h4>
-                    <p>{badge.desc}</p>
+          {/* MÉDAILLES DE LA PERSONA DE DÉMONSTRATION (aperçu uniquement) */}
+          {personaBadges.length > 0 && (
+            <div className="player-section">
+              <div className="player-section-header">
+                <h2>{t.badgesHeading}</h2>
+                <p>{t.demoBadgesNote}</p>
+              </div>
+              <div className="player-badges-grid">
+                {personaBadges.map((badge) => (
+                  <div key={badge.id} className="player-badge-item">
+                    <span className="player-badge-icon">{badge.icon}</span>
+                    <div className="player-badge-info">
+                      <h4>{badge.name}</h4>
+                      <p>{badge.desc}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* SAVED STORIES & BOOKMARKS */}
           <div className="player-section">
@@ -1147,6 +1165,7 @@ export default function Auth({ initialMode = 'signup' }) {
 /* Inline profile editor (gamertag + avatar URL)                       */
 /* ------------------------------------------------------------------ */
 function ProfileEditor({ t, isDemo, gamertag, avatar, updateDemoProfile }) {
+  const track = useAchievementAction();
   const [editing, setEditing] = useState(false);
   const [tag, setTag] = useState(gamertag);
   const [avatarUrl, setAvatarUrl] = useState(avatar || '');
@@ -1189,6 +1208,7 @@ function ProfileEditor({ t, isDemo, gamertag, avatar, updateDemoProfile }) {
         });
         if (updateError) throw updateError;
       }
+      track('profile_updated');
       setNote(t.profileSaved);
       setEditing(false);
     } catch (e) {

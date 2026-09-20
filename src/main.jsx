@@ -11,6 +11,7 @@ import './monthly-releases.css';
 import './partners.css';
 import './reels-carousel.css';
 import './dossier-article.css';
+import './achievements/achievements.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -45,7 +46,11 @@ import EventOoredoo from './pages/EventOoredoo';
 import EventArena from './pages/EventArena';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
+import Achievements from './pages/Achievements';
 import { AuthProvider } from './auth/AuthContext';
+import { AchievementProvider } from './achievements/AchievementContext';
+import AchievementTracker from './achievements/AchievementTracker';
+import AchievementToasts from './achievements/AchievementToasts';
 import { initSinglePlayback } from './lib/videoPlayback';
 
 function App() {
@@ -53,8 +58,13 @@ function App() {
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter basename={import.meta.env.BASE_URL}>
-          <Layout>
-            <Routes>
+          {/* Les succès suivent les actions du joueur (navigation, lecture,
+              vidéo, commentaires, langue, compte). Le fournisseur est placé
+              dans le routeur : le suivi lit la route courante. */}
+          <AchievementProvider>
+            <Layout>
+              <AchievementTracker />
+              <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
             <Route path="/calendrier" element={<Calendar />} />
@@ -99,11 +109,15 @@ function App() {
             <Route path="/events/7ouma-arena" element={<EventArena />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/search" element={<Search />} />
+            <Route path="/achievements" element={<Achievements />} />
+            <Route path="/succes" element={<Achievements />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
+              </Routes>
+            </Layout>
+            <AchievementToasts />
+          </AchievementProvider>
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>

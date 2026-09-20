@@ -1,0 +1,323 @@
+/**
+ * Vérification des succès — `npm run check:achievements`.
+ *
+ * Quatre niveaux de contrôle :
+ *
+ *   1. le catalogue est cohérent (identifiants uniques, trois langues,
+ *      métrique connue, cible atteignable, XP et rareté valides) ;
+ *   2. le moteur se comporte comme annoncé (contenus distincts, lecture de
+ *      nuit, séries de jours, fusion appareil ↔ compte, données corrompues) ;
+ *   3. tous les succès du catalogue sont réellement débloquables : un
+ *      scénario complet (lecture, vidéos, commentaires, recherches, langues,
+ *      fidélité, compte) les ouvre un par un ;
+ *   4. le rendu réel des pages (SSR) montre ces succès dans les trois
+ *      langues, y compris avec une progression déjà enregistrée — et les
+ *      actions du site sont bien branchées sur le moteur.
+ */
+import { execFileSync } from 'node:child_process';
+import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  METRICS,
+  createState,
+  dayKey,
+  evaluate,
+  levelFromXp,
+  mergeStates,
+  metricValue,
+  normalizeState,
+  reduce,
+  summarize,
+} from '../src/achievements/engine.js';
+import { ACHIEVEMENTS, GROUPS, RARITIES, achievementLabel } from '../src/achievements/catalog.js';
+import { describeRoute, linkedProviders } from '../src/achievements/routeActions.js';
+import { REMOTE_META_KEY } from '../src/achievements/storage.js';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const LANGS = ['en', 'fr', 'ar'];
+
+let failures = 0;
+function check(label, actual, expected) {
+  const ok = actual === expected;
+  if (!ok) failures += 1;
+  console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${label}${ok ? ` → ${actual}` : ` → ${actual} (attendu : ${expected})`}`);
+}
+function ok(label, condition, detail = '') {
+  check(`${label}${detail ? ` (${detail})` : ''}`, Boolean(condition), true);
+}
+
+/* ------------------------------------------------------- 1. Catalogue */
+
+console.log(`\n[1/4] catalogue : ${ACHIEVEMENTS.length} succès, trois langues\n`);
+
+const ids = ACHIEVEMENTS.map((entry) => entry.id);
+check('identifiants uniques', new Set(ids).size, ids.length);
+
+const unknownMetrics = ACHIEVEMENTS.filter((entry) => typeof METRICS[entry.metric] !== 'function').map((entry) => `${entry.id}→${entry.metric}`);
+check('chaque succès utilise une métrique du moteur', unknownMetrics.join(', ') || 'aucune', 'aucune');
+
+const badTargets = ACHIEVEMENTS.filter((entry) => !Number.isFinite(entry.target) || entry.target < 1).map((entry) => entry.id);
+check('chaque succès a une cible ≥ 1', badTargets.join(', ') || 'aucune', 'aucune');
+
+const badXp = ACHIEVEMENTS.filter((entry) => !Number.isFinite(entry.xp) || entry.xp <= 0).map((entry) => entry.id);
+check('chaque succès donne de l’XP', badXp.join(', ') || 'aucun', 'aucun');
+
+const badRarity = ACHIEVEMENTS.filter((entry) => !RARITIES[entry.rarity]).map((entry) => entry.id);
+check('raretés valides', badRarity.join(', ') || 'aucune', 'aucune');
+
+const groups = new Set(GROUPS.map((group) => group.id));
+const badGroup = ACHIEVEMENTS.filter((entry) => !groups.has(entry.group)).map((entry) => entry.id);
+check('familles valides', badGroup.join(', ') || 'aucune', 'aucune');
+
+const missingLabels = [];
+for (const entry of ACHIEVEMENTS) {
+  for (const lang of LANGS) {
+    const label = achievementLabel(entry, lang);
+    if (!label.name?.trim() || !label.desc?.trim() || label.name === entry.id) missingLabels.push(`${entry.id}/${lang}`);
+  }
+}
+check('nom + description dans FR / EN / AR', missingLabels.join(', ') || 'aucun', 'aucun');
+
+const usedMetrics = new Set(ACHIEVEMENTS.map((entry) => entry.metric));
+const unusedMetrics = Object.keys(METRICS).filter((metric) => !usedMetrics.has(metric));
+console.log(`  info métriques suivies sans succès : ${unusedMetrics.join(', ') || 'aucune'}`);
+
+/* --------------------------------------------------------- 2. Moteur */
+
+console.log('\n[2/4] moteur : comptage, séries, fusion, robustesse\n');
+
+const at = (year, month, day, hour = 12) => new Date(year, month - 1, day, hour, 30).toISOString();
+
+// Deux lectures du même article ne comptent qu'une fois.
+let run = createState(new Date(at(2026, 9, 20)));
+let step = reduce(run, { type: 'article_read', kind: 'news', id: 'metroid-ravenous', at: at(2026, 9, 20) });
+const firstReadUnlocked = step.unlocked.includes('first-read');
+const doubleRead = reduce(step.state, { type: 'article_read', kind: 'news', id: 'metroid-ravenous', at: at(2026, 9, 21) });
+check('un article déjà lu ne compte pas deux fois', metricValue(doubleRead.state, 'articlesRead'), 1);
+check('le premier article débloque « Première page »', firstReadUnlocked, true);
+
+// Lecture de nuit : un article lu à 2 h fait basculer le drapeau.
+const night = reduce(createState(), { type: 'article_read', kind: 'news', id: 'night-owl', at: at(2026, 9, 20, 2) });
+check('lecture entre minuit et 5 h reconnue', metricValue(night.state, 'nightReading'), 1);
+const day = reduce(createState(), { type: 'article_read', kind: 'news', id: 'day-owl', at: at(2026, 9, 20, 14) });
+check('lecture en journée : pas de succès de nuit', metricValue(day.state, 'nightReading'), 0);
+
+// Séries de jours : même jour, jours consécutifs, puis rupture.
+let streakState = createState();
+streakState = reduce(streakState, { type: 'visit', day: '2026-09-20' }).state;
+streakState = reduce(streakState, { type: 'visit', day: '2026-09-20' }).state;
+check('deux visites le même jour = une seule journée', metricValue(streakState, 'bestStreak'), 1);
+streakState = reduce(streakState, { type: 'visit', day: '2026-09-21' }).state;
+streakState = reduce(streakState, { type: 'visit', day: '2026-09-22' }).state;
+check('trois jours consécutifs', metricValue(streakState, 'bestStreak'), 3);
+const afterGap = reduce(streakState, { type: 'visit', day: '2026-09-25' }).state;
+check('une journée manquée relance la série', metricValue(afterGap, 'bestStreak'), 3);
+check('… mais le jour est compté', metricValue(afterGap, 'visitDays'), 4);
+
+// Une action inconnue ne casse rien et n’attribue rien.
+const ghost = reduce(createState(), { type: 'teleport', at: at(2026, 9, 20) });
+check('action inconnue ignorée', ghost.unlocked.length, 0);
+
+// Données corrompues : état valide malgré tout.
+const broken = normalizeState({ counters: { comments_posted: 'beaucoup' }, sets: { articles_read: 'nope' }, unlocked: null, days: [1, '2026-09-20'] });
+check('état corrompu réparé (compteurs)', metricValue(broken, 'commentsPosted'), 0);
+check('état corrompu réparé (ensembles)', metricValue(broken, 'articlesRead'), 0);
+check('état corrompu réparé (jours)', metricValue(broken, 'visitDays'), 1);
+
+// Fusion appareil ↔ compte : rien n’est perdu.
+const laptop = reduce(createState(), { type: 'search_performed', query: 'zelda', at: at(2026, 9, 20) }).state;
+const phone = reduce(createState(), { type: 'comment_posted', at: at(2026, 9, 20) }).state;
+const merged = mergeStates(laptop, phone);
+check('fusion : recherches conservées', metricValue(merged, 'searchesPerformed'), 1);
+check('fusion : commentaires conservés', metricValue(merged, 'commentsPosted'), 1);
+check('fusion : c’est idempotent', metricValue(mergeStates(merged, merged), 'searchesPerformed'), 1);
+
+// Courbe de niveau : jamais de niveau 0, XP restant cohérent.
+check('0 XP = niveau 1', levelFromXp(0).level, 1);
+check('niveau 2 à 150 XP', levelFromXp(150).level, 2);
+check('XP restant dans le niveau', levelFromXp(150).xpInLevel, 0);
+ok('progression du niveau croissante', levelFromXp(2000).level > levelFromXp(400).level, `${levelFromXp(400).level} → ${levelFromXp(2000).level}`);
+
+// Navigation : chaque route du site doit se traduire en actions, sinon un
+// succès reste inaccessible même en visitant les bonnes pages.
+const routeCases = [
+  ['/', { section: 'home', article: null }],
+  ['/news', { section: 'news', article: null }],
+  ['/news/zelda-ocarina', { section: 'news', article: { kind: 'news', id: 'zelda-ocarina' } }],
+  ['/reviews/onimusha', { section: 'reviews', article: { kind: 'review', id: 'onimusha' } }],
+  ['/dossiers/pourquoi-les-souls', { section: 'dossiers', article: { kind: 'dossier', id: 'pourquoi-les-souls' } }],
+  ['/events/7ouma-arena', { section: 'events', article: null }],
+  ['/partenaires', { section: 'events', article: null }],
+  ['/calendrier', { section: 'calendrier', article: null }],
+  ['/calendar', { section: 'calendrier', article: null }],
+  ['/search', { section: 'search', article: null }],
+  ['/achievements', { section: 'achievements', article: null }],
+  ['/auth', { section: 'account', article: null }],
+  ['/unknown-page', { section: null, article: null }],
+  ['/news/', { section: 'news', article: null }],
+];
+const badRoutes = routeCases.filter(([route, expected]) => JSON.stringify(describeRoute(route)) !== JSON.stringify(expected)).map(([route]) => route);
+check('chaque route se traduit en actions de succès', badRoutes.join(', ') || 'aucune', 'aucune');
+
+// Comptes tiers : reconnus depuis une session Supabase (azure → microsoft).
+check('OAuth Google reconnu', linkedProviders({ app_metadata: { provider: 'google' } }).join(','), 'google');
+check('OAuth Azure reconnu comme Microsoft', linkedProviders({ identities: [{ provider: 'azure' }] }).join(','), 'microsoft');
+check('connexion e-mail : aucun compte tiers', linkedProviders({ app_metadata: { provider: 'email' } }).length, 0);
+
+// Clé de stockage distante attendue côté Supabase.
+check('clé de progression du compte', REMOTE_META_KEY, 'achievements');
+
+/* ------------------------------- 3. Tous les succès sont débloquables */
+
+console.log('\n[3/4] scénario complet : chaque succès du catalogue peut être obtenu\n');
+
+let scenario = createState(new Date(at(2026, 9, 1)));
+const play = (type, payload = {}) => {
+  const result = reduce(scenario, { type, ...payload });
+  scenario = result.state;
+  return result.unlocked;
+};
+
+const unlockedOrder = [];
+const record = (ids) => unlockedOrder.push(...ids);
+
+// Visite datée + navigation : accueil, actus, tests, dossiers, events, calendrier.
+record(play('visit', { day: dayKey(new Date(at(2026, 9, 1))) }));
+record(play('page_view'));
+['home', 'news', 'reviews', 'dossiers', 'events', 'calendrier', 'search', 'achievements'].forEach((section) => {
+  record(play('page_view'));
+  record(play('section_visited', { id: section }));
+});
+
+// Lecture : 12 articles, dont 5 actus, 3 tests et 3 dossiers.
+const newsIds = ['metroid-ravenous', 'zelda-ocarina', 'physint', 'wardogs', 'diablo-v', 'gta6-dualsense'];
+const reviewIds = ['onimusha', 'wolverine', 'orbitals'];
+const dossierIds = ['pourquoi-les-souls', 'goya-hicosoft', 'heritage-playstation-1'];
+newsIds.forEach((id) => record(play('article_read', { kind: 'news', id })));
+reviewIds.forEach((id) => record(play('article_read', { kind: 'review', id })));
+dossierIds.forEach((id) => record(play('article_read', { kind: 'dossier', id })));
+record(play('article_read', { kind: 'news', id: 'lecture-de-nuit', at: at(2026, 9, 2, 3) }));
+
+// Vidéos : cinq vidéos distinctes, dont le direct.
+['aTs0zhm6Leg', '91eqLm2Hy9k', 'twbaM8fiXpo', 'A2VPhWOUMHI', 'live_stream'].forEach((id) => {
+  record(play('video_played', { id }));
+});
+
+// Communauté : commentaires et recherches.
+for (let index = 0; index < 5; index += 1) record(play('comment_posted'));
+['zelda', 'metroid', 'onimusha', 'switch 2', 'gta'].forEach((query) => record(play('search_performed', { query })));
+
+// Langues et compte.
+['fr', 'en', 'ar'].forEach((code) => record(play('language_used', { code })));
+['google', 'microsoft'].forEach((provider) => record(play('provider_linked', { provider })));
+record(play('account_created'));
+record(play('signed_in'));
+record(play('profile_updated'));
+
+// Fidélité : sept jours différents, dont trois consécutifs.
+for (let index = 1; index <= 7; index += 1) {
+  const date = new Date(at(2026, 9, 1));
+  date.setDate(date.getDate() + index - 1);
+  record(play('visit', { day: dayKey(date) }));
+}
+
+const finalSummary = summarize(scenario);
+const unreachable = ACHIEVEMENTS.filter((entry) => !finalSummary.items.find((item) => item.id === entry.id)?.unlocked).map((entry) => entry.id);
+check('tous les succès sont débloquables', unreachable.join(', ') || 'aucun', 'aucun');
+check('tous les succès sont débloqués par le scénario', finalSummary.unlockedCount, ACHIEVEMENTS.length);
+check('aucun succès annoncé deux fois', new Set(unlockedOrder).size, unlockedOrder.length);
+ok('le scénario termine à un niveau supérieur à 3', finalSummary.level.level >= 4, `niveau ${finalSummary.level.level}, ${finalSummary.xp} XP`);
+check('100 % = catalogue complet', finalSummary.percent, 100);
+
+// Le catalogue est aussi évalué au chargement (succès rétroactifs) : un joueur
+// qui avait déjà lu 5 articles — un état écrit avant l'ajout d'un succès, ou
+// synchronisé depuis un autre appareil — les reçoit sans rejouer les actions.
+const retroState = normalizeState({ ...createState(), sets: { articles_read: ['a', 'b', 'c', 'd', 'e'], news_read: ['a', 'b', 'c', 'd', 'e'] } });
+const retro = evaluate(retroState);
+check('évaluation au chargement : succès rétroactifs', retro.unlocked.includes('page-turner') && retro.unlocked.includes('news-wire'), true);
+check('… et rien à attribuer une seconde fois', evaluate(retro.state).unlocked.length, 0);
+
+/* ------------------------------------------------- 4. Rendu réel (SSR) */
+
+console.log('\n[4/4] rendu réel des pages + actions branchées\n');
+
+const outDir = path.join(root, 'node_modules', '.cache', 'achievements-smoke');
+execFileSync(
+  process.platform === 'win32' ? 'npx.cmd' : 'npx',
+  ['vite', 'build', '--ssr', 'scripts/achievements-smoke.jsx', '--outDir', path.relative(root, outDir), '--emptyOutDir', '--logLevel', 'error'],
+  { cwd: root, stdio: 'inherit' },
+);
+
+const { achievementsPage, authHub } = await import(path.join(outDir, 'achievements-smoke.js'));
+
+for (const lang of LANGS) {
+  const { html } = achievementsPage(lang);
+  const names = ACHIEVEMENTS.map((entry) => achievementLabel(entry, lang).name);
+  const missing = names.filter((name) => !html.includes(name));
+  check(`[${lang}] la page liste les ${ACHIEVEMENTS.length} succès`, missing.length, 0);
+  ok(`[${lang}] la page affiche le niveau`, html.includes('achievement-level-number') && html.includes('achievement-level-bar'));
+  ok(`[${lang}] la page affiche les compteurs d’actions`, html.includes('player-stat-value'));
+  ok(`[${lang}] la page est reliée aux succès depuis la navigation`, html.includes('/achievements'));
+  check(`[${lang}] rien n’est débloqué sans action`, (html.match(/achievement-state-tag/g) || []).length, 0);
+}
+
+// Progression enregistrée sur l’appareil : le rendu doit la reprendre telle quelle.
+const savedState = reduce(createState(), { type: 'article_read', kind: 'news', id: 'metroid-ravenous' }).state;
+const saved = reduce(savedState, { type: 'article_read', kind: 'news', id: 'zelda-ocarina' }).state;
+const withProgress = achievementsPage('fr', saved);
+const unlockedCards = (withProgress.html.match(/achievement-state-tag/g) || []).length;
+ok('progression enregistrée reprise au rendu', unlockedCards >= 1, `${unlockedCards} succès affichés comme débloqués`);
+ok('le compteur de succès suit la progression', withProgress.html.includes('>2<'));
+
+// Les compteurs d'actions doivent refléter la progression enregistrée
+// (un compteur branché sur la mauvaise métrique afficherait 0).
+const countersState = normalizeState({
+  ...createState(),
+  counters: { comments_posted: 3 },
+  sets: { articles_read: ['a', 'b'], videos_watched: ['v1'], sections_visited: ['home'] },
+});
+const counters = achievementsPage('fr', countersState);
+const counterValues = [...counters.html.matchAll(/class="player-stat-value">(\d+)</g)].map((match) => match[1]);
+check('les compteurs d’actions suivent la progression', counterValues.slice(0, 4).join(','), '2,1,3,1');
+
+const hub = authHub('fr', saved, { demo: true });
+ok('le hub joueur montre les succès du site', hub.html.includes('TES SUCCÈS SUR LE SITE'));
+ok('le hub joueur affiche le niveau', hub.html.includes('achievement-level'));
+ok('le hub joueur renvoie vers la page des succès', hub.html.includes('VOIR TOUS LES SUCCÈS'));
+
+// Les actions du site sont branchées sur le moteur (source du site, comme les
+// autres vérifications du dépôt : on lit ce qui est réellement livré).
+const read = (relative) => readFileSync(path.join(root, relative), 'utf8');
+const sources = [
+  ['src/components/Comments.jsx', "track('comment_posted')"],
+  ['src/pages/Search.jsx', "track('search_performed'"],
+  ['src/components/Layout.jsx', "track('search_performed'"],
+  ['src/pages/Auth.jsx', "track('account_created')"],
+  ['src/pages/Auth.jsx', "track('profile_updated')"],
+  ['src/achievements/AchievementTracker.jsx', "track('article_read'"],
+  ['src/achievements/AchievementTracker.jsx', "track('video_played'"],
+  ['src/achievements/AchievementTracker.jsx', 'VIDEO_PLAYED_EVENT'],
+];
+const unwired = sources.filter(([file, needle]) => !read(file).includes(needle)).map(([file, needle]) => `${file} → ${needle}`);
+check('actions branchées sur le moteur', unwired.join(', ') || 'aucune', 'aucune');
+
+const videoLib = read('src/lib/videoPlayback.js');
+ok('un lecteur qui démarre annonce la vidéo', videoLib.includes('dispatchEvent(new CustomEvent(VIDEO_PLAYED_EVENT'));
+
+// Un seul écrivain du stockage : le module de persistance.
+function sourceFiles(dir) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return sourceFiles(full);
+    return /\.(jsx?|mjs)$/.test(entry.name) ? [full] : [];
+  });
+}
+const writers = sourceFiles(path.join(root, 'src'))
+  .filter((file) => !file.endsWith(path.join('achievements', 'storage.js')))
+  .filter((file) => /letsplay_achievements/.test(readFileSync(file, 'utf8')))
+  .map((file) => path.relative(root, file));
+check('un seul module écrit la progression locale', writers.join(', ') || 'aucun', 'aucun');
+
+console.log(`\n  ${failures === 0 ? 'OK' : `${failures} échec(s)`} — succès : catalogue, moteur, scénario complet et rendu des pages\n`);
+if (failures > 0) process.exitCode = 1;

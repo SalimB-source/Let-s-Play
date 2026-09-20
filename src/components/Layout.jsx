@@ -5,6 +5,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
 import { searchContent } from '../search/searchIndex';
+import { useAchievementAction } from '../achievements/AchievementContext';
 
 const base = import.meta.env.BASE_URL;
 
@@ -15,6 +16,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const { user } = useAuth();
+  const track = useAchievementAction();
   const searchRef = useRef(null);
 
   useEffect(() => {
@@ -36,6 +38,7 @@ export default function Layout({ children }) {
   }, [location.pathname, location.hash]);
 
   const isActive = (path) => location.pathname === path;
+  const isAchievements = isActive('/achievements') || isActive('/succes');
   const isHome = location.pathname === '/';
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -57,6 +60,7 @@ export default function Layout({ children }) {
   const submitSearch = (event) => {
     event.preventDefault();
     const query = searchValue.trim();
+    if (query) track('search_performed', { query });
     navigate(query ? `/search?q=${encodeURIComponent(query)}` : '/search');
     setMenuOpen(false);
     setSearchOpen(false);
@@ -79,6 +83,7 @@ export default function Layout({ children }) {
             <Link to="/reviews" className={isActive('/reviews') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.reviews}</Link>
             <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.dossiers}</Link>
             <Link to="/events" className={isActive('/events') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Events</Link>
+            <Link to="/achievements" className={isAchievements ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.achievements}</Link>
           </div>
           <div className="nav-actions">
             <form className="nav-search" ref={searchRef} onSubmit={submitSearch} onFocus={() => setSearchOpen(true)} role="search">
@@ -128,6 +133,7 @@ export default function Layout({ children }) {
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
           <Link to="/events">Events</Link>
+          <Link to="/achievements">{t.nav.achievements}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>
           <span>{t.footer.copyright}</span>
