@@ -80,6 +80,8 @@ function App() {
             <Route path="/news/fire-emblem-fortunes-weave" element={<CurrentNews slug="fire-emblem-fortunes-weave" />} />
             <Route path="/news/wolverine-exclu-ps5" element={<CurrentNews slug="wolverine-exclu-ps5" />} />
             <Route path="/news/kingdom-hearts-4-coco" element={<CurrentNews slug="kingdom-hearts-4-coco" />} />
+            <Route path="/news/tokyo-game-show-2026-annulation" element={<CurrentNews slug="tokyo-game-show-2026-annulation" />} />
+            <Route path="/news/eshop-switch-2-20-septembre" element={<CurrentNews slug="eshop-switch-2-20-septembre" />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />

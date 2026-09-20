@@ -88,6 +88,16 @@ const pageMeta = {
     description: 'Sony a demandé l’arrêt d’un projet de mod multijoueur destiné à The Last of Us Part II sur PC.',
     image: 'last-of-us-mod-news.jpg', type: 'article', published: '2026-09-14', section: 'Actualités gaming',
   },
+  '/news/tokyo-game-show-2026-annulation': {
+    title: 'Tokyo Game Show 2026 : le dernier jour annulé — Let’s Play',
+    description: 'La CESA annule la journée du 21 septembre du Tokyo Game Show 2026 en raison de l’approche du typhon n°25. Le 20 septembre reste maintenu.',
+    image: 'tokyo-game-show-2026-news.jpg', type: 'article', published: '2026-09-20', section: 'Actualités gaming',
+  },
+  '/news/eshop-switch-2-20-septembre': {
+    title: 'Fire Emblem reste numéro un de l’eShop Switch 2 — Let’s Play',
+    description: 'Fire Emblem: Fortune’s Weave conserve la première place de l’eShop Nintendo Switch 2 au 20 septembre 2026, devant Diablo 4 et LEGO Batman.',
+    image: 'fire-emblem-fortunes-weave-news.jpg', type: 'article', published: '2026-09-20', section: 'Actualités gaming',
+  },
 };
 
 const routeAliases = {
