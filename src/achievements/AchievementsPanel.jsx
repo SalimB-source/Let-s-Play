@@ -77,8 +77,8 @@ const copy = {
 };
 
 /**
- * Carte de succès premium :
- * - Gagné : fond transparent (verre sombre) + outline doré premium + shimmer.
+ * Carte de succès :
+ * - Gagné : fond transparent + cadre doré + shimmer.
  * - Survol : tooltip custom qui explique comment le gagner (desc + progression).
  */
 export function AchievementCard({ item, lang, t }) {
@@ -91,7 +91,6 @@ export function AchievementCard({ item, lang, t }) {
       tabIndex={0}
     >
       <div className="achievement-card-inner">
-        {item.unlocked && <span className="achievement-card-glow" aria-hidden="true" />}
         <img
           className="achievement-card-icon"
           src={achievementIconUrl(item.icon)}
