@@ -100,6 +100,7 @@ function App() {
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/search" element={<Search />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>
