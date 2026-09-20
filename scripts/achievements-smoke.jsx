@@ -26,7 +26,17 @@ import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 export const STORAGE_KEY = 'letsplay_achievements_v1';
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
 
-function render(path, Page, lang, storedState, { demo = false } = {}) {
+// Compte réellement connecté (session Supabase) : contrairement aux personas de
+// démonstration, ses métadonnées ne portent ni XP ni niveau — seule la
+// progression des succès le fait monter.
+const REAL_ACCOUNT = {
+  id: 'real-player-0001',
+  email: 'joueur@letsplay.dz',
+  created_at: '2025-03-04T09:15:00.000Z',
+  user_metadata: { gamertag: 'JOUEUR_DZ', fullName: 'Joueur Connecté' },
+};
+
+function render(path, Page, lang, storedState, { demo = false, account = false } = {}) {
   const store = new Map();
   store.set('letsplay-lang', lang);
   if (storedState) store.set(STORAGE_KEY, JSON.stringify(storedState));
@@ -45,13 +55,17 @@ function render(path, Page, lang, storedState, { demo = false } = {}) {
     },
   };
 
+  // `account: true` monte la session d'un compte Supabase réel : le hub rendu
+  // est alors celui d'un joueur connecté, pas l'aperçu de démonstration.
+  const authProps = account ? { initialSession: { user: REAL_ACCOUNT } } : null;
+
   const html = renderToString(
     React.createElement(
       LanguageProvider,
       null,
       React.createElement(
         AuthProvider,
-        null,
+        authProps,
         React.createElement(
           MemoryRouter,
           { initialEntries: [path] },
@@ -82,7 +96,11 @@ export function achievementsPage(lang, storedState = null) {
   return render('/achievements', Achievements, lang, storedState);
 }
 
-/** Hub joueur /auth — `{ demo: true }` simule l'aperçu de démonstration. */
+/**
+ * Hub joueur /auth.
+ * `{ demo: true }` simule l'aperçu de démonstration, `{ account: true }` rend
+ * le hub d'un compte Supabase réellement connecté.
+ */
 export function authHub(lang, storedState = null, options = {}) {
   return render('/auth', Auth, lang, storedState, options);
 }

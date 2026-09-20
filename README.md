@@ -182,9 +182,19 @@ Où ça se voit :
 | Endroit | Ce qui s'y trouve |
 | --- | --- |
 | `/achievements` (alias `/succes`) | la page complète : niveau, XP, compteurs d'actions, catalogue filtrable (famille, débloqués / en cours / verrouillés) et bouton de réinitialisation |
-| `/auth` (hub joueur) | une section « succès » compacte : niveau, derniers succès obtenus, prochains objectifs, lien vers la page complète |
+| `/auth` (hub joueur) | la **barre d'XP du profil** (niveau, rang, XP du palier en cours, XP total gagné) et une section « succès » compacte : niveau, derniers succès obtenus, prochains objectifs, lien vers la page complète |
 | Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
 | Navigation et pied de page | le lien « Succès / Achievements / الإنجازات » |
+
+Le niveau et l'XP ne sont jamais stockés côté compte : ils se déduisent des
+succès débloqués (`totalXp` puis `levelFromXp`, dans
+`src/achievements/engine.js`). La barre d'XP de la carte profil du hub
+(`src/pages/Auth.jsx`) et celle de la section « succès » lisent donc le même
+`summary` et avancent ensemble — les métadonnées Supabase d'un compte réel ne
+portent ni XP ni niveau (seule la progression des succès y est écrite), et les
+relire laissait la barre principale à 0 % pendant que l'autre avançait. Seules
+les personas de démonstration (`src/auth/demoProfiles.js`) affichent des
+chiffres scriptés, pour prévisualiser un hub rempli sans backend.
 
 La fenêtre vit dans `src/achievements/AchievementPopup.jsx` et lit la file
 `notifications` du contexte. Plusieurs succès d'affilée sont présentés **un par
@@ -273,7 +283,10 @@ débloquent le nouvel objectif sans être rejouées.
   séries de jours, fusion appareil ↔ compte, données corrompues, courbe de
   niveau, détection du passage de niveau) ; **scénario complet qui débloque les
   26 succès** (donc aucun succès inatteignable) ; rendu réel en SSR de la page,
-  du hub joueur et de la **fenêtre de déblocage** (montée avec la file qu'un
+  du hub joueur — en aperçu de démonstration **et avec un compte réellement
+  connecté** (la barre d'XP du profil doit se remplir, suivre la barre de la
+  section « succès », et annoncer le niveau et le rang déduits du moteur) — et
+  de la **fenêtre de déblocage** (montée avec la file qu'un
   joueur verrait après une action : succès, rareté, XP, palier franchi,
   compteur de file, boîte de dialogue accessible, rien sans succès à fêter),
   plus la source du site (actions branchées, fenêtre montée dans `main.jsx`,
