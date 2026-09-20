@@ -16,6 +16,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { AchievementProvider, AchievementsContext } from '../src/achievements/AchievementContext';
+import { STORAGE_KEY, scopeForUser } from '../src/achievements/storage';
 import AchievementPopup from '../src/achievements/AchievementPopup';
 import AchievementTracker from '../src/achievements/AchievementTracker';
 import Layout from '../src/components/Layout';
@@ -23,7 +24,10 @@ import Achievements from '../src/pages/Achievements';
 import Auth from '../src/pages/Auth';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 
-export const STORAGE_KEY = 'letsplay_achievements_v1';
+export const STORAGE_KEY_LEGACY = STORAGE_KEY;
+// La progression est rangée par joueur : clé « invité » pour l'appareil,
+// clé propre à chaque compte pour le cache de sa copie serveur.
+const GUEST_STORAGE_KEY = `${STORAGE_KEY}:guest`;
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
 
 // Compte réellement connecté (session Supabase) : contrairement aux personas de
@@ -36,10 +40,17 @@ const REAL_ACCOUNT = {
   user_metadata: { gamertag: 'JOUEUR_DZ', fullName: 'Joueur Connecté' },
 };
 
-function render(path, Page, lang, storedState, { demo = false, account = false } = {}) {
+// Cache local du compte : la clé propre à ce joueur (`…:u:<id>`).
+const ACCOUNT_STORAGE_KEY = `${STORAGE_KEY}:${scopeForUser(REAL_ACCOUNT.id)}`;
+
+function render(path, Page, lang, storedState, { demo = false, account = false, deviceGuest = false } = {}) {
   const store = new Map();
   store.set('letsplay-lang', lang);
-  if (storedState) store.set(STORAGE_KEY, JSON.stringify(storedState));
+  // `deviceGuest` : la progression est laissée sur la clé invité de l'appareil
+  // pendant qu'un COMPTE NEUF est connecté — c'est le scénario « création d'un
+  // compte sur un appareil où l'on a déjà joué » : aucune fuite possible.
+  const stateKey = account && !deviceGuest ? ACCOUNT_STORAGE_KEY : GUEST_STORAGE_KEY;
+  if (storedState) store.set(stateKey, JSON.stringify(storedState));
   // Progression ET session de démonstration : c'est le cas du visiteur qui
   // explore le hub après avoir cliqué sur « Explorer le compte démo ».
   if (demo) store.set(DEMO_STORAGE_KEY, JSON.stringify(DEMO_PROFILES.vortex));
@@ -92,8 +103,18 @@ function render(path, Page, lang, storedState, { demo = false, account = false }
 }
 
 /** Page /achievements pour une langue, avec (ou sans) progression enregistrée. */
-export function achievementsPage(lang, storedState = null) {
-  return render('/achievements', Achievements, lang, storedState);
+export function achievementsPage(lang, storedState = null, options = {}) {
+  return render('/achievements', Achievements, lang, storedState, options);
+}
+
+/**
+ * Compte tout juste créé, sur un appareil où l'on a DÉJÀ joué : sa progression
+ * (niveau, succès) doit partir de zéro — la progression de l'appareil ne lui
+ * est pas prêtée, et un compte n'a pas de cache tant que le serveur n'a rien.
+ * `storedState` simule la progression laissée par le précédent joueur.
+ */
+export function freshAccountOnPlayedDevice(lang, storedState = null) {
+  return render('/achievements', Achievements, lang, storedState, { account: true, deviceGuest: true });
 }
 
 /**

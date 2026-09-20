@@ -263,17 +263,37 @@ débloquent le nouvel objectif sans être rejouées.
 
 ### Où vit la progression
 
-- **Sur l'appareil** (`localStorage`, clé `letsplay_achievements_v1`) : le site
-  statique fonctionne sans backend, un visiteur non connecté débloque déjà des
-  succès ;
-- **Avec le compte** (métadonnées Supabase, clé `achievements`) : à la
-  connexion, `mergeStates()` fait l'union des deux copies (compteurs au
-  maximum, ensembles en union, meilleure série conservée, succès datés au plus
-  tôt) puis renvoie l'union au compte. Rien n'est jamais écrasé, et la
-  progression suit le joueur d'un appareil à l'autre. Les sessions de
-  démonstration restent locales : les liaisons Google / Microsoft y sont
-  simulées pour l'aperçu et ne comptent donc pas comme un compte associé
-  (ce succès se débloque avec un vrai compte).
+La progression appartient à **chaque joueur**, jamais à un appareil :
+
+- **Visiteur (sans compte)** — `localStorage`, clé `letsplay_achievements_v1:guest` :
+  le site statique fonctionne sans backend, un visiteur non connecté débloque
+  déjà des succès, mais ils restent liés à cet appareil ;
+- **Compte connecté** — table Supabase `public.player_progress` (une ligne par
+  compte, protégée par RLS : chacun ne lit et n'écrit que sa ligne). C'est la
+  **référence** : elle est chargée à la connexion, mise à jour après chaque
+  action (écriture différée de 1,5 s pour les rafales), et sa lecture fait
+  suivre le joueur d'un appareil à l'autre. Un cache local par compte
+  (`letsplay_achievements_v1:u:<id>`) sert de filet hors ligne.
+  Un compte **neuf démarre au niveau 1, sans aucun succès**, même sur un
+  appareil où l'on a déjà joué : la progression locale de l'appareil n'est
+  jamais publiée vers un compte, et deux comptes sur la même machine restent
+  étanches. « Réinitialiser » sur `/achievements` efface aussi la ligne du
+  compte ;
+- **Ancien déploiement** (schéma SQL pas encore relancé) : repli transparent
+  sur l'ancienne copie dans les métadonnées du compte, puis migration vers la
+  table dès qu'elle existe. Les comptes créés avant cette mise à jour gardent
+  leur progression (l'ancienne copie du compte est reprise à la première
+  connexion) ;
+- **Sessions de démonstration** : toujours locales — les liaisons Google /
+  Microsoft y sont simulées pour l'aperçu et ne comptent donc pas comme un
+  compte associé (ce succès se débloque avec un vrai compte).
+
+Le niveau et l'XP publics du profil (affichés dans le fil de commentaires) sont
+synchronisés avec la progression des succès par un trigger SQL
+(`sync_profile_progress`).
+
+Pour appliquer la migration : relancer `supabase/schema.sql` dans le SQL
+Editor du projet Supabase (le script est relançable sans risque).
 
 ### Vérifications
 
