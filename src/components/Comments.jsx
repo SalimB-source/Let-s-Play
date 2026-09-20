@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useAchievementAction } from '../achievements/AchievementContext';
 
 export default function Comments(){
   const { t } = useLanguage();
+  const track = useAchievementAction();
   const copy = t.news.comments;
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
@@ -12,6 +14,7 @@ export default function Comments(){
     event.preventDefault();
     if (!name.trim() || !message.trim()) return;
     setComments(current => [{ name: name.trim(), message: message.trim() }, ...current]);
+    track('comment_posted');
     setName('');
     setMessage('');
   }

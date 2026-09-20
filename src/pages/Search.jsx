@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { searchContent } from '../search/searchIndex';
+import { useAchievementAction } from '../achievements/AchievementContext';
 
 const copy = {
   en: { label: 'SEARCH / RESULTS', titleA: 'FIND YOUR', titleB: 'NEXT PLAY.', placeholder: 'Search news, reviews, games…', submit: 'Search', clear: 'Clear search', results: 'results', result: 'result', empty: 'No results found. Try a different title, game, or platform.', prompt: 'Search the Let’s Play archive.', types: { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release calendar' }, read: 'Open story' },
@@ -12,6 +13,7 @@ const copy = {
 export default function Search() {
   const { lang } = useLanguage();
   const t = copy[lang] || copy.fr;
+  const track = useAchievementAction();
   const [params, setParams] = useSearchParams();
   const query = params.get('q') || '';
   const [value, setValue] = useState(query);
@@ -22,6 +24,7 @@ export default function Search() {
   const submit = (event) => {
     event.preventDefault();
     const next = value.trim();
+    if (next) track('search_performed', { query: next });
     setParams(next ? { q: next } : {});
   };
 
