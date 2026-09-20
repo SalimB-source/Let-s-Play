@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, authRedirectUrl, supabaseConfigStatus } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
 import { GoogleLogo, MicrosoftLogo } from '../components/SocialLogos';
@@ -13,6 +13,8 @@ const copy = {
     intro: 'Create your Let’s Play account and keep your community profile ready for what comes next.',
     email: 'Email address',
     password: 'Password',
+    gamertag: 'Gamertag',
+    gamertagPlaceholder: 'e.g. VORTEX_DZ',
     signIn: 'SIGN IN',
     signUp: 'CREATE ACCOUNT',
     google: 'CONTINUE WITH GOOGLE',
@@ -22,8 +24,24 @@ const copy = {
     signOut: 'SIGN OUT',
     back: 'Back to home',
     confirmation: 'Check your inbox to confirm your email address.',
+    alreadyRegistered: 'An account with this email already exists — try signing in instead.',
+    resend: 'RESEND CONFIRMATION EMAIL',
+    resendSent: 'Confirmation email sent — check your inbox.',
+    forgot: 'Forgot password?',
+    forgotTitle: 'RESET PASSWORD.',
+    forgotIntro: 'Enter your account email and we’ll send you a reset link.',
+    sendReset: 'SEND RESET LINK',
+    resetSent: 'Check your inbox for the password reset link.',
+    updateTitle: 'NEW PASSWORD.',
+    updateIntro: 'Choose a new password for your account.',
+    newPassword: 'New password',
+    updatePassword: 'UPDATE PASSWORD',
+    passwordUpdated: 'Password updated — you’re signed in.',
+    backToSignIn: 'Back to sign in',
     error: 'Something went wrong. Please try again.',
     unavailable: 'Supabase authentication is not configured in this environment. You can use the Demo Preview below.',
+    diagMissing: 'Missing configuration:',
+    diagHelp: 'Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel → Settings → Environment Variables (or connect the Supabase integration), then redeploy.',
     demoOptionTitle: 'DEMO / PREVIEW ACCESS',
     demoOptionText: 'Want to preview how the player hub looks when connected? Enter with a simulated profile in one click.',
     demoBtnVortex: 'EXPLORE DEMO ACCOUNT (VORTEX_DZ · PRO)',
@@ -74,6 +92,8 @@ const copy = {
     intro: 'Crée ton compte Let’s Play et prépare ton profil pour la suite.',
     email: 'Adresse e-mail',
     password: 'Mot de passe',
+    gamertag: 'Pseudo de joueur',
+    gamertagPlaceholder: 'ex. VORTEX_DZ',
     signIn: 'SE CONNECTER',
     signUp: 'CRÉER UN COMPTE',
     google: 'CONTINUER AVEC GOOGLE',
@@ -83,8 +103,24 @@ const copy = {
     signOut: 'SE DÉCONNECTER',
     back: "Retour à l'accueil",
     confirmation: 'Vérifie ta boîte mail pour confirmer ton adresse.',
+    alreadyRegistered: 'Un compte existe déjà avec cet e-mail — connecte-toi plutôt.',
+    resend: 'RENVYER L’E-MAIL DE CONFIRMATION',
+    resendSent: 'E-mail de confirmation envoyé — vérifie ta boîte mail.',
+    forgot: 'Mot de passe oublié ?',
+    forgotTitle: 'RÉINITIALISER LE MOT DE PASSE.',
+    forgotIntro: 'Entre ton e-mail et on t’envoie un lien de réinitialisation.',
+    sendReset: 'ENVOYER LE LIEN',
+    resetSent: 'Vérifie ta boîte mail pour le lien de réinitialisation.',
+    updateTitle: 'NOUVEAU MOT DE PASSE.',
+    updateIntro: 'Choisis un nouveau mot de passe pour ton compte.',
+    newPassword: 'Nouveau mot de passe',
+    updatePassword: 'METTRE À JOUR',
+    passwordUpdated: 'Mot de passe mis à jour — tu es connecté.',
+    backToSignIn: 'Retour à la connexion',
     error: 'Une erreur est survenue. Réessaie.',
     unavailable: "L'authentification Supabase n'est pas configurée dans cet environnement. Utilisez l'aperçu Démo ci-dessous.",
+    diagMissing: 'Configuration manquante :',
+    diagHelp: 'Ajoutez VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY dans Vercel → Settings → Environment Variables (ou connectez l’intégration Supabase), puis redéployez.',
     demoOptionTitle: 'ACCÈS DÉMO / APERÇU',
     demoOptionText: 'Envie de voir à quoi ressemble le profil connecté ? Testez instantanément en un clic.',
     demoBtnVortex: 'EXPLORER LE COMPTE DÉMO (VORTEX_DZ · PRO)',
@@ -135,6 +171,8 @@ const copy = {
     intro: 'أنشئ حسابك في Let’s Play واستعد لما هو قادم.',
     email: 'البريد الإلكتروني',
     password: 'كلمة المرور',
+    gamertag: 'اسم اللاعب',
+    gamertagPlaceholder: 'مثال: VORTEX_DZ',
     signIn: 'تسجيل الدخول',
     signUp: 'إنشاء حساب',
     google: 'المتابعة مع Google',
@@ -144,8 +182,24 @@ const copy = {
     signOut: 'تسجيل الخروج',
     back: 'العودة إلى الرئيسية',
     confirmation: 'تحقق من بريدك الإلكتروني لتأكيد العنوان.',
+    alreadyRegistered: 'يوجد حساب بهذا البريد بالفعل — جرّب تسجيل الدخول.',
+    resend: 'إعادة إرسال بريد التأكيد',
+    resendSent: 'تم إرسال بريد التأكيد — تحقق من صندوق الوارد.',
+    forgot: 'نسيت كلمة المرور؟',
+    forgotTitle: 'إعادة تعيين كلمة المرور.',
+    forgotIntro: 'أدخل بريد حسابك وسنرسل لك رابط إعادة التعيين.',
+    sendReset: 'إرسال رابط التعيين',
+    resetSent: 'تحقق من بريدك للحصول على رابط إعادة التعيين.',
+    updateTitle: 'كلمة مرور جديدة.',
+    updateIntro: 'اختر كلمة مرور جديدة لحسابك.',
+    newPassword: 'كلمة المرور الجديدة',
+    updatePassword: 'تحديث كلمة المرور',
+    passwordUpdated: 'تم تحديث كلمة المرور — أنت مسجل الدخول الآن.',
+    backToSignIn: 'العودة إلى تسجيل الدخول',
     error: 'حدث خطأ. حاول مرة أخرى.',
     unavailable: 'المصادقة عبر Supabase غير مهيأة في هذه البيئة. يمكنك استخدام الحساب التجريبي أدناه.',
+    diagMissing: 'الإعدادات الناقصة:',
+    diagHelp: 'أضف VITE_SUPABASE_URL و VITE_SUPABASE_PUBLISHABLE_KEY في Vercel ← Settings ← Environment Variables (أو اربط تكامل Supabase)، ثم أعد النشر.',
     demoOptionTitle: 'الوصول التجريبي / المعاينة',
     demoOptionText: 'هل تريد رؤية كيف يبدو حساب اللاعب عند الاتصال؟ ادخل بملف تجريبي بنقرة واحدة.',
     demoBtnVortex: 'استكشاف الحساب التجريبي (VORTEX_DZ · محترف)',
@@ -206,41 +260,142 @@ export default function Auth({ initialMode = 'signup' }) {
   const navigate = useNavigate();
   const t = copy[lang] || copy.en;
 
-  const [mode, setMode] = useState(initialMode);
+  const [mode, setMode] = useState(initialMode === 'update' ? 'signin' : initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [gamertag, setGamertag] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showResend, setShowResend] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(false);
 
-  // Handle Form Submission
+  // Password-recovery links land here with `#access_token=…&type=recovery`.
+  // Supabase signs the user in from that hash, so without this guard the
+  // player hub would render before a new password is chosen. The hash check
+  // is deterministic (no race with the auth event), the listener is a backup.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.includes('type=recovery')) {
+      setIsRecovery(true);
+      setMode('update');
+    }
+    if (!supabase) return undefined;
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecovery(true);
+        setMode('update');
+        setMessage('');
+        setError('');
+      }
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const switchMode = (next) => {
+    setMode(next);
+    setError('');
+    setMessage('');
+    setShowResend(false);
+  };
+
+  // Handle Form Submission (signup / signin / forgot / update)
   const submit = async (event) => {
     event.preventDefault();
     setMessage('');
     setError('');
+    setShowResend(false);
     setBusy(true);
 
-    if (!configured) {
+    if (!configured || !supabase) {
       setBusy(false);
       setError(t.unavailable);
       return;
     }
 
-    const result = mode === 'signup'
-      ? await supabase.auth.signUp({
-          email,
+    try {
+      if (mode === 'signup') {
+        const tag = gamertag.trim() || email.split('@')[0] || 'Player_DZ';
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email: email.trim(),
           password,
-          options: { emailRedirectTo: window.location.origin },
-        })
-      : await supabase.auth.signInWithPassword({ email, password });
+          options: {
+            data: { gamertag: tag, full_name: tag, fullName: tag, name: tag },
+            emailRedirectTo: authRedirectUrl(),
+          },
+        });
+        if (signUpError) {
+          setError(signUpError.message || t.error);
+        } else if (data.session) {
+          // Email confirmation disabled → already signed in.
+          navigate('/');
+          return;
+        } else if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+          // Supabase hides duplicate registrations: no identities = email taken.
+          setMode('signin');
+          setError(t.alreadyRegistered);
+        } else {
+          setMessage(t.confirmation);
+          setShowResend(true);
+        }
+      } else if (mode === 'signin') {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (signInError) {
+          setError(signInError.message || t.error);
+        } else {
+          navigate('/');
+          return;
+        }
+      } else if (mode === 'forgot') {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: authRedirectUrl(),
+        });
+        if (resetError) {
+          setError(resetError.message || t.error);
+        } else {
+          setMessage(t.resetSent);
+        }
+      } else if (mode === 'update') {
+        const { error: updateError } = await supabase.auth.updateUser({ password });
+        if (updateError) {
+          setError(updateError.message || t.error);
+        } else {
+          setIsRecovery(false);
+          setPassword('');
+          if (typeof window !== 'undefined') {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+          setMessage(t.passwordUpdated);
+        }
+      }
+    } catch (e) {
+      setError(e?.message || t.error);
+    } finally {
+      setBusy(false);
+    }
+  };
 
+  // Resend the signup confirmation email.
+  const resendConfirmation = async () => {
+    setError('');
+    setMessage('');
+    setBusy(true);
+    if (!configured || !supabase) {
+      setBusy(false);
+      setError(t.unavailable);
+      return;
+    }
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim(),
+    });
     setBusy(false);
-    if (result.error) {
-      setError(result.error.message || t.error);
-    } else if (mode === 'signup') {
-      setMessage(t.confirmation);
+    if (resendError) {
+      setError(resendError.message || t.error);
     } else {
-      navigate('/');
+      setMessage(t.resendSent);
     }
   };
 
@@ -248,14 +403,14 @@ export default function Auth({ initialMode = 'signup' }) {
   const oauth = async (provider) => {
     setError('');
     setBusy(true);
-    if (!configured) {
+    if (!configured || !supabase) {
       setBusy(false);
       setError(t.unavailable);
       return;
     }
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: authRedirectUrl() },
     });
     if (oauthError) {
       setError(oauthError.message || t.error);
@@ -272,8 +427,10 @@ export default function Auth({ initialMode = 'signup' }) {
 
   // --------------------------------------------------------------------------
   // CONNECTED ACCOUNT / PLAYER DASHBOARD VIEW
+  // (skipped while a password recovery is in progress — the new-password
+  // form below takes precedence even though a session already exists)
   // --------------------------------------------------------------------------
-  if (user) {
+  if (user && !isRecovery) {
     const meta = user.user_metadata || {};
     const gamertag = meta.gamertag || user.email?.split('@')[0] || 'Player_DZ';
     const fullName = meta.fullName || user.email || 'Let’s Play Player';
@@ -576,70 +733,116 @@ export default function Auth({ initialMode = 'signup' }) {
   // --------------------------------------------------------------------------
   // UNAUTHENTICATED / LOGIN & SIGNUP VIEW
   // --------------------------------------------------------------------------
+  const showSocials = mode === 'signup' || mode === 'signin';
+  const missingConfig = [
+    supabaseConfigStatus.hasUrl ? null : 'VITE_SUPABASE_URL',
+    supabaseConfigStatus.hasKey ? null : 'VITE_SUPABASE_PUBLISHABLE_KEY',
+  ].filter(Boolean);
+
   return (
     <section className="auth-page wrap">
       <div className="auth-panel">
         <p className="eyebrow">{t.eyebrow}</p>
-        <h1>{t.title}</h1>
-        <p className="auth-intro">{t.intro}</p>
+        <h1>{mode === 'forgot' ? t.forgotTitle : mode === 'update' ? t.updateTitle : t.title}</h1>
+        <p className="auth-intro">{mode === 'forgot' ? t.forgotIntro : mode === 'update' ? t.updateIntro : t.intro}</p>
 
         {/* EMAIL / PASSWORD FORM */}
         <form className="auth-form" onSubmit={submit}>
-          <label>
-            {t.email}
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
-          </label>
-          <label>
-            {t.password}
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            />
-          </label>
+          {mode === 'signup' && (
+            <label>
+              {t.gamertag}
+              <input
+                type="text"
+                value={gamertag}
+                onChange={(e) => setGamertag(e.target.value)}
+                placeholder={t.gamertagPlaceholder}
+                maxLength={24}
+                autoComplete="nickname"
+              />
+            </label>
+          )}
+          {mode !== 'update' && (
+            <label>
+              {t.email}
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+            </label>
+          )}
+          {mode !== 'forgot' && (
+            <label>
+              {mode === 'update' ? t.newPassword : t.password}
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              />
+            </label>
+          )}
           <button className="button button-yellow" disabled={busy}>
-            {mode === 'signup' ? t.signUp : t.signIn} <span>↗</span>
+            {mode === 'signup' ? t.signUp : mode === 'signin' ? t.signIn : mode === 'forgot' ? t.sendReset : t.updatePassword} <span>↗</span>
           </button>
         </form>
 
-        {/* OR DIVIDER */}
-        <div className="auth-divider">
-          <span>OR</span>
-        </div>
+        {mode === 'signin' && (
+          <div className="auth-aux-row">
+            <button type="button" className="auth-link" onClick={() => switchMode('forgot')}>
+              {t.forgot}
+            </button>
+          </div>
+        )}
 
-        {/* SOCIAL AUTH BUTTONS WITH LOGOS */}
-        <div className="auth-socials">
+        {showResend && mode === 'signup' && (
           <button
             type="button"
-            className="button button-ghost auth-social-btn"
-            onClick={() => oauth('google')}
-            disabled={busy}
+            className="auth-resend"
+            onClick={resendConfirmation}
+            disabled={busy || !email.trim()}
           >
-            <GoogleLogo size={18} />
-            <span>{t.google}</span>
+            {t.resend} ↻
           </button>
-          <button
-            type="button"
-            className="button button-ghost auth-social-btn"
-            onClick={() => oauth('azure')}
-            disabled={busy}
-          >
-            <MicrosoftLogo size={18} />
-            <span>{t.microsoft}</span>
-          </button>
-        </div>
+        )}
+
+        {showSocials && (
+          <>
+            {/* OR DIVIDER */}
+            <div className="auth-divider">
+              <span>OR</span>
+            </div>
+
+            {/* SOCIAL AUTH BUTTONS WITH LOGOS */}
+            <div className="auth-socials">
+              <button
+                type="button"
+                className="button button-ghost auth-social-btn"
+                onClick={() => oauth('google')}
+                disabled={busy}
+              >
+                <GoogleLogo size={18} />
+                <span>{t.google}</span>
+              </button>
+              <button
+                type="button"
+                className="button button-ghost auth-social-btn"
+                onClick={() => oauth('azure')}
+                disabled={busy}
+              >
+                <MicrosoftLogo size={18} />
+                <span>{t.microsoft}</span>
+              </button>
+            </div>
+          </>
+        )}
 
         {/* FAKE CONNECTED ACCOUNT PREVIEW CARD */}
-        <div className="auth-demo-box">
+        {showSocials && <div className="auth-demo-box">
           <div className="auth-demo-header">
             <span className="auth-demo-kicker">🎮 {t.demoOptionTitle}</span>
             <span className="auth-demo-tag">{t.quickDemoLabel}</span>
@@ -661,23 +864,37 @@ export default function Auth({ initialMode = 'signup' }) {
               <span>🎥</span> {t.demoBtnPixel}
             </button>
           </div>
-        </div>
+        </div>}
 
-        {!configured && <p className="auth-message">{t.unavailable}</p>}
+        {!configured && (
+          <div className="auth-message auth-config-box">
+            <span>{t.unavailable}</span>
+            {missingConfig.length > 0 && (
+              <span className="auth-diag-line">{t.diagMissing} {missingConfig.join(' · ')}</span>
+            )}
+            <span className="auth-diag-help">{t.diagHelp}</span>
+          </div>
+        )}
         {message && <p className="auth-message">{message}</p>}
         {error && <p className="auth-message auth-error">{error}</p>}
 
-        <button
-          type="button"
-          className="auth-switch"
-          onClick={() => {
-            setMode(mode === 'signup' ? 'signin' : 'signup');
-            setError('');
-            setMessage('');
-          }}
-        >
-          {mode === 'signup' ? t.switchSignIn : t.switchSignUp}
-        </button>
+        {(mode === 'signup' || mode === 'signin') ? (
+          <button
+            type="button"
+            className="auth-switch"
+            onClick={() => switchMode(mode === 'signup' ? 'signin' : 'signup')}
+          >
+            {mode === 'signup' ? t.switchSignIn : t.switchSignUp}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="auth-switch"
+            onClick={() => switchMode('signin')}
+          >
+            {t.backToSignIn}
+          </button>
+        )}
 
         <Link className="auth-back" to="/">
           ← {t.back}
