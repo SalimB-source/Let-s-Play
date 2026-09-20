@@ -99,9 +99,22 @@ If a variable is missing, `/auth` shows exactly which one under the form.
 
 ### Supabase dashboard checklist
 
-1. **Database**: run `supabase/schema.sql` once in Dashboard → SQL Editor. It
-   creates the `profiles` table (RLS enabled) and a trigger that inserts a
-   profile row — with the gamertag chosen at registration — for every new user.
+1. **Database**: run `supabase/schema.sql` once in Dashboard → SQL Editor:
+   paste the **whole** file and hit Run. It creates the `profiles` table (RLS
+   enabled) and a trigger that inserts a profile row — with the gamertag chosen
+   at registration — for every new user, plus the `comments` table behind the
+   article comment section (see below). The script is idempotent: re-run it
+   after pulling a newer version.
+   The SQL Editor wraps the file in **one transaction**, so a single error used
+   to roll everything back — and the script looks like it ran while nothing was
+   created. It is therefore guarded: steps that depend on Supabase-internal
+   objects (`auth.users`, the `anon` / `authenticated` roles) report a
+   `WARNING` and let the rest apply. Read the output of the Run:
+   - `WARNING … trigger sur auth.users refusé` → the profile trigger was
+     skipped (profiles are then only created by the app's own flow); comments
+     are unaffected because the author is read from the account metadata.
+   - The last query is a control table — every line must read `OK`. If a line
+     reads `MANQUANT`, the WARNING(s) above say why.
 2. **URLs**: Dashboard → Authentication → URL Configuration →
    - Site URL: `https://<your-domain>` (your Vercel domain),
    - Redirect URLs: add `https://<your-domain>/**` (covers `/auth`, where
@@ -119,6 +132,41 @@ If a variable is missing, `/auth` shows exactly which one under the form.
 
 The SPA fallback in `vercel.json` keeps deep links such as `/auth` working on
 Vercel (the `/api/*` serverless routes are excluded from the rewrite).
+
+### Article comments
+
+Every article page (`/news/*`, `/reviews/*`) ends with a comment section
+(`src/components/Comments.jsx`, data layer in `src/lib/comments.js`) backed by
+the `public.comments` table from `supabase/schema.sql`:
+
+- **Reading** is public: visitors see the thread (newest first, 100 max) and a
+  “sign in to comment” call to action that brings them back to the article
+  (`#comments`) once signed in — including after an OAuth round trip (the target survives the
+  full-page return).
+- **Posting** requires a Supabase session. The client only sends the article
+  route and the text; a `before insert` trigger stamps `user_id`, the author
+  name (gamertag chosen on `/auth`, then profile, then e-mail) and the avatar
+  server-side, so nobody can post under another name. Row Level Security lets
+  players insert only as themselves and delete only their own comments.
+- **Guard rails**: 1–1000 characters (enforced in the UI and by a check
+  constraint), 5 comments per player per minute (trigger), comments are removed
+  with the account (`on delete cascade`).
+- **Demo profiles** (`/auth` → demo preview, no Supabase session) keep their
+  comments in `localStorage` on that device only, flagged “DEMO” in the feed.
+
+Threads are keyed by the article route (e.g. `/news/physint`), which is the
+same on Vercel and on the GitHub Pages mirror. Nothing else to configure once
+the SQL has been run; the section explains itself when something is off:
+
+| Message in the comment section | Cause | Fix |
+| --- | --- | --- |
+| “Comments are not enabled on this deployment yet (the comments table is missing, or the API cache has not reloaded) — …” | The SQL was never run on the project this build points to | Dashboard → SQL Editor → paste **the whole** `supabase/schema.sql` and Run; the control table at the end must show `OK` on every line |
+| Same message although the SQL was run | The file was run on another project, or only part of it was pasted | Check `VITE_SUPABASE_URL` points to the project where you ran it, and that the SQL Editor showed the control table |
+| `WARNING Let's Play : ce rôle n'a pas le droit de créer un trigger sur auth.users` | `auth.users` belongs to Supabase; on some projects the SQL Editor role may not attach a trigger to it | Not blocking: `comments` and the rest of the script are applied. Profile rows then stay uncreated until the trigger can be attached |
+| A line of the control table reads `MANQUANT` | That object is missing — see the WARNING above it | Re-run the file (it is idempotent) and read the warnings |
+| “Your session has expired — sign in again to comment.” | The stored session is no longer valid | Sign out / in on `/auth` |
+| “Easy there — wait a moment before posting again.” | More than 5 comments in one minute | Wait a minute |
+| Sign-in gate although the site is deployed | Supabase variables missing at build time | See the environment-variable table above |
 
 ## Succès débloqués par les actions du site
 
