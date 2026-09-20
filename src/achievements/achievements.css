@@ -242,7 +242,7 @@
   border-color: rgba(34, 211, 238, .5);
 }
 
-/* Grille de cartes — premium transparent + gold pour les débloqués */
+/* Grille de cartes — fond transparent + cadre doré pour les débloqués */
 
 .achievement-grid {
   display: grid;
@@ -260,13 +260,14 @@
 /* Carte de base : focusable, overflow visible pour le tooltip */
 .achievement-card {
   position: relative;
-  padding: 1.5px; /* épaisseur de l'outline */
-  background: rgba(255, 255, 255, 0.06);
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-  transition: transform .22s cubic-bezier(.2,.8,.2,1), box-shadow .22s, background .22s;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  transition: transform .22s cubic-bezier(.2,.8,.2,1);
   overflow: visible;
   outline: none;
   isolation: isolate;
+  cursor: pointer;
 }
 
 .achievement-card:hover,
@@ -276,21 +277,64 @@
 }
 
 .achievement-card:focus-visible {
-  box-shadow: 0 0 0 2px rgba(255, 214, 25, .6), 0 0 0 5px rgba(255, 214, 25, .18);
+  outline: 2px dashed var(--yellow);
+  outline-offset: 4px;
 }
 
-/* Verrouillé : gris discret, bordure neutre */
-.achievement-card:not(.unlocked) {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.achievement-card:not(.unlocked):hover {
+/* Cadre découpé (outline creux) via ::before : seulement le cadre est visible, centre 100% transparent */
+.achievement-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
   background: rgba(255, 255, 255, 0.12);
+  -webkit-clip-path: polygon(evenodd,
+    /* Contour extérieur */
+    12px 0,
+    100% 0,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    0 100%,
+    0 12px,
+    12px 0,
+    /* Contour intérieur découpé (centre 100% transparent) */
+    12.6px 1.5px,
+    1.5px 12.6px,
+    1.5px calc(100% - 1.5px),
+    calc(100% - 12.6px) calc(100% - 1.5px),
+    calc(100% - 1.5px) calc(100% - 12.6px),
+    calc(100% - 1.5px) 1.5px,
+    12.6px 1.5px
+  );
+  clip-path: polygon(evenodd,
+    /* Contour extérieur */
+    12px 0,
+    100% 0,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    0 100%,
+    0 12px,
+    12px 0,
+    /* Contour intérieur découpé (centre 100% transparent) */
+    12.6px 1.5px,
+    1.5px 12.6px,
+    1.5px calc(100% - 1.5px),
+    calc(100% - 12.6px) calc(100% - 1.5px),
+    calc(100% - 1.5px) calc(100% - 12.6px),
+    calc(100% - 1.5px) 1.5px,
+    12.6px 1.5px
+  );
+  transition: background .22s, filter .22s;
 }
 
-/* Débloqué : fond TRANSPARENT + outline DORÉ PREMIUM */
-.achievement-card.unlocked {
-  padding: 1.5px;
+/* Verrouillé : cadre gris discret */
+.achievement-card:not(.unlocked):hover::before {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Débloqué : SEULEMENT LE CADRE EST DORÉ, FOND TRANSPARENT */
+.achievement-card.unlocked::before {
   background: linear-gradient(135deg,
     #FFD700 0%,
     #FFC64A 12%,
@@ -301,27 +345,23 @@
     #FFD700 72%,
     #FFB700 84%,
     #FFD700 100%);
-  box-shadow:
-    0 0 0 1px rgba(255, 215, 0, 0.18),
-    0 2px 18px rgba(255, 215, 0, 0.18),
-    0 8px 32px rgba(255, 215, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
-  filter: none;
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.45));
 }
 
 .achievement-card.unlocked:hover,
 .achievement-card.unlocked:focus-visible {
   transform: translateY(-4px) scale(1.015);
-  box-shadow:
-    0 0 0 1px rgba(255, 215, 0, 0.28),
-    0 4px 24px rgba(255, 215, 0, 0.28),
-    0 12px 40px rgba(255, 215, 0, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
-/* Inner : le fond réel de la carte */
+.achievement-card.unlocked:hover::before,
+.achievement-card.unlocked:focus-visible::before {
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.75));
+}
+
+/* Inner : corps de la carte, fond 100% transparent */
 .achievement-card-inner {
   position: relative;
+  flex: 1;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -330,38 +370,37 @@
   gap: 10px;
   padding: 20px 12px 18px;
   text-align: center;
-  background: rgba(12, 14, 32, 0.72);
-  clip-path: polygon(10.5px 0, 100% 0, 100% calc(100% - 10.5px), calc(100% - 10.5px) 100%, 0 100%, 0 10.5px);
-  transition: filter .22s, opacity .22s, background .22s, backdrop-filter .22s;
+  background: transparent;
+  -webkit-clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  transition: filter .22s, opacity .22s;
   overflow: hidden;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Verrouillé : gris + opacité réduite */
+/* Verrouillé : gris + opacité réduite, fond transparent */
 .achievement-card:not(.unlocked) .achievement-card-inner {
   filter: grayscale(1);
   opacity: .58;
-  background: rgba(14, 16, 36, 0.55);
+  background: transparent;
 }
 
 .achievement-card:not(.unlocked):hover .achievement-card-inner,
 .achievement-card:not(.unlocked):focus-visible .achievement-card-inner {
   filter: grayscale(.35);
   opacity: .9;
-  background: rgba(18, 20, 44, 0.7);
+  background: transparent;
 }
 
-/* Débloqué : FOND TRANSPARENT premium verre + léger voile doré */
+/* Débloqué : fond transparent (aucun fond doré ni voile) */
 .achievement-card.unlocked .achievement-card-inner {
-  background: rgba(10, 11, 26, 0.32); /* transparent premium */
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  border: 1px solid rgba(255, 215, 0, 0.08);
-  box-shadow: inset 0 0 24px rgba(255, 215, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-/* Shimmer doré au survol pour les débloqués */
+/* Shimmer subtil au survol pour les débloqués */
 .achievement-card-inner::after {
   content: '';
   position: absolute;
@@ -372,9 +411,7 @@
   background: linear-gradient(115deg,
     transparent 32%,
     rgba(255, 255, 255, 0) 40%,
-    rgba(255, 215, 0, 0.0) 45%,
-    rgba(255, 255, 255, 0.22) 50%,
-    rgba(255, 215, 0, 0.12) 53%,
+    rgba(255, 255, 255, 0.16) 50%,
     transparent 62%);
   transform: translateX(-100%) rotate(12deg);
   opacity: 0;
@@ -386,16 +423,6 @@
 .achievement-card.unlocked:focus-visible .achievement-card-inner::after {
   transform: translateX(55%) rotate(12deg);
   opacity: 1;
-}
-
-/* Halo doré interne subtil */
-.achievement-card-glow {
-  position: absolute;
-  inset: -20px;
-  background: radial-gradient(60% 60% at 50% 30%, rgba(255, 215, 0, 0.18), transparent 70%);
-  pointer-events: none;
-  opacity: .9;
-  z-index: 0;
 }
 
 .achievement-card-icon {
