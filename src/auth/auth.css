@@ -965,7 +965,8 @@
   clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
 }
 
-.player-actions-left {
+.player-actions-left,
+.player-actions-right {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -990,6 +991,174 @@
   border-color: #ff8c9d;
   color: #fff;
   transform: translateY(-2px);
+}
+
+/* ACCOUNT DELETION */
+.delete-account-wrap {
+  display: inline-flex;
+}
+
+.delete-account-btn,
+.delete-account-confirm {
+  font: 600 11px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  transition: all .2s;
+}
+
+.delete-account-btn {
+  padding: 11px 16px;
+  background: rgba(248, 113, 113, .06);
+  border: 1px solid rgba(248, 113, 113, .34);
+  color: #fca5a5;
+}
+
+.delete-account-btn:hover {
+  background: rgba(248, 113, 113, .16);
+  border-color: #f87171;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.delete-account-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 4, 10, .78);
+  backdrop-filter: blur(7px);
+}
+
+.delete-account-dialog {
+  width: min(460px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 32px;
+  background: linear-gradient(145deg, rgba(22, 17, 35, .99), rgba(8, 10, 24, .99));
+  border: 1px solid rgba(248, 113, 113, .55);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, .7), 0 0 40px rgba(248, 113, 113, .12);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+
+.delete-account-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border: 1px solid #f87171;
+  border-radius: 50%;
+  color: #fca5a5;
+  font: 700 20px var(--display);
+}
+
+.delete-account-dialog h2 {
+  margin: 0 0 10px;
+  color: #fff;
+  font: 700 clamp(22px, 5vw, 30px) var(--display);
+  letter-spacing: .02em;
+}
+
+.delete-account-warning {
+  margin: 0 0 24px;
+  color: var(--muted);
+  font: 14px/1.6 var(--body);
+}
+
+.delete-account-form {
+  display: grid;
+  gap: 16px;
+}
+
+.delete-account-field {
+  display: grid;
+  gap: 8px;
+  color: var(--cyan);
+  font: 500 11px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.delete-account-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.delete-account-input-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 46px 12px 14px;
+  border: 1px solid var(--line-strong);
+  outline: none;
+  background: rgba(255, 255, 255, .05);
+  color: var(--ink);
+  font: 15px var(--body);
+}
+
+.delete-account-input-wrap input:focus {
+  border-color: #f87171;
+  box-shadow: 0 0 18px rgba(248, 113, 113, .16);
+}
+
+.delete-account-eye {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.delete-account-eye:hover {
+  color: #fff;
+}
+
+.delete-account-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid #f87171;
+  background: rgba(248, 113, 113, .08);
+  color: #ffb4be;
+  font: 13px/1.45 var(--body);
+}
+
+.delete-account-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.delete-account-confirm {
+  padding: 11px 16px;
+  border: 1px solid #f87171;
+  background: #b91c1c;
+  color: #fff;
+}
+
+.delete-account-confirm:hover:not(:disabled) {
+  background: #dc2626;
+  border-color: #fca5a5;
+  transform: translateY(-1px);
+}
+
+.delete-account-confirm:disabled,
+.delete-account-btn:disabled,
+.player-signout-btn:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none;
 }
 
 /* EMPTY-STATE NOTES (platforms / saved stories) */
@@ -1166,8 +1335,10 @@
 [dir="rtl"] .sso-provider-footer,
 [dir="rtl"] .player-badge-item,
 [dir="rtl"] .player-actions-card,
+[dir="rtl"] .player-actions-right,
 [dir="rtl"] .player-edit-row,
-[dir="rtl"] .player-edit-actions {
+[dir="rtl"] .player-edit-actions,
+[dir="rtl"] .delete-account-actions {
   direction: rtl;
 }
 
@@ -1227,7 +1398,10 @@
   }
 
   .player-actions-left .button,
-  .player-signout-btn {
+  .player-actions-right,
+  .player-signout-btn,
+  .delete-account-wrap,
+  .delete-account-btn {
     width: 100%;
     text-align: center;
     justify-content: center;

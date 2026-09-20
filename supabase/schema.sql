@@ -363,7 +363,39 @@ for each row execute procedure public.set_comment_author();
 
 
 -- ----------------------------------------------------------------------------
--- 4. Droits d'accès à l'API (rôles anon / authenticated)
+-- 4. Suppression du compte (ré-authentification requise côté application)
+-- ----------------------------------------------------------------------------
+-- L'application vérifie d'abord le mot de passe avec
+-- `auth.signInWithPassword`, puis appelle cette fonction. La fonction est
+-- SECURITY DEFINER car le rôle `authenticated` ne doit jamais recevoir un
+-- accès direct à auth.users. La suppression en cascade efface le profil,
+-- les commentaires et la progression du joueur.
+create or replace function public.delete_my_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'account_delete_requires_auth' using errcode = '42501';
+  end if;
+
+  delete from auth.users
+   where id = auth.uid();
+
+  if not found then
+    raise exception 'account_not_found' using errcode = 'P0002';
+  end if;
+end;
+$$;
+
+revoke all on function public.delete_my_account() from public;
+grant execute on function public.delete_my_account() to authenticated;
+
+
+-- ----------------------------------------------------------------------------
+-- 5. Droits d'accès à l'API (rôles anon / authenticated)
 -- ----------------------------------------------------------------------------
 -- Supabase accorde normalement ces droits tout seul ; on les pose
 -- explicitement pour que l'espace commentaire marche aussi si les privilèges
@@ -385,7 +417,7 @@ end $$;
 
 
 -- ----------------------------------------------------------------------------
--- 5. Rechargement de l'API + contrôle final
+-- 6. Rechargement de l'API + contrôle final
 -- ----------------------------------------------------------------------------
 -- PostgREST garde en mémoire la liste des tables : sans ce signal, l'API peut
 -- répondre « Could not find the table 'public.comments' in the schema cache »
@@ -450,6 +482,14 @@ from (
         when to_regclass('public.comments') is null then 'MANQUANT'
         when to_regrole('authenticated') is null then 'role authenticated absent'
         when has_table_privilege('authenticated', 'public.comments', 'insert') then 'OK'
+        else 'MANQUANT'
+      end),
+    (14, 'fonction suppression compte',
+      case
+        when to_regprocedure('public.delete_my_account()') is not null
+         and to_regrole('authenticated') is not null
+         and has_function_privilege('authenticated', 'public.delete_my_account()', 'execute')
+          then 'OK'
         else 'MANQUANT'
       end)
 ) as controle(numero, objet, etat)

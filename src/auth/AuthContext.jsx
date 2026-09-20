@@ -106,6 +106,10 @@ export function AuthProvider({ children, initialSession = null }) {
   };
 
   const signOut = async () => {
+    // Clear the local session immediately. This also keeps account deletion
+    // from leaving a deleted user visible if Supabase rejects the follow-up
+    // network sign-out because the auth row has just been removed.
+    setSession(null);
     setDemoUser(null);
     try {
       if (typeof window !== 'undefined') {
@@ -113,7 +117,12 @@ export function AuthProvider({ children, initialSession = null }) {
       }
     } catch (e) {}
     if (supabase) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        // A local sign-out is still complete if the remote session is already
+        // invalid (for example, immediately after deleting the account).
+      }
     }
   };
 
