@@ -44,6 +44,7 @@ const noop = () => {};
 export const AchievementsContext = createContext({
   ready: false,
   state: createState(),
+  stateScope: null,
   summary: EMPTY_SUMMARY,
   notifications: [],
   dismissNotification: noop,
@@ -60,6 +61,11 @@ export function AchievementProvider({ children }) {
   const scope = accountId ? scopeForUser(accountId) : GUEST_SCOPE;
 
   const [state, setState] = useState(() => evaluate(normalizeState(readStorage(scope))).state);
+  // Scope dont l'état ci-dessus est réellement chargé : au moment de la
+  // connexion, `scope` bascule vers le compte avant que son état soit chargé
+  // (l'état affiché est encore celui du joueur précédent) — les lecteurs qui
+  // créditent la session attendent `stateScope === scope` du compte.
+  const [stateScope, setStateScope] = useState(scope);
   // File des succès à fêter : `{ id, levelUp }`, le premier de la file est
   // celui que la fenêtre affiche.
   const [notifications, setNotifications] = useState([]);
@@ -133,6 +139,7 @@ export function AchievementProvider({ children }) {
     const cached = evaluate(normalizeState(readStorage(scope))).state;
     stateRef.current = cached;
     setState(cached);
+    setStateScope(scope);
     setSynced(false);
     setNotifications([]);
     lastSynced.current = null;
@@ -207,6 +214,7 @@ export function AchievementProvider({ children }) {
   const value = useMemo(() => ({
     ready: true,
     state,
+    stateScope,
     summary,
     notifications,
     dismissNotification,
@@ -214,7 +222,7 @@ export function AchievementProvider({ children }) {
     track,
     reset,
     synced: Boolean(accountId) && synced,
-  }), [state, summary, notifications, dismissNotification, dismissAllNotifications, track, reset, synced, accountId]);
+  }), [state, stateScope, summary, notifications, dismissNotification, dismissAllNotifications, track, reset, synced, accountId]);
 
   return <AchievementsContext.Provider value={value}>{children}</AchievementsContext.Provider>;
 }

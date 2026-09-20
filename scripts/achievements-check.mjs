@@ -442,6 +442,7 @@ const sources = [
   ['src/pages/Auth.jsx', "track('account_created')"],
   ['src/pages/Auth.jsx', "track('profile_updated')"],
   ['src/achievements/AchievementTracker.jsx', "track('article_read'"],
+  ['src/achievements/AchievementTracker.jsx', 'stateScope !== scopeForUser(id)'],
   ['src/achievements/AchievementTracker.jsx', "track('video_played'"],
   ['src/achievements/AchievementTracker.jsx', 'VIDEO_PLAYED_EVENT'],
   ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
