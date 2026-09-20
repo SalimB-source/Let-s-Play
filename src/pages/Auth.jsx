@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase, authRedirectUrl, supabaseConfigStatus } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -371,6 +371,44 @@ const copy = {
   },
 };
 
+// Where to send the player once signed in. The comment section links here
+// with `state.from` (e.g. "/news/physint#comments"); the target is mirrored in
+// sessionStorage so it survives the full-page round trip of an OAuth login.
+// Only same-site paths are accepted and entries expire after 15 minutes.
+const RETURN_STORAGE_KEY = 'letsplay_auth_return_to';
+const RETURN_MAX_AGE_MS = 15 * 60 * 1000;
+
+function isInternalPath(path) {
+  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
+}
+
+function rememberReturnTo(path) {
+  if (typeof window === 'undefined' || !isInternalPath(path)) return;
+  try {
+    window.sessionStorage.setItem(RETURN_STORAGE_KEY, JSON.stringify({ to: path, at: Date.now() }));
+  } catch (e) { /* private mode — the in-memory ref still covers this tab */ }
+}
+
+function peekReturnTo() {
+  if (typeof window === 'undefined') return '';
+  try {
+    const raw = window.sessionStorage.getItem(RETURN_STORAGE_KEY);
+    if (!raw) return '';
+    const { to, at } = JSON.parse(raw);
+    if (!isInternalPath(to) || typeof at !== 'number' || Date.now() - at > RETURN_MAX_AGE_MS) return '';
+    return to;
+  } catch (e) {
+    return '';
+  }
+}
+
+function forgetReturnTo() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(RETURN_STORAGE_KEY);
+  } catch (e) { /* ignore */ }
+}
+
 // Format a Supabase ISO timestamp as "Month YYYY" for the member-since line.
 function formatJoined(iso) {
   if (!iso) return '';
@@ -396,7 +434,9 @@ export default function Auth({ initialMode = 'signup' }) {
   } = useAuth();
   const { lang } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   const t = copy[lang] || copy.en;
+  const returnToRef = useRef('');
 
   const [mode, setMode] = useState(initialMode === 'update' ? 'signin' : initialMode);
   const [email, setEmail] = useState('');
@@ -409,6 +449,51 @@ export default function Auth({ initialMode = 'signup' }) {
   const [busy, setBusy] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+
+  // Arriving from a "sign in to comment" link: remember where to go back to
+  // and open the requested form (sign-in instead of the default sign-up).
+  useEffect(() => {
+    const from = location.state?.from;
+    if (isInternalPath(from)) {
+      rememberReturnTo(from);
+      returnToRef.current = from;
+    } else {
+      returnToRef.current = peekReturnTo();
+    }
+    const requested = location.state?.mode;
+    if (requested === 'signin' || requested === 'signup') {
+      setMode(requested);
+    }
+  }, [location.state]);
+
+  // Real accounts: the "comments" stat counts the player's rows in
+  // public.comments (demo profiles ship their own numbers).
+  const [commentCount, setCommentCount] = useState(null);
+  useEffect(() => {
+    if (!user || isDemo || !supabase) {
+      setCommentCount(null);
+      return undefined;
+    }
+    let active = true;
+    supabase
+      .from('comments')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .then(({ count, error: countError }) => {
+        if (active && !countError && typeof count === 'number') setCommentCount(count);
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [user?.id, isDemo]);
+
+  // Once a session exists (email/password, OAuth round trip, demo profile),
+  // send the player back to the article they came from.
+  useEffect(() => {
+    if (!user || isRecovery) return;
+    const target = returnToRef.current || peekReturnTo();
+    forgetReturnTo();
+    if (target) navigate(target, { replace: true });
+  }, [user, isRecovery, navigate]);
 
   // Password-recovery links land here with `#access_token=…&type=recovery`.
   // Supabase signs the user in from that hash, so without this guard the
@@ -479,7 +564,7 @@ export default function Auth({ initialMode = 'signup' }) {
           setError(describeAuthError(signUpError, t, t.error));
         } else if (data.session) {
           // Email confirmation disabled → already signed in.
-          navigate('/auth');
+          navigate(returnToRef.current || '/auth', { replace: Boolean(returnToRef.current) });
           return;
         } else if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
           // Supabase hides duplicate registrations: no identities = email taken.
@@ -497,7 +582,7 @@ export default function Auth({ initialMode = 'signup' }) {
         if (signInError) {
           setError(describeAuthError(signInError, t, t.error));
         } else {
-          navigate('/auth');
+          navigate(returnToRef.current || '/auth', { replace: Boolean(returnToRef.current) });
           return;
         }
       } else if (mode === 'forgot') {
@@ -764,7 +849,7 @@ export default function Auth({ initialMode = 'signup' }) {
               <div className="player-stat-label">{t.statRead}</div>
             </div>
             <div className="player-stat-card">
-              <div className="player-stat-value">{stats.commentsPosted}</div>
+              <div className="player-stat-value">{commentCount ?? stats.commentsPosted}</div>
               <div className="player-stat-label">{t.statComments}</div>
             </div>
             <div className="player-stat-card">

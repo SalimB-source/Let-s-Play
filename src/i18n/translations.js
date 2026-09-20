@@ -109,7 +109,14 @@ export const translations = {
       cta: { eyebrow: 'The next round starts here', h2a: 'READY, PLAYER', h2b: 'ONE?', cta: 'Join the game' },
     },
     news: {
-      label1: 'PAGE / NEWS', label2: 'THE LATEST ROUND', comments: { section: 'COMMENTS', count: 'COMMENTS', title: 'JOIN THE CONVERSATION.', intro: 'Share your take on this story with the Let’s Play community.', name: 'Name', namePlaceholder: 'Your name', message: 'Comment', messagePlaceholder: 'What do you think?', submit: 'POST COMMENT', empty: 'No comments yet. Start the conversation.' },
+      label1: 'PAGE / NEWS', label2: 'THE LATEST ROUND', comments: {
+        section: 'COMMENTS', count: 'COMMENTS', countOne: 'COMMENT', title: 'JOIN THE CONVERSATION.', intro: 'Share your take on this story with the Let’s Play community.',
+        name: 'Name', namePlaceholder: 'Your name', message: 'Comment', messagePlaceholder: 'What do you think?', submit: 'POST COMMENT', posting: 'POSTING…', empty: 'No comments yet. Start the conversation.',
+        postingAs: 'Posting as', editProfile: 'Edit profile', signInPrompt: 'Sign in to join the conversation — your comment will be posted under your gamertag.', signIn: 'SIGN IN', createAccount: 'Create an account',
+        loading: 'Loading comments…', retry: 'RETRY', you: 'YOU', demoTag: 'DEMO', demoNote: 'Demo profile: your comments stay on this device and are not published to the community.',
+        delete: 'Delete', deleting: 'Deleting…', deleteConfirm: 'Delete this comment?', posted: 'Your comment has been posted.',
+        errLoad: 'Unable to load the comments.', errPost: 'Unable to post your comment.', errNetwork: 'Unable to reach the Supabase server', errUnavailable: 'Comments are not enabled on this deployment yet (the comments table is missing — run supabase/schema.sql)', errRateLimited: 'Easy there — wait a moment before posting again.', errSignedOut: 'Your session has expired — sign in again to comment.', errBody: 'Your comment must be between 1 and 1000 characters.',
+      },
       eyebrow: 'Fresh drops', h1a: 'NEWS,', h1b: 'NO FILLER.',
       text: 'Every episode, every announcement, every story worth playing. Filter by Gaming, Tech, Culture — all in one place. This is the multi-page hub for Let’s Play.', heroText: 'The stories moving games, tech and pop culture forward — rewritten with context, attitude and no filler.', featuredLabel: 'FEATURED NEWS', updatedLabel: 'Updated 10.09.2026', latestLabel: 'LATEST DROPS', latestMeta: 'VIDEO / CULTURE / TECH', platforms: 'SWITCH 2', consolePlatforms: 'PS5 / XBOX SERIES',
       episodes: 'EPISODES', updated: 'Updated weekly • Multi-page edition',
@@ -379,7 +386,14 @@ export const translations = {
       cta: { eyebrow: 'Le prochain round commence ici', h2a: 'PRÊT, JOUEUR', h2b: 'UN ?', cta: 'Rejoindre la partie' },
     },
     news: {
-      label1: 'PAGE / ACTUS', label2: 'LE DERNIER ROUND', comments: { section: 'COMMENTAIRES', count: 'COMMENTAIRES', title: 'REJOIGNEZ LA CONVERSATION.', intro: 'Partagez votre avis sur cette actu avec la communauté Let’s Play.', name: 'Nom', namePlaceholder: 'Votre nom', message: 'Commentaire', messagePlaceholder: 'Qu’en pensez-vous ?', submit: 'PUBLIER', empty: 'Aucun commentaire pour le moment. Lancez la conversation.' },
+      label1: 'PAGE / ACTUS', label2: 'LE DERNIER ROUND', comments: {
+        section: 'COMMENTAIRES', count: 'COMMENTAIRES', countOne: 'COMMENTAIRE', title: 'REJOIGNEZ LA CONVERSATION.', intro: 'Partagez votre avis sur cette actu avec la communauté Let’s Play.',
+        name: 'Nom', namePlaceholder: 'Votre nom', message: 'Commentaire', messagePlaceholder: 'Qu’en pensez-vous ?', submit: 'PUBLIER', posting: 'PUBLICATION…', empty: 'Aucun commentaire pour le moment. Lancez la conversation.',
+        postingAs: 'Vous publiez en tant que', editProfile: 'Modifier le profil', signInPrompt: 'Connectez-vous pour rejoindre la conversation — votre commentaire sera publié sous votre pseudo de joueur.', signIn: 'SE CONNECTER', createAccount: 'Créer un compte',
+        loading: 'Chargement des commentaires…', retry: 'RÉESSAYER', you: 'VOUS', demoTag: 'DÉMO', demoNote: 'Profil démo : vos commentaires restent sur cet appareil et ne sont pas publiés auprès de la communauté.',
+        delete: 'Supprimer', deleting: 'Suppression…', deleteConfirm: 'Supprimer ce commentaire ?', posted: 'Votre commentaire a été publié.',
+        errLoad: 'Impossible de charger les commentaires.', errPost: 'Impossible de publier votre commentaire.', errNetwork: 'Impossible de joindre le serveur Supabase', errUnavailable: 'L’espace commentaire n’est pas encore activé sur ce déploiement (la table des commentaires est absente — exécutez supabase/schema.sql)', errRateLimited: 'Doucement — patientez un instant avant de publier à nouveau.', errSignedOut: 'Votre session a expiré — reconnectez-vous pour commenter.', errBody: 'Votre commentaire doit faire entre 1 et 1000 caractères.',
+      },
       eyebrow: 'Nouveautés', h1a: 'ACTUS,', h1b: 'SANS BLABLA.',
       text: 'Chaque épisode, chaque annonce, chaque histoire qui mérite d’être jouée. Filtrez par Gaming, Tech, Culture — tout au même endroit. C’est le hub multi-pages de Let’s Play.', heroText: 'Les histoires qui font avancer le jeu vidéo, la tech et la pop culture — réécrites avec contexte et sans blabla.', featuredLabel: 'ACTU À LA UNE', updatedLabel: 'Mis à jour le 10.09.2026', latestLabel: 'DERNIÈRES SORTIES', latestMeta: 'VIDÉO / CULTURE / TECH', platforms: 'SWITCH 2', consolePlatforms: 'PS5 / XBOX SERIES',
       episodes: 'ÉPISODES', updated: 'Mis à jour chaque semaine • Édition multi-pages',
@@ -647,7 +661,14 @@ export const translations = {
       cta: { eyebrow: 'الجولة القادمة تبدأ هنا', h2a: 'هل أنت مستعد،', h2b: 'أيها اللاعب؟', cta: 'انضم إلى اللعبة' },
     },
     news: {
-      label1: 'الصفحة / الأخبار', label2: 'الجولة الأخيرة', comments: { section: 'التعليقات', count: 'تعليقات', title: 'انضم إلى النقاش.', intro: 'شارك رأيك حول هذا الخبر مع مجتمع Let’s Play.', name: 'الاسم', namePlaceholder: 'اسمك', message: 'التعليق', messagePlaceholder: 'ما رأيك؟', submit: 'نشر التعليق', empty: 'لا توجد تعليقات بعد. ابدأ النقاش.' },
+      label1: 'الصفحة / الأخبار', label2: 'الجولة الأخيرة', comments: {
+        section: 'التعليقات', count: 'تعليقات', countOne: 'تعليق', title: 'انضم إلى النقاش.', intro: 'شارك رأيك حول هذا الخبر مع مجتمع Let’s Play.',
+        name: 'الاسم', namePlaceholder: 'اسمك', message: 'التعليق', messagePlaceholder: 'ما رأيك؟', submit: 'نشر التعليق', posting: 'جارٍ النشر…', empty: 'لا توجد تعليقات بعد. ابدأ النقاش.',
+        postingAs: 'تنشر باسم', editProfile: 'تعديل الملف الشخصي', signInPrompt: 'سجّل الدخول للانضمام إلى النقاش — سيُنشر تعليقك باسم اللاعب الخاص بك.', signIn: 'تسجيل الدخول', createAccount: 'إنشاء حساب',
+        loading: 'جارٍ تحميل التعليقات…', retry: 'إعادة المحاولة', you: 'أنت', demoTag: 'تجريبي', demoNote: 'ملف تجريبي: تبقى تعليقاتك على هذا الجهاز ولا تُنشر للمجتمع.',
+        delete: 'حذف', deleting: 'جارٍ الحذف…', deleteConfirm: 'هل تريد حذف هذا التعليق؟', posted: 'تم نشر تعليقك.',
+        errLoad: 'تعذّر تحميل التعليقات.', errPost: 'تعذّر نشر تعليقك.', errNetwork: 'تعذّر الوصول إلى خادم Supabase', errUnavailable: 'مساحة التعليقات غير مفعّلة بعد في هذا النشر (جدول التعليقات غير موجود — شغّل supabase/schema.sql)', errRateLimited: 'على مهل — انتظر لحظة قبل النشر مجددًا.', errSignedOut: 'انتهت صلاحية جلستك — سجّل الدخول مجددًا للتعليق.', errBody: 'يجب أن يكون تعليقك بين 1 و1000 حرف.',
+      },
       eyebrow: 'إصدارات جديدة', h1a: 'أخبار،', h1b: 'بلا حشو.',
       text: 'كل حلقة، كل إعلان، كل قصة تستحق أن تُلعب. صفِّ حسب الألعاب، التقنية، الثقافة — كل شيء في مكان واحد. هذا هو المركز متعدد الصفحات لـ Let’s Play.', heroText: 'القصص التي تحرك الألعاب والتقنية والثقافة الشعبية — نعيد صياغتها بسياق واضح ومن دون حشو.', featuredLabel: 'الخبر المميز', updatedLabel: 'آخر تحديث 10.09.2026', latestLabel: 'أحدث الإصدارات', latestMeta: 'فيديو / ثقافة / تقنية', platforms: 'Switch 2', consolePlatforms: 'PS5 / XBOX SERIES',
       episodes: 'حلقات', updated: 'يُحدَّث أسبوعيًا • نسخة متعددة الصفحات',
