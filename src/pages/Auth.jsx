@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase, authRedirectUrl, supabaseConfigStatus } from '../lib/supabase';
+import { syncDemoCommentsForUser, syncSupabaseProfileAndComments } from '../lib/comments';
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
 import { describeAuthError } from '../lib/authErrors';
@@ -761,13 +762,19 @@ export default function Auth({ initialMode = 'signin' }) {
     try {
       const dataUrl = await compressImageToDataUrl(file);
       if (isDemo) {
-        updateDemoProfile((prev) => ({
-          ...prev,
-          user_metadata: { ...prev.user_metadata, avatar: dataUrl },
-        }));
+        updateDemoProfile((prev) => {
+          const next = { ...prev, user_metadata: { ...prev.user_metadata, avatar: dataUrl } };
+          try { syncDemoCommentsForUser(next); } catch {}
+          return next;
+        });
       } else if (supabase) {
-        const { error: uploadError } = await supabase.auth.updateUser({ data: { avatar: dataUrl } });
+        const { data: updData, error: uploadError } = await supabase.auth.updateUser({ data: { avatar: dataUrl } });
         if (uploadError) throw uploadError;
+        const uid = updData?.user?.id;
+        try {
+          if (uid) await syncSupabaseProfileAndComments(uid, { avatar: dataUrl });
+        } catch {}
+        try { if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('letsplay:profile-synced', { detail: { avatar: dataUrl } })); } catch {}
       } else {
         throw new Error(t.unavailable);
       }
@@ -1292,20 +1299,37 @@ function ProfileEditor({ t, isDemo, gamertag, avatar, updateDemoProfile }) {
     setNote('');
     try {
       if (isDemo) {
-        updateDemoProfile((prev) => ({
-          ...prev,
-          user_metadata: {
-            ...prev.user_metadata,
-            gamertag: nextTag,
-            fullName: nextTag,
-            avatar: avatarUrl.trim() || undefined,
-          },
-        }));
+        updateDemoProfile((prev) => {
+          const next = {
+            ...prev,
+            user_metadata: {
+              ...prev.user_metadata,
+              gamertag: nextTag,
+              fullName: nextTag,
+              avatar: avatarUrl.trim() || undefined,
+            },
+          };
+          // sync handled in AuthContext, but ensure demo comments reflect the new gamertag immediately
+          try { syncDemoCommentsForUser(next); } catch {}
+          return next;
+        });
       } else if (supabase) {
-        const { error: updateError } = await supabase.auth.updateUser({
-          data: { gamertag: nextTag, full_name: nextTag, fullName: nextTag, name: nextTag, avatar: avatarUrl.trim() || null },
+        const trimmedAvatar = avatarUrl.trim() || null;
+        const { data: updData, error: updateError } = await supabase.auth.updateUser({
+          data: { gamertag: nextTag, full_name: nextTag, fullName: nextTag, name: nextTag, avatar: trimmedAvatar },
         });
         if (updateError) throw updateError;
+        // Keep public profile and all past comments in sync so other viewers see the new name/photo
+        const uid = updData?.user?.id;
+        try {
+          // profiles + comments sync (best-effort, non bloquant)
+          if (uid) await syncSupabaseProfileAndComments(uid, { name: nextTag, avatar: trimmedAvatar });
+          else await syncSupabaseProfileAndComments((typeof window !== 'undefined' && window.__letsPlayUserId) || null, { name: nextTag, avatar: trimmedAvatar });
+        } catch {}
+        // Optimistic local update for immediate feedback even before the auth event propagates
+        try {
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('letsplay:profile-synced', { detail: { name: nextTag, avatar: trimmedAvatar } }));
+        } catch {}
       }
       track('profile_updated');
       setNote(t.profileSaved);

@@ -210,6 +210,112 @@ export function removeDemoComment(articleId, id) {
   writeDemoComments(articleId, readDemoComments(articleId).filter((comment) => comment.id !== id));
 }
 
+
+// ---------------------------------------------------------------------------
+// Sync helpers : keep comments in step with profile edits
+// ---------------------------------------------------------------------------
+
+/**
+ * Met à jour les commentaires démo de `user` stockés en localStorage.
+ * Appelé après une édition du gamertag/avatar/niveau de la persona démo.
+ * Parcourt tous les articles ayant des commentaires démo et remplace
+ * author_name / avatar / level / xp pour les lignes appartenant à `user.id`.
+ */
+export function syncDemoCommentsForUser(user) {
+  if (!user || typeof window === 'undefined' || !window.localStorage) return;
+  const meta = user.user_metadata || {};
+  const nextName = meta.gamertag || user.email?.split('@')[0] || 'Player_DZ';
+  const nextAvatar = meta.avatar || meta.avatar_url || meta.picture || null;
+  const nextLevel = meta.level ?? 1;
+  const nextXp = meta.xp ?? 0;
+  const uid = user.id;
+  if (!uid) return;
+  try {
+    const keys = [];
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const k = window.localStorage.key(i);
+      if (k && k.startsWith(DEMO_STORAGE_PREFIX)) keys.push(k);
+    }
+    for (const key of keys) {
+      try {
+        const raw = window.localStorage.getItem(key);
+        const list = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(list) || list.length === 0) continue;
+        let changed = false;
+        const nextList = list.map((c) => {
+          if (c.user_id !== uid) return c;
+          const sameName = c.author_name === nextName;
+          const sameAvatar = c.author_avatar === nextAvatar;
+          const sameLevel = c.author_level === nextLevel;
+          const sameXp = c.author_xp === nextXp;
+          if (sameName && sameAvatar && sameLevel && sameXp) return c;
+          changed = true;
+          return { ...c, author_name: nextName, author_avatar: nextAvatar, author_level: nextLevel, author_xp: nextXp };
+        });
+        if (changed) window.localStorage.setItem(key, JSON.stringify(nextList));
+      } catch {}
+    }
+    // notify live Comments components (same tab) and other tabs
+    try { window.dispatchEvent(new CustomEvent('letsplay:demo-comments-synced', { detail: { userId: uid } })); } catch {}
+    try { window.localStorage.setItem('letsplay_demo_comments_sync_tick', String(Date.now())); } catch {}
+  } catch {}
+}
+
+/**
+ * Pousse le nouveau profil vers Supabase :
+ *  - met à jour `public.profiles` (username / display_name / avatar_url / level / xp)
+ *  - met à jour toutes les lignes `public.comments` du joueur (author_name / avatar / level / xp)
+ * Tolère les déploiements n'ayant pas encore la migration author_level.
+ */
+export async function syncSupabaseProfileAndComments(userId, { name, avatar, level, xp }) {
+  if (!supabase || !userId) return;
+  const payloadProfile = {};
+  if (name) { payloadProfile.username = name; payloadProfile.display_name = name; }
+  if (avatar !== undefined) payloadProfile.avatar_url = avatar;
+  if (Number.isFinite(level)) payloadProfile.level = level;
+  if (Number.isFinite(xp)) payloadProfile.xp = xp;
+  if (Object.keys(payloadProfile).length) {
+    payloadProfile.updated_at = new Date().toISOString();
+    try {
+      // try with level/xp, fallback without if columns missing
+      let { error } = await supabase.from('profiles').update(payloadProfile).eq('id', userId);
+      if (error && /column.*level|column.*xp|column.*updated_at/.test(error.message || '')) {
+        const fallback = {};
+        if (payloadProfile.username) fallback.username = payloadProfile.username;
+        if (payloadProfile.display_name) fallback.display_name = payloadProfile.display_name;
+        if (payloadProfile.avatar_url !== undefined) fallback.avatar_url = payloadProfile.avatar_url;
+        if (Object.keys(fallback).length) {
+          fallback.updated_at = new Date().toISOString();
+          const r2 = await supabase.from('profiles').update(fallback).eq('id', userId);
+          if (r2.error) throw r2.error;
+        }
+      } else if (error) throw error;
+    } catch (e) {
+      // non bloquant : le fil pourra quand même afficher le nouveau nom via le JWT
+    }
+  }
+  const payloadComments = {};
+  if (name) payloadComments.author_name = name;
+  if (avatar !== undefined) payloadComments.author_avatar = avatar;
+  if (Number.isFinite(level)) payloadComments.author_level = level;
+  if (Number.isFinite(xp)) payloadComments.author_xp = xp;
+  if (!Object.keys(payloadComments).length) return;
+  try {
+    let { error } = await supabase.from('comments').update(payloadComments).eq('user_id', userId);
+    if (error && /column.*author_level|column.*author_xp/.test(error.message || '')) {
+      const fallback = {};
+      if (payloadComments.author_name) fallback.author_name = payloadComments.author_name;
+      if (payloadComments.author_avatar !== undefined) fallback.author_avatar = payloadComments.author_avatar;
+      if (Object.keys(fallback).length) {
+        const r2 = await supabase.from('comments').update(fallback).eq('user_id', userId);
+        if (r2.error) throw r2.error;
+      }
+    } else if (error) throw error;
+  } catch (e) {
+    // non bloquant : l'affichage live reste correct via le cache profil
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Display helpers
 // ---------------------------------------------------------------------------

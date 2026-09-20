@@ -197,6 +197,12 @@ drop policy if exists "Users can delete their own comments" on public.comments;
 create policy "Users can delete their own comments"
 on public.comments for delete to authenticated using (auth.uid() = user_id);
 
+-- Le joueur peut mettre à jour ses propres commentaires (nom/avatar/niveau dénormalisés
+-- synchronisés quand il modifie son profil).
+drop policy if exists "Users can update their own comments" on public.comments;
+create policy "Users can update their own comments"
+on public.comments for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
 -- Remplit les colonnes d'auteur côté serveur à partir du joueur connecté
 -- (gamertag et avatar du compte, puis profil, puis e-mail) : un client ne peut
 -- pas publier sous un autre nom. Trime aussi le texte et applique une petite
@@ -303,7 +309,7 @@ begin
   grant select on public.profiles to anon, authenticated;
   grant insert, update on public.profiles to authenticated;
   grant select on public.comments to anon, authenticated;
-  grant insert, delete on public.comments to authenticated;
+  grant insert, delete, update on public.comments to authenticated;
 exception
   when others then
     raise warning 'Let''s Play : droits anon/authenticated non appliqués (%). Sur Supabase c''est habituellement déjà le cas par défaut.', sqlerrm;
@@ -326,12 +332,13 @@ from (
       case when to_regclass('public.comments') is null then 'MANQUANT' else 'OK' end),
     (2, 'RLS activee sur comments',
       case when (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.comments')) then 'OK' else 'MANQUANT' end),
-    (3, 'politiques RLS comments (3)',
+    (3, 'politiques RLS comments (4)',
       case when (select count(*) from pg_policies p
                  where p.schemaname = 'public' and p.tablename = 'comments'
                    and p.policyname in ('Comments are publicly readable',
                                         'Users can post comments as themselves',
-                                        'Users can delete their own comments')) = 3
+                                        'Users can delete their own comments',
+                                        'Users can update their own comments')) = 4
            then 'OK' else 'MANQUANT' end),
     (4, 'trigger auteur + anti-spam',
       case when exists (select 1 from pg_trigger t

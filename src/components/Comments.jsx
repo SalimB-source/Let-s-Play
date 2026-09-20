@@ -54,6 +54,33 @@ function profileHrefFor(comment){
   return `/profile/${encodeURIComponent(comment.user_id)}`;
 }
 
+function nameForComment(comment, user, isDemo, profileMeta){
+  if (!comment) return '';
+  if (user && comment.user_id === user.id) return displayNameFor(user);
+  const demo = demoProfileForComment(comment);
+  if (demo) {
+    if (isDemo && user && user.id === comment.user_id) return displayNameFor(user);
+    return demo.user_metadata.gamertag || comment.author_name;
+  }
+  if (comment.user_id && profileMeta[comment.user_id]) {
+    const p = profileMeta[comment.user_id];
+    return p.display_name || p.username || comment.author_name;
+  }
+  return comment.author_name;
+}
+
+function avatarForComment(comment, user, isDemo, profileMeta){
+  if (!comment) return null;
+  if (user && comment.user_id === user.id) return avatarFor(user);
+  const demo = demoProfileForComment(comment);
+  if (demo) {
+    if (isDemo && user && user.id === comment.user_id) return avatarFor(user);
+    return demo.user_metadata.avatar || comment.author_avatar;
+  }
+  if (comment.user_id && profileMeta[comment.user_id]?.avatar_url) return profileMeta[comment.user_id].avatar_url;
+  return comment.author_avatar;
+}
+
 function sortNewestFirst(list) {
   return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
@@ -127,6 +154,38 @@ export default function Comments({ articleId: articleIdProp }){
     setPostError(null);
     setNotice('');
   }, [articleId, user?.id]);
+
+  // Keep demo comments in sync with live profile edits (gamertag / avatar / level)
+  // isDemo comments are stored in localStorage; when the persona is edited we
+  // re-read them so the list shows the new name/photo without a full reload.
+  useEffect(() => {
+    if (isDemo) setLocal(readDemoComments(articleId));
+  }, [articleId, isDemo, user?.user_metadata?.gamertag, user?.user_metadata?.avatar, user?.user_metadata?.level, user?.user_metadata?.xp, user?.user_metadata?.fullName]);
+
+  // Listen for cross-component profile sync (same tab) and storage events (other tabs)
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onSync = () => {
+      if (isDemo) setLocal(readDemoComments(articleId));
+      else if (commentsEnabled) load();
+      // also clear cached profile so fresh name/avatar is re-fetched
+      setProfileMeta({});
+    };
+    window.addEventListener('letsplay:demo-comments-synced', onSync);
+    window.addEventListener('letsplay:profile-synced', onSync);
+    const onStorage = (e) => {
+      if (!e.key) return;
+      if (e.key.startsWith('letsplay_demo_comments:') || e.key === 'letsplay_demo_comments_sync_tick' || e.key === 'letsplay_auth_demo_profile') {
+        if (isDemo) setLocal(readDemoComments(articleId));
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('letsplay:demo-comments-synced', onSync);
+      window.removeEventListener('letsplay:profile-synced', onSync);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [articleId, isDemo, load]);
 
   const comments = useMemo(() => sortNewestFirst([...local, ...remote]), [local, remote]);
 
@@ -222,19 +281,30 @@ export default function Comments({ articleId: articleIdProp }){
   }
 
   function levelFor(comment){
-    // stored level from DB (if migration applied)
-    if (comment.author_level != null) {
-      return { level: comment.author_level, xp: comment.author_xp ?? null };
-    }
-    const demo = demoProfileForComment(comment);
-    if (demo) {
-      return { level: demo.user_metadata.level ?? 1, xp: demo.user_metadata.xp ?? null, tier: demo.user_metadata.tier, title: demo.user_metadata.rankTitle };
-    }
+    // For own comments, always show the live level/XP from the current session
+    // (achievements + user_metadata) so a profile edit is reflected instantly
+    // even before the DB row is updated.
     if (user && comment.user_id === user.id) {
       const lvl = summary?.level?.level ?? user.user_metadata?.level ?? 1;
       const xp = summary?.xp ?? user.user_metadata?.xp ?? 0;
       const title = levelTitle(lvl, lang);
       return { level: lvl, xp, title, tier: user.user_metadata?.tier };
+    }
+    // stored level from DB (if migration applied) — used for other users
+    if (comment.author_level != null) {
+      return { level: comment.author_level, xp: comment.author_xp ?? null };
+    }
+    const demo = demoProfileForComment(comment);
+    if (demo) {
+      // For demo comments that belong to the current demo user, the live user
+      // object already carries the edited level; otherwise fall back to the
+      // constant persona definition.
+      if (isDemo && user && user.id === comment.user_id) {
+        const lvl = user.user_metadata?.level ?? demo.user_metadata.level ?? 1;
+        const xp = user.user_metadata?.xp ?? demo.user_metadata.xp ?? null;
+        return { level: lvl, xp, tier: user.user_metadata?.tier || demo.user_metadata.tier, title: user.user_metadata?.rankTitle || demo.user_metadata.rankTitle };
+      }
+      return { level: demo.user_metadata.level ?? 1, xp: demo.user_metadata.xp ?? null, tier: demo.user_metadata.tier, title: demo.user_metadata.rankTitle };
     }
     if (profileMeta[comment.user_id]) {
       const p = profileMeta[comment.user_id];
@@ -342,14 +412,16 @@ export default function Comments({ articleId: articleIdProp }){
         const lvlLabel = lang === 'fr' ? `NIV. ${level}` : lang === 'ar' ? `المستوى ${level}` : `LVL ${level}`;
         const xpLabel = xp != null ? `${xp.toLocaleString()} XP` : null;
         const href = own ? '/auth' : profileHrefFor(comment);
+        const displayAuthorName = nameForComment(comment, user, isDemo, profileMeta);
+        const displayAvatar = avatarForComment(comment, user, isDemo, profileMeta);
         return <article className={`comment${own ? ' comment-own' : ''}`} key={comment.id}>
-          <Link to={href} className="comment-avatar-link" aria-label={`${comment.author_name} — voir le profil`} title={`${comment.author_name} — voir le profil`}>
-            <Avatar name={comment.author_name} src={comment.author_avatar} />
+          <Link to={href} className="comment-avatar-link" aria-label={`${displayAuthorName} — voir le profil`} title={`${displayAuthorName} — voir le profil`}>
+            <Avatar name={displayAuthorName} src={displayAvatar} />
           </Link>
           <div className="comment-content">
             <div className="comment-meta">
-              <Link to={href} className="comment-author-link" title={`${comment.author_name} — voir le profil`}>
-                <strong>{comment.author_name}</strong>
+              <Link to={href} className="comment-author-link" title={`${displayAuthorName} — voir le profil`}>
+                <strong>{displayAuthorName}</strong>
               </Link>
               <span className="comment-level" title={title ? `${title} — ${xpLabel || ''}` : xpLabel || lvlLabel}>
                 <span className="comment-level-lvl">{lvlLabel}</span>
