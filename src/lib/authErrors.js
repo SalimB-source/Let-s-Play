@@ -33,6 +33,13 @@ export function describeAuthError(error, t, fallback) {
   }
 
   if (
+    code === 'provider_not_enabled'
+    || /provider is not enabled|unsupported provider/i.test(message)
+  ) {
+    return `${t.errProviderDisabled}${details}`;
+  }
+
+  if (
     code === 'over_email_send_rate_limit'
     || code === 'over_request_rate_limit'
     || /rate limit/i.test(message)
