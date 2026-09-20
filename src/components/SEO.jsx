@@ -98,6 +98,11 @@ const pageMeta = {
     description: 'Fire Emblem: Fortune’s Weave conserve la première place de l’eShop Nintendo Switch 2 au 20 septembre 2026, devant Diablo 4 et LEGO Batman.',
     image: 'fire-emblem-fortunes-weave-news.jpg', type: 'article', published: '2026-09-20', section: 'Actualités gaming',
   },
+  '/news/sony-licence-jeux-numeriques': {
+    title: 'Sony : les jeux numériques PlayStation sont-ils achetés ou seulement licenciés ? — Let’s Play',
+    description: 'Dans une plainte collective en Californie, Sony affirme qu’un achat sur le PlayStation Store accorde une licence personnelle et non la propriété du jeu numérique.',
+    image: 'playstation-store-ownership-news.jpg', type: 'article', published: '2026-09-20', section: 'Actualités gaming',
+  },
 };
 
 const routeAliases = {
