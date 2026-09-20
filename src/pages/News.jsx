@@ -18,7 +18,7 @@ export default function News(){
         ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-      ], read: 'READ THE STORY', carousel: 'Carousel', grid: 'Grid', mode: 'News display mode', label: 'FEATURED NEWS', updated: 'Updated 12.09.2026', section: 'FEATURED NEWS'
+      ], read: 'READ THE STORY', carousel: 'Carousel', grid: 'Grid', mode: 'News display mode', label: 'FEATURED NEWS', updated: 'Updated 12.09.2026', section: 'FEATURED NEWS', today: 'NEWS OF THE DAY'
     },
     fr: {
       cards: [
@@ -26,7 +26,7 @@ export default function News(){
         ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-      ], read: 'LIRE L’ARTICLE', carousel: 'Carrousel', grid: 'Grille', mode: 'Mode d’affichage des actualités', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 12.09.2026', section: 'ACTUS À LA UNE'
+      ], read: 'LIRE L’ARTICLE', carousel: 'Carrousel', grid: 'Grille', mode: 'Mode d’affichage des actualités', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 12.09.2026', section: 'ACTUS À LA UNE', today: 'NEWS DU JOUR'
     },
     ar: {
       cards: [
@@ -34,7 +34,7 @@ export default function News(){
         ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-      ], read: 'اقرأ المقال', carousel: 'شريط', grid: 'شبكة', mode: 'طريقة عرض الأخبار', label: 'أبرز الأخبار', updated: 'آخر تحديث 12.09.2026', section: 'أبرز الأخبار'
+      ], read: 'اقرأ المقال', carousel: 'شريط', grid: 'شبكة', mode: 'طريقة عرض الأخبار', label: 'أبرز الأخبار', updated: 'آخر تحديث 12.09.2026', section: 'أبرز الأخبار', today: 'أخبار اليوم'
     }
   }[lang] || null;
   const featured = featuredCopy || null;
@@ -66,6 +66,9 @@ export default function News(){
     { to: '/news/zelda-ocarina', image: 'zelda-ocarina-news.jpg', alt: t.news.zelda.coverAlt, badge: t.news.zelda.eyebrow, kicker: `${t.news.zelda.date} · ${t.news.platforms}`, title: `${t.news.zelda.title} ${t.news.zelda.titleAccent}`, excerpt: t.news.zelda.dek, read: t.news.zelda.back },
     { to: '/news/onimusha-million', image: 'onimusha-million-news.jpg', alt: million.coverAlt || million.alt, badge: million.eyebrow || million.badge, kicker: `${million.date || million.kicker} · CAPCOM`, title: `${million.title} ${million.titleAccent || ''}`, excerpt: million.dek || million.excerpt, read: million.back || million.read },
   ];
+  // Le dernier article paru ouvre la section au format paysage (news du jour),
+  // les autres articles suivent dans la grille 4 colonnes.
+  const [topStory, ...gridArticles] = articles;
 
   const today = new Date(Date.now() + CLOCK_OFFSET);
   const calendarCopy = { ...FALLBACK_CALENDAR, ...(t.news.calendar || {}) };
@@ -103,8 +106,18 @@ export default function News(){
             {view === 'carousel' && <div className="news-carousel-controls" aria-label={featured.carousel}><button type="button" onClick={() => scrollCards(-1)} aria-label={lang === 'fr' ? 'Articles précédents' : lang === 'ar' ? 'المقالات السابقة' : 'Previous articles'}>←</button><button type="button" onClick={() => scrollCards(1)} aria-label={lang === 'fr' ? 'Articles suivants' : lang === 'ar' ? 'المقالات التالية' : 'Next articles'}>→</button></div>}
           </div>
         </div>
+        <Link className="daily-news-card news-today" to={topStory.to}>
+          <div className="daily-news-image"><img src={`${base}${topStory.image}`} alt={topStory.alt} /><span className="news-feature-badge">{topStory.badge}</span><span className="news-feature-arrow">↗</span></div>
+          <div className="daily-news-copy">
+            <p className="eyebrow"><span className="live-dot" /> {featured.today}</p>
+            <span className="news-kicker">{topStory.kicker}</span>
+            <h2>{topStory.title}</h2>
+            <p>{topStory.excerpt}</p>
+            <span className="read-link">{topStory.read} <Arrow /></span>
+          </div>
+        </Link>
         <div className={`news-carousel${view === 'grid' ? ' is-grid' : ''}`} ref={carouselRef}>
-          {articles.map((article) => <Link className="news-carousel-card" to={article.to} key={article.to}>
+          {gridArticles.map((article) => <Link className="news-carousel-card" to={article.to} key={article.to}>
             <div className="news-carousel-image"><img src={`${base}${article.image}`} alt={article.alt} /><span className="news-feature-badge">{article.badge}</span><span className="news-feature-arrow">↗</span></div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link>)}
