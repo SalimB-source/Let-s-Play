@@ -9,6 +9,7 @@ import { useAchievementAction, useAchievements } from '../achievements/Achieveme
 import { metricValue } from '../achievements/engine';
 import { levelTitle } from '../achievements/catalog';
 import AchievementsPanel from '../achievements/AchievementsPanel';
+import DeleteAccount from '../components/DeleteAccount';
 
 /* ------------------------------------------------------------------ */
 /* Small inline icons (no external deps, inherits currentColor)        */
@@ -1131,16 +1132,19 @@ export default function Auth({ initialMode = 'signin' }) {
                 {t.returnHomeBtn}
               </Link>
             </div>
-            <button
-              type="button"
-              className="player-signout-btn"
-              onClick={async () => {
-                await signOut();
-                navigate('/auth');
-              }}
-            >
-              ⏻ {t.signOut}
-            </button>
+            <div className="player-actions-right">
+              <DeleteAccount />
+              <button
+                type="button"
+                className="player-signout-btn"
+                onClick={async () => {
+                  await signOut();
+                  navigate('/auth');
+                }}
+              >
+                ⏻ {t.signOut}
+              </button>
+            </div>
           </div>
         </div>
       </section>

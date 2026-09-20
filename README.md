@@ -114,7 +114,10 @@ If a variable is missing, `/auth` shows exactly which one under the form.
      skipped (profiles are then only created by the app's own flow); comments
      are unaffected because the author is read from the account metadata.
    - The last query is a control table — every line must read `OK`. If a line
-     reads `MANQUANT`, the WARNING(s) above say why.
+     reads `MANQUANT`, the WARNING(s) above say why. The script also installs
+     the `public.delete_my_account()` security-definer function used by the
+     password-confirmed delete-account action on the profile hub; do not grant
+     clients direct access to `auth.users`.
 2. **URLs**: Dashboard → Authentication → URL Configuration →
    - Site URL: `https://<your-domain>` (your Vercel domain),
    - Redirect URLs: add `https://<your-domain>/**` (covers `/auth`, where

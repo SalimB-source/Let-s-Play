@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { useAchievements } from '../achievements/AchievementContext';
 import { levelTitle } from '../achievements/catalog';
 import { useLanguage } from '../i18n/LanguageContext';
+import DeleteAccount from '../components/DeleteAccount';
 
 function formatJoined(iso) {
   if (!iso) return '—';
@@ -149,6 +150,9 @@ export default function Profile() {
             <div className="player-actions-left">
               <Link to="/auth" className="button button-yellow">Gérer mon profil ↗</Link>
               <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
+            </div>
+            <div className="player-actions-right">
+              <DeleteAccount />
             </div>
           </div>
         </div>
