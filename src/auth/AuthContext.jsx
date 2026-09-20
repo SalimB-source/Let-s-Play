@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { DEMO_PROFILES, DEFAULT_DEMO_KEY } from './demoProfiles';
+import { syncDemoCommentsForUser } from '../lib/comments';
 
 const AuthContext = createContext(null);
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
@@ -73,6 +74,8 @@ export function AuthProvider({ children, initialSession = null }) {
           window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(next));
         }
       } catch (e) {}
+      // Keep existing demo comments in sync with the new gamertag / avatar / level
+      try { syncDemoCommentsForUser(next); } catch {}
       return next;
     });
   };

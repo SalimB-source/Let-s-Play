@@ -84,4 +84,18 @@
 @keyframes comment-spin{to{transform:rotate(360deg)}}
 .comment-retry{border:1px solid var(--cyan);background:none;color:var(--cyan);font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;padding:8px 12px;cursor:pointer}
 .comment-retry:hover{background:rgba(34,211,238,.1)}
-@media(max-width:800px){.comment-identity-link{display:none}.comment-form-footer .button{width:auto}}
+/* --- Comment author is now a profile link + XP level badge ---------------- */
+.comment-avatar-link{display:flex;flex:none;border-radius:2px;transition:transform .18s,box-shadow .18s,border-color .18s}
+.comment-avatar-link:hover{transform:translateY(-1px);box-shadow:0 0 14px rgba(34,211,238,.3)}
+.comment-avatar-link .comment-avatar{transition:border-color .2s}
+.comment-avatar-link:hover .comment-avatar{border-color:var(--cyan)}
+.comment-author-link{display:inline-flex;align-items:center;color:#fff;text-decoration:none;border-bottom:1px dashed rgba(34,211,238,.35);padding-bottom:1px;transition:color .18s,border-color .18s,background .18s}
+.comment-author-link:hover{color:var(--cyan);border-bottom-color:var(--cyan);background:rgba(34,211,238,.06)}
+.comment-author-link strong{color:inherit}
+.comment-level{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:var(--yellow);color:#0a0b1a;border:1px solid rgba(255,214,25,.9);font:700 10px var(--mono);letter-spacing:.08em;line-height:1;clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px);box-shadow:0 0 10px rgba(255,214,25,.18)}
+.comment-level-lvl{white-space:nowrap}
+.comment-level-dot{opacity:.5;font-weight:700}
+.comment-level-xp{font-weight:600;opacity:.9}
+.comment-own .comment-level{background:var(--cyan);border-color:var(--cyan);color:#07101a;box-shadow:0 0 10px rgba(34,211,238,.3)}
+.comment-level[title]{cursor:help}
+@media(max-width:800px){.comment-identity-link{display:none}.comment-form-footer .button{width:auto}.comment-level{padding:2px 6px;font-size:9px}}

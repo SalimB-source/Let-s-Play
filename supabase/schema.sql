@@ -150,6 +150,36 @@ create index if not exists comments_article_created_idx
 create index if not exists comments_user_idx
   on public.comments (user_id);
 
+-- ----------------------------------------------------------------------------
+-- 3b. Niveaux XP : colonnes dénormalisées pour l'affichage dans les commentaires
+-- ----------------------------------------------------------------------------
+-- Ajout non bloquant : si la table existe déjà (déploiement mis à jour),
+-- on complète avec les colonnes manquantes. Les nouveaux commentaires stockent
+-- le niveau/XP du joueur au moment du post pour un affichage sans jointure.
+do $$
+begin
+  -- profils : niveau public visible dans le fil de commentaires
+  if to_regclass('public.profiles') is not null then
+    if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='level') then
+      execute 'alter table public.profiles add column level integer not null default 1';
+    end if;
+    if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='profiles' and column_name='xp') then
+      execute 'alter table public.profiles add column xp integer not null default 0';
+    end if;
+  end if;
+  -- commentaires : niveau/xp figés au moment du post
+  if to_regclass('public.comments') is not null then
+    if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='comments' and column_name='author_level') then
+      execute 'alter table public.comments add column author_level integer';
+    end if;
+    if not exists (select 1 from information_schema.columns where table_schema='public' and table_name='comments' and column_name='author_xp') then
+      execute 'alter table public.comments add column author_xp integer';
+    end if;
+  end if;
+exception when others then
+  raise warning 'Let''s Play : colonnes level/xp non ajoutées (%).', sqlerrm;
+end $$;
+
 alter table public.comments enable row level security;
 
 -- La conversation est publique, y compris pour les visiteurs déconnectés.
@@ -166,6 +196,12 @@ on public.comments for insert to authenticated with check (auth.uid() = user_id)
 drop policy if exists "Users can delete their own comments" on public.comments;
 create policy "Users can delete their own comments"
 on public.comments for delete to authenticated using (auth.uid() = user_id);
+
+-- Le joueur peut mettre à jour ses propres commentaires (nom/avatar/niveau dénormalisés
+-- synchronisés quand il modifie son profil).
+drop policy if exists "Users can update their own comments" on public.comments;
+create policy "Users can update their own comments"
+on public.comments for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Remplit les colonnes d'auteur côté serveur à partir du joueur connecté
 -- (gamertag et avatar du compte, puis profil, puis e-mail) : un client ne peut
@@ -218,6 +254,28 @@ begin
     nullif(trim(meta->>'picture'), ''),
     nullif(trim(profile_avatar), '')
   );
+  -- Niveau XP dénormalisé pour le fil : si le client n'a rien envoyé,
+  -- on tente de le déduire des métadonnées (niveau du hub ou achievements).
+  -- Les colonnes n'existent que si la migration 3b a été appliquée — on
+  -- teste leur existence à chaque insertion pour rester compatible avec les
+  -- déploiements n'ayant pas encore migré.
+  begin
+    if new.author_level is null then
+      -- priorité : level explicite dans les métadonnées du compte
+      new.author_level := nullif(trim(meta->>'level'), '')::int;
+    end if;
+  exception when others then null; end;
+  begin
+    if new.author_xp is null then
+      new.author_xp := nullif(trim(meta->>'xp'), '')::int;
+    end if;
+  exception when others then null; end;
+  -- fallback si toujours vide : 1 / 0
+  begin
+    if new.author_level is null then new.author_level := 1; end if;
+    if new.author_xp is null then new.author_xp := 0; end if;
+  exception when undefined_column then null; -- colonnes absentes sur ancien schéma
+  end;
   new.body := trim(new.body);
   new.created_at := now();
 
@@ -251,7 +309,7 @@ begin
   grant select on public.profiles to anon, authenticated;
   grant insert, update on public.profiles to authenticated;
   grant select on public.comments to anon, authenticated;
-  grant insert, delete on public.comments to authenticated;
+  grant insert, delete, update on public.comments to authenticated;
 exception
   when others then
     raise warning 'Let''s Play : droits anon/authenticated non appliqués (%). Sur Supabase c''est habituellement déjà le cas par défaut.', sqlerrm;
@@ -274,12 +332,13 @@ from (
       case when to_regclass('public.comments') is null then 'MANQUANT' else 'OK' end),
     (2, 'RLS activee sur comments',
       case when (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.comments')) then 'OK' else 'MANQUANT' end),
-    (3, 'politiques RLS comments (3)',
+    (3, 'politiques RLS comments (4)',
       case when (select count(*) from pg_policies p
                  where p.schemaname = 'public' and p.tablename = 'comments'
                    and p.policyname in ('Comments are publicly readable',
                                         'Users can post comments as themselves',
-                                        'Users can delete their own comments')) = 3
+                                        'Users can delete their own comments',
+                                        'Users can update their own comments')) = 4
            then 'OK' else 'MANQUANT' end),
     (4, 'trigger auteur + anti-spam',
       case when exists (select 1 from pg_trigger t

@@ -1,0 +1,334 @@
+import React, { useEffect, useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
+import { DEMO_PROFILES } from '../auth/demoProfiles';
+import { supabase } from '../lib/supabase';
+import { useAchievements } from '../achievements/AchievementContext';
+import { levelTitle } from '../achievements/catalog';
+import { useLanguage } from '../i18n/LanguageContext';
+
+function formatJoined(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  try {
+    return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  } catch {
+    return String(d.getFullYear());
+  }
+}
+
+function DemoNotFound({ id }) {
+  return (
+    <section className="auth-page wrap">
+      <div className="player-hub">
+        <div className="player-section" style={{ textAlign: 'center' }}>
+          <h2 style={{ fontFamily: 'var(--display)', color: '#fff' }}>Profil introuvable</h2>
+          <p style={{ color: 'var(--muted)', marginTop: 8 }}>Le joueur “{id}” n’existe pas.</p>
+          <Link to="/auth" className="button button-yellow" style={{ marginTop: 18 }}>Retour au hub</Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function Profile() {
+  const { userId } = useParams();
+  const navigate = useNavigate();
+  const { user: me } = useAuth();
+  const { summary } = useAchievements();
+  const { lang } = useLanguage();
+  const [remoteProfile, setRemoteProfile] = useState(null);
+  const [commentCount, setCommentCount] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  const isOwn = me && userId === me.id;
+  const demoProfile = Object.values(DEMO_PROFILES).find((p) => p.id === userId);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (demoProfile) {
+      setLoading(false);
+      return;
+    }
+    if (isOwn) {
+      setLoading(false);
+      return;
+    }
+    if (!supabase) {
+      setLoading(false);
+      setNotFound(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setNotFound(false);
+      try {
+        const { data, error } = await supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, updated_at').eq('id', userId).maybeSingle();
+        if (cancelled) return;
+        if (error) throw error;
+        if (!data) {
+          setNotFound(true);
+        } else {
+          setRemoteProfile(data);
+          // fetch comment count
+          try {
+            const { count } = await supabase.from('comments').select('id', { count: 'exact', head: true }).eq('user_id', userId);
+            if (!cancelled && typeof count === 'number') setCommentCount(count);
+          } catch {}
+        }
+      } catch (e) {
+        if (!cancelled) setNotFound(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [userId, demoProfile, isOwn]);
+
+  // Own profile → redirect to hub for editing
+  if (isOwn) {
+    // show own hub inline instead of redirecting, to keep XP sync with achievements
+    const meta = me.user_metadata || {};
+    const gamertag = meta.gamertag || me.email?.split('@')[0] || 'Player_DZ';
+    const fullName = meta.fullName || meta.full_name || me.email || 'Let’s Play Player';
+    const tier = meta.tier || 'TIER I · MEMBER';
+    const rankTitle = meta.rankTitle || 'New Player';
+    const avatar = meta.avatar || meta.avatar_url || meta.picture || null;
+    const lvl = summary?.level?.level ?? meta.level ?? 1;
+    const xp = summary?.xp ?? meta.xp ?? 0;
+    const xpForNext = summary?.level?.xpForNextLevel ?? meta.nextLevelXp ?? 100;
+    const xpInLevel = summary?.level?.xpInLevel ?? 0;
+    const percent = summary?.level?.percent ?? 0;
+    const title = levelTitle(lvl, lang);
+
+    return (
+      <section className="auth-page wrap">
+        <div className="player-hub">
+          <div className="player-demo-banner" style={{ background: 'rgba(34,211,238,.08)', borderColor: 'var(--cyan)' }}>
+            <div className="player-demo-banner-left">
+              <span className="player-demo-pill" style={{ background: 'var(--cyan)', color: '#07101a' }}>VOTRE PROFIL</span>
+              <span className="player-demo-text">Vous consultez votre propre profil — gérez-le depuis le hub joueur.</span>
+            </div>
+            <Link to="/auth" className="player-demo-switch-btn">Ouvrir le hub ↗</Link>
+          </div>
+
+          <div className="player-profile-card">
+            <div className="player-header-layout">
+              <div className="player-avatar-col">
+                <div className="player-avatar-wrap" style={{ cursor: 'default' }}>
+                  {avatar ? <img src={avatar} alt={gamertag} className="player-avatar-img" /> : <div className="player-avatar-fallback">{gamertag.slice(0,2).toUpperCase()}</div>}
+                  <span className="player-status-badge"><span className="player-status-dot" /> EN LIGNE</span>
+                </div>
+              </div>
+              <div className="player-identity">
+                <div className="player-tags-row">
+                  <span className="player-badge-tier">{tier}</span>
+                  <span className="player-badge-verified">NIV. {lvl} · {xp} XP</span>
+                </div>
+                <h1 className="player-gamertag">{gamertag}</h1>
+                <div className="player-meta-line">
+                  <span><strong>{fullName}</strong></span><span>•</span><span>{me.email}</span><span>•</span><span>Membre depuis {formatJoined(me.created_at)}</span>
+                </div>
+                {meta.bio && <p className="player-bio">{meta.bio}</p>}
+              </div>
+            </div>
+            <div className="player-xp-section">
+              <div className="player-xp-header">
+                <span className="player-xp-level-tag">NIVEAU {lvl} — {title}</span>
+                <span className="player-xp-count">{xp} / {xpForNext} XP ({percent}%)</span>
+              </div>
+              <div className="player-xp-bar-bg"><div className="player-xp-bar-fill" style={{ width: `${percent}%` }} /></div>
+              <p style={{ margin: '8px 0 0', color: 'var(--dim)', font: '500 10px var(--mono)', letterSpacing: '.12em' }}>{xpInLevel} XP dans le niveau · {xpForNext - xpInLevel} XP avant le prochain rang</p>
+            </div>
+          </div>
+
+          <div className="player-actions-card">
+            <div className="player-actions-left">
+              <Link to="/auth" className="button button-yellow">Gérer mon profil ↗</Link>
+              <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (loading) {
+    return (
+      <section className="auth-page wrap">
+        <div className="player-hub">
+          <div className="player-profile-card" style={{ padding: 40, textAlign: 'center' }}>
+            <div className="comment-skeleton" style={{ height: 120, width: '40%', margin: '0 auto 24px' }} />
+            <div className="comment-skeleton" style={{ height: 16, width: '60%', margin: '0 auto' }} />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (demoProfile) {
+    const meta = demoProfile.user_metadata;
+    const lvl = meta.level || 1;
+    const xp = meta.xp || 0;
+    const next = meta.nextLevelXp || 100;
+    const pct = next > 0 ? Math.min(100, Math.round((xp / next) * 100)) : 0;
+    const title = meta.rankTitle || levelTitle(lvl, lang);
+    return (
+      <section className="auth-page wrap">
+        <div className="player-hub">
+          <div className="player-demo-banner">
+            <div className="player-demo-banner-left">
+              <span className="player-demo-pill">APERÇU DÉMO</span>
+              <span className="player-demo-text">Profil de démonstration — cet aperçu simule un joueur connecté.</span>
+            </div>
+            <Link to="/auth" className="player-demo-switch-btn">Ouvrir le hub démo ↗</Link>
+          </div>
+
+          <div className="player-profile-card">
+            <div className="player-header-layout">
+              <div className="player-avatar-col">
+                <div className="player-avatar-wrap" style={{ cursor: 'default' }}>
+                  <img src={meta.avatar} alt={meta.gamertag} className="player-avatar-img" />
+                  <span className="player-status-badge"><span className="player-status-dot" /> EN LIGNE</span>
+                </div>
+              </div>
+              <div className="player-identity">
+                <div className="player-tags-row">
+                  <span className="player-badge-tier">{meta.tier}</span>
+                  {meta.rankTag && <span className="player-badge-verified">{meta.rankTag}</span>}
+                  <span className="player-badge-tier" style={{ background: 'var(--yellow)', color: '#0a0b1a', borderColor: 'var(--yellow)' }}>NIV. {lvl} · {xp} XP</span>
+                </div>
+                <h1 className="player-gamertag">{meta.gamertag}</h1>
+                <div className="player-meta-line">
+                  <span><strong>{meta.fullName}</strong></span><span>•</span><span>{demoProfile.email}</span><span>•</span><span>{meta.location}</span><span>•</span><span>Membre depuis {meta.joinedDate}</span>
+                </div>
+                <p className="player-bio">{meta.bio}</p>
+              </div>
+            </div>
+            <div className="player-xp-section">
+              <div className="player-xp-header">
+                <span className="player-xp-level-tag">NIVEAU {lvl} — {title}</span>
+                <span className="player-xp-count">{xp.toLocaleString()} / {next.toLocaleString()} XP ({pct}%)</span>
+              </div>
+              <div className="player-xp-bar-bg"><div className="player-xp-bar-fill" style={{ width: `${pct}%` }} /></div>
+              <p style={{ margin: '8px 0 0', color: 'var(--dim)', font: '500 10px var(--mono)', letterSpacing: '.12em' }}>{meta.xp} XP au total · {next - xp} XP avant le prochain rang</p>
+            </div>
+          </div>
+
+          <div className="player-stats-grid">
+            <div className="player-stat-card"><div className="player-stat-value">{meta.stats.articlesRead}</div><div className="player-stat-label">Articles lus</div></div>
+            <div className="player-stat-card"><div className="player-stat-value">{meta.stats.commentsPosted}</div><div className="player-stat-label">Commentaires</div></div>
+            <div className="player-stat-card"><div className="player-stat-value">{meta.stats.savedArticles}</div><div className="player-stat-label">Articles sauvés</div></div>
+            <div className="player-stat-card"><div className="player-stat-value">{meta.stats.badgesUnlocked}</div><div className="player-stat-label">Succès</div></div>
+          </div>
+
+          {meta.platforms?.length > 0 && (
+            <div className="player-section">
+              <div className="player-section-header"><h2>Plateformes</h2></div>
+              <div className="player-platforms-row">{meta.platforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}</div>
+            </div>
+          )}
+
+          {meta.badges?.length > 0 && (
+            <div className="player-section">
+              <div className="player-section-header"><h2>Succès & badges</h2></div>
+              <div className="player-badges-grid">{meta.badges.map((b) => (
+                <div key={b.id} className="player-badge-item"><span className="player-badge-icon">{b.icon}</span><div className="player-badge-info"><h4>{b.name}</h4><p>{b.desc}</p></div></div>
+              ))}</div>
+            </div>
+          )}
+
+          <div className="player-actions-card">
+            <div className="player-actions-left">
+              <Link to="/news" className="button button-yellow">Voir les actus ↗</Link>
+              <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
+            </div>
+            <Link to="/auth" className="player-signout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Ouvrir mon hub</Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (notFound || !remoteProfile) {
+    return (
+      <section className="auth-page wrap">
+        <div className="player-hub">
+          <div className="player-section" style={{ textAlign: 'center', padding: '60px 32px' }}>
+            <div style={{ fontSize: 42, marginBottom: 12 }}>🔍</div>
+            <h2 style={{ fontFamily: 'var(--display)', color: '#fff', margin: '0 0 10px' }}>Profil introuvable</h2>
+            <p style={{ color: 'var(--muted)', margin: '0 0 18px', lineHeight: 1.6 }}>Le joueur <code style={{ background: 'rgba(255,255,255,.06)', padding: '2px 6px', borderRadius: 4 }}>{userId}</code> n’existe pas ou n’est plus disponible.</p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <Link to="/auth" className="button button-yellow">Aller au hub</Link>
+              <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Remote real user fetched from Supabase
+  const displayName = remoteProfile.display_name || remoteProfile.username || remoteProfile.id.slice(0, 8);
+  const handle = remoteProfile.username || displayName;
+  const avatarUrl = remoteProfile.avatar_url || null;
+  const joined = formatJoined(remoteProfile.created_at);
+  // level fallback : 1 si non stocké (colonne absente)
+  const lvl = remoteProfile.level ?? 1;
+  const xp = remoteProfile.xp ?? null;
+  const title = levelTitle(lvl, lang);
+
+  return (
+    <section className="auth-page wrap">
+      <div className="player-hub">
+        <div className="player-profile-card">
+          <div className="player-header-layout">
+            <div className="player-avatar-col">
+              <div className="player-avatar-wrap" style={{ cursor: 'default' }}>
+                {avatarUrl ? <img src={avatarUrl} alt={handle} className="player-avatar-img" /> : <div className="player-avatar-fallback">{String(handle).slice(0,2).toUpperCase()}</div>}
+                <span className="player-status-badge"><span className="player-status-dot" style={{ background: 'var(--muted)', boxShadow: 'none' }} /> PROFIL PUBLIC</span>
+              </div>
+            </div>
+            <div className="player-identity">
+              <div className="player-tags-row">
+                <span className="player-badge-tier">JOUEUR · COMMUNAUTÉ</span>
+                <span className="player-badge-verified">NIV. {lvl} {xp != null ? `· ${xp} XP` : ''}</span>
+              </div>
+              <h1 className="player-gamertag">{handle}</h1>
+              <div className="player-meta-line">
+                {displayName && <><span><strong>{displayName}</strong></span><span>•</span></>}
+                <span>{remoteProfile.id.slice(0, 8)}…</span><span>•</span><span>Membre depuis {joined}</span>
+              </div>
+              <p className="player-bio" style={{ color: 'var(--muted)', fontStyle: 'italic' }}>Profil public Let’s Play — statistiques détaillées bientôt disponibles.</p>
+            </div>
+          </div>
+          <div className="player-xp-section">
+            <div className="player-xp-header">
+              <span className="player-xp-level-tag">NIVEAU {lvl} — {title}</span>
+              {xp != null && <span className="player-xp-count">{xp} XP</span>}
+            </div>
+            <div className="player-xp-bar-bg"><div className="player-xp-bar-fill" style={{ width: xp != null ? `${Math.min(100, Math.round((xp % 150)/150*100))}%` : '8%' }} /></div>
+          </div>
+        </div>
+
+        <div className="player-stats-grid">
+          <div className="player-stat-card"><div className="player-stat-value">{commentCount ?? '—'}</div><div className="player-stat-label">Commentaires</div></div>
+          <div className="player-stat-card"><div className="player-stat-value">{lvl}</div><div className="player-stat-label">Niveau XP</div></div>
+          <div className="player-stat-card"><div className="player-stat-value">{handle.slice(0,6)}</div><div className="player-stat-label">Gamertag</div></div>
+          <div className="player-stat-card"><div className="player-stat-value">—</div><div className="player-stat-label">Succès</div></div>
+        </div>
+
+        <div className="player-actions-card">
+          <div className="player-actions-left">
+            <Link to="/news" className="button button-yellow">Explorer les actus ↗</Link>
+            <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
+          </div>
+          <Link to="/auth" className="player-signout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Mon hub</Link>
+        </div>
+      </div>
+    </section>
+  );
+}
