@@ -2,7 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
-import { useAchievementAction } from '../achievements/AchievementContext';
+import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
+import { DEMO_PROFILES } from '../auth/demoProfiles';
+import { supabase } from '../lib/supabase';
+import { levelTitle } from '../achievements/catalog';
 import {
   COMMENT_MAX_LENGTH,
   addDemoComment,
@@ -28,6 +31,29 @@ function Avatar({ name, src }) {
   </div>;
 }
 
+function demoProfileForComment(comment){
+  if (!comment) return null;
+  if (comment.demo) {
+    const byId = Object.values(DEMO_PROFILES).find((p) => p.id === comment.user_id);
+    if (byId) return byId;
+  }
+  if (comment.user_id && String(comment.user_id).startsWith('demo-')) {
+    const byId = Object.values(DEMO_PROFILES).find((p) => p.id === comment.user_id);
+    if (byId) return byId;
+  }
+  // demo comments sometimes carry author_name matching gamertag
+  if (comment.demo) {
+    const byName = Object.values(DEMO_PROFILES).find((p) => p.user_metadata.gamertag === comment.author_name);
+    if (byName) return byName;
+  }
+  return null;
+}
+
+function profileHrefFor(comment){
+  if (!comment?.user_id) return '/auth';
+  return `/profile/${encodeURIComponent(comment.user_id)}`;
+}
+
 function sortNewestFirst(list) {
   return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
@@ -40,6 +66,7 @@ export default function Comments({ articleId: articleIdProp }){
   const copy = t.news.comments;
   const location = useLocation();
   const { user, isDemo, loading: authLoading } = useAuth();
+  const { summary } = useAchievements();
   const track = useAchievementAction();
   const articleId = useMemo(
     () => normalizeArticleId(articleIdProp || location.pathname),
@@ -57,6 +84,7 @@ export default function Comments({ articleId: articleIdProp }){
   const [postError, setPostError] = useState(null);
   const [notice, setNotice] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [profileMeta, setProfileMeta] = useState({}); // user_id -> { level, xp }
 
   // Ignores responses that arrive after the reader moved to another article.
   const requestRef = useRef(0);
@@ -101,6 +129,54 @@ export default function Comments({ articleId: articleIdProp }){
   }, [articleId, user?.id]);
 
   const comments = useMemo(() => sortNewestFirst([...local, ...remote]), [local, remote]);
+
+  // Fetch levels for remote comment authors (public profiles) so the badge can
+  // show the stored XP even for visitors we have never seen before. Demo and
+  // own comments are resolved synchronously, so this only touches unknown ids.
+  useEffect(() => {
+    if (!supabase || comments.length === 0) return;
+    const ids = [...new Set(comments.map((c) => c.user_id).filter((id) => id && !String(id).startsWith('demo-') && id !== user?.id))];
+    const missing = ids.filter((id) => !(id in profileMeta));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // Try with level/xp columns first (new schema), fall back to basic columns.
+        let data = null;
+        let error = null;
+        try {
+          const res = await supabase.from('profiles').select('id, username, display_name, avatar_url, level, xp').in('id', missing);
+          data = res.data; error = res.error;
+          // If columns do not exist PostgREST returns 400 / PGRST204
+          if (error && /column.*level|column.*xp does not exist/i.test(error.message || '')) throw new Error('retry_basic');
+          if (error) throw error;
+        } catch (e) {
+          if (String(e.message) === 'retry_basic') {
+            const res2 = await supabase.from('profiles').select('id, username, display_name, avatar_url').in('id', missing);
+            if (res2.error) throw res2.error;
+            data = res2.data;
+          } else {
+            throw e;
+          }
+        }
+        if (cancelled || !data) return;
+        const next = {};
+        for (const row of data) {
+          next[row.id] = { level: row.level ?? 1, xp: row.xp ?? null, username: row.username, display_name: row.display_name, avatar_url: row.avatar_url };
+        }
+        // mark fetched ids that returned nothing as level 1 to avoid refetch loop
+        for (const id of missing) if (!next[id]) next[id] = { level: 1, xp: null };
+        if (!cancelled) setProfileMeta((prev) => ({ ...prev, ...next }));
+      } catch (e) {
+        if (cancelled) return;
+        const fallback = {};
+        for (const id of missing) fallback[id] = { level: 1, xp: null };
+        setProfileMeta((prev) => ({ ...prev, ...fallback }));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [comments, user?.id, profileMeta]);
+
   const displayName = displayNameFor(user);
   const avatar = avatarFor(user);
   const returnTo = `${location.pathname}#comments`;
@@ -117,7 +193,9 @@ export default function Comments({ articleId: articleIdProp }){
         const comment = addDemoComment(articleId, user, text);
         setLocal((current) => [comment, ...current]);
       } else {
-        const comment = await postComment(articleId, text);
+        const lvl = summary?.level?.level ?? user.user_metadata?.level ?? 1;
+        const xpVal = summary?.xp ?? user.user_metadata?.xp ?? 0;
+        const comment = await postComment(articleId, text, { level: lvl, xp: xpVal });
         setRemote((current) => [comment, ...current.filter((item) => item.id !== comment.id)]);
       }
       setBody('');
@@ -141,6 +219,28 @@ export default function Comments({ articleId: articleIdProp }){
   function isOwn(comment){
     if (!user) return false;
     return comment.demo ? isDemo : comment.user_id === user.id;
+  }
+
+  function levelFor(comment){
+    // stored level from DB (if migration applied)
+    if (comment.author_level != null) {
+      return { level: comment.author_level, xp: comment.author_xp ?? null };
+    }
+    const demo = demoProfileForComment(comment);
+    if (demo) {
+      return { level: demo.user_metadata.level ?? 1, xp: demo.user_metadata.xp ?? null, tier: demo.user_metadata.tier, title: demo.user_metadata.rankTitle };
+    }
+    if (user && comment.user_id === user.id) {
+      const lvl = summary?.level?.level ?? user.user_metadata?.level ?? 1;
+      const xp = summary?.xp ?? user.user_metadata?.xp ?? 0;
+      const title = levelTitle(lvl, lang);
+      return { level: lvl, xp, title, tier: user.user_metadata?.tier };
+    }
+    if (profileMeta[comment.user_id]) {
+      const p = profileMeta[comment.user_id];
+      return { level: p.level ?? 1, xp: p.xp ?? null, tier: p.tier ?? null };
+    }
+    return { level: 1, xp: null };
   }
 
   async function remove(comment){
@@ -238,11 +338,23 @@ export default function Comments({ articleId: articleIdProp }){
     feed = <div className="comment-list">
       {comments.map((comment) => {
         const own = isOwn(comment);
+        const { level, xp, title } = levelFor(comment);
+        const lvlLabel = lang === 'fr' ? `NIV. ${level}` : lang === 'ar' ? `المستوى ${level}` : `LVL ${level}`;
+        const xpLabel = xp != null ? `${xp.toLocaleString()} XP` : null;
+        const href = own ? '/auth' : profileHrefFor(comment);
         return <article className={`comment${own ? ' comment-own' : ''}`} key={comment.id}>
-          <Avatar name={comment.author_name} src={comment.author_avatar} />
+          <Link to={href} className="comment-avatar-link" aria-label={`${comment.author_name} — voir le profil`} title={`${comment.author_name} — voir le profil`}>
+            <Avatar name={comment.author_name} src={comment.author_avatar} />
+          </Link>
           <div className="comment-content">
             <div className="comment-meta">
-              <strong>{comment.author_name}</strong>
+              <Link to={href} className="comment-author-link" title={`${comment.author_name} — voir le profil`}>
+                <strong>{comment.author_name}</strong>
+              </Link>
+              <span className="comment-level" title={title ? `${title} — ${xpLabel || ''}` : xpLabel || lvlLabel}>
+                <span className="comment-level-lvl">{lvlLabel}</span>
+                {xpLabel && <><span className="comment-level-dot" aria-hidden="true">·</span><span className="comment-level-xp">{xpLabel}</span></>}
+              </span>
               {own && <span className="comment-tag">{copy.you}</span>}
               {comment.demo && <span className="comment-tag comment-tag-demo">{copy.demoTag}</span>}
               <time className="comment-time" dateTime={comment.created_at}>{formatCommentDate(comment.created_at, lang)}</time>

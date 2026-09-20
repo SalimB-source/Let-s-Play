@@ -47,6 +47,7 @@ import EventArena from './pages/EventArena';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import Achievements from './pages/Achievements';
+import Profile from './pages/Profile';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
@@ -113,6 +114,9 @@ function App() {
             <Route path="/succes" element={<Achievements />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
+            <Route path="/profile/:userId" element={<Profile />} />
+            <Route path="/profil/:userId" element={<Profile />} />
+            <Route path="/u/:userId" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>

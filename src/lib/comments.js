@@ -15,6 +15,10 @@ export const COMMENT_MAX_LENGTH = 1000;
 export const COMMENT_PAGE_SIZE = 100;
 
 const COMMENT_COLUMNS = 'id, article_id, user_id, author_name, author_avatar, body, created_at';
+// Extended columns when the migration adding author_level/xp has been applied.
+// Selecting them on an older deployment fails with "column does not exist",
+// so fetchComments falls back to COMMENT_COLUMNS.
+const COMMENT_COLUMNS_WITH_LEVEL = 'id, article_id, user_id, author_name, author_avatar, author_level, author_xp, body, created_at';
 const DEMO_STORAGE_PREFIX = 'letsplay_demo_comments:';
 
 export const commentsEnabled = Boolean(supabase);
@@ -79,25 +83,70 @@ export function describeCommentsError(error, copy, fallback) {
 
 export async function fetchComments(articleId) {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('comments')
-    .select(COMMENT_COLUMNS)
-    .eq('article_id', articleId)
-    .order('created_at', { ascending: false })
-    .limit(COMMENT_PAGE_SIZE);
-  if (error) throw error;
-  return data || [];
+  // Prefer the extended column set so author_level/xp is available when the
+  // migration has been applied; gracefully fall back for older deployments.
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(COMMENT_COLUMNS_WITH_LEVEL)
+      .eq('article_id', articleId)
+      .order('created_at', { ascending: false })
+      .limit(COMMENT_PAGE_SIZE);
+    if (error) {
+      // column does not exist yet → retry without level
+      if (/column.*author_level|column.*author_xp does not exist/i.test(error.message || '')) throw new Error('retry_basic');
+      throw error;
+    }
+    return data || [];
+  } catch (e) {
+    if (String(e.message) === 'retry_basic') {
+      const { data, error } = await supabase
+        .from('comments')
+        .select(COMMENT_COLUMNS)
+        .eq('article_id', articleId)
+        .order('created_at', { ascending: false })
+        .limit(COMMENT_PAGE_SIZE);
+      if (error) throw error;
+      return data || [];
+    }
+    throw e;
+  }
 }
 
-export async function postComment(articleId, body) {
+export async function postComment(articleId, body, opts = {}) {
   if (!supabase) throw new Error('Supabase is not configured');
-  const { data, error } = await supabase
-    .from('comments')
-    .insert({ article_id: articleId, body })
-    .select(COMMENT_COLUMNS)
-    .single();
-  if (error) throw error;
-  return data;
+  const level = opts.level != null ? Number(opts.level) : null;
+  const xp = opts.xp != null ? Number(opts.xp) : null;
+  const hasLevel = Number.isFinite(level);
+  const hasXp = Number.isFinite(xp);
+  const levelPayload = {};
+  if (hasLevel) levelPayload.author_level = level;
+  if (hasXp) levelPayload.author_xp = xp;
+  // Try extended insert first so the level is persisted when the migration exists.
+  try {
+    const payload = { article_id: articleId, body, ...levelPayload };
+    const { data, error } = await supabase
+      .from('comments')
+      .insert(payload)
+      .select(COMMENT_COLUMNS_WITH_LEVEL)
+      .single();
+    if (error) {
+      if (/column.*author_level|column.*author_xp does not exist/i.test(error.message || '')) throw new Error('retry_basic');
+      throw error;
+    }
+    return data;
+  } catch (e) {
+    if (String(e.message) === 'retry_basic') {
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({ article_id: articleId, body })
+        .select(COMMENT_COLUMNS)
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    throw e;
+  }
 }
 
 export async function deleteComment(id) {
@@ -147,6 +196,8 @@ export function addDemoComment(articleId, user, body) {
     user_id: user?.id || 'demo',
     author_name: meta.gamertag || user?.email?.split('@')[0] || 'Player_DZ',
     author_avatar: meta.avatar || null,
+    author_level: meta.level ?? 1,
+    author_xp: meta.xp ?? 0,
     body,
     created_at: new Date().toISOString(),
     demo: true,
