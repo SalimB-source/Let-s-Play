@@ -76,6 +76,55 @@
   box-shadow: 0 0 18px rgba(34, 211, 238, .18);
 }
 
+/* PASSWORD SHOW/HIDE TOGGLE + FIELD HINTS */
+.auth-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.auth-input-wrap input {
+  padding-right: 46px;
+}
+
+.auth-eye-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .2s;
+}
+
+.auth-eye-toggle:hover {
+  color: var(--cyan);
+}
+
+.auth-eye-icon {
+  display: block;
+}
+
+.auth-field-hint {
+  font: 400 11px var(--body);
+  letter-spacing: .02em;
+  text-transform: none;
+  color: var(--dim);
+  line-height: 1.4;
+}
+
+.auth-pw-hint {
+  margin: -6px 0 0;
+  color: var(--dim);
+}
+
 .auth-divider {
   display: flex;
   align-items: center;
@@ -943,6 +992,132 @@
   transform: translateY(-2px);
 }
 
+/* EMPTY-STATE NOTES (platforms / saved stories) */
+.player-empty-note {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed var(--line-strong);
+  background: rgba(255, 255, 255, .02);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* PROFILE EDITOR */
+.player-edit-block {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.player-edit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.player-edit-prompt {
+  font: 400 12px var(--body);
+  color: var(--muted);
+}
+
+.player-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: rgba(34, 211, 238, .1);
+  border: 1px solid rgba(34, 211, 238, .35);
+  color: var(--cyan);
+  font: 600 11px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+.player-edit-btn:hover {
+  background: rgba(34, 211, 238, .2);
+  border-color: var(--cyan);
+  transform: translateY(-1px);
+}
+
+.player-edit-form {
+  display: grid;
+  gap: 14px;
+}
+
+.player-edit-form-head h3 {
+  font-family: var(--display);
+  font-size: 16px;
+  letter-spacing: .06em;
+  margin: 0;
+  color: var(--yellow);
+}
+
+.player-edit-field {
+  display: grid;
+  gap: 7px;
+  font: 500 11px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.player-edit-field input {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, .04);
+  color: var(--ink);
+  padding: 12px 14px;
+  font: 15px var(--body);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.player-edit-field input:focus {
+  border-color: var(--cyan);
+  background: rgba(34, 211, 238, .04);
+  box-shadow: 0 0 18px rgba(34, 211, 238, .18);
+}
+
+.player-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.player-edit-cancel {
+  padding: 11px 18px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font: 600 11px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.player-edit-cancel:hover:not(:disabled) {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.player-edit-note {
+  margin: 0;
+  font: 13px var(--body);
+  color: var(--cyan);
+}
+
+.player-edit-error {
+  color: #ff8c9d;
+}
+
 /* NAVBAR ACCOUNT CONNECTED PILL */
 .nav-account {
   color: var(--cyan) !important;
@@ -990,8 +1165,20 @@
 [dir="rtl"] .sso-provider-top,
 [dir="rtl"] .sso-provider-footer,
 [dir="rtl"] .player-badge-item,
-[dir="rtl"] .player-actions-card {
+[dir="rtl"] .player-actions-card,
+[dir="rtl"] .player-edit-row,
+[dir="rtl"] .player-edit-actions {
   direction: rtl;
+}
+
+[dir="rtl"] .auth-input-wrap input {
+  padding-right: 15px;
+  padding-left: 46px;
+}
+
+[dir="rtl"] .auth-eye-toggle {
+  right: auto;
+  left: 6px;
 }
 
 [dir="rtl"] .auth-message {
