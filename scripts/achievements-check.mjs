@@ -284,14 +284,14 @@ for (const lang of LANGS) {
   ok(`[${lang}] la page affiche le niveau`, html.includes('achievement-level-number') && html.includes('achievement-level-bar'));
   ok(`[${lang}] la page affiche les compteurs d’actions`, html.includes('player-stat-value'));
   ok(`[${lang}] la page est reliée aux succès depuis la navigation`, html.includes('/achievements'));
-  check(`[${lang}] rien n’est débloqué sans action`, (html.match(/achievement-state-tag/g) || []).length, 0);
+  check(`[${lang}] rien n’est débloqué sans action`, (html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length, 0);
 }
 
 // Progression enregistrée sur l’appareil : le rendu doit la reprendre telle quelle.
 const savedState = reduce(createState(), { type: 'article_read', kind: 'news', id: 'metroid-ravenous' }).state;
 const saved = reduce(savedState, { type: 'article_read', kind: 'news', id: 'zelda-ocarina' }).state;
 const withProgress = achievementsPage('fr', saved);
-const unlockedCards = (withProgress.html.match(/achievement-state-tag/g) || []).length;
+const unlockedCards = (withProgress.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length;
 ok('progression enregistrée reprise au rendu', unlockedCards >= 1, `${unlockedCards} succès affichés comme débloqués`);
 ok('le compteur de succès suit la progression', withProgress.html.includes('>2<'));
 
@@ -311,9 +311,8 @@ ok('le hub joueur montre les succès du site', hub.html.includes('TES SUCCÈS SU
 ok('le hub joueur affiche le niveau', hub.html.includes('achievement-level'));
 ok('le hub joueur renvoie vers la page des succès', hub.html.includes('VOIR TOUS LES SUCCÈS'));
 
-// Fenêtre de déblocage : elle n'apparaît qu'après une action, on la rend donc
-// avec la file qu'un joueur verrait juste après avoir obtenu un succès.
-const popupLabels = { en: 'SEE ALL ACHIEVEMENTS', fr: 'VOIR TOUS LES SUCCÈS', ar: 'عرض كل الإنجازات' };
+// Notification de déblocage : elle n'apparaît qu'après une action, on la rend
+// donc avec la file qu'un joueur verrait juste après avoir obtenu un succès.
 // React insère des commentaires entre les nœuds de texte : on les retire avant
 // de chercher une phrase dans le rendu.
 const noComments = (html) => html.replace(/<!--[^>]*-->/g, '');
@@ -322,17 +321,15 @@ for (const lang of LANGS) {
     notifications: [{ id: 'polyglot', levelUp: { from: 1, to: 3 } }, { id: 'first-read' }],
   }));
   const label = achievementLabel(ACHIEVEMENTS.find((entry) => entry.id === 'polyglot'), lang);
-  ok(`[${lang}] la fenêtre annonce le succès`, html.includes(label.name) && html.includes(label.desc));
-  ok(`[${lang}] … avec sa rareté et son XP`, html.includes('achievement-rarity rarity-rare') && html.includes('+100'));
-  ok(`[${lang}] … et le passage de niveau`, html.includes('achievement-popup-level'));
-  ok(`[${lang}] … le compteur de la file`, /achievement-popup-queue/.test(html));
-  ok(`[${lang}] … et le lien vers la page des succès`, html.includes(popupLabels[lang]));
-  ok(`[${lang}] la fenêtre est une boîte de dialogue accessible`, html.includes('aria-modal="true"') && html.includes('role="dialog"'));
+  ok(`[${lang}] la notification annonce le succès`, html.includes(label.name) && html.includes(label.desc));
+  ok(`[${lang}] … avec sa rareté et son XP`, html.includes('rarity-rare') && html.includes('+100'));
+  ok(`[${lang}] … et le passage de niveau`, html.includes('achievement-toast-level'));
+  check(`[${lang}] … les succès d'affilée s'empilent`, (html.match(/class="achievement-toast /g) || []).length, 2);
+  ok(`[${lang}] … la pile est ancrée et annoncée aux lecteurs d'écran`, html.includes('achievement-toasts') && html.includes('aria-live="polite"'));
 }
-const singlePopup = noComments(achievementPopup('fr', { notifications: [{ id: 'polyglot' }] }));
-ok('le dernier succès de la file propose de continuer', /CONTINUER/.test(singlePopup));
-check('… et n’affiche aucun compteur de file', /achievement-popup-queue/.test(singlePopup), false);
-check('pas de fenêtre sans succès à fêter', achievementPopup('fr', { notifications: [] }), '');
+const singleToast = noComments(achievementPopup('fr', { notifications: [{ id: 'polyglot' }] }));
+check('une seule notification = un seul toast cliquable', (singleToast.match(/<button/g) || []).length, 1);
+check('pas de notification sans succès à fêter', achievementPopup('fr', { notifications: [] }), '');
 
 // Les actions du site sont branchées sur le moteur (source du site, comme les
 // autres vérifications du dépôt : on lit ce qui est réellement livré).
@@ -347,18 +344,16 @@ const sources = [
   ['src/achievements/AchievementTracker.jsx', "track('video_played'"],
   ['src/achievements/AchievementTracker.jsx', 'VIDEO_PLAYED_EVENT'],
   ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
-  ['src/achievements/AchievementPopup.jsx', 'dismissNotification(current.id)'],
+  ['src/achievements/AchievementPopup.jsx', 'dismissNotification(entry.id)'],
   ['src/main.jsx', '<AchievementPopup />'],
 ];
 const unwired = sources.filter(([file, needle]) => !read(file).includes(needle)).map(([file, needle]) => `${file} → ${needle}`);
 check('actions branchées sur le moteur', unwired.join(', ') || 'aucune', 'aucune');
 
-// La fenêtre a remplacé les notifications en coin : aucun reste de l'ancien
-// composant ne doit traîner dans la source.
-const leftovers = sourceFiles(path.join(root, 'src'))
-  .filter((file) => /AchievementToasts|toastCopy|achievement-toast/.test(readFileSync(file, 'utf8')))
-  .map((file) => path.relative(root, file));
-check('plus aucune trace des anciennes notifications', leftovers.join(', ') || 'aucune', 'aucune');
+// Les toasts ont remplacé l'ancienne fenêtre centrale : aucun reste de modale
+// (backdrop, rôle dialog) ne doit traîner dans la source.
+const popupSource = read('src/achievements/AchievementPopup.jsx');
+ok('plus de fenêtre centrale ni de backdrop', !/achievement-popup-backdrop|aria-modal|role="dialog"/.test(popupSource));
 
 const videoLib = read('src/lib/videoPlayback.js');
 ok('un lecteur qui démarre annonce la vidéo', videoLib.includes('dispatchEvent(new CustomEvent(VIDEO_PLAYED_EVENT'));
