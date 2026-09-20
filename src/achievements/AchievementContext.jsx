@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
-import { ACHIEVEMENTS, achievementLabel } from './catalog';
+import { ACHIEVEMENTS, achievementIconUrl, achievementLabel } from './catalog';
 import { createState, evaluate, levelUpBetween, mergeStates, normalizeState, reduce, statesMatch, summarize } from './engine';
 import { REMOTE_META_KEY, clearStorage, readStorage, writeStorage } from './storage';
 
@@ -209,7 +209,7 @@ export function notificationCopy(achievementId, lang = 'en') {
   const label = achievementLabel(achievement, lang);
   return {
     id: achievement.id,
-    icon: achievement.icon,
+    icon: achievementIconUrl(achievement.icon),
     name: label.name,
     desc: label.desc,
     xp: achievement.xp,

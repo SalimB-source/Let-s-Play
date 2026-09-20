@@ -60,7 +60,7 @@ export const ACHIEVEMENTS = [
   /* ------------------------------- Premiers pas ------------------------------ */
   {
     id: 'welcome-aboard',
-    icon: '/icons/achievements/rocket.webp',
+    icon: 'icons/achievements/welcome-aboard.webp',
     group: 'start',
     rarity: 'common',
     xp: 25,
@@ -74,7 +74,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'explorer',
-    icon: '/icons/achievements/explorer.webp',
+    icon: 'icons/achievements/explorer.webp',
     group: 'start',
     rarity: 'common',
     xp: 40,
@@ -88,7 +88,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'grand-tour',
-    icon: '/icons/achievements/map-pin.webp',
+    icon: 'icons/achievements/grand-tour.webp',
     group: 'start',
     rarity: 'rare',
     xp: 80,
@@ -102,7 +102,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'trophy-hunter',
-    icon: '/icons/achievements/trophy.webp',
+    icon: 'icons/achievements/trophy-hunter.webp',
     group: 'start',
     rarity: 'common',
     xp: 25,
@@ -116,7 +116,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'player-one',
-    icon: '/icons/achievements/boy.webp',
+    icon: 'icons/achievements/player-one.webp',
     group: 'start',
     rarity: 'rare',
     xp: 80,
@@ -130,7 +130,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'welcome-back',
-    icon: '/icons/achievements/key.webp',
+    icon: 'icons/achievements/welcome-back.webp',
     group: 'start',
     rarity: 'common',
     xp: 40,
@@ -146,7 +146,7 @@ export const ACHIEVEMENTS = [
   /* --------------------------------- Lecture -------------------------------- */
   {
     id: 'first-read',
-    icon: '/icons/achievements/notebook.webp',
+    icon: 'icons/achievements/first-read.webp',
     group: 'reading',
     rarity: 'common',
     xp: 25,
@@ -160,7 +160,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'page-turner',
-    icon: '/icons/achievements/file.webp',
+    icon: 'icons/achievements/page-turner.webp',
     group: 'reading',
     rarity: 'rare',
     xp: 80,
@@ -174,7 +174,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'deep-reader',
-    icon: '/icons/achievements/file-text.webp',
+    icon: 'icons/achievements/deep-reader.webp',
     group: 'reading',
     rarity: 'epic',
     xp: 160,
@@ -188,7 +188,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'news-wire',
-    icon: '/icons/achievements/flash.webp',
+    icon: 'icons/achievements/news-wire.webp',
     group: 'reading',
     rarity: 'common',
     xp: 40,
@@ -202,7 +202,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'critic-eye',
-    icon: '/icons/achievements/pencil.webp',
+    icon: 'icons/achievements/critic-eye.webp',
     group: 'reading',
     rarity: 'rare',
     xp: 80,
@@ -216,7 +216,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'archivist',
-    icon: '/icons/achievements/folder.webp',
+    icon: 'icons/achievements/archivist.webp',
     group: 'reading',
     rarity: 'rare',
     xp: 80,
@@ -230,7 +230,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'night-owl',
-    icon: '/icons/achievements/moon.webp',
+    icon: 'icons/achievements/night-owl.webp',
     group: 'reading',
     rarity: 'epic',
     xp: 120,
@@ -246,7 +246,7 @@ export const ACHIEVEMENTS = [
   /* ---------------------------------- Vidéo --------------------------------- */
   {
     id: 'prime-time',
-    icon: '/icons/achievements/play.webp',
+    icon: 'icons/achievements/prime-time.webp',
     group: 'video',
     rarity: 'common',
     xp: 40,
@@ -260,7 +260,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'binge-watcher',
-    icon: '/icons/achievements/video-cam.webp',
+    icon: 'icons/achievements/binge-watcher.webp',
     group: 'video',
     rarity: 'epic',
     xp: 140,
@@ -274,7 +274,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'live-signal',
-    icon: '/icons/achievements/wifi.webp',
+    icon: 'icons/achievements/live-signal.webp',
     group: 'video',
     rarity: 'rare',
     xp: 100,
@@ -290,7 +290,7 @@ export const ACHIEVEMENTS = [
   /* -------------------------------- Communauté ------------------------------ */
   {
     id: 'first-comment',
-    icon: '/icons/achievements/chat-bubble.webp',
+    icon: 'icons/achievements/first-comment.webp',
     group: 'community',
     rarity: 'common',
     xp: 40,
@@ -304,7 +304,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'community-voice',
-    icon: '/icons/achievements/megaphone.webp',
+    icon: 'icons/achievements/community-voice.webp',
     group: 'community',
     rarity: 'epic',
     xp: 140,
@@ -318,7 +318,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'scout',
-    icon: '/icons/achievements/zoom.webp',
+    icon: 'icons/achievements/scout.webp',
     group: 'community',
     rarity: 'common',
     xp: 25,
@@ -332,7 +332,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'detective',
-    icon: '/icons/achievements/target.webp',
+    icon: 'icons/achievements/detective.webp',
     group: 'community',
     rarity: 'rare',
     xp: 100,
@@ -348,7 +348,7 @@ export const ACHIEVEMENTS = [
   /* --------------------------------- Fidélité ------------------------------- */
   {
     id: 'three-day-streak',
-    icon: '/icons/achievements/fire.webp',
+    icon: 'icons/achievements/three-day-streak.webp',
     group: 'loyalty',
     rarity: 'rare',
     xp: 120,
@@ -362,7 +362,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'seven-day-regular',
-    icon: '/icons/achievements/calender.webp',
+    icon: 'icons/achievements/seven-day-regular.webp',
     group: 'loyalty',
     rarity: 'epic',
     xp: 200,
@@ -376,7 +376,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'polyglot',
-    icon: '/icons/achievements/sphere.webp',
+    icon: 'icons/achievements/polyglot.webp',
     group: 'loyalty',
     rarity: 'rare',
     xp: 100,
@@ -390,7 +390,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'trilingual',
-    icon: '/icons/achievements/text.webp',
+    icon: 'icons/achievements/trilingual.webp',
     group: 'loyalty',
     rarity: 'legendary',
     xp: 250,
@@ -406,7 +406,7 @@ export const ACHIEVEMENTS = [
   /* ---------------------------------- Compte -------------------------------- */
   {
     id: 'linked-player',
-    icon: '/icons/achievements/link.webp',
+    icon: 'icons/achievements/linked-player.webp',
     group: 'profile',
     rarity: 'rare',
     xp: 100,
@@ -420,7 +420,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'own-look',
-    icon: '/icons/achievements/colour-palette.webp',
+    icon: 'icons/achievements/own-look.webp',
     group: 'profile',
     rarity: 'common',
     xp: 50,
@@ -455,4 +455,21 @@ export function levelTitle(level, lang = 'en') {
   const tiers = LEVEL_TITLES.filter((tier) => level >= tier.min);
   const tier = tiers[tiers.length - 1] || LEVEL_TITLES[0];
   return tier.labels[lang] || tier.labels.en;
+}
+
+/**
+ * URL publique d'une icône de succès, préfixée par la base Vite : sans elle,
+ * un chemin absolu (`/icons/…`) pointe à côté du site déployé sous
+ * `/Let-s-Play/` (GitHub Pages) et les récompenses s'affichent cassées.
+ * Fonctionne aussi hors navigateur (scripts de vérification) : la base vaut
+ * alors simplement `/`.
+ */
+export function achievementIconUrl(icon) {
+  const clean = String(icon || '').replace(/^\/+/, '');
+  let base = '/';
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) base = import.meta.env.BASE_URL;
+  } catch (e) { /* hors Vite : la base par défaut suffit */ }
+  if (!base.endsWith('/')) base += '/';
+  return `${base}${clean}`;
 }

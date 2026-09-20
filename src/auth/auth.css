@@ -1384,15 +1384,6 @@
   border-top-color: #fff;
 }
 
-.player-avatar-hint {
-  margin: 0;
-  font: 500 10px var(--mono);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  text-align: center;
-}
-
 .player-avatar-note {
   margin: 0;
   font: 500 12px var(--body);

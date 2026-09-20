@@ -899,7 +899,6 @@ export default function Auth({ initialMode = 'signin' }) {
                   role="button"
                   tabIndex={0}
                   aria-label={t.avatarUploadHint}
-                  title={t.avatarUploadHint}
                   onClick={() => fileInputRef.current && fileInputRef.current.click()}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -933,7 +932,6 @@ export default function Auth({ initialMode = 'signin' }) {
                     {t.onlineStatus}
                   </span>
                 </div>
-                <p className="player-avatar-hint">{t.avatarUploadHint}</p>
                 {avatarNote && (
                   <p className={`player-avatar-note${avatarNote.isError ? ' player-avatar-note-error' : ''}`}>
                     {avatarNote.text}
