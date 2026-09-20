@@ -30,6 +30,16 @@ export const supabaseConfigStatus = {
   hasKey: Boolean(supabaseKey),
 };
 
+// Host of the Supabase project this build talks to (no key, safe to surface).
+// Shown next to network errors so a wrong project URL is immediately visible.
+export const supabaseHost = (() => {
+  try {
+    return new URL(supabaseUrl).host;
+  } catch (e) {
+    return '';
+  }
+})();
+
 export const supabase = supabaseConfigStatus.configured
   ? createClient(supabaseUrl, supabaseKey)
   : null;

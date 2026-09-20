@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
 import { GoogleLogo, MicrosoftLogo } from '../components/SocialLogos';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
+import { describeAuthError } from '../lib/authErrors';
 
 const copy = {
   en: {
@@ -39,9 +40,13 @@ const copy = {
     passwordUpdated: 'Password updated — you’re signed in.',
     backToSignIn: 'Back to sign in',
     error: 'Something went wrong. Please try again.',
+    errNetwork: 'Unable to reach the Supabase server — check that the project URL and key are correct and that the project is not paused.',
+    errEmailNotConfirmed: 'Your email address is not confirmed yet — open the confirmation link we sent you, or resend it below.',
+    errInvalidCredentials: 'Wrong email address or password.',
+    errRateLimited: 'Too many attempts — wait a few minutes before trying again.',
     unavailable: 'Supabase authentication is not configured in this environment. You can use the Demo Preview below.',
     diagMissing: 'Missing configuration:',
-    diagHelp: 'Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel → Settings → Environment Variables (or connect the Supabase integration), then redeploy.',
+    diagHelp: 'Build-time variables: Vercel → Settings → Environment Variables, GitHub Pages → Settings → Secrets and variables → Actions → Variables (both names above), or a local .env.local copied from .env.example. Redeploy after adding them.',
     demoOptionTitle: 'DEMO / PREVIEW ACCESS',
     demoOptionText: 'Want to preview how the player hub looks when connected? Enter with a simulated profile in one click.',
     demoBtnVortex: 'EXPLORE DEMO ACCOUNT (VORTEX_DZ · PRO)',
@@ -118,9 +123,13 @@ const copy = {
     passwordUpdated: 'Mot de passe mis à jour — tu es connecté.',
     backToSignIn: 'Retour à la connexion',
     error: 'Une erreur est survenue. Réessaie.',
+    errNetwork: 'Impossible de joindre le serveur Supabase — vérifie l’URL et la clé du projet, et que le projet n’est pas en pause.',
+    errEmailNotConfirmed: 'Ton adresse e-mail n’est pas encore confirmée — ouvre le lien de confirmation reçu, ou renvoie-le ci-dessous.',
+    errInvalidCredentials: 'Adresse e-mail ou mot de passe incorrect.',
+    errRateLimited: 'Trop de tentatives — patiente quelques minutes avant de réessayer.',
     unavailable: "L'authentification Supabase n'est pas configurée dans cet environnement. Utilisez l'aperçu Démo ci-dessous.",
     diagMissing: 'Configuration manquante :',
-    diagHelp: 'Ajoutez VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY dans Vercel → Settings → Environment Variables (ou connectez l’intégration Supabase), puis redéployez.',
+    diagHelp: 'Variables lues à la compilation : Vercel → Settings → Environment Variables, GitHub Pages → Settings → Secrets and variables → Actions → Variables (les deux noms ci-dessus), ou un fichier .env.local copié depuis .env.example. Redéployez après les avoir ajoutées.',
     demoOptionTitle: 'ACCÈS DÉMO / APERÇU',
     demoOptionText: 'Envie de voir à quoi ressemble le profil connecté ? Testez instantanément en un clic.',
     demoBtnVortex: 'EXPLORER LE COMPTE DÉMO (VORTEX_DZ · PRO)',
@@ -197,9 +206,13 @@ const copy = {
     passwordUpdated: 'تم تحديث كلمة المرور — أنت مسجل الدخول الآن.',
     backToSignIn: 'العودة إلى تسجيل الدخول',
     error: 'حدث خطأ. حاول مرة أخرى.',
+    errNetwork: 'تعذّر الوصول إلى خادم Supabase — تحقق من رابط المشروع ومفتاحه، ومن أن المشروع غير متوقف مؤقتاً.',
+    errEmailNotConfirmed: 'لم يتم تأكيد بريدك الإلكتروني بعد — افتح رابط التأكيد المُرسل إليك أو أعد إرساله أدناه.',
+    errInvalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة.',
+    errRateLimited: 'محاولات كثيرة — انتظر بضع دقائق ثم أعد المحاولة.',
     unavailable: 'المصادقة عبر Supabase غير مهيأة في هذه البيئة. يمكنك استخدام الحساب التجريبي أدناه.',
     diagMissing: 'الإعدادات الناقصة:',
-    diagHelp: 'أضف VITE_SUPABASE_URL و VITE_SUPABASE_PUBLISHABLE_KEY في Vercel ← Settings ← Environment Variables (أو اربط تكامل Supabase)، ثم أعد النشر.',
+    diagHelp: 'المتغيرات تُقرأ وقت البناء: في Vercel ← Settings ← Environment Variables، وفي GitHub Pages ← Settings ← Secrets and variables ← Actions ← Variables (الاسمان أعلاه)، أو ملف .env.local محلي منسوخ من .env.example. أعد النشر بعد إضافتها.',
     demoOptionTitle: 'الوصول التجريبي / المعاينة',
     demoOptionText: 'هل تريد رؤية كيف يبدو حساب اللاعب عند الاتصال؟ ادخل بملف تجريبي بنقرة واحدة.',
     demoBtnVortex: 'استكشاف الحساب التجريبي (VORTEX_DZ · محترف)',
@@ -324,7 +337,7 @@ export default function Auth({ initialMode = 'signup' }) {
           },
         });
         if (signUpError) {
-          setError(signUpError.message || t.error);
+          setError(describeAuthError(signUpError, t, t.error));
         } else if (data.session) {
           // Email confirmation disabled → already signed in.
           navigate('/');
@@ -343,7 +356,7 @@ export default function Auth({ initialMode = 'signup' }) {
           password,
         });
         if (signInError) {
-          setError(signInError.message || t.error);
+          setError(describeAuthError(signInError, t, t.error));
         } else {
           navigate('/');
           return;
@@ -353,14 +366,14 @@ export default function Auth({ initialMode = 'signup' }) {
           redirectTo: authRedirectUrl(),
         });
         if (resetError) {
-          setError(resetError.message || t.error);
+          setError(describeAuthError(resetError, t, t.error));
         } else {
           setMessage(t.resetSent);
         }
       } else if (mode === 'update') {
         const { error: updateError } = await supabase.auth.updateUser({ password });
         if (updateError) {
-          setError(updateError.message || t.error);
+          setError(describeAuthError(updateError, t, t.error));
         } else {
           setIsRecovery(false);
           setPassword('');
@@ -371,7 +384,7 @@ export default function Auth({ initialMode = 'signup' }) {
         }
       }
     } catch (e) {
-      setError(e?.message || t.error);
+      setError(describeAuthError(e, t, t.error));
     } finally {
       setBusy(false);
     }
@@ -393,7 +406,7 @@ export default function Auth({ initialMode = 'signup' }) {
     });
     setBusy(false);
     if (resendError) {
-      setError(resendError.message || t.error);
+      setError(describeAuthError(resendError, t, t.error));
     } else {
       setMessage(t.resendSent);
     }
@@ -413,7 +426,7 @@ export default function Auth({ initialMode = 'signup' }) {
       options: { redirectTo: authRedirectUrl() },
     });
     if (oauthError) {
-      setError(oauthError.message || t.error);
+      setError(describeAuthError(oauthError, t, t.error));
       setBusy(false);
     }
   };
