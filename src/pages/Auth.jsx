@@ -6,6 +6,49 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { GoogleLogo, MicrosoftLogo } from '../components/SocialLogos';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
 
+/* ------------------------------------------------------------------ */
+/* Small inline icons (no external deps, inherits currentColor)        */
+/* ------------------------------------------------------------------ */
+function EyeIcon({ off = false, size = 18 }) {
+  return (
+    <svg
+      className="auth-eye-icon"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M1.5 12S5 5.5 12 5.5 22.5 12 22.5 12 19 18.5 12 18.5 1.5 12 1.5 12Z" />
+      <circle cx="12" cy="12" r="3.2" />
+      {off && <path d="M3 3l18 18" />}
+    </svg>
+  );
+}
+
+function PencilIcon({ size = 14 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 20h4l10.5-10.5a2.8 2.8 0 0 0-4-4L4 16v4Z" />
+      <path d="M13.5 6.5l4 4" />
+    </svg>
+  );
+}
+
 const copy = {
   en: {
     eyebrow: 'PLAYER ACCESS',
@@ -13,12 +56,20 @@ const copy = {
     intro: 'Create your Let’s Play account and keep your community profile ready for what comes next.',
     email: 'Email address',
     password: 'Password',
+    confirmPassword: 'Confirm password',
+    passwordHint: 'Use at least 6 characters.',
+    passwordMismatch: 'The two passwords don’t match.',
+    gamertagRequired: 'Choose a gamertag to join.',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     gamertag: 'Gamertag',
     gamertagPlaceholder: 'e.g. VORTEX_DZ',
+    gamertagHint: 'This is how you’ll appear across the community.',
     signIn: 'SIGN IN',
     signUp: 'CREATE ACCOUNT',
     google: 'CONTINUE WITH GOOGLE',
     microsoft: 'CONTINUE WITH MICROSOFT',
+    or: 'OR',
     switchSignUp: 'New here? Create an account',
     switchSignIn: 'Already registered? Sign in',
     signOut: 'SIGN OUT',
@@ -77,14 +128,28 @@ const copy = {
     actionConnect: 'Simulate Link',
     linkedOn: 'Linked on',
     notLinkedDesc: 'No account linked yet',
+    linkNow: 'LINK NOW',
     platformsHeading: 'GAMING HARDWARE & PLATFORMS',
+    noPlatformsYet: 'No platforms added yet.',
     badgesHeading: 'UNLOCKED ACHIEVEMENTS & BADGES',
+    welcomeBadgeName: 'Welcome Aboard',
+    welcomeBadgeDesc: 'You just created your Let’s Play account',
     savedStoriesHeading: 'SAVED STORIES & BOOKMARKS',
+    noSavedYet: 'No saved stories yet — explore the news feed and bookmark what you like.',
     readStory: 'READ STORY',
     profileActions: 'ACCOUNT ACTIONS',
     exploreNewsBtn: 'EXPLORE NEWS FEED ↗',
     returnHomeBtn: 'RETURN TO HOME',
     editProfilePrompt: 'Profile synced across Let’s Play network.',
+    editProfile: 'EDIT PROFILE',
+    editProfileTitle: 'EDIT YOUR PROFILE',
+    avatarUrlLabel: 'Avatar image URL',
+    avatarUrlPlaceholder: 'https://…',
+    saveChanges: 'SAVE CHANGES',
+    saving: 'SAVING…',
+    cancelEdit: 'Cancel',
+    profileSaved: 'Profile updated.',
+    profileSaveError: 'Couldn’t save your profile. Please try again.',
   },
   fr: {
     eyebrow: 'ACCÈS JOUEUR',
@@ -92,12 +157,20 @@ const copy = {
     intro: 'Crée ton compte Let’s Play et prépare ton profil pour la suite.',
     email: 'Adresse e-mail',
     password: 'Mot de passe',
+    confirmPassword: 'Confirmer le mot de passe',
+    passwordHint: 'Utilise au moins 6 caractères.',
+    passwordMismatch: 'Les deux mots de passe ne correspondent pas.',
+    gamertagRequired: 'Choisis un pseudo pour rejoindre.',
+    showPassword: 'Afficher le mot de passe',
+    hidePassword: 'Masquer le mot de passe',
     gamertag: 'Pseudo de joueur',
     gamertagPlaceholder: 'ex. VORTEX_DZ',
+    gamertagHint: 'C’est ainsi que tu apparaîtras dans la communauté.',
     signIn: 'SE CONNECTER',
     signUp: 'CRÉER UN COMPTE',
     google: 'CONTINUER AVEC GOOGLE',
     microsoft: 'CONTINUER AVEC MICROSOFT',
+    or: 'OU',
     switchSignUp: 'Nouveau ici ? Créer un compte',
     switchSignIn: 'Déjà inscrit ? Se connecter',
     signOut: 'SE DÉCONNECTER',
@@ -156,14 +229,28 @@ const copy = {
     actionConnect: 'Simuler liaison',
     linkedOn: 'Associé le',
     notLinkedDesc: 'Aucun compte associé pour l’instant',
+    linkNow: 'ASSOCIER',
     platformsHeading: 'ÉQUIPEMENT & PLATEFORMES DE JEU',
+    noPlatformsYet: 'Aucune plateforme ajoutée pour l’instant.',
     badgesHeading: 'SUCCÈS DÉBLOQUÉS & BADGES',
+    welcomeBadgeName: 'Bienvenue',
+    welcomeBadgeDesc: 'Tu viens de créer ton compte Let’s Play',
     savedStoriesHeading: 'FAVORIS & ARTICLES SAUVEGARDÉS',
+    noSavedYet: 'Aucun article sauvegardé pour l’instant — explore le fil d’actus et mets en favori ce qui te plaît.',
     readStory: 'LIRE L’ARTICLE',
     profileActions: 'ACTIONS DU COMPTE',
     exploreNewsBtn: 'VOIR LE FIL D’ACTUS ↗',
     returnHomeBtn: 'RETOUR À L’ACCUEIL',
     editProfilePrompt: 'Profil synchronisé sur tout le réseau Let’s Play.',
+    editProfile: 'MODIFIER LE PROFIL',
+    editProfileTitle: 'MODIFIER TON PROFIL',
+    avatarUrlLabel: 'URL de l’image d’avatar',
+    avatarUrlPlaceholder: 'https://…',
+    saveChanges: 'ENREGISTRER',
+    saving: 'ENREGISTREMENT…',
+    cancelEdit: 'Annuler',
+    profileSaved: 'Profil mis à jour.',
+    profileSaveError: 'Impossible d’enregistrer ton profil. Réessaie.',
   },
   ar: {
     eyebrow: 'دخول اللاعبين',
@@ -171,12 +258,20 @@ const copy = {
     intro: 'أنشئ حسابك في Let’s Play واستعد لما هو قادم.',
     email: 'البريد الإلكتروني',
     password: 'كلمة المرور',
+    confirmPassword: 'تأكيد كلمة المرور',
+    passwordHint: 'استخدم 6 أحرف على الأقل.',
+    passwordMismatch: 'كلمتا المرور غير متطابقتين.',
+    gamertagRequired: 'اختر اسم لاعب للانضمام.',
+    showPassword: 'إظهار كلمة المرور',
+    hidePassword: 'إخفاء كلمة المرور',
     gamertag: 'اسم اللاعب',
     gamertagPlaceholder: 'مثال: VORTEX_DZ',
+    gamertagHint: 'هذا هو الاسم الذي سيظهر عبر المجتمع.',
     signIn: 'تسجيل الدخول',
     signUp: 'إنشاء حساب',
     google: 'المتابعة مع Google',
     microsoft: 'المتابعة مع Microsoft',
+    or: 'أو',
     switchSignUp: 'جديد هنا؟ أنشئ حساباً',
     switchSignIn: 'لديك حساب؟ سجّل الدخول',
     signOut: 'تسجيل الخروج',
@@ -235,16 +330,42 @@ const copy = {
     actionConnect: 'محاكاة الربط',
     linkedOn: 'مرتبط بتاريخ',
     notLinkedDesc: 'لم يتم ربط حساب بعد',
+    linkNow: 'اربط الآن',
     platformsHeading: 'منصات وأجهزة اللعب',
+    noPlatformsYet: 'لم تتم إضافة أي منصة بعد.',
     badgesHeading: 'الإنجازات والأوسمة المفتوحة',
+    welcomeBadgeName: 'أهلاً بك',
+    welcomeBadgeDesc: 'لقد أنشأت حساب Let’s Play الخاص بك للتو',
     savedStoriesHeading: 'المقالات المحفوظة للقراءة لاحقًا',
+    noSavedYet: 'لا توجد مقالات محفوظة بعد — تصفح آخر الأخبار واحفظ ما يعجبك.',
     readStory: 'اقرأ المقال',
     profileActions: 'إجراءات الحساب',
     exploreNewsBtn: 'تصفح آخر الأخبار ↗',
     returnHomeBtn: 'العودة للرئيسية',
     editProfilePrompt: 'الملف الشخصي متزامن عبر شبكة Let’s Play.',
+    editProfile: 'تعديل الملف',
+    editProfileTitle: 'تعديل ملفك الشخصي',
+    avatarUrlLabel: 'رابط صورة الأفاتار',
+    avatarUrlPlaceholder: 'https://…',
+    saveChanges: 'حفظ التغييرات',
+    saving: 'جارٍ الحفظ…',
+    cancelEdit: 'إلغاء',
+    profileSaved: 'تم تحديث الملف الشخصي.',
+    profileSaveError: 'تعذّر حفظ ملفك الشخصي. حاول مرة أخرى.',
   },
 };
+
+// Format a Supabase ISO timestamp as "Month YYYY" for the member-since line.
+function formatJoined(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  try {
+    return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  } catch (e) {
+    return String(date.getFullYear());
+  }
+}
 
 export default function Auth({ initialMode = 'signup' }) {
   const {
@@ -253,6 +374,7 @@ export default function Auth({ initialMode = 'signup' }) {
     demoProfileKey,
     configured,
     loginAsDemo,
+    updateDemoProfile,
     toggleDemoProvider,
     signOut,
   } = useAuth();
@@ -263,6 +385,8 @@ export default function Auth({ initialMode = 'signup' }) {
   const [mode, setMode] = useState(initialMode === 'update' ? 'signin' : initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [gamertag, setGamertag] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -296,6 +420,7 @@ export default function Auth({ initialMode = 'signup' }) {
     setError('');
     setMessage('');
     setShowResend(false);
+    setConfirmPassword('');
   };
 
   // Handle Form Submission (signup / signin / forgot / update)
@@ -304,6 +429,17 @@ export default function Auth({ initialMode = 'signup' }) {
     setMessage('');
     setError('');
     setShowResend(false);
+
+    // Client-side validation before hitting Supabase.
+    if ((mode === 'signup' || mode === 'update') && confirmPassword !== password) {
+      setError(t.passwordMismatch);
+      return;
+    }
+    if (mode === 'signup' && !gamertag.trim()) {
+      setError(t.gamertagRequired);
+      return;
+    }
+
     setBusy(true);
 
     if (!configured || !supabase) {
@@ -327,7 +463,7 @@ export default function Auth({ initialMode = 'signup' }) {
           setError(signUpError.message || t.error);
         } else if (data.session) {
           // Email confirmation disabled → already signed in.
-          navigate('/');
+          navigate('/auth');
           return;
         } else if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
           // Supabase hides duplicate registrations: no identities = email taken.
@@ -345,7 +481,7 @@ export default function Auth({ initialMode = 'signup' }) {
         if (signInError) {
           setError(signInError.message || t.error);
         } else {
-          navigate('/');
+          navigate('/auth');
           return;
         }
       } else if (mode === 'forgot') {
@@ -364,6 +500,7 @@ export default function Auth({ initialMode = 'signup' }) {
         } else {
           setIsRecovery(false);
           setPassword('');
+          setConfirmPassword('');
           if (typeof window !== 'undefined') {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
           }
@@ -425,6 +562,33 @@ export default function Auth({ initialMode = 'signup' }) {
     loginAsDemo(profileKey);
   };
 
+  // Reusable password field with a show/hide toggle.
+  const renderPasswordField = (labelText, value, onChange, autoComplete, autoCompleteExtra) => (
+    <label>
+      {labelText}
+      <span className="auth-input-wrap">
+        <input
+          type={showPassword ? 'text' : 'password'}
+          value={value}
+          onChange={onChange}
+          required
+          minLength={6}
+          autoComplete={autoComplete}
+          className={autoCompleteExtra}
+        />
+        <button
+          type="button"
+          className="auth-eye-toggle"
+          onClick={() => setShowPassword((v) => !v)}
+          aria-label={showPassword ? t.hidePassword : t.showPassword}
+          title={showPassword ? t.hidePassword : t.showPassword}
+        >
+          <EyeIcon off={showPassword} />
+        </button>
+      </span>
+    </label>
+  );
+
   // --------------------------------------------------------------------------
   // CONNECTED ACCOUNT / PLAYER DASHBOARD VIEW
   // (skipped while a password recovery is in progress — the new-password
@@ -433,47 +597,67 @@ export default function Auth({ initialMode = 'signup' }) {
   if (user && !isRecovery) {
     const meta = user.user_metadata || {};
     const gamertag = meta.gamertag || user.email?.split('@')[0] || 'Player_DZ';
-    const fullName = meta.fullName || user.email || 'Let’s Play Player';
+    const fullName = meta.fullName || meta.full_name || user.email || 'Let’s Play Player';
     const role = meta.role || 'COMMUNITY PLAYER';
     const tier = meta.tier || 'TIER I · MEMBER';
-    const rankTitle = meta.rankTitle || 'Novice Gamer';
-    const level = meta.level || 25;
-    const xp = meta.xp || 2400;
-    const nextLevelXp = meta.nextLevelXp || 3000;
-    const xpPercentage = Math.min(100, Math.round((xp / nextLevelXp) * 100));
-    const joinedDate = meta.joinedDate || 'September 2026';
-    const location = meta.location || 'Algeria';
-    const bio = meta.bio || 'Exploring new gaming horizons with the Let’s Play community.';
+    const rankTitle = meta.rankTitle || (isDemo ? 'Novice Gamer' : 'New Player');
+    const level = meta.level || 1;
+    const xp = meta.xp || 0;
+    const nextLevelXp = meta.nextLevelXp || 100;
+    const xpPercentage = nextLevelXp > 0 ? Math.min(100, Math.round((xp / nextLevelXp) * 100)) : 0;
+    const joinedDate = meta.joinedDate || formatJoined(user.created_at) || '—';
+    const location = meta.location || (isDemo ? 'Algeria' : '');
+    const bio = meta.bio || (isDemo ? 'Exploring new gaming horizons with the Let’s Play community.' : '');
     const avatar = meta.avatar;
 
+    // Real accounts start at zero and grow from real activity; demo profiles
+    // ship fully populated so the hub can be previewed without a backend.
     const stats = meta.stats || {
-      articlesRead: 14,
-      commentsPosted: 6,
-      savedArticles: 2,
-      badgesUnlocked: 3,
+      articlesRead: 0,
+      commentsPosted: 0,
+      savedArticles: 0,
+      badgesUnlocked: 0,
     };
 
-    const isGoogleConnected = meta.googleConnected !== undefined ? meta.googleConnected : true;
-    const googleEmail = meta.googleEmail || user.email || 'player@gmail.com';
-    const googleLinkedDate = meta.googleLinkedDate || '12 Oct 2024';
+    // Derive the set of providers this account actually signed in with so we
+    // never claim a Google/Microsoft link that doesn't exist (email/password
+    // users previously saw a fabricated "CONNECTED" state).
+    const providerSet = new Set();
+    const appProviders = user.app_metadata?.providers;
+    if (Array.isArray(appProviders)) appProviders.forEach((p) => p && providerSet.add(p));
+    if (user.app_metadata?.provider) providerSet.add(user.app_metadata.provider);
+    if (Array.isArray(user.identities)) {
+      user.identities.forEach((identity) => identity?.provider && providerSet.add(identity.provider));
+    }
 
-    const isMicrosoftConnected = meta.microsoftConnected !== undefined ? meta.microsoftConnected : true;
-    const microsoftGamertag = meta.microsoftGamertag || `${gamertag}#9901`;
-    const microsoftLinkedDate = meta.microsoftLinkedDate || '04 Nov 2024';
+    const isGoogleConnected = isDemo
+      ? (meta.googleConnected !== undefined ? meta.googleConnected : true)
+      : providerSet.has('google');
+    const googleEmail = isDemo
+      ? (meta.googleEmail || 'player@gmail.com')
+      : (isGoogleConnected ? user.email : '');
+    const googleLinkedDate = isDemo
+      ? (meta.googleLinkedDate || '')
+      : (isGoogleConnected ? joinedDate : '');
 
-    const platforms = meta.platforms || ['PS5', 'PC', 'SWITCH 2', 'XBOX SERIES X'];
-    const badges = meta.badges || [
-      { id: 'early', icon: '⚡', name: 'Community Pioneer', desc: 'Registered on Let’s Play', rarity: 'Rare' },
-      { id: 'critic', icon: '✍️', name: 'Engaged Reader', desc: 'Active reader on news & reviews', rarity: 'Rare' },
-      { id: 'comiccon', icon: '🎟️', name: 'GCC Dzaïr Pass', desc: 'Convention 2026 registered', rarity: 'Epic' },
-    ];
+    const isMicrosoftConnected = isDemo
+      ? (meta.microsoftConnected !== undefined ? meta.microsoftConnected : true)
+      : (providerSet.has('azure') || providerSet.has('microsoft'));
+    const microsoftGamertag = isDemo
+      ? (meta.microsoftGamertag || `${gamertag}#9901`)
+      : (isMicrosoftConnected ? (meta.microsoftGamertag || gamertag) : '');
+    const microsoftLinkedDate = isDemo
+      ? (meta.microsoftLinkedDate || '')
+      : (isMicrosoftConnected ? joinedDate : '');
 
-    const savedArticles = meta.savedArticlesList || [
-      { id: 'gta6', title: 'GTA VI & DualSense: Haptic Feedback Deep Dive', category: 'TECH / HARDWARE', readTime: '5 MIN READ', link: '/news/gta6-dualsense' },
-      { id: 'onimusha', title: 'Onimusha: Way of the Sword — Review (8.5/10)', category: 'TEST / ACTION', readTime: '6 MIN READ', link: '/reviews/onimusha' },
-      { id: 'zelda', title: 'Zelda: Ocarina of Time Remake on Switch 2', category: 'NEWS / FIRST LOOK', readTime: '4 MIN READ', link: '/news/zelda-ocarina' },
-      { id: 'physint', title: 'Physint Moves to Xbox: Kojima’s Next Big Leap', category: 'INDUSTRY SHIFT', readTime: '6 MIN READ', link: '/news/physint' },
-    ];
+    const platforms = meta.platforms || [];
+    const badges = meta.badges || (isDemo
+      ? []
+      : [
+          { id: 'welcome', icon: '🎮', name: t.welcomeBadgeName, desc: t.welcomeBadgeDesc, rarity: 'Common' },
+        ]);
+
+    const savedArticles = meta.savedArticlesList || [];
 
     return (
       <section className="auth-page wrap">
@@ -523,13 +707,12 @@ export default function Auth({ initialMode = 'signup' }) {
                   <span><strong>{fullName}</strong></span>
                   <span>•</span>
                   <span>{user.email}</span>
-                  <span>•</span>
-                  <span>{location}</span>
+                  {location && (<><span>•</span><span>{location}</span></>)}
                   <span>•</span>
                   <span>{t.memberSince}: {joinedDate}</span>
                 </div>
 
-                <p className="player-bio">{bio}</p>
+                {bio && <p className="player-bio">{bio}</p>}
               </div>
             </div>
 
@@ -547,6 +730,15 @@ export default function Auth({ initialMode = 'signup' }) {
                 <div className="player-xp-bar-fill" style={{ width: `${xpPercentage}%` }} />
               </div>
             </div>
+
+            {/* EDIT PROFILE — persists to Supabase (real) or demo storage */}
+            <ProfileEditor
+              t={t}
+              isDemo={isDemo}
+              gamertag={gamertag}
+              avatar={avatar}
+              updateDemoProfile={updateDemoProfile}
+            />
           </div>
 
           {/* COMMUNITY STATS GRID */}
@@ -598,9 +790,9 @@ export default function Auth({ initialMode = 'signup' }) {
 
                 <div className="sso-provider-footer">
                   <span className="sso-linked-date">
-                    {isGoogleConnected ? `${t.linkedOn} ${googleLinkedDate}` : t.notLinkedDesc}
+                    {isGoogleConnected && googleLinkedDate ? `${t.linkedOn} ${googleLinkedDate}` : t.notLinkedDesc}
                   </span>
-                  {isDemo && (
+                  {isDemo ? (
                     <button
                       type="button"
                       className="sso-toggle-btn"
@@ -608,6 +800,16 @@ export default function Auth({ initialMode = 'signup' }) {
                     >
                       {isGoogleConnected ? t.actionDisconnect : t.actionConnect}
                     </button>
+                  ) : (
+                    !isGoogleConnected && (
+                      <button
+                        type="button"
+                        className="sso-toggle-btn"
+                        onClick={() => oauth('google')}
+                      >
+                        {t.linkNow}
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -633,9 +835,9 @@ export default function Auth({ initialMode = 'signup' }) {
 
                 <div className="sso-provider-footer">
                   <span className="sso-linked-date">
-                    {isMicrosoftConnected ? `${t.linkedOn} ${microsoftLinkedDate}` : t.notLinkedDesc}
+                    {isMicrosoftConnected && microsoftLinkedDate ? `${t.linkedOn} ${microsoftLinkedDate}` : t.notLinkedDesc}
                   </span>
-                  {isDemo && (
+                  {isDemo ? (
                     <button
                       type="button"
                       className="sso-toggle-btn"
@@ -643,6 +845,16 @@ export default function Auth({ initialMode = 'signup' }) {
                     >
                       {isMicrosoftConnected ? t.actionDisconnect : t.actionConnect}
                     </button>
+                  ) : (
+                    !isMicrosoftConnected && (
+                      <button
+                        type="button"
+                        className="sso-toggle-btn"
+                        onClick={() => oauth('azure')}
+                      >
+                        {t.linkNow}
+                      </button>
+                    )
                   )}
                 </div>
               </div>
@@ -654,13 +866,17 @@ export default function Auth({ initialMode = 'signup' }) {
             <div className="player-section-header">
               <h2>{t.platformsHeading}</h2>
             </div>
-            <div className="player-platforms-row">
-              {platforms.map((platform) => (
-                <span key={platform} className="player-platform-pill">
-                  🎮 {platform}
-                </span>
-              ))}
-            </div>
+            {platforms.length > 0 ? (
+              <div className="player-platforms-row">
+                {platforms.map((platform) => (
+                  <span key={platform} className="player-platform-pill">
+                    🎮 {platform}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="player-empty-note">{t.noPlatformsYet}</p>
+            )}
           </div>
 
           {/* UNLOCKED BADGES & ACHIEVEMENTS */}
@@ -686,22 +902,26 @@ export default function Auth({ initialMode = 'signup' }) {
             <div className="player-section-header">
               <h2>{t.savedStoriesHeading}</h2>
             </div>
-            <div className="player-saved-grid">
-              {savedArticles.map((story) => (
-                <Link to={story.link} key={story.id} className="player-saved-card">
-                  <div>
-                    <div className="player-saved-meta">
-                      <span>{story.category}</span>
-                      <span>{story.readTime}</span>
+            {savedArticles.length > 0 ? (
+              <div className="player-saved-grid">
+                {savedArticles.map((story) => (
+                  <Link to={story.link} key={story.id} className="player-saved-card">
+                    <div>
+                      <div className="player-saved-meta">
+                        <span>{story.category}</span>
+                        <span>{story.readTime}</span>
+                      </div>
+                      <h3 className="player-saved-title">{story.title}</h3>
                     </div>
-                    <h3 className="player-saved-title">{story.title}</h3>
-                  </div>
-                  <span className="player-saved-link">
-                    {t.readStory} ↗
-                  </span>
-                </Link>
-              ))}
-            </div>
+                    <span className="player-saved-link">
+                      {t.readStory} ↗
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="player-empty-note">{t.noSavedYet}</p>
+            )}
           </div>
 
           {/* ACCOUNT ACTIONS CARD */}
@@ -734,6 +954,7 @@ export default function Auth({ initialMode = 'signup' }) {
   // UNAUTHENTICATED / LOGIN & SIGNUP VIEW
   // --------------------------------------------------------------------------
   const showSocials = mode === 'signup' || mode === 'signin';
+  const showConfirm = mode === 'signup' || mode === 'update';
   const missingConfig = [
     supabaseConfigStatus.hasUrl ? null : 'VITE_SUPABASE_URL',
     supabaseConfigStatus.hasKey ? null : 'VITE_SUPABASE_PUBLISHABLE_KEY',
@@ -757,8 +978,10 @@ export default function Auth({ initialMode = 'signup' }) {
                 onChange={(e) => setGamertag(e.target.value)}
                 placeholder={t.gamertagPlaceholder}
                 maxLength={24}
+                required
                 autoComplete="nickname"
               />
+              <span className="auth-field-hint">{t.gamertagHint}</span>
             </label>
           )}
           {mode !== 'update' && (
@@ -773,19 +996,19 @@ export default function Auth({ initialMode = 'signup' }) {
               />
             </label>
           )}
-          {mode !== 'forgot' && (
-            <label>
-              {mode === 'update' ? t.newPassword : t.password}
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-              />
-            </label>
+          {mode !== 'forgot' && renderPasswordField(
+            mode === 'update' ? t.newPassword : t.password,
+            password,
+            (e) => setPassword(e.target.value),
+            mode === 'signin' ? 'current-password' : 'new-password',
           )}
+          {showConfirm && renderPasswordField(
+            t.confirmPassword,
+            confirmPassword,
+            (e) => setConfirmPassword(e.target.value),
+            'new-password',
+          )}
+          {showConfirm && <p className="auth-field-hint auth-pw-hint">{t.passwordHint}</p>}
           <button className="button button-yellow" disabled={busy}>
             {mode === 'signup' ? t.signUp : mode === 'signin' ? t.signIn : mode === 'forgot' ? t.sendReset : t.updatePassword} <span>↗</span>
           </button>
@@ -814,7 +1037,7 @@ export default function Auth({ initialMode = 'signup' }) {
           <>
             {/* OR DIVIDER */}
             <div className="auth-divider">
-              <span>OR</span>
+              <span>{t.or}</span>
             </div>
 
             {/* SOCIAL AUTH BUTTONS WITH LOGOS */}
@@ -901,5 +1124,114 @@ export default function Auth({ initialMode = 'signup' }) {
         </Link>
       </div>
     </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Inline profile editor (gamertag + avatar URL)                       */
+/* ------------------------------------------------------------------ */
+function ProfileEditor({ t, isDemo, gamertag, avatar, updateDemoProfile }) {
+  const [editing, setEditing] = useState(false);
+  const [tag, setTag] = useState(gamertag);
+  const [avatarUrl, setAvatarUrl] = useState(avatar || '');
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState('');
+  const [err, setErr] = useState('');
+
+  const open = () => {
+    setTag(gamertag);
+    setAvatarUrl(avatar || '');
+    setNote('');
+    setErr('');
+    setEditing(true);
+  };
+
+  const save = async (event) => {
+    event.preventDefault();
+    const nextTag = tag.trim();
+    if (!nextTag) {
+      setErr(t.gamertagRequired);
+      return;
+    }
+    setSaving(true);
+    setErr('');
+    setNote('');
+    try {
+      if (isDemo) {
+        updateDemoProfile((prev) => ({
+          ...prev,
+          user_metadata: {
+            ...prev.user_metadata,
+            gamertag: nextTag,
+            fullName: nextTag,
+            avatar: avatarUrl.trim() || undefined,
+          },
+        }));
+      } else if (supabase) {
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { gamertag: nextTag, full_name: nextTag, fullName: nextTag, name: nextTag, avatar: avatarUrl.trim() || null },
+        });
+        if (updateError) throw updateError;
+      }
+      setNote(t.profileSaved);
+      setEditing(false);
+    } catch (e) {
+      setErr(e?.message || t.profileSaveError);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="player-edit-block">
+      {!editing ? (
+        <div className="player-edit-row">
+          <span className="player-edit-prompt">{t.editProfilePrompt}</span>
+          <button type="button" className="player-edit-btn" onClick={open}>
+            <PencilIcon /> {t.editProfile}
+          </button>
+        </div>
+      ) : (
+        <form className="player-edit-form" onSubmit={save}>
+          <div className="player-edit-form-head">
+            <h3>{t.editProfileTitle}</h3>
+          </div>
+          <label className="player-edit-field">
+            {t.gamertag}
+            <input
+              type="text"
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              maxLength={24}
+              required
+            />
+          </label>
+          <label className="player-edit-field">
+            {t.avatarUrlLabel}
+            <input
+              type="url"
+              value={avatarUrl}
+              onChange={(e) => setAvatarUrl(e.target.value)}
+              placeholder={t.avatarUrlPlaceholder}
+            />
+          </label>
+          <div className="player-edit-actions">
+            <button type="submit" className="button button-yellow" disabled={saving}>
+              {saving ? t.saving : t.saveChanges}
+            </button>
+            <button
+              type="button"
+              className="player-edit-cancel"
+              onClick={() => setEditing(false)}
+              disabled={saving}
+            >
+              {t.cancelEdit}
+            </button>
+          </div>
+          {note && <p className="player-edit-note">{note}</p>}
+          {err && <p className="player-edit-note player-edit-error">{err}</p>}
+        </form>
+      )}
+    </div>
   );
 }
