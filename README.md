@@ -32,6 +32,61 @@ npm run build
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
 
+## Player accounts & authentication (Supabase)
+
+Registration, login, Google / Microsoft (Azure) sign-in, password reset and the
+connected player hub (`/auth`) run on [Supabase Auth](https://supabase.com/auth)
+(`@supabase/supabase-js`, client in `src/lib/supabase.js`, session in
+`src/auth/AuthContext.jsx`). Without configuration the page falls back to the
+one-click demo preview.
+
+### Environment variables
+
+Local development — copy `.env.example` to `.env.local`:
+
+```bash
+VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_or_anon_key
+```
+
+Find both values in Supabase Dashboard → Settings → API (Project URL and the
+publishable / anon public key). The app also accepts `VITE_SUPABASE_ANON_KEY`
+as the key name.
+
+On Vercel, two options (either works — **redeploy after changing variables**,
+Vite embeds them at build time):
+
+1. **Supabase marketplace integration** (recommended): Vercel → your project →
+   Marketplace → Supabase → Connect. The integration provisions `SUPABASE_URL` /
+   `SUPABASE_ANON_KEY` (no `VITE_` prefix) — `vite.config.js` mirrors those
+   public values into the client bundle at build time, so nothing else is needed.
+2. **Manual variables**: Vercel → Settings → Environment Variables → add
+   `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for Production
+   (and Preview if you want auth on preview deploys).
+
+If a variable is missing, `/auth` shows exactly which one under the form.
+
+### Supabase dashboard checklist
+
+1. **Database**: run `supabase/schema.sql` once in Dashboard → SQL Editor. It
+   creates the `profiles` table (RLS enabled) and a trigger that inserts a
+   profile row — with the gamertag chosen at registration — for every new user.
+2. **URLs**: Dashboard → Authentication → URL Configuration →
+   - Site URL: `https://<your-domain>` (your Vercel domain),
+   - Redirect URLs: add `https://<your-domain>/**` (covers `/auth`, where
+     email confirmation, OAuth and password-recovery links land).
+   - The Supabase → Vercel integration keeps these redirect URIs in sync
+     automatically, including preview deployments.
+3. **Email confirmation** (optional): Authentication → Sign Up → Confirm email
+   is ON by default — new accounts receive a confirmation link plus a resend
+   button. Turn it OFF and signups log in immediately; both flows are handled.
+4. **Google / Microsoft buttons** (optional): Authentication → Sign In / Up →
+   enable the Google and Azure providers with your OAuth client IDs/secrets
+   (the app uses provider keys `google` and `azure`).
+
+The SPA fallback in `vercel.json` keeps deep links such as `/auth` working on
+Vercel (the `/api/*` serverless routes are excluded from the rewrite).
+
 ## Live YouTube
 
 La page d’accueil contient un lecteur live YouTube permanent basé sur l’ID de la
