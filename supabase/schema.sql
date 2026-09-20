@@ -363,6 +363,49 @@ for each row execute procedure public.set_comment_author();
 
 
 -- ----------------------------------------------------------------------------
+-- 3d. Suppression définitive du compte courant
+-- ----------------------------------------------------------------------------
+-- Le client ré-authentifie d'abord le joueur avec son mot de passe via
+-- `signInWithPassword`, puis appelle cette fonction. La fonction ne reçoit
+-- jamais le mot de passe : elle vérifie uniquement le JWT de la session
+-- courante et supprime auth.users. Les clés étrangères en ON DELETE CASCADE
+-- suppriment alors le profil public, les commentaires et la progression.
+-- SECURITY DEFINER est indispensable ici : un rôle authenticated ne doit pas
+-- recevoir un accès direct à auth.users.
+create or replace function public.delete_current_user()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  current_user_id uuid;
+begin
+  current_user_id := auth.uid();
+  if current_user_id is null then
+    raise exception 'delete_account_requires_auth' using errcode = '42501';
+  end if;
+
+  delete from auth.users where id = current_user_id;
+
+  if not found then
+    raise exception 'delete_account_user_not_found' using errcode = 'P0002';
+  end if;
+end;
+$$;
+
+-- Ne laisse pas l'appel anonyme par défaut des fonctions PostgreSQL.
+do $$
+begin
+  revoke all on function public.delete_current_user() from public;
+  grant execute on function public.delete_current_user() to authenticated;
+exception
+  when others then
+    raise warning 'Let''s Play : droit d''appel de delete_current_user non appliqué (%).', sqlerrm;
+end $$;
+
+
+-- ----------------------------------------------------------------------------
 -- 4. Droits d'accès à l'API (rôles anon / authenticated)
 -- ----------------------------------------------------------------------------
 -- Supabase accorde normalement ces droits tout seul ; on les pose
@@ -451,6 +494,8 @@ from (
         when to_regrole('authenticated') is null then 'role authenticated absent'
         when has_table_privilege('authenticated', 'public.comments', 'insert') then 'OK'
         else 'MANQUANT'
-      end)
+      end),
+    (14, 'fonction suppression compte',
+      case when to_regprocedure('public.delete_current_user()') is null then 'MANQUANT' else 'OK' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

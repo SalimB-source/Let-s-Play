@@ -113,6 +113,10 @@ If a variable is missing, `/auth` shows exactly which one under the form.
    - `WARNING … trigger sur auth.users refusé` → the profile trigger was
      skipped (profiles are then only created by the app's own flow); comments
      are unaffected because the author is read from the account metadata.
+   - The script also installs `public.delete_current_user()`, the protected
+     function used by the “Delete my account” control on the profile. The UI
+     re-authenticates the player with the current password before calling it;
+     the function then removes `auth.users` and cascades the public data.
    - The last query is a control table — every line must read `OK`. If a line
      reads `MANQUANT`, the WARNING(s) above say why.
 2. **URLs**: Dashboard → Authentication → URL Configuration →

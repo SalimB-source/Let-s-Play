@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { useAchievements } from '../achievements/AchievementContext';
 import { levelTitle } from '../achievements/catalog';
 import { useLanguage } from '../i18n/LanguageContext';
+import AccountDeletion from '../components/AccountDeletion';
 
 function formatJoined(iso) {
   if (!iso) return '—';
@@ -151,6 +152,8 @@ export default function Profile() {
               <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
             </div>
           </div>
+
+          <AccountDeletion />
         </div>
       </section>
     );

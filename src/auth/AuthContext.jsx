@@ -107,13 +107,22 @@ export function AuthProvider({ children, initialSession = null }) {
 
   const signOut = async () => {
     setDemoUser(null);
+    // Clear the in-memory session immediately as well as the Supabase session.
+    // This matters after account deletion, where the auth.users row is already
+    // gone and a remote sign-out may not be able to complete normally.
+    setSession(null);
     try {
       if (typeof window !== 'undefined') {
         window.localStorage.removeItem(DEMO_STORAGE_KEY);
       }
     } catch (e) {}
     if (supabase) {
-      await supabase.auth.signOut();
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch (e) {
+        // The local state is already cleared; a network failure must not keep
+        // the player on a page that still looks authenticated.
+      }
     }
   };
 

@@ -9,6 +9,7 @@ import { useAchievementAction, useAchievements } from '../achievements/Achieveme
 import { metricValue } from '../achievements/engine';
 import { levelTitle } from '../achievements/catalog';
 import AchievementsPanel from '../achievements/AchievementsPanel';
+import AccountDeletion from '../components/AccountDeletion';
 
 /* ------------------------------------------------------------------ */
 /* Small inline icons (no external deps, inherits currentColor)        */
@@ -1142,6 +1143,8 @@ export default function Auth({ initialMode = 'signin' }) {
               ⏻ {t.signOut}
             </button>
           </div>
+
+          <AccountDeletion />
         </div>
       </section>
     );

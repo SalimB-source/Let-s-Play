@@ -1118,6 +1118,166 @@
   color: #ff8c9d;
 }
 
+/* ACCOUNT DELETION / DANGER ZONE */
+.account-delete-section {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: clamp(20px, 3vw, 30px);
+  background: linear-gradient(145deg, rgba(68, 17, 37, .28), rgba(14, 17, 38, .9));
+  border: 1px solid rgba(255, 140, 157, .35);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+.account-delete-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.account-delete-eyebrow {
+  margin: 0 0 8px;
+  color: #ff8c9d;
+  font: 600 10px var(--mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.account-delete-copy h2 {
+  margin: 0 0 8px;
+  color: #fff;
+  font-family: var(--display);
+  font-size: clamp(18px, 3vw, 24px);
+  letter-spacing: .04em;
+}
+
+.account-delete-copy > p:last-child {
+  max-width: 660px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.account-delete-button,
+.account-delete-confirm {
+  flex-shrink: 0;
+  padding: 12px 18px;
+  background: rgba(255, 140, 157, .12);
+  border: 1px solid rgba(255, 140, 157, .52);
+  color: #ff8c9d;
+  font: 700 10px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s ease;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+.account-delete-button:hover,
+.account-delete-confirm:hover:not(:disabled) {
+  background: #ff8c9d;
+  border-color: #ff8c9d;
+  color: #1a0710;
+  box-shadow: 0 0 24px rgba(255, 140, 157, .26);
+  transform: translateY(-1px);
+}
+
+.account-delete-form {
+  display: grid;
+  flex: 1 1 420px;
+  min-width: min(100%, 360px);
+  gap: 10px;
+}
+
+.account-delete-field {
+  display: grid;
+  gap: 7px;
+  color: #ffb1bf;
+  font: 600 10px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.account-delete-field input {
+  width: 100%;
+  border: 1px solid rgba(255, 140, 157, .38);
+  background: rgba(5, 6, 15, .42);
+  color: var(--ink);
+  padding: 12px 46px 12px 14px;
+  font: 15px var(--body);
+  outline: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+
+.account-delete-field input:focus {
+  border-color: #ff8c9d;
+  background: rgba(255, 140, 157, .05);
+  box-shadow: 0 0 18px rgba(255, 140, 157, .16);
+}
+
+.account-delete-field .auth-input-wrap {
+  width: 100%;
+}
+
+.account-delete-field .auth-eye-toggle {
+  color: #ffb1bf;
+}
+
+.account-delete-field .auth-eye-toggle:hover:not(:disabled) {
+  color: #fff;
+}
+
+.account-delete-hint {
+  margin: 0;
+  color: var(--dim);
+  font: 400 11px var(--body);
+  line-height: 1.45;
+}
+
+.account-delete-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.account-delete-confirm:disabled,
+.account-delete-cancel:disabled,
+.account-delete-field .auth-eye-toggle:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+.account-delete-cancel {
+  padding: 11px 18px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font: 600 10px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.account-delete-cancel:hover:not(:disabled) {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.account-delete-error {
+  margin: 0;
+  padding: 9px 12px;
+  color: #ffb1bf;
+  background: rgba(255, 140, 157, .08);
+  border-left: 3px solid #ff8c9d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 /* NAVBAR ACCOUNT CONNECTED PILL */
 .nav-account {
   color: var(--cyan) !important;
@@ -1192,6 +1352,15 @@
 
 /* RESPONSIVE */
 @media (max-width: 860px) {
+  .account-delete-section {
+    align-items: stretch;
+  }
+
+  .account-delete-button,
+  .account-delete-form {
+    width: 100%;
+  }
+
   .player-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
