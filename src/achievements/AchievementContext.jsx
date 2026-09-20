@@ -13,8 +13,8 @@ import { REMOTE_META_KEY, clearStorage, readStorage, writeStorage } from './stor
  *   - `track(type, payload)` — signale une action faite par le joueur
  *     (`article_read`, `video_played`, `comment_posted`, …). L'état est
  *     mis à jour, la progression enregistrée, et les succès nouvellement
- *     obtenus remontent dans `notifications` — la file que la fenêtre de
- *     déblocage (`AchievementPopup`) affiche un par un ;
+ *     obtenus remontent dans `notifications` — la file que les notifications
+ *     de déblocage (`AchievementPopup`) affichent en pile ;
  *   - `summary` — succès, progression, XP et niveau (déduit du catalogue) ;
  *   - `reset()` — efface la progression locale.
  *
@@ -27,7 +27,7 @@ const EMPTY_SUMMARY = summarize(createState());
 
 const noop = () => {};
 
-// Exporté : il permet de monter un composant des succès (la fenêtre de
+// Exporté : il permet de monter un composant des succès (les notifications de
 // déblocage) avec une file d'attente donnée, dans les scripts de vérification.
 export const AchievementsContext = createContext({
   ready: false,
@@ -100,8 +100,8 @@ export function AchievementProvider({ children }) {
     stateRef.current = nextState;
     setState(nextState);
     writeStorage(nextState);
-    // Le passage de niveau est calculé avant/après : la fenêtre de déblocage
-    // peut ainsi annoncer « NIVEAU 4 ATTEINT » avec le succès qui l'a déclenché.
+    // Le passage de niveau est calculé avant/après : la notification peut
+    // ainsi annoncer « NIVEAU 4 ATTEINT » avec le succès qui l'a déclenché.
     if (unlocked.length) enqueueNotifications(unlocked, levelUpBetween(previous, nextState));
     scheduleRemoteSync(nextState);
   }, [enqueueNotifications, scheduleRemoteSync]);
@@ -142,8 +142,8 @@ export function AchievementProvider({ children }) {
   // l'appareil, sans la copie du compte précédent.
   useEffect(() => () => { if (syncTimer.current) clearTimeout(syncTimer.current); }, []);
 
-  // Fermer la fenêtre fait passer à la suivante ; `dismissAll` vide la file
-  // (utilisé par le lien « voir tous les succès », qui change de page).
+  // Fermer une notification (clic ou minuteur) retire le succès de la file ;
+  // `dismissAll` la vide.
   const dismissNotification = useCallback((id) => {
     setNotifications((current) => {
       const index = current.findIndex((entry) => entry.id === id);

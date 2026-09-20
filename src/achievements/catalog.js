@@ -8,6 +8,10 @@
  *
  *   { id, icon, group, rarity, xp, metric, target, labels: { en, fr, ar } }
  *
+ * `icon` pointe vers une icône 3D de 3dicons.co (licence CC0, aucune
+ * attribution requise), rendue dans public/icons/achievements/ d'après
+ * l'identifiant du succès.
+ *
  * Ajouter un succès
  * -----------------
  * 1. `metric` doit exister dans `METRICS` (engine.js). Les métriques déjà
@@ -56,7 +60,7 @@ export const ACHIEVEMENTS = [
   /* ------------------------------- Premiers pas ------------------------------ */
   {
     id: 'welcome-aboard',
-    icon: '🛰️',
+    icon: '/icons/achievements/rocket.webp',
     group: 'start',
     rarity: 'common',
     xp: 25,
@@ -70,7 +74,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'explorer',
-    icon: '🧭',
+    icon: '/icons/achievements/explorer.webp',
     group: 'start',
     rarity: 'common',
     xp: 40,
@@ -84,7 +88,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'grand-tour',
-    icon: '🗺️',
+    icon: '/icons/achievements/map-pin.webp',
     group: 'start',
     rarity: 'rare',
     xp: 80,
@@ -98,7 +102,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'trophy-hunter',
-    icon: '🏁',
+    icon: '/icons/achievements/trophy.webp',
     group: 'start',
     rarity: 'common',
     xp: 25,
@@ -112,7 +116,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'player-one',
-    icon: '🎮',
+    icon: '/icons/achievements/boy.webp',
     group: 'start',
     rarity: 'rare',
     xp: 80,
@@ -126,7 +130,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'welcome-back',
-    icon: '🔑',
+    icon: '/icons/achievements/key.webp',
     group: 'start',
     rarity: 'common',
     xp: 40,
@@ -142,7 +146,7 @@ export const ACHIEVEMENTS = [
   /* --------------------------------- Lecture -------------------------------- */
   {
     id: 'first-read',
-    icon: '📖',
+    icon: '/icons/achievements/notebook.webp',
     group: 'reading',
     rarity: 'common',
     xp: 25,
@@ -156,7 +160,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'page-turner',
-    icon: '📚',
+    icon: '/icons/achievements/file.webp',
     group: 'reading',
     rarity: 'rare',
     xp: 80,
@@ -170,7 +174,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'deep-reader',
-    icon: '🐛',
+    icon: '/icons/achievements/file-text.webp',
     group: 'reading',
     rarity: 'epic',
     xp: 160,
@@ -184,7 +188,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'news-wire',
-    icon: '📰',
+    icon: '/icons/achievements/flash.webp',
     group: 'reading',
     rarity: 'common',
     xp: 40,
@@ -198,7 +202,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'critic-eye',
-    icon: '✍️',
+    icon: '/icons/achievements/pencil.webp',
     group: 'reading',
     rarity: 'rare',
     xp: 80,
@@ -212,7 +216,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'archivist',
-    icon: '🗂️',
+    icon: '/icons/achievements/folder.webp',
     group: 'reading',
     rarity: 'rare',
     xp: 80,
@@ -226,7 +230,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'night-owl',
-    icon: '🦉',
+    icon: '/icons/achievements/moon.webp',
     group: 'reading',
     rarity: 'epic',
     xp: 120,
@@ -242,7 +246,7 @@ export const ACHIEVEMENTS = [
   /* ---------------------------------- Vidéo --------------------------------- */
   {
     id: 'prime-time',
-    icon: '▶️',
+    icon: '/icons/achievements/play.webp',
     group: 'video',
     rarity: 'common',
     xp: 40,
@@ -256,7 +260,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'binge-watcher',
-    icon: '🍿',
+    icon: '/icons/achievements/video-cam.webp',
     group: 'video',
     rarity: 'epic',
     xp: 140,
@@ -270,7 +274,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'live-signal',
-    icon: '📡',
+    icon: '/icons/achievements/wifi.webp',
     group: 'video',
     rarity: 'rare',
     xp: 100,
@@ -286,7 +290,7 @@ export const ACHIEVEMENTS = [
   /* -------------------------------- Communauté ------------------------------ */
   {
     id: 'first-comment',
-    icon: '💬',
+    icon: '/icons/achievements/chat-bubble.webp',
     group: 'community',
     rarity: 'common',
     xp: 40,
@@ -300,7 +304,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'community-voice',
-    icon: '📣',
+    icon: '/icons/achievements/megaphone.webp',
     group: 'community',
     rarity: 'epic',
     xp: 140,
@@ -314,7 +318,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'scout',
-    icon: '⌕',
+    icon: '/icons/achievements/zoom.webp',
     group: 'community',
     rarity: 'common',
     xp: 25,
@@ -328,7 +332,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'detective',
-    icon: '🔍',
+    icon: '/icons/achievements/target.webp',
     group: 'community',
     rarity: 'rare',
     xp: 100,
@@ -344,7 +348,7 @@ export const ACHIEVEMENTS = [
   /* --------------------------------- Fidélité ------------------------------- */
   {
     id: 'three-day-streak',
-    icon: '🔥',
+    icon: '/icons/achievements/fire.webp',
     group: 'loyalty',
     rarity: 'rare',
     xp: 120,
@@ -358,7 +362,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'seven-day-regular',
-    icon: '🗓️',
+    icon: '/icons/achievements/calender.webp',
     group: 'loyalty',
     rarity: 'epic',
     xp: 200,
@@ -372,7 +376,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'polyglot',
-    icon: '🌍',
+    icon: '/icons/achievements/sphere.webp',
     group: 'loyalty',
     rarity: 'rare',
     xp: 100,
@@ -386,7 +390,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'trilingual',
-    icon: '🌐',
+    icon: '/icons/achievements/text.webp',
     group: 'loyalty',
     rarity: 'legendary',
     xp: 250,
@@ -402,7 +406,7 @@ export const ACHIEVEMENTS = [
   /* ---------------------------------- Compte -------------------------------- */
   {
     id: 'linked-player',
-    icon: '🔗',
+    icon: '/icons/achievements/link.webp',
     group: 'profile',
     rarity: 'rare',
     xp: 100,
@@ -416,7 +420,7 @@ export const ACHIEVEMENTS = [
   },
   {
     id: 'own-look',
-    icon: '🎨',
+    icon: '/icons/achievements/colour-palette.webp',
     group: 'profile',
     rarity: 'common',
     xp: 50,

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from './AchievementContext';
-import { GROUPS, achievementLabel, groupLabel, levelTitle, rarityLabel } from './catalog';
+import { GROUPS, achievementLabel, groupLabel, levelTitle } from './catalog';
 
 /**
  * Panneau des succès, partagé par la page `/achievements` (complet) et le
@@ -21,7 +21,6 @@ const copy = {
     toNext: 'XP to next level',
     unlockedTag: 'UNLOCKED',
     lockedTag: 'LOCKED',
-    progressDone: 'Unlocked',
     nextUp: 'NEXT UP',
     filterAll: 'All',
     filterUnlocked: 'Unlocked',
@@ -29,8 +28,6 @@ const copy = {
     filterLocked: 'Locked',
     viewAll: 'SEE ALL ACHIEVEMENTS',
     empty: 'No achievement matches this filter yet.',
-    unlockDate: 'Unlocked on',
-    progressLabel: 'Progress',
   },
   fr: {
     heading: 'SUCCÈS',
@@ -42,7 +39,6 @@ const copy = {
     toNext: 'XP avant le niveau suivant',
     unlockedTag: 'DÉBLOQUÉ',
     lockedTag: 'VERROUILLÉ',
-    progressDone: 'Débloqué',
     nextUp: 'PROCHAIN OBJECTIF',
     filterAll: 'Tous',
     filterUnlocked: 'Débloqués',
@@ -50,8 +46,6 @@ const copy = {
     filterLocked: 'Verrouillés',
     viewAll: 'VOIR TOUS LES SUCCÈS',
     empty: 'Aucun succès ne correspond à ce filtre pour l’instant.',
-    unlockDate: 'Débloqué le',
-    progressLabel: 'Progression',
   },
   ar: {
     heading: 'الإنجازات',
@@ -63,7 +57,6 @@ const copy = {
     toNext: 'نقطة للمستوى التالي',
     unlockedTag: 'مفتوح',
     lockedTag: 'مغلق',
-    progressDone: 'مفتوح',
     nextUp: 'الهدف القادم',
     filterAll: 'الكل',
     filterUnlocked: 'المفتوحة',
@@ -71,71 +64,34 @@ const copy = {
     filterLocked: 'المغلقة',
     viewAll: 'عرض كل الإنجازات',
     empty: 'لا يوجد إنجاز مطابق لهذا التصفية بعد.',
-    unlockDate: 'فُتح في',
-    progressLabel: 'التقدم',
   },
 };
 
-function formatDate(iso, lang) {
-  if (!iso) return '';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '';
-  try {
-    return date.toLocaleDateString(lang === 'ar' ? 'ar' : lang === 'fr' ? 'fr-FR' : 'en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  } catch (e) {
-    return iso.slice(0, 10);
-  }
-}
-
-/** Barre de progression d'un succès (ou état débloqué). */
+/**
+ * Carte de succès, volontairement sobre : une icône 3D (3dicons.co) et un
+ * titre. C'est tout. Le reste vit au survol (la description, en infobulle)
+ * et dans la notification de déblocage. Les succès non encore gagnés sont
+ * en gris ; ceux qui sont gagnés portent un outline coloré (couleur de la
+ * rareté, avec un léger halo).
+ */
 export function AchievementCard({ item, lang, t }) {
   const label = achievementLabel(item, lang);
   return (
-    <article className={`achievement-card rarity-${item.rarity}${item.unlocked ? ' unlocked' : ''}`}>
-      <header className="achievement-card-head">
-        <span className="achievement-card-icon" aria-hidden="true">{item.icon}</span>
-        <div className="achievement-card-titles">
-          <h3>{label.name}</h3>
-          <span className={`achievement-rarity rarity-${item.rarity}`}>{rarityLabel(item.rarity, lang)}</span>
-        </div>
-        <span className="achievement-card-xp">+{item.xp} {t.xp}</span>
-      </header>
-
-      <p className="achievement-card-desc">{label.desc}</p>
-
-      {item.unlocked ? (
-        <div className="achievement-card-state">
-          <span className="achievement-state-tag">✓ {t.unlockedTag}</span>
-          {item.unlockedAt && (
-            <span className="achievement-state-date">
-              {t.unlockDate} {formatDate(item.unlockedAt, lang)}
-            </span>
-          )}
-        </div>
-      ) : (
-        <div className="achievement-card-progress">
-          <div className="achievement-progress-head">
-            <span>{t.progressLabel}</span>
-            <span className="achievement-progress-count">
-              {Math.min(item.current, item.target)} / {item.target}
-            </span>
-          </div>
-          <div
-            className="achievement-progress-bar"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={item.target}
-            aria-valuenow={Math.min(item.current, item.target)}
-            aria-label={`${label.name} — ${t.progressLabel}`}
-          >
-            <span style={{ width: `${item.percent}%` }} />
-          </div>
-        </div>
-      )}
+    <article
+      className={`achievement-card rarity-${item.rarity}${item.unlocked ? ' unlocked' : ''}`}
+      title={label.desc}
+      aria-label={item.unlocked ? `${label.name} — ${t.unlockedTag}` : label.name}
+    >
+      <div className="achievement-card-inner">
+        <img
+          className="achievement-card-icon"
+          src={item.icon}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+        />
+        <h3>{label.name}</h3>
+      </div>
     </article>
   );
 }

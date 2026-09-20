@@ -88,11 +88,12 @@ export function authHub(lang, storedState = null, options = {}) {
 }
 
 /**
- * Fenêtre de déblocage, montée avec une file donnée.
+ * Notifications de déblocage (bas à droite), montées avec une file donnée.
  *
- * La fenêtre ne s'ouvre qu'après une action (elle est alimentée par l'état
- * React) : pour la vérifier en SSR, on la rend avec un contexte simulé qui
- * contient exactement la file qu'un joueur verrait après une action.
+ * Les toasts n'apparaissent qu'après une action (ils sont alimentés par
+ * l'état React) : pour les vérifier en SSR, on les rend avec un contexte
+ * simulé qui contient exactement la file qu'un joueur verrait après une
+ * action.
  *
  * @param {string} lang langue de l'interface
  * @param {{ notifications?: Array<{id: string, levelUp?: {from: number, to: number}|null}> }} [options]
