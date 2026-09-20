@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from './AchievementContext';
-import { GROUPS, achievementLabel, groupLabel, levelTitle } from './catalog';
+import { GROUPS, achievementIconUrl, achievementLabel, groupLabel, levelTitle } from './catalog';
 
 /**
  * Panneau des succès, partagé par la page `/achievements` (complet) et le
@@ -85,7 +85,7 @@ export function AchievementCard({ item, lang, t }) {
       <div className="achievement-card-inner">
         <img
           className="achievement-card-icon"
-          src={item.icon}
+          src={achievementIconUrl(item.icon)}
           alt=""
           aria-hidden="true"
           loading="lazy"
