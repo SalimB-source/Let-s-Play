@@ -96,7 +96,22 @@ export default function Layout({ children }) {
             </div>}
             </form>
             <LanguageSwitcher variant="nav" />
-            <Link to="/auth" className="nav-account" onClick={() => setMenuOpen(false)}>{user ? (user.email?.split('@')[0] || 'Account') : 'Join'}</Link>
+            <Link
+              to="/auth"
+              className={`nav-account${user ? ' connected' : ''}`}
+              onClick={() => setMenuOpen(false)}
+            >
+              {user ? (
+                <span className="nav-account-inner">
+                  <span className="nav-online-dot" aria-hidden="true" />
+                  <span className="nav-account-name">
+                    {user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
+                  </span>
+                </span>
+              ) : (
+                t.nav?.join || 'Join'
+              )}
+            </Link>
             <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer" className="nav-cta" onClick={() => setMenuOpen(false)}>{t.nav.watch} ↗</a>
           </div>
         </div>

@@ -24,6 +24,7 @@ import TestArticle from '../src/pages/TestArticle';
 import Dossiers from '../src/pages/Dossiers';
 import Partners from '../src/pages/Partners';
 import NotFound from '../src/pages/NotFound';
+import Auth from '../src/pages/Auth';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
 import { gameTests } from '../src/reviewsData';
@@ -45,6 +46,7 @@ export const ROUTES = [
   ['/dossiers', Dossiers],
   ['/partenaires', Partners],
   ['/events', Partners],
+  ['/auth', Auth],
   ['/unknown-page', NotFound],
 ];
 
