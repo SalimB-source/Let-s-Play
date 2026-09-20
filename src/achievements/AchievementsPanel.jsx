@@ -28,6 +28,9 @@ const copy = {
     filterLocked: 'Locked',
     viewAll: 'SEE ALL ACHIEVEMENTS',
     empty: 'No achievement matches this filter yet.',
+    remaining: '{n} more to go',
+    howHintUnlocked: 'Unlocked — keep playing!',
+    howTo: 'How to unlock',
   },
   fr: {
     heading: 'SUCCÈS',
@@ -46,6 +49,9 @@ const copy = {
     filterLocked: 'Verrouillés',
     viewAll: 'VOIR TOUS LES SUCCÈS',
     empty: 'Aucun succès ne correspond à ce filtre pour l’instant.',
+    remaining: 'Encore {n}',
+    howHintUnlocked: 'Débloqué — continue comme ça !',
+    howTo: 'Comment débloquer',
   },
   ar: {
     heading: 'الإنجازات',
@@ -64,25 +70,28 @@ const copy = {
     filterLocked: 'المغلقة',
     viewAll: 'عرض كل الإنجازات',
     empty: 'لا يوجد إنجاز مطابق لهذا التصفية بعد.',
+    remaining: 'متبق {n}',
+    howHintUnlocked: 'مفتوح — واصل اللعب!',
+    howTo: 'كيفية الفتح',
   },
 };
 
 /**
- * Carte de succès, volontairement sobre : une icône 3D (3dicons.co) et un
- * titre. C'est tout. Le reste vit au survol (la description, en infobulle)
- * et dans la notification de déblocage. Les succès non encore gagnés sont
- * en gris ; ceux qui sont gagnés portent un outline coloré (couleur de la
- * rareté, avec un léger halo).
+ * Carte de succès premium :
+ * - Gagné : fond transparent (verre sombre) + outline doré premium + shimmer.
+ * - Survol : tooltip custom qui explique comment le gagner (desc + progression).
  */
 export function AchievementCard({ item, lang, t }) {
   const label = achievementLabel(item, lang);
+  const progressText = `${item.current}/${item.target}`;
   return (
     <article
       className={`achievement-card rarity-${item.rarity}${item.unlocked ? ' unlocked' : ''}`}
-      title={label.desc}
-      aria-label={item.unlocked ? `${label.name} — ${t.unlockedTag}` : label.name}
+      aria-label={item.unlocked ? `${label.name} — ${t.unlockedTag}` : `${label.name} — ${t.lockedTag}`}
+      tabIndex={0}
     >
       <div className="achievement-card-inner">
+        {item.unlocked && <span className="achievement-card-glow" aria-hidden="true" />}
         <img
           className="achievement-card-icon"
           src={achievementIconUrl(item.icon)}
@@ -91,6 +100,36 @@ export function AchievementCard({ item, lang, t }) {
           loading="lazy"
         />
         <h3>{label.name}</h3>
+        {item.unlocked && <span className="achievement-card-check" aria-hidden="true">✓</span>}
+      </div>
+
+      {/* Tooltip premium au survol / focus */}
+      <div className="achievement-tooltip" role="tooltip">
+        <div className="achievement-tooltip-header">
+          <span className="achievement-tooltip-name">{label.name}</span>
+          <span className={`achievement-tooltip-status ${item.unlocked ? 'unlocked' : 'locked'}`}>
+            {item.unlocked ? t.unlockedTag : t.lockedTag}
+          </span>
+        </div>
+        <p className="achievement-tooltip-desc">{label.desc}</p>
+        <div className="achievement-tooltip-footer">
+          {!item.unlocked ? (
+            <div className="achievement-tooltip-progress">
+              <div className="achievement-tooltip-bar" aria-hidden="true">
+                <span style={{ width: `${item.percent}%` }} />
+              </div>
+              <span>{progressText}</span>
+            </div>
+          ) : (
+            <span className="achievement-tooltip-hint">{t.howHintUnlocked || ''}</span>
+          )}
+          <span className="achievement-tooltip-xp">{item.xp} XP</span>
+        </div>
+        {!item.unlocked && item.remaining > 0 && item.remaining !== item.target && (
+          <span className="achievement-tooltip-remaining">
+            {t.remaining?.replace('{n}', String(item.remaining)) || `${item.remaining} left`}
+          </span>
+        )}
       </div>
     </article>
   );
