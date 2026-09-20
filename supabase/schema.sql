@@ -180,6 +180,72 @@ exception when others then
   raise warning 'Let''s Play : colonnes level/xp non ajoutées (%).', sqlerrm;
 end $$;
 
+-- ----------------------------------------------------------------------------
+-- 3c. Progression des succès — UNE LIGNE PAR COMPTE
+-- ----------------------------------------------------------------------------
+-- Chaque compte possède SA progression (succès débloqués, XP, niveau) : le
+-- client écrit ici à chaque action (`src/achievements/remote.js`). `state`
+-- porte l'état complet du moteur ; `level` et `xp` sont dénormalisés pour
+-- l'affichage public (fil de commentaires, profils).
+-- RLS stricte : un joueur ne lit et n'écrit que SA ligne. Un compte neuf
+-- démarre donc au niveau 1, même sur un appareil où l'on a déjà joué, et la
+-- progression suit le joueur d'un appareil à l'autre.
+create table if not exists public.player_progress (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  state jsonb not null,
+  level integer not null default 1,
+  xp integer not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+do $$
+begin
+  alter table public.player_progress enable row level security;
+
+  drop policy if exists "Users can read their own progress" on public.player_progress;
+  create policy "Users can read their own progress"
+  on public.player_progress for select to authenticated using (auth.uid() = user_id);
+
+  drop policy if exists "Users can insert their own progress" on public.player_progress;
+  create policy "Users can insert their own progress"
+  on public.player_progress for insert to authenticated with check (auth.uid() = user_id);
+
+  drop policy if exists "Users can update their own progress" on public.player_progress;
+  create policy "Users can update their own progress"
+  on public.player_progress for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+  drop policy if exists "Users can delete their own progress" on public.player_progress;
+  create policy "Users can delete their own progress"
+  on public.player_progress for delete to authenticated using (auth.uid() = user_id);
+exception
+  when others then
+    raise warning 'Let''s Play : politiques RLS de public.player_progress non appliquées (%).', sqlerrm;
+end $$;
+
+-- Garde le niveau public du profil (fil de commentaires) synchronisé avec la
+-- progression des succès du compte. Le profil peut ne pas exister encore
+-- (trigger de l'étape 2 refusé) : l'échec est ignoré, sans effet.
+create or replace function public.sync_profile_progress()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  begin
+    update public.profiles
+       set level = new.level, xp = new.xp, updated_at = now()
+     where id = new.user_id;
+  exception when others then null;
+  end;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_player_progress_write on public.player_progress;
+create trigger on_player_progress_write
+after insert or update on public.player_progress
+for each row execute procedure public.sync_profile_progress();
+
 alter table public.comments enable row level security;
 
 -- La conversation est publique, y compris pour les visiteurs déconnectés.
@@ -310,6 +376,8 @@ begin
   grant insert, update on public.profiles to authenticated;
   grant select on public.comments to anon, authenticated;
   grant insert, delete, update on public.comments to authenticated;
+  -- Progression des succès : accès à sa propre ligne seulement (RLS).
+  grant select, insert, update, delete on public.player_progress to authenticated;
 exception
   when others then
     raise warning 'Let''s Play : droits anon/authenticated non appliqués (%). Sur Supabase c''est habituellement déjà le cas par défaut.', sqlerrm;
@@ -350,18 +418,34 @@ from (
       case when (select count(*) from pg_policies p
                  where p.schemaname = 'public' and p.tablename = 'profiles') = 3
            then 'OK' else 'MANQUANT' end),
-    (7, 'trigger profil (auth.users)',
+    (7, 'table public.player_progress',
+      case when to_regclass('public.player_progress') is null then 'MANQUANT' else 'OK' end),
+    (8, 'RLS activee sur player_progress',
+      case when (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.player_progress')) then 'OK' else 'MANQUANT' end),
+    (9, 'politiques RLS player_progress (4)',
+      case when (select count(*) from pg_policies p
+                 where p.schemaname = 'public' and p.tablename = 'player_progress'
+                   and p.policyname in ('Users can read their own progress',
+                                        'Users can insert their own progress',
+                                        'Users can update their own progress',
+                                        'Users can delete their own progress')) = 4
+           then 'OK' else 'MANQUANT' end),
+    (10, 'trigger progression → profil',
+      case when exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.player_progress')
+                          and t.tgname = 'on_player_progress_write') then 'OK' else 'MANQUANT' end),
+    (11, 'trigger profil (auth.users)',
       case when exists (select 1 from pg_trigger t
                         where t.tgrelid = to_regclass('auth.users')
                           and t.tgname = 'on_auth_user_created') then 'OK' else 'ABSENT (voir WARNING)' end),
-    (8, 'lecture autorisee (visiteurs)',
+    (12, 'lecture autorisee (visiteurs)',
       case
         when to_regclass('public.comments') is null then 'MANQUANT'
         when to_regrole('anon') is null then 'role anon absent'
         when has_table_privilege('anon', 'public.comments', 'select') then 'OK'
         else 'MANQUANT'
       end),
-    (9, 'ecriture autorisee (connectes)',
+    (13, 'ecriture autorisee (connectes)',
       case
         when to_regclass('public.comments') is null then 'MANQUANT'
         when to_regrole('authenticated') is null then 'role authenticated absent'

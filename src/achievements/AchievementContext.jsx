@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { ACHIEVEMENTS, achievementIconUrl, achievementLabel } from './catalog';
 import { createState, evaluate, levelUpBetween, mergeStates, normalizeState, reduce, statesMatch, summarize } from './engine';
-import { REMOTE_META_KEY, clearStorage, readStorage, writeStorage } from './storage';
+import { GUEST_SCOPE, clearStorage, readStorage, scopeForUser, writeStorage } from './storage';
+import { clearAccountState, fetchAccountState, saveAccountState } from './remote';
 
 /**
  * Contexte des succès.
@@ -16,7 +17,18 @@ import { REMOTE_META_KEY, clearStorage, readStorage, writeStorage } from './stor
  *     obtenus remontent dans `notifications` — la file que les notifications
  *     de déblocage (`AchievementPopup`) affichent en pile ;
  *   - `summary` — succès, progression, XP et niveau (déduit du catalogue) ;
- *   - `reset()` — efface la progression locale.
+ *   - `reset()` — efface la progression (locale + copie du compte).
+ *
+ * Chaque joueur possède sa progression :
+ *
+ *   - **Visiteur** (sans compte) : progression de l'appareil, clé locale
+ *     « invité » — le site statique fonctionne sans backend ;
+ *   - **Compte connecté** : la copie serveur (`player_progress`, une ligne
+ *     par compte) est LA référence. Elle est chargée à la connexion et
+ *     fusionnée seulement avec le cache local *du même compte* — jamais avec
+ *     la progression de l'appareil ni d'un autre compte. Un compte neuf
+ *     démarre donc au niveau 1, même sur un appareil qui a déjà joué, et la
+ *     progression suit le joueur d'un appareil à l'autre.
  *
  * Le contexte par défaut est *inerte* (pas de provider = pas d'erreur, les
  * pages se contentent d'un état vide) : c'est ce qui permet de rendre une page
@@ -44,9 +56,10 @@ export function AchievementProvider({ children }) {
   const { user, isDemo } = useAuth();
   // Un utilisateur de démonstration n'a pas de session Supabase : sa
   // progression reste locale, comme celle d'un visiteur non connecté.
-  const accountId = !isDemo && user?.id ? user.id : null;
+  const accountId = !isDemo && user?.id ? String(user.id) : null;
+  const scope = accountId ? scopeForUser(accountId) : GUEST_SCOPE;
 
-  const [state, setState] = useState(() => evaluate(normalizeState(readStorage())).state);
+  const [state, setState] = useState(() => evaluate(normalizeState(readStorage(scope))).state);
   // File des succès à fêter : `{ id, levelUp }`, le premier de la file est
   // celui que la fenêtre affiche.
   const [notifications, setNotifications] = useState([]);
@@ -84,14 +97,10 @@ export function AchievementProvider({ children }) {
     syncTimer.current = setTimeout(async () => {
       syncTimer.current = null;
       lastSynced.current = nextState;
-      try {
-        const { error } = await supabase.auth.updateUser({
-          data: { [REMOTE_META_KEY]: { ...nextState, updatedAt: new Date().toISOString() } },
-        });
-        if (!error) setSynced(true);
-      } catch (e) {
-        /* hors ligne : la copie locale reste la référence */
-      }
+      const written = await saveAccountState(accountId, nextState);
+      if (written) setSynced(true);
+      // Échec (hors ligne) : la copie locale reste la référence, la prochaine
+      // action relancera l'écriture.
     }, 1500);
   }, [accountId]);
 
@@ -99,12 +108,12 @@ export function AchievementProvider({ children }) {
     const previous = stateRef.current;
     stateRef.current = nextState;
     setState(nextState);
-    writeStorage(nextState);
+    writeStorage(nextState, scope);
     // Le passage de niveau est calculé avant/après : la notification peut
     // ainsi annoncer « NIVEAU 4 ATTEINT » avec le succès qui l'a déclenché.
     if (unlocked.length) enqueueNotifications(unlocked, levelUpBetween(previous, nextState));
     scheduleRemoteSync(nextState);
-  }, [enqueueNotifications, scheduleRemoteSync]);
+  }, [enqueueNotifications, scheduleRemoteSync, scope]);
 
   const track = useCallback((type, payload = {}) => {
     if (!type) return;
@@ -113,30 +122,50 @@ export function AchievementProvider({ children }) {
     commit(nextState, unlocked);
   }, [commit]);
 
-  // À la connexion : fusion de la progression locale avec celle du compte.
+  // Chargement du compte (et bascule invité ↔ compte, connexion/déconnexion).
+  // On repart du cache local DU SCOPE courant : celui du compte connecté, ou
+  // celui de l'appareil pour un visiteur — jamais celui d'un autre compte.
   useEffect(() => {
-    if (!accountId) return;
-    const remote = user?.user_metadata?.[REMOTE_META_KEY];
-    if (!remote) {
-      // Première connexion : on publie la progression de l'appareil.
-      scheduleRemoteSync(stateRef.current);
-      return;
-    }
-    const merged = evaluate(mergeStates(stateRef.current, remote));
-    if (statesMatch(merged.state, stateRef.current)) {
-      lastSynced.current = merged.state; // rien à écrire : le compte est à jour
-      return;
-    }
-    stateRef.current = merged.state;
-    setState(merged.state);
-    writeStorage(merged.state);
-    // Les succès déjà obtenus sur un autre appareil ne sont pas rejoués : ils
-    // sont simplement présents. L'union repart vers le compte pour que les
-    // deux appareils convergent.
+    // Une écriture en attente pour le scope précédent ne doit pas partir
+    // après la bascule : elle serait écrite sur le mauvais compte.
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = null;
+    const cached = evaluate(normalizeState(readStorage(scope))).state;
+    stateRef.current = cached;
+    setState(cached);
+    setSynced(false);
+    setNotifications([]);
     lastSynced.current = null;
-    setSynced(true);
-    scheduleRemoteSync(merged.state);
-  }, [accountId, user?.id, scheduleRemoteSync]);
+
+    if (!accountId || !supabase) return undefined;
+    let cancelled = false;
+    (async () => {
+      const remote = await fetchAccountState(accountId);
+      if (cancelled) return;
+      // La copie serveur du compte est la référence : on l'unit seulement au
+      // cache du même compte (actions faites pendant le chargement, session
+      // déjà ouverte sur cet appareil). La progression d'un visiteur ou d'un
+      // autre compte n'entre jamais ici.
+      const merged = remote.state
+        ? evaluate(mergeStates(cached, remote.state)).state
+        : cached;
+      stateRef.current = merged;
+      setState(merged);
+      writeStorage(merged, scope);
+
+      if (remote.source === 'unavailable') return; // hors ligne : le cache local fait foi
+      if (remote.source === 'table' && statesMatch(merged, remote.state)) {
+        lastSynced.current = merged; // déjà à jour : rien à écrire
+        setSynced(true);
+        return;
+      }
+      // 'none' (compte neuf : publier son état, vide ou presque) —
+      // 'metadata' (migrer l'ancienne copie du compte vers la table) —
+      // ou 'table' enrichi par des actions locales en attente.
+      scheduleRemoteSync(merged);
+    })();
+    return () => { cancelled = true; };
+  }, [accountId, scope, scheduleRemoteSync]);
 
   // Changement de compte (déconnexion) : la progression locale reste celle de
   // l'appareil, sans la copie du compte précédent.
@@ -155,21 +184,23 @@ export function AchievementProvider({ children }) {
   const dismissAllNotifications = useCallback(() => setNotifications([]), []);
 
   const reset = useCallback(() => {
-    clearStorage();
+    // Pas d'écriture en attente : l'état d'avant la réinitialisation ne doit
+    // pas repartir vers le serveur après coup.
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = null;
+    clearStorage(scope);
     const fresh = createState();
     stateRef.current = fresh;
     lastSynced.current = null;
     setSynced(false);
     setState(fresh);
     setNotifications([]);
+    // Compte connecté : la copie serveur est effacée aussi, sinon la
+    // progression reviendrait au prochain chargement ou sur un autre appareil.
     if (accountId && supabase) {
-      try {
-        Promise.resolve(supabase.auth.updateUser({ data: { [REMOTE_META_KEY]: fresh } })).catch(() => {});
-      } catch (e) {
-        /* la copie locale est déjà effacée : le compte suivra à la prochaine action */
-      }
+      Promise.resolve(clearAccountState(accountId)).catch(() => {});
     }
-  }, [accountId]);
+  }, [accountId, scope]);
 
   const summary = useMemo(() => summarize(state), [state]);
 

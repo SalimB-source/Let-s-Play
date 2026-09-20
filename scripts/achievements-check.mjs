@@ -34,7 +34,7 @@ import {
 } from '../src/achievements/engine.js';
 import { ACHIEVEMENTS, GROUPS, RARITIES, achievementLabel, levelTitle } from '../src/achievements/catalog.js';
 import { describeRoute, linkedProviders } from '../src/achievements/routeActions.js';
-import { REMOTE_META_KEY } from '../src/achievements/storage.js';
+import { GUEST_SCOPE, REMOTE_META_KEY, STORAGE_KEY, clearStorage, readStorage, scopeForUser, storageKeyForScope, writeStorage } from '../src/achievements/storage.js';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -194,6 +194,33 @@ check('connexion e-mail : aucun compte tiers', linkedProviders({ app_metadata: {
 // Clé de stockage distante attendue côté Supabase.
 check('clé de progression du compte', REMOTE_META_KEY, 'achievements');
 
+// Progression par joueur : clés locales séparées (invité / cache par compte),
+// avec reprise de l'ancienne clé unique comme progression invité.
+const fakeStore = new Map();
+globalThis.window = {
+  localStorage: {
+    getItem: (key) => (fakeStore.has(key) ? fakeStore.get(key) : null),
+    setItem: (key, value) => fakeStore.set(key, String(value)),
+    removeItem: (key) => fakeStore.delete(key),
+  },
+};
+// Ancien format (une seule clé pour tout le monde) : relu comme progression invité.
+const legacyProgress = reduce(createState(), { type: 'search_performed', query: 'legacy' }).state;
+fakeStore.set(STORAGE_KEY, JSON.stringify(legacyProgress));
+check('l’ancienne clé unique est reprise comme progression invité', metricValue(readStorage(GUEST_SCOPE), 'searchesPerformed'), 1);
+// Nouvelle clé invité : prioritaire dès qu'elle existe.
+const guestProgress = reduce(createState(), { type: 'comment_posted' }).state;
+check('la progression invité a sa propre clé', writeStorage(guestProgress, GUEST_SCOPE) && fakeStore.has(storageKeyForScope(GUEST_SCOPE)), true);
+check('… et prime sur l’ancienne clé unique', metricValue(readStorage(GUEST_SCOPE), 'commentsPosted'), 1);
+// Chaque compte a SON cache local ; un autre compte n'y voit rien.
+const scopeA = scopeForUser('compte-a');
+check('le cache d’un compte a sa propre clé', writeStorage(guestProgress, scopeA) && fakeStore.has(storageKeyForScope(scopeA)), true);
+check('un autre compte ne lit pas ce cache', readStorage(scopeForUser('compte-b')), null);
+check('… et démarre de zéro', metricValue(evaluate(readStorage(scopeForUser('compte-b'))).state, 'commentsPosted'), 0);
+// Effacer le cache d'un compte ne touche ni les autres ni l'invité.
+clearStorage(scopeA);
+check('effacer un cache ne touche pas l’invité', fakeStore.has(storageKeyForScope(scopeA)) === false && metricValue(readStorage(GUEST_SCOPE), 'commentsPosted'), 1);
+
 /* ------------------------------- 3. Tous les succès sont débloquables */
 
 console.log('\n[3/4] scénario complet : chaque succès du catalogue peut être obtenu\n');
@@ -275,7 +302,7 @@ execFileSync(
   { cwd: root, stdio: 'inherit' },
 );
 
-const { achievementsPage, authHub, achievementPopup } = await import(path.join(outDir, 'achievements-smoke.js'));
+const { achievementsPage, authHub, achievementPopup, freshAccountOnPlayedDevice } = await import(path.join(outDir, 'achievements-smoke.js'));
 
 for (const lang of LANGS) {
   const { html } = achievementsPage(lang);
@@ -295,6 +322,26 @@ const withProgress = achievementsPage('fr', saved);
 const unlockedCards = (withProgress.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length;
 ok('progression enregistrée reprise au rendu', unlockedCards >= 1, `${unlockedCards} succès affichés comme débloqués`);
 ok('le compteur de succès suit la progression', withProgress.html.includes('>2<'));
+
+// RÉGRESSION : un compte tout juste créé sur un appareil où l'on a déjà joué
+// démarre au niveau 1, sans aucun succès — la progression laissée sur
+// l'appareil (par un visiteur ou un autre compte) ne lui est pas prêtée.
+const freshOnDevice = freshAccountOnPlayedDevice('fr', saved);
+check(
+  'un compte neuf n’hérite d’aucun succès de l’appareil',
+  (freshOnDevice.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length,
+  0,
+);
+check('… il démarre au niveau 1', freshOnDevice.html.includes('achievement-level-number">1<'), true);
+ok('… son compteur de succès est à zéro', freshOnDevice.html.includes('achievement-hero-number">0<'));
+// Le compte connecté retrouve en revanche SA progression (cache de sa copie
+// serveur, clé propre au compte) : mêmes succès que ceux enregistrés pour lui.
+const ownCache = achievementsPage('fr', saved, { account: true });
+check(
+  'un compte relit son propre cache local',
+  (ownCache.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length,
+  1,
+);
 
 // Les compteurs d'actions doivent refléter la progression enregistrée
 // (un compteur branché sur la mauvaise métrique afficherait 0).
