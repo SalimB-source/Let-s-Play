@@ -25,6 +25,7 @@ import Dossiers from '../src/pages/Dossiers';
 import Partners from '../src/pages/Partners';
 import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
+import Achievements from '../src/pages/Achievements';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
 import { gameTests } from '../src/reviewsData';
@@ -47,6 +48,7 @@ export const ROUTES = [
   ['/partenaires', Partners],
   ['/events', Partners],
   ['/auth', Auth],
+  ['/achievements', Achievements],
   ['/unknown-page', NotFound],
 ];
 

@@ -1246,3 +1246,170 @@
     padding: 26px 18px;
   }
 }
+
+/* ==================== SIGN-IN LOADING SPINNER ==================== */
+.auth-btn-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(10, 11, 26, .28);
+  border-top-color: #0a0b1a;
+  border-radius: 50%;
+  display: inline-block;
+  margin: 0 -8px;
+  animation: auth-spin .7s linear infinite;
+}
+
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==================== "YOU ARE CONNECTED" POPUP ==================== */
+.auth-connected-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 4, 10, .74);
+  backdrop-filter: blur(6px);
+  animation: auth-fade-in .18s ease-out;
+  cursor: pointer;
+}
+
+.auth-connected-card {
+  max-width: min(430px, 100%);
+  padding: 46px 48px 42px;
+  text-align: center;
+  background: linear-gradient(145deg, rgba(14, 17, 38, .98), rgba(5, 6, 15, .97));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .6), 0 0 44px rgba(34, 211, 238, .14);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  animation: auth-pop-in .24s cubic-bezier(.18, .89, .32, 1.28);
+  cursor: default;
+}
+
+.auth-connected-check {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, .12);
+  border: 2px solid #10b981;
+  color: #10b981;
+  box-shadow: 0 0 26px rgba(16, 185, 129, .35);
+}
+
+.auth-connected-card h2 {
+  font-family: var(--display);
+  font-size: clamp(22px, 5vw, 30px);
+  letter-spacing: .02em;
+  margin: 0 0 10px;
+}
+
+.auth-connected-card p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+@keyframes auth-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes auth-pop-in {
+  from { opacity: 0; transform: scale(.86) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ==================== AVATAR UPLOAD (CLICK YOUR PHOTO) ==================== */
+.player-avatar-col {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  flex-shrink: 0;
+}
+
+.player-avatar-wrap {
+  cursor: pointer;
+}
+
+.player-avatar-wrap:hover .player-avatar-img,
+.player-avatar-wrap:hover .player-avatar-fallback,
+.player-avatar-wrap:focus-visible .player-avatar-img,
+.player-avatar-wrap:focus-visible .player-avatar-fallback {
+  border-color: var(--yellow);
+  box-shadow: 0 0 24px rgba(255, 214, 25, .4);
+}
+
+.player-avatar-file {
+  display: none;
+}
+
+.player-avatar-camera {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: var(--panel);
+  border: 1px solid var(--cyan);
+  border-radius: 4px;
+  color: var(--cyan);
+  box-shadow: 0 0 12px rgba(34, 211, 238, .35);
+  pointer-events: none;
+}
+
+.player-avatar-busy {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 6, 15, .62);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.player-avatar-busy .auth-btn-spinner {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  border-color: rgba(255, 255, 255, .25);
+  border-top-color: #fff;
+}
+
+.player-avatar-hint {
+  margin: 0;
+  font: 500 10px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+
+.player-avatar-note {
+  margin: 0;
+  font: 500 12px var(--body);
+  color: var(--cyan);
+}
+
+.player-avatar-note-error {
+  color: #f87171;
+}
+
+/* Emphasized "Register here" inside the switch line */
+.auth-switch-link {
+  color: var(--cyan);
+  border-bottom: 1px dashed rgba(34, 211, 238, .5);
+  padding-bottom: 1px;
+}
+
+.auth-switch:hover .auth-switch-link {
+  border-bottom-style: solid;
+}

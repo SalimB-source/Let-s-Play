@@ -3,9 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase, authRedirectUrl, supabaseConfigStatus } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
-import { GoogleLogo, MicrosoftLogo } from '../components/SocialLogos';
-import { DEMO_PROFILES } from '../auth/demoProfiles';
 import { describeAuthError } from '../lib/authErrors';
+import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
+import { metricValue } from '../achievements/engine';
+import AchievementsPanel from '../achievements/AchievementsPanel';
 
 /* ------------------------------------------------------------------ */
 /* Small inline icons (no external deps, inherits currentColor)        */
@@ -27,6 +28,43 @@ function EyeIcon({ off = false, size = 18 }) {
       <path d="M1.5 12S5 5.5 12 5.5 22.5 12 22.5 12 19 18.5 12 18.5 1.5 12 1.5 12Z" />
       <circle cx="12" cy="12" r="3.2" />
       {off && <path d="M3 3l18 18" />}
+    </svg>
+  );
+}
+
+function CameraIcon({ size = 14 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 8h3.2l1.8-2.8h6L16.8 8H20a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" />
+      <circle cx="12" cy="13" r="3.4" />
+    </svg>
+  );
+}
+
+function CheckIcon({ size = 30 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4.5 12.5l5 5 10-11" />
     </svg>
   );
 }
@@ -71,8 +109,12 @@ const copy = {
     google: 'CONTINUE WITH GOOGLE',
     microsoft: 'CONTINUE WITH MICROSOFT',
     or: 'OR',
+    noAccount: 'Don’t have an account yet?',
+    registerHere: 'Register here',
     switchSignUp: 'New here? Create an account',
     switchSignIn: 'Already registered? Sign in',
+    connectedPopup: 'You are connected',
+    connectedPopupSub: 'Welcome to your player hub — good to have you, player!',
     signOut: 'SIGN OUT',
     back: 'Back to home',
     confirmation: 'Check your inbox to confirm your email address.',
@@ -109,7 +151,7 @@ const copy = {
     profileEyebrow: 'CONNECTED PLAYER PROFILE',
     profileTitle: 'PLAYER HUB & DASHBOARD',
     demoModeTag: 'DEMO PREVIEW ACTIVE',
-    demoBannerDesc: 'You are viewing a simulated connected player session. You can test connected SSO providers, profile stats, bookmarks, and switch between demo personas.',
+    demoBannerDesc: 'You are viewing a simulated connected player session. You can preview profile stats, badges and bookmarks, and switch between demo personas.',
     switchDemoProfile: 'Switch persona',
     onlineStatus: 'ONLINE',
     verifiedPlayer: 'VERIFIED PLAYER',
@@ -123,23 +165,11 @@ const copy = {
     statRead: 'Articles Read',
     statComments: 'Comments',
     statSaved: 'Saved Stories',
-    statBadges: 'Badges Earned',
-    ssoHeading: 'LINKED ACCOUNTS & SSO',
-    ssoSub: 'Manage your connected third-party gaming and social logins',
-    googleAccount: 'Google Account',
-    microsoftAccount: 'Microsoft Xbox Live',
-    statusConnected: 'CONNECTED',
-    statusNotConnected: 'NOT LINKED',
-    actionDisconnect: 'Simulate Unlink',
-    actionConnect: 'Simulate Link',
-    linkedOn: 'Linked on',
-    notLinkedDesc: 'No account linked yet',
-    linkNow: 'LINK NOW',
+    statBadges: 'Achievements unlocked',
     platformsHeading: 'GAMING HARDWARE & PLATFORMS',
     noPlatformsYet: 'No platforms added yet.',
     badgesHeading: 'UNLOCKED ACHIEVEMENTS & BADGES',
-    welcomeBadgeName: 'Welcome Aboard',
-    welcomeBadgeDesc: 'You just created your Let’s Play account',
+    demoBadgesNote: 'Persona medals shown by the demo preview — your own achievements are listed above.',
     savedStoriesHeading: 'SAVED STORIES & BOOKMARKS',
     noSavedYet: 'No saved stories yet — explore the news feed and bookmark what you like.',
     readStory: 'READ STORY',
@@ -156,6 +186,10 @@ const copy = {
     cancelEdit: 'Cancel',
     profileSaved: 'Profile updated.',
     profileSaveError: 'Couldn’t save your profile. Please try again.',
+    avatarUploadHint: 'Click your photo to upload your own image',
+    avatarUpdated: 'Photo updated.',
+    avatarUploadError: 'Couldn’t upload your photo. Please try again.',
+    avatarInvalidType: 'Please choose an image file (JPG, PNG, WebP…)',
   },
   fr: {
     eyebrow: 'ACCÈS JOUEUR',
@@ -177,8 +211,12 @@ const copy = {
     google: 'CONTINUER AVEC GOOGLE',
     microsoft: 'CONTINUER AVEC MICROSOFT',
     or: 'OU',
+    noAccount: 'Tu n’as pas encore de compte ?',
+    registerHere: 'Inscris-toi ici',
     switchSignUp: 'Nouveau ici ? Créer un compte',
     switchSignIn: 'Déjà inscrit ? Se connecter',
+    connectedPopup: 'Tu es connecté',
+    connectedPopupSub: 'Bienvenue dans ton hub joueur — content de te voir, joueur !',
     signOut: 'SE DÉCONNECTER',
     back: "Retour à l'accueil",
     confirmation: 'Vérifie ta boîte mail pour confirmer ton adresse.',
@@ -215,7 +253,7 @@ const copy = {
     profileEyebrow: 'PROFIL JOUEUR CONNECTÉ',
     profileTitle: 'HUB & TABLEAU DE BORD JOUEUR',
     demoModeTag: 'MODE DÉMO ACTIF',
-    demoBannerDesc: 'Vous explorez une session joueur connectée simulée. Vous pouvez tester les comptes SSO liés, les statistiques, les favoris et changer de profil démo.',
+    demoBannerDesc: 'Vous explorez une session joueur connectée simulée. Vous pouvez prévisualiser les statistiques, les badges et les favoris, et changer de profil démo.',
     switchDemoProfile: 'Changer de profil',
     onlineStatus: 'EN LIGNE',
     verifiedPlayer: 'JOUEUR VÉRIFIÉ',
@@ -229,23 +267,11 @@ const copy = {
     statRead: 'Articles lus',
     statComments: 'Commentaires',
     statSaved: 'Articles sauvés',
-    statBadges: 'Badges obtenus',
-    ssoHeading: 'COMPTES CONNECTÉS & SSO',
-    ssoSub: 'Gérez vos connexions tierces de jeu et réseaux',
-    googleAccount: 'Compte Google',
-    microsoftAccount: 'Microsoft Xbox Live',
-    statusConnected: 'CONNECTÉ',
-    statusNotConnected: 'NON ASSOCIÉ',
-    actionDisconnect: 'Simuler déconnexion',
-    actionConnect: 'Simuler liaison',
-    linkedOn: 'Associé le',
-    notLinkedDesc: 'Aucun compte associé pour l’instant',
-    linkNow: 'ASSOCIER',
+    statBadges: 'Succès obtenus',
     platformsHeading: 'ÉQUIPEMENT & PLATEFORMES DE JEU',
     noPlatformsYet: 'Aucune plateforme ajoutée pour l’instant.',
     badgesHeading: 'SUCCÈS DÉBLOQUÉS & BADGES',
-    welcomeBadgeName: 'Bienvenue',
-    welcomeBadgeDesc: 'Tu viens de créer ton compte Let’s Play',
+    demoBadgesNote: 'Médailles de la persona affichées par l’aperçu démo — tes propres succès sont listés plus haut.',
     savedStoriesHeading: 'FAVORIS & ARTICLES SAUVEGARDÉS',
     noSavedYet: 'Aucun article sauvegardé pour l’instant — explore le fil d’actus et mets en favori ce qui te plaît.',
     readStory: 'LIRE L’ARTICLE',
@@ -262,6 +288,10 @@ const copy = {
     cancelEdit: 'Annuler',
     profileSaved: 'Profil mis à jour.',
     profileSaveError: 'Impossible d’enregistrer ton profil. Réessaie.',
+    avatarUploadHint: 'Clique sur ta photo pour téléverser ta propre image',
+    avatarUpdated: 'Photo mise à jour.',
+    avatarUploadError: 'Impossible de téléverser ta photo. Réessaie.',
+    avatarInvalidType: 'Choisis un fichier image (JPG, PNG, WebP…)',
   },
   ar: {
     eyebrow: 'دخول اللاعبين',
@@ -283,8 +313,12 @@ const copy = {
     google: 'المتابعة مع Google',
     microsoft: 'المتابعة مع Microsoft',
     or: 'أو',
+    noAccount: 'ليس لديك حساب بعد؟',
+    registerHere: 'سجّل هنا',
     switchSignUp: 'جديد هنا؟ أنشئ حساباً',
     switchSignIn: 'لديك حساب؟ سجّل الدخول',
+    connectedPopup: 'تم الاتصال بحسابك',
+    connectedPopupSub: 'مرحباً بك في مركز اللاعب — سعداء بوصولك، أيها اللاعب!',
     signOut: 'تسجيل الخروج',
     back: 'العودة إلى الرئيسية',
     confirmation: 'تحقق من بريدك الإلكتروني لتأكيد العنوان.',
@@ -321,7 +355,7 @@ const copy = {
     profileEyebrow: 'الملف الشخصي للاعب المتصل',
     profileTitle: 'مركز ولوحة تحكم اللاعب',
     demoModeTag: 'وضع المعاينة التجريبي نشط',
-    demoBannerDesc: 'أنت تتصفح جلسة لاعب متصلة تجريبية. يمكنك معاينة حسابات الدخول المرتبطة، الإحصائيات، المحفوظات والتبديل بين الشخصيات التجريبية.',
+    demoBannerDesc: 'أنت تتصفح جلسة لاعب متصلة تجريبية. يمكنك معاينة الإحصائيات والأوسمة والمقالات المحفوظة، والتبديل بين الشخصيات التجريبية.',
     switchDemoProfile: 'تبديل الشخصية',
     onlineStatus: 'متصل الآن',
     verifiedPlayer: 'لاعب موثق',
@@ -335,23 +369,11 @@ const copy = {
     statRead: 'المقالات المقروءة',
     statComments: 'التعليقات',
     statSaved: 'المقالات المحفوظة',
-    statBadges: 'الأوسمة المكتسبة',
-    ssoHeading: 'الحسابات المتصلة وتسجيل الدخول',
-    ssoSub: 'إدارة حسابات تسجيل الدخول المرتبطة بالألعاب والخدمات الخارجية',
-    googleAccount: 'حساب Google',
-    microsoftAccount: 'حساب Microsoft Xbox Live',
-    statusConnected: 'متصل',
-    statusNotConnected: 'غير مربوط',
-    actionDisconnect: 'محاكاة الفصل',
-    actionConnect: 'محاكاة الربط',
-    linkedOn: 'مرتبط بتاريخ',
-    notLinkedDesc: 'لم يتم ربط حساب بعد',
-    linkNow: 'اربط الآن',
+    statBadges: 'الإنجازات المفتوحة',
     platformsHeading: 'منصات وأجهزة اللعب',
     noPlatformsYet: 'لم تتم إضافة أي منصة بعد.',
     badgesHeading: 'الإنجازات والأوسمة المفتوحة',
-    welcomeBadgeName: 'أهلاً بك',
-    welcomeBadgeDesc: 'لقد أنشأت حساب Let’s Play الخاص بك للتو',
+    demoBadgesNote: 'أوسمة الشخصية في المعاينة التجريبية — إنجازاتك الخاصة معروضة في الأعلى.',
     savedStoriesHeading: 'المقالات المحفوظة للقراءة لاحقًا',
     noSavedYet: 'لا توجد مقالات محفوظة بعد — تصفح آخر الأخبار واحفظ ما يعجبك.',
     readStory: 'اقرأ المقال',
@@ -368,8 +390,66 @@ const copy = {
     cancelEdit: 'إلغاء',
     profileSaved: 'تم تحديث الملف الشخصي.',
     profileSaveError: 'تعذّر حفظ ملفك الشخصي. حاول مرة أخرى.',
+    avatarUploadHint: 'انقر على صورتك لرفع صورة خاصة بك',
+    avatarUpdated: 'تم تحديث الصورة.',
+    avatarUploadError: 'تعذّر رفع صورتك. حاول مرة أخرى.',
+    avatarInvalidType: 'الرجاء اختيار ملف صورة (JPG، PNG، WebP…)',
   },
 };
+
+/* ------------------------------------------------------------------ */
+/* Avatar upload: resize client-side so the image stays small enough   */
+/* to live in the auth user metadata (it is embedded in the JWT).      */
+/* ------------------------------------------------------------------ */
+const AVATAR_STEPS = [
+  { size: 160, quality: 0.8 },
+  { size: 128, quality: 0.75 },
+  { size: 96, quality: 0.65 },
+];
+const AVATAR_MAX_BASE64 = 20000;
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('file-read-failed'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// Cover-crop the image to a square and re-encode as JPEG, stepping down in
+// size/quality until the base64 payload is small enough for user metadata.
+function compressImageToDataUrl(file) {
+  return fileToDataUrl(file).then((src) => new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        if (!side) throw new Error('image-decode-failed');
+        const sx = (img.naturalWidth - side) / 2;
+        const sy = (img.naturalHeight - side) / 2;
+        let last = '';
+        for (const step of AVATAR_STEPS) {
+          const canvas = document.createElement('canvas');
+          canvas.width = step.size;
+          canvas.height = step.size;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, step.size, step.size);
+          last = canvas.toDataURL('image/jpeg', step.quality);
+          if (last.length <= AVATAR_MAX_BASE64) {
+            resolve(last);
+            return;
+          }
+        }
+        resolve(last);
+      } catch (e) {
+        reject(e);
+      }
+    };
+    img.onerror = () => reject(new Error('image-decode-failed'));
+    img.src = src;
+  }));
+}
 
 // Where to send the player once signed in. The comment section links here
 // with `state.from` (e.g. "/news/physint#comments"); the target is mirrored in
@@ -421,7 +501,7 @@ function formatJoined(iso) {
   }
 }
 
-export default function Auth({ initialMode = 'signup' }) {
+export default function Auth({ initialMode = 'signin' }) {
   const {
     user,
     isDemo,
@@ -429,12 +509,13 @@ export default function Auth({ initialMode = 'signup' }) {
     configured,
     loginAsDemo,
     updateDemoProfile,
-    toggleDemoProvider,
     signOut,
   } = useAuth();
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
+  const { summary, state: achievementState } = useAchievements();
+  const track = useAchievementAction();
   const t = copy[lang] || copy.en;
   const returnToRef = useRef('');
 
@@ -449,6 +530,17 @@ export default function Auth({ initialMode = 'signup' }) {
   const [busy, setBusy] = useState(false);
   const [showResend, setShowResend] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [connectedPopup, setConnectedPopup] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarNote, setAvatarNote] = useState(null); // { text, isError }
+  const fileInputRef = useRef(null);
+
+  // The "You are connected" popup stays on screen briefly, then fades.
+  useEffect(() => {
+    if (!connectedPopup) return undefined;
+    const id = window.setTimeout(() => setConnectedPopup(false), 3000);
+    return () => window.clearTimeout(id);
+  }, [connectedPopup]);
 
   // Arriving from a "sign in to comment" link: remember where to go back to
   // and open the requested form (sign-in instead of the default sign-up).
@@ -486,15 +578,6 @@ export default function Auth({ initialMode = 'signup' }) {
     return () => { active = false; };
   }, [user?.id, isDemo]);
 
-  // Once a session exists (email/password, OAuth round trip, demo profile),
-  // send the player back to the article they came from.
-  useEffect(() => {
-    if (!user || isRecovery) return;
-    const target = returnToRef.current || peekReturnTo();
-    forgetReturnTo();
-    if (target) navigate(target, { replace: true });
-  }, [user, isRecovery, navigate]);
-
   // Password-recovery links land here with `#access_token=…&type=recovery`.
   // Supabase signs the user in from that hash, so without this guard the
   // player hub would render before a new password is chosen. The hash check
@@ -515,6 +598,15 @@ export default function Auth({ initialMode = 'signup' }) {
     });
     return () => listener.subscription.unsubscribe();
   }, []);
+
+  // Once a session exists (email/password, OAuth round trip, demo profile),
+  // send the player back to the article they came from.
+  useEffect(() => {
+    if (!user || isRecovery) return;
+    const target = returnToRef.current || peekReturnTo();
+    forgetReturnTo();
+    if (target) navigate(target, { replace: true });
+  }, [user, isRecovery, navigate]);
 
   const switchMode = (next) => {
     setMode(next);
@@ -563,7 +655,9 @@ export default function Auth({ initialMode = 'signup' }) {
         if (signUpError) {
           setError(describeAuthError(signUpError, t, t.error));
         } else if (data.session) {
+          track('account_created');
           // Email confirmation disabled → already signed in.
+          setConnectedPopup(true);
           navigate(returnToRef.current || '/auth', { replace: Boolean(returnToRef.current) });
           return;
         } else if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
@@ -571,6 +665,8 @@ export default function Auth({ initialMode = 'signup' }) {
           setMode('signin');
           setError(t.alreadyRegistered);
         } else {
+          // Compte créé, en attente de confirmation par e-mail.
+          track('account_created');
           setMessage(t.confirmation);
           setShowResend(true);
         }
@@ -582,6 +678,8 @@ export default function Auth({ initialMode = 'signup' }) {
         if (signInError) {
           setError(describeAuthError(signInError, t, t.error));
         } else {
+          track('signed_in');
+          setConnectedPopup(true);
           navigate(returnToRef.current || '/auth', { replace: Boolean(returnToRef.current) });
           return;
         }
@@ -605,6 +703,7 @@ export default function Auth({ initialMode = 'signup' }) {
           if (typeof window !== 'undefined') {
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
           }
+          setConnectedPopup(true);
           setMessage(t.passwordUpdated);
         }
       }
@@ -637,30 +736,48 @@ export default function Auth({ initialMode = 'signup' }) {
     }
   };
 
-  // Handle OAuth Provider Login
-  const oauth = async (provider) => {
-    setError('');
-    setBusy(true);
-    if (!configured || !supabase) {
-      setBusy(false);
-      setError(t.unavailable);
-      return;
-    }
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: authRedirectUrl() },
-    });
-    if (oauthError) {
-      setError(describeAuthError(oauthError, t, t.error));
-      setBusy(false);
-    }
-  };
-
   // Handle Demo Login
   const handleDemoLogin = (profileKey) => {
     setError('');
     setMessage('');
     loginAsDemo(profileKey);
+    setConnectedPopup(true);
+  };
+
+  // Avatar upload: the user clicks the profile picture, picks an image file,
+  // we compress it client-side and store it in the user metadata (real
+  // accounts) or the demo profile (simulated sessions).
+  const onAvatarFilePicked = async (event) => {
+    const input = event.target;
+    const file = input.files && input.files[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) {
+      setAvatarNote({ text: t.avatarInvalidType, isError: true });
+      return;
+    }
+    setAvatarBusy(true);
+    setAvatarNote(null);
+    try {
+      const dataUrl = await compressImageToDataUrl(file);
+      if (isDemo) {
+        updateDemoProfile((prev) => ({
+          ...prev,
+          user_metadata: { ...prev.user_metadata, avatar: dataUrl },
+        }));
+      } else if (supabase) {
+        const { error: uploadError } = await supabase.auth.updateUser({ data: { avatar: dataUrl } });
+        if (uploadError) throw uploadError;
+      } else {
+        throw new Error(t.unavailable);
+      }
+      setAvatarNote({ text: t.avatarUpdated, isError: false });
+      window.setTimeout(() => setAvatarNote(null), 3500);
+    } catch (e) {
+      setAvatarNote({ text: describeAuthError(e, t, t.avatarUploadError), isError: true });
+    } finally {
+      setAvatarBusy(false);
+    }
   };
 
   // Reusable password field with a show/hide toggle.
@@ -690,6 +807,24 @@ export default function Auth({ initialMode = 'signup' }) {
     </label>
   );
 
+  // "You are connected" popup — rendered above whichever view is active so it
+  // lands on top of the player hub right after a successful sign-in.
+  const connectedOverlay = connectedPopup ? (
+    <div
+      className="auth-connected-overlay"
+      role="alertdialog"
+      aria-modal="true"
+      aria-label={t.connectedPopup}
+      onClick={() => setConnectedPopup(false)}
+    >
+      <div className="auth-connected-card">
+        <span className="auth-connected-check"><CheckIcon /></span>
+        <h2>{t.connectedPopup}</h2>
+        <p>{t.connectedPopupSub}</p>
+      </div>
+    </div>
+  ) : null;
+
   // --------------------------------------------------------------------------
   // CONNECTED ACCOUNT / PLAYER DASHBOARD VIEW
   // (skipped while a password recovery is in progress — the new-password
@@ -711,8 +846,9 @@ export default function Auth({ initialMode = 'signup' }) {
     const bio = meta.bio || (isDemo ? 'Exploring new gaming horizons with the Let’s Play community.' : '');
     const avatar = meta.avatar;
 
-    // Real accounts start at zero and grow from real activity; demo profiles
-    // ship fully populated so the hub can be previewed without a backend.
+    // Real accounts start at zero — 0 XP, level 1, no badges, no stats — and
+    // grow from real activity. Demo profiles ship fully populated so the hub
+    // can be previewed without a backend.
     const stats = meta.stats || {
       articlesRead: 0,
       commentsPosted: 0,
@@ -720,49 +856,22 @@ export default function Auth({ initialMode = 'signup' }) {
       badgesUnlocked: 0,
     };
 
-    // Derive the set of providers this account actually signed in with so we
-    // never claim a Google/Microsoft link that doesn't exist (email/password
-    // users previously saw a fabricated "CONNECTED" state).
-    const providerSet = new Set();
-    const appProviders = user.app_metadata?.providers;
-    if (Array.isArray(appProviders)) appProviders.forEach((p) => p && providerSet.add(p));
-    if (user.app_metadata?.provider) providerSet.add(user.app_metadata.provider);
-    if (Array.isArray(user.identities)) {
-      user.identities.forEach((identity) => identity?.provider && providerSet.add(identity.provider));
-    }
-
-    const isGoogleConnected = isDemo
-      ? (meta.googleConnected !== undefined ? meta.googleConnected : true)
-      : providerSet.has('google');
-    const googleEmail = isDemo
-      ? (meta.googleEmail || 'player@gmail.com')
-      : (isGoogleConnected ? user.email : '');
-    const googleLinkedDate = isDemo
-      ? (meta.googleLinkedDate || '')
-      : (isGoogleConnected ? joinedDate : '');
-
-    const isMicrosoftConnected = isDemo
-      ? (meta.microsoftConnected !== undefined ? meta.microsoftConnected : true)
-      : (providerSet.has('azure') || providerSet.has('microsoft'));
-    const microsoftGamertag = isDemo
-      ? (meta.microsoftGamertag || `${gamertag}#9901`)
-      : (isMicrosoftConnected ? (meta.microsoftGamertag || gamertag) : '');
-    const microsoftLinkedDate = isDemo
-      ? (meta.microsoftLinkedDate || '')
-      : (isMicrosoftConnected ? joinedDate : '');
+    // "Verified" is a curated tag: simulated demo personas carry it, real
+    // accounts only if explicitly flagged in their metadata.
+    const isVerified = isDemo || meta.verified === true;
 
     const platforms = meta.platforms || [];
-    const badges = meta.badges || (isDemo
-      ? []
-      : [
-          { id: 'welcome', icon: '🎮', name: t.welcomeBadgeName, desc: t.welcomeBadgeDesc, rarity: 'Common' },
-        ]);
+    // Les badges de la persona n'existent que dans l'aperçu de démonstration :
+    // les succès réels d'un compte connecté sont ceux suivis par le site
+    // (section « succès » ci-dessous, alimentée par src/achievements).
+    const personaBadges = isDemo ? (meta.badges || []) : [];
 
     const savedArticles = meta.savedArticlesList || [];
 
     return (
       <section className="auth-page wrap">
         <div className="player-hub">
+          {connectedOverlay}
           {/* DEMO MODE NOTICE BANNER */}
           {isDemo && (
             <div className="player-demo-banner">
@@ -783,22 +892,59 @@ export default function Auth({ initialMode = 'signup' }) {
           {/* PLAYER PROFILE HERO CARD */}
           <div className="player-profile-card">
             <div className="player-header-layout">
-              <div className="player-avatar-wrap">
-                {avatar ? (
-                  <img src={avatar} alt={gamertag} className="player-avatar-img" />
-                ) : (
-                  <div className="player-avatar-fallback">{gamertag.slice(0, 2).toUpperCase()}</div>
+              {/* Click the profile picture to upload your own image */}
+              <div className="player-avatar-col">
+                <div
+                  className="player-avatar-wrap"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={t.avatarUploadHint}
+                  title={t.avatarUploadHint}
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (fileInputRef.current) fileInputRef.current.click();
+                    }
+                  }}
+                >
+                  {avatar ? (
+                    <img src={avatar} alt={gamertag} className="player-avatar-img" />
+                  ) : (
+                    <div className="player-avatar-fallback">{gamertag.slice(0, 2).toUpperCase()}</div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="player-avatar-file"
+                    onChange={onAvatarFilePicked}
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+                  <span className="player-avatar-camera" aria-hidden="true"><CameraIcon /></span>
+                  {avatarBusy && (
+                    <span className="player-avatar-busy" aria-hidden="true">
+                      <span className="auth-btn-spinner" />
+                    </span>
+                  )}
+                  <span className="player-status-badge">
+                    <span className="player-status-dot" aria-hidden="true" />
+                    {t.onlineStatus}
+                  </span>
+                </div>
+                <p className="player-avatar-hint">{t.avatarUploadHint}</p>
+                {avatarNote && (
+                  <p className={`player-avatar-note${avatarNote.isError ? ' player-avatar-note-error' : ''}`}>
+                    {avatarNote.text}
+                  </p>
                 )}
-                <span className="player-status-badge">
-                  <span className="player-status-dot" aria-hidden="true" />
-                  {t.onlineStatus}
-                </span>
               </div>
 
               <div className="player-identity">
                 <div className="player-tags-row">
                   <span className="player-badge-tier">{tier}</span>
-                  <span className="player-badge-verified">⚡ {t.verifiedPlayer}</span>
+                  {isVerified && <span className="player-badge-verified">⚡ {t.verifiedPlayer}</span>}
                   {meta.rankTag && <span className="player-badge-tier">{meta.rankTag}</span>}
                 </div>
 
@@ -845,11 +991,15 @@ export default function Auth({ initialMode = 'signup' }) {
           {/* COMMUNITY STATS GRID */}
           <div className="player-stats-grid">
             <div className="player-stat-card">
-              <div className="player-stat-value">{stats.articlesRead}</div>
+              <div className="player-stat-value">
+                {isDemo ? stats.articlesRead : metricValue(achievementState, 'articlesRead')}
+              </div>
               <div className="player-stat-label">{t.statRead}</div>
             </div>
             <div className="player-stat-card">
-              <div className="player-stat-value">{commentCount ?? stats.commentsPosted}</div>
+              <div className="player-stat-value">
+                {isDemo ? stats.commentsPosted : (commentCount ?? metricValue(achievementState, 'commentsPosted'))}
+              </div>
               <div className="player-stat-label">{t.statComments}</div>
             </div>
             <div className="player-stat-card">
@@ -857,109 +1007,15 @@ export default function Auth({ initialMode = 'signup' }) {
               <div className="player-stat-label">{t.statSaved}</div>
             </div>
             <div className="player-stat-card">
-              <div className="player-stat-value">{stats.badgesUnlocked}</div>
+              <div className="player-stat-value">{summary.unlockedCount}</div>
               <div className="player-stat-label">{t.statBadges}</div>
             </div>
           </div>
 
-          {/* LINKED ACCOUNTS & SSO SECTION */}
+          {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
+              commentaires, recherche, fidélité, compte) */}
           <div className="player-section">
-            <div className="player-section-header">
-              <h2>{t.ssoHeading}</h2>
-              <p>{t.ssoSub}</p>
-            </div>
-
-            <div className="sso-providers-grid">
-              {/* GOOGLE ACCOUNT CARD */}
-              <div className={`sso-provider-card ${isGoogleConnected ? 'connected' : 'disconnected'}`}>
-                <div className="sso-provider-top">
-                  <div className="sso-provider-identity">
-                    <div className="sso-provider-icon-frame">
-                      <GoogleLogo size={22} />
-                    </div>
-                    <div>
-                      <div className="sso-provider-name">{t.googleAccount}</div>
-                      <div className="sso-provider-account">
-                        {isGoogleConnected ? googleEmail : t.notLinkedDesc}
-                      </div>
-                    </div>
-                  </div>
-                  <span className={`sso-badge-status ${isGoogleConnected ? 'connected' : 'disconnected'}`}>
-                    {isGoogleConnected ? `✓ ${t.statusConnected}` : t.statusNotConnected}
-                  </span>
-                </div>
-
-                <div className="sso-provider-footer">
-                  <span className="sso-linked-date">
-                    {isGoogleConnected && googleLinkedDate ? `${t.linkedOn} ${googleLinkedDate}` : t.notLinkedDesc}
-                  </span>
-                  {isDemo ? (
-                    <button
-                      type="button"
-                      className="sso-toggle-btn"
-                      onClick={() => toggleDemoProvider('google')}
-                    >
-                      {isGoogleConnected ? t.actionDisconnect : t.actionConnect}
-                    </button>
-                  ) : (
-                    !isGoogleConnected && (
-                      <button
-                        type="button"
-                        className="sso-toggle-btn"
-                        onClick={() => oauth('google')}
-                      >
-                        {t.linkNow}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* MICROSOFT ACCOUNT CARD */}
-              <div className={`sso-provider-card ${isMicrosoftConnected ? 'connected' : 'disconnected'}`}>
-                <div className="sso-provider-top">
-                  <div className="sso-provider-identity">
-                    <div className="sso-provider-icon-frame">
-                      <MicrosoftLogo size={20} />
-                    </div>
-                    <div>
-                      <div className="sso-provider-name">{t.microsoftAccount}</div>
-                      <div className="sso-provider-account">
-                        {isMicrosoftConnected ? microsoftGamertag : t.notLinkedDesc}
-                      </div>
-                    </div>
-                  </div>
-                  <span className={`sso-badge-status ${isMicrosoftConnected ? 'connected' : 'disconnected'}`}>
-                    {isMicrosoftConnected ? `✓ ${t.statusConnected}` : t.statusNotConnected}
-                  </span>
-                </div>
-
-                <div className="sso-provider-footer">
-                  <span className="sso-linked-date">
-                    {isMicrosoftConnected && microsoftLinkedDate ? `${t.linkedOn} ${microsoftLinkedDate}` : t.notLinkedDesc}
-                  </span>
-                  {isDemo ? (
-                    <button
-                      type="button"
-                      className="sso-toggle-btn"
-                      onClick={() => toggleDemoProvider('microsoft')}
-                    >
-                      {isMicrosoftConnected ? t.actionDisconnect : t.actionConnect}
-                    </button>
-                  ) : (
-                    !isMicrosoftConnected && (
-                      <button
-                        type="button"
-                        className="sso-toggle-btn"
-                        onClick={() => oauth('azure')}
-                      >
-                        {t.linkNow}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
-            </div>
+            <AchievementsPanel variant="compact" />
           </div>
 
           {/* GAMING PLATFORMS */}
@@ -980,23 +1036,27 @@ export default function Auth({ initialMode = 'signup' }) {
             )}
           </div>
 
-          {/* UNLOCKED BADGES & ACHIEVEMENTS */}
-          <div className="player-section">
-            <div className="player-section-header">
-              <h2>{t.badgesHeading}</h2>
-            </div>
-            <div className="player-badges-grid">
-              {badges.map((badge) => (
-                <div key={badge.id} className="player-badge-item">
-                  <span className="player-badge-icon">{badge.icon}</span>
-                  <div className="player-badge-info">
-                    <h4>{badge.name}</h4>
-                    <p>{badge.desc}</p>
+          {/* MÉDAILLES DE LA PERSONA DE DÉMONSTRATION (aperçu uniquement) —
+              les succès du joueur ont leur propre section plus haut */}
+          {personaBadges.length > 0 && (
+            <div className="player-section">
+              <div className="player-section-header">
+                <h2>{t.badgesHeading}</h2>
+                <p>{t.demoBadgesNote}</p>
+              </div>
+              <div className="player-badges-grid">
+                {personaBadges.map((badge) => (
+                  <div key={badge.id} className="player-badge-item">
+                    <span className="player-badge-icon">{badge.icon}</span>
+                    <div className="player-badge-info">
+                      <h4>{badge.name}</h4>
+                      <p>{badge.desc}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* SAVED STORIES & BOOKMARKS */}
           <div className="player-section">
@@ -1054,7 +1114,7 @@ export default function Auth({ initialMode = 'signup' }) {
   // --------------------------------------------------------------------------
   // UNAUTHENTICATED / LOGIN & SIGNUP VIEW
   // --------------------------------------------------------------------------
-  const showSocials = mode === 'signup' || mode === 'signin';
+  const showDemoBox = mode === 'signup' || mode === 'signin';
   const showConfirm = mode === 'signup' || mode === 'update';
   const missingConfig = [
     supabaseConfigStatus.hasUrl ? null : 'VITE_SUPABASE_URL',
@@ -1063,6 +1123,7 @@ export default function Auth({ initialMode = 'signup' }) {
 
   return (
     <section className="auth-page wrap">
+      {connectedOverlay}
       <div className="auth-panel">
         <p className="eyebrow">{t.eyebrow}</p>
         <h1>{mode === 'forgot' ? t.forgotTitle : mode === 'update' ? t.updateTitle : t.title}</h1>
@@ -1111,7 +1172,9 @@ export default function Auth({ initialMode = 'signup' }) {
           )}
           {showConfirm && <p className="auth-field-hint auth-pw-hint">{t.passwordHint}</p>}
           <button className="button button-yellow" disabled={busy}>
-            {mode === 'signup' ? t.signUp : mode === 'signin' ? t.signIn : mode === 'forgot' ? t.sendReset : t.updatePassword} <span>↗</span>
+            {busy && <span className="auth-btn-spinner" aria-hidden="true" />}
+            {mode === 'signup' ? t.signUp : mode === 'signin' ? t.signIn : mode === 'forgot' ? t.sendReset : t.updatePassword}
+            {!busy && <span>↗</span>}
           </button>
         </form>
 
@@ -1134,39 +1197,8 @@ export default function Auth({ initialMode = 'signup' }) {
           </button>
         )}
 
-        {showSocials && (
-          <>
-            {/* OR DIVIDER */}
-            <div className="auth-divider">
-              <span>{t.or}</span>
-            </div>
-
-            {/* SOCIAL AUTH BUTTONS WITH LOGOS */}
-            <div className="auth-socials">
-              <button
-                type="button"
-                className="button button-ghost auth-social-btn"
-                onClick={() => oauth('google')}
-                disabled={busy}
-              >
-                <GoogleLogo size={18} />
-                <span>{t.google}</span>
-              </button>
-              <button
-                type="button"
-                className="button button-ghost auth-social-btn"
-                onClick={() => oauth('azure')}
-                disabled={busy}
-              >
-                <MicrosoftLogo size={18} />
-                <span>{t.microsoft}</span>
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* FAKE CONNECTED ACCOUNT PREVIEW CARD */}
-        {showSocials && <div className="auth-demo-box">
+        {/* DEMO / PREVIEW ACCESS CARD */}
+        {showDemoBox && <div className="auth-demo-box">
           <div className="auth-demo-header">
             <span className="auth-demo-kicker">🎮 {t.demoOptionTitle}</span>
             <span className="auth-demo-tag">{t.quickDemoLabel}</span>
@@ -1208,7 +1240,9 @@ export default function Auth({ initialMode = 'signup' }) {
             className="auth-switch"
             onClick={() => switchMode(mode === 'signup' ? 'signin' : 'signup')}
           >
-            {mode === 'signup' ? t.switchSignIn : t.switchSignUp}
+            {mode === 'signup' ? t.switchSignIn : (
+              <>{t.noAccount} <span className="auth-switch-link">{t.registerHere}</span></>
+            )}
           </button>
         ) : (
           <button
@@ -1232,6 +1266,7 @@ export default function Auth({ initialMode = 'signup' }) {
 /* Inline profile editor (gamertag + avatar URL)                       */
 /* ------------------------------------------------------------------ */
 function ProfileEditor({ t, isDemo, gamertag, avatar, updateDemoProfile }) {
+  const track = useAchievementAction();
   const [editing, setEditing] = useState(false);
   const [tag, setTag] = useState(gamertag);
   const [avatarUrl, setAvatarUrl] = useState(avatar || '');
@@ -1274,6 +1309,7 @@ function ProfileEditor({ t, isDemo, gamertag, avatar, updateDemoProfile }) {
         });
         if (updateError) throw updateError;
       }
+      track('profile_updated');
       setNote(t.profileSaved);
       setEditing(false);
     } catch (e) {

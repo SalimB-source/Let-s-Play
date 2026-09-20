@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
+import { useAchievementAction } from '../achievements/AchievementContext';
 import {
   COMMENT_MAX_LENGTH,
   addDemoComment,
@@ -39,6 +40,7 @@ export default function Comments({ articleId: articleIdProp }){
   const copy = t.news.comments;
   const location = useLocation();
   const { user, isDemo, loading: authLoading } = useAuth();
+  const track = useAchievementAction();
   const articleId = useMemo(
     () => normalizeArticleId(articleIdProp || location.pathname),
     [articleIdProp, location.pathname],
@@ -120,6 +122,8 @@ export default function Comments({ articleId: articleIdProp }){
       }
       setBody('');
       setNotice(copy.posted);
+      // Achievement progress: the player really posted a comment.
+      track('comment_posted');
     } catch (error) {
       setPostError(error || new Error('post failed'));
     } finally {

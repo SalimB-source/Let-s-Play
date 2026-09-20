@@ -39,6 +39,11 @@ const YT_ORIGIN = 'https://www.youtube.com';
 const YT_NOCOOKIE_ORIGIN = 'https://www.youtube-nocookie.com';
 const YT_ORIGINS = new Set([YT_ORIGIN, YT_NOCOOKIE_ORIGIN]);
 
+// Événement émis quand un lecteur du site démarre vraiment. Il porte
+// l'identifiant de la vidéo, ce qui permet aux succès de compter les vidéos
+// distinctes sans connaître YouTube (« live_stream » pour le direct).
+export const VIDEO_PLAYED_EVENT = 'letsplay:video-played';
+
 // États du lecteur YouTube qui nous intéressent.
 const PLAYING = 1;
 const PAUSED = 2;
@@ -124,7 +129,7 @@ function track(frame) {
   const origin = embedOriginOf(frame.getAttribute('src'));
   if (!origin || players.has(frame)) return;
 
-  players.set(frame, { origin, state: null });
+  players.set(frame, { origin, state: null, videoId: videoIdOf(frame.getAttribute('src')) });
 
   if (!boundFrames.has(frame)) {
     boundFrames.add(frame);
@@ -156,7 +161,30 @@ function refresh(frame) {
   }
   entry.origin = origin;
   entry.state = null;
+  entry.videoId = videoIdOf(frame.getAttribute('src'));
   subscribe(frame);
+}
+
+/**
+ * Identifiant de la vidéo d'un embed : `/embed/<id>` (les embeds du direct
+ * utilisent `/embed/live_stream`). Sert uniquement à compter les vidéos
+ * distinctes ; aucun appel réseau n'en dépend.
+ */
+function videoIdOf(src) {
+  if (typeof src !== 'string' || !src) return null;
+  const match = src.match(/\/embed\/([^?&/]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// Annonce la lecture d'une vidéo (le direct est identifié comme tel).
+function announcePlayback(entry) {
+  if (typeof window === 'undefined' || typeof CustomEvent === 'undefined') return;
+  if (typeof window.dispatchEvent !== 'function') return;
+  try {
+    window.dispatchEvent(new CustomEvent(VIDEO_PLAYED_EVENT, { detail: { id: entry.videoId } }));
+  } catch {
+    /* environnements sans CustomEvent complet */
+  }
 }
 
 function frameForWindow(win) {
@@ -242,7 +270,10 @@ function onMessage(event) {
   const state = readState(data);
   if (state === null || state === entry.state) return; // infoDelivery répète l'état
   entry.state = state;
-  if (state === PLAYING) stopOthers(frame);
+  if (state === PLAYING) {
+    stopOthers(frame);
+    announcePlayback(entry);
+  }
 }
 
 function scan() {

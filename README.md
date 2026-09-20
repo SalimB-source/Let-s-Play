@@ -28,6 +28,9 @@ npm run build
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
+- Succès du joueur (`/achievements`, alias `/succes`) : 26 succès débloqués par les
+  actions réalisées sur le site, niveau et XP, notifications de déblocage (voir
+  « Succès débloqués par les actions du site »)
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -138,7 +141,8 @@ the `public.comments` table from `supabase/schema.sql`:
 
 - **Reading** is public: visitors see the thread (newest first, 100 max) and a
   “sign in to comment” call to action that brings them back to the article
-  (`#comments`) once signed in — including after a Google / Microsoft round trip.
+  (`#comments`) once signed in — including after an OAuth round trip (the target survives the
+  full-page return).
 - **Posting** requires a Supabase session. The client only sends the article
   route and the text; a `before insert` trigger stamps `user_id`, the author
   name (gamertag chosen on `/auth`, then profile, then e-mail) and the avatar
@@ -163,6 +167,119 @@ the SQL has been run; the section explains itself when something is off:
 | “Your session has expired — sign in again to comment.” | The stored session is no longer valid | Sign out / in on `/auth` |
 | “Easy there — wait a moment before posting again.” | More than 5 comments in one minute | Wait a minute |
 | Sign-in gate although the site is deployed | Supabase variables missing at build time | See the environment-variable table above |
+
+## Succès débloqués par les actions du site
+
+Le site récompense ce que le joueur fait réellement : lire un article, lancer
+un épisode, commenter, chercher, explorer une nouvelle section, revenir
+plusieurs jours de suite, créer un compte ou associer un fournisseur de
+connexion. **26 succès** sont livrés, répartis en six familles (premiers pas,
+lecture, vidéo, communauté, fidélité, compte) et quatre raretés ; chacun donne
+de l'XP, qui construit le niveau et le rang du joueur.
+
+Où ça se voit :
+
+| Endroit | Ce qui s'y trouve |
+| --- | --- |
+| `/achievements` (alias `/succes`) | la page complète : niveau, XP, compteurs d'actions, catalogue filtrable (famille, débloqués / en cours / verrouillés) et bouton de réinitialisation |
+| `/auth` (hub joueur) | une section « succès » compacte : niveau, derniers succès obtenus, prochains objectifs, lien vers la page complète |
+| Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
+| Navigation et pied de page | le lien « Succès / Achievements / الإنجازات » |
+
+La fenêtre vit dans `src/achievements/AchievementPopup.jsx` et lit la file
+`notifications` du contexte. Plusieurs succès d'affilée sont présentés **un par
+un** (« 1 sur 3 », bouton « SUIVANT »), la file est plafonnée à quatre pour
+qu'une rafale ne se transforme pas en séance de clics. Elle se ferme au clic,
+avec Échap, par son bouton, ou toute seule après quelques secondes — le
+minuteur est suspendu tant que la souris la survole, pour laisser le temps de
+lire.
+
+### Comment une action devient un succès
+
+Trois étages, un seul chemin :
+
+1. **l'action** est signalée par la page qui la vit (`track('comment_posted')`,
+   `track('search_performed', { query })`, `track('profile_updated')`, …) ou
+   automatiquement par `src/achievements/AchievementTracker.jsx`, monté une
+   fois dans `Layout` : visite datée, langue utilisée, route ouverte (section
+   + article lu, mémorisé par slug), session connectée (connexion, inscription,
+   comptes tiers) et lecture d'une vidéo — annoncée par le coordinateur
+   « une seule vidéo à la fois » (`VIDEO_PLAYED_EVENT`, aussi émis pour le
+   direct) ;
+2. **le moteur** (`src/achievements/engine.js`) applique l'action à l'état du
+   joueur (compteurs, ensembles de contenus distincts, jours de visite, séries)
+   puis débloque les succès dont la métrique atteint la cible ;
+3. **le catalogue** (`src/achievements/catalog.js`) ne contient que des
+   données : `{ id, icon, group, rarity, xp, metric, target, labels }`, les
+   libellés étant donnés en FR / EN / AR.
+
+| Action suivie | Métrique(s) alimentée(s) |
+| --- | --- |
+| `page_view` | `pagesVisited` |
+| `visit` (une par jour) | `visitDays`, `bestStreak` |
+| `article_read` (actu / test / dossier) | `articlesRead`, `newsRead`, `reviewsRead`, `dossiersRead`, `nightReading` (entre 0 h et 5 h) |
+| `section_visited` | `sectionsVisited`, `achievementsPageOpened` |
+| `video_played` | `videosWatched`, `liveWatched` |
+| `comment_posted` | `commentsPosted` |
+| `search_performed` | `searchesPerformed`, `distinctSearches` |
+| `language_used` | `languagesUsed` |
+| `account_created` / `signed_in` | `accountsCreated`, `sessions` |
+| `provider_linked` | `providersLinked` |
+| `profile_updated` | `profileUpdates` |
+
+### Ajouter un succès (ou une action)
+
+Un succès pour une action déjà suivie = **une entrée** dans
+`src/achievements/catalog.js` :
+
+```js
+{ id: 'dossier-fan', icon: '🗂️', group: 'reading', rarity: 'rare', xp: 90,
+  metric: 'dossiersRead', target: 5,
+  labels: {
+    en: { name: 'Dossier fan', desc: 'Read 5 dossiers.' },
+    fr: { name: 'Fan de dossiers', desc: 'Lis 5 dossiers.' },
+    ar: { name: 'من عشاق الملفات', desc: 'اقرأ 5 ملفات.' },
+  } }
+```
+
+Rien d'autre : la progression, les notifications, le compteur du hub et la
+page `/achievements` sont déduits du catalogue. Une **nouvelle action** (un
+nouveau geste sur le site) ajoute d'abord un cas dans `reduce()` et une
+métrique dans `METRICS` (`engine.js`), puis autant de succès que voulu.
+
+Un succès ajouté plus tard profite aux joueurs existants : le catalogue est
+réévalué au chargement (`evaluate()`), donc les actions déjà enregistrées
+débloquent le nouvel objectif sans être rejouées.
+
+### Où vit la progression
+
+- **Sur l'appareil** (`localStorage`, clé `letsplay_achievements_v1`) : le site
+  statique fonctionne sans backend, un visiteur non connecté débloque déjà des
+  succès ;
+- **Avec le compte** (métadonnées Supabase, clé `achievements`) : à la
+  connexion, `mergeStates()` fait l'union des deux copies (compteurs au
+  maximum, ensembles en union, meilleure série conservée, succès datés au plus
+  tôt) puis renvoie l'union au compte. Rien n'est jamais écrasé, et la
+  progression suit le joueur d'un appareil à l'autre. Les sessions de
+  démonstration restent locales : les liaisons Google / Microsoft y sont
+  simulées pour l'aperçu et ne comptent donc pas comme un compte associé
+  (ce succès se débloque avec un vrai compte).
+
+### Vérifications
+
+- `npm run check:achievements` — quatre niveaux : cohérence du catalogue
+  (identifiants uniques, trois langues, métriques connues, cibles et XP
+  valides) ; comportement du moteur (contenus distincts, lecture de nuit,
+  séries de jours, fusion appareil ↔ compte, données corrompues, courbe de
+  niveau, détection du passage de niveau) ; **scénario complet qui débloque les
+  26 succès** (donc aucun succès inatteignable) ; rendu réel en SSR de la page,
+  du hub joueur et de la **fenêtre de déblocage** (montée avec la file qu'un
+  joueur verrait après une action : succès, rareté, XP, palier franchi,
+  compteur de file, boîte de dialogue accessible, rien sans succès à fêter),
+  plus la source du site (actions branchées, fenêtre montée dans `main.jsx`,
+  plus aucun reste des anciennes notifications, un seul module écrit la
+  progression locale).
+- `npm run check:i18n` — les routes × FR / EN / AR, dont `/achievements`.
 
 ## Live YouTube
 
@@ -330,6 +447,12 @@ Le comportement vit dans `src/lib/videoPlayback.js` :
 - `pauseAllPlayback()` coupe tout d'un coup — utilisé à l'ouverture de la modale
   de test (`src/components/VideoModal.jsx`), dont l'autoplay peut être refusé
   par le navigateur.
+
+Un lecteur qui démarre émet aussi `VIDEO_PLAYED_EVENT`
+(`letsplay:video-played`, avec l'identifiant de la vidéo) : c'est ce que les
+succès écoutent pour compter les vidéos lancées, direct compris
+(`src/achievements/AchievementTracker.jsx`). L'événement ne change rien au
+comportement de pause.
 
 Aucun script externe : le coordinateur parle directement le protocole
 postMessage de l'embed YouTube (`{"event":"listening"}` pour s'abonner,
