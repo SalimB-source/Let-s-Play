@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useAchievements } from './AchievementContext';
 import { dayKey } from './engine';
 import { describeRoute, linkedProviders } from './routeActions';
+import { scopeForUser } from './storage';
 import { VIDEO_PLAYED_EVENT } from '../lib/videoPlayback';
 
 /**
@@ -24,7 +25,7 @@ import { VIDEO_PLAYED_EVENT } from '../lib/videoPlayback';
  * signalées par les composants concernés — `useAchievementAction()`.
  */
 export default function AchievementTracker() {
-  const { track } = useAchievements();
+  const { track, stateScope } = useAchievements();
   const location = useLocation();
   const { lang } = useLanguage();
   const { user, isDemo } = useAuth();
@@ -63,12 +64,18 @@ export default function AchievementTracker() {
   useEffect(() => {
     const id = user?.id;
     if (!id || isDemo || seenUser.current === id) return;
+    // À la connexion, l'état chargé est encore celui du joueur précédent
+    // (progression invité de l'appareil) : attendre que le contexte ait
+    // basculé vers la progression du compte, sinon les succès de session
+    // (connexion, inscription, comptes liés) seraient crédités à l'invité
+    // puis perdus à la bascule.
+    if (stateScope !== scopeForUser(id)) return;
     seenUser.current = id;
     track('signed_in');
     const createdAt = Date.parse(user?.created_at || '');
     if (Number.isFinite(createdAt) && Date.now() - createdAt < 60 * 60 * 1000) track('account_created');
     linkedProviders(user).forEach((provider) => track('provider_linked', { provider }));
-  }, [user, isDemo, track]);
+  }, [user, isDemo, track, stateScope]);
 
   return null;
 }

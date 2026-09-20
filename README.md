@@ -295,6 +295,20 @@ synchronisés avec la progression des succès par un trigger SQL
 Pour appliquer la migration : relancer `supabase/schema.sql` dans le SQL
 Editor du projet Supabase (le script est relançable sans risque).
 
+#### Comment vérifier que la progression serveur est active
+
+1. Se connecter, débloquer un succès (par exemple lire un article), attendre
+   quelques secondes (écriture différée), puis ouvrir les outils de
+   développement → Application → Stockage local : la clé
+   `letsplay_achievements_v1:u:<id>` (avec l'identifiant du compte) contient
+   la progression ;
+2. Dans Supabase → Table Editor → `player_progress` : une ligne existe pour
+   ce compte, avec `updated_at` récent et les succès dans `state` ;
+3. Ouvrir le site dans **un autre navigateur** (ou en navigation privée), s'y
+   connecter avec le même compte : les succès et le niveau suivent — la copie
+   serveur est bien la référence. Un compte neuf y démarre au niveau 1, même
+   si l'autre navigateur a une progression invité.
+
 ### Vérifications
 
 - `npm run check:achievements` — quatre niveaux : cohérence du catalogue
