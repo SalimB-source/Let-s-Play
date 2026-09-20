@@ -1,10 +1,25 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { DEMO_PROFILES, DEFAULT_DEMO_KEY } from './demoProfiles';
 
 const AuthContext = createContext(null);
+const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
+
+function getStoredDemoUser() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(DEMO_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed;
+  } catch (e) {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
+  const [demoUser, setDemoUser] = useState(getStoredDemoUser);
   const [loading, setLoading] = useState(Boolean(supabase));
 
   useEffect(() => {
@@ -32,13 +47,81 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  const loginAsDemo = (profileKey = DEFAULT_DEMO_KEY) => {
+    const profile = DEMO_PROFILES[profileKey] || DEMO_PROFILES[DEFAULT_DEMO_KEY];
+    setDemoUser(profile);
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(profile));
+      }
+    } catch (e) {}
+    return profile;
+  };
+
+  const updateDemoProfile = (updater) => {
+    setDemoUser((prev) => {
+      if (!prev) return prev;
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(next));
+        }
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const toggleDemoProvider = (provider) => {
+    setDemoUser((prev) => {
+      if (!prev) return prev;
+      const meta = { ...prev.user_metadata };
+      if (provider === 'google') {
+        meta.googleConnected = !meta.googleConnected;
+        if (meta.googleConnected && !meta.googleEmail) {
+          meta.googleEmail = prev.email || 'player@gmail.com';
+        }
+      } else if (provider === 'microsoft') {
+        meta.microsoftConnected = !meta.microsoftConnected;
+        if (meta.microsoftConnected && !meta.microsoftGamertag) {
+          meta.microsoftGamertag = `${meta.gamertag || 'PlayerDZ'}#${Math.floor(1000 + Math.random() * 9000)}`;
+        }
+      }
+      const next = { ...prev, user_metadata: meta };
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(next));
+        }
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  const signOut = async () => {
+    setDemoUser(null);
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(DEMO_STORAGE_KEY);
+      }
+    } catch (e) {}
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+  };
+
+  const activeUser = session?.user || demoUser || null;
+
   const value = useMemo(() => ({
     session,
-    user: session?.user ?? null,
+    user: activeUser,
+    isDemo: Boolean(!session?.user && demoUser),
+    demoProfileKey: demoUser?.profileKey || DEFAULT_DEMO_KEY,
     loading,
     configured: Boolean(supabase),
-    signOut: () => supabase?.auth.signOut(),
-  }), [session, loading]);
+    loginAsDemo,
+    updateDemoProfile,
+    toggleDemoProvider,
+    signOut,
+  }), [session, demoUser, loading, activeUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

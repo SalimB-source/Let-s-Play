@@ -12,6 +12,8 @@ export const translations = {
       reviews: 'Reviews',
       dossiers: 'Dossiers',
       partners: 'Partners',
+      join: 'Join',
+      account: 'Account',
       watch: 'Watch', menu: 'Menu',
       menuAria: 'Open menu',
       langAria: 'Change language',
@@ -289,6 +291,7 @@ export const translations = {
     meta: { title: 'Let’s Play — Jouer le jeu' },
     nav: {
       home: 'Accueil', news: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', partners: 'Partenaires',
+      join: 'Rejoindre', account: 'Compte',
       watch: 'Regarder', menu: 'Menu', menuAria: 'Ouvrir le menu', langAria: 'Changer de langue',
       search: { placeholder: 'Rechercher…', submit: 'Rechercher', noResults: 'Aucun résultat', viewAll: 'Voir tous les résultats' },
     },
@@ -556,6 +559,7 @@ export const translations = {
     meta: { title: 'Let’s Play — العب اللعبة' },
     nav: {
       home: 'الرئيسية', news: 'الأخبار', reviews: 'المراجعات', dossiers: 'الملفات', partners: 'الشركاء',
+      join: 'انضمام', account: 'الحساب',
       watch: 'شاهد', menu: 'القائمة', menuAria: 'افتح القائمة', langAria: 'تغيير اللغة',
       search: { placeholder: 'بحث…', submit: 'بحث', noResults: 'لا توجد نتائج', viewAll: 'عرض كل النتائج' },
     },
