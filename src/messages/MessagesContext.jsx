@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { useFriends } from '../friends/FriendsContext';
 import { DEMO_REPLY_DELAY_MS, dueDemoIncoming } from './demoThreads';
+import { playMessageSound } from './notificationSound';
 import {
   DEMO_MESSAGES_SYNC_KEY,
   MESSAGES_TABLE,
@@ -63,6 +64,10 @@ import {
  * discussion, rechargement toutes les minutes en secours. Personas de
  * démonstration : discussions scriptées en localStorage, réponses des joueurs
  * « en ligne » et messages qui arrivent tout seuls.
+ *
+ * À chaque message reçu (temps réel, réponse démo ou message scripté) un « ding »
+ * discret est joué (`./notificationSound`) — sauf si l'utilisateur regarde
+ * déjà la discussion en question.
  *
  * Le contexte par défaut est *inerte* (pas de provider = pas d'erreur, tout est
  * vide et désactivé) : les pages se rendent seules en SSR dans les scripts de
@@ -172,8 +177,20 @@ export function MessagesProvider({ children }) {
   const demoTimers = useRef(new Map());
   const activeRef = useRef(activePeerId);
   useEffect(() => { activeRef.current = activePeerId; }, [activePeerId]);
+  const dockOpenRef = useRef(dockOpen);
+  useEffect(() => { dockOpenRef.current = dockOpen; }, [dockOpen]);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
+
+  /**
+   * « Ding » d'un message reçu. Pas de son si l'utilisateur regarde déjà la
+   * discussion en question (fenêtre ouverte sur ce fil) : il voit la bulle
+   * apparaître à l'écran, le son lui serait inutile.
+   */
+  const chimeForIncoming = useCallback((peerId) => {
+    if (dockOpenRef.current && activeRef.current === peerId) return;
+    playMessageSound();
+  }, []);
 
   /* --------------------------- chargement (Supabase) --------------------------- */
 
@@ -285,6 +302,7 @@ export function MessagesProvider({ children }) {
         const row = payload?.new;
         if (!row?.id) return;
         setThreads((prev) => appendMessage(prev, uid, row));
+        chimeForIncoming(row.sender_id);
       })
       .on('postgres_changes', {
         event: 'DELETE', schema: 'public', table: MESSAGES_TABLE, filter: `recipient_id=eq.${uid}`,
@@ -397,6 +415,7 @@ export function MessagesProvider({ children }) {
         next = applyDemoIncoming(next, event, Date.now());
         // Discussion ouverte : le message est lu dès son arrivée.
         if (activeRef.current === event.from) next = applyDemoRead(next, event.from);
+        chimeForIncoming(event.from);
       }
       if (next !== state) commitDemo(next);
     };
@@ -527,6 +546,7 @@ export function MessagesProvider({ children }) {
         if (activeRef.current === peerId) next = applyDemoRead(next, peerId);
         return next;
       });
+      chimeForIncoming(peerId);
     }, DEMO_REPLY_DELAY_MS));
   }, [mode, mutateDemo, friends]);
 
