@@ -664,6 +664,18 @@
   gap: 16px;
 }
 
+/* SOCIAL GRID — Amis + Messagerie côte à côte */
+.player-social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+
+.player-social-grid .player-section {
+  margin: 0;
+  height: 100%;
+}
+
 .player-stat-card {
   background: rgba(14, 17, 38, .85);
   border: 1px solid var(--line);
@@ -1365,6 +1377,10 @@
 @media (max-width: 860px) {
   .player-stats-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .player-social-grid {
+    grid-template-columns: 1fr;
   }
 
   .sso-providers-grid,

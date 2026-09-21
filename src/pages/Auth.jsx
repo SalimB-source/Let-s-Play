@@ -1051,13 +1051,11 @@ export default function Auth({ initialMode = 'signin' }) {
             </div>
           </div>
 
-          {/* AMIS & DEMANDES — résumé + raccourcis vers la fenêtre d'amis
-              (en bas à droite) */}
-          <FriendsHubSection />
-
-          {/* MESSAGERIE — derniers échanges + raccourcis vers la fenêtre de
-              messagerie (en bas à gauche) */}
-          <MessagesHubSection />
+          {/* AMIS & MESSAGERIE — côte à côte */}
+          <div className="player-social-grid">
+            <FriendsHubSection />
+            <MessagesHubSection />
+          </div>
 
           {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
               commentaires, recherche, fidélité, compte) */}
