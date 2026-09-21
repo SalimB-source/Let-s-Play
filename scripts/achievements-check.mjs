@@ -32,7 +32,7 @@ import {
   summarize,
   totalXp,
 } from '../src/achievements/engine.js';
-import { ACHIEVEMENTS, GROUPS, RARITIES, achievementLabel, levelTitle } from '../src/achievements/catalog.js';
+import { ACHIEVEMENTS, GROUPS, RARITIES, TIER_ORDER, achievementLabel, levelTitle, rarityLabel, tierRank } from '../src/achievements/catalog.js';
 import { describeRoute, linkedProviders } from '../src/achievements/routeActions.js';
 import { GUEST_SCOPE, REMOTE_META_KEY, STORAGE_KEY, clearStorage, readStorage, scopeForUser, storageKeyForScope, writeStorage } from '../src/achievements/storage.js';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles.js';
@@ -67,7 +67,42 @@ const badXp = ACHIEVEMENTS.filter((entry) => !Number.isFinite(entry.xp) || entry
 check('chaque succès donne de l’XP', badXp.join(', ') || 'aucun', 'aucun');
 
 const badRarity = ACHIEVEMENTS.filter((entry) => !RARITIES[entry.rarity]).map((entry) => entry.id);
-check('raretés valides', badRarity.join(', ') || 'aucune', 'aucune');
+check('raretés valides (grades bronze → platine)', badRarity.join(', ') || 'aucune', 'aucune');
+
+// Grades : trois langues complètes pour chaque grade, et un ordre clair.
+const badTierLabels = [];
+for (const tier of Object.values(RARITIES)) {
+  for (const lang of LANGS) {
+    if (!tier.labels?.[lang]?.trim()) badTierLabels.push(`${tier.id}/${lang}`);
+  }
+}
+check('grades libellés en FR / EN / AR', badTierLabels.join(', ') || 'aucun', 'aucun');
+check('ordre des grades', TIER_ORDER.join('<'), 'bronze<silver<gold<platinum');
+check('rang des grades croissant', TIER_ORDER.every((tier, index) => tierRank(tier) === index), true);
+check('grade inconnu replié en bas de l’échelle', tierRank('mithril'), 0);
+
+// Un grade plus rare se mérite : l’XP maximum d’un grade reste sous l’XP
+// minimum du grade supérieur (sinon le grade ne raconterait rien).
+const tierXpMonotonic = TIER_ORDER.slice(0, -1).every((tier, index) => {
+  const maxOfTier = Math.max(...ACHIEVEMENTS.filter((entry) => entry.rarity === tier).map((entry) => entry.xp));
+  const next = TIER_ORDER[index + 1];
+  const minOfNext = Math.min(...ACHIEVEMENTS.filter((entry) => entry.rarity === next).map((entry) => entry.xp));
+  return maxOfTier < minOfNext;
+});
+ok('l’XP croît avec le grade (bronze < argent < or < platine)', tierXpMonotonic,
+  TIER_ORDER.map((tier) => {
+    const values = ACHIEVEMENTS.filter((entry) => entry.rarity === tier).map((entry) => entry.xp);
+    return `${tier} ${Math.min(...values)}–${Math.max(...values)}`;
+  }).join(', '));
+
+// Chaque icône du catalogue est livrée dans public/icons/achievements/.
+const availableIcons = new Set(readdirSync(path.join(root, 'public', 'icons', 'achievements')));
+const missingIcons = ACHIEVEMENTS.filter((entry) => !availableIcons.has(path.basename(entry.icon))).map((entry) => entry.id);
+check('icône livrée pour chaque succès', missingIcons.join(', ') || 'aucune', 'aucune');
+
+// Chaque grade du catalogue a au moins un succès (aucun filtre à vide).
+const emptyTiers = TIER_ORDER.filter((tier) => !ACHIEVEMENTS.some((entry) => entry.rarity === tier));
+check('chaque grade porte au moins un succès', emptyTiers.join(', ') || 'aucun', 'aucun');
 
 const groups = new Set(GROUPS.map((group) => group.id));
 const badGroup = ACHIEVEMENTS.filter((entry) => !groups.has(entry.group)).map((entry) => entry.id);
@@ -105,6 +140,35 @@ const night = reduce(createState(), { type: 'article_read', kind: 'news', id: 'n
 check('lecture entre minuit et 5 h reconnue', metricValue(night.state, 'nightReading'), 1);
 const day = reduce(createState(), { type: 'article_read', kind: 'news', id: 'day-owl', at: at(2026, 9, 20, 14) });
 check('lecture en journée : pas de succès de nuit', metricValue(day.state, 'nightReading'), 0);
+
+// Nuits distinctes : trois lectures la même nuit ne comptent qu'une nuit ;
+// le succès platine exige trois nuits différentes.
+const sameNight = reduce(reduce(
+  reduce(createState(), { type: 'article_read', kind: 'news', id: 'a', at: at(2026, 9, 20, 1) }).state,
+  { type: 'article_read', kind: 'news', id: 'b', at: at(2026, 9, 20, 2) }),
+  { type: 'article_read', kind: 'news', id: 'c', at: at(2026, 9, 20, 4) }).state;
+check('trois lectures la même nuit = une seule nuit', metricValue(sameNight, 'nightReadingDays'), 1);
+const threeNights = reduce(reduce(
+  sameNight,
+  { type: 'article_read', kind: 'news', id: 'd', at: at(2026, 9, 21, 3) }).state,
+  { type: 'article_read', kind: 'news', id: 'e', at: at(2026, 9, 22, 3) }).state;
+check('trois nuits différentes reconnues', metricValue(threeNights, 'nightReadingDays'), 3);
+
+// Lecture matinale (5 h – 8 h) : autre geste rare, succès or.
+const morning = reduce(createState(), { type: 'article_read', kind: 'news', id: 'lève-tôt', at: at(2026, 9, 20, 6) });
+check('lecture entre 5 h et 8 h reconnue', metricValue(morning.state, 'earlyReading'), 1);
+const tooLate = reduce(createState(), { type: 'article_read', kind: 'news', id: 'grasse matinée', at: at(2026, 9, 20, 9) });
+check('lecture après 8 h : pas de succès du matin', metricValue(tooLate.state, 'earlyReading'), 0);
+
+// Les trois familles éditoriales : le compteur ne s'allume qu'une fois les
+// trois touchées (actu + test + dossier).
+let kinds = createState();
+kinds = reduce(kinds, { type: 'article_read', kind: 'news', id: 'n1' }).state;
+check('une seule famille : pas de trinité', metricValue(kinds, 'readAllKinds'), 0);
+kinds = reduce(kinds, { type: 'article_read', kind: 'review', id: 'r1' }).state;
+check('deux familles : toujours pas', metricValue(kinds, 'readAllKinds'), 0);
+kinds = reduce(kinds, { type: 'article_read', kind: 'dossier', id: 'd1' }).state;
+check('trois familles : trinité validée', metricValue(kinds, 'readAllKinds'), 1);
 
 // Séries de jours : même jour, jours consécutifs, puis rupture.
 let streakState = createState();
@@ -235,30 +299,52 @@ const play = (type, payload = {}) => {
 const unlockedOrder = [];
 const record = (ids) => unlockedOrder.push(...ids);
 
-// Visite datée + navigation : accueil, actus, tests, dossiers, events, calendrier.
+// Visite datée + navigation : les neuf sections, y compris recherche,
+// succès et compte (passeport complet).
 record(play('visit', { day: dayKey(new Date(at(2026, 9, 1))) }));
 record(play('page_view'));
-['home', 'news', 'reviews', 'dossiers', 'events', 'calendrier', 'search', 'achievements'].forEach((section) => {
+['home', 'news', 'reviews', 'dossiers', 'events', 'calendrier', 'search', 'achievements', 'account'].forEach((section) => {
   record(play('page_view'));
   record(play('section_visited', { id: section }));
 });
 
-// Lecture : 12 articles, dont 5 actus, 3 tests et 3 dossiers.
-const newsIds = ['metroid-ravenous', 'zelda-ocarina', 'physint', 'wardogs', 'diablo-v', 'gta6-dualsense'];
+// Lecture : 31 articles réels du site — 22 actus, 3 tests et 6 dossiers —
+// de quoi pousser jusqu'au succès platine « Bibliothécaire » (30).
+const newsIds = [
+  'metroid-ravenous', 'zelda-ocarina', 'physint', 'wardogs', 'diablo-v', 'gta6-dualsense',
+  'onimusha-million', 'zelda-40th', 'monster-hunter-wilds', 'starcraft-fps', 'diablo-switch-2',
+  'diablo-netflix', 'persona-6-switch-2', 'last-of-us-ii-mod', 'cyberpunk-2077-battlenet',
+  'rayman-legends-retold', 'fire-emblem-fortunes-weave', 'wolverine-exclu-ps5',
+  'kingdom-hearts-4-coco', 'tokyo-game-show-2026-annulation', 'eshop-switch-2-20-septembre',
+  'sony-licence-jeux-numeriques',
+];
 const reviewIds = ['onimusha', 'wolverine', 'orbitals'];
-const dossierIds = ['pourquoi-les-souls', 'goya-hicosoft', 'heritage-playstation-1'];
+const dossierIds = [
+  'pourquoi-les-souls', 'goya-hicosoft', 'heritage-playstation-1',
+  'choc-generations-gaming', '20-ans-xbox-360', '25-ans-playstation-2',
+];
 newsIds.forEach((id) => record(play('article_read', { kind: 'news', id })));
 reviewIds.forEach((id) => record(play('article_read', { kind: 'review', id })));
 dossierIds.forEach((id) => record(play('article_read', { kind: 'dossier', id })));
-record(play('article_read', { kind: 'news', id: 'lecture-de-nuit', at: at(2026, 9, 2, 3) }));
 
-// Vidéos : cinq vidéos distinctes, dont le direct.
-['aTs0zhm6Leg', '91eqLm2Hy9k', 'twbaM8fiXpo', 'A2VPhWOUMHI', 'live_stream'].forEach((id) => {
+// Lectures inhabituelles : une à 3 h du matin (nuit n°1), une autre à 6 h 45.
+record(play('article_read', { kind: 'news', id: 'eshop-switch-2-20-septembre', at: at(2026, 9, 2, 3) }));
+record(play('article_read', { kind: 'news', id: 'sony-licence-jeux-numeriques', at: at(2026, 9, 3, 6, 45) }));
+// … et deux nuits supplémentaires, plus tard (trois nuits différentes au total).
+record(play('article_read', { kind: 'dossier', id: 'pourquoi-les-souls', at: at(2026, 9, 8, 1, 15) }));
+record(play('article_read', { kind: 'review', id: 'wolverine', at: at(2026, 9, 14, 2, 30) }));
+
+// Vidéos : douze vidéos distinctes, dont le direct (marathon ciné).
+[
+  'aTs0zhm6Leg', '91eqLm2Hy9k', 'twbaM8fiXpo', 'A2VPhWOUMHI', 'live_stream',
+  'extra-video-06', 'extra-video-07', 'extra-video-08', 'extra-video-09',
+  'extra-video-10', 'extra-video-11', 'extra-video-12',
+].forEach((id) => {
   record(play('video_played', { id }));
 });
 
-// Communauté : commentaires et recherches.
-for (let index = 0; index < 5; index += 1) record(play('comment_posted'));
+// Communauté : 15 commentaires (pilier) et cinq recherches différentes.
+for (let index = 0; index < 15; index += 1) record(play('comment_posted'));
 ['zelda', 'metroid', 'onimusha', 'switch 2', 'gta'].forEach((query) => record(play('search_performed', { query })));
 
 // Langues et compte.
@@ -268,8 +354,8 @@ record(play('account_created'));
 record(play('signed_in'));
 record(play('profile_updated'));
 
-// Fidélité : sept jours différents, dont trois consécutifs.
-for (let index = 1; index <= 7; index += 1) {
+// Fidélité : trente jours différents, dont quatorze consécutifs (série de fer).
+for (let index = 1; index <= 30; index += 1) {
   const date = new Date(at(2026, 9, 1));
   date.setDate(date.getDate() + index - 1);
   record(play('visit', { day: dayKey(date) }));
@@ -280,7 +366,7 @@ const unreachable = ACHIEVEMENTS.filter((entry) => !finalSummary.items.find((ite
 check('tous les succès sont débloquables', unreachable.join(', ') || 'aucun', 'aucun');
 check('tous les succès sont débloqués par le scénario', finalSummary.unlockedCount, ACHIEVEMENTS.length);
 check('aucun succès annoncé deux fois', new Set(unlockedOrder).size, unlockedOrder.length);
-ok('le scénario termine à un niveau supérieur à 3', finalSummary.level.level >= 4, `niveau ${finalSummary.level.level}, ${finalSummary.xp} XP`);
+ok('le scénario termine à un rang de vétéran ou plus', finalSummary.level.level >= 5, `niveau ${finalSummary.level.level}, ${finalSummary.xp} XP`);
 check('100 % = catalogue complet', finalSummary.percent, 100);
 
 // Le catalogue est aussi évalué au chargement (succès rétroactifs) : un joueur
@@ -311,6 +397,8 @@ for (const lang of LANGS) {
   check(`[${lang}] la page liste les ${ACHIEVEMENTS.length} succès`, missing.length, 0);
   ok(`[${lang}] la page affiche le niveau`, html.includes('achievement-level-number') && html.includes('achievement-level-bar'));
   ok(`[${lang}] la page affiche les compteurs d’actions`, html.includes('player-stat-value'));
+  ok(`[${lang}] la page filtre par grade (bronze → platine)`, ['bronze', 'silver', 'gold', 'platinum'].every((tier) => html.includes(`tier-chip rarity-${tier}`)));
+  ok(`[${lang}] … avec les compteurs débloqués / total`, /tier-chip-count">0(?:<!--[^>]*-->)?\//.test(html));
   ok(`[${lang}] la page est reliée aux succès depuis la navigation`, html.includes('/achievements'));
   check(`[${lang}] rien n’est débloqué sans action`, (html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length, 0);
 }
@@ -421,9 +509,11 @@ for (const lang of LANGS) {
   const html = noComments(achievementPopup(lang, {
     notifications: [{ id: 'polyglot', levelUp: { from: 1, to: 3 } }, { id: 'first-read' }],
   }));
-  const label = achievementLabel(ACHIEVEMENTS.find((entry) => entry.id === 'polyglot'), lang);
+  const polyglot = ACHIEVEMENTS.find((entry) => entry.id === 'polyglot');
+  const label = achievementLabel(polyglot, lang);
   ok(`[${lang}] la notification annonce le succès`, html.includes(label.name) && html.includes(label.desc));
-  ok(`[${lang}] … avec sa rareté et son XP`, html.includes('rarity-rare') && html.includes('+100'));
+  ok(`[${lang}] … avec son grade et son XP`, html.includes(`rarity-${polyglot.rarity}`) && html.includes(`+${polyglot.xp}`));
+  ok(`[${lang}] … le grade est libellé dans la langue du joueur`, html.includes(rarityLabel(polyglot.rarity, lang)));
   ok(`[${lang}] … et le passage de niveau`, html.includes('achievement-toast-level'));
   check(`[${lang}] … les succès d'affilée s'empilent`, (html.match(/class="achievement-toast /g) || []).length, 2);
   ok(`[${lang}] … la pile est ancrée et annoncée aux lecteurs d'écran`, html.includes('achievement-toasts') && html.includes('aria-live="polite"'));

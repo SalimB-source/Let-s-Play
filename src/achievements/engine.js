@@ -165,12 +165,21 @@ export function reduce(state, action = {}) {
     }
 
     // Lecture d'un article : le sujet précis (actu / test / dossier) est
-    // mémorisé pour ne compter qu'une fois par contenu.
+    // mémorisé pour ne compter qu'une fois par contenu. Les lectures nocturnes
+    // (0 h – 5 h) et matinales (5 h – 8 h) sont aussi repérées : ce sont les
+    // gestes les plus rares, ils alimentent les succès or et platine.
     case 'article_read': {
       const kind = action.kind === 'review' || action.kind === 'dossier' ? action.kind : 'news';
       next = addToSet(addToSet(current, 'articles_read', action.id), ARTICLE_SET_KEYS[kind], action.id);
       const hour = hourOf(at);
-      if (hour !== null && hour < 5) next = { ...next, flags: { ...next.flags, night_reading: true } };
+      if (hour !== null && hour < 5) {
+        next = { ...next, flags: { ...next.flags, night_reading: true } };
+        // La nuit précise est retenue : « 3 nuits différentes » ne peut pas
+        // être trompé par trois lectures la même nuit.
+        next = addToSet(next, 'nights_read', dayKey(at));
+      } else if (hour !== null && hour < 8) {
+        next = { ...next, flags: { ...next.flags, early_reading: true } };
+      }
       break;
     }
 
@@ -263,6 +272,15 @@ export const METRICS = {
   bestStreak: (state) => state.bestStreak || 0,
   /** Lecture entre minuit et 5 h. */
   nightReading: (state) => (state.flags?.night_reading ? 1 : 0),
+  /** Lecture tôt le matin, entre 5 h et 8 h. */
+  earlyReading: (state) => (state.flags?.early_reading ? 1 : 0),
+  /** Nuits différentes (0 h – 5 h) avec au moins une lecture : la métrique
+      des succès platine — trois nuits, pas trois lectures la même nuit. */
+  nightReadingDays: (state) => setSize(state, 'nights_read'),
+  /** Au moins une actu, un test et un dossier lus : les trois familles
+      éditoriales du site, toutes touchées. */
+  readAllKinds: (state) =>
+    setSize(state, 'news_read') > 0 && setSize(state, 'reviews_read') > 0 && setSize(state, 'dossiers_read') > 0 ? 1 : 0,
 };
 
 /** Valeur d'une métrique (0 si la métrique n'existe pas — jamais d'exception). */

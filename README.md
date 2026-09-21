@@ -28,9 +28,10 @@ npm run build
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
-- Succès du joueur (`/achievements`, alias `/succes`) : 26 succès débloqués par les
-  actions réalisées sur le site, niveau et XP, notifications de déblocage (voir
-  « Succès débloqués par les actions du site »)
+- Succès du joueur (`/achievements`, alias `/succes`) : 37 succès débloqués par les
+  actions réalisées sur le site, classés en quatre grades de difficulté — bronze,
+  argent, or, platine — avec niveau et XP, filtres par grade et notifications de
+  déblocage (voir « Succès débloqués par les actions du site »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans une fenêtre en bas à droite, pour
   tout joueur connecté (voir « Amis : demandes, liste et présence »)
@@ -290,9 +291,28 @@ comme des profils publics.
 Le site récompense ce que le joueur fait réellement : lire un article, lancer
 un épisode, commenter, chercher, explorer une nouvelle section, revenir
 plusieurs jours de suite, créer un compte ou associer un fournisseur de
-connexion. **26 succès** sont livrés, répartis en six familles (premiers pas,
-lecture, vidéo, communauté, fidélité, compte) et quatre raretés ; chacun donne
-de l'XP, qui construit le niveau et le rang du joueur.
+connexion. **37 succès** sont livrés, répartis en six familles (premiers pas,
+lecture, vidéo, communauté, fidélité, compte) et quatre **grades** de difficulté ;
+chacun donne de l'XP, qui construit le niveau et le rang du joueur.
+
+### Grades : bronze, argent, or, platine
+
+Le grade (`rarity` dans le catalogue) résume la difficulté d'obtention, du plus
+accessible au plus convoité. L'XP croît avec le grade (aucun succès bronze ne
+rapporte plus qu'un succès argent, etc.), ce qui rend l'échelle lisible :
+
+| Grade | Succès | XP | Exemples |
+| --- | --- | --- | --- |
+| 🥉 Bronze | 9 | 25–40 | premiers pas, première lecture, premier commentaire |
+| 🥈 Argent | 11 | 60–90 | créer un compte, 5 articles, 3 jours de suite |
+| 🥇 Or | 10 | 100–250 | 12 articles, semaine parfaite, trilingue, oiseau de nuit |
+| 🏅 Platine | 7 | 400–800 | 30 articles, 14 jours d'affilée, 30 jours de visite, 15 commentaires, les 9 sections, 3 nuits de lecture après minuit |
+
+Sur la page `/achievements`, une rangée de filtres dédiée montre la progression
+par grade (`débloqués / total`), chaque carte porte son grade sous le nom, et le
+cadre des succès débloqués prend la couleur du grade (bronze cuivré, argent,
+or, platine aux reflets irisés). La notification de déblocage affiche aussi le
+grade du succès tombé.
 
 Où ça se voit :
 
@@ -344,7 +364,7 @@ Trois étages, un seul chemin :
 | --- | --- |
 | `page_view` | `pagesVisited` |
 | `visit` (une par jour) | `visitDays`, `bestStreak` |
-| `article_read` (actu / test / dossier) | `articlesRead`, `newsRead`, `reviewsRead`, `dossiersRead`, `nightReading` (entre 0 h et 5 h) |
+| `article_read` (actu / test / dossier) | `articlesRead`, `newsRead`, `reviewsRead`, `dossiersRead`, `readAllKinds` (les trois familles), `nightReading` (entre 0 h et 5 h), `nightReadingDays` (nuits distinctes), `earlyReading` (entre 5 h et 8 h) |
 | `section_visited` | `sectionsVisited`, `achievementsPageOpened` |
 | `video_played` | `videosWatched`, `liveWatched` |
 | `comment_posted` | `commentsPosted` |
@@ -360,7 +380,7 @@ Un succès pour une action déjà suivie = **une entrée** dans
 `src/achievements/catalog.js` :
 
 ```js
-{ id: 'dossier-fan', icon: '🗂️', group: 'reading', rarity: 'rare', xp: 90,
+{ id: 'dossier-fan', icon: '🗂️', group: 'reading', rarity: 'gold', xp: 90,
   metric: 'dossiersRead', target: 5,
   labels: {
     en: { name: 'Dossier fan', desc: 'Read 5 dossiers.' },
