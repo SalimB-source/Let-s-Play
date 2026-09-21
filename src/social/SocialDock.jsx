@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useFriends } from '../friends/FriendsContext';
 import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy';
@@ -6,6 +7,7 @@ import { AddTab, FriendsTab, RequestsTab } from '../friends/FriendsTabs';
 import { useMessages } from '../messages/MessagesContext';
 import { describeMessagesError, messagesText } from '../messages/messagesCopy';
 import { InboxView, ThreadView } from '../messages/MessagesTabs';
+import useMediaQuery from '../lib/useMediaQuery';
 import { socialText } from './socialCopy';
 
 /**
@@ -18,9 +20,10 @@ import { socialText } from './socialCopy';
  *
  *   - **Amis** / **Demandes** / **Ajouter** : le module ami
  *     (`FriendsTabs`, données de `FriendsContext`) ;
- *   - **Messages** : la messagerie (`MessagesTabs`, données de
- *     `MessagesContext`) — la liste des discussions, puis la discussion
- *     ouverte qui prend tout le panneau (retour par l'icône « back »).
+ *   - **Messages** : la messagerie — sur bureau, la liste des discussions puis
+ *     la discussion ouverte (`MessagesTabs`) ; sur mobile, la **page dédiée**
+ *     `/messages` (alias `/messagerie`) : l'onglet et toute ouverture de
+ *     discussion y naviguent, le pop-up ne concerne plus que les amis.
  *
  * La fenêtre n'est ouverte que pour un joueur connecté (compte ou persona de
  * démo). L'ouverture est pilotée par les deux contextes : les boutons « Mes
@@ -28,9 +31,8 @@ import { socialText } from './socialCopy';
  * rouvrent sur le bon onglet (`openDock('messages')`, `openThread`).
  * Échap remonte de la discussion puis ferme la fenêtre.
  *
- * Sur mobile (≤760px), la fenêtre ouverte devient un pop-up plein écran
- * (voir `social.css`) : l'arrière-plan ne défile plus, et la fermeture se
- * fait par le bouton de l'en-tête.
+ * Sur la page de messagerie (`/messages`), la fenêtre s'efface entièrement :
+ * c'est la page qui porte la messagerie, rien ne flotte par-dessus.
  */
 
 function SocialIcon({ size = 16 }) {
@@ -62,9 +64,15 @@ export default function SocialDock() {
   const friends = useFriends();
   const messages = useMessages();
   const { lang } = useLanguage();
+  const navigate = useNavigate();
+  const location = useLocation();
   const t = socialText(lang);
   const ft = friendsText(lang);
   const mt = messagesText(lang);
+  // Mobile : la messagerie vit sur la page /messages, pas dans le pop-up.
+  const isMobile = useMediaQuery('(max-width: 760px)');
+  // La page de messagerie remplace la fenêtre : rien ne flotte par-dessus.
+  const onMessagesRoute = /^\/(messages|messagerie)(\/|$)/.test(location.pathname || '');
 
   const {
     enabled: friendsEnabled, status: friendsStatus, error: friendsError,
@@ -98,10 +106,20 @@ export default function SocialDock() {
     closeMessagesDock();
   };
   const toggle = () => {
-    if (open) closeAll();
-    else openDock(tab === 'messages' ? 'messages' : dockTab);
+    if (open) { closeAll(); return; }
+    // Mobile : l'onglet mémorisé est la messagerie → page dédiée, pas de pop-up.
+    if (isMobile && tab === 'messages') { navigate('/messages'); return; }
+    openDock(tab === 'messages' ? 'messages' : dockTab);
   };
-  const selectTab = (tabId) => openDock(tabId);
+  const selectTab = (tabId) => {
+    // Mobile : l'onglet Messages ouvre la page de messagerie.
+    if (isMobile && tabId === 'messages') {
+      closeAll();
+      navigate('/messages');
+      return;
+    }
+    openDock(tabId);
+  };
   // Retour à la liste des discussions : on reste sur l'onglet Messages
   // (utile quand la discussion a été rouverte depuis le stockage local).
   const backFromThread = () => {
@@ -109,18 +127,33 @@ export default function SocialDock() {
     openDock('messages');
   };
 
+  // Ancien état persisté « fenêtre ouverte sur la messagerie » (avant que la
+  // messagerie ne devienne une page sur mobile) : on bascule vers la page au
+  // lieu de rouvrir le pop-up.
+  useEffect(() => {
+    if (!isMobile || !open || onMessagesRoute) return;
+    if (tab !== 'messages') return;
+    const target = activePeerId ? `/messages/${encodeURIComponent(activePeerId)}` : '/messages';
+    closeFriendsDock();
+    closeMessagesDock();
+    backToInbox();
+    navigate(target);
+  }, [isMobile, open, tab, onMessagesRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
+
   // Classes sur <body> : social.css y lit la place prise par le lanceur ou la
   // fenêtre pour décaler les notifications de succès, et verrouille le scroll
-  // du document quand le pop-up plein écran est ouvert sur mobile.
+  // du document quand le pop-up plein écran est ouvert sur mobile. Sur la
+  // page de messagerie, la fenêtre étant effacée, aucune classe n'est posée.
+  const dockVisible = enabled && !onMessagesRoute;
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { classList } = document.body;
     const set = (name, on) => (on ? classList.add(name) : classList.remove(name));
-    set('has-friends-dock', enabled);
-    set('has-messages-dock', enabled);
-    set('friends-dock-open', open);
-    set('messages-dock-open', open);
-    set('social-dock-open', open);
+    set('has-friends-dock', dockVisible);
+    set('has-messages-dock', dockVisible);
+    set('friends-dock-open', dockVisible && open);
+    set('messages-dock-open', dockVisible && open);
+    set('social-dock-open', dockVisible && open);
     return () => {
       set('has-friends-dock', false);
       set('has-messages-dock', false);
@@ -128,7 +161,7 @@ export default function SocialDock() {
       set('messages-dock-open', false);
       set('social-dock-open', false);
     };
-  }, [enabled, open]);
+  }, [dockVisible, open]);
 
   // Discussion laissée ouverte (persistée) alors que la fenêtre rouvre sur un
   // onglet amis : la demande explicite gagne (raccourci « Ouvrir la liste
@@ -140,7 +173,7 @@ export default function SocialDock() {
 
   // Échap : remonte à la liste des discussions, puis ferme la fenêtre.
   useEffect(() => {
-    if (!open || typeof document === 'undefined') return undefined;
+    if (!dockVisible || !open || typeof document === 'undefined') return undefined;
     const onKey = (event) => {
       if (event.key !== 'Escape') return;
       if (activePeerId) { backToInbox(); openDock('messages'); }
@@ -148,7 +181,7 @@ export default function SocialDock() {
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [open, activePeerId, backToInbox, openDock, closeFriendsDock, closeMessagesDock]);
+  }, [dockVisible, open, activePeerId, backToInbox, openDock, closeFriendsDock, closeMessagesDock]);
 
   // Discussion ouverte : les messages reçus passent en lus tout de suite.
   const activeUnread = activePeerId ? unreadFor(activePeerId) : 0;
@@ -172,7 +205,7 @@ export default function SocialDock() {
       : fill(ft.subtitle, { online: onlineCount, total: friendsList.length })
   ), [t, ft, onlineCount, unreadTotal, friendsList.length]);
 
-  if (!enabled) return null;
+  if (!dockVisible) return null;
 
   const peerProfile = activePeerId ? friends.profileFor(activePeerId) : null;
   const activeEntry = activePeerId
@@ -227,7 +260,17 @@ export default function SocialDock() {
   } else if (tab === 'add') {
     friendsBody = <AddTab t={ft} lang={lang} search={search} isOnline={isOnline} relationWith={relationWith} />;
   } else {
-    friendsBody = <FriendsTab friends={friendsList} t={ft} lang={lang} unfriend={unfriend} />;
+    friendsBody = (
+      <FriendsTab
+        friends={friendsList}
+        t={ft}
+        lang={lang}
+        unfriend={unfriend}
+        onOpenThread={openThread}
+        chatLabel={mt.openChat}
+        profileLabel={ft.profileShort}
+      />
+    );
   }
 
   let body;

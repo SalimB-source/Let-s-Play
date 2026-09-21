@@ -42,7 +42,8 @@ npm run build
 - Amis + messagerie dans la **même fenêtre** : un seul lanceur « SOCIAL »
   (pastilles des non-lus et des demandes en attente, amis en ligne) ouvre un
   panneau à quatre onglets — Amis / Demandes / Ajouter / Messages ; sur mobile
-  (≤ 760 px), la fenêtre ouverte devient un **pop-up plein écran**
+  (≤ 760 px), la messagerie s'ouvre sur une **vraie page** (`/messages`) et la
+  fenêtre ne concerne plus que les amis (pop-up plein écran)
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -199,7 +200,7 @@ ne voit rien.
 
 | Onglet | Ce qui s'y trouve |
 | --- | --- |
-| **Amis** | les amis **en ligne** d'abord (point vert, « EN LIGNE »), puis **hors ligne** (avatar grisé, « Vu il y a 2 h »), chacun avec son niveau, un lien vers son profil et une icône « Message » (pastille des non-lus) ; « Retirer » enlève l'ami (confirmation) |
+| **Amis** | les amis **en ligne** d'abord (point vert, « EN LIGNE »), puis **hors ligne** (avatar grisé, « Vu il y a 2 h »), chacun avec son niveau ; **la photo ou le nom ouvre la discussion** avec lui, le bouton **« Profil »** bien visible mène à sa fiche, et « Retirer » enlève l'ami (confirmation) |
 | **Demandes** | les demandes **reçues** (Accepter / Refuser) et **envoyées** (Annuler) |
 | **Ajouter** | recherche d'un joueur par pseudo (2 caractères minimum), demande en un clic |
 | **Messages** | la messagerie 1-à-1 : liste des discussions puis fil (voir plus bas) |
@@ -211,7 +212,9 @@ et glissent à côté du panneau quand il est ouvert.
 **Sur mobile** (≤ 760 px), la fenêtre ouverte devient un **pop-up plein
 écran** : elle couvre tout l'écran (au-dessus de la navigation), l'arrière-plan
 ne défile plus, et la fermeture se fait par le bouton « × » de l'en-tête
-(`src/social/social.css`).
+(`src/social/social.css`). Elle ne concerne plus que les **amis** : l'onglet
+« Messages » — comme toute ouverture de discussion — bascule vers la **page de
+messagerie** `/messages` (voir plus bas), où la fenêtre s'efface entièrement.
 
 **Où envoyer une demande d'ami** (`src/friends/FriendButton.jsx`) :
 
@@ -292,9 +295,9 @@ comme des profils publics.
 | `src/friends/FriendsHubSection.jsx` | la section « Amis & demandes » du hub |
 | `src/friends/friendsCopy.js` | textes FR / EN / AR |
 | `src/friends/friends.css` | styles des onglets (listes, avatars, boutons) |
-| `src/social/SocialDock.jsx` | la fenêtre sociale unifiée : un lanceur, un panneau à quatre onglets, pop-up plein écran mobile |
+| `src/social/SocialDock.jsx` | la fenêtre sociale unifiée : un lanceur, un panneau à quatre onglets ; sur mobile, la messagerie part vers la page dédiée |
 | `src/social/socialCopy.js` | textes de la fenêtre (FR / EN / AR) |
-| `src/social/social.css` | position du lanceur/panneau, cohabitation avec les notifications, pop-up plein écran mobile |
+| `src/social/social.css` | position du lanceur/panneau, cohabitation avec les notifications, pop-up plein écran mobile (amis) |
 
 ### Vérifications
 
@@ -311,12 +314,22 @@ comme des profils publics.
 ## Messagerie : discussions 1-à-1 entre amis
 
 Tout joueur connecté (compte Supabase **ou** persona de démonstration) peut
-écrire à **ses amis** — et seulement à eux. La messagerie vit dans l'onglet
+écrire à **ses amis** — et seulement à eux.
+
+**Deux parcours** : sur **bureau**, la messagerie vit dans l'onglet
 **Messages** de la **fenêtre sociale** (en bas à droite, documentée dans la
-section amis) : la pastille jaune du lanceur compte les non-lus, et
-`openThread` (bouton « Message » d'un profil, icône bulle de la liste d'amis,
-raccourcis du hub) rouvre la fenêtre sur cet onglet. Un visiteur non connecté
-ne voit rien.
+section amis) — la pastille jaune du lanceur compte les non-lus, et
+`openThread` rouvre la fenêtre sur cet onglet. Sur **mobile** (≤ 760 px), elle
+est une **vraie page** : `/messages` (alias `/messagerie`) pour la liste,
+`/messages/:peerId` pour une discussion — un écran plein, de grandes zones
+d'appui, le champ toujours à portée de pouce ; tous les points d'entrée
+(liste d'amis, bouton « Message » d'un profil, raccourcis du hub) y naviguent.
+La page existe aussi sur bureau, en deux colonnes. Sur la page, **la photo ou
+le nom d'un interlocuteur ouvre la discussion** (jamais son profil : le
+bouton « Profil » de l'en-tête de discussion y mène), et dans la liste d'amis
+de la fenêtre, la photo/le nom d'un ami ouvre le chat tandis que le bouton
+**« Profil »** bien visible remplace l'ancienne icône « Message ».
+Un visiteur non connecté ne voit rien (carte de connexion sur la page).
 
 | Niveau | Ce qui s'y trouve |
 | --- | --- |
@@ -332,10 +345,12 @@ L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil 
   bouton « Ajouter en ami » — grisé avec l'explication « Deviens ami avec ce
   joueur pour lui écrire » tant que l'amitié n'est pas acceptée, avec le
   nombre de non-lus en pastille sinon ;
-- l'**icône bulle** de chaque ami dans la fenêtre d'amis (onglet Amis) ;
+- la **photo ou le nom** de chaque ami (onglet Amis de la fenêtre sociale) :
+  le geste ouvre directement la discussion avec lui ;
 - la section **« MESSAGES »** du hub joueur (`/auth`) : total des non-lus,
   trois derniers échanges, raccourcis « Ouvrir la messagerie » / « Écrire à un
-  ami ».
+  ami » ; sur mobile, chacun de ces points d'entrée ouvre la page
+  `/messages`.
 
 ### Comptes Supabase
 
@@ -394,14 +409,15 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `send`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
+| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
 | `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, lignes → discussions, non-lus, repli quand la table manque, état des personas |
 | `src/messages/demoThreads.js` | discussions de départ, réponses scriptées et messages entrants de l'aperçu démo |
-| `src/messages/MessagesTabs.jsx` | l'onglet Messages de la fenêtre sociale : liste des discussions, fil, champ de saisie, bloquer / signaler |
-| `src/messages/MessageButton.jsx` | le bouton « Message » (profil public, lignes de la liste d'amis) |
+| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler |
+| `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
+| `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
 | `src/messages/MessagesHubSection.jsx` | la section « MESSAGES » du hub |
 | `src/messages/messagesCopy.js` | textes FR / EN / AR |
-| `src/messages/messages.css` | styles (liste, bulles, signalement) |
+| `src/messages/messages.css` | styles (liste, bulles, signalement, page `/messages`) |
 
 ### Vérifications
 
@@ -417,8 +433,9 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   publics — visiteur, ami et non-ami — dans les trois langues.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
   continuent de passer : amis et messagerie partagent la même fenêtre sociale
-  (un seul lanceur, quatre onglets, pop-up plein écran sur mobile), et les
-  contextes par défaut sont inertes.
+  (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page
+  `/messages` et le pop-up reste pour les amis), et les contextes par défaut
+  sont inertes.
 
 ## Succès débloqués par les actions du site
 

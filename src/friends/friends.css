@@ -66,7 +66,16 @@
   align-items: center;
   gap: 11px;
   color: inherit;
+  /* Variante bouton (la photo / le nom d'un ami ouvre la discussion) : le
+     navigateur ne doit rien ajouter. */
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
 }
+[dir="rtl"] .friends-row-main { text-align: right; }
 .friends-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .friends-row-name {
   font: 600 13.5px var(--body);
@@ -156,6 +165,22 @@
 .friends-action-primary:hover { background: #ffe25c; border-color: #ffe25c; color: #0a0b1a; }
 .friends-action-quiet { background: transparent; border-color: transparent; color: var(--dim); }
 .friends-action-quiet:hover { background: rgba(255, 140, 157, .08); border-color: rgba(255, 140, 157, .35); color: #ff8c9d; }
+/* Bouton « Profil » des lignes d'amis : bien visible (il remplace l'ancienne
+   icône « Message »), lien réel vers la fiche du joueur. */
+.friends-action-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--cyan);
+  border-color: rgba(34, 211, 238, .4);
+  background: rgba(34, 211, 238, .07);
+}
+.friends-action-profile:hover {
+  border-color: rgba(34, 211, 238, .8);
+  background: rgba(34, 211, 238, .14);
+  color: var(--cyan);
+}
 
 .friends-empty {
   margin: 10px 6px;

@@ -102,7 +102,7 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 4px 0;
+  padding: 7px 0;
   background: transparent;
   border: 0;
   color: inherit;
@@ -112,6 +112,13 @@
 [dir="rtl"] .messages-row-main { text-align: right; }
 .messages-row-static { cursor: default; }
 .messages-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.messages-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
 .messages-row-name {
   font: 600 13.5px var(--body);
   color: #fff;
@@ -125,7 +132,7 @@
   font-size: 12px;
   line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -142,7 +149,11 @@
   letter-spacing: .08em;
   color: var(--dim);
   white-space: nowrap;
+  flex-shrink: 0;
 }
+.messages-row-chevron { display: inline-flex; color: var(--dim); opacity: .7; transition: opacity .18s, color .18s, transform .18s; }
+.messages-row-main:hover .messages-row-chevron { opacity: 1; color: var(--cyan); transform: translateX(2px); }
+[dir="rtl"] .messages-row-main:hover .messages-row-chevron { transform: translateX(-2px); }
 .messages-unread-badge {
   min-width: 19px;
   height: 19px;
@@ -223,7 +234,45 @@
   color: var(--dim);
 }
 .messages-thread-status.is-online { color: var(--friends-online, #10b981); }
-.messages-thread-tools { display: inline-flex; gap: 6px; flex-shrink: 0; }
+.messages-thread-tools { display: inline-flex; gap: 6px; flex-shrink: 0; align-items: center; }
+
+/* Bouton « Profil » de l'en-tête de discussion : l'accès profil explicite
+   (la photo / le nom ne sont plus un lien). */
+.messages-tool-profile {
+  width: auto;
+  padding: 0 10px;
+  gap: 6px;
+  font: 500 9.5px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--cyan);
+  border-color: rgba(34, 211, 238, .35);
+  background: rgba(34, 211, 238, .07);
+}
+.messages-tool-profile:hover { border-color: rgba(34, 211, 238, .7); background: rgba(34, 211, 238, .14); }
+
+/* Séparateurs de jour dans le fil. */
+.messages-day {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 6px;
+  list-style: none;
+}
+.messages-day::before,
+.messages-day::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.messages-day span {
+  padding: 3px 10px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 500 9px var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.messages-day:first-child { margin-top: 0; }
 
 .messages-thread {
   flex: 1;
@@ -335,20 +384,35 @@
 .messages-composer textarea:focus { border-color: var(--cyan); }
 .messages-composer textarea::placeholder { color: var(--dim); }
 .messages-send {
-  width: 38px;
   height: 38px;
+  padding: 0 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 7px;
   background: var(--yellow);
   border: 1px solid var(--yellow);
   color: #0a0b1a;
   cursor: pointer;
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
   transition: transform .18s, box-shadow .18s, opacity .18s;
+  flex-shrink: 0;
+}
+.messages-send-label {
+  font: 600 10.5px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
 }
 .messages-send:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(255, 214, 25, .5); }
 .messages-send:disabled { opacity: .45; cursor: default; }
+.messages-char-count {
+  align-self: center;
+  flex-shrink: 0;
+  font: 500 9.5px var(--mono);
+  letter-spacing: .08em;
+  color: var(--dim);
+}
+.messages-char-count.is-over { color: #ff8c9d; font-weight: 700; }
 .messages-composer-hint {
   margin: 0;
   padding: 0 12px 10px;
@@ -483,6 +547,24 @@
   line-height: 1.55;
   text-align: center;
 }
+.messages-empty-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 26px 16px;
+}
+.messages-empty-icon {
+  display: inline-flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  color: var(--cyan);
+  background: rgba(34, 211, 238, .06);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
 .messages-empty-small { padding: 10px 12px; font-size: 12px; }
 .messages-unavailable { border-color: rgba(255, 214, 25, .5); color: rgba(255, 214, 25, .9); }
 .messages-inline-error {
@@ -491,6 +573,134 @@
   font-size: 11.5px;
   line-height: 1.4;
 }
+
+/* ==========================================================================
+   PAGE DE MESSAGERIE — /messages (liste) et /messages/:peerId (discussion).
+   Le parcours mobile : une vraie page au lieu du pop-up (utile aussi sur
+   bureau en deux colonnes). La fenêtre sociale reste le parcours compact.
+   ========================================================================== */
+
+.messages-page { padding: 106px 0 30px; }
+.messages-page > .wrap { display: flex; flex-direction: column; gap: 14px; }
+
+.messages-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.messages-page-heading { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.messages-page-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: .08em;
+  color: #fff;
+}
+.messages-page-kicker svg { color: var(--yellow); }
+.messages-page-sub {
+  font: 500 10px var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.messages-page-tools { display: inline-flex; gap: 8px; }
+
+.messages-page-body {
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) 1fr;
+  gap: 14px;
+  /* Hauteur définie : le fil (bulles + champ) a besoin d'un conteneur de
+     hauteur connue pour défiler. */
+  height: min(640px, calc(100dvh - 220px));
+  min-height: 400px;
+}
+.messages-page-list,
+.messages-page-thread {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: linear-gradient(160deg, rgba(26, 17, 52, .92), rgba(7, 8, 20, .96));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 24px 50px -24px rgba(0, 0, 0, .85), 0 0 34px -16px rgba(124, 58, 237, .45);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+.messages-page-list {
+  overflow-y: auto;
+  padding: 12px;
+  overscroll-behavior: contain;
+}
+.messages-page-list::-webkit-scrollbar { width: 8px; }
+/* Sur mobile, un seul volet à la fois : la liste s'efface dès qu'un fil est
+   ouvert (et revient au retour), et le volet vide disparaît — voir le bloc
+   @media plus bas. Sur bureau, les deux volets restent côte à côte. */
+.messages-page-thread { overflow: hidden; padding: 0; }
+.messages-page-thread .messages-thread-head,
+.messages-page-thread .messages-composer { padding-left: 14px; padding-right: 14px; }
+
+.messages-page-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.messages-page-placeholder-icon {
+  display: inline-flex;
+  width: 64px;
+  height: 64px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  color: var(--cyan);
+  background: rgba(34, 211, 238, .05);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+}
+
+.messages-page-guest {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 30px auto;
+  max-width: 420px;
+  padding: 36px 28px;
+  text-align: center;
+  background: linear-gradient(160deg, rgba(26, 17, 52, .92), rgba(7, 8, 20, .96));
+  border: 1px solid var(--line-strong);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+.messages-page-guest-icon { display: inline-flex; color: var(--cyan); }
+.messages-page-guest-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: .08em;
+  color: #fff;
+}
+.messages-page-guest p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; line-height: 1.6; }
+
+.messages-page-foot {
+  padding: 9px 16px;
+  border: 1px solid rgba(255, 214, 25, .3);
+  background: rgba(255, 214, 25, .06);
+  color: rgba(255, 214, 25, .85);
+  font: 500 9.5px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.messages-page-error { margin: 0; text-align: center; }
 
 /* ------------------------- Bouton « Message » --------------------------- */
 
@@ -543,42 +753,6 @@
   letter-spacing: .1em;
   text-transform: uppercase;
 }
-
-/* Icône seule (lignes de la liste d'amis) */
-.message-icon {
-  position: relative;
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line);
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
-  transition: color .18s, border-color .18s, background .18s;
-  vertical-align: middle;
-  flex-shrink: 0;
-}
-.message-icon:not(:disabled):hover { color: var(--cyan); border-color: rgba(34, 211, 238, .6); background: rgba(34, 211, 238, .1); }
-.message-icon.has-unread { color: var(--yellow); border-color: rgba(255, 214, 25, .6); }
-.message-icon-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 3px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--yellow);
-  color: #0a0b1a;
-  font: 700 8.5px var(--mono);
-  letter-spacing: 0;
-}
-[dir="rtl"] .message-icon-badge { right: auto; left: -6px; }
 
 /* --------------------- Section « Messages » du hub joueur --------------- */
 
@@ -669,6 +843,31 @@
   .player-messages-row { grid-template-columns: 1fr auto; }
   .player-messages-name { grid-column: 1 / -1; }
   .messages-bubble-delete { opacity: 1; }
+}
+
+/* Mobile : la page de messagerie prend tout l'écran utile, avec de grandes
+   zones d'appui et des champs qui ne déclenchent pas le zoom iOS (16px). */
+@media (max-width: 760px) {
+  .messages-page { padding: 94px 0 18px; }
+  .messages-page-body {
+    grid-template-columns: 1fr;
+    height: calc(100dvh - 210px);
+    min-height: 340px;
+  }
+  .messages-page-kicker { font-size: 17px; }
+  .messages-page-list.is-dimmed { display: none; }
+  .messages-page-thread.is-empty { display: none; }
+  .messages-search input,
+  .messages-composer textarea { font-size: 16px; }
+  .messages-row-main { padding: 10px 0; }
+  .messages-composer { padding: 8px 10px 10px; }
+  .messages-composer textarea { padding: 10px 12px; }
+  /* Clavier tactile : le raccourci « Entrée pour envoyer » n'a pas de sens. */
+  .messages-composer-hint { display: none; }
+  .messages-thread-head { padding: 10px 12px; }
+  .messages-thread-name { font-size: 14px; }
+  .messages-bubble { max-width: 88%; font-size: 14px; }
+  .messages-day span { max-width: 70%; white-space: normal; text-align: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {

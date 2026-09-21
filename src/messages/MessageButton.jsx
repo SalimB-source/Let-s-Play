@@ -5,7 +5,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { useMessages } from './MessagesContext';
 import { messagesText } from './messagesCopy';
 
-/* Petites icônes en ligne (héritent de currentColor). */
+/* Petite icône en ligne (hérite de currentColor). */
 function ChatIcon({ size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -15,11 +15,15 @@ function ChatIcon({ size = 14 }) {
 }
 
 /**
- * Bouton « Message » pour un joueur `userId`.
+ * Bouton « Message » pour un joueur `userId` — il ouvre le chat avec lui
+ * (page `/messages` sur mobile, fenêtre sociale sur bureau).
  *
  *   variant 'full'    — profil public : bouton secondaire à côté du bouton ami ;
- *   variant 'compact' — lignes de la liste d'amis ;
- *   variant 'icon'    — une icône seule, avec le nombre de non-lus en pastille.
+ *   variant 'compact' — version resserrée pour les listes denses.
+ *
+ * Dans les listes d'amis, l'accès au profil est porté par le bouton
+ * « Profil » (`FriendsTabs`) : l'ancienne icône « Message » a disparu — le
+ * geste chat, c'est la photo ou le nom ; le geste profil, c'est le bouton.
  *
  * La messagerie est réservée aux **amis** : sans amitié acceptée le bouton est
  * désactivé et l'explique (« Deviens ami avec ce joueur pour lui écrire »).
@@ -33,7 +37,6 @@ export default function MessageButton({ userId, name, variant = 'full', guestHid
   const messages = useMessages();
   const t = messagesText(lang);
 
-  const isIcon = variant === 'icon';
   const isFull = variant === 'full';
 
   if (!userId || (user && String(user.id) === String(userId))) return null;
@@ -72,21 +75,6 @@ export default function MessageButton({ userId, name, variant = 'full', guestHid
   }
 
   const label = `${t.message}${name ? ` — ${name}` : ''}`;
-
-  if (isIcon) {
-    return (
-      <button
-        type="button"
-        className={`message-icon${unread > 0 ? ' has-unread' : ''} ${className}`.trim()}
-        onClick={() => messages.openThread(userId)}
-        title={blocked ? t.blockedNote : label}
-        aria-label={label}
-      >
-        <ChatIcon size={11} />
-        {unread > 0 && <span className="message-icon-badge">{unread}</span>}
-      </button>
-    );
-  }
 
   return (
     <span className={`message-btn-wrap message-btn-wrap-${variant} ${className}`.trim()}>

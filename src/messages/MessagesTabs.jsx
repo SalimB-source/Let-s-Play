@@ -2,21 +2,27 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
+import { ProfileIcon } from '../friends/FriendsTabs';
 import { describeMessagesError, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
 
 /**
- * Vues de messagerie de la fenêtre sociale unifiée
- * (`src/social/SocialDock.jsx`) :
+ * Vues de messagerie — partagées par la fenêtre sociale (bureau) et la page
+ * `/messages` (mobile surtout) :
  *
  *   - `InboxView` : la liste des discussions (un ami par ligne, dernier
  *     message, heure, badge des non-lus ; en dessous, les amis sans
  *     discussion et les joueurs bloqués, à débloquer) ;
- *   - `ThreadView` : la discussion ouverte (fil de bulles, accusé de
- *     lecture, champ de saisie, gestes **Bloquer** / **Signaler**).
+ *   - `ThreadView` : la discussion ouverte (séparateurs de jour, fil de
+ *     bulles, accusé de lecture, champ qui s'agrandit, bouton d'envoi
+ *     libellé, accès **Profil** explicite, gestes **Bloquer** /
+ *     **Signaler**).
  *
- * Les deux composants sont autonomes (props) : la fenêtre porte l'état,
- * le contexte (`MessagesContext`) fournit les données et les gestes.
+ * Ici, ni la photo ni le nom n'envoient vers le profil : on est déjà dans le
+ * chat — le profil a son bouton dédié dans la barre d'outils.
+ *
+ * Les deux composants sont autonomes (props) : la fenêtre et la page portent
+ * l'état, le contexte (`MessagesContext`) fournit les données et les gestes.
  */
 
 function BackIcon({ size = 15 }) {
@@ -73,6 +79,25 @@ function initialsFor(name) {
   return clean ? clean.slice(0, 2).toUpperCase() : '?';
 }
 
+/** Séparateur de jour : « Aujourd'hui », « Hier », sinon la date lisible. */
+function daySeparator(iso, lang, t) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return null;
+  const now = new Date();
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
+  if (diffDays <= 0) return t.today;
+  if (diffDays === 1) return t.yesterday;
+  const sameYear = date.getFullYear() === now.getFullYear();
+  try {
+    return date.toLocaleDateString(lang || 'en', sameYear
+      ? { weekday: 'long', day: 'numeric', month: 'long' }
+      : { day: 'numeric', month: 'long', year: 'numeric' });
+  } catch (e) {
+    return date.toISOString().slice(0, 10);
+  }
+}
+
 /** Avatar avec repli sur les initiales si l'image ne charge pas. */
 function Avatar({ name, src, online, size = 36 }) {
   const [broken, setBroken] = useState(false);
@@ -108,6 +133,14 @@ function SectionTitle({ children, count }) {
 
 /* --------------------------- liste des discussions -------------------------- */
 
+function ChevronIcon({ size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9.5 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 function ConversationRow({ entry, t, lang, online, onOpen }) {
   const { profile, lastMessage, unread, lastAt } = entry;
   const preview = lastMessage
@@ -115,15 +148,25 @@ function ConversationRow({ entry, t, lang, online, onOpen }) {
     : t.noMessageYet;
   return (
     <li className={`messages-row${unread > 0 ? ' has-unread' : ''}`}>
-      <button type="button" className="messages-row-main" onClick={() => onOpen(entry.peerId)}>
+      <button
+        type="button"
+        className="messages-row-main"
+        onClick={() => onOpen(entry.peerId)}
+        aria-label={`${t.openChat} — ${profile.name}`}
+        title={t.openChat}
+      >
         <Avatar name={profile.name} src={profile.avatar} online={online} />
         <span className="messages-row-text">
-          <span className="messages-row-name">{profile.name}</span>
+          <span className="messages-row-top">
+            <span className="messages-row-name">{profile.name}</span>
+            {lastAt && <span className="messages-row-time">{formatCommentDate(lastAt, lang)}</span>}
+          </span>
           <span className="messages-row-preview">{preview}</span>
         </span>
         <span className="messages-row-side">
-          {lastAt && <span className="messages-row-time">{formatCommentDate(lastAt, lang)}</span>}
-          {unread > 0 && <span className="messages-unread-badge">{unread}</span>}
+          {unread > 0
+            ? <span className="messages-unread-badge">{unread}</span>
+            : <span className="messages-row-chevron"><ChevronIcon /></span>}
         </span>
       </button>
     </li>
@@ -172,7 +215,15 @@ export function InboxView({ t, lang, conversations, blocked, isOnline, onOpen, o
         />
       </label>
       {filtered.length === 0 && blocked.length === 0 && (
-        <p className="messages-empty">{term ? fill(t.emptySearch, { query: query.trim() }) : t.emptyInbox}</p>
+        <div className="messages-empty messages-empty-hero">
+          <span className="messages-empty-icon" aria-hidden="true">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.5 12.2c0 4-3.8 7.2-8.5 7.2-1 0-2-.15-2.9-.42L4.5 20.5l1.2-3.3C4.3 15.9 3.5 14.1 3.5 12.2 3.5 8.2 7.3 5 12 5s8.5 3.2 8.5 7.2z" />
+              <path d="M8.5 11h7M8.5 14h4.5" />
+            </svg>
+          </span>
+          <p>{term ? fill(t.emptySearch, { query: query.trim() }) : t.emptyInbox}</p>
+        </div>
       )}
       {withMessages.length > 0 && (
         <>
@@ -290,6 +341,7 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
   const inputRef = useRef(null);
   const messages = thread?.messages || [];
   const lastMine = [...messages].reverse().find((message) => message.mine) || null;
+  const remaining = MESSAGE_MAX_LENGTH - draft.length;
 
   useEffect(() => {
     const node = listRef.current;
@@ -297,6 +349,24 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
   }, [messages.length, peerId]);
 
   useEffect(() => { setDraft(''); setError(''); setReportOpen(false); setDeletingId(null); }, [peerId]);
+
+  // Bureau : le champ prend le focus à l'ouverture de la discussion — on
+  // peut écrire tout de suite. Pas sur mobile, pour ne pas faire sortir le
+  // clavier tactile sans geste du joueur.
+  useEffect(() => {
+    if (typeof window === 'undefined' || blocked || !canWrite) return;
+    const fine = typeof window.matchMedia === 'function'
+      && window.matchMedia('(min-width: 761px) and (pointer: fine)').matches;
+    if (fine) inputRef.current?.focus();
+  }, [peerId, blocked, canWrite]);
+
+  // Le champ s'agrandit avec le message (jusqu'à ~5 lignes), puis défile.
+  useEffect(() => {
+    const node = inputRef.current;
+    if (!node) return;
+    node.style.height = 'auto';
+    node.style.height = `${Math.min(node.scrollHeight, 120)}px`;
+  }, [draft, peerId]);
 
   const statusText = online
     ? ft.onlineShort
@@ -342,14 +412,26 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
         <button type="button" className="messages-tool" aria-label={t.back} title={t.back} onClick={onBack}>
           <BackIcon />
         </button>
-        <Link to={`/profile/${encodeURIComponent(peerId)}`} className="messages-thread-peer">
+        {/* Ni la photo ni le nom ne renvoient au profil : on est déjà dans le
+            chat avec lui. Le profil reste accessible via le bouton dédié des
+            outils (à droite). */}
+        <div className="messages-thread-peer">
           <Avatar name={profile?.name} src={profile?.avatar} online={online} size={30} />
           <span className="messages-thread-identity">
             <span className="messages-thread-name">{profile?.name}</span>
             <span className={`messages-thread-status${online ? ' is-online' : ''}`}>{statusText}</span>
           </span>
-        </Link>
+        </div>
         <span className="messages-thread-tools">
+          <Link
+            to={`/profile/${encodeURIComponent(peerId)}`}
+            className="messages-tool messages-tool-profile"
+            aria-label={`${t.profile} — ${profile?.name || '?'}`}
+            title={t.profile}
+          >
+            <ProfileIcon size={12} />
+            <span className="messages-tool-profile-label">{t.profile}</span>
+          </Link>
           <button
             type="button"
             className={`messages-tool${reported ? ' is-flagged' : ''}`}
@@ -403,30 +485,38 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
       <div className="messages-thread" ref={listRef}>
         {messages.length === 0 && <p className="messages-empty messages-empty-small">{t.emptyThread}</p>}
         <ul className="messages-bubbles">
-          {messages.map((message) => (
-            <li key={message.id} className={`messages-bubble-row${message.mine ? ' is-mine' : ''}`}>
-              <div className="messages-bubble-wrap">
-                <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}>{message.body}</p>
-                {message.mine && (
-                  <button
-                    type="button"
-                    className="messages-bubble-delete"
-                    aria-label={t.deleteMessage}
-                    title={t.deleteMessage}
-                    disabled={deletingId === message.id}
-                    onClick={() => handleDelete(message)}
-                  >
-                    <TrashIcon size={12} />
-                  </button>
-                )}
-              </div>
-              <span className="messages-bubble-time">
-                {clockTime(message.createdAt, lang)}
-                {message.mine && message === lastMine && <em className="messages-bubble-read">{message.read ? t.seen : t.sent}</em>}
-                {deletingId === message.id && <em className="messages-bubble-read">{t.deleting}</em>}
-              </span>
-            </li>
-          ))}
+          {messages.map((message, index) => {
+            const previous = messages[index - 1];
+            const label = daySeparator(message.createdAt, lang, t);
+            const showDay = label && (!previous || daySeparator(previous.createdAt, lang, t) !== label);
+            return (
+              <React.Fragment key={message.id}>
+                {showDay && <li className="messages-day" aria-hidden="true"><span>{label}</span></li>}
+                <li className={`messages-bubble-row${message.mine ? ' is-mine' : ''}`}>
+                  <div className="messages-bubble-wrap">
+                    <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}>{message.body}</p>
+                    {message.mine && (
+                      <button
+                        type="button"
+                        className="messages-bubble-delete"
+                        aria-label={t.deleteMessage}
+                        title={t.deleteMessage}
+                        disabled={deletingId === message.id}
+                        onClick={() => handleDelete(message)}
+                      >
+                        <TrashIcon size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <span className="messages-bubble-time">
+                    {clockTime(message.createdAt, lang)}
+                    {message.mine && message === lastMine && <em className="messages-bubble-read">{message.read ? t.seen : t.sent}</em>}
+                    {deletingId === message.id && <em className="messages-bubble-read">{t.deleting}</em>}
+                  </span>
+                </li>
+              </React.Fragment>
+            );
+          })}
         </ul>
       </div>
 
@@ -452,8 +542,14 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
             maxLength={MESSAGE_MAX_LENGTH + 20}
             aria-label={t.composerPlaceholder}
           />
+          {remaining <= 60 && (
+            <span className={`messages-char-count${remaining < 0 ? ' is-over' : ''}`} aria-live="polite">
+              {remaining}
+            </span>
+          )}
           <button type="submit" className="messages-send" disabled={busy || !draft.trim() || tooLong} aria-label={t.send} title={t.send}>
             <SendIcon />
+            <span className="messages-send-label">{t.send}</span>
           </button>
         </form>
       ) : (
