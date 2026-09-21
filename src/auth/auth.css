@@ -691,7 +691,7 @@
 /* Simple trait vertical entre les deux colonnes — propriété logique pour
    rester entre les deux en RTL. */
 .player-social-grid .player-section + .player-section {
-  border-inline-start: 1px solid var(--line);
+  border-inline-start: 1px solid var(--line-strong);
 }
 
 .player-stat-card {
@@ -1404,7 +1404,7 @@
   /* En colonne unique, le séparateur devient un trait horizontal. */
   .player-social-grid .player-section + .player-section {
     border-inline-start: 0;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--line-strong);
   }
 
   .sso-providers-grid,
