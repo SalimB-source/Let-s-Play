@@ -4,6 +4,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { formatCommentDate } from '../lib/comments';
 import { useFriends } from './FriendsContext';
 import FriendButton from './FriendButton';
+import MessageButton from '../messages/MessageButton';
 import { describeFriendsError, fill, friendsText } from './friendsCopy';
 
 /**
@@ -137,6 +138,8 @@ function ActionButton({ onAction, className = '', children, t }) {
 /* ------------------------------ onglet Amis ------------------------------ */
 
 function FriendsTab({ friends, t, lang, unfriend }) {
+  // Chaque ami porte aussi l'icône « Message » (pastille des non-lus) : c'est
+  // l'entrée la plus courte vers une discussion.
   const online = friends.filter((friend) => friend.online);
   const offline = friends.filter((friend) => !friend.online);
   if (friends.length === 0) {
@@ -149,6 +152,7 @@ function FriendsTab({ friends, t, lang, unfriend }) {
         <ul className="friends-list">
           {online.map((friend) => (
             <PlayerRow key={friend.id} player={friend} t={t} lang={lang}>
+              <MessageButton userId={friend.id} name={friend.name} variant="icon" />
               <ActionButton t={t} className="friends-action-quiet" onAction={() => {
                 if (typeof window !== 'undefined' && !window.confirm(fill(t.removeConfirm, { name: friend.name }))) return undefined;
                 return unfriend(friend.id);
@@ -163,6 +167,7 @@ function FriendsTab({ friends, t, lang, unfriend }) {
           <ul className="friends-list">
             {offline.map((friend) => (
               <PlayerRow key={friend.id} player={friend} t={t} lang={lang}>
+                <MessageButton userId={friend.id} name={friend.name} variant="icon" />
                 <ActionButton t={t} className="friends-action-quiet" onAction={() => {
                   if (typeof window !== 'undefined' && !window.confirm(fill(t.removeConfirm, { name: friend.name }))) return undefined;
                   return unfriend(friend.id);

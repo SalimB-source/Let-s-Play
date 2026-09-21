@@ -117,11 +117,17 @@ export function FriendsProvider({ children }) {
   const uid = user?.id ? String(user.id) : null;
   const mode = !uid ? 'none' : isDemo ? 'demo' : supabase ? 'supabase' : 'none';
 
-  const [relations, setRelations] = useState({});
-  const [profiles, setProfiles] = useState({});
+  // Personas : l'état vit dans localStorage, donc la liste est connue dès le
+  // premier rendu (le lanceur affiche ses compteurs sans attendre le montage,
+  // et le rendu SSR des scripts de vérification montre de vrais amis).
+  const isDemoPlayer = mode === 'demo' && Boolean(user);
+  const [relations, setRelations] = useState(() => (
+    isDemoPlayer ? demoRelations(readDemoFriendState(user), uid) : {}
+  ));
+  const [profiles, setProfiles] = useState(() => (isDemoPlayer ? demoProfiles() : {}));
   const [presentIds, setPresentIds] = useState(EMPTY_SET);
   // 'idle' | 'loading' | 'ready' | 'error' | 'unavailable' (table absente)
-  const [status, setStatus] = useState('idle');
+  const [status, setStatus] = useState(isDemoPlayer ? 'ready' : 'idle');
   const [error, setError] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [dockOpen, setDockOpenState] = useState(readDockOpen);

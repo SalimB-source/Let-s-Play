@@ -8,6 +8,7 @@ import { levelTitle } from '../achievements/catalog';
 import { useLanguage } from '../i18n/LanguageContext';
 import DeleteAccount from '../components/DeleteAccount';
 import FriendButton from '../friends/FriendButton';
+import MessageButton from '../messages/MessageButton';
 import { useFriends } from '../friends/FriendsContext';
 import { isRecentlySeen } from '../friends/friendsApi';
 import { demoPresence, findDemoPlayer } from '../friends/demoRoster';
@@ -265,6 +266,8 @@ export default function Profile() {
                   (communauté de démonstration pour une persona, table
                   friendships pour un compte). */}
               <FriendButton userId={demoProfile.id} name={meta.gamertag} />
+              {/* Messagerie 1-à-1 : réservée aux amis (le bouton l'explique sinon). */}
+              <MessageButton userId={demoProfile.id} name={meta.gamertag} />
               <Link to="/news" className="button button-ghost">Voir les actus ↗</Link>
               <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
             </div>
@@ -335,6 +338,7 @@ export default function Profile() {
           <div className="player-actions-card">
             <div className="player-actions-left">
               <FriendButton userId={demoPlayer.id} name={demoPlayer.gamertag} />
+              <MessageButton userId={demoPlayer.id} name={demoPlayer.gamertag} />
               <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
             </div>
             <Link to="/auth" className="player-signout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Mon hub</Link>
@@ -419,6 +423,7 @@ export default function Profile() {
         <div className="player-actions-card">
           <div className="player-actions-left">
             <FriendButton userId={remoteProfile.id} name={handle} />
+            <MessageButton userId={remoteProfile.id} name={handle} />
             <Link to="/news" className="button button-ghost">Explorer les actus ↗</Link>
             <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
           </div>
