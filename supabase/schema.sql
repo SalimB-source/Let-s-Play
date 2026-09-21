@@ -1,5 +1,5 @@
 -- ============================================================================
---  Let's Play · schéma Supabase — profils joueurs + commentaires des articles
+--  Let's Play · schéma Supabase — profils joueurs, commentaires, succès, amis
 -- ============================================================================
 --  Où : Supabase Dashboard > SQL Editor, sur le projet pointé par
 --       VITE_SUPABASE_URL. Coller tout ce fichier puis « Run ».
@@ -363,6 +363,135 @@ for each row execute procedure public.set_comment_author();
 
 
 -- ----------------------------------------------------------------------------
+-- 3d. Amis : demandes, liste d'amis, présence en ligne
+-- ----------------------------------------------------------------------------
+-- Une ligne par relation entre deux joueurs. `requester_id` a envoyé la
+-- demande à `addressee_id` ; `status` vaut 'pending' tant que le destinataire
+-- n'a pas répondu, 'accepted' ensuite. Refuser, annuler ou retirer un ami
+-- SUPPRIME la ligne (pas d'historique). L'index unique sur la paire
+-- (ordonnée) empêche deux lignes A→B et B→A.
+create table if not exists public.friendships (
+  id uuid primary key default gen_random_uuid(),
+  requester_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  addressee_id uuid not null references auth.users(id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'accepted')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint friendships_not_self check (requester_id <> addressee_id)
+);
+
+create unique index if not exists friendships_pair_idx
+  on public.friendships (least(requester_id, addressee_id), greatest(requester_id, addressee_id));
+create index if not exists friendships_addressee_idx
+  on public.friendships (addressee_id, status);
+create index if not exists friendships_requester_idx
+  on public.friendships (requester_id, status);
+
+-- RLS : chaque joueur ne voit que les relations dont il fait partie, n'envoie
+-- des demandes qu'en son nom, ne répond (accepter) qu'à celles qu'il a reçues
+-- et peut supprimer toute relation dont il fait partie (refuser / annuler /
+-- retirer).
+do $$
+begin
+  alter table public.friendships enable row level security;
+
+  drop policy if exists "Friendships are visible to both players" on public.friendships;
+  create policy "Friendships are visible to both players"
+  on public.friendships for select to authenticated
+  using (auth.uid() = requester_id or auth.uid() = addressee_id);
+
+  drop policy if exists "Players send friend requests as themselves" on public.friendships;
+  create policy "Players send friend requests as themselves"
+  on public.friendships for insert to authenticated
+  with check (auth.uid() = requester_id and status = 'pending' and requester_id <> addressee_id);
+
+  drop policy if exists "Players answer requests they received" on public.friendships;
+  create policy "Players answer requests they received"
+  on public.friendships for update to authenticated
+  using (auth.uid() = addressee_id)
+  with check (auth.uid() = addressee_id and status = 'accepted');
+
+  drop policy if exists "Players remove friendships they belong to" on public.friendships;
+  create policy "Players remove friendships they belong to"
+  on public.friendships for delete to authenticated
+  using (auth.uid() = requester_id or auth.uid() = addressee_id);
+exception
+  when others then
+    raise warning 'Let''s Play : politiques RLS de public.friendships non appliquées (%).', sqlerrm;
+end $$;
+
+-- Côté serveur : l'expéditeur est toujours le joueur connecté, une demande
+-- part toujours en 'pending' et `updated_at` suit chaque changement. Une
+-- demande envoyée à quelqu'un qui nous avait déjà écrit vaut acceptation :
+-- sa demande passe en 'accepted' et rien n'est inséré (l'application recharge
+-- alors la liste).
+create or replace function public.prepare_friendship()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if tg_op = 'INSERT' then
+    new.requester_id := coalesce(auth.uid(), new.requester_id);
+    if new.requester_id is null then
+      raise exception 'friendship_requires_auth' using errcode = '42501';
+    end if;
+    update public.friendships
+       set status = 'accepted', updated_at = now()
+     where requester_id = new.addressee_id
+       and addressee_id = new.requester_id
+       and status = 'pending';
+    if found then
+      return null;
+    end if;
+    new.status := 'pending';
+    new.created_at := now();
+  end if;
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists on_friendship_write on public.friendships;
+create trigger on_friendship_write
+before insert or update on public.friendships
+for each row execute procedure public.prepare_friendship();
+
+-- Présence : `profiles.last_seen_at` est rafraîchi par l'application toutes
+-- les 90 secondes pour un joueur connecté (battement de cœur). La fenêtre
+-- d'amis considère un joueur en ligne s'il est présent sur le canal Realtime
+-- OU vu il y a moins de 3 minutes — le second signal fonctionne même si
+-- Realtime est indisponible. Ajout non bloquant sur une table existante.
+do $$
+begin
+  if to_regclass('public.profiles') is not null
+     and not exists (select 1 from information_schema.columns
+                     where table_schema = 'public' and table_name = 'profiles' and column_name = 'last_seen_at') then
+    execute 'alter table public.profiles add column last_seen_at timestamptz';
+  end if;
+exception when others then
+  raise warning 'Let''s Play : colonne profiles.last_seen_at non ajoutée (%).', sqlerrm;
+end $$;
+
+-- Realtime : la fenêtre d'amis écoute les changements de `friendships` pour
+-- afficher une demande reçue sans recharger. Les DELETE ne transportent que la
+-- clé primaire sans REPLICA IDENTITY FULL : on l'active pour que les filtres
+-- (requester_id / addressee_id) s'appliquent aussi aux suppressions. Sans
+-- publication `supabase_realtime` (base hors Supabase), on le signale.
+do $$
+begin
+  alter table public.friendships replica identity full;
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (select 1 from pg_publication_tables
+                     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'friendships') then
+    alter publication supabase_realtime add table public.friendships;
+  end if;
+exception when others then
+  raise warning 'Let''s Play : friendships non ajoutée à la publication Realtime (%). La fenêtre d''amis se rafraîchit alors toutes les minutes.', sqlerrm;
+end $$;
+
+
+-- ----------------------------------------------------------------------------
 -- 4. Suppression du compte (ré-authentification requise côté application)
 -- ----------------------------------------------------------------------------
 -- L'application vérifie d'abord le mot de passe avec
@@ -410,6 +539,8 @@ begin
   grant insert, delete, update on public.comments to authenticated;
   -- Progression des succès : accès à sa propre ligne seulement (RLS).
   grant select, insert, update, delete on public.player_progress to authenticated;
+  -- Amis : uniquement les relations dont on fait partie (RLS).
+  grant select, insert, update, delete on public.friendships to authenticated;
 exception
   when others then
     raise warning 'Let''s Play : droits anon/authenticated non appliqués (%). Sur Supabase c''est habituellement déjà le cas par défaut.', sqlerrm;
@@ -491,6 +622,28 @@ from (
          and has_function_privilege('authenticated', 'public.delete_my_account()', 'execute')
           then 'OK'
         else 'MANQUANT'
-      end)
+      end),
+    (15, 'table public.friendships',
+      case when to_regclass('public.friendships') is null then 'MANQUANT' else 'OK' end),
+    (16, 'politiques RLS friendships (4)',
+      case when (select count(*) from pg_policies p
+                 where p.schemaname = 'public' and p.tablename = 'friendships'
+                   and p.policyname in ('Friendships are visible to both players',
+                                        'Players send friend requests as themselves',
+                                        'Players answer requests they received',
+                                        'Players remove friendships they belong to')) = 4
+           then 'OK' else 'MANQUANT' end),
+    (17, 'trigger demande d''ami',
+      case when exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.friendships')
+                          and t.tgname = 'on_friendship_write') then 'OK' else 'MANQUANT' end),
+    (18, 'presence profiles.last_seen_at',
+      case when exists (select 1 from information_schema.columns
+                        where table_schema = 'public' and table_name = 'profiles' and column_name = 'last_seen_at')
+           then 'OK' else 'MANQUANT' end),
+    (19, 'realtime friendships',
+      case when exists (select 1 from pg_publication_tables
+                        where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'friendships')
+           then 'OK' else 'ABSENT (voir WARNING)' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

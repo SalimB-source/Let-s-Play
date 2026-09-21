@@ -7,6 +7,10 @@ import { useAchievements } from '../achievements/AchievementContext';
 import { levelTitle } from '../achievements/catalog';
 import { useLanguage } from '../i18n/LanguageContext';
 import DeleteAccount from '../components/DeleteAccount';
+import FriendButton from '../friends/FriendButton';
+import { useFriends } from '../friends/FriendsContext';
+import { isRecentlySeen } from '../friends/friendsApi';
+import { demoPresence, findDemoPlayer } from '../friends/demoRoster';
 
 function formatJoined(iso) {
   if (!iso) return '—';
@@ -39,17 +43,22 @@ export default function Profile() {
   const { user: me } = useAuth();
   const { summary } = useAchievements();
   const { lang } = useLanguage();
-  const [remoteProfile, setRemoteProfile] = useState(null);
-  const [commentCount, setCommentCount] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-
+  const friends = useFriends();
   const isOwn = me && userId === me.id;
   const demoProfile = Object.values(DEMO_PROFILES).find((p) => p.id === userId);
+  // Joueur de la communauté de démonstration (liste d'amis des personas) :
+  // pas de compte, une fiche scriptée.
+  const demoPlayer = !demoProfile ? findDemoPlayer(userId) : null;
+  const [remoteProfile, setRemoteProfile] = useState(null);
+  const [commentCount, setCommentCount] = useState(null);
+  // Les fiches scriptées (personas, communauté démo) sont connues tout de
+  // suite : pas de squelette de chargement pour elles.
+  const [loading, setLoading] = useState(() => !(demoProfile || demoPlayer));
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!userId) return;
-    if (demoProfile) {
+    if (demoProfile || demoPlayer) {
       setLoading(false);
       return;
     }
@@ -67,7 +76,12 @@ export default function Profile() {
       setLoading(true);
       setNotFound(false);
       try {
-        const { data, error } = await supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, updated_at').eq('id', userId).maybeSingle();
+        // `last_seen_at` (présence des amis) n'existe que si la migration a
+        // été appliquée : on retombe sur les colonnes de base sinon.
+        let { data, error } = await supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, updated_at, last_seen_at').eq('id', userId).maybeSingle();
+        if (error && /last_seen_at/.test(error.message || '')) {
+          ({ data, error } = await supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, updated_at').eq('id', userId).maybeSingle());
+        }
         if (cancelled) return;
         if (error) throw error;
         if (!data) {
@@ -87,7 +101,7 @@ export default function Profile() {
       }
     })();
     return () => { cancelled = true; };
-  }, [userId, demoProfile, isOwn]);
+  }, [userId, demoProfile, demoPlayer, isOwn]);
 
   // Own profile → redirect to hub for editing
   if (isOwn) {
@@ -247,10 +261,83 @@ export default function Profile() {
 
           <div className="player-actions-card">
             <div className="player-actions-left">
-              <Link to="/news" className="button button-yellow">Voir les actus ↗</Link>
+              {/* Demande d'ami : la relation vit dans le contexte des amis
+                  (communauté de démonstration pour une persona, table
+                  friendships pour un compte). */}
+              <FriendButton userId={demoProfile.id} name={meta.gamertag} />
+              <Link to="/news" className="button button-ghost">Voir les actus ↗</Link>
               <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
             </div>
             <Link to="/auth" className="player-signout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Ouvrir mon hub</Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (demoPlayer) {
+    // Persona connectée : présence « vivante » du contexte (elle avance avec
+    // l'horloge) ; visiteur : valeur scriptée du moment.
+    const presence = friends.mode === 'demo'
+      ? { online: friends.isOnline(demoPlayer.id) }
+      : demoPresence(demoPlayer, Date.now());
+    const title = levelTitle(demoPlayer.level, lang);
+    const nextXp = Math.max(demoPlayer.xp + 1, Math.ceil((demoPlayer.xp + 1) / 500) * 500);
+    const pct = Math.min(100, Math.round((demoPlayer.xp / nextXp) * 100));
+    return (
+      <section className="auth-page wrap">
+        <div className="player-hub">
+          <div className="player-demo-banner">
+            <div className="player-demo-banner-left">
+              <span className="player-demo-pill">COMMUNAUTÉ DÉMO</span>
+              <span className="player-demo-text">Joueur de la communauté de démonstration — cette fiche simule un profil public.</span>
+            </div>
+            <Link to="/auth" className="player-demo-switch-btn">Ouvrir mon hub ↗</Link>
+          </div>
+
+          <div className="player-profile-card">
+            <div className="player-header-layout">
+              <div className="player-avatar-col">
+                <div className="player-avatar-wrap" style={{ cursor: 'default' }}>
+                  {demoPlayer.avatar ? <img src={demoPlayer.avatar} alt={demoPlayer.gamertag} className="player-avatar-img" /> : <div className="player-avatar-fallback">{demoPlayer.gamertag.slice(0, 2).toUpperCase()}</div>}
+                  {presence.online
+                    ? <span className="player-status-badge"><span className="player-status-dot" /> EN LIGNE</span>
+                    : <span className="player-status-badge" style={{ borderColor: 'var(--line-strong)', color: 'var(--muted)' }}><span className="player-status-dot" style={{ background: 'var(--muted)', boxShadow: 'none', animation: 'none' }} /> HORS LIGNE</span>}
+                </div>
+              </div>
+              <div className="player-identity">
+                <div className="player-tags-row">
+                  <span className="player-badge-tier">JOUEUR · COMMUNAUTÉ</span>
+                  <span className="player-badge-verified">NIV. {demoPlayer.level} · {demoPlayer.xp.toLocaleString()} XP</span>
+                </div>
+                <h1 className="player-gamertag">{demoPlayer.gamertag}</h1>
+                <div className="player-meta-line">
+                  <span><strong>{demoPlayer.fullName}</strong></span><span>•</span><span>Algérie</span><span>•</span><span>Membre de la communauté Let’s Play</span>
+                </div>
+              </div>
+            </div>
+            <div className="player-xp-section">
+              <div className="player-xp-header">
+                <span className="player-xp-level-tag">NIVEAU {demoPlayer.level} — {title}</span>
+                <span className="player-xp-count">{demoPlayer.xp.toLocaleString()} / {nextXp.toLocaleString()} XP ({pct}%)</span>
+              </div>
+              <div className="player-xp-bar-bg"><div className="player-xp-bar-fill" style={{ width: `${pct}%` }} /></div>
+            </div>
+          </div>
+
+          {demoPlayer.platforms?.length > 0 && (
+            <div className="player-section">
+              <div className="player-section-header"><h2>Plateformes</h2></div>
+              <div className="player-platforms-row">{demoPlayer.platforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}</div>
+            </div>
+          )}
+
+          <div className="player-actions-card">
+            <div className="player-actions-left">
+              <FriendButton userId={demoPlayer.id} name={demoPlayer.gamertag} />
+              <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
+            </div>
+            <Link to="/auth" className="player-signout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Mon hub</Link>
           </div>
         </div>
       </section>
@@ -284,6 +371,8 @@ export default function Profile() {
   const lvl = remoteProfile.level ?? 1;
   const xp = remoteProfile.xp ?? null;
   const title = levelTitle(lvl, lang);
+  // Présence : canal temps réel (contexte des amis) ou battement de cœur récent.
+  const isOnline = friends.isOnline(remoteProfile.id) || isRecentlySeen(remoteProfile.last_seen_at);
 
   return (
     <section className="auth-page wrap">
@@ -293,7 +382,9 @@ export default function Profile() {
             <div className="player-avatar-col">
               <div className="player-avatar-wrap" style={{ cursor: 'default' }}>
                 {avatarUrl ? <img src={avatarUrl} alt={handle} className="player-avatar-img" /> : <div className="player-avatar-fallback">{String(handle).slice(0,2).toUpperCase()}</div>}
-                <span className="player-status-badge"><span className="player-status-dot" style={{ background: 'var(--muted)', boxShadow: 'none' }} /> PROFIL PUBLIC</span>
+                {isOnline
+                  ? <span className="player-status-badge"><span className="player-status-dot" /> EN LIGNE</span>
+                  : <span className="player-status-badge" style={{ borderColor: 'var(--line-strong)', color: 'var(--muted)' }}><span className="player-status-dot" style={{ background: 'var(--muted)', boxShadow: 'none', animation: 'none' }} /> HORS LIGNE</span>}
               </div>
             </div>
             <div className="player-identity">
@@ -327,7 +418,8 @@ export default function Profile() {
 
         <div className="player-actions-card">
           <div className="player-actions-left">
-            <Link to="/news" className="button button-yellow">Explorer les actus ↗</Link>
+            <FriendButton userId={remoteProfile.id} name={handle} />
+            <Link to="/news" className="button button-ghost">Explorer les actus ↗</Link>
             <button type="button" className="button button-ghost" onClick={() => navigate(-1)}>Retour</button>
           </div>
           <Link to="/auth" className="player-signout-btn" style={{ textDecoration: 'none', textAlign: 'center' }}>Mon hub</Link>

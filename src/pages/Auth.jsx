@@ -10,6 +10,7 @@ import { metricValue } from '../achievements/engine';
 import { levelTitle } from '../achievements/catalog';
 import AchievementsPanel from '../achievements/AchievementsPanel';
 import DeleteAccount from '../components/DeleteAccount';
+import FriendsHubSection from '../friends/FriendsHubSection';
 
 /* ------------------------------------------------------------------ */
 /* Small inline icons (no external deps, inherits currentColor)        */
@@ -1048,6 +1049,10 @@ export default function Auth({ initialMode = 'signin' }) {
               <div className="player-stat-label">{t.statBadges}</div>
             </div>
           </div>
+
+          {/* AMIS & DEMANDES — résumé + raccourcis vers la fenêtre d'amis
+              (en bas à droite) */}
+          <FriendsHubSection />
 
           {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
               commentaires, recherche, fidélité, compte) */}

@@ -11,7 +11,8 @@
     "check:videos": "node scripts/video-playback-check.mjs",
     "check:thumbs": "node scripts/thumbnail-check.mjs",
     "check:achievements": "node scripts/achievements-check.mjs",
-    "check:countdown": "node scripts/countdown-check.mjs"
+    "check:countdown": "node scripts/countdown-check.mjs",
+    "check:friends": "node scripts/friends-check.mjs"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",
