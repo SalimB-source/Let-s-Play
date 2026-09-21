@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements, notificationCopy } from './AchievementContext';
+import { rarityLabel } from './catalog';
 
 /**
  * Notifications de déblocage.
@@ -69,6 +70,9 @@ function AchievementToast({ entry }) {
       <span className="achievement-toast-text">
         <span className="achievement-toast-kicker">
           <span className="achievement-toast-spark" aria-hidden="true">◆</span> {t.unlocked}
+          <span className={`achievement-toast-tier rarity-${item.rarity || 'bronze'}`}>
+            {rarityLabel(item.rarity, lang)}
+          </span>
         </span>
         <span className="achievement-toast-title">{item.name}</span>
         <span className="achievement-toast-desc">{item.desc}</span>

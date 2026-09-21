@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from './AchievementContext';
-import { GROUPS, achievementIconUrl, achievementLabel, groupLabel, levelTitle } from './catalog';
+import { GROUPS, TIER_ORDER, achievementIconUrl, achievementLabel, groupLabel, levelTitle, rarityLabel } from './catalog';
 
 /**
  * Panneau des succès, partagé par la page `/achievements` (complet) et le
@@ -26,6 +26,8 @@ const copy = {
     filterUnlocked: 'Unlocked',
     filterInProgress: 'In progress',
     filterLocked: 'Locked',
+    filterByTier: 'Filter by tier',
+    tiers: { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', platinum: 'Platinum' },
     viewAll: 'SEE ALL ACHIEVEMENTS',
     empty: 'No achievement matches this filter yet.',
     remaining: '{n} more to go',
@@ -47,6 +49,8 @@ const copy = {
     filterUnlocked: 'Débloqués',
     filterInProgress: 'En cours',
     filterLocked: 'Verrouillés',
+    filterByTier: 'Filtrer par grade',
+    tiers: { bronze: 'Bronze', silver: 'Argent', gold: 'Or', platinum: 'Platine' },
     viewAll: 'VOIR TOUS LES SUCCÈS',
     empty: 'Aucun succès ne correspond à ce filtre pour l’instant.',
     remaining: 'Encore {n}',
@@ -68,6 +72,8 @@ const copy = {
     filterUnlocked: 'المفتوحة',
     filterInProgress: 'قيد التقدم',
     filterLocked: 'المغلقة',
+    filterByTier: 'تصفية حسب الرتبة',
+    tiers: { bronze: 'برونزي', silver: 'فضي', gold: 'ذهبي', platinum: 'بلاتيني' },
     viewAll: 'عرض كل الإنجازات',
     empty: 'لا يوجد إنجاز مطابق لهذا التصفية بعد.',
     remaining: 'متبق {n}',
@@ -99,6 +105,7 @@ export function AchievementCard({ item, lang, t }) {
           loading="lazy"
         />
         <h3>{label.name}</h3>
+        <span className={`achievement-card-tier rarity-${item.rarity}`}>{t.tiers?.[item.rarity] || rarityLabel(item.rarity, lang)}</span>
         {item.unlocked && <span className="achievement-card-check" aria-hidden="true">✓</span>}
       </div>
 
@@ -106,6 +113,10 @@ export function AchievementCard({ item, lang, t }) {
       <div className="achievement-tooltip" role="tooltip">
         <div className="achievement-tooltip-header">
           <span className="achievement-tooltip-name">{label.name}</span>
+          <span className={`achievement-tooltip-tier rarity-${item.rarity}`}>
+            <span className="achievement-tooltip-tier-dot" aria-hidden="true" />
+            {t.tiers?.[item.rarity] || rarityLabel(item.rarity, lang)}
+          </span>
           <span className={`achievement-tooltip-status ${item.unlocked ? 'unlocked' : 'locked'}`}>
             {item.unlocked ? t.unlockedTag : t.lockedTag}
           </span>
@@ -170,6 +181,7 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
   const { lang } = useLanguage();
   const t = copy[lang] || copy.en;
   const [group, setGroup] = useState('all');
+  const [tier, setTier] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
 
   const usedGroups = useMemo(
@@ -177,9 +189,22 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
     [summary.items],
   );
 
+  // Compteurs par grade : débloqués / total, dans l'ordre bronze → platine.
+  const tierCounts = useMemo(() => (
+    TIER_ORDER.map((id) => {
+      const items = summary.items.filter((item) => item.rarity === id);
+      return {
+        id,
+        total: items.length,
+        unlocked: items.filter((item) => item.unlocked).length,
+      };
+    }).filter((entry) => entry.total > 0)
+  ), [summary.items]);
+
   const filtered = useMemo(() => {
     let items = summary.items;
     if (group !== 'all') items = items.filter((item) => item.group === group);
+    if (tier !== 'all') items = items.filter((item) => item.rarity === tier);
     if (stateFilter === 'unlocked') items = items.filter((item) => item.unlocked);
     if (stateFilter === 'locked') items = items.filter((item) => !item.unlocked);
     if (stateFilter === 'progress') items = items.filter((item) => !item.unlocked && item.current > 0);
@@ -189,7 +214,7 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
       if (a.unlocked && b.unlocked) return String(b.unlockedAt).localeCompare(String(a.unlockedAt));
       return b.percent - a.percent || a.target - b.target;
     });
-  }, [summary.items, group, stateFilter]);
+  }, [summary.items, group, tier, stateFilter]);
 
   if (variant === 'compact') {
     const recent = filtered.filter((item) => item.unlocked).slice(0, limit);
@@ -241,6 +266,22 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
               onClick={() => setGroup(entry.id)}
             >
               {entry.icon} {groupLabel(entry.id, lang)}
+            </button>
+          ))}
+        </div>
+        {/* Grades : bronze → platine, avec le nombre de succès obtenus. */}
+        <div className="achievement-filter-row" role="group" aria-label={t.filterByTier}>
+          {tierCounts.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              className={`achievement-chip tier-chip rarity-${entry.id}${tier === entry.id ? ' active' : ''}`}
+              onClick={() => setTier(tier === entry.id ? 'all' : entry.id)}
+              aria-pressed={tier === entry.id}
+            >
+              <span className="tier-chip-dot" aria-hidden="true" />
+              {t.tiers?.[entry.id] || rarityLabel(entry.id, lang)}
+              <span className="tier-chip-count">{entry.unlocked}/{entry.total}</span>
             </button>
           ))}
         </div>

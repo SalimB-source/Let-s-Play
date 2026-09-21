@@ -12,14 +12,22 @@
  * attribution requise), rendue dans public/icons/achievements/ d'après
  * l'identifiant du succès.
  *
+ * Grades
+ * ------
+ * `rarity` porte le **grade** du succès, du plus accessible au plus convoité :
+ * bronze → argent → or → platine. Le grade se lit sur la carte (couleur du
+ * cadre), dans les filtres de la page et dans la notification de déblocage ;
+ * il résume la difficulté d'obtention (voir `TIER_ORDER` pour l'ordre).
+ *
  * Ajouter un succès
  * -----------------
  * 1. `metric` doit exister dans `METRICS` (engine.js). Les métriques déjà
  *    suivies : pagesVisited, articlesRead, newsRead, reviewsRead,
- *    dossiersRead, sectionsVisited, achievementsPageOpened, videosWatched,
- *    liveWatched, commentsPosted, searchesPerformed, distinctSearches,
- *    languagesUsed, providersLinked, profileUpdates, accountsCreated,
- *    sessions, visitDays, bestStreak, nightReading.
+ *    dossiersRead, readAllKinds, sectionsVisited, achievementsPageOpened,
+ *    videosWatched, liveWatched, commentsPosted, searchesPerformed,
+ *    distinctSearches, languagesUsed, providersLinked, profileUpdates,
+ *    accountsCreated, sessions, visitDays, bestStreak, nightReading,
+ *    earlyReading, nightReadingDays.
  * 2. `target` est le seuil à atteindre (1 = une fois).
  * 3. `labels` porte le nom et la description dans les trois langues du site
  *    (l'anglais sert de repli).
@@ -29,13 +37,23 @@
  * autant de succès que voulu ici.
  */
 
-/** Rareté : couleur et libellé affichés sur la carte du succès. */
+/** Grades : du plus accessible au plus difficile. Couleur et libellé affichés
+    sur la carte, dans les filtres et dans la notification de déblocage. */
 export const RARITIES = {
-  common: { id: 'common', labels: { en: 'Common', fr: 'Commun', ar: 'شائع' } },
-  rare: { id: 'rare', labels: { en: 'Rare', fr: 'Rare', ar: 'نادر' } },
-  epic: { id: 'epic', labels: { en: 'Epic', fr: 'Épique', ar: 'ملحمي' } },
-  legendary: { id: 'legendary', labels: { en: 'Legendary', fr: 'Légendaire', ar: 'أسطوري' } },
+  bronze: { id: 'bronze', labels: { en: 'Bronze', fr: 'Bronze', ar: 'برونزي' } },
+  silver: { id: 'silver', labels: { en: 'Silver', fr: 'Argent', ar: 'فضي' } },
+  gold: { id: 'gold', labels: { en: 'Gold', fr: 'Or', ar: 'ذهبي' } },
+  platinum: { id: 'platinum', labels: { en: 'Platinum', fr: 'Platine', ar: 'بلاتيني' } },
 };
+
+/** Ordre des grades, du plus accessible au plus difficile. */
+export const TIER_ORDER = ['bronze', 'silver', 'gold', 'platinum'];
+
+/** Rang d'un grade (0 = bronze). Les grades inconnus reviennent au bas. */
+export function tierRank(tier) {
+  const index = TIER_ORDER.indexOf(tier);
+  return index === -1 ? 0 : index;
+}
 
 /** Familles de succès, utilisées pour filtrer sur la page /achievements. */
 export const GROUPS = [
@@ -62,7 +80,7 @@ export const ACHIEVEMENTS = [
     id: 'welcome-aboard',
     icon: 'icons/achievements/welcome-aboard.webp',
     group: 'start',
-    rarity: 'common',
+    rarity: 'bronze',
     xp: 25,
     metric: 'pagesVisited',
     target: 1,
@@ -76,7 +94,7 @@ export const ACHIEVEMENTS = [
     id: 'explorer',
     icon: 'icons/achievements/explorer.webp',
     group: 'start',
-    rarity: 'common',
+    rarity: 'bronze',
     xp: 40,
     metric: 'sectionsVisited',
     target: 3,
@@ -90,7 +108,7 @@ export const ACHIEVEMENTS = [
     id: 'grand-tour',
     icon: 'icons/achievements/grand-tour.webp',
     group: 'start',
-    rarity: 'rare',
+    rarity: 'silver',
     xp: 80,
     metric: 'sectionsVisited',
     target: 6,
@@ -104,7 +122,7 @@ export const ACHIEVEMENTS = [
     id: 'trophy-hunter',
     icon: 'icons/achievements/trophy-hunter.webp',
     group: 'start',
-    rarity: 'common',
+    rarity: 'bronze',
     xp: 25,
     metric: 'achievementsPageOpened',
     target: 1,
@@ -118,7 +136,7 @@ export const ACHIEVEMENTS = [
     id: 'player-one',
     icon: 'icons/achievements/player-one.webp',
     group: 'start',
-    rarity: 'rare',
+    rarity: 'silver',
     xp: 80,
     metric: 'accountsCreated',
     target: 1,
@@ -132,8 +150,8 @@ export const ACHIEVEMENTS = [
     id: 'welcome-back',
     icon: 'icons/achievements/welcome-back.webp',
     group: 'start',
-    rarity: 'common',
-    xp: 40,
+    rarity: 'bronze',
+    xp: 30,
     metric: 'sessions',
     target: 1,
     labels: {
@@ -142,13 +160,29 @@ export const ACHIEVEMENTS = [
       ar: { name: 'مرحبًا بعودتك', desc: 'سجّل الدخول إلى حسابك.' },
     },
   },
+  {
+    // Platine : toutes les sections du site, y compris recherche, succès et
+    // compte — aucun recoin ne reste inexploré.
+    id: 'full-passport',
+    icon: 'icons/achievements/full-passport.webp',
+    group: 'start',
+    rarity: 'platinum',
+    xp: 400,
+    metric: 'sectionsVisited',
+    target: 9,
+    labels: {
+      en: { name: 'Full passport', desc: 'Visit all 9 sections: home, news, reviews, dossiers, events, calendar, search, achievements, account.' },
+      fr: { name: 'Passeport complet', desc: 'Visite les 9 sections : accueil, actus, tests, dossiers, events, calendrier, recherche, succès, compte.' },
+      ar: { name: 'جواز سفر كامل', desc: 'زُر الأقسام التسعة كلها: الرئيسية، الأخبار، المراجعات، الملفات، الفعاليات، التقويم، البحث، الإنجازات، الحساب.' },
+    },
+  },
 
   /* --------------------------------- Lecture -------------------------------- */
   {
     id: 'first-read',
     icon: 'icons/achievements/first-read.webp',
     group: 'reading',
-    rarity: 'common',
+    rarity: 'bronze',
     xp: 25,
     metric: 'articlesRead',
     target: 1,
@@ -162,7 +196,7 @@ export const ACHIEVEMENTS = [
     id: 'page-turner',
     icon: 'icons/achievements/page-turner.webp',
     group: 'reading',
-    rarity: 'rare',
+    rarity: 'silver',
     xp: 80,
     metric: 'articlesRead',
     target: 5,
@@ -176,8 +210,8 @@ export const ACHIEVEMENTS = [
     id: 'deep-reader',
     icon: 'icons/achievements/deep-reader.webp',
     group: 'reading',
-    rarity: 'epic',
-    xp: 160,
+    rarity: 'gold',
+    xp: 150,
     metric: 'articlesRead',
     target: 12,
     labels: {
@@ -187,11 +221,26 @@ export const ACHIEVEMENTS = [
     },
   },
   {
+    // Platine : lire la quasi-totalité du contenu éditorial publié.
+    id: 'librarian',
+    icon: 'icons/achievements/librarian.webp',
+    group: 'reading',
+    rarity: 'platinum',
+    xp: 600,
+    metric: 'articlesRead',
+    target: 30,
+    labels: {
+      en: { name: 'Librarian', desc: 'Read 30 different articles — news, reviews and dossiers combined.' },
+      fr: { name: 'Bibliothécaire', desc: 'Lis 30 articles différents : actus, tests et dossiers réunis.' },
+      ar: { name: 'أمين المكتبة', desc: 'اقرأ 30 مقالًا مختلفًا: أخبار ومراجعات وملفات معًا.' },
+    },
+  },
+  {
     id: 'news-wire',
     icon: 'icons/achievements/news-wire.webp',
     group: 'reading',
-    rarity: 'common',
-    xp: 40,
+    rarity: 'silver',
+    xp: 60,
     metric: 'newsRead',
     target: 5,
     labels: {
@@ -204,8 +253,8 @@ export const ACHIEVEMENTS = [
     id: 'critic-eye',
     icon: 'icons/achievements/critic-eye.webp',
     group: 'reading',
-    rarity: 'rare',
-    xp: 80,
+    rarity: 'silver',
+    xp: 70,
     metric: 'reviewsRead',
     target: 3,
     labels: {
@@ -218,8 +267,8 @@ export const ACHIEVEMENTS = [
     id: 'archivist',
     icon: 'icons/achievements/archivist.webp',
     group: 'reading',
-    rarity: 'rare',
-    xp: 80,
+    rarity: 'silver',
+    xp: 70,
     metric: 'dossiersRead',
     target: 3,
     labels: {
@@ -229,10 +278,38 @@ export const ACHIEVEMENTS = [
     },
   },
   {
+    id: 'erudit',
+    icon: 'icons/achievements/erudit.webp',
+    group: 'reading',
+    rarity: 'gold',
+    xp: 180,
+    metric: 'dossiersRead',
+    target: 6,
+    labels: {
+      en: { name: 'Scholar', desc: 'Read 6 dossiers.' },
+      fr: { name: 'Érudit', desc: 'Lis 6 dossiers.' },
+      ar: { name: 'مثقف', desc: 'اقرأ 6 ملفات.' },
+    },
+  },
+  {
+    id: 'trinity-reader',
+    icon: 'icons/achievements/trinity-reader.webp',
+    group: 'reading',
+    rarity: 'silver',
+    xp: 90,
+    metric: 'readAllKinds',
+    target: 1,
+    labels: {
+      en: { name: 'Reading trinity', desc: 'Read at least one news story, one review and one dossier.' },
+      fr: { name: 'Trinité de lecture', desc: 'Lis au moins une actu, un test et un dossier.' },
+      ar: { name: 'ثالوث القراءة', desc: 'اقرأ خبرًا ومراجعة وملفًا على الأقل.' },
+    },
+  },
+  {
     id: 'night-owl',
     icon: 'icons/achievements/night-owl.webp',
     group: 'reading',
-    rarity: 'epic',
+    rarity: 'gold',
     xp: 120,
     metric: 'nightReading',
     target: 1,
@@ -242,14 +319,44 @@ export const ACHIEVEMENTS = [
       ar: { name: 'ساهر الليل', desc: 'اقرأ مقالًا بين منتصف الليل والخامسة صباحًا.' },
     },
   },
+  {
+    id: 'early-bird',
+    icon: 'icons/achievements/early-bird.webp',
+    group: 'reading',
+    rarity: 'gold',
+    xp: 120,
+    metric: 'earlyReading',
+    target: 1,
+    labels: {
+      en: { name: 'Early bird', desc: 'Read an article between 5 and 8 a.m.' },
+      fr: { name: 'Lève-tôt', desc: 'Lis un article entre 5 h et 8 h du matin.' },
+      ar: { name: 'طائر مبكر', desc: 'اقرأ مقالًا بين الخامسة والثامنة صباحًا.' },
+    },
+  },
+  {
+    // Platine : trois nuits différentes après minuit — pas trois lectures
+    // d'affilée la même nuit (le moteur retient chaque nuit une seule fois).
+    id: 'night-shift',
+    icon: 'icons/achievements/night-shift.webp',
+    group: 'reading',
+    rarity: 'platinum',
+    xp: 450,
+    metric: 'nightReadingDays',
+    target: 3,
+    labels: {
+      en: { name: 'Creature of the night', desc: 'Read after midnight on 3 different nights.' },
+      fr: { name: 'Créature de la nuit', desc: 'Lis après minuit, 3 nuits différentes.' },
+      ar: { name: 'كائن الليل', desc: 'اقرأ بعد منتصف الليل في ثلاث ليالٍ مختلفة.' },
+    },
+  },
 
   /* ---------------------------------- Vidéo --------------------------------- */
   {
     id: 'prime-time',
     icon: 'icons/achievements/prime-time.webp',
     group: 'video',
-    rarity: 'common',
-    xp: 40,
+    rarity: 'bronze',
+    xp: 30,
     metric: 'videosWatched',
     target: 1,
     labels: {
@@ -262,7 +369,7 @@ export const ACHIEVEMENTS = [
     id: 'binge-watcher',
     icon: 'icons/achievements/binge-watcher.webp',
     group: 'video',
-    rarity: 'epic',
+    rarity: 'gold',
     xp: 140,
     metric: 'videosWatched',
     target: 5,
@@ -276,7 +383,7 @@ export const ACHIEVEMENTS = [
     id: 'live-signal',
     icon: 'icons/achievements/live-signal.webp',
     group: 'video',
-    rarity: 'rare',
+    rarity: 'gold',
     xp: 100,
     metric: 'liveWatched',
     target: 1,
@@ -286,14 +393,28 @@ export const ACHIEVEMENTS = [
       ar: { name: 'إشارة مباشرة', desc: 'شغّل البث المباشر للقناة.' },
     },
   },
+  {
+    id: 'marathon-viewer',
+    icon: 'icons/achievements/marathon-viewer.webp',
+    group: 'video',
+    rarity: 'platinum',
+    xp: 500,
+    metric: 'videosWatched',
+    target: 12,
+    labels: {
+      en: { name: 'Cine marathon', desc: 'Play 12 different videos: episodes, trailers and reels.' },
+      fr: { name: 'Marathon ciné', desc: 'Lance 12 vidéos différentes : épisodes, bandes-annonces et reels.' },
+      ar: { name: 'ماراثون السينما', desc: 'شغّل 12 فيديو مختلفًا: حلقات وإعلانات ومقاطع قصيرة.' },
+    },
+  },
 
   /* -------------------------------- Communauté ------------------------------ */
   {
     id: 'first-comment',
     icon: 'icons/achievements/first-comment.webp',
     group: 'community',
-    rarity: 'common',
-    xp: 40,
+    rarity: 'bronze',
+    xp: 30,
     metric: 'commentsPosted',
     target: 1,
     labels: {
@@ -306,7 +427,7 @@ export const ACHIEVEMENTS = [
     id: 'community-voice',
     icon: 'icons/achievements/community-voice.webp',
     group: 'community',
-    rarity: 'epic',
+    rarity: 'gold',
     xp: 140,
     metric: 'commentsPosted',
     target: 5,
@@ -317,10 +438,24 @@ export const ACHIEVEMENTS = [
     },
   },
   {
+    id: 'community-pillar',
+    icon: 'icons/achievements/community-pillar.webp',
+    group: 'community',
+    rarity: 'platinum',
+    xp: 500,
+    metric: 'commentsPosted',
+    target: 15,
+    labels: {
+      en: { name: 'Community pillar', desc: 'Post 15 comments — the conversations count on you.' },
+      fr: { name: 'Pilier de la communauté', desc: 'Publie 15 commentaires : les discussions comptent sur toi.' },
+      ar: { name: 'عمود المجتمع', desc: 'انشر 15 تعليقًا — النقاشات تعتمد عليك.' },
+    },
+  },
+  {
     id: 'scout',
     icon: 'icons/achievements/scout.webp',
     group: 'community',
-    rarity: 'common',
+    rarity: 'bronze',
     xp: 25,
     metric: 'searchesPerformed',
     target: 1,
@@ -334,8 +469,8 @@ export const ACHIEVEMENTS = [
     id: 'detective',
     icon: 'icons/achievements/detective.webp',
     group: 'community',
-    rarity: 'rare',
-    xp: 100,
+    rarity: 'silver',
+    xp: 80,
     metric: 'distinctSearches',
     target: 5,
     labels: {
@@ -350,8 +485,8 @@ export const ACHIEVEMENTS = [
     id: 'three-day-streak',
     icon: 'icons/achievements/three-day-streak.webp',
     group: 'loyalty',
-    rarity: 'rare',
-    xp: 120,
+    rarity: 'silver',
+    xp: 90,
     metric: 'bestStreak',
     target: 3,
     labels: {
@@ -361,10 +496,38 @@ export const ACHIEVEMENTS = [
     },
   },
   {
+    id: 'week-streak',
+    icon: 'icons/achievements/week-streak.webp',
+    group: 'loyalty',
+    rarity: 'gold',
+    xp: 200,
+    metric: 'bestStreak',
+    target: 7,
+    labels: {
+      en: { name: 'Perfect week', desc: 'Visit the site 7 days in a row, without missing one.' },
+      fr: { name: 'Semaine parfaite', desc: 'Visite le site 7 jours d’affilée, sans en manquer un.' },
+      ar: { name: 'أسبوع كامل', desc: 'زُر الموقع سبعة أيام متتالية دون انقطاع.' },
+    },
+  },
+  {
+    id: 'iron-streak',
+    icon: 'icons/achievements/iron-streak.webp',
+    group: 'loyalty',
+    rarity: 'platinum',
+    xp: 700,
+    metric: 'bestStreak',
+    target: 14,
+    labels: {
+      en: { name: 'Iron streak', desc: 'Visit the site 14 days in a row. Two weeks, not one missed.' },
+      fr: { name: 'Série de fer', desc: 'Visite le site 14 jours d’affilée. Deux semaines, pas un jour manqué.' },
+      ar: { name: 'سلسلة حديدية', desc: 'زُر الموقع 14 يومًا متتاليًا: أسبوعان دون تفويت يوم.' },
+    },
+  },
+  {
     id: 'seven-day-regular',
     icon: 'icons/achievements/seven-day-regular.webp',
     group: 'loyalty',
-    rarity: 'epic',
+    rarity: 'gold',
     xp: 200,
     metric: 'visitDays',
     target: 7,
@@ -375,11 +538,25 @@ export const ACHIEVEMENTS = [
     },
   },
   {
+    id: 'monthly-legend',
+    icon: 'icons/achievements/monthly-legend.webp',
+    group: 'loyalty',
+    rarity: 'platinum',
+    xp: 800,
+    metric: 'visitDays',
+    target: 30,
+    labels: {
+      en: { name: 'Site legend', desc: 'Visit the site on 30 different days. A whole month of loyalty.' },
+      fr: { name: 'Légende du site', desc: 'Visite le site 30 jours différents. Un mois entier de fidélité.' },
+      ar: { name: 'أسطورة الموقع', desc: 'زُر الموقع في 30 يومًا مختلفًا: شهر كامل من الوفاء.' },
+    },
+  },
+  {
     id: 'polyglot',
     icon: 'icons/achievements/polyglot.webp',
     group: 'loyalty',
-    rarity: 'rare',
-    xp: 100,
+    rarity: 'silver',
+    xp: 70,
     metric: 'languagesUsed',
     target: 2,
     labels: {
@@ -392,7 +569,7 @@ export const ACHIEVEMENTS = [
     id: 'trilingual',
     icon: 'icons/achievements/trilingual.webp',
     group: 'loyalty',
-    rarity: 'legendary',
+    rarity: 'gold',
     xp: 250,
     metric: 'languagesUsed',
     target: 3,
@@ -408,8 +585,8 @@ export const ACHIEVEMENTS = [
     id: 'linked-player',
     icon: 'icons/achievements/linked-player.webp',
     group: 'profile',
-    rarity: 'rare',
-    xp: 100,
+    rarity: 'silver',
+    xp: 80,
     metric: 'providersLinked',
     target: 1,
     labels: {
@@ -422,8 +599,8 @@ export const ACHIEVEMENTS = [
     id: 'own-look',
     icon: 'icons/achievements/own-look.webp',
     group: 'profile',
-    rarity: 'common',
-    xp: 50,
+    rarity: 'bronze',
+    xp: 40,
     metric: 'profileUpdates',
     target: 1,
     labels: {
@@ -439,9 +616,9 @@ export function achievementLabel(achievement, lang = 'en') {
   return achievement?.labels?.[lang] || achievement?.labels?.en || { name: achievement?.id || '', desc: '' };
 }
 
-/** Libellé traduit d'une rareté. */
+/** Libellé traduit d'un grade (bronze par défaut). */
 export function rarityLabel(rarity, lang = 'en') {
-  return RARITIES[rarity]?.labels?.[lang] || RARITIES.common.labels.en;
+  return RARITIES[rarity]?.labels?.[lang] || RARITIES.bronze.labels.en;
 }
 
 /** Libellé traduit d'une famille. */
