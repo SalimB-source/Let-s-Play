@@ -522,9 +522,9 @@ create index if not exists direct_messages_unread_idx
   where read_at is null;
 
 -- RLS : un joueur ne lit que ses propres échanges, n'écrit qu'en son nom, ne
--- marque comme lus que les messages qu'il a reçus et ne modifie rien d'autre
--- (le trigger ci-dessous refuse toute autre colonne). Pas de suppression :
--- l'historique d'une discussion n'appartient pas à un seul des deux joueurs.
+-- marque comme lus que les messages qu'il a reçus, ne supprime que les siens
+-- (effacer un message envoyé) et ne modifie rien d'autre (le trigger
+-- ci-dessous refuse toute autre colonne).
 do $$
 begin
   alter table public.direct_messages enable row level security;
@@ -544,6 +544,11 @@ begin
   on public.direct_messages for update to authenticated
   using (auth.uid() = recipient_id)
   with check (auth.uid() = recipient_id);
+
+  drop policy if exists "Senders delete their own messages" on public.direct_messages;
+  create policy "Senders delete their own messages"
+  on public.direct_messages for delete to authenticated
+  using (auth.uid() = sender_id);
 exception
   when others then
     raise warning 'Let''s Play : politiques RLS de public.direct_messages non appliquées (%).', sqlerrm;
@@ -848,7 +853,7 @@ begin
   grant select, insert, update, delete on public.friendships to authenticated;
   -- Messagerie : ses échanges (lecture / écriture / accusés de lecture),
   -- ses blocages et ses signalements — le reste est refusé par la RLS.
-  grant select, insert, update on public.direct_messages to authenticated;
+  grant select, insert, update, delete on public.direct_messages to authenticated;
   grant select, insert, delete on public.message_blocks to authenticated;
   grant select, insert on public.message_reports to authenticated;
 exception
@@ -957,12 +962,13 @@ from (
            then 'OK' else 'ABSENT (voir WARNING)' end),
     (20, 'table public.direct_messages',
       case when to_regclass('public.direct_messages') is null then 'MANQUANT' else 'OK' end),
-    (21, 'politiques RLS direct_messages (3)',
+    (21, 'politiques RLS direct_messages (4)',
       case when (select count(*) from pg_policies p
                  where p.schemaname = 'public' and p.tablename = 'direct_messages'
                    and p.policyname in ('Direct messages are visible to both players',
                                         'Players send direct messages as themselves',
-                                        'Recipients mark their own messages as read')) = 3
+                                        'Recipients mark their own messages as read',
+                                        'Senders delete their own messages')) = 4
            then 'OK' else 'MANQUANT' end),
     (22, 'trigger message 1-à-1 (amitié, blocage, anti-spam)',
       case when exists (select 1 from pg_trigger t

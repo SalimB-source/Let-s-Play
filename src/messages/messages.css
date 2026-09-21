@@ -413,6 +413,45 @@
   color: #fff;
   clip-path: polygon(0 0, 100% 0, 100% 100%, 8px 100%, 0 calc(100% - 8px));
 }
+.messages-bubble-wrap {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 82%;
+}
+.messages-bubble-row.is-mine .messages-bubble-wrap {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.messages-bubble-wrap .messages-bubble { max-width: 100%; }
+
+.messages-bubble-delete {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--line);
+  color: var(--dim);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+  opacity: 0;
+  transition: opacity .18s, color .18s, border-color .18s, background .18s;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+.messages-bubble-row:hover .messages-bubble-delete,
+.messages-bubble-delete:focus-visible {
+  opacity: 1;
+}
+.messages-bubble-delete:hover {
+  color: #ff8c9d;
+  border-color: rgba(255, 140, 157, .5);
+  background: rgba(255, 140, 157, .12);
+}
+.messages-bubble-delete:disabled { opacity: .4; cursor: default; }
+
 .messages-bubble-time {
   display: inline-flex;
   align-items: center;
@@ -790,6 +829,7 @@
   .message-btn-full { width: 100%; justify-content: center; }
   .player-messages-row { grid-template-columns: 1fr auto; }
   .player-messages-name { grid-column: 1 / -1; }
+  .messages-bubble-delete { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

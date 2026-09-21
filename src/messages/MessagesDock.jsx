@@ -87,6 +87,16 @@ function SearchIcon({ size = 14 }) {
     </svg>
   );
 }
+function TrashIcon({ size = 13 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 7h16" />
+      <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+      <path d="M19 7v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7" />
+      <path d="M10 11v5M14 11v5" />
+    </svg>
+  );
+}
 
 function initialsFor(name) {
   const clean = String(name || '').trim();
@@ -300,11 +310,12 @@ function ReportForm({ t, name, reported, onSubmit, onClose }) {
 
 /* --------------------------------- discussion ------------------------------- */
 
-function ThreadView({ peerId, t, ft, lang, thread, profile, online, blocked, reported, canWrite, onBack, onSend, onBlock, onUnblock, onReport }) {
+function ThreadView({ peerId, t, ft, lang, thread, profile, online, blocked, reported, canWrite, onBack, onSend, onDelete, onBlock, onUnblock, onReport }) {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const messages = thread?.messages || [];
@@ -315,7 +326,7 @@ function ThreadView({ peerId, t, ft, lang, thread, profile, online, blocked, rep
     if (node) node.scrollTop = node.scrollHeight;
   }, [messages.length, peerId]);
 
-  useEffect(() => { setDraft(''); setError(''); setReportOpen(false); }, [peerId]);
+  useEffect(() => { setDraft(''); setError(''); setReportOpen(false); setDeletingId(null); }, [peerId]);
 
   const statusText = online
     ? ft.onlineShort
@@ -333,6 +344,23 @@ function ThreadView({ peerId, t, ft, lang, thread, profile, online, blocked, rep
       setError(describeMessagesError(e, t));
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleDelete = async (message) => {
+    if (!message?.mine) return;
+    if (String(message.id).startsWith('pending-')) return;
+    const preview = String(message.body || '').slice(0, 40);
+    const ok = typeof window === 'undefined' || window.confirm(fill(t.deleteConfirm, { preview: preview || '…' }));
+    if (!ok) return;
+    setDeletingId(message.id);
+    setError('');
+    try {
+      await onDelete(peerId, message.id);
+    } catch (e) {
+      setError(describeMessagesError(e, t));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -407,10 +435,25 @@ function ThreadView({ peerId, t, ft, lang, thread, profile, online, blocked, rep
         <ul className="messages-bubbles">
           {messages.map((message) => (
             <li key={message.id} className={`messages-bubble-row${message.mine ? ' is-mine' : ''}`}>
-              <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}>{message.body}</p>
+              <div className="messages-bubble-wrap">
+                <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}>{message.body}</p>
+                {message.mine && (
+                  <button
+                    type="button"
+                    className="messages-bubble-delete"
+                    aria-label={t.deleteMessage}
+                    title={t.deleteMessage}
+                    disabled={deletingId === message.id}
+                    onClick={() => handleDelete(message)}
+                  >
+                    <TrashIcon size={12} />
+                  </button>
+                )}
+              </div>
               <span className="messages-bubble-time">
                 {clockTime(message.createdAt, lang)}
                 {message.mine && message === lastMine && <em className="messages-bubble-read">{message.read ? t.seen : t.sent}</em>}
+                {deletingId === message.id && <em className="messages-bubble-read">{t.deleting}</em>}
               </span>
             </li>
           ))}
@@ -465,7 +508,7 @@ export default function MessagesDock() {
     enabled, mode, status, error,
     conversations, blockedConversations, unreadTotal, unreadFor, threadFor,
     dockOpen, activePeerId, openThread, backToInbox, closeDock, toggleDock,
-    send, markRead, block, unblock, report, canMessage, isBlocked, reportedReason, refresh,
+    send, deleteMessage, markRead, block, unblock, report, canMessage, isBlocked, reportedReason, refresh,
   } = messages;
 
   // Classes sur <body> : messages.css les utilise pour la place prise par le
@@ -540,6 +583,7 @@ export default function MessagesDock() {
         canWrite={canMessage(activePeerId)}
         onBack={backToInbox}
         onSend={send}
+        onDelete={deleteMessage}
         onBlock={block}
         onUnblock={unblock}
         onReport={(reason, note) => report(activePeerId, reason, note)}
