@@ -8,6 +8,7 @@ import {
   MESSAGES_TABLE,
   appendMessage,
   applyDemoBlock,
+  applyDemoDelete,
   applyDemoIncoming,
   applyDemoRead,
   applyDemoReply,
@@ -17,6 +18,7 @@ import {
   applyReadReceipt,
   blockPeer,
   conversationKey,
+  deleteMessage as deleteMessageApi,
   demoThreads,
   fetchBlockedIds,
   fetchRecentMessages,
@@ -29,6 +31,8 @@ import {
   mergeUnread,
   prepareBody,
   readDemoMessages,
+  removeMessage,
+  removeMessageById,
   reportPeer,
   sendMessage,
   sortThreadsByActivity,
@@ -84,6 +88,7 @@ export const MessagesContext = createContext({
   isBlocked: () => false,
   reportedReason: () => null,
   send: asyncNoop,
+  deleteMessage: asyncNoop,
   markRead: asyncNoop,
   block: asyncNoop,
   unblock: asyncNoop,
@@ -269,7 +274,9 @@ export function MessagesProvider({ children }) {
     };
 
     // Nouveau message reçu, quelle que soit la discussion : le badge des
-    // non-lus bouge tout de suite.
+    // non-lus bouge tout de suite. On écoute aussi les suppressions (effacer
+    // ses propres messages) pour que les deux joueurs voient la bulle
+    // disparaître en temps réel.
     subscribe(`messages:inbox:${uid}`, (channel) => channel
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: MESSAGES_TABLE, filter: `recipient_id=eq.${uid}`,
@@ -278,6 +285,22 @@ export function MessagesProvider({ children }) {
         const row = payload?.new;
         if (!row?.id) return;
         setThreads((prev) => appendMessage(prev, uid, row));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: MESSAGES_TABLE, filter: `recipient_id=eq.${uid}`,
+      }, (payload) => {
+        if (!mountedRef.current) return;
+        const oldRow = payload?.old;
+        if (!oldRow?.id) return;
+        setThreads((prev) => removeMessageById(prev, oldRow.id));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: MESSAGES_TABLE, filter: `sender_id=eq.${uid}`,
+      }, (payload) => {
+        if (!mountedRef.current) return;
+        const oldRow = payload?.old;
+        if (!oldRow?.id) return;
+        setThreads((prev) => removeMessageById(prev, oldRow.id));
       })
       .subscribe());
 
@@ -320,6 +343,14 @@ export function MessagesProvider({ children }) {
           const row = payload?.new;
           if (!row?.read_at) return;
           setThreads((prev) => applyReadReceipt(prev, row));
+        })
+        .on('postgres_changes', {
+          event: 'DELETE', schema: 'public', table: MESSAGES_TABLE, filter: `conversation_key=eq.${key}`,
+        }, (payload) => {
+          if (!mountedRef.current) return;
+          const oldRow = payload?.old;
+          if (!oldRow?.id) return;
+          setThreads((prev) => removeMessageById(prev, oldRow.id));
         })
         .subscribe();
     } catch (e) {
@@ -557,6 +588,32 @@ export function MessagesProvider({ children }) {
     }
   }, [canMessage, isBlocked, mode, mutateDemo, scheduleDemoReply, uid]);
 
+  const deleteMessage = useCallback(async (peerId, messageId) => {
+    if (!peerId || !messageId) return;
+    if (String(messageId).startsWith('pending-')) return;
+    const thread = threads[peerId];
+    const message = thread?.messages.find((item) => item.id === messageId);
+    if (!message) return;
+    if (!message.mine) {
+      throw Object.assign(new Error('direct_message_not_mine'), { code: 'P0001' });
+    }
+
+    if (mode === 'demo') {
+      mutateDemo((state) => applyDemoDelete(state, peerId, messageId));
+      return;
+    }
+    if (mode !== 'supabase') return;
+
+    const previous = threads;
+    setThreads((prev) => removeMessage(prev, peerId, messageId));
+    try {
+      await deleteMessageApi(uid, messageId);
+    } catch (e) {
+      if (mountedRef.current) setThreads(previous);
+      throw e;
+    }
+  }, [threads, mode, mutateDemo, uid]);
+
   const block = useCallback(async (peerId) => {
     if (!peerId) return;
     if (mode === 'demo') {
@@ -636,6 +693,7 @@ export function MessagesProvider({ children }) {
     isBlocked,
     reportedReason,
     send,
+    deleteMessage,
     markRead,
     block,
     unblock,
@@ -651,7 +709,7 @@ export function MessagesProvider({ children }) {
   }), [
     mode, status, error, threads, sortedConversations, blockedConversations, unreadTotalValue,
     unreadFor, threadFor, canMessage, isBlocked, reportedReason,
-    send, markRead, block, unblock, report, refresh,
+    send, deleteMessage, markRead, block, unblock, report, refresh,
     dockOpen, activePeerId, openThread, openInbox, backToInbox, closeDock, toggleDock,
   ]);
 

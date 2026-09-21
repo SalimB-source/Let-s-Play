@@ -267,6 +267,48 @@ export function applyReadReceipt(threads, row) {
   return touched ? next : threads;
 }
 
+/**
+ * Supprime un message d'une discussion (optimiste, temps réel DELETE ou
+ * suppression locale). Met à jour `lastMessage` / `lastAt` et décrémente
+ * `unread` si le message supprimé était un non-lu.
+ */
+export function removeMessage(threads, peerId, messageId) {
+  if (!peerId || !messageId) return threads;
+  const thread = threads?.[peerId];
+  if (!thread) return threads;
+  const remaining = thread.messages.filter((message) => message.id !== messageId);
+  if (remaining.length === thread.messages.length) return threads;
+  const deleted = thread.messages.find((message) => message.id === messageId);
+  const lastMessage = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+  const unread = deleted && !deleted.mine && !deleted.read ? Math.max(0, thread.unread - 1) : thread.unread;
+  // Si le dernier message supprimé était un non-lu, on recalcule au cas où
+  // plusieurs messages partagent le même horodatage.
+  const finalUnread = deleted && !deleted.mine && !deleted.read
+    ? remaining.filter((message) => !message.mine && !message.read).length
+    : unread;
+  return {
+    ...threads,
+    [peerId]: {
+      ...thread,
+      messages: remaining,
+      lastMessage,
+      lastAt: lastMessage?.createdAt || null,
+      unread: finalUnread,
+    },
+  };
+}
+
+/** Supprime un message où qu'il soit (recherche par id). */
+export function removeMessageById(threads, messageId) {
+  if (!messageId) return threads;
+  for (const [peerId, thread] of Object.entries(threads || {})) {
+    if (thread.messages.some((message) => message.id === messageId)) {
+      return removeMessage(threads, peerId, messageId);
+    }
+  }
+  return threads;
+}
+
 // ---------------------------------------------------------------------------
 // Supabase
 // ---------------------------------------------------------------------------
@@ -322,6 +364,23 @@ export async function sendMessage(uid, peerId, body) {
     .single();
   if (error) throw error;
   return data;
+}
+
+/** Supprime un message envoyé par le joueur connecté. */
+export async function deleteMessage(uid, messageId) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  if (!uid || !messageId) throw new Error('direct_message_missing');
+  const { data, error } = await supabase
+    .from(MESSAGES_TABLE)
+    .delete()
+    .eq('id', messageId)
+    .eq('sender_id', uid)
+    .select('id');
+  if (error) throw error;
+  if (!data || data.length === 0) {
+    throw Object.assign(new Error('direct_message_not_found'), { code: 'P0001' });
+  }
+  return data[0];
 }
 
 /** Accusé de lecture : `read_at` des messages reçus non lus de cet ami. */
@@ -561,4 +620,14 @@ export function applyDemoReport(state, peerId, reason = 'other', now = Date.now(
     ...state,
     reported: { ...state.reported, [peerId]: { reason: safeReason, at: new Date(now).toISOString() } },
   };
+}
+
+/** Supprime un message envoyé par la persona (seuls ses propres messages). */
+export function applyDemoDelete(state, peerId, messageId) {
+  if (!peerId || !messageId) return state;
+  const list = state.threads[peerId];
+  if (!Array.isArray(list) || list.length === 0) return state;
+  const remaining = list.filter((message) => !(message.id === messageId && message.from === 'me'));
+  if (remaining.length === list.length) return state;
+  return { ...state, threads: { ...state.threads, [peerId]: remaining } };
 }
