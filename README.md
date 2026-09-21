@@ -33,11 +33,16 @@ npm run build
   argent, or, platine — avec niveau et XP, filtres par grade et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
-  liste d'amis **en ligne / hors ligne** dans une fenêtre en bas à droite, pour
-  tout joueur connecté (voir « Amis : demandes, liste et présence »)
+  liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
+  droite, pour tout joueur connecté (voir « Amis : demandes, liste et
+  présence »)
 - Messagerie : discussions **1-à-1 entre amis** en texte et en temps réel, avec
-  **non-lus**, accusé de lecture, **blocage** et **signalement**, dans une
-  fenêtre en bas à gauche (voir « Messagerie : discussions 1-à-1 entre amis »)
+  **non-lus**, accusé de lecture, **blocage** et **signalement**, dans la même
+  fenêtre sociale (voir « Messagerie : discussions 1-à-1 entre amis »)
+- Amis + messagerie dans la **même fenêtre** : un seul lanceur « SOCIAL »
+  (pastilles des non-lus et des demandes en attente, amis en ligne) ouvre un
+  panneau à quatre onglets — Amis / Demandes / Ajouter / Messages ; sur mobile
+  (≤ 760 px), la fenêtre ouverte devient un **pop-up plein écran**
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -184,20 +189,29 @@ the SQL has been run; the section explains itself when something is off:
 ## Amis : demandes, liste et présence
 
 Tout joueur connecté (compte Supabase **ou** persona de démonstration) dispose
-d'une liste d'amis. Elle vit dans une **fenêtre en bas à droite** (en bas à
-gauche en arabe), présente sur toutes les pages : un lanceur compact
-« AMIS · 2 en ligne » — avec une pastille jaune quand des demandes attendent —
-ouvre un panneau à trois onglets. Un visiteur non connecté ne voit rien.
+d'une liste d'amis. Elle vit dans la **fenêtre sociale** en bas à droite,
+présente sur toutes les pages : un lanceur compact « SOCIAL » — avec les
+pastilles des **non-lus** (messagerie) et des **demandes en attente**, et le
+compteur d'amis en ligne — ouvre un panneau à **quatre onglets** (Amis /
+Demandes / Ajouter / Messages). Amis et messagerie partagent donc la même
+fenêtre ; le quatrième onglet est documenté plus bas. Un visiteur non connecté
+ne voit rien.
 
 | Onglet | Ce qui s'y trouve |
 | --- | --- |
-| **Amis** | les amis **en ligne** d'abord (point vert, « EN LIGNE »), puis **hors ligne** (avatar grisé, « Vu il y a 2 h »), chacun avec son niveau et un lien vers son profil ; « Retirer » enlève l'ami (confirmation) |
+| **Amis** | les amis **en ligne** d'abord (point vert, « EN LIGNE »), puis **hors ligne** (avatar grisé, « Vu il y a 2 h »), chacun avec son niveau, un lien vers son profil et une icône « Message » (pastille des non-lus) ; « Retirer » enlève l'ami (confirmation) |
 | **Demandes** | les demandes **reçues** (Accepter / Refuser) et **envoyées** (Annuler) |
 | **Ajouter** | recherche d'un joueur par pseudo (2 caractères minimum), demande en un clic |
+| **Messages** | la messagerie 1-à-1 : liste des discussions puis fil (voir plus bas) |
 
 L'état ouvert/fermé est mémorisé sur l'appareil ; Échap ferme le panneau. Les
 notifications de succès partagent le coin : elles montent au-dessus du lanceur,
 et glissent à côté du panneau quand il est ouvert.
+
+**Sur mobile** (≤ 760 px), la fenêtre ouverte devient un **pop-up plein
+écran** : elle couvre tout l'écran (au-dessus de la navigation), l'arrière-plan
+ne défile plus, et la fermeture se fait par le bouton « × » de l'en-tête
+(`src/social/social.css`).
 
 **Où envoyer une demande d'ami** (`src/friends/FriendButton.jsx`) :
 
@@ -270,14 +284,17 @@ comme des profils publics.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/friends/FriendsContext.jsx` | le contexte : amis / demandes / présence du joueur connecté, gestes (`sendRequest`, `accept`, `decline`, `cancel`, `unfriend`, `search`), état de la fenêtre ; inerte sans provider (SSR des scripts) |
+| `src/friends/FriendsContext.jsx` | le contexte : amis / demandes / présence du joueur connecté, gestes (`sendRequest`, `accept`, `decline`, `cancel`, `unfriend`, `search`), et l'état de la **fenêtre sociale unifiée** (`dockOpen`, `dockTab` — l'onglet actif, `messages` inclus) ; inerte sans provider (SSR des scripts) |
 | `src/friends/friendsApi.js` | couche de données : requêtes `friendships` / `profiles`, replis quand une colonne ou la table manque, état des personas |
 | `src/friends/presence.js` | canal Realtime Presence + battement de cœur |
-| `src/friends/FriendsDock.jsx` | la fenêtre en bas à droite (lanceur, onglets) |
+| `src/friends/FriendsTabs.jsx` | les onglets Amis / Demandes / Ajouter de la fenêtre sociale |
 | `src/friends/FriendButton.jsx` | le bouton de demande d'ami (profil, commentaires, résultats de recherche) |
 | `src/friends/FriendsHubSection.jsx` | la section « Amis & demandes » du hub |
 | `src/friends/friendsCopy.js` | textes FR / EN / AR |
-| `src/friends/friends.css` | styles (dock, panneau, boutons, cohabitation avec les notifications de succès) |
+| `src/friends/friends.css` | styles des onglets (listes, avatars, boutons) |
+| `src/social/SocialDock.jsx` | la fenêtre sociale unifiée : un lanceur, un panneau à quatre onglets, pop-up plein écran mobile |
+| `src/social/socialCopy.js` | textes de la fenêtre (FR / EN / AR) |
+| `src/social/social.css` | position du lanceur/panneau, cohabitation avec les notifications, pop-up plein écran mobile |
 
 ### Vérifications
 
@@ -294,19 +311,20 @@ comme des profils publics.
 ## Messagerie : discussions 1-à-1 entre amis
 
 Tout joueur connecté (compte Supabase **ou** persona de démonstration) peut
-écrire à **ses amis** — et seulement à eux. La messagerie vit dans une
-**fenêtre en bas à gauche** (en bas à droite en arabe), de l'autre côté de la
-fenêtre d'amis : un lanceur compact « MESSAGES » — avec une pastille jaune
-quand des messages n'ont pas été lus — ouvre un panneau à deux niveaux. Un
-visiteur non connecté ne voit rien.
+écrire à **ses amis** — et seulement à eux. La messagerie vit dans l'onglet
+**Messages** de la **fenêtre sociale** (en bas à droite, documentée dans la
+section amis) : la pastille jaune du lanceur compte les non-lus, et
+`openThread` (bouton « Message » d'un profil, icône bulle de la liste d'amis,
+raccourcis du hub) rouvre la fenêtre sur cet onglet. Un visiteur non connecté
+ne voit rien.
 
 | Niveau | Ce qui s'y trouve |
 | --- | --- |
 | **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
-| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** |
+| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
 
 L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil ;
-Échap remonte à la liste puis ferme le panneau.
+Échap remonte à la liste puis ferme la fenêtre.
 
 **Où écrire à un ami** :
 
@@ -376,14 +394,14 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `send`, `markRead`, `block`, `unblock`, `report`), canaux temps réel, état de la fenêtre ; inerte sans provider (SSR des scripts) |
+| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `send`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
 | `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, lignes → discussions, non-lus, repli quand la table manque, état des personas |
 | `src/messages/demoThreads.js` | discussions de départ, réponses scriptées et messages entrants de l'aperçu démo |
-| `src/messages/MessagesDock.jsx` | la fenêtre en bas à gauche (lanceur, liste, fil, champ de saisie, bloquer / signaler) |
+| `src/messages/MessagesTabs.jsx` | l'onglet Messages de la fenêtre sociale : liste des discussions, fil, champ de saisie, bloquer / signaler |
 | `src/messages/MessageButton.jsx` | le bouton « Message » (profil public, lignes de la liste d'amis) |
 | `src/messages/MessagesHubSection.jsx` | la section « MESSAGES » du hub |
 | `src/messages/messagesCopy.js` | textes FR / EN / AR |
-| `src/messages/messages.css` | styles (dock, panneau, bulles, signalement, cohabitation avec la fenêtre d'amis) |
+| `src/messages/messages.css` | styles (liste, bulles, signalement) |
 
 ### Vérifications
 
@@ -398,8 +416,9 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   SSR du hub, de la fenêtre (fermée / liste / discussion ouverte) et de profils
   publics — visiteur, ami et non-ami — dans les trois langues.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
-  continuent de passer : la fenêtre de messagerie s'ajoute à celle des amis
-  sans la déplacer, et les contextes par défaut sont inertes.
+  continuent de passer : amis et messagerie partagent la même fenêtre sociale
+  (un seul lanceur, quatre onglets, pop-up plein écran sur mobile), et les
+  contextes par défaut sont inertes.
 
 ## Succès débloqués par les actions du site
 

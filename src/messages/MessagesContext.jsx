@@ -52,11 +52,14 @@ import {
  *   - les discussions (`conversations`, chacune avec son dernier message et
  *     son nombre de **non-lus**), le total `unreadTotal` qui alimente le badge
  *     du lanceur, et les joueurs **bloqués** ;
- *   - les gestes : `openThread`, `send`, `markRead`, `block`, `unblock`,
- *     `report` ; `canMessage(id)` pour afficher ou non le bouton « Message »
- *     d'un profil (il faut être amis) ;
- *   - l'état de la fenêtre (`dockOpen`, `activePeerId`) que le lanceur, le hub
- *     joueur et les boutons « Message » partagent.
+ *   - les gestes : `openThread`, `openInbox`, `send`, `markRead`, `block`,
+ *     `unblock`, `report` ; `canMessage(id)` pour afficher ou non le bouton
+ *     « Message » d'un profil (il faut être amis) ;
+ *   - l'état de la messagerie dans la **fenêtre sociale unifiée**
+ *     (`src/social/SocialDock.jsx`) : `activePeerId` (la discussion ouverte)
+ *     et `dockOpen` ; `openThread` / `openInbox` ouvrent la fenêtre sur
+ *     l'onglet « Messages » en passant par le contexte des amis, qui porte
+ *     l'onglet actif de la fenêtre.
  *
  * Comptes Supabase : messages dans `public.direct_messages`, arrivée en direct
  * par Realtime (`postgres_changes` sur la clé de conversation ouverte, et sur
@@ -105,7 +108,6 @@ export const MessagesContext = createContext({
   openInbox: noop,
   backToInbox: noop,
   closeDock: noop,
-  toggleDock: noop,
 });
 
 const DOCK_STORAGE_KEY = 'letsplay_messages_open';
@@ -165,8 +167,11 @@ export function MessagesProvider({ children }) {
   const [reported, setReported] = useState(() => (
     mode === 'demo' && user ? { ...(readDemoMessages(user).reported || {}) } : {}
   ));
-  // 'idle' | 'loading' | 'ready' | 'error' | 'unavailable' (table absente)
-  const [status, setStatus] = useState('idle');
+  // 'idle' | 'loading' | 'ready' | 'error' | 'unavailable' (table absente).
+  // Personas : les discussions scriptées sont lues au premier rendu, donc
+  // l'état est « ready » dès le départ (comme le contexte des amis) — le
+  // rendu SSR des scripts de vérification montre de vraies discussions.
+  const [status, setStatus] = useState(() => (isDemo && user ? 'ready' : 'idle'));
   const [error, setError] = useState(null);
   const [dockOpen, setDockOpenState] = useState(readDockOpen);
   const [activePeerId, setActivePeerId] = useState(readActivePeer);
@@ -501,14 +506,18 @@ export function MessagesProvider({ children }) {
     persistDockOpen(open);
   }, []);
 
+  // La messagerie vit dans la fenêtre sociale unifiée : ouvrir une discussion
+  // (ou la liste) ouvre la fenêtre sur son onglet « Messages ». Le contexte
+  // des amis porte l'onglet actif ; on garde aussi l'ancien drapeau local
+  // (`letsplay_messages_open`) pour que l'état ouvert survive à la migration.
   const openThread = useCallback((peerId) => {
     if (!peerId) return;
     setActivePeerId(peerId);
     persistActivePeer(peerId);
     setDockOpen(true);
-    persistDockOpen(true);
+    friends.openDock('messages');
     if (threads[peerId]?.unread) markRead(peerId);
-  }, [setDockOpen, threads, markRead]);
+  }, [setDockOpen, threads, markRead, friends]);
 
   const backToInbox = useCallback(() => {
     setActivePeerId(null);
@@ -520,14 +529,14 @@ export function MessagesProvider({ children }) {
     setActivePeerId(null);
     persistActivePeer(null);
     setDockOpen(true);
-    persistDockOpen(true);
-  }, [setDockOpen]);
+    friends.openDock('messages');
+  }, [setDockOpen, friends]);
 
-  const closeDock = useCallback(() => setDockOpen(false), [setDockOpen]);
-  const toggleDock = useCallback(() => setDockOpenState((open) => {
-    persistDockOpen(!open);
-    return !open;
-  }), []);
+  /** Ferme la fenêtre sociale (les deux contextes partagent la même fenêtre). */
+  const closeDock = useCallback(() => {
+    setDockOpen(false);
+    friends.closeDock();
+  }, [setDockOpen, friends]);
 
   // Un joueur scripté « en ligne » répond peu après : l'aperçu montre le temps
   // réel (message reçu + badge des non-lus) sans aucun backend.
@@ -725,12 +734,11 @@ export function MessagesProvider({ children }) {
     openInbox,
     backToInbox,
     closeDock,
-    toggleDock,
   }), [
     mode, status, error, threads, sortedConversations, blockedConversations, unreadTotalValue,
     unreadFor, threadFor, canMessage, isBlocked, reportedReason,
     send, deleteMessage, markRead, block, unblock, report, refresh,
-    dockOpen, activePeerId, openThread, openInbox, backToInbox, closeDock, toggleDock,
+    dockOpen, activePeerId, openThread, openInbox, backToInbox, closeDock,
   ]);
 
   return <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>;

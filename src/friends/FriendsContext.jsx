@@ -35,8 +35,11 @@ import { demoPresence, findDemoPlayer, isDemoPlayerId } from './demoRoster';
  *     connecté ;
  *   - les gestes : `sendRequest`, `accept`, `decline`, `cancel`, `unfriend`,
  *     `search` ; `relationWith(id)` pour afficher le bon bouton sur un profil ;
- *   - l'état de la fenêtre d'amis (`dockOpen`, `dockTab`) que le bouton
- *     « Mes amis » du hub et la fenêtre elle-même partagent.
+ *   - l'état de la **fenêtre sociale unifiée** (`src/social/SocialDock.jsx`,
+ *     amis + messagerie) : `dockOpen` (la fenêtre ouverte ou fermée) et
+ *     `dockTab` (l'onglet actif : `friends` | `requests` | `add` | `messages`)
+ *     que les raccourcis du hub, les boutons « Message » et la fenêtre
+ *     partagent.
  *
  * Comptes Supabase : relations dans `public.friendships`, présence temps réel
  * + battement de cœur (voir presence.js), rechargement à chaque changement de
@@ -444,7 +447,7 @@ export function FriendsProvider({ children }) {
     else await load();
   }, [mode, loadDemo, load]);
 
-  /* ------------------------------ fenêtre d'amis ------------------------------ */
+  /* --------------------- fenêtre sociale unifiée (amis) ---------------------- */
 
   const setDockOpen = useCallback((open) => {
     setDockOpenState(open);

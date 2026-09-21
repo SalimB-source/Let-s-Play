@@ -1,149 +1,8 @@
 /* ==========================================================================
-   MESSAGERIE — fenêtre en bas à gauche + bouton « Message »
-   (la fenêtre d'amis occupe le coin opposé : bas droite / bas gauche en RTL)
+   MESSAGERIE — contenu de la fenêtre sociale unifiée (src/social/social.css)
+   + bouton « Message ». La fenêtre (position, lanceur, pop-up mobile) vit
+   dans social.css ; ici, la liste des discussions, le fil, le champ.
    ========================================================================== */
-
-:root {
-  --messages-width: min(360px, calc(100vw - 24px));
-}
-
-/* ------------------------------- Dock ---------------------------------- */
-
-.messages-dock {
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
-  z-index: 1250;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  width: var(--messages-width);
-  pointer-events: none;
-}
-[dir="rtl"] .messages-dock {
-  left: auto;
-  right: 16px;
-  align-items: flex-end;
-}
-.messages-dock > * { pointer-events: auto; }
-
-/* Lanceur : pastille compacte, toujours visible pour un joueur connecté. */
-.messages-launcher {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 13px 11px 16px;
-  background: linear-gradient(200deg, rgba(30, 12, 70, .96), rgba(7, 8, 20, .97));
-  border: 1px solid var(--line-strong);
-  color: var(--ink);
-  cursor: pointer;
-  font: 500 11px var(--mono);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
-  box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .85), 0 0 24px -10px rgba(34, 211, 238, .5);
-  transition: border-color .2s, box-shadow .2s, transform .2s;
-}
-.messages-launcher:hover {
-  border-color: var(--yellow);
-  box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .85), 0 0 28px -8px rgba(255, 214, 25, .5);
-  transform: translateY(-2px);
-}
-.messages-dock.is-open .messages-launcher { border-color: var(--cyan); }
-.messages-launcher-icon { display: inline-flex; color: var(--cyan); }
-.messages-launcher-label {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: .12em;
-}
-.messages-launcher-count {
-  padding-left: 10px;
-  border-left: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: .1em;
-  text-transform: lowercase;
-  white-space: nowrap;
-}
-[dir="rtl"] .messages-launcher-count {
-  padding-left: 0;
-  padding-right: 10px;
-  border-left: 0;
-  border-right: 1px solid var(--line);
-}
-.messages-launcher.has-unread { border-color: rgba(255, 214, 25, .55); }
-.messages-launcher.has-unread .messages-launcher-icon { color: var(--yellow); }
-.messages-launcher-badge {
-  position: absolute;
-  top: -7px;
-  left: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--yellow);
-  color: #0a0b1a;
-  font: 700 10px var(--mono);
-  letter-spacing: 0;
-  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
-  box-shadow: 0 0 14px rgba(255, 214, 25, .6);
-}
-[dir="rtl"] .messages-launcher-badge { left: auto; right: -4px; }
-
-/* ------------------------------- Panneau ------------------------------- */
-
-.messages-panel {
-  position: relative;
-  width: 100%;
-  height: min(560px, calc(100vh - 120px));
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(200deg, rgba(26, 17, 52, .98), rgba(7, 8, 20, .985));
-  border: 1px solid var(--line-strong);
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .9), 0 0 40px -14px rgba(34, 211, 238, .45);
-  clip-path: polygon(0 14px, 14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
-  animation: messages-panel-in .28s cubic-bezier(.2, 1.1, .5, 1);
-  overflow: hidden;
-}
-@keyframes messages-panel-in {
-  from { opacity: 0; transform: translateY(14px) scale(.98); }
-  to { opacity: 1; transform: none; }
-}
-
-.messages-panel-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 18px 12px 16px;
-  border-bottom: 1px solid var(--line);
-}
-.messages-panel-title { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.messages-panel-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 14px;
-  letter-spacing: .08em;
-  color: #fff;
-}
-.messages-panel-kicker svg { color: var(--cyan); }
-.messages-panel-sub {
-  font: 500 10px var(--mono);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.messages-panel-tools { display: inline-flex; gap: 6px; flex-shrink: 0; }
-.messages-panel-tools-float { position: absolute; top: 10px; right: 10px; z-index: 3; }
-[dir="rtl"] .messages-panel-tools-float { right: auto; left: 10px; }
 
 .messages-tool {
   width: 30px;
@@ -175,16 +34,6 @@
 .messages-body::-webkit-scrollbar { width: 8px; }
 /* Discussion : le fil défile, l'en-tête et le champ restent en place. */
 .messages-body.is-thread { overflow: hidden; padding: 0; }
-
-.messages-panel-foot {
-  padding: 9px 16px;
-  border-top: 1px solid var(--line);
-  background: rgba(34, 211, 238, .06);
-  color: rgba(34, 211, 238, .85);
-  font: 500 9.5px var(--mono);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
 
 /* --------------------------- Liste des discussions ---------------------- */
 
@@ -812,19 +661,9 @@
   letter-spacing: .12em;
 }
 
-/* ------------- Cohabitation avec les autres éléments flottants ---------- */
-
-/* Les notifications de succès vivent en bas à droite (côté amis) : le lanceur
-   de messagerie n'a rien à déplacer, sauf sur petit écran où les deux
-   fenêtres occupent toute la largeur. */
+/* La position de la fenêtre, sa cohabitation avec les notifications et le
+   pop-up plein écran mobile vivent dans src/social/social.css. */
 @media (max-width: 600px) {
-  .messages-dock { left: 12px; bottom: 12px; }
-  [dir="rtl"] .messages-dock { right: 12px; }
-  .messages-panel { height: min(70vh, calc(100vh - 100px)); }
-  .messages-launcher { padding: 10px 13px; }
-  .messages-launcher-label,
-  .messages-launcher-count { display: none; }
-  body.messages-dock-open .achievement-toasts { bottom: auto; top: 90px; right: 16px; }
   .message-btn-wrap-full { width: 100%; }
   .message-btn-full { width: 100%; justify-content: center; }
   .player-messages-row { grid-template-columns: 1fr auto; }
@@ -833,6 +672,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .messages-panel { animation: none; }
-  .messages-launcher, .message-btn, .messages-send { transition: none; }
+  .message-btn, .messages-send { transition: none; }
 }

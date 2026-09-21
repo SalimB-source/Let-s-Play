@@ -10,9 +10,10 @@
  * 2. Communauté de démonstration : les états de départ ne citent que des
  *    joueurs existants, jamais soi-même, jamais deux fois.
  * 3. Rendu SSR : le hub /auth et un profil public se rendent dans les trois
- *    langues avec le provider des amis ; la fenêtre d'amis n'apparaît que pour
- *    un joueur connecté ; le bouton « Ajouter en ami » propose la connexion à
- *    un visiteur.
+ *    langues avec le provider des amis ; la fenêtre sociale unifiée (amis +
+ *    messagerie) n'apparaît que pour un joueur connecté, et ouverte expose
+ *    les onglets des deux modules ; le bouton « Ajouter en ami » propose la
+ *    connexion à un visiteur.
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -31,7 +32,7 @@ const smoke = await import(path.join(outDir, 'friends-smoke.js'));
 const {
   DEMO_COMMUNITY, DEMO_INITIAL_STATE, DEMO_PROFILES, demoPresence, findDemoPlayer,
   applyDemoAction, demoRelations, isRecentlySeen, relationsFromRows, sanitizeSearch, searchDemoPlayers,
-  friendsCopy, renderApp,
+  friendsCopy, socialCopy, renderApp,
 } = smoke;
 
 let failures = 0;
@@ -120,8 +121,10 @@ for (const [key, seed] of Object.entries(DEMO_INITIAL_STATE)) {
   check(`${key} : relations normalisées`, Object.values(rel).filter((r) => r.kind === 'friend').length, seed.friends.length);
 }
 for (const lang of ['en', 'fr', 'ar']) {
-  const missing = Object.keys(friendsCopy.en).filter((k) => !friendsCopy[lang][k]);
-  check(`textes complets en ${lang}`, missing.join(','), '');
+  const missingFriends = Object.keys(friendsCopy.en).filter((k) => !friendsCopy[lang][k]);
+  const missingSocial = Object.keys(socialCopy.en).filter((k) => !socialCopy[lang][k]);
+  check(`textes amis complets en ${lang}`, missingFriends.join(','), '');
+  check(`textes sociaux complets en ${lang}`, missingSocial.join(','), '');
 }
 
 /* ------------------------------------------------------------------------ */
@@ -129,19 +132,21 @@ console.log('\n[3/3] rendu SSR\n');
 
 for (const lang of ['en', 'fr', 'ar']) {
   const t = friendsCopy[lang];
+  const st = socialCopy[lang];
   try {
     const guest = strip(renderApp('/auth', { lang }));
-    check(`[${lang}] visiteur : pas de fenêtre d’amis`, guest.includes(t.launcher) && guest.includes('friends-launcher'), false);
+    check(`[${lang}] visiteur : pas de fenêtre sociale`, guest.includes(st.launcher) && guest.includes('social-launcher'), false);
   } catch (e) { check(`[${lang}] /auth visiteur se rend`, e.message, ''); }
   try {
     const html = renderApp('/auth', { lang, demoKey: 'vortex' });
     const text = strip(html);
-    check(`[${lang}] persona : lanceur « ${t.launcher} » présent`, html.includes('friends-launcher') && text.includes(t.launcher));
+    check(`[${lang}] persona : lanceur « ${st.launcher} » présent`, html.includes('social-launcher') && text.includes(st.launcher));
     check(`[${lang}] persona : section « ${t.hubTitle} » du hub`, text.includes(t.hubTitle));
   } catch (e) { check(`[${lang}] /auth persona se rend`, e.message, ''); }
   try {
     const html = renderApp('/auth', { lang, demoKey: 'pixel', dockOpen: true });
-    check(`[${lang}] fenêtre ouverte : panneau + onglets`, html.includes('friends-panel') && strip(html).includes(t.tabRequests));
+    const text = strip(html);
+    check(`[${lang}] fenêtre ouverte : panneau + onglets amis & messages`, html.includes('social-panel') && text.includes(t.tabRequests) && text.includes(st.tabMessages));
   } catch (e) { check(`[${lang}] fenêtre ouverte se rend`, e.message, ''); }
   try {
     const html = renderApp('/profile/demo-player-3105', { lang });

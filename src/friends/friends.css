@@ -1,229 +1,13 @@
 /* ==========================================================================
-   AMIS — fenêtre en bas à droite + boutons « Ajouter en ami »
+   AMIS — contenu de la fenêtre sociale unifiée (src/social/social.css) +
+   boutons « Ajouter en ami »
    ========================================================================== */
 
 :root {
   --friends-online: #10b981;
-  --friends-width: min(340px, calc(100vw - 24px));
 }
 
-/* ------------------------------- Dock ---------------------------------- */
-
-.friends-dock {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 1250;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  width: var(--friends-width);
-  pointer-events: none;
-}
-[dir="rtl"] .friends-dock {
-  right: auto;
-  left: 16px;
-  align-items: flex-start;
-}
-.friends-dock > * { pointer-events: auto; }
-
-/* Lanceur : pastille compacte, toujours visible pour un joueur connecté. */
-.friends-launcher {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 16px 11px 13px;
-  background: linear-gradient(160deg, rgba(30, 12, 70, .96), rgba(7, 8, 20, .97));
-  border: 1px solid var(--line-strong);
-  color: var(--ink);
-  cursor: pointer;
-  font: 500 11px var(--mono);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .85), 0 0 24px -10px rgba(168, 85, 247, .6);
-  transition: border-color .2s, box-shadow .2s, transform .2s;
-}
-.friends-launcher:hover {
-  border-color: var(--cyan);
-  box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .85), 0 0 28px -8px rgba(34, 211, 238, .55);
-  transform: translateY(-2px);
-}
-.friends-dock.is-open .friends-launcher { border-color: var(--cyan); }
-.friends-launcher-icon {
-  display: inline-flex;
-  color: var(--yellow);
-}
-.friends-launcher-label {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: .12em;
-}
-.friends-launcher-online {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding-left: 10px;
-  border-left: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: .1em;
-  text-transform: lowercase;
-}
-[dir="rtl"] .friends-launcher-online {
-  padding-left: 0;
-  padding-right: 10px;
-  border-left: 0;
-  border-right: 1px solid var(--line);
-}
-.friends-launcher-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(214, 220, 255, .28);
-  flex-shrink: 0;
-}
-.friends-launcher-dot.is-online {
-  background: var(--friends-online);
-  box-shadow: 0 0 8px var(--friends-online);
-  animation: friends-pulse 2s infinite ease-in-out;
-}
-.friends-launcher-badge {
-  position: absolute;
-  top: -7px;
-  right: -4px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--yellow);
-  color: #0a0b1a;
-  font: 700 10px var(--mono);
-  letter-spacing: 0;
-  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
-  box-shadow: 0 0 14px rgba(255, 214, 25, .6);
-}
-[dir="rtl"] .friends-launcher-badge { right: auto; left: -4px; }
-.friends-launcher.has-pending { border-color: rgba(255, 214, 25, .55); }
-
-@keyframes friends-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .45; transform: scale(.82); }
-}
-
-/* ------------------------------- Panneau ------------------------------- */
-
-.friends-panel {
-  width: 100%;
-  max-height: min(560px, calc(100vh - 120px));
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(160deg, rgba(26, 17, 52, .98), rgba(7, 8, 20, .985));
-  border: 1px solid var(--line-strong);
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .9), 0 0 40px -14px rgba(124, 58, 237, .55);
-  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
-  animation: friends-panel-in .28s cubic-bezier(.2, 1.1, .5, 1);
-  overflow: hidden;
-}
-@keyframes friends-panel-in {
-  from { opacity: 0; transform: translateY(14px) scale(.98); }
-  to { opacity: 1; transform: none; }
-}
-
-.friends-panel-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 16px 12px 18px;
-  border-bottom: 1px solid var(--line);
-}
-.friends-panel-title {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-.friends-panel-kicker {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 14px;
-  letter-spacing: .08em;
-  color: #fff;
-}
-.friends-panel-kicker svg { color: var(--yellow); }
-.friends-panel-sub {
-  font: 500 10px var(--mono);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.friends-panel-tools { display: inline-flex; gap: 6px; flex-shrink: 0; }
-.friends-tool {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, .04);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  cursor: pointer;
-  transition: color .18s, border-color .18s, background .18s;
-}
-.friends-tool:hover { color: var(--cyan); border-color: var(--line-strong); background: rgba(34, 211, 238, .08); }
-.friends-tool:disabled { opacity: .5; cursor: default; }
-.friends-tool.is-spinning svg { animation: friends-spin .6s linear infinite; }
-@keyframes friends-spin { to { transform: rotate(360deg); } }
-
-.friends-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--line);
-  background: rgba(5, 6, 15, .35);
-}
-.friends-tab {
-  position: relative;
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 11px 8px;
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  cursor: pointer;
-  font: 500 10.5px var(--mono);
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  transition: color .18s, border-color .18s, background .18s;
-}
-.friends-tab:hover { color: #fff; background: rgba(255, 255, 255, .03); }
-.friends-tab.is-active { color: var(--cyan); border-bottom-color: var(--cyan); }
-.friends-tab-count {
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line-strong);
-  color: var(--ink);
-  font-size: 9.5px;
-  letter-spacing: 0;
-}
-.friends-tab.is-active .friends-tab-count { border-color: rgba(34, 211, 238, .5); color: var(--cyan); }
-.friends-tab.has-alert .friends-tab-count { background: var(--yellow); border-color: var(--yellow); color: #0a0b1a; }
-
+/* Corps de la fenêtre (onglets Amis / Demandes / Ajouter). */
 .friends-body {
   flex: 1;
   min-height: 160px;
@@ -232,16 +16,6 @@
   overscroll-behavior: contain;
 }
 .friends-body::-webkit-scrollbar { width: 8px; }
-
-.friends-panel-foot {
-  padding: 9px 16px;
-  border-top: 1px solid var(--line);
-  background: rgba(255, 214, 25, .06);
-  color: rgba(255, 214, 25, .85);
-  font: 500 9.5px var(--mono);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
 
 /* ------------------------------- Listes -------------------------------- */
 
@@ -551,33 +325,14 @@
   letter-spacing: .12em;
 }
 
-/* ------------- Cohabitation avec les notifications de succès ------------ */
-
-/* Le lanceur occupe le coin : les notifications montent d'un cran. */
-body.has-friends-dock .achievement-toasts { bottom: 76px; }
-/* Panneau ouvert : les notifications glissent à côté du panneau. */
-body.friends-dock-open .achievement-toasts {
-  bottom: 16px;
-  right: calc(16px + var(--friends-width) + 12px);
-}
-[dir="rtl"] body.has-friends-dock .achievement-toasts { bottom: 16px; }
-[dir="rtl"] body.friends-dock-open .achievement-toasts { right: 16px; }
-
-/* ------------------------------ Responsive ------------------------------ */
+/* La position de la fenêtre, sa cohabitation avec les notifications et le
+   pop-up plein écran mobile vivent dans src/social/social.css. */
 
 @media (max-width: 600px) {
-  .friends-dock { right: 12px; bottom: 12px; }
-  [dir="rtl"] .friends-dock { left: 12px; }
-  .friends-panel { max-height: min(70vh, calc(100vh - 100px)); }
-  .friends-launcher { padding: 10px 13px; }
-  .friends-launcher-label { display: none; }
-  body.friends-dock-open .achievement-toasts { bottom: auto; top: 90px; right: 16px; }
   .friend-btn-wrap-full { width: 100%; }
   .friend-btn-full { width: 100%; justify-content: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .friends-panel { animation: none; }
-  .friends-launcher-dot.is-online { animation: none; }
-  .friends-launcher, .friend-btn { transition: none; }
+  .friend-btn { transition: none; }
 }
