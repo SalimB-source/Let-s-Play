@@ -107,6 +107,9 @@ function App() {
             <Route path="/news/kingdom-hearts-4-coco" element={<CurrentNews slug="kingdom-hearts-4-coco" />} />
             <Route path="/news/tokyo-game-show-2026-annulation" element={<CurrentNews slug="tokyo-game-show-2026-annulation" />} />
             <Route path="/news/eshop-switch-2-20-septembre" element={<CurrentNews slug="eshop-switch-2-20-septembre" />} />
+            <Route path="/news/netmarble-tgs-2026" element={<CurrentNews slug="netmarble-tgs-2026" />} />
+            <Route path="/news/control-resonant-24-septembre" element={<CurrentNews slug="control-resonant-24-septembre" />} />
+            <Route path="/news/sorties-24-septembre" element={<CurrentNews slug="sorties-24-septembre" />} />
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
