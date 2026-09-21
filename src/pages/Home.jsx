@@ -117,7 +117,17 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        <div className="hero-bg" style={{ backgroundImage: `url(${base}hero-dragon.webp)` }} role="img" aria-label="Let’s Play dragon key art" />
+        <video
+          className="hero-bg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster={`${base}hero-dragon.webp`}
+          aria-hidden="true"
+        >
+          <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663645820794/KZGPlCtTMmmvfSJj.mp4" type="video/mp4" />
+        </video>
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">
