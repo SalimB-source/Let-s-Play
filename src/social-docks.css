@@ -1,0 +1,133 @@
+/* ==========================================================================
+   SOCIAL DOCKS BAR — messagerie + amis côte à côte à droite
+   ========================================================================== */
+
+.social-docks-bar {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1250;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+  max-width: calc(100vw - 32px);
+}
+
+.social-docks-bar > * {
+  pointer-events: auto;
+}
+
+/* Les deux docks perdent leur position fixed quand ils sont dans la barre */
+.social-docks-bar .friends-dock,
+.social-docks-bar .messages-dock {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  top: auto;
+  align-items: flex-end;
+}
+
+.social-docks-bar .friends-dock {
+  width: var(--friends-width);
+  order: 2;
+}
+
+.social-docks-bar .messages-dock {
+  width: var(--messages-width);
+  order: 1;
+}
+
+/* Les panneaux restent au-dessus de leur lanceur */
+.social-docks-bar .friends-panel,
+.social-docks-bar .messages-panel {
+  width: 100%;
+}
+
+/* Cohabitation avec les toasts de succès :
+   - la barre occupe le coin, on remonte les toasts
+   - quand un panneau est ouvert, on les décale à gauche de la barre */
+body.has-friends-dock .achievement-toasts,
+body.has-messages-dock .achievement-toasts {
+  bottom: 76px;
+}
+
+body.friends-dock-open .achievement-toasts,
+body.messages-dock-open .achievement-toasts,
+body.friends-dock-open.messages-dock-open .achievement-toasts {
+  bottom: 16px;
+  right: calc(16px + var(--friends-width) + var(--messages-width) + 24px);
+}
+
+[dir="rtl"] body.has-friends-dock .achievement-toasts,
+[dir="rtl"] body.has-messages-dock .achievement-toasts {
+  bottom: 76px;
+  right: 16px;
+}
+
+[dir="rtl"] body.friends-dock-open .achievement-toasts,
+[dir="rtl"] body.messages-dock-open .achievement-toasts {
+  right: 16px;
+}
+
+/* Toujours à droite, même en RTL — l'utilisateur a demandé « à droite » */
+[dir="rtl"] .social-docks-bar {
+  right: 16px;
+  left: auto;
+}
+[dir="rtl"] .social-docks-bar .friends-dock,
+[dir="rtl"] .social-docks-bar .messages-dock {
+  left: auto;
+  right: auto;
+}
+
+/* Responsive : sur tablette/mobile, on garde la barre à droite mais on
+   limite la largeur pour que les deux lanceurs restent lisibles. */
+@media (max-width: 860px) {
+  .social-docks-bar {
+    gap: 10px;
+  }
+  body.friends-dock-open .achievement-toasts,
+  body.messages-dock-open .achievement-toasts,
+  body.friends-dock-open.messages-dock-open .achievement-toasts {
+    right: 16px;
+    bottom: auto;
+    top: 90px;
+  }
+}
+
+@media (max-width: 760px) {
+  .social-docks-bar {
+    right: 12px;
+    left: auto;
+    bottom: 12px;
+    max-width: calc(100vw - 24px);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  /* Fermés : les docks ne prennent que la place de leur lanceur */
+  .social-docks-bar .friends-dock,
+  .social-docks-bar .messages-dock {
+    width: auto;
+  }
+
+  /* Ouvert : panneau large, barre passe en colonne */
+  .social-docks-bar .friends-dock.is-open,
+  .social-docks-bar .messages-dock.is-open {
+    width: min(360px, calc(100vw - 24px));
+  }
+
+  .social-docks-bar:has(.is-open) {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+}
+
+@media (max-width: 600px) {
+  .social-docks-bar {
+    gap: 8px;
+  }
+}

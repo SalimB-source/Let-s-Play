@@ -14,6 +14,7 @@ import './dossier-article.css';
 import './achievements/achievements.css';
 import './friends/friends.css';
 import './messages/messages.css';
+import './social-docks.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -135,8 +136,10 @@ function App() {
               </Routes>
             </Layout>
             <AchievementPopup />
-            <FriendsDock />
-            <MessagesDock />
+            <div className="social-docks-bar">
+              <MessagesDock />
+              <FriendsDock />
+            </div>
           </AchievementProvider>
           </MessagesProvider>
           </FriendsProvider>
