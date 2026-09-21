@@ -1,0 +1,309 @@
+/* ==========================================================================
+   FENÊTRE SOCIALE — amis + messagerie dans la même fenêtre, en bas à droite
+   (à droite même en RTL : c'est le coin demandé pour le social).
+   Sur mobile (≤760px), la fenêtre ouverte devient un pop-up plein écran.
+   ========================================================================== */
+
+:root {
+  --social-width: min(360px, calc(100vw - 24px));
+}
+
+/* ------------------------------- Dock ---------------------------------- */
+
+.social-dock {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1250;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  width: var(--social-width);
+  pointer-events: none;
+}
+[dir="rtl"] .social-dock {
+  right: 16px;
+  left: auto;
+}
+.social-dock > * { pointer-events: auto; }
+
+/* Lanceur : pastille compacte, toujours visible pour un joueur connecté. */
+.social-launcher {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px 11px 13px;
+  background: linear-gradient(160deg, rgba(30, 12, 70, .96), rgba(7, 8, 20, .97));
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  cursor: pointer;
+  font: 500 11px var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .85), 0 0 24px -10px rgba(168, 85, 247, .6);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+.social-launcher:hover {
+  border-color: var(--cyan);
+  box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .85), 0 0 28px -8px rgba(34, 211, 238, .55);
+  transform: translateY(-2px);
+}
+.social-dock.is-open .social-launcher { border-color: var(--cyan); }
+.social-launcher.has-alert { border-color: rgba(255, 214, 25, .55); }
+.social-launcher-icon {
+  display: inline-flex;
+  color: var(--yellow);
+}
+.social-launcher-label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: .12em;
+}
+.social-launcher-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+[dir="rtl"] .social-launcher-meta {
+  padding-left: 0;
+  padding-right: 10px;
+  border-left: 0;
+  border-right: 1px solid var(--line);
+}
+.social-launcher-meta-unread { color: var(--yellow); }
+.social-launcher-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(214, 220, 255, .28);
+  flex-shrink: 0;
+}
+.social-launcher-dot.is-online {
+  background: var(--friends-online);
+  box-shadow: 0 0 8px var(--friends-online);
+  animation: social-pulse 2s infinite ease-in-out;
+}
+.social-launcher-badge {
+  position: absolute;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--yellow);
+  color: #0a0b1a;
+  font: 700 10px var(--mono);
+  letter-spacing: 0;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  box-shadow: 0 0 14px rgba(255, 214, 25, .6);
+}
+/* Non-lus en haut à droite, demandes d'amis en haut à gauche. */
+.social-launcher-badge-unread { top: -7px; right: -4px; }
+.social-launcher-badge-requests { top: -7px; left: -4px; }
+[dir="rtl"] .social-launcher-badge-unread { right: auto; left: -4px; }
+[dir="rtl"] .social-launcher-badge-requests { left: auto; right: -4px; }
+
+@keyframes social-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .45; transform: scale(.82); }
+}
+
+/* ------------------------------- Panneau ------------------------------- */
+
+.social-panel {
+  position: relative;
+  width: 100%;
+  /* Hauteur définie : la discussion (fil + champ) a besoin d'un conteneur de
+     hauteur connue pour que le fil défile ; les listes s'y ajustent. */
+  height: min(560px, calc(100vh - 120px));
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(160deg, rgba(26, 17, 52, .98), rgba(7, 8, 20, .985));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .9), 0 0 40px -14px rgba(124, 58, 237, .55);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  animation: social-panel-in .28s cubic-bezier(.2, 1.1, .5, 1);
+  overflow: hidden;
+}
+@keyframes social-panel-in {
+  from { opacity: 0; transform: translateY(14px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+
+.social-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.social-panel-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.social-panel-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: .08em;
+  color: #fff;
+}
+.social-panel-kicker svg { color: var(--yellow); }
+.social-panel-sub {
+  font: 500 10px var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.social-panel-tools { display: inline-flex; gap: 6px; flex-shrink: 0; }
+.social-panel-tools-float { position: absolute; top: 10px; right: 10px; z-index: 3; }
+[dir="rtl"] .social-panel-tools-float { right: auto; left: 10px; }
+.social-tool {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.social-tool:hover { color: var(--cyan); border-color: var(--line-strong); background: rgba(34, 211, 238, .08); }
+.social-tool:disabled { opacity: .5; cursor: default; }
+.social-tool.is-spinning svg { animation: social-spin .6s linear infinite; }
+@keyframes social-spin { to { transform: rotate(360deg); } }
+
+/* Quatre onglets : Amis / Demandes / Ajouter / Messages. */
+.social-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  background: rgba(5, 6, 15, .35);
+}
+.social-tab {
+  position: relative;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 4px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: 500 10px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: color .18s, border-color .18s, background .18s;
+}
+.social-tab:hover { color: #fff; background: rgba(255, 255, 255, .03); }
+.social-tab.is-active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.social-tab-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-size: 9.5px;
+  letter-spacing: 0;
+}
+.social-tab.is-active .social-tab-count { border-color: rgba(34, 211, 238, .5); color: var(--cyan); }
+.social-tab.has-alert .social-tab-count { background: var(--yellow); border-color: var(--yellow); color: #0a0b1a; }
+
+.social-panel-foot {
+  padding: 9px 16px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 214, 25, .06);
+  color: rgba(255, 214, 25, .85);
+  font: 500 9.5px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+/* --------------------- Cohabitation avec les toasts --------------------- */
+
+/* Le lanceur occupe le coin : les notifications montent d'un cran. */
+body.has-friends-dock .achievement-toasts,
+body.has-messages-dock .achievement-toasts { bottom: 76px; }
+/* Fenêtre ouverte : les notifications glissent à côté de la fenêtre. */
+body.friends-dock-open .achievement-toasts,
+body.messages-dock-open .achievement-toasts {
+  bottom: 16px;
+  right: calc(16px + var(--social-width) + 12px);
+}
+[dir="rtl"] body.friends-dock-open .achievement-toasts,
+[dir="rtl"] body.messages-dock-open .achievement-toasts { right: 16px; }
+
+/* ------------------- Mobile : pop-up plein écran ------------------------ */
+
+@media (max-width: 760px) {
+  .social-dock {
+    right: 12px;
+    bottom: 12px;
+    width: min(360px, calc(100vw - 24px));
+  }
+  .social-launcher { padding: 10px 13px; }
+  /* Fermée : icône + pastilles uniquement, l'écran est petit. */
+  .social-launcher-label,
+  .social-launcher-meta { display: none; }
+
+  /* Ouverte : la fenêtre couvre tout l'écran (au-dessus de la navigation),
+     l'arrière-plan ne défile plus, et le lanceur passe derrière. */
+  .social-panel {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border: 0;
+    clip-path: none;
+    box-shadow: none;
+    z-index: 1300;
+  }
+  .social-dock.is-open .social-launcher { visibility: hidden; }
+  body.social-dock-open { overflow: hidden; }
+  body.friends-dock-open .achievement-toasts,
+  body.messages-dock-open .achievement-toasts {
+    bottom: auto;
+    top: 90px;
+    right: 16px;
+  }
+  .friend-btn-wrap-full { width: 100%; }
+  .friend-btn-full { width: 100%; justify-content: center; }
+  .message-btn-wrap-full { width: 100%; }
+  .message-btn-full { width: 100%; justify-content: center; }
+  .player-messages-row { grid-template-columns: 1fr auto; }
+  .player-messages-name { grid-column: 1 / -1; }
+  .messages-bubble-delete { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .social-panel { animation: none; }
+  .social-launcher-dot.is-online { animation: none; }
+  .social-launcher { transition: none; }
+}

@@ -43,8 +43,10 @@ function getAudioContext() {
 }
 
 // Déverrouillage au premier geste utilisateur (les navigateurs ignorent tout
-// audio déclenché avant un clic ou une touche).
-if (typeof window !== 'undefined') {
+// audio déclenché avant un clic ou une touche). Les `addEventListener` sont
+// optionnels : certains harnais de vérification exposent un `window` minimal
+// (localStorage seul), et l'audio y est de toute façon inaudible.
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   window.addEventListener('pointerdown', () => { getAudioContext(); }, { passive: true });
   window.addEventListener('keydown', () => { getAudioContext(); });
 }

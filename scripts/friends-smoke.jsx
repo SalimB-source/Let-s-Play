@@ -2,10 +2,11 @@
  * Entrée SSR utilisée par scripts/friends-check.mjs.
  *
  * Rend le hub joueur (/auth), un profil public de la communauté de
- * démonstration et la fenêtre d'amis avec la vraie pile de l'application —
- * LanguageProvider + AuthProvider + FriendsProvider + AchievementProvider +
- * Layout — et ré-exporte la logique pure du module amis (relations, actions
- * de démonstration, présence scriptée, recherche) pour la vérifier sans DOM.
+ * démonstration et la fenêtre sociale unifiée (amis + messagerie) avec la
+ * vraie pile de l'application — LanguageProvider + AuthProvider +
+ * FriendsProvider + AchievementProvider + Layout — et ré-exporte la logique
+ * pure du module amis (relations, actions de démonstration, présence
+ * scriptée, recherche) pour la vérifier sans DOM.
  */
 import React from 'react';
 import { renderToString } from 'react-dom/server';
@@ -14,13 +15,15 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { AchievementProvider } from '../src/achievements/AchievementContext';
 import { FriendsProvider } from '../src/friends/FriendsContext';
-import FriendsDock from '../src/friends/FriendsDock';
+import { MessagesProvider } from '../src/messages/MessagesContext';
+import SocialDock from '../src/social/SocialDock';
 import Layout from '../src/components/Layout';
 import Auth from '../src/pages/Auth';
 import Profile from '../src/pages/Profile';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 
 export { DEMO_PROFILES };
+export { socialCopy } from '../src/social/socialCopy';
 export {
   DEMO_COMMUNITY,
   DEMO_INITIAL_STATE,
@@ -72,19 +75,23 @@ export function createApp(path, { initialSession = null } = {}) {
           FriendsProvider,
           null,
           React.createElement(
-            AchievementProvider,
+            MessagesProvider,
             null,
             React.createElement(
-              Layout,
+              AchievementProvider,
               null,
               React.createElement(
-                Routes,
+                Layout,
                 null,
-                React.createElement(Route, { path: '/auth', element: React.createElement(Auth) }),
-                React.createElement(Route, { path: '/profile/:userId', element: React.createElement(Profile) }),
+                React.createElement(
+                  Routes,
+                  null,
+                  React.createElement(Route, { path: '/auth', element: React.createElement(Auth) }),
+                  React.createElement(Route, { path: '/profile/:userId', element: React.createElement(Profile) }),
+                ),
               ),
+              React.createElement(SocialDock, null),
             ),
-            React.createElement(FriendsDock, null),
           ),
         ),
       ),

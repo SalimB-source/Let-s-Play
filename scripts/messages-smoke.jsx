@@ -15,9 +15,8 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { AchievementProvider } from '../src/achievements/AchievementContext';
 import { FriendsProvider } from '../src/friends/FriendsContext';
-import FriendsDock from '../src/friends/FriendsDock';
 import { MessagesProvider } from '../src/messages/MessagesContext';
-import MessagesDock from '../src/messages/MessagesDock';
+import SocialDock from '../src/social/SocialDock';
 import Layout from '../src/components/Layout';
 import Auth from '../src/pages/Auth';
 import Profile from '../src/pages/Profile';
@@ -26,6 +25,7 @@ import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 export { DEMO_PROFILES };
 export { DEMO_INITIAL_STATE, findDemoPlayer } from '../src/friends/demoRoster';
 export { friendsCopy } from '../src/friends/friendsCopy';
+export { socialCopy } from '../src/social/socialCopy';
 export {
   DEMO_INCOMING,
   DEMO_REPLIES,
@@ -113,8 +113,7 @@ export function createApp(path) {
                   React.createElement(Route, { path: '/profile/:userId', element: React.createElement(Profile) }),
                 ),
               ),
-              React.createElement(FriendsDock, null),
-              React.createElement(MessagesDock, null),
+              React.createElement(SocialDock, null),
             ),
           ),
         ),
@@ -125,13 +124,16 @@ export function createApp(path) {
 
 /**
  * Rendu SSR de `path` dans `lang`, avec (ou sans) persona de démonstration
- * connectée, la fenêtre de messagerie fermée / ouverte sur la liste / ouverte
- * sur une discussion.
+ * connectée, la fenêtre sociale unifiée fermée / ouverte sur la liste /
+ * ouverte sur une discussion. `dockOpen` ouvre du côté messagerie
+ * (`letsplay_messages_open`), `friendsOpen` du côté amis
+ * (`letsplay_friends_dock_open`) : la fenêtre s'ouvre si l'un des deux.
  */
-export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false, activePeer = null } = {}) {
+export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false, friendsOpen = false, activePeer = null } = {}) {
   const entries = {
     'letsplay-lang': lang,
     letsplay_messages_open: dockOpen ? '1' : '0',
+    letsplay_friends_dock_open: friendsOpen ? '1' : '0',
   };
   if (activePeer) entries.letsplay_messages_active = activePeer;
   if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILES[demoKey]);

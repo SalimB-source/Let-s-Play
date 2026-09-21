@@ -14,7 +14,7 @@ import './dossier-article.css';
 import './achievements/achievements.css';
 import './friends/friends.css';
 import './messages/messages.css';
-import './social-docks.css';
+import './social/social.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -56,9 +56,8 @@ import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
 import AchievementPopup from './achievements/AchievementPopup';
 import { FriendsProvider } from './friends/FriendsContext';
-import FriendsDock from './friends/FriendsDock';
 import { MessagesProvider } from './messages/MessagesContext';
-import MessagesDock from './messages/MessagesDock';
+import SocialDock from './social/SocialDock';
 import { initSinglePlayback } from './lib/videoPlayback';
 
 function App() {
@@ -69,12 +68,11 @@ function App() {
           {/* Les succès suivent les actions du joueur (navigation, lecture,
               vidéo, commentaires, langue, compte). Le fournisseur est placé
               dans le routeur : le suivi lit la route courante. */}
-          {/* Les amis (liste, demandes, présence) suivent le compte connecté :
-              la fenêtre en bas à droite et les boutons « Ajouter en ami » des
-              profils lisent le même contexte. */}
-          {/* La messagerie 1-à-1 vit dans le contexte des amis : on n'écrit
-              qu'à ses amis, et la fenêtre (en bas à gauche) lit la liste
-              d'amis, la présence et les profils du même endroit. */}
+          {/* Les amis (liste, demandes, présence) et la messagerie 1-à-1
+              suivent le compte connecté et partagent la même fenêtre sociale
+              (en bas à droite, plein écran sur mobile) : `SocialDock`. Les
+              boutons « Ajouter en ami » / « Message » des profils et les
+              raccourcis du hub lisent les deux mêmes contextes. */}
           <FriendsProvider>
           <MessagesProvider>
           <AchievementProvider>
@@ -139,10 +137,7 @@ function App() {
               </Routes>
             </Layout>
             <AchievementPopup />
-            <div className="social-docks-bar">
-              <MessagesDock />
-              <FriendsDock />
-            </div>
+            <SocialDock />
           </AchievementProvider>
           </MessagesProvider>
           </FriendsProvider>

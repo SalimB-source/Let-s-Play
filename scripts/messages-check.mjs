@@ -13,10 +13,11 @@
  *    arrivent à échéance, une seule fois ; bloquer / signaler sont réversibles
  *    et sans effet de bord.
  * 3. Rendu SSR : le hub /auth et un profil public se rendent dans les trois
- *    langues ; la fenêtre de messagerie n'apparaît que pour un joueur
- *    connecté ; ouverte, elle montre la liste des discussions puis la
- *    discussion en cours (bulles + champ de saisie) ; le bouton « Message »
- *    d'un profil ami est rendu, et propose la connexion à un visiteur.
+ *    langues ; la fenêtre sociale unifiée (amis + messagerie) n'apparaît que
+ *    pour un joueur connecté ; ouverte sur la messagerie, elle montre la
+ *    liste des discussions puis la discussion en cours (bulles + champ de
+ *    saisie) ; le bouton « Message » d'un profil ami est rendu, et propose la
+ *    connexion à un visiteur.
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -40,7 +41,7 @@ const {
   conversationKey, demoReplyFor, demoThreads, dueDemoIncoming, friendsCopy,
   isBlockedError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
   markThreadReadLocal, mergeUnread, messagesCopy, normalizeMessage, peersFromKey,
-  prepareBody, reasonLabel, seedDemoThreadState, sortThreadsByActivity,
+  prepareBody, reasonLabel, seedDemoThreadState, socialCopy, sortThreadsByActivity,
   threadsFromRows, totalUnread, unreadFromRows, findDemoPlayer, renderApp,
 } = smoke;
 
@@ -221,7 +222,9 @@ for (const [key, profile] of Object.entries(DEMO_PROFILES)) {
 
 for (const lang of ['en', 'fr', 'ar']) {
   const missing = Object.keys(messagesCopy.en).filter((entry) => !messagesCopy[lang][entry]);
+  const missingSocial = Object.keys(socialCopy.en).filter((entry) => !socialCopy[lang][entry]);
   check(`textes complets en ${lang}`, missing.join(','), '');
+  check(`textes sociaux complets en ${lang}`, missingSocial.join(','), '');
   const reasons = REPORT_REASONS.filter((reason) => !reasonLabel(reason, messagesCopy[lang]));
   check(`motifs de signalement libellés en ${lang}`, reasons.join(','), '');
 }
@@ -233,23 +236,25 @@ console.log('\n[3/3] rendu SSR\n');
 
 for (const lang of ['en', 'fr', 'ar']) {
   const t = messagesCopy[lang];
+  const st = socialCopy[lang];
   try {
     const guest = strip(renderApp('/auth', { lang }));
-    check(`[${lang}] visiteur : pas de fenêtre de messagerie`, guest.includes('messages-launcher') || guest.includes(t.launcherOpen), false);
+    check(`[${lang}] visiteur : pas de fenêtre sociale`, guest.includes('social-launcher') || guest.includes(st.launcherOpen), false);
   } catch (e) { check(`[${lang}] /auth visiteur se rend`, e.message, ''); }
 
   try {
     const html = renderApp('/auth', { lang, demoKey: 'vortex' });
     const text = strip(html);
-    check(`[${lang}] persona : lanceur « ${t.launcher} » présent`, html.includes('messages-launcher') && text.includes(t.launcher));
-    check(`[${lang}] persona : badge des non-lus`, html.includes('messages-launcher-badge'));
+    check(`[${lang}] persona : lanceur « ${st.launcher} » présent`, html.includes('social-launcher') && text.includes(st.launcher));
+    check(`[${lang}] persona : badge des non-lus`, html.includes('social-launcher-badge'));
     check(`[${lang}] persona : section « ${t.hubTitle} » du hub`, text.includes(t.hubOpen));
   } catch (e) { check(`[${lang}] /auth persona se rend`, e.message, ''); }
 
   try {
     const html = renderApp('/auth', { lang, demoKey: 'vortex', dockOpen: true });
     const text = strip(html);
-    check(`[${lang}] fenêtre ouverte : liste des discussions`, html.includes('messages-panel') && text.includes(t.sectionConversations));
+    check(`[${lang}] fenêtre ouverte : liste des discussions`, html.includes('social-panel') && text.includes(t.sectionConversations));
+    check(`[${lang}] fenêtre ouverte : onglet « ${st.tabMessages} » actif`, text.includes(st.tabMessages));
     const seededPeer = Object.keys(DEMO_THREADS.vortex)[0];
     const lastBody = DEMO_THREADS.vortex[seededPeer].at(-1).body;
     check(`[${lang}] fenêtre ouverte : dernier message en aperçu`, text.includes(lastBody));
@@ -284,12 +289,14 @@ for (const lang of ['en', 'fr', 'ar']) {
   } catch (e) { check(`[${lang}] profil non-ami se rend`, e.message, ''); }
 }
 
-// La fenêtre d'amis reste utilisable à côté (les deux docks se rendent).
+// Amis + messagerie partagent maintenant une seule fenêtre sociale.
 try {
   const html = renderApp('/auth', { lang: 'fr', demoKey: 'vortex' });
-  check('les deux fenêtres coexistent', html.includes('friends-launcher') && html.includes('messages-launcher'));
+  check('une seule fenêtre sociale', (html.match(/class="social-launcher( |")/g) || []).length, 1);
+  const opened = strip(renderApp('/auth', { lang: 'fr', demoKey: 'vortex', friendsOpen: true }));
+  check('fenêtre unifiée : onglets Amis et Messages', opened.includes(friendsCopy.fr.tabFriends) && opened.includes(socialCopy.fr.tabMessages));
   check('les textes des amis restent complets', Object.keys(friendsCopy.en).filter((entry) => !friendsCopy.fr[entry]).join(','), '');
-} catch (e) { check('les deux fenêtres se rendent', e.message, ''); }
+} catch (e) { check('la fenêtre sociale se rend', e.message, ''); }
 
 if (failures > 0) {
   console.error(`\n${failures} vérification(s) en échec.`);
