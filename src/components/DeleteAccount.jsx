@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -96,7 +97,13 @@ export default function DeleteAccount() {
       if (event.key === 'Escape') close();
     };
     document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
+    // Bloque le scroll du fond tant que la modale est ouverte.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [open, busy]);
 
   const submit = async (event) => {
@@ -171,7 +178,7 @@ export default function DeleteAccount() {
         {t.delete}
       </button>
 
-      {open && (
+      {open && typeof document !== 'undefined' && createPortal(
         <div className="delete-account-overlay" role="presentation" onMouseDown={close}>
           <div
             className="delete-account-dialog"
@@ -218,7 +225,8 @@ export default function DeleteAccount() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
