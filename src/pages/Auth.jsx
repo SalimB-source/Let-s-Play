@@ -11,6 +11,7 @@ import { levelTitle } from '../achievements/catalog';
 import AchievementsPanel from '../achievements/AchievementsPanel';
 import DeleteAccount from '../components/DeleteAccount';
 import FriendsHubSection from '../friends/FriendsHubSection';
+import MessagesHubSection from '../messages/MessagesHubSection';
 
 /* ------------------------------------------------------------------ */
 /* Small inline icons (no external deps, inherits currentColor)        */
@@ -1053,6 +1054,10 @@ export default function Auth({ initialMode = 'signin' }) {
           {/* AMIS & DEMANDES — résumé + raccourcis vers la fenêtre d'amis
               (en bas à droite) */}
           <FriendsHubSection />
+
+          {/* MESSAGERIE — derniers échanges + raccourcis vers la fenêtre de
+              messagerie (en bas à gauche) */}
+          <MessagesHubSection />
 
           {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
               commentaires, recherche, fidélité, compte) */}

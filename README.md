@@ -35,6 +35,9 @@ npm run build
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans une fenêtre en bas à droite, pour
   tout joueur connecté (voir « Amis : demandes, liste et présence »)
+- Messagerie : discussions **1-à-1 entre amis** en texte et en temps réel, avec
+  **non-lus**, accusé de lecture, **blocage** et **signalement**, dans une
+  fenêtre en bas à gauche (voir « Messagerie : discussions 1-à-1 entre amis »)
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -107,9 +110,11 @@ If a variable is missing, `/auth` shows exactly which one under the form.
    paste the **whole** file and hit Run. It creates the `profiles` table (RLS
    enabled) and a trigger that inserts a profile row — with the gamertag chosen
    at registration — for every new user, plus the `comments` table behind the
-   article comment section (see below) and the `friendships` table behind the
-   friends list (see « Amis : demandes, liste et présence »). The script is
-   idempotent: re-run it after pulling a newer version.
+   article comment section (see below), the `friendships` table behind the
+   friends list (see « Amis : demandes, liste et présence ») and the
+   `direct_messages` / `message_blocks` / `message_reports` tables behind the
+   1-à-1 messaging (see « Messagerie : discussions 1-à-1 entre amis »). The
+   script is idempotent: re-run it after pulling a newer version.
    The SQL Editor wraps the file in **one transaction**, so a single error used
    to roll everything back — and the script looks like it ran while nothing was
    created. It is therefore guarded: steps that depend on Supabase-internal
@@ -285,6 +290,116 @@ comme des profils publics.
   visiteur et persona — dans les trois langues.
 - `npm run check:i18n` et `npm run check:achievements` continuent de rendre les
   pages sans le provider des amis : le contexte par défaut est inerte.
+
+## Messagerie : discussions 1-à-1 entre amis
+
+Tout joueur connecté (compte Supabase **ou** persona de démonstration) peut
+écrire à **ses amis** — et seulement à eux. La messagerie vit dans une
+**fenêtre en bas à gauche** (en bas à droite en arabe), de l'autre côté de la
+fenêtre d'amis : un lanceur compact « MESSAGES » — avec une pastille jaune
+quand des messages n'ont pas été lus — ouvre un panneau à deux niveaux. Un
+visiteur non connecté ne voit rien.
+
+| Niveau | Ce qui s'y trouve |
+| --- | --- |
+| **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
+| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** |
+
+L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil ;
+Échap remonte à la liste puis ferme le panneau.
+
+**Où écrire à un ami** :
+
+- le bouton **« Message »** d'un profil public (`/profile/:id`), à côté du
+  bouton « Ajouter en ami » — grisé avec l'explication « Deviens ami avec ce
+  joueur pour lui écrire » tant que l'amitié n'est pas acceptée, avec le
+  nombre de non-lus en pastille sinon ;
+- l'**icône bulle** de chaque ami dans la fenêtre d'amis (onglet Amis) ;
+- la section **« MESSAGES »** du hub joueur (`/auth`) : total des non-lus,
+  trois derniers échanges, raccourcis « Ouvrir la messagerie » / « Écrire à un
+  ami ».
+
+### Comptes Supabase
+
+Les messages vivent dans `public.direct_messages` (`supabase/schema.sql`,
+étape 3e) : une ligne par message, `conversation_key` = les deux identifiants
+triés et séparés par `_` (les deux sens d'un échange partagent la même clé),
+`read_at` à NULL tant que le destinataire n'a pas ouvert la discussion — c'est
+ce qui compte les **non-lus**. Un trigger (`prepare_direct_message`) impose
+côté serveur : expéditeur = joueur connecté, **amitié `accepted` obligatoire**,
+aucun blocage entre les deux joueurs, message non vide et ≤ 1 000 caractères,
+20 messages par minute au plus. Un second trigger
+(`restrict_direct_message_update`) fait en sorte qu'une mise à jour ne puisse
+**que** poser `read_at` (accusé de lecture) : ni le texte, ni l'expéditeur, ni
+l'horodatage ne peuvent être modifiés, et un message lu ne redevient jamais
+non-lu. Row Level Security : un joueur ne lit que ses propres échanges et
+n'écrit qu'en son nom.
+
+- **Temps réel** — la fenêtre écoute `direct_messages` sur deux canaux
+  Realtime : `recipient_id = moi` pour les messages reçus (le badge des
+  non-lus bouge tout de suite, quelle que soit la discussion ouverte) et
+  `conversation_key = <clé>` pour la discussion en cours (messages de l'ami +
+  accusés de lecture). Toutes les minutes en secours, et au retour sur
+  l'onglet.
+- **Bloquer** — `public.message_blocks` : qui bloque qui. Un joueur ne voit
+  que **ses** blocages (jamais qui l'a bloqué). Bloquer coupe l'écriture dans
+  les deux sens (vérifié par le trigger) et retire la discussion de la liste ;
+  elle réapparaît dans la section « BLOQUÉS », avec « Débloquer ». Le joueur
+  bloqué ne reçoit aucun message d'erreur explicite (« Ce joueur ne reçoit pas
+  tes messages »).
+- **Signaler** — `public.message_reports` : motif (harcèlement, spam, propos
+  haineux, contenu inapproprié, autre), détail facultatif et identifiant du
+  dernier message reçu. Un seul signalement par joueur signalé (le second met
+  à jour le motif) ; le bouton passe à « Signalé ».
+
+Rien d'autre à configurer une fois le SQL relancé — le tableau de contrôle en
+fin de script doit afficher `OK` pour `table public.direct_messages`,
+`politiques RLS direct_messages (3)`, `trigger message 1-à-1`, `trigger accusé
+de lecture seul modifiable`, `tables blocages / signalements` et `politiques
+RLS blocages (3) / signalements (2)` ; `realtime direct_messages` peut rester
+`ABSENT` (la messagerie se rafraîchit alors toutes les minutes). Tant que la
+table manque, la fenêtre l'explique (« La messagerie n'est pas encore activée
+sur ce déploiement… ») sans rien casser d'autre.
+
+### Personas de démonstration
+
+Sans session Supabase, la persona (`VORTEX_DZ`, `PIXEL_QUEEN`) retrouve des
+**discussions scriptées** (`src/messages/demoThreads.js`) avec des amis de la
+communauté de démonstration : des messages non lus à traiter, des discussions
+déjà lues, des réponses automatiques des joueurs « en ligne » (quelques
+secondes après l'envoi) et des messages qui arrivent tout seuls au fil des
+minutes pour montrer le badge des non-lus. Tout est déterministe et enregistré
+dans `localStorage` (par persona, par appareil) ; bloquer un joueur arrête ses
+réponses, et un signalement y est enregistré comme sur un vrai compte.
+
+### Où vit le code
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `send`, `markRead`, `block`, `unblock`, `report`), canaux temps réel, état de la fenêtre ; inerte sans provider (SSR des scripts) |
+| `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, lignes → discussions, non-lus, repli quand la table manque, état des personas |
+| `src/messages/demoThreads.js` | discussions de départ, réponses scriptées et messages entrants de l'aperçu démo |
+| `src/messages/MessagesDock.jsx` | la fenêtre en bas à gauche (lanceur, liste, fil, champ de saisie, bloquer / signaler) |
+| `src/messages/MessageButton.jsx` | le bouton « Message » (profil public, lignes de la liste d'amis) |
+| `src/messages/MessagesHubSection.jsx` | la section « MESSAGES » du hub |
+| `src/messages/messagesCopy.js` | textes FR / EN / AR |
+| `src/messages/messages.css` | styles (dock, panneau, bulles, signalement, cohabitation avec la fenêtre d'amis) |
+
+### Vérifications
+
+- `npm run check:messages` — logique pure (lignes `direct_messages` →
+  discussions : les deux sens regroupés, fil retrié, non-lus comptés, accusé de
+  lecture, messages reçus en direct sans doublon ; clés de conversation
+  symétriques ; saisie nettoyée et bornée ; erreurs du trigger reconnues),
+  cohérence de l'aperçu de démonstration (discussions entre **amis**
+  existants, jamais soi-même, non-lus et discussions lues, réponses
+  déterministes, messages scriptés livrés une seule fois, blocage /
+  signalement réversibles, textes complets dans les trois langues), puis rendu
+  SSR du hub, de la fenêtre (fermée / liste / discussion ouverte) et de profils
+  publics — visiteur, ami et non-ami — dans les trois langues.
+- `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
+  continuent de passer : la fenêtre de messagerie s'ajoute à celle des amis
+  sans la déplacer, et les contextes par défaut sont inertes.
 
 ## Succès débloqués par les actions du site
 

@@ -1,5 +1,6 @@
 -- ============================================================================
---  Let's Play · schéma Supabase — profils joueurs, commentaires, succès, amis
+--  Let's Play · schéma Supabase — profils, commentaires, succès, amis,
+--  messagerie privée
 -- ============================================================================
 --  Où : Supabase Dashboard > SQL Editor, sur le projet pointé par
 --       VITE_SUPABASE_URL. Coller tout ce fichier puis « Run ».
@@ -492,6 +493,310 @@ end $$;
 
 
 -- ----------------------------------------------------------------------------
+-- 3e. Messagerie : messages privés 1-à-1, joueurs bloqués, signalements
+-- ----------------------------------------------------------------------------
+-- Une ligne par message. `conversation_key` regroupe les deux sens d'un même
+-- échange (`le plus petit uuid _ le plus grand`) : c'est la clé écoutée en
+-- temps réel et celle qui indexe le fil. Un message est `read_at is null`
+-- tant que le destinataire n'a pas ouvert la discussion — c'est ce qui compte
+-- les « non-lus ». On n'écrit à un joueur que si une amitié 'accepted' existe
+-- et qu'aucun des deux ne bloque l'autre (vérifié côté serveur, ci-dessous).
+create table if not exists public.direct_messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_key text not null,
+  sender_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now(),
+  read_at timestamptz,
+  constraint direct_messages_not_self check (sender_id <> recipient_id)
+);
+
+create index if not exists direct_messages_conversation_idx
+  on public.direct_messages (conversation_key, created_at desc);
+create index if not exists direct_messages_sender_idx
+  on public.direct_messages (sender_id, created_at desc);
+-- Fil des non-lus d'un joueur (badge du lanceur, liste des discussions).
+create index if not exists direct_messages_unread_idx
+  on public.direct_messages (recipient_id, created_at desc)
+  where read_at is null;
+
+-- RLS : un joueur ne lit que ses propres échanges, n'écrit qu'en son nom, ne
+-- marque comme lus que les messages qu'il a reçus et ne modifie rien d'autre
+-- (le trigger ci-dessous refuse toute autre colonne). Pas de suppression :
+-- l'historique d'une discussion n'appartient pas à un seul des deux joueurs.
+do $$
+begin
+  alter table public.direct_messages enable row level security;
+
+  drop policy if exists "Direct messages are visible to both players" on public.direct_messages;
+  create policy "Direct messages are visible to both players"
+  on public.direct_messages for select to authenticated
+  using (auth.uid() = sender_id or auth.uid() = recipient_id);
+
+  drop policy if exists "Players send direct messages as themselves" on public.direct_messages;
+  create policy "Players send direct messages as themselves"
+  on public.direct_messages for insert to authenticated
+  with check (auth.uid() = sender_id and auth.uid() <> recipient_id);
+
+  drop policy if exists "Recipients mark their own messages as read" on public.direct_messages;
+  create policy "Recipients mark their own messages as read"
+  on public.direct_messages for update to authenticated
+  using (auth.uid() = recipient_id)
+  with check (auth.uid() = recipient_id);
+exception
+  when others then
+    raise warning 'Let''s Play : politiques RLS de public.direct_messages non appliquées (%).', sqlerrm;
+end $$;
+
+-- Côté serveur : l'expéditeur est toujours le joueur connecté, la clé de
+-- conversation est recalculée, le message est vidé/nettoyé, et trois garde-
+-- fous s'appliquent — amitié acceptée obligatoire, aucun blocage entre les
+-- deux joueurs, pas plus de 20 messages par minute.
+create or replace function public.prepare_direct_message()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  recent int;
+begin
+  if tg_op = 'INSERT' then
+    new.sender_id := coalesce(auth.uid(), new.sender_id);
+    if new.sender_id is null then
+      raise exception 'direct_message_requires_auth' using errcode = '42501';
+    end if;
+    if new.sender_id = new.recipient_id then
+      raise exception 'direct_message_to_self' using errcode = 'P0001';
+    end if;
+
+    -- Comparaison des UUID eux-mêmes (ordre des octets, indépendant de la
+    -- collation) : l'application calcule la même clé en triant les deux
+    -- identifiants en texte.
+    new.conversation_key := case
+      when new.sender_id < new.recipient_id
+        then new.sender_id::text || '_' || new.recipient_id::text
+      else new.recipient_id::text || '_' || new.sender_id::text
+    end;
+    new.body := btrim(new.body);
+    if char_length(new.body) = 0 then
+      raise exception 'direct_message_empty' using errcode = 'P0001';
+    end if;
+    if char_length(new.body) > 1000 then
+      raise exception 'direct_message_too_long' using errcode = 'P0001';
+    end if;
+
+    if not exists (
+      select 1 from public.friendships f
+       where f.status = 'accepted'
+         and ((f.requester_id = new.sender_id and f.addressee_id = new.recipient_id)
+           or (f.requester_id = new.recipient_id and f.addressee_id = new.sender_id))
+    ) then
+      raise exception 'direct_message_requires_friendship' using errcode = 'P0001';
+    end if;
+
+    if exists (
+      select 1 from public.message_blocks b
+       where (b.blocker_id = new.recipient_id and b.blocked_id = new.sender_id)
+          or (b.blocker_id = new.sender_id and b.blocked_id = new.recipient_id)
+    ) then
+      raise exception 'direct_message_blocked' using errcode = 'P0001';
+    end if;
+
+    select count(*) into recent
+    from public.direct_messages
+    where sender_id = new.sender_id and created_at > now() - interval '1 minute';
+    if recent >= 20 then
+      raise exception 'direct_message_rate_limited' using errcode = 'P0001';
+    end if;
+
+    new.created_at := now();
+    new.read_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_direct_message_write on public.direct_messages;
+create trigger on_direct_message_write
+before insert on public.direct_messages
+for each row execute procedure public.prepare_direct_message();
+
+-- Une mise à jour ne peut que poser `read_at` (accusé de lecture). Toute
+-- autre colonne renvoyée différente est refusée, et un message déjà lu ne
+-- redevient jamais non-lu.
+create or replace function public.restrict_direct_message_update()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if new.sender_id is distinct from old.sender_id
+     or new.recipient_id is distinct from old.recipient_id
+     or new.conversation_key is distinct from old.conversation_key
+     or new.body is distinct from old.body then
+    raise exception 'direct_message_readonly' using errcode = '42501';
+  end if;
+  new.sender_id := old.sender_id;
+  new.recipient_id := old.recipient_id;
+  new.conversation_key := old.conversation_key;
+  new.body := old.body;
+  new.created_at := old.created_at;
+  new.read_at := coalesce(old.read_at, new.read_at);
+  return new;
+end;
+$$;
+
+drop trigger if exists on_direct_message_update on public.direct_messages;
+create trigger on_direct_message_update
+before update on public.direct_messages
+for each row execute procedure public.restrict_direct_message_update();
+
+-- Joueurs bloqués : qui bloque qui. Un joueur ne voit que SES blocages — la
+-- liste de ceux qui l'ont bloqué ne lui est jamais exposée, d'où l'absence de
+-- politique de lecture pour `blocked_id`.
+create table if not exists public.message_blocks (
+  blocker_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  blocked_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (blocker_id, blocked_id),
+  constraint message_blocks_not_self check (blocker_id <> blocked_id)
+);
+
+do $$
+begin
+  alter table public.message_blocks enable row level security;
+
+  drop policy if exists "Players see who they blocked" on public.message_blocks;
+  create policy "Players see who they blocked"
+  on public.message_blocks for select to authenticated
+  using (auth.uid() = blocker_id);
+
+  drop policy if exists "Players block on their own behalf" on public.message_blocks;
+  create policy "Players block on their own behalf"
+  on public.message_blocks for insert to authenticated
+  with check (auth.uid() = blocker_id and auth.uid() <> blocked_id);
+
+  drop policy if exists "Players unblock on their own behalf" on public.message_blocks;
+  create policy "Players unblock on their own behalf"
+  on public.message_blocks for delete to authenticated
+  using (auth.uid() = blocker_id);
+exception
+  when others then
+    raise warning 'Let''s Play : politiques RLS de public.message_blocks non appliquées (%).', sqlerrm;
+end $$;
+
+-- Le blocage est toujours posé par le joueur connecté.
+create or replace function public.prepare_message_block()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  new.blocker_id := coalesce(auth.uid(), new.blocker_id);
+  if new.blocker_id is null then
+    raise exception 'message_block_requires_auth' using errcode = '42501';
+  end if;
+  new.created_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists on_message_block_write on public.message_blocks;
+create trigger on_message_block_write
+before insert on public.message_blocks
+for each row execute procedure public.prepare_message_block();
+
+-- Signalements : un joueur peut signaler un autre joueur (avec le message en
+-- cause, facultatif). Un seul signalement par couple — le second met à jour
+-- le motif au lieu d'ajouter une ligne.
+create table if not exists public.message_reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  reported_id uuid not null references auth.users(id) on delete cascade,
+  message_id uuid references public.direct_messages(id) on delete set null,
+  reason text not null default 'other'
+    check (reason in ('harassment', 'spam', 'hate', 'inappropriate', 'other')),
+  note text,
+  created_at timestamptz not null default now(),
+  constraint message_reports_not_self check (reporter_id <> reported_id)
+);
+
+create unique index if not exists message_reports_pair_idx
+  on public.message_reports (reporter_id, reported_id);
+create index if not exists message_reports_reported_idx
+  on public.message_reports (reported_id, created_at desc);
+
+do $$
+begin
+  alter table public.message_reports enable row level security;
+
+  drop policy if exists "Players see their own reports" on public.message_reports;
+  create policy "Players see their own reports"
+  on public.message_reports for select to authenticated
+  using (auth.uid() = reporter_id);
+
+  drop policy if exists "Players report on their own behalf" on public.message_reports;
+  create policy "Players report on their own behalf"
+  on public.message_reports for insert to authenticated
+  with check (auth.uid() = reporter_id and auth.uid() <> reported_id);
+exception
+  when others then
+    raise warning 'Let''s Play : politiques RLS de public.message_reports non appliquées (%).', sqlerrm;
+end $$;
+
+create or replace function public.prepare_message_report()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  new.reporter_id := coalesce(auth.uid(), new.reporter_id);
+  if new.reporter_id is null then
+    raise exception 'message_report_requires_auth' using errcode = '42501';
+  end if;
+  if new.reporter_id = new.reported_id then
+    raise exception 'message_report_to_self' using errcode = 'P0001';
+  end if;
+  new.note := nullif(btrim(coalesce(new.note, '')), '');
+  if char_length(coalesce(new.note, '')) > 500 then
+    raise exception 'message_report_note_too_long' using errcode = 'P0001';
+  end if;
+  -- Un signalement existe déjà pour ce joueur : on met à jour le motif et
+  -- rien n'est inséré (l'application affiche « signalement envoyé »).
+  update public.message_reports
+     set reason = new.reason, note = new.note, message_id = new.message_id, created_at = now()
+   where reporter_id = new.reporter_id and reported_id = new.reported_id;
+  if found then
+    return null;
+  end if;
+  new.created_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists on_message_report_write on public.message_reports;
+create trigger on_message_report_write
+before insert on public.message_reports
+for each row execute procedure public.prepare_message_report();
+
+-- Realtime : la fenêtre de messagerie écoute `direct_messages` filtrée par
+-- clé de conversation (messages des deux sens + accusés de lecture) et par
+-- destinataire (nouveau message reçu, pour le badge des non-lus).
+do $$
+begin
+  alter table public.direct_messages replica identity full;
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (select 1 from pg_publication_tables
+                     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'direct_messages') then
+    alter publication supabase_realtime add table public.direct_messages;
+  end if;
+exception when others then
+  raise warning 'Let''s Play : direct_messages non ajoutée à la publication Realtime (%). La messagerie se rafraîchit alors toutes les minutes.', sqlerrm;
+end $$;
+
+
+-- ----------------------------------------------------------------------------
 -- 4. Suppression du compte (ré-authentification requise côté application)
 -- ----------------------------------------------------------------------------
 -- L'application vérifie d'abord le mot de passe avec
@@ -541,6 +846,11 @@ begin
   grant select, insert, update, delete on public.player_progress to authenticated;
   -- Amis : uniquement les relations dont on fait partie (RLS).
   grant select, insert, update, delete on public.friendships to authenticated;
+  -- Messagerie : ses échanges (lecture / écriture / accusés de lecture),
+  -- ses blocages et ses signalements — le reste est refusé par la RLS.
+  grant select, insert, update on public.direct_messages to authenticated;
+  grant select, insert, delete on public.message_blocks to authenticated;
+  grant select, insert on public.message_reports to authenticated;
 exception
   when others then
     raise warning 'Let''s Play : droits anon/authenticated non appliqués (%). Sur Supabase c''est habituellement déjà le cas par défaut.', sqlerrm;
@@ -644,6 +954,41 @@ from (
     (19, 'realtime friendships',
       case when exists (select 1 from pg_publication_tables
                         where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'friendships')
+           then 'OK' else 'ABSENT (voir WARNING)' end),
+    (20, 'table public.direct_messages',
+      case when to_regclass('public.direct_messages') is null then 'MANQUANT' else 'OK' end),
+    (21, 'politiques RLS direct_messages (3)',
+      case when (select count(*) from pg_policies p
+                 where p.schemaname = 'public' and p.tablename = 'direct_messages'
+                   and p.policyname in ('Direct messages are visible to both players',
+                                        'Players send direct messages as themselves',
+                                        'Recipients mark their own messages as read')) = 3
+           then 'OK' else 'MANQUANT' end),
+    (22, 'trigger message 1-à-1 (amitié, blocage, anti-spam)',
+      case when exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.direct_messages')
+                          and t.tgname = 'on_direct_message_write') then 'OK' else 'MANQUANT' end),
+    (23, 'trigger accusé de lecture seul modifiable',
+      case when exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.direct_messages')
+                          and t.tgname = 'on_direct_message_update') then 'OK' else 'MANQUANT' end),
+    (24, 'tables blocages / signalements',
+      case when to_regclass('public.message_blocks') is null
+             or to_regclass('public.message_reports') is null then 'MANQUANT' else 'OK' end),
+    (25, 'politiques RLS blocages (3) / signalements (2)',
+      case when (select count(*) from pg_policies p
+                 where p.schemaname = 'public' and p.tablename = 'message_blocks'
+                   and p.policyname in ('Players see who they blocked',
+                                        'Players block on their own behalf',
+                                        'Players unblock on their own behalf')) = 3
+            and (select count(*) from pg_policies p
+                 where p.schemaname = 'public' and p.tablename = 'message_reports'
+                   and p.policyname in ('Players see their own reports',
+                                        'Players report on their own behalf')) = 2
+           then 'OK' else 'MANQUANT' end),
+    (26, 'realtime direct_messages',
+      case when exists (select 1 from pg_publication_tables
+                        where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'direct_messages')
            then 'OK' else 'ABSENT (voir WARNING)' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;
