@@ -126,7 +126,7 @@ export default function Home() {
           poster={`${base}hero-dragon.webp`}
           aria-hidden="true"
         >
-          <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663645820794/dhLRAPdnnpvcKnXp.mp4" type="video/mp4" />
+          <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663645820794/qUDlGWxuPgMiBXOp.mp4" type="video/mp4" />
         </video>
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
