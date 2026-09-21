@@ -1,28 +1,30 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useFriends } from '../friends/FriendsContext';
-import { fill, friendsText } from '../friends/friendsCopy';
+import { AddTab, FriendsTab, RequestsTab } from '../friends/FriendsTabs';
+import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy';
 import { useMessages } from './MessagesContext';
 import { describeMessagesError, messagesText } from './messagesCopy';
 import { InboxView, ThreadView } from './MessagesTabs';
 
 /**
- * Page de messagerie — `/messages` (liste) et `/messages/:peerId`
+ * Page sociale — `/messages` (liste) et `/messages/:peerId`
  * (discussion ouverte ; alias `/messagerie`).
  * ----------------------------------------------------------------------
- * La messagerie est un **pop-up** sur bureau (la fenêtre sociale), mais une
- * **vraie page** sur mobile : plein écran, de grands appuis, le clavier qui
- * pousse le champ — le parcours familier d'une app de chat. La page sert
- * aussi sur bureau (deux colonnes : discussions à gauche, fil à droite),
- * praticable au clavier et partageable par URL.
+ * Sur mobile, TOUTE la fenêtre sociale (amis + demandes + ajouter +
+ * messagerie) vit sur cette page — pas de pop-up : plein écran, de grands
+ * appuis, un vrai bouton retour (qui ramène à la page précédente, pas
+ * « derrière » un overlay), et les onglets Amis / Demandes / Ajouter /
+ * Messages permettent de naviguer sans être piégé.
  *
- * Les données et les gestes restent ceux du contexte (`MessagesContext`) :
- * aucune logique dupliquée. La discussion affichée est lue dans l'URL, le
- * contexte suit via `viewThread` (pour couper le « ding » des messages qui
- * arrivent sous les yeux), et les messages reçus du fil affiché passent en
- * lus tout de suite.
+ * Sur bureau, la page garde son affichage deux-colonnes (liste à gauche,
+ * fil à droite) qui reste praticable au clavier et partageable par URL ;
+ * le dock flottant reste le parcours compact.
+ *
+ * Les données et les gestes restent ceux du contexte (`MessagesContext` /
+ * `FriendsContext`) : aucune logique dupliquée.
  */
 
 function RefreshIcon({ size = 14 }) {
@@ -30,6 +32,14 @@ function RefreshIcon({ size = 14 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M20 12a8 8 0 1 1-2.6-5.9" />
       <path d="M20 4v5h-5" />
+    </svg>
+  );
+}
+
+function BackIcon({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15 5l-7 7 7 7" />
     </svg>
   );
 }
@@ -43,10 +53,22 @@ function ChatBubbleIcon({ size = 42 }) {
   );
 }
 
+function PeopleIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M2.5 19c.7-3.2 3.2-4.8 6.5-4.8s5.8 1.6 6.5 4.8" />
+      <circle cx="17" cy="9" r="2.5" />
+      <path d="M15 15c2.5-.3 4.5 1 5.5 4" />
+    </svg>
+  );
+}
+
 export default function MessagesPage() {
   const { peerId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { lang } = useLanguage();
   const { user } = useAuth();
   const friends = useFriends();
@@ -54,25 +76,38 @@ export default function MessagesPage() {
   const t = messagesText(lang);
   const ft = friendsText(lang);
 
+  // Onglet actif (lecture depuis ?tab=friends|requests|add|messages).
+  // Quand un fil est ouvert (peerId), on est implicitement sur Messages.
+  const rawTab = searchParams.get('tab') || 'messages';
+  const activeTab = peerId ? 'messages' : (['friends', 'requests', 'add', 'messages'].includes(rawTab) ? rawTab : 'messages');
+
   const {
-    enabled, mode, status, error, conversations, blockedConversations, unreadTotal,
+    enabled: messagesEnabled, mode, status, error, conversations, blockedConversations, unreadTotal,
     unreadFor, threadFor, markRead, send, deleteMessage, block, unblock, report,
-    canMessage, isBlocked, reportedReason, refresh, viewThread,
+    canMessage, isBlocked, reportedReason, refresh: refreshMessages, viewThread,
   } = messages;
+
+  const {
+    enabled: friendsEnabled, status: friendsStatus, error: friendsError,
+    friends: friendsList, incoming, outgoing, onlineCount, pendingCount,
+    accept, decline, cancel, unfriend, search, isOnline, relationWith,
+    refresh: refreshFriends, openThread: friendsOpenThread,
+  } = friends;
+
+  const enabled = messagesEnabled || friendsEnabled;
 
   const [refreshing, setRefreshing] = useState(false);
   const refreshAll = async () => {
     setRefreshing(true);
     try {
-      await Promise.allSettled([friends.refresh(), refresh()]);
+      await Promise.allSettled([refreshFriends(), refreshMessages()]);
     } finally {
       setTimeout(() => setRefreshing(false), 500);
     }
   };
 
-  // Fil affiché par l'URL : le contexte le suit (pas de « ding » pour un
-  // message qui arrive dans la discussion ouverte sous les yeux) ; en quittant
-  // le fil, on le rend à nouveau « non vu ».
+  // Le fil affiché dans l'URL est signalé au contexte pour couper le ding
+  // des messages qui arrivent sous les yeux.
   useEffect(() => {
     viewThread(peerId || null);
     return () => viewThread(null);
@@ -84,25 +119,49 @@ export default function MessagesPage() {
     if (peerId && activeUnread > 0) markRead(peerId);
   }, [peerId, activeUnread, markRead]);
 
-  // Échap remonte à la liste des discussions.
+  // Échap : d'abord on ferme le fil → liste, sinon on quitte la page.
   useEffect(() => {
-    if (!peerId || typeof document === 'undefined') return undefined;
+    if (typeof document === 'undefined') return undefined;
     const onKey = (event) => {
-      if (event.key === 'Escape') navigate('/messages');
+      if (event.key !== 'Escape') return;
+      if (peerId) { navigate('/messages'); return; }
+      if (document.referrer && window.history.length > 1) navigate(-1);
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [peerId, navigate]);
 
-  const subtitle = useMemo(() => (
-    unreadTotal > 0
-      ? fill(t.subtitle, { online: friends.onlineCount, unread: unreadTotal, threads: conversations.length })
-      : fill(ft.subtitle, { online: friends.onlineCount, total: friends.friends.length })
-  ), [t, ft, friends.onlineCount, friends.friends.length, unreadTotal, conversations.length]);
+  const subtitle = useMemo(() => {
+    if (activeTab === 'messages') {
+      return unreadTotal > 0
+        ? fill(t.subtitle, { online: onlineCount, unread: unreadTotal, threads: conversations.length })
+        : fill(ft.subtitle, { online: onlineCount, total: friendsList.length });
+    }
+    return fill(ft.subtitle, { online: onlineCount, total: friendsList.length });
+  }, [t, ft, activeTab, friendsList.length, onlineCount, unreadTotal, conversations.length]);
+
+  // Quitter la page sociale : on revient là où l'utilisateur était.
+  const leaveSocial = () => {
+    if (window.history.length > 1 && location.key !== 'default') {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
+  const selectTab = (tabId) => {
+    if (peerId) {
+      // On quitte une discussion pour changer d'onglet → retour à la liste.
+      navigate(tabId === 'messages' ? '/messages' : `/messages?tab=${tabId}`);
+      return;
+    }
+    if (tabId === 'messages') setSearchParams({});
+    else setSearchParams({ tab: tabId });
+  };
 
   if (!user) {
     return (
-      <section className="messages-page">
+      <section className="messages-page social-page">
         <div className="wrap">
           <div className="messages-page-card messages-page-guest">
             <span className="messages-page-guest-icon"><ChatBubbleIcon /></span>
@@ -124,7 +183,7 @@ export default function MessagesPage() {
   if (!enabled) return null;
 
   const openConversation = (id) => navigate(`/messages/${encodeURIComponent(id)}`);
-  const backToInbox = () => navigate('/messages');
+  const backToInbox = () => navigate(activeTab === 'messages' ? '/messages' : `/messages?tab=${activeTab}`);
 
   const peerProfile = peerId ? friends.profileFor(peerId) : null;
   const activeEntry = peerId
@@ -134,21 +193,23 @@ export default function MessagesPage() {
   const resolvedProfile = activeEntry?.profile || peerProfile
     || { id: peerId, name: String(peerId || '').slice(0, 8), avatar: null };
 
-  // Liste des discussions (états de chargement / erreur compris).
-  let inboxBody;
+  // ------- Contenu selon l'onglet -------
+
+  // Boîte de réception / discussions.
+  let messagesBody;
   if (status === 'unavailable') {
-    inboxBody = <p className="messages-empty messages-unavailable">{t.unavailable}</p>;
+    messagesBody = <p className="messages-empty messages-unavailable">{t.unavailable}</p>;
   } else if (status === 'loading' || status === 'idle') {
-    inboxBody = <p className="messages-empty" aria-busy="true">{t.loading}</p>;
+    messagesBody = <p className="messages-empty" aria-busy="true">{t.loading}</p>;
   } else if (status === 'error' && conversations.length === 0) {
-    inboxBody = (
+    messagesBody = (
       <div className="messages-empty">
         <p className="messages-inline-error" role="alert">{describeMessagesError(error, t)}</p>
-        <button type="button" className="messages-action messages-action-primary" onClick={() => refresh()}>{t.refresh}</button>
+        <button type="button" className="messages-action messages-action-primary" onClick={() => refreshMessages()}>{t.refresh}</button>
       </div>
     );
   } else {
-    inboxBody = (
+    messagesBody = (
       <InboxView
         t={t}
         lang={lang}
@@ -161,12 +222,59 @@ export default function MessagesPage() {
     );
   }
 
+  // Listes d'amis.
+  let friendsBody;
+  if (friendsStatus === 'unavailable') {
+    friendsBody = <p className="friends-empty friends-unavailable">{ft.unavailable}</p>;
+  } else if (friendsStatus === 'loading' || friendsStatus === 'idle') {
+    friendsBody = <p className="friends-empty" aria-busy="true">{ft.loading}</p>;
+  } else if (friendsStatus === 'error' && friendsList.length === 0) {
+    friendsBody = null; // handled below by falling back to messages
+  } else if (activeTab === 'requests') {
+    friendsBody = <RequestsTab incoming={incoming} outgoing={outgoing} t={ft} lang={lang} accept={accept} decline={decline} cancel={cancel} />;
+  } else if (activeTab === 'add') {
+    friendsBody = <AddTab t={ft} lang={lang} search={search} isOnline={isOnline} relationWith={relationWith} />;
+  } else if (activeTab === 'friends') {
+    friendsBody = (
+      <FriendsTab
+        friends={friendsList}
+        t={ft}
+        lang={lang}
+        unfriend={unfriend}
+        onOpenThread={openConversation}
+        chatLabel={t.openChat}
+        profileLabel={ft.profileShort}
+      />
+    );
+  }
+
+  const tabs = [
+    { id: 'friends', label: ft.tabFriends, count: friendsList.length, icon: <PeopleIcon size={13} /> },
+    { id: 'requests', label: ft.tabRequests, count: pendingCount, alert: pendingCount > 0 },
+    { id: 'add', label: ft.tabAdd },
+    { id: 'messages', label: t.title, count: unreadTotal, alert: unreadTotal > 0, icon: <ChatBubbleIcon size={15} /> },
+  ];
+
+  const pageTitle = activeTab === 'messages' ? t.title : ft.tabFriends;
+
   return (
-    <section className="messages-page">
+    <section className="messages-page social-page">
       <div className="wrap">
-        <header className="messages-page-head">
+        <header className="messages-page-head social-page-head">
           <div className="messages-page-heading">
-            <span className="messages-page-kicker"><ChatBubbleIcon size={15} /> {t.title}</span>
+            <span className="messages-page-kicker">
+              <button
+                type="button"
+                className="social-page-back"
+                onClick={leaveSocial}
+                aria-label={t.back || 'Retour'}
+                title={t.back || 'Retour'}
+              >
+                <BackIcon />
+              </button>
+              {activeTab === 'messages' ? <ChatBubbleIcon size={18} /> : <PeopleIcon size={18} />}
+              {pageTitle}
+            </span>
             <span className="messages-page-sub">{subtitle}</span>
           </div>
           <div className="messages-page-tools">
@@ -183,12 +291,32 @@ export default function MessagesPage() {
           </div>
         </header>
 
-        <div className={`messages-page-body${peerId ? ' has-thread' : ''}`}>
-          <div className={`messages-page-list${peerId ? ' is-dimmed' : ''}`}>
-            {inboxBody}
-          </div>
-          <div className={`messages-page-thread${peerId ? '' : ' is-empty'}`}>
-            {peerId ? (
+        {/* Onglets sociaux — toujours visibles sur la page, permettant
+            de naviguer entre Amis / Demandes / Ajouter / Messages sans
+            jamais être « piégé » dans un onglet. */}
+        <nav className="social-page-tabs" aria-label={pageTitle}>
+          {tabs.map((item) => {
+            const isActive = activeTab === item.id && !peerId;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`social-page-tab${isActive ? ' is-active' : ''}${item.alert ? ' has-alert' : ''}`}
+                onClick={() => selectTab(item.id)}
+                aria-pressed={isActive}
+              >
+                {item.icon && <span className="social-page-tab-icon">{item.icon}</span>}
+                <span className="social-page-tab-label">{item.label}</span>
+                {item.count != null && item.count > 0 && <span className="social-page-tab-count">{item.count}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        {peerId ? (
+          // ---- Discussion ouverte (fil) ----
+          <div className="messages-page-body messages-page-body-thread">
+            <div className="messages-page-thread">
               <ThreadView
                 peerId={peerId}
                 t={t}
@@ -207,19 +335,37 @@ export default function MessagesPage() {
                 onUnblock={unblock}
                 onReport={(reason, note) => report(peerId, reason, note)}
               />
-            ) : (
+            </div>
+          </div>
+        ) : activeTab === 'messages' ? (
+          // ---- Boîte de réception ----
+          <div className="messages-page-body">
+            <div className="messages-page-list">
+              {messagesBody}
+            </div>
+            <div className="messages-page-thread is-empty">
               <div className="messages-page-placeholder">
                 <span className="messages-page-placeholder-icon"><ChatBubbleIcon /></span>
                 <p>{t.pageEmpty}</p>
               </div>
-            )}
+            </div>
           </div>
-        </div>
+        ) : (
+          // ---- Amis / Demandes / Ajouter ----
+          <div className="social-page-panel">
+            {friendsBody || <p className="friends-empty">{ft.loading}</p>}
+          </div>
+        )}
 
         {mode === 'demo' && <footer className="messages-page-foot">{t.demoNote}</footer>}
         {status === 'error' && conversations.length > 0 && (
           <p className="messages-inline-error messages-page-error" role="alert">
             {describeMessagesError(error, t)}
+          </p>
+        )}
+        {friendsError && friendsList.length > 0 && (
+          <p className="friends-inline-error social-page-error" role="alert">
+            {describeFriendsError(friendsError, ft)}
           </p>
         )}
       </div>

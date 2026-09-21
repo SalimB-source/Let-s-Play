@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import useMediaQuery from '../lib/useMediaQuery';
 import { useAuth } from '../auth/AuthContext';
 import {
   DEMO_FRIENDS_SYNC_KEY,
@@ -117,6 +119,11 @@ function sortPlayers(a, b) {
 
 export function FriendsProvider({ children }) {
   const { user, isDemo } = useAuth();
+  const navigate = useNavigate();
+  // Sur mobile, la fenêtre sociale (amis + messagerie) est une vraie page
+  // (/messages) et non un pop-up : tous les raccourcis (« Mes amis »,
+  // « Ajouter un ami » du hub, etc.) y naviguent au lieu d'ouvrir le dock.
+  const isMobile = useMediaQuery('(max-width: 760px)');
   const uid = user?.id ? String(user.id) : null;
   const mode = !uid ? 'none' : isDemo ? 'demo' : supabase ? 'supabase' : 'none';
 
@@ -454,9 +461,15 @@ export function FriendsProvider({ children }) {
     persistDockOpen(open);
   }, []);
   const openDock = useCallback((tab) => {
+    if (isMobile) {
+      // Mobile : on navigue vers la page sociale (pas de pop-up).
+      const tabId = tab || 'friends';
+      navigate(tabId === 'messages' ? '/messages' : `/messages?tab=${tabId}`);
+      return;
+    }
     if (tab) setDockTab(tab);
     setDockOpen(true);
-  }, [setDockOpen]);
+  }, [isMobile, navigate, setDockOpen]);
   const closeDock = useCallback(() => setDockOpen(false), [setDockOpen]);
   const toggleDock = useCallback(() => setDockOpenState((open) => {
     persistDockOpen(!open);

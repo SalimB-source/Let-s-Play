@@ -575,13 +575,113 @@
 }
 
 /* ==========================================================================
-   PAGE DE MESSAGERIE — /messages (liste) et /messages/:peerId (discussion).
-   Le parcours mobile : une vraie page au lieu du pop-up (utile aussi sur
-   bureau en deux colonnes). La fenêtre sociale reste le parcours compact.
+   PAGE SOCIALE — /messages (liste, amis, demandes, ajouter) et
+   /messages/:peerId (discussion). Sur mobile, TOUTE la fenêtre sociale vit
+   sur cette page : une vraie page, de vrais onglets, un vrai bouton retour
+   (pas un overlay qui intercepte le bouton retour du téléphone).
    ========================================================================== */
 
 .messages-page { padding: 106px 0 30px; }
 .messages-page > .wrap { display: flex; flex-direction: column; gap: 14px; }
+
+/* En-tête de page : bouton retour bien visible à gauche. */
+.social-page-head { align-items: flex-start; }
+.messages-page-kicker { position: relative; }
+.social-page-back {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 6px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: color .18s, border-color .18s, background .18s, transform .18s;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.social-page-back:hover {
+  color: var(--yellow);
+  border-color: var(--yellow);
+  background: rgba(255, 214, 25, .08);
+  transform: translateX(-2px);
+}
+
+/* Onglets de la page sociale (Amis / Demandes / Ajouter / Messages). */
+.social-page-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 6px;
+  background: rgba(5, 6, 15, .5);
+  border: 1px solid var(--line);
+}
+.social-page-tab {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 12px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: 600 11px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  transition: color .18s, border-color .18s, background .18s;
+  white-space: nowrap;
+}
+.social-page-tab:hover { color: #fff; background: rgba(255, 255, 255, .04); border-color: var(--line); }
+.social-page-tab.is-active {
+  color: var(--cyan);
+  border-color: rgba(34, 211, 238, .4);
+  background: rgba(34, 211, 238, .08);
+}
+.social-page-tab.has-alert .social-page-tab-count {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #0a0b1a;
+}
+.social-page-tab-icon { display: inline-flex; color: var(--yellow); }
+.social-page-tab.is-active .social-page-tab-icon { color: var(--cyan); }
+.social-page-tab-label { overflow: hidden; text-overflow: ellipsis; }
+.social-page-tab-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font: 700 10px var(--mono);
+  letter-spacing: 0;
+}
+.social-page-tab.is-active .social-page-tab-count { border-color: rgba(34, 211, 238, .5); color: var(--cyan); }
+
+/* Panneau unique (onglets amis) : style cohérent avec le panneau
+   messages-liste. */
+.social-page-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+  background: linear-gradient(160deg, rgba(26, 17, 52, .92), rgba(7, 8, 20, .96));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 24px 50px -24px rgba(0, 0, 0, .85), 0 0 34px -16px rgba(124, 58, 237, .45);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  padding: 14px;
+  overflow-y: auto;
+  max-height: min(640px, calc(100dvh - 310px));
+}
+.social-page-panel .friends-list { margin: 0; }
+.social-page-panel .friends-section-title:first-child { margin-top: 0; }
+.social-page-panel .friends-search { margin-left: 0; margin-right: 0; }
+.social-page-error { margin: 0; text-align: center; }
 
 .messages-page-head {
   display: flex;
@@ -848,26 +948,87 @@
 /* Mobile : la page de messagerie prend tout l'écran utile, avec de grandes
    zones d'appui et des champs qui ne déclenchent pas le zoom iOS (16px). */
 @media (max-width: 760px) {
-  .messages-page { padding: 94px 0 18px; }
+  .messages-page { padding: 84px 0 90px; }
   .messages-page-body {
     grid-template-columns: 1fr;
-    height: calc(100dvh - 210px);
+    height: calc(100dvh - 240px);
     min-height: 340px;
   }
-  .messages-page-kicker { font-size: 17px; }
+  .messages-page-body-thread {
+    height: calc(100dvh - 230px);
+  }
+  .messages-page-kicker {
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  /* Bouton retour de la page (celui de l'en-tête) : 44 px minimum,
+     zone d'appui confortable au pouce. */
+  .social-page-back {
+    width: 44px;
+    height: 44px;
+    margin-right: 4px;
+  }
+  .social-page-back svg { width: 22px; height: 22px; }
   .messages-page-list.is-dimmed { display: none; }
   .messages-page-thread.is-empty { display: none; }
+  /* Onglets sociaux sur mobile : 2x2 ou en bande défilante pour rester
+     touchables (≥ 44 px). */
+  .social-page-tabs {
+    gap: 4px;
+    padding: 4px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .social-page-tab {
+    flex: 0 0 auto;
+    padding: 12px 14px;
+    min-height: 44px;
+    font-size: 11px;
+  }
+  .social-page-tab-icon svg { width: 16px; height: 16px; }
+  .social-page-panel {
+    max-height: calc(100dvh - 260px);
+    padding: 12px;
+  }
   .messages-search input,
   .messages-composer textarea { font-size: 16px; }
-  .messages-row-main { padding: 10px 0; }
+  .messages-row-main { padding: 12px 0; }
   .messages-composer { padding: 8px 10px 10px; }
-  .messages-composer textarea { padding: 10px 12px; }
+  .messages-composer textarea { padding: 12px 12px; min-height: 44px; }
   /* Clavier tactile : le raccourci « Entrée pour envoyer » n'a pas de sens. */
   .messages-composer-hint { display: none; }
-  .messages-thread-head { padding: 10px 12px; }
-  .messages-thread-name { font-size: 14px; }
-  .messages-bubble { max-width: 88%; font-size: 14px; }
+  .messages-thread-head {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  /* Bouton retour du fil (premier outil à gauche, BackIcon) : 44 px pour
+     une zone d'appui confortable au pouce. */
+  .messages-thread-head > .messages-tool:first-child {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+  .messages-thread-head > .messages-tool:first-child svg { width: 20px; height: 20px; }
+  /* Les outils à droite (profil / signaler / bloquer) restent compacts
+     mais assez grands pour le pouce. */
+  .messages-thread-tools .messages-tool {
+    width: 38px;
+    height: 38px;
+  }
+  .messages-tool-profile { padding: 0 12px; min-height: 38px; }
+  .messages-thread-name { font-size: 15px; }
+  .messages-send {
+    height: 44px;
+    padding: 0 16px;
+  }
+  .messages-bubble { max-width: 88%; font-size: 14.5px; }
   .messages-day span { max-width: 70%; white-space: normal; text-align: center; }
+  /* Espace sous le contenu pour le lanceur flottant. */
+  .messages-page > .wrap { padding-bottom: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

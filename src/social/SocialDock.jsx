@@ -69,10 +69,14 @@ export default function SocialDock() {
   const t = socialText(lang);
   const ft = friendsText(lang);
   const mt = messagesText(lang);
-  // Mobile : la messagerie vit sur la page /messages, pas dans le pop-up.
+  // Mobile : toute la fenêtre sociale (amis + messagerie) vit sur la page
+  // /messages — pas de pop-up : l'expérience est plein écran, avec de vrais
+  // onglets et un historique de navigation (le bouton retour du téléphone
+  // fonctionne).
   const isMobile = useMediaQuery('(max-width: 760px)');
-  // La page de messagerie remplace la fenêtre : rien ne flotte par-dessus.
-  const onMessagesRoute = /^\/(messages|messagerie)(\/|$)/.test(location.pathname || '');
+  // Sur la page sociale, le lanceur flottant disparaît : la page se suffit
+  // à elle-même.
+  const onSocialRoute = /^\/(messages|messagerie)(\/|$)/.test(location.pathname || '');
 
   const {
     enabled: friendsEnabled, status: friendsStatus, error: friendsError,
@@ -92,7 +96,7 @@ export default function SocialDock() {
   } = messages;
 
   const enabled = friendsEnabled || messagesEnabled;
-  const open = friendsOpen || messagesOpen;
+  const open = !isMobile && (friendsOpen || messagesOpen);
   const inThread = Boolean(activePeerId);
   // Onglet actif : une discussion ouverte occupe tout le panneau ; sinon,
   // l'onglet mémorisé par le contexte amis (« messages » inclus), ou
@@ -105,17 +109,41 @@ export default function SocialDock() {
     closeFriendsDock();
     closeMessagesDock();
   };
+
+  // Sur mobile, tout clic sur le lanceur ou sur un onglet social ouvre la
+  // page dédiée (pas de pop-up) : l'historique de navigation fonctionne,
+  // le bouton retour du téléphone ferme la page, et l'utilisateur n'est
+  // jamais « piégé » dans un overlay sans retour visible.
+  const goSocial = (tabId, peerId) => {
+    const params = new URLSearchParams();
+    if (tabId && tabId !== 'messages') params.set('tab', tabId);
+    const search = params.toString();
+    let path;
+    if (peerId) {
+      path = `/messages/${encodeURIComponent(peerId)}`;
+    } else if (tabId && tabId !== 'messages') {
+      path = '/messages';
+    } else {
+      path = '/messages';
+    }
+    navigate(`${path}${search ? `?${search}` : ''}`);
+  };
+
   const toggle = () => {
+    if (isMobile) {
+      // Sur mobile, le lanceur ouvre toujours la page sociale (inbox).
+      if (onSocialRoute) navigate(-1);
+      else goSocial('messages');
+      return;
+    }
     if (open) { closeAll(); return; }
-    // Mobile : l'onglet mémorisé est la messagerie → page dédiée, pas de pop-up.
-    if (isMobile && tab === 'messages') { navigate('/messages'); return; }
     openDock(tab === 'messages' ? 'messages' : dockTab);
   };
   const selectTab = (tabId) => {
-    // Mobile : l'onglet Messages ouvre la page de messagerie.
-    if (isMobile && tabId === 'messages') {
-      closeAll();
-      navigate('/messages');
+    if (isMobile) {
+      // Mobile : tous les onglets mènent vers la page sociale (paramètre ?tab=).
+      if (activePeerId) backToInbox();
+      goSocial(tabId);
       return;
     }
     openDock(tabId);
@@ -123,28 +151,41 @@ export default function SocialDock() {
   // Retour à la liste des discussions : on reste sur l'onglet Messages
   // (utile quand la discussion a été rouverte depuis le stockage local).
   const backFromThread = () => {
+    if (isMobile) {
+      // Sur la page, le bouton retour du fil utilise la navigation du
+      // routeur (comportement déjà en place pour la page dans MessagesPage).
+      navigate('/messages');
+      backToInbox();
+      return;
+    }
     backToInbox();
     openDock('messages');
   };
 
-  // Ancien état persisté « fenêtre ouverte sur la messagerie » (avant que la
-  // messagerie ne devienne une page sur mobile) : on bascule vers la page au
-  // lieu de rouvrir le pop-up.
+  // Sur mobile, si la fenêtre sociale a été laissée ouverte dans le stockage
+  // local (état « bureau »), on redirige vers la page au lieu de rouvrir le
+  // pop-up plein écran.
   useEffect(() => {
-    if (!isMobile || !open || onMessagesRoute) return;
-    if (tab !== 'messages') return;
+    if (!isMobile || !friendsOpen && !messagesOpen) return;
+    if (onSocialRoute) {
+      // Déjà sur la page : on ferme juste le pop-up.
+      closeFriendsDock();
+      closeMessagesDock();
+      return;
+    }
     const target = activePeerId ? `/messages/${encodeURIComponent(activePeerId)}` : '/messages';
     closeFriendsDock();
     closeMessagesDock();
     backToInbox();
     navigate(target);
-  }, [isMobile, open, tab, onMessagesRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
+  }, [isMobile, friendsOpen, messagesOpen, onSocialRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
 
   // Classes sur <body> : social.css y lit la place prise par le lanceur ou la
-  // fenêtre pour décaler les notifications de succès, et verrouille le scroll
-  // du document quand le pop-up plein écran est ouvert sur mobile. Sur la
-  // page de messagerie, la fenêtre étant effacée, aucune classe n'est posée.
-  const dockVisible = enabled && !onMessagesRoute;
+  // fenêtre pour décaler les notifications de succès. Sur mobile, rien ne
+  // verrouille le scroll (pas de pop-up plein écran puisque tout se passe
+  // dans une vraie page). Sur la page sociale, le lanceur flottant étant
+  // masqué, aucune classe n'est posée.
+  const dockVisible = enabled && !onSocialRoute;
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { classList } = document.body;
