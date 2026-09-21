@@ -259,7 +259,10 @@ body.messages-dock-open .achievement-toasts {
 [dir="rtl"] body.friends-dock-open .achievement-toasts,
 [dir="rtl"] body.messages-dock-open .achievement-toasts { right: 16px; }
 
-/* ------------------- Mobile : pop-up plein écran ------------------------ */
+/* ------------------- Mobile : pop-up plein écran ------------------------
+   La fenêtre ouverte devient un pop-up plein écran — mais seulement pour les
+   amis : la messagerie, elle, s'ouvre sur la page /messages (alias
+   /messagerie) sur mobile, et la fenêtre s'efface entièrement sur cette page. */
 
 @media (max-width: 760px) {
   .social-dock {
@@ -300,6 +303,9 @@ body.messages-dock-open .achievement-toasts {
   .player-messages-row { grid-template-columns: 1fr auto; }
   .player-messages-name { grid-column: 1 / -1; }
   .messages-bubble-delete { opacity: 1; }
+  /* Lignes d'amis : les boutons « Profil » et « Retirer » restent lisibles. */
+  .friends-row { flex-wrap: wrap; }
+  .friends-row-actions { flex-basis: 100%; justify-content: flex-start; padding-top: 2px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

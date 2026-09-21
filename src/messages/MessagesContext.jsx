@@ -1,5 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import useMediaQuery from '../lib/useMediaQuery';
 import { useAuth } from '../auth/AuthContext';
 import { useFriends } from '../friends/FriendsContext';
 import { DEMO_REPLY_DELAY_MS, dueDemoIncoming } from './demoThreads';
@@ -52,14 +54,21 @@ import {
  *   - les discussions (`conversations`, chacune avec son dernier message et
  *     son nombre de **non-lus**), le total `unreadTotal` qui alimente le badge
  *     du lanceur, et les joueurs **bloqués** ;
- *   - les gestes : `openThread`, `openInbox`, `send`, `markRead`, `block`,
- *     `unblock`, `report` ; `canMessage(id)` pour afficher ou non le bouton
- *     « Message » d'un profil (il faut être amis) ;
+ *   - les gestes : `openThread`, `openInbox`, `viewThread`, `send`, `markRead`,
+ *     `block`, `unblock`, `report` ; `canMessage(id)` pour afficher ou non le
+ *     bouton « Message » d'un profil (il faut être amis) ;
  *   - l'état de la messagerie dans la **fenêtre sociale unifiée**
  *     (`src/social/SocialDock.jsx`) : `activePeerId` (la discussion ouverte)
  *     et `dockOpen` ; `openThread` / `openInbox` ouvrent la fenêtre sur
  *     l'onglet « Messages » en passant par le contexte des amis, qui porte
  *     l'onglet actif de la fenêtre.
+ *
+ * **Sur mobile (≤ 760 px)**, la messagerie est une vraie **page** et non le
+ * pop-up : `openThread` / `openInbox` naviguent vers `/messages` (et
+ * `/messages/:peerId` pour une discussion, alias `/messagerie`). La fenêtre
+ * sociale reste le parcours du bureau, et la page rend le pop-up inutile là-bas.
+ * `viewThread(peerId)` suit la discussion affichée par la page (sans ouvrir la
+ * fenêtre) : le « ding » d'un message reçu est coupé quand on la regarde.
  *
  * Comptes Supabase : messages dans `public.direct_messages`, arrivée en direct
  * par Realtime (`postgres_changes` sur la clé de conversation ouverte, et sur
@@ -106,6 +115,7 @@ export const MessagesContext = createContext({
   activePeerId: null,
   openThread: noop,
   openInbox: noop,
+  viewThread: noop,
   backToInbox: noop,
   closeDock: noop,
 });
@@ -152,6 +162,10 @@ function persistActivePeer(peerId) {
 export function MessagesProvider({ children }) {
   const { user, isDemo } = useAuth();
   const friends = useFriends();
+  const navigate = useNavigate();
+  // Sur mobile, la messagerie s'ouvre sur la page dédiée (/messages) plutôt
+  // que dans le pop-up de la fenêtre sociale.
+  const isMobile = useMediaQuery('(max-width: 760px)');
   const uid = user?.id ? String(user.id) : null;
   const mode = !uid ? 'none' : isDemo ? 'demo' : supabase ? 'supabase' : 'none';
 
@@ -184,15 +198,20 @@ export function MessagesProvider({ children }) {
   useEffect(() => { activeRef.current = activePeerId; }, [activePeerId]);
   const dockOpenRef = useRef(dockOpen);
   useEffect(() => { dockOpenRef.current = dockOpen; }, [dockOpen]);
+  // La page /messages affiche un fil via l'URL : on retient lequel pour ne
+  // pas jouer le « ding » des messages qui y arrivent sous les yeux du joueur.
+  const viewedRef = useRef(null);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
   /**
    * « Ding » d'un message reçu. Pas de son si l'utilisateur regarde déjà la
-   * discussion en question (fenêtre ouverte sur ce fil) : il voit la bulle
-   * apparaître à l'écran, le son lui serait inutile.
+   * discussion en question (fenêtre ouverte sur ce fil, ou fil affiché par la
+   * page /messages) : il voit la bulle apparaître à l'écran, le son lui serait
+   * inutile.
    */
   const chimeForIncoming = useCallback((peerId) => {
+    if (viewedRef.current === peerId) return;
     if (dockOpenRef.current && activeRef.current === peerId) return;
     playMessageSound();
   }, []);
@@ -268,6 +287,7 @@ export function MessagesProvider({ children }) {
     setReported({});
     setError(null);
     setActivePeerId(null);
+    viewedRef.current = null;
     persistActivePeer(null);
     demoStateRef.current = null;
     for (const timer of demoTimers.current.values()) clearTimeout(timer);
@@ -506,31 +526,56 @@ export function MessagesProvider({ children }) {
     persistDockOpen(open);
   }, []);
 
-  // La messagerie vit dans la fenêtre sociale unifiée : ouvrir une discussion
-  // (ou la liste) ouvre la fenêtre sur son onglet « Messages ». Le contexte
-  // des amis porte l'onglet actif ; on garde aussi l'ancien drapeau local
-  // (`letsplay_messages_open`) pour que l'état ouvert survive à la migration.
+  // La messagerie vit dans la fenêtre sociale unifiée sur bureau, et sur la
+  // **page dédiée** (/messages) sur mobile : `openThread` choisit le bon
+  // parcours. La fenêtre passe par le contexte des amis, qui porte l'onglet
+  // actif ; on garde aussi l'ancien drapeau local (`letsplay_messages_open`)
+  // pour que l'état ouvert survive à la migration.
   const openThread = useCallback((peerId) => {
     if (!peerId) return;
+    if (isMobile) {
+      // Mobile : navigation vers la page de messagerie (discussion en paramètre).
+      setActivePeerId(peerId);
+      viewedRef.current = peerId;
+      navigate(`/messages/${encodeURIComponent(peerId)}`);
+      if (threads[peerId]?.unread) markRead(peerId);
+      return;
+    }
     setActivePeerId(peerId);
     persistActivePeer(peerId);
     setDockOpen(true);
     friends.openDock('messages');
     if (threads[peerId]?.unread) markRead(peerId);
-  }, [setDockOpen, threads, markRead, friends]);
+  }, [isMobile, navigate, setDockOpen, threads, markRead, friends]);
 
   const backToInbox = useCallback(() => {
     setActivePeerId(null);
     persistActivePeer(null);
+    viewedRef.current = null;
+  }, []);
+
+  /**
+   * La page /messages affiche la discussion courante via l'URL : elle signale
+   * ici le fil vu (sans ouvrir la fenêtre ni naviguer), pour couper le son des
+   * messages qui y arrivent. `null` quand on quitte le fil.
+   */
+  const viewThread = useCallback((peerId) => {
+    viewedRef.current = peerId || null;
+    setActivePeerId(peerId || null);
   }, []);
 
   /** Ouvre la fenêtre sur la liste des discussions (raccourci du hub joueur). */
   const openInbox = useCallback(() => {
+    if (isMobile) {
+      viewedRef.current = null;
+      navigate('/messages');
+      return;
+    }
     setActivePeerId(null);
     persistActivePeer(null);
     setDockOpen(true);
     friends.openDock('messages');
-  }, [setDockOpen, friends]);
+  }, [isMobile, navigate, setDockOpen, friends]);
 
   /** Ferme la fenêtre sociale (les deux contextes partagent la même fenêtre). */
   const closeDock = useCallback(() => {
@@ -732,13 +777,14 @@ export function MessagesProvider({ children }) {
     activePeerId,
     openThread,
     openInbox,
+    viewThread,
     backToInbox,
     closeDock,
   }), [
     mode, status, error, threads, sortedConversations, blockedConversations, unreadTotalValue,
     unreadFor, threadFor, canMessage, isBlocked, reportedReason,
     send, deleteMessage, markRead, block, unblock, report, refresh,
-    dockOpen, activePeerId, openThread, openInbox, backToInbox, closeDock,
+    dockOpen, activePeerId, openThread, openInbox, viewThread, backToInbox, closeDock,
   ]);
 
   return <MessagesContext.Provider value={value}>{children}</MessagesContext.Provider>;

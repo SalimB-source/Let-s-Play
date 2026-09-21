@@ -51,6 +51,7 @@ import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import Achievements from './pages/Achievements';
 import Profile from './pages/Profile';
+import MessagesPage from './messages/MessagesPage';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
@@ -133,6 +134,13 @@ function App() {
             <Route path="/profile/:userId" element={<Profile />} />
             <Route path="/profil/:userId" element={<Profile />} />
             <Route path="/u/:userId" element={<Profile />} />
+            {/* Messagerie : une vraie page (surtout pour le mobile, où le
+                pop-up laisse place au plein écran) — liste et discussion par
+                URL, alias français `/messagerie`. */}
+            <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/messages/:peerId" element={<MessagesPage />} />
+            <Route path="/messagerie" element={<MessagesPage />} />
+            <Route path="/messagerie/:peerId" element={<MessagesPage />} />
             <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
