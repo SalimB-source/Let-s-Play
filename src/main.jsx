@@ -12,6 +12,7 @@ import './partners.css';
 import './reels-carousel.css';
 import './dossier-article.css';
 import './achievements/achievements.css';
+import './friends/friends.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -52,6 +53,8 @@ import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
 import AchievementPopup from './achievements/AchievementPopup';
+import { FriendsProvider } from './friends/FriendsContext';
+import FriendsDock from './friends/FriendsDock';
 import { initSinglePlayback } from './lib/videoPlayback';
 
 function App() {
@@ -62,6 +65,10 @@ function App() {
           {/* Les succès suivent les actions du joueur (navigation, lecture,
               vidéo, commentaires, langue, compte). Le fournisseur est placé
               dans le routeur : le suivi lit la route courante. */}
+          {/* Les amis (liste, demandes, présence) suivent le compte connecté :
+              la fenêtre en bas à droite et les boutons « Ajouter en ami » des
+              profils lisent le même contexte. */}
+          <FriendsProvider>
           <AchievementProvider>
             <Layout>
               <AchievementTracker />
@@ -121,7 +128,9 @@ function App() {
               </Routes>
             </Layout>
             <AchievementPopup />
+            <FriendsDock />
           </AchievementProvider>
+          </FriendsProvider>
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>

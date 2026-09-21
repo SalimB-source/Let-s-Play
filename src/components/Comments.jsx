@@ -22,6 +22,7 @@ import {
   readDemoComments,
   removeDemoComment,
 } from '../lib/comments';
+import FriendButton from '../friends/FriendButton';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
@@ -423,6 +424,9 @@ export default function Comments({ articleId: articleIdProp }){
               <Link to={href} className="comment-author-link" title={`${displayAuthorName} — voir le profil`}>
                 <strong>{displayAuthorName}</strong>
               </Link>
+              {/* Demande d'ami en un clic depuis la conversation (icône seule,
+                  masquée pour les visiteurs non connectés). */}
+              {!own && <FriendButton userId={comment.user_id} name={displayAuthorName} variant="icon" guestHidden />}
               <span className="comment-level" title={title ? `${title} — ${xpLabel || ''}` : xpLabel || lvlLabel}>
                 <span className="comment-level-lvl">{lvlLabel}</span>
                 {xpLabel && <><span className="comment-level-dot" aria-hidden="true">·</span><span className="comment-level-xp">{xpLabel}</span></>}

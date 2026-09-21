@@ -31,6 +31,9 @@ npm run build
 - Succès du joueur (`/achievements`, alias `/succes`) : 26 succès débloqués par les
   actions réalisées sur le site, niveau et XP, notifications de déblocage (voir
   « Succès débloqués par les actions du site »)
+- Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
+  liste d'amis **en ligne / hors ligne** dans une fenêtre en bas à droite, pour
+  tout joueur connecté (voir « Amis : demandes, liste et présence »)
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -103,8 +106,9 @@ If a variable is missing, `/auth` shows exactly which one under the form.
    paste the **whole** file and hit Run. It creates the `profiles` table (RLS
    enabled) and a trigger that inserts a profile row — with the gamertag chosen
    at registration — for every new user, plus the `comments` table behind the
-   article comment section (see below). The script is idempotent: re-run it
-   after pulling a newer version.
+   article comment section (see below) and the `friendships` table behind the
+   friends list (see « Amis : demandes, liste et présence »). The script is
+   idempotent: re-run it after pulling a newer version.
    The SQL Editor wraps the file in **one transaction**, so a single error used
    to roll everything back — and the script looks like it ran while nothing was
    created. It is therefore guarded: steps that depend on Supabase-internal
@@ -170,6 +174,116 @@ the SQL has been run; the section explains itself when something is off:
 | “Your session has expired — sign in again to comment.” | The stored session is no longer valid | Sign out / in on `/auth` |
 | “Easy there — wait a moment before posting again.” | More than 5 comments in one minute | Wait a minute |
 | Sign-in gate although the site is deployed | Supabase variables missing at build time | See the environment-variable table above |
+
+## Amis : demandes, liste et présence
+
+Tout joueur connecté (compte Supabase **ou** persona de démonstration) dispose
+d'une liste d'amis. Elle vit dans une **fenêtre en bas à droite** (en bas à
+gauche en arabe), présente sur toutes les pages : un lanceur compact
+« AMIS · 2 en ligne » — avec une pastille jaune quand des demandes attendent —
+ouvre un panneau à trois onglets. Un visiteur non connecté ne voit rien.
+
+| Onglet | Ce qui s'y trouve |
+| --- | --- |
+| **Amis** | les amis **en ligne** d'abord (point vert, « EN LIGNE »), puis **hors ligne** (avatar grisé, « Vu il y a 2 h »), chacun avec son niveau et un lien vers son profil ; « Retirer » enlève l'ami (confirmation) |
+| **Demandes** | les demandes **reçues** (Accepter / Refuser) et **envoyées** (Annuler) |
+| **Ajouter** | recherche d'un joueur par pseudo (2 caractères minimum), demande en un clic |
+
+L'état ouvert/fermé est mémorisé sur l'appareil ; Échap ferme le panneau. Les
+notifications de succès partagent le coin : elles montent au-dessus du lanceur,
+et glissent à côté du panneau quand il est ouvert.
+
+**Où envoyer une demande d'ami** (`src/friends/FriendButton.jsx`) :
+
+- sur un **profil public** (`/profile/:id`) : bouton principal « Ajouter en
+  ami », qui devient « Demande envoyée · Annuler », « Accepter / Refuser »
+  (si ce joueur nous a écrit en premier) puis « Amis · Retirer » ; le badge du
+  profil annonce aussi **EN LIGNE / HORS LIGNE** ;
+- dans le **fil de commentaires** : une petite icône « + » à côté du pseudo de
+  chaque auteur (✓ quand c'est déjà un ami, ⏱ quand la demande est partie) ;
+- dans l'onglet **Ajouter** de la fenêtre, et depuis le **hub joueur** (`/auth`),
+  section « Amis & demandes » : résumé, premiers avatars, raccourcis « Ouvrir la
+  liste d'amis » / « Ajouter un ami ».
+
+Un visiteur qui clique sur « Se connecter pour ajouter des amis » est renvoyé
+sur la page où il était une fois connecté.
+
+### Comptes Supabase
+
+Les relations vivent dans `public.friendships` (`supabase/schema.sql`,
+étape 3d) : une ligne par paire de joueurs, `status = 'pending'` tant que le
+destinataire n'a pas répondu, `'accepted'` ensuite ; refuser, annuler ou
+retirer un ami **supprime** la ligne. Un index unique sur la paire ordonnée
+interdit deux lignes A→B et B→A. Row Level Security : chaque joueur ne voit que
+les relations dont il fait partie, n'envoie des demandes qu'en son nom
+(`requester_id` forcé côté serveur), ne répond qu'à celles qu'il a reçues et ne
+supprime que les siennes. Envoyer une demande à quelqu'un qui nous avait déjà
+écrit **accepte sa demande** au lieu d'en créer une seconde (trigger
+`prepare_friendship`).
+
+Le statut en ligne croise deux signaux (`src/friends/presence.js`) :
+
+1. **Supabase Realtime Presence** — chaque joueur connecté rejoint le canal
+   `letsplay-presence` ; les entrées et sorties arrivent en direct. Aucune table
+   à créer, il suffit que Realtime soit actif sur le projet (c'est le cas par
+   défaut).
+2. **Battement de cœur** — `profiles.last_seen_at` est rafraîchi toutes les
+   90 secondes ; un joueur vu il y a moins de 3 minutes est considéré en ligne
+   même si Realtime est indisponible, et « Vu il y a… » s'affiche pour les amis
+   hors ligne. Le battement crée aussi la ligne `profiles` d'un compte qui n'en
+   aurait pas (trigger d'inscription refusé sur le projet), ce qui le rend
+   trouvable dans l'onglet « Ajouter ».
+
+La liste se recharge quand `friendships` change (Realtime `postgres_changes`,
+la table est ajoutée à la publication `supabase_realtime` par le script), toutes
+les minutes en secours, et au retour sur l'onglet. Pseudos, avatars et niveaux
+viennent de `public.profiles` (lecture publique) ; la recherche interroge
+`username` / `display_name` (`ilike`).
+
+Rien d'autre à configurer une fois le SQL relancé — le tableau de contrôle en
+fin de script doit afficher `OK` pour `table public.friendships`, `politiques
+RLS friendships (4)`, `trigger demande d'ami` et `presence
+profiles.last_seen_at` ; `realtime friendships` peut rester `ABSENT` (la fenêtre
+se rafraîchit alors toutes les minutes). Tant que la table manque, la fenêtre
+et les boutons l'expliquent (« Les amis ne sont pas encore activés sur ce
+déploiement… ») sans rien casser d'autre.
+
+### Personas de démonstration
+
+Sans session Supabase, la persona (`VORTEX_DZ`, `PIXEL_QUEEN`) évolue dans une
+**communauté scriptée** (`src/friends/demoRoster.js`) : dix joueurs avec des
+statuts de présence déterministes — toujours en ligne, toujours hors ligne, ou
+alternant toutes les quelques minutes pour que la liste bouge. Chaque persona
+démarre avec des amis en ligne et hors ligne, des demandes reçues et une demande
+envoyée ; l'état est enregistré dans `localStorage` (par persona, par appareil)
+et les joueurs « en ligne » acceptent d'eux-mêmes une demande après quelques
+secondes. Les fiches de ces joueurs (`/profile/demo-player-…`) sont rendues
+comme des profils publics.
+
+### Où vit le code
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/friends/FriendsContext.jsx` | le contexte : amis / demandes / présence du joueur connecté, gestes (`sendRequest`, `accept`, `decline`, `cancel`, `unfriend`, `search`), état de la fenêtre ; inerte sans provider (SSR des scripts) |
+| `src/friends/friendsApi.js` | couche de données : requêtes `friendships` / `profiles`, replis quand une colonne ou la table manque, état des personas |
+| `src/friends/presence.js` | canal Realtime Presence + battement de cœur |
+| `src/friends/FriendsDock.jsx` | la fenêtre en bas à droite (lanceur, onglets) |
+| `src/friends/FriendButton.jsx` | le bouton de demande d'ami (profil, commentaires, résultats de recherche) |
+| `src/friends/FriendsHubSection.jsx` | la section « Amis & demandes » du hub |
+| `src/friends/friendsCopy.js` | textes FR / EN / AR |
+| `src/friends/friends.css` | styles (dock, panneau, boutons, cohabitation avec les notifications de succès) |
+
+### Vérifications
+
+- `npm run check:friends` — logique pure (lignes `friendships` → relations
+  vues par le joueur, gestes de démonstration sans doublon, présence scriptée
+  déterministe avec des amis en ligne **et** hors ligne, recherche nettoyée
+  pour PostgREST), cohérence de la communauté de démonstration (joueurs
+  existants, jamais soi-même, textes complets dans les trois langues), puis
+  rendu SSR du hub, de la fenêtre (fermée / ouverte) et d'un profil public —
+  visiteur et persona — dans les trois langues.
+- `npm run check:i18n` et `npm run check:achievements` continuent de rendre les
+  pages sans le provider des amis : le contexte par défaut est inerte.
 
 ## Succès débloqués par les actions du site
 
