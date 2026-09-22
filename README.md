@@ -39,7 +39,7 @@ npm run build
 - Messagerie : discussions **1-à-1 entre amis** en texte et en temps réel, avec
   **non-lus**, accusé de lecture, **blocage** et **signalement**, dans la même
   fenêtre sociale (voir « Messagerie : discussions 1-à-1 entre amis »)
-- Amis + messagerie dans la **même fenêtre** : un seul lanceur « SOCIAL »
+- Amis + messagerie dans la **même fenêtre** : un seul lanceur « MESSAGERIE »
   (pastilles des non-lus et des demandes en attente, amis en ligne) ouvre un
   panneau à quatre onglets — Amis / Demandes / Ajouter / Messages ; sur mobile
   (≤ 760 px), la messagerie s'ouvre sur une **vraie page** (`/messages`) et la
@@ -191,7 +191,7 @@ the SQL has been run; the section explains itself when something is off:
 
 Tout joueur connecté (compte Supabase **ou** persona de démonstration) dispose
 d'une liste d'amis. Elle vit dans la **fenêtre sociale** en bas à droite,
-présente sur toutes les pages : un lanceur compact « SOCIAL » — avec les
+présente sur toutes les pages : un lanceur compact « MESSAGERIE » — avec les
 pastilles des **non-lus** (messagerie) et des **demandes en attente**, et le
 compteur d'amis en ligne — ouvre un panneau à **quatre onglets** (Amis /
 Demandes / Ajouter / Messages). Amis et messagerie partagent donc la même

@@ -6,8 +6,8 @@
  */
 export const socialCopy = {
   en: {
-    title: 'SOCIAL',
-    launcher: 'SOCIAL',
+    title: 'MESSAGING',
+    launcher: 'MESSAGING',
     launcherOpen: 'Open friends & messages',
     launcherClose: 'Close friends & messages',
     subtitle: '{online} online · {unread} unread',
@@ -15,8 +15,8 @@ export const socialCopy = {
     demoNote: 'Demo preview — simulated community and conversations, saved on this device only.',
   },
   fr: {
-    title: 'SOCIAL',
-    launcher: 'SOCIAL',
+    title: 'MESSAGERIE',
+    launcher: 'MESSAGERIE',
     launcherOpen: 'Ouvrir amis et messages',
     launcherClose: 'Fermer amis et messages',
     subtitle: '{online} en ligne · {unread} non lus',
