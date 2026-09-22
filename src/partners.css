@@ -259,7 +259,29 @@
 .partners-marquee-track{display:flex;width:max-content;animation:partners-marquee-scroll 55s linear infinite}
 .partners-marquee-group{display:flex;align-items:center;flex-shrink:0;gap:64px;list-style:none;margin:0;padding:0 32px}
 .partners-marquee-item{display:flex;align-items:center;justify-content:center;flex:0 0 180px;height:100px}
-.partners-marquee .partner-mark-logo{width:180px;max-width:180px;height:72px;filter:grayscale(1);object-fit:contain}
+/*
+ * Les fichiers des marques n'ont pas tous le même ratio ni les mêmes marges
+ * transparentes. Le slot commun évite les sauts de hauteur, tandis que les
+ * échelles ci-dessous compensent les logos très carrés ou très « aérés » pour
+ * obtenir une taille perçue homogène sans déformer les visuels.
+ */
+.partners-marquee .partner-mark-marquee{width:100%;justify-content:center}
+.partners-marquee .partner-mark-logo{
+  width:160px;max-width:160px;height:64px;filter:grayscale(1);object-fit:contain;
+  transform:scale(var(--marquee-logo-scale,1));transform-origin:center;
+}
+.partners-marquee-item--7ouma-arena{--marquee-logo-scale:1.35}
+.partners-marquee-item--djezzy{--marquee-logo-scale:1.12}
+.partners-marquee-item--egor-gaming{--marquee-logo-scale:1.28}
+.partners-marquee-item--esca{--marquee-logo-scale:1.45}
+.partners-marquee-item--ifa-constantine{--marquee-logo-scale:.95}
+.partners-marquee-item--just-play-it{--marquee-logo-scale:1.15}
+.partners-marquee-item--lg{--marquee-logo-scale:.88}
+.partners-marquee-item--tcl{--marquee-logo-scale:1.05}
+.partners-marquee-item--el-heddaf-tv{--marquee-logo-scale:.86}
+.partners-marquee-item--tmv{--marquee-logo-scale:.9}
+/* TMV est fourni en blanc sur transparent : il devient noir dans le bandeau blanc. */
+.partners-marquee-item--tmv .partner-mark-logo{filter:grayscale(1) brightness(0)}
 .partners-marquee .partner-mark-badge{filter:grayscale(1)}
 .partners-marquee:hover .partners-marquee-track,
 .partners-marquee:focus-within .partners-marquee-track,
