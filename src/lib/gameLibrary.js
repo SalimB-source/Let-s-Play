@@ -112,7 +112,7 @@ export function normalizePlatforms(values) {
 }
 
 /** Plafond de jeux testés par profil (la liste vit dans les métadonnées). */
-export const MAX_TESTED_GAMES = 30;
+export const MAX_TESTED_GAMES = 10;
 
 /**
  * Catalogue des jeux parus sur consoles modernes et iconiques rétro

@@ -14,6 +14,8 @@ import { isRecentlySeen } from '../friends/friendsApi';
 import { demoPresence, findDemoPlayer } from '../friends/demoRoster';
 import { normalizePlatforms, gamePlatforms } from '../lib/gameLibrary';
 import ConsoleLogo from '../components/ConsoleLogo';
+import TopGamePill from '../components/TopGamePill';
+import { MAX_TESTED_GAMES } from '../lib/gameLibrary';
 
 function formatJoined(iso) {
   if (!iso) return '—';
@@ -40,7 +42,7 @@ function DemoNotFound({ id }) {
   );
 }
 
-const PROFILE_TOP_GAMES_LIMIT = 10;
+const PROFILE_TOP_GAMES_LIMIT = MAX_TESTED_GAMES;
 
 /**
  * TOP 10 des jeux du profil : podium coloré, puis sept jeux standards.
@@ -148,23 +150,7 @@ function TopGamesRow({
         <div className="player-games-row">
           {displayedGames.map((title) => {
             const rank = list.indexOf(title) + 1;
-            const platforms = gamePlatforms(title);
-            const podiumClass = rank <= 3 ? ` player-game-pill-top-${rank}` : '';
-            return (
-              <span key={`${title}-${rank}`} className={`player-game-pill${podiumClass}`}>
-                {rank <= 3 && <span className={`player-game-rank player-game-rank-${rank}`}>TOP {rank}</span>}
-                <span className="player-game-pill-title">{title}</span>
-                {platforms.length > 0 && (
-                  <span className="player-game-pill-platforms">
-                    {platforms.map((p) => (
-                      <span key={p} className="player-game-pill-tag">
-                        <ConsoleLogo consoleId={p} size={11} /> {p}
-                      </span>
-                    ))}
-                  </span>
-                )}
-              </span>
-            );
+            return <TopGamePill key={`${title}-${rank}`} title={title} rank={rank} />;
           })}
         </div>
       ) : (

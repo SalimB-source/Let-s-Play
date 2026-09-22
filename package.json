@@ -16,10 +16,12 @@
     "check:friends": "node scripts/friends-check.mjs",
     "check:messages": "node scripts/messages-check.mjs",
     "check:newsbot": "node scripts/news-bot/check.mjs",
-    "news:fetch": "node scripts/news-bot/fetch-news.mjs"
+    "news:fetch": "node scripts/news-bot/fetch-news.mjs",
+    "check:top-games": "node scripts/top-games-check.mjs"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",
+    "jsdom": "^30.1.1",
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest"

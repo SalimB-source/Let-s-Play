@@ -16,9 +16,9 @@ import {
   MAX_TESTED_GAMES,
   normalizePlatforms,
   normalizeSearchText,
-  gamePlatforms,
 } from '../lib/gameLibrary';
 import ConsoleLogo from '../components/ConsoleLogo';
+import TopGamePill from '../components/TopGamePill';
 import FriendsHubSection from '../friends/FriendsHubSection';
 import MessagesHubSection from '../messages/MessagesHubSection';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
@@ -206,17 +206,19 @@ const copy = {
 
     // Consoles & tested games
     consolesHint: 'Tick every console you own — your selection is shown on your public profile.',
-    testedGamesHeading: 'GAMES TESTED',
-    testedGamesHint: 'Filter by console or search across retro and modern platforms, then mark games you tested.',
+    testedGamesHeading: 'Your all-time TOP 10 games',
+    editTopGames: 'Edit',
+    closeTopGames: 'Close',
+    testedGamesHint: 'Your 10 favourite games, across every generation.',
     filterAll: 'All',
     filterByConsole: 'Filter by console:',
     gamesSearchPlaceholder: 'Search a game…',
     noGameMatch: 'No game matches this console filter or search.',
     addGame: 'ADD',
-    gameTested: 'TESTED',
+    gameTested: 'SELECTED',
     removeGame: 'Remove',
-    noTestedGamesYet: 'No tested game yet — pick some from the catalogue below.',
-    maxGamesNote: 'Cap reached (30 games). Remove a game to add another.',
+    noTestedGamesYet: 'Your TOP 10 is empty. Click Edit to choose games.',
+    maxGamesNote: 'Cap reached (10 games). Remove a game to add another.',
     saveGear: 'SAVE',
   },
   fr: {
@@ -321,17 +323,19 @@ const copy = {
 
     // Consoles & jeux testés
     consolesHint: 'Coche toutes les consoles que tu possèdes — la sélection s’affiche sur ton profil public.',
-    testedGamesHeading: 'JEUX TESTÉS',
-    testedGamesHint: 'Filtre par console ou recherche dans le catalogue rétro et moderne, puis marque les jeux que tu as testés.',
+    testedGamesHeading: 'Ton TOP 10 des jeux all-time',
+    editTopGames: 'Modifier',
+    closeTopGames: 'Fermer',
+    testedGamesHint: 'Tes 10 jeux préférés, toutes générations confondues.',
     filterAll: 'Toutes',
     filterByConsole: 'Filtrer par console :',
     gamesSearchPlaceholder: 'Rechercher un jeu…',
     noGameMatch: 'Aucun jeu ne correspond à cette console ou à cette recherche.',
     addGame: 'AJOUTER',
-    gameTested: 'TESTÉ',
+    gameTested: 'SÉLECTIONNÉ',
     removeGame: 'Retirer',
-    noTestedGamesYet: 'Aucun jeu testé pour l’instant — choisis-en dans le catalogue ci-dessous.',
-    maxGamesNote: 'Plafond atteint (30 jeux). Retire un jeu pour en ajouter un autre.',
+    noTestedGamesYet: 'Aucun jeu dans ton TOP 10 pour l’instant. Clique sur Modifier pour en choisir.',
+    maxGamesNote: 'Plafond atteint (10 jeux). Retire un jeu pour en ajouter un autre.',
     saveGear: 'ENREGISTRER',
   },
   ar: {
@@ -436,8 +440,10 @@ const copy = {
 
     // وحدات التحكم والألعاب المجرَّبة
     consolesHint: 'حدّد كل وحدة تحكم تمتلكها — ستظهر اختياراتك على ملفك الشخصي العام.',
-    testedGamesHeading: 'الألعاب المجرَّبة',
-    testedGamesHint: 'صفِّ حسب الجهاز أو ابحث في الكتالوج الكلاسيكي والحديث، ثم حدّد الألعاب التي اختبرتها.',
+    testedGamesHeading: 'أفضل 10 ألعاب لديك على الإطلاق',
+    editTopGames: 'تعديل',
+    closeTopGames: 'إغلاق',
+    testedGamesHint: 'ألعابك العشر المفضلة عبر جميع الأجيال.',
     filterAll: 'الكل',
     filterByConsole: 'تصفية حسب المنصة:',
     gamesSearchPlaceholder: 'ابحث عن لعبة…',
@@ -445,8 +451,8 @@ const copy = {
     addGame: 'أضِف',
     gameTested: 'مُجرَّبة',
     removeGame: 'إزالة',
-    noTestedGamesYet: 'لا توجد ألعاب مجرَّبة بعد — اختر من الكتالوج أدناه.',
-    maxGamesNote: 'تم الوصول إلى الحد الأقصى (30 لعبة). احذف لعبة لإضافة أخرى.',
+    noTestedGamesYet: 'قائمتك فارغة. اضغط تعديل لاختيار الألعاب.',
+    maxGamesNote: 'تم الوصول إلى الحد الأقصى (10 ألعاب). احذف لعبة لإضافة أخرى.',
     saveGear: 'حفظ',
   },
 };
@@ -1517,11 +1523,17 @@ function sameList(a, b) {
   return a.length === b.length && a.every((value) => b.includes(value));
 }
 
-function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
+export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
   const [draftPlatforms, setDraftPlatforms] = useState(() => normalizePlatforms(meta.platforms));
-  const [draftGames, setDraftGames] = useState(() => (Array.isArray(meta.testedGames) ? meta.testedGames : []).slice());
+  const [draftGames, setDraftGames] = useState(() => (Array.isArray(meta.testedGames) ? meta.testedGames : []).filter((g) => typeof g === 'string' && g.trim()).slice(0, MAX_TESTED_GAMES));
   const [query, setQuery] = useState('');
   const [selectedConsole, setSelectedConsole] = useState('ALL');
+  const [isEditingGames, setIsEditingGames] = useState(false);
+  const resetGamesView = () => {
+    setQuery('');
+    setSelectedConsole('ALL');
+    setIsEditingGames(false);
+  };
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
@@ -1534,7 +1546,8 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
   const savedPlatforms = normalizePlatforms(meta.platforms);
   const savedGames = Array.isArray(meta.testedGames) ? meta.testedGames : [];
   const platformsDirty = !sameList(draftPlatforms, savedPlatforms);
-  const gamesDirty = !sameList(draftGames, savedGames);
+  const gamesDirty = draftGames.length !== savedGames.length
+    || draftGames.some((title, index) => title !== savedGames[index]);
 
   const flash = (text, isError) => {
     if (noteTimer.current) window.clearTimeout(noteTimer.current);
@@ -1554,7 +1567,7 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
   };
 
   const toggleGame = (title) => {
-    setDraftGames((prev) => (prev.includes(title) ? prev.filter((g) => g !== title) : [...prev, title]));
+    setDraftGames((prev) => (prev.includes(title) ? prev.filter((g) => g !== title) : prev.length < MAX_TESTED_GAMES ? [...prev, title] : prev));
     setNote('');
     setErr('');
   };
@@ -1655,39 +1668,36 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
         {err && <p className="player-edit-note player-edit-error">{err}</p>}
       </div>
 
-      {/* JEUX TESTÉS — catalogue multi-plateformes + filtre par console + recherche */}
+      {/* TOP 10 — même podium que le profil ; catalogue ouvert sur demande. */}
       <div className="player-section">
-        <div className="player-section-header">
-          <h2>{t.testedGamesHeading}</h2>
-          <p>{t.testedGamesHint}</p>
-        </div>
-
-        {draftGames.length > 0 ? (
-          <div className="player-games-chips">
-            {draftGames.map((title) => {
-              const platforms = gamePlatforms(title);
-              return (
-                <span key={title} className="player-game-chip">
-                  {platforms.length > 0 && <ConsoleLogo consoleId={platforms[0]} size={13} />}
-                  <span className="player-game-chip-title">{title}</span>
-                  <button
-                    type="button"
-                    className="player-game-chip-remove"
-                    onClick={() => toggleGame(title)}
-                    disabled={saving}
-                    aria-label={`${t.removeGame} — ${title}`}
-                    title={t.removeGame}
-                  >
-                    ×
-                  </button>
-                </span>
-              );
-            })}
+        <div className="player-section-header player-games-section-header">
+          <div>
+            <h2>{t.testedGamesHeading}</h2>
+            <p>{t.testedGamesHint}</p>
           </div>
-        ) : (
-          <p className="player-empty-note">{t.noTestedGamesYet}</p>
-        )}
+          <div className="player-games-actions" aria-label="Actions du TOP 10">
+            <button type="button" className={`player-games-action-btn${isEditingGames ? ' active' : ''}`}
+              aria-expanded={isEditingGames} aria-controls="hub-top-games-editor"
+              onClick={() => isEditingGames ? resetGamesView() : setIsEditingGames(true)}>
+              {isEditingGames ? t.closeTopGames : t.editTopGames}
+            </button>
+            <button type="button" className="player-games-action-btn reset" onClick={resetGamesView}>Reset</button>
+          </div>
+        </div>
+        {draftGames.length > 0 ? (
+          <div className="player-games-row">
+            {draftGames.map((title, index) => (
+              <TopGamePill key={title} title={title} rank={index + 1}>
+                {isEditingGames && (
+                  <button type="button" className="player-game-chip-remove" onClick={() => toggleGame(title)}
+                    disabled={saving} aria-label={`${t.removeGame} — ${title}`} title={t.removeGame}>×</button>
+                )}
+              </TopGamePill>
+            ))}
+          </div>
+        ) : <p className="player-empty-note">{t.noTestedGamesYet}</p>}
 
+        {isEditingGames && <div id="hub-top-games-editor">
         {/* FILTRE PAR CONSOLE */}
         <div className="player-games-filter-container">
           <div className="player-games-filter-header">
@@ -1777,6 +1787,7 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
           )}
         </div>
         {atCap && <p className="player-games-cap-note">{t.maxGamesNote}</p>}
+        </div>}
         {saveRow(gamesDirty)}
         {note && <p className="player-edit-note">{note}</p>}
         {err && <p className="player-edit-note player-edit-error">{err}</p>}
