@@ -41,8 +41,8 @@ export default function PartnersSection() {
           {[0, 1].map((copyIndex) => (
             <ul className="partners-marquee-group" key={copyIndex} aria-hidden={copyIndex === 1 ? true : undefined}>
               {partners.map((partner) => (
-                <li className="partners-marquee-item" key={partner.id}>
-                  <PartnerMark partner={partner} showText={false} />
+                <li className={`partners-marquee-item partners-marquee-item--${partner.id}`} key={partner.id}>
+                  <PartnerMark partner={partner} size="marquee" showText={false} />
                 </li>
               ))}
             </ul>
