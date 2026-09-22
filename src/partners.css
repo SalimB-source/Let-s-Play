@@ -253,3 +253,28 @@
   .arena-head h2,.arena-head h3{font-size:clamp(27px,8.4vw,38px)}
   .arena-proof{padding:22px 18px 20px;margin-top:48px}
 }
+
+/* Home: seamless monochrome logo ribbon. Two equal groups keep the loop continuous. */
+.partners-marquee{position:relative;overflow:hidden;background:#fff;color:#222;direction:ltr;padding:28px 0}
+.partners-marquee-track{display:flex;width:max-content;animation:partners-marquee-scroll 55s linear infinite}
+.partners-marquee-group{display:flex;align-items:center;flex-shrink:0;gap:64px;list-style:none;margin:0;padding:0 32px}
+.partners-marquee-item{display:flex;align-items:center;justify-content:center;flex:0 0 180px;height:100px}
+.partners-marquee .partner-mark-logo{width:180px;max-width:180px;height:72px;filter:grayscale(1);object-fit:contain}
+.partners-marquee .partner-mark-badge{filter:grayscale(1)}
+.partners-marquee:hover .partners-marquee-track,
+.partners-marquee:focus-within .partners-marquee-track,
+.partners-marquee[data-paused="true"] .partners-marquee-track{animation-play-state:paused}
+.partners-marquee-toggle{position:absolute;right:12px;bottom:8px;display:grid;place-items:center;width:32px;height:32px;border:1px solid #ccc;border-radius:50%;background:#fff;color:#333;cursor:pointer}
+.partners-marquee-toggle:focus-visible{outline:2px solid #222;outline-offset:3px}
+@keyframes partners-marquee-scroll{to{transform:translateX(-50%)}}
+@media(max-width:600px){
+  .partners-marquee{padding:20px 0}
+  .partners-marquee-group{gap:32px;padding:0 16px}
+  .partners-marquee-item{flex-basis:140px;height:80px}
+  .partners-marquee .partner-mark-logo{width:140px;max-width:140px;height:56px}
+}
+@media(prefers-reduced-motion:reduce){
+  .partners-marquee-track{animation:none;width:100%}
+  .partners-marquee-group{flex-wrap:wrap;justify-content:center;width:100%;box-sizing:border-box}
+  .partners-marquee-group[aria-hidden="true"],.partners-marquee-toggle{display:none}
+}
