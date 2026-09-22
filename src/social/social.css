@@ -28,6 +28,19 @@
 }
 .social-dock > * { pointer-events: auto; }
 
+/* Conteneur du lanceur. Le bouton est découpé (`clip-path`, coins coupés) et
+   rogne donc tout ce qui dépasse de sa boîte : les pastilles de notification,
+   posées sur ses coins, vivent ici, dans un conteneur non découpé — elles
+   s'affichent au-dessus du bouton, en entier. */
+.social-launcher-wrap {
+  position: relative;
+  display: inline-flex;
+  /* Le conteneur ne capte pas le clic (les pastilles non plus, par héritage) :
+     le clic va au bouton, ou à la page sous la partie qui dépasse. */
+  pointer-events: none;
+}
+.social-launcher-wrap > .social-launcher { pointer-events: auto; }
+
 /* Lanceur : pastille compacte, toujours visible pour un joueur connecté. */
 .social-launcher {
   position: relative;
@@ -96,6 +109,8 @@
 }
 .social-launcher-badge {
   position: absolute;
+  /* Peinte au-dessus du bouton découpé : jamais rognée par ses coins coupés. */
+  z-index: 2;
   min-width: 20px;
   height: 20px;
   padding: 0 6px;

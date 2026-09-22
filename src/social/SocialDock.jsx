@@ -405,23 +405,29 @@ export default function SocialDock() {
           {mode === 'demo' && <footer className="social-panel-foot">{t.demoNote}</footer>}
         </section>
       )}
-      <button
-        type="button"
-        className={`social-launcher${unreadTotal > 0 || pendingCount > 0 ? ' has-alert' : ''}`}
-        onClick={toggle}
-        aria-expanded={open}
-        aria-label={open ? t.launcherClose : t.launcherOpen}
-        title={open ? t.launcherClose : t.launcherOpen}
-      >
-        <span className="social-launcher-icon"><SocialIcon /></span>
-        <span className="social-launcher-label">{t.launcher}</span>
-        <span className="social-launcher-meta">
-          <span className={`social-launcher-dot${onlineCount > 0 ? ' is-online' : ''}`} aria-hidden="true" />
-          {onlineCount} {ft.online}
-        </span>
-        {unreadTotal > 0 && (
-          <span className="social-launcher-meta social-launcher-meta-unread">{unreadTotal} {mt.unread}</span>
-        )}
+      {/* Le bouton est découpé (coins coupés en `clip-path`) : une pastille
+          posée sur son coin serait rognée si elle restait dedans. Les deux
+          pastilles vivent donc dans ce conteneur, au-dessus du bouton, où
+          elles s'affichent en entier. */}
+      <span className="social-launcher-wrap">
+        <button
+          type="button"
+          className={`social-launcher${unreadTotal > 0 || pendingCount > 0 ? ' has-alert' : ''}`}
+          onClick={toggle}
+          aria-expanded={open}
+          aria-label={open ? t.launcherClose : t.launcherOpen}
+          title={open ? t.launcherClose : t.launcherOpen}
+        >
+          <span className="social-launcher-icon"><SocialIcon /></span>
+          <span className="social-launcher-label">{t.launcher}</span>
+          <span className="social-launcher-meta">
+            <span className={`social-launcher-dot${onlineCount > 0 ? ' is-online' : ''}`} aria-hidden="true" />
+            {onlineCount} {ft.online}
+          </span>
+          {unreadTotal > 0 && (
+            <span className="social-launcher-meta social-launcher-meta-unread">{unreadTotal} {mt.unread}</span>
+          )}
+        </button>
         {unreadTotal > 0 && (
           <span className="social-launcher-badge social-launcher-badge-unread" aria-label={fill(mt.unreadCount, { count: unreadTotal })}>
             {unreadTotal}
@@ -432,7 +438,7 @@ export default function SocialDock() {
             {pendingCount}
           </span>
         )}
-      </button>
+      </span>
     </div>
   );
 }
