@@ -11,4 +11,27 @@
 .news-carousel.is-grid .news-carousel-copy p{-webkit-line-clamp:3}
 @media(max-width:1100px){.news-carousel.is-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:800px){.news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:650px){.news-view-tools{width:100%;justify-content:space-between;align-items:center}.news-view-toggle button{padding:9px 11px}.news-carousel.is-grid{grid-template-columns:1fr;gap:18px}.news-carousel.is-grid .news-carousel-card{flex-basis:auto;width:100%}}
+@media(max-width:650px){
+  .news-view-tools{width:100%;justify-content:space-between;align-items:center}
+  .news-view-toggle button{padding:9px 11px}
+
+  /* Les actus restent denses sur téléphone, sans sacrifier le titre :
+     l'extrait et le CTA passent après lui et ne sont donc pas affichés ici. */
+  .news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .news-carousel.is-grid .news-carousel-card{flex-basis:auto;width:100%}
+  .news-carousel.is-grid .news-carousel-image{min-height:0;aspect-ratio:4/3}
+  .news-carousel.is-grid .news-carousel-image .news-feature-badge,
+  .news-carousel.is-grid .news-carousel-image .news-feature-arrow{display:none}
+  .news-carousel.is-grid .news-carousel-copy{padding:12px 10px 14px}
+  .news-carousel.is-grid .news-carousel-copy h2{
+    display:block;
+    margin:8px 0 0;
+    font-size:clamp(16px,4.2vw,18px);
+    line-height:1.28;
+    -webkit-line-clamp:unset;
+    overflow:visible;
+  }
+  .news-carousel.is-grid .news-carousel-copy p,
+  .news-carousel.is-grid .news-carousel-copy .read-link{display:none}
+  .news-carousel.is-grid .news-kicker{font-size:9px;line-height:1.35;letter-spacing:.08em}
+}
