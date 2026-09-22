@@ -9,22 +9,15 @@ import { useAchievementAction } from '../achievements/AchievementContext';
 
 const base = import.meta.env.BASE_URL;
 
-function isOffline() {
-  if (typeof window === 'undefined') return false;
-  return !navigator.onLine;
-}
-
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { user, configured } = useAuth();
+  const { user } = useAuth();
   const track = useAchievementAction();
   const searchRef = useRef(null);
-
-  const offlineMode = !configured || isOffline();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -119,7 +112,7 @@ export default function Layout({ children }) {
                   </span>
                 </span>
               </Link>
-            ) : offlineMode ? (
+            ) : (
               <>
                 <Link
                   to="/auth?mode=signin"
@@ -136,14 +129,6 @@ export default function Layout({ children }) {
                   {t.nav.register || 'Register'}
                 </Link>
               </>
-            ) : (
-              <Link
-                to="/auth"
-                className={`nav-account${user ? ' connected' : ''}`}
-                onClick={() => setMenuOpen(false)}
-              >
-                {t.nav?.join || 'Join'}
-              </Link>
             )}
           </div>
         </div>
