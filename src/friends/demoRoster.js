@@ -81,7 +81,8 @@ export const DEMO_PLAYERS = [
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
     level: 6,
     xp: 420,
-    platforms: ['SWITCH 2'],
+    platforms: ['GAMECUBE', 'SNES', 'MEGADRIVE', 'SWITCH 2'],
+    testedGames: ['Super Smash Bros. Melee', 'Super Mario World', 'Sonic the Hedgehog 2', 'The Legend of Zelda: The Wind Waker', 'Chrono Trigger'],
     presence: 'online',
   },
   {

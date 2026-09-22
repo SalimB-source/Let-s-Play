@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
@@ -13,6 +13,7 @@ import { useFriends } from '../friends/FriendsContext';
 import { isRecentlySeen } from '../friends/friendsApi';
 import { demoPresence, findDemoPlayer } from '../friends/demoRoster';
 import { normalizePlatforms, gamePlatforms } from '../lib/gameLibrary';
+import ConsoleLogo from '../components/ConsoleLogo';
 
 function formatJoined(iso) {
   if (!iso) return '—';
@@ -40,33 +41,94 @@ function DemoNotFound({ id }) {
 }
 
 /**
- * Ligne « jeux testés » du profil : une puce par jeu, avec les plateformes
- * cataloguées du titre (PS5 / PS4 / Xbox Series X / PC) quand le jeu est dans
- * le catalogue — un titre stocké avant une mise à jour du catalogue s'affiche
- * quand même, sans tag.
+ * Ligne « jeux testés » du profil : filtre interactif par console,
+ * puces de jeux avec logos des plateformes cataloguées.
  */
-function TestedGamesRow({ games, heading = 'Jeux testés', sub = 'PS5 · PS4 · Xbox Series X · PC', emptyText = null }) {
+function TestedGamesRow({ games, heading = 'Jeux testés', sub = 'Consoles iconiques, rétro & PC', emptyText = null }) {
+  const [activeFilter, setActiveFilter] = useState('ALL');
   const list = Array.isArray(games) ? games.filter((g) => typeof g === 'string' && g.trim()) : [];
+
+  const platformsRepresented = useMemo(() => {
+    const set = new Set();
+    for (const title of list) {
+      const pList = gamePlatforms(title);
+      for (const p of pList) set.add(p);
+    }
+    return Array.from(set);
+  }, [list]);
+
+  const displayedGames = useMemo(() => {
+    if (activeFilter === 'ALL') return list;
+    return list.filter((title) => {
+      const pList = gamePlatforms(title);
+      return pList.includes(activeFilter);
+    });
+  }, [list, activeFilter]);
+
   return (
     <div className="player-section">
       <div className="player-section-header">
         <h2>{heading}</h2>
         <p>{sub}</p>
       </div>
-      {list.length > 0 ? (
+
+      {list.length > 0 && platformsRepresented.length > 1 && (
+        <div className="player-profile-games-filter-bar" role="tablist" aria-label="Filtrer par console">
+          <button
+            type="button"
+            className={`player-games-filter-btn${activeFilter === 'ALL' ? ' active' : ''}`}
+            onClick={() => setActiveFilter('ALL')}
+            aria-pressed={activeFilter === 'ALL'}
+          >
+            <span>Toutes</span>
+            <span className="player-games-filter-count">{list.length}</span>
+          </button>
+          {platformsRepresented.map((platformId) => {
+            const count = list.filter((t) => gamePlatforms(t).includes(platformId)).length;
+            const isActive = activeFilter === platformId;
+            return (
+              <button
+                key={platformId}
+                type="button"
+                className={`player-games-filter-btn${isActive ? ' active' : ''}`}
+                onClick={() => setActiveFilter(isActive ? 'ALL' : platformId)}
+                aria-pressed={isActive}
+              >
+                <ConsoleLogo consoleId={platformId} size={14} />
+                <span>{platformId}</span>
+                <span className="player-games-filter-count">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {displayedGames.length > 0 ? (
         <div className="player-games-row">
-          {list.map((title) => {
+          {displayedGames.map((title) => {
             const platforms = gamePlatforms(title);
             return (
               <span key={title} className="player-game-pill">
                 <span className="player-game-pill-title">{title}</span>
-                {platforms.length > 0 && <span className="player-game-pill-platforms">{platforms.join(' · ')}</span>}
+                {platforms.length > 0 && (
+                  <span className="player-game-pill-platforms">
+                    {platforms.map((p) => (
+                      <span key={p} className="player-game-pill-tag">
+                        <ConsoleLogo consoleId={p} size={11} /> {p}
+                      </span>
+                    ))}
+                  </span>
+                )}
               </span>
             );
           })}
         </div>
       ) : (
-        <p className="player-empty-note">{emptyText || 'Aucun jeu testé pour l’instant.'}</p>
+        <p className="player-empty-note">
+          {list.length > 0
+            ? 'Aucun jeu correspondant à cette console.'
+            : (emptyText || 'Aucun jeu testé pour l’instant.')}
+        </p>
       )}
     </div>
   );
@@ -218,7 +280,12 @@ export default function Profile() {
             </div>
             {ownPlatforms.length > 0 ? (
               <div className="player-platforms-row">
-                {ownPlatforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}
+                {ownPlatforms.map((p) => (
+                  <span key={p} className="player-platform-pill">
+                    <ConsoleLogo consoleId={p} size={15} />
+                    <span>{p}</span>
+                  </span>
+                ))}
               </div>
             ) : (
               <p className="player-empty-note">Aucune console ajoutée pour l’instant — coche-les dans ton hub.</p>
@@ -317,7 +384,14 @@ export default function Profile() {
           {meta.platforms?.length > 0 && (
             <div className="player-section">
               <div className="player-section-header"><h2>Plateformes</h2></div>
-              <div className="player-platforms-row">{meta.platforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}</div>
+              <div className="player-platforms-row">
+                {meta.platforms.map((p) => (
+                  <span key={p} className="player-platform-pill">
+                    <ConsoleLogo consoleId={p} size={15} />
+                    <span>{p}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
@@ -405,7 +479,14 @@ export default function Profile() {
           {demoPlayer.platforms?.length > 0 && (
             <div className="player-section">
               <div className="player-section-header"><h2>Plateformes</h2></div>
-              <div className="player-platforms-row">{demoPlayer.platforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}</div>
+              <div className="player-platforms-row">
+                {demoPlayer.platforms.map((p) => (
+                  <span key={p} className="player-platform-pill">
+                    <ConsoleLogo consoleId={p} size={15} />
+                    <span>{p}</span>
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
@@ -504,7 +585,12 @@ export default function Profile() {
           <div className="player-section">
             <div className="player-section-header"><h2>Plateformes</h2></div>
             <div className="player-platforms-row">
-              {normalizePlatforms(remoteProfile.platforms).map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}
+              {normalizePlatforms(remoteProfile.platforms).map((p) => (
+                <span key={p} className="player-platform-pill">
+                  <ConsoleLogo consoleId={p} size={15} />
+                  <span>{p}</span>
+                </span>
+              ))}
             </div>
           </div>
         )}
