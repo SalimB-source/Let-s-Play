@@ -1574,7 +1574,8 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
 
   // Sauvegarde des deux listes en une seule écriture de métadonnées :
   // le bouton visible dans une section enregistre les deux (l'autre liste
-  // est déjà à jour du point de vue du joueur).
+  // est déjà à jour du point de vue du joueur). Après un enregistrement
+  // réussi, le filtre/éditeur se referme.
   const save = async () => {
     if (saving) return;
     setSaving(true);
@@ -1605,6 +1606,8 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
         throw new Error(t.unavailable);
       }
       flash(t.profileSaved, false);
+      // Le bouton Enregistrer ferme le filtre
+      resetGamesView();
     } catch (e) {
       flash(describeAuthError(e, t, t.profileSaveError), true);
     } finally {
@@ -1681,7 +1684,6 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
               onClick={() => isEditingGames ? resetGamesView() : setIsEditingGames(true)}>
               {isEditingGames ? t.closeTopGames : t.editTopGames}
             </button>
-            <button type="button" className="player-games-action-btn reset" onClick={resetGamesView}>Reset</button>
           </div>
         </div>
         {draftGames.length > 0 ? (
