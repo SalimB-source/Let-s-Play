@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const STORAGE_PREFIX = 'letsplay_article_reactions:';
+import { useAuth } from '../auth/AuthContext';
+import { fetchArticleReactions, saveArticleReaction } from '../lib/articleReactions';
 const CHOICES = [
   { id: 'hype', label: 'Je suis hypé', tone: 'cyan', icon: 'rocket' },
   { id: 'watch', label: 'Je garde un œil', tone: 'yellow', icon: 'eye' },
@@ -18,41 +19,71 @@ function defaultVotes() {
   return { hype: 0, watch: 0, wait: 0 };
 }
 
-function readState(articleId) {
-  if (typeof window === 'undefined') return { votes: defaultVotes(), mine: '' };
-  try {
-    const raw = window.localStorage.getItem(`${STORAGE_PREFIX}${articleId}`);
-    if (!raw) return { votes: defaultVotes(), mine: '' };
-    const parsed = JSON.parse(raw);
-    return { votes: { ...defaultVotes(), ...(parsed.votes || {}) }, mine: parsed.mine || '' };
-  } catch {
-    return { votes: defaultVotes(), mine: '' };
-  }
-}
-
 export default function ArticleEngagement({ articleId, title }) {
-  const initial = useMemo(() => readState(articleId), [articleId]);
-  const [votes, setVotes] = useState(initial.votes);
-  const [mine, setMine] = useState(initial.mine);
+  const { session } = useAuth();
+  const userId = session?.user?.id;
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const generation = useRef(0);
+  const busy = useRef(false);
+  const currentKey = `${articleId}:${userId || ''}`;
+  const state = result?.key === currentKey ? result.data : null;
+  const votes = state || defaultVotes();
+  const mine = state?.mine || '';
 
   useEffect(() => {
-    const next = readState(articleId);
-    setVotes(next.votes);
-    setMine(next.mine);
-  }, [articleId]);
+    const version = ++generation.current;
+    let active = true;
+    let reading = false;
+    busy.current = false;
+    setSaving(false);
+    setError('');
+    setResult(null);
+    async function refresh() {
+      if (reading || busy.current) return;
+      reading = true;
+      const requestVersion = generation.current;
+      try {
+        const data = await fetchArticleReactions(articleId);
+        if (active && requestVersion === generation.current) {
+          setResult({ key: currentKey, data });
+          setError('');
+        }
+      } catch {
+        if (active && requestVersion === generation.current) setError('Impossible de charger la tendance globale. Réessayez dans quelques instants.');
+      } finally { reading = false; }
+    }
+    refresh();
+    const interval = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      active = false;
+      generation.current = Math.max(generation.current, version) + 1;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [articleId, userId, currentKey]);
 
-  const total = Object.values(votes).reduce((sum, value) => sum + Number(value || 0), 0);
+  const total = ['hype', 'watch', 'wait'].reduce((sum, key) => sum + Number(votes[key] || 0), 0);
 
-  function react(choice) {
-    setVotes((current) => {
-      const next = { ...current };
-      if (mine && next[mine] > 0) next[mine] -= 1;
-      if (mine !== choice.id) next[choice.id] += 1;
-      const nextMine = mine === choice.id ? '' : choice.id;
-      setMine(nextMine);
-      try { window.localStorage.setItem(`${STORAGE_PREFIX}${articleId}`, JSON.stringify({ votes: next, mine: nextMine })); } catch { /* stockage indisponible : la réaction reste visible dans la session */ }
-      return next;
-    });
+  async function react(choice) {
+    if (!userId || !state || busy.current) return;
+    busy.current = true;
+    setSaving(true);
+    setError('');
+    const version = ++generation.current;
+    try {
+      const data = await saveArticleReaction(articleId, mine === choice.id ? null : choice.id);
+      if (version === generation.current) setResult({ key: currentKey, data });
+    } catch {
+      if (version === generation.current) setError('Votre réaction n’a pas pu être enregistrée. Veuillez réessayer.');
+    } finally {
+      if (version === generation.current) {
+        busy.current = false;
+        setSaving(false);
+      }
+    }
   }
 
   return (
@@ -63,24 +94,26 @@ export default function ArticleEngagement({ articleId, title }) {
           <h2 id="article-engagement-title">ET VOUS, <em>VOUS EN PENSEZ QUOI ?</em></h2>
           <p>Une réaction rapide, puis un vrai avis dans les commentaires. La rédaction Let’s Play veut suivre ce qui vous fait vibrer — ou douter.</p>
         </div>
-        <span className="article-engagement-count">{total} réaction{total > 1 ? 's' : ''}</span>
+        <span className="article-engagement-count">{state ? `${total} réaction${total > 1 ? 's' : ''} · tous les lecteurs` : error ? 'Tendance indisponible' : 'Chargement de la tendance…'}</span>
       </div>
       <div className="article-reaction-grid" role="group" aria-label={`Réagir à l’article ${title}`}>
         {CHOICES.map((choice) => {
           const count = votes[choice.id] || 0;
           const percentage = total ? Math.round((count / total) * 100) : 0;
           return (
-            <button key={choice.id} type="button" className={`article-reaction article-reaction-${choice.tone}${mine === choice.id ? ' is-selected' : ''}`} onClick={() => react(choice)} aria-pressed={mine === choice.id}>
+            <button key={choice.id} type="button" className={`article-reaction article-reaction-${choice.tone}${mine === choice.id ? ' is-selected' : ''}`} disabled={!userId || !state || saving} onClick={() => react(choice)} aria-pressed={mine === choice.id}>
               <span className="article-reaction-icon"><ReactionIcon type={choice.icon} /></span>
               <span className="article-reaction-label">{choice.label}</span>
               <span className="article-reaction-meter" aria-hidden="true"><i style={{ width: `${percentage}%` }} /></span>
-              <span className="article-reaction-meta">{percentage}% · {count}</span>
+              <span className="article-reaction-meta">{state ? `${percentage}% · ${count}` : '—'}</span>
             </button>
           );
         })}
       </div>
       <div className="article-engagement-footer">
-        <span>{mine ? 'Votre réaction est enregistrée sur cet appareil.' : 'Choisissez une réaction pour voir la tendance.'}</span>
+        <span>{saving ? 'Enregistrement…' : mine ? 'Votre réaction est comptabilisée dans la tendance globale.' : 'La tendance rassemble les votes de tous les lecteurs.'}</span>
+        {!userId && <Link className="arrow-link" to="/auth">CONNECTEZ-VOUS POUR VOTER</Link>}
+        {error && <span role="alert">{error}</span>}
         <Link className="arrow-link" to="#comments">REJOINDRE LA DISCUSSION <span aria-hidden="true">↗</span></Link>
       </div>
     </section>
