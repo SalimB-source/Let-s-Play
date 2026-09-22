@@ -184,9 +184,6 @@ const copy = {
     noPlatformsYet: 'No platforms added yet.',
     badgesHeading: 'UNLOCKED ACHIEVEMENTS & BADGES',
     demoBadgesNote: 'Persona medals shown by the demo preview — your own achievements are listed above.',
-    savedStoriesHeading: 'SAVED STORIES & BOOKMARKS',
-    noSavedYet: 'No saved stories yet — explore the news feed and bookmark what you like.',
-    readStory: 'READ STORY',
     profileActions: 'ACCOUNT ACTIONS',
     exploreNewsBtn: 'EXPLORE NEWS FEED ↗',
     returnHomeBtn: 'RETURN TO HOME',
@@ -207,8 +204,8 @@ const copy = {
 
     // Consoles & tested games
     consolesHint: 'Tick every console you own — your selection is shown on your public profile.',
-    testedGamesHeading: 'GAMES TESTED · PS5 / XBOX SERIES X',
-    testedGamesHint: 'Search the PS5 / Xbox Series X catalogue and tag the games you have tested.',
+    testedGamesHeading: 'GAMES TESTED · PS5 / PS4 / XBOX SERIES X / PC',
+    testedGamesHint: 'Search the PS5 / PS4 / Xbox Series X / PC catalogue and tag the games you have tested.',
     gamesSearchPlaceholder: 'Search a game…',
     noGameMatch: 'No game of the catalogue matches this search.',
     addGame: 'ADD',
@@ -300,9 +297,6 @@ const copy = {
     noPlatformsYet: 'Aucune plateforme ajoutée pour l’instant.',
     badgesHeading: 'SUCCÈS DÉBLOQUÉS & BADGES',
     demoBadgesNote: 'Médailles de la persona affichées par l’aperçu démo — tes propres succès sont listés plus haut.',
-    savedStoriesHeading: 'FAVORIS & ARTICLES SAUVEGARDÉS',
-    noSavedYet: 'Aucun article sauvegardé pour l’instant — explore le fil d’actus et mets en favori ce qui te plaît.',
-    readStory: 'LIRE L’ARTICLE',
     profileActions: 'ACTIONS DU COMPTE',
     exploreNewsBtn: 'VOIR LE FIL D’ACTUS ↗',
     returnHomeBtn: 'RETOUR À L’ACCUEIL',
@@ -323,8 +317,8 @@ const copy = {
 
     // Consoles & jeux testés
     consolesHint: 'Coche toutes les consoles que tu possèdes — la sélection s’affiche sur ton profil public.',
-    testedGamesHeading: 'JEUX TESTÉS · PS5 / XBOX SERIES X',
-    testedGamesHint: 'Recherche dans le catalogue PS5 / Xbox Series X et marque les jeux que tu as testés.',
+    testedGamesHeading: 'JEUX TESTÉS · PS5 / PS4 / XBOX SERIES X / PC',
+    testedGamesHint: 'Recherche dans le catalogue PS5 / PS4 / Xbox Series X / PC et marque les jeux que tu as testés.',
     gamesSearchPlaceholder: 'Rechercher un jeu…',
     noGameMatch: 'Aucun jeu du catalogue ne correspond à cette recherche.',
     addGame: 'AJOUTER',
@@ -416,9 +410,6 @@ const copy = {
     noPlatformsYet: 'لم تتم إضافة أي منصة بعد.',
     badgesHeading: 'الإنجازات والأوسمة المفتوحة',
     demoBadgesNote: 'أوسمة الشخصية في المعاينة التجريبية — إنجازاتك الخاصة معروضة في الأعلى.',
-    savedStoriesHeading: 'المقالات المحفوظة للقراءة لاحقًا',
-    noSavedYet: 'لا توجد مقالات محفوظة بعد — تصفح آخر الأخبار واحفظ ما يعجبك.',
-    readStory: 'اقرأ المقال',
     profileActions: 'إجراءات الحساب',
     exploreNewsBtn: 'تصفح آخر الأخبار ↗',
     returnHomeBtn: 'العودة للرئيسية',
@@ -439,8 +430,8 @@ const copy = {
 
     // وحدات التحكم والألعاب المجرَّبة
     consolesHint: 'حدّد كل وحدة تحكم تمتلكها — ستظهر اختياراتك على ملفك الشخصي العام.',
-    testedGamesHeading: 'الألعاب المجرَّبة · PS5 / Xbox Series X',
-    testedGamesHint: 'ابحث في كتالوج PS5 / Xbox Series X وحدّد الألعاب التي جرّبتها.',
+    testedGamesHeading: 'الألعاب المجرَّبة · PS5 / PS4 / Xbox Series X / PC',
+    testedGamesHint: 'ابحث في كتالوج PS5 / PS4 / Xbox Series X / PC وحدّد الألعاب التي جرّبتها.',
     gamesSearchPlaceholder: 'ابحث عن لعبة…',
     noGameMatch: 'لا توجد لعبة في الكتالوج تطابق هذا البحث.',
     addGame: 'أضِف',
@@ -994,8 +985,6 @@ export default function Auth({ initialMode = '' }) {
     // (section « succès » ci-dessous, alimentée par src/achievements).
     const personaBadges = isDemo ? (meta.badges || []) : [];
 
-    const savedArticles = meta.savedArticlesList || [];
-
     return (
       <section className="auth-page wrap">
         <div className="player-hub">
@@ -1198,33 +1187,6 @@ export default function Auth({ initialMode = '' }) {
               </div>
             </div>
           )}
-
-          {/* SAVED STORIES & BOOKMARKS */}
-          <div className="player-section">
-            <div className="player-section-header">
-              <h2>{t.savedStoriesHeading}</h2>
-            </div>
-            {savedArticles.length > 0 ? (
-              <div className="player-saved-grid">
-                {savedArticles.map((story) => (
-                  <Link to={story.link} key={story.id} className="player-saved-card">
-                    <div>
-                      <div className="player-saved-meta">
-                        <span>{story.category}</span>
-                        <span>{story.readTime}</span>
-                      </div>
-                      <h3 className="player-saved-title">{story.title}</h3>
-                    </div>
-                    <span className="player-saved-link">
-                      {t.readStory} ↗
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="player-empty-note">{t.noSavedYet}</p>
-            )}
-          </div>
 
           {/* ACCOUNT ACTIONS CARD */}
           <div className="player-actions-card">
@@ -1677,7 +1639,7 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
         {err && <p className="player-edit-note player-edit-error">{err}</p>}
       </div>
 
-      {/* JEUX TESTÉS — catalogue PS5 / Xbox Series X + recherche */}
+      {/* JEUX TESTÉS — catalogue PS5 / PS4 / Xbox Series X / PC + recherche */}
       <div className="player-section">
         <div className="player-section-header">
           <h2>{t.testedGamesHeading}</h2>

@@ -41,11 +41,11 @@ function DemoNotFound({ id }) {
 
 /**
  * Ligne « jeux testés » du profil : une puce par jeu, avec les plateformes
- * cataloguées du titre (PS5 / Xbox Series X) quand le jeu est dans le
- * catalogue — un titre stocké avant une mise à jour du catalogue s'affiche
+ * cataloguées du titre (PS5 / PS4 / Xbox Series X / PC) quand le jeu est dans
+ * le catalogue — un titre stocké avant une mise à jour du catalogue s'affiche
  * quand même, sans tag.
  */
-function TestedGamesRow({ games, heading = 'Jeux testés', sub = 'PS5 · Xbox Series X', emptyText = null }) {
+function TestedGamesRow({ games, heading = 'Jeux testés', sub = 'PS5 · PS4 · Xbox Series X · PC', emptyText = null }) {
   const list = Array.isArray(games) ? games.filter((g) => typeof g === 'string' && g.trim()) : [];
   return (
     <div className="player-section">
@@ -225,7 +225,7 @@ export default function Profile() {
             )}
           </div>
 
-          {/* JEUX TESTÉS — PS5 / Xbox Series X, catalogue + recherche dans le hub */}
+          {/* JEUX TESTÉS — PS5 / PS4 / Xbox Series X / PC, catalogue + recherche dans le hub */}
           <TestedGamesRow
             games={ownGames}
             emptyText="Aucun jeu testé pour l’instant — ajoute-les depuis ton hub."
