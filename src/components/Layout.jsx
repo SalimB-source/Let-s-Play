@@ -9,15 +9,22 @@ import { useAchievementAction } from '../achievements/AchievementContext';
 
 const base = import.meta.env.BASE_URL;
 
+function isOffline() {
+  if (typeof window === 'undefined') return false;
+  return !navigator.onLine;
+}
+
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, configured } = useAuth();
   const track = useAchievementAction();
   const searchRef = useRef(null);
+
+  const offlineMode = !configured || isOffline();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -99,22 +106,45 @@ export default function Layout({ children }) {
             </div>}
             </form>
             <LanguageSwitcher variant="nav" />
-            <Link
-              to="/auth"
-              className={`nav-account${user ? ' connected' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {user ? (
+            {user ? (
+              <Link
+                to="/auth"
+                className={`nav-account connected`}
+                onClick={() => setMenuOpen(false)}
+              >
                 <span className="nav-account-inner">
                   <span className="nav-online-dot" aria-hidden="true" />
                   <span className="nav-account-name">
                     {user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
                   </span>
                 </span>
-              ) : (
-                t.nav?.join || 'Join'
-              )}
-            </Link>
+              </Link>
+            ) : offlineMode ? (
+              <>
+                <Link
+                  to="/auth?mode=signin"
+                  className="nav-account nav-login"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.nav.login || 'Log in'}
+                </Link>
+                <Link
+                  to="/auth?mode=signup"
+                  className="nav-account nav-register"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.nav.register || 'Register'}
+                </Link>
+              </>
+            ) : (
+              <Link
+                to="/auth"
+                className={`nav-account${user ? ' connected' : ''}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {t.nav?.join || 'Join'}
+              </Link>
+            )}
             <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer" className="nav-cta" onClick={() => setMenuOpen(false)}>{t.nav.watch} ↗</a>
           </div>
         </div>

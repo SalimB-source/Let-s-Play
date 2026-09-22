@@ -12,6 +12,7 @@ import AchievementsPanel from '../achievements/AchievementsPanel';
 import DeleteAccount from '../components/DeleteAccount';
 import FriendsHubSection from '../friends/FriendsHubSection';
 import MessagesHubSection from '../messages/MessagesHubSection';
+import { DEMO_PROFILES } from '../auth/demoProfiles';
 
 /* ------------------------------------------------------------------ */
 /* Small inline icons (no external deps, inherits currentColor)        */
@@ -1245,8 +1246,8 @@ export default function Auth({ initialMode = 'signin' }) {
           </button>
         )}
 
-        {/* DEMO / PREVIEW ACCESS CARD */}
-        {showDemoBox && <div className="auth-demo-box">
+        {/* DEMO / PREVIEW ACCESS CARD — masqué quand aucun profil de démo n'est configuré */}
+        {showDemoBox && Object.keys(DEMO_PROFILES).length > 0 && <div className="auth-demo-box">
           <div className="auth-demo-header">
             <span className="auth-demo-kicker">🎮 {t.demoOptionTitle}</span>
             <span className="auth-demo-tag">{t.quickDemoLabel}</span>
