@@ -25,5 +25,7 @@
   "sourceDetail": "Lire le communiqué officiel",
   "sourceName": "TENCENT",
   "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
-  "auto": true
+  "auto": true,
+  "thumbnail": "news-auto/tencent-ecs-jeux-asiatiques-esport-2026-official.png",
+  "officialThumbnailUrl": "https://www.tencent.com/wp-content/uploads/2026/09/OCA.png"
 }

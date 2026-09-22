@@ -1,5 +1,5 @@
 // ⚙️ FICHIER GÉNÉRÉ par scripts/news-bot/fetch-news.mjs — ne pas éditer à la main.
-// Dernière génération : 2026-09-22T10:30:00.000Z — 3 article(s).
+// Dernière génération : 2026-09-22T10:40:00.000Z — 3 article(s).
 // Ce module alimente la page Actus et les routes /news/<slug> du site.
 export const autoStories = {
   "xbox-consolidation-studios-licenciements-rapport": {
@@ -29,7 +29,9 @@ export const autoStories = {
     "sourceDetail": "Lire le rapport VGC",
     "sourceName": "VGC",
     "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
-    "auto": true
+    "auto": true,
+    "thumbnail": "news-auto/xbox-consolidation-studios-licenciements-rapport-official.webp",
+    "officialThumbnailUrl": "https://files.manuscdn.com/search-media/310519663645820794/DkH0qyi7rbv66dQnKZOL3K/q6ZUZ8sDnFfvj9HKrgMPhf.jpg"
   },
   "tencent-ecs-jeux-asiatiques-esport-2026": {
     "slug": "tencent-ecs-jeux-asiatiques-esport-2026",
@@ -58,7 +60,9 @@ export const autoStories = {
     "sourceDetail": "Lire le communiqué officiel",
     "sourceName": "TENCENT",
     "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
-    "auto": true
+    "auto": true,
+    "thumbnail": "news-auto/tencent-ecs-jeux-asiatiques-esport-2026-official.png",
+    "officialThumbnailUrl": "https://www.tencent.com/wp-content/uploads/2026/09/OCA.png"
   },
   "dune-awakening-sortie-consoles-mise-a-jour-15": {
     "slug": "dune-awakening-sortie-consoles-mise-a-jour-15",
@@ -89,6 +93,8 @@ export const autoStories = {
     "video": "pn7OQJ9EbR0",
     "videoTitle": "Dune: Awakening — Console and Single-Player Launch Trailer",
     "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
-    "auto": true
+    "auto": true,
+    "thumbnail": "news-auto/dune-awakening-sortie-consoles-mise-a-jour-15-official.jpg",
+    "officialThumbnailUrl": "https://duneawakening.com/wp-content/uploads/Steam-News-Website-Banners_Website_16x9.jpg"
   },
 };
