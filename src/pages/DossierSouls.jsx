@@ -27,7 +27,7 @@ export default function DossierSouls() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>01 / DOSSIER</b> / GAMING</span><span>LECTURE LONGUE · 24 MIN</span></div>
+        <div className="section-label"><span><b>DOSSIER</b> / GAMING</span><span>LECTURE LONGUE · 24 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> Analyse gaming</p>
           <h1>POURQUOI<br /><em>LES SOULS ?</em></h1>

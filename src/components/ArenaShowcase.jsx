@@ -164,7 +164,7 @@ export default function ArenaShowcase() {
   return (
     <section className="arena wrap" id="7ouma-arena-show" aria-labelledby="arena-title">
       <div className="section-label">
-        <span><b>01</b> / {page.label}</span><span>{page.meta}</span>
+        <span>{page.label}</span><span>{page.meta}</span>
       </div>
 
       <div className="arena-hero">
@@ -205,7 +205,7 @@ export default function ArenaShowcase() {
 
       <div className="arena-head">
         <div>
-          <div className="section-label"><span><b>01.1</b> / {page.rolesLabel}</span><span>{page.rolesMeta}</span></div>
+          <div className="section-label"><span>{page.rolesLabel}</span><span>{page.rolesMeta}</span></div>
           <h3>{page.rolesTitleA}<br /><em>{page.rolesTitleB}</em></h3>
         </div>
         <p className="arena-head-side">{page.rolesSide}</p>
@@ -224,7 +224,7 @@ export default function ArenaShowcase() {
       <div className="partners-how arena-how">
         <div className="arena-head">
           <div>
-            <div className="section-label"><span><b>01.2</b> / {page.howLabel}</span><span>{page.howMeta}</span></div>
+            <div className="section-label"><span>{page.howLabel}</span><span>{page.howMeta}</span></div>
             <h3 className="partners-how-title">{page.howTitleA}<br /><em>{page.howTitleB}</em></h3>
           </div>
         </div>
@@ -240,7 +240,7 @@ export default function ArenaShowcase() {
       </div>
 
       <div className="arena-proof">
-        <div className="section-label"><span><b>01.3</b> / {page.proofLabel}</span><span>{page.proofMeta}</span></div>
+        <div className="section-label"><span>{page.proofLabel}</span><span>{page.proofMeta}</span></div>
         <p className="arena-proof-note">{page.proofNote}</p>
         <ul className="partners-sources-list">
           {page.proofItems.map((item) => (

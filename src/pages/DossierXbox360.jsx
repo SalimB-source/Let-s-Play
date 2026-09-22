@@ -28,7 +28,7 @@ export default function DossierXbox360() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>04 / DOSSIER</b> / HISTOIRE DU GAMING</span><span>RÉTROSPECTIVE · 21 MIN</span></div>
+        <div className="section-label"><span><b>DOSSIER</b> / HISTOIRE DU GAMING</span><span>RÉTROSPECTIVE · 21 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> 20 ans de Xbox 360</p>
           <h1>LA CONSOLE<br /><em>D’UNE GÉNÉRATION.</em></h1>

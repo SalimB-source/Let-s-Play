@@ -21,7 +21,7 @@ export default function PartnersSection() {
   return (
     <section className="partners wrap" id="events">
       <div className="section-label">
-        <span><b>{copy.label.split(' / ')[0]}</b> / {copy.label.split(' / ')[1]}</span><span>{copy.meta}</span>
+        <span>{copy.label.split(' / ')[1]}</span><span>{copy.meta}</span>
       </div>
 
       <div className="partners-head">

@@ -13,7 +13,7 @@ export default function EventAlgerieTelecom() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>01 / EVENT</b> / PARTENARIAT</span><span>12 MOIS</span></div>
+        <div className="section-label"><span><b>EVENT</b> / PARTENARIAT</span><span>12 MOIS</span></div>
         <div className="dossier-hero-grid">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Algérie Télécom</p>

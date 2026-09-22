@@ -36,7 +36,7 @@ export default function Calendar(){
   return (
     <>
       <section className="calendar-page wrap">
-        <div className="section-label"><span><b>01</b> / {copy.label}</span><span>{range}</span></div>
+        <div className="section-label"><span>{copy.label}</span><span>{range}</span></div>
         <div className="monthly-releases-head">
           <div><p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p><h2>{copy.h2a}<br/><em>{copy.h2b}</em></h2></div>
           <Link className="arrow-link" to="/news">{copy.back} <Arrow/></Link>

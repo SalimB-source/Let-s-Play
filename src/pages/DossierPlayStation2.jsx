@@ -31,7 +31,7 @@ export default function DossierPlayStation2() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>05 / DOSSIER</b> / HISTOIRE DU GAMING</span><span>RÉTROSPECTIVE · 18 MIN</span></div>
+        <div className="section-label"><span><b>DOSSIER</b> / HISTOIRE DU GAMING</span><span>RÉTROSPECTIVE · 18 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> 25 ans de PlayStation 2</p>
           <h1>LA REINE<br /><em>DES CONSOLES.</em></h1>

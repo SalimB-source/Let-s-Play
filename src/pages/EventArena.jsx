@@ -11,7 +11,7 @@ export default function EventArena() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>03 / EVENT</b> / 7OUMA ARENA</span><span>ÉMISSION · TOURNOI</span></div>
+        <div className="section-label"><span><b>EVENT</b> / 7OUMA ARENA</span><span>ÉMISSION · TOURNOI</span></div>
         <div className="dossier-hero-grid">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Let’s Play × EGOR × Djezzy</p>
