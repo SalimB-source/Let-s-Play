@@ -1,5 +1,5 @@
 // ⚙️ FICHIER GÉNÉRÉ par scripts/news-bot/fetch-news.mjs — ne pas éditer à la main.
-// Dernière génération : 2026-09-22T10:40:00.000Z — 3 article(s).
+// Dernière génération : 2026-09-22T15:09:18.283Z — 3 article(s).
 // Ce module alimente la page Actus et les routes /news/<slug> du site.
 export const autoStories = {
   "xbox-consolidation-studios-licenciements-rapport": {
@@ -31,7 +31,8 @@ export const autoStories = {
     "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
     "auto": true,
     "thumbnail": "news-auto/xbox-consolidation-studios-licenciements-rapport-official.webp",
-    "officialThumbnailUrl": "https://files.manuscdn.com/search-media/310519663645820794/DkH0qyi7rbv66dQnKZOL3K/q6ZUZ8sDnFfvj9HKrgMPhf.jpg"
+    "officialThumbnailUrl": "https://files.manuscdn.com/search-media/310519663645820794/DkH0qyi7rbv66dQnKZOL3K/q6ZUZ8sDnFfvj9HKrgMPhf.jpg",
+    "sentiment": "negative"
   },
   "tencent-ecs-jeux-asiatiques-esport-2026": {
     "slug": "tencent-ecs-jeux-asiatiques-esport-2026",
@@ -62,7 +63,8 @@ export const autoStories = {
     "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
     "auto": true,
     "thumbnail": "news-auto/tencent-ecs-jeux-asiatiques-esport-2026-official.png",
-    "officialThumbnailUrl": "https://www.tencent.com/wp-content/uploads/2026/09/OCA.png"
+    "officialThumbnailUrl": "https://www.tencent.com/wp-content/uploads/2026/09/OCA.png",
+    "sentiment": "positive"
   },
   "dune-awakening-sortie-consoles-mise-a-jour-15": {
     "slug": "dune-awakening-sortie-consoles-mise-a-jour-15",
@@ -95,6 +97,7 @@ export const autoStories = {
     "credit": "Visuel : carte éditoriale Let’s Play générée automatiquement.",
     "auto": true,
     "thumbnail": "news-auto/dune-awakening-sortie-consoles-mise-a-jour-15-official.jpg",
-    "officialThumbnailUrl": "https://duneawakening.com/wp-content/uploads/Steam-News-Website-Banners_Website_16x9.jpg"
+    "officialThumbnailUrl": "https://duneawakening.com/wp-content/uploads/Steam-News-Website-Banners_Website_16x9.jpg",
+    "sentiment": "positive"
   },
 };
