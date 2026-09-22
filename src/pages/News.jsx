@@ -2,13 +2,10 @@ import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
-import { activeMonth, calendarMonths, gameReleases, monthHeadline, monthLabel } from '../releasesData';
-import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
+import { Arrow } from '../components/ReleasesCalendar';
 
-// Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
-// partagé avec la page calendrier complet via clockOffset().
-const CLOCK_OFFSET = clockOffset();
-
+// La section calendrier + compte à rebours (01) a été déplacée sur la page
+// d'accueil, juste après le hero — la frise complète vit sur /calendrier.
 export default function News(){
   const { t, lang } = useLanguage();
   const featuredCopy = {
@@ -73,32 +70,10 @@ export default function News(){
   // les autres articles suivent dans la grille 4 colonnes.
   const [topStory, ...gridArticles] = articles;
 
-  const today = new Date(Date.now() + CLOCK_OFFSET);
-  const calendarCopy = { ...FALLBACK_CALENDAR, ...(t.news.calendar || {}) };
-  // Le mois affiché est calculé depuis le calendrier : le mois courant s'il a des
-  // sorties, sinon le mois de la prochaine sortie annoncée.
-  const month = activeMonth(today);
-  const monthName = monthLabel(month.year, month.month, lang);
-  const monthReleases = month.releases;
-  // La liste complète des sorties (tous mois confondus) vit sur /calendrier :
-  // la page Actus n'en garde que la frise, le compte à rebours et ce teaser.
-  const allMonths = calendarMonths(today);
-  const totalGames = gameReleases.length;
-
   return (
     <>
-      <section className="monthly-releases wrap">
-        <div className="section-label"><span><b>01</b> / {calendarCopy.label}</span><span>{monthName}</span></div>
-        <div className="monthly-releases-head"><div><p className="eyebrow"><span className="live-dot" /> {calendarCopy.eyebrow}</p><h2>{monthHeadline(month.year, month.month, lang)}<br/><em>{calendarCopy.play}</em></h2></div><Link className="arrow-link" to="/calendrier">{calendarCopy.full} <Arrow/></Link></div>
-        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
-        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
-        <div className="calendar-teaser">
-          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
-          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
-        </div>
-      </section>
       <section className="news-carousel-section wrap">
-        <div className="section-label"><span><b>02</b> / {featured.section}</span><span>{featured.updated}</span></div>
+        <div className="section-label"><span><b>01</b> / {featured.section}</span><span>{featured.updated}</span></div>
         <div className="news-carousel-head">
           <div><p className="eyebrow"><span className="live-dot" /> {t.news.eyebrow}</p><h1>{t.news.h1a}<br/><em>{t.news.h1b}</em></h1></div>
           <div className="news-view-tools">
