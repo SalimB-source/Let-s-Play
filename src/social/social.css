@@ -270,7 +270,7 @@ body.messages-dock-open .achievement-toasts {
     bottom: 12px;
     width: auto;
   }
-  /* Lanceur mobile : gros bouton rond « SOCIAL » bien visible, avec son
+  /* Lanceur mobile : gros bouton rond « MESSAGERIE » bien visible, avec son
      libellé — les utilisateurs ne doivent pas avoir à deviner qu'il y a
      une messagerie / des amis là-dedans. */
   .social-launcher {

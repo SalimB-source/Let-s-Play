@@ -14,7 +14,7 @@ import { socialText } from './socialCopy';
  * Fenêtre sociale unifiée — amis + messagerie dans la même fenêtre, ancrée
  * en bas à droite.
  * ---------------------------------------------------------------------------
- * Un seul lanceur compact (« SOCIAL » : pastilles des non-lus et des
+ * Un seul lanceur compact (« MESSAGERIE » : pastilles des non-lus et des
  * demandes d'amis reçues, compteur d'amis en ligne) ouvre un panneau à
  * quatre onglets :
  *
