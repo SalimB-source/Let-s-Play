@@ -732,6 +732,47 @@
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
 }
 
+/* ------------------------------------------------------------------
+   Achievements inside player hub — keep the same cut-corner look but
+   allow the tooltip to overflow outside the box. Using clip-path on
+   the container would clip the tooltip (position:absolute) even with
+   overflow:visible, so the visual shape is moved to a ::before layer.
+   Both the :has() selector (modern) and the fallback class are handled.
+   ------------------------------------------------------------------ */
+.player-section:has(.achievements-panel),
+.player-section.achievements-section {
+  overflow: visible;
+  clip-path: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  position: relative;
+}
+
+.player-section:has(.achievements-panel)::before,
+.player-section.achievements-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(14, 17, 38, .9), rgba(5, 6, 15, .88));
+  border: 1px solid var(--line-strong);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.player-section:has(.achievements-panel) .achievements-panel,
+.player-section.achievements-section .achievements-panel {
+  padding: clamp(20px, 3.5vw, 32px);
+  overflow: visible;
+}
+
+/* Fallback when :has() is not supported: the JSX adds the extra class,
+   and we ensure the ::before background still shows. */
+.player-section.achievements-section .achievements-panel {
+  position: relative;
+}
+
 .player-section-header {
   margin-bottom: 20px;
 }

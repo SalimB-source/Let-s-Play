@@ -1117,7 +1117,7 @@ export default function Auth({ initialMode = '' }) {
 
           {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
               commentaires, recherche, fidélité, compte) */}
-          <div className="player-section">
+          <div className="player-section achievements-section">
             <AchievementsPanel variant="compact" />
           </div>
 
