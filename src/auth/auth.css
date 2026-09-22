@@ -1318,12 +1318,12 @@
 }
 
 /* NAVBAR ACCOUNT CONNECTED PILL */
-.nav-account {
+/* Uniquement le lien « Join » (Supabase configuré, visiteur non connecté) :
+   les boutons séparés « Se connecter » / « S'inscrire » gardent les couleurs
+   de styles.css. Le `!important` appliqué à tout `.nav-account` peignait
+   « S'inscrire » en cyan sur fond jaune — illisible. */
+.nav-account:not(.nav-login):not(.nav-register):not(.connected) {
   color: var(--cyan) !important;
-}
-
-.nav-account::after {
-  background: var(--yellow) !important;
 }
 
 .nav-account.connected {
