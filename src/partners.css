@@ -273,14 +273,15 @@
 .partners-marquee-item--7ouma-arena{--marquee-logo-scale:1.35}
 .partners-marquee-item--djezzy{--marquee-logo-scale:1.12}
 .partners-marquee-item--egor-gaming{--marquee-logo-scale:1.28}
-.partners-marquee-item--esca{--marquee-logo-scale:1.45}
+.partners-marquee-item--esca{--marquee-logo-scale:.9}
 .partners-marquee-item--ifa-constantine{--marquee-logo-scale:.95}
 .partners-marquee-item--just-play-it{--marquee-logo-scale:1.15}
 .partners-marquee-item--lg{--marquee-logo-scale:.88}
 .partners-marquee-item--tcl{--marquee-logo-scale:1.05}
 .partners-marquee-item--el-heddaf-tv{--marquee-logo-scale:.86}
 .partners-marquee-item--tmv{--marquee-logo-scale:.9}
-/* TMV est fourni en blanc sur transparent : il devient noir dans le bandeau blanc. */
+/* Les logos blancs deviennent noirs dans le bandeau blanc. */
+.partners-marquee-item--esca .partner-mark-logo,
 .partners-marquee-item--tmv .partner-mark-logo{filter:grayscale(1) brightness(0)}
 .partners-marquee .partner-mark-badge{filter:grayscale(1)}
 .partners-marquee:hover .partners-marquee-track,
