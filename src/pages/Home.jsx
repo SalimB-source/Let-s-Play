@@ -5,8 +5,12 @@ import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
+import { activeMonth, calendarMonths, gameReleases, monthHeadline, monthLabel } from '../releasesData';
+import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
 
-function Arrow() { return <span aria-hidden="true">↗</span>; }
+// Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
+// partagé avec la page calendrier complet via clockOffset().
+const CLOCK_OFFSET = clockOffset();
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },
@@ -49,6 +53,18 @@ const liveChannelId = import.meta.env.VITE_YOUTUBE_CHANNEL_ID?.trim() || 'UCBi98
 export default function Home() {
   const { t, lang } = useLanguage();
   const [liveStatus, setLiveStatus] = useState('unknown');
+
+  // Section 01 (déplacée depuis la page Actus) : frise du mois + compte à
+  // rebours de la sortie la plus attendue. Le mois affiché est calculé depuis
+  // le calendrier : le mois courant s'il a des sorties, sinon le mois de la
+  // prochaine sortie annoncée. La liste complète vit sur /calendrier.
+  const today = new Date(Date.now() + CLOCK_OFFSET);
+  const calendarCopy = { ...FALLBACK_CALENDAR, ...(t.news.calendar || {}) };
+  const month = activeMonth(today);
+  const monthName = monthLabel(month.year, month.month, lang);
+  const monthReleases = month.releases;
+  const allMonths = calendarMonths(today);
+  const totalGames = gameReleases.length;
 
   useEffect(() => {
     let cancelled = false;
@@ -109,8 +125,8 @@ export default function Home() {
     { ...djezzyEpisode, copy: t.home.featuredDjezzy },
   ];
 
-  // On garde le split 01 / XXX de la trad existante pour le section-label
-  const labelParts = (t.home.featured.label1 || '01 / ÉPISODES À LA UNE').split(' / ');
+  // On garde le split 02 / XXX de la trad existante pour le section-label
+  const labelParts = (t.home.featured.label1 || '02 / ÉPISODES À LA UNE').split(' / ');
   const labelNum = labelParts[0] || '01';
   const labelTitle = labelParts[1] || 'ÉPISODES À LA UNE';
 
@@ -162,7 +178,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 01 / ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
+      {/* 01 / SORTIES DU MOIS — frise + compte à rebours (déplacé depuis la page Actus) */}
+      <section className="monthly-releases wrap" id="countdown">
+        <div className="section-label"><span><b>01</b> / {calendarCopy.label}</span><span>{monthName}</span></div>
+        <div className="monthly-releases-head"><div><p className="eyebrow"><span className="live-dot" /> {calendarCopy.eyebrow}</p><h2>{monthHeadline(month.year, month.month, lang)}<br/><em>{calendarCopy.play}</em></h2></div><Link className="arrow-link" to="/calendrier">{calendarCopy.full} <Arrow/></Link></div>
+        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
+        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
+        <div className="calendar-teaser">
+          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
+          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
+        </div>
+      </section>
+
+      {/* 02 / ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
       <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured">
         <div className="section-label"><span><b>{labelNum}</b> / {labelTitle}</span><span>{head.label2}</span></div>
         <div className="featured-dossiers-head">
@@ -197,7 +225,7 @@ export default function Home() {
       </section>
 
       <section className="live-section wrap" id="live">
-        <div className="section-label"><span><b>02</b> / {t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
+        <div className="section-label"><span><b>03</b> / {t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
         <div className="live-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> {t.home.live.eyebrow}</p>
@@ -237,7 +265,7 @@ export default function Home() {
       <PartnersSection />
 
       <section className="reels-section wrap" id="reels">
-        <div className="section-label"><span><b>04</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="section-label"><span><b>06</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
         <div className="reels-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Format court</p>

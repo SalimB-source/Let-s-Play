@@ -43,7 +43,7 @@ export const translations = {
       hud: { subs: 'YOUTUBE SUBS', community: 'IG COMMUNITY', reasons: 'REASONS TO PLAY', scroll: 'SCROLL' },
       ticker: ['GAMING', 'E-SPORT', 'CINEMA', 'TECH', 'POP CULTURE'],
       featured: {
-        label1: '01 / FEATURED EPISODES', label2: 'FEATURED EPISODE × ALGÉRIE TÉLÉCOM',
+        label1: '02 / FEATURED EPISODES', label2: 'FEATURED EPISODE × ALGÉRIE TÉLÉCOM',
         eyebrow: 'Featured episode — HicoSoft Studio', h2a: 'HICOSOFT,', h2b: 'GOYA, BEHIND THE SCENES.',
         text: 'The show is presented with Algérie Télécom, and our episode on HicoSoft Studio takes the headline slot: an Algerian RPG studio aiming for international standards, filmed inside the partnership.',
         cta: 'Read the dossier', watch: 'Watch the episode',
@@ -51,7 +51,7 @@ export const translations = {
         sponsorKicker: 'Broadcast partner', sponsorText: 'Let’s Play × Algérie Télécom: the operator backs the production and the release of every episode — from the Journal du Geek segment to the local studio interviews.', sponsorLink: 'Official website',
       },
       featuredPartner: {
-        label1: '01 / FEATURED EPISODES', label2: 'FFAC2023 × OOREDOO',
+        label1: '02 / FEATURED EPISODES', label2: 'FFAC2023 × OOREDOO',
         eyebrow: 'Partner episode — Ooredoo', h2a: 'FFAC2023,', h2b: 'THE ALGERIAN CHAMPIONSHIP.',
         text: 'Our championship video with Ooredoo: the FreeFire Algerian Championship 2023 in detail — mechanics, registration, prizes and the road to the final, backed by the operator.',
         cta: 'See the partnerships', watch: 'Watch the episode',
@@ -59,7 +59,7 @@ export const translations = {
         desc: 'A look back at the FreeFire Algerian Championship 2023 — the format, registration and the road to the final.',
       },
       featuredDjezzy: {
-        label1: '01 / FEATURED EPISODES', label2: '7OUMA ARENA × DJEZZY',
+        label1: '02 / FEATURED EPISODES', label2: '7OUMA ARENA × DJEZZY',
         eyebrow: 'Featured episode — 7ouma Arena', h2a: 'MOBILE FOOTBALL,', h2b: 'THE NEXT ARENA.',
         text: '7ouma Arena by Djezzy explores the rise of mobile football games, from FC Mobile and eFootball to the future of esports, 5G and the Djezzy Cup.',
         cta: 'See the partnerships', watch: 'Watch the episode',
@@ -80,7 +80,7 @@ export const translations = {
         stats: { subs: 'YOUTUBE SUBSCRIBERS', community: 'INSTAGRAM COMMUNITY', reasons: 'REASONS TO PLAY' },
       },
       formats: {
-        label1: '02 / FORMATS', label2: 'OUR PLAYGROUNDS',
+        label1: '04 / FORMATS', label2: 'OUR PLAYGROUNDS',
         gamingTitle: 'GAMING', gamingText: 'Latest games, reviews, previews, expert tips and guides.',
         moviesTitle: 'MOVIES & COMICS', moviesText: 'In-depth film and series reviews, plus hot news from the comic world.',
         communityTitle: 'COMMUNITY', communityText: 'Join the Let’s Play community and dive into the fun together.',
@@ -191,7 +191,7 @@ export const translations = {
       featuredEyebrow: 'Featured dossier', featuredH2a: 'BLACK FLAG,', featuredH2b: 'FULL SAIL.',
       featuredText: 'Assassin’s Creed Black Flag Resynced — our deep dive, performance test, and whether nostalgia holds up in 2026.',
       watchYoutube: 'Watch on YouTube',
-      formatsLabel1: '02 / FORMATS', formatsLabel2: 'OUR PLAYGROUNDS',
+      formatsLabel1: '04 / FORMATS', formatsLabel2: 'OUR PLAYGROUNDS',
       gamingText: 'Latest games, reviews, previews, expert tips and guides. Now with dedicated pages.',
       moviesText: 'In-depth film and series reviews, plus hot news from the comic world. Full archive on News.',
       communityText: 'Join the Let’s Play community and dive into the fun together. Instagram feed on Home.',
@@ -320,7 +320,7 @@ export const translations = {
       hud: { subs: 'ABONNÉS YOUTUBE', community: 'COMMUNAUTÉ IG', reasons: 'RAISONS DE JOUER', scroll: 'DÉFILER' },
       ticker: ['GAMING', 'E-SPORT', 'CINÉMA', 'TECH', 'POP CULTURE'],
       featured: {
-        label1: '01 / ÉPISODES À LA UNE', label2: 'ÉPISODE À LA UNE × ALGÉRIE TÉLÉCOM',
+        label1: '02 / ÉPISODES À LA UNE', label2: 'ÉPISODE À LA UNE × ALGÉRIE TÉLÉCOM',
         eyebrow: 'Épisode à la une — HicoSoft Studio', h2a: 'HICOSOFT,', h2b: 'EN CULISSES DU GOYA.',
         text: 'L’émission est présentée avec Algérie Télécom, et notre épisode consacré à HicoSoft Studio passe à la une : un studio algérien de RPG qui vise les standards internationaux, filmé dans le cadre du partenariat.',
         cta: 'Lire le dossier', watch: 'Voir l’épisode',
@@ -328,7 +328,7 @@ export const translations = {
         sponsorKicker: 'Partenaire de diffusion', sponsorText: 'Let’s Play × Algérie Télécom : l’opérateur accompagne la production et la sortie des épisodes, de la chronique Journal du Geek jusqu’aux rencontres avec les studios locaux.', sponsorLink: 'Site officiel',
       },
       featuredPartner: {
-        label1: '01 / ÉPISODES À LA UNE', label2: 'FFAC2023 × OOREDOO',
+        label1: '02 / ÉPISODES À LA UNE', label2: 'FFAC2023 × OOREDOO',
         eyebrow: 'Épisode partenaire — Ooredoo', h2a: 'FFAC2023,', h2b: 'LE CHAMPIONNAT D’ALGÉRIE.',
         text: 'Notre vidéo de partenariat avec Ooredoo : le FreeFire Algerian Championship 2023 en détail — mécaniques, conditions d’inscription, récompenses et le chemin vers la finale, avec l’appui de l’opérateur.',
         cta: 'Voir les partenariats', watch: 'Voir l’épisode',
@@ -336,7 +336,7 @@ export const translations = {
         desc: 'Retour sur le FreeFire Algerian Championship 2023 : le format, les inscriptions et la route vers la finale.',
       },
       featuredDjezzy: {
-        label1: '01 / ÉPISODES À LA UNE', label2: '7OUMA ARENA × DJEZZY',
+        label1: '02 / ÉPISODES À LA UNE', label2: '7OUMA ARENA × DJEZZY',
         eyebrow: 'Épisode à la une — 7ouma Arena', h2a: 'LE FOOTBALL', h2b: 'PASSE EN MODE MOBILE.',
         text: '7ouma Arena by Djezzy explore l’essor des jeux de football sur mobile, de FC Mobile et eFootball jusqu’au futur de l’e-sport, de la 5G et de la Djezzy Cup.',
         cta: 'Voir les partenariats', watch: 'Voir l’épisode',
@@ -357,7 +357,7 @@ export const translations = {
         stats: { subs: 'ABONNÉS YOUTUBE', community: 'COMMUNAUTÉ INSTAGRAM', reasons: 'RAISONS DE JOUER' },
       },
       formats: {
-        label1: '02 / FORMATS', label2: 'NOS TERRAINS DE JEU',
+        label1: '04 / FORMATS', label2: 'NOS TERRAINS DE JEU',
         gamingTitle: 'GAMING', gamingText: 'Derniers jeux, tests, avant-premières, astuces d’experts et guides.',
         moviesTitle: 'FILMS & COMICS', moviesText: 'Tests approfondis de films et séries, plus les actus chaudes du monde des comics.',
         communityTitle: 'COMMUNAUTÉ', communityText: 'Rejoignez la communauté Let’s Play et vivez le plaisir ensemble.',
@@ -466,7 +466,7 @@ export const translations = {
       featuredEyebrow: 'Dossier à la une', featuredH2a: 'BLACK FLAG,', featuredH2b: 'TOUTES VOILES DEHORS.',
       featuredText: 'Assassin’s Creed Black Flag Resynced — notre analyse approfondie, test de performance, et si la nostalgie tient la route en 2026.',
       watchYoutube: 'Regarder sur YouTube',
-      formatsLabel1: '02 / FORMATS', formatsLabel2: 'NOS TERRAINS DE JEU',
+      formatsLabel1: '04 / FORMATS', formatsLabel2: 'NOS TERRAINS DE JEU',
       gamingText: 'Derniers jeux, tests, avant-premières, astuces d’experts et guides. Maintenant avec des pages dédiées.',
       moviesText: 'Tests approfondis de films et séries, plus les actus chaudes du monde des comics. Archive complète sur Actus.',
       communityText: 'Rejoignez la communauté Let’s Play et vivez le plaisir ensemble. Fil Instagram sur l’Accueil.',
@@ -595,7 +595,7 @@ export const translations = {
       hud: { subs: 'مشتركو يوتيوب', community: 'مجتمع إنستغرام', reasons: 'أسباب للعب', scroll: 'مرر للأسفل' },
       ticker: ['ألعاب', 'رياضات إلكترونية', 'سينما', 'تقنية', 'ثقافة شعبية'],
       featured: {
-        label1: '01 / الحلقات المميزة', label2: 'حلقة الواجهة × اتصالات الجزائر',
+        label1: '02 / الحلقات المميزة', label2: 'حلقة الواجهة × اتصالات الجزائر',
         eyebrow: 'الحلقة المميزة — HicoSoft Studio', h2a: 'HICOSOFT،', h2b: 'خلف كواليس GOYA.',
         text: 'البرنامج يُقدَّم بالشراكة مع اتصالات الجزائر، وحلقتنا عن HicoSoft Studio تتصدّر الواجهة: استوديو جزائري لألعاب الأدوار يطمح إلى معايير عالمية، صُوِّر في إطار هذا التعاون.',
         cta: 'اقرأ الملف', watch: 'شاهد الحلقة',
@@ -603,7 +603,7 @@ export const translations = {
         sponsorKicker: 'شريك البث', sponsorText: '‏Let’s Play × اتصالات الجزائر: يدعم المشغّل إنتاج الحلقات وطرحها، من فقرة Journal du Geek إلى اللقاءات مع الاستوديوهات المحلية.', sponsorLink: 'الموقع الرسمي',
       },
       featuredPartner: {
-        label1: '01 / الحلقات المميزة', label2: 'FFAC2023 × أوريدو',
+        label1: '02 / الحلقات المميزة', label2: 'FFAC2023 × أوريدو',
         eyebrow: 'حلقة الشراكة — أوريدو', h2a: 'FFAC2023،', h2b: 'بطولة الجزائر.',
         text: 'فيديو شراكتنا مع أوريدو: بطولة الجزائر FreeFire 2023 بالتفصيل — الآليات، شروط التسجيل، الجوائز والطريق إلى النهائي، بدعم من المشغّل.',
         cta: 'اكتشف الشراكات', watch: 'شاهد الحلقة',
@@ -611,7 +611,7 @@ export const translations = {
         desc: 'نظرة على بطولة الجزائر FreeFire 2023: النظام، التسجيل والطريق إلى النهائي.',
       },
       featuredDjezzy: {
-        label1: '01 / الحلقات المميزة', label2: '7OUMA ARENA × DJEZZY',
+        label1: '02 / الحلقات المميزة', label2: '7OUMA ARENA × DJEZZY',
         eyebrow: 'حلقة مميزة — 7ouma Arena', h2a: 'كرة القدم', h2b: 'تنتقل إلى الهاتف.',
         text: 'تستكشف 7ouma Arena by Djezzy صعود ألعاب كرة القدم على الهاتف، من FC Mobile وeFootball إلى مستقبل الرياضات الإلكترونية والجيل الخامس وDjezzy Cup.',
         cta: 'اكتشف الشراكات', watch: 'شاهد الحلقة',
