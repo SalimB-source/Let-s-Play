@@ -23,9 +23,11 @@ export const SECTION_ROUTES = {
   '/calendrier': 'calendrier',
   '/calendar': 'calendrier',
   '/search': 'search',
-  '/achievements': 'achievements',
   '/auth': 'account',
   '/register': 'account',
+  '/profile': 'account',
+  '/profil': 'account',
+  '/u': 'account',
 };
 
 // Familles d'articles : préfixe → type retenu par le moteur.

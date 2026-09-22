@@ -77,8 +77,8 @@ export function writeStorage(state, scope = GUEST_SCOPE) {
 }
 
 /**
- * Efface la progression locale d'un scope (bouton « réinitialiser » de
- * /achievements). Pour l'invité, l'ancienne clé unique est effacée aussi :
+ * Efface la progression locale d'un scope (bouton de réinitialisation du
+ * profil joueur). Pour l'invité, l'ancienne clé unique est effacée aussi :
  * sinon elle reviendrait au prochain chargement.
  */
 export function clearStorage(scope = GUEST_SCOPE) {

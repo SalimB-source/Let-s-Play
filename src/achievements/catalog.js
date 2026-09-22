@@ -3,8 +3,8 @@
  * ------------------------------------------------
  * Chaque succès est une donnée : une métrique du moteur (`src/achievements/
  * engine.js`) comparée à une `target`. Rien d'autre à écrire pour en ajouter
- * un — les compteurs, la progression, les notifications et la page
- * `/achievements` sont déduits de cette liste.
+ * un — les compteurs, la progression et les notifications sont déduits de
+ * cette liste.
  *
  *   { id, icon, group, rarity, xp, metric, target, labels: { en, fr, ar } }
  *
@@ -23,7 +23,7 @@
  * -----------------
  * 1. `metric` doit exister dans `METRICS` (engine.js). Les métriques déjà
  *    suivies : pagesVisited, articlesRead, newsRead, reviewsRead,
- *    dossiersRead, readAllKinds, sectionsVisited, achievementsPageOpened,
+ *    dossiersRead, readAllKinds, sectionsVisited, profileOpened,
  *    videosWatched, liveWatched, commentsPosted, searchesPerformed,
  *    distinctSearches, languagesUsed, providersLinked, profileUpdates,
  *    accountsCreated, sessions, visitDays, bestStreak, nightReading,
@@ -55,7 +55,7 @@ export function tierRank(tier) {
   return index === -1 ? 0 : index;
 }
 
-/** Familles de succès, utilisées pour filtrer sur la page /achievements. */
+/** Familles de succès, utilisées pour filtrer dans le hub joueur. */
 export const GROUPS = [
   { id: 'start', icon: '🚀', labels: { en: 'Getting started', fr: 'Premiers pas', ar: 'البدايات' } },
   { id: 'reading', icon: '📚', labels: { en: 'Reading', fr: 'Lecture', ar: 'القراءة' } },
@@ -124,12 +124,12 @@ export const ACHIEVEMENTS = [
     group: 'start',
     rarity: 'bronze',
     xp: 25,
-    metric: 'achievementsPageOpened',
+    metric: 'profileOpened',
     target: 1,
     labels: {
-      en: { name: 'Trophy hunter', desc: 'Open the achievements page.' },
-      fr: { name: 'Chasseur de trophées', desc: 'Ouvre la page des succès.' },
-      ar: { name: 'باحث الأوسمة', desc: 'افتح صفحة الإنجازات.' },
+      en: { name: 'Trophy hunter', desc: 'Open your player profile.' },
+      fr: { name: 'Chasseur de trophées', desc: 'Ouvre ton profil joueur.' },
+      ar: { name: 'باحث الأوسمة', desc: 'افتح ملف اللاعب الخاص بك.' },
     },
   },
   {
@@ -161,19 +161,19 @@ export const ACHIEVEMENTS = [
     },
   },
   {
-    // Platine : toutes les sections du site, y compris recherche, succès et
-    // compte — aucun recoin ne reste inexploré.
+    // Platine : toutes les sections du site, y compris recherche et compte
+    // — aucun recoin ne reste inexploré.
     id: 'full-passport',
     icon: 'icons/achievements/full-passport.webp',
     group: 'start',
     rarity: 'platinum',
     xp: 400,
     metric: 'sectionsVisited',
-    target: 9,
+    target: 8,
     labels: {
-      en: { name: 'Full passport', desc: 'Visit all 9 sections: home, news, reviews, dossiers, events, calendar, search, achievements, account.' },
-      fr: { name: 'Passeport complet', desc: 'Visite les 9 sections : accueil, actus, tests, dossiers, events, calendrier, recherche, succès, compte.' },
-      ar: { name: 'جواز سفر كامل', desc: 'زُر الأقسام التسعة كلها: الرئيسية، الأخبار، المراجعات، الملفات، الفعاليات، التقويم، البحث، الإنجازات، الحساب.' },
+      en: { name: 'Full passport', desc: 'Visit all 8 sections: home, news, reviews, dossiers, events, calendar, search and account.' },
+      fr: { name: 'Passeport complet', desc: 'Visite les 8 sections : accueil, actus, tests, dossiers, events, calendrier, recherche et compte.' },
+      ar: { name: 'جواز سفر كامل', desc: 'زُر الأقسام الثمانية كلها: الرئيسية، الأخبار، المراجعات، الملفات، الفعاليات، التقويم، البحث والحساب.' },
     },
   },
 

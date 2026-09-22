@@ -49,7 +49,6 @@ import EventOoredoo from './pages/EventOoredoo';
 import EventArena from './pages/EventArena';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
-import Achievements from './pages/Achievements';
 import Profile from './pages/Profile';
 import MessagesPage from './messages/MessagesPage';
 import { AuthProvider } from './auth/AuthContext';
@@ -127,8 +126,6 @@ function App() {
             <Route path="/events/7ouma-arena" element={<EventArena />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/search" element={<Search />} />
-            <Route path="/achievements" element={<Achievements />} />
-            <Route path="/succes" element={<Achievements />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />

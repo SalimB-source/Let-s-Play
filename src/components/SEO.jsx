@@ -23,11 +23,6 @@ const pageMeta = {
     description: 'Toutes les sorties de jeux vidéo datées, mois par mois : septembre 2026 à avril 2027, plateformes et comptes à rebours, mis à jour dès qu’une date est confirmée.',
     type: 'website',
   },
-  '/achievements': {
-    title: 'Succès du joueur — Let’s Play',
-    description: 'Les succès Let’s Play se débloquent par les actions réalisées sur le site : articles lus, épisodes lancés, commentaires, recherches, sections explorées et fidélité.',
-    type: 'website',
-  },
   '/reviews': {
     title: 'Tests de jeux vidéo — Let’s Play',
     description: 'Retrouvez les tests et analyses de jeux vidéo de Let’s Play : gameplay, technique, direction artistique et verdict.',
@@ -113,7 +108,6 @@ const pageMeta = {
 const routeAliases = {
   '/partenaires': '/events',
   '/calendar': '/calendrier',
-  '/succes': '/achievements',
 };
 
 function upsertMeta(attribute, value, content) {

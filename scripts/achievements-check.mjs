@@ -10,7 +10,7 @@
  *   3. tous les succès du catalogue sont réellement débloquables : un
  *      scénario complet (lecture, vidéos, commentaires, recherches, langues,
  *      fidélité, compte) les ouvre un par un ;
- *   4. le rendu réel des pages (SSR) montre ces succès dans les trois
+ *   4. le rendu réel du profil joueur (SSR) montre ces succès dans les trois
  *      langues, y compris avec une progression déjà enregistrée — et les
  *      actions du site sont bien branchées sur le moteur.
  */
@@ -242,8 +242,10 @@ const routeCases = [
   ['/calendrier', { section: 'calendrier', article: null }],
   ['/calendar', { section: 'calendrier', article: null }],
   ['/search', { section: 'search', article: null }],
-  ['/achievements', { section: 'achievements', article: null }],
   ['/auth', { section: 'account', article: null }],
+  ['/profile/player-1', { section: 'account', article: null }],
+  ['/profil/player-1', { section: 'account', article: null }],
+  ['/u/player-1', { section: 'account', article: null }],
   ['/unknown-page', { section: null, article: null }],
   ['/news/', { section: 'news', article: null }],
 ];
@@ -299,11 +301,11 @@ const play = (type, payload = {}) => {
 const unlockedOrder = [];
 const record = (ids) => unlockedOrder.push(...ids);
 
-// Visite datée + navigation : les neuf sections, y compris recherche,
-// succès et compte (passeport complet).
+// Visite datée + navigation : les huit sections, y compris recherche
+// et compte (passeport complet).
 record(play('visit', { day: dayKey(new Date(at(2026, 9, 1))) }));
 record(play('page_view'));
-['home', 'news', 'reviews', 'dossiers', 'events', 'calendrier', 'search', 'achievements', 'account'].forEach((section) => {
+['home', 'news', 'reviews', 'dossiers', 'events', 'calendrier', 'search', 'account'].forEach((section) => {
   record(play('page_view'));
   record(play('section_visited', { id: section }));
 });
@@ -379,7 +381,7 @@ check('… et rien à attribuer une seconde fois', evaluate(retro.state).unlocke
 
 /* ------------------------------------------------- 4. Rendu réel (SSR) */
 
-console.log('\n[4/4] rendu réel des pages + actions branchées\n');
+console.log('\n[4/4] rendu réel du profil + actions branchées\n');
 
 const outDir = path.join(root, 'node_modules', '.cache', 'achievements-smoke');
 execFileSync(
@@ -388,28 +390,24 @@ execFileSync(
   { cwd: root, stdio: 'inherit' },
 );
 
-const { achievementsPage, authHub, achievementPopup, freshAccountOnPlayedDevice } = await import(path.join(outDir, 'achievements-smoke.js'));
+const { profileAchievements, authHub, achievementPopup, freshAccountOnPlayedDevice } = await import(path.join(outDir, 'achievements-smoke.js'));
 
 for (const lang of LANGS) {
-  const { html } = achievementsPage(lang);
-  const names = ACHIEVEMENTS.map((entry) => achievementLabel(entry, lang).name);
-  const missing = names.filter((name) => !html.includes(name));
-  check(`[${lang}] la page liste les ${ACHIEVEMENTS.length} succès`, missing.length, 0);
-  ok(`[${lang}] la page affiche le niveau`, html.includes('achievement-level-number') && html.includes('achievement-level-bar'));
-  ok(`[${lang}] la page affiche les compteurs d’actions`, html.includes('player-stat-value'));
-  ok(`[${lang}] la page filtre par grade (bronze → platine)`, ['bronze', 'silver', 'gold', 'platinum'].every((tier) => html.includes(`tier-chip rarity-${tier}`)));
-  ok(`[${lang}] … avec les compteurs débloqués / total`, /tier-chip-count">0(?:<!--[^>]*-->)?\//.test(html));
-  ok(`[${lang}] la page est reliée aux succès depuis la navigation`, html.includes('/achievements'));
+  const { html } = profileAchievements(lang, null, { demo: true });
+  const heading = { en: 'YOUR SITE ACHIEVEMENTS', fr: 'TES SUCCÈS SUR LE SITE', ar: 'إنجازاتك على الموقع' }[lang];
+  ok(`[${lang}] le profil expose la section des succès`, html.includes('achievements-panel compact') && html.includes(heading));
+  ok(`[${lang}] le profil affiche le niveau`, html.includes('achievement-level'));
+  ok(`[${lang}] le profil n’a plus de lien vers une page dédiée`, !html.includes('href="/achievements"'));
   check(`[${lang}] rien n’est débloqué sans action`, (html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length, 0);
 }
 
-// Progression enregistrée sur l’appareil : le rendu doit la reprendre telle quelle.
-const savedState = reduce(createState(), { type: 'article_read', kind: 'news', id: 'metroid-ravenous' }).state;
-const saved = reduce(savedState, { type: 'article_read', kind: 'news', id: 'zelda-ocarina' }).state;
-const withProgress = achievementsPage('fr', saved);
+// Progression enregistrée sur l'appareil : le panneau intégré au profil doit
+// la reprendre telle quelle.
+const savedState = reduce(createState(), { type: 'article_read', kind: 'news', id: 'metroid-ravenous', at: '2026-09-01T12:00:00.000Z' }).state;
+const saved = reduce(savedState, { type: 'article_read', kind: 'news', id: 'zelda-ocarina', at: '2026-09-01T12:05:00.000Z' }).state;
+const withProgress = profileAchievements('fr', saved, { demo: true });
 const unlockedCards = (withProgress.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length;
-ok('progression enregistrée reprise au rendu', unlockedCards >= 1, `${unlockedCards} succès affichés comme débloqués`);
-ok('le compteur de succès suit la progression', withProgress.html.includes('>2<'));
+ok('progression enregistrée reprise dans le profil', unlockedCards >= 1, `${unlockedCards} succès affichés comme débloqués`);
 
 // RÉGRESSION : un compte tout juste créé sur un appareil où l'on a déjà joué
 // démarre au niveau 1, sans aucun succès — la progression laissée sur
@@ -421,10 +419,9 @@ check(
   0,
 );
 check('… il démarre au niveau 1', freshOnDevice.html.includes('achievement-level-number">1<'), true);
-ok('… son compteur de succès est à zéro', freshOnDevice.html.includes('achievement-hero-number">0<'));
 // Le compte connecté retrouve en revanche SA progression (cache de sa copie
 // serveur, clé propre au compte) : mêmes succès que ceux enregistrés pour lui.
-const ownCache = achievementsPage('fr', saved, { account: true });
+const ownCache = profileAchievements('fr', saved, { account: true });
 check(
   'un compte relit son propre cache local',
   (ownCache.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length,
@@ -438,9 +435,8 @@ const countersState = normalizeState({
   counters: { comments_posted: 3 },
   sets: { articles_read: ['a', 'b'], videos_watched: ['v1'], sections_visited: ['home'] },
 });
-const counters = achievementsPage('fr', countersState);
-const counterValues = [...counters.html.matchAll(/class="player-stat-value">(\d+)</g)].map((match) => match[1]);
-check('les compteurs d’actions suivent la progression', counterValues.slice(0, 4).join(','), '2,1,3,1');
+const counters = profileAchievements('fr', countersState, { demo: true });
+ok('le profil reflète la progression enregistrée', counters.html.includes('achievements-panel') && (counters.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length >= 1);
 
 // React insère des commentaires entre les nœuds de texte : on les retire avant
 // de chercher une phrase (ou un nombre) dans le rendu.
@@ -460,7 +456,7 @@ function barFill(html, className) {
 const hub = authHub('fr', saved, { demo: true });
 ok('le hub joueur montre les succès du site', hub.html.includes('TES SUCCÈS SUR LE SITE'));
 ok('le hub joueur affiche le niveau', hub.html.includes('achievement-level'));
-ok('le hub joueur renvoie vers la page des succès', hub.html.includes('VOIR TOUS LES SUCCÈS'));
+ok('le hub joueur conserve les succès dans le profil', hub.html.includes('TES SUCCÈS SUR LE SITE') && !hub.html.includes('VOIR TOUS LES SUCCÈS'));
 const vortex = DEMO_PROFILES.vortex.user_metadata;
 check(
   'l’aperçu démo garde ses chiffres scriptés',
@@ -564,5 +560,5 @@ const writers = sourceFiles(path.join(root, 'src'))
   .map((file) => path.relative(root, file));
 check('un seul module écrit la progression locale', writers.join(', ') || 'aucun', 'aucun');
 
-console.log(`\n  ${failures === 0 ? 'OK' : `${failures} échec(s)`} — succès : catalogue, moteur, scénario complet et rendu des pages\n`);
+console.log(`\n  ${failures === 0 ? 'OK' : `${failures} échec(s)`} — succès : catalogue, moteur, scénario complet et rendu du profil\n`);
 if (failures > 0) process.exitCode = 1;

@@ -114,7 +114,7 @@ export async function saveAccountState(userId, state) {
 
 /**
  * Efface la progression du compte côté serveur (ligne + ancienne copie) —
- * le « réinitialiser » de la page /achievements pour un compte connecté.
+ * le bouton de réinitialisation du profil pour un compte connecté.
  * En cas d'échec réseau, la prochaine action repartira de l'état local vierge
  * et réécrira la ligne.
  */

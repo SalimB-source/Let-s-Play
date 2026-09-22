@@ -84,8 +84,8 @@ export function AchievementProvider({ children }) {
 
   // Quatre fenêtres au maximum dans la file : une rafale de succès (premier
   // passage sur une page riche en actions) ne se transforme pas en longue
-  // séance de clics. Les succès écartés restent obtenus et visibles sur la
-  // page /achievements.
+  // séance de clics. Les succès écartés restent obtenus et visibles dans le
+  // profil joueur.
   const enqueueNotifications = useCallback((ids, levelUp) => {
     if (!ids.length) return;
     setNotifications((current) => [
