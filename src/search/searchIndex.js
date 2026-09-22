@@ -6,6 +6,7 @@ import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { autoSearchEntries } from '../lib/autoNews';
 
 const news = [
+  ['EA Sports FC 27 — la carrière devient vivante', 'Note globale dynamique, valeur marchande hebdomadaire via TransferRoom et scénarios créés par la communauté.', '/news/ea-sports-fc-27-carriere-dynamique', 'ea sports fc 27 electronic arts football carrière transferts manager', 'ea-sports-fc-27-carriere-pitch-notes.jpg'],
   ['Kingdom Hearts 4 — Le monde de Coco', 'Sora est apparu au milieu d’une séquence Disney consacrée à Coco.', '/news/kingdom-hearts-4-coco', 'square enix disney', 'kingdom-hearts-4-coco-news.jpg'],
   ['Marvel’s Wolverine', 'Une exclusivité PS5 développée par Insomniac Games.', '/news/wolverine-exclu-ps5', 'marvel sony insomniac ps5', 'wolverine-countdown.jpg'],
   ['Fire Emblem: Fortune’s Weave', 'Le nouvel épisode revient sur ses quatre protagonistes et ses scénarios croisés.', '/news/fire-emblem-fortunes-weave', 'nintendo switch 2', 'fire-emblem-fortunes-weave-news.jpg'],
