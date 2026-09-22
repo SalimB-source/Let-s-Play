@@ -40,13 +40,17 @@ function DemoNotFound({ id }) {
   );
 }
 
+const PROFILE_FAVORITE_GAMES_LIMIT = 20;
+
 /**
- * Ligne « jeux testés » du profil : filtre interactif par console,
+ * Ligne « jeux favoris » du profil : filtre interactif par console,
  * puces de jeux avec logos des plateformes cataloguées.
  */
-function TestedGamesRow({ games, heading = 'Jeux testés', sub = 'Consoles iconiques, rétro & PC', emptyText = null }) {
+function TestedGamesRow({ games, heading = 'Tes jeux favoris', sub = 'Consoles iconiques, rétro & PC', emptyText = null }) {
   const [activeFilter, setActiveFilter] = useState('ALL');
-  const list = Array.isArray(games) ? games.filter((g) => typeof g === 'string' && g.trim()) : [];
+  const list = Array.isArray(games)
+    ? games.filter((g) => typeof g === 'string' && g.trim()).slice(0, PROFILE_FAVORITE_GAMES_LIMIT)
+    : [];
 
   const platformsRepresented = useMemo(() => {
     const set = new Set();
@@ -127,7 +131,7 @@ function TestedGamesRow({ games, heading = 'Jeux testés', sub = 'Consoles iconi
         <p className="player-empty-note">
           {list.length > 0
             ? 'Aucun jeu correspondant à cette console.'
-            : (emptyText || 'Aucun jeu testé pour l’instant.')}
+            : (emptyText || 'Aucun jeu favori pour l’instant.')}
         </p>
       )}
     </div>
@@ -226,7 +230,7 @@ export default function Profile() {
     const xpInLevel = summary?.level?.xpInLevel ?? 0;
     const percent = summary?.level?.percent ?? 0;
     const title = levelTitle(lvl, lang);
-    // Consoles possédées + jeux testés : la sélection se fait dans le hub
+    // Consoles possédées + jeux favoris : la sélection se fait dans le hub
     // joueur (/auth), le profil l'affiche.
     const ownPlatforms = normalizePlatforms(meta.platforms);
     const ownGames = Array.isArray(meta.testedGames) ? meta.testedGames : [];
@@ -292,10 +296,10 @@ export default function Profile() {
             )}
           </div>
 
-          {/* JEUX TESTÉS — PS5 / PS4 / Xbox Series X / PC, catalogue + recherche dans le hub */}
+          {/* JEUX FAVORIS — les 20 premiers jeux sélectionnés dans le hub */}
           <TestedGamesRow
             games={ownGames}
-            emptyText="Aucun jeu testé pour l’instant — ajoute-les depuis ton hub."
+            emptyText="Aucun jeu favori pour l’instant — ajoute-les depuis ton hub."
           />
 
           <div className="player-actions-card">
