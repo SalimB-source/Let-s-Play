@@ -3,10 +3,16 @@ import { Link } from 'react-router-dom';
 
 const STORAGE_PREFIX = 'letsplay_article_reactions:';
 const CHOICES = [
-  { id: 'hype', label: 'Je suis hypé', tone: 'cyan' },
-  { id: 'watch', label: 'Je garde un œil', tone: 'yellow' },
-  { id: 'wait', label: 'J’attends les tests', tone: 'violet' },
+  { id: 'hype', label: 'Je suis hypé', tone: 'cyan', icon: 'rocket' },
+  { id: 'watch', label: 'Je garde un œil', tone: 'yellow', icon: 'eye' },
+  { id: 'wait', label: 'J’attends les tests', tone: 'violet', icon: 'controller' },
 ];
+
+function ReactionIcon({ type }) {
+  if (type === 'rocket') return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M18.8 4.3c4.8-.8 7.4-.1 7.4-.1s.7 2.6-.1 7.4c-.6 3.6-3 7-6.7 9.8l-4.8-4.8c2.7-3.8 5.1-7 9.2-8.6" /><path d="m14.6 16.6-4.8.7-3.1 3.1 5.2.6.6 5.2 3.1-3.1.7-4.8M11.8 22.1l-3.6 3.6M21 11.1h.1" /></svg>;
+  if (type === 'eye') return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3.5 16s4.7-7.3 12.5-7.3S28.5 16 28.5 16 23.8 23.3 16 23.3 3.5 16 3.5 16Z" /><circle cx="16" cy="16" r="3.8" /></svg>;
+  return <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M11.5 14.2 14 8.8h4l2.5 5.4M8.5 17.2H5.8v5.1h3.8l3.4 3.2h2.4v-8.8l-3.8.5-3.1-3.1Z" /><path d="M21 17.1h2.4M21 21.1h2.4M25.4 17.1h1M25.4 21.1h1M18.2 17.8v7.7h7.1c1.4 0 2.3-.9 2.3-2.2v-4.9c0-1.3-.9-2.2-2.3-2.2h-5.1" /></svg>;
+}
 
 function defaultVotes() {
   return { hype: 0, watch: 0, wait: 0 };
@@ -65,6 +71,7 @@ export default function ArticleEngagement({ articleId, title }) {
           const percentage = total ? Math.round((count / total) * 100) : 0;
           return (
             <button key={choice.id} type="button" className={`article-reaction article-reaction-${choice.tone}${mine === choice.id ? ' is-selected' : ''}`} onClick={() => react(choice)} aria-pressed={mine === choice.id}>
+              <span className="article-reaction-icon"><ReactionIcon type={choice.icon} /></span>
               <span className="article-reaction-label">{choice.label}</span>
               <span className="article-reaction-meter" aria-hidden="true"><i style={{ width: `${percentage}%` }} /></span>
               <span className="article-reaction-meta">{percentage}% · {count}</span>
