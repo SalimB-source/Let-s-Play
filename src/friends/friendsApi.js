@@ -22,7 +22,7 @@
  *   profiles  : { [id]: { id, name, avatar, level, xp, lastSeenAt } }
  */
 import { supabase } from '../lib/supabase';
-import { DEMO_COMMUNITY, DEMO_INITIAL_STATE, findDemoPlayer } from './demoRoster';
+import { DEMO_INITIAL_STATE, demoCommunity, findDemoPlayer } from './demoRoster';
 
 export const FRIENDS_TABLE = 'friendships';
 const FRIENDSHIP_COLUMNS = 'id, requester_id, addressee_id, status, created_at, updated_at';
@@ -324,7 +324,7 @@ export function demoRelations(state, uid) {
 /** Profils de toute la communauté de démonstration, forme normalisée. */
 export function demoProfiles() {
   const map = {};
-  for (const player of DEMO_COMMUNITY) {
+  for (const player of demoCommunity()) {
     map[player.id] = {
       id: player.id,
       name: player.gamertag,
@@ -343,7 +343,7 @@ export function demoProfiles() {
 export function searchDemoPlayers(query, uid, limit = 8) {
   const term = sanitizeSearch(query).toLowerCase();
   if (term.length < 2) return [];
-  return DEMO_COMMUNITY
+  return demoCommunity()
     .filter((player) => player.id !== uid)
     .filter((player) => `${player.gamertag} ${player.fullName}`.toLowerCase().includes(term))
     .slice(0, limit)

@@ -87,16 +87,12 @@ img{max-width:100%}
   transform:translateY(-2px);box-shadow:0 0 24px rgba(255,214,25,.4);
 }
 .nav-links a{position:relative;color:rgba(238,240,255,.82);transition:color .2s}
-.nav-links a:not(.nav-cta):hover{color:var(--cyan)}
-.nav-links a:not(.nav-cta)::after{content:"";position:absolute;left:0;right:100%;bottom:-6px;height:1px;background:var(--cyan);transition:right .25s}
-.nav-links a:not(.nav-cta):hover::after{right:0}
-.nav-cta{
-  background:var(--yellow);color:#0a0b1a !important;padding:12px 18px;font-weight:500;
-  clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);
-  box-shadow:0 0 18px rgba(255,214,25,.25);
-  transition:box-shadow .2s,transform .2s;
-}
-.nav-cta:hover{transform:translateY(-2px);box-shadow:0 0 28px rgba(255,214,25,.5)}
+/* Survol cyan + soulignement : liens de page uniquement. Les boutons de
+   compte (.nav-account) gardent leurs propres couleurs — le cyan hérité de
+   ces règles rendait « S'inscrire » illisible sur son fond jaune. */
+.nav-links a:not(.nav-account):hover{color:var(--cyan)}
+.nav-links a:not(.nav-account)::after{content:"";position:absolute;left:0;right:100%;bottom:-6px;height:1px;background:var(--cyan);transition:right .25s}
+.nav-links a:not(.nav-account):hover::after{right:0}
 .menu-button{display:none;background:transparent;border:1px solid var(--line);color:var(--ink);font:500 11px var(--mono);letter-spacing:.16em;padding:10px 14px;cursor:pointer}
 .menu-button .dash{color:var(--cyan)}
 .menu-button .dash.open{color:var(--yellow)}
@@ -675,8 +671,8 @@ img{max-width:100%}
 [dir="rtl"] .scroll-cue{margin-left:0;margin-right:auto}
 [dir="rtl"] .video-image .play{left:auto;right:12px}
 [dir="rtl"] .insta-badge{right:auto;left:10px}
-[dir="rtl"] .nav-links a:not(.nav-cta)::after{left:100%;right:0}
-[dir="rtl"] .nav-links a:not(.nav-cta):hover::after{left:0}
+[dir="rtl"] .nav-links a:not(.nav-account)::after{left:100%;right:0}
+[dir="rtl"] .nav-links a:not(.nav-account):hover::after{left:0}
 [dir="rtl"] .stats div::before{left:auto;right:0}
 [dir="rtl"] .stats div+div{border-left:0;border-right:1px solid var(--line)}
 [dir="rtl"] .format-card::before{left:auto;right:0;background:linear-gradient(270deg,var(--accent),transparent 70%)}

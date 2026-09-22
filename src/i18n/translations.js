@@ -14,7 +14,7 @@ export const translations = {
       partners: 'Partners',
       join: 'Join',
       account: 'Account',
-      watch: 'Watch', menu: 'Menu',
+      menu: 'Menu',
       menuAria: 'Open menu',
       langAria: 'Change language',
       search: { placeholder: 'Search…', submit: 'Search', noResults: 'No results', viewAll: 'View all results' },
@@ -301,10 +301,10 @@ export const translations = {
     nav: {
       home: 'Accueil', news: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', partners: 'Partenaires',
       join: 'Rejoindre', account: 'Compte',
-      watch: 'Regarder', menu: 'Menu', menuAria: 'Ouvrir le menu', langAria: 'Changer de langue',
+      menu: 'Menu', menuAria: 'Ouvrir le menu', langAria: 'Changer de langue',
       search: { placeholder: 'Rechercher…', submit: 'Rechercher', noResults: 'Aucun résultat', viewAll: 'Voir tous les résultats' },
       login: 'Se connecter',
-      register: 'S\'inscrire',
+      register: "S'inscrire",
     },
     footer: {
       tagline: 'Une émission originale dédiée à la culture qui nous rassemble. Maintenant multi-pages.',
@@ -578,7 +578,7 @@ export const translations = {
     nav: {
       home: 'الرئيسية', news: 'الأخبار', reviews: 'المراجعات', dossiers: 'الملفات', partners: 'الشركاء',
       join: 'انضمام', account: 'الحساب',
-      watch: 'شاهد', menu: 'القائمة', menuAria: 'افتح القائمة', langAria: 'تغيير اللغة',
+      menu: 'القائمة', menuAria: 'افتح القائمة', langAria: 'تغيير اللغة',
       search: { placeholder: 'بحث…', submit: 'بحث', noResults: 'لا توجد نتائج', viewAll: 'عرض كل النتائج' },
       login: 'تسجيل الدخول',
       register: 'إنشاء حساب',

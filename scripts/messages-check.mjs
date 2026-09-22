@@ -149,6 +149,11 @@ console.log('\n[2/3] aperçu de démonstration\n');
 
 const now = Date.UTC(2026, 8, 21, 12, 0, 0);
 
+// Garde-fou : les personas ne sont plus livrées dans l'application, ce sont
+// des fixtures de test (scripts/demoFixtures.js). Sans elles, la boucle ci-dessous
+// ne tournerait pas et une trentaine de vérifications disparaîtraient en silence.
+check('personas de démonstration semées par les fixtures', Object.keys(DEMO_PROFILES).sort().join(','), 'pixel,vortex');
+
 for (const [key, profile] of Object.entries(DEMO_PROFILES)) {
   const self = profile.id;
   const friends = DEMO_INITIAL_STATE[key].friends;

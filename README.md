@@ -53,8 +53,17 @@ Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des ép
 Registration, login, Google / Microsoft (Azure) sign-in, password reset and the
 connected player hub (`/auth`) run on [Supabase Auth](https://supabase.com/auth)
 (`@supabase/supabase-js`, client in `src/lib/supabase.js`, session in
-`src/auth/AuthContext.jsx`). Without configuration the page falls back to the
-one-click demo preview.
+`src/auth/AuthContext.jsx`). When Supabase is not configured — or the visitor is
+offline — the navigation bar shows two separate buttons, **Log in** and
+**Register** (highlighted), instead of the single « Join » link, and `/auth`
+explains what is missing.
+
+The one-click demo accounts (`VORTEX_DZ`, `PIXEL_QUEEN`) are **no longer shipped**:
+`src/auth/demoProfiles.js` exports an empty registry, so the demo card on `/auth`
+never renders and no visitor can borrow a fake identity. Everything the demo
+preview used to exercise (friends dock, messaging, achievements hub) is still in
+the codebase but dormant; the verification scripts re-activate it with the
+fixtures in `scripts/demoFixtures.js` (see « Personas de démonstration » below).
 
 ### Environment variables
 
@@ -189,8 +198,8 @@ the SQL has been run; the section explains itself when something is off:
 
 ## Amis : demandes, liste et présence
 
-Tout joueur connecté (compte Supabase **ou** persona de démonstration) dispose
-d'une liste d'amis. Elle vit dans la **fenêtre sociale** en bas à droite,
+Tout joueur connecté (compte Supabase — ou persona de démonstration dans les
+scripts de vérification) dispose d'une liste d'amis. Elle vit dans la **fenêtre sociale** en bas à droite,
 présente sur toutes les pages : un lanceur compact « MESSAGERIE » — avec les
 pastilles des **non-lus** (messagerie) et des **demandes en attente**, et le
 compteur d'amis en ligne — ouvre un panneau à **quatre onglets** (Amis /
@@ -271,17 +280,31 @@ se rafraîchit alors toutes les minutes). Tant que la table manque, la fenêtre
 et les boutons l'expliquent (« Les amis ne sont pas encore activés sur ce
 déploiement… ») sans rien casser d'autre.
 
-### Personas de démonstration
+### Personas de démonstration (devenues fixtures de test)
 
-Sans session Supabase, la persona (`VORTEX_DZ`, `PIXEL_QUEEN`) évolue dans une
-**communauté scriptée** (`src/friends/demoRoster.js`) : dix joueurs avec des
-statuts de présence déterministes — toujours en ligne, toujours hors ligne, ou
-alternant toutes les quelques minutes pour que la liste bouge. Chaque persona
-démarre avec des amis en ligne et hors ligne, des demandes reçues et une demande
-envoyée ; l'état est enregistré dans `localStorage` (par persona, par appareil)
-et les joueurs « en ligne » acceptent d'eux-mêmes une demande après quelques
-secondes. Les fiches de ces joueurs (`/profile/demo-player-…`) sont rendues
-comme des profils publics.
+Les comptes de démonstration ne sont **plus proposés aux visiteurs** :
+`src/auth/demoProfiles.js` livre un registre vide, la carte « Explorer le compte
+démo » de `/auth` ne s'affiche donc jamais. Les deux personas (`VORTEX_DZ`,
+`PIXEL_QUEEN`) survivent comme **fixtures** dans `scripts/demoFixtures.js`, que
+les entrées SSR (`scripts/*-smoke.jsx`) réinjectent dans le registre au
+démarrage des vérifications — sans elles, le dock social ne pourrait pas être
+testé du tout, puisqu'il n'y a aucun backend dans les scripts.
+
+Une persona réinjectée évolue dans une **communauté scriptée**
+(`src/friends/demoRoster.js`) : dix joueurs avec des statuts de présence
+déterministes — toujours en ligne, toujours hors ligne, ou alternant toutes les
+quelques minutes pour que la liste bouge. Chaque persona démarre avec des amis en
+ligne et hors ligne, des demandes reçues et une demande envoyée ; l'état est
+enregistré dans `localStorage` (par persona, par appareil) et les joueurs
+« en ligne » acceptent d'eux-mêmes une demande après quelques secondes. Les
+fiches de ces joueurs (`/profile/demo-player-…`) sont rendues comme des profils
+publics.
+
+La communauté est calculée **à la demande** (`demoCommunity()`), jamais au
+chargement du module : c'est ce qui permet au registre d'être vide en production
+et semé plus tard par les fixtures. Une version précédente la figeait au
+chargement et lisait `DEMO_PROFILES.vortex.user_metadata` — registre vide, donc
+`TypeError` à l'import, donc **écran blanc sur tout le site**.
 
 ### Où vit le code
 
@@ -294,6 +317,8 @@ comme des profils publics.
 | `src/friends/FriendButton.jsx` | le bouton de demande d'ami (profil, commentaires, résultats de recherche) |
 | `src/friends/FriendsHubSection.jsx` | la section « Amis & demandes » du hub |
 | `src/friends/friendsCopy.js` | textes FR / EN / AR |
+| `src/auth/demoProfiles.js` | registre des personas : **vide** dans le bundle livré, `registerDemoProfiles()` pour les scripts |
+| `scripts/demoFixtures.js` | les deux personas en fixtures de test, semées par les entrées SSR |
 | `src/friends/friends.css` | styles des onglets (listes, avatars, boutons) |
 | `src/social/SocialDock.jsx` | la fenêtre sociale unifiée : un lanceur, un panneau à quatre onglets ; sur mobile, la messagerie part vers la page dédiée |
 | `src/social/socialCopy.js` | textes de la fenêtre (FR / EN / AR) |
@@ -313,8 +338,8 @@ comme des profils publics.
 
 ## Messagerie : discussions 1-à-1 entre amis
 
-Tout joueur connecté (compte Supabase **ou** persona de démonstration) peut
-écrire à **ses amis** — et seulement à eux.
+Tout joueur connecté (compte Supabase — ou persona de démonstration dans les
+scripts de vérification) peut écrire à **ses amis** — et seulement à eux.
 
 **Deux parcours** : sur **bureau**, la messagerie vit dans l'onglet
 **Messages** de la **fenêtre sociale** (en bas à droite, documentée dans la
@@ -394,9 +419,10 @@ RLS blocages (3) / signalements (2)` ; `realtime direct_messages` peut rester
 table manque, la fenêtre l'explique (« La messagerie n'est pas encore activée
 sur ce déploiement… ») sans rien casser d'autre.
 
-### Personas de démonstration
+### Personas de démonstration (fixtures de test)
 
-Sans session Supabase, la persona (`VORTEX_DZ`, `PIXEL_QUEEN`) retrouve des
+Comme pour les amis, les personas ne sont plus livrées : `check:messages` les
+réinjecte depuis `scripts/demoFixtures.js`. Une persona ainsi semée retrouve des
 **discussions scriptées** (`src/messages/demoThreads.js`) avec des amis de la
 communauté de démonstration : des messages non lus à traiter, des discussions
 déjà lues, des réponses automatiques des joueurs « en ligne » (quelques
@@ -482,8 +508,9 @@ succès débloqués (`totalXp` puis `levelFromXp`, dans
 `summary` et avancent ensemble — les métadonnées Supabase d'un compte réel ne
 portent ni XP ni niveau (seule la progression des succès y est écrite), et les
 relire laissait la barre principale à 0 % pendant que l'autre avançait. Seules
-les personas de démonstration (`src/auth/demoProfiles.js`) affichent des
-chiffres scriptés, pour prévisualiser un hub rempli sans backend.
+les personas de démonstration — registre `src/auth/demoProfiles.js`, vide dans
+le bundle livré, semé par `scripts/demoFixtures.js` pendant les vérifications —
+affichent des chiffres scriptés, pour prévisualiser un hub rempli sans backend.
 
 La fenêtre vit dans `src/achievements/AchievementPopup.jsx` et lit la file
 `notifications` du contexte. Plusieurs succès d'affilée sont présentés **un par
@@ -572,9 +599,10 @@ La progression appartient à **chaque joueur**, jamais à un appareil :
   table dès qu'elle existe. Les comptes créés avant cette mise à jour gardent
   leur progression (l'ancienne copie du compte est reprise à la première
   connexion) ;
-- **Sessions de démonstration** : toujours locales — les liaisons Google /
-  Microsoft y sont simulées pour l'aperçu et ne comptent donc pas comme un
-  compte associé (ce succès se débloque avec un vrai compte).
+- **Sessions de démonstration** (aperçu réactivé par les fixtures des scripts,
+  plus atteint en production) : toujours locales — les liaisons Google /
+  Microsoft y sont simulées et ne comptent donc pas comme un compte associé
+  (ce succès se débloque avec un vrai compte).
 
 Le niveau et l'XP publics du profil (affichés dans le fil de commentaires) sont
 synchronisés avec la progression des succès par un trigger SQL

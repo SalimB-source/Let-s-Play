@@ -22,6 +22,13 @@ import AchievementTracker from '../src/achievements/AchievementTracker';
 import Layout from '../src/components/Layout';
 import Auth from '../src/pages/Auth';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
+// Fixtures : réinjecte les personas de démonstration dans le registre de
+// l'application (livré vide) avant tout rendu — voir scripts/demoFixtures.js.
+import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
+
+seedDemoProfiles();
+
+export { DEMO_PROFILES, DEMO_PROFILE_FIXTURES };
 
 export const STORAGE_KEY_LEGACY = STORAGE_KEY;
 // La progression est rangée par joueur : clé « invité » pour l'appareil,
@@ -52,7 +59,7 @@ function render(path, Page, lang, storedState, { demo = false, account = false, 
   if (storedState) store.set(stateKey, JSON.stringify(storedState));
   // Progression ET session de démonstration : c'est le cas du visiteur qui
   // explore le hub après avoir cliqué sur « Explorer le compte démo ».
-  if (demo) store.set(DEMO_STORAGE_KEY, JSON.stringify(DEMO_PROFILES.vortex));
+  if (demo) store.set(DEMO_STORAGE_KEY, JSON.stringify(DEMO_PROFILE_FIXTURES.vortex));
 
   // LanguageProvider et AchievementProvider lisent le stockage pendant le
   // rendu : on fournit un localStorage minimal, comme le font déjà les autres
