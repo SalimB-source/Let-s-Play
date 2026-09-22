@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
@@ -139,7 +138,6 @@ export default function Home() {
           muted
           loop
           playsInline
-          poster={`${base}hero-dragon.webp`}
           aria-hidden="true"
         >
           <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663645820794/QjYUbmTfZIPVlQQb.mp4" type="video/mp4" />
