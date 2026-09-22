@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BOT, SOURCES, HOT_KEYWORDS, NEGATIVE_TITLE, NEGATIVE_CATEGORIES } from './config.mjs';
-import { fetchText } from './lib/net.mjs';
+import { fetchText, fetchBinary } from './lib/net.mjs';
 import { parseFeed } from './lib/rss.mjs';
 import { extractArticle } from './lib/extract.mjs';
 import { coverSvg } from './lib/cover.mjs';
@@ -206,13 +206,26 @@ async function composeArticle(item, taken) {
       extractionError = error.message;
     }
   }
+  if (!extracted.officialThumbnailUrl || !/^https?:\/\//i.test(extracted.officialThumbnailUrl)) {
+    throw new Error('miniature officielle absente : publication refusée');
+  }
+  let thumbnail = `news-auto/${slug}-official.svg`;
+  if (!FIXTURES) {
+    const downloaded = await fetchBinary(extracted.officialThumbnailUrl);
+    const extension = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/avif': 'avif', 'image/gif': 'gif', 'image/svg+xml': 'svg' })[downloaded.contentType];
+    if (!extension) throw new Error(`format de miniature officielle non supporté (${downloaded.contentType})`);
+    thumbnail = `news-auto/${slug}-official.${extension}`;
+    writeFileSafe(path.join(PATHS.coversDir, `${slug}-official.${extension}`), downloaded.buffer);
+  } else {
+    writeFileSafe(path.join(PATHS.coversDir, `${slug}-official.svg`), coverSvg({ title: 'MINIATURE OFFICIELLE', accent: 'SOURCE VÉRIFIÉE.', category: item.source?.name || 'SOURCE', date: dateLabel, source: item.source?.name || 'SOURCE' }));
+  }
   const fields = await writeWithLlm(item, extracted, llm);
   const base = templateCompose(item, { ...extracted, description: extracted.description || item.summary || '' }, {
     date: dateLabel,
     image: `news-auto/${slug}.svg`,
     slug,
   });
-  const story = { ...base, slug, date: dateLabel, image: `news-auto/${slug}.svg` };
+  const story = { ...base, slug, date: dateLabel, image: `news-auto/${slug}.svg`, thumbnail, officialThumbnailUrl: extracted.officialThumbnailUrl };
   if (fields) {
     // Les champs rédigés par le modèle complètent le gabarit : le cadre
     // (slug, date, image, source, url) reste contrôlé par le bot.

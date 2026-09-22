@@ -20,3 +20,26 @@ export async function fetchText(url, { timeout = 15000, retries = 1, accept = '*
   }
   throw lastError;
 }
+
+export async function fetchBinary(url, { timeout = 20000, retries = 1 } = {}) {
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        headers: { 'user-agent': UA, accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8' },
+        redirect: 'follow',
+        signal: AbortSignal.timeout(timeout),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const contentType = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+      if (!contentType.startsWith('image/')) throw new Error(`type MIME non-image (${contentType || 'inconnu'})`);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.length < 512) throw new Error('image officielle trop petite');
+      return { buffer, contentType };
+    } catch (error) {
+      lastError = error;
+      if (attempt < retries) await new Promise((resolve) => setTimeout(resolve, 1200));
+    }
+  }
+  throw lastError;
+}
