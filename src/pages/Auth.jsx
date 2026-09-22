@@ -1790,7 +1790,23 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
         </div>
         {atCap && <p className="player-games-cap-note">{t.maxGamesNote}</p>}
         </div>}
-        {saveRow(gamesDirty)}
+        {/* ENREGISTRER reste visible dès l'ouverture du filtre (sinon on
+            croirait que Reset est encore là) ; il ferme le filtre quand rien
+            n'a été modifié. */}
+        {isEditingGames ? (
+          <div className="player-gear-save-row">
+            <button type="button" className="button button-yellow" onClick={async () => {
+              if (gamesDirty || platformsDirty) {
+                await save();
+              } else {
+                resetGamesView();
+              }
+            }} disabled={saving}>
+              {saving && <span className="auth-btn-spinner" aria-hidden="true" />}
+              {saving ? t.saving : t.saveGear}
+            </button>
+          </div>
+        ) : saveRow(gamesDirty)}
         {note && <p className="player-edit-note">{note}</p>}
         {err && <p className="player-edit-note player-edit-error">{err}</p>}
       </div>
