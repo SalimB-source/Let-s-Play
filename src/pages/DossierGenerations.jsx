@@ -28,7 +28,7 @@ export default function DossierGenerations() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>03 / DOSSIER</b> / CULTURE GAMING</span><span>ENTRETIEN · 27 MIN</span></div>
+        <div className="section-label"><span><b>DOSSIER</b> / CULTURE GAMING</span><span>ENTRETIEN · 27 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> Old school vs new school</p>
           <h1>LE CHOC<br /><em>DES GÉNÉRATIONS.</em></h1>

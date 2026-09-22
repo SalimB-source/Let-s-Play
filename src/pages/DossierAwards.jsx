@@ -27,7 +27,7 @@ export default function DossierAwards() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>01 / DOSSIER</b> / GAMING</span><span>LECTURE LONGUE · 27 MIN</span></div>
+        <div className="section-label"><span><b>DOSSIER</b> / GAMING</span><span>LECTURE LONGUE · 27 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> Les choix de la rédaction</p>
           <h1>LES JEUX<br /><em>DE L’ANNÉE.</em></h1>

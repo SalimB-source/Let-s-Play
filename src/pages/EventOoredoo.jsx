@@ -13,7 +13,7 @@ export default function EventOoredoo() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>02 / EVENT</b> / PARTENARIAT</span><span>6 MOIS · TOURNOI</span></div>
+        <div className="section-label"><span><b>EVENT</b> / PARTENARIAT</span><span>6 MOIS · TOURNOI</span></div>
         <div className="dossier-hero-grid">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Ooredoo</p>

@@ -26,7 +26,7 @@ export default function DossierPlayStation1() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>02 / DOSSIER</b> / HISTOIRE DU GAMING</span><span>LECTURE LONGUE · 19 MIN</span></div>
+        <div className="section-label"><span><b>DOSSIER</b> / HISTOIRE DU GAMING</span><span>LECTURE LONGUE · 19 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> Journal du Geek</p>
           <h1>LA PLAYSTATION 1,<br /><em>UNE RÉVOLUTION.</em></h1>

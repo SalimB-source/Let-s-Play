@@ -36,7 +36,7 @@ export default function Search() {
   return (
     <div className="search-page wrap">
       <section className="search-hero">
-        <div className="section-label"><span><b>01</b> / {t.label}</span><span>{query ? `${results.length} ${results.length === 1 ? t.result : t.results}` : t.prompt}</span></div>
+        <div className="section-label"><span>{t.label}</span><span>{query ? `${results.length} ${results.length === 1 ? t.result : t.results}` : t.prompt}</span></div>
         <p className="eyebrow"><span className="live-dot" /> {t.prompt}</p>
         <h1>{t.titleA}<br /><em>{t.titleB}</em></h1>
         <form className="search-form" onSubmit={submit} role="search">
@@ -52,7 +52,7 @@ export default function Search() {
 
       {Object.entries(grouped).map(([type, items]) => (
         <section className="search-results-section" key={type}>
-          <div className="section-label"><span><b>{String(Object.keys(grouped).indexOf(type) + 2).padStart(2, '0')}</b> / {t.types[type]}</span><span>{items.length}</span></div>
+          <div className="section-label"><span>{t.types[type]}</span><span>{items.length}</span></div>
           <div className="search-results-grid">
             {items.map((item) => (
               <Link className="search-result-card" to={item.route} key={`${item.type}-${item.route}`}>

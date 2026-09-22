@@ -14,7 +14,7 @@ export default function DossierComicCon() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>03 / DOSSIER</b> / CULTURE</span><span>REPORTAGE · 15 MIN</span></div>
+        <div className="section-label"><span><b>DOSSIER</b> / CULTURE</span><span>REPORTAGE · 15 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> Culture gaming algérienne</p>
           <h1>LA CULTURE<br /><em>SE RÉUNIT.</em></h1>

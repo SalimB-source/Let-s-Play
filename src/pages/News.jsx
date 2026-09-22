@@ -100,7 +100,7 @@ export default function News(){
   return (
     <>
       <section className="news-carousel-section wrap">
-        <div className="section-label"><span><b>01</b> / {featured.section}</span><span>{featured.updated}</span></div>
+        <div className="section-label"><span>{featured.section}</span><span>{featured.updated}</span></div>
         <div className="news-carousel-head">
           <div><p className="eyebrow"><span className="live-dot" /> {t.news.eyebrow}</p><h1>{t.news.h1a}<br/><em>{t.news.h1b}</em></h1></div>
           <div className="news-view-tools">

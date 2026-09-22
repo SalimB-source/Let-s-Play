@@ -27,7 +27,7 @@ export default function DossierGoya() {
   return (
     <article className="dossier-article">
       <header className="dossier-hero wrap">
-        <div className="section-label"><span><b>02 / DOSSIER</b> / INDUSTRIE</span><span>LECTURE LONGUE · 17 MIN</span></div>
+        <div className="section-label"><span><b>DOSSIER</b> / INDUSTRIE</span><span>LECTURE LONGUE · 17 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> Scène indé algérienne</p>
           <h1>GOYA,<br /><em>LE PROCHAIN MONDE.</em></h1>
