@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture de démo (flux simulé façon VGC) — contenus inventés pour les
+     tests hors-ligne uniquement. -->
+<rss version="2.0">
+  <channel>
+    <title>Fixture INTL</title>
+    <item>
+      <id>fixture-intl-001</id>
+      <title>Persona 6 gameplay debut shows Tokyo-set school sim and urban dungeons</title>
+      <link rel="alternate" href="https://fixtures.letsplay.example/fixture/article-3"/>
+      <published>2026-09-21T12:00:00Z</published>
+      <category>News</category>
+      <summary>SEGA and Atlus have shown the first gameplay of Persona 6, revealing a Tokyo setting, a new party system and a 2027 release window on Switch 2, PS5, Xbox Series and PC.</summary>
+      <content>Full story in fixture article.</content>
+    </item>
+    <item>
+      <id>fixture-intl-002</id>
+      <title>Top 10 best gaming deals of the week</title>
+      <link rel="alternate" href="https://fixtures.letsplay.example/fixture/deals-3"/>
+      <published>2026-09-21T10:00:00Z</published>
+      <category>Deals</category>
+      <summary>Discounts roundup.</summary>
+    </item>
+  </channel>
+</rss>

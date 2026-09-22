@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture de démo (flux simulé façon ActuGaming) — contenus inventés pour
+     les tests hors-ligne uniquement. -->
+<rss version="2.0">
+  <channel>
+    <title>Fixture FR 2</title>
+    <item>
+      <guid>fixture-fr-2-001</guid>
+      <title><![CDATA[Control Resonant : Remedy détaille la mise à jour du jour un avant le lancement du 24 septembre]]></title>
+      <link>https://fixtures.letsplay.example/fixture/article-2</link>
+      <pubDate>Mon, 21 Sep 2026 15:20:00 +0200</pubDate>
+      <category><![CDATA[Actu]]></category>
+      <description><![CDATA[Le studio finlandais publie les notes de patch de la version 1.00 : trois modes graphiques sur PS5 et une compatibilité GeForce NOW confirmée dès jeudi.]]></description>
+    </item>
+  </channel>
+</rss>

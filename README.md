@@ -862,6 +862,55 @@ qualité disponible pour cette vidéo.
   huit vignettes), et la source du site (aucune URL de miniature codée en dur
   hors de `src/lib/videoThumbnails.js`, les deux chemins du repli présents).
 
+## Robot actus du jour
+
+La page Actus s’alimente toute seule : un robot (`scripts/news-bot/`) tourne
+chaque matin via GitHub Actions (`.github/workflows/news-bot.yml`), va chercher
+les news gaming sur les flux RSS des médias (FR + internationaux), sélectionne
+les trois plus fortes de la fenêtre des 36 h — promos, guides, tests et patch
+notes écartés, deux articles maximum par média — et les met en forme façon
+Let’s Play : titre en deux temps, chapô, deux sections titrées, citation
+d’analyse et encadré « À RETENIR », avec la source d’origine toujours citée
+et liée.
+
+- **Rédaction hybride** : si une clé d’IA est configurée (secrets
+  `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `MISTRAL_API_KEY` ou `GEMINI_API_KEY`
+  — une seule suffit, `NEWS_LLM_PROVIDER`/`NEWS_LLM_MODEL` pour affiner),
+  l’article est écrit par le modèle avec le guide de style du site, à partir
+  du texte de la source. Sans clé, le robot publie avec le gabarit extractif
+  et reste alors sur les sources francophones (il ne traduit pas). En cas de
+  panne du modèle, repli automatique sur le gabarit : aucun run n’est perdu.
+- **Publication automatique** : le robot committe sur `main`
+  (`src/news/auto/*.json` + `src/news/autoIndex.js` + visuels SVG générés dans
+  `public/news-auto/`), ce qui déclenche le déploiement Pages. Rien de neuf →
+  aucun commit. Sortie clairement en échec si *tous* les flux sont tombés.
+- **Intégration site** : `src/lib/autoNews.js` dérive la liste des actus
+  (ouvertes par les plus récentes), les routes `/news/<slug>` (route générique
+  dans `src/main.jsx` — les slugs manuels restent prioritaires, un slug
+  inconnu affiche la page 404) et l’index de recherche interne. Les articles
+  générés sont archivés après 21 jours (`archiveDays`) pour garder le bundle
+  léger. Les visuels sont des cartes éditoriales SVG aux couleurs Let’s Play :
+  aucune image de droit n’est embarquée automatiquement.
+- **Honnêteté éditoriale** : chaque article généré porte la mention
+  « ACTU DU JOUR », crédite sa source (lien « Lire l’article source ») et le
+  mode gabarit indique noir sur blanc que l’article a été préparé
+  automatiquement ; le mode IA crédite « rédigé avec l’assistance d’un modèle
+  de langage ».
+
+Run manuel : onglet Actions → « Robot actus du jour » → Run workflow (choisir
+le nombre d’articles, cocher « forcer » pour élargir la fenêtre). En local :
+
+```bash
+npm run news:fetch        # run réel (réseau requis)
+node scripts/news-bot/fetch-news.mjs --fixtures   # démo hors-ligne (3 articles de test)
+npm run check:newsbot     # rejoue la chaîne hors-ligne et valide les fichiers committs
+```
+
+Ajouter ou retirer un média, ajuster les mots-clés « chauds » (studios,
+licences, salons) et les filtres anti-bruit : tout vit dans
+`scripts/news-bot/config.mjs`. L’état anti-doublons est conservé dans
+`news-bot/state.json` (GUID des news déjà vues, slugs déjà publiés).
+
 ## Sources éditoriales
 
 - [Instagram @letsplay.officiel](https://www.instagram.com/letsplay.officiel/)

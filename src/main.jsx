@@ -110,6 +110,11 @@ function App() {
             <Route path="/news/control-resonant-24-septembre" element={<CurrentNews slug="control-resonant-24-septembre" />} />
             <Route path="/news/sorties-24-septembre" element={<CurrentNews slug="sorties-24-septembre" />} />
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
+            {/* Actus du jour générées par le robot (scripts/news-bot/) :
+                /news/<slug> lit src/news/autoIndex.js. Les slugs statiques
+                ci-dessus restent prioritaires ; un slug inconnu affiche la
+                page 404 (CurrentNews rend NotFound). */}
+            <Route path="/news/:slug" element={<CurrentNews />} />
             <Route path="/reviews" element={<Reviews />} />
             <Route path="/dossiers" element={<Dossiers />} />
             <Route path="/dossiers/pourquoi-les-souls" element={<DossierSouls />} />

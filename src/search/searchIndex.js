@@ -2,6 +2,8 @@ import { gameTests } from '../reviewsData';
 import { gameReleases } from '../releasesData';
 import { baseUrl as base } from '../data';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
+// Les actus du jour générées par le robot rejoignent l’index de recherche.
+import { autoSearchEntries } from '../lib/autoNews';
 
 const news = [
   ['Kingdom Hearts 4 — Le monde de Coco', 'Sora est apparu au milieu d’une séquence Disney consacrée à Coco.', '/news/kingdom-hearts-4-coco', 'square enix disney', 'kingdom-hearts-4-coco-news.jpg'],
@@ -75,4 +77,4 @@ export function searchContent(query) {
   return matches.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
 }
 
-export const searchCounts = { news: news.length, review: reviews.length, dossier: dossiers.length, release: releases.length };
+export const searchCounts = { news: news.length + autoSearchEntries.length, review: reviews.length, dossier: dossiers.length, release: releases.length };

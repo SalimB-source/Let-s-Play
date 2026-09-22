@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture de démo (flux simulé façon Jeuxvideo.com) — utilisée uniquement
+     par les runs --fixtures et le check hors-ligne. Ne reflète pas une vraie
+     source : les contenus sont inventés pour les tests. -->
+<rss version="2.0">
+  <channel>
+    <title>Fixture FR 1</title>
+    <item>
+      <guid>fixture-fr-1-001</guid>
+      <title><![CDATA[Nintendo annonce un Direct de 40 minutes dédié aux sorties de fin d’année]]></title>
+      <link>https://fixtures.letsplay.example/fixture/article-1</link>
+      <pubDate>Mon, 21 Sep 2026 18:30:00 +0200</pubDate>
+      <category><![CDATA[News jeu]]></category>
+      <description><![CDATA[La conférence aura lieu jeudi 24 septembre à 16h00 heure de Paris et mettra l’accent sur la ligne 2026-2027 de la Switch 2.]]></description>
+    </item>
+    <item>
+      <guid>fixture-fr-1-002</guid>
+      <title><![CDATA[Bon plan : cette manette pro est à 49 € au lieu de 79 €]]></title>
+      <link>https://fixtures.letsplay.example/fixture/promo-1</link>
+      <pubDate>Mon, 21 Sep 2026 17:00:00 +0200</pubDate>
+      <category><![CDATA[News bon plan]]></category>
+      <description><![CDATA[Une promo sur une manette.]]></description>
+    </item>
+    <item>
+      <guid>fixture-fr-1-003</guid>
+      <title><![CDATA[Nos 5 meilleures astuces pour progresser rapidement dans Valheim 1.0]]></title>
+      <link>https://fixtures.letsplay.example/fixture/astuce-1</link>
+      <pubDate>Mon, 21 Sep 2026 16:00:00 +0200</pubDate>
+      <category><![CDATA[News astuce]]></category>
+      <description><![CDATA[Guide et astuces.]]></description>
+    </item>
+  </channel>
+</rss>

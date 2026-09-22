@@ -4,3 +4,8 @@ dist
 
 .env.local
 .env.*.local
+
+# Sortie locale de démo du robot actus (node scripts/news-bot/fetch-news.mjs --fixtures)
+scripts/news-bot/demo-out/
+# Rapport transitoire du robot (sert de message de commit dans le workflow)
+news-bot/report.md
