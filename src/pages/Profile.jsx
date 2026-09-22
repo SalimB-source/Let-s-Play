@@ -12,6 +12,7 @@ import MessageButton from '../messages/MessageButton';
 import { useFriends } from '../friends/FriendsContext';
 import { isRecentlySeen } from '../friends/friendsApi';
 import { demoPresence, findDemoPlayer } from '../friends/demoRoster';
+import { normalizePlatforms, gamePlatforms } from '../lib/gameLibrary';
 
 function formatJoined(iso) {
   if (!iso) return '—';
@@ -35,6 +36,39 @@ function DemoNotFound({ id }) {
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * Ligne « jeux testés » du profil : une puce par jeu, avec les plateformes
+ * cataloguées du titre (PS5 / Xbox Series X) quand le jeu est dans le
+ * catalogue — un titre stocké avant une mise à jour du catalogue s'affiche
+ * quand même, sans tag.
+ */
+function TestedGamesRow({ games, heading = 'Jeux testés', sub = 'PS5 · Xbox Series X', emptyText = null }) {
+  const list = Array.isArray(games) ? games.filter((g) => typeof g === 'string' && g.trim()) : [];
+  return (
+    <div className="player-section">
+      <div className="player-section-header">
+        <h2>{heading}</h2>
+        <p>{sub}</p>
+      </div>
+      {list.length > 0 ? (
+        <div className="player-games-row">
+          {list.map((title) => {
+            const platforms = gamePlatforms(title);
+            return (
+              <span key={title} className="player-game-pill">
+                <span className="player-game-pill-title">{title}</span>
+                {platforms.length > 0 && <span className="player-game-pill-platforms">{platforms.join(' · ')}</span>}
+              </span>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="player-empty-note">{emptyText || 'Aucun jeu testé pour l’instant.'}</p>
+      )}
+    </div>
   );
 }
 
@@ -77,11 +111,22 @@ export default function Profile() {
       setLoading(true);
       setNotFound(false);
       try {
-        // `last_seen_at` (présence des amis) n'existe que si la migration a
-        // été appliquée : on retombe sur les colonnes de base sinon.
-        let { data, error } = await supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, updated_at, last_seen_at').eq('id', userId).maybeSingle();
-        if (error && /last_seen_at/.test(error.message || '')) {
-          ({ data, error } = await supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, updated_at').eq('id', userId).maybeSingle());
+        // `last_seen_at` (présence), `platforms` et `tested_games` (section
+        // 3b2 du schéma) n'existent que si la migration a été appliquée :
+        // on essaie les colonnes par paliers, du plus riche au plus basique.
+        const SELECT_TIERS = [
+          'id, username, display_name, avatar_url, created_at, updated_at, last_seen_at, platforms, tested_games',
+          'id, username, display_name, avatar_url, created_at, updated_at, last_seen_at',
+          'id, username, display_name, avatar_url, created_at, updated_at',
+        ];
+        let data = null;
+        let error = null;
+        for (const select of SELECT_TIERS) {
+          ({ data, error } = await supabase.from('profiles').select(select).eq('id', userId).maybeSingle());
+          const message = String(error && error.message || '');
+          const missingOptionalColumn = Boolean(error)
+            && (message.includes('last_seen_at') || message.includes('platforms') || message.includes('tested_games'));
+          if (!error || !missingOptionalColumn) break;
         }
         if (cancelled) return;
         if (error) throw error;
@@ -119,6 +164,10 @@ export default function Profile() {
     const xpInLevel = summary?.level?.xpInLevel ?? 0;
     const percent = summary?.level?.percent ?? 0;
     const title = levelTitle(lvl, lang);
+    // Consoles possédées + jeux testés : la sélection se fait dans le hub
+    // joueur (/auth), le profil l'affiche.
+    const ownPlatforms = normalizePlatforms(meta.platforms);
+    const ownGames = Array.isArray(meta.testedGames) ? meta.testedGames : [];
 
     return (
       <section className="auth-page wrap">
@@ -160,6 +209,27 @@ export default function Profile() {
               <p style={{ margin: '8px 0 0', color: 'var(--dim)', font: '500 10px var(--mono)', letterSpacing: '.12em' }}>{xpInLevel} XP dans le niveau · {xpForNext - xpInLevel} XP avant le prochain rang</p>
             </div>
           </div>
+
+          {/* CONSOLES POSSÉDÉES — sélection faite dans le hub joueur */}
+          <div className="player-section">
+            <div className="player-section-header">
+              <h2>Mes consoles</h2>
+              <p>Les consoles que tu possèdes — choisis-les dans ton hub joueur.</p>
+            </div>
+            {ownPlatforms.length > 0 ? (
+              <div className="player-platforms-row">
+                {ownPlatforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}
+              </div>
+            ) : (
+              <p className="player-empty-note">Aucune console ajoutée pour l’instant — coche-les dans ton hub.</p>
+            )}
+          </div>
+
+          {/* JEUX TESTÉS — PS5 / Xbox Series X, catalogue + recherche dans le hub */}
+          <TestedGamesRow
+            games={ownGames}
+            emptyText="Aucun jeu testé pour l’instant — ajoute-les depuis ton hub."
+          />
 
           <div className="player-actions-card">
             <div className="player-actions-left">
@@ -251,6 +321,10 @@ export default function Profile() {
             </div>
           )}
 
+          {meta.testedGames?.length > 0 && (
+            <TestedGamesRow games={meta.testedGames} />
+          )}
+
           {meta.badges?.length > 0 && (
             <div className="player-section">
               <div className="player-section-header"><h2>Succès & badges</h2></div>
@@ -333,6 +407,10 @@ export default function Profile() {
               <div className="player-section-header"><h2>Plateformes</h2></div>
               <div className="player-platforms-row">{demoPlayer.platforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}</div>
             </div>
+          )}
+
+          {demoPlayer.testedGames?.length > 0 && (
+            <TestedGamesRow games={demoPlayer.testedGames} />
           )}
 
           <div className="player-actions-card">
@@ -419,6 +497,20 @@ export default function Profile() {
           <div className="player-stat-card"><div className="player-stat-value">{handle.slice(0,6)}</div><div className="player-stat-label">Gamertag</div></div>
           <div className="player-stat-card"><div className="player-stat-value">—</div><div className="player-stat-label">Succès</div></div>
         </div>
+
+        {/* Consoles possédées + jeux testés — colonnes publiques du profil
+            (section 3b2 du schéma) ; absentes sur les anciens déploiements. */}
+        {normalizePlatforms(remoteProfile.platforms).length > 0 && (
+          <div className="player-section">
+            <div className="player-section-header"><h2>Plateformes</h2></div>
+            <div className="player-platforms-row">
+              {normalizePlatforms(remoteProfile.platforms).map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}
+            </div>
+          </div>
+        )}
+        {Array.isArray(remoteProfile.tested_games) && remoteProfile.tested_games.length > 0 && (
+          <TestedGamesRow games={remoteProfile.tested_games} />
+        )}
 
         <div className="player-actions-card">
           <div className="player-actions-left">
