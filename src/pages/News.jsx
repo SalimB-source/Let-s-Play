@@ -41,17 +41,8 @@ export default function News(){
   }[lang] || null;
   const featured = featuredCopy || null;
   const million = t.news.million || t.news.featured;
-  const [category, setCategory] = useState('all');
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
-
-  const categoryFor = (article) => {
-    if (article.category) return article.category;
-    const text = `${article.badge} ${article.kicker} ${article.title}`.toLowerCase();
-    if (/netflix|tokyo game show|kingdom hearts|coco/.test(text)) return 'culture';
-    if (/hardware|battle\.net|pc|tech/.test(text)) return 'tech';
-    return 'gaming';
-  };
 
   const articles = useMemo(() => [...autoNewsListing,
     { to: '/news/ea-sports-fc-27-carriere-dynamique', image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', alt: 'EA Sports FC 27 — fiche joueur du mode Carrière avec sa note globale et sa valeur marchande xTV (visuel officiel EA Sports FC)', badge: 'EA SPORTS FC 27 · CARRIÈRE', kicker: '22.09.2026 · ELECTRONIC ARTS', title: 'EA SPORTS FC 27 FAIT VIVRE SA CARRIÈRE.', excerpt: 'Valeur marchande recalculée chaque semaine avec TransferRoom, note globale dynamique, scénarios créés par la communauté et crises de vestiaire : la refonte du mode Carrière est le vrai chantier de l’édition 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
@@ -88,22 +79,12 @@ export default function News(){
     return () => { cancelled = true; };
   }, [articles]);
 
-  // La page reste lisible par défaut : 12 actus maximum. Le filtre est
-  // appliqué avant la limite afin de toujours proposer 12 résultats quand ils
-  // existent dans la catégorie choisie.
-  const filteredArticles = category === 'all'
-    ? articles
-    : articles.filter((article) => categoryFor(article) === category);
-  const visibleArticles = showAll ? filteredArticles : filteredArticles.slice(0, 12);
+  // La page reste lisible par défaut : 12 actus maximum affichées, le bouton
+  // « Voir toutes les actus » déplie le reste de la liste.
+  const visibleArticles = showAll ? articles : articles.slice(0, 12);
   // Le dernier article paru ouvre la section au format paysage (news du jour),
   // les autres articles suivent dans la grille 4 colonnes.
   const [topStory, ...gridArticles] = visibleArticles;
-  const filterLabels = {
-    all: lang === 'fr' ? 'Toutes' : lang === 'ar' ? 'الكل' : 'All',
-    gaming: lang === 'fr' ? 'Gaming' : lang === 'ar' ? 'ألعاب' : 'Gaming',
-    tech: lang === 'fr' ? 'Tech' : lang === 'ar' ? 'تقنية' : 'Tech',
-    culture: lang === 'fr' ? 'Culture' : lang === 'ar' ? 'ثقافة' : 'Culture',
-  };
   const allNewsLabel = lang === 'fr' ? 'Voir toutes les actus' : lang === 'ar' ? 'عرض كل الأخبار' : 'See all news';
 
   const renderBadges = (article) => {
@@ -131,13 +112,6 @@ export default function News(){
     <>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{featured.section}</span><span>{featured.updated}</span></div>
-        <div className="news-filters" role="group" aria-label={lang === 'fr' ? 'Filtrer les actus' : 'Filter news'}>
-          {Object.keys(filterLabels).map((key) => (
-            <button key={key} type="button" className={category === key ? 'active' : ''} onClick={() => { setCategory(key); setShowAll(false); }} aria-pressed={category === key}>
-              {filterLabels[key]}
-            </button>
-          ))}
-        </div>
         {topStory && <Link className="daily-news-card news-today" to={topStory.to}>
           <div className="daily-news-image"><img src={`${base}${topStory.image}`} alt={topStory.alt} />{renderBadges(topStory)}</div>
           <div className="daily-news-copy">
@@ -149,13 +123,12 @@ export default function News(){
           </div>
         </Link>}
         <div className="news-carousel is-grid">
-          {!topStory && <p className="news-empty">{lang === 'fr' ? 'Aucune actu dans cette catégorie.' : lang === 'ar' ? 'لا توجد أخبار في هذه الفئة.' : 'No news in this category.'}</p>}
           {gridArticles.map((article) => <Link className="news-carousel-card" to={article.to} key={article.to}>
             <div className="news-carousel-image"><img src={`${base}${article.image}`} alt={article.alt} />{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link>)}
         </div>
-        {filteredArticles.length > 12 && (
+        {articles.length > 12 && (
           <div className="news-all-actions">
             <button type="button" className="button button-yellow" onClick={() => setShowAll((current) => !current)}>
               {showAll ? (lang === 'fr' ? 'Réduire les actus' : lang === 'ar' ? 'عرض أقل' : 'Show fewer news') : allNewsLabel} <Arrow />
