@@ -103,6 +103,11 @@ const pageMeta = {
     description: 'Dans une plainte collective en Californie, Sony affirme qu’un achat sur le PlayStation Store accorde une licence personnelle et non la propriété du jeu numérique.',
     image: 'playstation-store-ownership-news.jpg', type: 'article', published: '2026-09-20', section: 'Actualités gaming',
   },
+  '/news/ea-sports-fc-27-carriere-dynamique': {
+    title: 'EA Sports FC 27 : la refonte du mode Carrière — Let’s Play',
+    description: 'Valeur marchande recalculée chaque semaine avec TransferRoom (xTV), note globale dynamique, profils de croissance, scénarios communautaires et crises de vestiaire : ce que change la refonte du mode Carrière d’EA Sports FC 27, attendu le 25 septembre 2026.',
+    image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', type: 'article', published: '2026-09-22', section: 'Actualités gaming',
+  },
 };
 
 const routeAliases = {

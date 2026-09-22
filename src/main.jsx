@@ -110,6 +110,7 @@ function App() {
             <Route path="/news/control-resonant-24-septembre" element={<CurrentNews slug="control-resonant-24-septembre" />} />
             <Route path="/news/sorties-24-septembre" element={<CurrentNews slug="sorties-24-septembre" />} />
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
+            <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
             {/* Actus du jour générées par le robot (scripts/news-bot/) :
                 /news/<slug> lit src/news/autoIndex.js. Les slugs statiques
                 ci-dessus restent prioritaires ; un slug inconnu affiche la
