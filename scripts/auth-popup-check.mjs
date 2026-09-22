@@ -139,6 +139,7 @@ ok('visiteur : pas de bouton « Log out »', !/class="nav-logout"/.test(navHtml)
 const connectedHtml = renderNav({
   session: { user: { id: 'smoke-user', email: 'smoke@letsplay.dz', user_metadata: { gamertag: 'SmokeDZ' } } },
 });
+ok('connecté : la pastille mène au hub /auth', /<a(?=[^>]*href="\/auth")(?=[^>]*class="nav-account connected")[^>]*>/.test(connectedHtml));
 const logoutIndex = connectedHtml.search(/<button[^>]*class="nav-logout"/);
 ok('connecté : bouton « Log out » présent', logoutIndex !== -1);
 ok('connecté : le bouton porte le libellé « Log out »', /class="nav-logout"[^>]*aria-label="Log out"/.test(connectedHtml));

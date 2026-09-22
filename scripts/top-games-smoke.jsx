@@ -1,0 +1,42 @@
+import React, { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { PlayerGearEditor } from '../src/pages/Auth';
+import { TESTED_GAMES_CATALOG } from '../src/lib/gameLibrary';
+
+export async function checkTopGames(assert) {
+  const node = document.createElement('div');
+  document.body.append(node);
+  const root = createRoot(node);
+  const games = TESTED_GAMES_CATALOG.slice(0, 12).map(g => g.title);
+  let saved;
+  const t = { testedGamesHeading: 'Ton TOP 10 des jeux all-time', editTopGames: 'Modifier', closeTopGames: 'Fermer', saveGear: 'Enregistrer', removeGame: 'Retirer', gamesSearchPlaceholder: 'Rechercher' };
+  await act(async () => root.render(<PlayerGearEditor t={t} isDemo meta={{ testedGames: games }} updateDemoProfile={fn => { saved = fn({ user_metadata: {} }); }} />));
+  const click = async el => { assert.ok(el); await act(async () => el.click()); };
+  const button = text => [...node.querySelectorAll('button')].find(el => el.textContent === text);
+  assert.equal(node.querySelectorAll('.player-game-pill').length, 10);
+  for (let rank = 1; rank <= 3; rank++) assert.equal(node.querySelectorAll(`.player-game-pill-top-${rank}`).length, 1);
+  assert.equal(node.querySelectorAll('.player-game-pill:not([class*="player-game-pill-top-"])').length, 7);
+  assert.equal(node.querySelector('.player-games-filter-container'), null);
+  assert.equal(node.querySelector('.player-games-list'), null);
+  await click(button('Modifier'));
+  assert.equal(button('Fermer').getAttribute('aria-expanded'), 'true');
+  assert.ok(node.querySelector('.player-games-filter-container'));
+  assert.ok(node.querySelector('.player-games-search'));
+  assert.ok([...node.querySelectorAll('.player-game-row-btn:not(.added)')].every(el => el.disabled));
+  await click(node.querySelector('.player-game-chip-remove'));
+  assert.equal(node.querySelectorAll('.player-game-pill').length, 9);
+  await click(node.querySelector('.player-game-row-btn:not(.added)'));
+  assert.equal(node.querySelectorAll('.player-game-pill').length, 10);
+  await click(node.querySelectorAll('.player-games-filter-btn')[1]);
+  await click(button('Reset'));
+  assert.equal(node.querySelector('.player-games-list'), null);
+  assert.equal(node.querySelectorAll('.player-game-pill').length, 10);
+  await click(button('Modifier'));
+  assert.equal(node.querySelector('.player-games-filter-btn').getAttribute('aria-pressed'), 'true');
+  assert.equal(node.querySelector('input[type="search"]').value, '');
+  await click(button('Enregistrer'));
+  assert.equal(saved.user_metadata.testedGames.length, 10);
+  assert.deepEqual(saved.user_metadata.testedGames, [...games.slice(1, 10), games[0]]);
+  await act(async () => root.unmount());
+  console.log('TOP 10: podium, cap, editor, Reset and demo persistence passed.');
+}
