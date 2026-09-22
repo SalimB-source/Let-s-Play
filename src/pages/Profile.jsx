@@ -40,16 +40,24 @@ function DemoNotFound({ id }) {
   );
 }
 
-const PROFILE_FAVORITE_GAMES_LIMIT = 20;
+const PROFILE_TOP_GAMES_LIMIT = 10;
 
 /**
- * Ligne « jeux favoris » du profil : filtre interactif par console,
- * puces de jeux avec logos des plateformes cataloguées.
+ * TOP 10 des jeux du profil : podium coloré, puis sept jeux standards.
+ * Le filtre par console reste caché tant que le joueur n'a pas demandé à
+ * modifier l'affichage.
  */
-function TestedGamesRow({ games, heading = 'Tes jeux favoris', sub = 'Consoles iconiques, rétro & PC', emptyText = null }) {
+function TopGamesRow({
+  games,
+  heading = 'Ton TOP 10 des jeux all-time',
+  sub = 'Tes 10 jeux préférés, toutes générations confondues.',
+  emptyText = null,
+  editable = false,
+}) {
   const [activeFilter, setActiveFilter] = useState('ALL');
+  const [isEditing, setIsEditing] = useState(false);
   const list = Array.isArray(games)
-    ? games.filter((g) => typeof g === 'string' && g.trim()).slice(0, PROFILE_FAVORITE_GAMES_LIMIT)
+    ? games.filter((g) => typeof g === 'string' && g.trim()).slice(0, PROFILE_TOP_GAMES_LIMIT)
     : [];
 
   const platformsRepresented = useMemo(() => {
@@ -69,15 +77,44 @@ function TestedGamesRow({ games, heading = 'Tes jeux favoris', sub = 'Consoles i
     });
   }, [list, activeFilter]);
 
+  const toggleEditing = () => {
+    setIsEditing((previous) => {
+      if (previous) setActiveFilter('ALL');
+      return !previous;
+    });
+  };
+
+  const resetView = () => {
+    setActiveFilter('ALL');
+    setIsEditing(false);
+  };
+
   return (
     <div className="player-section">
-      <div className="player-section-header">
-        <h2>{heading}</h2>
-        <p>{sub}</p>
+      <div className="player-section-header player-games-section-header">
+        <div>
+          <h2>{heading}</h2>
+          <p>{sub}</p>
+        </div>
+        {editable && (
+          <div className="player-games-actions" aria-label="Actions du TOP 10">
+            <button
+              type="button"
+              className={`player-games-action-btn${isEditing ? ' active' : ''}`}
+              onClick={toggleEditing}
+              aria-expanded={isEditing}
+            >
+              {isEditing ? 'Fermer' : 'Modifier'}
+            </button>
+            <button type="button" className="player-games-action-btn reset" onClick={resetView}>
+              Reset
+            </button>
+          </div>
+        )}
       </div>
 
-      {list.length > 0 && platformsRepresented.length > 1 && (
-        <div className="player-profile-games-filter-bar" role="tablist" aria-label="Filtrer par console">
+      {editable && isEditing && list.length > 0 && platformsRepresented.length > 1 && (
+        <div className="player-profile-games-filter-bar" role="tablist" aria-label="Filtrer le TOP 10 par console">
           <button
             type="button"
             className={`player-games-filter-btn${activeFilter === 'ALL' ? ' active' : ''}`}
@@ -110,9 +147,12 @@ function TestedGamesRow({ games, heading = 'Tes jeux favoris', sub = 'Consoles i
       {displayedGames.length > 0 ? (
         <div className="player-games-row">
           {displayedGames.map((title) => {
+            const rank = list.indexOf(title) + 1;
             const platforms = gamePlatforms(title);
+            const podiumClass = rank <= 3 ? ` player-game-pill-top-${rank}` : '';
             return (
-              <span key={title} className="player-game-pill">
+              <span key={`${title}-${rank}`} className={`player-game-pill${podiumClass}`}>
+                {rank <= 3 && <span className={`player-game-rank player-game-rank-${rank}`}>TOP {rank}</span>}
                 <span className="player-game-pill-title">{title}</span>
                 {platforms.length > 0 && (
                   <span className="player-game-pill-platforms">
@@ -131,7 +171,7 @@ function TestedGamesRow({ games, heading = 'Tes jeux favoris', sub = 'Consoles i
         <p className="player-empty-note">
           {list.length > 0
             ? 'Aucun jeu correspondant à cette console.'
-            : (emptyText || 'Aucun jeu favori pour l’instant.')}
+            : (emptyText || 'Aucun jeu dans ton TOP 10 pour l’instant.')}
         </p>
       )}
     </div>
@@ -296,10 +336,11 @@ export default function Profile() {
             )}
           </div>
 
-          {/* JEUX FAVORIS — les 20 premiers jeux sélectionnés dans le hub */}
-          <TestedGamesRow
+          {/* TOP 10 — les dix premiers jeux sélectionnés dans le hub */}
+          <TopGamesRow
             games={ownGames}
-            emptyText="Aucun jeu favori pour l’instant — ajoute-les depuis ton hub."
+            editable
+            emptyText="Aucun jeu dans ton TOP 10 pour l’instant — ajoute-les depuis ton hub."
           />
 
           <div className="player-actions-card">
@@ -400,7 +441,7 @@ export default function Profile() {
           )}
 
           {meta.testedGames?.length > 0 && (
-            <TestedGamesRow games={meta.testedGames} />
+            <TopGamesRow games={meta.testedGames} />
           )}
 
           {meta.badges?.length > 0 && (
@@ -495,7 +536,7 @@ export default function Profile() {
           )}
 
           {demoPlayer.testedGames?.length > 0 && (
-            <TestedGamesRow games={demoPlayer.testedGames} />
+            <TopGamesRow games={demoPlayer.testedGames} />
           )}
 
           <div className="player-actions-card">
@@ -599,7 +640,7 @@ export default function Profile() {
           </div>
         )}
         {Array.isArray(remoteProfile.tested_games) && remoteProfile.tested_games.length > 0 && (
-          <TestedGamesRow games={remoteProfile.tested_games} />
+          <TopGamesRow games={remoteProfile.tested_games} />
         )}
 
         <div className="player-actions-card">
