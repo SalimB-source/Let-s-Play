@@ -34,6 +34,8 @@ try {
     }
     if (!tmpIndex.includes(`"${story.slug}"`)) fail(`fixture ${file} : slug absent de l’index généré`);
     if (!fs.existsSync(path.join(tmp, 'public/news-auto', `${story.slug}.svg`))) fail(`fixture ${file} : visuel SVG absent`);
+    if (!/^https?:\/\//.test(story.officialThumbnailUrl)) fail(`fixture ${file} : miniature officielle absente ou invalide`);
+    if (!fs.existsSync(path.join(tmp, 'public', story.thumbnail))) fail(`fixture ${file} : fichier de miniature officielle absent`);
     if (!fs.readFileSync(path.join(tmp, 'news-bot/report.md'), 'utf8').includes(story.slug)) fail(`fixture ${file} : absente du rapport`);
   }
   if (!tmpIndex.startsWith('// ⚙️ FICHIER GÉNÉRÉ')) fail('l’index généré doit commencer par la bannière « FICHIER GÉNÉRÉ »');
@@ -65,6 +67,10 @@ for (const file of committed) {
   }
   if (story.slug && !indexSlugs.includes(story.slug)) fail(`${file} : slug « ${story.slug} » absent de l’index`);
   if (!fs.existsSync(path.join(ROOT, 'public/news-auto', `${story.slug}.svg`))) fail(`${file} : visuel public/news-auto/${story.slug}.svg absent`);
+  if (story.thumbnail || story.officialThumbnailUrl) {
+    if (!/^https?:\/\//.test(story.officialThumbnailUrl)) fail(`${file} : miniature officielle absente ou invalide`);
+    if (!fs.existsSync(path.join(ROOT, 'public', story.thumbnail))) fail(`${file} : fichier de miniature officielle absent`);
+  }
   const expectedFile = `${story.date.split('.').reverse().join('-')}-${story.slug}.json`;
   if (file !== expectedFile) fail(`${file} : nom de fichier attendu « ${expectedFile} »`);
   dates.push(story.date.split('.').reverse().join(''));

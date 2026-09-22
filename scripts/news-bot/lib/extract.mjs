@@ -62,7 +62,15 @@ export function extractFromHtml(html) {
     ])
     || paragraphs[0]
     || '';
-  return { headline: decodeEntities(headline).trim(), description, paragraphs };
+  const jsonLdImage = typeof article?.image === 'string'
+    ? article.image
+    : Array.isArray(article?.image) ? article.image.find((image) => typeof image === 'string') : article?.image?.url;
+  const officialThumbnailUrl = jsonLdImage
+    || metaContent(html, [
+      /<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i,
+      /<meta[^>]+name=["']twitter:image(?::src)?["'][^>]+content=["']([^"']+)["']/i,
+    ]);
+  return { headline: decodeEntities(headline).trim(), description, paragraphs, officialThumbnailUrl: decodeEntities(officialThumbnailUrl).trim() };
 }
 
 export async function extractArticle(url) {

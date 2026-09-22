@@ -179,6 +179,8 @@ export function validateStory(story, { internal = false } = {}) {
   if (!/^\d{2}\.\d{2}\.\d{4}$/.test(story.date)) throw new Error(`champ « date » invalide : ${story.date}`);
   if (!story.slug || !/^[a-z0-9-]+$/.test(story.slug)) throw new Error(`slug invalide : ${story.slug}`);
   if (!story.image.startsWith('news-auto/') || !story.image.endsWith('.svg')) throw new Error(`image invalide : ${story.image}`);
+  if (!story.thumbnail || !story.thumbnail.startsWith('news-auto/') || !/-official\.(jpg|png|webp|avif|gif|svg)$/.test(story.thumbnail)) throw new Error(`thumbnail officielle invalide : ${story.thumbnail || 'absente'}`);
+  if (!/^https?:\/\//.test(story.officialThumbnailUrl)) throw new Error(`officialThumbnailUrl invalide : ${story.officialThumbnailUrl}`);
   if (!/^https?:\/\//.test(story.sourceUrl)) throw new Error(`sourceUrl invalide : ${story.sourceUrl}`);
   for (const [field, max] of Object.entries(LENGTH_RULES)) {
     if (story[field] && story[field].length > max) throw new Error(`champ « ${field} » trop long (${story[field].length} > ${max})`);

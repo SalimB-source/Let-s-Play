@@ -884,6 +884,14 @@ et liée.
   (`src/news/auto/*.json` + `src/news/autoIndex.js` + visuels SVG générés dans
   `public/news-auto/`), ce qui déclenche le déploiement Pages. Rien de neuf →
   aucun commit. Sortie clairement en échec si *tous* les flux sont tombés.
+- **Miniature officielle obligatoire** : avant publication, le robot extrait
+  `image` du JSON-LD ou `og:image`/`twitter:image` de l’article source, vérifie
+  qu’il s’agit d’une URL HTTP(S), télécharge le fichier image et contrôle son
+  type MIME et sa taille minimale. Si la source ne fournit pas de miniature
+  officielle exploitable, l’article est abandonné ; aucune carte éditoriale ne
+  peut contourner cette règle. La miniature locale est utilisée par les cartes
+  et la couverture de l’article, tandis que le visuel SVG Let’s Play reste
+  conservé comme repli éditorial historique.
 - **Intégration site** : `src/lib/autoNews.js` dérive la liste des actus
   (ouvertes par les plus récentes), les routes `/news/<slug>` (route générique
   dans `src/main.jsx` — les slugs manuels restent prioritaires, un slug

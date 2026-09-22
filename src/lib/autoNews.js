@@ -16,7 +16,7 @@ export const autoNewsStories = Object.values(autoStories)
 
 const listingOf = (story) => ({
   to: `/news/${story.slug}`,
-  image: story.image,
+  image: story.thumbnail || story.image,
   alt: story.imageAlt,
   badge: story.category,
   kicker: `${story.date} · ${(story.sourceName || story.cover || 'RÉDACTION').toUpperCase()}`,
@@ -35,5 +35,5 @@ export const autoSearchEntries = autoNewsStories.map((story) => ({
   description: story.dek,
   route: `/news/${story.slug}`,
   keywords: `${story.category} ${story.cover} ${story.sourceName || ''}`.toLowerCase(),
-  image: `${base}${story.image}`,
+  image: `${base}${story.thumbnail || story.image}`,
 }));
