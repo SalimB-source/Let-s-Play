@@ -229,7 +229,7 @@ async function composeArticle(item, taken) {
   if (fields) {
     // Les champs rédigés par le modèle complètent le gabarit : le cadre
     // (slug, date, image, source, url) reste contrôlé par le bot.
-    for (const key of ['title', 'accent', 'category', 'cover', 'dek', 'lead', 'intro', 'h2', 'p1', 'quote', 'quoteBy', 'h2b', 'p2', 'p3', 'p4', 'takeText']) {
+    for (const key of ['title', 'accent', 'category', 'cover', 'dek', 'lead', 'intro', 'h2', 'p1', 'quote', 'quoteBy', 'h2b', 'p2', 'p3', 'p4', 'takeText', 'sentiment']) {
       if (typeof fields[key] === 'string' && fields[key].trim()) story[key] = fields[key].trim().replace(/\s+/g, ' ');
     }
     if (typeof fields.title === 'string' && fields.title.trim()) {
@@ -237,6 +237,17 @@ async function composeArticle(item, taken) {
       story.accent = (typeof fields.accent === 'string' && fields.accent.trim() ? fields.accent.trim() : accent);
       if (!/[.!?]$/.test(story.accent)) story.accent += '.';
     }
+    // Le modèle peut fournir sentiment : on normalise.
+    if (typeof fields.sentiment === 'string') {
+      const s = fields.sentiment.trim().toLowerCase();
+      if (['positive', 'negative', 'mixed', 'neutral'].includes(s)) story.sentiment = s === 'neutral' ? 'mixed' : s;
+    }
+  }
+  // Filet de sécurité : si sentiment manquant/invalide, on garde celui du gabarit (déjà présent via base)
+  if (!story.sentiment || !['positive', 'negative', 'mixed'].includes(String(story.sentiment).toLowerCase())) {
+    story.sentiment = base.sentiment || 'mixed';
+  } else {
+    story.sentiment = String(story.sentiment).toLowerCase() === 'neutral' ? 'mixed' : String(story.sentiment).toLowerCase();
   }
   story.credit = fields ? 'Article rédigé avec l’assistance d’un modèle de langage, à partir de la source citée. Visuel : carte éditoriale Let’s Play générée automatiquement.' : base.credit;
   story.auto = true;
