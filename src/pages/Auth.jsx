@@ -471,6 +471,40 @@ function isInternalPath(path) {
   return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
 }
 
+// The two forms the pop-up can show when the visitor is signed out. `update`
+// (password recovery) is added by the recovery guard, not by a link.
+export const AUTH_MODES = ['signin', 'signup'];
+
+function normalizeMode(value) {
+  return AUTH_MODES.includes(value) ? value : '';
+}
+
+/**
+ * Read the `?mode=` parameter of the address bar. The navbar renders
+ * « Log in » and « Register » as links to `/auth?mode=signin` and
+ * `/auth?mode=signup`, so the register button must open the register form —
+ * not the log-in one. Unknown values are ignored.
+ */
+export function modeFromSearch(search) {
+  if (typeof search !== 'string' || !search) return '';
+  try {
+    return normalizeMode(new URLSearchParams(search).get('mode'));
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
+ * Which form to show first. An explicit prop wins (the `/register` route
+ * passes `initialMode="signup"`); otherwise the address bar decides, and
+ * anything else falls back to log-in. `initialMode="update"` is legacy: a
+ * password recovery is detected from the URL hash, not from the prop.
+ */
+export function readAuthMode(initialMode, search) {
+  if (initialMode === 'update') return 'signin';
+  return normalizeMode(initialMode) || modeFromSearch(search) || 'signin';
+}
+
 function rememberReturnTo(path) {
   if (typeof window === 'undefined' || !isInternalPath(path)) return;
   try {
@@ -510,7 +544,7 @@ function formatJoined(iso) {
   }
 }
 
-export default function Auth({ initialMode = 'signin' }) {
+export default function Auth({ initialMode = '' }) {
   const {
     user,
     isDemo,
@@ -527,8 +561,11 @@ export default function Auth({ initialMode = 'signin' }) {
   const track = useAchievementAction();
   const t = copy[lang] || copy.en;
   const returnToRef = useRef('');
+  // Mode requested by the address bar: the navbar renders « Log in » and
+  // « Register » as links to `/auth?mode=signin` / `/auth?mode=signup`.
+  const requestedMode = readAuthMode(initialMode, location.search);
 
-  const [mode, setMode] = useState(initialMode === 'update' ? 'signin' : initialMode);
+  const [mode, setMode] = useState(requestedMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -553,6 +590,10 @@ export default function Auth({ initialMode = 'signin' }) {
 
   // Arriving from a "sign in to comment" link: remember where to go back to
   // and open the requested form (sign-in instead of the default sign-up).
+  // The address bar is watched too: the navbar « Log in » and « Register »
+  // buttons both point at `/auth` and only differ by `?mode=`, so clicking one
+  // while the pop-up is already open has to switch the form. An explicit
+  // `state.mode` from an in-app link wins over the query parameter.
   useEffect(() => {
     const from = location.state?.from;
     if (isInternalPath(from)) {
@@ -561,11 +602,15 @@ export default function Auth({ initialMode = 'signin' }) {
     } else {
       returnToRef.current = peekReturnTo();
     }
-    const requested = location.state?.mode;
-    if (requested === 'signin' || requested === 'signup') {
+    const requested = normalizeMode(location.state?.mode) || modeFromSearch(location.search);
+    if (requested) {
       setMode(requested);
+      setError('');
+      setMessage('');
+      setShowResend(false);
+      setConfirmPassword('');
     }
-  }, [location.state]);
+  }, [location.state, location.search]);
 
   // Real accounts: the "comments" stat counts the player's rows in
   // public.comments (demo profiles ship their own numbers).
@@ -617,12 +662,24 @@ export default function Auth({ initialMode = 'signin' }) {
     if (target) navigate(target, { replace: true });
   }, [user, isRecovery, navigate]);
 
+  // Keeps `/auth?mode=…` in step with the form on screen: the two navbar
+  // buttons and a reload then always agree on which pop-up was asked for.
+  // `/register` keeps its own shape, and forgot/update have no URL of theirs.
+  const syncModeInUrl = (next) => {
+    if (initialMode || !AUTH_MODES.includes(next) || !location.pathname.endsWith('/auth')) return;
+    const params = new URLSearchParams(location.search);
+    if (params.get('mode') === next) return;
+    params.set('mode', next);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true, state: location.state });
+  };
+
   const switchMode = (next) => {
     setMode(next);
     setError('');
     setMessage('');
     setShowResend(false);
     setConfirmPassword('');
+    syncModeInUrl(next);
   };
 
   // Handle Form Submission (signup / signin / forgot / update)

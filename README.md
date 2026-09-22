@@ -53,10 +53,20 @@ Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des ép
 Registration, login, Google / Microsoft (Azure) sign-in, password reset and the
 connected player hub (`/auth`) run on [Supabase Auth](https://supabase.com/auth)
 (`@supabase/supabase-js`, client in `src/lib/supabase.js`, session in
-`src/auth/AuthContext.jsx`). When Supabase is not configured — or the visitor is
-offline — the navigation bar shows two separate buttons, **Log in** and
-**Register** (highlighted), instead of the single « Join » link, and `/auth`
-explains what is missing.
+`src/auth/AuthContext.jsx`). The navigation bar shows two separate buttons,
+**Log in** and **Register** (highlighted), instead of the single « Join » link,
+and `/auth` explains what is missing when Supabase is not configured — or the
+visitor is offline.
+
+Each button opens its own form: they are links to `/auth?mode=signin` and
+`/auth?mode=signup`, and the page reads that `?mode=` parameter
+(`readAuthMode` in `src/pages/Auth.jsx`) — **Register** therefore lands on the
+register form (gamertag + password confirmation), never on the log-in one. The
+`/register` shortcut passes `initialMode="signup"` and wins over the query
+string, `state.mode` (links coming from the comment section) wins over both,
+and while the pop-up is already open the form follows the address bar, so
+clicking the other button switches forms instead of doing nothing. Values other
+than `signin` / `signup` (or no parameter at all) fall back to log-in.
 
 The one-click demo accounts (`VORTEX_DZ`, `PIXEL_QUEEN`) are **no longer shipped**:
 `src/auth/demoProfiles.js` exports an empty registry, so the demo card on `/auth`
@@ -643,6 +653,12 @@ Editor du projet Supabase (le script est relançable sans risque).
   plus aucun reste des anciennes notifications, un seul module écrit la
   progression locale).
 - `npm run check:i18n` — les routes × FR / EN / AR, dont le hub joueur `/auth`.
+- `npm run check:auth` — les deux boutons de compte de la navigation : lecture du
+  `?mode=` (les deux boutons, `?mode=` vide ou inconnu, priorité de la prop
+  `/register`), rendu SSR réel de chaque URL (quel formulaire s'ouvre : pseudo et
+  confirmation côté inscription, « mot de passe oublié » côté connexion), liens de
+  la navbar, et garde-fous de source pour que le mode initial continue de suivre
+  l'URL — y compris quand le pop-up est déjà ouvert.
 
 ## Live YouTube
 
