@@ -918,6 +918,9 @@
 }
 
 .player-platform-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font: 600 11px var(--mono);
   letter-spacing: .14em;
   padding: 7px 14px;
@@ -952,6 +955,38 @@
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
 
+.player-console-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.player-console-logo-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .08);
+  transition: all .2s;
+  flex-shrink: 0;
+}
+
+.player-console-option:hover .player-console-logo-box {
+  background: rgba(34, 211, 238, .1);
+  border-color: rgba(34, 211, 238, .3);
+}
+
+.player-console-option.selected .player-console-logo-box {
+  background: rgba(34, 211, 238, .18);
+  border-color: rgba(34, 211, 238, .5);
+  box-shadow: 0 0 12px rgba(34, 211, 238, .2);
+}
+
 .player-console-option:hover:not(:disabled) {
   border-color: var(--line-strong);
   transform: translateY(-1px);
@@ -984,10 +1019,7 @@
 }
 
 .player-console-check {
-  position: absolute;
-  top: 10px;
-  inset-inline-end: 10px;
-  font: 700 12px var(--mono);
+  font: 700 13px var(--mono);
   color: var(--dim);
 }
 
@@ -996,8 +1028,119 @@
 }
 
 /* ------------------------------------------------------------------
-   JEUX TESTÉS (hub) — catalogue PS5 / Xbox Series X + recherche
+   JEUX TESTÉS (hub) — catalogue multi-plateformes + filtre par console + recherche
    ------------------------------------------------------------------ */
+.player-games-filter-container {
+  margin-bottom: 12px;
+}
+
+.player-games-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font: 600 11px var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.player-games-filter-reset {
+  background: none;
+  border: none;
+  color: var(--cyan);
+  cursor: pointer;
+  font: 600 11px var(--mono);
+  padding: 0;
+  transition: opacity .2s;
+}
+
+.player-games-filter-reset:hover {
+  text-decoration: underline;
+}
+
+.player-games-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.player-games-filter-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.player-games-filter-bar::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 2px;
+}
+
+.player-games-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 600 11px var(--mono);
+  letter-spacing: .08em;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .2s;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+
+.player-games-filter-btn:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  background: rgba(255, 255, 255, .07);
+}
+
+.player-games-filter-btn.active {
+  background: rgba(34, 211, 238, .12);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 10px rgba(34, 211, 238, .15);
+}
+
+.player-games-filter-count {
+  font-size: 10px;
+  opacity: .8;
+  background: rgba(255, 255, 255, .08);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.player-games-filter-btn.active .player-games-filter-count {
+  background: rgba(34, 211, 238, .25);
+  color: #fff;
+}
+
+.player-profile-games-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding: 2px 2px 6px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.player-profile-games-filter-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.player-profile-games-filter-bar::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 2px;
+}
+
 .player-games-chips {
   display: flex;
   flex-wrap: wrap;
@@ -1117,6 +1260,9 @@
 }
 
 .player-game-row-platforms em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font: 600 9px var(--mono);
   font-style: normal;
   letter-spacing: .12em;
@@ -1202,9 +1348,22 @@
 }
 
 .player-game-pill-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.player-game-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font: 600 9px var(--mono);
-  letter-spacing: .14em;
+  letter-spacing: .12em;
   color: var(--cyan);
+  background: rgba(34, 211, 238, .08);
+  border: 1px solid rgba(34, 211, 238, .25);
+  padding: 2px 6px;
 }
 
 .player-badges-grid {

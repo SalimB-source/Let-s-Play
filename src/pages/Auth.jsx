@@ -16,7 +16,9 @@ import {
   MAX_TESTED_GAMES,
   normalizePlatforms,
   normalizeSearchText,
+  gamePlatforms,
 } from '../lib/gameLibrary';
+import ConsoleLogo from '../components/ConsoleLogo';
 import FriendsHubSection from '../friends/FriendsHubSection';
 import MessagesHubSection from '../messages/MessagesHubSection';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
@@ -204,10 +206,12 @@ const copy = {
 
     // Consoles & tested games
     consolesHint: 'Tick every console you own — your selection is shown on your public profile.',
-    testedGamesHeading: 'GAMES TESTED · PS5 / PS4 / XBOX SERIES X / PC',
-    testedGamesHint: 'Search the PS5 / PS4 / Xbox Series X / PC catalogue and tag the games you have tested.',
+    testedGamesHeading: 'GAMES TESTED',
+    testedGamesHint: 'Filter by console or search across retro and modern platforms, then mark games you tested.',
+    filterAll: 'All',
+    filterByConsole: 'Filter by console:',
     gamesSearchPlaceholder: 'Search a game…',
-    noGameMatch: 'No game of the catalogue matches this search.',
+    noGameMatch: 'No game matches this console filter or search.',
     addGame: 'ADD',
     gameTested: 'TESTED',
     removeGame: 'Remove',
@@ -317,10 +321,12 @@ const copy = {
 
     // Consoles & jeux testés
     consolesHint: 'Coche toutes les consoles que tu possèdes — la sélection s’affiche sur ton profil public.',
-    testedGamesHeading: 'JEUX TESTÉS · PS5 / PS4 / XBOX SERIES X / PC',
-    testedGamesHint: 'Recherche dans le catalogue PS5 / PS4 / Xbox Series X / PC et marque les jeux que tu as testés.',
+    testedGamesHeading: 'JEUX TESTÉS',
+    testedGamesHint: 'Filtre par console ou recherche dans le catalogue rétro et moderne, puis marque les jeux que tu as testés.',
+    filterAll: 'Toutes',
+    filterByConsole: 'Filtrer par console :',
     gamesSearchPlaceholder: 'Rechercher un jeu…',
-    noGameMatch: 'Aucun jeu du catalogue ne correspond à cette recherche.',
+    noGameMatch: 'Aucun jeu ne correspond à cette console ou à cette recherche.',
     addGame: 'AJOUTER',
     gameTested: 'TESTÉ',
     removeGame: 'Retirer',
@@ -430,10 +436,12 @@ const copy = {
 
     // وحدات التحكم والألعاب المجرَّبة
     consolesHint: 'حدّد كل وحدة تحكم تمتلكها — ستظهر اختياراتك على ملفك الشخصي العام.',
-    testedGamesHeading: 'الألعاب المجرَّبة · PS5 / PS4 / Xbox Series X / PC',
-    testedGamesHint: 'ابحث في كتالوج PS5 / PS4 / Xbox Series X / PC وحدّد الألعاب التي جرّبتها.',
+    testedGamesHeading: 'الألعاب المجرَّبة',
+    testedGamesHint: 'صفِّ حسب الجهاز أو ابحث في الكتالوج الكلاسيكي والحديث، ثم حدّد الألعاب التي اختبرتها.',
+    filterAll: 'الكل',
+    filterByConsole: 'تصفية حسب المنصة:',
     gamesSearchPlaceholder: 'ابحث عن لعبة…',
-    noGameMatch: 'لا توجد لعبة في الكتالوج تطابق هذا البحث.',
+    noGameMatch: 'لا توجد لعبة تطابق هذا الجهاز أو نص البحث.',
     addGame: 'أضِف',
     gameTested: 'مُجرَّبة',
     removeGame: 'إزالة',
@@ -1513,6 +1521,7 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
   const [draftPlatforms, setDraftPlatforms] = useState(() => normalizePlatforms(meta.platforms));
   const [draftGames, setDraftGames] = useState(() => (Array.isArray(meta.testedGames) ? meta.testedGames : []).slice());
   const [query, setQuery] = useState('');
+  const [selectedConsole, setSelectedConsole] = useState('ALL');
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState('');
   const [err, setErr] = useState('');
@@ -1591,9 +1600,11 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
   };
 
   const needle = normalizeSearchText(query);
-  const filteredGames = TESTED_GAMES_CATALOG.filter((game) =>
-    needle ? normalizeSearchText(game.title).includes(needle) : true,
-  );
+  const filteredGames = TESTED_GAMES_CATALOG.filter((game) => {
+    const matchesQuery = needle ? normalizeSearchText(game.title).includes(needle) : true;
+    const matchesConsole = selectedConsole === 'ALL' ? true : game.platforms.includes(selectedConsole);
+    return matchesQuery && matchesConsole;
+  });
   const atCap = draftGames.length >= MAX_TESTED_GAMES;
 
   const saveRow = (sectionDirty) => (
@@ -1627,9 +1638,14 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
                 onClick={() => togglePlatform(option.id)}
                 disabled={saving}
               >
+                <div className="player-console-top">
+                  <div className="player-console-logo-box">
+                    <ConsoleLogo consoleId={option.id} size={22} />
+                  </div>
+                  <span className="player-console-check" aria-hidden="true">{selected ? '✓' : '+'}</span>
+                </div>
                 <span className="player-console-id">{option.id}</span>
                 <span className="player-console-label">{option.label}</span>
-                <span className="player-console-check" aria-hidden="true">{selected ? '✓' : '+'}</span>
               </button>
             );
           })}
@@ -1639,7 +1655,7 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
         {err && <p className="player-edit-note player-edit-error">{err}</p>}
       </div>
 
-      {/* JEUX TESTÉS — catalogue PS5 / PS4 / Xbox Series X / PC + recherche */}
+      {/* JEUX TESTÉS — catalogue multi-plateformes + filtre par console + recherche */}
       <div className="player-section">
         <div className="player-section-header">
           <h2>{t.testedGamesHeading}</h2>
@@ -1648,25 +1664,74 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
 
         {draftGames.length > 0 ? (
           <div className="player-games-chips">
-            {draftGames.map((title) => (
-              <span key={title} className="player-game-chip">
-                <span className="player-game-chip-title">{title}</span>
-                <button
-                  type="button"
-                  className="player-game-chip-remove"
-                  onClick={() => toggleGame(title)}
-                  disabled={saving}
-                  aria-label={`${t.removeGame} — ${title}`}
-                  title={t.removeGame}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
+            {draftGames.map((title) => {
+              const platforms = gamePlatforms(title);
+              return (
+                <span key={title} className="player-game-chip">
+                  {platforms.length > 0 && <ConsoleLogo consoleId={platforms[0]} size={13} />}
+                  <span className="player-game-chip-title">{title}</span>
+                  <button
+                    type="button"
+                    className="player-game-chip-remove"
+                    onClick={() => toggleGame(title)}
+                    disabled={saving}
+                    aria-label={`${t.removeGame} — ${title}`}
+                    title={t.removeGame}
+                  >
+                    ×
+                  </button>
+                </span>
+              );
+            })}
           </div>
         ) : (
           <p className="player-empty-note">{t.noTestedGamesYet}</p>
         )}
+
+        {/* FILTRE PAR CONSOLE */}
+        <div className="player-games-filter-container">
+          <div className="player-games-filter-header">
+            <span>{t.filterByConsole}</span>
+            {selectedConsole !== 'ALL' && (
+              <button
+                type="button"
+                className="player-games-filter-reset"
+                onClick={() => setSelectedConsole('ALL')}
+              >
+                {t.filterAll} ({TESTED_GAMES_CATALOG.length}) ×
+              </button>
+            )}
+          </div>
+          <div className="player-games-filter-bar" role="tablist" aria-label={t.filterByConsole}>
+            <button
+              type="button"
+              className={`player-games-filter-btn${selectedConsole === 'ALL' ? ' active' : ''}`}
+              onClick={() => setSelectedConsole('ALL')}
+              aria-pressed={selectedConsole === 'ALL'}
+            >
+              <span>{t.filterAll}</span>
+              <span className="player-games-filter-count">{TESTED_GAMES_CATALOG.length}</span>
+            </button>
+            {CONSOLE_OPTIONS.map((consoleOpt) => {
+              const count = TESTED_GAMES_CATALOG.filter((g) => g.platforms.includes(consoleOpt.id)).length;
+              if (count === 0) return null;
+              const isActive = selectedConsole === consoleOpt.id;
+              return (
+                <button
+                  key={consoleOpt.id}
+                  type="button"
+                  className={`player-games-filter-btn${isActive ? ' active' : ''}`}
+                  onClick={() => setSelectedConsole(isActive ? 'ALL' : consoleOpt.id)}
+                  aria-pressed={isActive}
+                >
+                  <ConsoleLogo consoleId={consoleOpt.id} size={14} />
+                  <span>{consoleOpt.id}</span>
+                  <span className="player-games-filter-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <label className="player-games-search">
           <span className="player-games-search-icon" aria-hidden="true">🔍</span>
@@ -1689,7 +1754,11 @@ function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
                   <div className="player-game-row-info">
                     <span className="player-game-row-title">{game.title}</span>
                     <span className="player-game-row-platforms">
-                      {game.platforms.map((p) => <em key={p}>{p}</em>)}
+                      {game.platforms.map((p) => (
+                        <em key={p}>
+                          <ConsoleLogo consoleId={p} size={11} /> {p}
+                        </em>
+                      ))}
                     </span>
                   </div>
                   <button
