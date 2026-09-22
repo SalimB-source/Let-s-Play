@@ -38,7 +38,7 @@ export const translations = {
       h1b: 'YOUR REALITY.',
       heroText: 'Reviews, previews, e-sport, tech and pop culture — the show for the community that never stopped playing. Every drop, every round, every story worth playing.',
       watchEpisodes: 'Watch the episodes',
-      enterShow: 'Enter the show',
+      enterShow: 'See the news',
       hud: { subs: 'YOUTUBE SUBS', community: 'IG COMMUNITY', reasons: 'REASONS TO PLAY', scroll: 'SCROLL' },
       ticker: ['GAMING', 'E-SPORT', 'CINEMA', 'TECH', 'POP CULTURE'],
       featured: {
@@ -315,7 +315,7 @@ export const translations = {
       h1a: 'PASSE UN', h1b: 'NIVEAU AU RÉEL.',
       heroText: 'Tests, avant-premières, e-sport, tech et pop culture — l’émission de la communauté qui n’a jamais arrêté de jouer. Chaque sortie, chaque round, chaque histoire qui mérite d’être jouée.',
       watchEpisodes: 'Regarder les épisodes',
-      enterShow: 'Entrer dans l’émission',
+      enterShow: 'Voir les actus',
       hud: { subs: 'ABONNÉS YOUTUBE', community: 'COMMUNAUTÉ IG', reasons: 'RAISONS DE JOUER', scroll: 'DÉFILER' },
       ticker: ['GAMING', 'E-SPORT', 'CINÉMA', 'TECH', 'POP CULTURE'],
       featured: {
@@ -590,7 +590,7 @@ export const translations = {
       h1a: 'ارتقِ', h1b: 'بواقعك.',
       heroText: 'مراجعات، عروض أولى، رياضات إلكترونية، تكنولوجيا وثقافة شعبية — البرنامج المخصص للمجتمع الذي لم يتوقف عن اللعب أبدًا. كل إصدار، كل جولة، كل قصة تستحق أن تُلعب.',
       watchEpisodes: 'شاهد الحلقات',
-      enterShow: 'ادخل إلى البرنامج',
+      enterShow: 'شاهد الأخبار',
       hud: { subs: 'مشتركو يوتيوب', community: 'مجتمع إنستغرام', reasons: 'أسباب للعب', scroll: 'مرر للأسفل' },
       ticker: ['ألعاب', 'رياضات إلكترونية', 'سينما', 'تقنية', 'ثقافة شعبية'],
       featured: {
