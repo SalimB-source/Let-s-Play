@@ -77,15 +77,19 @@ export function renderAuth({ pathname = '/auth', search = '', hash = '', initial
   ));
 }
 
-/** Rend la barre de navigation pour lire ses deux boutons de compte. */
-export function renderNav() {
+/**
+ * Rend la barre de navigation pour lire ses boutons de compte. Sans `session`
+ * on obtient le visiteur (« Log in » / « Register ») ; avec une session
+ * Supabase factice, le membre connecté (pastille + bouton « Log out »).
+ */
+export function renderNav({ session = null } = {}) {
   return withLang('en', () => renderToString(
     React.createElement(
       LanguageProvider,
       null,
       React.createElement(
         AuthProvider,
-        null,
+        { initialSession: session },
         React.createElement(
           MemoryRouter,
           { initialEntries: ['/news'] },

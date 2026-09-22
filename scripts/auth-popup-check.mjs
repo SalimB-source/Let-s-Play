@@ -11,7 +11,9 @@
  *   1. la résolution du mode (paramètre d'URL, prop `/register`, valeurs
  *      inconnues, paramètre absent) ;
  *   2. le rendu réel (SSR) de chaque URL : quel formulaire s'affiche ;
- *   3. les deux boutons de la navigation pointent bien sur `/auth?mode=…` ;
+ *   3. les deux boutons de la navigation pointent bien sur `/auth?mode=…`, et
+ *      le membre connecté voit à la place la pastille de compte suivie du
+ *      bouton « Se déconnecter » (croix) ;
  *   4. les garde-fous de source : le mode suit l'URL y compris quand le pop-up
  *      est déjà ouvert (effet sur `location.search`), et le fichier ne revient
  *      pas à un mode initial figé.
@@ -125,11 +127,24 @@ ok('la connexion garde « Mot de passe oublié ? »', signinHtml.includes('Forgo
 
 /* --------------------------------------- 3. Les boutons de la navigation */
 
-console.log('\n[3/4] les deux boutons de la navbar pointent sur le bon mode\n');
+console.log('\n[3/4] les boutons de la navbar : visiteur (mode) et membre connecté (Log out)\n');
 
 const navHtml = renderNav();
 ok('lien « Log in » → /auth?mode=signin', /href="\/auth\?mode=signin"/.test(navHtml));
 ok('lien « Register » → /auth?mode=signup', /href="\/auth\?mode=signup"/.test(navHtml));
+ok('visiteur : pas de bouton « Log out »', !/class="nav-logout"/.test(navHtml));
+
+// Membre connecté : la pastille de compte remplace les deux liens et le bouton
+// « Log out » (croix) ferme la rangée d'actions — donc tout à droite de la barre.
+const connectedHtml = renderNav({
+  session: { user: { id: 'smoke-user', email: 'smoke@letsplay.dz', user_metadata: { gamertag: 'SmokeDZ' } } },
+});
+const logoutIndex = connectedHtml.search(/<button[^>]*class="nav-logout"/);
+ok('connecté : bouton « Log out » présent', logoutIndex !== -1);
+ok('connecté : le bouton porte le libellé « Log out »', /class="nav-logout"[^>]*aria-label="Log out"/.test(connectedHtml));
+ok('connecté : icône croix (SVG) dans le bouton', /class="nav-logout-icon"/.test(connectedHtml));
+ok('connecté : le bouton vient après la pastille de compte', logoutIndex > connectedHtml.indexOf('nav-account connected'));
+ok('connecté : plus de lien « Log in » / « Register »', !/href="\/auth\?mode=(signin|signup)"/.test(connectedHtml));
 
 /* ----------------------------------------- 4. Garde-fous de source */
 
