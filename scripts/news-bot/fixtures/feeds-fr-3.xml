@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fixture de démo (flux simulé façon Gamekult) — contenus inventés pour
+     les tests hors-ligne uniquement. -->
+<rss version="2.0">
+  <channel>
+    <title>Fixture FR 3</title>
+    <item>
+      <guid>fixture-fr-3-001</guid>
+      <title><![CDATA[Ghost of Yōtei : Sony dévoile le mode photo et le support PS5 Pro deux semaines avant la sortie]]></title>
+      <link>https://fixtures.letsplay.example/fixture/article-4</link>
+      <pubDate>Mon, 21 Sep 2026 14:10:00 +0200</pubDate>
+      <category><![CDATA[Actu PlayStation]]></category>
+      <description><![CDATA[Le prochain jeu de Sucker Punch arrive le 2 octobre : Sony confirme le ray tracing renforcé sur PS5 Pro et un mode photo complet dès le jour un.]]></description>
+    </item>
+  </channel>
+</rss>

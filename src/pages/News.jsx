@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
+// Les actus du jour générées par le robot ouvrent la liste (les plus récentes
+// d’abord) ; les articles manuels de la rédaction suivent dans l’ordre.
+import { autoNewsListing } from '../lib/autoNews';
 
 // La section calendrier + compte à rebours (01) a été déplacée sur la page
 // d'accueil, juste après le hero — la frise complète vit sur /calendrier.
@@ -43,7 +46,7 @@ export default function News(){
     carouselRef.current?.scrollBy({ left: direction * carouselRef.current.clientWidth * 0.82, behavior: 'smooth' });
   };
 
-  const articles = [
+  const articles = [...autoNewsListing,
     { to: '/news/netmarble-tgs-2026', image: 'tokyo-game-show-2026-news.jpg', alt: 'Tokyo Game Show 2026 — visuel officiel de l’événement', badge: 'TGS 2026 · NETMARBLE', kicker: '21.09.2026 · NETMARBLE', title: 'NETMARBLE QUITTE LE TGS AVEC TROIS JEUX.', excerpt: 'Shangri-La Frontier: The Seven Colossi, Solo Leveling: KARMA et Pearl in Blue ont été montrés sous forme de démos. Les dates de sortie restent ouvertes.', read: 'LIRE L’ARTICLE' },
     { to: '/news/control-resonant-24-septembre', image: 'physint-news.jpg', alt: 'Jeu d’action paranormal — visuel éditorial Let’s Play', badge: 'CONTROL RESONANT · SORTIE', kicker: '21.09.2026 · REMEDY', title: 'CONTROL RESONANT ARRIVE À J-3.', excerpt: 'Le lancement mondial reste fixé au 24 septembre sur PS5, Xbox Series et PC. La version Mac suivra plus tard en 2026.', read: 'LIRE L’ARTICLE' },
     { to: '/news/sorties-24-septembre', image: 'monster-hunter-wilds-switch2.jpg', alt: 'Sélection de jeux vidéo — visuel éditorial Let’s Play', badge: 'SORTIES · 24 SEPTEMBRE', kicker: '21.09.2026 · CALENDRIER', title: 'LE 24 SEPTEMBRE VA FAIRE DU BRUIT.', excerpt: 'CONTROL Resonant et Silent Hill: Townfall partagent la même date de sortie. Deux visions du paranormal, un seul jeudi à surveiller.', read: 'LIRE L’ARTICLE' },

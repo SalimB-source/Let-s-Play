@@ -1,0 +1,76 @@
+# Robot actus du jour — Let’s Play.
+#
+# Chaque matin (05:30 heure de Paris environ) :
+#   1. le robot moissonne les flux RSS gaming (FR + internationaux) ;
+#   2. il sélectionne les 3 meilleures news (fraîcheur, notoriété, diversité) ;
+#   3. il rédige chaque actu « façon Let’s Play » — via un modèle de langage
+#      si une clé est configurée (secrets OPENAI_API_KEY, ANTHROPIC_API_KEY,
+#      MISTRAL_API_KEY ou GEMINI_API_KEY), sinon via le gabarit extractif
+#      (sources francophones uniquement) ;
+#   4. il génère visuels SVG, JSON, index du site, puis committe sur main —
+#     ce qui déclenche automatiquement le déploiement GitHub Pages.
+#
+# Sans clé IA le robot reste 100 % fonctionnel (mode gabarit, sources FR).
+# Forcer un run manuel : onglet Actions → « Robot actus du jour » → Run workflow.
+
+name: Robot actus du jour
+
+on:
+  schedule:
+    - cron: '30 4 * * *' # 04:30 UTC = 05:30/06:30 Paris selon l’heure d’été
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Nombre d’articles à générer (défaut : 3)"
+        required: false
+        default: '3'
+      force:
+        description: 'Forcer même si les flux n’ont rien de nouveau (fenêtre élargie)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: news-bot
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Moissonner les news et rédiger les articles
+        env:
+          NEWS_COUNT: ${{ github.event.inputs.count || '3' }}
+          NEWS_FORCE: ${{ github.event.inputs.force == 'true' && '1' || '' }}
+          NEWS_LLM_PROVIDER: ${{ vars.NEWS_LLM_PROVIDER }}
+          NEWS_LLM_MODEL: ${{ vars.NEWS_LLM_MODEL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: node scripts/news-bot/fetch-news.mjs
+
+      - name: Vérifier les articles générés
+        run: npm run check:newsbot
+
+      - name: Commit & push (déclenche le déploiement)
+        run: |
+          git config user.name "letsplay-news-bot"
+          git config user.email "actions@github.com"
+          git add src/news/auto src/news/autoIndex.js public/news-auto news-bot/state.json news-bot/report.md
+          if git diff --cached --quiet; then
+            echo "Rien de nouveau à publier — pas de commit."
+            exit 0
+          fi
+          git commit -F news-bot/report.md
+          git push
