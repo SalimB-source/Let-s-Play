@@ -250,8 +250,8 @@ export const METRICS = {
   dossiersRead: (state) => setSize(state, 'dossiers_read'),
   /** Sections distinctes visitées (accueil, actus, tests, dossiers, events, calendrier…). */
   sectionsVisited: (state) => setSize(state, 'sections_visited'),
-  /** La page des succès elle-même a-t-elle été ouverte ? */
-  achievementsPageOpened: (state) => ((state.sets.sections_visited || []).includes('achievements') ? 1 : 0),
+  /** Le hub du profil joueur a-t-il été ouvert ? */
+  profileOpened: (state) => ((state.sets.sections_visited || []).includes('account') ? 1 : 0),
   /** Vidéos lancées, sans doublon. */
   videosWatched: (state) => setSize(state, 'videos_watched'),
   /** Le lecteur du direct de la chaîne a-t-il été lancé ? */

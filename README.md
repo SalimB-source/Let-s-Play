@@ -28,9 +28,9 @@ npm run build
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
-- Succès du joueur (`/achievements`, alias `/succes`) : 37 succès débloqués par les
+- Succès du joueur dans le profil (`/auth`) : 37 succès débloqués par les
   actions réalisées sur le site, classés en quatre grades de difficulté — bronze,
-  argent, or, platine — avec niveau et XP, filtres par grade et notifications de
+  argent, or, platine — avec niveau, XP, grades visibles et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
@@ -457,22 +457,23 @@ rapporte plus qu'un succès argent, etc.), ce qui rend l'échelle lisible :
 | 🥉 Bronze | 9 | 25–40 | premiers pas, première lecture, premier commentaire |
 | 🥈 Argent | 11 | 60–90 | créer un compte, 5 articles, 3 jours de suite |
 | 🥇 Or | 10 | 100–250 | 12 articles, semaine parfaite, trilingue, oiseau de nuit |
-| 🏅 Platine | 7 | 400–800 | 30 articles, 14 jours d'affilée, 30 jours de visite, 15 commentaires, les 9 sections, 3 nuits de lecture après minuit |
+| 🏅 Platine | 7 | 400–800 | 30 articles, 14 jours d'affilée, 30 jours de visite, 15 commentaires, les 8 sections, 3 nuits de lecture après minuit |
 
-Sur la page `/achievements`, une rangée de filtres dédiée montre la progression
-par grade (`débloqués / total`), chaque carte porte son grade sous le nom, et le
-cadre des succès débloqués prend la couleur du grade (bronze cuivré, argent,
-or, platine aux reflets irisés). La notification de déblocage affiche aussi le
-grade du succès tombé.
+Dans le profil `/auth`, la section « succès » compacte montre le niveau,
+la progression, les derniers succès obtenus et les prochains objectifs. Chaque
+carte porte son grade sous le nom, et le cadre des succès débloqués prend la
+couleur du grade (bronze cuivré, argent, or, platine aux reflets irisés). La
+notification de déblocage affiche aussi le grade du succès tombé. Il n’existe
+pas de page « succès » séparée : le hub joueur est l’endroit unique où retrouver
+cette progression.
 
 Où ça se voit :
 
 | Endroit | Ce qui s'y trouve |
 | --- | --- |
-| `/achievements` (alias `/succes`) | la page complète : niveau, XP, compteurs d'actions, catalogue filtrable (famille, débloqués / en cours / verrouillés) et bouton de réinitialisation |
-| `/auth` (hub joueur) | la **barre d'XP du profil** (niveau, rang, XP du palier en cours, XP total gagné) et une section « succès » compacte : niveau, derniers succès obtenus, prochains objectifs, lien vers la page complète |
+| `/auth` (hub joueur) | la **barre d'XP du profil** et la section « succès » intégrée : niveau, derniers succès obtenus et prochains objectifs |
 | Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
-| Navigation et pied de page | le lien « Succès / Achievements / الإنجازات » |
+| Navigation et pied de page | l’accès au profil joueur, qui contient les succès |
 
 Le niveau et l'XP ne sont jamais stockés côté compte : ils se déduisent des
 succès débloqués (`totalXp` puis `levelFromXp`, dans
@@ -516,7 +517,7 @@ Trois étages, un seul chemin :
 | `page_view` | `pagesVisited` |
 | `visit` (une par jour) | `visitDays`, `bestStreak` |
 | `article_read` (actu / test / dossier) | `articlesRead`, `newsRead`, `reviewsRead`, `dossiersRead`, `readAllKinds` (les trois familles), `nightReading` (entre 0 h et 5 h), `nightReadingDays` (nuits distinctes), `earlyReading` (entre 5 h et 8 h) |
-| `section_visited` | `sectionsVisited`, `achievementsPageOpened` |
+| `section_visited` | `sectionsVisited`, `profileOpened` |
 | `video_played` | `videosWatched`, `liveWatched` |
 | `comment_posted` | `commentsPosted` |
 | `search_performed` | `searchesPerformed`, `distinctSearches` |
@@ -541,8 +542,8 @@ Un succès pour une action déjà suivie = **une entrée** dans
 ```
 
 Rien d'autre : la progression, les notifications, le compteur du hub et la
-page `/achievements` sont déduits du catalogue. Une **nouvelle action** (un
-nouveau geste sur le site) ajoute d'abord un cas dans `reduce()` et une
+section « succès » du profil sont déduits du catalogue. Une **nouvelle action**
+(un nouveau geste sur le site) ajoute d'abord un cas dans `reduce()` et une
 métrique dans `METRICS` (`engine.js`), puis autant de succès que voulu.
 
 Un succès ajouté plus tard profite aux joueurs existants : le catalogue est
@@ -565,8 +566,7 @@ La progression appartient à **chaque joueur**, jamais à un appareil :
   Un compte **neuf démarre au niveau 1, sans aucun succès**, même sur un
   appareil où l'on a déjà joué : la progression locale de l'appareil n'est
   jamais publiée vers un compte, et deux comptes sur la même machine restent
-  étanches. « Réinitialiser » sur `/achievements` efface aussi la ligne du
-  compte ;
+  étanches ;
 - **Ancien déploiement** (schéma SQL pas encore relancé) : repli transparent
   sur l'ancienne copie dans les métadonnées du compte, puis migration vers la
   table dès qu'elle existe. Les comptes créés avant cette mise à jour gardent
@@ -604,8 +604,8 @@ Editor du projet Supabase (le script est relançable sans risque).
   valides) ; comportement du moteur (contenus distincts, lecture de nuit,
   séries de jours, fusion appareil ↔ compte, données corrompues, courbe de
   niveau, détection du passage de niveau) ; **scénario complet qui débloque les
-  26 succès** (donc aucun succès inatteignable) ; rendu réel en SSR de la page,
-  du hub joueur — en aperçu de démonstration **et avec un compte réellement
+  37 succès** (donc aucun succès inatteignable) ; rendu réel en SSR du panneau
+  du profil joueur et du hub — en aperçu de démonstration **et avec un compte réellement
   connecté** (la barre d'XP du profil doit se remplir, suivre la barre de la
   section « succès », et annoncer le niveau et le rang déduits du moteur) — et
   de la **fenêtre de déblocage** (montée avec la file qu'un
@@ -614,7 +614,7 @@ Editor du projet Supabase (le script est relançable sans risque).
   plus la source du site (actions branchées, fenêtre montée dans `main.jsx`,
   plus aucun reste des anciennes notifications, un seul module écrit la
   progression locale).
-- `npm run check:i18n` — les routes × FR / EN / AR, dont `/achievements`.
+- `npm run check:i18n` — les routes × FR / EN / AR, dont le hub joueur `/auth`.
 
 ## Live YouTube
 

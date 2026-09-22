@@ -1,12 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from './AchievementContext';
 import { GROUPS, TIER_ORDER, achievementIconUrl, achievementLabel, groupLabel, levelTitle, rarityLabel } from './catalog';
 
 /**
- * Panneau des succès, partagé par la page `/achievements` (complet) et le
- * hub joueur `/auth` (compact). Il ne lit que le récapitulatif du contexte :
+ * Panneau des succès, affiché dans le hub joueur `/auth`. Il ne lit que le
+ * récapitulatif du contexte :
  * le catalogue, la progression et l'XP sont déduits des actions suivies.
  */
 
@@ -28,7 +27,6 @@ const copy = {
     filterLocked: 'Locked',
     filterByTier: 'Filter by tier',
     tiers: { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', platinum: 'Platinum' },
-    viewAll: 'SEE ALL ACHIEVEMENTS',
     empty: 'No achievement matches this filter yet.',
     remaining: '{n} more to go',
     howHintUnlocked: 'Unlocked — keep playing!',
@@ -51,7 +49,6 @@ const copy = {
     filterLocked: 'Verrouillés',
     filterByTier: 'Filtrer par grade',
     tiers: { bronze: 'Bronze', silver: 'Argent', gold: 'Or', platinum: 'Platine' },
-    viewAll: 'VOIR TOUS LES SUCCÈS',
     empty: 'Aucun succès ne correspond à ce filtre pour l’instant.',
     remaining: 'Encore {n}',
     howHintUnlocked: 'Débloqué — continue comme ça !',
@@ -74,7 +71,6 @@ const copy = {
     filterLocked: 'المغلقة',
     filterByTier: 'تصفية حسب الرتبة',
     tiers: { bronze: 'برونزي', silver: 'فضي', gold: 'ذهبي', platinum: 'بلاتيني' },
-    viewAll: 'عرض كل الإنجازات',
     empty: 'لا يوجد إنجاز مطابق لهذا التصفية بعد.',
     remaining: 'متبق {n}',
     howHintUnlocked: 'مفتوح — واصل اللعب!',
@@ -240,9 +236,6 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
           <p className="player-empty-note">{t.empty}</p>
         )}
 
-        <Link className="arrow-link" to="/achievements">
-          {t.viewAll} ↗
-        </Link>
       </div>
     );
   }

@@ -1,8 +1,8 @@
 /**
  * Entrée SSR utilisée par scripts/achievements-check.mjs.
  *
- * Rend la page /achievements (et le hub /auth) avec la vraie pile de
- * l'application — LanguageProvider + AuthProvider + AchievementProvider +
+ * Rend le panneau des succès du profil (et le hub /auth) avec la vraie pile
+ * de l'application — LanguageProvider + AuthProvider + AchievementProvider +
  * Layout — pour vérifier que l'affichage correspond bien à l'état enregistré
  * sur l'appareil, dans les trois langues.
  *
@@ -20,7 +20,6 @@ import { STORAGE_KEY, scopeForUser } from '../src/achievements/storage';
 import AchievementPopup from '../src/achievements/AchievementPopup';
 import AchievementTracker from '../src/achievements/AchievementTracker';
 import Layout from '../src/components/Layout';
-import Achievements from '../src/pages/Achievements';
 import Auth from '../src/pages/Auth';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 
@@ -102,9 +101,9 @@ function render(path, Page, lang, storedState, { demo = false, account = false, 
   return { html, store };
 }
 
-/** Page /achievements pour une langue, avec (ou sans) progression enregistrée. */
-export function achievementsPage(lang, storedState = null, options = {}) {
-  return render('/achievements', Achievements, lang, storedState, options);
+/** Le panneau de succès rendu dans le profil joueur. */
+export function profileAchievements(lang, storedState = null, options = {}) {
+  return render('/auth', Auth, lang, storedState, options);
 }
 
 /**
@@ -114,7 +113,7 @@ export function achievementsPage(lang, storedState = null, options = {}) {
  * `storedState` simule la progression laissée par le précédent joueur.
  */
 export function freshAccountOnPlayedDevice(lang, storedState = null) {
-  return render('/achievements', Achievements, lang, storedState, { account: true, deviceGuest: true });
+  return render('/auth', Auth, lang, storedState, { account: true, deviceGuest: true });
 }
 
 /**

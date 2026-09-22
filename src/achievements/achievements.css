@@ -1,6 +1,6 @@
 /* ==========================================================================
    SUCCÈS / ACHIEVEMENTS
-   Styles de la page /achievements, du panneau du hub joueur et des
+   Styles du panneau des succès dans le hub joueur et des
    notifications de déblocage. Même langage visuel que le reste du site :
    coins coupés, monospace pour les libellés, accents jaune / cyan / violet.
    ========================================================================== */
@@ -17,7 +17,7 @@
 .rarity-gold     { --rarity: #ffd619; }
 .rarity-platinum { --rarity: #aee6ff; }
 
-/* -------------------------- Page /achievements --------------------------- */
+/* -------------------------- Panneau du profil --------------------------- */
 
 .achievements-body {
   display: flex;
