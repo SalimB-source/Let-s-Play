@@ -15,7 +15,7 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const track = useAchievementAction();
   const searchRef = useRef(null);
 
@@ -64,6 +64,18 @@ export default function Layout({ children }) {
     setMenuOpen(false);
     setSearchOpen(false);
   };
+
+  // Bouton « Se déconnecter » (croix) tout à droite de la barre. signOut()
+  // efface la session locale de façon synchrone avant la révocation distante :
+  // inutile d'attendre le réseau pour renvoyer vers l'accueil, ce qui évite de
+  // laisser affichée une page réservée aux membres (hub, messagerie).
+  const handleSignOut = () => {
+    setMenuOpen(false);
+    signOut();
+    navigate('/');
+  };
+
+  const logoutLabel = t.nav.logout || 'Log out';
   
   return (
     <>
@@ -100,18 +112,39 @@ export default function Layout({ children }) {
             </form>
             <LanguageSwitcher variant="nav" />
             {user ? (
-              <Link
-                to="/auth"
-                className={`nav-account connected`}
-                onClick={() => setMenuOpen(false)}
-              >
-                <span className="nav-account-inner">
-                  <span className="nav-online-dot" aria-hidden="true" />
-                  <span className="nav-account-name">
-                    {user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
+              <>
+                <Link
+                  to="/auth"
+                  className={`nav-account connected`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span className="nav-account-inner">
+                    <span className="nav-online-dot" aria-hidden="true" />
+                    <span className="nav-account-name">
+                      {user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
+                    </span>
                   </span>
-                </span>
-              </Link>
+                </Link>
+                <button
+                  type="button"
+                  className="nav-logout"
+                  onClick={handleSignOut}
+                  aria-label={logoutLabel}
+                  title={logoutLabel}
+                >
+                  <svg
+                    className="nav-logout-icon"
+                    viewBox="0 0 12 12"
+                    width="12"
+                    height="12"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                  <span className="nav-logout-label">{logoutLabel}</span>
+                </button>
+              </>
             ) : (
               <>
                 <Link

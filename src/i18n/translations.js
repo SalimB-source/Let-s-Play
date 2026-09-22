@@ -19,6 +19,7 @@ export const translations = {
       search: { placeholder: 'Search…', submit: 'Search', noResults: 'No results', viewAll: 'View all results' },
       login: 'Log in',
       register: 'Register',
+      logout: 'Log out',
     },
     footer: {
       tagline: 'An original show dedicated to the culture that brings us together. Now multi-page.',
@@ -304,6 +305,7 @@ export const translations = {
       search: { placeholder: 'Rechercher…', submit: 'Rechercher', noResults: 'Aucun résultat', viewAll: 'Voir tous les résultats' },
       login: 'Se connecter',
       register: "S'inscrire",
+      logout: 'Se déconnecter',
     },
     footer: {
       tagline: 'Une émission originale dédiée à la culture qui nous rassemble. Maintenant multi-pages.',
@@ -581,6 +583,7 @@ export const translations = {
       search: { placeholder: 'بحث…', submit: 'بحث', noResults: 'لا توجد نتائج', viewAll: 'عرض كل النتائج' },
       login: 'تسجيل الدخول',
       register: 'إنشاء حساب',
+      logout: 'تسجيل الخروج',
     },
     footer: {
       tagline: 'برنامج أصلي مكرّس للثقافة التي تجمعنا. الآن متعدد الصفحات.',

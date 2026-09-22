@@ -86,6 +86,27 @@ img{max-width:100%}
   border-color:var(--yellow);color:#0a0b1a;background:var(--yellow);
   transform:translateY(-2px);box-shadow:0 0 24px rgba(255,214,25,.4);
 }
+/* Bouton « Se déconnecter » (croix) — dernier élément de la barre, donc tout
+   à droite (tout à gauche en RTL). Même gabarit que les autres boutons de la
+   nav, dans la teinte « danger » du bouton de déconnexion du hub. */
+.nav-logout{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(255,140,157,.06);border:1px solid rgba(255,140,157,.42);color:#ff8c9d;
+  padding:9px 14px;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  cursor:pointer;white-space:nowrap;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+  transition:border-color .2s,color .2s,background .2s;
+}
+.nav-logout-icon{flex-shrink:0;transition:transform .25s}
+.nav-logout:hover{background:rgba(255,140,157,.18);border-color:#ff8c9d;color:#fff}
+.nav-logout:hover .nav-logout-icon{transform:rotate(90deg)}
+/* Entre 801 px et 1240 px, la barre est déjà serrée (cinq entrées + recherche
+   + langue + compte) : la croix suffit, le libellé passe en info-bulle /
+   aria-label. Le menu mobile (≤ 800 px) a la place pour le texte complet. */
+@media(min-width:801px) and (max-width:1240px){
+  .nav-logout{width:34px;height:34px;padding:0;gap:0}
+  .nav-logout-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
 .nav-links a{position:relative;color:rgba(238,240,255,.82);transition:color .2s}
 /* Survol cyan + soulignement : liens de page uniquement. Les boutons de
    compte (.nav-account) gardent leurs propres couleurs — le cyan hérité de
@@ -717,6 +738,7 @@ img{max-width:100%}
   .nav-account.nav-register{
     box-shadow:none;
   }
+  .nav-logout{width:100%;padding:12px 14px}
   .hero{padding:104px 0 92px}
   .hero-bg{left:0;width:100%;object-position:center}
   .hero h1{font-size:clamp(36px,9.6vw,52px)}
