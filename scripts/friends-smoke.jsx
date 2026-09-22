@@ -21,13 +21,18 @@ import Layout from '../src/components/Layout';
 import Auth from '../src/pages/Auth';
 import Profile from '../src/pages/Profile';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
+// Fixtures : réinjecte les personas de démonstration dans le registre de
+// l'application (livré vide) avant tout rendu — voir scripts/demoFixtures.js.
+import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
 
-export { DEMO_PROFILES };
+seedDemoProfiles();
+
+export { DEMO_PROFILES, DEMO_PROFILE_FIXTURES };
 export { socialCopy } from '../src/social/socialCopy';
 export {
-  DEMO_COMMUNITY,
   DEMO_INITIAL_STATE,
   DEMO_PLAYERS,
+  demoCommunity,
   demoPresence,
   findDemoPlayer,
   isDemoPlayerId,
@@ -105,7 +110,7 @@ export function createApp(path, { initialSession = null } = {}) {
  */
 export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false } = {}) {
   const entries = { 'letsplay-lang': lang, letsplay_friends_dock_open: dockOpen ? '1' : '0' };
-  if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILES[demoKey]);
+  if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILE_FIXTURES[demoKey]);
   globalThis.window = { localStorage: makeStorage(entries) };
   return renderToString(createApp(path));
 }

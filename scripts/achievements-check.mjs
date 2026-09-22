@@ -35,7 +35,10 @@ import {
 import { ACHIEVEMENTS, GROUPS, RARITIES, TIER_ORDER, achievementLabel, levelTitle, rarityLabel, tierRank } from '../src/achievements/catalog.js';
 import { describeRoute, linkedProviders } from '../src/achievements/routeActions.js';
 import { GUEST_SCOPE, REMOTE_META_KEY, STORAGE_KEY, clearStorage, readStorage, scopeForUser, storageKeyForScope, writeStorage } from '../src/achievements/storage.js';
-import { DEMO_PROFILES } from '../src/auth/demoProfiles.js';
+// Les personas de démonstration ne sont plus livrées dans l'application
+// (`src/auth/demoProfiles.js` est vide) : ce sont des fixtures de test, semées
+// dans l'entrée SSR par scripts/demoFixtures.js.
+import { DEMO_PROFILE_FIXTURES } from './demoFixtures.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['en', 'fr', 'ar'];
@@ -457,7 +460,7 @@ const hub = authHub('fr', saved, { demo: true });
 ok('le hub joueur montre les succès du site', hub.html.includes('TES SUCCÈS SUR LE SITE'));
 ok('le hub joueur affiche le niveau', hub.html.includes('achievement-level'));
 ok('le hub joueur conserve les succès dans le profil', hub.html.includes('TES SUCCÈS SUR LE SITE') && !hub.html.includes('VOIR TOUS LES SUCCÈS'));
-const vortex = DEMO_PROFILES.vortex.user_metadata;
+const vortex = DEMO_PROFILE_FIXTURES.vortex.user_metadata;
 check(
   'l’aperçu démo garde ses chiffres scriptés',
   barFill(hub.html, 'player-xp-bar-fill'),
