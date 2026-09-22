@@ -24,6 +24,7 @@ export const DEMO_PLAYERS = [
     level: 17,
     xp: 1640,
     platforms: ['PC STEAM', 'PS5'],
+    testedGames: ['Elden Ring', 'Tekken 8', 'Mortal Kombat 1'],
     presence: 'online',
   },
   {
@@ -69,6 +70,7 @@ export const DEMO_PLAYERS = [
     level: 12,
     xp: 1105,
     platforms: ['PS5', 'SWITCH 2'],
+    testedGames: ['Astro Bot', 'Gran Turismo 7', 'Stellar Blade'],
     presence: 'offline',
     lastSeenMinutes: 60 * 26,
   },
@@ -90,6 +92,7 @@ export const DEMO_PLAYERS = [
     level: 20,
     xp: 1980,
     platforms: ['PC STEAM', 'XBOX SERIES X'],
+    testedGames: ['Call of Duty: Black Ops 6', 'Forza Horizon 5', 'Hi-Fi Rush'],
     presence: 'offline',
     lastSeenMinutes: 60 * 24 * 3,
   },
@@ -101,6 +104,7 @@ export const DEMO_PLAYERS = [
     level: 11,
     xp: 980,
     platforms: ['PS5', 'PC STEAM'],
+    testedGames: ['Balatro', 'Hades II', 'Rocket League'],
     presence: 'online',
   },
   {
@@ -140,6 +144,7 @@ function personaAsPlayer(profile, presence) {
     level: meta.level || 1,
     xp: meta.xp || 0,
     platforms: meta.platforms || [],
+    testedGames: meta.testedGames || [],
     presence,
     persona: profile.profileKey,
   };

@@ -263,33 +263,44 @@ export function syncDemoCommentsForUser(user) {
 
 /**
  * Pousse le nouveau profil vers Supabase :
- *  - met à jour `public.profiles` (username / display_name / avatar_url / level / xp)
+ *  - met à jour `public.profiles` (username / display_name / avatar_url / level / xp
+ *    / platforms / tested_games)
  *  - met à jour toutes les lignes `public.comments` du joueur (author_name / avatar / level / xp)
- * Tolère les déploiements n'ayant pas encore la migration author_level.
+ * Tolère les déploiements n'ayant pas encore les migrations author_level,
+ * level/xp ou les colonnes consoles / jeux testés (section 3b2 du schéma).
  */
-export async function syncSupabaseProfileAndComments(userId, { name, avatar, level, xp }) {
+export async function syncSupabaseProfileAndComments(userId, { name, avatar, level, xp, platforms, testedGames }) {
   if (!supabase || !userId) return;
   const payloadProfile = {};
   if (name) { payloadProfile.username = name; payloadProfile.display_name = name; }
   if (avatar !== undefined) payloadProfile.avatar_url = avatar;
   if (Number.isFinite(level)) payloadProfile.level = level;
   if (Number.isFinite(xp)) payloadProfile.xp = xp;
+  if (Array.isArray(platforms)) payloadProfile.platforms = platforms;
+  if (Array.isArray(testedGames)) payloadProfile.tested_games = testedGames;
   if (Object.keys(payloadProfile).length) {
     payloadProfile.updated_at = new Date().toISOString();
     try {
-      // try with level/xp, fallback without if columns missing
       let { error } = await supabase.from('profiles').update(payloadProfile).eq('id', userId);
-      if (error && /column.*level|column.*xp|column.*updated_at/.test(error.message || '')) {
-        const fallback = {};
-        if (payloadProfile.username) fallback.username = payloadProfile.username;
-        if (payloadProfile.display_name) fallback.display_name = payloadProfile.display_name;
-        if (payloadProfile.avatar_url !== undefined) fallback.avatar_url = payloadProfile.avatar_url;
-        if (Object.keys(fallback).length) {
-          fallback.updated_at = new Date().toISOString();
-          const r2 = await supabase.from('profiles').update(fallback).eq('id', userId);
-          if (r2.error) throw r2.error;
+      if (error) {
+        // Déploiement partiel : une colonne optionnelle est absente. Le
+        // message d'erreur cite son nom (Postgres : « column "platforms"
+        // does not exist », PostgREST : « Could not find the 'platforms'
+        // column of 'profiles' … ») : on la retire et on réessaye une fois,
+        // au lieu d'abandonner les autres colonnes.
+        const message = String(error.message || '');
+        const missingColumns = ['platforms', 'tested_games', 'level', 'xp', 'updated_at']
+          .filter((col) => message.includes(`"${col}"`) || message.includes(`'${col}'`));
+        if (missingColumns.length) {
+          for (const col of missingColumns) delete payloadProfile[col];
+          if (Object.keys(payloadProfile).length > 1) { // plus que updated_at
+            const retry = await supabase.from('profiles').update(payloadProfile).eq('id', userId);
+            if (retry.error) throw retry.error;
+          }
+        } else {
+          throw error;
         }
-      } else if (error) throw error;
+      }
     } catch (e) {
       // non bloquant : le fil pourra quand même afficher le nouveau nom via le JWT
     }

@@ -182,6 +182,31 @@ exception when others then
 end $$;
 
 -- ----------------------------------------------------------------------------
+-- 3b2. Consoles possédées & jeux testés : colonnes publiques du profil
+-- ----------------------------------------------------------------------------
+-- Le hub joueur (src/pages/Auth.jsx) laisse cocher les consoles possédées et
+-- marquer les jeux testés (catalogue PS5 / Xbox Series X,
+-- src/lib/gameLibrary.js) ; la page de profil (src/pages/Profile.jsx) les
+-- affiche en public. La source de vérité reste user_metadata (JWT) ; ces
+-- colonnes dénormalisées servent l'affichage public sans session.
+-- Ajout non bloquant sur une table existante.
+do $$
+begin
+  if to_regclass('public.profiles') is not null then
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'profiles' and column_name = 'platforms') then
+      execute 'alter table public.profiles add column platforms text[]';
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'profiles' and column_name = 'tested_games') then
+      execute 'alter table public.profiles add column tested_games text[]';
+    end if;
+  end if;
+exception when others then
+  raise warning 'Let''s Play : colonnes profiles.platforms / tested_games non ajoutées (%).', sqlerrm;
+end $$;
+
+-- ----------------------------------------------------------------------------
 -- 3c. Progression des succès — UNE LIGNE PAR COMPTE
 -- ----------------------------------------------------------------------------
 -- Chaque compte possède SA progression (succès débloqués, XP, niveau) : le
@@ -995,6 +1020,14 @@ from (
     (26, 'realtime direct_messages',
       case when exists (select 1 from pg_publication_tables
                         where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'direct_messages')
-           then 'OK' else 'ABSENT (voir WARNING)' end)
+           then 'OK' else 'ABSENT (voir WARNING)' end),
+    (27, 'consoles profiles.platforms',
+      case when exists (select 1 from information_schema.columns
+                        where table_schema = 'public' and table_name = 'profiles' and column_name = 'platforms')
+           then 'OK' else 'MANQUANT' end),
+    (28, 'jeux testés profiles.tested_games',
+      case when exists (select 1 from information_schema.columns
+                        where table_schema = 'public' and table_name = 'profiles' and column_name = 'tested_games')
+           then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

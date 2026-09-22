@@ -10,6 +10,13 @@ import { metricValue } from '../achievements/engine';
 import { levelTitle } from '../achievements/catalog';
 import AchievementsPanel from '../achievements/AchievementsPanel';
 import DeleteAccount from '../components/DeleteAccount';
+import {
+  CONSOLE_OPTIONS,
+  TESTED_GAMES_CATALOG,
+  MAX_TESTED_GAMES,
+  normalizePlatforms,
+  normalizeSearchText,
+} from '../lib/gameLibrary';
 import FriendsHubSection from '../friends/FriendsHubSection';
 import MessagesHubSection from '../messages/MessagesHubSection';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
@@ -197,6 +204,19 @@ const copy = {
     avatarUpdated: 'Photo updated.',
     avatarUploadError: 'Couldn’t upload your photo. Please try again.',
     avatarInvalidType: 'Please choose an image file (JPG, PNG, WebP…)',
+
+    // Consoles & tested games
+    consolesHint: 'Tick every console you own — your selection is shown on your public profile.',
+    testedGamesHeading: 'GAMES TESTED · PS5 / XBOX SERIES X',
+    testedGamesHint: 'Search the PS5 / Xbox Series X catalogue and tag the games you have tested.',
+    gamesSearchPlaceholder: 'Search a game…',
+    noGameMatch: 'No game of the catalogue matches this search.',
+    addGame: 'ADD',
+    gameTested: 'TESTED',
+    removeGame: 'Remove',
+    noTestedGamesYet: 'No tested game yet — pick some from the catalogue below.',
+    maxGamesNote: 'Cap reached (30 games). Remove a game to add another.',
+    saveGear: 'SAVE',
   },
   fr: {
     eyebrow: 'ACCÈS JOUEUR',
@@ -300,6 +320,19 @@ const copy = {
     avatarUpdated: 'Photo mise à jour.',
     avatarUploadError: 'Impossible de téléverser ta photo. Réessaie.',
     avatarInvalidType: 'Choisis un fichier image (JPG, PNG, WebP…)',
+
+    // Consoles & jeux testés
+    consolesHint: 'Coche toutes les consoles que tu possèdes — la sélection s’affiche sur ton profil public.',
+    testedGamesHeading: 'JEUX TESTÉS · PS5 / XBOX SERIES X',
+    testedGamesHint: 'Recherche dans le catalogue PS5 / Xbox Series X et marque les jeux que tu as testés.',
+    gamesSearchPlaceholder: 'Rechercher un jeu…',
+    noGameMatch: 'Aucun jeu du catalogue ne correspond à cette recherche.',
+    addGame: 'AJOUTER',
+    gameTested: 'TESTÉ',
+    removeGame: 'Retirer',
+    noTestedGamesYet: 'Aucun jeu testé pour l’instant — choisis-en dans le catalogue ci-dessous.',
+    maxGamesNote: 'Plafond atteint (30 jeux). Retire un jeu pour en ajouter un autre.',
+    saveGear: 'ENREGISTRER',
   },
   ar: {
     eyebrow: 'دخول اللاعبين',
@@ -403,6 +436,19 @@ const copy = {
     avatarUpdated: 'تم تحديث الصورة.',
     avatarUploadError: 'تعذّر رفع صورتك. حاول مرة أخرى.',
     avatarInvalidType: 'الرجاء اختيار ملف صورة (JPG، PNG، WebP…)',
+
+    // وحدات التحكم والألعاب المجرَّبة
+    consolesHint: 'حدّد كل وحدة تحكم تمتلكها — ستظهر اختياراتك على ملفك الشخصي العام.',
+    testedGamesHeading: 'الألعاب المجرَّبة · PS5 / Xbox Series X',
+    testedGamesHint: 'ابحث في كتالوج PS5 / Xbox Series X وحدّد الألعاب التي جرّبتها.',
+    gamesSearchPlaceholder: 'ابحث عن لعبة…',
+    noGameMatch: 'لا توجد لعبة في الكتالوج تطابق هذا البحث.',
+    addGame: 'أضِف',
+    gameTested: 'مُجرَّبة',
+    removeGame: 'إزالة',
+    noTestedGamesYet: 'لا توجد ألعاب مجرَّبة بعد — اختر من الكتالوج أدناه.',
+    maxGamesNote: 'تم الوصول إلى الحد الأقصى (30 لعبة). احذف لعبة لإضافة أخرى.',
+    saveGear: 'حفظ',
   },
 };
 
@@ -943,7 +989,6 @@ export default function Auth({ initialMode = '' }) {
     // accounts only if explicitly flagged in their metadata.
     const isVerified = isDemo || meta.verified === true;
 
-    const platforms = meta.platforms || [];
     // Les badges de la persona n'existent que dans l'aperçu de démonstration :
     // les succès réels d'un compte connecté sont ceux suivis par le site
     // (section « succès » ci-dessous, alimentée par src/achievements).
@@ -1121,23 +1166,16 @@ export default function Auth({ initialMode = '' }) {
             <AchievementsPanel variant="compact" />
           </div>
 
-          {/* GAMING PLATFORMS */}
-          <div className="player-section">
-            <div className="player-section-header">
-              <h2>{t.platformsHeading}</h2>
-            </div>
-            {platforms.length > 0 ? (
-              <div className="player-platforms-row">
-                {platforms.map((platform) => (
-                  <span key={platform} className="player-platform-pill">
-                    🎮 {platform}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="player-empty-note">{t.noPlatformsYet}</p>
-            )}
-          </div>
+          {/* CONSOLES POSSÉDÉES + JEUX TESTÉS — multi-sélection persistée
+              dans les métadonnées du compte (ou de la persona démo) et poussée
+              vers les colonnes publiques profiles.platforms / tested_games. */}
+          <PlayerGearEditor
+            t={t}
+            isDemo={isDemo}
+            user={user}
+            meta={meta}
+            updateDemoProfile={updateDemoProfile}
+          />
 
           {/* MÉDAILLES DE LA PERSONA DE DÉMONSTRATION (aperçu uniquement) —
               les succès du joueur ont leur propre section plus haut */}
@@ -1493,5 +1531,225 @@ function ProfileEditor({ t, isDemo, gamertag, avatar, updateDemoProfile }) {
         </form>
       )}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Consoles possédées + jeux testés                                    */
+/* ------------------------------------------------------------------ */
+/* Deux multi-sélections persistées dans les métadonnées du compte     */
+/* (réel : supabase.auth.updateUser + sync vers profiles ; démo :      */
+/* persona en localStorage). Le brouillon vit dans le composant ;      */
+/* `meta` reste la source de vérité, donc « dirty » se recalcule tout  */
+/* seul après chaque enregistrement (l'événement auth fait re-rendu).  */
+/* ------------------------------------------------------------------ */
+function sameList(a, b) {
+  return a.length === b.length && a.every((value) => b.includes(value));
+}
+
+function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
+  const [draftPlatforms, setDraftPlatforms] = useState(() => normalizePlatforms(meta.platforms));
+  const [draftGames, setDraftGames] = useState(() => (Array.isArray(meta.testedGames) ? meta.testedGames : []).slice());
+  const [query, setQuery] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState('');
+  const [err, setErr] = useState('');
+  const noteTimer = useRef(null);
+
+  useEffect(() => () => {
+    if (noteTimer.current) window.clearTimeout(noteTimer.current);
+  }, []);
+
+  const savedPlatforms = normalizePlatforms(meta.platforms);
+  const savedGames = Array.isArray(meta.testedGames) ? meta.testedGames : [];
+  const platformsDirty = !sameList(draftPlatforms, savedPlatforms);
+  const gamesDirty = !sameList(draftGames, savedGames);
+
+  const flash = (text, isError) => {
+    if (noteTimer.current) window.clearTimeout(noteTimer.current);
+    if (isError) {
+      setErr(text);
+      return;
+    }
+    setErr('');
+    setNote(text);
+    noteTimer.current = window.setTimeout(() => setNote(''), 3500);
+  };
+
+  const togglePlatform = (id) => {
+    setDraftPlatforms((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
+    setNote('');
+    setErr('');
+  };
+
+  const toggleGame = (title) => {
+    setDraftGames((prev) => (prev.includes(title) ? prev.filter((g) => g !== title) : [...prev, title]));
+    setNote('');
+    setErr('');
+  };
+
+  // Sauvegarde des deux listes en une seule écriture de métadonnées :
+  // le bouton visible dans une section enregistre les deux (l'autre liste
+  // est déjà à jour du point de vue du joueur).
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    setNote('');
+    setErr('');
+    try {
+      if (isDemo) {
+        updateDemoProfile((prev) => ({
+          ...prev,
+          user_metadata: { ...prev.user_metadata, platforms: draftPlatforms, testedGames: draftGames },
+        }));
+      } else if (supabase) {
+        const { data, error } = await supabase.auth.updateUser({
+          data: { platforms: draftPlatforms, testedGames: draftGames },
+        });
+        if (error) throw error;
+        // Pousse la sélection vers le profil public (best-effort, non bloquant)
+        try {
+          const uid = data?.user?.id || user?.id;
+          if (uid) await syncSupabaseProfileAndComments(uid, { platforms: draftPlatforms, testedGames: draftGames });
+        } catch {}
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('letsplay:profile-synced', { detail: { platforms: draftPlatforms, testedGames: draftGames } }));
+          }
+        } catch {}
+      } else {
+        throw new Error(t.unavailable);
+      }
+      flash(t.profileSaved, false);
+    } catch (e) {
+      flash(describeAuthError(e, t, t.profileSaveError), true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const needle = normalizeSearchText(query);
+  const filteredGames = TESTED_GAMES_CATALOG.filter((game) =>
+    needle ? normalizeSearchText(game.title).includes(needle) : true,
+  );
+  const atCap = draftGames.length >= MAX_TESTED_GAMES;
+
+  const saveRow = (sectionDirty) => (
+    sectionDirty ? (
+      <div className="player-gear-save-row">
+        <button type="button" className="button button-yellow" onClick={save} disabled={saving}>
+          {saving && <span className="auth-btn-spinner" aria-hidden="true" />}
+          {saving ? t.saving : t.saveGear}
+        </button>
+      </div>
+    ) : null
+  );
+
+  return (
+    <>
+      {/* CONSOLES POSSÉDÉES */}
+      <div className="player-section">
+        <div className="player-section-header">
+          <h2>{t.platformsHeading}</h2>
+          <p>{t.consolesHint}</p>
+        </div>
+        <div className="player-console-grid">
+          {CONSOLE_OPTIONS.map((option) => {
+            const selected = draftPlatforms.includes(option.id);
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className={`player-console-option${selected ? ' selected' : ''}`}
+                aria-pressed={selected}
+                onClick={() => togglePlatform(option.id)}
+                disabled={saving}
+              >
+                <span className="player-console-id">{option.id}</span>
+                <span className="player-console-label">{option.label}</span>
+                <span className="player-console-check" aria-hidden="true">{selected ? '✓' : '+'}</span>
+              </button>
+            );
+          })}
+        </div>
+        {saveRow(platformsDirty)}
+        {note && <p className="player-edit-note">{note}</p>}
+        {err && <p className="player-edit-note player-edit-error">{err}</p>}
+      </div>
+
+      {/* JEUX TESTÉS — catalogue PS5 / Xbox Series X + recherche */}
+      <div className="player-section">
+        <div className="player-section-header">
+          <h2>{t.testedGamesHeading}</h2>
+          <p>{t.testedGamesHint}</p>
+        </div>
+
+        {draftGames.length > 0 ? (
+          <div className="player-games-chips">
+            {draftGames.map((title) => (
+              <span key={title} className="player-game-chip">
+                <span className="player-game-chip-title">{title}</span>
+                <button
+                  type="button"
+                  className="player-game-chip-remove"
+                  onClick={() => toggleGame(title)}
+                  disabled={saving}
+                  aria-label={`${t.removeGame} — ${title}`}
+                  title={t.removeGame}
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="player-empty-note">{t.noTestedGamesYet}</p>
+        )}
+
+        <label className="player-games-search">
+          <span className="player-games-search-icon" aria-hidden="true">🔍</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t.gamesSearchPlaceholder}
+            maxLength={40}
+            aria-label={t.gamesSearchPlaceholder}
+          />
+        </label>
+
+        <div className="player-games-list">
+          {filteredGames.length > 0 ? (
+            filteredGames.map((game) => {
+              const added = draftGames.includes(game.title);
+              return (
+                <div key={game.id} className="player-game-row">
+                  <div className="player-game-row-info">
+                    <span className="player-game-row-title">{game.title}</span>
+                    <span className="player-game-row-platforms">
+                      {game.platforms.map((p) => <em key={p}>{p}</em>)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`player-game-row-btn${added ? ' added' : ''}`}
+                    onClick={() => toggleGame(game.title)}
+                    disabled={saving || (!added && atCap)}
+                  >
+                    {added ? `✓ ${t.gameTested}` : `+ ${t.addGame}`}
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+            <p className="player-empty-note player-games-empty">{t.noGameMatch}</p>
+          )}
+        </div>
+        {atCap && <p className="player-games-cap-note">{t.maxGamesNote}</p>}
+        {saveRow(gamesDirty)}
+        {note && <p className="player-edit-note">{note}</p>}
+        {err && <p className="player-edit-note player-edit-error">{err}</p>}
+      </div>
+    </>
   );
 }

@@ -54,6 +54,7 @@ export const DEMO_PROFILE_FIXTURES = {
       microsoftGamertag: 'VortexDZ#7721',
       microsoftLinkedDate: '04 Nov 2024',
       platforms: ['PS5', 'PC STEAM', 'SWITCH 2', 'XBOX SERIES X'],
+      testedGames: ['Elden Ring', 'Tekken 8', 'Street Fighter 6', 'Black Myth: Wukong', 'Monster Hunter Wilds'],
       stats: {
         articlesRead: 48,
         commentsPosted: 19,
@@ -102,6 +103,7 @@ export const DEMO_PROFILE_FIXTURES = {
       microsoftGamertag: 'PixelQueenDZ',
       microsoftLinkedDate: null,
       platforms: ['SWITCH 2', 'PC STEAM', 'PS5'],
+      testedGames: ['Hades II', 'Astro Bot', 'Final Fantasy VII Rebirth', 'Hollow Knight: Silksong'],
       stats: {
         articlesRead: 32,
         commentsPosted: 27,
