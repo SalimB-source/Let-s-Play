@@ -86,11 +86,6 @@ function TopGamesRow({
     });
   };
 
-  const resetView = () => {
-    setActiveFilter('ALL');
-    setIsEditing(false);
-  };
-
   return (
     <div className="player-section">
       <div className="player-section-header player-games-section-header">
@@ -107,9 +102,6 @@ function TopGamesRow({
               aria-expanded={isEditing}
             >
               {isEditing ? 'Fermer' : 'Modifier'}
-            </button>
-            <button type="button" className="player-games-action-btn reset" onClick={resetView}>
-              Reset
             </button>
           </div>
         )}
