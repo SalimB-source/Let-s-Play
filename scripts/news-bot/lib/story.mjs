@@ -138,7 +138,7 @@ export function templateCompose(item, extracted, { date, image, slug }) {
   const p1 = condense(paragraphs[0] || dek, 480);
   const p2 = condense(paragraphs[1] || dek, 480);
   const p3 = condense(paragraphs[2] || paragraphs[1] || dek, 480);
-  const p4 = `Cet article a été préparé automatiquement par la rédaction Let’s Play à partir de la source citée ci-dessous. Les prochains communiqués de ${entity} préciseront la suite : fenêtre de sortie, supports et contenus restent à confirmer par l’éditeur.`;
+  const p4 = `Cet article a été préparé automatiquement par la rédaction Let’s Play à partir de la source citée ci-dessous. Les prochains communiqués de ${entity} préciseront la suite : fenêtre de sortie, supports et contenus restent à confirmer par l’éditeur. De votre côté, quel élément mérite d’être surveillé en premier ? Dites-le dans les commentaires.`;
   return {
     slug, date, category: buildCategory(item, { p1 }),
     image, imageAlt: `${headline} — visuel éditorial Let’s Play`,

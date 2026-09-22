@@ -71,7 +71,7 @@ export const STYLE_GUIDE = `Tu écris pour « Let’s Play », l’émission alg
 - Les h2 sont courts, en MAJUSCULES, et disent quelque chose (pas « Annonce » ni « Conclusion »).
 - La citation (« quote ») est la phrase la plus juste de l’article, avec « quoteBy » : « L’ANALYSE LET’S PLAY ».
 - « takeText » résume tout l’article en une phrase autonome.
-- Dernier paragraphe (p4) : perspective honnête pour les joueurs — quoi surveiller ensuite, quel signal attendre — sans spéculation présentée comme un fait.
+- Dernier paragraphe (p4) : perspective honnête pour les joueurs — quoi surveiller ensuite, quel signal attendre — sans spéculation présentée comme un fait, puis une question concrète qui donne envie de prendre position dans les commentaires (sans inventer de réponse ni de sondage).
 - Les paragraphes font 2 à 4 phrases, environ 45 à 80 mots chacun.`;
 
 export const STORY_SCHEMA_DOC = `Réponds UNIQUEMENT avec un objet JSON (aucun texte autour, pas de bloc de code) respectant exactement cette structure :
