@@ -402,6 +402,10 @@
   width: min(1080px, 100%);
   margin: 0 auto;
   display: grid;
+  /* minmax(0, 1fr) : sans lui, la piste unique grossit jusqu'au min-content
+     du plus large des enfants (barre de filtres « jeux testés ») et étire
+     TOUTES les cartes au-delà du hub — la page déborde et paraît décentrée. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
 }
 
@@ -625,6 +629,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 8px;
   font-family: var(--mono);
   font-size: 12px;
