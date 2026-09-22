@@ -1,0 +1,83 @@
+diff --git a/src/components/Layout.jsx b/src/components/Layout.jsx
+index 1ee3ee6..8d90f6e 100644
+--- a/src/components/Layout.jsx
++++ b/src/components/Layout.jsx
+@@ -9,23 +9,16 @@ import { useAchievementAction } from '../achievements/AchievementContext';
+ 
+ const base = import.meta.env.BASE_URL;
+ 
+-function isOffline() {
+-  if (typeof window === 'undefined') return false;
+-  return !navigator.onLine;
+-}
+-
+ export default function Layout({ children }) {
+   const [menuOpen, setMenuOpen] = useState(false);
+   const [scrolled, setScrolled] = useState(false);
+   const location = useLocation();
+   const navigate = useNavigate();
+   const { t } = useLanguage();
+-  const { user, configured } = useAuth();
++  const { user } = useAuth();
+   const track = useAchievementAction();
+   const searchRef = useRef(null);
+ 
+-  const offlineMode = !configured || isOffline();
+-
+   useEffect(() => {
+     const onScroll = () => setScrolled(window.scrollY > 24);
+     window.addEventListener('scroll', onScroll, { passive: true });
+@@ -119,7 +112,7 @@ export default function Layout({ children }) {
+                   </span>
+                 </span>
+               </Link>
+-            ) : offlineMode ? (
++            ) : (
+               <>
+                 <Link
+                   to="/auth?mode=signin"
+@@ -136,14 +129,6 @@ export default function Layout({ children }) {
+                   {t.nav.register || 'Register'}
+                 </Link>
+               </>
+-            ) : (
+-              <Link
+-                to="/auth"
+-                className={`nav-account${user ? ' connected' : ''}`}
+-                onClick={() => setMenuOpen(false)}
+-              >
+-                {t.nav?.join || 'Join'}
+-              </Link>
+             )}
+           </div>
+         </div>
+diff --git a/src/i18n/translations.js b/src/i18n/translations.js
+index 42f6576..217a435 100644
+--- a/src/i18n/translations.js
++++ b/src/i18n/translations.js
+@@ -12,7 +12,6 @@ export const translations = {
+       reviews: 'Reviews',
+       dossiers: 'Dossiers',
+       partners: 'Partners',
+-      join: 'Join',
+       account: 'Account',
+       menu: 'Menu',
+       menuAria: 'Open menu',
+@@ -300,7 +299,7 @@ export const translations = {
+     meta: { title: 'Let’s Play — Jouer le jeu' },
+     nav: {
+       home: 'Accueil', news: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', partners: 'Partenaires',
+-      join: 'Rejoindre', account: 'Compte',
++      account: 'Compte',
+       menu: 'Menu', menuAria: 'Ouvrir le menu', langAria: 'Changer de langue',
+       search: { placeholder: 'Rechercher…', submit: 'Rechercher', noResults: 'Aucun résultat', viewAll: 'Voir tous les résultats' },
+       login: 'Se connecter',
+@@ -577,7 +576,7 @@ export const translations = {
+     meta: { title: 'Let’s Play — العب اللعبة' },
+     nav: {
+       home: 'الرئيسية', news: 'الأخبار', reviews: 'المراجعات', dossiers: 'الملفات', partners: 'الشركاء',
+-      join: 'انضمام', account: 'الحساب',
++      account: 'الحساب',
+       menu: 'القائمة', menuAria: 'افتح القائمة', langAria: 'تغيير اللغة',
+       search: { placeholder: 'بحث…', submit: 'بحث', noResults: 'لا توجد نتائج', viewAll: 'عرض كل النتائج' },
+       login: 'تسجيل الدخول',
