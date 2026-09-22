@@ -893,6 +893,54 @@ end $$;
 -- PostgREST garde en mémoire la liste des tables : sans ce signal, l'API peut
 -- répondre « Could not find the table 'public.comments' in the schema cache »
 -- alors que la table vient d'être créée.
+-- Réactions partagées : un vote par compte et par article.
+create table if not exists public.article_reactions (
+  article_id text not null check (length(article_id) between 1 and 300),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  choice text not null check (choice in ('hype', 'watch', 'wait')),
+  primary key (article_id, user_id)
+);
+alter table public.article_reactions enable row level security;
+-- Les identités des votants ne sont jamais exposées ; accès via RPC seulement.
+revoke all on public.article_reactions from anon, authenticated;
+
+create or replace function public.get_article_reactions(p_article_id text)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'hype', count(*) filter (where choice = 'hype'),
+    'watch', count(*) filter (where choice = 'watch'),
+    'wait', count(*) filter (where choice = 'wait'),
+    'mine', coalesce(max(choice) filter (where user_id = auth.uid()), '')
+  ) from public.article_reactions where article_id = p_article_id;
+$$;
+
+create or replace function public.set_article_reaction(p_article_id text, p_choice text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then
+    raise exception 'reaction_requires_auth' using errcode = '42501';
+  end if;
+  if p_article_id is null or length(p_article_id) not between 1 and 300 then
+    raise exception 'invalid_article' using errcode = '22023';
+  end if;
+  if p_choice is null then
+    delete from public.article_reactions where article_id = p_article_id and user_id = auth.uid();
+  else
+    if p_choice not in ('hype', 'watch', 'wait') then
+      raise exception 'invalid_reaction' using errcode = '22023';
+    end if;
+    insert into public.article_reactions(article_id, user_id, choice)
+    values (p_article_id, auth.uid(), p_choice)
+    on conflict (article_id, user_id) do update set choice = excluded.choice;
+  end if;
+  return public.get_article_reactions(p_article_id);
+end;
+$$;
+revoke all on function public.get_article_reactions(text) from public;
+revoke all on function public.set_article_reaction(text, text) from public;
+grant execute on function public.get_article_reactions(text) to anon, authenticated;
+grant execute on function public.set_article_reaction(text, text) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Contrôle final : chaque ligne doit afficher « OK ».
@@ -1028,6 +1076,11 @@ from (
     (28, 'jeux testés profiles.tested_games',
       case when exists (select 1 from information_schema.columns
                         where table_schema = 'public' and table_name = 'profiles' and column_name = 'tested_games')
+           then 'OK' else 'MANQUANT' end)
+, (29, 'réactions partagées (table et RPC)',
+      case when to_regclass('public.article_reactions') is not null
+             and to_regprocedure('public.get_article_reactions(text)') is not null
+             and to_regprocedure('public.set_article_reaction(text,text)') is not null
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

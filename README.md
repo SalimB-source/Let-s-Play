@@ -970,3 +970,23 @@ licences, salons) et les filtres anti-bruit : tout vit dans
 - [Games & Comic Con Dzaïr](https://www.gccdz.com/)
 - [Algérie Télécom](https://www.algerietelecom.dz/) · [IdOOM Market](https://idoom-market.com.dz/fr)
 - [TCL](https://www.tcl.com/)
+
+### Réactions des articles actus
+
+La section « Vous en pensez quoi ? » utilise désormais Supabase, et non les
+compteurs du navigateur. **Relancer `supabase/schema.sql` dans le SQL Editor du
+projet utilisé par le site avant de déployer le frontend.** Cette migration
+ajoute `article_reactions` et les RPC `get_article_reactions` /
+`set_article_reaction`.
+
+Tous les visiteurs voient le total partagé et la répartition en pourcentages
+(par choix, pas une note numérique). Un compte connecté peut voter, changer
+son choix ou cliquer à nouveau pour le retirer. La clé primaire impose un seul
+vote par compte et par article, y compris sur plusieurs appareils. Les RPC
+n'exposent pas les identités des votants et l'identité d'écriture est issue de
+`auth.uid()`. Les comptes démo ne votent pas. La tendance est relue toutes les
+30 secondes, au retour sur la fenêtre et après chaque vote.
+
+Les anciens compteurs locaux ne sont pas importés : ils ne constituent pas des
+votes vérifiables. En cas de panne ou de migration manquante, une erreur est
+affichée, sans simuler un enregistrement local.
