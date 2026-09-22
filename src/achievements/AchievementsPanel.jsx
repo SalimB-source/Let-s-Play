@@ -170,9 +170,11 @@ export function AchievementLevelCard({ summary, lang, t, compact = false }) {
 
 /**
  * @param {'full'|'compact'} variant complet (page) ou résumé (hub joueur)
- * @param {number} [limit] nombre de succès affichés en variante compacte
+ * @param {number} [limit] nombre de succès affichés en variante compacte.
+ *   Par défaut (limit non défini) le hub affiche **tous** les succès — la
+ *   limite n'est respectée que si un nombre fini est passé explicitement.
  */
-export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
+export default function AchievementsPanel({ variant = 'full', limit }) {
   const { summary } = useAchievements();
   const { lang } = useLanguage();
   const t = copy[lang] || copy.en;
@@ -213,9 +215,17 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
   }, [summary.items, group, tier, stateFilter]);
 
   if (variant === 'compact') {
-    const recent = filtered.filter((item) => item.unlocked).slice(0, limit);
-    const upcoming = filtered.filter((item) => !item.unlocked).slice(0, Math.max(1, limit - recent.length));
-    const shown = [...recent, ...upcoming];
+    // Par défaut on affiche tous les succès (triés) ; si une limite
+    // finie est explicitement passée (ex. <AchievementsPanel limit={4} />)
+    // on garde le découpage \"récents + à venir\" hérité.
+    let shown;
+    if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+      const recent = filtered.filter((item) => item.unlocked).slice(0, limit);
+      const upcoming = filtered.filter((item) => !item.unlocked).slice(0, Math.max(1, limit - recent.length));
+      shown = [...recent, ...upcoming];
+    } else {
+      shown = filtered;
+    }
 
     return (
       <div className="achievements-panel compact">

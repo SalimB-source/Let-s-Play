@@ -801,13 +801,28 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overflow: visible;
 }
+
+.achievements-panel.compact { overflow: visible; }
 
 .achievements-panel.compact .player-section-header { margin-bottom: 0; }
 
-.achievement-grid.compact { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.achievement-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  overflow: visible;
+}
 
 .achievements-panel.compact .arrow-link { margin-top: 2px; }
+
+/* Le panneau dans le hub ne doit jamais rogner la tooltip — le conteneur
+   parent (.player-section) porte désormais son fond dans ::before, donc on
+   force partout overflow:visible et on remonte la tooltip au-dessus. */
+.achievements-panel.compact,
+.achievement-grid.compact,
+.achievements-panel.compact .achievement-grid {
+  overflow: visible;
+}
 
 
 /* ---------------- Notifications de déblocage (bas à droite) --------------- */
@@ -997,6 +1012,23 @@
   }
   .achievement-tooltip-name { font-size: 11.5px; }
   .achievement-tooltip-desc { font-size: 11.8px; }
+}
+
+/* RTL — la tooltip reste centrée mais l'origine passe à droite */
+[dir="rtl"] .achievement-tooltip {
+  left: auto;
+  right: 50%;
+  transform: translateX(50%) translateY(10px) scale(.98);
+}
+[dir="rtl"] .achievement-card:hover .achievement-tooltip,
+[dir="rtl"] .achievement-card:focus-visible .achievement-tooltip,
+[dir="rtl"] .achievement-card:focus-within .achievement-tooltip {
+  transform: translateX(50%) translateY(0) scale(1);
+}
+[dir="rtl"] .achievement-tooltip::after {
+  left: auto;
+  right: 50%;
+  transform: translateX(50%);
 }
 
 @media (prefers-reduced-motion: reduce) {
