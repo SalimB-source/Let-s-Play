@@ -254,8 +254,8 @@
   .arena-proof{padding:22px 18px 20px;margin-top:48px}
 }
 
-/* Home: seamless monochrome logo ribbon. Two equal groups keep the loop continuous. */
-.partners-marquee{position:relative;overflow:hidden;background:#fff;color:#222;direction:ltr;padding:28px 0}
+/* Home: seamless color logo ribbon on dark. Two equal groups keep the loop continuous. */
+.partners-marquee{position:relative;overflow:hidden;background:var(--panel);background:#0b0d1e;color:var(--ink);direction:ltr;padding:28px 0;border-block:1px solid var(--line)}
 .partners-marquee-track{display:flex;width:max-content;animation:partners-marquee-scroll 55s linear infinite}
 .partners-marquee-group{display:flex;align-items:center;flex-shrink:0;gap:64px;list-style:none;margin:0;padding:0 32px}
 .partners-marquee-item{display:flex;align-items:center;justify-content:center;flex:0 0 180px;height:100px}
@@ -267,7 +267,7 @@
  */
 .partners-marquee .partner-mark-marquee{width:100%;justify-content:center}
 .partners-marquee .partner-mark-logo{
-  width:160px;max-width:160px;height:64px;filter:grayscale(1);object-fit:contain;
+  width:160px;max-width:160px;height:64px;filter:none;object-fit:contain;
   transform:scale(var(--marquee-logo-scale,1));transform-origin:center;
 }
 .partners-marquee-item--7ouma-arena{--marquee-logo-scale:1.35}
@@ -280,15 +280,12 @@
 .partners-marquee-item--tcl{--marquee-logo-scale:1.05}
 .partners-marquee-item--el-heddaf-tv{--marquee-logo-scale:.86}
 .partners-marquee-item--tmv{--marquee-logo-scale:.9}
-/* Les logos blancs deviennent noirs dans le bandeau blanc. */
-.partners-marquee-item--esca .partner-mark-logo,
-.partners-marquee-item--tmv .partner-mark-logo{filter:grayscale(1) brightness(0)}
-.partners-marquee .partner-mark-badge{filter:grayscale(1)}
+.partners-marquee .partner-mark-badge{filter:none}
 .partners-marquee:hover .partners-marquee-track,
 .partners-marquee:focus-within .partners-marquee-track,
 .partners-marquee[data-paused="true"] .partners-marquee-track{animation-play-state:paused}
-.partners-marquee-toggle{position:absolute;right:12px;bottom:8px;display:grid;place-items:center;width:32px;height:32px;border:1px solid #ccc;border-radius:50%;background:#fff;color:#333;cursor:pointer}
-.partners-marquee-toggle:focus-visible{outline:2px solid #222;outline-offset:3px}
+.partners-marquee-toggle{position:absolute;right:12px;bottom:8px;display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--line-strong);border-radius:50%;background:rgba(11,13,30,.85);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
+.partners-marquee-toggle:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
 @keyframes partners-marquee-scroll{to{transform:translateX(-50%)}}
 @media(max-width:600px){
   .partners-marquee{padding:20px 0}
