@@ -1248,61 +1248,6 @@
   margin: 0;
 }
 
-/* SAVED ARTICLES GRID */
-.player-saved-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-
-.player-saved-card {
-  background: rgba(255, 255, 255, .03);
-  border: 1px solid var(--line);
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  transition: all .2s;
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-}
-
-.player-saved-card:hover {
-  border-color: var(--yellow);
-  background: rgba(255, 214, 25, .04);
-  transform: translateY(-2px);
-}
-
-.player-saved-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font: 500 10px var(--mono);
-  letter-spacing: .12em;
-  color: var(--cyan);
-  text-transform: uppercase;
-}
-
-.player-saved-title {
-  font-family: var(--body);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
-  line-height: 1.4;
-  margin: 0;
-}
-
-.player-saved-link {
-  font: 600 10px var(--mono);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--yellow);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
 /* ACCOUNT ACTIONS BAR */
 .player-actions-card {
   display: flex;
@@ -1728,8 +1673,7 @@
     border-top: 1px solid var(--line-strong);
   }
 
-  .sso-providers-grid,
-  .player-saved-grid {
+  .sso-providers-grid {
     grid-template-columns: 1fr;
   }
 
