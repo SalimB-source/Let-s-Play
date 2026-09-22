@@ -176,20 +176,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SORTIES DU MOIS — frise + compte à rebours (déplacé depuis la page Actus).
-          Le grand titre du mois a été retiré : la section s'identifie par son
-          libellé (SORTIES DU MOIS + nom du mois) et le lien complet vit dans
-          le teaser en bas de section. */}
-      <section className="monthly-releases wrap" id="countdown">
-        <div className="section-label"><span>{calendarCopy.label}</span><span>{monthName}</span></div>
-        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
-        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
-        <div className="calendar-teaser">
-          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
-          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
-        </div>
-      </section>
-
       {/* ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
       <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured">
         <div className="section-label"><span>{labelTitle}</span><span>{head.label2}</span></div>
@@ -221,6 +207,20 @@ export default function Home() {
               </div>
             </article>
           ))}
+        </div>
+      </section>
+
+      {/* SORTIES DU MOIS — frise + compte à rebours (déplacé depuis la page Actus).
+          Le grand titre du mois a été retiré : la section s'identifie par son
+          libellé (SORTIES DU MOIS + nom du mois) et le lien complet vit dans
+          le teaser en bas de section. */}
+      <section className="monthly-releases wrap" id="countdown">
+        <div className="section-label"><span>{calendarCopy.label}</span><span>{monthName}</span></div>
+        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
+        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
+        <div className="calendar-teaser">
+          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
+          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
         </div>
       </section>
 

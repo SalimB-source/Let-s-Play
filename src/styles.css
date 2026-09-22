@@ -295,7 +295,9 @@ img{max-width:100%}
 /* Les deux dossiers à la une tiennent dans une seule section, côte à côte,
    posée sous la grille des tests. */
 .featured-dossiers{padding:110px 0}
-.featured-dossiers#featured{padding:110px 0}
+/* #featured = « Épisodes à la une » de l'Accueil : première section posée sous
+   le hero (+ ticker), elle reprend donc le padding haut renforcé de 128px. */
+.featured-dossiers#featured{padding:128px 0 110px}
 .featured-dossiers-head{display:flex;align-items:end;justify-content:space-between;gap:30px;padding:38px 0 0}
 .featured-dossiers-head h2{
   font-family:var(--display);font-weight:800;font-size:clamp(38px,5vw,64px);
@@ -727,7 +729,7 @@ img{max-width:100%}
   .featured-grid{grid-template-columns:1fr;gap:36px;padding-top:40px}
   .featured-grid--mirror .featured-copy,.featured-grid--mirror .featured-player{order:0}
   .featured-dossiers{padding:70px 0}
-  .featured-dossiers#featured{padding:70px 0}
+  .featured-dossiers#featured{padding:104px 0 70px}
   .featured-dossiers-head{display:block;padding-top:30px}
   .featured-dossiers-head .arrow-link{display:inline-flex;margin-top:18px}
   .featured-dossiers-grid{grid-template-columns:1fr;gap:48px;margin-top:34px}
