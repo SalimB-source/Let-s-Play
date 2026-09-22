@@ -23,6 +23,7 @@ const listingOf = (story) => ({
   title: `${story.title} ${story.accent}`.trim(),
   excerpt: story.dek,
   read: 'LIRE L’ARTICLE',
+  sentiment: story.sentiment || 'mixed',
 });
 
 // Format attendu par la liste des actus (src/pages/News.jsx).

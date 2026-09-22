@@ -941,6 +941,65 @@ revoke all on function public.set_article_reaction(text, text) from public;
 grant execute on function public.get_article_reactions(text) to anon, authenticated;
 grant execute on function public.set_article_reaction(text, text) to authenticated;
 
+-- ----------------------------------------------------------------------------
+-- 7. Vues globales des actus (compteur partagé)
+-- ----------------------------------------------------------------------------
+-- Une ligne par article. Compteur global exposé sur les miniatures de /news
+-- et sur la page article : ``vues`` est le total de tous les lecteurs.
+-- Lecture publique (anon + authenticated) ; l'incrément passe par la RPC
+-- atomique ci-dessous (security definer) pour éviter qu'un client pose une
+-- valeur arbitraire. Fallback local (localStorage) géré côté client si
+-- Supabase n'est pas configuré.
+create table if not exists public.article_views (
+  article_id text primary key check (char_length(article_id) between 1 and 300),
+  views integer not null default 0 check (views >= 0),
+  updated_at timestamptz not null default now()
+);
+
+do $$
+begin
+  alter table public.article_views enable row level security;
+
+  drop policy if exists "Article views are publicly readable" on public.article_views;
+  create policy "Article views are publicly readable"
+  on public.article_views for select using (true);
+exception
+  when others then
+    raise warning 'Let''s Play : politiques RLS article_views non appliquées (%).', sqlerrm;
+end $$;
+
+-- Incrément atomique : insère à 1 si inconnu, sinon +1. Retourne le total.
+create or replace function public.increment_article_view(p_article_id text)
+returns integer
+language plpgsql
+security definer set search_path = ''
+as $$
+declare next_views integer;
+begin
+  if p_article_id is null or char_length(p_article_id) not between 1 and 300 then
+    raise exception 'invalid_article_id' using errcode = '22023';
+  end if;
+  insert into public.article_views(article_id, views, updated_at)
+  values (p_article_id, 1, now())
+  on conflict (article_id) do update
+    set views = public.article_views.views + 1, updated_at = now()
+  returning views into next_views;
+  return next_views;
+end;
+$$;
+
+revoke all on function public.increment_article_view(text) from public;
+grant execute on function public.increment_article_view(text) to anon, authenticated;
+
+do $$
+begin
+  grant usage on schema public to anon, authenticated;
+  grant select on public.article_views to anon, authenticated;
+exception
+  when others then
+    raise warning 'Let''s Play : droits article_views non appliqués (%).', sqlerrm;
+end $$;
+
 notify pgrst, 'reload schema';
 
 -- Contrôle final : chaque ligne doit afficher « OK ».
@@ -1081,6 +1140,10 @@ from (
       case when to_regclass('public.article_reactions') is not null
              and to_regprocedure('public.get_article_reactions(text)') is not null
              and to_regprocedure('public.set_article_reaction(text,text)') is not null
+           then 'OK' else 'MANQUANT' end)
+, (30, 'vues globales actus (table et RPC)',
+      case when to_regclass('public.article_views') is not null
+             and to_regprocedure('public.increment_article_view(text)') is not null
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

@@ -122,6 +122,23 @@ function mainEntity(item) {
   return best.split(' ').map(smartCase).join(' ');
 }
 
+// Sentiment global de l'actu : vert (positive), rouge (negative), jaune (mixed).
+// Détecté à partir du titre/résumé/category pour alimenter le smiley en haut à droite des miniatures.
+const POSITIVE_SENT = /(succès|succes|million|record|victoire|remport|gagn|prime|récompens|annonce|dévoile|arrive|arrivée|lancement|lance|disponible|sortie|exclus|nouveau|nouvelle|innovation|amélior|partenariat|collaboration|célèbre|fête|festival|révèle|numéro un|première place|garde la première|passe à l'attaque|change de quartier|fait des jaloux)/i;
+const NEGATIVE_SENT = /(licenciement|licenciements|suppression|consolidation|annulation|perd son dernier jour|report|repouss|retard|prend un peu de retard|reste au garage|ne sortira pas|échec|controverse|procès|plainte|justice|accuse|fermeture|baisse|chute|difficulté|crise|typhon|annule|demande l'arrêt)/i;
+
+export function inferSentiment(item, extracted) {
+  const hay = `${item.title || ''} ${item.summary || ''} ${extracted?.description || ''} ${buildCategory(item, {})}`.toLowerCase();
+  const pos = POSITIVE_SENT.test(hay);
+  const neg = NEGATIVE_SENT.test(hay);
+  // Négatif prime, sauf si les deux coexistent avec un signal de nuance.
+  const hasMixedHint = /(mais|pourtant|cependant|nuance|mitigé|contrasté|incertain)/i.test(hay);
+  if (pos && neg) return hasMixedHint ? 'mixed' : 'negative';
+  if (neg) return 'negative';
+  if (pos) return 'positive';
+  return 'mixed';
+}
+
 // Composition « sans IA » : assemblage extractif dans le gabarit éditorial.
 // Les textes proviennent uniquement de la source citée, le dernier paragraphe
 // indique clairement que l’article est généré automatiquement.
@@ -139,6 +156,7 @@ export function templateCompose(item, extracted, { date, image, slug }) {
   const p2 = condense(paragraphs[1] || dek, 480);
   const p3 = condense(paragraphs[2] || paragraphs[1] || dek, 480);
   const p4 = `Cet article a été préparé automatiquement par la rédaction Let’s Play à partir de la source citée ci-dessous. Les prochains communiqués de ${entity} préciseront la suite : fenêtre de sortie, supports et contenus restent à confirmer par l’éditeur. De votre côté, quel élément mérite d’être surveillé en premier ? Dites-le dans les commentaires.`;
+  const sentiment = inferSentiment(item, extracted);
   return {
     slug, date, category: buildCategory(item, { p1 }),
     image, imageAlt: `${headline} — visuel éditorial Let’s Play`,
@@ -159,6 +177,7 @@ export function templateCompose(item, extracted, { date, image, slug }) {
     sourceUrl: item.url,
     sourceDetail: 'Lire l’article source',
     credit: 'Visuel : carte éditoriale Let’s Play générée automatiquement.',
+    sentiment,
   };
 }
 
@@ -166,6 +185,7 @@ const LENGTH_RULES = {
   title: 60, accent: 80, category: 70, cover: 40, dek: 400, lead: 500, intro: 600,
   h2: 70, p1: 900, quote: 300, quoteBy: 80, h2b: 70, p2: 900, p3: 900, p4: 900,
   take: 40, takeText: 400, source: 300, sourceDetail: 80, sourceUrl: 1000,
+  sentiment: 20,
 };
 
 // Validation stricte : un article incomplet ou hors gabarit ne part jamais en prod.
@@ -175,6 +195,9 @@ export function validateStory(story, { internal = false } = {}) {
     if (typeof story[field] !== 'string' || !story[field].trim()) {
       throw new Error(`champ « ${field} » manquant ou vide`);
     }
+  }
+  if (story.sentiment && !['positive', 'negative', 'mixed', 'neutral'].includes(String(story.sentiment).toLowerCase())) {
+    throw new Error(`champ « sentiment » invalide : ${story.sentiment}`);
   }
   if (!/^\d{2}\.\d{2}\.\d{4}$/.test(story.date)) throw new Error(`champ « date » invalide : ${story.date}`);
   if (!story.slug || !/^[a-z0-9-]+$/.test(story.slug)) throw new Error(`slug invalide : ${story.slug}`);

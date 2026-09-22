@@ -1,3 +1,10 @@
+/* Badges partagés : vues globales + smiley sentiment (page Actus & article) */
+.news-sentiment{position:absolute;top:10px;right:10px;z-index:2;width:30px;height:30px;display:grid;place-items:center;border-radius:999px;font-size:15px;line-height:1;box-shadow:0 4px 14px rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.22);pointer-events:none}
+.news-sentiment.positive{background:#16a34a;color:#fff}
+.news-sentiment.negative{background:#dc2626;color:#fff}
+.news-sentiment.mixed{background:#eab308;color:#111;border-color:rgba(0,0,0,.08)}
+.news-views{position:absolute;left:10px;bottom:10px;z-index:2;display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border-radius:999px;background:rgba(5,6,15,.82);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);color:#fff;font:600 10px var(--mono);letter-spacing:.06em;box-shadow:0 4px 14px rgba(0,0,0,.32)}
+.news-views svg{width:13px;height:13px;display:block}
 .news-carousel-section{padding-top:128px;padding-bottom:60px}
 /* Les 128px du haut servent à passer sous le header fixe quand le carrousel ouvre la page ;
    derrière la section 01 (calendrier du mois), on revient à un espacement de section normal. */
