@@ -33,19 +33,21 @@ npm run build
   argent, or, platine — avec niveau, XP, grades visibles et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
 - Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
-  huit quizz rédigés par la rédaction (culture générale, rétro, souls-like,
-  RPG, e-sport, studios, tech et cinéma), **tous jouables dès l'arrivée** et
-  chacun en **trois niveaux à l'intérieur** (Facile ouvert, Confirmé puis
-  Expert débloqués en cascade en terminant le palier précédent, progression
-  synchronisée avec le compte ; questions différentes d'un niveau à l'autre et
-  points multipliés ×1/×1,5/×2, un niveau ne rapportant qu'une fois — en points
-  comme en XP), quizz du jour en rotation quotidienne avec
-  série de jours, feedback instantané de chaque réponse (gel, vert/rouge,
-  points de rapidité & combo), corrections commentées, confettis du
-  sans-faute, raccourcis clavier 1–4, commentaires, recherche et cinq succès
-  dédiés ; classement des quizz (un classement par niveau, clé `slug:niveau`)
-  par points gagnés et position au classement global affichée sur la page de
-  profil (voir « Quizz gaming & quizz du jour »)- Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
+  douze quizz rédigés par la rédaction (culture générale, rétro, souls-like,
+  RPG, e-sport, studios, tech, cinéma, PS4, Nintendo 64, Mega Drive et jeux
+  PC), **tous jouables dès l'arrivée** et chacun en **trois niveaux à
+  l'intérieur** (Facile ouvert, Confirmé puis Expert débloqués en cascade en
+  terminant le palier précédent, progression synchronisée avec le compte ;
+  questions différentes d'un niveau à l'autre et points multipliés
+  ×1/×1,5/×2, un niveau ne rapportant qu'une fois — en points comme en XP),
+  quizz du jour en rotation quotidienne avec série de jours, feedback
+  instantané de chaque réponse (gel, vert/rouge, points de rapidité & combo),
+  corrections commentées, confettis du sans-faute, raccourcis clavier 1–4,
+  commentaires, recherche et cinq succès dédiés ; classement des quizz (un
+  classement par niveau, clé `slug:niveau`) par points gagnés et position au
+  classement global affichée sur la page de profil (voir « Quizz gaming &
+  quizz du jour »)
+- Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
   présence »)
@@ -700,7 +702,7 @@ Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 `/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
 mais la structure de données les accepte déjà.
 
-- **Grille** — les huit quizz (aucun verrou, aucune pastille de difficulté : la
+- **Grille** — les douze quizz (aucun verrou, aucune pastille de difficulté : la
   progression « n/3 niveaux » remplace l'ancien badge) s'affichent sur **trois
   colonnes** stables sur
   bureau (`repeat(3, minmax(0, 1fr))` : le nombre ne bascule plus selon la
@@ -709,19 +711,19 @@ mais la structure de données les accepte déjà.
   pour préserver la largeur des cartes. Les titres des cartes suivent une
   taille fluide `clamp(16px → 18px)` avec interligne 1.3, `text-wrap: balance`
   (coupe harmonieuse sur deux lignes) et `overflow-wrap: break-word` en garde-fou.
-- **Données** — `src/quizzesData.js` : huit quizz (culture générale, rétro,
-  souls-like, RPG, e-sport, studios, tech et cinéma), la plupart liés à un
-  article maison (`source`). **Chaque quizz porte trois niveaux**
-  (`levels.easy` / `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit
-  questions par niveau — soit 24 questions par quizz, 192 au total. Les
-  helpers `quizLevelQuestions(quiz, level)` et `quizQuestionsCount(quiz)`
-  évitent d'accéder aux niveaux à la main (`QUIZ_DIFFICULTIES` reste exporté
-  comme alias de `QUIZ_LEVELS`, et `quizQuestions(quiz, level)` comme alias de
-  `quizLevelQuestions` : les appelants historiques continuent de fonctionner).
-  Ajouter un quizz = une entrée : la
-  grille, la recherche (`searchIndex`), la rotation du jour et le succès
-  « Tour complet » le prennent en compte (mettre à jour la cible du succès si
-  le nombre de quizz change).
+- **Données** — `src/quizzesData.js` : douze quizz (culture générale, rétro,
+  souls-like, RPG, e-sport, studios, tech, cinéma, PS4, Nintendo 64, Mega Drive
+  et jeux PC), la plupart liés à un article maison (`source`). **Chaque quizz
+  porte trois niveaux** (`levels.easy` / `levels.medium` / `levels.hard`,
+  `QUIZ_LEVELS`), huit questions par niveau — soit 24 questions par quizz, 288
+  au total. Les helpers `quizLevelQuestions(quiz, level)` et
+  `quizQuestionsCount(quiz)` évitent d'accéder aux niveaux à la main
+  (`QUIZ_DIFFICULTIES` reste exporté comme alias de `QUIZ_LEVELS`, et
+  `quizQuestions(quiz, level)` comme alias de `quizLevelQuestions` : les
+  appelants historiques continuent de fonctionner). Ajouter un quizz = une
+  entrée : la grille, la recherche (`searchIndex`), la rotation du jour et le
+  succès « Tour complet » le prennent en compte (mettre à jour la cible du
+  succès si le nombre de quizz change).
 - **Niveaux & déblocage** — les **quizz sont tous jouables dès l'arrivée** :
   plus aucune difficulté affichée sur la grille, aucun quizz verrouillé. La
   difficulté se choisit DANS le quizz (écran d'introduction, une carte par
@@ -735,7 +737,8 @@ mais la structure de données les accepte déjà.
   terminé) et se **fusionne** avec la copie locale `localStorage`
   (`letsplay_quiz_levels_v1`) — hors-ligne, c'est elle qui fait foi. Les
   cartes de la grille et la bannière du jour affichent la progression
-  « n/3 niveaux ».- **Miniatures** — chaque quizz a sa propre illustration 16/9
+  « n/3 niveaux ».
+- **Miniatures** — chaque quizz a sa propre illustration 16/9
   (`image`, fabriquée par `quizThumbUrl(slug)` depuis
   `public/quizzes/<slug>.jpg`) : une par thème, à la charte du site. La carte de
   la grille, la bannière du quizz du jour et les résultats de recherche
@@ -1141,7 +1144,7 @@ qualité disponible pour cette vidéo.
   404 connu, l'illustration locale essayée avant YouTube quand elle est passée
   en `lead`), le **rendu réel des pages** en SSR (accueil : trois vignettes,
   `twbaM8fiXpo` en `hqdefault`, HicoSoft toujours en `maxresdefault` ; dossiers :
-  huit vignettes ; quizz : bannière du jour + huit cartes servies par
+  huit vignettes ; quizz : bannière du jour + douze cartes servies par
   `public/quizzes/`, chaque fichier livré et non tronqué), et la source du site
   (aucune URL de miniature codée en dur hors de `src/lib/videoThumbnails.js`,
   ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins

@@ -513,7 +513,7 @@ export async function checkQuiz(assert) {
         </AuthProvider>
       </LanguageProvider>,
     ));
-    assert.equal(gridNode.querySelectorAll('.quiz-card').length, quizzes.length, `[${lang}] huit cartes de quizz`);
+    assert.equal(gridNode.querySelectorAll('.quiz-card').length, quizzes.length, `[${lang}] douze cartes de quizz`);
     assert.ok(gridNode.querySelector('.quiz-daily'), `[${lang}] bannière quizz du jour`);
     // Tous les quizz sont jouables dès l'arrivée, et la grille ne classe plus
     // rien par difficulté : aucune pastille Facile/Confirmé/Expert sur les
@@ -530,7 +530,7 @@ export async function checkQuiz(assert) {
     // la bannière du jour affiche celle du quizz mis en avant.
     const cardThumbs = [...gridNode.querySelectorAll('.quiz-card-media img')].map((img) => img.getAttribute('src'));
     assert.equal(cardThumbs.length, quizzes.length, `[${lang}] une miniature par carte`);
-    assert.equal(new Set(cardThumbs).size, quizzes.length, `[${lang}] huit miniatures distinctes`);
+    assert.equal(new Set(cardThumbs).size, quizzes.length, `[${lang}] douze miniatures distinctes`);
     assert.deepEqual(
       [...cardThumbs].sort(),
       quizzes.map((entry) => entry.image).sort(),

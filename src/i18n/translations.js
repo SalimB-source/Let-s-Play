@@ -25,7 +25,7 @@ export const translations = {
     quiz: {
       label: 'QUIZZES / GAMING',
       titleA: 'PROVE YOUR', titleB: 'GAME KNOWLEDGE.',
-      intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport, studios, tech and cinema. Every quiz plays in three levels: easy opens the door, seasoned then expert unlock as you play.',
+      intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport, studios, tech, cinema, legendary consoles and PC classics. Every quiz plays in three levels: easy opens the door, seasoned then expert unlock as you play.',
       dailyEyebrow: 'Daily quiz',
       dailyHint: 'One quiz picked every day — come back tomorrow to keep your streak.',
       streak: 'Streak',
@@ -364,7 +364,7 @@ export const translations = {
     quiz: {
       label: 'QUIZZ / GAMING',
       titleA: 'PROUVE QUE TU', titleB: 'CONNAIS LE GAME.',
-      intro: 'Des quizz écrits par la rédaction : culture générale, rétro, souls-like, RPG, e-sport, studios, tech et cinéma. Chaque quizz se joue en trois niveaux — le Facile ouvre la porte, le Confirmé puis l’Expert se débloquent en jouant.',
+      intro: 'Des quizz écrits par la rédaction : culture générale, rétro, souls-like, RPG, e-sport, studios, tech, cinéma, consoles légendaires et classiques PC. Chaque quizz se joue en trois niveaux — le Facile ouvre la porte, le Confirmé puis l’Expert se débloquent en jouant.',
       dailyEyebrow: 'Quizz du jour',
       dailyHint: 'Un quizz choisi chaque jour — reviens demain pour garder ta série.',
       streak: 'Série',
@@ -695,7 +695,7 @@ export const translations = {
     quiz: {
       label: 'اختبارات / ألعاب',
       titleA: 'أثبت أنك', titleB: 'تعرف اللعبة.',
-      intro: 'اختبارات من إعداد التحرير: ثقافة عامة، ريترو، سولز، تقمّص أدوار، رياضات إلكترونية، استوديوهات، تقنية وسينما. كل اختبار يُلعب على ثلاثة مستويات: السهل يفتح الباب، ثم المتوسط فالخبير.',
+      intro: 'اختبارات من إعداد التحرير: ثقافة عامة، ريترو، سولز، تقمّص أدوار، رياضات إلكترونية، استوديوهات، تقنية، سينما، وحدات تحكم أسطورية وكلاسيكيات الحاسوب. كل اختبار يُلعب على ثلاثة مستويات: السهل يفتح الباب، ثم المتوسط فالخبير.',
       dailyEyebrow: 'اختبار اليوم',
       dailyHint: 'اختبار يُختار كل يوم — عُد غدًا لتحافظ على سلسلتك.',
       streak: 'السلسلة',

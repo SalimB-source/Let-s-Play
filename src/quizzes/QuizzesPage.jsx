@@ -14,7 +14,7 @@ function Arrow() { return <span aria-hidden="true">↗</span>; }
 
 const FALLBACK = {
   label: 'QUIZZES / GAMING', titleA: 'PROVE YOUR', titleB: 'GAME KNOWLEDGE.',
-  intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport, studios, tech and cinema. Every quiz plays in three levels — easy opens the doors, seasoned then expert unlock as you go.',
+  intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport, studios, tech, cinema, legendary consoles and PC classics. Every quiz plays in three levels — easy opens the doors, seasoned then expert unlock as you go.',
   dailyEyebrow: 'Daily quiz', dailyHint: 'One quiz picked every day — come back tomorrow to keep your streak.',
   streak: 'Streak', questionsCount: '{n} questions', play: 'Play',
   nextIn: 'New quiz in {t}', best: 'Best: {s}',
