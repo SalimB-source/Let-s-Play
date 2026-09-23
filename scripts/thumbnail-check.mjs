@@ -193,11 +193,11 @@ check('dossiers : qualité demandée inchangée (hqdefault)', dossiers.every((sr
 const quiz = quizThumbs();
 console.log(`\n  ${quiz.length} miniature(s) sur la page /quizz (bannière du jour + grille)\n`);
 const localQuizFiles = quiz.map((thumb) => /\/quizzes\/([a-z0-9-]+\.jpg)$/.exec(thumb.src || '')?.[1] ?? null);
-check('quizz : bannière du jour + huit cartes', quiz.length, 9);
+check('quizz : bannière du jour + douze cartes', quiz.length, 13);
 check('quizz : toutes les miniatures viennent de public/quizzes/', localQuizFiles.every(Boolean), true);
 check('quizz : aucune requête YouTube pour les miniatures', quiz.every((thumb) => !(thumb.src || '').includes('ytimg.com')), true);
 check('quizz : toutes les miniatures sont décrites (alt)', quiz.every((thumb) => Boolean(thumb.alt)), true);
-check('quizz : huit fichiers distincts (le quizz du jour est aussi dans la grille)', new Set(localQuizFiles).size, 8);
+check('quizz : douze fichiers distincts (le quizz du jour est aussi dans la grille)', new Set(localQuizFiles).size, 12);
 
 const shipped = new Map(
   readdirSync(path.join(root, 'public', 'quizzes'))
@@ -205,7 +205,7 @@ const shipped = new Map(
     .map((name) => [name, path.join(root, 'public', 'quizzes', name)])
 );
 check('quizz : chaque miniature demandée est livrée', localQuizFiles.every((name) => shipped.has(name)), true);
-check('quizz : aucun fichier livré sans carte', shipped.size, 8);
+check('quizz : aucun fichier livré sans carte', shipped.size, 12);
 const tooLight = [...shipped.values()].filter((file) => statSync(file).size < 4096);
 check('quizz : aucun fichier vide ou tronqué', tooLight.length, 0);
 

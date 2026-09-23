@@ -389,12 +389,13 @@ for (let index = 1; index <= 30; index += 1) {
   record(play('visit', { day: dayKey(date) }));
 }
 
-// Quizz : les huit quizz du site joués huit jours consécutifs en « quizz du
+// Quizz : les douze quizz du site joués douze jours consécutifs en « quizz du
 // jour » (série de sept jours minimum), dont un sans faute — de quoi ouvrir
 // premier quizz, sans faute, tour complet et semaine parfaite.
 [
   'culture-gaming', 'consoles-retro', 'souls-fromsoftware', 'rpg-legends',
   'esport-competition', 'studios-legends', 'tech-hardware', 'cinema-pop-culture',
+  'ps4-generation', 'nintendo-64', 'megadrive', 'pc-legends',
 ].forEach((id, index) => {
   const date = new Date(at(2026, 9, 20));
   date.setDate(date.getDate() + index);

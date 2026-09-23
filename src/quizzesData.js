@@ -33,7 +33,7 @@ export const baseUrl = base;
 
 /**
  * Miniature d'un quizz : `public/quizzes/<slug>.jpg`.
- * Une seule fabrique pour les huit illustrations — la vérification
+ * Une seule fabrique pour les douze illustrations — la vérification
  * `npm run check:thumbs` s'assure qu'aucun chemin n'est codé en dur ailleurs.
  */
 export function quizThumbUrl(slug) {
@@ -46,7 +46,7 @@ export function quizLabel(labels, lang = 'fr') {
   return labels[lang] || labels.en || labels.fr || '';
 }
 
-export const QUIZ_TAGS = ['Culture', 'Rétro', 'Souls-like', 'RPG', 'E-sport', 'Studios', 'Tech', 'Cinéma'];
+export const QUIZ_TAGS = ['Culture', 'Rétro', 'Souls-like', 'RPG', 'E-sport', 'Studios', 'Tech', 'Cinéma', 'Consoles', 'PC'];
 
 /**
  * Les trois niveaux d'un quizz, dans l'ordre de progression : Facile est
@@ -410,6 +410,181 @@ export const quizzes = [
         { id: 'cph6', q: { fr: 'Quel film d’animation de 1988 suit des motards dans le Neo-Tokyo post-apocalyptique ?' }, choices: [{ fr: 'Akira' }, { fr: 'Ghost in the Shell' }, { fr: 'Perfect Blue' }, { fr: 'Cowboy Bebop' }], answer: 0, why: { fr: 'Akira (Katsuhiro Otomo, 1988) impose l’animation japonaise en Occident.' } },
         { id: 'cph7', q: { fr: 'Quel jeu de Konami est adapté au cinéma en 2006, dans la ville brumeuse de Silent Hill ?' }, choices: [{ fr: 'Silent Hill' }, { fr: 'Resident Evil' }, { fr: 'Fatal Frame' }, { fr: 'Alone in the Dark' }], answer: 0, why: { fr: 'Silent Hill (2006) transpose la série horrifique de Konami et sa brume iconique.' } },
         { id: 'cph8', q: { fr: 'Quel comédien prête sa voix à Bowser dans le film Super Mario Bros. (2023) ?' }, choices: [{ fr: 'Jack Black' }, { fr: 'Chris Pratt' }, { fr: 'Seth Rogen' }, { fr: 'Keegan-Michael Key' }], answer: 0, why: { fr: 'Jack Black double Bowser en VO, face à Chris Pratt (Mario) et Seth Rogen (Donkey Kong).' } },
+      ],
+    },
+  },
+  {
+    slug: 'ps4-generation',
+    route: '/quizz/ps4-generation',
+    videoId: 'A2VPhWOUMHI',
+    image: quizThumbUrl('ps4-generation'),
+    tag: 'Consoles',
+    keywords: 'quizz ps4 playstation 4 sony dualshock 4 exclusivités god of war horizon',
+    source: '/dossiers/heritage-playstation-1',
+    labels: {
+      fr: { title: 'PS4 : la génération bleue', text: 'DualShock 4, exclusivités Naughty Dog et batailles en ligne : la console qui a régné sur les salons des années 2010, en trois niveaux.' },
+    },
+    levels: {
+      easy: [
+        { id: 'p4e1', q: { fr: 'En quelle année la PlayStation 4 sort-elle en Europe ?' }, choices: [{ fr: '2012' }, { fr: '2013' }, { fr: '2014' }, { fr: '2016' }], answer: 1, why: { fr: 'Lancée le 15 novembre 2013 en Amérique du Nord, la PS4 arrive en Europe le 29 novembre 2013.' } },
+        { id: 'p4e2', q: { fr: 'Comment s’appelle la manette livrée avec la PS4 ?' }, choices: [{ fr: 'La DualShock 3' }, { fr: 'La DualShock 4' }, { fr: 'La DualSense' }, { fr: 'La Sixaxis' }], answer: 1, why: { fr: 'La DualShock 4 ajoute pavé tactile et barre lumineuse ; la DualSense n’arrivera qu’avec la PS5.' } },
+        { id: 'p4e3', q: { fr: 'Quel support optique la PS4 lit-elle pour ses jeux ?' }, choices: [{ fr: 'Le CD' }, { fr: 'Le DVD' }, { fr: 'Le Blu-ray' }, { fr: 'La cartouche' }], answer: 2, why: { fr: 'Comme la PS3, la PS4 lit le Blu-ray : jusqu’à 50 Go par galette double couche.' } },
+        { id: 'p4e4', q: { fr: 'Quelle exclu PS4 suit Aloy dans un monde peuplé de machines ?' }, choices: [{ fr: 'Horizon Zero Dawn' }, { fr: 'Killzone Shadow Fall' }, { fr: 'Infamous Second Son' }, { fr: 'Bloodborne' }], answer: 0, why: { fr: 'Horizon Zero Dawn (2017), signé Guerrilla, devient l’une des nouvelles licences fortes de Sony.' } },
+        { id: 'p4e5', q: { fr: 'Quel battle royale a fait de la PS4 la reine du jeu en ligne grand public ?' }, choices: [{ fr: 'PUBG' }, { fr: 'Fortnite' }, { fr: 'Apex Legends' }, { fr: 'Warzone' }], answer: 1, why: { fr: 'Fortnite (2017) transforme la PS4 en phénomène de société, cross-play compris.' } },
+        { id: 'p4e6', q: { fr: 'Quel service en ligne conditionne le multijoueur sur PS4 ?' }, choices: [{ fr: 'Le PlayStation Plus' }, { fr: 'Le Xbox Live' }, { fr: 'Le Nintendo Switch Online' }, { fr: 'Le Battle.net' }], answer: 0, why: { fr: 'Le PlayStation Plus ouvre le jeu en ligne et offre des jeux chaque mois.' } },
+        { id: 'p4e7', q: { fr: 'À combien d’exemplaires la PS4 s’est-elle vendue environ ?' }, choices: [{ fr: '60 millions' }, { fr: '85 millions' }, { fr: 'Plus de 117 millions' }, { fr: '200 millions' }], answer: 2, why: { fr: 'Avec plus de 117 millions d’unités, la PS4 est la console Sony la plus vendue après la PS2.' } },
+        { id: 'p4e8', q: { fr: 'Quelle couleur habille la PS4 originale ?' }, choices: [{ fr: 'Noire' }, { fr: 'Blanche' }, { fr: 'Bleue' }, { fr: 'Argentée' }], answer: 0, why: { fr: 'Noir mat et brillant séparés en diagonale : la signature de la PS4 de 2013.' } },
+      ],
+      medium: [
+        { id: 'p4m1', q: { fr: 'Quelle version musclée de la PS4, capable de 4K, sort en 2016 ?' }, choices: [{ fr: 'La PS4 Slim' }, { fr: 'La PS4 Pro' }, { fr: 'La PS4K' }, { fr: 'La PS TV' }], answer: 1, why: { fr: 'La PS4 Pro (2016) vise la 4K et le HDR ; la Slim, plus compacte, sort la même année.' } },
+        { id: 'p4m2', q: { fr: 'Quel studio Sony signe God of War (2018) sur PS4 ?' }, choices: [{ fr: 'Guerrilla' }, { fr: 'Santa Monica Studio' }, { fr: 'Insomniac Games' }, { fr: 'Sucker Punch' }], answer: 1, why: { fr: 'Santa Monica Studio ressuscite Kratos dans une saga nordique multi-récompensée.' } },
+        { id: 'p4m3', q: { fr: 'Quel jeu de Naughty Dog conclut la génération PS4 en 2020 ?' }, choices: [{ fr: 'Uncharted 4' }, { fr: 'The Last of Us Part II' }, { fr: 'Crash Bandicoot 4' }, { fr: 'Days Gone' }], answer: 1, why: { fr: 'The Last of Us Part II (2020) rafle les récompenses et clôt la génération.' } },
+        { id: 'p4m4', q: { fr: 'Quels boutons de la DualShock 4 remplacent Start et Select ?' }, choices: [{ fr: 'Options et Share' }, { fr: 'Menu et View' }, { fr: 'Plus et Moins' }, { fr: 'L3 et R3' }], answer: 0, why: { fr: 'Share pour capturer et diffuser, Options pour la pause : la PS4 pense social.' } },
+        { id: 'p4m5', q: { fr: 'Quelle exclu horrifique de FromSoftware hante la PS4 en 2015 ?' }, choices: [{ fr: 'Dark Souls III' }, { fr: 'Bloodborne' }, { fr: 'Sekiro' }, { fr: 'Déraciné' }], answer: 1, why: { fr: 'Bloodborne (2015), l’exclu FromSoftware qui fait encore rêver Yharnam.' } },
+        { id: 'p4m6', q: { fr: 'Quel titre Guerrilla accompagnait le lancement européen de la PS4 ?' }, choices: [{ fr: 'Infamous Second Son' }, { fr: 'Killzone Shadow Fall' }, { fr: 'Driveclub' }, { fr: 'Knack' }], answer: 1, why: { fr: 'Killzone Shadow Fall est l’un des titres du 29 novembre 2013 en Europe.' } },
+        { id: 'p4m7', q: { fr: 'Quel casque de réalité virtuelle Sony arrive sur PS4 en 2016 ?' }, choices: [{ fr: 'Le PlayStation VR' }, { fr: 'Le Gear VR' }, { fr: 'L’Oculus Rift' }, { fr: 'Le Vive' }], answer: 0, why: { fr: 'Le PlayStation VR (2016) apporte la réalité virtuelle à des millions de salons.' } },
+        { id: 'p4m8', q: { fr: 'Quel jeu de course de Polyphony débarque sur PS4 en 2017 ?' }, choices: [{ fr: 'Gran Turismo Sport' }, { fr: 'Forza Motorsport 7' }, { fr: 'Project Cars 2' }, { fr: 'Dirt Rally' }], answer: 0, why: { fr: 'Gran Turismo Sport (2017) recentre la saga sur la compétition FIA.' } },
+      ],
+      hard: [
+        { id: 'p4h1', q: { fr: 'Avec qui Sony a-t-il co-développé l’APU de la PS4 ?' }, choices: [{ fr: 'Intel' }, { fr: 'AMD' }, { fr: 'NVIDIA' }, { fr: 'IBM' }], answer: 1, why: { fr: 'CPU Jaguar et GPU Radeon : l’APU AMD équipe la PS4 comme la Xbox One.' } },
+        { id: 'p4h2', q: { fr: 'Combien de mémoire la PS4 embarque-t-elle ?' }, choices: [{ fr: '4 Go DDR3' }, { fr: '8 Go GDDR5' }, { fr: '12 Go GDDR6' }, { fr: '16 Go DDR4' }], answer: 1, why: { fr: '8 Go de GDDR5 unifiés : le pari gagnant de Sony face à la Xbox One.' } },
+        { id: 'p4h3', q: { fr: 'Quel jeu de lancement mettait en scène un héros qui s’assemble morceau par morceau ?' }, choices: [{ fr: 'Knack' }, { fr: 'Resogun' }, { fr: 'The Order 1886' }, { fr: 'Infamous' }], answer: 0, why: { fr: 'Knack, signé Mark Cerny lui-même, accompagne le line-up de novembre 2013.' } },
+        { id: 'p4h4', q: { fr: 'Quelle exclu de 2014 fait vibrer Seattle après l’apocalypse ?' }, choices: [{ fr: 'Infamous Second Son' }, { fr: 'The Last of Us' }, { fr: 'Days Gone' }, { fr: 'Horizon' }], answer: 0, why: { fr: 'Infamous Second Son (Sucker Punch, 2014) montre les muscles de la PS4 dès la première année.' } },
+        { id: 'p4h5', q: { fr: 'Environ combien de TFLOPS délivre la PS4 Pro ?' }, choices: [{ fr: '1,84' }, { fr: '4,2' }, { fr: '10,3' }, { fr: '12,1' }], answer: 1, why: { fr: '4,2 TFLOPS pour la Pro, contre 1,84 pour la PS4 de base ; la PS5 montera à 10,28.' } },
+        { id: 'p4h6', q: { fr: 'Quel jeu de Quantic Dream (2018) suit trois androïdes en fuite ?' }, choices: [{ fr: 'Heavy Rain' }, { fr: 'Beyond Two Souls' }, { fr: 'Detroit Become Human' }, { fr: 'Fahrenheit' }], answer: 2, why: { fr: 'Detroit: Become Human (2018) et ses destins croisés : Kara, Connor, Markus.' } },
+        { id: 'p4h7', q: { fr: 'Sur quelle portable le Remote Play de la PS4 s’affiche-t-il dès 2013 ?' }, choices: [{ fr: 'La PSP' }, { fr: 'La PS Vita' }, { fr: 'La 3DS' }, { fr: 'La Switch' }], answer: 1, why: { fr: 'La PS Vita sert d’écran déporté à la PS4 dès le lancement de la console.' } },
+        { id: 'p4h8', q: { fr: 'À sa sortie, la PS4 ne lit les jeux d’aucune console précédente, notamment pas ceux de…' }, choices: [{ fr: 'La PS1' }, { fr: 'La PS2' }, { fr: 'La PS3' }, { fr: 'La PSP' }], answer: 2, why: { fr: 'L’architecture x86 rompt avec le Cell : la PS3 n’est pas lisible, le streaming PS Now tentera de compenser.' } },
+      ],
+    },
+  },
+  {
+    slug: 'nintendo-64',
+    route: '/quizz/nintendo-64',
+    videoId: 'A2VPhWOUMHI',
+    image: quizThumbUrl('nintendo-64'),
+    tag: 'Consoles',
+    keywords: 'quizz nintendo 64 n64 super mario 64 ocarina of time mario kart 64 banjo',
+    source: '/dossiers/choc-generations-gaming',
+    labels: {
+      fr: { title: 'Nintendo 64 : la révolution 3D', text: 'Super Mario 64, Ocarina of Time, Mario Kart 64 : la cartouche qui a inventé la 3D et les soirées à quatre, en trois niveaux.' },
+    },
+    levels: {
+      easy: [
+        { id: 'n6e1', q: { fr: 'En quelle année la Nintendo 64 sort-elle au Japon ?' }, choices: [{ fr: '1994' }, { fr: '1995' }, { fr: '1996' }, { fr: '1998' }], answer: 2, why: { fr: 'Lancée le 23 juin 1996 au Japon puis à l’automne aux États-Unis, elle arrive en Europe en mars 1997.' } },
+        { id: 'n6e2', q: { fr: 'Quel jeu de lancement a défini la 3D moderne ?' }, choices: [{ fr: 'Super Mario 64' }, { fr: 'Ocarina of Time' }, { fr: 'Star Fox 64' }, { fr: 'Pilotwings 64' }], answer: 0, why: { fr: 'Super Mario 64 (1996) invente la caméra 3D libre et sert encore de référence au genre.' } },
+        { id: 'n6e3', q: { fr: 'Combien de ports manette la N64 intègre-t-elle en façade ?' }, choices: [{ fr: 'Un' }, { fr: 'Deux' }, { fr: 'Quatre' }, { fr: 'Six' }], answer: 2, why: { fr: 'Quatre ports : Mario Kart 64 et Smash Bros. en font la reine des soirées multijoueur.' } },
+        { id: 'n6e4', q: { fr: 'Quel titre de 1998 est régulièrement cité comme meilleur jeu de tous les temps ?' }, choices: [{ fr: 'Ocarina of Time' }, { fr: 'Majora’s Mask' }, { fr: 'GoldenEye 007' }, { fr: 'F-Zero X' }], answer: 0, why: { fr: 'Ocarina of Time verrouille le langage de l’aventure 3D : verrouillage Z, cycle jour/nuit, ocarina.' } },
+        { id: 'n6e5', q: { fr: 'Quel jeu de course déclenche des batailles à quatre en écran splitté ?' }, choices: [{ fr: 'Mario Kart 64' }, { fr: 'Wave Race 64' }, { fr: 'F-Zero X' }, { fr: 'Diddy Kong Racing' }], answer: 0, why: { fr: 'Mario Kart 64 (1996) et son écran splitté à quatre : des soirées entières de carapaces bleues.' } },
+        { id: 'n6e6', q: { fr: 'Quel accessoire fait vibrer la manette N64 dès 1997 ?' }, choices: [{ fr: 'Le Rumble Pak' }, { fr: 'Le Transfer Pak' }, { fr: 'Le Controller Pak' }, { fr: 'L’Expansion Pak' }], answer: 0, why: { fr: 'Le Rumble Pak, lancé avec Star Fox 64, généralise la vibration.' } },
+        { id: 'n6e7', q: { fr: 'Quel duo ours & oiseau signé Rare marque la N64 ?' }, choices: [{ fr: 'Conker' }, { fr: 'Banjo-Kazooie' }, { fr: 'Perfect Dark' }, { fr: 'Donkey Kong 64' }], answer: 1, why: { fr: 'Banjo-Kazooie (1998), le plateformer 3D culte du studio Rare.' } },
+        { id: 'n6e8', q: { fr: 'Quel support de jeu la N64 conserve-t-elle face au CD-ROM ?' }, choices: [{ fr: 'Le CD-ROM' }, { fr: 'La cartouche' }, { fr: 'Le MiniDisc' }, { fr: 'La disquette' }], answer: 1, why: { fr: 'La cartouche : chargements instantanés, mais capacité limitée face au CD de la PlayStation.' } },
+      ],
+      medium: [
+        { id: 'n6m1', q: { fr: 'Quelle manette « trident » a démocratisé le stick analogique ?' }, choices: [{ fr: 'Celle de la N64' }, { fr: 'La DualShock' }, { fr: 'Le pad Saturn' }, { fr: 'La Wiimote' }], answer: 0, why: { fr: 'Le stick central de la manette N64 apprend le contrôle 3D à toute une génération.' } },
+        { id: 'n6m2', q: { fr: 'Quel FPS James Bond transforme la N64 en machine à soirées ?' }, choices: [{ fr: 'Perfect Dark' }, { fr: 'GoldenEye 007' }, { fr: 'Turok' }, { fr: 'Doom 64' }], answer: 1, why: { fr: 'GoldenEye 007 (1997) : le multijoueur en écran splitté qui a usé des millions de canapés.' } },
+        { id: 'n6m3', q: { fr: 'Quel space shooter de 1997 popularise le Rumble Pak ?' }, choices: [{ fr: 'Star Fox 64' }, { fr: 'Wave Race 64' }, { fr: 'F-Zero X' }, { fr: 'Pokémon Stadium' }], answer: 0, why: { fr: 'Star Fox 64 (1997) et son « Do a barrel roll ! », vendu avec le Rumble Pak en Europe.' } },
+        { id: 'n6m4', q: { fr: 'Quel système de verrouillage Ocarina of Time lègue-t-il au genre ?' }, choices: [{ fr: 'Le Z-targeting' }, { fr: 'Le lock-on gyroscopique' }, { fr: 'Le viseur laser' }, { fr: 'Le mode photo' }], answer: 0, why: { fr: 'Le Z-targeting : la caméra qui verrouille l’ennemi, copiée par toute l’industrie.' } },
+        { id: 'n6m5', q: { fr: 'Quel jeu Rare de 1997 court contre Mario Kart avec des animaux ?' }, choices: [{ fr: 'Diddy Kong Racing' }, { fr: 'Banjo-Tooie' }, { fr: 'Mickey’s Speedway USA' }, { fr: 'Cruis’n USA' }], answer: 0, why: { fr: 'Diddy Kong Racing (Rare, 1997) ose le mode aventure face au kart de Nintendo.' } },
+        { id: 'n6m6', q: { fr: 'Quel partenaire technologique a co-conçu le processeur de la N64 ?' }, choices: [{ fr: 'Sega' }, { fr: 'Silicon Graphics' }, { fr: 'IBM' }, { fr: 'Atari' }], answer: 1, why: { fr: 'Le binôme Nintendo-SGI signe la machine : 64 bits et puissance graphique inédite.' } },
+        { id: 'n6m7', q: { fr: 'Quel jeu de plateau à dés lance une longue série en 1998 ?' }, choices: [{ fr: 'Mario Party' }, { fr: 'WarioWare' }, { fr: 'Pokémon Snap' }, { fr: 'Yoshi’s Story' }], answer: 0, why: { fr: 'Mario Party (1998) : un plateau, des mini-jeux et des amitiés brisées.' } },
+        { id: 'n6m8', q: { fr: 'Quel crossover de baston réunit Mario, Link et Pikachu en 1999 ?' }, choices: [{ fr: 'Super Smash Bros.' }, { fr: 'Mario Fighters' }, { fr: 'Pokémon Stadium' }, { fr: 'Kirby’s Dream Land' }], answer: 0, why: { fr: 'Super Smash Bros. (1999) transforme les mascottes en combattants.' } },
+      ],
+      hard: [
+        { id: 'n6h1', q: { fr: 'Quelle capacité maximale pour les cartouches N64 ?' }, choices: [{ fr: '8 Mo' }, { fr: '32 Mo' }, { fr: '64 Mo' }, { fr: '128 Mo' }], answer: 2, why: { fr: '64 Mo en pointe : dérisoire face aux 650 Mo du CD, au cœur de l’exil des éditeurs tiers.' } },
+        { id: 'n6h2', q: { fr: 'Quel add-on à disques, réservé au Japon, fut un échec commercial ?' }, choices: [{ fr: 'Le Satellaview' }, { fr: 'Le 64DD' }, { fr: 'Le Game Boy Player' }, { fr: 'L’e-Reader' }], answer: 1, why: { fr: 'Le 64DD (1999) et ses disques de 64 Mo : une poignée de milliers d’unités, neuf jeux.' } },
+        { id: 'n6h3', q: { fr: 'L’Expansion Pak fait passer la RAM de 4 à…' }, choices: [{ fr: '6 Mo' }, { fr: '8 Mo' }, { fr: '12 Mo' }, { fr: '16 Mo' }], answer: 1, why: { fr: '8 Mo : indispensable à Majora’s Mask et au mode haute résolution de Perfect Dark.' } },
+        { id: 'n6h4', q: { fr: 'Quel jeu de course futuriste tient 60 i/s avec 30 véhicules ?' }, choices: [{ fr: 'F-Zero X' }, { fr: 'Wipeout 64' }, { fr: 'Extreme-G' }, { fr: 'Pod' }], answer: 0, why: { fr: 'F-Zero X (1998) sacrifie la finesse graphique pour la fluidité absolue.' } },
+        { id: 'n6h5', q: { fr: 'Dans Majora’s Mask, combien de jours avant la chute de la Lune ?' }, choices: [{ fr: 'Un' }, { fr: 'Trois' }, { fr: 'Sept' }, { fr: 'Dix' }], answer: 1, why: { fr: 'Trois jours, à remonter avec le Chant du temps : la boucle temporelle la plus célèbre du médium.' } },
+        { id: 'n6h6', q: { fr: 'Quel safari photographique Pokémon signe la N64 en 1999 ?' }, choices: [{ fr: 'Pokémon Snap' }, { fr: 'Pokémon Stadium' }, { fr: 'Hey You, Pikachu!' }, { fr: 'Pokémon Puzzle League' }], answer: 0, why: { fr: 'Pokémon Snap (1999) : mitrailler des Magicarpe, un art.' } },
+        { id: 'n6h7', q: { fr: 'Quel platformer adulte et tardif (2001) clôt la N64 chez Rare ?' }, choices: [{ fr: 'Conker’s Bad Fur Day' }, { fr: 'Jet Force Gemini' }, { fr: 'Donkey Kong 64' }, { fr: 'Banjo-Tooie' }], answer: 0, why: { fr: 'Conker’s Bad Fur Day (2001), le chant du cygne irrévérencieux de la console.' } },
+        { id: 'n6h8', q: { fr: 'Wave Race 64 vous met aux commandes de…' }, choices: [{ fr: 'Des motos des mers' }, { fr: 'Des voiliers' }, { fr: 'Des hydroglisseurs' }, { fr: 'Des sous-marins' }], answer: 0, why: { fr: 'Des jet-skis : la houle simulée de Wave Race 64 reste une leçon de physique.' } },
+      ],
+    },
+  },
+  {
+    slug: 'megadrive',
+    route: '/quizz/megadrive',
+    videoId: 'A2VPhWOUMHI',
+    image: quizThumbUrl('megadrive'),
+    tag: 'Consoles',
+    keywords: 'quizz megadrive sega genesis sonic streets of rage 16 bits mega-cd',
+    source: '/dossiers/choc-generations-gaming',
+    labels: {
+      fr: { title: 'Mega Drive : la guerre des 16 bits', text: 'Sonic, Streets of Rage et le « blast processing » : la console Sega qui a défié Nintendo et marqué l’Europe, en trois niveaux.' },
+    },
+    levels: {
+      easy: [
+        { id: 'mde1', q: { fr: 'En quelle année la Mega Drive sort-elle en Europe ?' }, choices: [{ fr: '1988' }, { fr: '1989' }, { fr: '1990' }, { fr: '1992' }], answer: 2, why: { fr: '1988 au Japon, 1989 aux États-Unis sous le nom Genesis, fin 1990 en Europe.' } },
+        { id: 'mde2', q: { fr: 'Comment s’appelle la Mega Drive en Amérique du Nord ?' }, choices: [{ fr: 'La Saturn' }, { fr: 'La Genesis' }, { fr: 'La Nomad' }, { fr: 'La Sega CD' }], answer: 1, why: { fr: 'Outre-Atlantique, la console s’appelle Sega Genesis — même machine, autre nom.' } },
+        { id: 'mde3', q: { fr: 'Quel héros bleu devient la mascotte de Sega en 1991 ?' }, choices: [{ fr: 'Knuckles' }, { fr: 'Sonic' }, { fr: 'Alex Kidd' }, { fr: 'Ristar' }], answer: 1, why: { fr: 'Sonic the Hedgehog (1991) donne enfin à Sega sa réponse à Mario, vitesse comprise.' } },
+        { id: 'mde4', q: { fr: 'Combien de bits la Mega Drive brandit-elle comme étendard ?' }, choices: [{ fr: '8' }, { fr: '16' }, { fr: '32' }, { fr: '64' }], answer: 1, why: { fr: '« 16-BIT » en lettres d’or sur la console : l’argument massue de la guerre des consoles.' } },
+        { id: 'mde5', q: { fr: 'Combien de boutons d’action sur la manette de base ?' }, choices: [{ fr: 'Deux' }, { fr: 'Trois' }, { fr: 'Six' }, { fr: 'Neuf' }], answer: 1, why: { fr: 'Trois boutons (A, B, C) ; le pad six boutons arrivera avec Street Fighter II.' } },
+        { id: 'mde6', q: { fr: 'Quel add-on ajoute le CD-ROM à la Mega Drive ?' }, choices: [{ fr: 'Le 32X' }, { fr: 'Le Mega-CD' }, { fr: 'Le Virtua Processor' }, { fr: 'La Game Gear' }], answer: 1, why: { fr: 'Le Mega-CD (1991) apporte cinématiques et CD audio ; le 32X musclera la 3D, sans convaincre.' } },
+        { id: 'mde7', q: { fr: 'Quelle trilogie de beat’em all fait régner Axel et Blaze ?' }, choices: [{ fr: 'Golden Axe' }, { fr: 'Streets of Rage' }, { fr: 'Shinobi' }, { fr: 'Comix Zone' }], answer: 1, why: { fr: 'Streets of Rage (1991-1994) et sa bande-son culte signée Yūzō Koshiro.' } },
+        { id: 'mde8', q: { fr: 'Quel slogan US moque Nintendo pour vanter la Genesis ?' }, choices: [{ fr: '« Genesis does what Nintendon’t »' }, { fr: '« Sega screams »' }, { fr: '« Blast processing »' }, { fr: '« Welcome to the next level »' }], answer: 0, why: { fr: '« Genesis does what Nintendon’t » (1989) : la guerre des publicités est déclarée.' } },
+      ],
+      medium: [
+        { id: 'mdm1', q: { fr: 'Quel processeur motorise la Mega Drive ?' }, choices: [{ fr: 'L’Intel 8086' }, { fr: 'Le Motorola 68000' }, { fr: 'Le Zilog Z80' }, { fr: 'L’ARM7' }], answer: 1, why: { fr: 'Le Motorola 68000 à 7,6 MHz ; le Z80, lui, s’occupe du son.' } },
+        { id: 'mdm2', q: { fr: 'Quel run’n gun de Treasure (1993) pousse la console dans ses retranchements ?' }, choices: [{ fr: 'Gunstar Heroes' }, { fr: 'Rocket Knight Adventures' }, { fr: 'Contra Hard Corps' }, { fr: 'Ranger X' }], answer: 0, why: { fr: 'Gunstar Heroes empile sprites et effets sans ralentir : la vitrine technique de la Mega Drive.' } },
+        { id: 'mdm3', q: { fr: 'Quel jeu de course utilise la puce SVP pour la 3D en 1994 ?' }, choices: [{ fr: 'OutRun' }, { fr: 'Virtua Racing' }, { fr: 'Super Hang-On' }, { fr: 'Rad Mobile' }], answer: 1, why: { fr: 'Virtua Racing et sa puce SVP dans la cartouche : des polygones sur 16 bits.' } },
+        { id: 'mdm4', q: { fr: 'Quel Sonic de 1992 présente Tails ?' }, choices: [{ fr: 'Sonic CD' }, { fr: 'Sonic the Hedgehog 2' }, { fr: 'Sonic 3' }, { fr: 'Sonic & Knuckles' }], answer: 1, why: { fr: 'Sonic 2 (1992) : Tails, le spin dash et des anneaux à foison.' } },
+        { id: 'mdm5', q: { fr: 'Quel Aladdin (1993) sur Mega Drive vient de Virgin Games ?' }, choices: [{ fr: 'Celui de Capcom' }, { fr: 'Celui de Virgin Games' }, { fr: 'Celui de Sega' }, { fr: 'Celui de Treasure' }], answer: 1, why: { fr: 'L’Aladdin Mega Drive, animé façon Disney par Virgin, éclipse la version Capcom de la SNES.' } },
+        { id: 'mdm6', q: { fr: 'Quelle mascotte étoilée, née d’un prototype Sonic, sort en 1995 ?' }, choices: [{ fr: 'Ristar' }, { fr: 'Vector' }, { fr: 'Mighty' }, { fr: 'Ray' }], answer: 0, why: { fr: 'Ristar (1995), le héros aux bras extensibles issu des premières idées de Sonic.' } },
+        { id: 'mdm7', q: { fr: 'Le 32X (1994) voulait contrer quelle génération ?' }, choices: [{ fr: 'Les 8 bits' }, { fr: 'Les 32 bits Saturn et PlayStation' }, { fr: 'Les portables' }, { fr: 'La Neo Geo' }], answer: 1, why: { fr: 'Le 32X bouche-trou face à la Saturn et à la PlayStation : trop tard, trop peu.' } },
+        { id: 'mdm8', q: { fr: 'Quel beat’em all médiéval de Sega (1989) se joue à trois ?' }, choices: [{ fr: 'Golden Axe' }, { fr: 'Altered Beast' }, { fr: 'The Revenge of Shinobi' }, { fr: 'Shadow Dancer' }], answer: 0, why: { fr: 'Golden Axe : le barbare, l’amazone et le nain, montures dragon incluses.' } },
+      ],
+      hard: [
+        { id: 'mdh1', q: { fr: 'Sur Mega Drive, le Z80 s’occupe de…' }, choices: [{ fr: 'L’affichage' }, { fr: 'Du son' }, { fr: 'Des sauvegardes' }, { fr: 'Des manettes' }], answer: 1, why: { fr: 'Le Z80 pilote le YM2612 et le PSG : la fameuse sonorité FM de la console.' } },
+        { id: 'mdh2', q: { fr: 'Quel RPG de 1993 reste le sommet 16 bits de la saga Sega ?' }, choices: [{ fr: 'Shining Force II' }, { fr: 'Phantasy Star IV' }, { fr: 'Story of Thor' }, { fr: 'Light Crusader' }], answer: 1, why: { fr: 'Phantasy Star IV (1993), le chant du cygne RPG de la Mega Drive.' } },
+        { id: 'mdh3', q: { fr: 'Quelle technologie de cartouche empilable introduit Sonic & Knuckles ?' }, choices: [{ fr: 'Le lock-on' }, { fr: 'Le battery-backup' }, { fr: 'Le SVP' }, { fr: 'Le pass-through 32X' }], answer: 0, why: { fr: 'Le lock-on : emboîtez Sonic 3 dessus et jouez à Sonic 3 & Knuckles.' } },
+        { id: 'mdh4', q: { fr: 'Quelle série de foot US d’EA fait sa fortune sur Mega Drive ?' }, choices: [{ fr: 'NFL 2K' }, { fr: 'John Madden Football' }, { fr: 'NFL Blitz' }, { fr: 'Quarterback Club' }], answer: 1, why: { fr: 'John Madden Football dès 1990 : l’accord EA-Sega qui bâtit un empire.' } },
+        { id: 'mdh5', q: { fr: 'Dans Comix Zone (1995), l’action se déroule…' }, choices: [{ fr: 'Dans les cases d’un comic book' }, { fr: 'Sous la mer' }, { fr: 'Dans un flipper' }, { fr: 'En vue subjective' }], answer: 0, why: { fr: 'Comix Zone : chaque écran est une page, chaque saut change de case.' } },
+        { id: 'mdh6', q: { fr: 'Quel shmup Technosoft (1990) reste un Graal de collectionneur ?' }, choices: [{ fr: 'Thunder Force III' }, { fr: 'Gaiares' }, { fr: 'Gynoid' }, { fr: 'Hellfire' }], answer: 0, why: { fr: 'Thunder Force III (1990) : le shoot qui définit la console, entre défilements et boss énormes.' } },
+        { id: 'mdh7', q: { fr: 'Le Sega Channel (1994) distribuait les jeux via…' }, choices: [{ fr: 'L’ADSL' }, { fr: 'Le câble télé' }, { fr: 'Le satellite' }, { fr: 'La ligne téléphonique' }], answer: 1, why: { fr: 'Le Sega Channel téléchargeait des jeux par le câble : l’ancêtre du dématérialisé.' } },
+        { id: 'mdh8', q: { fr: 'Herzog Zwei (1989) est considéré comme l’ancêtre de quel genre ?' }, choices: [{ fr: 'Le MOBA' }, { fr: 'Le STR moderne' }, { fr: 'Le battle royale' }, { fr: 'Le city-builder' }], answer: 1, why: { fr: 'Herzog Zwei pose les bases du temps réel stratégique bien avant Dune II.' } },
+      ],
+    },
+  },
+  {
+    slug: 'pc-legends',
+    route: '/quizz/pc-legends',
+    videoId: 't1Re8ki_gsw',
+    image: quizThumbUrl('pc-legends'),
+    tag: 'PC',
+    keywords: 'quizz pc doom half-life starcraft diablo warcraft counter-strike baldur’s gate',
+    labels: {
+      fr: { title: 'Jeux PC légendaires', text: 'DOOM, Half-Life, StarCraft, Diablo : les fondations du jeu PC, du modding à l’e-sport, en trois niveaux.' },
+    },
+    levels: {
+      easy: [
+        { id: 'pce1', q: { fr: 'Quel FPS d’id Software (1993) déchaîne la planète PC ?' }, choices: [{ fr: 'Wolfenstein 3D' }, { fr: 'DOOM' }, { fr: 'Quake' }, { fr: 'Duke Nukem 3D' }], answer: 1, why: { fr: 'DOOM (1993) popularise le FPS et le modding — installé partout, même là où Windows 95 tardait.' } },
+        { id: 'pce2', q: { fr: 'Quel jeu Valve de 1998 mêle récit et FPS sans jamais couper la caméra ?' }, choices: [{ fr: 'Half-Life' }, { fr: 'Portal' }, { fr: 'Left 4 Dead' }, { fr: 'Counter-Strike' }], answer: 0, why: { fr: 'Half-Life raconte son histoire en vue subjective, sans cinématique : une révolution narrative.' } },
+        { id: 'pce3', q: { fr: 'Quel STR de Blizzard (1998) devient sport national en Corée du Sud ?' }, choices: [{ fr: 'Warcraft II' }, { fr: 'StarCraft' }, { fr: 'Age of Empires' }, { fr: 'Command & Conquer' }], answer: 1, why: { fr: 'StarCraft et ses trois races asymétriques fondent l’e-sport moderne, télévisé dès 1998.' } },
+        { id: 'pce4', q: { fr: 'Quel action-RPG de 1996 popularise le donjon généré et le butin aléatoire ?' }, choices: [{ fr: 'Diablo' }, { fr: 'Baldur’s Gate' }, { fr: 'System Shock' }, { fr: 'Deus Ex' }], answer: 0, why: { fr: 'Diablo (Blizzard, 1996) : cathédrale, loot et « encore une descente » jusqu’à 3 h du matin.' } },
+        { id: 'pce5', q: { fr: 'Quel mod de Half-Life (1999) fonde le FPS tactique en équipe ?' }, choices: [{ fr: 'Counter-Strike' }, { fr: 'Day of Defeat' }, { fr: 'Team Fortress Classic' }, { fr: 'Garry’s Mod' }], answer: 0, why: { fr: 'Counter-Strike, mod communautaire devenu franchise majeure, toujours roi de l’e-sport.' } },
+        { id: 'pce6', q: { fr: 'Quelle simulation de vie de Maxis (2000) conquiert le grand public ?' }, choices: [{ fr: 'SimCity 3000' }, { fr: 'Les Sims' }, { fr: 'Spore' }, { fr: 'Theme Hospital' }], answer: 1, why: { fr: 'Les Sims (2000) : phénomène de société, machine à extensions et à histoires de quartier.' } },
+        { id: 'pce7', q: { fr: 'Comment s’appelle le monde de Warcraft ?' }, choices: [{ fr: 'Azeroth' }, { fr: 'Lordaeron' }, { fr: 'Norfendre' }, { fr: 'Draenor' }], answer: 0, why: { fr: 'Azeroth, né avec Warcraft: Orcs & Humans (1994) et jamais quitté depuis.' } },
+        { id: 'pce8', q: { fr: 'Quel FPS d’id (1996) passe à la vraie 3D et électrise les LAN ?' }, choices: [{ fr: 'Quake' }, { fr: 'Heretic' }, { fr: 'Hexen' }, { fr: 'Strife' }], answer: 0, why: { fr: 'Quake (1996) : moteurs 3D, speedruns et QuakeCon — la culture PC en un sigle.' } },
+      ],
+      medium: [
+        { id: 'pcm1', q: { fr: 'Quel RPG BioWare (1998) adapte Donjons & Dragons sur PC ?' }, choices: [{ fr: 'Baldur’s Gate' }, { fr: 'Neverwinter Nights' }, { fr: 'Planescape: Torment' }, { fr: 'Icewind Dale' }], answer: 0, why: { fr: 'Baldur’s Gate impose le RPG occidental moderne et la légende de BioWare.' } },
+        { id: 'pcm2', q: { fr: 'Quel STR de 1994 ouvre la saga Warcraft chez Blizzard ?' }, choices: [{ fr: 'Warcraft: Orcs & Humans' }, { fr: 'StarCraft' }, { fr: 'Blackthorne' }, { fr: 'The Lost Vikings' }], answer: 0, why: { fr: 'Warcraft: Orcs & Humans (1994) pose les premières pierres d’Azeroth.' } },
+        { id: 'pcm3', q: { fr: 'Quel RPG post-apocalyptique d’Interplay (1997) engendre une dynastie ?' }, choices: [{ fr: 'Fallout' }, { fr: 'Wasteland' }, { fr: 'Arcanum' }, { fr: 'Shadowrun' }], answer: 0, why: { fr: 'Fallout (1997) : humour noir, guerre nucléaire et liberté totale.' } },
+        { id: 'pcm4', q: { fr: 'Quel FPS d’Epic (1998) défie Quake et donne son nom à un moteur ?' }, choices: [{ fr: 'Unreal' }, { fr: 'Sin' }, { fr: 'Daikatana' }, { fr: 'Turok' }], answer: 0, why: { fr: 'Unreal (1998) : l’Unreal Engine naît avec lui et équipe encore la moitié de l’industrie.' } },
+        { id: 'pcm5', q: { fr: 'Quel STR Westwood (1995) popularise le genre avec la confrérie du Nod ?' }, choices: [{ fr: 'Dune II' }, { fr: 'Command & Conquer' }, { fr: 'Alerte rouge' }, { fr: 'Tiberian Sun' }], answer: 1, why: { fr: 'Command & Conquer (1995) : FMV, base building et « yes sir ! ».' } },
+        { id: 'pcm6', q: { fr: 'Quelle archéologue pille sa première tombe en 1996 ?' }, choices: [{ fr: 'Lara Croft dans Tomb Raider' }, { fr: 'Samus dans Metroid' }, { fr: 'Nathan Drake dans Uncharted' }, { fr: 'Aloy dans Horizon' }], answer: 0, why: { fr: 'Tomb Raider (Core Design, 1996) fait de Lara Croft une icône mondiale.' } },
+        { id: 'pcm7', q: { fr: 'Quel point’n click LucasArts (1990) envoie Guybrush à Mêlée Island ?' }, choices: [{ fr: 'The Secret of Monkey Island' }, { fr: 'Day of the Tentacle' }, { fr: 'Full Throttle' }, { fr: 'Grim Fandango' }], answer: 0, why: { fr: 'Monkey Island (1990) : duels d’insultes et poulet à poulie.' } },
+        { id: 'pcm8', q: { fr: 'Quel Valve de 2004 fait de la physique un terrain de jeu ?' }, choices: [{ fr: 'Half-Life 2' }, { fr: 'Portal' }, { fr: 'Left 4 Dead' }, { fr: 'Team Fortress 2' }], answer: 0, why: { fr: 'Half-Life 2 (2004) et le moteur Source : City 17 et le pistolet gravitaire.' } },
+      ],
+      hard: [
+        { id: 'pch1', q: { fr: 'Quel simu spatial (1994) fait jouer Mark Hamill ?' }, choices: [{ fr: 'Wing Commander III' }, { fr: 'X-Wing' }, { fr: 'Freespace' }, { fr: 'Starlancer' }], answer: 0, why: { fr: 'Wing Commander III (1994) : Mark Hamill face à Malcolm McDowell, en FMV sur quatre CD.' } },
+        { id: 'pch2', q: { fr: 'Sur quel moteur tourne Duke Nukem 3D (1996) ?' }, choices: [{ fr: 'id Tech 2' }, { fr: 'Build' }, { fr: 'Unreal' }, { fr: 'Le moteur Quake' }], answer: 1, why: { fr: 'Le Build engine (3D Realms), ses miroirs et ses secteurs empilés.' } },
+        { id: 'pch3', q: { fr: 'Quel jeu Looking Glass (1998) invente l’infiltration systémique ?' }, choices: [{ fr: 'Thief: The Dark Project' }, { fr: 'System Shock 2' }, { fr: 'Deus Ex' }, { fr: 'Hitman' }], answer: 0, why: { fr: 'Thief (1998) : la lumière comme ennemie, le son comme arme.' } },
+        { id: 'pch4', q: { fr: 'Quel action-RPG d’Ion Storm (2000) marie FPS, RPG et conspirations ?' }, choices: [{ fr: 'Deus Ex' }, { fr: 'Anachronox' }, { fr: 'Daikatana' }, { fr: 'System Shock 2' }], answer: 0, why: { fr: 'Deus Ex (2000) : JC Denton, les Illuminati et mille façons de faire chaque choix.' } },
+        { id: 'pch5', q: { fr: 'Qui signe la bande-son de Quake (1996) ?' }, choices: [{ fr: 'Trent Reznor' }, { fr: 'Bobby Prince' }, { fr: 'Nobuo Uematsu' }, { fr: 'Jesper Kyd' }], answer: 0, why: { fr: 'Trent Reznor (Nine Inch Nails) : des nappes industrielles qui hantent encore les donjons.' } },
+        { id: 'pch6', q: { fr: 'Quel RPG Black Isle (1999) fait du Sans-Nom une légende littéraire ?' }, choices: [{ fr: 'Planescape: Torment' }, { fr: 'Icewind Dale' }, { fr: 'Fallout 2' }, { fr: 'Baldur’s Gate II' }], answer: 0, why: { fr: 'Planescape: Torment (1999) : « What can change the nature of a man? »' } },
+        { id: 'pch7', q: { fr: 'Comment s’appelle l’extension de StarCraft (1998) ?' }, choices: [{ fr: 'Brood War' }, { fr: 'Insurrection' }, { fr: 'Retribution' }, { fr: 'The Frozen Throne' }], answer: 0, why: { fr: 'Brood War (1998) prolonge les trois races et scelle la scène coréenne.' } },
+        { id: 'pch8', q: { fr: 'Quel FPS croate (2001) né d’une démo devient un hymne au gore joyeux ?' }, choices: [{ fr: 'Serious Sam' }, { fr: 'Painkiller' }, { fr: 'Shadow Warrior' }, { fr: 'Blood' }], answer: 0, why: { fr: 'Serious Sam (Croteam, 2001) : des arènes, des milliers d’ennemis, zéro subtilité.' } },
       ],
     },
   },
