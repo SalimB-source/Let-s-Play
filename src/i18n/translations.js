@@ -36,6 +36,7 @@ export const translations = {
       correctCount: 'Correct answers', wrongCount: 'Wrong answers',
       points: 'PTS', resultPoints: '{points} PTS', bestCombo: 'Best combo: ×{n}',
       keysHint: 'Tip: press keys 1–4 to answer',
+      noXpTag: 'Already completed', noXpHint: 'You already finished this quiz: playing it again earns no XP.', noXpResult: 'Quiz already completed — no XP this time.',
       verdicts: {
         right: ['Correct!', 'Unbelievable!', 'Too easy, right?', 'We are on fire 🔥', 'Ice in the veins pays off.'],
         wrong: ['Oof, missed it…', 'Not this one.', 'So close!', 'That one got you.', 'Tough one — it bit back.'],
@@ -357,6 +358,7 @@ export const translations = {
       correctCount: 'Bonnes réponses', wrongCount: 'Mauvaises réponses',
       points: 'PTS', resultPoints: '{points} PTS', bestCombo: 'Meilleure série : ×{n}',
       keysHint: 'Astuce : touches 1–4 pour répondre',
+      noXpTag: 'Déjà terminé', noXpHint: 'Tu as déjà terminé ce quizz : le rejouer ne rapporte plus d’XP.', noXpResult: 'Quizz déjà terminé — pas d’XP cette fois.',
       verdicts: {
         right: ['Bonne réponse !', 'Incroyable !', 'Facile, non ?', 'On est en feu 🔥', 'Le sang-froid, ça paie.'],
         wrong: ['Oups, raté…', 'Pas celle-là.', 'Presque !', 'Elle t’aura eu.', 'Dur, elle a mordu.'],
@@ -670,6 +672,7 @@ export const translations = {
       correctCount: 'إجابات صحيحة', wrongCount: 'إجابات خاطئة',
       points: 'نقطة', resultPoints: '{points} نقطة', bestCombo: 'أفضل سلسلة: ×{n}',
       keysHint: 'نصيحة: استخدم المفاتيح 1–4 للإجابة',
+      noXpTag: 'مكتمل مسبقًا', noXpHint: 'لقد أكملت هذا الاختبار من قبل: إعادة لعبه لا تمنح أي نقاط خبرة.', noXpResult: 'اختبار مكتمل مسبقًا — لا نقاط خبرة هذه المرة.',
       verdicts: {
         right: ['إجابة صحيحة!', 'مذهل!', 'هل كان سهلاً؟', 'نحن في القمة 🔥', 'الهدوء يجني ثماره.'],
         wrong: ['فرصة ضائعة…', 'ليس هذه المرة.', 'اقتربت!', 'هذه أسقطتك.', 'كانت صعبة حقًا.'],

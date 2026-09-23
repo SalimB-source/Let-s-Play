@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
-import { useAchievementAction } from '../achievements/AchievementContext';
+import { useAchievements } from '../achievements/AchievementContext';
+import { quizAlreadyCompleted } from '../achievements/engine';
 import { quizLabel } from '../quizzesData';
 import { submitQuizAttempt, writeLocalBest } from './quizApi';
 import QuizChallenge from './QuizChallenge';
@@ -55,6 +56,8 @@ const FALLBACK = {
   correctCount: 'Correct answers', wrongCount: 'Wrong answers',
   points: 'PTS', resultPoints: '{points} PTS', bestCombo: 'Best combo: ×{n}',
   keysHint: 'Tip: press keys 1–4 to answer',
+  noXpTag: 'Already completed', noXpHint: 'You already finished this quiz: playing it again earns no XP.',
+  noXpResult: 'Quiz already completed — no XP this time.',
   verdicts: {
     right: ['Correct!', 'Unbelievable!', 'Too easy, right?', 'We are on fire 🔥', 'Ice in the veins pays off.'],
     wrong: ['Oof, missed it…', 'Not this one.', 'So close!', 'That one got you.', 'Tough one — it bit back.'],
@@ -82,7 +85,13 @@ function pickVerdict(copy, correct, timedOut) {
 export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFinish = null }) {
   const { t, lang } = useLanguage();
   const { user, isDemo } = useAuth();
-  const track = useAchievementAction();
+  const { track, state: achievementState } = useAchievements();
+  // Règle anti-farm : un quizz déjà terminé ne rapporte plus d'XP. L'état
+  // est figé au lancement de la partie (`replayRun`) : la fin de CETTE partie
+  // marque le quizz comme terminé, l'écran de résultat doit pourtant dire si
+  // elle rapportait encore quelque chose.
+  const alreadyCompleted = quizAlreadyCompleted(achievementState, quiz.slug);
+  const [replayRun, setReplayRun] = useState(alreadyCompleted);
   const copy = {
     ...FALLBACK,
     ...(t.quiz || {}),
@@ -142,6 +151,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     // premier battement (une seconde plus tard) n'aurait pas le droit de jouer.
     unlockQuizAudio();
     resetRun();
+    setReplayRun(alreadyCompleted);
     // Quizz du jour : même mélange pour tout le monde (graine = numéro du jour).
     setPrepared(prepareQuiz(quiz, daily ? dayNumber(new Date()) : null));
     setAnswers({});
@@ -323,9 +333,11 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
             <span className={`quiz-chip quiz-chip--${quiz.difficulty}`}>{copy.difficulty[quiz.difficulty] || quiz.difficulty}</span>
             <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(quiz.questions.length))}</span>
             {daily && <span className="quiz-chip quiz-chip--daily"><i className="live-dot" aria-hidden="true" /> {copy.dailyTag}</span>}
+            {alreadyCompleted && <span className="quiz-chip quiz-chip--done">✓ {copy.noXpTag}</span>}
           </div>
           <h1>{meta.title}</h1>
           {meta.text ? <p>{meta.text}</p> : null}
+          {alreadyCompleted && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpHint}</p>}
           <div className="quiz-player-actions">
             <button type="button" className="button button-yellow" onClick={start}>{copy.start} <Arrow /></button>
             {/* Réglage accessible avant de lancer la partie : le tick-tack
@@ -416,6 +428,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
         {bestStreak >= 2 && <p className="quiz-result-combo">🔥 {copy.bestCombo.replace('{n}', String(bestStreak))}</p>}
         {result.perfect && <span className="quiz-result-perfect">★ {copy.perfect}</span>}
         {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
+        {!review && replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
         <div className="quiz-result-actions">
           {result.correct < result.total && (
             <button type="button" className="button button-yellow" onClick={startReview}>{copy.retryMistakes}</button>
