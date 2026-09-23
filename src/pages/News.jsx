@@ -82,8 +82,8 @@ export default function News(){
   // La page reste lisible par défaut : 12 actus maximum affichées, le bouton
   // « Voir toutes les actus » déplie le reste de la liste.
   const visibleArticles = showAll ? articles : articles.slice(0, 12);
-  // Le dernier article paru ouvre la section au format paysage (news du jour),
-  // les autres articles suivent dans la grille 4 colonnes.
+  // Le dernier article paru ouvre la grille en grand sur 2 colonnes (actu à la
+  // une) : les autres actus restent visibles à côté d'elle dès le premier écran.
   const [topStory, ...gridArticles] = visibleArticles;
   const allNewsLabel = lang === 'fr' ? 'Voir toutes les actus' : lang === 'ar' ? 'عرض كل الأخبار' : 'See all news';
 
@@ -112,17 +112,17 @@ export default function News(){
     <>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{featured.section}</span><span>{featured.updated}</span></div>
-        {topStory && <Link className="daily-news-card news-today" to={topStory.to}>
-          <div className="daily-news-image"><img src={`${base}${topStory.image}`} alt={topStory.alt} />{renderBadges(topStory)}</div>
-          <div className="daily-news-copy">
-            <p className="eyebrow"><span className="live-dot" /> {featured.today}</p>
-            <span className="news-kicker">{topStory.kicker}</span>
-            <h2>{topStory.title}</h2>
-            <p>{topStory.excerpt}</p>
-            <span className="read-link">{topStory.read} <Arrow /></span>
-          </div>
-        </Link>}
         <div className="news-carousel is-grid">
+          {topStory && <Link className="daily-news-card news-today" to={topStory.to}>
+            <div className="daily-news-image"><img src={`${base}${topStory.image}`} alt={topStory.alt} />{renderBadges(topStory)}</div>
+            <div className="daily-news-copy">
+              <p className="eyebrow"><span className="live-dot" /> {featured.today}</p>
+              <span className="news-kicker">{topStory.kicker}</span>
+              <h2>{topStory.title}</h2>
+              <p>{topStory.excerpt}</p>
+              <span className="read-link">{topStory.read} <Arrow /></span>
+            </div>
+          </Link>}
           {gridArticles.map((article) => <Link className="news-carousel-card" to={article.to} key={article.to}>
             <div className="news-carousel-image"><img src={`${base}${article.image}`} alt={article.alt} />{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
