@@ -5,15 +5,29 @@ import { useAuth } from '../auth/AuthContext';
 import { useAchievements } from '../achievements/AchievementContext';
 import { quizLevelCompleted } from '../achievements/engine';
 import { QUIZ_LEVELS, quizLabel, quizLevelQuestions, quizQuestionsCount } from '../quizzesData';
-import { quizAttemptId, submitQuizAttempt, writeLocalBest } from './quizApi';
+import { quizAttemptId, readLocalBestRun, submitQuizAttempt, writeLocalBest } from './quizApi';
 import { isLevelCompleted, levelRequirement, nextLevel } from './quizProgress';
 import { useQuizProgress } from './useQuizProgress';
 import QuizChallenge from './QuizChallenge';
 import QuizConfetti from './QuizConfetti';
-import { QUESTION_TIME, VERDICT_MS, dayNumber, gradeQuiz, prepareQuiz, quizPointsFor } from './engine';
+import {
+  FREEZE_BONUS,
+  dayNumber,
+  gradeQuiz,
+  levelBrief,
+  levelRules,
+  prepareQuiz,
+  questionBudgetMs,
+  quizPointsFor,
+  rng,
+  shuffle,
+  startJokers,
+  streakLevel,
+} from './engine';
 import {
   playQuizAnswerSound,
   playQuizComboSound,
+  playQuizJokerSound,
   playQuizResultFanfare,
   quizSoundEnabled,
   setQuizSoundEnabled,
@@ -24,6 +38,22 @@ import {
 } from './quizSounds';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
+
+/** Les touches qui répondent : une par proposition (l'expert en a cinq). */
+const ANSWER_KEYS = ['1', '2', '3', '4', '5', '6'];
+
+/** « 1,5 » en français et en arabe, « 1.5 » ailleurs — pour les ×points. */
+function formatMultiplier(value, lang) {
+  const text = String(Number(value));
+  return lang === 'fr' || lang === 'ar' ? text.replace('.', ',') : text;
+}
+
+/** Temps moyen de réponse, en secondes (une décimale, virgule en fr/ar). */
+function formatSeconds(ms, lang) {
+  const seconds = Math.max(0, Number(ms) || 0) / 1000;
+  const text = seconds.toFixed(1);
+  return lang === 'fr' || lang === 'ar' ? text.replace('.', ',') : text;
+}
 
 /**
  * Bouton son du lecteur : 🔊 / 🔇 avec l'état lu par les lecteurs d'écran
@@ -57,7 +87,20 @@ const FALLBACK = {
   soundMute: 'Mute the quiz sounds', soundUnmute: 'Turn the quiz sounds back on',
   correctCount: 'Correct answers', wrongCount: 'Wrong answers',
   points: 'PTS', resultPoints: '{points} PTS', bestCombo: 'Best combo: ×{n}',
-  keysHint: 'Tip: press keys 1–4 to answer',
+  keysHint: 'Tip: press keys 1–{n} to answer',
+  // Règles du niveau — annoncées dans le sélecteur, vécues en partie.
+  rulesTag: 'Rules of this level',
+  rules: { perQuestion: 'per question', choices: 'answers', lives: 'lives', noLives: 'no life to lose', jokers: 'jokers', noJokers: 'no joker' },
+  expertHint: 'Ten seconds, five answers, three lives, no joker — and double points.',
+  noJokersTag: 'EXPERT — NO JOKER',
+  jokersGroup: 'Jokers', fifty: '50/50', fiftyHint: 'Removes two wrong answers',
+  freeze: 'Freeze', freezeHint: 'Adds {n} seconds to the clock',
+  livesLeft: '{n} lives left',
+  streakTags: { warm: 'WARMING UP', hot: 'ON FIRE', blazing: 'UNSTOPPABLE' },
+  jokerKeys: ' · 50/50: D · Freeze: F',
+  gameOver: 'OUT OF LIVES', stoppedAt: 'Run stopped at question {n} of {total}',
+  stats: { accuracy: 'Accuracy', points: 'Points', bestCombo: 'Best combo', avgTime: 'Avg. answer', livesLeft: 'Lives left', jokersUsed: 'Jokers used' },
+  newRecord: 'NEW RECORD',
   noXpTag: 'Already completed',
   noXpHint: 'You already finished this level: playing it again earns no points (no XP either).',
   noXpResult: 'This level is already completed — no points this time.',
@@ -111,6 +154,9 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     ...(t.quiz || {}),
     levels: { ...FALLBACK.levels, ...((t.quiz || {}).levels || {}) },
     levelPoints: { ...FALLBACK.levelPoints, ...((t.quiz || {}).levelPoints || {}) },
+    rules: { ...FALLBACK.rules, ...((t.quiz || {}).rules || {}) },
+    stats: { ...FALLBACK.stats, ...((t.quiz || {}).stats || {}) },
+    streakTags: { ...FALLBACK.streakTags, ...((t.quiz || {}).streakTags || {}) },
     tiers: { ...FALLBACK.tiers, ...((t.quiz || {}).tiers || {}) },
     verdicts: { ...FALLBACK.verdicts, ...((t.quiz || {}).verdicts || {}) },
   };
@@ -148,7 +194,8 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [review, setReview] = useState(false);
-  const [remainingMs, setRemainingMs] = useState(() => QUESTION_TIME.seconds * 1000);
+  const [remainingMs, setRemainingMs] = useState(() => questionBudgetMs(level));
+  const [budgetMs, setBudgetMs] = useState(() => questionBudgetMs(level));
   // Son du quizz (tick-tack + verdicts) : préférence de l'appareil, et
   // compteur de la partie en cours — le son dit ce que l'écran ne montre pas,
   // puisque la question suivante s'affiche aussitôt ; le compteur donne la
@@ -162,43 +209,81 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [verdict, setVerdict] = useState(null);
+  // Le « fun » du lecteur : jokers restants, propositions éliminées par le
+  // 50/50, vies du niveau expert, chrono gelé, secousse sur une erreur et
+  // nouveau record annoncé sur l'écran de résultat.
+  const [jokers, setJokers] = useState(() => startJokers(level));
+  const [eliminated, setEliminated] = useState([]);
+  const [lives, setLives] = useState(levelRules(level).lives || null);
+  const [frozen, setFrozen] = useState(false);
+  const [shake, setShake] = useState(false);
+  const [newRecord, setNewRecord] = useState(false);
   const trackedFor = useRef(null);
   const commitRef = useRef(null);
+  const jokerRef = useRef({ fifty: null, freeze: null });
   const lockedRef = useRef(false);
   const streakRef = useRef(0);
   const pointsRef = useRef(0);
   const bestStreakRef = useRef(0);
   const questionStartRef = useRef(0);
+  const deadlineRef = useRef(0);
+  const budgetRef = useRef(questionBudgetMs(level));
+  const jokersRef = useRef(startJokers(level));
+  const jokersUsedRef = useRef(0);
+  const livesRef = useRef(levelRules(level).lives || 0);
+  const spentMsRef = useRef(0);
+  const answeredRef = useRef(0);
   const verdictTimerRef = useRef(null);
+  const shakeTimerRef = useRef(null);
   const fanfareFor = useRef(null);
 
   /** Remise à zéro du « fun » entre deux parties (nulle pour la révision). */
-  const resetRun = () => {
+  const resetRun = (levelId) => {
     if (verdictTimerRef.current) {
       window.clearTimeout(verdictTimerRef.current);
       verdictTimerRef.current = null;
     }
+    if (shakeTimerRef.current) {
+      window.clearTimeout(shakeTimerRef.current);
+      shakeTimerRef.current = null;
+    }
+    const rules = levelRules(levelId);
     lockedRef.current = false;
     streakRef.current = 0;
     pointsRef.current = 0;
     bestStreakRef.current = 0;
+    spentMsRef.current = 0;
+    answeredRef.current = 0;
+    jokersUsedRef.current = 0;
+    jokersRef.current = startJokers(levelId);
+    livesRef.current = rules.lives || 0;
     setPoints(0);
     setStreak(0);
     setBestStreak(0);
     setVerdict(null);
+    setJokers(jokersRef.current);
+    setLives(rules.lives || null);
+    setEliminated([]);
+    setFrozen(false);
+    setShake(false);
+    setNewRecord(false);
   };
 
   const start = (levelId) => {
     // Geste utilisateur : c'est ici que le contexte audio s'ouvre, sinon le
     // premier battement (une seconde plus tard) n'aurait pas le droit de jouer.
     unlockQuizAudio();
-    resetRun();
+    resetRun(levelId);
     setReplayRun(quizLevelCompleted(achievementState, quiz.slug, levelId));
     setJustUnlocked(null);
     if (onLevelChange && levelId !== level) onLevelChange(levelId);
     // Quizz du jour : même mélange pour tout le monde (graine = numéro du jour).
     setPlayedLevel(levelId);
-    setPrepared(prepareQuiz(quiz, levelId, daily ? dayNumber(new Date()) : null));
+    // Niveau expert : une proposition de plus par question (un piège tiré des
+    // autres questions du niveau) — voir `LEVEL_RULES` dans le moteur.
+    setPrepared(prepareQuiz(quiz, levelId, daily ? dayNumber(new Date()) : null, {
+      extraDistractors: levelRules(levelId).extraDistractors,
+    }));
     setAnswers({});
     setIndex(0);
     setResult(null);
@@ -214,7 +299,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     const missed = (result?.detail || []).filter((entry) => !entry.correct).map((entry) => entry.question);
     if (!missed.length) return;
     unlockQuizAudio();
-    resetRun();
+    resetRun(prepared.level || playedLevel);
     setPrepared({ ...prepared, questions: missed });
     setAnswers({});
     setIndex(0);
@@ -224,6 +309,40 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     setPhase('play');
   };
 
+  // 50/50 : deux mauvaises réponses sortent de la question en cours. Rien
+  // n'est dépensé s'il ne reste rien à éliminer.
+  const useFifty = () => {
+    if (lockedRef.current || jokersRef.current.fifty <= 0 || !prepared) return;
+    const question = prepared.questions[index];
+    const victims = shuffle(
+      question.choices.filter((choice) => !choice.correct && !eliminated.includes(choice.id)),
+      rng((Math.random() * 2 ** 31) | 0),
+    ).slice(0, 2).map((choice) => choice.id);
+    if (!victims.length) return;
+    setEliminated((previous) => [...previous, ...victims]);
+    jokersRef.current = { ...jokersRef.current, fifty: jokersRef.current.fifty - 1 };
+    jokersUsedRef.current += 1;
+    setJokers(jokersRef.current);
+    playQuizJokerSound('fifty');
+  };
+
+  // Gel du chrono : huit secondes de plus sur la question en cours. Le
+  // minuteur lit `deadlineRef` : l'échéance est repoussée sans relancer
+  // l'effet, la barre et le bonus de rapidité suivent.
+  const useFreeze = () => {
+    if (lockedRef.current || jokersRef.current.freeze <= 0) return;
+    deadlineRef.current += FREEZE_BONUS.seconds * 1000;
+    budgetRef.current += FREEZE_BONUS.seconds * 1000;
+    setBudgetMs(budgetRef.current);
+    setRemainingMs(Math.max(0, deadlineRef.current - Date.now()));
+    setFrozen(true);
+    jokersRef.current = { ...jokersRef.current, freeze: jokersRef.current.freeze - 1 };
+    jokersUsedRef.current += 1;
+    setJokers(jokersRef.current);
+    playQuizJokerSound('freeze');
+  };
+  jokerRef.current = { fifty: useFifty, freeze: useFreeze };
+
   // Valide une réponse. `choice` vaut null quand le minuteur expire.
   // Pendant le gel de verdict (après un clic), toute entrée est ignorée :
   // le clavier, le minuteur et les boutons passent par ce même garde-fou.
@@ -231,9 +350,14 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     if (lockedRef.current) return;
     // Niveau du run en cours : il décide du multiplicateur de points.
     const played = prepared.level || playedLevel;
-    const budget = QUESTION_TIME.seconds * 1000;
+    const rules = levelRules(played);
+    const budget = budgetRef.current || questionBudgetMs(played);
     const elapsed = Math.min(budget, Math.max(0, Date.now() - questionStartRef.current));
     const correct = Boolean(choice && choice.correct);
+    // Temps moyen de l'écran de résultat : une réponse juste compte son temps
+    // réel, un temps écoulé compte le budget entier.
+    spentMsRef.current += correct ? elapsed : budget;
+    answeredRef.current += 1;
     let pointsGained = 0;
     if (correct) {
       streakRef.current += 1;
@@ -255,6 +379,19 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     } else {
       streakRef.current = 0;
       setStreak(0);
+      // Niveau expert : une erreur (ou un temps écoulé) coûte une vie. À zéro,
+      // la partie s'arrête après le verdict — les questions restantes comptent
+      // comme ratées.
+      if (rules.lives) {
+        livesRef.current = Math.max(0, livesRef.current - 1);
+        setLives(livesRef.current);
+      }
+      if (shakeTimerRef.current) window.clearTimeout(shakeTimerRef.current);
+      setShake(true);
+      shakeTimerRef.current = window.setTimeout(() => {
+        shakeTimerRef.current = null;
+        setShake(false);
+      }, 420);
     }
     // Verdict sonore + compteur : la bonne réponse monte (do–mi–sol), la
     // mauvaise descend, et le temps écoulé ajoute sa note grave.
@@ -274,16 +411,17 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     });
     lockedRef.current = true;
     const isLast = index + 1 >= prepared.questions.length;
+    const outOfLives = rules.lives > 0 && livesRef.current === 0;
     if (verdictTimerRef.current) window.clearTimeout(verdictTimerRef.current);
     verdictTimerRef.current = window.setTimeout(() => {
       verdictTimerRef.current = null;
       lockedRef.current = false;
       setVerdict(null);
-      if (!isLast) {
+      if (!isLast && !outOfLives) {
         setIndex(index + 1);
         return;
       }
-      const graded = gradeQuiz(prepared, nextAnswers);
+      const graded = { ...gradeQuiz(prepared, nextAnswers), gameOver: outOfLives };
       setResult(graded);
       setPhase('result');
       // Une seule fois par partie : le moteur des succès crédite l'action
@@ -304,6 +442,16 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
         record(quiz.slug, played);
         if (!replayRun) setJustUnlocked(nextLevel(played));
         if (onFinish) onFinish(graded, played);
+        // Le record de l'appareil est annoncé à l'écran (comparé AVANT écriture).
+        const previousBest = readLocalBestRun(quiz.slug, played);
+        const previousPoints = previousBest?.points || 0;
+        setNewRecord(
+          !replayRun && Boolean(
+            !previousBest
+            || pointsRef.current > previousPoints
+            || (pointsRef.current === previousPoints && graded.correct > previousBest.score),
+          ),
+        );
         // Règle « un niveau rapporte une fois » : rejouer un niveau déjà
         // terminé n'écrit RIEN — pas de record de l'appareil, pas de tentative
         // serveur, pas de classement (les points du run sont restés à 0).
@@ -320,15 +468,17 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
           }
         }
       }
-    }, VERDICT_MS);
+    }, rules.verdictMs);
   };
 
   // Le minuteur et le clavier appellent toujours la dernière version de
   // `pick` (closures fraîches sur la question en cours) via cette ref.
   commitRef.current = pick;
 
-  // Minuteur de QUESTION_TIME secondes par question : à zéro, la question
-  // avance sans réponse (comptée ratée). Relancé à chaque nouvelle question.
+  // Minuteur par question — le budget vient du niveau (`questionBudgetMs` :
+  // 20 s en facile, 15 s en confirmé, 10 s en expert) : à zéro, la question
+  // avance sans réponse (comptée ratée). Relancé à chaque nouvelle question,
+  // qui repart aussi avec toutes ses propositions (fin des éliminations).
   // Le tick-tack (`./quizSounds`) suit le même budget : il démarre avec la
   // question, reçoit le temps restant à chaque rafraîchissement et s'arrête
   // avec le minuteur (nettoyage d'effet = fin de question, de partie, ou
@@ -337,17 +487,21 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   // déjà tranchée.
   useEffect(() => {
     if (phase !== 'play' || !prepared) return undefined;
-    const budget = QUESTION_TIME.seconds * 1000;
-    const deadline = Date.now() + budget;
+    const budget = questionBudgetMs(prepared.level || playedLevel);
+    budgetRef.current = budget;
+    deadlineRef.current = Date.now() + budget;
     questionStartRef.current = Date.now();
+    setBudgetMs(budget);
     setRemainingMs(budget);
+    setEliminated([]);
+    setFrozen(false);
     startQuizClock(budget);
     const id = window.setInterval(() => {
       if (lockedRef.current) return;
-      const left = deadline - Date.now();
+      const left = deadlineRef.current - Date.now();
       if (left > 0) {
         setRemainingMs(left);
-        updateQuizClock(left, budget);
+        updateQuizClock(left, budgetRef.current);
         return;
       }
       window.clearInterval(id);
@@ -358,27 +512,32 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
       window.clearInterval(id);
       stopQuizClock();
     };
-  }, [phase, index, prepared]);
+  }, [phase, index, prepared, playedLevel]);
 
-  // Raccourcis clavier : les touches 1–4 valident le choix affiché (les
-  // tryhards répondent sans main. Le garde-fou du gel s'applique, et on ne
-  // vole jamais une frappe destinée à un champ de saisie — commentaires,
-  // recherche, messagerie).
+  // Raccourcis clavier : les touches 1–5 valident la proposition affichée (les
+  // tryhards répondent sans main), D lance le 50/50 et F gèle le chrono. Le
+  // garde-fou du gel s'applique, et on ne vole jamais une frappe destinée à un
+  // champ de saisie — commentaires, recherche, messagerie.
   useEffect(() => {
     if (phase !== 'play' || !prepared) return undefined;
     const onKey = (event) => {
       if (lockedRef.current || event.metaKey || event.ctrlKey || event.altKey) return;
       const target = event.target;
       if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-      const position = ['1', '2', '3', '4'].indexOf(event.key);
-      if (position === -1) return;
-      const question = prepared.questions[index];
-      const choice = question.choices[position];
-      if (choice) commitRef.current(question, choice);
+      const position = ANSWER_KEYS.indexOf(event.key);
+      if (position !== -1) {
+        const question = prepared.questions[index];
+        const choice = question.choices[position];
+        if (choice && !eliminated.includes(choice.id)) commitRef.current(question, choice);
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === 'f') jokerRef.current.freeze();
+      else if (key === 'd') jokerRef.current.fifty();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, index, prepared]);
+  }, [phase, index, prepared, eliminated]);
 
   // Le fanfare de l'écran de résultat sonne une seule fois par partie — même
   // si le composant se remonte en mode développement (StrictMode).
@@ -388,9 +547,10 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     playQuizResultFanfare(result.tier);
   }, [phase, result]);
 
-  // Aucun gel de verdict ne survit au démontage du lecteur.
+  // Aucun gel de verdict ni secousse ne survit au démontage du lecteur.
   useEffect(() => () => {
     if (verdictTimerRef.current) window.clearTimeout(verdictTimerRef.current);
+    if (shakeTimerRef.current) window.clearTimeout(shakeTimerRef.current);
   }, []);
 
   if (phase === 'intro' || !prepared) {
@@ -430,6 +590,19 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
                       {' · '}{copy.levelPoints[entry] || ''}
                       {done ? ` · ✓ ${copy.levelDone}` : ''}
                     </span>
+                    {/* Les règles du niveau, en clair : la difficulté se lit
+                        avant de jouer (temps, propositions, vies, jokers). */}
+                    <span className="quiz-level-rules" aria-label={copy.rulesTag}>
+                      {(() => {
+                        const brief = levelBrief(quiz, entry);
+                        return [
+                          `⏱ ${brief.seconds} s`,
+                          `▤ ${brief.choices}`,
+                          brief.lives ? `♥ ${brief.lives}` : '♥ ∞',
+                          brief.jokerCount ? `◐ ${brief.jokerCount}` : '◌ 0',
+                        ].join('  ·  ');
+                      })()}
+                    </span>
                     {locked && requirement && (
                       <span className="quiz-level-lock" role="note">🔒 {copy.lockHint.replace('{level}', copy.levels[requirement] || requirement)}</span>
                     )}
@@ -437,7 +610,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
                   </div>
                   <button
                     type="button"
-                    className={`button ${locked ? 'button-ghost' : 'button-yellow'} quiz-level-play`}
+                    className={`quiz-cta ${locked ? 'quiz-cta--ghost' : 'quiz-cta--primary'} quiz-level-play`}
                     disabled={locked}
                     aria-disabled={locked}
                     onClick={() => start(entry)}
@@ -459,7 +632,10 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
               onToggle={() => setSoundOn(setQuizSoundEnabled(!soundOn))}
             />
           </div>
-          <p className="quiz-keys-hint">⌨ {copy.keysHint}</p>
+          <p className="quiz-keys-hint">
+            ⌨ {copy.keysHint.replace('{n}', String(levelBrief(quiz, level).choices))}
+            {levelRules(level).jokers.fifty + levelRules(level).jokers.freeze > 0 ? copy.jokerKeys : ''}
+          </p>
         </div>
       </div>
     );
@@ -468,22 +644,37 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   if (phase === 'play') {
     const question = prepared.questions[index];
     const played = prepared.level || playedLevel;
+    const rules = levelRules(played);
+    const flame = streakLevel(streak);
     const choiceStates = (choice) => {
       const classes = ['quiz-choice'];
+      if (eliminated.includes(choice.id)) classes.push('is-eliminated');
       if (verdict) classes.push('is-locked');
       if (verdict && verdict.choiceId === choice.id) classes.push(verdict.correct ? 'is-correct' : 'is-wrong');
       if (verdict && !verdict.correct && choice.correct) classes.push('is-reveal');
       return classes.join(' ');
     };
     return (
-      <div className="quiz-player">
-        <div className="quiz-progress" role="progressbar" aria-valuemin={1} aria-valuemax={prepared.questions.length} aria-valuenow={index + 1}>
-          <span style={{ width: `${((index + 1) / prepared.questions.length) * 100}%` }} />
+      <div className={`quiz-player quiz-player--${played}${shake ? ' is-shake' : ''}`}>
+        {/* Une pastille par question : la partie se lit d'un coup d'œil. */}
+        <div
+          className="quiz-pips"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={prepared.questions.length}
+          aria-valuenow={index + 1}
+        >
+          {prepared.questions.map((entry, position) => {
+            const pickedId = answers[entry.id];
+            const isRight = Boolean(pickedId && entry.choices.find((choice) => choice.id === pickedId)?.correct);
+            const state = pickedId ? (isRight ? 'is-right' : 'is-wrong') : position === index ? 'is-current' : '';
+            return <i key={entry.id} className={`quiz-pip${state ? ` ${state}` : ''}`} />;
+          })}
         </div>
         <div className="quiz-hud">
-          <div className={`quiz-timer${remainingMs < 3000 ? ' is-low' : ''}`} role="timer" aria-label={copy.timeLeft}>
+          <div className={`quiz-timer${remainingMs < 3000 ? ' is-low' : ''}${frozen ? ' is-frozen' : ''}`} role="timer" aria-label={copy.timeLeft}>
             <span className="quiz-timer-count">{Math.ceil(remainingMs / 1000)}s</span>
-            <span className="quiz-timer-track"><i style={{ width: `${(remainingMs / (QUESTION_TIME.seconds * 1000)) * 100}%` }} /></span>
+            <span className="quiz-timer-track"><i style={{ width: `${Math.min(100, (remainingMs / budgetMs) * 100)}%` }} /></span>
           </div>
           {/* Même information que le son, sans le son : le verdict s'affiche
               aussi (et se lit) — la question suivante arrive immédiatement. */}
@@ -491,8 +682,27 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
             <span className="quiz-live-item quiz-live-item--right" aria-hidden="true">✓ {live.right}</span>
             <span className="quiz-live-item quiz-live-item--wrong" aria-hidden="true">✗ {live.wrong}</span>
             <span className="quiz-live-item quiz-live-item--points" aria-hidden="true">⚡ {points}</span>
-            {streak >= 2 && <span className="quiz-live-item quiz-live-item--streak" aria-hidden="true">🔥 ×{streak}</span>}
+            {streak >= 2 && (
+              <span className={`quiz-live-item quiz-live-item--streak is-${flame}`} aria-hidden="true">
+                🔥 ×{streak}
+                {copy.streakTags[flame] ? <em className="quiz-live-tag">{copy.streakTags[flame]}</em> : null}
+              </span>
+            )}
           </p>
+          {/* Niveau expert : les vies, annoncées aux lecteurs d'écran (`sr-only`,
+              les cœurs visibles étant décoratifs). */}
+          {rules.lives > 0 && (
+            <p className="quiz-lives" role="status">
+              {Array.from({ length: rules.lives }, (_, position) => (
+                <span
+                  key={position}
+                  className={`quiz-heart${position < (lives || 0) ? '' : ' is-lost'}`}
+                  aria-hidden="true"
+                >♥</span>
+              ))}
+              <span className="sr-only">{copy.livesLeft.replace('{n}', String(lives || 0))}</span>
+            </p>
+          )}
           <SoundToggle
             on={soundOn}
             label={soundOn ? copy.soundMute : copy.soundUnmute}
@@ -519,13 +729,50 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
             )}
           </p>
         )}
-        <div className="quiz-choices">
-          {question.choices.map((choice) => (
-            <button type="button" key={choice.id} className={choiceStates(choice)} disabled={Boolean(verdict)} onClick={() => pick(question, choice)}>
-              {quizLabel(choice.label, lang)}
+        <div className={`quiz-choices${question.choices.length > 4 ? ' quiz-choices--five' : ''}`}>
+          {question.choices.map((choice, position) => (
+            <button
+              type="button"
+              key={choice.id}
+              className={choiceStates(choice)}
+              data-key={String(position + 1)}
+              disabled={Boolean(verdict) || eliminated.includes(choice.id)}
+              onClick={() => pick(question, choice)}
+            >
+              <span className="quiz-choice-label">{quizLabel(choice.label, lang)}</span>
             </button>
           ))}
         </div>
+        {/* Jokers : deux aides limitées, dépensées à la main (D et F au
+            clavier). Le niveau expert n'en a aucune — le bandeau le rappelle. */}
+        {rules.jokers.fifty + rules.jokers.freeze > 0 ? (
+          <div className="quiz-jokers" role="group" aria-label={copy.jokersGroup}>
+            <button
+              type="button"
+              className="quiz-joker"
+              title={copy.fiftyHint}
+              disabled={Boolean(verdict) || jokers.fifty <= 0}
+              onClick={useFifty}
+            >
+              <span className="quiz-joker-icon" aria-hidden="true">◐</span>
+              <span className="quiz-joker-name">{copy.fifty}</span>
+              <span className="quiz-joker-count" aria-hidden="true">{jokers.fifty}</span>
+            </button>
+            <button
+              type="button"
+              className="quiz-joker"
+              title={copy.freezeHint.replace('{n}', String(FREEZE_BONUS.seconds))}
+              disabled={Boolean(verdict) || jokers.freeze <= 0}
+              onClick={useFreeze}
+            >
+              <span className="quiz-joker-icon" aria-hidden="true">❄</span>
+              <span className="quiz-joker-name">{copy.freeze}</span>
+              <span className="quiz-joker-count" aria-hidden="true">{jokers.freeze}</span>
+            </button>
+          </div>
+        ) : (
+          <p className="quiz-jokers quiz-jokers--none">{copy.noJokersTag}</p>
+        )}
       </div>
     );
   }
@@ -533,6 +780,20 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   const tierClass = `quiz-tier--${result.tier}`;
   const meta = quizLabel(quiz.labels, lang) || {};
   const played = prepared.level || playedLevel;
+  const playedRules = levelRules(played);
+  const accuracy = result.total ? Math.round((result.correct / result.total) * 100) : 0;
+  const averageMs = answeredRef.current ? spentMsRef.current / answeredRef.current : 0;
+  // Le détail de la partie : ce qui s'est joué, au-delà du score.
+  const statItems = [
+    { key: 'accuracy', value: `${accuracy} %`, label: copy.stats.accuracy },
+    { key: 'points', value: String(points), label: copy.stats.points },
+    { key: 'combo', value: `×${Math.max(bestStreak, 1)}`, label: copy.stats.bestCombo },
+    { key: 'avg', value: `${formatSeconds(averageMs, lang)} s`, label: copy.stats.avgTime },
+    ...(playedRules.lives
+      ? [{ key: 'lives', value: `${Math.max(lives || 0, 0)}/${playedRules.lives}`, label: copy.stats.livesLeft }]
+      : []),
+    { key: 'jokers', value: String(jokersUsedRef.current), label: copy.stats.jokersUsed },
+  ];
   return (
     <div className="quiz-player">
       <div className={`quiz-result ${tierClass}`}>
@@ -544,20 +805,35 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
         </h2>
         <p className="quiz-result-score">{copy.score.replace('{correct}', String(result.correct)).replace('{total}', String(result.total))}</p>
         <p className="quiz-result-points">⚡ {copy.resultPoints.replace('{points}', String(points))}</p>
+        <p className="quiz-result-mult">{copy.levelPoints[played] || ''} · {copy.levels[played] || played}</p>
+        <ul className="quiz-stats">
+          {statItems.map((item) => (
+            <li className="quiz-stat" key={item.key}>
+              <strong>{item.value}</strong>
+              <span>{item.label}</span>
+            </li>
+          ))}
+        </ul>
         {bestStreak >= 2 && <p className="quiz-result-combo">🔥 {copy.bestCombo.replace('{n}', String(bestStreak))}</p>}
+        {newRecord && !review && <span className="quiz-result-record">★ {copy.newRecord}</span>}
         {result.perfect && <span className="quiz-result-perfect">★ {copy.perfect}</span>}
         {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
+        {result.gameOver && (
+          <p className="quiz-result-gameover" role="note">
+            💀 {copy.gameOver} — {copy.stoppedAt.replace('{n}', String(result.answered)).replace('{total}', String(result.total))}
+          </p>
+        )}
         {!review && replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
         {!review && justUnlocked && <p className="quiz-unlock-note" role="status">🔓 {copy.levelUnlocked.replace('{level}', copy.levels[justUnlocked] || justUnlocked)}</p>}
         <div className="quiz-result-actions">
           {!review && justUnlocked && (
-            <button type="button" className="button button-yellow" onClick={() => start(justUnlocked)}>{copy.levelPlay} <Arrow /></button>
+            <button type="button" className="quiz-cta quiz-cta--primary" onClick={() => start(justUnlocked)}>{copy.levelPlay} <Arrow /></button>
           )}
           {result.correct < result.total && (
-            <button type="button" className="button button-yellow" onClick={startReview}>{copy.retryMistakes}</button>
+            <button type="button" className="quiz-cta quiz-cta--primary" onClick={startReview}>{copy.retryMistakes}</button>
           )}
-          <button type="button" className="button button-ghost" onClick={() => start(played)}>{copy.replay}</button>
-          <Link className="button button-ghost" to="/quizz">{copy.others} <Arrow /></Link>
+          <button type="button" className="quiz-cta quiz-cta--ghost" onClick={() => start(played)}>{copy.replay}</button>
+          <Link className="quiz-cta quiz-cta--ghost" to="/quizz">{copy.others} <Arrow /></Link>
           {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
         </div>
       </div>
