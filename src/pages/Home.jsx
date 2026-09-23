@@ -5,6 +5,8 @@ import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
 import { activeMonth, calendarMonths, gameReleases, monthLabel } from '../releasesData';
+import { quizzes } from '../quizzesData';
+import { dailyQuizFor } from '../quizzes/engine';
 import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
 
 // Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
@@ -64,6 +66,8 @@ export default function Home() {
   const monthReleases = month.releases;
   const allMonths = calendarMonths(today);
   const totalGames = gameReleases.length;
+  // Le bandeau « quizz du jour » envoie directement à la partie du jour.
+  const dailyQuiz = dailyQuizFor(today, quizzes);
 
   useEffect(() => {
     let cancelled = false;
@@ -233,7 +237,7 @@ export default function Home() {
             <h2>{t.quiz.home.titleA}<br /><em>{t.quiz.home.titleB}</em></h2>
             <p>{t.quiz.home.text}</p>
           </div>
-          <Link className="button button-yellow" to="/quizz">{t.quiz.home.cta} <Arrow /></Link>
+          <Link className="button button-yellow" to={dailyQuiz ? dailyQuiz.route : '/quizz'}>{t.quiz.home.cta} <Arrow /></Link>
         </div>
       </section>
 
