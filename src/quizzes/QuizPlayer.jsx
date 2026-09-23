@@ -265,7 +265,16 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
       // complétion enregistrée à l'ancien format (slug nu, avant les paliers).
       if (!review && trackedFor.current !== prepared) {
         trackedFor.current = prepared;
-        track('quiz_completed', { id: quiz.slug, perfect: graded.perfect, daily, difficulty, homeDifficulty: quiz.difficulty });
+        track('quiz_completed', {
+          id: quiz.slug,
+          perfect: graded.perfect,
+          daily,
+          difficulty,
+          homeDifficulty: quiz.difficulty,
+          // Les points du run noté deviennent aussi de l'XP joueur. Le moteur
+          // ne les crédite qu'une fois grâce à la clé quiz:difficulté.
+          points: pointsRef.current,
+        });
         // Règle « un quizz rapporte une fois » : si la difficulté était
         // DÉJÀ terminée avant la partie, RIEN n'est noté — pas de record
         // de l'appareil, pas de tentative serveur, pas de refresh du

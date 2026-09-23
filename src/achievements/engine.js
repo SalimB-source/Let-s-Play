@@ -73,6 +73,9 @@ export function createState(now = new Date()) {
     bestStreak: 0,
     // Succès débloqués : id → horodatage ISO.
     unlocked: {},
+    // XP gagnée directement grâce aux parties de quiz : run noté → points.
+    // La clé du run rend l'attribution idempotente et fusionnable entre appareils.
+    quizPoints: {},
   };
 }
 
@@ -97,6 +100,11 @@ export function normalizeState(raw, now = new Date()) {
     if (typeof key === 'string' && key) unlocked[key] = typeof value === 'string' ? value : base.createdAt;
   }
 
+  const quizPoints = {};
+  for (const [key, value] of Object.entries(asObject(raw.quizPoints))) {
+    if (typeof key === 'string' && key && Number.isFinite(value)) quizPoints[key] = Math.max(0, Math.round(value));
+  }
+
   return {
     version: STATE_VERSION,
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : base.createdAt,
@@ -109,6 +117,7 @@ export function normalizeState(raw, now = new Date()) {
     streak: asNumber(raw.streak),
     bestStreak: asNumber(raw.bestStreak),
     unlocked,
+    quizPoints,
   };
 }
 
@@ -231,6 +240,11 @@ export function reduce(state, action = {}) {
         break;
       }
       next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', quizRunKey(action.id, action.difficulty));
+      const runKey = quizRunKey(action.id, action.difficulty);
+      const earnedPoints = Number.isFinite(action.points) ? Math.max(0, Math.round(action.points)) : 0;
+      if (runKey && earnedPoints > 0) {
+        next = { ...next, quizPoints: { ...next.quizPoints, [runKey]: earnedPoints } };
+      }
       if (action.perfect) next = addToSet(next, 'perfect_quizzes', action.id);
       if (action.daily) next = addToSet(next, 'quiz_days', dayKey(at));
       break;
@@ -434,8 +448,10 @@ export function levelFromXp(totalXp = 0) {
 
 /** XP total d'un état = somme des succès débloqués. */
 export function totalXp(state, entries = ACHIEVEMENTS) {
-  const unlocked = normalizeState(state).unlocked;
-  return entries.reduce((sum, achievement) => (unlocked[achievement.id] ? sum + (achievement.xp || 0) : sum), 0);
+  const normalized = normalizeState(state);
+  const achievementXp = entries.reduce((sum, achievement) => (normalized.unlocked[achievement.id] ? sum + (achievement.xp || 0) : sum), 0);
+  const quizXp = Object.values(normalized.quizPoints).reduce((sum, points) => sum + points, 0);
+  return achievementXp + quizXp;
 }
 
 /**
@@ -534,6 +550,10 @@ export function mergeStates(a, b) {
     streak: Math.max(left.streak, right.streak),
     bestStreak: Math.max(left.bestStreak, right.bestStreak),
     unlocked,
+    quizPoints: Object.fromEntries([...new Set([...Object.keys(left.quizPoints), ...Object.keys(right.quizPoints)])].map((key) => [
+      key,
+      Math.max(left.quizPoints[key] || 0, right.quizPoints[key] || 0),
+    ])),
   });
 }
 
@@ -543,6 +563,7 @@ export function statesMatch(a, b) {
   const right = normalizeState(b);
   return JSON.stringify(left.counters) === JSON.stringify(right.counters)
     && JSON.stringify(left.sets) === JSON.stringify(right.sets)
+    && JSON.stringify(left.quizPoints) === JSON.stringify(right.quizPoints)
     && JSON.stringify(left.days) === JSON.stringify(right.days)
     && JSON.stringify(left.unlocked) === JSON.stringify(right.unlocked);
 }
