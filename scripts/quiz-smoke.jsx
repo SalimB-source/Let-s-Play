@@ -443,40 +443,58 @@ export async function checkQuiz(assert) {
   assert.ok(boardLines[1].textContent.includes('★') && !boardLines[0].textContent.includes('★'), 'le sans-faute garde son étoile');
   await act(async () => boardRoot.unmount());
 
-  // Page de profil : la position au classement global des quizz s'y affiche.
-  // Sans backend (ni compte serveur, comme ici en session démo), la section
-  // explique comment la débloquer.
+  // Pages de profil : le classement global des quizz s'affiche partout.
+  // Sans backend (ni compte serveur, comme ici en session démo), les fiches
+  // scriptées montrent un rang déterministe hors-ligne — jamais une section
+  // vide — et les états de repli restent explicites.
   seedDemoProfiles();
   globalThis.window.localStorage.setItem(DEMO_AUTH_KEY, JSON.stringify(DEMO_PROFILE_FIXTURES.vortex));
-  const rankNode = document.createElement('div');
-  document.body.append(rankNode);
-  const rankRoot = createRoot(rankNode);
-  await act(async () => rankRoot.render(
-    <LanguageProvider>
-      <AuthProvider>
-        <MemoryRouter initialEntries={[`/profile/${DEMO_PROFILE_FIXTURES.vortex.id}`]}>
-          <FriendsProvider>
-            <MessagesProvider>
-              <AchievementProvider>
-                <Routes>
-                  <Route path="/profile/:userId" element={<Profile />} />
-                </Routes>
-              </AchievementProvider>
-            </MessagesProvider>
-          </FriendsProvider>
-        </MemoryRouter>
-      </AuthProvider>
-    </LanguageProvider>,
-  ));
-  assert.ok(rankNode.textContent.includes('VOTRE PROFIL'), 'propre profil rendu (hub joueur)');
-  const rankSection = rankNode.querySelector('.quiz-global-rank');
-  assert.ok(rankSection, 'section « classement global des quizz » présente sur le profil');
-  assert.ok(rankSection.textContent.includes('CLASSEMENT GLOBAL DES QUIZZ'), 'titre de la section classement global');
-  assert.ok(
-    rankSection.textContent.includes('Connecte-toi avec un compte joueur'),
-    'sans compte serveur : la position au classement global est expliquée, pas inventée',
-  );
-  await act(async () => rankRoot.unmount());
+  const renderProfileRank = async (profileId) => {
+    const rankNode = document.createElement('div');
+    document.body.append(rankNode);
+    const rankRoot = createRoot(rankNode);
+    await act(async () => rankRoot.render(
+      <LanguageProvider>
+        <AuthProvider>
+          <MemoryRouter initialEntries={[`/profile/${profileId}`]}>
+            <FriendsProvider>
+              <MessagesProvider>
+                <AchievementProvider>
+                  <Routes>
+                    <Route path="/profile/:userId" element={<Profile />} />
+                  </Routes>
+                </AchievementProvider>
+              </MessagesProvider>
+            </FriendsProvider>
+          </MemoryRouter>
+        </AuthProvider>
+      </LanguageProvider>,
+    ));
+    const rankSection = rankNode.querySelector('.quiz-global-rank');
+    assert.ok(rankSection, `[${profileId}] section « classement global des quizz » présente sur le profil`);
+    assert.ok(rankSection.textContent.includes('CLASSEMENT GLOBAL DES QUIZZ'), `[${profileId}] titre de la section classement global`);
+    assert.ok(rankSection.textContent.trim().length > 'CLASSEMENT GLOBAL DES QUIZZ'.length, `[${profileId}] section non vide`);
+    return { rankNode, rankRoot, rankSection };
+  };
+
+  const ownRank = await renderProfileRank(DEMO_PROFILE_FIXTURES.vortex.id);
+  assert.ok(ownRank.rankNode.textContent.includes('VOTRE PROFIL'), 'propre profil rendu (hub joueur)');
+  assert.ok(ownRank.rankSection.textContent.includes('Rang de démo hors-ligne'), '[profil personnel] rang scripté hors-ligne expliqué');
+  assert.ok(/#\d+/.test(ownRank.rankSection.textContent), '[profil personnel] position scriptée affichée');
+  assert.ok(ownRank.rankSection.textContent.includes('Points gagnés'), '[profil personnel] points du rang global affichés');
+  await act(async () => ownRank.rankRoot.unmount());
+
+  const personaRank = await renderProfileRank(DEMO_PROFILE_FIXTURES.pixel.id);
+  assert.ok(personaRank.rankNode.textContent.includes('APERÇU DÉMO'), 'fiche persona démo rendue');
+  assert.ok(personaRank.rankSection.textContent.includes('Rang de démo hors-ligne'), '[persona] rang scripté hors-ligne expliqué');
+  assert.ok(/#\d+/.test(personaRank.rankSection.textContent), '[persona] position scriptée affichée');
+  await act(async () => personaRank.rankRoot.unmount());
+
+  const communityRank = await renderProfileRank('demo-player-3105');
+  assert.ok(communityRank.rankNode.textContent.includes('COMMUNAUTÉ DÉMO'), 'fiche joueur communauté démo rendue');
+  assert.ok(communityRank.rankSection.textContent.includes('Rang de démo hors-ligne'), '[communauté démo] rang scripté hors-ligne expliqué');
+  assert.ok(/#\d+/.test(communityRank.rankSection.textContent), '[communauté démo] position scriptée affichée');
+  await act(async () => communityRank.rankRoot.unmount());
 
   /* ------------------------- 7. Révision des erreurs ------------------------ */
   seedLang('fr');
