@@ -4,6 +4,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import Comments from '../components/Comments';
 import NotFound from '../pages/NotFound';
 import { quizBySlug, quizLabel, quizzes } from '../quizzesData';
+import { quizAttemptId } from './quizApi';
 import { dailyQuizFor } from './engine';
 import QuizLeaderboard from './QuizLeaderboard';
 import QuizPlayer from './QuizPlayer';
@@ -12,12 +13,16 @@ import QuizPlayer from './QuizPlayer';
  * Une partie de quizz : `/quizz/:slug` (alias anglais `/quiz/:slug`).
  * Le fil de commentaires est celui de la route courante (`article_id` =
  * pathname), comme sur les articles — aucune configuration supplémentaire.
+ * Le classement affiché est celui du run JOUÉ (quizz + difficulté, identifié
+ * par `slug:difficulté`) — au départ, celui de la difficulté par défaut du
+ * quizz.
  */
 export default function QuizPage() {
   const { slug } = useParams();
   const { t, lang } = useLanguage();
   const [board, setBoard] = useState(null);
   const [plays, setPlays] = useState(0);
+  const [lastRunId, setLastRunId] = useState(null);
   const quiz = quizBySlug(slug);
   if (!quiz) return <NotFound />;
 
@@ -33,8 +38,21 @@ export default function QuizPage() {
         </div>
       </section>
       <section className="wrap">
-        <QuizPlayer quiz={quiz} daily={isDaily} onBoard={setBoard} onFinish={() => setPlays((count) => count + 1)} />
-        <QuizLeaderboard quiz={quiz} lastBoard={board} refreshKey={plays} />
+        <QuizPlayer
+          quiz={quiz}
+          daily={isDaily}
+          onBoard={setBoard}
+          onFinish={(_graded, difficulty) => {
+            setPlays((count) => count + 1);
+            setLastRunId(quizAttemptId(quiz.slug, difficulty));
+          }}
+        />
+        <QuizLeaderboard
+          quiz={quiz}
+          lastBoard={board}
+          refreshKey={plays}
+          runId={lastRunId || quizAttemptId(quiz.slug, quiz.difficulty)}
+        />
       </section>
       <section className="quiz-comments wrap">
         <h2>{copy.commentTitle}</h2>

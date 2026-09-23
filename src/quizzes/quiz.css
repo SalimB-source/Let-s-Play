@@ -29,6 +29,46 @@
 .quiz-chip--done { color: var(--muted); border-color: var(--line-strong); }
 .quiz-noxp-hint { margin: 12px 0 0; color: var(--muted); font: 600 13px var(--mono); letter-spacing: .04em; }
 
+/* ---- Sélecteur de difficulté (intro) ------------------------------------ */
+/* Trois paliers = trois banques de questions (et trois multiplicateurs de
+   points). Le palier actif est surligné ; un palier déjà terminé porte sa
+   coche — le rejouer ne rapporte plus rien (pas de points, pas d'XP). */
+.quiz-difficulty { margin: 6px 0 22px; }
+.quiz-difficulty-label {
+  margin: 0 0 10px; color: var(--dim);
+  font: 600 10px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+}
+.quiz-difficulty-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.quiz-difficulty-btn {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  min-width: 118px; padding: 12px 14px; cursor: pointer; text-align: start;
+  background: var(--panel); border: 1px solid var(--line);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.quiz-difficulty-btn:hover { border-color: var(--line-strong); transform: translateY(-1px); }
+.quiz-difficulty-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.quiz-difficulty-name { font: 700 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
+.quiz-difficulty-points { color: var(--dim); font: 700 12px var(--mono); letter-spacing: .06em; }
+.quiz-difficulty-btn--easy.is-active { border-color: rgba(34, 211, 238, .7); background: rgba(34, 211, 238, .08); }
+.quiz-difficulty-btn--easy.is-active .quiz-difficulty-name,
+.quiz-difficulty-btn--easy.is-active .quiz-difficulty-points { color: var(--cyan); }
+.quiz-difficulty-btn--medium.is-active { border-color: rgba(255, 214, 25, .7); background: rgba(255, 214, 25, .07); }
+.quiz-difficulty-btn--medium.is-active .quiz-difficulty-name,
+.quiz-difficulty-btn--medium.is-active .quiz-difficulty-points { color: var(--yellow); }
+.quiz-difficulty-btn--hard.is-active { border-color: rgba(168, 85, 247, .75); background: rgba(168, 85, 247, .1); }
+.quiz-difficulty-btn--hard.is-active .quiz-difficulty-name,
+.quiz-difficulty-btn--hard.is-active .quiz-difficulty-points { color: var(--violet); }
+/* Palier déjà terminé : la coche remplace l'appel au gain — rien à gagner
+   ici, les autres difficultés si. */
+.quiz-difficulty-btn.is-done .quiz-difficulty-points { visibility: hidden; }
+.quiz-difficulty-done {
+  padding: 1px 7px; border: 1px solid var(--line-strong); color: var(--muted);
+  font: 700 10px var(--mono); letter-spacing: .1em; text-transform: uppercase;
+}
+.quiz-difficulty-btn.is-active.is-done .quiz-difficulty-done { border-color: currentColor; }
+.quiz-difficulty-hint { margin: 10px 0 0; color: var(--dim); font-size: 12.5px; line-height: 1.5; }
+
 /* ---- Quizz du jour (bannière) ------------------------------------------- */
 .quiz-daily {
   display: grid; grid-template-columns: 1.2fr .8fr; gap: 26px; align-items: center;

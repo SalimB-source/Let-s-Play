@@ -36,6 +36,8 @@ import {
   metricValue,
   normalizeState,
   quizAlreadyCompleted,
+  quizCompletedAnyDifficulty,
+  quizRunKey,
   reduce,
   summarize,
   totalXp,
@@ -386,25 +388,49 @@ for (let index = 1; index <= 30; index += 1) {
   record(play('quiz_completed', { id, perfect: index === 0, daily: true, at: date.toISOString() }));
 });
 
-// Règle anti-farm : un quizz déjà terminé ne rapporte plus rien. Rejoué (même
-// sans faute), il ne bouge ni le compteur, ni les sans-faute, ni l'XP ; seul le
-// jour de quizz du jour reste crédité pour la série.
+// Règle anti-farm : un quizz déjà terminé À UNE DIFFICULTÉ ne rapporte plus
+// rien à CETTE difficulté. Rejoué (même sans faute), il ne bouge ni le
+// compteur, ni les sans-faute, ni l'XP ; seul le jour de quizz du jour reste
+// crédité pour la série. Une AUTRE difficulté du même quizz, elle, rapporte
+// à nouveau (de vraies questions différentes, des points multipliés) — sans
+// pour autant doubler le quizz dans « Tour complet ».
 {
   let fresh = createState(new Date(at(2026, 9, 1)));
   const run = (payload) => { const result = reduce(fresh, { type: 'quiz_completed', ...payload }); fresh = result.state; return result.unlocked; };
-  check('1re complétion : succès et XP', run({ id: 'rpg-legends', perfect: false, at: at(2026, 9, 2) }).join(','), 'first-quiz');
-  ok('le quizz est désormais marqué terminé', quizAlreadyCompleted(fresh, 'rpg-legends'));
-  ok('… et pas les autres', !quizAlreadyCompleted(fresh, 'tech-hardware'));
+  check('1re complétion (facile) : succès et XP', run({ id: 'rpg-legends', difficulty: 'easy', perfect: false, at: at(2026, 9, 2) }).join(','), 'first-quiz');
+  ok('le quizz est terminé À CETTE difficulté', quizAlreadyCompleted(fresh, 'rpg-legends', 'easy'));
+  ok('… mais pas à une autre', !quizAlreadyCompleted(fresh, 'rpg-legends', 'hard'));
+  ok('… et pas les autres quizz', !quizAlreadyCompleted(fresh, 'tech-hardware', 'easy'));
+  ok('terminé à au moins une difficulté', quizCompletedAnyDifficulty(fresh, 'rpg-legends'));
+  check('le run est stocké sous sa clé slug:difficulté', (fresh.sets.quizzes_played || []).includes(quizRunKey('rpg-legends', 'easy')), true);
   const xpBefore = totalXp(fresh);
   const countBefore = fresh.counters.quizzes_completed;
-  check('rejouer (sans faute) ne débloque rien', run({ id: 'rpg-legends', perfect: true, at: at(2026, 9, 3) }).length, 0);
+  check('rejouer la même difficulté (sans faute) ne débloque rien', run({ id: 'rpg-legends', difficulty: 'easy', perfect: true, at: at(2026, 9, 3) }).length, 0);
   check('… ni XP', totalXp(fresh), xpBefore);
   check('… ni compteur de parties', fresh.counters.quizzes_completed, countBefore);
   ok('… ni sans-faute', !(fresh.sets.perfect_quizzes || []).includes('rpg-legends'));
-  run({ id: 'rpg-legends', perfect: false, daily: true, at: at(2026, 9, 4) });
-  check('quizz du jour rejoué : le jour compte pour la série', (fresh.sets.quiz_days || []).length, 1);
+  run({ id: 'rpg-legends', difficulty: 'easy', perfect: false, daily: true, at: at(2026, 9, 4) });
+  check('quizz du jour rejoué (même difficulté) : le jour compte pour la série', (fresh.sets.quiz_days || []).length, 1);
   check('… sans XP', totalXp(fresh), xpBefore);
-  check('un autre quizz rapporte toujours', run({ id: 'tech-hardware', perfect: true, at: at(2026, 9, 5) }).join(','), 'perfect-score');
+  check('une autre difficulté du même quizz rapporte toujours', run({ id: 'rpg-legends', difficulty: 'hard', perfect: true, at: at(2026, 9, 5) }).join(','), 'perfect-score');
+  ok('… le sans-faute est crédité (une fois) pour le quizz', (fresh.sets.perfect_quizzes || []).includes('rpg-legends'));
+  check('… le compteur de parties compte bien le second run', fresh.counters.quizzes_completed, countBefore + 1);
+  check('… mais « quizz distincts » ne double pas le quizz', metricValue(fresh, 'distinctQuizzes'), 1);
+  const countBeforeOther = fresh.counters.quizzes_completed;
+  run({ id: 'tech-hardware', difficulty: 'medium', perfect: true, at: at(2026, 9, 6) });
+  check('un autre quizz compte bien sa partie', fresh.counters.quizzes_completed, countBeforeOther + 1);
+  ok('… son sans-faute est crédité', (fresh.sets.perfect_quizzes || []).includes('tech-hardware'));
+  check('… deux quizz distincts', metricValue(fresh, 'distinctQuizzes'), 2);
+}
+// L'ancien format (run sans difficulté, au slug nu) reste lu : un compte qui
+// a terminé un quizz AVANT les difficultés ne peut pas encaisser deux fois.
+{
+  let legacy = createState(new Date(at(2026, 9, 1)));
+  legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', perfect: false, at: at(2026, 9, 2) }).state;
+  ok('l\'ancien format marque le quizz terminé (toutes difficultés)', quizAlreadyCompleted(legacy, 'rpg-legends', 'hard'));
+  const xpBefore = totalXp(legacy);
+  legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', difficulty: 'hard', perfect: true, at: at(2026, 9, 3) }).state;
+  check('rejouer en expert un quizz terminé à l\'ancienne ne rapporte rien', totalXp(legacy), xpBefore);
 }
 
 // Un défi envoyé à un ami depuis un écran de résultat (rival trouvé).

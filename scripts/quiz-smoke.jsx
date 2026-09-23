@@ -4,13 +4,19 @@
  * Deux niveaux de contrôle, comme les autres vérifications du dépôt :
  *
  *   1. le moteur des quizz (mélange déterministe du quizz du jour, barème,
- *      série de jours, barème « fun » des points) se comporte comme annoncé ;
+ *      série de jours, barème « fun » des points, multiplicateurs de
+ *      difficulté) se comporte comme annoncé, et les huit quizz portent
+ *      chacun leurs TROIS banques de questions (une par difficulté) ;
  *   2. une partie complète est réellement jouée dans le navigateur simulé
  *      (jsdom) avec la vraie pile de l'application — LanguageProvider +
  *      AuthProvider + AchievementProvider — : huit bonnes réponses donnent
  *      un sans-faute (confettis inclus), le verdict de chaque réponse (gel,
  *      vert/rouge, points), les corrections s'affichent, et la progression
- *      des succès est écrite dans le stockage local.
+ *      des succès est écrite dans le stockage local ;
+ *   3. le choix de difficulté change les questions JOUÉES, multiplie les
+ *      points, et la règle « un quizz rapporte une fois » tient : rejouer
+ *      une difficulté déjà terminée ne rapporte plus rien (ni points, ni
+ *      progression, ni record de l'appareil).
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -27,8 +33,9 @@ import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import QuizLeaderboard from '../src/quizzes/QuizLeaderboard';
 import Profile from '../src/pages/Profile';
-import { baseUrl, quizThumbUrl, quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
-import { QUESTION_TIME, VERDICT_MS, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz, quizPoints } from '../src/quizzes/engine';
+import { baseUrl, quizThumbUrl, quizzes, quizBySlug, quizLabel, quizQuestions, QUIZ_DIFFICULTIES } from '../src/quizzesData';
+import { quizRunKey } from '../src/achievements/engine';
+import { QUESTION_TIME, VERDICT_MS, DIFFICULTY_MULTIPLIER, bestDayRun, dailyQuizFor, gradeQuiz, pointsMultiplier, prepareQuiz, quizPoints, quizPointsFor } from '../src/quizzes/engine';
 import { formatBest, readLocalBest, writeLocalBest } from '../src/quizzes/quizApi';
 import {
   playQuizAnswerSound,
@@ -117,6 +124,40 @@ export async function checkQuiz(assert) {
     assert.equal(gradeQuiz(prepared, {}).correct, 0, `${quiz.slug} : aucune réponse, aucun point`);
   }
 
+  // Les TROIS difficultés de chaque quizz portent leurs propres 8 questions
+  // (des vraies questions différentes, des identifiants uniques sur les
+  // trois banques, un mélange reproductible par banque) — pas trois copies
+  // du même quizz.
+  for (const quiz of quizzes) {
+    const allIds = new Set();
+    for (const level of QUIZ_DIFFICULTIES) {
+      const bank = quizQuestions(quiz, level);
+      assert.equal(bank.length, 8, `${quiz.slug} (${level}) : huit questions`);
+      for (const question of bank) {
+        assert.ok(question.id && !allIds.has(question.id), `${quiz.slug} (${level}) : identifiant unique (${question.id})`);
+        allIds.add(question.id);
+        assert.equal((question.choices || []).length, 4, `${quiz.slug} (${level}) : quatre choix par question`);
+      }
+      const preparedLevel = prepareQuiz(quiz, 7, bank);
+      const againLevel = prepareQuiz(quiz, 7, bank);
+      assert.deepEqual(
+        preparedLevel.questions.map((question) => question.id),
+        againLevel.questions.map((question) => question.id),
+        `${quiz.slug} (${level}) : même graine, même mélange`,
+      );
+      for (const question of preparedLevel.questions) {
+        assert.equal(question.choices.filter((choice) => choice.correct).length, 1, `${quiz.slug} (${level}) : une seule bonne réponse par question`);
+      }
+    }
+    // Les banques variantes ne sont pas des copies de la banque par défaut.
+    const defaultIds = new Set((quiz.questions || []).map((question) => question.id));
+    for (const level of QUIZ_DIFFICULTIES) {
+      if (level === quiz.difficulty) continue;
+      const copied = quizQuestions(quiz, level).every((question) => defaultIds.has(question.id));
+      assert.ok(!copied, `${quiz.slug} (${level}) : questions réellement différentes de la banque par défaut`);
+    }
+  }
+
   assert.equal(bestDayRun(['2026-09-20', '2026-09-21', '2026-09-22', '2026-09-25']), 3);
   assert.equal(bestDayRun([]), 0);
 
@@ -137,6 +178,30 @@ export async function checkQuiz(assert) {
   );
   assert.equal(quizPoints({ elapsedMs: 100, budgetMs: 15000, streak: 3 }).combo, 20, 'combo ×3 : deux bonnes consécutives au-delà de la première');
   assert.equal(quizPoints({ elapsedMs: 0, budgetMs: 15000, streak: 99 }).total, 200, 'pointage maximal, borné');
+
+  // Multiplicateurs de difficulté : plus le palier est dur, plus la bonne
+  // réponse vaut cher — facile ×1, confirmé ×1,5, expert ×2 (plafond par
+  // question 200/300/400, borné comme le barème de base).
+  assert.deepEqual(DIFFICULTY_MULTIPLIER, { easy: 1, medium: 1.5, hard: 2 }, 'un multiplicateur par palier');
+  assert.deepEqual(
+    quizPointsFor('easy', { elapsedMs: 0, budgetMs: 15000, streak: 1 }),
+    { base: 100, speed: 50, combo: 0, total: 150 },
+    'facile : même barème que la base',
+  );
+  assert.deepEqual(
+    quizPointsFor('medium', { elapsedMs: 0, budgetMs: 15000, streak: 1 }),
+    { base: 150, speed: 75, combo: 0, total: 225 },
+    'confirmé : réponse immédiate ×1,5',
+  );
+  assert.deepEqual(
+    quizPointsFor('hard', { elapsedMs: 0, budgetMs: 15000, streak: 1 }),
+    { base: 200, speed: 100, combo: 0, total: 300 },
+    'expert : réponse immédiate ×2',
+  );
+  assert.equal(quizPointsFor('medium', { elapsedMs: 0, budgetMs: 15000, streak: 99 }).total, 300, 'confirmé : plafond 300, borné');
+  assert.equal(quizPointsFor('hard', { elapsedMs: 0, budgetMs: 15000, streak: 99 }).total, 400, 'expert : plafond 400, borné');
+  assert.equal(quizPointsFor('medium', { elapsedMs: 15000, budgetMs: 15000, streak: 1 }).total, 150, 'confirmé : réponse sur le chrono = base ×1,5, sans bonus');
+  assert.equal(pointsMultiplier('ultra'), 1, 'difficulté inconnue : repli ×1');
 
   // Tick-tack du minuteur : le tempo est une fonction pure, donc testable sans
   // navigateur. Il accélère par paliers quand le temps baisse, et jamais
@@ -213,22 +278,37 @@ export async function checkQuiz(assert) {
   };
 
   // Joue une partie parfaite : bouton Commencer puis, à chaque question
-  // (ordre mélangé par le moteur), la bonne réponse reconnue à son libellé FR.
-  const playPerfect = async (container, game) => {
-    await click([...container.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
-    for (let step = 0; step < game.questions.length; step += 1) {
+  // (ordre mélangé par le moteur), la bonne réponse reconnue à son libellé
+  // FR. `bank` est la banque de questions jouée (selon la difficulté) ;
+  // `expectNoPoints` (rejouer une difficulté déjà terminée) exige que ni le
+  // bandeau de verdict, ni le compteur ⚡ de la partie n'affichent de points.
+  const playPerfect = async (container, bank, { expectNoPoints = false, alreadyStarted = false } = {}) => {
+    if (!alreadyStarted) {
+      await click([...container.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
+    }
+    for (let step = 0; step < bank.length; step += 1) {
       const prompt = container.querySelector('.quiz-question')?.textContent || '';
-      const question = game.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+      const question = bank.find((entry) => quizLabel(entry.q, 'fr') === prompt);
       assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
       const rightText = quizLabel(question.choices[question.answer], 'fr');
       await click([...container.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
+      if (expectNoPoints) {
+        const verdictText = container.querySelector('.quiz-verdict')?.textContent || '';
+        assert.ok(!/PTS/.test(verdictText), 'rejouée : le verdict n\'annonce aucun point');
+        const livePoints = (container.querySelector('.quiz-live-item--points')?.textContent || '').replace(/\D/g, '');
+        assert.equal(livePoints, '0', 'rejouée : le compteur de points reste à 0');
+      }
       await waitQuestionChange(container, prompt);
     }
   };
 
-  // Écran d'intro : titre du quizz + bouton Commencer.
+  // Écran d'intro : titre du quizz + bouton Commencer (la difficulté par
+  // défaut est sélectionnée, son multiplicateur et sa coche éventuelle
+  // s'affichent déjà dans le sélecteur).
   assert.ok(node.textContent.includes(quizLabel(quiz.labels, 'fr').title));
-  await playPerfect(node, quiz);
+  assert.ok(node.querySelector('.quiz-difficulty'), 'le sélecteur de difficulté est affiché en intro');
+  assert.equal(node.querySelectorAll('.quiz-difficulty-btn').length, QUIZ_DIFFICULTIES.length, 'un bouton par palier de difficulté');
+  await playPerfect(node, quiz.questions);
 
   // Résultat : sans-faute 8/8, palier légende, huit corrections.
   assert.ok(node.querySelector('.quiz-result'), 'écran de résultat affiché');
@@ -252,7 +332,10 @@ export async function checkQuiz(assert) {
   // le compteur de parties, lui, est toujours crédité).
   const stored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
   assert.ok(stored, 'progression des succès écrite dans le stockage');
-  assert.ok((stored.sets?.quizzes_played || []).includes(slug), 'quizz distinct crédité');
+  assert.ok(
+    (stored.sets?.quizzes_played || []).includes(quizRunKey(slug, quiz.difficulty)),
+    'le run quizz×difficulté est crédité (clé slug:difficulté)',
+  );
   assert.ok((stored.sets?.perfect_quizzes || []).includes(slug), 'sans-faute crédité');
   assert.equal(stored.counters?.quizzes_completed, 1, 'compteur de parties à 1');
   assert.ok((stored.unlocked || {})['first-quiz'], 'succès « Premier quizz » débloqué');
@@ -267,6 +350,81 @@ export async function checkQuiz(assert) {
   assert.ok(/8\/8 · \d+ PTS/.test(node.textContent), 'meilleur score local : points + bonnes réponses');
 
   await act(async () => root.unmount());
+
+  /* ---------- 2b. Difficultés : questions changées, ×points, replay = 0 ------ */
+  // Même quizz, nouvelle session de rendu — SANS vider le stockage (contrairement
+  // aux autres étapes) : la progression de l'étape 2 (le palier facile terminé)
+  // doit être visible. L'intro doit proposer les trois paliers, marquer le
+  // premier comme terminé, laisser jouer un PALIER DIFFÉRENT (vraies questions
+  // différentes, points ×2) et refuser tout gain au replay du palier terminé.
+  const diffNode = document.createElement('div');
+  document.body.append(diffNode);
+  const diffRoot = createRoot(diffNode);
+  await act(async () => diffRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <AchievementProvider>
+          <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
+            <Routes>
+              <Route path="/quizz" element={<QuizzesPage />} />
+              <Route path="/quizz/:slug" element={<QuizPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AchievementProvider>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+
+  const levelButton = (name) => [...diffNode.querySelectorAll('.quiz-difficulty-btn')].find((el) => el.textContent.includes(name));
+  // Les trois paliers sont proposés, chacun avec son multiplicateur de points.
+  assert.equal(diffNode.querySelectorAll('.quiz-difficulty-btn').length, 3, 'trois difficultés proposées');
+  assert.ok(diffNode.textContent.includes('×2'), 'le multiplicateur expert ×2 est annoncé');
+  // Le palier joué à l'étape 2 (le défaut du quizz) porte sa coche, et
+  // l'avertissement « plus de points » s'affiche dessus.
+  const defaultLevel = quiz.difficulty;
+  const defaultLabel = { easy: 'Facile', medium: 'Confirmé', hard: 'Expert' }[defaultLevel];
+  assert.ok(levelButton(defaultLabel)?.classList.contains('is-done'), 'la difficulté déjà terminée est cochée');
+  assert.ok(diffNode.textContent.includes('ne rapporte plus de points'), 'l\'avertissement « plus de points » est visible');
+
+  // On choisit UN PALIER NON TERMINÉ : 8 questions qu'on n'a jamais vues,
+  // et les points rapportés sont multipliés (expert = ×2 : 1600–3200).
+  const freshLevel = { easy: 'hard', medium: 'hard', hard: 'easy' }[defaultLevel];
+  const freshLabel = { easy: 'Facile', medium: 'Confirmé', hard: 'Expert' }[freshLevel];
+  await act(async () => levelButton(freshLabel).click());
+  assert.ok(levelButton(freshLabel)?.classList.contains('is-active'), 'le nouveau palier est sélectionné');
+  await playPerfect(diffNode, quizQuestions(quiz, freshLevel));
+  const freshMatch = diffNode.textContent.match(/(\d{3,4}) PTS/);
+  assert.ok(freshMatch, 'les points du nouveau palier sont affichés');
+  const freshPoints = Number(freshMatch[1]);
+  const freshMultiplier = { easy: 1, medium: 1.5, hard: 2 }[freshLevel];
+  assert.ok(
+    freshPoints >= 800 * freshMultiplier && freshPoints <= 1600 * freshMultiplier,
+    `points du palier ${freshLevel} bornés à son multiplicateur (${freshPoints} ∈ [${800 * freshMultiplier}, ${1600 * freshMultiplier}])`,
+  );
+  const diffStored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  assert.ok(
+    (diffStored?.sets?.quizzes_played || []).includes(quizRunKey(slug, freshLevel)),
+    'le second palier du même quizz est crédité à part',
+  );
+  assert.equal(diffStored?.counters?.quizzes_completed, 2, 'deux runs comptés (un par difficulté)');
+
+  // REJOUER le palier déjà terminé : le bouton « Rejouer » relance un run
+  // neuf (même palier), sans passer par l'intro — et ce run-là ne rapporte
+  // plus aucun point, ni au verdict, ni au compteur, ni au résultat ; rien
+  // n'est écrit (ni progression, ni record de l'appareil, ni classement).
+  await click([...diffNode.querySelectorAll('button')].find((el) => el.textContent.trim() === 'Rejouer'));
+  assert.ok(diffNode.querySelector('.quiz-question'), '« Rejouer » relance un run neuf du même palier');
+  await playPerfect(diffNode, quizQuestions(quiz, freshLevel), { expectNoPoints: true, alreadyStarted: true });
+  assert.ok(diffNode.textContent.includes('0 PTS'), 'résultat du replay : 0 point');
+  assert.ok(diffNode.textContent.includes('pas de points cette fois'), 'résultat du replay : la difficulté est marquée terminée');
+  const replayStored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  const runsForQuiz = (replayStored?.sets?.quizzes_played || []).filter((key) => String(key).split(':')[0] === slug);
+  assert.equal(runsForQuiz.length, 2, 'le replay n\'ajoute aucun run à la progression');
+  assert.equal(replayStored?.counters?.quizzes_completed, 2, 'le replay n\'ajoute aucune partie au compteur');
+  const replayBest = readLocalBest(slug);
+  assert.equal(replayBest?.points, Math.max(freshPoints, playedPoints), 'le replay ne remplace pas le record de l\'appareil');
+
+  await act(async () => diffRoot.unmount());
 
   /* ------------------------- 3. Défi entre amis (session démo) -------------- */
   seedLang('fr');
@@ -294,8 +452,9 @@ export async function checkQuiz(assert) {
     </LanguageProvider>,
   ));
 
-  // Session démo : partie parfaite puis défi envoyé au premier ami listé.
-  await playPerfect(demoNode, quiz);
+  // Session démo : partie parfaite (difficulté par défaut) puis défi envoyé
+  // au premier ami listé.
+  await playPerfect(demoNode, quiz.questions);
   assert.ok(demoNode.querySelector('.quiz-result'), '[démo] écran de résultat');
   await click([...demoNode.querySelectorAll('button')].find((el) => el.textContent.includes('Défier un ami')));
   const friendButtons = demoNode.querySelectorAll('.quiz-challenge-friend');
@@ -814,5 +973,5 @@ export async function checkQuiz(assert) {
     await act(async () => langRoot.unmount());
   }
 
-  console.log('QUIZZ : moteur (+ points bornés qui font le classement), partie 8/8 + succès + confettis, défi démo, grille FR/EN/AR, record par points + compte à rebours, classement par points (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
+  console.log('QUIZZ : moteur (+ points bornés, multiplicateurs ×1/×1,5/×2 par difficulté, 3 banques de questions par quizz), partie 8/8 + succès + confettis, difficultés (questions changées, ×points, replay déjà terminé = 0 point), défi démo, grille FR/EN/AR, record par points + compte à rebours, classement par points (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
 }
