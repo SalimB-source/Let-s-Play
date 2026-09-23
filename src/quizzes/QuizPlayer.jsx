@@ -4,7 +4,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
 import { useAchievements } from '../achievements/AchievementContext';
 import { quizAlreadyCompleted } from '../achievements/engine';
-import { quizLabel } from '../quizzesData';
+import { quizLabel, quizzes } from '../quizzesData';
 import { submitQuizAttempt, writeLocalBest } from './quizApi';
 import QuizChallenge from './QuizChallenge';
 import QuizConfetti from './QuizConfetti';
@@ -22,6 +22,8 @@ import {
 } from './quizSounds';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
+/** Flèche du « Niveau suivant » : vers la droite, la progression. */
+function NextArrow() { return <span aria-hidden="true">→</span>; }
 
 /**
  * Bouton son du lecteur : 🔊 / 🔇 avec l'état lu par les lecteurs d'écran
@@ -48,9 +50,9 @@ function SoundToggle({ on, label, onToggle }) {
 const FALLBACK = {
   question: 'Question', of: 'of', start: 'Start', next: 'Next question', seeResults: 'See my results',
   score: '{correct}/{total} correct answers', perfect: 'FLAWLESS!', corrections: 'ANSWERS',
-  yourAnswer: 'Your answer', rightAnswer: 'Answer', replay: 'Play again', others: 'All quizzes',
-  readSource: 'Read the related story', questionsCount: '{n} questions', dailyTag: 'Daily quiz',
-  retryMistakes: 'Retry my mistakes', reviewTag: 'REVIEW ROUND',
+  yourAnswer: 'Your answer', rightAnswer: 'Answer',
+  nextLevel: 'Next level', seeAll: 'See all the quizzes',
+  questionsCount: '{n} questions', dailyTag: 'Daily quiz',
   timeUp: 'Time up', timeLeft: 'Time remaining',
   soundMute: 'Mute the quiz sounds', soundUnmute: 'Turn the quiz sounds back on',
   correctCount: 'Correct answers', wrongCount: 'Wrong answers',
@@ -91,6 +93,11 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   // marque le quizz comme terminé, l'écran de résultat doit pourtant dire si
   // elle rapportait encore quelque chose.
   const alreadyCompleted = quizAlreadyCompleted(achievementState, quiz.slug);
+  // Niveau suivant : le quizz d'après dans l'ordre de la grille `/quizz`. Le
+  // dernier quizz de la grille n'en a pas — il ne reste que « Voir tous les
+  // quizz ».
+  const quizIndex = quizzes.findIndex((entry) => entry.slug === quiz.slug);
+  const nextQuiz = quizIndex >= 0 ? quizzes[quizIndex + 1] || null : null;
   const [replayRun, setReplayRun] = useState(alreadyCompleted);
   const copy = {
     ...FALLBACK,
@@ -105,7 +112,6 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
-  const [review, setReview] = useState(false);
   const [remainingMs, setRemainingMs] = useState(() => QUESTION_TIME.seconds * 1000);
   // Son du quizz (tick-tack + verdicts) : préférence de l'appareil, et
   // compteur de la partie en cours — le son dit ce que l'écran ne montre pas,
@@ -130,7 +136,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   const verdictTimerRef = useRef(null);
   const fanfareFor = useRef(null);
 
-  /** Remise à zéro du « fun » entre deux parties (nulle pour la révision). */
+  /** Remise à zéro du « fun » entre deux parties. */
   const resetRun = () => {
     if (verdictTimerRef.current) {
       window.clearTimeout(verdictTimerRef.current);
@@ -157,23 +163,6 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     setAnswers({});
     setIndex(0);
     setResult(null);
-    setReview(false);
-    setLive({ right: 0, wrong: 0 });
-    setPhase('play');
-  };
-
-  // Révision : ne rejoue que les questions ratées au tour précédent.
-  // C'est de l'entraînement : ni succès, ni record, ni classement ne bougent.
-  const startReview = () => {
-    const missed = (result?.detail || []).filter((entry) => !entry.correct).map((entry) => entry.question);
-    if (!missed.length) return;
-    unlockQuizAudio();
-    resetRun();
-    setPrepared({ ...prepared, questions: missed });
-    setAnswers({});
-    setIndex(0);
-    setResult(null);
-    setReview(true);
     setLive({ right: 0, wrong: 0 });
     setPhase('play');
   };
@@ -234,7 +223,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
       setPhase('result');
       // Une seule fois par partie : le moteur des succès crédite l'action
       // (quizz joué, sans-faute, jour de quizz du jour pour la série).
-      if (!review && trackedFor.current !== prepared) {
+      if (trackedFor.current !== prepared) {
         trackedFor.current = prepared;
         track('quiz_completed', { id: quiz.slug, perfect: graded.perfect, daily });
         // Le résultat : meilleure partie de l'appareil pour tout le monde
@@ -390,7 +379,6 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
           />
         </div>
         <p className="quiz-progress-label">{copy.question} {index + 1} {copy.of} {prepared.questions.length}</p>
-        {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         <h2 className="quiz-question">{quizLabel(question.q, lang)}</h2>
         {verdict && (
           <p className={`quiz-verdict ${verdict.correct ? 'is-right' : 'is-wrong'}`} role="status">
@@ -429,15 +417,15 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
         <p className="quiz-result-points">⚡ {copy.resultPoints.replace('{points}', String(points))}</p>
         {bestStreak >= 2 && <p className="quiz-result-combo">🔥 {copy.bestCombo.replace('{n}', String(bestStreak))}</p>}
         {result.perfect && <span className="quiz-result-perfect">★ {copy.perfect}</span>}
-        {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
-        {!review && replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
+        {replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
+        {/* Écran de résultat volontairement épuré : le niveau suivant d'abord
+            (bouton principal, flèche vers la droite), la grille complète
+            ensuite — rien d'autre. */}
         <div className="quiz-result-actions">
-          {result.correct < result.total && (
-            <button type="button" className="button button-yellow" onClick={startReview}>{copy.retryMistakes}</button>
+          {nextQuiz && (
+            <Link className="button button-yellow" to={nextQuiz.route}>{copy.nextLevel} <NextArrow /></Link>
           )}
-          <button type="button" className="button button-ghost" onClick={start}>{copy.replay}</button>
-          <Link className="button button-ghost" to="/quizz">{copy.others} <Arrow /></Link>
-          {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
+          <Link className="button button-ghost" to="/quizz">{copy.seeAll}</Link>
         </div>
       </div>
       <QuizChallenge quiz={quiz} score={result.correct} total={result.total} />

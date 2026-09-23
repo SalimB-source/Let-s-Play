@@ -266,6 +266,25 @@ export async function checkQuiz(assert) {
   assert.ok(node.textContent.includes('8/8'), 'meilleur score local à 8/8');
   assert.ok(/8\/8 · \d+ PTS/.test(node.textContent), 'meilleur score local : points + bonnes réponses');
 
+  // Écran de résultat épuré : « Niveau suivant » (flèche vers la droite, vers
+  // le quizz d'après dans la grille) et « Voir tous les quizz » — plus aucun
+  // autre bouton (Rejouer, Rejouer mes erreurs, dossier lié).
+  const resultLinks = [...node.querySelectorAll('.quiz-result-actions a')];
+  assert.equal(resultLinks.length, 2, 'seulement deux boutons sur l’écran de résultat');
+  const nextLevelLink = resultLinks.find((el) => el.getAttribute('href') === '/quizz/consoles-retro');
+  assert.ok(nextLevelLink, '« Niveau suivant » mène au quizz d’après dans la grille (consoles-retro)');
+  assert.ok(
+    nextLevelLink.textContent.includes('Niveau suivant') && nextLevelLink.textContent.includes('→'),
+    '« Niveau suivant » avec sa flèche vers la droite',
+  );
+  assert.ok(
+    resultLinks.some((el) => el.getAttribute('href') === '/quizz' && el.textContent.includes('Voir tous les quizz')),
+    'bouton « Voir tous les quizz »',
+  );
+  assert.equal(node.querySelectorAll('.quiz-result-actions button').length, 0, 'aucun autre bouton d’action');
+  assert.ok(!node.textContent.includes('Rejouer'), 'ni « Rejouer » ni « Rejouer mes erreurs »');
+  assert.ok(!node.textContent.includes('Lire le dossier lié'), 'le lien vers le dossier lié est retiré du résultat');
+
   await act(async () => root.unmount());
 
   /* ------------------------- 3. Défi entre amis (session démo) -------------- */
@@ -496,7 +515,7 @@ export async function checkQuiz(assert) {
   assert.ok(/#\d+/.test(communityRank.rankSection.textContent), '[communauté démo] position scriptée affichée');
   await act(async () => communityRank.rankRoot.unmount());
 
-  /* ------------------------- 7. Révision des erreurs ------------------------ */
+  /* ------------------------- 7. Partie tout faux ---------------------------- */
   seedLang('fr');
   const revNode = document.createElement('div');
   document.body.append(revNode);
@@ -536,22 +555,19 @@ export async function checkQuiz(assert) {
   }
   assert.ok(revNode.textContent.includes('0/8 bonnes réponses'), 'premier tour tout faux : 0/8');
 
-  // « Rejouer mes erreurs » : les huit questions ratées, en tour de révision.
-  await click([...revNode.querySelectorAll('button')].find((el) => el.textContent.includes('Rejouer mes erreurs')));
-  assert.ok(revNode.textContent.includes('TOUR DE RÉVISION'), 'tour de révision annoncé');
-  for (let step = 0; step < quiz.questions.length; step += 1) {
-    const prompt = revNode.querySelector('.quiz-question')?.textContent || '';
-    const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
-    const rightText = quizLabel(question.choices[question.answer], 'fr');
-    await click([...revNode.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
-    await waitQuestionChange(revNode, prompt);
-  }
-  assert.ok(revNode.textContent.includes('8/8 bonnes réponses'), 'révision réussie : 8/8');
+  // Le résultat reste épuré même sans bonne réponse : « Niveau suivant » et
+  // « Voir tous les quizz » — le tour de révision a disparu avec son bouton.
+  const revLinks = [...revNode.querySelectorAll('.quiz-result-actions a')];
+  assert.equal(revLinks.length, 2, '[tout faux] seulement deux boutons sur l’écran de résultat');
+  assert.ok(
+    revLinks.some((el) => el.getAttribute('href') === '/quizz/consoles-retro'),
+    '[tout faux] « Niveau suivant » proposé même sans bonne réponse',
+  );
 
-  // La révision est de l'entraînement : ni seconde partie, ni sans-faute crédité.
+  // Une seule partie créditée, aucun sans-faute.
   const revStored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
-  assert.equal(revStored?.counters?.quizzes_completed, 1, 'la révision ne compte pas une seconde partie');
-  assert.ok(!(revStored?.sets?.perfect_quizzes || []).includes(slug), 'le 8/8 de révision ne crédite pas « Sans faute »');
+  assert.equal(revStored?.counters?.quizzes_completed, 1, 'une seule partie comptée');
+  assert.ok(!(revStored?.sets?.perfect_quizzes || []).includes(slug), 'aucun sans-faute crédité');
 
   await act(async () => revRoot.unmount());
 
@@ -750,10 +766,14 @@ export async function checkQuiz(assert) {
   assert.equal(resultNotes.length, 6, 'verdict de la dernière réponse (3 notes) + fanfare du palier (3 notes)');
   assert.equal(audio.notes.filter((note) => note.type === 'square').length, 1, 'le combo de la dernière réponse sonne (série en cours)');
 
-  // Raccourcis clavier : « Rejouer » lance une partie neuve, et la touche 1
-  // valide le premier choix affiché. Une seconde touche pendant le gel est
-  // ignorée — une seule question avance.
-  await click([...soundNode.querySelectorAll('button')].find((el) => el.textContent.trim() === 'Rejouer'));
+  // Raccourcis clavier : « Niveau suivant » navigue au quizz d'après (retour
+  // à son écran d'introduction), « Commencer » lance une partie neuve, et la
+  // touche 1 valide le premier choix affiché. Une seconde touche pendant le
+  // gel est ignorée — une seule question avance.
+  const soundNext = [...soundNode.querySelectorAll('a')].find((el) => el.getAttribute('href') === '/quizz/consoles-retro');
+  await click(soundNext);
+  assert.ok(soundNode.querySelector('.quiz-player-intro'), 'le quizz suivant affiche son écran d’introduction');
+  await click([...soundNode.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
   assert.ok(soundNode.querySelector('.quiz-question'), 'la partie neuve est lancée');
   const keyPrompt = soundNode.querySelector('.quiz-question')?.textContent || '';
   await act(async () => {
@@ -832,5 +852,5 @@ export async function checkQuiz(assert) {
     await act(async () => langRoot.unmount());
   }
 
-  console.log('QUIZZ : moteur (+ points bornés qui font le classement), partie 8/8 + succès + confettis, défi démo, grille FR/EN/AR, record par points + compte à rebours, classement par points (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
+  console.log('QUIZZ : moteur (+ points bornés qui font le classement), partie 8/8 + succès + confettis, défi démo, grille FR/EN/AR, record par points + compte à rebours, classement par points (points d’abord, score/total en secondaire) + rang global au profil, résultat épuré (niveau suivant vers la grille + voir tous les quizz), partie tout faux, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
 }
