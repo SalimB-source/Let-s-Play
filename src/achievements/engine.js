@@ -212,17 +212,20 @@ export function reduce(state, action = {}) {
 
     // Partie de quizz terminée : compteur global + quizz distincts, sans-faute
     // par quizz, et jour crédité pour la série du « quizz du jour ».
-    // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion.
-    // Rejoué ensuite, il ne fait plus avancer aucun succès (ni compteur, ni
-    // sans-faute) — donc plus aucun XP. Seule exception : le jour de quizz du
-    // jour reste crédité, sinon la rotation (un quizz déjà fait tous les huit
-    // jours) casserait mécaniquement la série « Semaine parfaite ».
+    // Règle anti-farm : chaque NIVEAU d'un quizz ne rapporte qu'à sa PREMIÈRE
+    // complétion (`quiz_levels_played` porte `slug:niveau`), mais l'ensemble
+    // `quizzes_played` reste indexé par SLUG : le succès « Tour complet »
+    // compte les quizz, pas les niveaux. Un quizz rejoué au même niveau ne
+    // fait donc plus avancer aucun succès — seule exception : le jour de
+    // quizz du jour reste crédité, sinon la rotation (un quizz déjà fait tous
+    // les huit jours) casserait mécaniquement la série « Semaine parfaite ».
     case 'quiz_completed': {
-      if (quizAlreadyCompleted(current, action.id)) {
+      if (quizLevelCompleted(current, action.id, action.level)) {
         if (action.daily) next = addToSet(current, 'quiz_days', dayKey(at));
         break;
       }
       next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', action.id);
+      next = addToSet(next, 'quiz_levels_played', quizLevelKey(action.id, action.level));
       if (action.perfect) next = addToSet(next, 'perfect_quizzes', action.id);
       if (action.daily) next = addToSet(next, 'quiz_days', dayKey(at));
       break;
@@ -252,15 +255,35 @@ export function reduce(state, action = {}) {
   return award({ ...next, updatedAt: at }, at);
 }
 
+/** Clé d'un niveau de quizz dans les ensembles du moteur : `slug:niveau`. */
+export function quizLevelKey(quizId, level = 'easy') {
+  return `${quizId}:${level}`;
+}
+
 /**
- * Ce quizz a-t-il déjà été terminé par le joueur ? Si oui, le rejouer ne
- * rapporte plus d'XP (voir `quiz_completed` dans `reduce`). L'ensemble
- * `quizzes_played` n'est alimenté qu'à la fin d'une partie : c'est bien
- * « terminé », pas « commencé ».
+ * Ce quizz a-t-il déjà été terminé par le joueur, toutes difficultés
+ * confondues ? L'ensemble `quizzes_played` n'est alimenté qu'à la fin d'une
+ * partie : c'est bien « terminé », pas « commencé ».
  */
 export function quizAlreadyCompleted(state, quizId) {
   if (!quizId) return false;
   return Boolean(state?.sets?.quizzes_played?.includes(quizId));
+}
+
+/**
+ * Ce NIVEAU précis d'un quizz a-t-il déjà été terminé ? Seule la première
+ * complétion d'un niveau rapporte de l'XP (voir `quiz_completed` dans
+ * `reduce`). Compatibilité : avant les niveaux, un quizz se jouait en une
+ * seule difficulté — une complétion enregistrée à l'ancienne compte pour le
+ * niveau Facile, à condition que le joueur n'ait encore aucun niveau
+ * enregistré sur ce quizz.
+ */
+export function quizLevelCompleted(state, quizId, level = 'easy') {
+  if (!quizId) return false;
+  const recorded = state?.sets?.quiz_levels_played || [];
+  if (recorded.includes(quizLevelKey(quizId, level))) return true;
+  const legacy = level === 'easy' && Boolean(state?.sets?.quizzes_played?.includes(quizId));
+  return legacy && !recorded.some((key) => key.startsWith(`${quizId}:`));
 }
 
 /** Débloque les succès satisfaits, sans action — utilisé au chargement. */

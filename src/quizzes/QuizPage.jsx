@@ -18,6 +18,9 @@ export default function QuizPage() {
   const { t, lang } = useLanguage();
   const [board, setBoard] = useState(null);
   const [plays, setPlays] = useState(0);
+  // Niveau courant : piloté par le lecteur (sélecteur de l'écran d'intro) et
+  // suivi par le classement, qui affiche le palier choisi.
+  const [level, setLevel] = useState('easy');
   const quiz = quizBySlug(slug);
   if (!quiz) return <NotFound />;
 
@@ -33,8 +36,15 @@ export default function QuizPage() {
         </div>
       </section>
       <section className="wrap">
-        <QuizPlayer quiz={quiz} daily={isDaily} onBoard={setBoard} onFinish={() => setPlays((count) => count + 1)} />
-        <QuizLeaderboard quiz={quiz} lastBoard={board} refreshKey={plays} />
+        <QuizPlayer
+          quiz={quiz}
+          daily={isDaily}
+          level={level}
+          onLevelChange={setLevel}
+          onBoard={setBoard}
+          onFinish={() => setPlays((count) => count + 1)}
+        />
+        <QuizLeaderboard quiz={quiz} level={level} lastBoard={board} refreshKey={plays} />
       </section>
       <section className="quiz-comments wrap">
         <h2>{copy.commentTitle}</h2>

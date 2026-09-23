@@ -3,20 +3,34 @@
  * ---------------------------------------------------------------
  * Le classement se fait sur les POINTS gagnés (barème « fun » du moteur :
  * base + rapidité + combo), pas sur le nombre de bonnes réponses — resté
- * stocké et affiché en secondaire. Compte connecté : la tentative part au
+ * stocké et affiché en secondaire. LES NIVEAUX SONT SÉPARÉS : la clé d'une
+ * tentative est `slug:level` (`attemptKey`), donc chaque difficulté a son
+ * propre classement et son propre record d'appareil — un sans-faute en Expert
+ * ne se compare pas à un Facile. Compte connecté : la tentative part au
  * serveur via la RPC `submit_quiz_attempt` (MEILLEURE PARTIE conservée —
  * celle qui marque le plus de points, bornes vérifiées côté serveur — voir
- * `supabase/schema.sql`, section 8) ; le classement d'un quizz se lit via
+ * `supabase/schema.sql`, section 8) ; le classement d'un niveau se lit via
  * `get_quiz_leaderboard`, et la position au classement global (somme des
- * points, tous quizz confondus) via `get_quiz_global_rank`.
+ * points, tous niveaux confondus) via `get_quiz_global_rank`.
  *
  * Visiteur (sans compte, ou Supabase non configuré) : la meilleure partie de
  * l'appareil est gardée dans `localStorage` sous une clé propre aux quizz —
  * le module de persistance des succès reste le seul à écrire la sienne.
  */
 import { supabase } from '../lib/supabase';
+import { QUIZ_LEVELS } from '../quizzesData';
 
 const BEST_KEY = 'letsplay_quiz_best_v1';
+
+/**
+ * Clé de stockage/classement d'un niveau : `slug:level` (`culture-gaming:hard`).
+ * Chaque niveau a son propre record d'appareil et sa propre ligne de
+ * classement — un sans-faute en Expert ne se compare pas à un Facile.
+ * Sans niveau (appel historique), on retombe sur le slug seul.
+ */
+export function attemptKey(quizId, level = null) {
+  return level ? `${quizId}:${level}` : quizId;
+}
 
 /** true si un backend Supabase est configuré (classement partagé possible). */
 export function quizApiEnabled() {
@@ -71,7 +85,7 @@ export async function fetchGlobalQuizRank(userId = null) {
   return error ? null : data;
 }
 
-/** Meilleures parties de l'appareil : `{ [slug]: { score, total, points } }`. */
+/** Meilleures parties de l'appareil : `{ [clé de niveau]: { score, total, points, level } }`. */
 export function readLocalBests() {
   try {
     if (typeof window === 'undefined') return {};
@@ -83,26 +97,48 @@ export function readLocalBests() {
 }
 
 /**
- * Retient la meilleure partie de l'appareil pour un quizz : le plus de
- * points, à points égaux le plus de bonnes réponses (même règle que la RPC
- * `submit_quiz_attempt` côté serveur).
+ * Retient la meilleure partie de l'appareil pour un NIVEAU de quizz : le plus
+ * de points, à points égaux le plus de bonnes réponses (même règle que la RPC
+ * `submit_quiz_attempt` côté serveur, qui reçoit la clé de niveau).
  */
-export function writeLocalBest(quizId, score, total, points = 0) {
+export function writeLocalBest(quizId, level, score, total, points = 0) {
   try {
     if (typeof window === 'undefined') return;
     const bests = readLocalBests();
-    const current = bests[quizId];
+    const key = attemptKey(quizId, level);
+    const current = bests[key];
     const currentPoints = (current && current.points) || 0;
     const better = !current
       || points > currentPoints
       || (points === currentPoints && score > current.score);
-    if (better) bests[quizId] = { score, total, points };
+    if (better) bests[key] = { score, total, points, level };
     window.localStorage.setItem(BEST_KEY, JSON.stringify(bests));
   } catch (e) { /* stockage indisponible : le score reste en mémoire de session */ }
 }
 
-export function readLocalBest(quizId) {
-  return readLocalBests()[quizId] || null;
+/** Compare deux meilleures parties (points d'abord, puis bonnes réponses). */
+function betterBest(candidate, current) {
+  if (!current) return candidate;
+  if (!candidate) return current;
+  if (candidate.points !== current.points) return candidate.points > current.points ? candidate : current;
+  return candidate.score > current.score ? candidate : current;
+}
+
+/**
+ * Meilleure partie de l'appareil : d'un niveau précis (`level` fourni), ou
+ * tous niveaux confondus (aucun niveau — c'est le badge des cartes de la
+ * grille, qui nomme le niveau grâce à `level` conservé dans l'entrée).
+ * Compatibilité : un record enregistré avant les niveaux (clé = slug seul)
+ * vaut pour le niveau Facile.
+ */
+export function readLocalBest(quizId, level = null) {
+  const bests = readLocalBests();
+  if (level) {
+    return bests[attemptKey(quizId, level)] || (level === 'easy' ? bests[quizId] || null : null);
+  }
+  return QUIZ_LEVELS
+    .map((entry) => bests[attemptKey(quizId, entry)] || (entry === 'easy' ? bests[quizId] || null : null))
+    .reduce((best, current) => betterBest(current, best), null);
 }
 
 /**

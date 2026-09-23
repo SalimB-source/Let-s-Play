@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
 import { useAchievements } from '../achievements/AchievementContext';
-import { quizAlreadyCompleted } from '../achievements/engine';
-import { quizLabel } from '../quizzesData';
-import { submitQuizAttempt, writeLocalBest } from './quizApi';
+import { quizLevelCompleted } from '../achievements/engine';
+import { QUIZ_LEVELS, quizLabel, quizLevelQuestions, quizQuestionsCount } from '../quizzesData';
+import { attemptKey, submitQuizAttempt, writeLocalBest } from './quizApi';
+import { isLevelCompleted, isLevelUnlocked, levelRequirement, nextLevel } from './quizProgress';
+import { useQuizProgress } from './useQuizProgress';
 import QuizChallenge from './QuizChallenge';
 import QuizConfetti from './QuizConfetti';
 import { QUESTION_TIME, VERDICT_MS, dayNumber, gradeQuiz, prepareQuiz, quizPoints } from './engine';
@@ -56,15 +58,22 @@ const FALLBACK = {
   correctCount: 'Correct answers', wrongCount: 'Wrong answers',
   points: 'PTS', resultPoints: '{points} PTS', bestCombo: 'Best combo: ×{n}',
   keysHint: 'Tip: press keys 1–4 to answer',
-  noXpTag: 'Already completed', noXpHint: 'You already finished this quiz: playing it again earns no XP.',
-  noXpResult: 'Quiz already completed — no XP this time.',
+  noXpTag: 'Already completed', noXpHint: 'You already finished this level: playing it again earns no XP.',
+  noXpResult: 'Level already completed — no XP this time.',
+  chooseLevel: 'Pick your level',
+  levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
+  levelLocked: 'Locked',
+  lockHint: 'Finish the {level} level to unlock this one.',
+  levelDone: 'Completed',
+  levelUnlocked: '{level} level unlocked — it is waiting for you.',
+  levelPlay: 'Play this level',
+  levelProgress: '{done}/{total} levels completed',
   verdicts: {
     right: ['Correct!', 'Unbelievable!', 'Too easy, right?', 'We are on fire 🔥', 'Ice in the veins pays off.'],
     wrong: ['Oof, missed it…', 'Not this one.', 'So close!', 'That one got you.', 'Tough one — it bit back.'],
     timeout: ['Time is up!', 'Too slow…', 'The clock answered for you.'],
   },
   tiers: { rookie: 'NOVICE', player: 'PLAYER', veteran: 'VETERAN', legend: 'LEGEND' },
-  difficulty: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
 
 /** L'émoticone du palier — un peu de couleur sur l'écran de résultat. */
@@ -82,25 +91,36 @@ function pickVerdict(copy, correct, timedOut) {
   return list.length ? list[Math.floor(Math.random() * list.length)] : '';
 }
 
-export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFinish = null }) {
+/**
+ * Une partie de quizz : écran d'introduction (choix du NIVEAU — Facile ouvert,
+ * Confirmé et Expert verrouillés tant que le niveau précédent n'est pas
+ * terminé), partie chronométrée, résultat, corrections. `level` / `onLevelChange`
+ * sont pilotés par la page (`QuizPage`), pour que le classement affiché suive
+ * le niveau joué.
+ */
+export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLevelChange = null, onBoard = null, onFinish = null }) {
   const { t, lang } = useLanguage();
   const { user, isDemo } = useAuth();
   const { track, state: achievementState } = useAchievements();
-  // Règle anti-farm : un quizz déjà terminé ne rapporte plus d'XP. L'état
-  // est figé au lancement de la partie (`replayRun`) : la fin de CETTE partie
-  // marque le quizz comme terminé, l'écran de résultat doit pourtant dire si
-  // elle rapportait encore quelque chose.
-  const alreadyCompleted = quizAlreadyCompleted(achievementState, quiz.slug);
-  const [replayRun, setReplayRun] = useState(alreadyCompleted);
+  const { progress, record } = useQuizProgress();
   const copy = {
     ...FALLBACK,
     ...(t.quiz || {}),
+    levels: { ...FALLBACK.levels, ...((t.quiz || {}).levels || {}) },
     tiers: { ...FALLBACK.tiers, ...((t.quiz || {}).tiers || {}) },
-    difficulty: { ...FALLBACK.difficulty, ...((t.quiz || {}).difficulty || {}) },
     verdicts: { ...FALLBACK.verdicts, ...((t.quiz || {}).verdicts || {}) },
   };
+  const totalQuestions = quizQuestionsCount(quiz);
+  // Règle anti-farm : un niveau déjà terminé ne rapporte plus d'XP. L'état est
+  // figé au lancement de la partie (`replayRun`) : la fin de CETTE partie
+  // marque le niveau comme terminé, l'écran de résultat doit pourtant dire si
+  // elle rapportait encore quelque chose.
+  const levelAlreadyCompleted = quizLevelCompleted(achievementState, quiz.slug, level);
+  const [replayRun, setReplayRun] = useState(levelAlreadyCompleted);
+  const [justUnlocked, setJustUnlocked] = useState(null);
 
   const [phase, setPhase] = useState('intro');
+  const [playedLevel, setPlayedLevel] = useState(level);
   const [prepared, setPrepared] = useState(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -146,14 +166,17 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     setVerdict(null);
   };
 
-  const start = () => {
+  const start = (levelId) => {
     // Geste utilisateur : c'est ici que le contexte audio s'ouvre, sinon le
     // premier battement (une seconde plus tard) n'aurait pas le droit de jouer.
     unlockQuizAudio();
     resetRun();
-    setReplayRun(alreadyCompleted);
+    setReplayRun(quizLevelCompleted(achievementState, quiz.slug, levelId));
+    setJustUnlocked(null);
+    if (onLevelChange && levelId !== level) onLevelChange(levelId);
     // Quizz du jour : même mélange pour tout le monde (graine = numéro du jour).
-    setPrepared(prepareQuiz(quiz, daily ? dayNumber(new Date()) : null));
+    setPlayedLevel(levelId);
+    setPrepared(prepareQuiz(quiz, levelId, daily ? dayNumber(new Date()) : null));
     setAnswers({});
     setIndex(0);
     setResult(null);
@@ -162,8 +185,9 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     setPhase('play');
   };
 
-  // Révision : ne rejoue que les questions ratées au tour précédent.
-  // C'est de l'entraînement : ni succès, ni record, ni classement ne bougent.
+  // Révision : ne rejoue que les questions ratées au tour précédent, dans le
+  // même niveau. C'est de l'entraînement : ni succès, ni record, ni
+  // classement, ni progression de niveau ne bougent.
   const startReview = () => {
     const missed = (result?.detail || []).filter((entry) => !entry.correct).map((entry) => entry.question);
     if (!missed.length) return;
@@ -233,18 +257,22 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
       setResult(graded);
       setPhase('result');
       // Une seule fois par partie : le moteur des succès crédite l'action
-      // (quizz joué, sans-faute, jour de quizz du jour pour la série).
+      // (niveau joué, sans-faute, jour de quizz du jour pour la série).
       if (!review && trackedFor.current !== prepared) {
         trackedFor.current = prepared;
-        track('quiz_completed', { id: quiz.slug, perfect: graded.perfect, daily });
-        // Le résultat : meilleure partie de l'appareil pour tout le monde
-        // (le plus de points), et tentative serveur (classement partagé)
-        // pour les comptes connectés.
-        writeLocalBest(quiz.slug, graded.correct, graded.total, pointsRef.current);
+        const played = prepared.level || playedLevel;
+        track('quiz_completed', { id: quiz.slug, level: played, perfect: graded.perfect, daily });
+        // Le résultat : meilleure partie de l'appareil pour ce niveau (le plus
+        // de points), niveau marqué comme terminé (déblocage en cascade), et
+        // tentative serveur (classement partagé) pour les comptes connectés.
+        writeLocalBest(quiz.slug, played, graded.correct, graded.total, pointsRef.current);
+        const updated = record(quiz.slug, played);
+        const following = nextLevel(played);
+        if (following && isLevelUnlocked(updated, quiz.slug, following)) setJustUnlocked(following);
         if (onFinish) onFinish(graded);
         if (user && !isDemo) {
           submitQuizAttempt({
-            quizId: quiz.slug,
+            quizId: attemptKey(quiz.slug, played),
             score: graded.correct,
             total: graded.total,
             perfect: graded.perfect,
@@ -312,8 +340,8 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     return () => window.removeEventListener('keydown', onKey);
   }, [phase, index, prepared]);
 
-  // Le fanfare de l'écran de résultat sonne une seule fois par partie —
-  // même si le composant se remonte en mode développement (StrictMode).
+  // Le fanfare de l'écran de résultat sonne une seule fois par partie — même
+  // si le composant se remonte en mode développement (StrictMode).
   useEffect(() => {
     if (phase !== 'result' || !result || fanfareFor.current === result) return;
     fanfareFor.current = result;
@@ -332,18 +360,57 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
         <div className="quiz-player-intro">
           <div className="quiz-chips">
             <span className="quiz-chip">{quiz.tag}</span>
-            <span className={`quiz-chip quiz-chip--${quiz.difficulty}`}>{copy.difficulty[quiz.difficulty] || quiz.difficulty}</span>
-            <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(quiz.questions.length))}</span>
+            <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(totalQuestions))}</span>
+            <span className="quiz-chip quiz-chip--levels">{copy.levelProgress.replace('{done}', String(QUIZ_LEVELS.filter((entry) => isLevelCompleted(progress, quiz.slug, entry)).length)).replace('{total}', String(QUIZ_LEVELS.length))}</span>
             {daily && <span className="quiz-chip quiz-chip--daily"><i className="live-dot" aria-hidden="true" /> {copy.dailyTag}</span>}
-            {alreadyCompleted && <span className="quiz-chip quiz-chip--done">✓ {copy.noXpTag}</span>}
           </div>
           <h1>{meta.title}</h1>
           {meta.text ? <p>{meta.text}</p> : null}
-          {alreadyCompleted && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpHint}</p>}
+          <h2 className="quiz-levels-title">{copy.chooseLevel}</h2>
+          <ul className="quiz-levels">
+            {QUIZ_LEVELS.map((entry) => {
+              const locked = !isLevelUnlocked(progress, quiz.slug, entry);
+              const done = isLevelCompleted(progress, quiz.slug, entry);
+              const requirement = levelRequirement(entry);
+              const questions = quizLevelQuestions(quiz, entry).length;
+              return (
+                <li
+                  key={entry}
+                  data-level={entry}
+                  className={`quiz-level quiz-level--${entry}${locked ? ' is-locked' : ''}${done ? ' is-done' : ''}${entry === level ? ' is-selected' : ''}`}
+                >
+                  <div className="quiz-level-copy">
+                    <span className="quiz-level-name">
+                      {locked && <span className="quiz-level-padlock" aria-hidden="true">🔒</span>}
+                      {done && <span className="quiz-level-check" aria-hidden="true">✓</span>}
+                      {copy.levels[entry] || entry}
+                    </span>
+                    <span className="quiz-level-meta">
+                      {copy.questionsCount.replace('{n}', String(questions))}
+                      {done ? ` · ${copy.levelDone}` : ''}
+                    </span>
+                    {locked && requirement && (
+                      <span className="quiz-level-lock" role="note">🔒 {copy.lockHint.replace('{level}', copy.levels[requirement] || requirement)}</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className={`button ${locked ? 'button-ghost' : 'button-yellow'} quiz-level-play`}
+                    disabled={locked}
+                    aria-disabled={locked}
+                    onClick={() => start(entry)}
+                  >
+                    {locked ? copy.levelLocked : copy.levelPlay} <Arrow />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          {justUnlocked && <p className="quiz-unlock-note" role="status">🔓 {copy.levelUnlocked.replace('{level}', copy.levels[justUnlocked] || justUnlocked)}</p>}
+          {levelAlreadyCompleted && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpHint}</p>}
           <div className="quiz-player-actions">
-            <button type="button" className="button button-yellow" onClick={start}>{copy.start} <Arrow /></button>
             {/* Réglage accessible avant de lancer la partie : le tick-tack
-                démarre dès « Commencer ». */}
+                démarre dès que le niveau est lancé. */}
             <SoundToggle
               on={soundOn}
               label={soundOn ? copy.soundMute : copy.soundUnmute}
@@ -358,6 +425,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
 
   if (phase === 'play') {
     const question = prepared.questions[index];
+    const played = prepared.level || playedLevel;
     const choiceStates = (choice) => {
       const classes = ['quiz-choice'];
       if (verdict) classes.push('is-locked');
@@ -389,7 +457,10 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
             onToggle={() => setSoundOn(setQuizSoundEnabled(!soundOn))}
           />
         </div>
-        <p className="quiz-progress-label">{copy.question} {index + 1} {copy.of} {prepared.questions.length}</p>
+        <p className="quiz-progress-label">
+          <span className={`quiz-chip quiz-chip--${played}`}>{copy.levels[played] || played}</span>{' '}
+          {copy.question} {index + 1} {copy.of} {prepared.questions.length}
+        </p>
         {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         <h2 className="quiz-question">{quizLabel(question.q, lang)}</h2>
         {verdict && (
@@ -416,11 +487,12 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
 
   const tierClass = `quiz-tier--${result.tier}`;
   const meta = quizLabel(quiz.labels, lang) || {};
+  const played = prepared.level || playedLevel;
   return (
     <div className="quiz-player">
       <div className={`quiz-result ${tierClass}`}>
         {result.perfect && <QuizConfetti />}
-        <p className="quiz-result-eyebrow">{meta.title}</p>
+        <p className="quiz-result-eyebrow">{meta.title} · {copy.levels[played] || played}</p>
         <h2 className="quiz-result-tier">
           {TIER_EMOJI[result.tier] ? <span aria-hidden="true">{TIER_EMOJI[result.tier]} </span> : null}
           {copy.tiers[result.tier] || result.tier}
@@ -431,16 +503,20 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
         {result.perfect && <span className="quiz-result-perfect">★ {copy.perfect}</span>}
         {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         {!review && replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
+        {!review && justUnlocked && <p className="quiz-unlock-note" role="status">🔓 {copy.levelUnlocked.replace('{level}', copy.levels[justUnlocked] || justUnlocked)}</p>}
         <div className="quiz-result-actions">
+          {!review && justUnlocked && (
+            <button type="button" className="button button-yellow" onClick={() => start(justUnlocked)}>{copy.levelPlay} <Arrow /></button>
+          )}
           {result.correct < result.total && (
             <button type="button" className="button button-yellow" onClick={startReview}>{copy.retryMistakes}</button>
           )}
-          <button type="button" className="button button-ghost" onClick={start}>{copy.replay}</button>
+          <button type="button" className="button button-ghost" onClick={() => start(played)}>{copy.replay}</button>
           <Link className="button button-ghost" to="/quizz">{copy.others} <Arrow /></Link>
           {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
         </div>
       </div>
-      <QuizChallenge quiz={quiz} score={result.correct} total={result.total} />
+      <QuizChallenge quiz={quiz} level={played} score={result.correct} total={result.total} />
       <section className="quiz-corrections">
         <div className="section-label"><span>{copy.corrections}</span><span>{meta.title}</span></div>
         <ol>

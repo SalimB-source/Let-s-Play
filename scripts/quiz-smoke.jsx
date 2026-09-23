@@ -27,9 +27,25 @@ import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import QuizLeaderboard from '../src/quizzes/QuizLeaderboard';
 import Profile from '../src/pages/Profile';
-import { baseUrl, quizThumbUrl, quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
+import {
+  QUIZ_LEVELS,
+  baseUrl,
+  quizBySlug,
+  quizLabel,
+  quizLevelQuestions,
+  quizQuestionsCount,
+  quizThumbUrl,
+  quizzes,
+} from '../src/quizzesData';
 import { QUESTION_TIME, VERDICT_MS, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz, quizPoints } from '../src/quizzes/engine';
 import { formatBest, readLocalBest, writeLocalBest } from '../src/quizzes/quizApi';
+import {
+  LEVELS_KEY,
+  isLevelCompleted,
+  isLevelUnlocked,
+  markLevelCompleted,
+  nextLevel,
+} from '../src/quizzes/quizProgress';
 import {
   playQuizAnswerSound,
   playQuizComboSound,
@@ -98,24 +114,62 @@ export async function checkQuiz(assert) {
   assert.notEqual(dailyQuizFor(tomorrow, quizzes).slug, today.slug);
 
   for (const quiz of quizzes) {
-    const prepared = prepareQuiz(quiz, 42);
-    const again = prepareQuiz(quiz, 42);
-    assert.deepEqual(
-      prepared.questions.map((question) => question.choices.map((choice) => choice.label.fr)),
-      again.questions.map((question) => question.choices.map((choice) => choice.label.fr)),
-      `${quiz.slug} : même graine, même mélange`,
-    );
-    for (const question of prepared.questions) {
-      assert.equal(question.choices.filter((choice) => choice.correct).length, 1, `${quiz.slug} : une seule bonne réponse par question`);
+    // Trois niveaux de huit questions par quizz : les questions du niveau
+    // joué, et elles seules, partent dans la partie.
+    assert.equal(quizQuestionsCount(quiz), QUIZ_LEVELS.length * 8, `${quiz.slug} : trois niveaux de huit questions`);
+    const seenIds = new Set();
+    for (const level of QUIZ_LEVELS) {
+      const levelQuestions = quizLevelQuestions(quiz, level);
+      assert.equal(levelQuestions.length, 8, `${quiz.slug} [${level}] : huit questions`);
+      for (const question of levelQuestions) seenIds.add(question.id);
+
+      const prepared = prepareQuiz(quiz, level, 42);
+      const again = prepareQuiz(quiz, level, 42);
+      assert.equal(prepared.level, level, `${quiz.slug} [${level}] : le niveau voyage avec la partie`);
+      assert.equal(prepared.questions.length, levelQuestions.length, `${quiz.slug} [${level}] : seules les questions du niveau sont posées`);
+      assert.deepEqual(
+        prepared.questions.map((question) => question.choices.map((choice) => choice.label.fr)),
+        again.questions.map((question) => question.choices.map((choice) => choice.label.fr)),
+        `${quiz.slug} [${level}] : même graine, même mélange`,
+      );
+      // Un autre niveau ne partage aucune question : le tirage est bien celui
+      // du palier demandé.
+      const otherLevel = nextLevel(level);
+      if (otherLevel) {
+        const otherIds = new Set(quizLevelQuestions(quiz, otherLevel).map((question) => question.id));
+        assert.ok(
+          prepared.questions.every((question) => !otherIds.has(question.id)),
+          `${quiz.slug} [${level}] : aucune question du niveau ${otherLevel}`,
+        );
+      }
+      for (const question of prepared.questions) {
+        assert.equal(question.choices.filter((choice) => choice.correct).length, 1, `${quiz.slug} [${level}] : une seule bonne réponse par question`);
+      }
+      // Toutes bonnes réponses quel que soit le mélange : 100 %.
+      const perfectAnswers = {};
+      for (const question of prepared.questions) {
+        perfectAnswers[question.id] = question.choices.find((choice) => choice.correct).id;
+      }
+      assert.equal(gradeQuiz(prepared, perfectAnswers).perfect, true, `${quiz.slug} [${level}] : sans-faute détecté`);
+      assert.equal(gradeQuiz(prepared, {}).correct, 0, `${quiz.slug} [${level}] : aucune réponse, aucun point`);
     }
-    // Toutes bonnes réponses quel que soit le mélange : 100 %.
-    const perfectAnswers = {};
-    for (const question of prepared.questions) {
-      perfectAnswers[question.id] = question.choices.find((choice) => choice.correct).id;
-    }
-    assert.equal(gradeQuiz(prepared, perfectAnswers).perfect, true, `${quiz.slug} : sans-faute détecté`);
-    assert.equal(gradeQuiz(prepared, {}).correct, 0, `${quiz.slug} : aucune réponse, aucun point`);
+    assert.equal(seenIds.size, QUIZ_LEVELS.length * 8, `${quiz.slug} : identifiants de questions uniques d'un niveau à l'autre`);
   }
+
+  // Déblocage en cascade : Facile ouvert, Confirmé après le Facile, Expert
+  // après le Confirmé — et jamais l'inverse.
+  assert.equal(isLevelUnlocked({}, 'culture-gaming', 'easy'), true, 'le niveau Facile est ouvert sans rien avoir joué');
+  assert.equal(isLevelUnlocked({}, 'culture-gaming', 'medium'), false, 'le niveau Confirmé est verrouillé au départ');
+  assert.equal(isLevelUnlocked({}, 'culture-gaming', 'hard'), false, 'le niveau Expert est verrouillé au départ');
+  const afterEasy = markLevelCompleted('culture-gaming', 'easy');
+  assert.equal(isLevelCompleted(afterEasy, 'culture-gaming', 'easy'), true, 'le niveau Facile est enregistré comme terminé');
+  assert.equal(isLevelUnlocked(afterEasy, 'culture-gaming', 'medium'), true, 'le Confirmé s’ouvre après le Facile');
+  assert.equal(isLevelUnlocked(afterEasy, 'culture-gaming', 'hard'), false, 'l’Expert reste fermé tant que le Confirmé n’est pas fait');
+  assert.equal(isLevelUnlocked(afterEasy, 'consoles-retro', 'medium'), false, 'le déblocage ne fuit pas vers les autres quizz');
+  const afterMedium = markLevelCompleted('culture-gaming', 'medium');
+  assert.equal(isLevelUnlocked(afterMedium, 'culture-gaming', 'hard'), true, 'l’Expert s’ouvre après le Confirmé');
+  assert.ok(globalThis.window.localStorage.getItem(LEVELS_KEY), 'la progression est écrite dans le stockage local');
+  globalThis.window.localStorage.removeItem(LEVELS_KEY);
 
   assert.equal(bestDayRun(['2026-09-20', '2026-09-21', '2026-09-22', '2026-09-25']), 3);
   assert.equal(bestDayRun([]), 0);
@@ -212,13 +266,12 @@ export async function checkQuiz(assert) {
     }
   };
 
-  // Joue une partie parfaite : bouton Commencer puis, à chaque question
-  // (ordre mélangé par le moteur), la bonne réponse reconnue à son libellé FR.
-  const playPerfect = async (container, game) => {
-    await click([...container.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
-    for (let step = 0; step < game.questions.length; step += 1) {
+  // Répond juste à toutes les questions en cours : chacune est reconnue à son
+  // libellé FR (l'ordre est mélangé par le moteur), la bonne réponse au barème.
+  const playQuestions = async (container, questions) => {
+    for (let step = 0; step < questions.length; step += 1) {
       const prompt = container.querySelector('.quiz-question')?.textContent || '';
-      const question = game.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+      const question = questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
       assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
       const rightText = quizLabel(question.choices[question.answer], 'fr');
       await click([...container.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
@@ -226,17 +279,40 @@ export async function checkQuiz(assert) {
     }
   };
 
-  // Écran d'intro : titre du quizz + bouton Commencer.
-  assert.ok(node.textContent.includes(quizLabel(quiz.labels, 'fr').title));
-  await playPerfect(node, quiz);
+  // Joue une partie parfaite d'un niveau : on clique le bouton du palier
+  // (`[data-level]`, verrouillé ou non selon la progression), puis on répond
+  // juste aux huit questions.
+  const playPerfect = async (container, game, level = 'easy') => {
+    await click(container.querySelector(`[data-level="${level}"] .quiz-level-play`));
+    await playQuestions(container, quizLevelQuestions(game, level));
+  };
 
-  // Résultat : sans-faute 8/8, palier légende, huit corrections.
+  // Écran d'intro : titre du quizz + sélecteur des trois niveaux. Le Facile
+  // est ouvert, le Confirmé et l'Expert affichent leur cadenas et leur
+  // condition de déblocage.
+  assert.ok(node.textContent.includes(quizLabel(quiz.labels, 'fr').title));
+  assert.equal(node.querySelectorAll('.quiz-level').length, 3, 'trois niveaux proposés dans le quizz');
+  assert.ok(node.querySelector('.quiz-level--easy .quiz-level-play:not([disabled])'), 'le niveau Facile est ouvert');
+  assert.ok(node.querySelector('.quiz-level--medium .quiz-level-play[disabled]'), 'le niveau Confirmé est verrouillé au départ');
+  assert.ok(node.querySelector('.quiz-level--hard .quiz-level-play[disabled]'), 'le niveau Expert est verrouillé au départ');
+  assert.equal(node.querySelectorAll('.quiz-level.is-locked').length, 2, 'deux cadenas affichés (Confirmé, Expert)');
+  assert.ok(node.textContent.includes('🔒'), 'le cadenas est visible sur les niveaux fermés');
+  assert.ok(node.textContent.includes('Termine le niveau Facile pour débloquer celui-ci'), 'la condition de déblocage est écrite');
+  assert.ok(node.textContent.includes('0/3 niveaux'), 'la progression part de zéro');
+  assert.ok(node.textContent.includes(`${QUIZ_LEVELS.length * 8} questions`), 'le total de questions du quizz est affiché');
+
+  // Partie Facile : le niveau joué est rappelé pendant la partie.
+  await playPerfect(node, quiz, 'easy');
+  assert.ok(node.textContent.includes('Facile'), 'le niveau joué est rappelé en partie');
+
+  // Résultat : sans-faute 8/8, palier légende, huit corrections du niveau.
+  const easyQuestions = quizLevelQuestions(quiz, 'easy');
   assert.ok(node.querySelector('.quiz-result'), 'écran de résultat affiché');
   assert.ok(node.textContent.includes('8/8 bonnes réponses'), 'score 8/8 affiché');
   assert.ok(node.textContent.includes('SANS FAUTE'), 'sans-faute annoncé');
   assert.ok(node.textContent.includes('LÉGENDE'), 'palier légende');
-  assert.equal(node.querySelectorAll('.quiz-fix').length, quiz.questions.length);
-  assert.equal(node.querySelectorAll('.quiz-fix.is-right').length, quiz.questions.length);
+  assert.equal(node.querySelectorAll('.quiz-fix').length, easyQuestions.length);
+  assert.equal(node.querySelectorAll('.quiz-fix.is-right').length, easyQuestions.length);
 
   // Les points du résultat : total de la partie (ils font le classement),
   // meilleure série, et les confettis du sans-faute.
@@ -252,11 +328,32 @@ export async function checkQuiz(assert) {
   // le compteur de parties, lui, est toujours crédité).
   const stored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
   assert.ok(stored, 'progression des succès écrite dans le stockage');
-  assert.ok((stored.sets?.quizzes_played || []).includes(slug), 'quizz distinct crédité');
+  assert.ok((stored.sets?.quizzes_played || []).includes(slug), 'quizz distinct crédité (une entrée par quizz, pas par niveau)');
+  assert.ok((stored.sets?.quiz_levels_played || []).includes(`${slug}:easy`), 'le niveau joué est crédité');
   assert.ok((stored.sets?.perfect_quizzes || []).includes(slug), 'sans-faute crédité');
   assert.equal(stored.counters?.quizzes_completed, 1, 'compteur de parties à 1');
   assert.ok((stored.unlocked || {})['first-quiz'], 'succès « Premier quizz » débloqué');
   assert.ok((stored.unlocked || {})['perfect-score'], 'succès « Sans faute » débloqué');
+
+  // Déblocage : le Facile terminé ouvre le Confirmé — annoncé à l'écran, écrit
+  // dans la progression locale, et le record du niveau est conservé à part.
+  assert.ok(node.textContent.includes('Niveau Confirmé débloqué'), 'le niveau Confirmé est annoncé comme débloqué');
+  const storedLevels = JSON.parse(globalThis.window.localStorage.getItem(LEVELS_KEY) || '{}');
+  assert.ok(storedLevels[slug]?.easy, 'le niveau Facile est enregistré comme terminé');
+  assert.ok(!storedLevels[slug]?.medium, 'le niveau Confirmé n’est pas terminé pour autant');
+  assert.ok(readLocalBest(slug, 'easy'), 'le record du niveau Facile est enregistré');
+  assert.equal(readLocalBest(slug, 'medium'), null, 'aucun record pour un niveau jamais joué');
+
+  // Partie Confirmé : le palier s'enchaîne, et l'Expert s'ouvre à son tour.
+  await click([...node.querySelectorAll('button')].find((el) => el.textContent.includes('Jouer ce niveau')));
+  assert.ok(node.textContent.includes('Confirmé'), 'le niveau Confirmé est annoncé en partie');
+  await playQuestions(node, quizLevelQuestions(quiz, 'medium'));
+  assert.ok(node.textContent.includes('8/8 bonnes réponses'), 'sans-faute au niveau Confirmé');
+  assert.ok(node.textContent.includes('Niveau Expert débloqué'), 'le niveau Expert s’ouvre après le Confirmé');
+  assert.ok(readLocalBest(slug, 'medium'), 'le record du niveau Confirmé est enregistré séparément');
+  const storedMedium = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  assert.equal(storedMedium.counters?.quizzes_completed, 2, 'deux niveaux joués, deux parties comptées');
+  assert.equal((storedMedium.sets?.quizzes_played || []).filter((entry) => entry === slug).length, 1, 'un seul quizz distinct malgré deux niveaux');
 
   // Classement sans backend : message d'explication + meilleure partie locale
   // (points + bonnes réponses, les points faisant le classement).
@@ -294,8 +391,9 @@ export async function checkQuiz(assert) {
     </LanguageProvider>,
   ));
 
-  // Session démo : partie parfaite puis défi envoyé au premier ami listé.
-  await playPerfect(demoNode, quiz);
+  // Session démo : partie parfaite (niveau Facile) puis défi envoyé au premier
+  // ami listé — le message nomme le niveau joué.
+  await playPerfect(demoNode, quiz, 'easy');
   assert.ok(demoNode.querySelector('.quiz-result'), '[démo] écran de résultat');
   await click([...demoNode.querySelectorAll('button')].find((el) => el.textContent.includes('Défier un ami')));
   const friendButtons = demoNode.querySelectorAll('.quiz-challenge-friend');
@@ -310,6 +408,7 @@ export async function checkQuiz(assert) {
   const demoMessages = JSON.stringify(readDemoMessages(DEMO_PROFILE_FIXTURES.vortex));
   assert.ok(demoMessages.includes('Défi Let’s Play'), '[démo] le défi arrive dans la messagerie');
   assert.ok(demoMessages.includes('8/8'), '[démo] le score à battre est dans le message');
+  assert.ok(demoMessages.includes('Facile'), '[démo] le niveau joué fait partie du défi');
   const demoStored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
   assert.ok((demoStored?.unlocked || {})['first-challenge'], '[démo] succès « Rival trouvé » débloqué');
 
@@ -337,6 +436,16 @@ export async function checkQuiz(assert) {
     ));
     assert.equal(gridNode.querySelectorAll('.quiz-card').length, quizzes.length, `[${lang}] huit cartes de quizz`);
     assert.ok(gridNode.querySelector('.quiz-daily'), `[${lang}] bannière quizz du jour`);
+    // Tous les quizz sont jouables dès l'arrivée, et la grille ne classe plus
+    // rien par difficulté : aucune pastille Facile/Confirmé/Expert sur les
+    // cartes, mais la progression des niveaux à la place.
+    assert.equal(
+      gridNode.querySelectorAll('.quiz-chip--easy, .quiz-chip--medium, .quiz-chip--hard').length,
+      0,
+      `[${lang}] aucune pastille de difficulté sur la grille`,
+    );
+    assert.equal(gridNode.querySelectorAll('.quiz-card .quiz-chip--levels').length, quizzes.length, `[${lang}] une progression par carte`);
+    assert.ok(gridNode.textContent.includes(translations[lang].quiz.levelProgress.replace('{done}', '0').replace('{total}', '3')), `[${lang}] progression 0/3 niveaux affichée`);
 
     // Chaque carte affiche sa miniature maison (aucune requête YouTube), et
     // la bannière du jour affiche celle du quizz mis en avant.
@@ -364,7 +473,10 @@ export async function checkQuiz(assert) {
   // l'étape 2 n'existe plus (vidé par seedLang) : on le repose comme le ferait
   // une partie, puis la grille doit montrer le badge et le décompte.
   globalThis.window.localStorage.setItem('letsplay-lang', 'fr');
-  writeLocalBest('culture-gaming', 8, 8, 1250);
+  writeLocalBest('culture-gaming', 'easy', 8, 8, 1250);
+  // Progression : deux niveaux terminés sur trois, pour vérifier le badge.
+  markLevelCompleted('culture-gaming', 'easy');
+  markLevelCompleted('culture-gaming', 'medium');
   const bestNode = document.createElement('div');
   document.body.append(bestNode);
   const bestRoot = createRoot(bestNode);
@@ -386,27 +498,40 @@ export async function checkQuiz(assert) {
     [...bestNode.querySelectorAll('.quiz-card-best')].some((el) => el.textContent.includes('8/8') && el.textContent.includes('1250 PTS')),
     'record 8/8 · 1250 PTS affiché sur la carte du quizz joué',
   );
+  assert.ok(
+    [...bestNode.querySelectorAll('.quiz-card .quiz-chip--levels')].some((el) => el.textContent.trim() === '2/3 niveaux'),
+    'la carte affiche la progression des niveaux (2/3)',
+  );
+  assert.equal(readLocalBest('culture-gaming', 'medium'), null, 'le record est bien rangé par niveau');
   await act(async () => bestRoot.unmount());
 
   /* ---------------- 6. Classement par points + rang global profil ----------- */
   // Record de l'appareil : la meilleure partie est celle qui marque le plus
   // de points (à égalité, le plus de bonnes réponses l'emporte) — la règle du
   // classement, pas le nombre de bonnes réponses.
-  writeLocalBest('culture-gaming', 8, 8, 900);
-  writeLocalBest('culture-gaming', 6, 8, 1300);
-  let deviceBest = readLocalBest('culture-gaming');
+  writeLocalBest('culture-gaming', 'easy', 8, 8, 900);
+  writeLocalBest('culture-gaming', 'easy', 6, 8, 1300);
+  let deviceBest = readLocalBest('culture-gaming', 'easy');
   assert.deepEqual(
     { score: deviceBest.score, points: deviceBest.points },
     { score: 6, points: 1300 },
     'le record suit les points, pas les bonnes réponses (6/8 à 1300 pts bat 8/8 à 900)',
   );
-  writeLocalBest('culture-gaming', 7, 8, 1300);
-  deviceBest = readLocalBest('culture-gaming');
+  writeLocalBest('culture-gaming', 'easy', 7, 8, 1300);
+  deviceBest = readLocalBest('culture-gaming', 'easy');
   assert.equal(deviceBest.score, 7, 'à points égaux, le plus de bonnes réponses dépasse le record');
-  writeLocalBest('culture-gaming', 8, 8, 1299);
-  deviceBest = readLocalBest('culture-gaming');
+  writeLocalBest('culture-gaming', 'easy', 8, 8, 1299);
+  deviceBest = readLocalBest('culture-gaming', 'easy');
   assert.equal(deviceBest.points, 1300, 'moins de points ne remplace pas le record');
   assert.equal(formatBest(deviceBest), '7/8 · 1300 PTS', 'le libellé du record affiche points + bonnes réponses');
+  // Chaque niveau garde son record ; la carte, elle, montre le meilleur des trois.
+  writeLocalBest('culture-gaming', 'hard', 4, 8, 500);
+  assert.equal(readLocalBest('culture-gaming', 'hard').points, 500, 'le niveau Expert a son propre record');
+  assert.equal(readLocalBest('culture-gaming', 'easy').points, 1300, 'le record du Facile ne bouge pas');
+  const acrossLevels = readLocalBest('culture-gaming');
+  assert.equal(acrossLevels.points, 1300, 'le record affiché sur la carte prend le meilleur des niveaux');
+  assert.equal(acrossLevels.level, 'easy', 'le record affiché nomme son niveau');
+  assert.equal(readLocalBest('culture-gaming', 'medium'), null, 'un niveau jamais joué n’a pas de record');
   assert.equal(formatBest({ score: 8, total: 8 }), '8/8', 'record antérieur aux points : repli score/total');
 
   // Classement d'un quizz : les lignes arrivent déjà triées par points (RPC)
@@ -431,6 +556,10 @@ export async function checkQuiz(assert) {
   ));
   const boardLines = [...boardNode.querySelectorAll('.quiz-board-row')];
   assert.equal(boardLines.length, 3, 'trois lignes au classement');
+  assert.ok(
+    boardNode.querySelector('.quiz-board .section-label')?.textContent.includes('Facile'),
+    'le classement affiché est celui du niveau courant',
+  );
   assert.ok(
     boardLines[0].textContent.includes('Rapide') && boardLines[0].textContent.includes('1300 PTS'),
     'la ligne la mieux pourvue en points mène (1300 PTS devant 8/8 à 900)',
@@ -517,10 +646,11 @@ export async function checkQuiz(assert) {
   ));
 
   // Premier tour tout faux : à chaque question, un choix qui n'est pas le bon.
-  await click([...revNode.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
-  for (let step = 0; step < quiz.questions.length; step += 1) {
+  const reviewQuestions = quizLevelQuestions(quiz, 'easy');
+  await click(revNode.querySelector('[data-level="easy"] .quiz-level-play'));
+  for (let step = 0; step < reviewQuestions.length; step += 1) {
     const prompt = revNode.querySelector('.quiz-question')?.textContent || '';
-    const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    const question = reviewQuestions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
     const wrongText = quizLabel(question.choices[(question.answer + 1) % question.choices.length], 'fr');
     await click([...revNode.querySelectorAll('.quiz-choice')].find((el) => el.textContent === wrongText));
     if (step === 0) {
@@ -539,9 +669,9 @@ export async function checkQuiz(assert) {
   // « Rejouer mes erreurs » : les huit questions ratées, en tour de révision.
   await click([...revNode.querySelectorAll('button')].find((el) => el.textContent.includes('Rejouer mes erreurs')));
   assert.ok(revNode.textContent.includes('TOUR DE RÉVISION'), 'tour de révision annoncé');
-  for (let step = 0; step < quiz.questions.length; step += 1) {
+  for (let step = 0; step < reviewQuestions.length; step += 1) {
     const prompt = revNode.querySelector('.quiz-question')?.textContent || '';
-    const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    const question = reviewQuestions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
     const rightText = quizLabel(question.choices[question.answer], 'fr');
     await click([...revNode.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
     await waitQuestionChange(revNode, prompt);
@@ -552,6 +682,8 @@ export async function checkQuiz(assert) {
   const revStored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
   assert.equal(revStored?.counters?.quizzes_completed, 1, 'la révision ne compte pas une seconde partie');
   assert.ok(!(revStored?.sets?.perfect_quizzes || []).includes(slug), 'le 8/8 de révision ne crédite pas « Sans faute »');
+  const revLevels = JSON.parse(globalThis.window.localStorage.getItem(LEVELS_KEY) || '{}');
+  assert.deepEqual(Object.keys(revLevels[slug] || {}), ['easy'], 'la révision ne débloque pas le niveau Confirmé');
 
   await act(async () => revRoot.unmount());
 
@@ -578,11 +710,11 @@ export async function checkQuiz(assert) {
     </LanguageProvider>,
   ));
 
-  await click([...timerNode.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
+  await click(timerNode.querySelector('[data-level="easy"] .quiz-level-play'));
   assert.ok(timerNode.querySelector('.quiz-timer'), 'le minuteur est affiché pendant la partie');
   // Une question à la fois : chaque `act` laisse le décomte expirer (300 ms),
   // le verdict sonner, puis le gel (VERDICT_MS) faire avancer la question.
-  for (let step = 0; step < quiz.questions.length; step += 1) {
+  for (let step = 0; step < quizLevelQuestions(quiz, 'easy').length; step += 1) {
     await act(async () => { await sleep(VERDICT_MS + 400); });
   }
   assert.ok(timerNode.textContent.includes('0/8 bonnes réponses'), 'le minuteur écoulé compte chaque question comme ratée');
@@ -638,7 +770,7 @@ export async function checkQuiz(assert) {
   assert.equal(playQuizAnswerSound(true), false, 'aucun verdict tant que c’est coupé');
 
   audio.reset();
-  await click([...soundNode.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
+  await click(soundNode.querySelector('[data-level="easy"] .quiz-level-play'));
   assert.ok(soundNode.querySelector('.quiz-timer'), 'minuteur toujours en place');
   assert.equal(soundNode.querySelector('.quiz-hud .quiz-sound-toggle').getAttribute('aria-pressed'), 'false', 'bouton son de la partie annoncé coupé');
   await act(async () => { await sleep(1200); });
@@ -663,7 +795,7 @@ export async function checkQuiz(assert) {
   // gel de verdict).
   const answerOnce = async (nodeEl, right) => {
     const prompt = nodeEl.querySelector('.quiz-question')?.textContent || '';
-    const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    const question = quizLevelQuestions(quiz, 'easy').find((entry) => quizLabel(entry.q, 'fr') === prompt);
     assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
     const choice = right
       ? question.choices[question.answer]
@@ -694,12 +826,13 @@ export async function checkQuiz(assert) {
   // Mauvaise réponse : deux notes descendantes en dents de scie. Le budget de
   // la question suivante tombe à 400 ms, pour éprouver le temps écoulé.
   audio.reset();
-  QUESTION_TIME.seconds = 0.4;
   await answerOnce(soundNode, false);
+  QUESTION_TIME.seconds = 0.4;
   const wrongNotes = audio.notes.filter((note) => note.type === 'sawtooth');
   assert.equal(wrongNotes.length, 2, 'mauvaise réponse : deux notes');
   assert.ok(wrongNotes[0].frequency > wrongNotes[1].frequency, 'mauvaise réponse : la descente descend');
-  assert.ok(soundNode.textContent.includes('✗ 1'), 'compteur de mauvaises réponses à 1');
+  const wrongLive = Number((soundNode.querySelector('.quiz-live-item--wrong')?.textContent || '').replace(/\D/g, '')) || 0;
+  assert.equal(wrongLive, 1, 'compteur de mauvaises réponses à 1');
   assert.ok(soundNode.querySelector('.quiz-choice.is-wrong'), 'le choix raté passe au rouge');
   assert.ok(soundNode.querySelector('.quiz-choice.is-reveal'), 'la bonne réponse s’illumine sur le choix non cliqué');
 
@@ -832,5 +965,5 @@ export async function checkQuiz(assert) {
     await act(async () => langRoot.unmount());
   }
 
-  console.log('QUIZZ : moteur (+ points bornés qui font le classement), partie 8/8 + succès + confettis, défi démo, grille FR/EN/AR, record par points + compte à rebours, classement par points (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
+  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé), déblocage en cascade (Facile → Confirmé → Expert), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
 }

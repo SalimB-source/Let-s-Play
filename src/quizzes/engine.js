@@ -7,8 +7,9 @@
  *
  *   - `dailyQuizFor(date, quizzes)` : le quizz mis en avant ce jour-là
  *     (rotation par journée locale, comme les succès de fidélité) ;
- *   - `prepareQuiz(quiz, seed)` : questions ET choix mélangés, la bonne
- *     réponse voyageant avec son choix (le barème suit le mélange) ;
+ *   - `prepareQuiz(quiz, level, seed)` : questions du niveau demandé
+ *     (`easy` / `medium` / `hard`, voir `QUIZ_LEVELS`) ET choix mélangés, la
+ *     bonne réponse voyageant avec son choix (le barème suit le mélange) ;
  *   - `gradeQuiz(prepared, answers)` : score + palier + sans-faute ;
  *   - `bestDayRun(days)` : meilleure série de jours consécutifs — la
  *     métrique « série de quizz du jour » lue par les succès.
@@ -54,14 +55,21 @@ export function dailyQuizFor(date = new Date(), quizzes = []) {
 }
 
 /**
- * Prépare une partie : questions mélangées, et pour chacune ses choix
- * mélangés avec la bonne réponse marquée. `seed` rend le mélange
- * reproductible (le quizz du jour est le même pour tous) ; sans seed,
- * un mélange aléatoire propre à la partie.
+ * Prépare une partie : questions du NIVEAU demandé mélangées, et pour chacune
+ * ses choix mélangés avec la bonne réponse marquée. `level` est un identifiant
+ * de `QUIZ_LEVELS` (`easy` par défaut, `src/quizzesData.js`) ; `seed` rend le
+ * mélange reproductible (le quizz du jour est le même pour tous) ; sans seed,
+ * un mélange aléatoire propre à la partie. Le niveau joué voyage avec la
+ * partie préparée (`level`), pour l'affichage et la progression.
  */
-export function prepareQuiz(quiz, seed = null) {
+export function prepareQuiz(quiz, level = 'easy', seed = null) {
   const rand = seed === null || seed === undefined ? rng((Math.random() * 2 ** 31) | 0) : rng(seed);
-  const questions = shuffle(quiz.questions || [], rand).map((question, questionIndex) => {
+  // Lecture directe des niveaux : le moteur reste chargeable par Node (les
+  // vérifications `check:achievements` l'importent sans passer par Vite),
+  // là où `src/quizzesData.js` tire `./data` (import.meta.env). Même règle que
+  // `quizLevelQuestions` de `quizzesData` : le niveau demandé, repli Facile.
+  const levels = quiz && quiz.levels ? quiz.levels : {};
+  const questions = shuffle(levels[level] || levels.easy || [], rand).map((question, questionIndex) => {
     // La bonne réponse voyage avec son choix : le barème suit le mélange.
     const marked = (question.choices || []).map((label, originalIndex) => ({
       label,
@@ -73,7 +81,8 @@ export function prepareQuiz(quiz, seed = null) {
     }));
     return { ...question, choices };
   });
-  return { ...quiz, questions };
+  const { levels: _levels, ...meta } = quiz || {};
+  return { ...meta, level, questions };
 }
 
 /**

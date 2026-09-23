@@ -36,6 +36,7 @@ import {
   metricValue,
   normalizeState,
   quizAlreadyCompleted,
+  quizLevelCompleted,
   reduce,
   summarize,
   totalXp,
@@ -386,25 +387,39 @@ for (let index = 1; index <= 30; index += 1) {
   record(play('quiz_completed', { id, perfect: index === 0, daily: true, at: date.toISOString() }));
 });
 
-// Règle anti-farm : un quizz déjà terminé ne rapporte plus rien. Rejoué (même
-// sans faute), il ne bouge ni le compteur, ni les sans-faute, ni l'XP ; seul le
-// jour de quizz du jour reste crédité pour la série.
+// Règle anti-farm : un NIVEAU déjà terminé ne rapporte plus rien, mais un
+// autre niveau du même quizz rapporte une fois — et le succès « Tour complet »
+// continue de compter les QUIZZ (un slug par quizz), pas les niveaux.
 {
   let fresh = createState(new Date(at(2026, 9, 1)));
   const run = (payload) => { const result = reduce(fresh, { type: 'quiz_completed', ...payload }); fresh = result.state; return result.unlocked; };
-  check('1re complétion : succès et XP', run({ id: 'rpg-legends', perfect: false, at: at(2026, 9, 2) }).join(','), 'first-quiz');
+  check('1re complétion : succès et XP', run({ id: 'rpg-legends', level: 'easy', perfect: false, at: at(2026, 9, 2) }).join(','), 'first-quiz');
   ok('le quizz est désormais marqué terminé', quizAlreadyCompleted(fresh, 'rpg-legends'));
+  ok('… son niveau Facile aussi', quizLevelCompleted(fresh, 'rpg-legends', 'easy'));
   ok('… et pas les autres', !quizAlreadyCompleted(fresh, 'tech-hardware'));
   const xpBefore = totalXp(fresh);
   const countBefore = fresh.counters.quizzes_completed;
-  check('rejouer (sans faute) ne débloque rien', run({ id: 'rpg-legends', perfect: true, at: at(2026, 9, 3) }).length, 0);
+  check('rejouer le même niveau (sans faute) ne débloque rien', run({ id: 'rpg-legends', level: 'easy', perfect: true, at: at(2026, 9, 3) }).length, 0);
   check('… ni XP', totalXp(fresh), xpBefore);
   check('… ni compteur de parties', fresh.counters.quizzes_completed, countBefore);
   ok('… ni sans-faute', !(fresh.sets.perfect_quizzes || []).includes('rpg-legends'));
-  run({ id: 'rpg-legends', perfect: false, daily: true, at: at(2026, 9, 4) });
+  const mediumUnlocked = run({ id: 'rpg-legends', level: 'medium', perfect: false, at: at(2026, 9, 3) });
+  check('un autre niveau du même quizz rapporte', fresh.counters.quizzes_completed, countBefore + 1);
+  ok('… sans redébloquer les succès déjà acquis', mediumUnlocked.length === 0);
+  check('… et sans XP en double', totalXp(fresh), xpBefore);
+  check('… sans dupliquer le quizz (tour complet)', (fresh.sets.quizzes_played || []).filter((entry) => entry === 'rpg-legends').length, 1);
+  ok('… en gardant le niveau joué à part', quizLevelCompleted(fresh, 'rpg-legends', 'medium'));
+  const xpAfterLevels = totalXp(fresh);
+  run({ id: 'rpg-legends', level: 'easy', perfect: false, daily: true, at: at(2026, 9, 4) });
   check('quizz du jour rejoué : le jour compte pour la série', (fresh.sets.quiz_days || []).length, 1);
-  check('… sans XP', totalXp(fresh), xpBefore);
-  check('un autre quizz rapporte toujours', run({ id: 'tech-hardware', perfect: true, at: at(2026, 9, 5) }).join(','), 'perfect-score');
+  check('… sans XP', totalXp(fresh), xpAfterLevels);
+  check('un autre quizz rapporte toujours', run({ id: 'tech-hardware', level: 'easy', perfect: true, at: at(2026, 9, 5) }).join(','), 'perfect-score');
+  // Compatibilité : une complétion enregistrée avant les niveaux (aucun niveau
+  // au compteur pour ce quizz) vaut pour le niveau Facile.
+  const legacy = { ...createState(new Date(at(2026, 9, 1))) };
+  legacy.sets = { ...legacy.sets, quizzes_played: ['tech-hardware'] };
+  ok('ancienne complétion = niveau Facile', quizLevelCompleted(legacy, 'tech-hardware', 'easy'));
+  ok('… et rien d’autre', !quizLevelCompleted(legacy, 'tech-hardware', 'medium'));
 }
 
 // Un défi envoyé à un ami depuis un écran de résultat (rival trouvé).

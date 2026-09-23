@@ -13,7 +13,7 @@
 .quiz-header h1 em { color: var(--yellow); font-style: normal; }
 .quiz-intro { max-width: 640px; color: var(--muted); }
 
-/* ---- Chips (tag, difficulté, compteur) ---------------------------------- */
+/* ---- Chips (tag, niveau, compteur) --------------------------------------- */
 .quiz-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .quiz-chip {
   display: inline-flex; align-items: center; gap: 7px;
@@ -27,6 +27,10 @@
 .quiz-chip--hard { color: var(--violet); border-color: rgba(168, 85, 247, .45); }
 .quiz-chip--daily, .quiz-chip--streak { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
 .quiz-chip--done { color: var(--muted); border-color: var(--line-strong); }
+/* Progression des niveaux (grille + écran d'intro) : neutre, puis vert une
+   fois les trois niveaux terminés. */
+.quiz-chip--levels { color: var(--violet); border-color: rgba(168, 85, 247, .4); }
+.quiz-chip--levels.is-complete { color: #34d399; border-color: rgba(52, 211, 153, .45); }
 .quiz-noxp-hint { margin: 12px 0 0; color: var(--muted); font: 600 13px var(--mono); letter-spacing: .04em; }
 
 /* ---- Quizz du jour (bannière) ------------------------------------------- */
@@ -100,11 +104,53 @@
 }
 .quiz-player-intro h1 { margin: 6px 0 10px; font: 800 clamp(26px, 4vw, 42px)/1.1 var(--display); text-transform: uppercase; }
 .quiz-player-intro p { color: var(--muted); margin-bottom: 20px; }
-.quiz-player-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.quiz-player-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 18px; }
+
+/* ---- Sélecteur de niveaux (écran d'intro du lecteur) --------------------- */
+/* Les quizz sont tous ouverts : c'est ICI que se joue la progression —
+   Facile ouvert, Confirmé puis Expert verrouillés tant que le niveau
+   précédent n'est pas terminé (règle pure : `./quizProgress`). */
+.quiz-levels-title {
+  margin: 22px 0 10px;
+  font: 700 13px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+  color: var(--dim);
+}
+.quiz-levels { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.quiz-level {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; background: var(--panel-2); border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--line-strong);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  transition: border-color .18s, background .18s;
+}
+.quiz-level--easy { border-inline-start-color: var(--cyan); }
+.quiz-level--medium { border-inline-start-color: var(--yellow); }
+.quiz-level--hard { border-inline-start-color: var(--violet); }
+.quiz-level.is-selected { border-color: var(--line-strong); }
+.quiz-level.is-done { background: rgba(52, 211, 153, .05); }
+.quiz-level.is-locked { opacity: .62; border-inline-start-color: var(--line); border-style: dashed; }
+.quiz-level-copy { display: grid; gap: 3px; min-width: 0; }
+.quiz-level-name {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 700 clamp(15px, 2vw, 18px)/1.2 var(--display); text-transform: uppercase; letter-spacing: .03em;
+}
+.quiz-level-copy .quiz-level-meta { color: var(--muted); font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.quiz-level-lock { color: var(--dim); font: 500 12px var(--mono); letter-spacing: .04em; }
+.quiz-level-check { color: #34d399; }
+.quiz-level-padlock { font-size: 14px; }
+.quiz-level-play { flex: none; }
+.quiz-level-play:disabled { cursor: not-allowed; opacity: .75; }
+/* Note de déblocage : après une partie, le niveau qui vient de s'ouvrir est
+   annoncé (écran de résultat) et rappelé sur l'écran d'intro. */
+.quiz-unlock-note {
+  margin: 14px 0 0; padding: 10px 14px;
+  color: #34d399; border: 1px solid rgba(52, 211, 153, .4); background: rgba(52, 211, 153, .07);
+  font: 600 13px var(--mono); letter-spacing: .04em;
+}
 
 .quiz-progress { height: 6px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 10px; }
 .quiz-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--cyan)); transition: width .25s; }
-.quiz-progress-label { margin: 0 0 18px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.quiz-progress-label { margin: 0 0 18px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 /* Minuteur : 15 secondes par question, rouge dans les 3 dernières. */
 /* Barre du haut pendant la partie : compte à rebours, verdict de la partie en
    cours (✓ / ✗, la même information que les sons) et bouton son. */
@@ -325,4 +371,9 @@
 @media (max-width: 860px) {
   .quiz-daily { grid-template-columns: 1fr; }
   .quiz-choices { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .quiz-level { align-items: flex-start; }
+  .quiz-level-play { width: 100%; justify-content: center; }
 }
