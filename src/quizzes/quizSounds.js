@@ -2,8 +2,8 @@
  * Sons des quizz — tick-tack du minuteur et verdicts de réponse.
  * --------------------------------------------------------------
  * Tout est synthétisé avec l'API Web Audio : aucun fichier audio à livrer,
- * rien à télécharger pendant une partie, et le même rendu sur mobile. Trois
- * sons, trois intentions :
+ * rien à télécharger pendant une partie, et le même rendu sur mobile. Cinq
+ * sons, cinq intentions :
  *
  *   - le tick-tack du minuteur (`startQuizClock` / `updateQuizClock`) tourne
  *     en fond pendant la question et **accélère par paliers** quand le temps
@@ -17,7 +17,13 @@
  *   - `playQuizAnswerSound(false)` : une descente en dents de scie filtrée,
  *     la mauvaise ; `{ timeout: true }` ajoute une note grave quand le
  *     minuteur a expiré — ne pas avoir répondu n'est pas se tromper, le son
- *     le dit aussi.
+ *     le dit aussi ;
+ *   - `playQuizComboSound(streak)` : un bip carré joué dès la deuxième bonne
+ *     réponse consécutive, dont la note monte avec la série — le son chauffe
+ *     comme le compteur 🔥 de la partie ;
+ *   - `playQuizResultFanfare(tier)` : la fanfare de l'écran de résultat, à la
+ *     hauteur du palier (montée de quatre notes pour la légende, petit « oui »
+ *     pour le novice).
  *
  * Mêmes contraintes navigateur que `src/messages/notificationSound.js` :
  * l'audio n'est autorisé qu'après un geste utilisateur (`unlockQuizAudio`
@@ -213,6 +219,62 @@ export function playQuizAnswerSound(correct, { timeout = false } = {}) {
     });
     if (timeout) {
       scheduleNote(context, { frequency: 116.54, offset: 0.3, duration: 0.5, type: 'sawtooth', gain: 0.08, filter: 700 });
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Bip de combo : joué dès la deuxième bonne réponse consécutive, la fréquence
+ * monte avec la série — le son « chauffe » comme le compteur 🔥 de la partie.
+ * @param {number} streak série de bonnes réponses, celle-ci comprise
+ * @returns {boolean} true si le son a effectivement été lancé
+ */
+export function playQuizComboSound(streak) {
+  if (!quizSoundEnabled()) return false;
+  const context = getAudioContext();
+  if (!context || context.state === 'suspended') return false;
+  try {
+    const step = Math.max(0, Math.min(Math.floor(streak) - 2, 8));
+    scheduleNote(context, {
+      frequency: 659.25 + step * 78.4, // mi5 au combo ×2, montant de tierce à tierce
+      duration: 0.09,
+      attack: 0.005,
+      type: 'square',
+      gain: 0.05,
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Fanfare de l'écran de résultat : à la hauteur du palier — montée de quatre
+ * notes pour `legend`, accord de trois pour `veteran`, petit « oui » en deux
+ * notes pour `player` et `rookie`.
+ * @param {string} tier palier de la partie (`resultTier`)
+ * @returns {boolean} true si le son a effectivement été lancé
+ */
+export function playQuizResultFanfare(tier) {
+  if (!quizSoundEnabled()) return false;
+  const context = getAudioContext();
+  if (!context || context.state === 'suspended') return false;
+  try {
+    if (tier === 'legend') {
+      [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+        scheduleNote(context, { frequency, offset: index * 0.12, duration: 0.32, type: 'sine', gain: 0.12 });
+      });
+    } else if (tier === 'veteran') {
+      [523.25, 659.25, 783.99].forEach((frequency, index) => {
+        scheduleNote(context, { frequency, offset: index * 0.1, duration: 0.28, type: 'sine', gain: 0.1 });
+      });
+    } else {
+      [392, 523.25].forEach((frequency, index) => {
+        scheduleNote(context, { frequency, offset: index * 0.12, duration: 0.26, type: 'triangle', gain: 0.08 });
+      });
     }
     return true;
   } catch (e) {

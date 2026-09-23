@@ -4,12 +4,13 @@
  * Deux niveaux de contrôle, comme les autres vérifications du dépôt :
  *
  *   1. le moteur des quizz (mélange déterministe du quizz du jour, barème,
- *      série de jours) se comporte comme annoncé ;
+ *      série de jours, barème « fun » des points) se comporte comme annoncé ;
  *   2. une partie complète est réellement jouée dans le navigateur simulé
  *      (jsdom) avec la vraie pile de l'application — LanguageProvider +
  *      AuthProvider + AchievementProvider — : huit bonnes réponses donnent
- *      un sans-faute, les corrections s'affichent, et la progression des
- *      succès est écrite dans le stockage local.
+ *      un sans-faute (confettis inclus), le verdict de chaque réponse (gel,
+ *      vert/rouge, points), les corrections s'affichent, et la progression
+ *      des succès est écrite dans le stockage local.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -25,10 +26,12 @@ import { translations } from '../src/i18n/translations';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import { baseUrl, quizThumbUrl, quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
-import { QUESTION_TIME, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz } from '../src/quizzes/engine';
+import { QUESTION_TIME, VERDICT_MS, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz, quizPoints } from '../src/quizzes/engine';
 import { writeLocalBest } from '../src/quizzes/quizApi';
 import {
   playQuizAnswerSound,
+  playQuizComboSound,
+  playQuizResultFanfare,
   quizSoundEnabled,
   startQuizClock,
   stopQuizClock,
@@ -118,6 +121,22 @@ export async function checkQuiz(assert) {
   // Temps imparti : la valeur par défaut est celle annoncée (15 s par question).
   assert.equal(QUESTION_TIME.seconds, 15, 'quinze secondes par question');
 
+  // Barème « fun » (les points de la partie, hors barème officiel
+  // correct/total) : base + rapidité + combo, en entiers et bornés —
+  // 200 points maximum par question.
+  assert.deepEqual(
+    quizPoints({ elapsedMs: 0, budgetMs: 15000, streak: 1 }),
+    { base: 100, speed: 50, combo: 0, total: 150 },
+    'réponse immédiate : base + rapidité max',
+  );
+  assert.deepEqual(
+    quizPoints({ elapsedMs: 15000, budgetMs: 15000, streak: 1 }),
+    { base: 100, speed: 0, combo: 0, total: 100 },
+    'réponse sur le chrono : plus de bonus de rapidité',
+  );
+  assert.equal(quizPoints({ elapsedMs: 100, budgetMs: 15000, streak: 3 }).combo, 20, 'combo ×3 : deux bonnes consécutives au-delà de la première');
+  assert.equal(quizPoints({ elapsedMs: 0, budgetMs: 15000, streak: 99 }).total, 200, 'pointage maximal, borné');
+
   // Tick-tack du minuteur : le tempo est une fonction pure, donc testable sans
   // navigateur. Il accélère par paliers quand le temps baisse, et jamais
   // l'inverse — le dernier palier s'emballe pile quand la barre passe au rouge.
@@ -177,6 +196,20 @@ export async function checkQuiz(assert) {
   ));
 
   const click = async (el) => { assert.ok(el, 'élément cliquable présent'); await act(async () => el.click()); };
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  // Le gel de verdict (VERDICT_MS) retient la question suivante après chaque
+  // réponse : les boucles de jeu attendent que l'écran avance (nouvelle
+  // question, ou disparition de la question au profit du résultat).
+  const waitQuestionChange = async (container, previous, timeoutMs = 3000) => {
+    const startedAt = Date.now();
+    for (;;) {
+      const el = container.querySelector('.quiz-question');
+      if (!el || el.textContent !== previous) return;
+      if (Date.now() - startedAt > timeoutMs) throw new Error(`la question n'avance pas (${String(previous).slice(0, 40)}…)`);
+      await act(async () => { await sleep(50); });
+    }
+  };
 
   // Joue une partie parfaite : bouton Commencer puis, à chaque question
   // (ordre mélangé par le moteur), la bonne réponse reconnue à son libellé FR.
@@ -188,6 +221,7 @@ export async function checkQuiz(assert) {
       assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
       const rightText = quizLabel(question.choices[question.answer], 'fr');
       await click([...container.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
+      await waitQuestionChange(container, prompt);
     }
   };
 
@@ -202,6 +236,15 @@ export async function checkQuiz(assert) {
   assert.ok(node.textContent.includes('LÉGENDE'), 'palier légende');
   assert.equal(node.querySelectorAll('.quiz-fix').length, quiz.questions.length);
   assert.equal(node.querySelectorAll('.quiz-fix.is-right').length, quiz.questions.length);
+
+  // Le « fun » du résultat : points de la partie (hors barème officiel),
+  // meilleure série, et les confettis du sans-faute.
+  const pointsMatch = node.textContent.match(/(\d{3,4}) PTS/);
+  assert.ok(pointsMatch, 'les points de la partie sont affichés');
+  const playedPoints = Number(pointsMatch[1]);
+  assert.ok(playedPoints > 800 && playedPoints <= 1600, `points bornés entre 800 et 1600 (${playedPoints})`);
+  assert.ok(node.textContent.includes('×8'), 'la meilleure série ×8 est affichée');
+  assert.ok(node.querySelectorAll('.quiz-confetti span').length > 0, 'confettis du sans-faute');
 
   // La progression des succès est écrite : quizz joué + sans-faute + jour de
   // quizz du jour (le quizz joué est ou non celui du jour selon la date, mais
@@ -369,6 +412,16 @@ export async function checkQuiz(assert) {
     const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
     const wrongText = quizLabel(question.choices[(question.answer + 1) % question.choices.length], 'fr');
     await click([...revNode.querySelectorAll('.quiz-choice')].find((el) => el.textContent === wrongText));
+    if (step === 0) {
+      // Pendant le gel : le choix raté passe au rouge, la bonne réponse
+      // s'illumine sur le choix non cliqué, le bandeau annonce, et tous les
+      // choix sont verrouillés.
+      assert.ok(revNode.querySelector('.quiz-choice.is-wrong'), 'le choix raté passe au rouge');
+      assert.ok(revNode.querySelector('.quiz-choice.is-reveal'), 'la bonne réponse s’illumine');
+      assert.ok(revNode.querySelector('.quiz-verdict.is-wrong'), 'le bandeau de verdict s’affiche');
+      assert.equal([...revNode.querySelectorAll('.quiz-choice')].filter((el) => el.disabled).length, 4, 'choix verrouillés pendant le gel');
+    }
+    await waitQuestionChange(revNode, prompt);
   }
   assert.ok(revNode.textContent.includes('0/8 bonnes réponses'), 'premier tour tout faux : 0/8');
 
@@ -380,6 +433,7 @@ export async function checkQuiz(assert) {
     const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
     const rightText = quizLabel(question.choices[question.answer], 'fr');
     await click([...revNode.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
+    await waitQuestionChange(revNode, prompt);
   }
   assert.ok(revNode.textContent.includes('8/8 bonnes réponses'), 'révision réussie : 8/8');
 
@@ -394,7 +448,6 @@ export async function checkQuiz(assert) {
   // On raccourcit le budget à 300 ms : sans cliquer, chaque question doit
   // expirer toute seule et la partie finir en 0/8 avec « Temps écoulé ».
   QUESTION_TIME.seconds = 0.3;
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   seedLang('fr');
   const timerNode = document.createElement('div');
   document.body.append(timerNode);
@@ -416,10 +469,10 @@ export async function checkQuiz(assert) {
 
   await click([...timerNode.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
   assert.ok(timerNode.querySelector('.quiz-timer'), 'le minuteur est affiché pendant la partie');
-  // Une question à la fois : chaque `act` laisse le décompte expirer (300 ms),
-  // avancer la question, puis relance l'intervalle de la suivante.
+  // Une question à la fois : chaque `act` laisse le décomte expirer (300 ms),
+  // le verdict sonner, puis le gel (VERDICT_MS) faire avancer la question.
   for (let step = 0; step < quiz.questions.length; step += 1) {
-    await act(async () => { await sleep(500); });
+    await act(async () => { await sleep(VERDICT_MS + 400); });
   }
   assert.ok(timerNode.textContent.includes('0/8 bonnes réponses'), 'le minuteur écoulé compte chaque question comme ratée');
   assert.ok(timerNode.textContent.includes('Temps écoulé'), 'les corrections signalent le temps écoulé');
@@ -495,19 +548,24 @@ export async function checkQuiz(assert) {
   assert.ok(await ticks(), 'le tick-tack bat pendant la question, dès le rallumage');
 
   // Une réponse : le même choix que le barème, reconnu à son libellé FR.
-  const answerOnce = async (node, right) => {
-    const prompt = node.querySelector('.quiz-question')?.textContent || '';
+  // Renvoie le libellé de la question posée (pour attendre l'avance après le
+  // gel de verdict).
+  const answerOnce = async (nodeEl, right) => {
+    const prompt = nodeEl.querySelector('.quiz-question')?.textContent || '';
     const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
     assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
     const choice = right
       ? question.choices[question.answer]
       : question.choices[(question.answer + 1) % question.choices.length];
-    await click([...node.querySelectorAll('.quiz-choice')].find((el) => el.textContent === quizLabel(choice, 'fr')));
+    await click([...nodeEl.querySelectorAll('.quiz-choice')].find((el) => el.textContent === quizLabel(choice, 'fr')));
+    return prompt;
   };
 
   // Bonne réponse : accord montant do–mi–sol en sinusoïdes, et compteur ✓.
+  // Pendant le gel de verdict : le choix cliqué passe au vert, le bandeau
+  // annonce le verdict (phrase + points gagnés), les autres choix verrouillés.
   audio.reset();
-  await answerOnce(soundNode, true);
+  const rightPrompt = await answerOnce(soundNode, true);
   const rightNotes = audio.notes.filter((note) => note.type === 'sine');
   assert.equal(rightNotes.length, 3, 'bonne réponse : trois notes');
   assert.deepEqual(
@@ -516,6 +574,11 @@ export async function checkQuiz(assert) {
     'bonne réponse : accord montant do–mi–sol',
   );
   assert.ok(soundNode.textContent.includes('✓ 1'), 'compteur de bonnes réponses à 1');
+  assert.ok(soundNode.querySelector('.quiz-choice.is-correct'), 'le choix cliqué passe au vert pendant le gel');
+  assert.ok(soundNode.querySelector('.quiz-verdict.is-right'), 'le bandeau de verdict s’affiche');
+  assert.ok(/PTS/.test(soundNode.querySelector('.quiz-verdict')?.textContent || ''), 'les points gagnés sont annoncés');
+  assert.equal([...soundNode.querySelectorAll('.quiz-choice')].filter((el) => el.disabled).length, 4, 'choix verrouillés pendant le gel');
+  await waitQuestionChange(soundNode, rightPrompt);
 
   // Mauvaise réponse : deux notes descendantes en dents de scie. Le budget de
   // la question suivante tombe à 400 ms, pour éprouver le temps écoulé.
@@ -526,17 +589,71 @@ export async function checkQuiz(assert) {
   assert.equal(wrongNotes.length, 2, 'mauvaise réponse : deux notes');
   assert.ok(wrongNotes[0].frequency > wrongNotes[1].frequency, 'mauvaise réponse : la descente descend');
   assert.ok(soundNode.textContent.includes('✗ 1'), 'compteur de mauvaises réponses à 1');
+  assert.ok(soundNode.querySelector('.quiz-choice.is-wrong'), 'le choix raté passe au rouge');
+  assert.ok(soundNode.querySelector('.quiz-choice.is-reveal'), 'la bonne réponse s’illumine sur le choix non cliqué');
 
+  // Temps écoulé : la question suivante apparaît après le gel du verdict de la
+  // mauvaise réponse (VERDICT_MS), expire toute seule (400 ms), et sa note
+  // grave part pendant la sonnerie de ce même verdict — ne pas répondre n'est
+  // pas se tromper, le son le dit. On n'avance pas la question en attendant :
+  // il faut que la suivante expire pendant que la précédente est encore gelée.
   // Temps écoulé : la descente plus une note grave — ne pas répondre n'est pas
-  // se tromper, le son le dit. La question suivante expire seule (400 ms).
+  // se tromper, le son le dit. La question suivante apparaît après le gel du
+  // verdict de la mauvaise réponse (VERDICT_MS) et expire toute seule
+  // (400 ms) : on attend ses trois notes en polling (comme le tick-tack plus
+  // haut) plutôt que sur un délai fixe — le gel et le rendu n'étant pas
+  // instantanés, seul le son fait foi.
   audio.reset();
-  await act(async () => { await sleep(700); });
+  const timeoutSound = async (limit = 6000) => {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < limit) {
+      if (audio.notes.filter((note) => note.type === 'sawtooth').length >= 3) return true;
+      await act(async () => { await sleep(50); });
+    }
+    return audio.notes.filter((note) => note.type === 'sawtooth').length >= 3;
+  };
+  assert.ok(await timeoutSound(), 'temps écoulé : le verdict sonore part aussi');
   const timeoutNotes = audio.notes.filter((note) => note.type === 'sawtooth');
-  assert.ok(timeoutNotes.length >= 3, 'temps écoulé : le verdict sonore part aussi');
   assert.ok(timeoutNotes.some((note) => note.frequency < 150), 'temps écoulé : note grave supplémentaire');
   const wrongCount = Number((soundNode.querySelector('.quiz-live-item--wrong')?.textContent || '').replace(/\D/g, '')) || 0;
   assert.ok(wrongCount >= 2, `le temps écoulé compte comme une mauvaise réponse (✗ ${wrongCount})`);
+  // Budget de 15 s restauré aussitôt : il doit l'être avant l'apparition de la
+  // question suivante (à VERDICT_MS après l'expiration) pour que la fin de
+  // partie se joue à budget plein.
   QUESTION_TIME.seconds = 15;
+  await waitQuestionChange(soundNode, soundNode.querySelector('.quiz-question')?.textContent || '');
+
+  // Fin de partie : cinq bonnes réponses consécutives (6/8 au total). Le
+  // compteur de sons est remis à zéro juste avant la dernière — l'écran de
+  // résultat (palier vétérane) doit jouer sa fanfare en plus du verdict de la
+  // réponse, et le combo de la série sonne encore.
+  for (let step = 0; step < 5; step += 1) {
+    const prompt = soundNode.querySelector('.quiz-question')?.textContent || '';
+    if (step === 4) audio.reset();
+    await answerOnce(soundNode, true);
+    await waitQuestionChange(soundNode, prompt);
+  }
+  assert.ok(soundNode.textContent.includes('6/8 bonnes réponses'), 'résultat de la partie : 6/8');
+  assert.ok(soundNode.textContent.includes('VÉTÉRAN'), 'palier vétérane pour 6/8');
+  const resultNotes = audio.notes.filter((note) => note.type === 'sine');
+  assert.equal(resultNotes.length, 6, 'verdict de la dernière réponse (3 notes) + fanfare du palier (3 notes)');
+  assert.equal(audio.notes.filter((note) => note.type === 'square').length, 1, 'le combo de la dernière réponse sonne (série en cours)');
+
+  // Raccourcis clavier : « Rejouer » lance une partie neuve, et la touche 1
+  // valide le premier choix affiché. Une seconde touche pendant le gel est
+  // ignorée — une seule question avance.
+  await click([...soundNode.querySelectorAll('button')].find((el) => el.textContent.trim() === 'Rejouer'));
+  assert.ok(soundNode.querySelector('.quiz-question'), 'la partie neuve est lancée');
+  const keyPrompt = soundNode.querySelector('.quiz-question')?.textContent || '';
+  await act(async () => {
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { key: '1', bubbles: true }));
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { key: '2', bubbles: true }));
+  });
+  assert.ok(soundNode.querySelector('.quiz-verdict'), 'la touche 1 a répondu : verdict affiché');
+  await waitQuestionChange(soundNode, keyPrompt);
+  const answeredCount = Number((soundNode.querySelector('.quiz-live-item--right')?.textContent || '').replace(/\D/g, '')) || 0;
+  const rejectedCount = Number((soundNode.querySelector('.quiz-live-item--wrong')?.textContent || '').replace(/\D/g, '')) || 0;
+  assert.equal(answeredCount + rejectedCount, 1, 'la touche 2, pendant le gel, est ignorée : une seule question avancée');
 
   await act(async () => soundRoot.unmount());
 
@@ -553,6 +670,28 @@ export async function checkQuiz(assert) {
   assert.ok(fastBeat, 'le palier franchi reprogramme le battement immédiatement');
   assert.ok(Date.now() - fastForwardAt < 900, 'il bat moins d’une seconde après le franchissement (rythme accéléré)');
   assert.equal(stopQuizClock(), true, 'l’horloge s’arrête (aucun minuteur ne survit à la partie)');
+
+  // Combo et fanfare : les deux nouveaux sons, testés directement comme les
+  // verdicts — le bip monte avec la série, la fanfare suit le palier.
+  audio.reset();
+  assert.equal(playQuizComboSound(2), true, 'le combo sonne');
+  const comboNotes = audio.notes.filter((note) => note.type === 'square');
+  assert.equal(comboNotes.length, 1, 'un bip par combo');
+  assert.equal(Math.round(comboNotes[0].frequency), 659, 'le combo ×2 part sur le mi');
+  audio.reset();
+  playQuizComboSound(9);
+  const longCombo = audio.notes.find((note) => note.type === 'square');
+  assert.ok(longCombo && Math.round(longCombo.frequency) > 659, 'la note du combo monte avec la série');
+  audio.reset();
+  assert.equal(playQuizResultFanfare('legend'), true, 'la fanfare de légende sonne');
+  assert.deepEqual(
+    audio.notes.map((note) => Math.round(note.frequency)),
+    [523, 659, 784, 1047],
+    'quatre notes montantes pour la légende',
+  );
+  audio.reset();
+  assert.equal(playQuizResultFanfare('rookie'), true, 'la fanfare de novice sonne aussi');
+  assert.equal(audio.notes.length, 2, 'deux notes pour le novice');
 
   // Réglage compris avant de lancer la partie : le bouton son existe dans les
   // trois langues, avec le libellé traduit (pas le repli anglais).
@@ -582,5 +721,5 @@ export async function checkQuiz(assert) {
     await act(async () => langRoot.unmount());
   }
 
-  console.log('QUIZZ : moteur, partie 8/8 + succès, défi démo, grille FR/EN/AR, record + compte à rebours, révision sans double comptage, minuteur 15 s, sons (tick-tack qui accélère, verdicts juste/faux/temps écoulé, coupure).');
+  console.log('QUIZZ : moteur (+ points fun bornés), partie 8/8 + succès + confettis, défi démo, grille FR/EN/AR, record + compte à rebours, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
 }
