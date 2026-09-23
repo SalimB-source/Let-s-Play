@@ -683,8 +683,11 @@ mais la structure de données les accepte déjà.
   par graine (le quizz du jour est le même pour tous), barème, paliers de
   résultat (`rookie` → `legend`), meilleure série de jours consécutifs.
 - **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
-  sur `/quizz` et bandeau d'accueil ; terminer le quizz du jour crédite un jour
-  de série (succès platine « Semaine parfaite » = 7 jours d'affilée).
+  sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
+  `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
+  terminer le quizz du jour crédite un jour de série (succès platine
+  « Semaine parfaite » = 7 jours d'affilée). Le meilleur score de l'appareil
+  s'affiche sur chaque carte de la grille.
 - **Succès** — l'action `quiz_completed` (`QuizPlayer`) alimente le moteur des
   succès : parties, quizz distincts, sans-faute, jours de série. Cinq succès
   au catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi

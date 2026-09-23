@@ -60,7 +60,8 @@
 .quiz-card-copy { display: flex; flex-direction: column; gap: 8px; padding: 2px 4px 8px; }
 .quiz-card-copy h3 { margin: 0; font: 700 17px/1.2 var(--display); text-transform: uppercase; }
 .quiz-card-copy p { margin: 0; color: var(--muted); font-size: 14px; }
-.quiz-card-meta { margin-top: auto; padding-top: 10px; color: var(--cyan); font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
+.quiz-card-meta { margin-top: auto; padding-top: 10px; color: var(--cyan); font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+.quiz-card-best { color: var(--yellow); border: 1px solid rgba(255, 214, 25, .4); padding: 2px 7px; }
 
 /* ---- Le joueur ----------------------------------------------------------- */
 .quiz-player { max-width: 860px; margin: 0 auto; }

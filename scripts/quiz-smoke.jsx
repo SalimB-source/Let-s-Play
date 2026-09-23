@@ -25,6 +25,7 @@ import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import { quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
 import { bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz } from '../src/quizzes/engine';
+import { writeLocalBest } from '../src/quizzes/quizApi';
 // Personas de démonstration (livrés vides dans l'application) : comme les
 // autres scripts de vérification, on réinjecte les fixtures avant le rendu.
 import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
@@ -212,5 +213,34 @@ export async function checkQuiz(assert) {
     await act(async () => gridRoot.unmount());
   }
 
-  console.log('QUIZZ : moteur (jour, mélange, barème, série), partie complète 8/8 + succès crédités, grille en FR/EN/AR.');
+  /* ------------------ 5. Record + compte à rebours sur la grille ------------ */
+  // Le localStorage garde la langue FR et le record écrit par la partie de
+  // l'étape 2 n'existe plus (vidé par seedLang) : on le repose comme le ferait
+  // une partie, puis la grille doit montrer le badge et le décompte.
+  globalThis.window.localStorage.setItem('letsplay-lang', 'fr');
+  writeLocalBest('culture-gaming', 8, 8);
+  const bestNode = document.createElement('div');
+  document.body.append(bestNode);
+  const bestRoot = createRoot(bestNode);
+  await act(async () => bestRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <AchievementProvider>
+          <MemoryRouter initialEntries={['/quizz']}>
+            <Routes>
+              <Route path="/quizz" element={<QuizzesPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AchievementProvider>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+  assert.ok(bestNode.textContent.includes('Nouveau quizz dans'), 'compte à rebours du prochain quizz du jour');
+  assert.ok(
+    [...bestNode.querySelectorAll('.quiz-card-best')].some((el) => el.textContent.includes('8/8')),
+    'record 8/8 affiché sur la carte du quizz joué',
+  );
+  await act(async () => bestRoot.unmount());
+
+  console.log('QUIZZ : moteur (jour, mélange, barème, série), partie complète 8/8 + succès crédités, défi démo, grille en FR/EN/AR, record + compte à rebours.');
 }
