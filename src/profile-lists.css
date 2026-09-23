@@ -1,0 +1,26 @@
+/* Progressive disclosure controls shared by profile lists. */
+.player-list-toggle {
+  display: inline-flex;
+  margin-top: 16px;
+  padding: 8px 14px;
+  border: 1px solid var(--cyan);
+  background: rgba(34, 211, 238, .08);
+  color: var(--cyan);
+  font: 700 10px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.player-list-toggle:hover { background: rgba(34, 211, 238, .16); color: #fff; }
+
+@media (max-width: 720px) {
+  /* Exactly five compact achievement cards per row on phones. */
+  .achievements-panel.compact .achievement-grid.compact {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .achievements-panel.compact .achievement-card-inner { padding: 7px 2px; min-height: 86px; }
+  .achievements-panel.compact .achievement-card-icon { width: 30px; height: 30px; }
+  .achievements-panel.compact .achievement-card h3 { font-size: 7px; line-height: 1.15; }
+  .achievements-panel.compact .achievement-card-tier { font-size: 6px; padding: 2px 3px; }
+}

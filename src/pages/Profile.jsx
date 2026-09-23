@@ -58,6 +58,7 @@ function TopGamesRow({
 }) {
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [isEditing, setIsEditing] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const list = Array.isArray(games)
     ? games.filter((g) => typeof g === 'string' && g.trim()).slice(0, PROFILE_TOP_GAMES_LIMIT)
     : [];
@@ -72,12 +73,12 @@ function TopGamesRow({
   }, [list]);
 
   const displayedGames = useMemo(() => {
-    if (activeFilter === 'ALL') return list;
-    return list.filter((title) => {
+    const filteredList = activeFilter === 'ALL' ? list : list.filter((title) => {
       const pList = gamePlatforms(title);
       return pList.includes(activeFilter);
     });
-  }, [list, activeFilter]);
+    return (showAll || isEditing) ? filteredList : filteredList.slice(0, 3);
+  }, [list, activeFilter, showAll, isEditing]);
 
   const toggleEditing = () => {
     setIsEditing((previous) => {
@@ -152,6 +153,42 @@ function TopGamesRow({
             : (emptyText || 'Aucun jeu dans ton TOP 10 pour l’instant.')}
         </p>
       )}
+      {!editable && list.length > 3 && (
+        <button type="button" className="player-list-toggle" onClick={() => setShowAll((value) => !value)} aria-expanded={showAll}>
+          {showAll ? 'Réduire' : 'Voir plus'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PublicPlatforms({ platforms, heading = 'Plateformes' }) {
+  const [expanded, setExpanded] = useState(false);
+  const list = normalizePlatforms(platforms);
+  if (!list.length) return null;
+  return (
+    <div className="player-section">
+      <div className="player-section-header"><h2>{heading}</h2></div>
+      <div className="player-platforms-row">
+        {(expanded ? list : list.slice(0, 5)).map((p) => (
+          <span key={p} className="player-platform-pill"><ConsoleLogo consoleId={p} size={15} /><span>{p}</span></span>
+        ))}
+      </div>
+      {list.length > 5 && <button type="button" className="player-list-toggle" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Réduire' : 'Voir toutes les consoles'}</button>}
+    </div>
+  );
+}
+
+function PublicBadges({ badges }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!Array.isArray(badges) || !badges.length) return null;
+  return (
+    <div className="player-section">
+      <div className="player-section-header"><h2>Succès & badges</h2></div>
+      <div className="player-badges-grid">{(expanded ? badges : badges.slice(0, 5)).map((b) => (
+        <div key={b.id} className="player-badge-item"><span className="player-badge-icon">{b.icon}</span><div className="player-badge-info"><h4>{b.name}</h4><p>{b.desc}</p></div></div>
+      ))}</div>
+      {badges.length > 5 && <button type="button" className="player-list-toggle" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Réduire' : 'Voir tous les succès'}</button>}
     </div>
   );
 }
@@ -404,32 +441,13 @@ export default function Profile() {
             <div className="player-stat-card"><div className="player-stat-value">{meta.stats.badgesUnlocked}</div><div className="player-stat-label">Succès</div></div>
           </div>
 
-          {meta.platforms?.length > 0 && (
-            <div className="player-section">
-              <div className="player-section-header"><h2>Plateformes</h2></div>
-              <div className="player-platforms-row">
-                {meta.platforms.map((p) => (
-                  <span key={p} className="player-platform-pill">
-                    <ConsoleLogo consoleId={p} size={15} />
-                    <span>{p}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          <PublicPlatforms platforms={meta.platforms} />
 
           {meta.testedGames?.length > 0 && (
             <TopGamesRow games={meta.testedGames} />
           )}
 
-          {meta.badges?.length > 0 && (
-            <div className="player-section">
-              <div className="player-section-header"><h2>Succès & badges</h2></div>
-              <div className="player-badges-grid">{meta.badges.map((b) => (
-                <div key={b.id} className="player-badge-item"><span className="player-badge-icon">{b.icon}</span><div className="player-badge-info"><h4>{b.name}</h4><p>{b.desc}</p></div></div>
-              ))}</div>
-            </div>
-          )}
+          <PublicBadges badges={meta.badges} />
 
           <div className="player-actions-card">
             <div className="player-actions-left">
@@ -499,19 +517,7 @@ export default function Profile() {
             </div>
           </div>
 
-          {demoPlayer.platforms?.length > 0 && (
-            <div className="player-section">
-              <div className="player-section-header"><h2>Plateformes</h2></div>
-              <div className="player-platforms-row">
-                {demoPlayer.platforms.map((p) => (
-                  <span key={p} className="player-platform-pill">
-                    <ConsoleLogo consoleId={p} size={15} />
-                    <span>{p}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          <PublicPlatforms platforms={demoPlayer.platforms} />
 
           {demoPlayer.testedGames?.length > 0 && (
             <TopGamesRow games={demoPlayer.testedGames} />
@@ -604,19 +610,7 @@ export default function Profile() {
 
         {/* Consoles possédées + jeux testés — colonnes publiques du profil
             (section 3b2 du schéma) ; absentes sur les anciens déploiements. */}
-        {normalizePlatforms(remoteProfile.platforms).length > 0 && (
-          <div className="player-section">
-            <div className="player-section-header"><h2>Plateformes</h2></div>
-            <div className="player-platforms-row">
-              {normalizePlatforms(remoteProfile.platforms).map((p) => (
-                <span key={p} className="player-platform-pill">
-                  <ConsoleLogo consoleId={p} size={15} />
-                  <span>{p}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        <PublicPlatforms platforms={remoteProfile.platforms} />
         {Array.isArray(remoteProfile.tested_games) && remoteProfile.tested_games.length > 0 && (
           <TopGamesRow games={remoteProfile.tested_games} />
         )}

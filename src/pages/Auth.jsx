@@ -1166,7 +1166,7 @@ export default function Auth({ initialMode = '' }) {
           {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
               commentaires, recherche, fidélité, compte) */}
           <div className="player-section achievements-section">
-            <AchievementsPanel variant="compact" />
+            <AchievementsPanel variant="compact" limit={5} />
           </div>
 
           {/* CONSOLES POSSÉDÉES + JEUX TESTÉS — multi-sélection persistée
@@ -1529,6 +1529,7 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
   const [query, setQuery] = useState('');
   const [selectedConsole, setSelectedConsole] = useState('ALL');
   const [isEditingGames, setIsEditingGames] = useState(false);
+  const [isEditingPlatforms, setIsEditingPlatforms] = useState(false);
   const resetGamesView = () => {
     setQuery('');
     setSelectedConsole('ALL');
@@ -1606,8 +1607,9 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
         throw new Error(t.unavailable);
       }
       flash(t.profileSaved, false);
-      // Le bouton Enregistrer ferme le filtre
+      // Enregistrer referme les deux éditeurs.
       resetGamesView();
+      setIsEditingPlatforms(false);
     } catch (e) {
       flash(describeAuthError(e, t, t.profileSaveError), true);
     } finally {
@@ -1638,12 +1640,15 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
     <>
       {/* CONSOLES POSSÉDÉES */}
       <div className="player-section">
-        <div className="player-section-header">
-          <h2>{t.platformsHeading}</h2>
-          <p>{t.consolesHint}</p>
+        <div className="player-section-header player-games-section-header">
+          <div><h2>{t.platformsHeading}</h2><p>{t.consolesHint}</p></div>
+          <button type="button" className={`player-games-action-btn${isEditingPlatforms ? ' active' : ''}`}
+            onClick={() => setIsEditingPlatforms((value) => !value)} aria-expanded={isEditingPlatforms}>
+            {isEditingPlatforms ? 'Fermer' : 'Modifier'}
+          </button>
         </div>
-        <div className="player-console-grid">
-          {CONSOLE_OPTIONS.map((option) => {
+        <div className={isEditingPlatforms ? 'player-console-grid' : 'player-platforms-row'}>
+          {(isEditingPlatforms ? CONSOLE_OPTIONS : CONSOLE_OPTIONS.filter((option) => draftPlatforms.includes(option.id)).slice(0, 5)).map((option) => {
             const selected = draftPlatforms.includes(option.id);
             return (
               <button
@@ -1666,7 +1671,13 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
             );
           })}
         </div>
-        {saveRow(platformsDirty)}
+        {isEditingPlatforms && (
+          <div className="player-gear-save-row">
+            <button type="button" className="button button-yellow" onClick={platformsDirty ? save : () => setIsEditingPlatforms(false)} disabled={saving}>
+              {saving ? t.saving : 'Enregistrer'}
+            </button>
+          </div>
+        )}
         {note && <p className="player-edit-note">{note}</p>}
         {err && <p className="player-edit-note player-edit-error">{err}</p>}
       </div>
@@ -1688,7 +1699,7 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
         </div>
         {draftGames.length > 0 ? (
           <div className="player-games-row">
-            {draftGames.map((title, index) => (
+            {(isEditingGames ? draftGames : draftGames.slice(0, 3)).map((title, index) => (
               <TopGamePill key={title} title={title} rank={index + 1}>
                 {isEditingGames && (
                   <button type="button" className="player-game-chip-remove" onClick={() => toggleGame(title)}

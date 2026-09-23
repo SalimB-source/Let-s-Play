@@ -31,6 +31,8 @@ const copy = {
     remaining: '{n} more to go',
     howHintUnlocked: 'Unlocked — keep playing!',
     howTo: 'How to unlock',
+    showAll: 'See all achievements',
+    showLess: 'Show less',
   },
   fr: {
     heading: 'SUCCÈS',
@@ -53,6 +55,8 @@ const copy = {
     remaining: 'Encore {n}',
     howHintUnlocked: 'Débloqué — continue comme ça !',
     howTo: 'Comment débloquer',
+    showAll: 'Voir tous les succès',
+    showLess: 'Réduire',
   },
   ar: {
     heading: 'الإنجازات',
@@ -75,6 +79,8 @@ const copy = {
     remaining: 'متبق {n}',
     howHintUnlocked: 'مفتوح — واصل اللعب!',
     howTo: 'كيفية الفتح',
+    showAll: 'عرض كل الإنجازات',
+    showLess: 'عرض أقل',
   },
 };
 
@@ -181,6 +187,7 @@ export default function AchievementsPanel({ variant = 'full', limit }) {
   const [group, setGroup] = useState('all');
   const [tier, setTier] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
+  const [expanded, setExpanded] = useState(false);
 
   const usedGroups = useMemo(
     () => GROUPS.filter((entry) => summary.items.some((item) => item.group === entry.id)),
@@ -219,10 +226,10 @@ export default function AchievementsPanel({ variant = 'full', limit }) {
     // finie est explicitement passée (ex. <AchievementsPanel limit={4} />)
     // on garde le découpage \"récents + à venir\" hérité.
     let shown;
-    if (typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+    if (!expanded && typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
       const recent = filtered.filter((item) => item.unlocked).slice(0, limit);
-      const upcoming = filtered.filter((item) => !item.unlocked).slice(0, Math.max(1, limit - recent.length));
-      shown = [...recent, ...upcoming];
+      const upcoming = filtered.filter((item) => !item.unlocked).slice(0, Math.max(0, limit - recent.length));
+      shown = [...recent, ...upcoming].slice(0, limit);
     } else {
       shown = filtered;
     }
@@ -246,6 +253,11 @@ export default function AchievementsPanel({ variant = 'full', limit }) {
           <p className="player-empty-note">{t.empty}</p>
         )}
 
+        {typeof limit === 'number' && filtered.length > limit && (
+          <button type="button" className="player-list-toggle" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+            {expanded ? t.showLess : t.showAll}
+          </button>
+        )}
       </div>
     );
   }
