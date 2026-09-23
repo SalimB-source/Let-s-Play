@@ -98,8 +98,11 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   // plus de points (ni XP, ni record, ni classement). L'état est figé au
   // lancement de la partie (`replayRun`) : la fin de CETTE partie marque la
   // difficulté comme terminée, l'écran de résultat doit pourtant dire si
-  // elle rapportait encore quelque chose.
-  const alreadyCompleted = quizAlreadyCompleted(achievementState, quiz.slug, difficulty);
+  // elle rapportait encore quelque chose. `quiz.difficulty` est la
+  // difficulté « maison » : seule banque jouable avant les paliers, elle
+  // recueille une éventuelle complétion à l'ancien format (voir
+  // `quizAlreadyCompleted`) — les deux autres paliers restent neufs.
+  const alreadyCompleted = quizAlreadyCompleted(achievementState, quiz.slug, difficulty, quiz.difficulty);
   const [replayRun, setReplayRun] = useState(alreadyCompleted);
   const copy = {
     ...FALLBACK,
@@ -164,7 +167,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     // Figé AU LANCEMENT : si la difficulté était déjà terminée avant la
     // partie, rien ne sera noté (pas de points, pas de record, pas de
     // classement) — c'est `replayRun` que le reste du lecteur lit.
-    setReplayRun(quizAlreadyCompleted(achievementState, quiz.slug, difficulty));
+    setReplayRun(quizAlreadyCompleted(achievementState, quiz.slug, difficulty, quiz.difficulty));
     // La banque jouée est celle de la difficulté choisie (vraies questions
     // différentes par palier). Quizz du jour : même mélange pour tout le
     // monde (graine = numéro du jour) — à difficulté donnée.
@@ -258,9 +261,11 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
       // Une seule fois par partie : le moteur des succès crédite l'action
       // (quizz×difficulté joué, sans-faute, jour de quizz du jour pour la
       // série) — le moteur décide lui-même si ça rapporte encore de l'XP.
+      // `homeDifficulty` accompagne l'action : c'est elle qui recueille une
+      // complétion enregistrée à l'ancien format (slug nu, avant les paliers).
       if (!review && trackedFor.current !== prepared) {
         trackedFor.current = prepared;
-        track('quiz_completed', { id: quiz.slug, perfect: graded.perfect, daily, difficulty });
+        track('quiz_completed', { id: quiz.slug, perfect: graded.perfect, daily, difficulty, homeDifficulty: quiz.difficulty });
         // Règle « un quizz rapporte une fois » : si la difficulté était
         // DÉJÀ terminée avant la partie, RIEN n'est noté — pas de record
         // de l'appareil, pas de tentative serveur, pas de refresh du
@@ -371,13 +376,16 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
           {meta.text ? <p>{meta.text}</p> : null}
           {/* Choix de la difficulté : trois paliers, trois BANQUES DE
               QUESTIONS (pas les mêmes questions !) et trois multiplicateurs
-              de points. Une difficulté terminée porte sa coche — le rejouer
-              ne rapporte plus rien (pas de points, pas d'XP), les autres, si. */}
+              de points. Une difficulté RÉELLEMENT terminée porte sa coche —
+              le rejouer ne rapporte plus rien (pas de points, pas d'XP), les
+              autres, si. Un quizz terminé avant l'arrivée des paliers
+              (ancien format) ne coche que sa difficulté maison : les deux
+              autres banques n'ont jamais été jouées. */}
           <div className="quiz-difficulty">
             <p className="quiz-difficulty-label">{copy.difficultyTitle}</p>
             <div className="quiz-difficulty-row" role="group" aria-label={copy.difficultyTitle}>
               {QUIZ_DIFFICULTIES.map((level) => {
-                const levelDone = quizAlreadyCompleted(achievementState, quiz.slug, level);
+                const levelDone = quizAlreadyCompleted(achievementState, quiz.slug, level, quiz.difficulty);
                 const levelActive = difficulty === level;
                 return (
                   <button

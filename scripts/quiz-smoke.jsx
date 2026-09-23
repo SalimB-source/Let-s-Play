@@ -426,6 +426,67 @@ export async function checkQuiz(assert) {
 
   await act(async () => diffRoot.unmount());
 
+  /* --- 2c. Ancien format : une seule coche, sur la difficulté maison ------- */
+  // Un joueur qui avait terminé ce quizz AVANT l'arrivée des paliers (clé au
+  // slug nu) n'a joué que la banque maison du quizz (`quiz.difficulty`). Le
+  // sélecteur ne doit cocher QUE ce palier : les deux autres banques n'ont
+  // jamais été vues et s'annoncent neuves (bug signalé : les trois coches
+  // « ✓ Déjà terminé » s'allumaient d'un coup sur un quizz jamais rejoué).
+  seedLang('fr');
+  globalThis.window.localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify({
+    counters: { quizzes_completed: 1 },
+    sets: { quizzes_played: [slug], perfect_quizzes: [slug] },
+  }));
+  const legacyNode = document.createElement('div');
+  document.body.append(legacyNode);
+  const legacyRoot = createRoot(legacyNode);
+  await act(async () => legacyRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <AchievementProvider>
+          <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
+            <Routes>
+              <Route path="/quizz" element={<QuizzesPage />} />
+              <Route path="/quizz/:slug" element={<QuizPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AchievementProvider>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+
+  const levelLabels = { easy: 'Facile', medium: 'Confirmé', hard: 'Expert' };
+  const legacyLevel = quiz.difficulty;
+  const untouchedLevel = QUIZ_DIFFICULTIES.find((level) => level !== legacyLevel);
+  const legacyButton = (name) => [...legacyNode.querySelectorAll('.quiz-difficulty-btn')].find((el) => el.textContent.includes(name));
+  const doneLevels = [...legacyNode.querySelectorAll('.quiz-difficulty-btn.is-done')];
+  assert.equal(doneLevels.length, 1, 'une seule difficulté cochée pour un quizz terminé à l\'ancien format');
+  assert.ok(doneLevels[0].textContent.includes(levelLabels[legacyLevel]), 'la coche est sur la difficulté maison du quizz');
+  assert.ok(!legacyButton(levelLabels[untouchedLevel]).classList.contains('is-done'), 'une difficulté jamais jouée ne s\'annonce pas terminée');
+  assert.ok(legacyNode.textContent.includes('ne rapporte plus de points'), 'l\'avertissement s\'affiche sur le palier réellement terminé');
+  // Choisir la difficulté neuve : plus d'avertissement, plus de coche sur elle
+  // — la partie annoncée est bien une première partie.
+  await act(async () => legacyButton(levelLabels[untouchedLevel]).click());
+  assert.ok(legacyButton(levelLabels[untouchedLevel]).classList.contains('is-active'), 'le palier neuf est sélectionné');
+  assert.ok(!legacyNode.querySelector('.quiz-noxp-hint'), 'aucun avertissement « déjà terminé » sur la difficulté neuve');
+  assert.equal(legacyNode.querySelectorAll('.quiz-difficulty-btn.is-done').length, 1, 'la difficulté maison reste la seule cochée');
+
+  // La partie annoncée comme neuve l'est vraiment : elle rapporte ses points
+  // et son propre run, la difficulté maison (terminée à l'ancienne) gardant
+  // son blocage.
+  await playPerfect(legacyNode, quizQuestions(quiz, untouchedLevel));
+  const legacyRunPoints = Number((legacyNode.textContent.match(/(\d{3,4}) PTS/) || [])[1] || 0);
+  assert.ok(legacyRunPoints > 800, `un palier jamais joué rapporte ses points (${legacyRunPoints})`);
+  const legacyStored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  assert.ok(
+    (legacyStored?.sets?.quizzes_played || []).includes(quizRunKey(slug, untouchedLevel)),
+    'le palier neuf est crédité sous sa clé slug:difficulté',
+  );
+  assert.ok((legacyStored?.sets?.quizzes_played || []).includes(slug), 'l\'ancien run au slug nu reste dans la progression');
+  assert.equal(legacyStored?.counters?.quizzes_completed, 2, 'le palier neuf compte sa partie');
+
+  await act(async () => legacyRoot.unmount());
+
   /* ------------------------- 3. Défi entre amis (session démo) -------------- */
   seedLang('fr');
   seedDemoProfiles();
