@@ -85,7 +85,7 @@ export function prepareQuiz(quiz, seed = null) {
  * Temps imparti par question, en secondes. Exposé mutable pour que les
  * scripts de vérification (check:quiz) puissent accélérer l'horloge.
  */
-export const QUESTION_TIME = { seconds: 7 };
+export const QUESTION_TIME = { seconds: 15 };
 
 export function gradeQuiz(prepared, answers = {}) {
   const detail = (prepared.questions || []).map((question) => {

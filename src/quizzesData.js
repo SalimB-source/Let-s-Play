@@ -12,13 +12,25 @@
  * « Tour complet » le prennent en compte (penser à mettre à jour la cible
  * du succès dans `src/achievements/catalog.js` si le nombre change).
  *
- * `videoId` sert de miniature (mêmes miniatures YouTube publiques que les
- * dossiers du site) ; `source` renvoie vers l'article maison qui approfondit
- * le sujet du quizz.
+ * `image` est la miniature du quizz : une illustration maison livrée dans
+ * `public/quizzes/<slug>.jpg` (16/9, produite par `quizThumbUrl`). `videoId`
+ * reste l'épisode lié au sujet — il sert de repli si l'illustration manque
+ * (`QuizThumb` via `src/lib/videoThumbnails.js`), comme il servait de
+ * miniature avant. `source` renvoie vers l'article maison qui approfondit le
+ * sujet du quizz.
  */
 import { baseUrl as base } from './data';
 
 export const baseUrl = base;
+
+/**
+ * Miniature d'un quizz : `public/quizzes/<slug>.jpg`.
+ * Une seule fabrique pour les huit illustrations — la vérification
+ * `npm run check:thumbs` s'assure qu'aucun chemin n'est codé en dur ailleurs.
+ */
+export function quizThumbUrl(slug) {
+  return `${base}quizzes/${slug}.jpg`;
+}
 
 /** Libellé traduit d'un bloc de contenu, repli en → fr. */
 export function quizLabel(labels, lang = 'fr') {
@@ -33,6 +45,7 @@ export const quizzes = [
     slug: 'culture-gaming',
     route: '/quizz/culture-gaming',
     videoId: 't1Re8ki_gsw',
+    image: quizThumbUrl('culture-gaming'),
     tag: 'Culture',
     difficulty: 'easy',
     keywords: 'quizz culture gaming général mario zelda minecraft',
@@ -55,6 +68,7 @@ export const quizzes = [
     slug: 'consoles-retro',
     route: '/quizz/consoles-retro',
     videoId: 'A2VPhWOUMHI',
+    image: quizThumbUrl('consoles-retro'),
     tag: 'Rétro',
     difficulty: 'medium',
     keywords: 'quizz rétro consoles playstation xbox sega nintendo dreamcast',
@@ -77,6 +91,7 @@ export const quizzes = [
     slug: 'souls-fromsoftware',
     route: '/quizz/souls-fromsoftware',
     videoId: 'OH51fSHznwg',
+    image: quizThumbUrl('souls-fromsoftware'),
     tag: 'Souls-like',
     difficulty: 'hard',
     keywords: 'quizz souls fromsoftware dark souls elden ring bloodborne miyazaki',
@@ -99,6 +114,7 @@ export const quizzes = [
     slug: 'rpg-legends',
     route: '/quizz/rpg-legends',
     videoId: '0ThNyFItASM',
+    image: quizThumbUrl('rpg-legends'),
     tag: 'RPG',
     difficulty: 'medium',
     keywords: 'quizz rpg zelda witcher skyrim persona final fantasy cyberpunk',
@@ -121,6 +137,7 @@ export const quizzes = [
     slug: 'esport-competition',
     route: '/quizz/esport-competition',
     videoId: 'twbaM8fiXpo',
+    image: quizThumbUrl('esport-competition'),
     tag: 'E-sport',
     difficulty: 'medium',
     keywords: 'quizz esport counter-strike league of legends free fire mortak kombat rocket league',
@@ -143,6 +160,7 @@ export const quizzes = [
     slug: 'studios-legends',
     route: '/quizz/studios-legends',
     videoId: 'aTs0zhm6Leg',
+    image: quizThumbUrl('studios-legends'),
     tag: 'Studios',
     difficulty: 'hard',
     keywords: 'quizz studios créateurs kojima miyamoto naughty dog capcom ubisoft rockstar',
@@ -165,6 +183,7 @@ export const quizzes = [
     slug: 'tech-hardware',
     route: '/quizz/tech-hardware',
     videoId: 'Zl6crcrPnPQ',
+    image: quizThumbUrl('tech-hardware'),
     tag: 'Tech',
     difficulty: 'medium',
     keywords: 'quizz tech matériel gpu nvidia amd nvme ray tracing usb-c',
@@ -186,6 +205,7 @@ export const quizzes = [
     slug: 'cinema-pop-culture',
     route: '/quizz/cinema-pop-culture',
     videoId: 'HzigJZOxz2o',
+    image: quizThumbUrl('cinema-pop-culture'),
     tag: 'Cinéma',
     difficulty: 'easy',
     keywords: 'quizz cinéma séries adaptations arcane edgerunners witcher ready player one',

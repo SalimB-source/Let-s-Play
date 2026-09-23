@@ -23,7 +23,7 @@ import { MessagesProvider } from '../src/messages/MessagesContext';
 import { readDemoMessages } from '../src/messages/messagesApi';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
-import { quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
+import { baseUrl, quizThumbUrl, quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
 import { QUESTION_TIME, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz } from '../src/quizzes/engine';
 import { writeLocalBest } from '../src/quizzes/quizApi';
 // Personas de démonstration (livrés vides dans l'application) : comme les
@@ -71,6 +71,21 @@ export async function checkQuiz(assert) {
 
   assert.equal(bestDayRun(['2026-09-20', '2026-09-21', '2026-09-22', '2026-09-25']), 3);
   assert.equal(bestDayRun([]), 0);
+
+  // Temps imparti : la valeur par défaut est celle annoncée (15 s par question).
+  assert.equal(QUESTION_TIME.seconds, 15, 'quinze secondes par question');
+
+  // Miniatures : chaque quizz a sa propre illustration maison
+  // (`public/quizzes/<slug>.jpg`), et l'épisode lié reste disponible comme
+  // repli (`videoId`).
+  const thumbs = quizzes.map((quiz) => quiz.image);
+  for (const quiz of quizzes) {
+    assert.equal(quiz.image, quizThumbUrl(quiz.slug), `${quiz.slug} : miniature maison du bon slug`);
+    assert.ok(quiz.image.startsWith(`${baseUrl}quizzes/`), `${quiz.slug} : miniature dans public/quizzes/`);
+    assert.match(quiz.image, /\/quizzes\/[a-z0-9-]+\.jpg$/, `${quiz.slug} : nom de fichier attendu`);
+    assert.ok(quiz.videoId, `${quiz.slug} : épisode lié conservé en repli`);
+  }
+  assert.equal(new Set(thumbs).size, quizzes.length, 'une miniature distincte par quizz');
 
   /* ------------------------------------- 2. Partie complète (jsdom) -------- */
   seedLang('fr');
@@ -210,6 +225,25 @@ export async function checkQuiz(assert) {
     ));
     assert.equal(gridNode.querySelectorAll('.quiz-card').length, quizzes.length, `[${lang}] huit cartes de quizz`);
     assert.ok(gridNode.querySelector('.quiz-daily'), `[${lang}] bannière quizz du jour`);
+
+    // Chaque carte affiche sa miniature maison (aucune requête YouTube), et
+    // la bannière du jour affiche celle du quizz mis en avant.
+    const cardThumbs = [...gridNode.querySelectorAll('.quiz-card-media img')].map((img) => img.getAttribute('src'));
+    assert.equal(cardThumbs.length, quizzes.length, `[${lang}] une miniature par carte`);
+    assert.equal(new Set(cardThumbs).size, quizzes.length, `[${lang}] huit miniatures distinctes`);
+    assert.deepEqual(
+      [...cardThumbs].sort(),
+      quizzes.map((entry) => entry.image).sort(),
+      `[${lang}] les cartes demandent les fichiers de public/quizzes/`,
+    );
+    assert.ok(
+      cardThumbs.every((src) => !src.includes('ytimg.com')),
+      `[${lang}] aucune requête YouTube pour les cartes`,
+    );
+    assert.ok(
+      (gridNode.querySelector('.quiz-daily-media img')?.getAttribute('src') || '').startsWith(`${baseUrl}quizzes/`),
+      `[${lang}] la bannière du jour utilise la miniature maison`,
+    );
     await act(async () => gridRoot.unmount());
   }
 
@@ -323,9 +357,9 @@ export async function checkQuiz(assert) {
   }
   assert.ok(timerNode.textContent.includes('0/8 bonnes réponses'), 'le minuteur écoulé compte chaque question comme ratée');
   assert.ok(timerNode.textContent.includes('Temps écoulé'), 'les corrections signalent le temps écoulé');
-  QUESTION_TIME.seconds = 7;
+  QUESTION_TIME.seconds = 15;
 
   await act(async () => timerRoot.unmount());
 
-  console.log('QUIZZ : moteur, partie 8/8 + succès, défi démo, grille FR/EN/AR, record + compte à rebours, révision sans double comptage, minuteur 7 s.');
+  console.log('QUIZZ : moteur, partie 8/8 + succès, défi démo, grille FR/EN/AR, record + compte à rebours, révision sans double comptage, minuteur 15 s.');
 }

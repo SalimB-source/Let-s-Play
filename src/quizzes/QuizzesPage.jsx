@@ -74,7 +74,7 @@ export default function QuizzesPage() {
               <span className="arrow-link">{copy.play} <Arrow /></span>
             </div>
             <span className="quiz-daily-media">
-              <VideoThumb id={daily.videoId} alt={quizLabel(daily.labels, lang)?.title} quality="hq" />
+              <VideoThumb id={daily.videoId} lead={daily.image} alt={quizLabel(daily.labels, lang)?.title} quality="hq" />
             </span>
           </Link>
           <p className="quiz-daily-hint">{copy.dailyHint}</p>
@@ -87,7 +87,7 @@ export default function QuizzesPage() {
           return (
           <Link className="quiz-card" to={quiz.route} key={quiz.slug}>
             <span className="quiz-card-media hud-frame">
-              <VideoThumb id={quiz.videoId} alt={quizLabel(quiz.labels, lang)?.title} quality="hq" />
+              <VideoThumb id={quiz.videoId} lead={quiz.image} alt={quizLabel(quiz.labels, lang)?.title} quality="hq" />
             </span>
             <span className="quiz-card-copy">
               <span className="quiz-chips">

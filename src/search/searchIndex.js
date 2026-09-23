@@ -59,7 +59,7 @@ const quizzes = quizCatalog.map((quiz) => ({
   route: quiz.route,
   keywords: quiz.keywords,
   meta: `${quiz.questions.length} questions`,
-  image: youTubeThumbUrl(quiz.videoId, 'hq'),
+  image: quiz.image || youTubeThumbUrl(quiz.videoId, 'hq'),
 }));
 
 export const searchIndex = [...news, ...reviews, ...dossiers, ...releases, ...quizzes];
