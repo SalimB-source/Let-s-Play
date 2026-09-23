@@ -33,6 +33,11 @@ const pageMeta = {
     description: 'Des dossiers de fond sur l’histoire du jeu vidéo, les générations de consoles, les studios et la culture gaming.',
     type: 'website',
   },
+  '/quizz': {
+    title: 'Quizz gaming & quizz du jour — Let’s Play',
+    description: 'Teste tes connaissances gaming : culture générale, rétro, souls-like, RPG, e-sport et studios. Un quizz du jour, des succès et de l’XP à gagner.',
+    type: 'website',
+  },
   '/events': {
     title: 'Events et partenaires — Let’s Play',
     description: 'Découvrez les événements, émissions et partenaires qui font vivre la scène gaming et e-sport algérienne.',
@@ -113,6 +118,8 @@ const pageMeta = {
 const routeAliases = {
   '/partenaires': '/events',
   '/calendar': '/calendrier',
+  '/quiz': '/quizz',
+  '/quizzes': '/quizz',
 };
 
 function upsertMeta(attribute, value, content) {

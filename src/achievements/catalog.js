@@ -63,6 +63,7 @@ export const GROUPS = [
   { id: 'community', icon: '💬', labels: { en: 'Community', fr: 'Communauté', ar: 'المجتمع' } },
   { id: 'loyalty', icon: '🔥', labels: { en: 'Loyalty', fr: 'Fidélité', ar: 'الوفاء' } },
   { id: 'profile', icon: '🎮', labels: { en: 'Account', fr: 'Compte', ar: 'الحساب' } },
+  { id: 'quiz', icon: '🧠', labels: { en: 'Quizzes', fr: 'Quizz', ar: 'اختبارات' } },
 ];
 
 /** Titres de rang déduits du niveau (le dernier palier atteint gagne). */
@@ -607,6 +608,82 @@ export const ACHIEVEMENTS = [
       en: { name: 'Your own look', desc: 'Save a change to your player profile.' },
       fr: { name: 'Ton propre style', desc: 'Enregistre une modification de ton profil joueur.' },
       ar: { name: 'لمستك الخاصة', desc: 'احفظ تعديلًا على ملف اللاعب الخاص بك.' },
+    },
+  },
+
+  /* ---------------------------------- Quizz ---------------------------------- */
+  // XP dans les bandes du grade (bronze 25–40, argent 60–90, or 100–250,
+  // platine 400–800) : la vérification `check:achievements` impose que l'XP
+  // croisse avec le grade sur tout le catalogue.
+  {
+    id: 'first-quiz',
+    icon: 'icons/achievements/first-quiz.webp',
+    group: 'quiz',
+    rarity: 'bronze',
+    xp: 30,
+    metric: 'quizzesCompleted',
+    target: 1,
+    labels: {
+      en: { name: 'First quiz', desc: 'Complete your first gaming quiz.' },
+      fr: { name: 'Premier quizz', desc: 'Termine ton premier quizz gaming.' },
+      ar: { name: 'أول اختبار', desc: 'أكمل أول اختبار ألعاب لك.' },
+    },
+  },
+  {
+    id: 'perfect-score',
+    icon: 'icons/achievements/perfect-score.webp',
+    group: 'quiz',
+    rarity: 'silver',
+    xp: 70,
+    metric: 'perfectQuizzes',
+    target: 1,
+    labels: {
+      en: { name: 'Flawless', desc: 'Finish a quiz with a perfect score.' },
+      fr: { name: 'Sans faute', desc: 'Termine un quizz avec 100 % de bonnes réponses.' },
+      ar: { name: 'علامة كاملة', desc: 'أكمل اختبارًا بنسبة 100٪ من الإجابات الصحيحة.' },
+    },
+  },
+  {
+    id: 'quiz-tour',
+    icon: 'icons/achievements/quiz-tour.webp',
+    group: 'quiz',
+    rarity: 'gold',
+    xp: 150,
+    metric: 'distinctQuizzes',
+    // Le catalogue compte huit quizz : mettre à jour si un quizz est ajouté.
+    target: 8,
+    labels: {
+      en: { name: 'Full tour', desc: 'Play all eight quizzes of the site.' },
+      fr: { name: 'Tour complet', desc: 'Joue les huit quizz du site.' },
+      ar: { name: 'الجولة الكاملة', desc: 'العب الاختبارات الثمانية في الموقع.' },
+    },
+  },
+  {
+    id: 'quiz-week',
+    icon: 'icons/achievements/quiz-week.webp',
+    group: 'quiz',
+    rarity: 'platinum',
+    xp: 500,
+    metric: 'dailyQuizStreak',
+    target: 7,
+    labels: {
+      en: { name: 'Perfect week', desc: 'Complete the daily quiz seven days in a row.' },
+      fr: { name: 'Semaine parfaite', desc: 'Enchaîne sept jours de quizz du jour.' },
+      ar: { name: 'أسبوع مثالي', desc: 'أكمل اختبار اليوم سبعة أيام متتالية.' },
+    },
+  },
+  {
+    id: 'first-challenge',
+    icon: 'icons/achievements/first-challenge.webp',
+    group: 'quiz',
+    rarity: 'bronze',
+    xp: 35,
+    metric: 'challengesSent',
+    target: 1,
+    labels: {
+      en: { name: 'Rival found', desc: 'Send your first quiz challenge to a friend.' },
+      fr: { name: 'Rival trouvé', desc: 'Envoie ton premier défi de quizz à un ami.' },
+      ar: { name: 'وجدت منافسًا', desc: 'أرسل أول تحدّي اختبار إلى صديق.' },
     },
   },
 ];

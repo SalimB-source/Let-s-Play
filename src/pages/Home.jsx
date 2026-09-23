@@ -5,6 +5,8 @@ import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
 import { activeMonth, calendarMonths, gameReleases, monthLabel } from '../releasesData';
+import { quizzes } from '../quizzesData';
+import { dailyQuizFor } from '../quizzes/engine';
 import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
 
 // Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
@@ -64,6 +66,8 @@ export default function Home() {
   const monthReleases = month.releases;
   const allMonths = calendarMonths(today);
   const totalGames = gameReleases.length;
+  // Le bandeau « quizz du jour » envoie directement à la partie du jour.
+  const dailyQuiz = dailyQuizFor(today, quizzes);
 
   useEffect(() => {
     let cancelled = false;
@@ -221,6 +225,19 @@ export default function Home() {
         <div className="calendar-teaser">
           <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
           <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
+        </div>
+      </section>
+
+      {/* QUIZZ DU JOUR — un quizz choisi chaque jour parmi la sélection :
+          la série quotidienne (succès « Semaine parfaite ») se construit ici. */}
+      <section className="wrap" id="quizz-du-jour">
+        <div className="home-quiz-band">
+          <div className="home-quiz-band-copy">
+            <p className="eyebrow"><span className="live-dot" /> {t.quiz.home.eyebrow}</p>
+            <h2>{t.quiz.home.titleA}<br /><em>{t.quiz.home.titleB}</em></h2>
+            <p>{t.quiz.home.text}</p>
+          </div>
+          <Link className="button button-yellow" to={dailyQuiz ? dailyQuiz.route : '/quizz'}>{t.quiz.home.cta} <Arrow /></Link>
         </div>
       </section>
 

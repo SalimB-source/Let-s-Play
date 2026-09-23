@@ -1000,6 +1000,90 @@ exception
     raise warning 'Let''s Play : droits article_views non appliqués (%).', sqlerrm;
 end $$;
 
+-- ----------------------------------------------------------------------------
+-- 8. Quizz : tentatives & classement
+-- ----------------------------------------------------------------------------
+-- Une ligne par compte et par quizz : le meilleur score est conservé (upsert
+-- côté serveur dans la RPC). Le classement joint le profil public (pseudo,
+-- avatar, niveau). Même contrat que les réactions partagées : la table n'est
+-- pas exposée directement (revoke), tout passe par deux RPC security definer —
+-- un client ne peut ni écrire au nom d'un autre, ni poser un score hors
+-- bornes (0 ≤ score ≤ total vérifié côté serveur).
+create table if not exists public.quiz_attempts (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  quiz_id text not null check (char_length(quiz_id) between 1 and 120),
+  score integer not null,
+  total integer not null check (total >= 1),
+  perfect boolean not null default false,
+  played_at timestamptz not null default now(),
+  primary key (user_id, quiz_id),
+  check (score between 0 and total)
+);
+alter table public.quiz_attempts enable row level security;
+revoke all on public.quiz_attempts from anon, authenticated;
+
+-- Dépose une tentative : garde le meilleur score du compte sur ce quizz.
+-- Retourne le classement à jour (le joueur voit sa ligne remonter).
+create or replace function public.submit_quiz_attempt(
+  p_quiz_id text, p_score integer, p_total integer, p_perfect boolean default false
+)
+returns jsonb
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'quiz_requires_auth' using errcode = '42501';
+  end if;
+  if p_quiz_id is null or char_length(p_quiz_id) not between 1 and 120 then
+    raise exception 'invalid_quiz' using errcode = '22023';
+  end if;
+  if p_total is null or p_total < 1 or p_score is null or p_score < 0 or p_score > p_total then
+    raise exception 'invalid_quiz_score' using errcode = '22023';
+  end if;
+
+  update public.quiz_attempts
+     set score = greatest(score, p_score),
+         total = p_total,
+         perfect = perfect or coalesce(p_perfect, false) or p_score = p_total,
+         played_at = now()
+   where user_id = auth.uid() and quiz_id = p_quiz_id;
+  if not found then
+    insert into public.quiz_attempts (user_id, quiz_id, score, total, perfect)
+    values (auth.uid(), p_quiz_id, p_score, p_total,
+            coalesce(p_perfect, false) or p_score = p_total);
+  end if;
+  return public.get_quiz_leaderboard(p_quiz_id, 10);
+end;
+$$;
+
+-- Classement d'un quizz : meilleur score par compte, joint au profil public.
+-- `mine` marque la ligne du joueur connecté pour la surligner côté client.
+create or replace function public.get_quiz_leaderboard(p_quiz_id text, p_limit integer default 10)
+returns jsonb
+language sql
+stable
+security definer set search_path = ''
+as $$
+  select coalesce(jsonb_agg(row), '[]'::jsonb)
+  from (
+    select a.score, a.total, a.perfect, a.played_at,
+           coalesce(p.display_name, p.username, '') as username,
+           p.avatar_url, coalesce(p.level, 1) as level,
+           (a.user_id = auth.uid()) as mine
+      from public.quiz_attempts a
+      left join public.profiles p on p.id = a.user_id
+     where a.quiz_id = p_quiz_id
+     order by a.score desc, a.played_at asc
+     limit least(greatest(p_limit, 1), 50)
+  ) row;
+$$;
+
+revoke all on function public.submit_quiz_attempt(text, integer, integer, boolean) from public;
+revoke all on function public.get_quiz_leaderboard(text, integer) from public;
+grant execute on function public.get_quiz_leaderboard(text, integer) to anon, authenticated;
+grant execute on function public.submit_quiz_attempt(text, integer, integer, boolean) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Contrôle final : chaque ligne doit afficher « OK ».
@@ -1144,6 +1228,18 @@ from (
 , (30, 'vues globales actus (table et RPC)',
       case when to_regclass('public.article_views') is not null
              and to_regprocedure('public.increment_article_view(text)') is not null
+           then 'OK' else 'MANQUANT' end)
+, (31, 'table public.quiz_attempts',
+      case when to_regclass('public.quiz_attempts') is null then 'MANQUANT' else 'OK' end)
+, (32, 'RLS activee et table quizz non exposee',
+      case when to_regclass('public.quiz_attempts') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.quiz_attempts'))
+            and to_regrole('anon') is not null
+            and not has_table_privilege('anon', 'public.quiz_attempts', 'select')
+           then 'OK' else 'MANQUANT' end)
+, (33, 'RPC quizz (tentative + classement)',
+      case when to_regprocedure('public.submit_quiz_attempt(text,integer,integer,boolean)') is not null
+             and to_regprocedure('public.get_quiz_leaderboard(text,integer)') is not null
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

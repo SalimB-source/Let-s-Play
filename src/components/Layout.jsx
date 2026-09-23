@@ -42,7 +42,7 @@ export default function Layout({ children }) {
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
   const [searchOpen, setSearchOpen] = useState(false);
   const liveSearchResults = useMemo(() => searchContent(searchValue).slice(0, 6), [searchValue]);
-  const searchTypeLabels = { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release' };
+  const searchTypeLabels = { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release', quiz: 'Quiz' };
 
   useEffect(() => {
     setSearchValue(new URLSearchParams(location.search).get('q') || '');
@@ -93,6 +93,7 @@ export default function Layout({ children }) {
             <Link to="/news" className={isActive('/news') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.news}</Link>
             <Link to="/reviews" className={isActive('/reviews') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.reviews}</Link>
             <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.dossiers}</Link>
+            <Link to="/quizz" className={isActive('/quizz') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.quiz}</Link>
             <Link to="/events" className={isActive('/events') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Events</Link>
           </div>
           <div className="nav-actions">
@@ -177,6 +178,7 @@ export default function Layout({ children }) {
           <Link to="/news">{t.nav.news}</Link>
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
+          <Link to="/quizz">{t.nav.quiz}</Link>
           <Link to="/events">Events</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>

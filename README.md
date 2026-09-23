@@ -28,10 +28,15 @@ npm run build
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
-- Succès du joueur dans le profil (`/auth`) : 37 succès débloqués par les
+- Succès du joueur dans le profil (`/auth`) : 42 succès débloqués par les
   actions réalisées sur le site, classés en quatre grades de difficulté — bronze,
   argent, or, platine — avec niveau, XP, grades visibles et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
+- Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
+  huit quizz rédigés par la rédaction (culture générale, rétro, souls-like,
+  RPG, e-sport, studios, tech et cinéma), quizz du jour en rotation quotidienne avec série de
+  jours, corrections commentées, commentaires, recherche et cinq succès
+  dédiés (voir « Quizz gaming & quizz du jour »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
@@ -487,8 +492,8 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 Le site récompense ce que le joueur fait réellement : lire un article, lancer
 un épisode, commenter, chercher, explorer une nouvelle section, revenir
 plusieurs jours de suite, créer un compte ou associer un fournisseur de
-connexion. **37 succès** sont livrés, répartis en six familles (premiers pas,
-lecture, vidéo, communauté, fidélité, compte) et quatre **grades** de difficulté ;
+connexion. **42 succès** sont livrés, répartis en sept familles (premiers pas,
+lecture, vidéo, communauté, fidélité, compte, quizz) et quatre **grades** de difficulté ;
 chacun donne de l'XP, qui construit le niveau et le rang du joueur.
 
 ### Grades : bronze, argent, or, platine
@@ -659,7 +664,7 @@ Editor du projet Supabase (le script est relançable sans risque).
   valides) ; comportement du moteur (contenus distincts, lecture de nuit,
   séries de jours, fusion appareil ↔ compte, données corrompues, courbe de
   niveau, détection du passage de niveau) ; **scénario complet qui débloque les
-  37 succès** (donc aucun succès inatteignable) ; rendu réel en SSR du panneau
+  42 succès** (donc aucun succès inatteignable) ; rendu réel en SSR du panneau
   du profil joueur et du hub — en aperçu de démonstration **et avec un compte réellement
   connecté** (la barre d'XP du profil doit se remplir, être la seule de la
   page, et annoncer le niveau et le rang déduits du moteur), la **bulle
@@ -679,6 +684,61 @@ Editor du projet Supabase (le script est relançable sans risque).
   confirmation côté inscription, « mot de passe oublié » côté connexion), liens de
   la navbar, et garde-fous de source pour que le mode initial continue de suivre
   l'URL — y compris quand le pop-up est déjà ouvert.
+
+## Quizz gaming & quizz du jour
+
+Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
+`/quizz/:slug` (partie, corrections, commentaires), alias anglais `/quiz` et
+`/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
+mais la structure de données les accepte déjà.
+
+- **Données** — `src/quizzesData.js` : huit quizz de huit questions (culture
+  générale, rétro, souls-like, RPG, e-sport, studios, tech et cinéma), la
+  plupart liés à un article maison (`source`) et tous à une miniature YouTube
+  (`videoId`). Ajouter un quizz =
+  une entrée : la grille, la recherche (`searchIndex`), la rotation du jour et
+  le succès « Tour complet » le prennent en compte (mettre à jour la cible du
+  succès si le nombre de quizz change).
+- **Moteur** — `src/quizzes/engine.js` (pur, sans React) : mélange déterministe
+  par graine (le quizz du jour est le même pour tous), barème, paliers de
+  résultat (`rookie` → `legend`), meilleure série de jours consécutifs.
+- **Minuteur** — 7 secondes par question (`QUESTION_TIME`, mutable pour les
+  tests) : une barre de décompte passe au rouge dans les 3 dernières secondes
+  et, à zéro, la question avance sans réponse (comptée ratée, signalée
+  « Temps écoulé » dans les corrections).
+- **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
+  sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
+  `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
+  terminer le quizz du jour crédite un jour de série (succès platine
+  « Semaine parfaite » = 7 jours d'affilée). Le meilleur score de l'appareil
+  s'affiche sur chaque carte de la grille.
+- **Succès** — l'action `quiz_completed` (`QuizPlayer`) alimente le moteur des
+  succès : parties, quizz distincts, sans-faute, jours de série. Cinq succès
+  au catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi
+  envoyé), Sans faute (argent), Tour complet (or), Semaine parfaite (platine).
+  L'XP reste celle des succès, comme partout sur le site.
+- **Révision des erreurs** — depuis l'écran de résultat, « Rejouer mes erreurs »
+  ne rejoue que les questions ratées (tour d'entraînement : succès, record,
+  série et classement ne bougent pas, vérifié par `check:quiz`).
+- **Défi entre amis** — depuis l'écran de résultat, `QuizChallenge` envoie à
+  un ami (messagerie 1-à-1 existante, mode démo ou Supabase) un message
+  pré-rempli avec le score à battre ; sans compte ni backend, un message
+  l'explique. Chaque défi crédite `quiz_challenge`.
+- **Scores & classement** — `supabase/schema.sql` (section 8) : table
+  `public.quiz_attempts` (meilleur score par compte et par quizz, bornes
+  `0 ≤ score ≤ total` vérifiées côté serveur) + RPC `submit_quiz_attempt` et
+  `get_quiz_leaderboard` (top 10 joint aux profils, ligne du joueur marquée
+  `mine`), non exposées en direct (revoke). Le compte connecté envoie sa
+  tentative à la fin de la partie (`src/quizzes/quizApi.js`) ; le visiteur
+  garde son meilleur score sur l'appareil (`localStorage`, clé propre aux
+  quizz). Sans backend, la section classement explique comment le débloquer.
+  Après collage du schéma dans le Dashboard Supabase, le tableau de contrôle
+  final affiche les lignes 31–33 « OK ».
+- **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
+  série), partie complète 8/8 jouée en jsdom avec la vraie pile de providers
+  (succès crédités dans le stockage), grille rendue en FR/EN/AR. Le scénario de
+  `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
+  rend les nouvelles routes dans les trois langues.
 
 ## Live YouTube
 
