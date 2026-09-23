@@ -333,8 +333,9 @@ export default function Profile() {
           </div>
 
           {/* Classement global des quizz : position du joueur (points cumulés
-              sur tous les quizz, RPC `get_quiz_global_rank`). */}
-          <QuizGlobalRank userId={me.id} self />
+              sur tous les quizz, RPC `get_quiz_global_rank`). En aperçu sans
+              backend, on affiche un rang scripté pour éviter une section vide. */}
+          <QuizGlobalRank userId={me.id} self scriptedFallback={{ level: lvl, xp }} />
 
           {/* CONSOLES POSSÉDÉES — sélection faite dans le hub joueur */}
           <div className="player-section">
@@ -446,6 +447,8 @@ export default function Profile() {
             <div className="player-stat-card"><div className="player-stat-value">{meta.stats.badgesUnlocked}</div><div className="player-stat-label">Succès</div></div>
           </div>
 
+          <QuizGlobalRank userId={demoProfile.id} scriptedFallback={{ level: lvl, xp }} />
+
           <PublicPlatforms platforms={meta.platforms} />
 
           {meta.testedGames?.length > 0 && (
@@ -521,6 +524,8 @@ export default function Profile() {
               <div className="player-xp-bar-bg"><div className="player-xp-bar-fill" style={{ width: `${pct}%` }} /></div>
             </div>
           </div>
+
+          <QuizGlobalRank userId={demoPlayer.id} scriptedFallback={{ level: demoPlayer.level, xp: demoPlayer.xp }} />
 
           <PublicPlatforms platforms={demoPlayer.platforms} />
 
