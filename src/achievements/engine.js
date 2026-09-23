@@ -210,19 +210,24 @@ export function reduce(state, action = {}) {
       next = addToSet(counter(current, 'search_performed'), 'searches', action.query);
       break;
 
-    // Partie de quizz terminée : compteur global + quizz distincts, sans-faute
-    // par quizz, et jour crédité pour la série du « quizz du jour ».
-    // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion.
-    // Rejoué ensuite, il ne fait plus avancer aucun succès (ni compteur, ni
-    // sans-faute) — donc plus aucun XP. Seule exception : le jour de quizz du
-    // jour reste crédité, sinon la rotation (un quizz déjà fait tous les huit
-    // jours) casserait mécaniquement la série « Semaine parfaite ».
+    // Partie de quizz terminée : compteur global + runs (quizz×difficulté)
+    // distincts, sans-faute par quizz, et jour crédité pour la série du
+    // « quizz du jour ».
+    // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion
+    // À CHAQUE DIFFICULTÉ — un run est identifié par `slug:difficulté`.
+    // Rejoué à la même difficulté, il ne fait plus avancer aucun succès
+    // (ni compteur, ni sans-faute) — donc plus aucun XP ni aucun point.
+    // Une autre difficulté du même quizz, elle, rapporte à nouveau (de
+    // vraies questions différentes, des points multipliés). Seule exception
+    // au blocage : le jour de quizz du jour reste crédité, sinon la
+    // rotation (un quizz déjà fait tous les huit jours) casserait
+    // mécaniquement la série « Semaine parfaite ».
     case 'quiz_completed': {
-      if (quizAlreadyCompleted(current, action.id)) {
+      if (quizAlreadyCompleted(current, action.id, action.difficulty)) {
         if (action.daily) next = addToSet(current, 'quiz_days', dayKey(at));
         break;
       }
-      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', action.id);
+      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', quizRunKey(action.id, action.difficulty));
       if (action.perfect) next = addToSet(next, 'perfect_quizzes', action.id);
       if (action.daily) next = addToSet(next, 'quiz_days', dayKey(at));
       break;
@@ -253,14 +258,36 @@ export function reduce(state, action = {}) {
 }
 
 /**
- * Ce quizz a-t-il déjà été terminé par le joueur ? Si oui, le rejouer ne
- * rapporte plus d'XP (voir `quiz_completed` dans `reduce`). L'ensemble
- * `quizzes_played` n'est alimenté qu'à la fin d'une partie : c'est bien
- * « terminé », pas « commencé ».
+ * Clé d'un run noté : `slug:difficulté` (un slug nu quand l'action n'en
+ * porte pas — ancien format). C'est la clé de l'ensemble `quizzes_played`,
+ * celle du record de l'appareil et de la tentative serveur (`quiz_id`).
  */
-export function quizAlreadyCompleted(state, quizId) {
+export function quizRunKey(quizId, difficulty) {
+  return quizId && difficulty ? `${quizId}:${difficulty}` : quizId;
+}
+
+/**
+ * Ce quizz a-t-il déjà été terminé par le joueur, À CETTE DIFFICULTÉ ?
+ * Si oui, le rejouer ne rapporte plus d'XP ni de points (voir
+ * `quiz_completed` dans `reduce`). L'ensemble `quizzes_played` n'est
+ * alimenté qu'à la fin d'une partie : c'est bien « terminé », pas
+ * « commencé ». Un quizz terminé dans l'ancien format (au slug nu, sans
+ * difficulté) est considéré comme terminé à TOUTES les difficultés — la
+ * migration ne redonne pas de points aux vieux comptes.
+ */
+export function quizAlreadyCompleted(state, quizId, difficulty = null) {
   if (!quizId) return false;
-  return Boolean(state?.sets?.quizzes_played?.includes(quizId));
+  const played = state?.sets?.quizzes_played || [];
+  return played.includes(quizId) || (difficulty ? played.includes(quizRunKey(quizId, difficulty)) : false);
+}
+
+/**
+ * Ce quizz a-t-il déjà été terminé par le joueur, À TOUTE DIFFICULTÉ ?
+ * (Pour l'affichage « complet » d'un quizz, pas pour le blocage des points.)
+ */
+export function quizCompletedAnyDifficulty(state, quizId) {
+  if (!quizId) return false;
+  return (state?.sets?.quizzes_played || []).some((key) => String(key).split(':')[0] === quizId);
 }
 
 /** Débloque les succès satisfaits, sans action — utilisé au chargement. */
@@ -316,10 +343,13 @@ export const METRICS = {
       éditoriales du site, toutes touchées. */
   readAllKinds: (state) =>
     setSize(state, 'news_read') > 0 && setSize(state, 'reviews_read') > 0 && setSize(state, 'dossiers_read') > 0 ? 1 : 0,
-  /** Parties de quizz terminées (toutes confondues). */
+  /** Parties de quizz terminées (toutes confondues — chaque
+      quizz×difficulté complète compte une partie). */
   quizzesCompleted: (state) => counterValue(state, 'quizzes_completed'),
-  /** Quizz distincts joués. */
-  distinctQuizzes: (state) => setSize(state, 'quizzes_played'),
+  /** Quizz DISTINCTS joués (à quelle que ce soit difficulté) : les clés
+      `slug:difficulté` sont ramenées à leur slug avant dédoublonnage, pour
+      que « Tour complet » reste un succès par quizz, pas par palier. */
+  distinctQuizzes: (state) => new Set((state.sets.quizzes_played || []).map((key) => String(key).split(':')[0])).size,
   /** Quizz distincts terminés sans faute. */
   perfectQuizzes: (state) => setSize(state, 'perfect_quizzes'),
   /** Jours différents avec le quizz du jour terminé. */

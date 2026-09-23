@@ -17,11 +17,17 @@ const FALLBACK = {
  * restent affichées en secondaire), meilleure partie de l'appareil pour les
  * visiteurs. Sans backend, un message explique comment débloquer le
  * classement — rien ne casse.
+ *
+ * `runId` est l'identifiant du run classé (`slug:difficulté`) : le serveur
+ * range une ligne par compte ET par difficulté, donc chaque palier a son
+ * propre tableau. La meilleure partie de l'appareil, elle, reste affichée
+ * pour tout le quizz (meilleure des trois difficultés).
  */
-export default function QuizLeaderboard({ quiz, lastBoard = null, refreshKey = 0 }) {
+export default function QuizLeaderboard({ quiz, lastBoard = null, refreshKey = 0, runId = null }) {
   const { t } = useLanguage();
   const { user, isDemo } = useAuth();
   const copy = { ...FALLBACK, ...((t.quiz || {}).board || {}) };
+  const id = runId || quiz.slug;
   const [rows, setRows] = useState(lastBoard);
   // Relu à chaque fin de partie (`refreshKey`) : la partie de l'appareil
   // change sans que ce composant ne reçoive d'autre mise à jour.
@@ -31,12 +37,12 @@ export default function QuizLeaderboard({ quiz, lastBoard = null, refreshKey = 0
   useEffect(() => {
     let cancelled = false;
     if (quizApiEnabled()) {
-      fetchQuizLeaderboard(quiz.slug).then((data) => {
+      fetchQuizLeaderboard(id).then((data) => {
         if (!cancelled && data) setRows(data);
       });
     }
     return () => { cancelled = true; };
-  }, [quiz.slug, lastBoard]);
+  }, [id, lastBoard]);
 
   useEffect(() => {
     setLocalBest(readLocalBest(quiz.slug));
