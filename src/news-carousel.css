@@ -14,7 +14,8 @@
 /* Le filtre par catégorie a été retiré de la page Actus : le libellé de section
    respire directement au-dessus de la « news du jour ». */
 .news-carousel-section>.section-label{margin-bottom:30px}
-/* Carte « news du jour » : dernier article paru au format paysage, juste au-dessus des articles. */
-.news-today{margin:0 0 36px}
+/* Carte « news du jour » : l'actu à la une n'est plus une carte pleine largeur
+   posée au-dessus des articles — elle est intégrée à la grille sur 2 colonnes
+   (styles dans news-view-toggle.css) pour laisser les actus voisines visibles. */
 .news-today .daily-news-copy .news-kicker{margin-top:14px}
-.news-today .daily-news-copy h2{margin-top:12px}@media(max-width:650px){.news-carousel-section{padding-top:104px;padding-bottom:40px}.monthly-releases+.news-carousel-section{padding-top:70px}.news-carousel-head{align-items:start;flex-direction:column;padding-top:30px}.news-carousel-controls{align-self:flex-end;margin-top:-8px}.news-carousel-card{flex-basis:78vw}.news-carousel-copy{padding:16px}.news-carousel-copy h2{font-size:19px;line-height:1.2;margin:8px 0 10px}.news-carousel-copy p{font-size:12px;line-height:1.35;margin-bottom:8px}.news-carousel-copy .news-kicker{font-size:9px}.news-carousel-copy .read-link{font-size:9px}.news-today{margin-bottom:24px}}
+.news-today .daily-news-copy h2{margin-top:12px}@media(max-width:650px){.news-carousel-section{padding-top:104px;padding-bottom:40px}.monthly-releases+.news-carousel-section{padding-top:70px}.news-carousel-head{align-items:start;flex-direction:column;padding-top:30px}.news-carousel-controls{align-self:flex-end;margin-top:-8px}.news-carousel-card{flex-basis:78vw}.news-carousel-copy{padding:16px}.news-carousel-copy h2{font-size:19px;line-height:1.2;margin:8px 0 10px}.news-carousel-copy p{font-size:12px;line-height:1.35;margin-bottom:8px}.news-carousel-copy .news-kicker{font-size:9px}.news-carousel-copy .read-link{font-size:9px}}
