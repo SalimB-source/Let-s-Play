@@ -28,14 +28,14 @@ npm run build
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
-- Succès du joueur dans le profil (`/auth`) : 41 succès débloqués par les
+- Succès du joueur dans le profil (`/auth`) : 42 succès débloqués par les
   actions réalisées sur le site, classés en quatre grades de difficulté — bronze,
   argent, or, platine — avec niveau, XP, grades visibles et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
 - Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
   six quizz rédigés par la rédaction (culture générale, rétro, souls-like,
   RPG, e-sport, studios), quizz du jour en rotation quotidienne avec série de
-  jours, corrections commentées, commentaires, recherche et quatre succès
+  jours, corrections commentées, commentaires, recherche et cinq succès
   dédiés (voir « Quizz gaming & quizz du jour »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
@@ -483,7 +483,7 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 Le site récompense ce que le joueur fait réellement : lire un article, lancer
 un épisode, commenter, chercher, explorer une nouvelle section, revenir
 plusieurs jours de suite, créer un compte ou associer un fournisseur de
-connexion. **41 succès** sont livrés, répartis en sept familles (premiers pas,
+connexion. **42 succès** sont livrés, répartis en sept familles (premiers pas,
 lecture, vidéo, communauté, fidélité, compte, quizz) et quatre **grades** de difficulté ;
 chacun donne de l'XP, qui construit le niveau et le rang du joueur.
 
@@ -647,7 +647,7 @@ Editor du projet Supabase (le script est relançable sans risque).
   valides) ; comportement du moteur (contenus distincts, lecture de nuit,
   séries de jours, fusion appareil ↔ compte, données corrompues, courbe de
   niveau, détection du passage de niveau) ; **scénario complet qui débloque les
-  41 succès** (donc aucun succès inatteignable) ; rendu réel en SSR du panneau
+  42 succès** (donc aucun succès inatteignable) ; rendu réel en SSR du panneau
   du profil joueur et du hub — en aperçu de démonstration **et avec un compte réellement
   connecté** (la barre d'XP du profil doit se remplir, suivre la barre de la
   section « succès », et annoncer le niveau et le rang déduits du moteur) — et
@@ -685,10 +685,14 @@ mais la structure de données les accepte déjà.
   sur `/quizz` et bandeau d'accueil ; terminer le quizz du jour crédite un jour
   de série (succès platine « Semaine parfaite » = 7 jours d'affilée).
 - **Succès** — l'action `quiz_completed` (`QuizPlayer`) alimente le moteur des
-  succès : parties, quizz distincts, sans-faute, jours de série. Quatre succès
-  au catalogue : Premier quizz (bronze), Sans faute (argent), Tour complet
-  (or), Semaine parfaite (platine). L'XP reste celle des succès, comme partout
-  sur le site.
+  succès : parties, quizz distincts, sans-faute, jours de série. Cinq succès
+  au catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi
+  envoyé), Sans faute (argent), Tour complet (or), Semaine parfaite (platine).
+  L'XP reste celle des succès, comme partout sur le site.
+- **Défi entre amis** — depuis l'écran de résultat, `QuizChallenge` envoie à
+  un ami (messagerie 1-à-1 existante, mode démo ou Supabase) un message
+  pré-rempli avec le score à battre ; sans compte ni backend, un message
+  l'explique. Chaque défi crédite `quiz_challenge`.
 - **Scores & classement** — `supabase/schema.sql` (section 8) : table
   `public.quiz_attempts` (meilleur score par compte et par quizz, bornes
   `0 ≤ score ≤ total` vérifiées côté serveur) + RPC `submit_quiz_attempt` et
@@ -702,7 +706,7 @@ mais la structure de données les accepte déjà.
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
   série), partie complète 8/8 jouée en jsdom avec la vraie pile de providers
   (succès crédités dans le stockage), grille rendue en FR/EN/AR. Le scénario de
-  `check:achievements` débloque aussi les quatre succès quizz ; `check:i18n`
+  `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
   rend les nouvelles routes dans les trois langues.
 
 ## Live YouTube

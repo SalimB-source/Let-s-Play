@@ -378,6 +378,9 @@ for (let index = 1; index <= 30; index += 1) {
   record(play('quiz_completed', { id, perfect: index === 0, daily: true, at: date.toISOString() }));
 });
 
+// Un défi envoyé à un ami depuis un écran de résultat (rival trouvé).
+record(play('quiz_challenge'));
+
 const finalSummary = summarize(scenario);
 const unreachable = ACHIEVEMENTS.filter((entry) => !finalSummary.items.find((item) => item.id === entry.id)?.unlocked).map((entry) => entry.id);
 check('tous les succès sont débloquables', unreachable.join(', ') || 'aucun', 'aucun');
@@ -547,6 +550,7 @@ const sources = [
   ['src/achievements/AchievementTracker.jsx', "track('video_played'"],
   ['src/achievements/AchievementTracker.jsx', 'VIDEO_PLAYED_EVENT'],
   ['src/quizzes/QuizPlayer.jsx', "track('quiz_completed'"],
+  ['src/quizzes/QuizChallenge.jsx', "track('quiz_challenge')"],
   ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
   ['src/achievements/AchievementPopup.jsx', 'dismissNotification(entry.id)'],
   ['src/main.jsx', '<AchievementPopup />'],

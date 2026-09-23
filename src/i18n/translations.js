@@ -44,6 +44,7 @@ export const translations = {
       page: { commentTitle: 'Comments' },
       home: { eyebrow: 'Daily quiz', titleA: 'ONE DAY,', titleB: 'ONE QUIZ.', text: 'A quiz picked every day from our selection. Answer, keep your streak, climb the levels.', cta: 'Play today’s quiz' },
       board: { boardTitle: 'LEADERBOARD', offline: 'Connect with a player account (Supabase configured) to compare your scores with the community.', empty: 'No score yet — be the first on the leaderboard.', you: 'You', bestDevice: 'Best score on this device' },
+      challenge: { title: 'CHALLENGE A FRIEND', open: 'Challenge a friend', loginHint: 'Log in with a player account to challenge a friend.', noBackend: 'Messaging needs Supabase to be configured — scores travel with your account.', noFriends: 'Add friends to challenge them.', sent: 'Challenge sent to {name}.', seeThread: 'Open the conversation', error: 'The challenge could not be sent.', message: '⚡ Let’s Play challenge: I scored {score} on the quiz “{title}”. Beat that if you can! ({route})' },
     },
     footer: {
       tagline: 'An original show dedicated to the culture that brings us together. Now multi-page.',
@@ -354,6 +355,7 @@ export const translations = {
       page: { commentTitle: 'Commentaires' },
       home: { eyebrow: 'Quizz du jour', titleA: 'UN JOUR,', titleB: 'UN QUIZZ.', text: 'Chaque jour, un quizz choisi dans notre sélection. Réponds, garde ta série, grimpe les niveaux.', cta: 'Jouer le quizz du jour' },
       board: { boardTitle: 'CLASSEMENT', offline: 'Connecte-toi avec un compte joueur (Supabase configuré) pour comparer tes scores avec la communauté.', empty: 'Aucun score pour l’instant — sois premier du classement.', you: 'Toi', bestDevice: 'Meilleur score sur cet appareil' },
+      challenge: { title: 'DÉFIE UN AMI', open: 'Défier un ami', loginHint: 'Connecte-toi avec un compte joueur pour défier un ami.', noBackend: 'La messagerie nécessite Supabase configuré — les scores voyagent avec ton compte.', noFriends: 'Ajoute des amis pour pouvoir les défier.', sent: 'Défi envoyé à {name}.', seeThread: 'Ouvrir la conversation', error: 'Le défi n’a pas pu être envoyé.', message: '⚡ Défi Let’s Play : j’ai marqué {score} au quizz « {title} ». Bats ça si tu peux ! ({route})' },
     },
     footer: {
       tagline: 'Une émission originale dédiée à la culture qui nous rassemble. Maintenant multi-pages.',
@@ -656,6 +658,7 @@ export const translations = {
       page: { commentTitle: 'التعليقات' },
       home: { eyebrow: 'اختبار اليوم', titleA: 'كل يوم،', titleB: 'اختبار.', text: 'كل يوم اختبار يُختار من قائمتنا. أَجب، حافظ على سلسلتك وارتقِ بالمستويات.', cta: 'العب اختبار اليوم' },
       board: { boardTitle: 'الترتيب', offline: 'سجّل الدخول بحساب لاعب (مع تهيئة Supabase) لمقارنة نتائجك مع المجتمع.', empty: 'لا نتائج بعد — كن الأول في الترتيب.', you: 'أنت', bestDevice: 'أفضل نتيجة على هذا الجهاز' },
+      challenge: { title: 'تحدَّ صديقًا', open: 'تحدَّ صديقًا', loginHint: 'سجّل الدخول بحساب لاعب لتحدّي صديق.', noBackend: 'تتطلب المراسلة تهيئة Supabase — النتائج تسافر مع حسابك.', noFriends: 'أضف أصدقاء لتتمكن من تحدّيهم.', sent: 'أُرسل التحدي إلى {name}.', seeThread: 'افتح المحادثة', error: 'تعذّر إرسال التحدي.', message: '⚡ تحدي Let’s Play: سجّلت {score} في اختبار «{title}». جرّب أن تتفوق عليّ! ({route})' },
     },
     footer: {
       tagline: 'برنامج أصلي مكرّس للثقافة التي تجمعنا. الآن متعدد الصفحات.',

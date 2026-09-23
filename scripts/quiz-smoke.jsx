@@ -18,12 +18,19 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { AchievementProvider } from '../src/achievements/AchievementContext';
 import { STORAGE_KEY } from '../src/achievements/storage';
+import { FriendsProvider } from '../src/friends/FriendsContext';
+import { MessagesProvider } from '../src/messages/MessagesContext';
+import { readDemoMessages } from '../src/messages/messagesApi';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import { quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
 import { bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz } from '../src/quizzes/engine';
+// Personas de démonstration (livrés vides dans l'application) : comme les
+// autres scripts de vérification, on réinjecte les fixtures avant le rendu.
+import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
 
 const GUEST_STORAGE_KEY = `${STORAGE_KEY}:guest`;
+const DEMO_AUTH_KEY = 'letsplay_auth_demo_profile';
 
 /** Langue active + progression vierge : le vrai `window` jsdom (et son
     localStorage) est installé par scripts/quiz-check.mjs. */
@@ -89,20 +96,22 @@ export async function checkQuiz(assert) {
 
   const click = async (el) => { assert.ok(el, 'élément cliquable présent'); await act(async () => el.click()); };
 
+  // Joue une partie parfaite : bouton Commencer puis, à chaque question
+  // (ordre mélangé par le moteur), la bonne réponse reconnue à son libellé FR.
+  const playPerfect = async (container, game) => {
+    await click([...container.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
+    for (let step = 0; step < game.questions.length; step += 1) {
+      const prompt = container.querySelector('.quiz-question')?.textContent || '';
+      const question = game.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+      assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
+      const rightText = quizLabel(question.choices[question.answer], 'fr');
+      await click([...container.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
+    }
+  };
+
   // Écran d'intro : titre du quizz + bouton Commencer.
   assert.ok(node.textContent.includes(quizLabel(quiz.labels, 'fr').title));
-  await click([...node.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
-
-  // Huit questions : à chaque fois, cliquer la bonne réponse (libellé FR
-  // original) lue dans les données — l'ordre des questions et des choix est
-  // mélangé par le moteur, le texte affiché permet de la reconnaître.
-  for (let step = 0; step < quiz.questions.length; step += 1) {
-    const prompt = node.querySelector('.quiz-question')?.textContent || '';
-    const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
-    assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
-    const rightText = quizLabel(question.choices[question.answer], 'fr');
-    await click([...node.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
-  }
+  await playPerfect(node, quiz);
 
   // Résultat : sans-faute 8/8, palier légende, huit corrections.
   assert.ok(node.querySelector('.quiz-result'), 'écran de résultat affiché');
@@ -131,7 +140,54 @@ export async function checkQuiz(assert) {
 
   await act(async () => root.unmount());
 
-  /* ------------------------------------- 3. Page grille (trois langues) ---- */
+  /* ------------------------- 3. Défi entre amis (session démo) -------------- */
+  seedLang('fr');
+  seedDemoProfiles();
+  globalThis.window.localStorage.setItem(DEMO_AUTH_KEY, JSON.stringify(DEMO_PROFILE_FIXTURES.vortex));
+  const demoNode = document.createElement('div');
+  document.body.append(demoNode);
+  const demoRoot = createRoot(demoNode);
+  await act(async () => demoRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
+          <FriendsProvider>
+            <MessagesProvider>
+              <AchievementProvider>
+                <Routes>
+                  <Route path="/quizz" element={<QuizzesPage />} />
+                  <Route path="/quizz/:slug" element={<QuizPage />} />
+                </Routes>
+              </AchievementProvider>
+            </MessagesProvider>
+          </FriendsProvider>
+        </MemoryRouter>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+
+  // Session démo : partie parfaite puis défi envoyé au premier ami listé.
+  await playPerfect(demoNode, quiz);
+  assert.ok(demoNode.querySelector('.quiz-result'), '[démo] écran de résultat');
+  await click([...demoNode.querySelectorAll('button')].find((el) => el.textContent.includes('Défier un ami')));
+  const friendButtons = demoNode.querySelectorAll('.quiz-challenge-friend');
+  assert.ok(friendButtons.length >= 1, '[démo] les amis sont listés pour le défi');
+  const firstName = demoNode.querySelector('.quiz-challenge-name')?.textContent || '';
+  assert.ok(firstName, '[démo] le premier ami a un nom');
+  await act(async () => friendButtons[0].click());
+
+  // Confirmation à l'écran, message déposé dans la messagerie démo, succès
+  // « Rival trouvé » crédité dans la progression locale.
+  assert.ok(demoNode.textContent.includes(`Défi envoyé à ${firstName}`), '[démo] confirmation d’envoi');
+  const demoMessages = JSON.stringify(readDemoMessages(DEMO_PROFILE_FIXTURES.vortex));
+  assert.ok(demoMessages.includes('Défi Let’s Play'), '[démo] le défi arrive dans la messagerie');
+  assert.ok(demoMessages.includes('8/8'), '[démo] le score à battre est dans le message');
+  const demoStored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  assert.ok((demoStored?.unlocked || {})['first-challenge'], '[démo] succès « Rival trouvé » débloqué');
+
+  await act(async () => demoRoot.unmount());
+
+  /* ------------------------------------- 4. Page grille (trois langues) ---- */
   for (const lang of ['fr', 'en', 'ar']) {
     seedLang(lang);
     const gridNode = document.createElement('div');

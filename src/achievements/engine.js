@@ -219,6 +219,11 @@ export function reduce(state, action = {}) {
       break;
     }
 
+    // Défi envoyé à un ami depuis l'écran de résultat d'un quizz.
+    case 'quiz_challenge':
+      next = counter(current, 'challenges_sent');
+      break;
+
     case 'account_created':
       next = counter(current, 'account_created');
       break;
@@ -301,6 +306,8 @@ export const METRICS = {
   dailyQuizDays: (state) => setSize(state, 'quiz_days'),
   /** Meilleure série de jours consécutifs de quizz du jour. */
   dailyQuizStreak: (state) => bestDayRun(state.sets.quiz_days || []),
+  /** Défis envoyés à des amis depuis les écrans de résultat. */
+  challengesSent: (state) => counterValue(state, 'challenges_sent'),
 };
 
 /** Valeur d'une métrique (0 si la métrique n'existe pas — jamais d'exception). */

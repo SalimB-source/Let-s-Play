@@ -672,6 +672,20 @@ export const ACHIEVEMENTS = [
       ar: { name: 'أسبوع مثالي', desc: 'أكمل اختبار اليوم سبعة أيام متتالية.' },
     },
   },
+  {
+    id: 'first-challenge',
+    icon: 'icons/achievements/first-challenge.webp',
+    group: 'quiz',
+    rarity: 'bronze',
+    xp: 35,
+    metric: 'challengesSent',
+    target: 1,
+    labels: {
+      en: { name: 'Rival found', desc: 'Send your first quiz challenge to a friend.' },
+      fr: { name: 'Rival trouvé', desc: 'Envoie ton premier défi de quizz à un ami.' },
+      ar: { name: 'وجدت منافسًا', desc: 'أرسل أول تحدّي اختبار إلى صديق.' },
+    },
+  },
 ];
 
 /** Libellé traduit d'un succès (repli sur l'anglais). */

@@ -121,6 +121,30 @@
 .quiz-fix-a span:last-child { color: #34d399; }
 .quiz-fix-why { margin: 0; color: var(--dim); font-size: 13px; }
 
+/* ---- Défi entre amis --------------------------------------------------------- */
+.quiz-challenge { margin-top: 34px; }
+.quiz-challenge .button-ghost { margin-top: 14px; }
+.quiz-challenge-note { margin: 12px 0 0; color: var(--dim); font-size: 14px; }
+.quiz-challenge-sent { color: #34d399; }
+.quiz-challenge-sent .arrow-link { color: var(--cyan); }
+.quiz-challenge-error { color: #f87171; }
+.quiz-challenge-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; max-width: 420px; }
+.quiz-challenge-friend {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 9px 12px; cursor: pointer; text-align: start;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  font: 600 14px var(--body);
+  transition: border-color .15s, background .15s;
+}
+.quiz-challenge-friend:hover { border-color: var(--yellow); background: rgba(255, 214, 25, .07); }
+.quiz-challenge-avatar {
+  width: 26px; height: 26px; border-radius: 50%; overflow: hidden; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--panel-2); color: var(--cyan); font: 700 12px var(--mono);
+}
+.quiz-challenge-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.quiz-challenge-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ---- Classement ------------------------------------------------------------ */
 .quiz-board { margin-top: 44px; }
 .quiz-board-note { color: var(--dim); font-size: 14px; }

@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useAchievementAction } from '../achievements/AchievementContext';
 import { quizLabel } from '../quizzesData';
 import { submitQuizAttempt, writeLocalBest } from './quizApi';
+import QuizChallenge from './QuizChallenge';
 import { dayNumber, gradeQuiz, prepareQuiz } from './engine';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
@@ -126,6 +127,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
           {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
         </div>
       </div>
+      <QuizChallenge quiz={quiz} score={result.correct} total={result.total} />
       <section className="quiz-corrections">
         <div className="section-label"><span>{copy.corrections}</span><span>{meta.title}</span></div>
         <ol>
