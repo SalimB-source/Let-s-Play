@@ -22,7 +22,8 @@
  */
 import { supabase } from '../lib/supabase';
 
-const BEST_KEY = 'letsplay_quiz_best_v1';
+const BEST_KEY = 'letsplay_quiz_best_v2';
+const LEGACY_BEST_KEYS = ['letsplay_quiz_best_v1'];
 
 /**
  * Identifiant d'un run noté : `slug:difficulté` (ex. `culture-gaming:hard`).
@@ -91,6 +92,10 @@ export async function fetchGlobalQuizRank(userId = null) {
 export function readLocalBests() {
   try {
     if (typeof window === 'undefined') return {};
+    // Nettoyage des anciennes clés pour forcer la remise à zéro demandée.
+    for (const legacy of LEGACY_BEST_KEYS) {
+      try { window.localStorage.removeItem(legacy); } catch (e) {}
+    }
     const raw = JSON.parse(window.localStorage.getItem(BEST_KEY) || '{}');
     return raw && typeof raw === 'object' ? raw : {};
   } catch (e) {

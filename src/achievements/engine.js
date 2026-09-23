@@ -20,7 +20,7 @@
 import { ACHIEVEMENTS } from './catalog.js';
 import { bestDayRun } from '../quizzes/engine.js';
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 /* ------------------------------------------------------------------ */
 /* Dates : la journée est celle du visiteur (fuseau local)             */
@@ -83,6 +83,11 @@ export function createState(now = new Date()) {
 export function normalizeState(raw, now = new Date()) {
   const base = createState(now);
   if (!raw || typeof raw !== 'object') return base;
+  // Migration v1 → v2 : remise à zéro totale demandée (tous les compteurs
+  // quizz à 0, plus de "déjà terminé", points joueurs à 0).
+  if (!raw.version || Number(raw.version) < STATE_VERSION) {
+    return base;
+  }
   const asObject = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
   const asArray = (value) => (Array.isArray(value) ? value : []);
   const asNumber = (value) => (Number.isFinite(value) ? value : 0);

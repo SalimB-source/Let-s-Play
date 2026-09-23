@@ -430,3 +430,30 @@ export const quizzes = [
 export function quizBySlug(slug) {
   return quizzes.find((quiz) => quiz.slug === slug) || null;
 }
+
+/** Slugs des quizz faciles — la porte d'entrée. */
+export const EASY_SLUGS = quizzes.filter((q) => q.difficulty === 'easy').map((q) => q.slug);
+
+/**
+ * Le mode facile est-il terminé ? Vrai si tous les quizz faciles sont dans
+ * `quizzesPlayed` (ensemble `sets.quizzes_played` du moteur des succès).
+ * Compatible ancien format (slug nu) et nouveau (slug:difficulty).
+ * Utilisé pour verrouiller Confirmé / Expert avec un cadenas.
+ */
+export function isEasyModeFinished(quizzesPlayed) {
+  if (!Array.isArray(quizzesPlayed)) return false;
+  if (EASY_SLUGS.length === 0) return true;
+  return EASY_SLUGS.every((slug) =>
+    quizzesPlayed.some((key) => key === slug || String(key).startsWith(`${slug}:`))
+  );
+}
+
+/**
+ * Un quizz est-il verrouillé ? Facile = toujours ouvert, Confirmé et Expert
+ * nécessitent que le mode facile soit terminé.
+ */
+export function isQuizLocked(quiz, quizzesPlayed) {
+  if (!quiz) return false;
+  if (quiz.difficulty === 'easy') return false;
+  return !isEasyModeFinished(quizzesPlayed);
+}
