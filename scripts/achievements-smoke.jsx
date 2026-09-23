@@ -29,6 +29,9 @@ import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
 seedDemoProfiles();
 
 export { DEMO_PROFILES, DEMO_PROFILE_FIXTURES };
+// Carte de succès seule : le contrôle de la bulle d'information la monte dans
+// jsdom avec une géométrie d'écran simulée (jsdom n'applique pas le CSS).
+export { AchievementCard, achievementsCopy } from '../src/achievements/AchievementsPanel';
 
 export const STORAGE_KEY_LEGACY = STORAGE_KEY;
 // La progression est rangée par joueur : clé « invité » pour l'appareil,

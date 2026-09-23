@@ -243,9 +243,15 @@ messagerie** `/messages` (voir plus bas), où la fenêtre s'efface entièrement.
   profil annonce aussi **EN LIGNE / HORS LIGNE** ;
 - dans le **fil de commentaires** : une petite icône « + » à côté du pseudo de
   chaque auteur (✓ quand c'est déjà un ami, ⏱ quand la demande est partie) ;
-- dans l'onglet **Ajouter** de la fenêtre, et depuis le **hub joueur** (`/auth`),
-  section « Amis & demandes » : résumé, premiers avatars, raccourcis « Ouvrir la
-  liste d'amis » / « Ajouter un ami ».
+- dans l'onglet **Ajouter** de la fenêtre sociale (lanceur en bas à droite) :
+  recherche par pseudo, demande en un clic.
+
+**Dans le hub joueur** (`/auth`), la section « **Mes amis** » n'affiche que la
+liste : un ami par ligne — avatar avec son point de présence, « EN LIGNE » ou
+« Vu il y a 2 h », niveau — et **toute la ligne mène à son profil**. Six amis en
+aperçu, puis un bouton « Voir tous mes amis ». Aucun geste ici (ni demande, ni
+discussion) : ils restent dans la fenêtre sociale. Un visiteur, ou une page
+montée sans le provider des amis, ne rend rien du tout.
 
 Un visiteur qui clique sur « Se connecter pour ajouter des amis » est renvoyé
 sur la page où il était une fois connecté.
@@ -325,7 +331,7 @@ chargement et lisait `DEMO_PROFILES.vortex.user_metadata` — registre vide, don
 | `src/friends/presence.js` | canal Realtime Presence + battement de cœur |
 | `src/friends/FriendsTabs.jsx` | les onglets Amis / Demandes / Ajouter de la fenêtre sociale |
 | `src/friends/FriendButton.jsx` | le bouton de demande d'ami (profil, commentaires, résultats de recherche) |
-| `src/friends/FriendsHubSection.jsx` | la section « Amis & demandes » du hub |
+| `src/friends/FriendsHubSection.jsx` | la section « Mes amis » du hub : la liste des amis, chaque ligne menant à son profil |
 | `src/friends/friendsCopy.js` | textes FR / EN / AR |
 | `src/auth/demoProfiles.js` | registre des personas : **vide** dans le bundle livré, `registerDemoProfiles()` pour les scripts |
 | `scripts/demoFixtures.js` | les deux personas en fixtures de test, semées par les entrées SSR |
@@ -358,7 +364,8 @@ section amis) — la pastille jaune du lanceur compte les non-lus, et
 est une **vraie page** : `/messages` (alias `/messagerie`) pour la liste,
 `/messages/:peerId` pour une discussion — un écran plein, de grandes zones
 d'appui, le champ toujours à portée de pouce ; tous les points d'entrée
-(liste d'amis, bouton « Message » d'un profil, raccourcis du hub) y naviguent.
+(bouton « Message » d'un profil, photo ou nom d'un ami dans la fenêtre
+sociale) y naviguent.
 La page existe aussi sur bureau, en deux colonnes. Sur la page, **la photo ou
 le nom d'un interlocuteur ouvre la discussion** (jamais son profil : le
 bouton « Profil » de l'en-tête de discussion y mène), et dans la liste d'amis
@@ -382,10 +389,13 @@ L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil 
   nombre de non-lus en pastille sinon ;
 - la **photo ou le nom** de chaque ami (onglet Amis de la fenêtre sociale) :
   le geste ouvre directement la discussion avec lui ;
-- la section **« MESSAGES »** du hub joueur (`/auth`) : total des non-lus,
-  trois derniers échanges, raccourcis « Ouvrir la messagerie » / « Écrire à un
-  ami » ; sur mobile, chacun de ces points d'entrée ouvre la page
-  `/messages`.
+- le **lanceur de la fenêtre sociale** (en bas à droite), qui rouvre la liste
+  des discussions — et sur mobile la page `/messages`, plein écran.
+
+Le **hub joueur** (`/auth`) ne porte plus aucun raccourci de messagerie : sa
+section sociale se limite à la liste d'amis (chaque ligne mène au profil du
+joueur). La messagerie reste la fenêtre sociale (bureau) et la page
+`/messages` (mobile et bureau).
 
 ### Comptes Supabase
 
@@ -451,7 +461,6 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 | `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler |
 | `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
 | `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
-| `src/messages/MessagesHubSection.jsx` | la section « MESSAGES » du hub |
 | `src/messages/messagesCopy.js` | textes FR / EN / AR |
 | `src/messages/messages.css` | styles (liste, bulles, signalement, page `/messages`) |
 
@@ -495,8 +504,14 @@ rapporte plus qu'un succès argent, etc.), ce qui rend l'échelle lisible :
 | 🥇 Or | 10 | 100–250 | 12 articles, semaine parfaite, trilingue, oiseau de nuit |
 | 🏅 Platine | 7 | 400–800 | 30 articles, 14 jours d'affilée, 30 jours de visite, 15 commentaires, les 8 sections, 3 nuits de lecture après minuit |
 
-Dans le profil `/auth`, la section « succès » compacte montre le niveau,
-la progression, les derniers succès obtenus et les prochains objectifs. Chaque
+Dans le profil `/auth`, la section « succès » compacte montre les succès
+obtenus et les prochains objectifs. Elle ne répète ni le niveau, ni le rang, ni
+la barre d'XP : tout cela vit dans la carte du joueur, juste au-dessus (un seul
+bloc de progression par page). La **bulle d'information** d'une carte — la
+description, la progression et l'XP — reste elle aussi toujours dans l'écran :
+centrée sur la carte, elle est décalée juste ce qu'il faut quand la carte touche
+un bord (mobile, dernières colonnes), et bascule **sous** la carte quand il n'y
+a pas la place au-dessus. Chaque
 carte porte son grade sous le nom, et le cadre des succès débloqués prend la
 couleur du grade (bronze cuivré, argent, or, platine aux reflets irisés). La
 notification de déblocage affiche aussi le grade du succès tombé. Il n’existe
@@ -507,17 +522,19 @@ Où ça se voit :
 
 | Endroit | Ce qui s'y trouve |
 | --- | --- |
-| `/auth` (hub joueur) | la **barre d'XP du profil** et la section « succès » intégrée : niveau, derniers succès obtenus et prochains objectifs |
+| `/auth` (hub joueur) | la **barre d'XP du profil** (seul endroit où niveau, rang et progression sont affichés) et la section « succès » intégrée : succès obtenus et prochains objectifs |
 | Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
 | Navigation et pied de page | l’accès au profil joueur, qui contient les succès |
 
 Le niveau et l'XP ne sont jamais stockés côté compte : ils se déduisent des
 succès débloqués (`totalXp` puis `levelFromXp`, dans
 `src/achievements/engine.js`). La barre d'XP de la carte profil du hub
-(`src/pages/Auth.jsx`) et celle de la section « succès » lisent donc le même
-`summary` et avancent ensemble — les métadonnées Supabase d'un compte réel ne
-portent ni XP ni niveau (seule la progression des succès y est écrite), et les
-relire laissait la barre principale à 0 % pendant que l'autre avançait. Seules
+(`src/pages/Auth.jsx`) est la **seule** à afficher la progression : elle lit le
+`summary` du moteur, comme la carte de niveau qui vivait avant dans la section
+« succès » — cette dernière n'en garde plus de copie, pour ne pas montrer deux
+fois le même niveau. Les métadonnées Supabase d'un compte réel ne portent ni XP
+ni niveau (seule la progression des succès y est écrite) : les relire laissait
+la barre principale à 0 % au lieu de suivre le moteur. Seules
 les personas de démonstration — registre `src/auth/demoProfiles.js`, vide dans
 le bundle livré, semé par `scripts/demoFixtures.js` pendant les vérifications —
 affichent des chiffres scriptés, pour prévisualiser un hub rempli sans backend.
@@ -637,15 +654,18 @@ Editor du projet Supabase (le script est relançable sans risque).
 
 ### Vérifications
 
-- `npm run check:achievements` — quatre niveaux : cohérence du catalogue
+- `npm run check:achievements` — cinq niveaux : cohérence du catalogue
   (identifiants uniques, trois langues, métriques connues, cibles et XP
   valides) ; comportement du moteur (contenus distincts, lecture de nuit,
   séries de jours, fusion appareil ↔ compte, données corrompues, courbe de
   niveau, détection du passage de niveau) ; **scénario complet qui débloque les
   37 succès** (donc aucun succès inatteignable) ; rendu réel en SSR du panneau
   du profil joueur et du hub — en aperçu de démonstration **et avec un compte réellement
-  connecté** (la barre d'XP du profil doit se remplir, suivre la barre de la
-  section « succès », et annoncer le niveau et le rang déduits du moteur) — et
+  connecté** (la barre d'XP du profil doit se remplir, être la seule de la
+  page, et annoncer le niveau et le rang déduits du moteur), la **bulle
+  d'information** d'une carte de succès montée dans jsdom avec une géométrie
+  de téléphone (elle est décalée pour rester dans l'écran, et bascule sous la
+  carte quand il n'y a pas la place au-dessus) — et
   de la **fenêtre de déblocage** (montée avec la file qu'un
   joueur verrait après une action : succès, rareté, XP, palier franchi,
   compteur de file, boîte de dialogue accessible, rien sans succès à fêter),

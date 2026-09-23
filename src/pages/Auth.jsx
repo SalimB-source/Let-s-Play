@@ -20,7 +20,6 @@ import {
 import ConsoleLogo from '../components/ConsoleLogo';
 import TopGamePill from '../components/TopGamePill';
 import FriendsHubSection from '../friends/FriendsHubSection';
-import MessagesHubSection from '../messages/MessagesHubSection';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
 
 /* ------------------------------------------------------------------ */
@@ -1157,11 +1156,10 @@ export default function Auth({ initialMode = '' }) {
             </div>
           </div>
 
-          {/* AMIS & MESSAGERIE — côte à côte */}
-          <div className="player-social-grid">
-            <FriendsHubSection />
-            <MessagesHubSection />
-          </div>
+          {/* AMIS — la liste des amis, chaque ligne mène à la page du joueur.
+              Aucune action de messagerie ici : la discussion 1-à-1 reste dans
+              la fenêtre sociale (en bas à droite) et sur /messages. */}
+          <FriendsHubSection />
 
           {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
               commentaires, recherche, fidélité, compte) */}
