@@ -67,10 +67,17 @@ jobs:
         run: |
           git config user.name "letsplay-news-bot"
           git config user.email "actions@github.com"
-          git add src/news/auto src/news/autoIndex.js public/news-auto news-bot/state.json news-bot/report.md
+          # NB : news-bot/report.md est volontairement gitignored (il sert de
+          # message de commit via `git commit -F`) — ne PAS le lister ici,
+          # sinon `git add` échoue sur un chemin ignoré (exit 1, aucun commit).
+          git add src/news/auto src/news/autoIndex.js public/news-auto news-bot/state.json
           if git diff --cached --quiet; then
             echo "Rien de nouveau à publier — pas de commit."
             exit 0
           fi
           git commit -F news-bot/report.md
+          # Si main a bougé pendant le run (push humain en cours), on se
+          # rebase avant le push pour éviter un rejet non fast-forward.
+          git fetch origin main
+          git rebase origin/main
           git push
