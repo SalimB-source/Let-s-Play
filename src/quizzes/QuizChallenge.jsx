@@ -77,7 +77,7 @@ export default function QuizChallenge({ quiz, level = null, score, total }) {
         </p>
       ) : (
         <>
-          <button type="button" className="button button-ghost" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <button type="button" className="quiz-cta quiz-cta--ghost" aria-expanded={open} onClick={() => setOpen(!open)}>
             {copy.open} {friends.friends.length ? `(${friends.friends.length})` : ''}
           </button>
           {open && (friends.friends.length === 0 ? (

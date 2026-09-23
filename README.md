@@ -747,26 +747,63 @@ mais la structure de données les accepte déjà.
   manque — aucune requête `i.ytimg.com` dans le cas nominal. Ajouter un
   quizz = déposer son illustration sous ce nom, `check:thumbs` le vérifie.
 - **Moteur** — `src/quizzes/engine.js` (pur, sans React, importable par Node) :
-  `prepareQuiz(quiz, level, seed)` ne pose que les questions du niveau demandé
-  (ordre et choix mélangés, la bonne réponse voyageant avec son choix),
+  `prepareQuiz(quiz, level, seed, { extraDistractors })` ne pose que les
+  questions du niveau demandé (ordre et choix mélangés, la bonne réponse
+  voyageant avec son choix — et, en expert, un **piège** tiré des réponses
+  d'autres questions du même quizz, jamais la bonne réponse et jamais un
+  doublon),
   mélange déterministe par graine (le quizz du jour est le même pour tous),
   barème, paliers de résultat (`rookie` → `legend`), meilleure série de jours
   consécutifs, et les **multiplicateurs de niveau** (`DIFFICULTY_MULTIPLIER` :
   Facile ×1, Confirmé ×1,5, Expert ×2 — `quizPointsFor` met le barème base +
   rapidité + combo à l'échelle, plafond 200/300/400 par question, revérifié
   côté serveur). Le niveau joué voyage avec la partie préparée
-  (`prepared.level`).- **Minuteur** — 15 secondes par question (`QUESTION_TIME`, mutable pour les
-  tests) : une barre de décompte passe au rouge dans les 3 dernières secondes
-  et, à zéro, la question avance sans réponse (comptée ratée, signalée
-  « Temps écoulé » dans les corrections).
+  (`prepared.level`).
+- **Règles par niveau** — `LEVEL_RULES` : le niveau ne change pas que les
+  questions et les points, il change **la façon de jouer** — temps par
+  question, nombre de propositions, vies, jokers et durée du gel de verdict :
+
+  | Niveau | Temps | Propositions | Vies | Jokers (50/50 + gel) | Gel de verdict |
+  | --- | --- | --- | --- | --- | --- |
+  | Facile | 20 s | 4 | — | 2 + 1 | 600 ms |
+  | Confirmé | 15 s | 4 | — | 1 + 1 | 600 ms |
+  | Expert | 10 s | 5 (dont un piège) | 3 | aucun | 450 ms |
+
+  `QUESTION_TIME.seconds` (15 s) reste la **référence** : chaque niveau la met
+  à l'échelle (`questionBudgetMs`), donc raccourcir la référence raccourcit les
+  trois budgets ensemble. Ces règles sont annoncées **avant** de jouer (carte
+  « Règles de ce niveau » du sélecteur, `levelBrief`) et appliquées en partie
+  (`resetRun`) — pas de piège pour le joueur. L'expert est plus dur sur tous
+  les axes : trois fois moins de temps par proposition qu'en facile, une
+  proposition de plus, une partie qui s'arrête à la troisième erreur, et
+  aucune aide.
+- **Jokers** — deux par partie, hors expert : **50/50** (deux mauvaises
+  propositions passent en `is-eliminated`, sans jamais toucher la bonne réponse
+  ni décaler la grille — le bouton reste en place, cliquable en apparence
+  seulement) et **gel du chrono** (la barre se fige et remonte de
+  `FREEZE_BONUS.seconds` = 8 s, ce qui rend la partie possible sans rendre la
+  question plus simple). Les boutons affichent le nombre restant, sont coupés
+  pendant le gel de verdict et se jouent aussi au clavier (`D` et `F`).
+- **Vies & fin de partie** — dès qu'un niveau en a (l'expert), chaque erreur ou
+  temps écoulé retire un cœur : au dernier, la partie **s'arrête** — écran de
+  résultat avec « Plus de vies », le rang où elle s'est arrêtée, les
+  corrections de tout le niveau et les questions non jouées comptées comme
+  ratées. `gradeQuiz` renvoie `answered` (questions réellement jouées) pour que
+  ce cas ne soit jamais pris pour un sans-faute.
+- **Minuteur** — budget par question selon le niveau (20 s / 15 s / 10 s,
+  `questionBudgetMs`) : une barre de décompte passe au rouge dans les 3
+  dernières secondes et, à zéro, la question avance sans réponse (comptée
+  ratée, signalée « Temps écoulé » dans les corrections).
 - **Sons** — `src/quizzes/quizSounds.js` : tout est synthétisé en Web Audio,
   aucun fichier audio à livrer. Un tick-tack discret tourne en fond pendant
   chaque question et **accélère par paliers** quand le temps baisse (une
   pulsation par seconde au début, 620 ms à mi-parcours, 340 ms dès que la barre
   passe au rouge — même seuil —, 220 ms dans la dernière seconde et demie, un
   peu plus fort). Une bonne réponse fait monter un accord do–mi–sol, une
-  mauvaise descend en dents de scie, et le temps écoulé ajoute une note grave
-  (ne pas répondre n'est pas se tromper). Tout est best-effort — sans API Web
+  mauvaise descend en dents de scie, le temps écoulé ajoute une note grave
+  (ne pas répondre n'est pas se tromper) et chaque jokers a sa signature
+  (`playQuizJokerSound` : le 50/50 descend sur deux notes, le gel du chrono
+  monte). Tout est best-effort — sans API Web
   Audio, la partie se joue normalement — et un bouton 🔊/🔇 (sur l'intro comme
   pendant la partie) coupe l'ensemble, la préférence restant sur l'appareil.
   Le son n'étant pas accessible à tous, un compteur ✓/✗ de la partie en cours
@@ -791,11 +828,25 @@ mais la structure de données les accepte déjà.
   erreurs » accumule 0 point — bandeau, compteur et résultat le disent — et
   rien n'est écrit (ni succès/XP, ni record de l'appareil, ni classement),
   quoi que le joueur réponde.
-  Raccourcis clavier : les touches 1–4 valident le choix affiché (jamais
-  pendant le gel, jamais dans un champ de saisie). Le sans-faute fait pleuvoir
-  des confettis sur l'écran de résultat
+  Raccourcis clavier : les touches **1–5** valident le choix affiché (les
+  propositions éliminées par un 50/50 sont ignorées, jamais pendant le gel,
+  jamais dans un champ de saisie) et `D` / `F` jouent les jokers — l'astuce
+  affichée suit le nombre réel de propositions du niveau.
+  Le sans-faute fait pleuvoir des confettis sur l'écran de résultat
   (`QuizConfetti`, DOM/CSS sans canvas, pluie de trois secondes) et chaque
   palier joue sa fanfare (`legend` = montée de quatre notes).
+  Une partie qui bat le record de l'appareil pour **ce niveau** est annoncée
+  (« Nouveau record », comparé **avant** d'écrire).
+- **Lecteur de partie & détail** — la refonte du lecteur : une pastille par
+  question (`quiz-pip`, verte/rouge, celle en cours signalée), un bandeau
+  compact (✓/✗, points, jokers, série, cœurs), des boutons d'action compacts
+  (`.quiz-cta` à la place du `.button` géant du site, avec l'accent du niveau
+  joué) et, au résultat, un **détail de partie** (`quiz-stats`) : réussite,
+  points, meilleure série, temps de réponse moyen, jokers dépensés et vies
+  restantes en expert. La série en cours passe par des paliers nommés
+  (`streakLevel` : `cold`/`warm`/`hot`/`blazing` — « Ça monte », « En feu »,
+  « Inarrêtable »). Tout reste lisible sans mouvement
+  (`prefers-reduced-motion` coupe secousses, pulses et confettis).
 - **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
   sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
   `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
@@ -881,12 +932,20 @@ mais la structure de données les accepte déjà.
   départage aux bonnes réponses), classement par points (points affichés en
   premier, score/total en secondaire, repli ancien backend) et position au
   classement global affichée sur la page de profil (repli hors-ligne expliqué),
-  verdict (gel avec choix verrouillés, vert/rouge, bonne réponse révélée,
-  bandeau avec points), raccourcis clavier 1–4 (la touche pendant le gel est
-  ignorée), sons (tempo qui accélère sans jamais ralentir et sans attendre le
-  battement suivant, battement réel, verdicts juste / faux / temps écoulé,
-  combo dont la note monte avec la série, fanfare du palier, coupure depuis le
-  bouton 🔊, no-op sans Web Audio) — le tout avec un faux `AudioContext` qui
+  règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en
+  expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons
+  ni doublés, `answered` d'une partie arrêtée), verdict (gel avec choix
+  verrouillés, vert/rouge, bonne réponse révélée, bandeau avec points),
+  raccourcis clavier 1–5 (+ `D` et `F` pour les jokers ; la touche pendant le
+  gel est ignorée), sons (tempo qui accélère sans jamais ralentir et sans
+  attendre le battement suivant, battement réel, verdicts juste / faux / temps
+  écoulé, combo dont la note monte avec la série, jokers — le 50/50 descend et
+  le gel monte —, fanfare du palier, coupure depuis le bouton 🔊, no-op sans
+  Web Audio), refonte du lecteur (CTA compacts, pastilles de progression,
+  50/50 qui élimine deux mauvaises réponses sans toucher la bonne, gel du
+  chrono, détail de partie) et niveau expert en conditions réelles (cinq
+  propositions, une vie perdue par erreur, fin de partie à la troisième,
+  « Plus de vies », base ×2 par bonne réponse, touche 5) — le tout avec un faux `AudioContext` qui
   enregistre les oscillateurs lancés. Le scénario de
   `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
   rend les nouvelles routes dans les trois langues ; `check:thumbs` vérifie les

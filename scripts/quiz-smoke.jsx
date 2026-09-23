@@ -43,7 +43,11 @@ import {
   quizThumbUrl,
   quizzes,
 } from '../src/quizzesData';
-import { QUESTION_TIME, VERDICT_MS, DIFFICULTY_MULTIPLIER, bestDayRun, dailyQuizFor, gradeQuiz, pointsMultiplier, prepareQuiz, quizPoints, quizPointsFor } from '../src/quizzes/engine';
+import {
+  DIFFICULTY_MULTIPLIER, FREEZE_BONUS, LEVEL_RULES, QUESTION_TIME, VERDICT_MS, bestDayRun,
+  dailyQuizFor, gradeQuiz, levelBrief, levelRules, pointsMultiplier, prepareQuiz,
+  questionBudgetMs, quizPoints, quizPointsFor, startJokers, streakLevel,
+} from '../src/quizzes/engine';
 import { quizRunKey, quizLevelCompleted, totalXp } from '../src/achievements/engine';
 import { formatBest, readLocalBest, readLocalBestRun, writeLocalBest } from '../src/quizzes/quizApi';
 import {
@@ -56,6 +60,7 @@ import {
 import {
   playQuizAnswerSound,
   playQuizComboSound,
+  playQuizJokerSound,
   playQuizResultFanfare,
   quizSoundEnabled,
   startQuizClock,
@@ -183,6 +188,74 @@ export async function checkQuiz(assert) {
 
   // Temps imparti : la valeur par défaut est celle annoncée (15 s par question).
   assert.equal(QUESTION_TIME.seconds, 15, 'quinze secondes par question');
+
+  // Règles par niveau : ce que « Facile / Confirmé / Expert » change VRAIMENT
+  // en partie, au-delà des questions du niveau et du multiplicateur de points.
+  // L'expert est plus dur sur tous les axes (temps, propositions, vies, jokers).
+  assert.equal(questionBudgetMs('easy'), 20000, 'facile : 20 s par question');
+  assert.equal(questionBudgetMs('medium'), 15000, 'confirmé : 15 s par question');
+  assert.equal(questionBudgetMs('hard'), 10000, 'expert : 10 s par question');
+  QUESTION_TIME.seconds = 6;
+  assert.equal(questionBudgetMs('hard'), 4000, 'la référence QUESTION_TIME met les trois niveaux à l’échelle');
+  QUESTION_TIME.seconds = 15;
+  assert.equal(levelRules('hard').extraDistractors, 1, 'expert : une proposition de plus par question');
+  assert.equal(levelRules('easy').extraDistractors, 0, 'facile : les quatre propositions d’origine');
+  assert.equal(levelRules('easy').lives, 0, 'facile : aucune vie à perdre');
+  assert.equal(levelRules('hard').lives, 3, 'expert : trois vies, puis la partie s’arrête');
+  assert.equal(startJokers('easy').fifty + startJokers('easy').freeze, 3, 'facile : deux 50/50 et un gel du chrono');
+  assert.equal(startJokers('medium').fifty + startJokers('medium').freeze, 2, 'confirmé : deux jokers');
+  assert.equal(startJokers('hard').fifty + startJokers('hard').freeze, 0, 'expert : aucun joker');
+  assert.ok(LEVEL_RULES.hard.verdictMs <= VERDICT_MS, 'expert : le gel de verdict est plus court');
+  assert.equal(levelRules('niveau-inconnu').id, 'easy', 'niveau inconnu : repli sur « facile »');
+  assert.equal(FREEZE_BONUS.seconds, 8, 'le gel du chrono rend huit secondes');
+
+  // Mélange expert : cinq propositions, une seule bonne, un piège marqué — et
+  // jamais la bonne réponse, jamais un doublon. Même graine, même mélange.
+  for (const entry of quizzes) {
+    const expertPrepared = prepareQuiz(entry, 'hard', 7, { extraDistractors: 1 });
+    const againExpert = prepareQuiz(entry, 'hard', 7, { extraDistractors: 1 });
+    assert.deepEqual(
+      expertPrepared.questions.map((question) => question.choices.map((choice) => JSON.stringify(choice.label))),
+      againExpert.questions.map((question) => question.choices.map((choice) => JSON.stringify(choice.label))),
+      `${entry.slug} : le mélange expert est déterministe`,
+    );
+    for (const question of expertPrepared.questions) {
+      assert.equal(
+        question.choices.length,
+        entry.levels.hard[0].choices.length + 1,
+        `${entry.slug} : une proposition de plus en expert`,
+      );
+      assert.equal(question.choices.filter((choice) => choice.correct).length, 1, `${entry.slug} : une seule bonne réponse`);
+      assert.equal(question.choices.filter((choice) => choice.trap).length, 1, `${entry.slug} : un piège, marqué comme tel`);
+      assert.equal(question.choices.find((choice) => choice.trap).correct, false, `${entry.slug} : le piège n’est pas la bonne réponse`);
+      const labels = question.choices.map((choice) => JSON.stringify(choice.label));
+      assert.equal(new Set(labels).size, labels.length, `${entry.slug} : aucune proposition en double`);
+    }
+  }
+
+  // Série en cours (paliers de la flamme) et résumé de règles (sélecteur).
+  assert.equal(streakLevel(1), 'cold', 'une bonne réponse : rien ne chauffe encore');
+  assert.equal(streakLevel(2), 'warm');
+  assert.equal(streakLevel(4), 'hot');
+  assert.equal(streakLevel(8), 'blazing');
+  assert.deepEqual(
+    levelBrief(quizBySlug('culture-gaming'), 'hard'),
+    { id: 'hard', seconds: 10, choices: 5, lives: 3, jokers: { fifty: 0, freeze: 0 }, jokerCount: 0 },
+    'résumé du niveau expert : cinq propositions, trois vies, aucun joker',
+  );
+  assert.equal(levelBrief(quizBySlug('culture-gaming'), 'easy').choices, 4, 'résumé du niveau facile : quatre propositions');
+  assert.equal(pointsMultiplier('hard'), DIFFICULTY_MULTIPLIER.hard, 'les règles ne réinventent pas le multiplicateur de points');
+
+  // Barème d'une partie arrêtée par les vies : `answered` distingue joué de
+  // répondu, et un arrêt prématuré n'est jamais un sans-faute.
+  const stoppedPrepared = prepareQuiz(quizBySlug('culture-gaming'), 'hard', 3, { extraDistractors: 1 });
+  const stoppedFirst = stoppedPrepared.questions[0];
+  const stoppedGrade = gradeQuiz(stoppedPrepared, {
+    [stoppedFirst.id]: stoppedFirst.choices.find((choice) => choice.correct).id,
+  });
+  assert.equal(stoppedGrade.answered, 1, 'une seule question réellement jouée');
+  assert.equal(stoppedGrade.total, 8, 'le total reste celui du niveau');
+  assert.equal(stoppedGrade.perfect, false, 'arrêt prématuré : pas de sans-faute');
 
   // Barème des points (le classement se joue dessus) : base + rapidité +
   // combo, en entiers et bornés — 200 points maximum par question.
@@ -314,6 +387,22 @@ export async function checkQuiz(assert) {
         const livePoints = (container.querySelector('.quiz-live-item--points')?.textContent || '').replace(/\D/g, '');
         assert.equal(livePoints, '0', 'niveau rejoué : le compteur de points reste à 0');
       }
+      await waitQuestionChange(container, prompt);
+    }
+  };
+
+  // Joue les questions d'un niveau dans l'ordre affiché : la bonne réponse est
+  // reconnue à son libellé FR (`quizLevelQuestions`), `skip` saute les `skip`
+  // premières questions (déjà jouées par un test précédent).
+  const answerLevel = async (container, game, level, skip = 0) => {
+    const questions = quizLevelQuestions(game, level);
+    for (let step = skip; step < questions.length; step += 1) {
+      const prompt = container.querySelector('.quiz-question')?.textContent || '';
+      const question = questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+      assert.ok(question, `[${level}] la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
+      const rightText = quizLabel(question.choices[question.answer], 'fr');
+      await click([...container.querySelectorAll('.quiz-choice')]
+        .find((el) => el.querySelector('.quiz-choice-label')?.textContent === rightText && !el.disabled));
       await waitQuestionChange(container, prompt);
     }
   };
@@ -791,10 +880,14 @@ export async function checkQuiz(assert) {
 
   await click(timerNode.querySelector('[data-level="easy"] .quiz-level-play'));
   assert.ok(timerNode.querySelector('.quiz-timer'), 'le minuteur est affiché pendant la partie');
-  // Une question à la fois : chaque `act` laisse le décomte expirer (300 ms),
-  // le verdict sonner, puis le gel (VERDICT_MS) faire avancer la question.
+  // Une question à la fois : chaque `act` laisse le décompte expirer, le
+  // verdict sonner, puis le gel faire avancer la question. L'attente se calcule
+  // depuis le moteur (budget du niveau + gel du verdict) : chaque niveau a son
+  // propre budget (`questionBudgetMs`), un délai codé en dur casserait dès
+  // qu'un niveau change.
+  const expireWait = questionBudgetMs('easy') + levelRules('easy').verdictMs + 300;
   for (let step = 0; step < quizLevelQuestions(quiz, 'easy').length; step += 1) {
-    await act(async () => { await sleep(VERDICT_MS + 400); });
+    await act(async () => { await sleep(expireWait); });
   }
   assert.ok(timerNode.textContent.includes('0/8 bonnes réponses'), 'le minuteur écoulé compte chaque question comme ratée');
   assert.ok(timerNode.textContent.includes('Temps écoulé'), 'les corrections signalent le temps écoulé');
@@ -1018,6 +1111,176 @@ export async function checkQuiz(assert) {
 
   // Réglage compris avant de lancer la partie : le bouton son existe dans les
   // trois langues, avec le libellé traduit (pas le repli anglais).
+  /* ------------- 10. Refonte : CTA compacts, pastilles, jokers -------------- */
+  // Le lecteur de partie : boutons d'action compacts (`.quiz-cta`, et plus le
+  // `.button` géant du site), pastilles de progression, jokers 50/50 + gel du
+  // chrono, détail de partie au résultat.
+  seedLang('fr');
+  const funNode = document.createElement('div');
+  document.body.append(funNode);
+  const funRoot = createRoot(funNode);
+  await act(async () => funRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <AchievementProvider>
+          <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
+            <Routes>
+              <Route path="/quizz" element={<QuizzesPage />} />
+              <Route path="/quizz/:slug" element={<QuizPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AchievementProvider>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+
+  // Sélecteur de niveaux : chaque niveau annonce ses règles (temps,
+  // propositions, vies, jokers) et se lance d'un CTA compact.
+  assert.equal(funNode.querySelectorAll('.quiz-level-rules').length, 3, 'les trois niveaux annoncent leurs règles');
+  assert.ok(funNode.querySelector('[data-level="easy"] .quiz-level-rules').textContent.includes('20 s'), 'facile : 20 s annoncées');
+  assert.ok(funNode.querySelector('[data-level="hard"] .quiz-level-rules').textContent.includes('♥ 3'), 'expert : trois vies annoncées');
+  assert.ok(funNode.querySelector('[data-level="easy"] .quiz-keys-hint, .quiz-keys-hint'), 'l’astuce clavier est affichée');
+  assert.ok(funNode.textContent.includes('touches 1–4 pour répondre'), 'facile : l’astuce clavier suit les quatre propositions');
+  const easyCta = funNode.querySelector('[data-level="easy"] .quiz-level-play');
+  assert.ok(easyCta.classList.contains('quiz-cta'), 'l’action du niveau est un CTA compact');
+  assert.ok(!easyCta.classList.contains('button'), 'le quizz n’utilise plus le gros bouton global');
+
+  await click(easyCta);
+  // Jokers du niveau facile (deux 50/50, un gel) et une pastille par question.
+  const jokerButtons = () => [...funNode.querySelectorAll('.quiz-joker')];
+  assert.equal(jokerButtons().length, 2, 'facile : un bouton 50/50 et un bouton gel');
+  assert.equal(funNode.querySelectorAll('.quiz-pip').length, quizLevelQuestions(quiz, 'easy').length, 'une pastille par question');
+  assert.ok(funNode.querySelector('.quiz-player--easy'), 'le lecteur porte l’accent du niveau joué');
+
+  // 50/50 : deux propositions sortent du jeu — sans disparaître (la grille ne
+  // bouge pas) — et la bonne réponse survit toujours.
+  const promptFifty = funNode.querySelector('.quiz-question')?.textContent || '';
+  const questionFifty = quizLevelQuestions(quiz, 'easy').find((entry) => quizLabel(entry.q, 'fr') === promptFifty);
+  const rightFifty = quizLabel(questionFifty.choices[questionFifty.answer], 'fr');
+  const totalChoices = funNode.querySelectorAll('.quiz-choice').length;
+  audio.reset();
+  await click(jokerButtons()[0]);
+  assert.equal(funNode.querySelectorAll('.quiz-choice').length, totalChoices, 'le 50/50 garde les boutons en place');
+  assert.equal(funNode.querySelectorAll('.quiz-choice.is-eliminated').length, 2, 'deux propositions éliminées');
+  assert.ok(
+    [...funNode.querySelectorAll('.quiz-choice.is-eliminated')].every((el) => el.disabled),
+    'les propositions éliminées ne sont plus cliquables',
+  );
+  const eliminatedLabels = [...funNode.querySelectorAll('.quiz-choice.is-eliminated')]
+    .map((el) => el.querySelector('.quiz-choice-label')?.textContent || '');
+  assert.ok(!eliminatedLabels.includes(rightFifty), 'le 50/50 ne touche jamais la bonne réponse');
+  assert.equal(audio.notes.filter((note) => note.type === 'sine').length, 2, 'le 50/50 sonne (deux notes)');
+  const jokerCounts = () => [...jokerButtons()].map((el) => el.querySelector('.quiz-joker-count')?.textContent);
+  assert.deepEqual(jokerCounts(), ['1', '1'], 'un 50/50 dépensé sur deux, le gel encore intact');
+
+  // Gel du chrono : la barre passe en mode gel et le compte à rebours remonte.
+  const secondsOf = () => Number((funNode.querySelector('.quiz-timer-count')?.textContent || '').replace(/\D/g, '')) || 0;
+  const beforeFreeze = secondsOf();
+  await click(jokerButtons()[1]);
+  assert.ok(funNode.querySelector('.quiz-timer.is-frozen'), 'le chrono passe en mode gel');
+  assert.ok(secondsOf() >= beforeFreeze + FREEZE_BONUS.seconds - 1, `le gel rend ses secondes (${beforeFreeze} → ${secondsOf()} s)`);
+  assert.deepEqual(jokerCounts(), ['1', '0'], 'le gel est dépensé');
+  assert.ok(jokerButtons()[1].disabled, 'un joker épuisé n’est plus cliquable');
+
+  // Réponse juste : la pastille passe au vert, et la question suivante repart
+  // avec toutes ses propositions (les éliminations ne survivent pas).
+  await click([...funNode.querySelectorAll('.quiz-choice')]
+    .find((el) => el.querySelector('.quiz-choice-label')?.textContent === rightFifty && !el.disabled));
+  assert.ok(funNode.querySelector('.quiz-pip.is-right'), 'la pastille de la question jouée passe au vert');
+  await waitQuestionChange(funNode, promptFifty);
+  assert.equal(funNode.querySelectorAll('.quiz-choice').length, quizLevelQuestions(quiz, 'easy')[0].choices.length, 'la question suivante a toutes ses propositions');
+  assert.equal(funNode.querySelectorAll('.quiz-choice.is-eliminated').length, 0, 'les éliminations ne suivent pas d’une question à l’autre');
+
+  // Le reste du niveau, puis l'écran de résultat : détail de la partie
+  // (réussite, points, série, temps moyen, jokers) et boutons compacts.
+  await answerLevel(funNode, quiz, 'easy', 1);
+  assert.ok(funNode.querySelector('.quiz-result'), 'écran de résultat de la refonte');
+  assert.equal(funNode.querySelectorAll('.quiz-stat').length, 5, 'réussite, points, série, temps moyen, jokers (pas de vies en facile)');
+  assert.ok(funNode.textContent.includes('Réussite'), 'la réussite fait partie du détail');
+  assert.ok(funNode.textContent.includes('Jokers utilisés'), 'les jokers dépensés sont comptés');
+  const replayCta = [...funNode.querySelectorAll('button')].find((el) => el.textContent.trim() === 'Rejouer');
+  assert.ok(replayCta && replayCta.classList.contains('quiz-cta'), 'le bouton « Rejouer » est compact aussi');
+  assert.ok(
+    [...funNode.querySelectorAll('.quiz-result-actions > *')].every((el) => el.classList.contains('quiz-cta') || el.classList.contains('arrow-link')),
+    'les actions du résultat sont toutes compactes',
+  );
+
+  /* ------------------- 11. Niveau expert : plus dur, vraiment --------------- */
+  // L'expert s'ouvre en terminant le Confirmé : on enchaîne depuis l'écran de
+  // résultat (bouton « Jouer ce niveau ») pour l'atteindre en conditions réelles.
+  const unlockButton = () => [...funNode.querySelectorAll('.quiz-result-actions .quiz-cta--primary')]
+    .find((el) => el.textContent.includes('Jouer ce niveau'));
+  assert.ok(unlockButton(), 'le niveau Confirmé vient de se débloquer');
+  await click(unlockButton());
+  await answerLevel(funNode, quiz, 'medium');
+  assert.ok(funNode.textContent.includes('8/8 bonnes réponses'), 'niveau Confirmé terminé');
+  assert.ok(funNode.textContent.includes('touches 1–4 pour répondre') || funNode.querySelector('.quiz-result'), 'le résultat du Confirmé s’affiche');
+  await click(unlockButton());
+
+  // Niveau expert : dix secondes, cinq propositions (quatre + un piège), trois
+  // vies, aucun joker, points ×2 — et la partie s'arrête à la troisième erreur.
+  assert.ok(funNode.querySelector('.quiz-player--hard'), 'le lecteur porte l’accent du niveau expert');
+  assert.equal(funNode.querySelectorAll('.quiz-choice').length, 5, 'expert : cinq propositions (quatre + un piège)');
+  assert.equal(funNode.querySelectorAll('.quiz-heart').length, 3, 'expert : trois vies affichées');
+  assert.equal(funNode.querySelectorAll('.quiz-joker').length, 0, 'expert : aucun bouton joker');
+  assert.ok(funNode.textContent.includes('EXPERT — AUCUN JOKER'), 'expert : l’absence de joker est dite');
+
+  // Partie experte parfaite : cinq propositions à chaque question et la base
+  // ×2 sur chaque bonne réponse (200 pts minimum, `DIFFICULTY_MULTIPLIER`).
+  let expertVerdictPoints = 0;
+  const expertQuestions = quizLevelQuestions(quiz, 'hard');
+  for (let step = 0; step < expertQuestions.length; step += 1) {
+    const prompt = funNode.querySelector('.quiz-question')?.textContent || '';
+    const question = expertQuestions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    assert.equal(funNode.querySelectorAll('.quiz-choice').length, 5, 'expert : cinq propositions à chaque question');
+    const rightText = quizLabel(question.choices[question.answer], 'fr');
+    await click([...funNode.querySelectorAll('.quiz-choice')]
+      .find((el) => el.querySelector('.quiz-choice-label')?.textContent === rightText));
+    expertVerdictPoints = Math.max(
+      expertVerdictPoints,
+      Number((funNode.querySelector('.quiz-verdict-points')?.textContent.match(/\d+/) || [0])[0]),
+    );
+    await waitQuestionChange(funNode, prompt);
+  }
+  assert.ok(funNode.querySelector('.quiz-result'), 'la partie experte se termine');
+  assert.ok(expertVerdictPoints >= 200, `une bonne réponse experte rapporte au moins la base ×2 (${expertVerdictPoints})`);
+  assert.ok(funNode.textContent.includes('8/8 bonnes réponses'), 'sans-faute en niveau expert');
+
+  // Rejouer le niveau expert (déjà terminé : plus de points, mais les vies
+  // s'appliquent toujours) : la touche 5 répond — cinq propositions, cinq touches.
+  await click([...funNode.querySelectorAll('button')].find((el) => el.textContent.trim() === 'Rejouer'));
+  const expertKeyPrompt = funNode.querySelector('.quiz-question')?.textContent || '';
+  await act(async () => {
+    window.dispatchEvent(new window.KeyboardEvent('keydown', { key: '5', bubbles: true }));
+  });
+  assert.ok(funNode.querySelector('.quiz-verdict'), 'la touche 5 répond en niveau expert');
+  await waitQuestionChange(funNode, expertKeyPrompt);
+
+  // Trois erreurs de suite : chaque erreur coûte une vie, la dernière arrête la
+  // partie — les questions non jouées comptent comme ratées.
+  const answerWrongExpert = async () => {
+    const prompt = funNode.querySelector('.quiz-question')?.textContent || '';
+    const question = expertQuestions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    const rightText = quizLabel(question.choices[question.answer], 'fr');
+    await click([...funNode.querySelectorAll('.quiz-choice')]
+      .find((el) => el.querySelector('.quiz-choice-label')?.textContent !== rightText));
+    await waitQuestionChange(funNode, prompt);
+  };
+  for (let step = 0; step < 3 && !funNode.querySelector('.quiz-result'); step += 1) {
+    await answerWrongExpert();
+    assert.ok(
+      funNode.querySelector('.quiz-result') || funNode.querySelectorAll('.quiz-heart.is-lost').length >= 1,
+      'chaque erreur coûte une vie',
+    );
+  }
+  assert.ok(funNode.querySelector('.quiz-result'), 'les vies épuisées arrêtent la partie');
+  assert.ok(funNode.textContent.includes('PLUS DE VIES'), 'l’écran annonce la fin de partie');
+  assert.ok(/[01]\/8 bonnes réponses/.test(funNode.textContent), 'les questions non jouées comptent comme ratées');
+  assert.equal(funNode.querySelectorAll('.quiz-stat').length, 6, 'le détail expert compte les vies restantes');
+  assert.equal(funNode.querySelectorAll('.quiz-fix').length, expertQuestions.length, 'les corrections couvrent tout le niveau');
+  assert.ok(funNode.querySelector('.quiz-result-actions .quiz-cta--primary'), 'l’action principale du résultat garde l’accent du niveau');
+  await act(async () => funRoot.unmount());
+
   for (const lang of ['fr', 'en', 'ar']) {
     seedLang(lang);
     const langNode = document.createElement('div');
@@ -1044,5 +1307,5 @@ export async function checkQuiz(assert) {
     await act(async () => langRoot.unmount());
   }
 
-  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, replay d’un niveau terminé = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
+  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons ni doublés, answered d’une partie arrêtée), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, replay d’un niveau terminé = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur par niveau, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–5 (+ D et F pour les jokers), combo + fanfare, sons (tick-tack qui accélère, verdicts, jokers — le 50/50 descend, le gel monte —, coupure), refonte du lecteur (CTA compacts, pastilles de progression, 50/50, gel du chrono, détail de partie) et niveau expert en conditions réelles (cinq propositions, une vie perdue par erreur, fin de partie à la troisième, « Plus de vies », base ×2 par bonne réponse, touche 5).');
 }
