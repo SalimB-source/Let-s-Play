@@ -22,7 +22,7 @@ export const CONSOLE_OPTIONS = [
   // Génération actuelle & moderne
   { id: 'PS5', label: 'PlayStation 5' },
   { id: 'PS4', label: 'PlayStation 4' },
-  { id: 'XBOX SERIES X', label: 'Xbox Series X' },
+  { id: 'XBOX SERIES S', label: 'Xbox Series S' },
   { id: 'XBOX ONE', label: 'Xbox One' },
   { id: 'SWITCH 2', label: 'Nintendo Switch 2' },
   { id: 'SWITCH', label: 'Nintendo Switch' },
@@ -40,6 +40,16 @@ export const CONSOLE_OPTIONS = [
   { id: 'DREAMCAST', label: 'Sega Dreamcast' },
   { id: 'GBA', label: 'Game Boy Advance' },
   { id: 'NES', label: 'Nintendo NES' },
+  { id: 'XBOX', label: 'Xbox' },
+  { id: 'WII U', label: 'Nintendo Wii U' },
+  { id: 'WII', label: 'Nintendo Wii' },
+  { id: '3DS', label: 'Nintendo 3DS' },
+  { id: 'DS', label: 'Nintendo DS' },
+  { id: 'GAME BOY', label: 'Nintendo Game Boy' },
+  { id: 'PS VITA', label: 'PlayStation Vita' },
+  { id: 'PSP', label: 'PlayStation Portable' },
+  { id: 'SATURN', label: 'Sega Saturn' },
+  { id: 'MASTER SYSTEM', label: 'Sega Master System' },
 ];
 
 // Alias ramenés à l'identifiant canonique avant de pré-remplir la sélection
@@ -75,6 +85,9 @@ const CONSOLE_ALIASES = {
   'PS4': 'PS4',
   'PLAYSTATION 5': 'PS5',
   'PS5': 'PS5',
+  'XBOX SERIES X': 'XBOX SERIES S',
+  'XBOX SERIES': 'XBOX SERIES S',
+  'XBOX SERIES S': 'XBOX SERIES S',
   'XBOX 360': 'XBOX 360',
   'X360': 'XBOX 360',
   'DREAMCAST': 'DREAMCAST',

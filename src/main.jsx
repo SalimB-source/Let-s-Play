@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
+import './profile-lists.css';
 import './news-article.css';
 import './auth/auth.css';
 import './news-carousel.css';
