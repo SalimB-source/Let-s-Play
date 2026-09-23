@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
-import { fetchQuizLeaderboard, quizApiEnabled, readLocalBest } from './quizApi';
+import { fetchQuizLeaderboard, formatBest, quizApiEnabled, readLocalBest } from './quizApi';
 
 const FALLBACK = {
   boardTitle: 'Leaderboard',
@@ -13,7 +13,8 @@ const FALLBACK = {
 
 /**
  * Classement d'un quizz : top 10 partagé pour les comptes connectés
- * (RPC `get_quiz_leaderboard`), meilleur score de l'appareil pour les
+ * (RPC `get_quiz_leaderboard`, trié par POINTS gagnés — les bonnes réponses
+ * restent affichées en secondaire), meilleure partie de l'appareil pour les
  * visiteurs. Sans backend, un message explique comment débloquer le
  * classement — rien ne casse.
  */
@@ -22,7 +23,7 @@ export default function QuizLeaderboard({ quiz, lastBoard = null, refreshKey = 0
   const { user, isDemo } = useAuth();
   const copy = { ...FALLBACK, ...((t.quiz || {}).board || {}) };
   const [rows, setRows] = useState(lastBoard);
-  // Relu à chaque fin de partie (`refreshKey`) : le score de l'appareil
+  // Relu à chaque fin de partie (`refreshKey`) : la partie de l'appareil
   // change sans que ce composant ne reçoive d'autre mise à jour.
   const [localBest, setLocalBest] = useState(() => readLocalBest(quiz.slug));
   const connected = Boolean(user) && !isDemo;
@@ -57,13 +58,20 @@ export default function QuizLeaderboard({ quiz, lastBoard = null, refreshKey = 0
                 {row.avatar_url ? <img src={row.avatar_url} alt="" loading="lazy" referrerPolicy="no-referrer" /> : null}
                 {row.username || copy.you}
               </span>
-              <span className="quiz-board-score">{row.score}/{row.total}{row.perfect ? ' ★' : ''}</span>
+              <span className="quiz-board-score">
+                {/* Les points mènent le classement ; les bonnes réponses du
+                    même run restent visibles en secondaire. Repli sans points
+                    (ancien backend) : l'ancien affichage score/total. */}
+                {row.points != null ? `⚡ ${row.points} PTS` : `${row.score}/${row.total}`}
+                {row.perfect ? ' ★' : ''}
+                {row.points != null && <span className="quiz-board-detail">{row.score}/{row.total}</span>}
+              </span>
             </li>
           ))}
         </ol>
       )}
       {!connected && localBest && (
-        <p className="quiz-board-local">{copy.bestDevice} : <strong>{localBest.score}/{localBest.total}</strong></p>
+        <p className="quiz-board-local">{copy.bestDevice} : <strong>{formatBest(localBest)}</strong></p>
       )}
     </section>
   );

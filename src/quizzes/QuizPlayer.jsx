@@ -113,9 +113,9 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   // même information sans le son (et pour les lecteurs d'écran).
   const [soundOn, setSoundOn] = useState(() => quizSoundEnabled());
   const [live, setLive] = useState({ right: 0, wrong: 0 });
-  // « Fun » de la partie : points de rapidité + combo (hors barème officiel,
-  // voir `quizPoints` du moteur), série en cours, meilleure série et le
-  // gel de verdict en attente (null = question libre).
+  // Points de la partie (rapidité + combo, voir `quizPoints` du moteur) :
+  // ils font le classement et le record de l'appareil. Série en cours,
+  // meilleure série et gel de verdict en attente (null = question libre).
   const [points, setPoints] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
@@ -237,9 +237,10 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
       if (!review && trackedFor.current !== prepared) {
         trackedFor.current = prepared;
         track('quiz_completed', { id: quiz.slug, perfect: graded.perfect, daily });
-        // Le score : meilleur score de l'appareil pour tout le monde, et
-        // tentative serveur (classement partagé) pour les comptes connectés.
-        writeLocalBest(quiz.slug, graded.correct, graded.total);
+        // Le résultat : meilleure partie de l'appareil pour tout le monde
+        // (le plus de points), et tentative serveur (classement partagé)
+        // pour les comptes connectés.
+        writeLocalBest(quiz.slug, graded.correct, graded.total, pointsRef.current);
         if (onFinish) onFinish(graded);
         if (user && !isDemo) {
           submitQuizAttempt({
@@ -247,6 +248,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
             score: graded.correct,
             total: graded.total,
             perfect: graded.perfect,
+            points: pointsRef.current,
           }).then((board) => { if (board && onBoard) onBoard(board); });
         }
       }

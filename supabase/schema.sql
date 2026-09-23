@@ -1003,34 +1003,64 @@ end $$;
 -- ----------------------------------------------------------------------------
 -- 8. Quizz : tentatives & classement
 -- ----------------------------------------------------------------------------
--- Une ligne par compte et par quizz : le meilleur score est conservé (upsert
--- côté serveur dans la RPC). Le classement joint le profil public (pseudo,
--- avatar, niveau). Même contrat que les réactions partagées : la table n'est
--- pas exposée directement (revoke), tout passe par deux RPC security definer —
--- un client ne peut ni écrire au nom d'un autre, ni poser un score hors
--- bornes (0 ≤ score ≤ total vérifié côté serveur).
+-- Une ligne par compte et par quizz : la MEILLEURE PARTIE est conservée
+-- (upsert côté serveur dans la RPC) — celle qui marque le plus de points
+-- (barème « fun » du moteur : base + rapidité + combo, 200 max par question),
+-- à points égaux le plus de bonnes réponses, et à égalité totale la première
+-- partie venue garde l'antériorité. Le classement se fait donc sur les POINTS
+-- gagnés, pas sur le nombre de bonnes réponses (resté affiché en secondaire).
+-- La RPC joint le profil public (pseudo, avatar, niveau). Même contrat que les
+-- réactions partagées : la table n'est pas exposée directement (revoke), tout
+-- passe par des RPC security definer — un client ne peut ni écrire au nom d'un
+-- autre, ni poser un score hors bornes (0 ≤ score ≤ total et
+-- 100 × score ≤ points ≤ 200 × total vérifiés côté serveur).
 create table if not exists public.quiz_attempts (
   user_id uuid not null references auth.users(id) on delete cascade,
   quiz_id text not null check (char_length(quiz_id) between 1 and 120),
   score integer not null,
   total integer not null check (total >= 1),
+  points integer not null default 0,
   perfect boolean not null default false,
   played_at timestamptz not null default now(),
   primary key (user_id, quiz_id),
-  check (score between 0 and total)
+  check (score between 0 and total),
+  check (points >= 0)
 );
 alter table public.quiz_attempts enable row level security;
 revoke all on public.quiz_attempts from anon, authenticated;
 
--- Dépose une tentative : garde le meilleur score du compte sur ce quizz.
+-- Points de la meilleure partie : ajout non bloquant sur une table existante.
+-- Les anciennes lignes (avant les points) reçoivent le plancher du barème —
+-- 100 points par bonne réponse, la base sans bonus — pour rester classables.
+do $$
+begin
+  if to_regclass('public.quiz_attempts') is not null then
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'quiz_attempts' and column_name = 'points') then
+      execute 'alter table public.quiz_attempts add column points integer not null default 0 check (points >= 0)';
+    end if;
+    update public.quiz_attempts set points = score * 100 where points = 0 and score > 0;
+  end if;
+exception when others then
+  raise warning 'Let''s Play : colonne quiz_attempts.points non ajoutée (%).', sqlerrm;
+end $$;
+
+-- Dépose une tentative : garde la MEILLEURE PARTIE du compte sur ce quizz —
+-- celle qui marque le plus de points (à égalité, le plus de bonnes réponses).
 -- Retourne le classement à jour (le joueur voit sa ligne remonter).
+-- Signature 2026-09 : p_points en plus ; l'ancienne surcharge à quatre
+-- paramètres est retirée pour ne pas ambiguïser les appels.
+drop function if exists public.submit_quiz_attempt(text, integer, integer, boolean);
+
 create or replace function public.submit_quiz_attempt(
-  p_quiz_id text, p_score integer, p_total integer, p_perfect boolean default false
+  p_quiz_id text, p_score integer, p_total integer, p_perfect boolean default false, p_points integer default 0
 )
 returns jsonb
 language plpgsql
 security definer set search_path = ''
 as $$
+declare
+  v_points integer;
 begin
   if auth.uid() is null then
     raise exception 'quiz_requires_auth' using errcode = '42501';
@@ -1041,23 +1071,31 @@ begin
   if p_total is null or p_total < 1 or p_score is null or p_score < 0 or p_score > p_total then
     raise exception 'invalid_quiz_score' using errcode = '22023';
   end if;
-
-  update public.quiz_attempts
-     set score = greatest(score, p_score),
-         total = p_total,
-         perfect = perfect or coalesce(p_perfect, false) or p_score = p_total,
-         played_at = now()
-   where user_id = auth.uid() and quiz_id = p_quiz_id;
-  if not found then
-    insert into public.quiz_attempts (user_id, quiz_id, score, total, perfect)
-    values (auth.uid(), p_quiz_id, p_score, p_total,
-            coalesce(p_perfect, false) or p_score = p_total);
+  v_points := coalesce(p_points, 0);
+  -- Plancher du barème (100 points par bonne réponse) et plafond absolu
+  -- (QUIZ_POINTS du moteur : 200 max par question) : les deux bornes sont
+  -- revérifiées ici, côté serveur.
+  if v_points < 100 * p_score or v_points > 200 * p_total then
+    raise exception 'invalid_quiz_points' using errcode = '22023';
   end if;
+
+  insert into public.quiz_attempts as qa (user_id, quiz_id, score, total, points, perfect)
+  values (auth.uid(), p_quiz_id, p_score, p_total, v_points,
+          coalesce(p_perfect, false) or p_score = p_total)
+  on conflict (user_id, quiz_id) do update
+     set score = excluded.score,
+         total = excluded.total,
+         points = excluded.points,
+         perfect = excluded.perfect,
+         played_at = now()
+   where excluded.points > qa.points
+      or (excluded.points = qa.points and excluded.score > qa.score);
   return public.get_quiz_leaderboard(p_quiz_id, 10);
 end;
 $$;
 
--- Classement d'un quizz : meilleur score par compte, joint au profil public.
+-- Classement d'un quizz : meilleure partie par compte, joint au profil public.
+-- Trié par POINTS gagnés (bonnes réponses puis antériorité en départage).
 -- `mine` marque la ligne du joueur connecté pour la surligner côté client.
 create or replace function public.get_quiz_leaderboard(p_quiz_id text, p_limit integer default 10)
 returns jsonb
@@ -1067,22 +1105,62 @@ security definer set search_path = ''
 as $$
   select coalesce(jsonb_agg(row), '[]'::jsonb)
   from (
-    select a.score, a.total, a.perfect, a.played_at,
+    select a.points, a.score, a.total, a.perfect, a.played_at,
            coalesce(p.display_name, p.username, '') as username,
            p.avatar_url, coalesce(p.level, 1) as level,
            (a.user_id = auth.uid()) as mine
       from public.quiz_attempts a
       left join public.profiles p on p.id = a.user_id
      where a.quiz_id = p_quiz_id
-     order by a.score desc, a.played_at asc
+     order by a.points desc, a.score desc, a.played_at asc
      limit least(greatest(p_limit, 1), 50)
   ) row;
 $$;
 
-revoke all on function public.submit_quiz_attempt(text, integer, integer, boolean) from public;
+-- Position d'un joueur au classement GLOBAL des quizz : somme des points de
+-- ses meilleures parties, tous les quizz confondus. `rank` suit le classement
+-- standard (égalité = même rang), `players` compte les joueurs classés, et
+-- `mine` signale si la fiche demandée est celle du visiteur. Un joueur sans
+-- partie classée reçoit `rank` null (« pas encore classé »).
+create or replace function public.get_quiz_global_rank(p_user_id uuid default null)
+returns jsonb
+language sql
+stable
+security definer set search_path = ''
+as $$
+  with totals as (
+    select a.user_id, sum(a.points) as points, count(*) as quizzes
+      from public.quiz_attempts a
+     group by a.user_id
+  ),
+  ranked as (
+    select t.user_id, t.points, t.quizzes,
+           rank() over (order by t.points desc, t.quizzes desc) as rank,
+           count(*) over () as players
+      from totals t
+  )
+  select coalesce(
+    (select jsonb_build_object(
+              'rank', r.rank::int,
+              'points', r.points::int,
+              'quizzes', r.quizzes::int,
+              'players', r.players::int,
+              'mine', coalesce(r.user_id = auth.uid(), false))
+       from ranked r
+      where r.user_id = coalesce(p_user_id, auth.uid())),
+    jsonb_build_object(
+      'rank', null, 'points', 0, 'quizzes', 0,
+      'players', (select count(*)::int from totals),
+      'mine', coalesce(coalesce(p_user_id, auth.uid()) = auth.uid(), false))
+  );
+$$;
+
+revoke all on function public.submit_quiz_attempt(text, integer, integer, boolean, integer) from public;
 revoke all on function public.get_quiz_leaderboard(text, integer) from public;
+revoke all on function public.get_quiz_global_rank(uuid) from public;
 grant execute on function public.get_quiz_leaderboard(text, integer) to anon, authenticated;
-grant execute on function public.submit_quiz_attempt(text, integer, integer, boolean) to authenticated;
+grant execute on function public.get_quiz_global_rank(uuid) to anon, authenticated;
+grant execute on function public.submit_quiz_attempt(text, integer, integer, boolean, integer) to authenticated;
 
 notify pgrst, 'reload schema';
 
@@ -1237,9 +1315,10 @@ from (
             and to_regrole('anon') is not null
             and not has_table_privilege('anon', 'public.quiz_attempts', 'select')
            then 'OK' else 'MANQUANT' end)
-, (33, 'RPC quizz (tentative + classement)',
-      case when to_regprocedure('public.submit_quiz_attempt(text,integer,integer,boolean)') is not null
-             and to_regprocedure('public.get_quiz_leaderboard(text,integer)') is not null
+, (33, 'RPC quizz (tentative + classement + rang global)',
+     case when to_regprocedure('public.submit_quiz_attempt(text,integer,integer,boolean,integer)') is not null
+            and to_regprocedure('public.get_quiz_leaderboard(text,integer)') is not null
+            and to_regprocedure('public.get_quiz_global_rank(uuid)') is not null
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

@@ -25,9 +25,11 @@ import { readDemoMessages } from '../src/messages/messagesApi';
 import { translations } from '../src/i18n/translations';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
+import QuizLeaderboard from '../src/quizzes/QuizLeaderboard';
+import Profile from '../src/pages/Profile';
 import { baseUrl, quizThumbUrl, quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
 import { QUESTION_TIME, VERDICT_MS, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz, quizPoints } from '../src/quizzes/engine';
-import { writeLocalBest } from '../src/quizzes/quizApi';
+import { formatBest, readLocalBest, writeLocalBest } from '../src/quizzes/quizApi';
 import {
   playQuizAnswerSound,
   playQuizComboSound,
@@ -121,9 +123,8 @@ export async function checkQuiz(assert) {
   // Temps imparti : la valeur par défaut est celle annoncée (15 s par question).
   assert.equal(QUESTION_TIME.seconds, 15, 'quinze secondes par question');
 
-  // Barème « fun » (les points de la partie, hors barème officiel
-  // correct/total) : base + rapidité + combo, en entiers et bornés —
-  // 200 points maximum par question.
+  // Barème des points (le classement se joue dessus) : base + rapidité +
+  // combo, en entiers et bornés — 200 points maximum par question.
   assert.deepEqual(
     quizPoints({ elapsedMs: 0, budgetMs: 15000, streak: 1 }),
     { base: 100, speed: 50, combo: 0, total: 150 },
@@ -237,7 +238,7 @@ export async function checkQuiz(assert) {
   assert.equal(node.querySelectorAll('.quiz-fix').length, quiz.questions.length);
   assert.equal(node.querySelectorAll('.quiz-fix.is-right').length, quiz.questions.length);
 
-  // Le « fun » du résultat : points de la partie (hors barème officiel),
+  // Les points du résultat : total de la partie (ils font le classement),
   // meilleure série, et les confettis du sans-faute.
   const pointsMatch = node.textContent.match(/(\d{3,4}) PTS/);
   assert.ok(pointsMatch, 'les points de la partie sont affichés');
@@ -257,11 +258,13 @@ export async function checkQuiz(assert) {
   assert.ok((stored.unlocked || {})['first-quiz'], 'succès « Premier quizz » débloqué');
   assert.ok((stored.unlocked || {})['perfect-score'], 'succès « Sans faute » débloqué');
 
-  // Classement sans backend : message d'explication + meilleur score local.
+  // Classement sans backend : message d'explication + meilleure partie locale
+  // (points + bonnes réponses, les points faisant le classement).
   assert.ok(node.textContent.includes('CLASSEMENT'), 'section classement présente');
   assert.ok(node.textContent.includes('Connecte-toi avec un compte joueur'), 'repli hors-ligne expliqué');
   assert.ok(node.textContent.includes('Meilleur score sur cet appareil'), 'meilleur score local affiché');
   assert.ok(node.textContent.includes('8/8'), 'meilleur score local à 8/8');
+  assert.ok(/8\/8 · \d+ PTS/.test(node.textContent), 'meilleur score local : points + bonnes réponses');
 
   await act(async () => root.unmount());
 
@@ -361,7 +364,7 @@ export async function checkQuiz(assert) {
   // l'étape 2 n'existe plus (vidé par seedLang) : on le repose comme le ferait
   // une partie, puis la grille doit montrer le badge et le décompte.
   globalThis.window.localStorage.setItem('letsplay-lang', 'fr');
-  writeLocalBest('culture-gaming', 8, 8);
+  writeLocalBest('culture-gaming', 8, 8, 1250);
   const bestNode = document.createElement('div');
   document.body.append(bestNode);
   const bestRoot = createRoot(bestNode);
@@ -380,12 +383,102 @@ export async function checkQuiz(assert) {
   ));
   assert.ok(bestNode.textContent.includes('Nouveau quizz dans'), 'compte à rebours du prochain quizz du jour');
   assert.ok(
-    [...bestNode.querySelectorAll('.quiz-card-best')].some((el) => el.textContent.includes('8/8')),
-    'record 8/8 affiché sur la carte du quizz joué',
+    [...bestNode.querySelectorAll('.quiz-card-best')].some((el) => el.textContent.includes('8/8') && el.textContent.includes('1250 PTS')),
+    'record 8/8 · 1250 PTS affiché sur la carte du quizz joué',
   );
   await act(async () => bestRoot.unmount());
 
-  /* ------------------------- 6. Révision des erreurs ------------------------ */
+  /* ---------------- 6. Classement par points + rang global profil ----------- */
+  // Record de l'appareil : la meilleure partie est celle qui marque le plus
+  // de points (à égalité, le plus de bonnes réponses l'emporte) — la règle du
+  // classement, pas le nombre de bonnes réponses.
+  writeLocalBest('culture-gaming', 8, 8, 900);
+  writeLocalBest('culture-gaming', 6, 8, 1300);
+  let deviceBest = readLocalBest('culture-gaming');
+  assert.deepEqual(
+    { score: deviceBest.score, points: deviceBest.points },
+    { score: 6, points: 1300 },
+    'le record suit les points, pas les bonnes réponses (6/8 à 1300 pts bat 8/8 à 900)',
+  );
+  writeLocalBest('culture-gaming', 7, 8, 1300);
+  deviceBest = readLocalBest('culture-gaming');
+  assert.equal(deviceBest.score, 7, 'à points égaux, le plus de bonnes réponses dépasse le record');
+  writeLocalBest('culture-gaming', 8, 8, 1299);
+  deviceBest = readLocalBest('culture-gaming');
+  assert.equal(deviceBest.points, 1300, 'moins de points ne remplace pas le record');
+  assert.equal(formatBest(deviceBest), '7/8 · 1300 PTS', 'le libellé du record affiche points + bonnes réponses');
+  assert.equal(formatBest({ score: 8, total: 8 }), '8/8', 'record antérieur aux points : repli score/total');
+
+  // Classement d'un quizz : les lignes arrivent déjà triées par points (RPC)
+  // et s'affichent avec les points en premier, les bonnes réponses en
+  // secondaire. Sans points (ancien backend), l'ancien affichage reste.
+  const boardRows = [
+    { username: 'Rapide', score: 6, total: 8, points: 1300, perfect: false },
+    { username: 'Parfait', score: 8, total: 8, points: 900, perfect: true },
+    { username: 'Legacy', score: 8, total: 8, perfect: true },
+  ];
+  const boardNode = document.createElement('div');
+  document.body.append(boardNode);
+  const boardRoot = createRoot(boardNode);
+  await act(async () => boardRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <MemoryRouter>
+          <QuizLeaderboard quiz={quiz} lastBoard={boardRows} />
+        </MemoryRouter>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+  const boardLines = [...boardNode.querySelectorAll('.quiz-board-row')];
+  assert.equal(boardLines.length, 3, 'trois lignes au classement');
+  assert.ok(
+    boardLines[0].textContent.includes('Rapide') && boardLines[0].textContent.includes('1300 PTS'),
+    'la ligne la mieux pourvue en points mène (1300 PTS devant 8/8 à 900)',
+  );
+  assert.ok(
+    boardLines[1].textContent.includes('900 PTS') && boardLines[1].textContent.includes('8/8'),
+    'points en premier, bonnes réponses en secondaire',
+  );
+  assert.ok(boardLines[2].textContent.includes('8/8'), 'ancien backend sans points : repli sur score/total');
+  assert.ok(boardLines[1].textContent.includes('★') && !boardLines[0].textContent.includes('★'), 'le sans-faute garde son étoile');
+  await act(async () => boardRoot.unmount());
+
+  // Page de profil : la position au classement global des quizz s'y affiche.
+  // Sans backend (ni compte serveur, comme ici en session démo), la section
+  // explique comment la débloquer.
+  seedDemoProfiles();
+  globalThis.window.localStorage.setItem(DEMO_AUTH_KEY, JSON.stringify(DEMO_PROFILE_FIXTURES.vortex));
+  const rankNode = document.createElement('div');
+  document.body.append(rankNode);
+  const rankRoot = createRoot(rankNode);
+  await act(async () => rankRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <MemoryRouter initialEntries={[`/profile/${DEMO_PROFILE_FIXTURES.vortex.id}`]}>
+          <FriendsProvider>
+            <MessagesProvider>
+              <AchievementProvider>
+                <Routes>
+                  <Route path="/profile/:userId" element={<Profile />} />
+                </Routes>
+              </AchievementProvider>
+            </MessagesProvider>
+          </FriendsProvider>
+        </MemoryRouter>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+  assert.ok(rankNode.textContent.includes('VOTRE PROFIL'), 'propre profil rendu (hub joueur)');
+  const rankSection = rankNode.querySelector('.quiz-global-rank');
+  assert.ok(rankSection, 'section « classement global des quizz » présente sur le profil');
+  assert.ok(rankSection.textContent.includes('CLASSEMENT GLOBAL DES QUIZZ'), 'titre de la section classement global');
+  assert.ok(
+    rankSection.textContent.includes('Connecte-toi avec un compte joueur'),
+    'sans compte serveur : la position au classement global est expliquée, pas inventée',
+  );
+  await act(async () => rankRoot.unmount());
+
+  /* ------------------------- 7. Révision des erreurs ------------------------ */
   seedLang('fr');
   const revNode = document.createElement('div');
   document.body.append(revNode);
@@ -480,7 +573,7 @@ export async function checkQuiz(assert) {
 
   await act(async () => timerRoot.unmount());
 
-  /* ------------------------------ 8. Sons du quizz -------------------------- */
+  /* ------------------------------ 9. Sons du quizz -------------------------- */
   // Sans Web Audio (le jsdom de ce script n'en fournit aucun), tout est no-op :
   // la partie se joue quand même et rien ne casse.
   assert.equal(unlockQuizAudio(), false, 'sans Web Audio, aucun contexte à déverrouiller');
@@ -721,5 +814,5 @@ export async function checkQuiz(assert) {
     await act(async () => langRoot.unmount());
   }
 
-  console.log('QUIZZ : moteur (+ points fun bornés), partie 8/8 + succès + confettis, défi démo, grille FR/EN/AR, record + compte à rebours, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
+  console.log('QUIZZ : moteur (+ points bornés qui font le classement), partie 8/8 + succès + confettis, défi démo, grille FR/EN/AR, record par points + compte à rebours, classement par points (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
 }
