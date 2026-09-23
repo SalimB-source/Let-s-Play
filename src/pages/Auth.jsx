@@ -20,6 +20,7 @@ import {
 import ConsoleLogo from '../components/ConsoleLogo';
 import TopGamePill from '../components/TopGamePill';
 import FriendsHubSection from '../friends/FriendsHubSection';
+import QuizGlobalRank from '../quizzes/QuizGlobalRank';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
 
 /* ------------------------------------------------------------------ */
@@ -1155,6 +1156,10 @@ export default function Auth({ initialMode = '' }) {
               <div className="player-stat-label">{t.statBadges}</div>
             </div>
           </div>
+
+          {/* CLASSEMENT GLOBAL QUIZZ — visible dans le hub joueur connecté,
+              en plus des fiches publiques /profile/:id. */}
+          <QuizGlobalRank userId={user.id} self scriptedFallback={{ level, xp: xpEarned || xp }} />
 
           {/* AMIS — la liste des amis, chaque ligne mène à la page du joueur.
               Aucune action de messagerie ici : la discussion 1-à-1 reste dans
