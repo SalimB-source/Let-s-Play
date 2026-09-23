@@ -4,7 +4,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from '../achievements/AchievementContext';
 import VideoThumb from '../components/VideoThumb';
 import { clockOffset } from '../components/ReleasesCalendar';
-import { quizzes, quizLabel } from '../quizzesData';
+import { quizzes, quizLabel, quizQuestions } from '../quizzesData';
 import { readLocalBest, formatBest } from './quizApi';
 import { bestDayRun, dailyQuizFor } from './engine';
 
@@ -67,7 +67,7 @@ export default function QuizzesPage() {
               <p>{quizLabel(daily.labels, lang)?.text}</p>
               <span className="quiz-daily-meta">
                 <span className="quiz-chip">{daily.tag}</span>
-                <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(daily.questions.length))}</span>
+                <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(quizQuestions(daily).length))}</span>
                 <span className="quiz-chip quiz-chip--streak">🔥 {copy.streak} : {streak}</span>
                 <span className="quiz-chip quiz-chip--daily">⏳ {countdown}</span>
               </span>
@@ -98,7 +98,7 @@ export default function QuizzesPage() {
               <p>{quizLabel(quiz.labels, lang)?.text}</p>
               <span className="quiz-card-meta">
                 {best && <span className="quiz-card-best" title={copy.best.replace('{s}', formatBest(best))}>★ {formatBest(best)}</span>}
-                {copy.questionsCount.replace('{n}', String(quiz.questions.length))} <Arrow />
+                {copy.questionsCount.replace('{n}', String(quizQuestions(quiz).length))} <Arrow />
               </span>
             </span>
           </Link>
