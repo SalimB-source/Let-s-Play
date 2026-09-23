@@ -18,6 +18,7 @@ const FALLBACK = {
   seeThread: 'Open the conversation',
   error: 'The challenge could not be sent.',
   message: '⚡ Let’s Play challenge: I scored {score} on the quiz “{title}”. Beat that if you can! ({route})',
+  levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
 
 /**
@@ -26,7 +27,7 @@ const FALLBACK = {
  * en mode démo comme avec Supabase ; sans compte, un message l'explique.
  * Chaque défi envoyé crédite l'action `quiz_challenge` (succès dédié).
  */
-export default function QuizChallenge({ quiz, score, total }) {
+export default function QuizChallenge({ quiz, level = null, score, total }) {
   const { t, lang } = useLanguage();
   const { user } = useAuth();
   const friends = useFriends();
@@ -35,16 +36,22 @@ export default function QuizChallenge({ quiz, score, total }) {
   const [open, setOpen] = useState(false);
   const [sentTo, setSentTo] = useState(null);
   const [failed, setFailed] = useState(false);
-  const copy = { ...FALLBACK, ...((t.quiz || {}).challenge || {}) };
+  const copy = {
+    ...FALLBACK,
+    ...((t.quiz || {}).challenge || {}),
+    levels: { ...FALLBACK.levels, ...((t.quiz || {}).levels || {}) },
+  };
 
   if (!user) return <p className="quiz-challenge-note">{copy.loginHint}</p>;
   if (!friends.enabled || !messages.enabled) return <p className="quiz-challenge-note">{copy.noBackend}</p>;
 
-  const title = quizLabel(quiz.labels, lang)?.title || quiz.slug;
+  // Le niveau joué fait partie du défi : « Culture gaming · Expert ».
+  const levelName = level ? copy.levels[level] || level : null;
+  const title = [quizLabel(quiz.labels, lang)?.title || quiz.slug, levelName].filter(Boolean).join(' · ');
   const challengeText = copy.message
     .replace('{score}', `${score}/${total}`)
     .replace('{title}', title)
-    .replace('{route}', quiz.route);
+    .replace('{route}', level ? `${quiz.route} (${levelName})` : quiz.route);
 
   const sendChallenge = async (friend) => {
     setFailed(false);
@@ -70,7 +77,7 @@ export default function QuizChallenge({ quiz, score, total }) {
         </p>
       ) : (
         <>
-          <button type="button" className="button button-ghost" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <button type="button" className="quiz-cta quiz-cta--ghost" aria-expanded={open} onClick={() => setOpen(!open)}>
             {copy.open} {friends.friends.length ? `(${friends.friends.length})` : ''}
           </button>
           {open && (friends.friends.length === 0 ? (

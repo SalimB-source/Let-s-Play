@@ -193,11 +193,11 @@ check('dossiers : qualité demandée inchangée (hqdefault)', dossiers.every((sr
 const quiz = quizThumbs();
 console.log(`\n  ${quiz.length} miniature(s) sur la page /quizz (bannière du jour + grille)\n`);
 const localQuizFiles = quiz.map((thumb) => /\/quizzes\/([a-z0-9-]+\.jpg)$/.exec(thumb.src || '')?.[1] ?? null);
-check('quizz : bannière du jour + huit cartes', quiz.length, 9);
+check('quizz : bannière du jour + douze cartes', quiz.length, 13);
 check('quizz : toutes les miniatures viennent de public/quizzes/', localQuizFiles.every(Boolean), true);
 check('quizz : aucune requête YouTube pour les miniatures', quiz.every((thumb) => !(thumb.src || '').includes('ytimg.com')), true);
 check('quizz : toutes les miniatures sont décrites (alt)', quiz.every((thumb) => Boolean(thumb.alt)), true);
-check('quizz : huit fichiers distincts (le quizz du jour est aussi dans la grille)', new Set(localQuizFiles).size, 8);
+check('quizz : douze fichiers distincts (le quizz du jour est aussi dans la grille)', new Set(localQuizFiles).size, 12);
 
 const shipped = new Map(
   readdirSync(path.join(root, 'public', 'quizzes'))
@@ -205,7 +205,7 @@ const shipped = new Map(
     .map((name) => [name, path.join(root, 'public', 'quizzes', name)])
 );
 check('quizz : chaque miniature demandée est livrée', localQuizFiles.every((name) => shipped.has(name)), true);
-check('quizz : aucun fichier livré sans carte', shipped.size, 8);
+check('quizz : aucun fichier livré sans carte', shipped.size, 12);
 const tooLight = [...shipped.values()].filter((file) => statSync(file).size < 4096);
 check('quizz : aucun fichier vide ou tronqué', tooLight.length, 0);
 
@@ -231,8 +231,15 @@ function codeOnly(source) {
 }
 
 const factory = path.join(root, 'src', 'lib', 'videoThumbnails.js');
+// L'index des actus auto-générées est, lui aussi, un fichier GÉNÉRÉ (en-tête
+// « ne pas éditer à la main », `scripts/news-bot/fetch-news.mjs`) : il recopie
+// les URLs officielles des sources — dont celle de la miniature, pour le
+// crédit — et l'affichage, lui, passe par le fichier livré (`thumbnail`, sous
+// `public/news-auto/`, déjà vérifié plus haut). Ce n'est donc pas une URL
+// d'affichage choisie à la main : la règle ne le vise pas.
+const generated = path.join(root, 'src', 'news', 'autoIndex.js');
 const hardcoded = [...sourceFiles(path.join(root, 'src')), ...sourceFiles(path.join(root, 'scripts'))]
-  .filter((file) => file !== factory && file !== fileURLToPath(import.meta.url))
+  .filter((file) => file !== factory && file !== generated && file !== fileURLToPath(import.meta.url))
   .filter((file) => /i\.ytimg\.com|maxresdefault/.test(codeOnly(readFileSync(file, 'utf8'))))
   .map((file) => path.relative(root, file));
 check('aucune URL de miniature codée en dur hors de src/lib/videoThumbnails.js', hardcoded.join(', ') || 'aucune', 'aucune');

@@ -7,6 +7,8 @@ import VideoThumb from '../components/VideoThumb';
 import { activeMonth, calendarMonths, gameReleases, monthLabel } from '../releasesData';
 import { quizzes } from '../quizzesData';
 import { dailyQuizFor } from '../quizzes/engine';
+import { isQuizFinished } from '../quizzes/quizProgress';
+import { useQuizProgress } from '../quizzes/useQuizProgress';
 import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
 
 // Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
@@ -66,8 +68,12 @@ export default function Home() {
   const monthReleases = month.releases;
   const allMonths = calendarMonths(today);
   const totalGames = gameReleases.length;
-  // Le bandeau « quizz du jour » envoie directement à la partie du jour.
+  // Le bandeau « quizz du jour » envoie directement à la partie du jour —
+  // sauf si ce quizz est TERMINÉ (ses trois niveaux faits) : il est verrouillé
+  // comme partout ailleurs, et le bouton mène à la grille des quizz.
+  const { progress: quizProgressState } = useQuizProgress();
   const dailyQuiz = dailyQuizFor(today, quizzes);
+  const dailyQuizFinished = Boolean(dailyQuiz) && isQuizFinished(quizProgressState, dailyQuiz.slug);
 
   useEffect(() => {
     let cancelled = false;
@@ -231,13 +237,21 @@ export default function Home() {
       {/* QUIZZ DU JOUR — un quizz choisi chaque jour parmi la sélection :
           la série quotidienne (succès « Semaine parfaite ») se construit ici. */}
       <section className="wrap" id="quizz-du-jour">
-        <div className="home-quiz-band">
+        <div className={`home-quiz-band${dailyQuizFinished ? ' is-finished' : ''}`}>
           <div className="home-quiz-band-copy">
-            <p className="eyebrow"><span className="live-dot" /> {t.quiz.home.eyebrow}</p>
+            <p className="eyebrow">
+              {dailyQuizFinished ? null : <span className="live-dot" />} {t.quiz.home.eyebrow}
+              {dailyQuizFinished && <span className="quiz-chip quiz-chip--levels is-complete">✓ {t.quiz.finished}</span>}
+            </p>
             <h2>{t.quiz.home.titleA}<br /><em>{t.quiz.home.titleB}</em></h2>
-            <p>{t.quiz.home.text}</p>
+            <p>{dailyQuizFinished ? t.quiz.home.done : t.quiz.home.text}</p>
           </div>
-          <Link className="button button-yellow" to={dailyQuiz ? dailyQuiz.route : '/quizz'}>{t.quiz.home.cta} <Arrow /></Link>
+          <Link
+            className="button button-yellow"
+            to={dailyQuiz && !dailyQuizFinished ? dailyQuiz.route : '/quizz'}
+          >
+            {dailyQuizFinished ? t.quiz.home.ctaAll : t.quiz.home.cta} <Arrow />
+          </Link>
         </div>
       </section>
 

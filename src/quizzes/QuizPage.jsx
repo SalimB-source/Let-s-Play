@@ -16,10 +16,11 @@ import QuizPlayer from './QuizPlayer';
 export default function QuizPage() {
   const { slug } = useParams();
   const { t, lang } = useLanguage();
-  // Classements reçus du backend, gardés par slug : naviguer au « Niveau
-  // suivant » ne montre jamais le classement du quizz précédent.
-  const [boards, setBoards] = useState({});
+  const [board, setBoard] = useState(null);
   const [plays, setPlays] = useState(0);
+  // Niveau courant : piloté par le lecteur (sélecteur de l'écran d'intro) et
+  // suivi par le classement, qui affiche le palier choisi.
+  const [level, setLevel] = useState('easy');
   const quiz = quizBySlug(slug);
   if (!quiz) return <NotFound />;
 
@@ -35,16 +36,15 @@ export default function QuizPage() {
         </div>
       </section>
       <section className="wrap">
-        {/* `key={quiz.slug}` : le « Niveau suivant » du résultat navigue vers
-            un autre quizz — le lecteur repart de son écran d'introduction. */}
         <QuizPlayer
-          key={quiz.slug}
           quiz={quiz}
           daily={isDaily}
-          onBoard={(board) => setBoards((all) => ({ ...all, [quiz.slug]: board }))}
+          level={level}
+          onLevelChange={setLevel}
+          onBoard={setBoard}
           onFinish={() => setPlays((count) => count + 1)}
         />
-        <QuizLeaderboard key={`board-${quiz.slug}`} quiz={quiz} lastBoard={boards[quiz.slug] || null} refreshKey={plays} />
+        <QuizLeaderboard quiz={quiz} level={level} lastBoard={board} refreshKey={plays} />
       </section>
       <section className="quiz-comments wrap">
         <h2>{copy.commentTitle}</h2>
