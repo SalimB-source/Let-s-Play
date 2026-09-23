@@ -56,6 +56,12 @@ export const QUIZ_TAGS = ['Culture', 'Rétro', 'Souls-like', 'RPG', 'E-sport', '
  */
 export const QUIZ_LEVELS = ['easy', 'medium', 'hard'];
 
+/**
+ * Alias historique des paliers (`QUIZ_DIFFICULTIES` était le nom employé quand
+ * la difficulté se choisissait sans déblocage) : même tableau, même ordre.
+ */
+export const QUIZ_DIFFICULTIES = QUIZ_LEVELS;
+
 export const quizzes = [
   {
     slug: 'culture-gaming',
@@ -413,6 +419,11 @@ export const quizzes = [
 export function quizLevelQuestions(quiz, level = 'easy') {
   const levels = quiz && quiz.levels ? quiz.levels : {};
   return levels[level] || levels.easy || [];
+}
+
+/** Alias historique : la banque de questions d’un niveau (`quizLevelQuestions`). */
+export function quizQuestions(quiz, level = 'easy') {
+  return quizLevelQuestions(quiz, level);
 }
 
 /** Nombre de questions d’un quizz, tous niveaux confondus (page de garde). */

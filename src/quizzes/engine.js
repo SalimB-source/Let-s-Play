@@ -135,6 +135,35 @@ export function quizPoints({ elapsedMs = 0, budgetMs = 0, streak = 1 } = {}) {
   return { base: QUIZ_POINTS.base, speed, combo, total: QUIZ_POINTS.base + speed + combo };
 }
 
+/**
+ * Multiplicateur de points par niveau : plus le palier est exigeant, plus les
+ * points rapportés valent cher — facile ×1, confirmé ×1,5, expert ×2
+ * (plafond par question : 200 / 300 / 400). La borne haute est revérifiée côté
+ * serveur dans `submit_quiz_attempt` (supabase/schema.sql, section 8) sur le
+ * suffixe `slug:niveau` de l'identifiant.
+ */
+export const DIFFICULTY_MULTIPLIER = { easy: 1, medium: 1.5, hard: 2 };
+
+export function pointsMultiplier(level) {
+  return DIFFICULTY_MULTIPLIER[level] || 1;
+}
+
+/**
+ * Points d'une bonne réponse, mis à l'échelle du niveau joué
+ * (`quizPoints` × `DIFFICULTY_MULTIPLIER`). Détail (base/rapidité/combo) et
+ * total remis en entiers — c'est le total qui s'affiche, qui part au
+ * classement et qui devient de l'XP joueur.
+ */
+export function quizPointsFor(level, { elapsedMs = 0, budgetMs = 0, streak = 1 } = {}) {
+  const multiplier = pointsMultiplier(level);
+  const points = quizPoints({ elapsedMs, budgetMs, streak });
+  if (multiplier === 1) return points;
+  const base = Math.round(points.base * multiplier);
+  const speed = Math.round(points.speed * multiplier);
+  const combo = Math.round(points.combo * multiplier);
+  return { base, speed, combo, total: base + speed + combo };
+}
+
 export function gradeQuiz(prepared, answers = {}) {
   const detail = (prepared.questions || []).map((question) => {
     const picked = question.choices.find((choice) => choice.id === answers[question.id]) || null;

@@ -4,13 +4,19 @@
  * Deux niveaux de contrôle, comme les autres vérifications du dépôt :
  *
  *   1. le moteur des quizz (mélange déterministe du quizz du jour, barème,
- *      série de jours, barème « fun » des points) se comporte comme annoncé ;
+ *      série de jours, barème « fun » des points MULTIPLIÉ par le niveau)
+ *      se comporte comme annoncé, et les huit quizz portent chacun leurs TROIS
+ *      banques de questions (une par niveau) ;
  *   2. une partie complète est réellement jouée dans le navigateur simulé
  *      (jsdom) avec la vraie pile de l'application — LanguageProvider +
  *      AuthProvider + AchievementProvider — : huit bonnes réponses donnent
  *      un sans-faute (confettis inclus), le verdict de chaque réponse (gel,
  *      vert/rouge, points), les corrections s'affichent, et la progression
- *      des succès est écrite dans le stockage local.
+ *      des succès est écrite dans le stockage local ;
+ *   3. le déblocage en cascade tient (Facile → Confirmé → Expert), les points
+ *      du run deviennent de l'XP joueur, et la règle « un niveau rapporte une
+ *      fois » aussi : rejouer un niveau déjà terminé ne rapporte plus rien
+ *      (ni points, ni record de l'appareil, ni tentative serveur).
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -37,8 +43,9 @@ import {
   quizThumbUrl,
   quizzes,
 } from '../src/quizzesData';
-import { QUESTION_TIME, VERDICT_MS, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz, quizPoints } from '../src/quizzes/engine';
-import { formatBest, readLocalBest, writeLocalBest } from '../src/quizzes/quizApi';
+import { QUESTION_TIME, VERDICT_MS, DIFFICULTY_MULTIPLIER, bestDayRun, dailyQuizFor, gradeQuiz, pointsMultiplier, prepareQuiz, quizPoints, quizPointsFor } from '../src/quizzes/engine';
+import { quizRunKey, quizLevelCompleted, totalXp } from '../src/achievements/engine';
+import { formatBest, readLocalBest, readLocalBestRun, writeLocalBest } from '../src/quizzes/quizApi';
 import {
   LEVELS_KEY,
   isLevelCompleted,
@@ -192,6 +199,30 @@ export async function checkQuiz(assert) {
   assert.equal(quizPoints({ elapsedMs: 100, budgetMs: 15000, streak: 3 }).combo, 20, 'combo ×3 : deux bonnes consécutives au-delà de la première');
   assert.equal(quizPoints({ elapsedMs: 0, budgetMs: 15000, streak: 99 }).total, 200, 'pointage maximal, borné');
 
+  // Multiplicateurs de niveau : plus le palier est dur, plus la bonne réponse
+  // vaut cher — Facile ×1, Confirmé ×1,5, Expert ×2 (plafond par question
+  // 200/300/400, borné comme le barème de base et revérifié côté serveur).
+  assert.deepEqual(DIFFICULTY_MULTIPLIER, { easy: 1, medium: 1.5, hard: 2 }, 'un multiplicateur par niveau');
+  assert.deepEqual(
+    quizPointsFor('easy', { elapsedMs: 0, budgetMs: 15000, streak: 1 }),
+    { base: 100, speed: 50, combo: 0, total: 150 },
+    'Facile : même barème que la base',
+  );
+  assert.deepEqual(
+    quizPointsFor('medium', { elapsedMs: 0, budgetMs: 15000, streak: 1 }),
+    { base: 150, speed: 75, combo: 0, total: 225 },
+    'Confirmé : réponse immédiate ×1,5',
+  );
+  assert.deepEqual(
+    quizPointsFor('hard', { elapsedMs: 0, budgetMs: 15000, streak: 1 }),
+    { base: 200, speed: 100, combo: 0, total: 300 },
+    'Expert : réponse immédiate ×2',
+  );
+  assert.equal(quizPointsFor('medium', { elapsedMs: 0, budgetMs: 15000, streak: 99 }).total, 300, 'Confirmé : plafond 300, borné');
+  assert.equal(quizPointsFor('hard', { elapsedMs: 0, budgetMs: 15000, streak: 99 }).total, 400, 'Expert : plafond 400, borné');
+  assert.equal(quizPointsFor('medium', { elapsedMs: 15000, budgetMs: 15000, streak: 1 }).total, 150, 'Confirmé : réponse sur le chrono = base ×1,5, sans bonus');
+  assert.equal(pointsMultiplier('ultra'), 1, 'niveau inconnu : repli ×1');
+
   // Tick-tack du minuteur : le tempo est une fonction pure, donc testable sans
   // navigateur. Il accélère par paliers quand le temps baisse, et jamais
   // l'inverse — le dernier palier s'emballe pile quand la barre passe au rouge.
@@ -268,13 +299,21 @@ export async function checkQuiz(assert) {
 
   // Répond juste à toutes les questions en cours : chacune est reconnue à son
   // libellé FR (l'ordre est mélangé par le moteur), la bonne réponse au barème.
-  const playQuestions = async (container, questions) => {
+  // `expectNoPoints` (rejouer un niveau déjà terminé) : ni le bandeau de
+  // verdict, ni le compteur ⚡ du HUD ne doivent afficher de point gagné.
+  const playQuestions = async (container, questions, { expectNoPoints = false } = {}) => {
     for (let step = 0; step < questions.length; step += 1) {
       const prompt = container.querySelector('.quiz-question')?.textContent || '';
       const question = questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
       assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
       const rightText = quizLabel(question.choices[question.answer], 'fr');
       await click([...container.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
+      if (expectNoPoints) {
+        const verdictText = container.querySelector('.quiz-verdict')?.textContent || '';
+        assert.ok(!/PTS/.test(verdictText), 'niveau rejoué : le verdict n’annonce aucun point');
+        const livePoints = (container.querySelector('.quiz-live-item--points')?.textContent || '').replace(/\D/g, '');
+        assert.equal(livePoints, '0', 'niveau rejoué : le compteur de points reste à 0');
+      }
       await waitQuestionChange(container, prompt);
     }
   };
@@ -282,9 +321,9 @@ export async function checkQuiz(assert) {
   // Joue une partie parfaite d'un niveau : on clique le bouton du palier
   // (`[data-level]`, verrouillé ou non selon la progression), puis on répond
   // juste aux huit questions.
-  const playPerfect = async (container, game, level = 'easy') => {
+  const playPerfect = async (container, game, level = 'easy', options = undefined) => {
     await click(container.querySelector(`[data-level="${level}"] .quiz-level-play`));
-    await playQuestions(container, quizLevelQuestions(game, level));
+    await playQuestions(container, quizLevelQuestions(game, level), options);
   };
 
   // Écran d'intro : titre du quizz + sélecteur des trois niveaux. Le Facile
@@ -300,6 +339,14 @@ export async function checkQuiz(assert) {
   assert.ok(node.textContent.includes('Termine le niveau Facile pour débloquer celui-ci'), 'la condition de déblocage est écrite');
   assert.ok(node.textContent.includes('0/3 niveaux'), 'la progression part de zéro');
   assert.ok(node.textContent.includes(`${QUIZ_LEVELS.length * 8} questions`), 'le total de questions du quizz est affiché');
+  // Les multiplicateurs de points sont annoncés dès le choix du niveau (le
+  // sélecteur dit ce que chaque palier rapporte, pas seulement qu'il est dur).
+  assert.ok(node.textContent.includes('×1,5'), 'le multiplicateur du palier Confirmé est annoncé');
+  assert.ok(node.textContent.includes('×2'), 'le multiplicateur du palier Expert est annoncé');
+  assert.ok(
+    node.querySelectorAll('.quiz-level .quiz-level-meta').length === QUIZ_LEVELS.length,
+    'chaque niveau annonce son nombre de questions et son barème',
+  );
 
   // Partie Facile : le niveau joué est rappelé pendant la partie.
   await playPerfect(node, quiz, 'easy');
@@ -328,10 +375,18 @@ export async function checkQuiz(assert) {
   // le compteur de parties, lui, est toujours crédité).
   const stored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
   assert.ok(stored, 'progression des succès écrite dans le stockage');
-  assert.ok((stored.sets?.quizzes_played || []).includes(slug), 'quizz distinct crédité (une entrée par quizz, pas par niveau)');
-  assert.ok((stored.sets?.quiz_levels_played || []).includes(`${slug}:easy`), 'le niveau joué est crédité');
+  assert.ok(
+    (stored.sets?.quizzes_played || []).includes(quizRunKey(slug, 'easy')),
+    'le run est crédité sous sa clé slug:niveau',
+  );
+  assert.ok(quizLevelCompleted(stored, slug, 'easy'), 'le niveau joué est crédité');
+  assert.ok(!quizLevelCompleted(stored, slug, 'hard'), 'un niveau jamais joué ne l’est pas pour autant');
   assert.ok((stored.sets?.perfect_quizzes || []).includes(slug), 'sans-faute crédité');
   assert.equal(stored.counters?.quizzes_completed, 1, 'compteur de parties à 1');
+  // Les points du run sont devenus de l'XP joueur (clé `slug:niveau`), donc du
+  // niveau du joueur : c'est la raison du multiplicateur par palier.
+  assert.equal(stored.quizPoints?.[quizRunKey(slug, 'easy')], playedPoints, 'les points du run sont crédités en XP');
+  assert.ok(totalXp(stored) >= playedPoints, 'le total d’XP inclut les points du quizz');
   assert.ok((stored.unlocked || {})['first-quiz'], 'succès « Premier quizz » débloqué');
   assert.ok((stored.unlocked || {})['perfect-score'], 'succès « Sans faute » débloqué');
 
@@ -341,8 +396,8 @@ export async function checkQuiz(assert) {
   const storedLevels = JSON.parse(globalThis.window.localStorage.getItem(LEVELS_KEY) || '{}');
   assert.ok(storedLevels[slug]?.easy, 'le niveau Facile est enregistré comme terminé');
   assert.ok(!storedLevels[slug]?.medium, 'le niveau Confirmé n’est pas terminé pour autant');
-  assert.ok(readLocalBest(slug, 'easy'), 'le record du niveau Facile est enregistré');
-  assert.equal(readLocalBest(slug, 'medium'), null, 'aucun record pour un niveau jamais joué');
+  assert.ok(readLocalBestRun(slug, 'easy'), 'le record du niveau Facile est enregistré');
+  assert.equal(readLocalBestRun(slug, 'medium'), null, 'aucun record pour un niveau jamais joué');
 
   // Partie Confirmé : le palier s'enchaîne, et l'Expert s'ouvre à son tour.
   await click([...node.querySelectorAll('button')].find((el) => el.textContent.includes('Jouer ce niveau')));
@@ -350,10 +405,15 @@ export async function checkQuiz(assert) {
   await playQuestions(node, quizLevelQuestions(quiz, 'medium'));
   assert.ok(node.textContent.includes('8/8 bonnes réponses'), 'sans-faute au niveau Confirmé');
   assert.ok(node.textContent.includes('Niveau Expert débloqué'), 'le niveau Expert s’ouvre après le Confirmé');
-  assert.ok(readLocalBest(slug, 'medium'), 'le record du niveau Confirmé est enregistré séparément');
+  assert.ok(readLocalBestRun(slug, 'medium'), 'le record du niveau Confirmé est enregistré séparément');
   const storedMedium = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
   assert.equal(storedMedium.counters?.quizzes_completed, 2, 'deux niveaux joués, deux parties comptées');
-  assert.equal((storedMedium.sets?.quizzes_played || []).filter((entry) => entry === slug).length, 1, 'un seul quizz distinct malgré deux niveaux');
+  assert.equal(
+    (storedMedium.sets?.quizzes_played || []).filter((entry) => String(entry).split(':')[0] === slug).length,
+    2,
+    'deux runs du même quizz, un par niveau',
+  );
+  assert.ok(quizLevelCompleted(storedMedium, slug, 'medium'), 'les deux niveaux joués sont enregistrés (Facile puis Confirmé)');
 
   // Classement sans backend : message d'explication + meilleure partie locale
   // (points + bonnes réponses, les points faisant le classement).
@@ -362,6 +422,25 @@ export async function checkQuiz(assert) {
   assert.ok(node.textContent.includes('Meilleur score sur cet appareil'), 'meilleur score local affiché');
   assert.ok(node.textContent.includes('8/8'), 'meilleur score local à 8/8');
   assert.ok(/8\/8 · \d+ PTS/.test(node.textContent), 'meilleur score local : points + bonnes réponses');
+
+  // REJOUER le niveau Confirmé (bouton « Rejouer » du résultat) : la partie se
+  // relance sans passer par l'intro et ne rapporte PLUS RIEN — le verdict n'a
+  // pas de points, le HUD reste à 0, le résultat affiche 0 PTS et rien n'est
+  // réécrit (ni progression, ni record, ni XP).
+  const beforeReplay = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  const xpBeforeReplay = totalXp(beforeReplay);
+  const bestBefore = readLocalBestRun(slug, 'medium');
+  await click([...node.querySelectorAll('button')].find((el) => el.textContent.includes('Rejouer')));
+  assert.ok(node.querySelector('.quiz-question'), '« Rejouer » relance une partie du même niveau');
+  assert.ok(node.textContent.includes('Confirmé'), 'la partie relancée garde son niveau');
+  await playQuestions(node, quizLevelQuestions(quiz, 'medium'), { expectNoPoints: true });
+  assert.ok(node.textContent.includes('0 PTS'), 'résultat du replay : 0 point');
+  assert.ok(node.textContent.includes('Niveau déjà terminé'), 'résultat du replay : le niveau est marqué terminé');
+  const afterReplay = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  assert.equal(afterReplay.counters?.quizzes_completed, 2, 'le replay n’ajoute aucune partie au compteur');
+  assert.equal((afterReplay.sets?.quizzes_played || []).length, 2, 'le replay n’ajoute aucun run à la progression');
+  assert.equal(totalXp(afterReplay), xpBeforeReplay, 'le replay n’ajoute aucun XP');
+  assert.equal(readLocalBestRun(slug, 'medium').points, bestBefore.points, 'le replay ne remplace pas le record de l’appareil');
 
   await act(async () => root.unmount());
 
@@ -473,7 +552,7 @@ export async function checkQuiz(assert) {
   // l'étape 2 n'existe plus (vidé par seedLang) : on le repose comme le ferait
   // une partie, puis la grille doit montrer le badge et le décompte.
   globalThis.window.localStorage.setItem('letsplay-lang', 'fr');
-  writeLocalBest('culture-gaming', 'easy', 8, 8, 1250);
+  writeLocalBest('culture-gaming', 8, 8, 1250, 'easy');
   // Progression : deux niveaux terminés sur trois, pour vérifier le badge.
   markLevelCompleted('culture-gaming', 'easy');
   markLevelCompleted('culture-gaming', 'medium');
@@ -502,36 +581,36 @@ export async function checkQuiz(assert) {
     [...bestNode.querySelectorAll('.quiz-card .quiz-chip--levels')].some((el) => el.textContent.trim() === '2/3 niveaux'),
     'la carte affiche la progression des niveaux (2/3)',
   );
-  assert.equal(readLocalBest('culture-gaming', 'medium'), null, 'le record est bien rangé par niveau');
+  assert.equal(readLocalBestRun('culture-gaming', 'medium'), null, 'le record est bien rangé par niveau');
   await act(async () => bestRoot.unmount());
 
   /* ---------------- 6. Classement par points + rang global profil ----------- */
   // Record de l'appareil : la meilleure partie est celle qui marque le plus
   // de points (à égalité, le plus de bonnes réponses l'emporte) — la règle du
   // classement, pas le nombre de bonnes réponses.
-  writeLocalBest('culture-gaming', 'easy', 8, 8, 900);
-  writeLocalBest('culture-gaming', 'easy', 6, 8, 1300);
-  let deviceBest = readLocalBest('culture-gaming', 'easy');
+  writeLocalBest('culture-gaming', 8, 8, 900, 'easy');
+  writeLocalBest('culture-gaming', 6, 8, 1300, 'easy');
+  let deviceBest = readLocalBestRun('culture-gaming', 'easy');
   assert.deepEqual(
     { score: deviceBest.score, points: deviceBest.points },
     { score: 6, points: 1300 },
     'le record suit les points, pas les bonnes réponses (6/8 à 1300 pts bat 8/8 à 900)',
   );
-  writeLocalBest('culture-gaming', 'easy', 7, 8, 1300);
-  deviceBest = readLocalBest('culture-gaming', 'easy');
+  writeLocalBest('culture-gaming', 7, 8, 1300, 'easy');
+  deviceBest = readLocalBestRun('culture-gaming', 'easy');
   assert.equal(deviceBest.score, 7, 'à points égaux, le plus de bonnes réponses dépasse le record');
-  writeLocalBest('culture-gaming', 'easy', 8, 8, 1299);
-  deviceBest = readLocalBest('culture-gaming', 'easy');
+  writeLocalBest('culture-gaming', 8, 8, 1299, 'easy');
+  deviceBest = readLocalBestRun('culture-gaming', 'easy');
   assert.equal(deviceBest.points, 1300, 'moins de points ne remplace pas le record');
   assert.equal(formatBest(deviceBest), '7/8 · 1300 PTS', 'le libellé du record affiche points + bonnes réponses');
   // Chaque niveau garde son record ; la carte, elle, montre le meilleur des trois.
-  writeLocalBest('culture-gaming', 'hard', 4, 8, 500);
-  assert.equal(readLocalBest('culture-gaming', 'hard').points, 500, 'le niveau Expert a son propre record');
-  assert.equal(readLocalBest('culture-gaming', 'easy').points, 1300, 'le record du Facile ne bouge pas');
+  writeLocalBest('culture-gaming', 4, 8, 500, 'hard');
+  assert.equal(readLocalBestRun('culture-gaming', 'hard').points, 500, 'le niveau Expert a son propre record');
+  assert.equal(readLocalBestRun('culture-gaming', 'easy').points, 1300, 'le record du Facile ne bouge pas');
   const acrossLevels = readLocalBest('culture-gaming');
   assert.equal(acrossLevels.points, 1300, 'le record affiché sur la carte prend le meilleur des niveaux');
   assert.equal(acrossLevels.level, 'easy', 'le record affiché nomme son niveau');
-  assert.equal(readLocalBest('culture-gaming', 'medium'), null, 'un niveau jamais joué n’a pas de record');
+  assert.equal(readLocalBestRun('culture-gaming', 'medium'), null, 'un niveau jamais joué n’a pas de record');
   assert.equal(formatBest({ score: 8, total: 8 }), '8/8', 'record antérieur aux points : repli score/total');
 
   // Classement d'un quizz : les lignes arrivent déjà triées par points (RPC)
@@ -965,5 +1044,5 @@ export async function checkQuiz(assert) {
     await act(async () => langRoot.unmount());
   }
 
-  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé), déblocage en cascade (Facile → Confirmé → Expert), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
+  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, replay d’un niveau terminé = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur 15 s, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–4, combo + fanfare, sons (tick-tack qui accélère, verdicts, coupure).');
 }

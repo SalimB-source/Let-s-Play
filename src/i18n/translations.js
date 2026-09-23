@@ -36,8 +36,7 @@ export const translations = {
       correctCount: 'Correct answers', wrongCount: 'Wrong answers',
       points: 'PTS', resultPoints: '{points} PTS', bestCombo: 'Best combo: ×{n}',
       keysHint: 'Tip: press keys 1–4 to answer',
-      noXpTag: 'Already completed', noXpHint: 'You already finished this level: playing it again earns no XP.', noXpResult: 'Level already completed — no XP this time.',
-      verdicts: {
+      noXpTag: 'Already completed', noXpHint: 'You already finished this level: playing it again earns no points (no XP either).', noXpResult: 'This level is already completed — no points this time.',      verdicts: {
         right: ['Correct!', 'Unbelievable!', 'Too easy, right?', 'We are on fire 🔥', 'Ice in the veins pays off.'],
         wrong: ['Oof, missed it…', 'Not this one.', 'So close!', 'That one got you.', 'Tough one — it bit back.'],
         timeout: ['Time is up!', 'Too slow…', 'The clock answered for you.'],
@@ -59,9 +58,10 @@ export const translations = {
       levelUnlocked: '{level} level unlocked — it is waiting for you.',
       levelPlay: 'Play this level',
       levelProgress: '{done}/{total} levels',
-      page: { commentTitle: 'Comments' },
+      levelPoints: { easy: '×1', medium: '×1.5', hard: '×2' },
+      levelsHint: 'The harder the level, the more the points are worth (×1, ×1.5, ×2). Each level changes the questions, points become player XP — and a level pays out only once.',      page: { commentTitle: 'Comments' },
       home: { eyebrow: 'Daily quiz', titleA: 'ONE DAY,', titleB: 'ONE QUIZ.', text: 'A quiz picked every day from our selection. Answer, keep your streak, climb the levels.', cta: 'Play today’s quiz' },
-      board: { boardTitle: 'LEADERBOARD', offline: 'Connect with a player account (Supabase configured) to compare your scores with the community.', empty: 'No score yet — be the first on the leaderboard.', you: 'You', bestDevice: 'Best score on this device' },
+      board: { boardTitle: 'LEADERBOARD', offline: 'Connect with a player account (Supabase configured) to compare your scores with the community.', empty: 'No score yet — be the first on the leaderboard.', you: 'You', bestDevice: 'Best score on this device', bestOther: 'This level is still untouched — your best run on this quiz is on another level.' },
       rank: {
         title: 'GLOBAL QUIZ RANKING',
         sub: 'Position in the global ranking — points earned across every quiz.',
@@ -375,8 +375,7 @@ export const translations = {
       correctCount: 'Bonnes réponses', wrongCount: 'Mauvaises réponses',
       points: 'PTS', resultPoints: '{points} PTS', bestCombo: 'Meilleure série : ×{n}',
       keysHint: 'Astuce : touches 1–4 pour répondre',
-      noXpTag: 'Déjà terminé', noXpHint: 'Tu as déjà terminé ce niveau : le rejouer ne rapporte plus d’XP.', noXpResult: 'Niveau déjà terminé — pas d’XP cette fois.',
-      verdicts: {
+      noXpTag: 'Déjà terminé', noXpHint: 'Tu as déjà terminé ce niveau : le rejouer ne rapporte plus de points (ni XP).', noXpResult: 'Niveau déjà terminé — pas de points cette fois.',      verdicts: {
         right: ['Bonne réponse !', 'Incroyable !', 'Facile, non ?', 'On est en feu 🔥', 'Le sang-froid, ça paie.'],
         wrong: ['Oups, raté…', 'Pas celle-là.', 'Presque !', 'Elle t’aura eu.', 'Dur, elle a mordu.'],
         timeout: ['Temps écoulé !', 'Trop lent…', 'Le chrono a répondu à ta place.'],
@@ -398,9 +397,10 @@ export const translations = {
       levelUnlocked: 'Niveau {level} débloqué — il t’attend.',
       levelPlay: 'Jouer ce niveau',
       levelProgress: '{done}/{total} niveaux',
-      page: { commentTitle: 'Commentaires' },
+      levelPoints: { easy: '×1', medium: '×1,5', hard: '×2' },
+      levelsHint: 'Plus le niveau est dur, plus les points valent cher (×1, ×1,5, ×2). Chaque niveau change les questions, les points deviennent de l’XP joueur — et un niveau ne rapporte qu’une fois.',      page: { commentTitle: 'Commentaires' },
       home: { eyebrow: 'Quizz du jour', titleA: 'UN JOUR,', titleB: 'UN QUIZZ.', text: 'Chaque jour, un quizz choisi dans notre sélection. Réponds, garde ta série, grimpe les niveaux.', cta: 'Jouer le quizz du jour' },
-      board: { boardTitle: 'CLASSEMENT', offline: 'Connecte-toi avec un compte joueur (Supabase configuré) pour comparer tes scores avec la communauté.', empty: 'Aucun score pour l’instant — sois premier du classement.', you: 'Toi', bestDevice: 'Meilleur score sur cet appareil' },
+      board: { boardTitle: 'CLASSEMENT', offline: 'Connecte-toi avec un compte joueur (Supabase configuré) pour comparer tes scores avec la communauté.', empty: 'Aucun score pour l’instant — sois premier du classement.', you: 'Toi', bestDevice: 'Meilleur score sur cet appareil', bestOther: 'Ce niveau est encore vierge — ton meilleur run sur ce quizz est sur un autre palier.' },
       rank: {
         title: 'CLASSEMENT GLOBAL DES QUIZZ',
         sub: 'Position dans le classement global — points cumulés sur tous les quizz.',
@@ -706,8 +706,7 @@ export const translations = {
       correctCount: 'إجابات صحيحة', wrongCount: 'إجابات خاطئة',
       points: 'نقطة', resultPoints: '{points} نقطة', bestCombo: 'أفضل سلسلة: ×{n}',
       keysHint: 'نصيحة: استخدم المفاتيح 1–4 للإجابة',
-      noXpTag: 'مكتمل مسبقًا', noXpHint: 'لقد أكملت هذا المستوى من قبل: إعادة لعبه لا تمنح أي نقاط خبرة.', noXpResult: 'المستوى مكتمل مسبقًا — لا نقاط خبرة هذه المرة.',
-      verdicts: {
+      noXpTag: 'مكتمل مسبقًا', noXpHint: 'لقد أكملت هذا المستوى من قبل: إعادة لعبه لا تمنح أي نقاط (ولا نقاط خبرة).', noXpResult: 'هذا المستوى مكتمل مسبقًا — لا نقاط هذه المرة.',      verdicts: {
         right: ['إجابة صحيحة!', 'مذهل!', 'هل كان سهلاً؟', 'نحن في القمة 🔥', 'الهدوء يجني ثماره.'],
         wrong: ['فرصة ضائعة…', 'ليس هذه المرة.', 'اقتربت!', 'هذه أسقطتك.', 'كانت صعبة حقًا.'],
         timeout: ['انتهى الوقت!', 'بطيء جدًا…', 'الساعة أجابت عنك.'],
@@ -729,9 +728,10 @@ export const translations = {
       levelUnlocked: 'تم فتح مستوى {level} — بانتظارك.',
       levelPlay: 'العب هذا المستوى',
       levelProgress: '{done}/{total} مستويات',
-      page: { commentTitle: 'التعليقات' },
+      levelPoints: { easy: '×1', medium: '×1.5', hard: '×2' },
+      levelsHint: 'كلما زادت صعوبة المستوى ارتفعت قيمة النقاط (×1، ×1.5، ×2). كل مستوى يغيّر الأسئلة، والنقاط تصبح خبرة للاعب — والمستوى يمنح النقاط مرة واحدة فقط.',      page: { commentTitle: 'التعليقات' },
       home: { eyebrow: 'اختبار اليوم', titleA: 'كل يوم،', titleB: 'اختبار.', text: 'كل يوم اختبار يُختار من قائمتنا. أَجب، حافظ على سلسلتك وارتقِ بالمستويات.', cta: 'العب اختبار اليوم' },
-      board: { boardTitle: 'الترتيب', offline: 'سجّل الدخول بحساب لاعب (مع تهيئة Supabase) لمقارنة نتائجك مع المجتمع.', empty: 'لا نتائج بعد — كن الأول في الترتيب.', you: 'أنت', bestDevice: 'أفضل نتيجة على هذا الجهاز' },
+      board: { boardTitle: 'الترتيب', offline: 'سجّل الدخول بحساب لاعب (مع تهيئة Supabase) لمقارنة نتائجك مع المجتمع.', empty: 'لا نتائج بعد — كن الأول في الترتيب.', you: 'أنت', bestDevice: 'أفضل نتيجة على هذا الجهاز', bestOther: 'هذا المستوى لم يُلعب بعد — أفضل نتيجة لك في هذا الاختبار على مستوى آخر.' },
       rank: {
         title: 'الترتيب العام للاختبارات',
         sub: 'موضعك في الترتيب العام — نقاط مكتسبة في كل الاختبارات.',

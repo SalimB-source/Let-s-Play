@@ -27,6 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   METRICS,
+  STATE_VERSION,
   createState,
   dayKey,
   evaluate,
@@ -36,7 +37,9 @@ import {
   metricValue,
   normalizeState,
   quizAlreadyCompleted,
+  quizCompletedAnyLevel,
   quizLevelCompleted,
+  quizRunKey,
   reduce,
   summarize,
   totalXp,
@@ -198,11 +201,17 @@ check('… mais le jour est compté', metricValue(afterGap, 'visitDays'), 4);
 const ghost = reduce(createState(), { type: 'teleport', at: at(2026, 9, 20) });
 check('action inconnue ignorée', ghost.unlocked.length, 0);
 
-// Données corrompues : état valide malgré tout.
-const broken = normalizeState({ counters: { comments_posted: 'beaucoup' }, sets: { articles_read: 'nope' }, unlocked: null, days: [1, '2026-09-20'] });
+// Données corrompues : état valide malgré tout (à version courante).
+const broken = normalizeState({ version: STATE_VERSION, counters: { comments_posted: 'beaucoup' }, sets: { articles_read: 'nope' }, unlocked: null, days: [1, '2026-09-20'] });
 check('état corrompu réparé (compteurs)', metricValue(broken, 'commentsPosted'), 0);
 check('état corrompu réparé (ensembles)', metricValue(broken, 'articlesRead'), 0);
 check('état corrompu réparé (jours)', metricValue(broken, 'visitDays'), 1);
+// Un état écrit par une version antérieure (sans numéro de version) repart de
+// zéro : la remise à zéro v2 est volontaire, elle vaut pour tous les anciens
+// enregistrements (succès, compteurs, points de quizz).
+const versionless = normalizeState({ counters: { comments_posted: 12, quizzes_completed: 5 }, quizPoints: { 'rpg-legends:easy': 900 } });
+check('un état d’avant la v2 repart de zéro', metricValue(versionless, 'commentsPosted'), 0);
+check('… points de quizz compris', totalXp(versionless), 0);
 
 // Fusion appareil ↔ compte : rien n’est perdu.
 const laptop = reduce(createState(), { type: 'search_performed', query: 'zelda', at: at(2026, 9, 20) }).state;
@@ -271,25 +280,30 @@ check('connexion e-mail : aucun compte tiers', linkedProviders({ app_metadata: {
 
 // Clé de stockage distante attendue côté Supabase.
 check('clé de progression du compte', REMOTE_META_KEY, 'achievements');
+// Progression locale : version 2 (la v1 est nettoyée, cf. plus bas).
+check('clé locale de progression', STORAGE_KEY, 'letsplay_achievements_v2');
 
-// Progression par joueur : clés locales séparées (invité / cache par compte),
-// avec reprise de l'ancienne clé unique comme progression invité.
+// Progression par joueur : clés locales séparées (invité / cache par compte).
+// Depuis la v2, la clé unique de l'ancien format n'est PLUS relue : la remise
+// à zéro est volontaire, l'ancienne clé est seulement nettoyée au passage.
 const fakeStore = new Map();
 globalThis.window = {
   localStorage: {
     getItem: (key) => (fakeStore.has(key) ? fakeStore.get(key) : null),
     setItem: (key, value) => fakeStore.set(key, String(value)),
     removeItem: (key) => fakeStore.delete(key),
+    key: (index) => [...fakeStore.keys()][index] ?? null,
+    get length() { return fakeStore.size; },
   },
 };
-// Ancien format (une seule clé pour tout le monde) : relu comme progression invité.
-const legacyProgress = reduce(createState(), { type: 'search_performed', query: 'legacy' }).state;
-fakeStore.set(STORAGE_KEY, JSON.stringify(legacyProgress));
-check('l’ancienne clé unique est reprise comme progression invité', metricValue(readStorage(GUEST_SCOPE), 'searchesPerformed'), 1);
-// Nouvelle clé invité : prioritaire dès qu'elle existe.
+const ancientProgress = reduce(createState(), { type: 'search_performed', query: 'ancient' }).state;
+fakeStore.set('letsplay_achievements_v1', JSON.stringify(ancientProgress));
+check('l’ancienne clé (v1) n’est plus relue — remise à zéro v2', readStorage(GUEST_SCOPE), null);
+check('… et elle est nettoyée du stockage', fakeStore.has('letsplay_achievements_v1'), false);
+// Progression invité : sa propre clé (v2), écrite puis relue telle quelle.
 const guestProgress = reduce(createState(), { type: 'comment_posted' }).state;
 check('la progression invité a sa propre clé', writeStorage(guestProgress, GUEST_SCOPE) && fakeStore.has(storageKeyForScope(GUEST_SCOPE)), true);
-check('… et prime sur l’ancienne clé unique', metricValue(readStorage(GUEST_SCOPE), 'commentsPosted'), 1);
+check('… et se relit avec ses compteurs', metricValue(readStorage(GUEST_SCOPE), 'commentsPosted'), 1);
 // Chaque compte a SON cache local ; un autre compte n'y voit rien.
 const scopeA = scopeForUser('compte-a');
 check('le cache d’un compte a sa propre clé', writeStorage(guestProgress, scopeA) && fakeStore.has(storageKeyForScope(scopeA)), true);
@@ -384,42 +398,68 @@ for (let index = 1; index <= 30; index += 1) {
 ].forEach((id, index) => {
   const date = new Date(at(2026, 9, 20));
   date.setDate(date.getDate() + index);
-  record(play('quiz_completed', { id, perfect: index === 0, daily: true, at: date.toISOString() }));
+  record(play('quiz_completed', { id, level: 'easy', perfect: index === 0, daily: true, at: date.toISOString() }));
 });
 
-// Règle anti-farm : un NIVEAU déjà terminé ne rapporte plus rien, mais un
-// autre niveau du même quizz rapporte une fois — et le succès « Tour complet »
-// continue de compter les QUIZZ (un slug par quizz), pas les niveaux.
+// Règle anti-farm : un quizz déjà terminé À UNE DIFFICULTÉ ne rapporte plus
+// rien à CE NIVEAU. Rejoué (même sans faute), il ne bouge ni le compteur, ni
+// les sans-faute, ni l'XP ; seul le jour de quizz du jour reste crédité pour
+// la série. Un AUTRE niveau du même quizz, lui, rapporte à nouveau (de vraies
+// questions différentes, des points multipliés) — sans pour autant doubler le
+// quizz dans « Tour complet ».
 {
   let fresh = createState(new Date(at(2026, 9, 1)));
   const run = (payload) => { const result = reduce(fresh, { type: 'quiz_completed', ...payload }); fresh = result.state; return result.unlocked; };
-  check('1re complétion : succès et XP', run({ id: 'rpg-legends', level: 'easy', perfect: false, at: at(2026, 9, 2) }).join(','), 'first-quiz');
-  ok('le quizz est désormais marqué terminé', quizAlreadyCompleted(fresh, 'rpg-legends'));
-  ok('… son niveau Facile aussi', quizLevelCompleted(fresh, 'rpg-legends', 'easy'));
-  ok('… et pas les autres', !quizAlreadyCompleted(fresh, 'tech-hardware'));
+  check('1re complétion (Facile) : succès et XP', run({ id: 'rpg-legends', level: 'easy', points: 620, perfect: false, at: at(2026, 9, 2) }).join(','), 'first-quiz');
+  check('les points du quiz deviennent de l’XP', fresh.quizPoints['rpg-legends:easy'], 620);
+  ok('le total XP inclut les points du quiz', totalXp(fresh) >= 620, true);
+  ok('le quizz est terminé À CE NIVEAU', quizLevelCompleted(fresh, 'rpg-legends', 'easy'));
+  ok('… mais pas à un autre', !quizLevelCompleted(fresh, 'rpg-legends', 'hard'));
+  ok('… et pas les autres quizz', !quizLevelCompleted(fresh, 'tech-hardware', 'easy'));
+  ok('terminé à au moins un niveau', quizCompletedAnyLevel(fresh, 'rpg-legends'));
+  check('le run est stocké sous sa clé slug:niveau', (fresh.sets.quizzes_played || []).includes(quizRunKey('rpg-legends', 'easy')), true);
   const xpBefore = totalXp(fresh);
   const countBefore = fresh.counters.quizzes_completed;
-  check('rejouer le même niveau (sans faute) ne débloque rien', run({ id: 'rpg-legends', level: 'easy', perfect: true, at: at(2026, 9, 3) }).length, 0);
+  check('rejouer le même niveau (sans faute) ne débloque rien', run({ id: 'rpg-legends', level: 'easy', points: 9999, perfect: true, at: at(2026, 9, 3) }).length, 0);
   check('… ni XP', totalXp(fresh), xpBefore);
   check('… ni compteur de parties', fresh.counters.quizzes_completed, countBefore);
   ok('… ni sans-faute', !(fresh.sets.perfect_quizzes || []).includes('rpg-legends'));
-  const mediumUnlocked = run({ id: 'rpg-legends', level: 'medium', perfect: false, at: at(2026, 9, 3) });
-  check('un autre niveau du même quizz rapporte', fresh.counters.quizzes_completed, countBefore + 1);
-  ok('… sans redébloquer les succès déjà acquis', mediumUnlocked.length === 0);
-  check('… et sans XP en double', totalXp(fresh), xpBefore);
-  check('… sans dupliquer le quizz (tour complet)', (fresh.sets.quizzes_played || []).filter((entry) => entry === 'rpg-legends').length, 1);
-  ok('… en gardant le niveau joué à part', quizLevelCompleted(fresh, 'rpg-legends', 'medium'));
-  const xpAfterLevels = totalXp(fresh);
   run({ id: 'rpg-legends', level: 'easy', perfect: false, daily: true, at: at(2026, 9, 4) });
-  check('quizz du jour rejoué : le jour compte pour la série', (fresh.sets.quiz_days || []).length, 1);
-  check('… sans XP', totalXp(fresh), xpAfterLevels);
-  check('un autre quizz rapporte toujours', run({ id: 'tech-hardware', level: 'easy', perfect: true, at: at(2026, 9, 5) }).join(','), 'perfect-score');
-  // Compatibilité : une complétion enregistrée avant les niveaux (aucun niveau
-  // au compteur pour ce quizz) vaut pour le niveau Facile.
-  const legacy = { ...createState(new Date(at(2026, 9, 1))) };
-  legacy.sets = { ...legacy.sets, quizzes_played: ['tech-hardware'] };
-  ok('ancienne complétion = niveau Facile', quizLevelCompleted(legacy, 'tech-hardware', 'easy'));
-  ok('… et rien d’autre', !quizLevelCompleted(legacy, 'tech-hardware', 'medium'));
+  check('quizz du jour rejoué (même niveau) : le jour compte pour la série', (fresh.sets.quiz_days || []).length, 1);
+  check('… sans XP', totalXp(fresh), xpBefore);
+  check('un autre niveau du même quizz rapporte toujours', run({ id: 'rpg-legends', level: 'hard', points: 900, perfect: true, at: at(2026, 9, 5) }).join(','), 'perfect-score');
+  check('les points du second palier sont ajoutés à l’XP', fresh.quizPoints['rpg-legends:hard'], 900);
+  ok('… le sans-faute est crédité (une fois) pour le quizz', (fresh.sets.perfect_quizzes || []).includes('rpg-legends'));
+  check('… le compteur de parties compte bien le second run', fresh.counters.quizzes_completed, countBefore + 1);
+  check('… mais « quizz distincts » ne double pas le quizz', metricValue(fresh, 'distinctQuizzes'), 1);
+  const countBeforeOther = fresh.counters.quizzes_completed;
+  run({ id: 'tech-hardware', level: 'medium', perfect: true, at: at(2026, 9, 6) });
+  check('un autre quizz compte bien sa partie', fresh.counters.quizzes_completed, countBeforeOther + 1);
+  ok('… son sans-faute est crédité', (fresh.sets.perfect_quizzes || []).includes('tech-hardware'));
+  check('… deux quizz distincts', metricValue(fresh, 'distinctQuizzes'), 2);
+}
+// L'ancien format (run sans niveau, au slug nu) reste lu : il vaut pour le
+// niveau FACILE — le palier ouvert à tout le monde, seule lecture possible
+// d'une époque où le quizz n'avait qu'une banque — et seulement tant qu'aucun
+// niveau n'a été enregistré pour ce quizz.
+{
+  let legacy = createState(new Date(at(2026, 9, 1)));
+  legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', perfect: false, at: at(2026, 9, 2) }).state;
+  ok('l’ancien format vaut pour le niveau Facile', quizLevelCompleted(legacy, 'rpg-legends', 'easy'));
+  ok('… et laisse les autres paliers neufs', !quizLevelCompleted(legacy, 'rpg-legends', 'hard'));
+  const xpBefore = totalXp(legacy);
+  legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', level: 'easy', perfect: true, at: at(2026, 9, 3) }).state;
+  check('rejouer le niveau Facile d’un quizz terminé à l’ancienne ne rapporte rien', totalXp(legacy), xpBefore);
+  ok('… ni le sans-faute de ce palier', !(legacy.sets.perfect_quizzes || []).includes('rpg-legends'));
+  legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', level: 'hard', points: 500, perfect: true, at: at(2026, 9, 4) }).state;
+  check('… mais un palier jamais joué rapporte à nouveau (XP)', totalXp(legacy) > xpBefore, true);
+  check('… crédité sous sa clé slug:niveau', (legacy.sets.quizzes_played || []).includes(quizRunKey('rpg-legends', 'hard')), true);
+  ok('… sans-faute compris', (legacy.sets.perfect_quizzes || []).includes('rpg-legends'));
+  // Une fois un niveau enregistré pour ce quizz, la vieille clé au slug nu ne
+  // coche plus le Facile : c'est le niveau réellement joué qui fait foi.
+  const leveled = { ...legacy, sets: { ...legacy.sets, quizzes_played: ['rpg-legends', 'rpg-legends:hard'] } };
+  ok('la clé au slug nu ne coche plus le Facile d’un quizz déjà nivelé', !quizLevelCompleted(leveled, 'rpg-legends', 'easy'));
+  ok('… et le niveau enregistré reste terminé', quizLevelCompleted(leveled, 'rpg-legends', 'hard'));
 }
 
 // Un défi envoyé à un ami depuis un écran de résultat (rival trouvé).

@@ -42,22 +42,24 @@ export function scriptedGlobalQuizRank(userId, seed = {}) {
 
 function RankCards({ rank, copy }) {
   return (
-    <div className="player-stats-grid">
-      <div className="player-stat-card">
-        <div className="player-stat-value">#{rank.rank}</div>
-        <div className="player-stat-label">{copy.position}</div>
+    <div className="quiz-rank-cards">
+      <div className="quiz-rank-hero-card quiz-rank-position">
+        <span className="quiz-rank-card-kicker">GLOBAL RANK</span>
+        <div className="quiz-rank-hero-value">#{rank.rank}</div>
+        <div className="quiz-rank-card-label">{copy.position}</div>
       </div>
-      <div className="player-stat-card">
-        <div className="player-stat-value">{Number(rank.points || 0).toLocaleString()}</div>
-        <div className="player-stat-label">{copy.points}</div>
+      <div className="quiz-rank-hero-card quiz-rank-points">
+        <span className="quiz-rank-card-kicker">LET’S PLAY SCORE</span>
+        <div className="quiz-rank-hero-value">{Number(rank.points || 0).toLocaleString()}</div>
+        <div className="quiz-rank-card-label">{copy.points}</div>
       </div>
-      <div className="player-stat-card">
-        <div className="player-stat-value">{rank.quizzes}</div>
-        <div className="player-stat-label">{copy.quizzes}</div>
+      <div className="quiz-rank-meta-card">
+        <div className="quiz-rank-meta-value">{rank.quizzes}</div>
+        <div className="quiz-rank-card-label">{copy.quizzes}</div>
       </div>
-      <div className="player-stat-card">
-        <div className="player-stat-value">{rank.players}</div>
-        <div className="player-stat-label">{copy.players}</div>
+      <div className="quiz-rank-meta-card">
+        <div className="quiz-rank-meta-value">{rank.players}</div>
+        <div className="quiz-rank-card-label">{copy.players}</div>
       </div>
     </div>
   );
@@ -116,9 +118,13 @@ export default function QuizGlobalRank({ userId, self = false, scriptedFallback 
 
   return (
     <div className="player-section quiz-global-rank">
-      <div className="player-section-header">
-        <h2>{copy.title}</h2>
-        <p>{copy.sub}</p>
+      <div className="quiz-rank-heading">
+        <div>
+          <span className="quiz-rank-kicker"><span className="quiz-rank-mark">✦</span> PLAYER STATUS</span>
+          <h2>{copy.title}</h2>
+          <p>{copy.sub}</p>
+        </div>
+        <span className="quiz-rank-live">{displayedRank?.scripted ? 'DEMO SIGNAL' : 'LIVE SCORE'}</span>
       </div>
       {note && <p className="player-empty-note">{note}</p>}
       {displayedRank && displayedRank.rank != null && <RankCards rank={displayedRank} copy={copy} />}

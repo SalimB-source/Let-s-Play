@@ -1003,17 +1003,26 @@ end $$;
 -- ----------------------------------------------------------------------------
 -- 8. Quizz : tentatives & classement
 -- ----------------------------------------------------------------------------
--- Une ligne par compte et par quizz : la MEILLEURE PARTIE est conservée
--- (upsert côté serveur dans la RPC) — celle qui marque le plus de points
--- (barème « fun » du moteur : base + rapidité + combo, 200 max par question),
--- à points égaux le plus de bonnes réponses, et à égalité totale la première
--- partie venue garde l'antériorité. Le classement se fait donc sur les POINTS
--- gagnés, pas sur le nombre de bonnes réponses (resté affiché en secondaire).
--- La RPC joint le profil public (pseudo, avatar, niveau). Même contrat que les
--- réactions partagées : la table n'est pas exposée directement (revoke), tout
--- passe par des RPC security definer — un client ne peut ni écrire au nom d'un
--- autre, ni poser un score hors bornes (0 ≤ score ≤ total et
--- 100 × score ≤ points ≤ 200 × total vérifiés côté serveur).
+-- Une ligne par compte et par RUN (`quiz_id` = `slug:difficulté`, ex.
+-- `culture-gaming:hard`) : la PREMIÈRE COMPLÉTION est conservée, c'est tout —
+-- un quizz déjà terminé à une difficulté ne rapporte plus de points s'il est
+-- rejoué (règle anti-farm, même contrat que l'XP côté client ; le `do
+-- nothing` du conflit l'applique aussi côté serveur). Chaque difficulté,
+-- elle, a ses propres points : le barème « fun » du moteur (base + rapidité
+-- + combo, 200 max par question en facile) est MULTIPLIÉ par la difficulté
+-- (facile ×1, confirmé ×1,5, expert ×2 → plafond 200/300/400 par question).
+-- Le classement d'un run se fait donc sur les POINTS gagnés, pas sur le
+-- nombre de bonnes réponses (resté affiché en secondaire). La RPC joint le
+-- profil public (pseudo, avatar, niveau). Même contrat que les réactions
+-- partagées : la table n'est pas exposée directement (revoke), tout passe par
+-- des RPC security definer — un client ne peut ni écrire au nom d'un autre,
+-- ni poser un score hors bornes (0 ≤ score ≤ total et
+-- 100 × mult × score ≤ points ≤ 200 × mult × total vérifiés côté serveur,
+-- le multiplicateur étant déduit du suffixe `:difficulté` de `quiz_id`).
+-- Remise à zéro du classement global (opération de maintenance ponctuelle) :
+-- `supabase/reset-quiz-ranking.sql` vide cette table et rien d'autre — à ne
+-- pas confondre avec ce fichier, qui ne fait qu'installer le schéma.
+
 create table if not exists public.quiz_attempts (
   user_id uuid not null references auth.users(id) on delete cascade,
   quiz_id text not null check (char_length(quiz_id) between 1 and 120),
@@ -1045,11 +1054,13 @@ exception when others then
   raise warning 'Let''s Play : colonne quiz_attempts.points non ajoutée (%).', sqlerrm;
 end $$;
 
--- Dépose une tentative : garde la MEILLEURE PARTIE du compte sur ce quizz —
--- celle qui marque le plus de points (à égalité, le plus de bonnes réponses).
--- Retourne le classement à jour (le joueur voit sa ligne remonter).
+-- Dépose une tentative : conserve la PREMIÈRE COMPLÉTION du compte sur ce
+-- run (quizz + difficulté) — rejoué, un quizz ne rapporte plus de points.
+-- Retourne le classement à jour (le joueur voit sa ligne entrer au tableau).
 -- Signature 2026-09 : p_points en plus ; l'ancienne surcharge à quatre
--- paramètres est retirée pour ne pas ambiguïser les appels.
+-- paramètres est retirée pour ne pas ambiguïser les appels. Depuis 2026-09
+-- (difficultés), le `quiz_id` est composé `slug:difficulté` — le
+-- multiplicateur de points en est déduit côté serveur.
 drop function if exists public.submit_quiz_attempt(text, integer, integer, boolean);
 
 create or replace function public.submit_quiz_attempt(
@@ -1061,6 +1072,8 @@ security definer set search_path = ''
 as $$
 declare
   v_points integer;
+  v_difficulty text;
+  v_multiplier numeric;
 begin
   if auth.uid() is null then
     raise exception 'quiz_requires_auth' using errcode = '42501';
@@ -1072,31 +1085,36 @@ begin
     raise exception 'invalid_quiz_score' using errcode = '22023';
   end if;
   v_points := coalesce(p_points, 0);
-  -- Plancher du barème (100 points par bonne réponse) et plafond absolu
-  -- (QUIZ_POINTS du moteur : 200 max par question) : les deux bornes sont
-  -- revérifiées ici, côté serveur.
-  if v_points < 100 * p_score or v_points > 200 * p_total then
+  -- Multiplicateur de la difficulté du run (DIFFICULTY_MULTIPLIER du moteur :
+  -- facile ×1, confirmé ×1,5, expert ×2 — un slug nu, sans suffixe, reste au
+  -- facteur 1). Plancher du barème (100 × multiplicateur par bonne réponse)
+  -- et plafond (QUIZ_POINTS : 200 × multiplicateur max par question) : les
+  -- deux bornes sont revérifiées ici, côté serveur.
+  v_difficulty := split_part(p_quiz_id, ':', 2);
+  v_multiplier := case v_difficulty
+                    when 'medium' then 1.5
+                    when 'hard' then 2
+                    else 1
+                  end;
+  if v_points < (100 * v_multiplier) * p_score
+     or v_points > (200 * v_multiplier) * p_total then
     raise exception 'invalid_quiz_points' using errcode = '22023';
   end if;
 
+  -- Première complétion uniquement : le conflit ne met à jour JAMAIS —
+  -- rejouer une difficulté déjà terminée ne remonte pas la ligne du joueur.
   insert into public.quiz_attempts as qa (user_id, quiz_id, score, total, points, perfect)
   values (auth.uid(), p_quiz_id, p_score, p_total, v_points,
           coalesce(p_perfect, false) or p_score = p_total)
-  on conflict (user_id, quiz_id) do update
-     set score = excluded.score,
-         total = excluded.total,
-         points = excluded.points,
-         perfect = excluded.perfect,
-         played_at = now()
-   where excluded.points > qa.points
-      or (excluded.points = qa.points and excluded.score > qa.score);
+  on conflict (user_id, quiz_id) do nothing;
   return public.get_quiz_leaderboard(p_quiz_id, 10);
 end;
 $$;
 
--- Classement d'un quizz : meilleure partie par compte, joint au profil public.
--- Trié par POINTS gagnés (bonnes réponses puis antériorité en départage).
--- `mine` marque la ligne du joueur connecté pour la surligner côté client.
+-- Classement d'un run (quizz + difficulté) : une ligne par compte, joint au
+-- profil public. Trié par POINTS gagnés (bonnes réponses puis antériorité en
+-- départage). `mine` marque la ligne du joueur connecté pour la surligner
+-- côté client.
 create or replace function public.get_quiz_leaderboard(p_quiz_id text, p_limit integer default 10)
 returns jsonb
 language sql
@@ -1198,6 +1216,11 @@ revoke all on function public.get_quiz_global_rank(uuid) from public;
 grant execute on function public.get_quiz_leaderboard(text, integer) to anon, authenticated;
 grant execute on function public.get_quiz_global_rank(uuid) to anon, authenticated;
 grant execute on function public.submit_quiz_attempt(text, integer, integer, boolean, integer) to authenticated;
+
+-- Remise à zéro ponctuelle des quizz (classements, compteurs, points
+-- joueurs) : elle ne vit PLUS dans ce fichier. Recoller le schéma ne doit
+-- jamais effacer les données des joueurs — l'opération est dans
+-- `supabase/reset-quiz-ranking.sql`, à exécuter explicitement.
 
 notify pgrst, 'reload schema';
 

@@ -20,7 +20,7 @@
 import { ACHIEVEMENTS } from './catalog.js';
 import { bestDayRun } from '../quizzes/engine.js';
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
 
 /* ------------------------------------------------------------------ */
 /* Dates : la journée est celle du visiteur (fuseau local)             */
@@ -73,6 +73,9 @@ export function createState(now = new Date()) {
     bestStreak: 0,
     // Succès débloqués : id → horodatage ISO.
     unlocked: {},
+    // XP gagnée directement grâce aux parties de quiz : run noté → points.
+    // La clé du run rend l'attribution idempotente et fusionnable entre appareils.
+    quizPoints: {},
   };
 }
 
@@ -80,6 +83,11 @@ export function createState(now = new Date()) {
 export function normalizeState(raw, now = new Date()) {
   const base = createState(now);
   if (!raw || typeof raw !== 'object') return base;
+  // Migration v1 → v2 : remise à zéro totale demandée (tous les compteurs
+  // quizz à 0, plus de "déjà terminé", points joueurs à 0).
+  if (!raw.version || Number(raw.version) < STATE_VERSION) {
+    return base;
+  }
   const asObject = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
   const asArray = (value) => (Array.isArray(value) ? value : []);
   const asNumber = (value) => (Number.isFinite(value) ? value : 0);
@@ -97,6 +105,11 @@ export function normalizeState(raw, now = new Date()) {
     if (typeof key === 'string' && key) unlocked[key] = typeof value === 'string' ? value : base.createdAt;
   }
 
+  const quizPoints = {};
+  for (const [key, value] of Object.entries(asObject(raw.quizPoints))) {
+    if (typeof key === 'string' && key && Number.isFinite(value)) quizPoints[key] = Math.max(0, Math.round(value));
+  }
+
   return {
     version: STATE_VERSION,
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : base.createdAt,
@@ -109,6 +122,7 @@ export function normalizeState(raw, now = new Date()) {
     streak: asNumber(raw.streak),
     bestStreak: asNumber(raw.bestStreak),
     unlocked,
+    quizPoints,
   };
 }
 
@@ -210,22 +224,29 @@ export function reduce(state, action = {}) {
       next = addToSet(counter(current, 'search_performed'), 'searches', action.query);
       break;
 
-    // Partie de quizz terminée : compteur global + quizz distincts, sans-faute
-    // par quizz, et jour crédité pour la série du « quizz du jour ».
-    // Règle anti-farm : chaque NIVEAU d'un quizz ne rapporte qu'à sa PREMIÈRE
-    // complétion (`quiz_levels_played` porte `slug:niveau`), mais l'ensemble
-    // `quizzes_played` reste indexé par SLUG : le succès « Tour complet »
-    // compte les quizz, pas les niveaux. Un quizz rejoué au même niveau ne
-    // fait donc plus avancer aucun succès — seule exception : le jour de
-    // quizz du jour reste crédité, sinon la rotation (un quizz déjà fait tous
-    // les huit jours) casserait mécaniquement la série « Semaine parfaite ».
+    // Partie de quizz terminée : compteur global + runs (quizz×niveau)
+    // distincts, sans-faute par quizz, et jour crédité pour la série du
+    // « quizz du jour ».
+    // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion
+    // À CHAQUE NIVEAU — un run est identifié par `slug:niveau`. Rejoué au
+    // même niveau, il ne fait plus avancer aucun succès (ni compteur, ni
+    // sans-faute) — donc plus aucun XP ni aucun point. Un AUTRE niveau du
+    // même quizz, lui, rapporte à nouveau (de vraies questions différentes,
+    // des points multipliés par le barème du palier). Seule exception au
+    // blocage : le jour de quizz du jour reste crédité, sinon la rotation
+    // (un quizz déjà fait tous les huit jours) casserait mécaniquement la
+    // série « Semaine parfaite ».
     case 'quiz_completed': {
       if (quizLevelCompleted(current, action.id, action.level)) {
         if (action.daily) next = addToSet(current, 'quiz_days', dayKey(at));
         break;
       }
-      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', action.id);
-      next = addToSet(next, 'quiz_levels_played', quizLevelKey(action.id, action.level));
+      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', quizRunKey(action.id, action.level));
+      const runKey = quizRunKey(action.id, action.level);
+      const earnedPoints = Number.isFinite(action.points) ? Math.max(0, Math.round(action.points)) : 0;
+      if (runKey && earnedPoints > 0) {
+        next = { ...next, quizPoints: { ...next.quizPoints, [runKey]: earnedPoints } };
+      }
       if (action.perfect) next = addToSet(next, 'perfect_quizzes', action.id);
       if (action.daily) next = addToSet(next, 'quiz_days', dayKey(at));
       break;
@@ -255,35 +276,59 @@ export function reduce(state, action = {}) {
   return award({ ...next, updatedAt: at }, at);
 }
 
-/** Clé d'un niveau de quizz dans les ensembles du moteur : `slug:niveau`. */
-export function quizLevelKey(quizId, level = 'easy') {
-  return `${quizId}:${level}`;
-}
-
 /**
- * Ce quizz a-t-il déjà été terminé par le joueur, toutes difficultés
- * confondues ? L'ensemble `quizzes_played` n'est alimenté qu'à la fin d'une
- * partie : c'est bien « terminé », pas « commencé ».
+ * Clé d'un run noté : `slug:niveau` (un slug nu quand l'action n'en porte pas
+ * — ancien format, avant les paliers). C'est la clé de l'ensemble
+ * `quizzes_played`, celle du record de l'appareil et de la tentative serveur
+ * (`quiz_attempts.quiz_id`).
  */
-export function quizAlreadyCompleted(state, quizId) {
-  if (!quizId) return false;
-  return Boolean(state?.sets?.quizzes_played?.includes(quizId));
+export function quizRunKey(quizId, level) {
+  return quizId && level ? `${quizId}:${level}` : quizId;
+}
+
+/** Alias de `quizRunKey` : la clé d'un NIVEAU de quizz (`slug:niveau`). */
+export function quizLevelKey(quizId, level = 'easy') {
+  return quizRunKey(quizId, level);
 }
 
 /**
- * Ce NIVEAU précis d'un quizz a-t-il déjà été terminé ? Seule la première
- * complétion d'un niveau rapporte de l'XP (voir `quiz_completed` dans
- * `reduce`). Compatibilité : avant les niveaux, un quizz se jouait en une
- * seule difficulté — une complétion enregistrée à l'ancienne compte pour le
- * niveau Facile, à condition que le joueur n'ait encore aucun niveau
- * enregistré sur ce quizz.
+ * Ce quizz a-t-il déjà été terminé par le joueur, À CE NIVEAU ?
+ * Si oui, le rejouer ne rapporte plus d'XP ni de points (voir
+ * `quiz_completed` dans `reduce`). L'ensemble `quizzes_played` n'est
+ * alimenté qu'à la fin d'une partie : c'est bien « terminé », pas
+ * « commencé ».
+ *
+ * Compatibilité : avant les niveaux, un quizz se jouait en une seule
+ * difficulté (clé au slug nu). Une complétion enregistrée à l'ancienne compte
+ * pour le niveau FACILE, et seulement tant qu'aucun niveau n'a été enregistré
+ * pour ce quizz — sinon les trois paliers s'annonceraient déjà joués alors que
+ * deux de leurs banques n'ont jamais été vues.
+ */
+export function quizAlreadyCompleted(state, quizId, level = null) {
+  if (!quizId) return false;
+  const played = state?.sets?.quizzes_played || [];
+  if (!level) return played.includes(quizId);
+  if (played.includes(quizRunKey(quizId, level))) return true;
+  if (level !== 'easy' || !played.includes(quizId)) return false;
+  return !played.some((key) => String(key).startsWith(`${quizId}:`));
+}
+
+/**
+ * Ce quizz a-t-il déjà été terminé par le joueur, À TOUS LES NIVEAUX ?
+ * (Pour l'affichage « complet » d'un quizz, pas pour le blocage des points.)
+ */
+export function quizCompletedAnyLevel(state, quizId) {
+  if (!quizId) return false;
+  return (state?.sets?.quizzes_played || []).some((key) => String(key).split(':')[0] === quizId);
+}
+
+/**
+ * Ce NIVEAU précis d'un quizz a-t-il déjà été terminé ? Même test que
+ * `quizAlreadyCompleted`, nommé pour les appelants qui raisonnent par palier
+ * (progression des niveaux, sélecteur du lecteur).
  */
 export function quizLevelCompleted(state, quizId, level = 'easy') {
-  if (!quizId) return false;
-  const recorded = state?.sets?.quiz_levels_played || [];
-  if (recorded.includes(quizLevelKey(quizId, level))) return true;
-  const legacy = level === 'easy' && Boolean(state?.sets?.quizzes_played?.includes(quizId));
-  return legacy && !recorded.some((key) => key.startsWith(`${quizId}:`));
+  return quizAlreadyCompleted(state, quizId, level);
 }
 
 /** Débloque les succès satisfaits, sans action — utilisé au chargement. */
@@ -339,10 +384,13 @@ export const METRICS = {
       éditoriales du site, toutes touchées. */
   readAllKinds: (state) =>
     setSize(state, 'news_read') > 0 && setSize(state, 'reviews_read') > 0 && setSize(state, 'dossiers_read') > 0 ? 1 : 0,
-  /** Parties de quizz terminées (toutes confondues). */
+  /** Parties de quizz terminées (toutes confondues — chaque
+      quizz×difficulté complète compte une partie). */
   quizzesCompleted: (state) => counterValue(state, 'quizzes_completed'),
-  /** Quizz distincts joués. */
-  distinctQuizzes: (state) => setSize(state, 'quizzes_played'),
+  /** Quizz DISTINCTS joués (à quelque niveau que ce soit) : les clés
+      `slug:niveau` sont ramenées à leur slug avant dédoublonnage, pour que
+      « Tour complet » reste un succès par quizz, pas par palier. */
+  distinctQuizzes: (state) => new Set((state.sets.quizzes_played || []).map((key) => String(key).split(':')[0])).size,
   /** Quizz distincts terminés sans faute. */
   perfectQuizzes: (state) => setSize(state, 'perfect_quizzes'),
   /** Jours différents avec le quizz du jour terminé. */
@@ -413,8 +461,10 @@ export function levelFromXp(totalXp = 0) {
 
 /** XP total d'un état = somme des succès débloqués. */
 export function totalXp(state, entries = ACHIEVEMENTS) {
-  const unlocked = normalizeState(state).unlocked;
-  return entries.reduce((sum, achievement) => (unlocked[achievement.id] ? sum + (achievement.xp || 0) : sum), 0);
+  const normalized = normalizeState(state);
+  const achievementXp = entries.reduce((sum, achievement) => (normalized.unlocked[achievement.id] ? sum + (achievement.xp || 0) : sum), 0);
+  const quizXp = Object.values(normalized.quizPoints).reduce((sum, points) => sum + points, 0);
+  return achievementXp + quizXp;
 }
 
 /**
@@ -513,6 +563,10 @@ export function mergeStates(a, b) {
     streak: Math.max(left.streak, right.streak),
     bestStreak: Math.max(left.bestStreak, right.bestStreak),
     unlocked,
+    quizPoints: Object.fromEntries([...new Set([...Object.keys(left.quizPoints), ...Object.keys(right.quizPoints)])].map((key) => [
+      key,
+      Math.max(left.quizPoints[key] || 0, right.quizPoints[key] || 0),
+    ])),
   });
 }
 
@@ -522,6 +576,7 @@ export function statesMatch(a, b) {
   const right = normalizeState(b);
   return JSON.stringify(left.counters) === JSON.stringify(right.counters)
     && JSON.stringify(left.sets) === JSON.stringify(right.sets)
+    && JSON.stringify(left.quizPoints) === JSON.stringify(right.quizPoints)
     && JSON.stringify(left.days) === JSON.stringify(right.days)
     && JSON.stringify(left.unlocked) === JSON.stringify(right.unlocked);
 }

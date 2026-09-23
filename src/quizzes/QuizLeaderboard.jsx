@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
-import { attemptKey, fetchQuizLeaderboard, formatBest, quizApiEnabled, readLocalBest } from './quizApi';
+import { fetchQuizLeaderboard, formatBest, quizApiEnabled, quizAttemptId, readLocalBest, readLocalBestRun } from './quizApi';
 
 const FALLBACK = {
   boardTitle: 'Leaderboard',
@@ -9,6 +9,7 @@ const FALLBACK = {
   empty: 'No scores yet — be the first on the leaderboard.',
   you: 'You',
   bestDevice: 'Best score on this device',
+  bestOther: 'This level is still untouched — your best score on this quiz is on another level.',
   levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
 
@@ -31,14 +32,17 @@ export default function QuizLeaderboard({ quiz, level = 'easy', lastBoard = null
   // Relu à chaque fin de partie (`refreshKey`) et à chaque changement de
   // niveau : la meilleure partie de l'appareil change sans que ce composant
   // ne reçoive d'autre mise à jour.
-  const [localBest, setLocalBest] = useState(() => readLocalBest(quiz.slug, level));
+  // Record de l'appareil : celui du NIVEAU affiché (une ligne de classement par
+  // niveau), plus le meilleur du quizz toutes difficultés confondues.
+  const [localBest, setLocalBest] = useState(() => readLocalBestRun(quiz.slug, level));
+  const [quizBest, setQuizBest] = useState(() => readLocalBest(quiz.slug));
   const connected = Boolean(user) && !isDemo;
 
   useEffect(() => {
     let cancelled = false;
     if (quizApiEnabled()) {
       setRows(null);
-      fetchQuizLeaderboard(attemptKey(quiz.slug, level)).then((data) => {
+      fetchQuizLeaderboard(quizAttemptId(quiz.slug, level)).then((data) => {
         if (!cancelled && data) setRows(data);
       });
     }
@@ -46,7 +50,8 @@ export default function QuizLeaderboard({ quiz, level = 'easy', lastBoard = null
   }, [quiz.slug, level, lastBoard]);
 
   useEffect(() => {
-    setLocalBest(readLocalBest(quiz.slug, level));
+    setLocalBest(readLocalBestRun(quiz.slug, level));
+    setQuizBest(readLocalBest(quiz.slug));
   }, [quiz.slug, level, refreshKey]);
 
   const list = Array.isArray(rows) ? rows : [];
@@ -79,6 +84,9 @@ export default function QuizLeaderboard({ quiz, level = 'easy', lastBoard = null
       )}
       {!connected && localBest && (
         <p className="quiz-board-local">{copy.bestDevice} : <strong>{formatBest(localBest)}</strong></p>
+      )}
+      {!connected && !localBest && quizBest && (
+        <p className="quiz-board-local">{copy.bestOther}</p>
       )}
     </section>
   );
