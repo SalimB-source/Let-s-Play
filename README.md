@@ -35,7 +35,9 @@ npm run build
 - Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
   huit quizz rédigés par la rédaction (culture générale, rétro, souls-like,
   RPG, e-sport, studios, tech et cinéma), quizz du jour en rotation quotidienne avec série de
-  jours, corrections commentées, commentaires, recherche et cinq succès
+  jours, feedback instantané de chaque réponse (gel, vert/rouge, points de
+  rapidité & combo), corrections commentées, confettis du sans-faute,
+  raccourcis clavier 1–4, commentaires, recherche et cinq succès
   dédiés (voir « Quizz gaming & quizz du jour »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
@@ -726,6 +728,22 @@ mais la structure de données les accepte déjà.
   Le son n'étant pas accessible à tous, un compteur ✓/✗ de la partie en cours
   (`aria-live`) dit la même chose à l'écran, et le tick-tack se tait quand
   l'onglet passe en arrière-plan.
+- **Feedback instantané & points** — le clic fige la question un court instant
+  (`VERDICT_MS` = 600 ms, défini une fois dans le moteur) : le choix cliqué
+  passe au vert (petit « pop ») ou au rouge (secousse), la bonne réponse
+  s'illumine si elle n'a pas été cliquée, et un bandeau annonce le verdict
+  avec une phrase tirée au hasard (`verdicts.right/wrong/timeout`, traduits)
+  et les points gagnés. Les points sont du jeu, pas du barème officiel :
+  base 100 + rapidité (jusqu'à 50, `quizPoints` du moteur) + combo (jusqu'à
+  50, les bonnes réponses consécutives) — 200 max par question. Ils s'affichent
+  en direct dans la barre du lecteur (⚡ + série 🔥 dès ×2, bip de combo dont
+  la note monte avec la série) et sur l'écran de résultat (total + meilleure
+  série). Le classement, les succès et le record de l'appareil restent
+  `correct/total`, inchangés. Raccourcis clavier : les touches 1–4 valident le
+  choix affiché (jamais pendant le gel, jamais dans un champ de saisie). Le
+  sans-faute fait pleuvoir des confettis sur l'écran de résultat
+  (`QuizConfetti`, DOM/CSS sans canvas, pluie de trois secondes) et chaque
+  palier joue sa fanfare (`legend` = montée de quatre notes).
 - **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
   sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
   `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
@@ -755,14 +773,18 @@ mais la structure de données les accepte déjà.
   Après collage du schéma dans le Dashboard Supabase, le tableau de contrôle
   final affiche les lignes 31–33 « OK ».
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
-  série, minuteur à 15 s), miniatures (une illustration distincte par quizz,
-  demandée par les cartes rendues — aucune requête YouTube), partie complète
-  8/8 jouée en jsdom avec la vraie pile de providers (succès crédités dans le
-  stockage), grille rendue en FR/EN/AR, sons (tempo qui accélère sans jamais
-  ralentir et sans attendre le battement suivant, battement réel, verdicts
-  juste / faux / temps écoulé, coupure depuis le bouton 🔊, no-op sans Web
-  Audio) — le tout avec un faux `AudioContext` qui enregistre les oscillateurs
-  lancés. Le scénario de
+  barème « fun » des points borné à 200/question, série, minuteur à 15 s),
+  miniatures (une illustration distincte par quizz, demandée par les cartes
+  rendues — aucune requête YouTube), partie complète 8/8 jouée en jsdom avec
+  la vraie pile de providers (succès crédités dans le stockage, confettis du
+  sans-faute, points et meilleure série affichés), grille rendue en FR/EN/AR,
+  verdict (gel avec choix verrouillés, vert/rouge, bonne réponse révélée,
+  bandeau avec points), raccourcis clavier 1–4 (la touche pendant le gel est
+  ignorée), sons (tempo qui accélère sans jamais ralentir et sans attendre le
+  battement suivant, battement réel, verdicts juste / faux / temps écoulé,
+  combo dont la note monte avec la série, fanfare du palier, coupure depuis le
+  bouton 🔊, no-op sans Web Audio) — le tout avec un faux `AudioContext` qui
+  enregistre les oscillateurs lancés. Le scénario de
   `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
   rend les nouvelles routes dans les trois langues ; `check:thumbs` vérifie les
   fichiers livrés dans `public/quizzes/`.

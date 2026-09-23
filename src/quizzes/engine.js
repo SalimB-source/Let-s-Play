@@ -87,6 +87,43 @@ export function prepareQuiz(quiz, seed = null) {
  */
 export const QUESTION_TIME = { seconds: 15 };
 
+/**
+ * Durée du « gel de verdict », en millisecondes. Après un clic — bonne
+ * réponse, mauvaise réponse ou temps écoulé — la question reste affichée ce
+ * laps de temps : le choix cliqué passe au vert (ou au rouge, la bonne
+ * réponse s'illuminant), un bandeau annonce le verdict, puis seulement la
+ * question suivante arrive. Défini une seule fois ici : le lecteur, la
+ * vérification (check:quiz) et les commentaires de CSS s'y réfèrent.
+ */
+export const VERDICT_MS = 600;
+
+/**
+ * Barème « fun » d'une bonne réponse : une base, un bonus de rapidité
+ * (répondre vite rapporte jusqu'à `speedMax`) et un bonus de combo (chaque
+ * bonne réponse consécutive au-delà de la première rapporte `comboPer`,
+ * plafonné à `comboCap × comboPer`).
+ *
+ * Les points sont du jeu, pas du barème officiel : le classement, les succès
+ * et le record de l'appareil restent `correct/total`. Les points s'affichent
+ * en direct dans la partie et sur l'écran de résultat.
+ */
+export const QUIZ_POINTS = { base: 100, speedMax: 50, comboPer: 10, comboCap: 5 };
+
+/**
+ * Points d'une bonne réponse. `elapsedMs` : temps écoulé depuis l'affichage
+ * de la question ; `budgetMs` : le budget complet (15 000 ms par défaut) ;
+ * `streak` : la série de bonnes réponses consécutives, celle-ci comprise.
+ * Renvoie `{ base, speed, combo, total }` en entiers, bornés entre `base` et
+ * `base + speedMax + comboPer × comboCap` (200 par question).
+ */
+export function quizPoints({ elapsedMs = 0, budgetMs = 0, streak = 1 } = {}) {
+  const budget = Number(budgetMs) > 0 ? Number(budgetMs) : 1;
+  const spent = Math.min(budget, Math.max(0, Number(elapsedMs) || 0));
+  const speed = Math.round(QUIZ_POINTS.speedMax * ((budget - spent) / budget));
+  const combo = Math.max(0, Math.min(Math.floor(streak) - 1, QUIZ_POINTS.comboCap)) * QUIZ_POINTS.comboPer;
+  return { base: QUIZ_POINTS.base, speed, combo, total: QUIZ_POINTS.base + speed + combo };
+}
+
 export function gradeQuiz(prepared, answers = {}) {
   const detail = (prepared.questions || []).map((question) => {
     const picked = question.choices.find((choice) => choice.id === answers[question.id]) || null;

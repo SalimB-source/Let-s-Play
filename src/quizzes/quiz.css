@@ -130,8 +130,58 @@
 }
 .quiz-choice:hover { border-color: var(--cyan); background: rgba(34, 211, 238, .08); transform: translateY(-1px); }
 
+/* ---- Verdict : le gel après une réponse (VERDICT_MS, `engine.js`) -------- */
+/* Le clic fige la question un court instant : le choix cliqué passe au vert
+   ou au rouge, la bonne réponse s'illumine si elle n'a pas été cliquée, et
+   le bandeau `quiz-verdict` annonce le verdict (phrase + points gagnés) —
+   la question suivante n'arrive qu'après. */
+.quiz-choice.is-locked { cursor: default; }
+.quiz-choice.is-correct {
+  border-color: #34d399;
+  background: rgba(52, 211, 153, .16);
+  animation: quiz-pop .38s ease;
+}
+.quiz-choice.is-wrong {
+  border-color: #f87171;
+  background: rgba(248, 113, 113, .14);
+  animation: quiz-shake .42s ease;
+}
+.quiz-choice.is-reveal {
+  border-color: rgba(52, 211, 153, .85);
+  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, .35);
+}
+@keyframes quiz-pop { 0% { transform: scale(.98); } 55% { transform: scale(1.015); } 100% { transform: scale(1); } }
+@keyframes quiz-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+.quiz-verdict {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px;
+  font: 700 14px var(--mono); letter-spacing: .05em;
+  animation: quiz-verdict-in .16s ease;
+}
+.quiz-verdict.is-right { color: #34d399; }
+.quiz-verdict.is-wrong { color: #f87171; }
+.quiz-verdict-points { color: var(--yellow); }
+.quiz-verdict-combo {
+  margin-left: 8px; padding: 3px 9px; border: 1px solid rgba(255, 214, 25, .5);
+  font-size: 11px; letter-spacing: .16em;
+  animation: quiz-combo-pulse .4s ease;
+}
+@keyframes quiz-verdict-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes quiz-combo-pulse { 0% { transform: scale(.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.quiz-live-item--points { color: var(--yellow); }
+.quiz-live-item--streak { color: var(--yellow); animation: quiz-combo-pulse .3s ease; }
+.quiz-keys-hint { margin: 16px 0 0; color: var(--dim); font: 400 11px var(--mono); letter-spacing: .1em; }
+
 /* ---- Résultat ------------------------------------------------------------ */
+/* `position: relative` + `overflow: hidden` : la boîte de référence des
+   confettis du sans-faute (`.quiz-confetti`, pluie contenue dans le cadre). */
 .quiz-result {
+  position: relative; overflow: hidden;
   padding: 34px 30px; text-align: center;
   background: var(--panel); border: 1px solid var(--line);
   clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
@@ -143,6 +193,23 @@
 .quiz-tier--veteran .quiz-result-tier { color: var(--yellow); }
 .quiz-tier--legend .quiz-result-tier { color: var(--violet); }
 .quiz-result-score { color: var(--muted); font: 500 15px var(--mono); letter-spacing: .1em; }
+/* Points « fun » de la partie (hors barème officiel) + meilleure série. */
+.quiz-result-points { margin: 10px 0 0; color: var(--yellow); font: 700 17px var(--mono); letter-spacing: .1em; }
+.quiz-result-combo { margin: 4px 0 0; color: var(--yellow); font: 500 13px var(--mono); letter-spacing: .1em; }
+
+/* Confettis du sans-faute : pluie de fragments CSS (pas de canvas — même
+   rendu partout, inerte hors navigateur). Chaque fragment a sa trajectoire
+   (`--drift`, `--spin`, délai et durée inline) ; la pluie se vide d'elle-même
+   après trois secondes (`QuizConfetti`). */
+.quiz-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+.quiz-confetti span {
+  position: absolute; top: -18px; display: block; border-radius: 2px; opacity: 0;
+  animation-name: quiz-confetti-fall; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+@keyframes quiz-confetti-fall {
+  0% { transform: translate3d(0, -20px, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--drift, 0px), 620px, 0) rotate(var(--spin, 540deg)); opacity: 0; }
+}
 .quiz-result-perfect {
   display: inline-block; margin-top: 12px; padding: 6px 14px;
   border: 1px solid rgba(255, 214, 25, .5); color: var(--yellow);
