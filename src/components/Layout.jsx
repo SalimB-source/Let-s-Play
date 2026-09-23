@@ -6,6 +6,8 @@ import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
 import { searchContent } from '../search/searchIndex';
 import { useAchievementAction } from '../achievements/AchievementContext';
+import { isQuizFinished } from '../quizzes/quizProgress';
+import { useQuizProgress } from '../quizzes/useQuizProgress';
 
 const base = import.meta.env.BASE_URL;
 
@@ -17,6 +19,11 @@ export default function Layout({ children }) {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
   const track = useAchievementAction();
+  // Un quizz TERMINÉ (ses trois niveaux faits) reste trouvé par la recherche
+  // instantanée, mais grisé et verrouillé comme partout ailleurs. La
+  // progression serveur est mise en cache par compte (`quizProgress`) : la
+  // nav, la recherche et l'accueil ne multiplient pas les requêtes.
+  const { progress: quizProgressState } = useQuizProgress();
   const searchRef = useRef(null);
 
   useEffect(() => {
@@ -102,12 +109,21 @@ export default function Layout({ children }) {
             <input id="nav-search-input" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder={t.nav.search.placeholder} />
             <button type="submit" aria-label={t.nav.search.submit}>⌕</button>
             {searchOpen && searchValue.trim() && <div className="nav-search-results">
-              {liveSearchResults.length > 0 ? liveSearchResults.map((item) => (
-                <Link className="nav-search-result" to={item.route} key={`${item.type}-${item.route}`} onClick={() => setMenuOpen(false)}>
-                  {item.image ? <img src={item.image} alt="" /> : <span className="nav-search-result-blank" aria-hidden="true" />}
-                  <span><small>{searchTypeLabels[item.type]}</small><strong>{item.title}</strong></span>
-                </Link>
-              )) : <span className="nav-search-empty">{t.nav.search.noResults}</span>}
+              {liveSearchResults.length > 0 ? liveSearchResults.map((item) => {
+                const done = item.type === 'quiz' && isQuizFinished(quizProgressState, item.slug);
+                const body = (
+                  <>
+                    {item.image ? <img src={item.image} alt="" /> : <span className="nav-search-result-blank" aria-hidden="true" />}
+                    <span>
+                      <small>{searchTypeLabels[item.type]}{done ? ` · ✓ ${t.quiz?.finished || 'FINISHED'}` : ''}</small>
+                      <strong>{item.title}</strong>
+                    </span>
+                  </>
+                );
+                return done
+                  ? <span className="nav-search-result is-finished" key={`${item.type}-${item.route}`}>{body}</span>
+                  : <Link className="nav-search-result" to={item.route} key={`${item.type}-${item.route}`} onClick={() => setMenuOpen(false)}>{body}</Link>;
+              }) : <span className="nav-search-empty">{t.nav.search.noResults}</span>}
               {liveSearchResults.length > 0 && <button type="submit" className="nav-search-all">{t.nav.search.viewAll} ↗</button>}
             </div>}
             </form>

@@ -6,7 +6,7 @@ import VideoThumb from '../components/VideoThumb';
 import { clockOffset } from '../components/ReleasesCalendar';
 import { QUIZ_LEVELS, quizzes, quizLabel, quizQuestionsCount } from '../quizzesData';
 import { readLocalBest, formatBest } from './quizApi';
-import { levelsDone } from './quizProgress';
+import { isQuizFinished, levelsDone } from './quizProgress';
 import { useQuizProgress } from './useQuizProgress';
 import { bestDayRun, dailyQuizFor } from './engine';
 
@@ -20,6 +20,10 @@ const FALLBACK = {
   nextIn: 'New quiz in {t}', best: 'Best: {s}',
   levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
   levelProgress: '{done}/{total} levels',
+  // Les TROIS niveaux terminés : le quizz passe « TERMINÉ » — niveaux de gris,
+  // drapeau sur la miniature, et le lien retiré (il n'est plus proposé).
+  finished: 'FINISHED', finishedNote: 'Three levels cleared',
+  dailyDoneHint: 'Today’s quiz is finished — its three levels are cleared. Come back tomorrow for the next one.',
 };
 
 /** Minutes restantes avant le prochain quizz du jour (minuit local). */
@@ -53,6 +57,10 @@ export default function QuizzesPage() {
 
   const daily = dailyQuizFor(now, quizzes);
   const streak = bestDayRun(state?.sets?.quiz_days || []);
+  // Bannière du jour : le même état « terminé » que les cartes de la grille
+  // (niveaux de gris + drapeau, lien retiré) quand les trois niveaux du quizz
+  // mis en avant sont faits.
+  const dailyFinished = Boolean(daily) && isQuizFinished(progress, daily.slug);
 
   return (
     <div className="quiz-page">
@@ -64,25 +72,46 @@ export default function QuizzesPage() {
 
       {daily && (
         <section className="wrap">
-          <Link className="quiz-daily hud-frame" to={daily.route}>
-            <div className="quiz-daily-copy">
-              <p className="eyebrow"><span className="live-dot" /> {copy.dailyEyebrow}</p>
-              <h2>{quizLabel(daily.labels, lang)?.title}</h2>
-              <p>{quizLabel(daily.labels, lang)?.text}</p>
-              <span className="quiz-daily-meta">
-                <span className="quiz-chip">{daily.tag}</span>
-                <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(quizQuestionsCount(daily)))}</span>
-                <span className="quiz-chip quiz-chip--levels">{copy.levelProgress.replace('{done}', String(levelsDone(progress, daily.slug))).replace('{total}', String(QUIZ_LEVELS.length))}</span>
-                <span className="quiz-chip quiz-chip--streak">🔥 {copy.streak} : {streak}</span>
-                <span className="quiz-chip quiz-chip--daily">⏳ {countdown}</span>
+          {dailyFinished ? (
+            <div className="quiz-daily hud-frame is-finished">
+              <div className="quiz-daily-copy">
+                <p className="eyebrow">{copy.dailyEyebrow}</p>
+                <h2>{quizLabel(daily.labels, lang)?.title}</h2>
+                <p>{quizLabel(daily.labels, lang)?.text}</p>
+                <span className="quiz-daily-meta">
+                  <span className="quiz-chip">{daily.tag}</span>
+                  <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(quizQuestionsCount(daily)))}</span>
+                  <span className="quiz-chip quiz-chip--levels is-complete">✓ {copy.finished}</span>
+                  <span className="quiz-chip quiz-chip--streak">🔥 {copy.streak} : {streak}</span>
+                </span>
+                <span className="quiz-finished-note">🏁 {copy.finishedNote}</span>
+              </div>
+              <span className="quiz-daily-media">
+                <VideoThumb id={daily.videoId} lead={daily.image} alt={quizLabel(daily.labels, lang)?.title} quality="hq" />
+                <span className="quiz-finished-flag">✓ {copy.finished}</span>
               </span>
-              <span className="arrow-link">{copy.play} <Arrow /></span>
             </div>
-            <span className="quiz-daily-media">
-              <VideoThumb id={daily.videoId} lead={daily.image} alt={quizLabel(daily.labels, lang)?.title} quality="hq" />
-            </span>
-          </Link>
-          <p className="quiz-daily-hint">{copy.dailyHint}</p>
+          ) : (
+            <Link className="quiz-daily hud-frame" to={daily.route}>
+              <div className="quiz-daily-copy">
+                <p className="eyebrow"><span className="live-dot" /> {copy.dailyEyebrow}</p>
+                <h2>{quizLabel(daily.labels, lang)?.title}</h2>
+                <p>{quizLabel(daily.labels, lang)?.text}</p>
+                <span className="quiz-daily-meta">
+                  <span className="quiz-chip">{daily.tag}</span>
+                  <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(quizQuestionsCount(daily)))}</span>
+                  <span className="quiz-chip quiz-chip--levels">{copy.levelProgress.replace('{done}', String(levelsDone(progress, daily.slug))).replace('{total}', String(QUIZ_LEVELS.length))}</span>
+                  <span className="quiz-chip quiz-chip--streak">🔥 {copy.streak} : {streak}</span>
+                  <span className="quiz-chip quiz-chip--daily">⏳ {countdown}</span>
+                </span>
+                <span className="arrow-link">{copy.play} <Arrow /></span>
+              </div>
+              <span className="quiz-daily-media">
+                <VideoThumb id={daily.videoId} lead={daily.image} alt={quizLabel(daily.labels, lang)?.title} quality="hq" />
+              </span>
+            </Link>
+          )}
+          <p className="quiz-daily-hint">{dailyFinished ? copy.dailyDoneHint : copy.dailyHint}</p>
         </section>
       )}
 
@@ -94,31 +123,42 @@ export default function QuizzesPage() {
           // tous les quizz sont jouables dès l'arrivée.
           const best = readLocalBest(quiz.slug);
           const done = levelsDone(progress, quiz.slug);
-          return (
-          <Link className="quiz-card" to={quiz.route} key={quiz.slug}>
-            <span className="quiz-card-media hud-frame">
-              <VideoThumb id={quiz.videoId} lead={quiz.image} alt={quizLabel(quiz.labels, lang)?.title} quality="hq" />
-            </span>
-            <span className="quiz-card-copy">
-              <span className="quiz-chips">
-                <span className="quiz-chip">{quiz.tag}</span>
-                <span className={`quiz-chip quiz-chip--levels${done === QUIZ_LEVELS.length ? ' is-complete' : ''}`}>
-                  {copy.levelProgress.replace('{done}', String(done)).replace('{total}', String(QUIZ_LEVELS.length))}
+          // Les trois niveaux terminés : la carte passe en niveaux de gris,
+          // affiche « TERMINÉ » et n'est plus un lien — le quizz est verrouillé.
+          const finished = done === QUIZ_LEVELS.length;
+          const title = quizLabel(quiz.labels, lang)?.title;
+          const body = (
+            <>
+              <span className="quiz-card-media hud-frame">
+                <VideoThumb id={quiz.videoId} lead={quiz.image} alt={title} quality="hq" />
+                {finished && <span className="quiz-finished-flag">✓ {copy.finished}</span>}
+              </span>
+              <span className="quiz-card-copy">
+                <span className="quiz-chips">
+                  <span className="quiz-chip">{quiz.tag}</span>
+                  <span className={`quiz-chip quiz-chip--levels${finished ? ' is-complete' : ''}`}>
+                    {finished
+                      ? `✓ ${copy.finished}`
+                      : copy.levelProgress.replace('{done}', String(done)).replace('{total}', String(QUIZ_LEVELS.length))}
+                  </span>
+                </span>
+                <h3>{title}</h3>
+                <p>{quizLabel(quiz.labels, lang)?.text}</p>
+                <span className="quiz-card-meta">
+                  {best && (
+                    <span className="quiz-card-best" title={`${copy.levels[best.level] || ''} · ${copy.best.replace('{s}', formatBest(best))}`}>
+                      ★ {formatBest(best)}
+                    </span>
+                  )}
+                  {copy.questionsCount.replace('{n}', String(quizQuestionsCount(quiz)))}
+                  {!finished && <Arrow />}
                 </span>
               </span>
-              <h3>{quizLabel(quiz.labels, lang)?.title}</h3>
-              <p>{quizLabel(quiz.labels, lang)?.text}</p>
-              <span className="quiz-card-meta">
-                {best && (
-                  <span className="quiz-card-best" title={`${copy.levels[best.level] || ''} · ${copy.best.replace('{s}', formatBest(best))}`}>
-                    ★ {formatBest(best)}
-                  </span>
-                )}
-                {copy.questionsCount.replace('{n}', String(quizQuestionsCount(quiz)))} <Arrow />
-              </span>
-            </span>
-          </Link>
+            </>
           );
+          return finished
+            ? <div className="quiz-card is-finished" key={quiz.slug} aria-label={`${title} — ${copy.finished}`}>{body}</div>
+            : <Link className="quiz-card" to={quiz.route} key={quiz.slug}>{body}</Link>;
         })}
       </section>
     </div>

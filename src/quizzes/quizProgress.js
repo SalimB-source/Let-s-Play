@@ -73,6 +73,23 @@ export function levelsDone(progress, quizId) {
   return completedLevels(progress, quizId).length;
 }
 
+/**
+ * Le quizz est-il TERMINÉ — les TROIS niveaux (Facile, Confirmé, Expert)
+ * terminés ? C'est l'état qui le retire du jeu : ses cartes passent en niveaux
+ * de gris avec le texte « TERMINÉ » et ne sont plus des liens (grille
+ * `/quizz`, bannière du quizz du jour, bandeau d'accueil, résultats de
+ * recherche, recherche instantanée de la nav), le lecteur affichant son écran
+ * « terminé » à la place du sélecteur de niveaux.
+ *
+ * La progression lue est l'union de la copie locale (`localStorage`) et de la
+ * copie serveur du compte (`public.quiz_progress`) : vider le stockage du site
+ * (ou supprimer les lignes du compte) rend les quizz à nouveau jouables — il
+ * n'existe pas de bouton de réinitialisation dans l'application.
+ */
+export function isQuizFinished(progress, quizId) {
+  return Boolean(quizId) && levelsDone(progress, quizId) >= QUIZ_LEVELS.length;
+}
+
 /* ------------------------------------------------------------ Local ------- */
 
 /** Progression de l'appareil : `{ [slug]: { easy: true, … } }`. */
@@ -133,12 +150,30 @@ function isMissingTableError(error) {
 }
 
 /**
- * Niveaux terminés côté serveur pour un compte : `{ [slug]: { easy: true } }`,
- * ou `null` si Supabase n'est pas configuré, si la table manque ou si le
- * réseau répond mal — l'appelant garde alors la copie locale.
+ * Cache des progressions serveur déjà demandées, par compte : la nav, la
+ * recherche, l'accueil et la grille lisent la progression sur une même page —
+ * une seule requête les sert toutes. Suivi à chaque niveau déposé
+ * (`pushLevelCompleted`), pour que la copie en cache reflète la partie jouée.
+ */
+const accountProgressCache = new Map();
+
+/**
+ * Niveaux terminés côté serveur pour un compte, mis en cache par compte (une
+ * requête par page chargée, quel que soit le nombre de surfaces qui la lisent).
  */
 export async function fetchAccountProgress(userId) {
   if (!supabase || !userId) return null;
+  const key = String(userId);
+  if (!accountProgressCache.has(key)) accountProgressCache.set(key, loadAccountProgress(userId));
+  return accountProgressCache.get(key);
+}
+
+/**
+ * La requête elle-même : `{ [slug]: { easy: true } }`, ou `null` si Supabase
+ * n'est pas configuré, si la table manque ou si le réseau répond mal —
+ * l'appelant garde alors la copie locale.
+ */
+async function loadAccountProgress(userId) {
   try {
     const { data, error } = await supabase
       .from(QUIZ_PROGRESS_TABLE)
@@ -169,7 +204,13 @@ export async function pushLevelCompleted(userId, quizId, level) {
         { user_id: userId, quiz_id: quizId, level_id: level },
         { onConflict: 'user_id,quiz_id,level_id', ignoreDuplicates: true },
       );
-    return !error;
+    if (error) return false;
+    // Le cache suit la partie jouée : les surfaces qui relisent la progression
+    // (nav, recherche, accueil) voient le niveau terminé sans requête.
+    accountProgressCache.get(String(userId))?.then((progress) => {
+      if (progress) mergeProgress(progress, { [quizId]: { [level]: true } });
+    });
+    return true;
   } catch (e) {
     return false;
   }
