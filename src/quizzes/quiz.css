@@ -84,17 +84,39 @@
 }
 .quiz-player-intro h1 { margin: 6px 0 10px; font: 800 clamp(26px, 4vw, 42px)/1.1 var(--display); text-transform: uppercase; }
 .quiz-player-intro p { color: var(--muted); margin-bottom: 20px; }
+.quiz-player-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
 
 .quiz-progress { height: 6px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 10px; }
 .quiz-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--cyan)); transition: width .25s; }
 .quiz-progress-label { margin: 0 0 18px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
 /* Minuteur : 15 secondes par question, rouge dans les 3 dernières. */
-.quiz-timer { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
+/* Barre du haut pendant la partie : compte à rebours, verdict de la partie en
+   cours (✓ / ✗, la même information que les sons) et bouton son. */
+.quiz-hud { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
+.quiz-timer { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
 .quiz-timer-count { min-width: 4ch; color: var(--cyan); font: 700 15px var(--mono); }
 .quiz-timer-track { flex: 1; height: 6px; background: var(--line); overflow: hidden; }
 .quiz-timer-track i { display: block; height: 100%; background: var(--cyan); transition: width .1s linear; }
 .quiz-timer.is-low .quiz-timer-count, .quiz-timer.is-low .quiz-timer-track i { color: #f87171; background: #f87171; }
 .quiz-timer.is-low .quiz-timer-count { background: none; }
+
+.quiz-live { display: flex; align-items: center; gap: 10px; margin: 0; font: 700 13px var(--mono); }
+.quiz-live-item--right { color: #34d399; }
+.quiz-live-item--wrong { color: #f87171; }
+
+/* Bouton son du lecteur (🔊 / 🔇) : discret, mais avec une cible tactile de
+   40 px et un état `aria-pressed` pour les lecteurs d'écran. */
+.quiz-sound-toggle {
+  flex: none; width: 40px; height: 40px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); font-size: 19px; line-height: 1;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: border-color .15s, background .15s, opacity .15s;
+}
+.quiz-sound-toggle:hover { border-color: var(--cyan); background: rgba(34, 211, 238, .08); }
+.quiz-sound-toggle.is-muted { opacity: .55; }
+.quiz-sound-toggle:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 
 .quiz-question { margin: 0 0 22px; font: 700 clamp(20px, 3vw, 28px)/1.25 var(--display); }
 

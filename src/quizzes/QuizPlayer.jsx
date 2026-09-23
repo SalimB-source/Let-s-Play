@@ -7,8 +7,37 @@ import { quizLabel } from '../quizzesData';
 import { submitQuizAttempt, writeLocalBest } from './quizApi';
 import QuizChallenge from './QuizChallenge';
 import { QUESTION_TIME, dayNumber, gradeQuiz, prepareQuiz } from './engine';
+import {
+  playQuizAnswerSound,
+  quizSoundEnabled,
+  setQuizSoundEnabled,
+  startQuizClock,
+  stopQuizClock,
+  unlockQuizAudio,
+  updateQuizClock,
+} from './quizSounds';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
+
+/**
+ * Bouton son du lecteur : 🔊 / 🔇 avec l'état lu par les lecteurs d'écran
+ * (`aria-pressed`), libellé = l'action proposée. La préférence est celle de
+ * l'appareil (`./quizSounds`), partagée par tous les quizz.
+ */
+function SoundToggle({ on, label, onToggle }) {
+  return (
+    <button
+      type="button"
+      className={`quiz-sound-toggle${on ? '' : ' is-muted'}`}
+      aria-pressed={on}
+      aria-label={label}
+      title={label}
+      onClick={onToggle}
+    >
+      <span aria-hidden="true">{on ? '🔊' : '🔇'}</span>
+    </button>
+  );
+}
 
 // Repli anglais : le rendu ne doit jamais casser si une clé manque dans une
 // langue (même garde-fou que le reste du site).
@@ -19,6 +48,8 @@ const FALLBACK = {
   readSource: 'Read the related story', questionsCount: '{n} questions', dailyTag: 'Daily quiz',
   retryMistakes: 'Retry my mistakes', reviewTag: 'REVIEW ROUND',
   timeUp: 'Time up', timeLeft: 'Time remaining',
+  soundMute: 'Mute the quiz sounds', soundUnmute: 'Turn the quiz sounds back on',
+  correctCount: 'Correct answers', wrongCount: 'Wrong answers',
   tiers: { rookie: 'NOVICE', player: 'PLAYER', veteran: 'VETERAN', legend: 'LEGEND' },
   difficulty: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
@@ -36,16 +67,26 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   const [result, setResult] = useState(null);
   const [review, setReview] = useState(false);
   const [remainingMs, setRemainingMs] = useState(() => QUESTION_TIME.seconds * 1000);
+  // Son du quizz (tick-tack + verdicts) : préférence de l'appareil, et
+  // compteur de la partie en cours — le son dit ce que l'écran ne montre pas,
+  // puisque la question suivante s'affiche aussitôt ; le compteur donne la
+  // même information sans le son (et pour les lecteurs d'écran).
+  const [soundOn, setSoundOn] = useState(() => quizSoundEnabled());
+  const [live, setLive] = useState({ right: 0, wrong: 0 });
   const trackedFor = useRef(null);
   const commitRef = useRef(null);
 
   const start = () => {
+    // Geste utilisateur : c'est ici que le contexte audio s'ouvre, sinon le
+    // premier battement (une seconde plus tard) n'aurait pas le droit de jouer.
+    unlockQuizAudio();
     // Quizz du jour : même mélange pour tout le monde (graine = numéro du jour).
     setPrepared(prepareQuiz(quiz, daily ? dayNumber(new Date()) : null));
     setAnswers({});
     setIndex(0);
     setResult(null);
     setReview(false);
+    setLive({ right: 0, wrong: 0 });
     setPhase('play');
   };
 
@@ -54,17 +95,24 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   const startReview = () => {
     const missed = (result?.detail || []).filter((entry) => !entry.correct).map((entry) => entry.question);
     if (!missed.length) return;
+    unlockQuizAudio();
     setPrepared({ ...prepared, questions: missed });
     setAnswers({});
     setIndex(0);
     setResult(null);
     setReview(true);
+    setLive({ right: 0, wrong: 0 });
     setPhase('play');
   };
 
   // Valide une réponse. `choice` vaut null quand le minuteur expire :
   // la question est alors comptée comme ratée (aucune réponse enregistrée).
   const pick = (question, choice) => {
+    const correct = Boolean(choice && choice.correct);
+    // Verdict sonore + compteur : la bonne réponse monte (do–mi–sol), la
+    // mauvaise descend, et le temps écoulé ajoute sa note grave.
+    playQuizAnswerSound(correct, { timeout: !choice });
+    setLive((previous) => ({ right: previous.right + (correct ? 1 : 0), wrong: previous.wrong + (correct ? 0 : 1) }));
     const nextAnswers = choice ? { ...answers, [question.id]: choice.id } : { ...answers };
     setAnswers(nextAnswers);
     if (index + 1 < prepared.questions.length) {
@@ -100,22 +148,31 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
 
   // Minuteur de QUESTION_TIME secondes par question : à zéro, la question
   // avance sans réponse (comptée ratée). Relancé à chaque nouvelle question.
+  // Le tick-tack (`./quizSounds`) suit le même budget : il démarre avec la
+  // question, reçoit le temps restant à chaque rafraîchissement et s'arrête
+  // avec le minuteur (nettoyage d'effet = fin de question, de partie, ou
+  // démontage du lecteur).
   useEffect(() => {
     if (phase !== 'play' || !prepared) return undefined;
     const budget = QUESTION_TIME.seconds * 1000;
     const deadline = Date.now() + budget;
     setRemainingMs(budget);
+    startQuizClock(budget);
     const id = window.setInterval(() => {
       const left = deadline - Date.now();
       if (left > 0) {
         setRemainingMs(left);
+        updateQuizClock(left, budget);
         return;
       }
       window.clearInterval(id);
       setRemainingMs(0);
       commitRef.current(prepared.questions[index], null);
     }, 100);
-    return () => window.clearInterval(id);
+    return () => {
+      window.clearInterval(id);
+      stopQuizClock();
+    };
   }, [phase, index, prepared]);
 
   if (phase === 'intro' || !prepared) {
@@ -131,7 +188,16 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
           </div>
           <h1>{meta.title}</h1>
           {meta.text ? <p>{meta.text}</p> : null}
-          <button type="button" className="button button-yellow" onClick={start}>{copy.start} <Arrow /></button>
+          <div className="quiz-player-actions">
+            <button type="button" className="button button-yellow" onClick={start}>{copy.start} <Arrow /></button>
+            {/* Réglage accessible avant de lancer la partie : le tick-tack
+                démarre dès « Commencer ». */}
+            <SoundToggle
+              on={soundOn}
+              label={soundOn ? copy.soundMute : copy.soundUnmute}
+              onToggle={() => setSoundOn(setQuizSoundEnabled(!soundOn))}
+            />
+          </div>
         </div>
       </div>
     );
@@ -144,9 +210,22 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
         <div className="quiz-progress" role="progressbar" aria-valuemin={1} aria-valuemax={prepared.questions.length} aria-valuenow={index + 1}>
           <span style={{ width: `${((index + 1) / prepared.questions.length) * 100}%` }} />
         </div>
-        <div className={`quiz-timer${remainingMs < 3000 ? ' is-low' : ''}`} role="timer" aria-label={copy.timeLeft}>
-          <span className="quiz-timer-count">{Math.ceil(remainingMs / 1000)}s</span>
-          <span className="quiz-timer-track"><i style={{ width: `${(remainingMs / (QUESTION_TIME.seconds * 1000)) * 100}%` }} /></span>
+        <div className="quiz-hud">
+          <div className={`quiz-timer${remainingMs < 3000 ? ' is-low' : ''}`} role="timer" aria-label={copy.timeLeft}>
+            <span className="quiz-timer-count">{Math.ceil(remainingMs / 1000)}s</span>
+            <span className="quiz-timer-track"><i style={{ width: `${(remainingMs / (QUESTION_TIME.seconds * 1000)) * 100}%` }} /></span>
+          </div>
+          {/* Même information que le son, sans le son : le verdict s'affiche
+              aussi (et se lit) — la question suivante arrive immédiatement. */}
+          <p className="quiz-live" aria-live="polite" aria-label={`${copy.correctCount} : ${live.right}, ${copy.wrongCount} : ${live.wrong}`}>
+            <span className="quiz-live-item quiz-live-item--right" aria-hidden="true">✓ {live.right}</span>
+            <span className="quiz-live-item quiz-live-item--wrong" aria-hidden="true">✗ {live.wrong}</span>
+          </p>
+          <SoundToggle
+            on={soundOn}
+            label={soundOn ? copy.soundMute : copy.soundUnmute}
+            onToggle={() => setSoundOn(setQuizSoundEnabled(!soundOn))}
+          />
         </div>
         <p className="quiz-progress-label">{copy.question} {index + 1} {copy.of} {prepared.questions.length}</p>
         {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
