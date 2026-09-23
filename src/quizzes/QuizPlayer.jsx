@@ -17,6 +17,7 @@ const FALLBACK = {
   score: '{correct}/{total} correct answers', perfect: 'FLAWLESS!', corrections: 'ANSWERS',
   yourAnswer: 'Your answer', rightAnswer: 'Answer', replay: 'Play again', others: 'All quizzes',
   readSource: 'Read the related story', questionsCount: '{n} questions', dailyTag: 'Daily quiz',
+  retryMistakes: 'Retry my mistakes', reviewTag: 'REVIEW ROUND',
   tiers: { rookie: 'NOVICE', player: 'PLAYER', veteran: 'VETERAN', legend: 'LEGEND' },
   difficulty: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
@@ -32,6 +33,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
+  const [review, setReview] = useState(false);
   const trackedFor = useRef(null);
 
   const start = () => {
@@ -40,6 +42,20 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     setAnswers({});
     setIndex(0);
     setResult(null);
+    setReview(false);
+    setPhase('play');
+  };
+
+  // Révision : ne rejoue que les questions ratées au tour précédent.
+  // C'est de l'entraînement : ni succès, ni record, ni classement ne bougent.
+  const startReview = () => {
+    const missed = (result?.detail || []).filter((entry) => !entry.correct).map((entry) => entry.question);
+    if (!missed.length) return;
+    setPrepared({ ...prepared, questions: missed });
+    setAnswers({});
+    setIndex(0);
+    setResult(null);
+    setReview(true);
     setPhase('play');
   };
 
@@ -55,7 +71,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     setPhase('result');
     // Une seule fois par partie : le moteur des succès crédite l'action
     // (quizz joué, sans-faute, jour de quizz du jour pour la série).
-    if (trackedFor.current !== prepared) {
+    if (!review && trackedFor.current !== prepared) {
       trackedFor.current = prepared;
       track('quiz_completed', { id: quiz.slug, perfect: graded.perfect, daily });
       // Le score : meilleur score de l'appareil pour tout le monde, et
@@ -100,6 +116,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
           <span style={{ width: `${((index + 1) / prepared.questions.length) * 100}%` }} />
         </div>
         <p className="quiz-progress-label">{copy.question} {index + 1} {copy.of} {prepared.questions.length}</p>
+        {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         <h2 className="quiz-question">{quizLabel(question.q, lang)}</h2>
         <div className="quiz-choices">
           {question.choices.map((choice) => (
@@ -121,8 +138,12 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
         <h2 className="quiz-result-tier">{copy.tiers[result.tier] || result.tier}</h2>
         <p className="quiz-result-score">{copy.score.replace('{correct}', String(result.correct)).replace('{total}', String(result.total))}</p>
         {result.perfect && <span className="quiz-result-perfect">★ {copy.perfect}</span>}
+        {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         <div className="quiz-result-actions">
-          <button type="button" className="button button-yellow" onClick={start}>{copy.replay}</button>
+          {result.correct < result.total && (
+            <button type="button" className="button button-yellow" onClick={startReview}>{copy.retryMistakes}</button>
+          )}
+          <button type="button" className="button button-ghost" onClick={start}>{copy.replay}</button>
           <Link className="button button-ghost" to="/quizz">{copy.others} <Arrow /></Link>
           {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
         </div>

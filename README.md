@@ -693,6 +693,9 @@ mais la structure de données les accepte déjà.
   au catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi
   envoyé), Sans faute (argent), Tour complet (or), Semaine parfaite (platine).
   L'XP reste celle des succès, comme partout sur le site.
+- **Révision des erreurs** — depuis l'écran de résultat, « Rejouer mes erreurs »
+  ne rejoue que les questions ratées (tour d'entraînement : succès, record,
+  série et classement ne bougent pas, vérifié par `check:quiz`).
 - **Défi entre amis** — depuis l'écran de résultat, `QuizChallenge` envoie à
   un ami (messagerie 1-à-1 existante, mode démo ou Supabase) un message
   pré-rempli avec le score à battre ; sans compte ni backend, un message

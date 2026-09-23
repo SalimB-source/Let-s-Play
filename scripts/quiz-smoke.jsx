@@ -242,5 +242,53 @@ export async function checkQuiz(assert) {
   );
   await act(async () => bestRoot.unmount());
 
-  console.log('QUIZZ : moteur (jour, mélange, barème, série), partie complète 8/8 + succès crédités, défi démo, grille en FR/EN/AR, record + compte à rebours.');
+  /* ------------------------- 6. Révision des erreurs ------------------------ */
+  seedLang('fr');
+  const revNode = document.createElement('div');
+  document.body.append(revNode);
+  const revRoot = createRoot(revNode);
+  await act(async () => revRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <AchievementProvider>
+          <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
+            <Routes>
+              <Route path="/quizz" element={<QuizzesPage />} />
+              <Route path="/quizz/:slug" element={<QuizPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AchievementProvider>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+
+  // Premier tour tout faux : à chaque question, un choix qui n'est pas le bon.
+  await click([...revNode.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
+  for (let step = 0; step < quiz.questions.length; step += 1) {
+    const prompt = revNode.querySelector('.quiz-question')?.textContent || '';
+    const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    const wrongText = quizLabel(question.choices[(question.answer + 1) % question.choices.length], 'fr');
+    await click([...revNode.querySelectorAll('.quiz-choice')].find((el) => el.textContent === wrongText));
+  }
+  assert.ok(revNode.textContent.includes('0/8 bonnes réponses'), 'premier tour tout faux : 0/8');
+
+  // « Rejouer mes erreurs » : les huit questions ratées, en tour de révision.
+  await click([...revNode.querySelectorAll('button')].find((el) => el.textContent.includes('Rejouer mes erreurs')));
+  assert.ok(revNode.textContent.includes('TOUR DE RÉVISION'), 'tour de révision annoncé');
+  for (let step = 0; step < quiz.questions.length; step += 1) {
+    const prompt = revNode.querySelector('.quiz-question')?.textContent || '';
+    const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    const rightText = quizLabel(question.choices[question.answer], 'fr');
+    await click([...revNode.querySelectorAll('.quiz-choice')].find((el) => el.textContent === rightText));
+  }
+  assert.ok(revNode.textContent.includes('8/8 bonnes réponses'), 'révision réussie : 8/8');
+
+  // La révision est de l'entraînement : ni seconde partie, ni sans-faute crédité.
+  const revStored = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  assert.equal(revStored?.counters?.quizzes_completed, 1, 'la révision ne compte pas une seconde partie');
+  assert.ok(!(revStored?.sets?.perfect_quizzes || []).includes(slug), 'le 8/8 de révision ne crédite pas « Sans faute »');
+
+  await act(async () => revRoot.unmount());
+
+  console.log('QUIZZ : moteur, partie 8/8 + succès, défi démo, grille FR/EN/AR, record + compte à rebours, révision des erreurs sans double comptage.');
 }
