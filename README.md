@@ -694,6 +694,13 @@ Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 `/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
 mais la structure de données les accepte déjà.
 
+- **Grille** — les huit quizz s'affichent sur **trois colonnes** stables sur
+  bureau (`repeat(3, minmax(0, 1fr))` : le nombre ne bascule plus selon la
+  largeur de la fenêtre comme avec l'`auto-fill` d'avant), deux sur tablette
+  (≤ 900 px), une sur mobile (≤ 620 px) ; le gap passe à 16 px sous 1000 px
+  pour préserver la largeur des cartes. Les titres des cartes suivent une
+  taille fluide `clamp(16px → 18px)` avec interligne 1.3, `text-wrap: balance`
+  (coupe harmonieuse sur deux lignes) et `overflow-wrap: break-word` en garde-fou.
 - **Données** — `src/quizzesData.js` : huit quizz de huit questions (culture
   générale, rétro, souls-like, RPG, e-sport, studios, tech et cinéma), la
   plupart liés à un article maison (`source`). Ajouter un quizz =
