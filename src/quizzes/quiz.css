@@ -26,6 +26,7 @@
 .quiz-chip--easy { color: #60a5fa; border-color: rgba(96, 165, 250, .4); }
 .quiz-chip--medium { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
 .quiz-chip--hard { color: #f87171; border-color: rgba(248, 113, 113, .45); }
+.quiz-chip--survival { color: #fb7185; border-color: rgba(251, 113, 133, .48); }
 .quiz-chip--daily, .quiz-chip--streak { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
 .quiz-chip--done { color: var(--muted); border-color: var(--line-strong); }
 /* Progression des niveaux (grille + écran d'intro) : neutre, puis vert une
@@ -103,6 +104,65 @@
 .quiz-card-copy p { margin: 0; color: var(--muted); font-size: 14px; }
 .quiz-card-meta { margin-top: auto; padding-top: 10px; color: var(--cyan); font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
 .quiz-card-best { color: var(--yellow); border: 1px solid rgba(255, 214, 25, .4); padding: 2px 7px; }
+
+/* ---- Catégories de la page Quizz ---------------------------------------- */
+.quiz-category { margin-top: 54px; }
+.quiz-category-heading { margin-bottom: 22px; }
+.quiz-category-heading .section-label { margin-bottom: 10px; }
+.quiz-category-heading h2 {
+  margin: 0 0 8px;
+  font: 800 clamp(24px, 3.4vw, 38px)/1.08 var(--display);
+  letter-spacing: .015em; text-transform: uppercase;
+}
+.quiz-category-heading p { max-width: 680px; margin: 0; color: var(--muted); }
+.quiz-category--survival { margin-top: 68px; }
+.quiz-survival-card {
+  position: relative; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 26px;
+  padding: clamp(18px, 3vw, 30px);
+  color: var(--ink); text-decoration: none;
+  background: radial-gradient(ellipse at 88% 50%, rgba(248, 113, 133, .14), transparent 42%), linear-gradient(115deg, rgba(124, 58, 237, .12), rgba(10, 11, 26, .2)), var(--panel);
+  border: 1px solid rgba(248, 113, 133, .32);
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.quiz-survival-card:hover {
+  color: var(--ink); border-color: rgba(248, 113, 133, .7); transform: translateY(-3px);
+  box-shadow: 0 18px 42px rgba(5, 6, 15, .45), 0 0 28px rgba(248, 113, 133, .08);
+}
+.quiz-survival-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; min-width: 0; }
+.quiz-survival-copy .quiz-chips { margin: 0; }
+.quiz-survival-rules { display: flex; flex-wrap: wrap; gap: 8px; }
+.quiz-survival-card .quiz-survival-rules span {
+  padding: 6px 9px; border: 1px solid var(--line); color: var(--muted);
+  font: 600 10px var(--mono); letter-spacing: .08em; text-transform: uppercase;
+}
+.quiz-survival-card .arrow-link { color: var(--yellow); font-weight: 700; }
+.quiz-survival-visual {
+  min-height: 154px; display: grid; place-content: center; justify-items: center;
+  background: rgba(7, 8, 20, .38); border: 1px solid rgba(248, 113, 133, .2);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+.quiz-survival-infinity {
+  color: var(--yellow); font: 900 100px/.75 var(--display);
+  text-shadow: 0 0 30px rgba(255, 214, 25, .28); transition: transform .25s;
+}
+.quiz-survival-card:hover .quiz-survival-infinity { transform: scale(1.08); }
+.quiz-survival-hearts { margin-top: 12px; color: #fb7185; font: 700 15px var(--mono); letter-spacing: .3em; text-shadow: 0 0 12px rgba(251, 113, 133, .45); }
+.quiz-survival-intro h2 { margin-top: 8px; }
+.quiz-survival-intro .quiz-survival-rules {
+  list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 8px;
+}
+.quiz-survival-intro .quiz-survival-rules li {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
+  font: 500 12px var(--mono); letter-spacing: .05em;
+}
+.quiz-survival-intro .quiz-survival-rules li > span { min-width: 28px; color: #fb7185; font-weight: 800; }
+.quiz-survival-best { margin: 16px 0 0; color: var(--yellow); font: 700 12px var(--mono); letter-spacing: .08em; }
+.quiz-survival-final-label { margin: 18px 0 0; color: var(--dim); font: 700 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.quiz-survival-result { border-color: rgba(248, 113, 133, .4); background: linear-gradient(135deg, rgba(248, 113, 133, .06), rgba(124, 58, 237, .08)), var(--panel); }
+.quiz-survival-result .quiz-result-tier { color: #fecdd3; }
 
 /* ---- Le joueur ----------------------------------------------------------- */
 .quiz-player {
@@ -578,6 +638,9 @@
 }
 @media (max-width: 620px) {
   .quiz-grid { grid-template-columns: 1fr; }
+  .quiz-survival-card { grid-template-columns: 1fr; gap: 18px; }
+  .quiz-survival-visual { min-height: 108px; }
+  .quiz-survival-infinity { font-size: 76px; }
 }
 
 @media (max-width: 860px) {

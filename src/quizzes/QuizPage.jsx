@@ -7,6 +7,7 @@ import { quizBySlug, quizLabel, quizzes } from '../quizzesData';
 import { dailyQuizFor } from './engine';
 import QuizLeaderboard from './QuizLeaderboard';
 import QuizPlayer from './QuizPlayer';
+import SurvivalPage from './SurvivalPage';
 
 /**
  * Une partie de quizz : `/quizz/:slug` (alias anglais `/quiz/:slug`).
@@ -22,6 +23,7 @@ export default function QuizPage() {
   // suivi par le classement, qui affiche le palier choisi.
   const [level, setLevel] = useState('easy');
   const quiz = quizBySlug(slug);
+  if (slug === 'survival') return <SurvivalPage />;
   if (!quiz) return <NotFound />;
 
   const copy = { dailyTag: 'Daily quiz', commentTitle: 'Comments', ...((t.quiz || {}).page || {}) };

@@ -8,14 +8,28 @@ import { QUIZ_LEVELS, quizzes, quizLabel, quizQuestionsCount } from '../quizzesD
 import { readLocalBest, formatBest } from './quizApi';
 import { isQuizFinished, levelsDone } from './quizProgress';
 import { useQuizProgress } from './useQuizProgress';
-import { bestDayRun, dailyQuizFor } from './engine';
+import { bestDayRun, dailyQuizFor, survivalQuestionPool } from './engine';
+
+const SURVIVAL_QUESTION_COUNT = survivalQuestionPool(quizzes).length;
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
 const FALLBACK = {
   label: 'QUIZZES / GAMING', titleA: 'PROVE YOUR', titleB: 'GAME KNOWLEDGE.',
   intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport, studios, tech, cinema, legendary consoles and PC classics. Every quiz plays in three levels — easy opens the doors, seasoned then expert unlock as you go.',
+  categoryMainEyebrow: 'CATEGORY 01 / CLASSICS',
+  categoryMainCount: '{n} quizzes',
+  categoryMainTitle: 'Gaming / tech / cinema quizzes',
+  categoryMainIntro: 'The 12 existing quizzes, gathered in one category.',
+  categorySurvivalInfinite: 'INFINITE',
+  categorySurvivalEyebrow: 'CATEGORY 02 / ENDLESS',
+  categorySurvivalTitle: 'Survival mode',
+  categorySurvivalIntro: 'Three lives. One mistake costs a heart. All questions shuffle and recycle without end.',
+  categorySurvivalLives: '3 lives', categorySurvivalTimer: '10 sec / question',
+  categorySurvivalTimeout: 'Timeout = mistake', categorySurvivalPool: '{n} questions in the global pool',
+  categorySurvivalPlay: 'Enter Survival mode',
   dailyEyebrow: 'Daily quiz', dailyHint: 'One quiz picked every day — come back tomorrow to keep your streak.',
+
   streak: 'Streak', questionsCount: '{n} questions', play: 'Play',
   nextIn: 'New quiz in {t}', best: 'Best: {s}',
   levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
@@ -115,51 +129,84 @@ export default function QuizzesPage() {
         </section>
       )}
 
-      <section className="quiz-grid wrap">
-        {quizzes.map((quiz) => {
-          // Meilleure partie de l'appareil, tous niveaux confondus : le record
-          // affiché nomme son niveau (`title`), et la pastille à côté rappelle
-          // la progression — aucune difficulté n'est imposée par la grille,
-          // tous les quizz sont jouables dès l'arrivée.
-          const best = readLocalBest(quiz.slug);
-          const done = levelsDone(progress, quiz.slug);
-          // Les trois niveaux terminés : la carte passe en niveaux de gris,
-          // affiche « TERMINÉ » et n'est plus un lien — le quizz est verrouillé.
-          const finished = done === QUIZ_LEVELS.length;
-          const title = quizLabel(quiz.labels, lang)?.title;
-          const body = (
-            <>
-              <span className="quiz-card-media hud-frame">
-                <VideoThumb id={quiz.videoId} lead={quiz.image} alt={title} quality="hq" />
-                {finished && <span className="quiz-finished-flag">✓ {copy.finished}</span>}
-              </span>
-              <span className="quiz-card-copy">
-                <span className="quiz-chips">
-                  <span className="quiz-chip">{quiz.tag}</span>
-                  <span className={`quiz-chip quiz-chip--levels${finished ? ' is-complete' : ''}`}>
-                    {finished
-                      ? `✓ ${copy.finished}`
-                      : copy.levelProgress.replace('{done}', String(done)).replace('{total}', String(QUIZ_LEVELS.length))}
+      <section className="quiz-category quiz-category--main wrap" aria-labelledby="quiz-category-main-title">
+        <div className="quiz-category-heading">
+          <div className="section-label"><span>{copy.categoryMainEyebrow}</span><span>{copy.categoryMainCount.replace('{n}', String(quizzes.length))}</span></div>
+          <h2 id="quiz-category-main-title">{copy.categoryMainTitle}</h2>
+          <p>{copy.categoryMainIntro}</p>
+        </div>
+        <div className="quiz-grid">
+          {quizzes.map((quiz) => {
+            // Meilleure partie de l'appareil, tous niveaux confondus : le record
+            // affiché nomme son niveau (`title`), et la pastille à côté rappelle
+            // la progression — aucune difficulté n'est imposée par la grille,
+            // tous les quizz sont jouables dès l'arrivée.
+            const best = readLocalBest(quiz.slug);
+            const done = levelsDone(progress, quiz.slug);
+            // Les trois niveaux terminés : la carte passe en niveaux de gris,
+            // affiche « TERMINÉ » et n'est plus un lien — le quizz est verrouillé.
+            const finished = done === QUIZ_LEVELS.length;
+            const title = quizLabel(quiz.labels, lang)?.title;
+            const body = (
+              <>
+                <span className="quiz-card-media hud-frame">
+                  <VideoThumb id={quiz.videoId} lead={quiz.image} alt={title} quality="hq" />
+                  {finished && <span className="quiz-finished-flag">✓ {copy.finished}</span>}
+                </span>
+                <span className="quiz-card-copy">
+                  <span className="quiz-chips">
+                    <span className="quiz-chip">{quiz.tag}</span>
+                    <span className={`quiz-chip quiz-chip--levels${finished ? ' is-complete' : ''}`}>
+                      {finished
+                        ? `✓ ${copy.finished}`
+                        : copy.levelProgress.replace('{done}', String(done)).replace('{total}', String(QUIZ_LEVELS.length))}
+                    </span>
+                  </span>
+                  <h3>{title}</h3>
+                  <p>{quizLabel(quiz.labels, lang)?.text}</p>
+                  <span className="quiz-card-meta">
+                    {best && (
+                      <span className="quiz-card-best" title={`${copy.levels[best.level] || ''} · ${copy.best.replace('{s}', formatBest(best))}`}>
+                        ★ {formatBest(best)}
+                      </span>
+                    )}
+                    {copy.questionsCount.replace('{n}', String(quizQuestionsCount(quiz)))}
+                    {!finished && <Arrow />}
                   </span>
                 </span>
-                <h3>{title}</h3>
-                <p>{quizLabel(quiz.labels, lang)?.text}</p>
-                <span className="quiz-card-meta">
-                  {best && (
-                    <span className="quiz-card-best" title={`${copy.levels[best.level] || ''} · ${copy.best.replace('{s}', formatBest(best))}`}>
-                      ★ {formatBest(best)}
-                    </span>
-                  )}
-                  {copy.questionsCount.replace('{n}', String(quizQuestionsCount(quiz)))}
-                  {!finished && <Arrow />}
-                </span>
-              </span>
-            </>
-          );
-          return finished
-            ? <div className="quiz-card is-finished" key={quiz.slug} aria-label={`${title} — ${copy.finished}`}>{body}</div>
-            : <Link className="quiz-card" to={quiz.route} key={quiz.slug}>{body}</Link>;
-        })}
+              </>
+            );
+            return finished
+              ? <div className="quiz-card is-finished" key={quiz.slug} aria-label={`${title} — ${copy.finished}`}>{body}</div>
+              : <Link className="quiz-card" to={quiz.route} key={quiz.slug}>{body}</Link>;
+          })}
+        </div>
+      </section>
+
+      <section className="quiz-category quiz-category--survival wrap" aria-labelledby="quiz-category-survival-title">
+        <div className="quiz-category-heading">
+          <div className="section-label"><span>{copy.categorySurvivalEyebrow}</span><span>♥♥♥</span></div>
+          <h2 id="quiz-category-survival-title">{copy.categorySurvivalTitle}</h2>
+          <p>{copy.categorySurvivalIntro}</p>
+        </div>
+        <Link className="quiz-survival-card hud-frame" to="/quizz/survival">
+          <span className="quiz-survival-copy">
+            <span className="quiz-chips">
+              <span className="quiz-chip quiz-chip--count">{copy.categorySurvivalPool.replace('{n}', String(SURVIVAL_QUESTION_COUNT))}</span>
+              <span className="quiz-chip quiz-chip--survival">∞ {copy.categorySurvivalInfinite}</span>
+            </span>
+            <span className="quiz-survival-rules">
+              <span>♥ {copy.categorySurvivalLives}</span>
+              <span>⏱ {copy.categorySurvivalTimer}</span>
+              <span>⌛ {copy.categorySurvivalTimeout}</span>
+            </span>
+            <span className="arrow-link">{copy.categorySurvivalPlay} <Arrow /></span>
+          </span>
+          <span className="quiz-survival-visual" aria-hidden="true">
+            <span className="quiz-survival-infinity">∞</span>
+            <span className="quiz-survival-hearts">♥♥♥</span>
+          </span>
+        </Link>
       </section>
     </div>
   );
