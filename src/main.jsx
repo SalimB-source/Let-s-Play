@@ -13,6 +13,7 @@ import './partners.css';
 import './reels-carousel.css';
 import './dossier-article.css';
 import './achievements/achievements.css';
+import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
 import './social/social.css';
@@ -45,6 +46,8 @@ import DossierXbox360 from './pages/DossierXbox360';
 import DossierPlayStation2 from './pages/DossierPlayStation2';
 import Partners from './pages/Partners';
 import Search from './pages/Search';
+import QuizzesPage from './quizzes/QuizzesPage';
+import QuizPage from './quizzes/QuizPage';
 import EventAlgerieTelecom from './pages/EventAlgerieTelecom';
 import EventOoredoo from './pages/EventOoredoo';
 import EventArena from './pages/EventArena';
@@ -133,6 +136,14 @@ function App() {
             <Route path="/events/7ouma-arena" element={<EventArena />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/search" element={<Search />} />
+            {/* Quizz gaming : grille + quizz du jour (`/quizz`), partie par
+                slug, alias anglais `/quiz` comme `/calendar` pour le
+                calendrier. */}
+            <Route path="/quizz" element={<QuizzesPage />} />
+            <Route path="/quiz" element={<QuizzesPage />} />
+            <Route path="/quizzes" element={<QuizzesPage />} />
+            <Route path="/quizz/:slug" element={<QuizPage />} />
+            <Route path="/quiz/:slug" element={<QuizPage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />

@@ -23,6 +23,8 @@ export const SECTION_ROUTES = {
   '/calendrier': 'calendrier',
   '/calendar': 'calendrier',
   '/search': 'search',
+  '/quizz': 'quizzes',
+  '/quiz': 'quizzes',
   '/auth': 'account',
   '/register': 'account',
   '/profile': 'account',

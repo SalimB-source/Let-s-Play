@@ -224,6 +224,19 @@ export default function Home() {
         </div>
       </section>
 
+      {/* QUIZZ DU JOUR — un quizz choisi chaque jour parmi la sélection :
+          la série quotidienne (succès « Semaine parfaite ») se construit ici. */}
+      <section className="wrap" id="quizz-du-jour">
+        <div className="home-quiz-band">
+          <div className="home-quiz-band-copy">
+            <p className="eyebrow"><span className="live-dot" /> {t.quiz.home.eyebrow}</p>
+            <h2>{t.quiz.home.titleA}<br /><em>{t.quiz.home.titleB}</em></h2>
+            <p>{t.quiz.home.text}</p>
+          </div>
+          <Link className="button button-yellow" to="/quizz">{t.quiz.home.cta} <Arrow /></Link>
+        </div>
+      </section>
+
       <section className="live-section wrap" id="live">
         <div className="section-label"><span>{t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
         <div className="live-head">

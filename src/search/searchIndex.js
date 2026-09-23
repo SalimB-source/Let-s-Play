@@ -1,5 +1,6 @@
 import { gameTests } from '../reviewsData';
 import { gameReleases } from '../releasesData';
+import { quizzes as quizCatalog, quizLabel } from '../quizzesData';
 import { baseUrl as base } from '../data';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 // Les actus du jour générées par le robot rejoignent l’index de recherche.
@@ -51,7 +52,17 @@ const releases = gameReleases.map((game) => ({
   image: game.image ? `${base}${game.image}` : null,
 }));
 
-export const searchIndex = [...news, ...reviews, ...dossiers, ...releases];
+const quizzes = quizCatalog.map((quiz) => ({
+  type: 'quiz',
+  title: quizLabel(quiz.labels, 'fr')?.title || quiz.slug,
+  description: quizLabel(quiz.labels, 'fr')?.text || '',
+  route: quiz.route,
+  keywords: quiz.keywords,
+  meta: `${quiz.questions.length} questions`,
+  image: youTubeThumbUrl(quiz.videoId, 'hq'),
+}));
+
+export const searchIndex = [...news, ...reviews, ...dossiers, ...releases, ...quizzes];
 
 export function normalizeSearch(value = '') {
   return String(value).toLocaleLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[’'`]/g, '').replace(/[^\p{Letter}\p{Number}]+/gu, ' ').trim();
@@ -78,4 +89,4 @@ export function searchContent(query) {
   return matches.sort((a, b) => b.score - a.score || a.title.localeCompare(b.title));
 }
 
-export const searchCounts = { news: news.length + autoSearchEntries.length, review: reviews.length, dossier: dossiers.length, release: releases.length };
+export const searchCounts = { news: news.length + autoSearchEntries.length, review: reviews.length, dossier: dossiers.length, release: releases.length, quiz: quizzes.length };

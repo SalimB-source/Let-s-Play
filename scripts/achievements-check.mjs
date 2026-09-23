@@ -366,6 +366,18 @@ for (let index = 1; index <= 30; index += 1) {
   record(play('visit', { day: dayKey(date) }));
 }
 
+// Quizz : les six quizz du site joués huit jours consécutifs en « quizz du
+// jour » (série de sept jours minimum), dont un sans faute — de quoi ouvrir
+// premier quizz, sans faute, tour complet et semaine parfaite.
+[
+  'culture-gaming', 'consoles-retro', 'souls-fromsoftware', 'rpg-legends',
+  'esport-competition', 'studios-legends', 'culture-gaming', 'consoles-retro',
+].forEach((id, index) => {
+  const date = new Date(at(2026, 9, 20));
+  date.setDate(date.getDate() + index);
+  record(play('quiz_completed', { id, perfect: index === 0, daily: true, at: date.toISOString() }));
+});
+
 const finalSummary = summarize(scenario);
 const unreachable = ACHIEVEMENTS.filter((entry) => !finalSummary.items.find((item) => item.id === entry.id)?.unlocked).map((entry) => entry.id);
 check('tous les succès sont débloquables', unreachable.join(', ') || 'aucun', 'aucun');
@@ -534,6 +546,7 @@ const sources = [
   ['src/achievements/AchievementTracker.jsx', 'stateScope !== scopeForUser(id)'],
   ['src/achievements/AchievementTracker.jsx', "track('video_played'"],
   ['src/achievements/AchievementTracker.jsx', 'VIDEO_PLAYED_EVENT'],
+  ['src/quizzes/QuizPlayer.jsx', "track('quiz_completed'"],
   ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
   ['src/achievements/AchievementPopup.jsx', 'dismissNotification(entry.id)'],
   ['src/main.jsx', '<AchievementPopup />'],

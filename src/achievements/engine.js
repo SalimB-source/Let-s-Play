@@ -18,6 +18,7 @@
  * hors navigateur par `npm run check:achievements`.
  */
 import { ACHIEVEMENTS } from './catalog.js';
+import { bestDayRun } from '../quizzes/engine.js';
 
 export const STATE_VERSION = 1;
 
@@ -209,6 +210,15 @@ export function reduce(state, action = {}) {
       next = addToSet(counter(current, 'search_performed'), 'searches', action.query);
       break;
 
+    // Partie de quizz terminée : compteur global + quizz distincts, sans-faute
+    // par quizz, et jour crédité pour la série du « quizz du jour ».
+    case 'quiz_completed': {
+      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', action.id);
+      if (action.perfect) next = addToSet(next, 'perfect_quizzes', action.id);
+      if (action.daily) next = addToSet(next, 'quiz_days', dayKey(at));
+      break;
+    }
+
     case 'account_created':
       next = counter(current, 'account_created');
       break;
@@ -281,6 +291,16 @@ export const METRICS = {
       éditoriales du site, toutes touchées. */
   readAllKinds: (state) =>
     setSize(state, 'news_read') > 0 && setSize(state, 'reviews_read') > 0 && setSize(state, 'dossiers_read') > 0 ? 1 : 0,
+  /** Parties de quizz terminées (toutes confondues). */
+  quizzesCompleted: (state) => counterValue(state, 'quizzes_completed'),
+  /** Quizz distincts joués. */
+  distinctQuizzes: (state) => setSize(state, 'quizzes_played'),
+  /** Quizz distincts terminés sans faute. */
+  perfectQuizzes: (state) => setSize(state, 'perfect_quizzes'),
+  /** Jours différents avec le quizz du jour terminé. */
+  dailyQuizDays: (state) => setSize(state, 'quiz_days'),
+  /** Meilleure série de jours consécutifs de quizz du jour. */
+  dailyQuizStreak: (state) => bestDayRun(state.sets.quiz_days || []),
 };
 
 /** Valeur d'une métrique (0 si la métrique n'existe pas — jamais d'exception). */
