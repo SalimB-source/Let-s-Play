@@ -1019,6 +1019,10 @@ end $$;
 -- ni poser un score hors bornes (0 ≤ score ≤ total et
 -- 100 × mult × score ≤ points ≤ 200 × mult × total vérifiés côté serveur,
 -- le multiplicateur étant déduit du suffixe `:difficulté` de `quiz_id`).
+-- Remise à zéro du classement global (opération de maintenance ponctuelle) :
+-- `supabase/reset-quiz-ranking.sql` vide cette table et rien d'autre — à ne
+-- pas confondre avec ce fichier, qui ne fait qu'installer le schéma.
+
 create table if not exists public.quiz_attempts (
   user_id uuid not null references auth.users(id) on delete cascade,
   quiz_id text not null check (char_length(quiz_id) between 1 and 120),
@@ -1176,61 +1180,10 @@ grant execute on function public.get_quiz_leaderboard(text, integer) to anon, au
 grant execute on function public.get_quiz_global_rank(uuid) to anon, authenticated;
 grant execute on function public.submit_quiz_attempt(text, integer, integer, boolean, integer) to authenticated;
 
--- ----------------------------------------------------------------------------
--- 8b. REMISE À ZÉRO GLOBALE DES QUIZZ (demandée : tous les compteurs à 0)
--- ----------------------------------------------------------------------------
--- Supprime toutes les tentatives (points joueurs → 0, classements vides) et
--- nettoie la progression des succès pour que plus aucune difficulté n'affiche
--- "déjà terminé". Relançable sans risque.
-do $$
-begin
-  if to_regclass('public.quiz_attempts') is not null then
-    execute 'delete from public.quiz_attempts';
-  end if;
-exception when others then
-  raise warning 'Let''s Play : remise à zéro quiz_attempts échouée (%).', sqlerrm;
-end $$;
-
-do $$
-begin
-  if to_regclass('public.player_progress') is not null then
-    update public.player_progress
-       set state = jsonb_set(
-                 jsonb_set(
-                   jsonb_set(
-                     jsonb_set(
-                       jsonb_set(
-                         state
-                         #- '{unlocked,first-quiz}'
-                         #- '{unlocked,perfect-score}'
-                         #- '{unlocked,quiz-tour}'
-                         #- '{unlocked,quiz-week}'
-                         #- '{unlocked,first-challenge}',
-                         '{counters,quizzes_completed}', '0'::jsonb, true
-                       ),
-                       '{counters,challenges_sent}', '0'::jsonb, true
-                     ),
-                     '{sets,quizzes_played}', '[]'::jsonb, true
-                   ),
-                   '{sets,perfect_quizzes}', '[]'::jsonb, true
-                 ),
-                 '{sets,quiz_days}', '[]'::jsonb, true
-               ),
-           updated_at = now();
-    -- Recalcule xp/level à partir du state nettoyé côté app au prochain sync,
-    -- mais on met déjà xp à 0 / level 1 pour que les points joueurs reviennent
-    -- à 0 immédiatement si l'app ne resync pas tout de suite.
-    -- On ne touche qu'aux lignes qui contenaient des données quizz pour éviter
-    -- de pénaliser les joueurs sans quizz : on remet xp/level à 0/1 seulement
-    -- si on vient de nettoyer, sinon on laisse tel quel. Ici on force 0/1 pour
-    -- tous afin de répondre à "même les points de joueurs doivent revenir à 0".
-    -- Si l'on veut conserver les autres succès, commenter les deux lignes ci-dessous
-    -- et laisser le client recalculer.
-    update public.player_progress set xp = 0, level = 1, updated_at = now();
-  end if;
-exception when others then
-  raise warning 'Let''s Play : remise à zéro player_progress quizz échouée (%).', sqlerrm;
-end $$;
+-- Remise à zéro ponctuelle des quizz (classements, compteurs, points
+-- joueurs) : elle ne vit PLUS dans ce fichier. Recoller le schéma ne doit
+-- jamais effacer les données des joueurs — l'opération est dans
+-- `supabase/reset-quiz-ranking.sql`, à exécuter explicitement.
 
 notify pgrst, 'reload schema';
 

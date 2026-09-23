@@ -834,6 +834,21 @@ mais la structure de données les accepte déjà.
   sans backend, la section explique comment la débloquer. Après collage du
   schéma dans le Dashboard Supabase, le tableau de contrôle final affiche les
   lignes 31–33 « OK ».
+- **Remise à zéro des quizz** — `supabase/reset-quiz-ranking.sql`, à coller dans
+  le SQL Editor du Dashboard. Deux niveaux : les étapes 1–3 vident
+  `public.quiz_attempts` (la seule source des deux RPC de classement) et tout
+  le monde redevient « pas encore classé » — rang null, 0 point, 0 quizz,
+  classements de runs vides — sans toucher aux comptes, aux profils, à l'XP ni
+  aux succès ; l'étape 4, **commentée**, va plus loin et remet à zéro les points
+  joueurs (`{quizPoints}` de `player_progress`, succès du groupe « quiz »,
+  compteurs et ensembles associés, `xp`/`level`), en conservant les succès des
+  autres groupes. Rien à redéployer côté site : l'état vide est déjà géré, et
+  le record gardé sur l'appareil (`localStorage`) est indépendant du serveur.
+  Le script affiche l'état avant/après et donne en variantes le vidage d'un
+  seul run (`rpg-legends:hard`) ou d'un seul joueur. Cette remise à zéro était
+  auparavant exécutée **automatiquement** par la section 8b de
+  `supabase/schema.sql` : elle en a été retirée, car recoller le schéma
+  (demandé à chaque évolution) ne doit jamais effacer les données des joueurs.
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
   multiplicateurs ×1/×1,5/×2 par difficulté, points bornés à
   200/300/400 par question qui font le classement, série, minuteur à 15 s),
