@@ -1,8 +1,10 @@
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useAuth } from '../auth/AuthContext';
 import { useAchievementAction } from '../achievements/AchievementContext';
 import { quizLabel } from '../quizzesData';
+import { submitQuizAttempt, writeLocalBest } from './quizApi';
 import { dayNumber, gradeQuiz, prepareQuiz } from './engine';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
@@ -18,8 +20,9 @@ const FALLBACK = {
   difficulty: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
 
-export default function QuizPlayer({ quiz, daily = false }) {
+export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFinish = null }) {
   const { t, lang } = useLanguage();
+  const { user, isDemo } = useAuth();
   const track = useAchievementAction();
   const copy = { ...FALLBACK, ...(t.quiz || {}), tiers: { ...FALLBACK.tiers, ...((t.quiz || {}).tiers || {}) }, difficulty: { ...FALLBACK.difficulty, ...((t.quiz || {}).difficulty || {}) } };
 
@@ -54,6 +57,18 @@ export default function QuizPlayer({ quiz, daily = false }) {
     if (trackedFor.current !== prepared) {
       trackedFor.current = prepared;
       track('quiz_completed', { id: quiz.slug, perfect: graded.perfect, daily });
+      // Le score : meilleur score de l'appareil pour tout le monde, et
+      // tentative serveur (classement partagé) pour les comptes connectés.
+      writeLocalBest(quiz.slug, graded.correct, graded.total);
+      if (onFinish) onFinish(graded);
+      if (user && !isDemo) {
+        submitQuizAttempt({
+          quizId: quiz.slug,
+          score: graded.correct,
+          total: graded.total,
+          perfect: graded.perfect,
+        }).then((board) => { if (board && onBoard) onBoard(board); });
+      }
     }
   };
 

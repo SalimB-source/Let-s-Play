@@ -43,6 +43,7 @@ export const translations = {
       difficulty: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
       page: { commentTitle: 'Comments' },
       home: { eyebrow: 'Daily quiz', titleA: 'ONE DAY,', titleB: 'ONE QUIZ.', text: 'A quiz picked every day from our selection. Answer, keep your streak, climb the levels.', cta: 'Play today’s quiz' },
+      board: { boardTitle: 'LEADERBOARD', offline: 'Connect with a player account (Supabase configured) to compare your scores with the community.', empty: 'No score yet — be the first on the leaderboard.', you: 'You', bestDevice: 'Best score on this device' },
     },
     footer: {
       tagline: 'An original show dedicated to the culture that brings us together. Now multi-page.',
@@ -352,6 +353,7 @@ export const translations = {
       difficulty: { easy: 'Facile', medium: 'Confirmé', hard: 'Expert' },
       page: { commentTitle: 'Commentaires' },
       home: { eyebrow: 'Quizz du jour', titleA: 'UN JOUR,', titleB: 'UN QUIZZ.', text: 'Chaque jour, un quizz choisi dans notre sélection. Réponds, garde ta série, grimpe les niveaux.', cta: 'Jouer le quizz du jour' },
+      board: { boardTitle: 'CLASSEMENT', offline: 'Connecte-toi avec un compte joueur (Supabase configuré) pour comparer tes scores avec la communauté.', empty: 'Aucun score pour l’instant — sois premier du classement.', you: 'Toi', bestDevice: 'Meilleur score sur cet appareil' },
     },
     footer: {
       tagline: 'Une émission originale dédiée à la culture qui nous rassemble. Maintenant multi-pages.',
@@ -653,6 +655,7 @@ export const translations = {
       difficulty: { easy: 'سهل', medium: 'متوسط', hard: 'خبير' },
       page: { commentTitle: 'التعليقات' },
       home: { eyebrow: 'اختبار اليوم', titleA: 'كل يوم،', titleB: 'اختبار.', text: 'كل يوم اختبار يُختار من قائمتنا. أَجب، حافظ على سلسلتك وارتقِ بالمستويات.', cta: 'العب اختبار اليوم' },
+      board: { boardTitle: 'الترتيب', offline: 'سجّل الدخول بحساب لاعب (مع تهيئة Supabase) لمقارنة نتائجك مع المجتمع.', empty: 'لا نتائج بعد — كن الأول في الترتيب.', you: 'أنت', bestDevice: 'أفضل نتيجة على هذا الجهاز' },
     },
     footer: {
       tagline: 'برنامج أصلي مكرّس للثقافة التي تجمعنا. الآن متعدد الصفحات.',

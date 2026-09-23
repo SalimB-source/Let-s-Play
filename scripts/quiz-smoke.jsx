@@ -123,6 +123,12 @@ export async function checkQuiz(assert) {
   assert.ok((stored.unlocked || {})['first-quiz'], 'succès « Premier quizz » débloqué');
   assert.ok((stored.unlocked || {})['perfect-score'], 'succès « Sans faute » débloqué');
 
+  // Classement sans backend : message d'explication + meilleur score local.
+  assert.ok(node.textContent.includes('CLASSEMENT'), 'section classement présente');
+  assert.ok(node.textContent.includes('Connecte-toi avec un compte joueur'), 'repli hors-ligne expliqué');
+  assert.ok(node.textContent.includes('Meilleur score sur cet appareil'), 'meilleur score local affiché');
+  assert.ok(node.textContent.includes('8/8'), 'meilleur score local à 8/8');
+
   await act(async () => root.unmount());
 
   /* ------------------------------------- 3. Page grille (trois langues) ---- */

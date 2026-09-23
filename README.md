@@ -689,6 +689,16 @@ mais la structure de données les accepte déjà.
   au catalogue : Premier quizz (bronze), Sans faute (argent), Tour complet
   (or), Semaine parfaite (platine). L'XP reste celle des succès, comme partout
   sur le site.
+- **Scores & classement** — `supabase/schema.sql` (section 8) : table
+  `public.quiz_attempts` (meilleur score par compte et par quizz, bornes
+  `0 ≤ score ≤ total` vérifiées côté serveur) + RPC `submit_quiz_attempt` et
+  `get_quiz_leaderboard` (top 10 joint aux profils, ligne du joueur marquée
+  `mine`), non exposées en direct (revoke). Le compte connecté envoie sa
+  tentative à la fin de la partie (`src/quizzes/quizApi.js`) ; le visiteur
+  garde son meilleur score sur l'appareil (`localStorage`, clé propre aux
+  quizz). Sans backend, la section classement explique comment le débloquer.
+  Après collage du schéma dans le Dashboard Supabase, le tableau de contrôle
+  final affiche les lignes 31–33 « OK ».
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
   série), partie complète 8/8 jouée en jsdom avec la vraie pile de providers
   (succès crédités dans le stockage), grille rendue en FR/EN/AR. Le scénario de

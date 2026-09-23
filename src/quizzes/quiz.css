@@ -121,6 +121,22 @@
 .quiz-fix-a span:last-child { color: #34d399; }
 .quiz-fix-why { margin: 0; color: var(--dim); font-size: 13px; }
 
+/* ---- Classement ------------------------------------------------------------ */
+.quiz-board { margin-top: 44px; }
+.quiz-board-note { color: var(--dim); font-size: 14px; }
+.quiz-board-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.quiz-board-row {
+  display: flex; align-items: center; gap: 14px; padding: 10px 14px;
+  background: var(--panel); border: 1px solid var(--line);
+}
+.quiz-board-row.is-mine { border-color: rgba(255, 214, 25, .5); }
+.quiz-board-rank { font: 700 14px var(--mono); color: var(--cyan); }
+.quiz-board-name { display: inline-flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-weight: 600; }
+.quiz-board-name img { width: 24px; height: 24px; border-radius: 50%; }
+.quiz-board-score { font: 700 14px var(--mono); color: var(--yellow); }
+.quiz-board-local { color: var(--muted); font-size: 14px; }
+.quiz-board-local strong { color: var(--cyan); }
+
 /* ---- Commentaires sous le quizz ------------------------------------------- */
 .quiz-comments { margin-top: 70px; }
 .quiz-comments h2 { font: 800 clamp(20px, 3vw, 30px)/1.1 var(--display); text-transform: uppercase; }
