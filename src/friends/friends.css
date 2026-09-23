@@ -319,36 +319,93 @@
 
 /* --------------------- Section « Amis » du hub joueur ------------------- */
 
-.player-friends-strip {
+/* La liste des amis du profil : une ligne par ami, toute la ligne est un lien
+   vers sa page de profil (aucune action de discussion ici). */
+.player-friends-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+.player-friend-row {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+  transition: border-color .18s, background .18s;
+}
+
+.player-friend-row:hover,
+.player-friend-row:focus-within {
+  border-color: rgba(34, 211, 238, .45);
+  background: rgba(34, 211, 238, .06);
+}
+
+.player-friend-row.is-offline .friends-avatar img,
+.player-friend-row.is-offline .friends-avatar-fallback {
+  filter: grayscale(.85) brightness(.75);
+}
+
+.player-friend-link {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 11px;
+  padding: 9px 11px;
+  color: inherit;
 }
-.player-friends-avatars { display: inline-flex; align-items: center; }
-.player-friends-avatars .friends-avatar { margin-right: -8px; }
-[dir="rtl"] .player-friends-avatars .friends-avatar { margin-right: 0; margin-left: -8px; }
-.player-friends-avatars .friends-avatar img,
-.player-friends-avatars .friends-avatar-fallback { box-shadow: 0 0 0 2px #0b0d1e; }
-.player-friends-more {
-  margin-left: 16px;
-  font: 500 10px var(--mono);
-  letter-spacing: .12em;
-  color: var(--muted);
+
+.player-friend-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
-[dir="rtl"] .player-friends-more { margin-left: 0; margin-right: 16px; }
-.player-friends-actions { display: inline-flex; gap: 10px; flex-wrap: wrap; }
-.player-friends-pending {
-  display: inline-flex;
+
+.player-friend-name {
+  font: 600 13.5px var(--body);
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-friend-link:hover .player-friend-name { color: var(--cyan); }
+
+.player-friend-meta {
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 3px 8px;
-  background: var(--yellow);
-  color: #0a0b1a;
-  font: 700 9.5px var(--mono);
-  letter-spacing: .12em;
+  gap: 8px;
+  font: 500 9.5px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
 }
+
+.player-friend-status { overflow: hidden; text-overflow: ellipsis; }
+.player-friend-status.is-online { color: var(--friends-online); }
+.player-friend-level { color: var(--yellow); flex-shrink: 0; }
+
+/* Chevron : la ligne entière mène au profil. */
+.player-friend-arrow {
+  flex-shrink: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--dim);
+  transition: color .18s, transform .18s;
+}
+
+[dir="rtl"] .player-friend-arrow { transform: scaleX(-1); }
+
+.player-friend-link:hover .player-friend-arrow {
+  color: var(--cyan);
+  transform: translateX(2px);
+}
+
+[dir="rtl"] .player-friend-link:hover .player-friend-arrow { transform: scaleX(-1) translateX(2px); }
 
 /* La position de la fenêtre, sa cohabitation avec les notifications et le
    pop-up plein écran mobile vivent dans src/social/social.css. */

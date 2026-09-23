@@ -669,36 +669,6 @@
   gap: 16px;
 }
 
-/* SOCIAL GRID — Amis + Messagerie, collés dans une SEULE carte : le conteneur
-   porte le fond / bordure des cartes, les deux sections sont fondus dedans
-   et séparées par un simple trait (vertical en desktop, horizontal en mobile). */
-.player-social-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: linear-gradient(145deg, rgba(14, 17, 38, .9), rgba(5, 6, 15, .88));
-  border: 1px solid var(--line-strong);
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-}
-
-/* Si les deux sections sont absentes (visiteur, hub des scripts), pas de carte vide. */
-.player-social-grid:empty {
-  display: none;
-}
-
-.player-social-grid .player-section {
-  margin: 0;
-  height: 100%;
-  background: none;
-  border: 0;
-  clip-path: none;
-}
-
-/* Simple trait vertical entre les deux colonnes — propriété logique pour
-   rester entre les deux en RTL. */
-.player-social-grid .player-section + .player-section {
-  border-inline-start: 1px solid var(--line-strong);
-}
-
 .player-stat-card {
   background: rgba(14, 17, 38, .85);
   border: 1px solid var(--line);
@@ -1927,16 +1897,6 @@
 @media (max-width: 860px) {
   .player-stats-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .player-social-grid {
-    grid-template-columns: 1fr;
-  }
-
-  /* En colonne unique, le séparateur devient un trait horizontal. */
-  .player-social-grid .player-section + .player-section {
-    border-inline-start: 0;
-    border-top: 1px solid var(--line-strong);
   }
 
   .sso-providers-grid {
