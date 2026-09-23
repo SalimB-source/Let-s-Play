@@ -17,6 +17,7 @@ import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
 import './social/social.css';
+import './typography.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
