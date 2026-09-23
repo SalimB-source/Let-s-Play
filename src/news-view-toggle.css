@@ -9,8 +9,21 @@
 .news-carousel.is-grid .news-carousel-copy{justify-content:flex-start;padding:18px 18px 20px}
 .news-carousel.is-grid .news-carousel-copy h2{font-size:clamp(18px,1.6vw,22px);line-height:1.22;-webkit-line-clamp:4}
 .news-carousel.is-grid .news-carousel-copy p{-webkit-line-clamp:3}
+/* Actu à la une : intégrée à la grille sur 2 colonnes (au lieu de toute la
+   largeur en format paysage) pour que les autres actus soient visibles à côté
+   d'elle dès le premier écran. Sa hauteur s'aligne sur celle des cartes de sa
+   rangée ; son image remplit sa colonne grâce à object-fit:cover. */
+.news-carousel.is-grid .news-today{grid-column:span 2;margin:0;min-height:0}
+.news-carousel.is-grid .news-today .daily-news-image{min-height:0}
+.news-carousel.is-grid .news-today .daily-news-copy{padding:clamp(20px,2.4vw,32px)}
+.news-carousel.is-grid .news-today .daily-news-copy h2{font-size:clamp(20px,2vw,28px);line-height:1.12;margin:12px 0}
+.news-carousel.is-grid .news-today .daily-news-copy>p:not(.eyebrow){font-size:14px;line-height:1.5;margin:0 0 16px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 @media(max-width:1100px){.news-carousel.is-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:800px){.news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:800px){.news-carousel.is-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* La une occupe alors toute la rangée (2 colonnes) : seule sur sa ligne, son
+     image garde une hauteur minimale le temps d'être empilée sous 700px. */
+  .news-carousel.is-grid .news-today .daily-news-image{min-height:240px}
+}
 @media(max-width:650px){
   .news-view-tools{width:100%;justify-content:space-between;align-items:center}
   .news-view-toggle button{padding:9px 11px}
@@ -35,5 +48,12 @@
   }
   .news-carousel.is-grid .news-carousel-copy p,
   .news-carousel.is-grid .news-carousel-copy .read-link{display:none}
+  /* La une suit le même régime que les autres cartes : image 16/9 + titre, sans
+     extrait ni CTA, pour ne pas saturer le premier écran du téléphone. */
+  .news-carousel.is-grid .news-today .daily-news-image{min-height:0;aspect-ratio:16/9}
+  .news-carousel.is-grid .news-today .daily-news-copy{padding:16px 14px 18px;justify-content:flex-start}
+  .news-carousel.is-grid .news-today .daily-news-copy h2{display:block;font-size:clamp(20px,5.4vw,24px);line-height:1.25;margin:10px 0 0;overflow:visible}
+  .news-carousel.is-grid .news-today .daily-news-copy>p:not(.eyebrow),
+  .news-carousel.is-grid .news-today .daily-news-copy .read-link{display:none}
   .news-carousel.is-grid .news-kicker{font-size:9px;line-height:1.35;letter-spacing:.08em}
 }
