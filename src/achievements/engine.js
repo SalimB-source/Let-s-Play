@@ -20,7 +20,16 @@
 import { ACHIEVEMENTS } from './catalog.js';
 import { bestDayRun } from '../quizzes/engine.js';
 
-export const STATE_VERSION = 1;
+export const STATE_VERSION = 2;
+
+/** Succès liés aux quizz à effacer lors de la remise à zéro. */
+const QUIZ_ACHIEVEMENT_IDS = [
+  'first-quiz',
+  'perfect-score',
+  'quiz-tour',
+  'quiz-week',
+  'first-challenge',
+];
 
 /* ------------------------------------------------------------------ */
 /* Dates : la journée est celle du visiteur (fuseau local)             */
@@ -80,6 +89,11 @@ export function createState(now = new Date()) {
 export function normalizeState(raw, now = new Date()) {
   const base = createState(now);
   if (!raw || typeof raw !== 'object') return base;
+  // Migration v1 → v2 : remise à zéro totale demandée (tous les compteurs
+  // quizz à 0, plus de "déjà terminé", points joueurs à 0).
+  if (!raw.version || Number(raw.version) < STATE_VERSION) {
+    return base;
+  }
   const asObject = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : {});
   const asArray = (value) => (Array.isArray(value) ? value : []);
   const asNumber = (value) => (Number.isFinite(value) ? value : 0);
@@ -257,10 +271,13 @@ export function reduce(state, action = {}) {
  * rapporte plus d'XP (voir `quiz_completed` dans `reduce`). L'ensemble
  * `quizzes_played` n'est alimenté qu'à la fin d'une partie : c'est bien
  * « terminé », pas « commencé ».
+ *
+ * REMISE À ZÉRO GLOBALE : on force false pour que plus aucune difficulté
+ * n'affiche "déjà terminé". Les compteurs sont aussi remis à zéro dans
+ * `normalizeState`, et les meilleurs scores locaux changent de clé (v2).
  */
-export function quizAlreadyCompleted(state, quizId) {
-  if (!quizId) return false;
-  return Boolean(state?.sets?.quizzes_played?.includes(quizId));
+export function quizAlreadyCompleted(_state, _quizId) {
+  return false;
 }
 
 /** Débloque les succès satisfaits, sans action — utilisé au chargement. */
