@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useAchievements } from '../achievements/AchievementContext';
 import { quizLevelCompleted } from '../achievements/engine';
 import { QUIZ_LEVELS, quizLabel, quizLevelQuestions, quizQuestionsCount } from '../quizzesData';
-import { quizAttemptId, readLocalBestRun, submitQuizAttempt, writeLocalBest } from './quizApi';
+import { formatBest, quizAttemptId, readLocalBest, readLocalBestRun, submitQuizAttempt, writeLocalBest } from './quizApi';
 import { isLevelCompleted, levelRequirement, nextLevel } from './quizProgress';
 import { useQuizProgress } from './useQuizProgress';
 import QuizChallenge from './QuizChallenge';
@@ -114,6 +114,14 @@ const FALLBACK = {
   levelUnlocked: '{level} level unlocked — it is waiting for you.',
   levelPlay: 'Play this level',
   levelProgress: '{done}/{total} levels completed',
+  // Les TROIS niveaux terminés : le quizz est « terminé » — le lecteur n'ouvre
+  // plus de nouvelle partie, comme les cartes du site passées en niveaux de
+  // gris (voir `isQuizFinished`, `./quizProgress`).
+  finished: 'FINISHED',
+  finishedNote: 'Three levels cleared',
+  finishedHint: 'You cleared this quiz on all three levels — Easy, Seasoned and Expert. It is no longer offered.',
+  finishedResult: 'Quiz finished — the three levels are cleared!',
+  best: 'Best: {s}',
   verdicts: {
     right: ['Correct!', 'Unbelievable!', 'Too easy, right?', 'We are on fire 🔥', 'Ice in the veins pays off.'],
     wrong: ['Oof, missed it…', 'Not this one.', 'So close!', 'That one got you.', 'Tough one — it bit back.'],
@@ -186,6 +194,14 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     const requirement = levelRequirement(entry);
     return !requirement || levelDone(requirement);
   };
+  /**
+   * Le quizz est TERMINÉ : les trois niveaux sont faits. Il n'est plus proposé
+   * nulle part (cartes grisées et verrouillées) et le lecteur remplace son
+   * sélecteur de niveaux par l'écran « terminé ». Une partie en cours va
+   * néanmoins à son terme — l'écran de résultat garde ses actions (révision,
+   * « Rejouer »), mais un niveau déjà terminé ne rapporte plus rien.
+   */
+  const quizFinished = QUIZ_LEVELS.every(levelDone);
 
   const [phase, setPhase] = useState('intro');
   const [playedLevel, setPlayedLevel] = useState(level);
@@ -555,6 +571,57 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
 
   if (phase === 'intro' || !prepared) {
     const meta = quizLabel(quiz.labels, lang) || {};
+    // Quizz TERMINÉ (les trois niveaux faits) : plus de sélecteur ni de
+    // nouvelle partie — l'écran rappelle ce qui a été joué (les trois niveaux
+    // cochés, le record de l'appareil) et renvoie vers les autres quizz.
+    if (quizFinished) {
+      const best = readLocalBest(quiz.slug);
+      return (
+        <div className="quiz-player">
+          <div className="quiz-player-intro quiz-player-finished">
+            <div className="quiz-chips">
+              <span className="quiz-chip">{quiz.tag}</span>
+              <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(totalQuestions))}</span>
+              <span className="quiz-chip quiz-chip--levels is-complete">✓ {copy.finished}</span>
+              {daily && <span className="quiz-chip quiz-chip--daily">{copy.dailyTag}</span>}
+            </div>
+            <h1>{meta.title}</h1>
+            <p className="quiz-finished-hint" role="note">🏁 {copy.finishedHint}</p>
+            <ul className="quiz-levels quiz-levels--finished">
+              {QUIZ_LEVELS.map((entry) => (
+                <li key={entry} data-level={entry} className={`quiz-level quiz-level--${entry} is-done`}>
+                  <div className="quiz-level-copy">
+                    <span className="quiz-level-name">
+                      <span className="quiz-level-check" aria-hidden="true">✓</span>
+                      {copy.levels[entry] || entry}
+                    </span>
+                    <span className="quiz-level-meta">{copy.levelDone}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {best && (
+              <p className="quiz-finished-best" title={`${copy.levels[best.level] || ''} · ${copy.best.replace('{s}', formatBest(best))}`}>
+                ★ {copy.best.replace('{s}', formatBest(best))}
+              </p>
+            )}
+            <div className="quiz-player-actions">
+              {/* Le réglage du son reste accessible sur cet écran (il est
+                  vérifié dans les trois langues par `scripts/quiz-smoke.jsx`). */}
+              <SoundToggle
+                on={soundOn}
+                label={soundOn ? copy.soundMute : copy.soundUnmute}
+                onToggle={() => setSoundOn(setQuizSoundEnabled(!soundOn))}
+              />
+            </div>
+            <div className="quiz-result-actions">
+              <Link className="quiz-cta quiz-cta--primary" to="/quizz">{copy.others} <Arrow /></Link>
+              {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="quiz-player">
         <div className="quiz-player-intro">
@@ -825,6 +892,9 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
         )}
         {!review && replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
         {!review && justUnlocked && <p className="quiz-unlock-note" role="status">🔓 {copy.levelUnlocked.replace('{level}', copy.levels[justUnlocked] || justUnlocked)}</p>}
+        {/* Le dernier niveau vient d'être terminé : le quizz passe TERMINÉ, il
+            n'est plus proposé nulle part (cartes grisées et verrouillées). */}
+        {!review && quizFinished && <span className="quiz-result-finished">🏁 {copy.finishedResult}</span>}
         <div className="quiz-result-actions">
           {!review && justUnlocked && (
             <button type="button" className="quiz-cta quiz-cta--primary" onClick={() => start(justUnlocked)}>{copy.levelPlay} <Arrow /></button>

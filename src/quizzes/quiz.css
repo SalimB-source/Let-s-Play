@@ -609,3 +609,82 @@
   .quiz-level { align-items: flex-start; }
   .quiz-level-play { width: 100%; justify-content: center; }
 }
+
+/* ---- Quizz TERMINÉ (les trois niveaux faits) ------------------------------ */
+/* Un quizz dont les niveaux Facile, Confirmé et Expert sont tous terminés n'est
+   plus proposé : sa carte reste visible (le joueur voit ce qu'il a accompli) mais
+   passe en niveaux de gris, avec le tampon « ✓ TERMINÉ » sur l'image et la
+   mention sous le titre. La carte n'est plus un lien (`<div>` côté `QuizzesPage`)
+   : rien n'est cliquable, le curseur reste par défaut et aucun survol ne bouge.
+   Même traitement pour le bandeau du quizz du jour, la bande d'accueil
+   (`styles.css`), les résultats de recherche et la nav. */
+.quiz-card.is-finished,
+.quiz-daily.is-finished,
+.quiz-player-finished {
+  filter: grayscale(1) brightness(.78);
+  cursor: default;
+  pointer-events: none;
+}
+/* La carte reste lisible : on remonte un peu le contraste du texte et on garde
+   les liens utilisables (`pointer-events` rétablis sur les éléments cliquables
+   de l'écran « terminé », la carte grisée n'en a aucun). */
+.quiz-player-finished { pointer-events: auto; filter: grayscale(1) brightness(.9); }
+.quiz-card.is-finished:hover,
+.quiz-daily.is-finished:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--line);
+}
+.quiz-card.is-finished .quiz-card-copy h3,
+.quiz-card.is-finished .quiz-card-copy p { color: var(--dim); }
+.quiz-card.is-finished .quiz-card-meta { color: var(--dim); }
+
+/* Le tampon sur la miniature : bandeau sombre + coche, lisible même sur une
+   image claire une fois désaturée. */
+.quiz-finished-flag {
+  position: absolute; inset-inline-start: 0; inset-block-end: 0;
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+  background: rgba(9, 10, 20, .82); border-block-start: 1px solid rgba(255, 255, 255, .18);
+  border-inline-end: 1px solid rgba(255, 255, 255, .18);
+  color: #e6e8f2; font: 700 10px var(--mono); letter-spacing: .16em; text-transform: uppercase;
+}
+/* La mention sous le titre — ce que « terminé » veut dire. */
+.quiz-finished-note {
+  display: inline-block; padding: 3px 8px; border: 1px solid rgba(255, 255, 255, .22);
+  color: var(--dim); font: 600 10px var(--mono); letter-spacing: .12em; text-transform: uppercase;
+}
+
+/* ---- Écran « terminé » du lecteur ----------------------------------------- */
+/* Le sélecteur de niveaux est remplacé par le récapitulatif : les trois niveaux
+   cochés, le record de l'appareil et les portes de sortie (autres quizz, source). */
+.quiz-player-finished { text-align: center; }
+.quiz-player-finished h1 { margin: 10px 0 4px; }
+.quiz-finished-hint { margin: 0 auto 20px; max-width: 54ch; color: var(--muted); font-size: 15px; }
+.quiz-levels--finished { max-width: 460px; margin: 0 auto; }
+.quiz-levels--finished .quiz-level { cursor: default; }
+.quiz-levels--finished .quiz-level:hover { border-color: var(--line); background: var(--panel); }
+.quiz-finished-best { margin: 16px 0 0; color: var(--yellow); font: 700 13px var(--mono); letter-spacing: .08em; }
+/* Badge de l'écran de résultat : le dernier niveau vient d'être terminé. */
+.quiz-result-finished {
+  display: inline-block; margin-top: 12px; padding: 5px 12px;
+  border: 1px solid rgba(255, 214, 25, .5); color: var(--yellow);
+  font: 700 11px var(--mono); letter-spacing: .18em;
+}
+
+/* ---- Bande d'accueil, recherche et nav (quizz terminé) -------------------- */
+/* La bande du jour garde sa mise en page mais passe en gris : le bouton renvoie
+   à la grille (`/quizz`) puisque le quizz du jour est verrouillé. */
+.home-quiz-band.is-finished { filter: grayscale(1) brightness(.82); }
+.home-quiz-band.is-finished .quiz-chip { margin-inline-start: 8px; }
+/* Résultats de recherche et suggestions de la nav : grisés, non cliquables
+   (rendus en `<div>`/`<span>` côté `Search.jsx` et `Layout.jsx`). */
+.search-result-card.is-finished,
+.nav-search-result.is-finished {
+  filter: grayscale(1) brightness(.78);
+  cursor: default;
+  pointer-events: none;
+}
+.search-result-card.is-finished:hover { transform: none; box-shadow: none; border-color: var(--line); }
+.search-result-card.is-finished h2,
+.search-result-card.is-finished p { color: var(--dim); }
+.nav-search-result.is-finished strong { color: var(--dim); }

@@ -71,9 +71,18 @@ export const translations = {
       levelUnlocked: '{level} level unlocked — it is waiting for you.',
       levelPlay: 'Play this level',
       levelProgress: '{done}/{total} levels',
+      // Les TROIS niveaux terminés : le quizz passe « terminé » — cartes grisées
+      // et verrouillées (grille, quizz du jour, recherche, accueil), et le
+      // lecteur n'ouvre plus de nouvelle partie.
+      finished: 'FINISHED',
+      finishedNote: 'Three levels cleared',
+      finishedHint: 'You cleared this quiz on all three levels — Easy, Seasoned and Expert. It is no longer offered.',
+      finishedResult: 'Quiz finished — the three levels are cleared!',
+      dailyDoneHint: 'Today’s three levels are all cleared — come back tomorrow for a new quiz.',
+      best: 'Best: {s}',
       levelPoints: { easy: '×1', medium: '×1.5', hard: '×2' },
       levelsHint: 'The harder the level, the more the points are worth (×1, ×1.5, ×2). Each level changes the questions, points become player XP — and a level pays out only once.',      page: { commentTitle: 'Comments' },
-      home: { eyebrow: 'Daily quiz', titleA: 'ONE DAY,', titleB: 'ONE QUIZ.', text: 'A quiz picked every day from our selection. Answer, keep your streak, climb the levels.', cta: 'Play today’s quiz' },
+      home: { eyebrow: 'Daily quiz', titleA: 'ONE DAY,', titleB: 'ONE QUIZ.', text: 'A quiz picked every day from our selection. Answer, keep your streak, climb the levels.', cta: 'Play today’s quiz', done: 'Today’s quiz is finished — its three levels are cleared. Pick another quiz from the selection.', ctaAll: 'See all the quizzes' },
       board: { boardTitle: 'LEADERBOARD', offline: 'Connect with a player account (Supabase configured) to compare your scores with the community.', empty: 'No score yet — be the first on the leaderboard.', you: 'You', bestDevice: 'Best score on this device', bestOther: 'This level is still untouched — your best run on this quiz is on another level.' },
       rank: {
         title: 'GLOBAL QUIZ RANKING',
@@ -423,9 +432,18 @@ export const translations = {
       levelUnlocked: 'Niveau {level} débloqué — il t’attend.',
       levelPlay: 'Jouer ce niveau',
       levelProgress: '{done}/{total} niveaux',
+      // Les TROIS niveaux terminés : le quizz passe « terminé » — cartes grisées
+      // et verrouillées (grille, quizz du jour, recherche, accueil), et le
+      // lecteur n'ouvre plus de nouvelle partie.
+      finished: 'TERMINÉ',
+      finishedNote: 'Trois niveaux terminés',
+      finishedHint: 'Tu as terminé ce quizz aux trois niveaux — facile, confirmé et expert. Il n’est plus proposé.',
+      finishedResult: 'Quizz terminé — les trois niveaux sont faits !',
+      dailyDoneHint: 'Les trois niveaux du jour sont terminés — reviens demain pour un nouveau quizz.',
+      best: 'Record : {s}',
       levelPoints: { easy: '×1', medium: '×1,5', hard: '×2' },
       levelsHint: 'Plus le niveau est dur, plus les points valent cher (×1, ×1,5, ×2). Chaque niveau change les questions, les points deviennent de l’XP joueur — et un niveau ne rapporte qu’une fois.',      page: { commentTitle: 'Commentaires' },
-      home: { eyebrow: 'Quizz du jour', titleA: 'UN JOUR,', titleB: 'UN QUIZZ.', text: 'Chaque jour, un quizz choisi dans notre sélection. Réponds, garde ta série, grimpe les niveaux.', cta: 'Jouer le quizz du jour' },
+      home: { eyebrow: 'Quizz du jour', titleA: 'UN JOUR,', titleB: 'UN QUIZZ.', text: 'Chaque jour, un quizz choisi dans notre sélection. Réponds, garde ta série, grimpe les niveaux.', cta: 'Jouer le quizz du jour', done: 'Le quizz du jour est terminé — ses trois niveaux sont faits. Choisis-en un autre dans la sélection.', ctaAll: 'Voir tous les quizz' },
       board: { boardTitle: 'CLASSEMENT', offline: 'Connecte-toi avec un compte joueur (Supabase configuré) pour comparer tes scores avec la communauté.', empty: 'Aucun score pour l’instant — sois premier du classement.', you: 'Toi', bestDevice: 'Meilleur score sur cet appareil', bestOther: 'Ce niveau est encore vierge — ton meilleur run sur ce quizz est sur un autre palier.' },
       rank: {
         title: 'CLASSEMENT GLOBAL DES QUIZZ',
@@ -767,9 +785,17 @@ export const translations = {
       levelUnlocked: 'تم فتح مستوى {level} — بانتظارك.',
       levelPlay: 'العب هذا المستوى',
       levelProgress: '{done}/{total} مستويات',
+      // اكتملت المستويات الثلاثة: الاختبار «مكتمل» — بطاقات رمادية ومقفلة (الشبكة،
+      // اختبار اليوم، البحث، الرئيسية) ولا تُفتح جولة جديدة في القارئ.
+      finished: 'مكتمل',
+      finishedNote: 'المستويات الثلاثة مكتملة',
+      finishedHint: 'أنهيت هذا الاختبار في المستويات الثلاثة — سهل ومتوسط وصعب. لم يعد متاحاً.',
+      finishedResult: 'الاختبار مكتمل — المستويات الثلاثة منتهية!',
+      dailyDoneHint: 'مستويات اليوم الثلاثة مكتملة — عُد غداً لاختبار جديد.',
+      best: 'الأفضل: {s}',
       levelPoints: { easy: '×1', medium: '×1.5', hard: '×2' },
       levelsHint: 'كلما زادت صعوبة المستوى ارتفعت قيمة النقاط (×1، ×1.5، ×2). كل مستوى يغيّر الأسئلة، والنقاط تصبح خبرة للاعب — والمستوى يمنح النقاط مرة واحدة فقط.',      page: { commentTitle: 'التعليقات' },
-      home: { eyebrow: 'اختبار اليوم', titleA: 'كل يوم،', titleB: 'اختبار.', text: 'كل يوم اختبار يُختار من قائمتنا. أَجب، حافظ على سلسلتك وارتقِ بالمستويات.', cta: 'العب اختبار اليوم' },
+      home: { eyebrow: 'اختبار اليوم', titleA: 'كل يوم،', titleB: 'اختبار.', text: 'كل يوم اختبار يُختار من قائمتنا. أَجب، حافظ على سلسلتك وارتقِ بالمستويات.', cta: 'العب اختبار اليوم', done: 'اختبار اليوم مكتمل — مستوياته الثلاثة منتهية. اختر اختباراً آخر من القائمة.', ctaAll: 'كل الاختبارات' },
       board: { boardTitle: 'الترتيب', offline: 'سجّل الدخول بحساب لاعب (مع تهيئة Supabase) لمقارنة نتائجك مع المجتمع.', empty: 'لا نتائج بعد — كن الأول في الترتيب.', you: 'أنت', bestDevice: 'أفضل نتيجة على هذا الجهاز', bestOther: 'هذا المستوى لم يُلعب بعد — أفضل نتيجة لك في هذا الاختبار على مستوى آخر.' },
       rank: {
         title: 'الترتيب العام للاختبارات',

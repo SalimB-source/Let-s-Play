@@ -52,8 +52,12 @@ const releases = gameReleases.map((game) => ({
   image: game.image ? `${base}${game.image}` : null,
 }));
 
+// `slug` : la page de recherche et la recherche instantanée de la nav s'en
+// servent pour reconnaître un quizz TERMINÉ (ses trois niveaux faits) et le
+// griser comme sur la grille `/quizz`.
 const quizzes = quizCatalog.map((quiz) => ({
   type: 'quiz',
+  slug: quiz.slug,
   title: quizLabel(quiz.labels, 'fr')?.title || quiz.slug,
   description: quizLabel(quiz.labels, 'fr')?.text || '',
   route: quiz.route,

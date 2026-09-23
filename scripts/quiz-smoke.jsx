@@ -54,6 +54,7 @@ import {
   LEVELS_KEY,
   isLevelCompleted,
   isLevelUnlocked,
+  isQuizFinished,
   markLevelCompleted,
   nextLevel,
 } from '../src/quizzes/quizProgress';
@@ -1281,6 +1282,105 @@ export async function checkQuiz(assert) {
   assert.ok(funNode.querySelector('.quiz-result-actions .quiz-cta--primary'), 'l’action principale du résultat garde l’accent du niveau');
   await act(async () => funRoot.unmount());
 
+  /* ------------- 12. Quizz TERMINÉ : grisé et verrouillé partout ----------- */
+  // Les trois niveaux d'un quizz faits (Facile + Confirmé + Expert) : il passe
+  // « TERMINÉ » — niveaux de gris, drapeau sur la miniature, LIEN RETIRÉ sur la
+  // grille comme sur la bannière du jour, et le lecteur remplace son sélecteur
+  // de niveaux par le récapitulatif. Plus rien n'est cliquable.
+  seedLang('fr');
+  const doneLevels = { 'culture-gaming': { easy: true, medium: true } };
+  assert.equal(isQuizFinished({}, 'culture-gaming'), false, 'aucun niveau terminé : pas « terminé »');
+  assert.equal(isQuizFinished({ 'culture-gaming': { easy: true } }, 'culture-gaming'), false, 'un niveau sur trois : pas « terminé »');
+  assert.equal(isQuizFinished(doneLevels, 'culture-gaming'), false, 'deux niveaux sur trois : pas « terminé »');
+  assert.equal(isQuizFinished({ 'culture-gaming': { easy: true, medium: true, hard: true } }, 'culture-gaming'), true, 'les trois niveaux : « terminé »');
+  assert.equal(isQuizFinished({ 'culture-gaming': { easy: true, medium: true, hard: true } }, 'rpg-cultes'), false, 'l’état « terminé » ne vaut que pour le quizz joué');
+
+  // Un rendu par racine : `MemoryRouter` fige son entrée au montage, donc
+  // changer de route passe par une nouvelle racine (comme ailleurs ici).
+  let lockNode = null;
+  let lockRoot = null;
+  const renderLocked = async (entries) => {
+    if (lockRoot) await act(async () => lockRoot.unmount());
+    lockNode = document.createElement('div');
+    document.body.append(lockNode);
+    lockRoot = createRoot(lockNode);
+    await act(async () => lockRoot.render(
+      <LanguageProvider>
+        <AuthProvider>
+          <AchievementProvider>
+            <MemoryRouter initialEntries={entries}>
+              <Routes>
+                <Route path="/quizz" element={<QuizzesPage />} />
+                <Route path="/quizz/:slug" element={<QuizPage />} />
+              </Routes>
+            </MemoryRouter>
+          </AchievementProvider>
+        </AuthProvider>
+      </LanguageProvider>,
+    ));
+    return lockNode;
+  };
+
+  // Un seul quizz terminé : sa carte est grisée et verrouillée, les autres
+  // restent des liens jouables.
+  QUIZ_LEVELS.forEach((level) => markLevelCompleted('culture-gaming', level));
+  let grid = await renderLocked(['/quizz']);
+  const lockedCards = grid.querySelectorAll('.quiz-card.is-finished');
+  assert.equal(lockedCards.length, 1, 'un seul quizz terminé sur la grille');
+  const lockedCard = lockedCards[0];
+  assert.equal(lockedCard.tagName, 'DIV', 'la carte terminée n’est plus un lien');
+  assert.equal(lockedCard.getAttribute('href'), null, 'la carte terminée n’a aucune destination');
+  assert.ok(lockedCard.getAttribute('aria-label').includes(translations.fr.quiz.finished), 'l’étiquette accessible annonce le quizz terminé');
+  assert.equal(grid.querySelectorAll('a.quiz-card').length, quizzes.length - 1, 'les autres quizz restent cliquables');
+  const lockedFlag = lockedCard.querySelector('.quiz-finished-flag');
+  assert.ok(lockedFlag, 'le drapeau « terminé » couvre la miniature');
+  assert.ok(lockedFlag.textContent.includes(translations.fr.quiz.finished), 'le drapeau dit TERMINÉ');
+  assert.equal(
+    lockedCard.querySelector('.quiz-chip--levels').textContent.trim(),
+    `✓ ${translations.fr.quiz.finished}`,
+    'la pastille de progression devient le tampon « terminé »',
+  );
+  assert.ok(lockedCard.querySelector('.quiz-chip--levels.is-complete'), 'la pastille terminée porte l’état complet');
+  assert.ok(!lockedCard.querySelector('.quiz-card-meta').textContent.includes('↗'), 'plus de flèche « ouvrir » sur la carte terminée');
+
+  // Tous les quizz terminés : la bannière du jour est verrouillée elle aussi
+  // (le test ne dépend pas du quizz choisi par le calendrier).
+  quizzes.forEach((entry) => QUIZ_LEVELS.forEach((level) => markLevelCompleted(entry.slug, level)));
+  grid = await renderLocked(['/quizz']);
+  assert.equal(grid.querySelectorAll('.quiz-card.is-finished').length, quizzes.length, 'toute la grille passe en « terminé »');
+  assert.equal(grid.querySelectorAll('a.quiz-card').length, 0, 'plus aucune carte cliquable');
+  const lockedDaily = grid.querySelector('.quiz-daily');
+  assert.ok(lockedDaily, 'la bannière du jour reste affichée');
+  assert.equal(lockedDaily.tagName, 'DIV', 'le quizz du jour terminé n’est plus un lien');
+  assert.ok(lockedDaily.classList.contains('is-finished'), 'la bannière porte l’état « terminé »');
+  assert.ok(lockedDaily.querySelector('.quiz-finished-flag'), 'le drapeau couvre la miniature du jour');
+  assert.ok(lockedDaily.querySelector('.quiz-finished-note'), 'la bannière rappelle que les trois niveaux sont faits');
+  assert.ok(!lockedDaily.textContent.includes('⏳'), 'plus de compte à rebours sur la bannière terminée');
+  assert.equal(
+    grid.querySelector('.quiz-daily-hint').textContent,
+    translations.fr.quiz.dailyDoneHint,
+    'l’indice du jour annonce la fin des trois niveaux',
+  );
+
+  // Le lecteur : plus de sélecteur de niveaux ni de bouton pour lancer une
+  // partie — le récapitulatif (trois niveaux cochés, réglage du son, sortie
+  // vers la grille) prend toute la place.
+  const lockedReader = await renderLocked([`/quizz/${slug}`]);
+  const finishedPanel = lockedReader.querySelector('.quiz-player-finished');
+  assert.ok(finishedPanel, 'le lecteur ouvre l’écran « terminé »');
+  assert.equal(lockedReader.querySelector('.quiz-levels-title'), null, 'le sélecteur de niveaux a disparu');
+  assert.equal(lockedReader.querySelectorAll('.quiz-level-play').length, 0, 'aucun bouton ne lance un niveau');
+  assert.equal(lockedReader.querySelectorAll('.quiz-level.is-done').length, QUIZ_LEVELS.length, 'les trois niveaux sont cochés');
+  assert.ok(finishedPanel.textContent.includes(translations.fr.quiz.finishedHint), 'l’écran explique pourquoi le quizz n’est plus proposé');
+  assert.ok(finishedPanel.querySelector('.quiz-sound-toggle'), 'le réglage du son reste accessible sur l’écran terminé');
+  assert.equal(
+    finishedPanel.querySelector('.quiz-result-actions .quiz-cta--primary').getAttribute('href'),
+    '/quizz',
+    'la sortie de l’écran terminé mène à la grille des quizz',
+  );
+  await act(async () => lockRoot.unmount());
+  lockRoot = null;
+
   for (const lang of ['fr', 'en', 'ar']) {
     seedLang(lang);
     const langNode = document.createElement('div');
@@ -1307,5 +1407,5 @@ export async function checkQuiz(assert) {
     await act(async () => langRoot.unmount());
   }
 
-  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons ni doublés, answered d’une partie arrêtée), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, replay d’un niveau terminé = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur par niveau, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–5 (+ D et F pour les jokers), combo + fanfare, sons (tick-tack qui accélère, verdicts, jokers — le 50/50 descend, le gel monte —, coupure), refonte du lecteur (CTA compacts, pastilles de progression, 50/50, gel du chrono, détail de partie) et niveau expert en conditions réelles (cinq propositions, une vie perdue par erreur, fin de partie à la troisième, « Plus de vies », base ×2 par bonne réponse, touche 5).');
+  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons ni doublés, answered d’une partie arrêtée), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, replay d’un niveau terminé = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, révision sans double comptage, minuteur par niveau, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–5 (+ D et F pour les jokers), combo + fanfare, sons (tick-tack qui accélère, verdicts, jokers — le 50/50 descend, le gel monte —, coupure), refonte du lecteur (CTA compacts, pastilles de progression, 50/50, gel du chrono, détail de partie) et niveau expert en conditions réelles (cinq propositions, une vie perdue par erreur, fin de partie à la troisième, « Plus de vies », base ×2 par bonne réponse, touche 5), et quizz TERMINÉ une fois ses trois niveaux faits (`isQuizFinished` : carte grisée sans lien ni flèche, drapeau ✓ TERMINÉ sur la miniature, bannière du jour verrouillée sans compte à rebours, écran « terminé » du lecteur à la place du sélecteur de niveaux).');
 }

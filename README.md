@@ -738,6 +738,33 @@ mais la structure de données les accepte déjà.
   (`letsplay_quiz_levels_v1`) — hors-ligne, c'est elle qui fait foi. Les
   cartes de la grille et la bannière du jour affichent la progression
   « n/3 niveaux ».
+- **Quizz TERMINÉ (les trois niveaux faits)** — un quizz dont les niveaux
+  Facile, Confirmé **et** Expert sont terminés passe en état « terminé » :
+  `isQuizFinished(progress, quizId)` (`src/quizzes/quizProgress.js`, fonction
+  pure) renvoie `true` dès que `levelsDone` atteint `QUIZ_LEVELS.length`. Le
+  quizz reste **visible mais verrouillé** partout où il est proposé : la carte
+  de la grille, la bannière du quizz du jour, la bande « quizz du jour » de
+  l'accueil, les résultats de `/recherche` et la recherche instantanée de la
+  nav. Concrètement : miniature et carte en **niveaux de gris**
+  (`grayscale(1)` + légère baisse de luminosité, `quiz.css`), drapeau
+  `✓ TERMINÉ` sur la miniature, tampon à la place de la pastille « n/3
+  niveaux », mention « Trois niveaux terminés » sur la bannière, flèche ↗
+  retirée — et surtout **le `<Link>` est remplacé par un `<div>`/`<span>` non
+  cliquable** (`cursor: default`, `pointer-events: none`, aucun effet de
+  survol). Le lecteur (`/quizz/:slug`) remplace son sélecteur de niveaux par un
+  écran « terminé » : les trois niveaux cochés, le record de l'appareil, le
+  réglage du son, et les sorties (tous les quizz, article source) — impossible
+  de relancer une partie depuis cet écran. L'écran de résultat de la dernière
+  partie affiche le badge « Quizz terminé » et garde ses actions (révision des
+  erreurs, « Rejouer ») : ces parties ne rapportent plus rien (règle
+  anti-rejeu), elles restent seulement consultables. Conséquence assumée : si
+  le quizz du jour est déjà terminé, la bannière et l'accueil renvoient à la
+  grille `/quizz` (la série « Semaine parfaite » ne peut plus s'alimenter ce
+  jour-là). La progression lue est l'union `localStorage` + `public.quiz_progress`
+  ; comme plusieurs surfaces partagent la même page (nav + accueil + grille),
+  `fetchAccountProgress` met sa promesse **en cache par compte**
+  (`accountProgressCache`) : un seul appel serveur par page chargée, rafraîchi
+  par `pushLevelCompleted` à chaque niveau terminé.
 - **Miniatures** — chaque quizz a sa propre illustration 16/9
   (`image`, fabriquée par `quizThumbUrl(slug)` depuis
   `public/quizzes/<slug>.jpg`) : une par thème, à la charte du site. La carte de
@@ -945,8 +972,14 @@ mais la structure de données les accepte déjà.
   50/50 qui élimine deux mauvaises réponses sans toucher la bonne, gel du
   chrono, détail de partie) et niveau expert en conditions réelles (cinq
   propositions, une vie perdue par erreur, fin de partie à la troisième,
-  « Plus de vies », base ×2 par bonne réponse, touche 5) — le tout avec un faux `AudioContext` qui
-  enregistre les oscillateurs lancés. Le scénario de
+  « Plus de vies », base ×2 par bonne réponse, touche 5) et état « terminé »
+  (`isQuizFinished` : carte grisée rendue en `<div>` sans lien ni flèche,
+  drapeau `✓ TERMINÉ` sur la miniature, tampon à la place de la pastille
+  « n/3 niveaux », bannière du jour verrouillée sans compte à rebours avec son
+  indice dédié, écran « terminé » du lecteur à la place du sélecteur de
+  niveaux — trois niveaux cochés, aucun bouton pour relancer, réglage du son et
+  sortie vers la grille toujours présents) — le tout avec un faux `AudioContext`
+  qui enregistre les oscillateurs lancés. Le scénario de
   `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
   rend les nouvelles routes dans les trois langues ; `check:thumbs` vérifie les
   fichiers livrés dans `public/quizzes/`.
