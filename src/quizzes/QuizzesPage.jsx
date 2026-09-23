@@ -5,7 +5,7 @@ import { useAchievements } from '../achievements/AchievementContext';
 import VideoThumb from '../components/VideoThumb';
 import { clockOffset } from '../components/ReleasesCalendar';
 import { quizzes, quizLabel } from '../quizzesData';
-import { readLocalBest } from './quizApi';
+import { readLocalBest, formatBest } from './quizApi';
 import { bestDayRun, dailyQuizFor } from './engine';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
@@ -97,7 +97,7 @@ export default function QuizzesPage() {
               <h3>{quizLabel(quiz.labels, lang)?.title}</h3>
               <p>{quizLabel(quiz.labels, lang)?.text}</p>
               <span className="quiz-card-meta">
-                {best && <span className="quiz-card-best" title={copy.best.replace('{s}', `${best.score}/${best.total}`)}>★ {best.score}/{best.total}</span>}
+                {best && <span className="quiz-card-best" title={copy.best.replace('{s}', formatBest(best))}>★ {formatBest(best)}</span>}
                 {copy.questionsCount.replace('{n}', String(quiz.questions.length))} <Arrow />
               </span>
             </span>

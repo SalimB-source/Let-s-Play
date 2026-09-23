@@ -38,7 +38,8 @@ npm run build
   jours, feedback instantané de chaque réponse (gel, vert/rouge, points de
   rapidité & combo), corrections commentées, confettis du sans-faute,
   raccourcis clavier 1–4, commentaires, recherche et cinq succès
-  dédiés (voir « Quizz gaming & quizz du jour »)
+  dédiés ; classement des quizz par points gagnés et position au classement
+  global affichée sur la page de profil (voir « Quizz gaming & quizz du jour »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
@@ -740,23 +741,25 @@ mais la structure de données les accepte déjà.
   passe au vert (petit « pop ») ou au rouge (secousse), la bonne réponse
   s'illumine si elle n'a pas été cliquée, et un bandeau annonce le verdict
   avec une phrase tirée au hasard (`verdicts.right/wrong/timeout`, traduits)
-  et les points gagnés. Les points sont du jeu, pas du barème officiel :
+  et les points gagnés. Les points sont le barème du classement :
   base 100 + rapidité (jusqu'à 50, `quizPoints` du moteur) + combo (jusqu'à
   50, les bonnes réponses consécutives) — 200 max par question. Ils s'affichent
   en direct dans la barre du lecteur (⚡ + série 🔥 dès ×2, bip de combo dont
   la note monte avec la série) et sur l'écran de résultat (total + meilleure
-  série). Le classement, les succès et le record de l'appareil restent
-  `correct/total`, inchangés. Raccourcis clavier : les touches 1–4 valident le
-  choix affiché (jamais pendant le gel, jamais dans un champ de saisie). Le
-  sans-faute fait pleuvoir des confettis sur l'écran de résultat
+  série). Ils font le classement des quizz et le record de l'appareil (la
+  meilleure partie = le plus de points, `correct/total` en départage) ; les
+  succès et les paliers de résultat restent calculés sur `correct/total`.
+  Raccourcis clavier : les touches 1–4 valident le choix affiché (jamais
+  pendant le gel, jamais dans un champ de saisie). Le sans-faute fait pleuvoir
+  des confettis sur l'écran de résultat
   (`QuizConfetti`, DOM/CSS sans canvas, pluie de trois secondes) et chaque
   palier joue sa fanfare (`legend` = montée de quatre notes).
 - **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
   sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
   `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
   terminer le quizz du jour crédite un jour de série (succès platine
-  « Semaine parfaite » = 7 jours d'affilée). Le meilleur score de l'appareil
-  s'affiche sur chaque carte de la grille.
+  « Semaine parfaite » = 7 jours d'affilée). La meilleure partie de l'appareil
+  (points + bonnes réponses) s'affiche sur chaque carte de la grille.
 - **Succès** — l'action `quiz_completed` (`QuizPlayer`) alimente le moteur des
   succès : parties, quizz distincts, sans-faute, jours de série. Cinq succès
   au catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi
@@ -770,21 +773,34 @@ mais la structure de données les accepte déjà.
   pré-rempli avec le score à battre ; sans compte ni backend, un message
   l'explique. Chaque défi crédite `quiz_challenge`.
 - **Scores & classement** — `supabase/schema.sql` (section 8) : table
-  `public.quiz_attempts` (meilleur score par compte et par quizz, bornes
-  `0 ≤ score ≤ total` vérifiées côté serveur) + RPC `submit_quiz_attempt` et
-  `get_quiz_leaderboard` (top 10 joint aux profils, ligne du joueur marquée
-  `mine`), non exposées en direct (revoke). Le compte connecté envoie sa
-  tentative à la fin de la partie (`src/quizzes/quizApi.js`) ; le visiteur
-  garde son meilleur score sur l'appareil (`localStorage`, clé propre aux
-  quizz). Sans backend, la section classement explique comment le débloquer.
-  Après collage du schéma dans le Dashboard Supabase, le tableau de contrôle
-  final affiche les lignes 31–33 « OK ».
+  `public.quiz_attempts` (MEILLEURE PARTIE par compte et par quizz — celle qui
+  marque le plus de points, à égalité le plus de bonnes réponses ; bornes
+  `0 ≤ score ≤ total` et `100 × score ≤ points ≤ 200 × total` vérifiées côté
+  serveur) + RPC `submit_quiz_attempt` (avec `p_points`), `get_quiz_leaderboard`
+  (top 10 trié par POINTS gagnés — les bonnes réponses du run servent de
+  départage et s'affichent en secondaire, jointes aux profils, ligne du joueur
+  marquée `mine`) et `get_quiz_global_rank` (position au classement GLOBAL des
+  quizz : somme des points des meilleures parties, tous quizz confondus —
+  rang, points, quizz joués, joueurs classés), non exposées en direct (revoke).
+  Le compte connecté envoie sa tentative à la fin de la partie
+  (`src/quizzes/quizApi.js`, avec repli sur l'ancienne signature de la RPC si
+  le déploiement est antérieur aux points) ; le visiteur garde sa meilleure
+  partie sur l'appareil (`localStorage`, clé propre aux quizz). La page de
+  profil affiche la position du joueur par rapport au classement global
+  (`src/quizzes/QuizGlobalRank.jsx`, profil personnel comme profils publics) ;
+  sans backend, la section explique comment la débloquer. Après collage du
+  schéma dans le Dashboard Supabase, le tableau de contrôle final affiche les
+  lignes 31–33 « OK ».
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
-  barème « fun » des points borné à 200/question, série, minuteur à 15 s),
+  points bornés à 200/question qui font le classement, série, minuteur à 15 s),
   miniatures (une illustration distincte par quizz, demandée par les cartes
   rendues — aucune requête YouTube), partie complète 8/8 jouée en jsdom avec
   la vraie pile de providers (succès crédités dans le stockage, confettis du
   sans-faute, points et meilleure série affichés), grille rendue en FR/EN/AR,
+  record de l'appareil par points (meilleure partie = le plus de points,
+  départage aux bonnes réponses), classement par points (points affichés en
+  premier, score/total en secondaire, repli ancien backend) et position au
+  classement global affichée sur la page de profil (repli hors-ligne expliqué),
   verdict (gel avec choix verrouillés, vert/rouge, bonne réponse révélée,
   bandeau avec points), raccourcis clavier 1–4 (la touche pendant le gel est
   ignorée), sons (tempo qui accélère sans jamais ralentir et sans attendre le

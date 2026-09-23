@@ -98,14 +98,16 @@ export const QUESTION_TIME = { seconds: 15 };
 export const VERDICT_MS = 600;
 
 /**
- * Barème « fun » d'une bonne réponse : une base, un bonus de rapidité
+ * Barème des points d'une bonne réponse : une base, un bonus de rapidité
  * (répondre vite rapporte jusqu'à `speedMax`) et un bonus de combo (chaque
  * bonne réponse consécutive au-delà de la première rapporte `comboPer`,
  * plafonné à `comboCap × comboPer`).
  *
- * Les points sont du jeu, pas du barème officiel : le classement, les succès
- * et le record de l'appareil restent `correct/total`. Les points s'affichent
- * en direct dans la partie et sur l'écran de résultat.
+ * Les points font le classement des quizz et le record de l'appareil (la
+ * meilleure partie = le plus de points, `correct/total` en départage) ; les
+ * succès et les paliers de résultat, eux, restent calculés sur
+ * `correct/total`. Les points s'affichent en direct dans la partie et sur
+ * l'écran de résultat.
  */
 export const QUIZ_POINTS = { base: 100, speedMax: 50, comboPer: 10, comboCap: 5 };
 

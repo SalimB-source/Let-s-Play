@@ -15,6 +15,7 @@ import { demoPresence, findDemoPlayer } from '../friends/demoRoster';
 import { normalizePlatforms, gamePlatforms } from '../lib/gameLibrary';
 import ConsoleLogo from '../components/ConsoleLogo';
 import TopGamePill from '../components/TopGamePill';
+import QuizGlobalRank from '../quizzes/QuizGlobalRank';
 import { MAX_TESTED_GAMES } from '../lib/gameLibrary';
 
 function formatJoined(iso) {
@@ -331,6 +332,10 @@ export default function Profile() {
             </div>
           </div>
 
+          {/* Classement global des quizz : position du joueur (points cumulés
+              sur tous les quizz, RPC `get_quiz_global_rank`). */}
+          <QuizGlobalRank userId={me.id} self />
+
           {/* CONSOLES POSSÉDÉES — sélection faite dans le hub joueur */}
           <div className="player-section">
             <div className="player-section-header">
@@ -607,6 +612,10 @@ export default function Profile() {
           <div className="player-stat-card"><div className="player-stat-value">{handle.slice(0,6)}</div><div className="player-stat-label">Gamertag</div></div>
           <div className="player-stat-card"><div className="player-stat-value">—</div><div className="player-stat-label">Succès</div></div>
         </div>
+
+        {/* Classement global des quizz : position du joueur dans la page de
+            profil (points cumulés sur tous les quizz). */}
+        <QuizGlobalRank userId={remoteProfile.id} />
 
         {/* Consoles possédées + jeux testés — colonnes publiques du profil
             (section 3b2 du schéma) ; absentes sur les anciens déploiements. */}

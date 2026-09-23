@@ -289,6 +289,7 @@
 .quiz-board-name { display: inline-flex; align-items: center; gap: 8px; flex: 1; min-width: 0; font-weight: 600; }
 .quiz-board-name img { width: 24px; height: 24px; border-radius: 50%; }
 .quiz-board-score { font: 700 14px var(--mono); color: var(--yellow); }
+.quiz-board-detail { margin-left: 8px; color: var(--dim); font: 500 12px var(--mono); letter-spacing: .04em; }
 .quiz-board-local { color: var(--muted); font-size: 14px; }
 .quiz-board-local strong { color: var(--cyan); }
 
