@@ -23,7 +23,8 @@
    horizontal rubber-band on mobile: iOS/Safari only trust the viewport scroll
    container (html) for this, and `clip` (unlike `hidden`) doesn't create a
    scroll container, so `position: sticky` descendants keep working. */
-html{scroll-behavior:smooth;overflow-x:clip;overscroll-behavior-x:none}
+/* Fallback `hidden` (anciens iOS) puis `clip` (moderne, ne casse pas le sticky). */
+html{scroll-behavior:smooth;overflow-x:hidden;overflow-x:clip;overscroll-behavior-x:none}
 body{
   margin:0;
   font-family:var(--body);
