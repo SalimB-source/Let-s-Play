@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
@@ -6,7 +6,7 @@ import { useAchievementAction } from '../achievements/AchievementContext';
 import { quizLabel } from '../quizzesData';
 import { submitQuizAttempt, writeLocalBest } from './quizApi';
 import QuizChallenge from './QuizChallenge';
-import { dayNumber, gradeQuiz, prepareQuiz } from './engine';
+import { QUESTION_TIME, dayNumber, gradeQuiz, prepareQuiz } from './engine';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
@@ -18,6 +18,7 @@ const FALLBACK = {
   yourAnswer: 'Your answer', rightAnswer: 'Answer', replay: 'Play again', others: 'All quizzes',
   readSource: 'Read the related story', questionsCount: '{n} questions', dailyTag: 'Daily quiz',
   retryMistakes: 'Retry my mistakes', reviewTag: 'REVIEW ROUND',
+  timeUp: 'Time up', timeLeft: 'Time remaining',
   tiers: { rookie: 'NOVICE', player: 'PLAYER', veteran: 'VETERAN', legend: 'LEGEND' },
   difficulty: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
@@ -34,7 +35,9 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
   const [review, setReview] = useState(false);
+  const [remainingMs, setRemainingMs] = useState(() => QUESTION_TIME.seconds * 1000);
   const trackedFor = useRef(null);
+  const commitRef = useRef(null);
 
   const start = () => {
     // Quizz du jour : même mélange pour tout le monde (graine = numéro du jour).
@@ -59,8 +62,10 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     setPhase('play');
   };
 
+  // Valide une réponse. `choice` vaut null quand le minuteur expire :
+  // la question est alors comptée comme ratée (aucune réponse enregistrée).
   const pick = (question, choice) => {
-    const nextAnswers = { ...answers, [question.id]: choice.id };
+    const nextAnswers = choice ? { ...answers, [question.id]: choice.id } : { ...answers };
     setAnswers(nextAnswers);
     if (index + 1 < prepared.questions.length) {
       setIndex(index + 1);
@@ -89,6 +94,30 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     }
   };
 
+  // Le minuteur appelle toujours la dernière version de `pick` (closures
+  // fraîches sur la question en cours) via cette ref.
+  commitRef.current = pick;
+
+  // Minuteur de QUESTION_TIME secondes par question : à zéro, la question
+  // avance sans réponse (comptée ratée). Relancé à chaque nouvelle question.
+  useEffect(() => {
+    if (phase !== 'play' || !prepared) return undefined;
+    const budget = QUESTION_TIME.seconds * 1000;
+    const deadline = Date.now() + budget;
+    setRemainingMs(budget);
+    const id = window.setInterval(() => {
+      const left = deadline - Date.now();
+      if (left > 0) {
+        setRemainingMs(left);
+        return;
+      }
+      window.clearInterval(id);
+      setRemainingMs(0);
+      commitRef.current(prepared.questions[index], null);
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [phase, index, prepared]);
+
   if (phase === 'intro' || !prepared) {
     const meta = quizLabel(quiz.labels, lang) || {};
     return (
@@ -114,6 +143,10 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
       <div className="quiz-player">
         <div className="quiz-progress" role="progressbar" aria-valuemin={1} aria-valuemax={prepared.questions.length} aria-valuenow={index + 1}>
           <span style={{ width: `${((index + 1) / prepared.questions.length) * 100}%` }} />
+        </div>
+        <div className={`quiz-timer${remainingMs < 3000 ? ' is-low' : ''}`} role="timer" aria-label={copy.timeLeft}>
+          <span className="quiz-timer-count">{Math.ceil(remainingMs / 1000)}s</span>
+          <span className="quiz-timer-track"><i style={{ width: `${(remainingMs / (QUESTION_TIME.seconds * 1000)) * 100}%` }} /></span>
         </div>
         <p className="quiz-progress-label">{copy.question} {index + 1} {copy.of} {prepared.questions.length}</p>
         {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
@@ -156,7 +189,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
             <li key={entry.question.id} className={`quiz-fix ${entry.correct ? 'is-right' : 'is-wrong'}`}>
               <p className="quiz-fix-q">{quizLabel(entry.question.q, lang)}</p>
               <p className="quiz-fix-a">
-                <span>{copy.yourAnswer} : {entry.picked ? quizLabel(entry.picked.label, lang) : '—'}</span>
+                <span>{copy.yourAnswer} : {entry.picked ? quizLabel(entry.picked.label, lang) : copy.timeUp}</span>
                 {!entry.correct && entry.solution && <span>{copy.rightAnswer} : {quizLabel(entry.solution.label, lang)}</span>}
               </p>
               {entry.question.why && <p className="quiz-fix-why">{quizLabel(entry.question.why, lang)}</p>}

@@ -81,6 +81,12 @@ export function prepareQuiz(quiz, seed = null) {
  * l'identifiant du choix cliqué. Renvoie le détail question par question
  * (pour l'écran « corrections ») et le palier de résultat.
  */
+/**
+ * Temps imparti par question, en secondes. Exposé mutable pour que les
+ * scripts de vérification (check:quiz) puissent accélérer l'horloge.
+ */
+export const QUESTION_TIME = { seconds: 7 };
+
 export function gradeQuiz(prepared, answers = {}) {
   const detail = (prepared.questions || []).map((question) => {
     const picked = question.choices.find((choice) => choice.id === answers[question.id]) || null;

@@ -24,7 +24,7 @@ import { readDemoMessages } from '../src/messages/messagesApi';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import { quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
-import { bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz } from '../src/quizzes/engine';
+import { QUESTION_TIME, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz } from '../src/quizzes/engine';
 import { writeLocalBest } from '../src/quizzes/quizApi';
 // Personas de démonstration (livrés vides dans l'application) : comme les
 // autres scripts de vérification, on réinjecte les fixtures avant le rendu.
@@ -290,5 +290,42 @@ export async function checkQuiz(assert) {
 
   await act(async () => revRoot.unmount());
 
-  console.log('QUIZZ : moteur, partie 8/8 + succès, défi démo, grille FR/EN/AR, record + compte à rebours, révision des erreurs sans double comptage.');
+  /* --------------------------- 7. Minuteur ---------------------------------- */
+  // On raccourcit le budget à 300 ms : sans cliquer, chaque question doit
+  // expirer toute seule et la partie finir en 0/8 avec « Temps écoulé ».
+  QUESTION_TIME.seconds = 0.3;
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  seedLang('fr');
+  const timerNode = document.createElement('div');
+  document.body.append(timerNode);
+  const timerRoot = createRoot(timerNode);
+  await act(async () => timerRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <AchievementProvider>
+          <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
+            <Routes>
+              <Route path="/quizz" element={<QuizzesPage />} />
+              <Route path="/quizz/:slug" element={<QuizPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AchievementProvider>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+
+  await click([...timerNode.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
+  assert.ok(timerNode.querySelector('.quiz-timer'), 'le minuteur est affiché pendant la partie');
+  // Une question à la fois : chaque `act` laisse le décompte expirer (300 ms),
+  // avancer la question, puis relance l'intervalle de la suivante.
+  for (let step = 0; step < quiz.questions.length; step += 1) {
+    await act(async () => { await sleep(500); });
+  }
+  assert.ok(timerNode.textContent.includes('0/8 bonnes réponses'), 'le minuteur écoulé compte chaque question comme ratée');
+  assert.ok(timerNode.textContent.includes('Temps écoulé'), 'les corrections signalent le temps écoulé');
+  QUESTION_TIME.seconds = 7;
+
+  await act(async () => timerRoot.unmount());
+
+  console.log('QUIZZ : moteur, partie 8/8 + succès, défi démo, grille FR/EN/AR, record + compte à rebours, révision sans double comptage, minuteur 7 s.');
 }

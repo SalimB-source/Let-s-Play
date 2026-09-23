@@ -682,6 +682,10 @@ mais la structure de données les accepte déjà.
 - **Moteur** — `src/quizzes/engine.js` (pur, sans React) : mélange déterministe
   par graine (le quizz du jour est le même pour tous), barème, paliers de
   résultat (`rookie` → `legend`), meilleure série de jours consécutifs.
+- **Minuteur** — 7 secondes par question (`QUESTION_TIME`, mutable pour les
+  tests) : une barre de décompte passe au rouge dans les 3 dernières secondes
+  et, à zéro, la question avance sans réponse (comptée ratée, signalée
+  « Temps écoulé » dans les corrections).
 - **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
   sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
   `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;

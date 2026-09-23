@@ -75,6 +75,13 @@
 .quiz-progress { height: 6px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 10px; }
 .quiz-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--cyan)); transition: width .25s; }
 .quiz-progress-label { margin: 0 0 18px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+/* Minuteur : 7 secondes par question, rouge dans les 3 dernières. */
+.quiz-timer { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
+.quiz-timer-count { min-width: 4ch; color: var(--cyan); font: 700 15px var(--mono); }
+.quiz-timer-track { flex: 1; height: 6px; background: var(--line); overflow: hidden; }
+.quiz-timer-track i { display: block; height: 100%; background: var(--cyan); transition: width .1s linear; }
+.quiz-timer.is-low .quiz-timer-count, .quiz-timer.is-low .quiz-timer-track i { color: #f87171; background: #f87171; }
+.quiz-timer.is-low .quiz-timer-count { background: none; }
 
 .quiz-question { margin: 0 0 22px; font: 700 clamp(20px, 3vw, 28px)/1.25 var(--display); }
 
