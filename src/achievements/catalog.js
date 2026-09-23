@@ -650,12 +650,12 @@ export const ACHIEVEMENTS = [
     rarity: 'gold',
     xp: 150,
     metric: 'distinctQuizzes',
-    // Le catalogue compte six quizz : mettre à jour si un quizz est ajouté.
-    target: 6,
+    // Le catalogue compte huit quizz : mettre à jour si un quizz est ajouté.
+    target: 8,
     labels: {
-      en: { name: 'Full tour', desc: 'Play all six quizzes of the site.' },
-      fr: { name: 'Tour complet', desc: 'Joue les six quizz du site.' },
-      ar: { name: 'الجولة الكاملة', desc: 'العب الاختبارات الستة في الموقع.' },
+      en: { name: 'Full tour', desc: 'Play all eight quizzes of the site.' },
+      fr: { name: 'Tour complet', desc: 'Joue les huit quizz du site.' },
+      ar: { name: 'الجولة الكاملة', desc: 'العب الاختبارات الثمانية في الموقع.' },
     },
   },
   {

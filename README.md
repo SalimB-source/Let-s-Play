@@ -33,8 +33,8 @@ npm run build
   argent, or, platine — avec niveau, XP, grades visibles et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
 - Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
-  six quizz rédigés par la rédaction (culture générale, rétro, souls-like,
-  RPG, e-sport, studios), quizz du jour en rotation quotidienne avec série de
+  huit quizz rédigés par la rédaction (culture générale, rétro, souls-like,
+  RPG, e-sport, studios, tech et cinéma), quizz du jour en rotation quotidienne avec série de
   jours, corrections commentées, commentaires, recherche et cinq succès
   dédiés (voir « Quizz gaming & quizz du jour »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
@@ -672,9 +672,10 @@ Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 `/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
 mais la structure de données les accepte déjà.
 
-- **Données** — `src/quizzesData.js` : six quizz de huit questions (culture
-  générale, rétro, souls-like, RPG, e-sport, studios), chacun lié à un article
-  maison (`source`) et à une miniature YouTube (`videoId`). Ajouter un quizz =
+- **Données** — `src/quizzesData.js` : huit quizz de huit questions (culture
+  générale, rétro, souls-like, RPG, e-sport, studios, tech et cinéma), la
+  plupart liés à un article maison (`source`) et tous à une miniature YouTube
+  (`videoId`). Ajouter un quizz =
   une entrée : la grille, la recherche (`searchIndex`), la rotation du jour et
   le succès « Tour complet » le prennent en compte (mettre à jour la cible du
   succès si le nombre de quizz change).

@@ -207,7 +207,7 @@ export async function checkQuiz(assert) {
         </AuthProvider>
       </LanguageProvider>,
     ));
-    assert.equal(gridNode.querySelectorAll('.quiz-card').length, quizzes.length, `[${lang}] six cartes de quizz`);
+    assert.equal(gridNode.querySelectorAll('.quiz-card').length, quizzes.length, `[${lang}] huit cartes de quizz`);
     assert.ok(gridNode.querySelector('.quiz-daily'), `[${lang}] bannière quizz du jour`);
     await act(async () => gridRoot.unmount());
   }

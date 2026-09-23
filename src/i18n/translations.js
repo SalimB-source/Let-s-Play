@@ -25,7 +25,7 @@ export const translations = {
     quiz: {
       label: 'QUIZZES / GAMING',
       titleA: 'PROVE YOUR', titleB: 'GAME KNOWLEDGE.',
-      intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport and studios.',
+      intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport, studios, tech and cinema.',
       dailyEyebrow: 'Daily quiz',
       dailyHint: 'One quiz picked every day — come back tomorrow to keep your streak.',
       streak: 'Streak',
@@ -336,7 +336,7 @@ export const translations = {
     quiz: {
       label: 'QUIZZ / GAMING',
       titleA: 'PROUVE QUE TU', titleB: 'CONNAIS LE GAME.',
-      intro: 'Des quizz écrits par la rédaction : culture générale, rétro, souls-like, RPG, e-sport et studios.',
+      intro: 'Des quizz écrits par la rédaction : culture générale, rétro, souls-like, RPG, e-sport, studios, tech et cinéma.',
       dailyEyebrow: 'Quizz du jour',
       dailyHint: 'Un quizz choisi chaque jour — reviens demain pour garder ta série.',
       streak: 'Série',
@@ -639,7 +639,7 @@ export const translations = {
     quiz: {
       label: 'اختبارات / ألعاب',
       titleA: 'أثبت أنك', titleB: 'تعرف اللعبة.',
-      intro: 'اختبارات من إعداد التحرير: ثقافة عامة، ريترو، سولز، تقمّص أدوار، رياضات إلكترونية واستوديوهات.',
+      intro: 'اختبارات من إعداد التحرير: ثقافة عامة، ريترو، سولز، تقمّص أدوار، رياضات إلكترونية، استوديوهات، تقنية وسينما.',
       dailyEyebrow: 'اختبار اليوم',
       dailyHint: 'اختبار يُختار كل يوم — عُد غدًا لتحافظ على سلسلتك.',
       streak: 'السلسلة',
