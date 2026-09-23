@@ -72,6 +72,23 @@ export const translations = {
       levelUnlocked: '{level} level unlocked — it is waiting for you.',
       levelPlay: 'Play this level',
       levelProgress: '{done}/{total} levels',
+      levelConfirm: {
+        title: 'Start {level}?',
+        intro: 'Check the rules for this level before you begin.',
+        warningHard: 'Expert is the ultimate challenge — only 10 seconds, 5 answers, 3 lives, no jokers.',
+        rulesTitle: 'Rules for this level',
+        time: '{n} seconds per question',
+        choices: '{n} answers',
+        lives: '{n} lives — lose one per mistake or timeout, game over at 0',
+        livesNone: 'No lives to lose',
+        jokers: '{n} jokers — {fifty} × 50/50, {freeze} × Freeze',
+        jokersNone: 'No jokers',
+        jokerDetail: '50/50 removes 2 wrong answers (D) · Freeze adds {n}s (F)',
+        points: 'Points ×{n}',
+        hintJokers: 'Use D for 50/50 and F for Freeze during the game.',
+        cancel: 'Cancel',
+        confirm: 'Start',
+      },
       // Les TROIS niveaux terminés : le quizz passe « terminé » — cartes grisées
       // et verrouillées (grille, quizz du jour, recherche, accueil), et le
       // lecteur n'ouvre plus de nouvelle partie.
@@ -434,6 +451,23 @@ export const translations = {
       levelUnlocked: 'Niveau {level} débloqué — il t’attend.',
       levelPlay: 'Jouer ce niveau',
       levelProgress: '{done}/{total} niveaux',
+      levelConfirm: {
+        title: 'Lancer {level} ?',
+        intro: 'Vérifie les règles de ce niveau avant de commencer.',
+        warningHard: 'L’Expert est impitoyable — 10 secondes, 5 propositions dont 1 piège, 3 vies, aucun joker.',
+        rulesTitle: 'Règles de ce niveau',
+        time: '{n} secondes par question',
+        choices: '{n} propositions',
+        lives: '{n} vies — une perdue par erreur ou temps écoulé, partie terminée à 0',
+        livesNone: 'Aucune vie à perdre',
+        jokers: '{n} jokers — {fifty} × 50/50, {freeze} × Gel',
+        jokersNone: 'Aucun joker',
+        jokerDetail: '50/50 élimine 2 mauvaises réponses (D) · Gel ajoute {n}s (F)',
+        points: 'Points ×{n}',
+        hintJokers: 'Utilise D pour 50/50 et F pour Gel pendant la partie.',
+        cancel: 'Annuler',
+        confirm: 'Lancer',
+      },
       // Les TROIS niveaux terminés : le quizz passe « terminé » — cartes grisées
       // et verrouillées (grille, quizz du jour, recherche, accueil), et le
       // lecteur n'ouvre plus de nouvelle partie.
@@ -788,6 +822,23 @@ export const translations = {
       levelUnlocked: 'تم فتح مستوى {level} — بانتظارك.',
       levelPlay: 'العب هذا المستوى',
       levelProgress: '{done}/{total} مستويات',
+      levelConfirm: {
+        title: 'بدء {level}؟',
+        intro: 'تحقق من قواعد هذا المستوى قبل البدء.',
+        warningHard: 'الخبير هو التحدي الأقصى — 10 ثوانٍ، 5 خيارات فيها فخ، 3 أرواح، دون وسائل مساعدة.',
+        rulesTitle: 'قواعد هذا المستوى',
+        time: '{n} ثوانٍ لكل سؤال',
+        choices: '{n} خيارات',
+        lives: '{n} أرواح — تخسر واحدة لكل خطأ أو انتهاء وقت',
+        livesNone: 'لا أرواح لتخسرها',
+        jokers: '{n} وسائل مساعدة — {fifty} × 50/50، {freeze} × تجميد',
+        jokersNone: 'دون وسائل مساعدة',
+        jokerDetail: '50/50 يحذف إجابتين (D) · التجميد يضيف {n}ث (F)',
+        points: 'النقاط ×{n}',
+        hintJokers: 'استخدم D لـ 50/50 و F للتجميد أثناء اللعب.',
+        cancel: 'إلغاء',
+        confirm: 'ابدأ',
+      },
       // اكتملت المستويات الثلاثة: الاختبار «مكتمل» — بطاقات رمادية ومقفلة (الشبكة،
       // اختبار اليوم، البحث، الرئيسية) ولا تُفتح جولة جديدة في القارئ.
       finished: 'مكتمل',

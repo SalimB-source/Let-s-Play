@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
@@ -16,6 +17,7 @@ import {
   gradeQuiz,
   levelBrief,
   levelRules,
+  pointsMultiplier,
   prepareQuiz,
   questionBudgetMs,
   quizPointsFor,
@@ -96,6 +98,23 @@ const FALLBACK = {
   rules: { perQuestion: 'per question', choices: 'answers', lives: 'lives', noLives: 'no life to lose', jokers: 'jokers', noJokers: 'no joker' },
   expertHint: 'Ten seconds, five answers, three lives, no joker — and double points.',
   noJokersTag: 'EXPERT — NO JOKER',
+  levelConfirm: {
+    title: 'Start {level}?',
+    intro: 'Check the rules for this level before you begin.',
+    warningHard: 'Expert is the ultimate challenge — only 10 seconds, 5 answers, 3 lives, no jokers.',
+    rulesTitle: 'Rules for this level',
+    time: '{n} seconds per question',
+    choices: '{n} answers',
+    lives: '{n} lives — lose one per mistake or timeout, game over at 0',
+    livesNone: 'No lives to lose',
+    jokers: '{n} jokers — {fifty} × 50/50, {freeze} × Freeze',
+    jokersNone: 'No jokers',
+    jokerDetail: '50/50 removes 2 wrong answers (D) · Freeze adds {n}s (F)',
+    points: 'Points ×{n}',
+    hintJokers: 'Use D for 50/50 and F for Freeze during the game.',
+    cancel: 'Cancel',
+    confirm: 'Start',
+  },
   jokersGroup: 'Jokers', fifty: '50/50', fiftyHint: 'Removes two wrong answers',
   freeze: 'Freeze', freezeHint: 'Adds {n} seconds to the clock',
   livesLeft: '{n} lives left',
@@ -170,6 +189,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     streakTags: { ...FALLBACK.streakTags, ...((t.quiz || {}).streakTags || {}) },
     tiers: { ...FALLBACK.tiers, ...((t.quiz || {}).tiers || {}) },
     verdicts: { ...FALLBACK.verdicts, ...((t.quiz || {}).verdicts || {}) },
+    levelConfirm: { ...FALLBACK.levelConfirm, ...((t.quiz || {}).levelConfirm || {}) },
   };
   const totalQuestions = quizQuestionsCount(quiz);
   // Règle anti-farm : un niveau déjà terminé ne rapporte plus d'XP. L'état est
@@ -179,6 +199,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   const levelAlreadyCompleted = quizLevelCompleted(achievementState, quiz.slug, level);
   const [replayRun, setReplayRun] = useState(levelAlreadyCompleted);
   const [justUnlocked, setJustUnlocked] = useState(null);
+  const [pendingLevel, setPendingLevel] = useState(null);
 
   /**
    * Ce niveau est-il terminé ? Deux registres disent la même chose : le moteur
@@ -286,6 +307,31 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     setShake(false);
     setNewRecord(false);
   };
+
+  const requestStart = (levelId) => {
+    setPendingLevel(levelId);
+  };
+  const cancelPending = () => setPendingLevel(null);
+  const confirmPending = () => {
+    const lvl = pendingLevel;
+    setPendingLevel(null);
+    if (lvl) start(lvl);
+  };
+
+  // Fermeture via Échap et verrouillage du scroll quand la popup est ouverte
+  useEffect(() => {
+    if (!pendingLevel) return undefined;
+    const onKey = (event) => {
+      if (event.key === 'Escape') setPendingLevel(null);
+    };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [pendingLevel]);
 
   const start = (levelId) => {
     // Geste utilisateur : c'est ici que le contexte audio s'ouvre, sinon le
@@ -603,6 +649,47 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
               {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
             </div>
           </div>
+                    {pendingLevel && typeof document !== 'undefined' && createPortal(
+            <div className="quiz-confirm-overlay" role="presentation" onClick={() => setPendingLevel(null)}>
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="quiz-confirm-title-intro"
+                className={`quiz-confirm-dialog quiz-confirm-dialog--${pendingLevel}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="quiz-confirm-head">
+                  <span className={`quiz-chip quiz-chip--${pendingLevel}`}>{(copy.levels && copy.levels[pendingLevel]) || pendingLevel}</span>
+                  <h2 id="quiz-confirm-title-intro" className="quiz-confirm-title">{(copy.levelConfirm.title || '').replace('{level}', (copy.levels && copy.levels[pendingLevel]) || pendingLevel)}</h2>
+                  <p className="quiz-confirm-intro">{copy.levelConfirm.intro}</p>
+                </div>
+                {pendingLevel === 'hard' && (
+                  <p className="quiz-confirm-warning" role="alert">⚠️ {copy.levelConfirm.warningHard}</p>
+                )}
+                <div className="quiz-confirm-rules">
+                  <h3 className="quiz-confirm-rulesTitle">{copy.levelConfirm.rulesTitle}</h3>
+                  <ul className="quiz-confirm-list">
+                    <li>⏱ {(copy.levelConfirm.time || '{n}').replace('{n}', String(levelRules(pendingLevel).seconds))}</li>
+                    <li>▤ {(copy.levelConfirm.choices || '{n}').replace('{n}', String(levelBrief(quiz, pendingLevel).choices))}</li>
+                    <li>♥ {levelRules(pendingLevel).lives > 0 ? (copy.levelConfirm.lives || '{n}').replace('{n}', String(levelRules(pendingLevel).lives)) : (copy.levelConfirm.livesNone || '')}</li>
+                    <li>◐ {((levelRules(pendingLevel).jokers.fifty || 0) + (levelRules(pendingLevel).jokers.freeze || 0)) > 0 ? (copy.levelConfirm.jokers || '{n}').replace('{n}', String((levelRules(pendingLevel).jokers.fifty || 0) + (levelRules(pendingLevel).jokers.freeze || 0))).replace('{fifty}', String(levelRules(pendingLevel).jokers.fifty || 0)).replace('{freeze}', String(levelRules(pendingLevel).jokers.freeze || 0)) : (copy.levelConfirm.jokersNone || '')}</li>
+                    <li>⚡ {(copy.levelConfirm.points || '×{n}').replace('{n}', formatMultiplier(pointsMultiplier(pendingLevel), lang))}</li>
+                  </ul>
+                  {((levelRules(pendingLevel).jokers.fifty || 0) + (levelRules(pendingLevel).jokers.freeze || 0)) > 0 && (
+                    <p className="quiz-confirm-jokerDetail">
+                      {(copy.levelConfirm.jokerDetail || '').replace('{n}', String(FREEZE_BONUS.seconds))}
+                      {copy.levelConfirm.hintJokers ? ` — ${copy.levelConfirm.hintJokers}` : ''}
+                    </p>
+                  )}
+                </div>
+                <div className="quiz-confirm-actions">
+                  <button type="button" className="quiz-cta quiz-cta--ghost" onClick={() => setPendingLevel(null)}>{copy.levelConfirm.cancel}</button>
+                  <button type="button" className="quiz-cta quiz-cta--primary" autoFocus onClick={() => { const lvl = pendingLevel; setPendingLevel(null); if (lvl) start(lvl); }}>{copy.levelConfirm.confirm}</button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )}
         </div>
       );
     }
@@ -664,7 +751,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
                     className={`quiz-cta ${locked ? 'quiz-cta--ghost' : 'quiz-cta--primary'} quiz-level-play`}
                     disabled={locked}
                     aria-disabled={locked}
-                    onClick={() => start(entry)}
+                    onClick={() => requestStart(entry)}
                   >
                     {locked ? copy.levelLocked : copy.levelPlay} <Arrow />
                   </button>
@@ -687,6 +774,47 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
             ⌨ {copy.keysHint.replace('{n}', String(levelBrief(quiz, level).choices))}
             {levelRules(level).jokers.fifty + levelRules(level).jokers.freeze > 0 ? copy.jokerKeys : ''}
           </p>
+                    {pendingLevel && typeof document !== 'undefined' && createPortal(
+            <div className="quiz-confirm-overlay" role="presentation" onClick={() => setPendingLevel(null)}>
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="quiz-confirm-title-intro"
+                className={`quiz-confirm-dialog quiz-confirm-dialog--${pendingLevel}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="quiz-confirm-head">
+                  <span className={`quiz-chip quiz-chip--${pendingLevel}`}>{(copy.levels && copy.levels[pendingLevel]) || pendingLevel}</span>
+                  <h2 id="quiz-confirm-title-intro" className="quiz-confirm-title">{(copy.levelConfirm.title || '').replace('{level}', (copy.levels && copy.levels[pendingLevel]) || pendingLevel)}</h2>
+                  <p className="quiz-confirm-intro">{copy.levelConfirm.intro}</p>
+                </div>
+                {pendingLevel === 'hard' && (
+                  <p className="quiz-confirm-warning" role="alert">⚠️ {copy.levelConfirm.warningHard}</p>
+                )}
+                <div className="quiz-confirm-rules">
+                  <h3 className="quiz-confirm-rulesTitle">{copy.levelConfirm.rulesTitle}</h3>
+                  <ul className="quiz-confirm-list">
+                    <li>⏱ {(copy.levelConfirm.time || '{n}').replace('{n}', String(levelRules(pendingLevel).seconds))}</li>
+                    <li>▤ {(copy.levelConfirm.choices || '{n}').replace('{n}', String(levelBrief(quiz, pendingLevel).choices))}</li>
+                    <li>♥ {levelRules(pendingLevel).lives > 0 ? (copy.levelConfirm.lives || '{n}').replace('{n}', String(levelRules(pendingLevel).lives)) : (copy.levelConfirm.livesNone || '')}</li>
+                    <li>◐ {((levelRules(pendingLevel).jokers.fifty || 0) + (levelRules(pendingLevel).jokers.freeze || 0)) > 0 ? (copy.levelConfirm.jokers || '{n}').replace('{n}', String((levelRules(pendingLevel).jokers.fifty || 0) + (levelRules(pendingLevel).jokers.freeze || 0))).replace('{fifty}', String(levelRules(pendingLevel).jokers.fifty || 0)).replace('{freeze}', String(levelRules(pendingLevel).jokers.freeze || 0)) : (copy.levelConfirm.jokersNone || '')}</li>
+                    <li>⚡ {(copy.levelConfirm.points || '×{n}').replace('{n}', formatMultiplier(pointsMultiplier(pendingLevel), lang))}</li>
+                  </ul>
+                  {((levelRules(pendingLevel).jokers.fifty || 0) + (levelRules(pendingLevel).jokers.freeze || 0)) > 0 && (
+                    <p className="quiz-confirm-jokerDetail">
+                      {(copy.levelConfirm.jokerDetail || '').replace('{n}', String(FREEZE_BONUS.seconds))}
+                      {copy.levelConfirm.hintJokers ? ` — ${copy.levelConfirm.hintJokers}` : ''}
+                    </p>
+                  )}
+                </div>
+                <div className="quiz-confirm-actions">
+                  <button type="button" className="quiz-cta quiz-cta--ghost" onClick={() => setPendingLevel(null)}>{copy.levelConfirm.cancel}</button>
+                  <button type="button" className="quiz-cta quiz-cta--primary" autoFocus onClick={() => { const lvl = pendingLevel; setPendingLevel(null); if (lvl) start(lvl); }}>{copy.levelConfirm.confirm}</button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )}
         </div>
       </div>
     );
@@ -848,6 +976,71 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   // est ouvert (le terminer vient de l'ouvrir — le dernier niveau du quizz
   // n'a pas de suivant, le résultat n'offre alors que la grille).
   const nextUp = nextLevel(played);
+  const pendingModal = (() => {
+    if (!pendingLevel) return null;
+    const rules = levelRules(pendingLevel);
+    const brief = levelBrief(quiz, pendingLevel);
+    const jokerCount = (rules.jokers.fifty || 0) + (rules.jokers.freeze || 0);
+    const levelName = (copy.levels && copy.levels[pendingLevel]) || pendingLevel;
+    const title = (copy.levelConfirm.title || '').replace('{level}', levelName);
+    const timeText = (copy.levelConfirm.time || '{n}').replace('{n}', String(rules.seconds));
+    const choicesText = (copy.levelConfirm.choices || '{n}').replace('{n}', String(brief.choices));
+    const livesText = rules.lives > 0
+      ? (copy.levelConfirm.lives || '{n}').replace('{n}', String(rules.lives))
+      : (copy.levelConfirm.livesNone || '');
+    const jokersText = jokerCount > 0
+      ? (copy.levelConfirm.jokers || '{n}').replace('{n}', String(jokerCount)).replace('{fifty}', String(rules.jokers.fifty || 0)).replace('{freeze}', String(rules.jokers.freeze || 0))
+      : (copy.levelConfirm.jokersNone || '');
+    const jokerDetail = (copy.levelConfirm.jokerDetail || '').replace('{n}', String(FREEZE_BONUS.seconds));
+    const pointsText = (copy.levelConfirm.points || '×{n}').replace('{n}', formatMultiplier(pointsMultiplier(pendingLevel), lang));
+    if (typeof document === 'undefined') return null;
+    return createPortal(
+      <div className="quiz-confirm-overlay" role="presentation" onClick={cancelPending}>
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="quiz-confirm-title"
+          className={`quiz-confirm-dialog quiz-confirm-dialog--${pendingLevel}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="quiz-confirm-head">
+            <span className={`quiz-chip quiz-chip--${pendingLevel}`}>{levelName}</span>
+            <h2 id="quiz-confirm-title" className="quiz-confirm-title">{title}</h2>
+            <p className="quiz-confirm-intro">{copy.levelConfirm.intro}</p>
+          </div>
+          {pendingLevel === 'hard' && (
+            <p className="quiz-confirm-warning" role="alert">⚠️ {copy.levelConfirm.warningHard}</p>
+          )}
+          <div className="quiz-confirm-rules">
+            <h3 className="quiz-confirm-rulesTitle">{copy.levelConfirm.rulesTitle}</h3>
+            <ul className="quiz-confirm-list">
+              <li>⏱ {timeText}</li>
+              <li>▤ {choicesText}</li>
+              <li>♥ {livesText}</li>
+              <li>◐ {jokersText}</li>
+              <li>⚡ {pointsText}</li>
+            </ul>
+            {jokerCount > 0 && (
+              <p className="quiz-confirm-jokerDetail">
+                {jokerDetail}
+                {copy.levelConfirm.hintJokers ? ` — ${copy.levelConfirm.hintJokers}` : ''}
+              </p>
+            )}
+
+          </div>
+          <div className="quiz-confirm-actions">
+            <button type="button" className="quiz-cta quiz-cta--ghost" onClick={cancelPending}>
+              {copy.levelConfirm.cancel}
+            </button>
+            <button type="button" className="quiz-cta quiz-cta--primary" autoFocus onClick={confirmPending}>
+              {copy.levelConfirm.confirm}
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body,
+    );
+  })();
   return (
     <div className="quiz-player">
       <div className={`quiz-result ${tierClass}`}>
@@ -886,7 +1079,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
             ensuite — rien d'autre. */}
         <div className="quiz-result-actions">
           {nextUp && levelOpen(nextUp) && (
-            <button type="button" className="quiz-cta quiz-cta--primary" onClick={() => start(nextUp)}>{copy.nextLevel} <NextArrow /></button>
+            <button type="button" className="quiz-cta quiz-cta--primary" onClick={() => requestStart(nextUp)}>{copy.nextLevel} <NextArrow /></button>
           )}
           <Link className="quiz-cta quiz-cta--ghost" to="/quizz">{copy.seeAll}</Link>
         </div>
@@ -907,6 +1100,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
           ))}
         </ol>
       </section>
+      {pendingModal}
     </div>
   );
 }

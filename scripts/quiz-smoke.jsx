@@ -355,7 +355,20 @@ export async function checkQuiz(assert) {
     </LanguageProvider>,
   ));
 
-  const click = async (el) => { assert.ok(el, 'élément cliquable présent'); await act(async () => el.click()); };
+  const click = async (el) => {
+    assert.ok(el, 'élément cliquable présent');
+    await act(async () => el.click());
+    // Popup de confirmation de niveau (portail vers document.body) : si elle
+    // vient de s'ouvrir après ce clic (bouton "Jouer ce niveau" ou
+    // "Niveau suivant"), confirmer immédiatement pour que les tests
+    // continuent comme avant — l'utilisateur réel, lui, voit la popup et
+    // doit confirmer manuellement.
+    const overlay = document.body.querySelector('.quiz-confirm-overlay');
+    if (overlay) {
+      const confirm = overlay.querySelector('.quiz-confirm-dialog .quiz-cta--primary');
+      if (confirm) await act(async () => confirm.click());
+    }
+  };
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   // Le gel de verdict (VERDICT_MS) retient la question suivante après chaque
