@@ -38,6 +38,8 @@ import {
 } from './quizSounds';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
+/** Flèche du « Niveau suivant » : vers la droite, la progression. */
+function NextArrow() { return <span aria-hidden="true">→</span>; }
 
 /** Les touches qui répondent : une par proposition (l'expert en a cinq). */
 const ANSWER_KEYS = ['1', '2', '3', '4', '5', '6'];
@@ -80,9 +82,10 @@ function SoundToggle({ on, label, onToggle }) {
 const FALLBACK = {
   question: 'Question', of: 'of', start: 'Start', next: 'Next question', seeResults: 'See my results',
   score: '{correct}/{total} correct answers', perfect: 'FLAWLESS!', corrections: 'ANSWERS',
-  yourAnswer: 'Your answer', rightAnswer: 'Answer', replay: 'Play again', others: 'All quizzes',
-  readSource: 'Read the related story', questionsCount: '{n} questions', dailyTag: 'Daily quiz',
-  retryMistakes: 'Retry my mistakes', reviewTag: 'REVIEW ROUND',
+  yourAnswer: 'Your answer', rightAnswer: 'Answer',
+  nextLevel: 'Next level', seeAll: 'See all the quizzes',
+  others: 'All quizzes', readSource: 'Read the related story',
+  questionsCount: '{n} questions', dailyTag: 'Daily quiz',
   timeUp: 'Time up', timeLeft: 'Time remaining',
   soundMute: 'Mute the quiz sounds', soundUnmute: 'Turn the quiz sounds back on',
   correctCount: 'Correct answers', wrongCount: 'Wrong answers',
@@ -209,7 +212,6 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [result, setResult] = useState(null);
-  const [review, setReview] = useState(false);
   const [remainingMs, setRemainingMs] = useState(() => questionBudgetMs(level));
   const [budgetMs, setBudgetMs] = useState(() => questionBudgetMs(level));
   // Son du quizz (tick-tack + verdicts) : préférence de l'appareil, et
@@ -303,24 +305,6 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     setAnswers({});
     setIndex(0);
     setResult(null);
-    setReview(false);
-    setLive({ right: 0, wrong: 0 });
-    setPhase('play');
-  };
-
-  // Révision : ne rejoue que les questions ratées au tour précédent, dans le
-  // même niveau. C'est de l'entraînement : ni succès, ni record, ni
-  // classement, ni progression de niveau ne bougent.
-  const startReview = () => {
-    const missed = (result?.detail || []).filter((entry) => !entry.correct).map((entry) => entry.question);
-    if (!missed.length) return;
-    unlockQuizAudio();
-    resetRun(prepared.level || playedLevel);
-    setPrepared({ ...prepared, questions: missed });
-    setAnswers({});
-    setIndex(0);
-    setResult(null);
-    setReview(true);
     setLive({ right: 0, wrong: 0 });
     setPhase('play');
   };
@@ -383,10 +367,10 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
       // Combo dès la deuxième bonne réponse : le bip monte avec la série.
       if (streakRef.current >= 2) playQuizComboSound(streakRef.current);
       // Points SEULEMENT si la partie rapporte encore quelque chose : niveau
-      // déjà terminé (`replayRun`) ou tour de révision (`review`) = rien à
-      // gagner — la série continue de sonner, les points, non. Le barème est
-      // multiplié par le niveau joué (facile ×1, confirmé ×1,5, expert ×2).
-      if (!replayRun && !review) {
+      // déjà terminé (`replayRun`) = rien à gagner — la série continue de
+      // sonner, les points, non. Le barème est multiplié par le niveau joué
+      // (facile ×1, confirmé ×1,5, expert ×2).
+      if (!replayRun) {
         const gained = quizPointsFor(played, { elapsedMs: elapsed, budgetMs: budget, streak: streakRef.current });
         pointsGained = gained.total;
         pointsRef.current += gained.total;
@@ -442,7 +426,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
       setPhase('result');
       // Une seule fois par partie : le moteur des succès crédite l'action
       // (niveau joué, sans-faute, jour de quizz du jour pour la série).
-      if (!review && trackedFor.current !== prepared) {
+      if (trackedFor.current !== prepared) {
         trackedFor.current = prepared;
         track('quiz_completed', {
           id: quiz.slug,
@@ -780,7 +764,6 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
           <span className={`quiz-chip quiz-chip--${played}`}>{copy.levels[played] || played}</span>{' '}
           {copy.question} {index + 1} {copy.of} {prepared.questions.length}
         </p>
-        {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         <h2 className="quiz-question">{quizLabel(question.q, lang)}</h2>
         {verdict && (
           <p className={`quiz-verdict ${verdict.correct ? 'is-right' : 'is-wrong'}`} role="status">
@@ -861,6 +844,10 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
       : []),
     { key: 'jokers', value: String(jokersUsedRef.current), label: copy.stats.jokersUsed },
   ];
+  // Niveau suivant : le palier au-dessus du niveau joué, s'il existe et qu'il
+  // est ouvert (le terminer vient de l'ouvrir — le dernier niveau du quizz
+  // n'a pas de suivant, le résultat n'offre alors que la grille).
+  const nextUp = nextLevel(played);
   return (
     <div className="quiz-player">
       <div className={`quiz-result ${tierClass}`}>
@@ -882,29 +869,26 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
           ))}
         </ul>
         {bestStreak >= 2 && <p className="quiz-result-combo">🔥 {copy.bestCombo.replace('{n}', String(bestStreak))}</p>}
-        {newRecord && !review && <span className="quiz-result-record">★ {copy.newRecord}</span>}
+        {newRecord && <span className="quiz-result-record">★ {copy.newRecord}</span>}
         {result.perfect && <span className="quiz-result-perfect">★ {copy.perfect}</span>}
-        {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         {result.gameOver && (
           <p className="quiz-result-gameover" role="note">
             💀 {copy.gameOver} — {copy.stoppedAt.replace('{n}', String(result.answered)).replace('{total}', String(result.total))}
           </p>
         )}
-        {!review && replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
-        {!review && justUnlocked && <p className="quiz-unlock-note" role="status">🔓 {copy.levelUnlocked.replace('{level}', copy.levels[justUnlocked] || justUnlocked)}</p>}
+        {replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
+        {justUnlocked && <p className="quiz-unlock-note" role="status">🔓 {copy.levelUnlocked.replace('{level}', copy.levels[justUnlocked] || justUnlocked)}</p>}
         {/* Le dernier niveau vient d'être terminé : le quizz passe TERMINÉ, il
             n'est plus proposé nulle part (cartes grisées et verrouillées). */}
-        {!review && quizFinished && <span className="quiz-result-finished">🏁 {copy.finishedResult}</span>}
+        {quizFinished && <span className="quiz-result-finished">🏁 {copy.finishedResult}</span>}
+        {/* Écran de résultat volontairement épuré : le niveau suivant d'abord
+            (bouton principal, flèche vers la droite), la grille complète
+            ensuite — rien d'autre. */}
         <div className="quiz-result-actions">
-          {!review && justUnlocked && (
-            <button type="button" className="quiz-cta quiz-cta--primary" onClick={() => start(justUnlocked)}>{copy.levelPlay} <Arrow /></button>
+          {nextUp && levelOpen(nextUp) && (
+            <button type="button" className="quiz-cta quiz-cta--primary" onClick={() => start(nextUp)}>{copy.nextLevel} <NextArrow /></button>
           )}
-          {result.correct < result.total && (
-            <button type="button" className="quiz-cta quiz-cta--primary" onClick={startReview}>{copy.retryMistakes}</button>
-          )}
-          <button type="button" className="quiz-cta quiz-cta--ghost" onClick={() => start(played)}>{copy.replay}</button>
-          <Link className="quiz-cta quiz-cta--ghost" to="/quizz">{copy.others} <Arrow /></Link>
-          {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
+          <Link className="quiz-cta quiz-cta--ghost" to="/quizz">{copy.seeAll}</Link>
         </div>
       </div>
       <QuizChallenge quiz={quiz} level={played} score={result.correct} total={result.total} />

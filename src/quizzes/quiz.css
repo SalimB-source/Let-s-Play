@@ -22,9 +22,10 @@
   color: var(--muted);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
-.quiz-chip--easy { color: var(--cyan); border-color: rgba(34, 211, 238, .4); }
+/* Difficultés : bleu = facile, jaune = confirmé (seasoned), rouge = expert. */
+.quiz-chip--easy { color: #60a5fa; border-color: rgba(96, 165, 250, .4); }
 .quiz-chip--medium { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
-.quiz-chip--hard { color: var(--violet); border-color: rgba(168, 85, 247, .45); }
+.quiz-chip--hard { color: #f87171; border-color: rgba(248, 113, 113, .45); }
 .quiz-chip--daily, .quiz-chip--streak { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
 .quiz-chip--done { color: var(--muted); border-color: var(--line-strong); }
 /* Progression des niveaux (grille + écran d'intro) : neutre, puis vert une
@@ -105,17 +106,18 @@
 
 /* ---- Le joueur ----------------------------------------------------------- */
 .quiz-player {
-  /* Accent du niveau : cyan en facile, jaune en confirmé, rouge en expert.
-     Toute la partie le réutilise (chrono, pastilles, boutons, verdicts). */
+  /* Accent du niveau : bleu en facile, jaune en confirmé, rouge en expert.
+     Toute la partie le réutilise (chrono, pastilles, boutons, verdicts) ;
+     hors partie (intro, résultat), l'accent par défaut reste celui du site. */
   --quiz-accent: var(--cyan);
   --quiz-accent-soft: rgba(34, 211, 238, .1);
   --quiz-good: #34d399;
   --quiz-bad: #f87171;
   max-width: 860px; margin: 0 auto;
 }
-.quiz-player--easy { --quiz-accent: var(--cyan); --quiz-accent-soft: rgba(34, 211, 238, .1); }
+.quiz-player--easy { --quiz-accent: #60a5fa; --quiz-accent-soft: rgba(96, 165, 250, .1); }
 .quiz-player--medium { --quiz-accent: var(--yellow); --quiz-accent-soft: rgba(255, 214, 25, .1); }
-.quiz-player--hard { --quiz-accent: #fb7185; --quiz-accent-soft: rgba(251, 113, 133, .12); }
+.quiz-player--hard { --quiz-accent: #f87171; --quiz-accent-soft: rgba(248, 113, 113, .12); }
 
 /* Secousse d'une mauvaise réponse : trois allers-retours, 420 ms (le temps du
    `shakeTimerRef` du lecteur), désactivée en `prefers-reduced-motion`. */
@@ -154,9 +156,15 @@
   clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
   transition: border-color .18s, background .18s;
 }
-.quiz-level--easy { border-inline-start-color: var(--cyan); }
-.quiz-level--medium { border-inline-start-color: var(--yellow); }
-.quiz-level--hard { border-inline-start-color: var(--violet); }
+/* Difficultés : bleu = facile, jaune = confirmé, rouge = expert — la couleur
+   du niveau teinte sa ligne (bordure, nom) et son bouton « Jouer ce niveau »
+   via l'accent, puis suit en partie (chrono, pastilles, verdicts). */
+.quiz-level--easy { --quiz-accent: #60a5fa; --quiz-accent-soft: rgba(96, 165, 250, .1); border-inline-start-color: #60a5fa; }
+.quiz-level--medium { --quiz-accent: var(--yellow); --quiz-accent-soft: rgba(255, 214, 25, .1); border-inline-start-color: var(--yellow); }
+.quiz-level--hard { --quiz-accent: #f87171; --quiz-accent-soft: rgba(248, 113, 113, .12); border-inline-start-color: #f87171; }
+.quiz-level--easy .quiz-level-name { color: #60a5fa; }
+.quiz-level--medium .quiz-level-name { color: var(--yellow); }
+.quiz-level--hard .quiz-level-name { color: #f87171; }
 .quiz-level.is-selected { border-color: var(--line-strong); }
 .quiz-level.is-done { background: rgba(52, 211, 153, .05); }
 .quiz-level.is-locked { opacity: .62; border-inline-start-color: var(--line); border-style: dashed; }
@@ -191,11 +199,13 @@
   clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
   transition: transform .15s, box-shadow .15s, background .15s, border-color .15s;
 }
+/* L'accent du contexte teinte le bouton principal ET son halo (le sélecteur
+   de niveaux pose l'accent de la difficulté sur chaque ligne). */
 .quiz-cta--primary {
   background: var(--quiz-accent, var(--yellow)); color: #0a0b1a;
-  box-shadow: 0 0 18px rgba(255, 214, 25, .22);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--quiz-accent, var(--yellow)) 22%, transparent);
 }
-.quiz-cta--primary:hover { transform: translateY(-2px); box-shadow: 0 0 26px rgba(255, 214, 25, .42); }
+.quiz-cta--primary:hover { transform: translateY(-2px); box-shadow: 0 0 26px color-mix(in srgb, var(--quiz-accent, var(--yellow)) 42%, transparent); }
 .quiz-cta--ghost {
   background: rgba(255, 255, 255, .04); color: var(--ink);
   border-color: rgba(255, 255, 255, .22);
@@ -455,11 +465,6 @@
 }
 .quiz-result-record { animation: quiz-record-in .5s ease; }
 @keyframes quiz-record-in { 0% { transform: scale(.85); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
-.quiz-result-review {
-  display: inline-block; margin-top: 12px; padding: 5px 12px;
-  border: 1px solid var(--line-strong); color: var(--cyan);
-  font: 700 11px var(--mono); letter-spacing: .18em;
-}
 /* Niveau expert, vies épuisées : la partie s'est arrêtée avant la fin. */
 .quiz-result-gameover {
   margin: 12px auto 0; max-width: 46ch; padding: 8px 12px;
