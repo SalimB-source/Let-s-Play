@@ -693,3 +693,76 @@
 .search-result-card.is-finished h2,
 .search-result-card.is-finished p { color: var(--dim); }
 .nav-search-result.is-finished strong { color: var(--dim); }
+
+/* ---- Confirmation avant de lancer un niveau (Facile / Confirmé / Expert) --- */
+/* Overlay + dialogue : même interaction que DeleteAccount / VideoModal
+   (role=dialog, Escape, clic sur le fond, scroll bloqué, focus sur Confirmer). */
+.quiz-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 4, 10, .78);
+  backdrop-filter: blur(7px);
+  animation: quiz-confirm-fade .18s ease;
+}
+@keyframes quiz-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.quiz-confirm-dialog {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 28px 26px 22px;
+  background: linear-gradient(145deg, rgba(22, 17, 35, .99), rgba(8, 10, 24, .99));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 30px 90px rgba(0,0,0,.7), 0 0 40px rgba(124,58,237,.14);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  animation: quiz-confirm-pop .22s cubic-bezier(.18,.89,.32,1.28);
+}
+@keyframes quiz-confirm-pop { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: none; } }
+
+.quiz-confirm-dialog--easy { border-color: rgba(96,165,250,.55); }
+.quiz-confirm-dialog--medium { border-color: rgba(255,214,25,.55); }
+.quiz-confirm-dialog--hard { border-color: rgba(248,113,113,.6); box-shadow: 0 30px 90px rgba(0,0,0,.7), 0 0 40px rgba(248,113,113,.18); }
+
+.quiz-confirm-head { display: grid; gap: 8px; margin-bottom: 14px; }
+.quiz-confirm-title { margin: 6px 0 0; font: 800 clamp(20px, 3.5vw, 28px)/1.1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.quiz-confirm-dialog--easy .quiz-confirm-title { color: #60a5fa; }
+.quiz-confirm-dialog--medium .quiz-confirm-title { color: var(--yellow); }
+.quiz-confirm-dialog--hard .quiz-confirm-title { color: #f87171; }
+.quiz-confirm-intro { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.quiz-confirm-warning {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(248,113,113,.5);
+  background: rgba(248,113,113,.1);
+  color: #fecdd3;
+  font: 700 12px var(--mono);
+  letter-spacing: .04em;
+}
+.quiz-confirm-rules { margin: 14px 0 18px; padding: 14px 16px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
+.quiz-confirm-rulesTitle { margin: 0 0 8px; font: 700 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.quiz-confirm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font: 600 13px var(--mono); }
+.quiz-confirm-list li { color: var(--ink); }
+.quiz-confirm-jokerDetail {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  background: rgba(168,85,247,.08);
+  border: 1px solid rgba(168,85,247,.3);
+  color: #e9d5ff;
+  font: 500 12px var(--mono);
+  line-height: 1.5;
+}
+.quiz-confirm-hint { margin: 8px 0 0; color: var(--muted); font: 500 12px var(--body); line-height: 1.5; }
+.quiz-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.quiz-confirm-actions .quiz-cta { min-width: 110px; justify-content: center; }
+@media (max-width: 560px) {
+  .quiz-confirm-dialog { padding: 20px 16px; }
+  .quiz-confirm-actions { flex-direction: column-reverse; }
+  .quiz-confirm-actions .quiz-cta { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quiz-confirm-overlay, .quiz-confirm-dialog { animation: none; }
+}
