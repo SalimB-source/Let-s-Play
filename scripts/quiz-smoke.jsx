@@ -21,11 +21,21 @@ import { STORAGE_KEY } from '../src/achievements/storage';
 import { FriendsProvider } from '../src/friends/FriendsContext';
 import { MessagesProvider } from '../src/messages/MessagesContext';
 import { readDemoMessages } from '../src/messages/messagesApi';
+import { translations } from '../src/i18n/translations';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import { baseUrl, quizThumbUrl, quizzes, quizBySlug, quizLabel } from '../src/quizzesData';
 import { QUESTION_TIME, bestDayRun, dailyQuizFor, gradeQuiz, prepareQuiz } from '../src/quizzes/engine';
 import { writeLocalBest } from '../src/quizzes/quizApi';
+import {
+  playQuizAnswerSound,
+  quizSoundEnabled,
+  startQuizClock,
+  stopQuizClock,
+  tickIntervalMs,
+  unlockQuizAudio,
+  updateQuizClock,
+} from '../src/quizzes/quizSounds';
 // Personas de démonstration (livrés vides dans l'application) : comme les
 // autres scripts de vérification, on réinjecte les fixtures avant le rendu.
 import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
@@ -38,6 +48,39 @@ const DEMO_AUTH_KEY = 'letsplay_auth_demo_profile';
 function seedLang(lang) {
   globalThis.window.localStorage.clear();
   globalThis.window.localStorage.setItem('letsplay-lang', lang);
+}
+
+/**
+ * Faux contexte Web Audio (jsdom n'en fournit aucun) : il enregistre les
+ * oscillateurs réellement lancés — type et fréquence — pour vérifier que le
+ * tick-tack bat et que les verdicts partent bien, sans rien écouter.
+ */
+function installFakeAudioContext() {
+  const notes = [];
+  class FakeParam {
+    constructor(value) { this.value = value; }
+    setValueAtTime(value) { this.value = value; return this; }
+    linearRampToValueAtTime(value) { this.value = value; return this; }
+    exponentialRampToValueAtTime(value) { this.value = value; return this; }
+  }
+  class FakeNode { connect() { return this; } disconnect() {} }
+  class FakeOscillator extends FakeNode {
+    constructor() { super(); this.type = 'sine'; this.frequency = new FakeParam(0); }
+    start() { notes.push({ type: this.type, frequency: this.frequency.value }); }
+    stop() {}
+    setPeriodicWave() {}
+  }
+  class FakeGain extends FakeNode { constructor() { super(); this.gain = new FakeParam(1); } }
+  class FakeFilter extends FakeNode { constructor() { super(); this.type = 'lowpass'; this.frequency = new FakeParam(0); this.Q = new FakeParam(0); } }
+  class FakeAudioContext {
+    constructor() { this.state = 'running'; this.currentTime = 0; this.destination = new FakeNode(); }
+    resume() { this.state = 'running'; return Promise.resolve(); }
+    createOscillator() { return new FakeOscillator(); }
+    createGain() { return new FakeGain(); }
+    createBiquadFilter() { return new FakeFilter(); }
+  }
+  globalThis.window.AudioContext = FakeAudioContext;
+  return { notes, reset: () => { notes.length = 0; } };
 }
 
 export async function checkQuiz(assert) {
@@ -74,6 +117,29 @@ export async function checkQuiz(assert) {
 
   // Temps imparti : la valeur par défaut est celle annoncée (15 s par question).
   assert.equal(QUESTION_TIME.seconds, 15, 'quinze secondes par question');
+
+  // Tick-tack du minuteur : le tempo est une fonction pure, donc testable sans
+  // navigateur. Il accélère par paliers quand le temps baisse, et jamais
+  // l'inverse — le dernier palier s'emballe pile quand la barre passe au rouge.
+  const budget = QUESTION_TIME.seconds * 1000;
+  const startTempo = tickIntervalMs(budget, budget);
+  const midTempo = tickIntervalMs(budget * 0.4, budget);
+  const lowTempo = tickIntervalMs(budget * 0.15, budget);
+  const lastTempo = tickIntervalMs(600, budget);
+  assert.equal(startTempo, 1000, 'une pulsation par seconde en début de question');
+  assert.ok(
+    startTempo > midTempo && midTempo > lowTempo && lowTempo > lastTempo,
+    `le tick-tack accélère par paliers (${startTempo} → ${midTempo} → ${lowTempo} → ${lastTempo} ms)`,
+  );
+  assert.ok(lastTempo <= 250, 'dernière ligne droite frénétique');
+  assert.equal(tickIntervalMs(3001, budget), midTempo, 'juste avant les trois dernières secondes : tempo normal');
+  assert.equal(tickIntervalMs(3000, budget), lowTempo, 'le tempo s’emballe avec la barre rouge (3 s)');
+  let previousTempo = Infinity;
+  for (let left = budget; left >= 0; left -= 250) {
+    const tempo = tickIntervalMs(left, budget);
+    assert.ok(tempo <= previousTempo, `tempo jamais plus lent quand le temps baisse (à ${left} ms restants)`);
+    previousTempo = tempo;
+  }
 
   // Miniatures : chaque quizz a sa propre illustration maison
   // (`public/quizzes/<slug>.jpg`), et l'épisode lié reste disponible comme
@@ -361,5 +427,160 @@ export async function checkQuiz(assert) {
 
   await act(async () => timerRoot.unmount());
 
-  console.log('QUIZZ : moteur, partie 8/8 + succès, défi démo, grille FR/EN/AR, record + compte à rebours, révision sans double comptage, minuteur 15 s.');
+  /* ------------------------------ 8. Sons du quizz -------------------------- */
+  // Sans Web Audio (le jsdom de ce script n'en fournit aucun), tout est no-op :
+  // la partie se joue quand même et rien ne casse.
+  assert.equal(unlockQuizAudio(), false, 'sans Web Audio, aucun contexte à déverrouiller');
+  assert.equal(playQuizAnswerSound(true), false, 'sans Web Audio, le verdict juste ne joue pas (sans planter)');
+  assert.equal(playQuizAnswerSound(false, { timeout: true }), false, 'sans Web Audio, le verdict raté non plus');
+  assert.equal(startQuizClock(1000), true, 'l’horloge démarre même sans audio');
+  assert.equal(stopQuizClock(), true, 'et s’arrête proprement');
+
+  // Avec un faux contexte Web Audio, on vérifie ce qui part réellement :
+  // tick-tack pendant la question, accord montant sur une bonne réponse,
+  // descente sur une mauvaise, note grave en plus quand le temps s'écoule.
+  const audio = installFakeAudioContext();
+  QUESTION_TIME.seconds = 15;
+  seedLang('fr');
+  const soundNode = document.createElement('div');
+  document.body.append(soundNode);
+  const soundRoot = createRoot(soundNode);
+  await act(async () => soundRoot.render(
+    <LanguageProvider>
+      <AuthProvider>
+        <AchievementProvider>
+          <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
+            <Routes>
+              <Route path="/quizz" element={<QuizzesPage />} />
+              <Route path="/quizz/:slug" element={<QuizPage />} />
+            </Routes>
+          </MemoryRouter>
+        </AchievementProvider>
+      </AuthProvider>
+    </LanguageProvider>,
+  ));
+
+  // Réglage accessible dès l'intro (le tick-tack démarre avec la partie).
+  const introSound = soundNode.querySelector('.quiz-sound-toggle');
+  assert.ok(introSound, 'bouton son sur l’écran d’introduction');
+  assert.equal(introSound.getAttribute('aria-pressed'), 'true', 'son actif par défaut');
+  assert.equal(introSound.getAttribute('aria-label'), 'Couper les sons du quizz', 'le libellé annonce l’action');
+
+  // Coupé depuis l'intro : la partie démarre en silence complet, et la
+  // préférence est retenue pour l'appareil.
+  await act(async () => introSound.click());
+  assert.equal(globalThis.window.localStorage.getItem('letsplay_quiz_sound_v1'), 'off', 'préférence « son coupé » retenue');
+  assert.equal(quizSoundEnabled(), false, 'le module lit la préférence');
+  assert.equal(playQuizAnswerSound(true), false, 'aucun verdict tant que c’est coupé');
+
+  audio.reset();
+  await click([...soundNode.querySelectorAll('button')].find((el) => el.textContent.includes('Commencer')));
+  assert.ok(soundNode.querySelector('.quiz-timer'), 'minuteur toujours en place');
+  assert.equal(soundNode.querySelector('.quiz-hud .quiz-sound-toggle').getAttribute('aria-pressed'), 'false', 'bouton son de la partie annoncé coupé');
+  await act(async () => { await sleep(1200); });
+  assert.equal(audio.notes.length, 0, 'aucun son pendant la partie muette');
+
+  // Rallumé en pleine question : le tick-tack reprend sans attendre la
+  // suivante, et bat en triangles (donc distinct des verdicts).
+  await act(async () => soundNode.querySelector('.quiz-hud .quiz-sound-toggle').click());
+  assert.equal(quizSoundEnabled(), true, 'le son se rallume');
+  const ticks = async (limit = 1500) => {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < limit) {
+      if (audio.notes.some((note) => note.type === 'triangle')) return true;
+      await act(async () => { await sleep(100); });
+    }
+    return audio.notes.some((note) => note.type === 'triangle');
+  };
+  assert.ok(await ticks(), 'le tick-tack bat pendant la question, dès le rallumage');
+
+  // Une réponse : le même choix que le barème, reconnu à son libellé FR.
+  const answerOnce = async (node, right) => {
+    const prompt = node.querySelector('.quiz-question')?.textContent || '';
+    const question = quiz.questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    assert.ok(question, `la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
+    const choice = right
+      ? question.choices[question.answer]
+      : question.choices[(question.answer + 1) % question.choices.length];
+    await click([...node.querySelectorAll('.quiz-choice')].find((el) => el.textContent === quizLabel(choice, 'fr')));
+  };
+
+  // Bonne réponse : accord montant do–mi–sol en sinusoïdes, et compteur ✓.
+  audio.reset();
+  await answerOnce(soundNode, true);
+  const rightNotes = audio.notes.filter((note) => note.type === 'sine');
+  assert.equal(rightNotes.length, 3, 'bonne réponse : trois notes');
+  assert.deepEqual(
+    rightNotes.map((note) => Math.round(note.frequency)),
+    [523, 659, 784],
+    'bonne réponse : accord montant do–mi–sol',
+  );
+  assert.ok(soundNode.textContent.includes('✓ 1'), 'compteur de bonnes réponses à 1');
+
+  // Mauvaise réponse : deux notes descendantes en dents de scie. Le budget de
+  // la question suivante tombe à 400 ms, pour éprouver le temps écoulé.
+  audio.reset();
+  QUESTION_TIME.seconds = 0.4;
+  await answerOnce(soundNode, false);
+  const wrongNotes = audio.notes.filter((note) => note.type === 'sawtooth');
+  assert.equal(wrongNotes.length, 2, 'mauvaise réponse : deux notes');
+  assert.ok(wrongNotes[0].frequency > wrongNotes[1].frequency, 'mauvaise réponse : la descente descend');
+  assert.ok(soundNode.textContent.includes('✗ 1'), 'compteur de mauvaises réponses à 1');
+
+  // Temps écoulé : la descente plus une note grave — ne pas répondre n'est pas
+  // se tromper, le son le dit. La question suivante expire seule (400 ms).
+  audio.reset();
+  await act(async () => { await sleep(700); });
+  const timeoutNotes = audio.notes.filter((note) => note.type === 'sawtooth');
+  assert.ok(timeoutNotes.length >= 3, 'temps écoulé : le verdict sonore part aussi');
+  assert.ok(timeoutNotes.some((note) => note.frequency < 150), 'temps écoulé : note grave supplémentaire');
+  const wrongCount = Number((soundNode.querySelector('.quiz-live-item--wrong')?.textContent || '').replace(/\D/g, '')) || 0;
+  assert.ok(wrongCount >= 2, `le temps écoulé compte comme une mauvaise réponse (✗ ${wrongCount})`);
+  QUESTION_TIME.seconds = 15;
+
+  await act(async () => soundRoot.unmount());
+
+  // Accélération en conditions réelles : on fait défiler le temps restant
+  // (comme le minuteur React, toutes les 100 ms) jusqu'à la dernière ligne
+  // droite — le battement en attente doit être reprogrammé tout de suite, et
+  // non à la seconde suivante comme au début de la question.
+  audio.reset();
+  startQuizClock(budget);
+  const fastForwardAt = Date.now();
+  for (let left = budget; left >= budget * 0.05; left -= 250) updateQuizClock(left, budget);
+  await act(async () => { await sleep(260); });
+  const fastBeat = audio.notes.find((note) => note.type === 'triangle');
+  assert.ok(fastBeat, 'le palier franchi reprogramme le battement immédiatement');
+  assert.ok(Date.now() - fastForwardAt < 900, 'il bat moins d’une seconde après le franchissement (rythme accéléré)');
+  assert.equal(stopQuizClock(), true, 'l’horloge s’arrête (aucun minuteur ne survit à la partie)');
+
+  // Réglage compris avant de lancer la partie : le bouton son existe dans les
+  // trois langues, avec le libellé traduit (pas le repli anglais).
+  for (const lang of ['fr', 'en', 'ar']) {
+    seedLang(lang);
+    const langNode = document.createElement('div');
+    document.body.append(langNode);
+    const langRoot = createRoot(langNode);
+    await act(async () => langRoot.render(
+      <LanguageProvider>
+        <AuthProvider>
+          <AchievementProvider>
+            <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
+              <Routes>
+                <Route path="/quizz" element={<QuizzesPage />} />
+                <Route path="/quizz/:slug" element={<QuizPage />} />
+              </Routes>
+            </MemoryRouter>
+          </AchievementProvider>
+        </AuthProvider>
+      </LanguageProvider>,
+    ));
+    const toggle = langNode.querySelector('.quiz-sound-toggle');
+    assert.ok(toggle, `[${lang}] bouton son sur l’écran d’introduction`);
+    assert.equal(toggle.getAttribute('aria-label'), translations[lang].quiz.soundMute, `[${lang}] libellé du bouton son traduit`);
+    assert.equal(toggle.getAttribute('aria-pressed'), 'true', `[${lang}] son actif par défaut`);
+    await act(async () => langRoot.unmount());
+  }
+
+  console.log('QUIZZ : moteur, partie 8/8 + succès, défi démo, grille FR/EN/AR, record + compte à rebours, révision sans double comptage, minuteur 15 s, sons (tick-tack qui accélère, verdicts juste/faux/temps écoulé, coupure).');
 }

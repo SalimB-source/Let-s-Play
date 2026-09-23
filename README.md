@@ -713,6 +713,19 @@ mais la structure de données les accepte déjà.
   tests) : une barre de décompte passe au rouge dans les 3 dernières secondes
   et, à zéro, la question avance sans réponse (comptée ratée, signalée
   « Temps écoulé » dans les corrections).
+- **Sons** — `src/quizzes/quizSounds.js` : tout est synthétisé en Web Audio,
+  aucun fichier audio à livrer. Un tick-tack discret tourne en fond pendant
+  chaque question et **accélère par paliers** quand le temps baisse (une
+  pulsation par seconde au début, 620 ms à mi-parcours, 340 ms dès que la barre
+  passe au rouge — même seuil —, 220 ms dans la dernière seconde et demie, un
+  peu plus fort). Une bonne réponse fait monter un accord do–mi–sol, une
+  mauvaise descend en dents de scie, et le temps écoulé ajoute une note grave
+  (ne pas répondre n'est pas se tromper). Tout est best-effort — sans API Web
+  Audio, la partie se joue normalement — et un bouton 🔊/🔇 (sur l'intro comme
+  pendant la partie) coupe l'ensemble, la préférence restant sur l'appareil.
+  Le son n'étant pas accessible à tous, un compteur ✓/✗ de la partie en cours
+  (`aria-live`) dit la même chose à l'écran, et le tick-tack se tait quand
+  l'onglet passe en arrière-plan.
 - **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
   sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
   `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
@@ -745,7 +758,11 @@ mais la structure de données les accepte déjà.
   série, minuteur à 15 s), miniatures (une illustration distincte par quizz,
   demandée par les cartes rendues — aucune requête YouTube), partie complète
   8/8 jouée en jsdom avec la vraie pile de providers (succès crédités dans le
-  stockage), grille rendue en FR/EN/AR. Le scénario de
+  stockage), grille rendue en FR/EN/AR, sons (tempo qui accélère sans jamais
+  ralentir et sans attendre le battement suivant, battement réel, verdicts
+  juste / faux / temps écoulé, coupure depuis le bouton 🔊, no-op sans Web
+  Audio) — le tout avec un faux `AudioContext` qui enregistre les oscillateurs
+  lancés. Le scénario de
   `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
   rend les nouvelles routes dans les trois langues ; `check:thumbs` vérifie les
   fichiers livrés dans `public/quizzes/`.
