@@ -1,0 +1,13 @@
+/* Site-wide typography: body/UI copy is Google Sans Regular; headings use Bold. */
+body,
+body * {
+  font-family: var(--google-sans) !important;
+  font-weight: 400 !important;
+}
+
+body :is(h1, h2, h3, h4, h5, h6, [role="heading"]),
+body :is(h1, h2, h3, h4, h5, h6, [role="heading"]) *,
+body [class*="title" i],
+body .social-panel-kicker {
+  font-weight: 700 !important;
+}
