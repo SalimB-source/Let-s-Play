@@ -120,6 +120,46 @@ export function prepareQuiz(quiz, level = 'easy', seed = null, { extraDistractor
 }
 
 /**
+ * Banque globale du Survival : toutes les questions de tous les quizz et de
+ * tous leurs niveaux, sans modifier les données source. L'identifiant est
+ * namespacé (quizz + niveau) pour rester unique même si un futur quizz
+ * réutilise un ancien identifiant de question.
+ */
+export function survivalQuestionPool(quizzes = []) {
+  return (Array.isArray(quizzes) ? quizzes : []).flatMap((quiz) => (
+    Object.entries(quiz?.levels || {}).flatMap(([level, questions]) => (
+      (Array.isArray(questions) ? questions : []).map((question, index) => ({
+        ...question,
+        id: `survival:${quiz.slug || 'quiz'}:${level}:${question.id || index}`,
+        sourceQuiz: quiz.slug || null,
+        sourceLevel: level,
+      }))
+    ))
+  ));
+}
+
+/**
+ * Un cycle du Survival : toutes les questions du pool, dans un ordre mélangé,
+ * avec les propositions mélangées comme dans les parties classiques. À la fin
+ * du cycle, le lecteur en prépare un nouveau ; `previousQuestionId` évite une
+ * répétition immédiate à la frontière entre deux cycles (ou deux parties).
+ */
+export function prepareSurvivalCycle(quizzes = [], seed = null, previousQuestionId = null) {
+  const pool = survivalQuestionPool(quizzes);
+  if (!pool.length) return [];
+  const prepared = prepareQuiz(
+    { slug: 'survival', levels: { easy: pool } },
+    'easy',
+    seed,
+    { extraDistractors: 1 },
+  ).questions;
+  if (previousQuestionId && prepared.length > 1 && prepared[0].id === previousQuestionId) {
+    [prepared[0], prepared[1]] = [prepared[1], prepared[0]];
+  }
+  return prepared;
+}
+
+/**
  * Barème d'une partie : `answers` mappe l'identifiant de question vers
  * l'identifiant du choix cliqué. Renvoie le détail question par question
  * (pour l'écran « corrections »), le palier de résultat et `answered` — le
