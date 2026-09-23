@@ -26,22 +26,29 @@ import { createThumbFallback, isThumbMissing } from '../lib/videoThumbnails';
  * @param {string} props.id identifiant de la vidéo YouTube
  * @param {string} [props.quality] qualité de départ (`maxres`/`sd`/`hq`) — par
  *   défaut la meilleure disponible pour cette vidéo
+ * @param {string|string[]} [props.lead] illustration(s) locale(s) essayée(s)
+ *   avant l'échelle YouTube — la miniature maison d'un quizz, par exemple :
+ *   l'épisode lié n'est alors qu'un repli
  * @param {string} [props.alt] texte alternatif de l'image
  * @param {string} [props.fallbackLabel] libellé affiché dans le cadre de repli
  */
-export default function VideoThumb({ id, quality, alt = '', fallbackLabel, className, ...rest }) {
+export default function VideoThumb({ id, quality, lead, alt = '', fallbackLabel, className, ...rest }) {
   const imgRef = useRef(null);
   const fallbackRef = useRef(null);
   const [, redraw] = useState(0);
 
-  // Le pilote est recréé dès que la vidéo (ou la qualité demandée) change.
+  // Le pilote est recréé dès que la vidéo, la qualité demandée ou
+  // l'illustration locale de tête change.
+  const leadKey = (Array.isArray(lead) ? lead : [lead]).filter(Boolean).join('|');
   if (
     !fallbackRef.current ||
     fallbackRef.current.id !== id ||
-    fallbackRef.current.quality !== (quality ?? null)
+    fallbackRef.current.quality !== (quality ?? null) ||
+    fallbackRef.current.lead.join('|') !== leadKey
   ) {
     fallbackRef.current = createThumbFallback(id, {
       quality,
+      lead,
       onChange: () => redraw((tick) => tick + 1),
     });
   }

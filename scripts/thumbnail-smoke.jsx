@@ -14,6 +14,7 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { AuthProvider } from '../src/auth/AuthContext';
 import Home from '../src/pages/Home';
 import Dossiers from '../src/pages/Dossiers';
+import QuizzesPage from '../src/quizzes/QuizzesPage';
 
 function render(Page, path) {
   // LanguageProvider lit la langue active dans localStorage pendant le rendu.
@@ -50,4 +51,18 @@ export function homeThumbs() {
 /** Toutes les vignettes YouTube rendues par la page Dossiers. */
 export function dossierThumbs() {
   return images(render(Dossiers, '/dossiers')).map((tag) => attr(tag, 'src'));
+}
+
+/**
+ * Miniatures de la page `/quizz` : `{ src, alt }` par image, dans l'ordre du
+ * rendu — d'abord la bannière du quizz du jour, puis les huit cartes de la
+ * grille. Une carte de quizz a sa propre illustration
+ * (`public/quizzes/<slug>.jpg`) : c'est cette URL-là qui doit être demandée, la
+ * miniature YouTube de l'épisode ne servant que de repli.
+ */
+export function quizThumbs() {
+  return images(render(QuizzesPage, '/quizz')).map((tag) => ({
+    src: attr(tag, 'src'),
+    alt: attr(tag, 'alt'),
+  }));
 }

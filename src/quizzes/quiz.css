@@ -41,7 +41,20 @@
 .quiz-daily p { color: var(--muted); }
 .quiz-daily-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
 .quiz-daily .arrow-link { color: var(--yellow); }
-.quiz-daily-media { display: block; }
+/* Miniature : l'illustration maison du quizz (public/quizzes/<slug>.jpg), en
+   16/9 quel que soit le fichier. Le cadre de repli de `VideoThumb`
+   (position: absolute) se pose sur la même boîte. */
+/* `background-color` et non `background` : le cadre HUD de la carte
+   (`.hud-frame`) dessine ses équerres en `background-image`, on ne les écrase
+   pas. */
+.quiz-daily-media, .quiz-card-media {
+  position: relative; aspect-ratio: 16/9; overflow: hidden; background-color: var(--panel);
+}
+.quiz-daily-media img, .quiz-card-media img {
+  width: 100%; height: 100%; display: block; object-fit: cover;
+  transition: transform .4s, filter .4s;
+}
+.quiz-card:hover .quiz-card-media img { transform: scale(1.04); }
 .quiz-daily-hint { margin: 0 0 40px; color: var(--dim); font: 400 12px var(--mono); letter-spacing: .08em; }
 
 /* ---- Grille des quizz ---------------------------------------------------- */
@@ -75,7 +88,7 @@
 .quiz-progress { height: 6px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 10px; }
 .quiz-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--cyan)); transition: width .25s; }
 .quiz-progress-label { margin: 0 0 18px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
-/* Minuteur : 7 secondes par question, rouge dans les 3 dernières. */
+/* Minuteur : 15 secondes par question, rouge dans les 3 dernières. */
 .quiz-timer { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
 .quiz-timer-count { min-width: 4ch; color: var(--cyan); font: 700 15px var(--mono); }
 .quiz-timer-track { flex: 1; height: 6px; background: var(--line); overflow: hidden; }

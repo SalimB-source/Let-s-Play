@@ -694,15 +694,22 @@ mais la structure de données les accepte déjà.
 
 - **Données** — `src/quizzesData.js` : huit quizz de huit questions (culture
   générale, rétro, souls-like, RPG, e-sport, studios, tech et cinéma), la
-  plupart liés à un article maison (`source`) et tous à une miniature YouTube
-  (`videoId`). Ajouter un quizz =
+  plupart liés à un article maison (`source`). Ajouter un quizz =
   une entrée : la grille, la recherche (`searchIndex`), la rotation du jour et
   le succès « Tour complet » le prennent en compte (mettre à jour la cible du
   succès si le nombre de quizz change).
+- **Miniatures** — chaque quizz a sa propre illustration 16/9
+  (`image`, fabriquée par `quizThumbUrl(slug)` depuis
+  `public/quizzes/<slug>.jpg`) : une par thème, à la charte du site. La carte de
+  la grille, la bannière du quizz du jour et les résultats de recherche
+  l'affichent. L'épisode lié (`videoId`) reste en repli : `VideoThumb` reçoit
+  l'illustration en `lead` et ne descend l'échelle YouTube que si le fichier
+  manque — aucune requête `i.ytimg.com` dans le cas nominal. Ajouter un
+  quizz = déposer son illustration sous ce nom, `check:thumbs` le vérifie.
 - **Moteur** — `src/quizzes/engine.js` (pur, sans React) : mélange déterministe
   par graine (le quizz du jour est le même pour tous), barème, paliers de
   résultat (`rookie` → `legend`), meilleure série de jours consécutifs.
-- **Minuteur** — 7 secondes par question (`QUESTION_TIME`, mutable pour les
+- **Minuteur** — 15 secondes par question (`QUESTION_TIME`, mutable pour les
   tests) : une barre de décompte passe au rouge dans les 3 dernières secondes
   et, à zéro, la question avance sans réponse (comptée ratée, signalée
   « Temps écoulé » dans les corrections).
@@ -735,10 +742,13 @@ mais la structure de données les accepte déjà.
   Après collage du schéma dans le Dashboard Supabase, le tableau de contrôle
   final affiche les lignes 31–33 « OK ».
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
-  série), partie complète 8/8 jouée en jsdom avec la vraie pile de providers
-  (succès crédités dans le stockage), grille rendue en FR/EN/AR. Le scénario de
+  série, minuteur à 15 s), miniatures (une illustration distincte par quizz,
+  demandée par les cartes rendues — aucune requête YouTube), partie complète
+  8/8 jouée en jsdom avec la vraie pile de providers (succès crédités dans le
+  stockage), grille rendue en FR/EN/AR. Le scénario de
   `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
-  rend les nouvelles routes dans les trois langues.
+  rend les nouvelles routes dans les trois langues ; `check:thumbs` vérifie les
+  fichiers livrés dans `public/quizzes/`.
 
 ## Live YouTube
 
@@ -958,7 +968,10 @@ URL de miniature :
   à `hqdefault`, aucune requête n'est envoyée vers un 404 connu. `twbaM8fiXpo`
   y figure déjà, avec la trace de la mesure ;
 - `createThumbFallback()` pilote le repli (position dans l'échelle, échec final)
-  et `isThumbMissing()` reconnaît une image « chargée mais vide ».
+  et `isThumbMissing()` reconnaît une image « chargée mais vide » ; son option
+  `lead` place une ou plusieurs sources **avant** l'échelle YouTube — c'est par
+  là que passent les illustrations maison des quizz (`public/quizzes/`), dont
+  l'épisode lié n'est alors qu'un repli.
 
 L'afficheur est `src/components/VideoThumb.jsx` : il descend l'échelle et, si
 aucune qualité ne répond, dessine un cadre Let's Play (`.video-thumb-fallback`)
@@ -976,15 +989,24 @@ avant que React n'attache l'écouteur, et l'événement `error` est alors perdu.
 `hqdefault`, comme avant) ; sans elle, le composant demande la meilleure
 qualité disponible pour cette vidéo.
 
+```jsx
+// Grille des quizz : l'illustration maison d'abord, l'épisode en repli.
+<VideoThumb id={quiz.videoId} lead={quiz.image} alt={titre} quality="hq" />
+```
+
 ### Vérification
 
 - `npm run check:thumbs` — l'échelle des qualités et son dernier barreau, le
   pilote rejoué avec une image simulée (chaque qualité manquante fait descendre
   d'un cran, la dernière bascule sur le cadre de repli, aucune requête vers un
-  404 connu), le **rendu réel des pages** en SSR (accueil : trois vignettes,
+  404 connu, l'illustration locale essayée avant YouTube quand elle est passée
+  en `lead`), le **rendu réel des pages** en SSR (accueil : trois vignettes,
   `twbaM8fiXpo` en `hqdefault`, HicoSoft toujours en `maxresdefault` ; dossiers :
-  huit vignettes), et la source du site (aucune URL de miniature codée en dur
-  hors de `src/lib/videoThumbnails.js`, les deux chemins du repli présents).
+  huit vignettes ; quizz : bannière du jour + huit cartes servies par
+  `public/quizzes/`, chaque fichier livré et non tronqué), et la source du site
+  (aucune URL de miniature codée en dur hors de `src/lib/videoThumbnails.js`,
+  ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins
+  du repli présents).
 
 ## Robot actus du jour
 
