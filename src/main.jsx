@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
+import './profile-lists.css';
 import './news-article.css';
 import './auth/auth.css';
 import './news-carousel.css';
@@ -12,6 +13,7 @@ import './partners.css';
 import './reels-carousel.css';
 import './dossier-article.css';
 import './achievements/achievements.css';
+import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
 import './social/social.css';
@@ -44,6 +46,8 @@ import DossierXbox360 from './pages/DossierXbox360';
 import DossierPlayStation2 from './pages/DossierPlayStation2';
 import Partners from './pages/Partners';
 import Search from './pages/Search';
+import QuizzesPage from './quizzes/QuizzesPage';
+import QuizPage from './quizzes/QuizPage';
 import EventAlgerieTelecom from './pages/EventAlgerieTelecom';
 import EventOoredoo from './pages/EventOoredoo';
 import EventArena from './pages/EventArena';
@@ -110,6 +114,7 @@ function App() {
             <Route path="/news/control-resonant-24-septembre" element={<CurrentNews slug="control-resonant-24-septembre" />} />
             <Route path="/news/sorties-24-septembre" element={<CurrentNews slug="sorties-24-septembre" />} />
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
+            <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
             {/* Actus du jour générées par le robot (scripts/news-bot/) :
                 /news/<slug> lit src/news/autoIndex.js. Les slugs statiques
                 ci-dessus restent prioritaires ; un slug inconnu affiche la
@@ -131,6 +136,14 @@ function App() {
             <Route path="/events/7ouma-arena" element={<EventArena />} />
             <Route path="/partenaires" element={<Partners />} />
             <Route path="/search" element={<Search />} />
+            {/* Quizz gaming : grille + quizz du jour (`/quizz`), partie par
+                slug, alias anglais `/quiz` comme `/calendar` pour le
+                calendrier. */}
+            <Route path="/quizz" element={<QuizzesPage />} />
+            <Route path="/quiz" element={<QuizzesPage />} />
+            <Route path="/quizzes" element={<QuizzesPage />} />
+            <Route path="/quizz/:slug" element={<QuizPage />} />
+            <Route path="/quiz/:slug" element={<QuizPage />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />

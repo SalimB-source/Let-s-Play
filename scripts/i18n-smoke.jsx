@@ -21,6 +21,8 @@ import Onimusha from '../src/pages/Onimusha';
 import OnimushaMillion from '../src/pages/OnimushaMillion';
 import Reviews from '../src/pages/Reviews';
 import TestArticle from '../src/pages/TestArticle';
+import QuizzesPage from '../src/quizzes/QuizzesPage';
+import QuizPage from '../src/quizzes/QuizPage';
 import Dossiers from '../src/pages/Dossiers';
 import Partners from '../src/pages/Partners';
 import NotFound from '../src/pages/NotFound';
@@ -47,6 +49,8 @@ export const ROUTES = [
   ['/partenaires', Partners],
   ['/events', Partners],
   ['/auth', Auth],
+  ['/quizz', QuizzesPage],
+  ['/quizz/culture-gaming', QuizPage, '/quizz/:slug'],
   ['/unknown-page', NotFound],
 ];
 
@@ -56,7 +60,7 @@ export function renderAll(lang) {
   // LanguageProvider reads the active language from localStorage during render.
   globalThis.window = { localStorage: { getItem: () => lang, setItem() {} } };
 
-  return ROUTES.map(([path, Page]) => {
+  return ROUTES.map(([path, Page, pattern]) => {
     try {
       const html = renderToString(
         React.createElement(
@@ -74,7 +78,7 @@ export function renderAll(lang) {
                 React.createElement(
                   Routes,
                   null,
-                  React.createElement(Route, { path, element: React.createElement(Page) })
+                  React.createElement(Route, { path: pattern || path, element: React.createElement(Page) })
                 )
               )
             )

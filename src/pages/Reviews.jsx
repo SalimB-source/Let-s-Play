@@ -71,7 +71,7 @@ export default function Reviews(){
   return (
     <>
       <section className="latest-tests wrap">
-        <div className="section-label"><span><b>01</b> / {c.gridLabel}</span><span>{c.gridRange}</span></div>
+        <div className="section-label"><span>{c.gridLabel}</span><span>{c.gridRange}</span></div>
         <div className="latest-tests-head"><div><p className="eyebrow"><span className="live-dot" /> {c.gridEyebrow}</p><h2>{c.gridTitleA}<br/><em>{c.gridTitleB}</em></h2></div></div>
         <div className="latest-tests-grid">
           {gameTests.map((test) => (
@@ -104,7 +104,7 @@ export default function Reviews(){
       </section>
 
       <section className="featured-dossiers wrap" id="dossiers-tests">
-        <div className="section-label"><span><b>02</b> / {d.label1}</span><span>{d.label2}</span></div>
+        <div className="section-label"><span>{d.label1}</span><span>{d.label2}</span></div>
         <div className="featured-dossiers-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> {d.eyebrow}</p>
@@ -131,7 +131,7 @@ export default function Reviews(){
       </section>
 
       <section className="reels-section wrap" id="reels-tests">
-        <div className="section-label"><span><b>03</b> / {t.reviews.reels.label1}</span><span>{t.reviews.reels.label2}</span></div>
+        <div className="section-label"><span>{t.reviews.reels.label1}</span><span>{t.reviews.reels.label2}</span></div>
         <div className="reels-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> {t.reviews.reels.eyebrow}</p>

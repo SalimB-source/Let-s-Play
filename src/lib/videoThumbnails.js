@@ -28,7 +28,10 @@
  *    `VIDEOS_WITHOUT_HD_THUMB` : sa chaîne commence directement à `hqdefault`,
  *    on n'envoie donc aucune requête vouée au 404 ;
  * 3. si toute la chaîne échoue, l'afficheur (`src/components/VideoThumb.jsx`)
- *    dessine un cadre Let's Play — jamais un carré vide ou gris.
+ *    dessine un cadre Let's Play — jamais un carré vide ou gris ;
+ * 4. une carte peut avoir sa **propre illustration** (`lead`) : les miniatures
+ *    maison des quizz (`public/quizzes/<slug>.jpg`) passent avant l'échelle
+ *    YouTube, dont l'épisode lié ne devient alors qu'un repli.
  *
  * Le repli ne repose pas seulement sur `onError` : un 404 servi depuis le cache
  * du navigateur peut se régler avant que React n'attache l'écouteur, et
@@ -119,11 +122,19 @@ export function isThumbMissing(img) {
  * chaque changement à l'afficheur (`onChange`) — la logique vit ici, hors
  * React, pour pouvoir être rejouée par `npm run check:thumbs`.
  *
+ * `lead` place une ou plusieurs sources **avant** l'échelle YouTube : c'est le
+ * cas des miniatures maison — l'illustration locale d'un quizz
+ * (`public/quizzes/<slug>.jpg`) est essayée d'abord, l'épisode lié ne servant
+ * que de repli. Le reste de la mécanique ne change pas : la source en cours
+ * échoue, on descend d'un cran, et le cadre Let's Play n'arrive qu'après le
+ * dernier barreau de la chaîne.
+ *
  * @param {string} id identifiant de la vidéo YouTube
- * @param {{quality?: string, onChange?: (state: {id: string, src: string|null, failed: boolean, index: number}) => void}} [options]
+ * @param {{quality?: string, lead?: string|string[], onChange?: (state: {id: string, src: string|null, failed: boolean, index: number}) => void}} [options]
  */
-export function createThumbFallback(id, { quality, onChange } = {}) {
-  const chain = thumbFallbackChain(id, { quality });
+export function createThumbFallback(id, { quality, lead, onChange } = {}) {
+  const localSources = (Array.isArray(lead) ? lead : [lead]).filter(Boolean);
+  const chain = [...localSources, ...thumbFallbackChain(id, { quality })];
   let index = 0;
   let failed = false;
 
@@ -133,6 +144,8 @@ export function createThumbFallback(id, { quality, onChange } = {}) {
   return {
     id,
     quality: quality ?? null,
+    /** Sources locales essayées avant l'échelle YouTube (vide s'il n'y en a pas). */
+    lead: localSources,
     /** Toutes les URL candidates, dans l'ordre d'essai. */
     chain,
     /** URL en cours, ou null une fois la chaîne épuisée. */

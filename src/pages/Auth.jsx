@@ -10,8 +10,17 @@ import { metricValue } from '../achievements/engine';
 import { levelTitle } from '../achievements/catalog';
 import AchievementsPanel from '../achievements/AchievementsPanel';
 import DeleteAccount from '../components/DeleteAccount';
+import {
+  CONSOLE_OPTIONS,
+  TESTED_GAMES_CATALOG,
+  MAX_TESTED_GAMES,
+  normalizePlatforms,
+  normalizeSearchText,
+} from '../lib/gameLibrary';
+import ConsoleLogo from '../components/ConsoleLogo';
+import TopGamePill from '../components/TopGamePill';
 import FriendsHubSection from '../friends/FriendsHubSection';
-import MessagesHubSection from '../messages/MessagesHubSection';
+import { DEMO_PROFILES } from '../auth/demoProfiles';
 
 /* ------------------------------------------------------------------ */
 /* Small inline icons (no external deps, inherits currentColor)        */
@@ -176,9 +185,6 @@ const copy = {
     noPlatformsYet: 'No platforms added yet.',
     badgesHeading: 'UNLOCKED ACHIEVEMENTS & BADGES',
     demoBadgesNote: 'Persona medals shown by the demo preview — your own achievements are listed above.',
-    savedStoriesHeading: 'SAVED STORIES & BOOKMARKS',
-    noSavedYet: 'No saved stories yet — explore the news feed and bookmark what you like.',
-    readStory: 'READ STORY',
     profileActions: 'ACCOUNT ACTIONS',
     exploreNewsBtn: 'EXPLORE NEWS FEED ↗',
     returnHomeBtn: 'RETURN TO HOME',
@@ -196,6 +202,23 @@ const copy = {
     avatarUpdated: 'Photo updated.',
     avatarUploadError: 'Couldn’t upload your photo. Please try again.',
     avatarInvalidType: 'Please choose an image file (JPG, PNG, WebP…)',
+
+    // Consoles & tested games
+    consolesHint: 'Tick every console you own — your selection is shown on your public profile.',
+    testedGamesHeading: 'Your all-time TOP 10 games',
+    editTopGames: 'Edit',
+    closeTopGames: 'Close',
+    testedGamesHint: 'Your 10 favourite games, across every generation.',
+    filterAll: 'All',
+    filterByConsole: 'Filter by console:',
+    gamesSearchPlaceholder: 'Search a game…',
+    noGameMatch: 'No game matches this console filter or search.',
+    addGame: 'ADD',
+    gameTested: 'SELECTED',
+    removeGame: 'Remove',
+    noTestedGamesYet: 'Your TOP 10 is empty. Click Edit to choose games.',
+    maxGamesNote: 'Cap reached (10 games). Remove a game to add another.',
+    saveGear: 'SAVE',
   },
   fr: {
     eyebrow: 'ACCÈS JOUEUR',
@@ -279,9 +302,6 @@ const copy = {
     noPlatformsYet: 'Aucune plateforme ajoutée pour l’instant.',
     badgesHeading: 'SUCCÈS DÉBLOQUÉS & BADGES',
     demoBadgesNote: 'Médailles de la persona affichées par l’aperçu démo — tes propres succès sont listés plus haut.',
-    savedStoriesHeading: 'FAVORIS & ARTICLES SAUVEGARDÉS',
-    noSavedYet: 'Aucun article sauvegardé pour l’instant — explore le fil d’actus et mets en favori ce qui te plaît.',
-    readStory: 'LIRE L’ARTICLE',
     profileActions: 'ACTIONS DU COMPTE',
     exploreNewsBtn: 'VOIR LE FIL D’ACTUS ↗',
     returnHomeBtn: 'RETOUR À L’ACCUEIL',
@@ -299,6 +319,23 @@ const copy = {
     avatarUpdated: 'Photo mise à jour.',
     avatarUploadError: 'Impossible de téléverser ta photo. Réessaie.',
     avatarInvalidType: 'Choisis un fichier image (JPG, PNG, WebP…)',
+
+    // Consoles & jeux testés
+    consolesHint: 'Coche toutes les consoles que tu possèdes — la sélection s’affiche sur ton profil public.',
+    testedGamesHeading: 'Ton TOP 10 des jeux all-time',
+    editTopGames: 'Modifier',
+    closeTopGames: 'Fermer',
+    testedGamesHint: 'Tes 10 jeux préférés, toutes générations confondues.',
+    filterAll: 'Toutes',
+    filterByConsole: 'Filtrer par console :',
+    gamesSearchPlaceholder: 'Rechercher un jeu…',
+    noGameMatch: 'Aucun jeu ne correspond à cette console ou à cette recherche.',
+    addGame: 'AJOUTER',
+    gameTested: 'SÉLECTIONNÉ',
+    removeGame: 'Retirer',
+    noTestedGamesYet: 'Aucun jeu dans ton TOP 10 pour l’instant. Clique sur Modifier pour en choisir.',
+    maxGamesNote: 'Plafond atteint (10 jeux). Retire un jeu pour en ajouter un autre.',
+    saveGear: 'ENREGISTRER',
   },
   ar: {
     eyebrow: 'دخول اللاعبين',
@@ -382,9 +419,6 @@ const copy = {
     noPlatformsYet: 'لم تتم إضافة أي منصة بعد.',
     badgesHeading: 'الإنجازات والأوسمة المفتوحة',
     demoBadgesNote: 'أوسمة الشخصية في المعاينة التجريبية — إنجازاتك الخاصة معروضة في الأعلى.',
-    savedStoriesHeading: 'المقالات المحفوظة للقراءة لاحقًا',
-    noSavedYet: 'لا توجد مقالات محفوظة بعد — تصفح آخر الأخبار واحفظ ما يعجبك.',
-    readStory: 'اقرأ المقال',
     profileActions: 'إجراءات الحساب',
     exploreNewsBtn: 'تصفح آخر الأخبار ↗',
     returnHomeBtn: 'العودة للرئيسية',
@@ -402,6 +436,23 @@ const copy = {
     avatarUpdated: 'تم تحديث الصورة.',
     avatarUploadError: 'تعذّر رفع صورتك. حاول مرة أخرى.',
     avatarInvalidType: 'الرجاء اختيار ملف صورة (JPG، PNG، WebP…)',
+
+    // وحدات التحكم والألعاب المجرَّبة
+    consolesHint: 'حدّد كل وحدة تحكم تمتلكها — ستظهر اختياراتك على ملفك الشخصي العام.',
+    testedGamesHeading: 'أفضل 10 ألعاب لديك على الإطلاق',
+    editTopGames: 'تعديل',
+    closeTopGames: 'إغلاق',
+    testedGamesHint: 'ألعابك العشر المفضلة عبر جميع الأجيال.',
+    filterAll: 'الكل',
+    filterByConsole: 'تصفية حسب المنصة:',
+    gamesSearchPlaceholder: 'ابحث عن لعبة…',
+    noGameMatch: 'لا توجد لعبة تطابق هذا الجهاز أو نص البحث.',
+    addGame: 'أضِف',
+    gameTested: 'مُجرَّبة',
+    removeGame: 'إزالة',
+    noTestedGamesYet: 'قائمتك فارغة. اضغط تعديل لاختيار الألعاب.',
+    maxGamesNote: 'تم الوصول إلى الحد الأقصى (10 ألعاب). احذف لعبة لإضافة أخرى.',
+    saveGear: 'حفظ',
   },
 };
 
@@ -470,6 +521,40 @@ function isInternalPath(path) {
   return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
 }
 
+// The two forms the pop-up can show when the visitor is signed out. `update`
+// (password recovery) is added by the recovery guard, not by a link.
+export const AUTH_MODES = ['signin', 'signup'];
+
+function normalizeMode(value) {
+  return AUTH_MODES.includes(value) ? value : '';
+}
+
+/**
+ * Read the `?mode=` parameter of the address bar. The navbar renders
+ * « Log in » and « Register » as links to `/auth?mode=signin` and
+ * `/auth?mode=signup`, so the register button must open the register form —
+ * not the log-in one. Unknown values are ignored.
+ */
+export function modeFromSearch(search) {
+  if (typeof search !== 'string' || !search) return '';
+  try {
+    return normalizeMode(new URLSearchParams(search).get('mode'));
+  } catch (e) {
+    return '';
+  }
+}
+
+/**
+ * Which form to show first. An explicit prop wins (the `/register` route
+ * passes `initialMode="signup"`); otherwise the address bar decides, and
+ * anything else falls back to log-in. `initialMode="update"` is legacy: a
+ * password recovery is detected from the URL hash, not from the prop.
+ */
+export function readAuthMode(initialMode, search) {
+  if (initialMode === 'update') return 'signin';
+  return normalizeMode(initialMode) || modeFromSearch(search) || 'signin';
+}
+
 function rememberReturnTo(path) {
   if (typeof window === 'undefined' || !isInternalPath(path)) return;
   try {
@@ -509,7 +594,7 @@ function formatJoined(iso) {
   }
 }
 
-export default function Auth({ initialMode = 'signin' }) {
+export default function Auth({ initialMode = '' }) {
   const {
     user,
     isDemo,
@@ -526,8 +611,11 @@ export default function Auth({ initialMode = 'signin' }) {
   const track = useAchievementAction();
   const t = copy[lang] || copy.en;
   const returnToRef = useRef('');
+  // Mode requested by the address bar: the navbar renders « Log in » and
+  // « Register » as links to `/auth?mode=signin` / `/auth?mode=signup`.
+  const requestedMode = readAuthMode(initialMode, location.search);
 
-  const [mode, setMode] = useState(initialMode === 'update' ? 'signin' : initialMode);
+  const [mode, setMode] = useState(requestedMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -552,6 +640,10 @@ export default function Auth({ initialMode = 'signin' }) {
 
   // Arriving from a "sign in to comment" link: remember where to go back to
   // and open the requested form (sign-in instead of the default sign-up).
+  // The address bar is watched too: the navbar « Log in » and « Register »
+  // buttons both point at `/auth` and only differ by `?mode=`, so clicking one
+  // while the pop-up is already open has to switch the form. An explicit
+  // `state.mode` from an in-app link wins over the query parameter.
   useEffect(() => {
     const from = location.state?.from;
     if (isInternalPath(from)) {
@@ -560,11 +652,15 @@ export default function Auth({ initialMode = 'signin' }) {
     } else {
       returnToRef.current = peekReturnTo();
     }
-    const requested = location.state?.mode;
-    if (requested === 'signin' || requested === 'signup') {
+    const requested = normalizeMode(location.state?.mode) || modeFromSearch(location.search);
+    if (requested) {
       setMode(requested);
+      setError('');
+      setMessage('');
+      setShowResend(false);
+      setConfirmPassword('');
     }
-  }, [location.state]);
+  }, [location.state, location.search]);
 
   // Real accounts: the "comments" stat counts the player's rows in
   // public.comments (demo profiles ship their own numbers).
@@ -616,12 +712,24 @@ export default function Auth({ initialMode = 'signin' }) {
     if (target) navigate(target, { replace: true });
   }, [user, isRecovery, navigate]);
 
+  // Keeps `/auth?mode=…` in step with the form on screen: the two navbar
+  // buttons and a reload then always agree on which pop-up was asked for.
+  // `/register` keeps its own shape, and forgot/update have no URL of theirs.
+  const syncModeInUrl = (next) => {
+    if (initialMode || !AUTH_MODES.includes(next) || !location.pathname.endsWith('/auth')) return;
+    const params = new URLSearchParams(location.search);
+    if (params.get('mode') === next) return;
+    params.set('mode', next);
+    navigate(`${location.pathname}?${params.toString()}`, { replace: true, state: location.state });
+  };
+
   const switchMode = (next) => {
     setMode(next);
     setError('');
     setMessage('');
     setShowResend(false);
     setConfirmPassword('');
+    syncModeInUrl(next);
   };
 
   // Handle Form Submission (signup / signin / forgot / update)
@@ -885,13 +993,10 @@ export default function Auth({ initialMode = 'signin' }) {
     // accounts only if explicitly flagged in their metadata.
     const isVerified = isDemo || meta.verified === true;
 
-    const platforms = meta.platforms || [];
     // Les badges de la persona n'existent que dans l'aperçu de démonstration :
     // les succès réels d'un compte connecté sont ceux suivis par le site
     // (section « succès » ci-dessous, alimentée par src/achievements).
     const personaBadges = isDemo ? (meta.badges || []) : [];
-
-    const savedArticles = meta.savedArticlesList || [];
 
     return (
       <section className="auth-page wrap">
@@ -1051,35 +1156,27 @@ export default function Auth({ initialMode = 'signin' }) {
             </div>
           </div>
 
-          {/* AMIS & MESSAGERIE — côte à côte */}
-          <div className="player-social-grid">
-            <FriendsHubSection />
-            <MessagesHubSection />
-          </div>
+          {/* AMIS — la liste des amis, chaque ligne mène à la page du joueur.
+              Aucune action de messagerie ici : la discussion 1-à-1 reste dans
+              la fenêtre sociale (en bas à droite) et sur /messages. */}
+          <FriendsHubSection />
 
           {/* SUCCÈS DU SITE — progression réelle du joueur (lecture, vidéos,
               commentaires, recherche, fidélité, compte) */}
-          <div className="player-section">
-            <AchievementsPanel variant="compact" />
+          <div className="player-section achievements-section">
+            <AchievementsPanel variant="compact" limit={5} />
           </div>
 
-          {/* GAMING PLATFORMS */}
-          <div className="player-section">
-            <div className="player-section-header">
-              <h2>{t.platformsHeading}</h2>
-            </div>
-            {platforms.length > 0 ? (
-              <div className="player-platforms-row">
-                {platforms.map((platform) => (
-                  <span key={platform} className="player-platform-pill">
-                    🎮 {platform}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="player-empty-note">{t.noPlatformsYet}</p>
-            )}
-          </div>
+          {/* CONSOLES POSSÉDÉES + JEUX TESTÉS — multi-sélection persistée
+              dans les métadonnées du compte (ou de la persona démo) et poussée
+              vers les colonnes publiques profiles.platforms / tested_games. */}
+          <PlayerGearEditor
+            t={t}
+            isDemo={isDemo}
+            user={user}
+            meta={meta}
+            updateDemoProfile={updateDemoProfile}
+          />
 
           {/* MÉDAILLES DE LA PERSONA DE DÉMONSTRATION (aperçu uniquement) —
               les succès du joueur ont leur propre section plus haut */}
@@ -1102,33 +1199,6 @@ export default function Auth({ initialMode = 'signin' }) {
               </div>
             </div>
           )}
-
-          {/* SAVED STORIES & BOOKMARKS */}
-          <div className="player-section">
-            <div className="player-section-header">
-              <h2>{t.savedStoriesHeading}</h2>
-            </div>
-            {savedArticles.length > 0 ? (
-              <div className="player-saved-grid">
-                {savedArticles.map((story) => (
-                  <Link to={story.link} key={story.id} className="player-saved-card">
-                    <div>
-                      <div className="player-saved-meta">
-                        <span>{story.category}</span>
-                        <span>{story.readTime}</span>
-                      </div>
-                      <h3 className="player-saved-title">{story.title}</h3>
-                    </div>
-                    <span className="player-saved-link">
-                      {t.readStory} ↗
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            ) : (
-              <p className="player-empty-note">{t.noSavedYet}</p>
-            )}
-          </div>
 
           {/* ACCOUNT ACTIONS CARD */}
           <div className="player-actions-card">
@@ -1245,8 +1315,8 @@ export default function Auth({ initialMode = 'signin' }) {
           </button>
         )}
 
-        {/* DEMO / PREVIEW ACCESS CARD */}
-        {showDemoBox && <div className="auth-demo-box">
+        {/* DEMO / PREVIEW ACCESS CARD — masqué quand aucun profil de démo n'est configuré */}
+        {showDemoBox && Object.keys(DEMO_PROFILES).length > 0 && <div className="auth-demo-box">
           <div className="auth-demo-header">
             <span className="auth-demo-kicker">🎮 {t.demoOptionTitle}</span>
             <span className="auth-demo-tag">{t.quickDemoLabel}</span>
@@ -1435,5 +1505,320 @@ function ProfileEditor({ t, isDemo, gamertag, avatar, updateDemoProfile }) {
         </form>
       )}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Consoles possédées + jeux testés                                    */
+/* ------------------------------------------------------------------ */
+/* Deux multi-sélections persistées dans les métadonnées du compte     */
+/* (réel : supabase.auth.updateUser + sync vers profiles ; démo :      */
+/* persona en localStorage). Le brouillon vit dans le composant ;      */
+/* `meta` reste la source de vérité, donc « dirty » se recalcule tout  */
+/* seul après chaque enregistrement (l'événement auth fait re-rendu).  */
+/* ------------------------------------------------------------------ */
+function sameList(a, b) {
+  return a.length === b.length && a.every((value) => b.includes(value));
+}
+
+export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
+  const [draftPlatforms, setDraftPlatforms] = useState(() => normalizePlatforms(meta.platforms));
+  const [draftGames, setDraftGames] = useState(() => (Array.isArray(meta.testedGames) ? meta.testedGames : []).filter((g) => typeof g === 'string' && g.trim()).slice(0, MAX_TESTED_GAMES));
+  const [query, setQuery] = useState('');
+  const [selectedConsole, setSelectedConsole] = useState('ALL');
+  const [isEditingGames, setIsEditingGames] = useState(false);
+  const [isEditingPlatforms, setIsEditingPlatforms] = useState(false);
+  const resetGamesView = () => {
+    setQuery('');
+    setSelectedConsole('ALL');
+    setIsEditingGames(false);
+  };
+  const [saving, setSaving] = useState(false);
+  const [note, setNote] = useState('');
+  const [err, setErr] = useState('');
+  const noteTimer = useRef(null);
+
+  useEffect(() => () => {
+    if (noteTimer.current) window.clearTimeout(noteTimer.current);
+  }, []);
+
+  const savedPlatforms = normalizePlatforms(meta.platforms);
+  const savedGames = Array.isArray(meta.testedGames) ? meta.testedGames : [];
+  const platformsDirty = !sameList(draftPlatforms, savedPlatforms);
+  const gamesDirty = draftGames.length !== savedGames.length
+    || draftGames.some((title, index) => title !== savedGames[index]);
+
+  const flash = (text, isError) => {
+    if (noteTimer.current) window.clearTimeout(noteTimer.current);
+    if (isError) {
+      setErr(text);
+      return;
+    }
+    setErr('');
+    setNote(text);
+    noteTimer.current = window.setTimeout(() => setNote(''), 3500);
+  };
+
+  const togglePlatform = (id) => {
+    setDraftPlatforms((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
+    setNote('');
+    setErr('');
+  };
+
+  const toggleGame = (title) => {
+    setDraftGames((prev) => (prev.includes(title) ? prev.filter((g) => g !== title) : prev.length < MAX_TESTED_GAMES ? [...prev, title] : prev));
+    setNote('');
+    setErr('');
+  };
+
+  // Sauvegarde des deux listes en une seule écriture de métadonnées :
+  // le bouton visible dans une section enregistre les deux (l'autre liste
+  // est déjà à jour du point de vue du joueur). Après un enregistrement
+  // réussi, le filtre/éditeur se referme.
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    setNote('');
+    setErr('');
+    try {
+      if (isDemo) {
+        updateDemoProfile((prev) => ({
+          ...prev,
+          user_metadata: { ...prev.user_metadata, platforms: draftPlatforms, testedGames: draftGames },
+        }));
+      } else if (supabase) {
+        const { data, error } = await supabase.auth.updateUser({
+          data: { platforms: draftPlatforms, testedGames: draftGames },
+        });
+        if (error) throw error;
+        // Pousse la sélection vers le profil public (best-effort, non bloquant)
+        try {
+          const uid = data?.user?.id || user?.id;
+          if (uid) await syncSupabaseProfileAndComments(uid, { platforms: draftPlatforms, testedGames: draftGames });
+        } catch {}
+        try {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('letsplay:profile-synced', { detail: { platforms: draftPlatforms, testedGames: draftGames } }));
+          }
+        } catch {}
+      } else {
+        throw new Error(t.unavailable);
+      }
+      flash(t.profileSaved, false);
+      // Enregistrer referme les deux éditeurs.
+      resetGamesView();
+      setIsEditingPlatforms(false);
+    } catch (e) {
+      flash(describeAuthError(e, t, t.profileSaveError), true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const needle = normalizeSearchText(query);
+  const filteredGames = TESTED_GAMES_CATALOG.filter((game) => {
+    const matchesQuery = needle ? normalizeSearchText(game.title).includes(needle) : true;
+    const matchesConsole = selectedConsole === 'ALL' ? true : game.platforms.includes(selectedConsole);
+    return matchesQuery && matchesConsole;
+  });
+  const atCap = draftGames.length >= MAX_TESTED_GAMES;
+
+  const saveRow = (sectionDirty) => (
+    sectionDirty ? (
+      <div className="player-gear-save-row">
+        <button type="button" className="button button-yellow" onClick={save} disabled={saving}>
+          {saving && <span className="auth-btn-spinner" aria-hidden="true" />}
+          {saving ? t.saving : t.saveGear}
+        </button>
+      </div>
+    ) : null
+  );
+
+  return (
+    <>
+      {/* CONSOLES POSSÉDÉES */}
+      <div className="player-section">
+        <div className="player-section-header player-games-section-header">
+          <div><h2>{t.platformsHeading}</h2><p>{t.consolesHint}</p></div>
+          <button type="button" className={`player-games-action-btn${isEditingPlatforms ? ' active' : ''}`}
+            onClick={() => setIsEditingPlatforms((value) => !value)} aria-expanded={isEditingPlatforms}>
+            {isEditingPlatforms ? 'Fermer' : 'Modifier'}
+          </button>
+        </div>
+        <div className={isEditingPlatforms ? 'player-console-grid' : 'player-platforms-row'}>
+          {(isEditingPlatforms ? CONSOLE_OPTIONS : CONSOLE_OPTIONS.filter((option) => draftPlatforms.includes(option.id)).slice(0, 5)).map((option) => {
+            const selected = draftPlatforms.includes(option.id);
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className={`player-console-option${selected ? ' selected' : ''}`}
+                aria-pressed={selected}
+                onClick={() => togglePlatform(option.id)}
+                disabled={saving}
+              >
+                <div className="player-console-top">
+                  <div className="player-console-logo-box">
+                    <ConsoleLogo consoleId={option.id} size={22} />
+                  </div>
+                  <span className="player-console-check" aria-hidden="true">{selected ? '✓' : '+'}</span>
+                </div>
+                <span className="player-console-id">{option.id}</span>
+                <span className="player-console-label">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {isEditingPlatforms && (
+          <div className="player-gear-save-row">
+            <button type="button" className="button button-yellow" onClick={platformsDirty ? save : () => setIsEditingPlatforms(false)} disabled={saving}>
+              {saving ? t.saving : 'Enregistrer'}
+            </button>
+          </div>
+        )}
+        {note && <p className="player-edit-note">{note}</p>}
+        {err && <p className="player-edit-note player-edit-error">{err}</p>}
+      </div>
+
+      {/* TOP 10 — même podium que le profil ; catalogue ouvert sur demande. */}
+      <div className="player-section">
+        <div className="player-section-header player-games-section-header">
+          <div>
+            <h2>{t.testedGamesHeading}</h2>
+            <p>{t.testedGamesHint}</p>
+          </div>
+          <div className="player-games-actions" aria-label="Actions du TOP 10">
+            <button type="button" className={`player-games-action-btn${isEditingGames ? ' active' : ''}`}
+              aria-expanded={isEditingGames} aria-controls="hub-top-games-editor"
+              onClick={() => isEditingGames ? resetGamesView() : setIsEditingGames(true)}>
+              {isEditingGames ? t.closeTopGames : t.editTopGames}
+            </button>
+          </div>
+        </div>
+        {draftGames.length > 0 ? (
+          <div className="player-games-row">
+            {(isEditingGames ? draftGames : draftGames.slice(0, 3)).map((title, index) => (
+              <TopGamePill key={title} title={title} rank={index + 1}>
+                {isEditingGames && (
+                  <button type="button" className="player-game-chip-remove" onClick={() => toggleGame(title)}
+                    disabled={saving} aria-label={`${t.removeGame} — ${title}`} title={t.removeGame}>×</button>
+                )}
+              </TopGamePill>
+            ))}
+          </div>
+        ) : <p className="player-empty-note">{t.noTestedGamesYet}</p>}
+
+        {isEditingGames && <div id="hub-top-games-editor">
+        {/* FILTRE PAR CONSOLE */}
+        <div className="player-games-filter-container">
+          <div className="player-games-filter-header">
+            <span>{t.filterByConsole}</span>
+            {selectedConsole !== 'ALL' && (
+              <button
+                type="button"
+                className="player-games-filter-reset"
+                onClick={() => setSelectedConsole('ALL')}
+              >
+                {t.filterAll} ({TESTED_GAMES_CATALOG.length}) ×
+              </button>
+            )}
+          </div>
+          <div className="player-games-filter-bar" role="tablist" aria-label={t.filterByConsole}>
+            <button
+              type="button"
+              className={`player-games-filter-btn${selectedConsole === 'ALL' ? ' active' : ''}`}
+              onClick={() => setSelectedConsole('ALL')}
+              aria-pressed={selectedConsole === 'ALL'}
+            >
+              <span>{t.filterAll}</span>
+              <span className="player-games-filter-count">{TESTED_GAMES_CATALOG.length}</span>
+            </button>
+            {CONSOLE_OPTIONS.map((consoleOpt) => {
+              const count = TESTED_GAMES_CATALOG.filter((g) => g.platforms.includes(consoleOpt.id)).length;
+              if (count === 0) return null;
+              const isActive = selectedConsole === consoleOpt.id;
+              return (
+                <button
+                  key={consoleOpt.id}
+                  type="button"
+                  className={`player-games-filter-btn${isActive ? ' active' : ''}`}
+                  onClick={() => setSelectedConsole(isActive ? 'ALL' : consoleOpt.id)}
+                  aria-pressed={isActive}
+                >
+                  <ConsoleLogo consoleId={consoleOpt.id} size={14} />
+                  <span>{consoleOpt.id}</span>
+                  <span className="player-games-filter-count">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <label className="player-games-search">
+          <span className="player-games-search-icon" aria-hidden="true">🔍</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t.gamesSearchPlaceholder}
+            maxLength={40}
+            aria-label={t.gamesSearchPlaceholder}
+          />
+        </label>
+
+        <div className="player-games-list">
+          {filteredGames.length > 0 ? (
+            filteredGames.map((game) => {
+              const added = draftGames.includes(game.title);
+              return (
+                <div key={game.id} className="player-game-row">
+                  <div className="player-game-row-info">
+                    <span className="player-game-row-title">{game.title}</span>
+                    <span className="player-game-row-platforms">
+                      {game.platforms.map((p) => (
+                        <em key={p}>
+                          <ConsoleLogo consoleId={p} size={11} /> {p}
+                        </em>
+                      ))}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={`player-game-row-btn${added ? ' added' : ''}`}
+                    onClick={() => toggleGame(game.title)}
+                    disabled={saving || (!added && atCap)}
+                  >
+                    {added ? `✓ ${t.gameTested}` : `+ ${t.addGame}`}
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+            <p className="player-empty-note player-games-empty">{t.noGameMatch}</p>
+          )}
+        </div>
+        {atCap && <p className="player-games-cap-note">{t.maxGamesNote}</p>}
+        </div>}
+        {/* ENREGISTRER reste visible dès l'ouverture du filtre (sinon on
+            croirait que Reset est encore là) ; il ferme le filtre quand rien
+            n'a été modifié. */}
+        {isEditingGames ? (
+          <div className="player-gear-save-row">
+            <button type="button" className="button button-yellow" onClick={async () => {
+              if (gamesDirty || platformsDirty) {
+                await save();
+              } else {
+                resetGamesView();
+              }
+            }} disabled={saving}>
+              {saving && <span className="auth-btn-spinner" aria-hidden="true" />}
+              {saving ? t.saving : t.saveGear}
+            </button>
+          </div>
+        ) : saveRow(gamesDirty)}
+        {note && <p className="player-edit-note">{note}</p>}
+        {err && <p className="player-edit-note player-edit-error">{err}</p>}
+      </div>
+    </>
   );
 }

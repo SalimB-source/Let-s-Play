@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from './AchievementContext';
 import { GROUPS, TIER_ORDER, achievementIconUrl, achievementLabel, groupLabel, levelTitle, rarityLabel } from './catalog';
@@ -31,6 +31,8 @@ const copy = {
     remaining: '{n} more to go',
     howHintUnlocked: 'Unlocked — keep playing!',
     howTo: 'How to unlock',
+    showAll: 'See all achievements',
+    showLess: 'Show less',
   },
   fr: {
     heading: 'SUCCÈS',
@@ -53,6 +55,8 @@ const copy = {
     remaining: 'Encore {n}',
     howHintUnlocked: 'Débloqué — continue comme ça !',
     howTo: 'Comment débloquer',
+    showAll: 'Voir tous les succès',
+    showLess: 'Réduire',
   },
   ar: {
     heading: 'الإنجازات',
@@ -75,22 +79,95 @@ const copy = {
     remaining: 'متبق {n}',
     howHintUnlocked: 'مفتوح — واصل اللعب!',
     howTo: 'كيفية الفتح',
+    showAll: 'عرض كل الإنجازات',
+    showLess: 'عرض أقل',
   },
 };
+
+/** Marge de sécurité entre la bulle d'information et les bords de l'écran. */
+const TOOLTIP_MARGIN = 12;
+/** Écart entre la carte et sa bulle. */
+const TOOLTIP_GAP = 14;
 
 /**
  * Carte de succès :
  * - Gagné : fond transparent + cadre doré + shimmer.
  * - Survol : tooltip custom qui explique comment le gagner (desc + progression).
+ *
+ * La bulle est centrée sur la carte, puis **ramenée dans l'écran** (décalage
+ * horizontal calculé au moment de l'ouverture, et bascule sous la carte quand
+ * il n'y a pas la place au-dessus) : sur un téléphone, les cartes des bords ne
+ * sont plus rognées. Le décalage passe par la variable CSS `--tooltip-shift`,
+ * lue par `src/achievements/achievements.css`.
  */
 export function AchievementCard({ item, lang, t }) {
   const label = achievementLabel(item, lang);
   const progressText = `${item.current}/${item.target}`;
+  const cardRef = useRef(null);
+  const tooltipRef = useRef(null);
+  // La bulle est visible au survol ou au focus (CSS) ; ces deux drapeaux
+  // servent à replacer la bulle tant qu'elle est affichée.
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [placement, setPlacement] = useState({ shift: 0, below: false });
+
+  /** Mesure la carte et pose le décalage qui garde la bulle dans l'écran. */
+  const place = useCallback(() => {
+    const card = cardRef.current;
+    const tip = tooltipRef.current;
+    if (!card || typeof window === 'undefined') return;
+    const rect = card.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const width = tip ? tip.offsetWidth : 0;
+    const height = tip ? tip.offsetHeight : 0;
+    // Sur un moteur sans mise en page (test SSR, jsdom) : rien à corriger.
+    if (!width || !height || !rect.width) return;
+
+    // Horizontal : centrage conservé tant que la bulle tient dans l'écran,
+    // sinon on la décale juste ce qu'il faut pour la ramener dedans.
+    const center = rect.left + rect.width / 2;
+    const overflowLeft = TOOLTIP_MARGIN - (center - width / 2);
+    const overflowRight = center + width / 2 - (viewportWidth - TOOLTIP_MARGIN);
+    const shift = overflowLeft > 0 ? overflowLeft : overflowRight > 0 ? -overflowRight : 0;
+
+    // Vertical : au-dessus de la carte, ou en dessous s'il n'y a pas la place.
+    const roomAbove = rect.top - TOOLTIP_GAP - height >= TOOLTIP_MARGIN;
+    const roomBelow = rect.bottom + TOOLTIP_GAP + height <= viewportHeight - TOOLTIP_MARGIN;
+    const below = !roomAbove && roomBelow;
+
+    const next = { shift: Math.round(shift), below };
+    setPlacement((previous) => (
+      previous.shift === next.shift && previous.below === next.below ? previous : next
+    ));
+  }, []);
+
+  // Une seule bulle à l'écran : elle suit les rotations, redimensionnements et
+  // défilements tant qu'elle est ouverte (sinon elle dépasserait à nouveau).
+  useEffect(() => {
+    if (!hovered && !focused) return undefined;
+    place();
+    const onMove = () => place();
+    window.addEventListener('scroll', onMove, { passive: true });
+    window.addEventListener('resize', onMove);
+    return () => {
+      window.removeEventListener('scroll', onMove);
+      window.removeEventListener('resize', onMove);
+    };
+  }, [hovered, focused, place]);
+
   return (
     <article
-      className={`achievement-card rarity-${item.rarity}${item.unlocked ? ' unlocked' : ''}`}
+      ref={cardRef}
+      className={`achievement-card rarity-${item.rarity}${item.unlocked ? ' unlocked' : ''}${placement.below ? ' tooltip-below' : ''}`}
+      style={{ '--tooltip-shift': `${placement.shift}px` }}
       aria-label={item.unlocked ? `${label.name} — ${t.unlockedTag}` : `${label.name} — ${t.lockedTag}`}
       tabIndex={0}
+      onPointerEnter={() => { setHovered(true); place(); }}
+      onPointerLeave={() => setHovered(false)}
+      onFocus={() => { setFocused(true); place(); }}
+      onBlur={() => setFocused(false)}
+      onKeyDown={(event) => { if (event.key === 'Escape') event.currentTarget.blur(); }}
     >
       <div className="achievement-card-inner">
         <img
@@ -106,7 +183,7 @@ export function AchievementCard({ item, lang, t }) {
       </div>
 
       {/* Tooltip premium au survol / focus */}
-      <div className="achievement-tooltip" role="tooltip">
+      <div className="achievement-tooltip" role="tooltip" ref={tooltipRef}>
         <div className="achievement-tooltip-header">
           <span className="achievement-tooltip-name">{label.name}</span>
           <span className={`achievement-tooltip-tier rarity-${item.rarity}`}>
@@ -170,15 +247,18 @@ export function AchievementLevelCard({ summary, lang, t, compact = false }) {
 
 /**
  * @param {'full'|'compact'} variant complet (page) ou résumé (hub joueur)
- * @param {number} [limit] nombre de succès affichés en variante compacte
+ * @param {number} [limit] nombre de succès affichés en variante compacte.
+ *   Par défaut (limit non défini) le hub affiche **tous** les succès — la
+ *   limite n'est respectée que si un nombre fini est passé explicitement.
  */
-export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
+export default function AchievementsPanel({ variant = 'full', limit }) {
   const { summary } = useAchievements();
   const { lang } = useLanguage();
   const t = copy[lang] || copy.en;
   const [group, setGroup] = useState('all');
   const [tier, setTier] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
+  const [expanded, setExpanded] = useState(false);
 
   const usedGroups = useMemo(
     () => GROUPS.filter((entry) => summary.items.some((item) => item.group === entry.id)),
@@ -213,9 +293,21 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
   }, [summary.items, group, tier, stateFilter]);
 
   if (variant === 'compact') {
-    const recent = filtered.filter((item) => item.unlocked).slice(0, limit);
-    const upcoming = filtered.filter((item) => !item.unlocked).slice(0, Math.max(1, limit - recent.length));
-    const shown = [...recent, ...upcoming];
+    // Pas de carte de niveau ici : le hub joueur affiche déjà niveau, rang et
+    // barre d'XP dans la carte de profil (`player-xp-section`). La section
+    // « succès » ne répète donc pas la progression — elle ne sert qu'à
+    // montrer les succès eux-mêmes.
+    // Par défaut on affiche tous les succès (triés) ; si une limite
+    // finie est explicitement passée (ex. <AchievementsPanel limit={4} />)
+    // on garde le découpage \"récents + à venir\" hérité.
+    let shown;
+    if (!expanded && typeof limit === 'number' && Number.isFinite(limit) && limit > 0) {
+      const recent = filtered.filter((item) => item.unlocked).slice(0, limit);
+      const upcoming = filtered.filter((item) => !item.unlocked).slice(0, Math.max(0, limit - recent.length));
+      shown = [...recent, ...upcoming].slice(0, limit);
+    } else {
+      shown = filtered;
+    }
 
     return (
       <div className="achievements-panel compact">
@@ -223,8 +315,6 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
           <h2>{t.headingHub}</h2>
           <p>{t.hubSub}</p>
         </div>
-
-        <AchievementLevelCard summary={summary} lang={lang} t={t} compact />
 
         {shown.length > 0 ? (
           <div className="achievement-grid compact">
@@ -236,6 +326,11 @@ export default function AchievementsPanel({ variant = 'full', limit = 4 }) {
           <p className="player-empty-note">{t.empty}</p>
         )}
 
+        {typeof limit === 'number' && filtered.length > limit && (
+          <button type="button" className="player-list-toggle" onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}>
+            {expanded ? t.showLess : t.showAll}
+          </button>
+        )}
       </div>
     );
   }

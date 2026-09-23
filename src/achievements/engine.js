@@ -18,6 +18,7 @@
  * hors navigateur par `npm run check:achievements`.
  */
 import { ACHIEVEMENTS } from './catalog.js';
+import { bestDayRun } from '../quizzes/engine.js';
 
 export const STATE_VERSION = 1;
 
@@ -209,6 +210,29 @@ export function reduce(state, action = {}) {
       next = addToSet(counter(current, 'search_performed'), 'searches', action.query);
       break;
 
+    // Partie de quizz terminée : compteur global + quizz distincts, sans-faute
+    // par quizz, et jour crédité pour la série du « quizz du jour ».
+    // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion.
+    // Rejoué ensuite, il ne fait plus avancer aucun succès (ni compteur, ni
+    // sans-faute) — donc plus aucun XP. Seule exception : le jour de quizz du
+    // jour reste crédité, sinon la rotation (un quizz déjà fait tous les huit
+    // jours) casserait mécaniquement la série « Semaine parfaite ».
+    case 'quiz_completed': {
+      if (quizAlreadyCompleted(current, action.id)) {
+        if (action.daily) next = addToSet(current, 'quiz_days', dayKey(at));
+        break;
+      }
+      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', action.id);
+      if (action.perfect) next = addToSet(next, 'perfect_quizzes', action.id);
+      if (action.daily) next = addToSet(next, 'quiz_days', dayKey(at));
+      break;
+    }
+
+    // Défi envoyé à un ami depuis l'écran de résultat d'un quizz.
+    case 'quiz_challenge':
+      next = counter(current, 'challenges_sent');
+      break;
+
     case 'account_created':
       next = counter(current, 'account_created');
       break;
@@ -226,6 +250,17 @@ export function reduce(state, action = {}) {
   }
 
   return award({ ...next, updatedAt: at }, at);
+}
+
+/**
+ * Ce quizz a-t-il déjà été terminé par le joueur ? Si oui, le rejouer ne
+ * rapporte plus d'XP (voir `quiz_completed` dans `reduce`). L'ensemble
+ * `quizzes_played` n'est alimenté qu'à la fin d'une partie : c'est bien
+ * « terminé », pas « commencé ».
+ */
+export function quizAlreadyCompleted(state, quizId) {
+  if (!quizId) return false;
+  return Boolean(state?.sets?.quizzes_played?.includes(quizId));
 }
 
 /** Débloque les succès satisfaits, sans action — utilisé au chargement. */
@@ -281,6 +316,18 @@ export const METRICS = {
       éditoriales du site, toutes touchées. */
   readAllKinds: (state) =>
     setSize(state, 'news_read') > 0 && setSize(state, 'reviews_read') > 0 && setSize(state, 'dossiers_read') > 0 ? 1 : 0,
+  /** Parties de quizz terminées (toutes confondues). */
+  quizzesCompleted: (state) => counterValue(state, 'quizzes_completed'),
+  /** Quizz distincts joués. */
+  distinctQuizzes: (state) => setSize(state, 'quizzes_played'),
+  /** Quizz distincts terminés sans faute. */
+  perfectQuizzes: (state) => setSize(state, 'perfect_quizzes'),
+  /** Jours différents avec le quizz du jour terminé. */
+  dailyQuizDays: (state) => setSize(state, 'quiz_days'),
+  /** Meilleure série de jours consécutifs de quizz du jour. */
+  dailyQuizStreak: (state) => bestDayRun(state.sets.quiz_days || []),
+  /** Défis envoyés à des amis depuis les écrans de résultat. */
+  challengesSent: (state) => counterValue(state, 'challenges_sent'),
 };
 
 /** Valeur d'une métrique (0 si la métrique n'existe pas — jamais d'exception). */

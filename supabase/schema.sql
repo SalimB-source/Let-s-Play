@@ -182,6 +182,31 @@ exception when others then
 end $$;
 
 -- ----------------------------------------------------------------------------
+-- 3b2. Consoles possédées & jeux testés : colonnes publiques du profil
+-- ----------------------------------------------------------------------------
+-- Le hub joueur (src/pages/Auth.jsx) laisse cocher les consoles possédées et
+-- marquer les jeux testés (catalogue PS5 / Xbox Series X,
+-- src/lib/gameLibrary.js) ; la page de profil (src/pages/Profile.jsx) les
+-- affiche en public. La source de vérité reste user_metadata (JWT) ; ces
+-- colonnes dénormalisées servent l'affichage public sans session.
+-- Ajout non bloquant sur une table existante.
+do $$
+begin
+  if to_regclass('public.profiles') is not null then
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'profiles' and column_name = 'platforms') then
+      execute 'alter table public.profiles add column platforms text[]';
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'profiles' and column_name = 'tested_games') then
+      execute 'alter table public.profiles add column tested_games text[]';
+    end if;
+  end if;
+exception when others then
+  raise warning 'Let''s Play : colonnes profiles.platforms / tested_games non ajoutées (%).', sqlerrm;
+end $$;
+
+-- ----------------------------------------------------------------------------
 -- 3c. Progression des succès — UNE LIGNE PAR COMPTE
 -- ----------------------------------------------------------------------------
 -- Chaque compte possède SA progression (succès débloqués, XP, niveau) : le
@@ -868,6 +893,275 @@ end $$;
 -- PostgREST garde en mémoire la liste des tables : sans ce signal, l'API peut
 -- répondre « Could not find the table 'public.comments' in the schema cache »
 -- alors que la table vient d'être créée.
+-- Réactions partagées : un vote par compte et par article.
+create table if not exists public.article_reactions (
+  article_id text not null check (length(article_id) between 1 and 300),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  choice text not null check (choice in ('hype', 'watch', 'wait')),
+  primary key (article_id, user_id)
+);
+alter table public.article_reactions enable row level security;
+-- Les identités des votants ne sont jamais exposées ; accès via RPC seulement.
+revoke all on public.article_reactions from anon, authenticated;
+
+create or replace function public.get_article_reactions(p_article_id text)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'hype', count(*) filter (where choice = 'hype'),
+    'watch', count(*) filter (where choice = 'watch'),
+    'wait', count(*) filter (where choice = 'wait'),
+    'mine', coalesce(max(choice) filter (where user_id = auth.uid()), '')
+  ) from public.article_reactions where article_id = p_article_id;
+$$;
+
+create or replace function public.set_article_reaction(p_article_id text, p_choice text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+begin
+  if auth.uid() is null then
+    raise exception 'reaction_requires_auth' using errcode = '42501';
+  end if;
+  if p_article_id is null or length(p_article_id) not between 1 and 300 then
+    raise exception 'invalid_article' using errcode = '22023';
+  end if;
+  if p_choice is null then
+    delete from public.article_reactions where article_id = p_article_id and user_id = auth.uid();
+  else
+    if p_choice not in ('hype', 'watch', 'wait') then
+      raise exception 'invalid_reaction' using errcode = '22023';
+    end if;
+    insert into public.article_reactions(article_id, user_id, choice)
+    values (p_article_id, auth.uid(), p_choice)
+    on conflict (article_id, user_id) do update set choice = excluded.choice;
+  end if;
+  return public.get_article_reactions(p_article_id);
+end;
+$$;
+revoke all on function public.get_article_reactions(text) from public;
+revoke all on function public.set_article_reaction(text, text) from public;
+grant execute on function public.get_article_reactions(text) to anon, authenticated;
+grant execute on function public.set_article_reaction(text, text) to authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 7. Vues globales des actus (compteur partagé)
+-- ----------------------------------------------------------------------------
+-- Une ligne par article. Compteur global exposé sur les miniatures de /news
+-- et sur la page article : ``vues`` est le total de tous les lecteurs.
+-- Lecture publique (anon + authenticated) ; l'incrément passe par la RPC
+-- atomique ci-dessous (security definer) pour éviter qu'un client pose une
+-- valeur arbitraire. Fallback local (localStorage) géré côté client si
+-- Supabase n'est pas configuré.
+create table if not exists public.article_views (
+  article_id text primary key check (char_length(article_id) between 1 and 300),
+  views integer not null default 0 check (views >= 0),
+  updated_at timestamptz not null default now()
+);
+
+do $$
+begin
+  alter table public.article_views enable row level security;
+
+  drop policy if exists "Article views are publicly readable" on public.article_views;
+  create policy "Article views are publicly readable"
+  on public.article_views for select using (true);
+exception
+  when others then
+    raise warning 'Let''s Play : politiques RLS article_views non appliquées (%).', sqlerrm;
+end $$;
+
+-- Incrément atomique : insère à 1 si inconnu, sinon +1. Retourne le total.
+create or replace function public.increment_article_view(p_article_id text)
+returns integer
+language plpgsql
+security definer set search_path = ''
+as $$
+declare next_views integer;
+begin
+  if p_article_id is null or char_length(p_article_id) not between 1 and 300 then
+    raise exception 'invalid_article_id' using errcode = '22023';
+  end if;
+  insert into public.article_views(article_id, views, updated_at)
+  values (p_article_id, 1, now())
+  on conflict (article_id) do update
+    set views = public.article_views.views + 1, updated_at = now()
+  returning views into next_views;
+  return next_views;
+end;
+$$;
+
+revoke all on function public.increment_article_view(text) from public;
+grant execute on function public.increment_article_view(text) to anon, authenticated;
+
+do $$
+begin
+  grant usage on schema public to anon, authenticated;
+  grant select on public.article_views to anon, authenticated;
+exception
+  when others then
+    raise warning 'Let''s Play : droits article_views non appliqués (%).', sqlerrm;
+end $$;
+
+-- ----------------------------------------------------------------------------
+-- 8. Quizz : tentatives & classement
+-- ----------------------------------------------------------------------------
+-- Une ligne par compte et par quizz : la MEILLEURE PARTIE est conservée
+-- (upsert côté serveur dans la RPC) — celle qui marque le plus de points
+-- (barème « fun » du moteur : base + rapidité + combo, 200 max par question),
+-- à points égaux le plus de bonnes réponses, et à égalité totale la première
+-- partie venue garde l'antériorité. Le classement se fait donc sur les POINTS
+-- gagnés, pas sur le nombre de bonnes réponses (resté affiché en secondaire).
+-- La RPC joint le profil public (pseudo, avatar, niveau). Même contrat que les
+-- réactions partagées : la table n'est pas exposée directement (revoke), tout
+-- passe par des RPC security definer — un client ne peut ni écrire au nom d'un
+-- autre, ni poser un score hors bornes (0 ≤ score ≤ total et
+-- 100 × score ≤ points ≤ 200 × total vérifiés côté serveur).
+create table if not exists public.quiz_attempts (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  quiz_id text not null check (char_length(quiz_id) between 1 and 120),
+  score integer not null,
+  total integer not null check (total >= 1),
+  points integer not null default 0,
+  perfect boolean not null default false,
+  played_at timestamptz not null default now(),
+  primary key (user_id, quiz_id),
+  check (score between 0 and total),
+  check (points >= 0)
+);
+alter table public.quiz_attempts enable row level security;
+revoke all on public.quiz_attempts from anon, authenticated;
+
+-- Points de la meilleure partie : ajout non bloquant sur une table existante.
+-- Les anciennes lignes (avant les points) reçoivent le plancher du barème —
+-- 100 points par bonne réponse, la base sans bonus — pour rester classables.
+do $$
+begin
+  if to_regclass('public.quiz_attempts') is not null then
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'quiz_attempts' and column_name = 'points') then
+      execute 'alter table public.quiz_attempts add column points integer not null default 0 check (points >= 0)';
+    end if;
+    update public.quiz_attempts set points = score * 100 where points = 0 and score > 0;
+  end if;
+exception when others then
+  raise warning 'Let''s Play : colonne quiz_attempts.points non ajoutée (%).', sqlerrm;
+end $$;
+
+-- Dépose une tentative : garde la MEILLEURE PARTIE du compte sur ce quizz —
+-- celle qui marque le plus de points (à égalité, le plus de bonnes réponses).
+-- Retourne le classement à jour (le joueur voit sa ligne remonter).
+-- Signature 2026-09 : p_points en plus ; l'ancienne surcharge à quatre
+-- paramètres est retirée pour ne pas ambiguïser les appels.
+drop function if exists public.submit_quiz_attempt(text, integer, integer, boolean);
+
+create or replace function public.submit_quiz_attempt(
+  p_quiz_id text, p_score integer, p_total integer, p_perfect boolean default false, p_points integer default 0
+)
+returns jsonb
+language plpgsql
+security definer set search_path = ''
+as $$
+declare
+  v_points integer;
+begin
+  if auth.uid() is null then
+    raise exception 'quiz_requires_auth' using errcode = '42501';
+  end if;
+  if p_quiz_id is null or char_length(p_quiz_id) not between 1 and 120 then
+    raise exception 'invalid_quiz' using errcode = '22023';
+  end if;
+  if p_total is null or p_total < 1 or p_score is null or p_score < 0 or p_score > p_total then
+    raise exception 'invalid_quiz_score' using errcode = '22023';
+  end if;
+  v_points := coalesce(p_points, 0);
+  -- Plancher du barème (100 points par bonne réponse) et plafond absolu
+  -- (QUIZ_POINTS du moteur : 200 max par question) : les deux bornes sont
+  -- revérifiées ici, côté serveur.
+  if v_points < 100 * p_score or v_points > 200 * p_total then
+    raise exception 'invalid_quiz_points' using errcode = '22023';
+  end if;
+
+  insert into public.quiz_attempts as qa (user_id, quiz_id, score, total, points, perfect)
+  values (auth.uid(), p_quiz_id, p_score, p_total, v_points,
+          coalesce(p_perfect, false) or p_score = p_total)
+  on conflict (user_id, quiz_id) do update
+     set score = excluded.score,
+         total = excluded.total,
+         points = excluded.points,
+         perfect = excluded.perfect,
+         played_at = now()
+   where excluded.points > qa.points
+      or (excluded.points = qa.points and excluded.score > qa.score);
+  return public.get_quiz_leaderboard(p_quiz_id, 10);
+end;
+$$;
+
+-- Classement d'un quizz : meilleure partie par compte, joint au profil public.
+-- Trié par POINTS gagnés (bonnes réponses puis antériorité en départage).
+-- `mine` marque la ligne du joueur connecté pour la surligner côté client.
+create or replace function public.get_quiz_leaderboard(p_quiz_id text, p_limit integer default 10)
+returns jsonb
+language sql
+stable
+security definer set search_path = ''
+as $$
+  select coalesce(jsonb_agg(row), '[]'::jsonb)
+  from (
+    select a.points, a.score, a.total, a.perfect, a.played_at,
+           coalesce(p.display_name, p.username, '') as username,
+           p.avatar_url, coalesce(p.level, 1) as level,
+           (a.user_id = auth.uid()) as mine
+      from public.quiz_attempts a
+      left join public.profiles p on p.id = a.user_id
+     where a.quiz_id = p_quiz_id
+     order by a.points desc, a.score desc, a.played_at asc
+     limit least(greatest(p_limit, 1), 50)
+  ) row;
+$$;
+
+-- Position d'un joueur au classement GLOBAL des quizz : somme des points de
+-- ses meilleures parties, tous les quizz confondus. `rank` suit le classement
+-- standard (égalité = même rang), `players` compte les joueurs classés, et
+-- `mine` signale si la fiche demandée est celle du visiteur. Un joueur sans
+-- partie classée reçoit `rank` null (« pas encore classé »).
+create or replace function public.get_quiz_global_rank(p_user_id uuid default null)
+returns jsonb
+language sql
+stable
+security definer set search_path = ''
+as $$
+  with totals as (
+    select a.user_id, sum(a.points) as points, count(*) as quizzes
+      from public.quiz_attempts a
+     group by a.user_id
+  ),
+  ranked as (
+    select t.user_id, t.points, t.quizzes,
+           rank() over (order by t.points desc, t.quizzes desc) as rank,
+           count(*) over () as players
+      from totals t
+  )
+  select coalesce(
+    (select jsonb_build_object(
+              'rank', r.rank::int,
+              'points', r.points::int,
+              'quizzes', r.quizzes::int,
+              'players', r.players::int,
+              'mine', coalesce(r.user_id = auth.uid(), false))
+       from ranked r
+      where r.user_id = coalesce(p_user_id, auth.uid())),
+    jsonb_build_object(
+      'rank', null, 'points', 0, 'quizzes', 0,
+      'players', (select count(*)::int from totals),
+      'mine', coalesce(coalesce(p_user_id, auth.uid()) = auth.uid(), false))
+  );
+$$;
+
+revoke all on function public.submit_quiz_attempt(text, integer, integer, boolean, integer) from public;
+revoke all on function public.get_quiz_leaderboard(text, integer) from public;
+revoke all on function public.get_quiz_global_rank(uuid) from public;
+grant execute on function public.get_quiz_leaderboard(text, integer) to anon, authenticated;
+grant execute on function public.get_quiz_global_rank(uuid) to anon, authenticated;
+grant execute on function public.submit_quiz_attempt(text, integer, integer, boolean, integer) to authenticated;
+
 notify pgrst, 'reload schema';
 
 -- Contrôle final : chaque ligne doit afficher « OK ».
@@ -995,6 +1289,36 @@ from (
     (26, 'realtime direct_messages',
       case when exists (select 1 from pg_publication_tables
                         where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'direct_messages')
-           then 'OK' else 'ABSENT (voir WARNING)' end)
+           then 'OK' else 'ABSENT (voir WARNING)' end),
+    (27, 'consoles profiles.platforms',
+      case when exists (select 1 from information_schema.columns
+                        where table_schema = 'public' and table_name = 'profiles' and column_name = 'platforms')
+           then 'OK' else 'MANQUANT' end),
+    (28, 'jeux testés profiles.tested_games',
+      case when exists (select 1 from information_schema.columns
+                        where table_schema = 'public' and table_name = 'profiles' and column_name = 'tested_games')
+           then 'OK' else 'MANQUANT' end)
+, (29, 'réactions partagées (table et RPC)',
+      case when to_regclass('public.article_reactions') is not null
+             and to_regprocedure('public.get_article_reactions(text)') is not null
+             and to_regprocedure('public.set_article_reaction(text,text)') is not null
+           then 'OK' else 'MANQUANT' end)
+, (30, 'vues globales actus (table et RPC)',
+      case when to_regclass('public.article_views') is not null
+             and to_regprocedure('public.increment_article_view(text)') is not null
+           then 'OK' else 'MANQUANT' end)
+, (31, 'table public.quiz_attempts',
+      case when to_regclass('public.quiz_attempts') is null then 'MANQUANT' else 'OK' end)
+, (32, 'RLS activee et table quizz non exposee',
+      case when to_regclass('public.quiz_attempts') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.quiz_attempts'))
+            and to_regrole('anon') is not null
+            and not has_table_privilege('anon', 'public.quiz_attempts', 'select')
+           then 'OK' else 'MANQUANT' end)
+, (33, 'RPC quizz (tentative + classement + rang global)',
+     case when to_regprocedure('public.submit_quiz_attempt(text,integer,integer,boolean,integer)') is not null
+            and to_regprocedure('public.get_quiz_leaderboard(text,integer)') is not null
+            and to_regprocedure('public.get_quiz_global_rank(uuid)') is not null
+           then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

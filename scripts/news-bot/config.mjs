@@ -59,6 +59,10 @@ export const NEGATIVE_CATEGORIES = [
   /dossier/i, /video\b/i, /vid[ée]o/i,
 ];
 
+// Sentiment global affiché sur les miniatures : vert (positive), rouge (negative), jaune (mixed).
+// Détecté automatiquement (positif = annonce/sortie/succès, négatif = annulation/report/licenciement, mitigé = le reste).
+export const SENTIMENT_VALUES = ['positive', 'negative', 'mixed'];
+
 // Le style éditorial Let's Play, injecté tel quel dans le prompt LLM.
 export const STYLE_GUIDE = `Tu écris pour « Let’s Play », l’émission algérienne de gaming, cinéma, e-sport et pop culture. La rédaction du site publie chaque jour des actus au style très reconnaissable :
 
@@ -91,5 +95,6 @@ export const STORY_SCHEMA_DOC = `Réponds UNIQUEMENT avec un objet JSON (aucun t
   "p2": "Analyse ou détail de la matière première, 2-4 phrases.",
   "p3": "Complément factuel, 2-4 phrases.",
   "p4": "Perspective : quoi surveiller ensuite, 2-3 phrases.",
-  "takeText": "Résumé final en une phrase autonome."
+  "takeText": "Résumé final en une phrase autonome.",
+  "sentiment": "positive | negative | mixed — ton global de l'actu : positive (bonne nouvelle/sortie/succès) en VERT, negative (annulation/report/licenciement/problème) en ROUGE, mixed (nuancé/incertain/débat) en JAUNE."
 }`;

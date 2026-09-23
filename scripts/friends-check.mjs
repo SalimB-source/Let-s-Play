@@ -30,7 +30,7 @@ execFileSync(
 
 const smoke = await import(path.join(outDir, 'friends-smoke.js'));
 const {
-  DEMO_COMMUNITY, DEMO_INITIAL_STATE, DEMO_PROFILES, demoPresence, findDemoPlayer,
+  DEMO_INITIAL_STATE, DEMO_PROFILES, demoCommunity, demoPresence, findDemoPlayer,
   applyDemoAction, demoRelations, isRecentlySeen, relationsFromRows, sanitizeSearch, searchDemoPlayers,
   friendsCopy, socialCopy, renderApp,
 } = smoke;
@@ -107,7 +107,12 @@ check('moins de 2 caractères → rien', searchDemoPlayers('v', DEMO_PROFILES.vo
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/3] communauté de démonstration\n');
 
-const ids = DEMO_COMMUNITY.map((p) => p.id);
+// Garde-fou : les personas ne sont plus livrées dans l'application, ce sont
+// des fixtures de test (scripts/demoFixtures.js). Si le semis échouait, toutes
+// les vérifications « persona » passeraient silencieusement à la trappe.
+check('personas de démonstration semées par les fixtures', Object.keys(DEMO_PROFILES).sort().join(','), 'pixel,vortex');
+
+const ids = demoCommunity().map((p) => p.id);
 check('identifiants uniques', new Set(ids).size, ids.length);
 check('les deux personas font partie de la communauté', ids.includes(DEMO_PROFILES.vortex.id) && ids.includes(DEMO_PROFILES.pixel.id));
 for (const [key, seed] of Object.entries(DEMO_INITIAL_STATE)) {

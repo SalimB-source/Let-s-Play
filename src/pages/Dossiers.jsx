@@ -101,7 +101,7 @@ export default function Dossiers(){
       </section>
 
       <section className="formats wrap">
-        <div className="section-label"><span><b>{t.dossiers.formatsLabel1.split(' / ')[0]}</b> / {t.dossiers.formatsLabel1.split(' / ')[1]}</span><span>{t.dossiers.formatsLabel2}</span></div>
+        <div className="section-label"><span>{t.dossiers.formatsLabel1.split(' / ')[1]}</span><span>{t.dossiers.formatsLabel2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.dossiers.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow/></Link></article>
           <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.dossiers.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow/></Link></article>
@@ -123,7 +123,7 @@ export default function Dossiers(){
       </section>
 
       <section className="show wrap">
-        <div className="section-label"><span><b>{t.dossiers.showLabel1.split(' / ')[0]}</b> / {t.dossiers.showLabel1.split(' / ')[1]}</span><span>{t.dossiers.showLabel2}</span></div>
+        <div className="section-label"><span>{t.dossiers.showLabel1.split(' / ')[1]}</span><span>{t.dossiers.showLabel2}</span></div>
         <div className="manifesto-grid">
           <h2 className="manifesto-h2">{t.dossiers.weDontA}<br/><span>{t.dossiers.weDontB}</span></h2>
           <div>

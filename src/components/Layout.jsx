@@ -15,7 +15,7 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const track = useAchievementAction();
   const searchRef = useRef(null);
 
@@ -42,7 +42,7 @@ export default function Layout({ children }) {
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
   const [searchOpen, setSearchOpen] = useState(false);
   const liveSearchResults = useMemo(() => searchContent(searchValue).slice(0, 6), [searchValue]);
-  const searchTypeLabels = { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release' };
+  const searchTypeLabels = { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release', quiz: 'Quiz' };
 
   useEffect(() => {
     setSearchValue(new URLSearchParams(location.search).get('q') || '');
@@ -64,6 +64,18 @@ export default function Layout({ children }) {
     setMenuOpen(false);
     setSearchOpen(false);
   };
+
+  // Bouton « Se déconnecter » (croix) tout à droite de la barre. signOut()
+  // efface la session locale de façon synchrone avant la révocation distante :
+  // inutile d'attendre le réseau pour renvoyer vers l'accueil, ce qui évite de
+  // laisser affichée une page réservée aux membres (hub, messagerie).
+  const handleSignOut = () => {
+    setMenuOpen(false);
+    signOut();
+    navigate('/');
+  };
+
+  const logoutLabel = t.nav.logout || 'Log out';
   
   return (
     <>
@@ -81,6 +93,7 @@ export default function Layout({ children }) {
             <Link to="/news" className={isActive('/news') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.news}</Link>
             <Link to="/reviews" className={isActive('/reviews') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.reviews}</Link>
             <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.dossiers}</Link>
+            <Link to="/quizz" className={isActive('/quizz') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.quiz}</Link>
             <Link to="/events" className={isActive('/events') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Events</Link>
           </div>
           <div className="nav-actions">
@@ -99,23 +112,58 @@ export default function Layout({ children }) {
             </div>}
             </form>
             <LanguageSwitcher variant="nav" />
-            <Link
-              to="/auth"
-              className={`nav-account${user ? ' connected' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              {user ? (
-                <span className="nav-account-inner">
-                  <span className="nav-online-dot" aria-hidden="true" />
-                  <span className="nav-account-name">
-                    {user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
+            {user ? (
+              <>
+                <Link
+                  to="/auth"
+                  className={`nav-account connected`}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <span className="nav-account-inner">
+                    <span className="nav-online-dot" aria-hidden="true" />
+                    <span className="nav-account-name">
+                      {user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
+                    </span>
                   </span>
-                </span>
-              ) : (
-                t.nav?.join || 'Join'
-              )}
-            </Link>
-            <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer" className="nav-cta" onClick={() => setMenuOpen(false)}>{t.nav.watch} ↗</a>
+                </Link>
+                <button
+                  type="button"
+                  className="nav-logout"
+                  onClick={handleSignOut}
+                  aria-label={logoutLabel}
+                  title={logoutLabel}
+                >
+                  <svg
+                    className="nav-logout-icon"
+                    viewBox="0 0 12 12"
+                    width="12"
+                    height="12"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  </svg>
+                  <span className="nav-logout-label">{logoutLabel}</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/auth?mode=signin"
+                  className="nav-account nav-login"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.nav.login || 'Log in'}
+                </Link>
+                <Link
+                  to="/auth?mode=signup"
+                  className="nav-account nav-register"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {t.nav.register || 'Register'}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -130,6 +178,7 @@ export default function Layout({ children }) {
           <Link to="/news">{t.nav.news}</Link>
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
+          <Link to="/quizz">{t.nav.quiz}</Link>
           <Link to="/events">Events</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>

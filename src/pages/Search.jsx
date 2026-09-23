@@ -5,9 +5,9 @@ import { searchContent } from '../search/searchIndex';
 import { useAchievementAction } from '../achievements/AchievementContext';
 
 const copy = {
-  en: { label: 'SEARCH / RESULTS', titleA: 'FIND YOUR', titleB: 'NEXT PLAY.', placeholder: 'Search news, reviews, games…', submit: 'Search', clear: 'Clear search', results: 'results', result: 'result', empty: 'No results found. Try a different title, game, or platform.', prompt: 'Search the Let’s Play archive.', types: { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release calendar' }, read: 'Open story' },
-  fr: { label: 'RECHERCHE / RÉSULTATS', titleA: 'TROUVE TON', titleB: 'PROCHAIN JEU.', placeholder: 'Rechercher une actu, un test, un jeu…', submit: 'Rechercher', clear: 'Effacer', results: 'résultats', result: 'résultat', empty: 'Aucun résultat. Essaie un autre titre, jeu ou support.', prompt: 'Explore les archives Let’s Play.', types: { news: 'Actus', review: 'Test', dossier: 'Dossier', release: 'Calendrier des sorties' }, read: 'Ouvrir l’article' },
-  ar: { label: 'بحث / النتائج', titleA: 'اعثر على', titleB: 'لعبتك القادمة.', placeholder: 'ابحث عن خبر أو مراجعة أو لعبة…', submit: 'بحث', clear: 'مسح البحث', results: 'نتائج', result: 'نتيجة', empty: 'لم نعثر على نتائج. جرّب عنوانًا أو لعبة أو منصة أخرى.', prompt: 'استكشف أرشيف Let’s Play.', types: { news: 'أخبار', review: 'مراجعة', dossier: 'ملف', release: 'تقويم الإصدارات' }, read: 'فتح المقال' },
+  en: { label: 'SEARCH / RESULTS', titleA: 'FIND YOUR', titleB: 'NEXT PLAY.', placeholder: 'Search news, reviews, games…', submit: 'Search', clear: 'Clear search', results: 'results', result: 'result', empty: 'No results found. Try a different title, game, or platform.', prompt: 'Search the Let’s Play archive.', types: { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release calendar', quiz: 'Quizzes' }, read: 'Open story' },
+  fr: { label: 'RECHERCHE / RÉSULTATS', titleA: 'TROUVE TON', titleB: 'PROCHAIN JEU.', placeholder: 'Rechercher une actu, un test, un jeu…', submit: 'Rechercher', clear: 'Effacer', results: 'résultats', result: 'résultat', empty: 'Aucun résultat. Essaie un autre titre, jeu ou support.', prompt: 'Explore les archives Let’s Play.', types: { news: 'Actus', review: 'Test', dossier: 'Dossier', release: 'Calendrier des sorties', quiz: 'Quizz' }, read: 'Ouvrir l’article' },
+  ar: { label: 'بحث / النتائج', titleA: 'اعثر على', titleB: 'لعبتك القادمة.', placeholder: 'ابحث عن خبر أو مراجعة أو لعبة…', submit: 'بحث', clear: 'مسح البحث', results: 'نتائج', result: 'نتيجة', empty: 'لم نعثر على نتائج. جرّب عنوانًا أو لعبة أو منصة أخرى.', prompt: 'استكشف أرشيف Let’s Play.', types: { news: 'أخبار', review: 'مراجعة', dossier: 'ملف', release: 'تقويم الإصدارات', quiz: 'اختبارات' }, read: 'فتح المقال' },
 };
 
 export default function Search() {
@@ -36,7 +36,7 @@ export default function Search() {
   return (
     <div className="search-page wrap">
       <section className="search-hero">
-        <div className="section-label"><span><b>01</b> / {t.label}</span><span>{query ? `${results.length} ${results.length === 1 ? t.result : t.results}` : t.prompt}</span></div>
+        <div className="section-label"><span>{t.label}</span><span>{query ? `${results.length} ${results.length === 1 ? t.result : t.results}` : t.prompt}</span></div>
         <p className="eyebrow"><span className="live-dot" /> {t.prompt}</p>
         <h1>{t.titleA}<br /><em>{t.titleB}</em></h1>
         <form className="search-form" onSubmit={submit} role="search">
@@ -52,7 +52,7 @@ export default function Search() {
 
       {Object.entries(grouped).map(([type, items]) => (
         <section className="search-results-section" key={type}>
-          <div className="section-label"><span><b>{String(Object.keys(grouped).indexOf(type) + 2).padStart(2, '0')}</b> / {t.types[type]}</span><span>{items.length}</span></div>
+          <div className="section-label"><span>{t.types[type]}</span><span>{items.length}</span></div>
           <div className="search-results-grid">
             {items.map((item) => (
               <Link className="search-result-card" to={item.route} key={`${item.type}-${item.route}`}>

@@ -56,6 +56,10 @@ export function AuthProvider({ children, initialSession = null }) {
 
   const loginAsDemo = (profileKey = DEFAULT_DEMO_KEY) => {
     const profile = DEMO_PROFILES[profileKey] || DEMO_PROFILES[DEFAULT_DEMO_KEY];
+    if (!profile) {
+      console.warn('Aucun profil de démonstration disponible.');
+      return null;
+    }
     setDemoUser(profile);
     try {
       if (typeof window !== 'undefined') {

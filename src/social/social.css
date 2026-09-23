@@ -330,8 +330,6 @@ body.messages-dock-open .achievement-toasts {
   .friend-btn-full { width: 100%; justify-content: center; }
   .message-btn-wrap-full { width: 100%; }
   .message-btn-full { width: 100%; justify-content: center; }
-  .player-messages-row { grid-template-columns: 1fr auto; }
-  .player-messages-name { grid-column: 1 / -1; }
   .messages-bubble-delete { opacity: 1; }
   /* Lignes d'amis : les boutons « Profil » et « Retirer » restent lisibles. */
   .friends-row { flex-wrap: wrap; }

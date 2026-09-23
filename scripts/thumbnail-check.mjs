@@ -12,13 +12,16 @@
  *      chaque qualité manquante fait descendre d'un cran, la dernière fait
  *      basculer l'afficheur sur son cadre de repli ;
  *   3. le rendu réel des pages (SSR) : l'URL demandée pour chaque carte, et
- *      surtout aucune requête vers une qualité connue absente ;
+ *      surtout aucune requête vers une qualité connue absente — plus les
+ *      **miniatures maison des quizz** (`public/quizzes/<slug>.jpg`), demandées
+ *      avant YouTube grâce au `lead` du pilote, chaque fichier livré au dépôt ;
  *   4. la source du site : aucune URL de miniature codée en dur hors de
- *      `src/lib/videoThumbnails.js`, et les deux chemins du repli
+ *      `src/lib/videoThumbnails.js` (et de `src/quizzesData.js` pour les
+ *      illustrations de quizz), et les deux chemins du repli
  *      (`onError` + `isThumbMissing`) toujours présents dans l'afficheur.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -43,6 +46,8 @@ function check(label, actual, expected) {
 const HD = 'twbaM8fiXpo'; // vidéo sans miniature HD (maxresdefault → 404)
 const WITH_HD = 'aTs0zhm6Leg'; // épisode HicoSoft : maxresdefault disponible
 const qualityOf = (src) => /\/([^/]+)\.jpg$/.exec(src)?.[1] ?? null;
+// Clé d'une source : la qualité YouTube, ou le chemin du fichier local.
+const sourceKey = (src) => (String(src).includes('ytimg.com') ? qualityOf(src) : src);
 
 /* ------------------------------------------------- 1. Échelle des qualités */
 
@@ -74,14 +79,16 @@ console.log('\n[2/4] le pilote descend l’échelle, puis bascule sur le cadre d
  * Une qualité absente est simulée par une image complète sans pixels, soit
  * exactement ce que laisse un 404 servi depuis le cache (`isThumbMissing`).
  */
-function browse(id, { quality, available } = {}) {
+function browse(id, { quality, lead, available } = {}) {
   const published = [];
-  const thumb = createThumbFallback(id, { quality, onChange: (state) => published.push({ ...state }) });
+  const thumb = createThumbFallback(id, { quality, lead, onChange: (state) => published.push({ ...state }) });
   const requested = [];
-  for (let guard = 0; guard < THUMB_QUALITIES.length + 1 && !thumb.failed; guard += 1) {
+  for (let guard = 0; guard < thumb.chain.length && !thumb.failed; guard += 1) {
     const src = thumb.src;
-    requested.push(qualityOf(src));
-    const img = available.has(qualityOf(src))
+    // Une source locale n'est pas une qualité YouTube : on garde son chemin.
+    const key = sourceKey(src);
+    requested.push(key);
+    const img = available.has(key)
       ? { complete: true, naturalWidth: 1280 }
       : { complete: true, naturalWidth: 0 };
     if (!isThumbMissing(img)) break;
@@ -111,6 +118,29 @@ check(`${HD} : la vignette s’affiche`, noHdVideo.failed, false);
 const deadVideo = browse('videoSupprimee', { available: new Set() });
 check('vidéo retirée de YouTube : cadre de repli, pas de boucle infinie', `${deadVideo.failed}/${deadVideo.requested.length}`, 'true/3');
 
+/* ------------------- 2 bis. L'illustration locale passe d'abord ------------- */
+
+console.log('\n  illustration maison d\u2019abord (`lead`), YouTube en repli\n');
+
+const LOCAL = '/Let-s-Play/quizzes/culture-gaming.jpg';
+
+const localOnly = browse(WITH_HD, { lead: LOCAL, available: new Set([LOCAL]) });
+check('illustration maison présente : une seule requête', localOnly.requested.join(' > '), LOCAL);
+check('… et aucune URL YouTube demandée', localOnly.requested.some((src) => src.includes('ytimg.com')), false);
+check('… sans déclarer d’échec', localOnly.failed, false);
+
+const localThenYouTube = browse(WITH_HD, { lead: LOCAL, available: new Set(['maxresdefault']) });
+check('illustration maison absente : on descend vers YouTube', localThenYouTube.requested.join(' > '), `${LOCAL} > maxresdefault`);
+check('… la carte s’affiche quand même', localThenYouTube.failed, false);
+
+const leadSuite = browse(HD, { lead: LOCAL, available: new Set(['hqdefault']) });
+check('illustration absente + vidéo sans HD : hqdefault', leadSuite.requested.join(' > '), `${LOCAL} > hqdefault`);
+
+const leadDead = browse('videoSupprimee', { lead: [LOCAL, '/Let-s-Play/quizzes/_none.jpg'], available: new Set() });
+check('deux illustrations absentes puis YouTube : cadre de repli', leadDead.failed, true);
+check('… après avoir tout essayé, sans boucle', leadDead.requested.length, 5);
+check('chaque essai est publié à l’afficheur', leadDead.published.length, 5);
+
 console.log('\n  image « complète mais vide » = miniature absente (404 en cache)\n');
 check('complète sans pixels', isThumbMissing({ complete: true, naturalWidth: 0 }), true);
 check('complète avec pixels', isThumbMissing({ complete: true, naturalWidth: 480 }), false);
@@ -138,7 +168,7 @@ execFileSync(
   { cwd: root, stdio: 'inherit' }
 );
 
-const { homeThumbs, dossierThumbs } = await import(path.join(outDir, 'thumbnail-smoke.js'));
+const { homeThumbs, dossierThumbs, quizThumbs } = await import(path.join(outDir, 'thumbnail-smoke.js'));
 
 const home = homeThumbs();
 console.log(`  ${home.length} vignette(s) d’épisodes à la une sur l’accueil\n`);
@@ -156,6 +186,28 @@ check('accueil : l’épisode HicoSoft garde la qualité HD', home.some((thumb) 
 const dossiers = dossierThumbs();
 check('dossiers : huit vignettes', dossiers.length, 8);
 check('dossiers : qualité demandée inchangée (hqdefault)', dossiers.every((src) => qualityOf(src) === THUMB_BASELINE), true);
+
+/* ------------------------------- Miniatures maison des quizz (locales) ---- */
+// Les quizz ont leur propre illustration : le fichier de `public/quizzes/`
+// passe avant l'échelle YouTube (`lead`), donc aucune requête i.ytimg.com.
+const quiz = quizThumbs();
+console.log(`\n  ${quiz.length} miniature(s) sur la page /quizz (bannière du jour + grille)\n`);
+const localQuizFiles = quiz.map((thumb) => /\/quizzes\/([a-z0-9-]+\.jpg)$/.exec(thumb.src || '')?.[1] ?? null);
+check('quizz : bannière du jour + huit cartes', quiz.length, 9);
+check('quizz : toutes les miniatures viennent de public/quizzes/', localQuizFiles.every(Boolean), true);
+check('quizz : aucune requête YouTube pour les miniatures', quiz.every((thumb) => !(thumb.src || '').includes('ytimg.com')), true);
+check('quizz : toutes les miniatures sont décrites (alt)', quiz.every((thumb) => Boolean(thumb.alt)), true);
+check('quizz : huit fichiers distincts (le quizz du jour est aussi dans la grille)', new Set(localQuizFiles).size, 8);
+
+const shipped = new Map(
+  readdirSync(path.join(root, 'public', 'quizzes'))
+    .filter((name) => name.endsWith('.jpg'))
+    .map((name) => [name, path.join(root, 'public', 'quizzes', name)])
+);
+check('quizz : chaque miniature demandée est livrée', localQuizFiles.every((name) => shipped.has(name)), true);
+check('quizz : aucun fichier livré sans carte', shipped.size, 8);
+const tooLight = [...shipped.values()].filter((file) => statSync(file).size < 4096);
+check('quizz : aucun fichier vide ou tronqué', tooLight.length, 0);
 
 /* ----------------------------------------------------- 4. Source du site */
 
@@ -189,9 +241,26 @@ const display = readFileSync(path.join(root, 'src', 'components', 'VideoThumb.js
 check('l’afficheur écoute onError', /onError=\{/.test(display), true);
 check('l’afficheur relit l’état de l’image (404 en cache)', /isThumbMissing\(/.test(display), true);
 check('l’afficheur dessine un cadre quand tout manque', /video-thumb-fallback/.test(display), true);
+check('l’afficheur transmet l’illustration locale au pilote', /createThumbFallback\(id, \{[\s\S]*?\blead,/.test(display), true);
 
 const homeSource = readFileSync(path.join(root, 'src', 'pages', 'Home.jsx'), 'utf8');
 check('l’accueil passe par VideoThumb', /<VideoThumb/.test(homeSource), true);
+
+// Les miniatures maison des quizz : un seul chemin (`quizThumbUrl`), et les
+// cartes le passent bien à l'afficheur en `lead`.
+const quizzesFactory = path.join(root, 'src', 'quizzesData.js');
+const hardcodedQuizThumbs = [...sourceFiles(path.join(root, 'src')), ...sourceFiles(path.join(root, 'scripts'))]
+  .filter((file) => file !== quizzesFactory && file !== fileURLToPath(import.meta.url))
+  .filter((file) => /quizzes\/[a-z0-9-]+\.jpg/.test(codeOnly(readFileSync(file, 'utf8'))))
+  .map((file) => path.relative(root, file));
+check('aucun chemin de miniature de quizz codé en dur hors de src/quizzesData.js', hardcodedQuizThumbs.join(', ') || 'aucune', 'aucune');
+
+const quizzesSource = readFileSync(path.join(root, 'src', 'quizzes', 'QuizzesPage.jsx'), 'utf8');
+check('la grille passe la miniature maison à l’afficheur', /lead=\{quiz\.image\}/.test(quizzesSource), true);
+check('la bannière du jour aussi', /lead=\{daily\.image\}/.test(quizzesSource), true);
+
+const driver = readFileSync(path.join(root, 'src', 'lib', 'videoThumbnails.js'), 'utf8');
+check('le pilote essaie les sources locales avant YouTube', /\[\.\.\.localSources, \.\.\.thumbFallbackChain\(id, \{ quality \}\)\]/.test(driver), true);
 
 console.log(`\n  ${failures === 0 ? 'OK' : `${failures} échec(s)`} — chaque carte a une miniature, ou un cadre\n`);
 if (failures > 0) process.exitCode = 1;

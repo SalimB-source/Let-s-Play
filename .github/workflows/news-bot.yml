@@ -1,17 +1,19 @@
 # Robot actus du jour — Let’s Play.
 #
-# Chaque matin (05:30 heure de Paris environ) :
+# Chaque matin (04:30 UTC, soit 05:30/06:30 à Paris ; retard GitHub possible) :
 #   1. le robot moissonne les flux RSS gaming (FR + internationaux) ;
 #   2. il sélectionne les 3 meilleures news (fraîcheur, notoriété, diversité) ;
 #   3. il rédige chaque actu « façon Let’s Play » — via un modèle de langage
 #      si une clé est configurée (secrets OPENAI_API_KEY, ANTHROPIC_API_KEY,
 #      MISTRAL_API_KEY ou GEMINI_API_KEY), sinon via le gabarit extractif
 #      (sources francophones uniquement) ;
-#   4. il génère visuels SVG, JSON, index du site, puis committe sur main —
-#     ce qui déclenche automatiquement le déploiement GitHub Pages.
+#   4. il génère visuels SVG, JSON, index du site, committe sur la branche
+#      choisie, puis appelle explicitement le déploiement GitHub Pages (GITHUB_TOKEN
+#      ne déclenche pas les workflows abonnés aux push).
 #
 # Sans clé IA le robot reste 100 % fonctionnel (mode gabarit, sources FR).
-# Forcer un run manuel : onglet Actions → « Robot actus du jour » → Run workflow.
+# Nouveau run manuel : onglet Actions → « Robot actus du jour » → Run workflow.
+# « Re-run jobs » rejoue le même ancien commit, pas les derniers correctifs.
 
 name: Robot actus du jour
 
@@ -39,9 +41,17 @@ concurrency:
 jobs:
   generate:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      published_sha: ${{ steps.publish.outputs.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Rester sur la branche choisie pour un run manuel, et non en HEAD
+          # détachée. Ne jamais rebaser une branche de test sur main.
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -63,14 +73,46 @@ jobs:
       - name: Vérifier les articles générés
         run: npm run check:newsbot
 
-      - name: Commit & push (déclenche le déploiement)
+      - name: Rapport de génération
+        if: always()
+        run: |
+          if [ -f news-bot/report.md ]; then
+            cat news-bot/report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Commit & push des articles
+        id: publish
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
         run: |
           git config user.name "letsplay-news-bot"
           git config user.email "actions@github.com"
-          git add src/news/auto src/news/autoIndex.js public/news-auto news-bot/state.json news-bot/report.md
+          # NB : news-bot/report.md est volontairement gitignored (il sert de
+          # message de commit via `git commit -F`) — ne PAS le lister ici,
+          # sinon `git add` échoue sur un chemin ignoré (exit 1, aucun commit).
+          git add src/news/auto src/news/autoIndex.js public/news-auto news-bot/state.json
           if git diff --cached --quiet; then
             echo "Rien de nouveau à publier — pas de commit."
             exit 0
           fi
           git commit -F news-bot/report.md
-          git push
+          # Si la branche a bougé pendant le run, rebaser avant le push.
+          git fetch origin "$TARGET_BRANCH"
+          git rebase "origin/$TARGET_BRANCH"
+          git push origin "HEAD:refs/heads/$TARGET_BRANCH"
+          # Le SHA doit être celui APRÈS rebase, pas github.sha (avant génération).
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Publier les actus sur GitHub Pages
+    needs: generate
+    # Un run sur une branche de test ne doit jamais remplacer le site public.
+    if: needs.generate.outputs.published_sha != '' && github.ref_name == github.event.repository.default_branch
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ needs.generate.outputs.published_sha }}
+    secrets: inherit

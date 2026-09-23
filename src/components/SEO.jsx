@@ -33,6 +33,11 @@ const pageMeta = {
     description: 'Des dossiers de fond sur l’histoire du jeu vidéo, les générations de consoles, les studios et la culture gaming.',
     type: 'website',
   },
+  '/quizz': {
+    title: 'Quizz gaming & quizz du jour — Let’s Play',
+    description: 'Teste tes connaissances gaming : culture générale, rétro, souls-like, RPG, e-sport et studios. Un quizz du jour, des succès et de l’XP à gagner.',
+    type: 'website',
+  },
   '/events': {
     title: 'Events et partenaires — Let’s Play',
     description: 'Découvrez les événements, émissions et partenaires qui font vivre la scène gaming et e-sport algérienne.',
@@ -103,11 +108,18 @@ const pageMeta = {
     description: 'Dans une plainte collective en Californie, Sony affirme qu’un achat sur le PlayStation Store accorde une licence personnelle et non la propriété du jeu numérique.',
     image: 'playstation-store-ownership-news.jpg', type: 'article', published: '2026-09-20', section: 'Actualités gaming',
   },
+  '/news/ea-sports-fc-27-carriere-dynamique': {
+    title: 'EA Sports FC 27 : la refonte du mode Carrière — Let’s Play',
+    description: 'Valeur marchande recalculée chaque semaine avec TransferRoom (xTV), note globale dynamique, profils de croissance, scénarios communautaires et crises de vestiaire : ce que change la refonte du mode Carrière d’EA Sports FC 27, attendu le 25 septembre 2026.',
+    image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', type: 'article', published: '2026-09-22', section: 'Actualités gaming',
+  },
 };
 
 const routeAliases = {
   '/partenaires': '/events',
   '/calendar': '/calendrier',
+  '/quiz': '/quizz',
+  '/quizzes': '/quizz',
 };
 
 function upsertMeta(attribute, value, content) {

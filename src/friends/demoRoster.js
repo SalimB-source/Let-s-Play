@@ -24,6 +24,7 @@ export const DEMO_PLAYERS = [
     level: 17,
     xp: 1640,
     platforms: ['PC STEAM', 'PS5'],
+    testedGames: ['Elden Ring', 'Tekken 8', 'Mortal Kombat 1'],
     presence: 'online',
   },
   {
@@ -69,6 +70,7 @@ export const DEMO_PLAYERS = [
     level: 12,
     xp: 1105,
     platforms: ['PS5', 'SWITCH 2'],
+    testedGames: ['Astro Bot', 'Gran Turismo 7', 'Stellar Blade'],
     presence: 'offline',
     lastSeenMinutes: 60 * 26,
   },
@@ -79,7 +81,8 @@ export const DEMO_PLAYERS = [
     avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=80',
     level: 6,
     xp: 420,
-    platforms: ['SWITCH 2'],
+    platforms: ['GAMECUBE', 'SNES', 'MEGADRIVE', 'SWITCH 2'],
+    testedGames: ['Super Smash Bros. Melee', 'Super Mario World', 'Sonic the Hedgehog 2', 'The Legend of Zelda: The Wind Waker', 'Chrono Trigger'],
     presence: 'online',
   },
   {
@@ -90,6 +93,7 @@ export const DEMO_PLAYERS = [
     level: 20,
     xp: 1980,
     platforms: ['PC STEAM', 'XBOX SERIES X'],
+    testedGames: ['Call of Duty: Black Ops 6', 'Forza Horizon 5', 'Hi-Fi Rush'],
     presence: 'offline',
     lastSeenMinutes: 60 * 24 * 3,
   },
@@ -101,6 +105,7 @@ export const DEMO_PLAYERS = [
     level: 11,
     xp: 980,
     platforms: ['PS5', 'PC STEAM'],
+    testedGames: ['Balatro', 'Hades II', 'Rocket League'],
     presence: 'online',
   },
   {
@@ -128,8 +133,9 @@ export const DEMO_PLAYERS = [
   },
 ];
 
-/** Les deux personas connectables, vues comme des joueurs de la communauté. */
+/** Une persona connectable, vue comme un joueur de la communauté. */
 function personaAsPlayer(profile, presence) {
+  if (!profile) return null;
   const meta = profile.user_metadata || {};
   return {
     id: profile.id,
@@ -139,20 +145,33 @@ function personaAsPlayer(profile, presence) {
     level: meta.level || 1,
     xp: meta.xp || 0,
     platforms: meta.platforms || [],
+    testedGames: meta.testedGames || [],
     presence,
     persona: profile.profileKey,
   };
 }
 
-/** Tous les joueurs de la communauté de démonstration (personas comprises). */
-export const DEMO_COMMUNITY = [
-  personaAsPlayer(DEMO_PROFILES.vortex, 'online'),
-  personaAsPlayer(DEMO_PROFILES.pixel, 'online'),
-  ...DEMO_PLAYERS,
-];
+/**
+ * Tous les joueurs de la communauté de démonstration (personas comprises).
+ *
+ * **Calculé à la demande**, jamais au chargement du module : les personas
+ * connectables (`src/auth/demoProfiles.js`) ne sont plus livrées dans le bundle
+ * et ne sont enregistrées que par les scripts de vérification
+ * (`scripts/demoFixtures.js`). Une lecture trop précoce — ou une persona
+ * absente — ne doit donc ni figer une communauté incomplète, ni faire tomber
+ * l'application : c'est exactement ce qui vidait l'écran de tout le site.
+ *
+ * @returns {object[]} personas enregistrées (le cas échéant), puis joueurs scriptés.
+ */
+export function demoCommunity() {
+  const personas = Object.values(DEMO_PROFILES)
+    .map((profile) => personaAsPlayer(profile, 'online'))
+    .filter(Boolean);
+  return [...personas, ...DEMO_PLAYERS];
+}
 
 export function findDemoPlayer(id) {
-  return DEMO_COMMUNITY.find((player) => player.id === id) || null;
+  return demoCommunity().find((player) => player.id === id) || null;
 }
 
 /** Vrai quand `id` désigne un joueur de la communauté de démonstration. */

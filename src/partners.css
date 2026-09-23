@@ -45,7 +45,7 @@
 .partner-facts li::before{content:"";position:absolute;left:0;top:6px;width:5px;height:5px;background:var(--brand,#a855f7);box-shadow:0 0 8px var(--brand,#a855f7)}
 
 /* ---------- Section accueil ---------- */
-.partners{padding:100px 0 10px}
+.partners{padding:110px 0 60px}
 .partners-head{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:end;padding:24px 0 44px}
 .partners-head h2{font-family:var(--display);font-weight:800;font-size:clamp(34px,4.6vw,58px);line-height:1;margin:16px 0 0;text-transform:uppercase}
 .partners-head h2 em{font-style:normal;color:var(--yellow);text-shadow:0 0 24px rgba(255,214,25,.45)}
@@ -116,7 +116,7 @@
 .partner-detail-note strong{font:500 10px var(--mono);letter-spacing:.18em;color:var(--cyan);text-transform:uppercase}
 
 /* ---------- Comment on collabore ---------- */
-.partners-how{padding:92px 0 10px}
+.partners-how{padding:110px 0 60px}
 .partners-how-title{font-family:var(--display);font-weight:800;font-size:clamp(30px,4.2vw,52px);line-height:1.02;margin:22px 0 36px;text-transform:uppercase}
 .partners-how-title em{font-style:normal;color:var(--cyan);text-shadow:0 0 22px rgba(34,211,238,.4)}
 .partner-how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
@@ -127,7 +127,7 @@
 .partner-how-tag{display:inline-block;margin-top:16px;font:500 10px var(--mono);letter-spacing:.16em;color:var(--cyan);text-transform:uppercase}
 
 /* ---------- Sources & retours ---------- */
-.partners-sources{padding:56px 0 110px}
+.partners-sources{padding:110px 0 60px}
 .partners-sources-list{list-style:none;margin:20px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
 .partners-sources-list li{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;padding:14px 16px;border:1px solid var(--line);background:rgba(11,13,30,.5)}
 .partners-sources-list a{font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:#fff;transition:color .2s}
@@ -137,7 +137,7 @@
 .cta-note{position:relative;z-index:2;margin:16px 0 0;max-width:520px;font-size:15px;line-height:1.6;color:var(--muted)}
 
 /* ---------- 7ouma Arena — émission & tournoi (page Events) ---------- */
-.arena{position:relative;padding:88px 0 6px;scroll-margin-top:96px}
+.arena{position:relative;padding:110px 0 60px;scroll-margin-top:96px}
 .arena::before{
   content:"";position:absolute;top:26px;left:50%;transform:translateX(-50%);
   width:min(1240px,calc(100% - 56px));height:520px;pointer-events:none;
@@ -220,13 +220,13 @@
   .partners-detail{padding-top:66px}
 }
 @media (max-width:720px){
-  .partners{padding-top:76px}
+  .partners{padding:70px 0 40px}
   .partner-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
   .partner-how-grid{grid-template-columns:1fr}
   .partners-head h2{font-size:clamp(30px,9vw,40px)}
   .partner-strip{gap:18px;padding:18px}
   .partner-strip-marks{gap:20px}
-  .partners-sources{padding-bottom:80px}
+  .partners-sources{padding:70px 0 40px}
   .partner-detail{padding:30px 0}
   .partner-card-logo{min-height:132px;padding:16px}
   .partner-detail-logo{min-height:112px;padding:16px}
@@ -243,7 +243,7 @@
   .arena-roles{grid-template-columns:1fr 1fr}
 }
 @media (max-width:720px){
-  .arena{padding-top:72px}
+  .arena{padding:70px 0 40px}
   .arena-hero h2{font-size:clamp(40px,13vw,64px)}
   .arena-lead{font-size:18.5px}
   .arena-by{padding:24px 20px;max-width:none}
@@ -252,4 +252,49 @@
   .arena-head{padding-top:44px}
   .arena-head h2,.arena-head h3{font-size:clamp(27px,8.4vw,38px)}
   .arena-proof{padding:22px 18px 20px;margin-top:48px}
+}
+
+/* Home: seamless color logo ribbon on dark. Two equal groups keep the loop continuous. */
+.partners-marquee{position:relative;overflow:hidden;background:var(--panel);background:#0b0d1e;color:var(--ink);direction:ltr;padding:28px 0;border-block:1px solid var(--line)}
+.partners-marquee-track{display:flex;width:max-content;animation:partners-marquee-scroll 55s linear infinite}
+.partners-marquee-group{display:flex;align-items:center;flex-shrink:0;gap:64px;list-style:none;margin:0;padding:0 32px}
+.partners-marquee-item{display:flex;align-items:center;justify-content:center;flex:0 0 180px;height:100px}
+/*
+ * Les fichiers des marques n'ont pas tous le même ratio ni les mêmes marges
+ * transparentes. Le slot commun évite les sauts de hauteur, tandis que les
+ * échelles ci-dessous compensent les logos très carrés ou très « aérés » pour
+ * obtenir une taille perçue homogène sans déformer les visuels.
+ */
+.partners-marquee .partner-mark-marquee{width:100%;justify-content:center}
+.partners-marquee .partner-mark-logo{
+  width:160px;max-width:160px;height:64px;filter:none;object-fit:contain;
+  transform:scale(var(--marquee-logo-scale,1));transform-origin:center;
+}
+.partners-marquee-item--7ouma-arena{--marquee-logo-scale:1.35}
+.partners-marquee-item--djezzy{--marquee-logo-scale:1.12}
+.partners-marquee-item--egor-gaming{--marquee-logo-scale:1.28}
+.partners-marquee-item--esca{--marquee-logo-scale:.9}
+.partners-marquee-item--ifa-constantine{--marquee-logo-scale:.95}
+.partners-marquee-item--just-play-it{--marquee-logo-scale:1.15}
+.partners-marquee-item--lg{--marquee-logo-scale:.88}
+.partners-marquee-item--tcl{--marquee-logo-scale:1.05}
+.partners-marquee-item--el-heddaf-tv{--marquee-logo-scale:.86}
+.partners-marquee-item--tmv{--marquee-logo-scale:.9}
+.partners-marquee .partner-mark-badge{filter:none}
+.partners-marquee:hover .partners-marquee-track,
+.partners-marquee:focus-within .partners-marquee-track,
+.partners-marquee[data-paused="true"] .partners-marquee-track{animation-play-state:paused}
+.partners-marquee-toggle{position:absolute;right:12px;bottom:8px;display:grid;place-items:center;width:32px;height:32px;border:1px solid var(--line-strong);border-radius:50%;background:rgba(11,13,30,.85);color:var(--ink);cursor:pointer;backdrop-filter:blur(6px)}
+.partners-marquee-toggle:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+@keyframes partners-marquee-scroll{to{transform:translateX(-50%)}}
+@media(max-width:600px){
+  .partners-marquee{padding:20px 0}
+  .partners-marquee-group{gap:32px;padding:0 16px}
+  .partners-marquee-item{flex-basis:140px;height:80px}
+  .partners-marquee .partner-mark-logo{width:140px;max-width:140px;height:56px}
+}
+@media(prefers-reduced-motion:reduce){
+  .partners-marquee-track{animation:none;width:100%}
+  .partners-marquee-group{flex-wrap:wrap;justify-content:center;width:100%;box-sizing:border-box}
+  .partners-marquee-group[aria-hidden="true"],.partners-marquee-toggle{display:none}
 }

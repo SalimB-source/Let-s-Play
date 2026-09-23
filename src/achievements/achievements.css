@@ -531,11 +531,14 @@
 
 /* ===================== TOOLTIP PREMIUM ===================== */
 
+/* `--tooltip-shift` est posé par AchievementCard (JS) : 0 quand la bulle est
+   déjà centrée dans l'écran, sinon la correction en pixels qui la ramène à
+   l'intérieur des bords (cartes des extrémités sur mobile). */
 .achievement-tooltip {
   position: absolute;
   left: 50%;
   bottom: calc(100% + 14px);
-  transform: translateX(-50%) translateY(10px) scale(.98);
+  transform: translateX(calc(-50% + var(--tooltip-shift, 0px))) translateY(10px) scale(.98);
   width: 260px;
   max-width: min(88vw, 300px);
   background: linear-gradient(165deg, rgba(18, 20, 42, 0.98), rgba(10, 11, 26, 0.98));
@@ -557,12 +560,13 @@
   text-align: left;
 }
 
-/* petite flèche dorée */
+/* petite flèche dorée — elle vise toujours le centre de la carte (la bulle
+   peut être décalée), et reste collée à la bulle près des bords. */
 .achievement-tooltip::after {
   content: '';
   position: absolute;
   top: 100%;
-  left: 50%;
+  left: clamp(14px, calc(50% - var(--tooltip-shift, 0px)), calc(100% - 14px));
   transform: translateX(-50%);
   width: 12px;
   height: 8px;
@@ -578,8 +582,29 @@
 .achievement-card:focus-within .achievement-tooltip {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0) scale(1);
+  transform: translateX(calc(-50% + var(--tooltip-shift, 0px))) translateY(0) scale(1);
   pointer-events: auto;
+}
+
+/* Pas la place au-dessus de la carte (téléphone, carte en haut de l'écran) :
+   la bulle bascule sous la carte, flèche retournée. La classe est posée par
+   AchievementCard, qui a mesuré la place disponible. */
+.achievement-card.tooltip-below .achievement-tooltip {
+  bottom: auto;
+  top: calc(100% + 14px);
+  transform: translateX(calc(-50% + var(--tooltip-shift, 0px))) translateY(-10px) scale(.98);
+}
+
+.achievement-card.tooltip-below .achievement-tooltip::after {
+  top: auto;
+  bottom: 100%;
+  clip-path: polygon(0 100%, 100% 100%, 50% 0);
+}
+
+.achievement-card.tooltip-below:hover .achievement-tooltip,
+.achievement-card.tooltip-below:focus-visible .achievement-tooltip,
+.achievement-card.tooltip-below:focus-within .achievement-tooltip {
+  transform: translateX(calc(-50% + var(--tooltip-shift, 0px))) translateY(0) scale(1);
 }
 
 /* Tooltip header */
@@ -801,13 +826,28 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  overflow: visible;
 }
+
+.achievements-panel.compact { overflow: visible; }
 
 .achievements-panel.compact .player-section-header { margin-bottom: 0; }
 
-.achievement-grid.compact { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.achievement-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  overflow: visible;
+}
 
 .achievements-panel.compact .arrow-link { margin-top: 2px; }
+
+/* Le panneau dans le hub ne doit jamais rogner la tooltip — le conteneur
+   parent (.player-section) porte désormais son fond dans ::before, donc on
+   force partout overflow:visible et on remonte la tooltip au-dessus. */
+.achievements-panel.compact,
+.achievement-grid.compact,
+.achievements-panel.compact .achievement-grid {
+  overflow: visible;
+}
 
 
 /* ---------------- Notifications de déblocage (bas à droite) --------------- */
@@ -953,40 +993,12 @@
     gap: 12px;
   }
 
-  /* Tooltip en bas sur mobile si pas assez de place en haut */
+  /* La bulle reste centrée sur la carte puis est ramenée dans l'écran par le
+     décalage calculé en JS (`--tooltip-shift`) : plus de rognage sur les bords,
+     que la grille ait une, deux ou trois colonnes. */
   .achievement-tooltip {
     width: 220px;
-    left: 50%;
-    bottom: calc(100% + 10px);
     font-size: 12px;
-  }
-
-  /* Évite que le tooltip sorte à gauche/droite sur les bords */
-  .achievement-grid .achievement-card:nth-child(2n+1) .achievement-tooltip {
-    left: 0;
-    transform: translateX(0) translateY(10px) scale(.98);
-  }
-  .achievement-grid .achievement-card:nth-child(2n+1):hover .achievement-tooltip,
-  .achievement-grid .achievement-card:nth-child(2n+1):focus-visible .achievement-tooltip {
-    transform: translateX(0) translateY(0) scale(1);
-  }
-  .achievement-grid .achievement-card:nth-child(2n+1) .achievement-tooltip::after {
-    left: 24px;
-    transform: none;
-  }
-  .achievement-grid .achievement-card:nth-child(2n) .achievement-tooltip {
-    left: auto;
-    right: 0;
-    transform: translateX(0) translateY(10px) scale(.98);
-  }
-  .achievement-grid .achievement-card:nth-child(2n):hover .achievement-tooltip,
-  .achievement-grid .achievement-card:nth-child(2n):focus-visible .achievement-tooltip {
-    transform: translateX(0) translateY(0) scale(1);
-  }
-  .achievement-grid .achievement-card:nth-child(2n) .achievement-tooltip::after {
-    left: auto;
-    right: 24px;
-    transform: none;
   }
 }
 

@@ -28,10 +28,18 @@ npm run build
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
 - Partenaires & collaborations : Algérie Télécom, TCL et le Games & Comic Con Dzaïr 2026
   (section d’accueil + page dédiée `/partenaires`)
-- Succès du joueur dans le profil (`/auth`) : 37 succès débloqués par les
+- Succès du joueur dans le profil (`/auth`) : 42 succès débloqués par les
   actions réalisées sur le site, classés en quatre grades de difficulté — bronze,
   argent, or, platine — avec niveau, XP, grades visibles et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
+- Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
+  huit quizz rédigés par la rédaction (culture générale, rétro, souls-like,
+  RPG, e-sport, studios, tech et cinéma), quizz du jour en rotation quotidienne avec série de
+  jours, feedback instantané de chaque réponse (gel, vert/rouge, points de
+  rapidité & combo), corrections commentées, confettis du sans-faute,
+  raccourcis clavier 1–4, commentaires, recherche et cinq succès
+  dédiés ; classement des quizz par points gagnés et position au classement
+  global affichée sur la page de profil (voir « Quizz gaming & quizz du jour »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
@@ -53,8 +61,27 @@ Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des ép
 Registration, login, Google / Microsoft (Azure) sign-in, password reset and the
 connected player hub (`/auth`) run on [Supabase Auth](https://supabase.com/auth)
 (`@supabase/supabase-js`, client in `src/lib/supabase.js`, session in
-`src/auth/AuthContext.jsx`). Without configuration the page falls back to the
-one-click demo preview.
+`src/auth/AuthContext.jsx`). The navigation bar shows two separate buttons,
+**Log in** and **Register** (highlighted), instead of the single « Join » link,
+and `/auth` explains what is missing when Supabase is not configured — or the
+visitor is offline.
+
+Each button opens its own form: they are links to `/auth?mode=signin` and
+`/auth?mode=signup`, and the page reads that `?mode=` parameter
+(`readAuthMode` in `src/pages/Auth.jsx`) — **Register** therefore lands on the
+register form (gamertag + password confirmation), never on the log-in one. The
+`/register` shortcut passes `initialMode="signup"` and wins over the query
+string, `state.mode` (links coming from the comment section) wins over both,
+and while the pop-up is already open the form follows the address bar, so
+clicking the other button switches forms instead of doing nothing. Values other
+than `signin` / `signup` (or no parameter at all) fall back to log-in.
+
+The one-click demo accounts (`VORTEX_DZ`, `PIXEL_QUEEN`) are **no longer shipped**:
+`src/auth/demoProfiles.js` exports an empty registry, so the demo card on `/auth`
+never renders and no visitor can borrow a fake identity. Everything the demo
+preview used to exercise (friends dock, messaging, achievements hub) is still in
+the codebase but dormant; the verification scripts re-activate it with the
+fixtures in `scripts/demoFixtures.js` (see « Personas de démonstration » below).
 
 ### Environment variables
 
@@ -189,8 +216,8 @@ the SQL has been run; the section explains itself when something is off:
 
 ## Amis : demandes, liste et présence
 
-Tout joueur connecté (compte Supabase **ou** persona de démonstration) dispose
-d'une liste d'amis. Elle vit dans la **fenêtre sociale** en bas à droite,
+Tout joueur connecté (compte Supabase — ou persona de démonstration dans les
+scripts de vérification) dispose d'une liste d'amis. Elle vit dans la **fenêtre sociale** en bas à droite,
 présente sur toutes les pages : un lanceur compact « MESSAGERIE » — avec les
 pastilles des **non-lus** (messagerie) et des **demandes en attente**, et le
 compteur d'amis en ligne — ouvre un panneau à **quatre onglets** (Amis /
@@ -224,9 +251,15 @@ messagerie** `/messages` (voir plus bas), où la fenêtre s'efface entièrement.
   profil annonce aussi **EN LIGNE / HORS LIGNE** ;
 - dans le **fil de commentaires** : une petite icône « + » à côté du pseudo de
   chaque auteur (✓ quand c'est déjà un ami, ⏱ quand la demande est partie) ;
-- dans l'onglet **Ajouter** de la fenêtre, et depuis le **hub joueur** (`/auth`),
-  section « Amis & demandes » : résumé, premiers avatars, raccourcis « Ouvrir la
-  liste d'amis » / « Ajouter un ami ».
+- dans l'onglet **Ajouter** de la fenêtre sociale (lanceur en bas à droite) :
+  recherche par pseudo, demande en un clic.
+
+**Dans le hub joueur** (`/auth`), la section « **Mes amis** » n'affiche que la
+liste : un ami par ligne — avatar avec son point de présence, « EN LIGNE » ou
+« Vu il y a 2 h », niveau — et **toute la ligne mène à son profil**. Six amis en
+aperçu, puis un bouton « Voir tous mes amis ». Aucun geste ici (ni demande, ni
+discussion) : ils restent dans la fenêtre sociale. Un visiteur, ou une page
+montée sans le provider des amis, ne rend rien du tout.
 
 Un visiteur qui clique sur « Se connecter pour ajouter des amis » est renvoyé
 sur la page où il était une fois connecté.
@@ -271,17 +304,31 @@ se rafraîchit alors toutes les minutes). Tant que la table manque, la fenêtre
 et les boutons l'expliquent (« Les amis ne sont pas encore activés sur ce
 déploiement… ») sans rien casser d'autre.
 
-### Personas de démonstration
+### Personas de démonstration (devenues fixtures de test)
 
-Sans session Supabase, la persona (`VORTEX_DZ`, `PIXEL_QUEEN`) évolue dans une
-**communauté scriptée** (`src/friends/demoRoster.js`) : dix joueurs avec des
-statuts de présence déterministes — toujours en ligne, toujours hors ligne, ou
-alternant toutes les quelques minutes pour que la liste bouge. Chaque persona
-démarre avec des amis en ligne et hors ligne, des demandes reçues et une demande
-envoyée ; l'état est enregistré dans `localStorage` (par persona, par appareil)
-et les joueurs « en ligne » acceptent d'eux-mêmes une demande après quelques
-secondes. Les fiches de ces joueurs (`/profile/demo-player-…`) sont rendues
-comme des profils publics.
+Les comptes de démonstration ne sont **plus proposés aux visiteurs** :
+`src/auth/demoProfiles.js` livre un registre vide, la carte « Explorer le compte
+démo » de `/auth` ne s'affiche donc jamais. Les deux personas (`VORTEX_DZ`,
+`PIXEL_QUEEN`) survivent comme **fixtures** dans `scripts/demoFixtures.js`, que
+les entrées SSR (`scripts/*-smoke.jsx`) réinjectent dans le registre au
+démarrage des vérifications — sans elles, le dock social ne pourrait pas être
+testé du tout, puisqu'il n'y a aucun backend dans les scripts.
+
+Une persona réinjectée évolue dans une **communauté scriptée**
+(`src/friends/demoRoster.js`) : dix joueurs avec des statuts de présence
+déterministes — toujours en ligne, toujours hors ligne, ou alternant toutes les
+quelques minutes pour que la liste bouge. Chaque persona démarre avec des amis en
+ligne et hors ligne, des demandes reçues et une demande envoyée ; l'état est
+enregistré dans `localStorage` (par persona, par appareil) et les joueurs
+« en ligne » acceptent d'eux-mêmes une demande après quelques secondes. Les
+fiches de ces joueurs (`/profile/demo-player-…`) sont rendues comme des profils
+publics.
+
+La communauté est calculée **à la demande** (`demoCommunity()`), jamais au
+chargement du module : c'est ce qui permet au registre d'être vide en production
+et semé plus tard par les fixtures. Une version précédente la figeait au
+chargement et lisait `DEMO_PROFILES.vortex.user_metadata` — registre vide, donc
+`TypeError` à l'import, donc **écran blanc sur tout le site**.
 
 ### Où vit le code
 
@@ -292,8 +339,10 @@ comme des profils publics.
 | `src/friends/presence.js` | canal Realtime Presence + battement de cœur |
 | `src/friends/FriendsTabs.jsx` | les onglets Amis / Demandes / Ajouter de la fenêtre sociale |
 | `src/friends/FriendButton.jsx` | le bouton de demande d'ami (profil, commentaires, résultats de recherche) |
-| `src/friends/FriendsHubSection.jsx` | la section « Amis & demandes » du hub |
+| `src/friends/FriendsHubSection.jsx` | la section « Mes amis » du hub : la liste des amis, chaque ligne menant à son profil |
 | `src/friends/friendsCopy.js` | textes FR / EN / AR |
+| `src/auth/demoProfiles.js` | registre des personas : **vide** dans le bundle livré, `registerDemoProfiles()` pour les scripts |
+| `scripts/demoFixtures.js` | les deux personas en fixtures de test, semées par les entrées SSR |
 | `src/friends/friends.css` | styles des onglets (listes, avatars, boutons) |
 | `src/social/SocialDock.jsx` | la fenêtre sociale unifiée : un lanceur, un panneau à quatre onglets ; sur mobile, la messagerie part vers la page dédiée |
 | `src/social/socialCopy.js` | textes de la fenêtre (FR / EN / AR) |
@@ -313,8 +362,8 @@ comme des profils publics.
 
 ## Messagerie : discussions 1-à-1 entre amis
 
-Tout joueur connecté (compte Supabase **ou** persona de démonstration) peut
-écrire à **ses amis** — et seulement à eux.
+Tout joueur connecté (compte Supabase — ou persona de démonstration dans les
+scripts de vérification) peut écrire à **ses amis** — et seulement à eux.
 
 **Deux parcours** : sur **bureau**, la messagerie vit dans l'onglet
 **Messages** de la **fenêtre sociale** (en bas à droite, documentée dans la
@@ -323,7 +372,8 @@ section amis) — la pastille jaune du lanceur compte les non-lus, et
 est une **vraie page** : `/messages` (alias `/messagerie`) pour la liste,
 `/messages/:peerId` pour une discussion — un écran plein, de grandes zones
 d'appui, le champ toujours à portée de pouce ; tous les points d'entrée
-(liste d'amis, bouton « Message » d'un profil, raccourcis du hub) y naviguent.
+(bouton « Message » d'un profil, photo ou nom d'un ami dans la fenêtre
+sociale) y naviguent.
 La page existe aussi sur bureau, en deux colonnes. Sur la page, **la photo ou
 le nom d'un interlocuteur ouvre la discussion** (jamais son profil : le
 bouton « Profil » de l'en-tête de discussion y mène), et dans la liste d'amis
@@ -347,10 +397,13 @@ L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil 
   nombre de non-lus en pastille sinon ;
 - la **photo ou le nom** de chaque ami (onglet Amis de la fenêtre sociale) :
   le geste ouvre directement la discussion avec lui ;
-- la section **« MESSAGES »** du hub joueur (`/auth`) : total des non-lus,
-  trois derniers échanges, raccourcis « Ouvrir la messagerie » / « Écrire à un
-  ami » ; sur mobile, chacun de ces points d'entrée ouvre la page
-  `/messages`.
+- le **lanceur de la fenêtre sociale** (en bas à droite), qui rouvre la liste
+  des discussions — et sur mobile la page `/messages`, plein écran.
+
+Le **hub joueur** (`/auth`) ne porte plus aucun raccourci de messagerie : sa
+section sociale se limite à la liste d'amis (chaque ligne mène au profil du
+joueur). La messagerie reste la fenêtre sociale (bureau) et la page
+`/messages` (mobile et bureau).
 
 ### Comptes Supabase
 
@@ -394,9 +447,10 @@ RLS blocages (3) / signalements (2)` ; `realtime direct_messages` peut rester
 table manque, la fenêtre l'explique (« La messagerie n'est pas encore activée
 sur ce déploiement… ») sans rien casser d'autre.
 
-### Personas de démonstration
+### Personas de démonstration (fixtures de test)
 
-Sans session Supabase, la persona (`VORTEX_DZ`, `PIXEL_QUEEN`) retrouve des
+Comme pour les amis, les personas ne sont plus livrées : `check:messages` les
+réinjecte depuis `scripts/demoFixtures.js`. Une persona ainsi semée retrouve des
 **discussions scriptées** (`src/messages/demoThreads.js`) avec des amis de la
 communauté de démonstration : des messages non lus à traiter, des discussions
 déjà lues, des réponses automatiques des joueurs « en ligne » (quelques
@@ -415,7 +469,6 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 | `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler |
 | `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
 | `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
-| `src/messages/MessagesHubSection.jsx` | la section « MESSAGES » du hub |
 | `src/messages/messagesCopy.js` | textes FR / EN / AR |
 | `src/messages/messages.css` | styles (liste, bulles, signalement, page `/messages`) |
 
@@ -442,8 +495,8 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 Le site récompense ce que le joueur fait réellement : lire un article, lancer
 un épisode, commenter, chercher, explorer une nouvelle section, revenir
 plusieurs jours de suite, créer un compte ou associer un fournisseur de
-connexion. **37 succès** sont livrés, répartis en six familles (premiers pas,
-lecture, vidéo, communauté, fidélité, compte) et quatre **grades** de difficulté ;
+connexion. **42 succès** sont livrés, répartis en sept familles (premiers pas,
+lecture, vidéo, communauté, fidélité, compte, quizz) et quatre **grades** de difficulté ;
 chacun donne de l'XP, qui construit le niveau et le rang du joueur.
 
 ### Grades : bronze, argent, or, platine
@@ -459,8 +512,14 @@ rapporte plus qu'un succès argent, etc.), ce qui rend l'échelle lisible :
 | 🥇 Or | 10 | 100–250 | 12 articles, semaine parfaite, trilingue, oiseau de nuit |
 | 🏅 Platine | 7 | 400–800 | 30 articles, 14 jours d'affilée, 30 jours de visite, 15 commentaires, les 8 sections, 3 nuits de lecture après minuit |
 
-Dans le profil `/auth`, la section « succès » compacte montre le niveau,
-la progression, les derniers succès obtenus et les prochains objectifs. Chaque
+Dans le profil `/auth`, la section « succès » compacte montre les succès
+obtenus et les prochains objectifs. Elle ne répète ni le niveau, ni le rang, ni
+la barre d'XP : tout cela vit dans la carte du joueur, juste au-dessus (un seul
+bloc de progression par page). La **bulle d'information** d'une carte — la
+description, la progression et l'XP — reste elle aussi toujours dans l'écran :
+centrée sur la carte, elle est décalée juste ce qu'il faut quand la carte touche
+un bord (mobile, dernières colonnes), et bascule **sous** la carte quand il n'y
+a pas la place au-dessus. Chaque
 carte porte son grade sous le nom, et le cadre des succès débloqués prend la
 couleur du grade (bronze cuivré, argent, or, platine aux reflets irisés). La
 notification de déblocage affiche aussi le grade du succès tombé. Il n’existe
@@ -471,19 +530,22 @@ Où ça se voit :
 
 | Endroit | Ce qui s'y trouve |
 | --- | --- |
-| `/auth` (hub joueur) | la **barre d'XP du profil** et la section « succès » intégrée : niveau, derniers succès obtenus et prochains objectifs |
+| `/auth` (hub joueur) | la **barre d'XP du profil** (seul endroit où niveau, rang et progression sont affichés) et la section « succès » intégrée : succès obtenus et prochains objectifs |
 | Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
 | Navigation et pied de page | l’accès au profil joueur, qui contient les succès |
 
 Le niveau et l'XP ne sont jamais stockés côté compte : ils se déduisent des
 succès débloqués (`totalXp` puis `levelFromXp`, dans
 `src/achievements/engine.js`). La barre d'XP de la carte profil du hub
-(`src/pages/Auth.jsx`) et celle de la section « succès » lisent donc le même
-`summary` et avancent ensemble — les métadonnées Supabase d'un compte réel ne
-portent ni XP ni niveau (seule la progression des succès y est écrite), et les
-relire laissait la barre principale à 0 % pendant que l'autre avançait. Seules
-les personas de démonstration (`src/auth/demoProfiles.js`) affichent des
-chiffres scriptés, pour prévisualiser un hub rempli sans backend.
+(`src/pages/Auth.jsx`) est la **seule** à afficher la progression : elle lit le
+`summary` du moteur, comme la carte de niveau qui vivait avant dans la section
+« succès » — cette dernière n'en garde plus de copie, pour ne pas montrer deux
+fois le même niveau. Les métadonnées Supabase d'un compte réel ne portent ni XP
+ni niveau (seule la progression des succès y est écrite) : les relire laissait
+la barre principale à 0 % au lieu de suivre le moteur. Seules
+les personas de démonstration — registre `src/auth/demoProfiles.js`, vide dans
+le bundle livré, semé par `scripts/demoFixtures.js` pendant les vérifications —
+affichent des chiffres scriptés, pour prévisualiser un hub rempli sans backend.
 
 La fenêtre vit dans `src/achievements/AchievementPopup.jsx` et lit la file
 `notifications` du contexte. Plusieurs succès d'affilée sont présentés **un par
@@ -572,9 +634,10 @@ La progression appartient à **chaque joueur**, jamais à un appareil :
   table dès qu'elle existe. Les comptes créés avant cette mise à jour gardent
   leur progression (l'ancienne copie du compte est reprise à la première
   connexion) ;
-- **Sessions de démonstration** : toujours locales — les liaisons Google /
-  Microsoft y sont simulées pour l'aperçu et ne comptent donc pas comme un
-  compte associé (ce succès se débloque avec un vrai compte).
+- **Sessions de démonstration** (aperçu réactivé par les fixtures des scripts,
+  plus atteint en production) : toujours locales — les liaisons Google /
+  Microsoft y sont simulées et ne comptent donc pas comme un compte associé
+  (ce succès se débloque avec un vrai compte).
 
 Le niveau et l'XP publics du profil (affichés dans le fil de commentaires) sont
 synchronisés avec la progression des succès par un trigger SQL
@@ -599,15 +662,18 @@ Editor du projet Supabase (le script est relançable sans risque).
 
 ### Vérifications
 
-- `npm run check:achievements` — quatre niveaux : cohérence du catalogue
+- `npm run check:achievements` — cinq niveaux : cohérence du catalogue
   (identifiants uniques, trois langues, métriques connues, cibles et XP
   valides) ; comportement du moteur (contenus distincts, lecture de nuit,
   séries de jours, fusion appareil ↔ compte, données corrompues, courbe de
   niveau, détection du passage de niveau) ; **scénario complet qui débloque les
-  37 succès** (donc aucun succès inatteignable) ; rendu réel en SSR du panneau
+  42 succès** (donc aucun succès inatteignable) ; rendu réel en SSR du panneau
   du profil joueur et du hub — en aperçu de démonstration **et avec un compte réellement
-  connecté** (la barre d'XP du profil doit se remplir, suivre la barre de la
-  section « succès », et annoncer le niveau et le rang déduits du moteur) — et
+  connecté** (la barre d'XP du profil doit se remplir, être la seule de la
+  page, et annoncer le niveau et le rang déduits du moteur), la **bulle
+  d'information** d'une carte de succès montée dans jsdom avec une géométrie
+  de téléphone (elle est décalée pour rester dans l'écran, et bascule sous la
+  carte quand il n'y a pas la place au-dessus) — et
   de la **fenêtre de déblocage** (montée avec la file qu'un
   joueur verrait après une action : succès, rareté, XP, palier franchi,
   compteur de file, boîte de dialogue accessible, rien sans succès à fêter),
@@ -615,6 +681,136 @@ Editor du projet Supabase (le script est relançable sans risque).
   plus aucun reste des anciennes notifications, un seul module écrit la
   progression locale).
 - `npm run check:i18n` — les routes × FR / EN / AR, dont le hub joueur `/auth`.
+- `npm run check:auth` — les deux boutons de compte de la navigation : lecture du
+  `?mode=` (les deux boutons, `?mode=` vide ou inconnu, priorité de la prop
+  `/register`), rendu SSR réel de chaque URL (quel formulaire s'ouvre : pseudo et
+  confirmation côté inscription, « mot de passe oublié » côté connexion), liens de
+  la navbar, et garde-fous de source pour que le mode initial continue de suivre
+  l'URL — y compris quand le pop-up est déjà ouvert.
+
+## Quizz gaming & quizz du jour
+
+Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
+`/quizz/:slug` (partie, corrections, commentaires), alias anglais `/quiz` et
+`/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
+mais la structure de données les accepte déjà.
+
+- **Grille** — les huit quizz s'affichent sur **trois colonnes** stables sur
+  bureau (`repeat(3, minmax(0, 1fr))` : le nombre ne bascule plus selon la
+  largeur de la fenêtre comme avec l'`auto-fill` d'avant), deux sur tablette
+  (≤ 900 px), une sur mobile (≤ 620 px) ; le gap passe à 16 px sous 1000 px
+  pour préserver la largeur des cartes. Les titres des cartes suivent une
+  taille fluide `clamp(16px → 18px)` avec interligne 1.3, `text-wrap: balance`
+  (coupe harmonieuse sur deux lignes) et `overflow-wrap: break-word` en garde-fou.
+- **Données** — `src/quizzesData.js` : huit quizz de huit questions (culture
+  générale, rétro, souls-like, RPG, e-sport, studios, tech et cinéma), la
+  plupart liés à un article maison (`source`). Ajouter un quizz =
+  une entrée : la grille, la recherche (`searchIndex`), la rotation du jour et
+  le succès « Tour complet » le prennent en compte (mettre à jour la cible du
+  succès si le nombre de quizz change).
+- **Miniatures** — chaque quizz a sa propre illustration 16/9
+  (`image`, fabriquée par `quizThumbUrl(slug)` depuis
+  `public/quizzes/<slug>.jpg`) : une par thème, à la charte du site. La carte de
+  la grille, la bannière du quizz du jour et les résultats de recherche
+  l'affichent. L'épisode lié (`videoId`) reste en repli : `VideoThumb` reçoit
+  l'illustration en `lead` et ne descend l'échelle YouTube que si le fichier
+  manque — aucune requête `i.ytimg.com` dans le cas nominal. Ajouter un
+  quizz = déposer son illustration sous ce nom, `check:thumbs` le vérifie.
+- **Moteur** — `src/quizzes/engine.js` (pur, sans React) : mélange déterministe
+  par graine (le quizz du jour est le même pour tous), barème, paliers de
+  résultat (`rookie` → `legend`), meilleure série de jours consécutifs.
+- **Minuteur** — 15 secondes par question (`QUESTION_TIME`, mutable pour les
+  tests) : une barre de décompte passe au rouge dans les 3 dernières secondes
+  et, à zéro, la question avance sans réponse (comptée ratée, signalée
+  « Temps écoulé » dans les corrections).
+- **Sons** — `src/quizzes/quizSounds.js` : tout est synthétisé en Web Audio,
+  aucun fichier audio à livrer. Un tick-tack discret tourne en fond pendant
+  chaque question et **accélère par paliers** quand le temps baisse (une
+  pulsation par seconde au début, 620 ms à mi-parcours, 340 ms dès que la barre
+  passe au rouge — même seuil —, 220 ms dans la dernière seconde et demie, un
+  peu plus fort). Une bonne réponse fait monter un accord do–mi–sol, une
+  mauvaise descend en dents de scie, et le temps écoulé ajoute une note grave
+  (ne pas répondre n'est pas se tromper). Tout est best-effort — sans API Web
+  Audio, la partie se joue normalement — et un bouton 🔊/🔇 (sur l'intro comme
+  pendant la partie) coupe l'ensemble, la préférence restant sur l'appareil.
+  Le son n'étant pas accessible à tous, un compteur ✓/✗ de la partie en cours
+  (`aria-live`) dit la même chose à l'écran, et le tick-tack se tait quand
+  l'onglet passe en arrière-plan.
+- **Feedback instantané & points** — le clic fige la question un court instant
+  (`VERDICT_MS` = 600 ms, défini une fois dans le moteur) : le choix cliqué
+  passe au vert (petit « pop ») ou au rouge (secousse), la bonne réponse
+  s'illumine si elle n'a pas été cliquée, et un bandeau annonce le verdict
+  avec une phrase tirée au hasard (`verdicts.right/wrong/timeout`, traduits)
+  et les points gagnés. Les points sont le barème du classement :
+  base 100 + rapidité (jusqu'à 50, `quizPoints` du moteur) + combo (jusqu'à
+  50, les bonnes réponses consécutives) — 200 max par question. Ils s'affichent
+  en direct dans la barre du lecteur (⚡ + série 🔥 dès ×2, bip de combo dont
+  la note monte avec la série) et sur l'écran de résultat (total + meilleure
+  série). Ils font le classement des quizz et le record de l'appareil (la
+  meilleure partie = le plus de points, `correct/total` en départage) ; les
+  succès et les paliers de résultat restent calculés sur `correct/total`.
+  Raccourcis clavier : les touches 1–4 valident le choix affiché (jamais
+  pendant le gel, jamais dans un champ de saisie). Le sans-faute fait pleuvoir
+  des confettis sur l'écran de résultat
+  (`QuizConfetti`, DOM/CSS sans canvas, pluie de trois secondes) et chaque
+  palier joue sa fanfare (`legend` = montée de quatre notes).
+- **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
+  sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
+  `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
+  terminer le quizz du jour crédite un jour de série (succès platine
+  « Semaine parfaite » = 7 jours d'affilée). La meilleure partie de l'appareil
+  (points + bonnes réponses) s'affiche sur chaque carte de la grille.
+- **Succès** — l'action `quiz_completed` (`QuizPlayer`) alimente le moteur des
+  succès : parties, quizz distincts, sans-faute, jours de série. Cinq succès
+  au catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi
+  envoyé), Sans faute (argent), Tour complet (or), Semaine parfaite (platine).
+  L'XP reste celle des succès, comme partout sur le site.
+- **Révision des erreurs** — depuis l'écran de résultat, « Rejouer mes erreurs »
+  ne rejoue que les questions ratées (tour d'entraînement : succès, record,
+  série et classement ne bougent pas, vérifié par `check:quiz`).
+- **Défi entre amis** — depuis l'écran de résultat, `QuizChallenge` envoie à
+  un ami (messagerie 1-à-1 existante, mode démo ou Supabase) un message
+  pré-rempli avec le score à battre ; sans compte ni backend, un message
+  l'explique. Chaque défi crédite `quiz_challenge`.
+- **Scores & classement** — `supabase/schema.sql` (section 8) : table
+  `public.quiz_attempts` (MEILLEURE PARTIE par compte et par quizz — celle qui
+  marque le plus de points, à égalité le plus de bonnes réponses ; bornes
+  `0 ≤ score ≤ total` et `100 × score ≤ points ≤ 200 × total` vérifiées côté
+  serveur) + RPC `submit_quiz_attempt` (avec `p_points`), `get_quiz_leaderboard`
+  (top 10 trié par POINTS gagnés — les bonnes réponses du run servent de
+  départage et s'affichent en secondaire, jointes aux profils, ligne du joueur
+  marquée `mine`) et `get_quiz_global_rank` (position au classement GLOBAL des
+  quizz : somme des points des meilleures parties, tous quizz confondus —
+  rang, points, quizz joués, joueurs classés), non exposées en direct (revoke).
+  Le compte connecté envoie sa tentative à la fin de la partie
+  (`src/quizzes/quizApi.js`, avec repli sur l'ancienne signature de la RPC si
+  le déploiement est antérieur aux points) ; le visiteur garde sa meilleure
+  partie sur l'appareil (`localStorage`, clé propre aux quizz). La page de
+  profil affiche la position du joueur par rapport au classement global
+  (`src/quizzes/QuizGlobalRank.jsx`, profil personnel comme profils publics) ;
+  sans backend, la section explique comment la débloquer. Après collage du
+  schéma dans le Dashboard Supabase, le tableau de contrôle final affiche les
+  lignes 31–33 « OK ».
+- **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
+  points bornés à 200/question qui font le classement, série, minuteur à 15 s),
+  miniatures (une illustration distincte par quizz, demandée par les cartes
+  rendues — aucune requête YouTube), partie complète 8/8 jouée en jsdom avec
+  la vraie pile de providers (succès crédités dans le stockage, confettis du
+  sans-faute, points et meilleure série affichés), grille rendue en FR/EN/AR,
+  record de l'appareil par points (meilleure partie = le plus de points,
+  départage aux bonnes réponses), classement par points (points affichés en
+  premier, score/total en secondaire, repli ancien backend) et position au
+  classement global affichée sur la page de profil (repli hors-ligne expliqué),
+  verdict (gel avec choix verrouillés, vert/rouge, bonne réponse révélée,
+  bandeau avec points), raccourcis clavier 1–4 (la touche pendant le gel est
+  ignorée), sons (tempo qui accélère sans jamais ralentir et sans attendre le
+  battement suivant, battement réel, verdicts juste / faux / temps écoulé,
+  combo dont la note monte avec la série, fanfare du palier, coupure depuis le
+  bouton 🔊, no-op sans Web Audio) — le tout avec un faux `AudioContext` qui
+  enregistre les oscillateurs lancés. Le scénario de
+  `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
+  rend les nouvelles routes dans les trois langues ; `check:thumbs` vérifie les
+  fichiers livrés dans `public/quizzes/`.
 
 ## Live YouTube
 
@@ -834,7 +1030,10 @@ URL de miniature :
   à `hqdefault`, aucune requête n'est envoyée vers un 404 connu. `twbaM8fiXpo`
   y figure déjà, avec la trace de la mesure ;
 - `createThumbFallback()` pilote le repli (position dans l'échelle, échec final)
-  et `isThumbMissing()` reconnaît une image « chargée mais vide ».
+  et `isThumbMissing()` reconnaît une image « chargée mais vide » ; son option
+  `lead` place une ou plusieurs sources **avant** l'échelle YouTube — c'est par
+  là que passent les illustrations maison des quizz (`public/quizzes/`), dont
+  l'épisode lié n'est alors qu'un repli.
 
 L'afficheur est `src/components/VideoThumb.jsx` : il descend l'échelle et, si
 aucune qualité ne répond, dessine un cadre Let's Play (`.video-thumb-fallback`)
@@ -852,15 +1051,24 @@ avant que React n'attache l'écouteur, et l'événement `error` est alors perdu.
 `hqdefault`, comme avant) ; sans elle, le composant demande la meilleure
 qualité disponible pour cette vidéo.
 
+```jsx
+// Grille des quizz : l'illustration maison d'abord, l'épisode en repli.
+<VideoThumb id={quiz.videoId} lead={quiz.image} alt={titre} quality="hq" />
+```
+
 ### Vérification
 
 - `npm run check:thumbs` — l'échelle des qualités et son dernier barreau, le
   pilote rejoué avec une image simulée (chaque qualité manquante fait descendre
   d'un cran, la dernière bascule sur le cadre de repli, aucune requête vers un
-  404 connu), le **rendu réel des pages** en SSR (accueil : trois vignettes,
+  404 connu, l'illustration locale essayée avant YouTube quand elle est passée
+  en `lead`), le **rendu réel des pages** en SSR (accueil : trois vignettes,
   `twbaM8fiXpo` en `hqdefault`, HicoSoft toujours en `maxresdefault` ; dossiers :
-  huit vignettes), et la source du site (aucune URL de miniature codée en dur
-  hors de `src/lib/videoThumbnails.js`, les deux chemins du repli présents).
+  huit vignettes ; quizz : bannière du jour + huit cartes servies par
+  `public/quizzes/`, chaque fichier livré et non tronqué), et la source du site
+  (aucune URL de miniature codée en dur hors de `src/lib/videoThumbnails.js`,
+  ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins
+  du repli présents).
 
 ## Robot actus du jour
 
@@ -882,8 +1090,13 @@ et liée.
   panne du modèle, repli automatique sur le gabarit : aucun run n’est perdu.
 - **Publication automatique** : le robot committe sur `main`
   (`src/news/auto/*.json` + `src/news/autoIndex.js` + visuels SVG générés dans
-  `public/news-auto/`), ce qui déclenche le déploiement Pages. Rien de neuf →
-  aucun commit. Sortie clairement en échec si *tous* les flux sont tombés.
+  `public/news-auto/`), puis appelle explicitement le workflow réutilisable
+  de déploiement Pages avec le SHA publié après rebase. Un push effectué avec
+  `GITHUB_TOKEN` ne déclenche **pas** un autre workflow `on: push` : cet appel
+  direct est donc indispensable, sans nécessiter de jeton personnel. Le
+  déploiement est réservé à la branche par défaut ; un run manuel sur une
+  branche de test publie ses fichiers sur cette branche, jamais sur le site
+  public. Si aucun fichier suivi n’a changé, aucun commit ni déploiement.
 - **Miniature officielle obligatoire** : avant publication, le robot extrait
   `image` du JSON-LD ou `og:image`/`twitter:image` de l’article source, vérifie
   qu’il s’agit d’une URL HTTP(S), télécharge le fichier image et contrôle son
@@ -906,7 +1119,18 @@ et liée.
   de langage ».
 
 Run manuel : onglet Actions → « Robot actus du jour » → Run workflow (choisir
-le nombre d’articles, cocher « forcer » pour élargir la fenêtre). En local :
+le nombre d’articles, cocher « forcer » pour élargir la fenêtre).
+**Après un correctif du workflow, créer un nouveau run sur `main` une fois le
+correctif fusionné.** Le bouton « Re-run jobs » d’un ancien échec conserve
+l’ancien commit et l’ancienne définition du workflow : il peut donc répéter
+l’erreur même si elle est corrigée sur `main`.
+
+Diagnostic : dans le nouveau run, vérifier successivement la génération,
+« Commit & push des articles », puis « Publier les actus sur GitHub Pages ».
+Le rapport de génération apparaît dans le résumé du run. Le cron est prévu
+à **04:30 UTC** (05:30/06:30 à Paris), mais GitHub peut retarder son exécution.
+
+En local :
 
 ```bash
 npm run news:fetch        # run réel (réseau requis)
@@ -926,3 +1150,23 @@ licences, salons) et les filtres anti-bruit : tout vit dans
 - [Games & Comic Con Dzaïr](https://www.gccdz.com/)
 - [Algérie Télécom](https://www.algerietelecom.dz/) · [IdOOM Market](https://idoom-market.com.dz/fr)
 - [TCL](https://www.tcl.com/)
+
+### Réactions des articles actus
+
+La section « Vous en pensez quoi ? » utilise désormais Supabase, et non les
+compteurs du navigateur. **Relancer `supabase/schema.sql` dans le SQL Editor du
+projet utilisé par le site avant de déployer le frontend.** Cette migration
+ajoute `article_reactions` et les RPC `get_article_reactions` /
+`set_article_reaction`.
+
+Tous les visiteurs voient le total partagé et la répartition en pourcentages
+(par choix, pas une note numérique). Un compte connecté peut voter, changer
+son choix ou cliquer à nouveau pour le retirer. La clé primaire impose un seul
+vote par compte et par article, y compris sur plusieurs appareils. Les RPC
+n'exposent pas les identités des votants et l'identité d'écriture est issue de
+`auth.uid()`. Les comptes démo ne votent pas. La tendance est relue toutes les
+30 secondes, au retour sur la fenêtre et après chaque vote.
+
+Les anciens compteurs locaux ne sont pas importés : ils ne constituent pas des
+votes vérifiables. En cas de panne ou de migration manquante, une erreur est
+affichée, sans simuler un enregistrement local.

@@ -402,6 +402,10 @@
   width: min(1080px, 100%);
   margin: 0 auto;
   display: grid;
+  /* minmax(0, 1fr) : sans lui, la piste unique grossit jusqu'au min-content
+     du plus large des enfants (barre de filtres « jeux testés ») et étire
+     TOUTES les cartes au-delà du hub — la page déborde et paraît décentrée. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 28px;
 }
 
@@ -625,6 +629,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
   margin-bottom: 8px;
   font-family: var(--mono);
   font-size: 12px;
@@ -664,36 +669,6 @@
   gap: 16px;
 }
 
-/* SOCIAL GRID — Amis + Messagerie, collés dans une SEULE carte : le conteneur
-   porte le fond / bordure des cartes, les deux sections sont fondus dedans
-   et séparées par un simple trait (vertical en desktop, horizontal en mobile). */
-.player-social-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: linear-gradient(145deg, rgba(14, 17, 38, .9), rgba(5, 6, 15, .88));
-  border: 1px solid var(--line-strong);
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-}
-
-/* Si les deux sections sont absentes (visiteur, hub des scripts), pas de carte vide. */
-.player-social-grid:empty {
-  display: none;
-}
-
-.player-social-grid .player-section {
-  margin: 0;
-  height: 100%;
-  background: none;
-  border: 0;
-  clip-path: none;
-}
-
-/* Simple trait vertical entre les deux colonnes — propriété logique pour
-   rester entre les deux en RTL. */
-.player-social-grid .player-section + .player-section {
-  border-inline-start: 1px solid var(--line-strong);
-}
-
 .player-stat-card {
   background: rgba(14, 17, 38, .85);
   border: 1px solid var(--line);
@@ -730,6 +705,47 @@
   border: 1px solid var(--line-strong);
   padding: clamp(20px, 3.5vw, 32px);
   clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+
+/* ------------------------------------------------------------------
+   Achievements inside player hub — keep the same cut-corner look but
+   allow the tooltip to overflow outside the box. Using clip-path on
+   the container would clip the tooltip (position:absolute) even with
+   overflow:visible, so the visual shape is moved to a ::before layer.
+   Both the :has() selector (modern) and the fallback class are handled.
+   ------------------------------------------------------------------ */
+.player-section:has(.achievements-panel),
+.player-section.achievements-section {
+  overflow: visible;
+  clip-path: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  position: relative;
+}
+
+.player-section:has(.achievements-panel)::before,
+.player-section.achievements-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(14, 17, 38, .9), rgba(5, 6, 15, .88));
+  border: 1px solid var(--line-strong);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.player-section:has(.achievements-panel) .achievements-panel,
+.player-section.achievements-section .achievements-panel {
+  padding: clamp(20px, 3.5vw, 32px);
+  overflow: visible;
+}
+
+/* Fallback when :has() is not supported: the JSX adds the extra class,
+   and we ensure the ::before background still shows. */
+.player-section.achievements-section .achievements-panel {
+  position: relative;
 }
 
 .player-section-header {
@@ -877,6 +893,9 @@
 }
 
 .player-platform-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font: 600 11px var(--mono);
   letter-spacing: .14em;
   padding: 7px 14px;
@@ -884,6 +903,544 @@
   border: 1px solid rgba(124, 58, 237, .35);
   color: var(--ink);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+/* ------------------------------------------------------------------
+   CONSOLE PICKER (hub) — cartes à cocher pour les consoles possédées
+   ------------------------------------------------------------------ */
+.player-console-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.player-console-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: start;
+  transition: border-color .2s, background .2s, transform .2s;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+.player-console-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.player-console-logo-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .08);
+  transition: all .2s;
+  flex-shrink: 0;
+}
+
+.player-console-option:hover .player-console-logo-box {
+  background: rgba(34, 211, 238, .1);
+  border-color: rgba(34, 211, 238, .3);
+}
+
+.player-console-option.selected .player-console-logo-box {
+  background: rgba(34, 211, 238, .18);
+  border-color: rgba(34, 211, 238, .5);
+  box-shadow: 0 0 12px rgba(34, 211, 238, .2);
+}
+
+.player-console-option:hover:not(:disabled) {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.player-console-option.selected {
+  border-color: rgba(34, 211, 238, .55);
+  background: linear-gradient(135deg, rgba(34, 211, 238, .08), rgba(124, 58, 237, .08));
+}
+
+.player-console-option:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.player-console-id {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+
+.player-console-option.selected .player-console-id {
+  color: var(--cyan);
+}
+
+.player-console-label {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.player-console-check {
+  font: 700 13px var(--mono);
+  color: var(--dim);
+}
+
+.player-console-option.selected .player-console-check {
+  color: var(--cyan);
+}
+
+/* ------------------------------------------------------------------
+   JEUX TESTÉS (hub) — catalogue multi-plateformes + filtre par console + recherche
+   ------------------------------------------------------------------ */
+.player-games-filter-container {
+  margin-bottom: 12px;
+}
+
+.player-games-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font: 600 11px var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.player-games-filter-reset {
+  background: none;
+  border: none;
+  color: var(--cyan);
+  cursor: pointer;
+  font: 600 11px var(--mono);
+  padding: 0;
+  transition: opacity .2s;
+}
+
+.player-games-filter-reset:hover {
+  text-decoration: underline;
+}
+
+.player-games-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.player-games-filter-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.player-games-filter-bar::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 2px;
+}
+
+.player-games-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 600 11px var(--mono);
+  letter-spacing: .08em;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .2s;
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+
+.player-games-filter-btn:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+  background: rgba(255, 255, 255, .07);
+}
+
+.player-games-filter-btn.active {
+  background: rgba(34, 211, 238, .12);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: 0 0 10px rgba(34, 211, 238, .15);
+}
+
+.player-games-filter-count {
+  font-size: 10px;
+  opacity: .8;
+  background: rgba(255, 255, 255, .08);
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.player-games-filter-btn.active .player-games-filter-count {
+  background: rgba(34, 211, 238, .25);
+  color: #fff;
+}
+
+.player-profile-games-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  padding: 2px 2px 6px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.player-profile-games-filter-bar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.player-profile-games-filter-bar::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 2px;
+}
+
+.player-games-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.player-game-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px 7px 14px;
+  background: rgba(34, 211, 238, .08);
+  border: 1px solid rgba(34, 211, 238, .35);
+  font-size: 12px;
+  color: var(--ink);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+.player-game-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 600 11px/1 var(--mono);
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.player-game-chip-remove:hover:not(:disabled) {
+  border-color: #f87171;
+  color: #f87171;
+  background: rgba(248, 113, 113, .08);
+}
+
+.player-games-search {
+  position: relative;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.player-games-search-icon {
+  position: absolute;
+  inset-inline-start: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  opacity: .7;
+  pointer-events: none;
+}
+
+.player-games-search input {
+  width: 100%;
+  padding: 11px 14px 11px 36px;
+  background: rgba(5, 6, 15, .6);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font: 500 13px var(--body);
+  transition: border-color .2s;
+}
+
+.player-games-search input::placeholder {
+  color: var(--dim);
+}
+
+.player-games-search input:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
+.player-games-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  background: rgba(5, 6, 15, .45);
+}
+
+.player-game-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, .05);
+}
+
+.player-game-row:last-child {
+  border-bottom: 0;
+}
+
+.player-game-row:hover {
+  background: rgba(34, 211, 238, .04);
+}
+
+.player-game-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.player-game-row-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.player-game-row-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.player-game-row-platforms em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 9px var(--mono);
+  font-style: normal;
+  letter-spacing: .12em;
+  padding: 2px 6px;
+  background: rgba(124, 58, 237, .15);
+  border: 1px solid rgba(124, 58, 237, .35);
+  color: var(--ink);
+}
+
+.player-game-row-btn {
+  flex-shrink: 0;
+  font: 600 10px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.player-game-row-btn:hover:not(:disabled) {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(34, 211, 238, .08);
+}
+
+.player-game-row-btn.added {
+  border-color: rgba(16, 185, 129, .5);
+  color: #34d399;
+  background: rgba(16, 185, 129, .08);
+}
+
+.player-game-row-btn:disabled {
+  opacity: .45;
+  cursor: default;
+}
+
+.player-games-empty {
+  margin: 0;
+  padding: 14px;
+  text-align: center;
+}
+
+.player-games-cap-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: #fbbf24;
+}
+
+.player-gear-save-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------------
+   TOP 10 (page de profil) — podium + plateformes cataloguées
+   ------------------------------------------------------------------ */
+.player-games-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.player-games-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.player-games-action-btn {
+  padding: 8px 12px;
+  background: rgba(34, 211, 238, .08);
+  border: 1px solid rgba(34, 211, 238, .3);
+  color: var(--cyan);
+  font: 600 10px var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+}
+
+.player-games-action-btn:hover,
+.player-games-action-btn.active {
+  background: rgba(34, 211, 238, .18);
+  border-color: var(--cyan);
+  color: #fff;
+}
+
+.player-games-action-btn.reset {
+  background: rgba(255, 255, 255, .03);
+  border-color: var(--line-strong);
+  color: var(--muted);
+}
+
+.player-games-action-btn.reset:hover {
+  background: rgba(255, 255, 255, .08);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.player-games-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.player-game-pill {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: min(220px, 100%);
+  padding: 10px 14px;
+  background: rgba(34, 211, 238, .07);
+  border: 1px solid rgba(34, 211, 238, .3);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+
+.player-game-pill-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.player-game-rank {
+  align-self: flex-start;
+  padding: 2px 7px;
+  font: 700 10px var(--mono);
+  letter-spacing: .12em;
+}
+
+.player-game-pill-top-1 {
+  background: linear-gradient(135deg, rgba(246, 196, 83, .2), rgba(246, 196, 83, .06));
+  border-color: rgba(246, 196, 83, .78);
+  box-shadow: 0 0 18px rgba(246, 196, 83, .17);
+}
+
+.player-game-pill-top-1 .player-game-rank {
+  color: #171006;
+  background: #f6c453;
+}
+
+.player-game-pill-top-1 .player-game-pill-title {
+  color: #ffe4a0;
+  font-size: 14px;
+}
+
+.player-game-pill-top-2 {
+  background: linear-gradient(135deg, rgba(223, 231, 244, .17), rgba(223, 231, 244, .05));
+  border-color: rgba(223, 231, 244, .68);
+  box-shadow: 0 0 14px rgba(223, 231, 244, .12);
+}
+
+.player-game-pill-top-2 .player-game-rank {
+  color: #10151f;
+  background: #dfe7f4;
+}
+
+.player-game-pill-top-2 .player-game-pill-title {
+  color: #f2f6ff;
+  font-size: 14px;
+}
+
+.player-game-pill-top-3 {
+  background: linear-gradient(135deg, rgba(200, 122, 68, .19), rgba(200, 122, 68, .05));
+  border-color: rgba(200, 122, 68, .72);
+  box-shadow: 0 0 14px rgba(200, 122, 68, .13);
+}
+
+.player-game-pill-top-3 .player-game-rank {
+  color: #1b0d06;
+  background: #c87a44;
+}
+
+.player-game-pill-top-3 .player-game-pill-title {
+  color: #f0bd96;
+  font-size: 14px;
+}
+
+.player-game-pill-platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 3px;
+}
+
+.player-game-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font: 600 9px var(--mono);
+  letter-spacing: .12em;
+  color: var(--cyan);
+  background: rgba(34, 211, 238, .08);
+  border: 1px solid rgba(34, 211, 238, .25);
+  padding: 2px 6px;
 }
 
 .player-badges-grid {
@@ -925,61 +1482,6 @@
   color: var(--muted);
   line-height: 1.4;
   margin: 0;
-}
-
-/* SAVED ARTICLES GRID */
-.player-saved-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-
-.player-saved-card {
-  background: rgba(255, 255, 255, .03);
-  border: 1px solid var(--line);
-  padding: 16px 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12px;
-  transition: all .2s;
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-}
-
-.player-saved-card:hover {
-  border-color: var(--yellow);
-  background: rgba(255, 214, 25, .04);
-  transform: translateY(-2px);
-}
-
-.player-saved-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font: 500 10px var(--mono);
-  letter-spacing: .12em;
-  color: var(--cyan);
-  text-transform: uppercase;
-}
-
-.player-saved-title {
-  font-family: var(--body);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
-  line-height: 1.4;
-  margin: 0;
-}
-
-.player-saved-link {
-  font: 600 10px var(--mono);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--yellow);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
 }
 
 /* ACCOUNT ACTIONS BAR */
@@ -1318,12 +1820,12 @@
 }
 
 /* NAVBAR ACCOUNT CONNECTED PILL */
-.nav-account {
+/* Uniquement le lien « Join » (Supabase configuré, visiteur non connecté) :
+   les boutons séparés « Se connecter » / « S'inscrire » gardent les couleurs
+   de styles.css. Le `!important` appliqué à tout `.nav-account` peignait
+   « S'inscrire » en cyan sur fond jaune — illisible. */
+.nav-account:not(.nav-login):not(.nav-register):not(.connected) {
   color: var(--cyan) !important;
-}
-
-.nav-account::after {
-  background: var(--yellow) !important;
 }
 
 .nav-account.connected {
@@ -1397,18 +1899,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
-  .player-social-grid {
-    grid-template-columns: 1fr;
-  }
-
-  /* En colonne unique, le séparateur devient un trait horizontal. */
-  .player-social-grid .player-section + .player-section {
-    border-inline-start: 0;
-    border-top: 1px solid var(--line-strong);
-  }
-
-  .sso-providers-grid,
-  .player-saved-grid {
+  .sso-providers-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1426,6 +1917,18 @@
   .player-demo-banner {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .player-games-section-header {
+    flex-direction: column;
+  }
+
+  .player-games-actions {
+    width: 100%;
+  }
+
+  .player-games-action-btn {
+    flex: 1;
   }
 
   .player-actions-card {

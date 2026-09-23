@@ -17,7 +17,9 @@
  *    pour un joueur connecté ; ouverte sur la messagerie, elle montre la
  *    liste des discussions puis la discussion en cours (bulles + champ de
  *    saisie) ; le bouton « Message » d'un profil ami est rendu, et propose la
- *    connexion à un visiteur.
+ *    connexion à un visiteur. Le hub, lui, ne porte plus AUCUN raccourci de
+ *    messagerie : ses seules sections sociales sont la liste d'amis et la
+ *    fenêtre sociale (ou la page /messages sur mobile).
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -149,6 +151,11 @@ console.log('\n[2/3] aperçu de démonstration\n');
 
 const now = Date.UTC(2026, 8, 21, 12, 0, 0);
 
+// Garde-fou : les personas ne sont plus livrées dans l'application, ce sont
+// des fixtures de test (scripts/demoFixtures.js). Sans elles, la boucle ci-dessous
+// ne tournerait pas et une trentaine de vérifications disparaîtraient en silence.
+check('personas de démonstration semées par les fixtures', Object.keys(DEMO_PROFILES).sort().join(','), 'pixel,vortex');
+
 for (const [key, profile] of Object.entries(DEMO_PROFILES)) {
   const self = profile.id;
   const friends = DEMO_INITIAL_STATE[key].friends;
@@ -247,7 +254,10 @@ for (const lang of ['en', 'fr', 'ar']) {
     const text = strip(html);
     check(`[${lang}] persona : lanceur « ${st.launcher} » présent`, html.includes('social-launcher') && text.includes(st.launcher));
     check(`[${lang}] persona : badge des non-lus`, html.includes('social-launcher-badge'));
-    check(`[${lang}] persona : section « ${t.hubTitle} » du hub`, text.includes(t.hubOpen));
+    // Le profil du joueur n'affiche plus les raccourcis de messagerie : la
+    // discussion se rejoint par la fenêtre sociale (ou la page /messages).
+    check(`[${lang}] hub : aucun raccourci de messagerie`, text.includes(t.hubOpen), false);
+    check(`[${lang}] hub : plus de section « ${t.hubTitle} »`, text.includes(t.hubTitle), false);
   } catch (e) { check(`[${lang}] /auth persona se rend`, e.message, ''); }
 
   try {

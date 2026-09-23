@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
@@ -12,6 +12,11 @@ import MessageButton from '../messages/MessageButton';
 import { useFriends } from '../friends/FriendsContext';
 import { isRecentlySeen } from '../friends/friendsApi';
 import { demoPresence, findDemoPlayer } from '../friends/demoRoster';
+import { normalizePlatforms, gamePlatforms } from '../lib/gameLibrary';
+import ConsoleLogo from '../components/ConsoleLogo';
+import TopGamePill from '../components/TopGamePill';
+import QuizGlobalRank from '../quizzes/QuizGlobalRank';
+import { MAX_TESTED_GAMES } from '../lib/gameLibrary';
 
 function formatJoined(iso) {
   if (!iso) return '—';
@@ -35,6 +40,157 @@ function DemoNotFound({ id }) {
         </div>
       </div>
     </section>
+  );
+}
+
+const PROFILE_TOP_GAMES_LIMIT = MAX_TESTED_GAMES;
+
+/**
+ * TOP 10 des jeux du profil : podium coloré, puis sept jeux standards.
+ * Le filtre par console reste caché tant que le joueur n'a pas demandé à
+ * modifier l'affichage.
+ */
+function TopGamesRow({
+  games,
+  heading = 'Ton TOP 10 des jeux all-time',
+  sub = 'Tes 10 jeux préférés, toutes générations confondues.',
+  emptyText = null,
+  editable = false,
+}) {
+  const [activeFilter, setActiveFilter] = useState('ALL');
+  const [isEditing, setIsEditing] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const list = Array.isArray(games)
+    ? games.filter((g) => typeof g === 'string' && g.trim()).slice(0, PROFILE_TOP_GAMES_LIMIT)
+    : [];
+
+  const platformsRepresented = useMemo(() => {
+    const set = new Set();
+    for (const title of list) {
+      const pList = gamePlatforms(title);
+      for (const p of pList) set.add(p);
+    }
+    return Array.from(set);
+  }, [list]);
+
+  const displayedGames = useMemo(() => {
+    const filteredList = activeFilter === 'ALL' ? list : list.filter((title) => {
+      const pList = gamePlatforms(title);
+      return pList.includes(activeFilter);
+    });
+    return (showAll || isEditing) ? filteredList : filteredList.slice(0, 3);
+  }, [list, activeFilter, showAll, isEditing]);
+
+  const toggleEditing = () => {
+    setIsEditing((previous) => {
+      if (previous) setActiveFilter('ALL');
+      return !previous;
+    });
+  };
+
+  return (
+    <div className="player-section">
+      <div className="player-section-header player-games-section-header">
+        <div>
+          <h2>{heading}</h2>
+          <p>{sub}</p>
+        </div>
+        {editable && (
+          <div className="player-games-actions" aria-label="Actions du TOP 10">
+            <button
+              type="button"
+              className={`player-games-action-btn${isEditing ? ' active' : ''}`}
+              onClick={toggleEditing}
+              aria-expanded={isEditing}
+            >
+              {isEditing ? 'Fermer' : 'Modifier'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {editable && isEditing && list.length > 0 && platformsRepresented.length > 1 && (
+        <div className="player-profile-games-filter-bar" role="tablist" aria-label="Filtrer le TOP 10 par console">
+          <button
+            type="button"
+            className={`player-games-filter-btn${activeFilter === 'ALL' ? ' active' : ''}`}
+            onClick={() => setActiveFilter('ALL')}
+            aria-pressed={activeFilter === 'ALL'}
+          >
+            <span>Toutes</span>
+            <span className="player-games-filter-count">{list.length}</span>
+          </button>
+          {platformsRepresented.map((platformId) => {
+            const count = list.filter((t) => gamePlatforms(t).includes(platformId)).length;
+            const isActive = activeFilter === platformId;
+            return (
+              <button
+                key={platformId}
+                type="button"
+                className={`player-games-filter-btn${isActive ? ' active' : ''}`}
+                onClick={() => setActiveFilter(isActive ? 'ALL' : platformId)}
+                aria-pressed={isActive}
+              >
+                <ConsoleLogo consoleId={platformId} size={14} />
+                <span>{platformId}</span>
+                <span className="player-games-filter-count">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {displayedGames.length > 0 ? (
+        <div className="player-games-row">
+          {displayedGames.map((title) => {
+            const rank = list.indexOf(title) + 1;
+            return <TopGamePill key={`${title}-${rank}`} title={title} rank={rank} />;
+          })}
+        </div>
+      ) : (
+        <p className="player-empty-note">
+          {list.length > 0
+            ? 'Aucun jeu correspondant à cette console.'
+            : (emptyText || 'Aucun jeu dans ton TOP 10 pour l’instant.')}
+        </p>
+      )}
+      {!editable && list.length > 3 && (
+        <button type="button" className="player-list-toggle" onClick={() => setShowAll((value) => !value)} aria-expanded={showAll}>
+          {showAll ? 'Réduire' : 'Voir plus'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function PublicPlatforms({ platforms, heading = 'Plateformes' }) {
+  const [expanded, setExpanded] = useState(false);
+  const list = normalizePlatforms(platforms);
+  if (!list.length) return null;
+  return (
+    <div className="player-section">
+      <div className="player-section-header"><h2>{heading}</h2></div>
+      <div className="player-platforms-row">
+        {(expanded ? list : list.slice(0, 5)).map((p) => (
+          <span key={p} className="player-platform-pill"><ConsoleLogo consoleId={p} size={15} /><span>{p}</span></span>
+        ))}
+      </div>
+      {list.length > 5 && <button type="button" className="player-list-toggle" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Réduire' : 'Voir toutes les consoles'}</button>}
+    </div>
+  );
+}
+
+function PublicBadges({ badges }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!Array.isArray(badges) || !badges.length) return null;
+  return (
+    <div className="player-section">
+      <div className="player-section-header"><h2>Succès & badges</h2></div>
+      <div className="player-badges-grid">{(expanded ? badges : badges.slice(0, 5)).map((b) => (
+        <div key={b.id} className="player-badge-item"><span className="player-badge-icon">{b.icon}</span><div className="player-badge-info"><h4>{b.name}</h4><p>{b.desc}</p></div></div>
+      ))}</div>
+      {badges.length > 5 && <button type="button" className="player-list-toggle" onClick={() => setExpanded((v) => !v)}>{expanded ? 'Réduire' : 'Voir tous les succès'}</button>}
+    </div>
   );
 }
 
@@ -77,11 +233,22 @@ export default function Profile() {
       setLoading(true);
       setNotFound(false);
       try {
-        // `last_seen_at` (présence des amis) n'existe que si la migration a
-        // été appliquée : on retombe sur les colonnes de base sinon.
-        let { data, error } = await supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, updated_at, last_seen_at').eq('id', userId).maybeSingle();
-        if (error && /last_seen_at/.test(error.message || '')) {
-          ({ data, error } = await supabase.from('profiles').select('id, username, display_name, avatar_url, created_at, updated_at').eq('id', userId).maybeSingle());
+        // `last_seen_at` (présence), `platforms` et `tested_games` (section
+        // 3b2 du schéma) n'existent que si la migration a été appliquée :
+        // on essaie les colonnes par paliers, du plus riche au plus basique.
+        const SELECT_TIERS = [
+          'id, username, display_name, avatar_url, created_at, updated_at, last_seen_at, platforms, tested_games',
+          'id, username, display_name, avatar_url, created_at, updated_at, last_seen_at',
+          'id, username, display_name, avatar_url, created_at, updated_at',
+        ];
+        let data = null;
+        let error = null;
+        for (const select of SELECT_TIERS) {
+          ({ data, error } = await supabase.from('profiles').select(select).eq('id', userId).maybeSingle());
+          const message = String(error && error.message || '');
+          const missingOptionalColumn = Boolean(error)
+            && (message.includes('last_seen_at') || message.includes('platforms') || message.includes('tested_games'));
+          if (!error || !missingOptionalColumn) break;
         }
         if (cancelled) return;
         if (error) throw error;
@@ -119,6 +286,10 @@ export default function Profile() {
     const xpInLevel = summary?.level?.xpInLevel ?? 0;
     const percent = summary?.level?.percent ?? 0;
     const title = levelTitle(lvl, lang);
+    // Consoles possédées + jeux favoris : la sélection se fait dans le hub
+    // joueur (/auth), le profil l'affiche.
+    const ownPlatforms = normalizePlatforms(meta.platforms);
+    const ownGames = Array.isArray(meta.testedGames) ? meta.testedGames : [];
 
     return (
       <section className="auth-page wrap">
@@ -160,6 +331,38 @@ export default function Profile() {
               <p style={{ margin: '8px 0 0', color: 'var(--dim)', font: '500 10px var(--mono)', letterSpacing: '.12em' }}>{xpInLevel} XP dans le niveau · {xpForNext - xpInLevel} XP avant le prochain rang</p>
             </div>
           </div>
+
+          {/* Classement global des quizz : position du joueur (points cumulés
+              sur tous les quizz, RPC `get_quiz_global_rank`). En aperçu sans
+              backend, on affiche un rang scripté pour éviter une section vide. */}
+          <QuizGlobalRank userId={me.id} self scriptedFallback={{ level: lvl, xp }} />
+
+          {/* CONSOLES POSSÉDÉES — sélection faite dans le hub joueur */}
+          <div className="player-section">
+            <div className="player-section-header">
+              <h2>Mes consoles</h2>
+              <p>Les consoles que tu possèdes — choisis-les dans ton hub joueur.</p>
+            </div>
+            {ownPlatforms.length > 0 ? (
+              <div className="player-platforms-row">
+                {ownPlatforms.map((p) => (
+                  <span key={p} className="player-platform-pill">
+                    <ConsoleLogo consoleId={p} size={15} />
+                    <span>{p}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="player-empty-note">Aucune console ajoutée pour l’instant — coche-les dans ton hub.</p>
+            )}
+          </div>
+
+          {/* TOP 10 — les dix premiers jeux sélectionnés dans le hub */}
+          <TopGamesRow
+            games={ownGames}
+            editable
+            emptyText="Aucun jeu dans ton TOP 10 pour l’instant — ajoute-les depuis ton hub."
+          />
 
           <div className="player-actions-card">
             <div className="player-actions-left">
@@ -244,21 +447,15 @@ export default function Profile() {
             <div className="player-stat-card"><div className="player-stat-value">{meta.stats.badgesUnlocked}</div><div className="player-stat-label">Succès</div></div>
           </div>
 
-          {meta.platforms?.length > 0 && (
-            <div className="player-section">
-              <div className="player-section-header"><h2>Plateformes</h2></div>
-              <div className="player-platforms-row">{meta.platforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}</div>
-            </div>
+          <QuizGlobalRank userId={demoProfile.id} scriptedFallback={{ level: lvl, xp }} />
+
+          <PublicPlatforms platforms={meta.platforms} />
+
+          {meta.testedGames?.length > 0 && (
+            <TopGamesRow games={meta.testedGames} />
           )}
 
-          {meta.badges?.length > 0 && (
-            <div className="player-section">
-              <div className="player-section-header"><h2>Succès & badges</h2></div>
-              <div className="player-badges-grid">{meta.badges.map((b) => (
-                <div key={b.id} className="player-badge-item"><span className="player-badge-icon">{b.icon}</span><div className="player-badge-info"><h4>{b.name}</h4><p>{b.desc}</p></div></div>
-              ))}</div>
-            </div>
-          )}
+          <PublicBadges badges={meta.badges} />
 
           <div className="player-actions-card">
             <div className="player-actions-left">
@@ -328,11 +525,12 @@ export default function Profile() {
             </div>
           </div>
 
-          {demoPlayer.platforms?.length > 0 && (
-            <div className="player-section">
-              <div className="player-section-header"><h2>Plateformes</h2></div>
-              <div className="player-platforms-row">{demoPlayer.platforms.map((p) => <span key={p} className="player-platform-pill">🎮 {p}</span>)}</div>
-            </div>
+          <QuizGlobalRank userId={demoPlayer.id} scriptedFallback={{ level: demoPlayer.level, xp: demoPlayer.xp }} />
+
+          <PublicPlatforms platforms={demoPlayer.platforms} />
+
+          {demoPlayer.testedGames?.length > 0 && (
+            <TopGamesRow games={demoPlayer.testedGames} />
           )}
 
           <div className="player-actions-card">
@@ -419,6 +617,17 @@ export default function Profile() {
           <div className="player-stat-card"><div className="player-stat-value">{handle.slice(0,6)}</div><div className="player-stat-label">Gamertag</div></div>
           <div className="player-stat-card"><div className="player-stat-value">—</div><div className="player-stat-label">Succès</div></div>
         </div>
+
+        {/* Classement global des quizz : position du joueur dans la page de
+            profil (points cumulés sur tous les quizz). */}
+        <QuizGlobalRank userId={remoteProfile.id} />
+
+        {/* Consoles possédées + jeux testés — colonnes publiques du profil
+            (section 3b2 du schéma) ; absentes sur les anciens déploiements. */}
+        <PublicPlatforms platforms={remoteProfile.platforms} />
+        {Array.isArray(remoteProfile.tested_games) && remoteProfile.tested_games.length > 0 && (
+          <TopGamesRow games={remoteProfile.tested_games} />
+        )}
 
         <div className="player-actions-card">
           <div className="player-actions-left">

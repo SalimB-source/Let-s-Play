@@ -451,7 +451,7 @@ export default function Comments({ articleId: articleIdProp }){
   }
 
   return <section className="comments wrap" id="comments" aria-labelledby="comments-title">
-    <div className="section-label"><span><b>03</b> / {copy.section}</span><span>{status === 'loading' ? '…' : `${comments.length} ${countLabel}`}</span></div>
+    <div className="section-label"><span>{copy.section}</span><span>{status === 'loading' ? '…' : `${comments.length} ${countLabel}`}</span></div>
     <div className="comments-panel">
       <div className="comments-heading"><span className="comments-mark">//</span><h2 id="comments-title">{copy.title}</h2><p>{copy.intro}</p></div>
       {composer}

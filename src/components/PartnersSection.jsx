@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { partners } from '../partnersData';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -10,6 +10,7 @@ function Arrow({ external = false }) {
 
 export default function PartnersSection() {
   const { lang } = useLanguage();
+  const [paused, setPaused] = useState(false);
   const isFr = lang === 'fr';
   const isAr = lang === 'ar';
   const copy = isAr
@@ -19,9 +20,10 @@ export default function PartnersSection() {
       : { label: '05 / EVENTS', meta: 'ADVERTISERS · MEDIA · GAMING', eyebrow: 'On the ground', titleA: 'THE BRANDS,', titleB: 'THE COMMUNITIES.', text: 'Algérie Télécom, Ooredoo, 7ouma Arena: each partnership has its own article. More will follow.', cta: 'All Events', link: 'Source', explainer: 'Understand 7ouma Arena' };
 
   return (
-    <section className="partners wrap" id="events">
+    <section className="partners" id="events">
+      <div className="wrap">
       <div className="section-label">
-        <span><b>{copy.label.split(' / ')[0]}</b> / {copy.label.split(' / ')[1]}</span><span>{copy.meta}</span>
+        <span>{copy.label.split(' / ')[1]}</span><span>{copy.meta}</span>
       </div>
 
       <div className="partners-head">
@@ -33,14 +35,28 @@ export default function PartnersSection() {
         </div>
       </div>
 
-      <div className="partner-grid">
-        {partners.map((partner, index) => (
-            <article className={`partner-card partner-card-logo-only partner-card-${partner.tone}`} key={partner.id} aria-label={partner.name}>
-              <div className="partner-card-logo">
-                <PartnerMark partner={partner} size="xl" showText={false} />
-              </div>
-            </article>
-        ))}
+      </div>
+      <div className="partners-marquee" data-paused={paused}>
+        <div className="partners-marquee-track">
+          {[0, 1].map((copyIndex) => (
+            <ul className="partners-marquee-group" key={copyIndex} aria-hidden={copyIndex === 1 ? true : undefined}>
+              {partners.map((partner) => (
+                <li className={`partners-marquee-item partners-marquee-item--${partner.id}`} key={partner.id}>
+                  <PartnerMark partner={partner} size="marquee" showText={false} />
+                </li>
+              ))}
+            </ul>
+          ))}
+        </div>
+        <button
+          className="partners-marquee-toggle"
+          type="button"
+          onClick={() => setPaused(!paused)}
+          aria-pressed={paused}
+          aria-label={isAr ? 'إيقاف التمرير مؤقتًا' : isFr ? 'Mettre le défilement en pause' : 'Pause scrolling'}
+        >
+          <span aria-hidden="true">{paused ? '▶' : 'Ⅱ'}</span>
+        </button>
       </div>
     </section>
   );

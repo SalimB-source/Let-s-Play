@@ -1,7 +1,7 @@
 /**
  * Vérification des succès — `npm run check:achievements`.
  *
- * Quatre niveaux de contrôle :
+ * Cinq niveaux de contrôle :
  *
  *   1. le catalogue est cohérent (identifiants uniques, trois langues,
  *      métrique connue, cible atteignable, XP et rareté valides) ;
@@ -12,10 +12,17 @@
  *      fidélité, compte) les ouvre un par un ;
  *   4. le rendu réel du profil joueur (SSR) montre ces succès dans les trois
  *      langues, y compris avec une progression déjà enregistrée — et les
- *      actions du site sont bien branchées sur le moteur.
+ *      actions du site sont bien branchées sur le moteur. Le niveau et la
+ *      barre d'XP ne sont affichés qu'une fois, dans la carte du joueur :
+ *      la section « succès » ne les répète pas ;
+ *   5. la bulle d'information d'un succès reste dans l'écran (jsdom, avec une
+ *      géométrie de téléphone simulée) : elle est décalée pour ne pas être
+ *      rognée, et passe sous la carte quand il n'y a pas la place au-dessus.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
+import React from 'react';
+import { JSDOM } from 'jsdom';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -28,6 +35,7 @@ import {
   mergeStates,
   metricValue,
   normalizeState,
+  quizAlreadyCompleted,
   reduce,
   summarize,
   totalXp,
@@ -35,7 +43,10 @@ import {
 import { ACHIEVEMENTS, GROUPS, RARITIES, TIER_ORDER, achievementLabel, levelTitle, rarityLabel, tierRank } from '../src/achievements/catalog.js';
 import { describeRoute, linkedProviders } from '../src/achievements/routeActions.js';
 import { GUEST_SCOPE, REMOTE_META_KEY, STORAGE_KEY, clearStorage, readStorage, scopeForUser, storageKeyForScope, writeStorage } from '../src/achievements/storage.js';
-import { DEMO_PROFILES } from '../src/auth/demoProfiles.js';
+// Les personas de démonstration ne sont plus livrées dans l'application
+// (`src/auth/demoProfiles.js` est vide) : ce sont des fixtures de test, semées
+// dans l'entrée SSR par scripts/demoFixtures.js.
+import { DEMO_PROFILE_FIXTURES } from './demoFixtures.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LANGS = ['en', 'fr', 'ar'];
@@ -363,6 +374,42 @@ for (let index = 1; index <= 30; index += 1) {
   record(play('visit', { day: dayKey(date) }));
 }
 
+// Quizz : les huit quizz du site joués huit jours consécutifs en « quizz du
+// jour » (série de sept jours minimum), dont un sans faute — de quoi ouvrir
+// premier quizz, sans faute, tour complet et semaine parfaite.
+[
+  'culture-gaming', 'consoles-retro', 'souls-fromsoftware', 'rpg-legends',
+  'esport-competition', 'studios-legends', 'tech-hardware', 'cinema-pop-culture',
+].forEach((id, index) => {
+  const date = new Date(at(2026, 9, 20));
+  date.setDate(date.getDate() + index);
+  record(play('quiz_completed', { id, perfect: index === 0, daily: true, at: date.toISOString() }));
+});
+
+// Règle anti-farm : un quizz déjà terminé ne rapporte plus rien. Rejoué (même
+// sans faute), il ne bouge ni le compteur, ni les sans-faute, ni l'XP ; seul le
+// jour de quizz du jour reste crédité pour la série.
+{
+  let fresh = createState(new Date(at(2026, 9, 1)));
+  const run = (payload) => { const result = reduce(fresh, { type: 'quiz_completed', ...payload }); fresh = result.state; return result.unlocked; };
+  check('1re complétion : succès et XP', run({ id: 'rpg-legends', perfect: false, at: at(2026, 9, 2) }).join(','), 'first-quiz');
+  ok('le quizz est désormais marqué terminé', quizAlreadyCompleted(fresh, 'rpg-legends'));
+  ok('… et pas les autres', !quizAlreadyCompleted(fresh, 'tech-hardware'));
+  const xpBefore = totalXp(fresh);
+  const countBefore = fresh.counters.quizzes_completed;
+  check('rejouer (sans faute) ne débloque rien', run({ id: 'rpg-legends', perfect: true, at: at(2026, 9, 3) }).length, 0);
+  check('… ni XP', totalXp(fresh), xpBefore);
+  check('… ni compteur de parties', fresh.counters.quizzes_completed, countBefore);
+  ok('… ni sans-faute', !(fresh.sets.perfect_quizzes || []).includes('rpg-legends'));
+  run({ id: 'rpg-legends', perfect: false, daily: true, at: at(2026, 9, 4) });
+  check('quizz du jour rejoué : le jour compte pour la série', (fresh.sets.quiz_days || []).length, 1);
+  check('… sans XP', totalXp(fresh), xpBefore);
+  check('un autre quizz rapporte toujours', run({ id: 'tech-hardware', perfect: true, at: at(2026, 9, 5) }).join(','), 'perfect-score');
+}
+
+// Un défi envoyé à un ami depuis un écran de résultat (rival trouvé).
+record(play('quiz_challenge'));
+
 const finalSummary = summarize(scenario);
 const unreachable = ACHIEVEMENTS.filter((entry) => !finalSummary.items.find((item) => item.id === entry.id)?.unlocked).map((entry) => entry.id);
 check('tous les succès sont débloquables', unreachable.join(', ') || 'aucun', 'aucun');
@@ -392,11 +439,23 @@ execFileSync(
 
 const { profileAchievements, authHub, achievementPopup, freshAccountOnPlayedDevice } = await import(path.join(outDir, 'achievements-smoke.js'));
 
+/**
+ * Niveau affiché par la **carte du joueur** du hub : c'est le seul endroit où
+ * le hub montre la progression (la section « succès » n'affiche plus ni niveau
+ * ni barre d'XP, qui faisaient doublon). `player-xp-level-tag` porte le texte
+ * « NIVEAU 3 — … » ; React insère des commentaires entre les nœuds de texte,
+ * donc le motif les tolère.
+ */
+const shownLevel = (html) => Number(/player-xp-level-tag">(?:<!--[^>]*-->|[^0-9])*(\d+)/.exec(html)?.[1]);
+
 for (const lang of LANGS) {
   const { html } = profileAchievements(lang, null, { demo: true });
   const heading = { en: 'YOUR SITE ACHIEVEMENTS', fr: 'TES SUCCÈS SUR LE SITE', ar: 'إنجازاتك على الموقع' }[lang];
   ok(`[${lang}] le profil expose la section des succès`, html.includes('achievements-panel compact') && html.includes(heading));
-  ok(`[${lang}] le profil affiche le niveau`, html.includes('achievement-level'));
+  ok(`[${lang}] le profil affiche le niveau dans la carte du joueur`, shownLevel(html) >= 1);
+  // La section « succès » ne répète plus le niveau ni la barre d'XP du hub :
+  // un seul bloc de progression par page.
+  ok(`[${lang}] la section succès ne duplique plus la progression`, !html.includes('achievement-level'));
   ok(`[${lang}] le profil n’a plus de lien vers une page dédiée`, !html.includes('href="/achievements"'));
   check(`[${lang}] rien n’est débloqué sans action`, (html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length, 0);
 }
@@ -418,7 +477,7 @@ check(
   (freshOnDevice.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length,
   0,
 );
-check('… il démarre au niveau 1', freshOnDevice.html.includes('achievement-level-number">1<'), true);
+check('… il démarre au niveau 1', shownLevel(freshOnDevice.html), 1);
 // Le compte connecté retrouve en revanche SA progression (cache de sa copie
 // serveur, clé propre au compte) : mêmes succès que ceux enregistrés pour lui.
 const ownCache = profileAchievements('fr', saved, { account: true });
@@ -455,9 +514,10 @@ function barFill(html, className) {
 
 const hub = authHub('fr', saved, { demo: true });
 ok('le hub joueur montre les succès du site', hub.html.includes('TES SUCCÈS SUR LE SITE'));
-ok('le hub joueur affiche le niveau', hub.html.includes('achievement-level'));
+ok('le hub joueur affiche le niveau dans la carte du joueur', shownLevel(hub.html) >= 1);
+ok('le hub joueur ne duplique plus la progression dans la section succès', !hub.html.includes('achievement-level'));
 ok('le hub joueur conserve les succès dans le profil', hub.html.includes('TES SUCCÈS SUR LE SITE') && !hub.html.includes('VOIR TOUS LES SUCCÈS'));
-const vortex = DEMO_PROFILES.vortex.user_metadata;
+const vortex = DEMO_PROFILE_FIXTURES.vortex.user_metadata;
 check(
   'l’aperçu démo garde ses chiffres scriptés',
   barFill(hub.html, 'player-xp-bar-fill'),
@@ -476,11 +536,10 @@ check(
   realSummary.level.percent,
 );
 ok('… et elle se remplit', barFill(realHub, 'player-xp-bar-fill') > 0, `${realSummary.level.percent} % remplis`);
-check(
-  'les deux barres (hub et section succès) avancent ensemble',
-  barFill(realHub, 'player-xp-bar-fill'),
-  barFill(realHub, 'achievement-level-bar'),
-);
+// Une seule barre de progression dans le hub : celle de la carte du joueur.
+// La section « succès » ne la répète plus (c'était le doublon à supprimer).
+check('le hub ne montre qu’une seule barre d’XP', (realHub.match(/player-xp-bar-bg/g) || []).length, 1);
+ok('la section succès ne répète plus la barre d’XP', !realHub.includes('achievement-level-bar'));
 check(
   'le niveau affiché dans le hub vient du moteur',
   Number(/player-xp-level-tag">[^0-9]*(\d+)/.exec(realHub)?.[1]),
@@ -531,6 +590,8 @@ const sources = [
   ['src/achievements/AchievementTracker.jsx', 'stateScope !== scopeForUser(id)'],
   ['src/achievements/AchievementTracker.jsx', "track('video_played'"],
   ['src/achievements/AchievementTracker.jsx', 'VIDEO_PLAYED_EVENT'],
+  ['src/quizzes/QuizPlayer.jsx', "track('quiz_completed'"],
+  ['src/quizzes/QuizChallenge.jsx', "track('quiz_challenge')"],
   ['src/achievements/AchievementContext.jsx', 'enqueueNotifications(unlocked, levelUpBetween('],
   ['src/achievements/AchievementPopup.jsx', 'dismissNotification(entry.id)'],
   ['src/main.jsx', '<AchievementPopup />'],
@@ -560,5 +621,126 @@ const writers = sourceFiles(path.join(root, 'src'))
   .map((file) => path.relative(root, file));
 check('un seul module écrit la progression locale', writers.join(', ') || 'aucun', 'aucun');
 
-console.log(`\n  ${failures === 0 ? 'OK' : `${failures} échec(s)`} — succès : catalogue, moteur, scénario complet et rendu du profil\n`);
+/* ------------------------------------------------------------------------ */
+/* 5. Bulle d'information : elle ne doit jamais sortir de l'écran            */
+/* ------------------------------------------------------------------------ */
+
+// jsdom n'applique pas le CSS et ne calcule aucune mise en page : on monte la
+// carte pour de vrai, puis on décrit nous-mêmes la géométrie d'un téléphone
+// (375 × 720) — c'est ce que mesurerait le navigateur. La bulle, elle, est
+// ramenée dans l'écran par `--tooltip-shift` (+ bascule sous la carte), ce que
+// ces contrôles vérifient : les cartes des bords ne sont plus rognées.
+console.log('\n[5/5] bulle d’information des succès : toujours dans l’écran\n');
+
+const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: 'http://localhost' });
+
+/** Géométrie d'un écran de téléphone, en pixels CSS. */
+const VIEWPORT = { width: 375, height: 720 };
+const TOOLTIP = { width: 220, height: 150 };
+/** Marge gardée entre la bulle et les bords (celle du composant). */
+const TOOLTIP_MARGIN = 12;
+
+// Le viewport de jsdom (1024 × 768) ne nous intéresse pas : on impose celui du
+// téléphone, comme le ferait une rotation ou une fenêtre étroite.
+Object.defineProperty(dom.window, 'innerWidth', { value: VIEWPORT.width, configurable: true });
+Object.defineProperty(dom.window, 'innerHeight', { value: VIEWPORT.height, configurable: true });
+
+const { items } = summarize(saved);
+const tooltipCards = items.slice(0, 4);
+
+const RECTS = [
+  // Colonne de gauche, débordant à gauche (carte à moitié hors écran).
+  { left: -30, top: 300, width: 160, height: 140 },
+  // Colonne de droite, débordant à droite.
+  { left: 245, top: 300, width: 160, height: 140 },
+  // Carte centrée : aucun décalage nécessaire.
+  { left: 108, top: 300, width: 160, height: 140 },
+  // Carte en haut de l'écran : pas la place au-dessus, la bulle passe dessous.
+  { left: 108, top: 10, width: 160, height: 140 },
+];
+
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+// Node expose un `navigator` en lecture seule : on le remplace par celui de
+// jsdom (c'est lui que React lit).
+Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// Composants et textes viennent du même bundle que le rendu SSR (même
+// instance de React) ; la liste d'items vient du moteur, importé plus haut.
+const { createRoot } = await import('react-dom/client');
+const { act } = await import('react');
+const { AchievementCard, achievementsCopy } = await import(path.join(outDir, 'achievements-smoke.js'));
+const t = achievementsCopy.fr;
+
+const host = dom.window.document.getElementById('root');
+const tooltipRoot = createRoot(host);
+await act(async () => {
+  tooltipRoot.render(
+    React.createElement(
+      'div',
+      null,
+      tooltipCards.map((item) => React.createElement(AchievementCard, { key: item.id, item, lang: 'fr', t })),
+    ),
+  );
+});
+
+const cards = [...host.querySelectorAll('.achievement-card')];
+check('les cartes de succès sont montées', cards.length, tooltipCards.length);
+
+// La bulle est mesurée (largeur/hauteur) et chaque carte reçoit sa position.
+cards.forEach((card, index) => {
+  const rect = RECTS[index];
+  card.getBoundingClientRect = () => ({ ...rect, right: rect.left + rect.width, bottom: rect.top + rect.height, x: rect.left, y: rect.top });
+  const tip = card.querySelector('.achievement-tooltip');
+  Object.defineProperty(tip, 'offsetWidth', { value: TOOLTIP.width, configurable: true });
+  Object.defineProperty(tip, 'offsetHeight', { value: TOOLTIP.height, configurable: true });
+});
+
+/** Ouvre la bulle d'une carte (le focus est aussi ce que fait un appui tactile). */
+async function openTooltip(card) {
+  await act(async () => {
+    card.dispatchEvent(new dom.window.FocusEvent('focusin', { bubbles: true }));
+  });
+}
+
+/** Décalage horizontal posé par la carte, en pixels. */
+function shiftOf(card) {
+  return Number.parseFloat(card.style.getPropertyValue('--tooltip-shift')) || 0;
+}
+
+/** Bords de la bulle tels qu'ils atterrissent à l'écran, décalage compris. */
+const tooltipLeft = (index) => RECTS[index].left + RECTS[index].width / 2 - TOOLTIP.width / 2 + shiftOf(cards[index]);
+const tooltipRight = (index) => RECTS[index].left + RECTS[index].width / 2 + TOOLTIP.width / 2 + shiftOf(cards[index]);
+
+await openTooltip(cards[0]);
+ok('carte du bord gauche : la bulle est ramenée vers la droite', shiftOf(cards[0]) > 0, `${shiftOf(cards[0])} px`);
+ok('… et son bord gauche reste dans l’écran', tooltipLeft(0) >= TOOLTIP_MARGIN, `${Math.round(tooltipLeft(0))} px`);
+
+await openTooltip(cards[1]);
+ok('carte du bord droit : la bulle est ramenée vers la gauche', shiftOf(cards[1]) < 0, `${shiftOf(cards[1])} px`);
+check(
+  '… son bord droit s’arrête à la marge de l’écran',
+  Math.round(tooltipRight(1)),
+  VIEWPORT.width - TOOLTIP_MARGIN,
+);
+
+await openTooltip(cards[2]);
+check('carte centrée : aucun décalage', shiftOf(cards[2]), 0);
+
+await openTooltip(cards[3]);
+ok('carte en haut de l’écran : la bulle passe sous la carte', cards[3].classList.contains('tooltip-below'));
+ok('les autres cartes gardent la bulle au-dessus', !cards[2].classList.contains('tooltip-below'));
+
+// Échap referme la bulle (clavier et lecteurs d'écran).
+await act(async () => { cards[3].focus(); });
+await act(async () => {
+  cards[3].dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+});
+ok('Échap referme la bulle', dom.window.document.activeElement !== cards[3]);
+
+await act(async () => { tooltipRoot.unmount(); });
+dom.window.close();
+
+console.log(`\n  ${failures === 0 ? 'OK' : `${failures} échec(s)`} — succès : catalogue, moteur, scénario complet, rendu du profil et bulle d’information\n`);
 if (failures > 0) process.exitCode = 1;

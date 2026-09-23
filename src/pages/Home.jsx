@@ -4,7 +4,9 @@ import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
-import { activeMonth, calendarMonths, gameReleases, monthHeadline, monthLabel } from '../releasesData';
+import { activeMonth, calendarMonths, gameReleases, monthLabel } from '../releasesData';
+import { quizzes } from '../quizzesData';
+import { dailyQuizFor } from '../quizzes/engine';
 import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
 
 // Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
@@ -53,10 +55,10 @@ export default function Home() {
   const { t, lang } = useLanguage();
   const [liveStatus, setLiveStatus] = useState('unknown');
 
-  // Section 01 (déplacée depuis la page Actus) : frise du mois + compte à
-  // rebours de la sortie la plus attendue. Le mois affiché est calculé depuis
-  // le calendrier : le mois courant s'il a des sorties, sinon le mois de la
-  // prochaine sortie annoncée. La liste complète vit sur /calendrier.
+  // Section « Sorties du mois » (déplacée depuis la page Actus) : frise du
+  // mois + compte à rebours de la sortie la plus attendue. Le mois affiché est
+  // calculé depuis le calendrier : le mois courant s'il a des sorties, sinon
+  // le mois de la prochaine sortie annoncée. La liste complète vit sur /calendrier.
   const today = new Date(Date.now() + CLOCK_OFFSET);
   const calendarCopy = { ...FALLBACK_CALENDAR, ...(t.news.calendar || {}) };
   const month = activeMonth(today);
@@ -64,6 +66,8 @@ export default function Home() {
   const monthReleases = month.releases;
   const allMonths = calendarMonths(today);
   const totalGames = gameReleases.length;
+  // Le bandeau « quizz du jour » envoie directement à la partie du jour.
+  const dailyQuiz = dailyQuizFor(today, quizzes);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +96,7 @@ export default function Home() {
     unknown: t.home.live.statusChecking,
   }[liveStatus] || t.home.live.statusChecking;
 
-  // Head générique pour la section 01 — même structure que featured-dossiers de Reviews
+  // Head générique pour la section épisodes — même structure que featured-dossiers de Reviews
   const headMap = {
     fr: {
       eyebrow: 'Épisodes à la une',
@@ -124,10 +128,10 @@ export default function Home() {
     { ...djezzyEpisode, copy: t.home.featuredDjezzy },
   ];
 
-  // On garde le split 02 / XXX de la trad existante pour le section-label
-  const labelParts = (t.home.featured.label1 || '02 / ÉPISODES À LA UNE').split(' / ');
-  const labelNum = labelParts[0] || '01';
-  const labelTitle = labelParts[1] || 'ÉPISODES À LA UNE';
+  // Le libellé de section de la trad existe au format « N / TITRE » : on n'en
+  // affiche que le titre (les numéros de section ont été retirés du site).
+  const labelParts = (t.home.featured.label1 || 'ÉPISODES À LA UNE').split(' / ');
+  const labelTitle = labelParts[1] || labelParts[0] || 'ÉPISODES À LA UNE';
 
   return (
     <>
@@ -176,21 +180,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 01 / SORTIES DU MOIS — frise + compte à rebours (déplacé depuis la page Actus) */}
-      <section className="monthly-releases wrap" id="countdown">
-        <div className="section-label"><span><b>01</b> / {calendarCopy.label}</span><span>{monthName}</span></div>
-        <div className="monthly-releases-head"><div><p className="eyebrow"><span className="live-dot" /> {calendarCopy.eyebrow}</p><h2>{monthHeadline(month.year, month.month, lang)}<br/><em>{calendarCopy.play}</em></h2></div><Link className="arrow-link" to="/calendrier">{calendarCopy.full} <Arrow/></Link></div>
-        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
-        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
-        <div className="calendar-teaser">
-          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
-          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
-        </div>
-      </section>
-
-      {/* 02 / ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
+      {/* ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
       <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured">
-        <div className="section-label"><span><b>{labelNum}</b> / {labelTitle}</span><span>{head.label2}</span></div>
+        <div className="section-label"><span>{labelTitle}</span><span>{head.label2}</span></div>
         <div className="featured-dossiers-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> {head.eyebrow}</p>
@@ -222,8 +214,35 @@ export default function Home() {
         </div>
       </section>
 
+      {/* SORTIES DU MOIS — frise + compte à rebours (déplacé depuis la page Actus).
+          Le grand titre du mois a été retiré : la section s'identifie par son
+          libellé (SORTIES DU MOIS + nom du mois) et le lien complet vit dans
+          le teaser en bas de section. */}
+      <section className="monthly-releases wrap" id="countdown">
+        <div className="section-label"><span>{calendarCopy.label}</span><span>{monthName}</span></div>
+        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
+        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
+        <div className="calendar-teaser">
+          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
+          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
+        </div>
+      </section>
+
+      {/* QUIZZ DU JOUR — un quizz choisi chaque jour parmi la sélection :
+          la série quotidienne (succès « Semaine parfaite ») se construit ici. */}
+      <section className="wrap" id="quizz-du-jour">
+        <div className="home-quiz-band">
+          <div className="home-quiz-band-copy">
+            <p className="eyebrow"><span className="live-dot" /> {t.quiz.home.eyebrow}</p>
+            <h2>{t.quiz.home.titleA}<br /><em>{t.quiz.home.titleB}</em></h2>
+            <p>{t.quiz.home.text}</p>
+          </div>
+          <Link className="button button-yellow" to={dailyQuiz ? dailyQuiz.route : '/quizz'}>{t.quiz.home.cta} <Arrow /></Link>
+        </div>
+      </section>
+
       <section className="live-section wrap" id="live">
-        <div className="section-label"><span><b>03</b> / {t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
+        <div className="section-label"><span>{t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
         <div className="live-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> {t.home.live.eyebrow}</p>
@@ -252,7 +271,7 @@ export default function Home() {
       </section>
 
       <section className="formats wrap" id="formats">
-        <div className="section-label"><span><b>{t.home.formats.label1.split(' / ')[0]}</b> / {t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
+        <div className="section-label"><span>{t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
           <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow /></Link></article>
@@ -263,7 +282,7 @@ export default function Home() {
       <PartnersSection />
 
       <section className="reels-section wrap" id="reels">
-        <div className="section-label"><span><b>06</b> / REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="section-label"><span>REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
         <div className="reels-head">
           <div>
             <p className="eyebrow"><span className="live-dot" /> Format court</p>
