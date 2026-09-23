@@ -648,14 +648,14 @@ export const ACHIEVEMENTS = [
     icon: 'icons/achievements/quiz-tour.webp',
     group: 'quiz',
     rarity: 'gold',
-    xp: 150,
+    xp: 200,
     metric: 'distinctQuizzes',
-    // Le catalogue compte douze quizz : mettre à jour si un quizz est ajouté.
-    target: 12,
+    // Le catalogue compte vingt-deux quizz : mettre à jour si un quizz est ajouté.
+    target: 22,
     labels: {
-      en: { name: 'Full tour', desc: 'Play all twelve quizzes of the site.' },
-      fr: { name: 'Tour complet', desc: 'Joue les douze quizz du site.' },
-      ar: { name: 'الجولة الكاملة', desc: 'العب الاختبارات الاثني عشر في الموقع.' },
+      en: { name: 'Full tour', desc: 'Play all twenty-two quizzes of the site.' },
+      fr: { name: 'Tour complet', desc: 'Joue les vingt-deux quizz du site.' },
+      ar: { name: 'الجولة الكاملة', desc: 'العب الاختبارات الاثنين والعشرين في الموقع.' },
     },
   },
   {

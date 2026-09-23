@@ -7,7 +7,7 @@
  *      série de jours, barème « fun » des points MULTIPLIÉ par le niveau)
  *      se comporte comme annoncé, les douze quizz portent chacun leurs TROIS
  *      banques de questions (une par niveau), et le pool Survival mêle les
- *      288 questions sans doublon à l'intérieur d'un cycle ;
+ *      questions sans doublon à l'intérieur d'un cycle ;
  *   2. une partie complète est réellement jouée dans le navigateur simulé
  *      (jsdom) avec la vraie pile de l'application — LanguageProvider +
  *      AuthProvider + AchievementProvider — : huit bonnes réponses donnent
@@ -175,22 +175,23 @@ export async function checkQuiz(assert) {
     assert.equal(seenIds.size, QUIZ_LEVELS.length * 8, `${quiz.slug} : identifiants de questions uniques d'un niveau à l'autre`);
   }
 
-  // Le Survival prend le pool global des 12 quizz × 3 niveaux, soit 288
+  // Le Survival prend le pool global des quizz × 3 niveaux, soit N*24
   // questions. Un cycle est un vrai mélange sans doublon ; le nouveau cycle
   // évite aussi de répéter tout de suite la question qui clôt le précédent.
   const survivalPool = survivalQuestionPool(quizzes);
-  assert.equal(survivalPool.length, 288, 'le pool Survival réunit les 288 questions existantes');
-  assert.equal(new Set(survivalPool.map((question) => question.id)).size, 288, 'identifiants Survival uniques entre quizz et niveaux');
-  assert.equal(new Set(survivalPool.map((question) => question.sourceQuiz)).size, 12, 'le pool inclut les douze quizz');
+  const expectedPoolSize = quizzes.length * 24;
+  assert.equal(survivalPool.length, expectedPoolSize, `le pool Survival réunit les ${expectedPoolSize} questions existantes`);
+  assert.equal(new Set(survivalPool.map((question) => question.id)).size, expectedPoolSize, 'identifiants Survival uniques entre quizz et niveaux');
+  assert.equal(new Set(survivalPool.map((question) => question.sourceQuiz)).size, quizzes.length, `le pool inclut les ${quizzes.length} quizz`);
   const survivalCycle = prepareSurvivalCycle(quizzes, 4242);
   const sameSurvivalCycle = prepareSurvivalCycle(quizzes, 4242);
-  assert.equal(survivalCycle.length, 288, 'un cycle propose une fois chaque question du pool');
+  assert.equal(survivalCycle.length, expectedPoolSize, 'un cycle propose une fois chaque question du pool');
   assert.deepEqual(
     survivalCycle.map((question) => question.id),
     sameSurvivalCycle.map((question) => question.id),
     'le mélange Survival reste reproductible avec une graine fixe',
   );
-  assert.equal(new Set(survivalCycle.map((question) => question.id)).size, 288, 'aucun doublon à l’intérieur d’un cycle Survival');
+  assert.equal(new Set(survivalCycle.map((question) => question.id)).size, expectedPoolSize, 'aucun doublon à l’intérieur d’un cycle Survival');
   for (const question of survivalCycle) {
     assert.equal(question.choices.length, 5, 'Survival : quatre choix source et un piège expert');
     assert.equal(question.choices.filter((choice) => choice.correct).length, 1, 'Survival : une bonne réponse par question');
@@ -680,7 +681,7 @@ export async function checkQuiz(assert) {
     assert.ok(survivalLink, `[${lang}] carte Survival affichée`);
     assert.equal(survivalLink.getAttribute('href'), '/quizz/survival', `[${lang}] carte Survival ouvre sa route dédiée`);
     assert.ok(survivalLink.textContent.includes(translations[lang].quiz.categorySurvivalPlay), `[${lang}] CTA Survival traduit`);
-    assert.ok(survivalLink.textContent.includes(translations[lang].quiz.categorySurvivalPool.replace('{n}', '288')), `[${lang}] pool global de 288 questions annoncé`);
+    assert.ok(survivalLink.textContent.includes(translations[lang].quiz.categorySurvivalPool.replace('{n}', String(expectedPoolSize))), `[${lang}] pool global de ${expectedPoolSize} questions annoncé`);
     // Tous les quizz sont jouables dès l'arrivée, et la grille ne classe plus
     // rien par difficulté : aucune pastille Facile/Confirmé/Expert sur les
     // cartes, mais la progression des niveaux à la place.
@@ -734,7 +735,7 @@ export async function checkQuiz(assert) {
     </LanguageProvider>,
   ));
   assert.ok(survivalNode.textContent.includes('SURVIVAL MODE'), 'la route dédiée ouvre le Survival');
-  assert.ok(survivalNode.textContent.includes('288 questions dans le pool global'), 'le pool de questions est annoncé');
+  assert.ok(survivalNode.textContent.includes(`${expectedPoolSize} questions dans le pool global`), 'le pool de questions est annoncé');
   assert.ok(!survivalNode.querySelector('.quiz-levels'), 'le Survival ne demande aucun niveau classique');
   assert.ok(!survivalNode.querySelector('.quiz-board') && !survivalNode.querySelector('.quiz-comments'), 'le Survival est exclu du classement et des commentaires classiques');
   const survivalStartQuestion = survivalNode.querySelector('.quiz-question');
@@ -1638,5 +1639,5 @@ export async function checkQuiz(assert) {
   }
 
   console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons ni doublés, answered d’une partie arrêtée), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, résultat épuré (seuls « Niveau suivant → » vers le palier au-dessus et « Voir tous les quizz », rien après le dernier niveau), replay d’un niveau terminé via la grille = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, partie tout faux, minuteur par niveau, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–5 (+ D et F pour les jokers), combo + fanfare, sons (tick-tack qui accélère, verdicts, jokers — le 50/50 descend, le gel monte —, coupure), refonte du lecteur (CTA compacts, pastilles de progression, 50/50, gel du chrono, détail de partie) et niveau expert en conditions réelles (cinq propositions, une vie perdue par erreur, fin de partie à la troisième, « Plus de vies », base ×2 par bonne réponse, touche 5), et quizz TERMINÉ une fois ses trois niveaux faits (`isQuizFinished` : carte grisée sans lien ni flèche, drapeau ✓ TERMINÉ sur la miniature, bannière du jour verrouillée sans compte à rebours, écran « terminé » du lecteur à la place du sélecteur de niveaux).');
-  console.log('SURVIVAL : pool global de 288 questions, cycles mélangés sans doublon, trois vies et timeout pénalisé, record local, redémarrage complet, catégories et traductions FR/EN/AR.');
+  console.log(`SURVIVAL : pool global de ${expectedPoolSize} questions, cycles mélangés sans doublon, trois vies et timeout pénalisé, record local, redémarrage complet, catégories et traductions FR/EN/AR.`);
 }
