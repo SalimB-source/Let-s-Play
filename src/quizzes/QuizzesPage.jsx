@@ -20,7 +20,7 @@ const FALLBACK = {
   categoryMainEyebrow: 'CATEGORY 01 / CLASSICS',
   categoryMainCount: '{n} quizzes',
   categoryMainTitle: 'Gaming / tech / cinema quizzes',
-  categoryMainIntro: 'The 12 existing quizzes, gathered in one category.',
+  categoryMainIntro: 'The 22 existing quizzes, gathered in one category.',
   categorySurvivalInfinite: 'INFINITE',
   categorySurvivalEyebrow: 'CATEGORY 02 / ENDLESS',
   categorySurvivalTitle: 'Survival mode',
