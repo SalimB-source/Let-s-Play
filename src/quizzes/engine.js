@@ -7,8 +7,9 @@
  *
  *   - `dailyQuizFor(date, quizzes)` : le quizz mis en avant ce jour-là
  *     (rotation par journée locale, comme les succès de fidélité) ;
- *   - `prepareQuiz(quiz, seed)` : questions ET choix mélangés, la bonne
- *     réponse voyageant avec son choix (le barème suit le mélange) ;
+ *   - `prepareQuiz(quiz, level, seed)` : questions du niveau demandé
+ *     (`easy` / `medium` / `hard`, voir `QUIZ_LEVELS`) ET choix mélangés, la
+ *     bonne réponse voyageant avec son choix (le barème suit le mélange) ;
  *   - `gradeQuiz(prepared, answers)` : score + palier + sans-faute ;
  *   - `bestDayRun(days)` : meilleure série de jours consécutifs — la
  *     métrique « série de quizz du jour » lue par les succès.
@@ -54,17 +55,21 @@ export function dailyQuizFor(date = new Date(), quizzes = []) {
 }
 
 /**
- * Prépare une partie : questions mélangées, et pour chacune ses choix
- * mélangés avec la bonne réponse marquée. `seed` rend le mélange
- * reproductible (le quizz du jour est le même pour tous) ; sans seed,
- * un mélange aléatoire propre à la partie. `bank` est la banque de
- * questions jouée (selon la difficulté choisie, via `quizQuestions`
- * dans `src/quizzesData.js`) — sans banque fournie, celle par défaut
- * du quizz (`quiz.questions`).
+ * Prépare une partie : questions du NIVEAU demandé mélangées, et pour chacune
+ * ses choix mélangés avec la bonne réponse marquée. `level` est un identifiant
+ * de `QUIZ_LEVELS` (`easy` par défaut, `src/quizzesData.js`) ; `seed` rend le
+ * mélange reproductible (le quizz du jour est le même pour tous) ; sans seed,
+ * un mélange aléatoire propre à la partie. Le niveau joué voyage avec la
+ * partie préparée (`level`), pour l'affichage et la progression.
  */
-export function prepareQuiz(quiz, seed = null, bank = null) {
+export function prepareQuiz(quiz, level = 'easy', seed = null) {
   const rand = seed === null || seed === undefined ? rng((Math.random() * 2 ** 31) | 0) : rng(seed);
-  const questions = shuffle(bank || quiz.questions || [], rand).map((question, questionIndex) => {
+  // Lecture directe des niveaux : le moteur reste chargeable par Node (les
+  // vérifications `check:achievements` l'importent sans passer par Vite),
+  // là où `src/quizzesData.js` tire `./data` (import.meta.env). Même règle que
+  // `quizLevelQuestions` de `quizzesData` : le niveau demandé, repli Facile.
+  const levels = quiz && quiz.levels ? quiz.levels : {};
+  const questions = shuffle(levels[level] || levels.easy || [], rand).map((question, questionIndex) => {
     // La bonne réponse voyage avec son choix : le barème suit le mélange.
     const marked = (question.choices || []).map((label, originalIndex) => ({
       label,
@@ -76,7 +81,8 @@ export function prepareQuiz(quiz, seed = null, bank = null) {
     }));
     return { ...question, choices };
   });
-  return { ...quiz, questions };
+  const { levels: _levels, ...meta } = quiz || {};
+  return { ...meta, level, questions };
 }
 
 /**
@@ -130,26 +136,26 @@ export function quizPoints({ elapsedMs = 0, budgetMs = 0, streak = 1 } = {}) {
 }
 
 /**
- * Multiplicateur de points par difficulté : plus le palier est exigeant,
- * plus les points rapportés valent cher — facile ×1, confirmé ×1,5,
- * expert ×2 (plafond par question : 200 / 300 / 400). La borne haute est
- * revérifiée côté serveur dans `submit_quiz_attempt` (supabase/schema.sql,
- * section 8) sur le suffixe `slug:difficulté` de l'identifiant.
+ * Multiplicateur de points par niveau : plus le palier est exigeant, plus les
+ * points rapportés valent cher — facile ×1, confirmé ×1,5, expert ×2
+ * (plafond par question : 200 / 300 / 400). La borne haute est revérifiée côté
+ * serveur dans `submit_quiz_attempt` (supabase/schema.sql, section 8) sur le
+ * suffixe `slug:niveau` de l'identifiant.
  */
 export const DIFFICULTY_MULTIPLIER = { easy: 1, medium: 1.5, hard: 2 };
 
-export function pointsMultiplier(difficulty) {
-  return DIFFICULTY_MULTIPLIER[difficulty] || 1;
+export function pointsMultiplier(level) {
+  return DIFFICULTY_MULTIPLIER[level] || 1;
 }
 
 /**
- * Points d'une bonne réponse, mis à l'échelle de la difficulté du run
- * (`quizPoints` × `DIFFICULTY_MULTIPLIER`). Détail (base/rapidité/combo)
- * et total remis en entiers — c'est le total qui s'affiche et qui part au
- * classement.
+ * Points d'une bonne réponse, mis à l'échelle du niveau joué
+ * (`quizPoints` × `DIFFICULTY_MULTIPLIER`). Détail (base/rapidité/combo) et
+ * total remis en entiers — c'est le total qui s'affiche, qui part au
+ * classement et qui devient de l'XP joueur.
  */
-export function quizPointsFor(difficulty, { elapsedMs = 0, budgetMs = 0, streak = 1 } = {}) {
-  const multiplier = pointsMultiplier(difficulty);
+export function quizPointsFor(level, { elapsedMs = 0, budgetMs = 0, streak = 1 } = {}) {
+  const multiplier = pointsMultiplier(level);
   const points = quizPoints({ elapsedMs, budgetMs, streak });
   if (multiplier === 1) return points;
   const base = Math.round(points.base * multiplier);

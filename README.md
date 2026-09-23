@@ -34,15 +34,18 @@ npm run build
   déblocage (voir « Succès débloqués par les actions du site »)
 - Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
   huit quizz rédigés par la rédaction (culture générale, rétro, souls-like,
-  RPG, e-sport, studios, tech et cinéma), chacun jouable à **trois difficultés**
-  (questions différentes + points multipliés ×1/×1,5/×2, un palier ne rapporte
-  qu'une fois), quizz du jour en rotation quotidienne avec série de
-  jours, feedback instantané de chaque réponse (gel, vert/rouge, points de
-  rapidité & combo), corrections commentées, confettis du sans-faute,
-  raccourcis clavier 1–4, commentaires, recherche et cinq succès
-  dédiés ; classement des quizz par points gagnés et position au classement
-  global affichée sur la page de profil (voir « Quizz gaming & quizz du jour »)
-- Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
+  RPG, e-sport, studios, tech et cinéma), **tous jouables dès l'arrivée** et
+  chacun en **trois niveaux à l'intérieur** (Facile ouvert, Confirmé puis
+  Expert débloqués en cascade en terminant le palier précédent, progression
+  synchronisée avec le compte ; questions différentes d'un niveau à l'autre et
+  points multipliés ×1/×1,5/×2, un niveau ne rapportant qu'une fois — en points
+  comme en XP), quizz du jour en rotation quotidienne avec
+  série de jours, feedback instantané de chaque réponse (gel, vert/rouge,
+  points de rapidité & combo), corrections commentées, confettis du
+  sans-faute, raccourcis clavier 1–4, commentaires, recherche et cinq succès
+  dédiés ; classement des quizz (un classement par niveau, clé `slug:niveau`)
+  par points gagnés et position au classement global affichée sur la page de
+  profil (voir « Quizz gaming & quizz du jour »)- Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
   présence »)
@@ -697,7 +700,9 @@ Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 `/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
 mais la structure de données les accepte déjà.
 
-- **Grille** — les huit quizz s'affichent sur **trois colonnes** stables sur
+- **Grille** — les huit quizz (aucun verrou, aucune pastille de difficulté : la
+  progression « n/3 niveaux » remplace l'ancien badge) s'affichent sur **trois
+  colonnes** stables sur
   bureau (`repeat(3, minmax(0, 1fr))` : le nombre ne bascule plus selon la
   largeur de la fenêtre comme avec l'`auto-fill` d'avant), deux sur tablette
   (≤ 900 px), une sur mobile (≤ 620 px) ; le gap passe à 16 px sous 1000 px
@@ -706,15 +711,31 @@ mais la structure de données les accepte déjà.
   (coupe harmonieuse sur deux lignes) et `overflow-wrap: break-word` en garde-fou.
 - **Données** — `src/quizzesData.js` : huit quizz (culture générale, rétro,
   souls-like, RPG, e-sport, studios, tech et cinéma), la plupart liés à un
-  article maison (`source`). Chaque quizz porte **trois banques de questions**
-  — `questions` (la difficulté « maison » du quizz, `difficulty`) et
-  `questionVariants` (les deux autres niveaux) — huit questions par palier,
-  des questions réellement différentes, résolues par `quizQuestions(quiz,
-  difficulty)`. Ajouter un quizz = une entrée : la grille, la recherche
-  (`searchIndex`), la rotation du jour et le succès « Tour complet » le
-  prennent en compte (mettre à jour la cible du succès si le nombre de quizz
-  change).
-- **Miniatures** — chaque quizz a sa propre illustration 16/9
+  article maison (`source`). **Chaque quizz porte trois niveaux**
+  (`levels.easy` / `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit
+  questions par niveau — soit 24 questions par quizz, 192 au total. Les
+  helpers `quizLevelQuestions(quiz, level)` et `quizQuestionsCount(quiz)`
+  évitent d'accéder aux niveaux à la main (`QUIZ_DIFFICULTIES` reste exporté
+  comme alias de `QUIZ_LEVELS`, et `quizQuestions(quiz, level)` comme alias de
+  `quizLevelQuestions` : les appelants historiques continuent de fonctionner).
+  Ajouter un quizz = une entrée : la
+  grille, la recherche (`searchIndex`), la rotation du jour et le succès
+  « Tour complet » le prennent en compte (mettre à jour la cible du succès si
+  le nombre de quizz change).
+- **Niveaux & déblocage** — les **quizz sont tous jouables dès l'arrivée** :
+  plus aucune difficulté affichée sur la grille, aucun quizz verrouillé. La
+  difficulté se choisit DANS le quizz (écran d'introduction, une carte par
+  niveau) : le **Facile** est ouvert, le **Confirmé** se débloque en terminant
+  le Facile, l'**Expert** en terminant le Confirmé (progression en cascade).
+  Les niveaux fermés affichent leur cadenas 🔒 et la condition à remplir ; le
+  niveau qui vient de s'ouvrir est annoncé (« Niveau Confirmé débloqué ») avec
+  un bouton pour l'enchaîner. Règle pure, stockage local et copie serveur :
+  `src/quizzes/quizProgress.js` (+ hook `useQuizProgress`). La progression
+  suit le compte connecté (`public.quiz_progress`, une ligne par palier
+  terminé) et se **fusionne** avec la copie locale `localStorage`
+  (`letsplay_quiz_levels_v1`) — hors-ligne, c'est elle qui fait foi. Les
+  cartes de la grille et la bannière du jour affichent la progression
+  « n/3 niveaux ».- **Miniatures** — chaque quizz a sa propre illustration 16/9
   (`image`, fabriquée par `quizThumbUrl(slug)` depuis
   `public/quizzes/<slug>.jpg`) : une par thème, à la charte du site. La carte de
   la grille, la bannière du quizz du jour et les résultats de recherche
@@ -722,13 +743,16 @@ mais la structure de données les accepte déjà.
   l'illustration en `lead` et ne descend l'échelle YouTube que si le fichier
   manque — aucune requête `i.ytimg.com` dans le cas nominal. Ajouter un
   quizz = déposer son illustration sous ce nom, `check:thumbs` le vérifie.
-- **Moteur** — `src/quizzes/engine.js` (pur, sans React) : mélange déterministe
-  par graine (le quizz du jour est le même pour tous, à difficulté donnée),
+- **Moteur** — `src/quizzes/engine.js` (pur, sans React, importable par Node) :
+  `prepareQuiz(quiz, level, seed)` ne pose que les questions du niveau demandé
+  (ordre et choix mélangés, la bonne réponse voyageant avec son choix),
+  mélange déterministe par graine (le quizz du jour est le même pour tous),
   barème, paliers de résultat (`rookie` → `legend`), meilleure série de jours
-  consécutifs, et les **multiplicateurs de difficulté**
-  (`DIFFICULTY_MULTIPLIER` : facile ×1, confirmé ×1,5, expert ×2 —
-  `quizPointsFor` met le barème base + rapidité + combo à l'échelle).
-- **Minuteur** — 15 secondes par question (`QUESTION_TIME`, mutable pour les
+  consécutifs, et les **multiplicateurs de niveau** (`DIFFICULTY_MULTIPLIER` :
+  Facile ×1, Confirmé ×1,5, Expert ×2 — `quizPointsFor` met le barème base +
+  rapidité + combo à l'échelle, plafond 200/300/400 par question, revérifié
+  côté serveur). Le niveau joué voyage avec la partie préparée
+  (`prepared.level`).- **Minuteur** — 15 secondes par question (`QUESTION_TIME`, mutable pour les
   tests) : une barre de décompte passe au rouge dans les 3 dernières secondes
   et, à zéro, la question avance sans réponse (comptée ratée, signalée
   « Temps écoulé » dans les corrections).
@@ -773,95 +797,84 @@ mais la structure de données les accepte déjà.
   sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
   `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
   terminer le quizz du jour crédite un jour de série (succès platine
-  « Semaine parfaite » = 7 jours d'affilée) — même rejoué à la même
-  difficulté déjà terminée, le jour reste crédité (la rotation ne casse pas
-  la série). La meilleure partie de l'appareil (points + bonnes réponses)
-  s'affiche sur chaque carte de la grille.
-- **Difficultés** — chaque quizz se joue à trois niveaux (facile / confirmé /
-  expert, `QUIZ_DIFFICULTIES`), choisis dans l'intro : le sélecteur propose,
-  pour chaque palier, sa banque de huit questions (pas un redite des mêmes) et
-  son multiplicateur de points (×1, ×1,5, ×2). **Un palier ne rapporte des
-  points qu'une fois** : terminé, il porte sa coche ✓ dans le sélecteur, et le
-  rejouer ne donne plus rien (ni points, ni XP, ni record, ni classement) ;
-  un autre palier du même quizz rapporte à nouveau. La coche dit ce qui a
-  RÉELLEMENT été joué : un quizz terminé avant l'arrivée des paliers (ancien
-  format, clé au slug nu) n'a vu que sa difficulté « maison »
-  (`quiz.difficulty`, la seule banque jouable à l'époque) — seule celle-là est
-  cochée et bloque ses points, les deux autres paliers restent neufs et
-  jouables (les cocher tous les trois annoncerait deux parties qui n'ont pas
-  eu lieu). Le record de l'appareil reste le meilleur des trois paliers ;
-  côté serveur, chaque palier a son propre classement (une ligne par
-  `slug:difficulté`).
-- **Succès** — l'action `quiz_completed` (`QuizPlayer`, avec `difficulty` et
-  `homeDifficulty`) alimente le moteur des succès : parties (un run = quizz ×
-  difficulté, stocké sous `slug:difficulté`), quizz distincts (pas de double
-  comptage entre les paliers d'un même quizz), sans-faute, jours de série.
-  Règle anti-farm : un palier déjà terminé ne fait plus avancer aucun succès
-  (ni compteur, ni sans-faute, ni XP) ; une complétion à l'ancien format est
-  rattachée à la difficulté maison du quizz (`homeDifficulty`), seule banque
-  qu'elle a réellement jouée — les autres paliers rapportent donc à nouveau.
-  Vérifié par `check:achievements`. Cinq succès au
-  catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi
-  envoyé), Sans faute (argent), Tour complet (or), Semaine parfaite (platine).
-  L'XP reste celle des succès, comme partout sur le site.
-- **Révision des erreurs** — depuis l'écran de résultat, « Rejouer mes erreurs »
+  « Semaine parfaite » = 7 jours d'affilée). La meilleure partie de l'appareil
+  (points + bonnes réponses), **tous niveaux confondus**, s'affiche sur chaque
+  carte de la grille, avec son niveau en infobulle.
+- **Succès & XP** — l'action `quiz_completed` (`QuizPlayer`) porte le `level`
+  joué ET les `points` du run : chaque niveau d'un quizz ne rapporte qu'à sa
+  PREMIÈRE complétion (`quizzes_played`, clé `slug:niveau` — la même que le
+  record de l'appareil et la tentative serveur), et ces points deviennent de
+  l'XP joueur (`quizPoints`, clé `slug:niveau`, fusionnable entre appareils).
+  `perfect_quizzes` reste indexé par SLUG et les métriques qui comptent des
+  quizz (« Tour complet ») ramènent la clé à son slug : un quizz reste un
+  quizz, même joué à trois niveaux. Rejouer un niveau terminé ne fait plus
+  avancer aucun succès (ni compteur, ni sans-faute, ni XP, ni points) — sauf le
+  jour de quizz du jour, qui reste crédité pour ne pas casser la série
+  « Semaine parfaite ». Cinq succès au catalogue : Premier quizz (bronze),
+  Rival trouvé (bronze, premier défi envoyé), Sans faute (argent), Tour
+  complet (or), Semaine parfaite (platine). Une complétion enregistrée avant
+  les niveaux (clé au slug nu) compte pour le niveau Facile, et seulement tant
+  qu'aucun niveau n'a été enregistré pour ce quizz (compatibilité).- **Révision des erreurs** — depuis l'écran de résultat, « Rejouer mes erreurs »
   ne rejoue que les questions ratées (tour d'entraînement : succès, record,
   série, classement et points ne bougent pas, vérifié par `check:quiz`).
 - **Défi entre amis** — depuis l'écran de résultat, `QuizChallenge` envoie à
   un ami (messagerie 1-à-1 existante, mode démo ou Supabase) un message
   pré-rempli avec le score à battre ; sans compte ni backend, un message
   l'explique. Chaque défi crédite `quiz_challenge`.
-- **Scores & classement** — `supabase/schema.sql` (section 8) : table
-  `public.quiz_attempts` (PREMIÈRE COMPLÉTION par compte et par RUN —
-  `quiz_id` = `slug:difficulté` ; rejoué, un quizz ne remonte plus la ligne du
-  joueur, `on conflict … do nothing` ; bornes `0 ≤ score ≤ total` et
-  `100 × mult × score ≤ points ≤ 200 × mult × total` vérifiées côté serveur, le
-  multiplicateur mult ∈ {1, 1,5, 2} étant déduit du suffixe de `quiz_id`) +
-  RPC `submit_quiz_attempt` (avec `p_points`), `get_quiz_leaderboard` (top 10
-  d'un RUN trié par POINTS gagnés — les bonnes réponses servent de départage et
-  s'affichent en secondaire, jointes aux profils, ligne du joueur marquée
-  `mine`) et `get_quiz_global_rank` (position au classement GLOBAL des quizz :
-  somme des points de tous les runs, tous quizz et toutes difficultés
-  confondus — rang, points, quizz joués, joueurs classés), non exposées en
-  direct (revoke). Le compte connecté envoie sa tentative à la fin de la partie
-  (`src/quizzes/quizApi.js`, `quizId` = `slug:difficulté`, avec repli sur
-  l'ancienne signature de la RPC si le déploiement est antérieur aux points) —
-  mais seulement si ce palier est nouveau pour le joueur ; le visiteur garde
-  ses parties sur l'appareil (`localStorage`, une entrée par `slug:difficulté`,
-  les anciens enregistrements au slug nu restant lus). La page de
-  profil affiche la position du joueur par rapport au classement global
+- **Scores & classement** — les niveaux sont **séparés** : la clé d'une
+  tentative est `slug:niveau` (`attemptKey` dans `src/quizzes/quizApi.js`),
+  donc chaque palier a son propre classement et son propre record d'appareil
+  (un sans-faute en Expert ne se compare pas à un Facile) ; le classement
+  affiché suit le niveau choisi. `supabase/schema.sql` (section 8) : table
+  `public.quiz_attempts` (PREMIÈRE COMPLÉTION par compte et par RUN — rejoué,
+  un niveau ne remonte plus la ligne du joueur, `on conflict … do nothing` ;
+  bornes `0 ≤ score ≤ total` et `100 × mult × score ≤ points ≤ 200 × mult × total`
+  vérifiées côté serveur, le multiplicateur mult ∈ {1, 1,5, 2} étant déduit du
+  suffixe de `quiz_id`) + RPC `submit_quiz_attempt` (avec `p_points`), `get_quiz_leaderboard`
+  (top 10 trié par POINTS gagnés — les bonnes réponses du run servent de
+  départage et s'affichent en secondaire, jointes aux profils, ligne du joueur
+  marquée `mine`) et `get_quiz_global_rank` (position au classement GLOBAL des
+  quizz : somme des points des meilleures parties, tous quizz confondus —
+  rang, points, quizz joués, joueurs classés), non exposées en direct (revoke).
+  Le compte connecté envoie sa tentative à la fin de la partie
+  (`src/quizzes/quizApi.js`, `quizId` = `slug:niveau`, avec repli sur l'ancienne
+  signature de la RPC si le déploiement est antérieur aux points) — mais
+  seulement si ce niveau est nouveau pour le joueur ; le visiteur garde ses
+  parties sur l'appareil (`localStorage`, clé propre aux quizz, une entrée par
+  `slug:niveau`, les anciens enregistrements au slug nu restant lus). La progression
+  des niveaux d'un compte vit dans `public.quiz_progress` (table RLS : chaque
+  joueur ne lit et n'écrit que ses lignes ; aucune exposition à `anon`). La page de  profil affiche la position du joueur par rapport au classement global
   (`src/quizzes/QuizGlobalRank.jsx`, profil personnel comme profils publics) ;
   sans backend, la section explique comment la débloquer. Après collage du
   schéma dans le Dashboard Supabase, le tableau de contrôle final affiche les
-  lignes 31–33 « OK ».
+  lignes 31–35 « OK ».
 - **Remise à zéro des quizz** — `supabase/reset-quiz-ranking.sql`, à coller dans
-  le SQL Editor du Dashboard. Deux niveaux : les étapes 1–3 vident
-  `public.quiz_attempts` (la seule source des deux RPC de classement) et tout
-  le monde redevient « pas encore classé » — rang null, 0 point, 0 quizz,
+  le SQL Editor du Dashboard. Deux étages : les étapes 1–3 vident
+  `public.quiz_attempts` (la seule source des deux RPC de classement) et tout le
+  monde redevient « pas encore classé » — rang null, 0 point, 0 quizz,
   classements de runs vides — sans toucher aux comptes, aux profils, à l'XP ni
   aux succès ; l'étape 4, **commentée**, va plus loin et remet à zéro les points
   joueurs (`{quizPoints}` de `player_progress`, succès du groupe « quiz »,
   compteurs et ensembles associés, `xp`/`level`), en conservant les succès des
-  autres groupes. Rien à redéployer côté site : l'état vide est déjà géré, et
-  le record gardé sur l'appareil (`localStorage`) est indépendant du serveur.
-  Le script affiche l'état avant/après et donne en variantes le vidage d'un
-  seul run (`rpg-legends:hard`) ou d'un seul joueur. Cette remise à zéro était
-  auparavant exécutée **automatiquement** par la section 8b de
-  `supabase/schema.sql` : elle en a été retirée, car recoller le schéma
-  (demandé à chaque évolution) ne doit jamais effacer les données des joueurs.
+  autres groupes. Cette remise à zéro était auparavant exécutée
+  **automatiquement** par le schéma : elle en a été retirée (recoller le schéma
+  à chaque évolution ne doit jamais effacer les données des joueurs). Le record
+  gardé sur l'appareil (`localStorage`) est indépendant du serveur.
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
-  multiplicateurs ×1/×1,5/×2 par difficulté, points bornés à
-  200/300/400 par question qui font le classement, série, minuteur à 15 s),
-  trois banques de questions par quizz (24 questions à identifiants uniques,
-  les variantes réellement différentes de la banque par défaut),
-  miniatures (une illustration distincte par quizz, demandée par les cartes
-  rendues — aucune requête YouTube), partie complète 8/8 jouée en jsdom avec
-  la vraie pile de providers (succès crédités dans le stockage, confettis du
-  sans-faute, points et meilleure série affichés), choix de difficulté
-  (vraies questions différentes, points multipliés au bon palier, replay d'un
-  palier déjà terminé = 0 point et rien d'écrit, ancien format = une seule
-  coche sur la difficulté maison), grille rendue en FR/EN/AR,
-  record de l'appareil par points (meilleure partie = le plus de points,
+  multiplicateurs ×1/×1,5/×2 par niveau, points bornés (200/300/400 par
+  question) qui font le classement, série, minuteur à 15 s,
+  trois niveaux de huit questions par quizz sans identifiant partagé), règles de
+  déblocage en cascade (`quizProgress` : Facile ouvert, Confirmé puis Expert
+  débloqués), miniatures (une illustration distincte par quizz, demandée par
+  les cartes rendues — aucune requête YouTube), partie complète jouée en jsdom
+  avec la vraie pile de providers : cadenas du départ, partie Facile 8/8 dont
+  les points deviennent de l'XP joueur, annonce « Niveau Confirmé débloqué »,
+  enchaînement du niveau Confirmé qui ouvre l'Expert, replay d'un niveau
+  terminé = 0 point et rien d'écrit (ni progression, ni record, ni XP), succès
+  crédités dans le stockage (une clé de run `slug:niveau` par niveau joué),
+  confettis du sans-faute, points et meilleure série affichés,
+  grille rendue en FR/EN/AR (aucune pastille de difficulté, progression
+  affichée),  record de l'appareil par points (meilleure partie = le plus de points,
   départage aux bonnes réponses), classement par points (points affichés en
   premier, score/total en secondaire, repli ancien backend) et position au
   classement global affichée sur la page de profil (repli hors-ligne expliqué),

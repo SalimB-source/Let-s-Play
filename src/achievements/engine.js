@@ -224,28 +224,25 @@ export function reduce(state, action = {}) {
       next = addToSet(counter(current, 'search_performed'), 'searches', action.query);
       break;
 
-    // Partie de quizz terminée : compteur global + runs (quizz×difficulté)
+    // Partie de quizz terminée : compteur global + runs (quizz×niveau)
     // distincts, sans-faute par quizz, et jour crédité pour la série du
     // « quizz du jour ».
     // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion
-    // À CHAQUE DIFFICULTÉ — un run est identifié par `slug:difficulté`.
-    // Rejoué à la même difficulté, il ne fait plus avancer aucun succès
-    // (ni compteur, ni sans-faute) — donc plus aucun XP ni aucun point.
-    // Une autre difficulté du même quizz, elle, rapporte à nouveau (de
-    // vraies questions différentes, des points multipliés). Seule exception
-    // au blocage : le jour de quizz du jour reste crédité, sinon la
-    // rotation (un quizz déjà fait tous les huit jours) casserait
-    // mécaniquement la série « Semaine parfaite ».
-    // `action.homeDifficulty` (la difficulté « maison » du quizz) rattache
-    // une complétion à l'ANCIEN format à la seule banque qui existait
-    // alors — voir `quizAlreadyCompleted`.
+    // À CHAQUE NIVEAU — un run est identifié par `slug:niveau`. Rejoué au
+    // même niveau, il ne fait plus avancer aucun succès (ni compteur, ni
+    // sans-faute) — donc plus aucun XP ni aucun point. Un AUTRE niveau du
+    // même quizz, lui, rapporte à nouveau (de vraies questions différentes,
+    // des points multipliés par le barème du palier). Seule exception au
+    // blocage : le jour de quizz du jour reste crédité, sinon la rotation
+    // (un quizz déjà fait tous les huit jours) casserait mécaniquement la
+    // série « Semaine parfaite ».
     case 'quiz_completed': {
-      if (quizAlreadyCompleted(current, action.id, action.difficulty, action.homeDifficulty)) {
+      if (quizLevelCompleted(current, action.id, action.level)) {
         if (action.daily) next = addToSet(current, 'quiz_days', dayKey(at));
         break;
       }
-      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', quizRunKey(action.id, action.difficulty));
-      const runKey = quizRunKey(action.id, action.difficulty);
+      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', quizRunKey(action.id, action.level));
+      const runKey = quizRunKey(action.id, action.level);
       const earnedPoints = Number.isFinite(action.points) ? Math.max(0, Math.round(action.points)) : 0;
       if (runKey && earnedPoints > 0) {
         next = { ...next, quizPoints: { ...next.quizPoints, [runKey]: earnedPoints } };
@@ -280,47 +277,58 @@ export function reduce(state, action = {}) {
 }
 
 /**
- * Clé d'un run noté : `slug:difficulté` (un slug nu quand l'action n'en
- * porte pas — ancien format). C'est la clé de l'ensemble `quizzes_played`,
- * celle du record de l'appareil et de la tentative serveur (`quiz_id`).
+ * Clé d'un run noté : `slug:niveau` (un slug nu quand l'action n'en porte pas
+ * — ancien format, avant les paliers). C'est la clé de l'ensemble
+ * `quizzes_played`, celle du record de l'appareil et de la tentative serveur
+ * (`quiz_attempts.quiz_id`).
  */
-export function quizRunKey(quizId, difficulty) {
-  return quizId && difficulty ? `${quizId}:${difficulty}` : quizId;
+export function quizRunKey(quizId, level) {
+  return quizId && level ? `${quizId}:${level}` : quizId;
+}
+
+/** Alias de `quizRunKey` : la clé d'un NIVEAU de quizz (`slug:niveau`). */
+export function quizLevelKey(quizId, level = 'easy') {
+  return quizRunKey(quizId, level);
 }
 
 /**
- * Ce quizz a-t-il déjà été terminé par le joueur, À CETTE DIFFICULTÉ ?
+ * Ce quizz a-t-il déjà été terminé par le joueur, À CE NIVEAU ?
  * Si oui, le rejouer ne rapporte plus d'XP ni de points (voir
  * `quiz_completed` dans `reduce`). L'ensemble `quizzes_played` n'est
  * alimenté qu'à la fin d'une partie : c'est bien « terminé », pas
  * « commencé ».
  *
- * `homeDifficulty` : la difficulté « maison » du quizz (`quiz.difficulty`
- * dans `src/quizzesData.js`). Une complétion à l'ANCIEN format (clé au slug
- * nu, enregistrée avant l'arrivée des paliers) lui est rattachée : la banque
- * jouée à l'époque était la sienne (`quizQuestions(quiz, quiz.difficulty)`
- * = `quiz.questions`). Les deux autres paliers restent donc NEUFS — avant ce
- * rattachement, les trois coches ✓ du sélecteur s'allumaient d'un coup pour
- * un quizz joué avant la mise à jour, alors que deux de ses trois banques
- * n'avaient jamais été vues. Sans `homeDifficulty` (appelant qui ne connaît
- * pas le quizz), l'ancien format ne vaut pour aucun palier : mieux vaut une
- * difficulté à rejouer qu'une difficulté cochée à tort.
+ * Compatibilité : avant les niveaux, un quizz se jouait en une seule
+ * difficulté (clé au slug nu). Une complétion enregistrée à l'ancienne compte
+ * pour le niveau FACILE, et seulement tant qu'aucun niveau n'a été enregistré
+ * pour ce quizz — sinon les trois paliers s'annonceraient déjà joués alors que
+ * deux de leurs banques n'ont jamais été vues.
  */
-export function quizAlreadyCompleted(state, quizId, difficulty = null, homeDifficulty = null) {
+export function quizAlreadyCompleted(state, quizId, level = null) {
   if (!quizId) return false;
   const played = state?.sets?.quizzes_played || [];
-  if (!difficulty) return played.includes(quizId);
-  if (played.includes(quizRunKey(quizId, difficulty))) return true;
-  return Boolean(homeDifficulty) && homeDifficulty === difficulty && played.includes(quizId);
+  if (!level) return played.includes(quizId);
+  if (played.includes(quizRunKey(quizId, level))) return true;
+  if (level !== 'easy' || !played.includes(quizId)) return false;
+  return !played.some((key) => String(key).startsWith(`${quizId}:`));
 }
 
 /**
- * Ce quizz a-t-il déjà été terminé par le joueur, À TOUTE DIFFICULTÉ ?
+ * Ce quizz a-t-il déjà été terminé par le joueur, À TOUS LES NIVEAUX ?
  * (Pour l'affichage « complet » d'un quizz, pas pour le blocage des points.)
  */
-export function quizCompletedAnyDifficulty(state, quizId) {
+export function quizCompletedAnyLevel(state, quizId) {
   if (!quizId) return false;
   return (state?.sets?.quizzes_played || []).some((key) => String(key).split(':')[0] === quizId);
+}
+
+/**
+ * Ce NIVEAU précis d'un quizz a-t-il déjà été terminé ? Même test que
+ * `quizAlreadyCompleted`, nommé pour les appelants qui raisonnent par palier
+ * (progression des niveaux, sélecteur du lecteur).
+ */
+export function quizLevelCompleted(state, quizId, level = 'easy') {
+  return quizAlreadyCompleted(state, quizId, level);
 }
 
 /** Débloque les succès satisfaits, sans action — utilisé au chargement. */
@@ -379,9 +387,9 @@ export const METRICS = {
   /** Parties de quizz terminées (toutes confondues — chaque
       quizz×difficulté complète compte une partie). */
   quizzesCompleted: (state) => counterValue(state, 'quizzes_completed'),
-  /** Quizz DISTINCTS joués (à quelle que ce soit difficulté) : les clés
-      `slug:difficulté` sont ramenées à leur slug avant dédoublonnage, pour
-      que « Tour complet » reste un succès par quizz, pas par palier. */
+  /** Quizz DISTINCTS joués (à quelque niveau que ce soit) : les clés
+      `slug:niveau` sont ramenées à leur slug avant dédoublonnage, pour que
+      « Tour complet » reste un succès par quizz, pas par palier. */
   distinctQuizzes: (state) => new Set((state.sets.quizzes_played || []).map((key) => String(key).split(':')[0])).size,
   /** Quizz distincts terminés sans faute. */
   perfectQuizzes: (state) => setSize(state, 'perfect_quizzes'),

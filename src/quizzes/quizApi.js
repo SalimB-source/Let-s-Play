@@ -2,19 +2,18 @@
  * Scores de quizz : classement Supabase + meilleure partie locale.
  * ---------------------------------------------------------------
  * Le classement se fait sur les POINTS gagnés (barème « fun » du moteur :
- * base + rapidité + combo, MULTIPLIÉ par la difficulté du run), pas sur le
- * nombre de bonnes réponses — resté stocké et affiché en secondaire.
+ * base + rapidité + combo, MULTIPLIÉ par le niveau joué), pas sur le nombre
+ * de bonnes réponses — resté stocké et affiché en secondaire.
  *
- * Règle « un quizz rapporte une fois » : une partie est identifiée par
- * `slug:difficulté` (`quizAttemptId`) — c'est la clé des records de
- * l'appareil ET de la colonne `quiz_attempts.quiz_id`. Compte connecté : la
- * tentative part au serveur via la RPC `submit_quiz_attempt`, qui ne
- * conserve que la PREMIÈRE complétion de chaque quizz à chaque difficulté
- * (les bornes de points, recalées sur le multiplicateur, sont revérifiées
- * côté serveur — voir `supabase/schema.sql`, section 8) ; le classement d'un
- * quizz+difficulté se lit via `get_quiz_leaderboard`, et la position au
- * classement global (somme des points, tous runs confondus) via
- * `get_quiz_global_rank`.
+ * Règle « un quizz rapporte une fois par niveau » : une partie est identifiée
+ * par `slug:niveau` (`quizAttemptId`) — c'est la clé des records de l'appareil
+ * ET de la colonne `quiz_attempts.quiz_id`. Compte connecté : la tentative
+ * part au serveur via la RPC `submit_quiz_attempt`, qui ne conserve que la
+ * PREMIÈRE complétion de chaque quizz à chaque niveau (les bornes de points,
+ * recalées sur le multiplicateur, sont revérifiées côté serveur — voir
+ * `supabase/schema.sql`, section 8) ; le classement d'un couple quizz+niveau se
+ * lit via `get_quiz_leaderboard`, et la position au classement global (somme
+ * des points, tous niveaux confondus) via `get_quiz_global_rank`.
  *
  * Visiteur (sans compte, ou Supabase non configuré) : les parties de
  * l'appareil sont gardées dans `localStorage` sous une clé propre aux quizz
@@ -26,13 +25,13 @@ const BEST_KEY = 'letsplay_quiz_best_v2';
 const LEGACY_BEST_KEYS = ['letsplay_quiz_best_v1'];
 
 /**
- * Identifiant d'un run noté : `slug:difficulté` (ex. `culture-gaming:hard`).
+ * Identifiant d'un run noté : `slug:niveau` (ex. `culture-gaming:hard`).
  * Sert de clé aux records de l'appareil et à la colonne `quiz_attempts`.
- * Sans difficulté (anciens enregistrements), l'identifiant reste le slug
- * nu — la lecture (`readLocalBest`) accepte les deux formes.
+ * Sans niveau (anciens enregistrements, avant les paliers), l'identifiant
+ * reste le slug nu — la lecture (`readLocalBest`) accepte les deux formes.
  */
-export function quizAttemptId(quizId, difficulty) {
-  return quizId && difficulty ? `${quizId}:${difficulty}` : quizId;
+export function quizAttemptId(quizId, level) {
+  return quizId && level ? `${quizId}:${level}` : quizId;
 }
 
 /** true si un backend Supabase est configuré (classement partagé possible). */
@@ -104,31 +103,33 @@ export function readLocalBests() {
 }
 
 /**
- * Retient la meilleure partie de l'appareil pour un quizz ET une difficulté
- * (clé `slug:difficulté`) : le plus de points, à points égaux le plus de
- * bonnes réponses. En pratique un seul write par clé — le lecteur n'appelle
- * plus cette fonction qu'à la PREMIÈRE complétion d'une difficulté — mais
- * la règle de remplacement reste le garde-fou des anciens enregistrements.
+ * Retient la meilleure partie de l'appareil pour un quizz ET un niveau
+ * (clé `slug:niveau`) : le plus de points, à points égaux le plus de bonnes
+ * réponses. En pratique un seul write par clé — le lecteur n'appelle cette
+ * fonction qu'à la PREMIÈRE complétion d'un niveau —, mais la règle de
+ * remplacement reste le garde-fou des anciens enregistrements.
  */
-export function writeLocalBest(quizId, score, total, points = 0, difficulty = null) {
+export function writeLocalBest(quizId, score, total, points = 0, level = null) {
   try {
     if (typeof window === 'undefined') return;
     const bests = readLocalBests();
-    const key = quizAttemptId(quizId, difficulty);
+    const key = quizAttemptId(quizId, level);
     const current = bests[key];
     const currentPoints = (current && current.points) || 0;
     const better = !current
       || points > currentPoints
       || (points === currentPoints && score > current.score);
-    if (better) bests[key] = { score, total, points, difficulty: difficulty || null };
+    if (better) bests[key] = { score, total, points, level: level || null };
     window.localStorage.setItem(BEST_KEY, JSON.stringify(bests));
   } catch (e) { /* stockage indisponible : le score reste en mémoire de session */ }
 }
 
 /**
- * Meilleure partie de l'appareil pour un quizz, SUR TOUTES SES DIFFICULTÉS
- * (et sur les anciens enregistrements sans difficulté, clés au slug nu) :
- * le plus de points, à points égaux le plus de bonnes réponses.
+ * Meilleure partie de l'appareil pour un quizz, SUR TOUS SES NIVEAUX (et sur
+ * les anciens enregistrements sans niveau, clés au slug nu) : le plus de
+ * points, à points égaux le plus de bonnes réponses. C'est le badge affiché
+ * sur les cartes de la grille — l'entrée garde son `level`, donc l'infobulle
+ * peut nommer le palier du record.
  */
 export function readLocalBest(quizId) {
   const bests = readLocalBests();
@@ -146,9 +147,9 @@ export function readLocalBest(quizId) {
   return best;
 }
 
-/** Partie de l'appareil pour un quizz ET une difficulté (null si jamais jouée). */
-export function readLocalBestRun(quizId, difficulty) {
-  return readLocalBests()[quizAttemptId(quizId, difficulty)] || null;
+/** Partie de l'appareil pour un quizz ET un niveau (null si jamais joué). */
+export function readLocalBestRun(quizId, level) {
+  return readLocalBests()[quizAttemptId(quizId, level)] || null;
 }
 
 /**

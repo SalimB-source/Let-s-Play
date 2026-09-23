@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
 import { useAchievements } from '../achievements/AchievementContext';
-import { quizAlreadyCompleted } from '../achievements/engine';
-import { QUIZ_DIFFICULTIES, quizLabel, quizQuestions } from '../quizzesData';
+import { quizLevelCompleted } from '../achievements/engine';
+import { QUIZ_LEVELS, quizLabel, quizLevelQuestions, quizQuestionsCount } from '../quizzesData';
 import { quizAttemptId, submitQuizAttempt, writeLocalBest } from './quizApi';
+import { isLevelCompleted, levelRequirement, nextLevel } from './quizProgress';
+import { useQuizProgress } from './useQuizProgress';
 import QuizChallenge from './QuizChallenge';
 import QuizConfetti from './QuizConfetti';
 import { QUESTION_TIME, VERDICT_MS, dayNumber, gradeQuiz, prepareQuiz, quizPointsFor } from './engine';
@@ -57,18 +59,24 @@ const FALLBACK = {
   points: 'PTS', resultPoints: '{points} PTS', bestCombo: 'Best combo: ×{n}',
   keysHint: 'Tip: press keys 1–4 to answer',
   noXpTag: 'Already completed',
-  noXpHint: 'You already finished this difficulty: playing it again earns no points (no XP either).',
-  noXpResult: 'This difficulty is already completed — no points this time.',
-  difficultyTitle: 'Difficulty',
-  difficultyHint: 'Pick your level: the harder it gets, the more the points are worth (×1, ×1.5, ×2). Each difficulty changes the questions — and pays out only once.',
-  difficultyPoints: { easy: '×1', medium: '×1.5', hard: '×2' },
+  noXpHint: 'You already finished this level: playing it again earns no points (no XP either).',
+  noXpResult: 'This level is already completed — no points this time.',
+  chooseLevel: 'Pick your level',
+  levelPoints: { easy: '×1', medium: '×1.5', hard: '×2' },
+  levelsHint: 'The harder the level, the more the points are worth — and each level changes the questions. Points become player XP, and a level pays out only once.',
+  levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
+  levelLocked: 'Locked',
+  lockHint: 'Finish the {level} level to unlock this one.',
+  levelDone: 'Completed',
+  levelUnlocked: '{level} level unlocked — it is waiting for you.',
+  levelPlay: 'Play this level',
+  levelProgress: '{done}/{total} levels completed',
   verdicts: {
     right: ['Correct!', 'Unbelievable!', 'Too easy, right?', 'We are on fire 🔥', 'Ice in the veins pays off.'],
     wrong: ['Oof, missed it…', 'Not this one.', 'So close!', 'That one got you.', 'Tough one — it bit back.'],
     timeout: ['Time is up!', 'Too slow…', 'The clock answered for you.'],
   },
   tiers: { rookie: 'NOVICE', player: 'PLAYER', veteran: 'VETERAN', legend: 'LEGEND' },
-  difficulty: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
 
 /** L'émoticone du palier — un peu de couleur sur l'écran de résultat. */
@@ -86,34 +94,55 @@ function pickVerdict(copy, correct, timedOut) {
   return list.length ? list[Math.floor(Math.random() * list.length)] : '';
 }
 
-export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFinish = null }) {
+/**
+ * Une partie de quizz : écran d'introduction (choix du NIVEAU — Facile ouvert,
+ * Confirmé et Expert verrouillés tant que le niveau précédent n'est pas
+ * terminé), partie chronométrée, résultat, corrections. `level` / `onLevelChange`
+ * sont pilotés par la page (`QuizPage`), pour que le classement affiché suive
+ * le niveau joué.
+ */
+export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLevelChange = null, onBoard = null, onFinish = null }) {
   const { t, lang } = useLanguage();
   const { user, isDemo } = useAuth();
   const { track, state: achievementState } = useAchievements();
-  // Difficulté choisie dans l'intro (défaut : la difficulté « maison » du
-  // quizz). Elle change les questions (banque `questionVariants`) et le
-  // multiplicateur de points (`DIFFICULTY_MULTIPLIER` du moteur).
-  const [difficulty, setDifficulty] = useState(quiz.difficulty);
-  // Règle anti-farm : un quizz déjà terminé À CETTE DIFFICULTÉ ne rapporte
-  // plus de points (ni XP, ni record, ni classement). L'état est figé au
-  // lancement de la partie (`replayRun`) : la fin de CETTE partie marque la
-  // difficulté comme terminée, l'écran de résultat doit pourtant dire si
-  // elle rapportait encore quelque chose. `quiz.difficulty` est la
-  // difficulté « maison » : seule banque jouable avant les paliers, elle
-  // recueille une éventuelle complétion à l'ancien format (voir
-  // `quizAlreadyCompleted`) — les deux autres paliers restent neufs.
-  const alreadyCompleted = quizAlreadyCompleted(achievementState, quiz.slug, difficulty, quiz.difficulty);
-  const [replayRun, setReplayRun] = useState(alreadyCompleted);
+  const { progress, record } = useQuizProgress();
   const copy = {
     ...FALLBACK,
     ...(t.quiz || {}),
+    levels: { ...FALLBACK.levels, ...((t.quiz || {}).levels || {}) },
+    levelPoints: { ...FALLBACK.levelPoints, ...((t.quiz || {}).levelPoints || {}) },
     tiers: { ...FALLBACK.tiers, ...((t.quiz || {}).tiers || {}) },
-    difficulty: { ...FALLBACK.difficulty, ...((t.quiz || {}).difficulty || {}) },
-    difficultyPoints: { ...FALLBACK.difficultyPoints, ...((t.quiz || {}).difficultyPoints || {}) },
     verdicts: { ...FALLBACK.verdicts, ...((t.quiz || {}).verdicts || {}) },
+  };
+  const totalQuestions = quizQuestionsCount(quiz);
+  // Règle anti-farm : un niveau déjà terminé ne rapporte plus d'XP. L'état est
+  // figé au lancement de la partie (`replayRun`) : la fin de CETTE partie
+  // marque le niveau comme terminé, l'écran de résultat doit pourtant dire si
+  // elle rapportait encore quelque chose.
+  const levelAlreadyCompleted = quizLevelCompleted(achievementState, quiz.slug, level);
+  const [replayRun, setReplayRun] = useState(levelAlreadyCompleted);
+  const [justUnlocked, setJustUnlocked] = useState(null);
+
+  /**
+   * Ce niveau est-il terminé ? Deux registres disent la même chose : le moteur
+   * des succès (`quizzes_played`, clé `slug:niveau` — c'est lui qui coupe les
+   * points et l'XP) et la progression des niveaux (`quizProgress`, copie
+   * locale + serveur, qui porte le déblocage). On lit les deux : un joueur qui
+   * avait terminé un quizz à l'ANCIEN format (avant les paliers) voit son
+   * niveau Facile reconnu même si sa copie de progression est vide.
+   */
+  const levelDone = (entry) => Boolean(
+    quizLevelCompleted(achievementState, quiz.slug, entry)
+    || isLevelCompleted(progress, quiz.slug, entry),
+  );
+  /** Le niveau révélé par la cascade : ouvert si le précédent est terminé. */
+  const levelOpen = (entry) => {
+    const requirement = levelRequirement(entry);
+    return !requirement || levelDone(requirement);
   };
 
   const [phase, setPhase] = useState('intro');
+  const [playedLevel, setPlayedLevel] = useState(level);
   const [prepared, setPrepared] = useState(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -159,19 +188,17 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     setVerdict(null);
   };
 
-  const start = () => {
+  const start = (levelId) => {
     // Geste utilisateur : c'est ici que le contexte audio s'ouvre, sinon le
     // premier battement (une seconde plus tard) n'aurait pas le droit de jouer.
     unlockQuizAudio();
     resetRun();
-    // Figé AU LANCEMENT : si la difficulté était déjà terminée avant la
-    // partie, rien ne sera noté (pas de points, pas de record, pas de
-    // classement) — c'est `replayRun` que le reste du lecteur lit.
-    setReplayRun(quizAlreadyCompleted(achievementState, quiz.slug, difficulty, quiz.difficulty));
-    // La banque jouée est celle de la difficulté choisie (vraies questions
-    // différentes par palier). Quizz du jour : même mélange pour tout le
-    // monde (graine = numéro du jour) — à difficulté donnée.
-    setPrepared(prepareQuiz(quiz, daily ? dayNumber(new Date()) : null, quizQuestions(quiz, difficulty)));
+    setReplayRun(quizLevelCompleted(achievementState, quiz.slug, levelId));
+    setJustUnlocked(null);
+    if (onLevelChange && levelId !== level) onLevelChange(levelId);
+    // Quizz du jour : même mélange pour tout le monde (graine = numéro du jour).
+    setPlayedLevel(levelId);
+    setPrepared(prepareQuiz(quiz, levelId, daily ? dayNumber(new Date()) : null));
     setAnswers({});
     setIndex(0);
     setResult(null);
@@ -180,9 +207,9 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     setPhase('play');
   };
 
-  // Révision : ne rejoue que les questions ratées au tour précédent.
-  // C'est de l'entraînement : ni succès, ni record, ni classement, ni POINTS
-  // ne bougent — « rejouer ses erreurs » ne rapporte jamais rien.
+  // Révision : ne rejoue que les questions ratées au tour précédent, dans le
+  // même niveau. C'est de l'entraînement : ni succès, ni record, ni
+  // classement, ni progression de niveau ne bougent.
   const startReview = () => {
     const missed = (result?.detail || []).filter((entry) => !entry.correct).map((entry) => entry.question);
     if (!missed.length) return;
@@ -202,6 +229,8 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
   // le clavier, le minuteur et les boutons passent par ce même garde-fou.
   const pick = (question, choice) => {
     if (lockedRef.current) return;
+    // Niveau du run en cours : il décide du multiplicateur de points.
+    const played = prepared.level || playedLevel;
     const budget = QUESTION_TIME.seconds * 1000;
     const elapsed = Math.min(budget, Math.max(0, Date.now() - questionStartRef.current));
     const correct = Boolean(choice && choice.correct);
@@ -213,13 +242,12 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
       setBestStreak(bestStreakRef.current);
       // Combo dès la deuxième bonne réponse : le bip monte avec la série.
       if (streakRef.current >= 2) playQuizComboSound(streakRef.current);
-      // Points SEULEMENT si la partie rapporte encore quelque chose :
-      // difficulté déjà terminée (`replayRun`) ou tour de révision
-      // (`review`) = ne gagne RIEN — la série continue de sonner, les
-      // points, non. Multiplicateur de la difficulté choisie (facile ×1,
-      // confirmé ×1,5, expert ×2).
+      // Points SEULEMENT si la partie rapporte encore quelque chose : niveau
+      // déjà terminé (`replayRun`) ou tour de révision (`review`) = rien à
+      // gagner — la série continue de sonner, les points, non. Le barème est
+      // multiplié par le niveau joué (facile ×1, confirmé ×1,5, expert ×2).
       if (!replayRun && !review) {
-        const gained = quizPointsFor(difficulty, { elapsedMs: elapsed, budgetMs: budget, streak: streakRef.current });
+        const gained = quizPointsFor(played, { elapsedMs: elapsed, budgetMs: budget, streak: streakRef.current });
         pointsGained = gained.total;
         pointsRef.current += gained.total;
         setPoints(pointsRef.current);
@@ -259,33 +287,31 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
       setResult(graded);
       setPhase('result');
       // Une seule fois par partie : le moteur des succès crédite l'action
-      // (quizz×difficulté joué, sans-faute, jour de quizz du jour pour la
-      // série) — le moteur décide lui-même si ça rapporte encore de l'XP.
-      // `homeDifficulty` accompagne l'action : c'est elle qui recueille une
-      // complétion enregistrée à l'ancien format (slug nu, avant les paliers).
+      // (niveau joué, sans-faute, jour de quizz du jour pour la série).
       if (!review && trackedFor.current !== prepared) {
         trackedFor.current = prepared;
         track('quiz_completed', {
           id: quiz.slug,
+          level: played,
           perfect: graded.perfect,
           daily,
-          difficulty,
-          homeDifficulty: quiz.difficulty,
           // Les points du run noté deviennent aussi de l'XP joueur. Le moteur
-          // ne les crédite qu'une fois grâce à la clé quiz:difficulté.
+          // ne les crédite qu'une fois grâce à la clé `slug:niveau`.
           points: pointsRef.current,
         });
-        // Règle « un quizz rapporte une fois » : si la difficulté était
-        // DÉJÀ terminée avant la partie, RIEN n'est noté — pas de record
-        // de l'appareil, pas de tentative serveur, pas de refresh du
-        // classement. Les points restés à 0 dans le run le disent d'eux-
-        // mêmes sur l'écran de résultat.
+        // Progression : le niveau est noté (copie locale + compte connecté)
+        // et, s'il restait un palier au-dessus, il vient de s'ouvrir.
+        record(quiz.slug, played);
+        if (!replayRun) setJustUnlocked(nextLevel(played));
+        if (onFinish) onFinish(graded, played);
+        // Règle « un niveau rapporte une fois » : rejouer un niveau déjà
+        // terminé n'écrit RIEN — pas de record de l'appareil, pas de tentative
+        // serveur, pas de classement (les points du run sont restés à 0).
         if (!replayRun) {
-          writeLocalBest(quiz.slug, graded.correct, graded.total, pointsRef.current, difficulty);
-          if (onFinish) onFinish(graded, difficulty);
+          writeLocalBest(quiz.slug, graded.correct, graded.total, pointsRef.current, played);
           if (user && !isDemo) {
             submitQuizAttempt({
-              quizId: quizAttemptId(quiz.slug, difficulty),
+              quizId: quizAttemptId(quiz.slug, played),
               score: graded.correct,
               total: graded.total,
               perfect: graded.perfect,
@@ -354,8 +380,8 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
     return () => window.removeEventListener('keydown', onKey);
   }, [phase, index, prepared]);
 
-  // Le fanfare de l'écran de résultat sonne une seule fois par partie —
-  // même si le composant se remonte en mode développement (StrictMode).
+  // Le fanfare de l'écran de résultat sonne une seule fois par partie — même
+  // si le composant se remonte en mode développement (StrictMode).
   useEffect(() => {
     if (phase !== 'result' || !result || fanfareFor.current === result) return;
     fanfareFor.current = result;
@@ -369,55 +395,64 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
 
   if (phase === 'intro' || !prepared) {
     const meta = quizLabel(quiz.labels, lang) || {};
-    // Le compteur de questions suit la banque de la difficulté CHOISIE.
-    const questionCount = quizQuestions(quiz, difficulty).length;
     return (
       <div className="quiz-player">
         <div className="quiz-player-intro">
           <div className="quiz-chips">
             <span className="quiz-chip">{quiz.tag}</span>
-            <span className={`quiz-chip quiz-chip--${difficulty}`}>{copy.difficulty[difficulty] || difficulty}</span>
-            <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(questionCount))}</span>
+            <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(totalQuestions))}</span>
+            <span className="quiz-chip quiz-chip--levels">{copy.levelProgress.replace('{done}', String(QUIZ_LEVELS.filter((entry) => levelDone(entry)).length)).replace('{total}', String(QUIZ_LEVELS.length))}</span>
             {daily && <span className="quiz-chip quiz-chip--daily"><i className="live-dot" aria-hidden="true" /> {copy.dailyTag}</span>}
-            {alreadyCompleted && <span className="quiz-chip quiz-chip--done">✓ {copy.noXpTag}</span>}
           </div>
           <h1>{meta.title}</h1>
           {meta.text ? <p>{meta.text}</p> : null}
-          {/* Choix de la difficulté : trois paliers, trois BANQUES DE
-              QUESTIONS (pas les mêmes questions !) et trois multiplicateurs
-              de points. Une difficulté RÉELLEMENT terminée porte sa coche —
-              le rejouer ne rapporte plus rien (pas de points, pas d'XP), les
-              autres, si. Un quizz terminé avant l'arrivée des paliers
-              (ancien format) ne coche que sa difficulté maison : les deux
-              autres banques n'ont jamais été jouées. */}
-          <div className="quiz-difficulty">
-            <p className="quiz-difficulty-label">{copy.difficultyTitle}</p>
-            <div className="quiz-difficulty-row" role="group" aria-label={copy.difficultyTitle}>
-              {QUIZ_DIFFICULTIES.map((level) => {
-                const levelDone = quizAlreadyCompleted(achievementState, quiz.slug, level, quiz.difficulty);
-                const levelActive = difficulty === level;
-                return (
+          <h2 className="quiz-levels-title">{copy.chooseLevel}</h2>
+          <ul className="quiz-levels">
+            {QUIZ_LEVELS.map((entry) => {
+              const locked = !levelOpen(entry);
+              const done = levelDone(entry);
+              const requirement = levelRequirement(entry);
+              const questions = quizLevelQuestions(quiz, entry).length;
+              return (
+                <li
+                  key={entry}
+                  data-level={entry}
+                  className={`quiz-level quiz-level--${entry}${locked ? ' is-locked' : ''}${done ? ' is-done' : ''}${entry === level ? ' is-selected' : ''}`}
+                >
+                  <div className="quiz-level-copy">
+                    <span className="quiz-level-name">
+                      {locked && <span className="quiz-level-padlock" aria-hidden="true">🔒</span>}
+                      {done && <span className="quiz-level-check" aria-hidden="true">✓</span>}
+                      {copy.levels[entry] || entry}
+                    </span>
+                    <span className="quiz-level-meta">
+                      {copy.questionsCount.replace('{n}', String(questions))}
+                      {' · '}{copy.levelPoints[entry] || ''}
+                      {done ? ` · ✓ ${copy.levelDone}` : ''}
+                    </span>
+                    {locked && requirement && (
+                      <span className="quiz-level-lock" role="note">🔒 {copy.lockHint.replace('{level}', copy.levels[requirement] || requirement)}</span>
+                    )}
+                    {!locked && done && <span className="quiz-level-lock" role="note">✓ {copy.noXpHint}</span>}
+                  </div>
                   <button
-                    key={level}
                     type="button"
-                    className={`quiz-difficulty-btn quiz-difficulty-btn--${level}${levelActive ? ' is-active' : ''}${levelDone ? ' is-done' : ''}`}
-                    aria-pressed={levelActive}
-                    onClick={() => setDifficulty(level)}
+                    className={`button ${locked ? 'button-ghost' : 'button-yellow'} quiz-level-play`}
+                    disabled={locked}
+                    aria-disabled={locked}
+                    onClick={() => start(entry)}
                   >
-                    <span className="quiz-difficulty-name">{copy.difficulty[level] || level}</span>
-                    <span className="quiz-difficulty-points" aria-hidden="true">{copy.difficultyPoints[level] || ''}</span>
-                    {levelDone && <span className="quiz-difficulty-done">✓ {copy.noXpTag}</span>}
+                    {locked ? copy.levelLocked : copy.levelPlay} <Arrow />
                   </button>
-                );
-              })}
-            </div>
-            <p className="quiz-difficulty-hint">{copy.difficultyHint}</p>
-          </div>
-          {alreadyCompleted && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpHint}</p>}
+                </li>
+              );
+            })}
+          </ul>
+          {justUnlocked && <p className="quiz-unlock-note" role="status">🔓 {copy.levelUnlocked.replace('{level}', copy.levels[justUnlocked] || justUnlocked)}</p>}
+          <p className="quiz-levels-hint">{copy.levelsHint}</p>
           <div className="quiz-player-actions">
-            <button type="button" className="button button-yellow" onClick={start}>{copy.start} <Arrow /></button>
             {/* Réglage accessible avant de lancer la partie : le tick-tack
-                démarre dès « Commencer ». */}
+                démarre dès que le niveau est lancé. */}
             <SoundToggle
               on={soundOn}
               label={soundOn ? copy.soundMute : copy.soundUnmute}
@@ -432,6 +467,7 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
 
   if (phase === 'play') {
     const question = prepared.questions[index];
+    const played = prepared.level || playedLevel;
     const choiceStates = (choice) => {
       const classes = ['quiz-choice'];
       if (verdict) classes.push('is-locked');
@@ -463,15 +499,18 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
             onToggle={() => setSoundOn(setQuizSoundEnabled(!soundOn))}
           />
         </div>
-        <p className="quiz-progress-label">{copy.question} {index + 1} {copy.of} {prepared.questions.length}</p>
+        <p className="quiz-progress-label">
+          <span className={`quiz-chip quiz-chip--${played}`}>{copy.levels[played] || played}</span>{' '}
+          {copy.question} {index + 1} {copy.of} {prepared.questions.length}
+        </p>
         {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         <h2 className="quiz-question">{quizLabel(question.q, lang)}</h2>
         {verdict && (
           <p className={`quiz-verdict ${verdict.correct ? 'is-right' : 'is-wrong'}`} role="status">
             {verdict.phrase && <span className="quiz-verdict-phrase">{verdict.phrase}</span>}
-            {/* Points gagnés uniquement quand la partie rapporte encore
-                quelque chose : sur une difficulté déjà terminée, le bandeau
-                annonce le verdict sans +PTS (le compteur ⚡ reste à 0). */}
+            {/* Le bandeau n'annonce des points que s'il y en a : une bonne
+                réponse d'un niveau déjà terminé (ou d'un tour de révision) n'en
+                rapporte aucun — mieux vaut ne rien afficher que « +0 PTS ». */}
             {verdict.correct && verdict.points > 0 && (
               <span className="quiz-verdict-points">
                 +{verdict.points} {copy.points}
@@ -493,11 +532,12 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
 
   const tierClass = `quiz-tier--${result.tier}`;
   const meta = quizLabel(quiz.labels, lang) || {};
+  const played = prepared.level || playedLevel;
   return (
     <div className="quiz-player">
       <div className={`quiz-result ${tierClass}`}>
         {result.perfect && <QuizConfetti />}
-        <p className="quiz-result-eyebrow">{meta.title}</p>
+        <p className="quiz-result-eyebrow">{meta.title} · {copy.levels[played] || played}</p>
         <h2 className="quiz-result-tier">
           {TIER_EMOJI[result.tier] ? <span aria-hidden="true">{TIER_EMOJI[result.tier]} </span> : null}
           {copy.tiers[result.tier] || result.tier}
@@ -508,16 +548,20 @@ export default function QuizPlayer({ quiz, daily = false, onBoard = null, onFini
         {result.perfect && <span className="quiz-result-perfect">★ {copy.perfect}</span>}
         {review && <span className="quiz-result-review">{copy.reviewTag}</span>}
         {!review && replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
+        {!review && justUnlocked && <p className="quiz-unlock-note" role="status">🔓 {copy.levelUnlocked.replace('{level}', copy.levels[justUnlocked] || justUnlocked)}</p>}
         <div className="quiz-result-actions">
+          {!review && justUnlocked && (
+            <button type="button" className="button button-yellow" onClick={() => start(justUnlocked)}>{copy.levelPlay} <Arrow /></button>
+          )}
           {result.correct < result.total && (
             <button type="button" className="button button-yellow" onClick={startReview}>{copy.retryMistakes}</button>
           )}
-          <button type="button" className="button button-ghost" onClick={start}>{copy.replay}</button>
+          <button type="button" className="button button-ghost" onClick={() => start(played)}>{copy.replay}</button>
           <Link className="button button-ghost" to="/quizz">{copy.others} <Arrow /></Link>
           {quiz.source && <Link className="arrow-link" to={quiz.source}>{copy.readSource} <Arrow /></Link>}
         </div>
       </div>
-      <QuizChallenge quiz={quiz} score={result.correct} total={result.total} />
+      <QuizChallenge quiz={quiz} level={played} score={result.correct} total={result.total} />
       <section className="quiz-corrections">
         <div className="section-label"><span>{copy.corrections}</span><span>{meta.title}</span></div>
         <ol>

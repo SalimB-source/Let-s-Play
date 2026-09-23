@@ -13,7 +13,7 @@
 .quiz-header h1 em { color: var(--yellow); font-style: normal; }
 .quiz-intro { max-width: 640px; color: var(--muted); }
 
-/* ---- Chips (tag, difficulté, compteur) ---------------------------------- */
+/* ---- Chips (tag, niveau, compteur) --------------------------------------- */
 .quiz-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .quiz-chip {
   display: inline-flex; align-items: center; gap: 7px;
@@ -27,47 +27,18 @@
 .quiz-chip--hard { color: var(--violet); border-color: rgba(168, 85, 247, .45); }
 .quiz-chip--daily, .quiz-chip--streak { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
 .quiz-chip--done { color: var(--muted); border-color: var(--line-strong); }
+/* Progression des niveaux (grille + écran d'intro) : neutre, puis vert une
+   fois les trois niveaux terminés. */
+.quiz-chip--levels { color: var(--violet); border-color: rgba(168, 85, 247, .4); }
+.quiz-chip--levels.is-complete { color: #34d399; border-color: rgba(52, 211, 153, .45); }
 .quiz-noxp-hint { margin: 12px 0 0; color: var(--muted); font: 600 13px var(--mono); letter-spacing: .04em; }
 
 /* ---- Sélecteur de difficulté (intro) ------------------------------------ */
 /* Trois paliers = trois banques de questions (et trois multiplicateurs de
    points). Le palier actif est surligné ; un palier déjà terminé porte sa
    coche — le rejouer ne rapporte plus rien (pas de points, pas d'XP). */
-.quiz-difficulty { margin: 6px 0 22px; }
-.quiz-difficulty-label {
-  margin: 0 0 10px; color: var(--dim);
-  font: 600 10px var(--mono); letter-spacing: .18em; text-transform: uppercase;
-}
-.quiz-difficulty-row { display: flex; flex-wrap: wrap; gap: 10px; }
-.quiz-difficulty-btn {
-  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
-  min-width: 118px; padding: 12px 14px; cursor: pointer; text-align: start;
-  background: var(--panel); border: 1px solid var(--line);
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  transition: border-color .15s, background .15s, transform .15s;
-}
-.quiz-difficulty-btn:hover { border-color: var(--line-strong); transform: translateY(-1px); }
-.quiz-difficulty-btn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
-.quiz-difficulty-name { font: 700 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink); }
-.quiz-difficulty-points { color: var(--dim); font: 700 12px var(--mono); letter-spacing: .06em; }
-.quiz-difficulty-btn--easy.is-active { border-color: rgba(34, 211, 238, .7); background: rgba(34, 211, 238, .08); }
-.quiz-difficulty-btn--easy.is-active .quiz-difficulty-name,
-.quiz-difficulty-btn--easy.is-active .quiz-difficulty-points { color: var(--cyan); }
-.quiz-difficulty-btn--medium.is-active { border-color: rgba(255, 214, 25, .7); background: rgba(255, 214, 25, .07); }
-.quiz-difficulty-btn--medium.is-active .quiz-difficulty-name,
-.quiz-difficulty-btn--medium.is-active .quiz-difficulty-points { color: var(--yellow); }
-.quiz-difficulty-btn--hard.is-active { border-color: rgba(168, 85, 247, .75); background: rgba(168, 85, 247, .1); }
-.quiz-difficulty-btn--hard.is-active .quiz-difficulty-name,
-.quiz-difficulty-btn--hard.is-active .quiz-difficulty-points { color: var(--violet); }
 /* Palier déjà terminé : la coche remplace l'appel au gain — rien à gagner
    ici, les autres difficultés si. */
-.quiz-difficulty-btn.is-done .quiz-difficulty-points { visibility: hidden; }
-.quiz-difficulty-done {
-  padding: 1px 7px; border: 1px solid var(--line-strong); color: var(--muted);
-  font: 700 10px var(--mono); letter-spacing: .1em; text-transform: uppercase;
-}
-.quiz-difficulty-btn.is-active.is-done .quiz-difficulty-done { border-color: currentColor; }
-.quiz-difficulty-hint { margin: 10px 0 0; color: var(--dim); font-size: 12.5px; line-height: 1.5; }
 
 /* ---- Quizz du jour (bannière) ------------------------------------------- */
 .quiz-daily {
@@ -140,11 +111,54 @@
 }
 .quiz-player-intro h1 { margin: 6px 0 10px; font: 800 clamp(26px, 4vw, 42px)/1.1 var(--display); text-transform: uppercase; }
 .quiz-player-intro p { color: var(--muted); margin-bottom: 20px; }
-.quiz-player-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.quiz-player-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 18px; }
+
+/* ---- Sélecteur de niveaux (écran d'intro du lecteur) --------------------- */
+/* Les quizz sont tous ouverts : c'est ICI que se joue la progression —
+   Facile ouvert, Confirmé puis Expert verrouillés tant que le niveau
+   précédent n'est pas terminé (règle pure : `./quizProgress`). */
+.quiz-levels-title {
+  margin: 22px 0 10px;
+  font: 700 13px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+  color: var(--dim);
+}
+.quiz-levels-hint { margin: 12px 0 0; color: var(--dim); font: 400 12px var(--mono); letter-spacing: .06em; }
+.quiz-levels { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.quiz-level {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; background: var(--panel-2); border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--line-strong);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  transition: border-color .18s, background .18s;
+}
+.quiz-level--easy { border-inline-start-color: var(--cyan); }
+.quiz-level--medium { border-inline-start-color: var(--yellow); }
+.quiz-level--hard { border-inline-start-color: var(--violet); }
+.quiz-level.is-selected { border-color: var(--line-strong); }
+.quiz-level.is-done { background: rgba(52, 211, 153, .05); }
+.quiz-level.is-locked { opacity: .62; border-inline-start-color: var(--line); border-style: dashed; }
+.quiz-level-copy { display: grid; gap: 3px; min-width: 0; }
+.quiz-level-name {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 700 clamp(15px, 2vw, 18px)/1.2 var(--display); text-transform: uppercase; letter-spacing: .03em;
+}
+.quiz-level-copy .quiz-level-meta { color: var(--muted); font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.quiz-level-lock { color: var(--dim); font: 500 12px var(--mono); letter-spacing: .04em; }
+.quiz-level-check { color: #34d399; }
+.quiz-level-padlock { font-size: 14px; }
+.quiz-level-play { flex: none; }
+.quiz-level-play:disabled { cursor: not-allowed; opacity: .75; }
+/* Note de déblocage : après une partie, le niveau qui vient de s'ouvrir est
+   annoncé (écran de résultat) et rappelé sur l'écran d'intro. */
+.quiz-unlock-note {
+  margin: 14px 0 0; padding: 10px 14px;
+  color: #34d399; border: 1px solid rgba(52, 211, 153, .4); background: rgba(52, 211, 153, .07);
+  font: 600 13px var(--mono); letter-spacing: .04em;
+}
 
 .quiz-progress { height: 6px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 10px; }
 .quiz-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--cyan)); transition: width .25s; }
-.quiz-progress-label { margin: 0 0 18px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.quiz-progress-label { margin: 0 0 18px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 /* Minuteur : 15 secondes par question, rouge dans les 3 dernières. */
 /* Barre du haut pendant la partie : compte à rebours, verdict de la partie en
    cours (✓ / ✗, la même information que les sons) et bouton son. */
@@ -365,47 +379,6 @@
 }
 .quiz-daily.is-locked:hover { border-color: rgba(255, 214, 25, .3); }
 
-.quiz-lock-badge {
-  position: absolute;
-  top: 10px; right: 10px; z-index: 2;
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 32px; height: 32px; padding: 0 8px;
-  background: rgba(8, 9, 18, .85);
-  border: 1px solid rgba(255, 214, 25, .45);
-  color: var(--yellow);
-  font: 700 14px var(--mono);
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
-  backdrop-filter: blur(6px);
-}
-.quiz-locked-hint {
-  display: inline-block;
-  margin-top: 10px;
-  padding: 6px 10px;
-  background: rgba(255, 214, 25, .08);
-  border: 1px solid rgba(255, 214, 25, .25);
-  color: var(--yellow);
-  font: 600 11px var(--mono);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-.quiz-locked-label {
-  color: var(--dim);
-  font: 600 11px var(--mono);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  border: 1px solid var(--line);
-  padding: 3px 8px;
-}
-.quiz-locked-global {
-  margin: 0 0 6px;
-  padding: 12px 16px;
-  background: linear-gradient(90deg, rgba(255, 214, 25, .1), rgba(124, 58, 237, .08)), var(--panel);
-  border: 1px solid rgba(255, 214, 25, .28);
-  color: var(--yellow);
-  font: 600 13px/1.4 var(--mono);
-  letter-spacing: .04em;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-}
 .quiz-player-intro.is-locked {
   background: linear-gradient(120deg, rgba(255, 214, 25, .07), rgba(124, 58, 237, .1)), var(--panel);
   border-color: rgba(255, 214, 25, .32);
@@ -428,4 +401,9 @@
 @media (max-width: 860px) {
   .quiz-daily { grid-template-columns: 1fr; }
   .quiz-choices { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .quiz-level { align-items: flex-start; }
+  .quiz-level-play { width: 100%; justify-content: center; }
 }

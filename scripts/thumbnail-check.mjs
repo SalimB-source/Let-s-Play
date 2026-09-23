@@ -231,8 +231,15 @@ function codeOnly(source) {
 }
 
 const factory = path.join(root, 'src', 'lib', 'videoThumbnails.js');
+// L'index des actus auto-générées est, lui aussi, un fichier GÉNÉRÉ (en-tête
+// « ne pas éditer à la main », `scripts/news-bot/fetch-news.mjs`) : il recopie
+// les URLs officielles des sources — dont celle de la miniature, pour le
+// crédit — et l'affichage, lui, passe par le fichier livré (`thumbnail`, sous
+// `public/news-auto/`, déjà vérifié plus haut). Ce n'est donc pas une URL
+// d'affichage choisie à la main : la règle ne le vise pas.
+const generated = path.join(root, 'src', 'news', 'autoIndex.js');
 const hardcoded = [...sourceFiles(path.join(root, 'src')), ...sourceFiles(path.join(root, 'scripts'))]
-  .filter((file) => file !== factory && file !== fileURLToPath(import.meta.url))
+  .filter((file) => file !== factory && file !== generated && file !== fileURLToPath(import.meta.url))
   .filter((file) => /i\.ytimg\.com|maxresdefault/.test(codeOnly(readFileSync(file, 'utf8'))))
   .map((file) => path.relative(root, file));
 check('aucune URL de miniature codée en dur hors de src/lib/videoThumbnails.js', hardcoded.join(', ') || 'aucune', 'aucune');

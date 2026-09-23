@@ -1173,6 +1173,43 @@ as $$
   );
 $$;
 
+-- Progression des NIVEAUX d'un quizz : une ligne par compte et par palier
+-- terminé. Depuis 2026-09, un quizz se joue en trois niveaux (Facile,
+-- Confirmé, Expert) : le Facile est ouvert, le Confirmé se débloque en
+-- terminant le Facile, l'Expert en terminant le Confirmé. La règle est
+-- appliquée côté client (`src/quizzes/quizProgress.js`) et cette table la fait
+-- VOYAGER AVEC LE COMPTE : un joueur connecté retrouve ses paliers sur
+-- n'importe quel appareil ; hors-ligne (ou schéma non relancé), la copie
+-- locale (`localStorage`, clé `letsplay_quiz_levels_v1`) prend le relais.
+-- RLS : chaque joueur ne lit et n'écrit que ses propres lignes.
+create table if not exists public.quiz_progress (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  quiz_id text not null check (char_length(quiz_id) between 1 and 120),
+  level_id text not null check (level_id in ('easy', 'medium', 'hard')),
+  completed_at timestamptz not null default now(),
+  primary key (user_id, quiz_id, level_id)
+);
+
+do $$
+begin
+  alter table public.quiz_progress enable row level security;
+
+  drop policy if exists "Players read their own quiz levels" on public.quiz_progress;
+  create policy "Players read their own quiz levels"
+  on public.quiz_progress for select to authenticated using (auth.uid() = user_id);
+
+  -- Un palier terminé est définitif : le client insère (on conflict do nothing).
+  drop policy if exists "Players record their own quiz levels" on public.quiz_progress;
+  create policy "Players record their own quiz levels"
+  on public.quiz_progress for insert to authenticated with check (auth.uid() = user_id);
+
+  grant select, insert on public.quiz_progress to authenticated;
+  revoke all on public.quiz_progress from anon;
+exception
+  when others then
+    raise warning 'Let''s Play : politiques RLS de public.quiz_progress non appliquées (%).', sqlerrm;
+end $$;
+
 revoke all on function public.submit_quiz_attempt(text, integer, integer, boolean, integer) from public;
 revoke all on function public.get_quiz_leaderboard(text, integer) from public;
 revoke all on function public.get_quiz_global_rank(uuid) from public;
@@ -1342,6 +1379,14 @@ from (
      case when to_regprocedure('public.submit_quiz_attempt(text,integer,integer,boolean,integer)') is not null
             and to_regprocedure('public.get_quiz_leaderboard(text,integer)') is not null
             and to_regprocedure('public.get_quiz_global_rank(uuid)') is not null
+           then 'OK' else 'MANQUANT' end)
+, (34, 'table public.quiz_progress (niveaux par compte)',
+      case when to_regclass('public.quiz_progress') is null then 'MANQUANT' else 'OK' end)
+, (35, 'RLS activee et table quiz_progress non exposee a anon',
+      case when to_regclass('public.quiz_progress') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.quiz_progress'))
+            and to_regrole('anon') is not null
+            and not has_table_privilege('anon', 'public.quiz_progress', 'select')
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;
