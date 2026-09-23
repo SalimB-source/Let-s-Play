@@ -1014,6 +1014,9 @@ end $$;
 -- passe par des RPC security definer — un client ne peut ni écrire au nom d'un
 -- autre, ni poser un score hors bornes (0 ≤ score ≤ total et
 -- 100 × score ≤ points ≤ 200 × total vérifiés côté serveur).
+-- Remise à zéro du classement global (opération de maintenance ponctuelle) :
+-- `supabase/reset-quiz-ranking.sql` vide cette table et rien d'autre — à ne pas
+-- confondre avec ce fichier, qui ne fait qu'installer le schéma.
 create table if not exists public.quiz_attempts (
   user_id uuid not null references auth.users(id) on delete cascade,
   quiz_id text not null check (char_length(quiz_id) between 1 and 120),

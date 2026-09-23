@@ -791,6 +791,15 @@ mais la structure de données les accepte déjà.
   sans backend, la section explique comment la débloquer. Après collage du
   schéma dans le Dashboard Supabase, le tableau de contrôle final affiche les
   lignes 31–33 « OK ».
+- **Remise à zéro du classement** — `supabase/reset-quiz-ranking.sql`, à coller
+  dans le SQL Editor du Dashboard : vide `public.quiz_attempts` (la seule
+  source des deux RPC de classement), donc tout le monde redevient « pas encore
+  classé » — rang null, 0 point, 0 quizz, classements de quizz vides. Rien à
+  redéployer côté site : l'état vide est déjà géré. Les comptes, les profils,
+  l'XP et les succès (`public.player_progress`) ne sont pas touchés, pas plus
+  que le record gardé sur l'appareil d'un joueur (`localStorage`). Le script
+  affiche aussi l'état avant/après, et donne en variantes le vidage d'un seul
+  quizz ou d'un seul joueur.
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
   points bornés à 200/question qui font le classement, série, minuteur à 15 s),
   miniatures (une illustration distincte par quizz, demandée par les cartes
