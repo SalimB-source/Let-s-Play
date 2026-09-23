@@ -35,6 +35,7 @@ import {
   mergeStates,
   metricValue,
   normalizeState,
+  quizAlreadyCompleted,
   reduce,
   summarize,
   totalXp,
@@ -384,6 +385,27 @@ for (let index = 1; index <= 30; index += 1) {
   date.setDate(date.getDate() + index);
   record(play('quiz_completed', { id, perfect: index === 0, daily: true, at: date.toISOString() }));
 });
+
+// Règle anti-farm : un quizz déjà terminé ne rapporte plus rien. Rejoué (même
+// sans faute), il ne bouge ni le compteur, ni les sans-faute, ni l'XP ; seul le
+// jour de quizz du jour reste crédité pour la série.
+{
+  let fresh = createState(new Date(at(2026, 9, 1)));
+  const run = (payload) => { const result = reduce(fresh, { type: 'quiz_completed', ...payload }); fresh = result.state; return result.unlocked; };
+  check('1re complétion : succès et XP', run({ id: 'rpg-legends', perfect: false, at: at(2026, 9, 2) }).join(','), 'first-quiz');
+  ok('le quizz est désormais marqué terminé', quizAlreadyCompleted(fresh, 'rpg-legends'));
+  ok('… et pas les autres', !quizAlreadyCompleted(fresh, 'tech-hardware'));
+  const xpBefore = totalXp(fresh);
+  const countBefore = fresh.counters.quizzes_completed;
+  check('rejouer (sans faute) ne débloque rien', run({ id: 'rpg-legends', perfect: true, at: at(2026, 9, 3) }).length, 0);
+  check('… ni XP', totalXp(fresh), xpBefore);
+  check('… ni compteur de parties', fresh.counters.quizzes_completed, countBefore);
+  ok('… ni sans-faute', !(fresh.sets.perfect_quizzes || []).includes('rpg-legends'));
+  run({ id: 'rpg-legends', perfect: false, daily: true, at: at(2026, 9, 4) });
+  check('quizz du jour rejoué : le jour compte pour la série', (fresh.sets.quiz_days || []).length, 1);
+  check('… sans XP', totalXp(fresh), xpBefore);
+  check('un autre quizz rapporte toujours', run({ id: 'tech-hardware', perfect: true, at: at(2026, 9, 5) }).join(','), 'perfect-score');
+}
 
 // Un défi envoyé à un ami depuis un écran de résultat (rival trouvé).
 record(play('quiz_challenge'));

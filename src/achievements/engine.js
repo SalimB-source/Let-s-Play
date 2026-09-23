@@ -212,7 +212,16 @@ export function reduce(state, action = {}) {
 
     // Partie de quizz terminée : compteur global + quizz distincts, sans-faute
     // par quizz, et jour crédité pour la série du « quizz du jour ».
+    // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion.
+    // Rejoué ensuite, il ne fait plus avancer aucun succès (ni compteur, ni
+    // sans-faute) — donc plus aucun XP. Seule exception : le jour de quizz du
+    // jour reste crédité, sinon la rotation (un quizz déjà fait tous les huit
+    // jours) casserait mécaniquement la série « Semaine parfaite ».
     case 'quiz_completed': {
+      if (quizAlreadyCompleted(current, action.id)) {
+        if (action.daily) next = addToSet(current, 'quiz_days', dayKey(at));
+        break;
+      }
       next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', action.id);
       if (action.perfect) next = addToSet(next, 'perfect_quizzes', action.id);
       if (action.daily) next = addToSet(next, 'quiz_days', dayKey(at));
@@ -241,6 +250,17 @@ export function reduce(state, action = {}) {
   }
 
   return award({ ...next, updatedAt: at }, at);
+}
+
+/**
+ * Ce quizz a-t-il déjà été terminé par le joueur ? Si oui, le rejouer ne
+ * rapporte plus d'XP (voir `quiz_completed` dans `reduce`). L'ensemble
+ * `quizzes_played` n'est alimenté qu'à la fin d'une partie : c'est bien
+ * « terminé », pas « commencé ».
+ */
+export function quizAlreadyCompleted(state, quizId) {
+  if (!quizId) return false;
+  return Boolean(state?.sets?.quizzes_played?.includes(quizId));
 }
 
 /** Débloque les succès satisfaits, sans action — utilisé au chargement. */

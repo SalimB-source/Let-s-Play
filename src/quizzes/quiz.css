@@ -26,6 +26,8 @@
 .quiz-chip--medium { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
 .quiz-chip--hard { color: var(--violet); border-color: rgba(168, 85, 247, .45); }
 .quiz-chip--daily, .quiz-chip--streak { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
+.quiz-chip--done { color: var(--muted); border-color: var(--line-strong); }
+.quiz-noxp-hint { margin: 12px 0 0; color: var(--muted); font: 600 13px var(--mono); letter-spacing: .04em; }
 
 /* ---- Quizz du jour (bannière) ------------------------------------------- */
 .quiz-daily {
