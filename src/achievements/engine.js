@@ -22,15 +22,6 @@ import { bestDayRun } from '../quizzes/engine.js';
 
 export const STATE_VERSION = 2;
 
-/** Succès liés aux quizz à effacer lors de la remise à zéro. */
-const QUIZ_ACHIEVEMENT_IDS = [
-  'first-quiz',
-  'perfect-score',
-  'quiz-tour',
-  'quiz-week',
-  'first-challenge',
-];
-
 /* ------------------------------------------------------------------ */
 /* Dates : la journée est celle du visiteur (fuseau local)             */
 /* ------------------------------------------------------------------ */
@@ -82,6 +73,9 @@ export function createState(now = new Date()) {
     bestStreak: 0,
     // Succès débloqués : id → horodatage ISO.
     unlocked: {},
+    // XP gagnée directement grâce aux parties de quiz : run noté → points.
+    // La clé du run rend l'attribution idempotente et fusionnable entre appareils.
+    quizPoints: {},
   };
 }
 
@@ -111,6 +105,11 @@ export function normalizeState(raw, now = new Date()) {
     if (typeof key === 'string' && key) unlocked[key] = typeof value === 'string' ? value : base.createdAt;
   }
 
+  const quizPoints = {};
+  for (const [key, value] of Object.entries(asObject(raw.quizPoints))) {
+    if (typeof key === 'string' && key && Number.isFinite(value)) quizPoints[key] = Math.max(0, Math.round(value));
+  }
+
   return {
     version: STATE_VERSION,
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : base.createdAt,
@@ -123,6 +122,7 @@ export function normalizeState(raw, now = new Date()) {
     streak: asNumber(raw.streak),
     bestStreak: asNumber(raw.bestStreak),
     unlocked,
+    quizPoints,
   };
 }
 
@@ -224,19 +224,32 @@ export function reduce(state, action = {}) {
       next = addToSet(counter(current, 'search_performed'), 'searches', action.query);
       break;
 
-    // Partie de quizz terminée : compteur global + quizz distincts, sans-faute
-    // par quizz, et jour crédité pour la série du « quizz du jour ».
-    // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion.
-    // Rejoué ensuite, il ne fait plus avancer aucun succès (ni compteur, ni
-    // sans-faute) — donc plus aucun XP. Seule exception : le jour de quizz du
-    // jour reste crédité, sinon la rotation (un quizz déjà fait tous les huit
-    // jours) casserait mécaniquement la série « Semaine parfaite ».
+    // Partie de quizz terminée : compteur global + runs (quizz×difficulté)
+    // distincts, sans-faute par quizz, et jour crédité pour la série du
+    // « quizz du jour ».
+    // Règle anti-farm : un quizz ne rapporte qu'à sa PREMIÈRE complétion
+    // À CHAQUE DIFFICULTÉ — un run est identifié par `slug:difficulté`.
+    // Rejoué à la même difficulté, il ne fait plus avancer aucun succès
+    // (ni compteur, ni sans-faute) — donc plus aucun XP ni aucun point.
+    // Une autre difficulté du même quizz, elle, rapporte à nouveau (de
+    // vraies questions différentes, des points multipliés). Seule exception
+    // au blocage : le jour de quizz du jour reste crédité, sinon la
+    // rotation (un quizz déjà fait tous les huit jours) casserait
+    // mécaniquement la série « Semaine parfaite ».
+    // `action.homeDifficulty` (la difficulté « maison » du quizz) rattache
+    // une complétion à l'ANCIEN format à la seule banque qui existait
+    // alors — voir `quizAlreadyCompleted`.
     case 'quiz_completed': {
-      if (quizAlreadyCompleted(current, action.id)) {
+      if (quizAlreadyCompleted(current, action.id, action.difficulty, action.homeDifficulty)) {
         if (action.daily) next = addToSet(current, 'quiz_days', dayKey(at));
         break;
       }
-      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', action.id);
+      next = addToSet(counter(current, 'quizzes_completed'), 'quizzes_played', quizRunKey(action.id, action.difficulty));
+      const runKey = quizRunKey(action.id, action.difficulty);
+      const earnedPoints = Number.isFinite(action.points) ? Math.max(0, Math.round(action.points)) : 0;
+      if (runKey && earnedPoints > 0) {
+        next = { ...next, quizPoints: { ...next.quizPoints, [runKey]: earnedPoints } };
+      }
       if (action.perfect) next = addToSet(next, 'perfect_quizzes', action.id);
       if (action.daily) next = addToSet(next, 'quiz_days', dayKey(at));
       break;
@@ -267,17 +280,47 @@ export function reduce(state, action = {}) {
 }
 
 /**
- * Ce quizz a-t-il déjà été terminé par le joueur ? Si oui, le rejouer ne
- * rapporte plus d'XP (voir `quiz_completed` dans `reduce`). L'ensemble
- * `quizzes_played` n'est alimenté qu'à la fin d'une partie : c'est bien
- * « terminé », pas « commencé ».
- *
- * REMISE À ZÉRO GLOBALE : on force false pour que plus aucune difficulté
- * n'affiche "déjà terminé". Les compteurs sont aussi remis à zéro dans
- * `normalizeState`, et les meilleurs scores locaux changent de clé (v2).
+ * Clé d'un run noté : `slug:difficulté` (un slug nu quand l'action n'en
+ * porte pas — ancien format). C'est la clé de l'ensemble `quizzes_played`,
+ * celle du record de l'appareil et de la tentative serveur (`quiz_id`).
  */
-export function quizAlreadyCompleted(_state, _quizId) {
-  return false;
+export function quizRunKey(quizId, difficulty) {
+  return quizId && difficulty ? `${quizId}:${difficulty}` : quizId;
+}
+
+/**
+ * Ce quizz a-t-il déjà été terminé par le joueur, À CETTE DIFFICULTÉ ?
+ * Si oui, le rejouer ne rapporte plus d'XP ni de points (voir
+ * `quiz_completed` dans `reduce`). L'ensemble `quizzes_played` n'est
+ * alimenté qu'à la fin d'une partie : c'est bien « terminé », pas
+ * « commencé ».
+ *
+ * `homeDifficulty` : la difficulté « maison » du quizz (`quiz.difficulty`
+ * dans `src/quizzesData.js`). Une complétion à l'ANCIEN format (clé au slug
+ * nu, enregistrée avant l'arrivée des paliers) lui est rattachée : la banque
+ * jouée à l'époque était la sienne (`quizQuestions(quiz, quiz.difficulty)`
+ * = `quiz.questions`). Les deux autres paliers restent donc NEUFS — avant ce
+ * rattachement, les trois coches ✓ du sélecteur s'allumaient d'un coup pour
+ * un quizz joué avant la mise à jour, alors que deux de ses trois banques
+ * n'avaient jamais été vues. Sans `homeDifficulty` (appelant qui ne connaît
+ * pas le quizz), l'ancien format ne vaut pour aucun palier : mieux vaut une
+ * difficulté à rejouer qu'une difficulté cochée à tort.
+ */
+export function quizAlreadyCompleted(state, quizId, difficulty = null, homeDifficulty = null) {
+  if (!quizId) return false;
+  const played = state?.sets?.quizzes_played || [];
+  if (!difficulty) return played.includes(quizId);
+  if (played.includes(quizRunKey(quizId, difficulty))) return true;
+  return Boolean(homeDifficulty) && homeDifficulty === difficulty && played.includes(quizId);
+}
+
+/**
+ * Ce quizz a-t-il déjà été terminé par le joueur, À TOUTE DIFFICULTÉ ?
+ * (Pour l'affichage « complet » d'un quizz, pas pour le blocage des points.)
+ */
+export function quizCompletedAnyDifficulty(state, quizId) {
+  if (!quizId) return false;
+  return (state?.sets?.quizzes_played || []).some((key) => String(key).split(':')[0] === quizId);
 }
 
 /** Débloque les succès satisfaits, sans action — utilisé au chargement. */
@@ -333,10 +376,13 @@ export const METRICS = {
       éditoriales du site, toutes touchées. */
   readAllKinds: (state) =>
     setSize(state, 'news_read') > 0 && setSize(state, 'reviews_read') > 0 && setSize(state, 'dossiers_read') > 0 ? 1 : 0,
-  /** Parties de quizz terminées (toutes confondues). */
+  /** Parties de quizz terminées (toutes confondues — chaque
+      quizz×difficulté complète compte une partie). */
   quizzesCompleted: (state) => counterValue(state, 'quizzes_completed'),
-  /** Quizz distincts joués. */
-  distinctQuizzes: (state) => setSize(state, 'quizzes_played'),
+  /** Quizz DISTINCTS joués (à quelle que ce soit difficulté) : les clés
+      `slug:difficulté` sont ramenées à leur slug avant dédoublonnage, pour
+      que « Tour complet » reste un succès par quizz, pas par palier. */
+  distinctQuizzes: (state) => new Set((state.sets.quizzes_played || []).map((key) => String(key).split(':')[0])).size,
   /** Quizz distincts terminés sans faute. */
   perfectQuizzes: (state) => setSize(state, 'perfect_quizzes'),
   /** Jours différents avec le quizz du jour terminé. */
@@ -407,8 +453,10 @@ export function levelFromXp(totalXp = 0) {
 
 /** XP total d'un état = somme des succès débloqués. */
 export function totalXp(state, entries = ACHIEVEMENTS) {
-  const unlocked = normalizeState(state).unlocked;
-  return entries.reduce((sum, achievement) => (unlocked[achievement.id] ? sum + (achievement.xp || 0) : sum), 0);
+  const normalized = normalizeState(state);
+  const achievementXp = entries.reduce((sum, achievement) => (normalized.unlocked[achievement.id] ? sum + (achievement.xp || 0) : sum), 0);
+  const quizXp = Object.values(normalized.quizPoints).reduce((sum, points) => sum + points, 0);
+  return achievementXp + quizXp;
 }
 
 /**
@@ -507,6 +555,10 @@ export function mergeStates(a, b) {
     streak: Math.max(left.streak, right.streak),
     bestStreak: Math.max(left.bestStreak, right.bestStreak),
     unlocked,
+    quizPoints: Object.fromEntries([...new Set([...Object.keys(left.quizPoints), ...Object.keys(right.quizPoints)])].map((key) => [
+      key,
+      Math.max(left.quizPoints[key] || 0, right.quizPoints[key] || 0),
+    ])),
   });
 }
 
@@ -516,6 +568,7 @@ export function statesMatch(a, b) {
   const right = normalizeState(b);
   return JSON.stringify(left.counters) === JSON.stringify(right.counters)
     && JSON.stringify(left.sets) === JSON.stringify(right.sets)
+    && JSON.stringify(left.quizPoints) === JSON.stringify(right.quizPoints)
     && JSON.stringify(left.days) === JSON.stringify(right.days)
     && JSON.stringify(left.unlocked) === JSON.stringify(right.unlocked);
 }

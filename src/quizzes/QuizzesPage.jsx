@@ -4,7 +4,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from '../achievements/AchievementContext';
 import VideoThumb from '../components/VideoThumb';
 import { clockOffset } from '../components/ReleasesCalendar';
-import { quizzes, quizLabel, isQuizLocked, isEasyModeFinished, EASY_SLUGS } from '../quizzesData';
+import { quizzes, quizLabel, quizQuestions, isQuizLocked, isEasyModeFinished, EASY_SLUGS } from '../quizzesData';
 import { readLocalBest, formatBest } from './quizApi';
 import { bestDayRun, dailyQuizFor } from './engine';
 
@@ -17,7 +17,7 @@ const FALLBACK = {
   streak: 'Streak', questionsCount: '{n} questions', play: 'Play',
   nextIn: 'New quiz in {t}', best: 'Best: {s}',
   difficulty: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
-  locked: 'Locked', lockedHint: 'Finish easy mode to unlock', lockedNeed: 'Complete all easy quizzes ({done}/{total}) to unlock Confirmé & Expert.',
+  locked: 'Locked', lockedHint: 'Finish easy mode to unlock', lockedNeed: 'Complete all easy quizzes ({done}/{total}) to unlock Seasoned & Expert.',
 };
 
 /** Minutes restantes avant le prochain quizz du jour (minuit local). */
@@ -65,7 +65,9 @@ export default function QuizzesPage() {
   const streak = bestDayRun(state?.sets?.quiz_days || []);
   const quizzesPlayed = state?.sets?.quizzes_played || [];
   const easyFinished = isEasyModeFinished(quizzesPlayed);
-  const easyDone = EASY_SLUGS.filter((s) => quizzesPlayed.includes(s)).length;
+  const easyDone = EASY_SLUGS.filter((slug) =>
+    quizzesPlayed.some((k) => k === slug || String(k).startsWith(`${slug}:`))
+  ).length;
 
   return (
     <div className="quiz-page">
@@ -88,7 +90,7 @@ export default function QuizzesPage() {
                   <span className="quiz-daily-meta">
                     <span className="quiz-chip">{daily.tag}</span>
                     <span className={`quiz-chip quiz-chip--${daily.difficulty}`}>{copy.difficulty[daily.difficulty] || daily.difficulty}</span>
-                    <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(daily.questions.length))}</span>
+                    <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(quizQuestions(daily).length))}</span>
                   </span>
                   <span className="quiz-locked-hint">🔒 {lockedCopy.lockedNeed.replace('{done}', String(easyDone)).replace('{total}', String(EASY_SLUGS.length))}</span>
                 </div>
@@ -110,7 +112,7 @@ export default function QuizzesPage() {
                 <p>{quizLabel(daily.labels, lang)?.text}</p>
                 <span className="quiz-daily-meta">
                   <span className="quiz-chip">{daily.tag}</span>
-                  <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(daily.questions.length))}</span>
+                  <span className="quiz-chip quiz-chip--count">{copy.questionsCount.replace('{n}', String(quizQuestions(daily).length))}</span>
                   <span className="quiz-chip quiz-chip--streak">🔥 {copy.streak} : {streak}</span>
                   <span className="quiz-chip quiz-chip--daily">⏳ {countdown}</span>
                 </span>
@@ -170,7 +172,7 @@ export default function QuizzesPage() {
               <p>{quizLabel(quiz.labels, lang)?.text}</p>
               <span className="quiz-card-meta">
                 {best && <span className="quiz-card-best" title={copy.best.replace('{s}', formatBest(best))}>★ {formatBest(best)}</span>}
-                {copy.questionsCount.replace('{n}', String(quiz.questions.length))} <Arrow />
+                {copy.questionsCount.replace('{n}', String(quizQuestions(quiz).length))} <Arrow />
               </span>
             </span>
           </Link>
