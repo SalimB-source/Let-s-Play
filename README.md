@@ -783,15 +783,24 @@ mais la structure de données les accepte déjà.
   son multiplicateur de points (×1, ×1,5, ×2). **Un palier ne rapporte des
   points qu'une fois** : terminé, il porte sa coche ✓ dans le sélecteur, et le
   rejouer ne donne plus rien (ni points, ni XP, ni record, ni classement) ;
-  un autre palier du même quizz rapporte à nouveau. Le record de l'appareil
-  reste le meilleur des trois paliers ; côté serveur, chaque palier a son
-  propre classement (une ligne par `slug:difficulté`).
-- **Succès** — l'action `quiz_completed` (`QuizPlayer`, avec `difficulty`)
-  alimente le moteur des succès : parties (un run = quizz × difficulté, stocké
-  sous `slug:difficulté`), quizz distincts (pas de double comptage entre les
-  paliers d'un même quizz), sans-faute, jours de série. Règle anti-farm : un
-  palier déjà terminé ne fait plus avancer aucun succès (ni compteur, ni
-  sans-faute, ni XP) — vérifié par `check:achievements`. Cinq succès au
+  un autre palier du même quizz rapporte à nouveau. La coche dit ce qui a
+  RÉELLEMENT été joué : un quizz terminé avant l'arrivée des paliers (ancien
+  format, clé au slug nu) n'a vu que sa difficulté « maison »
+  (`quiz.difficulty`, la seule banque jouable à l'époque) — seule celle-là est
+  cochée et bloque ses points, les deux autres paliers restent neufs et
+  jouables (les cocher tous les trois annoncerait deux parties qui n'ont pas
+  eu lieu). Le record de l'appareil reste le meilleur des trois paliers ;
+  côté serveur, chaque palier a son propre classement (une ligne par
+  `slug:difficulté`).
+- **Succès** — l'action `quiz_completed` (`QuizPlayer`, avec `difficulty` et
+  `homeDifficulty`) alimente le moteur des succès : parties (un run = quizz ×
+  difficulté, stocké sous `slug:difficulté`), quizz distincts (pas de double
+  comptage entre les paliers d'un même quizz), sans-faute, jours de série.
+  Règle anti-farm : un palier déjà terminé ne fait plus avancer aucun succès
+  (ni compteur, ni sans-faute, ni XP) ; une complétion à l'ancien format est
+  rattachée à la difficulté maison du quizz (`homeDifficulty`), seule banque
+  qu'elle a réellement jouée — les autres paliers rapportent donc à nouveau.
+  Vérifié par `check:achievements`. Cinq succès au
   catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi
   envoyé), Sans faute (argent), Tour complet (or), Semaine parfaite (platine).
   L'XP reste celle des succès, comme partout sur le site.
@@ -835,7 +844,8 @@ mais la structure de données les accepte déjà.
   la vraie pile de providers (succès crédités dans le stockage, confettis du
   sans-faute, points et meilleure série affichés), choix de difficulté
   (vraies questions différentes, points multipliés au bon palier, replay d'un
-  palier déjà terminé = 0 point et rien d'écrit), grille rendue en FR/EN/AR,
+  palier déjà terminé = 0 point et rien d'écrit, ancien format = une seule
+  coche sur la difficulté maison), grille rendue en FR/EN/AR,
   record de l'appareil par points (meilleure partie = le plus de points,
   départage aux bonnes réponses), classement par points (points affichés en
   premier, score/total en secondaire, repli ancien backend) et position au

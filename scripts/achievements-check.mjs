@@ -422,15 +422,25 @@ for (let index = 1; index <= 30; index += 1) {
   ok('… son sans-faute est crédité', (fresh.sets.perfect_quizzes || []).includes('tech-hardware'));
   check('… deux quizz distincts', metricValue(fresh, 'distinctQuizzes'), 2);
 }
-// L'ancien format (run sans difficulté, au slug nu) reste lu : un compte qui
-// a terminé un quizz AVANT les difficultés ne peut pas encaisser deux fois.
+// L'ancien format (run sans difficulté, au slug nu) reste lu — mais il est
+// rattaché à LA difficulté maison du quizz (rpg-legends → confirmé), seule
+// banque jouable avant les paliers : le compte qui a terminé le quizz AVANT
+// les difficultés ne peut pas encaisser deux fois cette banque-là, et les
+// deux autres paliers restent neufs (ils n'ont jamais été joués — les cocher
+// serait annoncer une partie qui n'a pas eu lieu).
 {
   let legacy = createState(new Date(at(2026, 9, 1)));
   legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', perfect: false, at: at(2026, 9, 2) }).state;
-  ok('l\'ancien format marque le quizz terminé (toutes difficultés)', quizAlreadyCompleted(legacy, 'rpg-legends', 'hard'));
+  ok('l\'ancien format marque la difficulté maison du quizz', quizAlreadyCompleted(legacy, 'rpg-legends', 'medium', 'medium'));
+  ok('… et laisse les autres paliers neufs', !quizAlreadyCompleted(legacy, 'rpg-legends', 'hard', 'medium'));
   const xpBefore = totalXp(legacy);
-  legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', difficulty: 'hard', perfect: true, at: at(2026, 9, 3) }).state;
-  check('rejouer en expert un quizz terminé à l\'ancienne ne rapporte rien', totalXp(legacy), xpBefore);
+  legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', difficulty: 'medium', homeDifficulty: 'medium', perfect: true, at: at(2026, 9, 3) }).state;
+  check('rejouer la difficulté maison d\'un quizz terminé à l\'ancienne ne rapporte rien', totalXp(legacy), xpBefore);
+  ok('… ni le sans-faute de ce palier', !(legacy.sets.perfect_quizzes || []).includes('rpg-legends'));
+  legacy = reduce(legacy, { type: 'quiz_completed', id: 'rpg-legends', difficulty: 'hard', homeDifficulty: 'medium', perfect: true, at: at(2026, 9, 4) }).state;
+  check('… mais un palier jamais joué rapporte à nouveau (XP)', totalXp(legacy) > xpBefore, true);
+  check('… crédité sous sa clé slug:difficulté', (legacy.sets.quizzes_played || []).includes(quizRunKey('rpg-legends', 'hard')), true);
+  ok('… sans-faute compris', (legacy.sets.perfect_quizzes || []).includes('rpg-legends'));
 }
 
 // Un défi envoyé à un ami depuis un écran de résultat (rival trouvé).

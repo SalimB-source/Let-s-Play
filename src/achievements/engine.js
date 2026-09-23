@@ -222,8 +222,11 @@ export function reduce(state, action = {}) {
     // au blocage : le jour de quizz du jour reste crédité, sinon la
     // rotation (un quizz déjà fait tous les huit jours) casserait
     // mécaniquement la série « Semaine parfaite ».
+    // `action.homeDifficulty` (la difficulté « maison » du quizz) rattache
+    // une complétion à l'ANCIEN format à la seule banque qui existait
+    // alors — voir `quizAlreadyCompleted`.
     case 'quiz_completed': {
-      if (quizAlreadyCompleted(current, action.id, action.difficulty)) {
+      if (quizAlreadyCompleted(current, action.id, action.difficulty, action.homeDifficulty)) {
         if (action.daily) next = addToSet(current, 'quiz_days', dayKey(at));
         break;
       }
@@ -271,14 +274,25 @@ export function quizRunKey(quizId, difficulty) {
  * Si oui, le rejouer ne rapporte plus d'XP ni de points (voir
  * `quiz_completed` dans `reduce`). L'ensemble `quizzes_played` n'est
  * alimenté qu'à la fin d'une partie : c'est bien « terminé », pas
- * « commencé ». Un quizz terminé dans l'ancien format (au slug nu, sans
- * difficulté) est considéré comme terminé à TOUTES les difficultés — la
- * migration ne redonne pas de points aux vieux comptes.
+ * « commencé ».
+ *
+ * `homeDifficulty` : la difficulté « maison » du quizz (`quiz.difficulty`
+ * dans `src/quizzesData.js`). Une complétion à l'ANCIEN format (clé au slug
+ * nu, enregistrée avant l'arrivée des paliers) lui est rattachée : la banque
+ * jouée à l'époque était la sienne (`quizQuestions(quiz, quiz.difficulty)`
+ * = `quiz.questions`). Les deux autres paliers restent donc NEUFS — avant ce
+ * rattachement, les trois coches ✓ du sélecteur s'allumaient d'un coup pour
+ * un quizz joué avant la mise à jour, alors que deux de ses trois banques
+ * n'avaient jamais été vues. Sans `homeDifficulty` (appelant qui ne connaît
+ * pas le quizz), l'ancien format ne vaut pour aucun palier : mieux vaut une
+ * difficulté à rejouer qu'une difficulté cochée à tort.
  */
-export function quizAlreadyCompleted(state, quizId, difficulty = null) {
+export function quizAlreadyCompleted(state, quizId, difficulty = null, homeDifficulty = null) {
   if (!quizId) return false;
   const played = state?.sets?.quizzes_played || [];
-  return played.includes(quizId) || (difficulty ? played.includes(quizRunKey(quizId, difficulty)) : false);
+  if (!difficulty) return played.includes(quizId);
+  if (played.includes(quizRunKey(quizId, difficulty))) return true;
+  return Boolean(homeDifficulty) && homeDifficulty === difficulty && played.includes(quizId);
 }
 
 /**
