@@ -1090,8 +1090,13 @@ et liée.
   panne du modèle, repli automatique sur le gabarit : aucun run n’est perdu.
 - **Publication automatique** : le robot committe sur `main`
   (`src/news/auto/*.json` + `src/news/autoIndex.js` + visuels SVG générés dans
-  `public/news-auto/`), ce qui déclenche le déploiement Pages. Rien de neuf →
-  aucun commit. Sortie clairement en échec si *tous* les flux sont tombés.
+  `public/news-auto/`), puis appelle explicitement le workflow réutilisable
+  de déploiement Pages avec le SHA publié après rebase. Un push effectué avec
+  `GITHUB_TOKEN` ne déclenche **pas** un autre workflow `on: push` : cet appel
+  direct est donc indispensable, sans nécessiter de jeton personnel. Le
+  déploiement est réservé à la branche par défaut ; un run manuel sur une
+  branche de test publie ses fichiers sur cette branche, jamais sur le site
+  public. Si aucun fichier suivi n’a changé, aucun commit ni déploiement.
 - **Miniature officielle obligatoire** : avant publication, le robot extrait
   `image` du JSON-LD ou `og:image`/`twitter:image` de l’article source, vérifie
   qu’il s’agit d’une URL HTTP(S), télécharge le fichier image et contrôle son
@@ -1114,7 +1119,18 @@ et liée.
   de langage ».
 
 Run manuel : onglet Actions → « Robot actus du jour » → Run workflow (choisir
-le nombre d’articles, cocher « forcer » pour élargir la fenêtre). En local :
+le nombre d’articles, cocher « forcer » pour élargir la fenêtre).
+**Après un correctif du workflow, créer un nouveau run sur `main` une fois le
+correctif fusionné.** Le bouton « Re-run jobs » d’un ancien échec conserve
+l’ancien commit et l’ancienne définition du workflow : il peut donc répéter
+l’erreur même si elle est corrigée sur `main`.
+
+Diagnostic : dans le nouveau run, vérifier successivement la génération,
+« Commit & push des articles », puis « Publier les actus sur GitHub Pages ».
+Le rapport de génération apparaît dans le résumé du run. Le cron est prévu
+à **04:30 UTC** (05:30/06:30 à Paris), mais GitHub peut retarder son exécution.
+
+En local :
 
 ```bash
 npm run news:fetch        # run réel (réseau requis)
