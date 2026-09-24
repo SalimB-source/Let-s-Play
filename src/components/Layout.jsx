@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import ThemeToggle from './ThemeToggle';
-import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
 import { searchContent } from '../search/searchIndex';
@@ -20,7 +19,6 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
-  const { isLight } = useTheme();
   const { user, isDemo, signOut } = useAuth();
   const { summary } = useAchievements();
   const track = useAchievementAction();
@@ -102,10 +100,9 @@ export default function Layout({ children }) {
   };
 
   const logoutLabel = t.nav.logout || 'Log out';
-  // Le wordmark officiel est blanc (pensé pour le fond noir). Sur fond clair on
-  // sert la variante « encre » (public/lets-play-logo-light.png) : mêmes formes,
-  // le « Let's » blanc devient indigo profond, le jaune et le violet ne bougent pas.
-  const logoSrc = `${base}lets-play-logo${isLight ? '-light' : ''}.png`;
+  // Le wordmark officiel est le même dans les deux thèmes : son contour violet
+  // le rend lisible sur la barre blanche comme sur le fond noir.
+  const logoSrc = `${base}lets-play-logo.png`;
 
   const primaryLinks = [
     { to: '/', label: t.nav.home, num: '01', desc: 'HOME / INDEX' },

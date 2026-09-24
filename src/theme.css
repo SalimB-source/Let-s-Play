@@ -94,6 +94,10 @@
   [data-theme='light'] .achievement-tooltip-name,
   [data-theme='light'] .auth-social-btn:hover:not(:disabled),
   [data-theme='light'] .button-demo-secondary:hover,
+  [data-theme='light'] .player-games-filter-btn.active .player-games-filter-count,
+  [data-theme='light'] .player-games-action-btn:hover,
+  [data-theme='light'] .player-games-action-btn.active,
+  [data-theme='light'] .player-signout-btn:hover,
   [data-theme='light'] .delete-account-btn:hover,
   [data-theme='light'] .delete-account-dialog h2,
   [data-theme='light'] .delete-account-eye:hover,
@@ -101,11 +105,13 @@
   [data-theme='light'] .nav-account-name,
   [data-theme='light'] .nav-account-level strong,
   [data-theme='light'] .quiz-rank-heading h2,
+  [data-theme='light'] .quiz-rank-hero-value,
   [data-theme='light'] .dossier-lead,
   [data-theme='light'] .dossier-pullquote,
   [data-theme='light'] .dossier-stat-card span,
   [data-theme='light'] .friends-row-name,
   [data-theme='light'] .friends-search input,
+  [data-theme='light'] .player-friend-name,
   [data-theme='light'] .messages-search input,
   [data-theme='light'] .messages-row-name,
   [data-theme='light'] .messages-thread-name,
@@ -138,6 +144,7 @@
   [data-theme='light'] .partners-sources-list a,
   [data-theme='light'] .arena-lead,
   [data-theme='light'] .arena-by-meta a:hover,
+  [data-theme='light'] .player-list-toggle:hover,
   [data-theme='light'] .quiz-filter-chip:hover,
   [data-theme='light'] .social-panel-kicker,
   [data-theme='light'] .social-tab:hover,
@@ -166,10 +173,16 @@
 }
 
 /* Jaune de marque en texte : assombri pour rester lisible. */
+  [data-theme='light'] .achievement-hero-number,
   [data-theme='light'] .achievement-toast-kicker,
   [data-theme='light'] .auth-demo-kicker,
   [data-theme='light'] .auth-diag-line,
   [data-theme='light'] .auth-switch,
+  [data-theme='light'] .player-avatar-fallback,
+  [data-theme='light'] .player-badge-tier,
+  [data-theme='light'] .player-xp-level-tag,
+  [data-theme='light'] .player-stat-value,
+  [data-theme='light'] .player-edit-form-head h3,
   [data-theme='light'] .nav-account-avatar,
   [data-theme='light'] .nav-account-initials,
   [data-theme='light'] .nav-account.connected:hover .nav-account-name,
@@ -182,10 +195,12 @@
   [data-theme='light'] .dossier-stat-card strong,
   [data-theme='light'] .chapter-list time,
   [data-theme='light'] .friends-row-level,
-  [data-theme='light'] .friends-avatar img, .friends-avatar-fallback,
+  [data-theme='light'] .friends-avatar img,
+  [data-theme='light'] .friends-avatar-fallback,
   [data-theme='light'] .friend-btn-note-lead,
   [data-theme='light'] .friend-icon-add:not(:disabled):hover,
   [data-theme='light'] .friend-icon-incoming,
+  [data-theme='light'] .player-friend-level,
   [data-theme='light'] .messages-tool.is-flagged,
   [data-theme='light'] .messages-report-title,
   [data-theme='light'] .social-page-back:hover,
@@ -213,12 +228,14 @@
   [data-theme='light'] .partner-link:hover,
   [data-theme='light'] .partner-detail-facts-label,
   [data-theme='light'] .partners-sources-list a:hover,
+  [data-theme='light'] .arena-hero h2 em,
   [data-theme='light'] .arena-pills li:first-child,
   [data-theme='light'] .arena-by-label,
   [data-theme='light'] .arena-by-meta a,
   [data-theme='light'] .quiz-header h1 em,
   [data-theme='light'] .quiz-chip--medium,
-  [data-theme='light'] .quiz-chip--daily, .quiz-chip--streak,
+  [data-theme='light'] .quiz-chip--daily,
+  [data-theme='light'] .quiz-chip--streak,
   [data-theme='light'] .quiz-daily .arrow-link,
   [data-theme='light'] .quiz-card-best,
   [data-theme='light'] .quiz-survival-card .arrow-link,
@@ -231,7 +248,8 @@
   [data-theme='light'] .quiz-tier--veteran .quiz-result-tier,
   [data-theme='light'] .quiz-result-points,
   [data-theme='light'] .quiz-result-combo,
-  [data-theme='light'] .quiz-result-perfect, .quiz-result-record,
+  [data-theme='light'] .quiz-result-perfect,
+  [data-theme='light'] .quiz-result-record,
   [data-theme='light'] .quiz-board-score,
   [data-theme='light'] .quiz-player-intro.is-locked h1,
   [data-theme='light'] .quiz-finished-best,
@@ -261,9 +279,13 @@
 }
   [data-theme='light'] .achievement-reset:hover,
   [data-theme='light'] .auth-error,
+  [data-theme='light'] .player-game-chip-remove:hover:not(:disabled),
+  [data-theme='light'] .player-signout-btn,
   [data-theme='light'] .delete-account-btn,
   [data-theme='light'] .delete-account-icon,
   [data-theme='light'] .delete-account-error,
+  [data-theme='light'] .player-edit-error,
+  [data-theme='light'] .player-avatar-note-error,
   [data-theme='light'] .friends-action-quiet:hover,
   [data-theme='light'] .friends-inline-error,
   [data-theme='light'] .friend-btn-link:not(:disabled):hover,
@@ -290,9 +312,11 @@
   [data-theme='light'] .quiz-confirm-warning,
   [data-theme='light'] .nav-logout,
   [data-theme='light'] .live-status--live {
-  color: danger;
+  color: var(--danger);
 }
+  [data-theme='light'] .player-status-badge,
   [data-theme='light'] .sso-badge-status.connected,
+  [data-theme='light'] .player-game-row-btn.added,
   [data-theme='light'] .auth-connected-check,
   [data-theme='light'] .messages-thread-status.is-online,
   [data-theme='light'] .messages-report-thanks,
@@ -454,14 +478,18 @@
 [data-theme='light'] .article-reaction{background:var(--panel-2)}
 
 /* ============ 6. NAVIGATION, MENUS ============ */
-[data-theme='light'] .nav{
-  background:rgba(247,248,252,.86);
+/* La barre est d'un blanc pur et opaque, sur toutes les pages et à tout
+   moment du défilement (l'accueil n'a plus de variante transparente). Le
+   wordmark est le même qu'en sombre : son contour violet le porte sur blanc. */
+[data-theme='light'] .nav,
+[data-theme='light'] .nav.scrolled,
+[data-theme='light'] .nav.nav-home,
+[data-theme='light'] .nav.nav-home.scrolled{
+  background:#ffffff;
+  backdrop-filter:none;
   border-bottom-color:var(--line);
   box-shadow:0 1px 0 rgba(28,24,72,.04);
 }
-[data-theme='light'] .nav.scrolled,
-[data-theme='light'] .nav.nav-home.scrolled{background:rgba(247,248,252,.93);border-bottom-color:var(--line)}
-[data-theme='light'] .nav.nav-home{box-shadow:none}
 [data-theme='light'] .nav-search-results{background:rgba(255,255,255,.98);box-shadow:var(--shadow-md)}
 [data-theme='light'] .nav-search-result{border-bottom-color:var(--line)}
 [data-theme='light'] .nav-search-result:hover{background:rgba(14,116,144,.08)}
@@ -472,7 +500,7 @@
 [data-theme='light'] .messages-avatar-dot{border-color:#ffffff}
 @media (max-width:800px){
   [data-theme='light'] .nav,
-  [data-theme='light'] .nav.open{background:rgba(247,248,252,.97)}
+  [data-theme='light'] .nav.open{background:#ffffff}
   [data-theme='light'] .nav-links{
     background:
       radial-gradient(900px 600px at 85% -10%, rgba(124,58,237,.09), transparent 60%),
@@ -678,6 +706,25 @@
    pas seulement claire. */
 .button-yellow span,
 .button-yellow a{color:inherit}
+
+/* ============ 12b. ENCRES PASTEL HORS BALAYAGE ============ */
+/* Teintes claires « à la main » (pastels, cyan lumière) que le balayage ne
+   reconnaît pas : invisibles sur les panneaux blancs du profil, des succès
+   et des quizz. */
+[data-theme='light'] .achievement-tooltip-desc{color:var(--muted)}
+[data-theme='light'] .achievement-tooltip-xp{color:var(--cyan)}
+[data-theme='light'] .player-games-cap-note{color:#b45309}
+[data-theme='light'] .player-game-pill-top-1 .player-game-pill-title{color:#8a6100}
+[data-theme='light'] .player-game-pill-top-2 .player-game-pill-title{color:#3f4a5c}
+[data-theme='light'] .player-game-pill-top-3 .player-game-pill-title{color:#8a4a1f}
+[data-theme='light'] .player-game-pill-top-2{border-color:rgba(120,135,160,.6);background:linear-gradient(135deg,rgba(120,135,160,.16),rgba(120,135,160,.04))}
+[data-theme='light'] .quiz-confirm-jokerDetail{color:var(--violet)}
+[data-theme='light'] .quiz-jokers--none{color:var(--danger)}
+[data-theme='light'] .quiz-live-item--streak.is-hot{color:#c2410c}
+[data-theme='light'] .sentiment-text.positive{color:var(--ok)}
+[data-theme='light'] .sentiment-text.negative{color:var(--danger)}
+[data-theme='light'] .sentiment-text.mixed{color:#b45309}
+[data-theme='light'] .featured-dossier--telecom .featured-dossier-copy h3 em{color:#1d4ed8}
 
 /* ============ 13. LE BOUTON DE THÈME ============ */
 .theme-toggle{
