@@ -52,7 +52,7 @@ export const gameReleases = [
   { slug: 'control-resonant', day: 24, title: 'Control Resonant', platforms: 'PC · PS5 · XBOX SERIES', image: 'releases/control-resonant.jpg', alt: 'Control Resonant — Dylan Faden et son marteau au-dessus de Manhattan', awaitedRank: 4 },
   { slug: 'silent-hill-townfall', day: 24, title: 'Silent Hill Townfall', platforms: 'PC · PS5', image: 'releases/silent-hill-townfall.jpg', alt: 'Silent Hill Townfall — sheriff face à la brume rouge', awaitedRank: 3 },
   { slug: 'ea-sports-fc-27', day: 25, title: 'EA Sports FC 27', platforms: 'PC · PS5 · XBOX · SWITCH', image: 'releases/ea-sports-fc-27.jpg', alt: 'EA Sports FC 27 — visuel officiel de révélation', awaitedRank: 6 },
-  { slug: 'the-witcher-3-remastered', day: 29, title: 'The Witcher 3: Wild Hunt – Remastered', platforms: 'PC · PS5 · XBOX SERIES · SWITCH 2', image: 'releases/the-witcher-3-remastered.jpg', alt: 'The Witcher 3 — Geralt, Ciri et Yennefer en peinture remasterisée', awaitedRank: 5 },
+  { slug: 'the-witcher-3-remastered', day: 29, title: 'The Witcher 3: Wild Hunt – Remastered', platforms: 'PC · PS5 · XBOX SERIES · SWITCH 2', image: 'releases/the-witcher-3-remastered.jpg', alt: 'The Witcher 3: Wild Hunt – Remastered — Geralt, Ciri, Yennefer et Triss devant le crâne du Wild Hunt, key art officiel CD Projekt RED', awaitedRank: 5 },
 
   /* -----------------------------------------------------------------------
    * Octobre 2026 → avril 2027 : la suite de la saison, mois par mois.
