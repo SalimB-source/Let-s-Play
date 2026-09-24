@@ -24,13 +24,13 @@ const FALLBACK = {
   categoryMainCount: '{n} quizzes',
   categoryMainTitle: 'Gaming / tech / cinema / TV quizzes',
   categoryMainIntro: 'The {n} quizzes, gathered in one category.',
-  categorySurvivalInfinite: 'INFINITE',
+  categorySurvivalInfinite: 'NO EXIT',
   categorySurvivalEyebrow: 'CATEGORY 02 / ENDLESS',
   categorySurvivalTitle: 'Survival mode',
-  categorySurvivalIntro: 'Three lives. One mistake costs a heart. All {n} questions shuffle and recycle without end.',
+  categorySurvivalIntro: 'Three lives. No save. No exit.',
   categorySurvivalLives: '3 lives', categorySurvivalTimer: '10 sec / question',
-  categorySurvivalTimeout: 'Timeout = mistake', categorySurvivalPool: '{n} questions in the global pool',
-  categorySurvivalPlay: 'Enter Survival mode',
+  categorySurvivalTimeout: 'Timeout = mistake', categorySurvivalPool: '{n} questions',
+  categorySurvivalPlay: 'Enter',
   dailyEyebrow: 'Daily quiz', dailyHint: 'One quiz picked every day — come back tomorrow to keep your streak.',
 
   streak: 'Streak', questionsCount: '{n} questions', play: 'Play',
@@ -251,21 +251,16 @@ export default function QuizzesPage() {
 
       <section className="quiz-category quiz-category--survival wrap" aria-labelledby="quiz-category-survival-title">
         <div className="quiz-category-heading">
-          <div className="section-label"><span>{copy.categorySurvivalEyebrow}</span><span>♥♥♥</span></div>
+          <div className="section-label"><span>{copy.categorySurvivalEyebrow}</span><span style={{color:'#ef4444'}}>● REC</span></div>
           <h2 id="quiz-category-survival-title">{copy.categorySurvivalTitle}</h2>
           <p>{copy.categorySurvivalIntro.replace('{n}', String(SURVIVAL_QUESTION_COUNT))}</p>
         </div>
         <Link className="quiz-survival-card hud-frame" to="/quizz/survival">
+          <span className="quiz-survival-rec" aria-hidden="true"><i /> REC</span>
+          <span className="quiz-survival-tape" aria-hidden="true">QUARANTINE</span>
           <span className="quiz-survival-copy">
-            <span className="quiz-chips">
-              <span className="quiz-chip quiz-chip--count">{copy.categorySurvivalPool.replace('{n}', String(SURVIVAL_QUESTION_COUNT))}</span>
-              <span className="quiz-chip quiz-chip--survival">∞ {copy.categorySurvivalInfinite}</span>
-            </span>
-            <span className="quiz-survival-rules">
-              <span>♥ {copy.categorySurvivalLives}</span>
-              <span>⏱ {copy.categorySurvivalTimer}</span>
-              <span>⌛ {copy.categorySurvivalTimeout}</span>
-            </span>
+            <span className="quiz-survival-title">SURVIVAL</span>
+            <span className="quiz-survival-sub">No save. No exit.</span>
             <span className="arrow-link">{copy.categorySurvivalPlay} <Arrow /></span>
           </span>
           <span className="quiz-survival-visual" aria-hidden="true">

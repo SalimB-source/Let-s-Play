@@ -156,54 +156,206 @@
   letter-spacing: .015em; text-transform: uppercase;
 }
 .quiz-category-heading p { max-width: 680px; margin: 0; color: var(--muted); }
-.quiz-category--survival { margin-top: 68px; }
+/* ---- HORROR SURVIVAL — minimal card -------------------------------------- */
+/* Keep horror vibe but strip text: only REC, one tape, title, void, hearts */
+
+.quiz-category--survival {
+  margin-top: 72px;
+  position: relative;
+}
+.quiz-category--survival::before {
+  content: "";
+  position: absolute; inset: -20px -24px -14px;
+  pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(520px 220px at 14% 0%, rgba(220,20,30,.10), transparent 70%),
+    radial-gradient(460px 260px at 90% 100%, rgba(220,20,30,.08), transparent 70%);
+  filter: blur(8px);
+}
+
 .quiz-survival-card {
   position: relative; overflow: hidden;
-  display: grid; grid-template-columns: minmax(0, 1fr) 180px; align-items: center; gap: 26px;
-  padding: clamp(18px, 3vw, 30px);
+  display: grid; grid-template-columns: 1.1fr 160px; align-items: stretch;
+  min-height: 168px;
+  padding: 0;
   color: var(--ink); text-decoration: none;
-  background: radial-gradient(ellipse at 88% 50%, rgba(248, 113, 133, .14), transparent 42%), linear-gradient(115deg, rgba(124, 58, 237, .12), rgba(10, 11, 26, .2)), var(--panel);
-  border: 1px solid rgba(248, 113, 133, .32);
-  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
-  transition: border-color .2s, transform .2s, box-shadow .2s;
+  background: #07070a;
+  border: 1px solid rgba(185,28,28,.42);
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  isolation: isolate;
+  transition: border-color .22s, transform .22s, box-shadow .22s;
+}
+.quiz-survival-card::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    url('/quizzes/horror-gaming.jpg') center/cover no-repeat,
+    linear-gradient(100deg, rgba(7,7,10,.94) 28%, rgba(7,7,10,.72) 62%, rgba(7,7,10,.42)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+  opacity: .62;
+  filter: grayscale(.45) contrast(1.12) brightness(.72);
+}
+.quiz-survival-card::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(110% 110% at 50% 50%, transparent 52%, rgba(0,0,0,.72) 100%);
 }
 .quiz-survival-card:hover {
-  color: var(--ink); border-color: rgba(248, 113, 133, .7); transform: translateY(-3px);
-  box-shadow: 0 18px 42px rgba(5, 6, 15, .45), 0 0 28px rgba(248, 113, 133, .08);
+  border-color: rgba(239,68,68,.78);
+  transform: translateY(-3px);
+  box-shadow: 0 18px 44px rgba(0,0,0,.68), 0 0 0 1px rgba(239,68,68,.18) inset;
 }
-.quiz-survival-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; min-width: 0; }
-.quiz-survival-copy .quiz-chips { margin: 0; }
-.quiz-survival-rules { display: flex; flex-wrap: wrap; gap: 8px; }
-.quiz-survival-card .quiz-survival-rules span {
-  padding: 6px 9px; border: 1px solid var(--line); color: var(--muted);
-  font: 600 10px var(--mono); letter-spacing: .08em; text-transform: uppercase;
+.quiz-survival-card:hover::before { filter: grayscale(.18) contrast(1.18) brightness(.82); }
+
+.quiz-survival-copy {
+  position: relative; z-index: 3;
+  display: flex; flex-direction: column; justify-content: center; gap: 10px;
+  padding: 22px 22px 20px;
+  min-width: 0;
 }
-.quiz-survival-card .arrow-link { color: var(--yellow); font-weight: 700; }
+.quiz-survival-title {
+  font: 900 clamp(28px, 4vw, 42px)/.9 var(--display);
+  letter-spacing: .08em; text-transform: uppercase; color: #fff;
+  text-shadow: 0 0 18px rgba(239,68,68,.55);
+}
+.quiz-survival-sub {
+  font: 600 11px var(--mono); letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(252,165,165,.72);
+}
+.quiz-survival-card .arrow-link {
+  margin-top: 6px;
+  color: #fca5a5; font: 800 11px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+  border-bottom: 1px solid rgba(239,68,68,.42);
+  width: fit-content;
+}
+.quiz-survival-card:hover .arrow-link { color: #fff; border-bottom-color: #ef4444; }
+
+/* Visual */
 .quiz-survival-visual {
-  min-height: 154px; display: grid; place-content: center; justify-items: center;
-  background: rgba(7, 8, 20, .38); border: 1px solid rgba(248, 113, 133, .2);
-  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  position: relative; z-index: 3;
+  display: grid; place-content: center; justify-items: center;
+  background: linear-gradient(180deg, rgba(12,8,10,.86), rgba(6,6,8,.94));
+  border-left: 1px solid rgba(185,28,28,.26);
+  overflow: hidden;
+}
+.quiz-survival-visual::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px);
+  opacity: .5;
 }
 .quiz-survival-infinity {
-  color: var(--yellow); font: 900 100px/.75 var(--display);
-  text-shadow: 0 0 30px rgba(255, 214, 25, .28); transition: transform .25s;
+  position: relative; z-index: 1;
+  color: #fff; font: 900 84px/.7 var(--display);
+  text-shadow: 0 0 20px rgba(239,68,68,.7), 2px 0 0 rgba(239,68,68,.8);
+  animation: horror-glitch-text 4.8s steps(1) infinite;
 }
-.quiz-survival-card:hover .quiz-survival-infinity { transform: scale(1.08); }
-.quiz-survival-hearts { margin-top: 12px; color: #fb7185; font: 700 15px var(--mono); letter-spacing: .3em; text-shadow: 0 0 12px rgba(251, 113, 133, .45); }
-.quiz-survival-intro h2 { margin-top: 8px; }
+.quiz-survival-hearts {
+  position: relative; z-index: 1;
+  margin-top: 8px; color: #ef4444; font: 900 13px var(--mono); letter-spacing: .38em;
+  text-shadow: 0 0 12px rgba(239,68,68,.7);
+  animation: horror-heart-beat 1.3s ease-in-out infinite;
+}
+
+/* One tape + REC */
+.quiz-survival-tape {
+  position: absolute; z-index: 4; top: 10px; right: -18px;
+  background: #facc15; color: #000;
+  font: 900 9px var(--mono); letter-spacing: .20em; text-transform: uppercase;
+  padding: 4px 22px; transform: rotate(7deg);
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.quiz-survival-rec {
+  position: absolute; z-index: 4; top: 12px; left: 14px;
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 800 9px var(--mono); letter-spacing: .20em; color: #fecaca;
+}
+.quiz-survival-rec i {
+  width: 7px; height: 7px; background: #ef4444; border-radius: 50%;
+  box-shadow: 0 0 8px #ef4444; animation: horror-rec-blink 1s steps(1) infinite;
+}
+
+/* legacy hooks no longer used — hide */
+.quiz-survival-card .quiz-survival-rules,
+.quiz-survival-card .quiz-chips,
+.quiz-survival-tape--red { display: none !important; }
+
+/* Survival intro page — case file */
+.quiz-survival-intro h2 { margin-top: 8px; letter-spacing: .02em; }
 .quiz-survival-intro .quiz-survival-rules {
   list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 8px;
 }
 .quiz-survival-intro .quiz-survival-rules li {
-  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
-  background: var(--panel-2); border: 1px solid var(--line); color: var(--muted);
-  font: 500 12px var(--mono); letter-spacing: .05em;
+  display: flex; align-items: center; gap: 12px; padding: 11px 12px;
+  background: rgba(14, 10, 12, .88);
+  border: 1px solid rgba(185,28,28,.28);
+  border-left: 3px solid #b91c1c;
+  color: #e5d5d5;
+  font: 600 12px var(--mono); letter-spacing: .06em;
+  position: relative;
+  overflow: hidden;
 }
-.quiz-survival-intro .quiz-survival-rules li > span { min-width: 28px; color: #fb7185; font-weight: 800; }
-.quiz-survival-best { margin: 16px 0 0; color: var(--yellow); font: 700 12px var(--mono); letter-spacing: .08em; }
-.quiz-survival-final-label { margin: 18px 0 0; color: var(--dim); font: 700 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
-.quiz-survival-result { border-color: rgba(248, 113, 133, .4); background: linear-gradient(135deg, rgba(248, 113, 133, .06), rgba(124, 58, 237, .08)), var(--panel); }
-.quiz-survival-result .quiz-result-tier { color: #fecdd3; }
+.quiz-survival-intro .quiz-survival-rules li::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 22px, rgba(185,28,28,.04) 22px 23px);
+  pointer-events: none;
+}
+.quiz-survival-intro .quiz-survival-rules li > span {
+  min-width: 30px; color: #ef4444; font-weight: 900; font-size: 14px;
+  text-shadow: 0 0 10px rgba(239,68,68,.6);
+}
+.quiz-survival-best {
+  margin: 16px 0 0; color: #fca5a5;
+  font: 700 12px var(--mono); letter-spacing: .12em;
+  border-left: 2px solid #ef4444; padding-left: 10px;
+}
+.quiz-survival-final-label {
+  margin: 18px 0 0; color: #fca5a5;
+  font: 800 11px var(--mono); letter-spacing: .22em; text-transform: uppercase;
+}
+.quiz-survival-result {
+  border-color: rgba(185,28,28,.55);
+  background:
+    radial-gradient(500px 280px at 80% 0%, rgba(185,28,28,.14), transparent 70%),
+    linear-gradient(135deg, rgba(12, 8, 10, .98), rgba(8, 8, 12, .98));
+  position: relative; overflow: hidden;
+}
+.quiz-survival-result::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+}
+.quiz-survival-result .quiz-result-tier { color: #fecaca; text-shadow: 0 0 18px rgba(239,68,68,.6); }
+
+/* Animations */
+@keyframes horror-pulse-red {
+  0%,100% { box-shadow: 0 0 12px rgba(185,28,28,.4); }
+  50% { box-shadow: 0 0 22px rgba(239,68,68,.75), 0 0 36px rgba(239,68,68,.22); }
+}
+@keyframes horror-heart-beat {
+  0%,100% { transform: scale(1); }
+  15% { transform: scale(1.14); }
+  30% { transform: scale(.96); }
+  45% { transform: scale(1.08); }
+}
+@keyframes horror-rec-blink {
+  0%,49% { opacity: 1; } 50%,100% { opacity: 0; }
+}
+@keyframes horror-flicker {
+  0% { opacity: .72; } 50% { opacity: .94; } 100% { opacity: .78; }
+}
+@keyframes horror-scan-move {
+  0% { transform: translateY(0); } 100% { transform: translateY(6px); }
+}
+@keyframes horror-glitch-text {
+  0%, 86%, 100% { transform: none; text-shadow: 0 0 22px rgba(239,68,68,.72), 0 0 2px rgba(255,255,255,.9), 2px 0 0 rgba(239,68,68,.9), -1px 0 0 rgba(34,211,238,.6); }
+  87% { transform: translateX(-1px) skewX(-3deg); text-shadow: 3px 0 0 #ef4444, -2px 0 0 #22d3ee; }
+  88% { transform: translateX(1px); }
+  89% { transform: translateX(-2px) skewX(2deg); }
+  90% { transform: none; }
+}
 
 /* ---- Le joueur ----------------------------------------------------------- */
 .quiz-player {
@@ -693,9 +845,10 @@
   .quiz-card-copy .quiz-chips { flex-wrap: wrap; gap: 4px; }
 }
 @media (max-width: 620px) {
-  .quiz-survival-card { grid-template-columns: 1fr; gap: 18px; }
-  .quiz-survival-visual { min-height: 108px; }
-  .quiz-survival-infinity { font-size: 76px; }
+  .quiz-survival-card { grid-template-columns: 1fr; min-height: 0; }
+  .quiz-survival-visual { min-height: 88px; border-left: 0; border-top: 1px solid rgba(185,28,28,.26); }
+  .quiz-survival-infinity { font-size: 64px; }
+  .quiz-survival-tape { font-size: 8px; padding: 3px 18px; }
 }
 
 @media (max-width: 860px) {
@@ -883,3 +1036,524 @@
 @media (prefers-reduced-motion: reduce) {
   .quiz-confirm-overlay, .quiz-confirm-dialog { animation: none; }
 }
+
+/* ==========================================================================
+   SURVIVAL HORROR — Full page redesign inspired by:
+   - Silent Hill (fog, rust, radio static)
+   - Resident Evil (typewriter, ink ribbon, blood file)
+   - Dead Space (diegetic HUD, vitals)
+   - P.T. / Visage (flicker, looping corridor, whispers)
+   - Outlast (night vision, found footage)
+   ========================================================================== */
+
+.survival-horror {
+  position: relative;
+  background: #060608;
+  min-height: 100vh;
+  overflow: clip;
+  --horror-red: #ef4444;
+  --horror-red-dark: #7f1d1d;
+  --horror-blood: #b91c1c;
+  --horror-paper: #e8ddd0;
+  --horror-ink: #0a0a0a;
+}
+
+/* Atmosphere layers */
+.horror-atmosphere {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+.horror-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(900px 600px at 18% 8%, rgba(185,28,28,.16), transparent 62%),
+    radial-gradient(800px 520px at 86% 92%, rgba(185,28,28,.12), transparent 62%),
+    radial-gradient(700px 400px at 50% 50%, rgba(124,58,237,.08), transparent 72%),
+    linear-gradient(180deg, #0a0a0f 0%, #060608 100%);
+}
+.horror-fog {
+  position: absolute; inset: -20%;
+  background: radial-gradient(60% 40% at 50% 50%, rgba(255,255,255,.06), transparent 70%);
+  filter: blur(18px);
+  animation: horror-fog-drift 22s ease-in-out infinite alternate;
+}
+.horror-fog--2 {
+  background: radial-gradient(50% 60% at 30% 80%, rgba(239,68,68,.08), transparent 70%);
+  animation-duration: 28s; animation-delay: -8s;
+}
+.horror-grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.12'/%3E%3C/svg%3E");
+  opacity: .34; mix-blend-mode: overlay;
+  animation: horror-grain-shift .18s steps(2) infinite;
+}
+.horror-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(90% 85% at 50% 50%, transparent 44%, rgba(0,0,0,.82) 100%);
+}
+.horror-scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 4px);
+  opacity: .22;
+}
+.horror-blood-drips {
+  position: absolute; top: 0; left: 0; right: 0; height: 120px;
+  display: flex; gap: 0; justify-content: space-around; pointer-events: none;
+}
+.horror-blood-drips span {
+  display: block; width: 2px; background: linear-gradient(180deg, var(--horror-red), transparent);
+  height: 0; animation: horror-drip 7s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--horror-red);
+}
+.horror-blood-drips span:nth-child(1){ height: 68px; left: 8%; animation-delay: 0s; }
+.horror-blood-drips span:nth-child(2){ height: 92px; left: 34%; animation-delay: 1.2s; }
+.horror-blood-drips span:nth-child(3){ height: 54px; left: 66%; animation-delay: 2.8s; }
+.horror-blood-drips span:nth-child(4){ height: 78px; left: 88%; animation-delay: 4.1s; }
+
+.survival-horror .wrap { position: relative; z-index: 1; }
+
+/* Header horror */
+.survival-horror-header { margin-bottom: 22px; }
+.horror-section-label {
+  border-top-color: rgba(185,28,28,.42) !important;
+  color: #fca5a5 !important;
+}
+.horror-section-label span:first-child { display: inline-flex; align-items: center; gap: 8px; }
+.horror-rec-dot {
+  display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
+  box-shadow: 0 0 10px #ef4444; animation: horror-rec-blink 1s steps(1) infinite;
+}
+.horror-pool-label {
+  color: rgba(252,165,165,.56) !important; font: 700 9px var(--mono) !important;
+  letter-spacing: .18em !important;
+}
+.horror-glitch-title {
+  position: relative; display: inline-block;
+  font: 900 clamp(36px, 6vw, 66px)/.92 var(--display) !important;
+  letter-spacing: .06em; text-transform: uppercase; color: #fff;
+  text-shadow: 0 0 18px rgba(239,68,68,.55);
+}
+.horror-glitch-title span {
+  display: inline-block; position: relative;
+  animation: horror-letter-flicker 5s steps(1) infinite;
+  animation-delay: calc(var(--i) * .06s);
+}
+.horror-title-blood {
+  position: absolute; left: 0; top: 0; color: transparent;
+  -webkit-text-stroke: 1px rgba(239,68,68,.18);
+  transform: translate(2px, 2px); pointer-events: none; filter: blur(.4px);
+}
+.horror-intro { max-width: 720px !important; color: #e5d5d5 !important; line-height: 1.6 !important; }
+.horror-typewriter { font-family: var(--mono); letter-spacing: .02em; }
+.horror-log {
+  display: inline-block; margin-top: 10px; padding: 6px 10px;
+  background: rgba(0,0,0,.64); border-left: 2px solid var(--horror-red);
+  color: #fca5a5; font: 600 11px var(--mono); letter-spacing: .06em;
+}
+
+/* Case file intro */
+.horror-case-file {
+  max-width: 880px !important; position: relative;
+  --quiz-accent: var(--horror-red) !important;
+  --quiz-accent-soft: rgba(239,68,68,.12) !important;
+}
+.horror-tape {
+  position: absolute; z-index: 5; left: -14px; right: -14px; height: 26px;
+  display: grid; place-items: center;
+  font: 900 11px var(--mono); letter-spacing: .22em; text-transform: uppercase;
+  background: #facc15; color: #000; box-shadow: 0 4px 18px rgba(0,0,0,.5);
+  transform: rotate(-1.2deg);
+}
+.horror-tape--top { top: 12px; }
+.horror-tape--bottom { bottom: 12px; top: auto; transform: rotate(1.2deg); }
+.horror-tape--red { background: var(--horror-blood); color: #fff; }
+
+.horror-file-inner {
+  padding: 56px 28px 56px !important;
+  background:
+    linear-gradient(180deg, rgba(232,221,208,.04), rgba(232,221,208,.01)),
+    radial-gradient(800px 400px at 20% 0%, rgba(239,68,68,.08), transparent 60%),
+    linear-gradient(180deg, #121014, #0c0a0c) !important;
+  border: 1px solid rgba(185,28,28,.38) !important;
+  position: relative; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,.72), inset 0 0 0 1px rgba(239,68,68,.12);
+}
+.horror-file-inner::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(239,68,68,.04) 34px 35px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 28px);
+  opacity: .6;
+}
+.horror-file-header {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+  margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px dashed rgba(239,68,68,.28);
+  position: relative; z-index: 1;
+}
+.horror-file-meta {
+  display: grid; gap: 4px; font: 700 9px var(--mono); letter-spacing: .18em; color: rgba(252,165,165,.66); text-transform: uppercase;
+}
+.horror-stamp {
+  padding: 6px 14px; border: 2px solid var(--horror-red); color: var(--horror-red);
+  font: 900 12px var(--mono); letter-spacing: .22em; text-transform: uppercase;
+  transform: rotate(-8deg); opacity: .9; text-shadow: 0 0 8px rgba(239,68,68,.6);
+  box-shadow: 0 0 12px rgba(239,68,68,.22) inset;
+}
+.horror-chips { position: relative; z-index: 1; }
+.horror-chip-pulse {
+  background: var(--horror-blood) !important; color: #fff !important;
+  border-color: var(--horror-red) !important;
+  animation: horror-pulse-red 2.2s ease-in-out infinite;
+}
+.horror-chip-warn {
+  color: #facc15 !important; border-color: rgba(250,204,21,.45) !important;
+  background: rgba(250,204,21,.12) !important;
+}
+.horror-file-title {
+  position: relative; z-index: 1; margin: 12px 0 8px;
+  font: 800 clamp(22px, 3.2vw, 32px)/1.1 var(--display) !important;
+  color: #fff !important; letter-spacing: .02em; text-transform: uppercase;
+}
+.horror-cursor { color: var(--horror-red); animation: horror-cursor-blink .9s steps(1) infinite; margin-left: 4px; }
+
+.horror-evidence-photo {
+  position: relative; z-index: 1; margin: 18px 0 22px; height: 96px;
+  background: #000; border: 1px solid rgba(185,28,28,.28);
+  display: grid; place-items: center; overflow: hidden;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.horror-evidence-photo::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    url('/quizzes/horror-gaming.jpg') center/cover no-repeat,
+    linear-gradient(90deg, rgba(0,0,0,.6), rgba(0,0,0,.2));
+  filter: grayscale(1) contrast(1.3) brightness(.55) sepia(.2);
+  opacity: .72;
+}
+.horror-photo-inner {
+  position: relative; z-index: 1; width: 100%; display: flex; justify-content: space-between;
+  padding: 10px 14px; font: 700 9px var(--mono); letter-spacing: .22em; color: rgba(255,255,255,.5);
+}
+
+.horror-rules { position: relative; z-index: 1; }
+.horror-rules li { background: rgba(18,12,14,.92) !important; border-color: rgba(185,28,28,.32) !important; }
+
+.horror-audio-log {
+  position: relative; z-index: 1; margin-top: 18px; padding: 12px 14px;
+  background: rgba(0,0,0,.56); border: 1px solid rgba(185,28,28,.28);
+  border-left: 3px solid var(--horror-red);
+}
+.horror-audio-kicker {
+  display: block; font: 800 9px var(--mono); letter-spacing: .22em; color: var(--horror-red); margin-bottom: 6px;
+}
+.horror-audio-log p {
+  margin: 0; font: 500 13px/1.5 var(--mono); color: #e5d5d5; font-style: italic;
+}
+
+.horror-best {
+  position: relative; z-index: 1; background: rgba(0,0,0,.5); border-color: var(--horror-red) !important;
+  padding-left: 12px !important;
+}
+.horror-best-icon { color: var(--horror-red); margin-right: 6px; }
+
+.horror-actions { position: relative; z-index: 1; }
+.horror-cta-enter {
+  position: relative; overflow: hidden;
+  background: var(--horror-blood) !important; color: #fff !important;
+  border-color: var(--horror-red) !important;
+  padding: 14px 22px !important; font: 900 12px var(--mono) !important;
+  letter-spacing: .18em !important; min-width: 200px;
+  box-shadow: 0 0 22px rgba(185,28,28,.45), 0 0 0 1px rgba(239,68,68,.32) inset !important;
+  transition: transform .18s, box-shadow .18s, filter .18s !important;
+}
+.horror-cta-enter:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 0 34px rgba(239,68,68,.7), 0 0 0 1px rgba(239,68,68,.6) inset !important;
+  filter: contrast(1.15);
+}
+.horror-cta-blood {
+  position: absolute; inset: auto 0 0 0; height: 3px;
+  background: linear-gradient(90deg, transparent, #ef4444, transparent);
+  transform: scaleX(0); transform-origin: left; transition: transform .34s ease;
+}
+.horror-cta-enter:hover .horror-cta-blood { transform: scaleX(1); }
+.horror-cta-ghost {
+  background: rgba(0,0,0,.6) !important; border-color: rgba(252,165,165,.32) !important;
+  color: #fca5a5 !important;
+}
+.horror-footnote {
+  position: relative; z-index: 1; margin: 16px 0 0; color: rgba(252,165,165,.42);
+  font: 500 9px var(--mono); letter-spacing: .12em; text-transform: uppercase;
+}
+
+/* Play mode horror */
+.horror-play-root {
+  max-width: 900px !important;
+  --quiz-accent: var(--horror-red) !important;
+  --quiz-accent-soft: rgba(239,68,68,.12) !important;
+  --quiz-good: #4ade80 !important;
+  --quiz-bad: var(--horror-red) !important;
+  background: linear-gradient(180deg, rgba(18,12,14,.96), rgba(10,8,10,.98));
+  border: 1px solid rgba(185,28,28,.42);
+  padding: 18px 18px 22px;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  box-shadow: 0 28px 72px rgba(0,0,0,.78), inset 0 0 0 1px rgba(239,68,68,.14);
+  position: relative; overflow: hidden;
+}
+.horror-play-root::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+  opacity: .5;
+}
+
+.horror-hud {
+  position: relative; z-index: 1; background: rgba(0,0,0,.62) !important;
+  border-color: rgba(185,28,28,.32) !important;
+  padding: 12px 14px !important; gap: 12px !important;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px) !important;
+}
+.horror-hud-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.horror-timer { flex: 1 1 220px; }
+.horror-timer-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.horror-timer-label { font: 800 9px var(--mono); letter-spacing: .22em; color: #fca5a5; }
+.horror-timer-count { color: #fff !important; font: 900 18px var(--mono) !important; text-shadow: 0 0 12px rgba(239,68,68,.7); }
+.horror-timer-track { height: 6px !important; background: rgba(239,68,68,.18) !important; border: 1px solid rgba(239,68,68,.24); }
+.horror-timer-track i { background: linear-gradient(90deg, var(--horror-blood), #ef4444) !important; box-shadow: 0 0 10px rgba(239,68,68,.6); }
+.horror-timer.is-low .horror-timer-count { color: #ef4444 !important; animation: horror-timer-flash .42s steps(1) infinite; }
+.horror-timer-warning { margin-left: 10px; font: 800 9px var(--mono); color: #facc15; letter-spacing: .18em; animation: horror-flicker .2s steps(1) infinite; }
+.horror-lives { display: flex; align-items: center; gap: 10px; margin: 0; }
+.horror-lives-label { font: 800 10px var(--mono); letter-spacing: .18em; color: #fca5a5; }
+.horror-hearts { display: inline-flex; gap: 6px; }
+.horror-heart { position: relative; width: 28px; height: 28px; display: grid; place-items: center; background: rgba(185,28,28,.18); border: 1px solid rgba(239,68,68,.42); clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+.horror-heart-inner { color: #ef4444; font-size: 16px; text-shadow: 0 0 10px rgba(239,68,68,.8); animation: horror-heart-beat 1.2s ease-in-out infinite; }
+.horror-heart.is-lost { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.08); opacity: .5; }
+.horror-heart.is-lost .horror-heart-inner { color: #555; text-shadow: none; animation: none; }
+.horror-heart-lost { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font: 900 12px var(--mono); }
+.horror-hud-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: 10px; flex-wrap: wrap; }
+.horror-live { gap: 12px !important; font: 700 11px var(--mono) !important; letter-spacing: .08em; }
+.horror-live .quiz-live-item--right { color: #4ade80 !important; }
+.horror-live .quiz-live-item--wrong { color: #ef4444 !important; }
+.horror-live .quiz-live-item--points { color: #facc15 !important; }
+.horror-streak-tag { background: rgba(239,68,68,.18); border-color: var(--horror-red) !important; color: #fecaca !important; }
+.horror-loop-indicator { font: 700 9px var(--mono); letter-spacing: .18em; color: rgba(252,165,165,.5); border: 1px solid rgba(239,68,68,.22); padding: 3px 8px; background: rgba(0,0,0,.4); }
+
+.horror-question-wrap {
+  position: relative; z-index: 1; margin-top: 16px; padding: 16px 16px 14px;
+  background: linear-gradient(180deg, rgba(232,221,208,.06), rgba(232,221,208,.02)), #141016;
+  border: 1px solid rgba(239,68,68,.22); border-left: 3px solid var(--horror-red);
+}
+.horror-question-tape {
+  position: absolute; top: -10px; left: 18px; background: #facc15; color: #000;
+  font: 800 9px var(--mono); letter-spacing: .18em; padding: 3px 10px; transform: rotate(-1deg);
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.horror-progress { margin: 0 0 10px !important; gap: 8px !important; }
+.horror-file-ref { color: #e5d5d5 !important; letter-spacing: .12em !important; }
+.horror-static-id { font: 600 9px var(--mono); color: rgba(252,165,165,.42); letter-spacing: .16em; margin-left: auto; }
+.horror-question {
+  position: relative; color: #f5efe6 !important; font: 700 clamp(18px, 2.4vw, 24px)/1.28 var(--display) !important;
+  letter-spacing: .01em; text-wrap: balance;
+}
+.horror-question-mark {
+  display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 10px;
+  background: var(--horror-blood); color: #fff; font: 900 14px var(--mono);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  vertical-align: middle; transform: translateY(-2px);
+}
+.horror-question-blood {
+  position: absolute; right: 6px; top: -6px; width: 18px; height: 18px;
+  background: radial-gradient(circle, rgba(239,68,68,.7), transparent 70%); filter: blur(1px); pointer-events: none;
+}
+
+.horror-verdict {
+  position: relative; z-index: 1; margin: 14px 0 16px !important; padding: 12px 14px !important;
+  display: flex !important; align-items: center; gap: 12px !important;
+  background: rgba(0,0,0,.64) !important; border: 1px solid rgba(239,68,68,.32) !important;
+  border-left: 3px solid var(--horror-red) !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  overflow: hidden;
+}
+.horror-verdict.is-right { border-left-color: #4ade80 !important; }
+.horror-verdict.is-right .horror-verdict-icon { background: #4ade80; }
+.horror-verdict-icon {
+  flex: none; width: 32px; height: 32px; display: grid; place-items: center;
+  background: var(--horror-red); color: #fff; font: 900 16px var(--mono);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.horror-verdict-body { display: grid; gap: 2px; }
+.horror-verdict-phrase { font: 800 13px var(--mono) !important; letter-spacing: .06em !important; }
+.horror-verdict-sub { font: 500 11px var(--mono); color: rgba(252,165,165,.62); }
+.horror-verdict-points { margin-left: auto; background: rgba(250,204,21,.12); border: 1px solid rgba(250,204,21,.32); padding: 4px 8px; color: #facc15 !important; font: 800 11px var(--mono) !important; }
+.horror-verdict-blood {
+  position: absolute; inset: 0; pointer-events: none; opacity: .12;
+  background: radial-gradient(120px 60px at 20% 50%, var(--horror-red), transparent 70%);
+}
+
+.horror-choices { position: relative; z-index: 1; gap: 10px !important; }
+.horror-choice {
+  position: relative; overflow: hidden; min-height: 52px !important;
+  padding: 12px 14px 12px 48px !important;
+  background: linear-gradient(180deg, rgba(24,16,18,.96), rgba(14,10,12,.96)) !important;
+  border: 1px solid rgba(185,28,28,.26) !important; color: #e8ddd0 !important;
+  font: 600 14px/1.35 var(--body) !important;
+  text-align: left !important; transition: border-color .18s, transform .18s, background .18s, box-shadow .18s !important;
+}
+.horror-choice::before { display: none !important; }
+.horror-choice-key {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; display: grid; place-items: center;
+  background: rgba(0,0,0,.6); border: 1px solid rgba(252,165,165,.22);
+  color: #fca5a5; font: 800 11px var(--mono);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+.horror-choice:hover:not(:disabled) {
+  border-color: rgba(239,68,68,.64) !important; background: linear-gradient(180deg, rgba(38,18,20,.98), rgba(22,14,16,.98)) !important;
+  transform: translateY(-1px) !important; box-shadow: 0 0 18px rgba(239,68,68,.18);
+}
+.horror-choice:hover:not(:disabled) .horror-choice-key { border-color: var(--horror-red); color: #fff; background: var(--horror-blood); }
+.horror-choice-blood {
+  position: absolute; right: -10px; bottom: -10px; width: 80px; height: 80px;
+  background: radial-gradient(circle at 30% 30%, rgba(239,68,68,.18), transparent 70%);
+  opacity: 0; transition: opacity .22s; pointer-events: none;
+}
+.horror-choice:hover .horror-choice-blood { opacity: 1; }
+.horror-choice-static {
+  position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,.02) 2px 3px);
+  opacity: 0; pointer-events: none;
+}
+.horror-choice:hover .horror-choice-static { opacity: .6; }
+.horror-choice.is-correct {
+  border-color: #4ade80 !important; background: rgba(74,222,128,.12) !important;
+  box-shadow: 0 0 18px rgba(74,222,128,.22) !important;
+}
+.horror-choice.is-wrong {
+  border-color: var(--horror-red) !important; background: rgba(239,68,68,.16) !important;
+  animation: horror-shake .38s ease;
+}
+.horror-choice.is-reveal { border-color: rgba(74,222,128,.6) !important; box-shadow: inset 0 0 0 1px rgba(74,222,128,.32); }
+
+.horror-keys { color: rgba(252,165,165,.52) !important; margin-top: 14px !important; }
+.horror-keys-warn { color: #facc15; margin-left: 8px; }
+
+/* Game over horror */
+.horror-gameover-root { max-width: 860px !important; }
+.horror-gameover-card {
+  position: relative; padding: 36px 28px 28px !important; text-align: center;
+  background: linear-gradient(180deg, #151016, #0c0a0c) !important;
+  border-color: rgba(185,28,28,.55) !important;
+  overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,.84), inset 0 0 0 1px rgba(239,68,68,.18) !important;
+}
+.horror-gameover-static {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+    radial-gradient(80% 60% at 50% 30%, rgba(239,68,68,.12), transparent 70%);
+  animation: horror-static-flicker .12s steps(2) infinite;
+}
+.horror-gameover-blood {
+  position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(90deg, transparent, var(--horror-red), transparent); opacity: .8;
+}
+.horror-gameover-kicker { position: relative; z-index: 1; color: #fca5a5 !important; letter-spacing: .22em !important; }
+.horror-gameover-title {
+  position: relative; z-index: 1; font: 900 clamp(42px, 8vw, 84px)/.9 var(--display) !important;
+  letter-spacing: .06em; color: #fff !important; text-shadow: 0 0 24px rgba(239,68,68,.72);
+}
+.horror-skull { color: var(--horror-red); text-shadow: 0 0 18px rgba(239,68,68,.9); margin-right: 8px; }
+.horror-gameover-glitch {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  color: transparent; -webkit-text-stroke: 1px rgba(239,68,68,.12);
+  filter: blur(1px); pointer-events: none; font: inherit; white-space: nowrap;
+}
+.horror-gameover-sub { position: relative; z-index: 1; margin: 10px auto 0; max-width: 42ch; color: rgba(252,165,165,.64); font: 500 13px var(--mono); }
+.horror-points { position: relative; z-index: 1; font: 900 22px var(--mono) !important; letter-spacing: .12em; color: #facc15 !important; text-shadow: 0 0 14px rgba(250,204,21,.4); }
+.horror-record { position: relative; z-index: 1; background: rgba(250,204,21,.12); border-color: rgba(250,204,21,.5) !important; color: #facc15 !important; animation: horror-record-pulse 1.6s ease-in-out infinite; }
+.horror-stats { position: relative; z-index: 1; margin-top: 22px !important; }
+.horror-stats .quiz-stat { background: rgba(0,0,0,.54) !important; border-color: rgba(185,28,28,.22) !important; }
+.horror-stats .quiz-stat strong { color: #fff !important; }
+.horror-stat-streak { border-color: rgba(250,204,21,.32) !important; }
+.horror-stat-streak strong { color: #facc15 !important; }
+.horror-gameover-tape {
+  position: relative; z-index: 1; margin-top: 18px; display: inline-block;
+  background: #facc15; color: #000; font: 800 9px var(--mono); letter-spacing: .18em; padding: 4px 12px; transform: rotate(-1deg);
+}
+.horror-gameover-actions { position: relative; z-index: 1; margin-top: 20px !important; }
+.horror-gameover-whisper {
+  position: relative; z-index: 1; margin: 18px 0 0; color: rgba(252,165,165,.32);
+  font: 500 11px var(--mono); letter-spacing: .14em; font-style: italic;
+}
+
+/* Sound toggle horror */
+.horror-sound-toggle {
+  background: rgba(0,0,0,.6) !important; border-color: rgba(239,68,68,.32) !important;
+  color: #fca5a5 !important; width: auto !important; padding: 0 12px !important; gap: 8px !important;
+  font: 700 10px var(--mono) !important; letter-spacing: .14em;
+}
+.horror-sound-toggle:hover { border-color: var(--horror-red) !important; background: rgba(185,28,28,.18) !important; }
+.horror-sound-label { font: inherit; }
+
+/* Horror empty */
+.horror-empty { color: #fca5a5 !important; border-left: 2px solid var(--horror-red); padding-left: 10px; }
+
+/* Responsive */
+@media (max-width: 720px) {
+  .horror-file-inner { padding: 48px 16px 48px !important; }
+  .horror-play-root { padding: 14px 12px 18px; }
+  .horror-hud-top { gap: 10px; }
+  .horror-question { font-size: clamp(17px, 4.2vw, 22px) !important; }
+  .horror-tape { font-size: 9px; height: 22px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .horror-fog, .horror-grain, .horror-scanlines, .horror-blood-drips span,
+  .horror-glitch-title span, .horror-heart-inner, .horror-chip-pulse,
+  .horror-gameover-static, .horror-timer.is-low .horror-timer-count {
+    animation: none !important;
+  }
+}
+
+/* Keyframes */
+@keyframes horror-fog-drift {
+  0% { transform: translate(-4%, -2%) scale(1); }
+  100% { transform: translate(4%, 3%) scale(1.06); }
+}
+@keyframes horror-grain-shift {
+  0% { transform: translate(0,0); } 50% { transform: translate(-2%, -1%); } 100% { transform: translate(1%, 2%); }
+}
+@keyframes horror-drip {
+  0%, 90% { transform: scaleY(.2); opacity: 0; }
+  10% { opacity: .8; transform: scaleY(1); }
+  100% { transform: scaleY(1.4); opacity: 0; }
+}
+@keyframes horror-letter-flicker {
+  0%, 92%, 100% { opacity: 1; transform: none; }
+  93% { opacity: .6; transform: translateX(-1px); }
+  94% { opacity: 1; transform: translateX(1px); }
+  95% { opacity: .8; }
+}
+@keyframes horror-cursor-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+@keyframes horror-timer-flash { 0%,49% { opacity: 1; } 50%,100% { opacity: .35; } }
+@keyframes horror-static-flicker { 0% { opacity: .12; } 100% { opacity: .22; } }
+@keyframes horror-record-pulse { 0%,100% { box-shadow: 0 0 0 rgba(250,204,21,0); } 50% { box-shadow: 0 0 18px rgba(250,204,21,.35); } }
+@keyframes horror-shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+/* Light theme overrides — keep horror dark even in light */
+[data-theme='light'] .survival-horror {
+  background: #08080c;
+  --bg: #08080c;
+}
+[data-theme='light'] .survival-horror .quiz-header h1 { color: #fff; }
+[data-theme='light'] .survival-horror .quiz-intro { color: #e5d5d5 !important; }
+[data-theme='light'] .horror-file-inner { background: linear-gradient(180deg, #121014, #0c0a0c) !important; border-color: rgba(185,28,28,.38) !important; }
+[data-theme='light'] .horror-file-inner h2 { color: #fff !important; }
+[data-theme='light'] .horror-play-root { background: linear-gradient(180deg, rgba(18,12,14,.96), rgba(10,8,10,.98)) !important; border-color: rgba(185,28,28,.42) !important; }
+[data-theme='light'] .horror-question { color: #f5efe6 !important; }
+[data-theme='light'] .horror-choice { background: linear-gradient(180deg, rgba(24,16,18,.96), rgba(14,10,12,.96)) !important; border-color: rgba(185,28,28,.26) !important; color: #e8ddd0 !important; }
+[data-theme='light'] .horror-gameover-card { background: linear-gradient(180deg, #151016, #0c0a0c) !important; border-color: rgba(185,28,28,.55) !important; }
+

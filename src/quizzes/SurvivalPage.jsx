@@ -29,40 +29,40 @@ const SURVIVAL_LEVEL = 'hard';
 const POOL_SIZE = survivalQuestionPool(quizzes).length;
 
 const FALLBACK = {
-  eyebrow: 'SURVIVAL MODE',
+  eyebrow: 'SURVIVAL MODE // BLACKSITE-03',
   title: 'SURVIVAL MODE',
   introTitle: 'How long can you last?',
-  intro: 'Three lives. One mistake costs one life. The full question pool is shuffled and recycled forever — no levels to unlock and no finish line.',
-  modeChip: 'ENDLESS RUN',
+  intro: 'Three lives. One mistake costs one life. The full question pool is shuffled and recycled forever — no levels to unlock and no finish line. The signal loops. The walls listen.',
+  modeChip: 'ENDLESS RUN // NO SAVE',
   poolCount: '{n} questions in the pool',
-  livesRule: 'Three lives',
-  timerRule: '10 seconds per question',
-  timeoutRule: 'Timeout counts as a mistake',
-  start: 'Start survival',
-  restart: 'Restart from zero',
-  back: 'All quizzes',
-  question: 'Question',
-  cycle: 'Shuffle {n}',
+  livesRule: 'Three lives — lose one per mistake',
+  timerRule: '10 seconds per question — the lights flicker',
+  timeoutRule: 'Timeout counts as a mistake — it hears you',
+  start: 'ENTER THE VOID',
+  restart: 'RETRY // STILL ALIVE?',
+  back: 'EXIT TO MENU',
+  question: 'FILE',
+  cycle: 'LOOP {n}',
   correctCount: 'Correct',
   wrongCount: 'Mistakes',
   points: 'PTS',
   timeLeft: 'Time remaining',
   livesLeft: '{n} lives left',
-  keysHint: 'Press 1–{n} to answer',
-  right: 'Correct!',
-  wrong: 'Wrong answer — one life lost.',
-  timeout: 'Time up — one life lost.',
-  gameOver: 'GAME OVER',
-  finalScore: 'Final score',
-  questionsPlayed: 'Questions played',
+  keysHint: 'Press 1–{n} to answer — don\'t look back',
+  right: 'Signal clear.',
+  wrong: 'WRONG — one life lost. It\'s closer.',
+  timeout: 'TIME UP — one life lost. Footsteps.',
+  gameOver: 'YOU DIED',
+  finalScore: 'Final score // evidence recovered',
+  questionsPlayed: 'Questions survived',
   correctAnswers: 'Correct answers',
-  bestScore: 'Best score on this device',
-  newRecord: 'NEW PERSONAL BEST',
+  bestScore: 'Best score on this device // last survivor',
+  newRecord: 'NEW PERSONAL BEST // SIGNAL STRONGER',
   best: 'Best: {score} PTS',
   emptyPool: 'There are no questions in the Survival pool yet.',
   mute: 'Mute the quiz sounds',
   unmute: 'Turn the quiz sounds back on',
-  statsTitle: 'RUN SUMMARY',
+  statsTitle: 'AUTOPSY REPORT // RUN SUMMARY',
   tier: 'SURVIVOR',
   streakTags: { warm: 'WARMING UP', hot: 'ON FIRE', blazing: 'UNSTOPPABLE' },
 };
@@ -75,18 +75,19 @@ function SoundToggle({ on, label, onToggle }) {
   return (
     <button
       type="button"
-      className={`quiz-sound-toggle${on ? '' : ' is-muted'}`}
+      className={`quiz-sound-toggle horror-sound-toggle${on ? '' : ' is-muted'}`}
       aria-pressed={on}
       aria-label={label}
       title={label}
       onClick={onToggle}
     >
-      <span aria-hidden="true">{on ? '🔊' : '🔇'}</span>
+      <span aria-hidden="true">{on ? '◍' : '◍'}</span>
+      <span className="horror-sound-label">{on ? 'AUDIO: ON' : 'AUDIO: OFF'}</span>
     </button>
   );
 }
 
-/** Partie Survival infinie, sans progression ni classement des quizz classiques. */
+/** Partie Survival infinie, sans progression ni classement des quizz classiques. — Horror edition */
 export default function SurvivalPage() {
   const { t, lang } = useLanguage();
   const copy = { ...FALLBACK, ...((t.quiz || {}).survival || {}) };
@@ -312,91 +313,185 @@ export default function SurvivalPage() {
   const toggleSound = () => setSoundOn(setQuizSoundEnabled(!soundOn));
   const soundLabel = soundOn ? copy.mute : copy.unmute;
   const formatPoolCount = copy.poolCount.replace('{n}', String(POOL_SIZE));
+  const timerPercent = Math.min(100, (remainingMs / budgetMs) * 100);
+  const isLow = remainingMs < 3000;
 
   return (
-    <div className="quiz-page quiz-survival-page">
-      <section className="quiz-header wrap">
-        <div className="section-label"><span>{copy.eyebrow}</span><span>{formatPoolCount}</span></div>
-        <h1>{copy.title}</h1>
-        <p className="quiz-intro">{copy.intro}</p>
+    <div className={`quiz-page quiz-survival-page survival-horror ${phase === 'play' ? 'is-playing' : ''} ${shake ? 'is-shake' : ''} ${isLow ? 'is-low-time' : ''}`}>
+      {/* Horror atmosphere layers */}
+      <div className="horror-atmosphere" aria-hidden="true">
+        <div className="horror-bg" />
+        <div className="horror-fog horror-fog--1" />
+        <div className="horror-fog horror-fog--2" />
+        <div className="horror-grain" />
+        <div className="horror-vignette" />
+        <div className="horror-scanlines" />
+        <div className="horror-blood-drips">
+          <span /><span /><span /><span />
+        </div>
+      </div>
+
+      <section className="quiz-header wrap survival-horror-header">
+        <div className="section-label horror-section-label">
+          <span><i className="horror-rec-dot" /> {copy.eyebrow}</span>
+          <span className="horror-pool-label">{formatPoolCount} // SIGNAL: CORRUPTED</span>
+        </div>
+        <h1 className="horror-glitch-title" data-text={copy.title}>
+          {copy.title.split('').map((ch, i) => (
+            <span key={i} style={{'--i': i} }>{ch === ' ' ? '\u00A0' : ch}</span>
+          ))}
+          <span className="horror-title-blood" aria-hidden="true">SURVIVAL MODE</span>
+        </h1>
+        <p className="quiz-intro horror-intro">
+          <span className="horror-typewriter">{copy.intro}</span>
+          <br />
+          <span className="horror-log">// LOG 03-47: Subject entered loop at {new Date().toLocaleTimeString()}. No exit observed.</span>
+        </p>
       </section>
 
-      <section className="wrap">
+      <section className="wrap survival-horror-main">
         {phase === 'intro' && (
-          <div className="quiz-player">
-            <div className="quiz-player-intro quiz-survival-intro">
-              <div className="quiz-chips">
-                <span className="quiz-chip quiz-chip--survival">{copy.modeChip}</span>
-                <span className="quiz-chip quiz-chip--count">{formatPoolCount}</span>
+          <div className="quiz-player horror-case-file">
+            <div className="horror-tape horror-tape--top">⚠ RESTRICTED // EYES ONLY — BLACKSITE-03</div>
+            <div className="horror-tape horror-tape--bottom horror-tape--red">QUARANTINE — DO NOT ENTER — BIOHAZARD LEVEL 4</div>
+
+            <div className="quiz-player-intro quiz-survival-intro horror-file-inner">
+              <div className="horror-file-header">
+                <div className="horror-file-meta">
+                  <span>CASE FILE: SURVIVAL-∞</span>
+                  <span>DATE: {new Date().toISOString().slice(0,10)}</span>
+                  <span>STATUS: ACTIVE // LOOPING</span>
+                </div>
+                <div className="horror-stamp horror-stamp--classified">CLASSIFIED</div>
               </div>
-              <h2>{copy.introTitle}</h2>
-              <ul className="quiz-survival-rules">
-                <li><span aria-hidden="true">♥♥♥</span>{copy.livesRule}</li>
-                <li><span aria-hidden="true">⏱</span>{copy.timerRule}</li>
-                <li><span aria-hidden="true">↻</span>{copy.timeoutRule}</li>
+
+              <div className="quiz-chips horror-chips">
+                <span className="quiz-chip quiz-chip--survival horror-chip-pulse">◍ {copy.modeChip}</span>
+                <span className="quiz-chip quiz-chip--count">{formatPoolCount}</span>
+                <span className="quiz-chip horror-chip-warn">☣ NO EXTRACTION</span>
+              </div>
+
+              <h2 className="horror-file-title">{copy.introTitle}<span className="horror-cursor">█</span></h2>
+
+              <div className="horror-evidence-photo" aria-hidden="true">
+                <div className="horror-photo-inner">
+                  <span>SUBJECT-03</span>
+                  <span>LOOP #00{Math.floor(Math.random()*9)+1}</span>
+                </div>
+              </div>
+
+              <ul className="quiz-survival-rules horror-rules">
+                <li><span aria-hidden="true">♥♥♥</span><span><strong>{copy.livesRule}</strong> — every wrong answer bleeds.</span></li>
+                <li><span aria-hidden="true">⏱</span><span><strong>{copy.timerRule}</strong> — the dark gets closer.</span></li>
+                <li><span aria-hidden="true">☣</span><span><strong>{copy.timeoutRule}</strong> — silence is not safe.</span></li>
               </ul>
+
+              <div className="horror-audio-log">
+                <span className="horror-audio-kicker">AUDIO LOG // RECOVERED</span>
+                <p>“We thought it was a quiz. It’s a loop. Three hearts, then nothing. If you find this — don’t answer. Don’t answer.”</p>
+              </div>
+
               {best && (
-                <p className="quiz-survival-best" aria-live="polite">
-                  ★ {copy.best.replace('{score}', String(best.points))}
+                <p className="quiz-survival-best horror-best" aria-live="polite">
+                  <span className="horror-best-icon">☠</span> LAST SURVIVOR: {copy.best.replace('{score}', String(best.points))} // STILL IN THE WALLS
                 </p>
               )}
-              <div className="quiz-player-actions">
-                <button type="button" className="quiz-cta quiz-cta--primary" onClick={resetAndStart} disabled={!POOL_SIZE}>
-                  {copy.start} <span aria-hidden="true">↗</span>
+
+              <div className="quiz-player-actions horror-actions">
+                <button type="button" className="quiz-cta quiz-cta--primary horror-cta-enter" onClick={resetAndStart} disabled={!POOL_SIZE}>
+                  <span className="horror-cta-text">{copy.start}</span>
+                  <span aria-hidden="true" className="horror-cta-arrow">↗ ENTER</span>
+                  <span className="horror-cta-blood" aria-hidden="true" />
                 </button>
                 <SoundToggle on={soundOn} label={soundLabel} onToggle={toggleSound} />
-                <Link className="quiz-cta quiz-cta--ghost" to="/quizz">{copy.back}</Link>
+                <Link className="quiz-cta quiz-cta--ghost horror-cta-ghost" to="/quizz">{copy.back}</Link>
               </div>
+
+              <p className="horror-footnote">* This file will self-corrupt after 3 deaths. Found footage property of Let’s Play.</p>
             </div>
           </div>
         )}
 
         {phase === 'play' && question && (
-          <div className={`quiz-player quiz-player--${SURVIVAL_LEVEL}${shake ? ' is-shake' : ''}`}>
-            <div className="quiz-hud">
-              <div className={`quiz-timer${remainingMs < 3000 ? ' is-low' : ''}`} role="timer" aria-label={copy.timeLeft}>
-                <span className="quiz-timer-count">{Math.ceil(remainingMs / 1000)}s</span>
-                <span className="quiz-timer-track"><i style={{ width: `${Math.min(100, (remainingMs / budgetMs) * 100)}%` }} /></span>
-              </div>
-              <p className="quiz-live" aria-live="polite" aria-label={`${copy.correctCount}: ${live.right}, ${copy.wrongCount}: ${live.wrong}`}>
-                <span className="quiz-live-item quiz-live-item--right" aria-hidden="true">✓ {live.right}</span>
-                <span className="quiz-live-item quiz-live-item--wrong" aria-hidden="true">✗ {live.wrong}</span>
-                <span className="quiz-live-item quiz-live-item--points" aria-hidden="true">⚡ {score}</span>
-                {streak >= 2 && (
-                  <span className={`quiz-live-item quiz-live-item--streak is-${streakLevel(streak)}`} aria-hidden="true">
-                    🔥 ×{streak}
-                    {copy.streakTags[streakLevel(streak)] ? <em className="quiz-live-tag">{copy.streakTags[streakLevel(streak)]}</em> : null}
+          <div className={`quiz-player quiz-player--${SURVIVAL_LEVEL} horror-play-root${shake ? ' is-shake' : ''}`}>
+            <div className="quiz-hud horror-hud">
+              <div className="horror-hud-top">
+                <div className={`quiz-timer horror-timer${isLow ? ' is-low' : ''}`} role="timer" aria-label={copy.timeLeft}>
+                  <div className="horror-timer-head">
+                    <span className="horror-timer-label">◍ SIGNAL LOSS IN</span>
+                    <span className="quiz-timer-count horror-timer-count">{Math.ceil(remainingMs / 1000)}s</span>
+                  </div>
+                  <span className="quiz-timer-track horror-timer-track"><i style={{ width: `${timerPercent}%` }} /></span>
+                  {isLow && <span className="horror-timer-warning">⚠ LIGHTS OUT SOON</span>}
+                </div>
+
+                <p className="quiz-lives horror-lives" role="status">
+                  <span className="horror-lives-label">VITALS:</span>
+                  <span className="horror-hearts">
+                    {Array.from({ length: SURVIVAL_LIVES }, (_, position) => (
+                      <span key={position} className={`quiz-heart horror-heart${position < lives ? '' : ' is-lost'}`} aria-hidden="true">
+                        <span className="horror-heart-inner">♥</span>
+                        {position >= lives && <span className="horror-heart-lost">✕</span>}
+                      </span>
+                    ))}
                   </span>
-                )}
-              </p>
-              <p className="quiz-lives" role="status">
-                {Array.from({ length: SURVIVAL_LIVES }, (_, position) => (
-                  <span key={position} className={`quiz-heart${position < lives ? '' : ' is-lost'}`} aria-hidden="true">♥</span>
-                ))}
-                <span className="sr-only">{copy.livesLeft.replace('{n}', String(lives))}</span>
-              </p>
-              <SoundToggle on={soundOn} label={soundLabel} onToggle={toggleSound} />
+                  <span className="sr-only">{copy.livesLeft.replace('{n}', String(lives))}</span>
+                </p>
+
+                <SoundToggle on={soundOn} label={soundLabel} onToggle={toggleSound} />
+              </div>
+
+              <div className="horror-hud-bottom">
+                <p className="quiz-live horror-live" aria-live="polite" aria-label={`${copy.correctCount}: ${live.right}, ${copy.wrongCount}: ${live.wrong}`}>
+                  <span className="quiz-live-item quiz-live-item--right">✓ {live.right} CLEAR</span>
+                  <span className="quiz-live-item quiz-live-item--wrong">✕ {live.wrong} LOST</span>
+                  <span className="quiz-live-item quiz-live-item--points">⚡ {score} EVIDENCE</span>
+                  {streak >= 2 && (
+                    <span className={`quiz-live-item quiz-live-item--streak is-${streakLevel(streak)}`}>
+                      ◍ SIGNAL ×{streak}
+                      {copy.streakTags[streakLevel(streak)] ? <em className="quiz-live-tag horror-streak-tag">{copy.streakTags[streakLevel(streak)]}</em> : null}
+                    </span>
+                  )}
+                </p>
+                <span className="horror-loop-indicator">LOOP {cycle} // FILE {questionNumber}</span>
+              </div>
             </div>
-            <p className="quiz-progress-label">
-              <span className="quiz-chip quiz-chip--survival">{copy.modeChip}</span>
-              {copy.question} {questionNumber}
-              <span className="quiz-chip quiz-chip--count">{copy.cycle.replace('{n}', String(cycle))}</span>
-            </p>
-            <h2 className="quiz-question" data-question-id={question.id}>{quizLabel(question.q, lang)}</h2>
-            {verdict && (
-              <p className={`quiz-verdict ${verdict.correct ? 'is-right' : 'is-wrong'}`} role="status">
-                <span className="quiz-verdict-phrase">
-                  {verdict.correct ? copy.right : verdict.timedOut ? copy.timeout : copy.wrong}
-                </span>
-                {verdict.correct && verdict.points > 0 && (
-                  <span className="quiz-verdict-points">+{verdict.points} {copy.points}</span>
-                )}
+
+            <div className="horror-question-wrap">
+              <div className="horror-question-tape">EVIDENCE #{questionNumber} // DO NOT REMOVE</div>
+              <p className="quiz-progress-label horror-progress">
+                <span className="quiz-chip quiz-chip--survival">{copy.modeChip}</span>
+                <span className="horror-file-ref">{copy.question} {questionNumber} // {copy.cycle.replace('{n}', String(cycle))}</span>
+                <span className="horror-static-id">ID:{question.id.slice(-8).toUpperCase()}</span>
               </p>
+              <h2 className="quiz-question horror-question" data-question-id={question.id}>
+                <span className="horror-question-mark">?</span>
+                {quizLabel(question.q, lang)}
+                <span className="horror-question-blood" aria-hidden="true" />
+              </h2>
+            </div>
+
+            {verdict && (
+              <div className={`quiz-verdict horror-verdict ${verdict.correct ? 'is-right' : 'is-wrong'}`} role="status">
+                <div className="horror-verdict-icon">{verdict.correct ? '◍' : '☠'}</div>
+                <div className="horror-verdict-body">
+                  <span className="quiz-verdict-phrase horror-verdict-phrase">
+                    {verdict.correct ? copy.right : verdict.timedOut ? copy.timeout : copy.wrong}
+                  </span>
+                  <span className="horror-verdict-sub">{verdict.correct ? 'Signal stabilized.' : 'It heard you. Closer now.'}</span>
+                </div>
+                {verdict.correct && verdict.points > 0 && (
+                  <span className="quiz-verdict-points horror-verdict-points">+{verdict.points} {copy.points}</span>
+                )}
+                <div className="horror-verdict-blood" aria-hidden="true" />
+              </div>
             )}
-            <div className={`quiz-choices${question.choices.length > 4 ? ' quiz-choices--five' : ''}`}>
+
+            <div className={`quiz-choices horror-choices${question.choices.length > 4 ? ' quiz-choices--five' : ''}`}>
               {question.choices.map((choice, position) => {
                 const choiceClass = [
                   'quiz-choice',
+                  'horror-choice',
                   verdict ? 'is-locked' : '',
                   verdict?.choiceId === choice.id ? (verdict.correct ? 'is-correct' : 'is-wrong') : '',
                   verdict && !verdict.correct && choice.correct ? 'is-reveal' : '',
@@ -410,40 +505,58 @@ export default function SurvivalPage() {
                     disabled={Boolean(verdict)}
                     onClick={() => answer(question, choice)}
                   >
+                    <span className="horror-choice-key">{position + 1}</span>
                     <span className="quiz-choice-label">{quizLabel(choice.label, lang)}</span>
+                    <span className="horror-choice-blood" aria-hidden="true" />
+                    <span className="horror-choice-static" aria-hidden="true" />
                   </button>
                 );
               })}
             </div>
-            <p className="quiz-keys-hint">⌨ {copy.keysHint.replace('{n}', String(question.choices.length))}</p>
+            <p className="quiz-keys-hint horror-keys">⌨ {copy.keysHint.replace('{n}', String(question.choices.length))} <span className="horror-keys-warn">// DON'T HESITATE</span></p>
           </div>
         )}
 
         {phase === 'gameover' && finalRun && (
-          <div className="quiz-player">
-            <div className="quiz-result quiz-survival-result" role="region" aria-labelledby="survival-gameover-title">
-              <p className="quiz-result-eyebrow">{copy.statsTitle}</p>
-              <h2 id="survival-gameover-title" className="quiz-result-tier">💀 {copy.gameOver}</h2>
+          <div className="quiz-player horror-gameover-root">
+            <div className="quiz-result quiz-survival-result horror-gameover-card" role="region" aria-labelledby="survival-gameover-title">
+              <div className="horror-gameover-static" aria-hidden="true" />
+              <div className="horror-gameover-blood" aria-hidden="true" />
+
+              <p className="quiz-result-eyebrow horror-gameover-kicker">{copy.statsTitle} // CASE CLOSED</p>
+              <h2 id="survival-gameover-title" className="quiz-result-tier horror-gameover-title">
+                <span className="horror-skull">☠</span> {copy.gameOver}
+                <span className="horror-gameover-glitch" aria-hidden="true">{copy.gameOver}</span>
+              </h2>
+              <p className="horror-gameover-sub">Subject terminated. Loop reset. The signal continues without you.</p>
+
               <p className="quiz-survival-final-label">{copy.finalScore}</p>
-              <p className="quiz-result-points">⚡ {finalRun.points} {copy.points}</p>
-              {finalRun.isRecord && <span className="quiz-result-record">★ {copy.newRecord}</span>}
-              <ul className="quiz-stats">
+              <p className="quiz-result-points horror-points">⚡ {finalRun.points} {copy.points} // EVIDENCE</p>
+              {finalRun.isRecord && <span className="quiz-result-record horror-record">★ {copy.newRecord} // YOU ARE THE LAST SIGNAL</span>}
+
+              <ul className="quiz-stats horror-stats">
                 <li className="quiz-stat"><strong>{finalRun.questions}</strong><span>{copy.questionsPlayed}</span></li>
                 <li className="quiz-stat"><strong>{finalRun.correct}</strong><span>{copy.correctAnswers}</span></li>
                 <li className="quiz-stat"><strong>{finalRun.best?.points ?? finalRun.points}</strong><span>{copy.bestScore}</span></li>
+                <li className="quiz-stat horror-stat-streak"><strong>×{finalRun.bestStreak}</strong><span>BEST SIGNAL</span></li>
               </ul>
-              <div className="quiz-result-actions">
-                <button type="button" className="quiz-cta quiz-cta--primary quiz-survival-restart" onClick={resetAndStart}>
-                  {copy.restart} <span aria-hidden="true">↻</span>
+
+              <div className="horror-gameover-tape">EVIDENCE SEALED // DO NOT OPEN — {new Date().toLocaleDateString()}</div>
+
+              <div className="quiz-result-actions horror-gameover-actions">
+                <button type="button" className="quiz-cta quiz-cta--primary horror-cta-enter" onClick={resetAndStart}>
+                  <span className="horror-cta-text">{copy.restart}</span> <span aria-hidden="true">↻ RE-ENTER</span>
                 </button>
-                <Link className="quiz-cta quiz-cta--ghost" to="/quizz">{copy.back}</Link>
+                <Link className="quiz-cta quiz-cta--ghost horror-cta-ghost" to="/quizz">{copy.back}</Link>
               </div>
+
+              <p className="horror-gameover-whisper">“...it’s still behind you...”</p>
             </div>
           </div>
         )}
 
         {!POOL_SIZE && (
-          <p className="quiz-board-note" role="alert">{copy.emptyPool}</p>
+          <p className="quiz-board-note horror-empty" role="alert">{copy.emptyPool}</p>
         )}
       </section>
     </div>
