@@ -24,7 +24,6 @@ import TestArticle from '../src/pages/TestArticle';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import Dossiers from '../src/pages/Dossiers';
-import Partners from '../src/pages/Partners';
 import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
 import { AuthProvider } from '../src/auth/AuthContext';
@@ -46,8 +45,6 @@ export const ROUTES = [
   ['/reviews', Reviews],
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle]),
   ['/dossiers', Dossiers],
-  ['/partenaires', Partners],
-  ['/events', Partners],
   ['/auth', Auth],
   ['/quizz', QuizzesPage],
   ['/quizz/culture-gaming', QuizPage, '/quizz/:slug'],

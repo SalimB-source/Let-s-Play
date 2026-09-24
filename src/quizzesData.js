@@ -246,7 +246,6 @@ export const quizzes = [
     image: quizThumbUrl('esport-competition'),
     tag: 'E-sport',
     keywords: 'quizz esport counter-strike league of legends free fire mortal kombat rocket league valorant',
-    source: '/events/ooredoo',
     labels: {
       fr: { title: 'E-sport & compétition', text: 'CS, LoL, Free Fire, Rocket League, Valorant : la scène compétitive, de Séoul à Alger (FFAC2023), en trois niveaux.' },
     },
@@ -683,7 +682,6 @@ export const quizzes = [
     image: quizThumbUrl('fighting-legends'),
     tag: 'Combat',
     keywords: 'quizz combat street fighter tekken mortal kombat smash bros guilty gear',
-    source: '/events/ooredoo',
     labels: {
       fr: { title: 'Jeux de combat légendaires', text: 'Street Fighter, Tekken, Mortal Kombat, Smash Bros : les KO les plus célèbres, du hadoken facile au frame data expert.' },
     },
@@ -947,7 +945,6 @@ export const quizzes = [
     image: quizThumbUrl('battle-royale'),
     tag: 'E-sport',
     keywords: 'quizz battle royale fortnite pubg apex warzone free fire',
-    source: '/events/ooredoo',
     labels: {
       fr: { title: 'Battle royale', text: 'PUBG, Fortnite, Apex, Warzone, Free Fire : le dernier survivant rafle tout, du drop facile au top 1 expert.' },
     },

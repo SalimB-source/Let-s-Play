@@ -258,8 +258,6 @@ const routeCases = [
   ['/news/zelda-ocarina', { section: 'news', article: { kind: 'news', id: 'zelda-ocarina' } }],
   ['/reviews/onimusha', { section: 'reviews', article: { kind: 'review', id: 'onimusha' } }],
   ['/dossiers/pourquoi-les-souls', { section: 'dossiers', article: { kind: 'dossier', id: 'pourquoi-les-souls' } }],
-  ['/events/7ouma-arena', { section: 'events', article: null }],
-  ['/partenaires', { section: 'events', article: null }],
   ['/calendrier', { section: 'calendrier', article: null }],
   ['/calendar', { section: 'calendrier', article: null }],
   ['/search', { section: 'search', article: null }],
@@ -327,11 +325,11 @@ const play = (type, payload = {}) => {
 const unlockedOrder = [];
 const record = (ids) => unlockedOrder.push(...ids);
 
-// Visite datée + navigation : les huit sections, y compris recherche
+// Visite datée + navigation : les sept sections, y compris recherche
 // et compte (passeport complet).
 record(play('visit', { day: dayKey(new Date(at(2026, 9, 1))) }));
 record(play('page_view'));
-['home', 'news', 'reviews', 'dossiers', 'events', 'calendrier', 'search', 'account'].forEach((section) => {
+['home', 'news', 'reviews', 'dossiers', 'calendrier', 'search', 'account'].forEach((section) => {
   record(play('page_view'));
   record(play('section_visited', { id: section }));
 });
