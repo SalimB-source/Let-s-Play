@@ -249,14 +249,32 @@ export default function Layout({ children }) {
                   <>
                     <Link
                       to="/auth"
-                      className={`nav-account connected`}
+                      className="nav-account connected"
                       onClick={() => setMenuOpen(false)}
+                      aria-label={profileAria}
+                      title={profileAria}
+                      aria-current={isActive('/auth') ? 'page' : undefined}
                     >
                       <span className="nav-account-inner">
-                        <span className="nav-online-dot" aria-hidden="true" />
-                        <span className="nav-account-name">
-                          {user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
+                        <span className="nav-account-avatar" aria-hidden="true">
+                          <span className="nav-account-avatar-face">
+                            {profileAvatar ? (
+                              <img src={profileAvatar} alt="" />
+                            ) : (
+                              <span className="nav-account-initials">{profileInitials}</span>
+                            )}
+                          </span>
+                          <span className="nav-online-dot" />
                         </span>
+                        <span className="nav-account-name">
+                          {profileName || user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
+                        </span>
+                        {profileLevel != null && (
+                          <span className="nav-account-level" aria-hidden="true">
+                            <small>{t.nav.levelShort}</small>
+                            <strong>{profileLevel}</strong>
+                          </span>
+                        )}
                       </span>
                     </Link>
                     <button

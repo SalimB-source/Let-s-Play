@@ -140,6 +140,8 @@ const connectedHtml = renderNav({
   session: { user: { id: 'smoke-user', email: 'smoke@letsplay.dz', user_metadata: { gamertag: 'SmokeDZ' } } },
 });
 ok('connecté : la pastille mène au hub /auth', /<a(?=[^>]*href="\/auth")(?=[^>]*class="nav-account connected")[^>]*>/.test(connectedHtml));
+ok('connecté (desktop) : photo ou initiales dans la pastille', connectedHtml.includes('nav-account-avatar') && connectedHtml.includes('nav-account-initials'));
+ok('connecté (desktop) : niveau affiché dans la pastille', /class="nav-account-level"[\s\S]*?<strong>1<\/strong>/.test(connectedHtml));
 const logoutIndex = connectedHtml.search(/<button[^>]*class="nav-logout"/);
 ok('connecté : bouton « Log out » présent', logoutIndex !== -1);
 ok('connecté : le bouton porte le libellé « Log out »', /class="nav-logout"[^>]*aria-label="Log out"/.test(connectedHtml));

@@ -1010,7 +1010,7 @@ img{max-width:100%}
   .nav-profile-link.active .nav-profile-level{border-color:var(--cyan);color:var(--cyan)}
 
   /* La pastille de compte du bas doublonnait le lien Profil. */
-  .nav-actions-grid .nav-account.connected{display:none}
+  .nav-actions-grid .nav-account.connected{display:none !important}
 
   @keyframes mobileLinkIn{
     from{opacity:0;transform:translateY(18px)}
