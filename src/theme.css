@@ -138,10 +138,10 @@
   [data-theme='light'] .partners-sources-list a,
   [data-theme='light'] .arena-lead,
   [data-theme='light'] .arena-by-meta a:hover,
+  [data-theme='light'] .quiz-filter-chip:hover,
   [data-theme='light'] .social-panel-kicker,
   [data-theme='light'] .social-tab:hover,
   [data-theme='light'] .nav-logout:hover,
-  [data-theme='light'] .lang-switch-option:hover,
   [data-theme='light'] .featured-sponsor-text,
   [data-theme='light'] .featured-dossier-sponsor-text,
   [data-theme='light'] .stats strong,
@@ -241,7 +241,6 @@
   [data-theme='light'] .social-launcher-meta-unread,
   [data-theme='light'] .social-panel-kicker svg,
   [data-theme='light'] .menu-button .dash.open,
-  [data-theme='light'] .lang-switch-code,
   [data-theme='light'] .arrow-link:hover,
   [data-theme='light'] .stats strong span,
   [data-theme='light'] .latest-test-card:hover h3,
@@ -463,11 +462,9 @@
 [data-theme='light'] .nav.scrolled,
 [data-theme='light'] .nav.nav-home.scrolled{background:rgba(247,248,252,.93);border-bottom-color:var(--line)}
 [data-theme='light'] .nav.nav-home{box-shadow:none}
-[data-theme='light'] .lang-switch-menu,
 [data-theme='light'] .nav-search-results{background:rgba(255,255,255,.98);box-shadow:var(--shadow-md)}
 [data-theme='light'] .nav-search-result{border-bottom-color:var(--line)}
 [data-theme='light'] .nav-search-result:hover{background:rgba(14,116,144,.08)}
-[data-theme='light'] .lang-switch-option:hover{background:rgba(14,116,144,.08)}
 [data-theme='light'] .nav-account.nav-login:hover,
 [data-theme='light'] .nav-account.nav-register:hover{background:rgba(255,214,25,.16);color:var(--ink)}
 [data-theme='light'] .nav-account-avatar .nav-online-dot{border-color:#f7f8fc}
@@ -482,8 +479,7 @@
       radial-gradient(700px 500px at -10% 90%, rgba(14,116,144,.07), transparent 60%),
       #f7f8fc;
   }
-  [data-theme='light'] .nav-actions .nav-search-results,
-  [data-theme='light'] .lang-switch-menu{background:rgba(255,255,255,.99)}
+  [data-theme='light'] .nav-actions .nav-search-results{background:rgba(255,255,255,.99)}
   [data-theme='light'] .nav-profile-avatar .nav-online-dot{border-color:#f7f8fc}
   [data-theme='light'] .nav-primary a:hover .nav-link-num,
   [data-theme='light'] .nav-primary a.active .nav-link-num{color:var(--yellow-ink)}

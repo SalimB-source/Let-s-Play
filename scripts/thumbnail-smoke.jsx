@@ -20,12 +20,12 @@ import { quizzes } from '../src/quizzesData';
 export const quizSlugs = quizzes.map(({ slug }) => slug);
 
 function render(Page, path) {
-  // LanguageProvider lit la langue active dans localStorage pendant le rendu.
-  globalThis.window = { localStorage: { getItem: () => 'fr', setItem() {} } };
+  // Le site est publié en français : la langue se passe au provider, plus rien
+  // ne la lit dans `localStorage`.
   return renderToString(
     React.createElement(
       LanguageProvider,
-      null,
+      { lang: 'fr' },
       React.createElement(
         AuthProvider,
         null,

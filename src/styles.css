@@ -135,44 +135,6 @@ img{max-width:100%}
 .nav-link-text{display:contents}
 .nav-actions-grid{display:flex;align-items:center;gap:14px}
 
-/* ============ LANGUAGE SWITCHER ============ */
-.lang-switch{position:relative}
-.lang-switch-button{
-  display:inline-flex;align-items:center;gap:8px;background:transparent;
-  border:1px solid var(--line);color:var(--ink);cursor:pointer;
-  font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;
-  padding:9px 14px;
-  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
-  transition:border-color .2s,color .2s,background .2s;
-}
-.lang-switch-icon{color:var(--cyan);font-size:12px}
-.lang-switch-button:hover{border-color:var(--line-strong);color:var(--cyan)}
-.lang-switch-menu{
-  position:absolute;top:calc(100% + 10px);right:0;min-width:168px;z-index:1100;
-  background:rgba(11,13,30,.97);backdrop-filter:blur(14px);
-  border:1px solid var(--line-strong);
-  display:none;flex-direction:column;padding:6px;
-  box-shadow:0 24px 48px -16px rgba(0,0,0,.7);
-}
-[dir="rtl"] .lang-switch-menu{right:auto;left:0}
-.lang-switch-menu.open{display:flex}
-.lang-switch-option{
-  display:flex;align-items:center;gap:10px;background:transparent;border:0;color:var(--muted);
-  padding:10px 12px;cursor:pointer;text-align:left;font-family:var(--body);
-  transition:background .18s,color .18s;
-}
-[dir="rtl"] .lang-switch-option{text-align:right}
-.lang-switch-option:hover{background:rgba(34,211,238,.08);color:#fff}
-.lang-switch-option.active{color:var(--cyan)}
-.lang-switch-code{font:600 11px var(--mono);letter-spacing:.1em;min-width:28px;color:var(--yellow)}
-.lang-switch-option.active .lang-switch-code{color:var(--cyan)}
-.lang-switch-name{font-size:13.5px}
-@media(max-width:800px){
-  .lang-switch{width:100%}
-  .lang-switch-button{width:100%;justify-content:space-between}
-  .lang-switch-menu{position:static;margin-top:10px;width:100%;box-shadow:none}
-}
-
 /* ============ HERO (full screen) ============ */
 .hero{
   position:relative;
@@ -1046,8 +1008,12 @@ img{max-width:100%}
     gap:10px;
     width:100%;
   }
-  .nav-actions-grid .lang-switch{width:100%}
-  .nav-actions-grid .lang-switch-button{width:100%;justify-content:space-between;height:44px}
+  /* Le sélecteur de langue occupait la moitié de la première ligne à côté du
+     bouton de thème : parti, le thème prend toute la ligne (il est dessiné pour
+     ça : `justify-content:space-between`, libellé à droite) et les boutons de
+     compte se placent par paires en dessous. */
+  .nav-actions-grid .theme-toggle{grid-column:1 / -1}
+  .nav-actions-grid .nav-logout{grid-column:1 / -1}
   .nav-account.nav-login,
   .nav-account.nav-register,
   .nav-account.connected,
@@ -1131,18 +1097,6 @@ img{max-width:100%}
   }
 
   body.nav-open{overscroll-behavior:none}
-
-  /* lang switch inside fullscreen */
-  .lang-switch{width:100%}
-  .lang-switch-menu{
-    position:static;
-    margin-top:10px;
-    width:100%;
-    min-width:0;
-    box-shadow:none;
-    background:rgba(11,13,30,.98);
-  }
-  .lang-switch-menu.open{display:flex}
 
   /* RTL tweaks for fullscreen menu */
   [dir=\"rtl\"] .nav-primary a{flex-direction:row-reverse}

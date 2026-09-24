@@ -88,11 +88,12 @@ import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
 const GUEST_STORAGE_KEY = `${STORAGE_KEY}:guest`;
 const DEMO_AUTH_KEY = 'letsplay_auth_demo_profile';
 
-/** Langue active + progression vierge : le vrai `window` jsdom (et son
-    localStorage) est installé par scripts/quiz-check.mjs. */
-function seedLang(lang) {
+/** Appareil vierge : le vrai `window` jsdom (et son localStorage) est installé
+    par scripts/quiz-check.mjs, on vide donc la progression. La langue, elle,
+    n'est plus un réglage : le site est publié en français, et les sections qui
+    vérifient les trois dictionnaires la passent au provider (`lang`). */
+function freshDevice() {
   globalThis.window.localStorage.clear();
-  globalThis.window.localStorage.setItem('letsplay-lang', lang);
 }
 
 /**
@@ -422,7 +423,7 @@ export async function checkQuiz(assert) {
   assert.equal(quizCategory({ slug: 'x', category: 'nope' }), 'games', 'famille invalide : repli sur Gaming');
 
   /* ------------------------------------- 2. Partie complète (jsdom) -------- */
-  seedLang('fr');
+  freshDevice();
   const node = document.createElement('div');
   document.body.append(node);
   const root = createRoot(node);
@@ -657,7 +658,7 @@ export async function checkQuiz(assert) {
   await act(async () => root.unmount());
 
   /* ------------------------- 3. Défi entre amis (session démo) -------------- */
-  seedLang('fr');
+  freshDevice();
   seedDemoProfiles();
   globalThis.window.localStorage.setItem(DEMO_AUTH_KEY, JSON.stringify(DEMO_PROFILE_FIXTURES.vortex));
   const demoNode = document.createElement('div');
@@ -707,12 +708,12 @@ export async function checkQuiz(assert) {
 
   /* ------------------------------------- 4. Page grille (trois langues) ---- */
   for (const lang of ['fr', 'en', 'ar']) {
-    seedLang(lang);
+    freshDevice();
     const gridNode = document.createElement('div');
     document.body.append(gridNode);
     const gridRoot = createRoot(gridNode);
     await act(async () => gridRoot.render(
-      <LanguageProvider>
+      <LanguageProvider lang={lang}>
         <AuthProvider>
           <AchievementProvider>
             <MemoryRouter initialEntries={['/quizz']}>
@@ -872,7 +873,7 @@ export async function checkQuiz(assert) {
   // rechargement rouvre la page sur la même famille, et une famille inconnue
   // retombe sur « Tous » au lieu d'une grille vide.
   for (const [search, expected] of [['?cat=tech', quizzesInCategory('tech', quizzes)], ['?cat=nope', quizzes]]) {
-    seedLang('fr');
+    freshDevice();
     const deepNode = document.createElement('div');
     document.body.append(deepNode);
     const deepRoot = createRoot(deepNode);
@@ -905,7 +906,7 @@ export async function checkQuiz(assert) {
   }
 
   /* --------------------------- 4 bis. Survival mode ------------------------- */
-  seedLang('fr');
+  freshDevice();
   globalThis.window.localStorage.removeItem(SURVIVAL_BEST_KEY);
   const survivalNode = document.createElement('div');
   document.body.append(survivalNode);
@@ -998,10 +999,9 @@ export async function checkQuiz(assert) {
   await act(async () => survivalRoot.unmount());
 
   /* ------------------ 5. Record + compte à rebours sur la grille ------------ */
-  // Le localStorage garde la langue FR et le record écrit par la partie de
-  // l'étape 2 n'existe plus (vidé par seedLang) : on le repose comme le ferait
-  // une partie, puis la grille doit montrer le badge et le décompte.
-  globalThis.window.localStorage.setItem('letsplay-lang', 'fr');
+  // Le record écrit par la partie de l'étape 2 n'existe plus (vidé par
+  // freshDevice) : on le repose comme le ferait une partie, puis la grille doit
+  // montrer le badge et le décompte.
   writeLocalBest('culture-gaming', 8, 8, 1250, 'easy');
   // Progression : deux niveaux terminés sur trois, pour vérifier le badge.
   markLevelCompleted('culture-gaming', 'easy');
@@ -1155,7 +1155,7 @@ export async function checkQuiz(assert) {
   await act(async () => communityRank.rankRoot.unmount());
 
   /* ------------------------- 7. Partie tout faux ---------------------------- */
-  seedLang('fr');
+  freshDevice();
   const revNode = document.createElement('div');
   document.body.append(revNode);
   const revRoot = createRoot(revNode);
@@ -1219,7 +1219,7 @@ export async function checkQuiz(assert) {
   // On raccourcit le budget à 300 ms : sans cliquer, chaque question doit
   // expirer toute seule et la partie finir en 0/8 avec « Temps écoulé ».
   QUESTION_TIME.seconds = 0.3;
-  seedLang('fr');
+  freshDevice();
   const timerNode = document.createElement('div');
   document.body.append(timerNode);
   const timerRoot = createRoot(timerNode);
@@ -1269,7 +1269,7 @@ export async function checkQuiz(assert) {
   // descente sur une mauvaise, note grave en plus quand le temps s'écoule.
   const audio = installFakeAudioContext();
   QUESTION_TIME.seconds = 15;
-  seedLang('fr');
+  freshDevice();
   const soundNode = document.createElement('div');
   document.body.append(soundNode);
   const soundRoot = createRoot(soundNode);
@@ -1475,7 +1475,7 @@ export async function checkQuiz(assert) {
   // Le lecteur de partie : boutons d'action compacts (`.quiz-cta`, et plus le
   // `.button` géant du site), pastilles de progression, jokers 50/50 + gel du
   // chrono, détail de partie au résultat.
-  seedLang('fr');
+  freshDevice();
   const funNode = document.createElement('div');
   document.body.append(funNode);
   const funRoot = createRoot(funNode);
@@ -1620,7 +1620,7 @@ export async function checkQuiz(assert) {
   // « Rejouer » (résultat épuré, quizz TERMINÉ) : l'expert d'un AUTRE quizz,
   // ouvert par une progression semée à la main, porte ces tests en conditions
   // réelles — cinq propositions, cinq touches, trois vies.
-  seedLang('fr');
+  freshDevice();
   const livesSlug = 'consoles-retro';
   const livesQuiz = quizBySlug(livesSlug);
   globalThis.window.localStorage.setItem(LEVELS_KEY, JSON.stringify({ [livesSlug]: { easy: true, medium: true } }));
@@ -1687,7 +1687,7 @@ export async function checkQuiz(assert) {
   // « TERMINÉ » — niveaux de gris, drapeau sur la miniature, LIEN RETIRÉ sur la
   // grille comme sur la bannière du jour, et le lecteur remplace son sélecteur
   // de niveaux par le récapitulatif. Plus rien n'est cliquable.
-  seedLang('fr');
+  freshDevice();
   const doneLevels = { 'culture-gaming': { easy: true, medium: true } };
   assert.equal(isQuizFinished({}, 'culture-gaming'), false, 'aucun niveau terminé : pas « terminé »');
   assert.equal(isQuizFinished({ 'culture-gaming': { easy: true } }, 'culture-gaming'), false, 'un niveau sur trois : pas « terminé »');
@@ -1782,12 +1782,12 @@ export async function checkQuiz(assert) {
   lockRoot = null;
 
   for (const lang of ['fr', 'en', 'ar']) {
-    seedLang(lang);
+    freshDevice();
     const langNode = document.createElement('div');
     document.body.append(langNode);
     const langRoot = createRoot(langNode);
     await act(async () => langRoot.render(
-      <LanguageProvider>
+      <LanguageProvider lang={lang}>
         <AuthProvider>
           <AchievementProvider>
             <MemoryRouter initialEntries={[`/quizz/${slug}`]}>
@@ -1810,7 +1810,7 @@ export async function checkQuiz(assert) {
     document.body.append(survivalLangNode);
     const survivalLangRoot = createRoot(survivalLangNode);
     await act(async () => survivalLangRoot.render(
-      <LanguageProvider>
+      <LanguageProvider lang={lang}>
         <AuthProvider>
           <AchievementProvider>
             <MemoryRouter initialEntries={['/quizz/survival']}>

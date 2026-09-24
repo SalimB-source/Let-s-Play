@@ -1248,8 +1248,14 @@ export const translations = {
   },
 };
 
+// Langues décrites par ce fichier, français d'abord. Le site n'est publié
+// qu'en français (`SITE_LANG`, LanguageContext) : la première entrée est la
+// seule proposée au visiteur. Les autres restent décrites — libellé et sens de
+// lecture — parce que leurs dictionnaires existent toujours : `en` sert de
+// filet de sécurité au français, et les scripts de vérification rendent encore
+// les routes dans les trois langues (`npm run check:i18n`).
 export const languages = [
-  { code: 'en', label: 'EN', name: 'English', dir: 'ltr' },
   { code: 'fr', label: 'FR', name: 'Français', dir: 'ltr' },
+  { code: 'en', label: 'EN', name: 'English', dir: 'ltr' },
   { code: 'ar', label: 'AR', name: 'العربية', dir: 'rtl' },
 ];
