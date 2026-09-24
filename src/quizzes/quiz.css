@@ -73,32 +73,33 @@
 .quiz-daily-hint { margin: 0 0 40px; color: var(--dim); font: 400 12px var(--mono); letter-spacing: .08em; }
 
 /* ---- Grille des quizz ---------------------------------------------------- */
-/* Trois colonnes stables sur desktop — pas d'`auto-fill`, dont le nombre de
-   colonnes bascule selon la fenêtre : la page affiche toujours 3 colonnes,
-   puis 2 sur tablette et 1 sur mobile (voir les media queries en bas de
-   fichier). `minmax(0, 1fr)` : un mot long (FROMSOFTWARE…) n'étire pas sa
-   colonne et ne casse pas l'alignement de la grille. */
+/* Deux colonnes stables sur desktop — la page affiche toujours 2 colonnes,
+   puis 1 sur mobile (voir les media queries en bas de fichier).
+   `minmax(0, 1fr)` : un mot long (FROMSOFTWARE…) n'étire pas sa colonne
+   et ne casse pas l'alignement de la grille. L'espace gagné par colonne
+   permet aux titres longs de rester entièrement lisibles sans césure
+   disgracieuse. */
 .quiz-grid {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px; margin-top: 26px;
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px; margin-top: 26px;
 }
 .quiz-card {
   display: flex; flex-direction: column; gap: 14px;
-  padding: 14px; background: var(--panel); border: 1px solid var(--line);
+  padding: 16px; background: var(--panel); border: 1px solid var(--line);
   clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
   transition: border-color .2s, transform .2s, box-shadow .2s;
 }
 .quiz-card:hover { border-color: var(--line-strong); transform: translateY(-3px); box-shadow: 0 18px 40px rgba(5, 6, 15, .5); }
 .quiz-card-media { display: block; }
 .quiz-card-copy { display: flex; flex-direction: column; gap: 8px; padding: 2px 4px 8px; }
-/* Titre : taille fluide (16 → 18 px) pour rester lisible quelle que soit la
-   largeur des trois colonnes, interligne aéré pour les titres sur deux lignes,
-   `balance` pour une coupe harmonique, `break-word` en garde-fou contre les
-   mots très longs. */
+/* Titre : taille fluide (18 → 22 px) — colonnes plus larges = titre plus gros
+   pour une lisibilité complète, interligne aéré pour les titres sur deux
+   lignes, `balance` pour une coupe harmonique, `break-word` en garde-fou
+   contre les mots très longs. */
 .quiz-card-copy h3 {
   margin: 0;
-  font: 700 clamp(16px, .75vw + 9px, 18px)/1.3 var(--display);
-  letter-spacing: .015em; text-transform: uppercase;
+  font: 700 clamp(18px, 1vw + 12px, 22px)/1.25 var(--display);
+  letter-spacing: .01em; text-transform: uppercase;
   text-wrap: balance; overflow-wrap: break-word;
 }
 .quiz-card-copy p { margin: 0; color: var(--muted); font-size: 14px; }
@@ -628,16 +629,15 @@
 .quiz-player-intro.is-locked h1 { color: var(--yellow); }
 
 /* ---- Responsive ----------------------------------------------------------- */
-/* Grille des quizz : 3 colonnes sur desktop (gap resserré sous 1000 px pour
-   garder des cartes lisibles), 2 colonnes sur tablette, 1 sur mobile. */
+/* Grille des quizz : 2 colonnes sur desktop/tablette (gap resserré sous
+   1000 px pour garder des cartes lisibles), 1 colonne sur mobile. */
 @media (max-width: 1000px) {
-  .quiz-grid { gap: 16px; }
+  .quiz-grid { gap: 18px; }
 }
-@media (max-width: 900px) {
-  .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 680px) {
+  .quiz-grid { grid-template-columns: 1fr; gap: 16px; }
 }
 @media (max-width: 620px) {
-  .quiz-grid { grid-template-columns: 1fr; }
   .quiz-survival-card { grid-template-columns: 1fr; gap: 18px; }
   .quiz-survival-visual { min-height: 108px; }
   .quiz-survival-infinity { font-size: 76px; }
