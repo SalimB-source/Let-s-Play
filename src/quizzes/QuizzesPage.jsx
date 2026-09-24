@@ -251,26 +251,58 @@ export default function QuizzesPage() {
 
       <section className="quiz-category quiz-category--survival wrap" aria-labelledby="quiz-category-survival-title">
         <div className="quiz-category-heading">
-          <div className="section-label"><span>{copy.categorySurvivalEyebrow}</span><span>♥♥♥</span></div>
-          <h2 id="quiz-category-survival-title">{copy.categorySurvivalTitle}</h2>
-          <p>{copy.categorySurvivalIntro.replace('{n}', String(SURVIVAL_QUESTION_COUNT))}</p>
+          <div className="section-label"><span>{copy.categorySurvivalEyebrow}</span><span style={{color:'#ef4444'}}>◍ REC ●</span></div>
+          <h2 id="quiz-category-survival-title" style={{display:'flex', alignItems:'center', gap:'12px', flexWrap:'wrap'}}>
+            {copy.categorySurvivalTitle}
+            <span style={{
+              font: '700 10px var(--mono)', letterSpacing: '.28em',
+              color:'#fca5a5', border:'1px solid rgba(239,68,68,.5)',
+              background:'rgba(185,28,28,.18)', padding:'4px 8px'
+            }}>CASE FILE: BLACKSITE-03</span>
+          </h2>
+          <p>{copy.categorySurvivalIntro.replace('{n}', String(SURVIVAL_QUESTION_COUNT))} — Found footage. No extraction. The signal loops.</p>
         </div>
         <Link className="quiz-survival-card hud-frame" to="/quizz/survival">
+          <span className="quiz-survival-rec" aria-hidden="true"><i /> REC 00:47:12 — FEED: CORRUPTED</span>
+          <span className="quiz-survival-tape" aria-hidden="true">⚠ BIOHAZARD // LEVEL-4</span>
+          <span className="quiz-survival-tape quiz-survival-tape--red" aria-hidden="true">DO NOT ENTER — QUARANTINE</span>
+
           <span className="quiz-survival-copy">
             <span className="quiz-chips">
               <span className="quiz-chip quiz-chip--count">{copy.categorySurvivalPool.replace('{n}', String(SURVIVAL_QUESTION_COUNT))}</span>
               <span className="quiz-chip quiz-chip--survival">∞ {copy.categorySurvivalInfinite}</span>
+              <span className="quiz-chip" style={{color:'#facc15', borderColor:'rgba(250,204,21,.45)'}}>◉ LIVE SIGNAL LOST</span>
+            </span>
+            <span style={{
+              font: '800 clamp(20px, 2.6vw, 28px)/1 var(--display)',
+              letterSpacing: '.06em', textTransform:'uppercase', color:'#fff',
+              textShadow:'0 0 18px rgba(239,68,68,.6)'
+            }}>
+              ENTER THE <em style={{color:'#ef4444', fontStyle:'normal', textShadow:'0 0 12px rgba(239,68,68,.9)'}}>VOID</em>
             </span>
             <span className="quiz-survival-rules">
               <span>♥ {copy.categorySurvivalLives}</span>
               <span>⏱ {copy.categorySurvivalTimer}</span>
               <span>⌛ {copy.categorySurvivalTimeout}</span>
+              <span style={{color:'#facc15', borderColor:'rgba(250,204,21,.4)'}}>☣ NO SAVE // NO EXIT</span>
             </span>
             <span className="arrow-link">{copy.categorySurvivalPlay} <Arrow /></span>
+            <span style={{font:'500 10px var(--mono)', color:'rgba(252,165,165,.72)', letterSpacing:'.12em', marginTop:'4px'}}>
+              // AUDIO LOG: &quot;Three hearts. The walls listen. Don&apos;t look back.&quot;
+            </span>
           </span>
           <span className="quiz-survival-visual" aria-hidden="true">
+            <span style={{
+              position:'absolute', inset:'0', zIndex:0,
+              background: 'radial-gradient(60% 50% at 50% 50%, rgba(239,68,68,.14), transparent 70%)',
+              pointerEvents:'none'
+            }} />
             <span className="quiz-survival-infinity">∞</span>
             <span className="quiz-survival-hearts">♥♥♥</span>
+            <span style={{
+              position:'relative', zIndex:1, marginTop:'10px',
+              font:'700 9px var(--mono)', letterSpacing:'.22em', color:'rgba(255,255,255,.32)'
+            }}>SIGNAL: 14% — STAY ALIVE</span>
           </span>
         </Link>
       </section>
