@@ -146,6 +146,10 @@ export default function QuizzesPage() {
             // Les trois niveaux terminés : la carte passe en niveaux de gris,
             // affiche « TERMINÉ » et n'est plus un lien — le quizz est verrouillé.
             const finished = done === QUIZ_LEVELS.length;
+            // Carte compacte : miniature, pastilles, TITRE, méta. Le chapeau
+            // (`labels.text`) n'est plus affiché ici — il reste lu sur la
+            // bannière du quizz du jour et sur l'écran d'intro du quizz, là où
+            // il a la place de se développer.
             const title = quizLabel(quiz.labels, lang)?.title;
             const body = (
               <>
@@ -163,7 +167,6 @@ export default function QuizzesPage() {
                     </span>
                   </span>
                   <h3>{title}</h3>
-                  <p>{quizLabel(quiz.labels, lang)?.text}</p>
                   <span className="quiz-card-meta">
                     {best && (
                       <span className="quiz-card-best" title={`${copy.levels[best.level] || ''} · ${copy.best.replace('{s}', formatBest(best))}`}>
