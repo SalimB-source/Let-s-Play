@@ -103,6 +103,13 @@ export const translations = {
       levelUnlocked: '{level} level unlocked — it is waiting for you.',
       levelPlay: 'Play this level',
       levelProgress: '{done}/{total} levels',
+      // Filtre par famille de la grille : Gaming / Tech / Cinéma / E-sport
+      filterLabel: 'Filter the quizzes by family',
+      filterAll: 'All',
+      filterCategories: { games: 'Gaming', tech: 'Tech', cinema: 'Cinema', esport: 'E-sport' },
+      filterResults: '{shown} of {total} quizzes shown',
+      filterAllCount: '{n} quizzes in the catalogue',
+      filterEmpty: 'No quiz in this family yet.',
       levelConfirm: {
         title: 'Start {level}?',
         intro: 'Check the rules for this level before you begin.',
@@ -513,6 +520,13 @@ export const translations = {
       levelUnlocked: 'Niveau {level} débloqué — il t’attend.',
       levelPlay: 'Jouer ce niveau',
       levelProgress: '{done}/{total} niveaux',
+      // Filtre par famille de la grille : Gaming / Tech / Cinéma / E-sport
+      filterLabel: 'Filtrer les quizz par famille',
+      filterAll: 'Tous',
+      filterCategories: { games: 'Gaming', tech: 'Tech', cinema: 'Cinéma', esport: 'E-sport' },
+      filterResults: '{shown} quizz sur {total} affichés',
+      filterAllCount: '{n} quizz au catalogue',
+      filterEmpty: 'Aucun quizz dans cette famille pour l’instant.',
       levelConfirm: {
         title: 'Lancer {level} ?',
         intro: 'Vérifie les règles de ce niveau avant de commencer.',
@@ -915,6 +929,13 @@ export const translations = {
       levelUnlocked: 'تم فتح مستوى {level} — بانتظارك.',
       levelPlay: 'العب هذا المستوى',
       levelProgress: '{done}/{total} مستويات',
+      // Filtre par famille de la grille : Gaming / Tech / Cinéma / E-sport
+      filterLabel: 'تصفية الاختبارات حسب العائلة',
+      filterAll: 'الكل',
+      filterCategories: { games: 'الألعاب', tech: 'التقنية', cinema: 'السينما', esport: 'الرياضات الإلكترونية' },
+      filterResults: '{shown} من {total} اختبارًا معروضة',
+      filterAllCount: '{n} اختبارًا في الكتالوج',
+      filterEmpty: 'لا يوجد اختبار في هذه العائلة بعد.',
       levelConfirm: {
         title: 'بدء {level}؟',
         intro: 'تحقق من قواعد هذا المستوى قبل البدء.',

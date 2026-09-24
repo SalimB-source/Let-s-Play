@@ -115,6 +115,37 @@
 .quiz-card-meta { margin-top: auto; padding-top: 4px; color: var(--cyan); font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .quiz-card-best { color: var(--yellow); border: 1px solid rgba(255, 214, 25, .4); padding: 2px 7px; }
 
+/* ---- Filtre par famille (Gaming / Tech / Cinéma / E-sport) --------------- */
+/* Une pastille par famille (+ « Tous »), la famille active en jaune — même
+   langage visuel que les filtres du site (`.filter`, `.achievement-chip`). Le
+   compte de quizz est collé à la pastille ; sous chaque rangée, la ligne de
+   résumé rappelle ce que la grille montre (« Tous » = catalogue entier). */
+.quiz-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding-top: 16px; margin-top: 2px; border-top: 1px solid var(--line);
+}
+.quiz-filter-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px; background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--line); color: var(--muted);
+  font: 500 10.5px var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: color .2s, border-color .2s, background .2s, box-shadow .2s;
+}
+.quiz-filter-chip:hover { color: #fff; border-color: var(--line-strong); }
+.quiz-filter-chip.is-active {
+  background: var(--yellow); border-color: var(--yellow); color: #0a0b1a;
+  box-shadow: 0 0 18px rgba(255, 214, 25, .3);
+}
+.quiz-filter-count { color: var(--dim); font-size: 9.5px; letter-spacing: .06em; }
+.quiz-filter-chip.is-active .quiz-filter-count { color: rgba(10, 11, 26, .72); }
+.quiz-filter-summary {
+  margin: 10px 0 0; color: var(--dim);
+  font: 400 11px var(--mono); letter-spacing: .1em; text-transform: uppercase;
+}
+.quiz-filter-empty { margin: 26px 0 0; color: var(--muted); }
+
 /* ---- Catégories de la page Quizz ---------------------------------------- */
 .quiz-category { margin-top: 54px; }
 .quiz-category-heading { margin-bottom: 22px; }
@@ -648,6 +679,11 @@
 }
 @media (max-width: 680px) {
   .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  /* Filtre : pastilles plus serrées — les cinq libellés tiennent sur deux
+     rangées sans manger la grille. */
+  .quiz-filter-bar { gap: 6px; }
+  .quiz-filter-chip { padding: 8px 11px; gap: 6px; font-size: 9.5px; }
+  .quiz-filter-summary { font-size: 10px; }
 }
 @media (max-width: 460px) {
   .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

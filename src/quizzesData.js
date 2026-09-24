@@ -26,6 +26,13 @@
  * (`QuizThumb` via `src/lib/videoThumbnails.js`), comme il servait de
  * miniature avant. `source` renvoie vers l'article maison qui approfondit le
  * sujet du quizz.
+ *
+ * QUATRE FAMILLES, UN FILTRE — chaque quizz porte aussi `category`, sa
+ * famille parmi `QUIZ_CATEGORIES` (Gaming, Tech, Cinéma, E-sport). C'est ce
+ * que filtrent les pastilles de la grille ; `tag` reste l'étiquette fine
+ * affichée sur la carte. La famille est une donnée, pas une règle de rendu :
+ * ajouter un quizz = lui donner sa famille, la pastille et son compte suivent
+ * (`quizzesInCategory`, `quizCategoryCounts`).
  */
 import { baseUrl as base } from './data';
 
@@ -49,6 +56,61 @@ export function quizLabel(labels, lang = 'fr') {
 export const QUIZ_TAGS = ['Culture', 'Rétro', 'Souls-like', 'RPG', 'E-sport', 'Studios', 'Tech', 'Cinéma', 'Séries', 'Consoles', 'PC', 'FPS', 'Horreur', 'Combat', 'Course', 'Indé', 'Nintendo', 'Open World', 'SF'];
 
 /**
+ * Les quatre familles du filtre de la grille `/quizz` — Gaming, Tech, Cinéma,
+ * E-sport — dans l'ordre d'affichage des pastilles (le « Tous » du filtre
+ * n'est pas une famille : il n'est pas listé ici).
+ *
+ * Les familles regroupent les étiquettes fines (`tag`, `QUIZ_TAGS`) :
+ *   - `games`  : Culture, Rétro, Souls-like, RPG, Studios, Consoles, FPS,
+ *                Horreur, Combat, Course, Indé, Nintendo, Open World, SF ;
+ *   - `tech`   : Tech et PC (matériel, machines) ;
+ *   - `cinema` : Cinéma et Séries (écrans, adaptations) ;
+ *   - `esport` : E-sport (compétition).
+ *
+ * Chaque quizz déclare SA famille (`category`, une seule) : le filtre ne
+ * propose donc jamais deux fois le même quizz et les comptes des pastilles
+ * s'additionnent au total du catalogue. Famille inconnue ou absente : repli
+ * sur `games` — la grille ne perd jamais un quizz.
+ */
+export const QUIZ_CATEGORIES = ['games', 'tech', 'cinema', 'esport'];
+
+/** Famille appliquée quand `category` est absent ou inconnu. */
+export const DEFAULT_QUIZ_CATEGORY = 'games';
+
+/** Famille d'un quizz — jamais `null`, on retombe sur « Gaming ». */
+export function quizCategory(quiz) {
+  const id = quiz && quiz.category;
+  return QUIZ_CATEGORIES.includes(id) ? id : DEFAULT_QUIZ_CATEGORY;
+}
+
+/**
+ * Les quizz d'une famille, dans l'ordre du catalogue. `category` absent,
+ * `null` ou `'all'` : tout le catalogue (copie, jamais la liste source).
+ */
+export function quizzesInCategory(category, list = quizzes) {
+  const items = Array.isArray(list) ? list : [];
+  if (!category || category === 'all') return [...items];
+  return items.filter((quiz) => quizCategory(quiz) === category);
+}
+
+/**
+ * Comptes par famille pour les pastilles du filtre : `{ all, games, tech,
+ * cinema, esport }` — `all` est le total du catalogue.
+ */
+export function quizCategoryCounts(list = quizzes) {
+  const items = Array.isArray(list) ? list : [];
+  const counts = { all: items.length };
+  for (const id of QUIZ_CATEGORIES) counts[id] = 0;
+  for (const quiz of items) counts[quizCategory(quiz)] += 1;
+  return counts;
+}
+
+/** Le filtre est-il actif ? (`all` / absent = catalogue entier) */
+export function isQuizCategory(category) {
+  return QUIZ_CATEGORIES.includes(category);
+}
+
+/**
  * Les trois niveaux d'un quizz, dans l'ordre de progression : Facile est
  * toujours ouvert, chaque niveau terminé débloque le suivant. Utilisé par le
  * lecteur (sélecteur de niveaux), la page de garde (progression) et les
@@ -69,6 +131,7 @@ export const quizzes = [
     videoId: 't1Re8ki_gsw',
     image: quizThumbUrl('culture-gaming'),
     tag: 'Culture',
+    category: 'games',
     keywords: 'quizz culture gaming général mario zelda minecraft',
     source: '/dossiers/choc-generations-gaming',
     labels: {
@@ -113,6 +176,7 @@ export const quizzes = [
     videoId: 'A2VPhWOUMHI',
     image: quizThumbUrl('consoles-retro'),
     tag: 'Rétro',
+    category: 'games',
     keywords: 'quizz rétro consoles playstation xbox sega nintendo dreamcast',
     source: '/dossiers/25-ans-playstation-2',
     labels: {
@@ -157,6 +221,7 @@ export const quizzes = [
     videoId: 'OH51fSHznwg',
     image: quizThumbUrl('souls-fromsoftware'),
     tag: 'Souls-like',
+    category: 'games',
     keywords: 'quizz souls fromsoftware dark souls elden ring bloodborne miyazaki',
     source: '/dossiers/pourquoi-les-souls',
     labels: {
@@ -201,6 +266,7 @@ export const quizzes = [
     videoId: '0ThNyFItASM',
     image: quizThumbUrl('rpg-legends'),
     tag: 'RPG',
+    category: 'games',
     keywords: 'quizz rpg zelda witcher skyrim persona final fantasy cyberpunk',
     source: '/dossiers/let-play-awards-2025',
     labels: {
@@ -245,6 +311,7 @@ export const quizzes = [
     videoId: 'twbaM8fiXpo',
     image: quizThumbUrl('esport-competition'),
     tag: 'E-sport',
+    category: 'esport',
     keywords: 'quizz esport counter-strike league of legends free fire mortal kombat rocket league valorant',
     labels: {
       fr: { title: 'E-sport & compétition', text: 'CS, LoL, Free Fire, Rocket League, Valorant : la scène compétitive, de Séoul à Alger (FFAC2023), en trois niveaux.' },
@@ -288,6 +355,7 @@ export const quizzes = [
     videoId: 'aTs0zhm6Leg',
     image: quizThumbUrl('studios-legends'),
     tag: 'Studios',
+    category: 'games',
     keywords: 'quizz studios créateurs kojima miyamoto naughty dog capcom ubisoft rockstar',
     source: '/dossiers/goya-hicosoft',
     labels: {
@@ -332,6 +400,7 @@ export const quizzes = [
     videoId: 'Zl6crcrPnPQ',
     image: quizThumbUrl('tech-hardware'),
     tag: 'Tech',
+    category: 'tech',
     keywords: 'quizz tech matériel gpu nvidia amd nvme ray tracing usb-c',
     labels: {
       fr: { title: 'Tech & matériel', text: 'GPU, NVMe, ray tracing, USB-C : le vocabulaire de la machine, côté segment Tech de l’émission — trois niveaux, du plus simple au plus pointu.' },
@@ -375,6 +444,7 @@ export const quizzes = [
     videoId: 'HzigJZOxz2o',
     image: quizThumbUrl('cinema-pop-culture'),
     tag: 'Cinéma',
+    category: 'cinema',
     keywords: 'quizz cinéma séries adaptations arcane edgerunners witcher ready player one',
     labels: {
       fr: { title: 'Cinéma & pop culture', text: 'Adaptations, séries et films gamers : du PNJ de Free Guy au Ready Player One de Spielberg — trois niveaux, du grand public à l’expert.' },
@@ -418,6 +488,7 @@ export const quizzes = [
     videoId: '0ThNyFItASM',
     image: quizThumbUrl('films-cultes'),
     tag: 'Cinéma',
+    category: 'cinema',
     keywords: 'quizz cinéma films cultes classiques titanic jurassic park matrix parasite miyazaki kurosawa',
     labels: {
       fr: { title: 'Films cultes : connais-tu tes classiques ?', text: 'Du Titanic à Parasite, de la DeLorean à Metropolis : traverse les grands classiques du cinéma en trois niveaux.' },
@@ -461,6 +532,7 @@ export const quizzes = [
     videoId: 'HzigJZOxz2o',
     image: quizThumbUrl('super-heros-cinema'),
     tag: 'Cinéma',
+    category: 'cinema',
     keywords: 'quizz cinéma pop culture super héros marvel dc avengers batman superman iron man wonder woman',
     labels: {
       fr: { title: 'Super-héros au cinéma : Marvel & DC', text: 'De Gotham au Wakanda : retrouve tes héros, leurs films et les secrets des univers Marvel et DC en trois niveaux.' },
@@ -504,6 +576,7 @@ export const quizzes = [
     videoId: 'HzigJZOxz2o',
     image: quizThumbUrl('series-cultes'),
     tag: 'Séries',
+    category: 'cinema',
     keywords: 'quizz séries pop culture television tv streaming netflix hbo stranger things game of thrones breaking bad black mirror',
     labels: {
       fr: { title: 'Séries cultes & pop culture', text: 'De Hawkins à Westeros, de Friends à Black Mirror : trois niveaux pour tester ta culture des séries.' },
@@ -547,6 +620,7 @@ export const quizzes = [
     videoId: 'A2VPhWOUMHI',
     image: quizThumbUrl('ps4-generation'),
     tag: 'Consoles',
+    category: 'games',
     keywords: 'quizz ps4 playstation 4 sony dualshock 4 exclusivités god of war horizon',
     source: '/dossiers/heritage-playstation-1',
     labels: {
@@ -591,6 +665,7 @@ export const quizzes = [
     videoId: 'A2VPhWOUMHI',
     image: quizThumbUrl('nintendo-64'),
     tag: 'Consoles',
+    category: 'games',
     keywords: 'quizz nintendo 64 n64 super mario 64 ocarina of time mario kart 64 banjo',
     source: '/dossiers/choc-generations-gaming',
     labels: {
@@ -635,6 +710,7 @@ export const quizzes = [
     videoId: 'A2VPhWOUMHI',
     image: quizThumbUrl('megadrive'),
     tag: 'Consoles',
+    category: 'games',
     keywords: 'quizz megadrive sega genesis sonic streets of rage 16 bits mega-cd',
     source: '/dossiers/choc-generations-gaming',
     labels: {
@@ -679,6 +755,7 @@ export const quizzes = [
     videoId: 't1Re8ki_gsw',
     image: quizThumbUrl('pc-legends'),
     tag: 'PC',
+    category: 'tech',
     keywords: 'quizz pc doom half-life starcraft diablo warcraft counter-strike baldur’s gate',
     labels: {
       fr: { title: 'Jeux PC légendaires', text: 'DOOM, Half-Life, StarCraft, Diablo : les fondations du jeu PC, du modding à l’e-sport, en trois niveaux.' },
@@ -722,6 +799,7 @@ export const quizzes = [
     videoId: 't1Re8ki_gsw',
     image: quizThumbUrl('fps-legends'),
     tag: 'FPS',
+    category: 'games',
     keywords: 'quizz fps doom quake halo call of duty counter-strike overwatch valorant',
     source: '/dossiers/choc-generations-gaming',
     labels: {
@@ -766,6 +844,7 @@ export const quizzes = [
     videoId: 'OH51fSHznwg',
     image: quizThumbUrl('horror-gaming'),
     tag: 'Horreur',
+    category: 'games',
     keywords: 'quizz horreur resident evil silent hill dead space the last of us amnesia',
     source: '/dossiers/pourquoi-les-souls',
     labels: {
@@ -810,6 +889,7 @@ export const quizzes = [
     videoId: 'twbaM8fiXpo',
     image: quizThumbUrl('fighting-legends'),
     tag: 'Combat',
+    category: 'games',
     keywords: 'quizz combat street fighter tekken mortal kombat smash bros guilty gear',
     labels: {
       fr: { title: 'Jeux de combat légendaires', text: 'Street Fighter, Tekken, Mortal Kombat, Smash Bros : les KO les plus célèbres, du hadoken facile au frame data expert.' },
@@ -853,6 +933,7 @@ export const quizzes = [
     videoId: 'A2VPhWOUMHI',
     image: quizThumbUrl('racing-legends'),
     tag: 'Course',
+    category: 'games',
     keywords: 'quizz course gran turismo mario kart forza need for speed f1',
     source: '/dossiers/choc-generations-gaming',
     labels: {
@@ -897,6 +978,7 @@ export const quizzes = [
     videoId: '0ThNyFItASM',
     image: quizThumbUrl('indie-gems'),
     tag: 'Indé',
+    category: 'games',
     keywords: 'quizz indé indie hades celeste hollow knight undertale stardew valley',
     source: '/dossiers/let-play-awards-2025',
     labels: {
@@ -941,6 +1023,7 @@ export const quizzes = [
     videoId: 'A2VPhWOUMHI',
     image: quizThumbUrl('nintendo-legends'),
     tag: 'Nintendo',
+    category: 'games',
     keywords: 'quizz nintendo mario zelda pokemon kirby metroid smash bros',
     source: '/dossiers/choc-generations-gaming',
     labels: {
@@ -985,6 +1068,7 @@ export const quizzes = [
     videoId: '0ThNyFItASM',
     image: quizThumbUrl('open-world-legends'),
     tag: 'Open World',
+    category: 'games',
     keywords: 'quizz open world gta red dead zelda skyrim witcher elden ring',
     source: '/dossiers/let-play-awards-2025',
     labels: {
@@ -1029,6 +1113,7 @@ export const quizzes = [
     videoId: 'Zl6crcrPnPQ',
     image: quizThumbUrl('sci-fi-gaming'),
     tag: 'SF',
+    category: 'games',
     keywords: 'quizz science fiction mass effect halo cyberpunk starcraft half-life',
     source: '/dossiers/choc-generations-gaming',
     labels: {
@@ -1073,6 +1158,7 @@ export const quizzes = [
     videoId: 'twbaM8fiXpo',
     image: quizThumbUrl('battle-royale'),
     tag: 'E-sport',
+    category: 'esport',
     keywords: 'quizz battle royale fortnite pubg apex warzone free fire',
     labels: {
       fr: { title: 'Battle royale', text: 'PUBG, Fortnite, Apex, Warzone, Free Fire : le dernier survivant rafle tout, du drop facile au top 1 expert.' },
@@ -1116,6 +1202,7 @@ export const quizzes = [
     videoId: 't1Re8ki_gsw',
     image: quizThumbUrl('mmo-legends'),
     tag: 'RPG',
+    category: 'games',
     keywords: 'quizz mmo wow final fantasy xiv guild wars eve online elder scrolls online',
     source: '/dossiers/let-play-awards-2025',
     labels: {
