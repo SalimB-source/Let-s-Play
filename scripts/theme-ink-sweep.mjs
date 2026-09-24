@@ -29,13 +29,15 @@ const write = process.argv.includes('--write');
    - bandeaux de marque : le ticker et l'appel final deviennent des aplats
      saturés, l'encre claire y reste juste ;
    - pastilles colorées : fond de marque plein, l'encre claire est le sujet. */
+/* NB : `\\.play\\b` vise le bouton lecture, pas `.player-*` (page profil) ;
+   `\\.hero\\b` vise le héros photo, pas `.arena-hero` ni `.quiz-rank-hero-*`. */
 const KEEP = new RegExp([
-  'hero', 'video-modal', 'live-player', 'live-offline', 'page-hero-visual',
+  '\\.hero\\b', 'video-modal', 'live-player', 'live-offline', 'page-hero-visual',
   'video-image', 'latest-test-image', 'news-carousel-image', 'reel-', 'insta-',
   'dossier-feature-card-media', 'article-cover', 'score-badge',
   'featured-dossier-badge', 'social-slide-overlay', 'video-thumb-fallback',
   'button-ghost', 'ticker', 'cta', 'partner-mark-badge', 'messages-bubble.is-mine',
-  'delete-account-confirm', 'nav-register', 'filter.active', '\\.play',
+  'delete-account-confirm', 'nav-register', 'filter.active', '\\.play\\b',
   'button-yellow', 'awaited-band',
   // pastilles de statut pleines : le fond saturé porte l'encre claire
   'sentiment', 'article-views-inline',
@@ -46,7 +48,7 @@ const KEEP = new RegExp([
    les mêmes teintes servent de remplissage (pastilles, points de présence) et
    doivent y rester vives. */
 const STATUS_INK = new Map([
-  ['danger', /#(?:ff8c9d|fb7185|fca5a5|fecdd3|ffb4be|ff8f8f|ff6b6b|ff5c5c|ff4d5a|ff3d4f|f87171|dc2626)\b/i],
+  ['var(--danger)', /#(?:ff8c9d|fb7185|fca5a5|fecdd3|ffb4be|ff8f8f|ff6b6b|ff5c5c|ff4d5a|ff3d4f|f87171|dc2626)\b/i],
   ['var(--ok)', /#(?:10b981|34d399|16a34a)\b/i],
   ['#b45309', /#(?:ff8a4c|f97316|eab308)\b/i],
   ['#1d4ed8', /#(?:60a5fa|3b82f6)\b/i],
@@ -93,7 +95,11 @@ for (const file of files.sort()) {
   });
 }
 
-const uniq = (list) => [...new Set(list)];
+/* Une règle à plusieurs sélecteurs (`a, b`) donne une entrée par sélecteur :
+   sinon seul le premier reçoit le préfixe `[data-theme='light']` et le second
+   s'applique aussi au thème sombre. */
+const split = (sel) => sel.split(/\s*,\s*/).filter(Boolean);
+const uniq = (list) => [...new Set(list.flatMap(split))];
 const group = (sel, value, comment) => {
   const lines = uniq(sel).map((s) => `  [data-theme='light'] ${s}`);
   if (!lines.length) return '';
