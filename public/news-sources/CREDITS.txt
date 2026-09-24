@@ -1,0 +1,37 @@
+VISUEL ÉDITORIAL — KOJIMA PRODUCTIONS / XBOX
+=============================================
+
+Le visuel final est une composition originale Let’s Play destinée à illustrer
+une actualité. Les photographies sources sont de vraies photographies de
+presse (et non des images générées par IA).
+
+1. Hideo Kojima et Asha Sharma chez Kojima Productions
+   Fichier : kojima-asha-sharma-xbox-tokyo.jpg
+   Publication originale : comptes X officiels de Hideo Kojima et Asha Sharma,
+   14 septembre 2026.
+   Publication éditoriale consultée : Instant Gaming News
+   https://news.instant-gaming.com/en/articles/21882-asha-sharma-poses-with-hideo-kojima-to-prepare-for-the-future
+   URL de l’image consultée :
+   https://gaming-cdn.com/images/news/articles/21882/cover/1000x563/asha-sharma-poses-with-hideo-kojima-to-prepare-for-the-future-cover6aa7a58a17020.jpg
+   Message cité sur le visuel : « To invention and adventure together with Xbox »
+   (Asha Sharma, publication X du 14 septembre 2026).
+
+2. Console Xbox Series X25 (texture de fond très floutée du format 16:9)
+   Fichier : xbox-series-x-console.jpg
+   Source éditoriale consultée : Box.co.uk
+   https://box.co.uk/blog/xbox-25th-anniversary-green-series-x
+
+Ces photographies restent la propriété de leurs auteurs et ayants droit.
+Elles sont conservées ici pour la réalisation de ce visuel éditorial ; leur
+présence dans ce dépôt ne leur attribue pas une licence libre.
+
+Polices
+-------
+Anton — Copyright 2020 The Anton Project Authors
+https://github.com/googlefonts/AntonFont.git
+
+Inter — Copyright 2016 The Inter Project Authors
+https://github.com/rsms/inter
+
+Anton et Inter sont distribuées sous SIL Open Font License 1.1. Le texte
+complet de la licence figure dans scripts/visuels/fonts/OFL.txt.
