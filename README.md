@@ -42,7 +42,8 @@ npm run build
   ×1/×1,5/×2, un niveau ne rapportant qu'une fois — en points comme en XP),
   quizz du jour en rotation quotidienne avec série de jours, feedback
   instantané de chaque réponse (gel, vert/rouge, points de rapidité & combo),
-  corrections commentées, confettis du sans-faute, raccourcis clavier 1–4,
+  grille filtrable par famille (Gaming / Tech / Cinéma / E-sport, `?cat=` dans
+  l'URL), corrections commentées, confettis du sans-faute, raccourcis clavier 1–4,
   commentaires, recherche et cinq succès dédiés ; classement des quizz (un
   classement par niveau, clé `slug:niveau`) par points gagnés et position au
   classement global affichée sur la page de profil (voir « Quizz gaming,
@@ -702,6 +703,18 @@ Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 `/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
 mais la structure de données les accepte déjà.
 
+- **Filtre par famille** — au-dessus de la grille, cinq pastilles : **Tous**
+  (le catalogue entier, actif par défaut), **Gaming**, **Tech**, **Cinéma** et
+  **E-sport** (`QUIZ_CATEGORIES`). Chaque pastille annonce son nombre de quizz,
+  une seule famille est active à la fois, et la ligne de résumé rappelle ce que
+  la grille affiche (« 25 quizz au catalogue » / « 2 quizz sur 25 affichés »,
+  `aria-live`). Le filtre vit dans l'**URL** (`/quizz?cat=tech`) : le lien est
+  partageable, un rechargement ou un retour arrière rouvre la même famille, une
+  valeur inconnue retombe sur « Tous ». La bannière du quizz du jour et la carte
+  Survival ne sont pas filtrées (elles ont leurs propres catégories 01 / 02).
+  `quizCategory` / `quizzesInCategory` / `quizCategoryCounts`
+  (`src/quizzesData.js`) portent la règle, `scripts/quiz-smoke.jsx` la vérifie
+  (comptes, pastille active, cartes des autres familles absentes, lien direct).
 - **Grille** — les vingt-cinq quizz (aucun verrou, aucune pastille de difficulté : la
   progression « n/3 niveaux » remplace l'ancien badge) s'affichent sur **cinq
   colonnes** sur desktop (`repeat(5, minmax(0, 1fr))`, ≈ 230 px par carte), puis
@@ -721,7 +734,12 @@ mais la structure de données les accepte déjà.
 - **Données** — `src/quizzesData.js` : vingt-cinq quizz (gaming, consoles,
   e-sport, tech, cinéma & pop culture ; trois nouveaux thèmes : films cultes,
   super-héros Marvel/DC et séries cultes), la plupart liés à un article maison
-  (`source`). **Chaque quizz porte trois niveaux** (`levels.easy` /
+  (`source`). Chaque quizz déclare aussi sa **famille** (`category`, une seule,
+  parmi `QUIZ_CATEGORIES` : gaming, tech, cinéma, e-sport) — c'est elle que
+  filtrent les pastilles, `tag` restant l'étiquette fine affichée sur la carte
+  (Tech et PC → Tech, Cinéma et Séries → Cinéma, E-sport → E-sport, le reste →
+  Gaming ; famille absente ou inconnue : repli sur Gaming, jamais de quizz
+  perdu). **Chaque quizz porte trois niveaux** (`levels.easy` /
   `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit questions par niveau —
   soit 24 questions par quizz, 600 au total. Les helpers
   `quizLevelQuestions(quiz, level)` et `quizQuestionsCount(quiz)` évitent

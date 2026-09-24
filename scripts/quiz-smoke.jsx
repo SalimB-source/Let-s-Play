@@ -39,14 +39,18 @@ import QuizPage from '../src/quizzes/QuizPage';
 import QuizLeaderboard from '../src/quizzes/QuizLeaderboard';
 import Profile from '../src/pages/Profile';
 import {
+  QUIZ_CATEGORIES,
   QUIZ_LEVELS,
   baseUrl,
   quizBySlug,
+  quizCategory,
+  quizCategoryCounts,
   quizLabel,
   quizLevelQuestions,
   quizQuestionsCount,
   quizThumbUrl,
   quizzes,
+  quizzesInCategory,
 } from '../src/quizzesData';
 import {
   DIFFICULTY_MULTIPLIER, FREEZE_BONUS, LEVEL_RULES, QUESTION_TIME, VERDICT_MS, bestDayRun,
@@ -390,6 +394,32 @@ export async function checkQuiz(assert) {
     assert.ok(quiz.videoId, `${quiz.slug} : épisode lié conservé en repli`);
   }
   assert.equal(new Set(thumbs).size, quizzes.length, 'une miniature distincte par quizz');
+
+  // Familles du filtre : chaque quizz en déclare une, valide, et les quatre
+  // familles couvrent le catalogue (aucun quizz orphelin, aucun doublon :
+  // chaque quizz n'appartient qu'à une seule famille, les comptes des
+  // pastilles s'additionnent donc au total).
+  const categoryCounts = quizCategoryCounts(quizzes);
+  assert.equal(categoryCounts.all, quizzes.length, 'le compte « Tous » est le catalogue entier');
+  assert.equal(
+    QUIZ_CATEGORIES.reduce((total, id) => total + categoryCounts[id], 0),
+    quizzes.length,
+    'les quatre familles couvrent tous les quizz',
+  );
+  for (const quiz of quizzes) {
+    assert.ok(QUIZ_CATEGORIES.includes(quiz.category), `${quiz.slug} : famille déclarée (${quiz.category})`);
+    assert.equal(quizCategory(quiz), quiz.category, `${quiz.slug} : famille lue par quizCategory`);
+  }
+  assert.equal(quizzesInCategory('all', quizzes).length, quizzes.length, '« Tous » rend tout le catalogue');
+  assert.equal(quizzesInCategory(null, quizzes).length, quizzes.length, 'famille absente : tout le catalogue');
+  assert.notEqual(quizzesInCategory('all', quizzes), quizzes, '« Tous » rend une copie, pas la liste source');
+  for (const id of QUIZ_CATEGORIES) {
+    const family = quizzesInCategory(id, quizzes);
+    assert.equal(family.length, categoryCounts[id], `famille ${id} : compte et liste d’accord`);
+    assert.ok(family.every((quiz) => quizCategory(quiz) === id), `famille ${id} : uniquement ses quizz`);
+  }
+  assert.equal(quizCategory({ slug: 'x' }), 'games', 'famille inconnue : repli sur Gaming');
+  assert.equal(quizCategory({ slug: 'x', category: 'nope' }), 'games', 'famille invalide : repli sur Gaming');
 
   /* ------------------------------------- 2. Partie complète (jsdom) -------- */
   seedLang('fr');
@@ -757,7 +787,121 @@ export async function checkQuiz(assert) {
       (gridNode.querySelector('.quiz-daily-media img')?.getAttribute('src') || '').startsWith(`${baseUrl}quizzes/`),
       `[${lang}] la bannière du jour utilise la miniature maison`,
     );
+
+    // Filtre par famille : une pastille « Tous » + les quatre familles, dans
+    // l'ordre de `QUIZ_CATEGORIES`, chacune annonçant son compte. Cliquer une
+    // famille ne laisse que ses cartes (les autres disparaissent vraiment de
+    // la grille), la pastille active le dit (`aria-pressed`) et « Tous » rend
+    // le catalogue entier.
+    const filterChips = [...gridNode.querySelectorAll('.quiz-filter-chip')];
+    assert.equal(
+      filterChips.length,
+      QUIZ_CATEGORIES.length + 1,
+      `[${lang}] cinq pastilles de filtre (Tous + les quatre familles)`,
+    );
+    assert.deepEqual(
+      filterChips.map((chip) => chip.getAttribute('data-category')),
+      ['all', ...QUIZ_CATEGORIES],
+      `[${lang}] pastilles dans l’ordre des familles`,
+    );
+    for (const chip of filterChips) {
+      const id = chip.getAttribute('data-category');
+      assert.equal(
+        chip.querySelector('.quiz-filter-count')?.textContent,
+        String(categoryCounts[id]),
+        `[${lang}] pastille ${id} : compte de quizz affiché`,
+      );
+    }
+    assert.equal(
+      gridNode.querySelector('.quiz-filter-chip[data-category="all"]')?.getAttribute('aria-pressed'),
+      'true',
+      `[${lang}] « Tous » est actif par défaut`,
+    );
+    assert.ok(
+      gridNode.querySelector('.quiz-filter-summary')?.textContent.includes(String(quizzes.length)),
+      `[${lang}] la ligne de résumé annonce le catalogue entier`,
+    );
+    for (const id of QUIZ_CATEGORIES) {
+      const chip = gridNode.querySelector(`.quiz-filter-chip[data-category="${id}"]`);
+      await click(chip);
+      const family = quizzesInCategory(id, quizzes);
+      assert.equal(chip.getAttribute('aria-pressed'), 'true', `[${lang}] famille ${id} : pastille active`);
+      assert.equal(
+        gridNode.querySelector('.quiz-filter-chip[data-category="all"]')?.getAttribute('aria-pressed'),
+        'false',
+        `[${lang}] famille ${id} : « Tous » n’est plus actif`,
+      );
+      const shownCards = [...gridNode.querySelectorAll('.quiz-category--main .quiz-card')];
+      assert.equal(shownCards.length, family.length, `[${lang}] famille ${id} : seules ses ${family.length} cartes restent`);
+      // Les cartes affichées sont bien celles de la famille (comparées par
+      // titre, seul texte des cartes), et aucune carte d'une autre famille ne
+      // traîne dans la grille.
+      const shownTitles = shownCards.map((card) => card.querySelector('.quiz-card-copy h3')?.textContent.trim());
+      assert.deepEqual(
+        [...shownTitles].sort(),
+        family.map((quiz) => quizLabel(quiz.labels, lang)?.title).sort(),
+        `[${lang}] famille ${id} : les bons quizz affichés`,
+      );
+      const otherTitles = quizzesInCategory('all', quizzes)
+        .filter((quiz) => quizCategory(quiz) !== id)
+        .map((quiz) => quizLabel(quiz.labels, lang)?.title);
+      assert.ok(
+        otherTitles.every((title) => !shownTitles.includes(title)),
+        `[${lang}] famille ${id} : aucune carte des autres familles`,
+      );
+      assert.ok(
+        gridNode.querySelector('.quiz-filter-summary')?.textContent.includes(String(family.length)),
+        `[${lang}] famille ${id} : le résumé annonce ${family.length} quizz affichés`,
+      );
+      // La bannière du jour et la carte Survival ne sont pas filtrées : elles
+      // ont leurs propres catégories (01 / 02).
+      assert.ok(gridNode.querySelector('.quiz-daily'), `[${lang}] famille ${id} : la bannière du jour reste`);
+      assert.ok(gridNode.querySelector('.quiz-survival-card'), `[${lang}] famille ${id} : le Survival reste`);
+    }
+    await click(gridNode.querySelector('.quiz-filter-chip[data-category="all"]'));
+    assert.equal(
+      gridNode.querySelectorAll('.quiz-category--main .quiz-card').length,
+      quizzes.length,
+      `[${lang}] « Tous » rétablit les ${quizzes.length} cartes`,
+    );
     await act(async () => gridRoot.unmount());
+  }
+
+  /* --------------------- 4 ter. Filtre : lien direct `?cat=` ---------------- */
+  // Le filtre vit dans l'URL (`?cat=tech`) : un lien partagé ou un
+  // rechargement rouvre la page sur la même famille, et une famille inconnue
+  // retombe sur « Tous » au lieu d'une grille vide.
+  for (const [search, expected] of [['?cat=tech', quizzesInCategory('tech', quizzes)], ['?cat=nope', quizzes]]) {
+    seedLang('fr');
+    const deepNode = document.createElement('div');
+    document.body.append(deepNode);
+    const deepRoot = createRoot(deepNode);
+    await act(async () => deepRoot.render(
+      <LanguageProvider>
+        <AuthProvider>
+          <AchievementProvider>
+            <MemoryRouter initialEntries={[`/quizz${search}`]}>
+              <Routes>
+                <Route path="/quizz" element={<QuizzesPage />} />
+                <Route path="/quizz/:slug" element={<QuizPage />} />
+              </Routes>
+            </MemoryRouter>
+          </AchievementProvider>
+        </AuthProvider>
+      </LanguageProvider>,
+    ));
+    assert.equal(
+      deepNode.querySelectorAll('.quiz-category--main .quiz-card').length,
+      expected.length,
+      `[fr] /quizz${search} : ${expected.length} cartes affichées`,
+    );
+    const activeChip = deepNode.querySelector('.quiz-filter-chip[aria-pressed="true"]');
+    assert.equal(
+      activeChip?.getAttribute('data-category'),
+      search === '?cat=tech' ? 'tech' : 'all',
+      `[fr] /quizz${search} : pastille active`,
+    );
+    await act(async () => deepRoot.unmount());
   }
 
   /* --------------------------- 4 bis. Survival mode ------------------------- */
@@ -1684,6 +1828,6 @@ export async function checkQuiz(assert) {
     await act(async () => survivalLangRoot.unmount());
   }
 
-  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons ni doublés, answered d’une partie arrêtée), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, résultat épuré (seuls « Niveau suivant → » vers le palier au-dessus et « Voir tous les quizz », rien après le dernier niveau), replay d’un niveau terminé via la grille = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, partie tout faux, minuteur par niveau, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–5 (+ D et F pour les jokers), combo + fanfare, sons (tick-tack qui accélère, verdicts, jokers — le 50/50 descend, le gel monte —, coupure), refonte du lecteur (CTA compacts, pastilles de progression, 50/50, gel du chrono, détail de partie) et niveau expert en conditions réelles (cinq propositions, une vie perdue par erreur, fin de partie à la troisième, « Plus de vies », base ×2 par bonne réponse, touche 5), et quizz TERMINÉ une fois ses trois niveaux faits (`isQuizFinished` : carte grisée sans lien ni flèche, drapeau ✓ TERMINÉ sur la miniature, bannière du jour verrouillée sans compte à rebours, écran « terminé » du lecteur à la place du sélecteur de niveaux).');
+  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons ni doublés, answered d’une partie arrêtée), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, résultat épuré (seuls « Niveau suivant → » vers le palier au-dessus et « Voir tous les quizz », rien après le dernier niveau), replay d’un niveau terminé via la grille = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3) et filtrable par famille (Gaming / Tech / Cinéma / E-sport : comptes par pastille, pastille active, cartes des autres familles retirées, « Tous » qui rétablit le catalogue, lien direct `?cat=` et famille inconnue ignorée), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, partie tout faux, minuteur par niveau, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–5 (+ D et F pour les jokers), combo + fanfare, sons (tick-tack qui accélère, verdicts, jokers — le 50/50 descend, le gel monte —, coupure), refonte du lecteur (CTA compacts, pastilles de progression, 50/50, gel du chrono, détail de partie) et niveau expert en conditions réelles (cinq propositions, une vie perdue par erreur, fin de partie à la troisième, « Plus de vies », base ×2 par bonne réponse, touche 5), et quizz TERMINÉ une fois ses trois niveaux faits (`isQuizFinished` : carte grisée sans lien ni flèche, drapeau ✓ TERMINÉ sur la miniature, bannière du jour verrouillée sans compte à rebours, écran « terminé » du lecteur à la place du sélecteur de niveaux).');
   console.log(`SURVIVAL : pool global de ${expectedPoolSize} questions, cycles mélangés sans doublon, trois vies et timeout pénalisé, record local, redémarrage complet, catégories et traductions FR/EN/AR.`);
 }

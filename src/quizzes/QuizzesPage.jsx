@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from '../achievements/AchievementContext';
 import VideoThumb from '../components/VideoThumb';
 import { clockOffset } from '../components/ReleasesCalendar';
-import { QUIZ_LEVELS, quizzes, quizLabel, quizQuestionsCount } from '../quizzesData';
+import {
+  QUIZ_CATEGORIES, QUIZ_LEVELS, quizzes, quizCategoryCounts, quizLabel,
+  quizQuestionsCount, isQuizCategory, quizzesInCategory,
+} from '../quizzesData';
 import { readLocalBest, formatBest } from './quizApi';
 import { isQuizFinished, levelsDone } from './quizProgress';
 import { useQuizProgress } from './useQuizProgress';
@@ -34,6 +37,13 @@ const FALLBACK = {
   nextIn: 'New quiz in {t}', best: 'Best: {s}',
   levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
   levelProgress: '{done}/{total} levels',
+  // Filtre par famille, au-dessus de la grille (voir `QUIZ_CATEGORIES`).
+  filterLabel: 'Filter the quizzes by family',
+  filterAll: 'All',
+  filterCategories: { games: 'Gaming', tech: 'Tech', cinema: 'Cinema', esport: 'E-sport' },
+  filterResults: '{shown} of {total} quizzes shown',
+  filterAllCount: '{n} quizzes in the catalogue',
+  filterEmpty: 'No quiz in this family yet.',
   // Les TROIS niveaux terminés : le quizz passe « TERMINÉ » — niveaux de gris,
   // drapeau sur la miniature, et le lien retiré (il n'est plus proposé).
   finished: 'FINISHED', finishedNote: 'Three levels cleared',
@@ -59,7 +69,14 @@ export default function QuizzesPage() {
   const { t, lang } = useLanguage();
   const { state } = useAchievements();
   const { progress } = useQuizProgress();
-  const copy = { ...FALLBACK, ...(t.quiz || {}), levels: { ...FALLBACK.levels, ...((t.quiz || {}).levels || {}) } };
+  const copy = {
+    ...FALLBACK,
+    ...(t.quiz || {}),
+    levels: { ...FALLBACK.levels, ...((t.quiz || {}).levels || {}) },
+    // Familles du filtre : libellés traduits, repli sur l'anglais du FALLBACK
+    // si une langue n'a pas encore la clé (même règle que `levels`).
+    filterCategories: { ...FALLBACK.filterCategories, ...((t.quiz || {}).filterCategories || {}) },
+  };
 
   // Horloge simulée « ?at= » partagée avec les comptes à rebours du site.
   const [now, setNow] = useState(() => new Date(Date.now() + clockOffset()));
@@ -75,6 +92,25 @@ export default function QuizzesPage() {
   // (niveaux de gris + drapeau, lien retiré) quand les trois niveaux du quizz
   // mis en avant sont faits.
   const dailyFinished = Boolean(daily) && isQuizFinished(progress, daily.slug);
+
+  // Filtre par famille de la grille : `?cat=tech` porte l'état — l'URL reste
+  // partageable, le rechargement et le retour arrière retombent sur le même
+  // filtre. Paramètre inconnu ou absent : tout le catalogue, comme « Tous ».
+  // La bannière du jour et le Survival ne sont pas filtrés : ils ont leurs
+  // propres catégories (01 / 02), le filtre ne concerne que les quizz.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedCategory = searchParams.get('cat');
+  const activeCategory = isQuizCategory(requestedCategory) ? requestedCategory : 'all';
+  const categoryCounts = quizCategoryCounts(quizzes);
+  const shownQuizzes = quizzesInCategory(activeCategory, quizzes);
+  const selectCategory = (id) => {
+    const next = new URLSearchParams(searchParams);
+    if (id === 'all') next.delete('cat');
+    else next.set('cat', id);
+    // `replace` : filtrer n'empile pas une entrée d'historique par pastille,
+    // le retour arrière ramène à la page précédente (pas à « Tous »).
+    setSearchParams(next, { replace: true });
+  };
 
   return (
     <div className="quiz-page">
@@ -135,8 +171,34 @@ export default function QuizzesPage() {
           <h2 id="quiz-category-main-title">{copy.categoryMainTitle}</h2>
           <p>{copy.categoryMainIntro.replace('{n}', String(quizzes.length))}</p>
         </div>
+        {/* Filtre par famille : Gaming / Tech / Cinéma / E-sport, chaque
+            pastille annonçant son nombre de quizz. Une seule famille à la
+            fois, « Tous » remet le catalogue entier — l'état vit dans l'URL
+            (`?cat=…`), les quizz terminés restent visibles dans leur famille. */}
+        <div className="quiz-filter-bar" role="group" aria-label={copy.filterLabel}>
+          {['all', ...QUIZ_CATEGORIES].map((id) => (
+            <button
+              key={id}
+              type="button"
+              data-category={id}
+              className={`quiz-filter-chip${activeCategory === id ? ' is-active' : ''}`}
+              aria-pressed={activeCategory === id}
+              onClick={() => selectCategory(id)}
+            >
+              {id === 'all' ? copy.filterAll : copy.filterCategories[id]}
+              <span className="quiz-filter-count">{categoryCounts[id]}</span>
+            </button>
+          ))}
+        </div>
+        <p className="quiz-filter-summary" aria-live="polite">
+          {activeCategory === 'all'
+            ? copy.filterAllCount.replace('{n}', String(categoryCounts.all))
+            : copy.filterResults
+              .replace('{shown}', String(shownQuizzes.length))
+              .replace('{total}', String(categoryCounts.all))}
+        </p>
         <div className="quiz-grid">
-          {quizzes.map((quiz) => {
+          {shownQuizzes.map((quiz) => {
             // Meilleure partie de l'appareil, tous niveaux confondus : le record
             // affiché nomme son niveau (`title`), et la pastille à côté rappelle
             // la progression — aucune difficulté n'est imposée par la grille,
@@ -184,6 +246,7 @@ export default function QuizzesPage() {
               : <Link className="quiz-card" to={quiz.route} key={quiz.slug}>{body}</Link>;
           })}
         </div>
+        {shownQuizzes.length === 0 && <p className="quiz-filter-empty">{copy.filterEmpty}</p>}
       </section>
 
       <section className="quiz-category quiz-category--survival wrap" aria-labelledby="quiz-category-survival-title">
