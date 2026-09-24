@@ -61,11 +61,30 @@
 .release-empty{grid-column:1 / -1;margin:0;padding:22px 16px;text-align:center;color:var(--muted);font:10px var(--mono);letter-spacing:.1em;text-transform:uppercase;border:1px dashed var(--line-strong);background:rgba(11,13,30,.4)}
 @media(max-width:650px){.release-empty{padding:14px 10px;font-size:8px;letter-spacing:.08em}}
 
-/* --- page Actus : teaser vers le calendrier complet (la liste a déménagé) --- */
-.calendar-teaser{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:22px;padding:16px 18px;border:1px dashed var(--line-strong);background:rgba(11,13,30,.45)}
-.calendar-teaser p{margin:0;color:var(--muted);font:500 11px var(--mono);letter-spacing:.1em;text-transform:uppercase}
-.calendar-teaser .button{margin:0;white-space:nowrap}
-@media(max-width:650px){.calendar-teaser{padding:13px 14px}.calendar-teaser p{font-size:9px;letter-spacing:.08em}.calendar-teaser .button{width:100%;justify-content:center}}
+/* --- accueil : fine bande « le plus attendu » posée sous le héros --- */
+.awaited-band{display:block;background:linear-gradient(110deg,rgba(124,58,237,.16),rgba(34,211,238,.06));border-bottom:1px solid var(--line)}
+/* Dans le héros : calée tout en bas de la section, en verre dépoli au-dessus
+   de la vidéo, là où se trouvait l'ancienne rangée de chiffres. */
+.hero .awaited-band{position:absolute;left:0;right:0;bottom:0;z-index:6;border-top:1px solid var(--line);border-bottom:0;background:linear-gradient(110deg,rgba(11,13,30,.82),rgba(11,13,30,.62)),linear-gradient(110deg,rgba(124,58,237,.35),rgba(34,211,238,.14));-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+[dir="rtl"] .awaited-band-date{margin-left:0;margin-right:auto}
+.awaited-band-inner{display:flex;align-items:center;gap:18px;padding-top:13px;padding-bottom:13px;color:inherit;text-decoration:none}
+.awaited-band-thumb{flex:0 0 96px;aspect-ratio:16/9;overflow:hidden;border:1px solid var(--line-strong);background:rgba(8,10,24,.85)}
+.awaited-band-thumb img{width:100%;height:100%;display:block;object-fit:cover;transition:transform .3s ease}
+.awaited-band-ticket{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:repeating-linear-gradient(135deg,rgba(148,130,255,.08) 0 7px,transparent 7px 14px)}
+.awaited-band-ticket b{color:var(--cyan);font:700 17px/1 var(--display)}
+.awaited-band-ticket i{font:700 8px var(--mono);font-style:normal;letter-spacing:.16em;color:var(--dim)}
+.awaited-band-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+.awaited-band-eyebrow{display:flex;align-items:center;gap:8px;font:500 9px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--cyan)}
+.awaited-band-eyebrow .live-dot{width:6px;height:6px}
+.awaited-band-chip{padding:2px 7px;border:1px solid var(--yellow);background:rgba(255,214,25,.08);color:var(--yellow);font:700 8px var(--mono);font-style:normal;letter-spacing:.12em;text-transform:uppercase}
+.awaited-band-title{font-family:var(--display);font-size:clamp(15px,2vw,21px);line-height:1.05;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.awaited-band-date{margin-left:auto;color:var(--cyan);font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.awaited-band-arrow{color:var(--dim);font-size:14px;transition:color .2s,transform .2s}
+.awaited-band-inner:hover .awaited-band-title{color:var(--yellow)}
+.awaited-band-inner:hover .awaited-band-arrow{color:var(--yellow);transform:translate(2px,-2px)}
+.awaited-band-inner:hover .awaited-band-thumb img{transform:scale(1.05)}
+@media(max-width:650px){.awaited-band-inner{gap:12px;padding-top:11px;padding-bottom:11px}.awaited-band-thumb{flex-basis:72px}.awaited-band-date{font-size:9px;letter-spacing:.1em}.awaited-band-arrow{display:none}}
+@media(prefers-reduced-motion:reduce){.awaited-band-thumb img,.awaited-band-arrow{transition:none}}
 
 /* --- page « calendrier complet » (/calendrier) --- */
 .calendar-page{padding-top:128px;padding-bottom:60px}

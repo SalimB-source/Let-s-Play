@@ -255,3 +255,52 @@ export function ReleaseCountdown({ lang, copy, offset = 0 }){
     </div>
   );
 }
+
+/**
+ * Bandeau fin « le plus attendu » de la page d'accueil, posé sous le héros —
+ * version allégée du bloc compte à rebours : vignette, nom du jeu et date de
+ * sortie, rien de plus. Il pioche dans la même file que ReleaseCountdown
+ * (premier `awaitedRank` pas encore disponible) et bascule donc tout seul sur
+ * la sortie suivante le jour du lancement ; un clic ouvre le calendrier
+ * complet. Si le calendrier est épuisé, la bande s'efface plutôt que de
+ * rester vide.
+ */
+export function AwaitedBand({ lang, copy, offset = 0 }){
+  const [now, setNow] = useState(() => new Date(Date.now() + offset));
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date(Date.now() + offset)), 1000);
+    return () => window.clearInterval(timer);
+  }, [offset]);
+
+  const safe = { ...FALLBACK_COUNTDOWN, ...(copy || {}) };
+  const target = upcomingReleases(now)[0] || null;  // prochaine sortie attendue
+  const outToday = todaysReleases(now)[0] || null;  // file épuisée mais sortie du jour
+  const shown = target || outToday;
+  if (!shown) return null;
+
+  const image = shown.countdownImage || shown.image;
+  const [dayLabel, ...monthParts] = releaseDayLabel(shown, lang).split(' ');
+  const chip = !target && outToday ? safe.outToday : null;
+
+  return (
+    <section className="awaited-band" aria-label={`${safe.eyebrow} — ${shown.title}`}>
+      <Link className="awaited-band-inner wrap" to="/calendrier">
+        <span className="awaited-band-thumb">
+          {image
+            ? <img src={`${base}${image}`} alt="" loading="lazy" />
+            : <span className="awaited-band-ticket" aria-hidden="true"><b>{dayLabel}</b><i>{monthParts.join(' ')}</i></span>}
+        </span>
+        <span className="awaited-band-copy">
+          <span className="awaited-band-eyebrow">
+            <span className="live-dot" aria-hidden="true" /> {safe.eyebrow}
+            {chip ? <em className="awaited-band-chip">{chip}</em> : null}
+          </span>
+          <strong className="awaited-band-title">{shown.title}</strong>
+        </span>
+        <span className="awaited-band-date">{releaseDateLabel(shown, lang)}</span>
+        <span className="awaited-band-arrow" aria-hidden="true">↗</span>
+      </Link>
+    </section>
+  );
+}
