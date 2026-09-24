@@ -537,14 +537,14 @@ Où ça se voit :
 
 | Endroit | Ce qui s'y trouve |
 | --- | --- |
-| `/auth` (hub joueur) | la **barre d'XP du profil** (seul endroit où niveau, rang et progression sont affichés) et la section « succès » intégrée : succès obtenus et prochains objectifs |
+| `/auth` (hub joueur) | la **barre d'XP du profil** (seul endroit où la barre de progression est affichée) et la section « succès » intégrée : succès obtenus et prochains objectifs |
 | Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
-| Navigation et pied de page | l’accès au profil joueur, qui contient les succès |
+| Navigation (mobile) | dans le menu plein écran, le lien **Profil** est une entrée à part entière juste sous **Quizz** : photo (ou initiales) et niveau. Le desktop garde la pastille de compte |
 
 Le niveau et l'XP ne sont jamais stockés côté compte : ils se déduisent des
 succès débloqués (`totalXp` puis `levelFromXp`, dans
 `src/achievements/engine.js`). La barre d'XP de la carte profil du hub
-(`src/pages/Auth.jsx`) est la **seule** à afficher la progression : elle lit le
+(`src/pages/Auth.jsx`) est la **seule** à afficher la barre de progression : elle lit le
 `summary` du moteur, comme la carte de niveau qui vivait avant dans la section
 « succès » — cette dernière n'en garde plus de copie, pour ne pas montrer deux
 fois le même niveau. Les métadonnées Supabase d'un compte réel ne portent ni XP

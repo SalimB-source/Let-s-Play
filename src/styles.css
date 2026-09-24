@@ -130,6 +130,7 @@ img{max-width:100%}
 .nav-links-inner{display:contents}
 .mobile-menu-top,.mobile-menu-footer{display:none}
 .nav-link-num,.nav-link-desc,.nav-link-arrow{display:none}
+.nav-profile-link{display:none}
 .nav-link-main{display:contents}
 .nav-link-text{display:contents}
 .nav-actions-grid{display:flex;align-items:center;gap:14px}
@@ -917,6 +918,99 @@ img{max-width:100%}
   .nav-primary a.active{color:var(--cyan)}
   .nav-primary a.active .nav-link-num{color:var(--yellow)}
   .nav-primary a.active .nav-link-arrow{opacity:1;border-color:var(--cyan);color:var(--cyan)}
+
+  /* Profil — entrée 06, juste sous Quizz : photo + niveau */
+  .nav-primary a.nav-profile-link{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px 2px;
+  }
+  .nav-profile-avatar{
+    position:relative;
+    width:52px;height:52px;flex:none;
+    display:grid;place-items:center;
+    border:2px solid var(--cyan);
+    border-radius:4px;
+    background:linear-gradient(135deg, var(--purple), var(--panel-2));
+    box-shadow:0 0 16px rgba(34,211,238,.28);
+    color:var(--yellow);
+    overflow:visible;
+    letter-spacing:0;
+    text-transform:uppercase;
+  }
+  .nav-profile-avatar img{
+    width:100%;height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:2px;
+    max-width:none;
+  }
+  .nav-profile-initials{
+    font:800 16px var(--display);
+    letter-spacing:0;
+    line-height:1;
+  }
+  .nav-profile-avatar .nav-online-dot{
+    position:absolute;
+    inset-inline-end:-3px;
+    inset-block-end:-3px;
+    width:10px;height:10px;
+    border:2px solid #05060f;
+  }
+  .nav-profile-link.is-guest .nav-profile-avatar{color:var(--muted)}
+  .nav-profile-link.is-guest .nav-profile-avatar-face{
+    border-style:dashed;
+    box-shadow:none;
+  }
+  .nav-profile-link .nav-link-text{min-width:0;flex:1}
+  .nav-profile-link .nav-link-main{min-width:0;flex:1}
+  .nav-profile-link .nav-link-label{
+    font-size:clamp(22px, 7.2vw, 36px);
+    white-space:nowrap;
+  }
+  .nav-profile-link .nav-link-desc{
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:100%;
+  }
+  .nav-profile-level{
+    flex:none;
+    min-width:58px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:2px;
+    padding:8px 10px;
+    border:1px solid var(--yellow);
+    background:rgba(255,214,25,.1);
+    color:var(--yellow);
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+    letter-spacing:0;
+    text-transform:uppercase;
+  }
+  .nav-profile-level small{
+    font:700 8px var(--mono);
+    letter-spacing:.16em;
+    line-height:1;
+  }
+  .nav-profile-level strong{
+    font:800 22px/1 var(--display);
+    letter-spacing:-.03em;
+    color:#fff;
+    text-transform:none;
+  }
+  .nav-profile-link:hover .nav-profile-level{
+    background:var(--yellow);
+    color:#0a0b1a;
+  }
+  .nav-profile-link:hover .nav-profile-level strong{color:#0a0b1a}
+  .nav-profile-link.active .nav-profile-level{border-color:var(--cyan);color:var(--cyan)}
+
+  /* La pastille de compte du bas doublonnait le lien Profil. */
+  .nav-actions-grid .nav-account.connected{display:none}
 
   @keyframes mobileLinkIn{
     from{opacity:0;transform:translateY(18px)}
