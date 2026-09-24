@@ -139,11 +139,12 @@ export default function Home() {
     <>
       <section className="hero" id="top">
         {isLight ? (
-          /* Thème clair : la vidéo est retirée, la key art maison
-             (public/hero-lets-play.png) devient le fond du héros. */
+          /* Thème clair : la vidéo est retirée, le visuel jaune maison
+             (public/yellow-background-...-space-text.jpg) devient le fond
+             du héros, plein cadre et sans voile. */
           <img
             className="hero-bg hero-bg--keyart"
-            src={`${import.meta.env.BASE_URL}hero-lets-play.png`}
+            src={`${import.meta.env.BASE_URL}yellow-background-modern-gaming-accessory-is-displayed-with-space-text.jpg`}
             alt=""
             aria-hidden="true"
             decoding="async"
