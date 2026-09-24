@@ -4,15 +4,14 @@ import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
-import { activeMonth, calendarMonths, gameReleases, monthLabel } from '../releasesData';
 import { quizzes } from '../quizzesData';
 import { dailyQuizFor } from '../quizzes/engine';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
-import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
+import { Arrow, AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
 
-// Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
-// partagé avec la page calendrier complet via clockOffset().
+// Le paramètre d'URL `?at=` (horloge simulée du bandeau « le plus attendu »)
+// est partagé avec la page calendrier complet via clockOffset().
 const CLOCK_OFFSET = clockOffset();
 
 const reels = [
@@ -57,17 +56,10 @@ export default function Home() {
   const { t, lang } = useLanguage();
   const [liveStatus, setLiveStatus] = useState('unknown');
 
-  // Section « Sorties du mois » (déplacée depuis la page Actus) : frise du
-  // mois + compte à rebours de la sortie la plus attendue. Le mois affiché est
-  // calculé depuis le calendrier : le mois courant s'il a des sorties, sinon
-  // le mois de la prochaine sortie annoncée. La liste complète vit sur /calendrier.
+  // La frise « Sorties du mois » et le compte à rebours ont quitté l'accueil :
+  // il n'en reste que le bandeau fin « le plus attendu » sous le héros
+  // (vignette + nom + date). La liste complète vit sur /calendrier.
   const today = new Date(Date.now() + CLOCK_OFFSET);
-  const calendarCopy = { ...FALLBACK_CALENDAR, ...(t.news.calendar || {}) };
-  const month = activeMonth(today);
-  const monthName = monthLabel(month.year, month.month, lang);
-  const monthReleases = month.releases;
-  const allMonths = calendarMonths(today);
-  const totalGames = gameReleases.length;
   // Le bandeau « quizz du jour » envoie directement à la partie du jour —
   // sauf si ce quizz est TERMINÉ (ses trois niveaux faits) : il est verrouillé
   // comme partout ailleurs, et le bouton mène à la grille des quizz.
@@ -163,12 +155,10 @@ export default function Home() {
             <Link className="button button-ghost" to="/news">{t.home.enterShow} <span aria-hidden="true">↓</span></Link>
           </div>
         </div>
-        <div className="hero-hud">
-          <div><strong>15K+</strong><small>{t.home.hud.subs}</small></div>
-          <div><strong>33K+</strong><small>{t.home.hud.community}</small></div>
-          <div><strong>∞</strong><small>{t.home.hud.reasons}</small></div>
-          <a className="scroll-cue" href="#featured" aria-label="Scroll to content">{t.home.hud.scroll}<span /></a>
-        </div>
+        {/* LE PLUS ATTENDU — fine bande posée en bas du héros (à la place de
+            l'ancienne rangée de chiffres) : vignette, nom, date de sortie.
+            Suit la file automatique du calendrier et mène à /calendrier. */}
+        <AwaitedBand lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
       </section>
 
       {/* Ticker continu — chaque moitié est suffisamment longue (> viewport) pour éviter les trous sur desktop, même en 4K/5K */}
@@ -217,20 +207,6 @@ export default function Home() {
               </div>
             </article>
           ))}
-        </div>
-      </section>
-
-      {/* SORTIES DU MOIS — frise + compte à rebours (déplacé depuis la page Actus).
-          Le grand titre du mois a été retiré : la section s'identifie par son
-          libellé (SORTIES DU MOIS + nom du mois) et le lien complet vit dans
-          le teaser en bas de section. */}
-      <section className="monthly-releases wrap" id="countdown">
-        <div className="section-label"><span>{calendarCopy.label}</span><span>{monthName}</span></div>
-        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
-        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
-        <div className="calendar-teaser">
-          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
-          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
         </div>
       </section>
 

@@ -215,16 +215,8 @@ img{max-width:100%}
 .button-yellow:hover{transform:translateY(-3px);box-shadow:0 0 40px rgba(255,214,25,.55)}
 .button-ghost{background:rgba(255,255,255,.04);color:#fff;border:1px solid rgba(255,255,255,.35)}
 .button-ghost:hover{transform:translateY(-3px);border-color:var(--cyan);background:rgba(34,211,238,.1);box-shadow:0 0 24px rgba(34,211,238,.28)}
-.hero-hud{
-  position:absolute;left:0;right:0;bottom:0;z-index:6;
-  display:flex;align-items:flex-end;gap:44px;
-  width:min(1240px,calc(100% - 56px));margin:auto;padding-bottom:32px;
-}
-.hero-hud div strong{display:block;font-family:var(--display);font-weight:700;font-size:24px;color:#fff;text-shadow:0 0 18px rgba(34,211,238,.4)}
-.hero-hud div small{font:500 10px var(--mono);letter-spacing:.18em;color:var(--muted)}
-.scroll-cue{margin-left:auto;display:flex;flex-direction:column;align-items:center;gap:8px;font:500 10px var(--mono);letter-spacing:.22em;color:var(--cyan)}
-.scroll-cue span{width:1px;height:36px;background:linear-gradient(var(--cyan),transparent);animation:cue 1.8s ease-in-out infinite}
-@keyframes cue{0%{transform:scaleY(.2);transform-origin:top}50%{transform:scaleY(1)}100%{transform:scaleY(.2);transform-origin:bottom}}
+/* La rangée de chiffres en bas du héros (hero-hud + scroll-cue) a été retirée :
+   la fine bande « le plus attendu » occupe désormais ce bandeau inférieur. */
 
 /* ============ TICKER ============ */
 .ticker{
@@ -701,7 +693,6 @@ img{max-width:100%}
 
 /* ============ RTL SUPPORT (Arabic) ============ */
 [dir="rtl"] body{direction:rtl}
-[dir="rtl"] .scroll-cue{margin-left:0;margin-right:auto}
 [dir="rtl"] .video-image .play{left:auto;right:12px}
 [dir="rtl"] .insta-badge{right:auto;left:10px}
 [dir="rtl"] .nav-links a:not(.nav-account)::after{left:100%;right:0}
@@ -709,7 +700,6 @@ img{max-width:100%}
 [dir="rtl"] .stats div::before{left:auto;right:0}
 [dir="rtl"] .stats div+div{border-left:0;border-right:1px solid var(--line)}
 [dir="rtl"] .format-card::before{left:auto;right:0;background:linear-gradient(270deg,var(--accent),transparent 70%)}
-[dir="rtl"] .hero-hud{direction:rtl}
 [dir="rtl"] .ticker-track{animation-direction:reverse}
 [dir="rtl"] .format-card a{flex-direction:row-reverse}
 [dir="rtl"] .video-meta{flex-direction:row-reverse}
@@ -749,9 +739,6 @@ img{max-width:100%}
   .hero h1{font-size:clamp(36px,9.6vw,52px)}
   .hero-content{margin-bottom:88px}
   .hero-frame{display:none}
-  .hero-hud{gap:22px;padding-bottom:24px}
-  .hero-hud div strong{font-size:19px}
-  .scroll-cue{display:none}
   .featured{padding:70px 0 40px}
   .featured-grid{grid-template-columns:1fr;gap:36px;padding-top:40px}
   .featured-grid--mirror .featured-copy,.featured-grid--mirror .featured-player{order:0}
