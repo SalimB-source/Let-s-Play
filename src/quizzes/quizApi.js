@@ -18,11 +18,13 @@
  * Visiteur (sans compte, ou Supabase non configuré) : les parties de
  * l'appareil sont gardées dans `localStorage` sous une clé propre aux quizz
  * — le module de persistance des succès reste le seul à écrire la sienne.
+ * La clé v3 est volontaire : elle invalide les records locaux de la remise à
+ * zéro globale au lieu de les laisser réapparaître sur la grille.
  */
 import { supabase } from '../lib/supabase';
 
-const BEST_KEY = 'letsplay_quiz_best_v2';
-const LEGACY_BEST_KEYS = ['letsplay_quiz_best_v1'];
+const BEST_KEY = 'letsplay_quiz_best_v3';
+const LEGACY_BEST_KEYS = ['letsplay_quiz_best_v1', 'letsplay_quiz_best_v2'];
 
 /**
  * Identifiant d'un run noté : `slug:niveau` (ex. `culture-gaming:hard`).

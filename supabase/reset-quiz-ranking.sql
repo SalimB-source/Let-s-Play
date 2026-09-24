@@ -1,141 +1,196 @@
 -- ----------------------------------------------------------------------------
--- Remise à zéro des quizz — classement global (étape 2) et, en option,
--- tous les compteurs/points joueurs (étape 4)
+-- Remise à zéro complète des quizz — TOUS les joueurs
 -- ----------------------------------------------------------------------------
 -- Où : Supabase → SQL Editor → New query → coller → Run.
 --
--- Ce script remplace le bloc « 8b » qui vivait dans `supabase/schema.sql` :
--- une remise à zéro ponctuelle n'a rien à faire dans le fichier d'installation
--- — recoller le schéma (ce que le README demande à chaque évolution) ne doit
--- jamais effacer les données des joueurs. L'opération se déclenche donc ici,
--- explicitement.
+-- Cette opération est destructive et irréversible. Elle remet à zéro, pour
+-- tous les comptes :
+--   * les scores et classements (`quiz_attempts`),
+--   * les trois niveaux terminés (`quiz_progress`),
+--   * les points d'XP, compteurs, jours, succès et défis liés aux quizz dans
+--     `player_progress`.
 --
--- DEUX NIVEAUX, à choisir :
+-- Les profils, comptes et progression NON liée aux quizz sont conservés.
+-- L'XP et le niveau restants sont recalculés à partir de la progression
+-- conservée. Les anciennes copies dans le stockage du navigateur sont
+-- invalidées par la version publiée du client (`quizResetVersion` et les clés
+-- locales v2/v3) : un joueur ne récupère donc pas ses anciens quizz en
+-- revenant sur le site.
 --
---   1. ÉTAPES 1 → 3 (par défaut, non destructif pour les joueurs) : le
---      CLASSEMENT partagé revient à zéro. On vide `public.quiz_attempts`,
---      l'unique source de `get_quiz_leaderboard` (top 10 d'un run) et de
---      `get_quiz_global_rank` (position globale : somme des points de toutes
---      les tentatives). Chaque joueur redevient « pas encore classé » (rang
---      null, 0 point, 0 quizz), chaque quizz n'a plus aucun score. Les comptes,
---      les profils, l'XP et les succès ne bougent pas.
+-- Si l'ancien schéma n'a pas encore créé `quiz_progress` ou `player_progress`,
+-- le bloc concerné est ignoré avec un message NOTICE. `quiz_attempts` doit
+-- normalement exister après l'installation de `supabase/schema.sql`.
 --
---   2. ÉTAPES 1 → 4 : TOUT à zéro, y compris les points joueurs. L'étape 4 est
---      commentée (à décommenter volontairement) car elle touche à l'XP : elle
---      nettoie le `state` de `public.player_progress` — points de quizz
---      (`quizPoints`), succès du groupe « quiz », compteurs et ensembles
---      associés — puis force `xp`/`level` à 0/1. `xp` et `level` étant
---      recalculés par le client à partir de l'état (`saveAccountState`), le
---      nettoyage de `quizPoints` fait de toute façon retomber le total au
---      prochain passage ; le forçage sert surtout aux profils jamais rouverts.
---      Les succès des autres groupes (lecture, vidéo, communauté…) et leur XP
---      sont conservés.
---
--- Rappels utiles :
---   * le MEILLEUR SCORE de l'appareil (navigateur du joueur, `localStorage`,
---     clé `letsplay_quiz_best_v1`) et l'état local des succès ne dépendent pas
---     du serveur : ils peuvent continuer d'afficher un record local. C'est
---     voulu — serveur et appareil sont deux choses distinctes.
---   * les points servent aussi d'XP joueur depuis l'état `quizPoints` : vider
---     le classement seul (étape 2) laisse donc l'XP acquis, c'est l'étape 4 qui
---     la remet à zéro.
---   * irréversible : impossible de récupérer les tentatives supprimées. En cas
---     de doute, exporte la table avant (Dashboard → Table Editor →
---     quiz_attempts → Export CSV) ou note les nombres de l'étape 1.
---
+-- Exporter les tables avant de lancer ce script si une sauvegarde est requise.
 -- ----------------------------------------------------------------------------
 
--- 1) État AVANT (note les trois nombres : ils servent de référence).
-select count(*)                    as tentatives,
-       count(distinct user_id)     as joueurs_classes,
-       coalesce(sum(points), 0)    as points_cumules
+begin;
+
+-- 1) État AVANT : garde une trace de ce qui va disparaître.
+select count(*)                 as tentatives,
+       count(distinct user_id)  as joueurs_classes,
+       coalesce(sum(points), 0) as points_cumules
   from public.quiz_attempts;
 
--- 2) Le CLASSEMENT à zéro.
---    `truncate` plutôt que `delete` : la table est vidée d'un coup, sans
---    balayage ligne à ligne, et l'espace disque est rendu immédiatement.
---    Rien ne référence `quiz_attempts` par clé étrangère, et RLS ne s'applique
---    pas à TRUNCATE (le SQL Editor se connecte en `postgres`, propriétaire).
---    Si ton rôle n'est pas propriétaire de la table (erreur 42501), remplace
---    la ligne par :  delete from public.quiz_attempts;
+do $$
+begin
+  if to_regclass('public.quiz_progress') is not null then
+    raise notice 'Let''s Play : % niveau(x) de quizz seront supprimés.',
+      (select count(*) from public.quiz_progress);
+  else
+    raise notice 'Let''s Play : public.quiz_progress absente — rien à supprimer dans cette table.';
+  end if;
+
+  if to_regclass('public.player_progress') is not null then
+    raise notice 'Let''s Play : % profil(s) seront nettoyés de leur progression quizz.',
+      (select count(*) from public.player_progress);
+  else
+    raise notice 'Let''s Play : public.player_progress absente — nettoyage des succès ignoré.';
+  end if;
+end $$;
+
+-- 2) Scores partagés : aucun joueur ne reste classé.
+--    TRUNCATE est atomique dans la transaction et ne laisse aucun ancien run.
 truncate table public.quiz_attempts;
 
--- 3) Contrôle APRÈS : 0 ligne, le rang global d'un joueur sans partie répond
---    « pas encore classé » (rank null, 0 point, 0 quizz, 0 joueur classé) et le
---    top 10 d'un quizz revient vide (`[]`). `get_quiz_leaderboard` attend un
---    run `slug:difficulté` (v2) mais accepte aussi un slug nu.
-select count(*) as lignes_restantes from public.quiz_attempts;
-select public.get_quiz_global_rank(null)                as rang_global;
-select public.get_quiz_leaderboard('rpg-legends', 10)    as classement_slug_nu;
+-- 3) Progression des paliers : les niveaux Facile, Confirmé et Expert sont
+--    tous à nouveau ouverts. Le test conditionnel permet aussi d'utiliser le
+--    script sur un projet qui n'a pas encore relancé la dernière partie du
+--    schéma.
+do $$
+begin
+  if to_regclass('public.quiz_progress') is not null then
+    execute 'truncate table public.quiz_progress';
+  end if;
+end $$;
+
+-- 4) Progression des succès : supprimer uniquement la famille quizz.
+--    Les compteurs/ensembles/achievements de lecture, vidéo, profil et
+--    communauté restent intacts. `quizResetVersion` permet au client de
+--    reconnaître ce reset même si une copie locale plus ancienne subsiste.
+do $$
+declare
+  player record;
+  cleaned jsonb;
+  quiz_xp integer;
+  remaining_xp integer;
+  remaining_level integer;
+  level_cost integer;
+begin
+  if to_regclass('public.player_progress') is null then
+    raise notice 'Let''s Play : public.player_progress absente — étape 4 ignorée.';
+    return;
+  end if;
+
+  for player in
+    select user_id, coalesce(state, '{}'::jsonb) as state, coalesce(xp, 0)::integer as xp
+      from public.player_progress
+  loop
+    -- Les succès liés aux quizz (catalogue JS : catalog.js, groupe quiz).
+    cleaned := player.state
+      #- '{unlocked,first-quiz}'
+      #- '{unlocked,perfect-score}'
+      #- '{unlocked,quiz-tour}'
+      #- '{unlocked,quiz-week}'
+      #- '{unlocked,first-challenge}'
+      #- '{counters,quizzes_completed}'
+      #- '{counters,challenges_sent}';
+
+    -- Les clés d'ensembles restent présentes et vides : les anciennes
+    -- versions du client les comprennent aussi.
+    cleaned := jsonb_set(cleaned, '{sets}', coalesce(cleaned->'sets', '{}'::jsonb), true);
+    cleaned := jsonb_set(cleaned, '{sets,quizzes_played}', '[]'::jsonb, true);
+    cleaned := jsonb_set(cleaned, '{sets,perfect_quizzes}', '[]'::jsonb, true);
+    cleaned := jsonb_set(cleaned, '{sets,quiz_days}', '[]'::jsonb, true);
+    cleaned := jsonb_set(cleaned, '{quizPoints}', '{}'::jsonb, true);
+    cleaned := jsonb_set(cleaned, '{quizResetVersion}', '1'::jsonb, true);
+
+    -- `xp` stocke succès + points de quizz. Retirer les points et les cinq
+    -- récompenses quizz garde l'XP gagnée dans les autres familles.
+    quiz_xp := coalesce((
+      select sum(greatest(0, value::integer))
+        from jsonb_each_text(coalesce(player.state->'quizPoints', '{}'::jsonb))
+    ), 0);
+    quiz_xp := quiz_xp
+      + case when player.state->'unlocked' ? 'first-quiz' then 30 else 0 end
+      + case when player.state->'unlocked' ? 'perfect-score' then 70 else 0 end
+      + case when player.state->'unlocked' ? 'quiz-tour' then 200 else 0 end
+      + case when player.state->'unlocked' ? 'quiz-week' then 500 else 0 end
+      + case when player.state->'unlocked' ? 'first-challenge' then 35 else 0 end;
+
+    remaining_xp := greatest(0, player.xp - quiz_xp);
+    remaining_level := 1;
+    level_cost := 150; -- XP_PER_LEVEL_STEP du moteur des succès.
+    while remaining_xp >= level_cost loop
+      remaining_xp := remaining_xp - level_cost;
+      remaining_level := remaining_level + 1;
+      level_cost := 150 * remaining_level;
+    end loop;
+
+    update public.player_progress
+       set state = cleaned,
+           xp = greatest(0, player.xp - quiz_xp),
+           level = remaining_level,
+           updated_at = now()
+     where user_id = player.user_id;
+  end loop;
+end $$;
+
+-- 4b) Ancien repli utilisé par les déploiements sans `player_progress` :
+-- retirer uniquement la clé d'achievements des métadonnées Auth. Les autres
+-- métadonnées de compte restent intactes.
+do $$
+declare
+  cleared integer;
+begin
+  update auth.users
+     set raw_user_meta_data = raw_user_meta_data - 'achievements'
+   where raw_user_meta_data ? 'achievements';
+  get diagnostics cleared = row_count;
+  raise notice 'Let''s Play : % copie(s) legacy achievements supprimée(s).', cleared;
+exception
+  when undefined_table then
+    raise notice 'Let''s Play : métadonnées Auth absentes — repli legacy ignoré.';
+end $$;
+
+commit;
+
+-- 5) Contrôles APRÈS : tout le monde est déclassé et les trois sources de
+--    progression quizz sont vides.
+select count(*) as tentatives_restantes
+  from public.quiz_attempts;
+
+do $$
+begin
+  if to_regclass('public.quiz_progress') is not null then
+    raise notice 'Let''s Play : niveaux_restants = %',
+      (select count(*) from public.quiz_progress);
+  end if;
+end $$;
+
+select public.get_quiz_global_rank(null)                 as rang_global;
+select public.get_quiz_leaderboard('rpg-legends', 10)     as classement_slug_nu;
 select public.get_quiz_leaderboard('rpg-legends:hard', 10) as classement_run_v2;
 
--- 4) OPTIONNEL — TOUT à zéro côté joueurs (points de quizz, succès quizz,
---    XP). Décommente ce bloc, relis-le, puis exécute-le en connaissance de
---    cause : les succès et l'XP des autres groupes restent, le reste part.
---
---    La liste des succès ci-dessous est le groupe « quiz » du catalogue
---    (`src/achievements/catalog.js`) : si un succès quizz y est ajouté, ajoute
---    son id ici (une ligne `#- '{unlocked,<id>}'`).
---
--- do $$
--- begin
---   if to_regclass('public.player_progress') is not null then
---     update public.player_progress
---        set state = jsonb_set(
---              jsonb_set(
---                jsonb_set(
---                  jsonb_set(
---                    jsonb_set(
---                      jsonb_set(
---                        state
---                        #- '{unlocked,first-quiz}'
---                        #- '{unlocked,perfect-score}'
---                        #- '{unlocked,quiz-tour}'
---                        #- '{unlocked,quiz-week}'
---                        #- '{unlocked,first-challenge}',
---                        '{counters,quizzes_completed}', '0'::jsonb, true
---                      ),
---                      '{counters,challenges_sent}', '0'::jsonb, true
---                    ),
---                    '{sets,quizzes_played}', '[]'::jsonb, true
---                  ),
---                  '{sets,perfect_quizzes}', '[]'::jsonb, true
---                ),
---                '{sets,quiz_days}', '[]'::jsonb, true
---              ),
---              '{quizPoints}', '{}'::jsonb, true
---            ),
---            xp = 0,
---            level = 1,
---            updated_at = now();
---     raise notice 'Let''s Play : compteurs quizz remis à zéro sur % profil(s),',
---                  (select count(*) from public.player_progress);
---   else
---     raise notice 'Let''s Play : public.player_progress absente — étape 4 ignorée.';
---   end if;
--- end $$;
---
--- Vérification de l'étape 4 (à lancer après l'avoir décommentée) : plus aucun
--- point de quizz, plus de succès quizz, xp à 0.
--- select user_id,
---        jsonb_object_length(coalesce(state->'quizPoints', '{}'::jsonb)) as runs_notes,
---        (select count(*) from jsonb_object_keys(coalesce(state->'unlocked', '{}'::jsonb)) as k(id)
---          where k.id in ('first-quiz','perfect-score','quiz-tour','quiz-week','first-challenge')) as succes_quizz,
---        xp, level
---   from public.player_progress
---  order by xp desc;
+do $$
+begin
+  if to_regclass('public.player_progress') is not null then
+    raise notice 'Let''s Play : profils_avec_etat_quizz_non_vide = %', (
+      select count(*)
+        from public.player_progress
+       where coalesce(jsonb_object_length(coalesce(state->'quizPoints', '{}'::jsonb)), 0) > 0
+          or coalesce(jsonb_array_length(coalesce(state->'sets'->'quizzes_played', '[]'::jsonb)), 0) > 0
+          or coalesce(jsonb_array_length(coalesce(state->'sets'->'perfect_quizzes', '[]'::jsonb)), 0) > 0
+          or coalesce(jsonb_array_length(coalesce(state->'sets'->'quiz_days', '[]'::jsonb)), 0) > 0
+          or coalesce((state->'counters'->>'quizzes_completed')::integer, 0) > 0
+          or coalesce((state->'counters'->>'challenges_sent')::integer, 0) > 0
+    );
+  end if;
+end $$;
 
 -- ----------------------------------------------------------------------------
--- Variantes (facultatives) — n'exécute que ce dont tu as besoin.
--- ----------------------------------------------------------------------------
-
--- a) Vider le classement d'UN SEUL run (slugs : culture-gaming,
---    consoles-retro, souls-fromsoftware, rpg-legends, esport-competition,
---    studios-legends, tech-hardware, cinema-pop-culture — suffixés par la
---    difficulté depuis la v2 : `rpg-legends:medium`, `rpg-legends:hard`) :
--- delete from public.quiz_attempts where quiz_id = 'souls-fromsoftware';
--- delete from public.quiz_attempts where quiz_id like 'souls-fromsoftware:%';
-
--- b) Sortir UN joueur du classement (départ du site, demande de
---    suppression) — l'uuid se lit dans Dashboard → Authentication → Users :
+-- Variante : sortir un seul joueur du classement (demande de suppression).
+-- Ne l'exécute pas en plus du reset global sauf si c'est intentionnel.
 -- delete from public.quiz_attempts where user_id = '00000000-0000-0000-0000-000000000000';
+-- delete from public.quiz_progress where user_id = '00000000-0000-0000-0000-000000000000';
+-- ----------------------------------------------------------------------------

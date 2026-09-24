@@ -2,7 +2,8 @@
  * Meilleur score local du Survival — indépendant des quizz classiques, de leur
  * classement partagé et de la progression/achievements par niveau.
  */
-export const SURVIVAL_BEST_KEY = 'letsplay_quiz_survival_best_v1';
+export const SURVIVAL_BEST_KEY = 'letsplay_quiz_survival_best_v2';
+const LEGACY_SURVIVAL_BEST_KEYS = ['letsplay_quiz_survival_best_v1'];
 
 function normaliseRun(run) {
   if (!run || typeof run !== 'object') return null;
@@ -17,6 +18,11 @@ function normaliseRun(run) {
 export function readSurvivalBest() {
   try {
     if (typeof window === 'undefined') return null;
+    // Survival is a quiz mode too: do not carry its old device record across
+    // the global quiz reset.
+    for (const legacy of LEGACY_SURVIVAL_BEST_KEYS) {
+      try { window.localStorage.removeItem(legacy); } catch (error) {}
+    }
     return normaliseRun(JSON.parse(window.localStorage.getItem(SURVIVAL_BEST_KEY) || 'null'));
   } catch (error) {
     return null;
