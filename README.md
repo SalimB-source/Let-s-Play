@@ -20,8 +20,9 @@ npm run build
 Le site se joue en deux thèmes. Le **sombre** reste l'identité d'origine et le
 défaut ; le **clair** est un choix explicite de l'utilisateur.
 
-- Bascule dans la barre de navigation (icône soleil / lune), à côté du sélecteur
-  de langue. En menu mobile, elle occupe toute la largeur avec son libellé.
+- Bascule dans la barre de navigation (icône soleil / lune), dernière commande
+  utilitaire à droite de la recherche. En menu mobile, elle occupe toute la
+  largeur avec son libellé.
 - Le choix est mémorisé (`localStorage`, clé `lp-theme`) et repris au chargement
   par un script en ligne dans `index.html` : la page ne s'affiche jamais en
   sombre avant de basculer, ce qui produirait un flash très visible.
@@ -75,6 +76,36 @@ Contrôle de contraste (outil d'atelier, hors dépôt) : chaque page est parcour
 dans les deux thèmes, le fond effectif de chaque texte est calculé en empilant
 les couches translucides, et tout ce qui passe sous le seuil WCAG AA est
 signalé. Onze pages sont aujourd'hui à zéro écart en clair.
+
+## Langue : le site est en français
+
+Le sélecteur de langue (EN / FR / AR) a été **retiré de la barre de navigation** :
+le site est publié en français, sans réglage. `LanguageContext` n'a plus ni état
+ni `localStorage` — l'ancienne clé `letsplay-lang` est ignorée, y compris chez un
+visiteur qui avait choisi l'anglais ou l'arabe.
+
+Ce qui reste dans le dépôt, volontairement :
+
+- **Les dictionnaires `en` et `ar`** (`src/i18n/translations.js`). `en` est le
+  filet de sécurité du français : une clé oubliée dans `fr` s'affiche en anglais
+  au lieu de faire planter la page (le bug ff6d390 avait laissé la page Actus
+  blanche pour cette raison). Voir `withBaseFallback` dans
+  `src/i18n/LanguageContext.jsx`.
+- **La direction du texte** (`dir`) et le câblage RTL : inertes en français,
+  déjà en place si une langue revient.
+- **La prop `lang` du provider** : une prise réservée aux scripts de
+  vérification, qui continuent de rendre chaque route en FR / EN / AR
+  (`npm run check:i18n`). Aucun écran ne s'en sert.
+- **Les scripts de vérification** ne posent plus la langue dans `localStorage`
+  (plus personne ne la lit) : ils la passent au provider.
+
+Le suivi des succès continue d'enregistrer la langue utilisée, mais il ne voit
+plus que le français : les succès **« Polyglotte »** (2 langues) et
+**« Trilingue »** (3 langues) ne peuvent donc plus être débloqués par un nouveau
+visiteur. Ils restent au catalogue, délibérément — un joueur qui les a obtenus
+du temps des trois langues garde son grade, son XP et sa progression, et les
+retirer ferait baisser son niveau (voir « Succès débloqués par les actions du
+site »).
 
 ## Contenu
 
@@ -652,7 +683,7 @@ Trois étages, un seul chemin :
 | `video_played` | `videosWatched`, `liveWatched` |
 | `comment_posted` | `commentsPosted` |
 | `search_performed` | `searchesPerformed`, `distinctSearches` |
-| `language_used` | `languagesUsed` |
+| `language_used` | `languagesUsed` — le site n'étant publié qu'en français, seul `fr` est enregistré : « Polyglotte » et « Trilingue » restent au catalogue mais ne se débloquent plus |
 | `account_created` / `signed_in` | `accountsCreated`, `sessions` |
 | `provider_linked` | `providersLinked` |
 | `profile_updated` | `profileUpdates` |
@@ -749,7 +780,8 @@ Editor du projet Supabase (le script est relançable sans risque).
   plus la source du site (actions branchées, fenêtre montée dans `main.jsx`,
   plus aucun reste des anciennes notifications, un seul module écrit la
   progression locale).
-- `npm run check:i18n` — les routes × FR / EN / AR, dont le hub joueur `/auth`.
+- `npm run check:i18n` — les routes × FR / EN / AR (la langue se passe au
+  provider, le site étant publié en français), dont le hub joueur `/auth`.
 - `npm run check:auth` — les deux boutons de compte de la navigation : lecture du
   `?mode=` (les deux boutons, `?mode=` vide ou inconnu, priorité de la prop
   `/register`), rendu SSR réel de chaque URL (quel formulaire s'ouvre : pseudo et

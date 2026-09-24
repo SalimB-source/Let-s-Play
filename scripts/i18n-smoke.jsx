@@ -57,15 +57,17 @@ export const ROUTES = [
 export const LANGS = Object.keys(translations);
 
 export function renderAll(lang) {
-  // LanguageProvider reads the active language from localStorage during render.
-  globalThis.window = { localStorage: { getItem: () => lang, setItem() {} } };
-
+  // Le site est publié en français : plus rien ne lit la langue dans
+  // `localStorage`. Les vérifications continuent pourtant de rendre chaque
+  // route en FR / EN / AR, via la prop `lang` du provider — c'est la couverture
+  // qui garde le dictionnaire anglais utilisable comme filet de sécurité du
+  // français.
   return ROUTES.map(([path, Page, pattern]) => {
     try {
       const html = renderToString(
         React.createElement(
           LanguageProvider,
-          null,
+          { lang },
           React.createElement(
             AuthProvider,
             null,

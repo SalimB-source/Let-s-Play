@@ -66,10 +66,10 @@ export function makeStorage(entries = {}) {
 }
 
 /** Élément racine de l'application pour `path` (routes utiles au module amis). */
-export function createApp(path, { initialSession = null } = {}) {
+export function createApp(path, { initialSession = null, lang = 'fr' } = {}) {
   return React.createElement(
     LanguageProvider,
-    null,
+    { lang },
     React.createElement(
       AuthProvider,
       initialSession ? { initialSession } : null,
@@ -109,8 +109,8 @@ export function createApp(path, { initialSession = null } = {}) {
  * connectée, la fenêtre d'amis ouverte ou fermée.
  */
 export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false } = {}) {
-  const entries = { 'letsplay-lang': lang, letsplay_friends_dock_open: dockOpen ? '1' : '0' };
+  const entries = { letsplay_friends_dock_open: dockOpen ? '1' : '0' };
   if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILE_FIXTURES[demoKey]);
   globalThis.window = { localStorage: makeStorage(entries) };
-  return renderToString(createApp(path));
+  return renderToString(createApp(path, { lang }));
 }

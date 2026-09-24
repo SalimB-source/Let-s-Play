@@ -19,20 +19,15 @@ import Auth from '../src/pages/Auth';
 // que la vérification les teste directement, sans navigateur.
 export { AUTH_MODES, modeFromSearch, readAuthMode } from '../src/pages/Auth';
 
-const LANG_STUBS = {};
-
 /**
- * LanguageProvider lit la langue active dans `localStorage` pendant le rendu :
- * on installe un `window` minimal, comme scripts/i18n-smoke.jsx.
+ * Le site est publié en français : la langue ne se lit plus dans
+ * `localStorage`, elle se passe au provider (`lang`). On garde malgré tout un
+ * `window` minimal pendant le rendu — le hub joueur et `AuthProvider`
+ * consultent le stockage local, comme dans les autres scripts de vérification.
  */
 function withLang(lang, render) {
   const previous = globalThis.window;
-  globalThis.window = {
-    localStorage: {
-      getItem: (key) => (key === 'lang' || key === 'letsplay-lang' ? lang : (LANG_STUBS[key] ?? null)),
-      setItem() {},
-    },
-  };
+  globalThis.window = { localStorage: { getItem: () => null, setItem() {} } };
   if (typeof globalThis.navigator === 'undefined') {
     globalThis.navigator = { language: lang };
   }
@@ -59,7 +54,7 @@ export function renderAuth({ pathname = '/auth', search = '', hash = '', initial
   return withLang('en', () => renderToString(
     React.createElement(
       LanguageProvider,
-      null,
+      { lang: 'en' },
       React.createElement(
         AuthProvider,
         null,
@@ -89,7 +84,7 @@ export function renderNav({ session = null } = {}) {
   return withLang('en', () => renderToString(
     React.createElement(
       LanguageProvider,
-      null,
+      { lang: 'en' },
       React.createElement(
         AuthProvider,
         { initialSession: session },

@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
-import LanguageSwitcher from './LanguageSwitcher';
 import ThemeToggle from './ThemeToggle';
 import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
@@ -249,7 +248,6 @@ export default function Layout({ children }) {
 
               <div className="nav-actions-grid">
                 <ThemeToggle />
-                <LanguageSwitcher variant="nav" />
                 {user ? (
                   <>
                     <Link
