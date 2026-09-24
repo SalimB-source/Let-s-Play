@@ -703,14 +703,21 @@ Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 mais la structure de données les accepte déjà.
 
 - **Grille** — les douze quizz (aucun verrou, aucune pastille de difficulté : la
-  progression « n/3 niveaux » remplace l'ancien badge) s'affichent sur **trois
-  colonnes** stables sur
-  bureau (`repeat(3, minmax(0, 1fr))` : le nombre ne bascule plus selon la
-  largeur de la fenêtre comme avec l'`auto-fill` d'avant), deux sur tablette
-  (≤ 900 px), une sur mobile (≤ 620 px) ; le gap passe à 16 px sous 1000 px
-  pour préserver la largeur des cartes. Les titres des cartes suivent une
-  taille fluide `clamp(16px → 18px)` avec interligne 1.3, `text-wrap: balance`
-  (coupe harmonieuse sur deux lignes) et `overflow-wrap: break-word` en garde-fou.
+  progression « n/3 niveaux » remplace l'ancien badge) s'affichent sur **cinq
+  colonnes** sur desktop (`repeat(5, minmax(0, 1fr))`, ≈ 230 px par carte), puis
+  quatre sous 1200 px, trois sous 1000 px, deux sous 680 px et une sous 460 px.
+  **Carte compacte** : miniature, pastilles, **titre** et méta — plus de
+  chapeau, le texte court de `labels` n'est affiché que sur la bannière du quizz
+  du jour et l'écran d'intro du quizz. La miniature de carte passe en `2/1`
+  (l'illustration 16/9 est recadrée par `object-fit: cover`, jamais déformée, la
+  bannière du jour garde son 16/9), le `clip-path` et les espacements sont
+  resserrés (`gap: 10px`, `padding: 10px`, `gap: 6px` dans le bloc copie,
+  `margin-bottom` des pastilles repris par ce `gap`) : ≈ 344 px → ≈ 224 px de
+  haut par carte dans une colonne de 232 px. Les titres des cartes
+  suivent une taille fluide `clamp(15px → 17px)` avec interligne 1.25,
+  `text-wrap: balance` (coupe harmonieuse sur deux lignes) et
+  `overflow-wrap: break-word` en garde-fou — un titre reste **toujours affiché
+  en entier**, jamais tronqué.
 - **Données** — `src/quizzesData.js` : douze quizz (culture générale, rétro,
   souls-like, RPG, e-sport, studios, tech, cinéma, PS4, Nintendo 64, Mega Drive
   et jeux PC), la plupart liés à un article maison (`source`). **Chaque quizz
@@ -768,7 +775,8 @@ mais la structure de données les accepte déjà.
 - **Miniatures** — chaque quizz a sa propre illustration 16/9
   (`image`, fabriquée par `quizThumbUrl(slug)` depuis
   `public/quizzes/<slug>.jpg`) : une par thème, à la charte du site. La carte de
-  la grille, la bannière du quizz du jour et les résultats de recherche
+  la grille (recadrée en 2:1 pour garder la grille compacte), la bannière du
+  quizz du jour et les résultats de recherche
   l'affichent. L'épisode lié (`videoId`) reste en repli : `VideoThumb` reçoit
   l'illustration en `lead` et ne descend l'échelle YouTube que si le fichier
   manque — aucune requête `i.ytimg.com` dans le cas nominal. Ajouter un

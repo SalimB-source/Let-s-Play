@@ -693,6 +693,24 @@ export async function checkQuiz(assert) {
     assert.equal(gridNode.querySelectorAll('.quiz-card .quiz-chip--levels').length, quizzes.length, `[${lang}] une progression par carte`);
     assert.ok(gridNode.textContent.includes(translations[lang].quiz.levelProgress.replace('{done}', '0').replace('{total}', '3')), `[${lang}] progression 0/3 niveaux affichée`);
 
+    // Cartes compactes : le chapeau du quizz n'est plus affiché sur la grille
+    // (il reste lu sur la bannière du jour et l'écran d'intro du quizz), seul
+    // le titre reste — et il est bien là, en entier, sur chaque carte.
+    assert.equal(gridNode.querySelectorAll('.quiz-card-copy p').length, 0, `[${lang}] aucune description sur les cartes`);
+    assert.equal(gridNode.querySelectorAll('.quiz-card-copy h3').length, quizzes.length, `[${lang}] un titre par carte`);
+    const cardTitles = [...gridNode.querySelectorAll('.quiz-card-copy h3')].map((el) => el.textContent.trim());
+    const cards = [...gridNode.querySelectorAll('.quiz-card')];
+    for (const entry of quizzes) {
+      const title = quizLabel(entry.labels, lang)?.title;
+      const intro = quizLabel(entry.labels, lang)?.text;
+      assert.ok(title, `[${lang}] ${entry.slug} : le quizz a bien un titre dans sa langue`);
+      assert.ok(cardTitles.includes(title), `[${lang}] ${entry.slug} : son titre est affiché sur sa carte`);
+      assert.ok(
+        !intro || !cards.some((card) => card.textContent.includes(intro)),
+        `[${lang}] ${entry.slug} : son chapeau n'est pas recopié sur la carte`,
+      );
+    }
+
     // Chaque carte affiche sa miniature maison (aucune requête YouTube), et
     // la bannière du jour affiche celle du quizz mis en avant.
     const cardThumbs = [...gridNode.querySelectorAll('.quiz-card-media img')].map((img) => img.getAttribute('src'));
