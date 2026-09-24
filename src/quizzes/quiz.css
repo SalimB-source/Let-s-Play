@@ -639,7 +639,7 @@
 
 /* ---- Responsive ----------------------------------------------------------- */
 /* Grille des quizz : 5 colonnes sur PC, 4 sous 1200 px, 3 sur tablette,
-   2 sur petit écran, 1 colonne sur mobile étroit. */
+   2 sur mobile (cartes resserrées sur écran étroit). */
 @media (max-width: 1200px) {
   .quiz-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
 }
@@ -650,7 +650,11 @@
   .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 }
 @media (max-width: 460px) {
-  .quiz-grid { grid-template-columns: 1fr; }
+  .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .quiz-card { padding: 7px; gap: 8px; }
+  .quiz-card-copy h3 { font-size: 13px; }
+  .quiz-card-meta { font-size: 9px; letter-spacing: .06em; gap: 4px 6px; }
+  .quiz-card-copy .quiz-chips { flex-wrap: wrap; gap: 4px; }
 }
 @media (max-width: 620px) {
   .quiz-survival-card { grid-template-columns: 1fr; gap: 18px; }
