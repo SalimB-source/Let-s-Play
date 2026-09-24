@@ -351,7 +351,7 @@ export const METRICS = {
   newsRead: (state) => setSize(state, 'news_read'),
   reviewsRead: (state) => setSize(state, 'reviews_read'),
   dossiersRead: (state) => setSize(state, 'dossiers_read'),
-  /** Sections distinctes visitées (accueil, actus, tests, dossiers, events, calendrier…). */
+  /** Sections distinctes visitées (accueil, actus, tests, dossiers, calendrier…). */
   sectionsVisited: (state) => setSize(state, 'sections_visited'),
   /** Le hub du profil joueur a-t-il été ouvert ? */
   profileOpened: (state) => ((state.sets.sections_visited || []).includes('account') ? 1 : 0),

@@ -101,7 +101,6 @@ export default function Layout({ children }) {
             <Link to="/reviews" className={isActive('/reviews') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.reviews}</Link>
             <Link to="/dossiers" className={isActive('/dossiers') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.dossiers}</Link>
             <Link to="/quizz" className={isActive('/quizz') ? 'active' : ''} onClick={() => setMenuOpen(false)}>{t.nav.quiz}</Link>
-            <Link to="/events" className={isActive('/events') ? 'active' : ''} onClick={() => setMenuOpen(false)}>Events</Link>
           </div>
           <div className="nav-actions">
             <form className="nav-search" ref={searchRef} onSubmit={submitSearch} onFocus={() => setSearchOpen(true)} role="search">
@@ -195,7 +194,6 @@ export default function Layout({ children }) {
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
           <Link to="/quizz">{t.nav.quiz}</Link>
-          <Link to="/events">Events</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>
           <span>{t.footer.copyright}</span>

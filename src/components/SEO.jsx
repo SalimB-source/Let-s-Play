@@ -38,26 +38,6 @@ const pageMeta = {
     description: 'Teste tes connaissances gaming : culture générale, rétro, souls-like, RPG, e-sport et studios. Un quizz du jour, des succès et de l’XP à gagner.',
     type: 'website',
   },
-  '/events': {
-    title: 'Events et partenaires — Let’s Play',
-    description: 'Découvrez les événements, émissions et partenaires qui font vivre la scène gaming et e-sport algérienne.',
-    type: 'website',
-  },
-  '/events/algerie-telecom': {
-    title: 'Let’s Play × Algérie Télécom — un an de partenariat',
-    description: 'Un an de collaboration entre Let’s Play et Algérie Télécom : production, diffusion et rendez-vous avec la scène gaming algérienne.',
-    type: 'article', published: '2026-09-15', section: 'Events',
-  },
-  '/events/ooredoo': {
-    title: 'Let’s Play × Ooredoo — six mois et un tournoi',
-    description: 'Six mois d’activation Let’s Play × Ooredoo, avec un tournoi pour clôturer le partenariat.',
-    type: 'article', published: '2026-09-15', section: 'Events',
-  },
-  '/events/7ouma-arena': {
-    title: '7ouma Arena — Let’s Play, EGOR et Djezzy',
-    description: '7ouma Arena : l’émission et le tournoi portés par l’équipe Let’s Play, EGOR Gaming et Djezzy.',
-    type: 'article', published: '2026-09-15', section: 'Events',
-  },
   '/news/kingdom-hearts-4-coco': {
     title: 'Kingdom Hearts 4 : pourquoi le monde de Coco colle à la saga — Let’s Play',
     description: 'Le monde de Coco est confirmé dans Kingdom Hearts 4, attendu fin 2027. Seconde mort, mémoire et symbolique du cœur : pourquoi ce choix de Disney et Tetsuya Nomura est bien plus cohérent qu’un simple coup marketing.',
@@ -116,7 +96,6 @@ const pageMeta = {
 };
 
 const routeAliases = {
-  '/partenaires': '/events',
   '/calendar': '/calendrier',
   '/quiz': '/quizz',
   '/quizzes': '/quizz',

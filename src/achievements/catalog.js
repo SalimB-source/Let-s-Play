@@ -114,9 +114,9 @@ export const ACHIEVEMENTS = [
     metric: 'sectionsVisited',
     target: 6,
     labels: {
-      en: { name: 'Grand tour', desc: 'Visit 6 sections: home, news, reviews, dossiers, events, calendar.' },
-      fr: { name: 'Grand tour', desc: 'Visite 6 sections : accueil, actus, tests, dossiers, events, calendrier.' },
-      ar: { name: 'الجولة الكبرى', desc: 'زُر ستة أقسام: الرئيسية، الأخبار، المراجعات، الملفات، الفعاليات، التقويم.' },
+      en: { name: 'Grand tour', desc: 'Visit 6 sections: home, news, reviews, dossiers, calendar and search.' },
+      fr: { name: 'Grand tour', desc: 'Visite 6 sections : accueil, actus, tests, dossiers, calendrier et recherche.' },
+      ar: { name: 'الجولة الكبرى', desc: 'زُر ستة أقسام: الرئيسية، الأخبار، المراجعات، الملفات، التقويم، البحث.' },
     },
   },
   {
@@ -170,11 +170,11 @@ export const ACHIEVEMENTS = [
     rarity: 'platinum',
     xp: 400,
     metric: 'sectionsVisited',
-    target: 8,
+    target: 7,
     labels: {
-      en: { name: 'Full passport', desc: 'Visit all 8 sections: home, news, reviews, dossiers, events, calendar, search and account.' },
-      fr: { name: 'Passeport complet', desc: 'Visite les 8 sections : accueil, actus, tests, dossiers, events, calendrier, recherche et compte.' },
-      ar: { name: 'جواز سفر كامل', desc: 'زُر الأقسام الثمانية كلها: الرئيسية، الأخبار، المراجعات، الملفات، الفعاليات، التقويم، البحث والحساب.' },
+      en: { name: 'Full passport', desc: 'Visit all 7 sections: home, news, reviews, dossiers, calendar, search and account.' },
+      fr: { name: 'Passeport complet', desc: 'Visite les 7 sections : accueil, actus, tests, dossiers, calendrier, recherche et compte.' },
+      ar: { name: 'جواز سفر كامل', desc: 'زُر الأقسام السبعة كلها: الرئيسية، الأخبار، المراجعات، الملفات، التقويم، البحث والحساب.' },
     },
   },
 
