@@ -7,6 +7,27 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;700&display=swap" rel="stylesheet" />
     <meta name="theme-color" content="#05060f" />
+    <!--
+      Thème clair / sombre — posé avant le premier rendu.
+      Sans ce script, la page s'affiche en sombre puis bascule en clair une fois
+      React monté : un flash très visible. La valeur doit rester synchronisée
+      avec `src/theme/ThemeContext.jsx` (clé `lp-theme`, défaut `dark`).
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('lp-theme');
+          var theme = stored === 'light' || stored === 'dark' ? stored : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+          if (theme === 'light') {
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', '#f7f8fc');
+          }
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
     <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />

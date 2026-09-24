@@ -18,7 +18,9 @@ import './friends/friends.css';
 import './messages/messages.css';
 import './social/social.css';
 import './typography.css';
+import './theme.css';        // thème clair : importé en dernier (surcharge)
 import { LanguageProvider } from './i18n/LanguageContext';
+import { ThemeProvider } from './theme/ThemeContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import News from './pages/News';
@@ -63,6 +65,7 @@ import { initSinglePlayback } from './lib/videoPlayback';
 
 function App() {
   return (
+    <ThemeProvider>
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter basename={import.meta.env.BASE_URL}>
@@ -159,6 +162,7 @@ function App() {
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

@@ -18,7 +18,8 @@
     "check:newsbot": "node scripts/news-bot/check.mjs",
     "news:fetch": "node scripts/news-bot/fetch-news.mjs",
     "check:top-games": "node scripts/top-games-check.mjs",
-    "check:quiz": "node scripts/quiz-check.mjs"
+    "check:quiz": "node scripts/quiz-check.mjs",
+    "theme:ink-sweep": "node scripts/theme-ink-sweep.mjs --write"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",

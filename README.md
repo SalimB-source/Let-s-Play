@@ -15,6 +15,67 @@ Pour produire la version de production :
 npm run build
 ```
 
+## Thème clair / sombre
+
+Le site se joue en deux thèmes. Le **sombre** reste l'identité d'origine et le
+défaut ; le **clair** est un choix explicite de l'utilisateur.
+
+- Bascule dans la barre de navigation (icône soleil / lune), à côté du sélecteur
+  de langue. En menu mobile, elle occupe toute la largeur avec son libellé.
+- Le choix est mémorisé (`localStorage`, clé `lp-theme`) et repris au chargement
+  par un script en ligne dans `index.html` : la page ne s'affiche jamais en
+  sombre avant de basculer, ce qui produirait un flash très visible.
+- `?theme=light` (ou `?theme=dark`) force le thème le temps d'une visite :
+  pratique pour partager un lien de recette.
+- La barre du navigateur (`theme-color`) suit le thème actif.
+
+Le thème clair est décrit dans **`src/theme.css`**, importé en dernier dans
+`src/main.jsx` (il surcharge les dix-huit autres feuilles). Trois principes le
+gouvernent, et il vaut la peine de les connaître avant d'y toucher :
+
+1. **Les accents s'assombrissent pour le texte, pas pour le remplissage.** Le
+   cyan `#22d3ee` tombe à 1,7:1 sur blanc. Chaque teinte existe donc en deux
+   versions : `--cyan` (encre lisible), `--cyan-bright` (remplissages, halos).
+   Le jaune de marque `--yellow` reste le jaune d'origine en aplat — c'est
+   l'*encre posée dessus* qui est sombre — et `--yellow-ink` sert quand il doit
+   être du texte.
+2. **Les médias restent sombres.** Héros, lecteur YouTube, fenêtre vidéo,
+   vignettes et voiles posés sur une photo gardent leur fond sombre et leur
+   texte blanc dans les deux thèmes. Seules les surfaces de l'interface
+   passent au clair. La section 8 de `theme.css` (commentée) ré-affirme cette
+   intention.
+3. **Les halos deviennent des ombres.** Un `text-shadow` néon sur fond clair
+   produit un halo sale ; il est remplacé par une ombre colorée douce.
+
+Deux points d'attention pour la suite :
+
+- **Le wordmark est blanc à l'origine.** Sur fond clair, `Layout` sert
+  `public/lets-play-logo-light.png` (généré par `tools/make-light-assets.py`) :
+  mêmes formes, le « Let's » blanc devient indigo, le jaune et le violet de
+  marque ne bougent pas. Si le logo officiel change, régénérer ce fichier.
+- **Le mur des partenaires garde une bande sombre.** Les logos tiers (Djezzy,
+  egor, LG, IFA, TMV…) sont dessinés clairs sur sombre : les recolorer serait
+  trahir des marques qui ne nous appartiennent pas. C'est aussi un rappel du
+  thème d'origine au milieu d'une page claire.
+
+### Vérifier le thème clair
+
+```bash
+npm run theme:ink-sweep   # régénère la liste des encres à rabattre vers le sombre
+```
+
+`theme:ink-sweep` reparcourt les feuilles et réécrit la section « encre claire →
+encre sombre » de `src/theme.css` : environ 200 règles posent une encre claire
+(blanc, jaune de marque) parce qu'elles visaient un fond noir, et cette liste
+mécanique évite d'en oublier une quand le site évolue. Les contextes qui gardent
+leur encre claire (médias, bandeaux de marque, pastilles de statut) sont exclus
+du générateur et traités à la main dans `theme.css`.
+
+Contrôle de contraste (outil d'atelier, hors dépôt) : chaque page est parcourue
+dans les deux thèmes, le fond effectif de chaque texte est calculé en empilant
+les couches translucides, et tout ce qui passe sous le seuil WCAG AA est
+signalé. Onze pages sont aujourd'hui à zéro écart en clair.
+
 ## Contenu
 
 - Hero éditorial avec CTA YouTube

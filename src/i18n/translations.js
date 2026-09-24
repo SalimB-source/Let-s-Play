@@ -23,6 +23,7 @@ export const translations = {
       quiz: 'Quizzes',
       profile: 'Profile',
       levelShort: 'LVL',
+      theme: { light: 'Light', dark: 'Dark', toLight: 'Switch to light theme', toDark: 'Switch to dark theme' },
     },
     quiz: {
       label: 'QUIZZES / GAMING',
@@ -440,6 +441,7 @@ export const translations = {
       quiz: 'Quizz',
       profile: 'Profil',
       levelShort: 'NIV.',
+      theme: { light: 'Clair', dark: 'Sombre', toLight: 'Passer au thème clair', toDark: 'Passer au thème sombre' },
     },
     quiz: {
       label: 'QUIZZ / GAMING',
@@ -849,6 +851,7 @@ export const translations = {
       quiz: 'اختبارات',
       profile: 'الملف',
       levelShort: 'المستوى',
+      theme: { light: 'فاتح', dark: 'داكن', toLight: 'التبديل إلى المظهر الفاتح', toDark: 'التبديل إلى المظهر الداكن' },
     },
     quiz: {
       label: 'اختبارات / ألعاب',

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import ThemeToggle from './ThemeToggle';
+import { useTheme } from '../theme/ThemeContext';
 import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
 import { searchContent } from '../search/searchIndex';
@@ -19,6 +21,7 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
+  const { isLight } = useTheme();
   const { user, isDemo, signOut } = useAuth();
   const { summary } = useAchievements();
   const track = useAchievementAction();
@@ -100,6 +103,10 @@ export default function Layout({ children }) {
   };
 
   const logoutLabel = t.nav.logout || 'Log out';
+  // Le wordmark officiel est blanc (pensé pour le fond noir). Sur fond clair on
+  // sert la variante « encre » (public/lets-play-logo-light.png) : mêmes formes,
+  // le « Let's » blanc devient indigo profond, le jaune et le violet ne bougent pas.
+  const logoSrc = `${base}lets-play-logo${isLight ? '-light' : ''}.png`;
 
   const primaryLinks = [
     { to: '/', label: t.nav.home, num: '01', desc: 'HOME / INDEX' },
@@ -132,7 +139,7 @@ export default function Layout({ children }) {
       <SEO />
       <nav className={`${scrolled ? 'nav scrolled' : 'nav'}${isHome ? ' nav-home' : ''}${menuOpen ? ' open' : ''}`}>
         <Link className="brand" to="/" aria-label="Let's Play, home">
-          <img className="brand-logo" src={`${base}lets-play-logo.png`} alt="Let’s Play" />
+          <img className="brand-logo" src={logoSrc} alt="Let’s Play" />
         </Link>
         <button
           className={`menu-button${menuOpen ? ' open' : ''}`}
@@ -244,6 +251,7 @@ export default function Layout({ children }) {
               </form>
 
               <div className="nav-actions-grid">
+                <ThemeToggle />
                 <LanguageSwitcher variant="nav" />
                 {user ? (
                   <>
@@ -341,7 +349,7 @@ export default function Layout({ children }) {
       <main>{children}</main>
       <footer className="footer wrap">
         <Link className="brand" to="/" aria-label="Let's Play, home">
-          <img className="brand-logo" src={`${base}lets-play-logo.png`} alt="Let’s Play" />
+          <img className="brand-logo" src={logoSrc} alt="Let’s Play" />
         </Link>
         <p>{t.footer.tagline}</p>
         <div className="footer-links">
