@@ -32,10 +32,10 @@ npm run build
   actions réalisées sur le site, classés en quatre grades de difficulté — bronze,
   argent, or, platine — avec niveau, XP, grades visibles et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
-- Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
-  douze quizz rédigés par la rédaction (culture générale, rétro, souls-like,
-  RPG, e-sport, studios, tech, cinéma, PS4, Nintendo 64, Mega Drive et jeux
-  PC), **tous jouables dès l'arrivée** et chacun en **trois niveaux à
+- Quizz gaming, cinéma & pop culture et quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
+  vingt-cinq quizz rédigés par la rédaction (culture gaming, consoles, PC,
+  e-sport, tech, adaptations, films cultes, super-héros et séries), **tous
+  jouables dès l'arrivée** et chacun en **trois niveaux à
   l'intérieur** (Facile ouvert, Confirmé puis Expert débloqués en cascade en
   terminant le palier précédent, progression synchronisée avec le compte ;
   questions différentes d'un niveau à l'autre et points multipliés
@@ -45,8 +45,8 @@ npm run build
   corrections commentées, confettis du sans-faute, raccourcis clavier 1–4,
   commentaires, recherche et cinq succès dédiés ; classement des quizz (un
   classement par niveau, clé `slug:niveau`) par points gagnés et position au
-  classement global affichée sur la page de profil (voir « Quizz gaming &
-  quizz du jour »)
+  classement global affichée sur la page de profil (voir « Quizz gaming,
+  cinéma & pop culture et quizz du jour »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
@@ -695,14 +695,14 @@ Editor du projet Supabase (le script est relançable sans risque).
   la navbar, et garde-fous de source pour que le mode initial continue de suivre
   l'URL — y compris quand le pop-up est déjà ouvert.
 
-## Quizz gaming & quizz du jour
+## Quizz gaming, cinéma & pop culture et quizz du jour
 
 Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 `/quizz/:slug` (partie, corrections, commentaires), alias anglais `/quiz` et
 `/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
 mais la structure de données les accepte déjà.
 
-- **Grille** — les douze quizz (aucun verrou, aucune pastille de difficulté : la
+- **Grille** — les vingt-cinq quizz (aucun verrou, aucune pastille de difficulté : la
   progression « n/3 niveaux » remplace l'ancien badge) s'affichent sur **cinq
   colonnes** sur desktop (`repeat(5, minmax(0, 1fr))`, ≈ 230 px par carte), puis
   quatre sous 1200 px, trois sous 1000 px, deux sous 680 px et une sous 460 px.
@@ -718,13 +718,14 @@ mais la structure de données les accepte déjà.
   `text-wrap: balance` (coupe harmonieuse sur deux lignes) et
   `overflow-wrap: break-word` en garde-fou — un titre reste **toujours affiché
   en entier**, jamais tronqué.
-- **Données** — `src/quizzesData.js` : douze quizz (culture générale, rétro,
-  souls-like, RPG, e-sport, studios, tech, cinéma, PS4, Nintendo 64, Mega Drive
-  et jeux PC), la plupart liés à un article maison (`source`). **Chaque quizz
-  porte trois niveaux** (`levels.easy` / `levels.medium` / `levels.hard`,
-  `QUIZ_LEVELS`), huit questions par niveau — soit 24 questions par quizz, 288
-  au total. Les helpers `quizLevelQuestions(quiz, level)` et
-  `quizQuestionsCount(quiz)` évitent d'accéder aux niveaux à la main
+- **Données** — `src/quizzesData.js` : vingt-cinq quizz (gaming, consoles,
+  e-sport, tech, cinéma & pop culture ; trois nouveaux thèmes : films cultes,
+  super-héros Marvel/DC et séries cultes), la plupart liés à un article maison
+  (`source`). **Chaque quizz porte trois niveaux** (`levels.easy` /
+  `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit questions par niveau —
+  soit 24 questions par quizz, 600 au total. Les helpers
+  `quizLevelQuestions(quiz, level)` et `quizQuestionsCount(quiz)` évitent
+  d'accéder aux niveaux à la main
   (`QUIZ_DIFFICULTIES` reste exporté comme alias de `QUIZ_LEVELS`, et
   `quizQuestions(quiz, level)` comme alias de `quizLevelQuestions` : les
   appelants historiques continuent de fonctionner). Ajouter un quizz = une
@@ -1244,7 +1245,7 @@ qualité disponible pour cette vidéo.
   404 connu, l'illustration locale essayée avant YouTube quand elle est passée
   en `lead`), le **rendu réel des pages** en SSR (accueil : trois vignettes,
   `twbaM8fiXpo` en `hqdefault`, HicoSoft toujours en `maxresdefault` ; dossiers :
-  huit vignettes ; quizz : bannière du jour + douze cartes servies par
+  huit vignettes ; quizz : bannière du jour + vingt-cinq cartes servies par
   `public/quizzes/`, chaque fichier livré et non tronqué), et la source du site
   (aucune URL de miniature codée en dur hors de `src/lib/videoThumbnails.js`,
   ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins

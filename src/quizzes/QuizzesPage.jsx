@@ -16,15 +16,15 @@ function Arrow() { return <span aria-hidden="true">↗</span>; }
 
 const FALLBACK = {
   label: 'QUIZZES / GAMING', titleA: 'PROVE YOUR', titleB: 'GAME KNOWLEDGE.',
-  intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport, studios, tech, cinema, legendary consoles and PC classics. Every quiz plays in three levels — easy opens the doors, seasoned then expert unlock as you go.',
+  intro: 'Quizzes written by the editorial team: general culture, retro, souls-likes, RPGs, e-sport, studios, tech, cinema, TV series, legendary consoles and PC classics. Every quiz plays in three levels — easy opens the doors, seasoned then expert unlock as you go.',
   categoryMainEyebrow: 'CATEGORY 01 / CLASSICS',
   categoryMainCount: '{n} quizzes',
-  categoryMainTitle: 'Gaming / tech / cinema quizzes',
-  categoryMainIntro: 'The 22 existing quizzes, gathered in one category.',
+  categoryMainTitle: 'Gaming / tech / cinema / TV quizzes',
+  categoryMainIntro: 'The {n} quizzes, gathered in one category.',
   categorySurvivalInfinite: 'INFINITE',
   categorySurvivalEyebrow: 'CATEGORY 02 / ENDLESS',
   categorySurvivalTitle: 'Survival mode',
-  categorySurvivalIntro: 'Three lives. One mistake costs a heart. All questions shuffle and recycle without end.',
+  categorySurvivalIntro: 'Three lives. One mistake costs a heart. All {n} questions shuffle and recycle without end.',
   categorySurvivalLives: '3 lives', categorySurvivalTimer: '10 sec / question',
   categorySurvivalTimeout: 'Timeout = mistake', categorySurvivalPool: '{n} questions in the global pool',
   categorySurvivalPlay: 'Enter Survival mode',
@@ -133,7 +133,7 @@ export default function QuizzesPage() {
         <div className="quiz-category-heading">
           <div className="section-label"><span>{copy.categoryMainEyebrow}</span><span>{copy.categoryMainCount.replace('{n}', String(quizzes.length))}</span></div>
           <h2 id="quiz-category-main-title">{copy.categoryMainTitle}</h2>
-          <p>{copy.categoryMainIntro}</p>
+          <p>{copy.categoryMainIntro.replace('{n}', String(quizzes.length))}</p>
         </div>
         <div className="quiz-grid">
           {quizzes.map((quiz) => {
@@ -190,7 +190,7 @@ export default function QuizzesPage() {
         <div className="quiz-category-heading">
           <div className="section-label"><span>{copy.categorySurvivalEyebrow}</span><span>♥♥♥</span></div>
           <h2 id="quiz-category-survival-title">{copy.categorySurvivalTitle}</h2>
-          <p>{copy.categorySurvivalIntro}</p>
+          <p>{copy.categorySurvivalIntro.replace('{n}', String(SURVIVAL_QUESTION_COUNT))}</p>
         </div>
         <Link className="quiz-survival-card hud-frame" to="/quizz/survival">
           <span className="quiz-survival-copy">

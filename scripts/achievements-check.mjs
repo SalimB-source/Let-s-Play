@@ -387,14 +387,19 @@ for (let index = 1; index <= 30; index += 1) {
   record(play('visit', { day: dayKey(date) }));
 }
 
-// Quizz : les douze quizz du site joués douze jours consécutifs en « quizz du
-// jour » (série de sept jours minimum), dont un sans faute — de quoi ouvrir
-// premier quizz, sans faute, tour complet et semaine parfaite.
-[
+// Quizz : les vingt-cinq quizz du site joués vingt-cinq jours consécutifs en
+// « quizz du jour » (série de sept jours minimum), dont un sans faute — de quoi
+// ouvrir premier quizz, sans faute, tour complet et semaine parfaite.
+const allQuizSlugs = [
   'culture-gaming', 'consoles-retro', 'souls-fromsoftware', 'rpg-legends',
   'esport-competition', 'studios-legends', 'tech-hardware', 'cinema-pop-culture',
-  'ps4-generation', 'nintendo-64', 'megadrive', 'pc-legends',
-].forEach((id, index) => {
+  'films-cultes', 'super-heros-cinema', 'series-cultes',
+  'ps4-generation', 'nintendo-64', 'megadrive', 'pc-legends', 'fps-legends',
+  'horror-gaming', 'fighting-legends', 'racing-legends', 'indie-gems',
+  'nintendo-legends', 'open-world-legends', 'sci-fi-gaming', 'battle-royale', 'mmo-legends',
+];
+check('le seuil Tour complet couvre tout le catalogue', ACHIEVEMENTS.find(({ id }) => id === 'quiz-tour').target, allQuizSlugs.length);
+allQuizSlugs.forEach((id, index) => {
   const date = new Date(at(2026, 9, 20));
   date.setDate(date.getDate() + index);
   record(play('quiz_completed', { id, level: 'easy', perfect: index === 0, daily: true, at: date.toISOString() }));
