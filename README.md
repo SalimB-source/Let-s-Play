@@ -39,11 +39,15 @@ gouvernent, et il vaut la peine de les connaître avant d'y toucher :
    Le jaune de marque `--yellow` reste le jaune d'origine en aplat — c'est
    l'*encre posée dessus* qui est sombre — et `--yellow-ink` sert quand il doit
    être du texte.
-2. **Les médias restent sombres.** Héros, lecteur YouTube, fenêtre vidéo,
+2. **Les médias restent sombres.** Lecteur YouTube, fenêtre vidéo,
    vignettes et voiles posés sur une photo gardent leur fond sombre et leur
    texte blanc dans les deux thèmes. Seules les surfaces de l'interface
    passent au clair. La section 8 de `theme.css` (commentée) ré-affirme cette
-   intention.
+   intention. Seule exception : en clair, le héros d'accueil retire la vidéo
+   de fond et pose la key art maison (`public/hero-lets-play.png`) — voile
+   blanc dégradé, encre sombre (bloc « Héros clair » de la section 8). Aucune
+   balise `<video>` n'est montée dans ce thème : `Home.jsx` ne la rend qu'en
+   sombre.
 3. **Les halos deviennent des ombres.** Un `text-shadow` néon sur fond clair
    produit un halo sale ; il est remplacé par une ombre colorée douce.
 

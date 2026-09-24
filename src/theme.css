@@ -16,10 +16,13 @@
       sombre par-dessus, 12,8:1), `--yellow-ink` est sa version lisible quand il
       sert de texte.
 
-   2. LES MÉDIAS RESTENT SOMBRES. Un écran reste un écran. Le héros, le lecteur
-      YouTube, la fenêtre vidéo, les vignettes et tous les voiles posés *sur une
-      photo* gardent leur fond sombre et leur texte blanc dans les deux thèmes.
+   2. LES MÉDIAS RESTENT SOMBRES. Un écran reste un écran. Le lecteur YouTube,
+      la fenêtre vidéo, les vignettes et tous les voiles posés *sur une photo*
+      gardent leur fond sombre et leur texte blanc dans les deux thèmes.
       Seules les *surfaces de l'interface* passent au clair.
+      Exception assumée : en clair, le héros d'accueil retire la vidéo et pose
+      la key art maison (public/hero-lets-play.png) — voile clair, encre sombre
+      (bloc « Héros clair » de la section 8).
 
    3. LES HALOS DEVIENNENT DES OMBRES. Un `text-shadow` néon sur fond clair
       produit un halo sale : remplacé par une ombre colorée douce, qui garde la
@@ -548,7 +551,8 @@
 /* Tout ce qui se pose sur une image, une vidéo ou un écran garde son voile
    sombre et son texte blanc. Cette section ré-affirme l'intention : elle vient
    après la section 3, donc elle a le dernier mot sur ces sélecteurs. */
-[data-theme='light'] .hero,
+/* Le héros clair fait exception (key art sur fond clair) : voir le bloc
+   « Héros clair » ci-dessous. */
 [data-theme='light'] .live-player,
 [data-theme='light'] .video-modal-player{background:#05060f}
 [data-theme='light'] .video-modal{background:rgba(10,11,26,.86)}
@@ -566,8 +570,6 @@
 [data-theme='light'] .featured-dossier-badge,
 [data-theme='light'] .social-slide-overlay strong,
 [data-theme='light'] .video-thumb-fallback .video-thumb-fallback-mark,
-[data-theme='light'] .hero .button-ghost,
-[data-theme='light'] .hero-text,
 [data-theme='light'] .insta-badge,
 [data-theme='light'] .news-views,
 [data-theme='light'] .article-views-inline,
@@ -581,23 +583,48 @@
 [data-theme='light'] .article-sentiment-inline.negative,
 [data-theme='light'] .news-sentiment.negative{background:#b91c1c;border-color:rgba(185,28,28,.5)}
 [data-theme='light'] .page-hero-visual-content small{color:var(--yellow)}
-/* Le héros garde sa typographie blanche : son fond est une photo. Sans cette
-   règle, le titre hérite de l'encre sombre du thème et devient illisible. */
+/* --- Héros clair : key art au lieu de la vidéo -------------------------
+   En thème clair, Home.jsx ne monte pas la <video> : la key art maison
+   (public/hero-lets-play.png) porte le héros. C'est la seule exception à la
+   règle « les médias restent sombres » : le voile devient clair et le texte
+   reprend l'encre sombre du thème, sinon le titre blanc disparaîtrait sur
+   un ciel pastel. Le voile blanc dégradé garde le contraste AA à gauche,
+   là où vit le texte. */
+[data-theme='light'] .hero{background:var(--bg)}
+[data-theme='light'] .hero-shade{
+  background:
+    linear-gradient(90deg, rgba(247,248,252,.96) 0%, rgba(247,248,252,.88) 30%, rgba(247,248,252,.42) 62%, rgba(247,248,252,.06) 100%),
+    linear-gradient(180deg, rgba(247,248,252,.9) 0%, rgba(247,248,252,.12) 22%, rgba(247,248,252,0) 42%, rgba(247,248,252,.5) 76%, rgba(247,248,252,.88) 100%);
+}
+@media(max-width:800px){
+  /* mobile : l'art passe plein cadre sous le texte — voile renforcé */
+  [data-theme='light'] .hero-shade{
+    background:linear-gradient(180deg, rgba(247,248,252,.94) 0%, rgba(247,248,252,.78) 36%, rgba(247,248,252,.82) 68%, rgba(247,248,252,.95) 100%);
+  }
+}
 [data-theme='light'] .hero h1,
 [data-theme='light'] .hero .awaited-band,
-[data-theme='light'] .awaited-band-title{color:#fff}
+[data-theme='light'] .awaited-band-title{color:var(--ink)}
+[data-theme='light'] .hero h1 em{color:var(--cyan)}
+[data-theme='light'] .hero-text{color:var(--muted)}
 [data-theme='light'] .hero .eyebrow,
-[data-theme='light'] .hero .awaited-band-eyebrow,
-[data-theme='light'] .hero .awaited-band-date,
-[data-theme='light'] .hero .awaited-band-arrow{color:#a5f3fc}
-[data-theme='light'] .hero .awaited-band-arrow,
+[data-theme='light'] .hero .awaited-band-eyebrow{color:var(--cyan)}
+[data-theme='light'] .hero .awaited-band-date{color:var(--muted)}
 [data-theme='light'] .live-offline span:last-child,
 [data-theme='light'] .page-hero-visual-content span{color:rgba(255,255,255,.72)}
 [data-theme='light'] .live-offline span:last-child{color:rgba(255,255,255,.72)}
-[data-theme='light'] .hero h1 em{color:#67e8f9;text-shadow:0 0 26px rgba(34,211,238,.55),0 0 80px rgba(34,211,238,.3)}
-[data-theme='light'] .hero-frame span{border-color:rgba(34,211,238,.85)}
-[data-theme='light'] .hero .awaited-band{background:linear-gradient(110deg,rgba(11,13,30,.86),rgba(11,13,30,.66))}
-[data-theme='light'] .hero .button-ghost{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.38)}
+[data-theme='light'] .hero-frame span{border-color:rgba(14,116,144,.75);filter:none}
+[data-theme='light'] .hero .awaited-band{
+  background:linear-gradient(110deg,rgba(255,255,255,.88),rgba(255,255,255,.68));
+  border-top-color:var(--line-strong);
+}
+[data-theme='light'] .hero .awaited-band-chip{color:var(--yellow-ink);border-color:var(--yellow-ink);background:rgba(255,214,25,.14)}
+[data-theme='light'] .hero .awaited-band-thumb{background:rgba(255,255,255,.72)}
+[data-theme='light'] .hero .awaited-band-arrow{color:var(--dim)}
+[data-theme='light'] .hero .awaited-band-inner:hover .awaited-band-title,
+[data-theme='light'] .hero .awaited-band-inner:hover .awaited-band-arrow{color:var(--yellow-ink)}
+[data-theme='light'] .hero .button-ghost{background:rgba(255,255,255,.7);border-color:var(--line-strong);color:var(--ink)}
+[data-theme='light'] .hero .button-ghost:hover{background:#fff;border-color:var(--cyan);color:var(--cyan)}
 [data-theme='light'] .button-ghost{background:transparent;border-color:var(--line-strong);color:var(--ink)}
 [data-theme='light'] .button-ghost:hover{border-color:var(--cyan);background:rgba(14,116,144,.08)}
 

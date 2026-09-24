@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useTheme } from '../theme/ThemeContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
@@ -54,6 +55,9 @@ const liveChannelId = import.meta.env.VITE_YOUTUBE_CHANNEL_ID?.trim() || 'UCBi98
 
 export default function Home() {
   const { t, lang } = useLanguage();
+  // En thème clair, le héros pose la key art fournie au lieu de la vidéo :
+  // aucune balise <video> n'est montée (ni téléchargée) dans ce thème.
+  const { isLight } = useTheme();
   const [liveStatus, setLiveStatus] = useState('unknown');
 
   // La frise « Sorties du mois » et le compte à rebours ont quitté l'accueil :
@@ -134,16 +138,28 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        <video
-          className="hero-bg"
-          autoPlay
-          muted
-          loop
-          playsInline
-          aria-hidden="true"
-        >
-          <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663645820794/QjYUbmTfZIPVlQQb.mp4" type="video/mp4" />
-        </video>
+        {isLight ? (
+          /* Thème clair : la vidéo est retirée, la key art maison
+             (public/hero-lets-play.png) devient le fond du héros. */
+          <img
+            className="hero-bg hero-bg--keyart"
+            src={`${import.meta.env.BASE_URL}hero-lets-play.png`}
+            alt=""
+            aria-hidden="true"
+            decoding="async"
+          />
+        ) : (
+          <video
+            className="hero-bg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            aria-hidden="true"
+          >
+            <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663645820794/QjYUbmTfZIPVlQQb.mp4" type="video/mp4" />
+          </video>
+        )}
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">
