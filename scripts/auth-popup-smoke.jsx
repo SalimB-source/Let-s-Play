@@ -29,10 +29,13 @@ function withLang(lang, render) {
   const previous = globalThis.window;
   globalThis.window = {
     localStorage: {
-      getItem: (key) => (key === 'lang' ? lang : (LANG_STUBS[key] ?? null)),
+      getItem: (key) => (key === 'lang' || key === 'letsplay-lang' ? lang : (LANG_STUBS[key] ?? null)),
       setItem() {},
     },
   };
+  if (typeof globalThis.navigator === 'undefined') {
+    globalThis.navigator = { language: lang };
+  }
   try {
     return render();
   } finally {

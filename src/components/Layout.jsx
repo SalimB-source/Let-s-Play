@@ -5,7 +5,9 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
 import { searchContent } from '../search/searchIndex';
-import { useAchievementAction } from '../achievements/AchievementContext';
+import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
+import { levelTitle } from '../achievements/catalog';
+import { avatarFor, displayNameFor } from '../lib/comments';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
 
@@ -16,8 +18,9 @@ export default function Layout({ children }) {
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useLanguage();
-  const { user, signOut } = useAuth();
+  const { t, lang } = useLanguage();
+  const { user, isDemo, signOut } = useAuth();
+  const { summary } = useAchievements();
   const track = useAchievementAction();
   const { progress: quizProgressState } = useQuizProgress();
   const searchRef = useRef(null);
@@ -106,6 +109,24 @@ export default function Layout({ children }) {
     { to: '/quizz', label: t.nav.quiz, num: '05', desc: 'QUIZZ / PLAY' },
   ];
 
+  // Photo + niveau du joueur connecté, mêmes sources que le hub /auth :
+  // avatar des métadonnées, niveau du moteur de succès (chiffres scriptés
+  // pour une persona de démo). Le menu mobile les montre sous Quizz.
+  const profileMeta = user?.user_metadata || {};
+  const profileName = user ? displayNameFor(user) : '';
+  const profileAvatar = user ? avatarFor(user) : null;
+  const profileLevel = user
+    ? (isDemo ? (profileMeta.level || 1) : (summary?.level?.level || 1))
+    : null;
+  const profileRank = user
+    ? (isDemo ? (profileMeta.rankTitle || levelTitle(profileLevel, lang)) : levelTitle(profileLevel, lang))
+    : '';
+  const profileInitials = (profileName || '?').slice(0, 2).toUpperCase();
+  const profileHref = user ? '/auth' : '/auth?mode=signin';
+  const profileAria = user
+    ? `${t.nav.profile}, ${profileName}, ${t.nav.levelShort} ${profileLevel}`
+    : `${t.nav.profile}, ${t.nav.login}`;
+
   return (
     <>
       <SEO />
@@ -155,6 +176,46 @@ export default function Layout({ children }) {
                   <span className="nav-link-arrow" aria-hidden="true">↗</span>
                 </Link>
               ))}
+              {/* Menu mobile uniquement : entrée Profil juste sous Quizz,
+                  avec la photo et le niveau. Le desktop garde la pastille. */}
+              <Link
+                to={profileHref}
+                className={`nav-profile-link${user ? ' is-player' : ' is-guest'}${isActive('/auth') ? ' active' : ''}`}
+                onClick={() => setMenuOpen(false)}
+                style={{ '--i': primaryLinks.length }}
+                aria-label={profileAria}
+              >
+                <span className="nav-link-main">
+                  <span className="nav-link-num">06</span>
+                  <span className="nav-profile-avatar" aria-hidden="true">
+                    <span className="nav-profile-avatar-face">
+                      {profileAvatar ? (
+                        <img src={profileAvatar} alt="" />
+                      ) : user ? (
+                        <span className="nav-profile-initials">{profileInitials}</span>
+                      ) : (
+                        <svg viewBox="0 0 24 24" width="22" height="22" focusable="false">
+                          <circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                          <path d="M5.2 19.2c1.3-3.1 3.6-4.5 6.8-4.5s5.5 1.4 6.8 4.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                        </svg>
+                      )}
+                    </span>
+                    {user ? <span className="nav-online-dot" /> : null}
+                  </span>
+                  <span className="nav-link-text">
+                    <span className="nav-link-label">{t.nav.profile}</span>
+                    <span className="nav-link-desc">{user ? `${profileName} · ${profileRank}` : t.nav.login}</span>
+                  </span>
+                </span>
+                {user ? (
+                  <span className="nav-profile-level">
+                    <small>{t.nav.levelShort}</small>
+                    <strong>{profileLevel}</strong>
+                  </span>
+                ) : (
+                  <span className="nav-link-arrow" aria-hidden="true">↗</span>
+                )}
+              </Link>
             </div>
 
             <div className="nav-actions">

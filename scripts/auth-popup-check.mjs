@@ -146,6 +146,15 @@ ok('connecté : le bouton porte le libellé « Log out »', /class="nav-logout"[
 ok('connecté : icône croix (SVG) dans le bouton', /class="nav-logout-icon"/.test(connectedHtml));
 ok('connecté : le bouton vient après la pastille de compte', logoutIndex > connectedHtml.indexOf('nav-account connected'));
 ok('connecté : plus de lien « Log in » / « Register »', !/href="\/auth\?mode=(signin|signup)"/.test(connectedHtml));
+const quizIndex = connectedHtml.indexOf('href="/quizz"');
+const afterQuiz = connectedHtml.slice(quizIndex + 'href="/quizz"'.length);
+const nextHref = afterQuiz.match(/href="([^"]+)"/);
+ok('menu : le lien Profil vient juste après Quizz', nextHref?.[1] === '/auth' && afterQuiz.indexOf('nav-profile-link') !== -1 && afterQuiz.indexOf('nav-profile-link') < afterQuiz.indexOf('nav-actions'));
+ok('menu : le lien Profil mène au hub /auth', /<a(?=[^>]*href="\/auth")(?=[^>]*class="[^"]*nav-profile-link)[^>]*>/.test(connectedHtml));
+ok('menu : photo (ou initiales) du profil', connectedHtml.includes('nav-profile-avatar') && connectedHtml.includes('>SM<'));
+ok('menu : niveau du profil affiché', /class="nav-profile-level"[\s\S]*?<strong>1<\/strong>/.test(connectedHtml));
+const guestAfterQuiz = navHtml.slice(navHtml.indexOf('href="/quizz"') + 'href="/quizz"'.length);
+ok('visiteur : le lien Profil est aussi sous Quizz et mène à la connexion', guestAfterQuiz.match(/href="([^"]+)"/)?.[1] === '/auth?mode=signin' && guestAfterQuiz.includes('nav-profile-link'));
 
 /* ----------------------------------------- 4. Garde-fous de source */
 

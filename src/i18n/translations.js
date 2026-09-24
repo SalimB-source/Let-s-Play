@@ -21,6 +21,8 @@ export const translations = {
       register: 'Register',
       logout: 'Log out',
       quiz: 'Quizzes',
+      profile: 'Profile',
+      levelShort: 'LVL',
     },
     quiz: {
       label: 'QUIZZES / GAMING',
@@ -429,6 +431,8 @@ export const translations = {
       register: "S'inscrire",
       logout: 'Se déconnecter',
       quiz: 'Quizz',
+      profile: 'Profil',
+      levelShort: 'NIV.',
     },
     quiz: {
       label: 'QUIZZ / GAMING',
@@ -829,6 +833,8 @@ export const translations = {
       register: 'إنشاء حساب',
       logout: 'تسجيل الخروج',
       quiz: 'اختبارات',
+      profile: 'الملف',
+      levelShort: 'المستوى',
     },
     quiz: {
       label: 'اختبارات / ألعاب',
