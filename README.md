@@ -859,7 +859,7 @@ mais la structure de données les accepte déjà.
   `src/quizzes/quizProgress.js` (+ hook `useQuizProgress`). La progression
   suit le compte connecté (`public.quiz_progress`, une ligne par palier
   terminé) et se **fusionne** avec la copie locale `localStorage`
-  (`letsplay_quiz_levels_v1`) — hors-ligne, c'est elle qui fait foi. Les
+  (`letsplay_quiz_levels_v2`) — hors-ligne, c'est elle qui fait foi. Les
   cartes de la grille et la bannière du jour affichent la progression
   « n/3 niveaux ».
 - **Quizz TERMINÉ (les trois niveaux faits)** — un quizz dont les niveaux
@@ -1054,18 +1054,16 @@ mais la structure de données les accepte déjà.
   sans backend, la section explique comment la débloquer. Après collage du
   schéma dans le Dashboard Supabase, le tableau de contrôle final affiche les
   lignes 31–35 « OK ».
-- **Remise à zéro des quizz** — `supabase/reset-quiz-ranking.sql`, à coller dans
-  le SQL Editor du Dashboard. Deux étages : les étapes 1–3 vident
-  `public.quiz_attempts` (la seule source des deux RPC de classement) et tout le
-  monde redevient « pas encore classé » — rang null, 0 point, 0 quizz,
-  classements de runs vides — sans toucher aux comptes, aux profils, à l'XP ni
-  aux succès ; l'étape 4, **commentée**, va plus loin et remet à zéro les points
-  joueurs (`{quizPoints}` de `player_progress`, succès du groupe « quiz »,
-  compteurs et ensembles associés, `xp`/`level`), en conservant les succès des
-  autres groupes. Cette remise à zéro était auparavant exécutée
-  **automatiquement** par le schéma : elle en a été retirée (recoller le schéma
-  à chaque évolution ne doit jamais effacer les données des joueurs). Le record
-  gardé sur l'appareil (`localStorage`) est indépendant du serveur.
+- **Remise à zéro de tous les quizz pour tous les joueurs** —
+  `supabase/reset-quiz-ranking.sql`, à coller dans le SQL Editor du Dashboard.
+  Le script est explicitement destructif : il vide `public.quiz_attempts` et
+  `public.quiz_progress`, puis efface dans `player_progress` les points,
+  compteurs, ensembles, succès et défis du groupe « quiz ». Les comptes,
+  profils et progression non liée aux quizz sont conservés ; l'XP et le niveau
+  restants sont recalculés. Les copies locales sont également invalidées par
+  les clés v2/v3 et `quizResetVersion`, afin qu'un ancien navigateur ne
+  reverrouille pas les quizz après le reset. Recoller `schema.sql` n'exécute
+  jamais cette opération : lance le fichier de maintenance séparément.
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
   multiplicateurs ×1/×1,5/×2 par niveau, points bornés (200/300/400 par
   question) qui font le classement, série, minuteur à 15 s,

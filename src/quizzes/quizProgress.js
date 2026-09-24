@@ -10,8 +10,10 @@
  * Ce module ne contient que des fonctions pures, plus la lecture/écriture de
  * la copie locale (`localStorage`) et la copie serveur d'un compte connecté :
  *
- *   - local (`letsplay_quiz_levels_v1`) : la référence hors-ligne, comme le
- *     record de l'appareil (`./quizApi`) ou la progression des succès ;
+ *   - local (`letsplay_quiz_levels_v2`) : la référence hors-ligne, comme le
+ *     record de l'appareil (`./quizApi`) ou la progression des succès. Le
+ *     suffixe v2 invalide la progression stockée avant la remise à zéro
+ *     globale ;
  *   - serveur (`public.quiz_progress`, une ligne par compte et par niveau
  *     terminé) : la progression suit le compte, et se FUSIONNE avec la copie
  *     locale (union des niveaux terminés) au chargement. Table absente
@@ -25,7 +27,8 @@ import { QUIZ_LEVELS } from '../quizzesData.js';
 import { supabase } from '../lib/supabase.js';
 
 /** Clé du stockage local : niveaux terminés, par quizz. */
-export const LEVELS_KEY = 'letsplay_quiz_levels_v1';
+export const LEVELS_KEY = 'letsplay_quiz_levels_v2';
+const LEGACY_LEVELS_KEYS = ['letsplay_quiz_levels_v1'];
 
 /** Table Supabase qui porte la progression de niveaux d'un compte. */
 export const QUIZ_PROGRESS_TABLE = 'quiz_progress';
@@ -96,6 +99,12 @@ export function isQuizFinished(progress, quizId) {
 export function readLocalProgress() {
   try {
     if (typeof window === 'undefined') return {};
+    // The old key contains completions from before the global reset. Never
+    // merge it back into the new progression: doing so would immediately
+    // re-lock every quiz for a returning visitor.
+    for (const legacy of LEGACY_LEVELS_KEYS) {
+      try { window.localStorage.removeItem(legacy); } catch (e) {}
+    }
     const raw = JSON.parse(window.localStorage.getItem(LEVELS_KEY) || '{}');
     return raw && typeof raw === 'object' ? raw : {};
   } catch (e) {

@@ -1019,9 +1019,11 @@ end $$;
 -- ni poser un score hors bornes (0 ≤ score ≤ total et
 -- 100 × mult × score ≤ points ≤ 200 × mult × total vérifiés côté serveur,
 -- le multiplicateur étant déduit du suffixe `:difficulté` de `quiz_id`).
--- Remise à zéro du classement global (opération de maintenance ponctuelle) :
--- `supabase/reset-quiz-ranking.sql` vide cette table et rien d'autre — à ne
--- pas confondre avec ce fichier, qui ne fait qu'installer le schéma.
+-- Remise à zéro globale des quizz (opération de maintenance ponctuelle) :
+-- `supabase/reset-quiz-ranking.sql` vide les scores, les paliers et les
+-- compteurs/succès liés aux quizz pour tous les comptes. À ne pas confondre
+-- avec ce fichier, qui ne fait qu'installer le schéma : le reset ne doit pas
+-- être déclenché en recollant le schéma.
 
 create table if not exists public.quiz_attempts (
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -1180,7 +1182,7 @@ $$;
 -- appliquée côté client (`src/quizzes/quizProgress.js`) et cette table la fait
 -- VOYAGER AVEC LE COMPTE : un joueur connecté retrouve ses paliers sur
 -- n'importe quel appareil ; hors-ligne (ou schéma non relancé), la copie
--- locale (`localStorage`, clé `letsplay_quiz_levels_v1`) prend le relais.
+-- locale (`localStorage`, clé `letsplay_quiz_levels_v2`) prend le relais.
 -- RLS : chaque joueur ne lit et n'écrit que ses propres lignes.
 create table if not exists public.quiz_progress (
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -1217,9 +1219,9 @@ grant execute on function public.get_quiz_leaderboard(text, integer) to anon, au
 grant execute on function public.get_quiz_global_rank(uuid) to anon, authenticated;
 grant execute on function public.submit_quiz_attempt(text, integer, integer, boolean, integer) to authenticated;
 
--- Remise à zéro ponctuelle des quizz (classements, compteurs, points
--- joueurs) : elle ne vit PLUS dans ce fichier. Recoller le schéma ne doit
--- jamais effacer les données des joueurs — l'opération est dans
+-- Remise à zéro ponctuelle des quizz (classements, paliers, compteurs et
+-- points joueurs) : elle ne vit PLUS dans ce fichier. Recoller le schéma ne
+-- doit jamais effacer les données des joueurs — l'opération complète est dans
 -- `supabase/reset-quiz-ranking.sql`, à exécuter explicitement.
 
 notify pgrst, 'reload schema';

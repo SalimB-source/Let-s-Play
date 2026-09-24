@@ -22,6 +22,22 @@ import { bestDayRun } from '../quizzes/engine.js';
 
 export const STATE_VERSION = 2;
 
+// Invalidation indépendante de la version globale : la remise à zéro des
+// quizz doit supprimer les anciennes parties sur les copies locales et dans
+// le cache d'un compte, sans effacer les succès de lecture, vidéo ou communauté.
+// Incrémenter cette constante pour une nouvelle remise à zéro globale.
+export const QUIZ_RESET_VERSION = 1;
+
+const QUIZ_RESET_UNLOCKED = [
+  'first-quiz',
+  'perfect-score',
+  'quiz-tour',
+  'quiz-week',
+  'first-challenge',
+];
+const QUIZ_RESET_COUNTERS = ['quizzes_completed', 'challenges_sent'];
+const QUIZ_RESET_SETS = ['quizzes_played', 'perfect_quizzes', 'quiz_days'];
+
 /* ------------------------------------------------------------------ */
 /* Dates : la journée est celle du visiteur (fuseau local)             */
 /* ------------------------------------------------------------------ */
@@ -58,6 +74,10 @@ export function createState(now = new Date()) {
   const stamp = now instanceof Date ? now.toISOString() : String(now);
   return {
     version: STATE_VERSION,
+    // Version de la remise à zéro des quizz appliquée à cet état. Elle est
+    // persistée pour que les anciennes copies soient invalidées exactement
+    // une fois, tout en conservant les autres familles de succès.
+    quizResetVersion: QUIZ_RESET_VERSION,
     createdAt: stamp,
     updatedAt: stamp,
     // Compteurs cumulés (chaque action compte).
@@ -110,8 +130,20 @@ export function normalizeState(raw, now = new Date()) {
     if (typeof key === 'string' && key && Number.isFinite(value)) quizPoints[key] = Math.max(0, Math.round(value));
   }
 
+  // The global reset is deliberately narrower than STATE_VERSION: keep every
+  // non-quiz achievement, counter, day and visit while making every quiz
+  // look new again on this device and on the next account sync.
+  const storedQuizResetVersion = Number(raw.quizResetVersion) || 0;
+  if (storedQuizResetVersion < QUIZ_RESET_VERSION) {
+    for (const key of QUIZ_RESET_COUNTERS) delete counters[key];
+    for (const key of QUIZ_RESET_SETS) delete sets[key];
+    for (const id of QUIZ_RESET_UNLOCKED) delete unlocked[id];
+    for (const key of Object.keys(quizPoints)) delete quizPoints[key];
+  }
+
   return {
     version: STATE_VERSION,
+    quizResetVersion: QUIZ_RESET_VERSION,
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : base.createdAt,
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : base.updatedAt,
     counters,
@@ -553,6 +585,7 @@ export function mergeStates(a, b) {
 
   return normalizeState({
     version: STATE_VERSION,
+    quizResetVersion: QUIZ_RESET_VERSION,
     createdAt: left.createdAt < right.createdAt ? left.createdAt : right.createdAt,
     updatedAt: left.updatedAt > right.updatedAt ? left.updatedAt : right.updatedAt,
     counters,
