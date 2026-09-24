@@ -48,6 +48,9 @@ export const ROUTES = [
   ['/auth', Auth],
   ['/quizz', QuizzesPage],
   ['/quizz/culture-gaming', QuizPage, '/quizz/:slug'],
+  ['/quizz/films-cultes', QuizPage, '/quizz/:slug'],
+  ['/quizz/super-heros-cinema', QuizPage, '/quizz/:slug'],
+  ['/quizz/series-cultes', QuizPage, '/quizz/:slug'],
   ['/unknown-page', NotFound],
 ];
 

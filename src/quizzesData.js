@@ -1,5 +1,5 @@
 /**
- * Quizz gaming de la rédaction Let's Play.
+ * Quizz gaming, cinéma et pop culture de la rédaction Let's Play.
  * ----------------------------------------
  * Chaque quizz est une donnée : la page `/quizz` (grille + quizz du jour) et
  * `/quizz/:slug` (partie + corrections) ne font que les rendre. Le contenu
@@ -33,7 +33,7 @@ export const baseUrl = base;
 
 /**
  * Miniature d'un quizz : `public/quizzes/<slug>.jpg`.
- * Une seule fabrique pour les douze illustrations — la vérification
+ * Une seule fabrique pour toutes les illustrations — la vérification
  * `npm run check:thumbs` s'assure qu'aucun chemin n'est codé en dur ailleurs.
  */
 export function quizThumbUrl(slug) {
@@ -46,7 +46,7 @@ export function quizLabel(labels, lang = 'fr') {
   return labels[lang] || labels.en || labels.fr || '';
 }
 
-export const QUIZ_TAGS = ['Culture', 'Rétro', 'Souls-like', 'RPG', 'E-sport', 'Studios', 'Tech', 'Cinéma', 'Consoles', 'PC', 'FPS', 'Horreur', 'Combat', 'Course', 'Indé', 'Nintendo', 'Open World', 'SF'];
+export const QUIZ_TAGS = ['Culture', 'Rétro', 'Souls-like', 'RPG', 'E-sport', 'Studios', 'Tech', 'Cinéma', 'Séries', 'Consoles', 'PC', 'FPS', 'Horreur', 'Combat', 'Course', 'Indé', 'Nintendo', 'Open World', 'SF'];
 
 /**
  * Les trois niveaux d'un quizz, dans l'ordre de progression : Facile est
@@ -409,6 +409,135 @@ export const quizzes = [
         { id: 'cph6', q: { fr: 'Quel film d’animation de 1988 suit des motards dans le Neo-Tokyo post-apocalyptique ?' }, choices: [{ fr: 'Akira' }, { fr: 'Ghost in the Shell' }, { fr: 'Perfect Blue' }, { fr: 'Cowboy Bebop' }], answer: 0, why: { fr: 'Akira (Katsuhiro Otomo, 1988) impose l’animation japonaise en Occident.' } },
         { id: 'cph7', q: { fr: 'Quel jeu de Konami est adapté au cinéma en 2006, dans la ville brumeuse de Silent Hill ?' }, choices: [{ fr: 'Silent Hill' }, { fr: 'Resident Evil' }, { fr: 'Fatal Frame' }, { fr: 'Alone in the Dark' }], answer: 0, why: { fr: 'Silent Hill (2006) transpose la série horrifique de Konami et sa brume iconique.' } },
         { id: 'cph8', q: { fr: 'Quel comédien prête sa voix à Bowser dans le film Super Mario Bros. (2023) ?' }, choices: [{ fr: 'Jack Black' }, { fr: 'Chris Pratt' }, { fr: 'Seth Rogen' }, { fr: 'Keegan-Michael Key' }], answer: 0, why: { fr: 'Jack Black double Bowser en VO, face à Chris Pratt (Mario) et Seth Rogen (Donkey Kong).' } },
+      ],
+    },
+  },
+  {
+    slug: 'films-cultes',
+    route: '/quizz/films-cultes',
+    videoId: '0ThNyFItASM',
+    image: quizThumbUrl('films-cultes'),
+    tag: 'Cinéma',
+    keywords: 'quizz cinéma films cultes classiques titanic jurassic park matrix parasite miyazaki kurosawa',
+    labels: {
+      fr: { title: 'Films cultes : connais-tu tes classiques ?', text: 'Du Titanic à Parasite, de la DeLorean à Metropolis : traverse les grands classiques du cinéma en trois niveaux.' },
+    },
+    levels: {
+      easy: [
+        { id: 'fce1', q: { fr: 'Quel réalisateur a signé « Titanic » (1997) ?' }, choices: [{ fr: 'Steven Spielberg' }, { fr: 'James Cameron' }, { fr: 'Christopher Nolan' }, { fr: 'Ridley Scott' }], answer: 1, why: { fr: 'James Cameron réalise Titanic, porté par Leonardo DiCaprio et Kate Winslet.' } },
+        { id: 'fce2', q: { fr: 'Dans « Jurassic Park », quelles créatures s’échappent du parc ?' }, choices: [{ fr: 'Des dragons' }, { fr: 'Des requins' }, { fr: 'Des extraterrestres' }, { fr: 'Des dinosaures' }], answer: 3, why: { fr: 'Le parc imaginé par Michael Crichton ramène les dinosaures à la vie ; Spielberg l’adapte en 1993.' } },
+        { id: 'fce3', q: { fr: 'Quel objet Frodon doit-il détruire dans « Le Seigneur des anneaux » ?' }, choices: [{ fr: 'L’Anneau unique' }, { fr: 'L’épée Andúril' }, { fr: 'Un Silmaril' }, { fr: 'Un palantír' }], answer: 0, why: { fr: 'Frodon porte l’Anneau unique jusqu’au Mordor pour le détruire dans les flammes du Mont du Destin.' } },
+        { id: 'fce4', q: { fr: 'Dans « Retour vers le futur », quelle voiture voyage dans le temps ?' }, choices: [{ fr: 'Une Ford Mustang' }, { fr: 'Une Coccinelle' }, { fr: 'Une DeLorean' }, { fr: 'Une Ferrari' }], answer: 2, why: { fr: 'Doc Brown transforme une DeLorean DMC-12 en machine à voyager dans le temps.' } },
+        { id: 'fce5', q: { fr: 'Dans les films « Harry Potter », comment s’appelle l’école de Harry ?' }, choices: [{ fr: 'Beauxbâtons' }, { fr: 'Poudlard' }, { fr: 'Durmstrang' }, { fr: 'Ilvermorny' }], answer: 1, why: { fr: 'Harry étudie la sorcellerie à Poudlard, Hogwarts en version originale.' } },
+        { id: 'fce6', q: { fr: 'Dans « Star Wars », quelle arme lumineuse utilisent les Jedi ?' }, choices: [{ fr: 'Un blaster' }, { fr: 'Une lance photonique' }, { fr: 'Un arc laser' }, { fr: 'Un sabre laser' }], answer: 3, why: { fr: 'Le sabre laser est l’arme emblématique des Jedi, des apprentis aux maîtres.' } },
+        { id: 'fce7', q: { fr: 'Comment s’appelle le lionceau héros du « Roi lion » ?' }, choices: [{ fr: 'Simba' }, { fr: 'Mufasa' }, { fr: 'Scar' }, { fr: 'Zazu' }], answer: 0, why: { fr: 'Simba est le fils de Mufasa et le futur roi de la Terre des Lions.' } },
+        { id: 'fce8', q: { fr: 'Dans « Matrix » (1999), quelle pilule Neo choisit-il pour connaître la vérité ?' }, choices: [{ fr: 'La verte' }, { fr: 'La bleue' }, { fr: 'La rouge' }, { fr: 'La jaune' }], answer: 2, why: { fr: 'Morpheus lui propose la pilule rouge pour découvrir la réalité cachée derrière la Matrice.' } },
+      ],
+      medium: [
+        { id: 'fcm1', q: { fr: 'De quel pays vient le film « Parasite » (2019) ?' }, choices: [{ fr: 'Japon' }, { fr: 'Corée du Sud' }, { fr: 'Chine' }, { fr: 'Thaïlande' }], answer: 1, why: { fr: 'Parasite, du cinéaste sud-coréen Bong Joon-ho, remporte l’Oscar du meilleur film en 2020.' } },
+        { id: 'fcm2', q: { fr: 'Qui a réalisé « Pulp Fiction » (1994) ?' }, choices: [{ fr: 'Martin Scorsese' }, { fr: 'Francis Ford Coppola' }, { fr: 'David Fincher' }, { fr: 'Quentin Tarantino' }], answer: 3, why: { fr: 'Quentin Tarantino signe ce film choral et sa narration non chronologique.' } },
+        { id: 'fcm3', q: { fr: 'Quel réalisateur a signé « Le Voyage de Chihiro » ?' }, choices: [{ fr: 'Hayao Miyazaki' }, { fr: 'Isao Takahata' }, { fr: 'Makoto Shinkai' }, { fr: 'Satoshi Kon' }], answer: 0, why: { fr: 'Hayao Miyazaki réalise ce film du studio Ghibli, sorti en 2001 au Japon.' } },
+        { id: 'fcm4', q: { fr: 'Quel instrument joue le jeune Andrew dans « Whiplash » (2014) ?' }, choices: [{ fr: 'Le piano' }, { fr: 'Le violon' }, { fr: 'La batterie' }, { fr: 'La trompette' }], answer: 2, why: { fr: 'Andrew Neiman est batteur de jazz, poussé à bout par son professeur Fletcher.' } },
+        { id: 'fcm5', q: { fr: 'Quel film de 2009 se déroule sur Pandora, planète des Na’vi ?' }, choices: [{ fr: 'Avatar' }, { fr: 'Dune' }, { fr: 'Interstellar' }, { fr: 'Star Trek' }], answer: 0, why: { fr: 'Dans Avatar, James Cameron imagine Pandora et ses habitants, les Na’vi.' } },
+        { id: 'fcm6', q: { fr: 'Dans « Inception », où Cobb et son équipe entrent-ils pour implanter une idée ?' }, choices: [{ fr: 'Dans les livres' }, { fr: 'Dans les rêves' }, { fr: 'Dans les jeux vidéo' }, { fr: 'Dans les archives' }], answer: 1, why: { fr: 'Leur mission consiste à s’introduire dans les rêves d’une cible pour y déposer une idée.' } },
+        { id: 'fcm7', q: { fr: 'Quel film de 1982 suit Rick Deckard, chasseur de réplicants ?' }, choices: [{ fr: 'Minority Report' }, { fr: 'RoboCop' }, { fr: 'Total Recall' }, { fr: 'Blade Runner' }], answer: 3, why: { fr: 'Harrison Ford interprète Deckard dans Blade Runner, réalisé par Ridley Scott.' } },
+        { id: 'fcm8', q: { fr: 'Dans « Les Dents de la mer », quelle île fictive est menacée ?' }, choices: [{ fr: 'Amity Island' }, { fr: 'Skull Island' }, { fr: 'Isla Nublar' }, { fr: 'Shutter Island' }], answer: 0, why: { fr: 'Le requin blanc attaque les baigneurs d’Amity Island, station balnéaire du film de Spielberg.' } },
+      ],
+      hard: [
+        { id: 'fch1', q: { fr: 'Quel film muet de Fritz Lang (1927) imagine une cité futuriste ?' }, choices: [{ fr: 'Nosferatu' }, { fr: 'Metropolis' }, { fr: 'Le Cabinet du docteur Caligari' }, { fr: 'M le maudit' }], answer: 1, why: { fr: 'Metropolis confronte ouvriers souterrains et élites dans une immense ville futuriste.' } },
+        { id: 'fch2', q: { fr: 'Qui a composé la musique du film « Interstellar » (2014) ?' }, choices: [{ fr: 'John Williams' }, { fr: 'Clint Mansell' }, { fr: 'Ludwig Göransson' }, { fr: 'Hans Zimmer' }], answer: 3, why: { fr: 'Hans Zimmer compose la partition d’Interstellar, notamment ses thèmes à l’orgue.' } },
+        { id: 'fch3', q: { fr: 'Qui a réalisé « Oldboy » (2003), thriller sud-coréen ?' }, choices: [{ fr: 'Bong Joon-ho' }, { fr: 'Kim Jee-woon' }, { fr: 'Park Chan-wook' }, { fr: 'Na Hong-jin' }], answer: 2, why: { fr: 'Park Chan-wook signe Oldboy, deuxième volet de sa trilogie de la vengeance.' } },
+        { id: 'fch4', q: { fr: 'Quel film d’Akira Kurosawa a inspiré « Les Sept Mercenaires » (1960) ?' }, choices: [{ fr: 'Les Sept Samouraïs' }, { fr: 'Rashōmon' }, { fr: 'Yojimbo' }, { fr: 'Ran' }], answer: 0, why: { fr: 'Les Sept Mercenaires transpose le récit des Sept Samouraïs dans un western.' } },
+        { id: 'fch5', q: { fr: 'Quel ordinateur de bord dialogue avec l’équipage dans « 2001 : l’Odyssée de l’espace » ?' }, choices: [{ fr: 'Skynet' }, { fr: 'GERTY' }, { fr: 'VIKI' }, { fr: 'HAL 9000' }], answer: 3, why: { fr: 'HAL 9000 contrôle le vaisseau Discovery One dans le film de Stanley Kubrick.' } },
+        { id: 'fch6', q: { fr: 'Quel film a reçu le tout premier Oscar du meilleur film d’animation (cérémonie 2002) ?' }, choices: [{ fr: 'Monstres & Cie' }, { fr: 'Shrek' }, { fr: 'Toy Story' }, { fr: 'Le Voyage de Chihiro' }], answer: 1, why: { fr: 'Shrek remporte la première édition de cette catégorie, pour les films sortis en 2001.' } },
+        { id: 'fch7', q: { fr: 'Dans « Memento », de quoi souffre Leonard Shelby ?' }, choices: [{ fr: 'D’amnésie antérograde' }, { fr: 'De cécité nocturne' }, { fr: 'De surdité' }, { fr: 'De prosopagnosie' }], answer: 0, why: { fr: 'Leonard ne peut plus former de nouveaux souvenirs durables et laisse des indices pour lui-même.' } },
+        { id: 'fch8', q: { fr: 'Quel film de George A. Romero (1968) a popularisé le zombie au cinéma ?' }, choices: [{ fr: 'Dawn of the Dead' }, { fr: '28 Jours plus tard' }, { fr: 'La Nuit des morts-vivants' }, { fr: 'Le Jour des morts-vivants' }], answer: 2, why: { fr: 'La Nuit des morts-vivants pose les bases du zombie moderne dans le film d’horreur.' } },
+      ],
+    },
+  },
+  {
+    slug: 'super-heros-cinema',
+    route: '/quizz/super-heros-cinema',
+    videoId: 'HzigJZOxz2o',
+    image: quizThumbUrl('super-heros-cinema'),
+    tag: 'Cinéma',
+    keywords: 'quizz cinéma pop culture super héros marvel dc avengers batman superman iron man wonder woman',
+    labels: {
+      fr: { title: 'Super-héros au cinéma : Marvel & DC', text: 'De Gotham au Wakanda : retrouve tes héros, leurs films et les secrets des univers Marvel et DC en trois niveaux.' },
+    },
+    levels: {
+      easy: [
+        { id: 'she1', q: { fr: 'Quel héros porte un bouclier étoilé ?' }, choices: [{ fr: 'Iron Man' }, { fr: 'Captain America' }, { fr: 'Batman' }, { fr: 'Thor' }], answer: 1, why: { fr: 'Le bouclier aux couleurs des États-Unis est l’emblème de Steve Rogers, alias Captain America.' } },
+        { id: 'she2', q: { fr: 'Quelle ville Batman protège-t-il ?' }, choices: [{ fr: 'Metropolis' }, { fr: 'Star City' }, { fr: 'Central City' }, { fr: 'Gotham City' }], answer: 3, why: { fr: 'Batman veille sur Gotham City, théâtre de ses affrontements avec le Joker.' } },
+        { id: 'she3', q: { fr: 'Quel dieu nordique du MCU brandit le marteau Mjolnir ?' }, choices: [{ fr: 'Loki' }, { fr: 'Odin' }, { fr: 'Thor' }, { fr: 'Heimdall' }], answer: 2, why: { fr: 'Thor, fils d’Odin et dieu du tonnerre, combat avec Mjolnir.' } },
+        { id: 'she4', q: { fr: 'Quelle héroïne de DC vient de l’île de Themyscira ?' }, choices: [{ fr: 'Wonder Woman' }, { fr: 'Supergirl' }, { fr: 'Catwoman' }, { fr: 'Batgirl' }], answer: 0, why: { fr: 'Diana de Themyscira est l’Amazone connue sous le nom de Wonder Woman.' } },
+        { id: 'she5', q: { fr: 'Quel scientifique se transforme en Hulk ?' }, choices: [{ fr: 'Tony Stark' }, { fr: 'Barry Allen' }, { fr: 'Bruce Banner' }, { fr: 'Stephen Strange' }], answer: 2, why: { fr: 'Après une exposition aux rayons gamma, Bruce Banner devient Hulk.' } },
+        { id: 'she6', q: { fr: 'Quel royaume fictif T’Challa dirige-t-il dans « Black Panther » ?' }, choices: [{ fr: 'Atlantis' }, { fr: 'Le Wakanda' }, { fr: 'Asgard' }, { fr: 'Latveria' }], answer: 1, why: { fr: 'T’Challa est le roi du Wakanda, nation protégée grâce à ses réserves de vibranium.' } },
+        { id: 'she7', q: { fr: 'Quel super-héros DC peut voler et porte un « S » sur la poitrine ?' }, choices: [{ fr: 'The Flash' }, { fr: 'Batman' }, { fr: 'Aquaman' }, { fr: 'Superman' }], answer: 3, why: { fr: 'Superman est l’Homme d’acier venu de Krypton ; son « S » est son emblème.' } },
+        { id: 'she8', q: { fr: 'Quel nom porte l’équipe d’Iron Man, Thor et Captain America au cinéma ?' }, choices: [{ fr: 'Les Avengers' }, { fr: 'La Justice League' }, { fr: 'Les X-Men' }, { fr: 'Les Gardiens de la Galaxie' }], answer: 0, why: { fr: 'Les Avengers se réunissent pour la première fois au cinéma dans le film de 2012.' } },
+      ],
+      medium: [
+        { id: 'shm1', q: { fr: 'Quel acteur incarne Tony Stark / Iron Man dans le MCU ?' }, choices: [{ fr: 'Chris Evans' }, { fr: 'Chris Hemsworth' }, { fr: 'Robert Downey Jr.' }, { fr: 'Mark Ruffalo' }], answer: 2, why: { fr: 'Robert Downey Jr. incarne Tony Stark dès Iron Man (2008).' } },
+        { id: 'shm2', q: { fr: 'Qui a réalisé « The Dark Knight » (2008) ?' }, choices: [{ fr: 'Christopher Nolan' }, { fr: 'Tim Burton' }, { fr: 'Matt Reeves' }, { fr: 'Zack Snyder' }], answer: 0, why: { fr: 'Christopher Nolan signe le deuxième volet de sa trilogie Batman.' } },
+        { id: 'shm3', q: { fr: 'Dans « Avengers: Infinity War », qui traque les Pierres d’infinité ?' }, choices: [{ fr: 'Ultron' }, { fr: 'Loki' }, { fr: 'Ronan' }, { fr: 'Thanos' }], answer: 3, why: { fr: 'Thanos cherche à réunir les six Pierres d’infinité dans son Gantelet.' } },
+        { id: 'shm4', q: { fr: 'De quel métal fictif est fait le bouclier de Captain America dans le MCU ?' }, choices: [{ fr: 'L’adamantium' }, { fr: 'Le vibranium' }, { fr: 'L’uru' }, { fr: 'La kryptonite' }], answer: 1, why: { fr: 'Dans les films du MCU, le bouclier de Steve Rogers est fabriqué en vibranium.' } },
+        { id: 'shm5', q: { fr: 'Quelle actrice incarne Wonder Woman dans les films DC depuis 2016 ?' }, choices: [{ fr: 'Gal Gadot' }, { fr: 'Brie Larson' }, { fr: 'Margot Robbie' }, { fr: 'Elizabeth Olsen' }], answer: 0, why: { fr: 'Gal Gadot apparaît en Diana Prince dans Batman v Superman (2016), puis dans son film solo.' } },
+        { id: 'shm6', q: { fr: 'Quelle est la planète natale de Superman ?' }, choices: [{ fr: 'Asgard' }, { fr: 'Tamaran' }, { fr: 'Krypton' }, { fr: 'Xandar' }], answer: 2, why: { fr: 'Kal-El vient de Krypton et grandit sur Terre sous le nom de Clark Kent.' } },
+        { id: 'shm7', q: { fr: 'Quel journaliste fusionne avec un symbiote dans « Venom » (2018) ?' }, choices: [{ fr: 'Peter Parker' }, { fr: 'Eddie Brock' }, { fr: 'Clark Kent' }, { fr: 'Matt Murdock' }], answer: 1, why: { fr: 'Eddie Brock, interprété par Tom Hardy, devient l’hôte du symbiote Venom.' } },
+        { id: 'shm8', q: { fr: 'Quel nom de super-héroïne porte Carol Danvers dans le MCU ?' }, choices: [{ fr: 'Black Widow' }, { fr: 'La Guêpe' }, { fr: 'Scarlet Witch' }, { fr: 'Captain Marvel' }], answer: 3, why: { fr: 'Carol Danvers devient Captain Marvel dans le film de 2019.' } },
+      ],
+      hard: [
+        { id: 'shh1', q: { fr: 'Quel dessinateur a co-créé Black Panther avec Stan Lee ?' }, choices: [{ fr: 'Steve Ditko' }, { fr: 'Jack Kirby' }, { fr: 'John Romita Sr.' }, { fr: 'Jim Steranko' }], answer: 1, why: { fr: 'Jack Kirby et Stan Lee créent T’Challa en 1966, bien avant son arrivée au cinéma.' } },
+        { id: 'shh2', q: { fr: 'Quel film de 1978 présente Christopher Reeve en Homme d’acier ?' }, choices: [{ fr: 'Superman II' }, { fr: 'Batman' }, { fr: 'Superman' }, { fr: 'Supergirl' }], answer: 2, why: { fr: 'Christopher Reeve enfile la cape dans Superman (1978), réalisé par Richard Donner.' } },
+        { id: 'shh3', q: { fr: 'Quel acteur interprète le Joker dans « The Dark Knight » (2008) ?' }, choices: [{ fr: 'Joaquin Phoenix' }, { fr: 'Jack Nicholson' }, { fr: 'Jared Leto' }, { fr: 'Heath Ledger' }], answer: 3, why: { fr: 'Heath Ledger reçoit un Oscar posthume pour sa prestation dans le film de Nolan.' } },
+        { id: 'shh4', q: { fr: 'Qui a réalisé « Logan » (2017) avec Hugh Jackman ?' }, choices: [{ fr: 'James Mangold' }, { fr: 'Ryan Coogler' }, { fr: 'Zack Snyder' }, { fr: 'James Gunn' }], answer: 0, why: { fr: 'James Mangold réalise ce western crépusculaire autour de Wolverine.' } },
+        { id: 'shh5', q: { fr: 'Quel film sorti en 2008 a lancé le Marvel Cinematic Universe ?' }, choices: [{ fr: 'L’Incroyable Hulk' }, { fr: 'Thor' }, { fr: 'Iron Man' }, { fr: 'Captain America: First Avenger' }], answer: 2, why: { fr: 'Iron Man, premier film du MCU, sort au printemps 2008 avant L’Incroyable Hulk.' } },
+        { id: 'shh6', q: { fr: 'Quelle dimension subatomique est explorée dans les films « Ant-Man » ?' }, choices: [{ fr: 'La Zone négative' }, { fr: 'Le Royaume quantique' }, { fr: 'Le Plan astral' }, { fr: 'Le Monde miroir' }], answer: 1, why: { fr: 'Le Royaume quantique, ou Quantum Realm, devient crucial pour les voyages dans le temps du MCU.' } },
+        { id: 'shh7', q: { fr: 'Quel film d’animation de 2018 met Miles Morales en scène au cinéma ?' }, choices: [{ fr: 'Spider-Man: Homecoming' }, { fr: 'Spider-Man: Across the Spider-Verse' }, { fr: 'Spider-Man: No Way Home' }, { fr: 'Spider-Man: New Generation' }], answer: 3, why: { fr: 'Spider-Man: New Generation (Into the Spider-Verse) fait de Miles le héros de son propre film.' } },
+        { id: 'shh8', q: { fr: 'Quel réalisateur a signé « Batman » (1989) avec Michael Keaton ?' }, choices: [{ fr: 'Matt Reeves' }, { fr: 'Tim Burton' }, { fr: 'Christopher Nolan' }, { fr: 'Joel Schumacher' }], answer: 1, why: { fr: 'Tim Burton donne à Gotham son esthétique gothique dans Batman (1989).' } },
+      ],
+    },
+  },
+  {
+    slug: 'series-cultes',
+    route: '/quizz/series-cultes',
+    videoId: 'HzigJZOxz2o',
+    image: quizThumbUrl('series-cultes'),
+    tag: 'Séries',
+    keywords: 'quizz séries pop culture television tv streaming netflix hbo stranger things game of thrones breaking bad black mirror',
+    labels: {
+      fr: { title: 'Séries cultes & pop culture', text: 'De Hawkins à Westeros, de Friends à Black Mirror : trois niveaux pour tester ta culture des séries.' },
+    },
+    levels: {
+      easy: [
+        { id: 'sce1', q: { fr: 'Dans « Stranger Things », comment s’appelle la fille aux pouvoirs télékinésiques ?' }, choices: [{ fr: 'Max' }, { fr: 'Onze' }, { fr: 'Robin' }, { fr: 'Nancy' }], answer: 1, why: { fr: 'Onze, Eleven en VO, s’enfuit du laboratoire de Hawkins.' } },
+        { id: 'sce2', q: { fr: 'Dans quelle ville vivent les six amis de « Friends » ?' }, choices: [{ fr: 'Chicago' }, { fr: 'Los Angeles' }, { fr: 'Boston' }, { fr: 'New York' }], answer: 3, why: { fr: 'Friends suit le quotidien des six amis à New York, autour du Central Perk.' } },
+        { id: 'sce3', q: { fr: 'Quelle série suit Walter White, professeur de chimie devenu criminel ?' }, choices: [{ fr: 'Breaking Bad' }, { fr: 'Ozark' }, { fr: 'Narcos' }, { fr: 'Better Call Saul' }], answer: 0, why: { fr: 'Walter White passe de professeur de chimie à fabricant de méthamphétamine dans Breaking Bad.' } },
+        { id: 'sce4', q: { fr: 'Dans « Game of Thrones », quelle famille dit « Winter is Coming » ?' }, choices: [{ fr: 'Les Lannister' }, { fr: 'Les Targaryen' }, { fr: 'Les Stark' }, { fr: 'Les Baratheon' }], answer: 2, why: { fr: '« L’hiver vient » est la devise de la maison Stark de Winterfell.' } },
+        { id: 'sce5', q: { fr: 'Quelle série coréenne met en scène des jeux mortels en survêtements numérotés ?' }, choices: [{ fr: 'Alice in Borderland' }, { fr: 'Squid Game' }, { fr: 'Kingdom' }, { fr: 'The 8 Show' }], answer: 1, why: { fr: 'Squid Game oppose des joueurs endettés dans des épreuves inspirées de jeux d’enfants.' } },
+        { id: 'sce6', q: { fr: 'Dans quel univers se déroule « The Mandalorian » ?' }, choices: [{ fr: 'Marvel' }, { fr: 'Dune' }, { fr: 'Star Wars' }, { fr: 'Star Trek' }], answer: 2, why: { fr: 'The Mandalorian se déroule dans la galaxie Star Wars, après la chute de l’Empire.' } },
+        { id: 'sce7', q: { fr: 'À quelle famille appartient Mercredi dans la série éponyme ?' }, choices: [{ fr: 'La famille Addams' }, { fr: 'La famille Munster' }, { fr: 'La famille Simpson' }, { fr: 'La famille Shelby' }], answer: 0, why: { fr: 'Mercredi Addams quitte sa famille pour étudier à l’académie Nevermore.' } },
+        { id: 'sce8', q: { fr: 'Dans « Les Simpson », comment s’appelle le père de Bart et Lisa ?' }, choices: [{ fr: 'Ned' }, { fr: 'Moe' }, { fr: 'Homer' }, { fr: 'Abe' }], answer: 2, why: { fr: 'Homer Simpson est le père de Bart, Lisa et Maggie.' } },
+      ],
+      medium: [
+        { id: 'scm1', q: { fr: 'Comment s’appelle la dimension parallèle de « Stranger Things » ?' }, choices: [{ fr: 'La Zone fantôme' }, { fr: 'Le Monde à l’envers' }, { fr: 'Le Vide' }, { fr: 'Le Multivers' }], answer: 1, why: { fr: 'Le Monde à l’envers, ou Upside Down, est le reflet hostile de Hawkins.' } },
+        { id: 'scm2', q: { fr: 'Quel métier exerce Saul Goodman dans « Breaking Bad » et « Better Call Saul » ?' }, choices: [{ fr: 'Policier' }, { fr: 'Journaliste' }, { fr: 'Médecin' }, { fr: 'Avocat' }], answer: 3, why: { fr: 'Saul Goodman est l’avocat aux méthodes douteuses de Walter White et Jesse Pinkman.' } },
+        { id: 'scm3', q: { fr: 'Qui joue Tommy Shelby, chef des « Peaky Blinders » ?' }, choices: [{ fr: 'Tom Hardy' }, { fr: 'Cillian Murphy' }, { fr: 'Paul Anderson' }, { fr: 'Tom Hiddleston' }], answer: 1, why: { fr: 'Cillian Murphy incarne Thomas Shelby, chef de la famille de Birmingham.' } },
+        { id: 'scm4', q: { fr: 'Dans « The Mandalorian », quel est le vrai nom de « Baby Yoda » ?' }, choices: [{ fr: 'Grogu' }, { fr: 'Yaddle' }, { fr: 'Yoda' }, { fr: 'Ezra' }], answer: 0, why: { fr: 'L’Enfant, surnommé « Baby Yoda » par les fans, s’appelle Grogu.' } },
+        { id: 'scm5', q: { fr: 'Quelle préquelle de « Game of Thrones » suit la maison Targaryen ?' }, choices: [{ fr: 'The Witcher' }, { fr: 'Vikings' }, { fr: 'House of the Dragon' }, { fr: 'The Rings of Power' }], answer: 2, why: { fr: 'House of the Dragon raconte la guerre de succession des Targaryen avant Game of Thrones.' } },
+        { id: 'scm6', q: { fr: 'Comment s’appelle l’entreprise de papier de « The Office » (version US) ?' }, choices: [{ fr: 'Dunder Mifflin' }, { fr: 'Vought International' }, { fr: 'Waystar Royco' }, { fr: 'Sterling Cooper' }], answer: 0, why: { fr: 'Michael Scott dirige la succursale de Scranton de Dunder Mifflin.' } },
+        { id: 'scm7', q: { fr: 'Dans quelle ville fictive allemande se déroule « Dark » ?' }, choices: [{ fr: 'Winden' }, { fr: 'Hawkins' }, { fr: 'Westview' }, { fr: 'Riverdale' }], answer: 0, why: { fr: 'Les disparitions et les voyages temporels de Dark convergent autour de Winden.' } },
+        { id: 'scm8', q: { fr: 'Quel épisode de « Black Mirror » met en scène une vie notée par les autres ?' }, choices: [{ fr: 'Bandersnatch' }, { fr: 'San Junipero' }, { fr: 'Chute libre (Nosedive)' }, { fr: 'White Bear' }], answer: 2, why: { fr: 'Dans « Chute libre » (Nosedive), chaque interaction sociale vaut une note.' } },
+      ],
+      hard: [
+        { id: 'sch1', q: { fr: 'Quel créateur signe la série « Breaking Bad » (2008) ?' }, choices: [{ fr: 'David Simon' }, { fr: 'Vince Gilligan' }, { fr: 'David Chase' }, { fr: 'Matthew Weiner' }], answer: 1, why: { fr: 'Vince Gilligan crée Breaking Bad avant de co-créer Better Call Saul avec Peter Gould.' } },
+        { id: 'sch2', q: { fr: 'Quel morceau de Kate Bush aide Max dans la saison 4 de « Stranger Things » ?' }, choices: [{ fr: 'Wuthering Heights' }, { fr: 'Babooshka' }, { fr: 'Cloudbusting' }, { fr: 'Running Up That Hill' }], answer: 3, why: { fr: '« Running Up That Hill » permet à Max de résister à Vecna et revient dans les classements en 2022.' } },
+        { id: 'sch3', q: { fr: 'Quel est le titre anglais du tout premier épisode de « Game of Thrones » ?' }, choices: [{ fr: 'Winter Is Coming' }, { fr: 'The Kingsroad' }, { fr: 'Lord Snow' }, { fr: 'The Pointy End' }], answer: 0, why: { fr: '« Winter Is Coming » ouvre la série en 2011, comme la devise des Stark.' } },
+        { id: 'sch4', q: { fr: 'Qui a co-créé « Twin Peaks » avec Mark Frost ?' }, choices: [{ fr: 'David Fincher' }, { fr: 'Alan Ball' }, { fr: 'David Lynch' }, { fr: 'J. J. Abrams' }], answer: 2, why: { fr: 'David Lynch et Mark Frost imaginent ensemble l’enquête de l’agent Dale Cooper.' } },
+        { id: 'sch5', q: { fr: 'Quel épisode interactif de « Black Mirror » (2018) laisse choisir l’intrigue ?' }, choices: [{ fr: 'White Christmas' }, { fr: 'Bandersnatch' }, { fr: 'Nosedive' }, { fr: 'San Junipero' }], answer: 1, why: { fr: 'Dans Bandersnatch, le spectateur décide des actions du jeune programmeur Stefan.' } },
+        { id: 'sch6', q: { fr: 'Quel est le numéro du vol Oceanic écrasé sur l’île dans « Lost » ?' }, choices: [{ fr: '108' }, { fr: '316' }, { fr: '815' }, { fr: '828' }], answer: 2, why: { fr: 'Le vol Oceanic 815 s’écrase sur l’île dans l’épisode pilote de Lost.' } },
+        { id: 'sch7', q: { fr: 'Qui a composé le thème musical de « Succession » ?' }, choices: [{ fr: 'Ramin Djawadi' }, { fr: 'Ludwig Göransson' }, { fr: 'Hans Zimmer' }, { fr: 'Nicholas Britell' }], answer: 3, why: { fr: 'Nicholas Britell signe le générique de Succession, entre piano classique et beat hip-hop.' } },
+        { id: 'sch8', q: { fr: 'Quel créateur est à l’origine de « Les Soprano » ?' }, choices: [{ fr: 'David Chase' }, { fr: 'David Simon' }, { fr: 'Terence Winter' }, { fr: 'Matthew Weiner' }], answer: 0, why: { fr: 'David Chase crée la série autour de Tony Soprano, diffusée à partir de 1999.' } },
       ],
     },
   },

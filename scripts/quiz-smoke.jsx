@@ -5,7 +5,7 @@
  *
  *   1. le moteur des quizz (mélange déterministe du quizz du jour, barème,
  *      série de jours, barème « fun » des points MULTIPLIÉ par le niveau)
- *      se comporte comme annoncé, les douze quizz portent chacun leurs TROIS
+ *      se comporte comme annoncé, les quizz portent chacun leurs TROIS
  *      banques de questions (une par niveau), et le pool Survival mêle les
  *      questions sans doublon à l'intérieur d'un cycle ;
  *   2. une partie complète est réellement jouée dans le navigateur simulé
@@ -33,6 +33,7 @@ import { FriendsProvider } from '../src/friends/FriendsContext';
 import { MessagesProvider } from '../src/messages/MessagesContext';
 import { readDemoMessages } from '../src/messages/messagesApi';
 import { translations } from '../src/i18n/translations';
+import { searchContent } from '../src/search/searchIndex';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import QuizLeaderboard from '../src/quizzes/QuizLeaderboard';
@@ -131,6 +132,28 @@ export async function checkQuiz(assert) {
   assert.equal(dailyQuizFor(date, quizzes).slug, today.slug);
   const tomorrow = new Date(2026, 8, 24, 12);
   assert.notEqual(dailyQuizFor(tomorrow, quizzes).slug, today.slug);
+
+  // Les trois nouveaux thèmes cinéma/pop culture s'ajoutent au catalogue sans
+  // réutiliser les questions du quizz historique sur les adaptations gaming.
+  const newSlugs = ['films-cultes', 'super-heros-cinema', 'series-cultes'];
+  assert.equal(quizzes.length, 25, '22 quizz existants + 3 nouveaux thèmes cinéma/pop culture');
+  assert.equal(new Set(quizzes.map((quiz) => quiz.slug)).size, quizzes.length, 'slugs uniques');
+  assert.equal(new Set(quizzes.map((quiz) => quiz.route)).size, quizzes.length, 'routes uniques');
+  for (const slug of newSlugs) {
+    const quiz = quizBySlug(slug);
+    assert.ok(quiz, `${slug} : présent dans le catalogue`);
+    assert.equal(quiz.route, `/quizz/${slug}`, `${slug} : page jouable`);
+    assert.ok(searchContent(slug.replaceAll('-', ' ')).some((item) => item.type === 'quiz' && item.slug === slug), `${slug} : présent dans la recherche`);
+    for (const level of QUIZ_LEVELS) {
+      for (const question of quizLevelQuestions(quiz, level)) {
+        assert.ok(question.q.fr && question.why.fr, `${slug} [${level}] : question et explication en français`);
+        assert.equal(question.choices.length, 4, `${slug} [${level}] : quatre propositions`);
+        assert.ok(question.choices.every((choice) => choice.fr), `${slug} [${level}] : propositions en français`);
+        assert.equal(new Set(question.choices.map((choice) => choice.fr)).size, 4, `${slug} [${level}] : propositions distinctes`);
+        assert.ok(Number.isInteger(question.answer) && question.answer >= 0 && question.answer < 4, `${slug} [${level}] : réponse valide`);
+      }
+    }
+  }
 
   for (const quiz of quizzes) {
     // Trois niveaux de huit questions par quizz : les questions du niveau
@@ -672,11 +695,16 @@ export async function checkQuiz(assert) {
         </AuthProvider>
       </LanguageProvider>,
     ));
-    assert.equal(gridNode.querySelectorAll('.quiz-card').length, quizzes.length, `[${lang}] douze cartes de quizz`);
+    assert.equal(gridNode.querySelectorAll('.quiz-card').length, quizzes.length, `[${lang}] ${quizzes.length} cartes de quizz`);
     assert.ok(gridNode.querySelector('.quiz-daily'), `[${lang}] bannière quizz du jour`);
     assert.equal(gridNode.querySelector('#quiz-category-main-title')?.textContent, translations[lang].quiz.categoryMainTitle, `[${lang}] catégorie des quizz classiques traduite`);
     assert.equal(gridNode.querySelector('#quiz-category-survival-title')?.textContent, translations[lang].quiz.categorySurvivalTitle, `[${lang}] catégorie Survival traduite`);
-    assert.equal(gridNode.querySelectorAll('.quiz-category--main .quiz-card').length, quizzes.length, `[${lang}] la catégorie classique regroupe les douze cartes`);
+    assert.equal(gridNode.querySelectorAll('.quiz-category--main .quiz-card').length, quizzes.length, `[${lang}] la catégorie classique regroupe les ${quizzes.length} cartes`);
+    assert.ok(gridNode.querySelector('.quiz-category--main .quiz-category-heading p')?.textContent.includes(String(quizzes.length)), `[${lang}] le nombre de quizz dans le texte suit le catalogue`);
+    assert.ok(gridNode.querySelector('.quiz-category--survival .quiz-category-heading p')?.textContent.includes(String(expectedPoolSize)), `[${lang}] le texte Survival annonce le pool complet`);
+    for (const slug of newSlugs) {
+      assert.ok(gridNode.querySelector(`a.quiz-card[href="/quizz/${slug}"]`), `[${lang}] ${slug} : carte jouable dans la grille`);
+    }
     const survivalLink = gridNode.querySelector('.quiz-survival-card');
     assert.ok(survivalLink, `[${lang}] carte Survival affichée`);
     assert.equal(survivalLink.getAttribute('href'), '/quizz/survival', `[${lang}] carte Survival ouvre sa route dédiée`);
@@ -715,7 +743,7 @@ export async function checkQuiz(assert) {
     // la bannière du jour affiche celle du quizz mis en avant.
     const cardThumbs = [...gridNode.querySelectorAll('.quiz-card-media img')].map((img) => img.getAttribute('src'));
     assert.equal(cardThumbs.length, quizzes.length, `[${lang}] une miniature par carte`);
-    assert.equal(new Set(cardThumbs).size, quizzes.length, `[${lang}] douze miniatures distinctes`);
+    assert.equal(new Set(cardThumbs).size, quizzes.length, `[${lang}] ${quizzes.length} miniatures distinctes`);
     assert.deepEqual(
       [...cardThumbs].sort(),
       quizzes.map((entry) => entry.image).sort(),
