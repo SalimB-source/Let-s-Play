@@ -1829,15 +1829,88 @@
 }
 
 .nav-account.connected {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  color: var(--yellow) !important;
+  height: 36px;
+  padding: 3px 10px 3px 4px;
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid var(--line-strong);
+  color: #fff !important;
+  text-decoration: none;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: border-color .2s, background .2s, box-shadow .2s;
+}
+
+[dir="rtl"] .nav-account.connected {
+  padding: 3px 4px 3px 10px;
+}
+
+.nav-account.connected:hover {
+  background: rgba(34, 211, 238, .08);
+  border-color: var(--cyan);
+  box-shadow: 0 0 16px rgba(34, 211, 238, .22);
+}
+
+.nav-account.connected[aria-current="page"],
+.nav-account.connected.active {
+  border-color: var(--cyan);
+  box-shadow: 0 0 14px rgba(34, 211, 238, .28);
 }
 
 .nav-account-inner {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Avatar container */
+.nav-account-avatar {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--cyan);
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--purple), var(--panel-2));
+  box-shadow: 0 0 8px rgba(34, 211, 238, .25);
+  color: var(--yellow);
+  overflow: visible;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.nav-account.connected:hover .nav-account-avatar {
+  border-color: var(--yellow);
+  box-shadow: 0 0 12px rgba(255, 214, 25, .35);
+}
+
+.nav-account-avatar-face {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.nav-account-avatar-face img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 2px;
+}
+
+.nav-account-initials {
+  font: 800 11px/1 var(--display);
+  letter-spacing: 0;
+  color: var(--yellow);
+  line-height: 1;
 }
 
 .nav-online-dot {
@@ -1850,11 +1923,90 @@
   flex-shrink: 0;
 }
 
+.nav-account-avatar .nav-online-dot {
+  position: absolute;
+  inset-inline-end: -2px;
+  inset-block-end: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  border: 1.5px solid #05060f;
+  box-shadow: 0 0 6px #10b981;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
 .nav-account-name {
-  max-width: 120px;
+  max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font: 600 11px var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #fff;
+  transition: color .2s;
+}
+
+.nav-account.connected:hover .nav-account-name {
+  color: var(--yellow);
+}
+
+/* Level badge */
+.nav-account-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: rgba(255, 214, 25, .12);
+  border: 1px solid rgba(255, 214, 25, .4);
+  color: var(--yellow);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  letter-spacing: 0;
+  text-transform: uppercase;
+  flex: none;
+  line-height: 1;
+  transition: background .2s, border-color .2s, color .2s;
+}
+
+.nav-account-level small {
+  font: 700 8px var(--mono);
+  letter-spacing: .12em;
+  line-height: 1;
+  color: var(--yellow);
+  transition: color .2s;
+}
+
+.nav-account-level strong {
+  font: 800 11px/1 var(--display);
+  letter-spacing: -.02em;
+  color: #fff;
+  text-transform: none;
+  transition: color .2s;
+}
+
+.nav-account.connected:hover .nav-account-level {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #0a0b1a;
+}
+
+.nav-account.connected:hover .nav-account-level small,
+.nav-account.connected:hover .nav-account-level strong {
+  color: #0a0b1a;
+}
+
+@media (min-width: 801px) and (max-width: 1160px) {
+  .nav-account-name {
+    max-width: 80px;
+  }
+}
+
+@media (min-width: 801px) and (max-width: 980px) {
+  .nav-account-name {
+    max-width: 60px;
+  }
 }
 
 /* RTL OVERRIDES */
