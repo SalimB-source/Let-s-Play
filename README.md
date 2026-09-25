@@ -159,6 +159,90 @@ site »).
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
 
+## Salle d'arcade : émulateur NES (`/games/nes`)
+
+Le lien **Jeux** de la navigation mène désormais à `/games` (alias `/jeux`), une
+petite salle d'arcade qui présente les deux bornes : **Pixel Runner**
+(`/games/pixel-runner`) et **Retro NES** (`/games/nes`).
+
+L'émulateur s'appuie sur [jsnes](https://github.com/bfirsh/jsnes) (Apache 2.0,
+pur JavaScript, sans WebAssembly). Le cœur est chargé à la demande
+(`React.lazy`) : ~38 Ko gzip téléchargés seulement en ouvrant la page.
+
+- **La borne** (`src/games/nes/catalog.js`, `GameShelf.jsx`) : cinq homebrews
+  libres jouables en un clic, chacun avec sa jaquette, sa fiche (auteur, année,
+  joueurs, licence, lien vers les sources) et une URL partageable
+  `/games/nes/<jeu>` :
+
+  | Jeu | Auteur | Licence |
+  |---|---|---|
+  | Thwaite | Damian Yerrick (2011) | GPL v3+ — sources hébergées (`thwaite-source.zip`) |
+  | RHDE: Furniture Fight | Damian Yerrick (2014) | GNU All-Permissive |
+  | Concentration Room | Damian Yerrick (2010) | GPL v3, exception binaire |
+  | Lan Master | Shiru (2011) | CC0 |
+  | 2048 | mmuszkow (2015) | Unlicense |
+
+  Provenance (commits sources, empreintes) et textes de licence :
+  `public/roms/README.md` et `public/roms/<jeu>/`. Jaquettes : illustrations
+  originales Let's Play ; captures générées par
+  `node scripts/nes-screenshot.mjs <rom> <sortie.png> [script|frames] [échelle]`.
+  **Avant d'ajouter un jeu, vérifier que sa licence autorise la
+  redistribution** — aucune ROM commerciale, ne rien ajouter d'autre dans
+  `public/`.
+- **Tes ROMs** : fichier `.nes` du joueur (bouton ou glisser-déposer), lu dans
+  le navigateur : **rien n'est envoyé au serveur**.
+- **Stockage local** (IndexedDB `lets-play-nes`, `src/games/nes/romLibrary.js`) :
+  ludothèque des ROMs déjà chargées, un état sauvegardé par jeu (avec
+  miniature) et la SRAM des cartouches à pile (Zelda, etc.), réécrite
+  automatiquement.
+- **Commandes** (lues via `event.code`, donc identiques en AZERTY et QWERTY) :
+  - J1 : croix = flèches, A = `C`/`K`, B = `X`/`J`, Start = Entrée,
+    Select = Maj/Retour arrière ;
+  - J2 : croix = `ZQSD` (AZERTY) / `WASD` (QWERTY), A = `H`, B = `G`,
+    Start = `T`, Select = `R` ;
+  - `P` pause, `F2` sauver, `F4` charger.
+  Manettes USB/Bluetooth via la Gamepad API (1re manette = J1, 2e = J2 ; une
+  option donne la 1re manette au J2 pour jouer clavier + manette). Manette tactile
+  (croix glissable, A/B, Select/Start) affichée d'office sur écran tactile.
+- **Son et cadence** (`src/games/nes/nesEngine.js`) : l'AudioContext est créé
+  avant le cœur pour que l'APU produise exactement au taux de la carte son ;
+  la boucle tourne à 60,0988 images/s quelle que soit la fréquence de l'écran,
+  et se met en pause quand l'onglet est masqué.
+- **Compatibilité** : mappers 0–4, 5, 7, 9, 11, 34, 38, 66, 71, 79, 94, 118,
+  119, 140, 180, 240, 241 (la grande majorité du catalogue). Un mapper inconnu
+  affiche un message clair au lieu d'une page cassée.
+
+`npm run check:i18n` rend aussi `/games`, `/games/nes`, `/games/nes/thwaite` et
+les pages `/games/megadrive`.
+
+### Borne Mega Drive (`/games/megadrive`)
+
+- **Moteur** : RetroArch 1.22.2 + cœur **Genesis Plus GX** (WebAssembly),
+  piloté par [Nostalgist.js](https://nostalgist.js.org/) (MIT). Le cœur est
+  **hébergé par le site** (`public/megadrive/core/`, ~1,5 Mo compressé) et
+  n'est téléchargé qu'au premier « Jouer ». Sources et licences :
+  `public/megadrive/core/SOURCE.txt`. ⚠ Licence Genesis Plus GX **non
+  commerciale** : pas de publicité, d'abonnement ni de vente sur cette page
+  (sinon, passer au cœur clownmdemu, AGPL).
+- **Jeux** (`src/games/megadrive/catalog.js`, provenance dans
+  `public/megadrive/README.md`) :
+  - hébergés : *Oh Mummy Genesis* (freeware libéré par 1985 Alternativo) ;
+    *Irmãos Aratu*, *Shaolin Carcará* (Mangangá Team, « distribution
+    gratuite »), *Minesweeper MD* et *KłełeAtoms MD* (Nightwolf-47, MIT) —
+    ces quatre-là sont marqués `pending` (« Bientôt ») tant que leur `.bin`
+    n'est pas déposé dans `public/megadrive/roms/<jeu>/` ;
+  - présentés avec un lien vers l'auteur, sans être hébergés : *30 Years of
+    Nintendon't*, *Break An Egg* (Dr. Ludos, pas d'autorisation de
+    redistribution), *Bio Evil* (propriété intellectuelle Capcom),
+    *Barbarian* de la Z-Team (graphismes et sons originaux de Psygnosis).
+- **Commandes** : J1 flèches + `X` / `C` / `V` (A / B / C) + Entrée ;
+  J2 `ZQSD` (AZERTY) / `WASD` (QWERTY) + `G` / `H` / `J` + `T`. `P` pause,
+  `F2` / `F4` sauver / charger. Manettes via RetroArch (1re = J1, 2e = J2),
+  manette tactile A / B / C + Start sur mobile.
+- **Stockage** : IndexedDB `lets-play-megadrive` (même module que la NES,
+  `createRomLibrary`) : ROMs perso, états sauvegardés avec miniature, SRAM
+  des jeux copiée toutes les 15 s et à la pause.
+
 ## Player accounts & authentication (Supabase)
 
 Registration, login, Google / Microsoft (Azure) sign-in, password reset and the

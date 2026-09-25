@@ -55,6 +55,13 @@ import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import MessagesPage from './messages/MessagesPage';
 import PixelRunner from './games/PixelRunner';
+import GamesHub from './games/GamesHub';
+// L'émulateur (cœur jsnes, ~150 Ko) n'est téléchargé qu'à l'ouverture de
+// /games/nes : le reste du site n'en paie pas le poids.
+const NesEmulator = React.lazy(() => import('./games/nes/NesEmulator'));
+// Idem pour la Mega Drive : le cœur WebAssembly (~1,5 Mo) n'est chargé qu'au
+// premier « Jouer ».
+const MegaDriveEmulator = React.lazy(() => import('./games/megadrive/MegaDriveEmulator'));
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
@@ -152,7 +159,27 @@ function App() {
             <Route path="/messages/:peerId" element={<MessagesPage />} />
             <Route path="/messagerie" element={<MessagesPage />} />
             <Route path="/messagerie/:peerId" element={<MessagesPage />} />
+            {/* Salle d'arcade : hub `/games`, jeu maison Pixel Runner et
+                émulateurs NES (jsnes) et Mega Drive (Genesis Plus GX). */}
+            <Route path="/games" element={<GamesHub />} />
+            <Route path="/jeux" element={<GamesHub />} />
             <Route path="/games/pixel-runner" element={<PixelRunner />} />
+            <Route
+              path="/games/nes/:slug?"
+              element={(
+                <React.Suspense fallback={<main className="nes-page" style={{ minHeight: '100vh' }} aria-busy="true" />}>
+                  <NesEmulator />
+                </React.Suspense>
+              )}
+            />
+            <Route
+              path="/games/megadrive/:slug?"
+              element={(
+                <React.Suspense fallback={<main className="nes-page" style={{ minHeight: '100vh' }} aria-busy="true" />}>
+                  <MegaDriveEmulator />
+                </React.Suspense>
+              )}
+            />
             <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>

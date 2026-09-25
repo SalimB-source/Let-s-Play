@@ -1,0 +1,22 @@
+Oh Mummy Genesis (2012)
+=======================
+
+Développement : Pocket Lucho — édition : 1985 Alternativo (Espagne).
+Graphismes : Pocket Lucho, David Ayala, Juan M. Rodríguez. Musique : David
+Sánchez, Atomic Hound (version classique). Couverture
+d'origine : David Ayala. Remake du « Oh Mummy » de Gem Software (Amstrad CPC,
+1984) + la version classique, deux jeux en un.
+
+Statut : jeu commercial à l'origine (cartouche), puis LIBÉRÉ GRATUITEMENT par
+ses auteurs en mai 2013, une fois le stock de cartouches épuisé, « pour le
+partager ouvertement avec tout le monde » :
+  https://www.fasebonus.net/2013/05/oh-mummy-genesis-liberado/
+Aucune licence écrite n'accompagne cette libération : diffusion gratuite
+tolérée par les auteurs, pas de licence libre. Les auteurs gardent leurs
+droits ; à retirer immédiatement sur simple demande (contacto@1985alternativo.com).
+
+Fichier : oh-mummy.bin, 1 048 576 octets
+SHA-1   : 8754105230504f5f4fd156353c4d8a91520bd049
+Copie reprise de https://github.com/retrobrews/md-games (commit
+8dd5af964a9a2cfd6abcee4fcde0e541ee4d616f, fichier ohmummy.bin), identique à
+la ROM libérée par 1985 Alternativo (en-tête « OH MUMMY »).

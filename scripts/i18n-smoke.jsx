@@ -26,6 +26,9 @@ import QuizPage from '../src/quizzes/QuizPage';
 import Dossiers from '../src/pages/Dossiers';
 import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
+import GamesHub from '../src/games/GamesHub';
+import NesEmulator from '../src/games/nes/NesEmulator';
+import MegaDriveEmulator from '../src/games/megadrive/MegaDriveEmulator';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
 import { gameTests } from '../src/reviewsData';
@@ -51,6 +54,13 @@ export const ROUTES = [
   ['/quizz/films-cultes', QuizPage, '/quizz/:slug'],
   ['/quizz/super-heros-cinema', QuizPage, '/quizz/:slug'],
   ['/quizz/series-cultes', QuizPage, '/quizz/:slug'],
+  ['/games', GamesHub],
+  ['/games/nes', NesEmulator, '/games/nes/:slug?'],
+  ['/games/nes/thwaite', NesEmulator, '/games/nes/:slug?'],
+  ['/games/nes/jeu-inconnu', NesEmulator, '/games/nes/:slug?'],
+  ['/games/megadrive', MegaDriveEmulator, '/games/megadrive/:slug?'],
+  ['/games/megadrive/oh-mummy', MegaDriveEmulator, '/games/megadrive/:slug?'],
+  ['/games/megadrive/minesweeper', MegaDriveEmulator, '/games/megadrive/:slug?'],
   ['/unknown-page', NotFound],
 ];
 
