@@ -285,14 +285,17 @@ body.messages-dock-open .achievement-toasts {
     bottom: 12px;
     width: auto;
   }
-  /* Lanceur mobile : gros bouton rond « MESSAGERIE » bien visible, avec son
-     libellé — les utilisateurs ne doivent pas avoir à deviner qu'il y a
-     une messagerie / des amis là-dedans. */
+  /* Lanceur mobile : pastille ronde centrée sur l'icône ; le libellé desktop
+     « AMIS » est volontairement retiré pour préserver l'espace disponible. */
   .social-launcher {
-    padding: 14px 18px;
-    gap: 10px;
-    font-size: 12px;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
     border-width: 2px;
+    border-radius: 50%;
+    clip-path: none;
     box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .95), 0 0 32px -8px rgba(255, 214, 25, .45), 0 0 0 4px rgba(7, 8, 20, .9);
   }
   .social-launcher.has-alert {
@@ -305,11 +308,7 @@ body.messages-dock-open .achievement-toasts {
   }
   .social-launcher-icon { font-size: 20px; }
   .social-launcher-icon svg { width: 22px; height: 22px; }
-  .social-launcher-label {
-    display: inline;
-    font-size: 13px;
-    letter-spacing: .14em;
-  }
+  .social-launcher-label { display: none; }
   .social-launcher-meta { display: none; }
   .social-launcher-badge {
     min-width: 22px;
