@@ -54,6 +54,7 @@ import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import MessagesPage from './messages/MessagesPage';
+import PixelRunner from './games/PixelRunner';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
@@ -151,6 +152,7 @@ function App() {
             <Route path="/messages/:peerId" element={<MessagesPage />} />
             <Route path="/messagerie" element={<MessagesPage />} />
             <Route path="/messagerie/:peerId" element={<MessagesPage />} />
+            <Route path="/games/pixel-runner" element={<PixelRunner />} />
             <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
