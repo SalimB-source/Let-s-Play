@@ -139,15 +139,17 @@ export default function Home() {
     <>
       <section className="hero" id="top">
         {isLight ? (
-          /* Thème clair : la vidéo est retirée au profit du visuel gaming
-             fourni (public/hero-light.jpg), affiché en plein cadre. */
-          <img
+          /* Thème clair : la vidéo fournie remplace l’ancien visuel fixe. */
+          <video
             className="hero-bg hero-bg--keyart"
-            src={`${import.meta.env.BASE_URL}hero-light.jpg`}
-            alt=""
+            autoPlay
+            muted
+            loop
+            playsInline
             aria-hidden="true"
-            decoding="async"
-          />
+          >
+            <source src={`${import.meta.env.BASE_URL}hero-light.mp4`} type="video/mp4" />
+          </video>
         ) : (
           <video
             className="hero-bg"

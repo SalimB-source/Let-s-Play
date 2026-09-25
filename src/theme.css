@@ -20,10 +20,10 @@
       la fenêtre vidéo, les vignettes et tous les voiles posés *sur une photo*
       gardent leur fond sombre et leur texte blanc dans les deux thèmes.
       Seules les *surfaces de l'interface* passent au clair.
-      Exception assumée : en clair, le héros d'accueil retire la vidéo et pose
-      le visuel jaune maison (public/yellow-background-...jpg) plein cadre,
-      sans voile — encre sombre directement sur le jaune
-      (bloc « Héros clair » de la section 8).
+      Exception assumée : en clair, le héros d'accueil utilise la vidéo fournie
+      (public/hero-light.mp4) plein cadre, avec un voile sombre discret à gauche
+      pour garder le texte blanc et jaune lisible (bloc « Héros clair » de la
+      section 8).
 
    3. LES HALOS DEVIENNENT DES OMBRES. Un `text-shadow` néon sur fond clair
       produit un halo sale : remplacé par une ombre colorée douce, qui garde la
@@ -579,39 +579,39 @@
 [data-theme='light'] .article-sentiment-inline.negative,
 [data-theme='light'] .news-sentiment.negative{background:#b91c1c;border-color:rgba(185,28,28,.5)}
 [data-theme='light'] .page-hero-visual-content small{color:var(--yellow)}
-/* --- Héros clair : nouveau visuel gaming plein cadre ----------------------
-   En thème clair, Home.jsx ne monte pas la <video> : hero-light.jpg porte le
-   héros. Un dégradé clair localisé à gauche garantit le contraste du titre,
-   du texte et des actions tout en laissant l’image lisible à droite. */
+/* --- Héros clair : vidéo fournie plein cadre -------------------------------
+   La vidéo hero-light.mp4 remplace l’ancien visuel fixe. L’overlay blanc est
+   supprimé ; un voile sombre très léger à gauche garde le texte blanc/jaune
+   lisible sans éclaircir ni dénaturer la vidéo. */
 [data-theme='light'] .hero{background:var(--bg)}
 [data-theme='light'] .hero-bg--keyart{left:0;width:100%}
 [data-theme='light'] .hero-shade{
   display:block;
   background:
-    linear-gradient(90deg,rgba(247,248,252,.97) 0%,rgba(247,248,252,.91) 30%,rgba(247,248,252,.68) 49%,rgba(247,248,252,.16) 74%,transparent 100%),
-    linear-gradient(180deg,rgba(247,248,252,.12),rgba(247,248,252,.06));
+    linear-gradient(90deg,rgba(5,6,15,.78) 0%,rgba(5,6,15,.56) 30%,rgba(5,6,15,.24) 52%,rgba(5,6,15,.04) 76%,transparent 100%),
+    linear-gradient(180deg,rgba(5,6,15,.18),transparent 36%,rgba(5,6,15,.35) 100%);
 }
 @media(max-width:800px){
-  /* mobile : garde la console dans le cadre tout en réservant un voile fort
-     à gauche pour que le titre et le texte restent lisibles. */
+  /* mobile : renforce seulement le voile sombre à gauche pour la lisibilité. */
   [data-theme='light'] .hero-bg--keyart{object-position:68% center}
-  [data-theme='light'] .hero-shade{background:linear-gradient(90deg,rgba(247,248,252,.98) 0%,rgba(247,248,252,.9) 58%,rgba(247,248,252,.3) 100%)}
+  [data-theme='light'] .hero-shade{background:linear-gradient(90deg,rgba(5,6,15,.84) 0%,rgba(5,6,15,.62) 58%,rgba(5,6,15,.18) 100%)}
 }
 [data-theme='light'] .hero h1,
 [data-theme='light'] .hero .awaited-band,
-[data-theme='light'] .awaited-band-title{color:var(--ink)}
-[data-theme='light'] .hero h1 em{color:var(--cyan)}
-[data-theme='light'] .hero-text{color:var(--muted)}
+[data-theme='light'] .awaited-band-title{color:#fff}
+[data-theme='light'] .hero h1{color:#fff;text-shadow:0 3px 18px rgba(0,0,0,.42)}
+[data-theme='light'] .hero h1 em{color:var(--yellow);text-shadow:0 3px 18px rgba(0,0,0,.55)}
+[data-theme='light'] .hero-text{color:rgba(255,255,255,.94);text-shadow:0 2px 10px rgba(0,0,0,.65)}
 [data-theme='light'] .hero .eyebrow,
-[data-theme='light'] .hero .awaited-band-eyebrow{color:var(--cyan)}
-[data-theme='light'] .hero .awaited-band-date{color:var(--muted)}
+[data-theme='light'] .hero .awaited-band-eyebrow{color:var(--yellow)}
+[data-theme='light'] .hero .awaited-band-date{color:rgba(255,255,255,.84)}
 [data-theme='light'] .live-offline span:last-child,
 [data-theme='light'] .page-hero-visual-content span{color:rgba(255,255,255,.72)}
 [data-theme='light'] .live-offline span:last-child{color:rgba(255,255,255,.72)}
 [data-theme='light'] .hero-frame span{border-color:rgba(14,116,144,.75);filter:none}
 [data-theme='light'] .hero .awaited-band{
-  background:linear-gradient(110deg,rgba(255,255,255,.88),rgba(255,255,255,.68));
-  border-top-color:var(--line-strong);
+  background:linear-gradient(110deg,rgba(5,6,15,.86),rgba(5,6,15,.64));
+  border-top-color:rgba(255,255,255,.24);
 }
 [data-theme='light'] .hero .awaited-band-chip{color:var(--yellow-ink);border-color:var(--yellow-ink);background:rgba(255,214,25,.14)}
 [data-theme='light'] .hero .awaited-band-thumb{background:rgba(255,255,255,.72)}
