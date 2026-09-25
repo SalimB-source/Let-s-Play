@@ -478,6 +478,9 @@
   background:#fff;
   border-color:var(--line);
 }
+[data-theme='light'] .social-tabs{
+  background:#fff;
+}
 [data-theme='light'] .nav-search,
 [data-theme='light'] .comment-form input,
 [data-theme='light'] .comment-form textarea{border-color:var(--line)}
