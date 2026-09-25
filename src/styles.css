@@ -803,6 +803,7 @@ img{max-width:100%}
     margin-left:0;
     justify-content:flex-start;
     padding:8px 0 18px;
+    order:2;
   }
   .nav-primary a{
     position:relative;
@@ -992,6 +993,7 @@ img{max-width:100%}
     border-top:1px solid var(--line);
     /* Les actions suivent le profil au lieu d'être plaquées en bas du menu. */
     margin-top:18px;
+    order:1;
   }
   .nav-actions .nav-search{
     order:0;
