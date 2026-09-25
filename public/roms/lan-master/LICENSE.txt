@@ -1,0 +1,11 @@
+Lan Master (NES)
+Original game by Shiru (Alexander Semenov), 2011 — http://shiru.untergrund.net/
+
+The game and its source code are released into the Public Domain
+(CC0 dedication, see the NESdev list of freely reproducible games:
+https://forums.nesdev.org/viewtopic.php?p=116794).
+
+This ROM was assembled by Let's Play from the public-domain source code
+published at https://github.com/RGBA-CRT/LanMasterFDS
+(commit 1446b297bc80ae8a2f58b2c06bf7a6138a442367, file main_nes.asm, NROM / mapper 0 target)
+with NESASM 3.1: `nesasm main_nes.asm`.

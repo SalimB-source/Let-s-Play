@@ -162,7 +162,7 @@ function App() {
             <Route path="/jeux" element={<GamesHub />} />
             <Route path="/games/pixel-runner" element={<PixelRunner />} />
             <Route
-              path="/games/nes"
+              path="/games/nes/:slug?"
               element={(
                 <React.Suspense fallback={<main className="nes-page" style={{ minHeight: '100vh' }} aria-busy="true" />}>
                   <NesEmulator />

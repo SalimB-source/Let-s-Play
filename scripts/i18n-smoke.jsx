@@ -54,7 +54,9 @@ export const ROUTES = [
   ['/quizz/super-heros-cinema', QuizPage, '/quizz/:slug'],
   ['/quizz/series-cultes', QuizPage, '/quizz/:slug'],
   ['/games', GamesHub],
-  ['/games/nes', NesEmulator],
+  ['/games/nes', NesEmulator, '/games/nes/:slug?'],
+  ['/games/nes/thwaite', NesEmulator, '/games/nes/:slug?'],
+  ['/games/nes/jeu-inconnu', NesEmulator, '/games/nes/:slug?'],
   ['/unknown-page', NotFound],
 ];
 

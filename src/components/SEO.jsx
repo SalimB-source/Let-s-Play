@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import { NES_CATALOG } from '../games/nes/catalog';
 
 const SITE_URL = 'https://salimb-source.github.io/Let-s-Play';
 const base = import.meta.env.BASE_URL;
@@ -45,7 +46,7 @@ const pageMeta = {
   },
   '/games/nes': {
     title: 'Émulateur NES en ligne — Let’s Play',
-    description: 'Joue à la NES dans ton navigateur : démo homebrew gratuite, chargement de tes ROMs .nes, sauvegardes, manette USB/Bluetooth et contrôles tactiles sur mobile.',
+    description: 'Une borne NES dans ton navigateur : Thwaite, RHDE, Concentration Room, Lan Master et 2048, cinq jeux libres jouables en un clic, plus tes propres ROMs .nes, sauvegardes, manettes et contrôles tactiles.',
     type: 'website',
   },
   '/games/pixel-runner': {
@@ -110,6 +111,16 @@ const pageMeta = {
     image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', type: 'article', published: '2026-09-22', section: 'Actualités gaming',
   },
 };
+
+// Une fiche par cartouche de la borne rétro : /games/nes/<jeu>.
+for (const game of NES_CATALOG) {
+  pageMeta[`/games/nes/${game.slug}`] = {
+    title: `${game.title} — jouer en ligne sur la borne NES Let’s Play`,
+    description: `${game.tagline} ${game.description}`,
+    image: `roms/${game.slug}/cover.webp`,
+    type: 'website',
+  };
+}
 
 const routeAliases = {
   '/calendar': '/calendrier',

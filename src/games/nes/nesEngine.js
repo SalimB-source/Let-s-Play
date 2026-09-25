@@ -35,23 +35,36 @@ export const BUTTONS = {
   RIGHT: Controller.BUTTON_RIGHT,
 };
 
-// Clavier : `event.code` désigne la position physique de la touche. X, C, J
-// et K sont au même endroit en AZERTY et en QWERTY — pas de surprise pour un
-// clavier français. B à gauche, A à droite, comme sur la manette d'origine.
+// Clavier : `event.code` désigne la position physique de la touche, donc les
+// mêmes touches tombent sous les doigts en AZERTY et en QWERTY. B à gauche,
+// A à droite, comme sur la manette d'origine.
+//   Joueur 1 : flèches, X (B), C (A) — ou J / K —, Entrée, Maj.
+//   Joueur 2 : ZQSD en AZERTY (WASD en QWERTY), G (B), H (A), T (Start),
+//              R (Select). Pour les jeux à deux sur un seul clavier.
+const P1 = 1;
+const P2 = 2;
 export const KEYBOARD_MAP = {
-  ArrowUp: BUTTONS.UP,
-  ArrowDown: BUTTONS.DOWN,
-  ArrowLeft: BUTTONS.LEFT,
-  ArrowRight: BUTTONS.RIGHT,
-  KeyX: BUTTONS.B,
-  KeyJ: BUTTONS.B,
-  KeyC: BUTTONS.A,
-  KeyK: BUTTONS.A,
-  Enter: BUTTONS.START,
-  NumpadEnter: BUTTONS.START,
-  ShiftLeft: BUTTONS.SELECT,
-  ShiftRight: BUTTONS.SELECT,
-  Backspace: BUTTONS.SELECT,
+  ArrowUp: [P1, BUTTONS.UP],
+  ArrowDown: [P1, BUTTONS.DOWN],
+  ArrowLeft: [P1, BUTTONS.LEFT],
+  ArrowRight: [P1, BUTTONS.RIGHT],
+  KeyX: [P1, BUTTONS.B],
+  KeyJ: [P1, BUTTONS.B],
+  KeyC: [P1, BUTTONS.A],
+  KeyK: [P1, BUTTONS.A],
+  Enter: [P1, BUTTONS.START],
+  NumpadEnter: [P1, BUTTONS.START],
+  ShiftLeft: [P1, BUTTONS.SELECT],
+  ShiftRight: [P1, BUTTONS.SELECT],
+  Backspace: [P1, BUTTONS.SELECT],
+  KeyW: [P2, BUTTONS.UP],
+  KeyS: [P2, BUTTONS.DOWN],
+  KeyA: [P2, BUTTONS.LEFT],
+  KeyD: [P2, BUTTONS.RIGHT],
+  KeyG: [P2, BUTTONS.B],
+  KeyH: [P2, BUTTONS.A],
+  KeyT: [P2, BUTTONS.START],
+  KeyR: [P2, BUTTONS.SELECT],
 };
 
 // Manette au « standard mapping » (Xbox, PlayStation, Switch Pro, 8BitDo…).
@@ -202,6 +215,9 @@ export class NesEngine {
       2: Array.from({ length: 8 }, () => new Set()),
     };
     this.gamepadState = new Map();
+    // 1 : la 1re manette est le joueur 1 (défaut). 2 : la 1re manette est le
+    // joueur 2 — pratique quand le joueur 1 est au clavier.
+    this.padFirstPlayer = 1;
 
     this.fpsFrames = 0;
     this.fpsSince = 0;
@@ -458,17 +474,25 @@ export class NesEngine {
     if (!this.running || this.paused) return;
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (isTypingTarget(event.target)) return;
-    const button = KEYBOARD_MAP[event.code];
-    if (button === undefined) return;
+    const mapping = KEYBOARD_MAP[event.code];
+    if (!mapping) return;
     event.preventDefault();
-    this.press(1, button, `key:${event.code}`);
+    this.press(mapping[0], mapping[1], `key:${event.code}`);
   }
 
   handleKeyUp(event) {
-    const button = KEYBOARD_MAP[event.code];
-    if (button === undefined) return;
+    const mapping = KEYBOARD_MAP[event.code];
+    if (!mapping) return;
     if (this.running) event.preventDefault();
-    this.release(1, button, `key:${event.code}`);
+    this.release(mapping[0], mapping[1], `key:${event.code}`);
+  }
+
+  setPadFirstPlayer(player) {
+    const next = player === 2 ? 2 : 1;
+    if (next === this.padFirstPlayer) return;
+    for (const index of this.gamepadState.keys()) this.releaseSource(`pad:${index}`);
+    this.gamepadState.clear();
+    this.padFirstPlayer = next;
   }
 
   handleBlur() {
@@ -479,9 +503,10 @@ export class NesEngine {
     if (!navigator.getGamepads) return;
     let pads;
     try { pads = navigator.getGamepads(); } catch { return; }
-    let player = 1;
+    let slot = 0;
     for (const pad of pads) {
-      if (!pad || !pad.connected || player > 2) continue;
+      if (!pad || !pad.connected || slot > 1) continue;
+      const player = slot === 0 ? this.padFirstPlayer : 3 - this.padFirstPlayer;
       const source = `pad:${pad.index}`;
       const previous = this.gamepadState.get(pad.index) || 0;
       let mask = 0;
@@ -503,7 +528,7 @@ export class NesEngine {
         }
         this.gamepadState.set(pad.index, mask);
       }
-      player += 1;
+      slot += 1;
     }
   }
 

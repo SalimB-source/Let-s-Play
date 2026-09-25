@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { NES_CATALOG } from './nes/catalog';
 import './games-hub.css';
 
 const BASE = import.meta.env.BASE_URL;
@@ -10,9 +11,10 @@ const GAMES = [
     num: '01',
     kicker: 'ÉMULATEUR · 8-BIT',
     title: 'Retro NES',
-    text: 'La console 8-bit de Nintendo dans ton navigateur : démo gratuite, tes propres ROMs, sauvegardes, manette et contrôles tactiles.',
+    text: `${NES_CATALOG.length} cartouches libres à lancer en un clic — Thwaite, RHDE, 2048… — plus tes propres ROMs, sauvegardes, manettes et contrôles tactiles.`,
     cta: 'ALLUMER LA CONSOLE',
     accent: 'is-red',
+    jackets: NES_CATALOG.slice(0, 3),
   },
   {
     to: '/games/pixel-runner',
@@ -40,11 +42,11 @@ export default function GamesHub() {
           {GAMES.map((game) => (
             <Link key={game.to} to={game.to} className={`games-hub-card ${game.accent}`}>
               <div className="games-hub-visual" style={game.image ? { backgroundImage: `url(${game.image})` } : undefined}>
-                {!game.image && (
-                  <div className="games-hub-pad" aria-hidden="true">
-                    <span className="dpad" />
-                    <span className="meta" />
-                    <span className="ab"><i /><i /></span>
+                {game.jackets && (
+                  <div className="games-hub-jackets" aria-hidden="true">
+                    {game.jackets.map((jacket) => (
+                      <img key={jacket.slug} src={jacket.cover} alt="" loading="lazy" width="600" height="804" />
+                    ))}
                   </div>
                 )}
                 <span className="games-hub-num">{game.num}</span>

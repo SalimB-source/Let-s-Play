@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import useMediaQuery from '../../lib/useMediaQuery';
 import TouchPad from './TouchPad';
+import GameShelf from './GameShelf';
+import { NES_CATALOG, findNesGame } from './catalog';
 import {
   NesEngine,
   SCREEN_HEIGHT,
@@ -22,14 +24,10 @@ import {
 } from './romLibrary';
 import './nes-emulator.css';
 
-const BASE = import.meta.env.BASE_URL;
 const MAX_ROM_BYTES = 4 * 1024 * 1024; // la plus grosse cartouche NES fait ~1 Mo
 const VOLUME_KEY = 'lets-play-nes-volume';
-const DEMO = {
-  name: 'Concentration Room',
-  url: `${BASE}roms/concentration-room/croom.nes`,
-  notice: `${BASE}roms/concentration-room/README.html`,
-};
+const PAD_KEY = 'lets-play-nes-pad-player';
+const FEATURED = NES_CATALOG[0];
 
 function formatSize(bytes) {
   if (!bytes) return '—';
@@ -45,17 +43,25 @@ function cleanName(fileName) {
   return String(fileName || 'ROM').replace(/\.(nes|unf|unif)$/i, '').replace(/[_]+/g, ' ').trim() || 'ROM';
 }
 
-function readStoredVolume() {
+function readStored(key, fallback) {
   try {
-    const raw = window.localStorage.getItem(VOLUME_KEY);
-    const value = raw === null ? 0.7 : Number(raw);
-    return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.7;
+    const raw = window.localStorage.getItem(key);
+    return raw === null ? fallback : raw;
   } catch {
-    return 0.7;
+    return fallback;
   }
 }
 
+function readStoredVolume() {
+  const value = Number(readStored(VOLUME_KEY, '0.7'));
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0.7;
+}
+
 export default function NesEmulator() {
+  const { slug } = useParams();
+  const navigate = useNavigate();
+  const routeGame = slug ? findNesGame(slug) : null;
+
   const canvasRef = useRef(null);
   const stageRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -72,14 +78,19 @@ export default function NesEmulator() {
   const [savedState, setSavedState] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState('');
   const [dragging, setDragging] = useState(false);
   const [volume, setVolume] = useState(readStoredVolume);
   const [muted, setMuted] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [padPlayer, setPadPlayer] = useState(() => (readStored(PAD_KEY, '1') === '2' ? 2 : 1));
   const coarsePointer = useMediaQuery('(pointer: coarse)');
   const [touchPref, setTouchPref] = useState(null);
   const showTouch = touchPref ?? coarsePointer;
+
+  // Fiche affichée : le jeu de la borne en cours, sinon celui de l'URL.
+  const currentGame = rom?.slug ? findNesGame(rom.slug) : null;
+  const infoGame = currentGame || (!rom ? routeGame : null);
 
   const flash = useCallback((message) => {
     setNotice(message);
@@ -113,6 +124,7 @@ export default function NesEmulator() {
       },
     });
     engine.setVolume(readStoredVolume());
+    engine.setPadFirstPlayer(readStored(PAD_KEY, '1') === '2' ? 2 : 1);
     engineRef.current = engine;
     refreshLibrary();
     return () => {
@@ -134,6 +146,11 @@ export default function NesEmulator() {
     engineRef.current?.setMuted(muted);
   }, [muted]);
 
+  useEffect(() => {
+    engineRef.current?.setPadFirstPlayer(padPlayer);
+    try { window.localStorage.setItem(PAD_KEY, String(padPlayer)); } catch { /* stockage plein */ }
+  }, [padPlayer]);
+
   // Onglet masqué → pause ; retour → reprise si c'est nous qui avions mis pause.
   useEffect(() => {
     const onVisibility = () => {
@@ -151,18 +168,26 @@ export default function NesEmulator() {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, []);
 
-  const startRom = useCallback(async (bytes, name, { builtin = false } = {}) => {
+  const scrollToStage = () => {
+    const el = stageRef.current;
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 96;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    el.focus({ preventScroll: true });
+  };
+
+  const startRom = useCallback(async (bytes, name, { builtin = false, slug: gameSlug = null } = {}) => {
     const engine = engineRef.current;
-    if (!engine) return;
+    if (!engine) return false;
     setError('');
     if (bytes.byteLength > MAX_ROM_BYTES) {
       setError('Fichier trop volumineux pour une cartouche NES (4 Mo maximum).');
-      return;
+      return false;
     }
     const data = new Uint8Array(bytes);
     if (!isNesRom(data)) {
       setError('Ce fichier n’est pas une ROM NES valide (format iNES .nes attendu).');
-      return;
+      return false;
     }
     const id = romFingerprint(data);
     const sram = await getSram(id).catch(() => null);
@@ -170,18 +195,20 @@ export default function NesEmulator() {
       engine.loadRom(data, { sram });
     } catch (err) {
       setError(describeRomError(err));
-      return;
+      return false;
     }
     autoPaused.current = false;
-    const meta = { id, name, size: data.byteLength, builtin };
+    const meta = { id, name, size: data.byteLength, builtin, slug: gameSlug };
     romRef.current = meta;
     setRom(meta);
     setSavedState(null);
     getState(id).then((state) => {
       if (romRef.current?.id === id) setSavedState(state ? { savedAt: state.savedAt, thumbnail: state.thumbnail } : null);
     }).catch(() => {});
-    putRom({ id, name, data, builtin }).then(refreshLibrary).catch(() => setStorageOk(false));
-    stageRef.current?.focus({ preventScroll: true });
+    // Les jeux de la borne sont servis par le site : inutile de les recopier
+    // dans le navigateur. Seules les ROMs perso rejoignent la ludothèque.
+    if (!builtin) putRom({ id, name, data }).then(refreshLibrary).catch(() => setStorageOk(false));
+    return true;
   }, [refreshLibrary]);
 
   const primeAudio = () => {
@@ -193,44 +220,58 @@ export default function NesEmulator() {
     engine.audioCtx?.resume?.().catch(() => {});
   };
 
-  const openFile = async (file) => {
-    if (!file) return;
-    setLoading(true);
+  const launchGame = async (game) => {
+    if (!game) return;
+    primeAudio();
+    // Le hash #console fait défiler jusqu'à l'écran (Layout suit le hash).
+    if (slug !== game.slug) navigate(`/games/nes/${game.slug}#console`);
+    else scrollToStage();
+    setLoading(game.slug);
     try {
-      await startRom(await file.arrayBuffer(), cleanName(file.name));
+      const response = await fetch(game.rom);
+      if (!response.ok) throw new Error(String(response.status));
+      await startRom(await response.arrayBuffer(), game.title, { builtin: true, slug: game.slug });
     } catch {
-      setError('Lecture du fichier impossible.');
+      setError(`Impossible de charger ${game.title} pour le moment.`);
     } finally {
-      setLoading(false);
+      setLoading('');
     }
   };
 
-  const playDemo = async () => {
-    primeAudio();
-    setLoading(true);
+  const openFile = async (file) => {
+    if (!file) return;
+    setLoading('file');
     try {
-      const response = await fetch(DEMO.url);
-      if (!response.ok) throw new Error(String(response.status));
-      await startRom(await response.arrayBuffer(), DEMO.name, { builtin: true });
+      const ok = await startRom(await file.arrayBuffer(), cleanName(file.name));
+      if (ok && slug) navigate('/games/nes#console');
     } catch {
-      setError('Impossible de charger la démo pour le moment.');
+      setError('Lecture du fichier impossible.');
     } finally {
-      setLoading(false);
+      setLoading('');
     }
+  };
+
+  const pickFile = () => {
+    primeAudio();
+    fileInputRef.current?.click();
   };
 
   const playFromLibrary = async (entry) => {
     primeAudio();
-    setLoading(true);
+    setLoading(entry.id);
     try {
       const record = await getRom(entry.id);
       if (!record?.data) throw new Error('missing');
-      await startRom(record.data, record.name, { builtin: record.builtin });
+      const ok = await startRom(record.data, record.name);
+      if (ok) {
+        if (slug) navigate('/games/nes#console');
+        else scrollToStage();
+      }
     } catch {
       setError('Cette ROM n’est plus disponible dans ta ludothèque.');
       refreshLibrary();
     } finally {
-      setLoading(false);
+      setLoading('');
     }
   };
 
@@ -261,6 +302,7 @@ export default function NesEmulator() {
     setRom(null);
     setSavedState(null);
     setError('');
+    if (slug) navigate('/games/nes#console');
   };
 
   const saveState = useCallback(async () => {
@@ -326,8 +368,8 @@ export default function NesEmulator() {
     return () => document.documentElement.classList.remove('nes-pseudo-fullscreen');
   }, [fullscreen]);
 
-  // Raccourcis de la page (hors manette) : P pause, F plein écran,
-  // F2 sauvegarder, F4 charger.
+  // Raccourcis de la page (hors manette) : P pause, F2 sauver, F4 charger.
+  // Pas de lettre pour le plein écran : ZQSD/G/H/R/T servent au joueur 2.
   useEffect(() => {
     const onKey = (event) => {
       if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
@@ -335,13 +377,12 @@ export default function NesEmulator() {
       if (tag === 'INPUT' || tag === 'TEXTAREA' || event.target?.isContentEditable) return;
       if (!romRef.current) return;
       if (event.code === 'KeyP') { event.preventDefault(); togglePause(); }
-      else if (event.code === 'KeyF') { event.preventDefault(); toggleFullscreen(); }
       else if (event.code === 'F2') { event.preventDefault(); saveState(); }
       else if (event.code === 'F4') { event.preventDefault(); loadState(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [togglePause, toggleFullscreen, saveState, loadState]);
+  }, [togglePause, saveState, loadState]);
 
   const onDrop = (event) => {
     event.preventDefault();
@@ -353,7 +394,10 @@ export default function NesEmulator() {
   const hasRom = !!rom;
   const crashed = hasRom && !status.running;
   const statusLabel = !hasRom ? 'EN ATTENTE' : crashed ? 'ARRÊT' : status.paused ? 'PAUSE' : `${status.fps || 60} FPS`;
-  const userRoms = library.filter((entry) => !entry.builtin);
+  // L'ancienne version enregistrait la démo Concentration Room dans la
+  // bibliothèque : elle fait désormais partie de la borne, on la masque ici.
+  const userRoms = library.filter((entry) => !entry.builtin && !/^(croom\.nes|concentration room)/i.test(entry.name || ''));
+  const overlayGame = !hasRom ? routeGame : null;
 
   return (
     <main className="nes-page">
@@ -363,11 +407,11 @@ export default function NesEmulator() {
 
         <div className="nes-heading">
           <div>
-            <p className="eyebrow"><span className="live-dot" /> ÉMULATEUR NES · 8-BIT</p>
+            <p className="eyebrow"><span className="live-dot" /> BORNE RÉTRO · NES 8-BIT</p>
             <h1>RETRO <em>NES.</em></h1>
             <p className="nes-intro">
-              La console 8-bit de Nintendo, directement dans ton navigateur. Lance la démo ou glisse ta propre
-              ROM <code>.nes</code> : le jeu tourne chez toi, aucun fichier n’est envoyé sur nos serveurs.
+              {NES_CATALOG.length} cartouches libres à lancer en un clic, directement dans ton navigateur. Tu peux aussi
+              glisser ta propre ROM <code>.nes</code> : elle reste chez toi, rien n’est envoyé sur nos serveurs.
             </p>
           </div>
           <div className="nes-status-box">
@@ -381,7 +425,9 @@ export default function NesEmulator() {
           <div className="nes-main">
             <div
               ref={stageRef}
+              id="console"
               className={`nes-stage${fullscreen ? ' is-fullscreen' : ''}${showTouch ? ' has-touch' : ''}${dragging ? ' is-dragging' : ''}`}
+              style={currentGame ? { '--game-accent': currentGame.accent } : undefined}
               tabIndex={-1}
               onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
               onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false); }}
@@ -396,18 +442,32 @@ export default function NesEmulator() {
                 />
                 <div className="nes-scanlines" aria-hidden="true" />
 
-                {!hasRom && (
+                {!hasRom && overlayGame && (
+                  <div className="nes-overlay has-cover" style={{ '--game-accent': overlayGame.accent }}>
+                    <img className="nes-overlay-cover" src={overlayGame.cover} alt="" />
+                    <div className="nes-overlay-copy">
+                      <p className="eyebrow"><span className="live-dot" /> CARTOUCHE PRÊTE</p>
+                      <h2>{overlayGame.title}</h2>
+                      <p>{overlayGame.tagline}</p>
+                      <div className="nes-overlay-actions">
+                        <button className="button button-yellow" type="button" disabled={!!loading} onClick={() => launchGame(overlayGame)}>
+                          {loading === overlayGame.slug ? 'CHARGEMENT…' : 'JOUER ▶'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!hasRom && !overlayGame && (
                   <div className="nes-overlay">
                     <p className="eyebrow"><span className="live-dot" /> INSÈRE UNE CARTOUCHE</p>
-                    <h2>{dragging ? 'LÂCHE TA ROM ICI.' : 'PRÊT À JOUER ?'}</h2>
-                    <p>Glisse un fichier <b>.nes</b> sur l’écran, choisis-le sur ton appareil, ou teste la démo gratuite.</p>
+                    <h2>{dragging ? 'LÂCHE TA ROM ICI.' : 'CHOISIS TON JEU.'}</h2>
+                    <p>Pioche une cartouche dans la borne juste en dessous, ou glisse un fichier <b>.nes</b> sur l’écran.</p>
                     <div className="nes-overlay-actions">
-                      <button className="button button-yellow" type="button" disabled={loading} onClick={playDemo}>
-                        {loading ? 'CHARGEMENT…' : 'JOUER À LA DÉMO ↗'}
+                      <button className="button button-yellow" type="button" disabled={!!loading} onClick={() => launchGame(FEATURED)}>
+                        {loading === FEATURED.slug ? 'CHARGEMENT…' : `JOUER À ${FEATURED.title.toUpperCase()} ▶`}
                       </button>
-                      <button className="button button-ghost" type="button" disabled={loading} onClick={() => { primeAudio(); fileInputRef.current?.click(); }}>
-                        CHARGER UNE ROM
-                      </button>
+                      <a className="button button-ghost" href="#borne">VOIR LA BORNE ↓</a>
                     </div>
                   </div>
                 )}
@@ -467,7 +527,7 @@ export default function NesEmulator() {
               <button type="button" onClick={saveState} disabled={!hasRom || crashed}>⤓ SAUVER</button>
               <button type="button" onClick={loadState} disabled={!hasRom || !savedState}>⤒ CHARGER</button>
               <button type="button" onClick={toggleFullscreen} disabled={!hasRom}>⛶ PLEIN ÉCRAN</button>
-              <button type="button" onClick={() => { primeAudio(); fileInputRef.current?.click(); }}>＋ ROM</button>
+              <button type="button" onClick={pickFile}>＋ MA ROM</button>
               {hasRom && <button type="button" className="is-danger" onClick={eject}>⏏ ÉJECTER</button>}
               <label className="nes-volume">
                 <button type="button" onClick={() => setMuted((m) => !m)} aria-label={muted ? 'Activer le son' : 'Couper le son'}>
@@ -498,22 +558,57 @@ export default function NesEmulator() {
           </div>
 
           <aside className="nes-side">
+            {infoGame && (
+              <div className="nes-panel nes-game-card" style={{ '--game-accent': infoGame.accent }}>
+                <div className="nes-game-card-head">
+                  <img src={infoGame.cover} alt={`Jaquette de ${infoGame.title}`} width="72" height="96" />
+                  <div>
+                    <h3>{currentGame ? 'En cours' : 'Fiche du jeu'}</h3>
+                    <strong>{infoGame.title}</strong>
+                    <span>{infoGame.developer} · {infoGame.year}</span>
+                  </div>
+                </div>
+                <p className="nes-game-desc">{infoGame.description}</p>
+                <ul className="nes-game-howto">
+                  {infoGame.howTo.map((line) => <li key={line}>{line}</li>)}
+                </ul>
+                {infoGame.warning && <p className="nes-game-warning">⚠ {infoGame.warning}</p>}
+                <dl className="nes-game-facts">
+                  <div><dt>Genre</dt><dd>{infoGame.genre}</dd></div>
+                  <div><dt>Joueurs</dt><dd>{infoGame.players}</dd></div>
+                  <div><dt>Licence</dt><dd><a href={infoGame.licenseUrl} target="_blank" rel="noreferrer">{infoGame.license}</a></dd></div>
+                  <div>
+                    <dt>Code source</dt>
+                    <dd>
+                      <a href={infoGame.sourceUrl} target="_blank" rel="noreferrer">GitHub</a>
+                      {infoGame.sourceDownload && <> · <a href={infoGame.sourceDownload} download>télécharger (.zip)</a></>}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+            )}
+
             <div className="nes-panel">
               <h3>Commandes</h3>
               <table className="nes-keys">
-                <thead><tr><th>NES</th><th>Clavier</th><th>Manette</th></tr></thead>
+                <thead><tr><th>NES</th><th>Joueur 1</th><th>Joueur 2</th></tr></thead>
                 <tbody>
-                  <tr><td>Croix</td><td><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></td><td>Croix / stick</td></tr>
-                  <tr><td>A</td><td><kbd>C</kbd> ou <kbd>K</kbd></td><td>Bouton droit</td></tr>
-                  <tr><td>B</td><td><kbd>X</kbd> ou <kbd>J</kbd></td><td>Bouton bas</td></tr>
-                  <tr><td>Start</td><td><kbd>Entrée</kbd></td><td>Start / Options</td></tr>
-                  <tr><td>Select</td><td><kbd>Maj</kbd></td><td>Select / Share</td></tr>
+                  <tr><td>Croix</td><td><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></td><td><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd></td></tr>
+                  <tr><td>A</td><td><kbd>C</kbd> / <kbd>K</kbd></td><td><kbd>H</kbd></td></tr>
+                  <tr><td>B</td><td><kbd>X</kbd> / <kbd>J</kbd></td><td><kbd>G</kbd></td></tr>
+                  <tr><td>Start</td><td><kbd>Entrée</kbd></td><td><kbd>T</kbd></td></tr>
+                  <tr><td>Select</td><td><kbd>Maj</kbd></td><td><kbd>R</kbd></td></tr>
                 </tbody>
               </table>
               <p className="nes-hint">
-                <kbd>P</kbd> pause · <kbd>F</kbd> plein écran · <kbd>F2</kbd> sauver · <kbd>F4</kbd> charger.
-                Branche une manette USB ou Bluetooth : elle est détectée dès le premier bouton (2 joueurs possibles).
+                Joueur 2 : <kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> en AZERTY (<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> en QWERTY).
+                <kbd>P</kbd> pause · <kbd>F2</kbd> sauver · <kbd>F4</kbd> charger. Les manettes USB ou Bluetooth sont détectées
+                dès le premier bouton (bouton du bas = B, de droite = A).
               </p>
+              <label className="nes-switch">
+                <input type="checkbox" checked={padPlayer === 2} onChange={(event) => setPadPlayer(event.target.checked ? 2 : 1)} />
+                <span>La 1re manette joue le joueur 2 (joueur 1 au clavier)</span>
+              </label>
               <label className="nes-switch">
                 <input type="checkbox" checked={showTouch} onChange={(event) => setTouchPref(event.target.checked)} />
                 <span>Manette tactile à l’écran</span>
@@ -521,45 +616,53 @@ export default function NesEmulator() {
             </div>
 
             <div className="nes-panel">
-              <h3>Ma ludothèque</h3>
-              <ul className="nes-library">
-                <li className={rom?.builtin ? 'is-current' : ''}>
-                  <button type="button" className="nes-lib-play" onClick={playDemo} disabled={loading}>
-                    <b>{DEMO.name}</b>
-                    <span>Démo · homebrew libre</span>
-                  </button>
-                </li>
-                {userRoms.map((entry) => (
-                  <li key={entry.id} className={rom?.id === entry.id ? 'is-current' : ''}>
-                    <button type="button" className="nes-lib-play" onClick={() => playFromLibrary(entry)} disabled={loading}>
-                      <b>{entry.name}</b>
-                      <span>{formatSize(entry.size)} · {formatDate(entry.lastPlayed)}</span>
-                    </button>
-                    <button type="button" className="nes-lib-remove" aria-label={`Retirer ${entry.name}`} onClick={() => removeFromLibrary(entry)}>✕</button>
-                  </li>
-                ))}
-              </ul>
+              <h3>Mes ROMs</h3>
+              {userRoms.length > 0 ? (
+                <ul className="nes-library">
+                  {userRoms.map((entry) => (
+                    <li key={entry.id} className={rom?.id === entry.id ? 'is-current' : ''}>
+                      <button type="button" className="nes-lib-play" onClick={() => playFromLibrary(entry)} disabled={!!loading}>
+                        <b>{entry.name}</b>
+                        <span>{formatSize(entry.size)} · {formatDate(entry.lastPlayed)}</span>
+                      </button>
+                      <button type="button" className="nes-lib-remove" aria-label={`Retirer ${entry.name}`} onClick={() => removeFromLibrary(entry)}>✕</button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <button type="button" className="nes-lib-empty" onClick={pickFile}>
+                  <b>＋ Charger une ROM .nes</b>
+                  <span>Ou glisse le fichier sur l’écran</span>
+                </button>
+              )}
               <p className="nes-hint">
                 {storageOk
                   ? 'Tes ROMs et sauvegardes restent dans ce navigateur, sur cet appareil.'
                   : 'Stockage local indisponible (navigation privée ?) : les ROMs devront être rechargées à chaque visite.'}
               </p>
             </div>
-
-            <div className="nes-panel nes-legal">
-              <h3>Bon à savoir</h3>
-              <p>
-                L’émulation est légale, mais les jeux commerciaux restent protégés par le droit d’auteur : n’utilise
-                que des copies de cartouches que tu possèdes ou des homebrews distribués librement. Let’s Play
-                n’héberge ni ne fournit de ROM commerciale.
-              </p>
-              <p>
-                Moteur : <a href="https://github.com/bfirsh/jsnes" target="_blank" rel="noreferrer">jsnes</a> (Apache 2.0).
-                Démo : <a href={DEMO.notice} target="_blank" rel="noreferrer">Concentration Room</a> © 2010 Damian Yerrick,
-                logiciel libre (GPL v3).
-              </p>
-            </div>
           </aside>
+        </div>
+
+        <GameShelf
+          games={NES_CATALOG}
+          currentSlug={currentGame?.slug || null}
+          loadingSlug={loading}
+          onPlay={launchGame}
+        />
+
+        <div className="nes-legal">
+          <p>
+            <b>Uniquement des jeux libres.</b> Les cartouches de la borne sont des créations indépendantes (« homebrews »)
+            dont les auteurs autorisent la diffusion — licence et code source sur chaque fiche. L’émulation est légale,
+            mais les jeux commerciaux restent protégés : si tu charges ta propre ROM, utilise seulement la copie d’une
+            cartouche que tu possèdes. Let’s Play n’héberge aucune ROM commerciale.
+          </p>
+          <p>
+            Émulateur : <a href="https://github.com/bfirsh/jsnes" target="_blank" rel="noreferrer">jsnes</a> (Apache 2.0).
+            Jaquettes : illustrations originales Let’s Play, captures réalisées dans l’émulateur. NES est une marque de
+            Nintendo, qui n’est pas associée à ces jeux ni à cette page.
+          </p>
         </div>
       </section>
     </main>
