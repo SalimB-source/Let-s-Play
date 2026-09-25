@@ -471,10 +471,13 @@
 [data-theme='light'] .messages-composer-hint,
 [data-theme='light'] .messages-composer-disabled,
 [data-theme='light'] .messages-report-note,
-[data-theme='light'] .social-page-tabs,
 [data-theme='light'] .comment-form input,
 [data-theme='light'] .comment-form textarea,
 [data-theme='light'] .countdown-unit{background:var(--panel)}
+[data-theme='light'] .social-page-tabs{
+  background:#fff;
+  border-color:var(--line);
+}
 [data-theme='light'] .nav-search,
 [data-theme='light'] .comment-form input,
 [data-theme='light'] .comment-form textarea{border-color:var(--line)}
