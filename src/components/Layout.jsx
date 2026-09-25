@@ -110,6 +110,7 @@ export default function Layout({ children }) {
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
     { to: '/quizz', label: t.nav.quiz, num: '05', desc: 'QUIZZ / PLAY' },
+    { to: '/games/pixel-runner', label: t.nav.games || 'Jeux', num: '06', desc: 'ARCADE / PLAY' },
   ];
 
   // Photo + niveau du joueur connecté, mêmes sources que le hub /auth :
@@ -189,7 +190,7 @@ export default function Layout({ children }) {
                 aria-label={profileAria}
               >
                 <span className="nav-link-main">
-                  <span className="nav-link-num">06</span>
+                        <span className="nav-link-num">07</span>
                   <span className="nav-profile-avatar" aria-hidden="true">
                     <span className="nav-profile-avatar-face">
                       {profileAvatar ? (
@@ -353,6 +354,7 @@ export default function Layout({ children }) {
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
           <Link to="/quizz">{t.nav.quiz}</Link>
+          <Link to="/games/pixel-runner">{t.nav.games || 'Jeux'}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>
           <span>{t.footer.copyright}</span>
