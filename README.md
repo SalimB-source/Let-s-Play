@@ -159,6 +159,41 @@ site »).
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
 
+## Salle d'arcade : émulateur NES (`/games/nes`)
+
+Le lien **Jeux** de la navigation mène désormais à `/games` (alias `/jeux`), une
+petite salle d'arcade qui présente les deux bornes : **Pixel Runner**
+(`/games/pixel-runner`) et **Retro NES** (`/games/nes`).
+
+L'émulateur s'appuie sur [jsnes](https://github.com/bfirsh/jsnes) (Apache 2.0,
+pur JavaScript, sans WebAssembly). Le cœur est chargé à la demande
+(`React.lazy`) : ~38 Ko gzip téléchargés seulement en ouvrant la page.
+
+- **ROMs** : démo intégrée *Concentration Room* (homebrew libre de Damian
+  Yerrick, GPL v3 avec exception de redistribution du binaire ; notice dans
+  `public/roms/concentration-room/README.html`), ou fichier `.nes` du joueur
+  (bouton ou glisser-déposer). La ROM est lue dans le navigateur : **rien n'est
+  envoyé au serveur**. Aucune ROM commerciale n'est hébergée — ne pas en
+  ajouter dans `public/`.
+- **Stockage local** (IndexedDB `lets-play-nes`, `src/games/nes/romLibrary.js`) :
+  ludothèque des ROMs déjà chargées, un état sauvegardé par jeu (avec
+  miniature) et la SRAM des cartouches à pile (Zelda, etc.), réécrite
+  automatiquement.
+- **Commandes** : croix = flèches, A = `C`/`K`, B = `X`/`J`, Start = Entrée,
+  Select = Maj (touches identiques en AZERTY et QWERTY, lues via
+  `event.code`). `P` pause, `F` plein écran, `F2` sauver, `F4` charger.
+  Manettes USB/Bluetooth via la Gamepad API (2 joueurs). Manette tactile
+  (croix glissable, A/B, Select/Start) affichée d'office sur écran tactile.
+- **Son et cadence** (`src/games/nes/nesEngine.js`) : l'AudioContext est créé
+  avant le cœur pour que l'APU produise exactement au taux de la carte son ;
+  la boucle tourne à 60,0988 images/s quelle que soit la fréquence de l'écran,
+  et se met en pause quand l'onglet est masqué.
+- **Compatibilité** : mappers 0–4, 5, 7, 9, 11, 34, 38, 66, 71, 79, 94, 118,
+  119, 140, 180, 240, 241 (la grande majorité du catalogue). Un mapper inconnu
+  affiche un message clair au lieu d'une page cassée.
+
+`npm run check:i18n` rend aussi `/games` et `/games/nes`.
+
 ## Player accounts & authentication (Supabase)
 
 Registration, login, Google / Microsoft (Azure) sign-in, password reset and the

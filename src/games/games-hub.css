@@ -1,0 +1,105 @@
+/* ============ SALLE D'ARCADE (/games) ============ */
+.games-hub-page {
+  min-height: 100vh;
+  padding: 128px 0 80px;
+  background:
+    radial-gradient(900px 520px at 80% 10%, rgba(124, 58, 237, .2), transparent 65%),
+    radial-gradient(760px 480px at 6% 80%, rgba(34, 211, 238, .08), transparent 62%);
+}
+.games-hub-heading { padding: 42px 0 34px; }
+.games-hub-heading h1 {
+  margin: 18px 0 14px;
+  font-family: var(--display);
+  font-size: clamp(44px, 7vw, 88px);
+  line-height: .94;
+  letter-spacing: -.035em;
+  text-transform: uppercase;
+}
+.games-hub-heading h1 em { color: var(--cyan); font-style: normal; text-shadow: 0 0 26px rgba(34, 211, 238, .5); }
+.games-hub-heading p:not(.eyebrow) { max-width: 560px; margin: 0; color: var(--muted); font-size: 17px; line-height: 1.5; }
+
+.games-hub-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.games-hub-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-strong);
+  background: var(--panel);
+  color: var(--ink);
+  clip-path: polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px);
+  transition: transform .2s, border-color .2s, box-shadow .2s;
+}
+.games-hub-card:hover { transform: translateY(-4px); }
+.games-hub-card.is-red:hover { border-color: #ef4444; box-shadow: 0 24px 60px -30px rgba(239, 68, 68, .6); }
+.games-hub-card.is-cyan:hover { border-color: #22d3ee; box-shadow: 0 24px 60px -30px rgba(34, 211, 238, .6); }
+
+.games-hub-visual {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 8;
+  overflow: hidden;
+  background: radial-gradient(420px 220px at 70% 20%, rgba(239, 68, 68, .35), transparent 70%), linear-gradient(160deg, #1b1c33, #07081a);
+  background-size: cover;
+  background-position: center;
+}
+.games-hub-num {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  color: rgba(255, 255, 255, .7);
+  font: 500 11px var(--mono);
+  letter-spacing: .2em;
+}
+/* Manette NES stylisée, en CSS pur. */
+.games-hub-pad {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: min(62%, 320px);
+  aspect-ratio: 2.4;
+  padding: 0 7%;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #d9d9df, #b9b9c2);
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, .8), inset 0 -4px 0 rgba(0, 0, 0, .15);
+  transform: rotate(-6deg);
+  transition: transform .3s;
+}
+.games-hub-card:hover .games-hub-pad { transform: rotate(-2deg) scale(1.04); }
+.games-hub-pad::before {
+  content: '';
+  position: absolute;
+  inset: 12% 5%;
+  border-radius: 4px;
+  background: #1f1f28;
+}
+.games-hub-pad > span { position: relative; }
+.games-hub-pad .dpad {
+  width: 22%;
+  aspect-ratio: 1;
+  background:
+    linear-gradient(#3a3a46, #3a3a46) center / 34% 100% no-repeat,
+    linear-gradient(#3a3a46, #3a3a46) center / 100% 34% no-repeat;
+}
+.games-hub-pad .meta {
+  width: 22%;
+  height: 10%;
+  border-radius: 99px;
+  background: #555563;
+  box-shadow: 0 0 0 0 transparent;
+}
+.games-hub-pad .ab { display: flex; gap: 10%; width: 26%; }
+.games-hub-pad .ab i { flex: 1; aspect-ratio: 1; border-radius: 50%; background: #dc2626; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .3); }
+
+.games-hub-copy { padding: 22px 24px 24px; }
+.games-hub-copy h2 { margin: 12px 0 10px; font: 800 clamp(28px, 3.4vw, 40px)/1 var(--display); letter-spacing: -.02em; text-transform: uppercase; }
+.games-hub-copy p:not(.eyebrow) { margin: 0 0 18px; color: var(--muted); line-height: 1.5; }
+.games-hub-cta { color: var(--cyan); font: 500 11px var(--mono); letter-spacing: .16em; }
+.games-hub-card.is-red .games-hub-cta { color: #ef4444; }
+[data-theme='light'] .games-hub-card.is-red .games-hub-cta { color: #b91c1c; }
+
+@media (max-width: 800px) {
+  .games-hub-page { padding: 104px 0 48px; }
+  .games-hub-heading { padding: 28px 0 24px; }
+  .games-hub-grid { grid-template-columns: 1fr; }
+}

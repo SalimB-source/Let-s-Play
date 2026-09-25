@@ -26,6 +26,8 @@ import QuizPage from '../src/quizzes/QuizPage';
 import Dossiers from '../src/pages/Dossiers';
 import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
+import GamesHub from '../src/games/GamesHub';
+import NesEmulator from '../src/games/nes/NesEmulator';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
 import { gameTests } from '../src/reviewsData';
@@ -51,6 +53,8 @@ export const ROUTES = [
   ['/quizz/films-cultes', QuizPage, '/quizz/:slug'],
   ['/quizz/super-heros-cinema', QuizPage, '/quizz/:slug'],
   ['/quizz/series-cultes', QuizPage, '/quizz/:slug'],
+  ['/games', GamesHub],
+  ['/games/nes', NesEmulator],
   ['/unknown-page', NotFound],
 ];
 

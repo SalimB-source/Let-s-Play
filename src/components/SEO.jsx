@@ -38,6 +38,22 @@ const pageMeta = {
     description: 'Teste tes connaissances gaming : culture générale, rétro, souls-like, RPG, e-sport et studios. Un quizz du jour, des succès et de l’XP à gagner.',
     type: 'website',
   },
+  '/games': {
+    title: 'Jeux en ligne : émulateur NES et Pixel Runner — Let’s Play',
+    description: 'La salle d’arcade Let’s Play : un émulateur NES jouable dans le navigateur et Pixel Runner, notre endless runner maison.',
+    type: 'website',
+  },
+  '/games/nes': {
+    title: 'Émulateur NES en ligne — Let’s Play',
+    description: 'Joue à la NES dans ton navigateur : démo homebrew gratuite, chargement de tes ROMs .nes, sauvegardes, manette USB/Bluetooth et contrôles tactiles sur mobile.',
+    type: 'website',
+  },
+  '/games/pixel-runner': {
+    title: 'Pixel Runner, l’endless runner de Let’s Play',
+    description: 'Cours, saute et bats ton record dans la ville néon de Let’s Play. Jouable au clavier et au tactile.',
+    image: 'pixel-runner-bg.jpg',
+    type: 'website',
+  },
   '/news/kingdom-hearts-4-coco': {
     title: 'Kingdom Hearts 4 : pourquoi le monde de Coco colle à la saga — Let’s Play',
     description: 'Le monde de Coco est confirmé dans Kingdom Hearts 4, attendu fin 2027. Seconde mort, mémoire et symbolique du cœur : pourquoi ce choix de Disney et Tetsuya Nomura est bien plus cohérent qu’un simple coup marketing.',
@@ -99,6 +115,7 @@ const routeAliases = {
   '/calendar': '/calendrier',
   '/quiz': '/quizz',
   '/quizzes': '/quizz',
+  '/jeux': '/games',
 };
 
 function upsertMeta(attribute, value, content) {
