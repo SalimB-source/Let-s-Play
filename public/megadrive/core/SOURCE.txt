@@ -1,0 +1,28 @@
+Moteur d'émulation Mega Drive de la borne Let's Play
+=====================================================
+
+Fichiers : genesis_plus_gx_libretro.js / genesis_plus_gx_libretro.wasm
+
+Il s'agit de la compilation web officielle (Emscripten) de RetroArch 1.22.2
+avec le cœur Genesis Plus GX, publiée par le buildbot Libretro
+(https://buildbot.libretro.com/stable/1.22.2/emscripten/RetroArch.7z) et
+reprise SANS MODIFICATION depuis le dépôt
+https://github.com/arianrhodsandlot/retroarch-emscripten-build (tag v1.22.2,
+fichier retroarch/genesis_plus_gx_libretro.zip).
+
+Codes sources correspondants :
+  - RetroArch 1.22.2 (GPL v3) :
+    https://github.com/libretro/RetroArch/tree/v1.22.2
+    (commit 69a4f0ea1e8aaf442ae4858f2e7f2b31a1776576)
+  - Genesis Plus GX (licence non commerciale, voir LICENSE-GenesisPlusGX.txt) :
+    https://github.com/libretro/Genesis-Plus-GX
+
+Licences :
+  - COPYING-RetroArch-GPLv3.txt : GNU GPL v3 (RetroArch).
+  - LICENSE-GenesisPlusGX.txt : Genesis Plus GX. Redistribution autorisée à
+    condition de ne PAS la vendre ni l'utiliser dans un produit ou une activité
+    commerciale. => La page /games/megadrive doit rester sans publicité,
+    sans abonnement et sans vente. Si le site devient commercial, remplacer
+    ce cœur par clownmdemu (AGPL v3), disponible dans le même dépôt.
+
+Interface JavaScript : Nostalgist.js (MIT), https://github.com/arianrhodsandlot/nostalgist

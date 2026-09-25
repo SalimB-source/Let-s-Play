@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { NES_CATALOG } from '../games/nes/catalog';
+import { MD_CATALOG } from '../games/megadrive/catalog';
 
 const SITE_URL = 'https://salimb-source.github.io/Let-s-Play';
 const base = import.meta.env.BASE_URL;
@@ -41,12 +42,18 @@ const pageMeta = {
   },
   '/games': {
     title: 'Jeux en ligne : émulateur NES et Pixel Runner — Let’s Play',
-    description: 'La salle d’arcade Let’s Play : un émulateur NES jouable dans le navigateur et Pixel Runner, notre endless runner maison.',
+    description: 'La salle d’arcade Let’s Play : des émulateurs NES et Mega Drive jouables dans le navigateur et Pixel Runner, notre endless runner maison.',
     type: 'website',
   },
   '/games/nes': {
     title: 'Émulateur NES en ligne — Let’s Play',
     description: 'Une borne NES dans ton navigateur : Thwaite, RHDE, Concentration Room, Lan Master et 2048, cinq jeux libres jouables en un clic, plus tes propres ROMs .nes, sauvegardes, manettes et contrôles tactiles.',
+    type: 'website',
+  },
+  '/games/megadrive': {
+    title: 'Émulateur Mega Drive en ligne — Let’s Play',
+    description: 'Une borne Mega Drive dans ton navigateur : Oh Mummy Genesis et d’autres homebrews offerts par leurs auteurs, jouables en un clic, plus tes propres ROMs, sauvegardes, manettes et contrôles tactiles.',
+    image: 'megadrive/covers/oh-mummy.webp',
     type: 'website',
   },
   '/games/pixel-runner': {
@@ -118,6 +125,16 @@ for (const game of NES_CATALOG) {
     title: `${game.title} — jouer en ligne sur la borne NES Let’s Play`,
     description: `${game.tagline} ${game.description}`,
     image: `roms/${game.slug}/cover.webp`,
+    type: 'website',
+  };
+}
+
+// Idem pour la borne Mega Drive : /games/megadrive/<jeu>.
+for (const game of MD_CATALOG.filter((entry) => !entry.external)) {
+  pageMeta[`/games/megadrive/${game.slug}`] = {
+    title: `${game.title} — jouer en ligne sur la borne Mega Drive Let’s Play`,
+    description: `${game.tagline} ${game.description}`,
+    image: `megadrive/covers/${game.slug}.webp`,
     type: 'website',
   };
 }

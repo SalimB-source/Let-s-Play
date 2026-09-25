@@ -63,6 +63,7 @@
   text-overflow: ellipsis;
 }
 
+.nes-main { min-width: 0; }
 .nes-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -600,7 +601,7 @@
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1020px) {
-  .nes-layout { grid-template-columns: 1fr; }
+  .nes-layout { grid-template-columns: minmax(0, 1fr); }
   .nes-side { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 }
 @media (max-width: 800px) {
@@ -638,4 +639,31 @@
 /* Écrans tactiles : pas de survol, le bouton « Jouer » reste visible. */
 @media (hover: none) {
   .nes-cart-play { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Borne : cartouches sans capture, « Bientôt », et liens vers l'auteur. */
+a.nes-cart-box { text-decoration: none; }
+.nes-cart-art.no-shot .nes-cart-cover { opacity: 1 !important; }
+.nes-cart-box:hover .nes-cart-art.no-shot .nes-cart-cover,
+.nes-cart-box:focus-visible .nes-cart-art.no-shot .nes-cart-cover { transform: scale(1.05); }
+.nes-cart.is-pending .nes-cart-box { cursor: default; }
+.nes-cart.is-pending .nes-cart-cover { filter: grayscale(.75) brightness(.7); }
+.nes-cart.is-pending .nes-cart-play { opacity: 1; transform: translate(-50%, 0); background: rgba(10, 11, 26, .85); color: #fff; box-shadow: 0 0 0 1px rgba(255, 255, 255, .25); }
+.nes-cart.is-external .nes-cart-band { background: repeating-linear-gradient(135deg, var(--game-accent) 0 10px, color-mix(in srgb, var(--game-accent) 80%, #000) 10px 20px); }
+.nes-cart.is-external .nes-cart-play { background: #fff; }
+.nes-shelf-subhead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 56px 0 22px;
+  padding-top: 26px;
+  border-top: 1px dashed var(--line, rgba(255, 255, 255, .15));
+}
+.nes-shelf-subhead h3 { margin: 0; font: 800 clamp(20px, 2.4vw, 28px) var(--display); letter-spacing: -.01em; }
+.nes-shelf-subhead p { max-width: 460px; margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.nes-shelf-grid.is-external { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+@media (max-width: 800px) {
+  .nes-shelf-subhead { display: block; }
+  .nes-shelf-subhead p { margin-top: 8px; }
 }

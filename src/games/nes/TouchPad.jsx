@@ -5,14 +5,29 @@ import { BUTTONS } from './nesEngine';
 // pouce d'une direction à l'autre, diagonales comprises), A / B et
 // Select / Start. Multi-touch : chaque zone suit son propre doigt.
 
-const DIRECTIONS = [BUTTONS.UP, BUTTONS.DOWN, BUTTONS.LEFT, BUTTONS.RIGHT];
+// Disposition par défaut : manette NES. La Mega Drive passe la sienne
+// (A / B / C + Start) via la prop `layout`.
+export const NES_LAYOUT = {
+  up: BUTTONS.UP,
+  down: BUTTONS.DOWN,
+  left: BUTTONS.LEFT,
+  right: BUTTONS.RIGHT,
+  meta: [
+    { button: BUTTONS.SELECT, label: 'SELECT' },
+    { button: BUTTONS.START, label: 'START' },
+  ],
+  face: [
+    { button: BUTTONS.B, label: 'B', className: 'is-b' },
+    { button: BUTTONS.A, label: 'A', className: 'is-a' },
+  ],
+};
 const DEADZONE = 0.22;
 
 function buzz() {
   try { navigator.vibrate?.(8); } catch { /* pas de vibreur */ }
 }
 
-function directionsFor(event, element) {
+function directionsFor(event, element, layout) {
   const rect = element.getBoundingClientRect();
   const dx = (event.clientX - rect.left) / rect.width - 0.5;
   const dy = (event.clientY - rect.top) / rect.height - 0.5;
@@ -20,14 +35,15 @@ function directionsFor(event, element) {
   if (Math.hypot(dx, dy) < DEADZONE / 2) return pressed;
   const angle = Math.atan2(dy, dx); // 0 = droite, π/2 = bas
   const sector = Math.round(angle / (Math.PI / 4)); // -4..4, 8 secteurs
-  if ([-1, 0, 1].includes(sector)) pressed.add(BUTTONS.RIGHT);
-  if ([1, 2, 3].includes(sector)) pressed.add(BUTTONS.DOWN);
-  if ([3, 4, -4, -3].includes(sector)) pressed.add(BUTTONS.LEFT);
-  if ([-3, -2, -1].includes(sector)) pressed.add(BUTTONS.UP);
+  if ([-1, 0, 1].includes(sector)) pressed.add(layout.right);
+  if ([1, 2, 3].includes(sector)) pressed.add(layout.down);
+  if ([3, 4, -4, -3].includes(sector)) pressed.add(layout.left);
+  if ([-3, -2, -1].includes(sector)) pressed.add(layout.up);
   return pressed;
 }
 
-export default function TouchPad({ engineRef, disabled }) {
+export default function TouchPad({ engineRef, disabled, layout = NES_LAYOUT }) {
+  const DIRECTIONS = [layout.up, layout.down, layout.left, layout.right];
   const dpadRef = useRef(null);
   const activeDirs = useRef(new Set());
   const [, force] = React.useReducer((n) => n + 1, 0);
@@ -42,17 +58,17 @@ export default function TouchPad({ engineRef, disabled }) {
     }
     activeDirs.current = next;
     force();
-  }, [engineRef]);
+  }, [engineRef, layout]);
 
   const onDpadDown = (event) => {
     if (disabled) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    setDirections(directionsFor(event, dpadRef.current));
+    setDirections(directionsFor(event, dpadRef.current, layout));
   };
   const onDpadMove = (event) => {
     if (disabled || !event.currentTarget.hasPointerCapture?.(event.pointerId)) return;
-    setDirections(directionsFor(event, dpadRef.current));
+    setDirections(directionsFor(event, dpadRef.current, layout));
   };
   const onDpadUp = () => setDirections(new Set());
 
@@ -101,19 +117,17 @@ export default function TouchPad({ engineRef, disabled }) {
         onLostPointerCapture={onDpadUp}
         onContextMenu={(event) => event.preventDefault()}
       >
-        <span className={`nes-dpad-arm up${dirs.has(BUTTONS.UP) ? ' is-pressed' : ''}`} />
-        <span className={`nes-dpad-arm down${dirs.has(BUTTONS.DOWN) ? ' is-pressed' : ''}`} />
-        <span className={`nes-dpad-arm left${dirs.has(BUTTONS.LEFT) ? ' is-pressed' : ''}`} />
-        <span className={`nes-dpad-arm right${dirs.has(BUTTONS.RIGHT) ? ' is-pressed' : ''}`} />
+        <span className={`nes-dpad-arm up${dirs.has(layout.up) ? ' is-pressed' : ''}`} />
+        <span className={`nes-dpad-arm down${dirs.has(layout.down) ? ' is-pressed' : ''}`} />
+        <span className={`nes-dpad-arm left${dirs.has(layout.left) ? ' is-pressed' : ''}`} />
+        <span className={`nes-dpad-arm right${dirs.has(layout.right) ? ' is-pressed' : ''}`} />
         <span className="nes-dpad-hub" />
       </div>
       <div className="nes-touch-meta">
-        {bind(BUTTONS.SELECT, 'SELECT', 'nes-pill')}
-        {bind(BUTTONS.START, 'START', 'nes-pill')}
+        {layout.meta.map((item) => <React.Fragment key={item.label}>{bind(item.button, item.label, 'nes-pill')}</React.Fragment>)}
       </div>
-      <div className="nes-touch-ab">
-        {bind(BUTTONS.B, 'B', 'nes-round is-b')}
-        {bind(BUTTONS.A, 'A', 'nes-round is-a')}
+      <div className={`nes-touch-ab${layout.face.length > 2 ? ' has-three' : ''}`}>
+        {layout.face.map((item) => <React.Fragment key={item.label}>{bind(item.button, item.label, `nes-round ${item.className || ''}`)}</React.Fragment>)}
       </div>
     </div>
   );

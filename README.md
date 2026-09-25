@@ -212,7 +212,36 @@ pur JavaScript, sans WebAssembly). Le cœur est chargé à la demande
   119, 140, 180, 240, 241 (la grande majorité du catalogue). Un mapper inconnu
   affiche un message clair au lieu d'une page cassée.
 
-`npm run check:i18n` rend aussi `/games`, `/games/nes` et `/games/nes/thwaite`.
+`npm run check:i18n` rend aussi `/games`, `/games/nes`, `/games/nes/thwaite` et
+les pages `/games/megadrive`.
+
+### Borne Mega Drive (`/games/megadrive`)
+
+- **Moteur** : RetroArch 1.22.2 + cœur **Genesis Plus GX** (WebAssembly),
+  piloté par [Nostalgist.js](https://nostalgist.js.org/) (MIT). Le cœur est
+  **hébergé par le site** (`public/megadrive/core/`, ~1,5 Mo compressé) et
+  n'est téléchargé qu'au premier « Jouer ». Sources et licences :
+  `public/megadrive/core/SOURCE.txt`. ⚠ Licence Genesis Plus GX **non
+  commerciale** : pas de publicité, d'abonnement ni de vente sur cette page
+  (sinon, passer au cœur clownmdemu, AGPL).
+- **Jeux** (`src/games/megadrive/catalog.js`, provenance dans
+  `public/megadrive/README.md`) :
+  - hébergés : *Oh Mummy Genesis* (freeware libéré par 1985 Alternativo) ;
+    *Irmãos Aratu*, *Shaolin Carcará* (Mangangá Team, « distribution
+    gratuite »), *Minesweeper MD* et *KłełeAtoms MD* (Nightwolf-47, MIT) —
+    ces quatre-là sont marqués `pending` (« Bientôt ») tant que leur `.bin`
+    n'est pas déposé dans `public/megadrive/roms/<jeu>/` ;
+  - présentés avec un lien vers l'auteur, sans être hébergés : *30 Years of
+    Nintendon't*, *Break An Egg* (Dr. Ludos, pas d'autorisation de
+    redistribution), *Bio Evil* (propriété intellectuelle Capcom),
+    *Barbarian* de la Z-Team (graphismes et sons originaux de Psygnosis).
+- **Commandes** : J1 flèches + `X` / `C` / `V` (A / B / C) + Entrée ;
+  J2 `ZQSD` (AZERTY) / `WASD` (QWERTY) + `G` / `H` / `J` + `T`. `P` pause,
+  `F2` / `F4` sauver / charger. Manettes via RetroArch (1re = J1, 2e = J2),
+  manette tactile A / B / C + Start sur mobile.
+- **Stockage** : IndexedDB `lets-play-megadrive` (même module que la NES,
+  `createRomLibrary`) : ROMs perso, états sauvegardés avec miniature, SRAM
+  des jeux copiée toutes les 15 s et à la pause.
 
 ## Player accounts & authentication (Supabase)
 

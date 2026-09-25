@@ -1,0 +1,16 @@
+Irmãos Aratu (Mangangá Team, 2022 — révision rev01)
+==============================================
+
+Crédits : Laudelino : code, logo, game design, sprites · Amaweks : décors, cinématiques, musique · Luiz F.M. Villalva : tests.
+Pixel art des décors et sprites : ansimuz (https://opengameart.org/users/ansimuz).
+Développé avec SGDK (Stephane Dallongeville, MIT).
+
+Statut : gratuit. Page officielle : https://amaweks.itch.io/aratu-shaolin
+Texte des auteurs (portugais) : « A Distribuição é gratuita, mas apreciamos
+qualquer apoio em forma de doação » — « La distribution est gratuite, mais
+tout soutien sous forme de don est apprécié ». Pas de licence formelle : les
+auteurs gardent leurs droits ; à retirer sur simple demande. La fiche du jeu
+renvoie vers leur page pour les dons.
+
+Fichier attendu : fichier .bin extrait de l'archive officielle
+(irmaos-aratu-2022-rev01.zip / shaolin-carcara-2022-rev01.zip).

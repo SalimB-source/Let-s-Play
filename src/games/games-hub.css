@@ -18,7 +18,7 @@
 .games-hub-heading h1 em { color: var(--cyan); font-style: normal; text-shadow: 0 0 26px rgba(34, 211, 238, .5); }
 .games-hub-heading p:not(.eyebrow) { max-width: 560px; margin: 0; color: var(--muted); font-size: 17px; line-height: 1.5; }
 
-.games-hub-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.games-hub-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 22px; }
 .games-hub-card {
   display: flex;
   flex-direction: column;
@@ -30,6 +30,7 @@
 }
 .games-hub-card:hover { transform: translateY(-4px); }
 .games-hub-card.is-red:hover { border-color: #ef4444; box-shadow: 0 24px 60px -30px rgba(239, 68, 68, .6); }
+.games-hub-card.is-blue:hover { border-color: #3b82f6; box-shadow: 0 24px 60px -30px rgba(59, 130, 246, .6); }
 .games-hub-card.is-cyan:hover { border-color: #22d3ee; box-shadow: 0 24px 60px -30px rgba(34, 211, 238, .6); }
 
 .games-hub-visual {
@@ -50,26 +51,34 @@
   font: 500 11px var(--mono);
   letter-spacing: .2em;
 }
-/* Éventail de jaquettes de la borne NES. */
-.games-hub-jackets { position: relative; width: 70%; height: 86%; }
+/* Éventail de jaquettes des bornes rétro. Dimensionné par la hauteur :
+   les attributs width/height des <img> vaudraient sinon une hauteur fixe. */
+.games-hub-jackets { position: relative; width: 100%; height: 100%; }
 .games-hub-jackets img {
   position: absolute;
-  top: 8%;
+  bottom: -6%;
   left: 50%;
-  width: 34%;
+  width: auto;
+  height: 82%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
   border: 2px solid rgba(255, 255, 255, .16);
   box-shadow: 0 16px 34px -12px rgba(0, 0, 0, .9);
-  transform-origin: 50% 110%;
+  transform-origin: 50% 100%;
   transition: transform .35s ease;
 }
-.games-hub-jackets img:nth-child(1) { transform: translateX(-50%) rotate(-16deg) translateX(-38%); }
-.games-hub-jackets img:nth-child(2) { z-index: 1; transform: translateX(-50%) translateY(-4%); }
-.games-hub-jackets img:nth-child(3) { transform: translateX(-50%) rotate(16deg) translateX(38%); }
-.games-hub-card:hover .games-hub-jackets img:nth-child(1) { transform: translateX(-50%) rotate(-22deg) translateX(-48%); }
-.games-hub-card:hover .games-hub-jackets img:nth-child(2) { transform: translateX(-50%) translateY(-9%); }
-.games-hub-card:hover .games-hub-jackets img:nth-child(3) { transform: translateX(-50%) rotate(22deg) translateX(48%); }
+.games-hub-jackets img:nth-child(1) { transform: translateX(-50%) rotate(-14deg) translateX(-62%); }
+.games-hub-jackets img:nth-child(2) { z-index: 1; transform: translateX(-50%) translateY(-6%); }
+.games-hub-jackets img:nth-child(3) { transform: translateX(-50%) rotate(14deg) translateX(62%); }
+.games-hub-card:hover .games-hub-jackets img:nth-child(1) { transform: translateX(-50%) rotate(-18deg) translateX(-74%); }
+.games-hub-card:hover .games-hub-jackets img:nth-child(2) { transform: translateX(-50%) translateY(-12%); }
+.games-hub-card:hover .games-hub-jackets img:nth-child(3) { transform: translateX(-50%) rotate(18deg) translateX(74%); }
+.games-hub-card.is-blue .games-hub-visual {
+  background: radial-gradient(420px 220px at 70% 20%, rgba(59, 130, 246, .4), transparent 70%), linear-gradient(160deg, #111a3a, #05081a);
+}
+@media (prefers-reduced-motion: reduce) {
+  .games-hub-jackets img { transition: none; }
+}
 
 .games-hub-copy { padding: 22px 24px 24px; }
 .games-hub-copy h2 { margin: 12px 0 10px; font: 800 clamp(28px, 3.4vw, 40px)/1 var(--display); letter-spacing: -.02em; text-transform: uppercase; }
@@ -77,6 +86,8 @@
 .games-hub-cta { color: var(--cyan); font: 500 11px var(--mono); letter-spacing: .16em; }
 .games-hub-card.is-red .games-hub-cta { color: #ef4444; }
 [data-theme='light'] .games-hub-card.is-red .games-hub-cta { color: #b91c1c; }
+.games-hub-card.is-blue .games-hub-cta { color: #60a5fa; }
+[data-theme='light'] .games-hub-card.is-blue .games-hub-cta { color: #1d4ed8; }
 
 @media (max-width: 800px) {
   .games-hub-page { padding: 104px 0 48px; }
