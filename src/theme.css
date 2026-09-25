@@ -475,11 +475,18 @@
 [data-theme='light'] .comment-form textarea,
 [data-theme='light'] .countdown-unit{background:var(--panel)}
 [data-theme='light'] .social-page-tabs{
-  background:#fff;
+  background-color:#fff;
+  background-image:none;
   border-color:var(--line);
 }
 [data-theme='light'] .social-tabs{
-  background:#fff;
+  background-color:#fff;
+  background-image:none;
+  border-bottom-color:var(--line);
+}
+[data-theme='light'] .social-tab:hover{
+  color:var(--ink);
+  background:rgba(86,70,190,.06);
 }
 [data-theme='light'] .nav-search,
 [data-theme='light'] .comment-form input,
