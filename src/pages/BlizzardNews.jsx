@@ -13,7 +13,7 @@ const stories = {
     h2: 'UNE NOUVELLE ÉCHELLE POUR LA GUERRE', p1: 'Ce projet prendra la forme d’un FPS en monde ouvert. Blizzard veut donner une place centrale à l’exploration, à la tension des affrontements et au sentiment de survivre dans un conflit qui dépasse chaque soldat.',
     quote: 'Un jeu de tir en monde ouvert où chaque pas se mérite.', quoteBy: 'Dan Hay · Directeur du projet',
     h2b: 'UNE ÉQUIPE EXPÉRIMENTÉE', p2: 'Le jeu est dirigé par Dan Hay, ancien responsable de la licence Far Cry. Un choix qui laisse entrevoir une expérience plus directe et cinématographique, sans pour autant renier l’ADN de la franchise.', p3: 'StarCraft ne sera pas disponible avant 2030. Le titre est annoncé sur PC et consoles Xbox, tandis que Blizzard garde encore le reste de ses plans confidentiel.', p4: 'Pour l’instant, cette annonce ressemble davantage à une déclaration d’intention qu’à une présentation complète. Mais le simple fait de voir StarCraft changer de perspective suffit à relancer toutes les spéculations.',
-    take: 'RÉSUMÉ', takeText: 'StarCraft devient un FPS en monde ouvert, prévu pour 2030 sur PC et Xbox.'
+    take: 'RÉSUMÉ', takeText: 'Blizzard ne ressuscite pas StarCraft à l’identique : le studio teste une nouvelle porte d’entrée, avec un risque créatif aussi grand que l’attente autour du nom.'
   },
   'diablo-v': {
     date: '12.09.2026', category: 'BLIZZARD · ACTION-RPG', image: 'diablo-v-news.png', imageAlt: 'Logo Diablo V et annonce du printemps 2029', cover: 'DIABLO V', video: 'GxCN_AKYtts', videoTitle: 'Diablo V — teaser officiel',
@@ -23,7 +23,7 @@ const stories = {
     h2: 'UN SANCTUAIRE SANS HÉROS', p1: 'Cette nouvelle direction narrative pourrait changer la place du joueur dans l’univers de Diablo. Dans un monde où les anciens défenseurs ont disparu, il faudra reconstruire l’espoir autant que combattre les forces démoniaques.',
     quote: 'L’histoire prendra place dans un Sanctuaire qui est tombé.', quoteBy: 'Blizzard Entertainment',
     h2b: 'UNE LONGUE ATTENTE', p2: 'Diablo V est attendu au printemps 2029. La fenêtre est encore large, mais elle confirme que le projet se trouve à un stade de développement précoce.', p3: 'Blizzard n’a donné aucune précision sur les plateformes, le modèle économique ou les nouveautés de cette suite. La prochaine présentation devrait donc être particulièrement scrutée.', p4: 'En attendant, cette première annonce installe une ambiance plus sombre que jamais. Le Sanctuaire est à terre ; reste à savoir qui répondra à l’appel.',
-    take: 'RÉSUMÉ', takeText: 'Diablo V est prévu pour le printemps 2029, dans un Sanctuaire en ruines.'
+    take: 'RÉSUMÉ', takeText: 'Diablo V est encore lointain, mais son annonce pose déjà une direction plus sombre ; Blizzard devra maintenant transformer cette atmosphère en vraie évolution de la formule.'
   },
   'diablo-switch-2': {
     date: '12.09.2026', category: 'BLIZZARD · SWITCH 2', image: 'diablo-switch2-news.jpg', imageAlt: 'Diablo IV Age of Hatred Collection sur Nintendo Switch 2', cover: 'DIABLO IV',
@@ -33,7 +33,7 @@ const stories = {
     h2: 'TOUT LE SANCTUAIRE DANS LA CONSOLE', p1: 'Le contenu embarqué est généreux : la campagne, les saisons et les extensions seront réunis dans une seule collection. La sortie intervient alors que Diablo IV continue d’enrichir régulièrement son univers.',
     quote: 'Une collection complète pour partir chasser les démons partout.', quoteBy: 'Let’s Play · Première impression',
     h2b: 'RENDEZ-VOUS LE 15 SEPTEMBRE', p2: 'La sortie est fixée au 15 septembre 2026. Blizzard n’a pas encore détaillé toutes les spécificités techniques de cette édition, mais la Switch 2 devrait offrir une porte d’entrée originale vers le jeu.', p3: 'Cette annonce accompagne celle de Diablo V, tout en répondant à une demande qui circulait depuis plusieurs mois. Les joueurs pourront donc retrouver le Sanctuaire sans rester devant leur écran fixe.', p4: 'Le plus important est ailleurs : l’édition arrive avec suffisamment de contenu pour éviter l’effet simple portage. La collection vise clairement les nouveaux venus comme les habitués.',
-    take: 'RÉSUMÉ', takeText: 'Diablo IV: Age of Hatred Collection sort le 15 septembre 2026 sur Switch 2.'
+    take: 'RÉSUMÉ', takeText: 'Cette collection peut devenir le point d’entrée idéal pour les joueurs nomades, à condition que le portage conserve la profondeur et le confort de la version de référence.'
   },
   'diablo-netflix': {
     date: '12.09.2026', category: 'BLIZZARD · NETFLIX', image: 'diablo-netflix-news.webp', imageAlt: 'Annonce d’une série animée Diablo pour Netflix', cover: 'DIABLO',
@@ -43,7 +43,7 @@ const stories = {
     h2: 'UNE NOUVELLE PORTE D’ENTRÉE', p1: 'Après plusieurs tentatives d’adaptation autour de ses licences, Blizzard veut utiliser l’animation pour développer ses histoires autrement. Diablo se prête naturellement à ce format : ses conflits millénaires et ses personnages tourmentés offrent une matière particulièrement riche.',
     quote: 'D’autres adaptations sont également à l’étude.', quoteBy: 'Johanna Faries · Blizzard Entertainment',
     h2b: 'OVERWATCH ET WARCRAFT DANS LE VISEUR', p2: 'La présidente de Blizzard a indiqué que d’autres licences pourraient suivre. Overwatch et Warcraft sont notamment concernés par cette réflexion.', p3: 'Pour le moment, Diablo reste le seul projet officiellement annoncé. Le partenariat avec Netflix pourrait toutefois ouvrir une nouvelle période pour les univers Blizzard à l’écran.', p4: 'Il faudra attendre les premières images pour juger la direction artistique. Mais l’annonce confirme une ambition : faire vivre ces mondes au-delà de la manette et du clavier.',
-    take: 'RÉSUMÉ', takeText: 'Une série animée Diablo est en préparation pour Netflix, sans date annoncée.'
+    take: 'RÉSUMÉ', takeText: 'Diablo quitte progressivement le jeu vidéo pour devenir un univers à plusieurs formats ; la réussite dépendra de la capacité de l’adaptation à préserver sa noirceur.'
   }
 };
 
