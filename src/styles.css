@@ -1094,6 +1094,9 @@ img{max-width:100%}
 .cta .eyebrow{color:var(--yellow)}
 .cta h2{position:relative;font-family:var(--display);font-weight:800;font-size:clamp(36px,5vw,58px);line-height:1.05;letter-spacing:.005em;margin:18px 0 0;text-transform:uppercase}
 .cta h2 em{font-style:normal;color:var(--yellow);text-shadow:0 0 26px rgba(255,214,25,.5)}
+/* Titre d'appel : sous 430px, le clamp(36px…) d'origine faisait passer le
+   titre sur quatre lignes dans une colonne de ~270px. */
+@media(max-width:430px){.cta h2{font-size:clamp(28px,8vw,36px)}}
 .cta .button{position:relative;z-index:2}
 
 /* ============ FOOTER ============ */
@@ -1641,7 +1644,10 @@ img{max-width:100%}
 }
 
 /* ============ YOUTUBE REELS ============ */
-.reels-section{padding:110px 0 60px}.reels-head{display:flex;justify-content:space-between;align-items:end;gap:30px;padding-top:42px}.reels-head h2{font-family:var(--display);font-weight:800;font-size:clamp(38px,5vw,64px);line-height:1.02;letter-spacing:.005em;margin:18px 0 0;text-transform:uppercase}.reels-head h2 em{font-style:normal;color:var(--cyan);text-shadow:0 0 24px rgba(34,211,238,.5)}.reels-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:46px}.reel-card{position:relative;display:block;aspect-ratio:9/16;min-width:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);box-shadow:0 18px 42px -24px rgba(0,0,0,.9);transition:transform .22s,border-color .22s,box-shadow .22s}.reel-card:hover{transform:translateY(-5px);border-color:var(--cyan);box-shadow:0 20px 45px -20px rgba(34,211,238,.3)}.reel-card iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:var(--panel)}.reel-label{position:absolute;z-index:2;left:14px;right:14px;bottom:14px;display:flex;justify-content:space-between;align-items:center;padding-top:22px;font:500 10px var(--mono);letter-spacing:.16em;color:#fff;text-transform:uppercase;background:linear-gradient(180deg,transparent,rgba(5,6,15,.82));pointer-events:none}.reel-label span{color:var(--yellow)}
+.reels-section{padding:110px 0 60px}.reels-head{display:flex;justify-content:space-between;align-items:end;gap:30px;padding-top:42px}.reels-head h2{font-family:var(--display);font-weight:800;font-size:clamp(38px,5vw,64px);line-height:1.02;letter-spacing:.005em;margin:18px 0 0;text-transform:uppercase}
+/* Sous 450px, ces têtes de section ne disposent que d'environ 320px : on
+   resserre l'échelle pour que le titre reste sur trois lignes maximum. */
+@media(max-width:450px){.featured-dossiers-head h2,.latest-tests-head h2,.live-head h2,.reels-head h2{font-size:clamp(30px,8.4vw,38px)}}.reels-head h2 em{font-style:normal;color:var(--cyan);text-shadow:0 0 24px rgba(34,211,238,.5)}.reels-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:46px}.reel-card{position:relative;display:block;aspect-ratio:9/16;min-width:0;overflow:hidden;background:var(--panel);border:1px solid var(--line);box-shadow:0 18px 42px -24px rgba(0,0,0,.9);transition:transform .22s,border-color .22s,box-shadow .22s}.reel-card:hover{transform:translateY(-5px);border-color:var(--cyan);box-shadow:0 20px 45px -20px rgba(34,211,238,.3)}.reel-card iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:var(--panel)}.reel-label{position:absolute;z-index:2;left:14px;right:14px;bottom:14px;display:flex;justify-content:space-between;align-items:center;padding-top:22px;font:500 10px var(--mono);letter-spacing:.16em;color:#fff;text-transform:uppercase;background:linear-gradient(180deg,transparent,rgba(5,6,15,.82));pointer-events:none}.reel-label span{color:var(--yellow)}
 @media(max-width:800px){.reels-section{padding:70px 0 40px}.reels-head{display:block;padding-top:32px}.reels-head .arrow-link{margin-top:22px}.reels-grid{grid-template-columns:repeat(2,1fr);gap:14px;margin-top:34px}.reel-label{font-size:8px;left:10px;right:10px;bottom:10px}}
 @media(max-width:450px){.reels-grid{gap:10px}.reel-label{font-size:7px;letter-spacing:.1em}}
 .reel-label{pointer-events:auto;text-decoration:none}
@@ -1771,6 +1777,13 @@ img{max-width:100%}
   .search-form input{grid-column:1/-1}
   .search-form .button{height:50px}
   .search-clear{position:absolute;margin-left:calc(100% - 76px);margin-top:8px}
+}
+/* Titre de recherche : sous 430px, le clamp(42px…) d'origine poussait le
+   sous-titre « PROCHAIN JEU. » sur trois lignes à lui seul. On resserre
+   l'échelle sur les très petits écrans pour que le titre tienne sur trois
+   lignes — même règle pour le titre du catalogue de quizz (quiz.css). */
+@media(max-width:430px){
+  .search-hero h1{font-size:clamp(34px,9.6vw,42px)}
 }
 
 .nav-search-results{

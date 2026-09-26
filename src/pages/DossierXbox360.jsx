@@ -31,7 +31,7 @@ export default function DossierXbox360() {
         <div className="section-label"><span><b>DOSSIER</b> / HISTOIRE DU GAMING</span><span>RÉTROSPECTIVE · 21 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> 20 ans de Xbox 360</p>
-          <h1>LA CONSOLE<br /><em>D’UNE GÉNÉRATION.</em></h1>
+          <h1>XBOX 360,<br /><em>UNE GÉNÉRATION.</em></h1>
           <p className="dossier-dek">Retour sur la Xbox 360, la machine qui a installé la haute définition dans les salons, transformé le jeu en ligne et marqué l’ère HD malgré le traumatisme du Red Ring of Death.</p>
           <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>27.11.2025</span></div>
         </div>
@@ -86,7 +86,7 @@ export default function DossierXbox360() {
 
           <div className="dossier-dark-panel">
             <p className="dossier-kicker">L’INNOVATION ET LA CRISE</p>
-            <h2>KINECT,<br /><em>PUIS LE CERCLE ROUGE.</em></h2>
+            <h2>KINECT,<br /><em>PUIS LES PANNES.</em></h2>
             <p>Kinect promet de faire du joueur la manette. Son lancement rencontre un succès commercial important, avec une expérience pensée pour élargir le public et rendre le mouvement visible dans le salon. Mais l’effet de nouveauté ne suffit pas à maintenir la même dynamique sur la durée.</p>
             <p>Le Red Ring of Death reste l’ombre de la génération. Les premières machines souffrent de problèmes de surchauffe et de fiabilité qui obligent Microsoft à investir massivement dans les réparations et les garanties. La crise abîme l’image de la console sans effacer ce qu’elle a apporté à l’industrie.</p>
           </div>

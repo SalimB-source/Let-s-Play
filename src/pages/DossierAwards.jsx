@@ -60,7 +60,7 @@ export default function DossierAwards() {
 
           <div className="dossier-dark-panel">
             <p className="dossier-kicker">LES RÉCOMPENSES</p>
-            <h2>DES TALENTS<br /><em>QUI S’AFFIRMENT.</em></h2>
+            <h2>DES TALENTS<br /><em>CONFIRMÉS.</em></h2>
             <p><em>Clair Obscur: Expedition 33</em> repart avec deux distinctions, pour sa direction artistique et sa musique. <em>Death Stranding 2</em> est récompensé pour sa claque visuelle avant de recevoir le prix du jeu de l’année. <em>Ghost of Yotei</em> est distingué dans l’action-aventure, tandis qu’<em>Arc Raiders</em> remporte le prix du multijoueur grâce aux alliances et aux trahisons qu’il fait naître entre joueurs.</p>
             <p>La cérémonie n’oublie pas les concepts plus risqués. <em>The Alters</em> est salué comme meilleur jeu indépendant pour son idée de survivre avec plusieurs versions de soi-même. <em>South of Midnight</em> devient la surprise de l’année avec son animation inspirée du stop-motion et son imaginaire sombre.</p>
           </div>
