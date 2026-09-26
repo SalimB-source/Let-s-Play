@@ -154,6 +154,7 @@
   [data-theme='light'] .article-reaction,
   [data-theme='light'] .news-views,
   [data-theme='light'] .news-carousel-copy h2,
+  [data-theme='light'] .news-hub-card,
   [data-theme='light'] .partner-mark-text b,
   [data-theme='light'] .partner-link,
   [data-theme='light'] .partners-sources-list a,
@@ -161,9 +162,37 @@
   [data-theme='light'] .arena-by-meta a:hover,
   [data-theme='light'] .player-list-toggle:hover,
   [data-theme='light'] .quiz-filter-chip:hover,
+  [data-theme='light'] .quiz-survival-title,
+  [data-theme='light'] .quiz-survival-card:hover .arrow-link,
+  [data-theme='light'] .quiz-survival-infinity,
+  [data-theme='light'] .horror-glitch-title,
+  [data-theme='light'] .horror-tape--red,
+  [data-theme='light'] .horror-chip-pulse,
+  [data-theme='light'] .horror-file-title,
+  [data-theme='light'] .horror-timer-count,
+  [data-theme='light'] .horror-heart-lost,
+  [data-theme='light'] .horror-question-mark,
+  [data-theme='light'] .horror-verdict-icon,
+  [data-theme='light'] .horror-choice:hover:not(:disabled) .horror-choice-key,
+  [data-theme='light'] .horror-gameover-title,
+  [data-theme='light'] .horror-stats .quiz-stat strong,
+  [data-theme='light'] [data-theme='light'] .survival-horror .quiz-header h1,
+  [data-theme='light'] [data-theme='light'] .horror-file-inner h2,
   [data-theme='light'] .social-panel-kicker,
   [data-theme='light'] .social-tab:hover,
   [data-theme='light'] .nav-logout:hover,
+  [data-theme='light'] .nav-profile-dropdown-avatar,
+  [data-theme='light'] .nav-profile-dropdown-meta strong,
+  [data-theme='light'] .nav-profile-dropdown-links a:hover,
+  [data-theme='light'] .nav-profile-dropdown-logout:hover,
+  [data-theme='light'] .cmd-palette-head input,
+  [data-theme='light'] .cmd-palette-close:hover,
+  [data-theme='light'] .cmd-palette-item-text strong,
+  [data-theme='light'] .cmd-palette-quick a:hover,
+  [data-theme='light'] .nav-primary a:hover,
+  [data-theme='light'] .nav-search-clear:hover,
+  [data-theme='light'] .nav .theme-toggle:hover,
+  [data-theme='light'] .nav-actions-grid .theme-toggle:hover,
   [data-theme='light'] .featured-sponsor-text,
   [data-theme='light'] .featured-dossier-sponsor-text,
   [data-theme='light'] .stats strong,
@@ -171,19 +200,37 @@
   [data-theme='light'] .filter:hover,
   [data-theme='light'] .video-card h3,
   [data-theme='light'] .carousel-controls button,
-  [data-theme='light'] .nav-primary a:hover,
   [data-theme='light'] .nav-profile-level strong,
+  [data-theme='light'] .nav-search input,
   [data-theme='light'] .search-form input,
-  [data-theme='light'] .nav-search-result:hover,
-  [data-theme='light'] .nav-search-all:hover {
+  [data-theme='light'] .nav-search-result,
+  [data-theme='light'] .nav-search-result:hover {
   color: var(--ink);
 }
 
 /* Encres blanches atténuées : corps de texte et libellés. */
   [data-theme='light'] .article-body,
   [data-theme='light'] .proscons li,
+  [data-theme='light'] .horror-photo-inner,
+  [data-theme='light'] .nav-logout,
+  [data-theme='light'] .nav-profile-dropdown-meta small,
+  [data-theme='light'] .nav-profile-dropdown-links a,
+  [data-theme='light'] .cmd-palette-icon,
+  [data-theme='light'] .cmd-palette-kbd,
+  [data-theme='light'] .cmd-palette-close,
+  [data-theme='light'] .cmd-palette-shortcuts em,
+  [data-theme='light'] .cmd-palette-item,
+  [data-theme='light'] .cmd-palette-empty,
+  [data-theme='light'] .cmd-palette-quick a,
+  [data-theme='light'] .cmd-palette-tips strong,
   [data-theme='light'] .nav-links a,
-  [data-theme='light'] .nav-primary a {
+  [data-theme='light'] .nav-primary a,
+  [data-theme='light'] .nav-search-clear,
+  [data-theme='light'] .nav .theme-toggle,
+  [data-theme='light'] .nav-actions-grid .theme-toggle,
+  [data-theme='light'] .nav-search button,
+  [data-theme='light'] .nav-search-icon,
+  [data-theme='light'] .nav-search-kbd {
   color: var(--muted);
 }
 
@@ -239,6 +286,11 @@
   [data-theme='light'] .article-engagement-kicker,
   [data-theme='light'] .article-engagement-footer .arrow-link,
   [data-theme='light'] .article-reaction-yellow .article-reaction-icon,
+  [data-theme='light'] .article-byline > span:nth-child(2),
+  [data-theme='light'] .article-toc-progress,
+  [data-theme='light'] .news-hub-title em,
+  [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
+  [data-theme='light'] .news-carousel.is-grid .news-today .read-link,
   [data-theme='light'] .partners-head h2 em,
   [data-theme='light'] .partner-link:hover,
   [data-theme='light'] .partner-detail-facts-label,
@@ -253,9 +305,6 @@
   [data-theme='light'] .quiz-chip--streak,
   [data-theme='light'] .quiz-daily .arrow-link,
   [data-theme='light'] .quiz-card-best,
-  [data-theme='light'] .quiz-survival-card .arrow-link,
-  [data-theme='light'] .quiz-survival-infinity,
-  [data-theme='light'] .quiz-survival-best,
   [data-theme='light'] .quiz-level--medium .quiz-level-name,
   [data-theme='light'] .quiz-live-item--points,
   [data-theme='light'] .quiz-live-item--streak,
@@ -273,6 +322,7 @@
   [data-theme='light'] .social-launcher-icon,
   [data-theme='light'] .social-launcher-meta-unread,
   [data-theme='light'] .social-panel-kicker svg,
+  [data-theme='light'] .cmd-palette-foot-dot,
   [data-theme='light'] .menu-button .dash.open,
   [data-theme='light'] .arrow-link:hover,
   [data-theme='light'] .stats strong span,
@@ -286,7 +336,6 @@
   [data-theme='light'] .nav-profile-avatar,
   [data-theme='light'] .nav-profile-level,
   [data-theme='light'] .mobile-menu-footer-dot,
-  [data-theme='light'] .nav-search button:hover,
   [data-theme='light'] .search-clear:hover,
   [data-theme='light'] .search-result-top span:last-child,
   [data-theme='light'] .nav-search-all {
@@ -315,9 +364,9 @@
   [data-theme='light'] .comment-empty-error .comment-empty-icon,
   [data-theme='light'] .quiz-chip--hard,
   [data-theme='light'] .quiz-chip--survival,
-  [data-theme='light'] .quiz-survival-hearts,
-  [data-theme='light'] .quiz-survival-intro .quiz-survival-rules li > span,
-  [data-theme='light'] .quiz-survival-result .quiz-result-tier,
+  [data-theme='light'] .quiz-survival-card .arrow-link,
+  [data-theme='light'] .quiz-survival-best,
+  [data-theme='light'] .quiz-survival-final-label,
   [data-theme='light'] .quiz-level--hard .quiz-level-name,
   [data-theme='light'] .quiz-heart,
   [data-theme='light'] .quiz-verdict.is-wrong,
@@ -325,7 +374,15 @@
   [data-theme='light'] .quiz-challenge-error,
   [data-theme='light'] .quiz-confirm-dialog--hard .quiz-confirm-title,
   [data-theme='light'] .quiz-confirm-warning,
-  [data-theme='light'] .nav-logout,
+  [data-theme='light'] .horror-section-label,
+  [data-theme='light'] .horror-log,
+  [data-theme='light'] .horror-timer-label,
+  [data-theme='light'] .horror-lives-label,
+  [data-theme='light'] .horror-choice-key,
+  [data-theme='light'] .horror-gameover-kicker,
+  [data-theme='light'] .horror-sound-toggle,
+  [data-theme='light'] .horror-empty,
+  [data-theme='light'] .nav-profile-dropdown-logout,
   [data-theme='light'] .live-status--live {
   color: var(--danger);
 }
@@ -353,14 +410,14 @@
   color: #1d4ed8;
 }
 
-/* Les secondes lignes des titres d’articles passent au violet, sans halo, sur fond clair. */
-[data-theme='light'] .article-heading h1 em {
-  color: var(--violet);
-  text-shadow: none;
-}
-
 /* Motifs décoratifs translucides (les seuls dont l'alpha est conservé). */
-  [data-theme='light'] .quiz-global-rank::after {
+  [data-theme='light'] .quiz-global-rank::after,
+  [data-theme='light'] .cmd-palette-head input::placeholder,
+  [data-theme='light'] .cmd-palette-meta,
+  [data-theme='light'] .cmd-palette-recent small,
+  [data-theme='light'] .cmd-palette-tips,
+  [data-theme='light'] .cmd-palette-foot,
+  [data-theme='light'] .nav-search input::placeholder {
   color: rgba(20,18,50,.05);
 }
 /* #endregion encre-claire */
@@ -410,6 +467,7 @@
 
 /* Dégradés sombres → dégradés clairs (mêmes formes, autre lumière). */
 [data-theme='light'] .news-carousel-card,
+[data-theme='light'] .news-hub-card,
 [data-theme='light'] .release-card,
 [data-theme='light'] .release-countdown.is-complete,
 [data-theme='light'] .player-profile-card,
@@ -834,7 +892,13 @@
 [data-theme='light'] .carousel-head h2 em,
 [data-theme='light'] .featured-dossier-copy h3 em,
 [data-theme='light'] .format-icon,
-[data-theme='light'] .live-head h2 em{text-shadow:none}
+[data-theme='light'] .live-head h2 em,
+[data-theme='light'] .news-hub-title em,
+[data-theme='light'] .news-hub-card--gaming h2 em,
+[data-theme='light'] .news-hub-card--cinema h2 em,
+[data-theme='light'] .news-carousel-head h1 em,
+[data-theme='light'] .daily-news-copy h2 em,
+[data-theme='light'] .daily-news-copy h3 em{text-shadow:none}
 [data-theme='light'] .card-gaming .format-icon{color:var(--yellow-ink)}
 [data-theme='light'] .featured-player,
 [data-theme='light'] .featured-dossier-player,
@@ -980,7 +1044,7 @@
 /* ============ ARTICLE HUD — LIGHT MODE ============ */
 [data-theme='light'] .article-hero::before{opacity:.42}
 [data-theme='light'] .article-heading h1{color:var(--ink)}
-[data-theme='light'] .article-heading h1 em{color:var(--violet)}
+[data-theme='light'] .article-heading h1 em{color:var(--violet);text-shadow:none}
 [data-theme='light'] .article-byline > span{
   background:rgba(255,255,255,.82);
   border-color:var(--line);
@@ -1017,3 +1081,55 @@
 [data-theme='light'] .news-carousel.is-grid .news-today .daily-news-copy h2{color:var(--ink)}
 [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
 [data-theme='light'] .news-carousel.is-grid .news-today .read-link{color:var(--yellow-ink)}
+
+/* ============ 14. ACTUS — HUB ET FLUX ============ */
+/* Le hub Actus (/news) et ses deux flux (/news/gaming, /news/cinema) ont été
+   construits après la passe de thème clair : cartes presque noires, accents
+   néon, filets blancs. Le balayage d'encre (section 3) remet le texte à
+   l'endroit ; le reste est mécanique et ne s'invente pas — surfaces de
+   papier, accents assombris dès qu'ils servent de texte, halos remplacés par
+   des ombres. `npm run check:light-news` vérifie l'ensemble.
+
+   Ne bougent pas les zones posées SUR une photo (règle n°2, section 8) : voile
+   des cartes du hub, chiffre « 01 / 02 », pastilles vues et sentiment — ni la
+   flèche « ↗ » du flux, qui garde une encre claire là où `--cyan` devient une
+   encre foncée. */
+
+/* Filet sous le libellé de section : le jaune de marque en aplat de 2px
+   devient invisible sur le fond clair — même dégradé, variante « encre ». */
+[data-theme='light'] .news-carousel-section > .section-label::after{
+  background:linear-gradient(90deg,var(--yellow-ink),var(--cyan),transparent);
+}
+
+/* --- Hub : les deux cartes d'univers --- */
+[data-theme='light'] .news-hub-card:hover{box-shadow:0 24px 46px -24px rgba(28,24,72,.45)}
+[data-theme='light'] .news-hub-card--gaming:hover{border-color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema:hover{border-color:#b45309}
+/* La deuxième ligne du titre garde la couleur de son univers, en version
+   *encre* : #22d3ee (cyan) et #f59e0b (ambre) tombent sous 2:1 sur blanc. */
+[data-theme='light'] .news-hub-card--gaming h2 em{color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema h2 em{color:#b45309}
+/* Lien « entrer dans les actus… » : même code couleur que le titre. Ces deux
+   règles sont écrites ici et non laissées au balayage, qui les rabattrait
+   toutes les deux sur le jaune d'encre. */
+[data-theme='light'] .news-hub-card--gaming .read-link{color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema .read-link{color:#b45309}
+/* Filet au-dessus du pied de carte : posé en blanc 8 %, il disparaissait. */
+[data-theme='light'] .news-hub-card-meta{border-top-color:var(--line)}
+
+/* --- Flux : la grille d'articles --- */
+/* Rail d'accent de 2px en tête de carte : une carte sur quatre le porte en
+   jaune de marque, illisible sur une carte blanche. Les halos qui
+   l'accompagnent ne se voient pas non plus sur papier (règle n°3). */
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{
+  background:var(--yellow-ink);
+}
+[data-theme='light'] .news-carousel.is-grid .news-carousel-card::before,
+[data-theme='light'] .news-carousel.is-grid .news-today::before,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(3n) .news-carousel-card::before,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{
+  box-shadow:none;
+}
+/* La flèche « ↗ » est posée sur la photo de l'article : elle garde une encre
+   claire, sinon `--cyan` (une encre foncée en thème clair) s'y perdrait. */
+[data-theme='light'] .news-feature-arrow{color:var(--cyan-bright)}
