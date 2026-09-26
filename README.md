@@ -44,10 +44,11 @@ gouvernent, et il vaut la peine de les connaître avant d'y toucher :
    vignettes et voiles posés sur une photo gardent leur fond sombre et leur
    texte blanc dans les deux thèmes. Seules les surfaces de l'interface
    passent au clair. La section 8 de `theme.css` (commentée) ré-affirme cette
-   intention. Seule exception : en clair, le héros d'accueil utilise la vidéo
-   fournie (`public/hero-light.mp4`) plein cadre, avec un voile sombre discret
-   à gauche et un texte blanc/jaune pour garantir la lisibilité du titre, du
-   texte et des actions (bloc « Héros clair » de la section 8).
+   intention. Seule exception : le héros d'accueil utilise une image unique
+   (`public/hero-keyart.jpg`) plein cadre, identique dans les deux thèmes,
+   avec un voile sombre discret à gauche et un texte blanc/jaune pour garantir
+   la lisibilité du titre, du texte et des actions (bloc « Héros clair » de la
+   section 8).
 3. **Les halos deviennent des ombres.** Un `text-shadow` néon sur fond clair
    produit un halo sale ; il est remplacé par une ombre colorée douce.
 
