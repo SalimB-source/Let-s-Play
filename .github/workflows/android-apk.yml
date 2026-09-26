@@ -124,21 +124,23 @@ jobs:
       # (Les commits faits avec GITHUB_TOKEN ne déclenchent pas de workflows.)
       - name: Déposer l'APK sur la branche
         run: |
-          set -o pipefail
           {
             APK=$(ls lets-play-v*.apk)
-            B64=$(base64 -w0 "$APK")
+            base64 -w0 "$APK" > content.b64
+            jq -n --rawfile content content.b64 \
+                  --arg msg "Build APK : $APK [skip ci]" \
+                  '{message: $msg, content: $content}' > payload.json
             SHA=$(gh api "repos/$GITHUB_REPOSITORY/contents/android/dist/lets-play-latest.apk?ref=$GITHUB_REF_NAME" -q .sha 2>/dev/null || echo "")
             if [ -n "$SHA" ]; then
-              gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/android/dist/lets-play-latest.apk" \
-                -f message="Build APK : $APK [skip ci]" \
-                -f content="$B64" -f sha="$SHA" >/dev/null && echo "APK mise à jour sur la branche."
-            else
-              gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/android/dist/lets-play-latest.apk" \
-                -f message="Build APK : $APK [skip ci]" \
-                -f content="$B64" >/dev/null && echo "APK déposée sur la branche."
+              jq -n --rawfile content content.b64 --arg msg "Build APK : $APK [skip ci]" --arg sha "$SHA" \
+                '{message: $msg, content: $content, sha: $sha}' > payload.json
             fi
-          } 2>&1 | tee deposit.log || {
-            grep -E "error|Error|fatal|rejected|denied|Not Found|403|422" deposit.log | head -10 | while IFS= read -r l; do echo "::error::${l:0:400}"; done
+            gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/android/dist/lets-play-latest.apk" \
+              --input payload.json >/dev/null && echo "APK déposée sur la branche (android/dist/lets-play-latest.apk)."
+            rm -f content.b64 payload.json
+          } 2>&1 | tee deposit.log
+          STATUS=$?
+          if [ "$STATUS" -ne 0 ]; then
+            tail -12 deposit.log | while IFS= read -r l; do echo "::error::${l:0:400}"; done
             exit 0
-          }
+          fi
