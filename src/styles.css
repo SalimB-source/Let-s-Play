@@ -480,7 +480,13 @@ img{max-width:100%}
 .nav-links-inner{display:contents}
 .mobile-menu-top,.mobile-menu-footer{display:none}
 .nav-link-num,.nav-link-desc,.nav-link-arrow{display:none}
-.nav-profile-link{display:none}
+/* Spécificité : `.nav-primary a` (0,1,1) impose `display:inline-flex` à tous les
+   liens de la liste, y compris l'entrée Profil. Un sélecteur à une seule classe
+   (0,1,0) perdait donc la cascade — l'entrée Profil restait visible sur desktop
+   en doublon de la pastille de compte. On cible le type en plus de la classe
+   (0,2,1) pour repasser au-dessus. La règle mobile plus bas, de même
+   spécificité mais postérieure, continue de l'emporter sous 800px. */
+.nav-primary a.nav-profile-link{display:none}
 .nav-link-main{display:contents}
 .nav-link-text{display:contents}
 .nav-actions-grid{display:flex;align-items:center;gap:8px}
