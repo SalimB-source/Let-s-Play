@@ -61,56 +61,143 @@ img{max-width:100%}
 
 .wrap{width:min(1240px,calc(100% - 56px));margin:auto}
 
-/* ============ NAV ============ */
+/* ============ NAV — GLASS ISLAND (Option A) ============ */
+/* Île flottante centrée : verre dépoli sombre, bords arrondis 16px,
+   ombre douce. Au scroll elle se resserre (64px → 58px) et s'opacifie.
+   Sur l'accueil (hero plein écran) elle démarre semi-transparente puis
+   rejoint le même verre au scroll. Le mobile (≤800px) repasse en barre
+   pleine largeur — voir media query plus bas. */
 .nav{
-  position:fixed;top:0;left:0;right:0;z-index:1000;height:78px;
-  display:flex;align-items:center;justify-content:space-between;gap:24px;
-  padding:0 max(28px, calc((100vw - 1240px) / 2));
-  background:rgba(30,12,70,.88);backdrop-filter:blur(14px);
-  border-bottom:1px solid rgba(168,85,247,.25);
-  transition:background .25s,border-color .25s,backdrop-filter .25s;
+  position:fixed;top:16px;left:50%;right:auto;transform:translateX(-50%);
+  z-index:1000;width:min(1240px,calc(100% - 32px));height:64px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:0 10px 0 16px;
+  background:rgba(16,14,38,.68);
+  backdrop-filter:blur(18px) saturate(1.35);
+  -webkit-backdrop-filter:blur(18px) saturate(1.35);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  box-shadow:0 10px 30px -12px rgba(0,0,0,.62), 0 4px 12px -6px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06);
+  transition:background .32s cubic-bezier(.16,1,.3,1), border-color .32s, box-shadow .32s, height .32s cubic-bezier(.16,1,.3,1), transform .32s;
+  animation:navIslandIn .7s cubic-bezier(.16,1,.3,1) both;
 }
-.nav.scrolled{background:rgba(30,12,70,.74);backdrop-filter:blur(14px);border-bottom-color:rgba(168,85,247,.3)}
-     .nav.nav-home{background:transparent;backdrop-filter:none;border-bottom-color:transparent}
-.nav.nav-home.scrolled{background:rgba(30,12,70,.74);backdrop-filter:blur(14px);border-bottom-color:rgba(168,85,247,.3)}
-.brand{display:inline-flex;align-items:center}
-.brand-logo{height:46px;width:auto;display:block;transition:transform .2s}
-.brand-logo:hover{transform:scale(1.05)}
+@keyframes navIslandIn{
+  from{opacity:0;transform:translateX(-50%) translateY(-10px) scale(.98)}
+  to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .nav{animation:none}
+}
+.nav.scrolled{
+  height:58px;
+  background:rgba(16,14,38,.84);
+  border-color:rgba(255,255,255,.10);
+  box-shadow:0 16px 40px -16px rgba(0,0,0,.72), 0 6px 16px -8px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06);
+}
+.nav.nav-home{
+  background:rgba(16,14,38,.46);
+  border-color:rgba(255,255,255,.06);
+  backdrop-filter:blur(14px) saturate(1.25);
+  -webkit-backdrop-filter:blur(14px) saturate(1.25);
+}
+.nav.nav-home.scrolled{
+  background:rgba(16,14,38,.84);
+  border-color:rgba(255,255,255,.10);
+  backdrop-filter:blur(18px) saturate(1.35);
+  -webkit-backdrop-filter:blur(18px) saturate(1.35);
+}
+.brand{display:inline-flex;align-items:center;flex:none}
+.brand-logo{height:38px;width:auto;display:block;transition:transform .22s cubic-bezier(.16,1,.3,1)}
+.brand-logo:hover{transform:scale(1.04)}
 .nav-links{display:flex;align-items:center;flex:1;min-width:0;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
-.nav-primary{display:flex;align-items:center;justify-content:center;gap:30px;flex:1;min-width:0}
-.nav-actions{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin-left:24px;flex:none}
+.nav-primary{
+  display:flex;align-items:center;justify-content:center;gap:4px;flex:none;
+  padding:4px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:999px;
+  backdrop-filter:blur(8px);
+}
+.nav-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-left:16px;flex:none}
+
+/* Island grid — centrage parfait de la pill (desktop uniquement) */
+@media(min-width:801px){
+  .nav{
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    align-items:center;
+    gap:16px;
+  }
+  .nav-links{
+    display:contents;
+  }
+  .nav-links-inner{
+    display:contents;
+  }
+  .nav-primary{
+    justify-self:center;
+    align-self:center;
+  }
+  .nav-actions{
+    justify-self:end;
+    margin-left:0;
+  }
+}
+/* Island responsive — resserre avant le breakpoint mobile */
+@media(min-width:801px) and (max-width:1100px){
+  .nav{width:min(1240px, calc(100% - 20px));gap:10px;padding:0 8px 0 12px}
+  .nav-primary{padding:3px;gap:2px}
+  .nav-primary a{padding:7px 10px;font-size:10.5px;letter-spacing:.12em}
+  .nav-search{min-width:160px;height:34px}
+  .nav-search input{font-size:12px}
+  .nav-actions{gap:8px}
+}
+@media(min-width:801px) and (max-width:950px){
+  .nav-search{min-width:140px}
+  .nav-search-kbd{display:none}
+  .brand-logo{height:34px}
+}
+/* Comptes — île : pilules arrondies, même langage que les liens */
 .nav-account.nav-login,
 .nav-account.nav-register{
-  background:transparent;border:1px solid var(--line);color:var(--ink);
-  padding:9px 14px;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;
-  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
-  transition:border-color .2s,color .2s,background .2s;
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:8px 14px;
+  font:600 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.06);
+  color:rgba(238,240,255,.9);
+  backdrop-filter:blur(8px);
+  transition:border-color .22s,color .22s,background .22s,transform .18s,box-shadow .22s;
 }
 .nav-account.nav-login:hover,
 .nav-account.nav-register:hover{
-  border-color:var(--line-strong);color:var(--cyan);background:rgba(34,211,238,.08);
+  border-color:rgba(255,255,255,.18);
+  color:#fff;
+  background:rgba(255,255,255,.10);
+  transform:translateY(-1px);
 }
 .nav-account.nav-register{
   background:var(--yellow);color:#0a0b1a;border-color:var(--yellow);
-  box-shadow:0 0 14px rgba(255,214,25,.2);
+  box-shadow:0 4px 14px -4px rgba(255,214,25,.4);
 }
 .nav-account.nav-register:hover{
-  border-color:var(--yellow);color:#0a0b1a;background:var(--yellow);
-  transform:translateY(-2px);box-shadow:0 0 24px rgba(255,214,25,.4);
+  border-color:var(--yellow);color:#0a0b1a;background:#ffe44a;
+  transform:translateY(-1px);box-shadow:0 8px 22px -6px rgba(255,214,25,.55);
 }
-/* Bouton « Se déconnecter » (croix) — dernier élément de la barre, donc tout
-   à droite (tout à gauche en RTL). Même gabarit que les autres boutons de la
-   nav, dans la teinte « danger » du bouton de déconnexion du hub. */
+/* Déconnexion — pilule danger discrète, même hauteur que les autres */
 .nav-logout{
-  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  background:rgba(255,140,157,.06);border:1px solid rgba(255,140,157,.42);color:#ff8c9d;
-  padding:9px 14px;font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  height:34px;padding:0 12px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:rgba(238,240,255,.82);
+  font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;
   cursor:pointer;white-space:nowrap;
-  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
-  transition:border-color .2s,color .2s,background .2s;
+  border-radius:999px;
+  backdrop-filter:blur(8px);
+  transition:border-color .22s,color .22s,background .22s,transform .18s;
 }
 .nav-logout-icon{flex-shrink:0;transition:transform .25s}
-.nav-logout:hover{background:rgba(255,140,157,.18);border-color:#ff8c9d;color:#fff}
+.nav-logout:hover{background:rgba(255,92,124,.14);border-color:rgba(255,92,124,.32);color:#fff}
 .nav-logout:hover .nav-logout-icon{transform:rotate(90deg)}
 /* Entre 801 px et 1240 px, la barre est déjà serrée (cinq entrées + recherche
    + langue + compte) : la croix suffit, le libellé passe en info-bulle /
@@ -119,13 +206,269 @@ img{max-width:100%}
   .nav-logout{width:34px;height:34px;padding:0;gap:0}
   .nav-logout-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 }
+/* Hide on scroll — l'île s'efface quand on descend */
+.nav.nav-hidden{
+  transform:translateX(-50%) translateY(calc(-100% - 24px)) !important;
+  opacity:0;
+  pointer-events:none;
+}
+@media(max-width:800px){
+  .nav.nav-hidden{transform:translateY(-100%) !important}
+}
+/* Bordure gradient animée — halo premium autour de l'île */
+.nav::before{
+  content:"";
+  position:absolute; inset:-1px;
+  border-radius:17px;
+  padding:1px;
+  background:conic-gradient(from 180deg, rgba(34,211,238,.9), rgba(168,85,247,.9), rgba(255,214,25,.9), rgba(34,211,238,.9));
+  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  opacity:0;
+  transition:opacity .45s;
+  pointer-events:none;
+  animation:navBorderSpin 10s linear infinite;
+  z-index:-1;
+}
+.nav:hover::before,
+.nav.scrolled::before{opacity:.42}
+@media(prefers-reduced-motion:reduce){ .nav::before{animation:none} }
+@keyframes navBorderSpin{ to{ transform:rotate(360deg) } }
+@media(max-width:800px){ .nav::before{display:none} }
+
+/* Pill indicator qui glisse (remplace le saut instantané) */
+.nav-primary{position:relative}
+.nav-pill-indicator{
+  position:absolute; top:4px; bottom:4px;
+  background:var(--yellow);
+  border-radius:999px;
+  box-shadow:0 2px 12px -2px rgba(255,214,25,.52);
+  transition:left .48s cubic-bezier(.16,1,.3,1), width .48s cubic-bezier(.16,1,.3,1), opacity .2s, background .25s;
+  pointer-events:none;
+  z-index:0;
+}
+[data-theme='light'] .nav-pill-indicator{background:var(--ink); box-shadow:0 2px 12px -2px rgba(20,18,50,.18)}
+.nav-primary a{position:relative; z-index:1}
+@media(max-width:800px){ .nav-pill-indicator{display:none !important} }
+
+/* Dropdown profil verre — desktop uniquement */
+.nav-profile-wrap{position:relative; display:inline-flex; align-items:center}
+.nav-profile-dropdown{
+  position:absolute; top:calc(100% + 14px); right:0;
+  width:300px;
+  background:rgba(16,14,38,.92);
+  backdrop-filter:blur(18px) saturate(1.3); -webkit-backdrop-filter:blur(18px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  padding:14px;
+  box-shadow:0 24px 48px -18px rgba(0,0,0,.62), 0 8px 16px -8px rgba(0,0,0,.4);
+  opacity:0; pointer-events:none;
+  transform:translateY(10px) scale(.98);
+  transition:opacity .28s cubic-bezier(.16,1,.3,1), transform .36s cubic-bezier(.16,1,.3,1);
+  z-index:1200;
+}
+.nav-profile-dropdown.open{
+  opacity:1; pointer-events:auto; transform:none;
+}
+.nav-profile-dropdown::before{
+  content:""; position:absolute; top:-7px; right:22px;
+  width:12px; height:12px;
+  background:inherit; border-left:1px solid rgba(255,255,255,.08); border-top:1px solid rgba(255,255,255,.08);
+  transform:rotate(45deg); backdrop-filter:blur(18px);
+}
+.nav-profile-dropdown-head{
+  display:flex; align-items:center; gap:12px;
+  padding:4px 4px 12px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.nav-profile-dropdown-avatar{
+  position:relative; width:44px; height:44px; flex:none;
+  border-radius:50%; overflow:hidden;
+  background:linear-gradient(135deg, var(--purple), var(--cyan));
+  display:grid; place-items:center;
+  color:#fff; font:800 16px var(--display);
+  border:2px solid rgba(255,255,255,.12);
+}
+.nav-profile-dropdown-avatar img{width:100%; height:100%; object-fit:cover; display:block}
+.nav-profile-dropdown-avatar .nav-online-dot{
+  position:absolute; right:-1px; bottom:-1px;
+  width:10px; height:10px; border-radius:50%;
+  background:#22c55e; border:2px solid rgba(16,14,38,.94);
+  box-shadow:0 0 8px rgba(34,197,94,.6);
+}
+.nav-profile-dropdown-meta{display:flex; flex-direction:column; gap:2px; min-width:0}
+.nav-profile-dropdown-meta strong{font:700 13px var(--body); color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.nav-profile-dropdown-meta small{font:500 10px var(--mono); letter-spacing:.08em; color:rgba(238,240,255,.62); text-transform:uppercase}
+.nav-profile-dropdown-progress{
+  height:4px; margin:10px 2px 12px;
+  background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden;
+}
+.nav-profile-dropdown-progress span{
+  display:block; height:100%; background:linear-gradient(90deg, var(--yellow), var(--cyan));
+  border-radius:999px; transition:width .6s;
+}
+.nav-profile-dropdown-links{display:flex; flex-direction:column; gap:6px}
+.nav-profile-dropdown-links a{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 10px;
+  border-radius:10px;
+  font:500 12px var(--body); color:rgba(238,240,255,.86);
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.04);
+  transition:background .2s, border-color .2s, color .2s, transform .18s;
+}
+.nav-profile-dropdown-links a span{font-size:13px; opacity:.9}
+.nav-profile-dropdown-links a em{margin-left:auto; font-style:normal; opacity:.5; font-size:11px}
+.nav-profile-dropdown-links a:hover{
+  background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.10); color:#fff; transform:translateX(2px);
+}
+.nav-profile-dropdown-logout{
+  width:100%; margin-top:10px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  padding:10px; border-radius:10px;
+  background:rgba(255,92,124,.08); border:1px solid rgba(255,92,124,.18); color:#ff8c9d;
+  font:600 11px var(--mono); letter-spacing:.08em; text-transform:uppercase;
+  cursor:pointer; transition:background .2s, color .2s, border-color .2s;
+}
+.nav-profile-dropdown-logout:hover{background:rgba(255,92,124,.14); border-color:rgba(255,92,124,.32); color:#fff}
+@media(max-width:800px){ .nav-profile-dropdown{display:none !important} }
+
+/* Command Palette plein centre — ⌘K */
+.cmd-palette-overlay{
+  position:fixed; inset:0; z-index:1300;
+  display:grid; place-items:start center;
+  padding:10vh 16px 16px;
+  background:rgba(5,6,15,.52);
+  backdrop-filter:blur(14px) saturate(1.2); -webkit-backdrop-filter:blur(14px) saturate(1.2);
+  animation:paletteOverlayIn .28s ease;
+}
+@keyframes paletteOverlayIn{ from{opacity:0} to{opacity:1} }
+.cmd-palette{
+  width:min(640px, calc(100vw - 24px));
+  background:rgba(16,14,38,.96);
+  backdrop-filter:blur(20px) saturate(1.3); -webkit-backdrop-filter:blur(20px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;
+  box-shadow:0 24px 64px -20px rgba(0,0,0,.72), 0 8px 24px -10px rgba(0,0,0,.4);
+  overflow:hidden;
+  animation:paletteCardIn .42s cubic-bezier(.16,1,.3,1);
+}
+@keyframes paletteCardIn{ from{opacity:0; transform:translateY(16px) scale(.97)} to{opacity:1; transform:none} }
+.cmd-palette-head{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 14px 14px 16px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.03);
+}
+.cmd-palette-icon{color:rgba(238,240,255,.5); display:grid; place-items:center; flex:none}
+.cmd-palette-head input{
+  flex:1; min-width:0; border:0; outline:0; background:transparent;
+  color:#fff; font:500 16px var(--body);
+}
+.cmd-palette-head input::placeholder{color:rgba(238,240,255,.42)}
+.cmd-palette-kbd{
+  padding:4px 7px; border-radius:6px;
+  font:600 10px var(--mono); letter-spacing:.08em; color:rgba(238,240,255,.5);
+  border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.06);
+}
+.cmd-palette-close{
+  width:28px; height:28px; display:grid; place-items:center; flex:none;
+  border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.06);
+  color:rgba(238,240,255,.7); border-radius:999px; cursor:pointer;
+  transition:background .18s, color .18s, transform .18s;
+}
+.cmd-palette-close:hover{background:rgba(255,255,255,.10); color:#fff; transform:rotate(90deg)}
+.cmd-palette-meta{
+  display:flex; justify-content:space-between; gap:12px;
+  padding:10px 16px 8px;
+  font:500 10px var(--mono); letter-spacing:.08em; text-transform:uppercase;
+  color:rgba(238,240,255,.48); border-bottom:1px solid rgba(255,255,255,.04);
+}
+.cmd-palette-hint{display:inline-flex; align-items:center; gap:8px}
+.cmd-palette-shortcuts{display:flex; gap:10px}
+.cmd-palette-shortcuts em{font-style:normal; color:rgba(238,240,255,.72); background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); padding:1px 5px; border-radius:4px; font-size:9px}
+.cmd-palette-results{max-height:min(52vh, 420px); overflow:auto; padding:8px; display:flex; flex-direction:column; gap:6px}
+.cmd-palette-item{
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px; border-radius:12px;
+  background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.04);
+  color:rgba(238,240,255,.88); text-decoration:none;
+  transition:background .18s, border-color .18s, transform .18s;
+}
+.cmd-palette-item:hover{background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.08); transform:translateY(-1px)}
+.cmd-palette-item.is-finished{opacity:.55; pointer-events:none}
+.cmd-palette-item-media{width:56px; height:36px; flex:none; border-radius:8px; overflow:hidden; background:rgba(255,255,255,.06); display:grid; place-items:center}
+.cmd-palette-item-media img{width:100%; height:100%; object-fit:cover; display:block}
+.cmd-palette-item-blank{width:22px; height:22px; border:1px dashed rgba(255,255,255,.12); border-radius:6px}
+.cmd-palette-item-text{display:flex; flex-direction:column; gap:3px; min-width:0; flex:1}
+.cmd-palette-item-text small{font:600 10px var(--mono); letter-spacing:.08em; color:var(--cyan); text-transform:uppercase}
+.cmd-palette-item-text strong{font:600 13px/1.2 var(--body); color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.cmd-palette-item-arrow{font-size:12px; opacity:.5; flex:none}
+.cmd-palette-all{
+  margin-top:4px; padding:12px; border-radius:10px; text-align:center;
+  background:var(--yellow); color:#0a0b1a; border:1px solid var(--yellow);
+  font:700 11px var(--mono); letter-spacing:.08em; text-transform:uppercase;
+  cursor:pointer; transition:transform .18s, background .18s;
+}
+.cmd-palette-all:hover{background:#ffe44a; transform:translateY(-1px)}
+.cmd-palette-empty{padding:22px; text-align:center; font:500 12px var(--body); color:rgba(238,240,255,.6)}
+.cmd-palette-recent{padding:12px; display:flex; flex-direction:column; gap:14px}
+.cmd-palette-recent small{font:700 10px var(--mono); letter-spacing:.14em; color:rgba(238,240,255,.42); text-transform:uppercase}
+.cmd-palette-quick{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+.cmd-palette-quick a{
+  padding:10px 12px; border-radius:10px;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);
+  color:rgba(238,240,255,.84); font:500 12px var(--body);
+  display:flex; justify-content:space-between; align-items:center;
+  transition:background .18s, border-color .18s;
+}
+.cmd-palette-quick a em{opacity:.4}
+.cmd-palette-quick a:hover{background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.10); color:#fff}
+.cmd-palette-tips{display:flex; gap:14px; flex-wrap:wrap; font:500 11px var(--mono); color:rgba(238,240,255,.45)}
+.cmd-palette-tips strong{color:rgba(238,240,255,.82); font-weight:700}
+.cmd-palette-foot{
+  display:flex; justify-content:center; align-items:center; gap:8px;
+  padding:10px 16px; border-top:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.02);
+  font:500 10px var(--mono); letter-spacing:.08em; text-transform:uppercase; color:rgba(238,240,255,.38);
+}
+.cmd-palette-foot-dot{color:var(--yellow)}
+
+/* Theme toggle morphing — soleil ↔ lune */
+.theme-toggle-track{
+  position:relative; width:15px; height:15px; display:grid; place-items:center; flex:none;
+}
+.theme-toggle-track .theme-toggle-icon{grid-area:1/1; transition:transform .52s cubic-bezier(.16,1,.3,1), opacity .28s, scale .52s}
+.theme-toggle.is-dark .theme-toggle-icon-sun{opacity:1; transform:rotate(0deg) scale(1)}
+.theme-toggle.is-dark .theme-toggle-icon-moon{opacity:0; transform:rotate(-90deg) scale(.62)}
+.theme-toggle.is-light .theme-toggle-icon-sun{opacity:0; transform:rotate(90deg) scale(.62)}
+.theme-toggle.is-light .theme-toggle-icon-moon{opacity:1; transform:rotate(0deg) scale(1)}
+.theme-toggle:active .theme-toggle-track{transform:scale(.92)}
+
+/* Liens pill — état repos, hover et actif */
 .nav-links a{position:relative;color:rgba(238,240,255,.82);transition:color .2s}
-/* Survol cyan + soulignement : liens de page uniquement. Les boutons de
-   compte (.nav-account) gardent leurs propres couleurs — le cyan hérité de
-   ces règles rendait « S'inscrire » illisible sur son fond jaune. */
-.nav-links a:not(.nav-account):hover{color:var(--cyan)}
-.nav-links a:not(.nav-account)::after{content:"";position:absolute;left:0;right:100%;bottom:-6px;height:1px;background:var(--cyan);transition:right .25s}
-.nav-links a:not(.nav-account):hover::after{right:0}
+.nav-primary a{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:8px 14px;
+  border-radius:999px;
+  font:600 11px var(--mono);
+  letter-spacing:.14em;
+  color:rgba(238,240,255,.78);
+  transition:color .22s, background .22s, box-shadow .22s, transform .18s;
+}
+.nav-primary a::after{display:none !important}
+.nav-primary a:hover{
+  color:#fff;
+  background:rgba(255,255,255,.08);
+}
+.nav-primary a.active{
+  color:#0a0b1a;
+  background:var(--yellow);
+  box-shadow:0 2px 12px -2px rgba(255,214,25,.52);
+}
+.nav-primary a.active:hover{color:#0a0b1a;background:var(--yellow)}
+.nav-primary a:active{transform:scale(.97)}
+/* Les boutons de compte gardent leurs propres couleurs — on les exclut du pill */
+.nav-links a.nav-account{transition:all .22s}
 .menu-button{display:none;background:transparent;border:1px solid var(--line);color:var(--ink);font:500 11px var(--mono);letter-spacing:.16em;padding:10px 14px;cursor:pointer;align-items:center;gap:10px}
 .menu-button .dash{color:var(--cyan)}
 .menu-button .dash.open{color:var(--yellow)}
@@ -140,7 +483,73 @@ img{max-width:100%}
 .nav-profile-link{display:none}
 .nav-link-main{display:contents}
 .nav-link-text{display:contents}
-.nav-actions-grid{display:flex;align-items:center;gap:14px}
+.nav-actions-grid{display:flex;align-items:center;gap:8px}
+
+/* ============ NAV ISLAND — compléments (search, theme, compte) ============ */
+.nav-search-clear{
+  flex:none;width:26px;height:26px;display:grid;place-items:center;
+  border:0;border-radius:999px;
+  background:rgba(255,255,255,.08);color:rgba(238,240,255,.7);
+  cursor:pointer;transition:background .18s,color .18s;
+}
+.nav-search-clear:hover{background:rgba(255,255,255,.14);color:#fff}
+.nav-search-submit{flex:none}
+/* Theme pill dans l'île — écrase le clip-path historique */
+.nav .theme-toggle,
+.nav-actions-grid .theme-toggle{
+  height:36px;min-width:36px;padding:0 10px;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  color:rgba(238,240,255,.88);
+  border-radius:999px;
+  backdrop-filter:blur(8px);
+  clip-path:none !important;
+  font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  transition:border-color .22s, background .22s, color .22s, transform .18s;
+}
+.nav .theme-toggle:hover,
+.nav-actions-grid .theme-toggle:hover{
+  background:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.14);
+  color:#fff;
+  transform:translateY(-1px);
+}
+/* Compte connecté — pill compacte dans l'île */
+.nav-actions-grid .nav-account.connected{
+  display:inline-flex !important;
+  height:36px;
+  padding:0 4px 0 4px;
+  border-radius:999px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(8px);
+  clip-path:none !important;
+  transition:border-color .22s, background .22s, transform .18s;
+}
+.nav-actions-grid .nav-account.connected:hover{
+  background:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.14);
+  transform:translateY(-1px);
+}
+.nav-actions-grid .nav-account.connected .nav-account-inner{
+  display:flex;align-items:center;gap:8px;
+}
+.nav-actions-grid .nav-account.connected .nav-account-avatar{
+  width:28px;height:28px;
+}
+.nav-actions-grid .nav-account.connected .nav-account-name{
+  font:600 12px var(--body);letter-spacing:.01em;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.nav-actions-grid .nav-account.connected .nav-account-level{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 6px;
+  border-radius:999px;
+  background:var(--yellow);color:#0a0b1a;
+  font:700 10px var(--mono);
+}
+.nav-actions-grid .nav-account.connected .nav-account-level small{font-size:8px;opacity:.7}
+.nav-actions-grid .nav-account.connected .nav-account-level strong{font-size:11px}
 
 /* ============ HERO (full screen) ============ */
 .hero{
@@ -633,6 +1042,19 @@ img{max-width:100%}
 /* ============ MULTI-PAGE — PAGE HERO & NEW PAGES ============ */
 .nav-links a.active{color:var(--cyan)}
 .nav-links a.active::after{right:0;background:var(--cyan)}
+/* Île desktop — l'actif est une pill jaune qui glisse. L'encre doit être sombre,
+   pas cyan. Le fond jaune est désormais porté par .nav-pill-indicator qui se
+   déplace ; le lien actif devient transparent. */
+@media(min-width:801px){
+  .nav .nav-primary a.active,
+  .nav .nav-primary a.active:hover,
+  .nav .nav-primary a.active:focus{
+    color:#0a0b1a !important;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
+  .nav .nav-primary a.active::after{display:none !important}
+}
 .page-hero{padding:128px 0 60px;position:relative;overflow:hidden}
 .page-hero .section-label{margin-bottom:18px}
 .page-hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;padding-top:36px}
@@ -699,12 +1121,36 @@ img{max-width:100%}
 @media(max-width:800px){
   .wrap{width:calc(100% - 36px)}
   .nav{
+    display:flex !important;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    top:0;left:0;right:0;transform:none;width:100%;
     height:68px;
     padding:0 18px;
     background:rgba(8,10,28,.92);
     backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    border:0;
     border-bottom:1px solid rgba(168,85,247,.22);
+    border-radius:0;
+    box-shadow:none;
     z-index:1001;
+    animation:none;
+  }
+  .nav.scrolled,
+  .nav.nav-home,
+  .nav.nav-home.scrolled{
+    top:0;left:0;right:0;transform:none !important;width:100%;
+    height:68px;
+    background:rgba(8,10,28,.92);
+    border:0;
+    border-bottom:1px solid rgba(168,85,247,.22);
+    border-radius:0;
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    box-shadow:none;
+    animation:none;
   }
   .nav.open{
     background:rgba(8,10,28,.96);
@@ -805,7 +1251,7 @@ img{max-width:100%}
   }
   .mobile-menu-eyebrow-line{flex:1;height:1px;background:linear-gradient(90deg, var(--line-strong), transparent);margin-left:12px}
 
-  /* Primary — big typographic links */
+  /* Primary — big typographic links (mobile overrides island pill) */
   .nav-primary{
     width:100%;
     flex:none;
@@ -816,6 +1262,10 @@ img{max-width:100%}
     justify-content:flex-start;
     padding:8px 0 18px;
     order:2;
+    background:transparent !important;
+    border:0 !important;
+    border-radius:0 !important;
+    backdrop-filter:none !important;
   }
   .nav-primary a{
     position:relative;
@@ -825,6 +1275,9 @@ img{max-width:100%}
     width:100%;
     padding:18px 4px 18px 2px;
     border-bottom:1px solid rgba(148,130,255,.12);
+    border-radius:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
     color:rgba(238,240,255,.86);
     text-transform:uppercase;
     transition:color .25s, padding-left .25s, border-color .25s, background .25s;
@@ -1238,11 +1691,45 @@ img{max-width:100%}
 
 /* ============ SITE SEARCH ============ */
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.nav-search{display:flex;align-items:center;gap:0;border:1px solid var(--line-strong);background:rgba(5,6,15,.22);height:34px;min-width:150px}
-.nav-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);padding:8px 10px;font:500 11px var(--mono);letter-spacing:.04em}
-.nav-search input::placeholder{color:var(--dim)}
-.nav-search button{height:100%;width:34px;border:0;border-left:1px solid var(--line);background:transparent;color:var(--cyan);font-size:18px;cursor:pointer}
-.nav-search button:hover{color:var(--yellow);background:rgba(34,211,238,.08)}
+/* Recherche — pilule verre dans l'île */
+.nav-search{
+  position:relative;z-index:20;
+  display:flex;align-items:center;gap:8px;
+  height:36px;min-width:210px;
+  padding:0 6px 0 12px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;
+  backdrop-filter:blur(10px);
+  transition:border-color .22s, background .22s, box-shadow .22s;
+}
+.nav-search:focus-within{
+  background:rgba(255,255,255,.09);
+  border-color:rgba(34,211,238,.32);
+  box-shadow:0 0 0 3px rgba(34,211,238,.12);
+}
+.nav-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#fff;padding:6px 0;font:500 12.5px var(--body);letter-spacing:.01em}
+.nav-search input::placeholder{color:rgba(238,240,255,.48)}
+.nav-search button{
+  flex:none;width:28px;height:28px;display:grid;place-items:center;
+  border:0;border-radius:999px;
+  background:rgba(255,255,255,.08);color:rgba(238,240,255,.86);
+  font-size:13px;cursor:pointer;
+  transition:background .2s,color .2s,transform .18s;
+}
+.nav-search button:hover{background:var(--yellow);color:#0a0b1a;transform:scale(1.05)}
+.nav-search-icon{display:grid;place-items:center;flex:none;color:rgba(238,240,255,.55)}
+.nav-search-kbd{
+  display:inline-flex;align-items:center;gap:2px;
+  padding:3px 6px;
+  font:600 10px var(--mono);letter-spacing:.08em;
+  color:rgba(238,240,255,.55);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:6px;
+  background:rgba(255,255,255,.06);
+  white-space:nowrap;
+}
+@media(max-width:1000px){ .nav-search-kbd{display:none} }
 .search-page{padding:128px 0 60px}
 .search-hero{padding-bottom:70px}
 .search-hero .eyebrow{margin-top:46px}
@@ -1280,17 +1767,39 @@ img{max-width:100%}
   .search-clear{position:absolute;margin-left:calc(100% - 76px);margin-top:8px}
 }
 
-.nav-search{position:relative;z-index:20}
-.nav-search-results{position:absolute;top:calc(100% + 10px);right:0;width:min(360px,80vw);padding:7px;background:rgba(11,13,30,.98);border:1px solid var(--line-strong);box-shadow:0 24px 48px -16px rgba(0,0,0,.8);z-index:1200}
-.nav-search-result{display:flex;align-items:center;gap:10px;padding:8px;color:var(--ink);border-bottom:1px solid rgba(148,130,255,.12);transition:background .18s,color .18s}
-.nav-search-result:hover{background:rgba(34,211,238,.09);color:#fff}
-.nav-search-result img{width:62px;height:38px;object-fit:cover;background:var(--panel-2);flex:none}
+.nav-search-results{
+  position:absolute;top:calc(100% + 12px);right:0;width:min(380px,88vw);
+  padding:8px;
+  background:rgba(16,14,38,.94);
+  backdrop-filter:blur(16px) saturate(1.2);
+  -webkit-backdrop-filter:blur(16px) saturate(1.2);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  box-shadow:0 24px 48px -16px rgba(0,0,0,.7), 0 8px 16px -8px rgba(0,0,0,.4);
+  z-index:1200;
+  overflow:hidden;
+}
+.nav-search-result{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 8px;
+  border-radius:10px;
+  color:rgba(238,240,255,.9);
+  border-bottom:0;
+  transition:background .18s,color .18s;
+}
+.nav-search-result:hover{background:rgba(255,255,255,.08);color:#fff}
+.nav-search-result img{width:62px;height:38px;object-fit:cover;background:var(--panel-2);flex:none;border-radius:6px}
 .nav-search-result span{display:flex;flex-direction:column;gap:4px;min-width:0}
-.nav-search-result small{color:var(--cyan);font:500 8px var(--mono);letter-spacing:.12em;text-transform:uppercase}
+.nav-search-result small{color:var(--cyan-bright, var(--cyan));font:500 8px var(--mono);letter-spacing:.12em;text-transform:uppercase}
 .nav-search-result strong{font:600 12px/1.15 var(--body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav-search-empty{display:block;padding:14px 10px;color:var(--muted);font:500 10px var(--mono);letter-spacing:.08em;text-transform:uppercase}
-.nav-search-all{width:100%;border:0;background:transparent;color:var(--yellow);padding:12px 8px 7px;text-align:left;cursor:pointer;font:500 9px var(--mono);letter-spacing:.12em;text-transform:uppercase}
-.nav-search-all:hover{color:#fff}
+.nav-search-all{
+  width:100%;border:0;background:rgba(255,255,255,.06);
+  color:var(--yellow);padding:10px;border-radius:8px;margin-top:6px;
+  text-align:center;cursor:pointer;font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  transition:background .18s,color .18s;
+}
+.nav-search-all:hover{color:#0a0b1a;background:var(--yellow)}
 .search-result-card{overflow:hidden;padding:0 22px 22px}
 .search-result-image{display:block;width:calc(100% + 44px);height:150px;object-fit:cover;margin:0 -22px 20px;background:var(--panel-2)}
 @media(max-width:800px){.nav-search-results{position:absolute;top:calc(100% + 8px);left:0;right:auto;width:100%;max-width:none}.search-result-image{height:180px}}
