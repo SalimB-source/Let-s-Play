@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { REQUIRED_FIELDS } from './lib/story.mjs';
+import { REQUIRED_FIELDS, OPTIONAL_FIELDS, detectRepetitions } from './lib/story.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, '../..');
@@ -31,6 +31,12 @@ try {
     const story = JSON.parse(fs.readFileSync(path.join(tmp, 'src/news/auto', file), 'utf8'));
     for (const field of REQUIRED_FIELDS) {
       if (typeof story[field] !== 'string' || !story[field].trim()) fail(`fixture ${file} : champ « ${field} » manquant`);
+    }
+    for (const field of OPTIONAL_FIELDS) {
+      if (story[field] != null && typeof story[field] !== 'string') fail(`fixture ${file} : champ « ${field} » invalide`);
+    }
+    for (const issue of detectRepetitions(story)) {
+      fail(`fixture ${file} : répétition ${issue.a}↔${issue.b} (${issue.length} caractères communs)`);
     }
     if (!tmpIndex.includes(`"${story.slug}"`)) fail(`fixture ${file} : slug absent de l’index généré`);
     if (!fs.existsSync(path.join(tmp, 'public/news-auto', `${story.slug}.svg`))) fail(`fixture ${file} : visuel SVG absent`);
@@ -64,6 +70,12 @@ for (const file of committed) {
   } catch (error) { fail(`${file} : JSON illisible (${error.message})`); continue; }
   for (const field of REQUIRED_FIELDS) {
     if (typeof story[field] !== 'string' || !story[field].trim()) fail(`${file} : champ « ${field} » manquant`);
+  }
+  for (const field of OPTIONAL_FIELDS) {
+    if (story[field] != null && typeof story[field] !== 'string') fail(`${file} : champ « ${field} » invalide`);
+  }
+  for (const issue of detectRepetitions(story)) {
+    fail(`${file} : répétition ${issue.a}↔${issue.b} (${issue.length} caractères communs)`);
   }
   if (story.slug && !indexSlugs.includes(story.slug)) fail(`${file} : slug « ${story.slug} » absent de l’index`);
   if (!fs.existsSync(path.join(ROOT, 'public/news-auto', `${story.slug}.svg`))) fail(`${file} : visuel public/news-auto/${story.slug}.svg absent`);

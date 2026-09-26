@@ -3,9 +3,11 @@
 
 const NAMED_ENTITIES = {
   amp: '&', lt: '<', gt: '>', quot: '"', apos: '\'', nbsp: ' ', ndash: '–', mdash: '—',
-  hellip: '…', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', eacute: 'é',
-  egrave: 'è', agrave: 'à', ccedil: 'ç', ecirc: 'ê', auml: 'ä', ouml: 'ö', uuml: 'ü',
-  ocirc: 'ô', icirc: 'î', uacute: 'ú', euro: '€', deg: '°', times: '×', middot: '·',
+  hellip: '…', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', laquo: '«', raquo: '»',
+  eacute: 'é', egrave: 'è', agrave: 'à', ccedil: 'ç', ecirc: 'ê', auml: 'ä', ouml: 'ö',
+  uuml: 'ü', ocirc: 'ô', icirc: 'î', uacute: 'ú', ugrave: 'ù', acirc: 'â', iuml: 'ï',
+  oelig: 'œ', aelig: 'æ', ccedil: 'ç', copy: '©', reg: '®', trade: '™',
+  euro: '€', deg: '°', times: '×', middot: '·',
 };
 
 export function decodeEntities(input) {
