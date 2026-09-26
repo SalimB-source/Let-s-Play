@@ -24,6 +24,8 @@ import { ThemeProvider } from './theme/ThemeContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import News from './pages/News';
+import GamingNews from './pages/GamingNews';
+import CinemaNews from './pages/CinemaNews';
 import Calendar from './pages/Calendar';
 import Physint from './pages/Physint';
 import MetroidRavenous from './pages/MetroidRavenous';
@@ -85,6 +87,8 @@ function App() {
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
+            <Route path="/news/gaming" element={<GamingNews />} />
+            <Route path="/news/cinema" element={<CinemaNews />} />
             <Route path="/calendrier" element={<Calendar />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/news/physint" element={<Physint />} />
