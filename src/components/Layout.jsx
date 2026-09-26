@@ -10,6 +10,7 @@ import { levelTitle } from '../achievements/catalog';
 import { avatarFor, displayNameFor } from '../lib/comments';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
+import ArticleReadingTools from './ArticleReadingTools';
 
 const base = import.meta.env.BASE_URL;
 
@@ -133,6 +134,7 @@ export default function Layout({ children }) {
   return (
     <>
       <SEO />
+      <ArticleReadingTools />
       <nav className={`${scrolled ? 'nav scrolled' : 'nav'}${isHome ? ' nav-home' : ''}${menuOpen ? ' open' : ''}`}>
         <Link className="brand" to="/" aria-label="Let's Play, home">
           <img className="brand-logo" src={logoSrc} alt="Let’s Play" />
