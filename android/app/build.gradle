@@ -1,0 +1,77 @@
+plugins {
+    id 'com.android.application'
+}
+
+// ── Signature de l'APK ──────────────────────────────────────────────────────
+// Deux sources possibles, la première gagne :
+//   1. Variables d'environnement (recommandé, utilisé par GitHub Actions si
+//      les secrets ANDROID_KEYSTORE_B64 / ANDROID_KEYSTORE_PASSWORD existent) ;
+//   2. Repli committé : android/keystore/letsplay-release.p12 +
+//      android/keystore/signing.properties (pratique pour builder en local).
+// Sans aucune des deux, `assembleRelease` produit une APK non signée.
+def keystorePath = System.getenv('ANDROID_KEYSTORE_FILE')
+def keystorePass = System.getenv('ANDROID_KEYSTORE_PASSWORD')
+def keystoreAlias = System.getenv('ANDROID_KEY_ALIAS') ?: 'letsplay'
+def fallbackPropsFile = rootProject.file('keystore/signing.properties')
+def fallbackStoreFile = rootProject.file('keystore/letsplay-release.p12')
+if (keystorePath == null && fallbackStoreFile.exists() && fallbackPropsFile.exists()) {
+    def props = new Properties()
+    fallbackPropsFile.withInputStream { props.load(it) }
+    keystorePath = fallbackStoreFile.absolutePath
+    keystorePass = props.getProperty('storePassword')
+    keystoreAlias = props.getProperty('keyAlias') ?: 'letsplay'
+}
+
+android {
+    namespace 'dz.letsplay.officiel'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'dz.letsplay.officiel'
+        minSdk 23          // Android 6.0+
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePath != null) {
+                storeFile file(keystorePath)
+                storePassword keystorePass
+                keyAlias keystoreAlias
+                keyPassword keystorePass
+                storeType 'PKCS12'
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (keystorePath != null) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    lint {
+        // Le contenu vit sur le site : rien à lint côté Android.
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    base {
+        archivesName = 'lets-play'
+    }
+}
+
+dependencies {
+    // Tirer-rafraîchir dans l'app.
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+}
