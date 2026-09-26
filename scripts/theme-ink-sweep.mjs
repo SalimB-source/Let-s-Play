@@ -35,6 +35,8 @@ const KEEP = new RegExp([
   '\\.hero\\b', 'video-modal', 'live-player', 'live-offline', 'page-hero-visual',
   'video-image', 'latest-test-image', 'news-carousel-image', 'reel-', 'insta-',
   'dossier-feature-card-media', 'article-cover', 'score-badge',
+  // chiffre « 01 / 02 » posé sur la photo des cartes du hub Actus
+  'news-hub-card-num',
   'featured-dossier-badge', 'social-slide-overlay', 'video-thumb-fallback',
   'button-ghost', 'ticker', 'cta', 'partner-mark-badge', 'messages-bubble.is-mine',
   'delete-account-confirm', 'nav-register', 'filter.active', '\\.play\\b',
