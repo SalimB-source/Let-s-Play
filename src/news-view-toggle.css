@@ -6,6 +6,11 @@
    `@media(min-width:1201px)` plus bas, qui adapte la carte à cette largeur
    réduite (titre en entier, plus d'extrait ni de lien « lire l'article »). */
 .news-carousel.is-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));overflow:visible;scroll-snap-type:none;align-items:stretch}
+/* La cellule est l'élément de grille ; la carte qu'elle contient la remplit
+   (grille à une case : étirement automatique dans les deux sens). C'est elle
+   qui porte l'ombre — voir « Ombre de profondeur » plus bas. */
+.news-carousel.is-grid .news-grid-cell{display:grid;min-width:0}
+.news-carousel.is-grid .news-grid-cell--today{grid-column:span 2}
 .news-carousel.is-grid .news-carousel-card{width:100%;min-width:0;height:100%;aspect-ratio:auto}
 .news-carousel.is-grid .news-carousel-card:hover{transform:translateY(-4px)}
 .news-carousel.is-grid .news-carousel-image{flex:none;aspect-ratio:16/10;min-height:150px}
@@ -16,7 +21,7 @@
    largeur en format paysage) pour que les autres actus soient visibles à côté
    d'elle dès le premier écran. Sa hauteur s'aligne sur celle des cartes de sa
    rangée ; son image remplit sa colonne grâce à object-fit:cover. */
-.news-carousel.is-grid .news-today{grid-column:span 2;margin:0;min-height:0}
+.news-carousel.is-grid .news-today{margin:0;min-height:0}
 .news-carousel.is-grid .news-today .daily-news-image{min-height:0}
 .news-carousel.is-grid .news-today .daily-news-copy{padding:clamp(20px,2.4vw,32px)}
 .news-carousel.is-grid .news-today .daily-news-copy h2{font-size:clamp(20px,2vw,28px);line-height:1.12;margin:12px 0}
@@ -135,7 +140,7 @@
   border-color:rgba(148,130,255,.26);
   background:linear-gradient(155deg,rgba(17,20,46,.98),rgba(9,11,26,.94));
   clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);
-  transition:transform .3s cubic-bezier(.16,1,.3,1),border-color .3s,box-shadow .3s;
+  transition:transform .3s cubic-bezier(.16,1,.3,1),border-color .3s;
 }
 .news-carousel.is-grid .news-carousel-card::before,
 .news-carousel.is-grid .news-today::before{
@@ -150,13 +155,14 @@
   background:var(--cyan);
   box-shadow:0 0 14px rgba(34,211,238,.56);
 }
-.news-carousel.is-grid .news-carousel-card:nth-child(3n)::before{background:var(--violet);box-shadow:0 0 14px rgba(168,85,247,.55)}
-.news-carousel.is-grid .news-carousel-card:nth-child(4n)::before{background:var(--yellow);box-shadow:0 0 14px rgba(255,214,25,.48)}
+/* L'alternance de couleur du rail se compte sur les cellules (la carte est
+   seule dans la sienne). */
+.news-carousel.is-grid .news-grid-cell:nth-child(3n) .news-carousel-card::before{background:var(--violet);box-shadow:0 0 14px rgba(168,85,247,.55)}
+.news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{background:var(--yellow);box-shadow:0 0 14px rgba(255,214,25,.48)}
 .news-carousel.is-grid .news-carousel-card:hover,
 .news-carousel.is-grid .news-today:hover{
   transform:translateY(-7px);
   border-color:var(--cyan);
-  box-shadow:0 24px 48px -28px rgba(34,211,238,.64),0 14px 24px -18px rgba(0,0,0,.9);
 }
 .news-carousel.is-grid .news-carousel-image,
 .news-carousel.is-grid .daily-news-image{
@@ -224,21 +230,28 @@
 }
 
 /* Ombre de profondeur : les cartes reposent sur la page au lieu de flotter
-   à plat. Le halo reste volontairement discret pour garder la lisibilité. */
-.news-carousel.is-grid .news-carousel-card,
-.news-carousel.is-grid .news-today{
-  box-shadow:
-    0 20px 42px -26px rgba(0,0,0,.9),
-    0 0 30px -24px rgba(34,211,238,.65);
+   à plat. Le halo reste volontairement discret pour garder la lisibilité.
+
+   Pourquoi `filter: drop-shadow` sur la cellule et non `box-shadow` sur la
+   carte : la carte est découpée par `clip-path` (coin biseauté), et le
+   découpage s'applique après `box-shadow` comme après `filter` — toute ombre
+   portée par la carte elle-même est donc rognée avec elle et invisible. Posée
+   sur la cellule parente, l'ombre suit la forme réellement affichée (biseau
+   compris) et reste visible. La transition se joue sur `filter`, pas sur
+   `box-shadow`. */
+.news-carousel.is-grid .news-grid-cell{
+  filter:
+    drop-shadow(0 18px 22px rgba(0,0,0,.42))
+    drop-shadow(0 0 12px rgba(34,211,238,.12));
+  transition:filter .3s;
 }
-.news-carousel.is-grid .news-today{
-  box-shadow:
-    0 26px 54px -28px rgba(0,0,0,.95),
-    0 0 38px -24px rgba(124,58,237,.72);
+.news-carousel.is-grid .news-grid-cell--today{
+  filter:
+    drop-shadow(0 22px 28px rgba(0,0,0,.48))
+    drop-shadow(0 0 16px rgba(124,58,237,.18));
 }
-.news-carousel.is-grid .news-carousel-card:hover,
-.news-carousel.is-grid .news-today:hover{
-  box-shadow:
-    0 28px 54px -25px rgba(0,0,0,.95),
-    0 0 34px -19px rgba(34,211,238,.85);
+.news-carousel.is-grid .news-grid-cell:hover{
+  filter:
+    drop-shadow(0 26px 30px rgba(0,0,0,.5))
+    drop-shadow(0 0 16px rgba(34,211,238,.26));
 }

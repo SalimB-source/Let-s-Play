@@ -112,8 +112,12 @@ export default function News(){
     <>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{featured.section}</span><span>{featured.updated}</span></div>
+        {/* Chaque carte est enveloppée dans une cellule `.news-grid-cell` : la
+            carte porte le `clip-path` (coin biseauté) et la cellule porte
+            l'ombre (`filter: drop-shadow`). Posée sur la carte, l'ombre serait
+            découpée avec elle — clip-path s'applique après filter/box-shadow. */}
         <div className="news-carousel is-grid">
-          {topStory && <Link className="daily-news-card news-today" to={topStory.to}>
+          {topStory && <div className="news-grid-cell news-grid-cell--today"><Link className="daily-news-card news-today" to={topStory.to}>
             <div className="daily-news-image"><img src={`${base}${topStory.image}`} alt={topStory.alt} />{renderBadges(topStory)}</div>
             <div className="daily-news-copy">
               <p className="eyebrow"><span className="live-dot" /> {featured.today}</p>
@@ -122,11 +126,11 @@ export default function News(){
               <p>{topStory.excerpt}</p>
               <span className="read-link">{topStory.read} <Arrow /></span>
             </div>
-          </Link>}
-          {gridArticles.map((article) => <Link className="news-carousel-card" to={article.to} key={article.to}>
+          </Link></div>}
+          {gridArticles.map((article) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to}>
             <div className="news-carousel-image"><img src={`${base}${article.image}`} alt={article.alt} />{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
-          </Link>)}
+          </Link></div>)}
         </div>
         {articles.length > 12 && (
           <div className="news-all-actions">
