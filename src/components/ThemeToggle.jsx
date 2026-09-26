@@ -3,18 +3,15 @@ import { useTheme } from '../theme/ThemeContext';
 import { useLanguage } from '../i18n/LanguageContext';
 
 /**
- * Bascule clair / sombre, dans la barre de navigation.
- *
- * Le libellé annonce la destination (« Passer en clair »), pas l'état courant :
- * les lecteurs d'écran et le survol disent donc ce que le clic va faire. Le
- * libellé visible n'apparaît qu'en menu mobile (≤ 800 px), où la place le
- * permet ; sur desktop seule l'icône reste, avec `aria-label` + `title`.
+ * Bascule clair / sombre — version morphing.
+ * Les deux icônes coexistent et se transforment l'une en l'autre
+ * (rotation + scale + opacité) pour un effet premium.
  */
 
 function SunIcon() {
   return (
     <svg
-      className="theme-toggle-icon"
+      className="theme-toggle-icon theme-toggle-icon-sun"
       viewBox="0 0 16 16"
       width="15"
       height="15"
@@ -36,7 +33,7 @@ function SunIcon() {
 function MoonIcon() {
   return (
     <svg
-      className="theme-toggle-icon"
+      className="theme-toggle-icon theme-toggle-icon-moon"
       viewBox="0 0 16 16"
       width="15"
       height="15"
@@ -64,12 +61,15 @@ export default function ThemeToggle() {
   return (
     <button
       type="button"
-      className="theme-toggle"
+      className={`theme-toggle ${isLight ? 'is-light' : 'is-dark'}`}
       onClick={toggleTheme}
       aria-label={label}
       title={label}
     >
-      {isLight ? <MoonIcon /> : <SunIcon />}
+      <span className="theme-toggle-track" aria-hidden="true">
+        <SunIcon />
+        <MoonIcon />
+      </span>
       <span className="theme-toggle-label">{short}</span>
     </button>
   );
