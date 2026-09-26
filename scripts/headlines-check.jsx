@@ -27,6 +27,7 @@ import Gta6DualSense from '../src/pages/Gta6DualSense';
 import Zelda40th from '../src/pages/Zelda40th';
 import MonsterHunterWilds from '../src/pages/MonsterHunterWilds';
 import BlizzardNews from '../src/pages/BlizzardNews';
+import CinemaNews from '../src/pages/CinemaNews';
 import CurrentNews from '../src/pages/CurrentNews';
 import Reviews from '../src/pages/Reviews';
 import TestArticle from '../src/pages/TestArticle';
@@ -64,6 +65,9 @@ const QUIZ_SLUGS = [
 export const ROUTES = [
   ['/', Home],
   ['/news', News],
+  // Hub cinéma : ses cartes réutilisent .news-carousel-copy / .daily-news-copy,
+  // donc leurs h2 sont mesurés comme ceux de la grille Actus.
+  ['/news/cinema', CinemaNews],
   ['/calendrier', Calendar],
   ['/news/physint', Physint],
   ['/news/metroid-ravenous', MetroidRavenous],
