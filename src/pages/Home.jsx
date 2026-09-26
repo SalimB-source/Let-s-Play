@@ -1,9 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import { baseUrl as base } from '../data';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
+// L'actu à la une de l'accueil dérive du robot d'actus (comme la page Actus) :
+// aucun contenu à maintenir à la main ici.
+import { autoNewsListing } from '../lib/autoNews';
+import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { quizzes } from '../quizzesData';
 import { dailyQuizFor } from '../quizzes/engine';
 import { isQuizFinished } from '../quizzes/quizProgress';
@@ -51,6 +56,28 @@ const djezzyEpisode = {
   href: 'https://www.youtube.com/watch?v=48U4aK0CnnI',
   title: '2026 World Cup changed mobile football games — 7ouma Arena by Djezzy',
   tone: 'djezzy',
+};
+
+// Actu à la une de l'accueil — choix éditorial : l'actu Halo × Activision
+// (visuel fourni à la rédaction) ouvre la page d'accueil, juste après les
+// épisodes. Remettre la constante à null laisse la une à la dernière actu
+// publiée par le robot (autoNewsListing, déjà triée du plus récent au plus
+// ancien), puis en repli à l'actu manuelle PHYSINT.
+const editorialTopStory = {
+  to: '/news/halo-activision',
+  image: 'halo-activision-news.jpg',
+  alt: 'Un super-soldat en armure verte s’avance vers un portail illuminé où brille le logo Activision — visuel éditorial Let’s Play',
+  badge: 'HALO · ACTIVISION',
+  kicker: '26.09.2026 · XBOX',
+  title: 'HALO REJOINT ACTIVISION. RARE ET WORLD’S EDGE SUIVENT.',
+  excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
+  sentiment: 'mixed',
+};
+
+const fallbackTopStory = {
+  to: '/news/physint',
+  image: 'physint-news.jpg',
+  sentiment: 'mixed',
 };
 
 // YouTube resolves this permanent channel URL to the channel's active live
@@ -124,6 +151,47 @@ export default function Home() {
     },
   };
   const head = headMap[lang] || headMap.fr;
+
+  // Head de la section « actu à la une » — même structure que la section épisodes.
+  const newsHeadMap = {
+    fr: {
+      label1: 'ACTU À LA UNE',
+      label2: 'LE DERNIER ROUND · LET’S PLAY',
+      eyebrow: 'Actu à la une',
+      h2a: 'L’ACTU',
+      h2b: 'À LA UNE.',
+      today: 'Actu du jour',
+      read: 'Lire l’article',
+      seeAll: 'Voir toutes les actus',
+    },
+    en: {
+      label1: 'FEATURED NEWS',
+      label2: 'THE LATEST ROUND · LET’S PLAY',
+      eyebrow: 'Featured news',
+      h2a: 'TOP STORY,',
+      h2b: 'RIGHT NOW.',
+      today: 'News of the day',
+      read: 'Read the story',
+      seeAll: 'See all news',
+    },
+    ar: {
+      label1: 'أبرز الأخبار',
+      label2: 'آخر الأخبار · LET’S PLAY',
+      eyebrow: 'خبر مميز',
+      h2a: 'الخبر',
+      h2b: 'المميز.',
+      today: 'خبر اليوم',
+      read: 'اقرأ المقال',
+      seeAll: 'عرض كل الأخبار',
+    },
+  };
+  const newsHead = newsHeadMap[lang] || newsHeadMap.fr;
+
+  // La carte « actu à la une » : choix éditorial d'abord, sinon la dernière
+  // actu publiée, sinon le repli PHYSINT (traduit dans la langue courante).
+  const topStory = editorialTopStory || autoNewsListing[0]
+    || { ...fallbackTopStory, alt: t.news.featured.alt, badge: t.news.featured.badge, kicker: t.news.featured.kicker, title: t.news.featured.title, excerpt: t.news.featured.excerpt };
+  const topStoryMeta = sentimentMeta(getArticleSentiment(topStory));
 
   const episodes = [
     { ...headlineEpisode, copy: t.home.featured },
@@ -213,6 +281,34 @@ export default function Home() {
             </article>
           ))}
         </div>
+      </section>
+
+      {/* ACTU À LA UNE — la dernière actu publiée, juste après les épisodes :
+          grande carte image + texte, le même gabarit que la une de la page Actus. */}
+      <section className="featured-dossiers featured-dossiers--news wrap" id="actu-une">
+        <div className="section-label"><span>{newsHead.label1}</span><span>{newsHead.label2}</span></div>
+        <div className="featured-dossiers-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {newsHead.eyebrow}</p>
+            <h2>{newsHead.h2a}<br /><em>{newsHead.h2b}</em></h2>
+          </div>
+          <Link className="arrow-link" to="/news">{newsHead.seeAll} <Arrow /></Link>
+        </div>
+        <Link className="daily-news-card home-news-card" to={topStory.to}>
+          <div className="daily-news-image">
+            <img src={`${base}${topStory.image}`} alt={topStory.alt || topStory.title} loading="lazy" decoding="async" />
+            <span className="news-feature-badge">{topStory.badge}</span>
+            <span className="news-feature-arrow" aria-hidden="true">↗</span>
+            <span className={`news-sentiment ${topStoryMeta.color}`} title={topStoryMeta.label} aria-label={topStoryMeta.label}>{topStoryMeta.emoji}</span>
+          </div>
+          <div className="daily-news-copy">
+            <p className="eyebrow"><span className="live-dot" /> {newsHead.today}</p>
+            <span className="news-kicker">{topStory.kicker}</span>
+            <h3>{topStory.title}</h3>
+            <p>{topStory.excerpt}</p>
+            <span className="read-link">{newsHead.read} <Arrow /></span>
+          </div>
+        </Link>
       </section>
 
       {/* QUIZZ DU JOUR — un quizz choisi chaque jour parmi la sélection :
