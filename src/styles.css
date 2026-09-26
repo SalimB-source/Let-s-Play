@@ -51,6 +51,54 @@ body::after{
   position:fixed;inset:0;z-index:1200;pointer-events:none;
   background:repeating-linear-gradient(0deg, rgba(255,255,255,.026) 0 1px, transparent 1px 4px);
 }
+
+/* ============ BACKDROP — PETITES ICÔNES NÉON GAMING (décor) ============ */
+/* Quelques rappels posés sur le fond du site — 7 icônes seulement, calées
+   près des bords, jamais au centre de lecture. Couche fixe, non interactive
+   et peinte SOUS le contenu (z-index:-1) : le texte reste au-dessus, les
+   cartes opaques les masquent, et `body::after` (scanlines) passe par-dessus.
+   Formes dans src/components/NeonBackdrop.jsx ; surcharge thème clair dans
+   src/theme.css. */
+.neon-backdrop{
+  position:fixed;inset:0;z-index:-1;
+  pointer-events:none;overflow:hidden;
+}
+.ni{
+  position:absolute;display:block;line-height:0;
+  opacity:.42;
+  transform:rotate(var(--ni-rot,0deg));
+}
+.ni svg{
+  display:block;width:100%;height:100%;
+  fill:none;stroke:currentColor;stroke-width:1.5;
+  stroke-linecap:round;stroke-linejoin:round;
+  filter:drop-shadow(0 0 5px currentColor) drop-shadow(0 0 16px currentColor);
+  animation:ni-float var(--ni-dur,9s) ease-in-out var(--ni-delay,0s) infinite;
+}
+@keyframes ni-float{
+  0%,100%{transform:translateY(0);opacity:1}
+  50%{transform:translateY(-11px);opacity:.55}
+}
+/* Positions volontairement clairsemées (gouttières + bords de viewport) */
+.ni-gamepad{left:3%;top:21%;width:46px;height:46px;color:#a855f7;--ni-rot:-8deg;--ni-dur:9s}
+.ni-dpad{right:4.5%;top:31%;width:32px;height:32px;color:#22d3ee;--ni-rot:10deg;--ni-dur:7.5s;--ni-delay:-2s}
+.ni-heart{left:5.5%;bottom:20%;width:30px;height:30px;color:#ff5c7c;--ni-rot:-6deg;--ni-dur:8s;--ni-delay:-4s}
+.ni-trophy{right:3.5%;top:60%;width:42px;height:42px;color:#ffd619;--ni-rot:5deg;--ni-dur:10s;--ni-delay:-1s}
+.ni-sparkle{left:3.5%;top:64%;width:26px;height:26px;color:#22d3ee;--ni-dur:7s;--ni-delay:-3s}
+.ni-zap{right:9%;bottom:27%;width:30px;height:30px;color:#a855f7;--ni-rot:-10deg;--ni-dur:8.5s;--ni-delay:-5s}
+.ni-joystick{left:9%;bottom:9%;width:36px;height:36px;color:#ff5c7c;--ni-rot:6deg;--ni-dur:9.5s;--ni-delay:-2.5s}
+/* Mobile : on n'affiche que 3 rappels, encore plus discrets */
+@media(max-width:800px){
+  .ni{opacity:.3}
+  .ni-dpad,.ni-sparkle,.ni-zap,.ni-joystick{display:none}
+  .ni-gamepad{top:16%;left:3.5%;width:36px;height:36px}
+  .ni-trophy{top:56%;right:3.5%;width:32px;height:32px}
+  .ni-heart{left:4%;bottom:12%}
+}
+@media(prefers-reduced-motion:reduce){
+  .ni svg{animation:none}
+}
+
 a{color:inherit;text-decoration:none}
 img{max-width:100%}
 ::selection{background:var(--yellow);color:#0a0b1a}

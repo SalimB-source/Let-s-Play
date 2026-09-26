@@ -11,6 +11,7 @@ import { avatarFor, displayNameFor } from '../lib/comments';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
 import ArticleReadingTools from './ArticleReadingTools';
+import NeonBackdrop from './NeonBackdrop';
 
 const base = import.meta.env.BASE_URL;
 
@@ -262,6 +263,8 @@ export default function Layout({ children }) {
     <>
       <SEO />
       <ArticleReadingTools />
+      {/* Quelques rappels néon sur le fond — décoratifs, derrière le contenu */}
+      <NeonBackdrop />
       <nav className={navClass} aria-label="Navigation principale">
         <Link className="brand" to="/" aria-label="Let's Play, home">
           <img className="brand-logo" src={logoSrc} alt="Let’s Play" />
