@@ -545,7 +545,7 @@ img{max-width:100%}
   width:28px;height:28px;
 }
 .nav-actions-grid .nav-account.connected .nav-account-name{
-  font:600 12px var(--body);letter-spacing:.01em;color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font:600 12px var(--body);letter-spacing:.01em;color:var(--ink);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .nav-actions-grid .nav-account.connected .nav-account-level{
   display:inline-flex;align-items:center;gap:3px;
