@@ -67,7 +67,23 @@ jobs:
           fi
 
       - name: Construire l'APK signée
-        run: gradle -p android assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          gradle -p android assembleRelease --no-daemon --stacktrace 2>&1 | tee build.log
+
+      # En cas d'échec : publie les lignes utiles du log en annotations
+      # (lisibles via l'API check-runs, contrairement aux logs complets).
+      - name: Diagnostic (échec)
+        if: failure()
+        run: |
+          grep -E "FAILURE|What went wrong|Caused by|error:|Error:|FAILED|Exception" build.log | head -30 | while IFS= read -r l; do
+            echo "::error::${l:0:400}"
+          done
+          echo "--- 25 dernières lignes ---" >> diag.txt
+          tail -25 build.log >> diag.txt
+          sed -n '1,200p' diag.txt | while IFS= read -r l; do
+            echo "::error::${l:0:400}"
+          done
 
       - name: Renommer l'APK avec la version
         run: |
