@@ -12,6 +12,24 @@ import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews 
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 
 const stories = {
+  // Actu à la une du 26.09.2026 — aussi mise en avant sur l'accueil.
+  'halo-activision': {
+    date: '26.09.2026', category: 'XBOX · ACTIVISION', image: 'halo-activision-news.jpg', imageAlt: 'Un super-soldat en armure verte s’avance vers un portail illuminé où brille le logo Activision — visuel éditorial Let’s Play', cover: 'ACTIVISION',
+    title: 'HALO REJOINT ACTIVISION.', accent: 'RARE ET WORLD’S EDGE SUIVENT.', dek: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision, avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
+    lead: 'La note interne « Continuing Our Reset », envoyée par Matt Booty aux équipes Xbox et publiée sur Xbox Wire, a mis fin aux rumeurs : c’est Activision qui développera le prochain jeu Halo. Une équipe dédiée, distincte des studios Call of Duty, sera montée pour l’occasion — tandis qu’Halo Studios est frappé par 268 licenciements.',
+    intro: 'Depuis la fin de l’été, les rumeurs s’enchaînaient : Sledgehammer Games aurait présenté un projet de Halo multijoueur à Microsoft, et Xbox explorait ouvertement une proposition pour qu’Activision prête main-forte à la franchise. La restructuration du 22 septembre 2026 transforme la rumeur en feuille de route.',
+    h2: 'LES FAITS',
+    p1: 'Dans sa note, Matt Booty est sans détour : Activision étend son périmètre à World’s Edge (Age of Empires) et à Rare (Sea of Thieves), et prend en charge le développement du prochain titre Halo « avec une équipe créée spécifiquement pour le projet, séparée du développement et des plans en cours de Call of Duty ». Treyarch, Infinity Ward et Sledgehammer ne seront donc pas officiellement aux commandes du prochain Halo. Halo Studios n’est pas dissous pour autant : une petite équipe reste chargée de la communauté et des jeux déjà sur le marché, dont Halo Infinite et Halo: Campaign Evolved.',
+    quote: 'Notre objectif pour Halo est clair : créer le plus grand jeu Halo de tous les temps, digne de son univers et de son héritage, tout en restant fidèle à ce qui a fait aimer la série aux joueurs.', quoteBy: 'ROB KOSTICH, PRÉSIDENT D’ACTIVISION',
+    h2b: 'LE CONTEXTE',
+    p2: 'Le même jour, Xbox a confirmé la suppression de 268 postes à travers Halo Studios, d’autres studios first-party, ainsi que la couche de management et les fonctions centrales de Xbox Game Studios. Playground et Turn 10 fusionnent pour porter ensemble Forza et Fable, l’avenir d’Arkane reste en discussion jusqu’à la fin de l’année, et deux accords concernant Ninja Theory sont tombés à l’eau.',
+    p3: 'Pour les joueurs, la question n’est plus « qui fait Halo », mais « quel Halo ». Aucun titre ni fenêtre de sortie n’ont été communiqués, et Microsoft n’a pas confirmé les rumeurs de redémarrage de la trame narrative. Une réunion générale Xbox est prévue le 6 octobre 2026 : elle dira si le Major et sa nouvelle maison ont déjà un calendrier.',
+    p4: 'Reste le symbole : vingt ans après la rivalité Halo / Call of Duty, Master Chief entre dans la maison de l’ancien concurrent. Microsoft justifie le mouvement par le regroupement d’équipes capables de partager compétences et moyens. Si l’ambition affichée est de revitaliser la franchise, elle se paie d’abord en postes — et c’est ce double visage, promesse d’un grand Halo et restructuration douloureuse, qui marquera cette date dans l’histoire de Xbox.',
+    take: 'À RETENIR', takeText: 'Activision développera le prochain Halo avec une équipe dédiée, Rare et World’s Edge rejoignent son périmètre, et 268 postes sont supprimés — sans titre ni date annoncés.',
+    source: 'D’après Xbox Wire (note interne « Continuing Our Reset » de Matt Booty, 22.09.2026) et IGN France, article consulté le 26.09.2026.', sourceUrl: 'https://fr.ign.com/halo-campaign-evolved/92471/cest-officiel-microsoft-confie-halo-a-activision-le-developpeur-de-call-of-duty-dans-le-cadre-deu-pl', sourceDetail: 'Lire l’article source',
+    credit: 'Visuel : illustration éditoriale Let’s Play (image fournie à la rédaction).',
+    sentiment: 'mixed'
+  },
   'ea-sports-fc-27-carriere-dynamique': {
     date: '22.09.2026', category: 'EA SPORTS FC 27 · MODE CARRIÈRE', image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', imageAlt: 'EA Sports FC 27 — fiche joueur du mode Carrière avec sa note globale et sa valeur marchande xTV calculée avec TransferRoom (visuel officiel EA Sports FC)', cover: 'EA SPORTS FC 27',
     title: 'EA SPORTS FC 27', accent: 'LA CARRIÈRE DEVIENT VIVANTE.', dek: 'Valeur marchande recalculée chaque semaine avec TransferRoom, note globale qui monte et qui chute, scénarios créés par la communauté : le mode Carrière est le vrai chantier de l’édition 2027.',

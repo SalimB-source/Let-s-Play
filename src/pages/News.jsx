@@ -44,7 +44,12 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
-  const articles = useMemo(() => [...autoNewsListing,
+  // L'actu à la une (Halo × Activision, aussi mise en avant sur l'accueil)
+  // ouvre la liste ; les actus du jour du robot suivent, puis les articles
+  // manuels de la rédaction dans l'ordre.
+  const articles = useMemo(() => [
+    { to: '/news/halo-activision', image: 'halo-activision-news.jpg', alt: 'Un super-soldat en armure verte s’avance vers un portail illuminé où brille le logo Activision — visuel éditorial Let’s Play', badge: 'HALO · ACTIVISION', kicker: '26.09.2026 · XBOX', title: 'HALO REJOINT ACTIVISION. RARE ET WORLD’S EDGE SUIVENT.', excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
+    ...autoNewsListing,
     { to: '/news/ea-sports-fc-27-carriere-dynamique', image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', alt: 'EA Sports FC 27 — fiche joueur du mode Carrière avec sa note globale et sa valeur marchande xTV (visuel officiel EA Sports FC)', badge: 'EA SPORTS FC 27 · CARRIÈRE', kicker: '22.09.2026 · ELECTRONIC ARTS', title: 'EA SPORTS FC 27 FAIT VIVRE SA CARRIÈRE.', excerpt: 'Valeur marchande recalculée chaque semaine avec TransferRoom, note globale dynamique, scénarios créés par la communauté et crises de vestiaire : la refonte du mode Carrière est le vrai chantier de l’édition 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/netmarble-tgs-2026', image: 'tokyo-game-show-2026-news.jpg', alt: 'Tokyo Game Show 2026 — visuel officiel de l’événement', badge: 'TGS 2026 · NETMARBLE', kicker: '21.09.2026 · NETMARBLE', title: 'NETMARBLE QUITTE LE TGS AVEC TROIS JEUX.', excerpt: 'Shangri-La Frontier: The Seven Colossi, Solo Leveling: KARMA et Pearl in Blue ont été montrés sous forme de démos. Les dates de sortie restent ouvertes.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/control-resonant-24-septembre', image: 'physint-news.jpg', alt: 'Jeu d’action paranormal — visuel éditorial Let’s Play', badge: 'CONTROL RESONANT · SORTIE', kicker: '21.09.2026 · REMEDY', title: 'CONTROL RESONANT ARRIVE À J-3.', excerpt: 'Le lancement mondial reste fixé au 24 septembre sur PS5, Xbox Series et PC. La version Mac suivra plus tard en 2026.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
