@@ -1,0 +1,79 @@
+# Compile et signe l'APK Android de Let's Play à chaque modification du
+# dossier android/, et la dépose en artefact téléchargeable (« lets-play-apk »).
+#
+# Lancement manuel : onglet Actions → « APK Android » → Run workflow.
+# L'APK signée utilise la clé committée dans android/keystore/ ; si tu bascules
+# un jour vers les secrets GitHub (ANDROID_KEYSTORE_B64 + ANDROID_KEYSTORE_PASSWORD),
+# ils prennent automatiquement le dessus (voir android/app/build.gradle).
+
+name: APK Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'arena/**'
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-apk.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Gradle 8.10.2
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: SDK Android 35
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-35" "build-tools;35.0.0" >/dev/null
+
+      # Optionnel : si les secrets GitHub sont configurés, ils remplacent la
+      # clé committée (recommandé si le repo s'ouvre à des contributeurs).
+      - name: Restaurer la clé depuis les secrets (si présents)
+        if: ${{ secrets.ANDROID_KEYSTORE_B64 != '' }}
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d \
+            > "$GITHUB_WORKSPACE/letsplay-release.p12"
+          echo "ANDROID_KEYSTORE_FILE=$GITHUB_WORKSPACE/letsplay-release.p12" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=letsplay" >> "$GITHUB_ENV"
+
+      - name: Construire l'APK signée
+        run: gradle -p android assembleRelease --no-daemon --stacktrace
+
+      - name: Renommer l'APK avec la version
+        run: |
+          VERSION=$(grep versionName android/app/build.gradle | cut -d"'" -f2)
+          cp android/app/build/outputs/apk/release/lets-play-release.apk \
+             "lets-play-v${VERSION}.apk"
+          ls -la lets-play-v*.apk
+
+      - name: Publier l'artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lets-play-apk
+          path: lets-play-v*.apk
+          retention-days: 90
+          if-no-files-found: error

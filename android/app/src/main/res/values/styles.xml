@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Thème sombre par défaut, fidèle à l'identité du site : fond noir,
+         barres de statut et de navigation noires (le site gère déjà son
+         propre thème clair/sombre en interne). -->
+    <style name="Theme.LetsPlay" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/lp_black</item>
+        <item name="android:statusBarColor">@color/lp_black</item>
+        <item name="android:navigationBarColor">@color/lp_black</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
