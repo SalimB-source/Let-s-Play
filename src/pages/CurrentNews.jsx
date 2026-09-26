@@ -16,7 +16,7 @@ const stories = {
   // Actu à la une du 26.09.2026 — aussi mise en avant sur l'accueil.
   'halo-activision': {
     date: '26.09.2026', category: 'XBOX · ACTIVISION', image: 'halo-activision-news.jpg', imageAlt: 'Un super-soldat en armure verte s’avance vers un portail illuminé où brille le logo Activision — visuel éditorial Let’s Play', cover: 'ACTIVISION',
-    title: 'HALO REJOINT ACTIVISION.', accent: 'RARE ET WORLD’S EDGE SUIVENT.', dek: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision, avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
+    title: 'HALO PASSE CHEZ', accent: 'ACTIVISION.', dek: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision, avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
     lead: 'La note interne « Continuing Our Reset », envoyée par Matt Booty aux équipes Xbox et publiée sur Xbox Wire, a mis fin aux rumeurs : c’est Activision qui développera le prochain jeu Halo. Une équipe dédiée, distincte des studios Call of Duty, sera montée pour l’occasion — tandis qu’Halo Studios est frappé par 268 licenciements.',
     intro: 'Depuis la fin de l’été, les rumeurs s’enchaînaient : Sledgehammer Games aurait présenté un projet de Halo multijoueur à Microsoft, et Xbox explorait ouvertement une proposition pour qu’Activision prête main-forte à la franchise. La restructuration du 22 septembre 2026 transforme la rumeur en feuille de route.',
     h2: 'LES FAITS',

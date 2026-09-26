@@ -69,7 +69,7 @@ const editorialTopStory = {
   alt: 'Un super-soldat en armure verte s’avance vers un portail illuminé où brille le logo Activision — visuel éditorial Let’s Play',
   badge: 'HALO · ACTIVISION',
   kicker: '26.09.2026 · XBOX',
-  title: 'HALO REJOINT ACTIVISION. RARE ET WORLD’S EDGE SUIVENT.',
+  title: 'HALO PASSE CHEZ ACTIVISION.',
   excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
   sentiment: 'mixed',
 };
