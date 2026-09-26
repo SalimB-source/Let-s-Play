@@ -496,7 +496,7 @@
 .player-avatar-img {
   width: 96px;
   height: 96px;
-  border-radius: 4px;
+  border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--cyan);
   box-shadow: 0 0 20px rgba(34, 211, 238, .3);
@@ -506,6 +506,8 @@
 .player-avatar-fallback {
   width: 96px;
   height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
   background: linear-gradient(135deg, var(--purple), var(--panel-2));
   border: 2px solid var(--cyan);
   box-shadow: 0 0 20px rgba(34, 211, 238, .3);
@@ -1874,7 +1876,7 @@
   display: grid;
   place-items: center;
   border: 1.5px solid var(--cyan);
-  border-radius: 4px;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--purple), var(--panel-2));
   box-shadow: 0 0 8px rgba(34, 211, 238, .25);
   color: var(--yellow);
@@ -1895,7 +1897,7 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 50%;
 }
 
 .nav-account-avatar-face img {
@@ -1903,7 +1905,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 2px;
+  border-radius: 50%;
 }
 
 .nav-account-initials {
@@ -2241,7 +2243,7 @@
   display: grid;
   place-items: center;
   background: rgba(5, 6, 15, .62);
-  border-radius: 4px;
+  border-radius: 50%;
   pointer-events: none;
 }
 

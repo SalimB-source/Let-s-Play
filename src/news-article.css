@@ -85,7 +85,8 @@
 .comment-retry{border:1px solid var(--cyan);background:none;color:var(--cyan);font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase;padding:8px 12px;cursor:pointer}
 .comment-retry:hover{background:rgba(34,211,238,.1)}
 /* --- Comment author is now a profile link + XP level badge ---------------- */
-.comment-avatar-link{display:flex;flex:none;border-radius:2px;transition:transform .18s,box-shadow .18s,border-color .18s}
+.comment-avatar-link{display:flex;flex:none;border-radius:50%;transition:transform .18s,box-shadow .18s,border-color .18s}
+.comment-avatar{border-radius:50%}
 .comment-avatar-link:hover{transform:translateY(-1px);box-shadow:0 0 14px rgba(34,211,238,.3)}
 .comment-avatar-link .comment-avatar{transition:border-color .2s}
 .comment-avatar-link:hover .comment-avatar{border-color:var(--cyan)}

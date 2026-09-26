@@ -125,9 +125,9 @@
   object-fit: cover;
   background: linear-gradient(135deg, var(--purple), var(--panel-2));
   border: 1px solid var(--line-strong);
+  border-radius: 50%;
   font: 700 12px var(--display);
   color: var(--yellow);
-  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
 .friends-avatar-dot {
   position: absolute;
