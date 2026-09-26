@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { getTest, scoreTier, scoreLabel, videoEmbedUrl, videoWatchUrl } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 import Comments from '../components/Comments';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 import NotFound from './NotFound';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
@@ -29,6 +31,7 @@ export default function TestArticle(){
   if (!a) return <NotFound />;
   const c = t.reviews.article;
   const tier = scoreTier(a.score);
+  const gallery = getArticleGallery(slug);
 
   return <>
     <section className="article-hero wrap">
@@ -89,6 +92,7 @@ export default function TestArticle(){
                 <small>— {section.pull.by}</small>
               </div>
             )}
+            {index === 0 && gallery ? <ArticleGallery {...gallery} /> : null}
           </React.Fragment>
         ))}
 
@@ -109,17 +113,6 @@ export default function TestArticle(){
       </article>
 
       <aside className="article-aside">
-        <div className="aside-card">
-          <span className="aside-kicker">{c.quick}</span>
-          <strong>{c.platformsLabel}</strong>
-          <p>{a.platforms}</p>
-          <strong>{c.genreLabel}</strong>
-          <p>{a.genre}</p>
-          <strong>{c.studioLabel}</strong>
-          <p>{a.studio}</p>
-          <strong>{c.durationLabel}</strong>
-          <p>{a.duration}</p>
-        </div>
         <div className="aside-card aside-card-accent">
           <span className="aside-kicker">{c.verdict} · {scoreLabel(a.score, lang)}/10</span>
           <strong>{a.verdictTitle}</strong>
