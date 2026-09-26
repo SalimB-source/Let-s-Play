@@ -10,6 +10,7 @@ import NotFound from './NotFound';
 import { autoStories } from '../news/autoIndex';
 import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
+import SpoilerAlert from '../components/SpoilerAlert';
 
 const stories = {
   // Actu à la une du 26.09.2026 — aussi mise en avant sur l'accueil.
@@ -32,16 +33,26 @@ const stories = {
   },
   // Actu cinéma & séries du 26.09.2026 — la reprise hebdomadaire de
   // Steel Ball Run (partie 7 de JoJo) sur Netflix, ouverte par l’épisode 2.
+  // IMPORTANT ANTI-SPOILER : aucun détail d'intrigue n'est affiché en clair.
+  // Les révélations sont rangées dans des <SpoilerAlert> cliquables.
   'cinema/jojo-steel-ball-run-episode-2': {
     date: '26.09.2026', category: 'NETFLIX · ANIME', image: 'cinema-jojo-steel-ball-run.jpg', imageAlt: 'Key visual officiel de STEEL BALL RUN JoJo’s Bizarre Adventure : Johnny Joestar au premier plan, Gyro Zeppeli derrière lui et les chevaux dorés de la course, sur fond violet à pois', cover: 'STEEL BALL RUN',
     title: 'STEEL BALL RUN', accent: 'REPREND LA COURSE.', dek: 'Six mois de silence après un spécial de 47 minutes encensé : depuis le 25 septembre, la partie 7 de JoJo’s Bizarre Adventure est enfin diffusée au rythme d’un épisode par semaine sur Netflix. L’épisode 2 ouvre un bloc de onze épisodes, chaque vendredi, jusqu’au 4 décembre.',
     lead: 'Le 19 mars dernier, la 1st STAGE donnait le départ de la Steel Ball Run : 47 minutes pour présenter Johnny Joestar, Gyro Zeppeli et la course transcontinentale la plus folle du manga. Puis plus rien. Ce vendredi 25 septembre, l’épisode 2 — « La requête du shérif à Mountain Tim » — a enfin lancé la machine hebdomadaire que les fans réclamaient.',
     intro: 'Entre-temps, la communauté a oscillé entre memes désespérés et crainte d’un traitement « Stone Ocean » : des épisodes lâchés par paquets, sans promotion. Le panel d’Anime Expo, le 3 juillet, a tranché : un épisode chaque vendredi, sous-titré et doublé, pour la planète entière.',
-    h2: 'CE QUE RACONTE L’ÉPISODE 2', p1: 'Le verdict de la première étape tombe, et il est injuste : Gyro Zeppeli, arrivé en tête, est rétrogradé à la 21e place pour avoir utilisé ses Steel Balls contre un concurrent — c’est Sandman qui hérite de la victoire. Pendant ce temps, Johnny comprend que sa paralysie n’est pas une fin : au contact de Gyro, il découvre le Spin et sa deuxième leçon, « ne laisse pas tes muscles savoir ». L’alliance entre le paraplégique et le spadassin de Gênes se scelle ici. En coulisses, la course vire au polar : trois coureurs sont retrouvés éventrés, et le shérif enrôle le cowboy Mountain Tim comme adjoint pour retrouver le coupable — sous les yeux de Lucy Steel.',
+    h2: 'CE QUE RACONTE L’ÉPISODE 2 (SANS SPOILER)', p1: 'L’épisode 2 reprend exactement là où la 1st STAGE s’était arrêtée : la course vient de boucler sa première étape et l’organisation doit déjà gérer ses premières tensions. L’épisode se concentre sur deux axes sans en dévoiler l’issue : l’apprentissage du Spin côté Johnny au contact de Gyro, et l’installation d’une intrigue policière qui va suivre la caravane. Une reprise lisible même sans avoir lu le manga.',
+    spoiler: {
+      title: 'Détails de l’intrigue — épisode 2',
+      content: 'Le verdict de la première étape tombe, et il est injuste : Gyro Zeppeli, arrivé en tête, est rétrogradé à la 21e place pour avoir utilisé ses Steel Balls contre un concurrent — c’est Sandman qui hérite de la victoire. Pendant ce temps, Johnny comprend que sa paralysie n’est pas une fin : au contact de Gyro, il découvre le Spin et sa deuxième leçon, « ne laisse pas tes muscles savoir ». L’alliance entre le paraplégique et le spadassin de Gênes se scelle ici. En coulisses, la course vire au polar : trois coureurs sont retrouvés éventrés, et le shérif enrôle le cowboy Mountain Tim comme adjoint pour retrouver le coupable — sous les yeux de Lucy Steel.'
+    },
     quote: 'Le pouvoir n’est pas dans les sphères d’acier : il est dans la rotation. Toute la partie 7 tient dans cette phrase.', quoteBy: 'L’ANALYSE LET’S PLAY',
     h2b: 'POURQUOI SIX MOIS DE SILENCE', p2: 'Parce que David Production a choisi de soigner sa copie. La 1st STAGE, saluée comme l’un des meilleurs épisodes de l’année — un passage éclair en tête du classement MyAnimeList, devant Frieren — a exigé un polissage rare pour un lancement. Netflix, échaudé par les reproches faits au rythme de Stone Ocean, a ensuite calé la suite au cordeau : le panel Anime Expo du 3 juillet 2026, avec le compositeur Yugo Kanno et les voix américaines Daman Mills et Kaiji Tang, a officialisé le rendez-vous du vendredi.',
-    p3: 'La reprise arrive avec un nouvel opening, « SPIN » du groupe Kroi, dévoilé le 23 septembre : un thème western nourri d’Ennio Morricone et des Ventures, frotté de funk, de soul et de hip-hop. Derrière la caméra, Yasuhiro Kimura et Hideya Takahashi dirigent toujours cette saison 6 — le 192e épisode de la saga animée — produite par David Production et Warner Bros. Japan, diffusée partout sur Netflix pendant que Crunchyroll reste sur le carreau. L’épisode 2 adapte les chapitres 12 à 14 du manga.',
-    p4: 'La suite du programme est connue : onze épisodes pour les 2nd et 3rd STAGE, soit la traversée du désert de l’Arizona et ses dinosaures, jusqu’au chapitre 32 — clap de fin attendu le 4 décembre. Des fuites évoquent déjà 42 à 43 épisodes au total sur les prochaines années. En attendant, le rendez-vous est simple : chaque vendredi, 9 h du matin heure d’Alger. En selle.',
+    p3: 'La reprise arrive avec un nouvel opening, « SPIN » du groupe Kroi, dévoilé le 23 septembre : un thème western nourri d’Ennio Morricone et des Ventures, frotté de funk, de soul et de hip-hop. Derrière la caméra, Yasuhiro Kimura et Hideya Takahashi dirigent toujours cette saison 6 — le 192e épisode de la saga animée — produite par David Production et Warner Bros. Japan, diffusée partout sur Netflix pendant que Crunchyroll reste sur le carreau.',
+    spoiler2: {
+      title: 'À venir — chapitres adaptés et indices manga',
+      content: 'L’épisode 2 adapte les chapitres 12 à 14 du manga. La suite annoncée pour les 2nd et 3rd STAGE couvre la traversée du désert de l’Arizona et ses dinosaures, jusqu’au chapitre 32. Des fuites évoquent déjà 42 à 43 épisodes au total sur les prochaines années.'
+    },
+    p4: 'La suite du programme est connue : onze épisodes pour les 2nd et 3rd STAGE, avec un clap de fin attendu le 4 décembre pour ce bloc. En attendant, le rendez-vous est simple : chaque vendredi, 9 h du matin heure d’Alger. En selle.',
     take: 'À RETENIR', takeText: 'L’épisode 2 de Steel Ball Run est en ligne depuis le 25 septembre sur Netflix, puis un épisode chaque vendredi jusqu’au 4 décembre : onze épisodes pour les 2e et 3e étapes de la course.',
     source: 'D’après Netflix, le panel Anime Expo 2026, JoJo’s Bizarre Encyclopedia (jojowiki.com) et GamesRadar+, articles consultés le 26.09.2026.', sourceUrl: 'https://www.gamesradar.com/entertainment/anime-shows/jojos-bizarre-adventure-steel-ball-run-2nd-stage-3rd-stage-release-date-time-netflix/', sourceDetail: 'Lire l’article source',
     credit: 'Visuel : key visual officiel STEEL BALL RUN JoJo’s Bizarre Adventure — ©LUCKY LAND COMMUNICATIONS/SHUEISHA, JOJO’s Animation SBR Project.',
@@ -54,7 +65,11 @@ const stories = {
     intro: 'Messiah ne sera pas une suite de plus : c’est le livre où le messie découvre le prix de sa propre légende. Un matériau sombre, politique, presque funèbre — et le chantier le plus attendu de la science-fiction au cinéma.',
     h2: 'CE QUE L’ON SAIT DU TRAILER', p1: 'Warner Bros. calera la révélation en fin d’année, adossée à l’un des grands rendez-vous de la salle. On y retrouvera Timothée Chalamet en Paul Atréides, Zendaya en Chani et Anya Taylor-Joy en Alia, personnage clé du roman. Le studio promet des images déjà finalisées plutôt qu’un simple teaser : Villeneuve montre rarement ce qui n’est pas prêt.',
     quote: 'Adapter Messiah, c’est adapter le revers de la médaille : le héros devient le problème.', quoteBy: 'L’ANALYSE LET’S PLAY',
-    h2b: 'LE LIVRE LE PLUS DANGEREUX DE LA SAGA', p2: 'Publié en 1969, douze ans après Dune, Dune Messiah raconte un empire gagné et déjà rongé : la guerre sainte menée au nom de Paul a semé des milliards de morts, et les factions — Bene Gesserit, Tleilaxu, Guilde — ourdissent sa chute. Le roman déconstruit le mythe du sauveur que les premiers films avaient construit : difficile d’imaginer blockbuster plus à contre-courant.',
+    h2b: 'LE LIVRE LE PLUS DANGEREUX DE LA SAGA', p2: 'Publié en 1969, douze ans après Dune, Dune Messiah est présenté comme le roman le plus à contre-courant de la saga : il interroge le mythe du sauveur que les premiers films avaient construit.',
+    spoiler: {
+      title: 'Spoiler livre — intrigue de Dune Messiah (1969)',
+      content: 'Le roman raconte un empire gagné et déjà rongé : la guerre sainte menée au nom de Paul a semé des milliards de morts, et les factions — Bene Gesserit, Tleilaxu, Guilde — ourdissent sa chute.'
+    },
     p3: 'Côté fabrication, l’équipe reprend ses marques : Villeneuve à la réalisation et à l’écriture, la photographie désertique qui a signé visuellement la saga, et la musique de Hans Zimmer. Le cinéaste l’a répété : ce troisième film achèvera l’arc en trois actes entamé en 2021.',
     p4: 'Reste la question que tout le monde pose : Messiah sera-t-il le dernier Dune de Villeneuve ? L’intéressé rêve toujours d’adapter Les Enfants de Dune, mais jure qu’il faudra une pause de plusieurs années. En attendant, rendez-vous en fin d’année pour les premières images, puis en 2027 pour le verdict en salle.',
     take: 'À RETENIR', takeText: 'Première bande-annonce de Dune: Messiah en fin d’année, sortie en 2027 : Villeneuve, Chalamet, Zendaya et Taylor-Joy refermeront la prophétie de Paul Atréides.',
@@ -67,7 +82,11 @@ const stories = {
     title: 'THE LAST OF US', accent: 'SAISON 3 CONFIRMÉE.', dek: 'HBO a officiellement commandé une troisième saison de The Last of Us. Elle adaptera la seconde moitié du deuxième jeu, avec de nouveaux arcs narratifs et le retour du duo Pascal–Ramsey.',
     lead: 'C’est confirmé : The Last of Us aura bien une saison 3. HBO a officialisé la commande, et avec elle la promesse d’adapter la partie du récit que le deuxième jeu racontait de l’autre côté du miroir — celle d’Abby.',
     intro: 'La saison 2 s’était achevée sur une fracture : Ellie et un mensonge impossible à porter. La suite devra changer de point de vue, l’exercice le plus risqué de toute la saga.',
-    h2: 'PASSER DE L’AUTRE CÔTÉ DU MIROIR', p1: 'Dans The Last of Us Part II, le récit bascule à mi-parcours : on rejoue les mêmes événements du point de vue d’Abby, celle que la saison 2 avait construite comme l’adversaire. La saison 3 reprendra cette seconde moitié, avec Kaitlyn Dever au centre, et devra faire accepter au public ce que le jeu imposait manette en main : comprendre, sans excuser.',
+    h2: 'PASSER DE L’AUTRE CÔTÉ DU MIROIR', p1: 'HBO confirme que la saison 3 adaptera la seconde moitié de The Last of Us Part II, avec un changement de perspective majeur annoncé comme le cœur du récit.',
+    spoiler: {
+      title: 'Spoiler jeu — structure narrative de Part II',
+      content: 'Dans The Last of Us Part II, le récit bascule à mi-parcours : on rejoue les mêmes événements du point de vue d’Abby, celle que la saison 2 avait construite comme l’adversaire. La saison 3 reprendra cette seconde moitié, avec Kaitlyn Dever au centre, et devra faire accepter au public ce que le jeu imposait manette en main : comprendre, sans excuser.'
+    },
     quote: 'Changer de point de vue n’est pas un twist : c’est tout le sujet.', quoteBy: 'L’ANALYSE LET’S PLAY',
     h2b: 'UN CHANTIER DÉJÀ SUR LES RAILS', p2: 'Craig Mazin et Neil Druckmann rempilent à l’écriture, avec une équipe rodée aux décors contaminés. Pedro Pascal et Bella Ramsey reviendront, entourés d’un casting élargi — Isabela Merced en Dina, Young Mazino en Jesse — et de nouveaux venus pour les arcs de Seattle. HBO vise une production lancée rapidement, pour un retour espéré en 2027.',
     p3: 'La série reste l’une des plus grosses machines de la chaîne : audiences solides, critiques globalement favorables, et un jeu d’origine remis en lumière à chaque saison. Assez pour que HBO voie plus loin : d’autres déclinaisons de l’univers de Naughty Dog restent dans les tiroirs.',
@@ -112,7 +131,11 @@ const stories = {
     title: 'JOKER 2 DIVISE', accent: 'ET FAIT ENCORE DÉBAT.', dek: 'Conspué à Venise, boudé en salle, depuis réévalué : Joker: Folie à Deux reste le blockbuster le plus discuté de sa génération. Bilan d’un malentendu, deux ans après sa sortie.',
     lead: 'Peu de films auront autant fendu le public : conspué à Venise, boudé en salle, défendu ensuite par une partie de la critique, Joker: Folie à Deux continue de faire écrire — et de diviser. Retour sur ce que le film de Todd Phillips a vraiment essayé de faire.',
     intro: 'Sur le papier, tout était réuni pour un triomphe : un Oscar, un milliard de dollars, Joaquin Phoenix, Lady Gaga. À l’arrivée, le plus gros pari musical de Warner s’est pris le mur des attentes — et c’est peut-être là son sujet.',
-    h2: 'UN PARI MUSICAL ASSUMÉ', p1: 'Folie à Deux n’est pas un film de super-vilains : c’est une comédie musicale de procès. Arthur Fleck y abandonne progressivement le personnage du Joker, et Harley Quinn — Lady Gaga — n’existe que dans le miroir de ses numéros chantés, repris du grand songbook américain. Les séquences musicales, tournées comme des rêves éveillés, sont les seuls moments où les deux existent vraiment ensemble.',
+    h2: 'UN PARI MUSICAL ASSUMÉ', p1: 'Folie à Deux n’est pas un film de super-vilains : c’est une comédie musicale de procès qui prend le contre-pied du premier opus. Les séquences musicales, tournées comme des rêves éveillés, sont au cœur du dispositif.',
+    spoiler: {
+      title: 'Spoiler — fin et traitement des personnages',
+      content: 'Arthur Fleck y abandonne progressivement le personnage du Joker, et Harley Quinn — Lady Gaga — n’existe que dans le miroir de ses numéros chantés, repris du grand songbook américain. Les séquences musicales sont les seuls moments où les deux existent vraiment ensemble.'
+    },
     quote: 'Conspué à sa sortie, rejoué depuis : Folie à Deux est en train de devenir un objet de culte.', quoteBy: 'L’ANALYSE LET’S PLAY',
     h2b: 'POURQUOI ÇA A COINCÉ', p2: 'D’abord un malentendu de marketing : les bandes-annonces vendaient un duo de vilains flamboyants, pas une déconstruction du mythe. Ensuite un contresens public : après le Joker « homme du peuple » de 2019, Phillips filme un homme qui renonce à son masque — exactement l’inverse de ce que la salle attendait. Le box-office a tranché sans appel : à peine de quoi rembourser un budget énorme.',
     p3: 'Reste ce que le film défend bec et ongles : la photographie de Lawrence Sher, la composition des plans, un Phoenix habité jusqu’au malaise. Une frange de la critique y voit désormais le geste le plus honnête d’un cinéaste de studio : avoir utilisé une notoriété de milliard de dollars pour filmer la fin d’une idolâtrie.',
@@ -127,7 +150,11 @@ const stories = {
     title: 'HOUSE OF THE DRAGON', accent: 'EN TOURNAGE.', dek: 'La troisième saison de House of the Dragon entre en tournage. HBO promet une guerre civile plus intense, de nouveaux dragons et le cœur de la Danse : la bataille qui fera basculer Westeros.',
     lead: 'Les caméras tournent : House of the Dragon lance sa saison 3, celle que les lecteurs de Fire & Blood attendent comme le point de non-retour de la Danse des Dragons. HBO annonce plus de fronts, plus de dragons, et moins de compromis.',
     intro: 'La saison 2 s’était achevée sur une guerre déclarée mais encore contenue. La troisième devra la montrer : fils mourants, trahisons de cour, et le ciel de Westeros saturé d’ailes.',
-    h2: 'LA DANSE ENTRE DANS SA PHASE BRUTALE', p1: 'Au programme de cette saison 3 : l’escalade totale entre le conseil noir de Rhaenyra et celui d’Aegon II, la bataille de la Gorgelette — l’un des chapitres les plus meurtriers du livre — et l’entrée en scène de nouveaux dragons et cavaliers, dont les bâtards de Dragonstone. Matt Smith, Emma D’Arcy et Olivia Cooke rempilent, sous la houlette du showrunner Ryan Condal.',
+    h2: 'LA DANSE ENTRE DANS SA PHASE BRUTALE', p1: 'HBO annonce une escalade totale entre les deux camps, avec de nouveaux dragons et cavaliers annoncés. Matt Smith, Emma D’Arcy et Olivia Cooke rempilent, sous la houlette du showrunner Ryan Condal.',
+    spoiler: {
+      title: 'Spoiler livre & saison 3 — batailles à venir',
+      content: 'Au programme de cette saison 3 : l’escalade totale entre le conseil noir de Rhaenyra et celui d’Aegon II, la bataille de la Gorgelette — l’un des chapitres les plus meurtriers du livre — et l’entrée en scène de nouveaux dragons et cavaliers, dont les bâtards de Dragonstone.'
+    },
     quote: 'Une guerre civile avec dix-sept dragons n’a rien d’une bataille : c’est un incendie qui choisit ses camps.', quoteBy: 'L’ANALYSE LET’S PLAY',
     h2b: 'NOUVEAUX DRAGONS, NOUVEAUX CAMPS', p2: 'HBO le promet : le bestiaire s’élargit encore. Silverwing, Vermithor et les montures réclamées par les deux camps devront exister à l’écran, avec ce que cela suppose de volume d’effets. La production reprend ses bases — plateaux britanniques et extérieurs européens — avec de nouveaux réalisateurs annoncés pour donner à chaque front sa texture.',
     p3: 'La série mère reste l’un des piliers d’abonnement de HBO : chaque saison a tenu ses audiences malgré la comparaison permanente avec Game of Thrones. L’enjeu de la saison 3 est narratif autant qu’industriel : prouver que la Danse peut monter en intensité sans se perdre en manœuvres de couloir.',
@@ -234,11 +261,19 @@ const stories = {
     title: 'MARVEL’S WOLVERINE', accent: 'FAIT DES JALOUX.', dek: 'Le jeu sort aujourd’hui, et uniquement sur PS5. Après deux heures manette en main chez Insomniac Games, on vous raconte pourquoi l’aventure de Logan est l’exclu que les joueurs PC et Xbox Series regardent de travers.',
     lead: 'Jour J pour le mutant. Marvel’s Wolverine débarque ce 15 septembre sur PS5, sans aucune autre machine à l’horizon. Un choix que Sony assume, et que deux heures de prise en main suffisent à expliquer : entre récit original, combats bestiaux et mise en scène de cinéma, Logan signe l’une des aventures les plus enviables de la génération.',
     intro: 'Le postulat de départ a de quoi décontenancer : dans cet univers, les X-Men n’existent pas. Les mutants sont bien là, mais aucune grande équipe ne défend leurs intérêts. Logan, retiré depuis trois ans, a autrefois appartenu à la Team X de Nathaniel Essex, aux côtés de Dents de Sabre, Mystique et Jean Grey. Quand Bolivar Trask commence à enlever des mutants, il n’a d’autre choix que de ressortir les griffes.',
-    h2: 'UNE OUVERTURE QUI NE FAIT PAS DE QUARTIER', p1: 'Pas de préambule, pas de tutoriel déguisé en promenade : le jeu s’ouvre in media res à bord d’un hélicoptère pris pour cible par la DCA. Provocé par Dents de Sabre, Logan répond en se laissant tomber dans le vide, griffes sorties et double doigt d’honneur à l’appui. Oubliez la formule Spider-Man : Marvel’s Wolverine assume une aventure linéaire, ponctuée de zones semi-ouvertes, entièrement dédiée à la mise en scène.',
+    h2: 'UNE OUVERTURE QUI NE FAIT PAS DE QUARTIER', p1: 'Pas de préambule, pas de tutoriel déguisé en promenade : le jeu s’ouvre directement dans l’action, avec une mise en scène qui installe immédiatement le ton. Oubliez la formule Spider-Man : Marvel’s Wolverine assume une aventure linéaire, ponctuée de zones semi-ouvertes, entièrement dédiée à la mise en scène.',
+    spoiler: {
+      title: 'Spoiler — scène d’ouverture',
+      content: 'Le jeu s’ouvre in media res à bord d’un hélicoptère pris pour cible par la DCA. Provocé par Dents de Sabre, Logan répond en se laissant tomber dans le vide, griffes sorties et double doigt d’honneur à l’appui.'
+    },
     quote: 'Un hélicoptère en feu, un saut dans le vide, un doigt d’honneur : en une scène, Logan est déjà chez lui.', quoteBy: 'Let’s Play · Carnet de prise en main',
     h2b: 'BESTIAL, MÊME QUAND IL SE FAIT DISCRET', p2: 'La linéarité n’empêche pas le voyage. Telambang, Madripoor, Tokyo : les décors, partiellement destructibles, mêlent réalisme et esthétique de comics modernes, portés par une caméra « in game » conçue sur mesure pour donner au jeu son grain de cinéma. C’est beau, c’est dense, et ça ne se dilue jamais.',
     p3: 'En combat, Insomniac ne retire rien : attaques, parades, esquives et exécutions sanglantes s’enchaînent dans un système qui célèbre la férocité du personnage. Même la furtivité reste brutale — Logan traque ses ennemis à l’odorat avant de les éliminer. Le tout s’appuie sur une progression light RPG : techniques, capacités spéciales et adaptations génétiques améliorent régénération, dégâts ou mobilité, pendant que des défis cachés débloquent des souvenirs perdus.',
-    p4: 'Et puis il y a Jean Grey. Une scène particulièrement touchante laisse entrevoir un récit plus intime qu’attendu, qui explore autant la violence du mutant que les blessures de l’homme derrière les griffes. Ajoutez plusieurs dizaines de costumes et de griffes à personnaliser, et vous tenez l’exclu que tout le monde va regarder sortir… depuis une autre machine que la sienne. Notre verdict complet, lui, vous attend déjà dans la rubrique Tests.',
+    p4: 'Le jeu laisse aussi entrevoir un récit plus intime qu’attendu, qui explore autant la violence du mutant que les blessures de l’homme derrière les griffes. Ajoutez plusieurs dizaines de costumes et de griffes à personnaliser, et vous tenez l’exclu que tout le monde va regarder sortir… depuis une autre machine que la sienne. Notre verdict complet, lui, vous attend déjà dans la rubrique Tests.',
+    spoiler2: {
+      title: 'Spoiler — personnage surprise',
+      content: 'Et puis il y a Jean Grey. Une scène particulièrement touchante laisse entrevoir un récit plus intime, avec des retrouvailles qui pèsent lourd dans l’histoire de Logan.'
+    },
     take: 'RÉSUMÉ', takeText: 'Wolverine assume une direction plus resserrée et plus adulte : une aventure solo qui cherche son identité propre plutôt que de simplement collectionner les apparitions Marvel.',
     source: 'Basé sur la prise en main de jeuxvideo.com (15.08.2026).', sourceUrl: 'https://www.jeuxvideo.com/news/2096034/marvel-s-wolverine-l-exclu-ps5-enviee-par-tous-les-joueurs-pc-et-xbox-series.htm', sourceDetail: 'Lire l’article original',
     sentiment: 'positive'
@@ -368,7 +403,55 @@ export default function CurrentNews({ slug, slugPrefix }) {
 
   return <>
     <section className="article-hero wrap"><div className="section-label"><span>ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {story.auto ? 'ACTU DU JOUR · LET’S PLAY' : 'RÉÉCRIT POUR LET’S PLAY'}</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>4 MIN DE LECTURE</span>{views != null && <span className="article-views-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg> {formatViews(views)} vues</span>}<span className={`article-sentiment-inline ${meta.color}`} title={meta.label}>{meta.emoji} {meta.label}</span></div></div><div className="article-cover hud-frame"><img src={`${base}${story.thumbnail || story.image}`} alt={story.imageAlt} /><div><small>{story.category}</small><strong>{story.cover}</strong></div><span className={`news-sentiment ${meta.color}`} style={{ top: 12, right: 12 }} aria-label={meta.label} title={meta.label}>{meta.emoji}</span>{views != null && <span className="news-views" style={{ left: 12, bottom: 12 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg>{formatViews(views)}</span>}</div></div></section>
-    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{story.lead}</p>{story.intro ? <p>{story.intro}</p> : null}{story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / OFFICIELLE</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">Vidéo officielle : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">Voir sur YouTube</a></p></section> : null}<h2>{story.h2}</h2><p>{story.p1}</p>{story.quote ? <div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div> : null}{story.p2 ? <p>{story.p2}</p> : null}{story.p3 ? <><h2>{story.h2b}</h2><p>{story.p3}</p></> : null}<p>{story.p4}</p>{story.takeText ? <div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div> : null}{story.source ? <p className="article-source">{story.source} <a href={story.sourceUrl} target="_blank" rel="noreferrer">{story.sourceDetail}</a></p> : null}{story.credit ? <p className="article-source">{story.credit}</p> : null}</article><aside className="article-aside"><div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>{story.auto ? 'ACTU DU JOUR · SOURCÉE' : 'LET’S PLAY ORIGINAL'}</strong>{views != null && <><span className="aside-kicker" style={{ marginTop: 14 }}>VUES GLOBALES</span><strong>{formatViews(views)} vues</strong></>}<span className="aside-kicker" style={{ marginTop: 14 }}>TON DE L’ACTU</span><strong className={`sentiment-text ${meta.color}`}>{meta.emoji} {meta.label}</strong></div><div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div></aside></main>
+    <main className="article-layout wrap">
+      <article className="article-body">
+        <p className="article-lead">{story.lead}</p>
+        {story.intro ? <p>{story.intro}</p> : null}
+        {story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / OFFICIELLE</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">Vidéo officielle : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">Voir sur YouTube</a></p></section> : null}
+
+        <h2>{story.h2}</h2>
+        <p>{story.p1}</p>
+
+        {story.spoiler ? (
+          <SpoilerAlert title={story.spoiler.title}>
+            <p>{story.spoiler.content}</p>
+          </SpoilerAlert>
+        ) : null}
+
+        {story.spoilers?.map((sp, i) => (
+          <SpoilerAlert key={i} title={sp.title}>
+            <p>{sp.content}</p>
+          </SpoilerAlert>
+        ))}
+
+        {story.quote ? <div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div> : null}
+        {story.p2 ? <p>{story.p2}</p> : null}
+
+        {story.p3 ? (
+          <>
+            <h2>{story.h2b}</h2>
+            <p>{story.p3}</p>
+          </>
+        ) : story.h2b ? <h2>{story.h2b}</h2> : null}
+
+        {story.spoiler2 ? (
+          <SpoilerAlert title={story.spoiler2.title}>
+            <p>{story.spoiler2.content}</p>
+          </SpoilerAlert>
+        ) : null}
+
+        {story.p4 ? <p>{story.p4}</p> : null}
+
+        {story.takeText ? <div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div> : null}
+        {story.source ? <p className="article-source">{story.source} <a href={story.sourceUrl} target="_blank" rel="noreferrer">{story.sourceDetail}</a></p> : null}
+        {story.credit ? <p className="article-source">{story.credit}</p> : null}
+      </article>
+
+      <aside className="article-aside">
+        <div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>{story.auto ? 'ACTU DU JOUR · SOURCÉE' : 'LET’S PLAY ORIGINAL'}</strong>{views != null && <><span className="aside-kicker" style={{ marginTop: 14 }}>VUES GLOBALES</span><strong>{formatViews(views)} vues</strong></>}<span className="aside-kicker" style={{ marginTop: 14 }}>TON DE L’ACTU</span><strong className={`sentiment-text ${meta.color}`}>{meta.emoji} {meta.label}</strong></div>
+        <div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div>
+      </aside>
+    </main>
     <ArticleEngagement articleId={`/news/${key}`} title={`${story.title} ${story.accent}`} />
     <Comments />
     <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> LA SUITE SUR LET’S PLAY</p><h2>RESTEZ DANS<br/><em>LE GAME.</em></h2></div><Link className="button button-yellow" to="/news">VOIR LES ACTUS <Arrow/></Link></section>
