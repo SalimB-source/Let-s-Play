@@ -72,6 +72,7 @@ export default function Layout({ children }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const liveSearchResults = useMemo(() => searchContent(searchValue).slice(0, 6), [searchValue]);
   const searchTypeLabels = { news: 'News', review: 'Review', dossier: 'Dossier', release: 'Release', quiz: 'Quiz' };
+  const searchInputRef = useRef(null);
 
   useEffect(() => {
     setSearchValue(new URLSearchParams(location.search).get('q') || '');
@@ -83,6 +84,24 @@ export default function Layout({ children }) {
     };
     document.addEventListener('mousedown', closeOnOutsideClick);
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
+  }, []);
+
+  // Cmd+K / Ctrl+K focus la recherche (standard « command palette »)
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setSearchOpen(true);
+      }
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const submitSearch = (event) => {
@@ -135,7 +154,7 @@ export default function Layout({ children }) {
     <>
       <SEO />
       <ArticleReadingTools />
-      <nav className={`${scrolled ? 'nav scrolled' : 'nav'}${isHome ? ' nav-home' : ''}${menuOpen ? ' open' : ''}`}>
+      <nav className={`${scrolled ? 'nav scrolled' : 'nav'}${isHome ? ' nav-home' : ''}${menuOpen ? ' open' : ''}`} aria-label="Navigation principale">
         <Link className="brand" to="/" aria-label="Let's Play, home">
           <img className="brand-logo" src={logoSrc} alt="Let’s Play" />
         </Link>
@@ -162,12 +181,13 @@ export default function Layout({ children }) {
               </div>
             </div>
 
-            <div className="nav-primary">
+            <div className="nav-primary" role="navigation" aria-label="Sections">
               {primaryLinks.map((link, idx) => (
                 <Link
                   key={link.to}
                   to={link.to}
                   className={isActive(link.to) ? 'active' : ''}
+                  aria-current={isActive(link.to) ? 'page' : undefined}
                   onClick={() => setMenuOpen(false)}
                   style={{ '--i': idx }}
                 >
@@ -224,10 +244,25 @@ export default function Layout({ children }) {
             </div>
 
             <div className="nav-actions">
-              <form className="nav-search" ref={searchRef} onSubmit={submitSearch} onFocus={() => setSearchOpen(true)} role="search">
+              <form className="nav-search" ref={searchRef} onSubmit={submitSearch} onFocus={() => setSearchOpen(true)} role="search" aria-label="Recherche">
                 <label className="sr-only" htmlFor="nav-search-input">{t.nav.search.placeholder}</label>
-                <input id="nav-search-input" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder={t.nav.search.placeholder} />
-                <button type="submit" aria-label={t.nav.search.submit}>⌕</button>
+                <span className="nav-search-icon" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M11 11l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </span>
+                <input ref={searchInputRef} id="nav-search-input" value={searchValue} onChange={(event) => { setSearchValue(event.target.value); setSearchOpen(true); }} onFocus={() => setSearchOpen(true)} placeholder={t.nav.search.placeholder} autoComplete="off" />
+                {searchValue ? (
+                  <button type="button" className="nav-search-clear" aria-label="Effacer" onClick={() => { setSearchValue(''); setSearchOpen(false); searchInputRef.current?.focus(); }}>
+                    <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+                  </button>
+                ) : (
+                  <span className="nav-search-kbd" aria-hidden="true"><span>⌘</span><span>K</span></span>
+                )}
+                <button type="submit" aria-label={t.nav.search.submit} className="nav-search-submit">
+                  <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9M8 3l5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </button>
                 {searchOpen && searchValue.trim() && <div className="nav-search-results">
                   {liveSearchResults.length > 0 ? liveSearchResults.map((item) => {
                     const done = item.type === 'quiz' && isQuizFinished(quizProgressState, item.slug);
