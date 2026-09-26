@@ -1,5 +1,7 @@
 # Compile et signe l'APK Android de Let's Play à chaque modification du
-# dossier android/, et la dépose en artefact téléchargeable (« lets-play-apk »).
+# dossier android/, puis la publie :
+#   - en artefact téléchargeable (« lets-play-apk ») ;
+#   - en GitHub Release sur le tag « apk » (lien permanent pour les utilisateurs).
 #
 # Lancement manuel : onglet Actions → « APK Android » → Run workflow.
 # L'APK signée utilise la clé committée dans android/keystore/ ; si tu bascules
@@ -79,11 +81,6 @@ jobs:
           grep -E "FAILURE|What went wrong|Caused by|error:|Error:|FAILED|Exception" build.log | head -30 | while IFS= read -r l; do
             echo "::error::${l:0:400}"
           done
-          echo "--- 25 dernières lignes ---" >> diag.txt
-          tail -25 build.log >> diag.txt
-          sed -n '1,200p' diag.txt | while IFS= read -r l; do
-            echo "::error::${l:0:400}"
-          done
 
       - name: Renommer l'APK avec la version
         run: |
@@ -107,18 +104,17 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           APK=$(ls lets-play-v*.apk)
+          {
+            echo "Build automatique de la coque Android du site."
+            echo ""
+            echo "**Installation** : télécharge l'APK sur ton téléphone, ouvre-le, et autorise l'installation depuis des sources inconnues si demandé."
+            echo ""
+            echo "**Mises à jour du site** : automatiques dans l'app — pas besoin de réinstaller l'APK pour voir les nouvelles actus."
+            echo ""
+            echo "- **Version** : \`$APK\`"
+            echo "- **Commit** : \`${GITHUB_SHA::7}\`"
+          } > notes.md
           gh release delete apk --yes --cleanup-tag 2>/dev/null || true
           git push origin :refs/tags/apk 2>/dev/null || true
-          gh release create apk "$APK" \
-            --title "APK Android — $APK" \
-            --notes "Build automatique de la coque Android du site.
-
-- **Version** : $APK
-- **Commit** : ${GITHUB_SHA::7}
-- **Installation** : télécharge l'APK sur ton téléphone, ouvre-le, et
-  autorise l'installation depuis des sources inconnues si demandé.
-- **Mises à jour du site** : automatiques dans l'app — pas besoin de
-  réinstaller l'APK pour voir les nouvelles actus.
-
-Rebuild : tout push touchant android/ relance ce workflow
-(ou onglet Actions → « APK Android » → Run workflow)."
+          gh release create apk "$APK" --title "APK Android — $APK" --notes-file notes.md
+          echo "Release publiée : $APK"
