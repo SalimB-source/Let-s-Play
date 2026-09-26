@@ -342,6 +342,12 @@
   color: #1d4ed8;
 }
 
+/* Les secondes lignes des titres d’articles passent au violet, sans halo, sur fond clair. */
+[data-theme='light'] .article-heading h1 em {
+  color: var(--violet);
+  text-shadow: none;
+}
+
 /* Motifs décoratifs translucides (les seuls dont l'alpha est conservé). */
   [data-theme='light'] .quiz-global-rank::after {
   color: rgba(20,18,50,.05);
