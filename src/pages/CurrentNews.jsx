@@ -59,7 +59,7 @@ const stories = {
     sentiment: 'positive'
   },
   'cinema/dune-messiah-trailer': {
-    date: '26.09.2026', category: 'WARNER BROS · DUNE', image: 'cinema-dune-messiah.jpg', imageAlt: 'Dune: Messiah — Paul Atréides dans le désert d’Arrakis, visuel cinématographique', cover: 'DUNE: MESSIAH',
+    date: '26.09.2026', category: 'WARNER BROS · DUNE', image: 'cinema-dune-messiah.jpg', imageAlt: 'Dune — Paul Atréides et Chani devant le soleil d’Arrakis, affiche officielle Legendary / Warner Bros', cover: 'DUNE: MESSIAH',
     title: 'DUNE: MESSIAH', accent: 'LE TRAILER ARRIVE.', dek: 'Denis Villeneuve a confirmé que la première bande-annonce de Dune: Messiah sera dévoilée en fin d’année. Le troisième chapitre, attendu en 2027, refermera la prophétie de Paul Atréides.',
     lead: 'La nouvelle est tombée simplement, comme souvent avec Villeneuve : la première bande-annonce de Dune: Messiah arrive en fin d’année, et le film sortira en 2027. Après le triomphe de Dune, deuxième partie, le cinéaste retourne sur Arrakis pour adapter le plus trouble des romans de Frank Herbert.',
     intro: 'Messiah ne sera pas une suite de plus : c’est le livre où le messie découvre le prix de sa propre légende. Un matériau sombre, politique, presque funèbre — et le chantier le plus attendu de la science-fiction au cinéma.',
@@ -78,7 +78,7 @@ const stories = {
     sentiment: 'positive'
   },
   'cinema/last-of-us-saison-3': {
-    date: '22.09.2026', category: 'HBO · SÉRIES', image: 'last-of-us-mod-news.jpg', imageAlt: 'The Last of Us — série HBO, silhouettes dans un décor post-apocalyptique', cover: 'THE LAST OF US',
+    date: '22.09.2026', category: 'HBO · SÉRIES', image: 'cinema-last-of-us.jpg', imageAlt: 'The Last of Us — Ellie (Bella Ramsey) dans la série HBO, visuel officiel HBO', cover: 'THE LAST OF US',
     title: 'THE LAST OF US', accent: 'SAISON 3 CONFIRMÉE.', dek: 'HBO a officiellement commandé une troisième saison de The Last of Us. Elle adaptera la seconde moitié du deuxième jeu, avec de nouveaux arcs narratifs et le retour du duo Pascal–Ramsey.',
     lead: 'C’est confirmé : The Last of Us aura bien une saison 3. HBO a officialisé la commande, et avec elle la promesse d’adapter la partie du récit que le deuxième jeu racontait de l’autre côté du miroir — celle d’Abby.',
     intro: 'La saison 2 s’était achevée sur une fracture : Ellie et un mensonge impossible à porter. La suite devra changer de point de vue, l’exercice le plus risqué de toute la saga.',
@@ -127,7 +127,7 @@ const stories = {
     sentiment: 'positive'
   },
   'cinema/joker-folie-a-deux': {
-    date: '15.09.2026', category: 'WARNER BROS · BILAN', image: 'cinema-joker.jpg', imageAlt: 'Joker: Folie à Deux — Joaquin Phoenix et Lady Gaga en pleine scène musicale', cover: 'JOKER 2',
+    date: '15.09.2026', category: 'WARNER BROS · BILAN', image: 'cinema-joker.jpg', imageAlt: 'Joker: Folie à Deux — Joaquin Phoenix et Lady Gaga, affiche officielle Warner Bros', cover: 'JOKER 2',
     title: 'JOKER 2 DIVISE', accent: 'ET FAIT ENCORE DÉBAT.', dek: 'Conspué à Venise, boudé en salle, depuis réévalué : Joker: Folie à Deux reste le blockbuster le plus discuté de sa génération. Bilan d’un malentendu, deux ans après sa sortie.',
     lead: 'Peu de films auront autant fendu le public : conspué à Venise, boudé en salle, défendu ensuite par une partie de la critique, Joker: Folie à Deux continue de faire écrire — et de diviser. Retour sur ce que le film de Todd Phillips a vraiment essayé de faire.',
     intro: 'Sur le papier, tout était réuni pour un triomphe : un Oscar, un milliard de dollars, Joaquin Phoenix, Lady Gaga. À l’arrivée, le plus gros pari musical de Warner s’est pris le mur des attentes — et c’est peut-être là son sujet.',
@@ -146,7 +146,7 @@ const stories = {
     sentiment: 'mixed'
   },
   'cinema/house-of-dragon-saison-3': {
-    date: '12.09.2026', category: 'HBO · SÉRIES', image: 'cinema-hotd.jpg', imageAlt: 'House of the Dragon saison 3 — dragon en vol au-dessus de Port-Réal, visuel HBO', cover: 'HOUSE OF THE DRAGON',
+    date: '12.09.2026', category: 'HBO · SÉRIES', image: 'cinema-hotd.jpg', imageAlt: 'House of the Dragon — Rhaenyra Targaryen, affiche officielle HBO « Fire and Blood »', cover: 'HOUSE OF THE DRAGON',
     title: 'HOUSE OF THE DRAGON', accent: 'EN TOURNAGE.', dek: 'La troisième saison de House of the Dragon entre en tournage. HBO promet une guerre civile plus intense, de nouveaux dragons et le cœur de la Danse : la bataille qui fera basculer Westeros.',
     lead: 'Les caméras tournent : House of the Dragon lance sa saison 3, celle que les lecteurs de Fire & Blood attendent comme le point de non-retour de la Danse des Dragons. HBO annonce plus de fronts, plus de dragons, et moins de compromis.',
     intro: 'La saison 2 s’était achevée sur une guerre déclarée mais encore contenue. La troisième devra la montrer : fils mourants, trahisons de cour, et le ciel de Westeros saturé d’ailes.',
@@ -165,7 +165,7 @@ const stories = {
     sentiment: 'positive'
   },
   'cinema/blade-reboot': {
-    date: '10.09.2026', category: 'MARVEL STUDIOS · COULISSES', image: 'cinema-blade.jpg', imageAlt: 'Blade reboot Marvel — silhouette du Daywalker dans une ruelle néon, visuel Marvel Studios', cover: 'BLADE',
+    date: '10.09.2026', category: 'MARVEL STUDIOS · COULISSES', image: 'cinema-blade.jpg', imageAlt: 'Blade — affiche officielle du film de 1998 avec Wesley Snipes, franchise reprise par Marvel Studios', cover: 'BLADE',
     title: 'BLADE', accent: 'RETROUVE UN RÉALISATEUR.', dek: 'Après des années de départs et de scénarios jetés, le Blade de Marvel Studios aurait enfin un nouveau réalisateur. Mahershala Ali reste attaché au rôle, et un tournage est envisagé pour 2027.',
     lead: 'Le projet le plus turbulent du MCU tient peut-être son capitaine : selon plusieurs sources concordantes, Marvel Studios aurait arrêté un nouveau réalisateur pour Blade, sept ans après l’annonce du film avec Mahershala Ali.',
     intro: 'Annoncé en fanfare en 2019, le reboot du Daywalker a depuis tout connu : scénaristes remplacés, réalisateurs partis, réécritures complètes. Le studio jure que le film se fera. Cette fois, un calendrier commence à circuler.',
@@ -180,7 +180,7 @@ const stories = {
     sentiment: 'mixed'
   },
   'cinema/arcane-saison-2': {
-    date: '08.09.2026', category: 'NETFLIX · RIOT GAMES', image: 'cinema-arcane.jpg', imageAlt: 'Arcane saison 2 — Vi et Jinx face à face sur fond de Zaun, affiche Netflix / Riot Games', cover: 'ARCANE S2',
+    date: '08.09.2026', category: 'NETFLIX · RIOT GAMES', image: 'cinema-arcane.jpg', imageAlt: 'Arcane saison 2 — Jinx et Vi, affiche officielle Netflix / Riot Games', cover: 'ARCANE S2',
     title: 'ARCANE S2', accent: 'DERNIÈRE LIGNE DROITE.', dek: 'À quelques semaines de sa sortie, la saison 2 d’Arcane dévoile ses nouvelles affiches — et confirme qu’elle conclura l’histoire de Vi et Jinx. Piltover et Zaun n’ont jamais été aussi près de la rupture.',
     lead: 'Les affiches sont là, et elles donnent le ton : la saison 2 d’Arcane arrive dans quelques semaines sur Netflix, et ce sera la dernière pour le duo de sœurs qui a fait la réputation de la série. Riot et Fortiche préfèrent conclure plutôt qu’étirer.',
     intro: 'La saison 1 s’était terminée sur un coup de feu tiré vers le Conseil. La reprise montrera ce que cette balle coûte aux deux villes jumelles — et à celles qui la reçoivent de plein fouet.',
