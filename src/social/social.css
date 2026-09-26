@@ -274,10 +274,12 @@ body.messages-dock-open .achievement-toasts {
 [dir="rtl"] body.friends-dock-open .achievement-toasts,
 [dir="rtl"] body.messages-dock-open .achievement-toasts { right: 16px; }
 
-/* ------------------- Mobile : pop-up plein écran ------------------------
-   La fenêtre ouverte devient un pop-up plein écran — mais seulement pour les
-   amis : la messagerie, elle, s'ouvre sur la page /messages (alias
-   /messagerie) sur mobile, et la fenêtre s'efface entièrement sur cette page. */
+/* Le menu mobile couvre toute la page : le raccourci flottant ne doit ni
+   masquer ses liens ni rester cliquable par-dessus. */
+body.nav-open .social-dock { display: none; }
+
+/* ----------------------- Mobile : page sociale --------------------------
+   Le lanceur ouvre /messages ; aucun panneau flottant sur mobile. */
 
 @media (max-width: 760px) {
   .social-dock {
@@ -285,16 +287,15 @@ body.messages-dock-open .achievement-toasts {
     bottom: 12px;
     width: auto;
   }
-  /* Lanceur mobile : pastille ronde centrée sur l'icône ; le libellé desktop
-     « AMIS » est volontairement retiré pour préserver l'espace disponible. */
+  /* Libellé lisible dans l'APK : l'icône seule ressemblait à une action
+     anonyme, voire passait inaperçue. */
   .social-launcher {
-    width: 56px;
-    height: 56px;
-    padding: 0;
-    gap: 0;
+    min-height: 52px;
+    padding: 0 16px;
+    gap: 9px;
     justify-content: center;
     border-width: 2px;
-    border-radius: 50%;
+    border-radius: 28px;
     clip-path: none;
     box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .95), 0 0 32px -8px rgba(255, 214, 25, .45), 0 0 0 4px rgba(7, 8, 20, .9);
   }
@@ -308,7 +309,7 @@ body.messages-dock-open .achievement-toasts {
   }
   .social-launcher-icon { font-size: 20px; }
   .social-launcher-icon svg { width: 22px; height: 22px; }
-  .social-launcher-label { display: none; }
+  .social-launcher-label { display: inline; font-size: 10px; }
   .social-launcher-meta { display: none; }
   .social-launcher-badge {
     min-width: 22px;

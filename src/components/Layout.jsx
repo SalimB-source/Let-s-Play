@@ -12,6 +12,7 @@ import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
 import ArticleReadingTools from './ArticleReadingTools';
 import NeonBackdrop from './NeonBackdrop';
+import { socialText } from '../social/socialCopy';
 
 const base = import.meta.env.BASE_URL;
 
@@ -317,11 +318,29 @@ export default function Layout({ children }) {
                   <span className="nav-link-arrow" aria-hidden="true">↗</span>
                 </Link>
               ))}
+              {/* Sur téléphone, un accès nommé reste disponible dans le menu,
+                  même avant connexion (la page /messages affiche le portail). */}
+              <Link
+                to="/messages"
+                className={`nav-messages-link${location.pathname.startsWith('/messages') || location.pathname.startsWith('/messagerie') ? ' active' : ''}`}
+                aria-current={location.pathname.startsWith('/messages') || location.pathname.startsWith('/messagerie') ? 'page' : undefined}
+                onClick={() => setMenuOpen(false)}
+                style={{ '--i': primaryLinks.length }}
+              >
+                <span className="nav-link-main">
+                  <span className="nav-link-num">06</span>
+                  <span className="nav-link-text">
+                    <span className="nav-link-label">{socialText(lang).title}</span>
+                    <span className="nav-link-desc">{socialText(lang).tabMessages}</span>
+                  </span>
+                </span>
+                <span className="nav-link-arrow" aria-hidden="true">↗</span>
+              </Link>
               <Link
                 to={profileHref}
                 className={`nav-profile-link${user ? ' is-player' : ' is-guest'}${isActive('/auth') ? ' active' : ''}`}
                 onClick={() => setMenuOpen(false)}
-                style={{ '--i': primaryLinks.length }}
+                style={{ '--i': primaryLinks.length + 1 }}
                 aria-label={profileAria}
               >
                 <span className="nav-link-main">
