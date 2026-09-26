@@ -246,9 +246,10 @@ img{max-width:100%}
 }
 .nav-logout-icon{flex-shrink:0;transition:transform .25s}
 .nav-logout:hover{background:rgba(255,92,124,.14);border-color:rgba(255,92,124,.32);color:#fff}
-.nav-logout:hover .nav-logout-icon{transform:rotate(90deg)}
+.nav-logout:hover .nav-logout-icon{transform:translateX(2px)}
+.nav-logout:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
 /* Entre 801 px et 1240 px, la barre est déjà serrée (cinq entrées + recherche
-   + langue + compte) : la croix suffit, le libellé passe en info-bulle /
+   + langue + compte) : l’icône suffit, le libellé passe en info-bulle /
    aria-label. Le menu mobile (≤ 800 px) a la place pour le texte complet. */
 @media(min-width:801px) and (max-width:1240px){
   .nav-logout{width:34px;height:34px;padding:0;gap:0}
@@ -1308,7 +1309,7 @@ img{max-width:100%}
   }
   .mobile-menu-eyebrow-line{flex:1;height:1px;background:linear-gradient(90deg, var(--line-strong), transparent);margin-left:12px}
 
-  /* Primary — big typographic links (mobile overrides island pill) */
+  /* Primary — compact mobile links with comfortable touch targets */
   .nav-primary{
     width:100%;
     flex:none;
@@ -1330,7 +1331,8 @@ img{max-width:100%}
     align-items:center;
     justify-content:space-between;
     width:100%;
-    padding:18px 4px 18px 2px;
+    padding:12px 4px 12px 2px;
+    min-height:44px;
     border-bottom:1px solid rgba(148,130,255,.12);
     border-radius:0 !important;
     background:transparent !important;
@@ -1357,7 +1359,7 @@ img{max-width:100%}
   .nav-primary a:hover::before,
   .nav-primary a.active::before{transform:scaleY(1)}
   .nav-primary a::after{display:none}
-  .nav-link-main{display:flex;align-items:center;gap:16px;min-width:0}
+  .nav-link-main{display:flex;align-items:center;gap:10px;min-width:0}
   .nav-link-num{
     font:700 11px var(--mono);
     letter-spacing:.12em;
@@ -1370,7 +1372,7 @@ img{max-width:100%}
   .nav-link-label{
     font-family:var(--display);
     font-weight:800;
-    font-size:clamp(28px, 9vw, 42px);
+    font-size:clamp(22px, 6vw, 28px);
     line-height:.95;
     letter-spacing:-.02em;
   }
@@ -1382,7 +1384,7 @@ img{max-width:100%}
   }
   .nav-link-arrow{
     flex:none;
-    width:36px;height:36px;
+    width:30px;height:30px;
     display:grid;place-items:center;
     border:1px solid var(--line);
     font-size:14px;
@@ -1409,11 +1411,11 @@ img{max-width:100%}
     display:flex;
     align-items:center;
     gap:12px;
-    padding:14px 2px;
+    padding:12px 2px;
   }
   .nav-profile-avatar{
     position:relative;
-    width:52px;height:52px;flex:none;
+    width:40px;height:40px;flex:none;
     display:grid;place-items:center;
     border:2px solid var(--cyan);
     border-radius:50%;
@@ -1457,8 +1459,10 @@ img{max-width:100%}
   .nav-profile-link .nav-link-text{min-width:0;flex:1}
   .nav-profile-link .nav-link-main{min-width:0;flex:1}
   .nav-profile-link .nav-link-label{
-    font-size:clamp(22px, 7.2vw, 36px);
+    font-size:clamp(20px, 5.5vw, 26px);
     white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
   .nav-profile-link .nav-link-desc{
     white-space:nowrap;
@@ -1468,13 +1472,13 @@ img{max-width:100%}
   }
   .nav-profile-level{
     flex:none;
-    min-width:58px;
+    min-width:46px;
     display:flex;
     flex-direction:column;
     align-items:center;
     justify-content:center;
     gap:2px;
-    padding:8px 10px;
+    padding:6px 8px;
     border:1px solid var(--yellow);
     background:rgba(255,214,25,.1);
     color:var(--yellow);
@@ -1501,7 +1505,7 @@ img{max-width:100%}
   .nav-profile-link.active .nav-profile-level{border-color:var(--cyan);color:var(--cyan)}
 
   /* La pastille de compte du bas doublonnait le lien Profil. */
-  .nav-actions-grid .nav-account.connected{display:none !important}
+  .nav-actions-grid .nav-profile-wrap{display:none}
 
   @keyframes mobileLinkIn{
     from{opacity:0;transform:translateY(18px)}
@@ -1817,7 +1821,7 @@ img{max-width:100%}
 .search-result-card h2{font-family:var(--display);font-size:19px;line-height:1.2;margin:26px 0 12px;text-transform:uppercase}
 .search-result-card p{color:var(--muted);line-height:1.45;margin:0 0 20px}
 .search-result-card .read-link{margin-top:auto;color:var(--cyan);font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase}
-@media(max-width:1120px){.nav-primary{gap:16px}} /* six entrées : on resserre avant le menu (800px) */
+@media(min-width:801px) and (max-width:1120px){.nav-primary{gap:16px}} /* six entrées : on resserre avant le menu (800px) */
 @media(max-width:1000px){.nav-links{gap:18px}.nav-search{min-width:128px}.search-results-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:800px){
   .nav-links .nav-search{width:100%;height:48px;order:0}

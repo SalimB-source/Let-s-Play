@@ -511,17 +511,6 @@ function compressImageToDataUrl(file) {
   }));
 }
 
-// Where to send the player once signed in. The comment section links here
-// with `state.from` (e.g. "/news/physint#comments"); the target is mirrored in
-// sessionStorage so it survives the full-page round trip of an OAuth login.
-// Only same-site paths are accepted and entries expire after 15 minutes.
-const RETURN_STORAGE_KEY = 'letsplay_auth_return_to';
-const RETURN_MAX_AGE_MS = 15 * 60 * 1000;
-
-function isInternalPath(path) {
-  return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
-}
-
 // The two forms the pop-up can show when the visitor is signed out. `update`
 // (password recovery) is added by the recovery guard, not by a link.
 export const AUTH_MODES = ['signin', 'signup'];
@@ -556,33 +545,6 @@ export function readAuthMode(initialMode, search) {
   return normalizeMode(initialMode) || modeFromSearch(search) || 'signin';
 }
 
-function rememberReturnTo(path) {
-  if (typeof window === 'undefined' || !isInternalPath(path)) return;
-  try {
-    window.sessionStorage.setItem(RETURN_STORAGE_KEY, JSON.stringify({ to: path, at: Date.now() }));
-  } catch (e) { /* private mode — the in-memory ref still covers this tab */ }
-}
-
-function peekReturnTo() {
-  if (typeof window === 'undefined') return '';
-  try {
-    const raw = window.sessionStorage.getItem(RETURN_STORAGE_KEY);
-    if (!raw) return '';
-    const { to, at } = JSON.parse(raw);
-    if (!isInternalPath(to) || typeof at !== 'number' || Date.now() - at > RETURN_MAX_AGE_MS) return '';
-    return to;
-  } catch (e) {
-    return '';
-  }
-}
-
-function forgetReturnTo() {
-  if (typeof window === 'undefined') return;
-  try {
-    window.sessionStorage.removeItem(RETURN_STORAGE_KEY);
-  } catch (e) { /* ignore */ }
-}
-
 // Format a Supabase ISO timestamp as "Month YYYY" for the member-since line.
 function formatJoined(iso) {
   if (!iso) return '';
@@ -601,6 +563,7 @@ export default function Auth({ initialMode = '' }) {
     isDemo,
     demoProfileKey,
     configured,
+    loading,
     loginAsDemo,
     updateDemoProfile,
     signOut,
@@ -611,7 +574,11 @@ export default function Auth({ initialMode = '' }) {
   const { summary, state: achievementState } = useAchievements();
   const track = useAchievementAction();
   const t = copy[lang] || copy.en;
-  const returnToRef = useRef('');
+  // Only a fresh login should redirect; an existing session may still open
+  // /auth to view its profile (including after a reload).
+  const authCallback = new URLSearchParams(location.search).has('code')
+    || new URLSearchParams(location.hash.slice(1)).has('access_token');
+  const pendingLoginRef = useRef(authCallback || (!user && !loading));
   // Mode requested by the address bar: the navbar renders « Log in » and
   // « Register » as links to `/auth?mode=signin` / `/auth?mode=signup`.
   const requestedMode = readAuthMode(initialMode, location.search);
@@ -626,7 +593,7 @@ export default function Auth({ initialMode = '' }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [showResend, setShowResend] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
+  const [isRecovery, setIsRecovery] = useState(() => new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery');
   const [connectedPopup, setConnectedPopup] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarNote, setAvatarNote] = useState(null); // { text, isError }
@@ -639,20 +606,9 @@ export default function Auth({ initialMode = '' }) {
     return () => window.clearTimeout(id);
   }, [connectedPopup]);
 
-  // Arriving from a "sign in to comment" link: remember where to go back to
-  // and open the requested form (sign-in instead of the default sign-up).
-  // The address bar is watched too: the navbar « Log in » and « Register »
-  // buttons both point at `/auth` and only differ by `?mode=`, so clicking one
-  // while the pop-up is already open has to switch the form. An explicit
-  // `state.mode` from an in-app link wins over the query parameter.
+  // Keep the requested form in sync with navbar and in-app sign-in links.
+  // After authentication, all entry points lead to the home page.
   useEffect(() => {
-    const from = location.state?.from;
-    if (isInternalPath(from)) {
-      rememberReturnTo(from);
-      returnToRef.current = from;
-    } else {
-      returnToRef.current = peekReturnTo();
-    }
     const requested = normalizeMode(location.state?.mode) || modeFromSearch(location.search);
     if (requested) {
       setMode(requested);
@@ -704,14 +660,19 @@ export default function Auth({ initialMode = '' }) {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  // Once a session exists (email/password, OAuth round trip, demo profile),
-  // send the player back to the article they came from.
+  // Cover session-based sign-ins (including email confirmation and demo)
+  // without redirecting profile visits or interrupting password recovery.
   useEffect(() => {
-    if (!user || isRecovery) return;
-    const target = returnToRef.current || peekReturnTo();
-    forgetReturnTo();
-    if (target) navigate(target, { replace: true });
-  }, [user, isRecovery, navigate]);
+    if (loading || isRecovery) return;
+    if (!user) {
+      pendingLoginRef.current = true;
+      return;
+    }
+    if (pendingLoginRef.current) {
+      pendingLoginRef.current = false;
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, isRecovery, navigate]);
 
   // Keeps `/auth?mode=…` in step with the form on screen: the two navbar
   // buttons and a reload then always agree on which pop-up was asked for.
@@ -775,7 +736,7 @@ export default function Auth({ initialMode = '' }) {
           track('account_created');
           // Email confirmation disabled → already signed in.
           setConnectedPopup(true);
-          navigate(returnToRef.current || '/auth', { replace: Boolean(returnToRef.current) });
+          navigate('/', { replace: true });
           return;
         } else if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
           // Supabase hides duplicate registrations: no identities = email taken.
@@ -797,7 +758,7 @@ export default function Auth({ initialMode = '' }) {
         } else {
           track('signed_in');
           setConnectedPopup(true);
-          navigate(returnToRef.current || '/auth', { replace: Boolean(returnToRef.current) });
+          navigate('/', { replace: true });
           return;
         }
       } else if (mode === 'forgot') {

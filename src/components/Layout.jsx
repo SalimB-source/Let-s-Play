@@ -400,65 +400,79 @@ export default function Layout({ children }) {
               <div className="nav-actions-grid">
                 <ThemeToggle />
                 {user ? (
-                  <div className="nav-profile-wrap" ref={profileWrapRef} onMouseEnter={() => setProfileMenuOpen(true)} onMouseLeave={() => setProfileMenuOpen(false)}>
-                    <Link
-                      to="/auth"
-                      className="nav-account connected"
-                      onClick={() => setMenuOpen(false)}
-                      aria-label={profileAria}
-                      title={profileAria}
-                      aria-current={isActive('/auth') ? 'page' : undefined}
-                      aria-expanded={profileMenuOpen}
-                      aria-haspopup="menu"
-                      onFocus={() => setProfileMenuOpen(true)}
-                    >
-                      <span className="nav-account-inner">
-                        <span className="nav-account-avatar" aria-hidden="true">
-                          <span className="nav-account-avatar-face">
-                            {profileAvatar ? (
-                              <img src={profileAvatar} alt="" />
-                            ) : (
-                              <span className="nav-account-initials">{profileInitials}</span>
-                            )}
+                  <>
+                    <div className="nav-profile-wrap" ref={profileWrapRef} onMouseEnter={() => setProfileMenuOpen(true)} onMouseLeave={() => setProfileMenuOpen(false)}>
+                      <Link
+                        to="/auth"
+                        className="nav-account connected"
+                        onClick={() => setMenuOpen(false)}
+                        aria-label={profileAria}
+                        title={profileAria}
+                        aria-current={isActive('/auth') ? 'page' : undefined}
+                        aria-expanded={profileMenuOpen}
+                        aria-haspopup="menu"
+                        onFocus={() => setProfileMenuOpen(true)}
+                      >
+                        <span className="nav-account-inner">
+                          <span className="nav-account-avatar" aria-hidden="true">
+                            <span className="nav-account-avatar-face">
+                              {profileAvatar ? (
+                                <img src={profileAvatar} alt="" />
+                              ) : (
+                                <span className="nav-account-initials">{profileInitials}</span>
+                              )}
+                            </span>
+                            <span className="nav-online-dot" />
                           </span>
-                          <span className="nav-online-dot" />
-                        </span>
-                        <span className="nav-account-name">
-                          {profileName || user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
-                        </span>
-                        {profileLevel != null && (
-                          <span className="nav-account-level" aria-hidden="true">
-                            <small>{t.nav.levelShort}</small>
-                            <strong>{profileLevel}</strong>
+                          <span className="nav-account-name">
+                            {profileName || user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
                           </span>
-                        )}
-                      </span>
-                    </Link>
-                    <div className={`nav-profile-dropdown${profileMenuOpen ? ' open' : ''}`} role="menu" aria-hidden={!profileMenuOpen}>
-                      <div className="nav-profile-dropdown-head">
-                        <span className="nav-profile-dropdown-avatar" aria-hidden="true">
-                          {profileAvatar ? <img src={profileAvatar} alt="" /> : <span>{profileInitials}</span>}
-                          <span className="nav-online-dot" />
+                          {profileLevel != null && (
+                            <span className="nav-account-level" aria-hidden="true">
+                              <small>{t.nav.levelShort}</small>
+                              <strong>{profileLevel}</strong>
+                            </span>
+                          )}
                         </span>
-                        <span className="nav-profile-dropdown-meta">
-                          <strong>{profileName}</strong>
-                          <small>{profileRank} · {t.nav.levelShort} {profileLevel}</small>
-                        </span>
+                      </Link>
+                      <div className={`nav-profile-dropdown${profileMenuOpen ? ' open' : ''}`} role="menu" aria-hidden={!profileMenuOpen}>
+                        <div className="nav-profile-dropdown-head">
+                          <span className="nav-profile-dropdown-avatar" aria-hidden="true">
+                            {profileAvatar ? <img src={profileAvatar} alt="" /> : <span>{profileInitials}</span>}
+                            <span className="nav-online-dot" />
+                          </span>
+                          <span className="nav-profile-dropdown-meta">
+                            <strong>{profileName}</strong>
+                            <small>{profileRank} · {t.nav.levelShort} {profileLevel}</small>
+                          </span>
+                        </div>
+                        <div className="nav-profile-dropdown-progress" aria-hidden="true">
+                          <span style={{ width: `${Math.min(100, ((summary?.xpProgress ?? 0) * 100) || 34)}%` }} />
+                        </div>
+                        <nav className="nav-profile-dropdown-links">
+                          <Link to="/auth" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
+                          <Link to="/messages" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>✉</span> Messages <em>↗</em></Link>
+                          <Link to="/auth#achievements" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>🏆</span> Succès <em>↗</em></Link>
+                        </nav>
+                        <button type="button" className="nav-profile-dropdown-logout" onClick={handleSignOut} role="menuitem">
+                          <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+                          {logoutLabel}
+                        </button>
                       </div>
-                      <div className="nav-profile-dropdown-progress" aria-hidden="true">
-                        <span style={{ width: `${Math.min(100, ((summary?.xpProgress ?? 0) * 100) || 34)}%` }} />
-                      </div>
-                      <nav className="nav-profile-dropdown-links">
-                        <Link to="/auth" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
-                        <Link to="/messages" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>✉</span> Messages <em>↗</em></Link>
-                        <Link to="/auth#achievements" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>🏆</span> Succès <em>↗</em></Link>
-                      </nav>
-                      <button type="button" className="nav-profile-dropdown-logout" onClick={handleSignOut} role="menuitem">
-                        <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
-                        {logoutLabel}
-                      </button>
                     </div>
-                  </div>
+                    <button
+                      type="button"
+                      className="nav-logout"
+                      onClick={handleSignOut}
+                      aria-label={logoutLabel}
+                      title={logoutLabel}
+                    >
+                      <svg className="nav-logout-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M9 21H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5M16 17l5-5-5-5M21 12H9" />
+                      </svg>
+                      <span className="nav-logout-label">{logoutLabel}</span>
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Link
