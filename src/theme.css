@@ -607,7 +607,7 @@
 [data-theme='light'] .hero-shade{
   display:block;
   background:
-    linear-gradient(90deg,rgba(5,6,15,.78) 0%,rgba(5,6,15,.56) 30%,rgba(5,6,15,.24) 52%,rgba(5,6,15,.04) 76%,transparent 100%),
+    linear-gradient(90deg,rgba(5,6,15,.70) 0%,rgba(5,6,15,.50) 30%,rgba(5,6,15,.22) 52%,rgba(5,6,15,.03) 76%,transparent 100%),
     linear-gradient(180deg,rgba(5,6,15,.18),transparent 36%,rgba(5,6,15,.35) 100%);
 }
 @media(max-width:800px){

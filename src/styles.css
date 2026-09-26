@@ -159,8 +159,11 @@ img{max-width:100%}
 }
 .hero-shade{
   position:absolute;inset:0;z-index:3;
+  /* Le visuel du héros est déjà très sombre (luminance moyenne ~21/255) : le
+     voile reste mesuré pour ne pas l'écraser, tout en garantissant le contraste
+     du texte blanc/jaune posé à gauche (≈18:1 mesuré sous le titre). */
   background:
-    linear-gradient(90deg, rgba(0,0,0,.86) 0%, rgba(0,0,0,.68) 30%, rgba(0,0,0,.28) 62%, rgba(0,0,0,.06) 100%),
+    linear-gradient(90deg, rgba(0,0,0,.76) 0%, rgba(0,0,0,.56) 30%, rgba(0,0,0,.22) 62%, rgba(0,0,0,.04) 100%),
     linear-gradient(180deg, rgba(5,6,15,.5) 0%, rgba(5,6,15,.04) 18%, rgba(5,6,15,0) 36%, rgba(5,6,15,.3) 64%, rgba(5,6,15,.9) 92%, rgba(5,6,15,.95) 100%),
     radial-gradient(120% 90% at 50% 35%, transparent 48%, rgba(5,6,15,.3) 100%);
 }
