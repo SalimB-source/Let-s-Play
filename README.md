@@ -1382,6 +1382,13 @@ et liée.
   du texte de la source. Sans clé, le robot publie avec le gabarit extractif
   et reste alors sur les sources francophones (il ne traduit pas). En cas de
   panne du modèle, repli automatique sur le gabarit : aucun run n’est perdu.
+- **Zéro répétition** : chaque phrase de la source sert au plus une fois. Le
+  gabarit extractif distribue un pot de phrases dédupliquées entre chapô,
+  accroche, corps, citation et encadré « À RETENIR » ; la validation refuse
+  tout article dont deux champs rendus partagent un même passage
+  (`detectRepetitions`, également contrôlé par `npm run check:newsbot` sur
+  les articles déjà publiés). Sur une source trop courte, l’article est plus
+  court plutôt que répétitif : les blocs sans matière ne sont pas rendus.
 - **Publication automatique** : le robot committe sur `main`
   (`src/news/auto/*.json` + `src/news/autoIndex.js` + visuels SVG générés dans
   `public/news-auto/`), puis appelle explicitement le workflow réutilisable

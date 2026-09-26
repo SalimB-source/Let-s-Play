@@ -76,7 +76,8 @@ export const STYLE_GUIDE = `Tu écris pour « Let’s Play », l’émission alg
 - La citation (« quote ») est la phrase la plus juste de l’article, avec « quoteBy » : « L’ANALYSE LET’S PLAY ».
 - « takeText » résume tout l’article en une phrase autonome.
 - Dernier paragraphe (p4) : perspective honnête pour les joueurs — quoi surveiller ensuite, quel signal attendre — sans spéculation présentée comme un fait, puis une question concrète qui donne envie de prendre position dans les commentaires (sans inventer de réponse ni de sondage).
-- Les paragraphes font 2 à 4 phrases, environ 45 à 80 mots chacun.`;
+- Les paragraphes font 2 à 4 phrases, environ 45 à 80 mots chacun.
+- AUCUNE RÉPÉTITION : une phrase (ou un passage de plus de quelques mots) ne doit jamais réapparaître dans deux champs. dek, lead, intro, p1, quote, p2, p3 et takeText apportent chacun du contenu distinct ; la citation est une phrase unique qui ne figure nulle part ailleurs dans l’article.`;
 
 export const STORY_SCHEMA_DOC = `Réponds UNIQUEMENT avec un objet JSON (aucun texte autour, pas de bloc de code) respectant exactement cette structure :
 
@@ -90,11 +91,11 @@ export const STORY_SCHEMA_DOC = `Réponds UNIQUEMENT avec un objet JSON (aucun t
   "intro": "Mise en contexte de 1 à 3 phrases.",
   "h2": "TITRE DE SECTION 1 EN MAJUSCULES",
   "p1": "Développement des faits principaux, 2-4 phrases.",
-  "quote": "Phrase forte tirée de la matière première (15-30 mots).",
+  "quote": "Phrase forte tirée de la matière première (15-30 mots), absente de tous les autres champs.",
   "h2b": "TITRE DE SECTION 2 EN MAJUSCULES",
   "p2": "Analyse ou détail de la matière première, 2-4 phrases.",
   "p3": "Complément factuel, 2-4 phrases.",
   "p4": "Perspective : quoi surveiller ensuite, 2-3 phrases.",
-  "takeText": "Résumé final en une phrase autonome.",
+  "takeText": "Résumé final en une phrase autonome, reformulé (pas une reprise du dek ou du lead).",
   "sentiment": "positive | negative | mixed — ton global de l'actu : positive (bonne nouvelle/sortie/succès) en VERT, negative (annulation/report/licenciement/problème) en ROUGE, mixed (nuancé/incertain/débat) en JAUNE."
 }`;
