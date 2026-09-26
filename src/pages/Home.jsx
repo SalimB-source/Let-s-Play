@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
-import { useTheme } from '../theme/ThemeContext';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
@@ -14,6 +13,11 @@ import { Arrow, AwaitedBand, clockOffset } from '../components/ReleasesCalendar'
 // Le paramètre d'URL `?at=` (horloge simulée du bandeau « le plus attendu »)
 // est partagé avec la page calendrier complet via clockOffset().
 const CLOCK_OFFSET = clockOffset();
+
+// Visuel unique du héros : une seule image, plein cadre, utilisée dans tous les
+// thèmes (les anciennes vidéos d'arrière-plan clair/sombre ont été retirées).
+// Pour changer le visuel, remplacer le fichier `public/hero-keyart.jpg`.
+const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-keyart.jpg`;
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },
@@ -55,9 +59,6 @@ const liveChannelId = import.meta.env.VITE_YOUTUBE_CHANNEL_ID?.trim() || 'UCBi98
 
 export default function Home() {
   const { t, lang } = useLanguage();
-  // En thème clair, le héros pose la key art fournie au lieu de la vidéo :
-  // aucune balise <video> n'est montée (ni téléchargée) dans ce thème.
-  const { isLight } = useTheme();
   const [liveStatus, setLiveStatus] = useState('unknown');
 
   // La frise « Sorties du mois » et le compte à rebours ont quitté l'accueil :
@@ -138,30 +139,16 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        {isLight ? (
-          /* Thème clair : la vidéo fournie remplace l’ancien visuel fixe. */
-          <video
-            className="hero-bg hero-bg--keyart"
-            autoPlay
-            muted
-            loop
-            playsInline
-            aria-hidden="true"
-          >
-            <source src={`${import.meta.env.BASE_URL}hero-light.mp4`} type="video/mp4" />
-          </video>
-        ) : (
-          <video
-            className="hero-bg"
-            autoPlay
-            muted
-            loop
-            playsInline
-            aria-hidden="true"
-          >
-            <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663645820794/QjYUbmTfZIPVlQQb.mp4" type="video/mp4" />
-          </video>
-        )}
+        {/* Visuel du héros : une image, plein cadre, identique en thème clair
+            et sombre. `fetchPriority` évite qu'elle attende le reste de la page. */}
+        <img
+          className="hero-bg hero-bg--keyart"
+          src={HERO_IMAGE}
+          alt=""
+          aria-hidden="true"
+          fetchPriority="high"
+          decoding="async"
+        />
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">
