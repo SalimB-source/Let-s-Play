@@ -64,14 +64,14 @@ export default function DossierPlayStation2() {
 
           <div className="dossier-dark-panel">
             <p className="dossier-kicker">LA RÉVOLUTION DVD</p>
-            <h2>UNE CONSOLE<br /><em>POUR TOUTE LA MAISON.</em></h2>
+            <h2>UNE CONSOLE<br /><em>FAMILIALE.</em></h2>
             <p>Le lecteur DVD est l’un des grands avantages de la PS2. À son lancement, la console propose une porte d’entrée abordable vers un format qui change la manière de regarder des films. Sony ne vend donc pas seulement un appareil de jeu : la machine devient un équipement du salon.</p>
             <p>Cette polyvalence aide la PlayStation 2 à dépasser le public traditionnel des joueurs. Le DVD crée une justification familiale à l’achat, tandis que les jeux construisent ensuite une relation durable avec la console.</p>
           </div>
 
           <div className="dossier-section-grid dossier-section-grid-reverse">
             <div>
-              <h2>UNE ARCHITECTURE<br /><em>À APPRIVOISER.</em></h2>
+              <h2>UNE ARCHITECTURE<br /><em>À DOMPTER.</em></h2>
               <p>L’Emotion Engine donne à la console une réputation de puissance, mais sa conception rend aussi le développement complexe pour les studios tiers. L’aliasing, la mémoire et les contraintes de programmation obligent les équipes à trouver des solutions très spécifiques.</p>
               <p>La PS2 est ainsi une machine paradoxale : difficile à maîtriser, mais capable de résultats visuels et techniques qui semblaient improbables au début de la génération. Sa courbe d’apprentissage participe à la diversité de sa bibliothèque.</p>
             </div>
@@ -89,7 +89,7 @@ export default function DossierPlayStation2() {
 
           <div className="dossier-dark-panel">
             <p className="dossier-kicker">L’HÉRITAGE</p>
-            <h2>LA FORMULE<br /><em>DES CONSOLES MODERNES.</em></h2>
+            <h2>UNE FORMULE<br /><em>DEVENUE STANDARD.</em></h2>
             <p>La PlayStation 2 a laissé un modèle qui dépasse ses composants : une identité forte, une technologie identifiable, des exclusivités, une compatibilité avec le passé et une présence dans la culture populaire.</p>
             <p>Les générations suivantes ont tenté de prolonger cette formule, avec des réussites et des accidents industriels comme celui que l’émission associe aux débuts de la PS3. La PS2 reste le point d’équilibre auquel Sony continue d’être comparé.</p>
           </div>

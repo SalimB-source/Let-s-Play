@@ -18,6 +18,44 @@ export const REQUIRED_FIELDS = [
 // répéter une phrase déjà publiée ; le rendu saute alors le bloc concerné.
 export const OPTIONAL_FIELDS = ['intro', 'quote', 'quoteBy', 'p2', 'p3', 'takeText'];
 
+// Budget d'un gros titre, en caractères — même règle que les titres écrits à
+// la main sur le site (voir src/typography.css, bloc 3) : « title » porte
+// l'amorce (l'entité, souvent le nom du jeu), « accent » la chute, et le tout
+// doit tenir sur trois lignes à l'écran — y compris dans une carte de la
+// grille Actus, large de ~200px sur PC. Au-delà de ~40 caractères, le titre
+// passe sur une quatrième ligne.
+export const HEADLINE_BUDGET = { title: 20, accent: 24, total: 40 };
+
+// Ramène un texte au budget sans jamais couper un mot : on retire des mots
+// entiers depuis la fin, et on préfère s'arrêter sur une ponctuation faible
+// (virgule, deux-points) quand il y en a une dans la dernière partie du budget
+// — la chute reste alors une proposition lisible.
+function fitToBudget(text, max) {
+  const clean = String(text).replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const head = clean.slice(0, max + 1);
+  const punctuation = Math.max(head.lastIndexOf(','), head.lastIndexOf(':'), head.lastIndexOf(';'), head.lastIndexOf(' – '));
+  if (punctuation >= max * 0.55) return head.slice(0, punctuation).trimEnd();
+  const cut = clean.slice(0, max + 1).replace(/\s+\S*$/, '').trimEnd();
+  if (cut) return cut;
+  // Un seul mot, plus long que le budget : on taille dedans, faute de mieux.
+  return clean.slice(0, Math.max(1, max - 1)).trimEnd();
+}
+
+// Applique le budget à un couple title/accent, en gardant la chute lisible :
+// l'accent est une phrase — elle finit par un point, et ne commence jamais par
+// une ponctuation orpheline (« : AEGIS RIM… »).
+export function fitHeadline(title, accent) {
+  let short = fitToBudget(String(title || '').toUpperCase(), HEADLINE_BUDGET.title).replace(/[.,;:!?\s–—-]+$/, '');
+  let tail = String(accent || '').replace(/\s+/g, ' ').trim().replace(/^[\s:;,.–—-]+/, '');
+  const total = HEADLINE_BUDGET.total - short.length - 1; // -1 : l'espace entre les deux champs
+  tail = fitToBudget(tail, Math.max(1, Math.min(HEADLINE_BUDGET.accent, total)));
+  if (!tail) tail = fitToBudget(String(accent || title || 'ACTU'), HEADLINE_BUDGET.accent);
+  if (!short) short = fitToBudget(String(title || tail).toUpperCase(), HEADLINE_BUDGET.title);
+  if (!/[.!?]$/.test(tail)) tail += '.';
+  return { title: short, accent: tail };
+}
+
 export function slugify(input) {
   return String(input)
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -34,20 +72,28 @@ export function formatParisDate(date = new Date()) {
 }
 
 export function splitHeadline(headline) {
-  const upper = headline.toUpperCase().replace(/\s+/g, ' ').trim();
-  const words = upper.split(' ');
-  const target = Math.max(1, Math.round((upper.length * 0.38) / 6)); // ≈ 1-3 mots forts
-  let cut = 0;
+  const upper = String(headline).toUpperCase().replace(/\s+/g, ' ').trim();
+  const words = upper.split(' ').filter(Boolean);
+  // Amorce : les premiers mots, tant qu'ils tiennent dans le budget du champ
+  // « title » (au moins un mot, même long).
+  const title = [];
   let length = 0;
-  while (cut < words.length - 1 && (cut < target || length < 10)) {
-    length += words[cut].length + 1;
-    cut += 1;
+  for (const word of words) {
+    const next = length + word.length + (title.length ? 1 : 0);
+    if (title.length && next > HEADLINE_BUDGET.title) break;
+    title.push(word);
+    length = next;
   }
-  let title = words.slice(0, cut).join(' ').replace(/[.,;:!]+$/, '');
-  let accent = words.slice(cut).join(' ');
-  if (!accent) { accent = title; title = words[0] || 'ACTU'; }
-  if (!/[.!?]$/.test(accent)) accent += '.';
-  return { title, accent };
+  const accent = words.slice(Math.max(1, title.length)).join(' ');
+  // Titre d'un seul mot (ou source sans chute) : l'amorce se réduit au premier
+  // mot, la chute récupère le reste — jamais deux champs identiques.
+  if (!accent) {
+    const head = title[0] || upper;
+    return fitHeadline(head, words.slice(1).join(' ') || head);
+  }
+  // Le budget complet s'applique au couple : la chute récupère la place
+  // laissée libre par l'amorce.
+  return fitHeadline(title.join(' '), accent);
 }
 
 export function sentenceSplit(text) {
@@ -339,7 +385,8 @@ export function templateCompose(item, extracted, { date, image, slug }) {
 }
 
 const LENGTH_RULES = {
-  title: 60, accent: 80, category: 70, cover: 40, dek: 400, lead: 500, intro: 600,
+  // Titrage : le couple title + accent doit tenir sur trois lignes (HEADLINE_BUDGET).
+  title: HEADLINE_BUDGET.title, accent: HEADLINE_BUDGET.accent, category: 70, cover: 40, dek: 400, lead: 500, intro: 600,
   h2: 70, p1: 900, quote: 300, quoteBy: 80, h2b: 70, p2: 900, p3: 900, p4: 900,
   take: 40, takeText: 400, source: 300, sourceDetail: 80, sourceUrl: 1000,
   sentiment: 20,

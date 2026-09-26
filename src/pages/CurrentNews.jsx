@@ -123,7 +123,7 @@ const stories = {
   },
   'rayman-legends-retold': {
     date: '15.09.2026', category: 'UBISOFT · PLATEFORMES', image: 'rayman-legends-retold-news.jpg', imageAlt: 'Rayman Legends Retold — miniature officielle du trailer Ubisoft', cover: 'RAYMAN LEGENDS',
-    title: 'RAYMAN LEGENDS RETOLD', accent: 'PREND UN PEU DE RETARD.', dek: 'Le remaster ne sortira plus le 1er octobre. Ubisoft repousse le rendez-vous au 3 décembre 2026 pour peaufiner sa version.',
+    title: 'RAYMAN RETOLD', accent: 'REPORTÉ À DÉCEMBRE.', dek: 'Le remaster ne sortira plus le 1er octobre. Ubisoft repousse le rendez-vous au 3 décembre 2026 pour peaufiner sa version.',
     lead: 'Les joueurs devront patienter quelques semaines de plus avant de retrouver Rayman. Alors que Rayman Legends Retold était attendu le 1er octobre 2026, Ubisoft vient d’annoncer un report au 3 décembre.',
     intro: 'Le changement concerne les versions PS5, Xbox Series, Switch 2 et PC. Le développement est présenté comme terminé, mais l’équipe souhaite profiter de ce délai supplémentaire pour améliorer les derniers détails et viser le niveau de qualité attendu pour ce retour.',
     h2: 'UN REPORT POUR POLIR LE REMASTER', p1: 'Ce décalage ne ressemble donc pas à une remise en question du projet. Rayman Legends Retold garde son calendrier de sortie et ses plateformes, tandis que les développeurs s’offrent un peu d’air pour finaliser l’expérience dans de meilleures conditions.',

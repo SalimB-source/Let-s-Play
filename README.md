@@ -108,12 +108,24 @@ l'étendre (les grands chiffres d'un compte à rebours, le score d'un test, un
 futur titre en h4), il suffit d'ajouter les sélecteurs concernés à la liste du
 bloc 2 de `typography.css`.
 
+**Trois lignes maximum.** Un gros titre du site tient sur trois lignes, jamais
+plus. La règle se joue d'abord sur le texte : les titres sont écrits dans ce
+budget (le robot actus refuse un couple `title` + `accent` au-delà de
+`HEADLINE_BUDGET`, dans `scripts/news-bot/lib/story.mjs`), et
+`npm run check:headlines` rend toutes les routes, mesure chaque h1/h2/h3 à seize
+largeurs de fenêtre avec les métriques d'Orbitron, puis échoue si l'un d'eux
+dépasse. Le bloc 3 de `typography.css` n'est qu'un filet : les titres de carte y
+sont plafonnés à trois lignes (`-webkit-line-clamp`), au cas où un titre correct
+passerait malgré tout sur quatre lignes. Quand un titre est trop long, on le
+réécrit — on ne le coupe pas.
+
 Deux points d'attention :
 
 - **Orbitron est plus large que Google Sans.** Un titre peut donc passer sur
   une ligne de plus ; `overflow-wrap: break-word` évite qu'un mot long déborde
   de sa colonne sur un écran étroit, mais si un titrage paraît trop large, c'est
-  le corps ou l'interlettrage de la règle concernée qu'il faut reprendre.
+  le corps ou l'interlettrage de la règle concernée qu'il faut reprendre —
+  `check:headlines` dit lesquels.
 - **Seule exception au titrage gaming :** les titres du mode Survie
   (`.horror-*`, dans `src/quizzes/quiz.css`) posent leur famille en
   `!important` et gardent donc leur rendu d'origine — leur habillage de
@@ -824,6 +836,9 @@ Editor du projet Supabase (le script est relançable sans risque).
   progression locale).
 - `npm run check:i18n` — les routes × FR / EN / AR (la langue se passe au
   provider, le site étant publié en français), dont le hub joueur `/auth`.
+- `npm run check:headlines` — tous les gros titres rendus (h1 de page, d'article
+  et de dossier, h2 de carte et de section), mesurés à seize largeurs de fenêtre
+  d'après les métriques d'Orbitron : aucun ne doit dépasser trois lignes.
 - `npm run check:auth` — les deux boutons de compte de la navigation : lecture du
   `?mode=` (les deux boutons, `?mode=` vide ou inconnu, priorité de la prop
   `/register`), rendu SSR réel de chaque URL (quel formulaire s'ouvre : pseudo et

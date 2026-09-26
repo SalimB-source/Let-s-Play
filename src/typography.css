@@ -20,6 +20,12 @@
    dix-huit autres feuilles avec `!important`, et c'est ici — pas dans les
    feuilles de section — qu'on règle la portée de la police d'affichage.
 
+   3. LES GROS TITRES TIENNENT SUR TROIS LIGNES. C'est une règle éditoriale
+      autant que typographique : elle se joue sur le texte (budget de
+      caractères du robot actus, contrôle de `scripts/headlines-check.mjs`)
+      et se rattrape ici, en CSS, pour les titres de carte — le seul endroit
+      où un titre correct peut malgré tout dépasser sur téléphone.
+
    Pour l'étendre (par exemple aux grands chiffres du compte à rebours, des
    scores ou des statistiques), il suffit d'ajouter leurs sélecteurs à la liste
    du bloc 2 ; rien d'autre à changer.
@@ -68,7 +74,30 @@ html body :is(h1, h2, h3, [role='heading']) {
   overflow-wrap: break-word;
 }
 
-/* ============ 3. LES PETITS TITRES ============ */
+/* ============ 3. LES GROS TITRES DES CARTES : TROIS LIGNES MAX ============ */
+/* Règle éditoriale : un gros titre tient sur trois lignes, jamais plus.
+   Le respect se joue d'abord sur le texte — les titres sont écrits dans ce
+   budget (voir scripts/headlines-check.mjs, qui mesure chaque titre rendu), et
+   le robot actus refuse un couple title + accent trop long
+   (HEADLINE_BUDGET, scripts/news-bot/lib/story.mjs).
+
+   Ce plafond CSS est le filet des cartes : une carte de la grille Actus ne
+   fait que ~200px de large sur PC (5 colonnes) et ~150px sur téléphone, où un
+   titre de 40 caractères passerait sinon sur quatre ou cinq lignes. Les titres
+   de héros (h1) ne sont pas plafonnés ici : leur `em` porte un halo lumineux
+   que `overflow: hidden` couperait net ; leur budget est donc tenu par le
+   texte et vérifié par le script.
+
+   Sont exclus les intitulés qui ne sont pas des titres de carte et doivent
+   rester lisibles en entier, même longs : les questions de quizz. */
+html body :is(.news-carousel-copy, .daily-news-copy, .news-feature-copy, .review-feature-copy) h2 {
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  overflow: hidden !important;
+}
+
+/* ============ 4. LES PETITS TITRES ============ */
 /* h4-h6 et intitulés de panneaux : mêmes règles qu'avant — Google Sans gras. */
 html body :is(h4, h5, h6),
 html body :is(h4, h5, h6) * {

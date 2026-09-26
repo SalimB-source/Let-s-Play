@@ -23,7 +23,7 @@ import { extractArticle } from './lib/extract.mjs';
 import { coverSvg } from './lib/cover.mjs';
 import { detectLlm, writeWithLlm } from './lib/llm.mjs';
 import {
-  slugify, formatParisDate, templateCompose, validateStory,
+  slugify, formatParisDate, templateCompose, validateStory, fitHeadline, HEADLINE_BUDGET,
 } from './lib/story.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
@@ -243,6 +243,17 @@ async function composeArticle(item, taken) {
       if (['positive', 'negative', 'mixed', 'neutral'].includes(s)) story.sentiment = s === 'neutral' ? 'mixed' : s;
     }
   }
+  // Titrage : le modèle rédige, le gabarit découpe — mais le budget, lui, est
+  // tenu ici, pour les deux chemins. Un titre trop long passerait sur quatre
+  // lignes dans la grille Actus comme dans l'article (HEADLINE_BUDGET).
+  const drafted = { title: story.title, accent: story.accent };
+  const headline = fitHeadline(drafted.title, drafted.accent);
+  if (headline.title !== drafted.title || headline.accent !== drafted.accent) {
+    console.log(`  ✂️  Titre ramené au budget (${HEADLINE_BUDGET.total} caractères) : ${headline.title} ${headline.accent}`);
+  }
+  story.title = headline.title;
+  story.accent = headline.accent;
+
   // Filet de sécurité : si sentiment manquant/invalide, on garde celui du gabarit (déjà présent via base)
   if (!story.sentiment || !['positive', 'negative', 'mixed'].includes(String(story.sentiment).toLowerCase())) {
     story.sentiment = base.sentiment || 'mixed';

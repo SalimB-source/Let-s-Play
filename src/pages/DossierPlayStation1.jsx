@@ -29,7 +29,7 @@ export default function DossierPlayStation1() {
         <div className="section-label"><span><b>DOSSIER</b> / HISTOIRE DU GAMING</span><span>LECTURE LONGUE · 19 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> Journal du Geek</p>
-          <h1>LA PLAYSTATION 1,<br /><em>UNE RÉVOLUTION.</em></h1>
+          <h1>PLAYSTATION,<br /><em>LA RÉVOLUTION.</em></h1>
           <p className="dossier-dek">Trente et un ans après son lancement, la première PlayStation reste le symbole d’un changement de génération : des cartouches aux CD, de la 2D à la 3D, du jeu d’enfant à une culture de masse.</p>
           <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>25.12.2025</span></div>
         </div>
@@ -51,7 +51,7 @@ export default function DossierPlayStation1() {
           <div className="dossier-section-grid">
             <aside className="dossier-pullquote">« La PlayStation est devenue plus qu’une console : le nom d’une manière de jouer ensemble. »</aside>
             <div>
-              <h2>UNE CONSOLE<br /><em>NÉE D’UNE RUPTURE.</em></h2>
+              <h2>LA CONSOLE<br /><em>NÉE D’UNE RUPTURE.</em></h2>
               <p>Avant la PlayStation, le marché est dominé par Sega et Nintendo. Le projet initial de Sony avec Nintendo autour d’un lecteur CD échoue, mais cette rupture ne fait pas disparaître l’idée. Elle donne à Sony l’occasion de développer sa propre machine.</p>
               <p>Le prototype connu sous le nom de “Nintendo PlayStation” apparaît dans l’épisode comme la trace visible d’une histoire qui aurait pu prendre une autre direction. La console finale naît d’un conflit industriel devenu point de départ.</p>
             </div>
@@ -76,7 +76,7 @@ export default function DossierPlayStation1() {
           <div className="dossier-section-grid">
             <aside className="dossier-pullquote">« Dans beaucoup de foyers, “jouer” a fini par se dire “faire une Play”. »</aside>
             <div>
-              <h2>UNE CULTURE<br /><em>QUI S’INSTALLE.</em></h2>
+              <h2>CULTURE<br /><em>QUI S’INSTALLE.</em></h2>
               <p>Le dossier insiste sur la dimension sociale de la console. En Algérie comme ailleurs, le mot “Play” devient une façon ordinaire de désigner le jeu vidéo. Les parties de <em>PES</em> ou d’<em>ISS</em> transforment la console en lieu de rendez-vous, de compétition et de négociation entre amis.</p>
               <p>Les souvenirs évoqués — câbles abîmés, échanges de jeux, difficultés rencontrées dans certains titres comme <em>Harry Potter</em> — donnent à l’histoire une dimension concrète. L’héritage de la PS1 ne se trouve pas uniquement dans ses chiffres, mais dans les habitudes qu’elle a créées.</p>
             </div>

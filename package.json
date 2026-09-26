@@ -16,6 +16,7 @@
     "check:friends": "node scripts/friends-check.mjs",
     "check:messages": "node scripts/messages-check.mjs",
     "check:newsbot": "node scripts/news-bot/check.mjs",
+    "check:headlines": "node scripts/headlines-check.mjs",
     "news:fetch": "node scripts/news-bot/fetch-news.mjs",
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:quiz": "node scripts/quiz-check.mjs",
