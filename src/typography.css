@@ -1,13 +1,81 @@
-/* Site-wide typography: body/UI copy is Google Sans Regular; headings use Bold. */
+/* ==========================================================================
+   Typographie — qui écrit quoi
+   --------------------------------------------------------------------------
+   Deux familles, deux rôles, et un seul endroit qui tranche : ce fichier.
+
+   1. LES GROS TITRES portent la police « gaming » du site — **Orbitron**, une
+      géométrique anguleuse, à l'allure d'un écran de jeu : héros, titres de
+      section, titres de page et de dossier. Le jeton `--font-gaming`
+      (src/styles.css) porte la pile de polices, et la famille est demandée en
+      700-800 : c'est un titrage, il doit peser.
+
+   2. TOUT LE RESTE — paragraphes, libellés, boutons, pastilles, chiffres des
+      compteurs — reste en **Google Sans Regular**, exactement comme avant.
+      Ce n'est pas un oubli : une feuille de section qui pose
+      `font-family:var(--display)` sur un libellé de 11px (le ticker, un
+      intitulé de panneau, une pastille de score) vise Google Sans, lisible à
+      ce corps-là ; Orbitron, large et anguleuse, y serait pénible à lire.
+
+   Le fichier est importé en dernier (`src/main.jsx`) : ses règles coiffent les
+   dix-huit autres feuilles avec `!important`, et c'est ici — pas dans les
+   feuilles de section — qu'on règle la portée de la police d'affichage.
+
+   Pour l'étendre (par exemple aux grands chiffres du compte à rebours, des
+   scores ou des statistiques), il suffit d'ajouter leurs sélecteurs à la liste
+   du bloc 2 ; rien d'autre à changer.
+   ========================================================================== */
+
+/* ============ 1. LE TEXTE : GOOGLE SANS ============ */
+/* `body, body *` couvre aussi ce qu'aucune feuille ne style explicitement, et
+   les contrôles de formulaire, qui n'héritent pas de la famille du <body>. */
 body,
 body * {
   font-family: var(--google-sans) !important;
   font-weight: 400 !important;
 }
 
-body :is(h1, h2, h3, h4, h5, h6, [role="heading"]),
-body :is(h1, h2, h3, h4, h5, h6, [role="heading"]) *,
-body [class*="title" i],
-body .social-panel-kicker {
+/* ============ 2. LES GROS TITRES : POLICE GAMING ============ */
+/* Sélecteur plus spécifique que `body *` : il l'emporte sur la famille du
+   bloc 1, et la clause descendante (`... *`) garde la même police pour un
+   <em> ou un <span> posé à l'intérieur d'un titre — le mot mis en avant reste
+   dans la police du titre.
+
+   h4-h6 restent en Google Sans : entre 9 et 13px, Orbitron ne se lit plus. */
+html body :is(h1, h2, h3, [role='heading']),
+html body :is(h1, h2, h3, [role='heading']) * {
+  font-family: var(--font-gaming) !important;
+}
+
+/* Poids : les héros et les titres de section en 800 (le poids que les feuilles
+   de section demandaient déjà), les h3 en 700, et les descendants suivent le
+   titre qui les contient. */
+html body :is(h1, h2) {
+  font-weight: 800 !important;
+}
+
+html body :is(h3, [role='heading']) {
+  font-weight: 700 !important;
+}
+
+html body :is(h1, h2, h3, [role='heading']) * {
+  font-weight: inherit !important;
+}
+
+/* Filet de sécurité : Orbitron est plus large que Google Sans. Sur un écran
+   étroit, un mot long d'un titre peut ne plus tenir dans la colonne : il se
+   coupe plutôt que de déborder. Invisible tant que le mot tient. */
+html body :is(h1, h2, h3, [role='heading']) {
+  overflow-wrap: break-word;
+}
+
+/* ============ 3. LES PETITS TITRES ============ */
+/* h4-h6 et intitulés de panneaux : mêmes règles qu'avant — Google Sans gras. */
+html body :is(h4, h5, h6),
+html body :is(h4, h5, h6) * {
+  font-weight: 700 !important;
+}
+
+html body [class*='title' i],
+html body .social-panel-kicker {
   font-weight: 700 !important;
 }
