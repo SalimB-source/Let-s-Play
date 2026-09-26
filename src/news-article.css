@@ -170,3 +170,11 @@
 .aside-card{padding:16px;gap:10px}
 .article-hero+.article-layout{padding-bottom:30px}
 @media(max-width:800px){.article-hero{padding:88px 0 24px}.article-heading{gap:24px;padding-top:18px}.article-heading h1{font-size:clamp(30px,9vw,42px)}.article-layout{gap:22px}.article-body{font-size:15px;line-height:1.62}.article-lead{font-size:19px}.article-body h2{font-size:22px;margin:30px 0 12px}.article-pullquote p{font-size:19px}.article-endnote{margin-top:22px;padding:14px 15px}}
+
+
+/* --- Titres éditoriaux : échelle volontairement discrète ------------------ */
+.article-heading h1{font-size:clamp(24px,2.8vw,38px);line-height:1.06;letter-spacing:.015em;margin:10px 0}
+.article-body h2{font-size:20px;line-height:1.15;margin:28px 0 11px;letter-spacing:.04em}
+.article-lead{font-size:18px;line-height:1.45}
+.article-cover strong{font-size:24px}
+@media(max-width:800px){.article-heading h1{font-size:clamp(24px,7vw,32px);line-height:1.08}.article-body h2{font-size:19px;margin:24px 0 10px}.article-lead{font-size:17px}.article-cover strong{font-size:21px}}
