@@ -1007,10 +1007,12 @@
 [data-theme='light'] .news-carousel.is-grid .news-today{
   background:linear-gradient(155deg,#ffffff,#f3f4fb);
   border-color:var(--line);
-  box-shadow:var(--shadow-sm);
 }
-[data-theme='light'] .news-carousel.is-grid .news-carousel-card:hover,
-[data-theme='light'] .news-carousel.is-grid .news-today:hover{box-shadow:0 22px 44px -22px rgba(14,116,144,.38)}
+/* Ombre sur la cellule parente (pas sur la carte, rognée par son clip-path) —
+   même mécanique qu'en thème sombre, voir news-view-toggle.css. */
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell--today{filter:drop-shadow(0 4px 8px rgba(28,24,72,.10))}
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:hover{filter:drop-shadow(0 16px 22px rgba(14,116,144,.24))}
 [data-theme='light'] .news-carousel.is-grid .news-carousel-copy h2,
 [data-theme='light'] .news-carousel.is-grid .news-today .daily-news-copy h2{color:var(--ink)}
 [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
