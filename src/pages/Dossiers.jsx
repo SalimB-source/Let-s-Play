@@ -104,7 +104,7 @@ export default function Dossiers(){
         <div className="section-label"><span>{t.dossiers.formatsLabel1.split(' / ')[1]}</span><span>{t.dossiers.formatsLabel2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.dossiers.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow/></Link></article>
-          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.dossiers.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow/></Link></article>
+          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.dossiers.moviesText}</p><Link to="/news/cinema">{t.home.formats.explore} <Arrow/></Link></article>
           <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.dossiers.communityText}</p><Link to="/">{t.dossiers.backHome} <Arrow/></Link></article>
         </div>
       </section>
