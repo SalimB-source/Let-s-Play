@@ -1365,7 +1365,7 @@ img{max-width:100%}
     width:52px;height:52px;flex:none;
     display:grid;place-items:center;
     border:2px solid var(--cyan);
-    border-radius:4px;
+    border-radius:50%;
     background:linear-gradient(135deg, var(--purple), var(--panel-2));
     box-shadow:0 0 16px rgba(34,211,238,.28);
     color:var(--yellow);
@@ -1373,11 +1373,17 @@ img{max-width:100%}
     letter-spacing:0;
     text-transform:uppercase;
   }
+  .nav-profile-avatar-face{
+    width:100%;height:100%;
+    display:grid;place-items:center;
+    overflow:hidden;
+    border-radius:50%;
+  }
   .nav-profile-avatar img{
     width:100%;height:100%;
     object-fit:cover;
     display:block;
-    border-radius:2px;
+    border-radius:50%;
     max-width:none;
   }
   .nav-profile-initials{

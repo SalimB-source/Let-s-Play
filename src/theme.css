@@ -663,6 +663,22 @@
 [data-theme='light'] .nav .nav-primary a.active:hover{color:#fff !important}
 [data-theme='light'] .nav-account.nav-login:hover,
 [data-theme='light'] .nav-account.nav-register:hover{background:rgba(255,214,25,.16);color:var(--ink)}
+
+/* Les liens d'accès au profil sont des actions explicites, pas des icônes :
+   leur encre doit rester lisible sur les surfaces claires. */
+[data-theme='light'] .friends-action-profile,
+[data-theme='light'] .messages-tool-profile{
+  color:var(--cyan);
+  border-color:rgba(14,116,144,.38);
+  background:rgba(14,116,144,.08);
+}
+[data-theme='light'] .friends-action-profile:hover,
+[data-theme='light'] .messages-tool-profile:hover{
+  color:var(--cyan);
+  border-color:rgba(14,116,144,.72);
+  background:rgba(14,116,144,.14);
+}
+
 [data-theme='light'] .nav-account-avatar .nav-online-dot{border-color:#f7f8fc}
 [data-theme='light'] .friends-avatar-dot,
 [data-theme='light'] .messages-avatar-dot{border-color:#ffffff}
@@ -679,6 +695,15 @@
   [data-theme='light'] .nav-profile-avatar .nav-online-dot{border-color:#f7f8fc}
   [data-theme='light'] .nav-primary a:hover .nav-link-num,
   [data-theme='light'] .nav-primary a.active .nav-link-num{color:var(--yellow-ink)}
+  /* On mobile the active link has no dark pill background. Keeping the
+     desktop white active ink here made the Profile label disappear on the
+     light menu. */
+  [data-theme='light'] .nav .nav-primary a.active,
+  [data-theme='light'] .nav .nav-primary a.active:hover{
+    color:var(--ink) !important;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
   [data-theme='light'] .menu-button.open{color:var(--ink)}
   [data-theme='light'] .mobile-menu-footer-dot,
   [data-theme='light'] .mobile-menu-hud span:nth-child(2){border-color:var(--yellow-ink)}
