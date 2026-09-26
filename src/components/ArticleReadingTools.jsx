@@ -80,10 +80,12 @@ export default function ArticleReadingTools() {
           className="article-toc-toggle"
           aria-expanded={open}
           aria-controls="article-toc-panel"
+          aria-label={`Sommaire de l’article — ${Math.round(progress * 100)} % lu`}
           onClick={() => setOpen((value) => !value)}
         >
           <span className="article-toc-toggle-mark" aria-hidden="true">☰</span>
           <span>Sommaire</span>
+          <span className="article-toc-progress" aria-hidden="true">{Math.round(progress * 100)}%</span>
           <span className="article-toc-count">{sections.length}</span>
         </button>
         <nav id="article-toc-panel" className="article-toc-panel" aria-hidden={!open}>
