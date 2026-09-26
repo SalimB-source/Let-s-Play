@@ -82,6 +82,17 @@
 }
 /* Les scanlines « CRT » n'ont pas de sens sur du papier. */
 [data-theme='light'] body::after{display:none}
+/* Icônes néon du fond : sur papier, on densifie les couleurs (le néon
+   pâle disparaît sur blanc) et on réduit le halo. Voir styles.css. */
+[data-theme='light'] .ni{opacity:.5}
+[data-theme='light'] .ni svg{filter:drop-shadow(0 0 3px currentColor)}
+[data-theme='light'] .ni-gamepad,
+[data-theme='light'] .ni-zap{color:#7c3aed}
+[data-theme='light'] .ni-dpad,
+[data-theme='light'] .ni-sparkle{color:#0e7490}
+[data-theme='light'] .ni-heart,
+[data-theme='light'] .ni-joystick{color:#e11d48}
+[data-theme='light'] .ni-trophy{color:#d97706}
 [data-theme='light'] ::selection{background:var(--yellow);color:var(--ink)}
 [data-theme='light'] :focus-visible{outline-color:var(--cyan)}
 [data-theme='light'] ::-webkit-scrollbar{background:#ecedf8}
