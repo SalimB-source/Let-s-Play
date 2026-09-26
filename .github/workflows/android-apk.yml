@@ -118,3 +118,19 @@ jobs:
           git push origin :refs/tags/apk 2>/dev/null || true
           gh release create apk "$APK" --title "APK Android — $APK" --notes-file notes.md
           echo "Release publiée : $APK"
+
+      # Dépose aussi l'APK sur la branche (android/dist/lets-play-latest.apk) :
+      # pratique pour la récupérer en clonant le repo. Les pushes faits avec
+      # GITHUB_TOKEN ne déclenchent pas de workflows, donc pas de boucle.
+      - name: Déposer l'APK sur la branche
+        continue-on-error: true
+        run: |
+          APK=$(ls lets-play-v*.apk)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mkdir -p android/dist
+          git rm --ignore-unmatch android/dist/lets-play-latest.apk >/dev/null 2>&1 || true
+          cp "$APK" android/dist/lets-play-latest.apk
+          git add android/dist/lets-play-latest.apk
+          git commit -m "Build APK : $APK [skip ci]" || echo "rien de nouveau à committer"
+          git push origin "HEAD:$GITHUB_REF_NAME"

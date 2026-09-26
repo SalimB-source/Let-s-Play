@@ -66,3 +66,11 @@ Les PNG de `app/src/main/res/mipmap-*` sont dérivés de
 npm install sharp   # une seule fois
 node android/icongen.mjs "public/Logo Let's Play.png" android/app/src/main/res
 ```
+
+## Récupérer l'APK compilée
+
+Deux canaux, mis à jour à chaque build :
+
+1. **Release GitHub** — page <https://github.com/SalimB-source/Let-s-Play/releases/tag/apk>
+   (fichier `lets-play-v*.apk`, lien permanent à partager) ;
+2. **La branche** — `android/dist/lets-play-latest.apk`, committée par le robot.
