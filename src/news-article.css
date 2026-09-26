@@ -145,3 +145,28 @@
 @media(max-width:1100px){.article-toc{right:12px;width:176px}}
 @media(max-width:800px){.article-toc{right:12px;top:auto;bottom:18px;width:auto;max-width:calc(100vw - 24px);transform:none}.article-toc-panel{max-height:55vh;overflow:auto}.article-body>p:not(.article-source),.article-body>.article-lead{max-width:none}.article-endnote>span:last-child{min-width:0}}
 @media(prefers-reduced-motion:reduce){.article-reading-progress span{transition:none}}
+
+
+/* --- Édition compacte : titres plus mesurés, lecture sans répétition -------- */
+.article-hero{padding:104px 0 32px}
+.article-heading{gap:38px;padding-top:28px}
+.article-heading h1{font-size:clamp(32px,4vw,52px);line-height:1.02;margin:14px 0}
+.article-dek{font-size:17px;line-height:1.45;max-width:520px}
+.article-byline{gap:11px;margin-top:20px}
+.article-layout{grid-template-columns:minmax(0,700px) 230px;gap:42px;padding-top:0}
+.article-body{font-size:16px;line-height:1.65}
+.article-body p{margin-bottom:17px}
+.article-lead{font-size:20px;line-height:1.4}
+.article-body h2{font-size:24px;margin:36px 0 14px}
+.article-pullquote{margin:24px 0;padding:18px 0}
+.article-pullquote p{font-size:21px}
+.article-pullquote span{font-size:54px}
+.article-pullquote small{margin-top:10px}
+.article-endnote{margin-top:28px;padding:16px 18px;gap:7px 12px;letter-spacing:.03em;background:linear-gradient(110deg,rgba(148,130,255,.11),rgba(34,211,238,.04));border-inline-start-color:var(--violet)}
+.article-endnote strong{color:var(--violet);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
+.article-endnote>span:last-child{font:500 13px/1.5 var(--body);color:var(--ink);letter-spacing:0}
+.article-source{margin-top:22px!important}
+.article-aside{gap:12px;padding-top:6px}
+.aside-card{padding:16px;gap:10px}
+.article-hero+.article-layout{padding-bottom:30px}
+@media(max-width:800px){.article-hero{padding:88px 0 24px}.article-heading{gap:24px;padding-top:18px}.article-heading h1{font-size:clamp(30px,9vw,42px)}.article-layout{gap:22px}.article-body{font-size:15px;line-height:1.62}.article-lead{font-size:19px}.article-body h2{font-size:22px;margin:30px 0 12px}.article-pullquote p{font-size:19px}.article-endnote{margin-top:22px;padding:14px 15px}}
