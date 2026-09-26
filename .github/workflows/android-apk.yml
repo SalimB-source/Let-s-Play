@@ -99,3 +99,26 @@ jobs:
           path: lets-play-v*.apk
           retention-days: 90
           if-no-files-found: error
+
+      # Publie l'APK en release GitHub (tag « apk », remplacé à chaque build) :
+      # lien de téléchargement permanent et direct pour les utilisateurs.
+      - name: Publier l'APK en GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=$(ls lets-play-v*.apk)
+          gh release delete apk --yes --cleanup-tag 2>/dev/null || true
+          git push origin :refs/tags/apk 2>/dev/null || true
+          gh release create apk "$APK" \
+            --title "APK Android — $APK" \
+            --notes "Build automatique de la coque Android du site.
+
+- **Version** : $APK
+- **Commit** : ${GITHUB_SHA::7}
+- **Installation** : télécharge l'APK sur ton téléphone, ouvre-le, et
+  autorise l'installation depuis des sources inconnues si demandé.
+- **Mises à jour du site** : automatiques dans l'app — pas besoin de
+  réinstaller l'APK pour voir les nouvelles actus.
+
+Rebuild : tout push touchant android/ relance ce workflow
+(ou onglet Actions → « APK Android » → Run workflow)."
