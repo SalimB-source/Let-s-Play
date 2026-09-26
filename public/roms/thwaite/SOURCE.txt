@@ -1,7 +1,0 @@
-Thwaite — Copyright 2011-2023 Damian Yerrick
-Free software: GNU General Public License, version 3 or later (see LICENSE.txt).
-
-Corresponding source: thwaite-source.zip (this folder), a snapshot of
-https://github.com/pinobatch/thwaite-nes at commit 00e36745188bc165990f60eed6b093c3ce6ad0e3.
-thwaite.nes was built by Let's Play from exactly that snapshot with cc65 (ca65/ld65)
-and `make thwaite.nes`.
