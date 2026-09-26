@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
 import './profile-lists.css';
 import './news-article.css';
+import './components/SpoilerAlert.css';
 import './auth/auth.css';
 import './news-carousel.css';
 import './news-view-toggle.css';
