@@ -20,6 +20,7 @@ import SocialDock from '../src/social/SocialDock';
 import Layout from '../src/components/Layout';
 import Auth from '../src/pages/Auth';
 import Profile from '../src/pages/Profile';
+import MessagesPage from '../src/messages/MessagesPage';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 // Fixtures : réinjecte les personas de démonstration dans le registre de
 // l'application (livré vide) avant tout rendu — voir scripts/demoFixtures.js.
@@ -115,6 +116,7 @@ export function createApp(path, { lang = 'fr' } = {}) {
                   Routes,
                   null,
                   React.createElement(Route, { path: '/auth', element: React.createElement(Auth) }),
+                  React.createElement(Route, { path: '/messages', element: React.createElement(MessagesPage) }),
                   React.createElement(Route, { path: '/profile/:userId', element: React.createElement(Profile) }),
                 ),
               ),

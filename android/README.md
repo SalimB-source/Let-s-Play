@@ -3,7 +3,10 @@
 Coque Android (WebView) du site **Let's Play**. L'application affiche le site
 en ligne : **chaque mise à jour du site est immédiatement visible dans l'app**,
 sans reconstruire l'APK. On ne recompile que pour changer l'icône, le nom, la
-version ou une fonctionnalité native.
+version ou une fonctionnalité native. **Il faut publier les changements sur
+l'URL Vercel ci-dessous** : le déploiement GitHub Pages seul n'affecte pas l'APK.
+La WebView possède une session distincte du navigateur du téléphone : pour
+accéder à la messagerie, il faut se connecter dans l'application.
 
 - Nom affiché : **Let's Play**
 - Identifiant : `dz.letsplay.officiel`

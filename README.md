@@ -204,8 +204,8 @@ site »).
 - Amis + messagerie dans la **même fenêtre** : un seul lanceur « MESSAGERIE »
   (pastilles des non-lus et des demandes en attente, amis en ligne) ouvre un
   panneau à quatre onglets — Amis / Demandes / Ajouter / Messages ; sur mobile
-  (≤ 760 px), la messagerie s'ouvre sur une **vraie page** (`/messages`) et la
-  fenêtre ne concerne plus que les amis (pop-up plein écran)
+  (≤ 760 px), la page `/messages` regroupe les quatre onglets sans pop-up,
+  accessible aussi depuis le menu, même avant connexion
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -376,8 +376,12 @@ présente sur toutes les pages : un lanceur compact « MESSAGERIE » — avec le
 pastilles des **non-lus** (messagerie) et des **demandes en attente**, et le
 compteur d'amis en ligne — ouvre un panneau à **quatre onglets** (Amis /
 Demandes / Ajouter / Messages). Amis et messagerie partagent donc la même
-fenêtre ; le quatrième onglet est documenté plus bas. Un visiteur non connecté
-ne voit rien.
+fenêtre ; le quatrième onglet est documenté plus bas. Le lanceur « MESSAGERIE »
+reste visible pour un visiteur non connecté : il ouvre `/messages`, qui propose
+la connexion sans afficher de conversations. Dans l'APK Android, la WebView a
+une session distincte de celle du navigateur du téléphone : il faut s'y
+connecter pour retrouver ses discussions. Sur mobile, un lien « MESSAGERIE »
+est aussi présent dans le menu de navigation.
 
 | Onglet | Ce qui s'y trouve |
 | --- | --- |
@@ -390,12 +394,10 @@ L'état ouvert/fermé est mémorisé sur l'appareil ; Échap ferme le panneau. L
 notifications de succès partagent le coin : elles montent au-dessus du lanceur,
 et glissent à côté du panneau quand il est ouvert.
 
-**Sur mobile** (≤ 760 px), la fenêtre ouverte devient un **pop-up plein
-écran** : elle couvre tout l'écran (au-dessus de la navigation), l'arrière-plan
-ne défile plus, et la fermeture se fait par le bouton « × » de l'en-tête
-(`src/social/social.css`). Elle ne concerne plus que les **amis** : l'onglet
-« Messages » — comme toute ouverture de discussion — bascule vers la **page de
-messagerie** `/messages` (voir plus bas), où la fenêtre s'efface entièrement.
+**Sur mobile** (≤ 760 px), le lanceur nommé « MESSAGERIE » mène à la **page
+sociale** `/messages` (voir plus bas), sans pop-up : les onglets Amis, Demandes,
+Ajouter et Messages y sont accessibles et le bouton retour du téléphone revient
+à la page précédente. Le menu mobile propose également un lien direct.
 
 **Où envoyer une demande d'ami** (`src/friends/FriendButton.jsx`) :
 

@@ -535,7 +535,7 @@ img{max-width:100%}
    en doublon de la pastille de compte. On cible le type en plus de la classe
    (0,2,1) pour repasser au-dessus. La règle mobile plus bas, de même
    spécificité mais postérieure, continue de l'emporter sous 800px. */
-.nav-primary a.nav-profile-link{display:none}
+.nav-primary a.nav-profile-link,.nav-primary a.nav-messages-link{display:none}
 .nav-link-main{display:contents}
 .nav-link-text{display:contents}
 .nav-actions-grid{display:flex;align-items:center;gap:8px}
@@ -1406,7 +1406,10 @@ img{max-width:100%}
   .nav-primary a.active .nav-link-num{color:var(--yellow)}
   .nav-primary a.active .nav-link-arrow{opacity:1;border-color:var(--cyan);color:var(--cyan)}
 
-  /* Profil — entrée 06, juste sous Quizz : photo + niveau */
+  /* Entrée explicite de messagerie dans le menu mobile, même hors session. */
+  .nav-primary a.nav-messages-link{display:flex}
+
+  /* Profil — entrée 07, juste sous Messagerie : photo + niveau */
   .nav-primary a.nav-profile-link{
     display:flex;
     align-items:center;
