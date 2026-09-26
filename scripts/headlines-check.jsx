@@ -84,6 +84,8 @@ export const ROUTES = [
     'control-resonant-24-septembre', 'sorties-24-septembre',
     'sony-licence-jeux-numeriques', 'ea-sports-fc-27-carriere-dynamique',
   ].map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
+  // Actu cinéma : route préfixée, clé d'article « cinema/<slug> ».
+  ['/news/cinema/jojo-steel-ball-run-episode-2', CurrentNews, '/news/cinema/:slug', { slug: 'cinema/jojo-steel-ball-run-episode-2' }],
   ...Object.keys(autoStories).map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
   ['/reviews', Reviews],
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle, '/reviews/:slug']),

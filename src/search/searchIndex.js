@@ -7,6 +7,7 @@ import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { autoSearchEntries } from '../lib/autoNews';
 
 const news = [
+  ['Steel Ball Run — la course reprend', 'L’épisode 2 ouvre onze épisodes hebdomadaires sur Netflix, chaque vendredi jusqu’au 4 décembre.', '/news/cinema/jojo-steel-ball-run-episode-2', 'jojo steel ball run netflix anime david production gyro zeppeli johnny joestar', 'cinema-jojo-steel-ball-run.jpg'],
   ['EA Sports FC 27 — la carrière devient vivante', 'Note globale dynamique, valeur marchande hebdomadaire via TransferRoom et scénarios créés par la communauté.', '/news/ea-sports-fc-27-carriere-dynamique', 'ea sports fc 27 electronic arts football carrière transferts manager', 'ea-sports-fc-27-carriere-pitch-notes.jpg'],
   ['Kingdom Hearts 4 — Le monde de Coco', 'Sora est apparu au milieu d’une séquence Disney consacrée à Coco.', '/news/kingdom-hearts-4-coco', 'square enix disney', 'kingdom-hearts-4-coco-news.jpg'],
   ['Marvel’s Wolverine', 'Une exclusivité PS5 développée par Insomniac Games.', '/news/wolverine-exclu-ps5', 'marvel sony insomniac ps5', 'wolverine-countdown.jpg'],
