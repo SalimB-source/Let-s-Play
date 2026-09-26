@@ -236,6 +236,27 @@ export default function Home() {
         </div>
       </section>
 
+      {/* REELS / SHORTS YOUTUBE — placés juste avant le direct : le format court
+          garde le visiteur en mouvement avant le lecteur live. */}
+      <section className="reels-section wrap" id="reels">
+        <div className="section-label"><span>REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="reels-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> Format court</p>
+            <h2>À VOIR<br /><em>EN BOUCLE.</em></h2>
+          </div>
+          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">Voir tous les reels <Arrow /></a>
+        </div>
+        <div className="reels-grid">
+          {reels.map((reel) => (
+            <div className="reel-card hud-frame" key={reel.id}>
+              <iframe src={youTubeEmbedUrl(reel.id)} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="live-section wrap" id="live">
         <div className="section-label"><span>{t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
         <div className="live-head">
@@ -275,25 +296,6 @@ export default function Home() {
       </section>
 
       <PartnersSection />
-
-      <section className="reels-section wrap" id="reels">
-        <div className="section-label"><span>REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
-        <div className="reels-head">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> Format court</p>
-            <h2>À VOIR<br /><em>EN BOUCLE.</em></h2>
-          </div>
-          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">Voir tous les reels <Arrow /></a>
-        </div>
-        <div className="reels-grid">
-          {reels.map((reel) => (
-            <div className="reel-card hud-frame" key={reel.id}>
-              <iframe src={youTubeEmbedUrl(reel.id)} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-              <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
-            </div>
-          ))}
-        </div>
-      </section>
 
       <section className="cta wrap">
         <div>
