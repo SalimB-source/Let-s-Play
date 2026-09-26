@@ -84,6 +84,12 @@ export const ROUTES = [
     'control-resonant-24-septembre', 'sorties-24-septembre',
     'sony-licence-jeux-numeriques', 'ea-sports-fc-27-carriere-dynamique',
   ].map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
+  // Actus cinéma : route préfixée /news/cinema/:slug, clés d'article « cinema/<slug> ».
+  ...[
+    'jojo-steel-ball-run-episode-2', 'dune-messiah-trailer', 'last-of-us-saison-3',
+    'marvel-doctor-doom', 'stranger-things-saison-5', 'joker-folie-a-deux',
+    'house-of-dragon-saison-3', 'blade-reboot', 'arcane-saison-2',
+  ].map((slug) => [`/news/cinema/${slug}`, CurrentNews, '/news/cinema/:slug', { slug: `cinema/${slug}` }]),
   ...Object.keys(autoStories).map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
   ['/reviews', Reviews],
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle, '/reviews/:slug']),
