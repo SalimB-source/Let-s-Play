@@ -12,6 +12,13 @@
   --cyan:#22d3ee;
   --yellow:#ffd619;
   --google-sans:'Google Sans',sans-serif;
+  /* Police d'affichage « gaming » : Orbitron, une géométrique anguleuse à
+     l'allure « écran de jeu », chargée dans index.html. Elle porte les gros
+     titres (h1-h3) ; src/typography.css est le seul endroit qui décide quels
+     éléments la reçoivent — c'est aussi lui qui garde Google Sans, plus
+     lisible en petit corps, sur les libellés de 11 à 15px qui utilisent
+     `--display` (ticker, pastilles, intitulés de panneaux). */
+  --font-gaming:'Orbitron','Google Sans',sans-serif;
   --display:var(--google-sans);
   --body:var(--google-sans);
   --mono:var(--google-sans);

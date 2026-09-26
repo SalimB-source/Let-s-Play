@@ -81,6 +81,44 @@ dans les deux thèmes, le fond effectif de chaque texte est calculé en empilant
 les couches translucides, et tout ce qui passe sous le seuil WCAG AA est
 signalé. Onze pages sont aujourd'hui à zéro écart en clair.
 
+## Typographie : Orbitron pour les gros titres
+
+Deux familles, un partage net, et un seul fichier qui tranche —
+**`src/typography.css`** :
+
+- **Orbitron** porte les gros titres (h1, h2, h3 et tout `[role="heading"]`) :
+  une géométrique anguleuse, l'esprit « écran de jeu ». Héros d'accueil, titres
+  de section, titres d'article et de dossier, questions de quizz. Poids 800
+  pour les h1-h2, 700 pour les h3 — le titrage pèse, comme les feuilles de
+  section le demandaient déjà. La pile de polices vit dans le jeton
+  `--font-gaming` (`src/styles.css`), et la famille est chargée depuis Google
+  Fonts dans `index.html` en variable 400-900, pour que les poids 700, 800 et
+  900 des feuilles rendent vraiment.
+- **Google Sans** reste sur tout le reste : paragraphes, libellés, boutons,
+  pastilles, chiffres des compteurs et des scores. C'est la police de lecture
+  du site, et les libellés de 9 à 15px des cartes, du menu et du ticker ne
+  supportent pas une police d'affichage.
+
+`typography.css` est importé en dernier dans `src/main.jsx` : ses règles
+(`!important`) coiffent les dix-huit autres feuilles. C'est aussi pour ça que
+les feuilles de section continuent de poser `font-family:var(--display)` sur
+des éléments de 11 à 15px : `--display` reste Google Sans, et c'est le fichier
+de politique — lui seul — qui décide où la police gaming s'applique. Pour
+l'étendre (les grands chiffres d'un compte à rebours, le score d'un test, un
+futur titre en h4), il suffit d'ajouter les sélecteurs concernés à la liste du
+bloc 2 de `typography.css`.
+
+Deux points d'attention :
+
+- **Orbitron est plus large que Google Sans.** Un titre peut donc passer sur
+  une ligne de plus ; `overflow-wrap: break-word` évite qu'un mot long déborde
+  de sa colonne sur un écran étroit, mais si un titrage paraît trop large, c'est
+  le corps ou l'interlettrage de la règle concernée qu'il faut reprendre.
+- **Seule exception au titrage gaming :** les titres du mode Survie
+  (`.horror-*`, dans `src/quizzes/quiz.css`) posent leur famille en
+  `!important` et gardent donc leur rendu d'origine — leur habillage de
+  dossier d'horreur est volontairement à part.
+
 ## Langue : le site est en français
 
 Le sélecteur de langue (EN / FR / AR) a été **retiré de la barre de navigation** :
