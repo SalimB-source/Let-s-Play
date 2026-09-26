@@ -6,7 +6,7 @@
 //    diversité des sources), en écartant promos, guides et tests.
 // 3. Rédige chaque actu « façon Let’s Play » : via un modèle de langage si
 //    une clé d’API est configurée, sinon via le gabarit éditorial extractif.
-// 4. Génère le visuel SVG, les fichiers JSON, l’index du site et un rapport.
+// 4. Télécharge la vraie photo officielle, écrit les fichiers JSON, l’index du site et un rapport.
 //
 // Utilisation :
 //   node scripts/news-bot/fetch-news.mjs                 # run réel (réseau)
@@ -20,7 +20,8 @@ import { BOT, SOURCES, HOT_KEYWORDS, NEGATIVE_TITLE, NEGATIVE_CATEGORIES } from 
 import { fetchText, fetchBinary } from './lib/net.mjs';
 import { parseFeed } from './lib/rss.mjs';
 import { extractArticle } from './lib/extract.mjs';
-import { coverSvg } from './lib/cover.mjs';
+// Plus de visuel SVG généré : seules les vraies photos officielles des sources sont publiées.
+const FIXTURE_JPEG = Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=', 'base64');
 import { detectLlm, writeWithLlm } from './lib/llm.mjs';
 import {
   slugify, formatParisDate, templateCompose, validateStory, fitHeadline, HEADLINE_BUDGET,
@@ -209,23 +210,24 @@ async function composeArticle(item, taken) {
   if (!extracted.officialThumbnailUrl || !/^https?:\/\//i.test(extracted.officialThumbnailUrl)) {
     throw new Error('miniature officielle absente : publication refusée');
   }
-  let thumbnail = `news-auto/${slug}-official.svg`;
+  let thumbnail = `news-auto/${slug}-official.jpg`;
   if (!FIXTURES) {
     const downloaded = await fetchBinary(extracted.officialThumbnailUrl);
-    const extension = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/avif': 'avif', 'image/gif': 'gif', 'image/svg+xml': 'svg' })[downloaded.contentType];
-    if (!extension) throw new Error(`format de miniature officielle non supporté (${downloaded.contentType})`);
+    const extension = ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/avif': 'avif', 'image/gif': 'gif' })[downloaded.contentType];
+    // Seules de vraies photos/images matricielles sont acceptées (pas de SVG).
+    if (!extension) throw new Error(`format de miniature officielle non supporté (${downloaded.contentType}) : publication refusée`);
     thumbnail = `news-auto/${slug}-official.${extension}`;
     writeFileSafe(path.join(PATHS.coversDir, `${slug}-official.${extension}`), downloaded.buffer);
   } else {
-    writeFileSafe(path.join(PATHS.coversDir, `${slug}-official.svg`), coverSvg({ title: 'MINIATURE OFFICIELLE', accent: 'SOURCE VÉRIFIÉE.', category: item.source?.name || 'SOURCE', date: dateLabel, source: item.source?.name || 'SOURCE' }));
+    writeFileSafe(path.join(PATHS.coversDir, `${slug}-official.jpg`), FIXTURE_JPEG);
   }
   const fields = await writeWithLlm(item, extracted, llm);
   const base = templateCompose(item, { ...extracted, description: extracted.description || item.summary || '' }, {
     date: dateLabel,
-    image: `news-auto/${slug}.svg`,
+    image: thumbnail,
     slug,
   });
-  const story = { ...base, slug, date: dateLabel, image: `news-auto/${slug}.svg`, thumbnail, officialThumbnailUrl: extracted.officialThumbnailUrl };
+  const story = { ...base, slug, date: dateLabel, image: thumbnail, thumbnail, officialThumbnailUrl: extracted.officialThumbnailUrl };
   if (fields) {
     // Les champs rédigés par le modèle complètent le gabarit : le cadre
     // (slug, date, image, source, url) reste contrôlé par le bot.
@@ -314,6 +316,7 @@ function pruneArchive() {
       if (new Date(year, month - 1, day).getTime() < cutoff) {
         fs.rmSync(file_);
         fs.rmSync(path.join(PATHS.coversDir, `${story.slug}.svg`), { force: true });
+        if (story.thumbnail) fs.rmSync(path.join(ROOT, 'public', story.thumbnail), { force: true });
         removed.push(story.slug);
       }
     } catch { /* on garde le fichier en cas de doute */ }
@@ -340,7 +343,6 @@ for (const item of picked) {
 
 for (const { story } of articles) {
   writeFileSafe(path.join(PATHS.autoDir, `${story.date.split('.').reverse().join('-')}-${story.slug}.json`), `${JSON.stringify(story, null, 2)}\n`);
-  writeFileSafe(path.join(PATHS.coversDir, `${story.slug}.svg`), coverSvg(story));
   validateStory(story);
   console.log(`  ✔ /news/${story.slug} — ${story.title} ${story.accent}`);
 }
