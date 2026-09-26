@@ -119,18 +119,26 @@ jobs:
           gh release create apk "$APK" --title "APK Android — $APK" --notes-file notes.md
           echo "Release publiée : $APK"
 
-      # Dépose aussi l'APK sur la branche (android/dist/lets-play-latest.apk) :
-      # pratique pour la récupérer en clonant le repo. Les pushes faits avec
-      # GITHUB_TOKEN ne déclenchent pas de workflows, donc pas de boucle.
+      # Dépose aussi l'APK sur la branche (android/dist/lets-play-latest.apk)
+      # via l'API Contents : pratique pour la récupérer en clonant le repo.
+      # (Les commits faits avec GITHUB_TOKEN ne déclenchent pas de workflows.)
       - name: Déposer l'APK sur la branche
-        continue-on-error: true
         run: |
-          APK=$(ls lets-play-v*.apk)
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p android/dist
-          git rm --ignore-unmatch android/dist/lets-play-latest.apk >/dev/null 2>&1 || true
-          cp "$APK" android/dist/lets-play-latest.apk
-          git add android/dist/lets-play-latest.apk
-          git commit -m "Build APK : $APK [skip ci]" || echo "rien de nouveau à committer"
-          git push origin "HEAD:$GITHUB_REF_NAME"
+          set -o pipefail
+          {
+            APK=$(ls lets-play-v*.apk)
+            B64=$(base64 -w0 "$APK")
+            SHA=$(gh api "repos/$GITHUB_REPOSITORY/contents/android/dist/lets-play-latest.apk?ref=$GITHUB_REF_NAME" -q .sha 2>/dev/null || echo "")
+            if [ -n "$SHA" ]; then
+              gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/android/dist/lets-play-latest.apk" \
+                -f message="Build APK : $APK [skip ci]" \
+                -f content="$B64" -f sha="$SHA" >/dev/null && echo "APK mise à jour sur la branche."
+            else
+              gh api -X PUT "repos/$GITHUB_REPOSITORY/contents/android/dist/lets-play-latest.apk" \
+                -f message="Build APK : $APK [skip ci]" \
+                -f content="$B64" >/dev/null && echo "APK déposée sur la branche."
+            fi
+          } 2>&1 | tee deposit.log || {
+            grep -E "error|Error|fatal|rejected|denied|Not Found|403|422" deposit.log | head -10 | while IFS= read -r l; do echo "::error::${l:0:400}"; done
+            exit 0
+          }
