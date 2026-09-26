@@ -65,10 +65,7 @@ export default function Layout({ children }) {
     return undefined;
   }, [menuOpen]);
 
-  // « Jeux » reste allumé sur toutes les pages de la salle d'arcade.
-  const isActive = (path) => (path === '/games'
-    ? location.pathname === '/games' || location.pathname.startsWith('/games/')
-    : location.pathname === path);
+  const isActive = (path) => location.pathname === path;
   const isHome = location.pathname === '/';
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -113,7 +110,6 @@ export default function Layout({ children }) {
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
     { to: '/quizz', label: t.nav.quiz, num: '05', desc: 'QUIZZ / PLAY' },
-    { to: '/games', label: t.nav.games || 'Jeux', num: '06', desc: 'ARCADE / NES' },
   ];
 
   // Photo + niveau du joueur connecté, mêmes sources que le hub /auth :
@@ -357,7 +353,6 @@ export default function Layout({ children }) {
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
           <Link to="/quizz">{t.nav.quiz}</Link>
-          <Link to="/games">{t.nav.games || 'Jeux'}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>
           <span>{t.footer.copyright}</span>
