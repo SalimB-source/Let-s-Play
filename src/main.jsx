@@ -89,11 +89,11 @@ function App() {
             <Route path="/news" element={<News />} />
             <Route path="/news/gaming" element={<GamingNews />} />
             <Route path="/news/cinema" element={<CinemaNews />} />
-            {/* Actus cinéma : la carte du hub `/news/cinema` pointe vers
-                /news/cinema/<slug> ; la clé d'article correspondante dans
-                CurrentNews est préfixée « cinema/ » (ex. :
+            {/* Actus cinéma : les cartes du hub `/news/cinema` pointent vers
+                /news/cinema/<slug> ; les clés d'article correspondantes dans
+                CurrentNews sont préfixées « cinema/ » (ex. :
                 cinema/jojo-steel-ball-run-episode-2). */}
-            <Route path="/news/cinema/jojo-steel-ball-run-episode-2" element={<CurrentNews slug="cinema/jojo-steel-ball-run-episode-2" />} />
+            <Route path="/news/cinema/:slug" element={<CurrentNews slugPrefix="cinema/" />} />
             <Route path="/calendrier" element={<Calendar />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/news/physint" element={<Physint />} />
