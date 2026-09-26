@@ -4,10 +4,13 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -41,6 +44,27 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Android 15 impose l'edge-to-edge avec targetSdk 35 : protéger le
+        // contenu des barres système, des encoches et du clavier. Sur les
+        // anciennes versions, le décor a déjà retiré les insets qu'il gère.
+        View content = findViewById(android.R.id.content);
+        content.setOnApplyWindowInsetsListener((view, insets) -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Insets safeInsets = insets.getInsets(WindowInsets.Type.systemBars()
+                        | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
+                view.setPadding(safeInsets.left, safeInsets.top,
+                        safeInsets.right, safeInsets.bottom);
+            } else {
+                view.setPadding(insets.getSystemWindowInsetLeft(),
+                        insets.getSystemWindowInsetTop(),
+                        insets.getSystemWindowInsetRight(),
+                        insets.getSystemWindowInsetBottom());
+            }
+            // Ne pas consommer les insets : les enfants doivent les recevoir.
+            return insets;
+        });
+        content.requestApplyInsets();
 
         refreshLayout = findViewById(R.id.refresh);
         webView = findViewById(R.id.webview);
