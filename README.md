@@ -715,6 +715,46 @@ provisionner : non-lus, temps réel et suppression sont ceux de la messagerie.
 - les personas de démonstration n'ont pas de correspondant réel : les boutons
   y sont grisés avec l'explication, et `check:calls` le vérifie.
 
+### Dépannage « l'appel semble marcher mais… »
+
+Historique et réglages des pannes d'image réelles (testé avec deux comptes
+amis — un téléphone + un ordinateur, appel vidéo depuis la discussion) :
+
+- **Écran noir en appel vidéo, le son passe, APK Android** : la WebView
+  exigeait un geste utilisateur pour chaque lecture de média — l'image de
+  l'ami arrive quelques secondes après le clic « Répondre », sa lecture était
+  rejetée et l'ancien code avalait le rejet pour toujours. Réglé des deux
+  côtés : `setMediaPlaybackRequiresUserGesture(false)` dans l'APK **1.0.2**,
+  et le site rejoue désormais `play()` de lui-même (métadonnées, gestes,
+  relances) au lieu d'avaler le rejet. Mettre les deux joueurs à jour.
+- **Aucune image nulle part, appel devenu « vocal » sans prévenir** : la
+  caméra était refusée/occupée — pire, la WebView Android peut répondre à
+  `getUserMedia({audio, video})` avec un **accord partiel** (micro oui,
+  caméra non) SANS erreur : l'appel restait étiqueté « vidéo » avec un écran
+  vide. Désormais le repli audio est détecté (même sans erreur) et **expliqué
+  à l'écran** — bandeau + pastille « Caméra indisponible — l'appel continue
+  en audio, sans image » ; si c'est la caméra de l'AMI qui manque, l'appelant
+  est prévenu aussi (événement de signalisation `media`).
+- **Appel vocal sans voix** : le panneau ne branchait le flux distant sur un
+  élément média QUE quand il avait une image — un appel vocal ne jouait donc
+  jamais la voix de l'ami (et l'appel vocal passait `video: false` à
+  `getUserMedia`, que certaines WebView refusent). Désormais le son est joué
+  dans un `<video playsinline>` dédié même sans image, et l'APK force le
+  **haut-parleur** pendant l'appel (`LetsPlayAndroid.setCallAudio`) — sinon
+  la voix part dans l'écouteur et on croit l'appel muet.
+- **Rien ne passe du tout (ni son ni image) en 4G/5G** : connexions
+  pair-à-pair bloquées par le NAT de l'opérateur → relais TURN (ci-dessous).
+  Si le SON passe mais pas l'image, le TURN n'est pas le coupable : la
+  connexion existe déjà.
+- **« Ça me demande d'activer le micro mais c'est déjà fait »** : c'était
+  l'en-tête `Permissions-Policy` servi par le déploiement (corrigé :
+  `microphone=(self), camera=(self)` dans `vercel.json` — `check:calls`
+  surveille qu'il ne revienne pas). Dans une iframe, il faut en plus
+  `allow="microphone; camera"` sur l'iframe.
+- **APK : la demande d'autorisation n'apparaît jamais** : Android a un refus
+  en mémoire (« Ne plus demander ») — Paramètres → Applications → Let's Play →
+  Autorisations → Micro/Caméra → Autoriser (voir `android/README.md`).
+
 ### Serveur TURN (recommandé en production)
 
 Le STUN public de Google suffit derrière la plupart des box internet, mais les
@@ -737,9 +777,9 @@ quand même : simplement moins souvent du premier coup en mobile.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/messages/CallsContext.jsx` | le moteur et l'état : sonneries entrantes (canal personnel permanent, sonnerie gardée tant que la liste d'amis n'est pas chargée), `startCall` / `acceptCall` / `declineCall` / `endCall`, micro / caméra / bascule de caméra, connexions P2P, traces d'appel, `blockerFor` (boutons grisés) et `warningFor` (avertissements), `notice` (un échec s'explique) |
-| `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, `ringDecision`, durées, classification des erreurs de média |
-| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant (**Répondre / Refuser**), panneau d'appel (vidéo, PiP miroir, chrono, contrôles), bandeau d'avertissement |
+| `src/messages/CallsContext.jsx` | le moteur et l'état : sonneries entrantes (canal personnel permanent, sonnerie gardée tant que la liste d'amis n'est pas chargée), `startCall` / `acceptCall` / `declineCall` / `endCall`, micro / caméra / bascule de caméra, **repli caméra détecté et expliqué** (`cameraFallback`, événement `media` vers l'ami), connexions P2P, traces d'appel, `blockerFor` (boutons grisés) et `warningFor` (avertissements), `notice` (un échec s'explique) |
+| `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, `ringDecision`, `effectiveStreamKind` (appel vidéo sans piste vidéo → audio), durées, classification des erreurs de média |
+| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant (**Répondre / Refuser**), panneau d'appel (vidéo, PiP miroir, chrono, contrôles, pastille de repli caméra, `play()` fiable avec relances), bandeau d'avertissement |
 | `src/messages/callSounds.js` | sons synthétisés (Web Audio) : sonnerie, tonalité, connexion, fin |
 | `src/messages/callsCopy.js` | textes EN / FR / AR, libellés de blocage, traces d'appel — le site étant publié en français, EN / AR restent en filet de sécurité, comme les dictionnaires du site |
 | `src/messages/calls.css` | styles des overlays (plein écran, coins coupés, mobile, `prefers-reduced-motion`) |

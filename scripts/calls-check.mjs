@@ -33,7 +33,7 @@ const {
   END_BUSY, END_DECLINED, END_FAILED, END_HUNG_UP, END_LOST, END_NO_ANSWER,
   CALL_BLOCKERS, CALL_KINDS, CALL_WARNINGS,
   classifyMediaError, callsCopy, callsText, callBlockLabel, callStatusLabel, callSummaryText,
-  createCallId, describeCallError, formatDuration, iceServersFromEnv,
+  createCallId, describeCallError, effectiveStreamKind, formatDuration, iceServersFromEnv,
   inboxChannelFor, isCallEvent, isEmbedded, makeCallEvent, normalizeCallKind, permissionFailureKind, renderApp,
   remotePlaybackNeedsSink, ringDecision, turnConfigured, RING_IGNORE, RING_RING, RING_WAIT,
 } = smoke;
@@ -157,9 +157,29 @@ check('TURN présent par variable d’environnement', turnConfigured({ VITE_TURN
 check('TURN vide ignoré', turnConfigured({ VITE_TURN_URL: '   ' }), false);
 check('l’échec de connexion pointe le TURN', callsText('fr').hintTurn.includes('TURN'));
 
+// La caméra peut manquer SANS ERREUR (accord partiel de la WebView Android :
+// getUserMedia({audio, video}) résout avec un flux sans piste vidéo) —
+// `effectiveStreamKind` dégrade l'appel en audio au lieu d'attendre pour
+// toujours une image qui n'existe pas.
+check('vidéo demandée et obtenue → vidéo', effectiveStreamKind('video', { getVideoTracks: () => [{}] }), 'video');
+check('vidéo demandée, flux sans piste vidéo → audio', effectiveStreamKind('video', { getVideoTracks: () => [] }), 'audio');
+check('flux inutilisable → audio', effectiveStreamKind('video', null), 'audio');
+check('getVideoTracks absent → audio', effectiveStreamKind('video', {}), 'audio');
+check('audio demandé → audio', effectiveStreamKind('audio', { getVideoTracks: () => [] }), 'audio');
+check('sorte inconnue → audio', effectiveStreamKind('fax', { getVideoTracks: () => [{}] }), 'audio');
+
+// Repli caméra expliqué, jamais silencieux : c'est la cause du « l'appel
+// semble marcher mais l'image ne s'affiche pas » — micro seul, sans image,
+// sans aucune explication.
+check('message de repli caméra présent (FR)', callsCopy.fr.cameraFallback.includes('Caméra'));
+check('message de repli caméra présent (EN)', callsCopy.en.cameraFallback.includes('Camera'));
+check('message de repli caméra présent (AR)', callsCopy.ar.cameraFallback.length > 20);
+check('caméra de l’ami : l’appelant est prévenu (FR)', callsCopy.fr.peerCameraOff.includes('ami'));
+check('caméra de l’ami : l’appelant est prévenu (EN)', callsCopy.en.peerCameraOff.length > 20);
+check('caméra de l’ami : l’appelant est prévenu (AR)', callsCopy.ar.peerCameraOff.length > 20);
+
 // Micro refusé : quatre causes, quatre réglages — l'utilisateur doit savoir OÙ agir.
-check('isEmbedded existe', typeof isEmbedded, 'function');
-check('… hors iframe par défaut (Node)', isEmbedded(), false);
+check('isEmbedded existe', typeof isEmbedded, 'function');check('… hors iframe par défaut (Node)', isEmbedded(), false);
 check('permissionFailureKind existe', typeof permissionFailureKind, 'function');
 check('iframe sans allow → iframe', permissionFailureKind({ embedded: true }), 'iframe');
 check('micro bloqué pour l’origine → blocked', permissionFailureKind({ embedded: false, permissionState: 'denied' }), 'blocked');

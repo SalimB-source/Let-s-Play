@@ -30,6 +30,7 @@ import {
   RING_WAIT,
   classifyMediaError,
   createCallId,
+  effectiveStreamKind,
   formatDuration,
   iceServersFromEnv,
   inboxChannelFor,
@@ -196,6 +197,12 @@ export function CallsProvider({ children }) {
   const [peer, setPeer] = useState(null);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
+  /**
+   * Vrai si la caméra demandée n'a pas été obtenue (refusée, absente,
+   * occupée, ou accord partiel de la WebView Android) : l'appel « vidéo »
+   * continue en audio et l'interface l'explique — jamais en silence.
+   */
+  const [cameraFallback, setCameraFallback] = useState(false);
   const [connected, setConnected] = useState(false);
   const [startedAt, setStartedAt] = useState(null);
   const [nowTick, setNowTick] = useState(0);
@@ -433,6 +440,7 @@ export function CallsProvider({ children }) {
     setStartedAt(null);
     setEndReason(reason);
     setEndDetail(detail);
+    setCameraFallback(false);
     applyPhase('ended');
     clearTimer('ended');
     timersRef.current.ended = setTimeout(() => {
@@ -451,18 +459,47 @@ export function CallsProvider({ children }) {
    */
   const connectFailureDetail = useCallback(() => (turnConfigured() ? null : callsText(langRef.current).hintTurn), []);
 
+  /**
+   * Avertissement visible — « appel impossible », « connexion ratée »… Sans
+   * lui, un refus du navigateur ou de la configuration ne produit qu'un
+   * silence, et le joueur conclut « ça ne marche pas » sans savoir pourquoi.
+   * (Déclaré tôt : la réception de signalisation s'en sert.)
+   */
+  const showNotice = useCallback((text) => {
+    if (!text) return;
+    setNotice(text);
+    clearTimer('notice');
+    timersRef.current.notice = setTimeout(() => {
+      timersRef.current.notice = null;
+      if (mountedRef.current) setNotice(null);
+    }, NOTICE_MS);
+  }, [clearTimer]);
+
+  const dismissNotice = useCallback(() => {
+    clearTimer('notice');
+    setNotice(null);
+  }, [clearTimer]);
+
   /* ------------------------------ médias (locales) -------------------------- */
 
   /**
    * Demande micro (+ caméra pour un appel vidéo). La caméra est facultative :
    * si elle refuse sur un appel vidéo, on continue en audio (l'appel
-   * « descend » d'un cran) plutôt que d'échouer.
+   * « descend » d'un cran) plutôt que d'échouer — MAIS ce repli n'est plus
+   * silencieux : `cameraFallback` revient avec le flux et l'interface
+   * affiche l'explication (`CallsContext` → notice + pastille du panneau).
    *
-   * L'appel vocal ne passe pas `video: false` : sur certaines WebView Android,
-   * cette contrainte fait échouer le micro alors que le même micro, demandé
-   * avec la caméra, fonctionne — d'où « la vidéo marche, le vocal non ».
-   * Si les contraintes de traitement (écho, bruit) sont refusées, on retente
-   * un micro nu, sauf refus explicite de permission.
+   * Deux pièges WebView traités ici :
+   *   - l'appel vocal ne passe pas `video: false` : sur certaines WebView,
+   *     cette contrainte fait échouer le micro alors que le même micro,
+   *     demandé avec la caméra, fonctionne — d'où « la vidéo marche, le
+   *     vocal non ». Si les contraintes de traitement (écho, bruit) sont
+   *     refusées, on retente un micro nu, sauf refus explicite de permission ;
+   *   - `getUserMedia({audio, video})` peut RÉSOURDRE avec un flux sans
+   *     aucune piste vidéo (accord partiel : micro accordé, caméra refusée
+   *     au niveau Android) sans la moindre erreur. On le détecte avec
+   *     `effectiveStreamKind` — sinon l'appel resterait « vidéo » avec
+   *     l'écran vide pour de bon.
    */
   const acquireMedia = useCallback(async (wantedKind) => {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
@@ -485,10 +522,15 @@ export function CallsProvider({ children }) {
         audio: processed,
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
       });
-      return { stream, kind: 'video' };
+      const kind = effectiveStreamKind(wantedKind, stream);
+      if (kind === wantedKind) return { stream, kind };
+      // Flux reçu sans piste vidéo (accord partiel) : micro gardé, appel
+      // dégradé en audio — et signalé.
+      return { stream, kind, cameraFallback: true };
     } catch (e) {
-      // Pas de caméra (refusée, absente, occupée) : l'appel continue en audio.
-      return { stream: await openMic(), kind: 'audio' };
+      // Pas de caméra (refusée, absente, occupée) : l'appel continue en
+      // audio — avec explication, jamais en silence.
+      return { stream: await openMic(), kind: 'audio', cameraFallback: true };
     }
   }, []);
 
@@ -586,6 +628,7 @@ export function CallsProvider({ children }) {
     setPeer(peerProfile(friends.profileFor, payload.from));
     setMicOn(true);
     setCamOn(kind === 'video');
+    setCameraFallback(false);
     setEndReason(null);
     setEndDetail(null);
     setNotice(null);
@@ -747,10 +790,20 @@ export function CallsProvider({ children }) {
         finish(END_HUNG_UP);
         break;
       }
+
+      // L'ami n'a pas pu obtenir sa caméra (refusée, occupée, accord partiel
+      // de la WebView) : son appel « vidéo » continue en audio. Le dire tout
+      // de suite — sinon notre écran « vidéo » reste vide sans explication.
+      case 'media': {
+        if (payload.video === false && call.role === 'caller' && phaseRef.current !== 'idle' && phaseRef.current !== 'ended') {
+          showNotice(callsText(langRef.current).peerCameraOff);
+        }
+        break;
+      }
       default:
         break;
     }
-  }, [uid, friends, messages, sendEvent, ensureChannel, stopSounds, clearTimer, finish, insertCallSummary, startIncoming, connectFailureDetail, applyPhase]);
+  }, [uid, friends, messages, sendEvent, ensureChannel, stopSounds, clearTimer, finish, insertCallSummary, startIncoming, connectFailureDetail, showNotice, applyPhase]);
 
   // La référence du gestionnaire évite de recréer le canal à chaque rendu.
   const signalRef = useRef(handleSignal);
@@ -835,26 +888,6 @@ export function CallsProvider({ children }) {
   /* --------------------------------- gestes --------------------------------- */
 
   /**
-   * Avertissement visible — « appel impossible », « connexion ratée »… Sans
-   * lui, un refus du navigateur ou de la configuration ne produit qu'un
-   * silence, et le joueur conclut « ça ne marche pas » sans savoir pourquoi.
-   */
-  const showNotice = useCallback((text) => {
-    if (!text) return;
-    setNotice(text);
-    clearTimer('notice');
-    timersRef.current.notice = setTimeout(() => {
-      timersRef.current.notice = null;
-      if (mountedRef.current) setNotice(null);
-    }, NOTICE_MS);
-  }, [clearTimer]);
-
-  const dismissNotice = useCallback(() => {
-    clearTimer('notice');
-    setNotice(null);
-  }, [clearTimer]);
-
-  /**
    * Raison pour laquelle on ne peut PAS appeler `peerId`, ou null si l'appel
    * est possible. C'est la source unique des boutons d'appel (fenêtre sociale
    * et page /messages) : grisés avec infobulle explicite, jamais aveugles.
@@ -905,6 +938,7 @@ export function CallsProvider({ children }) {
     setPeer(peerProfile(friends.profileFor, peerId));
     setMicOn(true);
     setCamOn(wanted === 'video');
+    setCameraFallback(false);
     setConnected(false);
     setEndReason(null);
     setEndDetail(null);
@@ -914,7 +948,7 @@ export function CallsProvider({ children }) {
     try {
       // 1. Micro / caméra AVANT de sonner : l'autorisation se demande une
       //    fois pour toutes, pas pendant la sonnerie de l'ami.
-      const { stream, kind: actualKind } = await acquireMedia(wanted);
+      const { stream, kind: actualKind, cameraFallback } = await acquireMedia(wanted);
       if (callRef.current?.callId !== callId) {
         for (const track of stream.getTracks()) track.stop();
         releaseLoudspeaker();
@@ -924,10 +958,17 @@ export function CallsProvider({ children }) {
       setLocalStream(stream);
       preferLoudspeaker();
       if (actualKind !== wanted) {
-        // Pas de caméra : l'appel vidéo continue en audio.
+        // Pas de caméra (refusée, occupée, ou accord partiel de la WebView) :
+        // l'appel vidéo continue en audio — ET ON LE DIT, à voix haute
+        // (bandeau) et durablement (pastille du panneau). Le repli silencieux
+        // d'avant faisait croire à un appel vidéo « qui marche sans image ».
         callRef.current.kind = 'audio';
         setKind('audio');
         setCamOn(false);
+        if (cameraFallback) {
+          setCameraFallback(true);
+          showNotice(callsText(langRef.current).cameraFallback);
+        }
       }
 
       // 2. Connexion P2P prête (pistes attachées) avant l'offre.
@@ -983,7 +1024,7 @@ export function CallsProvider({ children }) {
     try {
       // 1. Micro / caméra tout de suite (on vient d'un geste du joueur :
       //    c'est le moment que Safari exige pour la permission).
-      const { stream, kind: actualKind } = await acquireMedia(wanted);
+      const { stream, kind: actualKind, cameraFallback } = await acquireMedia(wanted);
       if (callRef.current?.callId !== callId) {
         for (const track of stream.getTracks()) track.stop();
         releaseLoudspeaker();
@@ -992,10 +1033,15 @@ export function CallsProvider({ children }) {
       localRef.current = stream;
       setLocalStream(stream);
       preferLoudspeaker();
-      if (actualKind !== wanted) {
+      const degraded = actualKind !== wanted;
+      if (degraded) {
         callRef.current.kind = 'audio';
         setKind('audio');
         setCamOn(false);
+        if (cameraFallback) {
+          setCameraFallback(true);
+          showNotice(callsText(langRef.current).cameraFallback);
+        }
       }
       buildPeerConnection(callId);
       for (const track of stream.getTracks()) pcRef.current.addTrack(track, stream);
@@ -1004,6 +1050,11 @@ export function CallsProvider({ children }) {
       await ensureChannel(inboxChannelFor(peerId));
       if (callRef.current?.callId !== callId) return;
       sendEvent(peerId, makeCallEvent('reply', { callId, from: uid, to: peerId, result: 'accept' }));
+      if (degraded) {
+        // Notre caméra n'a pas pu être obtenue : prévenir l'ami, sinon son
+        // écran « vidéo » reste vide sans la moindre explication.
+        sendToPeer('media', { video: false });
+      }
 
       // 3. Une offre arrivée trop tôt est traitée maintenant.
       const early = pendingOfferRef.current;
@@ -1032,7 +1083,7 @@ export function CallsProvider({ children }) {
       sendEvent(peerId, makeCallEvent('reply', { callId, from: uid, to: peerId, result: 'decline' }));
       finish(END_FAILED, detail);
     }
-  }, [enabled, uid, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, stopSounds, clearTimer, finish, connectFailureDetail, applyPhase]);
+  }, [enabled, uid, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, sendToPeer, stopSounds, clearTimer, finish, connectFailureDetail, showNotice, applyPhase]);
 
   const declineCall = useCallback(() => {
     const call = callRef.current;
@@ -1159,6 +1210,7 @@ export function CallsProvider({ children }) {
     peer,
     micOn,
     camOn,
+    cameraFallback,
     connected,
     elapsedMs,
     endReason,
@@ -1175,7 +1227,7 @@ export function CallsProvider({ children }) {
     flipCamera,
     dismissNotice,
   }), [
-    enabled, unavailableReason, blockerFor, warningFor, phase, role, kind, peer, micOn, camOn,
+    enabled, unavailableReason, blockerFor, warningFor, phase, role, kind, peer, micOn, camOn, cameraFallback,
     connected, elapsedMs, endReason, endDetail, notice, localStream, remoteStream,
     startCall, acceptCall, declineCall, endCall, toggleMic, toggleCam, flipCamera, dismissNotice,
   ]);

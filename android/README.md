@@ -10,6 +10,7 @@ accéder à la messagerie, il faut se connecter dans l'application.
 
 - Nom affiché : **Let's Play**
 - Identifiant : `dz.letsplay.officiel`
+- Version actuelle : **1.0.2** (versionCode 3 — voir `app/build.gradle`)
 - URL embarquée : <https://let-s-play-nu.vercel.app> (constante `SITE_HOST`
   dans `app/src/main/java/dz/letsplay/officiel/MainActivity.java`)
 - Android minimum : 6.0 (API 23) · cible : API 35
@@ -33,8 +34,61 @@ accéder à la messagerie, il faut se connecter dans l'application.
   que l'appel vidéo sort du haut-parleur — on croit le vocal muet. Dès que le
   micro est accordé (et quand le site appelle `LetsPlayAndroid.setCallAudio`),
   l'app bascule en haut-parleur et rend le routage d'avant à la fin de l'appel.
-  La lecture média ne dépend pas d'un geste : le son distant arrive après la
-  négociation WebRTC.
+- La lecture des médias **ne dépend pas d'un geste** (
+  `setMediaPlaybackRequiresUserGesture(false)`) : le son et l'image d'un appel
+  arrivent plusieurs secondes après le clic « Répondre » — avec le réglage par
+  défaut de la WebView, la lecture était refusée et l'écran restait noir
+  pendant que le son passait (corrigé en 1.0.2).
+
+## Dépannage
+
+### « Aucune autorisation à accepter » (la demande Android n'apparaît jamais)
+
+Le site réclame le micro/la caméra, le pop-up Android ne s'affiche pas, et
+l'appel finit en « accès refusé » ? C'est qu'Android a déjà un refus **en
+mémoire** : depuis Android 11, un refus deux fois (« Ne plus demander ») fait
+que `requestPermissions` répond immédiatement « refusé » **sans plus rien
+afficher** — la WebView reçoit donc un refus sans que le joueur puisse
+accepter quoi que ce soit. Réglage :
+
+> **Paramètres Android → Applications → Let's Play → Autorisations →
+> Microphone et Caméra → Autoriser**, puis rouvrir l'appel.
+
+(Désinstaller/réinstaller ne remet PAS les autorisations à zéro : elles
+suivent l'application tant qu'elle n'est pas désinstallée. Passer par les
+réglages système est le seul chemin.)
+
+### L'appel vidéo reste sans image (écran noir, le son passe)
+
+1. **Mettre à jour l'APK (1.0.2 ou plus)** : avant 1.0.2, la WebView exigeait
+   un geste pour chaque lecture de média — l'image de l'ami, qui arrive après
+   le clic « Répondre », ne démarrait jamais. Le site rejoue aussi la lecture
+   tout seul (gestes, métadonnées, pistes qui se débloquent), mais l'APK à
+   jour reste la meilleure réponse.
+2. **Vérifier la permission Caméra** (voir ci-dessus) : si la caméra est
+   refusée au niveau Android, l'appel continue en audio — le site l'affiche
+   désormais noir sur blanc (« Caméra indisponible — l'appel continue en
+   audio, sans image ») au lieu de laisser un écran vide.
+3. **Caméra occupée** : une autre application qui garde la caméra (visio,
+   appareil photo en arrière-plan) empêche la capture — fermer l'autre app.
+4. Les deux joueurs doivent être sur le **site à jour** (l'APK affiche le site
+   en ligne : tirer-rafraîchir suffit côté site) ; pour tester, deux comptes
+   amis, un téléphone + un ordinateur, appel vidéo depuis la discussion.
+
+### L'appel vocal reste silencieux (le chrono tourne, rien ne s'entend)
+
+1. **Le son sort de l'écouteur, pas du haut-parleur** : c'est le routage
+   Android par défaut d'un appel vocal — l'app bascule en haut-parleur dès
+   que le site signale l'appel (`LetsPlayAndroid.setCallAudio`, APK 1.0.2) ;
+   vérifier le volume d'appel (boutons volume pendant l'appel).
+2. **Site pas à jour** : l'ancienne version ne branchait le flux distant sur
+   aucun élément média en appel vocal — tirer-rafraîchir dans l'app.
+
+### Rien ne passe du tout (ni son ni image) en 4G/5G
+
+Sans relais TURN, les connexions pair-à-pair échouent derrière certains NAT
+d'opérateur — et là, ni son ni image. Côté serveur : configurer
+`VITE_TURN_URL` (voir le README principal, section « Serveur TURN »).
 
 ## Construire l'APK
 

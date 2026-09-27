@@ -93,11 +93,21 @@ function CallAvatar({ name, src, size = 92 }) {
 }
 
 /**
- * Branche un MediaStream sur un `<video>` (autoplay tolérant, sens iOS).
+ * Branche un MediaStream sur un `<video>` — avec un `play()` FIABLE.
  *
- * Le son WebRTC ne sort que si un élément média le joue. On force `muted` en
- * propriété (React ne la met pas toujours à jour) et on relance `play()` quand
- * la piste se débloque : sinon l'appel « marche » à l'écran et reste muet.
+ * C'était le point qui laissait l'écran noir ou muet : le son WebRTC ne sort
+ * que si un élément média le joue, et le premier `play()` est souvent rejeté
+ * — lecture exigée après un geste utilisateur (geste déjà consommé par le
+ * clic « Répondre », surtout dans la WebView Android), médias pas encore
+ * chargés — et l'ancien code avalait le rejet pour toujours. Désormais :
+ *
+ *   - `muted` est forcé en propriété (React ne la met pas toujours à jour) ;
+ *   - `play()` est relancé dès que des données arrivent (`canplay`,
+ *     `loadedmetadata`) ou qu'une piste se débloque (`unmute`) ;
+ *   - il est relancé sur chaque geste du joueur (n'importe quel clic) — le
+ *     déblocage que réclame la WebView arrive souvent juste après ;
+ *   - entre les deux, quelques relances espacées couvrent les politiques
+ *     d'autoplay qui lèvent le blocage d'elles-mêmes.
  */
 function Stream({ stream, muted = false, className = '', mirrored = false, label }) {
   const ref = useRef(null);
@@ -110,21 +120,49 @@ function Stream({ stream, muted = false, className = '', mirrored = false, label
     node.setAttribute('playsinline', 'true');
     node.setAttribute('webkit-playsinline', 'true');
     if (node.srcObject !== (stream || null)) node.srcObject = stream || null;
-    const tryPlay = () => {
-      if (!node || !stream) return;
+    if (!stream) return undefined;
+
+    let cancelled = false;
+    let timer = null;
+    let retries = 0;
+    const MAX_AUTO_RETRIES = 12;
+    const attempt = () => {
+      if (cancelled) return;
       const playing = node.play?.();
-      if (playing && typeof playing.catch === 'function') playing.catch(() => { /* geste requis : on réessaiera au unmute */ });
+      if (!playing || typeof playing.catch !== 'function') return;
+      playing.then(() => {
+        clearTimeout(timer);
+      }).catch(() => {
+        if (cancelled) return;
+        if (retries < MAX_AUTO_RETRIES) {
+          retries += 1;
+          clearTimeout(timer);
+          timer = setTimeout(attempt, 300 * retries);
+        }
+        // Au-delà, les gestes et `unmute` gardent une chance de relancer la
+        // lecture — on n'abandonne jamais tout à fait.
+      });
     };
-    tryPlay();
-    node.addEventListener?.('canplay', tryPlay);
+    const onReady = () => attempt();
+    const onGesture = () => attempt();
+    attempt();
+    node.addEventListener('loadedmetadata', onReady);
+    node.addEventListener('canplay', onReady);
     const tracks = [
       ...(stream?.getAudioTracks?.() || []),
       ...(stream?.getVideoTracks?.() || []),
     ];
-    for (const track of tracks) track.addEventListener?.('unmute', tryPlay);
+    for (const track of tracks) track.addEventListener?.('unmute', onReady);
+    window.addEventListener('pointerdown', onGesture, true);
+    window.addEventListener('touchstart', onGesture, true);
     return () => {
-      node.removeEventListener?.('canplay', tryPlay);
-      for (const track of tracks) track.removeEventListener?.('unmute', tryPlay);
+      cancelled = true;
+      clearTimeout(timer);
+      node.removeEventListener('loadedmetadata', onReady);
+      node.removeEventListener('canplay', onReady);
+      for (const track of tracks) track.removeEventListener?.('unmute', onReady);
+      window.removeEventListener('pointerdown', onGesture, true);
+      window.removeEventListener('touchstart', onGesture, true);
       node.srcObject = null;
     };
   }, [stream, muted]);
@@ -185,7 +223,7 @@ function IncomingCall({ calls, t }) {
 
 function ActiveCall({ calls, t }) {
   const {
-    phase, kind, peer, micOn, camOn, connected, elapsedMs, endReason, endDetail,
+    phase, kind, peer, micOn, camOn, cameraFallback, connected, elapsedMs, endReason, endDetail,
     localStream, remoteStream, endCall, toggleMic, toggleCam, flipCamera,
   } = calls;
   const isVideo = kind === 'video';
@@ -207,6 +245,9 @@ function ActiveCall({ calls, t }) {
           <span className="calls-status" aria-live="polite">
             {timer ? <em className="calls-timer">{timer}</em> : status}
           </span>
+          {cameraFallback && phase !== 'ended' && (
+            <span className="calls-fallback" role="status">{t.cameraFallback}</span>
+          )}
           {endDetail && <span className="calls-error" role="alert">{endDetail}</span>}
         </header>
 

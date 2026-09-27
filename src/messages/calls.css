@@ -168,7 +168,33 @@
    iOS et Android coupent alors la lecture) caché derrière l'avatar. */
 .calls-stage { position: relative; flex: 1; min-height: 0; background: rgba(4, 5, 14, .5); }
 .calls-remote { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/*
+ * Appel vocal (ou caméra de l'ami indisponible) : pas d'image à montrer, mais
+ * le média distant est quand même branché — c'est LUI qui porte la voix. Il
+ * vit en PLEINE TAILLE derrière la scène audio (ni `display: none` ni
+ * `hidden` : iOS et Android coupent alors la lecture) — l'avatar et son
+ * dégradé le recouvrent.
+ */
 .calls-remote-audio { z-index: 0; }
+
+/*
+ * Pastille « caméra indisponible » sous le titre : le repli audio est dit
+ * en permanence pendant l'appel, pas seulement dans le bandeau éphémère.
+ */
+.calls-fallback {
+  margin-top: 3px;
+  padding: 3px 10px;
+  max-width: 92%;
+  background: rgba(250, 204, 21, .12);
+  border: 1px solid rgba(250, 204, 21, .45);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: var(--yellow);
+  font: 500 11px/1.45 var(--body);
+  text-align: center;
+}
+
+
 .calls-stage-audio {
   position: absolute;
   inset: 0;
@@ -206,6 +232,9 @@
   right: 14px;
   bottom: 14px;
   width: clamp(110px, 24vw, 190px);
+  /* Repli pour les vieilles WebViews sans `aspect-ratio` (Android < 9) :
+     sans hauteur explicite, l'incrustation s'aplatit à 0 px — invisible. */
+  min-height: 84px;
   aspect-ratio: 4 / 3;
   border: 1px solid rgba(34, 211, 238, .5);
   background: var(--panel);
