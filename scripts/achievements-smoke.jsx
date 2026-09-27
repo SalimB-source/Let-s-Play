@@ -54,7 +54,6 @@ const ACCOUNT_STORAGE_KEY = `${STORAGE_KEY}:${scopeForUser(REAL_ACCOUNT.id)}`;
 
 function render(path, Page, lang, storedState, { demo = false, account = false, deviceGuest = false } = {}) {
   const store = new Map();
-  store.set('letsplay-lang', lang);
   // `deviceGuest` : la progression est laissée sur la clé invité de l'appareil
   // pendant qu'un COMPTE NEUF est connecté — c'est le scénario « création d'un
   // compte sur un appareil où l'on a déjà joué » : aucune fuite possible.
@@ -64,9 +63,10 @@ function render(path, Page, lang, storedState, { demo = false, account = false, 
   // explore le hub après avoir cliqué sur « Explorer le compte démo ».
   if (demo) store.set(DEMO_STORAGE_KEY, JSON.stringify(DEMO_PROFILE_FIXTURES.vortex));
 
-  // LanguageProvider et AchievementProvider lisent le stockage pendant le
-  // rendu : on fournit un localStorage minimal, comme le font déjà les autres
-  // scripts de vérification du dépôt.
+  // AchievementProvider (et le compte de démonstration) lisent le stockage
+  // pendant le rendu : on fournit un localStorage minimal, comme le font déjà
+  // les autres scripts de vérification du dépôt. La langue, elle, se passe au
+  // provider : le site est publié en français.
   globalThis.window = {
     localStorage: {
       getItem: (key) => (store.has(key) ? store.get(key) : null),
@@ -82,7 +82,7 @@ function render(path, Page, lang, storedState, { demo = false, account = false, 
   const html = renderToString(
     React.createElement(
       LanguageProvider,
-      null,
+      { lang },
       React.createElement(
         AuthProvider,
         authProps,
@@ -148,7 +148,6 @@ export function authHub(lang, storedState = null, options = {}) {
  */
 export function achievementPopup(lang, { notifications = [] } = {}) {
   const store = new Map();
-  store.set('letsplay-lang', lang);
   globalThis.window = {
     localStorage: {
       getItem: (key) => (store.has(key) ? store.get(key) : null),
@@ -172,7 +171,7 @@ export function achievementPopup(lang, { notifications = [] } = {}) {
   return renderToString(
     React.createElement(
       LanguageProvider,
-      null,
+      { lang },
       React.createElement(
         MemoryRouter,
         { initialEntries: ['/news'] },

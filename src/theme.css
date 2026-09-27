@@ -1,0 +1,1139 @@
+/* ==========================================================================
+   THÈME CLAIR — Let's Play
+   --------------------------------------------------------------------------
+   Le site est conçu « néon sur nuit » : fond presque noir, accents saturés,
+   halos lumineux. Le thème clair doit rester *le même site* — mêmes formes
+   (angles coupés), même hiérarchie éditoriale, même énergie de marque — mais
+   posé sur du papier.
+
+   Trois règles gouvernent la conversion :
+
+   1. LES ACCENTS S'ASSOMBRISSENT POUR LE TEXTE, PAS POUR LE REMPLISSAGE.
+      Le cyan #22d3ee (11:1 sur le noir) tombe à 1,7:1 sur blanc. On garde donc
+      deux accents par teinte : `--cyan` est la version *encre* (lisible),
+      `--cyan-bright` la version *lumière* (bordures, halos, remplissages).
+      Idem pour le jaune : `--yellow` reste le jaune de marque en aplat (encre
+      sombre par-dessus, 12,8:1), `--yellow-ink` est sa version lisible quand il
+      sert de texte.
+
+   2. LES MÉDIAS RESTENT SOMBRES. Un écran reste un écran. Le lecteur YouTube,
+      la fenêtre vidéo, les vignettes et tous les voiles posés *sur une photo*
+      gardent leur fond sombre et leur texte blanc dans les deux thèmes.
+      Seules les *surfaces de l'interface* passent au clair.
+   Exception assumée : le héros d'accueil est une image plein cadre
+      (public/hero-gaming-gear.webp), identique dans les deux thèmes, avec un voile
+      sombre discret à gauche pour garder le texte blanc et jaune lisible
+      (bloc « Héros clair » de la section 8).
+
+   3. LES HALOS DEVIENNENT DES OMBRES. Un `text-shadow` néon sur fond clair
+      produit un halo sale : remplacé par une ombre colorée douce, qui garde la
+      couleur sans la lumière.
+
+   Le thème est piloté par `data-theme` sur <html> (« dark » par défaut,
+   « light » en mode clair), posé par `ThemeContext` et par un script en ligne
+   dans index.html — ce dernier évite le flash au chargement.
+
+   Import : `src/main.jsx`, EN DERNIER (ce fichier surcharge les 18 autres).
+   ========================================================================== */
+
+/* ============ 1. JETONS ============ */
+/* Alias utilisés par les deux thèmes : en sombre, la version « lumière » et la
+   version « encre » coïncident — c'est le propre du thème d'origine. */
+:root{
+  --cyan-bright:#22d3ee;
+  --violet-bright:#a855f7;
+  --yellow-ink:#ffd619;
+}
+
+:root[data-theme='light']{
+  color-scheme: light;
+
+  --bg:#f7f8fc;
+  --panel:#ffffff;
+  --panel-2:#f2f4fa;
+  --ink:#141232;
+  --muted:rgba(35,32,70,.74);   /* ≈ 6,3:1 sur --bg */
+  --dim:rgba(35,32,70,.65);     /* ≈ 4,8:1 : les libellés 9-11px restent AA */
+  --line:rgba(86,70,190,.16);
+  --line-strong:rgba(86,70,190,.34);
+
+  /* teintes « encre » — lisibles sur blanc */
+  --cyan:#0e7490;        /* 5,0:1 */
+  --violet:#6d28d9;      /* 6,7:1 */
+  --purple:#5b21b6;
+  --yellow-ink:#8a6100;  /* 5,2:1 — le jaune de marque, assombri pour le texte */
+  --danger:#be123c;
+  --ok:#047857;
+
+  /* teintes « lumière » — remplissages, bordures, halos */
+  --yellow:#ffd619;      /* inchangé : aplat, encre sombre par-dessus */
+
+  --shadow-sm:0 2px 10px -4px rgba(28,24,72,.14);
+  --shadow-md:0 14px 34px -18px rgba(28,24,72,.35);
+  --tint:rgba(86,70,190,.05);
+}
+
+/* ============ 2. SOCLE ============ */
+[data-theme='light'] body{
+  background:
+    radial-gradient(1100px 620px at 88% -12%, rgba(124,58,237,.10), transparent 60%),
+    radial-gradient(900px 560px at -12% 30%, rgba(14,116,144,.07), transparent 60%),
+    var(--bg);
+}
+/* Les scanlines « CRT » n'ont pas de sens sur du papier. */
+[data-theme='light'] body::after{display:none}
+/* Icônes néon du fond : sur papier, on densifie les couleurs (le néon
+   pâle disparaît sur blanc) et on réduit le halo. Voir styles.css. */
+[data-theme='light'] .ni{opacity:.5}
+[data-theme='light'] .ni svg{filter:drop-shadow(0 0 3px currentColor)}
+[data-theme='light'] .ni-gamepad,
+[data-theme='light'] .ni-zap{color:#7c3aed}
+[data-theme='light'] .ni-dpad,
+[data-theme='light'] .ni-sparkle{color:#0e7490}
+[data-theme='light'] .ni-heart,
+[data-theme='light'] .ni-joystick{color:#e11d48}
+[data-theme='light'] .ni-trophy{color:#d97706}
+[data-theme='light'] ::selection{background:var(--yellow);color:var(--ink)}
+[data-theme='light'] :focus-visible{outline-color:var(--cyan)}
+[data-theme='light'] ::-webkit-scrollbar{background:#ecedf8}
+[data-theme='light'] ::-webkit-scrollbar-thumb{background:#c6cae4;border-color:#ecedf8}
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover{background:#a8aed2}
+[data-theme='light'] .news-carousel::-webkit-scrollbar-thumb,
+[data-theme='light'] .reel-window::-webkit-scrollbar-thumb{background:#c6cae4}
+
+/* ============ 3. ENCRE CLAIRE → ENCRE SOMBRE ============ */
+/* #region encre-claire — généré par scripts/theme-ink-sweep.mjs */
+
+/* Encres blanches littérales : supposent un fond sombre. */
+  [data-theme='light'] .achievement-level-number,
+  [data-theme='light'] .achievement-tooltip-name,
+  [data-theme='light'] .auth-social-btn:hover:not(:disabled),
+  [data-theme='light'] .button-demo-secondary:hover,
+  [data-theme='light'] .player-games-filter-btn.active .player-games-filter-count,
+  [data-theme='light'] .player-games-action-btn:hover,
+  [data-theme='light'] .player-games-action-btn.active,
+  [data-theme='light'] .player-signout-btn:hover,
+  [data-theme='light'] .delete-account-btn:hover,
+  [data-theme='light'] .delete-account-dialog h2,
+  [data-theme='light'] .delete-account-eye:hover,
+  [data-theme='light'] .nav-account.connected,
+  [data-theme='light'] .nav-account-name,
+  [data-theme='light'] .nav-account-level strong,
+  [data-theme='light'] .quiz-rank-heading h2,
+  [data-theme='light'] .quiz-rank-hero-value,
+  [data-theme='light'] .dossier-lead,
+  [data-theme='light'] .dossier-pullquote,
+  [data-theme='light'] .dossier-stat-card span,
+  [data-theme='light'] .friends-row-name,
+  [data-theme='light'] .friends-search input,
+  [data-theme='light'] .player-friend-name,
+  [data-theme='light'] .messages-search input,
+  [data-theme='light'] .messages-row-name,
+  [data-theme='light'] .messages-thread-name,
+  [data-theme='light'] .messages-composer textarea,
+  [data-theme='light'] .messages-report-reason:hover,
+  [data-theme='light'] .messages-report-reason.is-active,
+  [data-theme='light'] .messages-report-note,
+  [data-theme='light'] .social-page-tab:hover,
+  [data-theme='light'] .messages-page-kicker,
+  [data-theme='light'] .messages-page-guest-title,
+  [data-theme='light'] .news-feature-copy h2,
+  [data-theme='light'] .article-lead,
+  [data-theme='light'] .article-body h2,
+  [data-theme='light'] .article-pullquote p,
+  [data-theme='light'] .aside-card strong,
+  [data-theme='light'] .comments h2,
+  [data-theme='light'] .comment strong,
+  [data-theme='light'] .comment-form-heading strong,
+  [data-theme='light'] .review-feature-copy h2,
+  [data-theme='light'] .review-score-card strong,
+  [data-theme='light'] .article-video-title,
+  [data-theme='light'] .comment-identity-text strong,
+  [data-theme='light'] .comment-author-link,
+  [data-theme='light'] .article-engagement-heading h2,
+  [data-theme='light'] .article-reaction,
+  [data-theme='light'] .news-views,
+  [data-theme='light'] .news-carousel-copy h2,
+  [data-theme='light'] .news-hub-card,
+  [data-theme='light'] .partner-mark-text b,
+  [data-theme='light'] .partner-link,
+  [data-theme='light'] .partners-sources-list a,
+  [data-theme='light'] .arena-lead,
+  [data-theme='light'] .arena-by-meta a:hover,
+  [data-theme='light'] .player-list-toggle:hover,
+  [data-theme='light'] .quiz-filter-chip:hover,
+  [data-theme='light'] .quiz-survival-title,
+  [data-theme='light'] .quiz-survival-card:hover .arrow-link,
+  [data-theme='light'] .quiz-survival-infinity,
+  [data-theme='light'] .horror-glitch-title,
+  [data-theme='light'] .horror-tape--red,
+  [data-theme='light'] .horror-chip-pulse,
+  [data-theme='light'] .horror-file-title,
+  [data-theme='light'] .horror-timer-count,
+  [data-theme='light'] .horror-heart-lost,
+  [data-theme='light'] .horror-question-mark,
+  [data-theme='light'] .horror-verdict-icon,
+  [data-theme='light'] .horror-choice:hover:not(:disabled) .horror-choice-key,
+  [data-theme='light'] .horror-gameover-title,
+  [data-theme='light'] .horror-stats .quiz-stat strong,
+  [data-theme='light'] [data-theme='light'] .survival-horror .quiz-header h1,
+  [data-theme='light'] [data-theme='light'] .horror-file-inner h2,
+  [data-theme='light'] .social-panel-kicker,
+  [data-theme='light'] .social-tab:hover,
+  [data-theme='light'] .nav-logout:hover,
+  [data-theme='light'] .nav-profile-dropdown-avatar,
+  [data-theme='light'] .nav-profile-dropdown-meta strong,
+  [data-theme='light'] .nav-profile-dropdown-links a:hover,
+  [data-theme='light'] .nav-profile-dropdown-logout:hover,
+  [data-theme='light'] .cmd-palette-head input,
+  [data-theme='light'] .cmd-palette-close:hover,
+  [data-theme='light'] .cmd-palette-item-text strong,
+  [data-theme='light'] .cmd-palette-quick a:hover,
+  [data-theme='light'] .nav-primary a:hover,
+  [data-theme='light'] .nav-search-clear:hover,
+  [data-theme='light'] .nav .theme-toggle:hover,
+  [data-theme='light'] .nav-actions-grid .theme-toggle:hover,
+  [data-theme='light'] .featured-sponsor-text,
+  [data-theme='light'] .featured-dossier-sponsor-text,
+  [data-theme='light'] .stats strong,
+  [data-theme='light'] .format-card a,
+  [data-theme='light'] .filter:hover,
+  [data-theme='light'] .video-card h3,
+  [data-theme='light'] .carousel-controls button,
+  [data-theme='light'] .nav-profile-level strong,
+  [data-theme='light'] .nav-search input,
+  [data-theme='light'] .search-form input,
+  [data-theme='light'] .nav-search-result,
+  [data-theme='light'] .nav-search-result:hover {
+  color: var(--ink);
+}
+
+/* Encres blanches atténuées : corps de texte et libellés. */
+  [data-theme='light'] .article-body,
+  [data-theme='light'] .proscons li,
+  [data-theme='light'] .horror-photo-inner,
+  [data-theme='light'] .nav-logout,
+  [data-theme='light'] .nav-profile-dropdown-meta small,
+  [data-theme='light'] .nav-profile-dropdown-links a,
+  [data-theme='light'] .cmd-palette-icon,
+  [data-theme='light'] .cmd-palette-kbd,
+  [data-theme='light'] .cmd-palette-close,
+  [data-theme='light'] .cmd-palette-shortcuts em,
+  [data-theme='light'] .cmd-palette-item,
+  [data-theme='light'] .cmd-palette-empty,
+  [data-theme='light'] .cmd-palette-quick a,
+  [data-theme='light'] .cmd-palette-tips strong,
+  [data-theme='light'] .nav-links a,
+  [data-theme='light'] .nav-primary a,
+  [data-theme='light'] .nav-search-clear,
+  [data-theme='light'] .nav .theme-toggle,
+  [data-theme='light'] .nav-actions-grid .theme-toggle,
+  [data-theme='light'] .nav-search button,
+  [data-theme='light'] .nav-search-icon,
+  [data-theme='light'] .nav-search-kbd {
+  color: var(--muted);
+}
+
+/* Jaune de marque en texte : assombri pour rester lisible. */
+  [data-theme='light'] .achievement-hero-number,
+  [data-theme='light'] .achievement-toast-kicker,
+  [data-theme='light'] .auth-demo-kicker,
+  [data-theme='light'] .auth-diag-line,
+  [data-theme='light'] .auth-switch,
+  [data-theme='light'] .player-avatar-fallback,
+  [data-theme='light'] .player-badge-tier,
+  [data-theme='light'] .player-xp-level-tag,
+  [data-theme='light'] .player-stat-value,
+  [data-theme='light'] .player-edit-form-head h3,
+  [data-theme='light'] .nav-account-avatar,
+  [data-theme='light'] .nav-account-initials,
+  [data-theme='light'] .nav-account.connected:hover .nav-account-name,
+  [data-theme='light'] .nav-account-level,
+  [data-theme='light'] .nav-account-level small,
+  [data-theme='light'] .quiz-rank-kicker,
+  [data-theme='light'] .quiz-rank-position,
+  [data-theme='light'] .quiz-rank-meta-value,
+  [data-theme='light'] .dossier-byline,
+  [data-theme='light'] .dossier-stat-card strong,
+  [data-theme='light'] .chapter-list time,
+  [data-theme='light'] .friends-row-level,
+  [data-theme='light'] .friends-avatar img,
+  [data-theme='light'] .friends-avatar-fallback,
+  [data-theme='light'] .friend-btn-note-lead,
+  [data-theme='light'] .friend-icon-add:not(:disabled):hover,
+  [data-theme='light'] .friend-icon-incoming,
+  [data-theme='light'] .player-friend-level,
+  [data-theme='light'] .messages-tool.is-flagged,
+  [data-theme='light'] .messages-report-title,
+  [data-theme='light'] .social-page-back:hover,
+  [data-theme='light'] .social-page-tab-icon,
+  [data-theme='light'] .messages-page-kicker svg,
+  [data-theme='light'] .monthly-releases-head h2 em,
+  [data-theme='light'] .release-countdown h3 em,
+  [data-theme='light'] .release-timeline-today em,
+  [data-theme='light'] .release-countdown-out,
+  [data-theme='light'] .calendar-month-nav a.is-current,
+  [data-theme='light'] .calendar-month-head h3 span,
+  [data-theme='light'] .calendar-month-now,
+  [data-theme='light'] .read-link,
+  [data-theme='light'] .article-pullquote span,
+  [data-theme='light'] .article-endnote strong,
+  [data-theme='light'] .comments-mark,
+  [data-theme='light'] .comment-form-heading span,
+  [data-theme='light'] .review-feature-copy h2 em,
+  [data-theme='light'] .review-score-card span,
+  [data-theme='light'] .article-engagement-kicker,
+  [data-theme='light'] .article-engagement-footer .arrow-link,
+  [data-theme='light'] .article-reaction-yellow .article-reaction-icon,
+  [data-theme='light'] .article-byline > span:nth-child(2),
+  [data-theme='light'] .article-toc-progress,
+  [data-theme='light'] .news-hub-title em,
+  [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
+  [data-theme='light'] .news-carousel.is-grid .news-today .read-link,
+  [data-theme='light'] .partners-head h2 em,
+  [data-theme='light'] .partner-link:hover,
+  [data-theme='light'] .partner-detail-facts-label,
+  [data-theme='light'] .partners-sources-list a:hover,
+  [data-theme='light'] .arena-hero h2 em,
+  [data-theme='light'] .arena-pills li:first-child,
+  [data-theme='light'] .arena-by-label,
+  [data-theme='light'] .arena-by-meta a,
+  [data-theme='light'] .quiz-header h1 em,
+  [data-theme='light'] .quiz-chip--medium,
+  [data-theme='light'] .quiz-chip--daily,
+  [data-theme='light'] .quiz-chip--streak,
+  [data-theme='light'] .quiz-daily .arrow-link,
+  [data-theme='light'] .quiz-card-best,
+  [data-theme='light'] .quiz-level--medium .quiz-level-name,
+  [data-theme='light'] .quiz-live-item--points,
+  [data-theme='light'] .quiz-live-item--streak,
+  [data-theme='light'] .quiz-verdict-points,
+  [data-theme='light'] .quiz-tier--veteran .quiz-result-tier,
+  [data-theme='light'] .quiz-result-points,
+  [data-theme='light'] .quiz-result-combo,
+  [data-theme='light'] .quiz-result-perfect,
+  [data-theme='light'] .quiz-result-record,
+  [data-theme='light'] .quiz-board-score,
+  [data-theme='light'] .quiz-player-intro.is-locked h1,
+  [data-theme='light'] .quiz-finished-best,
+  [data-theme='light'] .quiz-result-finished,
+  [data-theme='light'] .quiz-confirm-dialog--medium .quiz-confirm-title,
+  [data-theme='light'] .social-launcher-icon,
+  [data-theme='light'] .social-launcher-meta-unread,
+  [data-theme='light'] .social-panel-kicker svg,
+  [data-theme='light'] .cmd-palette-foot-dot,
+  [data-theme='light'] .menu-button .dash.open,
+  [data-theme='light'] .arrow-link:hover,
+  [data-theme='light'] .stats strong span,
+  [data-theme='light'] .latest-test-card:hover h3,
+  [data-theme='light'] .video-card:hover h3,
+  [data-theme='light'] .live-head h2 em,
+  [data-theme='light'] .live-footer,
+  [data-theme='light'] .live-status--unknown,
+  [data-theme='light'] .nav-primary a:hover .nav-link-num,
+  [data-theme='light'] .nav-primary a.active .nav-link-num,
+  [data-theme='light'] .nav-profile-avatar,
+  [data-theme='light'] .nav-profile-level,
+  [data-theme='light'] .mobile-menu-footer-dot,
+  [data-theme='light'] .search-clear:hover,
+  [data-theme='light'] .search-result-top span:last-child,
+  [data-theme='light'] .nav-search-all {
+  color: var(--yellow-ink);
+}
+  [data-theme='light'] .achievement-reset:hover,
+  [data-theme='light'] .auth-error,
+  [data-theme='light'] .player-game-chip-remove:hover:not(:disabled),
+  [data-theme='light'] .player-signout-btn,
+  [data-theme='light'] .delete-account-btn,
+  [data-theme='light'] .delete-account-icon,
+  [data-theme='light'] .delete-account-error,
+  [data-theme='light'] .player-edit-error,
+  [data-theme='light'] .player-avatar-note-error,
+  [data-theme='light'] .friends-action-quiet:hover,
+  [data-theme='light'] .friends-inline-error,
+  [data-theme='light'] .friend-btn-link:not(:disabled):hover,
+  [data-theme='light'] .friend-btn-error,
+  [data-theme='light'] .messages-bubble-delete:hover,
+  [data-theme='light'] .messages-char-count.is-over,
+  [data-theme='light'] .messages-blocked-banner,
+  [data-theme='light'] .messages-inline-error,
+  [data-theme='light'] .comment-note-error,
+  [data-theme='light'] .comment-delete:hover:not(:disabled),
+  [data-theme='light'] .comment-empty-error,
+  [data-theme='light'] .comment-empty-error .comment-empty-icon,
+  [data-theme='light'] .quiz-chip--hard,
+  [data-theme='light'] .quiz-chip--survival,
+  [data-theme='light'] .quiz-survival-card .arrow-link,
+  [data-theme='light'] .quiz-survival-best,
+  [data-theme='light'] .quiz-survival-final-label,
+  [data-theme='light'] .quiz-level--hard .quiz-level-name,
+  [data-theme='light'] .quiz-heart,
+  [data-theme='light'] .quiz-verdict.is-wrong,
+  [data-theme='light'] .quiz-result-gameover,
+  [data-theme='light'] .quiz-challenge-error,
+  [data-theme='light'] .quiz-confirm-dialog--hard .quiz-confirm-title,
+  [data-theme='light'] .quiz-confirm-warning,
+  [data-theme='light'] .horror-section-label,
+  [data-theme='light'] .horror-log,
+  [data-theme='light'] .horror-timer-label,
+  [data-theme='light'] .horror-lives-label,
+  [data-theme='light'] .horror-choice-key,
+  [data-theme='light'] .horror-gameover-kicker,
+  [data-theme='light'] .horror-sound-toggle,
+  [data-theme='light'] .horror-empty,
+  [data-theme='light'] .nav-profile-dropdown-logout,
+  [data-theme='light'] .live-status--live {
+  color: var(--danger);
+}
+  [data-theme='light'] .player-status-badge,
+  [data-theme='light'] .sso-badge-status.connected,
+  [data-theme='light'] .player-game-row-btn.added,
+  [data-theme='light'] .auth-connected-check,
+  [data-theme='light'] .messages-thread-status.is-online,
+  [data-theme='light'] .messages-report-thanks,
+  [data-theme='light'] .quiz-chip--levels.is-complete,
+  [data-theme='light'] .quiz-level-check,
+  [data-theme='light'] .quiz-unlock-note,
+  [data-theme='light'] .quiz-verdict.is-right,
+  [data-theme='light'] .quiz-fix-a span:last-child,
+  [data-theme='light'] .quiz-challenge-sent {
+  color: var(--ok);
+}
+  [data-theme='light'] .review-score-card-is-mid span,
+  [data-theme='light'] .proscons .pc-cons h3 {
+  color: #b45309;
+}
+  [data-theme='light'] .quiz-chip--easy,
+  [data-theme='light'] .quiz-level--easy .quiz-level-name,
+  [data-theme='light'] .quiz-confirm-dialog--easy .quiz-confirm-title {
+  color: #1d4ed8;
+}
+
+/* Motifs décoratifs translucides (les seuls dont l'alpha est conservé). */
+  [data-theme='light'] .quiz-global-rank::after,
+  [data-theme='light'] .cmd-palette-head input::placeholder,
+  [data-theme='light'] .cmd-palette-meta,
+  [data-theme='light'] .cmd-palette-recent small,
+  [data-theme='light'] .cmd-palette-tips,
+  [data-theme='light'] .cmd-palette-foot,
+  [data-theme='light'] .nav-search input::placeholder {
+  color: rgba(20,18,50,.05);
+}
+/* #endregion encre-claire */
+/* Les cas particuliers (médias, bandeaux de marque, pastilles colorées) sont
+   traités en sections 8 et 10, qui viennent après et ont donc le dernier mot. */
+
+/* ============ 4. SURFACES DE L'INTERFACE ============ */
+/* Les littéraux presque noirs deviennent des surfaces blanches bordées.
+   Regroupés par rôle, pas par fichier. */
+[data-theme='light'] .stats,
+[data-theme='light'] .featured-sponsor,
+[data-theme='light'] .format-card,
+[data-theme='light'] .live-status-card,
+[data-theme='light'] .search-result-card,
+[data-theme='light'] .daily-news-card,
+[data-theme='light'] .release-card,
+[data-theme='light'] .release-timeline,
+[data-theme='light'] .release-empty,
+[data-theme='light'] .aside-card,
+[data-theme='light'] .comment-form,
+[data-theme='light'] .comment-identity,
+[data-theme='light'] .comments-panel,
+[data-theme='light'] .proscons .pc-col,
+[data-theme='light'] .article-engagement,
+[data-theme='light'] .dossier-stat-card,
+[data-theme='light'] .dossier-sidebar-inner,
+[data-theme='light'] .partner-card,
+[data-theme='light'] .partner-strip,
+[data-theme='light'] .partner-detail-facts,
+[data-theme='light'] .partner-how-card,
+[data-theme='light'] .arena-pills li,
+[data-theme='light'] .arena-format,
+[data-theme='light'] .arena-role,
+[data-theme='light'] .arena-proof,
+[data-theme='light'] .partners-sources-list li,
+[data-theme='light'] .arena-proof .partners-sources-list li,
+[data-theme='light'] .achievement-how,
+[data-theme='light'] .player-stat-card,
+[data-theme='light'] .player-actions-card,
+[data-theme='light'] .player-games-list,
+[data-theme='light'] .quiz-rank-hero-card,
+[data-theme='light'] .quiz-rank-meta-card{
+  background:var(--panel);
+  border-color:var(--line);
+  box-shadow:var(--shadow-sm);
+}
+
+/* Dégradés sombres → dégradés clairs (mêmes formes, autre lumière). */
+[data-theme='light'] .news-carousel-card,
+[data-theme='light'] .news-hub-card,
+[data-theme='light'] .release-card,
+[data-theme='light'] .release-countdown.is-complete,
+[data-theme='light'] .player-profile-card,
+[data-theme='light'] .player-section,
+[data-theme='light'] .player-section:has(.achievements-panel)::before,
+[data-theme='light'] .player-section.achievements-section::before,
+[data-theme='light'] .achievement-hero-card,
+[data-theme='light'] .achievement-tooltip,
+[data-theme='light'] .achievement-toast,
+[data-theme='light'] .auth-panel,
+[data-theme='light'] .auth-connected-card,
+[data-theme='light'] .delete-account-dialog,
+[data-theme='light'] .quiz-confirm-dialog,
+[data-theme='light'] .social-launcher,
+[data-theme='light'] .social-panel,
+[data-theme='light'] .social-page-panel,
+[data-theme='light'] .messages-page-list,
+[data-theme='light'] .messages-page-thread,
+[data-theme='light'] .messages-page-guest,
+[data-theme='light'] .quiz-global-rank{
+  background:linear-gradient(160deg,#ffffff,#f7f8fd);
+  border-color:var(--line);
+  box-shadow:var(--shadow-md);
+}
+
+/* Blocs teintés par un accent : la teinte de marque reste, très diluée. */
+[data-theme='light'] .aside-card-accent,
+[data-theme='light'] .featured-sponsor{background:linear-gradient(150deg, rgba(255,214,25,.10), rgba(255,255,255,.96))}
+[data-theme='light'] .review-score-card{background:linear-gradient(110deg, rgba(255,214,25,.14), rgba(255,255,255,.97))}
+[data-theme='light'] .review-score-card-is-hit,
+[data-theme='light'] .proscons .pc-pros,
+[data-theme='light'] .quiz-rank-points{background:linear-gradient(150deg, rgba(14,116,144,.12), rgba(255,255,255,.97))}
+[data-theme='light'] .review-score-card-is-mid,
+[data-theme='light'] .proscons .pc-cons{background:linear-gradient(150deg, rgba(217,119,6,.12), rgba(255,255,255,.97))}
+[data-theme='light'] .dossier-feature-card{background:linear-gradient(115deg, rgba(109,40,217,.10), rgba(255,255,255,.98))}
+[data-theme='light'] .dossier-dark-panel{background:linear-gradient(135deg, rgba(109,40,217,.12), rgba(255,255,255,.9))}
+[data-theme='light'] .arena-by{background:linear-gradient(160deg, rgba(227,6,19,.08), rgba(255,255,255,.97))}
+[data-theme='light'] .quiz-rank-position{background:linear-gradient(145deg, rgba(255,214,25,.18), rgba(255,255,255,.97))}
+[data-theme='light'] .quiz-rank-points{background:linear-gradient(145deg, rgba(34,211,238,.16), rgba(255,255,255,.97))}
+
+/* Calendrier : la barre de mois est collante, elle doit rester opaque pour ne
+   pas laisser passer le contenu au défilement. */
+[data-theme='light'] .calendar-month-nav{background:rgba(255,255,255,.94);border-color:var(--line);box-shadow:var(--shadow-sm)}
+[data-theme='light'] .release-past-badge{background:rgba(255,255,255,.92);border-color:var(--line);color:var(--muted)}
+/* Pastilles « aujourd'hui » : sur fond clair, l'encre sombre remplace le jaune
+   (le jaune de marque ne tient que sur son propre aplat). */
+[data-theme='light'] .calendar-month-now,
+[data-theme='light'] .release-countdown-out,
+[data-theme='light'] .awaited-band-chip{background:rgba(255,214,25,.22);color:var(--ink);border-color:rgba(180,140,0,.55)}
+[data-theme='light'] .calendar-month-head h3 span{color:var(--yellow-ink)}
+[data-theme='light'] .calendar-month-nav a.is-current{background:var(--yellow);border-color:var(--yellow);color:var(--ink)}
+[data-theme='light'] .calendar-month-nav a.is-current b,
+[data-theme='light'] .calendar-month-nav a.is-current span{color:var(--ink)}
+[data-theme='light'] .release-timeline-today em{color:var(--ink);border-color:rgba(180,140,0,.5);background:rgba(255,214,25,.28)}
+
+/* Fonds « troués » : placeholders d'image et zones vides. */
+[data-theme='light'] .release-card-image,
+[data-theme='light'] .awaited-band-thumb,
+[data-theme='light'] .news-feature-image,
+[data-theme='light'] .nav-search-result-blank,
+[data-theme='light'] .search-result-image-blank,
+[data-theme='light'] .search-result-image{background:var(--panel-2)}
+[data-theme='light'] .release-card-image.is-placeholder{
+  background:
+    repeating-linear-gradient(135deg,rgba(86,70,190,.07) 0 9px,transparent 9px 18px),
+    linear-gradient(160deg,#f4f5fb,#eceefa);
+}
+
+/* ============ 5. CHAMPS DE SAISIE ============ */
+[data-theme='light'] .nav-search,
+[data-theme='light'] .search-form,
+[data-theme='light'] .player-games-search input,
+[data-theme='light'] .friends-search,
+[data-theme='light'] .messages-search,
+[data-theme='light'] .messages-composer,
+[data-theme='light'] .messages-composer-hint,
+[data-theme='light'] .messages-composer-disabled,
+[data-theme='light'] .messages-report-note,
+[data-theme='light'] .comment-form input,
+[data-theme='light'] .comment-form textarea,
+[data-theme='light'] .countdown-unit{background:var(--panel)}
+[data-theme='light'] .social-page-tabs{
+  background-color:#fff;
+  background-image:none;
+  border-color:var(--line);
+}
+[data-theme='light'] .social-tabs{
+  background-color:#fff;
+  background-image:none;
+  border-bottom-color:var(--line);
+}
+[data-theme='light'] .social-tab:hover{
+  color:var(--ink);
+  background:rgba(86,70,190,.06);
+}
+[data-theme='light'] .nav-search,
+[data-theme='light'] .comment-form input,
+[data-theme='light'] .comment-form textarea{border-color:var(--line)}
+[data-theme='light'] .search-form{box-shadow:var(--shadow-md)}
+[data-theme='light'] .article-reaction{background:var(--panel-2)}
+
+/* ============ 6. NAVIGATION, MENUS — GLASS ISLAND CLAIR ============ */
+/* L'île garde sa forme en clair : verre blanc, même rayon 16px, même ombre
+   douce. Le wordmark reste lisible (contour violet). */
+[data-theme='light'] .nav,
+[data-theme='light'] .nav.scrolled,
+[data-theme='light'] .nav.nav-home,
+[data-theme='light'] .nav.nav-home.scrolled{
+  background:rgba(255,255,255,.86);
+  backdrop-filter:blur(18px) saturate(1.25);
+  -webkit-backdrop-filter:blur(18px) saturate(1.25);
+  border:1px solid rgba(86,70,190,.12);
+  border-radius:16px;
+  box-shadow:0 10px 30px -14px rgba(28,24,72,.22), 0 4px 12px -6px rgba(28,24,72,.14), inset 0 1px 0 rgba(255,255,255,.9);
+}
+[data-theme='light'] .nav.scrolled{
+  background:rgba(255,255,255,.92);
+  box-shadow:0 16px 40px -16px rgba(28,24,72,.24), 0 6px 16px -8px rgba(28,24,72,.16);
+}
+[data-theme='light'] .nav.nav-home{
+  background:rgba(255,255,255,.74);
+}
+[data-theme='light'] .nav-primary{
+  background:rgba(86,70,190,.06);
+  border-color:rgba(86,70,190,.08);
+}
+[data-theme='light'] .nav-primary a{color:rgba(35,32,70,.72)}
+[data-theme='light'] .nav-primary a:hover{color:var(--ink);background:rgba(86,70,190,.08)}
+[data-theme='light'] .nav-primary a.active{
+  color:#fff;
+  background:var(--ink);
+  box-shadow:0 2px 12px -2px rgba(20,18,50,.28);
+}
+[data-theme='light'] .nav-search{
+  background:rgba(86,70,190,.06);
+  border-color:rgba(86,70,190,.10);
+}
+[data-theme='light'] .nav-search:focus-within{
+  background:#fff;
+  border-color:rgba(14,116,144,.28);
+  box-shadow:0 0 0 3px rgba(14,116,144,.10);
+}
+[data-theme='light'] .nav-search input{color:var(--ink)}
+[data-theme='light'] .nav-search input::placeholder{color:rgba(35,32,70,.45)}
+[data-theme='light'] .nav-search-icon{color:rgba(35,32,70,.42)}
+[data-theme='light'] .nav-search-kbd{
+  color:rgba(35,32,70,.52);
+  border-color:rgba(86,70,190,.16);
+  background:rgba(255,255,255,.72);
+}
+[data-theme='light'] .nav-search button{
+  background:rgba(86,70,190,.08);
+  color:var(--muted);
+}
+[data-theme='light'] .nav-search button:hover{background:var(--yellow);color:var(--ink)}
+[data-theme='light'] .nav-search-clear{
+  background:rgba(86,70,190,.08);
+  color:var(--muted);
+}
+[data-theme='light'] .nav-search-clear:hover{background:rgba(86,70,190,.14);color:var(--ink)}
+[data-theme='light'] .nav-account.nav-login,
+[data-theme='light'] .nav-account.nav-register{
+  background:rgba(86,70,190,.06);
+  border-color:rgba(86,70,190,.12);
+  color:var(--ink);
+}
+[data-theme='light'] .nav-account.nav-login:hover{background:rgba(86,70,190,.10)}
+[data-theme='light'] .nav-account.nav-register{
+  background:var(--yellow);border-color:var(--yellow);color:var(--ink);
+}
+[data-theme='light'] .nav-logout{
+  background:rgba(86,70,190,.06);
+  border-color:rgba(86,70,190,.10);
+  color:var(--muted);
+}
+[data-theme='light'] .nav-logout:hover{
+  background:rgba(190,18,60,.08);
+  border-color:rgba(190,18,60,.22);
+  color:var(--danger);
+}
+@media(max-width:800px){
+  [data-theme='light'] .nav,
+  [data-theme='light'] .nav.scrolled,
+  [data-theme='light'] .nav.nav-home,
+  [data-theme='light'] .nav.nav-home.scrolled{
+    background:#ffffff;
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    border:0;
+    border-bottom:1px solid var(--line);
+    border-radius:0;
+    box-shadow:0 1px 0 rgba(28,24,72,.04);
+  }
+}
+[data-theme='light'] .nav-search-results{
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(16px) saturate(1.2);
+  -webkit-backdrop-filter:blur(16px) saturate(1.2);
+  border:1px solid rgba(86,70,190,.12);
+  border-radius:14px;
+  box-shadow:var(--shadow-md);
+}
+[data-theme='light'] .nav-search-result{border-bottom-color:transparent}
+[data-theme='light'] .nav-search-result:hover{background:rgba(86,70,190,.06)}
+/* Palette & dropdown profil en clair */
+[data-theme='light'] .nav-profile-dropdown{
+  background:rgba(255,255,255,.96);
+  border-color:rgba(86,70,190,.12);
+  box-shadow:0 24px 48px -18px rgba(28,24,72,.18), 0 8px 16px -8px rgba(28,24,72,.12);
+}
+[data-theme='light'] .nav-profile-dropdown::before{
+  background:rgba(255,255,255,.96); border-color:rgba(86,70,190,.12);
+}
+[data-theme='light'] .nav-profile-dropdown-head{border-bottom-color:rgba(86,70,190,.08)}
+[data-theme='light'] .nav-profile-dropdown-meta strong{color:var(--ink)}
+[data-theme='light'] .nav-profile-dropdown-meta small{color:var(--muted)}
+[data-theme='light'] .nav-profile-dropdown-progress{background:rgba(86,70,190,.08)}
+[data-theme='light'] .nav-profile-dropdown-links a{
+  background:rgba(86,70,190,.04); border-color:rgba(86,70,190,.06); color:var(--muted);
+}
+[data-theme='light'] .nav-profile-dropdown-links a:hover{
+  background:rgba(86,70,190,.07); border-color:rgba(86,70,190,.10); color:var(--ink);
+}
+[data-theme='light'] .cmd-palette{
+  background:rgba(255,255,255,.98);
+  border-color:rgba(86,70,190,.12);
+}
+[data-theme='light'] .cmd-palette-head{
+  background:rgba(86,70,190,.04); border-bottom-color:rgba(86,70,190,.08);
+}
+[data-theme='light'] .cmd-palette-head input{color:var(--ink)}
+[data-theme='light'] .cmd-palette-head input::placeholder{color:rgba(35,32,70,.42)}
+[data-theme='light'] .cmd-palette-icon{color:rgba(35,32,70,.42)}
+[data-theme='light'] .cmd-palette-kbd{
+  color:rgba(35,32,70,.52); border-color:rgba(86,70,190,.12); background:rgba(86,70,190,.06);
+}
+[data-theme='light'] .cmd-palette-close{
+  background:rgba(86,70,190,.06); border-color:rgba(86,70,190,.10); color:var(--muted);
+}
+[data-theme='light'] .cmd-palette-meta{
+  color:rgba(35,32,70,.48); border-bottom-color:rgba(86,70,190,.06);
+}
+[data-theme='light'] .cmd-palette-item{
+  background:rgba(86,70,190,.02); border-color:rgba(86,70,190,.06); color:var(--muted);
+}
+[data-theme='light'] .cmd-palette-item:hover{
+  background:rgba(86,70,190,.06); border-color:rgba(86,70,190,.10);
+}
+[data-theme='light'] .cmd-palette-item-text small{color:var(--cyan)}
+[data-theme='light'] .cmd-palette-item-text strong{color:var(--ink)}
+[data-theme='light'] .cmd-palette-quick a{
+  background:rgba(86,70,190,.04); border-color:rgba(86,70,190,.06); color:var(--muted);
+}
+[data-theme='light'] .cmd-palette-quick a:hover{
+  background:rgba(86,70,190,.07); color:var(--ink);
+}
+[data-theme='light'] .cmd-palette-foot{
+  background:rgba(86,70,190,.03); border-top-color:rgba(86,70,190,.06); color:rgba(35,32,70,.42);
+}
+[data-theme='light'] .nav-pill-indicator{background:var(--ink) !important}
+[data-theme='light'] .nav .nav-primary a.active,
+[data-theme='light'] .nav .nav-primary a.active:hover{color:#fff !important}
+[data-theme='light'] .nav-account.nav-login:hover,
+[data-theme='light'] .nav-account.nav-register:hover{background:rgba(255,214,25,.16);color:var(--ink)}
+
+/* Les liens d'accès au profil sont des actions explicites, pas des icônes :
+   leur encre doit rester lisible sur les surfaces claires. */
+[data-theme='light'] .friends-action-profile,
+[data-theme='light'] .messages-tool-profile{
+  color:var(--cyan);
+  border-color:rgba(14,116,144,.38);
+  background:rgba(14,116,144,.08);
+}
+[data-theme='light'] .friends-action-profile:hover,
+[data-theme='light'] .messages-tool-profile:hover{
+  color:var(--cyan);
+  border-color:rgba(14,116,144,.72);
+  background:rgba(14,116,144,.14);
+}
+
+[data-theme='light'] .nav-account-avatar .nav-online-dot{border-color:#f7f8fc}
+[data-theme='light'] .friends-avatar-dot,
+[data-theme='light'] .messages-avatar-dot{border-color:#ffffff}
+@media (max-width:800px){
+  [data-theme='light'] .nav,
+  [data-theme='light'] .nav.open{background:#ffffff}
+  [data-theme='light'] .nav-links{
+    background:
+      radial-gradient(900px 600px at 85% -10%, rgba(124,58,237,.09), transparent 60%),
+      radial-gradient(700px 500px at -10% 90%, rgba(14,116,144,.07), transparent 60%),
+      #f7f8fc;
+  }
+  [data-theme='light'] .nav-actions .nav-search-results{background:rgba(255,255,255,.99)}
+  [data-theme='light'] .nav-profile-avatar .nav-online-dot{border-color:#f7f8fc}
+  [data-theme='light'] .nav-primary a:hover .nav-link-num,
+  [data-theme='light'] .nav-primary a.active .nav-link-num{color:var(--yellow-ink)}
+  /* On mobile the active link has no dark pill background. Keeping the
+     desktop white active ink here made the Profile label disappear on the
+     light menu. */
+  [data-theme='light'] .nav .nav-primary a.active,
+  [data-theme='light'] .nav .nav-primary a.active:hover{
+    color:var(--ink) !important;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
+  [data-theme='light'] .menu-button.open{color:var(--ink)}
+  [data-theme='light'] .mobile-menu-footer-dot,
+  [data-theme='light'] .mobile-menu-hud span:nth-child(2){border-color:var(--yellow-ink)}
+}
+
+/* Fenêtres modales : le voile reste sombre (il assombrit la page), le panneau
+   qu'il contient passe au clair. */
+[data-theme='light'] .delete-account-overlay,
+[data-theme='light'] .auth-connected-overlay,
+[data-theme='light'] .quiz-confirm-overlay{background:rgba(20,18,50,.55)}
+[data-theme='light'] .delete-account-confirm{background:#be123c;color:#fff}
+[data-theme='light'] .delete-account-btn:hover,
+[data-theme='light'] .delete-account-eye:hover,
+[data-theme='light'] .player-signout-btn:hover{background:rgba(190,18,60,.08)}
+[data-theme='light'] .player-status-badge{background:rgba(255,255,255,.92)}
+[data-theme='light'] .player-avatar-busy{background:rgba(255,255,255,.7)}
+[data-theme='light'] .auth-btn-spinner{border-top-color:var(--ink)}
+
+/* ============ 7. MESSAGERIE ============ */
+/* « Mes » messages : la teinte cyan/violet reste, mais assez dense pour porter
+   du blanc — sur fond clair, le dégradé translucide d'origine disparaissait. */
+[data-theme='light'] .messages-bubble.is-mine{
+  background:linear-gradient(160deg,#0e7490,#6d28d9);
+  border-color:transparent;
+  color:#fff;
+}
+[data-theme='light'] .messages-bubble.is-mine a{color:#fff}
+
+/* ============ 8. MÉDIAS : RESTENT SOMBRES ============ */
+/* Tout ce qui se pose sur une image, une vidéo ou un écran garde son voile
+   sombre et son texte blanc. Cette section ré-affirme l'intention : elle vient
+   après la section 3, donc elle a le dernier mot sur ces sélecteurs. */
+/* Le héros clair fait exception (key art sur fond clair) : voir le bloc
+   « Héros clair » ci-dessous. */
+[data-theme='light'] .live-player,
+[data-theme='light'] .video-modal-player{background:#05060f}
+[data-theme='light'] .video-modal{background:rgba(10,11,26,.86)}
+[data-theme='light'] .live-player--offline{
+  background:
+    radial-gradient(circle at 50% 42%,rgba(124,58,237,.28),transparent 45%),
+    linear-gradient(145deg,#12142c,#05060f);
+}
+[data-theme='light'] .live-offline strong,
+[data-theme='light'] .video-modal-head strong,
+[data-theme='light'] .video-modal-kicker,
+[data-theme='light'] .page-hero-visual-content strong,
+[data-theme='light'] .score-badge b,
+[data-theme='light'] .reel-label,
+[data-theme='light'] .featured-dossier-badge,
+[data-theme='light'] .social-slide-overlay strong,
+[data-theme='light'] .video-thumb-fallback .video-thumb-fallback-mark,
+[data-theme='light'] .insta-badge,
+[data-theme='light'] .news-views,
+[data-theme='light'] .article-views-inline,
+[data-theme='light'] .article-sentiment-inline.positive,
+[data-theme='light'] .article-sentiment-inline.negative{color:#fff}
+/* Pastilles de statut : la teinte pleine reste, elle porte l'encre claire dans
+   les deux thèmes (le vert #16a34a et le rouge #dc2626 sont inchangés). */
+[data-theme='light'] .article-views-inline{background:rgba(5,6,15,.72)}
+[data-theme='light'] .article-sentiment-inline.positive,
+[data-theme='light'] .news-sentiment.positive{background:#15803d;border-color:rgba(21,128,61,.5)}
+[data-theme='light'] .article-sentiment-inline.negative,
+[data-theme='light'] .news-sentiment.negative{background:#b91c1c;border-color:rgba(185,28,28,.5)}
+[data-theme='light'] .page-hero-visual-content small{color:var(--yellow)}
+/* --- Héros clair : même visuel (image) qu'en sombre ------------------------
+   Le héros utilise une seule image (public/hero-gaming-gear.webp) dans les deux
+   thèmes : aucun recadrage ni repositionnement spécifique au clair.
+   Seul le voile sombre à gauche est renforcé pour garder le texte blanc et
+   jaune lisible sans éclaircir ni dénaturer le visuel. */
+[data-theme='light'] .hero{background:var(--bg)}
+[data-theme='light'] .hero-shade{
+  display:block;
+  background:
+    linear-gradient(90deg,rgba(5,6,15,.70) 0%,rgba(5,6,15,.50) 30%,rgba(5,6,15,.22) 52%,rgba(5,6,15,.03) 76%,transparent 100%),
+    linear-gradient(180deg,rgba(5,6,15,.18),transparent 36%,rgba(5,6,15,.35) 100%);
+}
+@media(max-width:800px){
+  /* mobile : renforce seulement le voile sombre à gauche pour la lisibilité. */
+  [data-theme='light'] .hero-shade{background:linear-gradient(90deg,rgba(5,6,15,.84) 0%,rgba(5,6,15,.62) 58%,rgba(5,6,15,.18) 100%)}
+}
+[data-theme='light'] .hero h1,
+[data-theme='light'] .hero .awaited-band,
+[data-theme='light'] .awaited-band-title{color:#fff}
+[data-theme='light'] .hero h1{color:#fff;text-shadow:0 3px 18px rgba(0,0,0,.42)}
+[data-theme='light'] .hero h1 em{color:var(--yellow);text-shadow:0 3px 18px rgba(0,0,0,.55)}
+[data-theme='light'] .hero-text{color:rgba(255,255,255,.94);text-shadow:0 2px 10px rgba(0,0,0,.65)}
+[data-theme='light'] .hero .eyebrow,
+[data-theme='light'] .hero .awaited-band-eyebrow{color:var(--yellow)}
+[data-theme='light'] .hero .awaited-band-date{color:rgba(255,255,255,.84)}
+[data-theme='light'] .live-offline span:last-child,
+[data-theme='light'] .page-hero-visual-content span{color:rgba(255,255,255,.72)}
+[data-theme='light'] .live-offline span:last-child{color:rgba(255,255,255,.72)}
+[data-theme='light'] .hero-frame span{border-color:rgba(14,116,144,.75);filter:none}
+[data-theme='light'] .hero .awaited-band{
+  background:linear-gradient(110deg,rgba(5,6,15,.86),rgba(5,6,15,.64));
+  border-top-color:rgba(255,255,255,.24);
+}
+[data-theme='light'] .hero .awaited-band-chip{color:var(--yellow-ink);border-color:var(--yellow-ink);background:rgba(255,214,25,.14)}
+[data-theme='light'] .hero .awaited-band-thumb{background:rgba(255,255,255,.72)}
+[data-theme='light'] .hero .awaited-band-arrow{color:var(--dim)}
+[data-theme='light'] .hero .awaited-band-inner:hover .awaited-band-title,
+[data-theme='light'] .hero .awaited-band-inner:hover .awaited-band-arrow{color:var(--yellow-ink)}
+[data-theme='light'] .hero .button-ghost{background:rgba(255,255,255,.7);border-color:var(--line-strong);color:var(--ink)}
+[data-theme='light'] .hero .button-ghost:hover{background:#fff;border-color:var(--cyan);color:var(--cyan)}
+[data-theme='light'] .button-ghost{background:transparent;border-color:var(--line-strong);color:var(--ink)}
+[data-theme='light'] .button-ghost:hover{border-color:var(--cyan);background:rgba(14,116,144,.08)}
+
+/* ============ 9. HALOS NÉON → OMBRES ============ */
+[data-theme='light'] .hero h1 em,
+[data-theme='light'] .page-h2 em,
+[data-theme='light'] .search-hero h1 em,
+[data-theme='light'] .featured-copy h2 em,
+[data-theme='light'] .featured-dossiers-head h2 em,
+[data-theme='light'] .manifesto-h2 span,
+[data-theme='light'] .latest h2 em,
+[data-theme='light'] .latest-tests-head h2 em,
+[data-theme='light'] .carousel-head h2 em,
+[data-theme='light'] .featured-dossier-copy h3 em,
+[data-theme='light'] .format-icon,
+[data-theme='light'] .live-head h2 em,
+[data-theme='light'] .news-hub-title em,
+[data-theme='light'] .news-hub-card--gaming h2 em,
+[data-theme='light'] .news-hub-card--cinema h2 em,
+[data-theme='light'] .news-carousel-head h1 em,
+[data-theme='light'] .daily-news-copy h2 em,
+[data-theme='light'] .daily-news-copy h3 em{text-shadow:none}
+[data-theme='light'] .card-gaming .format-icon{color:var(--yellow-ink)}
+[data-theme='light'] .featured-player,
+[data-theme='light'] .featured-dossier-player,
+[data-theme='light'] .featured--ooredoo .featured-player,
+[data-theme='light'] .featured-dossier--ooredoo .featured-dossier-player,
+[data-theme='light'] .featured-dossier--djezzy .featured-dossier-player,
+[data-theme='light'] .live-player{box-shadow:var(--shadow-md)}
+[data-theme='light'] .format-card:hover{box-shadow:0 22px 44px -20px var(--glow)}
+[data-theme='light'] .search-result-card:hover{box-shadow:0 18px 42px -22px rgba(14,116,144,.4)}
+[data-theme='light'] .carousel-controls button:hover{background:var(--cyan);border-color:var(--cyan);color:#fff;box-shadow:0 12px 26px -14px rgba(14,116,144,.6)}
+[data-theme='light'] .nav-account.nav-register{box-shadow:0 6px 18px -8px rgba(255,214,25,.55)}
+[data-theme='light'] .button-yellow{box-shadow:0 10px 26px -12px rgba(180,140,0,.7)}
+[data-theme='light'] .button-yellow:hover{box-shadow:0 16px 34px -12px rgba(180,140,0,.8)}
+[data-theme='light'] .live-dot{box-shadow:0 0 0 3px rgba(255,214,25,.3)}
+
+/* ============ 10. BANDEAUX DE MARQUE ============ */
+/* Le ticker et l'appel final étaient des voiles colorés posés sur du noir ;
+   sur papier ils deviennent des aplats de marque pleins, encre claire. */
+[data-theme='light'] .ticker{
+  background:linear-gradient(90deg,#6d28d9,#0e7490);
+  border-block-color:transparent;
+  color:#fff;
+}
+[data-theme='light'] .ticker b{color:var(--yellow);text-shadow:none}
+[data-theme='light'] .cta{
+  background:linear-gradient(120deg,#6d28d9,#155e75 62%,#0e7490);
+  border-color:transparent;
+  color:#fff;
+}
+[data-theme='light'] .cta .eyebrow{color:#a5f3fc}
+[data-theme='light'] .cta h2,
+[data-theme='light'] .cta h2 em{color:#fff;text-shadow:none}
+[data-theme='light'] .cta .button-yellow{color:var(--ink)}
+
+/* Mur des partenaires : les logos tiers sont dessinés clairs sur sombre
+   (Djezzy, egor, LG, IFA, TMV…) et ne doivent pas être recolorés — ce serait
+   trahir des marques qui ne nous appartiennent pas. On garde donc une bande
+   sombre dédiée : clin d'œil au thème d'origine, et seul moyen de les
+   afficher proprement sur une page claire. */
+[data-theme='light'] .partners-marquee{background:#0b0d1e;border-color:rgba(148,130,255,.2)}
+[data-theme='light'] .partners-marquee-toggle{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(148,130,255,.35)}
+[data-theme='light'] .partner-card-logo{background:radial-gradient(115% 125% at 50% -12%,var(--glow,rgba(124,58,237,.14)),rgba(242,244,250,.9) 64%)}
+[data-theme='light'] .partner-detail-logo{background:radial-gradient(120% 130% at 0% 0%,var(--glow,rgba(124,58,237,.14)),rgba(242,244,250,.9) 66%)}
+[data-theme='light'] [dir='rtl'] .partner-detail-logo{background:radial-gradient(120% 130% at 100% 0%,var(--glow,rgba(124,58,237,.14)),rgba(242,244,250,.9) 66%)}
+[data-theme='light'] .partner-mark-badge{color:#fff}
+
+/* ============ 11. SUCCÈS ============ */
+/* Les succès déclinent quatre grades (bronze, argent, or, platine) et posent
+   leur texte en éclaircissant la teinte du grade (`color-mix(... #ffffff)`)
+   — invisible sur blanc. En thème clair, chaque grade reçoit une variante
+   *assombrie*, utilisée directement, sans mélange vers le blanc. */
+[data-theme='light'] .rarity-bronze{--rarity:#9a5b21}
+[data-theme='light'] .rarity-silver{--rarity:#525c6e}
+[data-theme='light'] .rarity-gold{--rarity:#8a6100}
+[data-theme='light'] .rarity-platinum{--rarity:#0e7490}
+[data-theme='light'] .tier-chip.active,
+[data-theme='light'] .achievement-card.unlocked .achievement-card-inner h3,
+[data-theme='light'] .achievement-card-tier,
+[data-theme='light'] .achievement-tooltip-tier,
+[data-theme='light'] .achievement-tooltip-hint,
+[data-theme='light'] .achievement-toast-tier{color:var(--rarity, var(--yellow-ink))}
+[data-theme='light'] .achievement-tooltip-name,
+[data-theme='light'] .achievement-level-number{color:var(--ink)}
+[data-theme='light'] .achievement-card.unlocked .achievement-card-icon{filter:drop-shadow(0 4px 12px rgba(28,24,72,.28))}
+[data-theme='light'] .achievement-hero-number{text-shadow:none}
+
+/* ============ 12. QUIZZ ============ */
+/* Les encres « rose » du mode survie (#fb7185) sont pensées pour le noir :
+   2,7:1 sur blanc. On les rabat sur la teinte danger du thème clair. */
+[data-theme='light'] .quiz-chip--survival,
+[data-theme='light'] .quiz-survival-hearts{color:var(--danger)}
+[data-theme='light'] .quiz-survival-hearts{text-shadow:none}
+[data-theme='light'] .quiz-survival-infinity{color:var(--yellow-ink);text-shadow:none}
+[data-theme='light'] .quiz-survival-visual{background:rgba(86,70,190,.06)}
+[data-theme='light'] .quiz-finished-flag{background:rgba(255,255,255,.92);border-color:var(--line);color:var(--ink)}
+[data-theme='light'] .quiz-card.is-locked,
+[data-theme='light'] .quiz-daily.is-locked{opacity:.62}
+[data-theme='light'] .home-quiz-band.is-finished,
+[data-theme='light'] .search-result-card.is-finished,
+[data-theme='light'] .nav-search-result.is-finished{filter:grayscale(.75) brightness(.97)}
+
+/* Le sélecteur généré ci-dessus (`[data-theme='light'] .nav-links a`) l'emporte
+   sur la couleur propre des boutons de compte, qui sont dans `.nav-links` :
+   on rétablit explicitement l'encre sombre sur le jaune « S'inscrire ». */
+[data-theme='light'] .nav-links a.nav-account.nav-login{color:var(--ink)}
+[data-theme='light'] .nav-links a.nav-account.nav-register,
+[data-theme='light'] .nav-links a.nav-account.nav-register:hover{
+  color:var(--ink);background:var(--yellow);border-color:var(--yellow);
+}
+[data-theme='light'] .nav-links a.nav-account.nav-login:hover{background:rgba(14,116,144,.08);color:var(--cyan)}
+
+/* La flèche « ↗ » des boutons jaunes tombait sous `.calendar-foot span`
+   (`color:var(--dim)`) : quasi invisible sur l'aplat jaune, dans les DEUX
+   thèmes. Elle suit désormais l'encre du bouton — correction transversale,
+   pas seulement claire. */
+.button-yellow span,
+.button-yellow a{color:inherit}
+
+/* ============ 12b. ENCRES PASTEL HORS BALAYAGE ============ */
+/* Teintes claires « à la main » (pastels, cyan lumière) que le balayage ne
+   reconnaît pas : invisibles sur les panneaux blancs du profil, des succès
+   et des quizz. */
+[data-theme='light'] .achievement-tooltip-desc{color:var(--muted)}
+[data-theme='light'] .achievement-tooltip-xp{color:var(--cyan)}
+[data-theme='light'] .player-games-cap-note{color:#b45309}
+[data-theme='light'] .player-game-pill-top-1 .player-game-pill-title{color:#8a6100}
+[data-theme='light'] .player-game-pill-top-2 .player-game-pill-title{color:#3f4a5c}
+[data-theme='light'] .player-game-pill-top-3 .player-game-pill-title{color:#8a4a1f}
+[data-theme='light'] .player-game-pill-top-2{border-color:rgba(120,135,160,.6);background:linear-gradient(135deg,rgba(120,135,160,.16),rgba(120,135,160,.04))}
+[data-theme='light'] .quiz-confirm-jokerDetail{color:var(--violet)}
+[data-theme='light'] .quiz-jokers--none{color:var(--danger)}
+[data-theme='light'] .quiz-live-item--streak.is-hot{color:#c2410c}
+[data-theme='light'] .sentiment-text.positive{color:var(--ok)}
+[data-theme='light'] .sentiment-text.negative{color:var(--danger)}
+[data-theme='light'] .sentiment-text.mixed{color:#b45309}
+[data-theme='light'] .featured-dossier--telecom .featured-dossier-copy h3 em{color:#1d4ed8}
+
+/* ============ 13. LE BOUTON DE THÈME — PILL ISLAND ============ */
+.theme-toggle{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  gap:8px;height:36px;min-width:36px;padding:0 10px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(238,240,255,.88);
+  font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
+  border-radius:999px;
+  clip-path:none;
+  backdrop-filter:blur(8px);
+  transition:border-color .22s,color .22s,background .22s,transform .18s;
+}
+.theme-toggle:hover{border-color:rgba(255,255,255,.14);color:#fff;background:rgba(255,255,255,.10);transform:translateY(-1px)}
+.theme-toggle-icon{flex:none;display:block}
+.theme-toggle-label{display:none}
+[data-theme='light'] .theme-toggle{
+  background:rgba(86,70,190,.06);border-color:rgba(86,70,190,.10);color:var(--muted);
+}
+[data-theme='light'] .theme-toggle:hover{
+  background:rgba(86,70,190,.10);border-color:rgba(86,70,190,.16);color:var(--ink);
+}
+@media (max-width:800px){
+  .theme-toggle{width:100%;height:48px;justify-content:space-between;padding:0 14px;border-radius:10px}
+  .theme-toggle-label{display:inline}
+}
+
+/* ============ ARTICLE HUD — LIGHT MODE ============ */
+[data-theme='light'] .article-hero::before{opacity:.42}
+[data-theme='light'] .article-heading h1{color:var(--ink)}
+[data-theme='light'] .article-heading h1 em{color:var(--violet);text-shadow:none}
+[data-theme='light'] .article-byline > span{
+  background:rgba(255,255,255,.82);
+  border-color:var(--line);
+  color:var(--muted);
+}
+[data-theme='light'] .article-byline > span:first-child{color:var(--cyan);border-color:rgba(14,116,144,.28)}
+[data-theme='light'] .article-byline > span:nth-child(2){color:var(--yellow-ink);border-color:rgba(138,97,0,.28)}
+[data-theme='light'] .article-body > .article-lead{
+  background:linear-gradient(110deg,rgba(14,116,144,.08),rgba(109,40,217,.05) 65%,transparent);
+  border-color:rgba(14,116,144,.24);
+  color:var(--ink);
+}
+[data-theme='light'] .article-body::before{background:linear-gradient(180deg,var(--cyan),rgba(109,40,217,.52) 42%,transparent 90%)}
+[data-theme='light'] .article-body h2::before{border-color:var(--yellow-ink);box-shadow:none}
+[data-theme='light'] .article-body h2::after{background:linear-gradient(90deg,var(--line-strong),transparent)}
+[data-theme='light'] .article-pullquote{
+  background:linear-gradient(135deg,rgba(109,40,217,.08),rgba(255,255,255,.36));
+  border-color:rgba(109,40,217,.26);
+}
+[data-theme='light'] .article-toc-toggle{background:rgba(255,255,255,.9);box-shadow:var(--shadow-sm)}
+[data-theme='light'] .article-toc-panel{background:rgba(255,255,255,.96)}
+[data-theme='light'] .article-toc-progress{color:var(--yellow-ink)}
+[data-theme='light'] .news-carousel.is-grid .news-carousel-card,
+[data-theme='light'] .news-carousel.is-grid .news-today{
+  background:linear-gradient(155deg,#ffffff,#f3f4fb);
+  border-color:var(--line);
+}
+/* Ombre sur la cellule parente (pas sur la carte, rognée par son clip-path) —
+   même mécanique qu'en thème sombre, voir news-view-toggle.css. */
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell--today{filter:drop-shadow(0 4px 8px rgba(28,24,72,.10))}
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:hover{filter:drop-shadow(0 16px 22px rgba(14,116,144,.24))}
+[data-theme='light'] .news-carousel.is-grid .news-carousel-copy h2,
+[data-theme='light'] .news-carousel.is-grid .news-today .daily-news-copy h2{color:var(--ink)}
+[data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
+[data-theme='light'] .news-carousel.is-grid .news-today .read-link{color:var(--yellow-ink)}
+
+/* ============ 14. ACTUS — HUB ET FLUX ============ */
+/* Le hub Actus (/news) et ses deux flux (/news/gaming, /news/cinema) ont été
+   construits après la passe de thème clair : cartes presque noires, accents
+   néon, filets blancs. Le balayage d'encre (section 3) remet le texte à
+   l'endroit ; le reste est mécanique et ne s'invente pas — surfaces de
+   papier, accents assombris dès qu'ils servent de texte, halos remplacés par
+   des ombres. `npm run check:light-news` vérifie l'ensemble.
+
+   Ne bougent pas les zones posées SUR une photo (règle n°2, section 8) : voile
+   des cartes du hub, chiffre « 01 / 02 », pastilles vues et sentiment — ni la
+   flèche « ↗ » du flux, qui garde une encre claire là où `--cyan` devient une
+   encre foncée. */
+
+/* Filet sous le libellé de section : le jaune de marque en aplat de 2px
+   devient invisible sur le fond clair — même dégradé, variante « encre ». */
+[data-theme='light'] .news-carousel-section > .section-label::after{
+  background:linear-gradient(90deg,var(--yellow-ink),var(--cyan),transparent);
+}
+
+/* --- Hub : les deux cartes d'univers --- */
+[data-theme='light'] .news-hub-card:hover{box-shadow:0 24px 46px -24px rgba(28,24,72,.45)}
+[data-theme='light'] .news-hub-card--gaming:hover{border-color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema:hover{border-color:#b45309}
+/* La deuxième ligne du titre garde la couleur de son univers, en version
+   *encre* : #22d3ee (cyan) et #f59e0b (ambre) tombent sous 2:1 sur blanc. */
+[data-theme='light'] .news-hub-card--gaming h2 em{color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema h2 em{color:#b45309}
+/* Lien « entrer dans les actus… » : même code couleur que le titre. Ces deux
+   règles sont écrites ici et non laissées au balayage, qui les rabattrait
+   toutes les deux sur le jaune d'encre. */
+[data-theme='light'] .news-hub-card--gaming .read-link{color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema .read-link{color:#b45309}
+/* Filet au-dessus du pied de carte : posé en blanc 8 %, il disparaissait. */
+[data-theme='light'] .news-hub-card-meta{border-top-color:var(--line)}
+
+/* --- Flux : la grille d'articles --- */
+/* Rail d'accent de 2px en tête de carte : une carte sur quatre le porte en
+   jaune de marque, illisible sur une carte blanche. Les halos qui
+   l'accompagnent ne se voient pas non plus sur papier (règle n°3). */
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{
+  background:var(--yellow-ink);
+}
+[data-theme='light'] .news-carousel.is-grid .news-carousel-card::before,
+[data-theme='light'] .news-carousel.is-grid .news-today::before,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(3n) .news-carousel-card::before,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{
+  box-shadow:none;
+}
+/* La flèche « ↗ » est posée sur la photo de l'article : elle garde une encre
+   claire, sinon `--cyan` (une encre foncée en thème clair) s'y perdrait. */
+[data-theme='light'] .news-feature-arrow{color:var(--cyan-bright)}
+[data-theme='light'] .lets-talk-label{color:#0a0b1a}
+[data-theme='light'] .social-panel-kicker.lets-talk-label svg,
+[data-theme='light'] .social-launcher-icon{color:var(--violet)}
+[data-theme='light'] .social-tab--messages.lets-talk-label.is-active{color:var(--violet);border-bottom-color:var(--violet)}
+[data-theme='light'] .nav-messages-link .lets-talk-label{color:#0a0b1a}

@@ -9,3 +9,10 @@ dist
 scripts/news-bot/demo-out/
 # Rapport transitoire du robot (sert de message de commit dans le workflow)
 news-bot/report.md
+
+# Android (builds locaux de l'APK)
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/

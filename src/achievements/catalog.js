@@ -114,9 +114,9 @@ export const ACHIEVEMENTS = [
     metric: 'sectionsVisited',
     target: 6,
     labels: {
-      en: { name: 'Grand tour', desc: 'Visit 6 sections: home, news, reviews, dossiers, events, calendar.' },
-      fr: { name: 'Grand tour', desc: 'Visite 6 sections : accueil, actus, tests, dossiers, events, calendrier.' },
-      ar: { name: 'الجولة الكبرى', desc: 'زُر ستة أقسام: الرئيسية، الأخبار، المراجعات، الملفات، الفعاليات، التقويم.' },
+      en: { name: 'Grand tour', desc: 'Visit 6 sections: home, news, reviews, dossiers, calendar and search.' },
+      fr: { name: 'Grand tour', desc: 'Visite 6 sections : accueil, actus, tests, dossiers, calendrier et recherche.' },
+      ar: { name: 'الجولة الكبرى', desc: 'زُر ستة أقسام: الرئيسية، الأخبار، المراجعات، الملفات، التقويم، البحث.' },
     },
   },
   {
@@ -170,11 +170,11 @@ export const ACHIEVEMENTS = [
     rarity: 'platinum',
     xp: 400,
     metric: 'sectionsVisited',
-    target: 8,
+    target: 7,
     labels: {
-      en: { name: 'Full passport', desc: 'Visit all 8 sections: home, news, reviews, dossiers, events, calendar, search and account.' },
-      fr: { name: 'Passeport complet', desc: 'Visite les 8 sections : accueil, actus, tests, dossiers, events, calendrier, recherche et compte.' },
-      ar: { name: 'جواز سفر كامل', desc: 'زُر الأقسام الثمانية كلها: الرئيسية، الأخبار، المراجعات، الملفات، الفعاليات، التقويم، البحث والحساب.' },
+      en: { name: 'Full passport', desc: 'Visit all 7 sections: home, news, reviews, dossiers, calendar, search and account.' },
+      fr: { name: 'Passeport complet', desc: 'Visite les 7 sections : accueil, actus, tests, dossiers, calendrier, recherche et compte.' },
+      ar: { name: 'جواز سفر كامل', desc: 'زُر الأقسام السبعة كلها: الرئيسية، الأخبار، المراجعات، الملفات، التقويم، البحث والحساب.' },
     },
   },
 
@@ -552,6 +552,13 @@ export const ACHIEVEMENTS = [
       ar: { name: 'أسطورة الموقع', desc: 'زُر الموقع في 30 يومًا مختلفًا: شهر كامل من الوفاء.' },
     },
   },
+  /* Les deux succès de langue. Le site n'est plus publié qu'en français (le
+     sélecteur de langue a été retiré de la navigation) : le suivi n'enregistre
+     donc plus que `fr`, et ces deux succès ne peuvent plus être débloqués par
+     un nouveau visiteur. Ils restent au catalogue — un joueur qui les a obtenus
+     du temps des trois langues garde son grade, son XP et sa progression, et
+     les retirer ferait baisser son niveau. Les libellés sont conservés dans les
+     trois langues, comme les autres. */
   {
     id: 'polyglot',
     icon: 'icons/achievements/polyglot.webp',
@@ -648,14 +655,14 @@ export const ACHIEVEMENTS = [
     icon: 'icons/achievements/quiz-tour.webp',
     group: 'quiz',
     rarity: 'gold',
-    xp: 150,
+    xp: 200,
     metric: 'distinctQuizzes',
-    // Le catalogue compte huit quizz : mettre à jour si un quizz est ajouté.
-    target: 8,
+    // Le catalogue compte vingt-cinq quizz : mettre à jour si un quizz est ajouté.
+    target: 25,
     labels: {
-      en: { name: 'Full tour', desc: 'Play all eight quizzes of the site.' },
-      fr: { name: 'Tour complet', desc: 'Joue les huit quizz du site.' },
-      ar: { name: 'الجولة الكاملة', desc: 'العب الاختبارات الثمانية في الموقع.' },
+      en: { name: 'Full tour', desc: 'Play all twenty-five quizzes of the site.' },
+      fr: { name: 'Tour complet', desc: 'Joue les vingt-cinq quizz du site.' },
+      ar: { name: 'الجولة الكاملة', desc: 'العب الاختبارات الخمسة والعشرين في الموقع.' },
     },
   },
   {

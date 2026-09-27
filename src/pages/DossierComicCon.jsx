@@ -39,7 +39,7 @@ export default function DossierComicCon() {
           <div className="dossier-section-grid">
             <aside className="dossier-pullquote">« Une convention réussie ne montre pas seulement une culture : elle lui donne un espace pour se reconnaître. »</aside>
             <div>
-              <h2>UNE CULTURE<br /><em>EN PRÉSENCE.</em></h2>
+              <h2>CULTURE<br /><em>EN PRÉSENCE.</em></h2>
               <p>Le gaming est souvent vécu seul, face à un écran. Les conventions renversent cette logique. Un cosplay devient une conversation, une démonstration déclenche un défi et une rencontre transforme un spectateur en membre actif de la communauté.</p>
               <p>Cette présence compte particulièrement dans un paysage où les joueurs algériens ont longtemps dû se retrouver dans des espaces dispersés. Le salon crée un point de rendez-vous commun, avec ses codes, ses souvenirs et ses nouvelles découvertes.</p>
             </div>
@@ -80,7 +80,7 @@ export default function DossierComicCon() {
       </section>
 
       <section className="dossier-take wrap">
-        <div><p className="eyebrow"><span className="live-dot" /> Le point de vue Let’s Play</p><h2>LES RENDEZ-VOUS<br /><em>FONT COMMUNAUTÉ.</em></h2></div>
+        <div><p className="eyebrow"><span className="live-dot" /> Le point de vue Let’s Play</p><h2>RENDEZ-VOUS<br /><em>QUI RASSEMBLENT.</em></h2></div>
         <p>Le plus important n’est pas seulement ce qui est exposé, mais ce qui se crée entre les personnes. Une convention donne à la culture gaming algérienne un lieu, une voix et un souvenir commun.</p>
       </section>
 

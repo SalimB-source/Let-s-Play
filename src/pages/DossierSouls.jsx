@@ -60,14 +60,14 @@ export default function DossierSouls() {
 
           <div className="dossier-dark-panel">
             <p className="dossier-kicker">AU-DELÀ DU COMBAT</p>
-            <h2>UN MONDE QUI<br /><em>NE DIT PAS TOUT.</em></h2>
+            <h2>UN MONDE<br /><em>QUI SE TAIT.</em></h2>
             <p>La narration des Souls avance par fragments : descriptions d’objets, silhouettes rencontrées au détour d’un chemin, ruines qui suggèrent une histoire plus vaste. Le joueur doit relier les indices et accepter qu’une part du mystère reste intacte.</p>
             <p>Cette retenue donne au monde une densité particulière. On ne visite pas seulement un décor ; on enquête sur ses traces, on discute avec une communauté et l’on construit sa propre interprétation.</p>
           </div>
 
           <div className="dossier-section-grid dossier-section-grid-reverse">
             <div>
-              <h2>UNE COMMUNAUTÉ<br /><em>QUI TRANSMET.</em></h2>
+              <h2>LA COMMUNAUTÉ<br /><em>TRANSMET.</em></h2>
               <p>Messages au sol, signes d’invocation, vidéos d’analyse et conseils partagés : les Souls sont aussi des jeux sociaux, même lorsqu’ils se jouent seul. La communauté prolonge le monde en donnant des clés, des avertissements et parfois de fausses pistes.</p>
               <p>Le meilleur conseil reste peut-être le plus simple : avancer à son rythme. Il n’existe pas une seule bonne manière de jouer, seulement celle qui donne envie de retenter.</p>
             </div>

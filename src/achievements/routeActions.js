@@ -3,7 +3,7 @@
  * ---------------------------------------------------------
  * Une seule table dit ce que chaque route du site apporte :
  *
- *   - la *section* visitée (accueil, actus, tests, dossiers, events,
+ *   - la *section* visitée (accueil, actus, tests, dossiers,
  *     calendrier, recherche, succès, compte) ;
  *   - l'*article* lu, avec sa famille (actu / test / dossier) et son
  *     identifiant (le slug), pour ne compter qu'une fois chaque contenu.
@@ -18,8 +18,6 @@ export const SECTION_ROUTES = {
   '/news': 'news',
   '/reviews': 'reviews',
   '/dossiers': 'dossiers',
-  '/events': 'events',
-  '/partenaires': 'events',
   '/calendrier': 'calendrier',
   '/calendar': 'calendrier',
   '/search': 'search',
@@ -42,7 +40,7 @@ const ARTICLE_SECTIONS = [
 
 /**
  * Section d'une route : correspondance exacte, sinon la route parente la plus
- * précise (`/events/7ouma-arena` → section « events »).
+ * précise (`/news/zelda-ocarina` → section « news »).
  */
 function sectionFor(path) {
   if (SECTION_ROUTES[path]) return SECTION_ROUTES[path];

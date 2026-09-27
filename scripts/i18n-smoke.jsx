@@ -24,7 +24,6 @@ import TestArticle from '../src/pages/TestArticle';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
 import QuizPage from '../src/quizzes/QuizPage';
 import Dossiers from '../src/pages/Dossiers';
-import Partners from '../src/pages/Partners';
 import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
 import { AuthProvider } from '../src/auth/AuthContext';
@@ -46,26 +45,29 @@ export const ROUTES = [
   ['/reviews', Reviews],
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle]),
   ['/dossiers', Dossiers],
-  ['/partenaires', Partners],
-  ['/events', Partners],
   ['/auth', Auth],
   ['/quizz', QuizzesPage],
   ['/quizz/culture-gaming', QuizPage, '/quizz/:slug'],
+  ['/quizz/films-cultes', QuizPage, '/quizz/:slug'],
+  ['/quizz/super-heros-cinema', QuizPage, '/quizz/:slug'],
+  ['/quizz/series-cultes', QuizPage, '/quizz/:slug'],
   ['/unknown-page', NotFound],
 ];
 
 export const LANGS = Object.keys(translations);
 
 export function renderAll(lang) {
-  // LanguageProvider reads the active language from localStorage during render.
-  globalThis.window = { localStorage: { getItem: () => lang, setItem() {} } };
-
+  // Le site est publié en français : plus rien ne lit la langue dans
+  // `localStorage`. Les vérifications continuent pourtant de rendre chaque
+  // route en FR / EN / AR, via la prop `lang` du provider — c'est la couverture
+  // qui garde le dictionnaire anglais utilisable comme filet de sécurité du
+  // français.
   return ROUTES.map(([path, Page, pattern]) => {
     try {
       const html = renderToString(
         React.createElement(
           LanguageProvider,
-          null,
+          { lang },
           React.createElement(
             AuthProvider,
             null,

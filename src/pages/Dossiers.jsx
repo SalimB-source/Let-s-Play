@@ -25,7 +25,7 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
-          <h2>LA XBOX 360,<br/><em>UNE GÉNÉRATION.</em></h2>
+          <h2>XBOX 360,<br/><em>UNE GÉNÉRATION.</em></h2>
           <p>Retour sur la console qui a installé la haute définition, Xbox Live et une nouvelle culture du jeu connecté, malgré le célèbre Red Ring of Death.</p>
           <Link className="arrow-link" to="/dossiers/20-ans-xbox-360">Lire le dossier <Arrow/></Link>
         </div>
@@ -51,7 +51,7 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
-          <h2>LA PLAYSTATION 1,<br/><em>UNE RÉVOLUTION.</em></h2>
+          <h2>PLAYSTATION,<br/><em>LA RÉVOLUTION.</em></h2>
           <p>Retour sur la console qui a fait passer le jeu vidéo aux CD, à la 3D et à une nouvelle culture du souvenir, trente et un ans après son lancement.</p>
           <Link className="arrow-link" to="/dossiers/heritage-playstation-1">Lire le dossier <Arrow/></Link>
         </div>
@@ -77,7 +77,7 @@ export default function Dossiers(){
       <section className="dossier-feature-card wrap">
         <div className="dossier-feature-card-copy">
           <p className="eyebrow"><span className="live-dot" /> Nouveau dossier</p>
-          <h2>GOYA,<br/><em>LE PROCHAIN MONDE.</em></h2>
+          <h2>GOYA,<br/><em>LE MONDE D’APRÈS.</em></h2>
           <p>Dans les coulisses de HicoSoft Studio : outils, projet GOYA, défis locaux et ambition pour la scène indépendante algérienne.</p>
           <Link className="arrow-link" to="/dossiers/goya-hicosoft">Lire le dossier <Arrow/></Link>
         </div>
@@ -104,7 +104,7 @@ export default function Dossiers(){
         <div className="section-label"><span>{t.dossiers.formatsLabel1.split(' / ')[1]}</span><span>{t.dossiers.formatsLabel2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.dossiers.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow/></Link></article>
-          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.dossiers.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow/></Link></article>
+          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.dossiers.moviesText}</p><Link to="/news/cinema">{t.home.formats.explore} <Arrow/></Link></article>
           <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.dossiers.communityText}</p><Link to="/">{t.dossiers.backHome} <Arrow/></Link></article>
         </div>
       </section>
