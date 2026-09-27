@@ -227,7 +227,7 @@
   border-bottom: 2px solid transparent;
   color: var(--muted);
   cursor: pointer;
-  font: 500 10px var(--mono);
+  font: 700 10px var(--mono);
   letter-spacing: .1em;
   text-transform: uppercase;
   white-space: nowrap;

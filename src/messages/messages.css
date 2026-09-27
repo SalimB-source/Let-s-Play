@@ -120,7 +120,7 @@
   min-width: 0;
 }
 .messages-row-name {
-  font: 600 13.5px var(--body);
+  font: 700 13.5px var(--body);
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
@@ -242,7 +242,7 @@
   width: auto;
   padding: 0 10px;
   gap: 6px;
-  font: 500 9.5px var(--mono);
+  font: 700 9.5px var(--mono);
   letter-spacing: .12em;
   text-transform: uppercase;
   text-decoration: none;
@@ -454,6 +454,7 @@
   color: var(--cyan);
   cursor: pointer;
   font: inherit;
+  font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -630,7 +631,7 @@
   border: 1px solid transparent;
   color: var(--muted);
   cursor: pointer;
-  font: 600 11px var(--mono);
+  font: 700 11px var(--mono);
   letter-spacing: .1em;
   text-transform: uppercase;
   transition: color .18s, border-color .18s, background .18s;

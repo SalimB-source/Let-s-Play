@@ -78,7 +78,7 @@
 [dir="rtl"] .friends-row-main { text-align: right; }
 .friends-row-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .friends-row-name {
-  font: 600 13.5px var(--body);
+  font: 700 13.5px var(--body);
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
@@ -171,6 +171,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-weight: 700;
   text-decoration: none;
   color: var(--cyan);
   border-color: rgba(34, 211, 238, .4);
@@ -364,7 +365,7 @@
 }
 
 .player-friend-name {
-  font: 600 13.5px var(--body);
+  font: 700 13.5px var(--body);
   color: #fff;
   white-space: nowrap;
   overflow: hidden;
