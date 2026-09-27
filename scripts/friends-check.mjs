@@ -11,8 +11,9 @@
  *    joueurs existants, jamais soi-même, jamais deux fois.
  * 3. Rendu SSR : le hub /auth et un profil public se rendent dans les trois
  *    langues avec le provider des amis ; la fenêtre sociale unifiée (amis +
- *    messagerie) n'apparaît que pour un joueur connecté, et ouverte expose
- *    les onglets des deux modules ; le bouton « Ajouter en ami » propose la
+ *    messagerie) ne s'ouvre que pour un joueur connecté, mais son accès à
+ *    /messages reste visible avant connexion ; ouverte, elle expose les
+ *    onglets des deux modules ; le bouton « Ajouter en ami » propose la
  *    connexion à un visiteur.
  */
 import { execFileSync } from 'node:child_process';
@@ -139,8 +140,9 @@ for (const lang of ['en', 'fr', 'ar']) {
   const t = friendsCopy[lang];
   const st = socialCopy[lang];
   try {
-    const guest = strip(renderApp('/auth', { lang }));
-    check(`[${lang}] visiteur : pas de fenêtre sociale`, guest.includes(st.launcher) && guest.includes('social-launcher'), false);
+    const guest = renderApp('/auth', { lang });
+    check(`[${lang}] visiteur : raccourci messagerie visible`, guest.includes('social-launcher') && strip(guest).includes(st.launcher));
+    check(`[${lang}] visiteur : pas de panneau de conversations`, guest.includes('social-panel'), false);
   } catch (e) { check(`[${lang}] /auth visiteur se rend`, e.message, ''); }
   try {
     const html = renderApp('/auth', { lang, demoKey: 'vortex' });

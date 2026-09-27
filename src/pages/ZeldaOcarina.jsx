@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import Comments from '../components/Comments';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
@@ -10,10 +12,11 @@ function Arrow(){ return <span aria-hidden="true">↗</span>; }
 export default function ZeldaOcarina(){
   const { t } = useLanguage();
   const a = t.news.zelda;
+  const gallery = getArticleGallery('zelda-ocarina');
   return <>
     <section className="article-hero wrap"><div className="section-label"><span><b>{a.label.split(' / ')[0]}</b> / {a.label.split(' / ')[1]}</span><span>{a.date}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {a.eyebrow}</p><h1>{a.title}<br/><em>{a.titleAccent}</em></h1><p className="article-dek">{a.dek}</p><div className="article-byline"><span>{a.byline}</span><span>{a.readTime}</span></div></div><div className="article-cover hud-frame"><img src={`${base}zelda-ocarina-news.jpg`} alt={a.coverAlt} /><div><small>{a.coverKicker}</small><strong>ZELDA</strong></div></div></div></section>
     <section className="article-video wrap"><div className="section-label"><span><b>{a.videoSection}</b> / {a.videoLabel}</span><span>{a.videoMeta}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl('Ze-346WTsI0')} title={a.videoLabel} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div></section>
-    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{a.lead}</p><p>{a.intro}</p><h2>{a.h2a}</h2><p>{a.p1}</p><div className="article-pullquote"><span>“</span><p>{a.quote}</p><small>{a.quoteBy}</small></div><p>{a.p2}</p><h2>{a.h2b}</h2><p>{a.p3}</p><p>{a.p4}</p><div className="article-endnote"><span className="live-dot" /><strong>{a.take}</strong><span>{a.takeText}</span></div><p className="article-source">{a.source} <a href="https://news.instant-gaming.com/fr/articles/21781-the-legend-of-zelda-ocarina-of-time-sortira-le-5-novembre-sur-switch-2" target="_blank" rel="noreferrer">{a.sourceDetail}</a></p></article><aside className="article-aside"><div className="aside-card"><span className="aside-kicker">{a.quick}</span><strong>{a.switch}</strong><strong>{a.stakes}</strong><strong>{a.unknowns}</strong></div><div className="aside-card aside-card-accent"><span className="aside-kicker">{a.next}</span><strong>{a.nextTitle}</strong><p>{a.nextText}</p><Link className="arrow-link" to="/news">{a.back} <Arrow/></Link></div></aside></main>
+    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{a.lead}</p><p>{a.intro}</p><h2>{a.h2a}</h2><p>{a.p1}</p>{gallery ? <ArticleGallery {...gallery} /> : null}<div className="article-pullquote"><span>“</span><p>{a.quote}</p><small>{a.quoteBy}</small></div><p>{a.p2}</p><h2>{a.h2b}</h2><p>{a.p3}</p><p>{a.p4}</p><div className="article-endnote"><span className="live-dot" /><strong>{a.take}</strong><span>{a.takeText}</span></div><p className="article-source">{a.source} <a href="https://news.instant-gaming.com/fr/articles/21781-the-legend-of-zelda-ocarina-of-time-sortira-le-5-novembre-sur-switch-2" target="_blank" rel="noreferrer">{a.sourceDetail}</a></p></article><aside className="article-aside"><div className="aside-card aside-card-accent"><span className="aside-kicker">{a.next}</span><strong>{a.nextTitle}</strong><p>{a.nextText}</p><Link className="arrow-link" to="/news">{a.back} <Arrow/></Link></div></aside></main>
     <Comments />
     <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> {a.ctaEyebrow}</p><h2>{a.ctaA}<br/><em>{a.ctaB}</em></h2></div><Link className="button button-yellow" to="/news">{a.backButton} <Arrow/></Link></section>
   </>;

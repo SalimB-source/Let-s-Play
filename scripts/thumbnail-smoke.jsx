@@ -15,14 +15,17 @@ import { AuthProvider } from '../src/auth/AuthContext';
 import Home from '../src/pages/Home';
 import Dossiers from '../src/pages/Dossiers';
 import QuizzesPage from '../src/quizzes/QuizzesPage';
+import { quizzes } from '../src/quizzesData';
+
+export const quizSlugs = quizzes.map(({ slug }) => slug);
 
 function render(Page, path) {
-  // LanguageProvider lit la langue active dans localStorage pendant le rendu.
-  globalThis.window = { localStorage: { getItem: () => 'fr', setItem() {} } };
+  // Le site est publié en français : la langue se passe au provider, plus rien
+  // ne la lit dans `localStorage`.
   return renderToString(
     React.createElement(
       LanguageProvider,
-      null,
+      { lang: 'fr' },
       React.createElement(
         AuthProvider,
         null,
@@ -55,7 +58,7 @@ export function dossierThumbs() {
 
 /**
  * Miniatures de la page `/quizz` : `{ src, alt }` par image, dans l'ordre du
- * rendu — d'abord la bannière du quizz du jour, puis les huit cartes de la
+ * rendu — d'abord la bannière du quizz du jour, puis une carte par quizz de la
  * grille. Une carte de quizz a sa propre illustration
  * (`public/quizzes/<slug>.jpg`) : c'est cette URL-là qui doit être demandée, la
  * miniature YouTube de l'épisode ne servant que de repli.

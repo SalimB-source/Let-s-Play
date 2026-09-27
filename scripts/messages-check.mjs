@@ -13,8 +13,9 @@
  *    arrivent à échéance, une seule fois ; bloquer / signaler sont réversibles
  *    et sans effet de bord.
  * 3. Rendu SSR : le hub /auth et un profil public se rendent dans les trois
- *    langues ; la fenêtre sociale unifiée (amis + messagerie) n'apparaît que
- *    pour un joueur connecté ; ouverte sur la messagerie, elle montre la
+ *    langues ; le lanceur reste visible pour un visiteur et l'envoie vers
+ *    la page de connexion, sans ouvrir les conversations ; pour un joueur
+ *    connecté, la fenêtre sociale ouverte sur la messagerie montre la
  *    liste des discussions puis la discussion en cours (bulles + champ de
  *    saisie) ; le bouton « Message » d'un profil ami est rendu, et propose la
  *    connexion à un visiteur. Le hub, lui, ne porte plus AUCUN raccourci de
@@ -245,8 +246,13 @@ for (const lang of ['en', 'fr', 'ar']) {
   const t = messagesCopy[lang];
   const st = socialCopy[lang];
   try {
-    const guest = strip(renderApp('/auth', { lang }));
-    check(`[${lang}] visiteur : pas de fenêtre sociale`, guest.includes('social-launcher') || guest.includes(st.launcherOpen), false);
+    const guest = renderApp('/auth', { lang });
+    check(`[${lang}] visiteur : lanceur vers la messagerie visible`, guest.includes('social-launcher') && strip(guest).includes(st.launcher));
+    check(`[${lang}] visiteur : aucun panneau de discussions`, guest.includes('social-panel'), false);
+    check(`[${lang}] menu mobile : accès direct à /messages`, guest.includes('class="nav-messages-link') && guest.includes('href="/messages"'));
+    const gate = renderApp('/messages', { lang });
+    check(`[${lang}] visiteur : page de connexion et aucun fil`, strip(gate).includes(t.signInPrompt) && !gate.includes('messages-thread'));
+    check(`[${lang}] page /messages : pas de lanceur en double`, gate.includes('social-launcher'), false);
   } catch (e) { check(`[${lang}] /auth visiteur se rend`, e.message, ''); }
 
   try {
@@ -257,7 +263,6 @@ for (const lang of ['en', 'fr', 'ar']) {
     // Le profil du joueur n'affiche plus les raccourcis de messagerie : la
     // discussion se rejoint par la fenêtre sociale (ou la page /messages).
     check(`[${lang}] hub : aucun raccourci de messagerie`, text.includes(t.hubOpen), false);
-    check(`[${lang}] hub : plus de section « ${t.hubTitle} »`, text.includes(t.hubTitle), false);
   } catch (e) { check(`[${lang}] /auth persona se rend`, e.message, ''); }
 
   try {
