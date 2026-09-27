@@ -4,7 +4,7 @@ import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
 import { callBlockLabel } from './callsCopy';
 import { describeMessagesError, reasonLabel } from './messagesCopy';
-import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
+import { MESSAGE_MAX_LENGTH, REPORT_REASONS, VOICE_MAX_SECONDS } from './messagesApi';
 
 /**
  * Vues de messagerie — partagées par la fenêtre sociale (bureau) et la page
@@ -97,6 +97,59 @@ function TrashIcon({ size = 13 }) {
     </svg>
   );
 }
+function MicIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0" />
+      <path d="M12 18v3M9 21h6" />
+    </svg>
+  );
+}
+function StopIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <rect x="5" y="5" width="14" height="14" rx="2" />
+    </svg>
+  );
+}
+function PlayIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M7 4.5v15l13-7.5-13-7.5z" />
+    </svg>
+  );
+}
+function PauseIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <rect x="6" y="4.5" width="4" height="15" rx="1" />
+      <rect x="14" y="4.5" width="4" height="15" rx="1" />
+    </svg>
+  );
+}
+
+/** `93` → `1:33` ; toujours au moins `0:00`, jamais de décimales. */
+function formatDuration(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  const minutes = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${minutes}:${String(secs).padStart(2, '0')}`;
+}
+
+/** Le navigateur sait-il enregistrer du son (MediaRecorder + micro) ? */
+function canRecordVoice() {
+  return typeof window !== 'undefined'
+    && typeof window.MediaRecorder === 'function'
+    && Boolean(window.navigator?.mediaDevices?.getUserMedia);
+}
+
+/** Meilleur type MIME supporté par MediaRecorder parmi ceux acceptés côté serveur. */
+function pickVoiceMimeType() {
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', 'audio/ogg'];
+  if (typeof window === 'undefined' || typeof window.MediaRecorder?.isTypeSupported !== 'function') return '';
+  return candidates.find((type) => window.MediaRecorder.isTypeSupported(type)) || '';
+}
 
 function initialsFor(name) {
   const clean = String(name || '').trim();
@@ -165,11 +218,17 @@ function ChevronIcon({ size = 13 }) {
   );
 }
 
+/** Aperçu texte d'un message (liste des discussions) : un vocal se résume à
+ * son icône et sa durée, jamais à un corps de texte vide. */
+function messagePreview(message, t) {
+  if (!message) return t.noMessageYet;
+  const body = message.kind === 'voice' ? fill(t.voiceMessagePreview, { duration: formatDuration(message.attachmentDuration) }) : message.body;
+  return `${message.mine ? '→ ' : ''}${body}`;
+}
+
 function ConversationRow({ entry, t, lang, online, onOpen }) {
   const { profile, lastMessage, unread, lastAt } = entry;
-  const preview = lastMessage
-    ? `${lastMessage.mine ? '→ ' : ''}${lastMessage.body}`
-    : t.noMessageYet;
+  const preview = messagePreview(lastMessage, t);
   return (
     <li className={`messages-row${unread > 0 ? ' has-unread' : ''}`}>
       <button
@@ -353,21 +412,296 @@ function ReportForm({ t, name, reported, onSubmit, onClose }) {
   );
 }
 
+/* -------------------------------- message vocal ------------------------------ */
+
+/**
+ * Bulle d'un message vocal reçu ou envoyé : bouton lecture/pause, barre de
+ * progression, durée. L'URL n'est résolue qu'au premier appui sur « lecture »
+ * (`resolveAudioUrl` — signée pour un compte Supabase, immédiate pour une
+ * persona de démonstration) : pas un aller-retour par bulle affichée.
+ */
+function VoiceBubble({ message, t, resolveAudioUrl }) {
+  const audioRef = useRef(null);
+  const [url, setUrl] = useState(message.attachmentUrl || null);
+  const [status, setStatus] = useState('idle'); // idle | loading | ready | error
+  const [playing, setPlaying] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [wantsPlay, setWantsPlay] = useState(false);
+  const duration = message.attachmentDuration || 0;
+
+  useEffect(() => {
+    setUrl(message.attachmentUrl || null);
+    setStatus('idle');
+    setPlaying(false);
+    setElapsed(0);
+    setWantsPlay(false);
+  }, [message.id, message.attachmentUrl]);
+
+  useEffect(() => {
+    if (wantsPlay && url && audioRef.current) {
+      audioRef.current.play().catch(() => setStatus('error'));
+      setWantsPlay(false);
+    }
+  }, [wantsPlay, url]);
+
+  const toggle = async () => {
+    if (playing) { audioRef.current?.pause(); return; }
+    if (url) { setWantsPlay(true); return; }
+    if (typeof resolveAudioUrl !== 'function') { setStatus('error'); return; }
+    setStatus('loading');
+    try {
+      const resolved = await resolveAudioUrl(message);
+      if (!resolved) { setStatus('error'); return; }
+      setUrl(resolved);
+      setWantsPlay(true);
+    } catch (e) {
+      setStatus('error');
+    }
+  };
+
+  const shownSeconds = playing || elapsed > 0 ? elapsed : duration;
+  const progressPct = duration > 0 ? Math.min(1, elapsed / duration) : 0;
+
+  return (
+    <span className={`messages-voice${status === 'error' ? ' is-error' : ''}`}>
+      <button
+        type="button"
+        className="messages-voice-play"
+        onClick={toggle}
+        disabled={status === 'loading'}
+        aria-label={playing ? t.pauseVoice : t.playVoice}
+        title={playing ? t.pauseVoice : t.playVoice}
+      >
+        {status === 'loading' ? <span className="messages-voice-spinner" aria-hidden="true" /> : playing ? <PauseIcon /> : <PlayIcon />}
+      </button>
+      <span className="messages-voice-track" aria-hidden="true">
+        <span className="messages-voice-track-fill" style={{ width: `${Math.round(progressPct * 100)}%` }} />
+      </span>
+      <span className="messages-voice-duration">{formatDuration(shownSeconds)}</span>
+      {status === 'error' && <span className="messages-voice-hint">{t.voiceUnavailable}</span>}
+      {url && (
+        <audio
+          ref={audioRef}
+          src={url}
+          preload="none"
+          className="sr-only"
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          onEnded={() => { setPlaying(false); setElapsed(0); }}
+          onTimeUpdate={(event) => setElapsed(event.currentTarget.currentTime)}
+          onError={() => setStatus('error')}
+        />
+      )}
+    </span>
+  );
+}
+
+/**
+ * Barre d'enregistrement / prévisualisation d'un message vocal, affichée à la
+ * place du composeur texte pendant tout le cycle (permission → enregistrement
+ * → écoute → envoi). `onRecorded(blob, seconds)` envoie le fichier ;
+ * l'enregistrement s'arrête tout seul à `VOICE_MAX_SECONDS`.
+ */
+function VoiceComposer({ t, onRecorded, onCancel }) {
+  const [phase, setPhase] = useState('requesting'); // requesting | recording | preview | sending | error
+  const [seconds, setSeconds] = useState(0);
+  const [blob, setBlob] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+  const [errorText, setErrorText] = useState('');
+  const recorderRef = useRef(null);
+  const streamRef = useRef(null);
+  const chunksRef = useRef([]);
+  const timerRef = useRef(null);
+  const startedAtRef = useRef(0);
+  const discardRef = useRef(false);
+  const previewAudioRef = useRef(null);
+
+  const stopStream = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  };
+  const clearTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const stream = await window.navigator.mediaDevices.getUserMedia({ audio: true });
+        if (cancelled) { stream.getTracks().forEach((track) => track.stop()); return; }
+        streamRef.current = stream;
+        const mimeType = pickVoiceMimeType();
+        const recorder = mimeType ? new window.MediaRecorder(stream, { mimeType }) : new window.MediaRecorder(stream);
+        chunksRef.current = [];
+        recorder.ondataavailable = (event) => {
+          if (event.data && event.data.size > 0) chunksRef.current.push(event.data);
+        };
+        recorder.onstop = () => {
+          stopStream();
+          clearTimer();
+          const wasDiscarded = discardRef.current;
+          discardRef.current = false;
+          const parts = chunksRef.current;
+          chunksRef.current = [];
+          if (wasDiscarded) return;
+          const recordedBlob = new Blob(parts, { type: recorder.mimeType || mimeType || 'audio/webm' });
+          if (recordedBlob.size === 0) { onCancel(); return; }
+          setBlob(recordedBlob);
+          setPreviewUrl(URL.createObjectURL(recordedBlob));
+          setPhase('preview');
+        };
+        recorderRef.current = recorder;
+        recorder.start();
+        startedAtRef.current = Date.now();
+        setPhase('recording');
+        timerRef.current = setInterval(() => {
+          const elapsed = Math.floor((Date.now() - startedAtRef.current) / 1000);
+          setSeconds(elapsed);
+          if (elapsed >= VOICE_MAX_SECONDS) recorder.stop();
+        }, 250);
+      } catch (e) {
+        if (!cancelled) { setErrorText(t.micPermissionDenied); setPhase('error'); }
+      }
+    })();
+    return () => {
+      cancelled = true;
+      clearTimer();
+      const recorder = recorderRef.current;
+      if (recorder && recorder.state !== 'inactive') {
+        discardRef.current = true;
+        recorder.ondataavailable = null;
+        try { recorder.stop(); } catch (e) { /* déjà arrêté */ }
+      }
+      stopStream();
+    };
+    // Un seul cycle d'enregistrement par montage : le composant est
+    // démonté / remonté (clé sur peerId) pour en relancer un nouveau.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  const stopRecording = () => {
+    if (phase !== 'recording') return;
+    clearTimer();
+    recorderRef.current?.stop();
+  };
+  const discardRecording = () => {
+    if (phase === 'recording') {
+      discardRef.current = true;
+      clearTimer();
+      recorderRef.current?.stop();
+    }
+    onCancel();
+  };
+  const togglePreview = () => {
+    const audio = previewAudioRef.current;
+    if (!audio) return;
+    if (previewPlaying) audio.pause();
+    else audio.play().catch(() => {});
+  };
+  const send = async () => {
+    if (!blob || phase === 'sending') return;
+    setPhase('sending');
+    setErrorText('');
+    try {
+      await onRecorded(blob, seconds || 1);
+    } catch (e) {
+      setPhase('preview');
+      setErrorText(describeMessagesError(e, t));
+    }
+  };
+
+  return (
+    <div className="messages-voice-composer" role="group" aria-label={t.micRecord}>
+      {phase === 'requesting' && (
+        <p className="messages-voice-composer-status">{t.micRequesting}</p>
+      )}
+      {phase === 'error' && (
+        <>
+          <p className="messages-inline-error" role="alert">{errorText}</p>
+          <button type="button" className="messages-action messages-action-quiet" onClick={onCancel}>{t.micCancel}</button>
+        </>
+      )}
+      {phase === 'recording' && (
+        <>
+          <span className="messages-voice-composer-dot" aria-hidden="true" />
+          <span className="messages-voice-composer-time">{formatDuration(seconds)}</span>
+          <span className="messages-voice-composer-spacer" />
+          <button type="button" className="messages-tool" aria-label={t.micCancel} title={t.micCancel} onClick={discardRecording}>
+            <TrashIcon />
+          </button>
+          <button type="button" className="messages-send" aria-label={t.micStop} title={t.micStop} onClick={stopRecording}>
+            <StopIcon />
+          </button>
+        </>
+      )}
+      {(phase === 'preview' || phase === 'sending') && (
+        <>
+          <button
+            type="button"
+            className="messages-voice-play"
+            onClick={togglePreview}
+            disabled={phase === 'sending'}
+            aria-label={previewPlaying ? t.pauseVoice : t.playVoice}
+            title={previewPlaying ? t.pauseVoice : t.playVoice}
+          >
+            {previewPlaying ? <PauseIcon /> : <PlayIcon />}
+          </button>
+          <span className="messages-voice-composer-time">{formatDuration(seconds)}</span>
+          <span className="messages-voice-composer-spacer" />
+          <button type="button" className="messages-tool" aria-label={t.micCancel} title={t.micCancel} onClick={discardRecording} disabled={phase === 'sending'}>
+            <TrashIcon />
+          </button>
+          <button type="button" className="messages-send" aria-label={t.micSend} title={t.micSend} disabled={phase === 'sending'} onClick={send}>
+            <SendIcon />
+          </button>
+          {errorText && <p className="messages-inline-error" role="alert">{errorText}</p>}
+          {previewUrl && (
+            <audio
+              ref={previewAudioRef}
+              src={previewUrl}
+              preload="none"
+              className="sr-only"
+              onPlay={() => setPreviewPlaying(true)}
+              onPause={() => setPreviewPlaying(false)}
+              onEnded={() => setPreviewPlaying(false)}
+            />
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 /* --------------------------------- discussion ------------------------------- */
 
-export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, blocked, reported, canWrite, onBack, onSend, onDelete, onBlock, onUnblock, onReport, onCall, callBlocker, callWarning }) {
+export function ThreadView({
+  peerId, t, ft, ct, lang, thread, profile, online, blocked, reported, canWrite,
+  onBack, onSend, onSendVoice, resolveAudioUrl, onDelete, onBlock, onUnblock, onReport,
+  onCall, callBlocker, callWarning,
+}) {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const moreRef = useRef(null);
   const messages = thread?.messages || [];
   const lastMine = [...messages].reverse().find((message) => message.mine) || null;
   const remaining = MESSAGE_MAX_LENGTH - draft.length;
+
+  // Le support de l'enregistrement dépend du navigateur : vérifié après le
+  // montage seulement, pour que le rendu serveur et le premier rendu client
+  // restent identiques (pas de bouton micro tant qu'on ne sait pas).
+  useEffect(() => { setVoiceSupported(canRecordVoice()); }, []);
 
   // Ferme le menu « … » quand on clique en dehors ou qu'on appuie sur Échap.
   useEffect(() => {
@@ -394,7 +728,7 @@ export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, b
     if (node) node.scrollTop = node.scrollHeight;
   }, [messages.length, peerId]);
 
-  useEffect(() => { setDraft(''); setError(''); setReportOpen(false); setMoreOpen(false); setDeletingId(null); }, [peerId]);
+  useEffect(() => { setDraft(''); setError(''); setReportOpen(false); setMoreOpen(false); setDeletingId(null); setIsRecording(false); }, [peerId]);
 
   // Bureau : le champ prend le focus à l'ouverture de la discussion — on
   // peut écrire tout de suite. Pas sur mobile, pour ne pas faire sortir le
@@ -446,7 +780,7 @@ export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, b
   const handleDelete = async (message) => {
     if (!message?.mine) return;
     if (String(message.id).startsWith('pending-')) return;
-    const preview = String(message.body || '').slice(0, 40);
+    const preview = message.kind === 'voice' ? t.voiceMessage : String(message.body || '').slice(0, 40);
     const ok = typeof window === 'undefined' || window.confirm(fill(t.deleteConfirm, { preview: preview || '…' }));
     if (!ok) return;
     setDeletingId(message.id);
@@ -602,7 +936,13 @@ export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, b
                 {showDay && <li className="messages-day" aria-hidden="true"><span>{label}</span></li>}
                 <li className={`messages-bubble-row${message.mine ? ' is-mine' : ''}`}>
                   <div className="messages-bubble-wrap">
-                    <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}>{message.body}</p>
+                    {message.kind === 'voice' ? (
+                      <div className={`messages-bubble messages-bubble-voice${message.mine ? ' is-mine' : ''}`}>
+                        <VoiceBubble message={message} t={t} resolveAudioUrl={resolveAudioUrl} />
+                      </div>
+                    ) : (
+                      <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}>{message.body}</p>
+                    )}
                     {message.mine && (
                       <button
                         type="button"
@@ -631,40 +971,64 @@ export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, b
       {blocked ? (
         <p className="messages-composer-disabled">{t.blockedNote}</p>
       ) : canWrite ? (
-        <form
-          className="messages-composer"
-          onSubmit={(event) => { event.preventDefault(); submit(); }}
-        >
-          <textarea
-            ref={inputRef}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                submit();
-              }
+        isRecording ? (
+          <VoiceComposer
+            t={t}
+            onCancel={() => setIsRecording(false)}
+            onRecorded={async (blob, seconds) => {
+              await onSendVoice(peerId, blob, seconds);
+              setIsRecording(false);
             }}
-            placeholder={t.composerPlaceholder}
-            rows={1}
-            maxLength={MESSAGE_MAX_LENGTH + 20}
-            aria-label={t.composerPlaceholder}
           />
-          {remaining <= 60 && (
-            <span className={`messages-char-count${remaining < 0 ? ' is-over' : ''}`} aria-live="polite">
-              {remaining}
-            </span>
-          )}
-          <button type="submit" className="messages-send" disabled={busy || !draft.trim() || tooLong} aria-label={t.send} title={t.send}>
-            <SendIcon />
-          </button>
-        </form>
+        ) : (
+          <form
+            className="messages-composer"
+            onSubmit={(event) => { event.preventDefault(); submit(); }}
+          >
+            <textarea
+              ref={inputRef}
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  submit();
+                }
+              }}
+              placeholder={t.composerPlaceholder}
+              rows={1}
+              maxLength={MESSAGE_MAX_LENGTH + 20}
+              aria-label={t.composerPlaceholder}
+            />
+            {remaining <= 60 && (
+              <span className={`messages-char-count${remaining < 0 ? ' is-over' : ''}`} aria-live="polite">
+                {remaining}
+              </span>
+            )}
+            {voiceSupported && typeof onSendVoice === 'function' && !draft.trim() ? (
+              <button
+                type="button"
+                className="messages-send messages-send-mic"
+                disabled={busy}
+                aria-label={t.micRecord}
+                title={t.micRecord}
+                onClick={() => setIsRecording(true)}
+              >
+                <MicIcon />
+              </button>
+            ) : (
+              <button type="submit" className="messages-send" disabled={busy || !draft.trim() || tooLong} aria-label={t.send} title={t.send}>
+                <SendIcon />
+              </button>
+            )}
+          </form>
+        )
       ) : (
         <p className="messages-composer-disabled">{t.notFriends}</p>
       )}
       {tooLong && <p className="messages-inline-error" role="alert">{fill(t.tooLong, { max: MESSAGE_MAX_LENGTH })}</p>}
       {error && <p className="messages-inline-error" role="alert">{error}</p>}
-      {!blocked && canWrite && !error && !tooLong && <p className="messages-composer-hint">{t.composerHint}</p>}
+      {!blocked && canWrite && !error && !tooLong && !isRecording && <p className="messages-composer-hint">{t.composerHint}</p>}
     </>
   );
 }

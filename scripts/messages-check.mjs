@@ -38,14 +38,14 @@ execFileSync(
 const smoke = await import(path.join(outDir, 'messages-smoke.js'));
 const {
   DEMO_INCOMING, DEMO_INITIAL_STATE, DEMO_PROFILES, DEMO_REPLIES, DEMO_THREADS,
-  MESSAGE_MAX_LENGTH, REPORT_REASONS,
+  MESSAGE_MAX_LENGTH, VOICE_MAX_SECONDS, REPORT_REASONS,
   appendMessage, applyDemoBlock, applyDemoIncoming, applyDemoRead, applyDemoReply,
-  applyDemoReport, applyDemoSend, applyDemoUnblock, applyReadReceipt,
+  applyDemoReport, applyDemoSend, applyDemoSendVoice, applyDemoUnblock, applyReadReceipt,
   conversationKey, demoReplyFor, demoThreads, dueDemoIncoming, friendsCopy,
-  isBlockedError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
+  isBlockedError, isInvalidVoiceError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
   markThreadReadLocal, mergeUnread, messagesCopy, normalizeMessage, peersFromKey,
   prepareBody, reasonLabel, seedDemoThreadState, socialCopy, sortThreadsByActivity,
-  threadsFromRows, totalUnread, unreadFromRows, findDemoPlayer, renderApp,
+  threadsFromRows, totalUnread, unreadFromRows, findDemoPlayer, renderApp, voiceFileExtension,
 } = smoke;
 
 let failures = 0;
@@ -146,6 +146,25 @@ check('blocage reconnu', isBlockedError({ message: 'direct_message_blocked' }));
 check('amitié requise reconnue', isRequiresFriendshipError({ message: 'direct_message_requires_friendship' }));
 check('anti-spam reconnu', isRateLimitedError({ message: 'direct_message_rate_limited' }));
 check('une autre erreur n’est pas un blocage', isBlockedError({ message: 'connection reset' }), false);
+check('pièce jointe vocale invalide reconnue', isInvalidVoiceError({ message: 'direct_message_voice_requires_attachment' }));
+check('vocal trop long reconnu', isInvalidVoiceError({ message: 'direct_message_voice_too_long' }));
+check('une erreur texte n’est pas une erreur vocale', isInvalidVoiceError({ message: 'direct_message_empty' }), false);
+
+// Messages vocaux : une ligne sans `kind` (avant la migration) reste un
+// message texte ; une ligne `kind: 'voice'` porte pièce jointe et durée.
+const voiceRow = {
+  id: 'v1', conversation_key: bobKey, sender_id: bob, recipient_id: me, body: '', kind: 'voice',
+  attachment_path: `${bob}/clip.webm`, attachment_duration: 12, attachment_mime: 'audio/webm',
+  created_at: '2026-01-01T11:00:00Z', read_at: null,
+};
+const normalizedVoice = normalizeMessage(voiceRow, me);
+check('message vocal détecté', normalizedVoice.kind, 'voice');
+check('chemin de la pièce jointe conservé', normalizedVoice.attachmentPath, `${bob}/clip.webm`);
+check('durée de la pièce jointe conservée', normalizedVoice.attachmentDuration, 12);
+check('ligne sans `kind` → message texte', normalizeMessage(rows[0], me).kind, 'text');
+check('extension .webm par défaut', voiceFileExtension(''), 'webm');
+check('extension .m4a pour l’audio mp4', voiceFileExtension('audio/mp4'), 'm4a');
+check('extension .ogg pour l’audio ogg', voiceFileExtension('audio/ogg;codecs=opus'), 'ogg');
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/3] aperçu de démonstration\n');
@@ -191,6 +210,19 @@ for (const [key, profile] of Object.entries(DEMO_PROFILES)) {
   check(`${key} : envoi marqué comme le mien`, demo.threads[anyPeer].at(-1).from, 'me');
   check(`${key} : envoi → discussion lue`, demoThreads(demo, self)[anyPeer].unread, 0);
   check(`${key} : envoi vide → état inchangé`, applyDemoSend(state, anyPeer, '   ', now), state);
+
+  // Message vocal : encodé en `data:` URL (localStorage), durée bornée à
+  // VOICE_MAX_SECONDS, discussion lue comme un envoi texte.
+  const voiceDemo = applyDemoSendVoice(state, anyPeer, 'data:audio/webm;base64,AAAA', 9000, now + 1500);
+  const voiceRaw = voiceDemo.threads[anyPeer].at(-1);
+  check(`${key} : message vocal ajouté`, voiceRaw.kind, 'voice');
+  check(`${key} : message vocal marqué comme le mien`, voiceRaw.from, 'me');
+  check(`${key} : durée bornée à VOICE_MAX_SECONDS`, voiceRaw.duration, VOICE_MAX_SECONDS);
+  check(`${key} : vocal sans donnée → état inchangé`, applyDemoSendVoice(state, anyPeer, '', 5, now), state);
+  const voiceNormalized = demoThreads(voiceDemo, self)[anyPeer].messages.at(-1);
+  check(`${key} : vocal normalisé (URL lisible)`, voiceNormalized.attachmentUrl, 'data:audio/webm;base64,AAAA');
+  check(`${key} : vocal normalisé (durée)`, voiceNormalized.attachmentDuration, VOICE_MAX_SECONDS);
+  check(`${key} : envoi vocal → discussion lue`, demoThreads(voiceDemo, self)[anyPeer].unread, 0);
 
   demo = applyDemoReply(state, anyPeer, now + 2000);
   check(`${key} : réponse reçue`, demo.threads[anyPeer].at(-1).from, 'them');
