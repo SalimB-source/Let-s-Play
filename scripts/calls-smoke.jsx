@@ -68,11 +68,13 @@ export {
 
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
 
-/** Élément racine de l'application pour `path` (routes utiles au module). */
-export function createApp(path) {
+/** Élément racine de l'application pour `path` (routes utiles au module).
+ *  La langue passe par la **prop `lang`** du provider — depuis que le site
+ *  est publié en français seul, plus rien ne lit `localStorage`. */
+export function createApp(path, lang = 'fr') {
   return React.createElement(
     LanguageProvider,
-    null,
+    { lang },
     React.createElement(
       AuthProvider,
       null,
@@ -121,12 +123,11 @@ export function createApp(path) {
  */
 export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false, activePeer = null } = {}) {
   const entries = {
-    'letsplay-lang': lang,
     letsplay_messages_open: dockOpen ? '1' : '0',
     letsplay_friends_dock_open: '0',
   };
   if (activePeer) entries.letsplay_messages_active = activePeer;
   if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILE_FIXTURES[demoKey]);
   globalThis.window = { localStorage: makeStorage(entries) };
-  return renderToString(createApp(path));
+  return renderToString(createApp(path, lang));
 }

@@ -730,7 +730,7 @@ quand même : simplement moins souvent du premier coup en mobile.
 | `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, durées, classification des erreurs de média |
 | `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant, panneau d'appel (vidéo, PiP miroir, chrono, contrôles) |
 | `src/messages/callSounds.js` | sons synthétisés (Web Audio) : sonnerie, tonalité, connexion, fin |
-| `src/messages/callsCopy.js` | textes EN / FR / AR, libellés de blocage, traces d'appel |
+| `src/messages/callsCopy.js` | textes EN / FR / AR, libellés de blocage, traces d'appel — le site étant publié en français, EN / AR restent en filet de sécurité, comme les dictionnaires du site |
 | `src/messages/calls.css` | styles des overlays (plein écran, coins coupés, mobile, `prefers-reduced-motion`) |
 | `src/messages/MessagesTabs.jsx` | les deux boutons d'appel de l'en-tête de discussion (fenêtre sociale **et** page `/messages`) |
 
