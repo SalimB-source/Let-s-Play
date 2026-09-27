@@ -83,7 +83,7 @@ export default function MessagesPage() {
 
   const {
     enabled: messagesEnabled, mode, status, error, conversations, blockedConversations, unreadTotal,
-    unreadFor, threadFor, markRead, send, deleteMessage, block, unblock, report,
+    unreadFor, threadFor, markRead, send, sendVoice, resolveAudioUrl, deleteMessage, block, unblock, report,
     canMessage, isBlocked, reportedReason, refresh: refreshMessages, viewThread,
   } = messages;
 
@@ -330,6 +330,8 @@ export default function MessagesPage() {
                 canWrite={canMessage(peerId)}
                 onBack={backToInbox}
                 onSend={send}
+                onSendVoice={sendVoice}
+                resolveAudioUrl={resolveAudioUrl}
                 onDelete={deleteMessage}
                 onBlock={block}
                 onUnblock={unblock}

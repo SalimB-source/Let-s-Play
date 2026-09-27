@@ -19,7 +19,14 @@
  *
  * Le contexte (`MessagesContext.jsx`) ne connaît que la forme normalisée :
  *   threads : { [peerId]: { peerId, key, messages, lastMessage, lastAt, unread } }
- *   message : { id, peerId, key, mine, body, createdAt, read }
+ *   message : { id, peerId, key, mine, kind, body, attachmentPath, attachmentUrl,
+ *               attachmentDuration, createdAt, read }
+ *
+ * Messages vocaux : `kind` vaut `'voice'`, `body` reste vide, et le fichier
+ * vit soit dans le bucket privé `voice-messages` (compte Supabase —
+ * `attachmentPath` est la clé de l'objet, à faire signer via
+ * `getVoiceMessageUrl`), soit en `data:` URL dans localStorage (persona de
+ * démonstration — `attachmentUrl` est alors directement lisible).
  */
 import { supabase } from '../lib/supabase';
 import { demoReplyFor, seedDemoThreadState } from './demoThreads';
@@ -27,10 +34,15 @@ import { demoReplyFor, seedDemoThreadState } from './demoThreads';
 export const MESSAGES_TABLE = 'direct_messages';
 export const BLOCKS_TABLE = 'message_blocks';
 export const REPORTS_TABLE = 'message_reports';
-const MESSAGE_COLUMNS = 'id, conversation_key, sender_id, recipient_id, body, created_at, read_at';
+export const VOICE_BUCKET = 'voice-messages';
+const MESSAGE_COLUMNS = 'id, conversation_key, sender_id, recipient_id, body, kind, attachment_path, attachment_duration, attachment_mime, created_at, read_at';
 
 /** Longueur maximale d'un message (contrainte SQL identique). */
 export const MESSAGE_MAX_LENGTH = 1000;
+/** Durée maximale d'un message vocal, en secondes (contrainte SQL identique). */
+export const VOICE_MAX_SECONDS = 120;
+/** Poids maximal d'un enregistrement vocal, en octets (limite du bucket). */
+export const VOICE_MAX_BYTES = 5 * 1024 * 1024;
 /** Motifs de signalement proposés au joueur. */
 export const REPORT_REASONS = ['harassment', 'spam', 'hate', 'inappropriate', 'other'];
 
@@ -65,6 +77,11 @@ export function isRateLimitedError(error) {
 /** Le message est vide ou trop long (refusé côté client comme côté serveur). */
 export function isInvalidBodyError(error) {
   return /direct_message_(empty|too_long)/i.test(error?.message || '');
+}
+
+/** Le trigger a refusé : message vocal sans fichier valide (ou trop long). */
+export function isInvalidVoiceError(error) {
+  return /direct_message_voice_(requires_attachment|too_long)/i.test(error?.message || '');
 }
 
 // ---------------------------------------------------------------------------
@@ -127,7 +144,11 @@ export function normalizeMessage(row, uid) {
     peerId,
     key: row.conversation_key || conversationKey(uid, peerId),
     mine,
+    kind: row.kind === 'voice' ? 'voice' : 'text',
     body: String(row.body ?? ''),
+    attachmentPath: row.attachment_path || null,
+    attachmentDuration: Number.isFinite(row.attachment_duration) ? row.attachment_duration : null,
+    attachmentMime: row.attachment_mime || null,
     createdAt: row.created_at || null,
     read: Boolean(row.read_at),
   };
@@ -366,8 +387,63 @@ export async function sendMessage(uid, peerId, body) {
   return data;
 }
 
-/** Supprime un message envoyé par le joueur connecté. */
-export async function deleteMessage(uid, messageId) {
+/** Extension de fichier à utiliser pour un enregistrement, selon son type MIME. */
+export function voiceFileExtension(mime) {
+  const value = String(mime || '').toLowerCase();
+  if (/mp4|m4a|aac/.test(value)) return 'm4a';
+  if (/ogg/.test(value)) return 'ogg';
+  if (/wav/.test(value)) return 'wav';
+  return 'webm';
+}
+
+/**
+ * Dépose un enregistrement vocal dans le bucket privé `voice-messages`, sous
+ * `{uid}/…` (imposé par la politique de stockage). Renvoie la clé de l'objet,
+ * à passer à `sendVoiceMessage`.
+ */
+export async function uploadVoiceRecording(uid, blob) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  if (!uid || !blob) throw new Error('direct_message_missing');
+  const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${voiceFileExtension(blob.type)}`;
+  const { error } = await supabase.storage.from(VOICE_BUCKET).upload(path, blob, {
+    contentType: blob.type || 'audio/webm',
+    upsert: false,
+  });
+  if (error) throw error;
+  return path;
+}
+
+/** Envoie un message vocal (fichier déjà déposé par `uploadVoiceRecording`). */
+export async function sendVoiceMessage(uid, peerId, attachmentPath, durationSeconds, mime) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  const { data, error } = await supabase
+    .from(MESSAGES_TABLE)
+    .insert({
+      recipient_id: peerId,
+      body: '',
+      kind: 'voice',
+      attachment_path: attachmentPath,
+      attachment_duration: Math.min(VOICE_MAX_SECONDS, Math.max(1, Math.round(durationSeconds || 0))),
+      attachment_mime: mime || null,
+    })
+    .select(MESSAGE_COLUMNS)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** URL signée temporaire pour lire un message vocal (le bucket est privé). */
+export async function getVoiceMessageUrl(attachmentPath, expiresInSeconds = 3600) {
+  if (!supabase || !attachmentPath) return null;
+  const { data, error } = await supabase.storage
+    .from(VOICE_BUCKET)
+    .createSignedUrl(attachmentPath, expiresInSeconds);
+  if (error) throw error;
+  return data?.signedUrl || null;
+}
+
+/** Supprime un message envoyé par le joueur connecté (et son fichier, s'il y en a un). */
+export async function deleteMessage(uid, messageId, attachmentPath = null) {
   if (!supabase) throw new Error('Supabase is not configured');
   if (!uid || !messageId) throw new Error('direct_message_missing');
   const { data, error } = await supabase
@@ -379,6 +455,12 @@ export async function deleteMessage(uid, messageId) {
   if (error) throw error;
   if (!data || data.length === 0) {
     throw Object.assign(new Error('direct_message_not_found'), { code: 'P0001' });
+  }
+  if (attachmentPath) {
+    // Best-effort : le message est déjà supprimé, un fichier orphelin ne
+    // bloque jamais la suppression (la politique de lecture le referme de
+    // toute façon aux deux joueurs dès que la ligne disparaît).
+    try { await supabase.storage.from(VOICE_BUCKET).remove([attachmentPath]); } catch (e) { /* ignore */ }
   }
   return data[0];
 }
@@ -475,11 +557,15 @@ function cleanDemoState(raw, personaKey, now) {
   for (const [peerId, messages] of Object.entries(raw.threads || {})) {
     if (!Array.isArray(messages) || messages.length === 0) continue;
     state.threads[peerId] = messages
-      .filter((message) => message && typeof message.body === 'string')
+      .filter((message) => message && (typeof message.body === 'string'
+        || (message.kind === 'voice' && typeof message.dataUrl === 'string')))
       .map((message, index) => ({
         id: message.id || `demo-${peerId}-${index + 1}`,
         from: message.from === 'me' ? 'me' : 'them',
-        body: String(message.body).slice(0, MESSAGE_MAX_LENGTH),
+        kind: message.kind === 'voice' ? 'voice' : 'text',
+        body: typeof message.body === 'string' ? message.body.slice(0, MESSAGE_MAX_LENGTH) : '',
+        dataUrl: message.kind === 'voice' && typeof message.dataUrl === 'string' ? message.dataUrl : null,
+        duration: Number.isFinite(message.duration) ? message.duration : null,
         at: typeof message.at === 'string' ? message.at : state.seededAt,
         read: message.from === 'me' ? true : message.read !== false,
       }));
@@ -526,7 +612,10 @@ function demoThread(peerId, uid, messages) {
     peerId,
     key: conversationKey(uid, peerId),
     mine: message.from === 'me',
-    body: message.body,
+    kind: message.kind === 'voice' ? 'voice' : 'text',
+    body: message.body || '',
+    attachmentUrl: message.kind === 'voice' ? (message.dataUrl || null) : null,
+    attachmentDuration: message.kind === 'voice' ? (message.duration ?? null) : null,
     createdAt: message.at,
     read: message.from === 'me' ? true : message.read !== false,
   }));
@@ -552,9 +641,16 @@ export function demoThreads(state, uid) {
 }
 
 /** Ajoute un message à l'état démo (immuable) et renvoie le nouvel état. */
-function appendDemoMessage(state, peerId, from, body, at, read) {
+function appendDemoMessage(state, peerId, from, body, at, read, extra = null) {
   const messages = [...(state.threads[peerId] || [])];
-  messages.push({ id: `demo-${peerId}-${messages.length + 1}-${at.slice(11, 19).replace(/:/g, '')}`, from, body, at, read });
+  messages.push({
+    id: `demo-${peerId}-${messages.length + 1}-${at.slice(11, 19).replace(/:/g, '')}`,
+    from,
+    body,
+    at,
+    read,
+    ...(extra || {}),
+  });
   return { ...state, threads: { ...state.threads, [peerId]: messages } };
 }
 
@@ -570,6 +666,28 @@ export function applyDemoSend(state, peerId, body, now = Date.now()) {
     },
   };
   return appendDemoMessage(withRead, peerId, 'me', clean, new Date(now).toISOString(), true);
+}
+
+/**
+ * La persona envoie un message vocal : `dataUrl` est l'enregistrement encodé
+ * (voir `blobToDataUrl` côté contexte — localStorage ne sait pas garder un
+ * `Blob`), `duration` sa durée en secondes.
+ */
+export function applyDemoSendVoice(state, peerId, dataUrl, duration, now = Date.now()) {
+  if (!peerId || typeof dataUrl !== 'string' || !dataUrl) return state;
+  const withRead = {
+    ...state,
+    threads: {
+      ...state.threads,
+      [peerId]: (state.threads[peerId] || []).map((message) => (message.from === 'them' ? { ...message, read: true } : message)),
+    },
+  };
+  const safeDuration = Math.min(VOICE_MAX_SECONDS, Math.max(1, Math.round(duration || 0)));
+  return appendDemoMessage(withRead, peerId, 'me', '', new Date(now).toISOString(), true, {
+    kind: 'voice',
+    dataUrl,
+    duration: safeDuration,
+  });
 }
 
 /** Un joueur scripté répond. */

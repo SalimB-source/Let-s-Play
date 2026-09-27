@@ -41,6 +41,7 @@ export {
 } from '../src/messages/demoThreads';
 export {
   MESSAGE_MAX_LENGTH,
+  VOICE_MAX_SECONDS,
   REPORT_REASONS,
   appendMessage,
   applyDemoBlock,
@@ -50,12 +51,14 @@ export {
   applyDemoReply,
   applyDemoReport,
   applyDemoSend,
+  applyDemoSendVoice,
   applyDemoUnblock,
   applyReadReceipt,
   conversationKey,
   deleteMessage,
   demoThreads,
   isBlockedError,
+  isInvalidVoiceError,
   isMissingMessagesTable,
   isRateLimitedError,
   isRequiresFriendshipError,
@@ -70,6 +73,7 @@ export {
   threadsFromRows,
   totalUnread,
   unreadFromRows,
+  voiceFileExtension,
 } from '../src/messages/messagesApi';
 export { messagesCopy, reasonLabel } from '../src/messages/messagesCopy';
 

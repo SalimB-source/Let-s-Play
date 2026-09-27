@@ -532,10 +532,49 @@ create table if not exists public.direct_messages (
   sender_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   recipient_id uuid not null references auth.users(id) on delete cascade,
   body text not null,
+  -- `kind` distingue un message texte d'un message vocal. Un message vocal a
+  -- un `body` vide et pointe vers un fichier du bucket `voice-messages` via
+  -- `attachment_path` (voir 3f, plus bas) ; sa durée (secondes, 2 min max) et
+  -- son type MIME sont dénormalisés pour l'affichage sans second aller-retour.
+  kind text not null default 'text' check (kind in ('text', 'voice')),
+  attachment_path text,
+  attachment_duration integer,
+  attachment_mime text,
   created_at timestamptz not null default now(),
   read_at timestamptz,
   constraint direct_messages_not_self check (sender_id <> recipient_id)
 );
+
+-- Déploiement déjà en place (table créée avant l'ajout des messages vocaux) :
+-- on complète avec les colonnes manquantes sans jamais toucher aux données.
+do $$
+begin
+  if to_regclass('public.direct_messages') is not null then
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'kind') then
+      execute 'alter table public.direct_messages add column kind text not null default ''text''';
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'attachment_path') then
+      execute 'alter table public.direct_messages add column attachment_path text';
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'attachment_duration') then
+      execute 'alter table public.direct_messages add column attachment_duration integer';
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'attachment_mime') then
+      execute 'alter table public.direct_messages add column attachment_mime text';
+    end if;
+    if not exists (select 1 from pg_constraint
+                   where conname = 'direct_messages_kind_check' and conrelid = 'public.direct_messages'::regclass) then
+      execute 'alter table public.direct_messages add constraint direct_messages_kind_check check (kind in (''text'', ''voice''))';
+    end if;
+  end if;
+exception
+  when others then
+    raise warning 'Let''s Play : colonnes de messagerie vocale non ajoutées à direct_messages (%).', sqlerrm;
+end $$;
 
 create index if not exists direct_messages_conversation_idx
   on public.direct_messages (conversation_key, created_at desc);
@@ -608,12 +647,43 @@ begin
         then new.sender_id::text || '_' || new.recipient_id::text
       else new.recipient_id::text || '_' || new.sender_id::text
     end;
-    new.body := btrim(new.body);
-    if char_length(new.body) = 0 then
-      raise exception 'direct_message_empty' using errcode = 'P0001';
+
+    new.kind := coalesce(nullif(btrim(new.kind), ''), 'text');
+    if new.kind not in ('text', 'voice') then
+      raise exception 'direct_message_invalid_kind' using errcode = 'P0001';
     end if;
+
+    new.body := btrim(coalesce(new.body, ''));
     if char_length(new.body) > 1000 then
       raise exception 'direct_message_too_long' using errcode = 'P0001';
+    end if;
+
+    if new.kind = 'voice' then
+      -- Message vocal : pas de texte obligatoire, mais un fichier déposé par
+      -- l'expéditeur lui-même (dossier `{uid}/…` du bucket, voir 3f) et une
+      -- durée plausible (le composeur plafonne déjà l'enregistrement à 2 min).
+      new.attachment_path := nullif(btrim(coalesce(new.attachment_path, '')), '');
+      if new.attachment_path is null or char_length(new.attachment_path) > 500 then
+        raise exception 'direct_message_voice_requires_attachment' using errcode = 'P0001';
+      end if;
+      if split_part(new.attachment_path, '/', 1) <> new.sender_id::text then
+        raise exception 'direct_message_voice_requires_attachment' using errcode = 'P0001';
+      end if;
+      if new.attachment_duration is null or new.attachment_duration < 1 or new.attachment_duration > 120 then
+        raise exception 'direct_message_voice_too_long' using errcode = 'P0001';
+      end if;
+      new.attachment_mime := nullif(btrim(coalesce(new.attachment_mime, '')), '');
+      if new.attachment_mime is not null and new.attachment_mime !~ '^audio/' then
+        new.attachment_mime := null;
+      end if;
+    else
+      if char_length(new.body) = 0 then
+        raise exception 'direct_message_empty' using errcode = 'P0001';
+      end if;
+      if new.attachment_path is not null or new.attachment_duration is not null then
+        raise exception 'direct_message_attachment_not_allowed' using errcode = 'P0001';
+      end if;
+      new.attachment_mime := null;
     end if;
 
     if not exists (
@@ -664,13 +734,21 @@ begin
   if new.sender_id is distinct from old.sender_id
      or new.recipient_id is distinct from old.recipient_id
      or new.conversation_key is distinct from old.conversation_key
-     or new.body is distinct from old.body then
+     or new.body is distinct from old.body
+     or new.kind is distinct from old.kind
+     or new.attachment_path is distinct from old.attachment_path
+     or new.attachment_duration is distinct from old.attachment_duration
+     or new.attachment_mime is distinct from old.attachment_mime then
     raise exception 'direct_message_readonly' using errcode = '42501';
   end if;
   new.sender_id := old.sender_id;
   new.recipient_id := old.recipient_id;
   new.conversation_key := old.conversation_key;
   new.body := old.body;
+  new.kind := old.kind;
+  new.attachment_path := old.attachment_path;
+  new.attachment_duration := old.attachment_duration;
+  new.attachment_mime := old.attachment_mime;
   new.created_at := old.created_at;
   new.read_at := coalesce(old.read_at, new.read_at);
   return new;
@@ -823,6 +901,65 @@ begin
   end if;
 exception when others then
   raise warning 'Let''s Play : direct_messages non ajoutée à la publication Realtime (%). La messagerie se rafraîchit alors toutes les minutes.', sqlerrm;
+end $$;
+
+
+-- ----------------------------------------------------------------------------
+-- 3f. Messagerie vocale : bucket de stockage des messages vocaux
+-- ----------------------------------------------------------------------------
+-- Les enregistrements (webm/ogg/m4a, 2 minutes et 5 Mo maxi, imposés par le
+-- composeur et re-vérifiés par le trigger ci-dessus) sont déposés dans un
+-- bucket **privé** : jamais d'URL publique, seulement des URL signées
+-- générées à la demande. Chaque fichier vit sous `{auth.uid()}/…` — la
+-- politique d'upload l'impose — et sa lecture est accordée soit à celui qui
+-- l'a déposé, soit au destinataire du message `direct_messages` qui le
+-- référence (jointure sur `attachment_path`, pas sur le seul chemin) : un
+-- fichier orphelin (message supprimé) n'est plus lisible que par son auteur.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'voice-messages', 'voice-messages', false, 5242880,
+  array['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/aac', 'audio/wav', 'audio/x-m4a']
+)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+do $$
+begin
+  drop policy if exists "Players upload their own voice messages" on storage.objects;
+  create policy "Players upload their own voice messages"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'voice-messages'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+  drop policy if exists "Conversation participants read voice messages" on storage.objects;
+  create policy "Conversation participants read voice messages"
+  on storage.objects for select to authenticated
+  using (
+    bucket_id = 'voice-messages'
+    and (
+      (storage.foldername(name))[1] = auth.uid()::text
+      or exists (
+        select 1 from public.direct_messages dm
+         where dm.attachment_path = storage.objects.name
+           and dm.recipient_id = auth.uid()
+      )
+    )
+  );
+
+  drop policy if exists "Senders delete their own voice messages" on storage.objects;
+  create policy "Senders delete their own voice messages"
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'voice-messages'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+exception
+  when others then
+    raise warning 'Let''s Play : politiques de stockage voice-messages non appliquées (%). Créez le bucket « voice-messages » (privé) à la main dans Storage si cette étape échoue.', sqlerrm;
 end $$;
 
 
@@ -1320,5 +1457,15 @@ from (
             and to_regprocedure('public.get_quiz_leaderboard(text,integer)') is not null
             and to_regprocedure('public.get_quiz_global_rank(uuid)') is not null
            then 'OK' else 'MANQUANT' end)
+, (34, 'messages vocaux (colonnes + bucket + politiques de stockage)',
+     case when exists (select 1 from information_schema.columns
+                       where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'attachment_path')
+            and exists (select 1 from storage.buckets where id = 'voice-messages')
+            and (select count(*) from pg_policies p
+                 where p.schemaname = 'storage' and p.tablename = 'objects'
+                   and p.policyname in ('Players upload their own voice messages',
+                                        'Conversation participants read voice messages',
+                                        'Senders delete their own voice messages')) = 3
+           then 'OK' else 'ABSENT (voir WARNING)' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;
