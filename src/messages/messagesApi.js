@@ -27,8 +27,12 @@
  * `attachmentPath` est la clé de l'objet, à faire signer via
  * `getVoiceMessageUrl`), soit en `data:` URL dans localStorage (persona de
  * démonstration — `attachmentUrl` est alors directement lisible).
+ *
+ * Diagnostic : en cas d'échec d'envoi vocal, `window.__lpVoiceDiag()` sonde
+ * chaque étape (upload storage, URL signée, INSERT) sans rien laisser derrière
+ * — voir `diagnoseVoicePipeline()` plus bas.
  */
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseConfigStatus, supabaseHost } from '../lib/supabase';
 import { demoReplyFor, seedDemoThreadState } from './demoThreads';
 
 export const MESSAGES_TABLE = 'direct_messages';
@@ -54,6 +58,65 @@ export const REPORT_REASONS = ['harassment', 'spam', 'hate', 'inappropriate', 'o
 // ---------------------------------------------------------------------------
 // Erreurs
 // ---------------------------------------------------------------------------
+
+/**
+ * Décrit une erreur Supabase sous une forme plate et lisible.
+ *
+ * Le client renvoie des objets aux formes variées (`PostgrestError` et
+ * `StorageError` sont de simples objets, `AuthError` une classe, et un échec
+ * réseau une `Error` ordinaire) ; or ce sont précisément `code`, `status`,
+ * `details` et `hint` qui distinguent un refus RLS (403 / `42501`), un bucket
+ * absent (404), un type MIME rejeté (400) ou un trigger qui lève (`P0001`).
+ * `console.error(objet)` ne les affiche pas de façon fiable une fois le bundle
+ * minifié : on les extrait donc explicitement.
+ *
+ * @param {*} error Erreur (ou objet d'erreur) renvoyée par supabase-js.
+ * @param {number} depth Garde-fou contre une chaîne de `cause` cyclique.
+ * @returns {{name: string|null, message: string|null, code: string|null,
+ *   status: number|string|null, error: string|null, details: string|null,
+ *   hint: string|null, cause: object|null}|null}
+ */
+export function describeSupabaseError(error, depth = 0) {
+  if (error === null || error === undefined) return null;
+  if (depth > 3) return { message: '[cause chain too deep]' };
+
+  const pick = (...values) => {
+    for (const value of values) {
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    return null;
+  };
+
+  // `PostgrestError` n'a pas de `status` ; `StorageError` porte `statusCode`,
+  // et un `fetch` raté remonte parfois la réponse d'origine.
+  const rawStatus = pick(error.status, error.statusCode, error.response?.status, error.__httpStatus);
+  const numericStatus = Number(rawStatus);
+
+  const described = {
+    name: pick(error.name),
+    message: pick(error.message, error.error_description, error.msg),
+    code: pick(error.code, error.errorCode, error.name === 'AuthError' ? error.name : null),
+    status: rawStatus === null ? null : (Number.isFinite(numericStatus) ? numericStatus : rawStatus),
+    error: pick(error.error),
+    details: pick(error.details),
+    hint: pick(error.hint),
+  };
+
+  if (typeof error === 'string') described.message = error;
+  if (error instanceof Error && !described.name) described.name = error.name;
+
+  const cause = error.cause && error.cause !== error ? describeSupabaseError(error.cause, depth + 1) : null;
+  if (cause) described.cause = cause;
+  return described;
+}
+
+/** Résumé d'une erreur en une ligne, pour les `notes` du diagnostic. */
+function errorSummary(error) {
+  const described = describeSupabaseError(error) || {};
+  const bits = [described.status && `HTTP ${described.status}`, described.code && `code ${described.code}`, described.message]
+    .filter(Boolean);
+  return bits.join(' · ') || 'erreur inconnue';
+}
 
 /** Vrai quand `public.direct_messages` n'existe pas (schéma SQL pas relancé). */
 export function isMissingMessagesTable(error) {
@@ -464,9 +527,12 @@ export function voiceFileExtension(mime) {
 }
 
 /**
- * Dépose un enregistrement vocal dans le bucket privé `voice-messages`, sous
- * `{uid}/…` (imposé par la politique de stockage). Renvoie la clé de l'objet,
- * à passer à `sendVoiceMessage`.
+ * Ramène un type MIME d'enregistrement à une valeur acceptée par le bucket.
+ *
+ * `MediaRecorder` annonce `audio/webm;codecs=opus` : avec le paramètre
+ * `;codecs=`, la comparaison au `allowed_mime_types` du bucket échoue et
+ * l'upload est refusé. On garde donc la partie avant le `;`, et on retombe sur
+ * `fallback` pour tout ce qui n'est pas un `audio/…` connu.
  */
 export function cleanVoiceMime(mime, fallback = 'audio/webm') {
   const value = String(mime || '').split(';')[0].trim().toLowerCase();
@@ -474,11 +540,58 @@ export function cleanVoiceMime(mime, fallback = 'audio/webm') {
   return VOICE_ALLOWED_MIME.includes(value) ? value : fallback;
 }
 
+// ---------------------------------------------------------------------------
+// Échecs de la chaîne vocale
+// ---------------------------------------------------------------------------
+
+/**
+ * Identifiant que l'application utilise pour construire les chemins
+ * `{uid}/…`. Renseigné par `MessagesContext` au montage : le diagnostic le
+ * compare à `auth.uid()` de la session, car les deux politiques (upload
+ * storage et trigger `direct_messages`) exigent `auth.uid()`.
+ */
+let appVoiceUid = null;
+
+/** Mémorise l'identifiant côté application (voir `appVoiceUid`). */
+export function rememberVoiceUid(uid) {
+  appVoiceUid = uid ? String(uid) : null;
+  return appVoiceUid;
+}
+
+/** L'identifiant côté application, tel que mémorisé (peut valoir `null`). */
+export function rememberedVoiceUid() {
+  return appVoiceUid;
+}
+
+/**
+ * Journalise un échec de la chaîne vocale et renvoie l'erreur décrite.
+ *
+ * Volontairement **non** conditionné à `import.meta.env.DEV` : l'échec se
+ * reproduit sur le build déployé, où ce drapeau vaut `false`. Sans ce log, la
+ * cause réelle (politique RLS, bucket, trigger) disparaît complètement et
+ * l'écran n'affiche que « Ce message vocal n'a pas pu être envoyé ».
+ *
+ * @param {'upload'|'insert'} stage Étape en échec.
+ * @param {*} error Erreur remontée par supabase-js.
+ * @param {object} context Détails de l'appel (chemin, mime, taille…).
+ */
+function voiceFailure(stage, error, context = {}) {
+  const described = describeSupabaseError(error);
+  // eslint-disable-next-line no-console
+  console.error(`[voice] ${stage} failed`, { stage, ...context, error: described });
+  return described;
+}
+
+/**
+ * Dépose un enregistrement vocal dans le bucket privé `voice-messages`, sous
+ * `{uid}/…` (imposé par la politique de stockage). Renvoie la clé de l'objet,
+ * à passer à `sendVoiceMessage`.
+ */
 export async function uploadVoiceRecording(uid, blob) {
   if (!supabase) throw new Error('Supabase is not configured');
   if (!uid || !blob) throw new Error('direct_message_missing');
   if (blob.size > VOICE_MAX_BYTES) {
-    throw Object.assign(new Error('direct_message_voice_too_long'), { code: 'P0001' });
+    throw Object.assign(new Error('direct_message_voice_too_long'), { code: 'P0001', stage: 'upload' });
   }
   const contentType = cleanVoiceMime(blob.type);
   const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${voiceFileExtension(contentType)}`;
@@ -492,44 +605,72 @@ export async function uploadVoiceRecording(uid, blob) {
   } catch (e) {
     // Bucket manquant, quota, mime refusé ou politique RLS : on signale une
     // erreur vocale explicite (affichée comme errVoiceInvalid) plutôt qu'un
-    // générique « Un problème est survenu ».
-    if (import.meta?.env?.DEV) {
-      console.error('[voice] uploadVoiceRecording failed', {
-        bucket: VOICE_BUCKET, path, contentType, size: blob.size, rawType: blob.type, error: e,
-      });
-    }
-    throw Object.assign(new Error('direct_message_voice_requires_attachment'), { code: 'P0001', cause: e });
+    // générique « Un problème est survenu ». La cause réelle est journalisée
+    // et portée par l'erreur (`stage`, `supabase`) pour rester diagnosable.
+    const described = voiceFailure('upload', e, {
+      bucket: VOICE_BUCKET,
+      path,
+      pathOwner: String(path).split('/')[0],
+      contentType,
+      rawType: blob?.type ?? null,
+      size: blob?.size ?? null,
+      uid: uid ? String(uid) : null,
+    });
+    throw Object.assign(new Error('direct_message_voice_requires_attachment'), {
+      code: 'P0001',
+      stage: 'upload',
+      cause: e,
+      supabase: described,
+    });
   }
 }
 
 /** Envoie un message vocal (fichier déjà déposé par `uploadVoiceRecording`). */
 export async function sendVoiceMessage(uid, peerId, attachmentPath, durationSeconds, mime) {
   if (!supabase) throw new Error('Supabase is not configured');
+  const payload = {
+    recipient_id: peerId,
+    body: '',
+    kind: 'voice',
+    attachment_path: attachmentPath,
+    attachment_duration: Math.min(VOICE_MAX_SECONDS, Math.max(1, Math.round(durationSeconds || 0))),
+    attachment_mime: cleanVoiceMime(mime),
+  };
   try {
     const { data, error } = await supabase
       .from(MESSAGES_TABLE)
-      .insert({
-        recipient_id: peerId,
-        body: '',
-        kind: 'voice',
-        attachment_path: attachmentPath,
-        attachment_duration: Math.min(VOICE_MAX_SECONDS, Math.max(1, Math.round(durationSeconds || 0))),
-        attachment_mime: cleanVoiceMime(mime),
-      })
+      .insert(payload)
       .select(MESSAGE_COLUMNS)
       .single();
     if (error) throw error;
     return data;
   } catch (e) {
-    // Si les colonnes vocales manquent, le schéma n'a pas été migré : on
-    // signale une erreur vocale explicite (affichée comme errVoiceInvalid).
-    if (import.meta?.env?.DEV) {
-      console.error('[voice] sendVoiceMessage failed', { peerId, attachmentPath, durationSeconds, mime, error: e });
-    }
+    // Le trigger refuse soit un fichier dont le dossier n'est pas
+    // `{sender_id}/…`, soit une amitié non `accepted` ; un échec de colonne
+    // signale un schéma non migré. Dans tous les cas, la cause réelle est
+    // journalisée et l'étape est portée par l'erreur.
+    const described = voiceFailure('insert', e, {
+      peerId: peerId ? String(peerId) : null,
+      attachmentPath: attachmentPath || null,
+      pathOwner: String(attachmentPath || '').split('/')[0] || null,
+      durationSeconds: payload.attachment_duration,
+      mime: mime || null,
+      attachmentMime: payload.attachment_mime,
+      uid: uid ? String(uid) : null,
+    });
     if (isColumnMissingError(e) || isMissingVoiceColumnError(e)) {
-      throw Object.assign(new Error('direct_message_voice_requires_attachment'), { code: 'P0001', cause: e });
+      throw Object.assign(new Error('direct_message_voice_requires_attachment'), {
+        code: 'P0001', stage: 'insert', cause: e, supabase: described,
+      });
     }
-    throw e;
+    // Les refus du trigger (amitié, blocage, cadence) conservent leur message :
+    // l'interface les traduit déjà. On n'ajoute que l'étape et la cause.
+    if (e && typeof e === 'object') {
+      let enriched = e;
+      try { enriched = Object.assign(e, { stage: 'insert', supabase: described }); } catch { /* objet scellé */ }
+      throw enriched;
+    }
+    throw Object.assign(new Error(String(e)), { stage: 'insert', cause: e, supabase: described });
   }
 }
 
@@ -544,11 +685,428 @@ export async function getVoiceMessageUrl(attachmentPath, expiresInSeconds = 3600
     return data?.signedUrl || null;
   } catch (e) {
     // Bucket manquant ou politique non appliquée : pas de crash, on
-    // renvoie null et la bulle affiche voiceUnavailable.
+    // renvoie null et la bulle affiche voiceUnavailable. L'échec reste
+    // journalisé : « audio introuvable » et « envoi refusé » se ressemblent
+    // à l'écran mais n'ont pas la même cause.
+    voiceFailure('signed-url', e, { bucket: VOICE_BUCKET, attachmentPath });
     const msg = String(e?.message || '').toLowerCase();
     if (msg.includes('bucket') || msg.includes('not found') || msg.includes('does not exist')) return null;
     throw e;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Diagnostic de la chaîne vocale
+// ---------------------------------------------------------------------------
+
+/** Table des amitiés (miroir de `friendsApi.js`, pour rester autonome). */
+const FRIENDSHIPS_TABLE = 'friendships';
+/** Préfixe des objets déposés par le diagnostic (facile à repérer / purger). */
+const DIAG_PATH_PREFIX = '__lp-voice-diag';
+/** Uuid nul : sonde de lecture qui ne ramène jamais de ligne. */
+const NIL_UUID = '00000000-0000-0000-0000-000000000000';
+
+/** Uuid v4 (le diagnostic a seulement besoin d'un identifiant bien formé). */
+function randomUuid() {
+  const cryptoRef = typeof globalThis === 'undefined' ? undefined : globalThis.crypto;
+  if (cryptoRef && typeof cryptoRef.randomUUID === 'function') return cryptoRef.randomUUID();
+  const hex = () => Math.floor(Math.random() * 16).toString(16);
+  const block = (length) => Array.from({ length }, hex).join('');
+  const variant = (Math.floor(Math.random() * 4) + 8).toString(16);
+  return `${block(8)}-${block(4)}-4${block(3)}-${variant}${block(3)}-${block(12)}`;
+}
+
+/**
+ * Interprète un échec d'upload dans `storage.objects`.
+ * Les deux politiques en jeu : la présence du bucket, et
+ * `(storage.foldername(name))[1] = auth.uid()::text`.
+ */
+function interpretUploadError(described, pathOwner, sessionUid) {
+  const status = described?.status;
+  const text = [described?.message, described?.error, described?.details, described?.hint].filter(Boolean).join(' ').toLowerCase();
+  if (status === 400 && /(mime|content.?type|unsupported|invalid)/.test(text)) {
+    return 'Le bucket a refusé ce type MIME : vérifie `allowed_mime_types` (7 valeurs attendues, sans `;codecs=`).';
+  }
+  if (status === 404 || /(bucket not found|does not exist|not found)/.test(text)) {
+    return `Le bucket « ${VOICE_BUCKET} » est introuvable pour ce projet (mauvais projet Supabase, ou bucket non créé).`;
+  }
+  if (status === 413 || /(too large|exceed|maximum)/.test(text)) {
+    return 'Fichier au-delà de la limite du bucket (5 Mo attendus).';
+  }
+  if (status === 403 || status === 401 || /(row.level security|row-level security|violates|policy|permission denied|jwt|unauthorized)/.test(text)) {
+    return sessionUid && pathOwner && pathOwner !== sessionUid
+      ? `Refus RLS : le chemin commence par « ${pathOwner} » alors que la session vaut « ${sessionUid} ». L'uid utilisé par l'application n'est PAS auth.uid().`
+      : `Refus RLS (403/401) sur storage.objects : la politique « Players upload their own voice messages » n'est pas satisfaite (bucket_id ou dossier {auth.uid()}), ou le JWT n'est pas celui d'un compte authenticated.`;
+  }
+  if (/(failed to fetch|networkerror|network|cors|load failed)/.test(text)) {
+    return 'Échec réseau/CORS avant même d’atteindre Supabase (bloqueur d’annonces, proxy, ou URL de projet injoignable).';
+  }
+  return 'Échec d’upload non classé : lis `code`/`status`/`details` ci-dessus.';
+}
+
+/**
+ * Interprète la sonde d'INSERT.
+ *
+ * La sonde vise un destinataire **aléatoire** : le trigger `before insert`
+ * lève donc avant tout engagement (ni contrainte de clé étrangère, ni
+ * politique RLS `with check` ne sont atteintes) et aucune ligne n'est créée.
+ * L'ordre des contrôles dans le trigger est décisif : les vérifications
+ * vocales (`attachment_path` non vide, `split_part(path,'/',1) = sender_id`,
+ * durée 1..120) passent **avant** le contrôle d'amitié. Obtenir
+ * `direct_message_requires_friendship` prouve donc que toute la partie vocale
+ * est acceptée.
+ */
+function interpretInsertProbe(described) {
+  const message = String(described?.message || '');
+  const code = String(described?.code || '');
+  const status = described?.status;
+  if (/direct_message_requires_friendship/i.test(message)) {
+    return { passed: true, meaning: 'Les contrôles vocaux du trigger sont PASSÉS (chemin `{uid}/…` accepté, durée valide, colonnes présentes). Seule l\'amitié manquait — attendu, le destinataire de la sonde est aléatoire.' };
+  }
+  if (/direct_message_voice_requires_attachment/i.test(message)) {
+    return { passed: false, meaning: 'Le trigger a rejeté le fichier : `attachment_path` vide, ou `split_part(attachment_path,\'/\',1) <> sender_id` — l\'uid qui construit le chemin n\'est pas auth.uid().' };
+  }
+  if (/direct_message_voice_too_long/i.test(message)) {
+    return { passed: false, meaning: 'Le trigger a rejeté la durée (`attachment_duration` hors 1..120).' };
+  }
+  if (/direct_message_invalid_kind/i.test(message)) {
+    return { passed: false, meaning: 'Le trigger a rejeté `kind` (attendu \'text\' ou \'voice\') — colonne `kind` présente mais contrainte différente du schéma livré.' };
+  }
+  if (/direct_message_requires_auth/i.test(message) || code === '42501') {
+    return { passed: false, meaning: 'Pas de session : `auth.uid()` est NULL côté serveur. Le token n\'est pas envoyé ou a expiré.' };
+  }
+  if (/direct_message_to_self/i.test(message)) {
+    return { passed: false, meaning: 'La sonde est tombée sur soi-même (cas dégénéré) — relance le diagnostic.' };
+  }
+  if (code === 'PGRST204' || code === '42703' || /(column|could not find)/i.test(message)) {
+    return { passed: false, meaning: 'Une colonne vocale manque (`kind`, `attachment_path`, `attachment_duration`, `attachment_mime`) : le schéma SQL n\'a pas été rejoué sur CE projet.' };
+  }
+  if (code === '42P01' || code === 'PGRST205' || /relation .* does not exist|could not find the table/i.test(message)) {
+    return { passed: false, meaning: 'La table `public.direct_messages` n\'existe pas sur ce projet.' };
+  }
+  if (status === 403 || /row.level security|row-level security|violates/i.test(message)) {
+    return { passed: false, meaning: 'Politique RLS d\'INSERT refusée (`auth.uid() = sender_id and auth.uid() <> recipient_id`).' };
+  }
+  return { passed: false, meaning: 'Échec d\'INSERT non classé : lis `code`/`status`/`details` ci-dessus.' };
+}
+
+/**
+ * Sonde la chaîne complète d'un message vocal et renvoie un rapport lisible.
+ *
+ * Exposée dans la console par `window.__lpVoiceDiag()`. Chaque étape est
+ * isolée : un échec n'interrompt pas les suivantes, et le rapport dit quelle
+ * étape casse — `storage-upload`, `storage-signed-url` ou l'`INSERT`.
+ *
+ * Sans argument, le diagnostic ne crée **aucun** message visible : la sonde
+ * d'INSERT vise un destinataire aléatoire, que le trigger refuse avant tout
+ * engagement, et l'objet déposé dans le bucket est supprimé en fin de course.
+ *
+ * @param {object} [options]
+ * @param {string} [options.uid] Identifiant à tester (défaut : celui mémorisé
+ *   par l'application, sinon `auth.uid()` de la session).
+ * @param {string} [options.mimeType] Type brut annoncé par `MediaRecorder`
+ *   (défaut : `audio/webm;codecs=opus`, le cas réel le plus courant).
+ * @param {string} [options.peerId] Identifiant d'un ami `accepted` : ajoute un
+ *   INSERT **réel** (puis sa suppression immédiate, ligne et fichier) pour
+ *   tester aussi la politique RLS d'insertion et le contrôle d'amitié.
+ * @returns {Promise<object>} Rapport `{ startedAt, stages, notes, verdict }`.
+ */
+export async function diagnoseVoicePipeline(options = {}) {
+  const startedAt = new Date().toISOString();
+  const stages = {};
+  const notes = [];
+  const note = (text) => { notes.push(text); };
+  const stage = (name, ok, payload = {}) => {
+    stages[name] = Object.assign({ ok: Boolean(ok) }, payload);
+    return stages[name];
+  };
+  let diagPath = null;
+  let diagRowId = null;
+  let liveTestRow = null; // ligne de test encore en place (id), sinon null
+
+  const report = () => {
+    const failed = Object.keys(stages).filter((name) => !stages[name].ok);
+    const verdict = failed.length === 0
+      ? 'Chaîne vocale entièrement verte côté client/serveur : si l\'envoi échoue encore en vrai, compare l\'enregistrement réel (mime, taille, durée) à la sonde, ou relance avec `{ peerId }` pour tester l\'INSERT de bout en bout.'
+      : `Étape(s) en échec : ${failed.join(', ')}.`;
+    const payload = { startedAt, finishedAt: new Date().toISOString(), stages, notes, verdict };
+    // eslint-disable-next-line no-console
+    console.log('[voice] diagnostic report', payload);
+    if (failed.length > 0) {
+      // eslint-disable-next-line no-console
+      console.error('[voice] diagnostic — première étape cassée :', failed[0], stages[failed[0]]);
+    }
+    return payload;
+  };
+
+  // --- 1. client Supabase ---------------------------------------------------
+  stage('client', Boolean(supabase), {
+    configured: Boolean(supabase),
+    host: supabaseHost || null,
+    hasUrl: supabaseConfigStatus.hasUrl,
+    hasKey: supabaseConfigStatus.hasKey,
+    bucket: VOICE_BUCKET,
+    maxBytes: VOICE_MAX_BYTES,
+    allowedMime: VOICE_ALLOWED_MIME,
+  });
+  if (!supabase) {
+    note('client : Supabase non configuré (VITE_SUPABASE_URL / clé absente) — aucune étape suivante ne peut tourner.');
+    return report();
+  }
+
+  // --- 2. session : l'uid de l'application est-il auth.uid() ? -------------
+  let sessionUid = null;
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    sessionUid = data?.session?.user?.id || null;
+    stage('auth', Boolean(sessionUid), {
+      sessionUid,
+      email: data?.session?.user?.email || null,
+      expiresAt: data?.session?.expires_at || null,
+      appUid: appVoiceUid,
+      requestedUid: options.uid ? String(options.uid) : null,
+    });
+    if (!sessionUid) note('auth : aucune session — le diagnostic tourne-t-il sur un compte connecté (et pas une persona de démonstration) ?');
+  } catch (e) {
+    stage('auth', false, { error: describeSupabaseError(e) });
+    note(`auth : getSession() a échoué — ${errorSummary(e)}`);
+  }
+
+  const uid = String(options.uid || appVoiceUid || sessionUid || '');
+  const uidMatchesSession = uid && sessionUid ? uid === sessionUid : null;
+  stages.auth = Object.assign(stages.auth || { ok: Boolean(sessionUid) }, { uidUsedForPaths: uid || null, uidMatchesSession });
+  if (uidMatchesSession === false) {
+    note(`auth : ÉCART D'IDENTIFIANT — l'application construit les chemins avec « ${uid} » alors que la session vaut « ${sessionUid} ». La politique d'upload ET le trigger (split_part(attachment_path, '/', 1) = sender_id) exigent auth.uid() : c'est la cause la plus probable de l'échec.`);
+  }
+  if (!uid) {
+    note('auth : aucun uid à tester — passe `{ uid }` ou connecte un compte.');
+    return report();
+  }
+
+  // --- 3. enregistrement de test -------------------------------------------
+  const rawType = options.mimeType || 'audio/webm;codecs=opus';
+  const cleanedMime = cleanVoiceMime(rawType);
+  const extension = voiceFileExtension(cleanedMime);
+  let blob = null;
+  try {
+    if (typeof Blob === 'undefined') throw new Error('Blob indisponible dans cet environnement');
+    // ~4 Ko d'octets : Supabase vérifie le MIME et la taille, pas le contenu.
+    blob = new Blob([new Uint8Array(4096).fill(26)], { type: cleanedMime });
+    stage('recording', true, {
+      rawType, cleanedMime, extension, size: blob.size,
+      mimeWasRewritten: rawType.toLowerCase() !== cleanedMime,
+      allowed: VOICE_ALLOWED_MIME.includes(cleanedMime),
+    });
+    if (!VOICE_ALLOWED_MIME.includes(cleanedMime)) {
+      note(`recording : « ${cleanedMime} » n'est pas dans allowed_mime_types — l'upload sera refusé.`);
+    }
+  } catch (e) {
+    stage('recording', false, { rawType, cleanedMime, error: describeSupabaseError(e) });
+    note(`recording : blob de test impossible — ${errorSummary(e)}`);
+    return report();
+  }
+
+  // --- 4. bucket (best-effort, souvent refusé sans service_role) -----------
+  try {
+    const { data, error } = await supabase.storage.getBucket(VOICE_BUCKET);
+    if (error) throw error;
+    stage('bucket', true, {
+      id: data?.id, public: data?.public, fileSizeLimit: data?.file_size_limit,
+      allowedMimeTypes: data?.allowed_mime_types || null,
+    });
+    if (data && data.public) note('bucket : le bucket est PUBLIC alors que le schéma le veut privé.');
+  } catch (e) {
+    // Non bloquant : lire un bucket n'est pas accordé au rôle `authenticated`
+    // sur tous les projets. On le signale sans conclure.
+    stage('bucket', true, { skipped: true, reason: errorSummary(e), error: describeSupabaseError(e) });
+    note('bucket : lecture des métadonnées refusée (normal sans clé service_role) — non concluant.');
+  }
+
+  // --- 5. storage-upload ----------------------------------------------------
+  diagPath = `${uid}/${DIAG_PATH_PREFIX}-${Date.now()}.${extension}`;
+  try {
+    const { data, error } = await supabase.storage.from(VOICE_BUCKET).upload(diagPath, blob, {
+      contentType: cleanedMime,
+      upsert: true,
+    });
+    if (error) throw error;
+    stage('storage-upload', true, { path: diagPath, contentType: cleanedMime, size: blob.size, returnedPath: data?.path || null });
+  } catch (e) {
+    const described = describeSupabaseError(e);
+    stage('storage-upload', false, {
+      path: diagPath, pathOwner: uid, sessionUid, contentType: cleanedMime, size: blob.size,
+      error: described, interpretation: interpretUploadError(described, uid, sessionUid),
+    });
+    note(`storage-upload : ${errorSummary(e)} → ${stages['storage-upload'].interpretation}`);
+    // Sans objet déposé, la suite (URL signée, INSERT) n'a plus de sens : on
+    // sonde quand même les colonnes et le trigger, qui ont leurs propres causes.
+  }
+
+  // --- 6. storage-signed-url ------------------------------------------------
+  if (stages['storage-upload']?.ok) {
+    try {
+      const { data, error } = await supabase.storage.from(VOICE_BUCKET).createSignedUrl(diagPath, 60);
+      if (error) throw error;
+      const signedUrl = data?.signedUrl || null;
+      let fetchStatus = null;
+      if (signedUrl && typeof fetch === 'function') {
+        try {
+          const response = await fetch(signedUrl);
+          fetchStatus = response.status;
+          // On ne télécharge pas le corps : le statut suffit.
+          if (typeof response.body?.cancel === 'function') await response.body.cancel();
+        } catch (fetchError) {
+          fetchStatus = `fetch échoué : ${errorSummary(fetchError)}`;
+        }
+      }
+      const readable = Boolean(signedUrl) && fetchStatus === 200;
+      stage('storage-signed-url', readable, { signedUrl: signedUrl ? `${signedUrl.slice(0, 72)}…` : null, fetchStatus });
+      if (!readable) {
+        note(`storage-signed-url : URL signée ${signedUrl ? 'obtenue' : 'refusée'}, relecture ${fetchStatus}. Sans URL lisible, la bulle affiche « message vocal indisponible » (voir la politique « Conversation participants read voice messages »).`);
+      }
+    } catch (e) {
+      stage('storage-signed-url', false, { path: diagPath, error: describeSupabaseError(e) });
+      note(`storage-signed-url : ${errorSummary(e)} → l'upload a réussi mais la relecture échoue (politique de lecture ou bucket privé mal câblé).`);
+    }
+  } else {
+    stage('storage-signed-url', false, { skipped: true, reason: 'upload en échec' });
+  }
+
+  // --- 7. colonnes de direct_messages (sonde de lecture, zéro ligne) -------
+  try {
+    const { error } = await supabase.from(MESSAGES_TABLE).select(MESSAGE_COLUMNS).eq('id', NIL_UUID).maybeSingle();
+    if (error) throw error;
+    stage('columns', true, { probed: MESSAGE_COLUMNS });
+  } catch (e) {
+    stage('columns', false, { probed: MESSAGE_COLUMNS, error: describeSupabaseError(e) });
+    note(`columns : la SELECT des colonnes vocales échoue — ${errorSummary(e)}. Schéma non rejoué sur ce projet ?`);
+  }
+
+  // --- 8. amitiés accepted (le trigger l'exige) ----------------------------
+  try {
+    const { data, error } = await supabase
+      .from(FRIENDSHIPS_TABLE)
+      .select('requester_id, addressee_id, status')
+      .eq('status', 'accepted')
+      .or(`requester_id.eq.${uid},addressee_id.eq.${uid}`)
+      .limit(5);
+    if (error) throw error;
+    const peers = (data || []).map((row) => (row.requester_id === uid ? row.addressee_id : row.requester_id));
+    stage('friendship', true, { acceptedSample: peers, count: (data || []).length });
+    if (peers.length === 0) {
+      note('friendship : AUCUNE amitié `accepted` pour cet uid — tout envoi réel sera refusé par le trigger (`direct_message_requires_friendship`), vocal ou non.');
+    } else {
+      note(`friendship : ami(s) disponible(s) pour un test de bout en bout — relance avec window.__lpVoiceDiag({ peerId: '${peers[0]}' }).`);
+    }
+  } catch (e) {
+    stage('friendship', false, { error: describeSupabaseError(e) });
+    note(`friendship : lecture des amitiés impossible — ${errorSummary(e)}`);
+  }
+
+  // --- 9. INSERT : sonde non destructive -----------------------------------
+  const probeRecipient = randomUuid();
+  const probePayload = {
+    recipient_id: probeRecipient,
+    body: '',
+    kind: 'voice',
+    attachment_path: diagPath,
+    attachment_duration: 3,
+    attachment_mime: cleanedMime,
+  };
+  try {
+    const { data, error } = await supabase.from(MESSAGES_TABLE).insert(probePayload).select('id').maybeSingle();
+    if (error) throw error;
+    // Cas dégénéré : la sonde a été acceptée (destinataire aléatoire ami).
+    // On supprime immédiatement la ligne pour ne rien laisser derrière.
+    diagRowId = data?.id || null;
+    if (diagRowId) {
+      try {
+        const { error: deleteError } = await supabase.from(MESSAGES_TABLE).delete().eq('id', diagRowId).eq('sender_id', uid);
+        if (!deleteError) diagRowId = null;
+      } catch { /* best-effort */ }
+    }
+    liveTestRow = diagRowId;
+    stage('insert-probe', true, {
+      unexpected: true, rowId: diagRowId, deleted: Boolean(diagRowId),
+      meaning: 'La sonde a été ACCEPTÉE alors que le destinataire était aléatoire : le contrôle d\'amitié du trigger ne semble pas appliqué.',
+    });
+    note('insert-probe : la sonde a été acceptée — le trigger ne vérifie pas l\'amitié comme dans schema.sql (§3e).');
+  } catch (e) {
+    const described = describeSupabaseError(e);
+    const interpretation = interpretInsertProbe(described);
+    stage('insert-probe', interpretation.passed, {
+      probeRecipient, payload: probePayload, error: described, meaning: interpretation.meaning,
+      noRowCreated: true,
+    });
+    note(`insert-probe : ${errorSummary(e)} → ${interpretation.meaning}`);
+  }
+
+  // --- 10. INSERT réel (opt-in) --------------------------------------------
+  const peerId = options.peerId ? String(options.peerId) : null;
+  if (peerId && stages['storage-upload']?.ok) {
+    try {
+      const { data, error } = await supabase
+        .from(MESSAGES_TABLE)
+        .insert(Object.assign({}, probePayload, { recipient_id: peerId }))
+        .select(MESSAGE_COLUMNS)
+        .single();
+      if (error) throw error;
+      diagRowId = data?.id || null;
+      // Nettoyage immédiat : la ligne d'abord ; le fichier part à l'étape 11 —
+      // sauf si la ligne reste en place (on garde alors un état cohérent).
+      let deleted = false;
+      if (diagRowId) {
+        try {
+          const { error: deleteError } = await supabase.from(MESSAGES_TABLE).delete().eq('id', diagRowId).eq('sender_id', uid).select('id');
+          deleted = !deleteError;
+        } catch { deleted = false; }
+        if (deleted) diagRowId = null;
+      }
+      liveTestRow = deleted ? null : diagRowId;
+      stage('insert-real', true, { peerId, rowId: diagRowId, deleted });
+      note(`insert-real : INSERT réel accepté puis supprimé (${deleted ? 'ligne effacée' : 'ATTENTION : ligne encore présente, id ' + diagRowId}). La chaîne est fonctionnelle de bout en bout.`);
+      if (!deleted) note('insert-real : la ligne de test n\'a pas pu être supprimée — supprime-la à la main.');
+    } catch (e) {
+      const described = describeSupabaseError(e);
+      stage('insert-real', false, { peerId, error: described, interpretation: interpretInsertProbe(described).meaning });
+      note(`insert-real : ${errorSummary(e)} → ${interpretInsertProbe(described).meaning}`);
+    }
+  } else if (peerId) {
+    stage('insert-real', false, { skipped: true, reason: 'upload en échec — impossible d\'envoyer un vrai message' });
+  } else {
+    stage('insert-real', true, { skipped: true, reason: 'non demandé (passe { peerId } pour un INSERT réel, supprimé aussitôt)' });
+  }
+
+  // --- 11. nettoyage --------------------------------------------------------
+  // L'objet de test part systématiquement, sauf s'il reste référencé par une
+  // ligne de test qu'on n'a pas pu supprimer (on garde alors un état cohérent
+  // : une bulle ne doit pas pointer vers un fichier absent).
+  if (diagPath && stages['storage-upload']?.ok && !liveTestRow) {
+    try {
+      const { error } = await supabase.storage.from(VOICE_BUCKET).remove([diagPath]);
+      if (error) throw error;
+      stage('cleanup', true, { removed: diagPath });
+    } catch (e) {
+      stage('cleanup', false, { removed: null, error: describeSupabaseError(e) });
+      note(`cleanup : l'objet de test « ${diagPath} » est encore dans le bucket — supprime-le à la main (politique de suppression refusée ?).`);
+    }
+  } else {
+    stage('cleanup', true, {
+      removed: null,
+      skipped: !(diagPath && stages['storage-upload']?.ok),
+      keptForRow: liveTestRow || undefined,
+    });
+  }
+
+  return report();
+}
+
+// Console de l'application connectée : `await window.__lpVoiceDiag()`.
+// Enregistré dès le chargement du module pour rester disponible même quand la
+// messagerie n'est pas ouverte, et sans effet de bord (aucun envoi).
+if (typeof window !== 'undefined' && typeof window.__lpVoiceDiag !== 'function') {
+  window.__lpVoiceDiag = (options) => diagnoseVoicePipeline(options || {});
 }
 
 /** Supprime un message envoyé par le joueur connecté (et son fichier, s'il y en a un). */

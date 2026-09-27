@@ -55,9 +55,11 @@ export {
   applyDemoSendVoice,
   applyDemoUnblock,
   applyReadReceipt,
+  cleanVoiceMime,
   conversationKey,
   deleteMessage,
   demoThreads,
+  describeSupabaseError,
   isBlockedError,
   isInvalidVoiceError,
   isMissingMessagesTable,
@@ -68,13 +70,16 @@ export {
   normalizeMessage,
   peersFromKey,
   prepareBody,
+  rememberVoiceUid,
   removeMessage,
   removeMessageById,
+  rememberedVoiceUid,
   sortThreadsByActivity,
   threadsFromRows,
   totalUnread,
   unreadFromRows,
   voiceFileExtension,
+  VOICE_ALLOWED_MIME,
 } from '../src/messages/messagesApi';
 export { messagesCopy, reasonLabel } from '../src/messages/messagesCopy';
 

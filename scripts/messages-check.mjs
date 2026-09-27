@@ -41,11 +41,13 @@ const {
   MESSAGE_MAX_LENGTH, VOICE_MAX_SECONDS, REPORT_REASONS,
   appendMessage, applyDemoBlock, applyDemoIncoming, applyDemoRead, applyDemoReply,
   applyDemoReport, applyDemoSend, applyDemoSendVoice, applyDemoUnblock, applyReadReceipt,
-  conversationKey, demoReplyFor, demoThreads, dueDemoIncoming, friendsCopy,
+  cleanVoiceMime, conversationKey, demoReplyFor, demoThreads, describeSupabaseError,
+  dueDemoIncoming, friendsCopy,
   isBlockedError, isInvalidVoiceError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
   markThreadReadLocal, mergeUnread, messagesCopy, normalizeMessage, peersFromKey,
-  prepareBody, reasonLabel, seedDemoThreadState, socialCopy, sortThreadsByActivity,
-  threadsFromRows, totalUnread, unreadFromRows, findDemoPlayer, renderApp, voiceFileExtension,
+  prepareBody, reasonLabel, rememberVoiceUid, rememberedVoiceUid, seedDemoThreadState, socialCopy,
+  sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, findDemoPlayer, renderApp,
+  voiceFileExtension, VOICE_ALLOWED_MIME,
 } = smoke;
 
 let failures = 0;
@@ -165,6 +167,35 @@ check('ligne sans `kind` → message texte', normalizeMessage(rows[0], me).kind,
 check('extension .webm par défaut', voiceFileExtension(''), 'webm');
 check('extension .m4a pour l’audio mp4', voiceFileExtension('audio/mp4'), 'm4a');
 check('extension .ogg pour l’audio ogg', voiceFileExtension('audio/ogg;codecs=opus'), 'ogg');
+
+// Nettoyage du MIME (le bucket refuse le paramètre `;codecs=`) : c'est la
+// première cause d'échec d'upload des messages vocaux.
+check('mime autorisé : les 7 valeurs du bucket', VOICE_ALLOWED_MIME.length, 7);
+check('mime webm;codecs=opus → audio/webm', cleanVoiceMime('audio/webm;codecs=opus'), 'audio/webm');
+check('mime ogg;codecs=opus → audio/ogg', cleanVoiceMime('AUDIO/OGG;codecs="opus"'), 'audio/ogg');
+check('mime mp4 → conservé', cleanVoiceMime('audio/mp4'), 'audio/mp4');
+check('mime inconnu → audio/webm', cleanVoiceMime('audio/flac'), 'audio/webm');
+check('mime absent → audio/webm', cleanVoiceMime(''), 'audio/webm');
+check('mime non audio → audio/webm', cleanVoiceMime('video/webm;codecs=vp8'), 'audio/webm');
+
+// Description des erreurs Supabase : le diagnostic et les logs s'appuient sur
+// une forme plate, car `console.error(erreur)` perd `code`/`status`/`details`.
+const describedStorage = describeSupabaseError({ message: 'The object was not found', error: 'not_found', statusCode: '404' });
+check('erreur storage : statusCode devient status', describedStorage.status, 404);
+check('erreur storage : message conservé', describedStorage.message, 'The object was not found');
+check('erreur storage : champ error conservé', describedStorage.error, 'not_found');
+const describedPostgrest = describeSupabaseError({ code: 'P0001', message: 'direct_message_requires_friendship', details: null, hint: null });
+check('erreur postgrest : code conservé', describedPostgrest.code, 'P0001');
+check('erreur postgrest : pas de status inventé', describedPostgrest.status, null);
+const describedNested = describeSupabaseError(new Error('outer', { cause: { message: 'inner', code: '42501' } }));
+check('chaîne de cause parcourue', describedNested.cause.code, '42501');
+check('erreur null → null', describeSupabaseError(null), null);
+check('chaîne brute acceptée', describeSupabaseError('rate limit').message, 'rate limit');
+
+// L'identifiant employé par l'application pour les chemins `{uid}/…` est
+// mémorisé pour que `window.__lpVoiceDiag()` le compare à auth.uid().
+check('uid mémorisé', (rememberVoiceUid(me), rememberedVoiceUid()), me);
+check('uid oublié (persona démo)', (rememberVoiceUid(null), rememberedVoiceUid()), null);
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/3] aperçu de démonstration\n');

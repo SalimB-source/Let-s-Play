@@ -37,6 +37,7 @@ import {
   mergeUnread,
   prepareBody,
   readDemoMessages,
+  rememberVoiceUid,
   removeMessage,
   removeMessageById,
   reportPeer,
@@ -306,6 +307,11 @@ export function MessagesProvider({ children }) {
   // Changement de compte (connexion, déconnexion, autre persona) : on repart de
   // zéro pour ne jamais montrer les messages du joueur précédent.
   useEffect(() => {
+    // Identifiant que l'application emploie pour les chemins vocaux `{uid}/…` :
+    // mémorisé pour que `window.__lpVoiceDiag()` puisse le comparer à
+    // `auth.uid()`, les deux politiques (upload et trigger) exigeant ce dernier.
+    // Une persona de démonstration n'a pas de session : on ne mémorise rien.
+    rememberVoiceUid(mode === 'supabase' ? uid : null);
     setThreads({});
     setBlockedIds([]);
     setReported({});
