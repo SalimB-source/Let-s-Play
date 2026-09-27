@@ -33,7 +33,7 @@ const {
   CALL_BLOCKERS, CALL_KINDS, CALL_WARNINGS,
   classifyMediaError, callsCopy, callsText, callBlockLabel, callStatusLabel, callSummaryText,
   createCallId, describeCallError, formatDuration, iceServersFromEnv,
-  inboxChannelFor, isCallEvent, makeCallEvent, normalizeCallKind, renderApp,
+  inboxChannelFor, isCallEvent, isEmbedded, makeCallEvent, normalizeCallKind, permissionFailureKind, renderApp,
   ringDecision, turnConfigured, RING_IGNORE, RING_RING, RING_WAIT,
 } = smoke;
 
@@ -153,6 +153,22 @@ check('TURN absent par défaut', turnConfigured({}), false);
 check('TURN présent par variable d’environnement', turnConfigured({ VITE_TURN_URL: 'turn:turn.example.com:3478' }));
 check('TURN vide ignoré', turnConfigured({ VITE_TURN_URL: '   ' }), false);
 check('l’échec de connexion pointe le TURN', callsText('fr').hintTurn.includes('TURN'));
+
+// Micro refusé : trois causes, trois réglages — l'utilisateur doit savoir OÙ agir.
+check('isEmbedded existe', typeof isEmbedded, 'function');
+check('… hors iframe par défaut (Node)', isEmbedded(), false);
+check('permissionFailureKind existe', typeof permissionFailureKind, 'function');
+check('iframe sans allow → iframe', permissionFailureKind({ embedded: true }), 'iframe');
+check('micro bloqué pour l’origine → blocked', permissionFailureKind({ embedded: false, permissionState: 'denied' }), 'blocked');
+check('refus au moment de la demande → denied', permissionFailureKind({ embedded: false, permissionState: 'prompt' }), 'denied');
+check('… même sans état → denied', permissionFailureKind({}), 'denied');
+check('message iframe EN', callsCopy.en.errPermissionIframe.includes('iframe'));
+check('message bloqué FR', callsCopy.fr.errPermissionBlocked.includes('Paramètres'));
+check('message refusé AR', callsCopy.ar.errPermissionDenied.length > 10);
+check('describeCallError iframe (FR)', describeCallError({ name: 'NotAllowedError' }, callsText('fr'), 'iframe'), callsCopy.fr.errPermissionIframe);
+check('describeCallError bloqué (EN)', describeCallError({ name: 'NotAllowedError' }, callsText('en'), 'blocked'), callsCopy.en.errPermissionBlocked);
+check('describeCallError refusé (AR)', describeCallError({ name: 'NotAllowedError' }, callsText('ar'), 'denied'), callsCopy.ar.errPermissionDenied);
+check('describeCallError sans détail → générique', describeCallError({ name: 'NotAllowedError' }, callsText('fr')), callsCopy.fr.errPermission);
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/2] rendu SSR\n');

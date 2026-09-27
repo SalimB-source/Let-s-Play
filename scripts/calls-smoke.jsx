@@ -59,8 +59,10 @@ export {
   iceServersFromEnv,
   inboxChannelFor,
   isCallEvent,
+  isEmbedded,
   makeCallEvent,
   normalizeCallKind,
+  permissionFailureKind,
   ringDecision,
   turnConfigured,
 } from '../src/messages/callsCore';
