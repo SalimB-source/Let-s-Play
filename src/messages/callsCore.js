@@ -57,7 +57,7 @@ export const RING_WAIT = 'wait';     // la liste d'amis arrive : on garde la son
 export const RING_IGNORE = 'ignore'; // inconnu, bloqué, soi-même : silence
 
 /** Types d'événements diffusés sur les canaux de signalisation. */
-export const CALL_EVENTS = ['ring', 'cancel', 'reply', 'sdp', 'ice', 'bye'];
+export const CALL_EVENTS = ['ring', 'cancel', 'reply', 'sdp', 'ice', 'bye', 'media'];
 
 /** Délais (ms) du scénario d'appel. */
 export const OUTGOING_TIMEOUT_MS = 30 * 1000; // sonnerie sans réponse (côté appelant)
@@ -122,6 +122,29 @@ export function createCallId() {
 /** Normalise une sorte d'appel reçue de l'extérieur ; `null` si inconnue. */
 export function normalizeCallKind(kind) {
   return CALL_KINDS.includes(kind) ? kind : null;
+}
+
+/**
+ * Sorte d'appel RÉELLEMENT obtenue : on demandait de la vidéo mais le flux
+ * capturé n'a aucune piste vidéo ? Alors l'appel est en réalité un appel
+ * audio. Ce cas paraît théorique, il ne l'est pas :
+ *
+ *   - la WebView Android peut répondre à `getUserMedia({audio, video})` avec
+ *     un **accord partiel** (micro accordé, caméra refusée) : la promesse
+ *     résout avec un flux sans AUCUNE piste vidéo, sans erreur ;
+ *   - certains navigateurs anciens résolvent aussi sans la piste demandée.
+ *
+ * Sans ce contrôle, l'appel reste « vidéo » dans l'interface (boutons caméra,
+ * attente d'une image) alors qu'aucune image n'existe ni n'arrivera jamais :
+ * c'est exactement la plainte « l'appel semble marcher mais l'image ne
+ * s'affiche pas ». Le résultat sert à dégrader l'appel en audio EN
+ * EXPLIQUANT pourquoi (voir `acquireMedia` dans `CallsContext`).
+ */
+export function effectiveStreamKind(wantedKind, stream) {
+  const wanted = normalizeCallKind(wantedKind) || 'audio';
+  if (wanted !== 'video') return 'audio';
+  const tracks = typeof stream?.getVideoTracks === 'function' ? stream.getVideoTracks() : [];
+  return tracks.length > 0 ? 'video' : 'audio';
 }
 
 /**

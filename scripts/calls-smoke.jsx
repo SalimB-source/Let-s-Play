@@ -55,6 +55,7 @@ export {
   RING_WAIT,
   classifyMediaError,
   createCallId,
+  effectiveStreamKind,
   formatDuration,
   iceServersFromEnv,
   inboxChannelFor,

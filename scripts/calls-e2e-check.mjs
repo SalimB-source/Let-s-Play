@@ -280,13 +280,28 @@ const rtc = (() => {
 
 dom.window.RTCPeerConnection = rtc;
 dom.window.MediaStream = FakeStream;
+/**
+ * Politique caméra du monde courant — les scénarios de repli la font varier :
+ *   - 'full'       : micro + caméra (par défaut) ;
+ *   - 'no-camera'  : getUserMedia({video}) est REJETÉ (caméra refusée), le
+ *                    micro reste obtenu — cas d'un navigateur qui refuse la
+ *                    caméra ;
+ *   - 'audio-only' : accord partiel façon WebView Android — la promesse
+ *                    résout SANS erreur mais le flux n'a AUCUNE piste vidéo.
+ */
+const cameraPolicy = { current: 'full' };
 Object.defineProperty(dom.window.navigator, 'mediaDevices', {
   configurable: true,
   value: {
-    getUserMedia: async ({ video } = {}) => new FakeStream([
-      new FakeTrack('audio'),
-      ...(video ? [new FakeTrack('video')] : []),
-    ]),
+    getUserMedia: async ({ video } = {}) => {
+      if (video && cameraPolicy.current === 'no-camera') {
+        throw Object.assign(new Error('Camera denied'), { name: 'NotAllowedError' });
+      }
+      return new FakeStream([
+        new FakeTrack('audio'),
+        ...(video && cameraPolicy.current !== 'audio-only' ? [new FakeTrack('video')] : []),
+      ]);
+    },
     enumerateDevices: async () => [{ kind: 'videoinput', deviceId: 'cam-1' }],
   },
 });
@@ -532,6 +547,10 @@ if (established) {
   check('Bob reçoit le média d’Alice', Boolean(bob.calls().remoteStream));
   check('Alice a le micro ouvert', alice.calls().micOn);
   check('panneau d’appel affiché chez Alice', alice.html().includes('calls-panel'));
+  // Appel VOCAL : aucun élément média ne portait le flux distant (la vidéo
+  // seule était rendue) — la voix de l'ami ne jouait donc JAMAIS. Le média
+  // est désormais branché même sans image (élément masqué `is-audio-only`).
+  check('appel vocal : le son distant est branché (média masqué)', alice.html().includes('is-audio-only') && bob.html().includes('is-audio-only'));
 }
 
 /* ------------------------------------------------------------------------ */
@@ -555,6 +574,28 @@ check('troisième sonnerie chez Bob', await waitFor(() => bob.calls().phase === 
 await act(async () => { alice.calls().endCall(); });
 check('annulation reçue par Bob', await waitFor(() => bob.calls().endReason === K.END_CANCELLED, 25));
 check('Alice a annulé', alice.calls().endReason, K.END_CANCELLED);
+
+/* --------------- appel vidéo de bout en bout : l'image passe -------------- */
+
+check('retour au calme avant l’appel vidéo', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
+cameraPolicy.current = 'full';
+await act(async () => { await alice.calls().startCall(PROFILES.bob.id, 'video'); });
+check('quatrième sonnerie chez Bob, en vidéo', await waitFor(() => bob.calls().phase === 'incoming' && bob.calls().kind === 'video', 25));
+await act(async () => { await bob.calls().acceptCall(); });
+const videoLive = await waitFor(() => alice.calls().phase === 'active' && bob.calls().phase === 'active', 40);
+check('appel vidéo établi des deux côtés', videoLive);
+if (videoLive) {
+  check('Alice reçoit la piste vidéo de Bob', alice.calls().remoteStream?.getVideoTracks?.().length, 1);
+  check('Bob reçoit la piste vidéo d’Alice', bob.calls().remoteStream?.getVideoTracks?.().length, 1);
+  check('vidéo de l’ami rendue chez Alice', alice.html().includes('calls-remote'));
+  check('incrustation locale (PiP) chez Alice', alice.html().includes('calls-pip'));
+  check('vidéo de l’ami rendue chez Bob', bob.html().includes('calls-remote'));
+  check('incrustation locale (PiP) chez Bob', bob.html().includes('calls-pip'));
+  check('pas de média audio masqué quand la vidéo passe', alice.html().includes('is-audio-only'), false);
+  check('pas de repli caméra en appel vidéo nominal', alice.calls().cameraFallback, false);
+}
+await act(async () => { alice.calls().endCall(); });
+check('retour au calme après l’appel vidéo', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[6/7] dégradations réelles\n');
@@ -665,7 +706,59 @@ dom.window.navigator.mediaDevices.getUserMedia = originalGetUserMedia;
 if (originalPermissions) dom.window.navigator.permissions = originalPermissions;
 else delete dom.window.navigator.permissions;
 
+// (g) Caméra REFUSÉE sur un appel vidéo : l'appel continue en audio, mais
+//     EXPLIQUÉ (bandeau + pastille) — plus jamais le repli silencieux qui
+//     faisait croire à un appel vidéo « qui marche sans image ». L'ami, lui,
+//     reçoit un appel vocal dès la sonnerie.
+check('retour au calme avant caméra refusée', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
+cameraPolicy.current = 'no-camera';
+await act(async () => { await alice.calls().startCall(PROFILES.bob.id, 'video'); });
+check('caméra refusée : l’appel descend en audio', alice.calls().kind, 'audio');
+check('… le repli est porté par l’état (pastille)', alice.calls().cameraFallback, true);
+await settle(2);
+check('… le repli est expliqué (bandeau)', String(alice.calls().notice).includes('Caméra'));
+check('… l’ami sonne en appel VOCAL', await waitFor(() => bob.calls().phase === 'incoming' && bob.calls().kind === 'audio', 25));
+await act(async () => { await bob.calls().acceptCall(); });
+const degradedLive = await waitFor(() => alice.calls().phase === 'active' && bob.calls().phase === 'active', 40);
+check('appel dégradé établi des deux côtés', degradedLive);
+if (degradedLive) {
+  check('… pastille « caméra indisponible » rendue', alice.html().includes('calls-fallback') && alice.html().includes('Caméra indisponible'));
+  check('… pas d’incrustation vidéo (pas de piste)', alice.html().includes('calls-pip'), false);
+  check('… le son distant reste branché des deux côtés', alice.html().includes('is-audio-only') && bob.html().includes('is-audio-only'));
+}
+await act(async () => { alice.calls().endCall(); });
+check('retour au calme après l’appel dégradé', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
+
+// (h) Accord partiel façon WebView Android : getUserMedia({audio, video})
+//     résout SANS erreur mais SANS piste vidéo. Même détection, même
+//     explication — l'appel ne reste pas « vidéo » avec un écran vide, et
+//     part chez l'ami comme un appel vocal.
+cameraPolicy.current = 'audio-only';
+await act(async () => { await alice.calls().startCall(PROFILES.bob.id, 'video'); });
+await settle(2);
+check('accord partiel WebView : l’appel descend en audio', alice.calls().kind, 'audio');
+check('… repli signalé', alice.calls().cameraFallback, true);
+check('… bandeau explicatif', String(alice.calls().notice).includes('Caméra'));
+check('… Bob est bien sonné en appel vocal', await waitFor(() => bob.calls().phase === 'incoming' && bob.calls().kind === 'audio', 25));
+await act(async () => { alice.calls().endCall(); });
+check('retour au calme après l’accord partiel', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
+
+// (i) Caméra de l'AMI indisponible (l'appelante, elle, a sa caméra) : elle
+//     est prévenue par l'événement « media » — son écran « vidéo » ne reste
+//     pas vide sans la moindre explication.
+cameraPolicy.current = 'full';
+await act(async () => { await alice.calls().startCall(PROFILES.bob.id, 'video'); });
+check('cinquième sonnerie chez Bob, en vidéo', await waitFor(() => bob.calls().phase === 'incoming' && bob.calls().kind === 'video', 25));
+cameraPolicy.current = 'no-camera'; // Bob seul : sa caméra échoue à la réponse
+await act(async () => { await bob.calls().acceptCall(); });
+cameraPolicy.current = 'full';
+await settle(4);
+check('Bob a dégradé son appel en audio', bob.calls().kind, 'audio');
+check('… Bob voit son propre repli', bob.calls().cameraFallback, true);
+check('… Alice est prévenue de la caméra absente', String(alice.calls().notice).includes('ton ami'));
+await act(async () => { alice.calls().endCall(); });
 check('retour au calme final', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
+cameraPolicy.current = 'full';
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[7/7] intégrité du transport\n');

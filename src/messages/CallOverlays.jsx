@@ -92,21 +92,70 @@ function CallAvatar({ name, src, size = 92 }) {
   );
 }
 
-/** Branche un MediaStream sur un `<video>` (autoplay tolérant, sens iOS). */
+/**
+ * Branche un MediaStream sur un `<video>` — avec un `play()` FIABLE.
+ *
+ * C'était le point qui laissait l'image noire alors que le son passait,
+ * surtout dans la WebView Android : le premier `play()` (ou l'autoplay) est
+ * rejeté — lecture exigée après un geste utilisateur, geste déjà consommé par
+ * le clic « Répondre », médias pas encore chargés — et l'ancien code avalait
+ * le rejet pour toujours. Désormais :
+ *
+ *   - `play()` est relancé dès que des métadonnées/données arrivent
+ *     (`loadedmetadata`, `canplay`) — le moment où l'autoplay redevient
+ *     possible sur un flux qui vient juste d'être posé ;
+ *   - il est relancé sur chaque geste du joueur (n'importe quel clic) — le
+ *     déblocage que réclame la WebView arrive souvent juste après ;
+ *   - entre les deux, quelques relances espacées couvrent les politiques
+ *     d'autoplay qui lèvent le blocage d'elles-mêmes.
+ */
 function Stream({ stream, muted = false, className = '', mirrored = false, label }) {
   const ref = useRef(null);
   useEffect(() => {
     const node = ref.current;
     if (!node) return undefined;
     if (node.srcObject !== (stream || null)) node.srcObject = stream || null;
-    if (stream) {
+    node.muted = Boolean(muted);
+    if (!stream) return undefined;
+
+    let cancelled = false;
+    let timer = null;
+    let retries = 0;
+    const MAX_AUTO_RETRIES = 12;
+    const attempt = () => {
+      if (cancelled) return;
       const playing = node.play?.();
-      if (playing && typeof playing.catch === 'function') playing.catch(() => { /* geste requis : le panneau reste visible */ });
-    }
-    return () => {
-      if (node) node.srcObject = null;
+      if (!playing || typeof playing.catch !== 'function') return;
+      playing.then(() => {
+        clearTimeout(timer);
+      }).catch(() => {
+        if (cancelled) return;
+        if (retries < MAX_AUTO_RETRIES) {
+          retries += 1;
+          clearTimeout(timer);
+          timer = setTimeout(attempt, 300 * retries);
+        }
+        // Au-delà, les gestes et `loadedmetadata` gardent une chance de
+        // relancer la lecture — on n'abandonne jamais tout à fait.
+      });
     };
-  }, [stream]);
+    const onReady = () => attempt();
+    const onGesture = () => attempt();
+    attempt();
+    node.addEventListener('loadedmetadata', onReady);
+    node.addEventListener('canplay', onReady);
+    window.addEventListener('pointerdown', onGesture, true);
+    window.addEventListener('touchstart', onGesture, true);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      node.removeEventListener('loadedmetadata', onReady);
+      node.removeEventListener('canplay', onReady);
+      window.removeEventListener('pointerdown', onGesture, true);
+      window.removeEventListener('touchstart', onGesture, true);
+      node.srcObject = null;
+    };
+  }, [stream, muted]);
   return (
     <video
       ref={ref}
@@ -164,7 +213,7 @@ function IncomingCall({ calls, t }) {
 
 function ActiveCall({ calls, t }) {
   const {
-    phase, kind, peer, micOn, camOn, connected, elapsedMs, endReason, endDetail,
+    phase, kind, peer, micOn, camOn, cameraFallback, connected, elapsedMs, endReason, endDetail,
     localStream, remoteStream, endCall, toggleMic, toggleCam, flipCamera,
   } = calls;
   const isVideo = kind === 'video';
@@ -182,6 +231,9 @@ function ActiveCall({ calls, t }) {
           <span className="calls-status" aria-live="polite">
             {timer ? <em className="calls-timer">{timer}</em> : status}
           </span>
+          {cameraFallback && phase !== 'ended' && (
+            <span className="calls-fallback" role="status">{t.cameraFallback}</span>
+          )}
           {endDetail && <span className="calls-error" role="alert">{endDetail}</span>}
         </header>
 
@@ -196,6 +248,16 @@ function ActiveCall({ calls, t }) {
               </span>
               <span className="calls-eq" aria-hidden="true"><i /><i /><i /><i /><i /></span>
             </div>
+          )}
+          {/*
+            PAS d'image à montrer (appel vocal, ou caméra de l'ami
+            indisponible) ? Le flux distant doit QUAND MÊME être branché sur
+            un élément média — c'est lui qui porte la voix. L'ancien panneau
+            ne rendait aucun média dans ce cas : les appels vocaux ne
+            jouaient donc jamais la voix de l'ami.
+          */}
+          {phase !== 'ended' && !remoteVideo && remoteStream && (
+            <Stream stream={remoteStream} className="calls-remote is-audio-only" label={peer?.name} />
           )}
           {localVideo && phase !== 'ended' && (
             <span className="calls-pip">

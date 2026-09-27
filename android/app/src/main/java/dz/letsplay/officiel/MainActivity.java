@@ -84,6 +84,15 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);      // thème, session, quizz, listes…
         settings.setAllowFileAccess(false);
+        // Appels vocaux / vidéo (WebRTC) : sans ce réglage, la WebView exige
+        // un geste utilisateur pour CHAQUE lecture de média. Le clic « Répondre
+        // » est déjà consommé quand l'image de l'ami arrive (quelques secondes
+        // plus tard, après la connexion pair-à-pair) : le `play()` du
+        // `<video>` distant était rejeté et l'image restait NOIRE alors que
+        // le son passait. Autoriser la lecture sans geste règle ça pour les
+        // vidéos de l'appel (et pour les `<video>` du site : mutes, elles ne
+        // produisent jamais de son surprise).
+        settings.setMediaPlaybackRequiresUserGesture(false);
         webView.setBackgroundColor(Color.BLACK);
 
         webView.setWebViewClient(new WebViewClient() {
