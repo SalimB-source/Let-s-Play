@@ -620,6 +620,31 @@ if (recovered) {
   await act(async () => { bob.calls().declineCall(); });
   await settle(4);
 }
+check('retour au calme avant micro refusé', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
+
+// (e) Micro refusé : l'appel ne doit pas rester figé sur « Appel vocal… »
+//     (c'était le bug de `setPhase` asynchrone) et doit dire OÙ régler le
+//     micro (iframe, site bloqué, refus ponctuel).
+const originalGetUserMedia = dom.window.navigator.mediaDevices.getUserMedia;
+const originalPermissions = dom.window.navigator.permissions;
+dom.window.navigator.mediaDevices.getUserMedia = async () => {
+  throw Object.assign(new Error('Permission denied'), { name: 'NotAllowedError' });
+};
+dom.window.navigator.permissions = {
+  query: async () => ({ state: 'denied' }),
+};
+await act(async () => { await alice.calls().startCall(PROFILES.bob.id, 'audio'); });
+await settle(4);
+check('micro refusé : l’appel échoue', alice.calls().endReason, K.END_FAILED);
+check('… avec un détail qui dit où agir (bloqué)', String(alice.calls().endDetail).includes('site') || String(alice.calls().endDetail).includes('Site'));
+check('… ne reste pas bloqué en « Appel vocal… »', alice.calls().phase !== 'outgoing');
+check('… revient au calme (applyPhase synchrone)', await waitFor(() => alice.calls().phase === 'idle', 60));
+check('… aucun événement perdu sur un canal non joint pendant l’échec', faults.length, 0);
+// Restaure le micro pour la suite (même si plus rien ne suit, par propreté).
+dom.window.navigator.mediaDevices.getUserMedia = originalGetUserMedia;
+if (originalPermissions) dom.window.navigator.permissions = originalPermissions;
+else delete dom.window.navigator.permissions;
+
 check('retour au calme final', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
 
 /* ------------------------------------------------------------------------ */

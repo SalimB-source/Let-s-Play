@@ -775,7 +775,20 @@ Si rien ne se passe, dans l'ordre :
    démo) et **amis** — le bouton est grisé avec la raison au survol sinon ;
 2. **HTTPS** (ou localhost) : en HTTP, `getUserMedia` est absent et les
    boutons l'expliquent ;
-3. **la permission micro/caméra** a été accordée dans le navigateur ;
+3. **la permission micro/caméra** a été accordée dans le navigateur — trois
+   causes, trois réglages quand le navigateur dit « accès refusé » :
+
+   | Symptôme à l'écran | Cause | Où agir |
+   | --- | --- | --- |
+   | « Micro bloqué — la page est dans une iframe… » | page dans une `<iframe>` sans `allow=\"microphone\"` | ajouter `allow=\"microphone; camera\"` à l'iframe ou ouvrir le site directement |
+   | « Micro bloqué pour ce site… » | micro déjà bloqué pour l'origine (le navigateur ne redemande plus) | cadenas dans la barre d'adresse → Paramètres du site → Microphone → Autoriser, puis recharger |
+   | « Accès au micro refusé… » | refus au moment de la demande | autoriser quand le navigateur le demande, puis relancer l'appel |
+
+   Le code distingue les trois cas par `isEmbedded()` (page dans une iframe ?)
+   croisé avec `navigator.permissions.query({name:'microphone'})`
+   (`permissionFailureKind`) — trois messages EN/FR/AR, vérifiés par
+   `npm run check:calls`.
+
 4. **l'appel sonne mais ne s'établit pas** (« Connexion… » puis échec) : il
    manque un relais **TURN** (voir ci-dessus) — c'est le cas typique en 4G/5G ;
 5. **dans l'APK Android** : les autorisations micro et caméra doivent avoir

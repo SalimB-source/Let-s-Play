@@ -28,13 +28,16 @@ import {
   RING_HOLD_MS,
   RING_IGNORE,
   RING_WAIT,
+  classifyMediaError,
   createCallId,
   formatDuration,
   iceServersFromEnv,
   inboxChannelFor,
   isCallEvent,
+  isEmbedded,
   makeCallEvent,
   normalizeCallKind,
+  permissionFailureKind,
   ringDecision,
   turnConfigured,
 } from './callsCore';
@@ -183,8 +186,11 @@ export function CallsProvider({ children }) {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const phaseRef = useRef(phase);
-  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  const phaseRef = useRef('idle');
+  const applyPhase = useCallback((next) => {
+    phaseRef.current = next;
+    setPhase(next);
+  }, []);
   const langRef = useRef(lang);
   useEffect(() => { langRef.current = lang; }, [lang]);
   const uidRef = useRef(uid);
@@ -402,17 +408,17 @@ export function CallsProvider({ children }) {
     setStartedAt(null);
     setEndReason(reason);
     setEndDetail(detail);
-    setPhase('ended');
+    applyPhase('ended');
     clearTimer('ended');
     timersRef.current.ended = setTimeout(() => {
       if (!mountedRef.current) return;
-      setPhase('idle');
+      applyPhase('idle');
       setEndReason(null);
       setEndDetail(null);
       setPeer(null);
       setRole(null);
     }, ENDED_TOAST_MS);
-  }, [clearTimer, stopSounds, closePeerConnection, stopLocalTracks, dropCallChannels]);
+  }, [clearTimer, stopSounds, closePeerConnection, stopLocalTracks, dropCallChannels, applyPhase]);
 
   /**
    * Motif lisible d'un échec de connexion pair-à-pair : sans relais TURN, les
@@ -470,7 +476,7 @@ export function CallsProvider({ children }) {
         clearTimer('connect');
         clearTimer('grace');
         if (phaseRef.current !== 'active') {
-          setPhase('active');
+          applyPhase('active');
           setConnected(true);
           setStartedAt(Date.now());
           setNowTick(Date.now());
@@ -497,7 +503,7 @@ export function CallsProvider({ children }) {
       }
     };
     return pc;
-  }, [clearTimer, stopSounds, sendToPeer, insertCallSummary, finish, connectFailureDetail]);
+  }, [clearTimer, stopSounds, sendToPeer, insertCallSummary, finish, connectFailureDetail, applyPhase]);
 
   /* ------------------------- réception de la signalisation ------------------ */
 
@@ -520,7 +526,7 @@ export function CallsProvider({ children }) {
     setEndReason(null);
     setEndDetail(null);
     setNotice(null);
-    setPhase('incoming');
+    applyPhase('incoming');
     stopSounds();
     soundsStopRef.current = startRingtone();
     // Le canal de l'ami est joint dès maintenant : répondre (même pour
@@ -533,7 +539,7 @@ export function CallsProvider({ children }) {
       if (phaseRef.current !== 'incoming') return;
       finish(END_NO_ANSWER, null, { silent: true });
     }, INCOMING_TIMEOUT_MS);
-  }, [friends, stopSounds, ensureChannel, clearTimer, finish]);
+  }, [friends, stopSounds, ensureChannel, clearTimer, finish, applyPhase]);
 
   const handleSignal = useCallback((payload) => {
     const me = uid;
@@ -596,7 +602,7 @@ export function CallsProvider({ children }) {
           if (phaseRef.current !== 'outgoing') return;
           clearTimer('ring');
           stopSounds();
-          setPhase('connecting');
+          applyPhase('connecting');
           clearTimer('connect');
           timersRef.current.connect = setTimeout(() => finish(END_FAILED, connectFailureDetail()), CONNECT_TIMEOUT_MS);
           const pc = pcRef.current;
@@ -681,7 +687,7 @@ export function CallsProvider({ children }) {
       default:
         break;
     }
-  }, [uid, friends, messages, sendEvent, ensureChannel, stopSounds, clearTimer, finish, insertCallSummary, startIncoming, connectFailureDetail]);
+  }, [uid, friends, messages, sendEvent, ensureChannel, stopSounds, clearTimer, finish, insertCallSummary, startIncoming, connectFailureDetail, applyPhase]);
 
   // La référence du gestionnaire évite de recréer le canal à chaque rendu.
   const signalRef = useRef(handleSignal);
@@ -753,7 +759,7 @@ export function CallsProvider({ children }) {
     dropCallChannels();
     callRef.current = null;
     pendingRingRef.current = null;
-    setPhase('idle');
+    applyPhase('idle');
     setEndReason(null);
     setEndDetail(null);
     setNotice(null);
@@ -840,7 +846,7 @@ export function CallsProvider({ children }) {
     setEndReason(null);
     setEndDetail(null);
     setNotice(null);
-    setPhase('outgoing');
+    applyPhase('outgoing');
 
     try {
       // 1. Micro / caméra AVANT de sonner : l'autorisation se demande une
@@ -877,10 +883,24 @@ export function CallsProvider({ children }) {
       }, OUTGOING_TIMEOUT_MS);
     } catch (e) {
       const t = callsText(langRef.current);
-      const detail = e?.callError === 'nowebrtc' ? t.reasonNoWebRTC : describeCallError(e, t);
+      let failureKind = null;
+      if (classifyMediaError(e) === 'permission') {
+        try {
+          const embedded = isEmbedded();
+          let permissionState = null;
+          try {
+            if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+              const status = await navigator.permissions.query({ name: 'microphone' });
+              permissionState = status?.state || null;
+            }
+          } catch {}
+          failureKind = permissionFailureKind({ embedded, permissionState });
+        } catch {}
+      }
+      const detail = e?.callError === 'nowebrtc' ? t.reasonNoWebRTC : describeCallError(e, t, failureKind);
       finish(END_FAILED, detail);
     }
-  }, [enabled, uid, blockerFor, friends, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, sendToPeer, clearTimer, insertCallSummary, finish, showNotice]);
+  }, [enabled, uid, blockerFor, friends, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, sendToPeer, clearTimer, insertCallSummary, finish, showNotice, applyPhase]);
 
   const acceptCall = useCallback(async () => {
     const call = callRef.current;
@@ -889,7 +909,7 @@ export function CallsProvider({ children }) {
 
     clearTimer('incoming');
     stopSounds();
-    setPhase('connecting');
+    applyPhase('connecting');
     setEndReason(null);
     setEndDetail(null);
     clearTimer('connect');
@@ -926,12 +946,26 @@ export function CallsProvider({ children }) {
       }
     } catch (e) {
       const t = callsText(langRef.current);
-      const detail = e?.callError === 'nowebrtc' ? t.reasonNoWebRTC : describeCallError(e, t);
+      let failureKind = null;
+      if (classifyMediaError(e) === 'permission') {
+        try {
+          const embedded = isEmbedded();
+          let permissionState = null;
+          try {
+            if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+              const status = await navigator.permissions.query({ name: 'microphone' });
+              permissionState = status?.state || null;
+            }
+          } catch {}
+          failureKind = permissionFailureKind({ embedded, permissionState });
+        } catch {}
+      }
+      const detail = e?.callError === 'nowebrtc' ? t.reasonNoWebRTC : describeCallError(e, t, failureKind);
       // Pas de média = pas d'appel : on prévient l'ami (équivalent d'un refus).
       sendEvent(peerId, makeCallEvent('reply', { callId, from: uid, to: peerId, result: 'decline' }));
       finish(END_FAILED, detail);
     }
-  }, [enabled, uid, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, stopSounds, clearTimer, finish, connectFailureDetail]);
+  }, [enabled, uid, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, stopSounds, clearTimer, finish, connectFailureDetail, applyPhase]);
 
   const declineCall = useCallback(() => {
     const call = callRef.current;

@@ -46,6 +46,9 @@ export const callsCopy = {
     endLost: 'Connection lost',
     endFailed: 'The call could not start',
     errPermission: 'Microphone/camera access denied — allow it in your browser settings.',
+    errPermissionIframe: 'Microphone blocked — the page is inside an iframe without microphone permission. Add allow=\"microphone\" to the iframe or open the site directly.',
+    errPermissionBlocked: 'Microphone blocked for this site — allow it in your browser site settings (padlock → Site settings → Microphone → Allow), then reload.',
+    errPermissionDenied: 'Microphone access denied — allow it when the browser asks, then try again.',
     errNodevice: 'No microphone or camera found.',
     errBusyDevice: 'Your microphone or camera is used by another app.',
     errGeneric: 'The call could not start.',
@@ -93,6 +96,9 @@ export const callsCopy = {
     endLost: 'Connexion perdue',
     endFailed: 'L’appel n’a pas pu démarrer',
     errPermission: 'Accès au micro/à la caméra refusé — autorise-le dans ton navigateur.',
+    errPermissionIframe: 'Micro bloqué — la page est dans une iframe sans permission micro. Ajoute allow=\"microphone\" à l’iframe ou ouvre le site directement.',
+    errPermissionBlocked: 'Micro bloqué pour ce site — autorise-le dans les paramètres du site (cadenas → Paramètres du site → Micro → Autoriser), puis recharge.',
+    errPermissionDenied: 'Accès au micro refusé — autorise-le quand le navigateur le demande, puis réessaie.',
     errNodevice: 'Aucun micro ni caméra trouvé.',
     errBusyDevice: 'Ton micro ou ta caméra est utilisé par une autre application.',
     errGeneric: 'L’appel n’a pas pu démarrer.',
@@ -140,6 +146,9 @@ export const callsCopy = {
     endLost: 'انقطع الاتصال',
     endFailed: 'تعذّر بدء المكالمة',
     errPermission: 'رُفض الوصول إلى الميكروفون/الكاميرا — اسمح به من إعدادات المتصفح.',
+    errPermissionIframe: 'الميكروفون محظور — الصفحة داخل iframe بدون إذن الميكروفون. أضف allow=\"microphone\" إلى الـ iframe أو افتح الموقع مباشرة.',
+    errPermissionBlocked: 'الميكروفون محظور لهذا الموقع — اسمح به من إعدادات الموقع (القفل → إعدادات الموقع → الميكروفون → سماح)، ثم أعد التحميل.',
+    errPermissionDenied: 'رُفض الوصول إلى الميكروفون — اسمح به عندما يطلبه المتصفح، ثم حاول مرة أخرى.',
     errNodevice: 'لا يوجد ميكروفون أو كاميرا.',
     errBusyDevice: 'الميكروفون أو الكاميرا يستخدمه تطبيق آخر.',
     errGeneric: 'تعذّر بدء المكالمة.',
@@ -201,9 +210,14 @@ export function callStatusLabel(t, { phase, kind, endReason }) {
 }
 
 /** Message lisible pour une erreur de micro / caméra (`getUserMedia`). */
-export function describeCallError(error, t) {
+export function describeCallError(error, t, failureKind = null) {
   switch (classifyMediaError(error)) {
-    case 'permission': return t.errPermission;
+    case 'permission': {
+      if (failureKind === 'iframe') return t.errPermissionIframe || t.errPermission;
+      if (failureKind === 'blocked') return t.errPermissionBlocked || t.errPermission;
+      if (failureKind === 'denied') return t.errPermissionDenied || t.errPermission;
+      return t.errPermission;
+    }
     case 'nodevice': return t.errNodevice;
     case 'busy': return t.errBusyDevice;
     default: return t.errGeneric;

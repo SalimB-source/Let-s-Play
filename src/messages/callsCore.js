@@ -198,3 +198,21 @@ export function classifyMediaError(error) {
   if (name === 'NotReadableError' || name === 'AbortError' || error?.code === 2) return 'busy';
   return 'generic';
 }
+
+/**
+ * La page est-elle embarquée dans une iframe ? Un `allow=\"microphone\"`\n * manquant sur l'iframe bloque `getUserMedia` par construction, même si le\n * joueur clique sur « Autoriser ».\n */
+export function isEmbedded() {
+  try {
+    return typeof window !== 'undefined' && window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Trois causes, trois réglages quand le micro est refusé :\n *\n *   - page dans une iframe sans `allow=\"microphone\"` → `iframe` ;\n *   - micro déjà bloqué pour l'origine (le navigateur ne redemande plus rien)\n *     → `blocked` ;\n *   - refus au moment de la demande → `denied`.\n *\n * `permissionState` vient de `navigator.permissions.query({name:'microphone'})`\n * (`granted` / `denied` / `prompt` / null si indisponible).\n */
+export function permissionFailureKind({ embedded = false, permissionState = null } = {}) {
+  if (embedded) return 'iframe';
+  if (permissionState === 'denied') return 'blocked';
+  return 'denied';
+}
