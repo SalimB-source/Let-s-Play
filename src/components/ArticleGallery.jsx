@@ -6,8 +6,8 @@ import { baseUrl as base } from '../data';
 // items [{ src, alt, caption }] et credit (ligne de mention sous la grille).
 // Avec trois visuels ou plus, la première capture s'étale sur toute la
 // largeur ; les suivantes se partagent la ligne en deux colonnes.
-export default function ArticleGallery({ label, meta, items, credit }) {
-  if (!items || items.length === 0) return null;
+export default function ArticleGallery({ label, meta, items = [], credit, creditSources = [] }) {
+  if (!items.length) return null;
   return (
     <figure className="article-gallery">
       <div className="section-label">
@@ -22,7 +22,20 @@ export default function ArticleGallery({ label, meta, items, credit }) {
           </figure>
         ))}
       </div>
-      {credit ? <figcaption className="article-gallery-credit">{credit}</figcaption> : null}
+      {credit || creditSources.length ? (
+        <figcaption className="article-gallery-credit">
+          {credit}
+          {creditSources.length ? (
+            <span className="article-gallery-sources">
+              {' '}Sources des visuels : {creditSources.map((source, index) => (
+                <React.Fragment key={source.href}>
+                  {index ? ', ' : ''}<a href={source.href} target="_blank" rel="noreferrer">{source.label}</a>
+                </React.Fragment>
+              ))}.
+            </span>
+          ) : null}
+        </figcaption>
+      ) : null}
     </figure>
   );
 }
