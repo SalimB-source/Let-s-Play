@@ -347,7 +347,7 @@ function ReportForm({ t, name, reported, onSubmit, onClose }) {
 
 /* --------------------------------- discussion ------------------------------- */
 
-export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, blocked, reported, canWrite, onBack, onSend, onDelete, onBlock, onUnblock, onReport, onCall, callBlocker }) {
+export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, blocked, reported, canWrite, onBack, onSend, onDelete, onBlock, onUnblock, onReport, onCall, callBlocker, callWarning }) {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -387,6 +387,16 @@ export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, b
   const statusText = online
     ? ft.onlineShort
     : (profile?.lastSeenAt ? fill(ft.lastSeen, { when: formatCommentDate(profile.lastSeenAt, lang) }) : ft.offlineShort);
+
+  // Boutons d'appel : `callBlocker` grise le bouton et explique pourquoi ;
+  // `callWarning` (ami qui semble hors ligne) n'empêche PAS d'appeler — la
+  // présence est une estimation — il complète seulement l'infobulle. Sans
+  // aucun des deux, l'infobulle reste le nom de l'action.
+  const callBlock = callBlocker?.(peerId) ?? null;
+  const callWarn = callWarning?.(peerId) ?? null;
+  const callHint = (callBlock || callWarn)
+    ? callBlockLabel(callBlock || callWarn, ct, profile?.name || '?')
+    : null;
 
   const submit = async () => {
     const body = draft.trim();
@@ -440,16 +450,17 @@ export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, b
         </div>
         <span className="messages-thread-tools">
           {/* Appels vocal / vidéo — grisés avec la raison au survol quand
-              l'ami est hors ligne, en démo, bloqué… (`callBlocker`), et tout
-              simplement absents si le module d'appels n'est pas monté. */}
+              l'appel est impossible (aperçu démo, compte absent, joueur
+              bloqué, déjà en appel…), avertis sans être grisés quand l'ami
+              semble hors ligne, et absents si le module n'est pas monté. */}
           {onCall && ct && (
             <>
               <button
                 type="button"
                 className="messages-tool"
-                disabled={Boolean(callBlocker?.(peerId))}
+                disabled={Boolean(callBlock)}
                 aria-label={ct.callAudio}
-                title={callBlockLabel(callBlocker?.(peerId) ?? 'unavailable', ct, profile?.name || '?') || ct.callAudio}
+                title={callHint || ct.callAudio}
                 onClick={() => onCall(peerId, 'audio')}
               >
                 <PhoneIcon />
@@ -457,9 +468,9 @@ export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, b
               <button
                 type="button"
                 className="messages-tool"
-                disabled={Boolean(callBlocker?.(peerId))}
+                disabled={Boolean(callBlock)}
                 aria-label={ct.callVideo}
-                title={callBlockLabel(callBlocker?.(peerId) ?? 'unavailable', ct, profile?.name || '?') || ct.callVideo}
+                title={callHint || ct.callVideo}
                 onClick={() => onCall(peerId, 'video')}
               >
                 <VideoCallIcon />

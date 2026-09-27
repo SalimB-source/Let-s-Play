@@ -69,6 +69,14 @@ function FlipIcon({ size = 20 }) {
   );
 }
 
+function CloseIcon({ size = 12 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 function initialsFor(name) {
   const clean = String(name || '').trim();
   return clean ? clean.slice(0, 2).toUpperCase() : '?';
@@ -251,13 +259,39 @@ function ActiveCall({ calls, t }) {
   );
 }
 
+/* -------------------------------- avertissement ------------------------------ */
+
+/**
+ * Bandeau court expliquant pourquoi un appel n'a pas abouti (bouton
+ * indisponible, micro refusé, connexion pair-à-pair impossible sans relais
+ * TURN…). Sans lui, un échec ne laisse qu'un silence à l'écran.
+ */
+function CallNotice({ calls }) {
+  return (
+    <div className="calls-notice" role="status" aria-live="polite">
+      <span className="calls-notice-text">{calls.notice}</span>
+      <button type="button" className="calls-notice-close" onClick={calls.dismissNotice} aria-label="Fermer">
+        <CloseIcon size={12} />
+      </button>
+    </div>
+  );
+}
+
 /* --------------------------------- aiguillage -------------------------------- */
 
 export default function CallOverlays() {
   const calls = useCalls();
   const { lang } = useLanguage();
   const t = callsText(lang);
-  if (calls.phase === 'idle') return null;
-  if (calls.phase === 'incoming') return <IncomingCall calls={calls} t={t} />;
-  return <ActiveCall calls={calls} t={t} />;
+
+  let surface = null;
+  if (calls.phase === 'incoming') surface = <IncomingCall calls={calls} t={t} />;
+  else if (calls.phase !== 'idle') surface = <ActiveCall calls={calls} t={t} />;
+
+  return (
+    <>
+      {calls.notice ? <CallNotice calls={calls} /> : null}
+      {surface}
+    </>
+  );
 }

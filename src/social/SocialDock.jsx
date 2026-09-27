@@ -342,6 +342,7 @@ export default function SocialDock() {
           onBack={backFromThread}
           onCall={calls.startCall}
           callBlocker={calls.blockerFor}
+          callWarning={calls.warningFor}
           onSend={send}
           onDelete={deleteMessage}
           onBlock={block}
