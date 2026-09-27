@@ -11,6 +11,8 @@ import { autoStories } from '../news/autoIndex';
 import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 import SpoilerAlert from '../components/SpoilerAlert';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 
 const stories = {
   // Actu à la une du 26.09.2026 — aussi mise en avant sur l'accueil.
@@ -382,6 +384,7 @@ export default function CurrentNews({ slug, slugPrefix }) {
   const articleId = `/news/${key}`;
   const sentimentId = inferSentimentForStory(story);
   const meta = sentimentMeta(sentimentId);
+  const gallery = story.gallery || getArticleGallery(key);
   const [views, setViews] = useState(null);
 
   useEffect(() => {
@@ -424,6 +427,8 @@ export default function CurrentNews({ slug, slugPrefix }) {
           </SpoilerAlert>
         ))}
 
+        {gallery ? <ArticleGallery {...gallery} /> : null}
+
         {story.quote ? <div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div> : null}
         {story.p2 ? <p>{story.p2}</p> : null}
 
@@ -448,7 +453,6 @@ export default function CurrentNews({ slug, slugPrefix }) {
       </article>
 
       <aside className="article-aside">
-        <div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>{story.auto ? 'ACTU DU JOUR · SOURCÉE' : 'LET’S PLAY ORIGINAL'}</strong>{views != null && <><span className="aside-kicker" style={{ marginTop: 14 }}>VUES GLOBALES</span><strong>{formatViews(views)} vues</strong></>}<span className="aside-kicker" style={{ marginTop: 14 }}>TON DE L’ACTU</span><strong className={`sentiment-text ${meta.color}`}>{meta.emoji} {meta.label}</strong></div>
         <div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div>
       </aside>
     </main>
