@@ -34,7 +34,9 @@ seedDemoProfiles();
 export { DEMO_PROFILES, DEMO_PROFILE_FIXTURES };
 export { DEMO_INITIAL_STATE, findDemoPlayer } from '../src/friends/demoRoster';
 export {
+  CALL_BLOCKERS,
   CALL_KINDS,
+  CALL_WARNINGS,
   CONNECT_TIMEOUT_MS,
   DISCONNECT_GRACE_MS,
   ENDED_TOAST_MS,
@@ -48,6 +50,9 @@ export {
   INCOMING_TIMEOUT_MS,
   OUTGOING_TIMEOUT_MS,
   RING_DEDUP_MS,
+  RING_IGNORE,
+  RING_RING,
+  RING_WAIT,
   classifyMediaError,
   createCallId,
   formatDuration,
@@ -56,6 +61,8 @@ export {
   isCallEvent,
   makeCallEvent,
   normalizeCallKind,
+  ringDecision,
+  turnConfigured,
 } from '../src/messages/callsCore';
 export {
   callBlockLabel,

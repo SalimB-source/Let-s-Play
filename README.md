@@ -662,10 +662,13 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 Dans l'en-tête de chaque discussion (fenêtre sociale sur bureau, page
 `/messages` partout), deux boutons à côté de « Profil » : **téléphone** (appel
 vocal) et **caméra** (appel vidéo). Comme la messagerie, les appels sont
-réservés aux **amis** — et seulement à ceux qui sont **en ligne** : un bouton
-grisé s'explique toujours au survol (« Salim est hors ligne — les appels se
-font entre amis en ligne », « aperçu démo », « connexion sécurisée (HTTPS)
-exigée »…).
+réservés aux **amis**. Un bouton grisé s'explique toujours au survol
+(« aperçu démo », « connexion sécurisée (HTTPS) exigée », « deviens ami avec
+ce joueur »…). Un ami qui **semble hors ligne** ne grise PAS le bouton : la
+présence est une estimation (canal de présence, dernier passage vu), l'appel
+part quand même et conclut « Sans réponse » s'il n'aboutit pas — l'infobulle
+prévient. Un appel impossible le dit aussi à l'écran (bandeau en bas), jamais
+de clic muet.
 
 **Comment ça marche** (trois étages, tous sans serveur en plus) :
 
@@ -726,9 +729,9 @@ quand même : simplement moins souvent du premier coup en mobile.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/messages/CallsContext.jsx` | le moteur et l'état : sonneries entrantes (canal personnel permanent), `startCall` / `acceptCall` / `declineCall` / `endCall`, micro / caméra / bascule de caméra, connexions P2P, traces d'appel, `blockerFor` (les boutons grisés s'expliquent) |
-| `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, durées, classification des erreurs de média |
-| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant, panneau d'appel (vidéo, PiP miroir, chrono, contrôles) |
+| `src/messages/CallsContext.jsx` | le moteur et l'état : sonneries entrantes (canal personnel permanent, sonnerie gardée tant que la liste d'amis n'est pas chargée), `startCall` / `acceptCall` / `declineCall` / `endCall`, micro / caméra / bascule de caméra, connexions P2P, traces d'appel, `blockerFor` (boutons grisés) et `warningFor` (avertissements), `notice` (un échec s'explique) |
+| `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, `ringDecision`, durées, classification des erreurs de média |
+| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant (**Répondre / Refuser**), panneau d'appel (vidéo, PiP miroir, chrono, contrôles), bandeau d'avertissement |
 | `src/messages/callSounds.js` | sons synthétisés (Web Audio) : sonnerie, tonalité, connexion, fin |
 | `src/messages/callsCopy.js` | textes EN / FR / AR, libellés de blocage, traces d'appel — le site étant publié en français, EN / AR restent en filet de sécurité, comme les dictionnaires du site |
 | `src/messages/calls.css` | styles des overlays (plein écran, coins coupés, mobile, `prefers-reduced-motion`) |
@@ -736,24 +739,48 @@ quand même : simplement moins souvent du premier coup en mobile.
 
 ### Vérifications
 
-- `npm run check:calls` — logique pure (ICE/TURN par variables d'environnement,
-  canaux de signalisation, événements broadcast validés — version, type,
-  appel, destinataire, émetteur —, durées, classification des erreurs de
-  micro/caméra, traces d'appel et libellés complets dans les trois langues),
-  puis rendu SSR : visiteur sans bouton ni panneau, discussion de démonstration
-  avec les deux boutons **grisés et expliqués** (pas de WebRTC entre personas),
-  rien dans la liste des discussions, libellés EN / FR / AR, jamais appelable
-  soi-même.
+- `npm run check:calls` — deux étapes :
+  - **logique pure + rendu SSR** (`scripts/calls-check.mjs`) : ICE/TURN par
+    variables d'environnement, canaux de signalisation, événements broadcast
+    validés (version, type, appel, destinataire, émetteur), décision de
+    sonnerie (ami / bloqué / liste d'amis pas encore chargée), durées,
+    classification des erreurs de micro/caméra, traces d'appel et libellés
+    complets dans les trois langues ; puis visiteur sans bouton ni panneau,
+    discussion de démonstration avec les deux boutons **grisés et expliqués**
+    (pas de WebRTC entre personas), rien dans la liste des discussions,
+    libellés EN / FR / AR, jamais appelable soi-même ;
+  - **un appel de bout en bout entre deux joueurs** (`scripts/calls-e2e-check.mjs`) :
+    deux arbres React montés côte à côte, chacun avec son propre client
+    Supabase (comme deux navigateurs), un bus Realtime et un WebRTC simulés.
+    Le script déroule sonnerie entrante → **pop-up Répondre / Refuser** →
+    refus → appel établi (média des deux côtés) → occupé → raccrocher →
+    annuler, puis les dégradations : sonnerie reçue avant que la liste d'amis
+    soit chargée, appel impossible expliqué, ami « hors ligne » quand même
+    appelable, canal de signalisation en échec puis rétabli. Tout événement
+    perdu sur un canal non joint est compté comme une panne.
 - `npm run check:messages`, `check:friends` et `check:i18n` continuent de
   passer : les appels se greffent sur la messagerie sans rien redonder.
 
 ### Tester un vrai appel
 
-Il faut deux **comptes Supabase amis et en ligne** (deux navigateurs, ou un
-ordinateur + un téléphone sur le déploiement HTTPS) : ouvrir la discussion,
-appuyer sur le téléphone ou la caméra, répondre de l'autre côté. En local
-(`npm run dev` sur localhost), les appels entre deux onglets fonctionnent —
-les permissions micro/caméra se demandent normalement.
+Il faut deux **comptes Supabase amis** (deux navigateurs, ou un ordinateur +
+un téléphone sur le déploiement HTTPS) : ouvrir la discussion, appuyer sur le
+téléphone ou la caméra, répondre de l'autre côté. En local (`npm run dev` sur
+localhost), les appels entre deux onglets fonctionnent — les permissions
+micro/caméra se demandent normalement.
+
+Si rien ne se passe, dans l'ordre :
+
+1. **les deux joueurs sont connectés avec un vrai compte** (pas une persona de
+   démo) et **amis** — le bouton est grisé avec la raison au survol sinon ;
+2. **HTTPS** (ou localhost) : en HTTP, `getUserMedia` est absent et les
+   boutons l'expliquent ;
+3. **la permission micro/caméra** a été accordée dans le navigateur ;
+4. **l'appel sonne mais ne s'établit pas** (« Connexion… » puis échec) : il
+   manque un relais **TURN** (voir ci-dessus) — c'est le cas typique en 4G/5G ;
+5. **dans l'APK Android** : les autorisations micro et caméra doivent avoir
+   été accordées à l'application (voir `android/README.md`) — sans elles, la
+   WebView refuse `getUserMedia` et aucun appel n'est possible.
 
 ## Succès débloqués par les actions du site
 

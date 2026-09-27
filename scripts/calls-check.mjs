@@ -30,10 +30,11 @@ const smoke = await import(path.join(outDir, 'calls-smoke.js'));
 const {
   DEMO_INITIAL_STATE, DEMO_PROFILES,
   END_BUSY, END_DECLINED, END_FAILED, END_HUNG_UP, END_LOST, END_NO_ANSWER,
-  CALL_KINDS,
+  CALL_BLOCKERS, CALL_KINDS, CALL_WARNINGS,
   classifyMediaError, callsCopy, callsText, callBlockLabel, callStatusLabel, callSummaryText,
   createCallId, describeCallError, formatDuration, iceServersFromEnv,
   inboxChannelFor, isCallEvent, makeCallEvent, normalizeCallKind, renderApp,
+  ringDecision, turnConfigured, RING_IGNORE, RING_RING, RING_WAIT,
 } = smoke;
 
 let failures = 0;
@@ -130,6 +131,28 @@ const keys = (set) => Object.keys(set).sort().join(',');
 check('textes EN / FR alignés', keys(callsCopy.fr), keys(callsCopy.en));
 check('textes EN / AR alignés', keys(callsCopy.ar), keys(callsCopy.en));
 check('les textes ne sont pas vides', Object.values(callsCopy.fr).every((value) => String(value).length > 0));
+
+// Décision prise à la réception d'une sonnerie : un appel ne doit jamais
+// disparaître en silence, et un inconnu ne doit jamais faire sonner.
+check('ami → la sonnerie sonne', ringDecision({ from: 'a', me: 'b', relationKind: 'friend' }), RING_RING);
+check('ami bloqué → silence', ringDecision({ from: 'a', me: 'b', relationKind: 'friend', blocked: true }), RING_IGNORE);
+check('soi-même → silence', ringDecision({ from: 'a', me: 'a', relationKind: 'friend' }), RING_IGNORE);
+check('inconnu, liste chargée → silence', ringDecision({ from: 'a', me: 'b', relationKind: null }), RING_IGNORE);
+check('demande en attente, liste chargée → silence', ringDecision({ from: 'a', me: 'b', relationKind: 'outgoing' }), RING_IGNORE);
+check('liste d’amis pas encore chargée → on garde la sonnerie', ringDecision({ from: 'a', me: 'b', relationKind: null, friendsReady: false }), RING_WAIT);
+check('… même pour une demande en attente', ringDecision({ from: 'a', me: 'b', relationKind: 'incoming', friendsReady: false }), RING_WAIT);
+check('… mais un blocage reste un blocage', ringDecision({ from: 'a', me: 'b', blocked: true, friendsReady: false }), RING_IGNORE);
+
+// La présence en ligne n'empêche plus d'appeler : c'est une estimation.
+check('« hors ligne » n’est plus un blocage', CALL_BLOCKERS.includes('offline'), false);
+check('… c’est devenu un avertissement', CALL_WARNINGS.join(','), 'offline');
+check('le libellé d’avertissement existe toujours', callBlockLabel('offline', fr, 'Salim').includes('Salim'));
+
+// Un relais TURN configuré se détecte (sinon l'échec de connexion l'explique).
+check('TURN absent par défaut', turnConfigured({}), false);
+check('TURN présent par variable d’environnement', turnConfigured({ VITE_TURN_URL: 'turn:turn.example.com:3478' }));
+check('TURN vide ignoré', turnConfigured({ VITE_TURN_URL: '   ' }), false);
+check('l’échec de connexion pointe le TURN', callsText('fr').hintTurn.includes('TURN'));
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/2] rendu SSR\n');

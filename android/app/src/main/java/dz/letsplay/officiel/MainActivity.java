@@ -1,8 +1,10 @@
 package dz.letsplay.officiel;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Insets;
 import android.net.Uri;
@@ -20,6 +22,10 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Coque Android du site Let's Play (https://let-s-play-nu.vercel.app).
@@ -39,6 +45,11 @@ public class MainActivity extends Activity {
     private SwipeRefreshLayout refreshLayout;
     private View videoView;                       // vue vidéo plein écran en cours
     private WebChromeClient.CustomViewCallback videoCallback;
+    /** Demande micro/caméra de la WebView en attente d'un accord Android. */
+    private PermissionRequest pendingMediaRequest;
+
+    /** Code de la demande d'autorisation micro/caméra (appels vocaux/vidéo). */
+    private static final int REQUEST_MEDIA_PERMISSIONS = 4210;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,9 +109,43 @@ public class MainActivity extends Activity {
         });
 
         webView.setWebChromeClient(new WebChromeClient() {
+            /**
+             * Appels vocaux / vidéo du site : la WebView demande le micro
+             * et/ou la caméra. Refuser ici rendrait `getUserMedia()`
+             * systématiquement impossible dans l'app — donc aucun appel. On
+             * n'accorde que ce qui est demandé, et seulement si le joueur a
+             * donné l'autorisation Android correspondante (sinon on la lui
+             * demande, puis on tranche dans `onRequestPermissionsResult`).
+             */
             @Override
             public void onPermissionRequest(PermissionRequest request) {
-                request.deny();                   // le site n'utilise ni caméra ni micro
+                List<String> wanted = Arrays.asList(request.getResources());
+                boolean needsAudio = wanted.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
+                boolean needsVideo = wanted.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
+
+                List<String> granted = new ArrayList<>();
+                List<String> missing = new ArrayList<>();
+                if (needsAudio) {
+                    if (hasPermission(Manifest.permission.RECORD_AUDIO)) {
+                        granted.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
+                    } else {
+                        missing.add(Manifest.permission.RECORD_AUDIO);
+                    }
+                }
+                if (needsVideo) {
+                    if (hasPermission(Manifest.permission.CAMERA)) {
+                        granted.add(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
+                    } else {
+                        missing.add(Manifest.permission.CAMERA);
+                    }
+                }
+
+                if (!missing.isEmpty()) {
+                    pendingMediaRequest = request;
+                    requestPermissions(missing.toArray(new String[0]), REQUEST_MEDIA_PERMISSIONS);
+                    return;
+                }
+                settleMediaRequest(request, granted);
             }
 
             @Override
@@ -129,6 +174,47 @@ public class MainActivity extends Activity {
         } else {
             webView.loadUrl(HOME_URL);
         }
+    }
+
+    /** L'autorisation Android est-elle déjà accordée ? (minSdk 23) */
+    private boolean hasPermission(String permission) {
+        return checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** Rend la décision à la WebView : ce qui est accordé, le reste refusé. */
+    private void settleMediaRequest(PermissionRequest request, List<String> granted) {
+        if (request == null) {
+            return;
+        }
+        if (granted.isEmpty()) {
+            request.deny();
+        } else {
+            request.grant(granted.toArray(new String[0]));
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != REQUEST_MEDIA_PERMISSIONS) {
+            return;
+        }
+        PermissionRequest request = pendingMediaRequest;
+        pendingMediaRequest = null;
+
+        List<String> granted = new ArrayList<>();
+        for (int i = 0; i < permissions.length; i++) {
+            boolean ok = i < grantResults.length && grantResults[i] == PackageManager.PERMISSION_GRANTED;
+            if (!ok) {
+                continue;
+            }
+            if (Manifest.permission.RECORD_AUDIO.equals(permissions[i])) {
+                granted.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
+            } else if (Manifest.permission.CAMERA.equals(permissions[i])) {
+                granted.add(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
+            }
+        }
+        settleMediaRequest(request, granted);
     }
 
     /** Affiche une vidéo en plein écran au-dessus de tout. */

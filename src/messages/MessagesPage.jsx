@@ -335,6 +335,7 @@ export default function MessagesPage() {
                 onBack={backToInbox}
                 onCall={calls.startCall}
                 callBlocker={calls.blockerFor}
+                callWarning={calls.warningFor}
                 onSend={send}
                 onDelete={deleteMessage}
                 onBlock={block}

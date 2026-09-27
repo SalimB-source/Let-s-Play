@@ -37,8 +37,24 @@ export const END_HUNG_UP = 'hung-up';
 export const END_LOST = 'lost';
 export const END_FAILED = 'failed';
 
-/** Raisons d'indisponibilité des boutons d'appel (`blockerFor`). */
-export const CALL_BLOCKERS = ['auth', 'supabase', 'demo', 'insecure', 'nowebrtc', 'busy', 'blocked', 'friends', 'offline'];
+/**
+ * Raisons qui EMPÊCHENT un appel (`blockerFor`) : le bouton est grisé.
+ *
+ * La présence en ligne n'en fait volontairement PAS partie : c'est une
+ * estimation (canal de présence ou dernier passage vu) et un faux « hors
+ * ligne » rendrait l'appel impossible alors que l'ami est là. Elle devient un
+ * simple avertissement (`warningFor`) et un appel sans réponse conclut
+ * « Sans réponse », comme dans toute messagerie.
+ */
+export const CALL_BLOCKERS = ['auth', 'supabase', 'demo', 'insecure', 'nowebrtc', 'busy', 'blocked', 'friends'];
+
+/** Avertissements qui n'empêchent pas d'appeler (`warningFor`). */
+export const CALL_WARNINGS = ['offline'];
+
+/** Décisions prises à la réception d'une sonnerie (`ringDecision`). */
+export const RING_RING = 'ring';     // l'appel entrant s'affiche
+export const RING_WAIT = 'wait';     // la liste d'amis arrive : on garde la sonnerie
+export const RING_IGNORE = 'ignore'; // inconnu, bloqué, soi-même : silence
 
 /** Types d'événements diffusés sur les canaux de signalisation. */
 export const CALL_EVENTS = ['ring', 'cancel', 'reply', 'sdp', 'ice', 'bye'];
@@ -49,8 +65,11 @@ export const INCOMING_TIMEOUT_MS = 35 * 1000; // appel entrant ignoré (côté a
 export const CONNECT_TIMEOUT_MS = 25 * 1000;  // accepté mais la connexion P2P ne prend pas
 export const DISCONNECT_GRACE_MS = 6 * 1000;  // coupure brève : on laisse le réseau se refaire
 export const ENDED_TOAST_MS = 2600;           // affichage du motif de fin avant retour au calme
+export const NOTICE_MS = 4200;                // durée d'un avertissement (appel impossible…)
+export const RING_HOLD_MS = 12 * 1000;        // sonnerie gardée le temps que la liste d'amis arrive
 export const RING_DEDUP_MS = 12 * 1000;       // même sonnerie rejouée par le réseau → ignorée
 export const CHANNELS_DROP_DELAY_MS = 2000;   // fin d'appel : on laisse partir « bye »/« cancel » avant de quitter les canaux
+export const CHANNEL_JOIN_TIMEOUT_MS = 6000;  // attente de la jointure d'un canal de signalisation
 
 /** STUN publics de Google : gratuits, suffisants derrière la plupart des box. */
 const DEFAULT_STUN_URLS = ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'];
@@ -79,6 +98,15 @@ export function iceServersFromEnv(env = (typeof import.meta !== 'undefined' ? im
     }
   }
   return servers;
+}
+
+/**
+ * Un relais TURN est-il configuré au build ? Sert à expliquer un échec de
+ * connexion : derrière un NAT strict (4G/5G, Wi-Fi d'hôtel, CGNAT), le STUN
+ * seul ne suffit pas et seul un relais laisse passer les médias.
+ */
+export function turnConfigured(env = (typeof import.meta !== 'undefined' ? import.meta.env : {}) || {}) {
+  return Boolean(String(env?.VITE_TURN_URL || '').trim());
 }
 
 /** Identifiant d'appel : UUID quand la plateforme le fournit, tirage sinon. */
@@ -126,6 +154,26 @@ export function isCallEvent(payload, type, { to, from = null } = {}) {
     && typeof payload.from === 'string' && payload.from.length > 0
     && (to == null || payload.to === to)
     && (from == null || payload.from === from);
+}
+
+/**
+ * Que faire d'une sonnerie reçue ?
+ *
+ * Trois issues, parce que « pas encore ami » et « pas encore SAVOIR si c'est
+ * un ami » ne sont pas la même chose :
+ *
+ *   - `ring`   : l'expéditeur est un ami non bloqué → le pop-up s'affiche ;
+ *   - `wait`   : la liste d'amis n'est pas encore chargée (ouverture du site,
+ *     connexion toute fraîche) — jeter la sonnerie ici la perdrait pour de
+ *     bon, on la garde et on rejoue la décision dès que la liste est là ;
+ *   - `ignore` : bloqué, inconnu une fois la liste chargée, ou soi-même.
+ */
+export function ringDecision({ from, me, relationKind = null, blocked = false, friendsReady = true } = {}) {
+  if (!from || from === me) return RING_IGNORE;
+  if (blocked) return RING_IGNORE;
+  if (relationKind === 'friend') return RING_RING;
+  if (!friendsReady) return RING_WAIT;
+  return RING_IGNORE;
 }
 
 /** Durée lisible : « 02:14 » (et « 1:02:05 » au-delà d'une heure). */

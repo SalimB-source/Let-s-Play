@@ -21,6 +21,14 @@ accéder à la messagerie, il faut se connecter dans l'application.
   navigateur ; le site reste dans la WebView.
 - Les vidéos intégrées (YouTube) passent en plein écran natif.
 - Le thème clair/sombre du site fonctionne tel quel (`localStorage` activé).
+- **Appels vocaux / vidéo** : la WebView demande le micro et la caméra à
+  l'application, qui relaie la demande Android au joueur puis accorde ce qui a
+  été autorisé (`onPermissionRequest` + `onRequestPermissionsResult` dans
+  `MainActivity`). Les autorisations `RECORD_AUDIO`, `CAMERA` et
+  `MODIFY_AUDIO_SETTINGS` sont déclarées dans le manifeste ; un téléphone sans
+  caméra reste installable (`uses-feature` non requis) et les appels y restent
+  vocaux. **Refuser ces permissions rend tout appel impossible dans l'app** :
+  le site affichera « accès au micro/à la caméra refusé ».
 
 ## Construire l'APK
 

@@ -6,10 +6,11 @@ import { useMessages } from './MessagesContext';
 import { useLanguage } from '../i18n/LanguageContext';
 import { playConnectTone, playEndTone, startRingback, startRingtone } from './callSounds';
 import { sendMessage } from './messagesApi';
-import { callsText, callSummaryText, describeCallError } from './callsCopy';
+import { callsText, callSummaryText, describeCallError, callBlockLabel } from './callsCopy';
 import {
   CALL_KINDS,
   CHANNELS_DROP_DELAY_MS,
+  CHANNEL_JOIN_TIMEOUT_MS,
   CONNECT_TIMEOUT_MS,
   DISCONNECT_GRACE_MS,
   ENDED_TOAST_MS,
@@ -21,8 +22,12 @@ import {
   END_LOST,
   END_NO_ANSWER,
   INCOMING_TIMEOUT_MS,
+  NOTICE_MS,
   OUTGOING_TIMEOUT_MS,
   RING_DEDUP_MS,
+  RING_HOLD_MS,
+  RING_IGNORE,
+  RING_WAIT,
   createCallId,
   formatDuration,
   iceServersFromEnv,
@@ -30,6 +35,8 @@ import {
   isCallEvent,
   makeCallEvent,
   normalizeCallKind,
+  ringDecision,
+  turnConfigured,
 } from './callsCore';
 
 /**
@@ -67,6 +74,18 @@ import {
  * `direct_messages` : « 📞 Appel vidéo · 02:14 », « sans réponse », « refusé »,
  * « occupé ») — non-lus, temps réel et suppression fonctionnent d'eux-mêmes.
  *
+ * Rien ne doit se perdre en silence — c'est ce qui fait croire que « les
+ * appels ne marchent pas » :
+ *   - une sonnerie reçue AVANT que la liste d'amis soit chargée est gardée et
+ *     rejouée dès qu'elle arrive (`ringDecision` → `RING_WAIT`) : le pop-up
+ *     d'appel entrant s'affiche au lieu de ne jamais apparaître ;
+ *   - un appel impossible explique sa raison (`notice`, rendu par
+ *     `CallOverlays`) au lieu de ne rien produire ;
+ *   - un échec de connexion pair-à-pair pointe le relais TURN manquant ;
+ *   - un ami qui semble hors ligne n'empêche plus d'appeler : la présence est
+ *     une estimation, l'appel sonne et conclut « Sans réponse » le cas
+ *     échéant (`warningFor` plutôt que `blockerFor`).
+ *
  * Dégradations propres : personas de démo, Supabase non configuré, page non
  * sécurisée (HTTP) ou navigateur sans WebRTC → `blockerFor` l'explique et les
  * boutons sont grisés ; caméra refusée sur un appel vidéo → l'appel continue
@@ -84,6 +103,7 @@ export const CallsContext = createContext({
   enabled: false,
   unavailableReason: 'supabase',
   blockerFor: () => 'supabase',
+  warningFor: () => null,
   phase: 'idle',
   role: null,
   kind: 'audio',
@@ -94,6 +114,7 @@ export const CallsContext = createContext({
   elapsedMs: 0,
   endReason: null,
   endDetail: null,
+  notice: null,
   localStream: null,
   remoteStream: null,
   startCall: asyncNoop,
@@ -103,6 +124,7 @@ export const CallsContext = createContext({
   toggleMic: noop,
   toggleCam: noop,
   flipCamera: asyncNoop,
+  dismissNotice: noop,
 });
 
 /** Profils rendus par le contexte : { id, name, avatar } minimal et stable. */
@@ -152,6 +174,7 @@ export function CallsProvider({ children }) {
   const [nowTick, setNowTick] = useState(0);
   const [endReason, setEndReason] = useState(null);
   const [endDetail, setEndDetail] = useState(null);
+  const [notice, setNotice] = useState(null);
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
 
@@ -174,6 +197,12 @@ export function CallsProvider({ children }) {
   const callRef = useRef(null);
   /** Le callId de la dernière sonnerie vue (anti-rejeu réseau). */
   const lastRingRef = useRef({ callId: null, at: 0 });
+  /**
+   * Sonnerie arrivée AVANT que la liste d'amis soit chargée (site ouvert à
+   * l'instant, connexion toute fraîche) : `{ payload, at }`. La rejeter là
+   * perdrait l'appel pour de bon — l'appelé ne verrait jamais le pop-up.
+   */
+  const pendingRingRef = useRef(null);
   const pcRef = useRef(null);
   const localRef = useRef(null);
   const pendingIceRef = useRef([]);
@@ -182,7 +211,7 @@ export function CallsProvider({ children }) {
   const channelsRef = useRef(new Map());
   const ownInboxRef = useRef(null);
   const soundsStopRef = useRef(null);
-  const timersRef = useRef({ ring: null, incoming: null, connect: null, grace: null, ended: null, channels: null });
+  const timersRef = useRef({ ring: null, incoming: null, connect: null, grace: null, ended: null, channels: null, notice: null });
   /** La trace d'appel est-elle déjà déposée pour cet appel ? */
   const summaryDoneRef = useRef(false);
 
@@ -206,35 +235,69 @@ export function CallsProvider({ children }) {
    * Rejoint un canal de signalisation et attend la confirmation `SUBSCRIBED`
    * (un `send()` sur un canal non joint serait perdu) ; renvoie le canal ou
    * null. Le canal personnel (`permanent`) n'est jamais retiré.
+   *
+   * Deux pièges évités ici, tous deux invisibles à l'écran :
+   *   - un canal déjà en cours de jointure par un autre chemin (le canal
+   *     personnel, monté par effet) n'a pas encore de promesse : on attend sa
+   *     confirmation au lieu de renvoyer `null` et de perdre l'événement ;
+   *   - une jointure qui échoue (réseau, délai) est OUBLIÉE : sans ça, le
+   *     canal resterait en échec pour toute la session et plus aucun
+   *     événement ne partirait vers cet ami.
    */
   const ensureChannel = useCallback((name, permanent = false) => {
     if (!supabase || !name) return Promise.resolve(null);
     const existing = channelsRef.current.get(name);
     if (existing) {
       if (existing.ready) return Promise.resolve(existing.channel);
-      return existing.pending;
+      if (existing.pending) return existing.pending;
+      return new Promise((resolve) => {
+        const startedAt = Date.now();
+        const watch = setInterval(() => {
+          if (existing.ready) { clearInterval(watch); resolve(existing.channel); return; }
+          if (channelsRef.current.get(name) !== existing) { clearInterval(watch); resolve(null); return; }
+          if (Date.now() - startedAt > CHANNEL_JOIN_TIMEOUT_MS) { clearInterval(watch); resolve(null); }
+        }, 50);
+      });
     }
     // Le canal personnel n'est jamais retiré, même rejoint par un autre chemin.
     const isOwnInbox = name === inboxChannelFor(uidRef.current);
-    let entry = { channel: null, ready: false, pending: null, permanent: permanent || isOwnInbox };
+    const entry = { channel: null, ready: false, pending: null, permanent: permanent || isOwnInbox };
     const pending = new Promise((resolve) => {
       let settled = false;
-      const done = (value) => { if (!settled) { settled = true; resolve(value); } };
+      const succeed = () => {
+        if (settled) return;
+        settled = true;
+        resolve(entry.channel);
+      };
+      const fail = () => {
+        if (settled) return;
+        settled = true;
+        if (channelsRef.current.get(name) === entry) channelsRef.current.delete(name);
+        const channel = entry.channel;
+        entry.channel = null;
+        if (channel) {
+          try { supabase?.removeChannel(channel); } catch (e) { /* déjà retiré */ }
+        }
+        resolve(null);
+      };
       try {
         const channel = supabase.channel(name);
         entry.channel = channel;
         channel.subscribe((status) => {
           if (status === 'SUBSCRIBED') {
             entry.ready = true;
-            done(channel);
+            succeed();
           } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            done(null);
+            fail();
           }
         });
       } catch (e) {
-        done(null);
+        fail();
       }
-      setTimeout(() => done(entry.ready ? entry.channel : null), 6000);
+      setTimeout(() => {
+        if (entry.ready) succeed();
+        else fail();
+      }, CHANNEL_JOIN_TIMEOUT_MS);
     });
     entry.pending = pending;
     channelsRef.current.set(name, entry);
@@ -351,6 +414,12 @@ export function CallsProvider({ children }) {
     }, ENDED_TOAST_MS);
   }, [clearTimer, stopSounds, closePeerConnection, stopLocalTracks, dropCallChannels]);
 
+  /**
+   * Motif lisible d'un échec de connexion pair-à-pair : sans relais TURN, les
+   * réseaux mobiles et les Wi-Fi fermés ne laissent pas passer les médias.
+   */
+  const connectFailureDetail = useCallback(() => (turnConfigured() ? null : callsText(langRef.current).hintTurn), []);
+
   /* ------------------------------ médias (locales) -------------------------- */
 
   /**
@@ -424,13 +493,47 @@ export function CallsProvider({ children }) {
       } else if (state === 'failed') {
         const wasActive = phaseRef.current === 'active';
         if (wasActive) insertCallSummary('connected', Date.now() - startedAtRef.current);
-        finish(wasActive ? END_LOST : END_FAILED);
+        finish(wasActive ? END_LOST : END_FAILED, wasActive ? null : connectFailureDetail());
       }
     };
     return pc;
-  }, [clearTimer, stopSounds, sendToPeer, insertCallSummary, finish]);
+  }, [clearTimer, stopSounds, sendToPeer, insertCallSummary, finish, connectFailureDetail]);
 
   /* ------------------------- réception de la signalisation ------------------ */
+
+  /**
+   * Affiche l'appel entrant (pop-up Répondre / Refuser) et met la sonnerie en
+   * route. Appelée par la sonnerie reçue, ou par l'effet qui rejoue une
+   * sonnerie arrivée avant que la liste d'amis soit chargée.
+   */
+  const startIncoming = useCallback((payload) => {
+    const kind = normalizeCallKind(payload.kind);
+    if (!kind) return;
+
+    callRef.current = { callId: payload.callId, peerId: payload.from, kind, role: 'callee' };
+    summaryDoneRef.current = false;
+    setRole('callee');
+    setKind(kind);
+    setPeer(peerProfile(friends.profileFor, payload.from));
+    setMicOn(true);
+    setCamOn(kind === 'video');
+    setEndReason(null);
+    setEndDetail(null);
+    setNotice(null);
+    setPhase('incoming');
+    stopSounds();
+    soundsStopRef.current = startRingtone();
+    // Le canal de l'ami est joint dès maintenant : répondre (même pour
+    // refuser) exige d'émettre sur son canal.
+    ensureChannel(inboxChannelFor(payload.from));
+    clearTimer('incoming');
+    timersRef.current.incoming = setTimeout(() => {
+      // Ignoré trop longtemps : retour au calme sans bruit (l'appelant
+      // conclura « sans réponse » de son côté).
+      if (phaseRef.current !== 'incoming') return;
+      finish(END_NO_ANSWER, null, { silent: true });
+    }, INCOMING_TIMEOUT_MS);
+  }, [friends, stopSounds, ensureChannel, clearTimer, finish]);
 
   const handleSignal = useCallback((payload) => {
     const me = uid;
@@ -445,39 +548,31 @@ export function CallsProvider({ children }) {
         sendEvent(payload.from, makeCallEvent('reply', { callId: payload.callId, from: me, to: payload.from, result: 'busy' }));
         return;
       }
-      if (settled === 'ended') clearTimer('ended'); // la sonnerie remplace le toast de fin
-      const kind = normalizeCallKind(payload.kind);
-      if (!kind) return;
+      if (!normalizeCallKind(payload.kind)) return;
       const now = Date.now();
       if (lastRingRef.current.callId === payload.callId && now - lastRingRef.current.at < RING_DEDUP_MS) return;
-      lastRingRef.current = { callId: payload.callId, at: now };
-      // Garde-fous : seuls les amis non bloqués font sonner le téléphone.
-      if (payload.from === me) return;
-      if (messages.isBlocked?.(payload.from)) return;
-      if (friends.relationWith(payload.from)?.kind !== 'friend') return;
 
-      callRef.current = { callId: payload.callId, peerId: payload.from, kind, role: 'callee' };
-      summaryDoneRef.current = false;
-      setRole('callee');
-      setKind(kind);
-      setPeer(peerProfile(friends.profileFor, payload.from));
-      setMicOn(true);
-      setCamOn(kind === 'video');
-      setEndReason(null);
-      setEndDetail(null);
-      setPhase('incoming');
-      stopSounds();
-      soundsStopRef.current = startRingtone();
-      // Le canal de l'ami est joint dès maintenant : répondre (même pour
-      // refuser) exige d'émettre sur son canal.
-      ensureChannel(inboxChannelFor(payload.from));
-      clearTimer('incoming');
-      timersRef.current.incoming = setTimeout(() => {
-        // Ignoré trop longtemps : retour au calme sans bruit (l'appelant
-        // conclura « sans réponse » de son côté).
-        if (phaseRef.current !== 'incoming') return;
-        finish(END_NO_ANSWER, null, { silent: true });
-      }, INCOMING_TIMEOUT_MS);
+      // Garde-fous : seuls les amis non bloqués font sonner le téléphone —
+      // mais « pas encore ami » et « liste d'amis pas encore chargée » sont
+      // deux choses différentes : dans le second cas, jeter la sonnerie
+      // ferait disparaître l'appel sans laisser la moindre trace à l'écran.
+      const decision = ringDecision({
+        from: payload.from,
+        me,
+        relationKind: friends.relationWith(payload.from)?.kind || null,
+        blocked: Boolean(messages.isBlocked?.(payload.from)),
+        friendsReady: friends.status === 'ready',
+      });
+      if (decision === RING_IGNORE) return;
+      if (decision === RING_WAIT) {
+        pendingRingRef.current = { payload, at: now };
+        return;
+      }
+
+      lastRingRef.current = { callId: payload.callId, at: now };
+      pendingRingRef.current = null;
+      if (settled === 'ended') clearTimer('ended'); // la sonnerie remplace le toast de fin
+      startIncoming(payload);
       return;
     }
 
@@ -503,7 +598,7 @@ export function CallsProvider({ children }) {
           stopSounds();
           setPhase('connecting');
           clearTimer('connect');
-          timersRef.current.connect = setTimeout(() => finish(END_FAILED), CONNECT_TIMEOUT_MS);
+          timersRef.current.connect = setTimeout(() => finish(END_FAILED, connectFailureDetail()), CONNECT_TIMEOUT_MS);
           const pc = pcRef.current;
           if (!pc) { finish(END_FAILED); return; }
           (async () => {
@@ -586,11 +681,30 @@ export function CallsProvider({ children }) {
       default:
         break;
     }
-  }, [uid, friends, messages, sendEvent, ensureChannel, stopSounds, clearTimer, finish, insertCallSummary]);
+  }, [uid, friends, messages, sendEvent, ensureChannel, stopSounds, clearTimer, finish, insertCallSummary, startIncoming, connectFailureDetail]);
 
   // La référence du gestionnaire évite de recréer le canal à chaque rendu.
   const signalRef = useRef(handleSignal);
   useEffect(() => { signalRef.current = handleSignal; }, [handleSignal]);
+
+  /* ------------- sonnerie arrivée avant la liste d'amis --------------------- */
+
+  // La liste d'amis est chargée (ou rechargée) : une sonnerie gardée au chaud
+  // peut enfin être tranchée. Sans cet effet, un appel reçu dans les premières
+  // secondes après l'ouverture du site ne ferait jamais apparaître le pop-up.
+  useEffect(() => {
+    const pending = pendingRingRef.current;
+    if (!pending) return;
+    if (Date.now() - pending.at > RING_HOLD_MS) { pendingRingRef.current = null; return; }
+    if (friends.status !== 'ready') return;
+    const settled = phaseRef.current;
+    if (callRef.current || (settled !== 'idle' && settled !== 'ended')) {
+      pendingRingRef.current = null;
+      return;
+    }
+    pendingRingRef.current = null;
+    try { signalRef.current(pending.payload); } catch (e) { /* événement bancal */ }
+  }, [friends]);
 
   /* --------------------- écoute permanente (sonneries entrantes) ------------ */
 
@@ -638,9 +752,11 @@ export function CallsProvider({ children }) {
     stopLocalTracks();
     dropCallChannels();
     callRef.current = null;
+    pendingRingRef.current = null;
     setPhase('idle');
     setEndReason(null);
     setEndDetail(null);
+    setNotice(null);
     setPeer(null);
     setRole(null);
     summaryDoneRef.current = false;
@@ -650,9 +766,32 @@ export function CallsProvider({ children }) {
   /* --------------------------------- gestes --------------------------------- */
 
   /**
+   * Avertissement visible — « appel impossible », « connexion ratée »… Sans
+   * lui, un refus du navigateur ou de la configuration ne produit qu'un
+   * silence, et le joueur conclut « ça ne marche pas » sans savoir pourquoi.
+   */
+  const showNotice = useCallback((text) => {
+    if (!text) return;
+    setNotice(text);
+    clearTimer('notice');
+    timersRef.current.notice = setTimeout(() => {
+      timersRef.current.notice = null;
+      if (mountedRef.current) setNotice(null);
+    }, NOTICE_MS);
+  }, [clearTimer]);
+
+  const dismissNotice = useCallback(() => {
+    clearTimer('notice');
+    setNotice(null);
+  }, [clearTimer]);
+
+  /**
    * Raison pour laquelle on ne peut PAS appeler `peerId`, ou null si l'appel
    * est possible. C'est la source unique des boutons d'appel (fenêtre sociale
    * et page /messages) : grisés avec infobulle explicite, jamais aveugles.
+   *
+   * La présence en ligne n'en fait PAS partie (voir `warningFor`) : c'est une
+   * estimation, et un faux « hors ligne » rendrait l'appel impossible.
    */
   const blockerFor = useCallback((candidateId) => {
     if (!candidateId || candidateId === uid) return 'friends';
@@ -661,18 +800,35 @@ export function CallsProvider({ children }) {
     if (phase !== 'idle' && phase !== 'ended') return 'busy';
     if (messages.isBlocked?.(candidateId)) return 'blocked';
     if (friends.relationWith(candidateId)?.kind !== 'friend') return 'friends';
-    if (!friends.isOnline(candidateId)) return 'offline';
     return null;
   }, [uid, unavailableReason, phase, messages, friends]);
+
+  /**
+   * Avertissement qui n'empêche PAS d'appeler (`offline`) : l'infobulle
+   * explique, le bouton reste actif, et un appel sans réponse conclut
+   * « Sans réponse » — comme dans toute messagerie.
+   */
+  const warningFor = useCallback((candidateId) => {
+    if (!candidateId || blockerFor(candidateId)) return null;
+    return friends.isOnline(candidateId) ? null : 'offline';
+  }, [blockerFor, friends]);
 
   const startCall = useCallback(async (peerId, wantedKind = 'audio') => {
     if (!enabled || !uid) return;
     if (phaseRef.current !== 'idle' && phaseRef.current !== 'ended') return;
-    if (blockerFor(peerId)) return;
+    const blocker = blockerFor(peerId);
+    if (blocker) {
+      // Un clic qui ne produit rien est incompréhensible : la raison s'affiche.
+      const t = callsText(langRef.current);
+      showNotice(callBlockLabel(blocker, t, friends.profileFor(peerId)?.name || ''));
+      return;
+    }
     const wanted = normalizeCallKind(wantedKind) || 'audio';
 
     const callId = createCallId();
     clearTimer('ended'); // un nouvel appel remplace l'annonce de fin précédente
+    clearTimer('channels'); // … et garde ses propres canaux de signalisation
+    pendingRingRef.current = null;
     callRef.current = { callId, peerId, kind: wanted, role: 'caller' };
     summaryDoneRef.current = false;
     setRole('caller');
@@ -683,6 +839,7 @@ export function CallsProvider({ children }) {
     setConnected(false);
     setEndReason(null);
     setEndDetail(null);
+    setNotice(null);
     setPhase('outgoing');
 
     try {
@@ -723,7 +880,7 @@ export function CallsProvider({ children }) {
       const detail = e?.callError === 'nowebrtc' ? t.reasonNoWebRTC : describeCallError(e, t);
       finish(END_FAILED, detail);
     }
-  }, [enabled, uid, blockerFor, friends, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, sendToPeer, clearTimer, insertCallSummary, finish]);
+  }, [enabled, uid, blockerFor, friends, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, sendToPeer, clearTimer, insertCallSummary, finish, showNotice]);
 
   const acceptCall = useCallback(async () => {
     const call = callRef.current;
@@ -736,7 +893,7 @@ export function CallsProvider({ children }) {
     setEndReason(null);
     setEndDetail(null);
     clearTimer('connect');
-    timersRef.current.connect = setTimeout(() => finish(END_FAILED), CONNECT_TIMEOUT_MS);
+    timersRef.current.connect = setTimeout(() => finish(END_FAILED, connectFailureDetail()), CONNECT_TIMEOUT_MS);
 
     try {
       // 1. Micro / caméra tout de suite (on vient d'un geste du joueur :
@@ -774,7 +931,7 @@ export function CallsProvider({ children }) {
       sendEvent(peerId, makeCallEvent('reply', { callId, from: uid, to: peerId, result: 'decline' }));
       finish(END_FAILED, detail);
     }
-  }, [enabled, uid, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, stopSounds, clearTimer, finish]);
+  }, [enabled, uid, acquireMedia, buildPeerConnection, ensureChannel, sendEvent, stopSounds, clearTimer, finish, connectFailureDetail]);
 
   const declineCall = useCallback(() => {
     const call = callRef.current;
@@ -894,6 +1051,7 @@ export function CallsProvider({ children }) {
     enabled,
     unavailableReason,
     blockerFor,
+    warningFor,
     phase,
     role,
     kind,
@@ -904,6 +1062,7 @@ export function CallsProvider({ children }) {
     elapsedMs,
     endReason,
     endDetail,
+    notice,
     localStream,
     remoteStream,
     startCall,
@@ -913,10 +1072,11 @@ export function CallsProvider({ children }) {
     toggleMic,
     toggleCam,
     flipCamera,
+    dismissNotice,
   }), [
-    enabled, unavailableReason, blockerFor, phase, role, kind, peer, micOn, camOn,
-    connected, elapsedMs, endReason, endDetail, localStream, remoteStream,
-    startCall, acceptCall, declineCall, endCall, toggleMic, toggleCam, flipCamera,
+    enabled, unavailableReason, blockerFor, warningFor, phase, role, kind, peer, micOn, camOn,
+    connected, elapsedMs, endReason, endDetail, notice, localStream, remoteStream,
+    startCall, acceptCall, declineCall, endCall, toggleMic, toggleCam, flipCamera, dismissNotice,
   ]);
 
   return <CallsContext.Provider value={value}>{children}</CallsContext.Provider>;
