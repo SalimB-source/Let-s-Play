@@ -50,13 +50,8 @@ export default function TestArticle(){
       </div>
     </section>
 
-    <main className="article-layout wrap">
+    <main className="article-layout article-layout-test wrap">
       <article className="article-body">
-        <div className={`review-score-card review-score-card-${tier}`}>
-          <span>{c.scoreLabel}</span>
-          <strong>{scoreLabel(a.score, lang)}<i>/10</i></strong>
-          <em>{a.verdictTitle}</em>
-        </div>
         <p className="article-lead">{a.lead}</p>
 
         {a.video && (
@@ -108,7 +103,12 @@ export default function TestArticle(){
         </p>
       </article>
 
-      <aside className="article-aside">
+      <aside className="article-aside article-aside-test">
+        <div className={`review-score-card review-score-card-${tier}`}>
+          <span>{c.scoreLabel}</span>
+          <strong>{scoreLabel(a.score, lang)}<i>/10</i></strong>
+          <em>{a.verdictTitle}</em>
+        </div>
         <div className="aside-card">
           <span className="aside-kicker">{c.quick}</span>
           <strong>{c.platformsLabel}</strong>
