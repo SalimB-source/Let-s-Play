@@ -1132,3 +1132,8 @@
 /* La flèche « ↗ » est posée sur la photo de l'article : elle garde une encre
    claire, sinon `--cyan` (une encre foncée en thème clair) s'y perdrait. */
 [data-theme='light'] .news-feature-arrow{color:var(--cyan-bright)}
+[data-theme='light'] .lets-talk-label{color:#0a0b1a}
+[data-theme='light'] .social-panel-kicker.lets-talk-label svg,
+[data-theme='light'] .social-launcher-icon{color:var(--violet)}
+[data-theme='light'] .social-tab--messages.lets-talk-label.is-active{color:var(--violet);border-bottom-color:var(--violet)}
+[data-theme='light'] .nav-messages-link .lets-talk-label{color:#0a0b1a}
