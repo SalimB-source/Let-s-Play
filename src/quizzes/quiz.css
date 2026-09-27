@@ -11,9 +11,15 @@
   letter-spacing: .02em; text-transform: uppercase;
 }
 .quiz-header h1 em { color: var(--yellow); font-style: normal; }
+/* Sous 430px, on resserre l'échelle du titre : le clamp(34px…) d'origine
+   faisait passer « PROUVE QUE TU / CONNAIS LE GAME. » sur quatre lignes.
+   Même règle que le titre de la recherche (styles.css). */
+@media (max-width: 430px) {
+  .quiz-header h1 { font-size: clamp(28px, 8vw, 34px); }
+}
 .quiz-intro { max-width: 640px; color: var(--muted); }
 
-/* ---- Chips (tag, difficulté, compteur) ---------------------------------- */
+/* ---- Chips (tag, niveau, compteur) --------------------------------------- */
 .quiz-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
 .quiz-chip {
   display: inline-flex; align-items: center; gap: 7px;
@@ -22,12 +28,25 @@
   color: var(--muted);
   clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
 }
-.quiz-chip--easy { color: var(--cyan); border-color: rgba(34, 211, 238, .4); }
+/* Difficultés : bleu = facile, jaune = confirmé (seasoned), rouge = expert. */
+.quiz-chip--easy { color: #60a5fa; border-color: rgba(96, 165, 250, .4); }
 .quiz-chip--medium { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
-.quiz-chip--hard { color: var(--violet); border-color: rgba(168, 85, 247, .45); }
+.quiz-chip--hard { color: #f87171; border-color: rgba(248, 113, 113, .45); }
+.quiz-chip--survival { color: #fb7185; border-color: rgba(251, 113, 133, .48); }
 .quiz-chip--daily, .quiz-chip--streak { color: var(--yellow); border-color: rgba(255, 214, 25, .4); }
 .quiz-chip--done { color: var(--muted); border-color: var(--line-strong); }
+/* Progression des niveaux (grille + écran d'intro) : neutre, puis vert une
+   fois les trois niveaux terminés. */
+.quiz-chip--levels { color: var(--violet); border-color: rgba(168, 85, 247, .4); }
+.quiz-chip--levels.is-complete { color: #34d399; border-color: rgba(52, 211, 153, .45); }
 .quiz-noxp-hint { margin: 12px 0 0; color: var(--muted); font: 600 13px var(--mono); letter-spacing: .04em; }
+
+/* ---- Sélecteur de difficulté (intro) ------------------------------------ */
+/* Trois paliers = trois banques de questions (et trois multiplicateurs de
+   points). Le palier actif est surligné ; un palier déjà terminé porte sa
+   coche — le rejouer ne rapporte plus rien (pas de points, pas d'XP). */
+/* Palier déjà terminé : la coche remplace l'appel au gain — rien à gagner
+   ici, les autres difficultés si. */
 
 /* ---- Quizz du jour (bannière) ------------------------------------------- */
 .quiz-daily {
@@ -44,8 +63,9 @@
 .quiz-daily-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
 .quiz-daily .arrow-link { color: var(--yellow); }
 /* Miniature : l'illustration maison du quizz (public/quizzes/<slug>.jpg), en
-   16/9 quel que soit le fichier. Le cadre de repli de `VideoThumb`
-   (position: absolute) se pose sur la même boîte. */
+   16/9 quel que soit le fichier — sauf sur les cartes de la grille, qui
+   repassent en 2:1 plus bas pour garder la grille peu haute. Le cadre de
+   repli de `VideoThumb` (position: absolute) se pose sur la même boîte. */
 /* `background-color` et non `background` : le cadre HUD de la carte
    (`.hud-frame`) dessine ses équerres en `background-image`, on ne les écrase
    pas. */
@@ -60,91 +80,544 @@
 .quiz-daily-hint { margin: 0 0 40px; color: var(--dim); font: 400 12px var(--mono); letter-spacing: .08em; }
 
 /* ---- Grille des quizz ---------------------------------------------------- */
-/* Trois colonnes stables sur desktop — pas d'`auto-fill`, dont le nombre de
-   colonnes bascule selon la fenêtre : la page affiche toujours 3 colonnes,
-   puis 2 sur tablette et 1 sur mobile (voir les media queries en bas de
-   fichier). `minmax(0, 1fr)` : un mot long (FROMSOFTWARE…) n'étire pas sa
-   colonne et ne casse pas l'alignement de la grille. */
+/* Cinq colonnes sur desktop (≈ 230 px par carte dans le conteneur de
+   1240 px), quatre sous 1200 px, trois sous 1000 px, deux sous 680 px, une
+   sous 460 px (voir les media queries en bas de fichier).
+   `minmax(0, 1fr)` : un mot long (FROMSOFTWARE…) n'étire pas sa colonne
+   et ne casse pas l'alignement de la grille. */
 .quiz-grid {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px; margin-top: 26px;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px; margin-top: 26px;
 }
 .quiz-card {
-  display: flex; flex-direction: column; gap: 14px;
-  padding: 14px; background: var(--panel); border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  padding: 10px; background: var(--panel); border: 1px solid var(--line);
   clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
   transition: border-color .2s, transform .2s, box-shadow .2s;
 }
 .quiz-card:hover { border-color: var(--line-strong); transform: translateY(-3px); box-shadow: 0 18px 40px rgba(5, 6, 15, .5); }
-.quiz-card-media { display: block; }
-.quiz-card-copy { display: flex; flex-direction: column; gap: 8px; padding: 2px 4px 8px; }
-/* Titre : taille fluide (16 → 18 px) pour rester lisible quelle que soit la
-   largeur des trois colonnes, interligne aéré pour les titres sur deux lignes,
-   `balance` pour une coupe harmonique, `break-word` en garde-fou contre les
-   mots très longs. */
+/* Carte compacte : la miniature se lit en 2:1 — la bande centrale de
+   l'illustration 16/9, recadrée sans déformation par `object-fit: cover`.
+   C'est ce qui rend la grille moins haute, avec le chapeau retiré. La
+   bannière du quizz du jour garde son 16/9. */
+.quiz-card-media { display: block; aspect-ratio: 2 / 1; }
+.quiz-card-copy { display: flex; flex-direction: column; gap: 6px; padding: 0 2px; }
+/* Les pastilles tiennent sur le rang de la carte : leur `margin-bottom` global
+   (bandeaux, écrans d'intro) est repris par le `gap` du bloc. */
+.quiz-card-copy .quiz-chips { margin-bottom: 0; }
+/* Titre : le seul texte de la carte (le chapeau du quizz n'y est plus
+   affiché), donc toujours montré en entier — jamais tronqué (pas d'ellipsis ni
+   de line-clamp), il passe sur autant de lignes que nécessaire. Taille fluide
+   (15 → 17 px) adaptée à des cartes de ~230 px, interligne aéré, `balance`
+   pour une coupe harmonieuse, `break-word` en garde-fou contre les mots
+   très longs. */
 .quiz-card-copy h3 {
   margin: 0;
-  font: 700 clamp(16px, .75vw + 9px, 18px)/1.3 var(--display);
-  letter-spacing: .015em; text-transform: uppercase;
-  text-wrap: balance; overflow-wrap: break-word;
+  font: 700 clamp(15px, .4vw + 10px, 17px)/1.25 var(--display);
+  letter-spacing: .01em; text-transform: uppercase;
+  text-wrap: balance; overflow-wrap: break-word; hyphens: manual;
+  white-space: normal; overflow: visible; min-width: 0;
 }
-.quiz-card-copy p { margin: 0; color: var(--muted); font-size: 14px; }
-.quiz-card-meta { margin-top: auto; padding-top: 10px; color: var(--cyan); font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+.quiz-card-meta { margin-top: auto; padding-top: 4px; color: var(--cyan); font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .quiz-card-best { color: var(--yellow); border: 1px solid rgba(255, 214, 25, .4); padding: 2px 7px; }
 
+/* ---- Filtre par famille (Gaming / Tech / Cinéma / E-sport) --------------- */
+/* Une pastille par famille (+ « Tous »), la famille active en jaune — même
+   langage visuel que les filtres du site (`.filter`, `.achievement-chip`). Le
+   compte de quizz est collé à la pastille ; sous chaque rangée, la ligne de
+   résumé rappelle ce que la grille montre (« Tous » = catalogue entier). */
+.quiz-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  padding-top: 16px; margin-top: 2px; border-top: 1px solid var(--line);
+}
+.quiz-filter-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px; background: rgba(255, 255, 255, .03);
+  border: 1px solid var(--line); color: var(--muted);
+  font: 500 10.5px var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: color .2s, border-color .2s, background .2s, box-shadow .2s;
+}
+.quiz-filter-chip:hover { color: #fff; border-color: var(--line-strong); }
+.quiz-filter-chip.is-active {
+  background: var(--yellow); border-color: var(--yellow); color: #0a0b1a;
+  box-shadow: 0 0 18px rgba(255, 214, 25, .3);
+}
+.quiz-filter-count { color: var(--dim); font-size: 9.5px; letter-spacing: .06em; }
+.quiz-filter-chip.is-active .quiz-filter-count { color: rgba(10, 11, 26, .72); }
+.quiz-filter-summary {
+  margin: 10px 0 0; color: var(--dim);
+  font: 400 11px var(--mono); letter-spacing: .1em; text-transform: uppercase;
+}
+.quiz-filter-empty { margin: 26px 0 0; color: var(--muted); }
+
+/* ---- Catégories de la page Quizz ---------------------------------------- */
+.quiz-category { margin-top: 54px; }
+.quiz-category-heading { margin-bottom: 22px; }
+.quiz-category-heading .section-label { margin-bottom: 10px; }
+.quiz-category-heading h2 {
+  margin: 0 0 8px;
+  font: 800 clamp(24px, 3.4vw, 38px)/1.08 var(--display);
+  letter-spacing: .015em; text-transform: uppercase;
+}
+.quiz-category-heading p { max-width: 680px; margin: 0; color: var(--muted); }
+/* ---- HORROR SURVIVAL — minimal card -------------------------------------- */
+/* Keep horror vibe but strip text: only REC, one tape, title, void, hearts */
+
+.quiz-category--survival {
+  margin-top: 72px;
+  position: relative;
+}
+.quiz-category--survival::before {
+  content: "";
+  position: absolute; inset: -20px -24px -14px;
+  pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(520px 220px at 14% 0%, rgba(220,20,30,.10), transparent 70%),
+    radial-gradient(460px 260px at 90% 100%, rgba(220,20,30,.08), transparent 70%);
+  filter: blur(8px);
+}
+
+.quiz-survival-card {
+  position: relative; overflow: hidden;
+  display: grid; grid-template-columns: 1.1fr 160px; align-items: stretch;
+  min-height: 168px;
+  padding: 0;
+  color: var(--ink); text-decoration: none;
+  background: #07070a;
+  border: 1px solid rgba(185,28,28,.42);
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+  isolation: isolate;
+  transition: border-color .22s, transform .22s, box-shadow .22s;
+}
+.quiz-survival-card::before {
+  content: "";
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    url('/quizzes/horror-gaming.jpg') center/cover no-repeat,
+    linear-gradient(100deg, rgba(7,7,10,.94) 28%, rgba(7,7,10,.72) 62%, rgba(7,7,10,.42)),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+  opacity: .62;
+  filter: grayscale(.45) contrast(1.12) brightness(.72);
+}
+.quiz-survival-card::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(110% 110% at 50% 50%, transparent 52%, rgba(0,0,0,.72) 100%);
+}
+.quiz-survival-card:hover {
+  border-color: rgba(239,68,68,.78);
+  transform: translateY(-3px);
+  box-shadow: 0 18px 44px rgba(0,0,0,.68), 0 0 0 1px rgba(239,68,68,.18) inset;
+}
+.quiz-survival-card:hover::before { filter: grayscale(.18) contrast(1.18) brightness(.82); }
+
+.quiz-survival-copy {
+  position: relative; z-index: 3;
+  display: flex; flex-direction: column; justify-content: center; gap: 10px;
+  padding: 22px 22px 20px;
+  min-width: 0;
+}
+.quiz-survival-title {
+  font: 900 clamp(28px, 4vw, 42px)/.9 var(--display);
+  letter-spacing: .08em; text-transform: uppercase; color: #fff;
+  text-shadow: 0 0 18px rgba(239,68,68,.55);
+}
+.quiz-survival-sub {
+  font: 600 11px var(--mono); letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(252,165,165,.72);
+}
+.quiz-survival-card .arrow-link {
+  margin-top: 6px;
+  color: #fca5a5; font: 800 11px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+  border-bottom: 1px solid rgba(239,68,68,.42);
+  width: fit-content;
+}
+.quiz-survival-card:hover .arrow-link { color: #fff; border-bottom-color: #ef4444; }
+
+/* Visual */
+.quiz-survival-visual {
+  position: relative; z-index: 3;
+  display: grid; place-content: center; justify-items: center;
+  background: linear-gradient(180deg, rgba(12,8,10,.86), rgba(6,6,8,.94));
+  border-left: 1px solid rgba(185,28,28,.26);
+  overflow: hidden;
+}
+.quiz-survival-visual::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px);
+  opacity: .5;
+}
+.quiz-survival-infinity {
+  position: relative; z-index: 1;
+  color: #fff; font: 900 84px/.7 var(--display);
+  text-shadow: 0 0 20px rgba(239,68,68,.7), 2px 0 0 rgba(239,68,68,.8);
+  animation: horror-glitch-text 4.8s steps(1) infinite;
+}
+.quiz-survival-hearts {
+  position: relative; z-index: 1;
+  margin-top: 8px; color: #ef4444; font: 900 13px var(--mono); letter-spacing: .38em;
+  text-shadow: 0 0 12px rgba(239,68,68,.7);
+  animation: horror-heart-beat 1.3s ease-in-out infinite;
+}
+
+/* One tape + REC */
+.quiz-survival-tape {
+  position: absolute; z-index: 4; top: 10px; right: -18px;
+  background: #facc15; color: #000;
+  font: 900 9px var(--mono); letter-spacing: .20em; text-transform: uppercase;
+  padding: 4px 22px; transform: rotate(7deg);
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.quiz-survival-rec {
+  position: absolute; z-index: 4; top: 12px; left: 14px;
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 800 9px var(--mono); letter-spacing: .20em; color: #fecaca;
+}
+.quiz-survival-rec i {
+  width: 7px; height: 7px; background: #ef4444; border-radius: 50%;
+  box-shadow: 0 0 8px #ef4444; animation: horror-rec-blink 1s steps(1) infinite;
+}
+
+/* legacy hooks no longer used — hide */
+.quiz-survival-card .quiz-survival-rules,
+.quiz-survival-card .quiz-chips,
+.quiz-survival-tape--red { display: none !important; }
+
+/* Survival intro page — case file */
+.quiz-survival-intro h2 { margin-top: 8px; letter-spacing: .02em; }
+.quiz-survival-intro .quiz-survival-rules {
+  list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 8px;
+}
+.quiz-survival-intro .quiz-survival-rules li {
+  display: flex; align-items: center; gap: 12px; padding: 11px 12px;
+  background: rgba(14, 10, 12, .88);
+  border: 1px solid rgba(185,28,28,.28);
+  border-left: 3px solid #b91c1c;
+  color: #e5d5d5;
+  font: 600 12px var(--mono); letter-spacing: .06em;
+  position: relative;
+  overflow: hidden;
+}
+.quiz-survival-intro .quiz-survival-rules li::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 22px, rgba(185,28,28,.04) 22px 23px);
+  pointer-events: none;
+}
+.quiz-survival-intro .quiz-survival-rules li > span {
+  min-width: 30px; color: #ef4444; font-weight: 900; font-size: 14px;
+  text-shadow: 0 0 10px rgba(239,68,68,.6);
+}
+.quiz-survival-best {
+  margin: 16px 0 0; color: #fca5a5;
+  font: 700 12px var(--mono); letter-spacing: .12em;
+  border-left: 2px solid #ef4444; padding-left: 10px;
+}
+.quiz-survival-final-label {
+  margin: 18px 0 0; color: #fca5a5;
+  font: 800 11px var(--mono); letter-spacing: .22em; text-transform: uppercase;
+}
+.quiz-survival-result {
+  border-color: rgba(185,28,28,.55);
+  background:
+    radial-gradient(500px 280px at 80% 0%, rgba(185,28,28,.14), transparent 70%),
+    linear-gradient(135deg, rgba(12, 8, 10, .98), rgba(8, 8, 12, .98));
+  position: relative; overflow: hidden;
+}
+.quiz-survival-result::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+}
+.quiz-survival-result .quiz-result-tier { color: #fecaca; text-shadow: 0 0 18px rgba(239,68,68,.6); }
+
+/* Animations */
+@keyframes horror-pulse-red {
+  0%,100% { box-shadow: 0 0 12px rgba(185,28,28,.4); }
+  50% { box-shadow: 0 0 22px rgba(239,68,68,.75), 0 0 36px rgba(239,68,68,.22); }
+}
+@keyframes horror-heart-beat {
+  0%,100% { transform: scale(1); }
+  15% { transform: scale(1.14); }
+  30% { transform: scale(.96); }
+  45% { transform: scale(1.08); }
+}
+@keyframes horror-rec-blink {
+  0%,49% { opacity: 1; } 50%,100% { opacity: 0; }
+}
+@keyframes horror-flicker {
+  0% { opacity: .72; } 50% { opacity: .94; } 100% { opacity: .78; }
+}
+@keyframes horror-scan-move {
+  0% { transform: translateY(0); } 100% { transform: translateY(6px); }
+}
+@keyframes horror-glitch-text {
+  0%, 86%, 100% { transform: none; text-shadow: 0 0 22px rgba(239,68,68,.72), 0 0 2px rgba(255,255,255,.9), 2px 0 0 rgba(239,68,68,.9), -1px 0 0 rgba(34,211,238,.6); }
+  87% { transform: translateX(-1px) skewX(-3deg); text-shadow: 3px 0 0 #ef4444, -2px 0 0 #22d3ee; }
+  88% { transform: translateX(1px); }
+  89% { transform: translateX(-2px) skewX(2deg); }
+  90% { transform: none; }
+}
+
 /* ---- Le joueur ----------------------------------------------------------- */
-.quiz-player { max-width: 860px; margin: 0 auto; }
+.quiz-player {
+  /* Accent du niveau : bleu en facile, jaune en confirmé, rouge en expert.
+     Toute la partie le réutilise (chrono, pastilles, boutons, verdicts) ;
+     hors partie (intro, résultat), l'accent par défaut reste celui du site. */
+  --quiz-accent: var(--cyan);
+  --quiz-accent-soft: rgba(34, 211, 238, .1);
+  --quiz-good: #34d399;
+  --quiz-bad: #f87171;
+  max-width: 860px; margin: 0 auto;
+}
+.quiz-player--easy { --quiz-accent: #60a5fa; --quiz-accent-soft: rgba(96, 165, 250, .1); }
+.quiz-player--medium { --quiz-accent: var(--yellow); --quiz-accent-soft: rgba(255, 214, 25, .1); }
+.quiz-player--hard { --quiz-accent: #f87171; --quiz-accent-soft: rgba(248, 113, 113, .12); }
+
+/* Secousse d'une mauvaise réponse : trois allers-retours, 420 ms (le temps du
+   `shakeTimerRef` du lecteur), désactivée en `prefers-reduced-motion`. */
+.quiz-player.is-shake { animation: quiz-shake-player .42s ease; }
+@keyframes quiz-shake-player {
+  0%, 100% { transform: translateX(0); }
+  18% { transform: translateX(-7px); }
+  36% { transform: translateX(6px); }
+  54% { transform: translateX(-4px); }
+  72% { transform: translateX(3px); }
+  88% { transform: translateX(-1px); }
+}
 .quiz-player-intro {
   padding: 30px; background: var(--panel); border: 1px solid var(--line);
   clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
 }
 .quiz-player-intro h1 { margin: 6px 0 10px; font: 800 clamp(26px, 4vw, 42px)/1.1 var(--display); text-transform: uppercase; }
 .quiz-player-intro p { color: var(--muted); margin-bottom: 20px; }
-.quiz-player-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.quiz-player-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 18px; }
 
-.quiz-progress { height: 6px; background: var(--panel-2); border: 1px solid var(--line); margin-bottom: 10px; }
-.quiz-progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--purple), var(--cyan)); transition: width .25s; }
-.quiz-progress-label { margin: 0 0 18px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
-/* Minuteur : 15 secondes par question, rouge dans les 3 dernières. */
+/* ---- Sélecteur de niveaux (écran d'intro du lecteur) --------------------- */
+/* Les quizz sont tous ouverts : c'est ICI que se joue la progression —
+   Facile ouvert, Confirmé puis Expert verrouillés tant que le niveau
+   précédent n'est pas terminé (règle pure : `./quizProgress`). */
+.quiz-levels-title {
+  margin: 22px 0 10px;
+  font: 700 13px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+  color: var(--dim);
+}
+.quiz-levels-hint { margin: 12px 0 0; color: var(--dim); font: 400 12px var(--mono); letter-spacing: .06em; }
+.quiz-levels { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.quiz-level {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; background: var(--panel-2); border: 1px solid var(--line);
+  border-inline-start: 3px solid var(--line-strong);
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  transition: border-color .18s, background .18s;
+}
+/* Difficultés : bleu = facile, jaune = confirmé, rouge = expert — la couleur
+   du niveau teinte sa ligne (bordure, nom) et son bouton « Jouer ce niveau »
+   via l'accent, puis suit en partie (chrono, pastilles, verdicts). */
+.quiz-level--easy { --quiz-accent: #60a5fa; --quiz-accent-soft: rgba(96, 165, 250, .1); border-inline-start-color: #60a5fa; }
+.quiz-level--medium { --quiz-accent: var(--yellow); --quiz-accent-soft: rgba(255, 214, 25, .1); border-inline-start-color: var(--yellow); }
+.quiz-level--hard { --quiz-accent: #f87171; --quiz-accent-soft: rgba(248, 113, 113, .12); border-inline-start-color: #f87171; }
+.quiz-level--easy .quiz-level-name { color: #60a5fa; }
+.quiz-level--medium .quiz-level-name { color: var(--yellow); }
+.quiz-level--hard .quiz-level-name { color: #f87171; }
+.quiz-level.is-selected { border-color: var(--line-strong); }
+.quiz-level.is-done { background: rgba(52, 211, 153, .05); }
+.quiz-level.is-locked { opacity: .62; border-inline-start-color: var(--line); border-style: dashed; }
+.quiz-level-copy { display: grid; gap: 3px; min-width: 0; }
+.quiz-level-name {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 700 clamp(15px, 2vw, 18px)/1.2 var(--display); text-transform: uppercase; letter-spacing: .03em;
+}
+.quiz-level-copy .quiz-level-meta { color: var(--muted); font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.quiz-level-lock { color: var(--dim); font: 500 12px var(--mono); letter-spacing: .04em; }
+.quiz-level-check { color: #34d399; }
+.quiz-level-padlock { font-size: 14px; }
+.quiz-level-play { flex: none; }
+.quiz-level-play:disabled { cursor: not-allowed; opacity: .75; }
+/* Note de déblocage : après une partie, le niveau qui vient de s'ouvrir est
+   annoncé (écran de résultat) et rappelé sur l'écran d'intro. */
+.quiz-unlock-note {
+  margin: 14px 0 0; padding: 10px 14px;
+  color: #34d399; border: 1px solid rgba(52, 211, 153, .4); background: rgba(52, 211, 153, .07);
+  font: 600 13px var(--mono); letter-spacing: .04em;
+}
+
+/* ---- Boutons d'action du quizz ------------------------------------------- */
+/* Le `.button` global (17 × 26 px, corps 12) est taillé pour les héros de
+   page ; ici on clique souvent et l'écran est déjà chargé : moitié moins
+   haut, corps 11, coin coupé plus discret. Même charte, autre échelle. */
+.quiz-cta {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; cursor: pointer; text-decoration: none;
+  font: 600 11px var(--mono); letter-spacing: .12em; text-transform: uppercase;
+  border: 1px solid transparent;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: transform .15s, box-shadow .15s, background .15s, border-color .15s;
+}
+/* L'accent du contexte teinte le bouton principal ET son halo (le sélecteur
+   de niveaux pose l'accent de la difficulté sur chaque ligne). */
+.quiz-cta--primary {
+  background: var(--quiz-accent, var(--yellow)); color: #0a0b1a;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--quiz-accent, var(--yellow)) 22%, transparent);
+}
+.quiz-cta--primary:hover { transform: translateY(-2px); box-shadow: 0 0 26px color-mix(in srgb, var(--quiz-accent, var(--yellow)) 42%, transparent); }
+.quiz-cta--ghost {
+  background: rgba(255, 255, 255, .04); color: var(--ink);
+  border-color: rgba(255, 255, 255, .22);
+}
+.quiz-cta--ghost:hover { transform: translateY(-2px); border-color: var(--quiz-accent, var(--cyan)); background: var(--quiz-accent-soft); }
+.quiz-cta:focus-visible { outline: 2px solid var(--quiz-accent, var(--cyan)); outline-offset: 2px; }
+.quiz-cta:disabled { cursor: not-allowed; opacity: .6; transform: none; box-shadow: none; }
+
+/* Règles du niveau, sur chaque ligne du sélecteur (⏱ 10 s · ▤ 5 · ♥ 3 · ◐ 0). */
+.quiz-level-rules { color: var(--dim); font: 500 10px var(--mono); letter-spacing: .1em; }
+
+/* ---- Pastilles de progression -------------------------------------------- */
+/* Une pastille par question : la partie se lit d'un coup d'œil, sans chiffre
+   à déchiffrer. La question en cours pulse doucement. */
+.quiz-pips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.quiz-pip {
+  flex: 1 1 0; min-width: 14px; height: 5px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  transition: background .2s, border-color .2s, box-shadow .2s;
+}
+.quiz-pip.is-current { border-color: var(--quiz-accent); animation: quiz-pip-pulse 1.6s ease-in-out infinite; }
+.quiz-pip.is-right { background: var(--quiz-good); border-color: var(--quiz-good); }
+.quiz-pip.is-wrong { background: var(--quiz-bad); border-color: var(--quiz-bad); }
+@keyframes quiz-pip-pulse { 0%, 100% { box-shadow: 0 0 0 rgba(255, 255, 255, 0); } 50% { box-shadow: 0 0 10px var(--quiz-accent); } }
+
+.quiz-progress-label { margin: 0 0 12px; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+/* Minuteur : le budget vient du niveau (20 s / 15 s / 10 s), rouge dans les
+   3 dernières secondes, dégradé cyan/violet quand le joker « gel » est actif. */
 /* Barre du haut pendant la partie : compte à rebours, verdict de la partie en
-   cours (✓ / ✗, la même information que les sons) et bouton son. */
-.quiz-hud { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; }
-.quiz-timer { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-.quiz-timer-count { min-width: 4ch; color: var(--cyan); font: 700 15px var(--mono); }
-.quiz-timer-track { flex: 1; height: 6px; background: var(--line); overflow: hidden; }
-.quiz-timer-track i { display: block; height: 100%; background: var(--cyan); transition: width .1s linear; }
-.quiz-timer.is-low .quiz-timer-count, .quiz-timer.is-low .quiz-timer-track i { color: #f87171; background: #f87171; }
-.quiz-timer.is-low .quiz-timer-count { background: none; }
+   cours (✓ / ✗, la même information que les sons), vies du niveau expert et
+   bouton son. */
+.quiz-hud {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 0 0 12px; padding: 9px 12px;
+  background: var(--panel); border: 1px solid var(--line);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+}
+.quiz-timer { display: flex; align-items: center; gap: 10px; flex: 1 1 200px; min-width: 0; }
+.quiz-timer-count { min-width: 4ch; color: var(--quiz-accent); font: 700 14px var(--mono); }
+.quiz-timer-track { flex: 1; height: 5px; background: var(--panel-2); overflow: hidden; }
+.quiz-timer-track i { display: block; height: 100%; background: var(--quiz-accent); transition: width .1s linear; }
+.quiz-timer.is-low .quiz-timer-count { color: var(--quiz-bad); }
+.quiz-timer.is-low .quiz-timer-track i { background: var(--quiz-bad); animation: quiz-timer-urgent .6s ease-in-out infinite; }
+.quiz-timer.is-frozen .quiz-timer-count { color: var(--cyan); }
+.quiz-timer.is-frozen .quiz-timer-track i {
+  background: linear-gradient(90deg, var(--cyan), var(--violet));
+  animation: quiz-timer-freeze .9s ease-in-out infinite;
+}
+@keyframes quiz-timer-urgent { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+@keyframes quiz-timer-freeze { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
 
-.quiz-live { display: flex; align-items: center; gap: 10px; margin: 0; font: 700 13px var(--mono); }
-.quiz-live-item--right { color: #34d399; }
-.quiz-live-item--wrong { color: #f87171; }
+.quiz-live { display: flex; align-items: center; gap: 9px; margin: 0; font: 700 12px var(--mono); }
+.quiz-live-item { display: inline-flex; align-items: center; gap: 4px; }
+.quiz-live-item--right { color: var(--quiz-good); }
+.quiz-live-item--wrong { color: var(--quiz-bad); }
+.quiz-live-item--points { color: var(--yellow); }
+.quiz-live-item--streak { color: var(--yellow); animation: quiz-combo-pulse .3s ease; }
+/* La flamme chauffe avec la série (paliers `streakLevel` du moteur). */
+.quiz-live-item--streak.is-hot { color: #fb923c; text-shadow: 0 0 12px rgba(251, 146, 60, .55); }
+.quiz-live-item--streak.is-blazing { color: #f43f5e; text-shadow: 0 0 14px rgba(244, 63, 94, .6); }
+.quiz-live-tag {
+  padding: 1px 6px; border: 1px solid currentColor; font-style: normal;
+  font: 700 9px var(--mono); letter-spacing: .14em;
+}
+
+/* Vies du niveau expert : trois cœurs, grisés à mesure qu'ils tombent. */
+.quiz-lives { display: inline-flex; align-items: center; gap: 3px; margin: 0; }
+.quiz-heart { color: #fb7185; font-size: 15px; line-height: 1; text-shadow: 0 0 10px rgba(251, 113, 133, .5); transition: color .2s, opacity .2s, transform .2s; }
+.quiz-heart.is-lost { color: var(--line-strong); opacity: .5; transform: scale(.85); text-shadow: none; }
 
 /* Bouton son du lecteur (🔊 / 🔇) : discret, mais avec une cible tactile de
-   40 px et un état `aria-pressed` pour les lecteurs d'écran. */
+   34 px et un état `aria-pressed` pour les lecteurs d'écran. */
 .quiz-sound-toggle {
-  flex: none; width: 40px; height: 40px; cursor: pointer;
+  flex: none; width: 34px; height: 34px; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
-  background: var(--panel); color: var(--ink);
-  border: 1px solid var(--line); font-size: 19px; line-height: 1;
-  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  background: var(--panel-2); color: var(--ink);
+  border: 1px solid var(--line); font-size: 16px; line-height: 1;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
   transition: border-color .15s, background .15s, opacity .15s;
 }
-.quiz-sound-toggle:hover { border-color: var(--cyan); background: rgba(34, 211, 238, .08); }
+.quiz-sound-toggle:hover { border-color: var(--quiz-accent); background: var(--quiz-accent-soft); }
 .quiz-sound-toggle.is-muted { opacity: .55; }
-.quiz-sound-toggle:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.quiz-sound-toggle:focus-visible { outline: 2px solid var(--quiz-accent); outline-offset: 2px; }
 
-.quiz-question { margin: 0 0 22px; font: 700 clamp(20px, 3vw, 28px)/1.25 var(--display); }
+.quiz-question { margin: 0 0 16px; font: 700 clamp(19px, 2.6vw, 26px)/1.25 var(--display); text-wrap: balance; }
 
-.quiz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* ---- Propositions -------------------------------------------------------- */
+/* Pavé tactile de 46 px minimum, mais plus ramassé qu'avant (11 px de padding
+   au lieu de 16) : la touche 1–5 se lit dans le coin via `data-key`, donc le
+   libellé reste seul dans le flux de texte (les lecteurs d'écran — et les
+   vérifications — n'entendent que la réponse). */
+.quiz-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Cinq propositions (niveau expert) : la dernière pleine largeur, pour ne pas
+   laisser un trou en bas de grille. */
+.quiz-choices--five .quiz-choice:last-child { grid-column: 1 / -1; }
 .quiz-choice {
-  padding: 16px 18px; text-align: start; cursor: pointer;
+  position: relative; min-height: 46px; padding: 10px 14px 10px 40px;
+  display: flex; align-items: center; text-align: start; cursor: pointer;
   background: var(--panel); color: var(--ink); border: 1px solid var(--line);
-  font: 600 15px/1.35 var(--body);
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-  transition: border-color .15s, background .15s, transform .15s;
+  font: 600 14px/1.3 var(--body);
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px);
+  transition: border-color .15s, background .15s, transform .15s, opacity .2s;
 }
-.quiz-choice:hover { border-color: var(--cyan); background: rgba(34, 211, 238, .08); transform: translateY(-1px); }
+/* La touche clavier, en pseudo-élément : elle ne pollue pas le texte. */
+.quiz-choice::before {
+  content: attr(data-key);
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 19px; height: 19px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-strong); color: var(--dim);
+  font: 600 10px var(--mono);
+  transition: border-color .15s, color .15s, background .15s;
+}
+.quiz-choice:hover:not(:disabled) {
+  border-color: var(--quiz-accent); background: var(--quiz-accent-soft); transform: translateY(-1px);
+}
+.quiz-choice:hover:not(:disabled)::before { border-color: var(--quiz-accent); color: var(--quiz-accent); }
+.quiz-choice:active:not(:disabled) { transform: translateY(0) scale(.995); }
+.quiz-choice:focus-visible { outline: 2px solid var(--quiz-accent); outline-offset: 2px; }
+.quiz-choice-label { min-width: 0; overflow-wrap: anywhere; }
+
+/* 50/50 : les deux propositions éliminées restent en place (la grille ne
+   bouge pas) mais sortent du jeu — barrées, grisées, non cliquables. */
+.quiz-choice.is-eliminated {
+  cursor: default; opacity: .3; text-decoration: line-through;
+  border-style: dashed; background: transparent;
+}
+.quiz-choice.is-eliminated::before { content: '×'; border-color: var(--line); }
+
+/* ---- Jokers -------------------------------------------------------------- */
+/* Deux aides limitées (50/50 et gel du chrono), dépensées à la main. Petits
+   boutons : ce sont des outils, pas des actions principales. Le niveau expert
+   n'en a aucune — la ligne devient un rappel. */
+.quiz-jokers { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+.quiz-joker {
+  display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; cursor: pointer;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+  font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  transition: border-color .15s, background .15s, opacity .15s, transform .15s;
+}
+.quiz-joker:hover:not(:disabled) { border-color: var(--violet); background: rgba(168, 85, 247, .12); transform: translateY(-1px); }
+.quiz-joker:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+.quiz-joker:disabled { cursor: default; opacity: .35; }
+.quiz-joker-icon { font-size: 13px; color: var(--violet); }
+.quiz-joker-count {
+  min-width: 17px; padding: 1px 4px; text-align: center;
+  background: rgba(168, 85, 247, .18); border: 1px solid rgba(168, 85, 247, .5);
+  font: 700 10px var(--mono);
+}
+.quiz-jokers--none {
+  margin: 14px 0 0; color: #fda4af;
+  font: 700 10px var(--mono); letter-spacing: .18em; text-transform: uppercase;
+}
 
 /* ---- Verdict : le gel après une réponse (VERDICT_MS, `engine.js`) -------- */
 /* Le clic fige la question un court instant : le choix cliqué passe au vert
@@ -153,19 +626,22 @@
    la question suivante n'arrive qu'après. */
 .quiz-choice.is-locked { cursor: default; }
 .quiz-choice.is-correct {
-  border-color: #34d399;
+  border-color: var(--quiz-good);
   background: rgba(52, 211, 153, .16);
   animation: quiz-pop .38s ease;
 }
+.quiz-choice.is-correct::before { content: '✓'; border-color: var(--quiz-good); color: var(--quiz-good); }
 .quiz-choice.is-wrong {
-  border-color: #f87171;
+  border-color: var(--quiz-bad);
   background: rgba(248, 113, 113, .14);
   animation: quiz-shake .42s ease;
 }
+.quiz-choice.is-wrong::before { content: '×'; border-color: var(--quiz-bad); color: var(--quiz-bad); }
 .quiz-choice.is-reveal {
   border-color: rgba(52, 211, 153, .85);
   box-shadow: inset 0 0 0 1px rgba(52, 211, 153, .35);
 }
+.quiz-choice.is-reveal::before { content: '✓'; border-color: var(--quiz-good); color: var(--quiz-good); }
 @keyframes quiz-pop { 0% { transform: scale(.98); } 55% { transform: scale(1.015); } 100% { transform: scale(1); } }
 @keyframes quiz-shake {
   0%, 100% { transform: translateX(0); }
@@ -210,8 +686,23 @@
 .quiz-tier--legend .quiz-result-tier { color: var(--violet); }
 .quiz-result-score { color: var(--muted); font: 500 15px var(--mono); letter-spacing: .1em; }
 /* Points « fun » de la partie (hors barème officiel) + meilleure série. */
-.quiz-result-points { margin: 10px 0 0; color: var(--yellow); font: 700 17px var(--mono); letter-spacing: .1em; }
+.quiz-result-points { margin: 8px 0 0; color: var(--yellow); font: 700 17px var(--mono); letter-spacing: .1em; }
+/* Rappel du niveau joué et de son multiplicateur de points. */
+.quiz-result-mult { margin: 3px 0 0; color: var(--dim); font: 600 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
 .quiz-result-combo { margin: 4px 0 0; color: var(--yellow); font: 500 13px var(--mono); letter-spacing: .1em; }
+
+/* Le détail de la partie : réussite, points, meilleure série, temps moyen,
+   vies restantes (expert) et jokers dépensés. */
+.quiz-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px; margin: 18px 0 0; padding: 0; list-style: none; text-align: center;
+}
+.quiz-stat {
+  padding: 9px 6px; background: var(--panel-2); border: 1px solid var(--line);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.quiz-stat strong { display: block; color: var(--ink); font: 700 clamp(14px, 1.6vw, 18px)/1.1 var(--display); }
+.quiz-stat span { display: block; margin-top: 3px; color: var(--dim); font: 500 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; }
 
 /* Confettis du sans-faute : pluie de fragments CSS (pas de canvas — même
    rendu partout, inerte hors navigateur). Chaque fragment a sa trajectoire
@@ -226,17 +717,21 @@
   0% { transform: translate3d(0, -20px, 0) rotate(0deg); opacity: 1; }
   100% { transform: translate3d(var(--drift, 0px), 620px, 0) rotate(var(--spin, 540deg)); opacity: 0; }
 }
-.quiz-result-perfect {
-  display: inline-block; margin-top: 12px; padding: 6px 14px;
+.quiz-result-perfect, .quiz-result-record {
+  display: inline-block; margin-top: 12px; padding: 5px 12px;
   border: 1px solid rgba(255, 214, 25, .5); color: var(--yellow);
-  font: 700 12px var(--mono); letter-spacing: .18em;
+  font: 700 11px var(--mono); letter-spacing: .18em;
 }
-.quiz-result-review {
-  display: inline-block; margin-top: 12px; padding: 6px 14px;
-  border: 1px solid var(--line-strong); color: var(--cyan);
-  font: 700 12px var(--mono); letter-spacing: .18em;
+.quiz-result-record { animation: quiz-record-in .5s ease; }
+@keyframes quiz-record-in { 0% { transform: scale(.85); opacity: 0; } 60% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+/* Niveau expert, vies épuisées : la partie s'est arrêtée avant la fin. */
+.quiz-result-gameover {
+  margin: 12px auto 0; max-width: 46ch; padding: 8px 12px;
+  border: 1px solid rgba(251, 113, 133, .45); background: rgba(251, 113, 133, .08);
+  color: #fecdd3; font: 600 12px var(--mono); letter-spacing: .04em;
 }
-.quiz-result-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; margin-top: 22px; }
+.quiz-result-actions { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; align-items: center; margin-top: 18px; }
+.quiz-result-actions .arrow-link { font-size: 13px; }
 
 /* ---- Corrections ---------------------------------------------------------- */
 .quiz-corrections { margin-top: 44px; }
@@ -254,7 +749,7 @@
 
 /* ---- Défi entre amis --------------------------------------------------------- */
 .quiz-challenge { margin-top: 34px; }
-.quiz-challenge .button-ghost { margin-top: 14px; }
+.quiz-challenge .quiz-cta { margin-top: 14px; }
 .quiz-challenge-note { margin: 12px 0 0; color: var(--dim); font-size: 14px; }
 .quiz-challenge-sent { color: #34d399; }
 .quiz-challenge-sent .arrow-link { color: var(--cyan); }
@@ -309,20 +804,762 @@
 .home-quiz-band h2 em { color: var(--cyan); font-style: normal; }
 .home-quiz-band-copy p { margin: 0; color: var(--muted); }
 
-/* ---- Responsive ----------------------------------------------------------- */
-/* Grille des quizz : 3 colonnes sur desktop (gap resserré sous 1000 px pour
-   garder des cartes lisibles), 2 colonnes sur tablette, 1 sur mobile. */
-@media (max-width: 1000px) {
-  .quiz-grid { gap: 16px; }
+/* ---- Verrouillage Confirmé/Expert ---------------------------------------- */
+.quiz-card.is-locked,
+.quiz-daily.is-locked {
+  opacity: .72;
+  filter: saturate(.85);
+  cursor: not-allowed;
+  pointer-events: none;
 }
-@media (max-width: 900px) {
-  .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.quiz-card.is-locked:hover,
+.quiz-daily.is-locked:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--line);
+}
+.quiz-daily.is-locked:hover { border-color: rgba(255, 214, 25, .3); }
+
+.quiz-player-intro.is-locked {
+  background: linear-gradient(120deg, rgba(255, 214, 25, .07), rgba(124, 58, 237, .1)), var(--panel);
+  border-color: rgba(255, 214, 25, .32);
+}
+.quiz-player-intro.is-locked h1 { color: var(--yellow); }
+
+/* ---- Responsive ----------------------------------------------------------- */
+/* Grille des quizz : 5 colonnes sur PC, 4 sous 1200 px, 3 sur tablette,
+   2 sur mobile (cartes resserrées sur écran étroit). */
+@media (max-width: 1200px) {
+  .quiz-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+}
+@media (max-width: 1000px) {
+  .quiz-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+  .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  /* Filtre : pastilles plus serrées — les cinq libellés tiennent sur deux
+     rangées sans manger la grille. */
+  .quiz-filter-bar { gap: 6px; }
+  .quiz-filter-chip { padding: 8px 11px; gap: 6px; font-size: 9.5px; }
+  .quiz-filter-summary { font-size: 10px; }
+}
+@media (max-width: 460px) {
+  .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .quiz-card { padding: 7px; gap: 8px; }
+  .quiz-card-copy h3 { font-size: 13px; }
+  .quiz-card-meta { font-size: 9px; letter-spacing: .06em; gap: 4px 6px; }
+  .quiz-card-copy .quiz-chips { flex-wrap: wrap; gap: 4px; }
 }
 @media (max-width: 620px) {
-  .quiz-grid { grid-template-columns: 1fr; }
+  .quiz-survival-card { grid-template-columns: 1fr; min-height: 0; }
+  .quiz-survival-visual { min-height: 88px; border-left: 0; border-top: 1px solid rgba(185,28,28,.26); }
+  .quiz-survival-infinity { font-size: 64px; }
+  .quiz-survival-tape { font-size: 8px; padding: 3px 18px; }
 }
 
 @media (max-width: 860px) {
   .quiz-daily { grid-template-columns: 1fr; }
-  .quiz-choices { grid-template-columns: 1fr; }
 }
+/* Partie : une seule colonne de propositions sous 720 px (le pouce vise mieux
+   une cible pleine largeur), et le bandeau s'empile proprement. */
+@media (max-width: 720px) {
+  .quiz-choices, .quiz-choices--five { grid-template-columns: 1fr; }
+  .quiz-choices--five .quiz-choice:last-child { grid-column: auto; }
+  .quiz-hud { gap: 8px; }
+  .quiz-timer { flex: 1 1 100%; }
+}
+
+/* Mouvement réduit : plus de secousse, plus de pulse — l'information passe
+   par les couleurs et les libellés, qui restent tous en place. */
+@media (prefers-reduced-motion: reduce) {
+  .quiz-player.is-shake,
+  .quiz-choice.is-correct,
+  .quiz-choice.is-wrong,
+  .quiz-pip.is-current,
+  .quiz-timer.is-low .quiz-timer-track i,
+  .quiz-timer.is-frozen .quiz-timer-track i,
+  .quiz-live-item--streak,
+  .quiz-verdict,
+  .quiz-verdict-points,
+  .quiz-verdict-combo,
+  .quiz-result-record { animation: none; }
+  .quiz-confetti { display: none; }
+  .quiz-cta, .quiz-choice, .quiz-joker, .quiz-sound-toggle { transition: none; }
+}
+
+@media (max-width: 560px) {
+  .quiz-level { align-items: flex-start; }
+  .quiz-level-play { width: 100%; justify-content: center; }
+}
+
+/* ---- Quizz TERMINÉ (les trois niveaux faits) ------------------------------ */
+/* Un quizz dont les niveaux Facile, Confirmé et Expert sont tous terminés n'est
+   plus proposé : sa carte reste visible (le joueur voit ce qu'il a accompli) mais
+   passe en niveaux de gris, avec le tampon « ✓ TERMINÉ » sur l'image et la
+   mention sous le titre. La carte n'est plus un lien (`<div>` côté `QuizzesPage`)
+   : rien n'est cliquable, le curseur reste par défaut et aucun survol ne bouge.
+   Même traitement pour le bandeau du quizz du jour, la bande d'accueil
+   (`styles.css`), les résultats de recherche et la nav. */
+.quiz-card.is-finished,
+.quiz-daily.is-finished,
+.quiz-player-finished {
+  filter: grayscale(1) brightness(.78);
+  cursor: default;
+  pointer-events: none;
+}
+/* La carte reste lisible : on remonte un peu le contraste du texte et on garde
+   les liens utilisables (`pointer-events` rétablis sur les éléments cliquables
+   de l'écran « terminé », la carte grisée n'en a aucun). */
+.quiz-player-finished { pointer-events: auto; filter: grayscale(1) brightness(.9); }
+.quiz-card.is-finished:hover,
+.quiz-daily.is-finished:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--line);
+}
+.quiz-card.is-finished .quiz-card-copy h3 { color: var(--dim); }
+.quiz-card.is-finished .quiz-card-meta { color: var(--dim); }
+
+/* Le tampon sur la miniature : bandeau sombre + coche, lisible même sur une
+   image claire une fois désaturée. */
+.quiz-finished-flag {
+  position: absolute; inset-inline-start: 0; inset-block-end: 0;
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
+  background: rgba(9, 10, 20, .82); border-block-start: 1px solid rgba(255, 255, 255, .18);
+  border-inline-end: 1px solid rgba(255, 255, 255, .18);
+  color: #e6e8f2; font: 700 10px var(--mono); letter-spacing: .16em; text-transform: uppercase;
+}
+/* La mention sous le titre — ce que « terminé » veut dire. */
+.quiz-finished-note {
+  display: inline-block; padding: 3px 8px; border: 1px solid rgba(255, 255, 255, .22);
+  color: var(--dim); font: 600 10px var(--mono); letter-spacing: .12em; text-transform: uppercase;
+}
+
+/* ---- Écran « terminé » du lecteur ----------------------------------------- */
+/* Le sélecteur de niveaux est remplacé par le récapitulatif : les trois niveaux
+   cochés, le record de l'appareil et les portes de sortie (autres quizz, source). */
+.quiz-player-finished { text-align: center; }
+.quiz-player-finished h1 { margin: 10px 0 4px; }
+.quiz-finished-hint { margin: 0 auto 20px; max-width: 54ch; color: var(--muted); font-size: 15px; }
+.quiz-levels--finished { max-width: 460px; margin: 0 auto; }
+.quiz-levels--finished .quiz-level { cursor: default; }
+.quiz-levels--finished .quiz-level:hover { border-color: var(--line); background: var(--panel); }
+.quiz-finished-best { margin: 16px 0 0; color: var(--yellow); font: 700 13px var(--mono); letter-spacing: .08em; }
+/* Badge de l'écran de résultat : le dernier niveau vient d'être terminé. */
+.quiz-result-finished {
+  display: inline-block; margin-top: 12px; padding: 5px 12px;
+  border: 1px solid rgba(255, 214, 25, .5); color: var(--yellow);
+  font: 700 11px var(--mono); letter-spacing: .18em;
+}
+
+/* ---- Bande d'accueil, recherche et nav (quizz terminé) -------------------- */
+/* La bande du jour garde sa mise en page mais passe en gris : le bouton renvoie
+   à la grille (`/quizz`) puisque le quizz du jour est verrouillé. */
+.home-quiz-band.is-finished { filter: grayscale(1) brightness(.82); }
+.home-quiz-band.is-finished .quiz-chip { margin-inline-start: 8px; }
+/* Résultats de recherche et suggestions de la nav : grisés, non cliquables
+   (rendus en `<div>`/`<span>` côté `Search.jsx` et `Layout.jsx`). */
+.search-result-card.is-finished,
+.nav-search-result.is-finished {
+  filter: grayscale(1) brightness(.78);
+  cursor: default;
+  pointer-events: none;
+}
+.search-result-card.is-finished:hover { transform: none; box-shadow: none; border-color: var(--line); }
+.search-result-card.is-finished h2,
+.search-result-card.is-finished p { color: var(--dim); }
+.nav-search-result.is-finished strong { color: var(--dim); }
+
+/* ---- Confirmation avant de lancer un niveau (Facile / Confirmé / Expert) --- */
+/* Overlay + dialogue : même interaction que DeleteAccount / VideoModal
+   (role=dialog, Escape, clic sur le fond, scroll bloqué, focus sur Confirmer). */
+.quiz-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(3, 4, 10, .78);
+  backdrop-filter: blur(7px);
+  animation: quiz-confirm-fade .18s ease;
+}
+@keyframes quiz-confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.quiz-confirm-dialog {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding: 28px 26px 22px;
+  background: linear-gradient(145deg, rgba(22, 17, 35, .99), rgba(8, 10, 24, .99));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 30px 90px rgba(0,0,0,.7), 0 0 40px rgba(124,58,237,.14);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  animation: quiz-confirm-pop .22s cubic-bezier(.18,.89,.32,1.28);
+}
+@keyframes quiz-confirm-pop { from { opacity: 0; transform: scale(.96) translateY(8px); } to { opacity: 1; transform: none; } }
+
+.quiz-confirm-dialog--easy { border-color: rgba(96,165,250,.55); }
+.quiz-confirm-dialog--medium { border-color: rgba(255,214,25,.55); }
+.quiz-confirm-dialog--hard { border-color: rgba(248,113,113,.6); box-shadow: 0 30px 90px rgba(0,0,0,.7), 0 0 40px rgba(248,113,113,.18); }
+
+.quiz-confirm-head { display: grid; gap: 8px; margin-bottom: 14px; }
+.quiz-confirm-title { margin: 6px 0 0; font: 800 clamp(20px, 3.5vw, 28px)/1.1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.quiz-confirm-dialog--easy .quiz-confirm-title { color: #60a5fa; }
+.quiz-confirm-dialog--medium .quiz-confirm-title { color: var(--yellow); }
+.quiz-confirm-dialog--hard .quiz-confirm-title { color: #f87171; }
+.quiz-confirm-intro { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.quiz-confirm-warning {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(248,113,113,.5);
+  background: rgba(248,113,113,.1);
+  color: #fecdd3;
+  font: 700 12px var(--mono);
+  letter-spacing: .04em;
+}
+.quiz-confirm-rules { margin: 14px 0 18px; padding: 14px 16px; background: rgba(255,255,255,.03); border: 1px solid var(--line); }
+.quiz-confirm-rulesTitle { margin: 0 0 8px; font: 700 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.quiz-confirm-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font: 600 13px var(--mono); }
+.quiz-confirm-list li { color: var(--ink); }
+.quiz-confirm-jokerDetail {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  background: rgba(168,85,247,.08);
+  border: 1px solid rgba(168,85,247,.3);
+  color: #e9d5ff;
+  font: 500 12px var(--mono);
+  line-height: 1.5;
+}
+.quiz-confirm-hint { margin: 8px 0 0; color: var(--muted); font: 500 12px var(--body); line-height: 1.5; }
+.quiz-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.quiz-confirm-actions .quiz-cta { min-width: 110px; justify-content: center; }
+@media (max-width: 560px) {
+  .quiz-confirm-dialog { padding: 20px 16px; }
+  .quiz-confirm-actions { flex-direction: column-reverse; }
+  .quiz-confirm-actions .quiz-cta { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .quiz-confirm-overlay, .quiz-confirm-dialog { animation: none; }
+}
+
+/* ==========================================================================
+   SURVIVAL HORROR — Full page redesign inspired by:
+   - Silent Hill (fog, rust, radio static)
+   - Resident Evil (typewriter, ink ribbon, blood file)
+   - Dead Space (diegetic HUD, vitals)
+   - P.T. / Visage (flicker, looping corridor, whispers)
+   - Outlast (night vision, found footage)
+   ========================================================================== */
+
+.survival-horror {
+  position: relative;
+  background: #060608;
+  min-height: 100vh;
+  overflow: clip;
+  --horror-red: #ef4444;
+  --horror-red-dark: #7f1d1d;
+  --horror-blood: #b91c1c;
+  --horror-paper: #e8ddd0;
+  --horror-ink: #0a0a0a;
+}
+
+/* Atmosphere layers */
+.horror-atmosphere {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+}
+.horror-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(900px 600px at 18% 8%, rgba(185,28,28,.16), transparent 62%),
+    radial-gradient(800px 520px at 86% 92%, rgba(185,28,28,.12), transparent 62%),
+    radial-gradient(700px 400px at 50% 50%, rgba(124,58,237,.08), transparent 72%),
+    linear-gradient(180deg, #0a0a0f 0%, #060608 100%);
+}
+.horror-fog {
+  position: absolute; inset: -20%;
+  background: radial-gradient(60% 40% at 50% 50%, rgba(255,255,255,.06), transparent 70%);
+  filter: blur(18px);
+  animation: horror-fog-drift 22s ease-in-out infinite alternate;
+}
+.horror-fog--2 {
+  background: radial-gradient(50% 60% at 30% 80%, rgba(239,68,68,.08), transparent 70%);
+  animation-duration: 28s; animation-delay: -8s;
+}
+.horror-grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.12'/%3E%3C/svg%3E");
+  opacity: .34; mix-blend-mode: overlay;
+  animation: horror-grain-shift .18s steps(2) infinite;
+}
+.horror-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(90% 85% at 50% 50%, transparent 44%, rgba(0,0,0,.82) 100%);
+}
+.horror-scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, transparent 1px 4px);
+  opacity: .22;
+}
+.horror-blood-drips {
+  position: absolute; top: 0; left: 0; right: 0; height: 120px;
+  display: flex; gap: 0; justify-content: space-around; pointer-events: none;
+}
+.horror-blood-drips span {
+  display: block; width: 2px; background: linear-gradient(180deg, var(--horror-red), transparent);
+  height: 0; animation: horror-drip 7s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--horror-red);
+}
+.horror-blood-drips span:nth-child(1){ height: 68px; left: 8%; animation-delay: 0s; }
+.horror-blood-drips span:nth-child(2){ height: 92px; left: 34%; animation-delay: 1.2s; }
+.horror-blood-drips span:nth-child(3){ height: 54px; left: 66%; animation-delay: 2.8s; }
+.horror-blood-drips span:nth-child(4){ height: 78px; left: 88%; animation-delay: 4.1s; }
+
+.survival-horror .wrap { position: relative; z-index: 1; }
+
+/* Header horror */
+.survival-horror-header { margin-bottom: 22px; }
+.horror-section-label {
+  border-top-color: rgba(185,28,28,.42) !important;
+  color: #fca5a5 !important;
+}
+.horror-section-label span:first-child { display: inline-flex; align-items: center; gap: 8px; }
+.horror-rec-dot {
+  display: inline-block; width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
+  box-shadow: 0 0 10px #ef4444; animation: horror-rec-blink 1s steps(1) infinite;
+}
+.horror-pool-label {
+  color: rgba(252,165,165,.56) !important; font: 700 9px var(--mono) !important;
+  letter-spacing: .18em !important;
+}
+.horror-glitch-title {
+  position: relative; display: inline-block;
+  font: 900 clamp(36px, 6vw, 66px)/.92 var(--display) !important;
+  letter-spacing: .06em; text-transform: uppercase; color: #fff;
+  text-shadow: 0 0 18px rgba(239,68,68,.55);
+}
+.horror-glitch-title span {
+  display: inline-block; position: relative;
+  animation: horror-letter-flicker 5s steps(1) infinite;
+  animation-delay: calc(var(--i) * .06s);
+}
+.horror-title-blood {
+  position: absolute; left: 0; top: 0; color: transparent;
+  -webkit-text-stroke: 1px rgba(239,68,68,.18);
+  transform: translate(2px, 2px); pointer-events: none; filter: blur(.4px);
+}
+.horror-intro { max-width: 720px !important; color: #e5d5d5 !important; line-height: 1.6 !important; }
+.horror-typewriter { font-family: var(--mono); letter-spacing: .02em; }
+.horror-log {
+  display: inline-block; margin-top: 10px; padding: 6px 10px;
+  background: rgba(0,0,0,.64); border-left: 2px solid var(--horror-red);
+  color: #fca5a5; font: 600 11px var(--mono); letter-spacing: .06em;
+}
+
+/* Case file intro */
+.horror-case-file {
+  max-width: 880px !important; position: relative;
+  --quiz-accent: var(--horror-red) !important;
+  --quiz-accent-soft: rgba(239,68,68,.12) !important;
+}
+.horror-tape {
+  position: absolute; z-index: 5; left: -14px; right: -14px; height: 26px;
+  display: grid; place-items: center;
+  font: 900 11px var(--mono); letter-spacing: .22em; text-transform: uppercase;
+  background: #facc15; color: #000; box-shadow: 0 4px 18px rgba(0,0,0,.5);
+  transform: rotate(-1.2deg);
+}
+.horror-tape--top { top: 12px; }
+.horror-tape--bottom { bottom: 12px; top: auto; transform: rotate(1.2deg); }
+.horror-tape--red { background: var(--horror-blood); color: #fff; }
+
+.horror-file-inner {
+  padding: 56px 28px 56px !important;
+  background:
+    linear-gradient(180deg, rgba(232,221,208,.04), rgba(232,221,208,.01)),
+    radial-gradient(800px 400px at 20% 0%, rgba(239,68,68,.08), transparent 60%),
+    linear-gradient(180deg, #121014, #0c0a0c) !important;
+  border: 1px solid rgba(185,28,28,.38) !important;
+  position: relative; overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,.72), inset 0 0 0 1px rgba(239,68,68,.12);
+}
+.horror-file-inner::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(239,68,68,.04) 34px 35px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 28px);
+  opacity: .6;
+}
+.horror-file-header {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 14px;
+  margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px dashed rgba(239,68,68,.28);
+  position: relative; z-index: 1;
+}
+.horror-file-meta {
+  display: grid; gap: 4px; font: 700 9px var(--mono); letter-spacing: .18em; color: rgba(252,165,165,.66); text-transform: uppercase;
+}
+.horror-stamp {
+  padding: 6px 14px; border: 2px solid var(--horror-red); color: var(--horror-red);
+  font: 900 12px var(--mono); letter-spacing: .22em; text-transform: uppercase;
+  transform: rotate(-8deg); opacity: .9; text-shadow: 0 0 8px rgba(239,68,68,.6);
+  box-shadow: 0 0 12px rgba(239,68,68,.22) inset;
+}
+.horror-chips { position: relative; z-index: 1; }
+.horror-chip-pulse {
+  background: var(--horror-blood) !important; color: #fff !important;
+  border-color: var(--horror-red) !important;
+  animation: horror-pulse-red 2.2s ease-in-out infinite;
+}
+.horror-chip-warn {
+  color: #facc15 !important; border-color: rgba(250,204,21,.45) !important;
+  background: rgba(250,204,21,.12) !important;
+}
+.horror-file-title {
+  position: relative; z-index: 1; margin: 12px 0 8px;
+  font: 800 clamp(22px, 3.2vw, 32px)/1.1 var(--display) !important;
+  color: #fff !important; letter-spacing: .02em; text-transform: uppercase;
+}
+.horror-cursor { color: var(--horror-red); animation: horror-cursor-blink .9s steps(1) infinite; margin-left: 4px; }
+
+.horror-evidence-photo {
+  position: relative; z-index: 1; margin: 18px 0 22px; height: 96px;
+  background: #000; border: 1px solid rgba(185,28,28,.28);
+  display: grid; place-items: center; overflow: hidden;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.horror-evidence-photo::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    url('/quizzes/horror-gaming.jpg') center/cover no-repeat,
+    linear-gradient(90deg, rgba(0,0,0,.6), rgba(0,0,0,.2));
+  filter: grayscale(1) contrast(1.3) brightness(.55) sepia(.2);
+  opacity: .72;
+}
+.horror-photo-inner {
+  position: relative; z-index: 1; width: 100%; display: flex; justify-content: space-between;
+  padding: 10px 14px; font: 700 9px var(--mono); letter-spacing: .22em; color: rgba(255,255,255,.5);
+}
+
+.horror-rules { position: relative; z-index: 1; }
+.horror-rules li { background: rgba(18,12,14,.92) !important; border-color: rgba(185,28,28,.32) !important; }
+
+.horror-audio-log {
+  position: relative; z-index: 1; margin-top: 18px; padding: 12px 14px;
+  background: rgba(0,0,0,.56); border: 1px solid rgba(185,28,28,.28);
+  border-left: 3px solid var(--horror-red);
+}
+.horror-audio-kicker {
+  display: block; font: 800 9px var(--mono); letter-spacing: .22em; color: var(--horror-red); margin-bottom: 6px;
+}
+.horror-audio-log p {
+  margin: 0; font: 500 13px/1.5 var(--mono); color: #e5d5d5; font-style: italic;
+}
+
+.horror-best {
+  position: relative; z-index: 1; background: rgba(0,0,0,.5); border-color: var(--horror-red) !important;
+  padding-left: 12px !important;
+}
+.horror-best-icon { color: var(--horror-red); margin-right: 6px; }
+
+.horror-actions { position: relative; z-index: 1; }
+.horror-cta-enter {
+  position: relative; overflow: hidden;
+  background: var(--horror-blood) !important; color: #fff !important;
+  border-color: var(--horror-red) !important;
+  padding: 14px 22px !important; font: 900 12px var(--mono) !important;
+  letter-spacing: .18em !important; min-width: 200px;
+  box-shadow: 0 0 22px rgba(185,28,28,.45), 0 0 0 1px rgba(239,68,68,.32) inset !important;
+  transition: transform .18s, box-shadow .18s, filter .18s !important;
+}
+.horror-cta-enter:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 0 34px rgba(239,68,68,.7), 0 0 0 1px rgba(239,68,68,.6) inset !important;
+  filter: contrast(1.15);
+}
+.horror-cta-blood {
+  position: absolute; inset: auto 0 0 0; height: 3px;
+  background: linear-gradient(90deg, transparent, #ef4444, transparent);
+  transform: scaleX(0); transform-origin: left; transition: transform .34s ease;
+}
+.horror-cta-enter:hover .horror-cta-blood { transform: scaleX(1); }
+.horror-cta-ghost {
+  background: rgba(0,0,0,.6) !important; border-color: rgba(252,165,165,.32) !important;
+  color: #fca5a5 !important;
+}
+.horror-footnote {
+  position: relative; z-index: 1; margin: 16px 0 0; color: rgba(252,165,165,.42);
+  font: 500 9px var(--mono); letter-spacing: .12em; text-transform: uppercase;
+}
+
+/* Play mode horror */
+.horror-play-root {
+  max-width: 900px !important;
+  --quiz-accent: var(--horror-red) !important;
+  --quiz-accent-soft: rgba(239,68,68,.12) !important;
+  --quiz-good: #4ade80 !important;
+  --quiz-bad: var(--horror-red) !important;
+  background: linear-gradient(180deg, rgba(18,12,14,.96), rgba(10,8,10,.98));
+  border: 1px solid rgba(185,28,28,.42);
+  padding: 18px 18px 22px;
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  box-shadow: 0 28px 72px rgba(0,0,0,.78), inset 0 0 0 1px rgba(239,68,68,.14);
+  position: relative; overflow: hidden;
+}
+.horror-play-root::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+  opacity: .5;
+}
+
+.horror-hud {
+  position: relative; z-index: 1; background: rgba(0,0,0,.62) !important;
+  border-color: rgba(185,28,28,.32) !important;
+  padding: 12px 14px !important; gap: 12px !important;
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px) !important;
+}
+.horror-hud-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+.horror-timer { flex: 1 1 220px; }
+.horror-timer-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.horror-timer-label { font: 800 9px var(--mono); letter-spacing: .22em; color: #fca5a5; }
+.horror-timer-count { color: #fff !important; font: 900 18px var(--mono) !important; text-shadow: 0 0 12px rgba(239,68,68,.7); }
+.horror-timer-track { height: 6px !important; background: rgba(239,68,68,.18) !important; border: 1px solid rgba(239,68,68,.24); }
+.horror-timer-track i { background: linear-gradient(90deg, var(--horror-blood), #ef4444) !important; box-shadow: 0 0 10px rgba(239,68,68,.6); }
+.horror-timer.is-low .horror-timer-count { color: #ef4444 !important; animation: horror-timer-flash .42s steps(1) infinite; }
+.horror-timer-warning { margin-left: 10px; font: 800 9px var(--mono); color: #facc15; letter-spacing: .18em; animation: horror-flicker .2s steps(1) infinite; }
+.horror-lives { display: flex; align-items: center; gap: 10px; margin: 0; }
+.horror-lives-label { font: 800 10px var(--mono); letter-spacing: .18em; color: #fca5a5; }
+.horror-hearts { display: inline-flex; gap: 6px; }
+.horror-heart { position: relative; width: 28px; height: 28px; display: grid; place-items: center; background: rgba(185,28,28,.18); border: 1px solid rgba(239,68,68,.42); clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px); }
+.horror-heart-inner { color: #ef4444; font-size: 16px; text-shadow: 0 0 10px rgba(239,68,68,.8); animation: horror-heart-beat 1.2s ease-in-out infinite; }
+.horror-heart.is-lost { background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.08); opacity: .5; }
+.horror-heart.is-lost .horror-heart-inner { color: #555; text-shadow: none; animation: none; }
+.horror-heart-lost { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font: 900 12px var(--mono); }
+.horror-hud-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: 10px; flex-wrap: wrap; }
+.horror-live { gap: 12px !important; font: 700 11px var(--mono) !important; letter-spacing: .08em; }
+.horror-live .quiz-live-item--right { color: #4ade80 !important; }
+.horror-live .quiz-live-item--wrong { color: #ef4444 !important; }
+.horror-live .quiz-live-item--points { color: #facc15 !important; }
+.horror-streak-tag { background: rgba(239,68,68,.18); border-color: var(--horror-red) !important; color: #fecaca !important; }
+.horror-loop-indicator { font: 700 9px var(--mono); letter-spacing: .18em; color: rgba(252,165,165,.5); border: 1px solid rgba(239,68,68,.22); padding: 3px 8px; background: rgba(0,0,0,.4); }
+
+.horror-question-wrap {
+  position: relative; z-index: 1; margin-top: 16px; padding: 16px 16px 14px;
+  background: linear-gradient(180deg, rgba(232,221,208,.06), rgba(232,221,208,.02)), #141016;
+  border: 1px solid rgba(239,68,68,.22); border-left: 3px solid var(--horror-red);
+}
+.horror-question-tape {
+  position: absolute; top: -10px; left: 18px; background: #facc15; color: #000;
+  font: 800 9px var(--mono); letter-spacing: .18em; padding: 3px 10px; transform: rotate(-1deg);
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.horror-progress { margin: 0 0 10px !important; gap: 8px !important; }
+.horror-file-ref { color: #e5d5d5 !important; letter-spacing: .12em !important; }
+.horror-static-id { font: 600 9px var(--mono); color: rgba(252,165,165,.42); letter-spacing: .16em; margin-left: auto; }
+.horror-question {
+  position: relative; color: #f5efe6 !important; font: 700 clamp(18px, 2.4vw, 24px)/1.28 var(--display) !important;
+  letter-spacing: .01em; text-wrap: balance;
+}
+.horror-question-mark {
+  display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: 10px;
+  background: var(--horror-blood); color: #fff; font: 900 14px var(--mono);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  vertical-align: middle; transform: translateY(-2px);
+}
+.horror-question-blood {
+  position: absolute; right: 6px; top: -6px; width: 18px; height: 18px;
+  background: radial-gradient(circle, rgba(239,68,68,.7), transparent 70%); filter: blur(1px); pointer-events: none;
+}
+
+.horror-verdict {
+  position: relative; z-index: 1; margin: 14px 0 16px !important; padding: 12px 14px !important;
+  display: flex !important; align-items: center; gap: 12px !important;
+  background: rgba(0,0,0,.64) !important; border: 1px solid rgba(239,68,68,.32) !important;
+  border-left: 3px solid var(--horror-red) !important;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  overflow: hidden;
+}
+.horror-verdict.is-right { border-left-color: #4ade80 !important; }
+.horror-verdict.is-right .horror-verdict-icon { background: #4ade80; }
+.horror-verdict-icon {
+  flex: none; width: 32px; height: 32px; display: grid; place-items: center;
+  background: var(--horror-red); color: #fff; font: 900 16px var(--mono);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.horror-verdict-body { display: grid; gap: 2px; }
+.horror-verdict-phrase { font: 800 13px var(--mono) !important; letter-spacing: .06em !important; }
+.horror-verdict-sub { font: 500 11px var(--mono); color: rgba(252,165,165,.62); }
+.horror-verdict-points { margin-left: auto; background: rgba(250,204,21,.12); border: 1px solid rgba(250,204,21,.32); padding: 4px 8px; color: #facc15 !important; font: 800 11px var(--mono) !important; }
+.horror-verdict-blood {
+  position: absolute; inset: 0; pointer-events: none; opacity: .12;
+  background: radial-gradient(120px 60px at 20% 50%, var(--horror-red), transparent 70%);
+}
+
+.horror-choices { position: relative; z-index: 1; gap: 10px !important; }
+.horror-choice {
+  position: relative; overflow: hidden; min-height: 52px !important;
+  padding: 12px 14px 12px 48px !important;
+  background: linear-gradient(180deg, rgba(24,16,18,.96), rgba(14,10,12,.96)) !important;
+  border: 1px solid rgba(185,28,28,.26) !important; color: #e8ddd0 !important;
+  font: 600 14px/1.35 var(--body) !important;
+  text-align: left !important; transition: border-color .18s, transform .18s, background .18s, box-shadow .18s !important;
+}
+.horror-choice::before { display: none !important; }
+.horror-choice-key {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  width: 26px; height: 26px; display: grid; place-items: center;
+  background: rgba(0,0,0,.6); border: 1px solid rgba(252,165,165,.22);
+  color: #fca5a5; font: 800 11px var(--mono);
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+.horror-choice:hover:not(:disabled) {
+  border-color: rgba(239,68,68,.64) !important; background: linear-gradient(180deg, rgba(38,18,20,.98), rgba(22,14,16,.98)) !important;
+  transform: translateY(-1px) !important; box-shadow: 0 0 18px rgba(239,68,68,.18);
+}
+.horror-choice:hover:not(:disabled) .horror-choice-key { border-color: var(--horror-red); color: #fff; background: var(--horror-blood); }
+.horror-choice-blood {
+  position: absolute; right: -10px; bottom: -10px; width: 80px; height: 80px;
+  background: radial-gradient(circle at 30% 30%, rgba(239,68,68,.18), transparent 70%);
+  opacity: 0; transition: opacity .22s; pointer-events: none;
+}
+.horror-choice:hover .horror-choice-blood { opacity: 1; }
+.horror-choice-static {
+  position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(255,255,255,.02) 2px 3px);
+  opacity: 0; pointer-events: none;
+}
+.horror-choice:hover .horror-choice-static { opacity: .6; }
+.horror-choice.is-correct {
+  border-color: #4ade80 !important; background: rgba(74,222,128,.12) !important;
+  box-shadow: 0 0 18px rgba(74,222,128,.22) !important;
+}
+.horror-choice.is-wrong {
+  border-color: var(--horror-red) !important; background: rgba(239,68,68,.16) !important;
+  animation: horror-shake .38s ease;
+}
+.horror-choice.is-reveal { border-color: rgba(74,222,128,.6) !important; box-shadow: inset 0 0 0 1px rgba(74,222,128,.32); }
+
+.horror-keys { color: rgba(252,165,165,.52) !important; margin-top: 14px !important; }
+.horror-keys-warn { color: #facc15; margin-left: 8px; }
+
+/* Game over horror */
+.horror-gameover-root { max-width: 860px !important; }
+.horror-gameover-card {
+  position: relative; padding: 36px 28px 28px !important; text-align: center;
+  background: linear-gradient(180deg, #151016, #0c0a0c) !important;
+  border-color: rgba(185,28,28,.55) !important;
+  overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,.84), inset 0 0 0 1px rgba(239,68,68,.18) !important;
+}
+.horror-gameover-static {
+  position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px),
+    radial-gradient(80% 60% at 50% 30%, rgba(239,68,68,.12), transparent 70%);
+  animation: horror-static-flicker .12s steps(2) infinite;
+}
+.horror-gameover-blood {
+  position: absolute; top: 0; left: 0; right: 0; height: 6px;
+  background: linear-gradient(90deg, transparent, var(--horror-red), transparent); opacity: .8;
+}
+.horror-gameover-kicker { position: relative; z-index: 1; color: #fca5a5 !important; letter-spacing: .22em !important; }
+.horror-gameover-title {
+  position: relative; z-index: 1; font: 900 clamp(42px, 8vw, 84px)/.9 var(--display) !important;
+  letter-spacing: .06em; color: #fff !important; text-shadow: 0 0 24px rgba(239,68,68,.72);
+}
+.horror-skull { color: var(--horror-red); text-shadow: 0 0 18px rgba(239,68,68,.9); margin-right: 8px; }
+.horror-gameover-glitch {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  color: transparent; -webkit-text-stroke: 1px rgba(239,68,68,.12);
+  filter: blur(1px); pointer-events: none; font: inherit; white-space: nowrap;
+}
+.horror-gameover-sub { position: relative; z-index: 1; margin: 10px auto 0; max-width: 42ch; color: rgba(252,165,165,.64); font: 500 13px var(--mono); }
+.horror-points { position: relative; z-index: 1; font: 900 22px var(--mono) !important; letter-spacing: .12em; color: #facc15 !important; text-shadow: 0 0 14px rgba(250,204,21,.4); }
+.horror-record { position: relative; z-index: 1; background: rgba(250,204,21,.12); border-color: rgba(250,204,21,.5) !important; color: #facc15 !important; animation: horror-record-pulse 1.6s ease-in-out infinite; }
+.horror-stats { position: relative; z-index: 1; margin-top: 22px !important; }
+.horror-stats .quiz-stat { background: rgba(0,0,0,.54) !important; border-color: rgba(185,28,28,.22) !important; }
+.horror-stats .quiz-stat strong { color: #fff !important; }
+.horror-stat-streak { border-color: rgba(250,204,21,.32) !important; }
+.horror-stat-streak strong { color: #facc15 !important; }
+.horror-gameover-tape {
+  position: relative; z-index: 1; margin-top: 18px; display: inline-block;
+  background: #facc15; color: #000; font: 800 9px var(--mono); letter-spacing: .18em; padding: 4px 12px; transform: rotate(-1deg);
+}
+.horror-gameover-actions { position: relative; z-index: 1; margin-top: 20px !important; }
+.horror-gameover-whisper {
+  position: relative; z-index: 1; margin: 18px 0 0; color: rgba(252,165,165,.32);
+  font: 500 11px var(--mono); letter-spacing: .14em; font-style: italic;
+}
+
+/* Sound toggle horror */
+.horror-sound-toggle {
+  background: rgba(0,0,0,.6) !important; border-color: rgba(239,68,68,.32) !important;
+  color: #fca5a5 !important; width: auto !important; padding: 0 12px !important; gap: 8px !important;
+  font: 700 10px var(--mono) !important; letter-spacing: .14em;
+}
+.horror-sound-toggle:hover { border-color: var(--horror-red) !important; background: rgba(185,28,28,.18) !important; }
+.horror-sound-label { font: inherit; }
+
+/* Horror empty */
+.horror-empty { color: #fca5a5 !important; border-left: 2px solid var(--horror-red); padding-left: 10px; }
+
+/* Responsive */
+@media (max-width: 720px) {
+  .horror-file-inner { padding: 48px 16px 48px !important; }
+  .horror-play-root { padding: 14px 12px 18px; }
+  .horror-hud-top { gap: 10px; }
+  .horror-question { font-size: clamp(17px, 4.2vw, 22px) !important; }
+  .horror-tape { font-size: 9px; height: 22px; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .horror-fog, .horror-grain, .horror-scanlines, .horror-blood-drips span,
+  .horror-glitch-title span, .horror-heart-inner, .horror-chip-pulse,
+  .horror-gameover-static, .horror-timer.is-low .horror-timer-count {
+    animation: none !important;
+  }
+}
+
+/* Keyframes */
+@keyframes horror-fog-drift {
+  0% { transform: translate(-4%, -2%) scale(1); }
+  100% { transform: translate(4%, 3%) scale(1.06); }
+}
+@keyframes horror-grain-shift {
+  0% { transform: translate(0,0); } 50% { transform: translate(-2%, -1%); } 100% { transform: translate(1%, 2%); }
+}
+@keyframes horror-drip {
+  0%, 90% { transform: scaleY(.2); opacity: 0; }
+  10% { opacity: .8; transform: scaleY(1); }
+  100% { transform: scaleY(1.4); opacity: 0; }
+}
+@keyframes horror-letter-flicker {
+  0%, 92%, 100% { opacity: 1; transform: none; }
+  93% { opacity: .6; transform: translateX(-1px); }
+  94% { opacity: 1; transform: translateX(1px); }
+  95% { opacity: .8; }
+}
+@keyframes horror-cursor-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+@keyframes horror-timer-flash { 0%,49% { opacity: 1; } 50%,100% { opacity: .35; } }
+@keyframes horror-static-flicker { 0% { opacity: .12; } 100% { opacity: .22; } }
+@keyframes horror-record-pulse { 0%,100% { box-shadow: 0 0 0 rgba(250,204,21,0); } 50% { box-shadow: 0 0 18px rgba(250,204,21,.35); } }
+@keyframes horror-shake {
+  0%,100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+/* Light theme overrides — keep horror dark even in light */
+[data-theme='light'] .survival-horror {
+  background: #08080c;
+  --bg: #08080c;
+}
+[data-theme='light'] .survival-horror .quiz-header h1 { color: #fff; }
+[data-theme='light'] .survival-horror .quiz-intro { color: #e5d5d5 !important; }
+[data-theme='light'] .horror-file-inner { background: linear-gradient(180deg, #121014, #0c0a0c) !important; border-color: rgba(185,28,28,.38) !important; }
+[data-theme='light'] .horror-file-inner h2 { color: #fff !important; }
+[data-theme='light'] .horror-play-root { background: linear-gradient(180deg, rgba(18,12,14,.96), rgba(10,8,10,.98)) !important; border-color: rgba(185,28,28,.42) !important; }
+[data-theme='light'] .horror-question { color: #f5efe6 !important; }
+[data-theme='light'] .horror-choice { background: linear-gradient(180deg, rgba(24,16,18,.96), rgba(14,10,12,.96)) !important; border-color: rgba(185,28,28,.26) !important; color: #e8ddd0 !important; }
+[data-theme='light'] .horror-gameover-card { background: linear-gradient(180deg, #151016, #0c0a0c) !important; border-color: rgba(185,28,28,.55) !important; }
+

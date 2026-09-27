@@ -1,9 +1,37 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { translations, languages } from './translations';
 
-const STORAGE_KEY = 'letsplay-lang';
+/**
+ * Langue du site — le français, et rien d'autre.
+ * ----------------------------------------------
+ * Le sélecteur de langue a été retiré de la barre de navigation : le site est
+ * publié en français. `SITE_LANG` est donc la langue de tous les visiteurs, et
+ * plus rien n'est lu dans `localStorage` : l'ancienne clé `letsplay-lang` est
+ * ignorée, y compris chez un visiteur qui avait choisi l'anglais ou l'arabe.
+ *
+ * Ce qui reste dans le dépôt, et pourquoi :
+ *
+ *   - les dictionnaires `en` et `ar` (`src/i18n/translations.js`). `en` reste le
+ *     filet de sécurité du français : une clé oubliée dans `fr` s'affiche en
+ *     anglais au lieu de casser la page (voir `withBaseFallback` — c'est le bug
+ *     ff6d390 qui avait blanchi la page Actus) ;
+ *   - la direction du texte (`dir`) et le câblage RTL qui va avec : inertes en
+ *     français, déjà en place si une langue revient un jour ;
+ *   - la prop `lang` du provider : une prise réservée aux scripts de
+ *     vérification, qui continuent de rendre chaque route en FR / EN / AR
+ *     (`npm run check:i18n`). Aucun écran ne s'en sert, aucun visiteur ne peut
+ *     changer la langue.
+ *
+ * Le contexte expose `{ lang, dir, t }` : `setLang` a disparu avec le
+ * sélecteur.
+ */
 
-// Dictionary used as the safety net when a key has not been translated yet.
+// Langue publiée dans `index.html` (`<html lang="fr">`) et seul réglage du
+// site. Sert aussi de repli quand la prop `lang` ne correspond à aucun
+// dictionnaire.
+export const SITE_LANG = 'fr';
+
+// Dictionnaire de secours du français : celui de l'anglais.
 const BASE_LANG = 'en';
 
 function isPlainObject(value) {
@@ -11,19 +39,21 @@ function isPlainObject(value) {
 }
 
 /**
- * Deep-merges a language dictionary on top of the base dictionary so that any
- * key missing from a translation falls back to the base language instead of
- * being `undefined`.
+ * Fusionne profondément un dictionnaire de langue sur le dictionnaire de base,
+ * pour qu'une clé absente d'une traduction retombe sur la langue de secours au
+ * lieu de valoir `undefined`.
  *
- * Without this, a partially translated dictionary crashes every page that reads
- * the missing key (`t.news.million.coverAlt` throws when `t.news.million` is
- * undefined), which is exactly how the News page went blank for FR / AR.
+ * Sans cela, un dictionnaire partiellement traduit fait planter toute page qui
+ * lit la clé manquante (`t.news.million.coverAlt` lève quand `t.news.million`
+ * est `undefined`) : c'est exactement ce qui avait laissé la page Actus blanche
+ * en FR / AR.
  */
 function withBaseFallback(dict, base, path = '') {
   if (!isPlainObject(dict)) return dict;
   const hasBase = isPlainObject(base);
   const merged = {};
-  // Walk the union of both key sets so keys absent from `dict` are inherited.
+  // On parcourt l'union des deux jeux de clés pour hériter de celles qui
+  // manquent à `dict`.
   const keys = new Set([...Object.keys(dict), ...(hasBase ? Object.keys(base) : [])]);
   for (const key of keys) {
     const value = dict[key];
@@ -56,41 +86,24 @@ function buildDictionary(lang) {
   return withBaseFallback(dict, base);
 }
 
-function detectInitialLang() {
-  if (typeof window === 'undefined') return 'en';
-  try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored && translations[stored]) return stored;
-  } catch (e) { /* ignore */ }
-  const nav = (navigator.language || 'en').slice(0, 2).toLowerCase();
-  if (translations[nav]) return nav;
-  return 'en';
-}
-
 const LanguageContext = createContext(null);
 
-export function LanguageProvider({ children }) {
-  const [lang, setLangState] = useState(detectInitialLang);
-
-  const meta = languages.find((l) => l.code === lang) || languages[0];
+export function LanguageProvider({ children, lang = SITE_LANG }) {
+  // `lang` n'est qu'une prise de test (voir l'en-tête) : la langue du site ne
+  // change pas en cours de visite, il n'y a donc ni état ni effet de bord.
+  const active = translations[lang] ? lang : SITE_LANG;
+  const meta = languages.find((entry) => entry.code === active) || languages[0];
 
   useEffect(() => {
-    document.documentElement.lang = lang;
+    document.documentElement.lang = active;
     document.documentElement.dir = meta.dir;
-    try { window.localStorage.setItem(STORAGE_KEY, lang); } catch (e) { /* ignore */ }
-  }, [lang, meta.dir]);
-
-  const setLang = (code) => {
-    if (translations[code]) setLangState(code);
-  };
+  }, [active, meta.dir]);
 
   const value = useMemo(() => ({
-    lang,
+    lang: active,
     dir: meta.dir,
-    setLang,
-    t: buildDictionary(lang),
-    languages,
-  }), [lang, meta.dir]);
+    t: buildDictionary(active),
+  }), [active, meta.dir]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

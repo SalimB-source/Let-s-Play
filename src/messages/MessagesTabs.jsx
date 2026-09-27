@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
-import { ProfileIcon } from '../friends/FriendsTabs';
+import { callBlockLabel } from './callsCopy';
 import { describeMessagesError, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS, VOICE_MAX_SECONDS } from './messagesApi';
 
@@ -52,6 +52,30 @@ function FlagIcon({ size = 14 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M6 21V4" />
       <path d="M6 4.8h9.5l-1.2 3.4 1.2 3.4H6" />
+    </svg>
+  );
+}
+function PhoneIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M6.8 3.2c.7-.4 1.6-.2 2 .5l1.6 2.6c.4.6.3 1.4-.3 1.9l-1.2 1.1c-.3.3-.4.7-.2 1 .8 1.5 2.5 3.2 4 4 .3.2.7.1 1-.2l1.1-1.2c.5-.5 1.3-.7 1.9-.3l2.6 1.6c.7.4.9 1.3.5 2l-.9 1.5c-.5.8-1.4 1.2-2.3 1.1C10.9 18.9 5.1 13.1 4.2 6.4c-.1-.9.3-1.8 1.1-2.3l1.5-.9z" />
+    </svg>
+  );
+}
+function VideoCallIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="7" width="12" height="10" rx="2.5" />
+      <path d="M15 11l5.5-3v8L15 13" />
+    </svg>
+  );
+}
+function MoreIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="12" cy="5" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="12" cy="19" r="1.8" />
     </svg>
   );
 }
@@ -655,18 +679,21 @@ function VoiceComposer({ t, onRecorded, onCancel }) {
 /* --------------------------------- discussion ------------------------------- */
 
 export function ThreadView({
-  peerId, t, ft, lang, thread, profile, online, blocked, reported, canWrite,
+  peerId, t, ft, ct, lang, thread, profile, online, blocked, reported, canWrite,
   onBack, onSend, onSendVoice, resolveAudioUrl, onDelete, onBlock, onUnblock, onReport,
+  onCall, callBlocker, callWarning,
 }) {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const listRef = useRef(null);
   const inputRef = useRef(null);
+  const moreRef = useRef(null);
   const messages = thread?.messages || [];
   const lastMine = [...messages].reverse().find((message) => message.mine) || null;
   const remaining = MESSAGE_MAX_LENGTH - draft.length;
@@ -676,12 +703,32 @@ export function ThreadView({
   // restent identiques (pas de bouton micro tant qu'on ne sait pas).
   useEffect(() => { setVoiceSupported(canRecordVoice()); }, []);
 
+  // Ferme le menu « … » quand on clique en dehors ou qu'on appuie sur Échap.
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const onDoc = (event) => {
+      if (event.type === 'keydown') {
+        if (event.key === 'Escape') { setMoreOpen(false); return; }
+        return;
+      }
+      if (moreRef.current && !moreRef.current.contains(event.target)) setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('touchstart', onDoc);
+    document.addEventListener('keydown', onDoc);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('touchstart', onDoc);
+      document.removeEventListener('keydown', onDoc);
+    };
+  }, [moreOpen]);
+
   useEffect(() => {
     const node = listRef.current;
     if (node) node.scrollTop = node.scrollHeight;
   }, [messages.length, peerId]);
 
-  useEffect(() => { setDraft(''); setError(''); setReportOpen(false); setDeletingId(null); setIsRecording(false); }, [peerId]);
+  useEffect(() => { setDraft(''); setError(''); setReportOpen(false); setMoreOpen(false); setDeletingId(null); setIsRecording(false); }, [peerId]);
 
   // Bureau : le champ prend le focus à l'ouverture de la discussion — on
   // peut écrire tout de suite. Pas sur mobile, pour ne pas faire sortir le
@@ -704,6 +751,16 @@ export function ThreadView({
   const statusText = online
     ? ft.onlineShort
     : (profile?.lastSeenAt ? fill(ft.lastSeen, { when: formatCommentDate(profile.lastSeenAt, lang) }) : ft.offlineShort);
+
+  // Boutons d'appel : `callBlocker` grise le bouton et explique pourquoi ;
+  // `callWarning` (ami qui semble hors ligne) n'empêche PAS d'appeler — la
+  // présence est une estimation — il complète seulement l'infobulle. Sans
+  // aucun des deux, l'infobulle reste le nom de l'action.
+  const callBlock = callBlocker?.(peerId) ?? null;
+  const callWarn = callWarning?.(peerId) ?? null;
+  const callHint = (callBlock || callWarn)
+    ? callBlockLabel(callBlock || callWarn, ct, profile?.name || '?')
+    : null;
 
   const submit = async () => {
     const body = draft.trim();
@@ -742,59 +799,111 @@ export function ThreadView({
   return (
     <>
       <header className="messages-thread-head">
-        <button type="button" className="messages-tool" aria-label={t.back} title={t.back} onClick={onBack}>
+        <button type="button" className="messages-tool messages-tool-back" aria-label={t.back} title={t.back} onClick={onBack}>
           <BackIcon />
         </button>
-        {/* Ni la photo ni le nom ne renvoient au profil : on est déjà dans le
-            chat avec lui. Le profil reste accessible via le bouton dédié des
-            outils (à droite). */}
-        <div className="messages-thread-peer">
+        {/* Le nom et l'avatar renvoient au profil : c'est le geste naturel
+            et ça évite un bouton « Profil » dédié qui encombre la barre. */}
+        <Link
+          to={`/profile/${encodeURIComponent(peerId)}`}
+          className="messages-thread-peer messages-thread-peer-link"
+          aria-label={`${t.profile} — ${profile?.name || '?'}`}
+          title={t.profile}
+        >
           <Avatar name={profile?.name} src={profile?.avatar} online={online} size={30} />
           <span className="messages-thread-identity">
             <span className="messages-thread-name">{profile?.name}</span>
             <span className={`messages-thread-status${online ? ' is-online' : ''}`}>{statusText}</span>
           </span>
-        </div>
-        <span className="messages-thread-tools">
-          <Link
-            to={`/profile/${encodeURIComponent(peerId)}`}
-            className="messages-tool messages-tool-profile"
-            aria-label={`${t.profile} — ${profile?.name || '?'}`}
-            title={t.profile}
-          >
-            <ProfileIcon size={12} />
-            <span className="messages-tool-profile-label">{t.profile}</span>
-          </Link>
-          <button
-            type="button"
-            className={`messages-tool${reported ? ' is-flagged' : ''}`}
-            aria-label={reported ? t.reported : t.report}
-            title={reported ? t.reported : t.report}
-            aria-pressed={reportOpen}
-            onClick={() => setReportOpen((open) => !open)}
-          >
-            <FlagIcon />
-          </button>
-          {blocked
-            ? (
-              <button type="button" className="messages-tool is-flagged" aria-label={t.unblock} title={t.unblock} onClick={() => onUnblock(peerId)}>
-                <BlockIcon />
-              </button>
-            )
-            : (
+        </Link>
+        <span className="messages-thread-tools" ref={moreRef}>
+          {/* Appels vocal / vidéo — grisés avec la raison au survol quand
+              l'appel est impossible (aperçu démo, compte absent, joueur
+              bloqué, déjà en appel…), avertis sans être grisés quand l'ami
+              semble hors ligne, et absents si le module n'est pas monté. */}
+          {onCall && ct && (
+            <>
               <button
                 type="button"
                 className="messages-tool"
-                aria-label={t.block}
-                title={t.block}
-                onClick={() => {
-                  const ok = typeof window === 'undefined' || window.confirm(fill(t.blockConfirm, { name: profile?.name || '?' }));
-                  if (ok) onBlock(peerId);
-                }}
+                disabled={Boolean(callBlock)}
+                aria-label={ct.callAudio}
+                title={callHint || ct.callAudio}
+                onClick={() => onCall(peerId, 'audio')}
               >
-                <BlockIcon />
+                <PhoneIcon />
               </button>
-            )}
+              <button
+                type="button"
+                className="messages-tool"
+                disabled={Boolean(callBlock)}
+                aria-label={ct.callVideo}
+                title={callHint || ct.callVideo}
+                onClick={() => onCall(peerId, 'video')}
+              >
+                <VideoCallIcon />
+              </button>
+            </>
+          )}
+          <div className={`messages-more${moreOpen ? ' is-open' : ''}`}>
+            <button
+              type="button"
+              className="messages-tool messages-tool-more"
+              aria-label={t.more}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              title={t.more}
+              onClick={() => setMoreOpen((open) => !open)}
+            >
+              <MoreIcon />
+            </button>
+            <ul className="messages-more-menu" role="menu" aria-hidden={!moreOpen}>
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={`messages-more-item${reported ? ' is-flagged' : ''}`}
+                  aria-label={reported ? t.reported : t.report}
+                  title={reported ? t.reported : t.report}
+                  onClick={() => { setMoreOpen(false); setReportOpen((open) => !open); }}
+                >
+                  <FlagIcon />
+                  <span>{reported ? t.reported : t.report}</span>
+                </button>
+              </li>
+              <li>
+                {blocked ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="messages-more-item is-flagged"
+                    aria-label={t.unblock}
+                    title={t.unblock}
+                    onClick={() => { setMoreOpen(false); onUnblock(peerId); }}
+                  >
+                    <BlockIcon />
+                    <span>{t.unblock}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="messages-more-item messages-more-item-danger"
+                    aria-label={t.block}
+                    title={t.block}
+                    onClick={() => {
+                      setMoreOpen(false);
+                      const ok = typeof window === 'undefined' || window.confirm(fill(t.blockConfirm, { name: profile?.name || '?' }));
+                      if (ok) onBlock(peerId);
+                    }}
+                  >
+                    <BlockIcon />
+                    <span>{t.block}</span>
+                  </button>
+                )}
+              </li>
+            </ul>
+          </div>
         </span>
       </header>
 
@@ -910,7 +1019,6 @@ export function ThreadView({
             ) : (
               <button type="submit" className="messages-send" disabled={busy || !draft.trim() || tooLong} aria-label={t.send} title={t.send}>
                 <SendIcon />
-                <span className="messages-send-label">{t.send}</span>
               </button>
             )}
           </form>

@@ -24,8 +24,12 @@ const THROTTLE_MS = 1200;
 let audioContext = null;
 let lastPlayedAt = 0;
 
-/** Crée (si besoin) et réveille le contexte audio ; null si l'API est absente. */
-function getAudioContext() {
+/**
+ * Crée (si besoin) et réveille le contexte audio ; null si l'API est absente.
+ * Partagé avec les sons d'appel (`callSounds.js`) : un seul contexte audio
+ * pour tout le module social.
+ */
+export function getAudioContext() {
   if (typeof window === 'undefined') return null;
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return null;

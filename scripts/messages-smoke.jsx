@@ -20,6 +20,7 @@ import SocialDock from '../src/social/SocialDock';
 import Layout from '../src/components/Layout';
 import Auth from '../src/pages/Auth';
 import Profile from '../src/pages/Profile';
+import MessagesPage from '../src/messages/MessagesPage';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 // Fixtures : réinjecte les personas de démonstration dans le registre de
 // l'application (livré vide) avant tout rendu — voir scripts/demoFixtures.js.
@@ -93,10 +94,10 @@ export function makeStorage(entries = {}) {
 }
 
 /** Élément racine de l'application pour `path` (routes utiles au module). */
-export function createApp(path) {
+export function createApp(path, { lang = 'fr' } = {}) {
   return React.createElement(
     LanguageProvider,
-    null,
+    { lang },
     React.createElement(
       AuthProvider,
       null,
@@ -119,6 +120,7 @@ export function createApp(path) {
                   Routes,
                   null,
                   React.createElement(Route, { path: '/auth', element: React.createElement(Auth) }),
+                  React.createElement(Route, { path: '/messages', element: React.createElement(MessagesPage) }),
                   React.createElement(Route, { path: '/profile/:userId', element: React.createElement(Profile) }),
                 ),
               ),
@@ -140,12 +142,11 @@ export function createApp(path) {
  */
 export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false, friendsOpen = false, activePeer = null } = {}) {
   const entries = {
-    'letsplay-lang': lang,
     letsplay_messages_open: dockOpen ? '1' : '0',
     letsplay_friends_dock_open: friendsOpen ? '1' : '0',
   };
   if (activePeer) entries.letsplay_messages_active = activePeer;
   if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILE_FIXTURES[demoKey]);
   globalThis.window = { localStorage: makeStorage(entries) };
-  return renderToString(createApp(path));
+  return renderToString(createApp(path, { lang }));
 }

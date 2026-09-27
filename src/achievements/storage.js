@@ -18,7 +18,7 @@
  * vérification) traversent ce module sans planter.
  */
 
-export const STORAGE_KEY = 'letsplay_achievements_v1';
+export const STORAGE_KEY = 'letsplay_achievements_v2';
 
 /** Scope de la progression « sans compte » : celle de l'appareil. */
 export const GUEST_SCOPE = 'guest';
@@ -43,16 +43,34 @@ function storage() {
   }
 }
 
-/** Clés à lire pour un scope — l'invité relit aussi l'ancienne clé unique. */
+const LEGACY_ACHIEVEMENT_KEYS = [
+  'letsplay_achievements_v1',
+  'letsplay_achievements_v1:guest',
+];
+
+/** Clés à lire pour un scope — v2 uniquement (remise à zéro demandée). */
 function keysForScope(scope) {
   if (scope && scope !== GUEST_SCOPE) return [storageKeyForScope(scope)];
-  return [storageKeyForScope(GUEST_SCOPE), STORAGE_KEY];
+  return [storageKeyForScope(GUEST_SCOPE)];
 }
 
 /** État enregistré pour ce scope, ou null si rien de lisible. */
 export function readStorage(scope = GUEST_SCOPE) {
   const store = storage();
   if (!store) return null;
+  // Nettoyage des anciennes clés v1 pour forcer la remise à zéro.
+  try {
+    for (const legacy of LEGACY_ACHIEVEMENT_KEYS) {
+      if (store.getItem(legacy)) store.removeItem(legacy);
+    }
+    // Nettoie aussi toutes les clés v1 par scope u:*
+    for (let i = 0; i < store.length; i++) {
+      const k = store.key(i);
+      if (k && k.startsWith('letsplay_achievements_v1:')) {
+        store.removeItem(k);
+      }
+    }
+  } catch (e) {}
   for (const key of keysForScope(scope)) {
     try {
       const raw = store.getItem(key);

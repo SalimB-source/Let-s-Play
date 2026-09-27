@@ -1,12 +1,24 @@
 import { gameTests } from '../reviewsData';
 import { gameReleases } from '../releasesData';
-import { quizzes as quizCatalog, quizLabel } from '../quizzesData';
+import { quizzes as quizCatalog, quizLabel, quizQuestionsCount } from '../quizzesData';
 import { baseUrl as base } from '../data';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 // Les actus du jour générées par le robot rejoignent l’index de recherche.
 import { autoSearchEntries } from '../lib/autoNews';
 
 const news = [
+  ['Box-office : Endgame contre Resident Evil', 'La ressortie d’Avengers: Endgame vise 24 à 26 M$ sur le week-end américain, devant le reboot Resident Evil.', '/news/cinema/box-office-us-endgame-resident-evil', 'cinéma box-office avengers endgame marvel resident evil sony zombies', youTubeThumbUrl('L2NAh3CIdig')],
+  ['Werwulf montre ses crocs', 'La deuxième bande-annonce de Werwulf, l’horreur médiévale de Robert Eggers, sort le 25 décembre 2026.', '/news/cinema/werwulf-trailer-eggers', 'cinéma robert eggers werwulf trailer horreur loup-garou aaron taylor-johnson dafoe', 'https://images.contentstack.io/v3/assets/blt223a4a92692ca457/bltc56e9a2c23500694/6a3d520c6391ef7c261677e4/werwulf_4marquee_image.png?branch=production&width=1600'],
+  ['Le biopic Fred Astaire trouve ses danseuses', 'Tom Holland, Margaret Qualley et Sabrina Carpenter réunis par Sony et Paul King.', '/news/cinema/fred-astaire-biopic-tom-holland', 'cinéma biopic fred astaire tom holland sabrina carpenter margaret qualley ginger rogers sony', 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1'],
+  ['Steel Ball Run — la course reprend', 'L’épisode 2 ouvre onze épisodes hebdomadaires sur Netflix, chaque vendredi jusqu’au 4 décembre.', '/news/cinema/jojo-steel-ball-run-episode-2', 'jojo steel ball run netflix anime david production gyro zeppeli johnny joestar', 'cinema-jojo-steel-ball-run.jpg'],
+  ['Dune: Messiah — le trailer arrive', 'Première bande-annonce en fin d’année, sortie en 2027 : Villeneuve referme la prophétie de Paul Atréides.', '/news/cinema/dune-messiah-trailer', 'dune messiah villeneuve warner bros chalamet zendaya', 'cinema-dune-messiah.jpg'],
+  ['The Last of Us saison 3 confirmée', 'HBO adapte la seconde moitié de Part II, du point de vue d’Abby.', '/news/cinema/last-of-us-saison-3', 'hbo the last of us série abby ellie Naughty Dog', 'cinema-last-of-us.jpg'],
+  ['Doctor Doom prend les rênes du MCU', 'Robert Downey Jr. masqué, d’Avengers: Doomsday jusqu’à Secret Wars.', '/news/cinema/marvel-doctor-doom', 'marvel doctor doom robert downey jr avengers doomsday secret wars', 'cinema-doctor-doom.jpg'],
+  ['Stranger Things 5 : date et trailer', 'La saison finale arrive en mars 2027 sur Netflix, huit épisodes.', '/news/cinema/stranger-things-saison-5', 'netflix stranger things vecna hawkins saison finale', 'cinema-stranger-things.jpg'],
+  ['Joker 2 divise encore', 'Bilan d’un malentendu : la comédie musicale de Todd Phillips continue de fendre le public.', '/news/cinema/joker-folie-a-deux', 'joker folie à deux warner phoenix lady gaga todd phillips', 'cinema-joker.jpg'],
+  ['House of the Dragon : tournage de la saison 3', 'La Danse des Dragons entre dans sa phase brutale, retour attendu en 2027.', '/news/cinema/house-of-dragon-saison-3', 'hbo house of the dragon westeros danse des dragons', 'cinema-hotd.jpg'],
+  ['Blade retrouve un réalisateur', 'Sept ans de chantier et, enfin, un capitaine pour le Daywalker de Mahershala Ali.', '/news/cinema/blade-reboot', 'marvel blade mahershala ali daywalker reboot', 'cinema-blade.jpg'],
+  ['Arcane saison 2 : dernière ligne droite', 'Les affiches de la saison finale arrivent, à quelques semaines de la sortie sur Netflix.', '/news/cinema/arcane-saison-2', 'arcane netflix riot games zaun piltover fortiche', 'cinema-arcane.jpg'],
   ['EA Sports FC 27 — la carrière devient vivante', 'Note globale dynamique, valeur marchande hebdomadaire via TransferRoom et scénarios créés par la communauté.', '/news/ea-sports-fc-27-carriere-dynamique', 'ea sports fc 27 electronic arts football carrière transferts manager', 'ea-sports-fc-27-carriere-pitch-notes.jpg'],
   ['Kingdom Hearts 4 — Le monde de Coco', 'Sora est apparu au milieu d’une séquence Disney consacrée à Coco.', '/news/kingdom-hearts-4-coco', 'square enix disney', 'kingdom-hearts-4-coco-news.jpg'],
   ['Marvel’s Wolverine', 'Une exclusivité PS5 développée par Insomniac Games.', '/news/wolverine-exclu-ps5', 'marvel sony insomniac ps5', 'wolverine-countdown.jpg'],
@@ -26,7 +38,7 @@ const news = [
   ['Physint', 'Le projet de jeu d’action espion de PlayStation.', '/news/physint', 'playstation sony', 'physint-news.jpg'],
   ['Zelda: Ocarina of Time', 'Le classique de Nintendo revient sur Switch 2.', '/news/zelda-ocarina', 'nintendo zelda switch 2', 'zelda-ocarina-news.jpg'],
   ['Onimusha: Way of the Sword', 'Le retour samouraï de Capcom dépasse le million de ventes.', '/news/onimusha-million', 'capcom samouraï', 'onimusha-million-news.jpg'],
-].map(([title, description, route, keywords, image]) => ({ type: 'news', title, description, route, keywords, image: `${base}${image}` }));
+].map(([title, description, route, keywords, image]) => ({ type: 'news', title, description, route, keywords, image: /^https?:\/\//i.test(image) ? image : `${base}${image}` }));
 
 const dossiers = [
   ['La PS2, la reine', 'Vingt-cinq ans après son lancement, retour sur la PlayStation 2.', '/dossiers/25-ans-playstation-2', 'playstation sony histoire', 'A2VPhWOUMHI'],
@@ -52,13 +64,17 @@ const releases = gameReleases.map((game) => ({
   image: game.image ? `${base}${game.image}` : null,
 }));
 
+// `slug` : la page de recherche et la recherche instantanée de la nav s'en
+// servent pour reconnaître un quizz TERMINÉ (ses trois niveaux faits) et le
+// griser comme sur la grille `/quizz`.
 const quizzes = quizCatalog.map((quiz) => ({
   type: 'quiz',
+  slug: quiz.slug,
   title: quizLabel(quiz.labels, 'fr')?.title || quiz.slug,
   description: quizLabel(quiz.labels, 'fr')?.text || '',
   route: quiz.route,
   keywords: quiz.keywords,
-  meta: `${quiz.questions.length} questions`,
+  meta: `${quizQuestionsCount(quiz)} questions`,
   image: quiz.image || youTubeThumbUrl(quiz.videoId, 'hq'),
 }));
 

@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import { baseUrl as base } from '../data';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
-import { activeMonth, calendarMonths, gameReleases, monthLabel } from '../releasesData';
+// L'actu à la une de l'accueil dérive du robot d'actus (comme la page Actus) :
+// aucun contenu à maintenir à la main ici.
+import { autoNewsListing } from '../lib/autoNews';
+import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { quizzes } from '../quizzesData';
 import { dailyQuizFor } from '../quizzes/engine';
-import { Arrow, fill, clockOffset, MonthTimeline, ReleaseCountdown, FALLBACK_CALENDAR } from '../components/ReleasesCalendar';
+import { isQuizFinished } from '../quizzes/quizProgress';
+import { useQuizProgress } from '../quizzes/useQuizProgress';
+import { Arrow, AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
 
-// Le paramètre d'URL `?at=` (horloge simulée de la section calendrier) est
-// partagé avec la page calendrier complet via clockOffset().
+// Le paramètre d'URL `?at=` (horloge simulée du bandeau « le plus attendu »)
+// est partagé avec la page calendrier complet via clockOffset().
 const CLOCK_OFFSET = clockOffset();
+
+// Visuel fixe du héros, utilisé dans les deux thèmes.
+const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-gaming-gear.webp`;
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },
@@ -47,6 +56,28 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
+// Actu à la une de l'accueil — choix éditorial : l'actu Halo × Activision
+// (visuel fourni à la rédaction) ouvre la page d'accueil, juste après les
+// épisodes. Remettre la constante à null laisse la une à la dernière actu
+// publiée par le robot (autoNewsListing, déjà triée du plus récent au plus
+// ancien), puis en repli à l'actu manuelle PHYSINT.
+const editorialTopStory = {
+  to: '/news/halo-activision',
+  image: 'masterchief-activision.png',
+  alt: 'Un super-soldat en armure verte s’avance vers un portail illuminé où brille le logo Activision — visuel éditorial Let’s Play',
+  badge: 'HALO · ACTIVISION',
+  kicker: '26.09.2026 · XBOX',
+  title: 'HALO PASSE CHEZ ACTIVISION.',
+  excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
+  sentiment: 'mixed',
+};
+
+const fallbackTopStory = {
+  to: '/news/physint',
+  image: 'physint-news.jpg',
+  sentiment: 'mixed',
+};
+
 // YouTube resolves this permanent channel URL to the channel's active live
 // broadcast, without requiring an API key or a server-side endpoint.
 const liveChannelId = import.meta.env.VITE_YOUTUBE_CHANNEL_ID?.trim() || 'UCBi989OGXiGBjvB17Xh5GUQ';
@@ -55,19 +86,16 @@ export default function Home() {
   const { t, lang } = useLanguage();
   const [liveStatus, setLiveStatus] = useState('unknown');
 
-  // Section « Sorties du mois » (déplacée depuis la page Actus) : frise du
-  // mois + compte à rebours de la sortie la plus attendue. Le mois affiché est
-  // calculé depuis le calendrier : le mois courant s'il a des sorties, sinon
-  // le mois de la prochaine sortie annoncée. La liste complète vit sur /calendrier.
+  // La frise « Sorties du mois » et le compte à rebours ont quitté l'accueil :
+  // il n'en reste que le bandeau fin « le plus attendu » sous le héros
+  // (vignette + nom + date). La liste complète vit sur /calendrier.
   const today = new Date(Date.now() + CLOCK_OFFSET);
-  const calendarCopy = { ...FALLBACK_CALENDAR, ...(t.news.calendar || {}) };
-  const month = activeMonth(today);
-  const monthName = monthLabel(month.year, month.month, lang);
-  const monthReleases = month.releases;
-  const allMonths = calendarMonths(today);
-  const totalGames = gameReleases.length;
-  // Le bandeau « quizz du jour » envoie directement à la partie du jour.
+  // Le bandeau « quizz du jour » envoie directement à la partie du jour —
+  // sauf si ce quizz est TERMINÉ (ses trois niveaux faits) : il est verrouillé
+  // comme partout ailleurs, et le bouton mène à la grille des quizz.
+  const { progress: quizProgressState } = useQuizProgress();
   const dailyQuiz = dailyQuizFor(today, quizzes);
+  const dailyQuizFinished = Boolean(dailyQuiz) && isQuizFinished(quizProgressState, dailyQuiz.slug);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +150,47 @@ export default function Home() {
   };
   const head = headMap[lang] || headMap.fr;
 
+  // Head de la section « actu à la une » — même structure que la section épisodes.
+  const newsHeadMap = {
+    fr: {
+      label1: 'ACTU À LA UNE',
+      label2: 'LE DERNIER ROUND · LET’S PLAY',
+      eyebrow: 'Actu à la une',
+      h2a: 'L’ACTU',
+      h2b: 'À LA UNE.',
+      today: 'Actu du jour',
+      read: 'Lire l’article',
+      seeAll: 'Voir toutes les actus',
+    },
+    en: {
+      label1: 'FEATURED NEWS',
+      label2: 'THE LATEST ROUND · LET’S PLAY',
+      eyebrow: 'Featured news',
+      h2a: 'TOP STORY,',
+      h2b: 'RIGHT NOW.',
+      today: 'News of the day',
+      read: 'Read the story',
+      seeAll: 'See all news',
+    },
+    ar: {
+      label1: 'أبرز الأخبار',
+      label2: 'آخر الأخبار · LET’S PLAY',
+      eyebrow: 'خبر مميز',
+      h2a: 'الخبر',
+      h2b: 'المميز.',
+      today: 'خبر اليوم',
+      read: 'اقرأ المقال',
+      seeAll: 'عرض كل الأخبار',
+    },
+  };
+  const newsHead = newsHeadMap[lang] || newsHeadMap.fr;
+
+  // La carte « actu à la une » : choix éditorial d'abord, sinon la dernière
+  // actu publiée, sinon le repli PHYSINT (traduit dans la langue courante).
+  const topStory = editorialTopStory || autoNewsListing[0]
+    || { ...fallbackTopStory, alt: t.news.featured.alt, badge: t.news.featured.badge, kicker: t.news.featured.kicker, title: t.news.featured.title, excerpt: t.news.featured.excerpt };
+  const topStoryMeta = sentimentMeta(getArticleSentiment(topStory));
+
   const episodes = [
     { ...headlineEpisode, copy: t.home.featured },
     { ...partnerEpisode, copy: t.home.featuredPartner },
@@ -136,16 +205,16 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        <video
-          className="hero-bg"
-          autoPlay
-          muted
-          loop
-          playsInline
+        {/* Visuel fixe du héros : plein cadre, avec le voile existant pour
+            conserver le contraste du contenu éditorial. */}
+        <img
+          className="hero-bg hero-bg--keyart"
+          src={HERO_IMAGE}
+          alt=""
           aria-hidden="true"
-        >
-          <source src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663645820794/QjYUbmTfZIPVlQQb.mp4" type="video/mp4" />
-        </video>
+          fetchPriority="high"
+          decoding="async"
+        />
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">
@@ -157,12 +226,10 @@ export default function Home() {
             <Link className="button button-ghost" to="/news">{t.home.enterShow} <span aria-hidden="true">↓</span></Link>
           </div>
         </div>
-        <div className="hero-hud">
-          <div><strong>15K+</strong><small>{t.home.hud.subs}</small></div>
-          <div><strong>33K+</strong><small>{t.home.hud.community}</small></div>
-          <div><strong>∞</strong><small>{t.home.hud.reasons}</small></div>
-          <a className="scroll-cue" href="#featured" aria-label="Scroll to content">{t.home.hud.scroll}<span /></a>
-        </div>
+        {/* LE PLUS ATTENDU — fine bande posée en bas du héros (à la place de
+            l'ancienne rangée de chiffres) : vignette, nom, date de sortie.
+            Suit la file automatique du calendrier et mène à /calendrier. */}
+        <AwaitedBand lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
       </section>
 
       {/* Ticker continu — chaque moitié est suffisamment longue (> viewport) pour éviter les trous sur desktop, même en 4K/5K */}
@@ -214,30 +281,73 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SORTIES DU MOIS — frise + compte à rebours (déplacé depuis la page Actus).
-          Le grand titre du mois a été retiré : la section s'identifie par son
-          libellé (SORTIES DU MOIS + nom du mois) et le lien complet vit dans
-          le teaser en bas de section. */}
-      <section className="monthly-releases wrap" id="countdown">
-        <div className="section-label"><span>{calendarCopy.label}</span><span>{monthName}</span></div>
-        <MonthTimeline month={month} monthName={monthName} releases={monthReleases} today={today} lang={lang} copy={calendarCopy} />
-        <ReleaseCountdown lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
-        <div className="calendar-teaser">
-          <p>{fill(calendarCopy.scope, { games: totalGames, months: allMonths.length })}</p>
-          <Link className="button button-yellow" to="/calendrier">{calendarCopy.full} <Arrow/></Link>
+      {/* ACTU À LA UNE — la dernière actu publiée, juste après les épisodes :
+          grande carte image + texte, le même gabarit que la une de la page Actus. */}
+      <section className="featured-dossiers featured-dossiers--news wrap" id="actu-une">
+        <div className="section-label"><span>{newsHead.label1}</span><span>{newsHead.label2}</span></div>
+        <div className="featured-dossiers-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {newsHead.eyebrow}</p>
+            <h2>{newsHead.h2a}<br /><em>{newsHead.h2b}</em></h2>
+          </div>
+          <Link className="arrow-link" to="/news">{newsHead.seeAll} <Arrow /></Link>
         </div>
+        <Link className="daily-news-card home-news-card" to={topStory.to}>
+          <div className="daily-news-image">
+            <img src={`${base}${topStory.image}`} alt={topStory.alt || topStory.title} loading="lazy" decoding="async" />
+            <span className="news-feature-badge">{topStory.badge}</span>
+            <span className="news-feature-arrow" aria-hidden="true">↗</span>
+            <span className={`news-sentiment ${topStoryMeta.color}`} title={topStoryMeta.label} aria-label={topStoryMeta.label}>{topStoryMeta.emoji}</span>
+          </div>
+          <div className="daily-news-copy">
+            <p className="eyebrow"><span className="live-dot" /> {newsHead.today}</p>
+            <span className="news-kicker">{topStory.kicker}</span>
+            <h3>{topStory.title}</h3>
+            <p>{topStory.excerpt}</p>
+            <span className="read-link">{newsHead.read} <Arrow /></span>
+          </div>
+        </Link>
       </section>
 
       {/* QUIZZ DU JOUR — un quizz choisi chaque jour parmi la sélection :
           la série quotidienne (succès « Semaine parfaite ») se construit ici. */}
       <section className="wrap" id="quizz-du-jour">
-        <div className="home-quiz-band">
+        <div className={`home-quiz-band${dailyQuizFinished ? ' is-finished' : ''}`}>
           <div className="home-quiz-band-copy">
-            <p className="eyebrow"><span className="live-dot" /> {t.quiz.home.eyebrow}</p>
+            <p className="eyebrow">
+              {dailyQuizFinished ? null : <span className="live-dot" />} {t.quiz.home.eyebrow}
+              {dailyQuizFinished && <span className="quiz-chip quiz-chip--levels is-complete">✓ {t.quiz.finished}</span>}
+            </p>
             <h2>{t.quiz.home.titleA}<br /><em>{t.quiz.home.titleB}</em></h2>
-            <p>{t.quiz.home.text}</p>
+            <p>{dailyQuizFinished ? t.quiz.home.done : t.quiz.home.text}</p>
           </div>
-          <Link className="button button-yellow" to={dailyQuiz ? dailyQuiz.route : '/quizz'}>{t.quiz.home.cta} <Arrow /></Link>
+          <Link
+            className="button button-yellow"
+            to={dailyQuiz && !dailyQuizFinished ? dailyQuiz.route : '/quizz'}
+          >
+            {dailyQuizFinished ? t.quiz.home.ctaAll : t.quiz.home.cta} <Arrow />
+          </Link>
+        </div>
+      </section>
+
+      {/* REELS / SHORTS YOUTUBE — placés juste avant le direct : le format court
+          garde le visiteur en mouvement avant le lecteur live. */}
+      <section className="reels-section wrap" id="reels">
+        <div className="section-label"><span>REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="reels-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> Format court</p>
+            <h2>À VOIR<br /><em>EN BOUCLE.</em></h2>
+          </div>
+          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">Voir tous les reels <Arrow /></a>
+        </div>
+        <div className="reels-grid">
+          {reels.map((reel) => (
+            <div className="reel-card hud-frame" key={reel.id}>
+              <iframe src={youTubeEmbedUrl(reel.id)} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+              <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -274,31 +384,12 @@ export default function Home() {
         <div className="section-label"><span>{t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
-          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow /></Link></article>
+          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news/cinema">{t.home.formats.explore} <Arrow /></Link></article>
           <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.home.formats.communityText}</p><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">{t.home.formats.joinUs} <Arrow /></a></article>
         </div>
       </section>
 
       <PartnersSection />
-
-      <section className="reels-section wrap" id="reels">
-        <div className="section-label"><span>REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
-        <div className="reels-head">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> Format court</p>
-            <h2>À VOIR<br /><em>EN BOUCLE.</em></h2>
-          </div>
-          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">Voir tous les reels <Arrow /></a>
-        </div>
-        <div className="reels-grid">
-          {reels.map((reel) => (
-            <div className="reel-card hud-frame" key={reel.id}>
-              <iframe src={youTubeEmbedUrl(reel.id)} title={`${reel.label} — Let’s Play`} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-              <a className="reel-label" href={`https://www.youtube.com/shorts/${reel.id}`} target="_blank" rel="noreferrer">{reel.label} <Arrow /></a>
-            </div>
-          ))}
-        </div>
-      </section>
 
       <section className="cta wrap">
         <div>

@@ -5,6 +5,8 @@ import { useFriends } from '../friends/FriendsContext';
 import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy';
 import { AddTab, FriendsTab, RequestsTab } from '../friends/FriendsTabs';
 import { useMessages } from '../messages/MessagesContext';
+import { useCalls } from '../messages/CallsContext';
+import { callsText } from '../messages/callsCopy';
 import { describeMessagesError, messagesText } from '../messages/messagesCopy';
 import { InboxView, ThreadView } from '../messages/MessagesTabs';
 import useMediaQuery from '../lib/useMediaQuery';
@@ -63,12 +65,14 @@ function RefreshIcon({ size = 14 }) {
 export default function SocialDock() {
   const friends = useFriends();
   const messages = useMessages();
+  const calls = useCalls();
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const t = socialText(lang);
   const ft = friendsText(lang);
   const mt = messagesText(lang);
+  const ct = callsText(lang);
   // Mobile : toute la fenêtre sociale (amis + messagerie) vit sur la page
   // /messages — pas de pop-up : l'expérience est plein écran, avec de vrais
   // onglets et un historique de navigation (le bouton retour du téléphone
@@ -96,7 +100,7 @@ export default function SocialDock() {
   } = messages;
 
   const enabled = friendsEnabled || messagesEnabled;
-  const open = !isMobile && (friendsOpen || messagesOpen);
+  const open = enabled && !isMobile && (friendsOpen || messagesOpen);
   const inThread = Boolean(activePeerId);
   // Onglet actif : une discussion ouverte occupe tout le panneau ; sinon,
   // l'onglet mémorisé par le contexte amis (« messages » inclus), ou
@@ -130,10 +134,12 @@ export default function SocialDock() {
   };
 
   const toggle = () => {
+    // Sans compte, le panneau n'a aucune donnée à montrer : la page dédiée
+    // explique la connexion au lieu d'ouvrir une fenêtre sociale vide.
+    if (!enabled) { goSocial('messages'); return; }
     if (isMobile) {
       // Sur mobile, le lanceur ouvre toujours la page sociale (inbox).
-      if (onSocialRoute) navigate(-1);
-      else goSocial('messages');
+      goSocial('messages');
       return;
     }
     if (open) { closeAll(); return; }
@@ -166,7 +172,7 @@ export default function SocialDock() {
   // local (état « bureau »), on redirige vers la page au lieu de rouvrir le
   // pop-up plein écran.
   useEffect(() => {
-    if (!isMobile || !friendsOpen && !messagesOpen) return;
+    if (!isMobile || !enabled || (!friendsOpen && !messagesOpen)) return;
     if (onSocialRoute) {
       // Déjà sur la page : on ferme juste le pop-up.
       closeFriendsDock();
@@ -178,14 +184,17 @@ export default function SocialDock() {
     closeMessagesDock();
     backToInbox();
     navigate(target);
-  }, [isMobile, friendsOpen, messagesOpen, onSocialRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
+  }, [isMobile, enabled, friendsOpen, messagesOpen, onSocialRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
 
   // Classes sur <body> : social.css y lit la place prise par le lanceur ou la
   // fenêtre pour décaler les notifications de succès. Sur mobile, rien ne
   // verrouille le scroll (pas de pop-up plein écran puisque tout se passe
   // dans une vraie page). Sur la page sociale, le lanceur flottant étant
   // masqué, aucune classe n'est posée.
-  const dockVisible = enabled && !onSocialRoute;
+  // La WebView de l'APK possède sa propre session : même si le joueur n'y est
+  // pas encore connecté, garder un accès visible à /messages, qui affiche
+  // alors l'invitation à se connecter (sans exposer les conversations).
+  const dockVisible = !onSocialRoute;
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { classList } = document.body;
@@ -322,6 +331,7 @@ export default function SocialDock() {
           peerId={activePeerId}
           t={mt}
           ft={ft}
+          ct={ct}
           lang={lang}
           thread={threadFor(activePeerId)}
           profile={resolvedProfile}
@@ -330,6 +340,9 @@ export default function SocialDock() {
           reported={reportedReason(activePeerId)}
           canWrite={canMessage(activePeerId)}
           onBack={backFromThread}
+          onCall={calls.startCall}
+          callBlocker={calls.blockerFor}
+          callWarning={calls.warningFor}
           onSend={send}
           onSendVoice={sendVoice}
           resolveAudioUrl={resolveAudioUrl}
@@ -360,7 +373,7 @@ export default function SocialDock() {
           {!inThread && (
             <header className="social-panel-head">
               <div className="social-panel-title">
-                <span className="social-panel-kicker"><SocialIcon size={14} /> {t.title}</span>
+                <span className="social-panel-kicker lets-talk-label"><SocialIcon size={14} /> {t.title}</span>
                 <span className="social-panel-sub">{subtitle}</span>
               </div>
               <div className="social-panel-tools">
@@ -393,7 +406,7 @@ export default function SocialDock() {
                 <button
                   key={item.id}
                   type="button"
-                  className={`social-tab${tab === item.id ? ' is-active' : ''}${item.alert ? ' has-alert' : ''}`}
+                  className={`social-tab${item.id === 'messages' ? ' social-tab--messages lets-talk-label' : ''}${tab === item.id ? ' is-active' : ''}${item.alert ? ' has-alert' : ''}`}
                   onClick={() => selectTab(item.id)}
                   aria-pressed={tab === item.id}
                 >
@@ -417,15 +430,15 @@ export default function SocialDock() {
           className={`social-launcher${unreadTotal > 0 || pendingCount > 0 ? ' has-alert' : ''}`}
           onClick={toggle}
           aria-expanded={open}
-          aria-label={open ? t.launcherClose : t.launcherOpen}
-          title={open ? t.launcherClose : t.launcherOpen}
+          aria-label={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
+          title={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
         >
           <span className="social-launcher-icon"><SocialIcon /></span>
-          <span className="social-launcher-label">{t.launcher}</span>
-          <span className="social-launcher-meta">
+          <span className="social-launcher-label lets-talk-label">{t.launcher}</span>
+          {enabled && <span className="social-launcher-meta">
             <span className={`social-launcher-dot${onlineCount > 0 ? ' is-online' : ''}`} aria-hidden="true" />
             {onlineCount} {ft.online}
-          </span>
+          </span>}
           {unreadTotal > 0 && (
             <span className="social-launcher-meta social-launcher-meta-unread">{unreadTotal} {mt.unread}</span>
           )}

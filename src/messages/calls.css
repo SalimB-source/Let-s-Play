@@ -1,0 +1,336 @@
+/* ==========================================================================
+   APPELS VOCAUX & VIDÉO — surfaces rendues par `CallOverlays.jsx`, au-dessus
+   de tout (y compris de la fenêtre sociale, z-index 1250). Le même langage
+   que le reste du site : panneaux sombres, coins coupés en clip-path,
+   Orbitron pour les intitulés, cyan/jaune en accents, rouge pour raccrocher.
+   ========================================================================== */
+
+.calls-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(4, 5, 14, .88);
+  backdrop-filter: blur(6px);
+  animation: calls-fade .22s ease;
+  font-family: var(--body);
+}
+@keyframes calls-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes calls-pop {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ------------------------------ avatar commun ----------------------------- */
+
+.calls-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-2);
+  flex: none;
+}
+.calls-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.calls-avatar-fallback {
+  font: 600 34px var(--display);
+  color: var(--cyan);
+  letter-spacing: .04em;
+}
+
+/* ------------------------------ appel entrant ----------------------------- */
+
+.calls-card {
+  position: relative;
+  width: min(340px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 26px 24px 24px;
+  text-align: center;
+  background: linear-gradient(160deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line-strong);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .55);
+  animation: calls-pop .24s ease;
+}
+.calls-card-kicker,
+.calls-kicker {
+  font: 600 10px var(--mono);
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--yellow);
+}
+.calls-card-name {
+  margin-top: 4px;
+  font: 600 22px var(--display);
+  color: var(--ink);
+  letter-spacing: .02em;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calls-card-status { margin: 0; color: var(--muted); font: 500 13px var(--body); }
+
+/* L'avatar « sonne » : deux anneaux qui se propagent, comme un téléphone. */
+.calls-ringing-avatar { position: relative; display: inline-flex; margin: 10px 0 4px; }
+.calls-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(34, 211, 238, .55);
+  animation: calls-ring-pulse 1.8s ease-out infinite;
+  pointer-events: none;
+}
+.calls-ring-b { animation-delay: .9s; }
+@keyframes calls-ring-pulse {
+  0% { transform: scale(1); opacity: .9; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+.calls-card-actions { display: flex; gap: 22px; margin-top: 16px; }
+
+/* ---------------------------- boutons ronds communs ------------------------ */
+
+.calls-round {
+  width: 58px;
+  height: 58px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 255, 255, .06);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform .15s, background .18s, border-color .18s, color .18s;
+}
+.calls-round:hover:not(:disabled) { transform: scale(1.06); background: rgba(34, 211, 238, .12); border-color: var(--cyan); color: var(--cyan); }
+.calls-round:disabled { opacity: .45; cursor: default; }
+.calls-round.is-accept { background: rgba(34, 197, 94, .18); border-color: rgba(34, 197, 94, .65); color: #4ade80; }
+.calls-round.is-accept:hover:not(:disabled) { background: rgba(34, 197, 94, .32); border-color: #4ade80; color: #bbf7d0; }
+.calls-round.is-decline,
+.calls-round.is-hangup { background: rgba(244, 63, 94, .16); border-color: rgba(244, 63, 94, .6); color: #fb7185; }
+.calls-round.is-decline:hover:not(:disabled),
+.calls-round.is-hangup:hover:not(:disabled) { background: rgba(244, 63, 94, .3); border-color: #fb7185; color: #fecdd3; }
+.calls-round.is-off { border-color: rgba(244, 63, 94, .5); color: #fb7185; background: rgba(244, 63, 94, .08); }
+
+/* ------------------------------- panneau d'appel --------------------------- */
+
+.calls-panel {
+  position: relative;
+  width: min(960px, 100%);
+  height: min(640px, 100%);
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(165deg, #0d1024, #070818);
+  border: 1px solid var(--line-strong);
+  clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, .6);
+  animation: calls-pop .24s ease;
+}
+
+.calls-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 14px 16px 10px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(4, 5, 14, .82), rgba(4, 5, 14, 0));
+  position: relative;
+  z-index: 2;
+}
+.calls-name {
+  font: 600 18px var(--display);
+  color: var(--ink);
+  letter-spacing: .02em;
+  max-width: 90%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calls-status { color: var(--muted); font: 500 12px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.calls-timer { font-style: normal; color: var(--cyan); }
+.calls-error { color: #fda4af; font: 500 12px var(--body); }
+
+/* La scène : la vidéo de l'ami couvre, ou l'avatar + égaliseur en audio.
+   Le son vocal passe par un <video> de la même taille (pas display:none :
+   iOS et Android coupent alors la lecture) caché derrière l'avatar. */
+.calls-stage { position: relative; flex: 1; min-height: 0; background: rgba(4, 5, 14, .5); }
+.calls-remote { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/*
+ * Appel vocal (ou caméra de l'ami indisponible) : pas d'image à montrer, mais
+ * le média distant est quand même branché — c'est LUI qui porte la voix. Il
+ * vit en PLEINE TAILLE derrière la scène audio (ni `display: none` ni
+ * `hidden` : iOS et Android coupent alors la lecture) — l'avatar et son
+ * dégradé le recouvrent.
+ */
+.calls-remote-audio { z-index: 0; }
+
+/*
+ * Pastille « caméra indisponible » sous le titre : le repli audio est dit
+ * en permanence pendant l'appel, pas seulement dans le bandeau éphémère.
+ */
+.calls-fallback {
+  margin-top: 3px;
+  padding: 3px 10px;
+  max-width: 92%;
+  background: rgba(250, 204, 21, .12);
+  border: 1px solid rgba(250, 204, 21, .45);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  color: var(--yellow);
+  font: 500 11px/1.45 var(--body);
+  text-align: center;
+}
+
+
+.calls-stage-audio {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: radial-gradient(ellipse at center, rgba(18, 24, 48, .35), rgba(7, 8, 24, .94) 70%);
+}
+.calls-stage-avatar { display: inline-flex; opacity: .8; transition: opacity .3s, transform .3s; }
+.calls-stage-avatar.is-live { opacity: 1; transform: scale(1.03); }
+
+/* Égaliseur : la conversation « respire » pendant l'audio. */
+.calls-eq { display: inline-flex; align-items: flex-end; gap: 5px; height: 22px; }
+.calls-eq i {
+  width: 4px;
+  height: 8px;
+  background: rgba(34, 211, 238, .75);
+  animation: calls-eq-b 1s ease-in-out infinite;
+}
+.calls-eq i:nth-child(2) { animation-delay: .15s; }
+.calls-eq i:nth-child(3) { animation-delay: .3s; }
+.calls-eq i:nth-child(4) { animation-delay: .45s; }
+.calls-eq i:nth-child(5) { animation-delay: .6s; }
+@keyframes calls-eq-b {
+  0%, 100% { height: 6px; opacity: .5; }
+  50% { height: 22px; opacity: 1; }
+}
+
+/* Notre image, en incrustation (miroir, comme dans un vrai téléphone). */
+.calls-pip {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: clamp(110px, 24vw, 190px);
+  /* Repli pour les vieilles WebViews sans `aspect-ratio` (Android < 9) :
+     sans hauteur explicite, l'incrustation s'aplatit à 0 px — invisible. */
+  min-height: 84px;
+  aspect-ratio: 4 / 3;
+  border: 1px solid rgba(34, 211, 238, .5);
+  background: var(--panel);
+  overflow: hidden;
+  z-index: 2;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.calls-pip-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.calls-pip video.is-mirrored { transform: scaleX(-1); }
+.calls-pip-label {
+  position: absolute;
+  left: 6px;
+  bottom: 5px;
+  padding: 1px 7px;
+  background: rgba(4, 5, 14, .72);
+  color: var(--muted);
+  font: 600 9px var(--mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.calls-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 14px 16px 18px;
+  background: linear-gradient(0deg, rgba(4, 5, 14, .85), rgba(4, 5, 14, 0));
+}
+
+/* ------------------------------- avertissement ------------------------------ */
+
+/*
+ * Bandeau « pourquoi l'appel n'a pas abouti » : il flotte au-dessus de tout
+ * (y compris du panneau d'appel, z-index 1900) et reste lisible quelques
+ * secondes. Sans lui, un micro refusé ou une connexion pair-à-pair impossible
+ * ne laissent qu'un silence à l'écran.
+ */
+.calls-notice {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 1950;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(520px, calc(100% - 32px));
+  padding: 12px 14px 12px 16px;
+  background: linear-gradient(160deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--yellow);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .5);
+  animation: calls-pop .22s ease;
+}
+.calls-notice-text {
+  color: var(--ink);
+  font: 500 13px/1.5 var(--body);
+}
+.calls-notice-close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.calls-notice-close:hover { color: var(--ink); border-color: var(--line-strong); }
+
+/* --------------------------------- mobile ---------------------------------- */
+
+@media (max-width: 760px) {
+  .calls-notice { bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
+  .calls-backdrop { padding: 0; }
+  .calls-panel {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border: 0;
+    clip-path: none;
+  }
+  .calls-pip { width: clamp(96px, 30vw, 150px); right: 10px; bottom: 96px; }
+  .calls-round { width: 62px; height: 62px; }
+  .calls-controls { gap: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* Le mouvement se coupe si le joueur le demande au système. */
+@media (prefers-reduced-motion: reduce) {
+  .calls-backdrop, .calls-card, .calls-panel { animation: none; }
+  .calls-ring { animation: none; opacity: .5; }
+  .calls-eq i { animation: none; height: 10px; }
+}
