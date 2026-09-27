@@ -3,8 +3,15 @@ import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
+import { youTubeThumbUrl } from '../lib/videoThumbnails';
+import '../cinema-news.css';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
+
+// Images promotionnelles officielles lorsqu'elles sont disponibles. Le biopic
+// Fred Astaire n'ayant pas encore de visuel Sony, sa carte utilise une photo de
+// presse Getty publiée par Variety.
+const imageUrl = (image) => /^https?:\/\//i.test(image) ? image : `${base}${image}`;
 
 // Page des actus CINÉMA & SÉRIES — même présentation que la page gaming mais
 // pour les films, séries, streaming et pop culture audiovisuelle.
@@ -73,9 +80,9 @@ export default function CinemaNews() {
   // Actus cinéma du jour (27.09.2026) : les plus récentes ouvrent la page —
   // box-office, bande-annonce Werwulf et casting du biopic Fred Astaire.
   const articles = useMemo(() => [
-    { to: '/news/cinema/box-office-us-endgame-resident-evil', image: 'box-office-endgame-resident-evil-news.svg', alt: 'Box-office américain du week-end — visuel éditorial Let’s Play sur le duel Avengers: Endgame et Resident Evil', badge: 'CINÉMA · BOX-OFFICE', kicker: '27.09.2026 · DEADLINE', title: 'ENDGAME REPREND LA TÊTE DU BOX-OFFICE.', excerpt: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain, devant le reboot Resident Evil de Zach Cregger. Les chiffres définitifs arrivent lundi.', read: copy.read, sentiment: 'positive' },
-    { to: '/news/cinema/werwulf-trailer-eggers', image: 'werwulf-trailer-news.svg', alt: 'Werwulf, le film d’horreur médiéval de Robert Eggers — visuel éditorial Let’s Play sur la deuxième bande-annonce', badge: 'CINÉMA · ROBERT EGGERS', kicker: '27.09.2026 · FOCUS FEATURES', title: 'WERWULF MONTRE SES CROCS.', excerpt: 'La deuxième bande-annonce du film de Robert Eggers est arrivée le 26 septembre, jour de pleine lune. L’horreur médiévale en vieil anglais sort le 25 décembre 2026.', read: copy.read, sentiment: 'positive' },
-    { to: '/news/cinema/fred-astaire-biopic-tom-holland', image: 'fred-astaire-biopic-news.svg', alt: 'Le biopic Fred Astaire de Sony Pictures — visuel éditorial Let’s Play sur le casting de Tom Holland, Margaret Qualley et Sabrina Carpenter', badge: 'CINÉMA · SONY PICTURES', kicker: '27.09.2026 · SONY PICTURES', title: 'LE BIOPIC ASTAIRE TROUVE SES DANSEUSES.', excerpt: 'Margaret Qualley (Adele Astaire) et Sabrina Carpenter (Ginger Rogers) rejoignent Tom Holland dans le biopic Sony réalisé par Paul King. Sans date de sortie pour l’instant.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/box-office-us-endgame-resident-evil', image: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-resident-evil-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · MARVEL STUDIOS', alt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', badge: 'CINÉMA · BOX-OFFICE', kicker: '27.09.2026 · DEADLINE', title: 'ENDGAME REPREND LA TÊTE DU BOX-OFFICE.', excerpt: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain, devant le reboot Resident Evil de Zach Cregger. Les chiffres définitifs arrivent lundi.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/werwulf-trailer-eggers', image: 'https://images.contentstack.io/v3/assets/blt223a4a92692ca457/bltc56e9a2c23500694/6a3d520c6391ef7c261677e4/werwulf_4marquee_image.png?branch=production&width=1600', fallbackImage: 'werwulf-trailer-news.svg', imageCredit: 'VISUEL OFFICIEL · FOCUS FEATURES', alt: 'Visuel officiel de Werwulf publié par Focus Features', badge: 'CINÉMA · ROBERT EGGERS', kicker: '27.09.2026 · FOCUS FEATURES', title: 'WERWULF MONTRE SES CROCS.', excerpt: 'La deuxième bande-annonce du film de Robert Eggers est arrivée le 26 septembre, jour de pleine lune. L’horreur médiévale en vieil anglais sort le 25 décembre 2026.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/fred-astaire-biopic-tom-holland', image: 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1', fallbackImage: 'fred-astaire-biopic-news.svg', imageCredit: 'PHOTO DE PRESSE · GETTY IMAGES / VARIETY', alt: 'Photos de presse de Tom Holland, Margaret Qualley et Sabrina Carpenter publiées par Variety, crédit Getty Images', badge: 'CINÉMA · SONY PICTURES', kicker: '27.09.2026 · SONY PICTURES', title: 'LE BIOPIC ASTAIRE TROUVE SES DANSEUSES.', excerpt: 'Margaret Qualley (Adele Astaire) et Sabrina Carpenter (Ginger Rogers) rejoignent Tom Holland dans le biopic Sony réalisé par Paul King. Sans date de sortie pour l’instant.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/jojo-steel-ball-run-episode-2', image: 'cinema-jojo-steel-ball-run.jpg', alt: 'Key visual officiel de STEEL BALL RUN JoJo’s Bizarre Adventure : Johnny Joestar, Gyro Zeppeli et les chevaux dorés de la course, sur fond violet à pois', badge: 'JOJO · STEEL BALL RUN', kicker: '26.09.2026 · NETFLIX', title: 'STEEL BALL RUN REPREND LA COURSE.', excerpt: 'Six mois après le spécial de 47 minutes, l’épisode 2 est en ligne depuis le 25 septembre : onze épisodes hebdomadaires, chaque vendredi sur Netflix, jusqu’au 4 décembre.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/dune-messiah-trailer', image: 'cinema-dune-messiah.jpg', alt: 'Dune — Paul Atréides et Chani devant le soleil d’Arrakis, affiche officielle Legendary / Warner Bros', badge: 'DUNE · MESSIAH', kicker: '26.09.2026 · WARNER BROS', title: 'DUNE: MESSIAH A SON TRAILER.', excerpt: 'Denis Villeneuve a confirmé que la première bande-annonce de Dune: Messiah sera diffusée en fin d’année, pour une sortie prévue en 2027.', read: copy.read, sentiment: 'positive' },
     { to: '/news/diablo-netflix', image: 'diablo-netflix-news.webp', alt: 'Série animée Diablo sur Netflix', badge: 'DIABLO · NETFLIX', kicker: '12.09.2026 · NETFLIX', title: 'DIABLO EN SÉRIE ANIMÉE.', excerpt: 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie d’autres adaptations de ses licences vers le petit écran.', read: copy.read, sentiment: 'positive' },
@@ -117,6 +124,20 @@ export default function CinemaNews() {
     );
   };
 
+  const renderStoryImage = (story, loading = 'lazy') => (
+    <img
+      src={imageUrl(story.image)}
+      alt={story.alt}
+      loading={loading}
+      onError={(event) => {
+        if (story.fallbackImage && event.currentTarget.dataset.fallback !== 'true') {
+          event.currentTarget.dataset.fallback = 'true';
+          event.currentTarget.src = imageUrl(story.fallbackImage);
+        }
+      }}
+    />
+  );
+
   return (
     <>
       {/* Lien retour vers le hub */}
@@ -131,11 +152,12 @@ export default function CinemaNews() {
             <div className="news-grid-cell news-grid-cell--today">
               <Link className="daily-news-card news-today" to={topStory.to}>
                 <div className="daily-news-image">
-                  <img src={`${base}${topStory.image}`} alt={topStory.alt} />
+                  {renderStoryImage(topStory, 'eager')}
                   {renderBadges(topStory)}
                 </div>
                 <div className="daily-news-copy">
                   <p className="eyebrow"><span className="live-dot" /> {copy.today}</p>
+                  {topStory.imageCredit && <span className="cinema-image-credit">{topStory.imageCredit}</span>}
                   <span className="news-kicker">{topStory.kicker}</span>
                   <h2>{topStory.title}</h2>
                   <p>{topStory.excerpt}</p>
@@ -148,10 +170,11 @@ export default function CinemaNews() {
             <div className="news-grid-cell" key={article.to}>
               <Link className="news-carousel-card" to={article.to}>
                 <div className="news-carousel-image">
-                  <img src={`${base}${article.image}`} alt={article.alt} />
+                  {renderStoryImage(article)}
                   {renderBadges(article)}
                 </div>
                 <div className="news-carousel-copy">
+                  {article.imageCredit && <span className="cinema-image-credit">{article.imageCredit}</span>}
                   <span className="news-kicker">{article.kicker}</span>
                   <h2>{article.title}</h2>
                   <p>{article.excerpt}</p>
