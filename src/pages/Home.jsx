@@ -63,7 +63,7 @@ const djezzyEpisode = {
 // ancien), puis en repli à l'actu manuelle PHYSINT.
 const editorialTopStory = {
   to: '/news/halo-activision',
-  image: 'halo-activision-news.jpg',
+  image: 'masterchief-activision.png',
   alt: 'Un super-soldat en armure verte s’avance vers un portail illuminé où brille le logo Activision — visuel éditorial Let’s Play',
   badge: 'HALO · ACTIVISION',
   kicker: '26.09.2026 · XBOX',
