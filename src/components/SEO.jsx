@@ -93,6 +93,21 @@ const pageMeta = {
     description: 'Valeur marchande recalculée chaque semaine avec TransferRoom (xTV), note globale dynamique, profils de croissance, scénarios communautaires et crises de vestiaire : ce que change la refonte du mode Carrière d’EA Sports FC 27, attendu le 25 septembre 2026.',
     image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', type: 'article', published: '2026-09-22', section: 'Actualités gaming',
   },
+  '/news/cinema/box-office-us-endgame-resident-evil': {
+    title: 'Box-office : Avengers Endgame reprend la tête face à Resident Evil — Let’s Play',
+    description: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain du 25-27 septembre 2026, devant le reboot Resident Evil de Zach Cregger (22-23,5 M$). Deuxième meilleur dernier week-end de septembre de l’histoire du box-office US.',
+    image: 'box-office-endgame-resident-evil-news.svg', type: 'article', published: '2026-09-27', section: 'Actualités cinéma',
+  },
+  '/news/cinema/werwulf-trailer-eggers': {
+    title: 'Werwulf : Robert Eggers montre ses crocs — Let’s Play',
+    description: 'Deuxième bande-annonce le 26 septembre, jour de pleine lune, pour Werwulf de Robert Eggers : loup-garou en vieil anglais, Aaron Taylor-Johnson, Willem Dafoe et Lily-Rose Depp. Sortie le 25 décembre 2026.',
+    image: 'werwulf-trailer-news.svg', type: 'article', published: '2026-09-27', section: 'Actualités cinéma',
+  },
+  '/news/cinema/fred-astaire-biopic-tom-holland': {
+    title: 'Le biopic Fred Astaire réunit Tom Holland, Margaret Qualley et Sabrina Carpenter — Let’s Play',
+    description: 'Sony complète le casting de son biopic Fred Astaire : Tom Holland en Fred, Margaret Qualley en Adele Astaire et Sabrina Carpenter en Ginger Rogers, sous la direction de Paul King. Aucune date de sortie pour l’instant.',
+    image: 'fred-astaire-biopic-news.svg', type: 'article', published: '2026-09-27', section: 'Actualités cinéma',
+  },
 };
 
 const routeAliases = {

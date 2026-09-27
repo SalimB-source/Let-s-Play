@@ -16,7 +16,7 @@ export default function CinemaNews() {
   const copy = {
     en: {
       section: 'CINEMA & SERIES NEWS',
-      updated: 'Updated 26.09.2026',
+      updated: 'Updated 27.09.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -29,7 +29,7 @@ export default function CinemaNews() {
     },
     fr: {
       section: 'ACTUS CINÉMA & SÉRIES',
-      updated: 'Mis à jour le 26.09.2026',
+      updated: 'Mis à jour le 27.09.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -42,7 +42,7 @@ export default function CinemaNews() {
     },
     ar: {
       section: 'أخبار السينما والمسلسلات',
-      updated: 'آخر تحديث 26.09.2026',
+      updated: 'آخر تحديث 27.09.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -55,7 +55,7 @@ export default function CinemaNews() {
     },
   }[lang] || {
     section: 'ACTUS CINÉMA & SÉRIES',
-    updated: 'Mis à jour le 26.09.2026',
+    updated: 'Mis à jour le 27.09.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -70,7 +70,12 @@ export default function CinemaNews() {
   // TODO : brancher un vrai flux cinéma (API TMDB / robots d'actus) comme pour
   // le gaming. Pour l'instant, quelques actus de rédaction qui ouvrent la page
   // en beauté.
+  // Actus cinéma du jour (27.09.2026) : les plus récentes ouvrent la page —
+  // box-office, bande-annonce Werwulf et casting du biopic Fred Astaire.
   const articles = useMemo(() => [
+    { to: '/news/cinema/box-office-us-endgame-resident-evil', image: 'box-office-endgame-resident-evil-news.svg', alt: 'Box-office américain du week-end — visuel éditorial Let’s Play sur le duel Avengers: Endgame et Resident Evil', badge: 'CINÉMA · BOX-OFFICE', kicker: '27.09.2026 · DEADLINE', title: 'ENDGAME REPREND LA TÊTE DU BOX-OFFICE.', excerpt: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain, devant le reboot Resident Evil de Zach Cregger. Les chiffres définitifs arrivent lundi.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/werwulf-trailer-eggers', image: 'werwulf-trailer-news.svg', alt: 'Werwulf, le film d’horreur médiéval de Robert Eggers — visuel éditorial Let’s Play sur la deuxième bande-annonce', badge: 'CINÉMA · ROBERT EGGERS', kicker: '27.09.2026 · FOCUS FEATURES', title: 'WERWULF MONTRE SES CROCS.', excerpt: 'La deuxième bande-annonce du film de Robert Eggers est arrivée le 26 septembre, jour de pleine lune. L’horreur médiévale en vieil anglais sort le 25 décembre 2026.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/fred-astaire-biopic-tom-holland', image: 'fred-astaire-biopic-news.svg', alt: 'Le biopic Fred Astaire de Sony Pictures — visuel éditorial Let’s Play sur le casting de Tom Holland, Margaret Qualley et Sabrina Carpenter', badge: 'CINÉMA · SONY PICTURES', kicker: '27.09.2026 · SONY PICTURES', title: 'LE BIOPIC ASTAIRE TROUVE SES DANSEUSES.', excerpt: 'Margaret Qualley (Adele Astaire) et Sabrina Carpenter (Ginger Rogers) rejoignent Tom Holland dans le biopic Sony réalisé par Paul King. Sans date de sortie pour l’instant.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/jojo-steel-ball-run-episode-2', image: 'cinema-jojo-steel-ball-run.jpg', alt: 'Key visual officiel de STEEL BALL RUN JoJo’s Bizarre Adventure : Johnny Joestar, Gyro Zeppeli et les chevaux dorés de la course, sur fond violet à pois', badge: 'JOJO · STEEL BALL RUN', kicker: '26.09.2026 · NETFLIX', title: 'STEEL BALL RUN REPREND LA COURSE.', excerpt: 'Six mois après le spécial de 47 minutes, l’épisode 2 est en ligne depuis le 25 septembre : onze épisodes hebdomadaires, chaque vendredi sur Netflix, jusqu’au 4 décembre.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/dune-messiah-trailer', image: 'cinema-dune-messiah.jpg', alt: 'Dune — Paul Atréides et Chani devant le soleil d’Arrakis, affiche officielle Legendary / Warner Bros', badge: 'DUNE · MESSIAH', kicker: '26.09.2026 · WARNER BROS', title: 'DUNE: MESSIAH A SON TRAILER.', excerpt: 'Denis Villeneuve a confirmé que la première bande-annonce de Dune: Messiah sera diffusée en fin d’année, pour une sortie prévue en 2027.', read: copy.read, sentiment: 'positive' },
     { to: '/news/diablo-netflix', image: 'diablo-netflix-news.webp', alt: 'Série animée Diablo sur Netflix', badge: 'DIABLO · NETFLIX', kicker: '12.09.2026 · NETFLIX', title: 'DIABLO EN SÉRIE ANIMÉE.', excerpt: 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie d’autres adaptations de ses licences vers le petit écran.', read: copy.read, sentiment: 'positive' },
