@@ -4,6 +4,7 @@ import { baseUrl as base } from '../data';
 import Comments from '../components/Comments';
 import ArticleEngagement from '../components/ArticleEngagement';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
+import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import NotFound from './NotFound';
 // Les actus du jour générées par le robot (src/news/autoIndex.js, vide au
 // départ) cohabitent avec les articles manuels ci-dessous : même gabarit.
@@ -13,6 +14,11 @@ import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 import SpoilerAlert from '../components/SpoilerAlert';
 import ArticleGallery from '../components/ArticleGallery';
 import { getArticleGallery } from '../articleGalleries';
+
+// Images officielles : les URLs absolues (miniatures YouTube, Focus
+// Features, Variety…) passent telles quelles ; les fichiers locaux du
+// site prennent le préfixe du baseUrl.
+const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
 const stories = {
   // Actu à la une du 26.09.2026 — aussi mise en avant sur l'accueil.
@@ -37,7 +43,7 @@ const stories = {
   // casting, au même gabarit éditorial que le jeu vidéo. Clés préfixées
   // « cinema/ » : servies par la route /news/cinema/:slug.
   'cinema/box-office-us-endgame-resident-evil': {
-    date: '27.09.2026', category: 'CINÉMA · BOX-OFFICE', image: 'box-office-endgame-resident-evil-news.svg', imageAlt: 'Box-office américain du week-end — visuel éditorial Let’s Play sur le duel Avengers: Endgame et Resident Evil', cover: 'ENDGAME VS RESIDENT EVIL',
+    date: '27.09.2026', category: 'CINÉMA · BOX-OFFICE', image: 'box-office-endgame-resident-evil-news.svg', thumbnail: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-resident-evil-news.svg', imageAlt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', cover: 'ENDGAME VS RESIDENT EVIL',
     title: 'ENDGAME REPREND', accent: 'LA TÊTE DU BOX-OFFICE.', dek: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain, devant le reboot Resident Evil de Zach Cregger. Un dernier week-end de septembre d’une densité inédite.',
     lead: 'Rarement un week-end de fin septembre aura autant ressemblé à un rendez-vous de blockbusters. Aux États-Unis, la ressortie d’Avengers: Endgame et le reboot Resident Evil se disputent la première place du box-office, avec une poignée de millions de dollars d’écart.',
     intro: 'Selon les chiffres provisoires publiés par Deadline le 26 septembre, le marché américain traverse son deuxième meilleur dernier week-end de septembre de l’histoire, avec quatre films au-dessus des 20 millions de dollars. Les estimations devront être confirmées par les résultats définitifs du dimanche soir.',
@@ -50,11 +56,11 @@ const stories = {
     p4: 'Reste le verdict de lundi : les chiffres définitifs diront si Marvel termine devant les zombies, les écarts estimés se comptant en millions plutôt qu’en dizaines. Au-delà du classement, Resident Evil a déjà démontré qu’une licence vidéoludique pouvait servir de socle à un film d’auteur horrifique rentable — un signal que Sony a rarement laissé sans suite. Et vous : si vous avez vu le film ce week-end, mérite-t-il sa place à côté des Resident Evil qui vous ont marqués ?',
     take: 'À RETENIR', takeText: 'Aux États-Unis, la ressortie d’Avengers: Endgame (24-26 M$ estimés) devance pour l’instant le reboot Resident Evil (22-23,5 M$) lors du deuxième meilleur dernier week-end de septembre de l’histoire du box-office américain. Résultats définitifs attendus lundi.',
     source: 'D’après Deadline (26.09.2026), recoupé avec Boxoffice Pro et Boxoffice Hype. Chiffres du week-end des 25-27 septembre : estimations provisoires à confirmer.', sourceUrl: 'https://deadline.com/2026/09/box-office-avengers-endgame-primetime-heart-of-the-beast-1237111302/', sourceDetail: 'Lire le suivi box-office de Deadline',
-    credit: 'Visuel : carte éditoriale Let’s Play.',
+    credit: 'Visuel : bande-annonce officielle d’Avengers: Endgame Encore — Marvel Studios.',
     sentiment: 'positive'
   },
   'cinema/werwulf-trailer-eggers': {
-    date: '27.09.2026', category: 'CINÉMA · ROBERT EGGERS', image: 'werwulf-trailer-news.svg', imageAlt: 'Werwulf, le film d’horreur médiéval de Robert Eggers — visuel éditorial Let’s Play sur la deuxième bande-annonce', cover: 'WERWULF',
+    date: '27.09.2026', category: 'CINÉMA · ROBERT EGGERS', image: 'werwulf-trailer-news.svg', thumbnail: 'https://images.contentstack.io/v3/assets/blt223a4a92692ca457/bltc56e9a2c23500694/6a3d520c6391ef7c261677e4/werwulf_4marquee_image.png?branch=production&width=1600', fallbackImage: 'werwulf-trailer-news.svg', imageAlt: 'Visuel officiel de Werwulf publié par Focus Features', cover: 'WERWULF',
     title: 'WERWULF MONTRE', accent: 'SES CROCS.', dek: 'Focus Features a dévoilé la deuxième bande-annonce de Werwulf, l’horreur médiévale de Robert Eggers, le 26 septembre — jour de la pleine lune. Rendez-vous dans les salles le 25 décembre 2026.',
     lead: 'Robert Eggers ne sort même pas ses bandes-annonces comme tout le monde. La deuxième du Werwulf est arrivée le 26 septembre, calée sur la pleine lune du mois — un clin d’œil assumé, puisque la première avait elle aussi été publiée un jour de pleine lune, en juin.',
     intro: 'Le réalisateur de The Witch, The Lighthouse et Nosferatu revient avec une fresque d’horreur plantée dans l’Angleterre du XIIIe siècle, co-écrite avec Sjón et portée par Aaron Taylor-Johnson, Willem Dafoe et Lily-Rose Depp. La sortie est fixée au 25 décembre 2026.',
@@ -67,11 +73,11 @@ const stories = {
     p4: 'La date de sortie, elle, dit déjà beaucoup : le 25 décembre, exactement le créneau que Focus avait utilisé pour Nosferatu. Et la suite se dessine — Eggers est annoncé sur une adaptation « Olde English » de Romeo et Juliette. En attendant, une question : offrir une place de Werwulf le soir de Noël, c’est de la dévotion ou de la damnation ?',
     take: 'À RETENIR', takeText: 'La deuxième bande-annonce de Werwulf, l’horreur médiévale de Robert Eggers avec Aaron Taylor-Johnson, Willem Dafoe et Lily-Rose Depp, est sortie le 26 septembre. Le film arrive en salles le 25 décembre 2026.',
     source: 'D’après Dark Horizons et TheWrap, publiés le 26.09.2026.', sourceUrl: 'https://www.darkhorizons.com/full-trailer-robert-eggers-werwulf/', sourceDetail: 'Lire le sujet de Dark Horizons',
-    credit: 'Visuel : carte éditoriale Let’s Play.',
+    credit: 'Visuel : Focus Features.',
     sentiment: 'positive'
   },
   'cinema/fred-astaire-biopic-tom-holland': {
-    date: '27.09.2026', category: 'CINÉMA · SONY PICTURES', image: 'fred-astaire-biopic-news.svg', imageAlt: 'Le biopic Fred Astaire de Sony Pictures — visuel éditorial Let’s Play sur le casting de Tom Holland, Margaret Qualley et Sabrina Carpenter', cover: 'FRED ASTAIRE',
+    date: '27.09.2026', category: 'CINÉMA · SONY PICTURES', image: 'fred-astaire-biopic-news.svg', thumbnail: 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1', fallbackImage: 'fred-astaire-biopic-news.svg', imageAlt: 'Photos de presse de Tom Holland, Margaret Qualley et Sabrina Carpenter publiées par Variety, crédit Getty Images', cover: 'FRED ASTAIRE',
     title: 'LE BIOPIC ASTAIRE', accent: 'TROUVE SES DANSEUSES.', dek: 'Margaret Qualley jouera Adele Astaire et Sabrina Carpenter Ginger Rogers aux côtés de Tom Holland dans le biopic Fred Astaire de Sony, réalisé par Paul King. Aucune date de sortie pour l’instant.',
     lead: 'Tom Holland cherchait des partenaires de danse depuis cinq ans : il les a trouvées. Margaret Qualley et Sabrina Carpenter rejoignent le biopic Fred Astaire de Sony Pictures, annoncé vendredi 25 septembre par Deadline puis détaillé par Variety.',
     intro: 'Le trio principal est désormais complet : Holland incarnera Astaire, Qualley sa sœur aînée Adele — sa première partenaire de scène —, et Carpenter la légendaire Ginger Rogers. Paul King (Paddington, Wonka) dirigera le film, adapté de la biographie The Astaires: Fred & Adele de Kathleen Riley.',
@@ -84,7 +90,7 @@ const stories = {
     p4: 'Ce qui manque encore : une date de tournage, un titre définitif, et la preuve que Sabrina Carpenter, immense en concert, tiendra la comédie musicale classique au cinéma. En attendant, le projet a au moins un mérite : donner envie de revoir Top Hat. Et vous : les comédies musicales de l’âge d’or, incontournables ou poussiéreuses ?',
     take: 'À RETENIR', takeText: 'Le biopic Fred Astaire de Sony réunit Tom Holland, Margaret Qualley (Adele Astaire) et Sabrina Carpenter (Ginger Rogers), sous la direction de Paul King. Aucune date de sortie pour le moment.',
     source: 'D’après Variety et Deadline, publiés les 25 et 26.09.2026.', sourceUrl: 'https://variety.com/2026/film/news/margaret-qualley-sabrina-carpenter-tom-holland-fred-astaire-biopic-1236850613/', sourceDetail: 'Lire l’article de Variety',
-    credit: 'Visuel : carte éditoriale Let’s Play.',
+    credit: 'Photo de presse : Getty Images, publiée par Variety.',
     sentiment: 'positive'
   },
   // Actu cinéma & séries du 26.09.2026 — la reprise hebdomadaire de
@@ -459,7 +465,7 @@ export default function CurrentNews({ slug, slugPrefix }) {
   }, [articleId]);
 
   return <>
-    <section className="article-hero wrap"><div className="section-label"><span>ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {story.auto ? 'ACTU DU JOUR · LET’S PLAY' : 'RÉÉCRIT POUR LET’S PLAY'}</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>4 MIN DE LECTURE</span>{views != null && <span className="article-views-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg> {formatViews(views)} vues</span>}<span className={`article-sentiment-inline ${meta.color}`} title={meta.label}>{meta.emoji} {meta.label}</span></div></div><div className="article-cover hud-frame"><img src={`${base}${story.thumbnail || story.image}`} alt={story.imageAlt} /><div><small>{story.category}</small><strong>{story.cover}</strong></div><span className={`news-sentiment ${meta.color}`} style={{ top: 12, right: 12 }} aria-label={meta.label} title={meta.label}>{meta.emoji}</span>{views != null && <span className="news-views" style={{ left: 12, bottom: 12 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg>{formatViews(views)}</span>}</div></div></section>
+    <section className="article-hero wrap"><div className="section-label"><span>ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {story.auto ? 'ACTU DU JOUR · LET’S PLAY' : 'RÉÉCRIT POUR LET’S PLAY'}</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>4 MIN DE LECTURE</span>{views != null && <span className="article-views-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg> {formatViews(views)} vues</span>}<span className={`article-sentiment-inline ${meta.color}`} title={meta.label}>{meta.emoji} {meta.label}</span></div></div><div className="article-cover hud-frame"><img src={imageUrl(story.thumbnail || story.image)} alt={story.imageAlt} onError={(event) => { if (story.fallbackImage && event.currentTarget.dataset.thumbFallback !== 'true') { event.currentTarget.dataset.thumbFallback = 'true'; event.currentTarget.src = imageUrl(story.fallbackImage); } }} /><div><small>{story.category}</small><strong>{story.cover}</strong></div><span className={`news-sentiment ${meta.color}`} style={{ top: 12, right: 12 }} aria-label={meta.label} title={meta.label}>{meta.emoji}</span>{views != null && <span className="news-views" style={{ left: 12, bottom: 12 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg>{formatViews(views)}</span>}</div></div></section>
     <main className="article-layout wrap">
       <article className="article-body">
         <p className="article-lead">{story.lead}</p>
