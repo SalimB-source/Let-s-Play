@@ -35,6 +35,7 @@ export const MESSAGES_TABLE = 'direct_messages';
 export const BLOCKS_TABLE = 'message_blocks';
 export const REPORTS_TABLE = 'message_reports';
 export const VOICE_BUCKET = 'voice-messages';
+const BASE_MESSAGE_COLUMNS = 'id, conversation_key, sender_id, recipient_id, body, created_at, read_at';
 const MESSAGE_COLUMNS = 'id, conversation_key, sender_id, recipient_id, body, kind, attachment_path, attachment_duration, attachment_mime, created_at, read_at';
 
 /** Longueur maximale d'un message (contrainte SQL identique). */
@@ -82,6 +83,27 @@ export function isInvalidBodyError(error) {
 /** Le trigger a refusé : message vocal sans fichier valide (ou trop long). */
 export function isInvalidVoiceError(error) {
   return /direct_message_voice_(requires_attachment|too_long)/i.test(error?.message || '');
+}
+
+/** Vrai quand une colonne de messagerie vocale manque (schéma pas migré). */
+export function isMissingVoiceColumnError(error) {
+  const code = error?.code || '';
+  const message = error?.message || '';
+  return code === 'PGRST204'
+    || code === '42703'
+    || /column .* does not exist|could not find the.*column|kind|attachment_path|attachment_duration|attachment_mime/i.test(message) && /direct_messages/i.test(message + (error?.details || ''))
+    || (/column|Could not find/i.test(message) && /(kind|attachment_path|attachment_duration|attachment_mime)/i.test(message));
+}
+
+/** Détecte une erreur de colonne manquante (pour le fallback texte seul). */
+function isColumnMissingError(error) {
+  const msg = String(error?.message || '').toLowerCase();
+  const details = String(error?.details || '').toLowerCase();
+  const code = String(error?.code || '');
+  return code === 'PGRST204' || code === '42703'
+    || msg.includes('column') && (msg.includes('kind') || msg.includes('attachment'))
+    || msg.includes('could not find') && (msg.includes('kind') || msg.includes('attachment'))
+    || details.includes('kind') || details.includes('attachment_path');
 }
 
 // ---------------------------------------------------------------------------
@@ -334,17 +356,31 @@ export function removeMessageById(threads, messageId) {
 // Supabase
 // ---------------------------------------------------------------------------
 
-/** Messages récents du joueur (les deux sens), du plus récent au plus ancien. */
+/** Messages récents du joueur (les deux sens), du plus récent au plus ancien). */
 export async function fetchRecentMessages(uid, limit = 200) {
   if (!supabase || !uid) return [];
-  const { data, error } = await supabase
-    .from(MESSAGES_TABLE)
-    .select(MESSAGE_COLUMNS)
-    .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return data || [];
+  try {
+    const { data, error } = await supabase
+      .from(MESSAGES_TABLE)
+      .select(MESSAGE_COLUMNS)
+      .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return data || [];
+  } catch (e) {
+    if (isColumnMissingError(e)) {
+      const { data, error } = await supabase
+        .from(MESSAGES_TABLE)
+        .select(BASE_MESSAGE_COLUMNS)
+        .or(`sender_id.eq.${uid},recipient_id.eq.${uid}`)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return data || [];
+    }
+    throw e;
+  }
 }
 
 /** Expéditeurs des messages non lus (un seul aller-retour pour tous les badges). */
@@ -365,26 +401,53 @@ export async function fetchThread(uid, peerId, limit = 100) {
   if (!supabase || !uid || !peerId) return [];
   const key = conversationKey(uid, peerId);
   if (!key) return [];
-  const { data, error } = await supabase
-    .from(MESSAGES_TABLE)
-    .select(MESSAGE_COLUMNS)
-    .eq('conversation_key', key)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return (data || []).reverse();
+  try {
+    const { data, error } = await supabase
+      .from(MESSAGES_TABLE)
+      .select(MESSAGE_COLUMNS)
+      .eq('conversation_key', key)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    return (data || []).reverse();
+  } catch (e) {
+    if (isColumnMissingError(e)) {
+      const { data, error } = await supabase
+        .from(MESSAGES_TABLE)
+        .select(BASE_MESSAGE_COLUMNS)
+        .eq('conversation_key', key)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data || []).reverse();
+    }
+    throw e;
+  }
 }
 
 /** Envoie un message ; renvoie la ligne créée par le serveur. */
 export async function sendMessage(uid, peerId, body) {
   if (!supabase) throw new Error('Supabase is not configured');
-  const { data, error } = await supabase
-    .from(MESSAGES_TABLE)
-    .insert({ recipient_id: peerId, body: prepareBody(body) })
-    .select(MESSAGE_COLUMNS)
-    .single();
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from(MESSAGES_TABLE)
+      .insert({ recipient_id: peerId, body: prepareBody(body) })
+      .select(MESSAGE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    if (isColumnMissingError(e)) {
+      const { data, error } = await supabase
+        .from(MESSAGES_TABLE)
+        .insert({ recipient_id: peerId, body: prepareBody(body) })
+        .select(BASE_MESSAGE_COLUMNS)
+        .single();
+      if (error) throw error;
+      return data;
+    }
+    throw e;
+  }
 }
 
 /** Extension de fichier à utiliser pour un enregistrement, selon son type MIME. */
@@ -404,42 +467,72 @@ export function voiceFileExtension(mime) {
 export async function uploadVoiceRecording(uid, blob) {
   if (!supabase) throw new Error('Supabase is not configured');
   if (!uid || !blob) throw new Error('direct_message_missing');
+  if (blob.size > VOICE_MAX_BYTES) {
+    throw Object.assign(new Error('direct_message_voice_too_long'), { code: 'P0001' });
+  }
   const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${voiceFileExtension(blob.type)}`;
-  const { error } = await supabase.storage.from(VOICE_BUCKET).upload(path, blob, {
-    contentType: blob.type || 'audio/webm',
-    upsert: false,
-  });
-  if (error) throw error;
-  return path;
+  try {
+    const { error } = await supabase.storage.from(VOICE_BUCKET).upload(path, blob, {
+      contentType: blob.type || 'audio/webm',
+      upsert: false,
+    });
+    if (error) throw error;
+    return path;
+  } catch (e) {
+    const msg = String(e?.message || '').toLowerCase();
+    // Bucket manquant, quota, ou politique : on signale une erreur vocale
+    // explicite (affichée comme errVoiceInvalid) plutôt qu'un générique.
+    if (msg.includes('bucket') || msg.includes('not found') || msg.includes('does not exist') || msg.includes('storage')) {
+      throw Object.assign(new Error('direct_message_voice_requires_attachment'), { code: 'P0001', cause: e });
+    }
+    throw e;
+  }
 }
 
 /** Envoie un message vocal (fichier déjà déposé par `uploadVoiceRecording`). */
 export async function sendVoiceMessage(uid, peerId, attachmentPath, durationSeconds, mime) {
   if (!supabase) throw new Error('Supabase is not configured');
-  const { data, error } = await supabase
-    .from(MESSAGES_TABLE)
-    .insert({
-      recipient_id: peerId,
-      body: '',
-      kind: 'voice',
-      attachment_path: attachmentPath,
-      attachment_duration: Math.min(VOICE_MAX_SECONDS, Math.max(1, Math.round(durationSeconds || 0))),
-      attachment_mime: mime || null,
-    })
-    .select(MESSAGE_COLUMNS)
-    .single();
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from(MESSAGES_TABLE)
+      .insert({
+        recipient_id: peerId,
+        body: '',
+        kind: 'voice',
+        attachment_path: attachmentPath,
+        attachment_duration: Math.min(VOICE_MAX_SECONDS, Math.max(1, Math.round(durationSeconds || 0))),
+        attachment_mime: mime || null,
+      })
+      .select(MESSAGE_COLUMNS)
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (e) {
+    // Si les colonnes vocales manquent, le schéma n'a pas été migré : on
+    // signale une erreur vocale explicite (affichée comme errVoiceInvalid).
+    if (isColumnMissingError(e) || isMissingVoiceColumnError(e)) {
+      throw Object.assign(new Error('direct_message_voice_requires_attachment'), { code: 'P0001', cause: e });
+    }
+    throw e;
+  }
 }
 
 /** URL signée temporaire pour lire un message vocal (le bucket est privé). */
 export async function getVoiceMessageUrl(attachmentPath, expiresInSeconds = 3600) {
   if (!supabase || !attachmentPath) return null;
-  const { data, error } = await supabase.storage
-    .from(VOICE_BUCKET)
-    .createSignedUrl(attachmentPath, expiresInSeconds);
-  if (error) throw error;
-  return data?.signedUrl || null;
+  try {
+    const { data, error } = await supabase.storage
+      .from(VOICE_BUCKET)
+      .createSignedUrl(attachmentPath, expiresInSeconds);
+    if (error) throw error;
+    return data?.signedUrl || null;
+  } catch (e) {
+    // Bucket manquant ou politique non appliquée : pas de crash, on
+    // renvoie null et la bulle affiche voiceUnavailable.
+    const msg = String(e?.message || '').toLowerCase();
+    if (msg.includes('bucket') || msg.includes('not found') || msg.includes('does not exist')) return null;
+    throw e;
+  }
 }
 
 /** Supprime un message envoyé par le joueur connecté (et son fichier, s'il y en a un). */
