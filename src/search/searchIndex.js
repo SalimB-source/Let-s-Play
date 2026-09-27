@@ -7,6 +7,9 @@ import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { autoSearchEntries } from '../lib/autoNews';
 
 const news = [
+  ['Box-office : Endgame contre Resident Evil', 'La ressortie d’Avengers: Endgame vise 24 à 26 M$ sur le week-end américain, devant le reboot Resident Evil.', '/news/cinema/box-office-us-endgame-resident-evil', 'cinéma box-office avengers endgame marvel resident evil sony zombies', 'box-office-endgame-resident-evil-news.svg'],
+  ['Werwulf montre ses crocs', 'La deuxième bande-annonce de Werwulf, l’horreur médiévale de Robert Eggers, sort le 25 décembre 2026.', '/news/cinema/werwulf-trailer-eggers', 'cinéma robert eggers werwulf trailer horreur loup-garou aaron taylor-johnson dafoe', 'werwulf-trailer-news.svg'],
+  ['Le biopic Fred Astaire trouve ses danseuses', 'Tom Holland, Margaret Qualley et Sabrina Carpenter réunis par Sony et Paul King.', '/news/cinema/fred-astaire-biopic-tom-holland', 'cinéma biopic fred astaire tom holland sabrina carpenter margaret qualley ginger rogers sony', 'fred-astaire-biopic-news.svg'],
   ['Steel Ball Run — la course reprend', 'L’épisode 2 ouvre onze épisodes hebdomadaires sur Netflix, chaque vendredi jusqu’au 4 décembre.', '/news/cinema/jojo-steel-ball-run-episode-2', 'jojo steel ball run netflix anime david production gyro zeppeli johnny joestar', 'cinema-jojo-steel-ball-run.jpg'],
   ['Dune: Messiah — le trailer arrive', 'Première bande-annonce en fin d’année, sortie en 2027 : Villeneuve referme la prophétie de Paul Atréides.', '/news/cinema/dune-messiah-trailer', 'dune messiah villeneuve warner bros chalamet zendaya', 'cinema-dune-messiah.jpg'],
   ['The Last of Us saison 3 confirmée', 'HBO adapte la seconde moitié de Part II, du point de vue d’Abby.', '/news/cinema/last-of-us-saison-3', 'hbo the last of us série abby ellie Naughty Dog', 'cinema-last-of-us.jpg'],
