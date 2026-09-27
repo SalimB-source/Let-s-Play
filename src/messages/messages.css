@@ -236,21 +236,76 @@
 .messages-thread-status.is-online { color: var(--friends-online, #10b981); }
 .messages-thread-tools { display: inline-flex; gap: 6px; flex-shrink: 0; align-items: center; }
 
-/* Bouton « Profil » de l'en-tête de discussion : l'accès profil explicite
-   (la photo / le nom ne sont plus un lien). */
-.messages-tool-profile {
-  width: auto;
-  padding: 0 10px;
-  gap: 6px;
-  font: 700 9.5px var(--mono);
-  letter-spacing: .12em;
-  text-transform: uppercase;
+/* Le peer (avatar + nom) est maintenant un lien vers le profil : curseur
+   et surlignage subtils, pas de soulignement. */
+.messages-thread-peer-link {
   text-decoration: none;
-  color: var(--cyan);
-  border-color: rgba(34, 211, 238, .35);
-  background: rgba(34, 211, 238, .07);
+  color: inherit;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: background .18s;
 }
-.messages-tool-profile:hover { border-color: rgba(34, 211, 238, .7); background: rgba(34, 211, 238, .14); }
+.messages-thread-peer-link:hover { background: rgba(255, 255, 255, .04); }
+.messages-thread-peer-link:hover .messages-thread-name { color: var(--cyan); }
+
+/* Menu « … » (plus d'actions : signaler / bloquer). Remplace les deux
+   boutons icônes qui encombraient l'en-tête. */
+.messages-more { position: relative; }
+.messages-tool-more { position: relative; z-index: 1; }
+.messages-more-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+  background: linear-gradient(160deg, rgba(26, 17, 52, .98), rgba(7, 8, 20, .99));
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 14px 32px -10px rgba(0, 0, 0, .8), 0 0 20px -8px rgba(124, 58, 237, .35);
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity .15s, transform .15s;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.messages-more.is-open .messages-more-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+[dir="rtl"] .messages-more-menu { right: auto; left: 0; }
+.messages-more-item {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font: 500 11px var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  transition: color .15s, background .15s;
+}
+.messages-more-item:hover { color: #fff; background: rgba(255, 255, 255, .05); }
+.messages-more-item.is-flagged { color: var(--yellow); }
+.messages-more-item.is-flagged:hover { color: #ffe25c; background: rgba(255, 214, 25, .08); }
+.messages-more-item-danger:hover { color: #ff8c9d; background: rgba(255, 140, 157, .08); }
+
+/* Sur la page plein écran, le bouton retour du fil est redondant avec le
+   bouton de l'en-tête de page — on le masque. Il reste visible dans le
+   dock flottant (bureau), qui n'a pas d'autre retour. */
+.messages-page-thread .messages-thread-head > .messages-tool-back {
+  display: none;
+}
+.messages-page-thread .messages-thread-head { padding-left: 14px; }
 
 /* Séparateurs de jour dans le fil. */
 .messages-day {
@@ -384,12 +439,11 @@
 .messages-composer textarea:focus { border-color: var(--cyan); }
 .messages-composer textarea::placeholder { color: var(--dim); }
 .messages-send {
+  width: 38px;
   height: 38px;
-  padding: 0 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
   background: var(--yellow);
   border: 1px solid var(--yellow);
   color: #0a0b1a;
@@ -398,11 +452,7 @@
   transition: transform .18s, box-shadow .18s, opacity .18s;
   flex-shrink: 0;
 }
-.messages-send-label {
-  font: 600 10.5px var(--mono);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
+.messages-send svg { width: 16px; height: 16px; }
 .messages-send:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(255, 214, 25, .5); }
 .messages-send:disabled { opacity: .45; cursor: default; }
 .messages-char-count {
@@ -421,6 +471,18 @@
   font: 500 9px var(--mono);
   letter-spacing: .1em;
   text-transform: uppercase;
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  overflow: hidden;
+  transition: opacity .2s, max-height .2s, padding .2s;
+}
+.messages-composer:focus-within + .messages-composer-hint,
+.messages-composer-hint.is-visible {
+  opacity: 1;
+  max-height: 40px;
+  padding: 2px 12px 10px;
 }
 .messages-composer-disabled {
   margin: 0;
@@ -923,26 +985,26 @@
     padding: 10px 12px;
     gap: 6px;
   }
-  /* Bouton retour du fil (premier outil à gauche, BackIcon) : 44 px pour
-     une zone d'appui confortable au pouce. */
-  .messages-thread-head > .messages-tool:first-child {
+  /* Bouton retour du fil : 44 px pour une zone d'appui confortable au pouce. */
+  .messages-thread-head > .messages-tool-back {
     width: 44px;
     height: 44px;
     flex-shrink: 0;
   }
-  .messages-thread-head > .messages-tool:first-child svg { width: 20px; height: 20px; }
-  /* Les outils à droite (profil / signaler / bloquer) restent compacts
-     mais assez grands pour le pouce. */
+  .messages-thread-head > .messages-tool-back svg { width: 20px; height: 20px; }
+  /* Les outils à droite (appels + menu « … ») restent assez grands pour le pouce. */
   .messages-thread-tools .messages-tool {
     width: 38px;
     height: 38px;
   }
-  .messages-tool-profile { padding: 0 12px; min-height: 38px; }
+  .messages-more-menu { min-width: 180px; }
+  .messages-more-item { padding: 11px 12px; font-size: 12px; }
   .messages-thread-name { font-size: 15px; }
   .messages-send {
+    width: 44px;
     height: 44px;
-    padding: 0 16px;
   }
+  .messages-send svg { width: 18px; height: 18px; }
   .messages-bubble { max-width: 88%; font-size: 14.5px; }
   .messages-day span { max-width: 70%; white-space: normal; text-align: center; }
   /* Espace sous le contenu pour le lanceur flottant. */
