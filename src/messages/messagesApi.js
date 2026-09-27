@@ -44,6 +44,10 @@ export const MESSAGE_MAX_LENGTH = 1000;
 export const VOICE_MAX_SECONDS = 120;
 /** Poids maximal d'un enregistrement vocal, en octets (limite du bucket). */
 export const VOICE_MAX_BYTES = 5 * 1024 * 1024;
+/** Types MIME acceptés par le bucket `voice-messages` (miroir de schema.sql). */
+export const VOICE_ALLOWED_MIME = [
+  'audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/aac', 'audio/wav', 'audio/x-m4a',
+];
 /** Motifs de signalement proposés au joueur. */
 export const REPORT_REASONS = ['harassment', 'spam', 'hate', 'inappropriate', 'other'];
 
@@ -464,28 +468,37 @@ export function voiceFileExtension(mime) {
  * `{uid}/…` (imposé par la politique de stockage). Renvoie la clé de l'objet,
  * à passer à `sendVoiceMessage`.
  */
+export function cleanVoiceMime(mime, fallback = 'audio/webm') {
+  const value = String(mime || '').split(';')[0].trim().toLowerCase();
+  if (!value || !value.startsWith('audio/')) return fallback;
+  return VOICE_ALLOWED_MIME.includes(value) ? value : fallback;
+}
+
 export async function uploadVoiceRecording(uid, blob) {
   if (!supabase) throw new Error('Supabase is not configured');
   if (!uid || !blob) throw new Error('direct_message_missing');
   if (blob.size > VOICE_MAX_BYTES) {
     throw Object.assign(new Error('direct_message_voice_too_long'), { code: 'P0001' });
   }
-  const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${voiceFileExtension(blob.type)}`;
+  const contentType = cleanVoiceMime(blob.type);
+  const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${voiceFileExtension(contentType)}`;
   try {
     const { error } = await supabase.storage.from(VOICE_BUCKET).upload(path, blob, {
-      contentType: blob.type || 'audio/webm',
+      contentType,
       upsert: false,
     });
     if (error) throw error;
     return path;
   } catch (e) {
-    const msg = String(e?.message || '').toLowerCase();
-    // Bucket manquant, quota, ou politique : on signale une erreur vocale
-    // explicite (affichée comme errVoiceInvalid) plutôt qu'un générique.
-    if (msg.includes('bucket') || msg.includes('not found') || msg.includes('does not exist') || msg.includes('storage')) {
-      throw Object.assign(new Error('direct_message_voice_requires_attachment'), { code: 'P0001', cause: e });
+    // Bucket manquant, quota, mime refusé ou politique RLS : on signale une
+    // erreur vocale explicite (affichée comme errVoiceInvalid) plutôt qu'un
+    // générique « Un problème est survenu ».
+    if (import.meta?.env?.DEV) {
+      console.error('[voice] uploadVoiceRecording failed', {
+        bucket: VOICE_BUCKET, path, contentType, size: blob.size, rawType: blob.type, error: e,
+      });
     }
-    throw e;
+    throw Object.assign(new Error('direct_message_voice_requires_attachment'), { code: 'P0001', cause: e });
   }
 }
 
@@ -501,7 +514,7 @@ export async function sendVoiceMessage(uid, peerId, attachmentPath, durationSeco
         kind: 'voice',
         attachment_path: attachmentPath,
         attachment_duration: Math.min(VOICE_MAX_SECONDS, Math.max(1, Math.round(durationSeconds || 0))),
-        attachment_mime: mime || null,
+        attachment_mime: cleanVoiceMime(mime),
       })
       .select(MESSAGE_COLUMNS)
       .single();
@@ -510,6 +523,9 @@ export async function sendVoiceMessage(uid, peerId, attachmentPath, durationSeco
   } catch (e) {
     // Si les colonnes vocales manquent, le schéma n'a pas été migré : on
     // signale une erreur vocale explicite (affichée comme errVoiceInvalid).
+    if (import.meta?.env?.DEV) {
+      console.error('[voice] sendVoiceMessage failed', { peerId, attachmentPath, durationSeconds, mime, error: e });
+    }
     if (isColumnMissingError(e) || isMissingVoiceColumnError(e)) {
       throw Object.assign(new Error('direct_message_voice_requires_attachment'), { code: 'P0001', cause: e });
     }
