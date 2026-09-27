@@ -112,6 +112,7 @@ export default function News(){
     <>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{featured.section}</span><span>{featured.updated}</span></div>
+        <div className="news-category-shortcut"><Link className="arrow-link" to="/news/cinema">{lang === 'ar' ? 'أخبار السينما والمسلسلات' : lang === 'en' ? 'Cinema & series news' : 'Actus cinéma & séries'} <Arrow /></Link></div>
         <div className="news-carousel is-grid">
           {topStory && <Link className="daily-news-card news-today" to={topStory.to}>
             <div className="daily-news-image"><img src={`${base}${topStory.image}`} alt={topStory.alt} />{renderBadges(topStory)}</div>

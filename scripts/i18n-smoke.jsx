@@ -12,6 +12,7 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import Layout from '../src/components/Layout';
 import Home from '../src/pages/Home';
 import News from '../src/pages/News';
+import CinemaNews from '../src/pages/CinemaNews';
 import Calendar from '../src/pages/Calendar';
 import Physint from '../src/pages/Physint';
 import MetroidRavenous from '../src/pages/MetroidRavenous';
@@ -36,6 +37,7 @@ export { translations };
 export const ROUTES = [
   ['/', Home],
   ['/news', News],
+  ['/news/cinema', CinemaNews],
   ['/calendrier', Calendar],
   ['/news/physint', Physint],
   ['/news/metroid-ravenous', MetroidRavenous],
