@@ -532,6 +532,15 @@ if (established) {
   check('Bob reçoit le média d’Alice', Boolean(bob.calls().remoteStream));
   check('Alice a le micro ouvert', alice.calls().micOn);
   check('panneau d’appel affiché chez Alice', alice.html().includes('calls-panel'));
+  // Sans ce lecteur, l'appel vocal s'établit (chrono, « En appel ») mais le
+  // flux distant n'est joué nulle part — la vidéo, elle, s'entend via son <video>.
+  const sinkOf = (html) => html.split('<video').slice(1).map((part) => `<video${part.split('>')[0]}>`).find((tag) => tag.includes('calls-remote-audio'));
+  const aliceSink = sinkOf(alice.html());
+  const bobSink = sinkOf(bob.html());
+  check('appel vocal : Alice entend Bob (lecteur branché)', Boolean(aliceSink));
+  check('… le lecteur n’est pas muet', Boolean(aliceSink) && !/\bmuted\b/.test(aliceSink));
+  check('appel vocal : Bob entend Alice (lecteur branché)', Boolean(bobSink));
+  check('… le lecteur de Bob n’est pas muet', Boolean(bobSink) && !/\bmuted\b/.test(bobSink));
 }
 
 /* ------------------------------------------------------------------------ */

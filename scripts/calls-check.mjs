@@ -35,7 +35,7 @@ const {
   classifyMediaError, callsCopy, callsText, callBlockLabel, callStatusLabel, callSummaryText,
   createCallId, describeCallError, formatDuration, iceServersFromEnv,
   inboxChannelFor, isCallEvent, isEmbedded, makeCallEvent, normalizeCallKind, permissionFailureKind, renderApp,
-  ringDecision, turnConfigured, RING_IGNORE, RING_RING, RING_WAIT,
+  remotePlaybackNeedsSink, ringDecision, turnConfigured, RING_IGNORE, RING_RING, RING_WAIT,
 } = smoke;
 
 let failures = 0;
@@ -86,6 +86,8 @@ check('émetteur attendu accepté', isCallEvent(ring, 'ring', { to: 'bob', from:
 // Sortes d'appel.
 check('« video » est une sorte d’appel', normalizeCallKind('video'), 'video');
 check('« audio » est une sorte d’appel', normalizeCallKind('audio'), 'audio');
+check('appel vocal : le son distant a besoin d’un lecteur', remotePlaybackNeedsSink(false));
+check('appel vidéo : le <video> porte déjà la voix', remotePlaybackNeedsSink(true), false);
 check('« fax » n’en est pas une', normalizeCallKind('fax'), null);
 check('le catalogue porte les deux sortes', CALL_KINDS.join(','), 'audio,video');
 
