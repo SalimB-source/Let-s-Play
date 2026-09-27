@@ -30,7 +30,7 @@ export default function DossierGoya() {
         <div className="section-label"><span><b>DOSSIER</b> / INDUSTRIE</span><span>LECTURE LONGUE · 17 MIN</span></div>
         <div className="dossier-hero-copy">
           <p className="eyebrow"><span className="live-dot" /> Scène indé algérienne</p>
-          <h1>GOYA,<br /><em>LE PROCHAIN MONDE.</em></h1>
+          <h1>GOYA,<br /><em>LE MONDE D’APRÈS.</em></h1>
           <p className="dossier-dek">Dans les coulisses de HicoSoft Studio, une équipe algérienne construit ses outils, ses ambitions et une nouvelle façon de raconter le jeu vidéo local.</p>
           <div className="dossier-byline"><span>PAR LA RÉDACTION LET’S PLAY</span><span>19.09.2025</span></div>
         </div>
@@ -60,7 +60,7 @@ export default function DossierGoya() {
 
           <div className="dossier-dark-panel">
             <p className="dossier-kicker">LE PROJET</p>
-            <h2>GOYA,<br /><em>UNE AMBITION LOCALE.</em></h2>
+            <h2>GOYA,<br /><em>AMBITION LOCALE.</em></h2>
             <p>GOYA concentre cette envie de créer un jeu avec une identité propre. Le projet doit trouver son ton, ses références et son public sans se réduire à une simple promesse de « jeu algérien ».</p>
             <p>La question centrale est celle de l’équilibre : raconter un univers qui vient d’ici, tout en restant lisible pour des joueurs qui ne partagent pas nécessairement le même contexte culturel. C’est dans cet espace que l’identité peut devenir une force de design.</p>
           </div>

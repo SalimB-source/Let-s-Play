@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
 import { ProfileIcon } from '../friends/FriendsTabs';
+import { callBlockLabel } from './callsCopy';
 import { describeMessagesError, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
 
@@ -52,6 +53,21 @@ function FlagIcon({ size = 14 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M6 21V4" />
       <path d="M6 4.8h9.5l-1.2 3.4 1.2 3.4H6" />
+    </svg>
+  );
+}
+function PhoneIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M6.8 3.2c.7-.4 1.6-.2 2 .5l1.6 2.6c.4.6.3 1.4-.3 1.9l-1.2 1.1c-.3.3-.4.7-.2 1 .8 1.5 2.5 3.2 4 4 .3.2.7.1 1-.2l1.1-1.2c.5-.5 1.3-.7 1.9-.3l2.6 1.6c.7.4.9 1.3.5 2l-.9 1.5c-.5.8-1.4 1.2-2.3 1.1C10.9 18.9 5.1 13.1 4.2 6.4c-.1-.9.3-1.8 1.1-2.3l1.5-.9z" />
+    </svg>
+  );
+}
+function VideoCallIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="7" width="12" height="10" rx="2.5" />
+      <path d="M15 11l5.5-3v8L15 13" />
     </svg>
   );
 }
@@ -331,7 +347,7 @@ function ReportForm({ t, name, reported, onSubmit, onClose }) {
 
 /* --------------------------------- discussion ------------------------------- */
 
-export function ThreadView({ peerId, t, ft, lang, thread, profile, online, blocked, reported, canWrite, onBack, onSend, onDelete, onBlock, onUnblock, onReport }) {
+export function ThreadView({ peerId, t, ft, ct, lang, thread, profile, online, blocked, reported, canWrite, onBack, onSend, onDelete, onBlock, onUnblock, onReport, onCall, callBlocker, callWarning }) {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -371,6 +387,16 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
   const statusText = online
     ? ft.onlineShort
     : (profile?.lastSeenAt ? fill(ft.lastSeen, { when: formatCommentDate(profile.lastSeenAt, lang) }) : ft.offlineShort);
+
+  // Boutons d'appel : `callBlocker` grise le bouton et explique pourquoi ;
+  // `callWarning` (ami qui semble hors ligne) n'empêche PAS d'appeler — la
+  // présence est une estimation — il complète seulement l'infobulle. Sans
+  // aucun des deux, l'infobulle reste le nom de l'action.
+  const callBlock = callBlocker?.(peerId) ?? null;
+  const callWarn = callWarning?.(peerId) ?? null;
+  const callHint = (callBlock || callWarn)
+    ? callBlockLabel(callBlock || callWarn, ct, profile?.name || '?')
+    : null;
 
   const submit = async () => {
     const body = draft.trim();
@@ -423,6 +449,34 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
           </span>
         </div>
         <span className="messages-thread-tools">
+          {/* Appels vocal / vidéo — grisés avec la raison au survol quand
+              l'appel est impossible (aperçu démo, compte absent, joueur
+              bloqué, déjà en appel…), avertis sans être grisés quand l'ami
+              semble hors ligne, et absents si le module n'est pas monté. */}
+          {onCall && ct && (
+            <>
+              <button
+                type="button"
+                className="messages-tool"
+                disabled={Boolean(callBlock)}
+                aria-label={ct.callAudio}
+                title={callHint || ct.callAudio}
+                onClick={() => onCall(peerId, 'audio')}
+              >
+                <PhoneIcon />
+              </button>
+              <button
+                type="button"
+                className="messages-tool"
+                disabled={Boolean(callBlock)}
+                aria-label={ct.callVideo}
+                title={callHint || ct.callVideo}
+                onClick={() => onCall(peerId, 'video')}
+              >
+                <VideoCallIcon />
+              </button>
+            </>
+          )}
           <Link
             to={`/profile/${encodeURIComponent(peerId)}`}
             className="messages-tool messages-tool-profile"

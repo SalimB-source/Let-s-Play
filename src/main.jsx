@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
 import './profile-lists.css';
 import './news-article.css';
+import './components/SpoilerAlert.css';
 import './auth/auth.css';
 import './news-carousel.css';
 import './news-view-toggle.css';
@@ -16,12 +17,17 @@ import './achievements/achievements.css';
 import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
+import './messages/calls.css';
 import './social/social.css';
-import './cinema-news.css';
+import './typography.css';
+import './theme.css';        // thème clair : importé en dernier (surcharge)
 import { LanguageProvider } from './i18n/LanguageContext';
+import { ThemeProvider } from './theme/ThemeContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import News from './pages/News';
+import GamingNews from './pages/GamingNews';
+import CinemaNews from './pages/CinemaNews';
 import Calendar from './pages/Calendar';
 import Physint from './pages/Physint';
 import MetroidRavenous from './pages/MetroidRavenous';
@@ -45,13 +51,9 @@ import DossierPlayStation1 from './pages/DossierPlayStation1';
 import DossierGenerations from './pages/DossierGenerations';
 import DossierXbox360 from './pages/DossierXbox360';
 import DossierPlayStation2 from './pages/DossierPlayStation2';
-import Partners from './pages/Partners';
 import Search from './pages/Search';
 import QuizzesPage from './quizzes/QuizzesPage';
 import QuizPage from './quizzes/QuizPage';
-import EventAlgerieTelecom from './pages/EventAlgerieTelecom';
-import EventOoredoo from './pages/EventOoredoo';
-import EventArena from './pages/EventArena';
 import NotFound from './pages/NotFound';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
@@ -62,11 +64,14 @@ import AchievementTracker from './achievements/AchievementTracker';
 import AchievementPopup from './achievements/AchievementPopup';
 import { FriendsProvider } from './friends/FriendsContext';
 import { MessagesProvider } from './messages/MessagesContext';
+import { CallsProvider } from './messages/CallsContext';
+import CallOverlays from './messages/CallOverlays';
 import SocialDock from './social/SocialDock';
 import { initSinglePlayback } from './lib/videoPlayback';
 
 function App() {
   return (
+    <ThemeProvider>
     <LanguageProvider>
       <AuthProvider>
         <BrowserRouter basename={import.meta.env.BASE_URL}>
@@ -80,16 +85,24 @@ function App() {
               raccourcis du hub lisent les deux mêmes contextes. */}
           <FriendsProvider>
           <MessagesProvider>
+          {/* Les appels vocaux/vidéo vivent à côté de la messagerie : ils
+              s'adressent aux amis en ligne, vérifient les blocages et
+              déposent leur trace dans les discussions. Les surfaces
+              (appel entrant, panneau d'appel) se rendent au-dessus de
+              tout, comme la fenêtre sociale. */}
+          <CallsProvider>
           <AchievementProvider>
             <Layout>
               <AchievementTracker />
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
-            {/* Actus cinéma & séries : hub dédié, puis article. Les clés
-                d'article correspondantes dans CurrentNews sont préfixées
-                « cinema/ » (ex. : cinema/werwulf-trailer-eggers). */}
+            <Route path="/news/gaming" element={<GamingNews />} />
             <Route path="/news/cinema" element={<CinemaNews />} />
+            {/* Actus cinéma : les cartes du hub `/news/cinema` pointent vers
+                /news/cinema/<slug> ; les clés d'article correspondantes dans
+                CurrentNews sont préfixées « cinema/ » (ex. :
+                cinema/jojo-steel-ball-run-episode-2). */}
             <Route path="/news/cinema/:slug" element={<CurrentNews slugPrefix="cinema/" />} />
             <Route path="/calendrier" element={<Calendar />} />
             <Route path="/calendar" element={<Calendar />} />
@@ -136,11 +149,6 @@ function App() {
             <Route path="/dossiers/choc-generations-gaming" element={<DossierGenerations />} />
             <Route path="/dossiers/20-ans-xbox-360" element={<DossierXbox360 />} />
             <Route path="/dossiers/25-ans-playstation-2" element={<DossierPlayStation2 />} />
-            <Route path="/events" element={<Partners />} />
-            <Route path="/events/algerie-telecom" element={<EventAlgerieTelecom />} />
-            <Route path="/events/ooredoo" element={<EventOoredoo />} />
-            <Route path="/events/7ouma-arena" element={<EventArena />} />
-            <Route path="/partenaires" element={<Partners />} />
             <Route path="/search" element={<Search />} />
             {/* Quizz gaming : grille + quizz du jour (`/quizz`), partie par
                 slug, alias anglais `/quiz` comme `/calendar` pour le
@@ -167,12 +175,15 @@ function App() {
             </Layout>
             <AchievementPopup />
             <SocialDock />
+            <CallOverlays />
           </AchievementProvider>
+          </CallsProvider>
           </MessagesProvider>
           </FriendsProvider>
         </BrowserRouter>
       </AuthProvider>
     </LanguageProvider>
+    </ThemeProvider>
   );
 }
 

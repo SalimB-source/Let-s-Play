@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleurs de marque Let's Play (cf. src/styles.css). -->
+    <color name="lp_black">#000000</color>
+    <color name="lp_yellow">#FFD619</color>
+</resources>

@@ -148,33 +148,41 @@ export default function CinemaNews() {
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{copy.section}</span><span>{copy.updated}</span></div>
         <div className="news-carousel is-grid">
-          {topStory && <Link className="daily-news-card news-today" to={topStory.to}>
-            <div className="daily-news-image">
-              {renderStoryImage(topStory, 'eager')}
-              {renderBadges(topStory)}
+          {topStory && (
+            <div className="news-grid-cell news-grid-cell--today">
+              <Link className="daily-news-card news-today" to={topStory.to}>
+                <div className="daily-news-image">
+                  {renderStoryImage(topStory, 'eager')}
+                  {renderBadges(topStory)}
+                </div>
+                <div className="daily-news-copy">
+                  <p className="eyebrow"><span className="live-dot" /> {copy.today}</p>
+                  {topStory.imageCredit && <span className="cinema-image-credit">{topStory.imageCredit}</span>}
+                  <span className="news-kicker">{topStory.kicker}</span>
+                  <h2>{topStory.title}</h2>
+                  <p>{topStory.excerpt}</p>
+                  <span className="read-link">{topStory.read} <Arrow /></span>
+                </div>
+              </Link>
             </div>
-            <div className="daily-news-copy">
-              <p className="eyebrow"><span className="live-dot" /> {copy.today}</p>
-              {topStory.imageCredit && <span className="cinema-image-credit">{topStory.imageCredit}</span>}
-              <span className="news-kicker">{topStory.kicker}</span>
-              <h2>{topStory.title}</h2>
-              <p>{topStory.excerpt}</p>
-              <span className="read-link">{topStory.read} <Arrow /></span>
+          )}
+          {gridArticles.map((article) => (
+            <div className="news-grid-cell" key={article.to}>
+              <Link className="news-carousel-card" to={article.to}>
+                <div className="news-carousel-image">
+                  {renderStoryImage(article)}
+                  {renderBadges(article)}
+                </div>
+                <div className="news-carousel-copy">
+                  {article.imageCredit && <span className="cinema-image-credit">{article.imageCredit}</span>}
+                  <span className="news-kicker">{article.kicker}</span>
+                  <h2>{article.title}</h2>
+                  <p>{article.excerpt}</p>
+                  <span className="read-link">{article.read} <Arrow /></span>
+                </div>
+              </Link>
             </div>
-          </Link>}
-          {gridArticles.map((article) => <Link className="news-carousel-card" to={article.to} key={article.to}>
-            <div className="news-carousel-image">
-              {renderStoryImage(article)}
-              {renderBadges(article)}
-            </div>
-            <div className="news-carousel-copy">
-              {article.imageCredit && <span className="cinema-image-credit">{article.imageCredit}</span>}
-              <span className="news-kicker">{article.kicker}</span>
-              <h2>{article.title}</h2>
-              <p>{article.excerpt}</p>
-              <span className="read-link">{article.read} <Arrow /></span>
-            </div>
-          </Link>)}
+          ))}
         </div>
         {articles.length > 12 && (
           <div className="news-all-actions">

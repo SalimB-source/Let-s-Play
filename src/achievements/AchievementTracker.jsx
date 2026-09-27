@@ -37,6 +37,9 @@ export default function AchievementTracker() {
   }, [track]);
 
   // Langue utilisée (une par langue, le moteur ne compte pas les doublons).
+  // Le site étant publié en français, seul `fr` est enregistré : les succès
+  // « Polyglotte » et « Trilingue » restent au catalogue pour les joueurs qui
+  // les ont obtenus, mais ne peuvent plus être débloqués (voir catalog.js).
   useEffect(() => {
     track('language_used', { code: lang });
   }, [lang, track]);

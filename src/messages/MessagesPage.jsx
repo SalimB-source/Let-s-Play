@@ -6,6 +6,8 @@ import { useFriends } from '../friends/FriendsContext';
 import { AddTab, FriendsTab, RequestsTab } from '../friends/FriendsTabs';
 import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy';
 import { useMessages } from './MessagesContext';
+import { useCalls } from './CallsContext';
+import { callsText } from './callsCopy';
 import { describeMessagesError, messagesText } from './messagesCopy';
 import { InboxView, ThreadView } from './MessagesTabs';
 
@@ -73,6 +75,7 @@ export default function MessagesPage() {
   const { user } = useAuth();
   const friends = useFriends();
   const messages = useMessages();
+  const calls = useCalls();
   const t = messagesText(lang);
   const ft = friendsText(lang);
 
@@ -321,6 +324,7 @@ export default function MessagesPage() {
                 peerId={peerId}
                 t={t}
                 ft={ft}
+                ct={callsText(lang)}
                 lang={lang}
                 thread={threadFor(peerId)}
                 profile={resolvedProfile}
@@ -329,6 +333,9 @@ export default function MessagesPage() {
                 reported={reportedReason(peerId)}
                 canWrite={canMessage(peerId)}
                 onBack={backToInbox}
+                onCall={calls.startCall}
+                callBlocker={calls.blockerFor}
+                callWarning={calls.warningFor}
                 onSend={send}
                 onDelete={deleteMessage}
                 onBlock={block}

@@ -1,6 +1,6 @@
 import { gameTests } from '../reviewsData';
 import { gameReleases } from '../releasesData';
-import { quizzes as quizCatalog, quizLabel } from '../quizzesData';
+import { quizzes as quizCatalog, quizLabel, quizQuestionsCount } from '../quizzesData';
 import { baseUrl as base } from '../data';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 // Les actus du jour générées par le robot rejoignent l’index de recherche.
@@ -12,14 +12,13 @@ const news = [
   ['Le biopic Fred Astaire trouve ses danseuses', 'Tom Holland, Margaret Qualley et Sabrina Carpenter réunis par Sony et Paul King.', '/news/cinema/fred-astaire-biopic-tom-holland', 'cinéma biopic fred astaire tom holland sabrina carpenter margaret qualley ginger rogers sony', 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1'],
   ['Steel Ball Run — la course reprend', 'L’épisode 2 ouvre onze épisodes hebdomadaires sur Netflix, chaque vendredi jusqu’au 4 décembre.', '/news/cinema/jojo-steel-ball-run-episode-2', 'jojo steel ball run netflix anime david production gyro zeppeli johnny joestar', 'cinema-jojo-steel-ball-run.jpg'],
   ['Dune: Messiah — le trailer arrive', 'Première bande-annonce en fin d’année, sortie en 2027 : Villeneuve referme la prophétie de Paul Atréides.', '/news/cinema/dune-messiah-trailer', 'dune messiah villeneuve warner bros chalamet zendaya', 'cinema-dune-messiah.jpg'],
-  ['Diablo en série animée', 'Une série animée Diablo est en préparation pour Netflix.', '/news/diablo-netflix', 'blizzard netflix série animée', 'diablo-netflix-news.webp'],
   ['The Last of Us saison 3 confirmée', 'HBO adapte la seconde moitié de Part II, du point de vue d’Abby.', '/news/cinema/last-of-us-saison-3', 'hbo the last of us série abby ellie Naughty Dog', 'cinema-last-of-us.jpg'],
-  ['Doctor Doom prend les rênes du MCU', 'Robert Downey Jr. sera Doctor Doom dans Avengers: Doomsday.', '/news/cinema/marvel-doctor-doom', 'marvel doctor doom robert downey jr avengers doomsday mcu', 'cinema-doctor-doom.jpg'],
-  ['Stranger Things 5 a sa date', 'Netflix dévoile la date et le premier trailer de la saison finale, attendue en mars 2027.', '/news/cinema/stranger-things-saison-5', 'stranger things netflix saison 5 hawkins eleven upside down', 'cinema-stranger-things.jpg'],
-  ['Joker : Folie à deux divise toujours', 'La comédie musicale avec Joaquin Phoenix et Lady Gaga divise critique et public.', '/news/cinema/joker-folie-a-deux', 'joker folie à deux joaquin phoenix lady gaga warner bros', 'cinema-joker.jpg'],
-  ['House of the Dragon tourne', 'La troisième saison entre en tournage, avec une guerre civile plus intense.', '/news/cinema/house-of-dragon-saison-3', 'house of the dragon hbo targaryen rhaenyra saison 3', 'cinema-hotd.jpg'],
-  ['Blade a enfin son réalisateur', 'Le film Blade avec Mahershala Ali aurait trouvé un nouveau réalisateur.', '/news/cinema/blade-reboot', 'blade marvel mahershala ali reboot vampire daywalker', 'cinema-blade.jpg'],
-  ['Arcane saison 2, dernière ligne droite', 'Riot et Netflix dévoilent les nouvelles affiches et confirment que ce sera la dernière.', '/news/cinema/arcane-saison-2', 'arcane netflix riot games jinx vi zaun saison 2', 'cinema-arcane.jpg'],
+  ['Doctor Doom prend les rênes du MCU', 'Robert Downey Jr. masqué, d’Avengers: Doomsday jusqu’à Secret Wars.', '/news/cinema/marvel-doctor-doom', 'marvel doctor doom robert downey jr avengers doomsday secret wars', 'cinema-doctor-doom.jpg'],
+  ['Stranger Things 5 : date et trailer', 'La saison finale arrive en mars 2027 sur Netflix, huit épisodes.', '/news/cinema/stranger-things-saison-5', 'netflix stranger things vecna hawkins saison finale', 'cinema-stranger-things.jpg'],
+  ['Joker 2 divise encore', 'Bilan d’un malentendu : la comédie musicale de Todd Phillips continue de fendre le public.', '/news/cinema/joker-folie-a-deux', 'joker folie à deux warner phoenix lady gaga todd phillips', 'cinema-joker.jpg'],
+  ['House of the Dragon : tournage de la saison 3', 'La Danse des Dragons entre dans sa phase brutale, retour attendu en 2027.', '/news/cinema/house-of-dragon-saison-3', 'hbo house of the dragon westeros danse des dragons', 'cinema-hotd.jpg'],
+  ['Blade retrouve un réalisateur', 'Sept ans de chantier et, enfin, un capitaine pour le Daywalker de Mahershala Ali.', '/news/cinema/blade-reboot', 'marvel blade mahershala ali daywalker reboot', 'cinema-blade.jpg'],
+  ['Arcane saison 2 : dernière ligne droite', 'Les affiches de la saison finale arrivent, à quelques semaines de la sortie sur Netflix.', '/news/cinema/arcane-saison-2', 'arcane netflix riot games zaun piltover fortiche', 'cinema-arcane.jpg'],
   ['EA Sports FC 27 — la carrière devient vivante', 'Note globale dynamique, valeur marchande hebdomadaire via TransferRoom et scénarios créés par la communauté.', '/news/ea-sports-fc-27-carriere-dynamique', 'ea sports fc 27 electronic arts football carrière transferts manager', 'ea-sports-fc-27-carriere-pitch-notes.jpg'],
   ['Kingdom Hearts 4 — Le monde de Coco', 'Sora est apparu au milieu d’une séquence Disney consacrée à Coco.', '/news/kingdom-hearts-4-coco', 'square enix disney', 'kingdom-hearts-4-coco-news.jpg'],
   ['Marvel’s Wolverine', 'Une exclusivité PS5 développée par Insomniac Games.', '/news/wolverine-exclu-ps5', 'marvel sony insomniac ps5', 'wolverine-countdown.jpg'],
@@ -39,9 +38,6 @@ const news = [
   ['Physint', 'Le projet de jeu d’action espion de PlayStation.', '/news/physint', 'playstation sony', 'physint-news.jpg'],
   ['Zelda: Ocarina of Time', 'Le classique de Nintendo revient sur Switch 2.', '/news/zelda-ocarina', 'nintendo zelda switch 2', 'zelda-ocarina-news.jpg'],
   ['Onimusha: Way of the Sword', 'Le retour samouraï de Capcom dépasse le million de ventes.', '/news/onimusha-million', 'capcom samouraï', 'onimusha-million-news.jpg'],
-// Les visuels officiels des actus cinéma (miniature YouTube de la bande-annonce
-// Marvel, Focus Features, Variety…) sont des URLs absolues : elles passent
-// telles quelles, seuls les fichiers du site prennent le préfixe du baseUrl.
 ].map(([title, description, route, keywords, image]) => ({ type: 'news', title, description, route, keywords, image: /^https?:\/\//i.test(image) ? image : `${base}${image}` }));
 
 const dossiers = [
@@ -68,13 +64,17 @@ const releases = gameReleases.map((game) => ({
   image: game.image ? `${base}${game.image}` : null,
 }));
 
+// `slug` : la page de recherche et la recherche instantanée de la nav s'en
+// servent pour reconnaître un quizz TERMINÉ (ses trois niveaux faits) et le
+// griser comme sur la grille `/quizz`.
 const quizzes = quizCatalog.map((quiz) => ({
   type: 'quiz',
+  slug: quiz.slug,
   title: quizLabel(quiz.labels, 'fr')?.title || quiz.slug,
   description: quizLabel(quiz.labels, 'fr')?.text || '',
   route: quiz.route,
   keywords: quiz.keywords,
-  meta: `${quiz.questions.length} questions`,
+  meta: `${quizQuestionsCount(quiz)} questions`,
   image: quiz.image || youTubeThumbUrl(quiz.videoId, 'hq'),
 }));
 

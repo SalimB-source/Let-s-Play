@@ -11,13 +11,34 @@ import NotFound from './NotFound';
 import { autoStories } from '../news/autoIndex';
 import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
+import SpoilerAlert from '../components/SpoilerAlert';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 
-// Images officielles : les URLs absolues (miniature YouTube de la bande-annonce
-// Marvel, visuel Focus Features, photo de presse Variety/Getty…) passent telles
-// quelles ; seuls les fichiers livrés dans public/ prennent le préfixe du site.
+// Images officielles : les URLs absolues (miniatures YouTube, Focus
+// Features, Variety…) passent telles quelles ; les fichiers locaux du
+// site prennent le préfixe du baseUrl.
 const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
 const stories = {
+  // Actu à la une du 26.09.2026 — aussi mise en avant sur l'accueil.
+  'halo-activision': {
+    date: '26.09.2026', category: 'XBOX · ACTIVISION', image: 'masterchief-activision.png', imageAlt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', cover: 'ACTIVISION',
+    title: 'HALO PASSE CHEZ', accent: 'ACTIVISION.', dek: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision, avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
+    lead: 'La note interne « Continuing Our Reset », envoyée par Matt Booty aux équipes Xbox et publiée sur Xbox Wire, a mis fin aux rumeurs : c’est Activision qui développera le prochain jeu Halo. Une équipe dédiée, distincte des studios Call of Duty, sera montée pour l’occasion — tandis qu’Halo Studios est frappé par 268 licenciements.',
+    intro: 'Depuis la fin de l’été, les rumeurs s’enchaînaient : Sledgehammer Games aurait présenté un projet de Halo multijoueur à Microsoft, et Xbox explorait ouvertement une proposition pour qu’Activision prête main-forte à la franchise. La restructuration du 22 septembre 2026 transforme la rumeur en feuille de route.',
+    h2: 'LES FAITS',
+    p1: 'Dans sa note, Matt Booty est sans détour : Activision étend son périmètre à World’s Edge (Age of Empires) et à Rare (Sea of Thieves), et prend en charge le développement du prochain titre Halo « avec une équipe créée spécifiquement pour le projet, séparée du développement et des plans en cours de Call of Duty ». Treyarch, Infinity Ward et Sledgehammer ne seront donc pas officiellement aux commandes du prochain Halo. Halo Studios n’est pas dissous pour autant : une petite équipe reste chargée de la communauté et des jeux déjà sur le marché, dont Halo Infinite et Halo: Campaign Evolved.',
+    quote: 'Notre objectif pour Halo est clair : créer le plus grand jeu Halo de tous les temps, digne de son univers et de son héritage, tout en restant fidèle à ce qui a fait aimer la série aux joueurs.', quoteBy: 'ROB KOSTICH, PRÉSIDENT D’ACTIVISION',
+    h2b: 'LE CONTEXTE',
+    p2: 'Le même jour, Xbox a confirmé la suppression de 268 postes à travers Halo Studios, d’autres studios first-party, ainsi que la couche de management et les fonctions centrales de Xbox Game Studios. Playground et Turn 10 fusionnent pour porter ensemble Forza et Fable, l’avenir d’Arkane reste en discussion jusqu’à la fin de l’année, et deux accords concernant Ninja Theory sont tombés à l’eau.',
+    p3: 'Pour les joueurs, la question n’est plus « qui fait Halo », mais « quel Halo ». Aucun titre ni fenêtre de sortie n’ont été communiqués, et Microsoft n’a pas confirmé les rumeurs de redémarrage de la trame narrative. Une réunion générale Xbox est prévue le 6 octobre 2026 : elle dira si le Major et sa nouvelle maison ont déjà un calendrier.',
+    p4: 'Reste le symbole : vingt ans après la rivalité Halo / Call of Duty, Master Chief entre dans la maison de l’ancien concurrent. Microsoft justifie le mouvement par le regroupement d’équipes capables de partager compétences et moyens. Si l’ambition affichée est de revitaliser la franchise, elle se paie d’abord en postes — et c’est ce double visage, promesse d’un grand Halo et restructuration douloureuse, qui marquera cette date dans l’histoire de Xbox.',
+    take: 'À RETENIR', takeText: 'Activision développera le prochain Halo avec une équipe dédiée, Rare et World’s Edge rejoignent son périmètre, et 268 postes sont supprimés — sans titre ni date annoncés.',
+    source: 'D’après Xbox Wire (note interne « Continuing Our Reset » de Matt Booty, 22.09.2026) et IGN France, article consulté le 26.09.2026.', sourceUrl: 'https://fr.ign.com/halo-campaign-evolved/92471/cest-officiel-microsoft-confie-halo-a-activision-le-developpeur-de-call-of-duty-dans-le-cadre-deu-pl', sourceDetail: 'Lire l’article source',
+    credit: 'Visuel : illustration éditoriale Let’s Play (image fournie à la rédaction).',
+    sentiment: 'mixed'
+  },
   // Actus cinéma du jour (27.09.2026) — box-office, bande-annonce et
   // casting, au même gabarit éditorial que le jeu vidéo. Clés préfixées
   // « cinema/ » : servies par la route /news/cinema/:slug.
@@ -245,7 +266,7 @@ const stories = {
     h2b: 'LA NOTE GLOBALE MONTE… ET DESCEND', p2: 'Deuxième bascule : la note globale devient dynamique. Dans les épisodes précédents, la progression d’un joueur suivait une courbe largement prédéfinie. Ici, elle peut monter ou chuter au fil de la saison selon la forme, le moral au quotidien et la condition physique. Le système d’entraînement manuel disparaît au profit de la récupération d’énergie : on ne passe plus ses semaines à optimiser des séances, on gère de la fraîcheur. Avec une conséquence très réaliste, et potentiellement cruelle : aligner un joueur tout juste revenu de blessure, sans être totalement rétabli, expose à une rechute immédiate.',
     p3: 'La progression gagne aussi en variété. Six profils de croissance sont intégrés : certains jeunes talents explosent très vite avant de stagner, d’autres ne révèlent leur potentiel qu’après plusieurs saisons. La polyvalence s’élargit, un joueur pouvant couvrir jusqu’à sept postes préférentiels sans pénalité sur sa note. En parallèle, le mode Manager Live ouvre un portail de création de scénarios accessible par un code QR : la communauté pourra concevoir et partager ses propres défis de carrière, avec des règles imposées dès le départ — pénalité de points au classement, plafond salarial strict, obligation d’aligner des jeunes du centre de formation. S’y ajoute un moteur d’événements imprévisibles qui sort du terrain : litiges financiers, sanctions de la ligue, tensions dans le vestiaire, et des conférences de presse où chaque réponse modifie le moral du groupe. En Carrière Joueur, des rivalités individuelles apparaissent face à un joueur géré par l’ordinateur au même poste.',
     p4: 'Reste la vraie question, celle qu’aucun patch note ne tranche. Le mode Carrière de la série souffre d’un syndrome connu : des saisons qui se ressemblent, une fois la première boucle comprise. Ce que décrit EA — un club qui vit, une valeur qui fluctue, un vestiaire qui s’agace — ressemble à la première tentative sérieuse pour casser ce rythme. Il faudra vérifier sur pièces que cette vie ne se résume pas à une pile de chiffres, et que les crises restent lisibles plutôt qu’aléatoires. Bonne nouvelle : la refonte s’appuie aussi sur le moteur de match détaillé dans les Pitch Notes de gameplay, qui renforce le contrôle manuel en défense. Rendez-vous le 25 septembre 2026, sur PC, PS5, Xbox Series et Switch, pour savoir si la routine a vraiment pris fin.',
-    sentiment: 'positive', take: 'À RETENIR', takeText: 'EA Sports FC 27 refond son mode Carrière : valeur marchande recalculée chaque semaine via TransferRoom, note globale dynamique, scénarios communautaires et crises de vestiaire. Sortie le 25 septembre 2026.',
+    sentiment: 'positive', take: 'RÉSUMÉ', takeText: 'EA Sports FC 27 cherche surtout à rendre le mode Carrière moins statique : le club, le marché et les histoires de vestiaire devraient enfin peser ensemble sur une saison.',
     source: 'D’après les Pitch Notes d’Electronic Arts (« FC 27 Career Mode Deep Dive ») et l’article de jeuxvideo.com publié le 22.09.2026.', sourceUrl: 'https://www.jeuxvideo.com/news/2105158/ea-sports-fc-27-les-nouveautes-du-mode-carriere-qui-changent-tout.htm', sourceDetail: 'Lire l’article de référence',
     credit: 'Image : visuel officiel EA SPORTS FC 27 — fiche joueur du mode Carrière, valeur marchande xTV calculée avec TransferRoom. © Electronic Arts.'
   },
@@ -257,7 +278,7 @@ const stories = {
     h2: 'TROIS PROMESSES, TROIS FORMATS', p1: 'Shangri-La Frontier: The Seven Colossi a été présenté comme un RPG collectible à combats en équipe et a bénéficié de sa première démonstration jouable au TGS. Solo Leveling: KARMA, en développement pour mobile, assume une formule d’action roguelite dans l’univers de la licence, avec des combinaisons d’armes et de bonus.',
     quote: 'Un line-up jouable n’est pas encore un calendrier de sortie.', quoteBy: 'L’ANALYSE LET’S PLAY',
     h2b: 'PEARL IN BLUE GARDE LE MYSTÈRE', p2: 'Pearl in Blue complète ce trio avec une proposition originale centrée sur ses personnages et son univers. Netmarble y a montré une première expérience jouable, accompagnée d’un espace thématique et de contenus sur scène.', p3: 'Cette sélection dessine un portefeuille très lisible : une adaptation d’IP manga/anime, un dérivé mobile de Solo Leveling et une nouvelle licence. C’est une démonstration de direction, pas encore une promesse de lancement à court terme.', p4: 'Pour les joueurs, le prochain signal à surveiller sera donc moins une nouvelle bande-annonce qu’une fenêtre de sortie précise. En attendant, les trois titres restent des projets en développement dont le potentiel devra être jugé sur pièces.',
-    take: 'À RETENIR', takeText: 'Netmarble a montré trois jeux jouables au TGS 2026, sans annoncer de date de sortie pour Shangri-La Frontier: The Seven Colossi, Solo Leveling: KARMA ou Pearl in Blue.', source: 'Communiqué Netmarble publié le 21.09.2026 via EQS News.', sourceUrl: 'https://www.eqs-news.com/news/corporate/netmarble-wraps-up-tokyo-game-show-2026-with-three-upcoming-titles/3fca48e2-6062-4712-8715-83b095654f1a_en', sourceDetail: 'Lire la source',
+    take: 'RÉSUMÉ', takeText: 'Netmarble veut occuper le terrain avec trois projets déjà montrables, mais garde encore la décision la plus importante — quand y jouer — pour plus tard.', source: 'Communiqué Netmarble publié le 21.09.2026 via EQS News.', sourceUrl: 'https://www.eqs-news.com/news/corporate/netmarble-wraps-up-tokyo-game-show-2026-with-three-upcoming-titles/3fca48e2-6062-4712-8715-83b095654f1a_en', sourceDetail: 'Lire la source',
     sentiment: 'positive'
   },
   'control-resonant-24-septembre': {
@@ -268,7 +289,7 @@ const stories = {
     h2: 'UNE DATE, DES PLATEFORMES', p1: 'Le jeu place Dylan Faden au centre d’une nouvelle crise paranormale à Manhattan. Ces éléments relèvent de la présentation officielle de Remedy ; ils ne préjugent ni de l’accueil critique ni du succès commercial du titre.',
     quote: 'À J-3, le plus important est ce qui est verrouillé.', quoteBy: 'L’ANALYSE LET’S PLAY',
     h2b: 'LE MAC RESTE À L’ÉCART DU JOUR J', p2: 'La fenêtre Mac est bien confirmée pour 2026 via Steam et l’App Store, mais aucune date plus précise n’est donnée. Il serait donc prématuré de parler d’une sortie simultanée sur tous les supports.', p3: 'Le calendrier publié le 21 septembre par ActuGaming replace simplement CONTROL Resonant dans la semaine du 21 au 27 septembre. La date de l’article ne doit pas être confondue avec celle de l’annonce de Remedy, publiée le 2 juin.', p4: 'À trois jours du lancement, l’information utile tient en quelques lignes : plateformes confirmées, rendez-vous fixé, et une version Mac qui suivra. Le reste devra attendre que le jeu soit entre les mains des joueurs.',
-    take: 'À RETENIR', takeText: 'CONTROL Resonant sort le 24 septembre 2026 sur PS5, Xbox Series et PC. La version Mac est prévue plus tard en 2026, sans date précise.', source: 'Remedy Entertainment et calendrier ActuGaming consultés le 21.09.2026.', sourceUrl: 'https://www.remedygames.com/article/control-resonant-launches-worldwide-on-september-24', sourceDetail: 'Lire l’annonce de Remedy',
+    take: 'RÉSUMÉ', takeText: 'CONTROL Resonant arrive avec une fenêtre claire sur les consoles et le PC ; l’absence de date Mac laisse toutefois une partie du public dans l’attente.', source: 'Remedy Entertainment et calendrier ActuGaming consultés le 21.09.2026.', sourceUrl: 'https://www.remedygames.com/article/control-resonant-launches-worldwide-on-september-24', sourceDetail: 'Lire l’annonce de Remedy',
     sentiment: 'positive'
   },
   'sorties-24-septembre': {
@@ -279,7 +300,7 @@ const stories = {
     h2: 'DEUX VISIONS DU PARANORMAL', p1: 'CONTROL Resonant arrivera sur PS5, Xbox Series X|S, Steam et Epic Games Store. Silent Hill: Townfall est confirmé sur PS5, avec une approche à la première personne, le CRTV comme outil d’exploration et une enquête au cœur de son dispositif.',
     quote: 'Deux sorties le même jour : le choix se fera au ton, pas seulement au calendrier.', quoteBy: 'L’ANALYSE LET’S PLAY',
     h2b: 'UN JEUDI À SUIVRE, PAS UN VERDICT', p2: 'Le calendrier publié le 21 septembre par ActuGaming confirme cette concentration autour du 24 septembre. Les annonces de référence sont toutefois antérieures : Remedy a communiqué le 2 juin et le PlayStation Blog les 16-17 septembre selon la région.', p3: 'Cette nuance compte. La sélection du jour est un repérage éditorial des sorties confirmées, pas une liste exhaustive de tous les jeux de la semaine et encore moins un classement de qualité.', p4: 'Pour les joueurs, la question devient très concrète : préférez-vous l’étrangeté systémique de Remedy ou l’angoisse plus resserrée de Konami ? Dans les deux cas, le 24 septembre mérite d’être marqué dans le calendrier.',
-    take: 'À RETENIR', takeText: 'CONTROL Resonant et Silent Hill: Townfall sont tous deux confirmés pour le 24 septembre 2026. Le dossier signale les dates de sortie, sans confondre calendrier et annonce du jour.', source: 'ActuGaming, « Les sorties jeux vidéo de la semaine du 21 septembre », consulté le 21.09.2026.', sourceUrl: 'https://www.actugaming.net/les-sorties-jeux-video-de-la-semaine-du-21-septembre-control-resonant-silent-hill-townfall-826185/', sourceDetail: 'Lire le calendrier',
+    take: 'RÉSUMÉ', takeText: 'Le 24 septembre concentre deux sorties très différentes : une semaine chargée qui mérite d’être planifiée, plutôt qu’une nouvelle annonce à surinterpréter.', source: 'ActuGaming, « Les sorties jeux vidéo de la semaine du 21 septembre », consulté le 21.09.2026.', sourceUrl: 'https://www.actugaming.net/les-sorties-jeux-video-de-la-semaine-du-21-septembre-control-resonant-silent-hill-townfall-826185/', sourceDetail: 'Lire le calendrier',
     sentiment: 'positive'
   },
   'kingdom-hearts-4-coco': {
@@ -292,7 +313,7 @@ const stories = {
     h2b: 'LA SECONDE MORT, TERRAIN DE JEU FAVORI DE NOMURA', p2: 'Car sur le fond, peu de mondes Disney collent aussi bien à l’écriture de Tetsuya Nomura. Chez Coco, la mort n’est pas une fin mais un passage : le Pays des Morts est un endroit habité, organisé, où l’on continue d’exister tant que quelqu’un, de l’autre côté, vous garde en mémoire. Le jour où le souvenir s’efface, l’existence s’efface avec lui.',
     p3: 'C’est exactement la mécanique émotionnelle de Kingdom Hearts. Quand Xion disparaît et que son cœur rejoint celui de Sora, Roxas et Axel ne perdent pas une amie : ils perdent jusqu’au souvenir de son existence. La saga a passé des épisodes entiers à répéter qu’un personnage n’est rien d’autre que la somme des cœurs qui se souviennent de lui — et voilà un monde Disney construit sur cette règle, avec ses propres autels et ses propres photos.',
     p4: 'Le reste de la connexion tient au cœur lui-même, qui est dans les deux univers le siège de la mémoire et des émotions. Chez Coco, c’est la musique qui vient rouvrir ce qui était enfoui ; chez Kingdom Hearts, le cœur n’oublie jamais tout à fait et sert même de boussole — Sora ouvre bien un chemin vers le Colisée au début de Kingdom Hearts 3 en se fiant à ce qu’il ressent. Autrement dit : si Square Enix choisit ses mondes avec ce niveau de soin, les mois qui nous séparent de la sortie — calée fin 2027 — méritent qu’on y regarde de très près.',
-    take: 'À RETENIR', takeText: 'Le monde de Coco est confirmé parmi les univers inédits de Kingdom Hearts 4, attendu fin 2027 sur PS5, Xbox Series X|S, Switch 2 et PC.',
+    take: 'RÉSUMÉ', takeText: 'L’arrivée de Coco élargit encore la promesse de Kingdom Hearts 4 : Square Enix mise sur la surprise et la variété pour faire patienter jusqu’à 2027.',
     source: 'D’après l’analyse de jeuxvideo.com (17.08.2026) et le communiqué officiel Square Enix (15.08.2026).', sourceUrl: 'https://www.jeuxvideo.com/news/2099264/kingdom-hearts-4-ce-monde-disney-est-probablement-bien-plus-adapte-a-la-saga-qu-on-ne-l-imagine.htm', sourceDetail: 'Lire l’article original',
     credit: 'Image : capture du trailer officiel KINGDOM HEARTS IV — D23 2026. KINGDOM HEARTS © Disney. © Disney/Pixar. Developed by SQUARE ENIX.',
     sentiment: 'positive'
@@ -302,12 +323,20 @@ const stories = {
     title: 'MARVEL’S WOLVERINE', accent: 'FAIT DES JALOUX.', dek: 'Le jeu sort aujourd’hui, et uniquement sur PS5. Après deux heures manette en main chez Insomniac Games, on vous raconte pourquoi l’aventure de Logan est l’exclu que les joueurs PC et Xbox Series regardent de travers.',
     lead: 'Jour J pour le mutant. Marvel’s Wolverine débarque ce 15 septembre sur PS5, sans aucune autre machine à l’horizon. Un choix que Sony assume, et que deux heures de prise en main suffisent à expliquer : entre récit original, combats bestiaux et mise en scène de cinéma, Logan signe l’une des aventures les plus enviables de la génération.',
     intro: 'Le postulat de départ a de quoi décontenancer : dans cet univers, les X-Men n’existent pas. Les mutants sont bien là, mais aucune grande équipe ne défend leurs intérêts. Logan, retiré depuis trois ans, a autrefois appartenu à la Team X de Nathaniel Essex, aux côtés de Dents de Sabre, Mystique et Jean Grey. Quand Bolivar Trask commence à enlever des mutants, il n’a d’autre choix que de ressortir les griffes.',
-    h2: 'UNE OUVERTURE QUI NE FAIT PAS DE QUARTIER', p1: 'Pas de préambule, pas de tutoriel déguisé en promenade : le jeu s’ouvre in media res à bord d’un hélicoptère pris pour cible par la DCA. Provocé par Dents de Sabre, Logan répond en se laissant tomber dans le vide, griffes sorties et double doigt d’honneur à l’appui. Oubliez la formule Spider-Man : Marvel’s Wolverine assume une aventure linéaire, ponctuée de zones semi-ouvertes, entièrement dédiée à la mise en scène.',
+    h2: 'UNE OUVERTURE QUI NE FAIT PAS DE QUARTIER', p1: 'Pas de préambule, pas de tutoriel déguisé en promenade : le jeu s’ouvre directement dans l’action, avec une mise en scène qui installe immédiatement le ton. Oubliez la formule Spider-Man : Marvel’s Wolverine assume une aventure linéaire, ponctuée de zones semi-ouvertes, entièrement dédiée à la mise en scène.',
+    spoiler: {
+      title: 'Spoiler — scène d’ouverture',
+      content: 'Le jeu s’ouvre in media res à bord d’un hélicoptère pris pour cible par la DCA. Provocé par Dents de Sabre, Logan répond en se laissant tomber dans le vide, griffes sorties et double doigt d’honneur à l’appui.'
+    },
     quote: 'Un hélicoptère en feu, un saut dans le vide, un doigt d’honneur : en une scène, Logan est déjà chez lui.', quoteBy: 'Let’s Play · Carnet de prise en main',
     h2b: 'BESTIAL, MÊME QUAND IL SE FAIT DISCRET', p2: 'La linéarité n’empêche pas le voyage. Telambang, Madripoor, Tokyo : les décors, partiellement destructibles, mêlent réalisme et esthétique de comics modernes, portés par une caméra « in game » conçue sur mesure pour donner au jeu son grain de cinéma. C’est beau, c’est dense, et ça ne se dilue jamais.',
     p3: 'En combat, Insomniac ne retire rien : attaques, parades, esquives et exécutions sanglantes s’enchaînent dans un système qui célèbre la férocité du personnage. Même la furtivité reste brutale — Logan traque ses ennemis à l’odorat avant de les éliminer. Le tout s’appuie sur une progression light RPG : techniques, capacités spéciales et adaptations génétiques améliorent régénération, dégâts ou mobilité, pendant que des défis cachés débloquent des souvenirs perdus.',
-    p4: 'Et puis il y a Jean Grey. Une scène particulièrement touchante laisse entrevoir un récit plus intime qu’attendu, qui explore autant la violence du mutant que les blessures de l’homme derrière les griffes. Ajoutez plusieurs dizaines de costumes et de griffes à personnaliser, et vous tenez l’exclu que tout le monde va regarder sortir… depuis une autre machine que la sienne. Notre verdict complet, lui, vous attend déjà dans la rubrique Tests.',
-    take: 'À RETENIR', takeText: 'Marvel’s Wolverine est disponible ce 15 septembre 2026, uniquement sur PS5 : une aventure linéaire et brutale, portée par un récit original sans X-Men et une mise en scène de cinéma.',
+    p4: 'Le jeu laisse aussi entrevoir un récit plus intime qu’attendu, qui explore autant la violence du mutant que les blessures de l’homme derrière les griffes. Ajoutez plusieurs dizaines de costumes et de griffes à personnaliser, et vous tenez l’exclu que tout le monde va regarder sortir… depuis une autre machine que la sienne. Notre verdict complet, lui, vous attend déjà dans la rubrique Tests.',
+    spoiler2: {
+      title: 'Spoiler — personnage surprise',
+      content: 'Et puis il y a Jean Grey. Une scène particulièrement touchante laisse entrevoir un récit plus intime, avec des retrouvailles qui pèsent lourd dans l’histoire de Logan.'
+    },
+    take: 'RÉSUMÉ', takeText: 'Wolverine assume une direction plus resserrée et plus adulte : une aventure solo qui cherche son identité propre plutôt que de simplement collectionner les apparitions Marvel.',
     source: 'Basé sur la prise en main de jeuxvideo.com (15.08.2026).', sourceUrl: 'https://www.jeuxvideo.com/news/2096034/marvel-s-wolverine-l-exclu-ps5-enviee-par-tous-les-joueurs-pc-et-xbox-series.htm', sourceDetail: 'Lire l’article original',
     sentiment: 'positive'
   },
@@ -319,7 +348,7 @@ const stories = {
     h2: 'UNE CARTE QUI CHANGE TOUT', p1: 'Il faut toutefois garder une nuance importante : SEGA utilise régulièrement le format de la carte clé pour ses sorties physiques sur Switch 2. La boîte sera bien présente en magasin, mais le contenu pourrait nécessiter un téléchargement.',
     quote: 'Une édition physique, oui. Une cartouche complète, pas forcément.', quoteBy: 'Let’s Play · Ce qu’il faut retenir',
     h2b: 'LE GAME PASS DANS L’ÉQUATION', p2: 'Persona 6 sera également ajouté au Xbox Game Pass dès sa sortie. Une manière de toucher immédiatement un large public, alors que l’attente autour de la série dépasse depuis longtemps le cercle des habitués de Persona.', p3: 'Pour SEGA, le choix est cohérent : multiplier les portes d’entrée sans abandonner les collectionneurs. Les joueurs Switch 2 pourront choisir entre le confort du numérique et la présence d’une édition en boîte.', p4: 'Il reste maintenant à découvrir le jeu lui-même. Tant que la date, le prix et le contenu exact de la carte clé ne sont pas précisés, cette annonce doit surtout être lue comme un signe de confiance envers la nouvelle console.',
-    take: 'À RETENIR', takeText: 'Persona 6 est annoncé sur Switch 2, PS5, Xbox Series et PC, avec une édition physique prévue sur Switch 2.',
+    take: 'RÉSUMÉ', takeText: 'Persona 6 devient un lancement multiplateforme dès le départ, un choix qui peut élargir son audience sans effacer l’importance de la version Switch 2.',
     sentiment: 'positive'
   },
   'last-of-us-ii-mod': {
@@ -330,7 +359,7 @@ const stories = {
     h2: 'QUAND LES FANS REPRENNENT LE RELAIS', p1: 'L’histoire est révélatrice d’une attente qui n’a jamais vraiment disparu. Naughty Dog avait d’abord abandonné le multijoueur prévu pour The Last of Us Part II, avant de mettre fin à son projet connecté autonome. Les joueurs, eux, ont continué à imaginer ce que cet univers pouvait donner en ligne.',
     quote: 'Le projet devait sortir ce mois-ci. Il ne verra finalement jamais le jour.', quoteBy: 'Specizer · Message à sa communauté',
     h2b: 'UNE QUESTION DE DROITS, MAIS AUSSI DE CONTRÔLE', p2: 'Les moddeurs ont confirmé avoir reçu une lettre de Sony Interactive Entertainment leur demandant de ne pas publier le mod. Le contenu n’avait pas encore été officiellement lancé, mais ses images suffisaient à rendre le projet visible.', p3: 'La décision peut se comprendre du point de vue de l’éditeur : un mod non officiel qui reprend des éléments d’une licence protégée peut brouiller la frontière entre fan project et produit concurrent.', p4: 'Elle laisse malgré tout une frustration particulière. Après l’annulation du multijoueur officiel, cette tentative indépendante représentait l’une des rares façons de voir cette idée continuer à vivre. Les extraits encore disponibles témoignent surtout d’un projet qui n’aura pas eu le temps de rencontrer son public.',
-    take: 'À RETENIR', takeText: 'Sony a demandé l’arrêt du mod multijoueur PC de The Last of Us Part II avant sa publication.',
+    take: 'RÉSUMÉ', takeText: 'Le dossier rappelle la limite des projets communautaires autour des licences propriétaires : une idée prometteuse peut s’arrêter avant même d’avoir rencontré son public.',
     sentiment: 'negative'
   },
   'cyberpunk-2077-battlenet': {
@@ -341,18 +370,18 @@ const stories = {
     h2: 'NIGHT CITY SUR LE LAUNCHER BLIZZARD', p1: 'Pour les joueurs PC, le changement sera surtout une question d’écosystème. Cyberpunk 2077: Ultimate Edition regroupe déjà le jeu et son extension Phantom Liberty ; son arrivée sur Battle.net lui donnera une nouvelle vitrine auprès du public habitué aux jeux Blizzard.',
     quote: 'Deux univers de RPG, un même point d’entrée sur PC.', quoteBy: 'Let’s Play · L’enjeu de l’annonce',
     h2b: 'UN PARTENARIAT QUI PREND DE L’AMPLEUR', p2: 'Le choix n’est pas anodin. Battle.net est historiquement associé aux licences de Blizzard, mais la plateforme accueille aussi des jeux partenaires. The Witcher 3 puis Cyberpunk 2077 installent progressivement une passerelle entre deux publics de joueurs.', p3: 'Il faudra encore attendre les précisions pratiques : date exacte, prix, gestion des sauvegardes et éventuelles conditions pour les propriétaires de l’Ultimate Edition. Rien de tout cela n’a été détaillé à ce stade.', p4: 'Cette arrivée ne change pas le contenu de Cyberpunk 2077, mais elle confirme que CD Projekt RED cherche de nouveaux chemins de distribution pour ses jeux. Pour Night City, le prochain arrêt est donc connu ; le calendrier reste à écrire.',
-    take: 'À RETENIR', takeText: 'Cyberpunk 2077: Ultimate Edition arrivera sur Battle.net plus tard en 2026, sans date précise annoncée.',
+    take: 'RÉSUMÉ', takeText: 'Cette arrivée complète la distribution de Cyberpunk 2077 sur PC, mais son intérêt dépendra surtout des avantages concrets de cette édition et de sa date réelle.',
     sentiment: 'positive'
   },
   'rayman-legends-retold': {
     date: '15.09.2026', category: 'UBISOFT · PLATEFORMES', image: 'rayman-legends-retold-news.jpg', imageAlt: 'Rayman Legends Retold — miniature officielle du trailer Ubisoft', cover: 'RAYMAN LEGENDS',
-    title: 'RAYMAN LEGENDS RETOLD', accent: 'PREND UN PEU DE RETARD.', dek: 'Le remaster ne sortira plus le 1er octobre. Ubisoft repousse le rendez-vous au 3 décembre 2026 pour peaufiner sa version.',
+    title: 'RAYMAN RETOLD', accent: 'REPORTÉ À DÉCEMBRE.', dek: 'Le remaster ne sortira plus le 1er octobre. Ubisoft repousse le rendez-vous au 3 décembre 2026 pour peaufiner sa version.',
     lead: 'Les joueurs devront patienter quelques semaines de plus avant de retrouver Rayman. Alors que Rayman Legends Retold était attendu le 1er octobre 2026, Ubisoft vient d’annoncer un report au 3 décembre.',
     intro: 'Le changement concerne les versions PS5, Xbox Series, Switch 2 et PC. Le développement est présenté comme terminé, mais l’équipe souhaite profiter de ce délai supplémentaire pour améliorer les derniers détails et viser le niveau de qualité attendu pour ce retour.',
     h2: 'UN REPORT POUR POLIR LE REMASTER', p1: 'Ce décalage ne ressemble donc pas à une remise en question du projet. Rayman Legends Retold garde son calendrier de sortie et ses plateformes, tandis que les développeurs s’offrent un peu d’air pour finaliser l’expérience dans de meilleures conditions.',
     quote: 'Quelques semaines de plus pour laisser le remaster trouver son meilleur rythme.', quoteBy: 'Let’s Play · Le point calendrier',
     h2b: 'UN NOUVEAU RENDEZ-VOUS EN DÉCEMBRE', p2: 'La nouvelle date est fixée au 3 décembre 2026. Elle place le jeu au cœur d’une période chargée en sorties, mais offre aussi à Ubisoft une fenêtre supplémentaire pour présenter les nouveautés et les ajustements de cette version revisitée.', p3: 'Pour accompagner cette attente, une importante vidéo de gameplay est annoncée le 22 septembre. Ce sera l’occasion de voir plus concrètement le travail réalisé sur le remaster et de vérifier comment ses niveaux cultes se comportent sur les machines actuelles.', p4: 'Le rendez-vous change, mais l’envie reste intacte : Rayman Legends Retold vise toujours la PS5, les Xbox Series, la Switch 2 et le PC. Il faudra simplement attendre le début du mois de décembre pour lancer cette nouvelle partie.',
-    take: 'À RETENIR', takeText: 'Rayman Legends Retold sortira le 3 décembre 2026 sur PS5, Xbox Series, Switch 2 et PC. Une vidéo de gameplay est prévue le 22 septembre.',
+    take: 'RÉSUMÉ', takeText: 'Rayman revient dans une configuration large, avec une promesse qui devra maintenant se vérifier manette en main : la prochaine vidéo sera plus parlante que le calendrier.',
     sentiment: 'negative'
   },
   'fire-emblem-fortunes-weave': {
@@ -363,7 +392,7 @@ const stories = {
     h2: 'QUATRE DESTINS, UNE SEULE ISSUE', p1: 'Chaque protagoniste dispose de son propre scénario, mais Fortune’s Weave ne cloisonne pas ces récits. Il sera possible de passer librement de l’un à l’autre afin de faire progresser les quatre fils narratifs et de viser la conclusion la plus favorable.',
     quote: 'Le joueur ne choisit plus seulement qui suivre : il choisit quand faire avancer chaque destin.', quoteBy: 'Let’s Play · La nouvelle mécanique narrative',
     h2b: 'ENTRE DEUX BATAILLES, LE TEMPS DES LIENS', p2: 'La formule stratégique reste familière aux habitués. Entre deux combats majeurs, le hub sert de point d’ancrage pour discuter avec les alliés, renforcer les soutiens, recruter de nouveaux personnages et explorer les environs.', p3: 'Ces moments de respiration ne sont pas qu’une parenthèse. Les échanges et les recrutements devraient nourrir la progression des quatre campagnes, tout en donnant au joueur les clés pour comprendre les enjeux de ce monde et les relations entre ses héros.', p4: 'La sortie est fixée au 17 septembre 2026, exclusivement sur Nintendo Switch 2. Une longue vidéo de présentation accompagne cette dernière étape et permet de revoir les bases de l’aventure avant de se lancer dans la bataille.',
-    take: 'À RETENIR', takeText: 'Fire Emblem: Fortune’s Weave sortira le 17 septembre 2026 sur Nintendo Switch 2, avec quatre protagonistes et des scénarios que le joueur pourra suivre librement.',
+    take: 'RÉSUMÉ', takeText: 'Fortune’s Weave mise sur la liberté de parcours pour renouveler la formule : son vrai défi sera de rendre ces choix aussi significatifs que nombreux.',
     sentiment: 'positive'
   },
   'tokyo-game-show-2026-annulation': {
@@ -374,7 +403,7 @@ const stories = {
     h2: 'LA SÉCURITÉ PASSE AVANT LE SHOW', p1: 'La décision répond à un risque très concret : l’intensification annoncée des intempéries pourrait perturber les transports et compliquer le retour des visiteurs, exposants et équipes. La CESA a également prévenu que certaines installations ou activités du dimanche pourraient être modifiées si la situation l’exige.',
     quote: 'Le dimanche est maintenu. Le lundi est annulé pour permettre à chacun de rentrer en sécurité.', quoteBy: 'CESA · Avis officiel du 19 septembre 2026',
     h2b: 'UN PROGRAMME À SAUVER EN LIGNE', p2: 'Les billets du 21 septembre feront l’objet d’un remboursement via leur canal d’achat. Pour les scènes prévues ce jour-là, l’organisateur cherche encore à mettre en place des diffusions en ligne, sans avoir confirmé les contenus ni les horaires.', p3: 'L’enjeu dépasse la simple logistique. Le TGS célébrait ses trente ans et inaugurait un format de cinq jours ; cette annulation devient un précédent pour un salon déjà en pleine expansion. Les annonces importantes ne disparaissent pas forcément, mais leur mise en scène pourrait désormais passer par le numérique.', p4: 'À ce stade, le seul calendrier certain est celui du dimanche 20 septembre, maintenu sur place. Le reste dépendra de la trajectoire du typhon et des prochaines communications officielles de la CESA.',
-    take: 'À RETENIR', takeText: 'La journée du 21 septembre du Tokyo Game Show 2026 est annulée. Le 20 septembre reste maintenu, et certains événements pourraient être diffusés en ligne.', source: 'D’après l’avis officiel de la CESA publié le 19.09.2026.', sourceUrl: 'https://tgs.cesa.or.jp/2026/en/news/detail/00061', sourceDetail: 'Lire l’avis officiel', credit: 'Image : visuel officiel Tokyo Game Show 2026. © CESA / Nikkei Business Publications.',
+    take: 'RÉSUMÉ', takeText: 'L’annulation perturbe le rendez-vous sans effacer son intérêt : les annonces importantes pourraient simplement se déplacer vers les formats numériques.', source: 'D’après l’avis officiel de la CESA publié le 19.09.2026.', sourceUrl: 'https://tgs.cesa.or.jp/2026/en/news/detail/00061', sourceDetail: 'Lire l’avis officiel', credit: 'Image : visuel officiel Tokyo Game Show 2026. © CESA / Nikkei Business Publications.',
     sentiment: 'negative'
   },
   'eshop-switch-2-20-septembre': {
@@ -385,7 +414,7 @@ const stories = {
     h2: 'UN DUEL ENTRE NOUVEAUTÉS', p1: 'Le deuxième rang de Diablo 4 est le signal le plus parlant. Le jeu de Blizzard s’installe immédiatement derrière une exclusivité Switch 2, tandis que LEGO Batman occupe les troisième et quatrième places avec ses éditions standard et Deluxe. Le haut du tableau reste ainsi dominé par des licences déjà très identifiables.',
     quote: 'Fortune’s Weave reste numéro un ; Diablo 4 prend la tête du classement des jeux uniquement numériques.', quoteBy: 'Let’s Play · Lecture des classements du 20 septembre',
     h2b: 'LA SWITCH 2 ÉLARGIT SON ÉVENTAIL', p2: 'Le reste du top 10 montre une console qui accueille désormais des profils très différents : RuneScape: Dragonwilds arrive sixième, tandis que Trails in the Sky 2nd Chapter se place neuvième. Entre RPG, jeux-service et grands portages, l’eShop ne dépend plus d’un seul type de sortie.', p3: 'Il faut toutefois garder une nuance : ce tableau est un classement de ventes, pas un baromètre de qualité ni un chiffre de ventes communiqué par Nintendo. Il indique une hiérarchie à un instant donné, avec l’effet des précommandes et des éditions multiples.', p4: 'Pour Fortune’s Weave, le premier signal reste favorable. Sa première place confirme l’intérêt du public pour une aventure stratégique pensée autour de quatre destins, alors que le jeu entre dans sa première semaine complète de disponibilité.',
-    take: 'À RETENIR', takeText: 'Fire Emblem: Fortune’s Weave est premier de l’eShop Switch 2 au 20 septembre 2026, devant Diablo 4 et LEGO Batman.', source: 'Classement publié par Nintendo Everything le 20.09.2026.', sourceUrl: 'https://nintendoeverything.com/nintendo-switch-2-eshop-charts-september-20-2026/', sourceDetail: 'Voir le classement complet', credit: 'Image : visuel officiel Nintendo de Fire Emblem: Fortune’s Weave.',
+    take: 'RÉSUMÉ', takeText: 'Ce classement montre que Fire Emblem bénéficie déjà d’une forte visibilité sur Switch 2, mais ne suffit pas encore à mesurer son endurance commerciale.', source: 'Classement publié par Nintendo Everything le 20.09.2026.', sourceUrl: 'https://nintendoeverything.com/nintendo-switch-2-eshop-charts-september-20-2026/', sourceDetail: 'Voir le classement complet', credit: 'Image : visuel officiel Nintendo de Fire Emblem: Fortune’s Weave.',
     sentiment: 'positive'
   },
   'sony-licence-jeux-numeriques': {
@@ -396,7 +425,7 @@ const stories = {
     h2: 'LE MOT « ACHETER » AU CŒUR DU DOSSIER', p1: 'La plainte s’appuie sur la loi californienne AB 2426, qui encadre depuis 2025 l’emploi de termes comme « buy » ou « purchase » pour des biens numériques. Lorsqu’une plateforme ne vend pas une propriété illimitée mais accorde une licence, elle doit le signaler de manière claire et visible avant la transaction, selon l’interprétation défendue par les plaignants.',
     quote: 'Le logiciel est concédé sous licence, et non vendu.', quoteBy: 'Conditions d’utilisation PlayStation, citées dans la procédure',
     h2b: 'UNE LICENCE N’EST PAS UNE LOCATION ORDINAIRE', p2: 'La nuance mérite d’être posée précisément. Un jeu numérique acheté sur le Store reste attaché au compte de l’utilisateur et peut être téléchargé selon les conditions de PlayStation. Mais le contrat ne décrit pas cette opération comme un transfert de propriété : il accorde un droit d’utilisation personnel, soumis aux règles du service et présenté comme révocable.', p3: 'Sony avance qu’il serait peu plausible qu’un consommateur raisonnable confonde cette licence avec la possession d’un objet physique. L’entreprise prend notamment l’exemple de Resident Evil Requiem : plusieurs personnes peuvent acheter le même fichier numérique, ce qui distingue cette transaction d’un bien matériel vendu une seule fois.', p4: 'C’est précisément ce raisonnement que la justice devra examiner. Le dossier ne signifie pas que les jeux déjà achetés vont disparaître, ni que Sony a déjà été condamné. Il pose une question de transparence : les conditions générales et les liens de licence sont-ils suffisamment visibles pour corriger l’impression créée par le bouton « Acheter » ?',
-    take: 'À RETENIR', takeText: 'Sony défend devant la justice l’idée que les jeux numériques du PlayStation Store sont concédés sous licence et non vendus. La plainte californienne doit encore être examinée.', source: 'Réécrit à partir de l’article Jeuxvideo.com du 20.09.2026, recoupé avec CNET et Polygon.', sourceUrl: 'https://www.jeuxvideo.com/news/2104611/les-joueurs-ne-possedent-pas-leurs-jeux-ps5-ils-ne-font-que-les-louer-sony-l-affirme-en-justice.htm', sourceDetail: 'Lire l’article de référence', credit: 'Image : visuel officiel PlayStation Store — Sony Interactive Entertainment.',
+    take: 'RÉSUMÉ', takeText: 'L’enjeu dépasse Sony : cette affaire peut clarifier la manière dont les plateformes doivent présenter la propriété, la licence et les droits réels liés à un achat numérique.', source: 'Réécrit à partir de l’article Jeuxvideo.com du 20.09.2026, recoupé avec CNET et Polygon.', sourceUrl: 'https://www.jeuxvideo.com/news/2104611/les-joueurs-ne-possedent-pas-leurs-jeux-ps5-ils-ne-font-que-les-louer-sony-l-affirme-en-justice.htm', sourceDetail: 'Lire l’article de référence', credit: 'Image : visuel officiel PlayStation Store — Sony Interactive Entertainment.',
     sentiment: 'negative'
   }
 };
@@ -406,17 +435,16 @@ function Arrow(){ return <span aria-hidden="true">↗</span>; }
 export default function CurrentNews({ slug, slugPrefix }) {
   const routeSlug = useParams().slug;
   const allStories = { ...autoStories, ...stories };
-  // Les routes préfixées (ex. : /news/cinema/:slug) reconstruisent la clé
-  // d'article (« cinema/<slug> ») : `slug` explicite garde la priorité.
+  // Les routes préfixées (ex. : /news/cinema/:slug) passent slugPrefix pour
+  // reconstruire la clé d'article (« cinema/<slug> ») : l'articleId reste
+  // identique à celui des cartes du hub correspondant (vues, réactions…).
   const key = slug || (routeSlug && slugPrefix ? `${slugPrefix}${routeSlug}` : routeSlug);
   const story = key ? allStories[key] : stories['persona-6-switch-2'];
   if (!story) return <NotFound />;
   const articleId = `/news/${key}`;
   const sentimentId = inferSentimentForStory(story);
   const meta = sentimentMeta(sentimentId);
-  // Une actu cinéma renvoie vers le hub cinéma, une actu gaming vers la liste.
-  const hubRoute = String(key).startsWith('cinema/') ? '/news/cinema' : '/news';
-  const isCinema = hubRoute === '/news/cinema';
+  const gallery = story.gallery || getArticleGallery(key);
   const [views, setViews] = useState(null);
 
   useEffect(() => {
@@ -438,10 +466,59 @@ export default function CurrentNews({ slug, slugPrefix }) {
 
   return <>
     <section className="article-hero wrap"><div className="section-label"><span>ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {story.auto ? 'ACTU DU JOUR · LET’S PLAY' : 'RÉÉCRIT POUR LET’S PLAY'}</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>4 MIN DE LECTURE</span>{views != null && <span className="article-views-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg> {formatViews(views)} vues</span>}<span className={`article-sentiment-inline ${meta.color}`} title={meta.label}>{meta.emoji} {meta.label}</span></div></div><div className="article-cover hud-frame"><img src={imageUrl(story.thumbnail || story.image)} alt={story.imageAlt} onError={(event) => { if (story.fallbackImage && event.currentTarget.dataset.thumbFallback !== 'true') { event.currentTarget.dataset.thumbFallback = 'true'; event.currentTarget.src = imageUrl(story.fallbackImage); } }} /><div><small>{story.category}</small><strong>{story.cover}</strong></div><span className={`news-sentiment ${meta.color}`} style={{ top: 12, right: 12 }} aria-label={meta.label} title={meta.label}>{meta.emoji}</span>{views != null && <span className="news-views" style={{ left: 12, bottom: 12 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg>{formatViews(views)}</span>}</div></div></section>
-    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{story.lead}</p><p>{story.intro}</p>{story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / OFFICIELLE</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">Vidéo officielle : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">Voir sur YouTube</a></p></section> : null}<h2>{story.h2}</h2><p>{story.p1}</p><div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div><p>{story.p2}</p><h2>{story.h2b}</h2><p>{story.p3}</p><p>{story.p4}</p><div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div>{story.source ? <p className="article-source">{story.source} <a href={story.sourceUrl} target="_blank" rel="noreferrer">{story.sourceDetail}</a></p> : null}{story.credit ? <p className="article-source">{story.credit}</p> : null}</article><aside className="article-aside"><div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>{story.auto ? 'ACTU DU JOUR · SOURCÉE' : 'LET’S PLAY ORIGINAL'}</strong>{views != null && <><span className="aside-kicker" style={{ marginTop: 14 }}>VUES GLOBALES</span><strong>{formatViews(views)} vues</strong></>}<span className="aside-kicker" style={{ marginTop: 14 }}>TON DE L’ACTU</span><strong className={`sentiment-text ${meta.color}`}>{meta.emoji} {meta.label}</strong></div><div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to={hubRoute}>RETOUR AUX ACTUS <Arrow/></Link></div></aside></main>
+    <main className="article-layout wrap">
+      <article className="article-body">
+        <p className="article-lead">{story.lead}</p>
+        {story.intro ? <p>{story.intro}</p> : null}
+        {story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / OFFICIELLE</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">Vidéo officielle : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">Voir sur YouTube</a></p></section> : null}
+
+        <h2>{story.h2}</h2>
+        <p>{story.p1}</p>
+
+        {story.spoiler ? (
+          <SpoilerAlert title={story.spoiler.title}>
+            <p>{story.spoiler.content}</p>
+          </SpoilerAlert>
+        ) : null}
+
+        {story.spoilers?.map((sp, i) => (
+          <SpoilerAlert key={i} title={sp.title}>
+            <p>{sp.content}</p>
+          </SpoilerAlert>
+        ))}
+
+        {gallery ? <ArticleGallery {...gallery} /> : null}
+
+        {story.quote ? <div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div> : null}
+        {story.p2 ? <p>{story.p2}</p> : null}
+
+        {story.p3 ? (
+          <>
+            <h2>{story.h2b}</h2>
+            <p>{story.p3}</p>
+          </>
+        ) : story.h2b ? <h2>{story.h2b}</h2> : null}
+
+        {story.spoiler2 ? (
+          <SpoilerAlert title={story.spoiler2.title}>
+            <p>{story.spoiler2.content}</p>
+          </SpoilerAlert>
+        ) : null}
+
+        {story.p4 ? <p>{story.p4}</p> : null}
+
+        {story.takeText ? <div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div> : null}
+        {story.source ? <p className="article-source">{story.source} <a href={story.sourceUrl} target="_blank" rel="noreferrer">{story.sourceDetail}</a></p> : null}
+        {story.credit ? <p className="article-source">{story.credit}</p> : null}
+      </article>
+
+      <aside className="article-aside">
+        <div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div>
+      </aside>
+    </main>
     <ArticleEngagement articleId={`/news/${key}`} title={`${story.title} ${story.accent}`} />
     <Comments />
-    <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> LA SUITE SUR LET’S PLAY</p><h2>RESTEZ DANS<br/><em>{isCinema ? 'LA SALLE.' : 'LE GAME.'}</em></h2></div><Link className="button button-yellow" to={hubRoute}>VOIR LES ACTUS <Arrow/></Link></section>
+    <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> LA SUITE SUR LET’S PLAY</p><h2>RESTEZ DANS<br/><em>LE GAME.</em></h2></div><Link className="button button-yellow" to="/news">VOIR LES ACTUS <Arrow/></Link></section>
   </>;
 }
 

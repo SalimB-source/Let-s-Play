@@ -15,6 +15,152 @@ Pour produire la version de production :
 npm run build
 ```
 
+## Thème clair / sombre
+
+Le site se joue en deux thèmes. Le **sombre** reste l'identité d'origine et le
+défaut ; le **clair** est un choix explicite de l'utilisateur.
+
+- Bascule dans la barre de navigation (icône soleil / lune), dernière commande
+  utilitaire à droite de la recherche. En menu mobile, elle occupe toute la
+  largeur avec son libellé.
+- Le choix est mémorisé (`localStorage`, clé `lp-theme`) et repris au chargement
+  par un script en ligne dans `index.html` : la page ne s'affiche jamais en
+  sombre avant de basculer, ce qui produirait un flash très visible.
+- `?theme=light` (ou `?theme=dark`) force le thème le temps d'une visite :
+  pratique pour partager un lien de recette.
+- La barre du navigateur (`theme-color`) suit le thème actif.
+
+Le thème clair est décrit dans **`src/theme.css`**, importé en dernier dans
+`src/main.jsx` (il surcharge les dix-huit autres feuilles). Trois principes le
+gouvernent, et il vaut la peine de les connaître avant d'y toucher :
+
+1. **Les accents s'assombrissent pour le texte, pas pour le remplissage.** Le
+   cyan `#22d3ee` tombe à 1,7:1 sur blanc. Chaque teinte existe donc en deux
+   versions : `--cyan` (encre lisible), `--cyan-bright` (remplissages, halos).
+   Le jaune de marque `--yellow` reste le jaune d'origine en aplat — c'est
+   l'*encre posée dessus* qui est sombre — et `--yellow-ink` sert quand il doit
+   être du texte.
+2. **Les médias restent sombres.** Lecteur YouTube, fenêtre vidéo,
+   vignettes et voiles posés sur une photo gardent leur fond sombre et leur
+   texte blanc dans les deux thèmes. Seules les surfaces de l'interface
+   passent au clair. La section 8 de `theme.css` (commentée) ré-affirme cette
+   intention. Seule exception : le héros d'accueil utilise une image unique
+   (`public/hero-keyart.jpg`) plein cadre, identique dans les deux thèmes,
+   avec un voile sombre discret à gauche et un texte blanc/jaune pour garantir
+   la lisibilité du titre, du texte et des actions (bloc « Héros clair » de la
+   section 8).
+3. **Les halos deviennent des ombres.** Un `text-shadow` néon sur fond clair
+   produit un halo sale ; il est remplacé par une ombre colorée douce.
+
+Deux points d'attention pour la suite :
+
+- **Le wordmark est blanc à l'origine.** Sur fond clair, `Layout` sert
+  `public/lets-play-logo-light.png` (généré par `tools/make-light-assets.py`) :
+  mêmes formes, le « Let's » blanc devient indigo, le jaune et le violet de
+  marque ne bougent pas. Si le logo officiel change, régénérer ce fichier.
+- **Le mur des partenaires garde une bande sombre.** Les logos tiers (Djezzy,
+  egor, LG, IFA, TMV…) sont dessinés clairs sur sombre : les recolorer serait
+  trahir des marques qui ne nous appartiennent pas. C'est aussi un rappel du
+  thème d'origine au milieu d'une page claire.
+
+### Vérifier le thème clair
+
+```bash
+npm run theme:ink-sweep   # régénère la liste des encres à rabattre vers le sombre
+```
+
+`theme:ink-sweep` reparcourt les feuilles et réécrit la section « encre claire →
+encre sombre » de `src/theme.css` : environ 200 règles posent une encre claire
+(blanc, jaune de marque) parce qu'elles visaient un fond noir, et cette liste
+mécanique évite d'en oublier une quand le site évolue. Les contextes qui gardent
+leur encre claire (médias, bandeaux de marque, pastilles de statut) sont exclus
+du générateur et traités à la main dans `theme.css`.
+
+Contrôle de contraste (outil d'atelier, hors dépôt) : chaque page est parcourue
+dans les deux thèmes, le fond effectif de chaque texte est calculé en empilant
+les couches translucides, et tout ce qui passe sous le seuil WCAG AA est
+signalé. Onze pages sont aujourd'hui à zéro écart en clair.
+
+## Typographie : Orbitron pour les gros titres
+
+Deux familles, un partage net, et un seul fichier qui tranche —
+**`src/typography.css`** :
+
+- **Orbitron** porte les gros titres (h1, h2, h3 et tout `[role="heading"]`) :
+  une géométrique anguleuse, l'esprit « écran de jeu ». Héros d'accueil, titres
+  de section, titres d'article et de dossier, questions de quizz. Poids 800
+  pour les h1-h2, 700 pour les h3 — le titrage pèse, comme les feuilles de
+  section le demandaient déjà. La pile de polices vit dans le jeton
+  `--font-gaming` (`src/styles.css`), et la famille est chargée depuis Google
+  Fonts dans `index.html` en variable 400-900, pour que les poids 700, 800 et
+  900 des feuilles rendent vraiment.
+- **Google Sans** reste sur tout le reste : paragraphes, libellés, boutons,
+  pastilles, chiffres des compteurs et des scores. C'est la police de lecture
+  du site, et les libellés de 9 à 15px des cartes, du menu et du ticker ne
+  supportent pas une police d'affichage.
+
+`typography.css` est importé en dernier dans `src/main.jsx` : ses règles
+(`!important`) coiffent les dix-huit autres feuilles. C'est aussi pour ça que
+les feuilles de section continuent de poser `font-family:var(--display)` sur
+des éléments de 11 à 15px : `--display` reste Google Sans, et c'est le fichier
+de politique — lui seul — qui décide où la police gaming s'applique. Pour
+l'étendre (les grands chiffres d'un compte à rebours, le score d'un test, un
+futur titre en h4), il suffit d'ajouter les sélecteurs concernés à la liste du
+bloc 2 de `typography.css`.
+
+**Trois lignes maximum.** Un gros titre du site tient sur trois lignes, jamais
+plus. La règle se joue d'abord sur le texte : les titres sont écrits dans ce
+budget (le robot actus refuse un couple `title` + `accent` au-delà de
+`HEADLINE_BUDGET`, dans `scripts/news-bot/lib/story.mjs`), et
+`npm run check:headlines` rend toutes les routes, mesure chaque h1/h2/h3 à seize
+largeurs de fenêtre avec les métriques d'Orbitron, puis échoue si l'un d'eux
+dépasse. Le bloc 3 de `typography.css` n'est qu'un filet : les titres de carte y
+sont plafonnés à trois lignes (`-webkit-line-clamp`), au cas où un titre correct
+passerait malgré tout sur quatre lignes. Quand un titre est trop long, on le
+réécrit — on ne le coupe pas.
+
+Deux points d'attention :
+
+- **Orbitron est plus large que Google Sans.** Un titre peut donc passer sur
+  une ligne de plus ; `overflow-wrap: break-word` évite qu'un mot long déborde
+  de sa colonne sur un écran étroit, mais si un titrage paraît trop large, c'est
+  le corps ou l'interlettrage de la règle concernée qu'il faut reprendre —
+  `check:headlines` dit lesquels.
+- **Seule exception au titrage gaming :** les titres du mode Survie
+  (`.horror-*`, dans `src/quizzes/quiz.css`) posent leur famille en
+  `!important` et gardent donc leur rendu d'origine — leur habillage de
+  dossier d'horreur est volontairement à part.
+
+## Langue : le site est en français
+
+Le sélecteur de langue (EN / FR / AR) a été **retiré de la barre de navigation** :
+le site est publié en français, sans réglage. `LanguageContext` n'a plus ni état
+ni `localStorage` — l'ancienne clé `letsplay-lang` est ignorée, y compris chez un
+visiteur qui avait choisi l'anglais ou l'arabe.
+
+Ce qui reste dans le dépôt, volontairement :
+
+- **Les dictionnaires `en` et `ar`** (`src/i18n/translations.js`). `en` est le
+  filet de sécurité du français : une clé oubliée dans `fr` s'affiche en anglais
+  au lieu de faire planter la page (le bug ff6d390 avait laissé la page Actus
+  blanche pour cette raison). Voir `withBaseFallback` dans
+  `src/i18n/LanguageContext.jsx`.
+- **La direction du texte** (`dir`) et le câblage RTL : inertes en français,
+  déjà en place si une langue revient.
+- **La prop `lang` du provider** : une prise réservée aux scripts de
+  vérification, qui continuent de rendre chaque route en FR / EN / AR
+  (`npm run check:i18n`). Aucun écran ne s'en sert.
+- **Les scripts de vérification** ne posent plus la langue dans `localStorage`
+  (plus personne ne la lit) : ils la passent au provider.
+
+Le suivi des succès continue d'enregistrer la langue utilisée, mais il ne voit
+plus que le français : les succès **« Polyglotte »** (2 langues) et
+**« Trilingue »** (3 langues) ne peuvent donc plus être débloqués par un nouveau
+visiteur. Ils restent au catalogue, délibérément — un joueur qui les a obtenus
+du temps des trois langues garde son grade, son XP et sa progression, et les
+retirer ferait baisser son niveau (voir « Succès débloqués par les actions du
+site »).
+
 ## Contenu
 
 - Hero éditorial avec CTA YouTube
@@ -23,9 +169,6 @@ npm run build
   présenté comme l’épisode HicoSoft — grille miroir, accents aux couleurs Ooredoo (page d’accueil uniquement)
 - Présentation de l’émission et chiffres de communauté
 - Formats : Gaming, Cinéma et Pop Culture
-- Actus cinéma & séries : page dédiée `/news/cinema` (même grille que les actus
-  gaming) et articles `/news/cinema/<slug>`, avec les **visuels officiels** des
-  studios en couverture (voir « Actus cinéma & séries » plus bas)
 - Dernières vidéos YouTube avec filtres interactifs
 - Liens vers les comptes officiels
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
@@ -35,14 +178,22 @@ npm run build
   actions réalisées sur le site, classés en quatre grades de difficulté — bronze,
   argent, or, platine — avec niveau, XP, grades visibles et notifications de
   déblocage (voir « Succès débloqués par les actions du site »)
-- Quizz gaming & quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
-  huit quizz rédigés par la rédaction (culture générale, rétro, souls-like,
-  RPG, e-sport, studios, tech et cinéma), quizz du jour en rotation quotidienne avec série de
-  jours, feedback instantané de chaque réponse (gel, vert/rouge, points de
-  rapidité & combo), corrections commentées, confettis du sans-faute,
-  raccourcis clavier 1–4, commentaires, recherche et cinq succès
-  dédiés ; classement des quizz par points gagnés et position au classement
-  global affichée sur la page de profil (voir « Quizz gaming & quizz du jour »)
+- Quizz gaming, cinéma & pop culture et quizz du jour (`/quizz`, alias `/quiz` et `/quizzes`) :
+  vingt-cinq quizz rédigés par la rédaction (culture gaming, consoles, PC,
+  e-sport, tech, adaptations, films cultes, super-héros et séries), **tous
+  jouables dès l'arrivée** et chacun en **trois niveaux à
+  l'intérieur** (Facile ouvert, Confirmé puis Expert débloqués en cascade en
+  terminant le palier précédent, progression synchronisée avec le compte ;
+  questions différentes d'un niveau à l'autre et points multipliés
+  ×1/×1,5/×2, un niveau ne rapportant qu'une fois — en points comme en XP),
+  quizz du jour en rotation quotidienne avec série de jours, feedback
+  instantané de chaque réponse (gel, vert/rouge, points de rapidité & combo),
+  grille filtrable par famille (Gaming / Tech / Cinéma / E-sport, `?cat=` dans
+  l'URL), corrections commentées, confettis du sans-faute, raccourcis clavier 1–4,
+  commentaires, recherche et cinq succès dédiés ; classement des quizz (un
+  classement par niveau, clé `slug:niveau`) par points gagnés et position au
+  classement global affichée sur la page de profil (voir « Quizz gaming,
+  cinéma & pop culture et quizz du jour »)
 - Amis : demandes d'ami depuis les profils publics, les commentaires et le hub ;
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
@@ -50,11 +201,16 @@ npm run build
 - Messagerie : discussions **1-à-1 entre amis** en texte et en temps réel, avec
   **non-lus**, accusé de lecture, **blocage** et **signalement**, dans la même
   fenêtre sociale (voir « Messagerie : discussions 1-à-1 entre amis »)
+- Appels **vocaux et vidéo** 1-à-1 entre amis, depuis l'en-tête d'une
+  discussion : pair-à-pair WebRTC signalé par Supabase Realtime, appel
+  entrant avec sonnerie, micro/caméra coupables, bascule de caméra,
+  refus / occupé / sans réponse, et **trace d'appel** déposée dans la
+  discussion (voir « Appels vocaux & vidéo entre amis »)
 - Amis + messagerie dans la **même fenêtre** : un seul lanceur « MESSAGERIE »
   (pastilles des non-lus et des demandes en attente, amis en ligne) ouvre un
   panneau à quatre onglets — Amis / Demandes / Ajouter / Messages ; sur mobile
-  (≤ 760 px), la messagerie s'ouvre sur une **vraie page** (`/messages`) et la
-  fenêtre ne concerne plus que les amis (pop-up plein écran)
+  (≤ 760 px), la page `/messages` regroupe les quatre onglets sans pop-up,
+  accessible aussi depuis le menu, même avant connexion
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -125,6 +281,12 @@ public by design — they ship inside the client bundle. The workflow accepts th
 `SUPABASE_URL` / `SUPABASE_ANON_KEY` names too. When they are absent, the build
 still deploys but `/auth` stays in demo-preview mode, and the workflow logs a
 warning (`Supabase non configuré`).
+
+**Appels vocaux & vidéo (facultatif)** : `VITE_TURN_URL`, `VITE_TURN_USERNAME`
+et `VITE_TURN_CREDENTIAL` ajoutent un relais TURN pour fiabiliser les appels
+derrière les NAT stricts — mêmes règles (lues au build, redéploiement après
+changement). Détails et choix d'hébergement dans « Appels vocaux & vidéo entre
+amis ».
 
 If a variable is missing, `/auth` shows exactly which one under the form.
 
@@ -225,8 +387,12 @@ présente sur toutes les pages : un lanceur compact « MESSAGERIE » — avec le
 pastilles des **non-lus** (messagerie) et des **demandes en attente**, et le
 compteur d'amis en ligne — ouvre un panneau à **quatre onglets** (Amis /
 Demandes / Ajouter / Messages). Amis et messagerie partagent donc la même
-fenêtre ; le quatrième onglet est documenté plus bas. Un visiteur non connecté
-ne voit rien.
+fenêtre ; le quatrième onglet est documenté plus bas. Le lanceur « MESSAGERIE »
+reste visible pour un visiteur non connecté : il ouvre `/messages`, qui propose
+la connexion sans afficher de conversations. Dans l'APK Android, la WebView a
+une session distincte de celle du navigateur du téléphone : il faut s'y
+connecter pour retrouver ses discussions. Sur mobile, un lien « MESSAGERIE »
+est aussi présent dans le menu de navigation.
 
 | Onglet | Ce qui s'y trouve |
 | --- | --- |
@@ -239,12 +405,10 @@ L'état ouvert/fermé est mémorisé sur l'appareil ; Échap ferme le panneau. L
 notifications de succès partagent le coin : elles montent au-dessus du lanceur,
 et glissent à côté du panneau quand il est ouvert.
 
-**Sur mobile** (≤ 760 px), la fenêtre ouverte devient un **pop-up plein
-écran** : elle couvre tout l'écran (au-dessus de la navigation), l'arrière-plan
-ne défile plus, et la fermeture se fait par le bouton « × » de l'en-tête
-(`src/social/social.css`). Elle ne concerne plus que les **amis** : l'onglet
-« Messages » — comme toute ouverture de discussion — bascule vers la **page de
-messagerie** `/messages` (voir plus bas), où la fenêtre s'efface entièrement.
+**Sur mobile** (≤ 760 px), le lanceur nommé « MESSAGERIE » mène à la **page
+sociale** `/messages` (voir plus bas), sans pop-up : les onglets Amis, Demandes,
+Ajouter et Messages y sont accessibles et le bouton retour du téléphone revient
+à la page précédente. Le menu mobile propose également un lien direct.
 
 **Où envoyer une demande d'ami** (`src/friends/FriendButton.jsx`) :
 
@@ -493,6 +657,131 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   `/messages` et le pop-up reste pour les amis), et les contextes par défaut
   sont inertes.
 
+## Appels vocaux & vidéo entre amis
+
+Dans l'en-tête de chaque discussion (fenêtre sociale sur bureau, page
+`/messages` partout), deux boutons à côté de « Profil » : **téléphone** (appel
+vocal) et **caméra** (appel vidéo). Comme la messagerie, les appels sont
+réservés aux **amis**. Un bouton grisé s'explique toujours au survol
+(« aperçu démo », « connexion sécurisée (HTTPS) exigée », « deviens ami avec
+ce joueur »…). Un ami qui **semble hors ligne** ne grise PAS le bouton : la
+présence est une estimation (canal de présence, dernier passage vu), l'appel
+part quand même et conclut « Sans réponse » s'il n'aboutit pas — l'infobulle
+prévient. Un appel impossible le dit aussi à l'écran (bandeau en bas), jamais
+de clic muet.
+
+**Comment ça marche** (trois étages, tous sans serveur en plus) :
+
+| Étage | Ce qui fait le travail |
+| --- | --- |
+| **Signalisation** | Supabase Realtime (Broadcast) — sonnerie, réponse, offre/réponse SDP, candidats ICE, raccrocher. Chaque joueur écoute en permanence **son** canal `calls:user:{uid}` ; on n'envoie que sur le canal du destinataire, et chaque événement `{v, t, callId, from, to}` est validé (destinataire, appel courant, amitié et blocage revérifiés à l'arrivée) |
+| **Médias** | WebRTC **pair-à-pair** (`getUserMedia` + `RTCPeerConnection`) : le son et l'image ne passent jamais par un serveur. STUN public livré par défaut ; TURN optionnel (voir plus bas) pour les NAT stricts |
+| **État & interface** | `CallsContext` expose la phase (`idle → incoming/outgoing → connecting → active → ended`), les flux `<video>`, le micro / la caméra, la durée, le motif de fin ; `CallOverlays` rend l'appel entrant (carte + sonnerie) et le panneau d'appel (vidéo de l'ami en grand, la nôtre en incrustation **miroir**, chrono, contrôles) |
+
+**Le scénario complet** : l'appelant obtient micro/caméra (la permission est
+demandée **avant** de sonner), puis l'ami reçoit l'appel entrant (sonnerie,
+carte « Répondre / Refuser »). Répondre lance la connexion P2P ; refuser
+affiche « Appel refusé » chez l'appelant ; appeler un ami déjà en appel répond
+**occupé** tout seul ; sonner 30 s sans réponse conclut « sans réponse ». En
+cours d'appel : micro et caméra coupables, **changement de caméra** (selfie ↔
+dos) sans coupure, **résistance aux micro-coupures** (6 s de grâce avant de
+conclure « Connexion perdue »). Caméra refusée sur un appel vidéo ? L'appel
+continue **en audio** plutôt que d'échouer.
+
+**Trace d'appel** : à la fin, l'appelant dépose un message normal dans la
+discussion — `📞 Appel vidéo · 02:14`, `📞 Appel audio sans réponse`,
+`📞 Appel audio refusé`, `📞 Appel audio — occupé`. Rien de nouveau à
+provisionner : non-lus, temps réel et suppression sont ceux de la messagerie.
+(Ce message suit la langue de l'appelant — limite assumée, documentée ici.)
+
+**Sécurité & limites honnêtes** :
+
+- les canaux de signalisation sont publics par nom : les événements sont
+  filtrés (destinataire + amitié + blocage + appel courant), mais ils restent
+  visibles d'un client qui joindrait le canal ; seuls des identifiants et une
+  offre SDP y transitent (jamais de média) — pour blinder, passer les canaux
+  Realtime en `private` (RLS `realtime.channels`) ;
+- deux onglets du même compte sonnent ensemble ; répondre dans l'un laisse
+  l'autre finir sa sonnerie (35 s max) ;
+- `getUserMedia` exige HTTPS (ou localhost) : les boutons s'expliquent sinon ;
+- les personas de démonstration n'ont pas de correspondant réel : les boutons
+  y sont grisés avec l'explication, et `check:calls` le vérifie.
+
+### Serveur TURN (recommandé en production)
+
+Le STUN public de Google suffit derrière la plupart des box internet, mais les
+**NAT des opérateurs mobiles** (3G/4G) font échouer une partie des connexions
+directes. Un serveur **TURN** (relais) règle ça — variables lues au build,
+donc **redéploiement après changement** :
+
+```bash
+VITE_TURN_URL=turn:turn.votre-domaine.com:3478          # URLs multiples acceptées (virgules)
+VITE_TURN_USERNAME=letsplay
+VITE_TURN_CREDENTIAL=le-mot-de-passe-turn
+```
+
+Deux options éprouvées : **Coturn** auto-hébergé sur un petit VPS (gratuit,
+~20 lignes de `turnserver.conf`), ou un TURN managé (Cloudflare Calls,
+Metered…) si l'on ne veut rien exploiter. Sans TURN, les appels fonctionnent
+quand même : simplement moins souvent du premier coup en mobile.
+
+### Où vit le code
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/messages/CallsContext.jsx` | le moteur et l'état : sonneries entrantes (canal personnel permanent, sonnerie gardée tant que la liste d'amis n'est pas chargée), `startCall` / `acceptCall` / `declineCall` / `endCall`, micro / caméra / bascule de caméra, connexions P2P, traces d'appel, `blockerFor` (boutons grisés) et `warningFor` (avertissements), `notice` (un échec s'explique) |
+| `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, `ringDecision`, durées, classification des erreurs de média |
+| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant (**Répondre / Refuser**), panneau d'appel (vidéo, PiP miroir, chrono, contrôles), bandeau d'avertissement |
+| `src/messages/callSounds.js` | sons synthétisés (Web Audio) : sonnerie, tonalité, connexion, fin |
+| `src/messages/callsCopy.js` | textes EN / FR / AR, libellés de blocage, traces d'appel — le site étant publié en français, EN / AR restent en filet de sécurité, comme les dictionnaires du site |
+| `src/messages/calls.css` | styles des overlays (plein écran, coins coupés, mobile, `prefers-reduced-motion`) |
+| `src/messages/MessagesTabs.jsx` | les deux boutons d'appel de l'en-tête de discussion (fenêtre sociale **et** page `/messages`) |
+
+### Vérifications
+
+- `npm run check:calls` — deux étapes :
+  - **logique pure + rendu SSR** (`scripts/calls-check.mjs`) : ICE/TURN par
+    variables d'environnement, canaux de signalisation, événements broadcast
+    validés (version, type, appel, destinataire, émetteur), décision de
+    sonnerie (ami / bloqué / liste d'amis pas encore chargée), durées,
+    classification des erreurs de micro/caméra, traces d'appel et libellés
+    complets dans les trois langues ; puis visiteur sans bouton ni panneau,
+    discussion de démonstration avec les deux boutons **grisés et expliqués**
+    (pas de WebRTC entre personas), rien dans la liste des discussions,
+    libellés EN / FR / AR, jamais appelable soi-même ;
+  - **un appel de bout en bout entre deux joueurs** (`scripts/calls-e2e-check.mjs`) :
+    deux arbres React montés côte à côte, chacun avec son propre client
+    Supabase (comme deux navigateurs), un bus Realtime et un WebRTC simulés.
+    Le script déroule sonnerie entrante → **pop-up Répondre / Refuser** →
+    refus → appel établi (média des deux côtés) → occupé → raccrocher →
+    annuler, puis les dégradations : sonnerie reçue avant que la liste d'amis
+    soit chargée, appel impossible expliqué, ami « hors ligne » quand même
+    appelable, canal de signalisation en échec puis rétabli. Tout événement
+    perdu sur un canal non joint est compté comme une panne.
+- `npm run check:messages`, `check:friends` et `check:i18n` continuent de
+  passer : les appels se greffent sur la messagerie sans rien redonder.
+
+### Tester un vrai appel
+
+Il faut deux **comptes Supabase amis** (deux navigateurs, ou un ordinateur +
+un téléphone sur le déploiement HTTPS) : ouvrir la discussion, appuyer sur le
+téléphone ou la caméra, répondre de l'autre côté. En local (`npm run dev` sur
+localhost), les appels entre deux onglets fonctionnent — les permissions
+micro/caméra se demandent normalement.
+
+Si rien ne se passe, dans l'ordre :
+
+1. **les deux joueurs sont connectés avec un vrai compte** (pas une persona de
+   démo) et **amis** — le bouton est grisé avec la raison au survol sinon ;
+2. **HTTPS** (ou localhost) : en HTTP, `getUserMedia` est absent et les
+   boutons l'expliquent ;
+3. **la permission micro/caméra** a été accordée dans le navigateur ;
+4. **l'appel sonne mais ne s'établit pas** (« Connexion… » puis échec) : il
+   manque un relais **TURN** (voir ci-dessus) — c'est le cas typique en 4G/5G ;
+5. **dans l'APK Android** : les autorisations micro et caméra doivent avoir
+   été accordées à l'application (voir `android/README.md`) — sans elles, la
+   WebView refuse `getUserMedia` et aucun appel n'est possible.
+
 ## Succès débloqués par les actions du site
 
 Le site récompense ce que le joueur fait réellement : lire un article, lancer
@@ -533,14 +822,14 @@ Où ça se voit :
 
 | Endroit | Ce qui s'y trouve |
 | --- | --- |
-| `/auth` (hub joueur) | la **barre d'XP du profil** (seul endroit où niveau, rang et progression sont affichés) et la section « succès » intégrée : succès obtenus et prochains objectifs |
+| `/auth` (hub joueur) | la **barre d'XP du profil** (seul endroit où la barre de progression est affichée) et la section « succès » intégrée : succès obtenus et prochains objectifs |
 | Toutes les pages | une **fenêtre de déblocage** au centre du site dès qu'un succès tombe : icône, nom, description, rareté, XP gagnés — et « NIVEAU N ATTEINT » quand les points font monter d'un rang |
-| Navigation et pied de page | l’accès au profil joueur, qui contient les succès |
+| Navigation (mobile) | dans le menu plein écran, le lien **Profil** est une entrée à part entière juste sous **Quizz** : photo (ou initiales) et niveau. Le desktop garde la pastille de compte |
 
 Le niveau et l'XP ne sont jamais stockés côté compte : ils se déduisent des
 succès débloqués (`totalXp` puis `levelFromXp`, dans
 `src/achievements/engine.js`). La barre d'XP de la carte profil du hub
-(`src/pages/Auth.jsx`) est la **seule** à afficher la progression : elle lit le
+(`src/pages/Auth.jsx`) est la **seule** à afficher la barre de progression : elle lit le
 `summary` du moteur, comme la carte de niveau qui vivait avant dans la section
 « succès » — cette dernière n'en garde plus de copie, pour ne pas montrer deux
 fois le même niveau. Les métadonnées Supabase d'un compte réel ne portent ni XP
@@ -586,7 +875,7 @@ Trois étages, un seul chemin :
 | `video_played` | `videosWatched`, `liveWatched` |
 | `comment_posted` | `commentsPosted` |
 | `search_performed` | `searchesPerformed`, `distinctSearches` |
-| `language_used` | `languagesUsed` |
+| `language_used` | `languagesUsed` — le site n'étant publié qu'en français, seul `fr` est enregistré : « Polyglotte » et « Trilingue » restent au catalogue mais ne se débloquent plus |
 | `account_created` / `signed_in` | `accountsCreated`, `sessions` |
 | `provider_linked` | `providersLinked` |
 | `profile_updated` | `profileUpdates` |
@@ -683,7 +972,11 @@ Editor du projet Supabase (le script est relançable sans risque).
   plus la source du site (actions branchées, fenêtre montée dans `main.jsx`,
   plus aucun reste des anciennes notifications, un seul module écrit la
   progression locale).
-- `npm run check:i18n` — les routes × FR / EN / AR, dont le hub joueur `/auth`.
+- `npm run check:i18n` — les routes × FR / EN / AR (la langue se passe au
+  provider, le site étant publié en français), dont le hub joueur `/auth`.
+- `npm run check:headlines` — tous les gros titres rendus (h1 de page, d'article
+  et de dossier, h2 de carte et de section), mesurés à seize largeurs de fenêtre
+  d'après les métriques d'Orbitron : aucun ne doit dépasser trois lignes.
 - `npm run check:auth` — les deux boutons de compte de la navigation : lecture du
   `?mode=` (les deux boutons, `?mode=` vide ou inconnu, priorité de la prop
   `/register`), rendu SSR réel de chaque URL (quel formulaire s'ouvre : pseudo et
@@ -691,49 +984,168 @@ Editor du projet Supabase (le script est relançable sans risque).
   la navbar, et garde-fous de source pour que le mode initial continue de suivre
   l'URL — y compris quand le pop-up est déjà ouvert.
 
-## Quizz gaming & quizz du jour
+## Quizz gaming, cinéma & pop culture et quizz du jour
 
 Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 `/quizz/:slug` (partie, corrections, commentaires), alias anglais `/quiz` et
 `/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
 mais la structure de données les accepte déjà.
 
-- **Grille** — les huit quizz s'affichent sur **trois colonnes** stables sur
-  bureau (`repeat(3, minmax(0, 1fr))` : le nombre ne bascule plus selon la
-  largeur de la fenêtre comme avec l'`auto-fill` d'avant), deux sur tablette
-  (≤ 900 px), une sur mobile (≤ 620 px) ; le gap passe à 16 px sous 1000 px
-  pour préserver la largeur des cartes. Les titres des cartes suivent une
-  taille fluide `clamp(16px → 18px)` avec interligne 1.3, `text-wrap: balance`
-  (coupe harmonieuse sur deux lignes) et `overflow-wrap: break-word` en garde-fou.
-- **Données** — `src/quizzesData.js` : huit quizz de huit questions (culture
-  générale, rétro, souls-like, RPG, e-sport, studios, tech et cinéma), la
-  plupart liés à un article maison (`source`). Ajouter un quizz =
-  une entrée : la grille, la recherche (`searchIndex`), la rotation du jour et
-  le succès « Tour complet » le prennent en compte (mettre à jour la cible du
+- **Filtre par famille** — au-dessus de la grille, cinq pastilles : **Tous**
+  (le catalogue entier, actif par défaut), **Gaming**, **Tech**, **Cinéma** et
+  **E-sport** (`QUIZ_CATEGORIES`). Chaque pastille annonce son nombre de quizz,
+  une seule famille est active à la fois, et la ligne de résumé rappelle ce que
+  la grille affiche (« 25 quizz au catalogue » / « 2 quizz sur 25 affichés »,
+  `aria-live`). Le filtre vit dans l'**URL** (`/quizz?cat=tech`) : le lien est
+  partageable, un rechargement ou un retour arrière rouvre la même famille, une
+  valeur inconnue retombe sur « Tous ». La bannière du quizz du jour et la carte
+  Survival ne sont pas filtrées (elles ont leurs propres catégories 01 / 02).
+  `quizCategory` / `quizzesInCategory` / `quizCategoryCounts`
+  (`src/quizzesData.js`) portent la règle, `scripts/quiz-smoke.jsx` la vérifie
+  (comptes, pastille active, cartes des autres familles absentes, lien direct).
+- **Grille** — les vingt-cinq quizz (aucun verrou, aucune pastille de difficulté : la
+  progression « n/3 niveaux » remplace l'ancien badge) s'affichent sur **cinq
+  colonnes** sur desktop (`repeat(5, minmax(0, 1fr))`, ≈ 230 px par carte), puis
+  quatre sous 1200 px, trois sous 1000 px, deux sous 680 px et une sous 460 px.
+  **Carte compacte** : miniature, pastilles, **titre** et méta — plus de
+  chapeau, le texte court de `labels` n'est affiché que sur la bannière du quizz
+  du jour et l'écran d'intro du quizz. La miniature de carte passe en `2/1`
+  (l'illustration 16/9 est recadrée par `object-fit: cover`, jamais déformée, la
+  bannière du jour garde son 16/9), le `clip-path` et les espacements sont
+  resserrés (`gap: 10px`, `padding: 10px`, `gap: 6px` dans le bloc copie,
+  `margin-bottom` des pastilles repris par ce `gap`) : ≈ 344 px → ≈ 224 px de
+  haut par carte dans une colonne de 232 px. Les titres des cartes
+  suivent une taille fluide `clamp(15px → 17px)` avec interligne 1.25,
+  `text-wrap: balance` (coupe harmonieuse sur deux lignes) et
+  `overflow-wrap: break-word` en garde-fou — un titre reste **toujours affiché
+  en entier**, jamais tronqué.
+- **Données** — `src/quizzesData.js` : vingt-cinq quizz (gaming, consoles,
+  e-sport, tech, cinéma & pop culture ; trois nouveaux thèmes : films cultes,
+  super-héros Marvel/DC et séries cultes), la plupart liés à un article maison
+  (`source`). Chaque quizz déclare aussi sa **famille** (`category`, une seule,
+  parmi `QUIZ_CATEGORIES` : gaming, tech, cinéma, e-sport) — c'est elle que
+  filtrent les pastilles, `tag` restant l'étiquette fine affichée sur la carte
+  (Tech et PC → Tech, Cinéma et Séries → Cinéma, E-sport → E-sport, le reste →
+  Gaming ; famille absente ou inconnue : repli sur Gaming, jamais de quizz
+  perdu). **Chaque quizz porte trois niveaux** (`levels.easy` /
+  `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit questions par niveau —
+  soit 24 questions par quizz, 600 au total. Les helpers
+  `quizLevelQuestions(quiz, level)` et `quizQuestionsCount(quiz)` évitent
+  d'accéder aux niveaux à la main
+  (`QUIZ_DIFFICULTIES` reste exporté comme alias de `QUIZ_LEVELS`, et
+  `quizQuestions(quiz, level)` comme alias de `quizLevelQuestions` : les
+  appelants historiques continuent de fonctionner). Ajouter un quizz = une
+  entrée : la grille, la recherche (`searchIndex`), la rotation du jour et le
+  succès « Tour complet » le prennent en compte (mettre à jour la cible du
   succès si le nombre de quizz change).
+- **Niveaux & déblocage** — les **quizz sont tous jouables dès l'arrivée** :
+  plus aucune difficulté affichée sur la grille, aucun quizz verrouillé. La
+  difficulté se choisit DANS le quizz (écran d'introduction, une carte par
+  niveau) : le **Facile** est ouvert, le **Confirmé** se débloque en terminant
+  le Facile, l'**Expert** en terminant le Confirmé (progression en cascade).
+  Les niveaux fermés affichent leur cadenas 🔒 et la condition à remplir ; le
+  niveau qui vient de s'ouvrir est annoncé (« Niveau Confirmé débloqué ») avec
+  un bouton pour l'enchaîner. Règle pure, stockage local et copie serveur :
+  `src/quizzes/quizProgress.js` (+ hook `useQuizProgress`). La progression
+  suit le compte connecté (`public.quiz_progress`, une ligne par palier
+  terminé) et se **fusionne** avec la copie locale `localStorage`
+  (`letsplay_quiz_levels_v2`) — hors-ligne, c'est elle qui fait foi. Les
+  cartes de la grille et la bannière du jour affichent la progression
+  « n/3 niveaux ».
+- **Quizz TERMINÉ (les trois niveaux faits)** — un quizz dont les niveaux
+  Facile, Confirmé **et** Expert sont terminés passe en état « terminé » :
+  `isQuizFinished(progress, quizId)` (`src/quizzes/quizProgress.js`, fonction
+  pure) renvoie `true` dès que `levelsDone` atteint `QUIZ_LEVELS.length`. Le
+  quizz reste **visible mais verrouillé** partout où il est proposé : la carte
+  de la grille, la bannière du quizz du jour, la bande « quizz du jour » de
+  l'accueil, les résultats de `/recherche` et la recherche instantanée de la
+  nav. Concrètement : miniature et carte en **niveaux de gris**
+  (`grayscale(1)` + légère baisse de luminosité, `quiz.css`), drapeau
+  `✓ TERMINÉ` sur la miniature, tampon à la place de la pastille « n/3
+  niveaux », mention « Trois niveaux terminés » sur la bannière, flèche ↗
+  retirée — et surtout **le `<Link>` est remplacé par un `<div>`/`<span>` non
+  cliquable** (`cursor: default`, `pointer-events: none`, aucun effet de
+  survol). Le lecteur (`/quizz/:slug`) remplace son sélecteur de niveaux par un
+  écran « terminé » : les trois niveaux cochés, le record de l'appareil, le
+  réglage du son, et les sorties (tous les quizz, article source) — impossible
+  de relancer une partie depuis cet écran. L'écran de résultat de la dernière
+  partie affiche le badge « Quizz terminé » et garde ses actions (révision des
+  erreurs, « Rejouer ») : ces parties ne rapportent plus rien (règle
+  anti-rejeu), elles restent seulement consultables. Conséquence assumée : si
+  le quizz du jour est déjà terminé, la bannière et l'accueil renvoient à la
+  grille `/quizz` (la série « Semaine parfaite » ne peut plus s'alimenter ce
+  jour-là). La progression lue est l'union `localStorage` + `public.quiz_progress`
+  ; comme plusieurs surfaces partagent la même page (nav + accueil + grille),
+  `fetchAccountProgress` met sa promesse **en cache par compte**
+  (`accountProgressCache`) : un seul appel serveur par page chargée, rafraîchi
+  par `pushLevelCompleted` à chaque niveau terminé.
 - **Miniatures** — chaque quizz a sa propre illustration 16/9
   (`image`, fabriquée par `quizThumbUrl(slug)` depuis
   `public/quizzes/<slug>.jpg`) : une par thème, à la charte du site. La carte de
-  la grille, la bannière du quizz du jour et les résultats de recherche
+  la grille (recadrée en 2:1 pour garder la grille compacte), la bannière du
+  quizz du jour et les résultats de recherche
   l'affichent. L'épisode lié (`videoId`) reste en repli : `VideoThumb` reçoit
   l'illustration en `lead` et ne descend l'échelle YouTube que si le fichier
   manque — aucune requête `i.ytimg.com` dans le cas nominal. Ajouter un
   quizz = déposer son illustration sous ce nom, `check:thumbs` le vérifie.
-- **Moteur** — `src/quizzes/engine.js` (pur, sans React) : mélange déterministe
-  par graine (le quizz du jour est le même pour tous), barème, paliers de
-  résultat (`rookie` → `legend`), meilleure série de jours consécutifs.
-- **Minuteur** — 15 secondes par question (`QUESTION_TIME`, mutable pour les
-  tests) : une barre de décompte passe au rouge dans les 3 dernières secondes
-  et, à zéro, la question avance sans réponse (comptée ratée, signalée
-  « Temps écoulé » dans les corrections).
+- **Moteur** — `src/quizzes/engine.js` (pur, sans React, importable par Node) :
+  `prepareQuiz(quiz, level, seed, { extraDistractors })` ne pose que les
+  questions du niveau demandé (ordre et choix mélangés, la bonne réponse
+  voyageant avec son choix — et, en expert, un **piège** tiré des réponses
+  d'autres questions du même quizz, jamais la bonne réponse et jamais un
+  doublon),
+  mélange déterministe par graine (le quizz du jour est le même pour tous),
+  barème, paliers de résultat (`rookie` → `legend`), meilleure série de jours
+  consécutifs, et les **multiplicateurs de niveau** (`DIFFICULTY_MULTIPLIER` :
+  Facile ×1, Confirmé ×1,5, Expert ×2 — `quizPointsFor` met le barème base +
+  rapidité + combo à l'échelle, plafond 200/300/400 par question, revérifié
+  côté serveur). Le niveau joué voyage avec la partie préparée
+  (`prepared.level`).
+- **Règles par niveau** — `LEVEL_RULES` : le niveau ne change pas que les
+  questions et les points, il change **la façon de jouer** — temps par
+  question, nombre de propositions, vies, jokers et durée du gel de verdict :
+
+  | Niveau | Temps | Propositions | Vies | Jokers (50/50 + gel) | Gel de verdict |
+  | --- | --- | --- | --- | --- | --- |
+  | Facile | 20 s | 4 | — | 2 + 1 | 600 ms |
+  | Confirmé | 15 s | 4 | — | 1 + 1 | 600 ms |
+  | Expert | 10 s | 5 (dont un piège) | 3 | aucun | 450 ms |
+
+  `QUESTION_TIME.seconds` (15 s) reste la **référence** : chaque niveau la met
+  à l'échelle (`questionBudgetMs`), donc raccourcir la référence raccourcit les
+  trois budgets ensemble. Ces règles sont annoncées **avant** de jouer (carte
+  « Règles de ce niveau » du sélecteur, `levelBrief`) et appliquées en partie
+  (`resetRun`) — pas de piège pour le joueur. L'expert est plus dur sur tous
+  les axes : trois fois moins de temps par proposition qu'en facile, une
+  proposition de plus, une partie qui s'arrête à la troisième erreur, et
+  aucune aide.
+- **Jokers** — deux par partie, hors expert : **50/50** (deux mauvaises
+  propositions passent en `is-eliminated`, sans jamais toucher la bonne réponse
+  ni décaler la grille — le bouton reste en place, cliquable en apparence
+  seulement) et **gel du chrono** (la barre se fige et remonte de
+  `FREEZE_BONUS.seconds` = 8 s, ce qui rend la partie possible sans rendre la
+  question plus simple). Les boutons affichent le nombre restant, sont coupés
+  pendant le gel de verdict et se jouent aussi au clavier (`D` et `F`).
+- **Vies & fin de partie** — dès qu'un niveau en a (l'expert), chaque erreur ou
+  temps écoulé retire un cœur : au dernier, la partie **s'arrête** — écran de
+  résultat avec « Plus de vies », le rang où elle s'est arrêtée, les
+  corrections de tout le niveau et les questions non jouées comptées comme
+  ratées. `gradeQuiz` renvoie `answered` (questions réellement jouées) pour que
+  ce cas ne soit jamais pris pour un sans-faute.
+- **Minuteur** — budget par question selon le niveau (20 s / 15 s / 10 s,
+  `questionBudgetMs`) : une barre de décompte passe au rouge dans les 3
+  dernières secondes et, à zéro, la question avance sans réponse (comptée
+  ratée, signalée « Temps écoulé » dans les corrections).
 - **Sons** — `src/quizzes/quizSounds.js` : tout est synthétisé en Web Audio,
   aucun fichier audio à livrer. Un tick-tack discret tourne en fond pendant
   chaque question et **accélère par paliers** quand le temps baisse (une
   pulsation par seconde au début, 620 ms à mi-parcours, 340 ms dès que la barre
   passe au rouge — même seuil —, 220 ms dans la dernière seconde et demie, un
   peu plus fort). Une bonne réponse fait monter un accord do–mi–sol, une
-  mauvaise descend en dents de scie, et le temps écoulé ajoute une note grave
-  (ne pas répondre n'est pas se tromper). Tout est best-effort — sans API Web
+  mauvaise descend en dents de scie, le temps écoulé ajoute une note grave
+  (ne pas répondre n'est pas se tromper) et chaque jokers a sa signature
+  (`playQuizJokerSound` : le 50/50 descend sur deux notes, le gel du chrono
+  monte). Tout est best-effort — sans API Web
   Audio, la partie se joue normalement — et un bouton 🔊/🔇 (sur l'intro comme
   pendant la partie) coupe l'ensemble, la préférence restant sur l'appareil.
   Le son n'étant pas accessible à tous, un compteur ✓/✗ de la partie en cours
@@ -746,71 +1158,141 @@ mais la structure de données les accepte déjà.
   avec une phrase tirée au hasard (`verdicts.right/wrong/timeout`, traduits)
   et les points gagnés. Les points sont le barème du classement :
   base 100 + rapidité (jusqu'à 50, `quizPoints` du moteur) + combo (jusqu'à
-  50, les bonnes réponses consécutives) — 200 max par question. Ils s'affichent
-  en direct dans la barre du lecteur (⚡ + série 🔥 dès ×2, bip de combo dont
-  la note monte avec la série) et sur l'écran de résultat (total + meilleure
-  série). Ils font le classement des quizz et le record de l'appareil (la
-  meilleure partie = le plus de points, `correct/total` en départage) ; les
-  succès et les paliers de résultat restent calculés sur `correct/total`.
-  Raccourcis clavier : les touches 1–4 valident le choix affiché (jamais
-  pendant le gel, jamais dans un champ de saisie). Le sans-faute fait pleuvoir
-  des confettis sur l'écran de résultat
+  50, les bonnes réponses consécutives) — 200 max par question, MULTIPLIÉ par
+  la difficulté choisie (×1 / ×1,5 / ×2 → plafond 200/300/400 par question).
+  Ils s'affichent en direct dans la barre du lecteur (⚡ + série 🔥 dès ×2,
+  bip de combo dont la note monte avec la série) et sur l'écran de résultat
+  (total + meilleure série). Ils font le classement des quizz et le record de
+  l'appareil (le plus de points, `correct/total` en départage) ; les succès et
+  les paliers de résultat restent calculés sur `correct/total`.
+  **Un quizz ne rapporte que par difficulté, et une fois par difficulté** :
+  rejouer une difficulté déjà terminée (bouton « Rejouer ») ou « rejouer ses
+  erreurs » accumule 0 point — bandeau, compteur et résultat le disent — et
+  rien n'est écrit (ni succès/XP, ni record de l'appareil, ni classement),
+  quoi que le joueur réponde.
+  Raccourcis clavier : les touches **1–5** valident le choix affiché (les
+  propositions éliminées par un 50/50 sont ignorées, jamais pendant le gel,
+  jamais dans un champ de saisie) et `D` / `F` jouent les jokers — l'astuce
+  affichée suit le nombre réel de propositions du niveau.
+  Le sans-faute fait pleuvoir des confettis sur l'écran de résultat
   (`QuizConfetti`, DOM/CSS sans canvas, pluie de trois secondes) et chaque
   palier joue sa fanfare (`legend` = montée de quatre notes).
+  Une partie qui bat le record de l'appareil pour **ce niveau** est annoncée
+  (« Nouveau record », comparé **avant** d'écrire).
+- **Lecteur de partie & détail** — la refonte du lecteur : une pastille par
+  question (`quiz-pip`, verte/rouge, celle en cours signalée), un bandeau
+  compact (✓/✗, points, jokers, série, cœurs), des boutons d'action compacts
+  (`.quiz-cta` à la place du `.button` géant du site, avec l'accent du niveau
+  joué) et, au résultat, un **détail de partie** (`quiz-stats`) : réussite,
+  points, meilleure série, temps de réponse moyen, jokers dépensés et vies
+  restantes en expert. La série en cours passe par des paliers nommés
+  (`streakLevel` : `cold`/`warm`/`hot`/`blazing` — « Ça monte », « En feu »,
+  « Inarrêtable »). Tout reste lisible sans mouvement
+  (`prefers-reduced-motion` coupe secousses, pulses et confettis).
 - **Quizz du jour** — rotation par journée locale sur le catalogue, bannière
   sur `/quizz` (avec compte à rebours « nouveau quizz dans… », horloge simulée
   `?at=` partagée avec les autres comptes à rebours) et bandeau d'accueil ;
   terminer le quizz du jour crédite un jour de série (succès platine
   « Semaine parfaite » = 7 jours d'affilée). La meilleure partie de l'appareil
-  (points + bonnes réponses) s'affiche sur chaque carte de la grille.
-- **Succès** — l'action `quiz_completed` (`QuizPlayer`) alimente le moteur des
-  succès : parties, quizz distincts, sans-faute, jours de série. Cinq succès
-  au catalogue : Premier quizz (bronze), Rival trouvé (bronze, premier défi
-  envoyé), Sans faute (argent), Tour complet (or), Semaine parfaite (platine).
-  L'XP reste celle des succès, comme partout sur le site.
-- **Révision des erreurs** — depuis l'écran de résultat, « Rejouer mes erreurs »
+  (points + bonnes réponses), **tous niveaux confondus**, s'affiche sur chaque
+  carte de la grille, avec son niveau en infobulle.
+- **Succès & XP** — l'action `quiz_completed` (`QuizPlayer`) porte le `level`
+  joué ET les `points` du run : chaque niveau d'un quizz ne rapporte qu'à sa
+  PREMIÈRE complétion (`quizzes_played`, clé `slug:niveau` — la même que le
+  record de l'appareil et la tentative serveur), et ces points deviennent de
+  l'XP joueur (`quizPoints`, clé `slug:niveau`, fusionnable entre appareils).
+  `perfect_quizzes` reste indexé par SLUG et les métriques qui comptent des
+  quizz (« Tour complet ») ramènent la clé à son slug : un quizz reste un
+  quizz, même joué à trois niveaux. Rejouer un niveau terminé ne fait plus
+  avancer aucun succès (ni compteur, ni sans-faute, ni XP, ni points) — sauf le
+  jour de quizz du jour, qui reste crédité pour ne pas casser la série
+  « Semaine parfaite ». Cinq succès au catalogue : Premier quizz (bronze),
+  Rival trouvé (bronze, premier défi envoyé), Sans faute (argent), Tour
+  complet (or), Semaine parfaite (platine). Une complétion enregistrée avant
+  les niveaux (clé au slug nu) compte pour le niveau Facile, et seulement tant
+  qu'aucun niveau n'a été enregistré pour ce quizz (compatibilité).- **Révision des erreurs** — depuis l'écran de résultat, « Rejouer mes erreurs »
   ne rejoue que les questions ratées (tour d'entraînement : succès, record,
-  série et classement ne bougent pas, vérifié par `check:quiz`).
+  série, classement et points ne bougent pas, vérifié par `check:quiz`).
 - **Défi entre amis** — depuis l'écran de résultat, `QuizChallenge` envoie à
   un ami (messagerie 1-à-1 existante, mode démo ou Supabase) un message
   pré-rempli avec le score à battre ; sans compte ni backend, un message
   l'explique. Chaque défi crédite `quiz_challenge`.
-- **Scores & classement** — `supabase/schema.sql` (section 8) : table
-  `public.quiz_attempts` (MEILLEURE PARTIE par compte et par quizz — celle qui
-  marque le plus de points, à égalité le plus de bonnes réponses ; bornes
-  `0 ≤ score ≤ total` et `100 × score ≤ points ≤ 200 × total` vérifiées côté
-  serveur) + RPC `submit_quiz_attempt` (avec `p_points`), `get_quiz_leaderboard`
+- **Scores & classement** — les niveaux sont **séparés** : la clé d'une
+  tentative est `slug:niveau` (`attemptKey` dans `src/quizzes/quizApi.js`),
+  donc chaque palier a son propre classement et son propre record d'appareil
+  (un sans-faute en Expert ne se compare pas à un Facile) ; le classement
+  affiché suit le niveau choisi. `supabase/schema.sql` (section 8) : table
+  `public.quiz_attempts` (PREMIÈRE COMPLÉTION par compte et par RUN — rejoué,
+  un niveau ne remonte plus la ligne du joueur, `on conflict … do nothing` ;
+  bornes `0 ≤ score ≤ total` et `100 × mult × score ≤ points ≤ 200 × mult × total`
+  vérifiées côté serveur, le multiplicateur mult ∈ {1, 1,5, 2} étant déduit du
+  suffixe de `quiz_id`) + RPC `submit_quiz_attempt` (avec `p_points`), `get_quiz_leaderboard`
   (top 10 trié par POINTS gagnés — les bonnes réponses du run servent de
   départage et s'affichent en secondaire, jointes aux profils, ligne du joueur
   marquée `mine`) et `get_quiz_global_rank` (position au classement GLOBAL des
   quizz : somme des points des meilleures parties, tous quizz confondus —
   rang, points, quizz joués, joueurs classés), non exposées en direct (revoke).
   Le compte connecté envoie sa tentative à la fin de la partie
-  (`src/quizzes/quizApi.js`, avec repli sur l'ancienne signature de la RPC si
-  le déploiement est antérieur aux points) ; le visiteur garde sa meilleure
-  partie sur l'appareil (`localStorage`, clé propre aux quizz). La page de
-  profil affiche la position du joueur par rapport au classement global
+  (`src/quizzes/quizApi.js`, `quizId` = `slug:niveau`, avec repli sur l'ancienne
+  signature de la RPC si le déploiement est antérieur aux points) — mais
+  seulement si ce niveau est nouveau pour le joueur ; le visiteur garde ses
+  parties sur l'appareil (`localStorage`, clé propre aux quizz, une entrée par
+  `slug:niveau`, les anciens enregistrements au slug nu restant lus). La progression
+  des niveaux d'un compte vit dans `public.quiz_progress` (table RLS : chaque
+  joueur ne lit et n'écrit que ses lignes ; aucune exposition à `anon`). La page de  profil affiche la position du joueur par rapport au classement global
   (`src/quizzes/QuizGlobalRank.jsx`, profil personnel comme profils publics) ;
   sans backend, la section explique comment la débloquer. Après collage du
   schéma dans le Dashboard Supabase, le tableau de contrôle final affiche les
-  lignes 31–33 « OK ».
+  lignes 31–35 « OK ».
+- **Remise à zéro de tous les quizz pour tous les joueurs** —
+  `supabase/reset-quiz-ranking.sql`, à coller dans le SQL Editor du Dashboard.
+  Le script est explicitement destructif : il vide `public.quiz_attempts` et
+  `public.quiz_progress`, puis efface dans `player_progress` les points,
+  compteurs, ensembles, succès et défis du groupe « quiz ». Les comptes,
+  profils et progression non liée aux quizz sont conservés ; l'XP et le niveau
+  restants sont recalculés. Les copies locales sont également invalidées par
+  les clés v2/v3 et `quizResetVersion`, afin qu'un ancien navigateur ne
+  reverrouille pas les quizz après le reset. Recoller `schema.sql` n'exécute
+  jamais cette opération : lance le fichier de maintenance séparément.
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
-  points bornés à 200/question qui font le classement, série, minuteur à 15 s),
-  miniatures (une illustration distincte par quizz, demandée par les cartes
-  rendues — aucune requête YouTube), partie complète 8/8 jouée en jsdom avec
-  la vraie pile de providers (succès crédités dans le stockage, confettis du
-  sans-faute, points et meilleure série affichés), grille rendue en FR/EN/AR,
-  record de l'appareil par points (meilleure partie = le plus de points,
+  multiplicateurs ×1/×1,5/×2 par niveau, points bornés (200/300/400 par
+  question) qui font le classement, série, minuteur à 15 s,
+  trois niveaux de huit questions par quizz sans identifiant partagé), règles de
+  déblocage en cascade (`quizProgress` : Facile ouvert, Confirmé puis Expert
+  débloqués), miniatures (une illustration distincte par quizz, demandée par
+  les cartes rendues — aucune requête YouTube), partie complète jouée en jsdom
+  avec la vraie pile de providers : cadenas du départ, partie Facile 8/8 dont
+  les points deviennent de l'XP joueur, annonce « Niveau Confirmé débloqué »,
+  enchaînement du niveau Confirmé qui ouvre l'Expert, replay d'un niveau
+  terminé = 0 point et rien d'écrit (ni progression, ni record, ni XP), succès
+  crédités dans le stockage (une clé de run `slug:niveau` par niveau joué),
+  confettis du sans-faute, points et meilleure série affichés,
+  grille rendue en FR/EN/AR (aucune pastille de difficulté, progression
+  affichée),  record de l'appareil par points (meilleure partie = le plus de points,
   départage aux bonnes réponses), classement par points (points affichés en
   premier, score/total en secondaire, repli ancien backend) et position au
   classement global affichée sur la page de profil (repli hors-ligne expliqué),
-  verdict (gel avec choix verrouillés, vert/rouge, bonne réponse révélée,
-  bandeau avec points), raccourcis clavier 1–4 (la touche pendant le gel est
-  ignorée), sons (tempo qui accélère sans jamais ralentir et sans attendre le
-  battement suivant, battement réel, verdicts juste / faux / temps écoulé,
-  combo dont la note monte avec la série, fanfare du palier, coupure depuis le
-  bouton 🔊, no-op sans Web Audio) — le tout avec un faux `AudioContext` qui
-  enregistre les oscillateurs lancés. Le scénario de
+  règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en
+  expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons
+  ni doublés, `answered` d'une partie arrêtée), verdict (gel avec choix
+  verrouillés, vert/rouge, bonne réponse révélée, bandeau avec points),
+  raccourcis clavier 1–5 (+ `D` et `F` pour les jokers ; la touche pendant le
+  gel est ignorée), sons (tempo qui accélère sans jamais ralentir et sans
+  attendre le battement suivant, battement réel, verdicts juste / faux / temps
+  écoulé, combo dont la note monte avec la série, jokers — le 50/50 descend et
+  le gel monte —, fanfare du palier, coupure depuis le bouton 🔊, no-op sans
+  Web Audio), refonte du lecteur (CTA compacts, pastilles de progression,
+  50/50 qui élimine deux mauvaises réponses sans toucher la bonne, gel du
+  chrono, détail de partie) et niveau expert en conditions réelles (cinq
+  propositions, une vie perdue par erreur, fin de partie à la troisième,
+  « Plus de vies », base ×2 par bonne réponse, touche 5) et état « terminé »
+  (`isQuizFinished` : carte grisée rendue en `<div>` sans lien ni flèche,
+  drapeau `✓ TERMINÉ` sur la miniature, tampon à la place de la pastille
+  « n/3 niveaux », bannière du jour verrouillée sans compte à rebours avec son
+  indice dédié, écran « terminé » du lecteur à la place du sélecteur de
+  niveaux — trois niveaux cochés, aucun bouton pour relancer, réglage du son et
+  sortie vers la grille toujours présents) — le tout avec un faux `AudioContext`
+  qui enregistre les oscillateurs lancés. Le scénario de
   `check:achievements` débloque aussi les cinq succès quizz ; `check:i18n`
   rend les nouvelles routes dans les trois langues ; `check:thumbs` vérifie les
   fichiers livrés dans `public/quizzes/`.
@@ -1067,39 +1549,37 @@ qualité disponible pour cette vidéo.
   404 connu, l'illustration locale essayée avant YouTube quand elle est passée
   en `lead`), le **rendu réel des pages** en SSR (accueil : trois vignettes,
   `twbaM8fiXpo` en `hqdefault`, HicoSoft toujours en `maxresdefault` ; dossiers :
-  huit vignettes ; quizz : bannière du jour + huit cartes servies par
+  huit vignettes ; quizz : bannière du jour + vingt-cinq cartes servies par
   `public/quizzes/`, chaque fichier livré et non tronqué), et la source du site
   (aucune URL de miniature codée en dur hors de `src/lib/videoThumbnails.js`,
   ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins
   du repli présents).
 
-## Actus cinéma & séries
+## Actus cinéma du jour
 
-La moitié cinéma du hub a sa propre page : `/news/cinema`
-(`src/pages/CinemaNews.jsx`) reprend la grille des actus gaming — actu à la une
-sur deux colonnes, cartes à la suite, vues et sentiment — pour les films, les
-séries et le streaming. Les articles vivent dans `src/pages/CurrentNews.jsx`
-sous des clés préfixées `cinema/` (`cinema/werwulf-trailer-eggers`), servies par
-la route générique `/news/cinema/:slug` : rien à déclarer dans `src/main.jsx`
-quand on ajoute une actu, sinon la carte dans la liste de `CinemaNews.jsx` (les
-plus récentes ouvrent la page), l'entrée dans `src/search/searchIndex.js` et la
-méta `SEO.jsx` (section « Actualités cinéma »).
+Le hub Actus (`/news`) ouvre sur deux zones, gaming et cinéma ; la page
+`/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
+séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
+en deux temps, chapô, deux sections titrées, citation et encadré
+« À RETENIR », source d’origine citée et liée. Fournée du 27.09.2026 :
 
-**Visuels officiels.** Chaque actu cinéma peut porter deux images :
+- `/news/cinema/box-office-us-endgame-resident-evil` — la ressortie
+  d’Avengers: Endgame face au reboot Resident Evil au box-office américain
+  (Deadline, chiffres provisoires) ;
+- `/news/cinema/werwulf-trailer-eggers` — la deuxième bande-annonce du
+  Werwulf de Robert Eggers, sortie un jour de pleine lune (Focus Features) ;
+- `/news/cinema/fred-astaire-biopic-tom-holland` — le casting du biopic
+  Fred Astaire : Tom Holland, Margaret Qualley et Sabrina Carpenter (Sony).
 
-- `image` : le visuel officiel du studio quand il est publiable — miniature de
-  la bande-annonce officielle (`youTubeThumbUrl(...)`), visuel Focus Features,
-  photo de presse Variety/Getty… Une URL absolue est utilisée telle quelle ;
-- `thumbnail` : la couverture de l'article, quand elle diffère de la carte ;
-- `fallbackImage` : la carte éditoriale SVG du site, affichée si le visuel
-  officiel ne charge pas (`onError` sur la couverture et sur les cartes du hub).
-
-C'est le cas des trois dernières actus cinéma : la ressortie d'*Avengers:
-Endgame* (miniature officielle Marvel Studios), *Werwulf* (visuel Focus
-Features) et le biopic *Fred Astaire* (Sony n'ayant pas encore de visuel, la
-photo de presse Variety crédit Getty Images). Les sources sont listées dans
-`public/cinema-image-credits.txt`, et le crédit exact est rappelé sur la carte
-(`imageCredit`) et sous la couverture de l'article (`credit`).
+Concrètement, une actu cinéma suit le chemin des actus cinéma existantes :
+entrée dans `src/pages/CurrentNews.jsx` avec une clé préfixée `cinema/`
+(servie par la route générique `/news/cinema/:slug` — rien à déclarer dans
+`src/main.jsx`), carte en tête de la liste de `CinemaNews.jsx` (les plus
+récentes ouvrent la grille, la première est « À la une »), entrée dans
+`src/search/searchIndex.js`, méta `SEO.jsx` (section « Actualités cinéma »)
+et URL dans `public/sitemap.xml`. Le visuel est une carte éditoriale SVG
+1280×720 générée par `scripts/news-bot/lib/cover.mjs` (aucune image de droit
+n’est embarquée).
 
 ## Robot actus du jour
 
@@ -1119,6 +1599,13 @@ et liée.
   du texte de la source. Sans clé, le robot publie avec le gabarit extractif
   et reste alors sur les sources francophones (il ne traduit pas). En cas de
   panne du modèle, repli automatique sur le gabarit : aucun run n’est perdu.
+- **Zéro répétition** : chaque phrase de la source sert au plus une fois. Le
+  gabarit extractif distribue un pot de phrases dédupliquées entre chapô,
+  accroche, corps, citation et encadré « À RETENIR » ; la validation refuse
+  tout article dont deux champs rendus partagent un même passage
+  (`detectRepetitions`, également contrôlé par `npm run check:newsbot` sur
+  les articles déjà publiés). Sur une source trop courte, l’article est plus
+  court plutôt que répétitif : les blocs sans matière ne sont pas rendus.
 - **Publication automatique** : le robot committe sur `main`
   (`src/news/auto/*.json` + `src/news/autoIndex.js` + visuels SVG générés dans
   `public/news-auto/`), puis appelle explicitement le workflow réutilisable
