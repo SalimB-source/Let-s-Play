@@ -264,27 +264,6 @@ img{max-width:100%}
 @media(max-width:800px){
   .nav.nav-hidden{transform:translateY(-100%) !important}
 }
-/* Bordure gradient animée — halo premium autour de l'île */
-.nav::before{
-  content:"";
-  position:absolute; inset:-1px;
-  border-radius:17px;
-  padding:1px;
-  background:conic-gradient(from 180deg, rgba(34,211,238,.9), rgba(168,85,247,.9), rgba(255,214,25,.9), rgba(34,211,238,.9));
-  -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite:xor; mask-composite:exclude;
-  opacity:0;
-  transition:opacity .45s;
-  pointer-events:none;
-  animation:navBorderSpin 10s linear infinite;
-  z-index:-1;
-}
-.nav:hover::before,
-.nav.scrolled::before{opacity:.42}
-@media(prefers-reduced-motion:reduce){ .nav::before{animation:none} }
-@keyframes navBorderSpin{ to{ transform:rotate(360deg) } }
-@media(max-width:800px){ .nav::before{display:none} }
-
 /* Pill indicator qui glisse (remplace le saut instantané) */
 .nav-primary{position:relative}
 .nav-pill-indicator{
