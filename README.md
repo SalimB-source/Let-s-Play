@@ -1555,6 +1555,32 @@ qualité disponible pour cette vidéo.
   ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins
   du repli présents).
 
+## Actus cinéma du jour
+
+Le hub Actus (`/news`) ouvre sur deux zones, gaming et cinéma ; la page
+`/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
+séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
+en deux temps, chapô, deux sections titrées, citation et encadré
+« À RETENIR », source d’origine citée et liée. Fournée du 27.09.2026 :
+
+- `/news/cinema/box-office-us-endgame-resident-evil` — la ressortie
+  d’Avengers: Endgame face au reboot Resident Evil au box-office américain
+  (Deadline, chiffres provisoires) ;
+- `/news/cinema/werwulf-trailer-eggers` — la deuxième bande-annonce du
+  Werwulf de Robert Eggers, sortie un jour de pleine lune (Focus Features) ;
+- `/news/cinema/fred-astaire-biopic-tom-holland` — le casting du biopic
+  Fred Astaire : Tom Holland, Margaret Qualley et Sabrina Carpenter (Sony).
+
+Concrètement, une actu cinéma suit le chemin des actus cinéma existantes :
+entrée dans `src/pages/CurrentNews.jsx` avec une clé préfixée `cinema/`
+(servie par la route générique `/news/cinema/:slug` — rien à déclarer dans
+`src/main.jsx`), carte en tête de la liste de `CinemaNews.jsx` (les plus
+récentes ouvrent la grille, la première est « À la une »), entrée dans
+`src/search/searchIndex.js`, méta `SEO.jsx` (section « Actualités cinéma »)
+et URL dans `public/sitemap.xml`. Le visuel est une carte éditoriale SVG
+1280×720 générée par `scripts/news-bot/lib/cover.mjs` (aucune image de droit
+n’est embarquée).
+
 ## Robot actus du jour
 
 La page Actus s’alimente toute seule : un robot (`scripts/news-bot/`) tourne
