@@ -89,13 +89,17 @@ export const articleGalleries = {
     credit: 'Captures : Persona 5 Royal (ATLUS / SEGA), à titre d’illustration — Persona 6 n’a pas encore montré de gameplay.',
   },
   'last-of-us-ii-mod': {
-    label: 'PART II REMASTERED', meta: 'NAUGHTY DOG · PC',
+    label: 'THE LAST OF US PART II', meta: 'MOD MULTIJOUEUR · PC',
     items: [
-      { src: 'screenshots/last-of-us-ii/01.jpg', alt: 'The Last of Us Part II Remastered — Ellie en exploration à Seattle', caption: '01 / Seattle, le terrain de jeu d’Ellie' },
-      { src: 'screenshots/last-of-us-ii/02.jpg', alt: 'The Last of Us Part II Remastered — environnement envahi par la végétation', caption: '02 / Le monde que le mod voulait reconnecter' },
-      { src: 'screenshots/last-of-us-ii/03.jpg', alt: 'The Last of Us Part II Remastered — scène d’exploration en intérieur', caption: '03 / Les traces d’un multijoueur attendu' },
+      { src: 'screenshots/last-of-us-ii/01.jpg', alt: 'The Last of Us Part II — deux joueurs avancent ensemble dans le mod multijoueur de Speclizer', caption: '01 / Le mod de Speclizer en coopération' },
+      { src: 'screenshots/last-of-us-ii/02.jpg', alt: 'The Last of Us Part II Remastered — Ellie retrouve Tommy', caption: '02 / Ellie et Tommy, le récit solo' },
+      { src: 'screenshots/last-of-us-ii/03.jpg', alt: 'The Last of Us Part II Remastered — Ellie explore les rues envahies de Seattle', caption: '03 / Seattle, terrain d’exploration' },
     ],
-    credit: 'Captures : The Last of Us Part II Remastered (Naughty Dog / PlayStation).',
+    credit: 'Capture du mod de Speclizer via Wccftech ; captures du jeu : The Last of Us Part II Remastered (Naughty Dog / PlayStation) via XDA Developers.',
+    creditSources: [
+      { label: 'article Wccftech sur le mod et la demande d’arrêt de Sony', href: 'https://wccftech.com/speclizer-the-last-of-us-2-multiplayer-mod-sony-cease-desist/' },
+      { label: 'test PC et captures XDA Developers', href: 'https://www.xda-developers.com/the-last-of-us-part-ii-remastered-pc-review/' },
+    ],
   },
   'sorties-24-septembre': {
     label: 'LE 24 SEPTEMBRE EN IMAGES', meta: 'SILENT HILL × CONTROL',
@@ -107,23 +111,34 @@ export const articleGalleries = {
     credit: 'Captures : Silent Hill: Townfall (Konami) et Control (Remedy Entertainment).',
   },
   'netmarble-tgs-2026': {
-    label: 'SOLO LEVELING: KARMA', meta: 'NETMARBLE · TGS 2026',
+    label: 'TROIS JEUX AU TGS', meta: 'NETMARBLE · TGS 2026',
     items: [
-      { src: 'screenshots/netmarble-tgs/01.jpg', alt: 'Solo Leveling: KARMA — Sung Jinwoo en action dans le roguelite de Netmarble', caption: '01 / L’action roguelite de KARMA' },
-      { src: 'screenshots/netmarble-tgs/02.jpg', alt: 'Solo Leveling: KARMA — affrontement dans l’univers Solo Leveling', caption: '02 / Sung Jinwoo, jouable au TGS' },
+      { src: 'screenshots/netmarble-tgs/01.jpg', alt: 'Solo Leveling: KARMA — Sung Jinwoo, visuel du jeu mobile de Netmarble', caption: '01 / Solo Leveling: KARMA' },
+      { src: 'screenshots/netmarble-tgs/02.jpg', alt: 'Shangri-La Frontier: The Seven Colossi — visuel officiel du RPG présenté au TGS', caption: '02 / Shangri-La Frontier: The Seven Colossi' },
+      { src: 'screenshots/netmarble-tgs/03.png', alt: 'Pearl in Blue — visuel officiel du jeu présenté au TGS 2026', caption: '03 / Pearl in Blue' },
     ],
-    credit: 'Captures : Solo Leveling: KARMA (Netmarble).',
+    credit: 'Visuels des trois jeux annoncés au TGS 2026. Sources : Netmarble, GameMeca et GachaGo.',
+    creditSources: [
+      { label: 'bilan TGS de Netmarble', href: 'https://www.eqs-news.com/news/corporate/netmarble-wraps-up-tokyo-game-show-2026-with-three-upcoming-titles/3fca48e2-6062-4712-8715-83b095654f1a_en' },
+      { label: 'visuel Shangri-La Frontier (GameMeca)', href: 'https://gamemeca.com/en/view.php?gid=1780506' },
+      { label: 'visuel Pearl in Blue (GachaGo)', href: 'https://gachago.com/en/news/pearl-in-blue-new-trailer-tgs-2026' },
+    ],
   },
 
   // ---- Actus cinéma & séries ---------------------------------------------
   'cinema/jojo-steel-ball-run-episode-2': {
     label: 'STEEL BALL RUN', meta: 'NETFLIX · DAVID PRODUCTION',
     items: [
-      { src: 'screenshots/cinema-jojo-steel-ball-run/01.jpg', alt: 'Steel Ball Run — Gyro Zeppeli, photogramme officiel de l’anime', caption: '01 / Gyro Zeppeli, photogramme officiel' },
-      { src: 'screenshots/cinema-jojo-steel-ball-run/02.jpg', alt: 'Steel Ball Run — la course transcontinentale en images', caption: '02 / La course reprend chaque vendredi' },
-      { src: 'screenshots/cinema-jojo-steel-ball-run/03.jpg', alt: 'Steel Ball Run — Johnny Joestar et Gyro Zeppeli', caption: '03 / Johnny et Gyro, le duo de la 1st STAGE' },
+      { src: 'screenshots/cinema-jojo-steel-ball-run/01.jpg', alt: 'Steel Ball Run — gros plan sur Gyro Zeppeli', caption: '01 / Gyro Zeppeli, photogramme officiel' },
+      { src: 'screenshots/cinema-jojo-steel-ball-run/02.jpg', alt: 'Steel Ball Run — Johnny et Gyro à cheval pendant la course', caption: '02 / Johnny et Gyro reprennent la route' },
+      { src: 'screenshots/cinema-jojo-steel-ball-run/03.jpg', alt: 'Steel Ball Run — Steven Steel, Lucy Steel et Mountain Tim autour des journaux', caption: '03 / Mountain Tim et Lucy Steel, une intrigue parallèle' },
     ],
-    credit: 'Photogrammes : STEEL BALL RUN JoJo’s Bizarre Adventure — ©LUCKY LAND COMMUNICATIONS/SHUEISHA, JOJO’s Animation SBR Project.',
+    credit: 'Photogrammes de l’épisode 2 — ©LUCKY LAND COMMUNICATIONS / SHUEISHA / JOJO’s Animation SBR Project.',
+    creditSources: [
+      { label: 'JoJoWiki', href: 'https://jojowiki.com/SBR_Episode_2' },
+      { label: 'But Why Tho?', href: 'https://butwhytho.net/2026/09/steel-ball-run-episode-2-review/' },
+      { label: 'Trill Mag', href: 'https://www.trillmag.com/entertainment/tv-film/the-journey-continues-steel-ball-run-episode-2-preview-and-episode-1-recap/' },
+    ],
   },
   'cinema/dune-messiah-trailer': {
     label: 'DUNE: PART TWO', meta: 'WARNER BROS · LEGENDARY',
@@ -274,10 +289,13 @@ export const articleGalleries = {
   'starcraft-fps': {
     label: 'L’UNIVERS STARCRAFT', meta: 'BLIZZARD · GUERRE INTERSTELLAIRE',
     items: [
-      { src: 'screenshots/starcraft-fps/01.jpg', alt: 'StarCraft II — affrontement Terrans contre Zergs', caption: '01 / Terrans contre Zergs' },
-      { src: 'screenshots/starcraft-fps/02.jpg', alt: 'StarCraft II — champ de bataille vu du dessus', caption: '02 / La guerre vue du dessus' },
+      { src: 'screenshots/starcraft-fps/01.jpg', alt: 'StarCraft — marine en armure, photogramme du trailer cinématique d’annonce', caption: '01 / Le nouveau shooter se dévoile en cinématique' },
+      { src: 'screenshots/starcraft-fps/02.jpg', alt: 'StarCraft II — bataille Terran contre Zerg vue du dessus', caption: '02 / L’héritage stratégique de la saga' },
     ],
-    credit: 'Captures : StarCraft II (Blizzard Entertainment), à titre d’illustration de l’univers.',
+    credit: 'Photogramme du trailer cinématique : Blizzard Entertainment ; capture de StarCraft II, à titre d’illustration de l’héritage de la licence.',
+    creditSources: [
+      { label: 'présentation du trailer chez Video Games Chronicle', href: 'https://www.videogameschronicle.com/news/blizzard-reveals-open-world-starcraft-shooter-from-ex-far-cry-boss/' },
+    ],
   },
   'diablo-v': {
     label: 'L’UNIVERS DIABLO', meta: 'BLIZZARD · SANCTUAIRE',
