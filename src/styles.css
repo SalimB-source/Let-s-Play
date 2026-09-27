@@ -575,15 +575,21 @@ img{max-width:100%}
 .nav-actions-grid .nav-account.connected .nav-account-name{
   font:600 12px var(--body);letter-spacing:.01em;color:var(--ink);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
+/* Badge de niveau : seul propriétaire de ce style (l'autre définition, dans
+   auth.css, datait d'avant l'île de verre et peignait du blanc sur l'aplat
+   jaune). Encre sombre sur le jaune de marque : lisible dans les deux
+   thèmes, 13,8:1. */
 .nav-actions-grid .nav-account.connected .nav-account-level{
   display:inline-flex;align-items:center;gap:3px;
+  flex:none;
   padding:2px 6px;
   border-radius:999px;
   background:var(--yellow);color:#0a0b1a;
   font:700 10px var(--mono);
+  letter-spacing:0;line-height:1;text-transform:uppercase;
 }
-.nav-actions-grid .nav-account.connected .nav-account-level small{font-size:8px;opacity:.7}
-.nav-actions-grid .nav-account.connected .nav-account-level strong{font-size:11px}
+.nav-actions-grid .nav-account.connected .nav-account-level small{font-size:8px;letter-spacing:.12em;line-height:1;opacity:.7}
+.nav-actions-grid .nav-account.connected .nav-account-level strong{font:800 11px/1 var(--display);letter-spacing:-.02em;text-transform:none}
 
 /* ============ HERO (full screen) ============ */
 .hero{

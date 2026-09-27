@@ -1955,49 +1955,14 @@
   color: var(--yellow);
 }
 
-/* Level badge */
-.nav-account-level {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 6px;
-  background: rgba(255, 214, 25, .12);
-  border: 1px solid rgba(255, 214, 25, .4);
-  color: var(--yellow);
-  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
-  letter-spacing: 0;
-  text-transform: uppercase;
-  flex: none;
-  line-height: 1;
-  transition: background .2s, border-color .2s, color .2s;
-}
-
-.nav-account-level small {
-  font: 700 8px var(--mono);
-  letter-spacing: .12em;
-  line-height: 1;
-  color: var(--yellow);
-  transition: color .2s;
-}
-
-.nav-account-level strong {
-  font: 800 11px/1 var(--display);
-  letter-spacing: -.02em;
-  color: #fff;
-  text-transform: none;
-  transition: color .2s;
-}
-
-.nav-account.connected:hover .nav-account-level {
-  background: var(--yellow);
-  border-color: var(--yellow);
-  color: #0a0b1a;
-}
-
-.nav-account.connected:hover .nav-account-level small,
-.nav-account.connected:hover .nav-account-level strong {
-  color: #0a0b1a;
-}
+/* Le badge de niveau (pastille jaune « LV 12 ») est stylé dans styles.css,
+   avec le reste de la pastille de compte, en `nav-actions-grid`. Ce fichier
+   gardait une seconde définition, d'avant l'« île de verre » : fond jaune
+   translucide et encre *claire* (jaune puis blanc). Chargé après styles.css,
+   elle recolorait `small`/`strong` — les sélecteurs courts
+   `.nav-account-level small|strong` (0,1,1) l'emportaient sur l'héritage de
+   la pastille (0,4,0) — et posait du blanc sur l'aplat jaune du badge :
+   niveau invisible en thème sombre. Un seul propriétaire pour le badge. */
 
 @media (min-width: 801px) and (max-width: 1160px) {
   .nav-account-name {
