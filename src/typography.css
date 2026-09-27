@@ -108,3 +108,47 @@ html body [class*='title' i],
 html body .social-panel-kicker {
   font-weight: 700 !important;
 }
+
+/* ============ 5. MESSAGERIE : PSEUDOS + NAVIGATION EN GRAS ============ */
+/* Les pseudos des joueurs et les liens de navigation de la messagerie
+   restent en Google Sans (lisible à petit corps), mais en gras (700) pour
+   les distinguer du texte courant. Sans ce bloc, la règle `body *` du
+   bloc 1 les ramènerait en 400 et annulerait le gras des feuilles
+   messages / friends / social. */
+html body :is(
+  /* Pseudos : lignes de discussion, en-tête du fil, initiales d'avatar,
+     et pseudos des onglets Amis (même page /messages). */
+  .messages-row-name,
+  .messages-thread-name,
+  .messages-avatar-fallback,
+  .friends-row-name,
+  .friends-avatar-fallback,
+  .player-friend-name,
+  /* Navigation de la messagerie : onglets de la page /messages, onglets
+     de la fenêtre flottante (bureau), bouton-lien « Profil » du fil,
+     liens de la messagerie, lien « Messages » du menu principal. */
+  .social-page-tab,
+  .social-page-tab-label,
+  .social-tab,
+  .messages-tool-profile,
+  .messages-link,
+  .friends-action-profile,
+  .nav-messages-link .nav-link-label
+),
+html body :is(
+  .messages-row-name,
+  .messages-thread-name,
+  .messages-avatar-fallback,
+  .friends-row-name,
+  .friends-avatar-fallback,
+  .player-friend-name,
+  .social-page-tab,
+  .social-page-tab-label,
+  .social-tab,
+  .messages-tool-profile,
+  .messages-link,
+  .friends-action-profile,
+  .nav-messages-link .nav-link-label
+) * {
+  font-weight: 700 !important;
+}
