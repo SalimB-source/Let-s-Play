@@ -29,6 +29,12 @@ accéder à la messagerie, il faut se connecter dans l'application.
   caméra reste installable (`uses-feature` non requis) et les appels y restent
   vocaux. **Refuser ces permissions rend tout appel impossible dans l'app** :
   le site affichera « accès au micro/à la caméra refusé ».
+- **Haut-parleur** : un appel vocal Android part sinon dans l'écouteur, alors
+  que l'appel vidéo sort du haut-parleur — on croit le vocal muet. Dès que le
+  micro est accordé (et quand le site appelle `LetsPlayAndroid.setCallAudio`),
+  l'app bascule en haut-parleur et rend le routage d'avant à la fin de l'appel.
+  La lecture média ne dépend pas d'un geste : le son distant arrive après la
+  négociation WebRTC.
 
 ## Construire l'APK
 

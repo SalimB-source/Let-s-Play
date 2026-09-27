@@ -163,17 +163,22 @@
 .calls-timer { font-style: normal; color: var(--cyan); }
 .calls-error { color: #fda4af; font: 500 12px var(--body); }
 
-/* La scène : la vidéo de l'ami couvre, ou l'avatar + égaliseur en audio. */
+/* La scène : la vidéo de l'ami couvre, ou l'avatar + égaliseur en audio.
+   Le son vocal passe par un <video> de la même taille (pas display:none :
+   iOS et Android coupent alors la lecture) caché derrière l'avatar. */
 .calls-stage { position: relative; flex: 1; min-height: 0; background: rgba(4, 5, 14, .5); }
 .calls-remote { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.calls-remote-audio { z-index: 0; }
 .calls-stage-audio {
   position: absolute;
   inset: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 18px;
+  background: radial-gradient(ellipse at center, rgba(18, 24, 48, .35), rgba(7, 8, 24, .94) 70%);
 }
 .calls-stage-avatar { display: inline-flex; opacity: .8; transition: opacity .3s, transform .3s; }
 .calls-stage-avatar.is-live { opacity: 1; transform: scale(1.03); }

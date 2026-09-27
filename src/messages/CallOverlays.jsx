@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useCalls } from './CallsContext';
 import { callStatusLabel, callsText } from './callsCopy';
-import { formatDuration } from './callsCore';
+import { formatDuration, remotePlaybackNeedsSink } from './callsCore';
 
 /**
  * Interface des appels vocaux / vidéo.
@@ -92,21 +92,42 @@ function CallAvatar({ name, src, size = 92 }) {
   );
 }
 
-/** Branche un MediaStream sur un `<video>` (autoplay tolérant, sens iOS). */
+/**
+ * Branche un MediaStream sur un `<video>` (autoplay tolérant, sens iOS).
+ *
+ * Le son WebRTC ne sort que si un élément média le joue. On force `muted` en
+ * propriété (React ne la met pas toujours à jour) et on relance `play()` quand
+ * la piste se débloque : sinon l'appel « marche » à l'écran et reste muet.
+ */
 function Stream({ stream, muted = false, className = '', mirrored = false, label }) {
   const ref = useRef(null);
   useEffect(() => {
     const node = ref.current;
     if (!node) return undefined;
+    node.muted = muted;
+    node.defaultMuted = muted;
+    if (!muted) node.volume = 1;
+    node.setAttribute('playsinline', 'true');
+    node.setAttribute('webkit-playsinline', 'true');
     if (node.srcObject !== (stream || null)) node.srcObject = stream || null;
-    if (stream) {
+    const tryPlay = () => {
+      if (!node || !stream) return;
       const playing = node.play?.();
-      if (playing && typeof playing.catch === 'function') playing.catch(() => { /* geste requis : le panneau reste visible */ });
-    }
-    return () => {
-      if (node) node.srcObject = null;
+      if (playing && typeof playing.catch === 'function') playing.catch(() => { /* geste requis : on réessaiera au unmute */ });
     };
-  }, [stream]);
+    tryPlay();
+    node.addEventListener?.('canplay', tryPlay);
+    const tracks = [
+      ...(stream?.getAudioTracks?.() || []),
+      ...(stream?.getVideoTracks?.() || []),
+    ];
+    for (const track of tracks) track.addEventListener?.('unmute', tryPlay);
+    return () => {
+      node.removeEventListener?.('canplay', tryPlay);
+      for (const track of tracks) track.removeEventListener?.('unmute', tryPlay);
+      node.srcObject = null;
+    };
+  }, [stream, muted]);
   return (
     <video
       ref={ref}
@@ -169,7 +190,11 @@ function ActiveCall({ calls, t }) {
   } = calls;
   const isVideo = kind === 'video';
   const localVideo = isVideo && Boolean(localStream?.getVideoTracks?.().length);
-  const remoteVideo = isVideo && Boolean(remoteStream?.getVideoTracks?.().length);
+  const remoteVideo = isVideo && Boolean(remoteStream?.getVideoTracks?.().some((track) => track.readyState !== 'ended'));
+  // Appel vocal (ou vidéo sans image distante) : le `<video>` ci-dessus n'est
+  // pas monté, donc il ne joue pas le son. Sans ce lecteur, le chrono tourne
+  // et personne n'entend l'ami — alors que l'appel vidéo, lui, s'entend.
+  const sinkRemoteAudio = phase !== 'ended' && Boolean(remoteStream) && remotePlaybackNeedsSink(remoteVideo);
   const status = callStatusLabel(t, { phase, kind, endReason });
   const timer = phase === 'active' && connected ? formatDuration(elapsedMs) : '';
 
@@ -188,6 +213,9 @@ function ActiveCall({ calls, t }) {
         <div className="calls-stage">
           {phase !== 'ended' && remoteVideo && (
             <Stream stream={remoteStream} className="calls-remote" label={peer?.name} />
+          )}
+          {sinkRemoteAudio && (
+            <Stream stream={remoteStream} className="calls-remote calls-remote-audio" label={peer?.name || t.callAudio} />
           )}
           {!remoteVideo && (
             <div className="calls-stage-audio" aria-hidden="true">
