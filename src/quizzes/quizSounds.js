@@ -21,6 +21,9 @@
  *   - `playQuizComboSound(streak)` : un bip carré joué dès la deuxième bonne
  *     réponse consécutive, dont la note monte avec la série — le son chauffe
  *     comme le compteur 🔥 de la partie ;
+ *   - `playQuizJokerSound(kind)` : la signature du joker dépensé — le 50/50
+ *     descend (deux choix qui disparaissent), le gel du chrono monte d'une
+ *     quinte (du temps repris) ;
  *   - `playQuizResultFanfare(tier)` : la fanfare de l'écran de résultat, à la
  *     hauteur du palier (montée de quatre notes pour la légende, petit « oui »
  *     pour le novice).
@@ -245,6 +248,33 @@ export function playQuizComboSound(streak) {
       type: 'square',
       gain: 0.05,
     });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Son d'un joker dépensé : deux signatures distinctes, jouées au moment du
+ * clic — le 50/50 « balaie » (deux notes qui descendent, comme les deux choix
+ * qui disparaissent), le gel du chrono monte d'une quinte (le temps repris).
+ * @param {'fifty'|'freeze'} kind le joker joué
+ * @returns {boolean} true si le son a effectivement été lancé
+ */
+export function playQuizJokerSound(kind) {
+  if (!quizSoundEnabled()) return false;
+  const context = getAudioContext();
+  if (!context || context.state === 'suspended') return false;
+  try {
+    if (kind === 'freeze') {
+      [587.33, 880].forEach((frequency, index) => {
+        scheduleNote(context, { frequency, offset: index * 0.06, duration: 0.18, type: 'triangle', gain: 0.075 });
+      });
+    } else {
+      [1046.5, 783.99].forEach((frequency, index) => {
+        scheduleNote(context, { frequency, offset: index * 0.05, duration: 0.14, attack: 0.005, type: 'sine', gain: 0.08 });
+      });
+    }
     return true;
   } catch (e) {
     return false;

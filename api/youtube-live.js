@@ -4,11 +4,17 @@ function send(res, status, payload, cacheControl = 'no-store') {
   res.status(status).setHeader('Cache-Control', cacheControl).json(payload);
 }
 
-export default async function handler(_request, response) {
+export default async function handler(request, response) {
+  if (request.method !== 'GET') {
+    response.setHeader('Allow', 'GET');
+    return send(response, 405, { error: 'Method not allowed.' });
+  }
+
   const apiKey = process.env.YOUTUBE_API_KEY;
 
   if (!apiKey) {
-    return send(response, 503, { status: 'unknown', error: 'YouTube API key is not configured.' });
+    console.error('YouTube API key is not configured.');
+    return send(response, 503, { status: 'unknown', error: 'Service unavailable.' });
   }
 
   const params = new URLSearchParams({
@@ -21,7 +27,9 @@ export default async function handler(_request, response) {
   });
 
   try {
-    const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+    const youtubeResponse = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`, {
+      signal: AbortSignal.timeout(8000),
+    });
     const data = await youtubeResponse.json();
 
     if (!youtubeResponse.ok) {
@@ -30,10 +38,15 @@ export default async function handler(_request, response) {
     }
 
     const live = data.items?.[0];
+    const videoId = live?.id?.videoId;
+    if (live && typeof videoId !== 'string') {
+      console.error('YouTube API returned an invalid live-video payload.');
+      return send(response, 502, { status: 'unknown', error: 'Invalid YouTube response.' });
+    }
     return send(response, 200, live ? {
       status: 'live',
-      videoId: live.id.videoId,
-      title: live.snippet.title,
+      videoId,
+      title: typeof live.snippet?.title === 'string' ? live.snippet.title : '',
     } : {
       status: 'offline',
     }, 's-maxage=60, stale-while-revalidate=300');

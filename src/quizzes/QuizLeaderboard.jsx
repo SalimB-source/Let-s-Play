@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
-import { fetchQuizLeaderboard, formatBest, quizApiEnabled, readLocalBest } from './quizApi';
+import { fetchQuizLeaderboard, formatBest, quizApiEnabled, quizAttemptId, readLocalBest, readLocalBestRun } from './quizApi';
 
 const FALLBACK = {
   boardTitle: 'Leaderboard',
@@ -9,44 +9,56 @@ const FALLBACK = {
   empty: 'No scores yet — be the first on the leaderboard.',
   you: 'You',
   bestDevice: 'Best score on this device',
+  bestOther: 'This level is still untouched — your best score on this quiz is on another level.',
+  levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
 };
 
 /**
- * Classement d'un quizz : top 10 partagé pour les comptes connectés
- * (RPC `get_quiz_leaderboard`, trié par POINTS gagnés — les bonnes réponses
- * restent affichées en secondaire), meilleure partie de l'appareil pour les
- * visiteurs. Sans backend, un message explique comment débloquer le
- * classement — rien ne casse.
+ * Classement d'un NIVEAU de quizz : top 10 partagé pour les comptes connectés
+ * (RPC `get_quiz_leaderboard`, clé `slug:niveau`, trié par POINTS gagnés — les
+ * bonnes réponses restent affichées en secondaire), meilleure partie de
+ * l'appareil pour les visiteurs. Sans backend, un message explique comment
+ * débloquer le classement — rien ne casse.
  */
-export default function QuizLeaderboard({ quiz, lastBoard = null, refreshKey = 0 }) {
+export default function QuizLeaderboard({ quiz, level = 'easy', lastBoard = null, refreshKey = 0 }) {
   const { t } = useLanguage();
   const { user, isDemo } = useAuth();
-  const copy = { ...FALLBACK, ...((t.quiz || {}).board || {}) };
+  const copy = {
+    ...FALLBACK,
+    ...((t.quiz || {}).board || {}),
+    levels: { ...FALLBACK.levels, ...((t.quiz || {}).levels || {}) },
+  };
   const [rows, setRows] = useState(lastBoard);
-  // Relu à chaque fin de partie (`refreshKey`) : la partie de l'appareil
-  // change sans que ce composant ne reçoive d'autre mise à jour.
-  const [localBest, setLocalBest] = useState(() => readLocalBest(quiz.slug));
+  // Relu à chaque fin de partie (`refreshKey`) et à chaque changement de
+  // niveau : la meilleure partie de l'appareil change sans que ce composant
+  // ne reçoive d'autre mise à jour.
+  // Record de l'appareil : celui du NIVEAU affiché (une ligne de classement par
+  // niveau), plus le meilleur du quizz toutes difficultés confondues.
+  const [localBest, setLocalBest] = useState(() => readLocalBestRun(quiz.slug, level));
+  const [quizBest, setQuizBest] = useState(() => readLocalBest(quiz.slug));
   const connected = Boolean(user) && !isDemo;
 
   useEffect(() => {
     let cancelled = false;
     if (quizApiEnabled()) {
-      fetchQuizLeaderboard(quiz.slug).then((data) => {
+      setRows(null);
+      fetchQuizLeaderboard(quizAttemptId(quiz.slug, level)).then((data) => {
         if (!cancelled && data) setRows(data);
       });
     }
     return () => { cancelled = true; };
-  }, [quiz.slug, lastBoard]);
+  }, [quiz.slug, level, lastBoard]);
 
   useEffect(() => {
-    setLocalBest(readLocalBest(quiz.slug));
-  }, [quiz.slug, refreshKey]);
+    setLocalBest(readLocalBestRun(quiz.slug, level));
+    setQuizBest(readLocalBest(quiz.slug));
+  }, [quiz.slug, level, refreshKey]);
 
   const list = Array.isArray(rows) ? rows : [];
 
   return (
     <section className="quiz-board">
-      <div className="section-label"><span>{copy.boardTitle}</span><span>{list.length || '—'}</span></div>
+      <div className="section-label"><span>{copy.boardTitle}</span><span>{copy.levels[level] || level}</span></div>
       {!quizApiEnabled() && <p className="quiz-board-note">{copy.offline}</p>}
       {quizApiEnabled() && list.length === 0 && <p className="quiz-board-note">{copy.empty}</p>}
       {list.length > 0 && (
@@ -72,6 +84,9 @@ export default function QuizLeaderboard({ quiz, lastBoard = null, refreshKey = 0
       )}
       {!connected && localBest && (
         <p className="quiz-board-local">{copy.bestDevice} : <strong>{formatBest(localBest)}</strong></p>
+      )}
+      {!connected && !localBest && quizBest && (
+        <p className="quiz-board-local">{copy.bestOther}</p>
       )}
     </section>
   );
