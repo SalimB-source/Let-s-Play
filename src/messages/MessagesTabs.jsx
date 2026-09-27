@@ -611,6 +611,13 @@ function VoiceComposer({ t, onRecorded, onCancel }) {
     } catch (e) {
       setPhase('preview');
       setErrorText(describeMessagesError(e, t));
+      // L'écran ne montre qu'un message générique : l'étape fautive (upload
+      // storage ou INSERT) et la cause Supabase détaillée vont dans la console,
+      // où `window.__lpVoiceDiag()` sonde en plus chaque maillon de la chaîne.
+      if (e?.stage) {
+        // eslint-disable-next-line no-console
+        console.error(`[voice] échec à l’étape « ${e.stage} » — détail ci-dessous, ou lance window.__lpVoiceDiag() pour sonder la chaîne complète.`, e.supabase || e.cause || e);
+      }
     }
   };
 
