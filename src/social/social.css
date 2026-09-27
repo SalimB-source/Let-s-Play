@@ -76,6 +76,11 @@
   font-size: 11px;
   letter-spacing: .12em;
 }
+.lets-talk-label { color: #fff; }
+.social-panel-kicker.lets-talk-label svg,
+.social-launcher-icon { color: var(--yellow); }
+.social-tab--messages.lets-talk-label.is-active { color: var(--yellow); border-bottom-color: var(--yellow); }
+.nav-messages-link .lets-talk-label { color: #fff; }
 .social-launcher-meta {
   display: inline-flex;
   align-items: center;

@@ -330,8 +330,8 @@ export default function Layout({ children }) {
                 <span className="nav-link-main">
                   <span className="nav-link-num">06</span>
                   <span className="nav-link-text">
-                    <span className="nav-link-label">{socialText(lang).title}</span>
-                    <span className="nav-link-desc">{socialText(lang).tabMessages}</span>
+                    <span className="nav-link-label lets-talk-label">{socialText(lang).title}</span>
+                    <span className="nav-link-desc lets-talk-label">{socialText(lang).tabMessages}</span>
                   </span>
                 </span>
                 <span className="nav-link-arrow" aria-hidden="true">↗</span>

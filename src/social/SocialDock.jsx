@@ -363,7 +363,7 @@ export default function SocialDock() {
           {!inThread && (
             <header className="social-panel-head">
               <div className="social-panel-title">
-                <span className="social-panel-kicker"><SocialIcon size={14} /> {t.title}</span>
+                <span className="social-panel-kicker lets-talk-label"><SocialIcon size={14} /> {t.title}</span>
                 <span className="social-panel-sub">{subtitle}</span>
               </div>
               <div className="social-panel-tools">
@@ -396,7 +396,7 @@ export default function SocialDock() {
                 <button
                   key={item.id}
                   type="button"
-                  className={`social-tab${tab === item.id ? ' is-active' : ''}${item.alert ? ' has-alert' : ''}`}
+                  className={`social-tab${item.id === 'messages' ? ' social-tab--messages lets-talk-label' : ''}${tab === item.id ? ' is-active' : ''}${item.alert ? ' has-alert' : ''}`}
                   onClick={() => selectTab(item.id)}
                   aria-pressed={tab === item.id}
                 >
@@ -424,7 +424,7 @@ export default function SocialDock() {
           title={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
         >
           <span className="social-launcher-icon"><SocialIcon /></span>
-          <span className="social-launcher-label">{t.launcher}</span>
+          <span className="social-launcher-label lets-talk-label">{t.launcher}</span>
           {enabled && <span className="social-launcher-meta">
             <span className={`social-launcher-dot${onlineCount > 0 ? ' is-online' : ''}`} aria-hidden="true" />
             {onlineCount} {ft.online}
