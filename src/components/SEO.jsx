@@ -18,6 +18,11 @@ const pageMeta = {
     description: 'Les dernières actualités du jeu vidéo, des consoles, du PC, de la tech et de la pop culture par la rédaction Let’s Play.',
     type: 'website',
   },
+  '/news/cinema': {
+    title: 'Actualités cinéma & séries — Let’s Play',
+    description: 'Blockbusters, bandes-annonces, casting et sorties streaming : l’actualité du cinéma et des séries décryptée par la rédaction Let’s Play.',
+    type: 'website',
+  },
   '/calendrier': {
     title: 'Calendrier complet des sorties gaming — Let’s Play',
     description: 'Toutes les sorties de jeux vidéo datées, mois par mois : septembre 2026 à avril 2027, plateformes et comptes à rebours, mis à jour dès qu’une date est confirmée.',
@@ -135,6 +140,11 @@ function upsertMeta(attribute, value, content) {
 
 function absoluteAsset(path) {
   if (!path) return DEFAULT_IMAGE;
+  // Les visuels officiels hébergés chez les studios (miniature YouTube de la
+  // bande-annonce Marvel, Focus Features, Variety…) sont des URLs absolues :
+  // on les laisse passer telles quelles, seul le préfixe du site s'applique
+  // aux fichiers livrés dans public/.
+  if (/^https?:\/\//i.test(path)) return path;
   return `${SITE_URL}/${String(path).replace(/^\//, '')}`;
 }
 

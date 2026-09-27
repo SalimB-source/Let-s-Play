@@ -4,6 +4,7 @@ import { baseUrl as base } from '../data';
 import Comments from '../components/Comments';
 import ArticleEngagement from '../components/ArticleEngagement';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
+import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import NotFound from './NotFound';
 // Les actus du jour générées par le robot (src/news/autoIndex.js, vide au
 // départ) cohabitent avec les articles manuels ci-dessous : même gabarit.
@@ -11,7 +12,229 @@ import { autoStories } from '../news/autoIndex';
 import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 
+// Images officielles : les URLs absolues (miniature YouTube de la bande-annonce
+// Marvel, visuel Focus Features, photo de presse Variety/Getty…) passent telles
+// quelles ; seuls les fichiers livrés dans public/ prennent le préfixe du site.
+const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
+
 const stories = {
+  // Actus cinéma du jour (27.09.2026) — box-office, bande-annonce et
+  // casting, au même gabarit éditorial que le jeu vidéo. Clés préfixées
+  // « cinema/ » : servies par la route /news/cinema/:slug.
+  'cinema/box-office-us-endgame-resident-evil': {
+    date: '27.09.2026', category: 'CINÉMA · BOX-OFFICE', image: 'box-office-endgame-resident-evil-news.svg', thumbnail: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-resident-evil-news.svg', imageAlt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', cover: 'ENDGAME VS RESIDENT EVIL',
+    title: 'ENDGAME REPREND', accent: 'LA TÊTE DU BOX-OFFICE.', dek: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain, devant le reboot Resident Evil de Zach Cregger. Un dernier week-end de septembre d’une densité inédite.',
+    lead: 'Rarement un week-end de fin septembre aura autant ressemblé à un rendez-vous de blockbusters. Aux États-Unis, la ressortie d’Avengers: Endgame et le reboot Resident Evil se disputent la première place du box-office, avec une poignée de millions de dollars d’écart.',
+    intro: 'Selon les chiffres provisoires publiés par Deadline le 26 septembre, le marché américain traverse son deuxième meilleur dernier week-end de septembre de l’histoire, avec quatre films au-dessus des 20 millions de dollars. Les estimations devront être confirmées par les résultats définitifs du dimanche soir.',
+    h2: 'LA RESSORTIE QUI TIRE PLUS FORT QUE LE NEUVEAU',
+    p1: 'Le fait le plus surprenant du week-end vient du film le plus ancien. Ressorti sur 3 060 écrans américains, Avengers: Endgame a signé 11,2 millions de dollars dès le vendredi, pour une estimation de 24 à 26 millions sur les trois jours — de quoi prendre la tête provisoire et pousser son cumul américain vers les 884 millions de dollars. Si la ressortie dépasse les 25,6 millions, elle s’emparerait au passage du record du meilleur démarrage pour une ressortie, détenu depuis 2012 par la version 3D de Titanic. Et pendant que le film chasse les records, il garde une ligne d’horizon plus lointaine : Endgame reste le deuxième plus gros succès de l’histoire du cinéma mondial, environ 125 millions de dollars derrière Avatar.',
+    quote: 'Une ressortie à 25 millions face au film le plus vu de la semaine : voilà un duel que le mois de septembre ne proposait pas.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'RESIDENT EVIL NE LÂCHE RIEN',
+    p2: 'Face au géant Marvel, le reboot Resident Evil de Zach Cregger dispute sa deuxième semaine : environ 22 à 23,5 millions de dollars attendus, en recul d’environ 61 %, après un démarrage à 60,2 millions — le meilleur de l’histoire de la franchise au cinéma. Son total américain après dix jours devrait frôler les 104 millions de dollars, ce qui en ferait le dix-neuvième film de l’année à dépasser les 100 millions.',
+    p3: 'Le film garde surtout un capital sympathie rare pour une adaptation de jeu vidéo : 95 % de critiques positives sur Rotten Tomatoes, un B+ au CinemaScore — la meilleure note jamais reçue par la saga — et un public composé aux deux tiers d’hommes, aux trois quarts de moins de 35 ans selon les sondages PostTrak. Produit pour environ 75 millions de dollars, il avait déjà dépassé les 108 millions de dollars au niveau mondial dès son premier week-end.',
+    p4: 'Reste le verdict de lundi : les chiffres définitifs diront si Marvel termine devant les zombies, les écarts estimés se comptant en millions plutôt qu’en dizaines. Au-delà du classement, Resident Evil a déjà démontré qu’une licence vidéoludique pouvait servir de socle à un film d’auteur horrifique rentable — un signal que Sony a rarement laissé sans suite. Et vous : si vous avez vu le film ce week-end, mérite-t-il sa place à côté des Resident Evil qui vous ont marqués ?',
+    take: 'À RETENIR', takeText: 'Aux États-Unis, la ressortie d’Avengers: Endgame (24-26 M$ estimés) devance pour l’instant le reboot Resident Evil (22-23,5 M$) lors du deuxième meilleur dernier week-end de septembre de l’histoire du box-office américain. Résultats définitifs attendus lundi.',
+    source: 'D’après Deadline (26.09.2026), recoupé avec Boxoffice Pro et Boxoffice Hype. Chiffres du week-end des 25-27 septembre : estimations provisoires à confirmer.', sourceUrl: 'https://deadline.com/2026/09/box-office-avengers-endgame-primetime-heart-of-the-beast-1237111302/', sourceDetail: 'Lire le suivi box-office de Deadline',
+    credit: 'Visuel : bande-annonce officielle d’Avengers: Endgame Encore — Marvel Studios.',
+    sentiment: 'positive'
+  },
+  'cinema/werwulf-trailer-eggers': {
+    date: '27.09.2026', category: 'CINÉMA · ROBERT EGGERS', image: 'werwulf-trailer-news.svg', thumbnail: 'https://images.contentstack.io/v3/assets/blt223a4a92692ca457/bltc56e9a2c23500694/6a3d520c6391ef7c261677e4/werwulf_4marquee_image.png?branch=production&width=1600', fallbackImage: 'werwulf-trailer-news.svg', imageAlt: 'Visuel officiel de Werwulf publié par Focus Features', cover: 'WERWULF',
+    title: 'WERWULF MONTRE', accent: 'SES CROCS.', dek: 'Focus Features a dévoilé la deuxième bande-annonce de Werwulf, l’horreur médiévale de Robert Eggers, le 26 septembre — jour de la pleine lune. Rendez-vous dans les salles le 25 décembre 2026.',
+    lead: 'Robert Eggers ne sort même pas ses bandes-annonces comme tout le monde. La deuxième du Werwulf est arrivée le 26 septembre, calée sur la pleine lune du mois — un clin d’œil assumé, puisque la première avait elle aussi été publiée un jour de pleine lune, en juin.',
+    intro: 'Le réalisateur de The Witch, The Lighthouse et Nosferatu revient avec une fresque d’horreur plantée dans l’Angleterre du XIIIe siècle, co-écrite avec Sjón et portée par Aaron Taylor-Johnson, Willem Dafoe et Lily-Rose Depp. La sortie est fixée au 25 décembre 2026.',
+    h2: 'UN LOUP-GAROU QUI PARLE VIEIL ANGLAIS',
+    p1: 'Le pitch tient en une phrase : un homme atteint de lycanthropie, chargé par un chasseur de l’accompagner dans une croisade destinée à débarrasser la région des loups. Aaron Taylor-Johnson mène le cortège, Willem Dafoe joue le chasseur, Ralph Ineson un lépreux qui se joint à la route, tandis que Lily-Rose Depp et Bodhi Rae Breathnach complètent le casting. Les dialogues sont écrits dans un vieil anglais fidèle à la période — la signature d’un cinéaste qui avait déjà imposé le dialecte d’époque de ses sorcières de Nouvelle-Angleterre.',
+    quote: 'Une histoire déchirante de dévotion, de damnation et du démon intérieur.', quoteBy: 'Synopsis officiel · Focus Features',
+    h2b: 'DU NOIR ET BLANC… MAIS PAS TOUT À FAIT',
+    p2: 'Le film avait d’abord été imaginé en noir et blanc. Il ne le sera pas : Eggers applique en post-production un traitement orthochromatique qui abîme les teints, et superpose au film couleur le grain d’une pellicule noir et blanc. Le résultat, visible dans la bande-annonce, donne aux visages une matière éteinte, presque minérale — de quoi classer d’emblée Werwulf hors de portée des âmes sensibles.',
+    p3: 'Focus présente le film comme l’expérience « la plus viscérale et la plus hantante » du réalisateur, et Eggers l’a lui-même décrit comme le texte le plus sombre qu’il ait écrit. La campagne s’accompagne d’un jeu de piste lunaire : à chaque pleine lune de septembre à novembre, un signe caché doit être déniché en ligne puis déchiffré, avec vingt-quatre heures pour chaque lune. Le film n’a pas encore de classification aux États-Unis.',
+    p4: 'La date de sortie, elle, dit déjà beaucoup : le 25 décembre, exactement le créneau que Focus avait utilisé pour Nosferatu. Et la suite se dessine — Eggers est annoncé sur une adaptation « Olde English » de Romeo et Juliette. En attendant, une question : offrir une place de Werwulf le soir de Noël, c’est de la dévotion ou de la damnation ?',
+    take: 'À RETENIR', takeText: 'La deuxième bande-annonce de Werwulf, l’horreur médiévale de Robert Eggers avec Aaron Taylor-Johnson, Willem Dafoe et Lily-Rose Depp, est sortie le 26 septembre. Le film arrive en salles le 25 décembre 2026.',
+    source: 'D’après Dark Horizons et TheWrap, publiés le 26.09.2026.', sourceUrl: 'https://www.darkhorizons.com/full-trailer-robert-eggers-werwulf/', sourceDetail: 'Lire le sujet de Dark Horizons',
+    credit: 'Visuel : Focus Features.',
+    sentiment: 'positive'
+  },
+  'cinema/fred-astaire-biopic-tom-holland': {
+    date: '27.09.2026', category: 'CINÉMA · SONY PICTURES', image: 'fred-astaire-biopic-news.svg', thumbnail: 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1', fallbackImage: 'fred-astaire-biopic-news.svg', imageAlt: 'Photos de presse de Tom Holland, Margaret Qualley et Sabrina Carpenter publiées par Variety, crédit Getty Images', cover: 'FRED ASTAIRE',
+    title: 'LE BIOPIC ASTAIRE', accent: 'TROUVE SES DANSEUSES.', dek: 'Margaret Qualley jouera Adele Astaire et Sabrina Carpenter Ginger Rogers aux côtés de Tom Holland dans le biopic Fred Astaire de Sony, réalisé par Paul King. Aucune date de sortie pour l’instant.',
+    lead: 'Tom Holland cherchait des partenaires de danse depuis cinq ans : il les a trouvées. Margaret Qualley et Sabrina Carpenter rejoignent le biopic Fred Astaire de Sony Pictures, annoncé vendredi 25 septembre par Deadline puis détaillé par Variety.',
+    intro: 'Le trio principal est désormais complet : Holland incarnera Astaire, Qualley sa sœur aînée Adele — sa première partenaire de scène —, et Carpenter la légendaire Ginger Rogers. Paul King (Paddington, Wonka) dirigera le film, adapté de la biographie The Astaires: Fred & Adele de Kathleen Riley.',
+    h2: 'L’HISTOIRE COMMENCE AVANT HOLLYWOOD',
+    p1: 'Le parti pris du scénario, co-écrit par King et Steven Levenson, est de remonter avant les comédies musicales d’Hollywood : Fred et Adele ont d’abord été des stars de Broadway et du West End, bien avant que Fred ne devienne l’une des plus grandes figures du cinéma aux côtés de Ginger Rogers — de Top Hat à Swing Time. Un détail rend le projet émouvant : aucune image de la danse d’Adele n’a survécu.',
+    quote: 'Fred a laissé un héritage éternel de danse au cinéma ; le travail d’Adele, lui, s’est perdu dans l’histoire.', quoteBy: 'Paul King, réalisateur, dans Variety',
+    h2b: 'UN DANSEUR POUR JOUER UN DANSEUR',
+    p2: 'Le casting de Tom Holland n’a rien d’un pari : l’acteur a commencé par la scène, dans Billy Elliot à Londres, et il est attaché au projet depuis 2021 — il en est aussi producteur via sa société Billy17. Après un été passé à dominer le box-office mondial avec Spider-Man: Brand New Day et The Odyssey, il répète désormais pour endosser les pas du maître.',
+    p3: 'Autour de lui, l’équipe a des allures de machine bien huilée : Amy Pascal produit avec Rachel O’Connor, la fille de Fred Astaire soutient publiquement le projet, et Kathleen Riley participe comme consultante. Détail savoureux : en 2020, Margaret Qualley avait été annoncée pour jouer… Ginger Rogers, dans un autre projet. Elle change de chaise, et d’Astaire.',
+    p4: 'Ce qui manque encore : une date de tournage, un titre définitif, et la preuve que Sabrina Carpenter, immense en concert, tiendra la comédie musicale classique au cinéma. En attendant, le projet a au moins un mérite : donner envie de revoir Top Hat. Et vous : les comédies musicales de l’âge d’or, incontournables ou poussiéreuses ?',
+    take: 'À RETENIR', takeText: 'Le biopic Fred Astaire de Sony réunit Tom Holland, Margaret Qualley (Adele Astaire) et Sabrina Carpenter (Ginger Rogers), sous la direction de Paul King. Aucune date de sortie pour le moment.',
+    source: 'D’après Variety et Deadline, publiés les 25 et 26.09.2026.', sourceUrl: 'https://variety.com/2026/film/news/margaret-qualley-sabrina-carpenter-tom-holland-fred-astaire-biopic-1236850613/', sourceDetail: 'Lire l’article de Variety',
+    credit: 'Photo de presse : Getty Images, publiée par Variety.',
+    sentiment: 'positive'
+  },
+  // Actu cinéma & séries du 26.09.2026 — la reprise hebdomadaire de
+  // Steel Ball Run (partie 7 de JoJo) sur Netflix, ouverte par l’épisode 2.
+  // IMPORTANT ANTI-SPOILER : aucun détail d'intrigue n'est affiché en clair.
+  // Les révélations sont rangées dans des <SpoilerAlert> cliquables.
+  'cinema/jojo-steel-ball-run-episode-2': {
+    date: '26.09.2026', category: 'NETFLIX · ANIME', image: 'cinema-jojo-steel-ball-run.jpg', imageAlt: 'Key visual officiel de STEEL BALL RUN JoJo’s Bizarre Adventure : Johnny Joestar au premier plan, Gyro Zeppeli derrière lui et les chevaux dorés de la course, sur fond violet à pois', cover: 'STEEL BALL RUN',
+    title: 'STEEL BALL RUN', accent: 'REPREND LA COURSE.', dek: 'Six mois de silence après un spécial de 47 minutes encensé : depuis le 25 septembre, la partie 7 de JoJo’s Bizarre Adventure est enfin diffusée au rythme d’un épisode par semaine sur Netflix. L’épisode 2 ouvre un bloc de onze épisodes, chaque vendredi, jusqu’au 4 décembre.',
+    lead: 'Le 19 mars dernier, la 1st STAGE donnait le départ de la Steel Ball Run : 47 minutes pour présenter Johnny Joestar, Gyro Zeppeli et la course transcontinentale la plus folle du manga. Puis plus rien. Ce vendredi 25 septembre, l’épisode 2 — « La requête du shérif à Mountain Tim » — a enfin lancé la machine hebdomadaire que les fans réclamaient.',
+    intro: 'Entre-temps, la communauté a oscillé entre memes désespérés et crainte d’un traitement « Stone Ocean » : des épisodes lâchés par paquets, sans promotion. Le panel d’Anime Expo, le 3 juillet, a tranché : un épisode chaque vendredi, sous-titré et doublé, pour la planète entière.',
+    h2: 'CE QUE RACONTE L’ÉPISODE 2 (SANS SPOILER)', p1: 'L’épisode 2 reprend exactement là où la 1st STAGE s’était arrêtée : la course vient de boucler sa première étape et l’organisation doit déjà gérer ses premières tensions. L’épisode se concentre sur deux axes sans en dévoiler l’issue : l’apprentissage du Spin côté Johnny au contact de Gyro, et l’installation d’une intrigue policière qui va suivre la caravane. Une reprise lisible même sans avoir lu le manga.',
+    spoiler: {
+      title: 'Détails de l’intrigue — épisode 2',
+      content: 'Le verdict de la première étape tombe, et il est injuste : Gyro Zeppeli, arrivé en tête, est rétrogradé à la 21e place pour avoir utilisé ses Steel Balls contre un concurrent — c’est Sandman qui hérite de la victoire. Pendant ce temps, Johnny comprend que sa paralysie n’est pas une fin : au contact de Gyro, il découvre le Spin et sa deuxième leçon, « ne laisse pas tes muscles savoir ». L’alliance entre le paraplégique et le spadassin de Gênes se scelle ici. En coulisses, la course vire au polar : trois coureurs sont retrouvés éventrés, et le shérif enrôle le cowboy Mountain Tim comme adjoint pour retrouver le coupable — sous les yeux de Lucy Steel.'
+    },
+    quote: 'Le pouvoir n’est pas dans les sphères d’acier : il est dans la rotation. Toute la partie 7 tient dans cette phrase.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'POURQUOI SIX MOIS DE SILENCE', p2: 'Parce que David Production a choisi de soigner sa copie. La 1st STAGE, saluée comme l’un des meilleurs épisodes de l’année — un passage éclair en tête du classement MyAnimeList, devant Frieren — a exigé un polissage rare pour un lancement. Netflix, échaudé par les reproches faits au rythme de Stone Ocean, a ensuite calé la suite au cordeau : le panel Anime Expo du 3 juillet 2026, avec le compositeur Yugo Kanno et les voix américaines Daman Mills et Kaiji Tang, a officialisé le rendez-vous du vendredi.',
+    p3: 'La reprise arrive avec un nouvel opening, « SPIN » du groupe Kroi, dévoilé le 23 septembre : un thème western nourri d’Ennio Morricone et des Ventures, frotté de funk, de soul et de hip-hop. Derrière la caméra, Yasuhiro Kimura et Hideya Takahashi dirigent toujours cette saison 6 — le 192e épisode de la saga animée — produite par David Production et Warner Bros. Japan, diffusée partout sur Netflix pendant que Crunchyroll reste sur le carreau.',
+    spoiler2: {
+      title: 'À venir — chapitres adaptés et indices manga',
+      content: 'L’épisode 2 adapte les chapitres 12 à 14 du manga. La suite annoncée pour les 2nd et 3rd STAGE couvre la traversée du désert de l’Arizona et ses dinosaures, jusqu’au chapitre 32. Des fuites évoquent déjà 42 à 43 épisodes au total sur les prochaines années.'
+    },
+    p4: 'La suite du programme est connue : onze épisodes pour les 2nd et 3rd STAGE, avec un clap de fin attendu le 4 décembre pour ce bloc. En attendant, le rendez-vous est simple : chaque vendredi, 9 h du matin heure d’Alger. En selle.',
+    take: 'À RETENIR', takeText: 'L’épisode 2 de Steel Ball Run est en ligne depuis le 25 septembre sur Netflix, puis un épisode chaque vendredi jusqu’au 4 décembre : onze épisodes pour les 2e et 3e étapes de la course.',
+    source: 'D’après Netflix, le panel Anime Expo 2026, JoJo’s Bizarre Encyclopedia (jojowiki.com) et GamesRadar+, articles consultés le 26.09.2026.', sourceUrl: 'https://www.gamesradar.com/entertainment/anime-shows/jojos-bizarre-adventure-steel-ball-run-2nd-stage-3rd-stage-release-date-time-netflix/', sourceDetail: 'Lire l’article source',
+    credit: 'Visuel : key visual officiel STEEL BALL RUN JoJo’s Bizarre Adventure — ©LUCKY LAND COMMUNICATIONS/SHUEISHA, JOJO’s Animation SBR Project.',
+    sentiment: 'positive'
+  },
+  'cinema/dune-messiah-trailer': {
+    date: '26.09.2026', category: 'WARNER BROS · DUNE', image: 'cinema-dune-messiah.jpg', imageAlt: 'Dune — Paul Atréides et Chani devant le soleil d’Arrakis, affiche officielle Legendary / Warner Bros', cover: 'DUNE: MESSIAH',
+    title: 'DUNE: MESSIAH', accent: 'LE TRAILER ARRIVE.', dek: 'Denis Villeneuve a confirmé que la première bande-annonce de Dune: Messiah sera dévoilée en fin d’année. Le troisième chapitre, attendu en 2027, refermera la prophétie de Paul Atréides.',
+    lead: 'La nouvelle est tombée simplement, comme souvent avec Villeneuve : la première bande-annonce de Dune: Messiah arrive en fin d’année, et le film sortira en 2027. Après le triomphe de Dune, deuxième partie, le cinéaste retourne sur Arrakis pour adapter le plus trouble des romans de Frank Herbert.',
+    intro: 'Messiah ne sera pas une suite de plus : c’est le livre où le messie découvre le prix de sa propre légende. Un matériau sombre, politique, presque funèbre — et le chantier le plus attendu de la science-fiction au cinéma.',
+    h2: 'CE QUE L’ON SAIT DU TRAILER', p1: 'Warner Bros. calera la révélation en fin d’année, adossée à l’un des grands rendez-vous de la salle. On y retrouvera Timothée Chalamet en Paul Atréides, Zendaya en Chani et Anya Taylor-Joy en Alia, personnage clé du roman. Le studio promet des images déjà finalisées plutôt qu’un simple teaser : Villeneuve montre rarement ce qui n’est pas prêt.',
+    quote: 'Adapter Messiah, c’est adapter le revers de la médaille : le héros devient le problème.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'LE LIVRE LE PLUS DANGEREUX DE LA SAGA', p2: 'Publié en 1969, douze ans après Dune, Dune Messiah est présenté comme le roman le plus à contre-courant de la saga : il interroge le mythe du sauveur que les premiers films avaient construit.',
+    spoiler: {
+      title: 'Spoiler livre — intrigue de Dune Messiah (1969)',
+      content: 'Le roman raconte un empire gagné et déjà rongé : la guerre sainte menée au nom de Paul a semé des milliards de morts, et les factions — Bene Gesserit, Tleilaxu, Guilde — ourdissent sa chute.'
+    },
+    p3: 'Côté fabrication, l’équipe reprend ses marques : Villeneuve à la réalisation et à l’écriture, la photographie désertique qui a signé visuellement la saga, et la musique de Hans Zimmer. Le cinéaste l’a répété : ce troisième film achèvera l’arc en trois actes entamé en 2021.',
+    p4: 'Reste la question que tout le monde pose : Messiah sera-t-il le dernier Dune de Villeneuve ? L’intéressé rêve toujours d’adapter Les Enfants de Dune, mais jure qu’il faudra une pause de plusieurs années. En attendant, rendez-vous en fin d’année pour les premières images, puis en 2027 pour le verdict en salle.',
+    take: 'À RETENIR', takeText: 'Première bande-annonce de Dune: Messiah en fin d’année, sortie en 2027 : Villeneuve, Chalamet, Zendaya et Taylor-Joy refermeront la prophétie de Paul Atréides.',
+    source: 'D’après les annonces Warner Bros. et la fiche de référence du film, consultées le 26.09.2026.', sourceUrl: 'https://en.wikipedia.org/wiki/Dune:_Part_Three', sourceDetail: 'Consulter la fiche de référence',
+    credit: 'Visuel : image promotionnelle officielle Warner Bros. fournie à la rédaction.',
+    sentiment: 'positive'
+  },
+  'cinema/last-of-us-saison-3': {
+    date: '22.09.2026', category: 'HBO · SÉRIES', image: 'cinema-last-of-us.jpg', imageAlt: 'The Last of Us — Ellie (Bella Ramsey) dans la série HBO, visuel officiel HBO', cover: 'THE LAST OF US',
+    title: 'THE LAST OF US', accent: 'SAISON 3 CONFIRMÉE.', dek: 'HBO a officiellement commandé une troisième saison de The Last of Us. Elle adaptera la seconde moitié du deuxième jeu, avec de nouveaux arcs narratifs et le retour du duo Pascal–Ramsey.',
+    lead: 'C’est confirmé : The Last of Us aura bien une saison 3. HBO a officialisé la commande, et avec elle la promesse d’adapter la partie du récit que le deuxième jeu racontait de l’autre côté du miroir — celle d’Abby.',
+    intro: 'La saison 2 s’était achevée sur une fracture : Ellie et un mensonge impossible à porter. La suite devra changer de point de vue, l’exercice le plus risqué de toute la saga.',
+    h2: 'PASSER DE L’AUTRE CÔTÉ DU MIROIR', p1: 'HBO confirme que la saison 3 adaptera la seconde moitié de The Last of Us Part II, avec un changement de perspective majeur annoncé comme le cœur du récit.',
+    spoiler: {
+      title: 'Spoiler jeu — structure narrative de Part II',
+      content: 'Dans The Last of Us Part II, le récit bascule à mi-parcours : on rejoue les mêmes événements du point de vue d’Abby, celle que la saison 2 avait construite comme l’adversaire. La saison 3 reprendra cette seconde moitié, avec Kaitlyn Dever au centre, et devra faire accepter au public ce que le jeu imposait manette en main : comprendre, sans excuser.'
+    },
+    quote: 'Changer de point de vue n’est pas un twist : c’est tout le sujet.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'UN CHANTIER DÉJÀ SUR LES RAILS', p2: 'Craig Mazin et Neil Druckmann rempilent à l’écriture, avec une équipe rodée aux décors contaminés. Pedro Pascal et Bella Ramsey reviendront, entourés d’un casting élargi — Isabela Merced en Dina, Young Mazino en Jesse — et de nouveaux venus pour les arcs de Seattle. HBO vise une production lancée rapidement, pour un retour espéré en 2027.',
+    p3: 'La série reste l’une des plus grosses machines de la chaîne : audiences solides, critiques globalement favorables, et un jeu d’origine remis en lumière à chaque saison. Assez pour que HBO voie plus loin : d’autres déclinaisons de l’univers de Naughty Dog restent dans les tiroirs.',
+    p4: 'En attendant le tournage, la saison 2 est toujours en ligne, et notre article sur le mod multijoueur annulé de The Last of Us Part II rappelle que la franchise vit aussi côté joueurs. La saison 3, elle, a désormais une certitude : conclure l’histoire de Seattle sans trahir personne — ni Ellie, ni Abby, ni le public.',
+    take: 'À RETENIR', takeText: 'HBO commande officiellement la saison 3 de The Last of Us : la seconde moitié de Part II, du point de vue d’Abby, avec Mazin et Druckmann aux commandes.',
+    source: 'D’après le communiqué HBO du 22.09.2026 et la fiche de référence de la série, consultés le 26.09.2026.', sourceUrl: 'https://en.wikipedia.org/wiki/The_Last_of_Us_season_3', sourceDetail: 'Consulter la fiche de référence',
+    credit: 'Visuel : image promotionnelle officielle HBO fournie à la rédaction.',
+    sentiment: 'positive'
+  },
+  'cinema/marvel-doctor-doom': {
+    date: '20.09.2026', category: 'MARVEL STUDIOS · MCU', image: 'cinema-doctor-doom.jpg', imageAlt: 'Doctor Doom — le visage de Robert Downey Jr. à moitié caché par le masque de métal du monarque de Latverie, visuel promotionnel Marvel Studios', cover: 'DOCTOR DOOM',
+    title: 'DOCTOR DOOM', accent: 'PREND LES RÊNES DU MCU.', dek: 'Robert Downey Jr. sera Doctor Doom dans Avengers: Doomsday puis dans plusieurs films Marvel. Un choix qui redéfinit la prochaine saga : un seul visage, masqué, pour tenir l’univers entier.',
+    lead: 'Marvel a tranché : la prochaine grande menace du MCU aura le visage de son plus ancien héros. Robert Downey Jr. revient, mais masqué, en Doctor Doom — et le studio confirme qu’il portera la saga sur plusieurs films, de Doomsday jusqu’aux suites déjà calées.',
+    intro: 'Remplacer Kang après la sortie de route de Jonathan Majors obligeait Marvel à viser plus haut qu’un plan B. En choisissant Doom — et en faisant revenir son acteur fétiche dans un autre rôle — le studio transforme une contrainte en déclaration d’intention.',
+    h2: 'UN SEUL MASQUE POUR TOUTE LA SAGA', p1: 'Doomsday, attendu en décembre, ne sera pas une apparition unique : Marvel Studios confirme que Downey Jr. incarnera Victor von Doom sur la durée, au cœur de l’arc qui mènera à Secret Wars. Les frères Russo réalisent, et le casting assemble des revenants de toutes les époques : anciens Avengers, X-Men des films Fox — Patrick Stewart et Ian McKellen compris. Doom y est présenté comme l’architecte de la crise du multivers, pas comme un simple boss de fin.',
+    quote: 'Faire jouer Iron Man derrière le masque de Doom : le pari le plus culotté de Marvel depuis Endgame.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'APRÈS KANG, LE VIDE À COMBLER', p2: 'Depuis 2023 et la condamnation de Jonathan Majors, le MCU cherchait sa colonne vertébrale. Doom offre mieux qu’un méchant : un mythe déjà écrit, soixante ans de comics derrière lui, et une Latverie entière à installer. Reste le risque inverse : que le public ne voie que Downey Jr. sous le masque, et que Doom existe moins que son interprète.',
+    p3: 'C’est tout l’enjeu du design montré par Marvel : masque intégral, cape verte, peu de peau visible. Le studio jure que la performance passera par la voix et la posture. Les premiers visuels officiels, dévoilés cet été, ont plutôt rassuré : le Doom de Doomsday emprunte autant aux époques classiques de Jack Kirby qu’aux versions modernes des comics.',
+    p4: 'La suite du calendrier est connue : Doomsday en décembre 2026, puis Secret Wars fin 2027 pour refermer le multivers et redistribuer les cartes. D’ici là, chaque film et série Marvel sera lu à l’aune de cette annonce. Doom n’est plus une rumeur de casting : c’est le pilier sur lequel tout le studio s’appuie.',
+    take: 'À RETENIR', takeText: 'Robert Downey Jr. incarnera Doctor Doom sur plusieurs films Marvel, d’Avengers: Doomsday (décembre 2026) à Secret Wars (2027) : la prochaine saga du MCU a son visage masqué.',
+    source: 'D’après les annonces Marvel Studios et la fiche de référence du film, consultées le 26.09.2026.', sourceUrl: 'https://en.wikipedia.org/wiki/Avengers:_Doomsday', sourceDetail: 'Consulter la fiche de référence',
+    credit: 'Visuel : image promotionnelle officielle Marvel Studios fournie à la rédaction.',
+    sentiment: 'mixed'
+  },
+  'cinema/stranger-things-saison-5': {
+    date: '18.09.2026', category: 'NETFLIX · SÉRIES', image: 'cinema-stranger-things.jpg', imageAlt: 'Stranger Things saison 5 — affiche teaser Netflix, Hawkins dans la brume du Monde à l’Envers', cover: 'STRANGER THINGS 5',
+    title: 'STRANGER THINGS 5', accent: 'DATE ET TRAILER.', dek: 'Netflix a dévoilé la date de sortie et le premier trailer de la saison finale de Stranger Things : huit épisodes attendus pour mars 2027, pour refermer Hawkins et le Monde à l’Envers.',
+    lead: 'C’est officiel : la dernière saison de Stranger Things arrive en mars 2027. Netflix a lâché la date et un premier trailer qui replonge Hawkins sous la menace de Vecna, onze ans après le début du phénomène.',
+    intro: 'La saison 4 s’achevait sur un portail grand ouvert et une ville au bord du gouffre. La saison 5 promet d’y répondre : le groupe d’amis d’origine, désormais adulte, face à la fin de l’histoire.',
+    h2: 'LE DERNIER PORTAIL', p1: 'Le trailer montre l’essentiel : Hawkins quadrillé, Vecna en toile de fond, et le noyau dur — Eleven, Mike, Will, Dustin, Lucas, Max, Joyce, Hopper — réuni pour une dernière campagne. Les frères Duffer ont prévenu : la saison se déroulera surtout à Hawkins, resserrée sur huit épisodes, avec un saut dans le temps assumé depuis la saison 4.',
+    quote: 'Onze ans que Hawkins sert de porte d’entrée au Monde à l’Envers : la boucle devait se refermer là.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'UN ADIEU CALIBRÉ COMME UN ÉVÉNEMENT', p2: 'Netflix traite la fin comme un lancement mondial : teaser relayé partout, compte à rebours en ligne, et une diffusion prévue en une fois pour mars 2027 — le contraire du découpage en volumes testé ailleurs. La plateforme sait ce que vaut la série : l’un de ses plus gros pics d’audience historiques, saison après saison.',
+    p3: 'Derrière l’événement, un héritage : Stranger Things a installé Netflix comme maison de production majeure, ressuscité les eighties pop de Spielberg et de King, et lancé une génération d’acteurs. Un spin-off est déjà en développement chez les Duffer, dans un autre coin du même univers — sans le casting actuel.',
+    p4: 'D’ici mars 2027, les quatre saisons restent en ligne pour les retardataires. Le trailer, lui, tourne déjà en boucle : assez pour mesurer une dernière fois ce que la série a fait de mieux — des gamins à vélo devenus le dernier rempart d’une petite ville de l’Indiana.',
+    take: 'À RETENIR', takeText: 'La saison finale de Stranger Things arrive en mars 2027 sur Netflix : huit épisodes, un premier trailer déjà en ligne, et Vecna en menace ultime sur Hawkins.',
+    source: 'D’après l’annonce Netflix du 18.09.2026 et la fiche de référence de la série, consultées le 26.09.2026.', sourceUrl: 'https://en.wikipedia.org/wiki/Stranger_Things_season_5', sourceDetail: 'Consulter la fiche de référence',
+    credit: 'Visuel : affiche teaser officielle Netflix fournie à la rédaction.',
+    sentiment: 'positive'
+  },
+  'cinema/joker-folie-a-deux': {
+    date: '15.09.2026', category: 'WARNER BROS · BILAN', image: 'cinema-joker.jpg', imageAlt: 'Joker: Folie à Deux — Joaquin Phoenix et Lady Gaga, affiche officielle Warner Bros', cover: 'JOKER 2',
+    title: 'JOKER 2 DIVISE', accent: 'ET FAIT ENCORE DÉBAT.', dek: 'Conspué à Venise, boudé en salle, depuis réévalué : Joker: Folie à Deux reste le blockbuster le plus discuté de sa génération. Bilan d’un malentendu, deux ans après sa sortie.',
+    lead: 'Peu de films auront autant fendu le public : conspué à Venise, boudé en salle, défendu ensuite par une partie de la critique, Joker: Folie à Deux continue de faire écrire — et de diviser. Retour sur ce que le film de Todd Phillips a vraiment essayé de faire.',
+    intro: 'Sur le papier, tout était réuni pour un triomphe : un Oscar, un milliard de dollars, Joaquin Phoenix, Lady Gaga. À l’arrivée, le plus gros pari musical de Warner s’est pris le mur des attentes — et c’est peut-être là son sujet.',
+    h2: 'UN PARI MUSICAL ASSUMÉ', p1: 'Folie à Deux n’est pas un film de super-vilains : c’est une comédie musicale de procès qui prend le contre-pied du premier opus. Les séquences musicales, tournées comme des rêves éveillés, sont au cœur du dispositif.',
+    spoiler: {
+      title: 'Spoiler — fin et traitement des personnages',
+      content: 'Arthur Fleck y abandonne progressivement le personnage du Joker, et Harley Quinn — Lady Gaga — n’existe que dans le miroir de ses numéros chantés, repris du grand songbook américain. Les séquences musicales sont les seuls moments où les deux existent vraiment ensemble.'
+    },
+    quote: 'Conspué à sa sortie, rejoué depuis : Folie à Deux est en train de devenir un objet de culte.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'POURQUOI ÇA A COINCÉ', p2: 'D’abord un malentendu de marketing : les bandes-annonces vendaient un duo de vilains flamboyants, pas une déconstruction du mythe. Ensuite un contresens public : après le Joker « homme du peuple » de 2019, Phillips filme un homme qui renonce à son masque — exactement l’inverse de ce que la salle attendait. Le box-office a tranché sans appel : à peine de quoi rembourser un budget énorme.',
+    p3: 'Reste ce que le film défend bec et ongles : la photographie de Lawrence Sher, la composition des plans, un Phoenix habité jusqu’au malaise. Une frange de la critique y voit désormais le geste le plus honnête d’un cinéaste de studio : avoir utilisé une notoriété de milliard de dollars pour filmer la fin d’une idolâtrie.',
+    p4: 'Le débat n’est pas clos, et c’est tant mieux : Folie à Deux se reverra mieux qu’il ne s’est vu. En attendant, l’univers DC avance ailleurs — le Batman de Matt Reeves d’un côté, le DCU de James Gunn de l’autre — et le Joker de Phillips reste ce qu’il a toujours été : un one-shot, certes controversé, mais un one-shot.',
+    take: 'À RETENIR', takeText: 'Joker: Folie à Deux reste un objet clivant : naufrage commercial assumé comme comédie musicale déconstructrice, il divise toujours critique et public — et se reverra comme un cas d’école.',
+    source: 'Réécrit par la rédaction Let’s Play à partir des critiques et des chiffres de sortie du film, consultés le 26.09.2026.', sourceUrl: 'https://en.wikipedia.org/wiki/Joker:_Folie_%C3%A0_Deux', sourceDetail: 'Consulter la fiche de référence',
+    credit: 'Visuel : photogramme officiel Warner Bros. fourni à la rédaction.',
+    sentiment: 'mixed'
+  },
+  'cinema/house-of-dragon-saison-3': {
+    date: '12.09.2026', category: 'HBO · SÉRIES', image: 'cinema-hotd.jpg', imageAlt: 'House of the Dragon — Rhaenyra Targaryen, affiche officielle HBO « Fire and Blood »', cover: 'HOUSE OF THE DRAGON',
+    title: 'HOUSE OF THE DRAGON', accent: 'EN TOURNAGE.', dek: 'La troisième saison de House of the Dragon entre en tournage. HBO promet une guerre civile plus intense, de nouveaux dragons et le cœur de la Danse : la bataille qui fera basculer Westeros.',
+    lead: 'Les caméras tournent : House of the Dragon lance sa saison 3, celle que les lecteurs de Fire & Blood attendent comme le point de non-retour de la Danse des Dragons. HBO annonce plus de fronts, plus de dragons, et moins de compromis.',
+    intro: 'La saison 2 s’était achevée sur une guerre déclarée mais encore contenue. La troisième devra la montrer : fils mourants, trahisons de cour, et le ciel de Westeros saturé d’ailes.',
+    h2: 'LA DANSE ENTRE DANS SA PHASE BRUTALE', p1: 'HBO annonce une escalade totale entre les deux camps, avec de nouveaux dragons et cavaliers annoncés. Matt Smith, Emma D’Arcy et Olivia Cooke rempilent, sous la houlette du showrunner Ryan Condal.',
+    spoiler: {
+      title: 'Spoiler livre & saison 3 — batailles à venir',
+      content: 'Au programme de cette saison 3 : l’escalade totale entre le conseil noir de Rhaenyra et celui d’Aegon II, la bataille de la Gorgelette — l’un des chapitres les plus meurtriers du livre — et l’entrée en scène de nouveaux dragons et cavaliers, dont les bâtards de Dragonstone.'
+    },
+    quote: 'Une guerre civile avec dix-sept dragons n’a rien d’une bataille : c’est un incendie qui choisit ses camps.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'NOUVEAUX DRAGONS, NOUVEAUX CAMPS', p2: 'HBO le promet : le bestiaire s’élargit encore. Silverwing, Vermithor et les montures réclamées par les deux camps devront exister à l’écran, avec ce que cela suppose de volume d’effets. La production reprend ses bases — plateaux britanniques et extérieurs européens — avec de nouveaux réalisateurs annoncés pour donner à chaque front sa texture.',
+    p3: 'La série mère reste l’un des piliers d’abonnement de HBO : chaque saison a tenu ses audiences malgré la comparaison permanente avec Game of Thrones. L’enjeu de la saison 3 est narratif autant qu’industriel : prouver que la Danse peut monter en intensité sans se perdre en manœuvres de couloir.',
+    p4: 'Le retour n’est pas attendu avant 2027. D’ici là, l’univers continue de s’étendre : le spin-off A Knight of the Seven Kingdoms, plus intime et sans dragons, arrive en éclaireur. De quoi patienter avant que le ciel de Port-Réal ne s’embrase pour de bon.',
+    take: 'À RETENIR', takeText: 'La saison 3 de House of the Dragon est en tournage : bataille de la Gorgelette, nouveaux dragons et guerre civile totale, pour un retour attendu en 2027 sur HBO.',
+    source: 'D’après les annonces HBO du 12.09.2026 et la fiche de référence de la série, consultées le 26.09.2026.', sourceUrl: 'https://en.wikipedia.org/wiki/House_of_the_Dragon_season_3', sourceDetail: 'Consulter la fiche de référence',
+    credit: 'Visuel : image promotionnelle officielle HBO fournie à la rédaction.',
+    sentiment: 'positive'
+  },
+  'cinema/blade-reboot': {
+    date: '10.09.2026', category: 'MARVEL STUDIOS · COULISSES', image: 'cinema-blade.jpg', imageAlt: 'Blade — affiche officielle du film de 1998 avec Wesley Snipes, franchise reprise par Marvel Studios', cover: 'BLADE',
+    title: 'BLADE', accent: 'RETROUVE UN RÉALISATEUR.', dek: 'Après des années de départs et de scénarios jetés, le Blade de Marvel Studios aurait enfin un nouveau réalisateur. Mahershala Ali reste attaché au rôle, et un tournage est envisagé pour 2027.',
+    lead: 'Le projet le plus turbulent du MCU tient peut-être son capitaine : selon plusieurs sources concordantes, Marvel Studios aurait arrêté un nouveau réalisateur pour Blade, sept ans après l’annonce du film avec Mahershala Ali.',
+    intro: 'Annoncé en fanfare en 2019, le reboot du Daywalker a depuis tout connu : scénaristes remplacés, réalisateurs partis, réécritures complètes. Le studio jure que le film se fera. Cette fois, un calendrier commence à circuler.',
+    h2: 'SEPT ANS DE CHANTIER', p1: 'Récapitulatif : Ali annoncé au San Diego Comic-Con 2019, un premier scénario commandé, deux réalisateurs successifs repartis — dont un parti en cours de préproduction — et une apparition vocale du personnage dans une scène post-générique pour prouver que le projet vivait encore. Chaque relance a remis l’angle à zéro : film d’époque ? horreur pure ? intégration au MCU contemporain ?',
+    quote: 'Blade est le plus vieux chantier du MCU actuel : c’est aussi celui qui a le plus à perdre.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'CE QUE CHANGE CE RETOUR', p2: 'Un réalisateur nommé, c’est un ton arrêté : les échos de production décrivent un film sombre, classé R assumé, loin des comédies d’équipe. Le script repasserait par une dernière polish avant un tournage visé pour 2027, après la clôture de l’arc Doomsday / Secret Wars — le moment idéal pour installer un coin vraiment nocturne de l’univers.',
+    p3: 'Il faut dire ce que Blade représente : la trilogie de Wesley Snipes (1998-2004) a financé la maison Marvel d’avant Disney, et prouvé qu’un comics pouvait porter un film adulte. Reprendre le Daywalker, c’est reprendre une filiation autant qu’un personnage.',
+    p4: 'Rien n’est officiel tant que Marvel n’a pas communiqué : ni le nom du réalisateur, ni la fenêtre de sortie. Mais pour la première fois depuis 2019, le dossier avance dans un seul sens. Les fans du chasseur de vampires ont appris à compter les faux départs ; celui-ci ressemble enfin à un départ.',
+    take: 'À RETENIR', takeText: 'Blade aurait enfin un réalisateur chez Marvel Studios : Mahershala Ali toujours attaché au rôle, tournage envisagé en 2027 après sept ans de development hell.',
+    source: 'D’après les informations de production relayées le 10.09.2026 et la fiche de référence du film, consultées le 26.09.2026.', sourceUrl: 'https://en.wikipedia.org/wiki/Blade_(upcoming_film)', sourceDetail: 'Consulter la fiche de référence',
+    credit: 'Visuel : image promotionnelle officielle Marvel Studios fournie à la rédaction.',
+    sentiment: 'mixed'
+  },
+  'cinema/arcane-saison-2': {
+    date: '08.09.2026', category: 'NETFLIX · RIOT GAMES', image: 'cinema-arcane.jpg', imageAlt: 'Arcane saison 2 — Jinx et Vi, affiche officielle Netflix / Riot Games', cover: 'ARCANE S2',
+    title: 'ARCANE S2', accent: 'DERNIÈRE LIGNE DROITE.', dek: 'À quelques semaines de sa sortie, la saison 2 d’Arcane dévoile ses nouvelles affiches — et confirme qu’elle conclura l’histoire de Vi et Jinx. Piltover et Zaun n’ont jamais été aussi près de la rupture.',
+    lead: 'Les affiches sont là, et elles donnent le ton : la saison 2 d’Arcane arrive dans quelques semaines sur Netflix, et ce sera la dernière pour le duo de sœurs qui a fait la réputation de la série. Riot et Fortiche préfèrent conclure plutôt qu’étirer.',
+    intro: 'La saison 1 s’était terminée sur un coup de feu tiré vers le Conseil. La reprise montrera ce que cette balle coûte aux deux villes jumelles — et à celles qui la reçoivent de plein fouet.',
+    h2: 'LES AFFICHES D’UN ADIEU', p1: 'Les nouveaux key arts mettent chacun face à son choix : Vi entre deux mondes, Jinx au bord du rire, Caitlyn en commandante, Silco et Vander en fantômes du passé. Riot Games et Netflix accompagnent ces visuels d’une confirmation attendue : cette saison 2 achèvera l’arc Piltover-Zaun, avec une sortie calée dans quelques semaines et une diffusion mondiale simultanée.',
+    quote: 'Arcane a prouvé qu’une adaptation de jeu vidéo pouvait viser l’or plutôt que le minimum syndical.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'UNE FIN, PAS UN TERME', p2: 'Conclure cette histoire n’enterre pas l’univers : Riot développe déjà d’autres séries situées à Runeterra, avec de nouvelles régions et de nouveaux protagonistes, dans le même partenariat avec Fortiche. Les showrunners Christian Linke et Alex Yee restent aux commandes de la franchise animée ; la saison 2 servira de pont entre ce chapitre clos et les suivants.',
+    p3: 'Ce qui ne changera pas : la fabrication. Le mélange 2D/3D de Fortiche, ses décors peints, son animation au cadre près — des années de travail par saison, et une reconnaissance critique rare pour une adaptation de jeu vidéo, Emmy Awards à l’appui.',
+    p4: 'Rendez-vous dans quelques semaines sur Netflix, avec la saison 1 toujours en ligne pour se remettre à niveau. D’ici là, les affiches font leur travail : rappeler que la plus belle série d’animation du moment s’apprête à tirer sa révérence — et que Zaun n’a pas fini de briller dans le noir.',
+    take: 'À RETENIR', takeText: 'La saison 2 d’Arcane sort dans quelques semaines sur Netflix et conclura l’histoire de Vi et Jinx ; d’autres séries Runeterra sont déjà en développement chez Riot.',
+    source: 'D’après les annonces Riot Games / Netflix du 08.09.2026 et la fiche de référence de la série, consultées le 26.09.2026.', sourceUrl: 'https://en.wikipedia.org/wiki/Arcane_season_2', sourceDetail: 'Consulter la fiche de référence',
+    credit: 'Visuel : affiches officielles Netflix / Riot Games fournies à la rédaction.',
+    sentiment: 'positive'
+  },
   'ea-sports-fc-27-carriere-dynamique': {
     date: '22.09.2026', category: 'EA SPORTS FC 27 · MODE CARRIÈRE', image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', imageAlt: 'EA Sports FC 27 — fiche joueur du mode Carrière avec sa note globale et sa valeur marchande xTV calculée avec TransferRoom (visuel officiel EA Sports FC)', cover: 'EA SPORTS FC 27',
     title: 'EA SPORTS FC 27', accent: 'LA CARRIÈRE DEVIENT VIVANTE.', dek: 'Valeur marchande recalculée chaque semaine avec TransferRoom, note globale qui monte et qui chute, scénarios créés par la communauté : le mode Carrière est le vrai chantier de l’édition 2027.',
@@ -180,15 +403,20 @@ const stories = {
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
-export default function CurrentNews({ slug }) {
+export default function CurrentNews({ slug, slugPrefix }) {
   const routeSlug = useParams().slug;
   const allStories = { ...autoStories, ...stories };
-  const key = slug || routeSlug;
+  // Les routes préfixées (ex. : /news/cinema/:slug) reconstruisent la clé
+  // d'article (« cinema/<slug> ») : `slug` explicite garde la priorité.
+  const key = slug || (routeSlug && slugPrefix ? `${slugPrefix}${routeSlug}` : routeSlug);
   const story = key ? allStories[key] : stories['persona-6-switch-2'];
   if (!story) return <NotFound />;
   const articleId = `/news/${key}`;
   const sentimentId = inferSentimentForStory(story);
   const meta = sentimentMeta(sentimentId);
+  // Une actu cinéma renvoie vers le hub cinéma, une actu gaming vers la liste.
+  const hubRoute = String(key).startsWith('cinema/') ? '/news/cinema' : '/news';
+  const isCinema = hubRoute === '/news/cinema';
   const [views, setViews] = useState(null);
 
   useEffect(() => {
@@ -209,11 +437,11 @@ export default function CurrentNews({ slug }) {
   }, [articleId]);
 
   return <>
-    <section className="article-hero wrap"><div className="section-label"><span>ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {story.auto ? 'ACTU DU JOUR · LET’S PLAY' : 'RÉÉCRIT POUR LET’S PLAY'}</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>4 MIN DE LECTURE</span>{views != null && <span className="article-views-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg> {formatViews(views)} vues</span>}<span className={`article-sentiment-inline ${meta.color}`} title={meta.label}>{meta.emoji} {meta.label}</span></div></div><div className="article-cover hud-frame"><img src={`${base}${story.thumbnail || story.image}`} alt={story.imageAlt} /><div><small>{story.category}</small><strong>{story.cover}</strong></div><span className={`news-sentiment ${meta.color}`} style={{ top: 12, right: 12 }} aria-label={meta.label} title={meta.label}>{meta.emoji}</span>{views != null && <span className="news-views" style={{ left: 12, bottom: 12 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg>{formatViews(views)}</span>}</div></div></section>
-    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{story.lead}</p><p>{story.intro}</p>{story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / OFFICIELLE</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">Vidéo officielle : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">Voir sur YouTube</a></p></section> : null}<h2>{story.h2}</h2><p>{story.p1}</p><div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div><p>{story.p2}</p><h2>{story.h2b}</h2><p>{story.p3}</p><p>{story.p4}</p><div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div>{story.source ? <p className="article-source">{story.source} <a href={story.sourceUrl} target="_blank" rel="noreferrer">{story.sourceDetail}</a></p> : null}{story.credit ? <p className="article-source">{story.credit}</p> : null}</article><aside className="article-aside"><div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>{story.auto ? 'ACTU DU JOUR · SOURCÉE' : 'LET’S PLAY ORIGINAL'}</strong>{views != null && <><span className="aside-kicker" style={{ marginTop: 14 }}>VUES GLOBALES</span><strong>{formatViews(views)} vues</strong></>}<span className="aside-kicker" style={{ marginTop: 14 }}>TON DE L’ACTU</span><strong className={`sentiment-text ${meta.color}`}>{meta.emoji} {meta.label}</strong></div><div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div></aside></main>
+    <section className="article-hero wrap"><div className="section-label"><span>ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {story.auto ? 'ACTU DU JOUR · LET’S PLAY' : 'RÉÉCRIT POUR LET’S PLAY'}</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>4 MIN DE LECTURE</span>{views != null && <span className="article-views-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg> {formatViews(views)} vues</span>}<span className={`article-sentiment-inline ${meta.color}`} title={meta.label}>{meta.emoji} {meta.label}</span></div></div><div className="article-cover hud-frame"><img src={imageUrl(story.thumbnail || story.image)} alt={story.imageAlt} onError={(event) => { if (story.fallbackImage && event.currentTarget.dataset.thumbFallback !== 'true') { event.currentTarget.dataset.thumbFallback = 'true'; event.currentTarget.src = imageUrl(story.fallbackImage); } }} /><div><small>{story.category}</small><strong>{story.cover}</strong></div><span className={`news-sentiment ${meta.color}`} style={{ top: 12, right: 12 }} aria-label={meta.label} title={meta.label}>{meta.emoji}</span>{views != null && <span className="news-views" style={{ left: 12, bottom: 12 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg>{formatViews(views)}</span>}</div></div></section>
+    <main className="article-layout wrap"><article className="article-body"><p className="article-lead">{story.lead}</p><p>{story.intro}</p>{story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / OFFICIELLE</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">Vidéo officielle : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">Voir sur YouTube</a></p></section> : null}<h2>{story.h2}</h2><p>{story.p1}</p><div className="article-pullquote"><span>“</span><p>{story.quote}</p><small>{story.quoteBy}</small></div><p>{story.p2}</p><h2>{story.h2b}</h2><p>{story.p3}</p><p>{story.p4}</p><div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div>{story.source ? <p className="article-source">{story.source} <a href={story.sourceUrl} target="_blank" rel="noreferrer">{story.sourceDetail}</a></p> : null}{story.credit ? <p className="article-source">{story.credit}</p> : null}</article><aside className="article-aside"><div className="aside-card"><span className="aside-kicker">EN BREF</span><strong>{story.date}</strong><strong>{story.category}</strong><strong>{story.auto ? 'ACTU DU JOUR · SOURCÉE' : 'LET’S PLAY ORIGINAL'}</strong>{views != null && <><span className="aside-kicker" style={{ marginTop: 14 }}>VUES GLOBALES</span><strong>{formatViews(views)} vues</strong></>}<span className="aside-kicker" style={{ marginTop: 14 }}>TON DE L’ACTU</span><strong className={`sentiment-text ${meta.color}`}>{meta.emoji} {meta.label}</strong></div><div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to={hubRoute}>RETOUR AUX ACTUS <Arrow/></Link></div></aside></main>
     <ArticleEngagement articleId={`/news/${key}`} title={`${story.title} ${story.accent}`} />
     <Comments />
-    <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> LA SUITE SUR LET’S PLAY</p><h2>RESTEZ DANS<br/><em>LE GAME.</em></h2></div><Link className="button button-yellow" to="/news">VOIR LES ACTUS <Arrow/></Link></section>
+    <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> LA SUITE SUR LET’S PLAY</p><h2>RESTEZ DANS<br/><em>{isCinema ? 'LA SALLE.' : 'LE GAME.'}</em></h2></div><Link className="button button-yellow" to={hubRoute}>VOIR LES ACTUS <Arrow/></Link></section>
   </>;
 }
 

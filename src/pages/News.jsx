@@ -44,6 +44,14 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
+  // Les actus cinéma & séries vivent sur leur propre page : un bandeau ramène
+  // le lecteur vers /news/cinema sans couper la liste gaming.
+  const cinemaTeaser = {
+    en: { kicker: 'CINEMA & SERIES ZONE', titleA: 'CINEMA &', titleB: 'SERIES.', text: 'Blockbusters, trailers, casting news and streaming drops — the film & series side of the hub now has its own page.', cta: 'See cinema news' },
+    fr: { kicker: 'ZONE CINÉMA & SÉRIES', titleA: 'CINÉMA &', titleB: 'SÉRIES.', text: 'Blockbusters, bandes-annonces, casting et sorties streaming : l’autre moitié du hub a sa propre page.', cta: 'Voir les actus cinéma' },
+    ar: { kicker: 'قسم السينما والمسلسلات', titleA: 'السينما و', titleB: 'المسلسلات.', text: 'أفلام كبيرة، إعلانات تشويقية، أخبار الطاقم وإصدارات المنصات — النصف الآخر من الأخبار له صفحته الخاصة.', cta: 'شاهد أخبار السينما' },
+  }[lang] || null;
+
   const articles = useMemo(() => [...autoNewsListing,
     { to: '/news/ea-sports-fc-27-carriere-dynamique', image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', alt: 'EA Sports FC 27 — fiche joueur du mode Carrière avec sa note globale et sa valeur marchande xTV (visuel officiel EA Sports FC)', badge: 'EA SPORTS FC 27 · CARRIÈRE', kicker: '22.09.2026 · ELECTRONIC ARTS', title: 'EA SPORTS FC 27 FAIT VIVRE SA CARRIÈRE.', excerpt: 'Valeur marchande recalculée chaque semaine avec TransferRoom, note globale dynamique, scénarios créés par la communauté et crises de vestiaire : la refonte du mode Carrière est le vrai chantier de l’édition 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/netmarble-tgs-2026', image: 'tokyo-game-show-2026-news.jpg', alt: 'Tokyo Game Show 2026 — visuel officiel de l’événement', badge: 'TGS 2026 · NETMARBLE', kicker: '21.09.2026 · NETMARBLE', title: 'NETMARBLE QUITTE LE TGS AVEC TROIS JEUX.', excerpt: 'Shangri-La Frontier: The Seven Colossi, Solo Leveling: KARMA et Pearl in Blue ont été montrés sous forme de démos. Les dates de sortie restent ouvertes.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
@@ -112,6 +120,17 @@ export default function News(){
     <>
       <section className="news-carousel-section wrap">
         <div className="section-label"><span>{featured.section}</span><span>{featured.updated}</span></div>
+        {cinemaTeaser && <div className="cinema-teaser">
+          <Link className="cinema-teaser-card" to="/news/cinema">
+            <span className="cinema-teaser-media"><img src={`${base}category-cinema-thumb.jpg`} alt="Actus cinéma & séries — clap et bobine de film sous un projecteur" loading="lazy" /></span>
+            <span className="cinema-teaser-copy">
+              <span className="news-kicker">{cinemaTeaser.kicker}</span>
+              <h2>{cinemaTeaser.titleA}<br/><em>{cinemaTeaser.titleB}</em></h2>
+              <p>{cinemaTeaser.text}</p>
+              <span className="read-link">{cinemaTeaser.cta} <Arrow /></span>
+            </span>
+          </Link>
+        </div>}
         <div className="news-carousel is-grid">
           {topStory && <Link className="daily-news-card news-today" to={topStory.to}>
             <div className="daily-news-image"><img src={`${base}${topStory.image}`} alt={topStory.alt} />{renderBadges(topStory)}</div>

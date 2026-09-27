@@ -23,6 +23,9 @@ npm run build
   présenté comme l’épisode HicoSoft — grille miroir, accents aux couleurs Ooredoo (page d’accueil uniquement)
 - Présentation de l’émission et chiffres de communauté
 - Formats : Gaming, Cinéma et Pop Culture
+- Actus cinéma & séries : page dédiée `/news/cinema` (même grille que les actus
+  gaming) et articles `/news/cinema/<slug>`, avec les **visuels officiels** des
+  studios en couverture (voir « Actus cinéma & séries » plus bas)
 - Dernières vidéos YouTube avec filtres interactifs
 - Liens vers les comptes officiels
 - Bloc de diffusion YouTube live configurable sur la page d’accueil
@@ -1069,6 +1072,34 @@ qualité disponible pour cette vidéo.
   (aucune URL de miniature codée en dur hors de `src/lib/videoThumbnails.js`,
   ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins
   du repli présents).
+
+## Actus cinéma & séries
+
+La moitié cinéma du hub a sa propre page : `/news/cinema`
+(`src/pages/CinemaNews.jsx`) reprend la grille des actus gaming — actu à la une
+sur deux colonnes, cartes à la suite, vues et sentiment — pour les films, les
+séries et le streaming. Les articles vivent dans `src/pages/CurrentNews.jsx`
+sous des clés préfixées `cinema/` (`cinema/werwulf-trailer-eggers`), servies par
+la route générique `/news/cinema/:slug` : rien à déclarer dans `src/main.jsx`
+quand on ajoute une actu, sinon la carte dans la liste de `CinemaNews.jsx` (les
+plus récentes ouvrent la page), l'entrée dans `src/search/searchIndex.js` et la
+méta `SEO.jsx` (section « Actualités cinéma »).
+
+**Visuels officiels.** Chaque actu cinéma peut porter deux images :
+
+- `image` : le visuel officiel du studio quand il est publiable — miniature de
+  la bande-annonce officielle (`youTubeThumbUrl(...)`), visuel Focus Features,
+  photo de presse Variety/Getty… Une URL absolue est utilisée telle quelle ;
+- `thumbnail` : la couverture de l'article, quand elle diffère de la carte ;
+- `fallbackImage` : la carte éditoriale SVG du site, affichée si le visuel
+  officiel ne charge pas (`onError` sur la couverture et sur les cartes du hub).
+
+C'est le cas des trois dernières actus cinéma : la ressortie d'*Avengers:
+Endgame* (miniature officielle Marvel Studios), *Werwulf* (visuel Focus
+Features) et le biopic *Fred Astaire* (Sony n'ayant pas encore de visuel, la
+photo de presse Variety crédit Getty Images). Les sources sont listées dans
+`public/cinema-image-credits.txt`, et le crédit exact est rappelé sur la carte
+(`imageCredit`) et sous la couverture de l'article (`credit`).
 
 ## Robot actus du jour
 

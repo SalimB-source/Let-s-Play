@@ -17,6 +17,7 @@ import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
 import './social/social.css';
+import './cinema-news.css';
 import { LanguageProvider } from './i18n/LanguageContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -85,6 +86,11 @@ function App() {
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
+            {/* Actus cinéma & séries : hub dédié, puis article. Les clés
+                d'article correspondantes dans CurrentNews sont préfixées
+                « cinema/ » (ex. : cinema/werwulf-trailer-eggers). */}
+            <Route path="/news/cinema" element={<CinemaNews />} />
+            <Route path="/news/cinema/:slug" element={<CurrentNews slugPrefix="cinema/" />} />
             <Route path="/calendrier" element={<Calendar />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/news/physint" element={<Physint />} />

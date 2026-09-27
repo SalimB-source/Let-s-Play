@@ -7,6 +7,19 @@ import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { autoSearchEntries } from '../lib/autoNews';
 
 const news = [
+  ['Box-office : Endgame contre Resident Evil', 'La ressortie d’Avengers: Endgame vise 24 à 26 M$ sur le week-end américain, devant le reboot Resident Evil.', '/news/cinema/box-office-us-endgame-resident-evil', 'cinéma box-office avengers endgame marvel resident evil sony zombies', youTubeThumbUrl('L2NAh3CIdig')],
+  ['Werwulf montre ses crocs', 'La deuxième bande-annonce de Werwulf, l’horreur médiévale de Robert Eggers, sort le 25 décembre 2026.', '/news/cinema/werwulf-trailer-eggers', 'cinéma robert eggers werwulf trailer horreur loup-garou aaron taylor-johnson dafoe', 'https://images.contentstack.io/v3/assets/blt223a4a92692ca457/bltc56e9a2c23500694/6a3d520c6391ef7c261677e4/werwulf_4marquee_image.png?branch=production&width=1600'],
+  ['Le biopic Fred Astaire trouve ses danseuses', 'Tom Holland, Margaret Qualley et Sabrina Carpenter réunis par Sony et Paul King.', '/news/cinema/fred-astaire-biopic-tom-holland', 'cinéma biopic fred astaire tom holland sabrina carpenter margaret qualley ginger rogers sony', 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1'],
+  ['Steel Ball Run — la course reprend', 'L’épisode 2 ouvre onze épisodes hebdomadaires sur Netflix, chaque vendredi jusqu’au 4 décembre.', '/news/cinema/jojo-steel-ball-run-episode-2', 'jojo steel ball run netflix anime david production gyro zeppeli johnny joestar', 'cinema-jojo-steel-ball-run.jpg'],
+  ['Dune: Messiah — le trailer arrive', 'Première bande-annonce en fin d’année, sortie en 2027 : Villeneuve referme la prophétie de Paul Atréides.', '/news/cinema/dune-messiah-trailer', 'dune messiah villeneuve warner bros chalamet zendaya', 'cinema-dune-messiah.jpg'],
+  ['Diablo en série animée', 'Une série animée Diablo est en préparation pour Netflix.', '/news/diablo-netflix', 'blizzard netflix série animée', 'diablo-netflix-news.webp'],
+  ['The Last of Us saison 3 confirmée', 'HBO adapte la seconde moitié de Part II, du point de vue d’Abby.', '/news/cinema/last-of-us-saison-3', 'hbo the last of us série abby ellie Naughty Dog', 'cinema-last-of-us.jpg'],
+  ['Doctor Doom prend les rênes du MCU', 'Robert Downey Jr. sera Doctor Doom dans Avengers: Doomsday.', '/news/cinema/marvel-doctor-doom', 'marvel doctor doom robert downey jr avengers doomsday mcu', 'cinema-doctor-doom.jpg'],
+  ['Stranger Things 5 a sa date', 'Netflix dévoile la date et le premier trailer de la saison finale, attendue en mars 2027.', '/news/cinema/stranger-things-saison-5', 'stranger things netflix saison 5 hawkins eleven upside down', 'cinema-stranger-things.jpg'],
+  ['Joker : Folie à deux divise toujours', 'La comédie musicale avec Joaquin Phoenix et Lady Gaga divise critique et public.', '/news/cinema/joker-folie-a-deux', 'joker folie à deux joaquin phoenix lady gaga warner bros', 'cinema-joker.jpg'],
+  ['House of the Dragon tourne', 'La troisième saison entre en tournage, avec une guerre civile plus intense.', '/news/cinema/house-of-dragon-saison-3', 'house of the dragon hbo targaryen rhaenyra saison 3', 'cinema-hotd.jpg'],
+  ['Blade a enfin son réalisateur', 'Le film Blade avec Mahershala Ali aurait trouvé un nouveau réalisateur.', '/news/cinema/blade-reboot', 'blade marvel mahershala ali reboot vampire daywalker', 'cinema-blade.jpg'],
+  ['Arcane saison 2, dernière ligne droite', 'Riot et Netflix dévoilent les nouvelles affiches et confirment que ce sera la dernière.', '/news/cinema/arcane-saison-2', 'arcane netflix riot games jinx vi zaun saison 2', 'cinema-arcane.jpg'],
   ['EA Sports FC 27 — la carrière devient vivante', 'Note globale dynamique, valeur marchande hebdomadaire via TransferRoom et scénarios créés par la communauté.', '/news/ea-sports-fc-27-carriere-dynamique', 'ea sports fc 27 electronic arts football carrière transferts manager', 'ea-sports-fc-27-carriere-pitch-notes.jpg'],
   ['Kingdom Hearts 4 — Le monde de Coco', 'Sora est apparu au milieu d’une séquence Disney consacrée à Coco.', '/news/kingdom-hearts-4-coco', 'square enix disney', 'kingdom-hearts-4-coco-news.jpg'],
   ['Marvel’s Wolverine', 'Une exclusivité PS5 développée par Insomniac Games.', '/news/wolverine-exclu-ps5', 'marvel sony insomniac ps5', 'wolverine-countdown.jpg'],
@@ -26,7 +39,10 @@ const news = [
   ['Physint', 'Le projet de jeu d’action espion de PlayStation.', '/news/physint', 'playstation sony', 'physint-news.jpg'],
   ['Zelda: Ocarina of Time', 'Le classique de Nintendo revient sur Switch 2.', '/news/zelda-ocarina', 'nintendo zelda switch 2', 'zelda-ocarina-news.jpg'],
   ['Onimusha: Way of the Sword', 'Le retour samouraï de Capcom dépasse le million de ventes.', '/news/onimusha-million', 'capcom samouraï', 'onimusha-million-news.jpg'],
-].map(([title, description, route, keywords, image]) => ({ type: 'news', title, description, route, keywords, image: `${base}${image}` }));
+// Les visuels officiels des actus cinéma (miniature YouTube de la bande-annonce
+// Marvel, Focus Features, Variety…) sont des URLs absolues : elles passent
+// telles quelles, seuls les fichiers du site prennent le préfixe du baseUrl.
+].map(([title, description, route, keywords, image]) => ({ type: 'news', title, description, route, keywords, image: /^https?:\/\//i.test(image) ? image : `${base}${image}` }));
 
 const dossiers = [
   ['La PS2, la reine', 'Vingt-cinq ans après son lancement, retour sur la PlayStation 2.', '/dossiers/25-ans-playstation-2', 'playstation sony histoire', 'A2VPhWOUMHI'],
