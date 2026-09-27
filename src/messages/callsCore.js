@@ -210,9 +210,14 @@ export function isEmbedded() {
 }
 
 /**
- * Trois causes, trois réglages quand le micro est refusé :\n *\n *   - page dans une iframe sans `allow=\"microphone\"` → `iframe` ;\n *   - micro déjà bloqué pour l'origine (le navigateur ne redemande plus rien)\n *     → `blocked` ;\n *   - refus au moment de la demande → `denied`.\n *\n * `permissionState` vient de `navigator.permissions.query({name:'microphone'})`\n * (`granted` / `denied` / `prompt` / null si indisponible).\n */
+ * Quatre causes, quatre réglages quand le micro est refusé :\n *\n *   - page dans une iframe sans `allow=\"microphone\"` → `iframe` ;\n *   - micro déjà bloqué pour l'origine (le navigateur ne redemande plus rien)\n *     → `blocked` ;\n *   - permission pourtant ACCORDÉE et capture refusée quand même → `policy` :
+ *     c'est la page elle-même qui n'en a pas le droit (en-tête
+ *     `Permissions-Policy` du site, conteneur tiers) — les réglages du joueur
+ *     sont déjà corrects, il ne faut pas le renvoyer les régler ;
+ *   - refus au moment de la demande → `denied`.\n *\n * `permissionState` vient de `navigator.permissions.query({name:'microphone'})`\n * (`granted` / `denied` / `prompt` / null si indisponible).\n */
 export function permissionFailureKind({ embedded = false, permissionState = null } = {}) {
   if (embedded) return 'iframe';
   if (permissionState === 'denied') return 'blocked';
+  if (permissionState === 'granted') return 'policy';
   return 'denied';
 }

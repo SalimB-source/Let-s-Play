@@ -14,6 +14,7 @@
  *    tant qu'aucun appel n'est en cours.
  */
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -154,7 +155,7 @@ check('TURN présent par variable d’environnement', turnConfigured({ VITE_TURN
 check('TURN vide ignoré', turnConfigured({ VITE_TURN_URL: '   ' }), false);
 check('l’échec de connexion pointe le TURN', callsText('fr').hintTurn.includes('TURN'));
 
-// Micro refusé : trois causes, trois réglages — l'utilisateur doit savoir OÙ agir.
+// Micro refusé : quatre causes, quatre réglages — l'utilisateur doit savoir OÙ agir.
 check('isEmbedded existe', typeof isEmbedded, 'function');
 check('… hors iframe par défaut (Node)', isEmbedded(), false);
 check('permissionFailureKind existe', typeof permissionFailureKind, 'function');
@@ -162,6 +163,7 @@ check('iframe sans allow → iframe', permissionFailureKind({ embedded: true }),
 check('micro bloqué pour l’origine → blocked', permissionFailureKind({ embedded: false, permissionState: 'denied' }), 'blocked');
 check('refus au moment de la demande → denied', permissionFailureKind({ embedded: false, permissionState: 'prompt' }), 'denied');
 check('… même sans état → denied', permissionFailureKind({}), 'denied');
+check('autorisé mais refusé quand même → policy', permissionFailureKind({ embedded: false, permissionState: 'granted' }), 'policy');
 check('message iframe EN', callsCopy.en.errPermissionIframe.includes('iframe'));
 check('message bloqué FR', callsCopy.fr.errPermissionBlocked.includes('Paramètres'));
 check('message refusé AR', callsCopy.ar.errPermissionDenied.length > 10);
@@ -169,6 +171,28 @@ check('describeCallError iframe (FR)', describeCallError({ name: 'NotAllowedErro
 check('describeCallError bloqué (EN)', describeCallError({ name: 'NotAllowedError' }, callsText('en'), 'blocked'), callsCopy.en.errPermissionBlocked);
 check('describeCallError refusé (AR)', describeCallError({ name: 'NotAllowedError' }, callsText('ar'), 'denied'), callsCopy.ar.errPermissionDenied);
 check('describeCallError sans détail → générique', describeCallError({ name: 'NotAllowedError' }, callsText('fr')), callsCopy.fr.errPermission);
+check('message policy FR dit que c’est déjà réglé', callsCopy.fr.errPermissionPolicy.includes('déjà corrects'));
+check('message policy EN présent', callsCopy.en.errPermissionPolicy.length > 10);
+check('message policy AR présent', callsCopy.ar.errPermissionPolicy.length > 10);
+check('describeCallError policy (FR)', describeCallError({ name: 'NotAllowedError' }, callsText('fr'), 'policy'), callsCopy.fr.errPermissionPolicy);
+check('describeCallError policy (EN)', describeCallError({ name: 'NotAllowedError' }, callsText('en'), 'policy'), callsCopy.en.errPermissionPolicy);
+
+// Garde-fou déploiement : l'en-tête `Permissions-Policy` de vercel.json est
+// servi à CHAQUE réponse du site (celui que charge l'APK Android). Un
+// `microphone=()` ou `camera=()` y désactive micro et caméra pour toujours :
+// permissions du joueur et correctifs de code mis à part. C'est la vraie cause
+// de la panne du 27/09/2026 (« ça me demande d'activer le micro et la
+// caméra mais c'est déjà fait ») : ne jamais laisser ce réglage revenir.
+const vercelConfig = JSON.parse(readFileSync(path.join(root, 'vercel.json'), 'utf8'));
+const policyHeader = (vercelConfig.headers || [])
+  .flatMap((entry) => entry.headers || [])
+  .find((header) => String(header.key).toLowerCase() === 'permissions-policy');
+check('en-tête Permissions-Policy déclaré', Boolean(policyHeader));
+const policyValue = policyHeader ? String(policyHeader.value) : '';
+check('… le micro n’y est pas interdit', /microphone=\(\)/.test(policyValue), false);
+check('… la caméra n’y est pas interdite', /camera=\(\)/.test(policyValue), false);
+check('… le micro reste ouvert au site', /microphone=\(self\)/.test(policyValue));
+check('… la caméra reste ouverte au site', /camera=\(self\)/.test(policyValue));
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/2] rendu SSR\n');

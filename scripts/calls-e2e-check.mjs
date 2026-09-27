@@ -645,6 +645,26 @@ dom.window.navigator.mediaDevices.getUserMedia = originalGetUserMedia;
 if (originalPermissions) dom.window.navigator.permissions = originalPermissions;
 else delete dom.window.navigator.permissions;
 
+// (f) Permission pourtant ACCORDÉE et capture refusée quand même (en-tête
+//     `Permissions-Policy` du site, conteneur tiers) : le message ne doit pas
+//     renvoyer le joueur régler ce qui est déjà réglé — c'est exactement la
+//     plainte « ça me demande d'activer le micro et la caméra mais c'est
+//     déjà fait ».
+dom.window.navigator.mediaDevices.getUserMedia = async () => {
+  throw Object.assign(new Error('Permission denied'), { name: 'NotAllowedError' });
+};
+dom.window.navigator.permissions = {
+  query: async () => ({ state: 'granted' }),
+};
+await act(async () => { await alice.calls().startCall(PROFILES.bob.id, 'audio'); });
+await settle(4);
+check('micro bloqué par la page : échec annoncé', alice.calls().endReason, K.END_FAILED);
+check('… le message dit que les réglages sont déjà corrects', String(alice.calls().endDetail).includes('déjà corrects'));
+check('… ne reste pas figé', alice.calls().phase !== 'outgoing');
+dom.window.navigator.mediaDevices.getUserMedia = originalGetUserMedia;
+if (originalPermissions) dom.window.navigator.permissions = originalPermissions;
+else delete dom.window.navigator.permissions;
+
 check('retour au calme final', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));
 
 /* ------------------------------------------------------------------------ */
