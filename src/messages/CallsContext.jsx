@@ -44,6 +44,30 @@ import {
 } from './callsCore';
 
 /**
+ * Haut-parleur pendant l'appel. Sur téléphone, un appel vocal (micro avec
+ * annulation d'écho) part dans l'écouteur : à côté d'un appel vidéo qui sort
+ * du haut-parleur, on croit que « le vocal ne marche pas ». Le pont natif
+ * n'existe que dans l'APK ; le navigateur ignore l'appel.
+ */
+function preferLoudspeaker() {
+  try {
+    window.LetsPlayAndroid?.setCallAudio?.(true);
+  } catch (e) { /* navigateur : pas de pont */ }
+}
+
+function releaseLoudspeaker() {
+  try {
+    window.LetsPlayAndroid?.setCallAudio?.(false);
+  } catch (e) { /* idem */ }
+}
+
+/** Refus explicite : inutile de redemander (même erreur, ou second pop-up). */
+function mediaDenied(error) {
+  const name = String(error?.name || '');
+  return name === 'NotAllowedError' || name === 'SecurityError' || error?.code === 1;
+}
+
+/**
  * Contexte des appels vocaux / vidéo — le pendant « téléphone » de la
  * messagerie.
  * ---------------------------------------------------------------------------
@@ -217,11 +241,6 @@ export function CallsProvider({ children }) {
    */
   const pendingRingRef = useRef(null);
   const pcRef = useRef(null);
-  /**
-   * Flux distant « maison » quand `event.streams[0]` manque (vieilles WebViews
-   * Android) : les pistes reçues y sont ajoutées, un seul flux exposé à l'UI.
-   */
-  const remoteMediaRef = useRef(null);
   const localRef = useRef(null);
   const pendingIceRef = useRef([]);
   const pendingOfferRef = useRef(null);
@@ -349,6 +368,7 @@ export function CallsProvider({ children }) {
       }
     }
     setLocalStream(null);
+    releaseLoudspeaker();
   }, []);
 
   const closePeerConnection = useCallback(() => {
@@ -469,32 +489,48 @@ export function CallsProvider({ children }) {
    * silencieux : `cameraFallback` revient avec le flux et l'interface
    * affiche l'explication (`CallsContext` → notice + pastille du panneau).
    *
-   * Piège WebView traité ici : `getUserMedia({audio, video})` peut RÉSOURDR
-   * avec un flux sans aucune piste vidéo (accord partiel : micro accordé,
-   * caméra refusée au niveau Android) sans la moindre erreur. On le détecte
-   * avec `effectiveStreamKind` — sinon l'appel resterait « vidéo » avec
-   * l'écran vide pour de bon.
+   * Deux pièges WebView traités ici :
+   *   - l'appel vocal ne passe pas `video: false` : sur certaines WebView,
+   *     cette contrainte fait échouer le micro alors que le même micro,
+   *     demandé avec la caméra, fonctionne — d'où « la vidéo marche, le
+   *     vocal non ». Si les contraintes de traitement (écho, bruit) sont
+   *     refusées, on retente un micro nu, sauf refus explicite de permission ;
+   *   - `getUserMedia({audio, video})` peut RÉSOURDRE avec un flux sans
+   *     aucune piste vidéo (accord partiel : micro accordé, caméra refusée
+   *     au niveau Android) sans la moindre erreur. On le détecte avec
+   *     `effectiveStreamKind` — sinon l'appel resterait « vidéo » avec
+   *     l'écran vide pour de bon.
    */
   const acquireMedia = useCallback(async (wantedKind) => {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       throw Object.assign(new Error('calls_no_media_api'), { callError: 'nowebrtc' });
     }
-    const audio = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
-    const video = wantedKind === 'video'
-      ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }
-      : false;
+    const processed = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+    const openMic = async () => {
+      try {
+        return await navigator.mediaDevices.getUserMedia({ audio: processed });
+      } catch (e) {
+        if (mediaDenied(e)) throw e;
+        return navigator.mediaDevices.getUserMedia({ audio: true });
+      }
+    };
+    if (wantedKind !== 'video') {
+      return { stream: await openMic(), kind: 'audio' };
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio, video });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: processed,
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      });
       const kind = effectiveStreamKind(wantedKind, stream);
       if (kind === wantedKind) return { stream, kind };
       // Flux reçu sans piste vidéo (accord partiel) : micro gardé, appel
       // dégradé en audio — et signalé.
       return { stream, kind, cameraFallback: true };
     } catch (e) {
-      if (wantedKind !== 'video') throw e;
       // Pas de caméra (refusée, absente, occupée) : l'appel continue en
       // audio — avec explication, jamais en silence.
-      return { stream: await navigator.mediaDevices.getUserMedia({ audio }), kind: 'audio', cameraFallback: true };
+      return { stream: await openMic(), kind: 'audio', cameraFallback: true };
     }
   }, []);
 
@@ -511,22 +547,30 @@ export function CallsProvider({ children }) {
     };
 
     // Les pistes de l'ami arrivent : on les expose à l'interface (<video>).
+    // Certains navigateurs émettent un événement par piste, parfois avec un
+    // flux différent : on accumule, sinon la voix peut être écrasée par
+    // l'image (ou l'inverse) et l'appel vocal reste muet.
+    const remoteMedia = { current: null };
     pc.ontrack = (event) => {
       if (callRef.current?.callId !== callId) return;
-      // Les deux côtés émettent via `addTrack(track, stream)` : la piste
-      // porte normalement son MediaStream (`event.streams[0]`). Certaines
-      // WebViews Android anciennes livrent un `streams` vide — on rattache
-      // alors la piste à un flux distant maison, partagé entre les
-      // événements (audio puis vidéo) pour n'en exposer qu'un seul.
-      let stream = event.streams?.[0] || null;
-      if (!stream && event.track && typeof MediaStream === 'function') {
-        if (!remoteMediaRef.current) remoteMediaRef.current = new MediaStream();
-        stream = remoteMediaRef.current;
-        if (!stream.getTracks().includes(event.track)) {
-          try { stream.addTrack(event.track); } catch (e) { /* piste déjà là */ }
+      const track = event.track;
+      const incoming = event.streams?.[0];
+      let media = remoteMedia.current;
+      if (!media) {
+        media = incoming || new MediaStream();
+        remoteMedia.current = media;
+      } else if (incoming && incoming !== media) {
+        for (const item of incoming.getTracks()) {
+          if (!media.getTracks().some((have) => have.id === item.id)) {
+            try { media.addTrack(item); } catch (e) { /* déjà attachée */ }
+          }
         }
       }
-      if (stream) setRemoteStream(stream);
+      if (track && !media.getTracks().some((have) => have.id === track.id)) {
+        try { media.addTrack(track); } catch (e) { /* déjà attachée */ }
+      }
+      setRemoteStream(media);
+      preferLoudspeaker();
     };
 
     pc.onconnectionstatechange = () => {
@@ -535,6 +579,7 @@ export function CallsProvider({ children }) {
       if (state === 'connected') {
         clearTimer('connect');
         clearTimer('grace');
+        preferLoudspeaker();
         if (phaseRef.current !== 'active') {
           applyPhase('active');
           setConnected(true);
@@ -906,10 +951,12 @@ export function CallsProvider({ children }) {
       const { stream, kind: actualKind, cameraFallback } = await acquireMedia(wanted);
       if (callRef.current?.callId !== callId) {
         for (const track of stream.getTracks()) track.stop();
+        releaseLoudspeaker();
         return; // annulé entre-temps (compte changé…)
       }
       localRef.current = stream;
       setLocalStream(stream);
+      preferLoudspeaker();
       if (actualKind !== wanted) {
         // Pas de caméra (refusée, occupée, ou accord partiel de la WebView) :
         // l'appel vidéo continue en audio — ET ON LE DIT, à voix haute
@@ -980,10 +1027,12 @@ export function CallsProvider({ children }) {
       const { stream, kind: actualKind, cameraFallback } = await acquireMedia(wanted);
       if (callRef.current?.callId !== callId) {
         for (const track of stream.getTracks()) track.stop();
+        releaseLoudspeaker();
         return;
       }
       localRef.current = stream;
       setLocalStream(stream);
+      preferLoudspeaker();
       const degraded = actualKind !== wanted;
       if (degraded) {
         callRef.current.kind = 'audio';

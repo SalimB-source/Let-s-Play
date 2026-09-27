@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useCalls } from './CallsContext';
 import { callStatusLabel, callsText } from './callsCopy';
-import { formatDuration } from './callsCore';
+import { formatDuration, remotePlaybackNeedsSink } from './callsCore';
 
 /**
  * Interface des appels vocaux / vidéo.
@@ -95,15 +95,15 @@ function CallAvatar({ name, src, size = 92 }) {
 /**
  * Branche un MediaStream sur un `<video>` — avec un `play()` FIABLE.
  *
- * C'était le point qui laissait l'image noire alors que le son passait,
- * surtout dans la WebView Android : le premier `play()` (ou l'autoplay) est
- * rejeté — lecture exigée après un geste utilisateur, geste déjà consommé par
- * le clic « Répondre », médias pas encore chargés — et l'ancien code avalait
- * le rejet pour toujours. Désormais :
+ * C'était le point qui laissait l'écran noir ou muet : le son WebRTC ne sort
+ * que si un élément média le joue, et le premier `play()` est souvent rejeté
+ * — lecture exigée après un geste utilisateur (geste déjà consommé par le
+ * clic « Répondre », surtout dans la WebView Android), médias pas encore
+ * chargés — et l'ancien code avalait le rejet pour toujours. Désormais :
  *
- *   - `play()` est relancé dès que des métadonnées/données arrivent
- *     (`loadedmetadata`, `canplay`) — le moment où l'autoplay redevient
- *     possible sur un flux qui vient juste d'être posé ;
+ *   - `muted` est forcé en propriété (React ne la met pas toujours à jour) ;
+ *   - `play()` est relancé dès que des données arrivent (`canplay`,
+ *     `loadedmetadata`) ou qu'une piste se débloque (`unmute`) ;
  *   - il est relancé sur chaque geste du joueur (n'importe quel clic) — le
  *     déblocage que réclame la WebView arrive souvent juste après ;
  *   - entre les deux, quelques relances espacées couvrent les politiques
@@ -114,8 +114,12 @@ function Stream({ stream, muted = false, className = '', mirrored = false, label
   useEffect(() => {
     const node = ref.current;
     if (!node) return undefined;
+    node.muted = muted;
+    node.defaultMuted = muted;
+    if (!muted) node.volume = 1;
+    node.setAttribute('playsinline', 'true');
+    node.setAttribute('webkit-playsinline', 'true');
     if (node.srcObject !== (stream || null)) node.srcObject = stream || null;
-    node.muted = Boolean(muted);
     if (!stream) return undefined;
 
     let cancelled = false;
@@ -135,8 +139,8 @@ function Stream({ stream, muted = false, className = '', mirrored = false, label
           clearTimeout(timer);
           timer = setTimeout(attempt, 300 * retries);
         }
-        // Au-delà, les gestes et `loadedmetadata` gardent une chance de
-        // relancer la lecture — on n'abandonne jamais tout à fait.
+        // Au-delà, les gestes et `unmute` gardent une chance de relancer la
+        // lecture — on n'abandonne jamais tout à fait.
       });
     };
     const onReady = () => attempt();
@@ -144,6 +148,11 @@ function Stream({ stream, muted = false, className = '', mirrored = false, label
     attempt();
     node.addEventListener('loadedmetadata', onReady);
     node.addEventListener('canplay', onReady);
+    const tracks = [
+      ...(stream?.getAudioTracks?.() || []),
+      ...(stream?.getVideoTracks?.() || []),
+    ];
+    for (const track of tracks) track.addEventListener?.('unmute', onReady);
     window.addEventListener('pointerdown', onGesture, true);
     window.addEventListener('touchstart', onGesture, true);
     return () => {
@@ -151,6 +160,7 @@ function Stream({ stream, muted = false, className = '', mirrored = false, label
       clearTimeout(timer);
       node.removeEventListener('loadedmetadata', onReady);
       node.removeEventListener('canplay', onReady);
+      for (const track of tracks) track.removeEventListener?.('unmute', onReady);
       window.removeEventListener('pointerdown', onGesture, true);
       window.removeEventListener('touchstart', onGesture, true);
       node.srcObject = null;
@@ -218,7 +228,11 @@ function ActiveCall({ calls, t }) {
   } = calls;
   const isVideo = kind === 'video';
   const localVideo = isVideo && Boolean(localStream?.getVideoTracks?.().length);
-  const remoteVideo = isVideo && Boolean(remoteStream?.getVideoTracks?.().length);
+  const remoteVideo = isVideo && Boolean(remoteStream?.getVideoTracks?.().some((track) => track.readyState !== 'ended'));
+  // Appel vocal (ou vidéo sans image distante) : le `<video>` ci-dessus n'est
+  // pas monté, donc il ne joue pas le son. Sans ce lecteur, le chrono tourne
+  // et personne n'entend l'ami — alors que l'appel vidéo, lui, s'entend.
+  const sinkRemoteAudio = phase !== 'ended' && Boolean(remoteStream) && remotePlaybackNeedsSink(remoteVideo);
   const status = callStatusLabel(t, { phase, kind, endReason });
   const timer = phase === 'active' && connected ? formatDuration(elapsedMs) : '';
 
@@ -241,6 +255,9 @@ function ActiveCall({ calls, t }) {
           {phase !== 'ended' && remoteVideo && (
             <Stream stream={remoteStream} className="calls-remote" label={peer?.name} />
           )}
+          {sinkRemoteAudio && (
+            <Stream stream={remoteStream} className="calls-remote calls-remote-audio" label={peer?.name || t.callAudio} />
+          )}
           {!remoteVideo && (
             <div className="calls-stage-audio" aria-hidden="true">
               <span className={`calls-stage-avatar${phase === 'active' ? ' is-live' : ''}`}>
@@ -248,16 +265,6 @@ function ActiveCall({ calls, t }) {
               </span>
               <span className="calls-eq" aria-hidden="true"><i /><i /><i /><i /><i /></span>
             </div>
-          )}
-          {/*
-            PAS d'image à montrer (appel vocal, ou caméra de l'ami
-            indisponible) ? Le flux distant doit QUAND MÊME être branché sur
-            un élément média — c'est lui qui porte la voix. L'ancien panneau
-            ne rendait aucun média dans ce cas : les appels vocaux ne
-            jouaient donc jamais la voix de l'ami.
-          */}
-          {phase !== 'ended' && !remoteVideo && remoteStream && (
-            <Stream stream={remoteStream} className="calls-remote is-audio-only" label={peer?.name} />
           )}
           {localVideo && phase !== 'ended' && (
             <span className="calls-pip">

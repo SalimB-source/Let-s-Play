@@ -64,6 +64,7 @@ export {
   makeCallEvent,
   normalizeCallKind,
   permissionFailureKind,
+  remotePlaybackNeedsSink,
   ringDecision,
   turnConfigured,
 } from '../src/messages/callsCore';

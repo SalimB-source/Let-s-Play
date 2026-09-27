@@ -244,3 +244,17 @@ export function permissionFailureKind({ embedded = false, permissionState = null
   if (permissionState === 'granted') return 'policy';
   return 'denied';
 }
+
+/**
+ * Faut-il un lecteur dédié pour entendre l'ami ?
+ *
+ * L'appel vidéo affiche déjà un `<video>` non muet : il porte l'image ET la
+ * voix. Un appel vocal n'a pas d'image — si le flux distant n'est branché sur
+ * aucun élément média, la connexion s'établit (chrono, « En appel ») mais
+ * personne n'entend rien. C'est le symptôme « la vidéo marche, le vocal non ».
+ *
+ * `hasRemotePicture` : un `<video>` distant est déjà à l'écran et joue le son.
+ */
+export function remotePlaybackNeedsSink(hasRemotePicture) {
+  return !hasRemotePicture;
+}

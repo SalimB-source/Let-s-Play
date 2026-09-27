@@ -30,11 +30,15 @@ accéder à la messagerie, il faut se connecter dans l'application.
   caméra reste installable (`uses-feature` non requis) et les appels y restent
   vocaux. **Refuser ces permissions rend tout appel impossible dans l'app** :
   le site affichera « accès au micro/à la caméra refusé ».
-- La lecture des médias **ne demande pas de geste** (
-  `setMediaPlaybackRequiresUserGesture(false)`) : l'image de l'ami d'un appel
-  vidéo arrive plusieurs secondes après le clic « Répondre » — avec le
-  réglage par défaut de la WebView, sa lecture était refusée et l'écran
-  restait noir pendant que le son passait (corrigé en 1.0.2).
+- **Haut-parleur** : un appel vocal Android part sinon dans l'écouteur, alors
+  que l'appel vidéo sort du haut-parleur — on croit le vocal muet. Dès que le
+  micro est accordé (et quand le site appelle `LetsPlayAndroid.setCallAudio`),
+  l'app bascule en haut-parleur et rend le routage d'avant à la fin de l'appel.
+- La lecture des médias **ne dépend pas d'un geste** (
+  `setMediaPlaybackRequiresUserGesture(false)`) : le son et l'image d'un appel
+  arrivent plusieurs secondes après le clic « Répondre » — avec le réglage par
+  défaut de la WebView, la lecture était refusée et l'écran restait noir
+  pendant que le son passait (corrigé en 1.0.2).
 
 ## Dépannage
 
@@ -59,8 +63,8 @@ réglages système est le seul chemin.)
 1. **Mettre à jour l'APK (1.0.2 ou plus)** : avant 1.0.2, la WebView exigeait
    un geste pour chaque lecture de média — l'image de l'ami, qui arrive après
    le clic « Répondre », ne démarrait jamais. Le site rejoue aussi la lecture
-   tout seul (gestes, métadonnées), mais l'APK à jour reste la meilleure
-   réponse.
+   tout seul (gestes, métadonnées, pistes qui se débloquent), mais l'APK à
+   jour reste la meilleure réponse.
 2. **Vérifier la permission Caméra** (voir ci-dessus) : si la caméra est
    refusée au niveau Android, l'appel continue en audio — le site l'affiche
    désormais noir sur blanc (« Caméra indisponible — l'appel continue en
@@ -70,6 +74,15 @@ réglages système est le seul chemin.)
 4. Les deux joueurs doivent être sur le **site à jour** (l'APK affiche le site
    en ligne : tirer-rafraîchir suffit côté site) ; pour tester, deux comptes
    amis, un téléphone + un ordinateur, appel vidéo depuis la discussion.
+
+### L'appel vocal reste silencieux (le chrono tourne, rien ne s'entend)
+
+1. **Le son sort de l'écouteur, pas du haut-parleur** : c'est le routage
+   Android par défaut d'un appel vocal — l'app bascule en haut-parleur dès
+   que le site signale l'appel (`LetsPlayAndroid.setCallAudio`, APK 1.0.2) ;
+   vérifier le volume d'appel (boutons volume pendant l'appel).
+2. **Site pas à jour** : l'ancienne version ne branchait le flux distant sur
+   aucun élément média en appel vocal — tirer-rafraîchir dans l'app.
 
 ### Rien ne passe du tout (ni son ni image) en 4G/5G
 

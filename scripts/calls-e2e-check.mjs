@@ -547,10 +547,15 @@ if (established) {
   check('Bob reçoit le média d’Alice', Boolean(bob.calls().remoteStream));
   check('Alice a le micro ouvert', alice.calls().micOn);
   check('panneau d’appel affiché chez Alice', alice.html().includes('calls-panel'));
-  // Appel VOCAL : aucun élément média ne portait le flux distant (la vidéo
-  // seule était rendue) — la voix de l'ami ne jouait donc JAMAIS. Le média
-  // est désormais branché même sans image (élément masqué `is-audio-only`).
-  check('appel vocal : le son distant est branché (média masqué)', alice.html().includes('is-audio-only') && bob.html().includes('is-audio-only'));
+  // Sans ce lecteur, l'appel vocal s'établit (chrono, « En appel ») mais le
+  // flux distant n'est joué nulle part — la vidéo, elle, s'entend via son <video>.
+  const sinkOf = (html) => html.split('<video').slice(1).map((part) => `<video${part.split('>')[0]}>`).find((tag) => tag.includes('calls-remote-audio'));
+  const aliceSink = sinkOf(alice.html());
+  const bobSink = sinkOf(bob.html());
+  check('appel vocal : Alice entend Bob (lecteur branché)', Boolean(aliceSink));
+  check('… le lecteur n’est pas muet', Boolean(aliceSink) && !/\bmuted\b/.test(aliceSink));
+  check('appel vocal : Bob entend Alice (lecteur branché)', Boolean(bobSink));
+  check('… le lecteur de Bob n’est pas muet', Boolean(bobSink) && !/\bmuted\b/.test(bobSink));
 }
 
 /* ------------------------------------------------------------------------ */
@@ -591,7 +596,7 @@ if (videoLive) {
   check('incrustation locale (PiP) chez Alice', alice.html().includes('calls-pip'));
   check('vidéo de l’ami rendue chez Bob', bob.html().includes('calls-remote'));
   check('incrustation locale (PiP) chez Bob', bob.html().includes('calls-pip'));
-  check('pas de média audio masqué quand la vidéo passe', alice.html().includes('is-audio-only'), false);
+  check('pas de lecteur audio séparé quand la vidéo passe', alice.html().includes('calls-remote-audio'), false);
   check('pas de repli caméra en appel vidéo nominal', alice.calls().cameraFallback, false);
 }
 await act(async () => { alice.calls().endCall(); });
@@ -724,7 +729,7 @@ check('appel dégradé établi des deux côtés', degradedLive);
 if (degradedLive) {
   check('… pastille « caméra indisponible » rendue', alice.html().includes('calls-fallback') && alice.html().includes('Caméra indisponible'));
   check('… pas d’incrustation vidéo (pas de piste)', alice.html().includes('calls-pip'), false);
-  check('… le son distant reste branché des deux côtés', alice.html().includes('is-audio-only') && bob.html().includes('is-audio-only'));
+  check('… le lecteur distant reste branché des deux côtés', alice.html().includes('calls-remote-audio') && bob.html().includes('calls-remote-audio'));
 }
 await act(async () => { alice.calls().endCall(); });
 check('retour au calme après l’appel dégradé', await waitFor(() => alice.calls().phase === 'idle' && bob.calls().phase === 'idle', 60));

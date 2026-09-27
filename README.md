@@ -688,6 +688,14 @@ dos) sans coupure, **résistance aux micro-coupures** (6 s de grâce avant de
 conclure « Connexion perdue »). Caméra refusée sur un appel vidéo ? L'appel
 continue **en audio** plutôt que d'échouer.
 
+**Appel vocal** : il n'y a pas d'image, donc pas de `<video>` visible — mais le
+son de l'ami doit quand même être joué, dans un `<video playsinline>` (le même
+chemin que l'appel vidéo). Un `<audio>` reste souvent silencieux sur iOS et
+part dans l'écouteur sur Android. Sans cet élément, l'appel « s'établit », le
+chrono tourne, et personne n'entend rien : c'est le symptôme « la vidéo marche,
+le vocal non ». Dans l'APK, le haut-parleur est forcé le temps de l'appel
+(`LetsPlayAndroid.setCallAudio`) pour la même raison.
+
 **Trace d'appel** : à la fin, l'appelant dépose un message normal dans la
 discussion — `📞 Appel vidéo · 02:14`, `📞 Appel audio sans réponse`,
 `📞 Appel audio refusé`, `📞 Appel audio — occupé`. Rien de nouveau à
@@ -729,8 +737,11 @@ amis — un téléphone + un ordinateur, appel vidéo depuis la discussion) :
   est prévenu aussi (événement de signalisation `media`).
 - **Appel vocal sans voix** : le panneau ne branchait le flux distant sur un
   élément média QUE quand il avait une image — un appel vocal ne jouait donc
-  jamais la voix de l'ami. Le média est maintenant toujours branché (élément
-  masqué quand il n'y a pas d'image).
+  jamais la voix de l'ami (et l'appel vocal passait `video: false` à
+  `getUserMedia`, que certaines WebView refusent). Désormais le son est joué
+  dans un `<video playsinline>` dédié même sans image, et l'APK force le
+  **haut-parleur** pendant l'appel (`LetsPlayAndroid.setCallAudio`) — sinon
+  la voix part dans l'écouteur et on croit l'appel muet.
 - **Rien ne passe du tout (ni son ni image) en 4G/5G** : connexions
   pair-à-pair bloquées par le NAT de l'opérateur → relais TURN (ci-dessous).
   Si le SON passe mais pas l'image, le TURN n'est pas le coupable : la
@@ -840,7 +851,14 @@ Si rien ne se passe, dans l'ordre :
    WebView refuse `getUserMedia` et aucun appel n'est possible. Et comme l’APK
    charge le site en ligne, c’est bien l’en-tête `Permissions-Policy` servi
    par Vercel qui décide au final : il doit laisser `microphone=(self)` et
-   `camera=(self)` (voir le tableau ci-dessus).
+   `camera=(self)` (voir le tableau ci-dessus). L'APK envoie aussi la voix
+   dans le **haut-parleur** (pas l'écouteur) le temps de l'appel — sinon, à
+   côté d'un appel vidéo audible, le vocal semble muet ;
+6. **l'appel vidéo s'entend, l'appel vocal non** (chrono qui tourne, silence) :
+   le flux distant n'était branché sur aucun élément média. Le correctif joue
+   ce flux dans un `<video playsinline>` non muet, comme l'image de l'appel
+   vidéo. `npm run check:calls` vérifie que ce lecteur est bien là, des deux
+   côtés, une fois l'appel vocal établi.
 
 ## Succès débloqués par les actions du site
 

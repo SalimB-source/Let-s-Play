@@ -3,16 +3,20 @@ package dz.letsplay.officiel;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Insets;
+import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
@@ -51,6 +55,16 @@ public class MainActivity extends Activity {
     /** Code de la demande d'autorisation micro/caméra (appels vocaux/vidéo). */
     private static final int REQUEST_MEDIA_PERMISSIONS = 4210;
 
+    /**
+     * Routage audio d'un appel. Sans ça, Android envoie la voix dans
+     * l'écouteur (mode communication) alors que l'appel vidéo sort du
+     * haut-parleur : le vocal semble muet quand on regarde l'écran.
+     */
+    private AudioManager audioManager;
+    private boolean callAudioRouted;
+    private int savedAudioMode = AudioManager.MODE_NORMAL;
+    private boolean savedSpeakerphone;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -84,16 +98,13 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);      // thème, session, quizz, listes…
         settings.setAllowFileAccess(false);
-        // Appels vocaux / vidéo (WebRTC) : sans ce réglage, la WebView exige
-        // un geste utilisateur pour CHAQUE lecture de média. Le clic « Répondre
-        // » est déjà consommé quand l'image de l'ami arrive (quelques secondes
-        // plus tard, après la connexion pair-à-pair) : le `play()` du
-        // `<video>` distant était rejeté et l'image restait NOIRE alors que
-        // le son passait. Autoriser la lecture sans geste règle ça pour les
-        // vidéos de l'appel (et pour les `<video>` du site : mutes, elles ne
-        // produisent jamais de son surprise).
+        // Le son distant arrive après la négociation WebRTC, bien après le
+        // clic « Répondre ». Sans ça, la WebView peut refuser de le jouer.
         settings.setMediaPlaybackRequiresUserGesture(false);
         webView.setBackgroundColor(Color.BLACK);
+        // Le site demande le haut-parleur le temps de l'appel (voir
+        // preferLoudspeaker dans CallsContext). Inerte hors de l'APK.
+        webView.addJavascriptInterface(new CallAudioBridge(), "LetsPlayAndroid");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -197,8 +208,78 @@ public class MainActivity extends Activity {
         }
         if (granted.isEmpty()) {
             request.deny();
-        } else {
-            request.grant(granted.toArray(new String[0]));
+            return;
+        }
+        request.grant(granted.toArray(new String[0]));
+        if (granted.contains(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+            runOnUiThread(this::routeCallToSpeaker);
+        }
+    }
+
+    private void ensureAudioManager() {
+        if (audioManager == null) {
+            audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        }
+    }
+
+    /** Voix dans le haut-parleur, comme l'appel vidéo — pas dans l'écouteur. */
+    private void routeCallToSpeaker() {
+        ensureAudioManager();
+        if (audioManager == null) {
+            return;
+        }
+        if (!callAudioRouted) {
+            savedAudioMode = audioManager.getMode();
+            savedSpeakerphone = audioManager.isSpeakerphoneOn();
+            callAudioRouted = true;
+        }
+        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        audioManager.setSpeakerphoneOn(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            for (AudioDeviceInfo device : audioManager.getAvailableCommunicationDevices()) {
+                if (device.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) {
+                    audioManager.setCommunicationDevice(device);
+                    break;
+                }
+            }
+        }
+        // API historique : présente depuis bien avant minSdk 23, et suffit à
+        // empêcher une autre app de couper la voix. (AudioFocusRequest est
+        // API 26 — un champ de ce type ferait planter le chargement de
+        // l'activité sur Android 6.)
+        audioManager.requestAudioFocus(null, AudioManager.STREAM_VOICE_CALL,
+                AudioManager.AUDIOFOCUS_GAIN);
+    }
+
+    /** Rend le routage d'avant l'appel (musique, autres apps). */
+    private void restoreAudioRoute() {
+        if (audioManager == null || !callAudioRouted) {
+            return;
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                audioManager.clearCommunicationDevice();
+            }
+            audioManager.abandonAudioFocus(null);
+            audioManager.setSpeakerphoneOn(savedSpeakerphone);
+            audioManager.setMode(savedAudioMode);
+        } catch (RuntimeException ignored) {
+            // Un appareil peut refuser le changement de mode : l'appel est fini.
+        }
+        callAudioRouted = false;
+    }
+
+    /** Pont appelé par le site : `LetsPlayAndroid.setCallAudio(true|false)`. */
+    private final class CallAudioBridge {
+        @JavascriptInterface
+        public void setCallAudio(boolean active) {
+            runOnUiThread(() -> {
+                if (active) {
+                    routeCallToSpeaker();
+                } else {
+                    restoreAudioRoute();
+                }
+            });
         }
     }
 
@@ -274,5 +355,11 @@ public class MainActivity extends Activity {
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         webView.saveState(outState);
+    }
+
+    @Override
+    protected void onDestroy() {
+        restoreAudioRoute();
+        super.onDestroy();
     }
 }
