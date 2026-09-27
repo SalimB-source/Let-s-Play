@@ -5,6 +5,8 @@ import { useFriends } from '../friends/FriendsContext';
 import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy';
 import { AddTab, FriendsTab, RequestsTab } from '../friends/FriendsTabs';
 import { useMessages } from '../messages/MessagesContext';
+import { useCalls } from '../messages/CallsContext';
+import { callsText } from '../messages/callsCopy';
 import { describeMessagesError, messagesText } from '../messages/messagesCopy';
 import { InboxView, ThreadView } from '../messages/MessagesTabs';
 import useMediaQuery from '../lib/useMediaQuery';
@@ -63,12 +65,14 @@ function RefreshIcon({ size = 14 }) {
 export default function SocialDock() {
   const friends = useFriends();
   const messages = useMessages();
+  const calls = useCalls();
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const t = socialText(lang);
   const ft = friendsText(lang);
   const mt = messagesText(lang);
+  const ct = callsText(lang);
   // Mobile : toute la fenêtre sociale (amis + messagerie) vit sur la page
   // /messages — pas de pop-up : l'expérience est plein écran, avec de vrais
   // onglets et un historique de navigation (le bouton retour du téléphone
@@ -327,6 +331,7 @@ export default function SocialDock() {
           peerId={activePeerId}
           t={mt}
           ft={ft}
+          ct={ct}
           lang={lang}
           thread={threadFor(activePeerId)}
           profile={resolvedProfile}
@@ -335,6 +340,8 @@ export default function SocialDock() {
           reported={reportedReason(activePeerId)}
           canWrite={canMessage(activePeerId)}
           onBack={backFromThread}
+          onCall={calls.startCall}
+          callBlocker={calls.blockerFor}
           onSend={send}
           onDelete={deleteMessage}
           onBlock={block}

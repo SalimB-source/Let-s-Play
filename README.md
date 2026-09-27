@@ -201,6 +201,11 @@ site »).
 - Messagerie : discussions **1-à-1 entre amis** en texte et en temps réel, avec
   **non-lus**, accusé de lecture, **blocage** et **signalement**, dans la même
   fenêtre sociale (voir « Messagerie : discussions 1-à-1 entre amis »)
+- Appels **vocaux et vidéo** 1-à-1 entre amis, depuis l'en-tête d'une
+  discussion : pair-à-pair WebRTC signalé par Supabase Realtime, appel
+  entrant avec sonnerie, micro/caméra coupables, bascule de caméra,
+  refus / occupé / sans réponse, et **trace d'appel** déposée dans la
+  discussion (voir « Appels vocaux & vidéo entre amis »)
 - Amis + messagerie dans la **même fenêtre** : un seul lanceur « MESSAGERIE »
   (pastilles des non-lus et des demandes en attente, amis en ligne) ouvre un
   panneau à quatre onglets — Amis / Demandes / Ajouter / Messages ; sur mobile
@@ -276,6 +281,12 @@ public by design — they ship inside the client bundle. The workflow accepts th
 `SUPABASE_URL` / `SUPABASE_ANON_KEY` names too. When they are absent, the build
 still deploys but `/auth` stays in demo-preview mode, and the workflow logs a
 warning (`Supabase non configuré`).
+
+**Appels vocaux & vidéo (facultatif)** : `VITE_TURN_URL`, `VITE_TURN_USERNAME`
+et `VITE_TURN_CREDENTIAL` ajoutent un relais TURN pour fiabiliser les appels
+derrière les NAT stricts — mêmes règles (lues au build, redéploiement après
+changement). Détails et choix d'hébergement dans « Appels vocaux & vidéo entre
+amis ».
 
 If a variable is missing, `/auth` shows exactly which one under the form.
 
@@ -645,6 +656,104 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page
   `/messages` et le pop-up reste pour les amis), et les contextes par défaut
   sont inertes.
+
+## Appels vocaux & vidéo entre amis
+
+Dans l'en-tête de chaque discussion (fenêtre sociale sur bureau, page
+`/messages` partout), deux boutons à côté de « Profil » : **téléphone** (appel
+vocal) et **caméra** (appel vidéo). Comme la messagerie, les appels sont
+réservés aux **amis** — et seulement à ceux qui sont **en ligne** : un bouton
+grisé s'explique toujours au survol (« Salim est hors ligne — les appels se
+font entre amis en ligne », « aperçu démo », « connexion sécurisée (HTTPS)
+exigée »…).
+
+**Comment ça marche** (trois étages, tous sans serveur en plus) :
+
+| Étage | Ce qui fait le travail |
+| --- | --- |
+| **Signalisation** | Supabase Realtime (Broadcast) — sonnerie, réponse, offre/réponse SDP, candidats ICE, raccrocher. Chaque joueur écoute en permanence **son** canal `calls:user:{uid}` ; on n'envoie que sur le canal du destinataire, et chaque événement `{v, t, callId, from, to}` est validé (destinataire, appel courant, amitié et blocage revérifiés à l'arrivée) |
+| **Médias** | WebRTC **pair-à-pair** (`getUserMedia` + `RTCPeerConnection`) : le son et l'image ne passent jamais par un serveur. STUN public livré par défaut ; TURN optionnel (voir plus bas) pour les NAT stricts |
+| **État & interface** | `CallsContext` expose la phase (`idle → incoming/outgoing → connecting → active → ended`), les flux `<video>`, le micro / la caméra, la durée, le motif de fin ; `CallOverlays` rend l'appel entrant (carte + sonnerie) et le panneau d'appel (vidéo de l'ami en grand, la nôtre en incrustation **miroir**, chrono, contrôles) |
+
+**Le scénario complet** : l'appelant obtient micro/caméra (la permission est
+demandée **avant** de sonner), puis l'ami reçoit l'appel entrant (sonnerie,
+carte « Répondre / Refuser »). Répondre lance la connexion P2P ; refuser
+affiche « Appel refusé » chez l'appelant ; appeler un ami déjà en appel répond
+**occupé** tout seul ; sonner 30 s sans réponse conclut « sans réponse ». En
+cours d'appel : micro et caméra coupables, **changement de caméra** (selfie ↔
+dos) sans coupure, **résistance aux micro-coupures** (6 s de grâce avant de
+conclure « Connexion perdue »). Caméra refusée sur un appel vidéo ? L'appel
+continue **en audio** plutôt que d'échouer.
+
+**Trace d'appel** : à la fin, l'appelant dépose un message normal dans la
+discussion — `📞 Appel vidéo · 02:14`, `📞 Appel audio sans réponse`,
+`📞 Appel audio refusé`, `📞 Appel audio — occupé`. Rien de nouveau à
+provisionner : non-lus, temps réel et suppression sont ceux de la messagerie.
+(Ce message suit la langue de l'appelant — limite assumée, documentée ici.)
+
+**Sécurité & limites honnêtes** :
+
+- les canaux de signalisation sont publics par nom : les événements sont
+  filtrés (destinataire + amitié + blocage + appel courant), mais ils restent
+  visibles d'un client qui joindrait le canal ; seuls des identifiants et une
+  offre SDP y transitent (jamais de média) — pour blinder, passer les canaux
+  Realtime en `private` (RLS `realtime.channels`) ;
+- deux onglets du même compte sonnent ensemble ; répondre dans l'un laisse
+  l'autre finir sa sonnerie (35 s max) ;
+- `getUserMedia` exige HTTPS (ou localhost) : les boutons s'expliquent sinon ;
+- les personas de démonstration n'ont pas de correspondant réel : les boutons
+  y sont grisés avec l'explication, et `check:calls` le vérifie.
+
+### Serveur TURN (recommandé en production)
+
+Le STUN public de Google suffit derrière la plupart des box internet, mais les
+**NAT des opérateurs mobiles** (3G/4G) font échouer une partie des connexions
+directes. Un serveur **TURN** (relais) règle ça — variables lues au build,
+donc **redéploiement après changement** :
+
+```bash
+VITE_TURN_URL=turn:turn.votre-domaine.com:3478          # URLs multiples acceptées (virgules)
+VITE_TURN_USERNAME=letsplay
+VITE_TURN_CREDENTIAL=le-mot-de-passe-turn
+```
+
+Deux options éprouvées : **Coturn** auto-hébergé sur un petit VPS (gratuit,
+~20 lignes de `turnserver.conf`), ou un TURN managé (Cloudflare Calls,
+Metered…) si l'on ne veut rien exploiter. Sans TURN, les appels fonctionnent
+quand même : simplement moins souvent du premier coup en mobile.
+
+### Où vit le code
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/messages/CallsContext.jsx` | le moteur et l'état : sonneries entrantes (canal personnel permanent), `startCall` / `acceptCall` / `declineCall` / `endCall`, micro / caméra / bascule de caméra, connexions P2P, traces d'appel, `blockerFor` (les boutons grisés s'expliquent) |
+| `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, durées, classification des erreurs de média |
+| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant, panneau d'appel (vidéo, PiP miroir, chrono, contrôles) |
+| `src/messages/callSounds.js` | sons synthétisés (Web Audio) : sonnerie, tonalité, connexion, fin |
+| `src/messages/callsCopy.js` | textes EN / FR / AR, libellés de blocage, traces d'appel — le site étant publié en français, EN / AR restent en filet de sécurité, comme les dictionnaires du site |
+| `src/messages/calls.css` | styles des overlays (plein écran, coins coupés, mobile, `prefers-reduced-motion`) |
+| `src/messages/MessagesTabs.jsx` | les deux boutons d'appel de l'en-tête de discussion (fenêtre sociale **et** page `/messages`) |
+
+### Vérifications
+
+- `npm run check:calls` — logique pure (ICE/TURN par variables d'environnement,
+  canaux de signalisation, événements broadcast validés — version, type,
+  appel, destinataire, émetteur —, durées, classification des erreurs de
+  micro/caméra, traces d'appel et libellés complets dans les trois langues),
+  puis rendu SSR : visiteur sans bouton ni panneau, discussion de démonstration
+  avec les deux boutons **grisés et expliqués** (pas de WebRTC entre personas),
+  rien dans la liste des discussions, libellés EN / FR / AR, jamais appelable
+  soi-même.
+- `npm run check:messages`, `check:friends` et `check:i18n` continuent de
+  passer : les appels se greffent sur la messagerie sans rien redonder.
+
+### Tester un vrai appel
+
+Il faut deux **comptes Supabase amis et en ligne** (deux navigateurs, ou un
+ordinateur + un téléphone sur le déploiement HTTPS) : ouvrir la discussion,
+appuyer sur le téléphone ou la caméra, répondre de l'autre côté. En local
+(`npm run dev` sur localhost), les appels entre deux onglets fonctionnent —
+les permissions micro/caméra se demandent normalement.
 
 ## Succès débloqués par les actions du site
 

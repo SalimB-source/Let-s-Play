@@ -17,6 +17,7 @@ import './achievements/achievements.css';
 import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
+import './messages/calls.css';
 import './social/social.css';
 import './typography.css';
 import './theme.css';        // thème clair : importé en dernier (surcharge)
@@ -63,6 +64,8 @@ import AchievementTracker from './achievements/AchievementTracker';
 import AchievementPopup from './achievements/AchievementPopup';
 import { FriendsProvider } from './friends/FriendsContext';
 import { MessagesProvider } from './messages/MessagesContext';
+import { CallsProvider } from './messages/CallsContext';
+import CallOverlays from './messages/CallOverlays';
 import SocialDock from './social/SocialDock';
 import { initSinglePlayback } from './lib/videoPlayback';
 
@@ -82,6 +85,12 @@ function App() {
               raccourcis du hub lisent les deux mêmes contextes. */}
           <FriendsProvider>
           <MessagesProvider>
+          {/* Les appels vocaux/vidéo vivent à côté de la messagerie : ils
+              s'adressent aux amis en ligne, vérifient les blocages et
+              déposent leur trace dans les discussions. Les surfaces
+              (appel entrant, panneau d'appel) se rendent au-dessus de
+              tout, comme la fenêtre sociale. */}
+          <CallsProvider>
           <AchievementProvider>
             <Layout>
               <AchievementTracker />
@@ -166,7 +175,9 @@ function App() {
             </Layout>
             <AchievementPopup />
             <SocialDock />
+            <CallOverlays />
           </AchievementProvider>
+          </CallsProvider>
           </MessagesProvider>
           </FriendsProvider>
         </BrowserRouter>
