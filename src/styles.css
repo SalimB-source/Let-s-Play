@@ -615,8 +615,8 @@ img{max-width:100%}
   background:#05060f;
   padding:120px 0 110px;
 }
-/* Le héros affiche la vidéo du contrôleur (avec key art en poster) en plein
-   cadre, le voile `.hero-shade` gardant le texte lisible à gauche. */
+/* Le héros affiche l'image gaming gear en plein cadre, le voile `.hero-shade`
+   gardant le texte lisible à gauche. */
 .hero-bg{
   position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;
   width:100%;height:100%;object-fit:cover;object-position:center;
@@ -624,7 +624,6 @@ img{max-width:100%}
   transform:scale(1.03);
   animation:hero-drift 24s ease-in-out infinite alternate;
 }
-.hero-bg--video{object-position:center;filter:saturate(.96) contrast(1.02)}
 @keyframes hero-drift{to{transform:scale(1.08)}}
 @media (prefers-reduced-motion: reduce){
   .hero-bg{animation:none;transform:scale(1.03)}

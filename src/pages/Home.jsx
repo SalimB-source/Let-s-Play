@@ -19,10 +19,8 @@ import { Arrow, AwaitedBand, clockOffset } from '../components/ReleasesCalendar'
 // est partagé avec la page calendrier complet via clockOffset().
 const CLOCK_OFFSET = clockOffset();
 
-// Visuel du héros : la vidéo est prioritaire, avec l'ancien key art comme
-// affiche de chargement et repli accessible si la lecture n'est pas disponible.
-const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-keyart.jpg`;
-const HERO_VIDEO = `${import.meta.env.BASE_URL}hero-controller.mp4`;
+// Visuel fixe du héros, utilisé dans les deux thèmes.
+const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-gaming-gear.webp`;
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },
@@ -207,20 +205,16 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        {/* Vidéo du héros : muette, en boucle et sans contrôles pour rester
-            ambiante. Le key art reste le poster et le repli visuel. */}
-        <video
-          className="hero-bg hero-bg--video"
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster={HERO_IMAGE}
+        {/* Visuel fixe du héros : plein cadre, avec le voile existant pour
+            conserver le contraste du contenu éditorial. */}
+        <img
+          className="hero-bg hero-bg--keyart"
+          src={HERO_IMAGE}
+          alt=""
           aria-hidden="true"
-        >
-          <source src={HERO_VIDEO} type="video/mp4" />
-        </video>
+          fetchPriority="high"
+          decoding="async"
+        />
         <div className="hero-shade" aria-hidden="true" />
         <div className="hero-frame" aria-hidden="true"><span className="tl" /><span className="tr" /><span className="bl" /><span className="br" /></div>
         <div className="hero-content">
