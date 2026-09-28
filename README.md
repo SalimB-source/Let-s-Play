@@ -579,7 +579,7 @@ chargement et lisait `DEMO_PROFILES.vortex.user_metadata` — registre vide, don
 | `src/friends/FriendsContext.jsx` | le contexte : amis / demandes / présence du joueur connecté, gestes (`sendRequest`, `accept`, `decline`, `cancel`, `unfriend`, `search`), et l'état de la **fenêtre sociale unifiée** (`dockOpen`, `dockTab` — l'onglet actif, `messages` inclus) ; inerte sans provider (SSR des scripts) |
 | `src/friends/friendsApi.js` | couche de données : requêtes `friendships` / `profiles`, replis quand une colonne ou la table manque, état des personas |
 | `src/friends/presence.js` | canal Realtime Presence + battement de cœur |
-| `src/friends/FriendsTabs.jsx` | les onglets Amis / Demandes / Ajouter de la fenêtre sociale |
+| `src/friends/FriendsTabs.jsx` | les onglets Amis / Demandes / Ajouter de la fenêtre sociale (pseudos **en majuscules**, comme dans la messagerie — `pseudoLabel`) |
 | `src/friends/FriendButton.jsx` | le bouton de demande d'ami (profil, commentaires, résultats de recherche) |
 | `src/friends/FriendsHubSection.jsx` | la section « Mes amis » du hub : la liste des amis, chaque ligne menant à son profil |
 | `src/friends/friendsCopy.js` | textes FR / EN / AR |
@@ -631,12 +631,15 @@ Un visiteur non connecté ne voit rien (carte de connexion sur la page).
 **Les pseudos s'affichent en majuscules** partout dans la messagerie :
 lignes de la liste des discussions, joueurs bloqués, en-tête de discussion,
 titres de la fenêtre de signalement, confirmations de blocage et d'effacement,
-infobulles d'appel et cartes d'appel. C'est une règle d'**affichage** appliquée au rendu
+infobulles d'appel et cartes d'appel, et les onglets **Amis / Demandes /
+Ajouter** de la fenêtre sociale (lignes, libellés accessibles, bouton
+« Profil », confirmation de retrait). C'est une règle d'**affichage** appliquée au rendu
 par `pseudoLabel` (`src/messages/messagesCopy.js`) : les données gardent leur
 casse d'origine et la **recherche** de la liste continue de comparer les
 pseudos bruts, sans tenir compte de la casse (chercher « kayz » trouve
-`KAYZ_ORAN`). Hors messagerie, rien ne change : la liste d'amis, les profils
-et les commentaires affichent le pseudo tel qu'il a été saisi.
+`KAYZ_ORAN`). Hors messagerie, rien ne change : la liste d'amis du hub
+joueur, les profils et les commentaires affichent le pseudo tel qu'il a été
+saisi.
 
 L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil ;
 Échap remonte à la liste puis ferme la fenêtre.
@@ -799,9 +802,10 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   « Effacer la conversation », vérifie l'annulation, la confirmation et la
   persistance après réouverture, puis sur la **bulle de suggestions**
   (remplissage sans envoi, fermeture après choix ou frappe, retour à la
-  réouverture) ; les deux vues de messagerie sont aussi
-  rendues avec un pseudo **en casse mixte** : il doit ressortir en majuscules,
-  dans le texte visible comme dans les libellés accessibles.
+  réouverture) ; les deux vues de messagerie **et les onglets Amis /
+  Demandes** de la fenêtre sociale sont aussi rendus avec un pseudo **en
+  casse mixte** : il doit ressortir en majuscules, dans le texte visible
+  comme dans les libellés accessibles.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
   continuent de passer : amis et messagerie partagent la même fenêtre sociale
   (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page

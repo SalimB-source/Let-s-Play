@@ -25,6 +25,7 @@ import MessagesPage from '../src/messages/MessagesPage';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 import { readDemoMessages } from '../src/messages/messagesApi';
 import { InboxView, ThreadView } from '../src/messages/MessagesTabs';
+import { FriendsTab, RequestsTab } from '../src/friends/FriendsTabs';
 import { messagesText } from '../src/messages/messagesCopy';
 import { callsText } from '../src/messages/callsCopy';
 import { friendsText } from '../src/friends/friendsCopy';
@@ -214,6 +215,46 @@ export function renderThreadView(profile, { lang = 'fr', messages = [], blocked 
       onUnblock: () => {},
       onReport: () => {},
       onCall: () => {},
+    }),
+  ));
+}
+
+/**
+ * Rendu SSR des onglets **Amis** et **Demandes** de la fenêtre sociale,
+ * seuls, avec des données fabriquées. `check:messages` y passe un pseudo en
+ * casse mixte pour vérifier qu'il ressort en majuscules — même règle que le
+ * reste de la messagerie — sans monter la pile complète de l'application.
+ */
+export function renderFriendsTab(friends, { lang = 'fr' } = {}) {
+  globalThis.window = { localStorage: makeStorage() };
+  return renderToString(React.createElement(
+    MemoryRouter,
+    { initialEntries: ['/messages?tab=friends'] },
+    React.createElement(FriendsTab, {
+      friends,
+      t: friendsText(lang),
+      lang,
+      unfriend: () => {},
+      onOpenThread: () => {},
+      chatLabel: messagesText(lang).openChat,
+      profileLabel: friendsText(lang).profileShort,
+    }),
+  ));
+}
+
+export function renderRequestsTab({ incoming = [], outgoing = [], lang = 'fr' } = {}) {
+  globalThis.window = { localStorage: makeStorage() };
+  return renderToString(React.createElement(
+    MemoryRouter,
+    { initialEntries: ['/messages?tab=requests'] },
+    React.createElement(RequestsTab, {
+      incoming,
+      outgoing,
+      t: friendsText(lang),
+      lang,
+      accept: () => {},
+      decline: () => {},
+      cancel: () => {},
     }),
   ));
 }
