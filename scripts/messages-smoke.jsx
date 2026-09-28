@@ -83,7 +83,7 @@ export {
   unreadFromRows,
   writeDemoMessages,
 } from '../src/messages/messagesApi';
-export { describeMessagesError, messagesCopy, pseudoLabel, reasonLabel } from '../src/messages/messagesCopy';
+export { describeMessagesError, messageSuggestions, messagesCopy, pseudoLabel, reasonLabel } from '../src/messages/messagesCopy';
 export { callsText } from '../src/messages/callsCopy';
 export { readDemoMessages };
 // Les deux vues de la messagerie sont exportées telles quelles : `check:messages`
@@ -258,6 +258,75 @@ export async function checkClearInteraction(assert) {
     root = createRoot(node);
     await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
     assert.equal(bubbles(), 0, 'le fil reste vide après remontage');
+  } finally {
+    await act(async () => root.unmount());
+    node.remove();
+  }
+}
+
+/**
+ * Clic réel (DOM) sur la bulle de suggestions : elle ouvre avec la
+ * discussion, un clic remplit le champ sans rien envoyer, elle se referme
+ * (au choix comme à la frappe) et revient à la réouverture.
+ *
+ * Les comptages servent d'assertions plutôt que les nœuds eux-mêmes : en
+ * cas d'échec, `assert` inspecte alors un simple nombre au lieu de l'arbre
+ * React/jsdom (l'inspection d'un tel nœud peut coûter très cher).
+ */
+export async function checkSuggestionInteraction(assert) {
+  const user = DEMO_PROFILE_FIXTURES.vortex;
+  const peer = 'demo-player-3105';
+  window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(user));
+  window.scrollTo = () => {};
+  const node = document.createElement('div');
+  document.body.append(node);
+  let root = createRoot(node);
+  const suggestCount = () => node.querySelectorAll('.messages-suggest').length;
+  const chips = () => [...node.querySelectorAll('.messages-suggest-chip')];
+  const textarea = () => node.querySelector('.messages-composer textarea');
+  const bubbleRows = () => node.querySelectorAll('.messages-bubble-row').length;
+  const click = async (element) => { await act(async () => element.click()); };
+  // Saisie contrôlée React : passer par le setter natif, sinon React prend
+  // la valeur pour inchangée et « input » ne déclenche aucun onChange.
+  const typeIn = async (value) => {
+    const area = textarea();
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+    await act(async () => {
+      setter.call(area, value);
+      area.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+  };
+
+  try {
+    await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
+    assert.equal(suggestCount(), 1, 'la bulle de suggestions ouvre avec la discussion');
+    assert.equal(chips().length, 3, 'trois suggestions sont proposées');
+
+    // Un clic place le texte dans le champ : rien n'est envoyé tout seul.
+    const before = bubbleRows();
+    const first = chips()[0];
+    const label = first.textContent;
+    await click(first);
+    assert.equal(textarea().value, label, 'le clic remplit le champ');
+    assert.equal(bubbleRows(), before, 'aucun message n’est parti sans validation');
+    assert.equal(node.querySelector('.messages-send').disabled, false, 'le champ est prêt à envoyer');
+    assert.equal(suggestCount(), 0, 'la bulle se referme après le choix');
+
+    // Effacer le brouillon ne fait pas revenir la bulle : le choix est pris.
+    await typeIn('');
+    assert.equal(suggestCount(), 0, 'effacer le brouillon ne fait pas revenir la bulle');
+
+    // Réouvrir la discussion : la bulle revient, comme à toute première visite.
+    await act(async () => root.unmount());
+    root = createRoot(node);
+    await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
+    assert.equal(suggestCount(), 1, 'la bulle revient à la réouverture de la discussion');
+
+    // Taper soi-même referme la bulle pour de bon.
+    await typeIn('Salut');
+    assert.equal(suggestCount(), 0, 'la première frappe referme la bulle');
+    await typeIn('');
+    assert.equal(suggestCount(), 0, 'la bulle reste fermée après effacement');
   } finally {
     await act(async () => root.unmount());
     node.remove();

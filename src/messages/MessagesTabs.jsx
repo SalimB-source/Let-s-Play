@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
 import { callBlockLabel } from './callsCopy';
-import { describeMessagesError, pseudoLabel, reasonLabel } from './messagesCopy';
+import { describeMessagesError, messageSuggestions, pseudoLabel, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
 
 /**
@@ -14,9 +14,10 @@ import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
  *     message, heure, badge des non-lus ; en dessous, les amis sans
  *     discussion et les joueurs bloqués, à débloquer) ;
  *   - `ThreadView` : la discussion ouverte (séparateurs de jour, fil de
- *     bulles, accusé de lecture, champ qui s'agrandit, bouton d'envoi
- *     libellé, accès **Profil**, gestes **Bloquer** / **Signaler** /
- *     **Effacer la conversation pour soi**).
+ *     bulles, accusé de lecture, **bulle de suggestions** à l'ouverture —
+ *     trois messages prêts à glisser dans le champ —, champ qui s'agrandit,
+ *     bouton d'envoi libellé, accès **Profil**, gestes **Bloquer** /
+ *     **Signaler** / **Effacer la conversation pour soi**).
  *
  * Ici, ni la photo ni le nom n'envoient vers le profil : on est déjà dans le
  * chat — le profil a son bouton dédié dans la barre d'outils.
@@ -100,6 +101,13 @@ function TrashIcon({ size = 13 }) {
       <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
       <path d="M19 7v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7" />
       <path d="M10 11v5M14 11v5" />
+    </svg>
+  );
+}
+function CloseIcon({ size = 12 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   );
 }
@@ -378,6 +386,10 @@ export function ThreadView({
   const [moreOpen, setMoreOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [clearing, setClearing] = useState(false);
+  // Bulle de suggestions visible à l'ouverture du fil : elle se referme au
+  // premier choix, à la première frappe ou sur « Masquer », et revient au
+  // prochain passage dans la discussion.
+  const [suggestOpen, setSuggestOpen] = useState(true);
   const currentPeerRef = useRef(peerId);
   const listRef = useRef(null);
   const inputRef = useRef(null);
@@ -385,6 +397,17 @@ export function ThreadView({
   const messages = thread?.messages || [];
   const lastMine = [...messages].reverse().find((message) => message.mine) || null;
   const remaining = MESSAGE_MAX_LENGTH - draft.length;
+
+  // Suggestions de la bulle d'ouverture : registre choisi selon l'état du fil
+  // (vide / reçu / envoyé) — voir `messageSuggestions`.
+  const suggestions = messageSuggestions(t, {
+    name: profile?.name,
+    lastMessage: messages[messages.length - 1] || null,
+  });
+  // La bulle disparaît dès qu'on écrit (y compris si l'on efface ensuite le
+  // brouillon) : à ce moment-là, le joueur a déjà son propre message en tête.
+  const showSuggestions = suggestOpen && !blocked && canWrite && !clearing
+    && !reportOpen && !draft.trim() && suggestions.length > 0;
 
   // Ferme le menu « … » quand on clique en dehors ou qu'on appuie sur Échap.
   useEffect(() => {
@@ -414,7 +437,7 @@ export function ThreadView({
   useEffect(() => {
     currentPeerRef.current = peerId;
     setDraft(''); setError(''); setReportOpen(false); setMoreOpen(false);
-    setDeletingId(null); setClearing(false);
+    setDeletingId(null); setClearing(false); setSuggestOpen(true);
   }, [peerId]);
 
   // Bureau : le champ prend le focus à l'ouverture de la discussion — on
@@ -465,6 +488,19 @@ export function ThreadView({
     } finally {
       setBusy(false);
     }
+  };
+
+  // Un clic sur une suggestion place le texte dans le champ — rien n'est
+  // envoyé sans le geste explicite du joueur (Envoyer / Entrée). Le focus
+  // n'est pris que sur pointeur fini : sur mobile, pas de clavier qui
+  // surgit sans que le joueur l'ait demandé.
+  const applySuggestion = (text) => {
+    setSuggestOpen(false);
+    setDraft(text);
+    setError('');
+    const fine = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(pointer: fine)').matches;
+    if (fine) inputRef.current?.focus();
   };
 
   const handleDelete = async (message) => {
@@ -685,6 +721,32 @@ export function ThreadView({
         </ul>
       </div>
 
+      {showSuggestions && (
+        <div className="messages-suggest" role="group" aria-label={t.suggestGroup}>
+          <div className="messages-suggest-head">
+            <span className="messages-suggest-title">{t.suggestTitle}</span>
+            <button
+              type="button"
+              className="messages-suggest-close"
+              aria-label={t.suggestClose}
+              title={t.suggestClose}
+              onClick={() => setSuggestOpen(false)}
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <ul className="messages-suggest-list">
+            {suggestions.map((text) => (
+              <li key={text}>
+                <button type="button" className="messages-suggest-chip" onClick={() => applySuggestion(text)}>
+                  {text}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {blocked ? (
         <p className="messages-composer-disabled">{t.blockedNote}</p>
       ) : canWrite ? (
@@ -695,7 +757,10 @@ export function ThreadView({
           <textarea
             ref={inputRef}
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              if (event.target.value.trim()) setSuggestOpen(false);
+            }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();

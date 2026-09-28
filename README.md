@@ -555,7 +555,7 @@ Un visiteur non connecté ne voit rien (carte de connexion sur la page).
 | Niveau | Ce qui s'y trouve |
 | --- | --- |
 | **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
-| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
+| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; à l'ouverture, une **bulle de suggestions** propose trois messages selon l'état du fil — salut si la discussion est vide, réponses si l'ami posait une question, réactions ou relances sinon — : un clic les place dans le champ (rien ne part sans validation) et la bulle se referme au premier choix, à la première frappe ou sur « Masquer » ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
 
 **Les pseudos s'affichent en majuscules** partout dans la messagerie :
 lignes de la liste des discussions, joueurs bloqués, en-tête de discussion,
@@ -703,10 +703,10 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 | `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `clearConversation`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
 | `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, RPC d'effacement pour soi, lignes → discussions, non-lus, repli quand la table manque, état des personas |
 | `src/messages/demoThreads.js` | discussions de départ, réponses scriptées et messages entrants de l'aperçu démo |
-| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler / effacer la conversation |
+| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, **bulle de suggestions à l'ouverture du fil**, champ de saisie, accès « Profil », bloquer / signaler / effacer la conversation |
 | `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
 | `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
-| `src/messages/messagesCopy.js` | textes FR / EN / AR, et `pseudoLabel` : les pseudos affichés en majuscules (règle de rendu, les données gardent leur casse) |
+| `src/messages/messagesCopy.js` | textes FR / EN / AR, `pseudoLabel` : les pseudos affichés en majuscules (règle de rendu, les données gardent leur casse), et `messageSuggestions` : les trois suggestions de la bulle d'ouverture selon l'état du fil |
 | `src/messages/messages.css` | styles (liste, bulles, signalement, page `/messages`) |
 
 ### Vérifications
@@ -721,11 +721,14 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   jamais soi-même, non-lus et discussions lues, réponses déterministes,
   messages scriptés livrés une seule fois, effacement propre à la persona et
   persistant, blocage / signalement réversibles, textes complets dans les trois
-  langues), puis rendu SSR du hub, de la fenêtre
+  langues, suggestions de la bulle d'ouverture cohérentes avec l'état du fil —
+  salut, réponse à la question, réaction, relance — en trois langues), puis rendu SSR du hub, de la fenêtre
   (fermée / liste / discussion ouverte) et de profils publics — visiteur, ami
   et non-ami — dans les trois langues ; un test DOM clique aussi sur
   « Effacer la conversation », vérifie l'annulation, la confirmation et la
-  persistance après réouverture ; les deux vues de messagerie sont aussi
+  persistance après réouverture, puis sur la **bulle de suggestions**
+  (remplissage sans envoi, fermeture après choix ou frappe, retour à la
+  réouverture) ; les deux vues de messagerie sont aussi
   rendues avec un pseudo **en casse mixte** : il doit ressortir en majuscules,
   dans le texte visible comme dans les libellés accessibles.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`

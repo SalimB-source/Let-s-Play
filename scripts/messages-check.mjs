@@ -6,7 +6,9 @@
  *    comptés, dernier message) ; les clés de conversation sont symétriques et
  *    sans caractère réservé ; la saisie est nettoyée et bornée ; l'accusé de
  *    lecture et les messages reçus en direct se fondent dans l'état sans
- *    doublon ; les erreurs du trigger sont reconnues.
+ *    doublon ; les erreurs du trigger sont reconnues ; les suggestions de la
+ *    bulle d'ouverture couvrent les quatre états du fil (vide, reçu en
+ *    question, reçu au calme, envoyé) dans les trois langues.
  * 2. Aperçu de démonstration : les discussions de départ ne citent que des
  *    amis existants, jamais soi-même ; il y a des non-lus et des discussions
  *    lues ; les réponses scriptées sont déterministes ; les messages scriptés
@@ -22,12 +24,15 @@
  *    la page de connexion, sans ouvrir les conversations ; pour un joueur
  *    connecté, la fenêtre sociale ouverte sur la messagerie montre la
  *    liste des discussions puis la discussion en cours (bulles + champ de
- *    saisie) ; le bouton « Message » d'un profil ami est rendu, et propose la
+ *    saisie + bulle de suggestions à l'ouverture, fermable) ; le bouton
+ *    « Message » d'un profil ami est rendu, et propose la
  *    connexion à un visiteur. Le hub, lui, ne porte plus AUCUN raccourci de
  *    messagerie : ses seules sections sociales sont la liste d'amis et la
  *    fenêtre sociale (ou la page /messages sur mobile).
  * 4. DOM : clic sur « Effacer la conversation » dans la page, annulation puis
- *    confirmation, disparition des bulles et persistance au rechargement.
+ *    confirmation, disparition des bulles et persistance au rechargement ;
+ *    clic sur la bulle de suggestions (remplissage sans envoi, fermeture
+ *    après choix ou frappe, retour à la réouverture).
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -44,6 +49,16 @@ execFileSync(
   { cwd: root, stdio: 'inherit' },
 );
 
+// react-dom fige `canUseDOM` / `isInputEventSupported` au moment de son
+// évaluation : sans fenêtre réelle à cet instant, le branchement « input »
+// ne se monte jamais et aucun onChange de champ de saisie ne part en DOM.
+// On ouvre donc une JSDOM *avant* d'importer la fumée (react-dom inclus),
+// puis on rend l'environnement à son état d'origine pour les sections 1-3,
+// qui tournent sans fenêtre ; la même fenêtre revient en section 4.
+const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost' });
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+
 const smoke = await import(path.join(outDir, 'messages-smoke.js'));
 const {
   DEMO_INCOMING, DEMO_INITIAL_STATE, DEMO_PROFILES, DEMO_REPLIES, DEMO_THREADS,
@@ -53,11 +68,15 @@ const {
   clearThreadLocal, conversationKey, demoReplyFor, demoThreads, describeMessagesError, describeSupabaseError,
   dueDemoIncoming, friendsCopy,
   isAfterClear, isBlockedError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
-  makeStorage, markThreadReadLocal, mergeUnread, messagesCopy, normalizeMessage, peersFromKey,
+  makeStorage, markThreadReadLocal, mergeUnread, messageSuggestions, messagesCopy, normalizeMessage, peersFromKey,
   prepareBody, pseudoLabel, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
   sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, writeDemoMessages,
-  checkClearInteraction, findDemoPlayer, renderApp, renderInboxView, renderThreadView, callsText,
+  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp, renderInboxView, renderThreadView, callsText,
 } = smoke;
+
+// Sections 1-3 : aucun besoin de fenêtre (voir le commentaire d'import).
+delete globalThis.window;
+delete globalThis.document;
 
 let failures = 0;
 function check(label, actual, expected = true) {
@@ -208,6 +227,27 @@ check('pseudo vide → chaîne vide', pseudoLabel('   '), '');
 check('pseudo nul → repli possible', pseudoLabel(null) || '?', '?');
 check('pseudo : conversion idempotente', pseudoLabel(pseudoLabel('Vortex_DZ')), 'VORTEX_DZ');
 check('pseudo : règle d’affichage, pas un texte traduit', typeof messagesCopy.fr.pseudoLabel, 'undefined');
+
+// Bulle de suggestions à l'ouverture d'une discussion : trois propositions,
+// registre choisi selon l'état du fil, pseudo en majuscules dans le salut.
+for (const lang of ['en', 'fr', 'ar']) {
+  const t = messagesCopy[lang];
+  const empty = messageSuggestions(t, { name: 'nova pixel', lastMessage: null });
+  const asked = messageSuggestions(t, { name: 'nova pixel', lastMessage: { mine: false, body: 'On joue ?' } });
+  const told = messageSuggestions(t, { name: 'nova pixel', lastMessage: { mine: false, body: 'Parfait.' } });
+  const mine = messageSuggestions(t, { name: 'nova pixel', lastMessage: { mine: true, body: 'J’arrive.' } });
+  check(`[${lang}] suggestions : toujours trois propositions non vides`,
+    [empty, asked, told, mine].every((list) => list.length === 3 && list.every((entry) => entry.trim())));
+  check(`[${lang}] suggestions : fil vide → salut avec pseudo en majuscules`,
+    empty.includes(t.suggestGreet[0].replace('{name}', 'NOVA PIXEL')));
+  check(`[${lang}] suggestions : question reçue → réponses courtes`, asked.join('|'), t.suggestAnswer.join('|'));
+  const askedAr = messageSuggestions(t, { name: 'x', lastMessage: { mine: false, body: 'جولة؟' } });
+  check(`[${lang}] suggestions : point d’interrogation arabe reconnu`, askedAr.join('|'), t.suggestAnswer.join('|'));
+  check(`[${lang}] suggestions : constat reçu → réactions`, told.join('|'), t.suggestReply.join('|'));
+  check(`[${lang}] suggestions : dernier envoyé → relances`, mine.join('|'), t.suggestFollowUp.join('|'));
+}
+check('suggestions : message reçu vide → trois propositions quand même',
+  messageSuggestions(messagesCopy.fr, { name: 'Kayz', lastMessage: { mine: false, body: '  ' } }).length, 3);
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/4] aperçu de démonstration\n');
@@ -425,21 +465,27 @@ try {
   check('discussion : lien profil libellé en majuscules', threadRaw.includes(`${t.profile} — NOVA PIXEL`));
   check('discussion : message du fil intact', thread.includes('Salut !'));
   check('discussion : champ de saisie et bouton d’envoi', threadRaw.includes('messages-composer') && threadRaw.includes(`aria-label="${t.send}"`));
+  check('discussion : bulle de suggestions à l’ouverture', threadRaw.includes('messages-suggest') && threadRaw.includes(`aria-label="${t.suggestGroup}"`));
+  check('discussion : trois suggestions proposées', (threadRaw.match(/messages-suggest-chip/g) || []).length, 3);
+  check('discussion : suggestions fermables', threadRaw.includes(`aria-label="${t.suggestClose}"`));
   const ct = callsText('fr');
   check('discussion : boutons d’appel nommés', threadRaw.includes(`aria-label="${ct.callAudio}"`) && threadRaw.includes(`aria-label="${ct.callVideo}"`));
   check('discussion : effacement pour soi toujours proposé', threadRaw.includes(`aria-label="${t.clearConversation}"`));
 } catch (e) { check('les vues de messagerie se rendent seules', e.message, ''); }
 
-console.log('\n[4/4] clic d’effacement dans la page\n');
-const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost' });
+console.log('\n[4/4] gestes DOM : effacement et suggestions\n');
+// La fenêtre ouverte avant l'import de la fumée (react-dom a besoin d'une
+// fenêtre dès son évaluation — voir le commentaire au-dessus de l'import).
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 try {
   await checkClearInteraction(assert);
   check('annuler / confirmer : fil effacé et persistant pour la persona seulement', true);
+  await checkSuggestionInteraction(assert);
+  check('bulle de suggestions : clic, fermeture puis réouverture', true);
 } catch (e) {
-  check('clic « Effacer la conversation » fonctionne', e.message, '');
+  check('gestes DOM de la page (effacement / suggestions)', e.message, '');
 } finally {
   dom.window.close();
 }

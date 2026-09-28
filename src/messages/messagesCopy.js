@@ -1,3 +1,5 @@
+import { fill } from '../friends/friendsCopy';
+
 /**
  * Textes de la messagerie (EN / FR / AR). L'anglais sert de repli, comme
  * partout sur le site. Les libellés de présence (« EN LIGNE », « Vu il y a… »)
@@ -36,6 +38,13 @@ export const messagesCopy = {
     composerPlaceholder: 'Write a message…',
     send: 'Send',
     composerHint: 'Enter to send · Shift + Enter for a new line',
+    suggestGroup: 'Message suggestions',
+    suggestTitle: 'SUGGESTIONS',
+    suggestClose: 'Dismiss suggestions',
+    suggestGreet: ['Hi {name} 👋', 'How’s it going?', 'Up for a round tonight?'],
+    suggestAnswer: ['Yes!', 'Not yet — give me a few minutes', 'Good call 😄'],
+    suggestReply: ['Nice one — tell me more!', 'Same here 😄', 'Wanna hop in a game?'],
+    suggestFollowUp: ['You around later?', 'Wanna hop on a call?', 'Seen the latest news?'],
     tooLong: '{max} characters max.',
     seen: 'Seen',
     sent: 'Sent',
@@ -114,6 +123,13 @@ export const messagesCopy = {
     composerPlaceholder: 'Écris ton message…',
     send: 'Envoyer',
     composerHint: 'Entrée pour envoyer · Maj + Entrée pour un saut de ligne',
+    suggestGroup: 'Suggestions de message',
+    suggestTitle: 'SUGGESTIONS',
+    suggestClose: 'Masquer les suggestions',
+    suggestGreet: ['Salut {name} 👋', 'Ça va ?', 'Une partie ce soir ?'],
+    suggestAnswer: ['Oui !', 'Pas encore — j’arrive dans quelques minutes', 'Bonne idée 😄'],
+    suggestReply: ['Sympa — raconte-moi !', 'Moi aussi 😄', 'On joue un match ?'],
+    suggestFollowUp: ['Tu es dispo plus tard ?', 'On fait un call ?', 'Tu as vu la dernière actu ?'],
     tooLong: '{max} caractères maximum.',
     seen: 'Vu',
     sent: 'Envoyé',
@@ -192,6 +208,13 @@ export const messagesCopy = {
     composerPlaceholder: 'اكتب رسالتك…',
     send: 'إرسال',
     composerHint: 'Enter للإرسال · Shift + Enter لسطر جديد',
+    suggestGroup: 'اقتراحات الرسائل',
+    suggestTitle: 'اقتراحات',
+    suggestClose: 'إخفاء الاقتراحات',
+    suggestGreet: ['مرحبًا {name} 👋', 'كيف حالك؟', 'جولة الليلة؟'],
+    suggestAnswer: ['نعم!', 'ليس بعد — سأصل خلال دقائق', 'فكرة جيدة 😄'],
+    suggestReply: ['جميل — أخبرني المزيد!', 'أنا أيضًا 😄', 'نلعب مباراة؟'],
+    suggestFollowUp: ['هل أنت متاح لاحقًا؟', 'نجري مكالمة صوتية؟', 'هل رأيت آخر خبر؟'],
     tooLong: '{max} حرفًا كحد أقصى.',
     seen: 'تمت القراءة',
     sent: 'أُرسلت',
@@ -260,6 +283,40 @@ export function messagesText(lang) {
  */
 export function pseudoLabel(name) {
   return String(name ?? '').trim().toUpperCase();
+}
+
+/**
+ * Trois suggestions de message pour la **bulle affichée à l'ouverture d'une
+ * discussion** (`ThreadView`). Le contexte décide du registre :
+ *
+ *   - fil vide → formules de salut (le pseudo est mis en majuscules, comme
+ *     tout affichage de pseudo dans le module) ;
+ *   - dernier message **reçu** qui se termine par un point d'interrogation
+ *     (`?` ou `؟` pour l'arabe) → réponses courtes ;
+ *   - dernier message reçu au calme → réactions pour relancer ;
+ *   - dernier message **envoyé** → relances pour continuer.
+ *
+ * Retourne toujours trois propositions non vides : si le libellé courant
+ * manque (copie incomplète), on retombe sur le registre suivant, puis sur le
+ * salut. Le texte sert de brouillon : un clic le place dans le champ, sans
+ * l'envoyer.
+ */
+export function messageSuggestions(t, { name = '', lastMessage = null } = {}) {
+  const greet = () => (t.suggestGreet || []).map((entry) => fill(entry, { name: pseudoLabel(name) }));
+  const pick = (...lists) => {
+    for (const list of lists) {
+      const filled = (list || []).map((entry) => fill(entry, { name: pseudoLabel(name) }));
+      if (filled.length > 0) return filled;
+    }
+    return greet();
+  };
+  if (!lastMessage) return pick(t.suggestGreet);
+  if (lastMessage.mine) return pick(t.suggestFollowUp, t.suggestGreet);
+  const body = String(lastMessage.body || '').trim();
+  const asking = body.endsWith('?') || body.endsWith('؟');
+  return asking
+    ? pick(t.suggestAnswer, t.suggestReply, t.suggestGreet)
+    : pick(t.suggestReply, t.suggestAnswer, t.suggestGreet);
 }
 
 /** Libellé d'un motif de signalement. */

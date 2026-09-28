@@ -965,6 +965,15 @@
 }
 [data-theme='light'] .messages-bubble-delete:hover{color:#ff8c9d;border-color:rgba(255,140,157,.5);background:rgba(255,140,157,.14)}
 
+/* Bulle de suggestions à l'ouverture du fil : comme les bulles, elle vit sur
+   l'île violette en thème clair — encres blanches, accents en cyan lumière. */
+[data-theme='light'] .messages-suggest{border-color:rgba(34,211,238,.45)}
+[data-theme='light'] .messages-suggest-title{color:var(--cyan-bright)}
+[data-theme='light'] .messages-suggest-close{color:rgba(255,255,255,.6)}
+[data-theme='light'] .messages-suggest-close:hover{color:#fff;border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.08)}
+[data-theme='light'] .messages-suggest-chip{background:rgba(7,8,20,.45);border-color:rgba(255,255,255,.24);color:#fff}
+[data-theme='light'] .messages-suggest-chip:hover{background:rgba(34,211,238,.14);border-color:var(--cyan-bright);color:#fff}
+
 /* Menu « … » : le volet reste sombre (dégradé d'origine, commun aux deux
    thèmes) — ses libellés repassent donc en encre claire. */
 [data-theme='light'] .messages-more-menu{border-color:rgba(255,255,255,.2)}
