@@ -1151,8 +1151,9 @@ mais la structure de données les accepte déjà.
   (Tech et PC → Tech, Cinéma et Séries → Cinéma, E-sport → E-sport, le reste →
   Gaming ; famille absente ou inconnue : repli sur Gaming, jamais de quizz
   perdu). **Chaque quizz porte trois niveaux** (`levels.easy` /
-  `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit questions par niveau —
-  soit 24 questions par quizz, 600 au total. Les helpers
+  `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit questions dans chaque
+  banque (24 questions uniques par quizz, 600 au total). L'Expert en tire dix
+  différentes à chaque tentative depuis l'ensemble de ces trois banques. Les helpers
   `quizLevelQuestions(quiz, level)` et `quizQuestionsCount(quiz)` évitent
   d'accéder aux niveaux à la main
   (`QUIZ_DIFFICULTIES` reste exporté comme alias de `QUIZ_LEVELS`, et
@@ -1212,14 +1213,19 @@ mais la structure de données les accepte déjà.
   manque — aucune requête `i.ytimg.com` dans le cas nominal. Ajouter un
   quizz = déposer son illustration sous ce nom, `check:thumbs` le vérifie.
 - **Moteur** — `src/quizzes/engine.js` (pur, sans React, importable par Node) :
-  `prepareQuiz(quiz, level, seed, { extraDistractors })` ne pose que les
-  questions du niveau demandé (ordre et choix mélangés, la bonne réponse
-  voyageant avec son choix — et, en expert, un **piège** tiré des réponses
-  d'autres questions du même quizz, jamais la bonne réponse et jamais un
-  doublon),
-  mélange déterministe par graine (le quizz du jour est le même pour tous),
-  barème, paliers de résultat (`rookie` → `legend`), meilleure série de jours
-  consécutifs, et les **multiplicateurs de niveau** (`DIFFICULTY_MULTIPLIER` :
+  `prepareQuiz(quiz, level, seed, { extraDistractors, questionPool, questionCount })`
+  utilise la banque du niveau demandé, sauf si un pool et une limite sont
+  fournis. En Expert, le lecteur tire **10 questions distinctes** dans la
+  banque complète du quizz (24 questions, tous niveaux confondus), avec un
+  nouveau tirage à chaque tentative et sans reprendre les questions de la
+  tentative précédente. L'ordre et les choix sont mélangés, la bonne réponse
+  voyage avec son choix ; le piège Expert est tiré des autres réponses de la
+  banque, jamais de la bonne réponse et jamais en doublon. Le mélange des
+  niveaux Facile/Confirmé du quizz du jour reste déterministe par graine :
+  même tirage pour tout le monde ; l'Expert est volontairement aléatoire. Le
+  moteur gère aussi le barème, les paliers de résultat (`rookie` → `legend`),
+  la meilleure série de jours consécutifs et les **multiplicateurs de niveau**
+  (`DIFFICULTY_MULTIPLIER` :
   Facile ×1, Confirmé ×1,5, Expert ×2 — `quizPointsFor` met le barème base +
   rapidité + combo à l'échelle, plafond 200/300/400 par question, revérifié
   côté serveur). Le niveau joué voyage avec la partie préparée
@@ -1228,20 +1234,22 @@ mais la structure de données les accepte déjà.
   questions et les points, il change **la façon de jouer** — temps par
   question, nombre de propositions, vies, jokers et durée du gel de verdict :
 
-  | Niveau | Temps | Propositions | Vies | Jokers (50/50 + gel) | Gel de verdict |
-  | --- | --- | --- | --- | --- | --- |
-  | Facile | 20 s | 4 | — | 2 + 1 | 600 ms |
-  | Confirmé | 15 s | 4 | — | 1 + 1 | 600 ms |
-  | Expert | 10 s | 5 (dont un piège) | 3 | aucun | 450 ms |
+  | Niveau | Questions par tentative | Temps | Propositions | Vies | Jokers (50/50 + gel) | Gel de verdict |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Facile | 8 | 20 s | 4 | — | 2 + 1 | 600 ms |
+  | Confirmé | 8 | 15 s | 4 | — | 1 + 1 | 600 ms |
+  | Expert | 10 tirées au hasard | 10 s | 5 (dont un piège) | 1 | aucun | 450 ms |
 
   `QUESTION_TIME.seconds` (15 s) reste la **référence** : chaque niveau la met
   à l'échelle (`questionBudgetMs`), donc raccourcir la référence raccourcit les
   trois budgets ensemble. Ces règles sont annoncées **avant** de jouer (carte
   « Règles de ce niveau » du sélecteur, `levelBrief`) et appliquées en partie
-  (`resetRun`) — pas de piège pour le joueur. L'expert est plus dur sur tous
-  les axes : trois fois moins de temps par proposition qu'en facile, une
-  proposition de plus, une partie qui s'arrête à la troisième erreur, et
-  aucune aide.
+  (`resetRun`) — pas de piège pour le joueur. L'Expert se rejoue autant de fois
+  que nécessaire : une erreur ou un temps écoulé l'élimine immédiatement ; le
+  bouton « Réessayer » relance une tentative avec dix questions inédites. Le
+  niveau n'est validé et ne crédite points/XP, record ou classement qu'après
+  un 10/10 sans faute. Une fois réussi, il rapporte comme les autres niveaux
+  une seule fois.
 - **Jokers** — deux par partie, hors expert : **50/50** (deux mauvaises
   propositions passent en `is-eliminated`, sans jamais toucher la bonne réponse
   ni décaler la grille — le bouton reste en place, cliquable en apparence
@@ -1249,12 +1257,12 @@ mais la structure de données les accepte déjà.
   `FREEZE_BONUS.seconds` = 8 s, ce qui rend la partie possible sans rendre la
   question plus simple). Les boutons affichent le nombre restant, sont coupés
   pendant le gel de verdict et se jouent aussi au clavier (`D` et `F`).
-- **Vies & fin de partie** — dès qu'un niveau en a (l'expert), chaque erreur ou
-  temps écoulé retire un cœur : au dernier, la partie **s'arrête** — écran de
-  résultat avec « Plus de vies », le rang où elle s'est arrêtée, les
-  corrections de tout le niveau et les questions non jouées comptées comme
-  ratées. `gradeQuiz` renvoie `answered` (questions réellement jouées) pour que
-  ce cas ne soit jamais pris pour un sans-faute.
+- **Vies & fin de partie** — en Expert, une seule vie : la première erreur ou
+  expiration du chrono élimine le joueur immédiatement. L'écran affiche le
+  résultat partiel et les corrections des dix questions ; « Réessayer » lance
+  une nouvelle sélection aléatoire, sans points, XP, record, classement ni
+  progression crédités sur une tentative éliminée. Seul un 10/10 sans faute
+  valide ce niveau et attribue les points.
 - **Minuteur** — budget par question selon le niveau (20 s / 15 s / 10 s,
   `questionBudgetMs`) : une barre de décompte passe au rouge dans les 3
   dernières secondes et, à zéro, la question avance sans réponse (comptée
@@ -1379,8 +1387,8 @@ mais la structure de données les accepte déjà.
   jamais cette opération : lance le fichier de maintenance séparément.
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
   multiplicateurs ×1/×1,5/×2 par niveau, points bornés (200/300/400 par
-  question) qui font le classement, série, minuteur à 15 s,
-  trois niveaux de huit questions par quizz sans identifiant partagé), règles de
+  question) qui font le classement, série, minuteur à 15 s, banques de huit
+  questions par niveau sans identifiant partagé et tirage Expert de dix sur 24), règles de
   déblocage en cascade (`quizProgress` : Facile ouvert, Confirmé puis Expert
   débloqués), miniatures (une illustration distincte par quizz, demandée par
   les cartes rendues — aucune requête YouTube), partie complète jouée en jsdom
@@ -1395,9 +1403,12 @@ mais la structure de données les accepte déjà.
   départage aux bonnes réponses), classement par points (points affichés en
   premier, score/total en secondaire, repli ancien backend) et position au
   classement global affichée sur la page de profil (repli hors-ligne expliqué),
-  règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en
-  expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons
-  ni doublés, `answered` d'une partie arrêtée), verdict (gel avec choix
+  règles par niveau (20 s / 15 s / 10 s, cinq propositions et une vie en
+  Expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons
+  ni doublés, élimination au premier échec, aucun point sur une défaite, dix
+  questions renouvelées sans répétition entre l'échec et la reprise, bouton
+  « Réessayer » Expert uniquement, progression débloquée après 10/10), verdict
+  (gel avec choix
   verrouillés, vert/rouge, bonne réponse révélée, bandeau avec points),
   raccourcis clavier 1–5 (+ `D` et `F` pour les jokers ; la touche pendant le
   gel est ignorée), sons (tempo qui accélère sans jamais ralentir et sans
@@ -1407,8 +1418,9 @@ mais la structure de données les accepte déjà.
   Web Audio), refonte du lecteur (CTA compacts, pastilles de progression,
   50/50 qui élimine deux mauvaises réponses sans toucher la bonne, gel du
   chrono, détail de partie) et niveau expert en conditions réelles (cinq
-  propositions, une vie perdue par erreur, fin de partie à la troisième,
-  « Plus de vies », base ×2 par bonne réponse, touche 5) et état « terminé »
+  propositions, une seule vie, élimination dès la première erreur, points
+  crédités uniquement après 10/10, retry réservé aux défaites Expert, questions
+  renouvelées entre tentatives, points ×2 sur un sans-faute, et état « terminé »
   (`isQuizFinished` : carte grisée rendue en `<div>` sans lien ni flèche,
   drapeau `✓ TERMINÉ` sur la miniature, tampon à la place de la pastille
   « n/3 niveaux », bannière du jour verrouillée sans compte à rebours avec son
