@@ -369,6 +369,80 @@ export const articleGalleries = {
     ],
   },
 
+  // ---- Actus tech de la semaine du 21 au 28.09.2026 ------------------------
+  // Contrairement aux actus gaming et cinéma, les visuels tech ne sont pas
+  // déposés dans public/screenshots/ : ce sont ceux publiés par les éditeurs
+  // eux-mêmes (page de lancement SpaceX, blog Microsoft, newsroom Meta,
+  // figures de brevets USPTO) et les photos de presse des articles sources,
+  // hotlinkés en direct. Chaque crédit renvoie à sa publication d'origine ; les
+  // cartes SVG de public/*.svg restent le repli si une URL ne répond plus.
+  'tech/starship-flight-14-premier-vol-orbital': {
+    label: 'LE VOL 14', meta: 'SPACEX · STARBASE',
+    items: [
+      { src: 'https://sxcontent9668.azureedge.us/cms-assets/assets/Flight_14_Website_Desktop_4_734a6bbf25.jpg', alt: 'Starship — visuel officiel du quatorzième vol d’essai sur la page de lancement de SpaceX', caption: '01 / Le vol 14, page de lancement SpaceX' },
+      { src: 'https://sxcontent9668.azureedge.us/cms-assets/assets/Test_Flight_14_Trajectory_090226_web_2_56b3b513b2.png', alt: 'Trajectoire officielle du vol 14, du décollage de Starbase à l’amerrissage dans le Pacifique', caption: '02 / La trajectoire officielle, jusqu’à l’amerrissage' },
+      { src: 'https://starlink.com/assets-new/images/marketing/starlink-version-3-satellites/Starlink_V3_Banner_03.webp', alt: 'Satellite Starlink V3 — visuel officiel de la constellation Starlink', caption: '03 / Starlink V3, les 26 satellites à déployer' },
+    ],
+    credit: 'Visuels : SpaceX (page de lancement du vol 14) et Starlink (fiche des satellites V3).',
+    creditSources: [
+      { label: 'page de lancement officielle du vol 14', href: 'https://www.spacex.com/launches/starship-flight-14' },
+      { label: 'fiche officielle des satellites Starlink V3', href: 'https://starlink.com/updates/starlink-version-3-satellites' },
+    ],
+  },
+  'tech/copilot-home-code-autopilot': {
+    label: 'HOME, CODE, AUTOPILOT', meta: 'MICROSOFT · 25.09.2026',
+    items: [
+      { src: 'https://blogs.microsoft.com/wp-content/uploads/2026/09/OMB-Home-FINAL-2.png', alt: 'Capture d’écran de Home, la nouvelle page d’accueil de Microsoft Copilot où se retrouvent Chat et Cowork', caption: '01 / Home, où Chat et Cowork se retrouvent' },
+      { src: 'https://blogs.microsoft.com/wp-content/uploads/2026/09/OMB-Code-FINAL-2.png', alt: 'Capture d’écran de Code, la brique de Copilot qui construit une application décrite en langage courant', caption: '02 / Code, les applications en langage courant' },
+      { src: 'https://blogs.microsoft.com/wp-content/uploads/2026/09/OMB-Autopilot-FINAL-2.png', alt: 'Capture d’écran d’Autopilot, l’agent hébergé dans le cloud qui continue de travailler sans surveillance', caption: '03 / Autopilot, l’agent qui travaille la nuit' },
+    ],
+    credit: 'Captures d’écran : Microsoft, tirées de l’annonce « Introducing the new Copilot with Home, Code and Autopilot » du 25 septembre 2026.',
+    creditSources: [
+      { label: 'annonce officielle de Microsoft', href: 'https://blogs.microsoft.com/blog/2026/09/25/introducing-the-new-copilot-with-home-code-and-autopilot/' },
+    ],
+  },
+  'tech/apple-taptic-engine-verdict-5-7-milliards': {
+    label: 'LE TACTIC ENGINE EN JUSTICE', meta: 'APPLE · TACTION TECHNOLOGY',
+    items: [
+      { src: 'https://platform.theverge.com/wp-content/uploads/sites/2/2026/09/268738_Apple_Watch_Series_12_AKrales_0277.jpg?quality=90&strip=all&crop=0%2C0%2C100%2C100&w=1600', alt: 'Apple Watch Series 12 — photo de presse d’Amelia Holowaty Krales pour The Verge', caption: '01 / L’Apple Watch, où bat le Taptic Engine' },
+      { src: 'https://patentimages.storage.googleapis.com/9b/b7/15/85b39cf905d838/US10659885-20200519-D00000.png', alt: 'Figure 1 du brevet américain US 10 659 885 de Taction Technology : un transducteur tactile à mouvement plan amorti', caption: '02 / Brevet US 10 659 885, le transducteur' },
+      { src: 'https://patentimages.storage.googleapis.com/a0/91/85/287d1c39ae3b37/US10820117-20201027-D00000.png', alt: 'Figure 1 du brevet américain US 10 820 117 de Taction Technology : le module de vibration plan dans un casque', caption: '03 / Brevet US 10 820 117, le module' },
+    ],
+    credit: 'Photo : Amelia Holowaty Krales / The Verge. Figures : Office des brevets et des marques des États-Unis, domaine public.',
+    creditSources: [
+      { label: 'article The Verge sur le verdict', href: 'https://www.theverge.com/tech/1001118/apple-hit-with-5-7-billion-in-damages-over-haptic-patents' },
+      { label: 'brevet US 10 659 885 (Google Patents)', href: 'https://patents.google.com/patent/US10659885B2/en' },
+      { label: 'brevet US 10 820 117 (Google Patents)', href: 'https://patents.google.com/patent/US10820117B2/en' },
+    ],
+  },
+  'tech/agent-openai-portail-australien': {
+    label: 'L’AGENT HORS CADRE', meta: 'OPENAI · SERVICES AUSTRALIA',
+    items: [
+      { src: 'https://image.cnbcfm.com/api/v1/image/107431804-17189858722024-06-21t155215z_1214353438_rc2sj6aut6ur_rtrmadp_0_rockset-m-a-openai.jpeg?v=1757715670&w=1600&h=900&vtcrop=y', alt: 'Logo OpenAI sur un mur — photo d’illustration Reuters / Dado Ruvic', caption: '01 / OpenAI, l’éditeur du modèle concerné' },
+      { src: 'https://images.ctfassets.net/kftzwdyauwt9/1XS9bnL9RrtlceJl54sXEl/d902366830a41aef6319b8db24401cb3/OAI_02_InternetAccess_Lightmode_CardAccent.svg?w=3840&q=90', alt: 'Chronologie publiée par OpenAI : un agent obtient un accès à Internet en détournant le gestionnaire de paquets Artifactory, via une faille SSRF', caption: '02 / L’accès à Internet obtenu par contournement' },
+      { src: 'https://images.ctfassets.net/kftzwdyauwt9/1tNhWnDkDNOLWal5uUlpVi/b89dd7c6c9d8af8283fdb08727abcfc8/figure-03.gif?w=3840&q=90&fm=webp', alt: 'Illustration OpenAI : un agent de jeu collecte indéfiniment des récompenses au lieu d’aller au bout du parcours', caption: '03 / Le contournement, un mode d’action connu' },
+    ],
+    credit: 'Photo : Dado Ruvic / Reuters. Schéma et illustration : OpenAI, tirés du rapport « The Hugging Face incident and the road ahead » du 26.08.2026 — la revue des « activités de modèle désalignées » qui a débusqué les faits de juin.',
+    creditSources: [
+      { label: 'article CNBC sur l’incident australien', href: 'https://www.cnbc.com/2026/09/24/openai-agent-hacked-australian-government-website-.html' },
+      { label: 'rapport OpenAI sur l’activité de modèle désalignée', href: 'https://openai.com/index/hugging-face-incident-and-the-road-ahead/' },
+      { label: 'conférence de presse d’Anthony Albanese (pm.gov.au)', href: 'https://www.pm.gov.au/media/press-conference-new-york' },
+    ],
+  },
+  'tech/meta-connect-2026-lunettes-muse-charm': {
+    label: 'META CONNECT 2026', meta: 'META · MENLO PARK',
+    items: [
+      { src: 'https://about.fb.com/wp-content/uploads/2026/09/01_VRGlasses_Inline_CloseUp.jpg?resize=960%2C836', alt: 'Gros plan sur les Meta VR Glasses, la paire de lunettes de réalité virtuelle à 100 grammes annoncée par Meta', caption: '01 / Les Meta VR Glasses, 100 g et 1 299 $' },
+      { src: 'https://about.fb.com/wp-content/uploads/2026/09/03_VRGlasses_Inline_Airplane_d9b0fd.jpg?resize=960%2C836', alt: 'Un passager regarde un film en 3D avec les Meta VR Glasses depuis son siège d’avion', caption: '02 / Le cinéma privé, jusque dans l’avion' },
+      { src: 'https://about.fb.com/wp-content/uploads/2026/09/02_Ray-Ban-Meta-Audio_Carousel_01.jpg?fit=1920%2C1672', alt: 'Ray-Ban Meta Audio Clubmaster, les premières lunettes audio de Meta, annoncées sans caméra', caption: '03 / Ray-Ban Meta Audio, les lunettes sans caméra' },
+    ],
+    credit: 'Visuels : Meta, tirés des communiqués officiels du Meta Connect 2026 (23 septembre 2026).',
+    creditSources: [
+      { label: 'annonce officielle des Meta VR Glasses', href: 'https://about.fb.com/news/2026/09/introducing-meta-vr-glasses-3d-movies-immersive-live-sports-100-grams/' },
+      { label: 'annonce officielle des Ray-Ban Meta Audio', href: 'https://about.fb.com/news/2026/09/introducing-ray-ban-meta-audio-glasses-new-styles-plus-muse/' },
+    ],
+  },
+
   // ---- Actus Blizzard -----------------------------------------------------
   'starcraft-fps': {
     label: 'L’UNIVERS STARCRAFT', meta: 'BLIZZARD · GUERRE INTERSTELLAIRE',
