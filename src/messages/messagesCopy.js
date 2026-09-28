@@ -2,6 +2,9 @@
  * Textes de la messagerie (EN / FR / AR). L'anglais sert de repli, comme
  * partout sur le site. Les libellés de présence (« EN LIGNE », « Vu il y a… »)
  * viennent de `friendsCopy` : ce sont les mêmes que dans la liste d'amis.
+ *
+ * Les pseudos des joueurs, eux, s'affichent **en majuscules** partout dans le
+ * module : `pseudoLabel` fait la conversion au rendu (voir son commentaire).
  */
 export const messagesCopy = {
   en: {
@@ -242,6 +245,21 @@ export const messagesCopy = {
 
 export function messagesText(lang) {
   return messagesCopy[lang] || messagesCopy.en;
+}
+
+/**
+ * Pseudo d'un joueur **tel qu'il s'affiche dans la messagerie** : en
+ * majuscules, espaces de bord retirés.
+ *
+ * C'est une règle d'**affichage** : les données (profil, fil, appel) gardent
+ * leur casse d'origine, la recherche et le tri continuent de comparer les
+ * pseudos bruts, et seul le rendu passe par ici — liste des discussions,
+ * en-tête de discussion, liste des joueurs bloqués, signalement, blocage,
+ * cartes d'appel. Un pseudo absent ou vide donne une chaîne vide : à
+ * l'appelant de prévoir son repli (« ? »).
+ */
+export function pseudoLabel(name) {
+  return String(name ?? '').trim().toUpperCase();
 }
 
 /** Libellé d'un motif de signalement. */

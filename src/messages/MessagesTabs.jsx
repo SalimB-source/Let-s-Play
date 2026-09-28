@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
 import { callBlockLabel } from './callsCopy';
-import { describeMessagesError, reasonLabel } from './messagesCopy';
+import { describeMessagesError, pseudoLabel, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
 
 /**
@@ -20,6 +20,12 @@ import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
  *
  * Ici, ni la photo ni le nom n'envoient vers le profil : on est déjà dans le
  * chat — le profil a son bouton dédié dans la barre d'outils.
+ *
+ * Tous les pseudos passent par `pseudoLabel` (majuscules) : lignes de la
+ * liste, joueurs bloqués, en-tête de discussion, titres du signalement,
+ * confirmations de blocage et d'effacement, infobulles d'appel. La casse d'origine reste
+ * intacte dans les données et dans la recherche (`InboxView` compare les
+ * pseudos bruts, sans tenir compte de la casse).
  *
  * Les deux composants sont autonomes (props) : la fenêtre et la page portent
  * l'état, le contexte (`MessagesContext`) fournit les données et les gestes.
@@ -172,6 +178,7 @@ function messagePreview(message, t) {
 
 function ConversationRow({ entry, t, lang, online, onOpen }) {
   const { profile, lastMessage, unread, lastAt } = entry;
+  const name = pseudoLabel(profile.name);
   const preview = messagePreview(lastMessage, t);
   return (
     <li className={`messages-row${unread > 0 ? ' has-unread' : ''}`}>
@@ -179,13 +186,13 @@ function ConversationRow({ entry, t, lang, online, onOpen }) {
         type="button"
         className="messages-row-main"
         onClick={() => onOpen(entry.peerId)}
-        aria-label={`${t.openChat} — ${profile.name}`}
+        aria-label={`${t.openChat} — ${name}`}
         title={t.openChat}
       >
-        <Avatar name={profile.name} src={profile.avatar} online={online} />
+        <Avatar name={name} src={profile.avatar} online={online} />
         <span className="messages-row-text">
           <span className="messages-row-top">
-            <span className="messages-row-name">{profile.name}</span>
+            <span className="messages-row-name">{name}</span>
             {lastAt && <span className="messages-row-time">{formatCommentDate(lastAt, lang)}</span>}
           </span>
           <span className="messages-row-preview">{preview}</span>
@@ -201,12 +208,13 @@ function ConversationRow({ entry, t, lang, online, onOpen }) {
 }
 
 function BlockedRow({ entry, t, lang, onUnblock }) {
+  const name = pseudoLabel(entry.profile.name);
   return (
     <li className="messages-row is-blocked">
       <span className="messages-row-main messages-row-static">
-        <Avatar name={entry.profile.name} src={entry.profile.avatar} online={false} />
+        <Avatar name={name} src={entry.profile.avatar} online={false} />
         <span className="messages-row-text">
-          <span className="messages-row-name">{entry.profile.name}</span>
+          <span className="messages-row-name">{name}</span>
           <span className="messages-row-preview">{t.blockedNote}</span>
         </span>
       </span>
@@ -430,6 +438,9 @@ export function ThreadView({
   const statusText = online
     ? ft.onlineShort
     : (profile?.lastSeenAt ? fill(ft.lastSeen, { when: formatCommentDate(profile.lastSeenAt, lang) }) : ft.offlineShort);
+  // Pseudo affiché en majuscules dans toute la discussion (en-tête, infobulles,
+  // confirmation de blocage, signalement) — `?` si le profil n'est pas résolu.
+  const peerName = pseudoLabel(profile?.name) || '?';
 
   // Boutons d'appel : `callBlocker` grise le bouton et explique pourquoi ;
   // `callWarning` (ami qui semble hors ligne) n'empêche PAS d'appeler — la
@@ -438,7 +449,7 @@ export function ThreadView({
   const callBlock = callBlocker?.(peerId) ?? null;
   const callWarn = callWarning?.(peerId) ?? null;
   const callHint = (callBlock || callWarn)
-    ? callBlockLabel(callBlock || callWarn, ct, profile?.name || '?')
+    ? callBlockLabel(callBlock || callWarn, ct, peerName)
     : null;
 
   const submit = async () => {
@@ -477,7 +488,7 @@ export function ThreadView({
     if (clearing) return;
     setMoreOpen(false);
     const ok = typeof window === 'undefined'
-      || window.confirm(fill(t.clearConfirm, { name: profile?.name || '?' }));
+      || window.confirm(fill(t.clearConfirm, { name: peerName }));
     if (!ok) return;
     setClearing(true);
     setError('');
@@ -503,12 +514,12 @@ export function ThreadView({
         <Link
           to={`/profile/${encodeURIComponent(peerId)}`}
           className="messages-thread-peer messages-thread-peer-link"
-          aria-label={`${t.profile} — ${profile?.name || '?'}`}
+          aria-label={`${t.profile} — ${peerName}`}
           title={t.profile}
         >
-          <Avatar name={profile?.name} src={profile?.avatar} online={online} size={30} />
+          <Avatar name={peerName} src={profile?.avatar} online={online} size={30} />
           <span className="messages-thread-identity">
-            <span className="messages-thread-name">{profile?.name}</span>
+            <span className="messages-thread-name">{peerName}</span>
             <span className={`messages-thread-status${online ? ' is-online' : ''}`}>{statusText}</span>
           </span>
         </Link>
@@ -589,7 +600,7 @@ export function ThreadView({
                     title={t.block}
                     onClick={() => {
                       setMoreOpen(false);
-                      const ok = typeof window === 'undefined' || window.confirm(fill(t.blockConfirm, { name: profile?.name || '?' }));
+                      const ok = typeof window === 'undefined' || window.confirm(fill(t.blockConfirm, { name: peerName }));
                       if (ok) onBlock(peerId);
                     }}
                   >
@@ -622,7 +633,7 @@ export function ThreadView({
       {reportOpen && (
         <ReportForm
           t={t}
-          name={profile?.name || '?'}
+          name={peerName}
           reported={Boolean(reported)}
           onSubmit={onReport}
           onClose={() => setReportOpen(false)}

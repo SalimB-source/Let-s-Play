@@ -12,6 +12,11 @@
  *    lues ; les réponses scriptées sont déterministes ; les messages scriptés
  *    arrivent à échéance, une seule fois ; bloquer / signaler sont réversibles
  *    et sans effet de bord.
+ *
+ * Les pseudos s'affichent en majuscules partout dans la messagerie
+ * (`pseudoLabel`) : la conversion est vérifiée sur la casse mixte, les accents,
+ * les espaces de bord et les pseudos absents, et les deux vues de messagerie
+ * sont rendues avec un pseudo en casse mixte.
  * 3. Rendu SSR : le hub /auth et un profil public se rendent dans les trois
  *    langues ; le lanceur reste visible pour un visiteur et l'envoie vers
  *    la page de connexion, sans ouvrir les conversations ; pour un joueur
@@ -49,9 +54,9 @@ const {
   dueDemoIncoming, friendsCopy,
   isAfterClear, isBlockedError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
   makeStorage, markThreadReadLocal, mergeUnread, messagesCopy, normalizeMessage, peersFromKey,
-  prepareBody, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
+  prepareBody, pseudoLabel, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
   sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, writeDemoMessages,
-  checkClearInteraction, findDemoPlayer, renderApp,
+  checkClearInteraction, findDemoPlayer, renderApp, renderInboxView, renderThreadView, callsText,
 } = smoke;
 
 let failures = 0;
@@ -190,6 +195,19 @@ const describedNested = describeSupabaseError(new Error('outer', { cause: { mess
 check('chaîne de cause parcourue', describedNested.cause.code, '42501');
 check('erreur null → null', describeSupabaseError(null), null);
 check('chaîne brute acceptée', describeSupabaseError('rate limit').message, 'rate limit');
+
+// Pseudos : la messagerie affiche tous les joueurs en majuscules. C'est une
+// règle de rendu — les données gardent leur casse, d'où ces quelques cas.
+check('pseudo en majuscules (casse mixte)', pseudoLabel('nova pixel'), 'NOVA PIXEL');
+check('pseudo déjà en majuscules inchangé', pseudoLabel('KAYZ_ORAN'), 'KAYZ_ORAN');
+check('pseudo en minuscules', pseudoLabel('kayz_oran'), 'KAYZ_ORAN');
+check('accents conservés en majuscules', pseudoLabel('éloïse_dz'), 'ÉLOÏSE_DZ');
+check('espaces de bord retirés', pseudoLabel('  vortex  '), 'VORTEX');
+check('pseudo absent → chaîne vide', pseudoLabel(null), '');
+check('pseudo vide → chaîne vide', pseudoLabel('   '), '');
+check('pseudo nul → repli possible', pseudoLabel(null) || '?', '?');
+check('pseudo : conversion idempotente', pseudoLabel(pseudoLabel('Vortex_DZ')), 'VORTEX_DZ');
+check('pseudo : règle d’affichage, pas un texte traduit', typeof messagesCopy.fr.pseudoLabel, 'undefined');
 
 /* ------------------------------------------------------------------------ */
 console.log('\n[2/4] aperçu de démonstration\n');
@@ -373,6 +391,44 @@ try {
   check('fenêtre unifiée : onglets Amis et Messages', opened.includes(friendsCopy.fr.tabFriends) && opened.includes(socialCopy.fr.tabMessages));
   check('les textes des amis restent complets', Object.keys(friendsCopy.en).filter((entry) => !friendsCopy.fr[entry]).join(','), '');
 } catch (e) { check('la fenêtre sociale se rend', e.message, ''); }
+
+// Pseudos en majuscules : les gamertags des fixtures le sont déjà, donc on
+// rend les deux vues de la messagerie avec un pseudo en casse mixte — le
+// rendu doit le mettre en majuscules, dans le texte comme dans les libellés
+// accessibles.
+try {
+  const mixed = { id: 'demo-player-9001', name: 'nova pixel', avatar: null };
+  const seeded = {
+    peerId: mixed.id,
+    profile: mixed,
+    lastMessage: { id: 'm1', body: 'Salut !', mine: false, createdAt: '2026-01-01T10:00:00Z', read: true },
+    unread: 0,
+    lastAt: '2026-01-01T10:00:00Z',
+  };
+  const t = messagesCopy.fr;
+  const inboxRaw = renderInboxView([seeded], { lang: 'fr' });
+  const inbox = strip(inboxRaw);
+  check('liste : pseudo en majuscules', inbox.includes('NOVA PIXEL') && !inbox.includes('nova pixel'));
+  check('liste : libellé accessible en majuscules', inboxRaw.includes(`${t.openChat} — NOVA PIXEL`));
+
+  const blockedRaw = renderInboxView([], { lang: 'fr', blocked: [{ ...seeded, lastMessage: null, lastAt: null }] });
+  const blocked = strip(blockedRaw);
+  check('joueurs bloqués : pseudo en majuscules', blocked.includes('NOVA PIXEL') && !blocked.includes('nova pixel'));
+  check('joueurs bloqués : mention du blocage', blocked.includes(t.blockedNote) && blocked.includes(t.unblock));
+
+  const threadRaw = renderThreadView(mixed, {
+    lang: 'fr',
+    messages: [{ id: 'm1', body: 'Salut !', mine: false, createdAt: '2026-01-01T10:00:00Z', read: false }],
+  });
+  const thread = strip(threadRaw);
+  check('discussion : pseudo en majuscules', thread.includes('NOVA PIXEL') && !thread.includes('nova pixel'));
+  check('discussion : lien profil libellé en majuscules', threadRaw.includes(`${t.profile} — NOVA PIXEL`));
+  check('discussion : message du fil intact', thread.includes('Salut !'));
+  check('discussion : champ de saisie et bouton d’envoi', threadRaw.includes('messages-composer') && threadRaw.includes(`aria-label="${t.send}"`));
+  const ct = callsText('fr');
+  check('discussion : boutons d’appel nommés', threadRaw.includes(`aria-label="${ct.callAudio}"`) && threadRaw.includes(`aria-label="${ct.callVideo}"`));
+  check('discussion : effacement pour soi toujours proposé', threadRaw.includes(`aria-label="${t.clearConversation}"`));
+} catch (e) { check('les vues de messagerie se rendent seules', e.message, ''); }
 
 console.log('\n[4/4] clic d’effacement dans la page\n');
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost' });

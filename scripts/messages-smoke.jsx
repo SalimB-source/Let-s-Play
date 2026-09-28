@@ -24,6 +24,10 @@ import Profile from '../src/pages/Profile';
 import MessagesPage from '../src/messages/MessagesPage';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 import { readDemoMessages } from '../src/messages/messagesApi';
+import { InboxView, ThreadView } from '../src/messages/MessagesTabs';
+import { messagesText } from '../src/messages/messagesCopy';
+import { callsText } from '../src/messages/callsCopy';
+import { friendsText } from '../src/friends/friendsCopy';
 // Fixtures : réinjecte les personas de démonstration dans le registre de
 // l'application (livré vide) avant tout rendu — voir scripts/demoFixtures.js.
 import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
@@ -79,8 +83,14 @@ export {
   unreadFromRows,
   writeDemoMessages,
 } from '../src/messages/messagesApi';
-export { describeMessagesError, messagesCopy, reasonLabel } from '../src/messages/messagesCopy';
+export { describeMessagesError, messagesCopy, pseudoLabel, reasonLabel } from '../src/messages/messagesCopy';
+export { callsText } from '../src/messages/callsCopy';
 export { readDemoMessages };
+// Les deux vues de la messagerie sont exportées telles quelles : `check:messages`
+// les rend seules (`renderInboxView` / `renderThreadView` ci-dessous) avec un
+// pseudo volontairement en casse mixte — les gamertags des fixtures sont déjà
+// en majuscules, donc l'application seule ne prouverait rien.
+export { InboxView, ThreadView };
 
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
 
@@ -154,6 +164,58 @@ export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false,
   if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILE_FIXTURES[demoKey]);
   globalThis.window = { localStorage: makeStorage(entries) };
   return renderToString(createApp(path, { lang }));
+}
+
+/**
+ * Rendu SSR d'une vue de messagerie **seule**, avec des données fabriquées.
+ * `check:messages` y passe un pseudo en casse mixte pour vérifier qu'il
+ * s'affiche en majuscules dans la liste, chez les joueurs bloqués et dans la
+ * discussion — sans monter la pile complète de l'application.
+ */
+export function renderInboxView(conversations, { lang = 'fr', blocked = [] } = {}) {
+  globalThis.window = { localStorage: makeStorage() };
+  return renderToString(React.createElement(
+    MemoryRouter,
+    { initialEntries: ['/messages'] },
+    React.createElement(InboxView, {
+      t: messagesText(lang),
+      lang,
+      conversations,
+      blocked,
+      isOnline: () => false,
+      onOpen: () => {},
+      onUnblock: () => {},
+    }),
+  ));
+}
+
+export function renderThreadView(profile, { lang = 'fr', messages = [], blocked = false, canWrite = true } = {}) {
+  globalThis.window = { localStorage: makeStorage() };
+  return renderToString(React.createElement(
+    MemoryRouter,
+    { initialEntries: [`/messages/${profile.id}`] },
+    React.createElement(ThreadView, {
+      peerId: profile.id,
+      t: messagesText(lang),
+      ft: friendsText(lang),
+      ct: callsText(lang),
+      lang,
+      thread: { messages },
+      profile,
+      online: true,
+      blocked,
+      reported: false,
+      canWrite,
+      onBack: () => {},
+      onSend: () => {},
+      onDelete: () => {},
+      onClear: () => {},
+      onBlock: () => {},
+      onUnblock: () => {},
+      onReport: () => {},
+      onCall: () => {},
+    }),
+  ));
 }
 
 /** Clic réel (DOM) : annulation, confirmation, disparition puis rechargement. */

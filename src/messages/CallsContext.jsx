@@ -7,6 +7,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { playConnectTone, playEndTone, startRingback, startRingtone } from './callSounds';
 import { sendMessage } from './messagesApi';
 import { callsText, callSummaryText, describeCallError, callBlockLabel } from './callsCopy';
+import { pseudoLabel } from './messagesCopy';
 import {
   CALL_KINDS,
   CHANNELS_DROP_DELAY_MS,
@@ -922,7 +923,8 @@ export function CallsProvider({ children }) {
     if (blocker) {
       // Un clic qui ne produit rien est incompréhensible : la raison s'affiche.
       const t = callsText(langRef.current);
-      showNotice(callBlockLabel(blocker, t, friends.profileFor(peerId)?.name || ''));
+      // Le pseudo s'affiche en majuscules, comme dans la messagerie.
+      showNotice(callBlockLabel(blocker, t, pseudoLabel(friends.profileFor(peerId)?.name)));
       return;
     }
     const wanted = normalizeCallKind(wantedKind) || 'audio';
