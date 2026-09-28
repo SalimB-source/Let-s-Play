@@ -15,7 +15,7 @@ export default function News() {
       h1a: 'NEWS',
       h1b: 'HUB.',
       intro: 'Pick a lane — every story, every trailer, every drop, in its own zone.',
-      updated: 'Updated daily · 26.09.2026',
+      updated: 'Updated daily · 28.09.2026',
       gaming: {
         num: '01',
         kicker: 'GAMING ZONE',
@@ -42,7 +42,7 @@ export default function News() {
       h1a: 'ACTUS,',
       h1b: 'À TOI DE JOUER.',
       intro: 'Choisis ta voie — chaque actu, chaque trailer, chaque sortie, regroupé dans son propre univers.',
-      updated: 'Mis à jour quotidiennement · 26.09.2026',
+      updated: 'Mis à jour quotidiennement · 28.09.2026',
       gaming: {
         num: '01',
         kicker: 'ZONE GAMING',
@@ -69,7 +69,7 @@ export default function News() {
       h1a: 'الأخبار',
       h1b: 'بين يديك.',
       intro: 'اختر مسارك — كل خبر، كل إعلان تشويقي، كل إصدار، في مكانه الخاص.',
-      updated: 'تحديث يومي · 26.09.2026',
+      updated: 'تحديث يومي · 28.09.2026',
       gaming: {
         num: '01',
         kicker: 'منطقة الألعاب',
@@ -96,7 +96,7 @@ export default function News() {
     h1a: 'ACTUS,',
     h1b: 'À TOI DE JOUER.',
     intro: 'Choisis ta voie.',
-    updated: 'Mis à jour quotidiennement · 26.09.2026',
+    updated: 'Mis à jour quotidiennement · 28.09.2026',
     gaming: { num: '01', kicker: 'ZONE GAMING', title: 'ACTUS', titleAccent: 'GAMING.', desc: 'Les actus gaming.', btn: 'ENTRER', badge: '🎮 GAMING', meta: 'PC · PS5 · XBOX · SWITCH 2' },
     cinema: { num: '02', kicker: 'CINÉMA & SÉRIES', title: 'ACTUS', titleAccent: 'CINÉMA.', desc: 'Les actus cinéma.', btn: 'ENTRER', badge: '🎬 CINÉMA', meta: 'FILMS · SÉRIES' },
   };

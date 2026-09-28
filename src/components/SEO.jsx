@@ -94,6 +94,36 @@ const pageMeta = {
     description: 'Valeur marchande recalculée chaque semaine avec TransferRoom (xTV), note globale dynamique, profils de croissance, scénarios communautaires et crises de vestiaire : ce que change la refonte du mode Carrière d’EA Sports FC 27, attendu le 25 septembre 2026.',
     image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', type: 'article', published: '2026-09-22', section: 'Actualités gaming',
   },
+  '/news/minecraft-the-sift-nouvelle-dimension': {
+    title: 'Minecraft : le Sift, première nouvelle dimension depuis quinze ans — Let’s Play',
+    description: 'Dévoilé au Minecraft Live du 26 septembre 2026, le Sift est la quatrième dimension de Minecraft après l’Overworld, le Nether et l’End. Il débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.',
+    image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg', type: 'article', published: '2026-09-28', section: 'Actualités gaming',
+  },
+  '/news/the-witcher-3-remastered-sortie-29-septembre': {
+    title: 'The Witcher 3: Wild Hunt – Remastered sort le 29 septembre : heure, poids, gratuité — Let’s Play',
+    description: 'Déverrouillage mondial le 29 septembre 2026 à 10 h UTC (11 h à Alger) sur PC, PS5, Xbox Series X|S et Switch 2. Gratuit pour les propriétaires du jeu sur PC et consoles actuelles, environ 45 Go, sans préchargement, extensions incluses.',
+    image: 'https://public.cdn.cdpr.app/common/news/974db3ceaf0e6035a922cbbd7c7770b0_q90_1280x720.jpeg', type: 'article', published: '2026-09-28', section: 'Actualités gaming',
+  },
+  '/news/xbox-nadella-restructuration': {
+    title: 'Satya Nadella défend la restructuration de Xbox — Let’s Play',
+    description: 'Le PDG de Microsoft juge « formidable » la rationalisation de Xbox menée par Asha Sharma et promet un retour à la croissance dès le prochain exercice fiscal, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.',
+    image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', type: 'article', published: '2026-09-28', section: 'Actualités gaming',
+  },
+  '/news/cinema/box-office-us-endgame-encore-26-millions': {
+    title: 'Box-office : Avengers Endgame – Encore confirme ses 26 millions de dollars — Let’s Play',
+    description: 'Bilan consolidé du week-end américain des 25-27 septembre 2026 : Endgame – Encore premier avec 26 M$ (deuxième meilleure ressortie de l’histoire), Resident Evil deuxième à 23,3 M$ et plus de 100 M$ en dix jours. Meilleur 39e week-end depuis 2015 avec 122,3 M$.',
+    image: youTubeThumbUrl('WsBwTw_P1Do'), type: 'article', published: '2026-09-28', section: 'Actualités cinéma',
+  },
+  '/news/cinema/the-last-of-us-saison-3-john-goodman-laura-bailey': {
+    title: 'The Last of Us saison 3 : John Goodman, Laura Bailey et Ian Alexander au casting — Let’s Play',
+    description: 'Pour The Last of Us Day, HBO annonce John Goodman (Joey), Ian Alexander (Paco) et Laura Bailey (Elizabeth, cheffe des Séraphites) dans la saison 3, attendue en 2027 sur HBO Max avec Craig Mazin seul showrunner. Bailey était la voix d’Abby dans le jeu.',
+    image: 'https://variety.com/wp-content/uploads/2026/09/LastofUs.Split_.1.jpg?w=1000&h=667&crop=1', type: 'article', published: '2026-09-28', section: 'Actualités cinéma',
+  },
+  '/news/cinema/godzilla-minus-zero-premiere-nyff': {
+    title: 'Godzilla Minus Zero : première mondiale applaudie au New York Film Festival — Let’s Play',
+    description: 'La suite de Godzilla Minus One de Takashi Yamazaki a fait sa première mondiale au NYFF le 26 septembre 2026. Premier film de la saga classé R aux États-Unis, il sort le 3 novembre au Japon, le 4 novembre en France et le 6 novembre aux États-Unis.',
+    image: 'https://variety.com/wp-content/uploads/2026/09/GettyImages-2297305809.jpg?w=1000&h=667&crop=1', type: 'article', published: '2026-09-28', section: 'Actualités cinéma',
+  },
   '/news/cinema/box-office-us-endgame-resident-evil': {
     title: 'Box-office : Avengers Endgame reprend la tête face à Resident Evil — Let’s Play',
     description: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain du 25-27 septembre 2026, devant le reboot Resident Evil de Zach Cregger (22-23,5 M$). Deuxième meilleur dernier week-end de septembre de l’histoire du box-office US.',

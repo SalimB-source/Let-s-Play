@@ -134,6 +134,9 @@ function App() {
             <Route path="/news/sorties-24-septembre" element={<CurrentNews slug="sorties-24-septembre" />} />
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
             <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
+            <Route path="/news/minecraft-the-sift-nouvelle-dimension" element={<CurrentNews slug="minecraft-the-sift-nouvelle-dimension" />} />
+            <Route path="/news/the-witcher-3-remastered-sortie-29-septembre" element={<CurrentNews slug="the-witcher-3-remastered-sortie-29-septembre" />} />
+            <Route path="/news/xbox-nadella-restructuration" element={<CurrentNews slug="xbox-nadella-restructuration" />} />
             {/* Actus du jour générées par le robot (scripts/news-bot/) :
                 /news/<slug> lit src/news/autoIndex.js. Les slugs statiques
                 ci-dessus restent prioritaires ; un slug inconnu affiche la
