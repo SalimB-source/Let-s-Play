@@ -494,116 +494,6 @@
   text-align: center;
 }
 
-/* ------------------------------- messages vocaux ----------------------------- */
-
-/* Bulle de lecture (fil de discussion), plus large qu'une bulle texte pour
-   laisser la place à la piste de progression. */
-.messages-bubble-voice {
-  display: inline-flex;
-  padding: 8px 12px;
-}
-.messages-voice {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 168px;
-}
-.messages-voice-play {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, .08);
-  border: 1px solid var(--line-strong);
-  color: inherit;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: border-color .18s, background .18s;
-}
-.messages-bubble.is-mine .messages-voice-play { background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .4); }
-.messages-voice-play:hover { border-color: var(--cyan); }
-.messages-voice-play:disabled { opacity: .6; cursor: default; }
-.messages-voice-track {
-  position: relative;
-  flex: 1;
-  min-width: 60px;
-  height: 4px;
-  background: rgba(255, 255, 255, .14);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.messages-voice-track-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  background: var(--cyan);
-  border-radius: 2px;
-  transition: width .12s linear;
-}
-.messages-bubble.is-mine .messages-voice-track-fill { background: #fff; }
-.messages-voice-duration {
-  flex-shrink: 0;
-  font: 600 10.5px var(--mono);
-  letter-spacing: .04em;
-  color: var(--dim);
-}
-.messages-bubble.is-mine .messages-voice-duration { color: rgba(255, 255, 255, .85); }
-.messages-voice-hint {
-  flex-basis: 100%;
-  font: 500 9.5px var(--mono);
-  color: #ff8c9d;
-}
-.messages-voice-spinner {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, .3);
-  border-top-color: currentColor;
-  animation: messages-spin .6s linear infinite;
-}
-
-/* Barre d'enregistrement / prévisualisation, à la place du composeur texte. */
-.messages-voice-composer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px 12px;
-  border-top: 1px solid var(--line);
-  background: rgba(5, 6, 15, .5);
-  min-height: 58px;
-}
-.messages-voice-composer-status {
-  margin: 0;
-  color: var(--dim);
-  font: 500 11px var(--mono);
-  letter-spacing: .04em;
-}
-.messages-voice-composer-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #ff5a6a;
-  flex-shrink: 0;
-  animation: messages-voice-pulse 1.1s ease-in-out infinite;
-}
-.messages-voice-composer-time {
-  font: 600 13px var(--mono);
-  letter-spacing: .04em;
-  color: #fff;
-}
-.messages-voice-composer-spacer { flex: 1; }
-.messages-voice-composer .messages-voice-play {
-  width: 34px;
-  height: 34px;
-}
-.messages-voice-composer .messages-inline-error { flex-basis: 100%; }
-
-@keyframes messages-voice-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: .45; transform: scale(.82); }
-}
-
 .messages-blocked-banner {
   display: flex;
   align-items: center;
@@ -1114,9 +1004,6 @@
     width: 44px;
     height: 44px;
   }
-  .messages-voice-composer { min-height: 64px; }
-  .messages-voice-composer .messages-voice-play,
-  .messages-voice-composer .messages-tool { width: 40px; height: 40px; }
   .messages-send svg { width: 18px; height: 18px; }
   .messages-bubble { max-width: 88%; font-size: 14.5px; }
   .messages-day span { max-width: 70%; white-space: normal; text-align: center; }
@@ -1126,6 +1013,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .message-btn, .messages-send { transition: none; }
-  .messages-voice-composer-dot { animation: none; }
-  .messages-voice-spinner { animation: none; }
 }

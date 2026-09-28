@@ -95,7 +95,7 @@ export default function SocialDock() {
     conversations, blockedConversations, unreadTotal, unreadFor, threadFor,
     dockOpen: messagesOpen, activePeerId, openThread, backToInbox,
     closeDock: closeMessagesDock,
-    send, sendVoice, resolveAudioUrl, deleteMessage, markRead, block, unblock, report,
+    send, deleteMessage, markRead, block, unblock, report,
     canMessage, isBlocked, reportedReason, refresh: refreshMessages,
   } = messages;
 
@@ -344,8 +344,6 @@ export default function SocialDock() {
           callBlocker={calls.blockerFor}
           callWarning={calls.warningFor}
           onSend={send}
-          onSendVoice={sendVoice}
-          resolveAudioUrl={resolveAudioUrl}
           onDelete={deleteMessage}
           onBlock={block}
           onUnblock={unblock}

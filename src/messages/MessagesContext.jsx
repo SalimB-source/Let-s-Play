@@ -9,7 +9,6 @@ import { playMessageSound } from './notificationSound';
 import {
   DEMO_MESSAGES_SYNC_KEY,
   MESSAGES_TABLE,
-  VOICE_MAX_SECONDS,
   appendMessage,
   applyDemoBlock,
   applyDemoDelete,
@@ -18,7 +17,6 @@ import {
   applyDemoReply,
   applyDemoReport,
   applyDemoSend,
-  applyDemoSendVoice,
   applyDemoUnblock,
   applyReadReceipt,
   blockPeer,
@@ -30,24 +28,20 @@ import {
   fetchReportedIds,
   fetchThread,
   fetchUnreadSenders,
-  getVoiceMessageUrl,
   isMissingMessagesTable,
   markThreadRead,
   markThreadReadLocal,
   mergeUnread,
   prepareBody,
   readDemoMessages,
-  rememberVoiceUid,
   removeMessage,
   removeMessageById,
   reportPeer,
   sendMessage,
-  sendVoiceMessage,
   sortThreadsByActivity,
   threadsFromRows,
   unreadFromRows,
   unblockPeer,
-  uploadVoiceRecording,
   writeDemoMessages,
   normalizeMessage,
 } from './messagesApi';
@@ -60,12 +54,9 @@ import {
  *   - les discussions (`conversations`, chacune avec son dernier message et
  *     son nombre de **non-lus**), le total `unreadTotal` qui alimente le badge
  *     du lanceur, et les joueurs **bloqués** ;
- *   - les gestes : `openThread`, `openInbox`, `viewThread`, `send`, `sendVoice`
- *     (message vocal, même logique optimiste que `send`), `resolveAudioUrl`
- *     (URL jouable d'un message vocal — signée pour un compte Supabase,
- *     directe pour une persona de démonstration), `markRead`, `block`,
- *     `unblock`, `report` ; `canMessage(id)` pour afficher ou non le
- *     bouton « Message » d'un profil (il faut être amis) ;
+ *   - les gestes : `openThread`, `openInbox`, `viewThread`, `send`,
+ *     `markRead`, `block`, `unblock`, `report` ; `canMessage(id)` pour
+ *     afficher ou non le bouton « Message » d'un profil (il faut être amis) ;
  *   - l'état de la messagerie dans la **fenêtre sociale unifiée**
  *     (`src/social/SocialDock.jsx`) : `activePeerId` (la discussion ouverte)
  *     et `dockOpen` ; `openThread` / `openInbox` ouvrent la fenêtre sur
@@ -114,8 +105,6 @@ export const MessagesContext = createContext({
   isBlocked: () => false,
   reportedReason: () => null,
   send: asyncNoop,
-  sendVoice: asyncNoop,
-  resolveAudioUrl: async () => null,
   deleteMessage: asyncNoop,
   markRead: asyncNoop,
   block: asyncNoop,
@@ -130,16 +119,6 @@ export const MessagesContext = createContext({
   backToInbox: noop,
   closeDock: noop,
 });
-
-/** `Blob` → `data:` URL (localStorage ne sait garder que du texte). */
-function blobToDataUrl(blob) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ''));
-    reader.onerror = () => reject(reader.error || new Error('voice_read_failed'));
-    reader.readAsDataURL(blob);
-  });
-}
 
 const DOCK_STORAGE_KEY = 'letsplay_messages_open';
 const ACTIVE_STORAGE_KEY = 'letsplay_messages_active';
@@ -224,10 +203,6 @@ export function MessagesProvider({ children }) {
   const viewedRef = useRef(null);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
-  // URL jouables des messages vocaux, par `attachmentPath` (compte Supabase,
-  // signée à la demande) ou par identifiant provisoire (`pending-…`, le
-  // temps que l'envoi aboutisse). Jamais persisté : recalculé à la demande.
-  const audioUrlCache = useRef(new Map());
 
   /**
    * « Ding » d'un message reçu. Pas de son si l'utilisateur regarde déjà la
@@ -307,11 +282,6 @@ export function MessagesProvider({ children }) {
   // Changement de compte (connexion, déconnexion, autre persona) : on repart de
   // zéro pour ne jamais montrer les messages du joueur précédent.
   useEffect(() => {
-    // Identifiant que l'application emploie pour les chemins vocaux `{uid}/…` :
-    // mémorisé pour que `window.__lpVoiceDiag()` puisse le comparer à
-    // `auth.uid()`, les deux politiques (upload et trigger) exigeant ce dernier.
-    // Une persona de démonstration n'a pas de session : on ne mémorise rien.
-    rememberVoiceUid(mode === 'supabase' ? uid : null);
     setThreads({});
     setBlockedIds([]);
     setReported({});
@@ -692,97 +662,6 @@ export function MessagesProvider({ children }) {
     }
   }, [canMessage, isBlocked, mode, mutateDemo, scheduleDemoReply, uid]);
 
-  /**
-   * Envoie un message vocal : `blob` est l'enregistrement (MediaRecorder),
-   * `durationSeconds` sa durée. Même logique optimiste que `send` — la bulle
-   * apparaît tout de suite, lisible depuis le fichier local, remplacée par la
-   * ligne du serveur une fois le fichier déposé et le message inséré.
-   */
-  const sendVoice = useCallback(async (peerId, blob, durationSeconds) => {
-    if (!blob || !blob.size) return null;
-    if (!canMessage(peerId)) {
-      throw Object.assign(new Error('direct_message_requires_friendship'), { code: 'P0001' });
-    }
-    if (isBlocked(peerId)) {
-      throw Object.assign(new Error('direct_message_blocked'), { code: 'P0001' });
-    }
-    const safeDuration = Math.min(VOICE_MAX_SECONDS, Math.max(1, Math.round(durationSeconds || 0)));
-
-    if (mode === 'demo') {
-      const dataUrl = await blobToDataUrl(blob);
-      mutateDemo((state) => applyDemoSendVoice(state, peerId, dataUrl, safeDuration));
-      scheduleDemoReply(peerId);
-      return { id: `demo-local-${Date.now()}` };
-    }
-    if (mode !== 'supabase') return null;
-
-    const pendingId = `pending-${Date.now()}`;
-    const nowIso = new Date().toISOString();
-    const key = conversationKey(uid, peerId);
-    const localUrl = typeof URL !== 'undefined' && URL.createObjectURL ? URL.createObjectURL(blob) : null;
-    if (localUrl) audioUrlCache.current.set(pendingId, { url: localUrl, expiresAt: Infinity });
-    setThreads((prev) => appendMessage(prev, uid, {
-      id: pendingId,
-      conversation_key: key,
-      sender_id: uid,
-      recipient_id: peerId,
-      body: '',
-      kind: 'voice',
-      attachment_duration: safeDuration,
-      created_at: nowIso,
-      read_at: null,
-    }));
-    try {
-      const path = await uploadVoiceRecording(uid, blob);
-      const row = await sendVoiceMessage(uid, peerId, path, safeDuration, blob.type);
-      if (!mountedRef.current) return row;
-      const saved = normalizeMessage(row, uid);
-      if (saved) {
-        if (localUrl) {
-          audioUrlCache.current.delete(pendingId);
-          audioUrlCache.current.set(saved.attachmentPath, { url: localUrl, expiresAt: Date.now() + 55 * 60 * 1000 });
-        }
-        setThreads((prev) => {
-          const thread = prev[peerId];
-          if (!thread) return appendMessage(prev, uid, row);
-          const messages = thread.messages.map((message) => (message.id === pendingId ? saved : message));
-          return { ...prev, [peerId]: { ...thread, messages, lastMessage: saved, lastAt: saved.createdAt } };
-        });
-      }
-      return row;
-    } catch (e) {
-      audioUrlCache.current.delete(pendingId);
-      if (localUrl && typeof URL.revokeObjectURL === 'function') URL.revokeObjectURL(localUrl);
-      if (mountedRef.current) {
-        setThreads((prev) => {
-          const thread = prev[peerId];
-          if (!thread) return prev;
-          const messages = thread.messages.filter((message) => message.id !== pendingId);
-          const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
-          return { ...prev, [peerId]: { ...thread, messages, lastMessage, lastAt: lastMessage?.createdAt || null } };
-        });
-      }
-      throw e;
-    }
-  }, [canMessage, isBlocked, mode, mutateDemo, scheduleDemoReply, uid]);
-
-  /**
-   * URL jouable d'un message vocal : la donnée démo est déjà une `data:` URL
-   * (`message.attachmentUrl`), un compte Supabase a besoin d'une URL signée
-   * (bucket privé) mise en cache le temps qu'elle reste valide.
-   */
-  const resolveAudioUrl = useCallback(async (message) => {
-    if (!message) return null;
-    if (message.attachmentUrl) return message.attachmentUrl;
-    const cacheKey = message.attachmentPath || message.id;
-    const cached = cacheKey ? audioUrlCache.current.get(cacheKey) : null;
-    if (cached && cached.expiresAt > Date.now() + 5000) return cached.url;
-    if (!message.attachmentPath || mode !== 'supabase' || !supabase) return null;
-    const url = await getVoiceMessageUrl(message.attachmentPath, 3600);
-    if (url) audioUrlCache.current.set(message.attachmentPath, { url, expiresAt: Date.now() + 55 * 60 * 1000 });
-    return url;
-  }, [mode]);
-
   const deleteMessage = useCallback(async (peerId, messageId) => {
     if (!peerId || !messageId) return;
     if (String(messageId).startsWith('pending-')) return;
@@ -802,7 +681,7 @@ export function MessagesProvider({ children }) {
     const previous = threads;
     setThreads((prev) => removeMessage(prev, peerId, messageId));
     try {
-      await deleteMessageApi(uid, messageId, message.kind === 'voice' ? message.attachmentPath : null);
+      await deleteMessageApi(uid, messageId);
     } catch (e) {
       if (mountedRef.current) setThreads(previous);
       throw e;
@@ -888,8 +767,6 @@ export function MessagesProvider({ children }) {
     isBlocked,
     reportedReason,
     send,
-    sendVoice,
-    resolveAudioUrl,
     deleteMessage,
     markRead,
     block,
@@ -906,7 +783,7 @@ export function MessagesProvider({ children }) {
   }), [
     mode, status, error, threads, sortedConversations, blockedConversations, unreadTotalValue,
     unreadFor, threadFor, canMessage, isBlocked, reportedReason,
-    send, sendVoice, resolveAudioUrl, deleteMessage, markRead, block, unblock, report, refresh,
+    send, deleteMessage, markRead, block, unblock, report, refresh,
     dockOpen, activePeerId, openThread, openInbox, viewThread, backToInbox, closeDock,
   ]);
 
