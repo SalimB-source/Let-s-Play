@@ -47,7 +47,9 @@
   .article-aside-test .review-score-card{
     position:fixed;
     top:auto;
-    bottom:18px;
+    /* safe-area : sans ça, le sommaire flottant passe sous la barre de geste
+       de l'iPhone. */
+    bottom:calc(18px + env(safe-area-inset-bottom,0px));
     inset-inline-end:16px;
     inset-inline-start:auto;
     z-index:90;
@@ -491,7 +493,7 @@
   .article-pullquote{padding:20px 18px;margin:28px 0}
   .article-pullquote p{font-size:20px}
   .article-aside{position:static;order:-1;display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:0}
-  .article-toc{right:12px;bottom:18px;width:auto;max-width:calc(100vw - 24px)}
+  .article-toc{right:12px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:auto;max-width:calc(100vw - 24px)}
 }
 @media(max-width:520px){
   .article-byline{align-items:stretch}

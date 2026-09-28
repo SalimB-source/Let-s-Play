@@ -2,7 +2,19 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      `viewport-fit=cover` : sans lui, la page s'arrête aux bords de l'écran et
+      les `env(safe-area-inset-*)` valent toujours 0. Sur iPhone (encoche,
+      indicateur home), le contenu à bord perdait 0 marge et passait SOUS la
+      barre de geste en bas. Avec `cover`, la page occupe tout l'écran et les
+      safe-area-insets deviennent réels — les éléments fixes (nav, menu,
+      contrôles d'appel) ajoutent leur marge via env() dans styles.css.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- PWA / écran d'accueil iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!--
