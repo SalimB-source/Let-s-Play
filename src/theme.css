@@ -565,29 +565,29 @@
 [data-theme='light'] .article-reaction{background:var(--panel-2)}
 
 /* ============ 6. NAVIGATION, MENUS — GLASS ISLAND CLAIR ============ */
-/* L'île garde sa forme en clair : verre blanc, même rayon 16px, même ombre
-   douce. Le wordmark reste lisible (contour violet). */
+/* En thème clair, l'île passe au violet de marque #4f3494 ; le wordmark blanc
+   et les commandes gardent un contraste net. */
 [data-theme='light'] .nav,
 [data-theme='light'] .nav.scrolled,
 [data-theme='light'] .nav.nav-home,
 [data-theme='light'] .nav.nav-home.scrolled{
-  background:rgba(255,255,255,.86);
+  background:#4f3494;
   backdrop-filter:blur(18px) saturate(1.25);
   -webkit-backdrop-filter:blur(18px) saturate(1.25);
-  border:1px solid rgba(86,70,190,.12);
+  border:1px solid rgba(255,255,255,.22);
   border-radius:16px;
-  box-shadow:0 10px 30px -14px rgba(28,24,72,.22), 0 4px 12px -6px rgba(28,24,72,.14), inset 0 1px 0 rgba(255,255,255,.9);
+  box-shadow:0 10px 30px -14px rgba(48,31,100,.42), 0 4px 12px -6px rgba(48,31,100,.28), inset 0 1px 0 rgba(255,255,255,.18);
 }
 [data-theme='light'] .nav.scrolled{
-  background:rgba(255,255,255,.92);
-  box-shadow:0 16px 40px -16px rgba(28,24,72,.24), 0 6px 16px -8px rgba(28,24,72,.16);
+  background:#4f3494;
+  box-shadow:0 16px 40px -16px rgba(48,31,100,.48), 0 6px 16px -8px rgba(48,31,100,.32);
 }
 [data-theme='light'] .nav.nav-home{
-  background:rgba(255,255,255,.74);
+  background:#4f3494;
 }
 [data-theme='light'] .nav-primary{
-  background:rgba(86,70,190,.06);
-  border-color:rgba(86,70,190,.08);
+  background:rgba(255,255,255,.12);
+  border-color:rgba(255,255,255,.2);
 }
 [data-theme='light'] .nav-primary a{color:rgba(35,32,70,.72)}
 [data-theme='light'] .nav-primary a:hover{color:var(--ink);background:rgba(86,70,190,.08)}
@@ -648,13 +648,13 @@
   [data-theme='light'] .nav.scrolled,
   [data-theme='light'] .nav.nav-home,
   [data-theme='light'] .nav.nav-home.scrolled{
-    background:#ffffff;
+    background:#4f3494;
     backdrop-filter:none;
     -webkit-backdrop-filter:none;
     border:0;
-    border-bottom:1px solid var(--line);
+    border-bottom:1px solid rgba(255,255,255,.24);
     border-radius:0;
-    box-shadow:0 1px 0 rgba(28,24,72,.04);
+    box-shadow:none;
   }
 }
 [data-theme='light'] .nav-search-results{
@@ -748,7 +748,7 @@
 [data-theme='light'] .messages-avatar-dot{border-color:#ffffff}
 @media (max-width:800px){
   [data-theme='light'] .nav,
-  [data-theme='light'] .nav.open{background:#ffffff}
+  [data-theme='light'] .nav.open{background:#4f3494}
   [data-theme='light'] .nav-links{
     background:
       radial-gradient(900px 600px at 85% -10%, rgba(124,58,237,.09), transparent 60%),
@@ -1137,3 +1137,74 @@
 [data-theme='light'] .social-launcher-icon{color:var(--violet)}
 [data-theme='light'] .social-tab--messages.lets-talk-label.is-active{color:var(--violet);border-bottom-color:var(--violet)}
 [data-theme='light'] .nav-messages-link .lets-talk-label{color:#0a0b1a}
+
+/* Contraste des commandes de la barre violette (desktop). Le menu mobile
+   reste clair : seuls son bandeau supérieur et son bouton burger sont violets. */
+@media (min-width:801px){
+  [data-theme='light'] .nav .nav-primary a,
+  [data-theme='light'] .nav .nav-primary a:hover{color:#fff}
+  [data-theme='light'] .nav .nav-primary a:not(.active):hover{background:rgba(255,255,255,.16)}
+  [data-theme='light'] .nav .nav-search{
+    background:rgba(255,255,255,.94);
+    border-color:rgba(255,255,255,.48);
+  }
+  [data-theme='light'] .nav .nav-search:focus-within{background:#fff}
+  [data-theme='light'] .nav .theme-toggle{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.28);
+    color:#fff;
+  }
+  [data-theme='light'] .nav .theme-toggle:hover{
+    background:rgba(255,255,255,.22);
+    border-color:rgba(255,255,255,.42);
+    color:#fff;
+  }
+  [data-theme='light'] .nav .nav-account.nav-login{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.3);
+    color:#fff;
+  }
+  [data-theme='light'] .nav .nav-account.nav-login:hover{
+    background:rgba(255,255,255,.22);
+    border-color:rgba(255,255,255,.46);
+    color:#fff;
+  }
+  [data-theme='light'] .nav .nav-account.nav-register:hover{
+    background:var(--yellow);
+    border-color:var(--yellow);
+    color:var(--ink);
+  }
+  [data-theme='light'] .nav .nav-account.connected{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.28);
+  }
+  [data-theme='light'] .nav .nav-account.connected:hover{
+    background:rgba(255,255,255,.2);
+    border-color:rgba(255,255,255,.44);
+  }
+  [data-theme='light'] .nav .nav-account.connected .nav-account-name,
+  [data-theme='light'] .nav .nav-logout{color:#fff}
+  [data-theme='light'] .nav .nav-account.connected:hover .nav-account-name{color:var(--yellow)}
+  [data-theme='light'] .nav .nav-logout{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.28);
+  }
+  [data-theme='light'] .nav .nav-logout:hover{
+    background:rgba(190,18,60,.88);
+    border-color:rgba(255,255,255,.36);
+    color:#fff;
+  }
+}
+
+@media (max-width:800px){
+  [data-theme='light'] .menu-button:not(.open){
+    background:rgba(255,255,255,.1);
+    border-color:rgba(255,255,255,.32);
+    color:#fff;
+  }
+  [data-theme='light'] .menu-button:not(.open):hover{
+    background:rgba(255,255,255,.2);
+    border-color:rgba(255,255,255,.52);
+    color:#fff;
+  }
+}
