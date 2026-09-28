@@ -249,15 +249,14 @@
 .messages-thread-peer-link:hover { background: rgba(255, 255, 255, .04); }
 .messages-thread-peer-link:hover .messages-thread-name { color: var(--cyan); }
 
-/* Menu « … » (plus d'actions : signaler / bloquer). Remplace les deux
-   boutons icônes qui encombraient l'en-tête. */
+/* Menu « … » (signaler / bloquer / effacer le fil pour soi). */
 .messages-more { position: relative; }
 .messages-tool-more { position: relative; z-index: 1; }
 .messages-more-menu {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
-  min-width: 160px;
+  min-width: 210px;
   margin: 0;
   padding: 5px;
   list-style: none;
@@ -298,6 +297,16 @@
 .messages-more-item.is-flagged { color: var(--yellow); }
 .messages-more-item.is-flagged:hover { color: #ffe25c; background: rgba(255, 214, 25, .08); }
 .messages-more-item-danger:hover { color: #ff8c9d; background: rgba(255, 140, 157, .08); }
+.messages-more-item:disabled { opacity: .5; cursor: wait; }
+.messages-clearing-status {
+  margin: 0;
+  padding: 7px 12px;
+  color: var(--cyan);
+  background: rgba(34, 211, 238, .08);
+  border-bottom: 1px solid var(--line);
+  font: 500 11px var(--mono);
+  text-align: center;
+}
 
 /* Sur la page plein écran, le bouton retour du fil est redondant avec le
    bouton de l'en-tête de page — on le masque. Il reste visible dans le
@@ -989,7 +998,7 @@
     width: 38px;
     height: 38px;
   }
-  .messages-more-menu { min-width: 180px; }
+  .messages-more-menu { min-width: 210px; }
   .messages-more-item { padding: 11px 12px; font-size: 12px; }
   .messages-thread-name { font-size: 15px; }
   .messages-send {

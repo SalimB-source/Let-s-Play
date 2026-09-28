@@ -15,8 +15,8 @@ import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
  *     discussion et les joueurs bloqués, à débloquer) ;
  *   - `ThreadView` : la discussion ouverte (séparateurs de jour, fil de
  *     bulles, accusé de lecture, champ qui s'agrandit, bouton d'envoi
- *     libellé, accès **Profil** explicite, gestes **Bloquer** /
- *     **Signaler**).
+ *     libellé, accès **Profil**, gestes **Bloquer** / **Signaler** /
+ *     **Effacer la conversation pour soi**).
  *
  * Ici, ni la photo ni le nom n'envoient vers le profil : on est déjà dans le
  * chat — le profil a son bouton dédié dans la barre d'outils.
@@ -360,7 +360,7 @@ function ReportForm({ t, name, reported, onSubmit, onClose }) {
 
 export function ThreadView({
   peerId, t, ft, ct, lang, thread, profile, online, blocked, reported, canWrite,
-  onBack, onSend, onDelete, onBlock, onUnblock, onReport,
+  onBack, onSend, onDelete, onClear, onBlock, onUnblock, onReport,
   onCall, callBlocker, callWarning,
 }) {
   const [draft, setDraft] = useState('');
@@ -369,6 +369,8 @@ export function ThreadView({
   const [reportOpen, setReportOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [clearing, setClearing] = useState(false);
+  const currentPeerRef = useRef(peerId);
   const listRef = useRef(null);
   const inputRef = useRef(null);
   const moreRef = useRef(null);
@@ -401,7 +403,11 @@ export function ThreadView({
     if (node) node.scrollTop = node.scrollHeight;
   }, [messages.length, peerId]);
 
-  useEffect(() => { setDraft(''); setError(''); setReportOpen(false); setMoreOpen(false); setDeletingId(null); }, [peerId]);
+  useEffect(() => {
+    currentPeerRef.current = peerId;
+    setDraft(''); setError(''); setReportOpen(false); setMoreOpen(false);
+    setDeletingId(null); setClearing(false);
+  }, [peerId]);
 
   // Bureau : le champ prend le focus à l'ouverture de la discussion — on
   // peut écrire tout de suite. Pas sur mobile, pour ne pas faire sortir le
@@ -437,7 +443,7 @@ export function ThreadView({
 
   const submit = async () => {
     const body = draft.trim();
-    if (!body || busy) return;
+    if (!body || busy || clearing) return;
     setBusy(true);
     setError('');
     try {
@@ -451,7 +457,7 @@ export function ThreadView({
   };
 
   const handleDelete = async (message) => {
-    if (!message?.mine) return;
+    if (!message?.mine || clearing) return;
     if (String(message.id).startsWith('pending-')) return;
     const preview = String(message.body || '').slice(0, 40);
     const ok = typeof window === 'undefined' || window.confirm(fill(t.deleteConfirm, { preview: preview || '…' }));
@@ -464,6 +470,23 @@ export function ThreadView({
       setError(describeMessagesError(e, t));
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleClear = async () => {
+    if (clearing) return;
+    setMoreOpen(false);
+    const ok = typeof window === 'undefined'
+      || window.confirm(fill(t.clearConfirm, { name: profile?.name || '?' }));
+    if (!ok) return;
+    setClearing(true);
+    setError('');
+    try {
+      await onClear(peerId);
+    } catch (e) {
+      if (currentPeerRef.current === peerId) setError(describeMessagesError(e, t));
+    } finally {
+      if (currentPeerRef.current === peerId) setClearing(false);
     }
   };
 
@@ -530,7 +553,7 @@ export function ThreadView({
             >
               <MoreIcon />
             </button>
-            <ul className="messages-more-menu" role="menu" aria-hidden={!moreOpen}>
+            <ul className="messages-more-menu" role="menu" aria-hidden={!moreOpen} inert={!moreOpen}>
               <li>
                 <button
                   type="button"
@@ -575,10 +598,26 @@ export function ThreadView({
                   </button>
                 )}
               </li>
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="messages-more-item messages-more-item-danger"
+                  aria-label={t.clearConversation}
+                  title={t.clearConversation}
+                  disabled={clearing}
+                  onClick={handleClear}
+                >
+                  <TrashIcon size={14} />
+                  <span>{t.clearConversation}</span>
+                </button>
+              </li>
             </ul>
           </div>
         </span>
       </header>
+
+      {clearing && <p className="messages-clearing-status" role="status">{t.clearingConversation}</p>}
 
       {reportOpen && (
         <ReportForm
@@ -616,7 +655,7 @@ export function ThreadView({
                         className="messages-bubble-delete"
                         aria-label={t.deleteMessage}
                         title={t.deleteMessage}
-                        disabled={deletingId === message.id}
+                        disabled={clearing || deletingId === message.id}
                         onClick={() => handleDelete(message)}
                       >
                         <TrashIcon size={12} />
@@ -662,7 +701,7 @@ export function ThreadView({
               {remaining}
             </span>
           )}
-          <button type="submit" className="messages-send" disabled={busy || !draft.trim() || tooLong} aria-label={t.send} title={t.send}>
+          <button type="submit" className="messages-send" disabled={busy || clearing || !draft.trim() || tooLong} aria-label={t.send} title={t.send}>
             <SendIcon />
           </button>
         </form>

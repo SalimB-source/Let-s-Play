@@ -10,8 +10,11 @@
  *     n'a pas ouvert la discussion — c'est ce qui compte les non-lus. Côté
  *     serveur, un trigger impose : expéditeur = joueur connecté, amitié
  *     `accepted` obligatoire, aucun blocage entre les deux joueurs, 20
- *     messages par minute au plus. Les joueurs bloqués vivent dans
- *     `public.message_blocks`, les signalements dans `public.message_reports`.
+ *     messages par minute au plus. Un repère dans
+ *     `public.message_conversation_clears` masque l'historique uniquement pour
+ *     le joueur qui l'efface (la RLS filtre aussi les non-lus). Les joueurs
+ *     bloqués vivent dans `public.message_blocks`, les signalements dans
+ *     `public.message_reports`.
  *
  *   - **Personas de démonstration** (pas de session) : les discussions vivent
  *     dans localStorage, par persona et par appareil, avec des réponses
@@ -276,10 +279,33 @@ export function markThreadReadLocal(threads, peerId) {
   };
 }
 
+/** Effacement local : plus de bulles, d'aperçu ni de badge pour cet ami. */
+export function clearThreadLocal(threads, peerId) {
+  if (!peerId || !threads?.[peerId]) return threads;
+  const next = { ...threads };
+  delete next[peerId];
+  return next;
+}
+
+/**
+ * Un événement Realtime/envoi retardé ne doit pas ressusciter un ancien
+ * message après un effacement. PostgreSQL garde les microsecondes alors que
+ * Date.parse les tronque aux millisecondes : comparer aussi le reste.
+ */
+export function isAfterClear(createdAt, clearedAt) {
+  if (!clearedAt) return true;
+  const createdMs = Date.parse(createdAt || '');
+  const clearedMs = Date.parse(clearedAt);
+  if (!Number.isFinite(createdMs) || !Number.isFinite(clearedMs)) return false;
+  if (createdMs !== clearedMs) return createdMs > clearedMs;
+  const micros = (iso) => Number((String(iso).match(/\.(\d+)/)?.[1] || '').padEnd(6, '0').slice(0, 6));
+  return micros(createdAt) > micros(clearedAt);
+}
+
 /** Ajoute un message à une discussion (temps réel : reçu ou envoyé ailleurs). */
-export function appendMessage(threads, uid, row) {
+export function appendMessage(threads, uid, row, clearedByPeer = {}) {
   const message = normalizeMessage(row, uid);
-  if (!message) return threads;
+  if (!message || !isAfterClear(message.createdAt, clearedByPeer[message.peerId])) return threads;
   const next = { ...threads };
   const thread = next[message.peerId] || {
     peerId: message.peerId, key: message.key, messages: [], lastMessage: null, lastAt: null, unread: 0,
@@ -432,6 +458,20 @@ export async function deleteMessage(uid, messageId) {
     throw Object.assign(new Error('direct_message_not_found'), { code: 'P0001' });
   }
   return data[0];
+}
+
+/**
+ * Efface le fil pour l'utilisateur connecté seulement (pas de DELETE sur les
+ * messages partagés). Le serveur fixe l'heure, le propriétaire et le filtre
+ * RLS ; le client ne lui transmet que l'identifiant de l'interlocuteur.
+ */
+export async function clearConversation(uid, peerId) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  if (!conversationKey(uid, peerId)) throw new Error('direct_conversation_invalid_peer');
+  const { data, error } = await supabase.rpc('clear_direct_conversation', { target_id: peerId });
+  if (error) throw error;
+  if (!data || !Number.isFinite(Date.parse(data))) throw new Error('direct_conversation_clear_failed');
+  return data;
 }
 
 /** Accusé de lecture : `read_at` des messages reçus non lus de cet ami. */
@@ -687,4 +727,12 @@ export function applyDemoDelete(state, peerId, messageId) {
   const remaining = list.filter((message) => !(message.id === messageId && message.from === 'me'));
   if (remaining.length === list.length) return state;
   return { ...state, threads: { ...state.threads, [peerId]: remaining } };
+}
+
+/** Efface les deux sens d'un fil pour cette persona sans toucher aux autres. */
+export function applyDemoClear(state, peerId) {
+  if (!peerId || !Object.prototype.hasOwnProperty.call(state.threads || {}, peerId)) return state;
+  const threads = { ...state.threads };
+  delete threads[peerId];
+  return { ...state, threads };
 }

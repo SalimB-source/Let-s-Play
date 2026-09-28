@@ -87,7 +87,7 @@ export default function SocialDock() {
     conversations, blockedConversations, unreadTotal, unreadFor, threadFor,
     dockOpen: messagesOpen, activePeerId, openThread, backToInbox,
     closeDock: closeMessagesDock,
-    send, deleteMessage, markRead, block, unblock, report,
+    send, deleteMessage, clearConversation, markRead, block, unblock, report,
     canMessage, isBlocked, reportedReason, refresh: refreshMessages,
   } = messages;
 
@@ -337,6 +337,7 @@ export default function SocialDock() {
           callWarning={calls.warningFor}
           onSend={send}
           onDelete={deleteMessage}
+          onClear={clearConversation}
           onBlock={block}
           onUnblock={unblock}
           onReport={(reason, note) => report(activePeerId, reason, note)}

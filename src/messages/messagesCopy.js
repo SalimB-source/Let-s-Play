@@ -60,6 +60,10 @@ export const messagesCopy = {
     deleteMessage: 'Delete',
     deleteConfirm: 'Delete this message? “{preview}”',
     deleting: 'Deleting…',
+    clearConversation: 'Clear conversation',
+    clearConfirm: 'Clear your conversation with {name}? All existing messages will disappear for you only. The other person will keep their copy, and new messages will still appear.',
+    clearingConversation: 'Clearing conversation…',
+    errClearUnavailable: 'This option is not available yet: run supabase/schema.sql on your Supabase project, then try again.',
     notFriends: 'Become friends to exchange messages.',
     signInPrompt: 'Sign in to send messages',
     message: 'Message',
@@ -134,6 +138,10 @@ export const messagesCopy = {
     deleteMessage: 'Supprimer',
     deleteConfirm: 'Supprimer ce message ? « {preview} »',
     deleting: 'Suppression…',
+    clearConversation: 'Effacer la conversation',
+    clearConfirm: 'Effacer la conversation avec {name} pour toi uniquement ? Tous les messages actuels disparaîtront de ta messagerie, mais resteront visibles pour l’autre personne. Les nouveaux messages s’afficheront normalement.',
+    clearingConversation: 'Effacement de la conversation…',
+    errClearUnavailable: 'Option indisponible sur ce déploiement : relance supabase/schema.sql sur le projet Supabase, puis réessaie.',
     notFriends: 'Deviens ami avec ce joueur pour lui écrire.',
     signInPrompt: 'Se connecter pour envoyer des messages',
     message: 'Message',
@@ -208,6 +216,10 @@ export const messagesCopy = {
     deleteMessage: 'حذف',
     deleteConfirm: 'هل تريد حذف هذه الرسالة؟ «{preview}»',
     deleting: 'جارٍ الحذف…',
+    clearConversation: 'مسح المحادثة',
+    clearConfirm: 'هل تريد مسح محادثتك مع {name} لديك فقط؟ ستختفي جميع الرسائل الحالية لديك، لكنها ستبقى ظاهرة للطرف الآخر. ستظهر الرسائل الجديدة كالمعتاد.',
+    clearingConversation: 'جارٍ مسح المحادثة…',
+    errClearUnavailable: 'هذا الخيار غير متاح بعد: شغّل supabase/schema.sql على مشروع Supabase ثم حاول مجددًا.',
     notFriends: 'أصبحا صديقين لتتبادلا الرسائل.',
     signInPrompt: 'سجّل الدخول لإرسال الرسائل',
     message: 'رسالة',
@@ -254,5 +266,6 @@ export function describeMessagesError(error, t) {
   if (/direct_message_requires_friendship/i.test(message)) return t.errNotFriends;
   if (/direct_message_rate_limited/i.test(message)) return t.errRateLimited;
   if (/direct_message_(empty|too_long)/i.test(message)) return t.errEmpty;
+  if ((code === 'PGRST202' || code === '42883') && /clear_direct_conversation/i.test(message)) return t.errClearUnavailable;
   return t.errGeneric;
 }
