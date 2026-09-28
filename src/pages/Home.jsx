@@ -56,21 +56,28 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Actu à la une de l'accueil — choix éditorial : l'actu Halo × Activision
-// (visuel fourni à la rédaction) ouvre la page d'accueil, juste après les
-// épisodes. Remettre la constante à null laisse la une à la dernière actu
-// publiée par le robot (autoNewsListing, déjà triée du plus récent au plus
-// ancien), puis en repli à l'actu manuelle PHYSINT.
+// Actu à la une de l'accueil — choix éditorial : l'actu Minecraft × le Sift
+// (28.09.2026, visuel officiel Mojang hotlinké + carte SVG de repli) ouvre la
+// page d'accueil, juste après les épisodes. Remettre la constante à null
+// laisse la une à la dernière actu publiée par le robot (autoNewsListing,
+// déjà triée du plus récent au plus ancien), puis en repli à l'actu manuelle
+// PHYSINT.
 const editorialTopStory = {
-  to: '/news/halo-activision',
-  image: 'masterchief-activision.png',
-  alt: 'Un super-soldat en armure verte s’avance vers un portail illuminé où brille le logo Activision — visuel éditorial Let’s Play',
-  badge: 'HALO · ACTIVISION',
-  kicker: '26.09.2026 · XBOX',
-  title: 'HALO PASSE CHEZ ACTIVISION.',
-  excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',
-  sentiment: 'mixed',
+  to: '/news/minecraft-the-sift-nouvelle-dimension',
+  image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg',
+  fallbackImage: 'minecraft-the-sift-news.svg',
+  alt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios',
+  badge: 'MINECRAFT · THE SIFT',
+  kicker: '28.09.2026 · MOJANG',
+  title: 'MINECRAFT OUVRE SA 4E DIMENSION.',
+  excerpt: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu après l’Overworld, le Nether et l’End — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.',
+  sentiment: 'positive',
 };
+
+// Visuel de la une : URL absolue (image officielle) telle quelle, fichier
+// local préfixé du baseUrl ; la carte SVG de repli prend le relais en cas
+// d'erreur de chargement — même mécanique que les hubs actus.
+const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
 const fallbackTopStory = {
   to: '/news/physint',
@@ -294,7 +301,18 @@ export default function Home() {
         </div>
         <Link className="daily-news-card home-news-card" to={topStory.to}>
           <div className="daily-news-image">
-            <img src={`${base}${topStory.image}`} alt={topStory.alt || topStory.title} loading="lazy" decoding="async" />
+            <img
+              src={imageUrl(topStory.image)}
+              alt={topStory.alt || topStory.title}
+              loading="lazy"
+              decoding="async"
+              onError={(event) => {
+                if (topStory.fallbackImage && event.currentTarget.dataset.fallback !== 'true') {
+                  event.currentTarget.dataset.fallback = 'true';
+                  event.currentTarget.src = imageUrl(topStory.fallbackImage);
+                }
+              }}
+            />
             <span className="news-feature-badge">{topStory.badge}</span>
             <span className="news-feature-arrow" aria-hidden="true">↗</span>
             <span className={`news-sentiment ${topStoryMeta.color}`} title={topStoryMeta.label} aria-label={topStoryMeta.label}>{topStoryMeta.emoji}</span>

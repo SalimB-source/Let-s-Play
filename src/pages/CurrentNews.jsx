@@ -75,7 +75,7 @@ const stories = {
     credit: 'Visuel : portrait officiel de Satya Nadella — Brian Smale / Microsoft, licence CC BY-SA 4.0.',
     sentiment: 'mixed'
   },
-  // Actu à la une du 26.09.2026 — aussi mise en avant sur l'accueil.
+  // Actu à la une du 26.09.2026 (une de l'accueil jusqu'au 28.09.2026).
   'halo-activision': {
     date: '26.09.2026', category: 'XBOX · ACTIVISION', image: 'masterchief-activision.png', imageAlt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', cover: 'ACTIVISION',
     title: 'HALO PASSE CHEZ', accent: 'ACTIVISION.', dek: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision, avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.',

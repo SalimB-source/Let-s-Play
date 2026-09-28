@@ -50,10 +50,10 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
-  // Les actus du 28.09.2026 (rédigées à la main au gabarit du robot) ouvrent
-  // la liste, suivies de l'actu Halo × Activision (aussi mise en avant sur
-  // l'accueil) ; les actus du jour du robot suivent, puis les articles
-  // manuels de la rédaction dans l'ordre.
+  // Les actus du 28.09.2026 (rédigées à la main au gabarit du robot — la
+  // première, Minecraft × le Sift, est aussi la une de l'accueil) ouvrent la
+  // liste, suivies de l'actu Halo × Activision ; les actus du jour du robot
+  // suivent, puis les articles manuels de la rédaction dans l'ordre.
   const articles = useMemo(() => [
     { to: '/news/minecraft-the-sift-nouvelle-dimension', image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg', fallbackImage: 'minecraft-the-sift-news.svg', alt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios', badge: 'MINECRAFT · THE SIFT', kicker: '28.09.2026 · MOJANG', title: 'MINECRAFT OUVRE SA 4E DIMENSION.', excerpt: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/the-witcher-3-remastered-sortie-29-septembre', image: 'https://public.cdn.cdpr.app/common/news/974db3ceaf0e6035a922cbbd7c7770b0_q90_1280x720.jpeg', fallbackImage: 'witcher-3-remastered-news.svg', alt: 'Geralt de Riv sur le visuel officiel de The Witcher 3: Wild Hunt – Remastered — CD PROJEKT RED', badge: 'THE WITCHER 3 · REMASTERED', kicker: '28.09.2026 · CD PROJEKT RED', title: 'THE WITCHER 3 REVIENT REMASTERISÉ.', excerpt: 'Déverrouillage mondial mardi à 10 h UTC (11 h à Alger) sur PC, PS5, Xbox Series X|S et Switch 2. Gratuit pour les propriétaires du jeu sur PC et consoles actuelles, environ 45 Go, sans préchargement.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
