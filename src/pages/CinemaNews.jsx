@@ -23,7 +23,7 @@ export default function CinemaNews() {
   const copy = {
     en: {
       section: 'CINEMA & SERIES NEWS',
-      updated: 'Updated 27.09.2026',
+      updated: 'Updated 28.09.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -36,7 +36,7 @@ export default function CinemaNews() {
     },
     fr: {
       section: 'ACTUS CINÉMA & SÉRIES',
-      updated: 'Mis à jour le 27.09.2026',
+      updated: 'Mis à jour le 28.09.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -49,7 +49,7 @@ export default function CinemaNews() {
     },
     ar: {
       section: 'أخبار السينما والمسلسلات',
-      updated: 'آخر تحديث 27.09.2026',
+      updated: 'آخر تحديث 28.09.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -62,7 +62,7 @@ export default function CinemaNews() {
     },
   }[lang] || {
     section: 'ACTUS CINÉMA & SÉRIES',
-    updated: 'Mis à jour le 27.09.2026',
+    updated: 'Mis à jour le 28.09.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -80,10 +80,13 @@ export default function CinemaNews() {
   // Actus cinéma du jour (27.09.2026) : les plus récentes ouvrent la page —
   // box-office, bande-annonce Werwulf et casting du biopic Fred Astaire.
   const articles = useMemo(() => [
-    { to: '/news/cinema/box-office-us-endgame-resident-evil', image: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-resident-evil-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · MARVEL STUDIOS', alt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', badge: 'CINÉMA · BOX-OFFICE', kicker: '27.09.2026 · DEADLINE', title: 'ENDGAME REPREND LA TÊTE DU BOX-OFFICE.', excerpt: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain, devant le reboot Resident Evil de Zach Cregger. Les chiffres définitifs arrivent lundi.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/box-office-us-endgame-encore-26-millions', image: youTubeThumbUrl('WsBwTw_P1Do'), fallbackImage: 'box-office-endgame-encore-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · SONY PICTURES', alt: 'Visuel officiel Sony Pictures pour Resident Evil, tiré de sa bande-annonce', badge: 'CINÉMA · BOX-OFFICE', kicker: '28.09.2026 · DEADLINE', title: 'ENDGAME GARDE LA TÊTE : 26 M$.', excerpt: 'Bilan consolidé du week-end américain : la ressortie d’Avengers: Endgame termine première avec 26 M$, devant Resident Evil (23,3 M$, plus de 100 M$ en dix jours). Meilleur 39e week-end depuis 2015 avec 122,3 M$.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/the-last-of-us-saison-3-john-goodman-laura-bailey', image: 'https://variety.com/wp-content/uploads/2026/09/LastofUs.Split_.1.jpg?w=1000&h=667&crop=1', fallbackImage: 'last-of-us-saison-3-casting-news.svg', imageCredit: 'PHOTOS DE PRESSE · GETTY IMAGES / HBO / VARIETY', alt: 'Photos de presse de Laura Bailey, John Goodman et Ian Alexander, nouveaux visages de la saison 3 de The Last of Us', badge: 'THE LAST OF US · HBO', kicker: '28.09.2026 · VARIETY', title: 'GOODMAN REJOINT THE LAST OF US.', excerpt: 'Pour The Last of Us Day, HBO annonce John Goodman, Ian Alexander et Laura Bailey — la voix d’Abby dans le jeu — au casting de la saison 3, attendue en 2027 avec Craig Mazin seul showrunner.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/godzilla-minus-zero-premiere-nyff', image: 'https://variety.com/wp-content/uploads/2026/09/GettyImages-2297305809.jpg?w=1000&h=667&crop=1', fallbackImage: 'godzilla-minus-zero-news.svg', imageCredit: 'PHOTO DE PRESSE · GETTY IMAGES / VARIETY', alt: 'Minami Hamabe, Ryunosuke Kamiki et Takashi Yamazaki sur le tapis rouge de Godzilla Minus Zero au New York Film Festival', badge: 'GODZILLA · NYFF', kicker: '28.09.2026 · VARIETY', title: 'GODZILLA RUGIT À NEW YORK.', excerpt: 'Première mondiale applaudie au New York Film Festival pour la suite de Godzilla Minus One, premier film de la saga classé R. Sortie le 3 novembre au Japon, le 4 en France et le 6 aux États-Unis.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/box-office-us-endgame-resident-evil', image: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-resident-evil-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · MARVEL STUDIOS', alt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', badge: 'CINÉMA · BOX-OFFICE', kicker: '27.09.2026 · DEADLINE', title: 'ENDGAME REPREND LA TÊTE.', excerpt: 'La ressortie d’Avengers: Endgame vise 24 à 26 millions de dollars sur le week-end américain, devant le reboot Resident Evil de Zach Cregger. Les chiffres définitifs arrivent lundi.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/werwulf-trailer-eggers', image: 'https://images.contentstack.io/v3/assets/blt223a4a92692ca457/bltc56e9a2c23500694/6a3d520c6391ef7c261677e4/werwulf_4marquee_image.png?branch=production&width=1600', fallbackImage: 'werwulf-trailer-news.svg', imageCredit: 'VISUEL OFFICIEL · FOCUS FEATURES', alt: 'Visuel officiel de Werwulf publié par Focus Features', badge: 'CINÉMA · ROBERT EGGERS', kicker: '27.09.2026 · FOCUS FEATURES', title: 'WERWULF MONTRE SES CROCS.', excerpt: 'La deuxième bande-annonce du film de Robert Eggers est arrivée le 26 septembre, jour de pleine lune. L’horreur médiévale en vieil anglais sort le 25 décembre 2026.', read: copy.read, sentiment: 'positive' },
-    { to: '/news/cinema/fred-astaire-biopic-tom-holland', image: 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1', fallbackImage: 'fred-astaire-biopic-news.svg', imageCredit: 'PHOTO DE PRESSE · GETTY IMAGES / VARIETY', alt: 'Photos de presse de Tom Holland, Margaret Qualley et Sabrina Carpenter publiées par Variety, crédit Getty Images', badge: 'CINÉMA · SONY PICTURES', kicker: '27.09.2026 · SONY PICTURES', title: 'LE BIOPIC ASTAIRE TROUVE SES DANSEUSES.', excerpt: 'Margaret Qualley (Adele Astaire) et Sabrina Carpenter (Ginger Rogers) rejoignent Tom Holland dans le biopic Sony réalisé par Paul King. Sans date de sortie pour l’instant.', read: copy.read, sentiment: 'positive' },
-    { to: '/news/cinema/jojo-steel-ball-run-episode-2', image: 'cinema-jojo-steel-ball-run.jpg', alt: 'Key visual officiel de STEEL BALL RUN JoJo’s Bizarre Adventure : Johnny Joestar, Gyro Zeppeli et les chevaux dorés de la course, sur fond violet à pois', badge: 'JOJO · STEEL BALL RUN', kicker: '26.09.2026 · NETFLIX', title: 'STEEL BALL RUN REPREND LA COURSE.', excerpt: 'Six mois après le spécial de 47 minutes, l’épisode 2 est en ligne depuis le 25 septembre : onze épisodes hebdomadaires, chaque vendredi sur Netflix, jusqu’au 4 décembre.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/fred-astaire-biopic-tom-holland', image: 'https://variety.com/wp-content/uploads/2026/09/margaret-tom-sabrina.jpg?w=1200&h=800&crop=1', fallbackImage: 'fred-astaire-biopic-news.svg', imageCredit: 'PHOTO DE PRESSE · GETTY IMAGES / VARIETY', alt: 'Photos de presse de Tom Holland, Margaret Qualley et Sabrina Carpenter publiées par Variety, crédit Getty Images', badge: 'CINÉMA · SONY PICTURES', kicker: '27.09.2026 · SONY PICTURES', title: 'ASTAIRE TROUVE SES DANSEUSES.', excerpt: 'Margaret Qualley (Adele Astaire) et Sabrina Carpenter (Ginger Rogers) rejoignent Tom Holland dans le biopic Sony réalisé par Paul King. Sans date de sortie pour l’instant.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/jojo-steel-ball-run-episode-2', image: 'cinema-jojo-steel-ball-run.jpg', alt: 'Key visual officiel de STEEL BALL RUN JoJo’s Bizarre Adventure : Johnny Joestar, Gyro Zeppeli et les chevaux dorés de la course, sur fond violet à pois', badge: 'JOJO · STEEL BALL RUN', kicker: '26.09.2026 · NETFLIX', title: 'STEEL BALL RUN REPART.', excerpt: 'Six mois après le spécial de 47 minutes, l’épisode 2 est en ligne depuis le 25 septembre : onze épisodes hebdomadaires, chaque vendredi sur Netflix, jusqu’au 4 décembre.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/dune-messiah-trailer', image: 'cinema-dune-messiah.jpg', alt: 'Dune — Paul Atréides et Chani devant le soleil d’Arrakis, affiche officielle Legendary / Warner Bros', badge: 'DUNE · MESSIAH', kicker: '26.09.2026 · WARNER BROS', title: 'DUNE: MESSIAH A SON TRAILER.', excerpt: 'Denis Villeneuve a confirmé que la première bande-annonce de Dune: Messiah sera diffusée en fin d’année, pour une sortie prévue en 2027.', read: copy.read, sentiment: 'positive' },
     { to: '/news/diablo-netflix', image: 'diablo-netflix-news.webp', alt: 'Série animée Diablo sur Netflix', badge: 'DIABLO · NETFLIX', kicker: '12.09.2026 · NETFLIX', title: 'DIABLO EN SÉRIE ANIMÉE.', excerpt: 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie d’autres adaptations de ses licences vers le petit écran.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/last-of-us-saison-3', image: 'cinema-last-of-us.jpg', alt: 'The Last of Us — Ellie (Bella Ramsey) dans la série HBO, visuel officiel HBO', badge: 'THE LAST OF US · HBO', kicker: '22.09.2026 · HBO', title: 'THE LAST OF US SAISON 3 CONFIRMÉE.', excerpt: 'HBO a officiellement commandé une troisième saison de The Last of Us, qui adaptera la seconde partie du deuxième jeu avec de nouveaux arcs narratifs.', read: copy.read, sentiment: 'positive' },

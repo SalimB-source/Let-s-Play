@@ -87,9 +87,14 @@ export const ROUTES = [
     'eshop-switch-2-20-septembre', 'netmarble-tgs-2026',
     'control-resonant-24-septembre', 'sorties-24-septembre',
     'sony-licence-jeux-numeriques', 'ea-sports-fc-27-carriere-dynamique',
+    'halo-activision', 'minecraft-the-sift-nouvelle-dimension',
+    'the-witcher-3-remastered-sortie-29-septembre', 'xbox-nadella-restructuration',
   ].map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
   // Actus cinéma : route préfixée /news/cinema/:slug, clés d'article « cinema/<slug> ».
   ...[
+    'box-office-us-endgame-encore-26-millions', 'the-last-of-us-saison-3-john-goodman-laura-bailey',
+    'godzilla-minus-zero-premiere-nyff', 'box-office-us-endgame-resident-evil',
+    'werwulf-trailer-eggers', 'fred-astaire-biopic-tom-holland',
     'jojo-steel-ball-run-episode-2', 'dune-messiah-trailer', 'last-of-us-saison-3',
     'marvel-doctor-doom', 'stranger-things-saison-5', 'joker-folie-a-deux',
     'house-of-dragon-saison-3', 'blade-reboot', 'arcane-saison-2',

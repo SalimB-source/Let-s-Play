@@ -1672,7 +1672,24 @@ Le hub Actus (`/news`) ouvre sur deux zones, gaming et cinéma ; la page
 `/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
 séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
 en deux temps, chapô, deux sections titrées, citation et encadré
-« À RETENIR », source d’origine citée et liée. Fournée du 27.09.2026 :
+« À RETENIR », source d’origine citée et liée. Fournée du 28.09.2026 :
+
+- `/news/cinema/box-office-us-endgame-encore-26-millions` — le bilan
+  consolidé du week-end américain : Endgame – Encore premier à 26 M$,
+  Resident Evil au-delà des 100 M$ (Deadline) ;
+- `/news/cinema/the-last-of-us-saison-3-john-goodman-laura-bailey` — John
+  Goodman, Ian Alexander et Laura Bailey (la voix d’Abby dans le jeu)
+  rejoignent la saison 3 de The Last of Us (Variety) ;
+- `/news/cinema/godzilla-minus-zero-premiere-nyff` — première mondiale au
+  New York Film Festival de la suite de Godzilla Minus One, premier film de
+  la saga classé R, dates de sortie confirmées (Variety, Toho).
+
+Le même jour, trois actus gaming ont été rédigées à la main au gabarit du
+robot (`/news/minecraft-the-sift-nouvelle-dimension`,
+`/news/the-witcher-3-remastered-sortie-29-septembre`,
+`/news/xbox-nadella-restructuration`) : entrées dans `CurrentNews.jsx`,
+cartes en tête de `GamingNews.jsx`, routes explicites dans `src/main.jsx`,
+recherche, SEO et sitemap. Fournée précédente (27.09.2026) :
 
 - `/news/cinema/box-office-us-endgame-resident-evil` — la ressortie
   d’Avengers: Endgame face au reboot Resident Evil au box-office américain
@@ -1688,9 +1705,13 @@ entrée dans `src/pages/CurrentNews.jsx` avec une clé préfixée `cinema/`
 `src/main.jsx`), carte en tête de la liste de `CinemaNews.jsx` (les plus
 récentes ouvrent la grille, la première est « À la une »), entrée dans
 `src/search/searchIndex.js`, méta `SEO.jsx` (section « Actualités cinéma »)
-et URL dans `public/sitemap.xml`. Le visuel est une carte éditoriale SVG
-1280×720 générée par `scripts/news-bot/lib/cover.mjs` (aucune image de droit
-n’est embarquée).
+et URL dans `public/sitemap.xml`. Le visuel principal est, quand il existe,
+une image officielle hotlinkée (`thumbnail` : miniature YouTube d’une
+bande-annonce officielle, visuel presse d’un distributeur…) ; une carte
+éditoriale SVG 1280×720 générée par `scripts/news-bot/lib/cover.mjs`
+(`image` / `fallbackImage`, dans `public/`) prend le relais si l’image
+distante ne répond plus — aucune image de droit n’est embarquée. Les crédits
+des visuels sont consignés dans `public/cinema-image-credits.txt`.
 
 ## Robot actus du jour
 

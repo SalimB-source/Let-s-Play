@@ -9,6 +9,12 @@ import { autoNewsListing } from '../lib/autoNews';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 
+// Visuels des cartes : les URLs absolues (images officielles hotlinkées) passent
+// telles quelles, les fichiers locaux du site prennent le préfixe du baseUrl ;
+// une carte SVG de repli (`fallbackImage`) prend le relais si l'image distante
+// ne répond plus — même mécanique que la page cinéma.
+const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
+
 // La section calendrier + compte à rebours (01) a été déplacée sur la page
 // d'accueil, juste après le hero — la frise complète vit sur /calendrier.
 export default function News(){
@@ -20,7 +26,7 @@ export default function News(){
         ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-      ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 12.09.2026', section: 'FEATURED NEWS', today: 'NEWS OF THE DAY'
+      ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 28.09.2026', section: 'FEATURED NEWS', today: 'NEWS OF THE DAY'
     },
     fr: {
       cards: [
@@ -28,7 +34,7 @@ export default function News(){
         ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-      ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 12.09.2026', section: 'ACTUS À LA UNE', today: 'NEWS DU JOUR'
+      ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 28.09.2026', section: 'ACTUS À LA UNE', today: 'NEWS DU JOUR'
     },
     ar: {
       cards: [
@@ -36,7 +42,7 @@ export default function News(){
         ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-      ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 12.09.2026', section: 'أبرز الأخبار', today: 'أخبار اليوم'
+      ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 28.09.2026', section: 'أبرز الأخبار', today: 'أخبار اليوم'
     }
   }[lang] || null;
   const featured = featuredCopy || null;
@@ -44,10 +50,14 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
-  // L'actu à la une (Halo × Activision, aussi mise en avant sur l'accueil)
-  // ouvre la liste ; les actus du jour du robot suivent, puis les articles
+  // Les actus du 28.09.2026 (rédigées à la main au gabarit du robot) ouvrent
+  // la liste, suivies de l'actu Halo × Activision (aussi mise en avant sur
+  // l'accueil) ; les actus du jour du robot suivent, puis les articles
   // manuels de la rédaction dans l'ordre.
   const articles = useMemo(() => [
+    { to: '/news/minecraft-the-sift-nouvelle-dimension', image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg', fallbackImage: 'minecraft-the-sift-news.svg', alt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios', badge: 'MINECRAFT · THE SIFT', kicker: '28.09.2026 · MOJANG', title: 'MINECRAFT OUVRE SA 4E DIMENSION.', excerpt: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+    { to: '/news/the-witcher-3-remastered-sortie-29-septembre', image: 'https://public.cdn.cdpr.app/common/news/974db3ceaf0e6035a922cbbd7c7770b0_q90_1280x720.jpeg', fallbackImage: 'witcher-3-remastered-news.svg', alt: 'Geralt de Riv sur le visuel officiel de The Witcher 3: Wild Hunt – Remastered — CD PROJEKT RED', badge: 'THE WITCHER 3 · REMASTERED', kicker: '28.09.2026 · CD PROJEKT RED', title: 'THE WITCHER 3 REVIENT REMASTERISÉ.', excerpt: 'Déverrouillage mondial mardi à 10 h UTC (11 h à Alger) sur PC, PS5, Xbox Series X|S et Switch 2. Gratuit pour les propriétaires du jeu sur PC et consoles actuelles, environ 45 Go, sans préchargement.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
+    { to: '/news/xbox-nadella-restructuration', image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', fallbackImage: 'xbox-nadella-news.svg', alt: 'Portrait officiel de Satya Nadella, PDG de Microsoft', badge: 'XBOX · MICROSOFT', kicker: '28.09.2026 · VGC', title: 'NADELLA DÉFEND LA CURE XBOX.', excerpt: 'Le PDG de Microsoft juge « formidable » la rationalisation menée par Asha Sharma et promet un retour à la croissance de Xbox, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
     { to: '/news/halo-activision', image: 'masterchief-activision.png', alt: 'Master Chief s’avance dans une installation futuriste devant le logo Activision — visuel éditorial Let’s Play', badge: 'HALO · ACTIVISION', kicker: '26.09.2026 · XBOX', title: 'HALO PASSE CHEZ ACTIVISION.', excerpt: 'Le 22 septembre, Xbox a confirmé que le prochain jeu Halo sera développé par Activision avec une équipe entièrement nouvelle. Rare (Sea of Thieves) et World’s Edge (Age of Empires) rejoignent aussi le giron de l’éditeur de Call of Duty.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
     ...autoNewsListing,
     { to: '/news/ea-sports-fc-27-carriere-dynamique', image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', alt: 'EA Sports FC 27 — fiche joueur du mode Carrière avec sa note globale et sa valeur marchande xTV (visuel officiel EA Sports FC)', badge: 'EA SPORTS FC 27 · CARRIÈRE', kicker: '22.09.2026 · ELECTRONIC ARTS', title: 'EA SPORTS FC 27 FAIT VIVRE SA CARRIÈRE.', excerpt: 'Valeur marchande recalculée chaque semaine avec TransferRoom, note globale dynamique, scénarios créés par la communauté et crises de vestiaire : la refonte du mode Carrière est le vrai chantier de l’édition 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
@@ -92,6 +102,20 @@ export default function News(){
   const [topStory, ...gridArticles] = visibleArticles;
   const allNewsLabel = lang === 'fr' ? 'Voir toutes les actus' : lang === 'ar' ? 'عرض كل الأخبار' : 'See all news';
 
+  const renderStoryImage = (story, loading = 'lazy') => (
+    <img
+      src={imageUrl(story.image)}
+      alt={story.alt}
+      loading={loading}
+      onError={(event) => {
+        if (story.fallbackImage && event.currentTarget.dataset.fallback !== 'true') {
+          event.currentTarget.dataset.fallback = 'true';
+          event.currentTarget.src = imageUrl(story.fallbackImage);
+        }
+      }}
+    />
+  );
+
   const renderBadges = (article) => {
     const sentimentId = getArticleSentiment(article);
     const meta = sentimentMeta(sentimentId);
@@ -129,7 +153,7 @@ export default function News(){
             découpée avec elle — clip-path s'applique après filter/box-shadow. */}
         <div className="news-carousel is-grid">
           {topStory && <div className="news-grid-cell news-grid-cell--today"><Link className="daily-news-card news-today" to={topStory.to}>
-            <div className="daily-news-image"><img src={`${base}${topStory.image}`} alt={topStory.alt} />{renderBadges(topStory)}</div>
+            <div className="daily-news-image">{renderStoryImage(topStory, 'eager')}{renderBadges(topStory)}</div>
             <div className="daily-news-copy">
               <p className="eyebrow"><span className="live-dot" /> {featured.today}</p>
               <span className="news-kicker">{topStory.kicker}</span>
@@ -139,7 +163,7 @@ export default function News(){
             </div>
           </Link></div>}
           {gridArticles.map((article) => <div className="news-grid-cell" key={article.to}><Link className="news-carousel-card" to={article.to}>
-            <div className="news-carousel-image"><img src={`${base}${article.image}`} alt={article.alt} />{renderBadges(article)}</div>
+            <div className="news-carousel-image">{renderStoryImage(article)}{renderBadges(article)}</div>
             <div className="news-carousel-copy"><span className="news-kicker">{article.kicker}</span><h2>{article.title}</h2><p>{article.excerpt}</p><span className="read-link">{article.read} <Arrow/></span></div>
           </Link></div>)}
         </div>
