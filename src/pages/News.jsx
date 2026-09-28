@@ -137,7 +137,9 @@ export default function News() {
       <div className="news-hub-head wrap">
         <div className="section-label"><span>02 / NEWS HUB</span><span>{copy.updated}</span></div>
         <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p>
-        <h1 className="news-hub-title">{copy.h1a}<br /><em>{copy.h1b}</em></h1>
+        {/* Gros titre retiré du visuel : le h1 ne reste que pour les lecteurs
+            d'écran et le référencement (invisible à l'affichage). */}
+        <h1 className="sr-only">{copy.h1a} {copy.h1b}</h1>
         <p className="news-hub-intro">{copy.intro}</p>
       </div>
 
