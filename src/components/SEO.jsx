@@ -6,7 +6,7 @@ import { youTubeThumbUrl } from '../lib/videoThumbnails';
 const SITE_URL = 'https://salimb-source.github.io/Let-s-Play';
 const base = import.meta.env.BASE_URL;
 const SITE_NAME = 'Let’s Play';
-const DEFAULT_IMAGE = `${SITE_URL}/hero-lets-play.png`;
+const DEFAULT_IMAGE = `${SITE_URL}/hero-lets-play.jpg`;
 
 const pageMeta = {
   '/': {

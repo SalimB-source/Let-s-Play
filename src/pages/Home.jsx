@@ -20,7 +20,7 @@ import { Arrow, AwaitedBand, clockOffset } from '../components/ReleasesCalendar'
 const CLOCK_OFFSET = clockOffset();
 
 // Visuel fixe du héros, utilisé dans les deux thèmes.
-const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-gaming-gear.webp`;
+const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-lets-play.jpg`;
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },

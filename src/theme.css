@@ -21,7 +21,7 @@
       gardent leur fond sombre et leur texte blanc dans les deux thèmes.
       Seules les *surfaces de l'interface* passent au clair.
    Exception assumée : le héros d'accueil est une image plein cadre
-      (public/hero-gaming-gear.webp), identique dans les deux thèmes, avec un voile
+      (public/hero-lets-play.jpg), identique dans les deux thèmes, avec un voile
       sombre discret à gauche pour garder le texte blanc et jaune lisible
       (bloc « Héros clair » de la section 8).
 
@@ -833,7 +833,7 @@
 [data-theme='light'] .news-sentiment.negative{background:#b91c1c;border-color:rgba(185,28,28,.5)}
 [data-theme='light'] .page-hero-visual-content small{color:var(--yellow)}
 /* --- Héros clair : même visuel (image) qu'en sombre ------------------------
-   Le héros utilise une seule image (public/hero-gaming-gear.webp) dans les deux
+   Le héros utilise une seule image (public/hero-lets-play.jpg) dans les deux
    thèmes : aucun recadrage ni repositionnement spécifique au clair.
    Seul le voile sombre à gauche est renforcé pour garder le texte blanc et
    jaune lisible sans éclaircir ni dénaturer le visuel. */
