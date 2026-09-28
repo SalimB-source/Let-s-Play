@@ -585,10 +585,63 @@ create index if not exists direct_messages_unread_idx
   on public.direct_messages (recipient_id, created_at desc)
   where read_at is null;
 
--- RLS : un joueur ne lit que ses propres échanges, n'écrit qu'en son nom, ne
--- marque comme lus que les messages qu'il a reçus, ne supprime que les siens
--- (effacer un message envoyé) et ne modifie rien d'autre (le trigger
--- ci-dessous refuse toute autre colonne).
+-- Effacer une conversation POUR SOI : un seul repère par joueur et par ami,
+-- et non une suppression des messages partagés. Les anciens messages sont
+-- masqués dans TOUTES les lectures (fil, liste, non-lus, autres appareils) par
+-- la RLS ci-dessous. L'autre joueur conserve son historique et les messages
+-- envoyés après le repère restent visibles. Aucun accès direct en écriture :
+-- seul le RPC attribue owner_id et l'heure du serveur.
+create table if not exists public.message_conversation_clears (
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  peer_id uuid not null references auth.users(id) on delete cascade,
+  cleared_at timestamptz not null,
+  primary key (owner_id, peer_id),
+  constraint message_conversation_clears_not_self check (owner_id <> peer_id)
+);
+
+do $$
+begin
+  alter table public.message_conversation_clears enable row level security;
+  drop policy if exists "Players see only their conversation clears" on public.message_conversation_clears;
+  create policy "Players see only their conversation clears"
+  on public.message_conversation_clears for select to authenticated
+  using (auth.uid() = owner_id);
+exception
+  when others then
+    raise warning 'Let''s Play : RLS de public.message_conversation_clears non appliquée (%).', sqlerrm;
+end $$;
+
+create or replace function public.clear_direct_conversation(target_id uuid)
+returns timestamptz
+language plpgsql
+security definer set search_path = ''
+as $$
+declare
+  actor uuid := auth.uid();
+  cleared timestamptz;
+begin
+  if actor is null then
+    raise exception 'direct_conversation_requires_auth' using errcode = '42501';
+  end if;
+  if target_id is null or target_id = actor then
+    raise exception 'direct_conversation_invalid_peer' using errcode = 'P0001';
+  end if;
+
+  insert into public.message_conversation_clears as c (owner_id, peer_id, cleared_at)
+  values (actor, target_id, clock_timestamp())
+  on conflict (owner_id, peer_id) do update
+    set cleared_at = greatest(c.cleared_at, excluded.cleared_at)
+  returning cleared_at into cleared;
+  return cleared;
+end;
+$$;
+revoke all on function public.clear_direct_conversation(uuid) from public, anon;
+grant execute on function public.clear_direct_conversation(uuid) to authenticated;
+
+-- RLS : un joueur ne lit que ses propres échanges NON effacés pour lui,
+-- n'écrit qu'en son nom, ne marque comme lus que les messages reçus et ne
+-- supprime que ses propres messages (effacer un message envoyé pour les deux
+-- joueurs). Le trigger refuse toute autre modification d'un message.
 do $$
 begin
   alter table public.direct_messages enable row level security;
@@ -596,7 +649,15 @@ begin
   drop policy if exists "Direct messages are visible to both players" on public.direct_messages;
   create policy "Direct messages are visible to both players"
   on public.direct_messages for select to authenticated
-  using (auth.uid() = sender_id or auth.uid() = recipient_id);
+  using (
+    (auth.uid() = sender_id or auth.uid() = recipient_id)
+    and not exists (
+      select 1 from public.message_conversation_clears c
+      where c.owner_id = auth.uid()
+        and c.peer_id = case when sender_id = auth.uid() then recipient_id else sender_id end
+        and c.cleared_at >= public.direct_messages.created_at
+    )
+  );
 
   drop policy if exists "Players send direct messages as themselves" on public.direct_messages;
   create policy "Players send direct messages as themselves"
@@ -647,6 +708,9 @@ begin
         then new.sender_id::text || '_' || new.recipient_id::text
       else new.recipient_id::text || '_' || new.sender_id::text
     end;
+    -- Un client ne peut pas antidater / postdater un message pour contourner
+    -- le repère d'effacement d'un participant.
+    new.created_at := clock_timestamp();
 
     new.kind := coalesce(nullif(btrim(new.kind), ''), 'text');
     if new.kind not in ('text', 'voice') then
@@ -1016,6 +1080,10 @@ begin
   -- Messagerie : ses échanges (lecture / écriture / accusés de lecture),
   -- ses blocages et ses signalements — le reste est refusé par la RLS.
   grant select, insert, update, delete on public.direct_messages to authenticated;
+  -- Les repères sont consultables seulement par leur propriétaire ; aucune
+  -- écriture directe (seul clear_direct_conversation peut en enregistrer un).
+  revoke all on public.message_conversation_clears from public, anon, authenticated;
+  grant select on public.message_conversation_clears to authenticated;
   grant select, insert, delete on public.message_blocks to authenticated;
   grant select, insert on public.message_reports to authenticated;
 exception
@@ -1537,5 +1605,17 @@ from (
                                         'Conversation participants read voice messages',
                                         'Senders delete their own voice messages')) = 3
            then 'OK' else 'ABSENT (voir WARNING)' end)
+, (37, 'effacement des conversations pour soi (table, RLS, RPC, filtre messages)',
+     case when to_regclass('public.message_conversation_clears') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.message_conversation_clears'))
+            and exists (select 1 from pg_policies p
+                        where p.schemaname = 'public' and p.tablename = 'message_conversation_clears'
+                          and p.policyname = 'Players see only their conversation clears')
+            and exists (select 1 from pg_policies p
+                        where p.schemaname = 'public' and p.tablename = 'direct_messages'
+                          and p.policyname = 'Direct messages are visible to both players'
+                          and p.qual like '%message_conversation_clears%')
+            and to_regprocedure('public.clear_direct_conversation(uuid)') is not null
+           then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

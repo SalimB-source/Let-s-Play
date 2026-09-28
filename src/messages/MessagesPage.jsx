@@ -85,7 +85,7 @@ export default function MessagesPage() {
 
   const {
     enabled: messagesEnabled, mode, status, error, conversations, blockedConversations, unreadTotal,
-    unreadFor, threadFor, markRead, send, deleteMessage, block, unblock, report,
+    unreadFor, threadFor, markRead, send, deleteMessage, clearConversation, block, unblock, report,
     canMessage, isBlocked, reportedReason, refresh: refreshMessages, viewThread,
   } = messages;
 
@@ -340,6 +340,7 @@ export default function MessagesPage() {
                 callWarning={calls.warningFor}
                 onSend={send}
                 onDelete={deleteMessage}
+                onClear={clearConversation}
                 onBlock={block}
                 onUnblock={unblock}
                 onReport={(reason, note) => report(peerId, reason, note)}

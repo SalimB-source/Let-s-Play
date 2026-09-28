@@ -21,10 +21,14 @@
  *    connexion à un visiteur. Le hub, lui, ne porte plus AUCUN raccourci de
  *    messagerie : ses seules sections sociales sont la liste d'amis et la
  *    fenêtre sociale (ou la page /messages sur mobile).
+ * 4. DOM : clic sur « Effacer la conversation » dans la page, annulation puis
+ *    confirmation, disparition des bulles et persistance au rechargement.
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import assert from 'node:assert/strict';
+import { JSDOM } from 'jsdom';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'node_modules', '.cache', 'messages-smoke');
@@ -39,14 +43,15 @@ const smoke = await import(path.join(outDir, 'messages-smoke.js'));
 const {
   DEMO_INCOMING, DEMO_INITIAL_STATE, DEMO_PROFILES, DEMO_REPLIES, DEMO_THREADS,
   MESSAGE_MAX_LENGTH, REPORT_REASONS,
-  appendMessage, applyDemoBlock, applyDemoIncoming, applyDemoRead, applyDemoReply,
+  appendMessage, applyDemoBlock, applyDemoClear, applyDemoIncoming, applyDemoRead, applyDemoReply,
   applyDemoReport, applyDemoSend, applyDemoUnblock, applyReadReceipt,
-  conversationKey, demoReplyFor, demoThreads, describeSupabaseError,
+  clearThreadLocal, conversationKey, demoReplyFor, demoThreads, describeMessagesError, describeSupabaseError,
   dueDemoIncoming, friendsCopy,
-  isBlockedError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
-  markThreadReadLocal, mergeUnread, messagesCopy, normalizeMessage, peersFromKey,
-  prepareBody, reasonLabel, seedDemoThreadState, socialCopy,
-  sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, findDemoPlayer, renderApp,
+  isAfterClear, isBlockedError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
+  makeStorage, markThreadReadLocal, mergeUnread, messagesCopy, normalizeMessage, peersFromKey,
+  prepareBody, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
+  sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, writeDemoMessages,
+  checkClearInteraction, findDemoPlayer, renderApp,
 } = smoke;
 
 let failures = 0;
@@ -58,7 +63,7 @@ function check(label, actual, expected = true) {
 function strip(html) { return html.replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, '’').replace(/&amp;/g, '&').replace(/\s+/g, ' '); }
 
 /* ------------------------------------------------------------------------ */
-console.log('\n[1/3] logique pure\n');
+console.log('\n[1/4] logique pure\n');
 
 const me = 'aaaaaaaa-0000-0000-0000-000000000001';
 const bob = 'bbbbbbbb-0000-0000-0000-000000000002';
@@ -134,6 +139,27 @@ const receipted = applyReadReceipt(sent, { id: 'm8', read_at: '2026-01-01T10:07:
 check('accusé de lecture → « vu »', receipted[bob].messages.find((message) => message.id === 'm8').read, true);
 check('accusé inconnu → état inchangé', applyReadReceipt(sent, { id: 'zzz', read_at: 'x' }), sent);
 
+// Effacer pour soi : le fil, son aperçu et son badge disparaissent, mais ni
+// l'autre conversation ni la copie de l'interlocuteur ne sont modifiées.
+const bobView = threadsFromRows(rows, bob);
+const cleared = clearThreadLocal(threads, bob);
+check('effacement local → fil retiré', cleared[bob] === undefined);
+check('effacement local → les non-lus disparaissent', totalUnread(cleared), 0);
+check('effacement local → autre conversation intacte', cleared[carol], threads[carol]);
+check('effacement local → copie de l’autre joueur intacte', bobView[me].messages.length, 3);
+check('effacement d’un fil inexistant → inchangé', clearThreadLocal(threads, 'zzz'), threads);
+const clearedAt = '2026-01-01T10:04:00.123456+00:00';
+check('un ancien message reçu en retard reste masqué', appendMessage(cleared, me, rows[0], { [bob]: clearedAt }), cleared);
+check('comparaison précise avant la microseconde du repère', isAfterClear('2026-01-01T10:04:00.123455Z', clearedAt), false);
+check('comparaison précise après la microseconde du repère', isAfterClear('2026-01-01T10:04:00.123457Z', clearedAt));
+const resumed = appendMessage(cleared, me, {
+  id: 'm9', sender_id: bob, recipient_id: me, body: 'Nouveau message',
+  created_at: '2026-01-01T10:05:00Z', read_at: null,
+}, { [bob]: clearedAt });
+check('nouveau message après effacement → visible', resumed[bob].messages.map((message) => message.id).join(','), 'm9');
+check('nouveau message après effacement → non-lu', resumed[bob].unread, 1);
+check('l’ancien historique ne revient pas avec le nouveau message', resumed[bob].lastMessage.id, 'm9');
+
 check('saisie nettoyée', prepareBody('   salut   '), 'salut');
 check('retours Windows normalisés', prepareBody('a\r\nb'), 'a\nb');
 check('sauts de ligne répétés réduits', prepareBody('a\n\n\n\nb'), 'a\n\nb');
@@ -147,6 +173,9 @@ check('blocage reconnu', isBlockedError({ message: 'direct_message_blocked' }));
 check('amitié requise reconnue', isRequiresFriendshipError({ message: 'direct_message_requires_friendship' }));
 check('anti-spam reconnu', isRateLimitedError({ message: 'direct_message_rate_limited' }));
 check('une autre erreur n’est pas un blocage', isBlockedError({ message: 'connection reset' }), false);
+check('RPC non déployé → consigne de relancer le SQL', describeMessagesError({
+  code: 'PGRST202', message: 'Could not find the function public.clear_direct_conversation(target_id)',
+}, messagesCopy.fr), messagesCopy.fr.errClearUnavailable);
 
 // Description des erreurs Supabase : le diagnostic et les logs s'appuient sur
 // une forme plate, car `console.error(erreur)` perd `code`/`status`/`details`.
@@ -163,7 +192,7 @@ check('erreur null → null', describeSupabaseError(null), null);
 check('chaîne brute acceptée', describeSupabaseError('rate limit').message, 'rate limit');
 
 /* ------------------------------------------------------------------------ */
-console.log('\n[2/3] aperçu de démonstration\n');
+console.log('\n[2/4] aperçu de démonstration\n');
 
 const now = Date.UTC(2026, 8, 21, 12, 0, 0);
 
@@ -216,6 +245,20 @@ for (const [key, profile] of Object.entries(DEMO_PROFILES)) {
   check(`${key} : lecture → plus de non-lus`, demoThreads(readOnce, self)[anyPeer].unread, 0);
   check(`${key} : lecture d’une discussion déjà lue → inchangée`, applyDemoRead(readOnce, anyPeer), readOnce);
 
+  const clearedDemo = applyDemoClear(state, anyPeer);
+  check(`${key} : effacement → les deux sens du fil disparaissent`, demoThreads(clearedDemo, self)[anyPeer] === undefined);
+  check(`${key} : effacement → autres fils intacts`, clearedDemo.threads[peers[1]], state.threads[peers[1]]);
+  check(`${key} : effacement → baisse des non-lus`, totalUnread(demoThreads(clearedDemo, self)), totalUnread(normalized) - normalized[anyPeer].unread);
+  check(`${key} : effacement répété → inchangé`, applyDemoClear(clearedDemo, anyPeer), clearedDemo);
+  const newAfterClear = applyDemoReply(clearedDemo, anyPeer, now + 3000);
+  check(`${key} : un nouveau message recrée le fil sans l’historique`, demoThreads(newAfterClear, self)[anyPeer].messages.length, 1);
+  // Le stockage de la persona ne réensemence pas le fil effacé au rechargement.
+  const savedWindow = globalThis.window;
+  globalThis.window = { localStorage: makeStorage() };
+  writeDemoMessages(profile, clearedDemo);
+  check(`${key} : effacement persistant après rechargement démo`, demoThreads(readDemoMessages(profile), self)[anyPeer] === undefined);
+  globalThis.window = savedWindow;
+
   // Messages scriptés : rien avant l'échéance, une seule fois après.
   const seededAt = Date.parse(state.seededAt);
   const first = DEMO_INCOMING[key][0];
@@ -255,7 +298,7 @@ check('motifs de signalement connus du SQL', REPORT_REASONS.join(','), 'harassme
 check('les amis de la communauté existent', Object.values(DEMO_THREADS).flatMap(Object.keys).every((peerId) => findDemoPlayer(peerId)));
 
 /* ------------------------------------------------------------------------ */
-console.log('\n[3/3] rendu SSR\n');
+console.log('\n[3/4] rendu SSR\n');
 
 for (const lang of ['en', 'fr', 'ar']) {
   const t = messagesCopy[lang];
@@ -297,6 +340,9 @@ for (const lang of ['en', 'fr', 'ar']) {
     check(`[${lang}] discussion ouverte : fil + champ de saisie`, html.includes('messages-thread') && html.includes('messages-composer'));
     check(`[${lang}] discussion ouverte : pseudo de l’ami`, text.includes(findDemoPlayer(peer).gamertag));
     check(`[${lang}] discussion ouverte : gestes bloquer / signaler`, html.includes(`aria-label="${t.block}"`) && html.includes(`aria-label="${t.report}"`));
+    check(`[${lang}] dock : option « ${t.clearConversation} »`, html.includes(`aria-label="${t.clearConversation}"`));
+    const pageThread = renderApp(`/messages/${peer}`, { lang, demoKey: 'vortex' });
+    check(`[${lang}] page : option « ${t.clearConversation} »`, pageThread.includes(`aria-label="${t.clearConversation}"`));
     check(`[${lang}] discussion ouverte : un message du fil`, text.includes(DEMO_THREADS.vortex[peer][0].body));
   } catch (e) { check(`[${lang}] discussion ouverte se rend`, e.message, ''); }
 
@@ -328,8 +374,22 @@ try {
   check('les textes des amis restent complets', Object.keys(friendsCopy.en).filter((entry) => !friendsCopy.fr[entry]).join(','), '');
 } catch (e) { check('la fenêtre sociale se rend', e.message, ''); }
 
+console.log('\n[4/4] clic d’effacement dans la page\n');
+const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost' });
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+try {
+  await checkClearInteraction(assert);
+  check('annuler / confirmer : fil effacé et persistant pour la persona seulement', true);
+} catch (e) {
+  check('clic « Effacer la conversation » fonctionne', e.message, '');
+} finally {
+  dom.window.close();
+}
+
 if (failures > 0) {
   console.error(`\n${failures} vérification(s) en échec.`);
   process.exit(1);
 }
-console.log('\n  OK — messagerie : discussions, non-lus, blocage / signalement, aperçu démo et rendu des pages\n');
+console.log('\n  OK — messagerie : discussions, non-lus, effacement pour soi, aperçu démo et rendu des pages\n');

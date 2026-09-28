@@ -8,7 +8,8 @@
  * conversation, lignes → discussions, non-lus, gestes de démonstration) pour
  * la vérifier sans DOM.
  */
-import React from 'react';
+import React, { act } from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from '../src/i18n/LanguageContext';
@@ -22,6 +23,7 @@ import Auth from '../src/pages/Auth';
 import Profile from '../src/pages/Profile';
 import MessagesPage from '../src/messages/MessagesPage';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
+import { readDemoMessages } from '../src/messages/messagesApi';
 // Fixtures : réinjecte les personas de démonstration dans le registre de
 // l'application (livré vide) avant tout rendu — voir scripts/demoFixtures.js.
 import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
@@ -45,6 +47,7 @@ export {
   REPORT_REASONS,
   appendMessage,
   applyDemoBlock,
+  applyDemoClear,
   applyDemoDelete,
   applyDemoIncoming,
   applyDemoRead,
@@ -53,10 +56,12 @@ export {
   applyDemoSend,
   applyDemoUnblock,
   applyReadReceipt,
+  clearThreadLocal,
   conversationKey,
   deleteMessage,
   demoThreads,
   describeSupabaseError,
+  isAfterClear,
   isBlockedError,
   isMissingMessagesTable,
   isRateLimitedError,
@@ -72,8 +77,10 @@ export {
   threadsFromRows,
   totalUnread,
   unreadFromRows,
+  writeDemoMessages,
 } from '../src/messages/messagesApi';
-export { messagesCopy, reasonLabel } from '../src/messages/messagesCopy';
+export { describeMessagesError, messagesCopy, reasonLabel } from '../src/messages/messagesCopy';
+export { readDemoMessages };
 
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
 
@@ -118,6 +125,7 @@ export function createApp(path, { lang = 'fr' } = {}) {
                   null,
                   React.createElement(Route, { path: '/auth', element: React.createElement(Auth) }),
                   React.createElement(Route, { path: '/messages', element: React.createElement(MessagesPage) }),
+                  React.createElement(Route, { path: '/messages/:peerId', element: React.createElement(MessagesPage) }),
                   React.createElement(Route, { path: '/profile/:userId', element: React.createElement(Profile) }),
                 ),
               ),
@@ -146,4 +154,50 @@ export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false,
   if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILE_FIXTURES[demoKey]);
   globalThis.window = { localStorage: makeStorage(entries) };
   return renderToString(createApp(path, { lang }));
+}
+
+/** Clic réel (DOM) : annulation, confirmation, disparition puis rechargement. */
+export async function checkClearInteraction(assert) {
+  const user = DEMO_PROFILE_FIXTURES.vortex;
+  const peer = 'demo-player-3105';
+  window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(user));
+  window.scrollTo = () => {};
+  const node = document.createElement('div');
+  document.body.append(node);
+  let root = createRoot(node);
+  const bubbles = () => node.querySelectorAll('.messages-bubble-row').length;
+  const click = async (selector) => {
+    const button = node.querySelector(selector);
+    assert.ok(button, `${selector} présent`);
+    await act(async () => button.click());
+  };
+
+  try {
+    await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
+    const before = bubbles();
+    assert.ok(before > 0, 'le fil démo contient des messages');
+    const prompts = [];
+    window.confirm = (text) => { prompts.push(text); return false; };
+    await click('.messages-tool-more');
+    await click('.messages-more-item[aria-label="Effacer la conversation"]');
+    assert.equal(bubbles(), before, 'annuler conserve le fil');
+    assert.equal(prompts.length, 1, 'l’effacement demande confirmation');
+    assert.match(prompts[0], /pour toi uniquement.*resteront visibles pour l’autre personne/i);
+
+    window.confirm = (text) => { prompts.push(text); return true; };
+    await click('.messages-tool-more');
+    await click('.messages-more-item[aria-label="Effacer la conversation"]');
+    assert.equal(bubbles(), 0, 'le fil effacé est immédiatement vide');
+    assert.ok(node.textContent.includes('Aucun message pour l’instant'), 'la discussion reste ouverte');
+    const state = readDemoMessages(user);
+    assert.equal(state.threads[peer], undefined, 'le fil effacé reste absent du stockage de ce joueur');
+    assert.ok(state.threads['demo-player-4820']?.length > 0, 'les autres discussions sont intactes');
+    await act(async () => root.unmount());
+    root = createRoot(node);
+    await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
+    assert.equal(bubbles(), 0, 'le fil reste vide après remontage');
+  } finally {
+    await act(async () => root.unmount());
+    node.remove();
+  }
 }

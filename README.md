@@ -598,8 +598,21 @@ plus, et un message non vide de 1 000 caractères au maximum. Un second trigger
 **que** poser `read_at` (accusé de lecture) : ni le texte, ni l'expéditeur, ni
 l'horodatage ne peuvent être modifiés, et un message lu ne redevient jamais
 non-lu. Row Level Security : un joueur ne lit que ses propres échanges et
-n'écrit qu'en son nom.
+n'écrit qu'en son nom. Le trigger fixe aussi `created_at` côté serveur : aucun
+client ne peut contourner un effacement avec un horodatage futur.
 
+- **Effacer la conversation** — dans le menu « … » du fil (dock sur bureau et
+  page `/messages`), après confirmation. `clear_direct_conversation` enregistre
+  dans `public.message_conversation_clears` un repère **par compte et par ami**
+  à l'heure du serveur. La politique RLS de `direct_messages` masque alors tous
+  les messages antérieurs **pour ce compte seulement**, y compris les non-lus
+  et les messages plus anciens que la fenêtre chargée ; l'autre participant
+  conserve son historique. Les nouveaux messages restent possibles et
+  visibles. Le fil s'efface immédiatement à l'écran et l'effacement persiste
+  après reconnexion (pas seulement dans le navigateur). L'aperçu démo efface
+  localement la discussion de la persona courante. Cela ne remplace pas le
+  bouton « Supprimer » sur un message envoyé, qui le retire pour les deux
+  participants.
 - **Temps réel** — la fenêtre écoute `direct_messages` sur deux canaux
   Realtime : `recipient_id = moi` pour les messages reçus (le badge des
   non-lus bouge tout de suite, quelle que soit la discussion ouverte) et
@@ -617,11 +630,13 @@ n'écrit qu'en son nom.
   dernier message reçu. Un seul signalement par joueur signalé (le second met
   à jour le motif) ; le bouton passe à « Signalé ».
 
-Rien d'autre à configurer une fois le SQL relancé — le tableau de contrôle en
-fin de script doit afficher `OK` pour `table public.direct_messages`,
-`politiques RLS direct_messages (3)`, `trigger message 1-à-1`, `trigger accusé
+**Relancer `supabase/schema.sql` sur les projets déjà en place** pour créer le
+repère et le RPC avant d'utiliser le bouton. Le tableau de contrôle en fin de
+script doit afficher `OK` pour `table public.direct_messages`,
+`politiques RLS direct_messages (4)`, `trigger message 1-à-1`, `trigger accusé
 de lecture seul modifiable`, `tables blocages / signalements`, `politiques
-RLS blocages (3) / signalements (2)` ; `realtime direct_messages` peut rester
+RLS blocages (3) / signalements (2)` et `effacement des conversations pour soi
+(table, RLS, RPC, filtre messages)` ; `realtime direct_messages` peut rester
 `ABSENT` (la messagerie se rafraîchit alors toutes les minutes). La dernière
 ligne du tableau, `messages vocaux (colonnes + bucket + politiques de
 stockage)`, est **héritée de l'ancienne messagerie vocale** : elle peut rester
@@ -675,10 +690,10 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
-| `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, lignes → discussions, non-lus, repli quand la table manque, état des personas |
+| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `clearConversation`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
+| `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, RPC d'effacement pour soi, lignes → discussions, non-lus, repli quand la table manque, état des personas |
 | `src/messages/demoThreads.js` | discussions de départ, réponses scriptées et messages entrants de l'aperçu démo |
-| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler |
+| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler / effacer la conversation |
 | `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
 | `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
 | `src/messages/messagesCopy.js` | textes FR / EN / AR |
@@ -692,10 +707,13 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   symétriques ; saisie nettoyée et bornée ; erreurs du trigger reconnues),
   cohérence de l'aperçu de démonstration (discussions entre **amis** existants,
   jamais soi-même, non-lus et discussions lues, réponses déterministes,
-  messages scriptés livrés une seule fois, blocage / signalement réversibles,
-  textes complets dans les trois langues), puis rendu SSR du hub, de la fenêtre
+  messages scriptés livrés une seule fois, effacement propre à la persona et
+  persistant, blocage / signalement réversibles, textes complets dans les trois
+  langues), puis rendu SSR du hub, de la fenêtre
   (fermée / liste / discussion ouverte) et de profils publics — visiteur, ami
-  et non-ami — dans les trois langues.
+  et non-ami — dans les trois langues ; un test DOM clique aussi sur
+  « Effacer la conversation », vérifie l'annulation, la confirmation et la
+  persistance après réouverture.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
   continuent de passer : amis et messagerie partagent la même fenêtre sociale
   (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page
