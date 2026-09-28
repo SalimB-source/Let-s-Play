@@ -28,6 +28,7 @@ import Zelda40th from '../src/pages/Zelda40th';
 import MonsterHunterWilds from '../src/pages/MonsterHunterWilds';
 import BlizzardNews from '../src/pages/BlizzardNews';
 import CinemaNews from '../src/pages/CinemaNews';
+import TechNews from '../src/pages/TechNews';
 import CurrentNews from '../src/pages/CurrentNews';
 import Reviews from '../src/pages/Reviews';
 import TestArticle from '../src/pages/TestArticle';
@@ -68,6 +69,8 @@ export const ROUTES = [
   // Hub cinéma : ses cartes réutilisent .news-carousel-copy / .daily-news-copy,
   // donc leurs h2 sont mesurés comme ceux de la grille Actus.
   ['/news/cinema', CinemaNews],
+  // Hub tech : dernière zone du hub Actus, même gabarit de cartes que le cinéma.
+  ['/news/tech', TechNews],
   ['/calendrier', Calendar],
   ['/news/physint', Physint],
   ['/news/metroid-ravenous', MetroidRavenous],
@@ -99,6 +102,12 @@ export const ROUTES = [
     'marvel-doctor-doom', 'stranger-things-saison-5', 'joker-folie-a-deux',
     'house-of-dragon-saison-3', 'blade-reboot', 'arcane-saison-2',
   ].map((slug) => [`/news/cinema/${slug}`, CurrentNews, '/news/cinema/:slug', { slug: `cinema/${slug}` }]),
+  // Actus tech : route préfixée /news/tech/:slug, clés d'article « tech/<slug> ».
+  ...[
+    'starship-flight-14-premier-vol-orbital', 'copilot-home-code-autopilot',
+    'apple-taptic-engine-verdict-5-7-milliards', 'agent-openai-portail-australien',
+    'meta-connect-2026-lunettes-muse-charm',
+  ].map((slug) => [`/news/tech/${slug}`, CurrentNews, '/news/tech/:slug', { slug: `tech/${slug}` }]),
   ...Object.keys(autoStories).map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
   ['/reviews', Reviews],
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle, '/reviews/:slug']),

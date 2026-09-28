@@ -1,7 +1,8 @@
 /**
  * SSR entry used by scripts/light-news-check.mjs.
  *
- * Renders the Actus hub and its two feeds (/news, /news/gaming, /news/cinema)
+ * Renders the Actus hub and its three feeds (/news, /news/gaming,
+ * /news/cinema, /news/tech)
  * as static HTML, for the light-theme audit to walk the real DOM with jsdom.
  *
  * Same mechanism as scripts/i18n-smoke.jsx : the .mjs compiles this file with
@@ -16,6 +17,7 @@ import Layout from '../src/components/Layout';
 import News from '../src/pages/News';
 import GamingNews from '../src/pages/GamingNews';
 import CinemaNews from '../src/pages/CinemaNews';
+import TechNews from '../src/pages/TechNews';
 
 const e = React.createElement;
 
@@ -23,6 +25,7 @@ export const PAGES = [
   ['/news', News],
   ['/news/gaming', GamingNews],
   ['/news/cinema', CinemaNews],
+  ['/news/tech', TechNews],
 ];
 
 export function renderPages(lang = 'fr') {

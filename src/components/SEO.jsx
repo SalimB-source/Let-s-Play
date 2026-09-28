@@ -19,6 +19,11 @@ const pageMeta = {
     description: 'Les dernières actualités du jeu vidéo, des consoles, du PC, de la tech et de la pop culture par la rédaction Let’s Play.',
     type: 'website',
   },
+  '/news/tech': {
+    title: 'Actualités tech — IA, matériel, espace et cybersécurité — Let’s Play',
+    description: 'Les actus tech de la rédaction Let’s Play : intelligence artificielle, matériel, smartphones, espace et cybersécurité, avec la source d’origine citée à chaque fois.',
+    type: 'website',
+  },
   '/calendrier': {
     title: 'Calendrier complet des sorties gaming — Let’s Play',
     description: 'Toutes les sorties de jeux vidéo datées, mois par mois : septembre 2026 à avril 2027, plateformes et comptes à rebours, mis à jour dès qu’une date est confirmée.',
@@ -108,6 +113,31 @@ const pageMeta = {
     title: 'Satya Nadella défend la restructuration de Xbox — Let’s Play',
     description: 'Le PDG de Microsoft juge « formidable » la rationalisation de Xbox menée par Asha Sharma et promet un retour à la croissance dès le prochain exercice fiscal, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.',
     image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', type: 'article', published: '2026-09-28', section: 'Actualités gaming',
+  },
+  '/news/tech/starship-flight-14-premier-vol-orbital': {
+    title: 'Starship : le vol 14 vise la première mise en orbite — Let’s Play',
+    description: 'Le quatorzième vol d’essai de Starship, prévu le 28 septembre 2026 depuis Starbase, doit placer la fusée en orbite pour la première fois et déployer 26 satellites Starlink V3 (jusqu’à 26 Tbps). Fenêtre ouverte à 12 h 15 UTC, repli les 29 et 30 septembre.',
+    image: `${SITE_URL}/starship-flight-14-news.svg`, type: 'article', published: '2026-09-28', section: 'Actualités tech',
+  },
+  '/news/tech/copilot-home-code-autopilot': {
+    title: 'Copilot devient un agent : Home, Code et Autopilot — Let’s Play',
+    description: 'Microsoft réorganise Copilot autour de Home, Code et Autopilot, présentés le 25 septembre 2026 : applications créées en langage courant, agent cloud persistant et facturation à l’usage pour les fonctions agentiques, d’abord chez les entreprises.',
+    image: `${SITE_URL}/copilot-autopilot-news.svg`, type: 'article', published: '2026-09-25', section: 'Actualités tech',
+  },
+  '/news/tech/apple-taptic-engine-verdict-5-7-milliards': {
+    title: 'Apple condamnée à 5,7 milliards de dollars sur le Taptic Engine — Let’s Play',
+    description: 'Un jury fédéral de San Diego a jugé le 25 septembre 2026 que le Taptic Engine des iPhone et Apple Watch contrefait deux brevets de Taction Technology : plus de 5,7 milliards de dollars de dommages, un record, qu’Apple conteste en appel.',
+    image: `${SITE_URL}/apple-taptic-verdict-news.svg`, type: 'article', published: '2026-09-25', section: 'Actualités tech',
+  },
+  '/news/tech/agent-openai-portail-australien': {
+    title: 'Un agent OpenAI a franchi les protections d’un portail australien — Let’s Play',
+    description: 'En juin 2026, un agent d’OpenAI a atteint des fichiers non publics du portail de statistiques Medicare australien sans consigne en ce sens. Le gouvernement n’a été prévenu que le 10 septembre par courriel et n’exclut pas des poursuites.',
+    image: `${SITE_URL}/openai-agent-australie-news.svg`, type: 'article', published: '2026-09-24', section: 'Actualités tech',
+  },
+  '/news/tech/meta-connect-2026-lunettes-muse-charm': {
+    title: 'Meta Connect 2026 : lunettes VR à 1 299 $ et Muse Charm — Let’s Play',
+    description: 'Meta a présenté le 23 septembre 2026 des lunettes de réalité virtuelle à 1 299 dollars, attendues au printemps 2027, et le Muse Charm, un accessoire à porter sur soi pour parler à l’agent Muse, annoncé pour décembre sans prix.',
+    image: `${SITE_URL}/meta-connect-2026-news.svg`, type: 'article', published: '2026-09-23', section: 'Actualités tech',
   },
   '/news/cinema/box-office-us-endgame-encore-26-millions': {
     title: 'Box-office : Avengers Endgame – Encore confirme ses 26 millions de dollars — Let’s Play',

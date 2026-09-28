@@ -1680,7 +1680,8 @@ qualité disponible pour cette vidéo.
 
 ## Actus cinéma du jour
 
-Le hub Actus (`/news`) ouvre sur deux zones, gaming et cinéma ; la page
+Le hub Actus (`/news`) ouvre sur trois zones — gaming, cinéma & séries et
+tech ; la page
 `/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
 séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
 en deux temps, chapô, deux sections titrées, citation et encadré
@@ -1724,6 +1725,42 @@ bande-annonce officielle, visuel presse d’un distributeur…) ; une carte
 (`image` / `fallbackImage`, dans `public/`) prend le relais si l’image
 distante ne répond plus — aucune image de droit n’est embarquée. Les crédits
 des visuels sont consignés dans `public/cinema-image-credits.txt`.
+
+## Actus tech du jour
+
+Troisième zone du hub Actus (`/news`) : la page `/news/tech`
+(`src/pages/TechNews.jsx`) rassemble les actus tech de la semaine, au même
+gabarit éditorial que le gaming et le cinéma. Fournée du 21-28.09.2026 :
+
+- `/news/tech/starship-flight-14-premier-vol-orbital` — le vol 14 de Starship
+  vise la première mise en orbite et le déploiement de 26 satellites
+  Starlink V3 (SpaceX, FAA, CNBC, Numerama) ;
+- `/news/tech/copilot-home-code-autopilot` — Microsoft réorganise Copilot
+  autour de Home, Code et Autopilot, dont un agent cloud persistant
+  (Microsoft, Frandroid) ;
+- `/news/tech/apple-taptic-engine-verdict-5-7-milliards` — un jury fédéral de
+  San Diego condamne Apple à plus de 5,7 milliards de dollars sur le Taptic
+  Engine (Reuters, CNBC) ;
+- `/news/tech/agent-openai-portail-australien` — un agent OpenAI franchit les
+  protections d’un portail de statistiques australien en juin, l’Australie
+  n’est prévenue que le 10 septembre (CNBC, The Guardian) ;
+- `/news/tech/meta-connect-2026-lunettes-muse-charm` — Meta Connect 2026 :
+  lunettes VR à 1 299 $, Muse Charm et agent Muse (Meta, CNBC).
+
+Concrètement, une actu tech suit exactement le chemin des actus cinéma :
+entrée dans `src/pages/CurrentNews.jsx` avec une clé préfixée `tech/` (servie
+par la route générique `/news/tech/:slug`, déclarée une fois dans
+`src/main.jsx` à côté de celle du cinéma), carte en tête de la liste de
+`TechNews.jsx` (les plus récentes ouvrent la grille, la première est
+« À la une »), entrée dans `src/search/searchIndex.js`, méta `SEO.jsx`
+(section « Actualités tech ») et URL dans `public/sitemap.xml`. Les visuels
+sont des cartes éditoriales SVG 1280×720 produites par le générateur du robot
+(`scripts/news-bot/lib/cover.mjs`, dans `public/`) : aucune photo de droit
+n’est embarquée, et le crédit affiché en pied d’article le rappelle.
+Le hub, lui, ajoute une troisième carte (`03 / TECH`) dans `News.jsx`, avec
+sa couleur d’univers (violet #a855f7, #6d28d9 en thème clair) déclinée dans
+`src/news-carousel.css` et `src/theme.css` — la grille passe à trois colonnes
+sur desktop, deux sous 1100 px, une sous 780 px.
 
 ## Robot actus du jour
 
