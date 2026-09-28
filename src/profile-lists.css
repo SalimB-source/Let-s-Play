@@ -13,7 +13,7 @@
 }
 .player-list-toggle:hover { background: rgba(34, 211, 238, .16); color: #fff; }
 
-@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   /* Exactly five compact achievement cards per row on phones. */
   .achievements-panel.compact .achievement-grid.compact {
     grid-template-columns: repeat(5, minmax(0, 1fr));
