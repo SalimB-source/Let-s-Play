@@ -794,6 +794,264 @@
 }
 [data-theme='light'] .messages-bubble.is-mine a{color:#fff}
 
+/* --- 7bis. L'ÎLE VIOLETTE — la messagerie habillée comme la nav ----------- */
+/* Sur papier, la fenêtre « Let’s Talk » (dock flottant + page /messages)
+   prend le violet de marque de la barre de navigation (#4f3494, section 6) :
+   même île, même bordure claire, même ombre violette — et, comme sur la
+   barre, une encre blanche. Ce choix raccorde la messagerie à la nav et
+   rend ses accents d'origine lisibles : jaune des badges et du bouton
+   d'envoi, vert « en ligne », rose des alertes et dégradé des bulles
+   « mine » tiennent le contraste sur le violet, pas sur du blanc.
+   La page autour (en-tête, onglets, note de démo) reste claire : seule
+   l'île change, comme pour la nav. */
+
+/* Surfaces : exactement les valeurs de la barre (section 6). */
+[data-theme='light'] .social-launcher,
+[data-theme='light'] .social-panel,
+[data-theme='light'] .messages-page-list,
+[data-theme='light'] .messages-page-thread,
+[data-theme='light'] .messages-page-guest,
+[data-theme='light'] .social-page-panel{
+  background:#4f3494;
+  border-color:rgba(255,255,255,.22);
+  box-shadow:0 10px 30px -14px rgba(48,31,100,.42), 0 4px 12px -6px rgba(48,31,100,.28), inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+/* Séparations internes : le filet passe au blanc voilé. */
+[data-theme='light'] .social-panel-head,
+[data-theme='light'] .messages-thread-head{border-bottom-color:rgba(255,255,255,.14)}
+[data-theme='light'] .messages-composer,
+[data-theme='light'] .messages-composer-disabled{border-top-color:rgba(255,255,255,.14)}
+[data-theme='light'] .messages-report{border-bottom-color:rgba(255,255,255,.14)}
+[data-theme='light'] .social-panel-foot{border-top-color:rgba(255,255,255,.14)}
+
+/* Encres : blanc plein pour les noms et la saisie, blancs voilés pour le
+   secondaire — même hiérarchie que sur la barre. */
+[data-theme='light'] .social-panel-kicker,
+[data-theme='light'] .messages-row-name,
+[data-theme='light'] .messages-thread-name,
+[data-theme='light'] .friends-row-name,
+[data-theme='light'] .messages-search input,
+[data-theme='light'] .friends-search input,
+[data-theme='light'] .messages-composer textarea,
+[data-theme='light'] .messages-report-note,
+[data-theme='light'] .messages-report-reason:hover,
+[data-theme='light'] .messages-report-reason.is-active,
+[data-theme='light'] .messages-action,
+[data-theme='light'] .friends-action{color:#fff}
+[data-theme='light'] .social-panel-sub,
+[data-theme='light'] .messages-row-preview,
+[data-theme='light'] .messages-row-time,
+[data-theme='light'] .messages-row-chevron,
+[data-theme='light'] .messages-thread-status,
+[data-theme='light'] .messages-section-title,
+[data-theme='light'] .messages-section-count,
+[data-theme='light'] .messages-char-count,
+[data-theme='light'] .messages-bubble-time,
+[data-theme='light'] .messages-composer-hint,
+[data-theme='light'] .messages-composer-disabled,
+[data-theme='light'] .messages-empty,
+[data-theme='light'] .messages-report-hint,
+[data-theme='light'] .messages-page-placeholder,
+[data-theme='light'] .messages-day span,
+[data-theme='light'] .friends-section-title,
+[data-theme='light'] .friends-section-count,
+[data-theme='light'] .friends-row-meta,
+[data-theme='light'] .friends-hint,
+[data-theme='light'] .friends-empty{color:rgba(255,255,255,.68)}
+[data-theme='light'] .messages-row.has-unread .messages-row-preview{color:#fff}
+[data-theme='light'] .friends-row.is-offline .friends-row-name{color:rgba(255,255,255,.55)}
+[data-theme='light'] .friends-row-level{color:var(--yellow)}
+[data-theme='light'] .messages-page-guest p{color:rgba(255,255,255,.8)}
+[data-theme='light'] .messages-search input::placeholder,
+[data-theme='light'] .friends-search input::placeholder,
+[data-theme='light'] .messages-composer textarea::placeholder{color:rgba(255,255,255,.5)}
+
+/* Bandes internes (onglets de la fenêtre, recherche, champ de saisie) :
+   voile sombre translucide, comme en thème sombre. */
+[data-theme='light'] .social-tabs{
+  background:rgba(7,8,20,.22);
+  border-bottom-color:rgba(255,255,255,.14);
+}
+[data-theme='light'] .messages-search,
+[data-theme='light'] .friends-search,
+[data-theme='light'] .messages-composer,
+[data-theme='light'] .messages-composer-hint,
+[data-theme='light'] .messages-composer-disabled{background:rgba(7,8,20,.22)}
+[data-theme='light'] .messages-search,
+[data-theme='light'] .friends-search{border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.66)}
+[data-theme='light'] .messages-search:focus-within,
+[data-theme='light'] .friends-search:focus-within{border-color:var(--cyan-bright);color:var(--cyan-bright)}
+[data-theme='light'] .messages-composer textarea{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.24);
+}
+[data-theme='light'] .messages-composer textarea:focus{border-color:var(--cyan-bright)}
+[data-theme='light'] .messages-report-note{background:rgba(7,8,20,.3);border-color:rgba(255,255,255,.24)}
+
+/* Onglets de la fenêtre : libellés blancs, actif cyan lumière (l'encre
+   cyan foncée du thème clair ne porte pas sur le violet), jaune réservé
+   à l'onglet Messages comme en thème sombre. */
+[data-theme='light'] .social-tab{color:rgba(255,255,255,.68)}
+[data-theme='light'] .social-tab:hover{color:#fff;background:rgba(255,255,255,.06)}
+[data-theme='light'] .social-tab.is-active{color:var(--cyan-bright);border-bottom-color:var(--cyan-bright)}
+[data-theme='light'] .social-tab-count{color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.3)}
+[data-theme='light'] .social-tab.is-active .social-tab-count{color:var(--cyan-bright);border-color:rgba(34,211,238,.55)}
+[data-theme='light'] .social-tab--messages.lets-talk-label{color:#fff}
+[data-theme='light'] .social-tab--messages.lets-talk-label.is-active{color:var(--yellow);border-bottom-color:var(--yellow)}
+
+/* Outils (rafraîchir, fermer, retour, « … ») : boutons de verre blanc. */
+[data-theme='light'] .messages-tool,
+[data-theme='light'] .social-tool{
+  color:rgba(255,255,255,.78);
+  border-color:rgba(255,255,255,.22);
+  background:rgba(255,255,255,.06);
+}
+[data-theme='light'] .messages-tool:hover,
+[data-theme='light'] .social-tool:hover{
+  color:var(--cyan-bright);
+  border-color:rgba(255,255,255,.42);
+  background:rgba(255,255,255,.1);
+}
+[data-theme='light'] .messages-tool.is-flagged{color:var(--yellow);border-color:rgba(255,214,25,.55)}
+[data-theme='light'] .friends-action-profile,
+[data-theme='light'] .messages-tool-profile{
+  color:var(--cyan-bright);
+  border-color:rgba(34,211,238,.45);
+  background:rgba(34,211,238,.1);
+}
+[data-theme='light'] .friends-action-profile:hover,
+[data-theme='light'] .messages-tool-profile:hover{
+  color:var(--cyan-bright);
+  border-color:rgba(34,211,238,.8);
+  background:rgba(34,211,238,.16);
+}
+
+/* Lignes (discussions, amis) : survol en verre blanc, noms qui passent au
+   cyan lumière — les mêmes gestes qu'en thème sombre. */
+[data-theme='light'] .messages-row:hover,
+[data-theme='light'] .friends-row:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+[data-theme='light'] .messages-row-main:hover .messages-row-name,
+[data-theme='light'] .messages-thread-peer:hover .messages-thread-name,
+[data-theme='light'] .messages-thread-peer-link:hover .messages-thread-name,
+[data-theme='light'] .friends-row-main:hover .friends-row-name{color:var(--cyan-bright)}
+[data-theme='light'] .messages-row-main:hover .messages-row-chevron{color:var(--cyan-bright)}
+[data-theme='light'] .messages-thread-peer-link:hover{background:rgba(255,255,255,.08)}
+[data-theme='light'] .messages-section-title::after,
+[data-theme='light'] .friends-section-title::after{background:rgba(255,255,255,.18)}
+[data-theme='light'] .messages-empty,
+[data-theme='light'] .friends-empty{border-color:rgba(255,255,255,.3)}
+[data-theme='light'] .messages-empty-icon{
+  color:var(--cyan-bright);
+  border-color:rgba(34,211,238,.4);
+  background:rgba(34,211,238,.08);
+}
+
+/* Filets et puces du fil : jour séparateur, accusé de lecture, corbeille. */
+[data-theme='light'] .messages-day::before,
+[data-theme='light'] .messages-day::after{background:rgba(255,255,255,.18)}
+[data-theme='light'] .messages-day span{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
+[data-theme='light'] .messages-bubble-read{color:var(--cyan-bright)}
+[data-theme='light'] .messages-link{color:var(--cyan-bright)}
+[data-theme='light'] .messages-bubble{
+  background:rgba(255,255,255,.1);
+  border-color:rgba(255,255,255,.18);
+  color:#fff;
+}
+[data-theme='light'] .messages-bubble-delete{
+  color:rgba(255,255,255,.6);
+  border-color:rgba(255,255,255,.22);
+  background:rgba(255,255,255,.08);
+}
+[data-theme='light'] .messages-bubble-delete:hover{color:#ff8c9d;border-color:rgba(255,140,157,.5);background:rgba(255,140,157,.14)}
+
+/* Menu « … » : le volet reste sombre (dégradé d'origine, commun aux deux
+   thèmes) — ses libellés repassent donc en encre claire. */
+[data-theme='light'] .messages-more-menu{border-color:rgba(255,255,255,.2)}
+[data-theme='light'] .messages-more-item{color:rgba(255,255,255,.78)}
+[data-theme='light'] .messages-more-item:hover{color:#fff;background:rgba(255,255,255,.07)}
+
+/* Signalement : titre jaune de marque, vert « en ligne » d'origine. */
+[data-theme='light'] .messages-report-title{color:var(--yellow)}
+[data-theme='light'] .messages-report-reason{color:rgba(255,255,255,.72);border-color:rgba(255,255,255,.22)}
+[data-theme='light'] .messages-report-thanks{color:var(--friends-online,#10b981)}
+
+/* Actions secondaires ; les boutons jaunes (envoyer, actions primaires)
+   ne changent pas : le jaune de marque porte son encre sombre. */
+[data-theme='light'] .messages-action,
+[data-theme='light'] .friends-action{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.24);
+}
+[data-theme='light'] .messages-action:hover,
+[data-theme='light'] .friends-action:hover{
+  border-color:var(--cyan-bright);
+  color:var(--cyan-bright);
+  background:rgba(34,211,238,.12);
+}
+[data-theme='light'] .messages-action-quiet,
+[data-theme='light'] .friends-action-quiet{color:rgba(255,255,255,.6);background:transparent;border-color:transparent}
+[data-theme='light'] .messages-action-quiet:hover{color:var(--cyan-bright);border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.1)}
+[data-theme='light'] .friends-action-quiet:hover{color:#ff8c9d;border-color:rgba(255,140,157,.4);background:rgba(255,140,157,.1)}
+
+/* Alertes dans l'île : le rose néon d'origine remplace l'encre dangereuse
+   du thème clair (les erreurs posées sur la page claire gardent leur encre,
+   voir les re-overscores juste après). */
+[data-theme='light'] .messages-inline-error,
+[data-theme='light'] .friends-inline-error,
+[data-theme='light'] .messages-blocked-banner,
+[data-theme='light'] .messages-char-count.is-over{color:#ff8c9d}
+[data-theme='light'] .messages-blocked-banner{
+  background:rgba(255,140,157,.12);
+  border-bottom-color:rgba(255,140,157,.4);
+}
+[data-theme='light'] .messages-thread-status.is-online{color:var(--friends-online,#10b981)}
+[data-theme='light'] .messages-page-error,
+[data-theme='light'] .social-page-error{color:var(--danger)}
+
+/* États « service indisponible » : le jaune d'avertissement d'origine
+   tient le contraste sur le violet — il reste donc plein. */
+[data-theme='light'] .messages-unavailable,
+[data-theme='light'] .friends-unavailable{color:var(--yellow);border-color:rgba(255,214,25,.5)}
+
+/* Avatars : liseré blanc, initiales dans les accents lumière, point de
+   présence cerclé du violet de l'île (et non du blanc du thème clair). */
+[data-theme='light'] .messages-avatar img,
+[data-theme='light'] .messages-avatar-fallback,
+[data-theme='light'] .friends-avatar img,
+[data-theme='light'] .friends-avatar-fallback{
+  border-color:rgba(255,255,255,.3);
+  background:linear-gradient(135deg,#6d3fd4,#4f3494);
+}
+[data-theme='light'] .messages-avatar-fallback{color:var(--cyan-bright)}
+[data-theme='light'] .friends-avatar-fallback{color:var(--yellow)}
+[data-theme='light'] .friends-avatar-dot,
+[data-theme='light'] .messages-avatar-dot{border-color:#4f3494}
+
+/* Lanceur « Let’s Talk » : même violet que la fenêtre qu'il ouvre. */
+[data-theme='light'] .social-launcher:hover,
+[data-theme='light'] .social-dock.is-open .social-launcher{border-color:var(--cyan-bright)}
+[data-theme='light'] .social-launcher-meta{
+  color:rgba(255,255,255,.68);
+  border-left-color:rgba(255,255,255,.2);
+}
+[data-theme='light'] .social-launcher-meta-unread{color:var(--yellow)}
+
+/* Barres de défilement internes : pouce clair translucide sur l'île. */
+[data-theme='light'] .messages-page-list::-webkit-scrollbar,
+[data-theme='light'] .messages-body::-webkit-scrollbar,
+[data-theme='light'] .messages-thread::-webkit-scrollbar,
+[data-theme='light'] .friends-body::-webkit-scrollbar,
+[data-theme='light'] .social-page-panel::-webkit-scrollbar{background:transparent}
+[data-theme='light'] .messages-page-list::-webkit-scrollbar-thumb,
+[data-theme='light'] .messages-body::-webkit-scrollbar-thumb,
+[data-theme='light'] .messages-thread::-webkit-scrollbar-thumb,
+[data-theme='light'] .friends-body::-webkit-scrollbar-thumb,
+[data-theme='light'] .social-page-panel::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.3);
+  border-color:transparent;
+}
+
 /* ============ 8. MÉDIAS : RESTENT SOMBRES ============ */
 /* Tout ce qui se pose sur une image, une vidéo ou un écran garde son voile
    sombre et son texte blanc. Cette section ré-affirme l'intention : elle vient
@@ -1130,8 +1388,11 @@
 /* La flèche « ↗ » est posée sur la photo de l'article : elle garde une encre
    claire, sinon `--cyan` (une encre foncée en thème clair) s'y perdrait. */
 [data-theme='light'] .news-feature-arrow{color:var(--cyan-bright)}
-[data-theme='light'] .lets-talk-label{color:#0a0b1a}
-[data-theme='light'] .social-tab--messages.lets-talk-label.is-active{color:var(--violet);border-bottom-color:var(--violet)}
+/* Libellé texte « Messagerie » : encre sombre, il ne vit que sur le menu
+   mobile clair (le dock flottant, lui, n'affiche que le logo). Dans l'île
+   violette de la fenêtre sociale, le libellé de l'onglet reste blanc —
+   voir la section 7bis. */
+[data-theme='light'] .nav-link-desc.lets-talk-label,
 [data-theme='light'] .nav-messages-link .lets-talk-label{color:#0a0b1a}
 
 /* Contraste des commandes de la barre violette (desktop). Le menu mobile
