@@ -1067,7 +1067,10 @@
 .survival-horror {
   position: relative;
   background: #060608;
+  /* vh (fallback) puis dvh : sur iPhone 100vh seul ignore les barres de
+     Safari et la section débordait derrière la barre d'outils. */
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: clip;
   --horror-red: #ef4444;
   --horror-red-dark: #7f1d1d;

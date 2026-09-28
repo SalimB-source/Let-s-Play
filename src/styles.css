@@ -29,7 +29,17 @@
    horizontal rubber-band on mobile: iOS/Safari only trust the viewport scroll
    container (html) for this, and `clip` (unlike `hidden`) doesn't create a
    scroll container, so `position: sticky` descendants keep working. */
-html{scroll-behavior:smooth;overflow-x:clip;overscroll-behavior-x:none}
+html{
+  scroll-behavior:smooth;
+  overflow-x:clip;
+  overscroll-behavior-x:none;
+  /* Safari iPhone gonfle automatiquement la taille du texte (text autosizing,
+     surtout en paysage) : les tailles choisies ici n'étaient alors plus
+     respectées et la mise en page « déraillait ». `100%` verrouille l'échelle
+     sur celle du design. */
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
 body{
   margin:0;
   font-family:var(--body);
@@ -45,6 +55,25 @@ body{
   overscroll-behavior-x:none;
   -webkit-font-smoothing:antialiased;
 }
+/* Safari iOS ignore `background-attachment: fixed` (il le traite comme
+   `scroll`) : les halos radiaux du fond défilent alors avec la page et le
+   rendu diffère complètement du desktop. On assume `scroll` sur iPhone pour
+   que le comportement du fond soit le même partout. */
+@supports (-webkit-touch-callout:none){
+  body{background-attachment:scroll}
+}
+/* Zoom automatique de Safari au focus : sur iPhone, tout champ de saisie dont
+   le `font-size` est inférieur à 16px déclenche un zoom de la page ENTIÈRE —
+   la page reste ensuite agrandie/décalée, ce qui donne l'impression que « le
+   site s'affiche bizarrement ». Le design utilise volontairement de petits
+   libellés (12–15px) ; sur petit écran tactile on force 16px, ce qui supprime
+   le zoom sans toucher au rendu desktop (souris/trackpad, grands écrans). */
+@media (hover:none) and (pointer:coarse) and (max-width:1000px){
+  input,textarea,select{font-size:16px !important}
+}
+/* Safari affiche un flash gris sur chaque élément touché : invisible sur un
+   fond clair, très voyant sur le fond très sombre du site. */
+body{-webkit-tap-highlight-color:rgba(0,0,0,0)}
 /* subtle CRT scanlines over everything */
 body::after{
   content:"";
@@ -1180,7 +1209,7 @@ img{max-width:100%}
 .cta .button{position:relative;z-index:2}
 
 /* ============ FOOTER ============ */
-.footer{margin-top:110px;border-top:1px solid var(--line);padding:38px 0 46px;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:28px}
+.footer{margin-top:110px;border-top:1px solid var(--line);padding:38px 0 calc(46px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:28px}
 .footer .brand-logo{height:40px}
 .footer p{font-size:12.5px;color:var(--muted);margin:0}
 .footer-links{display:flex;justify-content:flex-end;gap:22px;font:500 10.5px var(--mono);letter-spacing:.16em;text-transform:uppercase}
@@ -1214,7 +1243,11 @@ img{max-width:100%}
     align-items:center;
     justify-content:space-between;
     gap:16px;
-    top:0;left:0;right:0;transform:none;width:100%;
+    /* Avec viewport-fit=cover, la page passe sous la status bar : on décale
+       la barre sous l'encoche SANS changer sa hauteur (68px) — les pages
+       réservent 104px de padding en haut, une barre plus haute les
+       chevaucherait. */
+    top:env(safe-area-inset-top,0px);left:0;right:0;transform:none;width:100%;
     height:68px;
     padding:0 18px;
     background:rgba(8,10,28,.92);
@@ -1230,7 +1263,7 @@ img{max-width:100%}
   .nav.scrolled,
   .nav.nav-home,
   .nav.nav-home.scrolled{
-    top:0;left:0;right:0;transform:none !important;width:100%;
+    top:env(safe-area-inset-top,0px);left:0;right:0;transform:none !important;width:100%;
     height:68px;
     background:rgba(8,10,28,.92);
     border:0;
@@ -1278,9 +1311,16 @@ img{max-width:100%}
   .nav-links{
     position:fixed;
     inset:0;
-    width:100vw;
-    height:100dvh;
+    /* 100% et non 100vw : 100vw inclut la largeur de la barre de défilement
+       et peut créer un léger débordement horizontal. */
+    width:100%;
+    /* L'ordre compte : `dvh` DOIT venir en dernier. Écrit à l'envers
+       (`dvh` puis `vh`), les navigateurs qui connaissent dvh retombaient sur
+       100vh — sur iPhone, 100vh = hauteur SANS les barres de Safari, donc le
+       menu dépassait derrière la barre d'outils et son bas (recherche,
+       actions) était caché. */
     height:100vh;
+    height:100dvh;
     background:
       radial-gradient(900px 600px at 85% -10%, rgba(124,58,237,.22), transparent 60%),
       radial-gradient(700px 500px at -10% 90%, rgba(34,211,238,.14), transparent 60%),
@@ -1328,7 +1368,10 @@ img{max-width:100%}
     height:100%;
     overflow-y:auto;
     overscroll-behavior:contain;
-    padding:86px 20px 20px;
+    /* 86px = hauteur de la nav (68) + respiration ; on y ajoute l'encoche en
+       haut et la barre de geste iPhone en bas pour que le dernier élément du
+       menu ne soit jamais caché. */
+    padding:calc(86px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));
     gap:0;
   }
 
@@ -1761,6 +1804,7 @@ img{max-width:100%}
 .video-modal{
   position:fixed;inset:0;z-index:1100;display:grid;place-items:center;
   padding:22px;background:rgba(4,5,14,.9);backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
 }
 .video-modal-box{
   width:min(960px,100%);background:var(--panel);

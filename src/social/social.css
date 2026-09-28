@@ -142,8 +142,11 @@
   position: relative;
   width: 100%;
   /* Hauteur définie : la discussion (fil + champ) a besoin d'un conteneur de
-     hauteur connue pour que le fil défile ; les listes s'y ajustent. */
+     hauteur connue pour que le fil défile ; les listes s'y ajustent.
+     vh (fallback) puis dvh — sur iPhone, 100vh seul inclut la hauteur des
+     barres de Safari et le panneau débordait hors de l'écran. */
   height: min(560px, calc(100vh - 120px));
+  height: min(560px, calc(100dvh - 120px));
   display: flex;
   flex-direction: column;
   background: linear-gradient(160deg, rgba(26, 17, 52, .98), rgba(7, 8, 20, .985));
