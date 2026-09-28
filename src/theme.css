@@ -589,10 +589,11 @@
 }
 [data-theme='light'] .nav-primary a{color:rgba(35,32,70,.72)}
 [data-theme='light'] .nav-primary a:hover{color:var(--ink);background:rgba(86,70,190,.08)}
+/* Sur la pilule jaune, l'onglet courant garde une encre violette lisible. */
 [data-theme='light'] .nav-primary a.active{
-  color:#fff;
-  background:var(--ink);
-  box-shadow:0 2px 12px -2px rgba(20,18,50,.28);
+  color:var(--violet);
+  background:var(--yellow);
+  box-shadow:0 2px 12px -2px rgba(255,214,25,.52);
 }
 [data-theme='light'] .nav-search{
   background:rgba(86,70,190,.06);
@@ -720,9 +721,8 @@
 [data-theme='light'] .cmd-palette-foot{
   background:rgba(86,70,190,.03); border-top-color:rgba(86,70,190,.06); color:rgba(35,32,70,.42);
 }
-[data-theme='light'] .nav-pill-indicator{background:var(--ink) !important}
 [data-theme='light'] .nav .nav-primary a.active,
-[data-theme='light'] .nav .nav-primary a.active:hover{color:#fff !important}
+[data-theme='light'] .nav .nav-primary a.active:hover{color:var(--violet) !important}
 [data-theme='light'] .nav-account.nav-login:hover,
 [data-theme='light'] .nav-account.nav-register:hover{background:rgba(255,214,25,.16);color:var(--ink)}
 

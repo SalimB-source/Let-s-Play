@@ -275,7 +275,6 @@ img{max-width:100%}
   pointer-events:none;
   z-index:0;
 }
-[data-theme='light'] .nav-pill-indicator{background:var(--ink); box-shadow:0 2px 12px -2px rgba(20,18,50,.18)}
 .nav-primary a{position:relative; z-index:1}
 @media(max-width:800px){ .nav-pill-indicator{display:none !important} }
 
