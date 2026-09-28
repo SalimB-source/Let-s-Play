@@ -892,6 +892,7 @@
 [data-theme='light'] .news-hub-title em,
 [data-theme='light'] .news-hub-card--gaming h2 em,
 [data-theme='light'] .news-hub-card--cinema h2 em,
+[data-theme='light'] .news-hub-card--tech h2 em,
 [data-theme='light'] .news-carousel-head h1 em,
 [data-theme='light'] .daily-news-copy h2 em,
 [data-theme='light'] .daily-news-copy h3 em{text-shadow:none}
@@ -1101,15 +1102,19 @@
 [data-theme='light'] .news-hub-card:hover{box-shadow:0 24px 46px -24px rgba(28,24,72,.45)}
 [data-theme='light'] .news-hub-card--gaming:hover{border-color:var(--cyan)}
 [data-theme='light'] .news-hub-card--cinema:hover{border-color:#b45309}
+[data-theme='light'] .news-hub-card--tech:hover{border-color:#6d28d9}
 /* La deuxième ligne du titre garde la couleur de son univers, en version
-   *encre* : #22d3ee (cyan) et #f59e0b (ambre) tombent sous 2:1 sur blanc. */
+   *encre* : #22d3ee (cyan), #f59e0b (ambre) et #a855f7 (violet) tombent sous
+   2:1 sur blanc. */
 [data-theme='light'] .news-hub-card--gaming h2 em{color:var(--cyan)}
 [data-theme='light'] .news-hub-card--cinema h2 em{color:#b45309}
-/* Lien « entrer dans les actus… » : même code couleur que le titre. Ces deux
-   règles sont écrites ici et non laissées au balayage, qui les rabattrait
-   toutes les deux sur le jaune d'encre. */
+[data-theme='light'] .news-hub-card--tech h2 em{color:#6d28d9}
+/* Lien « entrer dans les actus… » : même code couleur que le titre. Ces règles
+   sont écrites ici et non laissées au balayage, qui les rabattrait toutes sur
+   le jaune d'encre. */
 [data-theme='light'] .news-hub-card--gaming .read-link{color:var(--cyan)}
 [data-theme='light'] .news-hub-card--cinema .read-link{color:#b45309}
+[data-theme='light'] .news-hub-card--tech .read-link{color:#6d28d9}
 /* Filet au-dessus du pied de carte : posé en blanc 8 %, il disparaissait. */
 [data-theme='light'] .news-hub-card-meta{border-top-color:var(--line)}
 

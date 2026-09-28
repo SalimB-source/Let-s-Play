@@ -28,6 +28,7 @@ import Home from './pages/Home';
 import News from './pages/News';
 import GamingNews from './pages/GamingNews';
 import CinemaNews from './pages/CinemaNews';
+import TechNews from './pages/TechNews';
 import Calendar from './pages/Calendar';
 import Physint from './pages/Physint';
 import MetroidRavenous from './pages/MetroidRavenous';
@@ -104,6 +105,12 @@ function App() {
                 CurrentNews sont préfixées « cinema/ » (ex. :
                 cinema/jojo-steel-ball-run-episode-2). */}
             <Route path="/news/cinema/:slug" element={<CurrentNews slugPrefix="cinema/" />} />
+            {/* Actus tech : troisième zone du hub `/news` (gaming / cinéma /
+                tech), même mécanique que le cinéma — clés d'article préfixées
+                « tech/ » dans CurrentNews (ex. :
+                tech/starship-flight-14-premier-vol-orbital). */}
+            <Route path="/news/tech" element={<TechNews />} />
+            <Route path="/news/tech/:slug" element={<CurrentNews slugPrefix="tech/" />} />
             <Route path="/calendrier" element={<Calendar />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/news/physint" element={<Physint />} />

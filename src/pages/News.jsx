@@ -4,8 +4,8 @@ import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
 
-// Page intermédiaire : choix entre actus GAMING et actus CINÉMA / SÉRIES.
-// Les deux grandes cartes redirigent vers les hubs dédiés.
+// Page intermédiaire : choix entre actus GAMING, actus CINÉMA / SÉRIES et
+// actus TECH. Les trois grandes cartes redirigent vers les hubs dédiés.
 export default function News() {
   const { lang } = useLanguage();
 
@@ -36,6 +36,16 @@ export default function News() {
         badge: '🎬 CINÉMA / SÉRIES',
         meta: 'FILMS · SÉRIES · STREAMING',
       },
+      tech: {
+        num: '03',
+        kicker: 'TECH ZONE',
+        title: 'TECH',
+        titleAccent: 'NEWS.',
+        desc: 'AI, hardware, smartphones, space and cybersecurity — the tech stories that actually move the industry, explained the Let\'s Play way.',
+        btn: 'ENTER TECH NEWS',
+        badge: '💻 TECH',
+        meta: 'AI · HARDWARE · SPACE',
+      },
     },
     fr: {
       eyebrow: 'Choisis ton univers',
@@ -62,6 +72,16 @@ export default function News() {
         btn: 'ENTRER DANS LES ACTUS CINÉMA',
         badge: '🎬 CINÉMA / SÉRIES',
         meta: 'FILMS · SÉRIES · STREAMING',
+      },
+      tech: {
+        num: '03',
+        kicker: 'ZONE TECH',
+        title: 'ACTUS',
+        titleAccent: 'TECH.',
+        desc: 'IA, matériel, smartphones, espace et cybersécurité — les actus tech qui font vraiment bouger l\'industrie, expliquées à la sauce Let\'s Play.',
+        btn: 'ENTRER DANS LES ACTUS TECH',
+        badge: '💻 TECH',
+        meta: 'IA · MATÉRIEL · ESPACE',
       },
     },
     ar: {
@@ -90,6 +110,16 @@ export default function News() {
         badge: '🎬 سينما / مسلسلات',
         meta: 'أفلام · مسلسلات · بث',
       },
+      tech: {
+        num: '03',
+        kicker: 'منطقة التقنية',
+        title: 'أخبار',
+        titleAccent: 'التقنية.',
+        desc: 'الذكاء الاصطناعي، العتاد، الهواتف، الفضاء والأمن السيبراني — أخبار التقنية التي تحرّك الصناعة فعلاً.',
+        btn: 'دخول أخبار التقنية',
+        badge: '💻 تقنية',
+        meta: 'ذكاء اصطناعي · عتاد · فضاء',
+      },
     },
   }[lang] || {
     eyebrow: 'Choisis ton univers',
@@ -99,6 +129,7 @@ export default function News() {
     updated: 'Mis à jour quotidiennement · 28.09.2026',
     gaming: { num: '01', kicker: 'ZONE GAMING', title: 'ACTUS', titleAccent: 'GAMING.', desc: 'Les actus gaming.', btn: 'ENTRER', badge: '🎮 GAMING', meta: 'PC · PS5 · XBOX · SWITCH 2' },
     cinema: { num: '02', kicker: 'CINÉMA & SÉRIES', title: 'ACTUS', titleAccent: 'CINÉMA.', desc: 'Les actus cinéma.', btn: 'ENTRER', badge: '🎬 CINÉMA', meta: 'FILMS · SÉRIES' },
+    tech: { num: '03', kicker: 'ZONE TECH', title: 'ACTUS', titleAccent: 'TECH.', desc: 'Les actus tech.', btn: 'ENTRER', badge: '💻 TECH', meta: 'IA · MATÉRIEL · ESPACE' },
   };
 
   return (
@@ -148,12 +179,31 @@ export default function News() {
             </div>
           </div>
         </Link>
+
+        {/* Carte TECH */}
+        <Link to="/news/tech" className="news-hub-card news-hub-card--tech">
+          <div className="news-hub-card-image">
+            <img src={`${base}category-tech-thumb.jpg`} alt="Actus Tech — puce et interface holographique sous les néons, main robotisée" />
+            <div className="news-hub-card-overlay" />
+            <span className="news-feature-badge">{copy.tech.badge}</span>
+            <span className="news-hub-card-num">{copy.tech.num}</span>
+          </div>
+          <div className="news-hub-card-copy">
+            <span className="news-kicker">{copy.tech.kicker}</span>
+            <h2>{copy.tech.title} <em>{copy.tech.titleAccent}</em></h2>
+            <p>{copy.tech.desc}</p>
+            <div className="news-hub-card-meta">
+              <span>{copy.tech.meta}</span>
+              <span className="read-link">{copy.tech.btn} <Arrow /></span>
+            </div>
+          </div>
+        </Link>
       </div>
 
       <section className="cta wrap">
         <div>
           <p className="eyebrow"><span className="live-dot" /> NEXT LEVEL UNLOCKED</p>
-          <h2>TWO WORLDS,<br /><em>ONE PRESS START.</em></h2>
+          <h2>THREE WORLDS,<br /><em>ONE PRESS START.</em></h2>
         </div>
         <Link className="button button-yellow" to="/">RETOUR À L'ACCUEIL <Arrow /></Link>
       </section>
