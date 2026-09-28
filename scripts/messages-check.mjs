@@ -71,7 +71,8 @@ const {
   makeStorage, markThreadReadLocal, mergeUnread, messageSuggestions, messagesCopy, normalizeMessage, peersFromKey,
   prepareBody, pseudoLabel, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
   sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, writeDemoMessages,
-  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp, renderInboxView, renderThreadView, callsText,
+  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp, renderFriendsTab,
+  renderInboxView, renderRequestsTab, renderThreadView, callsText,
 } = smoke;
 
 // Sections 1-3 : aucun besoin de fenêtre (voir le commentaire d'import).
@@ -472,6 +473,23 @@ try {
   check('discussion : boutons d’appel nommés', threadRaw.includes(`aria-label="${ct.callAudio}"`) && threadRaw.includes(`aria-label="${ct.callVideo}"`));
   check('discussion : effacement pour soi toujours proposé', threadRaw.includes(`aria-label="${t.clearConversation}"`));
 } catch (e) { check('les vues de messagerie se rendent seules', e.message, ''); }
+
+// Onglets Amis / Demandes de la fenêtre sociale : la même règle s'applique —
+// les pseudos des amis ressortent en majuscules, dans le texte visible comme
+// dans les libellés accessibles (ouverture de discussion, bouton « Profil »).
+try {
+  const mixed = { id: 'demo-player-9001', name: 'nova pixel', avatar: null, online: true, level: 4 };
+  const t = messagesCopy.fr;
+  const ft = friendsCopy.fr;
+  const friendsRaw = renderFriendsTab([mixed], { lang: 'fr' });
+  const friendsView = strip(friendsRaw);
+  check('onglet amis : pseudo en majuscules', friendsView.includes('NOVA PIXEL') && !friendsView.includes('nova pixel'));
+  check('onglet amis : libellé d’ouverture en majuscules', friendsRaw.includes(`${t.openChat} — NOVA PIXEL`));
+  check('onglet amis : bouton profil libellé en majuscules', friendsRaw.includes(`${ft.viewProfile} — NOVA PIXEL`));
+  const requestsRaw = renderRequestsTab({ incoming: [{ ...mixed, online: false }], outgoing: [{ ...mixed, id: 'demo-player-9002' }], lang: 'fr' });
+  const requestsView = strip(requestsRaw);
+  check('onglet demandes : pseudo en majuscules', requestsView.includes('NOVA PIXEL') && !requestsView.includes('nova pixel'));
+} catch (e) { check('les onglets amis se rendent seuls', e.message, ''); }
 
 console.log('\n[4/4] gestes DOM : effacement et suggestions\n');
 // La fenêtre ouverte avant l'import de la fumée (react-dom a besoin d'une

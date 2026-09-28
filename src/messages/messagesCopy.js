@@ -278,8 +278,9 @@ export function messagesText(lang) {
  * leur casse d'origine, la recherche et le tri continuent de comparer les
  * pseudos bruts, et seul le rendu passe par ici — liste des discussions,
  * en-tête de discussion, liste des joueurs bloqués, signalement, blocage,
- * cartes d'appel. Un pseudo absent ou vide donne une chaîne vide : à
- * l'appelant de prévoir son repli (« ? »).
+ * cartes d'appel, et les onglets Amis / Demandes / Ajouter de la fenêtre
+ * sociale (`FriendsTabs`). Un pseudo absent ou vide donne une chaîne vide :
+ * à l'appelant de prévoir son repli (« ? »).
  */
 export function pseudoLabel(name) {
   return String(name ?? '').trim().toUpperCase();
