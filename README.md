@@ -1933,6 +1933,63 @@ bande-annonce officielle, visuel presse d’un distributeur…) ; une carte
 distante ne répond plus — aucune image de droit n’est embarquée. Les crédits
 des visuels sont consignés dans `public/cinema-image-credits.txt`.
 
+### Bandes-annonces et teasers intégrés
+
+Chaque actu cinéma montre la vidéo officielle du distributeur — bande-annonce,
+teaser ou extrait — dans le corps de l’article, juste après le chapô. Les vidéos
+sont listées dans `src/articleTrailers.js`, une entrée par clé d’article (la même
+clé que les cartes du hub, préfixée `cinema/`), rendue par
+`src/components/ArticleTrailer.jsx` dans `CurrentNews.jsx` : la même mécanique
+que les galeries de captures (`src/articleGalleries.js`), avec ses styles dans
+`src/news-article.css`.
+
+Le bloc affiche un lecteur 16/9 (l’embed passe par `youTubeEmbedUrl()`, donc par
+le coordinateur « une seule vidéo à la fois »), la nature de la vidéo
+(`BANDE-ANNONCE`, `TEASER`, `EXTRAIT`), son titre, sa chaîne, un lien « Voir sur
+YouTube » et la mention de crédit — puis, quand l’article a plusieurs vidéos, un
+sélecteur de miniatures (`VideoThumb`, donc l’échelle de repli habituelle). Les
+cartes du hub `/news/cinema` portent sur leur vignette une pastille `▶` reprenant
+le libellé de la première vidéo (`src/cinema-news.css`).
+
+La règle éditoriale est stricte : **seules les vidéos publiées par la chaîne
+officielle** du studio ou du diffuseur sont intégrées (Marvel Entertainment, Sony
+Pictures Entertainment, Warner Bros., Netflix, Netflix Anime, HBO Max, Focus
+Features, GODZILLA OFFICIAL by TOHO). Les montages de fans, les comptes régionaux
+et les « trailers » générés par IA — très nombreux autour de Blade, de Dune ou de
+Resident Evil — sont écartés. Chaque identifiant est vérifié sur YouTube avant
+d’être écrit (oEmbed : `https://www.youtube.com/oembed?url=…&format=json` renvoie
+le titre exact et la chaîne), et la date du contrôle est consignée dans
+`verified`.
+
+Deux cas particuliers, pour que rien ne reste implicite :
+
+- une vidéo d’**illustration** — la bande-annonce de la saison 2 pour une saison
+  3 encore en tournage, la mise à jour d’une annonce périmée — porte un `note`
+  affiché sous le lecteur, qui dit au lecteur ce qu’il regarde ;
+- une actu **sans vidéo officielle** (le biopic Fred Astaire, sans titre ni date ;
+  le Blade de Mahershala Ali ; la série animée Diablo) porte `pending` : la
+  mention « Aucune bande-annonce : … » s’affiche à la place du lecteur et la carte
+  du hub ne porte aucune pastille. Un bloc oublié laisserait croire que la vidéo
+  n’existe pas ; `check:trailers` refuse qu’une actu cinéma n’ait ni l’un ni
+  l’autre.
+
+### Vérification
+
+- `npm run check:trailers` — les données (identifiant YouTube à onze caractères,
+  nature connue, chaîne officielle déclarée **et admise**, titre renseigné,
+  contrôle daté, crédit présent, aucune entrée muette, aucune vidéo en double
+  dans un article), la couverture (chaque clé `cinema/` de `CurrentNews.jsx` et
+  chaque carte du hub `CinemaNews.jsx` a une entrée, aucune entrée ne pointe vers
+  un article inexistant, pastille conforme à la première vidéo), le **rendu réel**
+  en SSR via `scripts/trailer-smoke.jsx` (un seul lecteur par article, l’embed
+  sorti de `youTubeEmbedUrl()`, le sélecteur et ses miniatures, le lien YouTube,
+  la note et la mention d’absence telles qu’écrites, les pastilles rendues sur les
+  cartes du hub) et la source (aucun embed ni aucune miniature codé en dur hors
+  des fabriques du site).
+- `npm run check:videos` et `npm run check:thumbs` continuent de s’appliquer : les
+  lecteurs du bloc passent par la fabrique d’embed, les miniatures du sélecteur
+  par `VideoThumb`.
+
 ## Actus tech du jour
 
 Troisième zone du hub Actus (`/news`) : la page `/news/tech`

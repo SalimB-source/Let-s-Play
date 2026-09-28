@@ -14,6 +14,9 @@ import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 import SpoilerAlert from '../components/SpoilerAlert';
 import ArticleGallery from '../components/ArticleGallery';
 import { getArticleGallery } from '../articleGalleries';
+// Bandes-annonces et teasers officiels des actus cinéma (src/articleTrailers.js).
+import ArticleTrailer from '../components/ArticleTrailer';
+import { getArticleTrailerEntry } from '../articleTrailers';
 
 // Images officielles : les URLs absolues (miniatures YouTube, Focus
 // Features, Variety…) passent telles quelles ; les fichiers locaux du
@@ -647,6 +650,11 @@ export default function CurrentNews({ slug, slugPrefix }) {
   const sentimentId = inferSentimentForStory(story);
   const meta = sentimentMeta(sentimentId);
   const gallery = story.gallery || getArticleGallery(key);
+  // Bandes-annonces et teasers officiels des actus cinéma : la liste vit dans
+  // src/articleTrailers.js, comme les galeries de captures. Une actu sans
+  // vidéo officielle rend la mention « aucune bande-annonce » plutôt qu'un
+  // bloc vide.
+  const trailer = story.trailer || getArticleTrailerEntry(key);
   const [views, setViews] = useState(null);
 
   useEffect(() => {
@@ -672,6 +680,7 @@ export default function CurrentNews({ slug, slugPrefix }) {
       <article className="article-body">
         <p className="article-lead">{story.lead}</p>
         {story.intro ? <p>{story.intro}</p> : null}
+        {trailer ? <ArticleTrailer {...trailer} /> : null}
         {story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / OFFICIELLE</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">Vidéo officielle : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">Voir sur YouTube</a></p></section> : null}
 
         <h2>{story.h2}</h2>
