@@ -7,6 +7,9 @@ import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import '../cinema-news.css';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
+// Une actu dont la bande-annonce officielle est intégrée à l'article affiche
+// une pastille « BANDE-ANNONCE » sur sa vignette (src/articleTrailers.js).
+import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 
 // Images promotionnelles officielles lorsqu'elles sont disponibles. Le biopic
 // Fred Astaire n'ayant pas encore de visuel Sony, sa carte utilise une photo de
@@ -112,9 +115,16 @@ export default function CinemaNews() {
     const sentimentId = getArticleSentiment(article);
     const meta = sentimentMeta(sentimentId);
     const views = viewsMap[normalizeArticleId(article.to)] ?? null;
+    const trailerFlag = trailerFlagLabel(article.to);
     return (
       <>
         <span className="news-feature-badge">{article.badge}</span>
+        {trailerFlag ? (
+          <span className="news-trailer-flag" title={trailerFlagTitle(article.to)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            {trailerFlag}
+          </span>
+        ) : null}
         <span className="news-feature-arrow">↗</span>
         <span className={`news-sentiment ${meta.color}`} title={meta.label} aria-label={meta.label}>{meta.emoji}</span>
         {views != null && (

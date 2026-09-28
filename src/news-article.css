@@ -542,3 +542,53 @@
   .article-gallery-item img{transition:none}
   .article-gallery-item:hover img{transform:none}
 }
+
+/* --------------------------------------------------------------------------
+   BANDES-ANNONCES & TEASERS — intégrés au corps des articles cinéma
+   Le bloc prend la place laissée libre par l'ancien encadré vidéo : en-tête
+   de section, lecteur 16/9, légende (nature de la vidéo, titre, chaîne,
+   lien YouTube), puis — quand l'article a plusieurs vidéos officielles — un
+   sélecteur de miniatures. Le lecteur reste un média : fond sombre et
+   biseau cyan dans les deux thèmes (règle n°2 de theme.css).
+   -------------------------------------------------------------------------- */
+.article-trailer{margin:38px 0 34px}
+.article-trailer .section-label{margin-bottom:14px}
+.article-trailer-frame{position:relative;width:100%;aspect-ratio:16/9;background:var(--panel);border:1px solid rgba(34,211,238,.42);clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));box-shadow:0 24px 60px -30px rgba(0,0,0,.9),0 0 44px -14px rgba(34,211,238,.3);overflow:hidden}
+.article-trailer-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.article-trailer-caption{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:14px}
+.article-trailer-badge{display:inline-flex;align-items:center;gap:9px;font:500 10px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--cyan)}
+.article-trailer-title{font:700 15px var(--display);letter-spacing:.04em;text-transform:uppercase;color:#fff}
+.article-trailer-channel{font:500 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-style:normal}
+.article-trailer-caption .arrow-link{font-size:10px}
+/* Une vidéo d'illustration (saison ou film précédent) le dit explicitement,
+   et la mise à jour d'une annonce périmée passe par le même encadré. */
+.article-trailer-note{margin-top:12px;padding:14px 16px;border:1px solid rgba(255,214,25,.32);border-inline-start:3px solid var(--yellow);background:rgba(255,214,25,.06);font:400 12px/1.6 var(--body);color:var(--muted)}
+.article-trailer-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.article-trailer-choice{position:relative;display:block;padding:0;border:1px solid var(--line-strong);background:var(--panel);cursor:pointer;text-align:left;transition:transform .2s,border-color .2s}
+.article-trailer-choice:hover{transform:translateY(-2px);border-color:var(--cyan)}
+.article-trailer-choice.is-active{border-color:var(--yellow-ink);box-shadow:0 0 0 1px rgba(255,214,25,.35)}
+.article-trailer-thumb{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--panel-2)}
+/* Quand YouTube ne publie aucune miniature, l'afficheur dessine son cadre de
+   repli (`.video-thumb-fallback`, absolu et plein cadre) : ici il ne doit
+   occuper que la case de la miniature, pas toute la proposition. */
+.article-trailer-choice .video-thumb-fallback{position:static;inset:auto;width:100%;height:auto;aspect-ratio:16/9;border:0;border-bottom:1px solid var(--line-strong)}
+.article-trailer-choice-copy{display:flex;flex-direction:column;gap:4px;padding:10px 12px 12px}
+.article-trailer-choice-copy b{font:500 9px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--yellow-ink)}
+.article-trailer-choice-copy small{font:500 10px/1.35 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.article-trailer-credit{margin-top:12px;font:400 11px/1.55 var(--body);color:var(--dim)}
+/* Aucune bande-annonce officielle : l'absence est écrite, pas devinée. */
+.article-trailer-pending{display:flex;align-items:center;gap:12px;margin:0;padding:18px 20px;border:1px solid var(--line-strong);border-inline-start:3px solid var(--cyan);background:rgba(34,211,238,.05);font:400 13px/1.6 var(--body);color:var(--muted)}
+[dir='rtl'] .article-trailer-choice,[dir='rtl'] .article-trailer-choice-copy{text-align:right}
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .article-trailer{margin:28px 0 26px}
+  .article-trailer-picker{grid-template-columns:1fr;gap:10px}
+  /* Une seule colonne : la miniature passe à gauche, le libellé à droite. */
+  .article-trailer-choice{display:grid;grid-template-columns:132px minmax(0,1fr);align-items:stretch}
+  .article-trailer-thumb{height:100%}
+  .article-trailer-title{font-size:13px}
+  .article-trailer-pending{padding:14px 16px;font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .article-trailer-choice{transition:none}
+  .article-trailer-choice:hover{transform:none}
+}
