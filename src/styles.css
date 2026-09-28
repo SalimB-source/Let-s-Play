@@ -640,6 +640,53 @@ img{max-width:100%}
 .hero h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 26px rgba(34,211,238,.65),0 0 80px rgba(34,211,238,.35)}
 .hero-text{font-size:17.5px;line-height:1.55;max-width:560px;color:rgba(232,235,255,.78);margin:0}
 .hero-actions{display:flex;align-items:center;gap:16px;margin-top:38px;flex-wrap:wrap}
+/* Hero-only controls: beveled chassis, illuminated edge and HUD icon bays.
+   Keep the focus ring outside the clipped inner surface. */
+.hero-cta{
+  --cta-edge:#ffd619;--cta-surface:#ffd619;--cta-ink:#101222;
+  position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:16px;
+  min-height:62px;padding:10px 22px 10px 12px;border:0;background:transparent;
+  color:var(--cta-ink);text-decoration:none;
+  font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  transition:transform .2s,filter .2s;
+  filter:drop-shadow(0 4px 12px rgba(255,214,25,.16));
+}
+.hero-cta::before,.hero-cta::after{
+  content:"";position:absolute;z-index:-1;pointer-events:none;
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
+}
+.hero-cta::before{inset:0;background:var(--cta-edge)}
+.hero-cta::after{
+  inset:1px;background:linear-gradient(115deg,rgba(255,255,255,.18),transparent 55%),var(--cta-surface);
+}
+.hero-cta--secondary{
+  --cta-edge:#22d3ee;--cta-surface:rgba(8,17,31,.94);--cta-ink:#e9fcff;
+  filter:drop-shadow(0 4px 12px rgba(34,211,238,.12));
+}
+.hero-cta-icon{
+  display:grid;place-items:center;flex:0 0 36px;height:36px;
+  background:rgba(10,11,26,.1);border:1px solid rgba(10,11,26,.18);
+}
+.hero-cta-icon svg{width:22px;height:22px}
+.hero-cta--secondary .hero-cta-icon{color:#67e8f9;background:rgba(34,211,238,.1);border-color:rgba(34,211,238,.3)}
+.hero-cta-label{flex:1}
+.hero-cta-arrow{font-size:22px;font-weight:400;line-height:1;margin-inline-start:8px;transition:transform .2s}
+.hero-cta--secondary .hero-cta-arrow{color:#67e8f9}
+@media (hover:hover){
+  .hero-cta:hover{transform:translateY(-3px);filter:drop-shadow(0 5px 18px rgba(255,214,25,.38))}
+  .hero-cta--secondary:hover{--cta-surface:#102c3b;filter:drop-shadow(0 5px 18px rgba(34,211,238,.35))}
+  .hero-cta:hover .hero-cta-arrow{transform:translateX(3px)}
+}
+.hero-cta:focus-visible{outline:3px solid #fff;outline-offset:5px}
+.hero-cta:active{transform:translateY(1px);filter:none}
+[dir="rtl"] .hero-cta--secondary .hero-cta-arrow{transform:scaleX(-1)}
+@media(max-width:540px){
+  .hero-actions .hero-cta{width:100%;gap:12px;min-height:58px;font-size:11px;letter-spacing:.06em}
+}
+@media(prefers-reduced-motion:reduce){
+  .hero-cta,.hero-cta-arrow{transition:none}
+  .hero-cta:hover,.hero-cta:active,.hero-cta:hover .hero-cta-arrow{transform:none}
+}
 .button{
   display:inline-flex;align-items:center;gap:18px;padding:17px 26px;
   font:500 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;
