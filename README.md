@@ -557,6 +557,16 @@ Un visiteur non connecté ne voit rien (carte de connexion sur la page).
 | **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
 | **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
 
+**Les pseudos s'affichent en majuscules** partout dans la messagerie :
+lignes de la liste des discussions, joueurs bloqués, en-tête de discussion,
+titres de la fenêtre de signalement, confirmations de blocage et d'effacement,
+infobulles d'appel et cartes d'appel. C'est une règle d'**affichage** appliquée au rendu
+par `pseudoLabel` (`src/messages/messagesCopy.js`) : les données gardent leur
+casse d'origine et la **recherche** de la liste continue de comparer les
+pseudos bruts, sans tenir compte de la casse (chercher « kayz » trouve
+`KAYZ_ORAN`). Hors messagerie, rien ne change : la liste d'amis, les profils
+et les commentaires affichent le pseudo tel qu'il a été saisi.
+
 L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil ;
 Échap remonte à la liste puis ferme la fenêtre.
 
@@ -696,7 +706,7 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 | `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler / effacer la conversation |
 | `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
 | `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
-| `src/messages/messagesCopy.js` | textes FR / EN / AR |
+| `src/messages/messagesCopy.js` | textes FR / EN / AR, et `pseudoLabel` : les pseudos affichés en majuscules (règle de rendu, les données gardent leur casse) |
 | `src/messages/messages.css` | styles (liste, bulles, signalement, page `/messages`) |
 
 ### Vérifications
@@ -704,7 +714,9 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 - `npm run check:messages` — logique pure (lignes `direct_messages` →
   discussions : les deux sens regroupés, fil retrié, non-lus comptés, accusé de
   lecture, messages reçus en direct sans doublon ; clés de conversation
-  symétriques ; saisie nettoyée et bornée ; erreurs du trigger reconnues),
+  symétriques ; saisie nettoyée et bornée ; erreurs du trigger reconnues ;
+  pseudos mis en majuscules — casse mixte, accents, espaces de bord, pseudo
+  absent),
   cohérence de l'aperçu de démonstration (discussions entre **amis** existants,
   jamais soi-même, non-lus et discussions lues, réponses déterministes,
   messages scriptés livrés une seule fois, effacement propre à la persona et
@@ -713,7 +725,9 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   (fermée / liste / discussion ouverte) et de profils publics — visiteur, ami
   et non-ami — dans les trois langues ; un test DOM clique aussi sur
   « Effacer la conversation », vérifie l'annulation, la confirmation et la
-  persistance après réouverture.
+  persistance après réouverture ; les deux vues de messagerie sont aussi
+  rendues avec un pseudo **en casse mixte** : il doit ressortir en majuscules,
+  dans le texte visible comme dans les libellés accessibles.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
   continuent de passer : amis et messagerie partagent la même fenêtre sociale
   (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page
@@ -842,7 +856,7 @@ quand même : simplement moins souvent du premier coup en mobile.
 | --- | --- |
 | `src/messages/CallsContext.jsx` | le moteur et l'état : sonneries entrantes (canal personnel permanent, sonnerie gardée tant que la liste d'amis n'est pas chargée), `startCall` / `acceptCall` / `declineCall` / `endCall`, micro / caméra / bascule de caméra, **repli caméra détecté et expliqué** (`cameraFallback`, événement `media` vers l'ami), connexions P2P, traces d'appel, `blockerFor` (boutons grisés) et `warningFor` (avertissements), `notice` (un échec s'explique) |
 | `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, `ringDecision`, `effectiveStreamKind` (appel vidéo sans piste vidéo → audio), durées, classification des erreurs de média |
-| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant (**Répondre / Refuser**), panneau d'appel (vidéo, PiP miroir, chrono, contrôles, pastille de repli caméra, `play()` fiable avec relances), bandeau d'avertissement |
+| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant (**Répondre / Refuser**, pseudo de l'ami **en majuscules** comme dans la messagerie), panneau d'appel (vidéo, PiP miroir, chrono, contrôles, pastille de repli caméra, `play()` fiable avec relances), bandeau d'avertissement |
 | `src/messages/callSounds.js` | sons synthétisés (Web Audio) : sonnerie, tonalité, connexion, fin |
 | `src/messages/callsCopy.js` | textes EN / FR / AR, libellés de blocage, traces d'appel — le site étant publié en français, EN / AR restent en filet de sécurité, comme les dictionnaires du site |
 | `src/messages/calls.css` | styles des overlays (plein écran, coins coupés, mobile, `prefers-reduced-motion`) |

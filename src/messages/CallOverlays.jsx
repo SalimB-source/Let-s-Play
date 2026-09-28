@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useCalls } from './CallsContext';
 import { callStatusLabel, callsText } from './callsCopy';
+import { pseudoLabel } from './messagesCopy';
 import { formatDuration, remotePlaybackNeedsSink } from './callsCore';
 
 /**
@@ -18,7 +19,8 @@ import { formatDuration, remotePlaybackNeedsSink } from './callsCore';
  *     contrôles : micro, caméra, changement de caméra, raccrocher.
  *
  * Aucune donnée ici : tout vient de `useCalls()`. Les textes suivent la
- * langue du site (EN / FR / AR).
+ * langue du site (EN / FR / AR) et le pseudo de l'ami s'affiche en majuscules,
+ * comme partout dans la messagerie (`pseudoLabel`).
  */
 
 function PhoneIcon({ size = 20 }) {
@@ -183,6 +185,7 @@ function Stream({ stream, muted = false, className = '', mirrored = false, label
 function IncomingCall({ calls, t }) {
   const { peer, kind, acceptCall, declineCall } = calls;
   const isVideo = kind === 'video';
+  const peerName = pseudoLabel(peer?.name); // pseudo en majuscules, comme la messagerie
   return (
     <div className="calls-backdrop is-incoming">
       <section className="calls-card" role="dialog" aria-modal="true" aria-label={isVideo ? t.incomingVideo : t.incomingAudio}>
@@ -190,9 +193,9 @@ function IncomingCall({ calls, t }) {
         <span className="calls-ringing-avatar">
           <span className="calls-ring calls-ring-a" aria-hidden="true" />
           <span className="calls-ring calls-ring-b" aria-hidden="true" />
-          <CallAvatar name={peer?.name} src={peer?.avatar} />
+          <CallAvatar name={peerName} src={peer?.avatar} />
         </span>
-        <strong className="calls-card-name">{peer?.name}</strong>
+        <strong className="calls-card-name">{peerName}</strong>
         <p className="calls-card-status" aria-live="polite">{isVideo ? t.incomingVideo : t.incomingAudio}…</p>
         <div className="calls-card-actions">
           <button
@@ -227,6 +230,7 @@ function ActiveCall({ calls, t }) {
     localStream, remoteStream, endCall, toggleMic, toggleCam, flipCamera,
   } = calls;
   const isVideo = kind === 'video';
+  const peerName = pseudoLabel(peer?.name); // pseudo en majuscules, comme la messagerie
   const localVideo = isVideo && Boolean(localStream?.getVideoTracks?.().length);
   const remoteVideo = isVideo && Boolean(remoteStream?.getVideoTracks?.().some((track) => track.readyState !== 'ended'));
   // Appel vocal (ou vidéo sans image distante) : le `<video>` ci-dessus n'est
@@ -241,7 +245,7 @@ function ActiveCall({ calls, t }) {
       <section className="calls-panel" role="dialog" aria-modal="true" aria-label={isVideo ? t.callVideo : t.callAudio}>
         <header className="calls-head">
           <span className="calls-kicker">{isVideo ? t.callVideo : t.callAudio}</span>
-          <strong className="calls-name">{peer?.name}</strong>
+          <strong className="calls-name">{peerName}</strong>
           <span className="calls-status" aria-live="polite">
             {timer ? <em className="calls-timer">{timer}</em> : status}
           </span>
@@ -253,15 +257,15 @@ function ActiveCall({ calls, t }) {
 
         <div className="calls-stage">
           {phase !== 'ended' && remoteVideo && (
-            <Stream stream={remoteStream} className="calls-remote" label={peer?.name} />
+            <Stream stream={remoteStream} className="calls-remote" label={peerName || t.callAudio} />
           )}
           {sinkRemoteAudio && (
-            <Stream stream={remoteStream} className="calls-remote calls-remote-audio" label={peer?.name || t.callAudio} />
+            <Stream stream={remoteStream} className="calls-remote calls-remote-audio" label={peerName || t.callAudio} />
           )}
           {!remoteVideo && (
             <div className="calls-stage-audio" aria-hidden="true">
               <span className={`calls-stage-avatar${phase === 'active' ? ' is-live' : ''}`}>
-                <CallAvatar name={peer?.name} src={peer?.avatar} />
+                <CallAvatar name={peerName} src={peer?.avatar} />
               </span>
               <span className="calls-eq" aria-hidden="true"><i /><i /><i /><i /><i /></span>
             </div>

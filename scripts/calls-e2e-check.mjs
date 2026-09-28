@@ -517,7 +517,9 @@ if (ringing) {
   check('… bouton Répondre', incomingHtml.includes('calls-round is-accept'));
   check('… libellé « Refuser » accessible', incomingHtml.includes('aria-label="Refuser"'));
   check('… libellé « Répondre » accessible', incomingHtml.includes('aria-label="Répondre"'));
-  check('… pseudo de l’appelant affiché', incomingHtml.includes('Alice'));
+  // Le pseudo s'affiche en majuscules, comme dans la messagerie (`pseudoLabel`).
+  check('… pseudo de l’appelant affiché en majuscules', incomingHtml.includes('ALICE'));
+  check('… jamais dans sa casse d’origine', incomingHtml.includes('Alice'), false);
 }
 check('pas de pop-up chez l’appelante', alice.html().includes('is-incoming'), false);
 
@@ -547,6 +549,8 @@ if (established) {
   check('Bob reçoit le média d’Alice', Boolean(bob.calls().remoteStream));
   check('Alice a le micro ouvert', alice.calls().micOn);
   check('panneau d’appel affiché chez Alice', alice.html().includes('calls-panel'));
+  // Le nom de l'ami suit la même règle que la messagerie : en majuscules.
+  check('… pseudo de l’ami en majuscules dans le panneau', alice.html().includes('>BOB<') && !alice.html().includes('>Bob<'));
   // Sans ce lecteur, l'appel vocal s'établit (chrono, « En appel ») mais le
   // flux distant n'est joué nulle part — la vidéo, elle, s'entend via son <video>.
   const sinkOf = (html) => html.split('<video').slice(1).map((part) => `<video${part.split('>')[0]}>`).find((tag) => tag.includes('calls-remote-audio'));
