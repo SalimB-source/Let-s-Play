@@ -229,8 +229,16 @@ export default function Home() {
           <h1>{t.home.h1a}<br /><em>{t.home.h1b}</em></h1>
           <p className="hero-text">{t.home.heroText}</p>
           <div className="hero-actions">
-            <a className="button button-yellow" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.watchEpisodes} <Arrow /></a>
-            <Link className="button button-ghost" to="/news">{t.home.enterShow} <span aria-hidden="true">↓</span></Link>
+            <a className="hero-cta hero-cta--primary" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">
+              <span className="hero-cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9 5 11 7-11 7z" /></svg></span>
+              <span className="hero-cta-label">{t.home.watchEpisodes}</span>
+              <span className="hero-cta-arrow" aria-hidden="true">↗</span>
+            </a>
+            <Link className="hero-cta hero-cta--secondary" to="/news">
+              <span className="hero-cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4M12 7v10m-5-5h10" /></svg></span>
+              <span className="hero-cta-label">{t.home.enterShow}</span>
+              <span className="hero-cta-arrow" aria-hidden="true">→</span>
+            </Link>
           </div>
         </div>
         {/* LE PLUS ATTENDU — fine bande posée en bas du héros (à la place de
