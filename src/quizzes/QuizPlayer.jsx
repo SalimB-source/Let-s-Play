@@ -5,18 +5,21 @@ import { useLanguage } from '../i18n/LanguageContext';
 import { useAuth } from '../auth/AuthContext';
 import { useAchievements } from '../achievements/AchievementContext';
 import { quizLevelCompleted } from '../achievements/engine';
-import { QUIZ_LEVELS, quizLabel, quizLevelQuestions, quizQuestionsCount } from '../quizzesData';
+import { QUIZ_LEVELS, quizLabel, quizQuestionsCount } from '../quizzesData';
 import { formatBest, quizAttemptId, readLocalBest, readLocalBestRun, submitQuizAttempt, writeLocalBest } from './quizApi';
 import { isLevelCompleted, levelRequirement, nextLevel } from './quizProgress';
 import { useQuizProgress } from './useQuizProgress';
 import QuizChallenge from './QuizChallenge';
 import QuizConfetti from './QuizConfetti';
 import {
+  EXPERT_QUESTION_COUNT,
   FREEZE_BONUS,
   dayNumber,
   gradeQuiz,
   levelBrief,
+  levelQuestionCount,
   levelRules,
+  quizQuestionPool,
   pointsMultiplier,
   prepareQuiz,
   questionBudgetMs,
@@ -96,16 +99,16 @@ const FALLBACK = {
   // Règles du niveau — annoncées dans le sélecteur, vécues en partie.
   rulesTag: 'Rules of this level',
   rules: { perQuestion: 'per question', choices: 'answers', lives: 'lives', noLives: 'no life to lose', jokers: 'jokers', noJokers: 'no joker' },
-  expertHint: 'Ten seconds, five answers, three lives, no joker — and double points.',
+  expertHint: `Ten questions, ten seconds each, five answers, one life. One mistake eliminates you; points count only after a flawless run.`,
   noJokersTag: 'EXPERT — NO JOKER',
   levelConfirm: {
     title: 'Start {level}?',
     intro: 'Check the rules for this level before you begin.',
-    warningHard: 'Expert is the ultimate challenge — only 10 seconds, 5 answers, 3 lives, no jokers.',
+    warningHard: `Expert: ${EXPERT_QUESTION_COUNT} random questions, 10 seconds each, 5 answers, 1 life, no jokers. One mistake eliminates you; only a flawless finish earns points.`,
     rulesTitle: 'Rules for this level',
     time: '{n} seconds per question',
     choices: '{n} answers',
-    lives: '{n} lives — lose one per mistake or timeout, game over at 0',
+    lives: '{n} life — your first mistake or timeout ends the run immediately',
     livesNone: 'No lives to lose',
     jokers: '{n} jokers — {fifty} × 50/50, {freeze} × Freeze',
     jokersNone: 'No jokers',
@@ -120,7 +123,8 @@ const FALLBACK = {
   livesLeft: '{n} lives left',
   streakTags: { warm: 'WARMING UP', hot: 'ON FIRE', blazing: 'UNSTOPPABLE' },
   jokerKeys: ' · 50/50: D · Freeze: F',
-  gameOver: 'OUT OF LIVES', stoppedAt: 'Run stopped at question {n} of {total}',
+  gameOver: 'ELIMINATED', stoppedAt: 'at question {n} of {total}',
+  retry: 'Retry Expert',
   stats: { accuracy: 'Accuracy', points: 'Points', bestCombo: 'Best combo', avgTime: 'Avg. answer', livesLeft: 'Lives left', jokersUsed: 'Jokers used' },
   newRecord: 'NEW RECORD',
   noXpTag: 'Already completed',
@@ -128,7 +132,7 @@ const FALLBACK = {
   noXpResult: 'This level is already completed — no points this time.',
   chooseLevel: 'Pick your level',
   levelPoints: { easy: '×1', medium: '×1.5', hard: '×2' },
-  levelsHint: 'The harder the level, the more the points are worth — and each level changes the questions. Points become player XP, and a level pays out only once.',
+  levelsHint: 'Expert: 10 fresh random questions per attempt. One mistake or timeout eliminates you—retry until 10/10. Points are awarded only for a flawless run, once.',
   levels: { easy: 'Easy', medium: 'Seasoned', hard: 'Expert' },
   levelLocked: 'Locked',
   lockHint: 'Finish the {level} level to unlock this one.',
@@ -275,6 +279,9 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   const verdictTimerRef = useRef(null);
   const shakeTimerRef = useRef(null);
   const fanfareFor = useRef(null);
+  // L'Expert ne répète aucune question de la tentative immédiatement
+  // précédente quand la banque contient assez de questions (24 ici, 10 jouées).
+  const previousExpertQuestionIdsRef = useRef(null);
 
   /** Remise à zéro du « fun » entre deux parties (nulle pour la révision). */
   const resetRun = (levelId) => {
@@ -341,13 +348,26 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     setReplayRun(quizLevelCompleted(achievementState, quiz.slug, levelId));
     setJustUnlocked(null);
     if (onLevelChange && levelId !== level) onLevelChange(levelId);
-    // Quizz du jour : même mélange pour tout le monde (graine = numéro du jour).
+    // Les niveaux Facile et Confirmé du quizz du jour gardent leur tirage
+    // commun (graine = numéro du jour). L'Expert, lui, doit renouveler ses
+    // dix questions à chaque tentative, y compris sur le quizz du jour.
     setPlayedLevel(levelId);
-    // Niveau expert : une proposition de plus par question (un piège tiré des
-    // autres questions du niveau) — voir `LEVEL_RULES` dans le moteur.
-    setPrepared(prepareQuiz(quiz, levelId, daily ? dayNumber(new Date()) : null, {
+    const expert = levelId === 'hard';
+    const seed = daily && !expert ? dayNumber(new Date()) : null;
+    const fullQuestionPool = expert ? quizQuestionPool(quiz) : null;
+    const expertCount = expert ? levelQuestionCount(quiz, levelId) : null;
+    const previousExpertIds = previousExpertQuestionIdsRef.current;
+    const retryPool = expert && previousExpertIds
+      && fullQuestionPool.length - previousExpertIds.size >= expertCount
+      ? fullQuestionPool.filter((question) => !previousExpertIds.has(question.id))
+      : fullQuestionPool;
+    const nextPrepared = prepareQuiz(quiz, levelId, seed, {
       extraDistractors: levelRules(levelId).extraDistractors,
-    }));
+      questionPool: retryPool,
+      questionCount: expert ? expertCount : null,
+    });
+    if (expert) previousExpertQuestionIdsRef.current = new Set(nextPrepared.questions.map((question) => question.id));
+    setPrepared(nextPrepared);
     setAnswers({});
     setIndex(0);
     setResult(null);
@@ -400,6 +420,8 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     const budget = budgetRef.current || questionBudgetMs(played);
     const elapsed = Math.min(budget, Math.max(0, Date.now() - questionStartRef.current));
     const correct = Boolean(choice && choice.correct);
+    const expertRun = played === 'hard';
+    const isLast = index + 1 >= prepared.questions.length;
     // Temps moyen de l'écran de résultat : une réponse juste compte son temps
     // réel, un temps écoulé compte le budget entier.
     spentMsRef.current += correct ? elapsed : budget;
@@ -412,25 +434,29 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
       setBestStreak(bestStreakRef.current);
       // Combo dès la deuxième bonne réponse : le bip monte avec la série.
       if (streakRef.current >= 2) playQuizComboSound(streakRef.current);
-      // Points SEULEMENT si la partie rapporte encore quelque chose : niveau
-      // déjà terminé (`replayRun`) = rien à gagner — la série continue de
-      // sonner, les points, non. Le barème est multiplié par le niveau joué
-      // (facile ×1, confirmé ×1,5, expert ×2).
+      // Les points d'un niveau classique s'ajoutent au fil du run. En Expert,
+      // ils restent provisoires et invisibles jusqu'à la dixième bonne réponse :
+      // une seule erreur élimine et annule toute la somme. Un niveau déjà
+      // validé ne rapporte rien, même s'il est rejoué.
       if (!replayRun) {
         const gained = quizPointsFor(played, { elapsedMs: elapsed, budgetMs: budget, streak: streakRef.current });
         pointsGained = gained.total;
         pointsRef.current += gained.total;
-        setPoints(pointsRef.current);
+        if (!expertRun || isLast) setPoints(pointsRef.current);
       }
     } else {
       streakRef.current = 0;
       setStreak(0);
-      // Niveau expert : une erreur (ou un temps écoulé) coûte une vie. À zéro,
-      // la partie s'arrête après le verdict — les questions restantes comptent
-      // comme ratées.
+      // En Expert, une erreur ou un temps écoulé consomme l'unique vie et
+      // annule tout point provisoire : le joueur est éliminé sur-le-champ.
       if (rules.lives) {
         livesRef.current = Math.max(0, livesRef.current - 1);
         setLives(livesRef.current);
+      }
+      if (expertRun) {
+        pointsRef.current = 0;
+        pointsGained = 0;
+        setPoints(0);
       }
       if (shakeTimerRef.current) window.clearTimeout(shakeTimerRef.current);
       setShake(true);
@@ -453,10 +479,9 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
       correct,
       timedOut: !choice,
       phrase: pickVerdict(copy, correct, !choice),
-      points: pointsGained,
+      points: expertRun && !isLast ? 0 : pointsGained,
     });
     lockedRef.current = true;
-    const isLast = index + 1 >= prepared.questions.length;
     const outOfLives = rules.lives > 0 && livesRef.current === 0;
     if (verdictTimerRef.current) window.clearTimeout(verdictTimerRef.current);
     verdictTimerRef.current = window.setTimeout(() => {
@@ -467,12 +492,24 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
         setIndex(index + 1);
         return;
       }
-      const graded = { ...gradeQuiz(prepared, nextAnswers), gameOver: outOfLives };
+      const graded = {
+        ...gradeQuiz(prepared, nextAnswers),
+        gameOver: outOfLives,
+        attempted: answeredRef.current,
+      };
+      const completed = !expertRun
+        || (!outOfLives && graded.perfect && graded.answered === graded.total);
+      if (expertRun && !completed) {
+        // Garde-fou final : aucun score partiel d'une tentative éliminée ne
+        // quitte le lecteur ni n'apparaît sur son écran de résultat.
+        pointsRef.current = 0;
+        setPoints(0);
+      }
       setResult(graded);
       setPhase('result');
-      // Une seule fois par partie : le moteur des succès crédite l'action
-      // (niveau joué, sans-faute, jour de quizz du jour pour la série).
-      if (trackedFor.current !== prepared) {
+      // Une seule fois par partie réussie : en Expert, une défaite ne valide
+      // ni la progression, ni les succès, ni le classement.
+      if (completed && trackedFor.current !== prepared) {
         trackedFor.current = prepared;
         track('quiz_completed', {
           id: quiz.slug,
@@ -710,7 +747,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
               const locked = !levelOpen(entry);
               const done = levelDone(entry);
               const requirement = levelRequirement(entry);
-              const questions = quizLevelQuestions(quiz, entry).length;
+              const questions = levelQuestionCount(quiz, entry);
               return (
                 <li
                   key={entry}
@@ -1066,7 +1103,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
         {result.perfect && <span className="quiz-result-perfect">★ {copy.perfect}</span>}
         {result.gameOver && (
           <p className="quiz-result-gameover" role="note">
-            💀 {copy.gameOver} — {copy.stoppedAt.replace('{n}', String(result.answered)).replace('{total}', String(result.total))}
+            💀 {copy.gameOver} — {copy.stoppedAt.replace('{n}', String(result.attempted ?? result.answered)).replace('{total}', String(result.total))}
           </p>
         )}
         {replayRun && <p className="quiz-noxp-hint" role="note">🔒 {copy.noXpResult}</p>}
@@ -1078,6 +1115,11 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
             (bouton principal, flèche vers la droite), la grille complète
             ensuite — rien d'autre. */}
         <div className="quiz-result-actions">
+          {result.gameOver && played === 'hard' && (
+            <button type="button" className="quiz-cta quiz-cta--primary" onClick={() => start(played)}>
+              {copy.retry} <NextArrow />
+            </button>
+          )}
           {nextUp && levelOpen(nextUp) && (
             <button type="button" className="quiz-cta quiz-cta--primary" onClick={() => requestStart(nextUp)}>{copy.nextLevel} <NextArrow /></button>
           )}

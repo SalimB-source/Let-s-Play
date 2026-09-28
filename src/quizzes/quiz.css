@@ -473,7 +473,7 @@
 .quiz-cta:focus-visible { outline: 2px solid var(--quiz-accent, var(--cyan)); outline-offset: 2px; }
 .quiz-cta:disabled { cursor: not-allowed; opacity: .6; transform: none; box-shadow: none; }
 
-/* Règles du niveau, sur chaque ligne du sélecteur (⏱ 10 s · ▤ 5 · ♥ 3 · ◐ 0). */
+/* Règles du niveau, sur chaque ligne du sélecteur (⏱ 10 s · ▤ 5 · ♥ 1 · ◐ 0). */
 .quiz-level-rules { color: var(--dim); font: 500 10px var(--mono); letter-spacing: .1em; }
 
 /* ---- Pastilles de progression -------------------------------------------- */
