@@ -42,7 +42,6 @@ export {
 } from '../src/messages/demoThreads';
 export {
   MESSAGE_MAX_LENGTH,
-  VOICE_MAX_SECONDS,
   REPORT_REASONS,
   appendMessage,
   applyDemoBlock,
@@ -52,16 +51,13 @@ export {
   applyDemoReply,
   applyDemoReport,
   applyDemoSend,
-  applyDemoSendVoice,
   applyDemoUnblock,
   applyReadReceipt,
-  cleanVoiceMime,
   conversationKey,
   deleteMessage,
   demoThreads,
   describeSupabaseError,
   isBlockedError,
-  isInvalidVoiceError,
   isMissingMessagesTable,
   isRateLimitedError,
   isRequiresFriendshipError,
@@ -70,16 +66,12 @@ export {
   normalizeMessage,
   peersFromKey,
   prepareBody,
-  rememberVoiceUid,
   removeMessage,
   removeMessageById,
-  rememberedVoiceUid,
   sortThreadsByActivity,
   threadsFromRows,
   totalUnread,
   unreadFromRows,
-  voiceFileExtension,
-  VOICE_ALLOWED_MIME,
 } from '../src/messages/messagesApi';
 export { messagesCopy, reasonLabel } from '../src/messages/messagesCopy';
 

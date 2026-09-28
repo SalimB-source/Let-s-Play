@@ -198,10 +198,9 @@ site »).
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
   présence »)
-- Messagerie : discussions **1-à-1 entre amis** en texte, en **messages
-  vocaux** (micro du navigateur, 2 min max) et en temps réel, avec **non-lus**,
-  accusé de lecture, **blocage** et **signalement**, dans la même fenêtre
-  sociale (voir « Messagerie : discussions 1-à-1 entre amis »)
+- Messagerie : discussions **1-à-1 entre amis** en texte et en temps réel,
+  avec **non-lus**, accusé de lecture, **blocage** et **signalement**, dans la
+  même fenêtre sociale (voir « Messagerie : discussions 1-à-1 entre amis »)
 - Appels **vocaux et vidéo** 1-à-1 entre amis, depuis l'en-tête d'une
   discussion : pair-à-pair WebRTC signalé par Supabase Realtime, appel
   entrant avec sonnerie, micro/caméra coupables, bascule de caméra,
@@ -311,10 +310,13 @@ If a variable is missing, `/auth` shows exactly which one under the form.
    at registration — for every new user, plus the `comments` table behind the
    article comment section (see below), the `friendships` table behind the
    friends list (see « Amis : demandes, liste et présence ») and the
-   `direct_messages` / `message_blocks` / `message_reports` tables plus the
-   private `voice-messages` Storage bucket behind the 1-à-1 messaging,
-   including voice messages (see « Messagerie : discussions 1-à-1 entre
-   amis »). The script is idempotent: re-run it after pulling a newer version.
+   `direct_messages` / `message_blocks` / `message_reports` tables behind the
+   1-à-1 messaging (see « Messagerie : discussions 1-à-1 entre amis »). The
+   script is idempotent: re-run it after pulling a newer version. It also
+   creates the `kind` / `attachment_*` columns and the private `voice-messages`
+   Storage bucket inherited from the old voice messaging: nothing in the app
+   uses them any more (see « Nettoyage optionnel du schéma » in the messaging
+   section to drop them).
    The SQL Editor wraps the file in **one transaction**, so a single error used
    to roll everything back — and the script looks like it ran while nothing was
    created. It is therefore guarded: steps that depend on Supabase-internal
@@ -553,21 +555,18 @@ Un visiteur non connecté ne voit rien (carte de connexion sur la page).
 | Niveau | Ce qui s'y trouve |
 | --- | --- |
 | **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
-| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), le bouton **micro** pour un message vocal, et dans l'en-tête les gestes **Bloquer** et **Signaler** ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
+| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
 
 L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil ;
 Échap remonte à la liste puis ferme la fenêtre.
 
-**Messages vocaux** : le bouton micro (à la place du bouton d'envoi tant que
-le champ texte est vide, masqué si le navigateur ne sait pas enregistrer de
-son) remplace le composeur par une barre d'enregistrement — chronomètre,
-annuler, arrêter — puis un aperçu écoutable avant l'envoi définitif ; 2
-minutes maximum, arrêt automatique passé ce délai. Dans le fil, une bulle
-vocale affiche un bouton lecture/pause, une barre de progression et la durée.
-Compte Supabase : l'enregistrement est déposé dans le bucket privé
-`voice-messages` et lu via une URL signée à la demande (jamais d'URL
-publique) ; persona de démonstration : encodé en `data:` URL dans
-localStorage, comme le reste de la messagerie de démonstration.
+**Le message vocal a été retiré** : le bouton micro, l'enregistreur, la bulle
+de lecture, l'upload dans le bucket `voice-messages` et le diagnostic
+`window.__lpVoiceDiag()` n'existent plus — la messagerie est **texte
+uniquement**. Les colonnes `kind` / `attachment_*` et le bucket restent dans
+`supabase/schema.sql` (le script est rejoué tel quel sur les projets déjà en
+place) ; voir « Nettoyage optionnel du schéma » à la fin de cette section si
+tu veux les effacer.
 
 **Où écrire à un ami** :
 
@@ -591,29 +590,15 @@ Les messages vivent dans `public.direct_messages` (`supabase/schema.sql`,
 étape 3e) : une ligne par message, `conversation_key` = les deux identifiants
 triés et séparés par `_` (les deux sens d'un échange partagent la même clé),
 `read_at` à NULL tant que le destinataire n'a pas ouvert la discussion — c'est
-ce qui compte les **non-lus**. `kind` distingue un message texte (`'text'`,
-par défaut) d'un message vocal (`'voice'`) ; un vocal a un `body` vide et
-porte `attachment_path` (clé de l'objet dans le bucket `voice-messages`),
-`attachment_duration` (secondes) et `attachment_mime`. Un trigger
-(`prepare_direct_message`) impose côté serveur : expéditeur = joueur connecté,
-**amitié `accepted` obligatoire**, aucun blocage entre les deux joueurs, 20
-messages par minute au plus, et selon `kind` — message texte non vide et
-≤ 1 000 caractères sans pièce jointe, ou message vocal avec un fichier déposé
-par l'expéditeur lui-même (dossier `{uid}/…`) et une durée entre 1 et 120
-secondes. Un second trigger (`restrict_direct_message_update`) fait en sorte
-qu'une mise à jour ne puisse **que** poser `read_at` (accusé de lecture) : ni
-le texte, ni la pièce jointe, ni l'expéditeur, ni l'horodatage ne peuvent être
-modifiés, et un message lu ne redevient jamais non-lu. Row Level Security : un
-joueur ne lit que ses propres échanges et n'écrit qu'en son nom.
-
-**Bucket de stockage** (`voice-messages`, étape 3f du schéma) : privé, jamais
-d'URL publique. Chaque fichier vit sous `{auth.uid()}/…` (imposé par la
-politique d'upload) ; il n'est lisible que par celui qui l'a déposé ou par le
-destinataire du message `direct_messages` qui le référence (jointure sur
-`attachment_path`, pas sur le seul chemin) — un fichier orphelin (message
-supprimé) redevient illisible pour l'autre joueur. Le client génère une URL
-signée à la demande (`getVoiceMessageUrl`, 1 h de validité) plutôt que de
-stocker une URL publique.
+ce qui compte les **non-lus**. Un trigger (`prepare_direct_message`) impose
+côté serveur : expéditeur = joueur connecté, **amitié `accepted`
+obligatoire**, aucun blocage entre les deux joueurs, 20 messages par minute au
+plus, et un message non vide de 1 000 caractères au maximum. Un second trigger
+(`restrict_direct_message_update`) fait en sorte qu'une mise à jour ne puisse
+**que** poser `read_at` (accusé de lecture) : ni le texte, ni l'expéditeur, ni
+l'horodatage ne peuvent être modifiés, et un message lu ne redevient jamais
+non-lu. Row Level Security : un joueur ne lit que ses propres échanges et
+n'écrit qu'en son nom.
 
 - **Temps réel** — la fenêtre écoute `direct_messages` sur deux canaux
   Realtime : `recipient_id = moi` pour les messages reçus (le badge des
@@ -636,13 +621,43 @@ Rien d'autre à configurer une fois le SQL relancé — le tableau de contrôle 
 fin de script doit afficher `OK` pour `table public.direct_messages`,
 `politiques RLS direct_messages (3)`, `trigger message 1-à-1`, `trigger accusé
 de lecture seul modifiable`, `tables blocages / signalements`, `politiques
-RLS blocages (3) / signalements (2)` et `messages vocaux (colonnes + bucket +
-politiques de stockage)` ; `realtime direct_messages` peut rester `ABSENT` (la
-messagerie se rafraîchit alors toutes les minutes), de même que la ligne
-messages vocaux si le bucket doit être créé à la main (rare, seulement si
-l'extension Storage n'est pas activée sur le projet). Tant que la table
-manque, la fenêtre l'explique (« La messagerie n'est pas encore activée sur ce
-déploiement… ») sans rien casser d'autre.
+RLS blocages (3) / signalements (2)` ; `realtime direct_messages` peut rester
+`ABSENT` (la messagerie se rafraîchit alors toutes les minutes). La dernière
+ligne du tableau, `messages vocaux (colonnes + bucket + politiques de
+stockage)`, est **héritée de l'ancienne messagerie vocale** : elle peut rester
+`ABSENT` sans conséquence, plus rien dans l'application ne s'en sert. Tant que
+la table manque, la fenêtre l'explique (« La messagerie n'est pas encore
+activée sur ce déploiement… ») sans rien casser d'autre.
+
+### Nettoyage optionnel du schéma
+
+Le message vocal ayant été retiré de l'application, les objets SQL qui le
+servaient ne sont plus utilisés : les colonnes `kind`, `attachment_path`,
+`attachment_duration`, `attachment_mime` de `direct_messages` et le bucket
+privé `voice-messages`. `supabase/schema.sql` continue de les créer (le script
+est rejoué tel quel sur les projets existants, et les retirer du fichier ne
+les supprimerait pas d'une base déjà à jour). Pour les effacer réellement —
+**opération définitive : les messages vocaux encore stockés sont perdus** —,
+dans Dashboard → SQL Editor :
+
+```sql
+drop policy if exists "Players upload their own voice messages" on storage.objects;
+drop policy if exists "Conversation participants read voice messages" on storage.objects;
+drop policy if exists "Senders delete their own voice messages" on storage.objects;
+delete from storage.objects where bucket_id = 'voice-messages';
+delete from storage.buckets where id = 'voice-messages';
+-- Messages vocaux restés en base : leur `body` est vide, ils s'afficheraient
+-- comme des bulles vides. À supprimer AVANT de retirer la colonne `kind`.
+delete from public.direct_messages where kind = 'voice';
+alter table public.direct_messages
+  drop column if exists kind,
+  drop column if exists attachment_path,
+  drop column if exists attachment_duration,
+  drop column if exists attachment_mime;
+```
+
+Sans ce nettoyage, la messagerie fonctionne exactement pareil : colonnes vides
+et bucket inutilisé.
 
 ### Personas de démonstration (fixtures de test)
 
@@ -660,10 +675,10 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `sendVoice`, `resolveAudioUrl`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
-| `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, lignes → discussions, non-lus, repli quand la table manque, état des personas, upload/URL signée des messages vocaux (bucket `voice-messages`) |
+| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
+| `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, lignes → discussions, non-lus, repli quand la table manque, état des personas |
 | `src/messages/demoThreads.js` | discussions de départ, réponses scriptées et messages entrants de l'aperçu démo |
-| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, enregistrement/lecture des messages vocaux, accès « Profil », bloquer / signaler |
+| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler |
 | `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
 | `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
 | `src/messages/messagesCopy.js` | textes FR / EN / AR |
@@ -674,16 +689,13 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 - `npm run check:messages` — logique pure (lignes `direct_messages` →
   discussions : les deux sens regroupés, fil retrié, non-lus comptés, accusé de
   lecture, messages reçus en direct sans doublon ; clés de conversation
-  symétriques ; saisie nettoyée et bornée ; erreurs du trigger reconnues,
-  y compris les erreurs vocales ; ligne `kind: 'voice'` → message vocal avec
-  pièce jointe et durée, ligne sans `kind` → message texte, comme avant la
-  migration), cohérence de l'aperçu de démonstration (discussions entre
-  **amis** existants, jamais soi-même, non-lus et discussions lues, réponses
-  déterministes, messages scriptés livrés une seule fois, envoi d'un message
-  vocal démo encodé en `data:` URL et borné à `VOICE_MAX_SECONDS`, blocage /
-  signalement réversibles, textes complets dans les trois langues), puis rendu
-  SSR du hub, de la fenêtre (fermée / liste / discussion ouverte) et de profils
-  publics — visiteur, ami et non-ami — dans les trois langues.
+  symétriques ; saisie nettoyée et bornée ; erreurs du trigger reconnues),
+  cohérence de l'aperçu de démonstration (discussions entre **amis** existants,
+  jamais soi-même, non-lus et discussions lues, réponses déterministes,
+  messages scriptés livrés une seule fois, blocage / signalement réversibles,
+  textes complets dans les trois langues), puis rendu SSR du hub, de la fenêtre
+  (fermée / liste / discussion ouverte) et de profils publics — visiteur, ami
+  et non-ami — dans les trois langues.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
   continuent de passer : amis et messagerie partagent la même fenêtre sociale
   (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page
