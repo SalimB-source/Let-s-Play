@@ -600,7 +600,7 @@ img{max-width:100%}
   background:#05060f;
   padding:120px 0 110px;
 }
-/* Le héros affiche l'image gaming gear en plein cadre, le voile `.hero-shade`
+/* Le héros affiche l'image Let's Play en plein cadre, le voile `.hero-shade`
    gardant le texte lisible à gauche. */
 .hero-bg{
   position:absolute;top:0;right:0;bottom:0;left:0;z-index:0;
