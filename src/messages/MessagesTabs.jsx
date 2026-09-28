@@ -532,7 +532,7 @@ export function ThreadView({
             <>
               <button
                 type="button"
-                className="messages-tool"
+                className="messages-tool is-call"
                 disabled={Boolean(callBlock)}
                 aria-label={ct.callAudio}
                 title={callHint || ct.callAudio}
@@ -542,7 +542,7 @@ export function ThreadView({
               </button>
               <button
                 type="button"
-                className="messages-tool"
+                className="messages-tool is-call"
                 disabled={Boolean(callBlock)}
                 aria-label={ct.callVideo}
                 title={callHint || ct.callVideo}

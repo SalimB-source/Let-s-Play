@@ -28,7 +28,13 @@ const write = process.argv.includes('--write');
    - médias : le texte est posé sur une image ou un lecteur vidéo ;
    - bandeaux de marque : le ticker et l'appel final deviennent des aplats
      saturés, l'encre claire y reste juste ;
-   - pastilles colorées : fond de marque plein, l'encre claire est le sujet. */
+   - pastilles colorées : fond de marque plein, l'encre claire est le sujet.
+   - appels (motif `calls-`) : l'overlay d'appel est un ÉCRAN — sombre dans
+     les deux thèmes (règle « les médias restent sombres », section 8 de
+     theme.css). Ses encres sont posées en dur dans src/messages/calls.css et
+     ne doivent PAS basculer en encre sombre en thème clair. (Seule le
+     `.calls-notice`, surface d'interface, suit le thème — elle n'y pose que
+     des jetons, donc rien à exclure de plus.) */
 /* NB : `\\.play\\b` vise le bouton lecture, pas `.player-*` (page profil) ;
    `\\.hero\\b` vise le héros photo, pas `.arena-hero` ni `.quiz-rank-hero-*`. */
 const KEEP = new RegExp([
@@ -43,6 +49,8 @@ const KEEP = new RegExp([
   'button-yellow', 'awaited-band',
   // pastilles de statut pleines : le fond saturé porte l'encre claire
   'sentiment', 'article-views-inline',
+  // appels vocaux/vidéo : écran, sombre dans les deux thèmes
+  'calls-',
 ].join('|'));
 
 /* Encres de statut, lisibles sur noir mais pas sur blanc (le rouge clair

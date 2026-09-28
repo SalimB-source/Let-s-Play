@@ -120,6 +120,12 @@
   [data-theme='light'] .nav-account-name,
   [data-theme='light'] .quiz-rank-heading h2,
   [data-theme='light'] .quiz-rank-hero-value,
+  [data-theme='light'] .spoiler-alert-title,
+  [data-theme='light'] .spoiler-alert-toggle,
+  [data-theme='light'] .inline-spoiler-btn,
+  [data-theme='light'] .inline-spoiler-content,
+  [data-theme='light'] .inline-spoiler-hide:hover,
+  [data-theme='light'] [data-theme='light'] .spoiler-alert-badge,
   [data-theme='light'] .dossier-lead,
   [data-theme='light'] .dossier-pullquote,
   [data-theme='light'] .dossier-stat-card span,
@@ -129,13 +135,13 @@
   [data-theme='light'] .messages-search input,
   [data-theme='light'] .messages-row-name,
   [data-theme='light'] .messages-thread-name,
+  [data-theme='light'] .messages-more-item:hover,
   [data-theme='light'] .messages-composer textarea,
   [data-theme='light'] .messages-report-reason:hover,
   [data-theme='light'] .messages-report-reason.is-active,
   [data-theme='light'] .messages-report-note,
   [data-theme='light'] .social-page-tab:hover,
   [data-theme='light'] .messages-page-kicker,
-  [data-theme='light'] .messages-page-guest-title,
   [data-theme='light'] .news-feature-copy h2,
   [data-theme='light'] .article-lead,
   [data-theme='light'] .article-body h2,
@@ -177,6 +183,8 @@
   [data-theme='light'] .horror-stats .quiz-stat strong,
   [data-theme='light'] [data-theme='light'] .survival-horror .quiz-header h1,
   [data-theme='light'] [data-theme='light'] .horror-file-inner h2,
+  [data-theme='light'] .lets-talk-label,
+  [data-theme='light'] .nav-messages-link .lets-talk-label,
   [data-theme='light'] .social-panel-kicker,
   [data-theme='light'] .social-tab:hover,
   [data-theme='light'] .nav-logout:hover,
@@ -208,6 +216,7 @@
 }
 
 /* Encres blanches atténuées : corps de texte et libellés. */
+  [data-theme='light'] .spoiler-alert-body-inner p,
   [data-theme='light'] .article-body,
   [data-theme='light'] .proscons li,
   [data-theme='light'] .horror-photo-inner,
@@ -250,6 +259,7 @@
   [data-theme='light'] .quiz-rank-kicker,
   [data-theme='light'] .quiz-rank-position,
   [data-theme='light'] .quiz-rank-meta-value,
+  [data-theme='light'] .spoiler-alert-toggle-arrow,
   [data-theme='light'] .dossier-byline,
   [data-theme='light'] .dossier-stat-card strong,
   [data-theme='light'] .chapter-list time,
@@ -261,6 +271,7 @@
   [data-theme='light'] .friend-icon-incoming,
   [data-theme='light'] .player-friend-level,
   [data-theme='light'] .messages-tool.is-flagged,
+  [data-theme='light'] .messages-more-item.is-flagged,
   [data-theme='light'] .messages-report-title,
   [data-theme='light'] .social-page-back:hover,
   [data-theme='light'] .social-page-tab-icon,
@@ -284,7 +295,7 @@
   [data-theme='light'] .article-reaction-yellow .article-reaction-icon,
   [data-theme='light'] .article-byline > span:nth-child(2),
   [data-theme='light'] .article-toc-progress,
-    [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
+  [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
   [data-theme='light'] .news-carousel.is-grid .news-today .read-link,
   [data-theme='light'] .partners-head h2 em,
   [data-theme='light'] .partner-link:hover,
@@ -314,6 +325,7 @@
   [data-theme='light'] .quiz-finished-best,
   [data-theme='light'] .quiz-result-finished,
   [data-theme='light'] .quiz-confirm-dialog--medium .quiz-confirm-title,
+  [data-theme='light'] .social-tab--messages.lets-talk-label.is-active,
   [data-theme='light'] .social-launcher-meta-unread,
   [data-theme='light'] .cmd-palette-foot-dot,
   [data-theme='light'] .menu-button .dash.open,
@@ -347,6 +359,7 @@
   [data-theme='light'] .friends-inline-error,
   [data-theme='light'] .friend-btn-link:not(:disabled):hover,
   [data-theme='light'] .friend-btn-error,
+  [data-theme='light'] .messages-more-item-danger:hover,
   [data-theme='light'] .messages-bubble-delete:hover,
   [data-theme='light'] .messages-char-count.is-over,
   [data-theme='light'] .messages-blocked-banner,
@@ -1056,6 +1069,15 @@
 /* Tout ce qui se pose sur une image, une vidéo ou un écran garde son voile
    sombre et son texte blanc. Cette section ré-affirme l'intention : elle vient
    après la section 3, donc elle a le dernier mot sur ces sélecteurs. */
+/* --- Appels vocaux / vidéo : un écran, sombre dans les deux thèmes --------
+   L'overlay d'appel (voile, carte entrante, panneau, scène, incrustation,
+   contrôles) est un écran : fond nuit, texte blanc, néons cyan/jaune —
+   c'est le seul endroit du site où le thème clair ne passe pas du tout.
+   Tout y est posé EN DUR dans src/messages/calls.css (aucun jeton de thème),
+   et le balayage d'encres exclut le motif `calls-`
+   (scripts/theme-ink-sweep.mjs) — rien à surcharger ici. Seule exception :
+   le bandeau `.calls-notice` est une surface d'interface (il s'affiche aussi
+   hors appel) et suit le thème, comme le reste des surfaces. */
 /* Le héros clair fait exception (key art sur fond clair) : voir le bloc
    « Héros clair » ci-dessous. */
 [data-theme='light'] .live-player,

@@ -755,6 +755,33 @@ de clic muet.
 | **Médias** | WebRTC **pair-à-pair** (`getUserMedia` + `RTCPeerConnection`) : le son et l'image ne passent jamais par un serveur. STUN public livré par défaut ; TURN optionnel (voir plus bas) pour les NAT stricts |
 | **État & interface** | `CallsContext` expose la phase (`idle → incoming/outgoing → connecting → active → ended`), les flux `<video>`, le micro / la caméra, la durée, le motif de fin ; `CallOverlays` rend l'appel entrant (carte + sonnerie) et le panneau d'appel (vidéo de l'ami en grand, la nôtre en incrustation **miroir**, chrono, contrôles) |
 
+**L'interface, en mode HUD de jeu.** L'overlay d'appel est traité comme un
+*écran* : sombre dans les deux thèmes (règle « les médias restent sombres »,
+section 8 de `theme.css`), encres posées **en dur** dans `src/messages/calls.css`
+— c'est le motif `calls-` du balayage d'encres (`scripts/theme-ink-sweep.mjs`)
+qui garantit qu'aucune de ces couleurs ne bascule en thème clair. L'habillage
+gaming :
+
+- **équerres néon** dans les angles (`.calls-frame`, le même geste que
+  `.hud-frame` sur le site) — le cadre du panneau « respire » en cours
+  d'appel et passe **au rouge** une fois l'appel terminé ;
+- **radar** autour de l'avatar (balayage conique + cadran pointillé) :
+  sonnerie entrante et scène de l'appel vocal ;
+- **LED d'état** dans l'en-tête (jaune en cours d'établissement, vert
+  clignotant en appel, rouge à la fin) et **chrono Orbitron** en pastille
+  néon — le pseudo de l'ami et les initiales d'avatar portent aussi
+  Orbitron (`src/typography.css`, bloc 6) ;
+- **scène vidéo** : viseur aux quatre coins, scanlines et vignette posées
+  sur l'image ; **scène audio** : égaliseur à sept barres (la médiane porte
+  le jaune de marque) et indicateur de signal en cascade ;
+- **boutons néon** : le « Répondre » pulse, micro/caméra coupés virent au
+  rouge, les boutons téléphone/caméra de l'en-tête de discussion
+  (`.messages-tool.is-call`) s'illuminent en cyan au survol.
+
+Tout le décoratif est `aria-hidden` : l'accessible reste le texte (libellé,
+pseudo, état, chrono), et `prefers-reduced-motion` coupe le mouvement sans
+enlever d'information.
+
 **Le scénario complet** : l'appelant obtient micro/caméra (la permission est
 demandée **avant** de sonner), puis l'ami reçoit l'appel entrant (sonnerie,
 carte « Répondre / Refuser »). Répondre lance la connexion P2P ; refuser

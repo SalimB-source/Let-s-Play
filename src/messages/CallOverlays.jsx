@@ -18,6 +18,12 @@ import { formatDuration, remotePlaybackNeedsSink } from './callsCore';
  *     dans un vrai téléphone), le chrono, l'état en toutes lettres et les
  *     contrôles : micro, caméra, changement de caméra, raccrocher.
  *
+ * Le visuel est celui d'un **HUD de jeu** (équerres néon, radar de sonnerie,
+ * LED d'état, chrono Orbitron, scanlines sur la vidéo, égaliseur en dégradé)
+ * — tout le style vit dans `calls.css`, y compris les éléments décoratifs
+ * ci-dessous (`calls-radar`, `calls-led`, `calls-signal`), qui sont toujours
+ * `aria-hidden` : l'accessible reste le texte (libellé, pseudo, état, chrono).
+ *
  * Aucune donnée ici : tout vient de `useCalls()`. Les textes suivent la
  * langue du site (EN / FR / AR) et le pseudo de l'ami s'affiche en majuscules,
  * comme partout dans la messagerie (`pseudoLabel`).
@@ -187,12 +193,13 @@ function IncomingCall({ calls, t }) {
   const isVideo = kind === 'video';
   const peerName = pseudoLabel(peer?.name); // pseudo en majuscules, comme la messagerie
   return (
-    <div className="calls-backdrop is-incoming">
-      <section className="calls-card" role="dialog" aria-modal="true" aria-label={isVideo ? t.incomingVideo : t.incomingAudio}>
+    <div className={`calls-backdrop is-incoming${isVideo ? ' is-video' : ''}`}>
+      <section className="calls-card calls-frame" role="dialog" aria-modal="true" aria-label={isVideo ? t.incomingVideo : t.incomingAudio}>
         <span className="calls-card-kicker">{isVideo ? t.incomingVideo : t.incomingAudio}</span>
         <span className="calls-ringing-avatar">
           <span className="calls-ring calls-ring-a" aria-hidden="true" />
           <span className="calls-ring calls-ring-b" aria-hidden="true" />
+          <span className="calls-radar" aria-hidden="true" />
           <CallAvatar name={peerName} src={peer?.avatar} />
         </span>
         <strong className="calls-card-name">{peerName}</strong>
@@ -242,11 +249,12 @@ function ActiveCall({ calls, t }) {
 
   return (
     <div className={`calls-backdrop is-${phase}${isVideo ? ' is-video' : ''}`}>
-      <section className="calls-panel" role="dialog" aria-modal="true" aria-label={isVideo ? t.callVideo : t.callAudio}>
+      <section className={`calls-panel calls-frame is-${phase}`} role="dialog" aria-modal="true" aria-label={isVideo ? t.callVideo : t.callAudio}>
         <header className="calls-head">
           <span className="calls-kicker">{isVideo ? t.callVideo : t.callAudio}</span>
           <strong className="calls-name">{peerName}</strong>
           <span className="calls-status" aria-live="polite">
+            <i className={`calls-led is-${phase}`} aria-hidden="true" />
             {timer ? <em className="calls-timer">{timer}</em> : status}
           </span>
           {cameraFallback && phase !== 'ended' && (
@@ -265,9 +273,11 @@ function ActiveCall({ calls, t }) {
           {!remoteVideo && (
             <div className="calls-stage-audio" aria-hidden="true">
               <span className={`calls-stage-avatar${phase === 'active' ? ' is-live' : ''}`}>
+                <span className="calls-radar" aria-hidden="true" />
                 <CallAvatar name={peerName} src={peer?.avatar} />
               </span>
-              <span className="calls-eq" aria-hidden="true"><i /><i /><i /><i /><i /></span>
+              <span className="calls-eq" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></span>
+              <span className="calls-signal" aria-hidden="true"><i /><i /><i /><i /></span>
             </div>
           )}
           {localVideo && phase !== 'ended' && (
