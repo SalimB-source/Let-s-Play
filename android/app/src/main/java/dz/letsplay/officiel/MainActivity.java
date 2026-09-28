@@ -98,6 +98,15 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);      // thème, session, quizz, listes…
         settings.setAllowFileAccess(false);
+        // Sans ces deux réglages, la WebView ignore `<meta name="viewport">` :
+        // elle met la page en page à ~980 px de large (comme un navigateur de
+        // bureau) puis la réduit pour la faire tenir dans l'écran. Sur
+        // téléphone, on voyait donc la barre de navigation « PC » et les blocs
+        // côte à côte au lieu de la mise en page mobile. Avec eux, la fenêtre
+        // de mise en page vaut la largeur de l'écran et les requêtes média
+        // `max-width:800px` (voir src/styles.css) s'appliquent normalement.
+        settings.setUseWideViewPort(true);
+        settings.setLoadWithOverviewMode(true);
         // Le son distant arrive après la négociation WebRTC, bien après le
         // clic « Répondre ». Sans ça, la WebView peut refuser de le jouer.
         settings.setMediaPlaybackRequiresUserGesture(false);

@@ -319,7 +319,7 @@ body.nav-open .social-dock { display: none; }
 /* ----------------------- Mobile : page sociale --------------------------
    Le lanceur ouvre /messages ; aucun panneau flottant sur mobile. */
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .social-dock {
     right: 12px;
     bottom: 12px;

@@ -276,7 +276,7 @@
 [data-theme='light'] .spoiler-alert-live { color: var(--violet); }
 [data-theme='light'] .spoiler-alert-body-inner p { color: rgba(33, 16, 62, 0.82); }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .spoiler-alert {
     margin: 22px 0 24px;
   }

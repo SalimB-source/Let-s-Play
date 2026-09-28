@@ -18,6 +18,12 @@ accéder à la messagerie, il faut se connecter dans l'application.
 ## Comportement de l'app
 
 - Tirer-rafraîchir rechargement la page ; bouton retour = navigation arrière.
+- **Mise en page mobile** : `setUseWideViewPort(true)` +
+  `setLoadWithOverviewMode(true)` sont indispensables. Sans eux, la WebView
+  ignore `<meta name="viewport">` et met la page en page à ~980 px (comme un
+  navigateur de bureau) avant de la réduire : on voyait la barre de navigation
+  « PC » et les blocs côte à côte au lieu du menu mobile. Voir la section
+  « Mise en page téléphone » du README principal.
 - Les liens externes (YouTube, Instagram…) s'ouvrent dans l'app dédiée ou le
   navigateur ; le site reste dans la WebView.
 - Les vidéos intégrées (YouTube) passent en plein écran natif.

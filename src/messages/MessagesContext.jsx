@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import useMediaQuery from '../lib/useMediaQuery';
+import { SOCIAL_MOBILE_MEDIA } from '../lib/phoneLayout';
 import { useAuth } from '../auth/AuthContext';
 import { useFriends } from '../friends/FriendsContext';
 import { DEMO_REPLY_DELAY_MS, dueDemoIncoming } from './demoThreads';
@@ -171,7 +172,7 @@ export function MessagesProvider({ children }) {
   const navigate = useNavigate();
   // Sur mobile, la messagerie s'ouvre sur la page dédiée (/messages) plutôt
   // que dans le pop-up de la fenêtre sociale.
-  const isMobile = useMediaQuery('(max-width: 760px)');
+  const isMobile = useMediaQuery(SOCIAL_MOBILE_MEDIA);
   const uid = user?.id ? String(user.id) : null;
   const mode = !uid ? 'none' : isDemo ? 'demo' : supabase ? 'supabase' : 'none';
 
