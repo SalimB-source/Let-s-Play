@@ -69,6 +69,7 @@ import { CallsProvider } from './messages/CallsContext';
 import CallOverlays from './messages/CallOverlays';
 import SocialDock from './social/SocialDock';
 import { initSinglePlayback } from './lib/videoPlayback';
+import { normalizePhoneViewport } from './lib/phoneLayout';
 
 function App() {
   return (
@@ -201,4 +202,15 @@ function App() {
 // coordinateur met en pause tous les autres lecteurs de la page.
 initSinglePlayback();
 
+// Sur un téléphone dont le navigateur a élargi la fenêtre de mise en page
+// (zoom de page mémorisé par Safari, « version ordinateur », WebView qui
+// ignore `<meta viewport>`), on réapplique le viewport de l'écran AVANT le
+// premier rendu : la page repart à l'échelle 1 et les requêtes média mobiles
+// s'appliquent. Appelée aussi juste après le montage : Safari applique
+// parfois son zoom mémorisé une fois la page déjà chargée.
+normalizePhoneViewport();
+
 createRoot(document.getElementById('root')).render(<App />);
+
+setTimeout(normalizePhoneViewport, 400);
+setTimeout(normalizePhoneViewport, 1500);

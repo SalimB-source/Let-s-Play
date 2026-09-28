@@ -81,6 +81,77 @@ dans les deux thèmes, le fond effectif de chaque texte est calculé en empilant
 les couches translucides, et tout ce qui passe sous le seuil WCAG AA est
 signalé. Onze pages sont aujourd'hui à zéro écart en clair.
 
+## Mise en page téléphone (iPhone, Android, WebView)
+
+Le site bascule sur sa mise en page mobile via des requêtes média
+`@media(max-width:800px)`. Or **la fenêtre de mise en page n'est pas toujours
+la largeur de l'écran** :
+
+- **Safari iOS mémorise un zoom par site** (menu « Aa » → −, pincement, ou
+  « version ordinateur ») et le réapplique au chargement : la fenêtre de mise en
+  page peut valoir 800–1100 px sur un écran de 390 px. Toutes les requêtes
+  `max-width:800px` sont alors ignorées, et le téléphone affiche la mise en page
+  du PC — barre de navigation complète, blocs côte à côte.
+- **Une WebView n'honore `<meta name="viewport">`** que si l'application le lui
+  demande ; sinon elle met la page en page à ~980 px, puis la réduit pour la
+  faire tenir dans l'écran. Même symptôme dans l'APK.
+
+Deux parades, dans cet ordre :
+
+1. **`normalizePhoneViewport()`** (`src/lib/phoneLayout.js`, appelé avant le
+   premier rendu dans `src/main.jsx`, puis deux fois après le montage — Safari
+   applique parfois son zoom une fois la page chargée) : sur un téléphone
+   (écran ≤ 600 px sur son petit côté) dont la fenêtre de mise en page dépasse
+   800 px **et** reste plus haute que large, le `<meta name="viewport">` est
+   réécrit — le navigateur recalcule alors la mise en page, qui revient à
+   l'échelle 1. La fenêtre est écrite une fois sous sa forme d'origine, puis une
+   fois sous une variante équivalente (`initial-scale=1` au lieu de `1.0`) : la
+   chaîne change, donc le recalcul est relancé même si le viewport était déjà le
+   bon, et au troisième appel il n'y a plus rien à faire. Un téléphone en
+   **paysage** (fenêtre 844 × 390) n'est jamais touché : sa fenêtre est la
+   largeur réelle de son écran, et la mise en page large y est celle voulue.
+2. **Les feuilles de style ne dépendent plus de la seule largeur.** Chaque
+   requête « petit écran » est écrite en OU d'une condition qui décrit un
+   téléphone d'après la **taille d'écran** (`max-device-width`, insensible au
+   zoom), et chaque requête « bureau » est restreinte aux appareils qui ne sont
+   pas des téléphones en portrait :
+
+   ```css
+   /* petit écran — un téléphone à fenêtre large est couvert aussi */
+   @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px){ … }
+
+   /* bureau — plus appliqué à un téléphone en portrait, mais toujours actif
+      sur ordinateur, tablette et téléphone en paysage */
+   @media(min-width:801px) and (hover:hover), (min-width:801px) and (min-device-width:601px){ … }
+   ```
+
+   Une liste média est fausse si **une** de ses conditions est inconnue du
+   navigateur : la mise en page d'origine continue donc de fonctionner partout
+   ailleurs (Firefox, qui ne connaît pas `device-width`, ignore simplement la
+   seconde condition). C'est le même critère qui pilote le JavaScript : les
+   décisions « mobile » de `Layout.jsx` (barre qui ne se cache pas au
+   défilement, pastille de navigation masquée) et des contextes social /
+   messagerie (`SOCIAL_MOBILE_MEDIA` : page `/messages` plutôt que pop-up)
+   passent par `isPhoneLayout()` / `isHandheld()` du même module.
+
+```bash
+npm run check:phone-css      # échoue si une requête média perd sa condition téléphone
+npm run check:phone-layout   # détection « téléphone » : zoom, paysage, iPad, bureau (jsdom)
+```
+
+`check:phone-css` relit toutes les feuilles, compte 86 requêtes « petit écran »
+et 12 requêtes « bureau » et échoue si l'une d'elles repart sans garde-fou : un
+nouveau composant qui écrirait `@media(max-width:700px)` sans la condition
+téléphone casse la vérification. C'est la règle à connaître avant d'ajouter une
+requête média. `check:phone-layout` rejoue les situations gênantes sur un faux
+DOM (écran de 390 px et fenêtre de 860 px, viewport élargi, paysage, iPad,
+ordinateur) et vérifie que la normalisation du viewport ne se déclenche que là
+où il faut — et une seule fois.
+
+Côté **APK Android**, la WebView reçoit `setUseWideViewPort(true)` et
+`setLoadWithOverviewMode(true)` (`android/app/src/main/java/dz/letsplay/officiel/MainActivity.java`) :
+sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
+
 ## Typographie : Orbitron pour les gros titres
 
 Deux familles, un partage net, et un seul fichier qui tranche —

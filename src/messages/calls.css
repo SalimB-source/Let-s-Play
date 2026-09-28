@@ -710,7 +710,7 @@
 
 /* --------------------------------- mobile ---------------------------------- */
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .calls-notice { bottom: max(14px, env(safe-area-inset-bottom, 0px)); }
   .calls-backdrop { padding: 0; }
   .calls-panel {

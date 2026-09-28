@@ -10,6 +10,7 @@ import { callsText } from '../messages/callsCopy';
 import { describeMessagesError, messagesText } from '../messages/messagesCopy';
 import { InboxView, ThreadView } from '../messages/MessagesTabs';
 import useMediaQuery from '../lib/useMediaQuery';
+import { SOCIAL_MOBILE_MEDIA } from '../lib/phoneLayout';
 import { socialText } from './socialCopy';
 import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
 
@@ -69,7 +70,7 @@ export default function SocialDock() {
   // /messages — pas de pop-up : l'expérience est plein écran, avec de vrais
   // onglets et un historique de navigation (le bouton retour du téléphone
   // fonctionne).
-  const isMobile = useMediaQuery('(max-width: 760px)');
+  const isMobile = useMediaQuery(SOCIAL_MOBILE_MEDIA);
   // Sur la page sociale, le lanceur flottant disparaît : la page se suffit
   // à elle-même.
   const onSocialRoute = /^\/(messages|messagerie)(\/|$)/.test(location.pathname || '');

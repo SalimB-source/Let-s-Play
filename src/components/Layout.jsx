@@ -8,6 +8,7 @@ import { searchContent } from '../search/searchIndex';
 import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
 import { levelTitle } from '../achievements/catalog';
 import { avatarFor, displayNameFor } from '../lib/comments';
+import { isPhoneLayout } from '../lib/phoneLayout';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
 import ArticleReadingTools from './ArticleReadingTools';
@@ -58,8 +59,11 @@ export default function Layout({ children }) {
         const last = lastScroll.current;
         const goingDown = y > last + 8;
         const goingUp = y < last - 8;
-        // ne cache que sur desktop et quand aucun overlay n'est ouvert
-        const isDesktop = window.innerWidth > 800;
+        // ne cache que sur desktop et quand aucun overlay n'est ouvert.
+        // `isPhoneLayout()` compte aussi les téléphones dont le navigateur a
+        // élargi la fenêtre de mise en page (zoom Safari, version ordinateur,
+        // WebView) : leur barre est celle du menu mobile, elle ne se cache pas.
+        const isDesktop = !isPhoneLayout();
         const anyOverlay = menuOpen || paletteOpen || profileMenuOpen;
         if (isDesktop && !anyOverlay && y > 120 && goingDown) {
           setNavHidden(true);
@@ -77,7 +81,10 @@ export default function Layout({ children }) {
   // pill indicator qui glisse
   const updateIndicator = () => {
     const el = navPrimaryRef.current;
-    if (!el || window.innerWidth <= 800) {
+    // La pastille qui glisse n'existe que sur la barre « bureau » : sur un
+    // téléphone (même à fenêtre large, voir `isPhoneLayout`), le menu mobile
+    // prend le relais et la pastille reste masquée.
+    if (!el || isPhoneLayout()) {
       setIndicator((p) => ({ ...p, opacity: 0 }));
       return;
     }
