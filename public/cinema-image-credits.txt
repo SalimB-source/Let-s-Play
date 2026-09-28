@@ -30,3 +30,39 @@ https://www.thewitcher.com/us/en/news/52017/announcing-the-witcher-3-wild-hunt-r
 
 Satya Nadella — portrait officiel Microsoft (Brian Smale / Microsoft), licence Creative Commons BY-SA 4.0 :
 https://news.microsoft.com/source/exec/satya-nadella/
+
+Galeries « Captures » des articles du 28.09.2026 (public/screenshots/) :
+
+cinema-box-office-endgame-encore/ — 01 : détail de l'affiche officielle d'Avengers: Endgame Encore (Marvel Studios / Disney), reproduite par Times Now ;
+02 : photo de tournage officielle de Resident Evil, Zach Cregger et Austin Abrams (Sony Pictures / Constantin Film), publiée par The Hollywood Reporter ;
+03 : photogramme officiel de Primetime (A24), publié par CNN.
+https://www.timesnownews.com/entertainment-news/hollywood/avengers-endgame-encore-marvel-alters-footage-for-2026-re-release-what-has-changed-article-155988728
+https://www.hollywoodreporter.com/movies/movie-features/resident-evil-filmmaker-zach-cregger-test-screenings-1236697134/
+https://www.cnn.com/2026/09/23/entertainment/primetime-movie-chris-hansen-robert-pattinson
+
+cinema-last-of-us-casting/ — 01 : photogramme officiel HBO, Kaitlyn Dever en Abby (saison 2), publié par Soap Central ;
+02 : capture officielle de The Last of Us Part II (Naughty Dog / Sony Interactive Entertainment), reproduite par Observer ;
+03 : photogramme HBO déjà utilisé dans screenshots/cinema-last-of-us/01.jpg (Ellie, Bella Ramsey).
+https://www.soapcentral.com/shows/what-kaitlyn-dever-s-casting-mean-future-the-last-us-here-s-know
+https://observer.com/2020/07/the-last-of-us-part-2-redemption-naughty-dog-analysis/
+
+cinema-godzilla-minus-zero/ — 01 : détail (recadrage 16:9) de l'affiche teaser officielle de Godzilla Minus Zero (© 2026 TOHO CO., LTD.) ;
+02 : image de la bande-annonce officielle, publiée par SlashFilm ;
+03 : visuel clé officiel publié sur Godzilla.com (Toho).
+https://www.slashfilm.com/2252602/godzilla-minus-zero-trailer/
+https://godzilla.com/pages/godzilla-minus-zero
+
+Galeries gaming du 28.09.2026 :
+
+minecraft-the-sift/ — 01 et 03 : extraits du Minecraft Live du 26.09.2026 (Mojang Studios), via BisectHosting ; 02 : capture officielle de Minecraft Dungeons II (Minecraft.net).
+https://www.bisecthosting.com/blog/minecraft-live-announcements-september-2026-the-sift-ice-caves-more
+https://www.minecraft.net/en-us/article/minecraft-dungeons-ii-gameplay-systems
+
+witcher-3-remastered/ — visuel et captures officiels de The Witcher 3: Wild Hunt Remastered (© CD Projekt Red), via IGN India, GamesRadar+ et FinalBoss.
+https://in.ign.com/the-witcher-3-wild-hunt-remastered/270260/the-witcher-3-remastered-cd-projekt-red-shares-new-gameplay-footage-of-its-action-rpg-title
+https://www.gamesradar.com/games/the-witcher/cd-projekt-red-snuck-30-improvements-into-the-witcher-3-remastered-reveal-including-immersive-meditation-new-quest-tracking-a-loot-rework-and-switch-2-exclusives/
+https://finalboss.io/the-witcher-3-remastered-path-tracing-combat-and-skill-tree-changes
+
+xbox-nadella/ — 01 : portrait officiel de Satya Nadella (Brian Smale & Microsoft, CC BY-SA 4.0), recadré en 16:9 ; 02 : photo publiée sur les comptes X officiels de Hideo Kojima et Asha Sharma (déjà présente dans public/news-sources/) ; 03 : capture de Halo Infinite déjà présente dans screenshots/halo-activision/01.jpg.
+https://news.microsoft.com/microsoft-news-center-photos
+https://news.instant-gaming.com/en/articles/21882-asha-sharma-poses-with-hideo-kojima-to-prepare-for-the-future

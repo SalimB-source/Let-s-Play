@@ -285,6 +285,90 @@ export const articleGalleries = {
     credit: 'Captures : Metroid Dread (Nintendo), à titre d’illustration de la série — Ravenous n’a montré que des extraits.',
   },
 
+  // ---- Actus du 28.09.2026 (gaming) ----------------------------------------
+  'minecraft-the-sift-nouvelle-dimension': {
+    label: 'THE SIFT', meta: 'MOJANG · MINECRAFT LIVE',
+    items: [
+      { src: 'screenshots/minecraft-the-sift/01.jpg', alt: 'Minecraft — une créature bleue aux longues oreilles de la dimension The Sift, extrait du Minecraft Live de septembre 2026', caption: '01 / Les habitants de The Sift, dévoilés au Minecraft Live' },
+      { src: 'screenshots/minecraft-the-sift/02.jpg', alt: 'Minecraft Dungeons II — quatre héros en coopération sur des blocs orange, dans une zone aux teintes roses et turquoise', caption: '02 / Dungeons II, première porte d’entrée vers la dimension' },
+      { src: 'screenshots/minecraft-the-sift/03.jpg', alt: 'Minecraft — grottes de glace du prochain game drop, extrait du Minecraft Live de septembre 2026', caption: '03 / Les grottes de glace du prochain game drop' },
+    ],
+    credit: 'Extraits du Minecraft Live du 26 septembre 2026 et capture officielle de Minecraft Dungeons II — Mojang Studios / Xbox Game Studios.',
+    creditSources: [
+      { label: 'récapitulatif du Minecraft Live par BisectHosting', href: 'https://www.bisecthosting.com/blog/minecraft-live-announcements-september-2026-the-sift-ice-caves-more' },
+      { label: 'article officiel Minecraft.net sur les systèmes de jeu de Dungeons II', href: 'https://www.minecraft.net/en-us/article/minecraft-dungeons-ii-gameplay-systems' },
+    ],
+  },
+  'the-witcher-3-remastered-sortie-29-septembre': {
+    label: 'THE WITCHER 3 REMASTERED', meta: 'CD PROJEKT RED · 29.09.2026',
+    items: [
+      { src: 'screenshots/witcher-3-remastered/01.jpg', alt: 'The Witcher 3: Wild Hunt Remastered — visuel officiel, Geralt de Riv l’épée à la main', caption: '01 / Geralt, visuel officiel de la version remasterisée' },
+      { src: 'screenshots/witcher-3-remastered/02.jpg', alt: 'The Witcher 3: Wild Hunt Remastered — Geralt lance le signe Igni face à un Sylvain dans la forêt', caption: '02 / Igni face au Sylvain, capture officielle' },
+      { src: 'screenshots/witcher-3-remastered/03.jpg', alt: 'The Witcher 3: Wild Hunt Remastered — Geralt affronte des noyeurs dans les marais de Velen', caption: '03 / Les marais de Velen en path tracing' },
+    ],
+    credit: 'Visuel et captures officiels de The Witcher 3: Wild Hunt Remastered — © CD Projekt Red.',
+    creditSources: [
+      { label: 'article IGN India (visuel officiel)', href: 'https://in.ign.com/the-witcher-3-wild-hunt-remastered/270260/the-witcher-3-remastered-cd-projekt-red-shares-new-gameplay-footage-of-its-action-rpg-title' },
+      { label: 'article GamesRadar+ (capture Igni)', href: 'https://www.gamesradar.com/games/the-witcher/cd-projekt-red-snuck-30-improvements-into-the-witcher-3-remastered-reveal-including-immersive-meditation-new-quest-tracking-a-loot-rework-and-switch-2-exclusives/' },
+      { label: 'article FinalBoss (capture des marais)', href: 'https://finalboss.io/the-witcher-3-remastered-path-tracing-combat-and-skill-tree-changes' },
+    ],
+  },
+  'xbox-nadella-restructuration': {
+    label: 'XBOX, ANNÉE ZÉRO', meta: 'MICROSOFT · RESTRUCTURATION',
+    items: [
+      { src: 'screenshots/xbox-nadella/01.jpg', alt: 'Satya Nadella, PDG de Microsoft — portrait officiel', caption: '01 / Satya Nadella, portrait officiel Microsoft' },
+      { src: 'screenshots/xbox-nadella/02.jpg', alt: 'Asha Sharma, patronne de Xbox, aux côtés de Hideo Kojima chez Kojima Productions', caption: '02 / Asha Sharma, ici avec Hideo Kojima le 14 septembre' },
+      { src: 'screenshots/xbox-nadella/03.jpg', alt: 'Halo Infinite — le Master Chief, capture du jeu', caption: '03 / Halo, la licence passée sous pavillon Activision' },
+    ],
+    credit: 'Portrait : Brian Smale & Microsoft (CC BY-SA 4.0) ; photo publiée sur les comptes X officiels de Hideo Kojima et Asha Sharma ; capture de Halo Infinite (343 Industries / Xbox Game Studios), à titre d’illustration.',
+    creditSources: [
+      { label: 'photothèque officielle Microsoft News Center', href: 'https://news.microsoft.com/microsoft-news-center-photos' },
+      { label: 'article Instant Gaming News sur la visite chez Kojima Productions', href: 'https://news.instant-gaming.com/en/articles/21882-asha-sharma-poses-with-hideo-kojima-to-prepare-for-the-future' },
+    ],
+  },
+
+  // ---- Actus du 28.09.2026 (cinéma) ----------------------------------------
+  'cinema/box-office-us-endgame-encore-26-millions': {
+    label: 'LE PODIUM DU WEEK-END', meta: 'BOX-OFFICE US · 25-27.09',
+    items: [
+      { src: 'screenshots/cinema-box-office-endgame-encore/01.jpg', alt: 'Avengers: Endgame Encore — détail de l’affiche officielle de la ressortie, les héros sculptés en argent', caption: '01 / Endgame Encore, détail de l’affiche officielle' },
+      { src: 'screenshots/cinema-box-office-endgame-encore/02.jpg', alt: 'Resident Evil — Zach Cregger dirige Austin Abrams sur le tournage, photo officielle', caption: '02 / Resident Evil : Cregger et Abrams sur le plateau' },
+      { src: 'screenshots/cinema-box-office-endgame-encore/03.jpg', alt: 'Primetime — Robert Pattinson en Chris Hansen face à un miroir, photogramme officiel', caption: '03 / Primetime : Pattinson en Chris Hansen' },
+    ],
+    credit: 'Affiche : Marvel Studios / Disney ; photo de tournage : Sony Pictures / Constantin Film ; photogramme : A24.',
+    creditSources: [
+      { label: 'article Times Now (affiche Encore)', href: 'https://www.timesnownews.com/entertainment-news/hollywood/avengers-endgame-encore-marvel-alters-footage-for-2026-re-release-what-has-changed-article-155988728' },
+      { label: 'article The Hollywood Reporter (photo de tournage)', href: 'https://www.hollywoodreporter.com/movies/movie-features/resident-evil-filmmaker-zach-cregger-test-screenings-1236697134/' },
+      { label: 'article CNN (photogramme Primetime)', href: 'https://www.cnn.com/2026/09/23/entertainment/primetime-movie-chris-hansen-robert-pattinson' },
+    ],
+  },
+  'cinema/the-last-of-us-saison-3-john-goodman-laura-bailey': {
+    label: 'THE LAST OF US', meta: 'HBO · SAISON 3',
+    items: [
+      { src: 'screenshots/cinema-last-of-us-casting/01.jpg', alt: 'The Last of Us saison 2 — Abby (Kaitlyn Dever), photogramme officiel HBO', caption: '01 / Abby (Kaitlyn Dever), au centre de la saison 3' },
+      { src: 'screenshots/cinema-last-of-us-casting/02.jpg', alt: 'The Last of Us Part II — Abby, le personnage incarné par Laura Bailey dans le jeu', caption: '02 / L’Abby du jeu, jouée par Laura Bailey' },
+      { src: 'screenshots/cinema-last-of-us-casting/03.jpg', alt: 'The Last of Us — Ellie (Bella Ramsey), photogramme officiel HBO', caption: '03 / Ellie (Bella Ramsey), de retour' },
+    ],
+    credit: 'Photogrammes : The Last of Us (HBO) ; capture : The Last of Us Part II (Naughty Dog / PlayStation), à titre d’illustration du rôle tenu par Laura Bailey.',
+    creditSources: [
+      { label: 'article Soap Central (photogramme HBO)', href: 'https://www.soapcentral.com/shows/what-kaitlyn-dever-s-casting-mean-future-the-last-us-here-s-know' },
+      { label: 'analyse Observer (capture Naughty Dog)', href: 'https://observer.com/2020/07/the-last-of-us-part-2-redemption-naughty-dog-analysis/' },
+    ],
+  },
+  'cinema/godzilla-minus-zero-premiere-nyff': {
+    label: 'GODZILLA MINUS ZERO', meta: 'TOHO · TAKASHI YAMAZAKI',
+    items: [
+      { src: 'screenshots/cinema-godzilla-minus-zero/01.jpg', alt: 'Godzilla Minus Zero — détail de l’affiche teaser, l’Empire State Building émergeant de la brume', caption: '01 / L’affiche teaser : New York dans la brume' },
+      { src: 'screenshots/cinema-godzilla-minus-zero/02.jpg', alt: 'Godzilla Minus Zero — Godzilla rugit au-dessus d’une ville en ruine, image de la bande-annonce', caption: '02 / Godzilla, image de la bande-annonce' },
+      { src: 'screenshots/cinema-godzilla-minus-zero/03.jpg', alt: 'Godzilla Minus Zero — visuel clé officiel, Godzilla sous la foudre', caption: '03 / Le visuel clé du site officiel' },
+    ],
+    credit: 'Affiche, image de bande-annonce et visuel clé : © 2026 TOHO CO., LTD.',
+    creditSources: [
+      { label: 'article SlashFilm sur la bande-annonce', href: 'https://www.slashfilm.com/2252602/godzilla-minus-zero-trailer/' },
+      { label: 'page officielle Godzilla.com', href: 'https://godzilla.com/pages/godzilla-minus-zero' },
+    ],
+  },
+
   // ---- Actus Blizzard -----------------------------------------------------
   'starcraft-fps': {
     label: 'L’UNIVERS STARCRAFT', meta: 'BLIZZARD · GUERRE INTERSTELLAIRE',
