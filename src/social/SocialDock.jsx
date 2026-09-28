@@ -413,10 +413,8 @@ export default function SocialDock() {
           {mode === 'demo' && <footer className="social-panel-foot">{t.demoNote}</footer>}
         </section>
       )}
-      {/* Le bouton est découpé (coins coupés en `clip-path`) : une pastille
-          posée sur son coin serait rognée si elle restait dedans. Les deux
-          pastilles vivent donc dans ce conteneur, au-dessus du bouton, où
-          elles s'affichent en entier. */}
+      {/* Les pastilles de notification vivent dans un conteneur dédié : elles
+          peuvent dépasser légèrement du bouton arrondi sans être rognées. */}
       <span className="social-launcher-wrap">
         <button
           type="button"

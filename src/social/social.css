@@ -28,10 +28,9 @@
 }
 .social-dock > * { pointer-events: auto; }
 
-/* Conteneur du lanceur. Le bouton est découpé (`clip-path`, coins coupés) et
-   rogne donc tout ce qui dépasse de sa boîte : les pastilles de notification,
-   posées sur ses coins, vivent ici, dans un conteneur non découpé — elles
-   s'affichent au-dessus du bouton, en entier. */
+/* Conteneur du lanceur. Les pastilles de notification dépassent légèrement
+   du bouton ; elles vivent donc dans ce conteneur non découpé pour rester
+   visibles en entier. */
 .social-launcher-wrap {
   position: relative;
   display: inline-flex;
@@ -55,7 +54,7 @@
   font: 500 11px var(--mono);
   letter-spacing: .14em;
   text-transform: uppercase;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  border-radius: 999px;
   box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .85), 0 0 24px -10px rgba(168, 85, 247, .6);
   transition: border-color .2s, box-shadow .2s, transform .2s;
 }
