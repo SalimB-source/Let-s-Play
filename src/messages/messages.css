@@ -1005,7 +1005,7 @@
 
 /* La position de la fenêtre, sa cohabitation avec les notifications et le
    pop-up plein écran mobile vivent dans src/social/social.css. */
-@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .message-btn-wrap-full { width: 100%; }
   .message-btn-full { width: 100%; justify-content: center; }
   .messages-bubble-delete { opacity: 1; }
@@ -1013,7 +1013,7 @@
 
 /* Mobile : la page de messagerie prend tout l'écran utile, avec de grandes
    zones d'appui et des champs qui ne déclenchent pas le zoom iOS (16px). */
-@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .messages-page { padding: 84px 0 90px; }
   .messages-page-body {
     grid-template-columns: 1fr;

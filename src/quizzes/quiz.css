@@ -14,7 +14,7 @@
 /* Sous 430px, on resserre l'échelle du titre : le clamp(34px…) d'origine
    faisait passer « PROUVE QUE TU / CONNAIS LE GAME. » sur quatre lignes.
    Même règle que le titre de la recherche (styles.css). */
-@media (max-width: 430px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 430px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-header h1 { font-size: clamp(28px, 8vw, 34px); }
 }
 .quiz-intro { max-width: 640px; color: var(--muted); }
@@ -847,7 +847,7 @@
 @media (max-width: 1000px) {
   .quiz-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (max-width: 680px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 680px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   /* Filtre : pastilles plus serrées — les cinq libellés tiennent sur deux
      rangées sans manger la grille. */
@@ -855,14 +855,14 @@
   .quiz-filter-chip { padding: 8px 11px; gap: 6px; font-size: 9.5px; }
   .quiz-filter-summary { font-size: 10px; }
 }
-@media (max-width: 460px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 460px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .quiz-card { padding: 7px; gap: 8px; }
   .quiz-card-copy h3 { font-size: 13px; }
   .quiz-card-meta { font-size: 9px; letter-spacing: .06em; gap: 4px 6px; }
   .quiz-card-copy .quiz-chips { flex-wrap: wrap; gap: 4px; }
 }
-@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-survival-card { grid-template-columns: 1fr; min-height: 0; }
   .quiz-survival-visual { min-height: 88px; border-left: 0; border-top: 1px solid rgba(185,28,28,.26); }
   .quiz-survival-infinity { font-size: 64px; }
@@ -874,7 +874,7 @@
 }
 /* Partie : une seule colonne de propositions sous 720 px (le pouce vise mieux
    une cible pleine largeur), et le bandeau s'empile proprement. */
-@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-choices, .quiz-choices--five { grid-template-columns: 1fr; }
   .quiz-choices--five .quiz-choice:last-child { grid-column: auto; }
   .quiz-hud { gap: 8px; }
@@ -899,7 +899,7 @@
   .quiz-cta, .quiz-choice, .quiz-joker, .quiz-sound-toggle { transition: none; }
 }
 
-@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-level { align-items: flex-start; }
   .quiz-level-play { width: 100%; justify-content: center; }
 }
@@ -1046,7 +1046,7 @@
 .quiz-confirm-hint { margin: 8px 0 0; color: var(--muted); font: 500 12px var(--body); line-height: 1.5; }
 .quiz-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .quiz-confirm-actions .quiz-cta { min-width: 110px; justify-content: center; }
-@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-confirm-dialog { padding: 20px 16px; }
   .quiz-confirm-actions { flex-direction: column-reverse; }
   .quiz-confirm-actions .quiz-cta { width: 100%; }
@@ -1518,7 +1518,7 @@
 .horror-empty { color: #fca5a5 !important; border-left: 2px solid var(--horror-red); padding-left: 10px; }
 
 /* Responsive */
-@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .horror-file-inner { padding: 48px 16px 48px !important; }
   .horror-play-root { padding: 14px 12px 18px; }
   .horror-hud-top { gap: 10px; }

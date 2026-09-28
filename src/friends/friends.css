@@ -411,7 +411,7 @@
 /* La position de la fenêtre, sa cohabitation avec les notifications et le
    pop-up plein écran mobile vivent dans src/social/social.css. */
 
-@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .friend-btn-wrap-full { width: 100%; }
   .friend-btn-full { width: 100%; justify-content: center; }
 }

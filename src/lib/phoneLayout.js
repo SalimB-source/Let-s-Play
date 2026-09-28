@@ -28,7 +28,7 @@
  * `max-width` classique.
  */
 export const HANDHELD_MEDIA =
-  '(hover:none) and (pointer:coarse) and (max-device-width:600px)';
+  '((hover:none) and (pointer:coarse) and (max-device-width:600px)), ((hover:none) and (pointer:coarse) and (orientation:portrait))';
 
 /** Mise en page « téléphone » : petit écran, ou téléphone à fenêtre large. */
 export const PHONE_LAYOUT_MEDIA = `(max-width:800px), ${HANDHELD_MEDIA}`;
