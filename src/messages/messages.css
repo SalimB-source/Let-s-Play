@@ -821,6 +821,9 @@
   color: #0a0b1a;
 }
 .social-page-tab-icon { display: inline-flex; color: var(--yellow); }
+/* L'emblème « Let’s Talk » garde ses couleurs et un peu plus de corps que
+   les pictogrammes au trait des autres onglets. */
+.social-page-tab-icon .social-page-tab-mark { width: 19px; height: 19px; margin: -2px 0; }
 .social-page-tab.is-active .social-page-tab-icon { color: var(--cyan); }
 .social-page-tab-label { overflow: hidden; text-overflow: ellipsis; }
 .social-page-tab-count {
@@ -874,6 +877,7 @@
   color: #fff;
 }
 .messages-page-kicker svg { color: var(--yellow); }
+.messages-page-logo { display: block; height: 40px; }
 .messages-page-sub {
   font: 500 10px var(--mono);
   letter-spacing: .14em;
@@ -927,17 +931,7 @@
   font-size: 13px;
   line-height: 1.6;
 }
-.messages-page-placeholder-icon {
-  display: inline-flex;
-  width: 64px;
-  height: 64px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--line-strong);
-  color: var(--cyan);
-  background: rgba(34, 211, 238, .05);
-  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
-}
+.messages-page-placeholder-mark { width: 84px; height: 84px; }
 
 .messages-page-guest {
   display: flex;
@@ -952,15 +946,12 @@
   border: 1px solid var(--line-strong);
   clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
 }
-.messages-page-guest-icon { display: inline-flex; color: var(--cyan); }
 .messages-page-guest-title {
-  margin: 0;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: .08em;
-  color: #fff;
+  margin: 0 0 4px;
+  line-height: 0;
 }
+/* Le logo empilé, en grand : c'est le titre de la carte. */
+.messages-page-guest-logo { display: block; width: min(240px, 68vw); }
 .messages-page-guest p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; line-height: 1.6; }
 
 .messages-page-foot {
@@ -1062,6 +1053,7 @@
     margin-right: 4px;
   }
   .social-page-back svg { width: 22px; height: 22px; }
+  .messages-page-logo { height: 32px; }
   .messages-page-list.is-dimmed { display: none; }
   .messages-page-thread.is-empty { display: none; }
   /* Onglets sociaux sur mobile : 2x2 ou en bande défilante pour rester

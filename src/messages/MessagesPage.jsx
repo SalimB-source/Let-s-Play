@@ -10,6 +10,8 @@ import { useCalls } from './CallsContext';
 import { callsText } from './callsCopy';
 import { describeMessagesError, messagesText } from './messagesCopy';
 import { InboxView, ThreadView } from './MessagesTabs';
+import LetsTalkLogo, { LetsTalkMark } from '../social/LetsTalkLogo';
+import { socialText } from '../social/socialCopy';
 
 /**
  * Page sociale — `/messages` (liste) et `/messages/:peerId`
@@ -27,6 +29,11 @@ import { InboxView, ThreadView } from './MessagesTabs';
  *
  * Les données et les gestes restent ceux du contexte (`MessagesContext` /
  * `FriendsContext`) : aucune logique dupliquée.
+ *
+ * Identité : comme l'en-tête de la fenêtre flottante, celui de la page porte
+ * le logo « Let’s Talk » (`LetsTalkLogo`) sur tous les onglets ; l'emblème
+ * seul (la bulle) marque l'onglet des discussions et le volet vide, et la
+ * version empilée accueille le visiteur non connecté.
  */
 
 function RefreshIcon({ size = 14 }) {
@@ -42,15 +49,6 @@ function BackIcon({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M15 5l-7 7 7 7" />
-    </svg>
-  );
-}
-
-function ChatBubbleIcon({ size = 42 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20.5 12.2c0 4-3.8 7.2-8.5 7.2-1 0-2-.15-2.9-.42L4.5 20.5l1.2-3.3C4.3 15.9 3.5 14.1 3.5 12.2 3.5 8.2 7.3 5 12 5s8.5 3.2 8.5 7.2z" />
-      <path d="M8.5 11h7M8.5 14h4.5" />
     </svg>
   );
 }
@@ -78,6 +76,7 @@ export default function MessagesPage() {
   const calls = useCalls();
   const t = messagesText(lang);
   const ft = friendsText(lang);
+  const st = socialText(lang);
 
   // Onglet actif (lecture depuis ?tab=friends|requests|add|messages).
   // Quand un fil est ouvert (peerId), on est implicitement sur Messages.
@@ -167,8 +166,9 @@ export default function MessagesPage() {
       <section className="messages-page social-page">
         <div className="wrap">
           <div className="messages-page-card messages-page-guest">
-            <span className="messages-page-guest-icon"><ChatBubbleIcon /></span>
-            <h1 className="messages-page-guest-title">{t.title}</h1>
+            <h1 className="messages-page-guest-title">
+              <LetsTalkLogo variant="stacked" className="messages-page-guest-logo" title={st.title} />
+            </h1>
             <p>{t.pageGuest}</p>
             <Link
               to="/auth"
@@ -255,7 +255,7 @@ export default function MessagesPage() {
     { id: 'friends', label: ft.tabFriends, count: friendsList.length, icon: <PeopleIcon size={13} /> },
     { id: 'requests', label: ft.tabRequests, count: pendingCount, alert: pendingCount > 0 },
     { id: 'add', label: ft.tabAdd },
-    { id: 'messages', label: t.title, count: unreadTotal, alert: unreadTotal > 0, icon: <ChatBubbleIcon size={15} /> },
+    { id: 'messages', label: t.title, count: unreadTotal, alert: unreadTotal > 0, icon: <LetsTalkMark className="social-page-tab-mark" /> },
   ];
 
   const pageTitle = activeTab === 'messages' ? t.title : ft.tabFriends;
@@ -275,8 +275,10 @@ export default function MessagesPage() {
               >
                 <BackIcon />
               </button>
-              {activeTab === 'messages' ? <ChatBubbleIcon size={18} /> : <PeopleIcon size={18} />}
-              {pageTitle}
+              <LetsTalkLogo className="messages-page-logo" title={st.title} />
+              {/* L'onglet courant, pour les lecteurs d'écran : le logo seul
+                  ne dit pas si l'on regarde les discussions ou les amis. */}
+              <span className="sr-only">{pageTitle}</span>
             </span>
             <span className="messages-page-sub">{subtitle}</span>
           </div>
@@ -354,7 +356,7 @@ export default function MessagesPage() {
             </div>
             <div className="messages-page-thread is-empty">
               <div className="messages-page-placeholder">
-                <span className="messages-page-placeholder-icon"><ChatBubbleIcon /></span>
+                <LetsTalkMark className="messages-page-placeholder-mark" />
                 <p>{t.pageEmpty}</p>
               </div>
             </div>
