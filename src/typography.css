@@ -152,3 +152,20 @@ html body :is(
 ) * {
   font-weight: 700 !important;
 }
+
+/* ============ 6. APPELS : LE HUD EN ORBITRON ============ */
+/* L'overlay d'appel est un écran de jeu : le pseudo de l'ami, le chrono et
+   les initiales d'avatar portent la police gaming, comme les comptes à
+   rebours (voir l'en-tête du fichier). L'overlay reste sombre dans les deux
+   thèmes (cf. section 8 de theme.css), donc ces encres blanches n'ont pas à
+   être rabattues — le balayage d'encres exclut le motif `calls-`.
+   Les pastilles (kickers, « Vous ») restent en Google Sans : à 9-10 px, la
+   police d'affichage y serait illisible. */
+html body :is(.calls-card-name, .calls-name, .calls-timer, .calls-avatar-fallback),
+html body :is(.calls-card-name, .calls-name, .calls-timer, .calls-avatar-fallback) * {
+  font-family: var(--font-gaming) !important;
+}
+
+html body :is(.calls-card-name, .calls-name, .calls-timer, .calls-avatar-fallback) {
+  font-weight: 700 !important;
+}
