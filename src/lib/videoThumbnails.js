@@ -86,6 +86,30 @@ export function youTubeThumbUrl(id, quality = THUMB_QUALITIES[0]) {
 }
 
 /**
+ * URL d'un photogramme auto-capturé par YouTube.
+ *
+ * En plus de la miniature choisie par la chaîne, YouTube extrait trois images
+ * **de la vidéo elle-même** (autour du quart, de la moitié et des trois quarts
+ * de sa durée) : les fichiers `1.jpg`, `2.jpg`, `3.jpg`, publiés aux mêmes
+ * qualités que les miniatures (`hq1.jpg` = 480×360, comme `hqdefault`). Ces
+ * trois photogrammes existent pour toute vidéo visible, comme `hqdefault`.
+ *
+ * Le site les utilise pour les galeries « captures de l'épisode » des
+ * dossiers : ce sont de vraies images tirées de la vidéo, servies par le même
+ * hôte que les miniatures. Les galeries les affichent dans un cadre 16/9
+ * (`object-fit: cover`), qui recadre la marge 4:3 que YouTube ajoute autour
+ * des photogrammes des vidéos au format large.
+ *
+ * @param {string} id identifiant de la vidéo YouTube
+ * @param {1|2|3} [frame] photogramme demandé (1 = quart de la vidéo)
+ * @returns {string}
+ */
+export function youTubeFrameUrl(id, frame = 1) {
+  const index = Math.min(3, Math.max(1, Math.round(Number(frame) || 1)));
+  return `${YT_IMG_ORIGIN}/vi/${id}/hq${index}.jpg`;
+}
+
+/**
  * Chaîne de repli d'une miniature : les URL à essayer, dans l'ordre.
  *
  * Elle part de la qualité demandée (`quality`) et descend jusqu'à `hqdefault`.
