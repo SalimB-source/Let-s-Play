@@ -11,14 +11,15 @@ import { describeMessagesError, messagesText } from '../messages/messagesCopy';
 import { InboxView, ThreadView } from '../messages/MessagesTabs';
 import useMediaQuery from '../lib/useMediaQuery';
 import { socialText } from './socialCopy';
+import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
 
 /**
  * Fenêtre sociale unifiée — amis + messagerie dans la même fenêtre, ancrée
  * en bas à droite.
  * ---------------------------------------------------------------------------
- * Un seul lanceur compact (« MESSAGERIE » : pastilles des non-lus et des
- * demandes d'amis reçues, compteur d'amis en ligne) ouvre un panneau à
- * quatre onglets :
+ * Un seul lanceur compact — le logo « Let’s Talk » (voir `LetsTalkLogo`),
+ * les pastilles des non-lus et des demandes d'amis reçues, le compteur d'amis
+ * en ligne — ouvre un panneau à quatre onglets :
  *
  *   - **Amis** / **Demandes** / **Ajouter** : le module ami
  *     (`FriendsTabs`, données de `FriendsContext`) ;
@@ -37,15 +38,6 @@ import { socialText } from './socialCopy';
  * c'est la page qui porte la messagerie, rien ne flotte par-dessus.
  */
 
-function SocialIcon({ size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20.5 12.2c0 4-3.8 7.2-8.5 7.2-1 0-2-.15-2.9-.42L4.5 20.5l1.2-3.3C4.3 15.9 3.5 14.1 3.5 12.2 3.5 8.2 7.3 5 12 5s8.5 3.2 8.5 7.2z" />
-      <circle cx="12" cy="10.4" r="2.1" />
-      <path d="M8.6 15.3c.7-1.6 2-2.4 3.4-2.4s2.7.8 3.4 2.4" />
-    </svg>
-  );
-}
 function CloseIcon({ size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -371,7 +363,9 @@ export default function SocialDock() {
           {!inThread && (
             <header className="social-panel-head">
               <div className="social-panel-title">
-                <span className="social-panel-kicker lets-talk-label"><SocialIcon size={14} /> {t.title}</span>
+                <span className="social-panel-kicker">
+                  <LetsTalkLogo className="social-panel-logo" title={t.title} />
+                </span>
                 <span className="social-panel-sub">{subtitle}</span>
               </div>
               <div className="social-panel-tools">
@@ -408,6 +402,7 @@ export default function SocialDock() {
                   onClick={() => selectTab(item.id)}
                   aria-pressed={tab === item.id}
                 >
+                  {item.id === 'messages' && <LetsTalkMark className="social-tab-mark" />}
                   {item.label}
                   {item.count != null && item.count > 0 && <span className="social-tab-count">{item.count}</span>}
                 </button>
@@ -431,8 +426,11 @@ export default function SocialDock() {
           aria-label={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
           title={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
         >
-          <span className="social-launcher-icon"><SocialIcon /></span>
-          <span className="social-launcher-label lets-talk-label">{t.launcher}</span>
+          {/* Le logo porte le nom visible ; le libellé texte reste dans le
+              DOM pour les lecteurs d'écran et les rendus sans SVG. Les trois
+              points de la bulle ondulent tant que des messages attendent. */}
+          <LetsTalkLogo className="social-launcher-logo" typing={unreadTotal > 0} />
+          <span className="sr-only">{t.launcher}</span>
           {enabled && <span className="social-launcher-meta">
             <span className={`social-launcher-dot${onlineCount > 0 ? ' is-online' : ''}`} aria-hidden="true" />
             {onlineCount} {ft.online}

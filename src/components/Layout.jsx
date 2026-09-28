@@ -13,6 +13,7 @@ import { useQuizProgress } from '../quizzes/useQuizProgress';
 import ArticleReadingTools from './ArticleReadingTools';
 import NeonBackdrop from './NeonBackdrop';
 import { socialText } from '../social/socialCopy';
+import LetsTalkLogo, { LetsTalkMark } from '../social/LetsTalkLogo';
 
 const base = import.meta.env.BASE_URL;
 
@@ -330,7 +331,12 @@ export default function Layout({ children }) {
                 <span className="nav-link-main">
                   <span className="nav-link-num">06</span>
                   <span className="nav-link-text">
-                    <span className="nav-link-label lets-talk-label">{socialText(lang).title}</span>
+                    {/* La messagerie a son propre logo : il remplace le libellé
+                        texte, gardé pour les lecteurs d'écran. */}
+                    <span className="nav-link-label nav-link-label-logo">
+                      <LetsTalkLogo className="nav-lets-talk-logo" />
+                      <span className="sr-only">{socialText(lang).title}</span>
+                    </span>
                     <span className="nav-link-desc lets-talk-label">{socialText(lang).tabMessages}</span>
                   </span>
                 </span>
@@ -470,7 +476,7 @@ export default function Layout({ children }) {
                         </div>
                         <nav className="nav-profile-dropdown-links">
                           <Link to="/auth" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
-                          <Link to="/messages" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>✉</span> Messages <em>↗</em></Link>
+                          <Link to="/messages" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span className="nav-dropdown-mark"><LetsTalkMark /></span> Messages <em>↗</em></Link>
                           <Link to="/auth#achievements" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>🏆</span> Succès <em>↗</em></Link>
                         </nav>
                         <button type="button" className="nav-profile-dropdown-logout" onClick={handleSignOut} role="menuitem">

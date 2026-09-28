@@ -314,9 +314,7 @@
   [data-theme='light'] .quiz-finished-best,
   [data-theme='light'] .quiz-result-finished,
   [data-theme='light'] .quiz-confirm-dialog--medium .quiz-confirm-title,
-  [data-theme='light'] .social-launcher-icon,
   [data-theme='light'] .social-launcher-meta-unread,
-  [data-theme='light'] .social-panel-kicker svg,
   [data-theme='light'] .cmd-palette-foot-dot,
   [data-theme='light'] .menu-button .dash.open,
   [data-theme='light'] .arrow-link:hover,
@@ -1133,8 +1131,6 @@
    claire, sinon `--cyan` (une encre foncée en thème clair) s'y perdrait. */
 [data-theme='light'] .news-feature-arrow{color:var(--cyan-bright)}
 [data-theme='light'] .lets-talk-label{color:#0a0b1a}
-[data-theme='light'] .social-panel-kicker.lets-talk-label svg,
-[data-theme='light'] .social-launcher-icon{color:var(--violet)}
 [data-theme='light'] .social-tab--messages.lets-talk-label.is-active{color:var(--violet);border-bottom-color:var(--violet)}
 [data-theme='light'] .nav-messages-link .lets-talk-label{color:#0a0b1a}
 
