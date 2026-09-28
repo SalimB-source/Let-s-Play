@@ -7,6 +7,14 @@
 // reste des pages actus ; le crédit précise toujours la source du visuel —
 // quand un jeu n’a encore rien montré, on affiche la saga à titre
 // d’illustration et on le dit.
+//
+// Cas particulier des dossiers (`dossier-*`) : les captures sont les trois
+// photogrammes que YouTube extrait automatiquement de l’épisode (quart,
+// moitié, trois quarts de la vidéo), via youTubeFrameUrl() — aucun fichier
+// local à déposer, et les URL passent par la fabrique unique de
+// src/lib/videoThumbnails.js (règle `npm run check:thumbs`).
+
+import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
   // ---- Actus gaming -------------------------------------------------------
@@ -470,6 +478,108 @@ export const articleGalleries = {
       { src: 'screenshots/diablo-switch-2/02.jpg', alt: 'Diablo IV — combat contre les démons', caption: '02 / Chasser les démons en nomade' },
     ],
     credit: 'Captures : Diablo IV (Blizzard Entertainment).',
+  },
+
+  // ---- Dossiers -----------------------------------------------------------
+  // Trois photogrammes de l’épisode YouTube, extraits automatiquement par
+  // YouTube (autour de 25 %, 50 % et 75 % de la vidéo) : ce sont de vraies
+// images de l’épisode. Les légendes reprennent le thème du passage où chaque
+// photogramme est capturé, sans promettre une seconde précise.
+  'dossier-souls': {
+    label: 'LES SOULS', meta: 'PHOTOGRAMMES · YOUTUBE',
+    items: [
+      { src: youTubeFrameUrl('OH51fSHznwg', 1), alt: 'Photogramme de l’épisode sur les Souls — segment sur la dopamine de la victoire', caption: '01 / La dopamine de la victoire' },
+      { src: youTubeFrameUrl('OH51fSHznwg', 2), alt: 'Photogramme de l’épisode sur les Souls — segment sur la narration cryptique', caption: '02 / Un récit qui se reconstitue par fragments' },
+      { src: youTubeFrameUrl('OH51fSHznwg', 3), alt: 'Photogramme de l’épisode sur les Souls — segment sur la communauté', caption: '03 / Une communauté qui transmet' },
+    ],
+    credit: 'Photogrammes extraits automatiquement de l’épisode par YouTube (quart, moitié, trois quarts de la vidéo) — chaîne Let’s Play Official.',
+    creditSources: [
+      { label: 'l’épisode sur YouTube', href: 'https://www.youtube.com/watch?v=OH51fSHznwg' },
+    ],
+  },
+  'dossier-awards': {
+    label: 'LP AWARDS 2025', meta: 'PHOTOGRAMMES · YOUTUBE',
+    items: [
+      { src: youTubeFrameUrl('0ThNyFItASM', 1), alt: 'Photogramme de l’épisode des Let’s Play Awards 2025 — segment sur la direction artistique', caption: '01 / La direction artistique à l’honneur' },
+      { src: youTubeFrameUrl('0ThNyFItASM', 2), alt: 'Photogramme de l’épisode des Let’s Play Awards 2025 — segment sur l’action-aventure', caption: '02 / L’action-aventure sous les projecteurs' },
+      { src: youTubeFrameUrl('0ThNyFItASM', 3), alt: 'Photogramme de l’épisode des Let’s Play Awards 2025 — segment sur la surprise de l’année, avant le jeu de l’année', caption: '03 / Avant l’annonce du jeu de l’année' },
+    ],
+    credit: 'Photogrammes extraits automatiquement de l’épisode par YouTube (quart, moitié, trois quarts de la vidéo) — chaîne Let’s Play Official.',
+    creditSources: [
+      { label: 'l’épisode sur YouTube', href: 'https://www.youtube.com/watch?v=0ThNyFItASM' },
+    ],
+  },
+  'dossier-comiccon': {
+    label: 'COMIC CON DZAIR', meta: 'PHOTOGRAMMES · YOUTUBE',
+    items: [
+      { src: youTubeFrameUrl('HzigJZOxz2o', 1), alt: 'Photogramme du reportage Games & Comic Con Dzair 2026 — ambiance des allées du salon', caption: '01 / L’ambiance des allées' },
+      { src: youTubeFrameUrl('HzigJZOxz2o', 2), alt: 'Photogramme du reportage Games & Comic Con Dzair 2026 — invités et cosplay', caption: '02 / Invités, cosplay et culture populaire' },
+      { src: youTubeFrameUrl('HzigJZOxz2o', 3), alt: 'Photogramme du reportage Games & Comic Con Dzair 2026 — la communauté réunie', caption: '03 / La communauté réunie' },
+    ],
+    credit: 'Photogrammes extraits automatiquement du reportage par YouTube (quart, moitié, trois quarts de la vidéo) — chaîne Let’s Play Official.',
+    creditSources: [
+      { label: 'le reportage sur YouTube', href: 'https://www.youtube.com/watch?v=HzigJZOxz2o' },
+    ],
+  },
+  'dossier-generations': {
+    label: 'GÉNÉRATIONS', meta: 'PHOTOGRAMMES · YOUTUBE',
+    items: [
+      { src: youTubeFrameUrl('t1Re8ki_gsw', 1), alt: 'Photogramme de l’épisode Old School vs New School — entretien avec El Joueur', caption: '01 / Le parcours d’El Joueur' },
+      { src: youTubeFrameUrl('t1Re8ki_gsw', 2), alt: 'Photogramme de l’épisode Old School vs New School — segment sur les jeux qui ont marqué', caption: '02 / Les jeux qui nous ont marqués' },
+      { src: youTubeFrameUrl('t1Re8ki_gsw', 3), alt: 'Photogramme de l’épisode Old School vs New School — débat graphismes ou gameplay', caption: '03 / Graphismes ou gameplay ?' },
+    ],
+    credit: 'Photogrammes extraits automatiquement de l’épisode par YouTube (quart, moitié, trois quarts de la vidéo) — chaîne Let’s Play Official.',
+    creditSources: [
+      { label: 'l’épisode sur YouTube', href: 'https://www.youtube.com/watch?v=t1Re8ki_gsw' },
+    ],
+  },
+  'dossier-goya': {
+    label: 'HICOSOFT STUDIO', meta: 'PHOTOGRAMMES · YOUTUBE',
+    items: [
+      { src: youTubeFrameUrl('aTs0zhm6Leg', 1), alt: 'Photogramme de l’épisode sur HicoSoft Studio — segment sur les outils du pipeline', caption: '01 / Les outils du pipeline' },
+      { src: youTubeFrameUrl('aTs0zhm6Leg', 2), alt: 'Photogramme de l’épisode sur HicoSoft Studio — segment sur les défis locaux', caption: '02 / Les défis d’un studio algérien' },
+      { src: youTubeFrameUrl('aTs0zhm6Leg', 3), alt: 'Photogramme de l’épisode sur HicoSoft Studio — segment sur le jeu indé de l’année 2025', caption: '03 / Cap sur le jeu indé de l’année' },
+    ],
+    credit: 'Photogrammes extraits automatiquement de l’épisode par YouTube (quart, moitié, trois quarts de la vidéo) — chaîne Let’s Play Official.',
+    creditSources: [
+      { label: 'l’épisode sur YouTube', href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg' },
+    ],
+  },
+  'dossier-playstation-1': {
+    label: 'PLAYSTATION 1', meta: 'PHOTOGRAMMES · YOUTUBE',
+    items: [
+      { src: youTubeFrameUrl('oOyW_rjiZ5w', 1), alt: 'Photogramme de l’épisode sur la PlayStation 1 — segment sur Ken Kutaragi et le projet Sony', caption: '01 / Le projet de Ken Kutaragi' },
+      { src: youTubeFrameUrl('oOyW_rjiZ5w', 2), alt: 'Photogramme de l’épisode sur la PlayStation 1 — segment sur les jeux qui ont fait aimer la console', caption: '02 / Les jeux qui nous ont fait aimer' },
+      { src: youTubeFrameUrl('oOyW_rjiZ5w', 3), alt: 'Photogramme de l’épisode sur la PlayStation 1 — segment sur les souvenirs de console', caption: '03 / Souvenirs de la première PlayStation' },
+    ],
+    credit: 'Photogrammes extraits automatiquement de l’épisode par YouTube (quart, moitié, trois quarts de la vidéo) — chaîne Let’s Play Official.',
+    creditSources: [
+      { label: 'l’épisode sur YouTube', href: 'https://www.youtube.com/watch?v=oOyW_rjiZ5w' },
+    ],
+  },
+  'dossier-playstation-2': {
+    label: 'PLAYSTATION 2', meta: 'PHOTOGRAMMES · YOUTUBE',
+    items: [
+      { src: youTubeFrameUrl('A2VPhWOUMHI', 1), alt: 'Photogramme de l’épisode sur les 25 ans de la PS2 — segment sur les fonctionnalités de la console', caption: '01 / Les fonctionnalités de la machine' },
+      { src: youTubeFrameUrl('A2VPhWOUMHI', 2), alt: 'Photogramme de l’épisode sur les 25 ans de la PS2 — segment sur les jeux qui ont marqué', caption: '02 / Les jeux qui nous ont marqués' },
+      { src: youTubeFrameUrl('A2VPhWOUMHI', 3), alt: 'Photogramme de l’épisode sur les 25 ans de la PS2 — segment sur le modèle des consoles suivantes', caption: '03 / Le modèle des consoles suivantes' },
+    ],
+    credit: 'Photogrammes extraits automatiquement de l’épisode par YouTube (quart, moitié, trois quarts de la vidéo) — chaîne Let’s Play Official.',
+    creditSources: [
+      { label: 'l’épisode sur YouTube', href: 'https://www.youtube.com/watch?v=A2VPhWOUMHI' },
+    ],
+  },
+  'dossier-xbox-360': {
+    label: 'XBOX 360', meta: 'PHOTOGRAMMES · YOUTUBE',
+    items: [
+      { src: youTubeFrameUrl('8NqnTzVh5O0', 1), alt: 'Photogramme de l’épisode sur les 20 ans de la Xbox 360 — segment sur les jeux légendaires de la machine', caption: '01 / Les jeux légendaires' },
+      { src: youTubeFrameUrl('8NqnTzVh5O0', 2), alt: 'Photogramme de l’épisode sur les 20 ans de la Xbox 360 — segment sur Kinect', caption: '02 / Kinect, le jeu sans manette' },
+      { src: youTubeFrameUrl('8NqnTzVh5O0', 3), alt: 'Photogramme de l’épisode sur les 20 ans de la Xbox 360 — segment sur l’héritage de la console', caption: '03 / L’héritage de la Xbox 360' },
+    ],
+    credit: 'Photogrammes extraits automatiquement de l’épisode par YouTube (quart, moitié, trois quarts de la vidéo) — chaîne Let’s Play Official.',
+    creditSources: [
+      { label: 'l’épisode sur YouTube', href: 'https://www.youtube.com/watch?v=8NqnTzVh5O0' },
+    ],
   },
 };
 

@@ -1827,6 +1827,64 @@ qualité disponible pour cette vidéo.
   ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins
   du repli présents).
 
+## Dossiers : la vidéo, le chapitrage et les captures de l'épisode
+
+Chaque dossier (`/dossiers/...`, gabarits `src/pages/Dossier*.jsx`) s'ouvre sur
+l'épisode YouTube qui l'accompagne, suivi de trois captures de cette vidéo, le
+chapitrage venant ensuite et le texte de l'article après.
+
+### L'ordre des blocs, bureau et mobile
+
+La lecture est une grille à zones (`src/dossier-article.css`,
+`.dossier-reading`) : `"video sidebar" / "main sidebar"` sur ordinateur — la
+vidéo en haut à gauche, le chapitrage collant à droite (`position: sticky`),
+le texte dessous — et `"video" "sidebar" "main"` sur téléphone. L'ordre mobile
+est donc **vidéo + captures → chapitrage → texte** : on voit d'abord ce dont
+parle l'épisode, puis le sommaire du chapitrage, puis l'article. Auparavant,
+le chapitrage passait avant la vidéo sur mobile (`grid-row: 1`) : le sommaire
+s'affichait avant la vidéo qu'il découpait.
+
+L'ordre du DOM suit le flux mobile (bloc vidéo, puis `<aside>` du chapitrage,
+puis colonne de texte) : les lecteurs d'écran lisent les blocs dans le même
+ordre que l'affichage, sur les deux supports. `useChapterVideo` n'a rien vu
+changer : la référence reste accrochée à `.dossier-video`, quel que soit
+l'endroit du bloc dans la page.
+
+### Les captures de l'épisode
+
+Les trois captures sont des **photogrammes de la vidéo elle-même** : YouTube
+extrait automatiquement trois images de chaque vidéo (autour du quart, de la
+moitié et des trois quarts de sa durée), publiées à côté des miniatures sous
+les noms `hq1.jpg`, `hq2.jpg` et `hq3.jpg`. Elles existent pour toute vidéo
+visible, comme `hqdefault`, et sont servies par le même hôte `i.ytimg.com` —
+aucun fichier à déposer dans le dépôt, et aucune image inventée.
+
+- `youTubeFrameUrl(id, frame)` (`src/lib/videoThumbnails.js`) construit l'URL ;
+  la fabrique reste la seule du site à écrire une URL `i.ytimg.com` (règle
+  `check:thumbs`). Le cadre 16/9 de la galerie (`object-fit: cover`) recadre
+  la marge 4:3 que YouTube ajoute autour de ces photogrammes ;
+- les galeries vivent dans `src/articleGalleries.js` (clés `dossier-souls`,
+  `dossier-awards`, `dossier-comiccon`, `dossier-generations`, `dossier-goya`,
+  `dossier-playstation-1`, `dossier-playstation-2`, `dossier-xbox-360`) et sont
+  rendues par le composant partagé `ArticleGallery`, comme les actus. Légendes
+  et textes alternatifs reprennent le thème du passage où chaque photogramme
+  est capturé — sans promettre une seconde précise — et le crédit renvoie à
+  l'épisode sur la chaîne Let's Play Official.
+
+```jsx
+const gallery = getArticleGallery('dossier-souls');
+// …dans le bloc vidéo du dossier, sous la note :
+{gallery ? <ArticleGallery {...gallery} /> : null}
+```
+
+### Vérification
+
+- `npm run check:thumbs` couvre aussi ces captures : la fabrique est la seule
+  source d'URL `i.ytimg.com` du site, et le rendu SSR des pages reste contrôlé.
+- `npm run check:phone-layout` / `check:phone-css` : la bascule d'ordre passe
+  par les mêmes media queries « petit écran » que le reste du site (largeur
+  ≤ 800 px et pointeur grossier), sans dépendre de la largeur de fenêtre.
+
 ## Actus cinéma du jour
 
 Le hub Actus (`/news`) ouvre sur trois zones — gaming, cinéma & séries et
@@ -2012,6 +2070,12 @@ Tous les visiteurs voient le total partagé et la répartition en pourcentages
 son choix ou cliquer à nouveau pour le retirer. La clé primaire impose un seul
 vote par compte et par article, y compris sur plusieurs appareils. Les RPC
 n'exposent pas les identités des votants et l'identité d'écriture est issue de
+`auth.uid()`. Les comptes démo ne votent pas. La tendance est relue toutes les
+30 secondes, au retour sur la fenêtre et après chaque vote.
+
+Les anciens compteurs locaux ne sont pas importés : ils ne constituent pas des
+votes vérifiables. En cas de panne ou de migration manquante, une erreur est
+affichée, sans simuler un enregistrement local.ts et l'identité d'écriture est issue de
 `auth.uid()`. Les comptes démo ne votent pas. La tendance est relue toutes les
 30 secondes, au retour sur la fenêtre et après chaque vote.
 

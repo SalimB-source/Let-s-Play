@@ -2,8 +2,11 @@ import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 
 const videoId = 'OH51fSHznwg';
+const gallery = getArticleGallery('dossier-souls');
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -37,12 +40,34 @@ export default function DossierSouls() {
       </header>
 
       <section className="dossier-reading wrap">
-        <div className="dossier-main-column">
+        <div className="dossier-video-block">
           <div className="dossier-video hud-frame" ref={videoRef}>
             <iframe src={youTubeEmbedUrl(videoId)} title="Pourquoi les Souls ? — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">La vidéo est le point de départ de ce dossier. Lancez l’épisode, puis revenez explorer les idées qui structurent la conversation.</p>
+          {gallery ? <ArticleGallery {...gallery} /> : null}
+        </div>
 
+        <aside className="dossier-sidebar">
+          <div className="dossier-sidebar-inner">
+            <p className="dossier-kicker">DANS CET ÉPISODE</p>
+            <h3>LE CHAPITRAGE</h3>
+            <ol className="chapter-list">
+              {chapters.map(([time, seconds, label]) => (
+                <li key={time}>
+                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo du dossier à ${time} : ${label}`}>
+                    <time>{time}</time>
+                    <span>{label}</span>
+                    <span aria-hidden="true">▸</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
+          </div>
+        </aside>
+
+        <div className="dossier-main-column">
           <div className="dossier-intro">
             <p className="dossier-kicker">LE SUJET</p>
             <p className="dossier-lead">Les jeux Souls ne demandent pas seulement au joueur d’être meilleur. Ils lui demandent d’accepter l’échec, de lire un monde qui ne s’explique jamais complètement et de trouver du plaisir dans la progression la plus lente.</p>
@@ -75,24 +100,6 @@ export default function DossierSouls() {
           </div>
         </div>
 
-        <aside className="dossier-sidebar">
-          <div className="dossier-sidebar-inner">
-            <p className="dossier-kicker">DANS CET ÉPISODE</p>
-            <h3>LE CHAPITRAGE</h3>
-            <ol className="chapter-list">
-              {chapters.map(([time, seconds, label]) => (
-                <li key={time}>
-                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo du dossier à ${time} : ${label}`}>
-                    <time>{time}</time>
-                    <span>{label}</span>
-                    <span aria-hidden="true">▸</span>
-                  </button>
-                </li>
-              ))}
-            </ol>
-            <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
-          </div>
-        </aside>
       </section>
 
       <section className="dossier-take wrap">

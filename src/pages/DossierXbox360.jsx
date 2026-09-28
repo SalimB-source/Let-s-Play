@@ -2,8 +2,11 @@ import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 
 const videoId = '8NqnTzVh5O0';
+const gallery = getArticleGallery('dossier-xbox-360');
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -38,12 +41,34 @@ export default function DossierXbox360() {
       </header>
 
       <section className="dossier-reading wrap">
-        <div className="dossier-main-column">
+        <div className="dossier-video-block">
           <div className="dossier-video hud-frame" ref={videoRef}>
             <iframe src={youTubeEmbedUrl(videoId)} title="20 سنة على Xbox 360: الأسطورة لي بدّلت عالم الألعاب — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Ce dossier accompagne l’épisode de <em>Journal du Geek</em> consacré aux vingt ans de la Xbox 360, avec Chaft et Rami.</p>
+          {gallery ? <ArticleGallery {...gallery} /> : null}
+        </div>
 
+        <aside className="dossier-sidebar">
+          <div className="dossier-sidebar-inner">
+            <p className="dossier-kicker">DANS CET ÉPISODE</p>
+            <h3>LE CHAPITRAGE</h3>
+            <ol className="chapter-list">
+              {chapters.map(([time, seconds, label]) => (
+                <li key={time}>
+                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo à ${time} : ${label}`}>
+                    <time>{time}</time>
+                    <span>{label}</span>
+                    <span aria-hidden="true">▸</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
+          </div>
+        </aside>
+
+        <div className="dossier-main-column">
           <div className="dossier-intro">
             <p className="dossier-kicker">LE SUJET</p>
             <p className="dossier-lead">La Xbox 360 n’a pas gagné sa génération par la puissance seule. Elle a changé le rythme de l’industrie, la place du jeu en ligne et la manière dont une console pouvait devenir un service.</p>
@@ -101,24 +126,6 @@ export default function DossierXbox360() {
           </div>
         </div>
 
-        <aside className="dossier-sidebar">
-          <div className="dossier-sidebar-inner">
-            <p className="dossier-kicker">DANS CET ÉPISODE</p>
-            <h3>LE CHAPITRAGE</h3>
-            <ol className="chapter-list">
-              {chapters.map(([time, seconds, label]) => (
-                <li key={time}>
-                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo à ${time} : ${label}`}>
-                    <time>{time}</time>
-                    <span>{label}</span>
-                    <span aria-hidden="true">▸</span>
-                  </button>
-                </li>
-              ))}
-            </ol>
-            <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
-          </div>
-        </aside>
       </section>
 
       <section className="dossier-take wrap">
