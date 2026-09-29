@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
@@ -70,6 +70,8 @@ import CallOverlays from './messages/CallOverlays';
 import SocialDock from './social/SocialDock';
 import { initSinglePlayback } from './lib/videoPlayback';
 import { normalizePhoneViewport } from './lib/phoneLayout';
+
+const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
 
 function App() {
   return (
@@ -169,6 +171,7 @@ function App() {
             <Route path="/quizzes" element={<QuizzesPage />} />
             <Route path="/quizz/:slug" element={<QuizPage />} />
             <Route path="/quiz/:slug" element={<QuizPage />} />
+            <Route path="/jeu" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Mirage Rush…</div>}><MirageRushPage /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />
