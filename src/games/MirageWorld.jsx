@@ -95,7 +95,7 @@ const effectiveTier = (item) => {
   return item.fake ? 1 : 2;
 };
 
-// Red diamonds (and the fake golds that pay like them) are a coin flip: the
+// Red diamonds (and the fake golds that pay like them) are a gamble: the
 // curse is rolled once per diamond, the first time anybody rides through it.
 const isTrapGem = (item) => {
   if (effectiveTier(item) !== RED_TRAP_TIER) return false;
