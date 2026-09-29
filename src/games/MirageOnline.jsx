@@ -1030,28 +1030,30 @@ export default function MirageOnline({
                     setFinished(true);
                     setXp(onRunFinish?.(p) ?? null);
                   }}
-                  onPickup={(tier, key, trapped) => {
-                    if (trapped) audio.current?.trap();
-                    else audio.current?.pickup(tier);
+                  onPickup={(tier, key) => {
+                    audio.current?.pickup(tier);
                     if (key && room?.code) {
                       roomAction('gem_pickup', room.code, { p_gem_key: key }, effectivePlayer).catch(()=>{});
                     }
                   }}
                   onCheer={() => audio.current?.cheer()}
-                  onGemTrap={() => {
-                    setPowerToast('◆ DIAMANT PIÉGÉ ! Tu es ralenti…');
-                    setTimeout(()=> setPowerToast(null), 2000);
-                  }}
-                  onPowerUpPickup={(type) => {
-                    if (type === 'shield') {
-                      setPowerToast('🛡️ Bouclier ramassé ! Protection 5s');
-                      setTimeout(()=> setPowerToast(null), 2500);
-                    } else if (type === 'lasso') {
-                      setPowerToast('🪢 Lasso ramassé ! Lancement auto…');
-                      setTimeout(()=> setPowerToast(null), 2000);
+                  onPowerUp={(info) => {
+                    if (info?.action === 'used') {
+                      if (info.type === 'shield') {
+                        setPowerToast('🛡️ Bouclier activé !');
+                      } else if (info.type === 'lasso') {
+                        setPowerToast('🪢 Lasso envoyé !');
+                      } else if (info.type === 'pistol') {
+                        audio.current?.gunshot();
+                        setPowerToast('🔫 Tir de pistolet !');
+                      }
+                      setTimeout(() => setPowerToast(null), 2000);
+                    } else if (info?.action === 'charged') {
+                      if (info.type === 'shield') setPowerToast('🛡️ Bouclier prêt ! (Q / A)');
+                      else if (info.type === 'lasso') setPowerToast('🪢 Lasso prêt ! (W / Z)');
+                      else if (info.type === 'pistol') setPowerToast('🔫 Pistolet prêt ! (E)');
+                      setTimeout(() => setPowerToast(null), 2000);
                     }
-                    if (type === 'pistol') audio.current?.gunshot();
-                    else audio.current?.pickup(2);
                   }}
                   onLasso={async (targetPlayer) => {
                     if (!room?.code || !targetPlayer) return;
@@ -1117,9 +1119,76 @@ export default function MirageOnline({
                       </button>
                </div>
                 )}
-                {active && hud.rank && (
-                  <div className="mirage-power-hint">
-                    <span>POS #{hud.rank} · OBJET « ? » · PISTOLET {Math.round(powerUpOdds(hud.rank || 1).pistol * 100)}% · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</span>
+                {active && (
+                  <div className="mirage-powerup-bar" role="group" aria-label="Objets de puissance">
+                    <button
+                      type="button"
+                      className={`mirage-powerup-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
+                      onClick={() => actions.current?.('use_shield')}
+                      disabled={(hud.shieldCharges || 0) <= 0 && !hud.shieldActive}
+                      title="Bouclier (Q / A)"
+                    >
+                      <div className="mirage-powerup-btn-top">
+                        <span className="mirage-powerup-icon">🛡️</span>
+                        <span className="mirage-powerup-key">Q / A</span>
+                      </div>
+                      <div className="mirage-powerup-btn-name">
+                        <span>Bouclier</span>
+                        {(hud.shieldCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.shieldCharges}</b>}
+                      </div>
+                      <div className="mirage-powerup-progress-bg">
+                        <div
+                          className="mirage-powerup-progress-fill is-shield"
+                          style={{ width: `${Math.round((hud.shieldProgress || 0) * 100)}%` }}
+                        />
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`mirage-powerup-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
+                      onClick={() => actions.current?.('use_lasso')}
+                      disabled={(hud.lassoCharges || 0) <= 0}
+                      title="Lasso (W / Z)"
+                    >
+                      <div className="mirage-powerup-btn-top">
+                        <span className="mirage-powerup-icon">🪢</span>
+                        <span className="mirage-powerup-key">W / Z</span>
+                      </div>
+                      <div className="mirage-powerup-btn-name">
+                        <span>Lasso</span>
+                        {(hud.lassoCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.lassoCharges}</b>}
+                      </div>
+                      <div className="mirage-powerup-progress-bg">
+                        <div
+                          className="mirage-powerup-progress-fill is-lasso"
+                          style={{ width: `${Math.round((hud.lassoProgress || 0) * 100)}%` }}
+                        />
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`mirage-powerup-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
+                      onClick={() => actions.current?.('use_pistol')}
+                      disabled={(hud.pistolCharges || 0) <= 0}
+                      title="Pistolet (E) - 5 diamants"
+                    >
+                      <div className="mirage-powerup-btn-top">
+                        <span className="mirage-powerup-icon">🔫</span>
+                        <span className="mirage-powerup-key">E</span>
+                      </div>
+                      <div className="mirage-powerup-btn-name">
+                        <span>Pistolet</span>
+                        {(hud.pistolCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.pistolCharges}</b>}
+                      </div>
+                      <div className="mirage-powerup-progress-bg">
+                        <div
+                          className="mirage-powerup-progress-fill is-pistol"
+                          style={{ width: `${Math.round((hud.pistolProgress || 0) * 100)}%` }}
+                        />
+                      </div>
+                    </button>
                   </div>
                 )}
               </div>

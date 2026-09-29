@@ -1556,7 +1556,139 @@
     grid-template-columns: 1fr;
   }
 }
-/* Power-ups: lasso & shield */
+/* Power-ups: charging & action bar */
+.mirage-powerup-bar {
+  position: absolute;
+  z-index: 4;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: var(--mirage-radius);
+  background: linear-gradient(160deg, rgba(20, 14, 32, .9), rgba(12, 8, 22, .94));
+  border: 1px solid rgba(255, 218, 169, .22);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+}
+
+.mirage-powerup-btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 86px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .04);
+  color: rgba(255, 245, 228, .75);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform .16s, border-color .16s, background .16s, box-shadow .16s;
+  touch-action: manipulation;
+}
+
+.mirage-powerup-btn:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.mirage-powerup-btn.is-ready {
+  opacity: 1;
+  border-color: rgba(243, 198, 91, .6);
+  background: rgba(243, 198, 91, .14);
+  color: #fff4df;
+  box-shadow: 0 0 16px rgba(243, 198, 91, .25);
+  animation: miragePowerReadyPulse 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes miragePowerReadyPulse {
+  from { box-shadow: 0 0 12px rgba(243, 198, 91, .2); }
+  to { box-shadow: 0 0 22px rgba(243, 198, 91, .5); border-color: #ffd875; }
+}
+
+.mirage-powerup-btn.is-ready:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: rgba(243, 198, 91, .25);
+  border-color: #ffe49a;
+}
+
+.mirage-powerup-btn:active:not(:disabled) {
+  transform: scale(.96);
+}
+
+.mirage-powerup-btn-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 6px;
+}
+
+.mirage-powerup-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mirage-powerup-key {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, .1);
+  border: 1px solid rgba(255, 255, 255, .18);
+  color: #ffda73;
+  font: 800 8px var(--mono);
+  letter-spacing: .08em;
+}
+
+.mirage-powerup-btn-name {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  font: 800 9px var(--mono);
+  letter-spacing: .08em;
+  color: #fff2dc;
+}
+
+.mirage-powerup-badge {
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: #f3c65b;
+  color: #1a1024;
+  font: 900 8px var(--mono);
+}
+
+.mirage-powerup-progress-bg {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .15);
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.mirage-powerup-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .2s ease-out;
+}
+
+.mirage-powerup-progress-fill.is-shield {
+  background: linear-gradient(90deg, #4ce9df, #62f3a5);
+}
+
+.mirage-powerup-progress-fill.is-lasso {
+  background: linear-gradient(90deg, #f39c38, #ffbe5c);
+}
+
+.mirage-powerup-progress-fill.is-pistol {
+  background: linear-gradient(90deg, #e55353, #ff7e7e);
+}
+
 .mirage-power-toast {
   position: absolute;
   z-index: 5;
@@ -1619,6 +1751,25 @@
     top: 18%;
     font-size: 10px;
     padding: 8px 14px;
+  }
+  .mirage-powerup-bar {
+    bottom: 8px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .mirage-powerup-btn {
+    min-width: 68px;
+    padding: 5px 6px;
+  }
+  .mirage-powerup-icon {
+    font-size: 16px;
+  }
+  .mirage-powerup-key {
+    font-size: 7px;
+    padding: 1px 3px;
+  }
+  .mirage-powerup-btn-name {
+    font-size: 8px;
   }
 }
 
