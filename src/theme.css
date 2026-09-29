@@ -1093,6 +1093,18 @@
 [data-theme='light'] .live-player,
 [data-theme='light'] .video-modal-player{background:#05060f}
 [data-theme='light'] .video-modal{background:rgba(10,11,26,.86)}
+/* Visionneuse des captures d'article : le voile et la scène (là où se pose le
+   visuel) sont un écran — sombres dans les deux thèmes, comme le lecteur
+   modal. Le cadre, son en-tête et son pied restent des surfaces d'interface :
+   ils suivent `--panel` et prennent donc l'encre sombre en thème clair, où le
+   jaune de marque passe à `--yellow-ink` (le #ffd619 tombe à 1,4:1 sur blanc).
+   Les flèches de navigation, elles, sont posées SUR le visuel : encre claire
+   conservée (voir la liste plus bas et le motif `article-lightbox-nav` du
+   balayage d'encres, scripts/theme-ink-sweep.mjs). */
+[data-theme='light'] .article-lightbox{background:rgba(10,11,26,.88)}
+[data-theme='light'] .article-lightbox-stage{background:#05060f}
+[data-theme='light'] .article-lightbox-kicker,
+[data-theme='light'] .article-lightbox-caption{color:var(--yellow-ink)}
 [data-theme='light'] .live-player--offline{
   background:
     radial-gradient(circle at 50% 42%,rgba(124,58,237,.28),transparent 45%),
@@ -1101,6 +1113,7 @@
 [data-theme='light'] .live-offline strong,
 [data-theme='light'] .video-modal-head strong,
 [data-theme='light'] .video-modal-kicker,
+[data-theme='light'] .article-lightbox-nav,
 [data-theme='light'] .page-hero-visual-content strong,
 [data-theme='light'] .score-badge b,
 [data-theme='light'] .reel-label,

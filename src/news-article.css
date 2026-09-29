@@ -533,14 +533,93 @@
 .article-gallery-item figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 16px 13px;background:linear-gradient(transparent,rgba(5,6,15,.92));font:500 10px var(--mono);letter-spacing:.15em;color:#ffd619;text-transform:uppercase;text-align:left;pointer-events:none}
 .article-gallery-credit{margin-top:10px;font:400 11px/1.55 var(--body);color:var(--dim);letter-spacing:0;text-transform:none}
 [dir='rtl'] .article-gallery-item figcaption{text-align:right}
+
+/* Chaque capture est un bouton : elle ouvre la visionneuse. Le bouton n'est
+   qu'une enveloppe transparente — le cadre, l'ombre et le zoom au survol
+   restent portés par `.article-gallery-item`. La pastille loupe apparaît au
+   survol et au focus clavier ; elle ne capte pas le pointeur, comme la
+   légende posée sur la photo. */
+.article-gallery-open{display:block;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;position:relative;cursor:zoom-in}
+.article-gallery-open:focus-visible{outline:2px solid var(--yellow);outline-offset:-3px}
+.article-gallery-zoom{
+  position:absolute;top:10px;right:10px;width:32px;height:32px;display:grid;place-items:center;
+  background:rgba(5,6,15,.74);border:1px solid rgba(255,255,255,.22);color:#ffd619;
+  opacity:0;transform:translateY(-4px);pointer-events:none;
+  transition:opacity .22s ease,transform .22s ease;
+}
+.article-gallery-open:hover .article-gallery-zoom,
+.article-gallery-open:focus-visible .article-gallery-zoom{opacity:1;transform:none}
+[dir='rtl'] .article-gallery-zoom{right:auto;left:10px}
+
+/* Visionneuse (lightbox) — au-dessus de la navigation (1000), de la barre de
+   lecture (1200), de la fenêtre sociale (1250) et des succès (1300), mais
+   sous les appels (1900), qui doivent rester visibles en toute circonstance.
+   Écran posé sur une image : il reste sombre dans les deux thèmes (règle n°2
+   de src/theme.css), comme le lecteur modal des tests. */
+.article-lightbox{
+  position:fixed;inset:0;z-index:1400;display:grid;place-items:center;
+  padding:22px;background:rgba(4,5,14,.93);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.article-lightbox-box{
+  width:min(1180px,100%);display:flex;flex-direction:column;
+  /* vh (fallback) puis dvh : sur iPhone, 100vh seul passe sous la barre
+     d'outils de Safari et coupe le pied de la visionneuse. */
+  max-height:calc(100vh - 44px);max-height:calc(100dvh - 44px);
+  background:var(--panel);border:1px solid var(--line-strong);
+  animation:articleLightboxIn .22s ease;
+}
+@keyframes articleLightboxIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.article-lightbox-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 18px;border-bottom:1px solid var(--line)}
+.article-lightbox-head > div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.article-lightbox-kicker{font:500 9px var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--yellow)}
+.article-lightbox-head strong{font:800 14px/1.15 var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.article-lightbox-close{
+  flex:none;width:36px;height:36px;display:grid;place-items:center;
+  background:transparent;border:1px solid var(--line-strong);color:var(--ink);
+  font-size:14px;cursor:pointer;transition:background .18s,border-color .18s,color .18s;
+}
+.article-lightbox-close:hover{background:var(--yellow);border-color:var(--yellow);color:#0a0b1a}
+.article-lightbox-stage{position:relative;flex:1;min-height:0;display:grid;place-items:center;background:#05060f;overflow:hidden}
+.article-lightbox-stage img{display:block;max-width:100%;max-height:calc(100vh - 210px);max-height:calc(100dvh - 210px);width:auto;height:auto;object-fit:contain}
+.article-lightbox-nav{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:44px;height:64px;display:grid;place-items:center;
+  background:rgba(5,6,15,.66);border:1px solid rgba(255,255,255,.18);color:#fff;
+  font:400 30px/1 var(--body);cursor:pointer;
+  transition:background .18s,border-color .18s,color .18s;
+}
+.article-lightbox-nav:hover{background:var(--yellow);border-color:var(--yellow);color:#0a0b1a}
+.article-lightbox-prev{left:10px}
+.article-lightbox-next{right:10px}
+.article-lightbox-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  padding:12px 18px;border-top:1px solid var(--line);
+}
+.article-lightbox-caption{font:500 10px/1.5 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--yellow);min-width:0}
+.article-lightbox-count{flex:none;font:500 10px var(--mono);letter-spacing:.16em;color:var(--muted)}
+[dir='rtl'] .article-lightbox-prev{left:auto;right:10px}
+[dir='rtl'] .article-lightbox-next{right:auto;left:10px}
+
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .article-gallery{margin:26px 0 22px}
   .article-gallery-grid{grid-template-columns:1fr;gap:12px}
   .article-gallery-item:first-child:nth-last-child(n+3){grid-column:auto}
+  /* Pas de survol au doigt : la loupe reste visible en permanence. */
+  .article-gallery-zoom{opacity:1;transform:none}
+  .article-lightbox{padding:12px}
+  .article-lightbox-head{padding:11px 13px}
+  .article-lightbox-head strong{font-size:12px}
+  .article-lightbox-stage img{max-height:calc(100vh - 190px);max-height:calc(100dvh - 190px)}
+  .article-lightbox-nav{width:38px;height:54px;font-size:26px}
+  .article-lightbox-foot{padding:10px 13px;gap:8px}
+  .article-lightbox-caption{font-size:9px;letter-spacing:.1em}
 }
 @media(prefers-reduced-motion:reduce){
   .article-gallery-item img{transition:none}
   .article-gallery-item:hover img{transform:none}
+  .article-gallery-zoom{transition:none}
+  .article-lightbox-box{animation:none}
 }
 
 /* --------------------------------------------------------------------------
