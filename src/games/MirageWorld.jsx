@@ -4,9 +4,9 @@ import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION } from './mirageRules';
+import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION } from './mirageRules';
 
-const LANES = [-2.1, 0, 2.1];
+const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
 const RUN_SECONDS = 60;
 
@@ -84,6 +84,14 @@ function makeCactus() {
   block(cube, green, group, [0.43, 0.78, 0], [0.42, 0.2, 0.24]);
   return group;
 }
+
+// Golden diamonds have a 30% chance to be a fake: they pay out like a pink one.
+const FAKE_GOLD_CHANCE = 0.3;
+const effectiveTier = (item) => {
+  if (item.tier !== 2) return item.tier;
+  if (item.fake === undefined) item.fake = Math.random() < FAKE_GOLD_CHANCE;
+  return item.fake ? 1 : 2;
+};
 
 function makeCrystal(tier) {
   const group = new THREE.Group();
@@ -415,10 +423,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const floor = [];
   for (let zIndex = 0; zIndex < 25; zIndex += 1) {
-    for (let lane = 0; lane < 4; lane += 1) {
+    for (let lane = 0; lane < LANE_COUNT; lane += 1) {
       const tile = new THREE.Mesh(floorGeometry, floorMaterials[(zIndex + lane) % floorMaterials.length]);
-      tile.position.set(lane === 3 ? 4.2 : LANES[lane], -0.34, TRACK_MIN_Z + zIndex * 2);
-      if (lane === 3) tile.visible = false;
+      tile.position.set(LANES[lane], -0.34, TRACK_MIN_Z + zIndex * 2);
       scene.add(tile);
       floor.push(tile);
     }
@@ -426,13 +433,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
   let skinColors = getSkin?.() ?? null;
   const player = makeExplorer(false, skinColors);
+  player.position.x = LANES[1];
   scene.add(player);
   const playerShieldBubble = makeShieldBubble();
   playerShieldBubble.position.set(0, 1.2, 0);
   player.add(playerShieldBubble);
 
   const rival = makeExplorer(true);
-  rival.position.set(4.2, 0, -5);
+  rival.position.set(LANES[LANE_COUNT - 1], 0, -5);
   rival.scale.setScalar(0.92);
   rival.visible = false;
   scene.add(rival);
@@ -458,8 +466,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
   const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xfdf0c8 });
   const finishMaterial = new THREE.MeshBasicMaterial({ color: 0x4ce9df });
-  const startLine = block(new THREE.BoxGeometry(8.6, 0.05, 0.45), lineMaterial, scene, [1.05, 0.025, 1]);
-  const finishLine = block(new THREE.BoxGeometry(8.6, 0.05, 0.75), finishMaterial, scene, [1.05, 0.03, -DUEL_DISTANCE]);
+  const startLine = block(new THREE.BoxGeometry(TRACK_WIDTH, 0.05, 0.45), lineMaterial, scene, [0, 0.025, 1]);
+  const finishLine = block(new THREE.BoxGeometry(TRACK_WIDTH, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
   startLine.visible = false;
   finishLine.visible = false;
   const playerShadow = new THREE.Mesh(
@@ -565,7 +573,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let boost = SPEED_BOOST_NONE;
   let trace = [0];
   let seed = 0;
-  const npc = { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0 };
+  const npc = { dist: 0, lane: 1, x: LANES[1], jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0 };
   const npcEnsureCourse = () => {
     while (npc.genPos < npc.dist + 60) {
       const encounter = npc.gen();
@@ -742,13 +750,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       pu.collected = true;
       pu.group.visible = false;
       pu.coursePos = distance - zPos;
-      pu.group.position.set(LANES[Math.floor(Math.random()*3)], 0, zPos);
+      pu.group.position.set(LANES[Math.floor(Math.random() * LANE_COUNT)], 0, zPos);
       pu.checked = false;
       return;
     }
     pu.type = type;
     pu.collected = false;
-    pu.lane = Math.floor(Math.random()*3);
+    pu.lane = Math.floor(Math.random() * LANE_COUNT);
     pu.coursePos = distance - zPos;
     const mesh = makePowerUpMesh(type);
     pu.group.add(mesh);
@@ -823,7 +831,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         if (gem) {
           sharedGems.add(gem.key);
           hidePlayerGem(gem.key);
-          npc.boost = speedBoostFor(gem.tier);
+          npc.boost = speedBoostFor(effectiveTier(gem));
         }
         npc.next += 1;
       }
@@ -854,6 +862,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const height = Math.max(1, mount.clientHeight);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
+    // Preserve a minimum horizontal field of view so all four lanes fit on phones.
+    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(50) / 2) / Math.min(1, camera.aspect)));
     camera.updateProjectionMatrix();
   };
   const observer = new ResizeObserver(resize);
@@ -910,7 +920,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     finishLine.position.z = -DUEL_DISTANCE;
     startLine.visible = race.mode !== 'rush';
     finishLine.visible = race.mode !== 'rush';
-    floor.forEach(tile => { tile.visible = tile.position.x !== 4.2 || Boolean(race.challenge); });
     elapsed = 0;
     score = 0;
     gems = 0;
@@ -923,13 +932,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     invulnerable = 0;
     crashAnimation = 0;
     crashDirection = 1;
-    player.position.set(0, 0, 0);
-    floor.forEach((tile, index) => { tile.position.z = TRACK_MIN_Z + Math.floor(index / 4) * 2; });
+    player.position.set(LANES[laneIndex], 0, 0);
+    floor.forEach((tile, index) => { tile.position.z = TRACK_MIN_Z + Math.floor(index / LANE_COUNT) * 2; });
     player.visible = true;
     nextEncounter = createCourse(race.mode !== 'rush' ? seededRandom(seed) : Math.random);
     rowCounter = 0;
     sharedGems.clear();
-    Object.assign(npc, { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0 });
+    Object.assign(npc, { dist: 0, lane: 1, x: LANES[1], jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0 });
     let z = -20;
     rows.forEach(row => {
       const gap = populateRow(row);
@@ -1069,11 +1078,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             sharedGems.add(crystal.key);
             crystal.object.visible = false;
             gems += 1;
-            callbacks.pickup?.(crystal.tier, crystal.key);
+            const tier = effectiveTier(crystal);
+            callbacks.pickup?.(tier, crystal.key);
             combo += 1;
             const multiplier = 1 + Math.min(3, Math.floor(combo / 5) * 0.5);
-            score += Math.round(CRYSTALS[crystal.tier].value * multiplier);
-            if (race.mode !== 'rush') boost = speedBoostFor(crystal.tier);
+            score += Math.round(CRYSTALS[tier].value * multiplier);
+            if (race.mode !== 'rush') boost = speedBoostFor(tier);
             if (combo === 5 || combo === 10 || combo === 15) {
               score += 150;
               poseLeft = 0.62;
@@ -1271,7 +1281,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         rival.position.y += Math.sin(time*0.02)*0.06;
       }
     } else {
-      rival.position.set(4.2, 0, rival.position.z);
+      // The non-colliding replay ghost shares the outer playable lane.
+      rival.position.set(LANES[LANE_COUNT - 1], 0, rival.position.z);
       rival.scale.setScalar(0.92);
     }
     rival.visible = race.mode === 'duel' && rival.position.z < 11 && rival.position.z > -74 && (npc.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
