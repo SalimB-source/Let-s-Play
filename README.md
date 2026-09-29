@@ -139,7 +139,7 @@ npm run check:phone-css      # échoue si une requête média perd sa condition 
 npm run check:phone-layout   # détection « téléphone » : zoom, paysage, iPad, bureau (jsdom)
 ```
 
-`check:phone-css` relit toutes les feuilles, compte 86 requêtes « petit écran »
+`check:phone-css` relit toutes les feuilles, compte 93 requêtes « petit écran »
 et 12 requêtes « bureau » et échoue si l'une d'elles repart sans garde-fou : un
 nouveau composant qui écrirait `@media(max-width:700px)` sans la condition
 téléphone casse la vérification. C'est la règle à connaître avant d'ajouter une
@@ -151,6 +151,59 @@ où il faut — et une seule fois.
 Côté **APK Android**, la WebView reçoit `setUseWideViewPort(true)` et
 `setLoadWithOverviewMode(true)` (`android/app/src/main/java/dz/letsplay/officiel/MainActivity.java`) :
 sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
+
+## Mirage Rush : les courses s'ouvrent en pop-up (téléphone, tablette, app)
+
+Sur téléphone, sur tablette et dans l'APK Android, une manche de Mirage Rush
+(Ruée ou Duel) ne se joue plus au milieu de la page : la fenêtre de jeu est
+**décollée en plein écran** par-dessus le reste, et le défilement de la page est
+**gelé** pendant la course. Un balayage du doigt destiné à esquiver — ou une main
+posée sur l'écran — ne fait donc plus défiler l'arrière-plan.
+
+- **Qui ouvre le pop-up** — `src/games/racePopup.js`, sur trois signaux (même
+  définition du « téléphone » que `src/lib/phoneLayout.js`) : un appareil
+  **tactile** (`(hover:none) and (pointer:coarse)`, téléphone en paysage et
+  tablette compris), la **mise en page téléphone** (`PHONE_LAYOUT_MEDIA` :
+  fenêtre ≤ 800 px, ou écran de téléphone dont le zoom de page a élargi la
+  fenêtre), ou l'**app Android** — la WebView y injecte le pont
+  `LetsPlayAndroid` (`MainActivity.addJavascriptInterface`), dernier recours
+  quand les requêtes média ne voient plus un téléphone (WebView large, souris
+  appairée).
+- **Quoi** — le *choix de la course* reste dans la page ; le décompte, la partie,
+  la pause et l'écran d'arrivée s'affichent dans le pop-up
+  (`.mirage-page.is-race-popup` dans `src/games/mirage-rush.css`), avec une croix
+  ✕ dans la barre du haut (décompte, pause, arrivée) : au doigt, il n'y a pas de
+  touche Échap.
+- **Comment** — la fenêtre de jeu n'est **pas déplacée dans le DOM** : elle est
+  seulement `position: fixed; inset: 0`, et le voile sombre
+  (`.mirage-race-popup-backdrop`) est un *frère* de la grille, jamais un parent.
+  C'est volontaire : un portail React remonterait `MirageWorld` à chaque
+  ouverture, donc la scène 3D, le canvas WebGL et la manche en cours
+  repartiraient de zéro. Les manettes tactiles restent affichées pendant la
+  manche, y compris en paysage et sur tablette, où la requête média « téléphone »
+  ne s'applique plus.
+- **Le défilement gelé** — `src/lib/usePageScrollLock.js` pose
+  `overflow: hidden` **et** fige le corps à sa position de défilement
+  (`position: fixed` + `top: -<défilé>`), puis rend au `<body>` exactement ses
+  styles d'avant et sa position : iOS Safari ignore en effet `overflow: hidden`,
+  et la page « caoutchoute » encore sous le doigt. Dans l'app, le verrou coupe
+  aussi le tirer-pour-rafraîchir natif (`setAppPullToRefresh`, voir
+  `src/lib/appBridge.js` et `android/README.md`) : page gelée, le geste vers le
+  bas n'irait plus qu'à l'indicateur de rafraîchissement. La course **en ligne**
+  (`MirageOnline`) prend le même verrou tant que la partie est ouverte.
+- **Écrans plus larges** — sur ordinateur (fenêtre large, souris), rien ne
+  change : la manche reste dans la page, à côté du classement et des skins.
+
+```bash
+npm run check:race-popup   # décision (tactile, paysage, app), verrou, câblage CSS/JSX
+```
+
+`check:race-popup` compile les modules concernés et rejoue les profils gênants
+sur un faux navigateur : ordinateur, téléphone en portrait, téléphone en paysage,
+téléphone dont le zoom a élargi la fenêtre, tablette, app Android sans tactile
+détecté. Il vérifie aussi que le corps de page retrouve ses styles et sa
+position après la course, qu'aucun portail React n'est utilisé (la scène 3D ne
+doit pas être remontée) et que les règles CSS du pop-up sont bien là.
 
 ## Typographie : Orbitron pour les gros titres
 

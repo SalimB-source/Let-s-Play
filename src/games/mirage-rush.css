@@ -303,7 +303,24 @@
 }
 .mirage-pause-stats b { color: #ffd76b; font: 800 13px var(--font-gaming); }
 
-.mirage-mobile-controls { display: none; }
+/* Manettes tactiles. Le dessin vit ici, hors requête média : la course en
+   pop-up les garde sur tout appareil tactile, y compris en paysage ou sur
+   tablette, où la requête « téléphone » ne s'applique pas (seuls le
+   balayage… et le hasard, sinon). Elles ne s'affichent que pendant une
+   manche, via `display: flex` (voir plus bas et .is-running). */
+.mirage-mobile-controls {
+  display: none; align-items: center; justify-content: center; gap: 12px;
+  padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(18, 12, 29, .96); border-top: 1px solid rgba(255, 255, 255, .07);
+}
+.mirage-mobile-controls button {
+  width: 58px; height: 46px; border-radius: 12px; border: 1px solid rgba(255, 220, 153, .32);
+  background: rgba(255, 255, 255, .055); color: #fff0d5; font: 800 22px var(--font-gaming);
+  touch-action: manipulation; cursor: pointer; transition: background .12s, transform .12s;
+}
+.mirage-mobile-controls button:active { background: rgba(243, 198, 91, .25); transform: scale(.96); }
+.mirage-mobile-controls .mirage-jump-control { width: 124px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(229, 99, 160, .16); border-color: rgba(242, 119, 169, .4); color: #f5b7d7; font: 800 10px var(--mono); letter-spacing: .12em; }
+.mirage-mobile-controls .mirage-jump-control span { font-size: 17px; }
 .mirage-game-foot { display: flex; justify-content: space-between; gap: 12px; padding: 12px 15px; color: rgba(255, 242, 221, .48); font-size: 8px; letter-spacing: .12em; }
 .mirage-game-foot b { color: #e8ba64; }
 
@@ -457,19 +474,7 @@
   .mirage-pause-stats b { font-size: 11px; }
   .mirage-game-foot { flex-direction: column; gap: 5px; padding: 9px; font-size: 7px; }
   /* Commandes tactiles : visibles uniquement pendant la course. */
-  .mirage-game-shell.is-running .mirage-mobile-controls {
-    display: flex; align-items: center; justify-content: center; gap: 12px;
-    padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
-    background: rgba(18, 12, 29, .96); border-top: 1px solid rgba(255, 255, 255, .07);
-  }
-  .mirage-mobile-controls button {
-    width: 58px; height: 46px; border-radius: 12px; border: 1px solid rgba(255, 220, 153, .32);
-    background: rgba(255, 255, 255, .055); color: #fff0d5; font: 800 22px var(--font-gaming);
-    touch-action: manipulation; cursor: pointer; transition: background .12s, transform .12s;
-  }
-  .mirage-mobile-controls button:active { background: rgba(243, 198, 91, .25); transform: scale(.96); }
-  .mirage-mobile-controls .mirage-jump-control { width: 124px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(229, 99, 160, .16); border-color: rgba(242, 119, 169, .4); color: #f5b7d7; font: 800 10px var(--mono); letter-spacing: .12em; }
-  .mirage-mobile-controls .mirage-jump-control span { font-size: 17px; }
+  .mirage-game-shell.is-running .mirage-mobile-controls { display: flex; }
   .mirage-side-panel { grid-template-columns: 1fr; gap: 10px; }
   .mirage-leaderboard { grid-row: auto; }
   .mirage-board-message { min-height: 96px; }
@@ -1707,6 +1712,55 @@
   .mirage-room-finished-banner { align-items: flex-start; flex-wrap: wrap; padding: 18px; gap: 14px; }
 }
 
+/* ── Course en pop-up : téléphone, tablette, app Android ──────────────
+   Décidée par src/games/racePopup.js : l'intro (choix de la course) reste
+   dans la page, puis la manche entière — décompte, partie, pause, arrivée —
+   est décollée en plein écran par-dessus le reste. Le défilement de la page
+   est gelé pendant ce temps (src/lib/usePageScrollLock.js) : un balayage du
+   doigt pour esquiver, ou une main posée sur l'écran, ne peut plus faire
+   défiler l'arrière-plan.
+   La fenêtre de jeu n'est pas déplacée dans le DOM (juste décollée) : la
+   scène 3D et son canvas WebGL gardent leur identité, donc la manche en cours
+   ne repart pas de zéro à l'ouverture du pop-up. */
+.mirage-race-popup-backdrop {
+  position: fixed; inset: 0; z-index: 9999;
+  /* Pas de flou : la fenêtre de jeu est opaque et couvre tout l'écran, le
+     voile ne sert qu'à ne jamais laisser voir la page vive derrière. Un
+     `backdrop-filter` plein écran coûterait cher pendant que la scène 3D
+     tourne. */
+  background: rgba(9, 7, 16, .9);
+}
+.mirage-page.is-race-popup .mirage-game-shell {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  border: 0; border-radius: 0;
+  background: linear-gradient(150deg, #221838, #0d0a17);
+  overscroll-behavior: contain;
+}
+.mirage-page.is-race-popup .mirage-game-topbar { flex: 0 0 auto; }
+/* Le nom de la zone cède la place en premier : sur un petit écran, les
+   commandes (pause, retour, croix, son) doivent toutes tenir dans la barre. */
+.mirage-page.is-race-popup .mirage-game-brand { flex-shrink: 1; min-width: 0; }
+.mirage-page.is-race-popup .mirage-game-brand > span:last-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mirage-page.is-race-popup .mirage-viewport { flex: 1 1 auto; height: auto; min-height: 0; }
+/* Le rappel clavier n'a plus d'objet plein écran sur téléphone : la place
+   revient à la piste. */
+.mirage-page.is-race-popup .mirage-game-foot { display: none; }
+.mirage-popup-close-button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 30px; border-radius: 8px;
+  border: 1px solid rgba(255, 224, 166, .32); background: rgba(255, 255, 255, .05);
+  color: #ffe1a8; font: 800 13px var(--mono); cursor: pointer;
+  transition: border-color .16s, background .16s, color .16s;
+}
+.mirage-popup-close-button:hover { border-color: rgba(243, 198, 91, .6); background: rgba(243, 198, 91, .14); color: #fff2d2; }
+.mirage-popup-close-button:focus-visible { outline: 2px solid #ffdb76; outline-offset: 2px; }
+/* Manettes tactiles : en pop-up, elles restent affichées pendant la manche
+   même hors mise en page téléphone (téléphone en paysage, tablette). */
+@media (hover: none) and (pointer: coarse) {
+  .mirage-page.is-race-popup .mirage-game-shell.is-running .mirage-mobile-controls { display: flex; }
+}
 /* Respect des préférences de mouvement réduit : on calme toutes les
    animations décoratives (shake, zoom, shimmer, pulsations…). */
 @media (prefers-reduced-motion: reduce) {
@@ -1733,7 +1787,8 @@
   .mirage-viewport.is-glow::before { animation: none !important; opacity: 0; }
   .mirage-viewport.is-live .mirage-swipe-hint { animation: none; opacity: 1; }
   .mirage-mode-picker button, .mirage-map-card, .mirage-skin-chip, .mirage-share-button,
-  .mirage-back-game-button, .mirage-sound-button, .mirage-pause-button, .mirage-board-list li {
+  .mirage-back-game-button, .mirage-sound-button, .mirage-pause-button, .mirage-popup-close-button,
+  .mirage-board-list li {
     transition: none;
   }
 }

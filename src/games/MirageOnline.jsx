@@ -14,6 +14,7 @@ import {
 } from './mirageRooms';
 import { powerUpOdds } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
+import usePageScrollLock from '../lib/usePageScrollLock';
 
 const characters = CHARACTER_NAMES;
 
@@ -369,6 +370,9 @@ export default function MirageOnline({
   // The server changes the room status only after the host starts the race.
   // Do not mount/render the 3D course while everyone is still in the lobby.
   const gameLaunched = room?.status === 'started';
+  // La course en ligne vit elle aussi dans un pop-up plein écran : sous le
+  // doigt, un balayage pour esquiver ne doit pas faire défiler le salon.
+  usePageScrollLock(gameLaunched && !finished);
 
   const standings = [...(room?.players || [])].sort((a, b) => {
     if (a.finished_at && b.finished_at) return Date.parse(a.finished_at) - Date.parse(b.finished_at);

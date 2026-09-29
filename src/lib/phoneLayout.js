@@ -36,6 +36,14 @@ export const PHONE_LAYOUT_MEDIA = `(max-width:800px), ${HANDHELD_MEDIA}`;
 /** Seuil de la fenêtre sociale (amis + messagerie). */
 export const SOCIAL_MOBILE_MEDIA = `(max-width:760px), ${HANDHELD_MEDIA}`;
 
+/**
+ * Appareil piloté au doigt. Un glissement pour esquiver peut alors faire
+ * défiler la page par erreur : téléphone en paysage et tablette compris, que
+ * `HANDHELD_MEDIA` (portrait, petit écran) ne décrit pas. Sert notamment à
+ * ouvrir les courses de Mirage Rush en pop-up (voir `src/games/racePopup.js`).
+ */
+export const TOUCH_MEDIA = '(hover:none) and (pointer:coarse)';
+
 function matches(query) {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
   try {
@@ -53,6 +61,24 @@ export function isHandheld() {
 /** Vrai quand le design doit utiliser sa mise en page compacte. */
 export function isPhoneLayout() {
   return matches(PHONE_LAYOUT_MEDIA);
+}
+
+/** Vrai sur un appareil tactile (téléphone, tablette), quelle que soit sa fenêtre. */
+export function isTouchDevice() {
+  return matches(TOUCH_MEDIA);
+}
+
+/**
+ * Vrai dans l'app Android. `MainActivity` injecte un pont natif
+ * (`webView.addJavascriptInterface(new CallAudioBridge(), "LetsPlayAndroid")`)
+ * avant de charger le site : la clé existe donc dès le premier rendu, et jamais
+ * dans un navigateur. L'app a besoin de ce signal à part : sa WebView peut être
+ * large (téléphone en paysage) et n'applique donc pas la mise en page téléphone,
+ * alors que le pouce qui la pilote reste un doigt (courses en pop-up).
+ */
+export function isAndroidApp() {
+  if (typeof window === 'undefined') return false;
+  return Boolean(window.LetsPlayAndroid);
 }
 
 /**
