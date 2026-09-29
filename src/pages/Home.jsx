@@ -1,14 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
-import { baseUrl as base } from '../data';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
-// L'actu à la une de l'accueil dérive du robot d'actus (comme la page Actus) :
-// aucun contenu à maintenir à la main ici.
-import { autoNewsListing } from '../lib/autoNews';
-import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { quizzes } from '../quizzesData';
 import { dailyQuizFor } from '../quizzes/engine';
 import { isQuizFinished } from '../quizzes/quizProgress';
@@ -56,31 +51,17 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Actu à la une de l'accueil — choix éditorial : l'actu Physint × Xbox
-// (29.09.2026, miniature kojima_mindplayer.png) ouvre la page d'accueil,
-// juste après les épisodes. Remettre la constante à null laisse la une à la
-// dernière actu publiée par le robot (autoNewsListing, déjà triée du plus
-// récent au plus ancien), puis en repli à l'actu manuelle PHYSINT.
-const editorialTopStory = {
-  to: '/news/physint-budget-400-millions-xbox',
-  image: 'kojima_mindplayer.png',
-  alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play',
-  badge: 'PHYSINT · XBOX',
-  kicker: '29.09.2026 · KOJIMA PRODUCTIONS',
-  title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.',
-  excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima, fraîchement repêché par Xbox après le retrait de PlayStation. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft s’est engagé sur un montant « nettement inférieur ».',
-  sentiment: 'mixed',
-};
-
-// Visuel de la une : URL absolue (image officielle) telle quelle, fichier
-// local préfixé du baseUrl ; la carte SVG de repli prend le relais en cas
-// d'erreur de chargement — même mécanique que les hubs actus.
-const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
-
-const fallbackTopStory = {
-  to: '/news/physint',
-  image: 'physint-news.jpg',
-  sentiment: 'mixed',
+// Actu mise en avant sur l'accueil : le trailer officiel de God of War Laufey
+// se lit directement dans la carte, sans quitter la page. Le lien éditorial
+// ouvre l'article complet consacré aux précommandes et à l'arc-serpent de Faye.
+const featuredNews = {
+  to: '/news/god-of-war-laufey-precommandes-arc-serpent',
+  video: 'CQve7-PraCM',
+  videoTitle: 'God of War Laufey - Pre-Orders Open Now | PS5 Games',
+  badge: 'GOD OF WAR LAUFEY · PRÉCOMMANDES',
+  kicker: '29.09.2026 · SANTA MONICA STUDIO',
+  title: 'FAYE DÉGAINE L’ARC-SERPENT.',
+  excerpt: 'Le trailer officiel dévoile l’arc-serpent de Faye et ses deux modes de tir. God of War Laufey est attendu le 16 février 2027, en exclusivité sur PS5.',
 };
 
 // YouTube resolves this permanent channel URL to the channel's active live
@@ -159,7 +140,7 @@ export default function Home() {
   const newsHeadMap = {
     fr: {
       label1: 'ACTU À LA UNE',
-      label2: 'LE DERNIER ROUND · LET’S PLAY',
+      label2: 'GOD OF WAR LAUFEY · PS5',
       eyebrow: 'Actu à la une',
       h2a: 'L’ACTU',
       h2b: 'À LA UNE.',
@@ -169,7 +150,7 @@ export default function Home() {
     },
     en: {
       label1: 'FEATURED NEWS',
-      label2: 'THE LATEST ROUND · LET’S PLAY',
+      label2: 'GOD OF WAR LAUFEY · PS5',
       eyebrow: 'Featured news',
       h2a: 'TOP STORY,',
       h2b: 'RIGHT NOW.',
@@ -179,7 +160,7 @@ export default function Home() {
     },
     ar: {
       label1: 'أبرز الأخبار',
-      label2: 'آخر الأخبار · LET’S PLAY',
+      label2: 'GOD OF WAR LAUFEY · PS5',
       eyebrow: 'خبر مميز',
       h2a: 'الخبر',
       h2b: 'المميز.',
@@ -189,12 +170,6 @@ export default function Home() {
     },
   };
   const newsHead = newsHeadMap[lang] || newsHeadMap.fr;
-
-  // La carte « actu à la une » : choix éditorial d'abord, sinon la dernière
-  // actu publiée, sinon le repli PHYSINT (traduit dans la langue courante).
-  const topStory = editorialTopStory || autoNewsListing[0]
-    || { ...fallbackTopStory, alt: t.news.featured.alt, badge: t.news.featured.badge, kicker: t.news.featured.kicker, title: t.news.featured.title, excerpt: t.news.featured.excerpt };
-  const topStoryMeta = sentimentMeta(getArticleSentiment(topStory));
 
   const episodes = [
     { ...headlineEpisode, copy: t.home.featured },
@@ -260,6 +235,41 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ACTU À LA UNE — première mise en avant après le ticker, trailer jouable sur place. */}
+      <section className="featured-dossiers featured-dossiers--news wrap" id="actu-une">
+        <div className="section-label"><span>{newsHead.label1}</span><span>{newsHead.label2}</span></div>
+        <div className="featured-dossiers-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {newsHead.eyebrow}</p>
+            <h2>{newsHead.h2a}<br /><em>{newsHead.h2b}</em></h2>
+          </div>
+          <Link className="arrow-link" to="/news">{newsHead.seeAll} <Arrow /></Link>
+        </div>
+        <article className="daily-news-card home-news-card">
+          <div className="daily-news-image home-news-video">
+            <iframe
+              src={youTubeEmbedUrl(featuredNews.video)}
+              title={featuredNews.videoTitle}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+            <span className="news-feature-badge">{featuredNews.badge}</span>
+          </div>
+          <Link
+            className="daily-news-copy"
+            to={featuredNews.to}
+            aria-label={`${newsHead.read} : ${featuredNews.title}`}
+          >
+            <p className="eyebrow"><span className="live-dot" /> {newsHead.today}</p>
+            <span className="news-kicker">{featuredNews.kicker}</span>
+            <h3>{featuredNews.title}</h3>
+            <p>{featuredNews.excerpt}</p>
+            <span className="read-link">{newsHead.read} <Arrow /></span>
+          </Link>
+        </article>
+      </section>
+
       {/* ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
       <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured">
         <div className="section-label"><span>{labelTitle}</span><span>{head.label2}</span></div>
@@ -292,45 +302,6 @@ export default function Home() {
             </article>
           ))}
         </div>
-      </section>
-
-      {/* ACTU À LA UNE — la dernière actu publiée, juste après les épisodes :
-          grande carte image + texte, le même gabarit que la une de la page Actus. */}
-      <section className="featured-dossiers featured-dossiers--news wrap" id="actu-une">
-        <div className="section-label"><span>{newsHead.label1}</span><span>{newsHead.label2}</span></div>
-        <div className="featured-dossiers-head">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> {newsHead.eyebrow}</p>
-            <h2>{newsHead.h2a}<br /><em>{newsHead.h2b}</em></h2>
-          </div>
-          <Link className="arrow-link" to="/news">{newsHead.seeAll} <Arrow /></Link>
-        </div>
-        <Link className="daily-news-card home-news-card" to={topStory.to}>
-          <div className="daily-news-image">
-            <img
-              src={imageUrl(topStory.image)}
-              alt={topStory.alt || topStory.title}
-              loading="lazy"
-              decoding="async"
-              onError={(event) => {
-                if (topStory.fallbackImage && event.currentTarget.dataset.fallback !== 'true') {
-                  event.currentTarget.dataset.fallback = 'true';
-                  event.currentTarget.src = imageUrl(topStory.fallbackImage);
-                }
-              }}
-            />
-            <span className="news-feature-badge">{topStory.badge}</span>
-            <span className="news-feature-arrow" aria-hidden="true">↗</span>
-            <span className={`news-sentiment ${topStoryMeta.color}`} title={topStoryMeta.label} aria-label={topStoryMeta.label}>{topStoryMeta.emoji}</span>
-          </div>
-          <div className="daily-news-copy">
-            <p className="eyebrow"><span className="live-dot" /> {newsHead.today}</p>
-            <span className="news-kicker">{topStory.kicker}</span>
-            <h3>{topStory.title}</h3>
-            <p>{topStory.excerpt}</p>
-            <span className="read-link">{newsHead.read} <Arrow /></span>
-          </div>
-        </Link>
       </section>
 
       {/* QUIZZ DU JOUR — un quizz choisi chaque jour parmi la sélection :
