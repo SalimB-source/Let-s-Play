@@ -6,13 +6,17 @@ import MirageOnline from './MirageOnline';
 import MirageCoursePicker from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, powerUpOdds, GEM_TRAP_CHANCE, GEM_TRAP_SLOW_DURATION } from './mirageRules';
+import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
 
 const BEST_KEY = 'letsplay_mirage_rush_best_v1';
-const EMPTY_HUD = { score: 0, gems: 0, combo: 0, multiplier: '1.0', lives: 3, remaining: 60 };
+const EMPTY_HUD = {
+  score: 0, gems: 0, combo: 0, multiplier: '1.0', lives: 3, remaining: 60,
+  shieldCharges: 0, lassoCharges: 0, pistolCharges: 0,
+  shieldProgress: 0, lassoProgress: 0, pistolProgress: 0,
+};
 
 function readBest() {
   try { return Math.max(0, Number(window.localStorage.getItem(BEST_KEY)) || 0); }
@@ -42,8 +46,6 @@ export default function MirageRushPage() {
   const [selectedMode, setSelectedMode] = useState(
     initialModeParam === 'online' ? 'online' : challenge ? 'duel' : 'rush',
   );
-  // Étape 1 : choisir le mode (ruée/duel/en ligne). Étape 2 seulement : le terrain.
-  // Un lien de défi impose déjà le duel, donc le terrain est directement visible (verrouillé).
   const [modeChosen, setModeChosen] = useState(Boolean(challenge));
   const currentUserName = useMemo(
     () =>
@@ -59,7 +61,6 @@ export default function MirageRushPage() {
   const stage = selectedMode === 'duel' && challenge ? challenge.stage || 'desert' : selectedStage;
   const [race, setRace] = useState({ mode: 'rush' });
   const [shareState, setShareState] = useState('');
-  // intro → countdown → playing ⇄ paused → finished
   const [phase, setPhase] = useState('intro');
   const [countdown, setCountdown] = useState(3);
   const [runToken, setRunToken] = useState(0);
@@ -181,7 +182,6 @@ export default function MirageRushPage() {
     if (phase === 'intro') exitImmersive();
   }, [phase, exitImmersive]);
 
-  // ── Run lifecycle ─────────────────────────────────────────────────
   const startRun = useCallback(() => {
     // Clic « LANCER » / Entrée pour rejouer : on demande le plein écran
     // ici, synchronement dans le geste, sinon le navigateur le refuse.
@@ -204,7 +204,6 @@ export default function MirageRushPage() {
   const startRunRef = useRef(startRun);
   startRunRef.current = startRun;
 
-  // The 3-2-1 drum roll, then the desert takes over.
   useEffect(() => {
     if (phase !== 'countdown') return undefined;
     if (countdown > 0) {
@@ -233,7 +232,6 @@ export default function MirageRushPage() {
     audioRef.current?.stop();
   }, []);
 
-  // Échap / P: pause, resume or cancel the countdown. Enter rejoue une fois fini.
   useEffect(() => {
     const onKey = (event) => {
       const key = event.key.toLowerCase();
@@ -254,7 +252,6 @@ export default function MirageRushPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [pauseGame, resumeGame, cancelCountdown]);
 
-  // Leaving the tab mid-run should never cost a life: auto-pause.
   useEffect(() => {
     const onVisibility = () => { if (document.hidden) pauseGame(); };
     document.addEventListener('visibilitychange', onVisibility);
@@ -272,7 +269,6 @@ export default function MirageRushPage() {
     setPhase('intro');
     audioRef.current?.stop();
     setSelectedMode(mode);
-    // Le choix du mode débloque l'étape suivante : le terrain.
     setModeChosen(true);
   }, []);
 
@@ -285,8 +281,6 @@ export default function MirageRushPage() {
     audioRef.current?.stop();
   };
 
-  // Shared by every mode (rush, duel and online) so one finished run always
-  // feeds the same local progression.
   const recordProgress = useCallback((result) => {
     const outcome = applyRun(progressRef.current, result);
     progressRef.current = outcome.progress;
@@ -338,24 +332,17 @@ export default function MirageRushPage() {
   const onHud = useCallback((next) => setHud(next), []);
   const trigger = (name) => actionsRef.current?.(name);
 
-  // ── Instant feedback: hit flash & golden glow ─────────────────────
   const flashFx = useCallback((name) => {
     window.clearTimeout(fxTimer.current);
     setFx(name);
     fxTimer.current = window.setTimeout(() => setFx(''), name === 'is-hit' ? 520 : 400);
   }, []);
 
-  // One toast at a time, always cleared on unmount.
   const showPowerToast = useCallback((text) => {
     window.clearTimeout(toastTimer.current);
     setPowerToast(text);
     toastTimer.current = window.setTimeout(() => setPowerToast(null), 2400);
   }, []);
-
-  // Commandes tactiles : le glissement est lu directement sur le canvas par
-  // MirageWorld (src/games/mirageTouch.js), donc la ruée, le duel et les rooms
-  // en ligne partagent exactement le même geste — et il est reconnu pendant le
-  // mouvement, pas seulement au relâchement du doigt.
 
   const timePercent = useMemo(() => Math.max(0, Math.min(100, (hud.remaining / 60) * 100)), [hud.remaining]);
   const duelPercent = Math.min(100, Math.max(0, (hud.distance || 0) / DUEL_DISTANCE * 100));
@@ -473,24 +460,25 @@ export default function MirageRushPage() {
               }}
               onFinish={onFinish}
               onCrash={() => flashFx('is-hit')}
-              onPickup={(tier, key, trapped) => {
-                if (trapped) audioRef.current?.trap();
-                else {
-                  audioRef.current?.pickup(tier);
-                  if (tier === 2) flashFx('is-glow');
-                }
-              }}
-              onGemTrap={() => {
-                flashFx('is-hit');
-                showPowerToast('◆ DIAMANT PIÉGÉ ! Tu es ralenti…');
+              onPickup={(tier) => {
+                audioRef.current?.pickup(tier);
+                if (tier === 3) flashFx('is-glow');
               }}
               onCheer={() => audioRef.current?.cheer()}
               actionsRef={actionsRef}
-              onPowerUpPickup={(type) => {
-                if (type === 'shield') showPowerToast('🛡️ Bouclier ramassé ! Protection 5s');
-                else if (type === 'lasso') showPowerToast('🪢 Lasso ramassé ! Lancement auto…');
-                if (type === 'pistol') audioRef.current?.gunshot();
-                else audioRef.current?.pickup(2);
+              onPowerUp={(info) => {
+                if (info?.action === 'used') {
+                  if (info.type === 'shield') showPowerToast('🛡️ Bouclier activé !');
+                  else if (info.type === 'lasso') showPowerToast('🪢 Lasso envoyé !');
+                  else if (info.type === 'pistol') {
+                    audioRef.current?.gunshot();
+                    showPowerToast('🔫 Tir de pistolet !');
+                  }
+                } else if (info?.action === 'charged') {
+                  if (info.type === 'shield') showPowerToast('🛡️ Bouclier chargé ! (Q / A)');
+                  else if (info.type === 'lasso') showPowerToast('🪢 Lasso chargé ! (W / Z)');
+                  else if (info.type === 'pistol') showPowerToast('🔫 Pistolet chargé ! (E)');
+                }
               }}
               onLassoHit={(info) => {
                 if (info?.target === 'rival') {
@@ -526,7 +514,7 @@ export default function MirageRushPage() {
                   <span className="mirage-hud-chips">
                     <i className="mirage-chip is-gem">◆ {hud.gems}</i>
                     {hud.shieldActive && <i className="mirage-chip is-shield">🛡️ {Math.ceil(hud.shieldLeft)}s</i>}
-                    {hud.slowed && <i className="mirage-chip is-slow">{hud.slowKind === 'trap' ? '◆ PIÉGÉ' : '🪢 RALENTI'}</i>}
+                    {hud.slowed && <i className="mirage-chip is-slow">🪢 RALENTI</i>}
                     {hud.stunned && <i className="mirage-chip is-slow">🔫 À TERRE</i>}
                   </span>
                 </div>
@@ -542,7 +530,6 @@ export default function MirageRushPage() {
                       <b className="mirage-race-dot is-you" style={{ left: `${duelPercent}%` }} />
                       <span className="mirage-race-flag">🏁</span>
                     </div>
-                    <small className="mirage-duel-odds">OBJET « ? » · PISTOLET {Math.round(powerUpOdds(hud.rank || 1).pistol * 100)}% · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</small>
                   </> : <>
                     <div className={`mirage-clock${hud.remaining <= 10 ? ' is-danger' : hud.remaining <= 20 ? ' is-warning' : ''}`}>{formatTime(hud.remaining)}</div>
                     <div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div>
@@ -559,6 +546,80 @@ export default function MirageRushPage() {
                     <span className="mirage-lives" key={`lives-${hud.lives}`} aria-label={`${hud.lives} vies restantes`}>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(Math.max(0, 3 - hud.lives))}</i></span>
                   </>}
                 </div>
+              </div>
+            )}
+
+            {/* Power-up Charging & Activation Bar (Desktop & Mobile) */}
+            {phase === 'playing' && (
+              <div className="mirage-powerup-bar" role="group" aria-label="Objets de puissance">
+                <button
+                  type="button"
+                  className={`mirage-powerup-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
+                  onClick={() => trigger('use_shield')}
+                  disabled={(hud.shieldCharges || 0) <= 0 && !hud.shieldActive}
+                  title="Bouclier (Q / A) — Se charge avec 3 diamants"
+                >
+                  <div className="mirage-powerup-btn-top">
+                    <span className="mirage-powerup-icon">🛡️</span>
+                    <span className="mirage-powerup-key">Q / A</span>
+                  </div>
+                  <div className="mirage-powerup-btn-name">
+                    <span>Bouclier</span>
+                    {(hud.shieldCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.shieldCharges}</b>}
+                  </div>
+                  <div className="mirage-powerup-progress-bg">
+                    <div
+                      className="mirage-powerup-progress-fill is-shield"
+                      style={{ width: `${Math.round((hud.shieldProgress || 0) * 100)}%` }}
+                    />
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={`mirage-powerup-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
+                  onClick={() => trigger('use_lasso')}
+                  disabled={(hud.lassoCharges || 0) <= 0}
+                  title="Lasso (W / Z) — Se charge avec 3 diamants"
+                >
+                  <div className="mirage-powerup-btn-top">
+                    <span className="mirage-powerup-icon">🪢</span>
+                    <span className="mirage-powerup-key">W / Z</span>
+                  </div>
+                  <div className="mirage-powerup-btn-name">
+                    <span>Lasso</span>
+                    {(hud.lassoCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.lassoCharges}</b>}
+                  </div>
+                  <div className="mirage-powerup-progress-bg">
+                    <div
+                      className="mirage-powerup-progress-fill is-lasso"
+                      style={{ width: `${Math.round((hud.lassoProgress || 0) * 100)}%` }}
+                    />
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className={`mirage-powerup-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
+                  onClick={() => trigger('use_pistol')}
+                  disabled={(hud.pistolCharges || 0) <= 0}
+                  title="Pistolet (E) — Se charge avec 5 diamants"
+                >
+                  <div className="mirage-powerup-btn-top">
+                    <span className="mirage-powerup-icon">🔫</span>
+                    <span className="mirage-powerup-key">E</span>
+                  </div>
+                  <div className="mirage-powerup-btn-name">
+                    <span>Pistolet</span>
+                    {(hud.pistolCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.pistolCharges}</b>}
+                  </div>
+                  <div className="mirage-powerup-progress-bg">
+                    <div
+                      className="mirage-powerup-progress-fill is-pistol"
+                      style={{ width: `${Math.round((hud.pistolProgress || 0) * 100)}%` }}
+                    />
+                  </div>
+                </button>
               </div>
             )}
 
@@ -580,17 +641,19 @@ export default function MirageRushPage() {
                 {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                 {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier le PNJ.</p>}
                 {modeChosen && <>
-                  <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval ; les chocs le ralentissent. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.'}</p>
+                  <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval et chargent tes 3 objets. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et charge tes objets.'}</p>
                   <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
                     {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
                   </button>
                   <div className="mirage-keys-hint" aria-label="Commandes clavier">
                     <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
                     <span><kbd>↑</kbd> sauter</span>
-                    <span><kbd>ESPACE</kbd> sauter</span>
+                    <span><kbd>Q/A</kbd> Bouclier</span>
+                    <span><kbd>W/Z</kbd> Lasso</span>
+                    <span><kbd>E</kbd> Pistolet</span>
                     <span><kbd>ÉCHAP</kbd> pause</span>
                   </div>
-                  <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · PISTE SANS OBJET « ? » · RECORD À BATTRE'}</div>
+                  <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · OBJETS CHARGÉS PAR LES DIAMANTS · RECORD À BATTRE'}</div>
                 </>}
               </div>
             )}
@@ -653,8 +716,6 @@ export default function MirageRushPage() {
             {phase === 'playing' && (
               <div className="mirage-live-callout" aria-hidden="true">
                 {hud.combo >= 5 && <span>✦ ÉCHO SOLAIRE ×{hud.multiplier} ✦</span>}
-                {/* Sur téléphone, le rappel des touches est remplacé par la
-                    pastille « GLISSE ← → · ↑ » posée sur la piste. */}
                 {hud.combo === 0 && hud.score === 0 && <span className="mirage-callout-keys">ESQUIVE ← → <b>SAUTE ↑</b></span>}
               </div>
             )}
@@ -665,7 +726,7 @@ export default function MirageRushPage() {
             <button type="button" className="mirage-jump-control" onClick={() => trigger('jump')} aria-label="Sauter">SAUT <span>↑</span></button>
             <button type="button" onClick={() => trigger('right')} aria-label="Aller à droite">→</button>
           </div>
-          <div className="mirage-game-foot"><span className="mirage-foot-touch">MOBILE : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER</span><span>ZQSD / WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER <b>·</b> ÉCHAP POUR LA PAUSE</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE · CHOCS = RALENTISSEMENT' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
+          <div className="mirage-game-foot"><span className="mirage-foot-touch">MOBILE : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER</span><span>TOUCHES DIRECTIONNELLES / FLÈCHES <b>·</b> SAUT (ESPACE/↑) <b>·</b> OBJETS (QWE/AZE)</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE & CHARGE D’OBJETS' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
 
         <aside className="mirage-side-panel">
@@ -738,16 +799,15 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">MODE DUEL · PREMIER À 600 M</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>Un cavalier rival</strong><small>Défie L’Ombre : un PNJ qui change de voie, saute et te vole les diamants. Ou partage ton fantôme de course avec un autre joueur. Ce n’est pas du temps réel.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rouge +{DUEL_SPEED_BONUS[1]} · Or +{DUEL_SPEED_BONUS[2]} m/s, pendant {SPEED_BOOST_DURATION} s seulement. Les boosts ne s’accumulent pas : un cristal remplace le boost en cours, et un choc l’annule.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rouge +{DUEL_SPEED_BONUS[1]} · Vert +{DUEL_SPEED_BONUS[2]} · Or +{DUEL_SPEED_BONUS[3]} m/s, pendant {SPEED_BOOST_DURATION} s. Les boosts ne s’accumulent pas.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Collision</strong><small>Pas de vies perdues en duel : le cheval ralentit puis reprend son allure.</small></div></div>
           </section>
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Tous les diamants peuvent être piégés</strong><small>{Math.round(GEM_TRAP_CHANCE * 100)} % de chances, quelle que soit la couleur — cyan, rouge ou or : au lieu du bonus de vitesse, le diamant te ralentit pendant {GEM_TRAP_SLOW_DURATION} s. Les points, eux, sont toujours encaissés. Rien ne le distingue avant de le traverser.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-green">🛡️</span><div><strong>Charge des 3 objets</strong><small>Chaque diamant ramassé charge tes 3 objets ! Le Bouclier (3 diamants) protège 5s, le Lasso (3 diamants) ralentit l'adversaire, le Pistolet (5 diamants) fait tomber le leader de son cheval. Touches PC : QWE / AZE ou boutons tactiles sur mobile.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-rainbow" aria-hidden="true">?</span><div><strong>Objet mystère « ? » — duel & en ligne</strong><small>La ruée n’en contient aucun : il faut un rival à lasser ou un choc à absorber. En duel ou en ligne, il flotte en arc-en-ciel au milieu de la piste et ne dévoile son effet qu’une fois ramassé — pistolet (fait tomber de cheval le cavalier en tête, même très loin, pendant 1 s : 0 % en tête, 5 % 2e, 15 % 3e, 30 % 4e), lasso (ralentit l’adversaire devant toi) ou bouclier (absorbe un choc, un lasso ou une balle pendant 5 s). Il ne disparaît jamais quand quelqu’un le prend : chaque cavalier peut le ramasser.</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies, le saut est obligatoire.</div>
           </section>
 

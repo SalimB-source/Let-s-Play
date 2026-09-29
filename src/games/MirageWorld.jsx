@@ -5,13 +5,20 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, powerUpsEnabled, rollPowerUpSlot, rollPowerUpContent, PISTOL_STUN_DURATION, stunPose,  SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, rollGemTrap, crystalPickupEffect } from './mirageRules';
+import {
+  LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
+  duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak,
+  playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible,
+  tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, powerUpsEnabled, PISTOL_STUN_DURATION,
+  stunPose, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION,
+  GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState,
+  crystalPickupEffect, POWER_UP_CHARGE_COST, DIAMOND_CHARGE_VALUE, POWER_UP_MAX_CHARGES,
+} from './mirageRules';
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 
 const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
 const RUN_SECONDS = 60;
-// Modes without special items (the Ruée) iterate over nothing instead of a live slot list.
 const NO_POWER_UPS = Object.freeze([]);
 
 function block(geometry, material, parent, position, scale = null) {
@@ -30,7 +37,6 @@ function makeExplorer(rival = false, palette = null) {
   const mat = color => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true });
   const palettes = CHARACTER_PALETTES;
   const [coat, mane, cloth, trim, hood] = (palette || palettes[Number(rival) || 0]).map(mat);
-  // Horse faces -Z: hindquarters and the rider's back face the camera.
   block(cube, coat, player, [0, 0.95, 0], [0.82, 0.83, 1.65]);
   const neck = block(cube, coat, player, [0, 1.48, -0.64], [0.46, 1.02, 0.52]);
   neck.rotation.x = -0.25;
@@ -50,8 +56,7 @@ function makeExplorer(rival = false, palette = null) {
   tail.rotation.x = -0.35;
   block(cube, cloth, player, [0, 1.33, 0.05], [0.96, 0.14, 0.95]);
   block(cube, trim, player, [0, 1.43, 0.15], [0.66, 0.16, 0.6]);
-  // The cowboy lives in his own group so the pistol can knock him off the horse.
-  // Pivot at the hips (y 1.4) so a fall rolls him sideways out of the saddle.
+
   const rider = new THREE.Group();
   rider.position.y = 1.4;
   player.add(rider);
@@ -76,11 +81,6 @@ function makeExplorer(rival = false, palette = null) {
   return player;
 }
 
-/**
- * Performance: roadside scenery is built from dozens of small boxes, one draw
- * call each. Once built it never changes shape, so fold every static mesh that
- * shares the same look into a single mesh (animated parts such as boats stay).
- */
 const materialKey = (m) => [m.type, m.color?.getHex(), m.emissive?.getHex(), m.roughness, m.metalness, m.flatShading, m.side, m.transparent, m.opacity, m.depthWrite, m.map?.uuid].join('|');
 function bakeStaticScenery(group) {
   const keep = new Set();
@@ -112,7 +112,6 @@ function bakeStaticScenery(group) {
   }
 }
 
-/** Knocked-off-the-horse animation: `left` seconds of pistol stun remaining (0 = in the saddle). */
 function poseRider(model, left, side = 1) {
   const rider = model.userData.parts.rider;
   const pose = stunPose(left, PISTOL_STUN_DURATION, side);
@@ -120,7 +119,6 @@ function poseRider(model, left, side = 1) {
   rider.rotation.set(pose.pitch, 0, -pose.roll);
 }
 
-/** Recolor a rider made by makeExplorer with a 5-slot skin palette. */
 function paintModel(model, colors) {
   const materials = model.userData.materials;
   if (!materials || !colors) return;
@@ -141,29 +139,15 @@ function makeCactus() {
   return group;
 }
 
-// Golden diamonds have a 30% chance to be a fake: they pay out like a pink one.
-const FAKE_GOLD_CHANCE = 0.3;
-const effectiveTier = (item) => {
-  if (item.tier !== 2) return item.tier;
-  if (item.fake === undefined) item.fake = Math.random() < FAKE_GOLD_CHANCE;
-  return item.fake ? 1 : 2;
-};
-
-// Every diamond is a gamble: the curse is rolled once per diamond, the first
-// time anybody rides through it — cyan, red, gold or a fake gold alike.
-const isTrapGem = (item) => {
-  if (item.trap === undefined) item.trap = rollGemTrap();
-  return item.trap;
-};
-
 function makeCrystal(tier) {
   const group = new THREE.Group();
-  const { color } = CRYSTALS[tier];
+  const crystalDef = CRYSTALS[tier] || CRYSTALS[0];
+  const color = crystalDef.color;
   const material = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3, metalness: 0.25, roughness: 0.24, flatShading: true });
   const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.43 + tier * 0.035), material);
   gem.scale.set(0.85, 1.65, 0.85);
   group.add(gem);
-  if (tier === 2) {
+  if (tier === 3) { // Or (Gold) gets decorative ring
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.025, 4, 12), material);
     ring.rotation.x = Math.PI / 2;
     group.add(ring);
@@ -171,10 +155,6 @@ function makeCrystal(tier) {
   return group;
 }
 
-// ── Diamond shatter burst ────────────────────────────────────────────
-// A small pool of reusable bursts: picking a diamond up swaps one in at the
-// gem's position, tints it with the gem's colour and plays it for
-// GEM_BURST_DURATION. No allocation happens mid-run.
 const GEM_BURST_POOL = 7;
 
 function makeGemBurst() {
@@ -199,7 +179,6 @@ function makeGemBurst() {
     group.add(shard);
     shards.push(shard);
   }
-  // A flat shockwave ring facing the camera, plus a bright core that pops once.
   const flashMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.4, 0.62, 20), flashMaterial);
   ring.renderOrder = 3;
@@ -221,110 +200,6 @@ function makeHazard(kind) {
   block(cube, rock, group, [0, 0.48, 0], [4.02, 0.96, 1.1]);
   block(cube, edge, group, [0, 0.93, 0], [4.05, 0.13, 1.13]);
   return group;
-}
-
-
-// ── Mystery item mesh ────────────────────────────────────────────────
-// Every special item is the same surprise: a floating, rainbow "?" whose
-// effect (lasso or shield) is only revealed when the rider picks it up.
-const RAINBOW_SATURATION = 0.9;
-const RAINBOW_LIGHTNESS = 0.58;
-const RAINBOW_EMISSIVE_LIGHTNESS = 0.3;
-
-/** Sample the "?" glyph: the bowl over the top, the hook coming down, then the dot. */
-function questionMarkPath() {
-  const points = [];
-  const centerY = 0.9;
-  const radius = 0.4;
-  const from = 196 * Math.PI / 180;
-  const to = -46 * Math.PI / 180;
-  const steps = 18;
-  for (let i = 0; i <= steps; i++) {
-    const angle = from + (to - from) * (i / steps);
-    points.push([Math.cos(angle) * radius, centerY + Math.sin(angle) * radius]);
-  }
-  // The hook: the tail of the bowl dropping back towards the dot.
-  const [hookX, hookY] = points[points.length - 1];
-  const hookSteps = 4;
-  for (let i = 1; i <= hookSteps; i++) {
-    const t = i / hookSteps;
-    points.push([hookX + (0.08 - hookX) * t, hookY + (0.42 - hookY) * t]);
-  }
-  return points;
-}
-
-function makePowerUpQuestionMarkMesh(type) {
-  const group = new THREE.Group();
-  const geometry = new THREE.BoxGeometry(1, 1, 1);
-  const rainbow = [];
-
-  const addRainbowBlock = (parent, position, scale, hue) => {
-    const color = new THREE.Color().setHSL(hue - Math.floor(hue), RAINBOW_SATURATION, RAINBOW_LIGHTNESS);
-    const material = new THREE.MeshStandardMaterial({
-      color,
-      emissive: color.clone().setHSL(hue - Math.floor(hue), RAINBOW_SATURATION, RAINBOW_EMISSIVE_LIGHTNESS),
-      metalness: 0.15,
-      roughness: 0.32,
-      flatShading: true,
-    });
-    material.userData.hue = hue - Math.floor(hue);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(...position);
-    mesh.scale.set(...scale);
-    parent.add(mesh);
-    rainbow.push(material);
-    return mesh;
-  };
-
-  // The glyph: blocks threaded along the "?" outline, hue shifting along it.
-  const glyph = new THREE.Group();
-  const path = questionMarkPath();
-  path.forEach((point, index) => {
-    const t = index / (path.length - 1);
-    const before = path[Math.max(0, index - 1)];
-    const after = path[Math.min(path.length - 1, index + 1)];
-    const segment = addRainbowBlock(glyph, [point[0], point[1], 0], [0.22, 0.17, 0.17], t * 0.85);
-    segment.rotation.z = Math.atan2(after[1] - before[1], after[0] - before[0]);
-  });
-  const dot = addRainbowBlock(glyph, [0.08, 0.19, 0], [0.24, 0.24, 0.24], 0.92);
-  dot.rotation.z = Math.PI / 4;
-  group.add(glyph);
-
-  // A rainbow halo spinning at its feet, so the item reads from a distance.
-  const halo = new THREE.Group();
-  const haloSegments = 14;
-  for (let i = 0; i < haloSegments; i++) {
-    const angle = (i / haloSegments) * Math.PI * 2;
-    const segment = addRainbowBlock(halo, [Math.cos(angle) * 0.66, 0.05, Math.sin(angle) * 0.66], [0.26, 0.11, 0.13], i / haloSegments);
-    segment.rotation.y = -angle;
-  }
-  group.add(halo);
-
-  group.userData.glyph = glyph;
-  group.userData.halo = halo;
-  group.userData.rainbow = rainbow;
-  group.userData.phase = Math.random() * Math.PI * 2;
-  group.userData.type = type ?? null;
-  return group;
-}
-
-function makePowerUpMesh(type) {
-  return makePowerUpQuestionMarkMesh(type);
-}
-
-/** Hue drift + gentle sway: the "?" stays readable, it never spins edge-on. */
-function animatePowerUpMesh(mesh, time, dt) {
-  const { glyph, halo, rainbow, phase } = mesh.userData;
-  if (halo) halo.rotation.y += dt * 1.5;
-  if (glyph) glyph.rotation.y = Math.sin(time * 0.0018 + (phase ?? 0)) * 0.42;
-  if (rainbow?.length) {
-    const shift = (time * 0.00012) % 1;
-    for (const material of rainbow) {
-      const hue = ((material.userData.hue ?? 0) + shift) % 1;
-      material.color.setHSL(hue, RAINBOW_SATURATION, RAINBOW_LIGHTNESS);
-      material.emissive.setHSL(hue, RAINBOW_SATURATION, RAINBOW_EMISSIVE_LIGHTNESS);
-    }
-  }
 }
 
 function makeShieldBubble() {
@@ -367,7 +242,6 @@ function makeLassoRope() {
   return group;
 }
 
-
 function makeScenery() {
   const group = new THREE.Group();
   const cube = new THREE.BoxGeometry(1, 1, 1);
@@ -376,8 +250,6 @@ function makeScenery() {
   const teal = new THREE.MeshStandardMaterial({ color: 0x287c7d, flatShading: true, roughness: 0.8 });
   const pick = (array) => array[Math.floor(Math.random() * array.length)];
   const side = Math.random() > 0.5 ? 1 : -1;
-  // Keep desert rock formations out of the center lane; they frame the view
-  // from the far roadside instead of reading like structures in front of the sun.
   const x = side * (13 + Math.random() * 4.5);
   const z = -Math.random() * 40;
   const h = 1.4 + Math.random() * 4.5;
@@ -446,9 +318,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   scene.add(rimLight);
 
   const cube = new THREE.BoxGeometry(1, 1, 1);
-  // A shared horizon sky for every course, with a partly-set sun on the skyline.
-  // The lower edge of the backdrop sits at ground level, naturally hiding the
-  // lower half of the sun just like a real dawn or sunset.
   const skyVector = (rgb) => new THREE.Vector3(...rgb);
   const sunset = new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
     depthWrite: false,
@@ -492,27 +361,21 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
   if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
   if (sardinia) {
-    // The village only occupies the left bank: the ground stops at the quay on the right.
     block(cube, new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [-17.35, -0.64, -35], [45.3, 0.6, 160]);
-    // Open sea along the whole right-hand side, below the quay.
     const bay = new THREE.Mesh(new THREE.PlaneGeometry(130, 170), new THREE.MeshStandardMaterial({ color: 0x2f7f92, roughness: 0.35, metalness: 0.1, flatShading: true }));
     bay.rotation.x = -Math.PI / 2;
     bay.position.set(70.3, -0.92, -35);
     scene.add(bay);
-    // A flat sea band on the horizon, just visible over the low coastal hills.
     const sea = block(new THREE.PlaneGeometry(240, 13), new THREE.MeshBasicMaterial({ color: 0x2f7f92 }), scene, [0, 6, -94]);
     sea.renderOrder = -1;
   }
 
-  // Sardinia trades the purple desert peaks for a low, sun-baked coastline.
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : 0x68466f, flatShading: true, roughness: 1 });
   for (let i = 0; i < (prairie ? 0 : sardinia ? 9 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
     const mountainSide = Math.random() > 0.5 ? 1 : -1;
-    // Keep the hills to the sides; Costa Omertà preserves its land-side hills
-    // and open sea horizon, without blocking the central sunset.
     const mountainX = sardinia ? -18 - Math.random() * 15 : mountainSide * (17 + Math.random() * 11);
     mountain.position.set(mountainX, height / 2 - 1, -38 - Math.random() * 26);
     mountain.scale.set(width, height, 3 + Math.random() * 5);
@@ -525,8 +388,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
-  // The checkered track is one merged mesh per colour (3 draw calls instead of
-  // ~100 tiles). It scrolls by one colour period (3 rows = 6 m) and loops.
   const FLOOR_PERIOD = floorMaterials.length * 2;
   const floorGroup = new THREE.Group();
   floorMaterials.forEach((material, m) => {
@@ -628,7 +489,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     rows.push(row);
   }
 
-  // ── Diamond shatter bursts ────────────────────────────────────────
   const reduceMotion = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
   const gemBursts = [];
   for (let i = 0; i < GEM_BURST_POOL; i += 1) {
@@ -639,33 +499,24 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let burstCursor = 0;
   const burstColor = new THREE.Color();
 
-  // A cursed diamond shatters into dark, smouldering debris instead of
-  // bright crystal, so the trap is unmistakable the instant it triggers.
-  const TRAP_SHARD_COLOR = 0x8c1220;
-  const TRAP_FLASH_COLOR = 0xff4433;
-
-  /** Play a shatter at a track position. `tier` picks the crystal colour. */
-  function spawnGemBurst(x, y, z, tier = 0, trapped = false) {
+  function spawnGemBurst(x, y, z, tier = 0) {
     const burst = gemBursts.find((candidate) => !candidate.userData.active)
       || gemBursts[(burstCursor += 1) % gemBursts.length];
     const data = burst.userData;
     data.active = true;
     data.age = 0;
     data.tier = tier;
-    // Reduced motion keeps the pickup readable with the flash alone, no debris.
     data.specs = reduceMotion ? [] : gemBurstShards(GEM_BURST_SHARDS, Math.random);
-    burstColor.set(trapped ? TRAP_SHARD_COLOR : (CRYSTALS[tier]?.color ?? CRYSTALS[0].color));
+    burstColor.set(CRYSTALS[tier]?.color ?? CRYSTALS[0].color);
     data.shardMaterial.color.copy(burstColor);
     data.shardMaterial.emissive.copy(burstColor);
-    if (trapped) data.flashMaterial.color.set(TRAP_FLASH_COLOR);
-    else data.flashMaterial.color.copy(burstColor).lerp(new THREE.Color(0xffffff), 0.6);
+    data.flashMaterial.color.copy(burstColor).lerp(new THREE.Color(0xffffff), 0.6);
     burst.position.set(x, y, z);
     burst.visible = true;
     data.ring.quaternion.copy(camera.quaternion);
     updateGemBurst(burst, 0);
   }
 
-  /** Advance one burst by `dt` seconds and retire it once it has played out. */
   function updateGemBurst(burst, dt) {
     const data = burst.userData;
     data.age += dt;
@@ -689,7 +540,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     }
   }
 
-  /** Bursts are anchored to the track, so they drift back with the road. */
   function updateGemBursts(dt, travel) {
     for (const burst of gemBursts) {
       if (!burst.userData.active) continue;
@@ -704,24 +554,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     burst.visible = false;
   });
 
-  /** Shatter a gem that is still on the track (player, rival or remote pickup). */
-  const burstGemItem = (row, item, trapped = false) => {
+  const burstGemItem = (row, item) => {
     if (item.burst) return;
     item.burst = true;
-    spawnGemBurst(item.object.position.x, item.object.position.y, row.group.position.z + item.object.position.z, item.tier ?? 0, trapped);
+    spawnGemBurst(item.object.position.x, item.object.position.y, row.group.position.z + item.object.position.z, item.tier ?? 0);
   };
-
-  // ── Power-ups system ──────────────────────────────────────────────
-  const powerUps = [];
-  for (let i = 0; i < 4; i++) {
-    const g = new THREE.Group();
-    g.visible = false;
-    scene.add(g);
-    powerUps.push({ group: g, filled: false, lane: 1, coursePos: 0, playerDone: false, npcDone: false, mesh: null });
-  }
-  // Slot positions come from the race seed: every online client lays the same "?"s.
-  let puRandom = Math.random;
-  let puNextPos = 0;
 
   // Pistol shots: a short-lived tracer plus a muzzle flash.
   const shotTracers = [];
@@ -815,23 +652,31 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       npc.genPos += encounter.gap;
     }
   };
-  const hidePlayerGem = (key, trapped = false) => rows.forEach(row => row.items.forEach(item => {
+  const hidePlayerGem = (key) => rows.forEach(row => row.items.forEach(item => {
     if (item.key !== key) return;
-    // The rival taking a diamond in front of us shatters it too.
-    if (item.object.visible) burstGemItem(row, item, trapped);
+    if (item.object.visible) burstGemItem(row, item);
     item.collected = true;
     item.object.visible = false;
   }));
+
+  // Power-up charging system: players collect diamonds to charge power-ups
+  // Each diamond gives charge points based on tier (Cyan=1, Red=1, Green=2, Gold=3)
+  // Shield and Lasso need 3 points, Pistol takes 5 points
+  let shieldCharges = 0;
+  let lassoCharges = 0;
+  let pistolCharges = 0;
+  let shieldChargePoints = 0;
+  let lassoChargePoints = 0;
+  let pistolChargePoints = 0;
 
   // Power-up player state
   let shieldActive = false;
   let shieldTimer = 0;
   let playerSlowTimer = 0;
-  // Lasso and cursed-diamond traps both brake the rider, each with its own bite.
   let playerSlowFactor = LASSO_SLOW_FACTOR;
-  let playerSlowKind = 'lasso'; // what the HUD should blame for the brake
+  let playerSlowKind = 'lasso';
   let shieldFlash = 0;
-  let playerStun = 0; // seconds left on the sand after a pistol shot
+  let playerStun = 0;
   let playerStunSide = 1;
   let lastNetworkStun = 0;
 
@@ -964,8 +809,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     }
   };
 
-  // ── Pistol ──────────────────────────────────────────────────────────
-  // The pistol always aims at the race leader, however far ahead.
   const findPistolTarget = () => {
     if (race.mode === 'online') {
       const net = getNetwork?.();
@@ -974,7 +817,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         .reduce((best, p) => (!best || (Number(p.distance) || 0) > (Number(best.distance) || 0) ? p : best), null);
       return leader && (Number(leader.distance) || 0) > distance ? { kind: 'online', player: leader } : null;
     }
-    // The replay ghost cannot be shot; the live PNJ is the only other rider.
     if (race.mode === 'duel' && !race.challenge && npc.finishedAt === null && npc.dist > distance) return { kind: 'rival' };
     return null;
   };
@@ -1032,43 +874,35 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: targetInfo });
   };
 
-  const handlePowerUpPickup = () => {
-    // What is inside is decided now, from the picker's own race position.
-    const type = rollPowerUpContent(getCurrentRank(), Math.random);
-    callbacks.powerUpPickup?.(type);
-    if (type === POWER_UPS.SHIELD) {
+  // Power-up activation functions
+  const useShield = () => {
+    if (shieldCharges > 0 && !shieldActive) {
+      shieldCharges--;
       activateShield();
-    } else if (type === POWER_UPS.LASSO) {
-      fireLasso(findLassoTarget());
-    } else if (type === POWER_UPS.PISTOL) {
-      firePistol(findPistolTarget());
+      callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'used', chargesLeft: shieldCharges });
+      emitHud(true);
     }
   };
 
-  /** Move a slot to the next seeded spot on the track (3 draws per slot, always). */
-  const spawnPowerUp = (pu) => {
-    const gap = POWER_UP_SPAWN_GAP_MIN + puRandom() * (POWER_UP_SPAWN_GAP_MAX - POWER_UP_SPAWN_GAP_MIN);
-    const filled = rollPowerUpSlot(puRandom);
-    const lane = Math.floor(puRandom() * LANE_COUNT);
-    puNextPos += gap;
-    pu.coursePos = puNextPos;
-    pu.lane = lane;
-    // Ruée: the mode gate keeps every slot empty.
-    pu.filled = filled && powerUpsEnabled(race.mode);
-    pu.playerDone = false;
-    pu.npcDone = false;
-    if (pu.filled && !pu.mesh) {
-      pu.mesh = makePowerUpMesh();
-      pu.group.add(pu.mesh);
+  const useLasso = () => {
+    if (lassoCharges > 0) {
+      lassoCharges--;
+      fireLasso(findLassoTarget());
+      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'used', chargesLeft: lassoCharges });
+      emitHud(true);
     }
-    pu.group.position.set(LANES[lane], 0, distance - pu.coursePos);
-    pu.group.visible = false;
+  };
+
+  const usePistol = () => {
+    if (pistolCharges > 0) {
+      pistolCharges--;
+      firePistol(findPistolTarget());
+      callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'used', chargesLeft: pistolCharges });
+      emitHud(true);
+    }
   };
 
   const resetPowerUps = () => {
-    puRandom = seededRandom((seed ^ 0x5f3759df) >>> 0);
-    puNextPos = 0;
-    for (const pu of powerUps) spawnPowerUp(pu);
     for (const proj of lassoProjectiles) releaseRope(proj.rope);
     lassoProjectiles.length = 0;
     shieldActive = false;
@@ -1083,8 +917,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     npc.slowTimer = 0;
     npc.stunTimer = 0;
     rivalShieldBubble.visible = false;
-  };
 
+    // Reset power-up charges
+    shieldCharges = 0;
+    lassoCharges = 0;
+    pistolCharges = 0;
+    shieldChargePoints = 0;
+    lassoChargePoints = 0;
+    pistolChargePoints = 0;
+  };
 
   const updateNpc = (dt) => {
     npcEnsureCourse();
@@ -1099,7 +940,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     npc.base += (DUEL_BASE_SPEED - npc.base) * Math.min(1, dt * 0.65);
     npc.boost = tickSpeedBoost(npc.boost, dt);
     const rawSpeed = duelSpeed(npc.base, npc.boost.bonus);
-    // Shot off his horse: fully stopped until he is back in the saddle.
     const speed = npc.stunTimer > 0 ? 0 : rawSpeed * slowFactor;
     const target = npc.course[npc.next];
     if (target) {
@@ -1131,15 +971,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
         const gem = target.items.find(item => item.kind === 'crystal' && Math.abs(npc.x - LANES[item.lane]) < 0.85 && (!item.raised || height > 1.05) && !sharedGems.has(item.key));
         if (gem) {
-          const trapped = isTrapGem(gem);
-          const effect = crystalPickupEffect(effectiveTier(gem), trapped);
+          const tier = gem.tier ?? 0;
+          const effect = crystalPickupEffect(tier, false);
           sharedGems.add(gem.key);
-          hidePlayerGem(gem.key, trapped);
+          hidePlayerGem(gem.key);
           npc.boost = effect.boost;
-          if (effect.trap) {
-            npc.slowTimer = Math.max(npc.slowTimer, effect.slowDuration);
-            npc.slowFactor = effect.slowFactor;
-          }
         }
         npc.next += 1;
       }
@@ -1149,6 +985,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     if (npc.dist >= DUEL_DISTANCE && npc.finishedAt === null) npc.finishedAt = elapsed;
     return npc.dist;
   };
+
   let elapsed = 0;
   let score = 0;
   let gems = 0;
@@ -1171,15 +1008,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const height = Math.max(1, Math.floor(bounds.height || mount.clientHeight || 1));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    // Preserve a minimum horizontal field of view so all four lanes fit on phones.
     camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(50) / 2) / Math.min(1, camera.aspect)));
     camera.updateProjectionMatrix();
   };
   const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
   observer?.observe(mount);
-  // The online room mounts the course inside a modal. Give layout one frame to
-  // settle before sizing the WebGL canvas, and retain a resize fallback for
-  // embedded webviews without ResizeObserver.
   window.addEventListener('resize', resize);
   resize();
   const initialResizeFrame = requestAnimationFrame(resize);
@@ -1205,7 +1038,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rank: getCurrentRank(),
       stunned: playerStun > 0,
       stunLeft: playerStun,
-      powerUps: powerUps.filter(p => p.filled).length,
+      // Power-up charges & charge progress for UI
+      shieldCharges,
+      shieldProgress: shieldCharges >= POWER_UP_MAX_CHARGES ? 1 : shieldChargePoints / POWER_UP_CHARGE_COST[POWER_UPS.SHIELD],
+      lassoCharges,
+      lassoProgress: lassoCharges >= POWER_UP_MAX_CHARGES ? 1 : lassoChargePoints / POWER_UP_CHARGE_COST[POWER_UPS.LASSO],
+      pistolCharges,
+      pistolProgress: pistolCharges >= POWER_UP_MAX_CHARGES ? 1 : pistolChargePoints / POWER_UP_CHARGE_COST[POWER_UPS.PISTOL],
     });
   };
 
@@ -1270,32 +1109,49 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
   const action = (name) => {
     if (!active || playerStun > 0) return;
-    laneIndex = playerLaneAfterAction(laneIndex, name, jumpLeft);
-    if (name === 'jump' && jumpLeft <= 0) jumpLeft = 0.82;
+    if (name === 'use_shield' || name === 'shield') useShield();
+    else if (name === 'use_lasso' || name === 'lasso') useLasso();
+    else if (name === 'use_pistol' || name === 'pistol') usePistol();
+    else {
+      laneIndex = playerLaneAfterAction(laneIndex, name, jumpLeft);
+      if (name === 'jump' && jumpLeft <= 0) jumpLeft = 0.82;
+    }
   };
 
   const onKeyDown = (event) => {
     if (!active || event.repeat) return;
     const key = event.key.toLowerCase();
-    if (['arrowleft', 'arrowright', 'arrowup', ' ', 'a', 'q', 'd', 'w', 'z'].includes(key)) event.preventDefault();
-    if (key === 'arrowleft' || key === 'a' || key === 'q') action('left');
-    if (key === 'arrowright' || key === 'd') action('right');
-    if (key === 'arrowup' || key === 'w' || key === 'z' || key === ' ') action('jump');
+    const code = event.code;
+    const target = event.target?.tagName;
+    if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
+
+    if (['arrowleft', 'arrowright', 'arrowup', ' ', 'a', 'q', 'd', 'w', 'z', 'e'].includes(key)) event.preventDefault();
+
+    // Movement
+    if (key === 'arrowleft') action('left');
+    if (key === 'arrowright') action('right');
+    if (key === 'arrowup' || key === ' ') action('jump');
+
+    // Power-up shortcuts QWE / AZE
+    // Q or A -> Shield
+    if (code === 'KeyQ' || code === 'KeyA' || key === 'q' || key === 'a') {
+      useShield();
+    }
+    // W or Z -> Lasso
+    else if (code === 'KeyW' || code === 'KeyZ' || key === 'w' || key === 'z') {
+      useLasso();
+    }
+    // E -> Pistol
+    else if (code === 'KeyE' || key === 'e') {
+      usePistol();
+    }
   };
   window.addEventListener('keydown', onKeyDown);
 
-  // Commandes tactiles « instinctives » : le doigt glisse directement sur la
-  // piste (← → pour changer de voie, ↑ ou tape pour sauter). Le canvas reçoit
-  // les gestes ; les overlays (intro, compte à rebours, pause, résultat) sont
-  // posés au-dessus de lui, donc presser « LANCER » ou « REJOUER » ne déclenche
-  // jamais de saut. Le glisser à la souris fonctionne aussi, ce qui permet de
-  // vérifier le comportement sans téléphone.
   const touchFeedback = createSwipeFeedback(mount);
   const detachSwipe = attachSwipeControls(renderer.domElement, action, {
     onGesture: (name) => touchFeedback.pulse(name),
   });
-  // `prepare()` monte la course derrière le compte à rebours 3-2-1 : le rappel
-  // des gestes doit apparaître au feu vert, pas pendant le décompte.
   let hintPending = false;
 
   const animate = (time) => {
@@ -1307,7 +1163,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const wallNow = Date.now();
     if (running && race.mode !== 'rush') {
       baseSpeed += (DUEL_BASE_SPEED - baseSpeed) * Math.min(1, dt * 0.65);
-      // if slowed, base tends to lower
       if (playerSlowTimer > 0) baseSpeed = Math.max(DUEL_BASE_SPEED * 0.5, baseSpeed - dt * 8);
       boost = tickSpeedBoost(boost, dt);
     }
@@ -1340,7 +1195,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       playerStun = Math.max(0, playerStun - dt);
       shieldFlash = Math.max(0, shieldFlash - dt);
 
-      // Network-based shield/slow for local player (online)
       if (race.mode === 'online') {
         const net = getNetwork?.();
         const me = net?.players?.find(p=> p.user_id===net.userId);
@@ -1377,7 +1231,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           boat.position.y = -1.05 + Math.sin(time * 0.0017 + boat.userData.bob) * 0.07;
           boat.rotation.z = Math.sin(time * 0.0013 + boat.userData.bob) * 0.05;
         }
-        // Plaines d'Or — animation légère des animaux de ferme
         const farmAnimals = item.userData.animals;
         if (farmAnimals?.length) {
           for (const animal of farmAnimals) {
@@ -1385,17 +1238,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             const bob = animal.userData.bob || 0;
             const type = animal.userData.animalType;
             if (type === 'cow') {
-              // tête qui broute, queue qui chasse les mouches
               animal.rotation.y += Math.sin(time * 0.0006 + bob) * 0.0006;
               if (animal.children[animal.children.length - 2]) {
-                // petite oscillation de la queue
                 const tail = animal.children[animal.children.length - 1];
                 if (tail) tail.rotation.x = 0.25 + Math.sin(time * 0.003 + bob) * 0.35;
               }
             } else if (type === 'sheep') {
               animal.position.y = Math.sin(time * 0.0015 + bob) * 0.04;
             } else if (type === 'chicken') {
-              // picore le sol
               animal.position.y = Math.abs(Math.sin(time * 0.008 + bob)) * 0.08;
               animal.rotation.z = Math.sin(time * 0.006 + bob) * 0.12;
               if (Math.floor(time * 0.002 + bob) % 3 === 0) {
@@ -1409,13 +1259,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
         if (item.position.z > (western || prairie || sardinia ? 15 : 9)) item.position.z -= western || prairie || sardinia ? 110 : 86;
       });
+
       rows.forEach((row) => {
         row.group.position.z += speed * dt;
         row.items.forEach((item) => {
           if (item.kind !== 'crystal') return;
           const locallyCollected = item.collected || sharedGems.has(item.key);
           const hiddenByRemotePickup = Number(network?.gemPickups?.[item.key] || 0) > wallNow;
-          // A diamond snatched by another rider bursts on our screen as well.
           if (hiddenByRemotePickup && item.object.visible) burstGemItem(row, item);
           item.object.visible = !locallyCollected && !hiddenByRemotePickup;
           if (item.object.visible) {
@@ -1423,6 +1273,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             item.object.rotation.x = Math.sin(time * 0.002 + row.group.position.z) * 0.1;
           }
         });
+
         if (!row.checked && row.group.position.z > -0.65 && row.group.position.z < 0.95) {
           row.checked = true;
           const hazard = row.items.find((item) => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(lane => Math.abs(player.position.x - LANES[lane]) < 0.95));
@@ -1446,28 +1297,45 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           }
           const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !item.collected && Number(network?.gemPickups?.[item.key] || 0) <= wallNow);
           if (crystal) {
-            const tier = effectiveTier(crystal);
-            const trapped = isTrapGem(crystal);
-            const effect = crystalPickupEffect(tier, trapped);
+            const tier = crystal.tier ?? 0; // 0=Cyan, 1=Red, 2=Green, 3=Gold
+            const points = DIAMOND_CHARGE_VALUE[tier] ?? 1;
             crystal.collected = true;
             sharedGems.add(crystal.key);
-            burstGemItem(row, crystal, effect.trap);
+            burstGemItem(row, crystal);
             crystal.object.visible = false;
             gems += 1;
-            callbacks.pickup?.(tier, crystal.key, effect.trap);
+            callbacks.pickup?.(tier, crystal.key, false);
             combo += 1;
             const multiplier = 1 + Math.min(3, Math.floor(combo / 5) * 0.5);
-            // A cursed diamond still pays: the gamble costs speed, never points.
             score += Math.round(CRYSTALS[tier].value * multiplier);
-            if (race.mode !== 'rush') boost = effect.boost;
-            if (effect.trap) {
-              playerSlowTimer = Math.max(playerSlowTimer, effect.slowDuration);
-              playerSlowFactor = effect.slowFactor;
-              playerSlowKind = 'trap';
-              crashDirection = laneIndex === 0 ? 1 : -1;
-              crashAnimation = Math.max(crashAnimation, 0.3);
-              callbacks.gemTrap?.({ tier, duration: effect.slowDuration });
+            if (race.mode !== 'rush') boost = crystalPickupEffect(tier, false).boost;
+
+            // Power-up charging system: add charge points to all 3 objects
+            if (shieldCharges < POWER_UP_MAX_CHARGES) {
+              shieldChargePoints += points;
+              if (shieldChargePoints >= POWER_UP_CHARGE_COST[POWER_UPS.SHIELD]) {
+                shieldCharges = Math.min(POWER_UP_MAX_CHARGES, shieldCharges + 1);
+                shieldChargePoints = 0;
+                callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'charged', charges: shieldCharges });
+              }
             }
+            if (lassoCharges < POWER_UP_MAX_CHARGES) {
+              lassoChargePoints += points;
+              if (lassoChargePoints >= POWER_UP_CHARGE_COST[POWER_UPS.LASSO]) {
+                lassoCharges = Math.min(POWER_UP_MAX_CHARGES, lassoCharges + 1);
+                lassoChargePoints = 0;
+                callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'charged', charges: lassoCharges });
+              }
+            }
+            if (pistolCharges < POWER_UP_MAX_CHARGES) {
+              pistolChargePoints += points;
+              if (pistolChargePoints >= POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]) {
+                pistolCharges = Math.min(POWER_UP_MAX_CHARGES, pistolCharges + 1);
+                pistolChargePoints = 0;
+                callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'charged', charges: pistolCharges });
+              }
+            }
+
             if (combo === 5 || combo === 10 || combo === 15) {
               score += 150;
               poseLeft = 0.62;
@@ -1489,63 +1357,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
       });
 
-      // Power-ups: shared "?"s — nobody's pickup removes them, every rider can take one.
-      for (const pu of powerUpsEnabled(race.mode) ? powerUps : NO_POWER_UPS) {
-        const z = distance - pu.coursePos;
-        pu.group.position.z = z;
-        pu.group.visible = pu.filled && z > -90 && z < 6;
-        if (pu.group.visible && pu.mesh) {
-          pu.mesh.position.y = 0.75 + Math.sin(time*0.003 + pu.coursePos)*0.12;
-          animatePowerUpMesh(pu.mesh, time, dt);
-        }
-        if (pu.filled && !pu.playerDone && z > -0.75) {
-          pu.playerDone = true;
-          if (z < 1.05 && Math.abs(player.position.x - LANES[pu.lane]) < 0.9) {
-            handlePowerUpPickup();
-            emitHud(true);
-          }
-        }
-        // The PNJ rides through the same "?" whenever it gets there, ahead or behind.
-        const liveNpc = race.mode === 'duel' && !race.challenge;
-        if (liveNpc && pu.filled && !pu.npcDone && npc.dist > pu.coursePos - 1.2) {
-          pu.npcDone = true;
-          if (npc.dist < pu.coursePos + 1.2 && Math.abs(npc.x - LANES[pu.lane]) < 0.9) {
-            const npcRank = npc.dist >= distance ? 1 : 2;
-            const type = rollPowerUpContent(npcRank, Math.random);
-            if (type === POWER_UPS.SHIELD) {
-              activateNpcShield();
-            } else if (type === POWER_UPS.LASSO) {
-              if (distance > npc.dist + 1.5) {
-                const rope = acquireRope();
-                const start = new THREE.Vector3(npc.x, 1.2, distance - npc.dist);
-                const end = new THREE.Vector3(player.position.x, 1.0, 0);
-                lassoProjectiles.push({ rope, start, end, progress: 0, target: { kind: 'player' }, fromPlayer: false });
-              }
-            } else if (type === POWER_UPS.PISTOL) {
-              spawnTracer(
-                new THREE.Vector3(rival.position.x + 0.35, rival.position.y + 1.9, rival.position.z - 0.5),
-                new THREE.Vector3(player.position.x, player.position.y + 1.9, 0),
-              );
-              const blocked = shieldActive;
-              stunPlayer(true);
-              callbacks.pistolHit?.({ target: 'player', from: 'npc', blocked });
-            }
-          }
-        }
-        const npcClear = !liveNpc || npc.finishedAt !== null || npc.dist > pu.coursePos + 2;
-        if (z > 6 && npcClear) spawnPowerUp(pu);
-      }
-
       // Lasso projectiles
       for (let i = lassoProjectiles.length-1; i>=0; i--) {
         const proj = lassoProjectiles[i];
         proj.progress += dt / LASSO_PROJECTILE_DURATION;
         const t = Math.min(1, proj.progress);
-        // update rope segments
         const segs = proj.rope.userData.segments;
         const from = proj.start;
         const to = proj.end;
-        // For moving targets, update end position
         if (proj.target?.kind === 'rival') {
           to.set(rival.position.x, 1.0, rival.position.z);
         } else if (proj.target?.kind === 'online') {
@@ -1559,10 +1378,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         } else if (proj.target?.kind === 'player') {
           to.set(player.position.x, 1.0, 0);
         }
-        // interpolate rope
         for (let s=0; s<segs.length; s++) {
           const segT = (s+0.5)/segs.length;
-          // lerp + arc
           const x = THREE.MathUtils.lerp(from.x, to.x, segT * t + (1-t)*0.1);
           const y = THREE.MathUtils.lerp(from.y, to.y, segT * t) + Math.sin(segT*Math.PI)*0.6*(1-t*0.5);
           const z = THREE.MathUtils.lerp(from.z, to.z, segT * t);
@@ -1576,17 +1393,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           }
         }
         if (t >= 1) {
-          // hit
           if (proj.fromPlayer) {
             if (proj.target?.kind === 'rival') {
               const slowed = applyNpcSlow();
               callbacks.lassoHit?.({ target: 'rival', blocked: !slowed });
             } else if (proj.target?.kind === 'online') {
-              // hit will be handled via network; locally show effect
               callbacks.lassoHit?.({ target: 'online', player: proj.target.player });
             }
           } else {
-            // NPC lasso hits player
             const blocked = shieldActive;
             applyPlayerSlow();
             callbacks.lassoHit?.({ target: 'player', from: 'npc', blocked });
@@ -1600,7 +1414,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       emitHud();
     }
 
-    // Shatters keep playing out even on the frame the run ends.
     updateGemBursts(dt, speed * dt);
     updateTracers(dt);
 
@@ -1623,7 +1436,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     player.rotation.x = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.16 : 0;
     player.scale.setScalar((poseLeft > 0 ? 1.035 : 1) * (crashAnimation > 0 ? 1 - Math.sin(crashProgress * Math.PI) * 0.09 : 1));
     player.visible = isPlayerVisible(race.mode, invulnerable, time);
-    // shield bubble pulse
+
     if (shieldActive) {
       const pulse = 1 + Math.sin(time*0.01)*0.06 + (shieldFlash>0? shieldFlash*0.3 : 0);
       playerShieldBubble.scale.setScalar(pulse);
@@ -1650,7 +1463,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       const stunLeft = mine ? playerStun : Math.min(PISTOL_STUN_DURATION, peerStun);
       poseRider(rider, stunLeft, peer.lane >= LANE_COUNT / 2 ? -1 : 1);
       rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running && stunLeft <= 0 ? Math.sin(time*.018+i*2.2)*.65 : 0; });
-      // shield visual for online riders
       if (rider.userData.shieldBubble) {
         const now = Date.now();
         const shieldUntil = peer?.shield_until ? Date.parse(peer.shield_until) : 0;
@@ -1660,7 +1472,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         rider.userData.shieldBubble.visible = hasShield;
         if (hasShield) rider.userData.shieldBubble.rotation.y += dt*1.5;
         rider.userData.slowEffect = isSlowed ? 1 : Math.max(0, rider.userData.slowEffect - dt*2);
-        // visual slow: tint or scale
         if (isSlowed) {
           rider.position.y += Math.sin(time*0.02)*0.05;
         }
@@ -1681,7 +1492,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         rival.position.y += Math.sin(time*0.02)*0.06;
       }
     } else {
-      // The non-colliding replay ghost shares the outer playable lane.
       rival.position.set(LANES[LANE_COUNT - 1], 0, rival.position.z);
       rival.scale.setScalar(0.92);
     }
@@ -1691,26 +1501,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
     renderer.render(scene, camera);
   };
-  // Build the seeded track before the first frame, not only after the race
-  // countdown. This keeps the online canvas fully painted as soon as its modal
-  // appears instead of briefly presenting an empty/black scene.
+
   reset();
   raf = requestAnimationFrame(animate);
 
   return {
     start() {
-      // Only reset when a brand-new race arrives: resuming from pause keeps
-      // the very same race object and must not rewind the run.
       const freshRace = race !== getRace();
       if (freshRace) reset();
       active = true;
       lastFrame = performance.now();
-      // Le rappel des gestes n'apparaît qu'au départ d'une course — jamais en
-      // reprenant une pause — et le CSS le réserve aux écrans tactiles.
       if (freshRace || hintPending) touchFeedback.showHint();
       hintPending = false;
     },
-    /** Stage the next race while the world is idle (e.g. during the 3-2-1 countdown). */
     prepare() {
       if (!active) reset();
       hintPending = true;
@@ -1723,6 +1526,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     setSkin(colors) {
       skinColors = colors ?? null;
       skinPaint(player, skinColors);
+    },
+    usePowerUp(type) {
+      if (type === 'shield' || type === POWER_UPS.SHIELD) useShield();
+      else if (type === 'lasso' || type === POWER_UPS.LASSO) useLasso();
+      else if (type === 'pistol' || type === POWER_UPS.PISTOL) usePistol();
     },
     action,
     destroy() {
@@ -1764,21 +1572,18 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
     let world;
     try {
       world = makeWorld(mountRef.current, {
-      hud: (data) => callbackRefs.current.onHud?.(data),
-      finish: (data) => callbackRefs.current.onFinish?.(data),
-      crash: () => callbackRefs.current.onCrash?.(),
-      // Keep the gem key in the payload: online rooms broadcast it so a diamond
-      // taken by one rider disappears on every screen.
-      pickup: (tier, key, trapped) => callbackRefs.current.onPickup?.(tier, key, trapped),
-      gemTrap: (info) => callbackRefs.current.onGemTrap?.(info),
-      cheer: () => callbackRefs.current.onCheer?.(),
-      powerUp: (info) => callbackRefs.current.onPowerUp?.(info),
-      powerUpPickup: (type) => callbackRefs.current.onPowerUpPickup?.(type),
-      lasso: (target) => callbackRefs.current.onLasso?.(target),
-      shield: (active) => callbackRefs.current.onShield?.(active),
-      lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
-      pistol: (target) => callbackRefs.current.onPistol?.(target),
-      pistolHit: (info) => callbackRefs.current.onPistolHit?.(info),
+        hud: (data) => callbackRefs.current.onHud?.(data),
+        finish: (data) => callbackRefs.current.onFinish?.(data),
+        crash: () => callbackRefs.current.onCrash?.(),
+        pickup: (tier, key) => callbackRefs.current.onPickup?.(tier, key),
+        cheer: () => callbackRefs.current.onCheer?.(),
+        powerUp: (info) => callbackRefs.current.onPowerUp?.(info),
+        powerUpPickup: (type) => callbackRefs.current.onPowerUpPickup?.(type),
+        lasso: (target) => callbackRefs.current.onLasso?.(target),
+        shield: (active) => callbackRefs.current.onShield?.(active),
+        lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
+        pistol: (target) => callbackRefs.current.onPistol?.(target),
+        pistolHit: (info) => callbackRefs.current.onPistolHit?.(info),
       }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
     } catch (error) {
       callbackRefs.current.onError?.(error instanceof Error ? error.message : String(error));
@@ -1804,15 +1609,9 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
     worldRef.current?.setSkin?.(skin);
   }, [skin]);
 
-  // The page bumps prepareSignal right before the countdown so the fresh
-  // course is already staged behind the 3-2-1 overlay.
   useEffect(() => {
     if (prepareSignal > 0) worldRef.current?.prepare?.();
   }, [prepareSignal]);
-
-  useEffect(() => {
-    if (!network) return;
-  }, [network]);
 
   return <div className="mirage-world" ref={mountRef} />;
 }

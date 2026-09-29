@@ -10,7 +10,7 @@ accéder à la messagerie, il faut se connecter dans l'application.
 
 - Nom affiché : **Let's Play**
 - Identifiant : `dz.letsplay.officiel`
-- Version actuelle : **1.0.2** (versionCode 3 — voir `app/build.gradle`)
+- Version actuelle : **1.0.3** (versionCode 4 — voir `app/build.gradle`)
 - URL embarquée : <https://let-s-play-nu.vercel.app> (constante `SITE_HOST`
   dans `app/src/main/java/dz/letsplay/officiel/MainActivity.java`)
 - Android minimum : 6.0 (API 23) · cible : API 35

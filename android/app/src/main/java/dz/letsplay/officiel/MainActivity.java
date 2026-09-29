@@ -80,14 +80,19 @@ public class MainActivity extends Activity {
                         | WindowInsets.Type.displayCutout() | WindowInsets.Type.ime());
                 view.setPadding(safeInsets.left, safeInsets.top,
                         safeInsets.right, safeInsets.bottom);
-            } else {
-                view.setPadding(insets.getSystemWindowInsetLeft(),
-                        insets.getSystemWindowInsetTop(),
-                        insets.getSystemWindowInsetRight(),
-                        insets.getSystemWindowInsetBottom());
+                // Les marges sont déjà appliquées au conteneur : les consommer
+                // évite que la WebView les réapplique via env(safe-area-inset-*).
+                return WindowInsets.CONSUMED;
             }
-            // Ne pas consommer les insets : les enfants doivent les recevoir.
-            return insets;
+            view.setPadding(insets.getSystemWindowInsetLeft(),
+                    insets.getSystemWindowInsetTop(),
+                    insets.getSystemWindowInsetRight(),
+                    insets.getSystemWindowInsetBottom());
+            WindowInsets consumed = insets.consumeSystemWindowInsets();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                consumed = consumed.consumeDisplayCutout();
+            }
+            return consumed;
         });
         content.requestApplyInsets();
 

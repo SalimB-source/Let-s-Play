@@ -1246,11 +1246,11 @@ img{max-width:100%}
     align-items:center;
     justify-content:space-between;
     gap:16px;
-    /* Avec viewport-fit=cover, la page passe sous la status bar : on décale
-       la barre sous l'encoche SANS changer sa hauteur (68px) — les pages
-       réservent 104px de padding en haut, une barre plus haute les
-       chevaucherait. */
-    top:env(safe-area-inset-top,0px);left:0;right:0;transform:none;width:100%;
+    /* La barre reste collée en haut de la zone d'affichage (`top: 0`). Dans
+       l'application Android, la WebView est déjà placée sous la barre de
+       statut par MainActivity ; ajouter `env(safe-area-inset-top)` décalait la
+       barre une seconde fois vers le bas. */
+    top:0;left:0;right:0;transform:none;width:100%;
     height:68px;
     padding:0 18px;
     background:rgba(8,10,28,.92);
@@ -1266,7 +1266,7 @@ img{max-width:100%}
   .nav.scrolled,
   .nav.nav-home,
   .nav.nav-home.scrolled{
-    top:env(safe-area-inset-top,0px);left:0;right:0;transform:none !important;width:100%;
+    top:0;left:0;right:0;transform:none !important;width:100%;
     height:68px;
     background:rgba(8,10,28,.92);
     border:0;
@@ -1371,10 +1371,10 @@ img{max-width:100%}
     height:100%;
     overflow-y:auto;
     overscroll-behavior:contain;
-    /* 86px = hauteur de la nav (68) + respiration ; on y ajoute l'encoche en
-       haut et la barre de geste iPhone en bas pour que le dernier élément du
-       menu ne soit jamais caché. */
-    padding:calc(86px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px));
+    /* 86px = hauteur de la nav (68) + respiration ; en bas on garde la marge
+       de la barre de geste iPhone pour que le dernier élément du menu ne soit
+       jamais caché. */
+    padding:86px 20px calc(20px + env(safe-area-inset-bottom,0px));
     gap:0;
   }
 
