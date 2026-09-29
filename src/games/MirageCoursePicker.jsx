@@ -4,6 +4,7 @@ const MAPS = [
   { id: 'desert', number: '01', name: 'Dunes de l’Écho', mood: 'Mystique & solaire', detail: 'Désert · funk', sky: '#624575', sun: '#ffd57f', land: '#c99268' },
   { id: 'western', number: '02', name: 'Dust Creek', mood: 'Au cœur du Far West', detail: 'Ville · cowboy', sky: '#c78768', sun: '#ffdf9a', land: '#a57650' },
   { id: 'prairie', number: '03', name: 'Plaines d’Or', mood: 'La grande échappée', detail: 'Golden hour · épique', sky: '#b97553', sun: '#ffad48', land: '#b5a550' },
+  { id: 'sardinia', number: '04', name: 'Costa Omertà', mood: 'Le clan veille sur la baie', detail: 'Village côtier · mandoline', sky: '#6b4a42', sun: '#f3b56a', land: '#c9895a' },
 ];
 
 function Landscape({ map }) {
@@ -13,6 +14,7 @@ function Landscape({ map }) {
     {map.id === 'desert' && <><path d="M0 70 42 36 85 72 128 47 195 76 240 54V110H0Z" fill="#8b6684" /><path d="M0 87Q55 48 120 84T240 79V110H0Z" fill={map.land} /></>}
     {map.id === 'western' && <><path d="M0 81V29H43V21H68V81M177 81V32H211V25H240V81" fill="#624236" /><path d="M4 39H65V46H4M179 42H240V49H179" stroke="#e5bd81" strokeWidth="5" /><path d="M17 54H29V68H17M41 54H53V68H41M190 58H201V73H190M216 58H229V73H216" fill="#e4b77c" /><path d="M0 81H240V110H0Z" fill={map.land} /></>}
     {map.id === 'prairie' && <><path d="M0 54Q60 47 120 55T240 54V110H0Z" fill={map.land} /><path d="M0 77Q60 62 108 81M135 78Q185 65 240 72" fill="none" stroke="#dac071" strokeWidth="10" />{[15, 34, 53, 188, 208, 228].map(x => <path key={x} d={`M${x} 102v-22m0 10-5-7m5 2 5-7`} stroke="#f4d58a" strokeWidth="2" fill="none" />)}</>}
+    {map.id === 'sardinia' && <><path d="M0 76Q60 68 120 76T240 72V110H0Z" fill="#3f7f92" opacity=".55" /><path d="M0 88H30V66H16V58H30V66H46V88M96 88V62H112V54H128V62H144V88M186 88V60H204V52H220V60H236V88" fill="#7a4632" /><path d="M8 88H22V100H8M104 88H120V100H104M194 88H210V100H194" fill="#c9895a" />{[20, 216].map(x => <path key={x} d={`M${x} 88V64Q${x + 3} 52 ${x + 6} 64V88`} fill="#2c4a34" />)}<path d="M0 88H240V110H0Z" fill={map.land} /></>}
     <path d="M109 72H130L168 110H73Z" fill="#f9deb1" opacity=".5" />
     {map.id === 'desert' && <path d="M26 103V75m0 16H17V82m9 3H35V74" stroke="#355f55" strokeWidth="5" fill="none" />}
   </svg>;
