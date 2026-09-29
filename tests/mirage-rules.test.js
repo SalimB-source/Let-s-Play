@@ -28,7 +28,7 @@ test('encounters remain varied and traversable over 1000 rows', () => {
     }
     if (row.pattern === 'jump') {
       assert.equal(cacti.length, LANE_COUNT - 2);
-      assert.ok(row.items.some(item => item.kind === 'crystal' && item.raised && item.tier === 2));
+      assert.ok(row.items.some(item => item.kind === 'crystal' && item.raised && item.tier >= 2));
     }
   }
   assert.equal(patterns.size, 5);
@@ -40,12 +40,12 @@ test('jump requires actual clearance, not simply a pressed button', () => {
   assert.ok(jumpHeight(0.41) > 1.05);
   assert.ok(jumpHeight(0.8) < 1.05);
   assert.ok(jumpHeight(0.03) < 1.05);
-  assert.deepEqual(CRYSTALS.map(c => c.value), [100, 150, 250]);
+  assert.deepEqual(CRYSTALS.map(c => c.value), [100, 150, 200, 250]);
 });
 
 test('duel speed is capped, collision can slow down and gems boost', async () => {
   const { DUEL_BASE_SPEED, DUEL_SPEED_BONUS, duelSpeed, ghostDistance, DUEL_DISTANCE, seededRandom } = await import('../src/games/mirageRules.js');
-  assert.equal(duelSpeed(DUEL_BASE_SPEED, DUEL_SPEED_BONUS[2]), 19.4);
+  assert.equal(duelSpeed(DUEL_BASE_SPEED, DUEL_SPEED_BONUS[3]), 19.4);
   assert.equal(duelSpeed(8, -50), 8);
   assert.equal(duelSpeed(25, 8), 26);
   assert.equal(ghostDistance([0, 7, 15, DUEL_DISTANCE], 0.25, 1.3), 3.5);
@@ -181,28 +181,21 @@ test('airborne player cannot change lanes or drift, and can move on landing', as
   assert.ok(playerLateralPosition(0.6, 2.1, 0.016, 0) > 0.6);
 });
 
-test('special items stay rare: slots are spread out and most of them are empty', async () => {
-  const { rollPowerUpType, powerUpOdds, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, POWER_UP_SPAWN_RATE, POWER_UPS } = await import('../src/games/mirageRules.js');
-  // Slots are further apart than the old 28–46 m cadence.
-  assert.ok(POWER_UP_SPAWN_GAP_MIN >= 40);
-  assert.ok(POWER_UP_SPAWN_GAP_MAX > POWER_UP_SPAWN_GAP_MIN);
-  assert.ok(POWER_UP_SPAWN_RATE < 1);
-  // A seeded roll: most slots are empty, and a leader never gets a lasso.
-  let seed = 7;
+test('special items charge costs and definition are properly configured', async () => {
+  const { POWER_UP_CHARGE_COST, POWER_UPS, POWER_UP_MAX_CHARGES, DIAMOND_CHARGE_VALUE } = await import('../src/games/mirageRules.js');
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.SHIELD], 3);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.LASSO], 3);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.PISTOL], 5, 'Pistol takes more diamonds to charge than shield and lasso');
+  assert.equal(POWER_UP_MAX_CHARGES, 3);
+  assert.deepEqual(DIAMOND_CHARGE_VALUE, [1, 1, 2, 3]);
+  
+  const { rollPowerUpForMode } = await import('../src/games/mirageRules.js');
+  let seed = 3;
   const next = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
-  let filled = 0;
-  const rolls = 4000;
-  for (let i = 0; i < rolls; i++) if (rollPowerUpType(4, next)) filled += 1;
-  assert.ok(filled / rolls < 0.5);
-  for (let i = 0; i < 500; i++) assert.notEqual(rollPowerUpType(1, next), POWER_UPS.LASSO);
-  // The HUD odds match what a picked-up "?" actually turns into.
-  const { rollPowerUpContent } = await import('../src/games/mirageRules.js');
-  for (const rank of [1, 2, 3, 4]) {
-    const odds = powerUpOdds(rank);
-    const counts = { lasso: 0, shield: 0, pistol: 0 };
-    for (let i = 0; i < rolls; i++) counts[rollPowerUpContent(rank, next)] += 1;
-    for (const type of ['lasso', 'shield', 'pistol']) {
-      assert.ok(Math.abs(counts[type] / rolls - odds[type]) < 0.03, `${type} ${rank}: ${counts[type] / rolls} vs ${odds[type]}`);
+  // Items are charged by diamonds, never found on the road
+  for (const mode of ['rush', 'duel', 'online']) {
+    for (const rank of [1, 2, 3, 4]) {
+      for (let i = 0; i < 50; i++) assert.equal(rollPowerUpForMode(mode, rank, next), null);
     }
   }
 });
@@ -262,25 +255,20 @@ test('NPC can use the fourth lane, collect its gems and jump its barriers', asyn
   assert.equal(planNpcLane(jump, 1).jump, true);
 });
 
-test('special items stay out of the Ruée: only duel and online carry them', async () => {
-  const { powerUpsEnabled, rollPowerUpForMode, POWER_UP_MODES } = await import('../src/games/mirageRules.js');
-  assert.deepEqual([...POWER_UP_MODES], ['duel', 'online']);
-  assert.equal(powerUpsEnabled('rush'), false);
+test('power-ups are available in all modes via diamond charging and not on the road', async () => {
+  const { powerUpsEnabled, rollPowerUpForMode } = await import('../src/games/mirageRules.js');
+  assert.equal(powerUpsEnabled('rush'), true);
   assert.equal(powerUpsEnabled('duel'), true);
   assert.equal(powerUpsEnabled('online'), true);
-  // A mode the game does not know never grows items either.
-  assert.equal(powerUpsEnabled(undefined), false);
-  assert.equal(powerUpsEnabled('Rush'), false);
-  // Even with a generous roll, the Ruée track yields nothing at any rank.
+  
+  // Power ups are not found on the road in any mode
   let seed = 3;
   const next = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
-  for (const rank of [1, 2, 3, 4]) {
-    for (let i = 0; i < 2000; i++) assert.equal(rollPowerUpForMode('rush', rank, next), null);
+  for (const mode of ['rush', 'duel', 'online']) {
+    for (const rank of [1, 2, 3, 4]) {
+      for (let i = 0; i < 50; i++) assert.equal(rollPowerUpForMode(mode, rank, next), null);
+    }
   }
-  // The duel (and online) still spawns them, so the gate is not a global off switch.
-  let found = 0;
-  for (let i = 0; i < 2000; i++) if (rollPowerUpForMode('duel', 4, next)) found += 1;
-  assert.ok(found > 0);
 });
 
 test('a collected diamond shatters into spread-out shards that settle back to nothing', async () => {
@@ -324,42 +312,31 @@ test('a collected diamond shatters into spread-out shards that settle back to no
   assert.equal(flashEnd.done, true);
 });
 
-test('every diamond is a gamble: 8 % of them are cursed and brake the rider instead of boosting it', async () => {
+test('diamonds give speed boost without traps, green diamond gives 200 points', async () => {
   const rules = await import('../src/games/mirageRules.js');
-  const { CRYSTALS, crystalPickupEffect, rollGemTrap, GEM_TRAP_CHANCE,
-    GEM_TRAP_SLOW_DURATION, GEM_TRAP_SLOW_FACTOR, DUEL_SPEED_BONUS, SPEED_BOOST_NONE, seededRandom } = rules;
+  const { CRYSTALS, crystalPickupEffect, DUEL_SPEED_BONUS } = rules;
 
-  // The tinted red diamond keeps its name and value — it is just no longer the
-  // only tier that can turn on the rider.
+  // Green diamond is between Red and Gold
+  const green = CRYSTALS[2];
+  assert.equal(green.name, 'Verte');
+  assert.equal(green.value, 200);
+
   const red = CRYSTALS[1];
   assert.equal(red.name, 'Rouge');
   assert.equal(red.value, 150);
-  assert.ok((red.color >> 16 & 255) > 200);
-  assert.ok((red.color >> 16 & 255) > (red.color >> 8 & 255) * 2);
-  assert.ok((red.color >> 16 & 255) > (red.color & 255) * 2);
 
-  assert.equal(GEM_TRAP_CHANCE, 0.08);
+  const gold = CRYSTALS[3];
+  assert.equal(gold.name, 'Or');
+  assert.equal(gold.value, 250);
 
-  for (const tier of [0, 1, 2]) {
-    const safe = crystalPickupEffect(tier, false);
-    assert.equal(safe.trap, false);
-    assert.equal(safe.boost.bonus, DUEL_SPEED_BONUS[tier]);
-    assert.equal(safe.slowDuration, 0);
+  assert.ok(green.value > red.value && green.value < gold.value, 'Green is worth more than red and less than gold');
 
-    const cursed = crystalPickupEffect(tier, true);
-    assert.equal(cursed.trap, true);
-    assert.equal(cursed.boost, SPEED_BOOST_NONE);
-    assert.equal(cursed.boost.bonus, 0);
-    assert.equal(cursed.slowDuration, GEM_TRAP_SLOW_DURATION);
-    assert.equal(cursed.slowFactor, GEM_TRAP_SLOW_FACTOR);
-    assert.ok(cursed.slowFactor > 0 && cursed.slowFactor < 1, 'a trap slows the rider, it never stops it');
+  for (let tier = 0; tier < CRYSTALS.length; tier += 1) {
+    const effect = crystalPickupEffect(tier);
+    assert.equal(effect.trap, false, 'traps are removed');
+    assert.equal(effect.boost.bonus, DUEL_SPEED_BONUS[tier]);
+    assert.equal(effect.slowDuration, 0);
   }
-
-  const random = seededRandom(2024);
-  const rolls = 20000;
-  let traps = 0;
-  for (let i = 0; i < rolls; i += 1) if (rollGemTrap(random)) traps += 1;
-  assert.ok(Math.abs(traps / rolls - GEM_TRAP_CHANCE) < 0.02, `traps ${traps / rolls} close to ${GEM_TRAP_CHANCE}`);
 });
 
 test('pistol odds follow the race position and the shot rider remounts in one second', async () => {
