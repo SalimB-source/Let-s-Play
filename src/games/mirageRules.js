@@ -151,11 +151,12 @@ export const SPEED_BOOST_NONE = Object.freeze({ bonus: 0, left: 0 });
 export const POWER_UPS = {
   LASSO: 'lasso',
   SHIELD: 'shield',
+  PISTOL: 'pistol',
 };
 
 // ── Which modes carry the "?" items ────────────────────────────────────
-// A special item needs a rival to lasso or a hit to absorb, so only the duel
-// (PNJ or shared ghost) and the online rooms keep them. The Ruée is a solo
+// A special item needs a rival to lasso, shoot or a hit to absorb, so only the
+// duel (PNJ or shared ghost) and the online rooms keep them. The Ruée is a solo
 // time attack scored on 3 lives: its track stays clean, crystals and hazards
 // only. Adding a mode here is all it takes to give it the "?" items back.
 export const POWER_UP_MODES = Object.freeze(['duel', 'online']);
@@ -165,61 +166,101 @@ export function powerUpsEnabled(mode) {
 }
 
 // Special items all wear the same skin: a floating rainbow "?" that only
-// reveals lasso or shield once the rider rides through it.
+// reveals its effect once a rider rides through it.
 //
-// Rarity is tuned by two knobs:
+// A "?" is shared by the whole field: its place on the track is drawn from the
+// race seed (so every online client sees it at the same spot) and it never
+// vanishes when someone grabs it — every rider can take it in turn. What is
+// inside is only rolled at pickup, from the picker's own race position.
+//
 //  - POWER_UP_SPAWN_GAP_MIN/MAX: how far apart the spawn slots are (metres).
-//  - POWER_UP_SPAWN_RATE: how often a slot actually holds an item (0 → never,
-//    1 → the raw lasso/shield chances below). Both raised/lowered together,
-//    they cut the old spawn cadence by roughly two thirds.
+//  - POWER_UP_SPAWN_RATE: how often a slot actually holds a "?".
 export const POWER_UP_SPAWN_GAP_MIN = 45;
 export const POWER_UP_SPAWN_GAP_MAX = 75;
-export const POWER_UP_SPAWN_RATE = 0.6;
+export const POWER_UP_SPAWN_RATE = 0.32;
 
-// Lasso appearance chances by race position (1st → 4th)
+// Pistol chances by race position (1st → 4th): rolled first.
+export const PISTOL_CHANCES = [0, 0.05, 0.15, 0.3];
+// Lasso chances by race position (1st → 4th), on what the pistol left.
 export const LASSO_CHANCES = [0, 0.3, 0.4, 0.6];
-// Shield appearance chance for all positions
-export const SHIELD_CHANCE = 0.3;
+// Whatever is neither pistol nor lasso is a shield.
 
 export const SHIELD_DURATION = 5; // seconds the shield stays active
 export const LASSO_SLOW_DURATION = 2.5; // seconds target is slowed
 export const LASSO_SLOW_FACTOR = 0.45; // speed multiplier while slowed
 export const LASSO_PROJECTILE_DURATION = 0.45; // seconds rope flies
+export const PISTOL_STUN_DURATION = 1; // seconds the shot rider is on the ground, fully stopped
+
+const rankIndex = (rank) => Math.max(0, Math.min(3, (rank | 0) - 1));
 
 export function getLassoChance(rank) {
-  const idx = Math.max(0, Math.min(3, (rank | 0) - 1));
-  return LASSO_CHANCES[idx] ?? 0;
+  return LASSO_CHANCES[rankIndex(rank)] ?? 0;
 }
 
-/** Odds, 0→1, that one spawn slot holds each item once the rarity knob is applied. */
+export function getPistolChance(rank) {
+  return PISTOL_CHANCES[rankIndex(rank)] ?? 0;
+}
+
+/** What a picked-up "?" turns into, 0→1 per item, for a rider at `rank`. Sums to 1. */
 export function powerUpOdds(rank) {
-  const lasso = getLassoChance(rank);
-  return {
-    lasso: lasso * POWER_UP_SPAWN_RATE,
-    shield: (1 - lasso) * SHIELD_CHANCE * POWER_UP_SPAWN_RATE,
-  };
+  const pistol = getPistolChance(rank);
+  const lasso = (1 - pistol) * getLassoChance(rank);
+  return { pistol, lasso, shield: 1 - pistol - lasso };
 }
 
-// Roll a single power-up type for a player at `rank` (1 = leader).
-// Returns 'lasso' | 'shield' | null.
-// Priority: lasso first, then shield. This matches the spec:
-// - POWER_UP_SPAWN_RATE gates every slot, so most of them stay empty
-// - lasso has position-dependent chance
-// - shield has flat 30% chance
+/** Does this spawn slot hold a "?" at all? Rank-free, so it can come from the shared seed. */
+export function rollPowerUpSlot(random = Math.random) {
+  return random() < POWER_UP_SPAWN_RATE;
+}
+
+/** Reveal a picked-up "?": pistol first, then lasso, otherwise shield. */
+export function rollPowerUpContent(rank, random = Math.random) {
+  if (random() < getPistolChance(rank)) return POWER_UPS.PISTOL;
+  if (random() < getLassoChance(rank)) return POWER_UPS.LASSO;
+  return POWER_UPS.SHIELD;
+}
+
+/** Full roll of one slot: empty (null) or the item a rider at `rank` would get. */
 export function rollPowerUpType(rank, random = Math.random) {
-  if (random() >= POWER_UP_SPAWN_RATE) return null;
-  const lassoChance = getLassoChance(rank);
-  if (random() < lassoChance) return POWER_UPS.LASSO;
-  if (random() < SHIELD_CHANCE) return POWER_UPS.SHIELD;
-  return null;
+  if (!rollPowerUpSlot(random)) return null;
+  return rollPowerUpContent(rank, random);
+}
+
+/** Roll one spawn slot for a given mode. The Ruée never yields anything. */
+export function rollPowerUpForMode(mode, rank, random = Math.random) {
+  return powerUpsEnabled(mode) ? rollPowerUpType(rank, random) : null;
+}
+
+/** Nearest other rider by track distance; `riders` = [{ id, distance }]. */
+export function nearestRider(myDistance, riders) {
+  let best = null;
+  for (const rider of riders || []) {
+    const gap = Math.abs((Number(rider.distance) || 0) - myDistance);
+    if (!best || gap < best.gap) best = { ...rider, gap };
+  }
+  return best;
 }
 
 /**
- * Roll one spawn slot for a given mode. The Ruée never yields anything: the
- * mode gate sits here so the world can ask for a type without knowing the rules.
+ * Remount animation for a rider knocked off by the pistol, `left` seconds of
+ * stun remaining. Returns the rider's offset from the saddle: thrown off to
+ * the side, a beat on the sand, then climbing back up.
  */
-export function rollPowerUpForMode(mode, rank, random = Math.random) {
-  return powerUpsEnabled(mode) ? rollPowerUpType(rank, random) : null;
+export function stunPose(left, duration = PISTOL_STUN_DURATION, side = 1) {
+  if (!(left > 0)) return { x: 0, y: 0, roll: 0, pitch: 0 };
+  const p = clamp01(1 - left / duration);
+  const ease = (t) => t * t * (3 - 2 * t);
+  let off; // 0 = in the saddle, 1 = lying on the ground
+  let hop = 0;
+  if (p < 0.28) { off = ease(p / 0.28); hop = Math.sin((p / 0.28) * Math.PI) * 0.45; }
+  else if (p < 0.5) off = 1;
+  else { const t = (p - 0.5) / 0.5; off = 1 - ease(t); hop = Math.sin(t * Math.PI) * 0.55; }
+  return {
+    x: side * off * 1.05,
+    y: -off * 1.1 + hop,
+    roll: side * off * 1.35,
+    pitch: p >= 0.5 ? -Math.sin(((p - 0.5) / 0.5) * Math.PI) * 0.5 : 0,
+  };
 }
 
 // For future extensibility: describe all power-ups in one place
@@ -237,6 +278,13 @@ export const POWER_UP_DEFS = {
     description: 'Protège une fois d’une collision ou d’un lasso (5s)',
     color: 0x4ce9df,
     emissive: 0x1a7a74,
+  },
+  [POWER_UPS.PISTOL]: {
+    id: POWER_UPS.PISTOL,
+    label: 'Pistolet',
+    description: 'Tire sur le cavalier le plus proche : il tombe de cheval 1 s',
+    color: 0x444444,
+    emissive: 0x111111,
   },
 };
 

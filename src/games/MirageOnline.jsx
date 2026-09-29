@@ -987,6 +987,7 @@ export default function MirageOnline({
                   {Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS
                   {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
                   {hud.slowed ? (hud.slowKind === 'trap' ? ' · ◆ PIÉGÉ' : ' · 🪢 RALENTI') : ''}
+                  {hud.stunned ? ' · 🔫 À TERRE' : ''}
                   {hud.rank ? ` · #${hud.rank}` : ''}
                 </strong>
                 <span>{finished ? 'ARRIVÉE !' : active ? 'COURSE EN COURS' : 'PISTE PRÊTE'}</span>
@@ -1001,6 +1002,7 @@ export default function MirageOnline({
                   actionsRef={actions}
                   onReady={() => setWorldReady(true)}
                   onHud={(p) => {
+                    audio.current?.setGallop(p.speed > 0 && !p.stunned, (p.speed || 15) / 15);
                     latest.current = p;
                     setHud(p);
                   }}
@@ -1031,7 +1033,8 @@ export default function MirageOnline({
                       setPowerToast('🪢 Lasso ramassé ! Lancement auto…');
                       setTimeout(()=> setPowerToast(null), 2000);
                     }
-                    audio.current?.pickup(2);
+                    if (type === 'pistol') audio.current?.gunshot();
+                    else audio.current?.pickup(2);
                   }}
                   onLasso={async (targetPlayer) => {
                     if (!room?.code || !targetPlayer) return;
@@ -1050,6 +1053,24 @@ export default function MirageOnline({
                         await roomAction('shield', room.code, { p_clear: true, p_active: false }, effectivePlayer);
                       }
                     } catch {}
+                  }}
+                  onPistol={async (targetPlayer) => {
+                    if (!room?.code || !targetPlayer) return;
+                    try {
+                      await roomAction('pistol', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                    } catch {}
+                    setPowerToast(`🔫 PAN ! Tu tires sur ${targetPlayer.name} !`);
+                    setTimeout(()=> setPowerToast(null), 2500);
+                  }}
+                  onPistolHit={(info) => {
+                    if (info?.target === null) {
+                      setPowerToast('🔫 PAN ! Personne à portée…');
+                      setTimeout(()=> setPowerToast(null), 2000);
+                    } else if (info?.target === 'player') {
+                      audio.current?.gunshot();
+                      setPowerToast('🔫 Touché ! Tu tombes de cheval…');
+                      setTimeout(()=> setPowerToast(null), 2000);
+                    }
                   }}
                   onLassoHit={(info) => {
                     if (info?.target === 'player') {
@@ -1074,7 +1095,7 @@ export default function MirageOnline({
                 )}
                 {active && hud.rank && (
                   <div className="mirage-power-hint">
-                    <span>POS #{hud.rank} · OBJET « ? » RARE · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</span>
+                    <span>POS #{hud.rank} · OBJET « ? » · PISTOLET {Math.round(powerUpOdds(hud.rank || 1).pistol * 100)}% · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</span>
                   </div>
                 )}
               </div>

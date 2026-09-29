@@ -348,6 +348,7 @@ function serializeRoom(room, nowIso = new Date().toISOString()) {
       last_seen: p.last_seen || nowIso,
       shield_until: p.shield_until || null,
       slowed_until: p.slowed_until || null,
+      stunned_until: p.stunned_until || null,
     }));
   const messages = [...(room.messages || [])].slice(-50).map((m) => ({
     id: m.id,
@@ -416,7 +417,11 @@ function advanceBotsInRace(room, nowMs) {
     const baseSpeed = isSlowed ? (p.speed || 16.2) * 0.45 : (p.speed || 16.2);
     const speed = baseSpeed;
     const wave = Math.sin(elapsedSec * 1.3 + p.slot * 1.9) * 0.8;
-    const nextDistance = Math.min(600, Math.max(Number(p.distance || 0), elapsedSec * speed + wave));
+    // Shot off its horse: the bot stands still, and the lost ground is never given back.
+    const stunned = p.stunned_until && Date.parse(p.stunned_until) > nowMs;
+    const nextDistance = stunned
+      ? Number(p.distance || 0)
+      : Math.min(600, Math.max(Number(p.distance || 0), elapsedSec * speed + wave - Number(p.stun_lag || 0)));
     const laneWave = Math.floor((elapsedSec + p.slot * 1.7) / 2.6) % LANE_COUNT;
     const jumpPhase = (elapsedSec + p.slot * 0.9) % 3.4;
     const jumpVal = jumpPhase < 0.55 ? Math.sin((jumpPhase / 0.55) * Math.PI) * 1.25 : 0;
@@ -487,7 +492,7 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
   }
 
 
-  if (!['create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'add_bot', 'shield', 'lasso'].includes(action)) {
+  if (!['create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'add_bot', 'shield', 'lasso', 'pistol'].includes(action)) {
 
     throw new Error('Action inconnue');
   }
@@ -834,6 +839,42 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
         // also reduce speed for next ticks
         target.speed = Math.max(8, (target.speed || 16) * 0.45);
       }
+    }
+    writeStore(store, true);
+    return serializeRoom(room, nowIso);
+  }
+
+  if (action === 'pistol') {
+    if (room.status !== 'started') {
+      throw new Error('Course non lancée');
+    }
+    const targetId = String(extras.p_target_id || extras.p_target || '').trim();
+    const target = room.players.find(p => p.user_id === targetId);
+    if (!target) {
+      throw new Error('Cible introuvable');
+    }
+    const shieldUntil = target.shield_until ? Date.parse(target.shield_until) : 0;
+    if (shieldUntil > nowMs) {
+      target.shield_until = null;
+      room.messages.push({
+        id: `msg-${nowMs}-pistolblock`,
+        user_id: target.user_id,
+        name: target.name,
+        slot: target.slot,
+        body: `🛡️ ${target.name} a arrêté une balle avec son bouclier !`,
+        created_at: nowIso,
+      });
+    } else {
+      target.stunned_until = new Date(nowMs + 1000).toISOString();
+      if (target.is_bot) target.stun_lag = Number(target.stun_lag || 0) + (target.speed || 16.2);
+      room.messages.push({
+        id: `msg-${nowMs}-pistol`,
+        user_id: uid,
+        name: uname,
+        slot: existingPlayer.slot,
+        body: `🔫 ${uname} a fait tomber ${target.name} de son cheval !`,
+        created_at: nowIso,
+      });
     }
     writeStore(store, true);
     return serializeRoom(room, nowIso);

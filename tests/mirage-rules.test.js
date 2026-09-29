@@ -195,18 +195,15 @@ test('special items stay rare: slots are spread out and most of them are empty',
   for (let i = 0; i < rolls; i++) if (rollPowerUpType(4, next)) filled += 1;
   assert.ok(filled / rolls < 0.5);
   for (let i = 0; i < 500; i++) assert.notEqual(rollPowerUpType(1, next), POWER_UPS.LASSO);
-  // The HUD odds match what the roll actually produces.
+  // The HUD odds match what a picked-up "?" actually turns into.
+  const { rollPowerUpContent } = await import('../src/games/mirageRules.js');
   for (const rank of [1, 2, 3, 4]) {
     const odds = powerUpOdds(rank);
-    let lasso = 0;
-    let shield = 0;
-    for (let i = 0; i < rolls; i++) {
-      const type = rollPowerUpType(rank, next);
-      if (type === POWER_UPS.LASSO) lasso += 1;
-      else if (type === POWER_UPS.SHIELD) shield += 1;
+    const counts = { lasso: 0, shield: 0, pistol: 0 };
+    for (let i = 0; i < rolls; i++) counts[rollPowerUpContent(rank, next)] += 1;
+    for (const type of ['lasso', 'shield', 'pistol']) {
+      assert.ok(Math.abs(counts[type] / rolls - odds[type]) < 0.03, `${type} ${rank}: ${counts[type] / rolls} vs ${odds[type]}`);
     }
-    assert.ok(Math.abs(lasso / rolls - odds.lasso) < 0.03, `lasso ${rank}: ${lasso / rolls} vs ${odds.lasso}`);
-    assert.ok(Math.abs(shield / rolls - odds.shield) < 0.03, `shield ${rank}: ${shield / rolls} vs ${odds.shield}`);
   }
 });
 test('four lanes are centred, evenly spaced, and traversable in both directions', async () => {
@@ -364,4 +361,15 @@ test('the red diamond is a gamble: some are cursed and brake the rider instead o
   let traps = 0;
   for (let i = 0; i < 4000; i += 1) if (rollRedTrap(random)) traps += 1;
   assert.ok(Math.abs(traps / 4000 - RED_TRAP_CHANCE) < 0.03, `traps ${traps / 4000} close to ${RED_TRAP_CHANCE}`);
+});
+
+test('pistol odds follow the race position and the shot rider remounts in one second', async () => {
+  const { powerUpOdds, stunPose, nearestRider, PISTOL_STUN_DURATION } = await import('../src/games/mirageRules.js');
+  assert.deepEqual([1, 2, 3, 4].map(rank => powerUpOdds(rank).pistol), [0, 0.05, 0.15, 0.3]);
+  assert.equal(PISTOL_STUN_DURATION, 1);
+  assert.deepEqual(stunPose(0), { x: 0, y: 0, roll: 0, pitch: 0 });
+  assert.ok(stunPose(0.6).y < -0.9); // on the sand
+  assert.ok(Math.abs(stunPose(0.001).y) < 0.05); // back in the saddle
+  assert.equal(nearestRider(100, [{ id: 'a', distance: 130 }, { id: 'b', distance: 92 }]).id, 'b');
+  assert.equal(nearestRider(100, []), null);
 });
