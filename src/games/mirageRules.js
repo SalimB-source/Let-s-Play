@@ -101,3 +101,17 @@ export function playerLateralPosition(x, targetX, dt, jumpRemaining) {
   // Freeze even an unfinished lane transition until the horse touches down.
   return jumpRemaining > 0 ? x : x + (targetX - x) * Math.min(1, dt * 12);
 }
+
+/** Apply one collision: rush consumes a life; races slow the rider without ending. */
+export function resolveCollision({ mode, lives, speed, boost }) {
+  if (mode === 'rush') {
+    const nextLives = Math.max(0, lives - 1);
+    return { lives: nextLives, baseSpeed: speed, boost, gameOver: nextLives === 0 };
+  }
+  return { lives, baseSpeed: Math.max(8, speed * 0.55), boost: 0, gameOver: false };
+}
+
+/** Keep online's locally-rendered duplicate hidden while blinking a hit rider. */
+export function isPlayerVisible(mode, invulnerable, time) {
+  return mode !== 'online' && (invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
+}

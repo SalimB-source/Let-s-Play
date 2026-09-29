@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
-import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_SPEED_BONUS, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition } from './mirageRules';
+import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_SPEED_BONUS, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible } from './mirageRules';
 
 const LANES = [-2.1, 0, 2.1];
 const TRACK_MIN_Z = -40;
@@ -375,6 +375,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
   let jumpLeft = 0;
   let poseLeft = 0;
   let invulnerable = 0;
+  let crashAnimation = 0;
+  let crashDirection = 1;
   let lastHud = 0;
   let lastFrame = performance.now();
   let raf = 0;
@@ -445,6 +447,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     jumpLeft = 0;
     poseLeft = 0;
     invulnerable = 0;
+    crashAnimation = 0;
+    crashDirection = 1;
     player.position.set(0, 0, 0);
     floor.forEach((tile, index) => { tile.position.z = TRACK_MIN_Z + Math.floor(index / 4) * 2; });
     player.visible = true;
@@ -500,6 +504,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
       }
       jumpLeft = Math.max(0, jumpLeft - dt);
       poseLeft = Math.max(0, poseLeft - dt);
+      crashAnimation = Math.max(0, crashAnimation - dt);
       invulnerable = Math.max(0, invulnerable - dt);
       floor.forEach((tile) => {
         tile.position.z += speed * dt;
@@ -523,14 +528,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
           const jumpedHighEnough = hazard?.kind === 'barrier' && jumpHeight(jumpLeft) > 1.05;
           const collided = Boolean(hazard && !jumpedHighEnough);
           if (collided && invulnerable <= 0) {
-            if (race.mode !== 'rush') {
-              baseSpeed = Math.max(8, duelSpeed(baseSpeed, boost) * 0.55);
-              boost = 0;
-            } else lives -= 1;
+            const impact = resolveCollision({ mode: race.mode, lives, speed: duelSpeed(baseSpeed, boost), boost });
+            lives = impact.lives;
+            baseSpeed = impact.baseSpeed;
+            boost = impact.boost;
             combo = 0;
             invulnerable = 1.15;
+            crashAnimation = 0.42;
+            crashDirection = laneIndex === 0 ? 1 : -1;
             callbacks.crash?.();
-            if (race.mode === 'rush' && lives <= 0) finish();
+            if (impact.gameOver) finish();
           }
           const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !item.collected);
           if (crystal) {
@@ -569,7 +576,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
 
     const targetX = LANES[laneIndex];
     player.position.x = playerLateralPosition(player.position.x, targetX, dt, jumpLeft);
-    player.position.y = jumpHeight(jumpLeft);
+    const crashProgress = crashAnimation > 0 ? 1 - crashAnimation / 0.42 : 0;
+    const crashBounce = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.18 : 0;
+    player.position.y = jumpHeight(jumpLeft) + crashBounce;
     const parts = player.userData.parts;
     const runWave = Math.sin(time * (running ? 0.018 : 0.002));
     parts.legs.forEach((leg, index) => {
@@ -577,11 +586,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     });
     parts.tail.rotation.z = runWave * 0.18;
     parts.cape.rotation.x = running ? -0.12 + runWave * 0.06 : 0;
-    player.rotation.z = (targetX - player.position.x) * -0.055;
-    player.scale.setScalar(poseLeft > 0 ? 1.035 : 1);
-    player.visible = invulnerable <= 0 || Math.floor(time / 90) % 2 === 0;
+    const impactTilt = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.2 * crashDirection : 0;
+    player.rotation.z = (targetX - player.position.x) * -0.055 + impactTilt;
+    player.rotation.x = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.16 : 0;
+    player.scale.setScalar((poseLeft > 0 ? 1.035 : 1) * (crashAnimation > 0 ? 1 - Math.sin(crashProgress * Math.PI) * 0.09 : 1));
+    player.visible = isPlayerVisible(race.mode, invulnerable, time);
     const network = getNetwork?.();
-    player.visible = race.mode !== 'online';
     onlineRiders.forEach((rider, slot) => {
       const peer = network?.players?.find(p => p.slot === slot);
       const mine = peer?.user_id === network?.userId;
