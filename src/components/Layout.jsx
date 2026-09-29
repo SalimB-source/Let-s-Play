@@ -243,7 +243,7 @@ export default function Layout({ children }) {
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
     { to: '/quizz', label: t.nav.quiz, num: '05', desc: 'QUIZZ / PLAY' },
-    { to: '/jeu', label: t.nav.game, num: '06', desc: 'ARCADE / PLAY' },
+    { to: '/jeu', label: t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / PLAY' },
   ];
 
   const profileMeta = user?.user_metadata || {};
@@ -635,7 +635,7 @@ export default function Layout({ children }) {
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
           <Link to="/quizz">{t.nav.quiz}</Link>
-          <Link to="/jeu">{t.nav.game}</Link>
+          <Link to="/jeu">{t.nav.games || t.nav.game}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>
           <span>{t.footer.copyright}</span>

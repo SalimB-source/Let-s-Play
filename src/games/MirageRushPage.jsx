@@ -324,7 +324,7 @@ export default function MirageRushPage() {
           <div className="mirage-eyebrow"><span className="mirage-live-dot" /> LET’S PLAY ARCADE <span className="mirage-eyebrow-divider">/</span> 3D VOXEL RUNNER</div>
           <h1>MIRAGE <em>RUSH</em></h1>
           <p>Le désert se déforme. Les cristaux t’appellent. <strong>Choisis la ruée contre la montre, un duel ou une room en ligne.</strong></p>
-          <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
+          <Link className="mirage-back-link" to="/jeu">← RETOUR AUX JEUX</Link>
         </div>
         <div className="mirage-heading-right">
           <div className="mirage-mode-tabs" role="tablist" aria-label="Modes de jeu Mirage">
@@ -677,7 +677,7 @@ export default function MirageRushPage() {
           <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>
         </aside>
       </div>
-      <footer className="mirage-page-footer wrap"><Link to="/quizz">← Retour aux quizz</Link><span>LET’S PLAY ARCADE <i>·</i> MIRAGE RUSH — ALGERIA</span></footer>
+      <footer className="mirage-page-footer wrap"><Link to="/jeu">← Retour aux jeux</Link><span>LET’S PLAY ARCADE <i>·</i> MIRAGE RUSH — ALGERIA</span></footer>
     </div>
   );
 }

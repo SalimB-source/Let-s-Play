@@ -56,6 +56,7 @@ import Search from './pages/Search';
 import QuizzesPage from './quizzes/QuizzesPage';
 import QuizPage from './quizzes/QuizPage';
 import NotFound from './pages/NotFound';
+import Games from './pages/Games';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import MessagesPage from './messages/MessagesPage';
@@ -174,7 +175,11 @@ function App() {
             <Route path="/quizzes" element={<QuizzesPage />} />
             <Route path="/quizz/:slug" element={<QuizPage />} />
             <Route path="/quiz/:slug" element={<QuizPage />} />
-            <Route path="/jeu" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Mirage Rush…</div>}><MirageRushPage /></Suspense>} />
+            {/* Arcade : `/jeu` est la vitrine des jeux de la maison (Mirage
+                Rush n'est qu'une des cartes), chaque jeu a sa propre route. */}
+            <Route path="/jeu" element={<Games />} />
+            <Route path="/jeux" element={<Games />} />
+            <Route path="/jeu/mirage-rush" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Mirage Rush…</div>}><MirageRushPage /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />

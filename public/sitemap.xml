@@ -24,6 +24,9 @@
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/blade-reboot</loc><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/arcane-saison-2</loc><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/calendrier</loc><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/quizz</loc><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/jeu</loc><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/jeu/mirage-rush</loc><priority>0.9</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/reviews</loc><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/dossiers</loc><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/events</loc><priority>0.7</priority></url>

@@ -45,8 +45,14 @@ const pageMeta = {
     type: 'website',
   },
   '/jeu': {
+    title: 'Les jeux de Let’s Play — arcade, Mirage Rush et à venir',
+    description: 'La vitrine arcade de Let’s Play : Mirage Rush, runner 3D western dans le désert, et les prochains jeux en préparation. Tout se joue directement dans la page.',
+    type: 'website',
+  },
+  '/jeu/mirage-rush': {
     title: 'Mirage Rush — Jeu arcade 3D — Let’s Play',
     description: 'Cours dans un désert surréaliste en blocs, évite les cactus et grimpe au classement communautaire de Let’s Play.',
+    image: 'mirage-rush-thumb.jpg',
     type: 'website',
   },
   '/news/kingdom-hearts-4-coco': {
