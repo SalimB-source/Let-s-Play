@@ -1295,9 +1295,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
   return {
     start() {
-      reset();
+      // Only reset when a brand-new race arrives: resuming from pause keeps
+      // the very same race object and must not rewind the run.
+      if (race !== getRace()) reset();
       active = true;
       lastFrame = performance.now();
+    },
+    /** Stage the next race while the world is idle (e.g. during the 3-2-1 countdown). */
+    prepare() {
+      if (!active) reset();
     },
     pause() {
       active = false;
@@ -1325,7 +1331,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -1370,6 +1376,12 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
   useEffect(() => {
     worldRef.current?.setSkin?.(skin);
   }, [skin]);
+
+  // The page bumps prepareSignal right before the countdown so the fresh
+  // course is already staged behind the 3-2-1 overlay.
+  useEffect(() => {
+    if (prepareSignal > 0) worldRef.current?.prepare?.();
+  }, [prepareSignal]);
 
   useEffect(() => {
     if (!network) return;
