@@ -27,7 +27,7 @@ create table if not exists public.mirage_room_players (
   slot integer not null check (slot between 0 and 3),
   ready boolean not null default false,
   distance numeric not null default 0 check (distance between 0 and 600),
-  lane integer not null default 1 check (lane between 0 and 2),
+  lane integer not null default 1 check (lane between 0 and 3),
   jump numeric not null default 0 check (jump between 0 and 1.7),
   score integer not null default 0 check (score between 0 and 200000),
   finished_at timestamptz,
@@ -35,6 +35,12 @@ create table if not exists public.mirage_room_players (
   primary key (room_code, user_id),
   unique (room_code, slot)
 );
+
+-- Upgrade existing three-lane installations too (CREATE TABLE IF NOT EXISTS is not enough).
+alter table public.mirage_room_players
+  drop constraint if exists mirage_room_players_lane_check;
+alter table public.mirage_room_players
+  add constraint mirage_room_players_lane_check check (lane between 0 and 3);
 
 alter table public.mirage_room_players
   add column if not exists ready boolean not null default false;
@@ -211,7 +217,7 @@ begin
         raise exception 'La course n’a pas commencé' using errcode = '22023';
       end if;
       if p_distance is null or p_distance < 0 or p_distance > 600 or
-         p_lane is null or p_lane not between 0 and 2 or
+         p_lane is null or p_lane not between 0 and 3 or
          p_jump is null or p_jump not between 0 and 1.7 or
          p_score is null or p_score not between 0 and 200000 then
         raise exception 'Position invalide' using errcode = '22023';

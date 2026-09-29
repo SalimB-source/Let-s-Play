@@ -4,6 +4,10 @@
 
 Exécuter `supabase/mirage-rooms.sql` dans le SQL Editor du projet Supabase déjà configuré pour le site, après `schema.sql` (table `profiles`). Aucun secret supplémentaire ni publication Realtime obligatoire : synchronisation par RPC (`mirage_room_action`) toutes les 200 ms pendant la course, 900 ms dans le salon, et liste des salons ouverts via l'action `list`. En l'absence de la migration SQL ou hors connexion Supabase, le client bascule automatiquement sur le moteur de salons local/multi-onglets.
 
+## Mise à jour vers quatre voies
+
+Réexécuter `supabase/mirage-rooms.sql` sur les installations existantes, avant de déployer le client à quatre voies. Le script remplace la contrainte de position et met à jour la validation RPC pour accepter les voies `0` à `3`, sans supprimer les salons ni les joueurs. Les clients d'une même course doivent utiliser la même version du jeu (le parcours généré a changé).
+
 ## Fonctionnalités des rooms
 
 1. **Liste des rooms disponibles (`list`)** : affiche les rooms en statut `lobby` (nom de la room, terrain, hôte, nombre de joueurs, nombre de joueurs prêts, indicateur de mot de passe).

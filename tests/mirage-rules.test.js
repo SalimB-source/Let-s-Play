@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCourse, jumpHeight, CRYSTALS } from '../src/games/mirageRules.js';
+import { createCourse, jumpHeight, CRYSTALS, LANES, LANE_COUNT, seededRandom } from '../src/games/mirageRules.js';
 
 test('encounters remain varied and traversable over 1000 rows', () => {
   let seed = 42;
@@ -14,18 +14,20 @@ test('encounters remain varied and traversable over 1000 rows', () => {
     patterns.add(row.pattern);
     assert.ok(row.gap >= 18 && row.gap <= 25);
     const cacti = row.items.filter(item => item.kind === 'cactus');
-    assert.ok(cacti.length <= 2);
+    assert.ok(cacti.length < LANE_COUNT);
+    assert.ok(LANES.some((_, lane) => !cacti.some(item => item.lane === lane)));
     for (const item of row.items) {
-      assert.ok(item.lane >= 0 && item.lane < 3);
+      assert.ok(item.lane >= 0 && item.lane < LANE_COUNT);
       if (item.kind === 'barrier') {
         assert.equal(item.lanes.length, 2);
+        assert.ok(item.lanes.every(l => l >= 0 && l < LANE_COUNT));
         assert.equal(item.lanes[1] - item.lanes[0], 1);
         assert.ok(item.lanes.every(l => !cacti.some(c => c.lane === l)));
       }
       if (item.kind === 'crystal') assert.ok(CRYSTALS[item.tier]);
     }
     if (row.pattern === 'jump') {
-      assert.equal(cacti.length, 1);
+      assert.equal(cacti.length, LANE_COUNT - 2);
       assert.ok(row.items.some(item => item.kind === 'crystal' && item.raised && item.tier === 2));
     }
   }
@@ -171,7 +173,66 @@ test('airborne player cannot change lanes or drift, and can move on landing', as
   assert.equal(playerLaneAfterAction(1, 'left', 0), 0);
   assert.equal(playerLaneAfterAction(1, 'right', 0), 2);
   assert.equal(playerLaneAfterAction(0, 'left', 0), 0);
-  assert.equal(playerLaneAfterAction(2, 'right', 0), 2);
+  assert.equal(playerLaneAfterAction(2, 'right', 0), 3);
+  assert.equal(playerLaneAfterAction(3, 'right', 0), 3);
+  assert.equal(playerLaneAfterAction(3, 'left', 0), 2);
+  assert.equal(playerLaneAfterAction(3, 'left', 0.41), 3);
   assert.equal(playerLaneAfterAction(1, 'jump', 0), 1);
   assert.ok(playerLateralPosition(0.6, 2.1, 0.016, 0) > 0.6);
+});
+
+test('four lanes are centred, evenly spaced, and traversable in both directions', async () => {
+  const { playerLaneAfterAction } = await import('../src/games/mirageRules.js');
+  assert.equal(LANE_COUNT, 4);
+  assert.equal(LANES[0] + LANES[3], 0);
+  assert.equal(LANES[1] + LANES[2], 0);
+  for (let lane = 1; lane < LANE_COUNT; lane++) {
+    assert.ok(Math.abs(LANES[lane] - LANES[lane - 1] - 2.1) < 1e-10);
+  }
+  let lane = 0;
+  for (const expected of [1, 2, 3, 3]) {
+    lane = playerLaneAfterAction(lane, 'right', 0);
+    assert.equal(lane, expected);
+  }
+  for (const expected of [2, 1, 0, 0]) {
+    lane = playerLaneAfterAction(lane, 'left', 0);
+    assert.equal(lane, expected);
+  }
+});
+
+test('seeded courses agree and populate the fourth lane in every pattern', () => {
+  const next = createCourse(seededRandom(42));
+  const other = createCourse(seededRandom(42));
+  const fourthLanePatterns = new Set();
+  const barrierStarts = new Set();
+  let fourthLaneGate = false;
+  for (let i = 0; i < 1000; i++) {
+    const row = next();
+    assert.deepEqual(row, other());
+    for (const item of row.items) {
+      if ((item.lanes || [item.lane]).includes(3)) fourthLanePatterns.add(row.pattern);
+      if (item.kind === 'barrier') barrierStarts.add(item.lane);
+    }
+    if (row.pattern === 'trail') assert.deepEqual(row.items.map(item => item.lane), [0, 1, 2, 3]);
+    if (row.pattern === 'gate' && row.items.some(item => item.kind === 'crystal' && item.lane === 3)) fourthLaneGate = true;
+  }
+  assert.equal(fourthLanePatterns.size, 5);
+  assert.deepEqual([...barrierStarts].sort(), [0, 1, 2]);
+  assert.ok(fourthLaneGate);
+});
+
+test('NPC can use the fourth lane, collect its gems and jump its barriers', async () => {
+  const { planNpcLane } = await import('../src/games/mirageRules.js');
+  const gate = [0, 1, 2].map(lane => ({ kind: 'cactus', lane }));
+  gate.push({ kind: 'crystal', lane: 3, tier: 2 });
+  const plan = planNpcLane(gate, 1);
+  assert.equal(plan.lane, 3);
+  assert.equal(plan.jump, false);
+  const jump = [
+    { kind: 'cactus', lane: 0 }, { kind: 'cactus', lane: 1 },
+    { kind: 'barrier', lane: 2, lanes: [2, 3] },
+    { kind: 'crystal', lane: 3, tier: 2, raised: true },
+  ];
+  assert.equal(planNpcLane(jump, 1).lane, 3);
+  assert.equal(planNpcLane(jump, 1).jump, true);
 });

@@ -1,3 +1,8 @@
+// Four playable lanes, centred on the road. Keep rendering and game rules in sync.
+export const LANES = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
+export const LANE_COUNT = LANES.length;
+const LANE_INDICES = LANES.map((_, lane) => lane);
+
 export const CRYSTALS = [
   { name: 'Cyan', color: 0x45e4ff, value: 100 },
   { name: 'Rose', color: 0xff65b8, value: 150 },
@@ -20,24 +25,32 @@ export function createCourse(random = Math.random) {
     }
     const pattern = bag.pop();
     previous = pattern;
-    const lane = Math.floor(random() * 3);
+    const lane = Math.floor(random() * LANE_COUNT);
     const gem = (l, raised = false) => {
       const roll = random();
       return { kind: 'crystal', lane: l, raised, tier: raised ? 2 : roll < 0.6 ? 0 : roll < 0.9 ? 1 : 2 };
     };
     let items;
     if (pattern === 'jump') {
-      const start = Math.floor(random() * 2);
-      items = [{ kind: 'barrier', lane: start, lanes: [start, start + 1] }, { kind: 'cactus', lane: start === 0 ? 2 : 0 }, gem(start, true), gem(start + 1, true)];
+      const start = Math.floor(random() * (LANE_COUNT - 1));
+      items = [
+        { kind: 'barrier', lane: start, lanes: [start, start + 1] },
+        ...LANE_INDICES.filter(l => l !== start && l !== start + 1).map(l => ({ kind: 'cactus', lane: l })),
+        gem(start, true), gem(start + 1, true),
+      ];
     } else if (pattern === 'gate') {
-      items = [0, 1, 2].map(l => l === lane ? gem(l) : { kind: 'cactus', lane: l });
+      items = LANE_INDICES.map(l => l === lane ? gem(l) : { kind: 'cactus', lane: l });
     } else if (pattern === 'trail') {
-      items = [0, 1, 2].map(l => gem(l));
+      items = LANE_INDICES.map(l => gem(l));
     } else if (pattern === 'fork') {
-      const start = Math.floor(random() * 2);
-      items = [{ kind: 'barrier', lane: start, lanes: [start, start + 1] }, gem(start === 0 ? 2 : 0), gem(start, true)];
+      const start = Math.floor(random() * (LANE_COUNT - 1));
+      items = [
+        { kind: 'barrier', lane: start, lanes: [start, start + 1] },
+        ...LANE_INDICES.filter(l => l !== start && l !== start + 1).map(l => gem(l)),
+        gem(start, true),
+      ];
     } else {
-      items = [0, 1, 2].map(l => l === lane ? { kind: 'cactus', lane: l } : gem(l));
+      items = LANE_INDICES.map(l => l === lane ? { kind: 'cactus', lane: l } : gem(l));
     }
     return { pattern, items, gap: 18 + random() * 7 };
   };
@@ -146,7 +159,7 @@ export function seededRandom(seed) {
 /** Pick the NPC's lane for an encounter: never a cactus, jump barriers, prefer valuable gems close by. */
 export function planNpcLane(items, currentLane) {
   let best = { lane: currentLane, jump: false, value: -Infinity };
-  for (let lane = 0; lane < 3; lane++) {
+  for (let lane = 0; lane < LANE_COUNT; lane++) {
     if (items.some(item => item.kind === 'cactus' && item.lane === lane)) continue;
     const barrier = items.some(item => item.kind === 'barrier' && item.lanes.includes(lane));
     const gem = items.find(item => item.kind === 'crystal' && item.lane === lane && !item.taken);
@@ -166,7 +179,7 @@ export function advanceCowboyStreak(current, collected, crashed = false) {
 export function playerLaneAfterAction(lane, action, jumpRemaining) {
   if (jumpRemaining > 0) return lane;
   if (action === 'left') return Math.max(0, lane - 1);
-  if (action === 'right') return Math.min(2, lane + 1);
+  if (action === 'right') return Math.min(LANE_COUNT - 1, lane + 1);
   return lane;
 }
 

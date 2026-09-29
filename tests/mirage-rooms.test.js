@@ -162,3 +162,24 @@ test('characters are shared in the lobby and locked as soon as the host starts',
   await assert.rejects(() => roomAction('character', room.code, { p_character: 0 }, guest), /verrouillé/);
   assert.equal((await roomAction('get', room.code, {}, host)).players[1].character, 3);
 });
+
+test('rooms accept lane 3 for positions and finishes, but reject invalid lane indices', (t) => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'desert' }, host);
+  localRoomAction('join', created.code, {}, guest);
+  localRoomAction('ready', created.code, { p_ready: true }, host);
+  localRoomAction('ready', created.code, { p_ready: true }, guest);
+  const started = localRoomAction('start', created.code, {}, host);
+  t.mock.method(Date, 'now', () => Date.parse(started.started_at) + 1000);
+  const position = { p_distance: 20, p_lane: 3, p_jump: 0, p_score: 150 };
+  const updated = localRoomAction('tick', created.code, position, host);
+  assert.equal(updated.players.find(p => p.user_id === host.id).lane, 3);
+  for (const lane of [-1, 4, 1.5, NaN, Infinity]) {
+    assert.throws(() => localRoomAction('tick', created.code, { ...position, p_lane: lane }, host), /Position invalide/);
+  }
+  const finished = localRoomAction('finish', created.code, { ...position, p_distance: 600 }, host);
+  const player = finished.players.find(p => p.user_id === host.id);
+  assert.equal(player.lane, 3);
+  assert.equal(player.distance, 600);
+  assert.ok(player.finished_at);
+});
