@@ -56,7 +56,10 @@ export default function MirageRushPage() {
   const stage = selectedMode === 'duel' && challenge ? challenge.stage || 'desert' : selectedStage;
   const [race, setRace] = useState({ mode: 'rush' });
   const [shareState, setShareState] = useState('');
+  // intro → countdown → playing ⇄ paused → finished
   const [phase, setPhase] = useState('intro');
+  const [countdown, setCountdown] = useState(3);
+  const [runToken, setRunToken] = useState(0);
   const [ready, setReady] = useState(false);
   const [hud, setHud] = useState(EMPTY_HUD);
   const [best, setBest] = useState(readBest);
@@ -69,9 +72,17 @@ export default function MirageRushPage() {
   const [progression, setProgression] = useState(() => loadProgress());
   const [award, setAward] = useState(null);
   const [powerToast, setPowerToast] = useState(null);
+  const [fx, setFx] = useState('');
   const progressRef = useRef(progression);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
+  const fxTimer = useRef(null);
+  const toastTimer = useRef(null);
+  const touchRef = useRef(null);
+  const phaseRef = useRef(phase);
+  const musicOnRef = useRef(musicOn);
+  phaseRef.current = phase;
+  musicOnRef.current = musicOn;
   const connected = Boolean(user?.id) && !isDemo;
   const backendEnabled = mirageApiEnabled();
 
@@ -96,21 +107,87 @@ export default function MirageRushPage() {
     return () => {
       audioRef.current?.destroy();
       audioRef.current = null;
+      window.clearTimeout(fxTimer.current);
+      window.clearTimeout(toastTimer.current);
     };
   }, [refreshLeaderboard]);
 
-  const startRun = () => {
+  // ── Run lifecycle ─────────────────────────────────────────────────
+  const startRun = useCallback(() => {
     audioRef.current?.setStage(stage);
     setRace({ mode: selectedMode, stage, challenge: selectedMode === 'duel' ? challenge : null });
+    setRunToken((token) => token + 1);
     setShareState('');
     setHud(EMPTY_HUD);
     setNewRecord(false);
     setJustFinished(null);
     setAward(null);
     setSubmitState('');
+    setPowerToast(null);
+    setFx('');
+    setCountdown(3);
+    setPhase('countdown');
+    if (musicOnRef.current) audioRef.current?.start();
+  }, [stage, selectedMode, challenge]);
+  const startRunRef = useRef(startRun);
+  startRunRef.current = startRun;
+
+  // The 3-2-1 drum roll, then the desert takes over.
+  useEffect(() => {
+    if (phase !== 'countdown') return undefined;
+    if (countdown > 0) {
+      const timer = window.setTimeout(() => setCountdown((value) => value - 1), countdown === 3 ? 950 : 820);
+      return () => window.clearTimeout(timer);
+    }
+    const timer = window.setTimeout(() => setPhase('playing'), 640);
+    return () => window.clearTimeout(timer);
+  }, [phase, countdown]);
+
+  const pauseGame = useCallback(() => {
+    if (phaseRef.current !== 'playing') return;
+    setPhase('paused');
+    audioRef.current?.stop();
+  }, []);
+
+  const resumeGame = useCallback(() => {
+    if (phaseRef.current !== 'paused') return;
     setPhase('playing');
-    if (musicOn) audioRef.current?.start();
-  };
+    if (musicOnRef.current) audioRef.current?.start();
+  }, []);
+
+  const cancelCountdown = useCallback(() => {
+    setPhase('intro');
+    setHud(EMPTY_HUD);
+    audioRef.current?.stop();
+  }, []);
+
+  // Échap / P: pause, resume or cancel the countdown. Enter rejoue une fois fini.
+  useEffect(() => {
+    const onKey = (event) => {
+      const key = event.key.toLowerCase();
+      const target = event.target?.tagName;
+      const typing = target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT';
+      if (typing) return;
+      if (key === 'escape' || key === 'p') {
+        if (phaseRef.current === 'playing') { event.preventDefault(); pauseGame(); }
+        else if (phaseRef.current === 'paused') { event.preventDefault(); resumeGame(); }
+        else if (phaseRef.current === 'countdown') { event.preventDefault(); cancelCountdown(); }
+      }
+      if ((key === 'enter' || key === 'r') && phaseRef.current === 'finished' && target !== 'BUTTON') {
+        event.preventDefault();
+        startRunRef.current?.();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [pauseGame, resumeGame, cancelCountdown]);
+
+  // Leaving the tab mid-run should never cost a life: auto-pause.
+  useEffect(() => {
+    const onVisibility = () => { if (document.hidden) pauseGame(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [pauseGame]);
 
   const toggleMusic = () => {
     const next = !musicOn;
@@ -123,6 +200,8 @@ export default function MirageRushPage() {
     setPhase('intro');
     setHud(EMPTY_HUD);
     setJustFinished(null);
+    setFx('');
+    setPowerToast(null);
     audioRef.current?.stop();
   };
 
@@ -178,7 +257,43 @@ export default function MirageRushPage() {
 
   const onHud = useCallback((next) => setHud(next), []);
   const trigger = (name) => actionsRef.current?.(name);
+
+  // ── Instant feedback: hit flash & golden glow ─────────────────────
+  const flashFx = useCallback((name) => {
+    window.clearTimeout(fxTimer.current);
+    setFx(name);
+    fxTimer.current = window.setTimeout(() => setFx(''), name === 'is-hit' ? 520 : 400);
+  }, []);
+
+  // One toast at a time, always cleared on unmount.
+  const showPowerToast = useCallback((text) => {
+    window.clearTimeout(toastTimer.current);
+    setPowerToast(text);
+    toastTimer.current = window.setTimeout(() => setPowerToast(null), 2400);
+  }, []);
+
+  // ── Touch controls: swipe to dodge, swipe up or tap to jump ──────
+  const onTouchStart = (event) => {
+    if (phaseRef.current !== 'playing') return;
+    const touch = event.touches[0];
+    touchRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+  };
+  const onTouchEnd = (event) => {
+    const start = touchRef.current;
+    touchRef.current = null;
+    if (!start || phaseRef.current !== 'playing') return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const elapsed = Date.now() - start.time;
+    if (Math.abs(dx) > 34 && Math.abs(dx) > Math.abs(dy) * 1.2) trigger(dx > 0 ? 'right' : 'left');
+    else if (dy < -34) trigger('jump');
+    else if (elapsed < 280 && Math.abs(dx) < 14 && Math.abs(dy) < 14) trigger('jump');
+  };
+
   const timePercent = useMemo(() => Math.max(0, Math.min(100, (hud.remaining / 60) * 100)), [hud.remaining]);
+  const duelPercent = Math.min(100, Math.max(0, (hud.distance || 0) / DUEL_DISTANCE * 100));
+  const rivalPercent = Math.min(100, Math.max(0, (hud.rivalDistance || 0) / DUEL_DISTANCE * 100));
   const levelInfo = useMemo(() => levelProgress(progression.xp), [progression.xp]);
   const activeSkin = skinFor(progression);
   const skinColors = activeSkin.colors;
@@ -248,7 +363,6 @@ export default function MirageRushPage() {
             <button
               type="button"
               role="tab"
-              aria-selected={selectedMode === 'online'}
               className="mirage-mode-tab"
               onClick={() => {
                 setPhase('intro');
@@ -274,7 +388,12 @@ export default function MirageRushPage() {
             <div className="mirage-game-controls-top">
               {phase === 'playing' && <>
                 <span className="mirage-live-pill"><i /> EN PARTIE</span>
+                <button type="button" className="mirage-pause-button" onClick={pauseGame} aria-label="Mettre la partie en pause">❚❚ PAUSE</button>
                 <button type="button" className="mirage-back-game-button" onClick={backToCoursePicker} aria-label="Retour au choix de course">← RETOUR</button>
+              </>}
+              {phase === 'paused' && <>
+                <span className="mirage-live-pill is-paused"><i /> EN PAUSE</span>
+                <button type="button" className="mirage-pause-button is-resume" onClick={resumeGame} aria-label="Reprendre la partie">▶ REPRENDRE</button>
               </>}
               <button type="button" className={`mirage-sound-button${musicOn ? ' is-on' : ''}`} onClick={toggleMusic} aria-pressed={musicOn}>
                 <span aria-hidden="true">{musicOn ? '♫' : '♪'}</span> {musicOn ? 'SON ON' : 'SON COUPÉ'}
@@ -282,50 +401,53 @@ export default function MirageRushPage() {
             </div>
           </div>
 
-          <div className="mirage-viewport">
+          <div
+            className={`mirage-viewport${fx ? ` ${fx}` : ''}${phase === 'playing' ? ' is-live' : ''}`}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            onTouchCancel={() => { touchRef.current = null; }}
+          >
             <MirageWorld
               active={phase === 'playing'}
               race={race}
               stage={stage}
               skin={skinColors}
+              prepareSignal={runToken}
               onReady={() => setReady(true)}
               onHud={onHud}
               onFinish={onFinish}
-              onCrash={() => {}}
+              onCrash={() => flashFx('is-hit')}
               onPickup={(tier, key, trapped) => {
                 if (trapped) audioRef.current?.trap();
-                else audioRef.current?.pickup(tier);
+                else {
+                  audioRef.current?.pickup(tier);
+                  if (tier === 2) flashFx('is-glow');
+                }
               }}
               onGemTrap={() => {
-                setPowerToast('◆ DIAMANT PIÉGÉ ! Tu es ralenti…');
-                setTimeout(() => setPowerToast(null), 2000);
+                flashFx('is-hit');
+                showPowerToast('◆ DIAMANT PIÉGÉ ! Tu es ralenti…');
               }}
               onCheer={() => audioRef.current?.cheer()}
               actionsRef={actionsRef}
               onPowerUpPickup={(type) => {
-                if (type === 'shield') {
-                  setPowerToast('🛡️ Bouclier ramassé ! Protection 5s');
-                } else if (type === 'lasso') {
-                  setPowerToast('🪢 Lasso ramassé ! Lancement auto…');
-                }
-                setTimeout(()=> setPowerToast(null), 2500);
+                if (type === 'shield') showPowerToast('🛡️ Bouclier ramassé ! Protection 5s');
+                else if (type === 'lasso') showPowerToast('🪢 Lasso ramassé ! Lancement auto…');
                 audioRef.current?.pickup(2);
               }}
               onLassoHit={(info) => {
                 if (info?.target === 'rival') {
-                  setPowerToast(info.blocked ? '🛡️ L’ombre a bloqué ton lasso !' : '🪢 L’ombre est ralentie !');
+                  showPowerToast(info.blocked ? '🛡️ L’ombre a bloqué ton lasso !' : '🪢 L’ombre est ralentie !');
                 } else if (info?.target === 'player') {
-                  setPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par le lasso de l’ombre !');
-                }
-                setTimeout(()=> setPowerToast(null), 2500);
-              }}
-              onShield={(active) => {
-                if (active) {
-                  // toast already shown via pickup
+                  showPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par le lasso de l’ombre !');
                 }
               }}
+              onShield={() => {}}
             />
             <div className="mirage-sun-glare" aria-hidden="true" />
+            {phase === 'playing' && (
+              <div className="mirage-swipe-hint" aria-hidden="true">GLISSE ← → POUR ESQUIVER · TAPE POUR SAUTER</div>
+            )}
             {powerToast && (
               <div className="mirage-power-toast" role="status" aria-live="polite">
                 {powerToast}
@@ -333,9 +455,54 @@ export default function MirageRushPage() {
             )}
             {phase === 'playing' && (
               <div className="mirage-hud" aria-live="polite">
-                <div className="mirage-hud-card mirage-hud-score"><small>SCORE</small><strong>{hud.score.toLocaleString('fr-FR')}</strong><span>✦ {hud.gems} fragments {hud.shieldActive ? '· 🛡️' : ''} {hud.slowed ? (hud.slowKind === 'trap' ? '· ◆' : '· 🪢') : ''}</span></div>
-                <div className="mirage-hud-center">{race.mode === 'duel' ? <><div className="mirage-clock">{Math.round(hud.distance || 0)} / {DUEL_DISTANCE} m {hud.rank ? `· #${hud.rank}` : ''}</div><div className="mirage-time-track"><i style={{ width: `${Math.min(100, (hud.distance || 0) / DUEL_DISTANCE * 100)}%` }} /></div><small style={{fontSize:'0.65rem',opacity:0.8}}>OBJET « ? » RARE · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</small></> : <><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></>}</div>
-                <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE{hud.boostLeft > 0 && <b> · BOOST</b>}{hud.shieldActive && <b> · 🛡️ {Math.ceil(hud.shieldLeft)}s</b>}{hud.slowed && <b> · {hud.slowKind === 'trap' ? '◆ PIÉGÉ' : '🪢 RALENTI'}</b>}</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b></small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
+                <div className="mirage-hud-card mirage-hud-score">
+                  <small>SCORE</small>
+                  <strong key={hud.score} className="mirage-score-pop">{hud.score.toLocaleString('fr-FR')}</strong>
+                  <span className="mirage-hud-chips">
+                    <i className="mirage-chip is-gem">◆ {hud.gems}</i>
+                    {hud.shieldActive && <i className="mirage-chip is-shield">🛡️ {Math.ceil(hud.shieldLeft)}s</i>}
+                    {hud.slowed && <i className="mirage-chip is-slow">{hud.slowKind === 'trap' ? '◆ PIÉGÉ' : '🪢 RALENTI'}</i>}
+                  </span>
+                </div>
+                <div className="mirage-hud-center">
+                  {race.mode === 'duel' ? <>
+                    <div className="mirage-clock">
+                      {Math.round(hud.distance || 0)}<small> / {DUEL_DISTANCE} m</small>
+                      {hud.rank > 0 && <b className={`mirage-rank-badge${hud.rank === 1 ? ' is-lead' : ''}`}>{hud.rank === 1 ? '1ᵉʳ' : '2ᵉ'}</b>}
+                    </div>
+                    <div className="mirage-race-track" aria-hidden="true">
+                      <i style={{ width: `${duelPercent}%` }} />
+                      <b className="mirage-race-dot is-rival" style={{ left: `${rivalPercent}%` }} />
+                      <b className="mirage-race-dot is-you" style={{ left: `${duelPercent}%` }} />
+                      <span className="mirage-race-flag">🏁</span>
+                    </div>
+                    <small className="mirage-duel-odds">OBJET « ? » RARE · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</small>
+                  </> : <>
+                    <div className={`mirage-clock${hud.remaining <= 10 ? ' is-danger' : hud.remaining <= 20 ? ' is-warning' : ''}`}>{formatTime(hud.remaining)}</div>
+                    <div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div>
+                  </>}
+                </div>
+                <div className="mirage-hud-card mirage-hud-streak">
+                  {race.mode === 'duel' ? <>
+                    <small>VITESSE{hud.boostLeft > 0 && <b> · BOOST</b>}</small>
+                    <strong key={Math.round((hud.speed || 15) * 3.6)} className="mirage-score-pop">{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong>
+                    <span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span>
+                  </> : <>
+                    <small>COMBO <b>×{hud.multiplier}</b></small>
+                    <strong key={hud.combo} className="mirage-score-pop">{hud.combo.toString().padStart(2, '0')}</strong>
+                    <span className="mirage-lives" key={`lives-${hud.lives}`} aria-label={`${hud.lives} vies restantes`}>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(Math.max(0, 3 - hud.lives))}</i></span>
+                  </>}
+                </div>
+              </div>
+            )}
+
+            {phase === 'countdown' && (
+              <div className="mirage-overlay mirage-countdown-overlay" role="status" aria-live="assertive">
+                <div className="mirage-overlay-kicker"><span>✦</span> {selectedMode === 'duel' ? `DUEL · PREMIER À ${DUEL_DISTANCE} M` : 'RUÉE · 60 SECONDES · 3 VIES'} <span>✦</span></div>
+                {countdown > 0
+                  ? <div className="mirage-countdown-number" key={countdown}>{countdown}</div>
+                  : <div className="mirage-countdown-go" key="go">GALOPE&nbsp;!</div>}
+                <div className="mirage-overlay-hint">ÉCHAP POUR ANNULER</div>
               </div>
             )}
 
@@ -350,7 +517,31 @@ export default function MirageRushPage() {
                 <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
                   {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
                 </button>
+                <div className="mirage-keys-hint" aria-label="Commandes clavier">
+                  <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
+                  <span><kbd>↑</kbd> sauter</span>
+                  <span><kbd>ESPACE</kbd> sauter</span>
+                  <span><kbd>ÉCHAP</kbd> pause</span>
+                </div>
                 <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · PISTE SANS OBJET « ? » · RECORD À BATTRE'}</div>
+              </div>
+            )}
+
+            {phase === 'paused' && (
+              <div className="mirage-overlay mirage-pause-overlay">
+                <div className="mirage-overlay-kicker"><span>✦</span> PARTIE SUSPENDUE <span>✦</span></div>
+                <h2>LE DÉSERT <em>T’ATTEND.</em></h2>
+                <div className="mirage-pause-stats">
+                  <span>SCORE <b>{hud.score.toLocaleString('fr-FR')}</b></span>
+                  {race.mode === 'duel'
+                    ? <span>DISTANCE <b>{Math.round(hud.distance || 0)} m</b></span>
+                    : <span>TEMPS RESTANT <b>{formatTime(hud.remaining)}</b></span>}
+                </div>
+                <div className="mirage-result-actions">
+                  <button type="button" className="mirage-start-button" onClick={resumeGame}>REPRENDRE <span>▶</span></button>
+                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← QUITTER LA COURSE</button>
+                </div>
+                <div className="mirage-overlay-hint">ÉCHAP POUR REPRENDRE</div>
               </div>
             )}
 
@@ -361,27 +552,33 @@ export default function MirageRushPage() {
                 <div className="mirage-final-score">{justFinished.duration.toFixed(1)} <small>SECONDES</small></div>
                 <div className="mirage-result-stats"><span>{justFinished.rivalName} : {justFinished.rivalDuration == null ? `${justFinished.rivalDistance} m` : `${justFinished.rivalDuration.toFixed(1)} s`}</span><span>◆ {justFinished.gems} cristaux</span><span>{justFinished.score.toLocaleString('fr-FR')} pts</span></div>
                 {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
-                <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
-                <button type="button" className="mirage-share-button" onClick={shareDuel}>PARTAGER UN DÉFI ↗</button>
-                <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR UNE COURSE</button>
+                <div className="mirage-result-actions">
+                  <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
+                  <button type="button" className="mirage-share-button" onClick={shareDuel}>PARTAGER UN DÉFI ↗</button>
+                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR UNE COURSE</button>
+                </div>
                 {shareState && <p className="mirage-share-status" role="status">{shareState}</p>}
-                <div className="mirage-overlay-hint">Défi par fantôme enregistré · pas une course en direct</div>
+                <div className="mirage-overlay-hint">ENTRÉE POUR REJOUER · DÉFI PAR FANTÔME, PAS EN DIRECT</div>
               </div>
             )}
 
             {phase === 'finished' && justFinished?.mode !== 'duel' && (
               <div className="mirage-overlay mirage-result-overlay">
                 <div className="mirage-overlay-kicker"><span>✦</span> {newRecord ? 'NOUVEAU RECORD PERSONNEL' : 'FIN DE LA RUÉE'} <span>✦</span></div>
+                {newRecord && <div className="mirage-record-badge">✦ NOUVEAU RECORD ✦</div>}
                 <h2>{newRecord ? 'LE MIRAGE' : 'LE SABLE'} <em>{newRecord ? 'EST À TOI.' : 'T’A RATTRAPÉ.'}</em></h2>
                 <div className="mirage-final-score">{(justFinished?.score || 0).toLocaleString('fr-FR')} <small>PTS</small></div>
                 <div className="mirage-result-stats"><span>◆ {justFinished?.gems || 0} fragments</span><span>◷ {justFinished?.duration || 0} s</span><span>RECORD {best.toLocaleString('fr-FR')}</span></div>
                 {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
-                <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
-                <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR UNE COURSE</button>
+                <div className="mirage-result-actions">
+                  <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
+                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR UNE COURSE</button>
+                </div>
                 {submitState === 'saving' && <p className="mirage-save-note">Envoi du score au classement…</p>}
                 {submitState === 'saved' && <p className="mirage-save-note is-success">Score enregistré dans le classement du site.</p>}
                 {submitState === 'login' && backendEnabled && <p className="mirage-save-note">Connecte-toi pour apparaître au classement <Link to="/auth">Connexion ↗</Link></p>}
                 {submitState === 'unavailable' && <p className="mirage-save-note">Classement indisponible pour le moment — ton record local est conservé.</p>}
+                <div className="mirage-overlay-hint">ENTRÉE POUR REJOUER</div>
               </div>
             )}
 
@@ -398,7 +595,7 @@ export default function MirageRushPage() {
             <button type="button" className="mirage-jump-control" onClick={() => trigger('jump')} aria-label="Sauter">SAUT <span>↑</span></button>
             <button type="button" onClick={() => trigger('right')} aria-label="Aller à droite">→</button>
           </div>
-          <div className="mirage-game-foot"><span>ZQSD / WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE · CHOCS = RALENTISSEMENT' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
+          <div className="mirage-game-foot"><span>ZQSD / WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER <b>·</b> ÉCHAP POUR LA PAUSE</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE · CHOCS = RALENTISSEMENT' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
 
         <aside className="mirage-side-panel">
@@ -413,7 +610,7 @@ export default function MirageRushPage() {
               <ol className="mirage-board-list">
                 {leaderboard.map((entry, index) => (
                   <li key={entry.user_id || `${entry.username}-${index}`} className={`${index < 3 ? `is-rank-${index + 1}` : ''}${entry.mine ? ' is-mine' : ''}`}>
-                    <span className="mirage-board-rank">{String(index + 1).padStart(2, '0')}</span>
+                    <span className="mirage-board-rank">{index < 3 ? ['🥇', '🥈', '🥉'][index] : String(index + 1).padStart(2, '0')}</span>
                     <span className="mirage-board-avatar">{playerName(entry).slice(0, 1).toUpperCase()}</span>
                     <span className="mirage-board-name">{playerName(entry)}{entry.mine && <i>TOI</i>}</span>
                     <strong>{Number(entry.score || 0).toLocaleString('fr-FR')}</strong>

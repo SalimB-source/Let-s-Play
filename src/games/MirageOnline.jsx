@@ -980,7 +980,7 @@ export default function MirageOnline({
             {gameLaunched && !finished && (
               <div className="mirage-game-popup-backdrop">
                 <div className="mirage-game-popup" role="dialog" aria-modal="true" aria-label="Course Mirage Rush">
-                  <section className="mirage-game-shell">
+                  <section className={`mirage-game-shell${active ? ' is-running' : ''}`}>
                     <div className="mirage-game-topbar">
 
                 <strong>
