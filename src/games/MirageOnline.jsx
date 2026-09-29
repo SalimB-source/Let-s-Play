@@ -396,13 +396,10 @@ export default function MirageOnline({
             <span className="mirage-live-dot" /> LET’S PLAY ARCADE{' '}
             <span className="mirage-eyebrow-divider">/</span> MULTIJOUEUR EN LIGNE
           </div>
-          <h1>
-            MIRAGE <em>EN LIGNE</em>
-          </h1>
-          <p>
-            2 à 4 cavaliers · 600 mètres · même parcours, cristaux individuels.{' '}
-            <strong>Rejoins une room disponible ou crée la tienne, coordonne-toi dans le chat et lance la partie !</strong>
-          </p>
+          {/* Le titre « MIRAGE EN LIGNE » et son chapô sont retirés des DEUX
+              thèmes, comme sur la page principale de Mirage Rush : encre
+              crème posée en dur, invisibles sur le fond clair du thème Light,
+              et la demande est de ne plus les afficher du tout. */}
           <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
 
