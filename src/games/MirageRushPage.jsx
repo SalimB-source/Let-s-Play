@@ -311,7 +311,6 @@ export default function MirageRushPage() {
         userId={user?.id}
         userName={currentUserName}
         initialStage={selectedStage}
-        skin={skinColors}
         onRunFinish={recordProgress}
         onSelectMode={(mode) => {
           setPhase('intro');
