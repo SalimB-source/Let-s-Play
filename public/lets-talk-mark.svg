@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 986.9 986.9" width="986.9" height="986.9" role="img" aria-labelledby="title">
+<title id="title">Let’s Talk</title>
+<defs>
+<linearGradient id="cyan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7AEEFC"/><stop offset=".55" stop-color="#22D3EE"/><stop offset="1" stop-color="#0CB4D8"/></linearGradient>
+<g id="solid"><path d="M291.2 73.5 647.6 23.4C784.4 4.2 891.2 102.2 886.4 242.3L882.1 364.1C877.2 504.2 762.4 633.4 625.7 652.6L467.2 674.9C395.9 684.9 296.7 818 117.7 921.9C184.7 807.5 195.4 727.2 173.5 677.8C105.9 636.8 27.6 567 30.5 483.8L34.7 362C39.6 221.9 154.4 92.7 291.2 73.5Z"/></g>
+</defs>
+<g stroke-linejoin="round">
+<use xlink:href="#solid" transform="translate(70 44)" fill="#4F3494" stroke="#2B1F63" stroke-width="32"/>
+<g fill="#4F3494" stroke="#4F3494" stroke-width="14.9"><use xlink:href="#solid" transform="translate(63 39.6)"/><use xlink:href="#solid" transform="translate(56 35.2)"/><use xlink:href="#solid" transform="translate(49 30.8)"/><use xlink:href="#solid" transform="translate(42 26.4)"/><use xlink:href="#solid" transform="translate(35 22)"/><use xlink:href="#solid" transform="translate(28 17.6)"/><use xlink:href="#solid" transform="translate(21 13.2)"/><use xlink:href="#solid" transform="translate(14 8.8)"/><use xlink:href="#solid" transform="translate(7 4.4)"/></g>
+<g stroke="#4F3494" stroke-width="18"><path d="M291.2 73.5 647.6 23.4C784.4 4.2 891.2 102.2 886.4 242.3L882.1 364.1C877.2 504.2 762.4 633.4 625.7 652.6L467.2 674.9C395.9 684.9 296.7 818 117.7 921.9C184.7 807.5 195.4 727.2 173.5 677.8C105.9 636.8 27.6 567 30.5 483.8L34.7 362C39.6 221.9 154.4 92.7 291.2 73.5Z" fill="url(#cyan)"/></g>
+<g fill="#2B1F63"><path d="M307.7 390.3C306.3 429.5 274.2 465.7 235.9 471.1C197.6 476.4 167.7 449 169 409.8C170.4 370.5 202.6 334.4 240.8 329C279.1 323.6 309.1 351.1 307.7 390.3Z"/><path d="M527.5 359.4C526.1 398.6 494 434.8 455.7 440.2C417.4 445.6 387.5 418.1 388.9 378.9C390.3 339.6 422.4 303.5 460.7 298.1C499 292.7 528.9 320.2 527.5 359.4Z"/><path d="M747.4 328.5C746 367.7 713.8 403.9 675.6 409.3C637.3 414.7 607.4 387.2 608.7 348C610.1 308.7 642.2 272.6 680.5 267.2C718.8 261.8 748.7 289.3 747.4 328.5Z"/></g>
+</g>
+</svg>

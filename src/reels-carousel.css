@@ -118,13 +118,13 @@
 .reel-overlay.is-fallback:hover{background:radial-gradient(80% 70% at 50% 20%, rgba(34,211,238,.16), transparent 62%), var(--panel-2)}
 .reel-overlay.is-fallback:hover em{text-decoration:underline}
 
-@media(max-width:800px){
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .reels-head-side{gap:18px;padding-top:22px}
   .reel-window{margin-top:26px;gap:14px}
   .reel-slide{flex-basis:min(88vw,340px)}
   .reel-embed{min-height:420px}.reel-embed iframe{min-height:420px}
 }
-@media(max-width:450px){
+@media(max-width:450px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .reel-nav button{width:42px;height:42px;font-size:19px}
   .reel-window{gap:12px}
   .reel-slide{flex-basis:min(92vw,340px)}

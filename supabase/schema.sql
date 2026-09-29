@@ -532,10 +532,49 @@ create table if not exists public.direct_messages (
   sender_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   recipient_id uuid not null references auth.users(id) on delete cascade,
   body text not null,
+  -- `kind` distingue un message texte d'un message vocal. Un message vocal a
+  -- un `body` vide et pointe vers un fichier du bucket `voice-messages` via
+  -- `attachment_path` (voir 3f, plus bas) ; sa durée (secondes, 2 min max) et
+  -- son type MIME sont dénormalisés pour l'affichage sans second aller-retour.
+  kind text not null default 'text' check (kind in ('text', 'voice')),
+  attachment_path text,
+  attachment_duration integer,
+  attachment_mime text,
   created_at timestamptz not null default now(),
   read_at timestamptz,
   constraint direct_messages_not_self check (sender_id <> recipient_id)
 );
+
+-- Déploiement déjà en place (table créée avant l'ajout des messages vocaux) :
+-- on complète avec les colonnes manquantes sans jamais toucher aux données.
+do $$
+begin
+  if to_regclass('public.direct_messages') is not null then
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'kind') then
+      execute 'alter table public.direct_messages add column kind text not null default ''text''';
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'attachment_path') then
+      execute 'alter table public.direct_messages add column attachment_path text';
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'attachment_duration') then
+      execute 'alter table public.direct_messages add column attachment_duration integer';
+    end if;
+    if not exists (select 1 from information_schema.columns
+                   where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'attachment_mime') then
+      execute 'alter table public.direct_messages add column attachment_mime text';
+    end if;
+    if not exists (select 1 from pg_constraint
+                   where conname = 'direct_messages_kind_check' and conrelid = 'public.direct_messages'::regclass) then
+      execute 'alter table public.direct_messages add constraint direct_messages_kind_check check (kind in (''text'', ''voice''))';
+    end if;
+  end if;
+exception
+  when others then
+    raise warning 'Let''s Play : colonnes de messagerie vocale non ajoutées à direct_messages (%).', sqlerrm;
+end $$;
 
 create index if not exists direct_messages_conversation_idx
   on public.direct_messages (conversation_key, created_at desc);
@@ -546,10 +585,63 @@ create index if not exists direct_messages_unread_idx
   on public.direct_messages (recipient_id, created_at desc)
   where read_at is null;
 
--- RLS : un joueur ne lit que ses propres échanges, n'écrit qu'en son nom, ne
--- marque comme lus que les messages qu'il a reçus, ne supprime que les siens
--- (effacer un message envoyé) et ne modifie rien d'autre (le trigger
--- ci-dessous refuse toute autre colonne).
+-- Effacer une conversation POUR SOI : un seul repère par joueur et par ami,
+-- et non une suppression des messages partagés. Les anciens messages sont
+-- masqués dans TOUTES les lectures (fil, liste, non-lus, autres appareils) par
+-- la RLS ci-dessous. L'autre joueur conserve son historique et les messages
+-- envoyés après le repère restent visibles. Aucun accès direct en écriture :
+-- seul le RPC attribue owner_id et l'heure du serveur.
+create table if not exists public.message_conversation_clears (
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  peer_id uuid not null references auth.users(id) on delete cascade,
+  cleared_at timestamptz not null,
+  primary key (owner_id, peer_id),
+  constraint message_conversation_clears_not_self check (owner_id <> peer_id)
+);
+
+do $$
+begin
+  alter table public.message_conversation_clears enable row level security;
+  drop policy if exists "Players see only their conversation clears" on public.message_conversation_clears;
+  create policy "Players see only their conversation clears"
+  on public.message_conversation_clears for select to authenticated
+  using (auth.uid() = owner_id);
+exception
+  when others then
+    raise warning 'Let''s Play : RLS de public.message_conversation_clears non appliquée (%).', sqlerrm;
+end $$;
+
+create or replace function public.clear_direct_conversation(target_id uuid)
+returns timestamptz
+language plpgsql
+security definer set search_path = ''
+as $$
+declare
+  actor uuid := auth.uid();
+  cleared timestamptz;
+begin
+  if actor is null then
+    raise exception 'direct_conversation_requires_auth' using errcode = '42501';
+  end if;
+  if target_id is null or target_id = actor then
+    raise exception 'direct_conversation_invalid_peer' using errcode = 'P0001';
+  end if;
+
+  insert into public.message_conversation_clears as c (owner_id, peer_id, cleared_at)
+  values (actor, target_id, clock_timestamp())
+  on conflict (owner_id, peer_id) do update
+    set cleared_at = greatest(c.cleared_at, excluded.cleared_at)
+  returning cleared_at into cleared;
+  return cleared;
+end;
+$$;
+revoke all on function public.clear_direct_conversation(uuid) from public, anon;
+grant execute on function public.clear_direct_conversation(uuid) to authenticated;
+
+-- RLS : un joueur ne lit que ses propres échanges NON effacés pour lui,
+-- n'écrit qu'en son nom, ne marque comme lus que les messages reçus et ne
+-- supprime que ses propres messages (effacer un message envoyé pour les deux
+-- joueurs). Le trigger refuse toute autre modification d'un message.
 do $$
 begin
   alter table public.direct_messages enable row level security;
@@ -557,7 +649,15 @@ begin
   drop policy if exists "Direct messages are visible to both players" on public.direct_messages;
   create policy "Direct messages are visible to both players"
   on public.direct_messages for select to authenticated
-  using (auth.uid() = sender_id or auth.uid() = recipient_id);
+  using (
+    (auth.uid() = sender_id or auth.uid() = recipient_id)
+    and not exists (
+      select 1 from public.message_conversation_clears c
+      where c.owner_id = auth.uid()
+        and c.peer_id = case when sender_id = auth.uid() then recipient_id else sender_id end
+        and c.cleared_at >= public.direct_messages.created_at
+    )
+  );
 
   drop policy if exists "Players send direct messages as themselves" on public.direct_messages;
   create policy "Players send direct messages as themselves"
@@ -608,12 +708,46 @@ begin
         then new.sender_id::text || '_' || new.recipient_id::text
       else new.recipient_id::text || '_' || new.sender_id::text
     end;
-    new.body := btrim(new.body);
-    if char_length(new.body) = 0 then
-      raise exception 'direct_message_empty' using errcode = 'P0001';
+    -- Un client ne peut pas antidater / postdater un message pour contourner
+    -- le repère d'effacement d'un participant.
+    new.created_at := clock_timestamp();
+
+    new.kind := coalesce(nullif(btrim(new.kind), ''), 'text');
+    if new.kind not in ('text', 'voice') then
+      raise exception 'direct_message_invalid_kind' using errcode = 'P0001';
     end if;
+
+    new.body := btrim(coalesce(new.body, ''));
     if char_length(new.body) > 1000 then
       raise exception 'direct_message_too_long' using errcode = 'P0001';
+    end if;
+
+    if new.kind = 'voice' then
+      -- Message vocal : pas de texte obligatoire, mais un fichier déposé par
+      -- l'expéditeur lui-même (dossier `{uid}/…` du bucket, voir 3f) et une
+      -- durée plausible (le composeur plafonne déjà l'enregistrement à 2 min).
+      new.attachment_path := nullif(btrim(coalesce(new.attachment_path, '')), '');
+      if new.attachment_path is null or char_length(new.attachment_path) > 500 then
+        raise exception 'direct_message_voice_requires_attachment' using errcode = 'P0001';
+      end if;
+      if split_part(new.attachment_path, '/', 1) <> new.sender_id::text then
+        raise exception 'direct_message_voice_requires_attachment' using errcode = 'P0001';
+      end if;
+      if new.attachment_duration is null or new.attachment_duration < 1 or new.attachment_duration > 120 then
+        raise exception 'direct_message_voice_too_long' using errcode = 'P0001';
+      end if;
+      new.attachment_mime := nullif(btrim(coalesce(new.attachment_mime, '')), '');
+      if new.attachment_mime is not null and new.attachment_mime !~ '^audio/' then
+        new.attachment_mime := null;
+      end if;
+    else
+      if char_length(new.body) = 0 then
+        raise exception 'direct_message_empty' using errcode = 'P0001';
+      end if;
+      if new.attachment_path is not null or new.attachment_duration is not null then
+        raise exception 'direct_message_attachment_not_allowed' using errcode = 'P0001';
+      end if;
+      new.attachment_mime := null;
     end if;
 
     if not exists (
@@ -664,13 +798,21 @@ begin
   if new.sender_id is distinct from old.sender_id
      or new.recipient_id is distinct from old.recipient_id
      or new.conversation_key is distinct from old.conversation_key
-     or new.body is distinct from old.body then
+     or new.body is distinct from old.body
+     or new.kind is distinct from old.kind
+     or new.attachment_path is distinct from old.attachment_path
+     or new.attachment_duration is distinct from old.attachment_duration
+     or new.attachment_mime is distinct from old.attachment_mime then
     raise exception 'direct_message_readonly' using errcode = '42501';
   end if;
   new.sender_id := old.sender_id;
   new.recipient_id := old.recipient_id;
   new.conversation_key := old.conversation_key;
   new.body := old.body;
+  new.kind := old.kind;
+  new.attachment_path := old.attachment_path;
+  new.attachment_duration := old.attachment_duration;
+  new.attachment_mime := old.attachment_mime;
   new.created_at := old.created_at;
   new.read_at := coalesce(old.read_at, new.read_at);
   return new;
@@ -827,6 +969,65 @@ end $$;
 
 
 -- ----------------------------------------------------------------------------
+-- 3f. Messagerie vocale : bucket de stockage des messages vocaux
+-- ----------------------------------------------------------------------------
+-- Les enregistrements (webm/ogg/m4a, 2 minutes et 5 Mo maxi, imposés par le
+-- composeur et re-vérifiés par le trigger ci-dessus) sont déposés dans un
+-- bucket **privé** : jamais d'URL publique, seulement des URL signées
+-- générées à la demande. Chaque fichier vit sous `{auth.uid()}/…` — la
+-- politique d'upload l'impose — et sa lecture est accordée soit à celui qui
+-- l'a déposé, soit au destinataire du message `direct_messages` qui le
+-- référence (jointure sur `attachment_path`, pas sur le seul chemin) : un
+-- fichier orphelin (message supprimé) n'est plus lisible que par son auteur.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'voice-messages', 'voice-messages', false, 5242880,
+  array['audio/webm', 'audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/aac', 'audio/wav', 'audio/x-m4a']
+)
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+do $$
+begin
+  drop policy if exists "Players upload their own voice messages" on storage.objects;
+  create policy "Players upload their own voice messages"
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'voice-messages'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+  drop policy if exists "Conversation participants read voice messages" on storage.objects;
+  create policy "Conversation participants read voice messages"
+  on storage.objects for select to authenticated
+  using (
+    bucket_id = 'voice-messages'
+    and (
+      (storage.foldername(name))[1] = auth.uid()::text
+      or exists (
+        select 1 from public.direct_messages dm
+         where dm.attachment_path = storage.objects.name
+           and dm.recipient_id = auth.uid()
+      )
+    )
+  );
+
+  drop policy if exists "Senders delete their own voice messages" on storage.objects;
+  create policy "Senders delete their own voice messages"
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id = 'voice-messages'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+exception
+  when others then
+    raise warning 'Let''s Play : politiques de stockage voice-messages non appliquées (%). Créez le bucket « voice-messages » (privé) à la main dans Storage si cette étape échoue.', sqlerrm;
+end $$;
+
+
+-- ----------------------------------------------------------------------------
 -- 4. Suppression du compte (ré-authentification requise côté application)
 -- ----------------------------------------------------------------------------
 -- L'application vérifie d'abord le mot de passe avec
@@ -879,6 +1080,10 @@ begin
   -- Messagerie : ses échanges (lecture / écriture / accusés de lecture),
   -- ses blocages et ses signalements — le reste est refusé par la RLS.
   grant select, insert, update, delete on public.direct_messages to authenticated;
+  -- Les repères sont consultables seulement par leur propriétaire ; aucune
+  -- écriture directe (seul clear_direct_conversation peut en enregistrer un).
+  revoke all on public.message_conversation_clears from public, anon, authenticated;
+  grant select on public.message_conversation_clears to authenticated;
   grant select, insert, delete on public.message_blocks to authenticated;
   grant select, insert on public.message_reports to authenticated;
 exception
@@ -1389,6 +1594,28 @@ from (
             and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.quiz_progress'))
             and to_regrole('anon') is not null
             and not has_table_privilege('anon', 'public.quiz_progress', 'select')
+           then 'OK' else 'MANQUANT' end)
+, (36, 'messages vocaux (colonnes + bucket + politiques de stockage)',
+     case when exists (select 1 from information_schema.columns
+                       where table_schema = 'public' and table_name = 'direct_messages' and column_name = 'attachment_path')
+            and exists (select 1 from storage.buckets where id = 'voice-messages')
+            and (select count(*) from pg_policies p
+                 where p.schemaname = 'storage' and p.tablename = 'objects'
+                   and p.policyname in ('Players upload their own voice messages',
+                                        'Conversation participants read voice messages',
+                                        'Senders delete their own voice messages')) = 3
+           then 'OK' else 'ABSENT (voir WARNING)' end)
+, (37, 'effacement des conversations pour soi (table, RLS, RPC, filtre messages)',
+     case when to_regclass('public.message_conversation_clears') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.message_conversation_clears'))
+            and exists (select 1 from pg_policies p
+                        where p.schemaname = 'public' and p.tablename = 'message_conversation_clears'
+                          and p.policyname = 'Players see only their conversation clears')
+            and exists (select 1 from pg_policies p
+                        where p.schemaname = 'public' and p.tablename = 'direct_messages'
+                          and p.policyname = 'Direct messages are visible to both players'
+                          and p.qual like '%message_conversation_clears%')
+            and to_regprocedure('public.clear_direct_conversation(uuid)') is not null
            then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

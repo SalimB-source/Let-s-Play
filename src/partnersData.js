@@ -102,7 +102,7 @@ export const partners = [
 export const partnerUrls = {
   instagram: 'https://www.instagram.com/letsplay.officiel/',
   youtube: 'https://www.youtube.com/@letsplay.officiel',
-  heroVisual: `${base}hero-lets-play.png`,
+  heroVisual: `${base}hero-lets-play.jpg`,
 };
 
 export const partnerByTag = partners.reduce((acc, partner) => {

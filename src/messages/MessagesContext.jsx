@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import useMediaQuery from '../lib/useMediaQuery';
+import { SOCIAL_MOBILE_MEDIA } from '../lib/phoneLayout';
 import { useAuth } from '../auth/AuthContext';
 import { useFriends } from '../friends/FriendsContext';
 import { DEMO_REPLY_DELAY_MS, dueDemoIncoming } from './demoThreads';
@@ -11,6 +12,7 @@ import {
   MESSAGES_TABLE,
   appendMessage,
   applyDemoBlock,
+  applyDemoClear,
   applyDemoDelete,
   applyDemoIncoming,
   applyDemoRead,
@@ -20,6 +22,8 @@ import {
   applyDemoUnblock,
   applyReadReceipt,
   blockPeer,
+  clearConversation as clearConversationApi,
+  clearThreadLocal,
   conversationKey,
   deleteMessage as deleteMessageApi,
   demoThreads,
@@ -28,6 +32,7 @@ import {
   fetchReportedIds,
   fetchThread,
   fetchUnreadSenders,
+  isAfterClear,
   isMissingMessagesTable,
   markThreadRead,
   markThreadReadLocal,
@@ -54,9 +59,10 @@ import {
  *   - les discussions (`conversations`, chacune avec son dernier message et
  *     son nombre de **non-lus**), le total `unreadTotal` qui alimente le badge
  *     du lanceur, et les joueurs **bloqués** ;
- *   - les gestes : `openThread`, `openInbox`, `viewThread`, `send`, `markRead`,
- *     `block`, `unblock`, `report` ; `canMessage(id)` pour afficher ou non le
- *     bouton « Message » d'un profil (il faut être amis) ;
+ *   - les gestes : `openThread`, `openInbox`, `viewThread`, `send`,
+ *     `deleteMessage`, `clearConversation`, `markRead`, `block`, `unblock`,
+ *     `report` ; `canMessage(id)` pour
+ *     afficher ou non le bouton « Message » d'un profil (il faut être amis) ;
  *   - l'état de la messagerie dans la **fenêtre sociale unifiée**
  *     (`src/social/SocialDock.jsx`) : `activePeerId` (la discussion ouverte)
  *     et `dockOpen` ; `openThread` / `openInbox` ouvrent la fenêtre sur
@@ -106,6 +112,7 @@ export const MessagesContext = createContext({
   reportedReason: () => null,
   send: asyncNoop,
   deleteMessage: asyncNoop,
+  clearConversation: asyncNoop,
   markRead: asyncNoop,
   block: asyncNoop,
   unblock: asyncNoop,
@@ -165,7 +172,7 @@ export function MessagesProvider({ children }) {
   const navigate = useNavigate();
   // Sur mobile, la messagerie s'ouvre sur la page dédiée (/messages) plutôt
   // que dans le pop-up de la fenêtre sociale.
-  const isMobile = useMediaQuery('(max-width: 760px)');
+  const isMobile = useMediaQuery(SOCIAL_MOBILE_MEDIA);
   const uid = user?.id ? String(user.id) : null;
   const mode = !uid ? 'none' : isDemo ? 'demo' : supabase ? 'supabase' : 'none';
 
@@ -201,6 +208,11 @@ export function MessagesProvider({ children }) {
   // La page /messages affiche un fil via l'URL : on retient lequel pour ne
   // pas jouer le « ding » des messages qui y arrivent sous les yeux du joueur.
   const viewedRef = useRef(null);
+  // Un chargement commencé avant l'effacement ne doit pas ressusciter les
+  // anciens messages ; le repère serveur protège aussi les événements en
+  // attente (Realtime / réponse d'un envoi en cours).
+  const requestVersionRef = useRef(0);
+  const clearedAtRef = useRef({});
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
@@ -220,6 +232,7 @@ export function MessagesProvider({ children }) {
 
   const load = useCallback(async () => {
     if (mode !== 'supabase' || !uid) return;
+    const version = requestVersionRef.current;
     try {
       const rows = await fetchRecentMessages(uid);
       const unreadRows = await fetchUnreadSenders(uid);
@@ -231,14 +244,14 @@ export function MessagesProvider({ children }) {
       try {
         reports = await fetchReportedIds(uid);
       } catch (e) { /* idem pour les signalements */ }
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || version !== requestVersionRef.current) return;
       setThreads(mergeUnread(threadsFromRows(rows, uid), unreadFromRows(unreadRows, uid), uid));
       setBlockedIds(blocked);
       setReported(reports);
       setStatus('ready');
       setError(null);
     } catch (e) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || version !== requestVersionRef.current) return;
       if (isMissingMessagesTable(e)) {
         setStatus('unavailable');
         setError(null);
@@ -282,6 +295,8 @@ export function MessagesProvider({ children }) {
   // Changement de compte (connexion, déconnexion, autre persona) : on repart de
   // zéro pour ne jamais montrer les messages du joueur précédent.
   useEffect(() => {
+    requestVersionRef.current += 1;
+    clearedAtRef.current = {};
     setThreads({});
     setBlockedIds([]);
     setReported({});
@@ -325,8 +340,8 @@ export function MessagesProvider({ children }) {
       }, (payload) => {
         if (!mountedRef.current) return;
         const row = payload?.new;
-        if (!row?.id) return;
-        setThreads((prev) => appendMessage(prev, uid, row));
+        if (!row?.id || !isAfterClear(row.created_at, clearedAtRef.current[row.sender_id])) return;
+        setThreads((prev) => appendMessage(prev, uid, row, clearedAtRef.current));
         chimeForIncoming(row.sender_id);
       })
       .on('postgres_changes', {
@@ -377,7 +392,7 @@ export function MessagesProvider({ children }) {
           if (!mountedRef.current) return;
           const row = payload?.new;
           if (!row?.id) return;
-          setThreads((prev) => appendMessage(prev, uid, row));
+          setThreads((prev) => appendMessage(prev, uid, row, clearedAtRef.current));
         })
         .on('postgres_changes', {
           event: 'UPDATE', schema: 'public', table: MESSAGES_TABLE, filter: `conversation_key=eq.${key}`,
@@ -403,10 +418,11 @@ export function MessagesProvider({ children }) {
     // L'historique complet de la discussion (au-delà des 200 derniers messages
     // chargés pour la liste) est relu à l'ouverture.
     let cancelled = false;
+    const version = requestVersionRef.current;
     (async () => {
       try {
         const rows = await fetchThread(uid, activePeerId);
-        if (cancelled || !mountedRef.current) return;
+        if (cancelled || !mountedRef.current || version !== requestVersionRef.current) return;
         setThreads((prev) => {
           const loaded = threadsFromRows(rows, uid)[activePeerId];
           if (!loaded) return prev;
@@ -641,8 +657,11 @@ export function MessagesProvider({ children }) {
       const saved = normalizeMessage(row, uid);
       if (saved) {
         setThreads((prev) => {
+          if (!isAfterClear(saved.createdAt, clearedAtRef.current[peerId])) return prev;
           const thread = prev[peerId];
-          if (!thread) return appendMessage(prev, uid, row);
+          if (!thread?.messages.some((message) => message.id === pendingId)) {
+            return appendMessage(prev, uid, row, clearedAtRef.current);
+          }
           const messages = thread.messages.map((message) => (message.id === pendingId ? saved : message));
           return { ...prev, [peerId]: { ...thread, messages, lastMessage: saved, lastAt: saved.createdAt } };
         });
@@ -679,14 +698,41 @@ export function MessagesProvider({ children }) {
     if (mode !== 'supabase') return;
 
     const previous = threads;
+    const version = requestVersionRef.current;
     setThreads((prev) => removeMessage(prev, peerId, messageId));
     try {
       await deleteMessageApi(uid, messageId);
     } catch (e) {
-      if (mountedRef.current) setThreads(previous);
+      if (mountedRef.current && version === requestVersionRef.current) setThreads(previous);
       throw e;
     }
   }, [threads, mode, mutateDemo, uid]);
+
+  const clearConversation = useCallback(async (peerId) => {
+    if (!peerId || peerId === uid) return;
+    if (mode === 'demo') {
+      // Une réponse programmée avant l'effacement ne doit pas ranimer le fil.
+      if (demoTimers.current.has(peerId)) {
+        clearTimeout(demoTimers.current.get(peerId));
+        demoTimers.current.delete(peerId);
+      }
+      mutateDemo((state) => applyDemoClear(state, peerId));
+      return;
+    }
+    if (mode !== 'supabase') return;
+
+    // Pas d'effacement optimiste : si le RPC manque ou échoue, le fil reste
+    // intact et l'interface affiche l'erreur. La RLS garde l'historique de
+    // l'autre participant, et filtre aussi les messages au-delà des 100
+    // derniers chargés dans le fil et les non-lus du badge.
+    const clearedAt = await clearConversationApi(uid, peerId);
+    if (!mountedRef.current || userRef.current?.id !== uid) return;
+    requestVersionRef.current += 1;
+    clearedAtRef.current = { ...clearedAtRef.current, [peerId]: clearedAt };
+    setThreads((prev) => clearThreadLocal(prev, peerId));
+    // Récupère les éventuels nouveaux messages reçus pendant le RPC.
+    void load();
+  }, [mode, uid, mutateDemo, load]);
 
   const block = useCallback(async (peerId) => {
     if (!peerId) return;
@@ -768,6 +814,7 @@ export function MessagesProvider({ children }) {
     reportedReason,
     send,
     deleteMessage,
+    clearConversation,
     markRead,
     block,
     unblock,
@@ -783,7 +830,7 @@ export function MessagesProvider({ children }) {
   }), [
     mode, status, error, threads, sortedConversations, blockedConversations, unreadTotalValue,
     unreadFor, threadFor, canMessage, isBlocked, reportedReason,
-    send, deleteMessage, markRead, block, unblock, report, refresh,
+    send, deleteMessage, clearConversation, markRead, block, unblock, report, refresh,
     dockOpen, activePeerId, openThread, openInbox, viewThread, backToInbox, closeDock,
   ]);
 

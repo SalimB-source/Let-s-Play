@@ -7,7 +7,7 @@
 #      si une clé est configurée (secrets OPENAI_API_KEY, ANTHROPIC_API_KEY,
 #      MISTRAL_API_KEY ou GEMINI_API_KEY), sinon via le gabarit extractif
 #      (sources francophones uniquement) ;
-#   4. il génère visuels SVG, JSON, index du site, committe sur la branche
+#   4. il télécharge la vraie photo officielle de la source (à défaut, visuel officiel du sujet via Steam/Wikipédia ; sinon article refusé), génère JSON, index du site, committe sur la branche
 #      choisie, puis appelle explicitement le déploiement GitHub Pages (GITHUB_TOKEN
 #      ne déclenche pas les workflows abonnés aux push).
 #

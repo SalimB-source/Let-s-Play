@@ -39,7 +39,7 @@ try {
       fail(`fixture ${file} : répétition ${issue.a}↔${issue.b} (${issue.length} caractères communs)`);
     }
     if (!tmpIndex.includes(`"${story.slug}"`)) fail(`fixture ${file} : slug absent de l’index généré`);
-    if (!fs.existsSync(path.join(tmp, 'public/news-auto', `${story.slug}.svg`))) fail(`fixture ${file} : visuel SVG absent`);
+    if (!story.thumbnail || !fs.existsSync(path.join(tmp, 'public', story.thumbnail))) fail(`fixture ${file} : photo officielle absente`);
     if (!/^https?:\/\//.test(story.officialThumbnailUrl)) fail(`fixture ${file} : miniature officielle absente ou invalide`);
     if (!fs.existsSync(path.join(tmp, 'public', story.thumbnail))) fail(`fixture ${file} : fichier de miniature officielle absent`);
     if (!fs.readFileSync(path.join(tmp, 'news-bot/report.md'), 'utf8').includes(story.slug)) fail(`fixture ${file} : absente du rapport`);
@@ -78,7 +78,7 @@ for (const file of committed) {
     fail(`${file} : répétition ${issue.a}↔${issue.b} (${issue.length} caractères communs)`);
   }
   if (story.slug && !indexSlugs.includes(story.slug)) fail(`${file} : slug « ${story.slug} » absent de l’index`);
-  if (!fs.existsSync(path.join(ROOT, 'public/news-auto', `${story.slug}.svg`))) fail(`${file} : visuel public/news-auto/${story.slug}.svg absent`);
+  if (!story.thumbnail || /\.svg$/i.test(story.thumbnail) || !fs.existsSync(path.join(ROOT, 'public', story.thumbnail))) fail(`${file} : vraie photo officielle absente (${story.thumbnail})`);
   if (story.thumbnail || story.officialThumbnailUrl) {
     if (!/^https?:\/\//.test(story.officialThumbnailUrl)) fail(`${file} : miniature officielle absente ou invalide`);
     if (!fs.existsSync(path.join(ROOT, 'public', story.thumbnail))) fail(`${file} : fichier de miniature officielle absent`);

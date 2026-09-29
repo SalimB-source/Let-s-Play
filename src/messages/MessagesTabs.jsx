@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
-import { ProfileIcon } from '../friends/FriendsTabs';
-import { describeMessagesError, reasonLabel } from './messagesCopy';
+import { callBlockLabel } from './callsCopy';
+import { describeMessagesError, messageSuggestions, pseudoLabel, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
 
 /**
@@ -14,12 +14,19 @@ import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
  *     message, heure, badge des non-lus ; en dessous, les amis sans
  *     discussion et les joueurs bloqués, à débloquer) ;
  *   - `ThreadView` : la discussion ouverte (séparateurs de jour, fil de
- *     bulles, accusé de lecture, champ qui s'agrandit, bouton d'envoi
- *     libellé, accès **Profil** explicite, gestes **Bloquer** /
- *     **Signaler**).
+ *     bulles, accusé de lecture, **bulle de suggestions** à l'ouverture —
+ *     trois messages prêts à glisser dans le champ —, champ qui s'agrandit,
+ *     bouton d'envoi libellé, accès **Profil**, gestes **Bloquer** /
+ *     **Signaler** / **Effacer la conversation pour soi**).
  *
  * Ici, ni la photo ni le nom n'envoient vers le profil : on est déjà dans le
  * chat — le profil a son bouton dédié dans la barre d'outils.
+ *
+ * Tous les pseudos passent par `pseudoLabel` (majuscules) : lignes de la
+ * liste, joueurs bloqués, en-tête de discussion, titres du signalement,
+ * confirmations de blocage et d'effacement, infobulles d'appel. La casse d'origine reste
+ * intacte dans les données et dans la recherche (`InboxView` compare les
+ * pseudos bruts, sans tenir compte de la casse).
  *
  * Les deux composants sont autonomes (props) : la fenêtre et la page portent
  * l'état, le contexte (`MessagesContext`) fournit les données et les gestes.
@@ -55,6 +62,30 @@ function FlagIcon({ size = 14 }) {
     </svg>
   );
 }
+function PhoneIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M6.8 3.2c.7-.4 1.6-.2 2 .5l1.6 2.6c.4.6.3 1.4-.3 1.9l-1.2 1.1c-.3.3-.4.7-.2 1 .8 1.5 2.5 3.2 4 4 .3.2.7.1 1-.2l1.1-1.2c.5-.5 1.3-.7 1.9-.3l2.6 1.6c.7.4.9 1.3.5 2l-.9 1.5c-.5.8-1.4 1.2-2.3 1.1C10.9 18.9 5.1 13.1 4.2 6.4c-.1-.9.3-1.8 1.1-2.3l1.5-.9z" />
+    </svg>
+  );
+}
+function VideoCallIcon({ size = 15 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="7" width="12" height="10" rx="2.5" />
+      <path d="M15 11l5.5-3v8L15 13" />
+    </svg>
+  );
+}
+function MoreIcon({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="12" cy="5" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="12" cy="19" r="1.8" />
+    </svg>
+  );
+}
 function SearchIcon({ size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" aria-hidden="true">
@@ -73,7 +104,13 @@ function TrashIcon({ size = 13 }) {
     </svg>
   );
 }
-
+function CloseIcon({ size = 12 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
 function initialsFor(name) {
   const clean = String(name || '').trim();
   return clean ? clean.slice(0, 2).toUpperCase() : '?';
@@ -141,24 +178,29 @@ function ChevronIcon({ size = 13 }) {
   );
 }
 
+/** Aperçu texte d'un message (liste des discussions). */
+function messagePreview(message, t) {
+  if (!message) return t.noMessageYet;
+  return `${message.mine ? '→ ' : ''}${message.body}`;
+}
+
 function ConversationRow({ entry, t, lang, online, onOpen }) {
   const { profile, lastMessage, unread, lastAt } = entry;
-  const preview = lastMessage
-    ? `${lastMessage.mine ? '→ ' : ''}${lastMessage.body}`
-    : t.noMessageYet;
+  const name = pseudoLabel(profile.name);
+  const preview = messagePreview(lastMessage, t);
   return (
     <li className={`messages-row${unread > 0 ? ' has-unread' : ''}`}>
       <button
         type="button"
         className="messages-row-main"
         onClick={() => onOpen(entry.peerId)}
-        aria-label={`${t.openChat} — ${profile.name}`}
+        aria-label={`${t.openChat} — ${name}`}
         title={t.openChat}
       >
-        <Avatar name={profile.name} src={profile.avatar} online={online} />
+        <Avatar name={name} src={profile.avatar} online={online} />
         <span className="messages-row-text">
           <span className="messages-row-top">
-            <span className="messages-row-name">{profile.name}</span>
+            <span className="messages-row-name">{name}</span>
             {lastAt && <span className="messages-row-time">{formatCommentDate(lastAt, lang)}</span>}
           </span>
           <span className="messages-row-preview">{preview}</span>
@@ -174,12 +216,13 @@ function ConversationRow({ entry, t, lang, online, onOpen }) {
 }
 
 function BlockedRow({ entry, t, lang, onUnblock }) {
+  const name = pseudoLabel(entry.profile.name);
   return (
     <li className="messages-row is-blocked">
       <span className="messages-row-main messages-row-static">
-        <Avatar name={entry.profile.name} src={entry.profile.avatar} online={false} />
+        <Avatar name={name} src={entry.profile.avatar} online={false} />
         <span className="messages-row-text">
-          <span className="messages-row-name">{entry.profile.name}</span>
+          <span className="messages-row-name">{name}</span>
           <span className="messages-row-preview">{t.blockedNote}</span>
         </span>
       </span>
@@ -331,24 +374,71 @@ function ReportForm({ t, name, reported, onSubmit, onClose }) {
 
 /* --------------------------------- discussion ------------------------------- */
 
-export function ThreadView({ peerId, t, ft, lang, thread, profile, online, blocked, reported, canWrite, onBack, onSend, onDelete, onBlock, onUnblock, onReport }) {
+export function ThreadView({
+  peerId, t, ft, ct, lang, thread, profile, online, blocked, reported, canWrite,
+  onBack, onSend, onDelete, onClear, onBlock, onUnblock, onReport,
+  onCall, callBlocker, callWarning,
+}) {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [clearing, setClearing] = useState(false);
+  // Bulle de suggestions visible à l'ouverture du fil : elle se referme au
+  // premier choix, à la première frappe ou sur « Masquer », et revient au
+  // prochain passage dans la discussion.
+  const [suggestOpen, setSuggestOpen] = useState(true);
+  const currentPeerRef = useRef(peerId);
   const listRef = useRef(null);
   const inputRef = useRef(null);
+  const moreRef = useRef(null);
   const messages = thread?.messages || [];
   const lastMine = [...messages].reverse().find((message) => message.mine) || null;
   const remaining = MESSAGE_MAX_LENGTH - draft.length;
+
+  // Suggestions de la bulle d'ouverture : registre choisi selon l'état du fil
+  // (vide / reçu / envoyé) — voir `messageSuggestions`.
+  const suggestions = messageSuggestions(t, {
+    name: profile?.name,
+    lastMessage: messages[messages.length - 1] || null,
+  });
+  // La bulle disparaît dès qu'on écrit (y compris si l'on efface ensuite le
+  // brouillon) : à ce moment-là, le joueur a déjà son propre message en tête.
+  const showSuggestions = suggestOpen && !blocked && canWrite && !clearing
+    && !reportOpen && !draft.trim() && suggestions.length > 0;
+
+  // Ferme le menu « … » quand on clique en dehors ou qu'on appuie sur Échap.
+  useEffect(() => {
+    if (!moreOpen) return undefined;
+    const onDoc = (event) => {
+      if (event.type === 'keydown') {
+        if (event.key === 'Escape') { setMoreOpen(false); return; }
+        return;
+      }
+      if (moreRef.current && !moreRef.current.contains(event.target)) setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('touchstart', onDoc);
+    document.addEventListener('keydown', onDoc);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('touchstart', onDoc);
+      document.removeEventListener('keydown', onDoc);
+    };
+  }, [moreOpen]);
 
   useEffect(() => {
     const node = listRef.current;
     if (node) node.scrollTop = node.scrollHeight;
   }, [messages.length, peerId]);
 
-  useEffect(() => { setDraft(''); setError(''); setReportOpen(false); setDeletingId(null); }, [peerId]);
+  useEffect(() => {
+    currentPeerRef.current = peerId;
+    setDraft(''); setError(''); setReportOpen(false); setMoreOpen(false);
+    setDeletingId(null); setClearing(false); setSuggestOpen(true);
+  }, [peerId]);
 
   // Bureau : le champ prend le focus à l'ouverture de la discussion — on
   // peut écrire tout de suite. Pas sur mobile, pour ne pas faire sortir le
@@ -371,10 +461,23 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
   const statusText = online
     ? ft.onlineShort
     : (profile?.lastSeenAt ? fill(ft.lastSeen, { when: formatCommentDate(profile.lastSeenAt, lang) }) : ft.offlineShort);
+  // Pseudo affiché en majuscules dans toute la discussion (en-tête, infobulles,
+  // confirmation de blocage, signalement) — `?` si le profil n'est pas résolu.
+  const peerName = pseudoLabel(profile?.name) || '?';
+
+  // Boutons d'appel : `callBlocker` grise le bouton et explique pourquoi ;
+  // `callWarning` (ami qui semble hors ligne) n'empêche PAS d'appeler — la
+  // présence est une estimation — il complète seulement l'infobulle. Sans
+  // aucun des deux, l'infobulle reste le nom de l'action.
+  const callBlock = callBlocker?.(peerId) ?? null;
+  const callWarn = callWarning?.(peerId) ?? null;
+  const callHint = (callBlock || callWarn)
+    ? callBlockLabel(callBlock || callWarn, ct, peerName)
+    : null;
 
   const submit = async () => {
     const body = draft.trim();
-    if (!body || busy) return;
+    if (!body || busy || clearing) return;
     setBusy(true);
     setError('');
     try {
@@ -387,8 +490,21 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
     }
   };
 
+  // Un clic sur une suggestion place le texte dans le champ — rien n'est
+  // envoyé sans le geste explicite du joueur (Envoyer / Entrée). Le focus
+  // n'est pris que sur pointeur fini : sur mobile, pas de clavier qui
+  // surgit sans que le joueur l'ait demandé.
+  const applySuggestion = (text) => {
+    setSuggestOpen(false);
+    setDraft(text);
+    setError('');
+    const fine = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(pointer: fine)').matches;
+    if (fine) inputRef.current?.focus();
+  };
+
   const handleDelete = async (message) => {
-    if (!message?.mine) return;
+    if (!message?.mine || clearing) return;
     if (String(message.id).startsWith('pending-')) return;
     const preview = String(message.body || '').slice(0, 40);
     const ok = typeof window === 'undefined' || window.confirm(fill(t.deleteConfirm, { preview: preview || '…' }));
@@ -404,71 +520,156 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
     }
   };
 
+  const handleClear = async () => {
+    if (clearing) return;
+    setMoreOpen(false);
+    const ok = typeof window === 'undefined'
+      || window.confirm(fill(t.clearConfirm, { name: peerName }));
+    if (!ok) return;
+    setClearing(true);
+    setError('');
+    try {
+      await onClear(peerId);
+    } catch (e) {
+      if (currentPeerRef.current === peerId) setError(describeMessagesError(e, t));
+    } finally {
+      if (currentPeerRef.current === peerId) setClearing(false);
+    }
+  };
+
   const tooLong = draft.length > MESSAGE_MAX_LENGTH;
 
   return (
     <>
       <header className="messages-thread-head">
-        <button type="button" className="messages-tool" aria-label={t.back} title={t.back} onClick={onBack}>
+        <button type="button" className="messages-tool messages-tool-back" aria-label={t.back} title={t.back} onClick={onBack}>
           <BackIcon />
         </button>
-        {/* Ni la photo ni le nom ne renvoient au profil : on est déjà dans le
-            chat avec lui. Le profil reste accessible via le bouton dédié des
-            outils (à droite). */}
-        <div className="messages-thread-peer">
-          <Avatar name={profile?.name} src={profile?.avatar} online={online} size={30} />
+        {/* Le nom et l'avatar renvoient au profil : c'est le geste naturel
+            et ça évite un bouton « Profil » dédié qui encombre la barre. */}
+        <Link
+          to={`/profile/${encodeURIComponent(peerId)}`}
+          className="messages-thread-peer messages-thread-peer-link"
+          aria-label={`${t.profile} — ${peerName}`}
+          title={t.profile}
+        >
+          <Avatar name={peerName} src={profile?.avatar} online={online} size={30} />
           <span className="messages-thread-identity">
-            <span className="messages-thread-name">{profile?.name}</span>
+            <span className="messages-thread-name">{peerName}</span>
             <span className={`messages-thread-status${online ? ' is-online' : ''}`}>{statusText}</span>
           </span>
-        </div>
-        <span className="messages-thread-tools">
-          <Link
-            to={`/profile/${encodeURIComponent(peerId)}`}
-            className="messages-tool messages-tool-profile"
-            aria-label={`${t.profile} — ${profile?.name || '?'}`}
-            title={t.profile}
-          >
-            <ProfileIcon size={12} />
-            <span className="messages-tool-profile-label">{t.profile}</span>
-          </Link>
-          <button
-            type="button"
-            className={`messages-tool${reported ? ' is-flagged' : ''}`}
-            aria-label={reported ? t.reported : t.report}
-            title={reported ? t.reported : t.report}
-            aria-pressed={reportOpen}
-            onClick={() => setReportOpen((open) => !open)}
-          >
-            <FlagIcon />
-          </button>
-          {blocked
-            ? (
-              <button type="button" className="messages-tool is-flagged" aria-label={t.unblock} title={t.unblock} onClick={() => onUnblock(peerId)}>
-                <BlockIcon />
-              </button>
-            )
-            : (
+        </Link>
+        <span className="messages-thread-tools" ref={moreRef}>
+          {/* Appels vocal / vidéo — grisés avec la raison au survol quand
+              l'appel est impossible (aperçu démo, compte absent, joueur
+              bloqué, déjà en appel…), avertis sans être grisés quand l'ami
+              semble hors ligne, et absents si le module n'est pas monté. */}
+          {onCall && ct && (
+            <>
               <button
                 type="button"
-                className="messages-tool"
-                aria-label={t.block}
-                title={t.block}
-                onClick={() => {
-                  const ok = typeof window === 'undefined' || window.confirm(fill(t.blockConfirm, { name: profile?.name || '?' }));
-                  if (ok) onBlock(peerId);
-                }}
+                className="messages-tool is-call"
+                disabled={Boolean(callBlock)}
+                aria-label={ct.callAudio}
+                title={callHint || ct.callAudio}
+                onClick={() => onCall(peerId, 'audio')}
               >
-                <BlockIcon />
+                <PhoneIcon />
               </button>
-            )}
+              <button
+                type="button"
+                className="messages-tool is-call"
+                disabled={Boolean(callBlock)}
+                aria-label={ct.callVideo}
+                title={callHint || ct.callVideo}
+                onClick={() => onCall(peerId, 'video')}
+              >
+                <VideoCallIcon />
+              </button>
+            </>
+          )}
+          <div className={`messages-more${moreOpen ? ' is-open' : ''}`}>
+            <button
+              type="button"
+              className="messages-tool messages-tool-more"
+              aria-label={t.more}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              title={t.more}
+              onClick={() => setMoreOpen((open) => !open)}
+            >
+              <MoreIcon />
+            </button>
+            <ul className="messages-more-menu" role="menu" aria-hidden={!moreOpen} inert={!moreOpen}>
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={`messages-more-item${reported ? ' is-flagged' : ''}`}
+                  aria-label={reported ? t.reported : t.report}
+                  title={reported ? t.reported : t.report}
+                  onClick={() => { setMoreOpen(false); setReportOpen((open) => !open); }}
+                >
+                  <FlagIcon />
+                  <span>{reported ? t.reported : t.report}</span>
+                </button>
+              </li>
+              <li>
+                {blocked ? (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="messages-more-item is-flagged"
+                    aria-label={t.unblock}
+                    title={t.unblock}
+                    onClick={() => { setMoreOpen(false); onUnblock(peerId); }}
+                  >
+                    <BlockIcon />
+                    <span>{t.unblock}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="messages-more-item messages-more-item-danger"
+                    aria-label={t.block}
+                    title={t.block}
+                    onClick={() => {
+                      setMoreOpen(false);
+                      const ok = typeof window === 'undefined' || window.confirm(fill(t.blockConfirm, { name: peerName }));
+                      if (ok) onBlock(peerId);
+                    }}
+                  >
+                    <BlockIcon />
+                    <span>{t.block}</span>
+                  </button>
+                )}
+              </li>
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="messages-more-item messages-more-item-danger"
+                  aria-label={t.clearConversation}
+                  title={t.clearConversation}
+                  disabled={clearing}
+                  onClick={handleClear}
+                >
+                  <TrashIcon size={14} />
+                  <span>{t.clearConversation}</span>
+                </button>
+              </li>
+            </ul>
+          </div>
         </span>
       </header>
+
+      {clearing && <p className="messages-clearing-status" role="status">{t.clearingConversation}</p>}
 
       {reportOpen && (
         <ReportForm
           t={t}
-          name={profile?.name || '?'}
+          name={peerName}
           reported={Boolean(reported)}
           onSubmit={onReport}
           onClose={() => setReportOpen(false)}
@@ -501,7 +702,7 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
                         className="messages-bubble-delete"
                         aria-label={t.deleteMessage}
                         title={t.deleteMessage}
-                        disabled={deletingId === message.id}
+                        disabled={clearing || deletingId === message.id}
                         onClick={() => handleDelete(message)}
                       >
                         <TrashIcon size={12} />
@@ -520,6 +721,32 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
         </ul>
       </div>
 
+      {showSuggestions && (
+        <div className="messages-suggest" role="group" aria-label={t.suggestGroup}>
+          <div className="messages-suggest-head">
+            <span className="messages-suggest-title">{t.suggestTitle}</span>
+            <button
+              type="button"
+              className="messages-suggest-close"
+              aria-label={t.suggestClose}
+              title={t.suggestClose}
+              onClick={() => setSuggestOpen(false)}
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          <ul className="messages-suggest-list">
+            {suggestions.map((text) => (
+              <li key={text}>
+                <button type="button" className="messages-suggest-chip" onClick={() => applySuggestion(text)}>
+                  {text}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {blocked ? (
         <p className="messages-composer-disabled">{t.blockedNote}</p>
       ) : canWrite ? (
@@ -530,7 +757,10 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
           <textarea
             ref={inputRef}
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              if (event.target.value.trim()) setSuggestOpen(false);
+            }}
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
@@ -547,9 +777,8 @@ export function ThreadView({ peerId, t, ft, lang, thread, profile, online, block
               {remaining}
             </span>
           )}
-          <button type="submit" className="messages-send" disabled={busy || !draft.trim() || tooLong} aria-label={t.send} title={t.send}>
+          <button type="submit" className="messages-send" disabled={busy || clearing || !draft.trim() || tooLong} aria-label={t.send} title={t.send}>
             <SendIcon />
-            <span className="messages-send-label">{t.send}</span>
           </button>
         </form>
       ) : (

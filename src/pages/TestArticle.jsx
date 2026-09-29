@@ -3,6 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { getTest, scoreTier, scoreLabel, videoEmbedUrl, videoWatchUrl } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 import Comments from '../components/Comments';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 import NotFound from './NotFound';
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
@@ -29,6 +31,7 @@ export default function TestArticle(){
   if (!a) return <NotFound />;
   const c = t.reviews.article;
   const tier = scoreTier(a.score);
+  const gallery = getArticleGallery(slug);
 
   return <>
     <section className="article-hero wrap">
@@ -50,13 +53,8 @@ export default function TestArticle(){
       </div>
     </section>
 
-    <main className="article-layout wrap">
+    <main className="article-layout article-layout-test wrap">
       <article className="article-body">
-        <div className={`review-score-card review-score-card-${tier}`}>
-          <span>{c.scoreLabel}</span>
-          <strong>{scoreLabel(a.score, lang)}<i>/10</i></strong>
-          <em>{a.verdictTitle}</em>
-        </div>
         <p className="article-lead">{a.lead}</p>
 
         {a.video && (
@@ -89,6 +87,7 @@ export default function TestArticle(){
                 <small>— {section.pull.by}</small>
               </div>
             )}
+            {index === 0 && gallery ? <ArticleGallery {...gallery} /> : null}
           </React.Fragment>
         ))}
 
@@ -108,17 +107,11 @@ export default function TestArticle(){
         </p>
       </article>
 
-      <aside className="article-aside">
-        <div className="aside-card">
-          <span className="aside-kicker">{c.quick}</span>
-          <strong>{c.platformsLabel}</strong>
-          <p>{a.platforms}</p>
-          <strong>{c.genreLabel}</strong>
-          <p>{a.genre}</p>
-          <strong>{c.studioLabel}</strong>
-          <p>{a.studio}</p>
-          <strong>{c.durationLabel}</strong>
-          <p>{a.duration}</p>
+      <aside className="article-aside article-aside-test">
+        <div className={`review-score-card review-score-card-${tier}`}>
+          <span>{c.scoreLabel}</span>
+          <strong>{scoreLabel(a.score, lang)}<i>/10</i></strong>
+          <em>{a.verdictTitle}</em>
         </div>
         <div className="aside-card aside-card-accent">
           <span className="aside-kicker">{c.verdict} · {scoreLabel(a.score, lang)}/10</span>

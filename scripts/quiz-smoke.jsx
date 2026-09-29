@@ -53,8 +53,9 @@ import {
   quizzesInCategory,
 } from '../src/quizzesData';
 import {
-  DIFFICULTY_MULTIPLIER, FREEZE_BONUS, LEVEL_RULES, QUESTION_TIME, VERDICT_MS, bestDayRun,
-  dailyQuizFor, gradeQuiz, levelBrief, levelRules, pointsMultiplier, prepareQuiz,
+  DIFFICULTY_MULTIPLIER, EXPERT_QUESTION_COUNT, FREEZE_BONUS, LEVEL_RULES, QUESTION_TIME, VERDICT_MS, bestDayRun,
+  dailyQuizFor, gradeQuiz, levelBrief, levelQuestionCount, levelRules, pointsMultiplier, prepareQuiz,
+  quizQuestionPool,
   prepareSurvivalCycle, questionBudgetMs, quizPoints, quizPointsFor, startJokers, streakLevel,
   survivalQuestionPool,
 } from '../src/quizzes/engine';
@@ -266,7 +267,8 @@ export async function checkQuiz(assert) {
   assert.equal(levelRules('hard').extraDistractors, 1, 'expert : une proposition de plus par question');
   assert.equal(levelRules('easy').extraDistractors, 0, 'facile : les quatre propositions d’origine');
   assert.equal(levelRules('easy').lives, 0, 'facile : aucune vie à perdre');
-  assert.equal(levelRules('hard').lives, 3, 'expert : trois vies, puis la partie s’arrête');
+  assert.equal(levelRules('hard').lives, 1, 'expert : une erreur suffit à éliminer');
+  assert.equal(EXPERT_QUESTION_COUNT, 10, 'Expert : dix questions par tentative');
   assert.equal(startJokers('easy').fifty + startJokers('easy').freeze, 3, 'facile : deux 50/50 et un gel du chrono');
   assert.equal(startJokers('medium').fifty + startJokers('medium').freeze, 2, 'confirmé : deux jokers');
   assert.equal(startJokers('hard').fifty + startJokers('hard').freeze, 0, 'expert : aucun joker');
@@ -298,6 +300,34 @@ export async function checkQuiz(assert) {
     }
   }
 
+  // Chaque tentative Expert tire dix questions différentes parmi les trois
+  // banques du quizz. Une tentative déterministe sert à vérifier le moteur ;
+  // le lecteur retire en plus la banque précédente pour éviter toute reprise
+  // immédiate après une élimination.
+  for (const entry of quizzes) {
+    const pool = quizQuestionPool(entry);
+    const expertRun = prepareQuiz(entry, 'hard', 7, {
+      extraDistractors: 1,
+      questionPool: pool,
+      questionCount: EXPERT_QUESTION_COUNT,
+    });
+    const nextExpertRun = prepareQuiz(entry, 'hard', 8, {
+      extraDistractors: 1,
+      questionPool: pool,
+      questionCount: EXPERT_QUESTION_COUNT,
+    });
+    assert.equal(pool.length, 24, `${entry.slug} : les trois banques alimentent le tirage expert`);
+    assert.equal(levelQuestionCount(entry, 'hard'), EXPERT_QUESTION_COUNT, `${entry.slug} : dix questions annoncées en Expert`);
+    assert.equal(expertRun.questions.length, EXPERT_QUESTION_COUNT, `${entry.slug} : dix questions par tentative Expert`);
+    assert.equal(new Set(expertRun.questions.map((question) => question.id)).size, EXPERT_QUESTION_COUNT, `${entry.slug} : pas de doublon dans une tentative Expert`);
+    assert.ok(expertRun.questions.every((question) => pool.some((candidate) => candidate.id === question.id)), `${entry.slug} : les questions viennent du quizz`);
+    assert.notDeepEqual(
+      expertRun.questions.map((question) => question.id).sort(),
+      nextExpertRun.questions.map((question) => question.id).sort(),
+      `${entry.slug} : une autre graine renouvelle les questions Expert`,
+    );
+  }
+
   // Série en cours (paliers de la flamme) et résumé de règles (sélecteur).
   assert.equal(streakLevel(1), 'cold', 'une bonne réponse : rien ne chauffe encore');
   assert.equal(streakLevel(2), 'warm');
@@ -305,8 +335,8 @@ export async function checkQuiz(assert) {
   assert.equal(streakLevel(8), 'blazing');
   assert.deepEqual(
     levelBrief(quizBySlug('culture-gaming'), 'hard'),
-    { id: 'hard', seconds: 10, choices: 5, lives: 3, jokers: { fifty: 0, freeze: 0 }, jokerCount: 0 },
-    'résumé du niveau expert : cinq propositions, trois vies, aucun joker',
+    { id: 'hard', seconds: 10, choices: 5, lives: 1, jokers: { fifty: 0, freeze: 0 }, jokerCount: 0 },
+    'résumé du niveau expert : cinq propositions, une vie, aucun joker',
   );
   assert.equal(levelBrief(quizBySlug('culture-gaming'), 'easy').choices, 4, 'résumé du niveau facile : quatre propositions');
   assert.equal(pointsMultiplier('hard'), DIFFICULTY_MULTIPLIER.hard, 'les règles ne réinventent pas le multiplicateur de points');
@@ -499,8 +529,9 @@ export async function checkQuiz(assert) {
   // reconnue à son libellé FR (`quizLevelQuestions`), `skip` saute les `skip`
   // premières questions (déjà jouées par un test précédent).
   const answerLevel = async (container, game, level, skip = 0) => {
-    const questions = quizLevelQuestions(game, level);
-    for (let step = skip; step < questions.length; step += 1) {
+    const questions = level === 'hard' ? quizQuestionPool(game) : quizLevelQuestions(game, level);
+    const runLength = levelQuestionCount(game, level);
+    for (let step = skip; step < runLength; step += 1) {
       const prompt = container.querySelector('.quiz-question')?.textContent || '';
       const question = questions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
       assert.ok(question, `[${level}] la question affichée existe dans les données (${prompt.slice(0, 40)}…)`);
@@ -513,7 +544,7 @@ export async function checkQuiz(assert) {
 
   // Joue une partie parfaite d'un niveau : on clique le bouton du palier
   // (`[data-level]`, verrouillé ou non selon la progression), puis on répond
-  // juste aux huit questions.
+  // au nombre de questions annoncé pour cette tentative.
   const playPerfect = async (container, game, level = 'easy', options = undefined) => {
     await click(container.querySelector(`[data-level="${level}"] .quiz-level-play`));
     await playQuestions(container, quizLevelQuestions(game, level), options);
@@ -539,6 +570,10 @@ export async function checkQuiz(assert) {
   assert.ok(
     node.querySelectorAll('.quiz-level .quiz-level-meta').length === QUIZ_LEVELS.length,
     'chaque niveau annonce son nombre de questions et son barème',
+  );
+  assert.ok(
+    node.querySelector('[data-level="hard"] .quiz-level-meta')?.textContent.includes('10 questions'),
+    'le niveau Expert annonce dix questions par tentative',
   );
 
   // Partie Facile : le niveau joué est rappelé pendant la partie.
@@ -732,7 +767,7 @@ export async function checkQuiz(assert) {
     assert.equal(gridNode.querySelector('#quiz-category-survival-title')?.textContent, translations[lang].quiz.categorySurvivalTitle, `[${lang}] catégorie Survival traduite`);
     assert.equal(gridNode.querySelectorAll('.quiz-category--main .quiz-card').length, quizzes.length, `[${lang}] la catégorie classique regroupe les ${quizzes.length} cartes`);
     assert.ok(gridNode.querySelector('.quiz-category--main .quiz-category-heading p')?.textContent.includes(String(quizzes.length)), `[${lang}] le nombre de quizz dans le texte suit le catalogue`);
-    assert.ok(gridNode.querySelector('.quiz-category--survival .quiz-category-heading p')?.textContent.includes(String(expectedPoolSize)), `[${lang}] le texte Survival annonce le pool complet`);
+    assert.ok(gridNode.querySelector('.quiz-category--survival .quiz-category-heading p')?.textContent.includes(translations[lang].quiz.categorySurvivalIntro), `[${lang}] le texte de présentation Survival est traduit`);
     for (const slug of newSlugs) {
       assert.ok(gridNode.querySelector(`a.quiz-card[href="/quizz/${slug}"]`), `[${lang}] ${slug} : carte jouable dans la grille`);
     }
@@ -740,7 +775,8 @@ export async function checkQuiz(assert) {
     assert.ok(survivalLink, `[${lang}] carte Survival affichée`);
     assert.equal(survivalLink.getAttribute('href'), '/quizz/survival', `[${lang}] carte Survival ouvre sa route dédiée`);
     assert.ok(survivalLink.textContent.includes(translations[lang].quiz.categorySurvivalPlay), `[${lang}] CTA Survival traduit`);
-    assert.ok(survivalLink.textContent.includes(translations[lang].quiz.categorySurvivalPool.replace('{n}', String(expectedPoolSize))), `[${lang}] pool global de ${expectedPoolSize} questions annoncé`);
+    // Le nombre de questions est affiché sur la page Survival elle-même
+    // (vérifié plus bas), pas dans cette carte d'entrée.
     // Tous les quizz sont jouables dès l'arrivée, et la grille ne classe plus
     // rien par difficulté : aucune pastille Facile/Confirmé/Expert sur les
     // cartes, mais la progression des niveaux à la place.
@@ -926,7 +962,10 @@ export async function checkQuiz(assert) {
     </LanguageProvider>,
   ));
   assert.ok(survivalNode.textContent.includes('SURVIVAL MODE'), 'la route dédiée ouvre le Survival');
-  assert.ok(survivalNode.textContent.includes(`${expectedPoolSize} questions dans le pool global`), 'le pool de questions est annoncé');
+  assert.ok(
+    survivalNode.textContent.includes(translations.fr.quiz.survival.poolCount.replace('{n}', String(expectedPoolSize))),
+    'le pool de questions est annoncé avec le libellé traduit',
+  );
   assert.ok(!survivalNode.querySelector('.quiz-levels'), 'le Survival ne demande aucun niveau classique');
   assert.ok(!survivalNode.querySelector('.quiz-board') && !survivalNode.querySelector('.quiz-comments'), 'le Survival est exclu du classement et des commentaires classiques');
   const survivalStartQuestion = survivalNode.querySelector('.quiz-question');
@@ -981,19 +1020,25 @@ export async function checkQuiz(assert) {
   await answerSurvivalWrong();
   assert.ok(survivalNode.querySelector('.quiz-survival-result'), 'la partie s’arrête à zéro vie');
   assert.ok(survivalNode.textContent.includes(translations.fr.quiz.survival.gameOver), 'écran Game Over affiché');
-  assert.ok(survivalNode.textContent.includes('0 PTS'), 'le score final est affiché');
+  assert.ok(
+    survivalNode.textContent.includes(`0 ${translations.fr.quiz.survival.points}`),
+    'le score final est affiché dans le lexique Survival traduit',
+  );
   assert.ok(survivalNode.textContent.includes('3') && survivalNode.textContent.includes(translations.fr.quiz.survival.questionsPlayed), 'le résumé compte les trois questions jouées');
-  assert.equal(survivalNode.querySelectorAll('.quiz-stat').length, 3, 'le résumé donne questions, bonnes réponses et record local');
+  assert.equal(survivalNode.querySelectorAll('.quiz-stat').length, 4, 'le résumé donne questions, bonnes réponses, record local et meilleure série');
   assert.equal(readSurvivalBest()?.questions, 3, 'le record Survival est stocké localement');
   const survivalAchievements = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
   assert.ok(!quizLevelCompleted(survivalAchievements, 'survival', 'hard'), 'le Survival ne crédite aucun niveau classique');
   assert.ok(!(JSON.parse(globalThis.window.localStorage.getItem(LEVELS_KEY) || '{}').survival), 'le Survival ne touche pas à la progression classique');
 
   // Recommencer repart sur un nouvel ordre, trois vies, question 1 et score 0.
-  await click(survivalNode.querySelector('.quiz-survival-restart'));
+  await click(survivalNode.querySelector('.horror-gameover-actions .quiz-cta--primary'));
   assert.notEqual(survivalNode.querySelector('.quiz-question')?.getAttribute('data-question-id'), firstSurvivalQuestionId, 'le restart remélange le pool depuis une autre première question');
   assert.equal(survivalNode.querySelectorAll('.quiz-heart.is-lost').length, 0, 'le restart restaure les trois vies');
-  assert.ok(survivalNode.querySelector('.quiz-progress-label')?.textContent.includes('Question 1'), 'le compteur repart de zéro');
+  assert.ok(
+    survivalNode.querySelector('.quiz-progress-label')?.textContent.includes(`${translations.fr.quiz.survival.question} 1`),
+    'le compteur Survival repart de zéro',
+  );
   assert.equal((survivalNode.querySelector('.quiz-live-item--points')?.textContent || '').replace(/\D/g, ''), '0', 'le score du run repart à zéro');
   assert.equal(readSurvivalBest()?.points, 0, 'le meilleur score local survit au redémarrage');
   await act(async () => survivalRoot.unmount());
@@ -1200,6 +1245,7 @@ export async function checkQuiz(assert) {
   // quizz » — le tour de révision a disparu avec son bouton.
   const revActions = [...revNode.querySelectorAll('.quiz-result-actions > *')];
   assert.equal(revActions.length, 2, '[tout faux] seulement deux boutons sur l’écran de résultat');
+  assert.ok(!revActions.some((el) => el.textContent.includes('Réessayer')), '[tout faux] aucun bouton Réessayer hors Expert');
   assert.ok(
     revActions.some((el) => el.textContent.includes('Niveau suivant')),
     '[tout faux] « Niveau suivant » proposé même sans bonne réponse',
@@ -1498,7 +1544,7 @@ export async function checkQuiz(assert) {
   // propositions, vies, jokers) et se lance d'un CTA compact.
   assert.equal(funNode.querySelectorAll('.quiz-level-rules').length, 3, 'les trois niveaux annoncent leurs règles');
   assert.ok(funNode.querySelector('[data-level="easy"] .quiz-level-rules').textContent.includes('20 s'), 'facile : 20 s annoncées');
-  assert.ok(funNode.querySelector('[data-level="hard"] .quiz-level-rules').textContent.includes('♥ 3'), 'expert : trois vies annoncées');
+  assert.ok(funNode.querySelector('[data-level="hard"] .quiz-level-rules').textContent.includes('♥ 1'), 'expert : une vie annoncée');
   assert.ok(funNode.querySelector('[data-level="easy"] .quiz-keys-hint, .quiz-keys-hint'), 'l’astuce clavier est affichée');
   assert.ok(funNode.textContent.includes('touches 1–4 pour répondre'), 'facile : l’astuce clavier suit les quatre propositions');
   const easyCta = funNode.querySelector('[data-level="easy"] .quiz-level-play');
@@ -1577,34 +1623,39 @@ export async function checkQuiz(assert) {
   assert.ok(funNode.textContent.includes('touches 1–4 pour répondre') || funNode.querySelector('.quiz-result'), 'le résultat du Confirmé s’affiche');
   await click(unlockButton());
 
-  // Niveau expert : dix secondes, cinq propositions (quatre + un piège), trois
-  // vies, aucun joker, points ×2 — et la partie s'arrête à la troisième erreur.
+  // Niveau Expert : dix secondes, cinq propositions (quatre + un piège), une
+  // seule vie, aucun joker et dix questions tirées dans les banques du quizz.
   assert.ok(funNode.querySelector('.quiz-player--hard'), 'le lecteur porte l’accent du niveau expert');
   assert.equal(funNode.querySelectorAll('.quiz-choice').length, 5, 'expert : cinq propositions (quatre + un piège)');
-  assert.equal(funNode.querySelectorAll('.quiz-heart').length, 3, 'expert : trois vies affichées');
+  assert.equal(funNode.querySelectorAll('.quiz-heart').length, 1, 'expert : une seule vie affichée');
   assert.equal(funNode.querySelectorAll('.quiz-joker').length, 0, 'expert : aucun bouton joker');
   assert.ok(funNode.textContent.includes('EXPERT — AUCUN JOKER'), 'expert : l’absence de joker est dite');
 
-  // Partie experte parfaite : cinq propositions à chaque question et la base
-  // ×2 sur chaque bonne réponse (200 pts minimum, `DIFFICULTY_MULTIPLIER`).
+  // Partie experte parfaite : dix questions sans erreur. Aucun point n'est
+  // affiché avant la dixième réponse ; le ×2 est crédité après le 10/10.
   let expertVerdictPoints = 0;
-  const expertQuestions = quizLevelQuestions(quiz, 'hard');
-  for (let step = 0; step < expertQuestions.length; step += 1) {
+  const expertQuestions = quizQuestionPool(quiz);
+  for (let step = 0; step < EXPERT_QUESTION_COUNT; step += 1) {
     const prompt = funNode.querySelector('.quiz-question')?.textContent || '';
     const question = expertQuestions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
+    assert.ok(question, `question Expert tirée d’une banque du quizz (${prompt})`);
     assert.equal(funNode.querySelectorAll('.quiz-choice').length, 5, 'expert : cinq propositions à chaque question');
     const rightText = quizLabel(question.choices[question.answer], 'fr');
     await click([...funNode.querySelectorAll('.quiz-choice')]
       .find((el) => el.querySelector('.quiz-choice-label')?.textContent === rightText));
-    expertVerdictPoints = Math.max(
-      expertVerdictPoints,
-      Number((funNode.querySelector('.quiz-verdict-points')?.textContent.match(/\d+/) || [0])[0]),
-    );
+    const verdictPoints = Number((funNode.querySelector('.quiz-verdict-points')?.textContent.match(/\d+/) || [0])[0]);
+    if (step < EXPERT_QUESTION_COUNT - 1) {
+      assert.equal(verdictPoints, 0, 'les points Expert restent cachés avant le sans-faute');
+      assert.equal((funNode.querySelector('.quiz-live-item--points')?.textContent || '').replace(/\D/g, ''), '0', 'aucun point Expert avant la fin');
+    }
+    expertVerdictPoints = Math.max(expertVerdictPoints, verdictPoints);
     await waitQuestionChange(funNode, prompt);
   }
   assert.ok(funNode.querySelector('.quiz-result'), 'la partie experte se termine');
   assert.ok(expertVerdictPoints >= 200, `une bonne réponse experte rapporte au moins la base ×2 (${expertVerdictPoints})`);
-  assert.ok(funNode.textContent.includes('8/8 bonnes réponses'), 'sans-faute en niveau expert');
+  assert.ok(funNode.textContent.includes('10/10 bonnes réponses'), 'sans-faute sur les dix questions Expert');
+  assert.equal(funNode.querySelectorAll('.quiz-fix').length, EXPERT_QUESTION_COUNT, 'les corrections couvrent les dix questions Expert');
+  assert.ok(![...funNode.querySelectorAll('.quiz-result-actions button')].some((el) => el.textContent.includes('Réessayer')), 'pas de bouton Réessayer après une victoire Expert');
 
   // Dernier niveau du quizz : pas de « Niveau suivant » — le résultat épuré ne
   // propose que « Voir tous les quizz » (et le quizz vient de passer TERMINÉ).
@@ -1616,10 +1667,9 @@ export async function checkQuiz(assert) {
   );
   await act(async () => funRoot.unmount());
 
-  // La touche 5 et la fin de partie ne peuvent plus passer par le bouton
-  // « Rejouer » (résultat épuré, quizz TERMINÉ) : l'expert d'un AUTRE quizz,
-  // ouvert par une progression semée à la main, porte ces tests en conditions
-  // réelles — cinq propositions, cinq touches, trois vies.
+  // Élimination immédiate après une seule erreur : l'expert d'un autre quizz
+  // est ouvert grâce à sa progression existante, sans passer par le résultat
+  // (réussite) du premier quizz.
   freshDevice();
   const livesSlug = 'consoles-retro';
   const livesQuiz = quizBySlug(livesSlug);
@@ -1643,43 +1693,75 @@ export async function checkQuiz(assert) {
   ));
   await click(livesNode.querySelector('[data-level="hard"] .quiz-level-play'));
   assert.ok(livesNode.querySelector('.quiz-player--hard'), 'l’expert semé s’ouvre directement');
+  assert.equal(livesNode.querySelectorAll('.quiz-heart').length, 1, 'une seule vie pour toute la tentative');
 
-  // La touche 5 répond — cinq propositions, cinq touches (et le piège de la
-  // cinquième coûte une vie, comme toute erreur en expert).
-  const livesExpertQuestions = quizLevelQuestions(livesQuiz, 'hard');
-  const expertKeyPrompt = livesNode.querySelector('.quiz-question')?.textContent || '';
-  await act(async () => {
-    window.dispatchEvent(new window.KeyboardEvent('keydown', { key: '5', bubbles: true }));
-  });
-  assert.ok(livesNode.querySelector('.quiz-verdict'), 'la touche 5 répond en niveau expert');
-  await waitQuestionChange(livesNode, expertKeyPrompt);
-
-  // Trois erreurs de suite : chaque erreur coûte une vie, la dernière arrête la
-  // partie — les questions non jouées comptent comme ratées.
-  const answerWrongExpert = async () => {
+  // Les deux bonnes réponses précédentes n'ont pas encore crédité de points,
+  // et l'échec ne valide rien.
+  const livesExpertQuestions = quizQuestionPool(livesQuiz);
+  const answerExpert = async (shouldBeCorrect) => {
     const prompt = livesNode.querySelector('.quiz-question')?.textContent || '';
     const question = livesExpertQuestions.find((entry) => quizLabel(entry.q, 'fr') === prompt);
-    const rightText = quizLabel(question.choices[question.answer], 'fr');
-    await click([...livesNode.querySelectorAll('.quiz-choice')]
-      .find((el) => el.querySelector('.quiz-choice-label')?.textContent !== rightText));
-    await waitQuestionChange(livesNode, prompt);
-  };
-  for (let step = 0; step < 3 && !livesNode.querySelector('.quiz-result'); step += 1) {
-    await answerWrongExpert();
-    assert.ok(
-      livesNode.querySelector('.quiz-result') || livesNode.querySelectorAll('.quiz-heart.is-lost').length >= 1,
-      'chaque erreur coûte une vie',
+    assert.ok(question, `question Expert issue de la banque du quizz (${prompt})`);
+    const answerText = quizLabel(
+      question.choices[shouldBeCorrect ? question.answer : (question.answer + 1) % question.choices.length],
+      'fr',
     );
-  }
-  assert.ok(livesNode.querySelector('.quiz-result'), 'les vies épuisées arrêtent la partie');
-  assert.ok(livesNode.textContent.includes('PLUS DE VIES'), 'l’écran annonce la fin de partie');
-  assert.ok(/[01]\/8 bonnes réponses/.test(livesNode.textContent), 'les questions non jouées comptent comme ratées');
-  assert.equal(livesNode.querySelectorAll('.quiz-stat').length, 6, 'le détail expert compte les vies restantes');
-  assert.equal(livesNode.querySelectorAll('.quiz-fix').length, livesExpertQuestions.length, 'les corrections couvrent tout le niveau');
+    await click([...livesNode.querySelectorAll('.quiz-choice')]
+      .find((el) => el.querySelector('.quiz-choice-label')?.textContent === answerText));
+    await waitQuestionChange(livesNode, prompt);
+    return prompt;
+  };
+  const firstRunPrompts = [];
+  firstRunPrompts.push(await answerExpert(true));
+  firstRunPrompts.push(await answerExpert(true));
+  assert.ok(!livesNode.querySelector('.quiz-result'), 'deux bonnes réponses ne terminent pas les dix questions');
+  assert.equal((livesNode.querySelector('.quiz-live-item--points')?.textContent || '').replace(/\D/g, ''), '0', 'les points Expert restent à zéro avant le sans-faute');
+  firstRunPrompts.push(await answerExpert(false));
+  assert.ok(livesNode.querySelector('.quiz-result'), 'une seule erreur élimine immédiatement');
+  assert.ok(livesNode.textContent.includes('ÉLIMINÉ'), 'l’écran annonce l’élimination');
+  assert.ok(livesNode.textContent.includes('2/10 bonnes réponses'), 'le score s’arrête à la troisième question');
+  assert.ok(livesNode.textContent.includes('0 PTS'), 'une tentative éliminée ne rapporte aucun point');
+  assert.equal(livesNode.querySelectorAll('.quiz-stat').length, 6, 'le détail Expert compte la vie restante');
+  assert.equal(livesNode.querySelectorAll('.quiz-fix').length, EXPERT_QUESTION_COUNT, 'les corrections couvrent les dix questions tirées');
+  const firstAttemptQuestionSet = [...livesNode.querySelectorAll('.quiz-fix-q')].map((el) => el.textContent);
+  assert.equal(firstAttemptQuestionSet.length, EXPERT_QUESTION_COUNT, 'la première tentative contient bien dix questions');
   assert.ok(
-    livesNode.textContent.includes('Voir tous les quizz') && !livesNode.textContent.includes('Niveau suivant'),
-    'fin de partie sur le dernier niveau : seulement « Voir tous les quizz »',
+    [...livesNode.querySelectorAll('.quiz-stat')].some((stat) => stat.textContent.includes('0/1') && stat.textContent.includes('Vies restantes')),
+    'le résultat confirme que l’unique vie a été perdue',
   );
+  const retryButton = [...livesNode.querySelectorAll('.quiz-result-actions button')]
+    .find((el) => el.textContent.includes('Réessayer'));
+  assert.ok(retryButton, 'un bouton Réessayer est proposé après un échec Expert');
+  assert.equal(livesNode.querySelectorAll('.quiz-result-actions button').length, 1, 'le bouton Réessayer n’apparaît que sur le résultat Expert éliminé');
+
+  const failedProgress = JSON.parse(globalThis.window.localStorage.getItem(LEVELS_KEY) || '{}');
+  assert.deepEqual(Object.keys(failedProgress[livesSlug] || {}).sort(), ['easy', 'medium'], 'un échec Expert ne termine pas le niveau');
+  const failedAchievements = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  assert.ok(!quizLevelCompleted(failedAchievements, livesSlug, 'hard'), 'l’échec ne crédite aucun succès de niveau');
+  assert.ok(!(failedAchievements?.quizPoints || {})[quizRunKey(livesSlug, 'hard')], 'l’échec ne crédite aucun XP');
+  assert.equal(readLocalBestRun(livesSlug, 'hard'), null, 'l’échec ne crée aucun record');
+
+  // Réessayer lance immédiatement un nouveau tirage : aucune des dix questions
+  // de la tentative éliminée n'est reprise, puis un 10/10 valide le niveau.
+  await click(retryButton);
+  assert.ok(livesNode.querySelector('.quiz-player--hard'), 'le bouton relance directement le mode Expert');
+  assert.equal(livesNode.querySelectorAll('.quiz-heart').length, 1, 'la nouvelle tentative récupère son unique vie');
+  assert.equal(livesNode.querySelectorAll('.quiz-heart.is-lost').length, 0, 'la nouvelle tentative repart sans vie perdue');
+  assert.equal((livesNode.querySelector('.quiz-live-item--points')?.textContent || '').replace(/\D/g, ''), '0', 'le score repart à zéro');
+  const retryPrompts = [];
+  for (let step = 0; step < EXPERT_QUESTION_COUNT; step += 1) {
+    retryPrompts.push(await answerExpert(true));
+  }
+  assert.equal(new Set(retryPrompts).size, EXPERT_QUESTION_COUNT, 'aucun doublon dans le nouvel Expert');
+  assert.ok(!retryPrompts.some((prompt) => firstAttemptQuestionSet.includes(prompt)), 'les questions changent toutes après une élimination');
+  assert.ok(livesNode.querySelector('.quiz-result'), 'la deuxième tentative arrive au résultat');
+  assert.ok(livesNode.textContent.includes('10/10 bonnes réponses'), 'le 10/10 réussit le niveau Expert');
+  assert.ok(!livesNode.textContent.includes('ÉLIMINÉ'), 'une réussite n’affiche pas l’élimination');
+  assert.ok(![...livesNode.querySelectorAll('.quiz-result-actions button')].some((el) => el.textContent.includes('Réessayer')), 'le bouton Réessayer disparaît après réussite');
+  const successfulAchievements = JSON.parse(globalThis.window.localStorage.getItem(GUEST_STORAGE_KEY) || 'null');
+  assert.ok(quizLevelCompleted(successfulAchievements, livesSlug, 'hard'), 'le sans-faute crédite enfin le niveau Expert');
+  assert.ok(successfulAchievements.quizPoints?.[quizRunKey(livesSlug, 'hard')] > 0, 'le 10/10 crédite les points et l’XP Expert');
+  assert.ok(readLocalBestRun(livesSlug, 'hard')?.points > 0, 'le sans-faute crée le record Expert');
   await act(async () => livesRoot.unmount());
 
   /* ------------- 12. Quizz TERMINÉ : grisé et verrouillé partout ----------- */
@@ -1822,12 +1904,15 @@ export async function checkQuiz(assert) {
         </AuthProvider>
       </LanguageProvider>,
     ));
-    assert.equal(survivalLangNode.querySelector('.quiz-header h1')?.textContent, translations[lang].quiz.survival.title, `[${lang}] titre Survival traduit`);
+    assert.ok(
+      (survivalLangNode.querySelector('.quiz-header h1')?.textContent || '').replace(/\s+/g, ' ').includes(translations[lang].quiz.survival.title),
+      `[${lang}] titre Survival traduit`,
+    );
     assert.ok(survivalLangNode.textContent.includes(translations[lang].quiz.survival.timeoutRule), `[${lang}] règle de timeout Survival traduite`);
     assert.equal(survivalLangNode.querySelector('.quiz-sound-toggle')?.getAttribute('aria-label'), translations[lang].quiz.survival.mute, `[${lang}] bouton son Survival traduit`);
     await act(async () => survivalLangRoot.unmount());
   }
 
-  console.log('QUIZZ : trois niveaux de huit questions par quizz (aucun identifiant partagé) et multiplicateurs ×1/×1,5/×2 (points bornés 200/300/400 par question, convertis en XP joueur), déblocage en cascade (Facile → Confirmé → Expert), règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons ni doublés, answered d’une partie arrêtée), parties 8/8 des niveaux Facile puis Confirmé + succès par niveau + confettis, résultat épuré (seuls « Niveau suivant → » vers le palier au-dessus et « Voir tous les quizz », rien après le dernier niveau), replay d’un niveau terminé via la grille = 0 point et rien d’écrit, défi démo, grille FR/EN/AR sans pastille de difficulté (progression n/3) et filtrable par famille (Gaming / Tech / Cinéma / E-sport : comptes par pastille, pastille active, cartes des autres familles retirées, « Tous » qui rétablit le catalogue, lien direct `?cat=` et famille inconnue ignorée), records séparés par niveau + compte à rebours, classement par niveau (points d’abord, score/total en secondaire) + rang global au profil, partie tout faux, minuteur par niveau, verdict (gel, vert/rouge, révélations, bandeau, points), clavier 1–5 (+ D et F pour les jokers), combo + fanfare, sons (tick-tack qui accélère, verdicts, jokers — le 50/50 descend, le gel monte —, coupure), refonte du lecteur (CTA compacts, pastilles de progression, 50/50, gel du chrono, détail de partie) et niveau expert en conditions réelles (cinq propositions, une vie perdue par erreur, fin de partie à la troisième, « Plus de vies », base ×2 par bonne réponse, touche 5), et quizz TERMINÉ une fois ses trois niveaux faits (`isQuizFinished` : carte grisée sans lien ni flèche, drapeau ✓ TERMINÉ sur la miniature, bannière du jour verrouillée sans compte à rebours, écran « terminé » du lecteur à la place du sélecteur de niveaux).');
+  console.log('QUIZZ : 25 banques × 24 questions, niveaux Facile/Confirmé (8 questions) + Expert (10 questions aléatoires tirées des trois banques), tirage renouvelé sans répétition à chaque réessai, élimination Expert à la première erreur/timeout, bouton Réessayer réservé à l’Expert, aucun point/XP/progression sur une défaite et crédit uniquement après un 10/10 sans faute ; déblocage en cascade, multiplicateurs ×1/×1,5/×2, jokers, minuteurs, records/classements, grilles FR/EN/AR et état « terminé » validés.');
   console.log(`SURVIVAL : pool global de ${expectedPoolSize} questions, cycles mélangés sans doublon, trois vies et timeout pénalisé, record local, redémarrage complet, catégories et traductions FR/EN/AR.`);
 }

@@ -28,10 +28,9 @@
 }
 .social-dock > * { pointer-events: auto; }
 
-/* Conteneur du lanceur. Le bouton est découpé (`clip-path`, coins coupés) et
-   rogne donc tout ce qui dépasse de sa boîte : les pastilles de notification,
-   posées sur ses coins, vivent ici, dans un conteneur non découpé — elles
-   s'affichent au-dessus du bouton, en entier. */
+/* Conteneur du lanceur. Les pastilles de notification dépassent légèrement
+   du bouton ; elles vivent donc dans ce conteneur non découpé pour rester
+   visibles en entier. */
 .social-launcher-wrap {
   position: relative;
   display: inline-flex;
@@ -55,7 +54,7 @@
   font: 500 11px var(--mono);
   letter-spacing: .14em;
   text-transform: uppercase;
-  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  border-radius: 999px;
   box-shadow: 0 16px 34px -16px rgba(0, 0, 0, .85), 0 0 24px -10px rgba(168, 85, 247, .6);
   transition: border-color .2s, box-shadow .2s, transform .2s;
 }
@@ -66,16 +65,18 @@
 }
 .social-dock.is-open .social-launcher { border-color: var(--cyan); }
 .social-launcher.has-alert { border-color: rgba(255, 214, 25, .55); }
-.social-launcher-icon {
-  display: inline-flex;
-  color: var(--yellow);
+/* Le logo « Let’s Talk » tient lieu d'icône et de libellé (le texte reste
+   en `.sr-only`). Hauteur fixe : la largeur suit la viewBox. */
+.social-launcher-logo {
+  display: block;
+  height: 26px;
+  flex-shrink: 0;
+  transition: transform .2s;
 }
-.social-launcher-label {
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: .12em;
-}
+.social-launcher:hover .social-launcher-logo { transform: rotate(-2deg) scale(1.04); }
+.lets-talk-label { color: #fff; }
+.social-tab--messages.lets-talk-label.is-active { color: var(--yellow); border-bottom-color: var(--yellow); }
+.nav-messages-link .lets-talk-label { color: #fff; }
 .social-launcher-meta {
   display: inline-flex;
   align-items: center;
@@ -141,8 +142,11 @@
   position: relative;
   width: 100%;
   /* Hauteur définie : la discussion (fil + champ) a besoin d'un conteneur de
-     hauteur connue pour que le fil défile ; les listes s'y ajustent. */
+     hauteur connue pour que le fil défile ; les listes s'y ajustent.
+     vh (fallback) puis dvh — sur iPhone, 100vh seul inclut la hauteur des
+     barres de Safari et le panneau débordait hors de l'écran. */
   height: min(560px, calc(100vh - 120px));
+  height: min(560px, calc(100dvh - 120px));
   display: flex;
   flex-direction: column;
   background: linear-gradient(160deg, rgba(26, 17, 52, .98), rgba(7, 8, 20, .985));
@@ -181,7 +185,7 @@
   letter-spacing: .08em;
   color: #fff;
 }
-.social-panel-kicker svg { color: var(--yellow); }
+.social-panel-logo { display: block; height: 30px; }
 .social-panel-sub {
   font: 500 10px var(--mono);
   letter-spacing: .14em;
@@ -227,13 +231,14 @@
   border-bottom: 2px solid transparent;
   color: var(--muted);
   cursor: pointer;
-  font: 500 10px var(--mono);
+  font: 700 10px var(--mono);
   letter-spacing: .1em;
   text-transform: uppercase;
   white-space: nowrap;
   transition: color .18s, border-color .18s, background .18s;
 }
 .social-tab:hover { color: #fff; background: rgba(255, 255, 255, .03); }
+.social-tab-mark { width: 17px; height: 17px; flex-shrink: 0; margin: -3px 0; }
 .social-tab.is-active { color: var(--cyan); border-bottom-color: var(--cyan); }
 .social-tab-count {
   min-width: 18px;
@@ -274,27 +279,61 @@ body.messages-dock-open .achievement-toasts {
 [dir="rtl"] body.friends-dock-open .achievement-toasts,
 [dir="rtl"] body.messages-dock-open .achievement-toasts { right: 16px; }
 
-/* ------------------- Mobile : pop-up plein écran ------------------------
-   La fenêtre ouverte devient un pop-up plein écran — mais seulement pour les
-   amis : la messagerie, elle, s'ouvre sur la page /messages (alias
-   /messagerie) sur mobile, et la fenêtre s'efface entièrement sur cette page. */
+/* Le menu mobile couvre toute la page : le raccourci flottant ne doit ni
+   masquer ses liens ni rester cliquable par-dessus. */
+body.nav-open .social-dock { display: none; }
 
-@media (max-width: 760px) {
+/* --------------------------- Logo « Let’s Talk » ---------------------------
+   Composant LetsTalkLogo (src/social/LetsTalkLogo.jsx), aux couleurs fixes
+   (même dessin sur les deux thèmes, comme le logo Let’s Play). Ses trois
+   points ondulent comme un « en train d'écrire » : par vagues espacées tant
+   que des messages attendent (`is-typing`), plus vite au survol du lanceur. */
+.lets-talk-logo { overflow: visible; }
+.lets-talk-logo-dot {
+  --lets-talk-dot-delay: 0s;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.lets-talk-logo-dot-2 { --lets-talk-dot-delay: .14s; }
+.lets-talk-logo-dot-3 { --lets-talk-dot-delay: .28s; }
+.lets-talk-logo.is-typing .lets-talk-logo-dot {
+  animation: lets-talk-typing 2.6s ease-in-out var(--lets-talk-dot-delay) infinite;
+}
+.social-launcher:hover .lets-talk-logo-dot,
+.social-launcher:focus-visible .lets-talk-logo-dot {
+  animation: lets-talk-typing 1.3s ease-in-out var(--lets-talk-dot-delay) infinite;
+}
+@keyframes lets-talk-typing {
+  0%, 42%, 100% { transform: translateY(0); }
+  16% { transform: translateY(-38%); }
+  30% { transform: translateY(8%); }
+}
+
+/* Menu mobile : le logo remplace le libellé de l'entrée messagerie. */
+.nav-link-label-logo { display: block; line-height: 0; }
+.nav-lets-talk-logo { display: block; height: 34px; }
+/* Menu profil : l'emblème à la place de l'enveloppe. */
+.nav-dropdown-mark { display: inline-flex; width: 18px; height: 18px; flex-shrink: 0; }
+.nav-dropdown-mark .lets-talk-logo { width: 100%; height: 100%; }
+
+/* ----------------------- Mobile : page sociale --------------------------
+   Le lanceur ouvre /messages ; aucun panneau flottant sur mobile. */
+
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .social-dock {
     right: 12px;
     bottom: 12px;
     width: auto;
   }
-  /* Lanceur mobile : pastille ronde centrée sur l'icône ; le libellé desktop
-     « AMIS » est volontairement retiré pour préserver l'espace disponible. */
+  /* Nom lisible dans l'APK (le logo « Let’s Talk », pas une icône seule :
+     elle ressemblait à une action anonyme, voire passait inaperçue). */
   .social-launcher {
-    width: 56px;
-    height: 56px;
-    padding: 0;
-    gap: 0;
+    min-height: 52px;
+    padding: 0 16px;
+    gap: 9px;
     justify-content: center;
     border-width: 2px;
-    border-radius: 50%;
+    border-radius: 28px;
     clip-path: none;
     box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .95), 0 0 32px -8px rgba(255, 214, 25, .45), 0 0 0 4px rgba(7, 8, 20, .9);
   }
@@ -306,9 +345,7 @@ body.messages-dock-open .achievement-toasts {
     0%, 100% { box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .95), 0 0 32px -8px rgba(255, 214, 25, .45), 0 0 0 4px rgba(7, 8, 20, .9); }
     50% { box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .95), 0 0 44px -2px rgba(255, 214, 25, .75), 0 0 0 4px rgba(7, 8, 20, .9); }
   }
-  .social-launcher-icon { font-size: 20px; }
-  .social-launcher-icon svg { width: 22px; height: 22px; }
-  .social-launcher-label { display: none; }
+  .social-launcher-logo { height: 28px; }
   .social-launcher-meta { display: none; }
   .social-launcher-badge {
     min-width: 22px;
@@ -339,4 +376,7 @@ body.messages-dock-open .achievement-toasts {
   .social-panel { animation: none; }
   .social-launcher-dot.is-online { animation: none; }
   .social-launcher { transition: none; }
+  .social-launcher-logo { transition: none; }
+  .social-launcher:hover .social-launcher-logo { transform: none; }
+  .lets-talk-logo .lets-talk-logo-dot { animation: none !important; }
 }

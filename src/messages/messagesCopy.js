@@ -1,7 +1,12 @@
+import { fill } from '../friends/friendsCopy';
+
 /**
  * Textes de la messagerie (EN / FR / AR). L'anglais sert de repli, comme
  * partout sur le site. Les libellés de présence (« EN LIGNE », « Vu il y a… »)
  * viennent de `friendsCopy` : ce sont les mêmes que dans la liste d'amis.
+ *
+ * Les pseudos des joueurs, eux, s'affichent **en majuscules** partout dans le
+ * module : `pseudoLabel` fait la conversion au rendu (voir son commentaire).
  */
 export const messagesCopy = {
   en: {
@@ -14,6 +19,7 @@ export const messagesCopy = {
     close: 'Close',
     refresh: 'Refresh',
     back: 'Back to conversations',
+    more: 'More actions',
     today: 'Today',
     yesterday: 'Yesterday',
     openChat: 'Open chat',
@@ -32,6 +38,13 @@ export const messagesCopy = {
     composerPlaceholder: 'Write a message…',
     send: 'Send',
     composerHint: 'Enter to send · Shift + Enter for a new line',
+    suggestGroup: 'Message suggestions',
+    suggestTitle: 'SUGGESTIONS',
+    suggestClose: 'Dismiss suggestions',
+    suggestGreet: ['Hi {name} 👋', 'How’s it going?', 'Up for a round tonight?'],
+    suggestAnswer: ['Yes!', 'Not yet — give me a few minutes', 'Good call 😄'],
+    suggestReply: ['Nice one — tell me more!', 'Same here 😄', 'Wanna hop in a game?'],
+    suggestFollowUp: ['You around later?', 'Wanna hop on a call?', 'Seen the latest news?'],
     tooLong: '{max} characters max.',
     seen: 'Seen',
     sent: 'Sent',
@@ -59,6 +72,10 @@ export const messagesCopy = {
     deleteMessage: 'Delete',
     deleteConfirm: 'Delete this message? “{preview}”',
     deleting: 'Deleting…',
+    clearConversation: 'Clear conversation',
+    clearConfirm: 'Clear your conversation with {name}? All existing messages will disappear for you only. The other person will keep their copy, and new messages will still appear.',
+    clearingConversation: 'Clearing conversation…',
+    errClearUnavailable: 'This option is not available yet: run supabase/schema.sql on your Supabase project, then try again.',
     notFriends: 'Become friends to exchange messages.',
     signInPrompt: 'Sign in to send messages',
     message: 'Message',
@@ -87,6 +104,7 @@ export const messagesCopy = {
     close: 'Fermer',
     refresh: 'Actualiser',
     back: 'Retour aux discussions',
+    more: 'Plus d’actions',
     today: 'Aujourd’hui',
     yesterday: 'Hier',
     openChat: 'Ouvrir la discussion',
@@ -105,6 +123,13 @@ export const messagesCopy = {
     composerPlaceholder: 'Écris ton message…',
     send: 'Envoyer',
     composerHint: 'Entrée pour envoyer · Maj + Entrée pour un saut de ligne',
+    suggestGroup: 'Suggestions de message',
+    suggestTitle: 'SUGGESTIONS',
+    suggestClose: 'Masquer les suggestions',
+    suggestGreet: ['Salut {name} 👋', 'Ça va ?', 'Une partie ce soir ?'],
+    suggestAnswer: ['Oui !', 'Pas encore — j’arrive dans quelques minutes', 'Bonne idée 😄'],
+    suggestReply: ['Sympa — raconte-moi !', 'Moi aussi 😄', 'On joue un match ?'],
+    suggestFollowUp: ['Tu es dispo plus tard ?', 'On fait un call ?', 'Tu as vu la dernière actu ?'],
     tooLong: '{max} caractères maximum.',
     seen: 'Vu',
     sent: 'Envoyé',
@@ -132,6 +157,10 @@ export const messagesCopy = {
     deleteMessage: 'Supprimer',
     deleteConfirm: 'Supprimer ce message ? « {preview} »',
     deleting: 'Suppression…',
+    clearConversation: 'Effacer la conversation',
+    clearConfirm: 'Effacer la conversation avec {name} pour toi uniquement ? Tous les messages actuels disparaîtront de ta messagerie, mais resteront visibles pour l’autre personne. Les nouveaux messages s’afficheront normalement.',
+    clearingConversation: 'Effacement de la conversation…',
+    errClearUnavailable: 'Option indisponible sur ce déploiement : relance supabase/schema.sql sur le projet Supabase, puis réessaie.',
     notFriends: 'Deviens ami avec ce joueur pour lui écrire.',
     signInPrompt: 'Se connecter pour envoyer des messages',
     message: 'Message',
@@ -160,6 +189,7 @@ export const messagesCopy = {
     close: 'إغلاق',
     refresh: 'تحديث',
     back: 'العودة إلى المحادثات',
+    more: 'مزيد من الإجراءات',
     today: 'اليوم',
     yesterday: 'أمس',
     openChat: 'افتح المحادثة',
@@ -178,6 +208,13 @@ export const messagesCopy = {
     composerPlaceholder: 'اكتب رسالتك…',
     send: 'إرسال',
     composerHint: 'Enter للإرسال · Shift + Enter لسطر جديد',
+    suggestGroup: 'اقتراحات الرسائل',
+    suggestTitle: 'اقتراحات',
+    suggestClose: 'إخفاء الاقتراحات',
+    suggestGreet: ['مرحبًا {name} 👋', 'كيف حالك؟', 'جولة الليلة؟'],
+    suggestAnswer: ['نعم!', 'ليس بعد — سأصل خلال دقائق', 'فكرة جيدة 😄'],
+    suggestReply: ['جميل — أخبرني المزيد!', 'أنا أيضًا 😄', 'نلعب مباراة؟'],
+    suggestFollowUp: ['هل أنت متاح لاحقًا؟', 'نجري مكالمة صوتية؟', 'هل رأيت آخر خبر؟'],
     tooLong: '{max} حرفًا كحد أقصى.',
     seen: 'تمت القراءة',
     sent: 'أُرسلت',
@@ -205,6 +242,10 @@ export const messagesCopy = {
     deleteMessage: 'حذف',
     deleteConfirm: 'هل تريد حذف هذه الرسالة؟ «{preview}»',
     deleting: 'جارٍ الحذف…',
+    clearConversation: 'مسح المحادثة',
+    clearConfirm: 'هل تريد مسح محادثتك مع {name} لديك فقط؟ ستختفي جميع الرسائل الحالية لديك، لكنها ستبقى ظاهرة للطرف الآخر. ستظهر الرسائل الجديدة كالمعتاد.',
+    clearingConversation: 'جارٍ مسح المحادثة…',
+    errClearUnavailable: 'هذا الخيار غير متاح بعد: شغّل supabase/schema.sql على مشروع Supabase ثم حاول مجددًا.',
     notFriends: 'أصبحا صديقين لتتبادلا الرسائل.',
     signInPrompt: 'سجّل الدخول لإرسال الرسائل',
     message: 'رسالة',
@@ -229,6 +270,56 @@ export function messagesText(lang) {
   return messagesCopy[lang] || messagesCopy.en;
 }
 
+/**
+ * Pseudo d'un joueur **tel qu'il s'affiche dans la messagerie** : en
+ * majuscules, espaces de bord retirés.
+ *
+ * C'est une règle d'**affichage** : les données (profil, fil, appel) gardent
+ * leur casse d'origine, la recherche et le tri continuent de comparer les
+ * pseudos bruts, et seul le rendu passe par ici — liste des discussions,
+ * en-tête de discussion, liste des joueurs bloqués, signalement, blocage,
+ * cartes d'appel, et les onglets Amis / Demandes / Ajouter de la fenêtre
+ * sociale (`FriendsTabs`). Un pseudo absent ou vide donne une chaîne vide :
+ * à l'appelant de prévoir son repli (« ? »).
+ */
+export function pseudoLabel(name) {
+  return String(name ?? '').trim().toUpperCase();
+}
+
+/**
+ * Trois suggestions de message pour la **bulle affichée à l'ouverture d'une
+ * discussion** (`ThreadView`). Le contexte décide du registre :
+ *
+ *   - fil vide → formules de salut (le pseudo est mis en majuscules, comme
+ *     tout affichage de pseudo dans le module) ;
+ *   - dernier message **reçu** qui se termine par un point d'interrogation
+ *     (`?` ou `؟` pour l'arabe) → réponses courtes ;
+ *   - dernier message reçu au calme → réactions pour relancer ;
+ *   - dernier message **envoyé** → relances pour continuer.
+ *
+ * Retourne toujours trois propositions non vides : si le libellé courant
+ * manque (copie incomplète), on retombe sur le registre suivant, puis sur le
+ * salut. Le texte sert de brouillon : un clic le place dans le champ, sans
+ * l'envoyer.
+ */
+export function messageSuggestions(t, { name = '', lastMessage = null } = {}) {
+  const greet = () => (t.suggestGreet || []).map((entry) => fill(entry, { name: pseudoLabel(name) }));
+  const pick = (...lists) => {
+    for (const list of lists) {
+      const filled = (list || []).map((entry) => fill(entry, { name: pseudoLabel(name) }));
+      if (filled.length > 0) return filled;
+    }
+    return greet();
+  };
+  if (!lastMessage) return pick(t.suggestGreet);
+  if (lastMessage.mine) return pick(t.suggestFollowUp, t.suggestGreet);
+  const body = String(lastMessage.body || '').trim();
+  const asking = body.endsWith('?') || body.endsWith('؟');
+  return asking
+    ? pick(t.suggestAnswer, t.suggestReply, t.suggestGreet)
+    : pick(t.suggestReply, t.suggestAnswer, t.suggestGreet);
+}
+
 /** Libellé d'un motif de signalement. */
 export function reasonLabel(reason, t) {
   const map = {
@@ -251,5 +342,6 @@ export function describeMessagesError(error, t) {
   if (/direct_message_requires_friendship/i.test(message)) return t.errNotFriends;
   if (/direct_message_rate_limited/i.test(message)) return t.errRateLimited;
   if (/direct_message_(empty|too_long)/i.test(message)) return t.errEmpty;
+  if ((code === 'PGRST202' || code === '42883') && /clear_direct_conversation/i.test(message)) return t.errClearUnavailable;
   return t.errGeneric;
 }

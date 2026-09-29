@@ -104,3 +104,7 @@ export function renderNav({ session = null } = {}) {
     ),
   ));
 }
+
+// Client-side regression checks use the same bundled application components.
+export { Auth, AuthProvider, LanguageProvider };
+export { registerDemoProfiles } from '../src/auth/demoProfiles';

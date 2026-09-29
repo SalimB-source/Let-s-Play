@@ -10,6 +10,8 @@
  *   - `prepareQuiz(quiz, level, seed)` : questions du niveau demandé
  *     (`easy` / `medium` / `hard`, voir `QUIZ_LEVELS`) ET choix mélangés, la
  *     bonne réponse voyageant avec son choix (le barème suit le mélange) ;
+ *     l'Expert peut tirer un sous-ensemble aléatoire de dix questions dans
+ *     toutes les banques du quizz (`questionPool` / `questionCount`) ;
  *   - `gradeQuiz(prepared, answers)` : score + palier + sans-faute ;
  *   - `bestDayRun(days)` : meilleure série de jours consécutifs — la
  *     métrique « série de quizz du jour » lue par les succès.
@@ -47,6 +49,27 @@ export function shuffle(items, rand) {
   return list;
 }
 
+/** Nombre de questions demandées à chaque tentative du niveau Expert. */
+export const EXPERT_QUESTION_COUNT = 10;
+
+/** Toutes les questions disponibles dans le catalogue d'un quizz. */
+export function quizQuestionPool(quiz) {
+  const levels = quiz && quiz.levels ? quiz.levels : {};
+  return Object.values(levels).flatMap((questions) => (Array.isArray(questions) ? questions : []));
+}
+
+/**
+ * Questions effectivement jouées pour un niveau. Les niveaux Facile et
+ * Confirmé utilisent leur banque dédiée ; l'Expert tire dix questions sans
+ * doublon dans toutes les banques du quizz, ce qui renouvelle les tentatives.
+ */
+export function levelQuestionCount(quiz, level = DEFAULT_LEVEL) {
+  if (level === 'hard') return Math.min(EXPERT_QUESTION_COUNT, quizQuestionPool(quiz).length);
+  const levels = quiz && quiz.levels ? quiz.levels : {};
+  const questions = levels[level] || levels.easy || (quiz && quiz.questions) || [];
+  return Array.isArray(questions) ? questions.length : 0;
+}
+
 /** Le quizz du jour : rotation quotidienne sur le catalogue. */
 export function dailyQuizFor(date = new Date(), quizzes = []) {
   if (!quizzes.length) return null;
@@ -62,7 +85,7 @@ export function dailyQuizFor(date = new Date(), quizzes = []) {
  * un mélange aléatoire propre à la partie. Le niveau joué voyage avec la
  * partie préparée (`level`), pour l'affichage et la progression.
  * `options.extraDistractors` (niveau expert, `LEVEL_RULES`) ajoute à chaque
- * question autant de pièges tirés des autres questions du même niveau.
+ * question autant de pièges tirés des autres questions de la banque fournie.
  */
 /**
  * Pièges disponibles pour une question : toutes les réponses des AUTRES
@@ -86,16 +109,28 @@ function trapPool(questions, question) {
   return pool;
 }
 
-export function prepareQuiz(quiz, level = 'easy', seed = null, { extraDistractors = 0 } = {}) {
+export function prepareQuiz(quiz, level = 'easy', seed = null, {
+  extraDistractors = 0,
+  questionPool = null,
+  questionCount = null,
+} = {}) {
   const rand = seed === null || seed === undefined ? rng((Math.random() * 2 ** 31) | 0) : rng(seed);
   // Lecture directe des niveaux : le moteur reste chargeable par Node (les
   // vérifications `check:achievements` l'importent sans passer par Vite),
   // là où `src/quizzesData.js` tire `./data` (import.meta.env). Même règle que
   // `quizLevelQuestions` de `quizzesData` : le niveau demandé, repli Facile.
   const levels = quiz && quiz.levels ? quiz.levels : {};
-  const source = levels[level] || levels.easy || [];
+  const defaultSource = levels[level] || levels.easy || (quiz && quiz.questions) || [];
+  const source = Array.isArray(questionPool) ? questionPool : defaultSource;
   const traps = Math.max(0, Math.floor(Number(extraDistractors) || 0));
-  const questions = shuffle(source, rand).map((question, questionIndex) => {
+  const selected = shuffle(source, rand);
+  const requestedCount = Number(questionCount);
+  const hasQuestionLimit = questionCount !== null
+    && questionCount !== undefined
+    && Number.isFinite(requestedCount)
+    && requestedCount >= 0;
+  const chosen = hasQuestionLimit ? selected.slice(0, Math.floor(requestedCount)) : selected;
+  const questions = chosen.map((question, questionIndex) => {
     // La bonne réponse voyage avec son choix : le barème suit le mélange.
     const marked = (question.choices || []).map((label, originalIndex) => ({
       label,
@@ -197,8 +232,8 @@ export const QUESTION_TIME = { seconds: 15 };
  *   - `extraDistractors` : pièges ajoutés à chaque question (l'expert passe à
  *                          cinq propositions, toutes crédibles) ;
  *   - `lives`            : vies avant arrêt de la partie (0 = pas de vies ;
- *                          l'expert en a trois — une erreur ou un temps écoulé
- *                          en coûte une) ;
+ *                          l'expert n'en a qu'une — une erreur ou un temps
+ *                          écoulé l'élimine) ;
  *   - `jokers`           : 50/50 et gel du chrono disponibles au départ
  *                          (l'expert n'en a aucun) ;
  *   - `verdictMs`        : durée du gel après une réponse (plus court en
@@ -214,7 +249,7 @@ export const LEVEL_RULES = {
     jokers: { fifty: 1, freeze: 1 }, verdictMs: VERDICT_MS,
   },
   hard: {
-    id: 'hard', seconds: 10, extraDistractors: 1, lives: 3,
+    id: 'hard', seconds: 10, extraDistractors: 1, lives: 1,
     jokers: { fifty: 0, freeze: 0 }, verdictMs: Math.round(VERDICT_MS * 0.75),
   },
 };

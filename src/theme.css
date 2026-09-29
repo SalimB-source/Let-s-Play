@@ -20,8 +20,8 @@
       la fenêtre vidéo, les vignettes et tous les voiles posés *sur une photo*
       gardent leur fond sombre et leur texte blanc dans les deux thèmes.
       Seules les *surfaces de l'interface* passent au clair.
-      Exception assumée : le héros d'accueil est une image plein cadre
-      (public/hero-keyart.jpg), identique dans les deux thèmes, avec un voile
+   Exception assumée : le héros d'accueil est une image plein cadre
+      (public/hero-lets-play.jpg), identique dans les deux thèmes, avec un voile
       sombre discret à gauche pour garder le texte blanc et jaune lisible
       (bloc « Héros clair » de la section 8).
 
@@ -118,9 +118,14 @@
   [data-theme='light'] .delete-account-eye:hover,
   [data-theme='light'] .nav-account.connected,
   [data-theme='light'] .nav-account-name,
-  [data-theme='light'] .nav-account-level strong,
   [data-theme='light'] .quiz-rank-heading h2,
   [data-theme='light'] .quiz-rank-hero-value,
+  [data-theme='light'] .spoiler-alert-title,
+  [data-theme='light'] .spoiler-alert-toggle,
+  [data-theme='light'] .inline-spoiler-btn,
+  [data-theme='light'] .inline-spoiler-content,
+  [data-theme='light'] .inline-spoiler-hide:hover,
+  [data-theme='light'] [data-theme='light'] .spoiler-alert-badge,
   [data-theme='light'] .dossier-lead,
   [data-theme='light'] .dossier-pullquote,
   [data-theme='light'] .dossier-stat-card span,
@@ -130,13 +135,13 @@
   [data-theme='light'] .messages-search input,
   [data-theme='light'] .messages-row-name,
   [data-theme='light'] .messages-thread-name,
+  [data-theme='light'] .messages-more-item:hover,
   [data-theme='light'] .messages-composer textarea,
   [data-theme='light'] .messages-report-reason:hover,
   [data-theme='light'] .messages-report-reason.is-active,
   [data-theme='light'] .messages-report-note,
   [data-theme='light'] .social-page-tab:hover,
   [data-theme='light'] .messages-page-kicker,
-  [data-theme='light'] .messages-page-guest-title,
   [data-theme='light'] .news-feature-copy h2,
   [data-theme='light'] .article-lead,
   [data-theme='light'] .article-body h2,
@@ -148,12 +153,14 @@
   [data-theme='light'] .review-feature-copy h2,
   [data-theme='light'] .review-score-card strong,
   [data-theme='light'] .article-video-title,
+  [data-theme='light'] .article-trailer-title,
   [data-theme='light'] .comment-identity-text strong,
   [data-theme='light'] .comment-author-link,
   [data-theme='light'] .article-engagement-heading h2,
   [data-theme='light'] .article-reaction,
   [data-theme='light'] .news-views,
   [data-theme='light'] .news-carousel-copy h2,
+  [data-theme='light'] .news-hub-card,
   [data-theme='light'] .partner-mark-text b,
   [data-theme='light'] .partner-link,
   [data-theme='light'] .partners-sources-list a,
@@ -161,9 +168,39 @@
   [data-theme='light'] .arena-by-meta a:hover,
   [data-theme='light'] .player-list-toggle:hover,
   [data-theme='light'] .quiz-filter-chip:hover,
+  [data-theme='light'] .quiz-survival-title,
+  [data-theme='light'] .quiz-survival-card:hover .arrow-link,
+  [data-theme='light'] .quiz-survival-infinity,
+  [data-theme='light'] .horror-glitch-title,
+  [data-theme='light'] .horror-tape--red,
+  [data-theme='light'] .horror-chip-pulse,
+  [data-theme='light'] .horror-file-title,
+  [data-theme='light'] .horror-timer-count,
+  [data-theme='light'] .horror-heart-lost,
+  [data-theme='light'] .horror-question-mark,
+  [data-theme='light'] .horror-verdict-icon,
+  [data-theme='light'] .horror-choice:hover:not(:disabled) .horror-choice-key,
+  [data-theme='light'] .horror-gameover-title,
+  [data-theme='light'] .horror-stats .quiz-stat strong,
+  [data-theme='light'] [data-theme='light'] .survival-horror .quiz-header h1,
+  [data-theme='light'] [data-theme='light'] .horror-file-inner h2,
+  [data-theme='light'] .lets-talk-label,
+  [data-theme='light'] .nav-messages-link .lets-talk-label,
   [data-theme='light'] .social-panel-kicker,
   [data-theme='light'] .social-tab:hover,
   [data-theme='light'] .nav-logout:hover,
+  [data-theme='light'] .nav-profile-dropdown-avatar,
+  [data-theme='light'] .nav-profile-dropdown-meta strong,
+  [data-theme='light'] .nav-profile-dropdown-links a:hover,
+  [data-theme='light'] .nav-profile-dropdown-logout:hover,
+  [data-theme='light'] .cmd-palette-head input,
+  [data-theme='light'] .cmd-palette-close:hover,
+  [data-theme='light'] .cmd-palette-item-text strong,
+  [data-theme='light'] .cmd-palette-quick a:hover,
+  [data-theme='light'] .nav-primary a:hover,
+  [data-theme='light'] .nav-search-clear:hover,
+  [data-theme='light'] .nav .theme-toggle:hover,
+  [data-theme='light'] .nav-actions-grid .theme-toggle:hover,
   [data-theme='light'] .featured-sponsor-text,
   [data-theme='light'] .featured-dossier-sponsor-text,
   [data-theme='light'] .stats strong,
@@ -171,19 +208,38 @@
   [data-theme='light'] .filter:hover,
   [data-theme='light'] .video-card h3,
   [data-theme='light'] .carousel-controls button,
-  [data-theme='light'] .nav-primary a:hover,
   [data-theme='light'] .nav-profile-level strong,
+  [data-theme='light'] .nav-search input,
   [data-theme='light'] .search-form input,
-  [data-theme='light'] .nav-search-result:hover,
-  [data-theme='light'] .nav-search-all:hover {
+  [data-theme='light'] .nav-search-result,
+  [data-theme='light'] .nav-search-result:hover {
   color: var(--ink);
 }
 
 /* Encres blanches atténuées : corps de texte et libellés. */
+  [data-theme='light'] .spoiler-alert-body-inner p,
   [data-theme='light'] .article-body,
   [data-theme='light'] .proscons li,
+  [data-theme='light'] .horror-photo-inner,
+  [data-theme='light'] .nav-logout,
+  [data-theme='light'] .nav-profile-dropdown-meta small,
+  [data-theme='light'] .nav-profile-dropdown-links a,
+  [data-theme='light'] .cmd-palette-icon,
+  [data-theme='light'] .cmd-palette-kbd,
+  [data-theme='light'] .cmd-palette-close,
+  [data-theme='light'] .cmd-palette-shortcuts em,
+  [data-theme='light'] .cmd-palette-item,
+  [data-theme='light'] .cmd-palette-empty,
+  [data-theme='light'] .cmd-palette-quick a,
+  [data-theme='light'] .cmd-palette-tips strong,
   [data-theme='light'] .nav-links a,
-  [data-theme='light'] .nav-primary a {
+  [data-theme='light'] .nav-primary a,
+  [data-theme='light'] .nav-search-clear,
+  [data-theme='light'] .nav .theme-toggle,
+  [data-theme='light'] .nav-actions-grid .theme-toggle,
+  [data-theme='light'] .nav-search button,
+  [data-theme='light'] .nav-search-icon,
+  [data-theme='light'] .nav-search-kbd {
   color: var(--muted);
 }
 
@@ -201,11 +257,10 @@
   [data-theme='light'] .nav-account-avatar,
   [data-theme='light'] .nav-account-initials,
   [data-theme='light'] .nav-account.connected:hover .nav-account-name,
-  [data-theme='light'] .nav-account-level,
-  [data-theme='light'] .nav-account-level small,
   [data-theme='light'] .quiz-rank-kicker,
   [data-theme='light'] .quiz-rank-position,
   [data-theme='light'] .quiz-rank-meta-value,
+  [data-theme='light'] .spoiler-alert-toggle-arrow,
   [data-theme='light'] .dossier-byline,
   [data-theme='light'] .dossier-stat-card strong,
   [data-theme='light'] .chapter-list time,
@@ -217,6 +272,7 @@
   [data-theme='light'] .friend-icon-incoming,
   [data-theme='light'] .player-friend-level,
   [data-theme='light'] .messages-tool.is-flagged,
+  [data-theme='light'] .messages-more-item.is-flagged,
   [data-theme='light'] .messages-report-title,
   [data-theme='light'] .social-page-back:hover,
   [data-theme='light'] .social-page-tab-icon,
@@ -233,12 +289,15 @@
   [data-theme='light'] .article-endnote strong,
   [data-theme='light'] .comments-mark,
   [data-theme='light'] .comment-form-heading span,
-  [data-theme='light'] .zelda-gallery figcaption,
   [data-theme='light'] .review-feature-copy h2 em,
   [data-theme='light'] .review-score-card span,
   [data-theme='light'] .article-engagement-kicker,
   [data-theme='light'] .article-engagement-footer .arrow-link,
   [data-theme='light'] .article-reaction-yellow .article-reaction-icon,
+  [data-theme='light'] .article-byline > span:nth-child(2),
+  [data-theme='light'] .article-toc-progress,
+  [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
+  [data-theme='light'] .news-carousel.is-grid .news-today .read-link,
   [data-theme='light'] .partners-head h2 em,
   [data-theme='light'] .partner-link:hover,
   [data-theme='light'] .partner-detail-facts-label,
@@ -253,9 +312,6 @@
   [data-theme='light'] .quiz-chip--streak,
   [data-theme='light'] .quiz-daily .arrow-link,
   [data-theme='light'] .quiz-card-best,
-  [data-theme='light'] .quiz-survival-card .arrow-link,
-  [data-theme='light'] .quiz-survival-infinity,
-  [data-theme='light'] .quiz-survival-best,
   [data-theme='light'] .quiz-level--medium .quiz-level-name,
   [data-theme='light'] .quiz-live-item--points,
   [data-theme='light'] .quiz-live-item--streak,
@@ -270,9 +326,9 @@
   [data-theme='light'] .quiz-finished-best,
   [data-theme='light'] .quiz-result-finished,
   [data-theme='light'] .quiz-confirm-dialog--medium .quiz-confirm-title,
-  [data-theme='light'] .social-launcher-icon,
+  [data-theme='light'] .social-tab--messages.lets-talk-label.is-active,
   [data-theme='light'] .social-launcher-meta-unread,
-  [data-theme='light'] .social-panel-kicker svg,
+  [data-theme='light'] .cmd-palette-foot-dot,
   [data-theme='light'] .menu-button .dash.open,
   [data-theme='light'] .arrow-link:hover,
   [data-theme='light'] .stats strong span,
@@ -286,7 +342,6 @@
   [data-theme='light'] .nav-profile-avatar,
   [data-theme='light'] .nav-profile-level,
   [data-theme='light'] .mobile-menu-footer-dot,
-  [data-theme='light'] .nav-search button:hover,
   [data-theme='light'] .search-clear:hover,
   [data-theme='light'] .search-result-top span:last-child,
   [data-theme='light'] .nav-search-all {
@@ -305,6 +360,7 @@
   [data-theme='light'] .friends-inline-error,
   [data-theme='light'] .friend-btn-link:not(:disabled):hover,
   [data-theme='light'] .friend-btn-error,
+  [data-theme='light'] .messages-more-item-danger:hover,
   [data-theme='light'] .messages-bubble-delete:hover,
   [data-theme='light'] .messages-char-count.is-over,
   [data-theme='light'] .messages-blocked-banner,
@@ -315,9 +371,9 @@
   [data-theme='light'] .comment-empty-error .comment-empty-icon,
   [data-theme='light'] .quiz-chip--hard,
   [data-theme='light'] .quiz-chip--survival,
-  [data-theme='light'] .quiz-survival-hearts,
-  [data-theme='light'] .quiz-survival-intro .quiz-survival-rules li > span,
-  [data-theme='light'] .quiz-survival-result .quiz-result-tier,
+  [data-theme='light'] .quiz-survival-card .arrow-link,
+  [data-theme='light'] .quiz-survival-best,
+  [data-theme='light'] .quiz-survival-final-label,
   [data-theme='light'] .quiz-level--hard .quiz-level-name,
   [data-theme='light'] .quiz-heart,
   [data-theme='light'] .quiz-verdict.is-wrong,
@@ -325,7 +381,15 @@
   [data-theme='light'] .quiz-challenge-error,
   [data-theme='light'] .quiz-confirm-dialog--hard .quiz-confirm-title,
   [data-theme='light'] .quiz-confirm-warning,
-  [data-theme='light'] .nav-logout,
+  [data-theme='light'] .horror-section-label,
+  [data-theme='light'] .horror-log,
+  [data-theme='light'] .horror-timer-label,
+  [data-theme='light'] .horror-lives-label,
+  [data-theme='light'] .horror-choice-key,
+  [data-theme='light'] .horror-gameover-kicker,
+  [data-theme='light'] .horror-sound-toggle,
+  [data-theme='light'] .horror-empty,
+  [data-theme='light'] .nav-profile-dropdown-logout,
   [data-theme='light'] .live-status--live {
   color: var(--danger);
 }
@@ -353,14 +417,14 @@
   color: #1d4ed8;
 }
 
-/* Les secondes lignes des titres d’articles passent au violet, sans halo, sur fond clair. */
-[data-theme='light'] .article-heading h1 em {
-  color: var(--violet);
-  text-shadow: none;
-}
-
 /* Motifs décoratifs translucides (les seuls dont l'alpha est conservé). */
-  [data-theme='light'] .quiz-global-rank::after {
+  [data-theme='light'] .quiz-global-rank::after,
+  [data-theme='light'] .cmd-palette-head input::placeholder,
+  [data-theme='light'] .cmd-palette-meta,
+  [data-theme='light'] .cmd-palette-recent small,
+  [data-theme='light'] .cmd-palette-tips,
+  [data-theme='light'] .cmd-palette-foot,
+  [data-theme='light'] .nav-search input::placeholder {
   color: rgba(20,18,50,.05);
 }
 /* #endregion encre-claire */
@@ -410,6 +474,7 @@
 
 /* Dégradés sombres → dégradés clairs (mêmes formes, autre lumière). */
 [data-theme='light'] .news-carousel-card,
+[data-theme='light'] .news-hub-card,
 [data-theme='light'] .release-card,
 [data-theme='light'] .release-countdown.is-complete,
 [data-theme='light'] .player-profile-card,
@@ -512,36 +577,37 @@
 [data-theme='light'] .article-reaction{background:var(--panel-2)}
 
 /* ============ 6. NAVIGATION, MENUS — GLASS ISLAND CLAIR ============ */
-/* L'île garde sa forme en clair : verre blanc, même rayon 16px, même ombre
-   douce. Le wordmark reste lisible (contour violet). */
+/* En thème clair, l'île passe au violet de marque #4f3494 ; le wordmark blanc
+   et les commandes gardent un contraste net. */
 [data-theme='light'] .nav,
 [data-theme='light'] .nav.scrolled,
 [data-theme='light'] .nav.nav-home,
 [data-theme='light'] .nav.nav-home.scrolled{
-  background:rgba(255,255,255,.86);
+  background:#4f3494;
   backdrop-filter:blur(18px) saturate(1.25);
   -webkit-backdrop-filter:blur(18px) saturate(1.25);
-  border:1px solid rgba(86,70,190,.12);
+  border:1px solid rgba(255,255,255,.22);
   border-radius:16px;
-  box-shadow:0 10px 30px -14px rgba(28,24,72,.22), 0 4px 12px -6px rgba(28,24,72,.14), inset 0 1px 0 rgba(255,255,255,.9);
+  box-shadow:0 10px 30px -14px rgba(48,31,100,.42), 0 4px 12px -6px rgba(48,31,100,.28), inset 0 1px 0 rgba(255,255,255,.18);
 }
 [data-theme='light'] .nav.scrolled{
-  background:rgba(255,255,255,.92);
-  box-shadow:0 16px 40px -16px rgba(28,24,72,.24), 0 6px 16px -8px rgba(28,24,72,.16);
+  background:#4f3494;
+  box-shadow:0 16px 40px -16px rgba(48,31,100,.48), 0 6px 16px -8px rgba(48,31,100,.32);
 }
 [data-theme='light'] .nav.nav-home{
-  background:rgba(255,255,255,.74);
+  background:#4f3494;
 }
 [data-theme='light'] .nav-primary{
-  background:rgba(86,70,190,.06);
-  border-color:rgba(86,70,190,.08);
+  background:rgba(255,255,255,.12);
+  border-color:rgba(255,255,255,.2);
 }
 [data-theme='light'] .nav-primary a{color:rgba(35,32,70,.72)}
 [data-theme='light'] .nav-primary a:hover{color:var(--ink);background:rgba(86,70,190,.08)}
+/* Sur la pilule jaune, l'onglet courant garde une encre violette lisible. */
 [data-theme='light'] .nav-primary a.active{
-  color:#fff;
-  background:var(--ink);
-  box-shadow:0 2px 12px -2px rgba(20,18,50,.28);
+  color:var(--violet);
+  background:var(--yellow);
+  box-shadow:0 2px 12px -2px rgba(255,214,25,.52);
 }
 [data-theme='light'] .nav-search{
   background:rgba(86,70,190,.06);
@@ -590,18 +656,18 @@
   border-color:rgba(190,18,60,.22);
   color:var(--danger);
 }
-@media(max-width:800px){
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   [data-theme='light'] .nav,
   [data-theme='light'] .nav.scrolled,
   [data-theme='light'] .nav.nav-home,
   [data-theme='light'] .nav.nav-home.scrolled{
-    background:#ffffff;
+    background:#4f3494;
     backdrop-filter:none;
     -webkit-backdrop-filter:none;
     border:0;
-    border-bottom:1px solid var(--line);
+    border-bottom:1px solid rgba(255,255,255,.24);
     border-radius:0;
-    box-shadow:0 1px 0 rgba(28,24,72,.04);
+    box-shadow:none;
   }
 }
 [data-theme='light'] .nav-search-results{
@@ -669,9 +735,8 @@
 [data-theme='light'] .cmd-palette-foot{
   background:rgba(86,70,190,.03); border-top-color:rgba(86,70,190,.06); color:rgba(35,32,70,.42);
 }
-[data-theme='light'] .nav-pill-indicator{background:var(--ink) !important}
 [data-theme='light'] .nav .nav-primary a.active,
-[data-theme='light'] .nav .nav-primary a.active:hover{color:#fff !important}
+[data-theme='light'] .nav .nav-primary a.active:hover{color:var(--violet) !important}
 [data-theme='light'] .nav-account.nav-login:hover,
 [data-theme='light'] .nav-account.nav-register:hover{background:rgba(255,214,25,.16);color:var(--ink)}
 
@@ -693,9 +758,9 @@
 [data-theme='light'] .nav-account-avatar .nav-online-dot{border-color:#f7f8fc}
 [data-theme='light'] .friends-avatar-dot,
 [data-theme='light'] .messages-avatar-dot{border-color:#ffffff}
-@media (max-width:800px){
+@media (max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   [data-theme='light'] .nav,
-  [data-theme='light'] .nav.open{background:#ffffff}
+  [data-theme='light'] .nav.open{background:#4f3494}
   [data-theme='light'] .nav-links{
     background:
       radial-gradient(900px 600px at 85% -10%, rgba(124,58,237,.09), transparent 60%),
@@ -743,15 +808,303 @@
 }
 [data-theme='light'] .messages-bubble.is-mine a{color:#fff}
 
+/* --- 7bis. L'ÎLE VIOLETTE — la messagerie habillée comme la nav ----------- */
+/* Sur papier, la fenêtre « Let’s Talk » (dock flottant + page /messages)
+   prend le violet de marque de la barre de navigation (#4f3494, section 6) :
+   même île, même bordure claire, même ombre violette — et, comme sur la
+   barre, une encre blanche. Ce choix raccorde la messagerie à la nav et
+   rend ses accents d'origine lisibles : jaune des badges et du bouton
+   d'envoi, vert « en ligne », rose des alertes et dégradé des bulles
+   « mine » tiennent le contraste sur le violet, pas sur du blanc.
+   La page autour (en-tête, onglets, note de démo) reste claire : seule
+   l'île change, comme pour la nav. */
+
+/* Surfaces : exactement les valeurs de la barre (section 6). */
+[data-theme='light'] .social-launcher,
+[data-theme='light'] .social-panel,
+[data-theme='light'] .messages-page-list,
+[data-theme='light'] .messages-page-thread,
+[data-theme='light'] .messages-page-guest,
+[data-theme='light'] .social-page-panel{
+  background:#4f3494;
+  border-color:rgba(255,255,255,.22);
+  box-shadow:0 10px 30px -14px rgba(48,31,100,.42), 0 4px 12px -6px rgba(48,31,100,.28), inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+/* Séparations internes : le filet passe au blanc voilé. */
+[data-theme='light'] .social-panel-head,
+[data-theme='light'] .messages-thread-head{border-bottom-color:rgba(255,255,255,.14)}
+[data-theme='light'] .messages-composer,
+[data-theme='light'] .messages-composer-disabled{border-top-color:rgba(255,255,255,.14)}
+[data-theme='light'] .messages-report{border-bottom-color:rgba(255,255,255,.14)}
+[data-theme='light'] .social-panel-foot{border-top-color:rgba(255,255,255,.14)}
+
+/* Encres : blanc plein pour les noms et la saisie, blancs voilés pour le
+   secondaire — même hiérarchie que sur la barre. */
+[data-theme='light'] .social-panel-kicker,
+[data-theme='light'] .messages-row-name,
+[data-theme='light'] .messages-thread-name,
+[data-theme='light'] .friends-row-name,
+[data-theme='light'] .messages-search input,
+[data-theme='light'] .friends-search input,
+[data-theme='light'] .messages-composer textarea,
+[data-theme='light'] .messages-report-note,
+[data-theme='light'] .messages-report-reason:hover,
+[data-theme='light'] .messages-report-reason.is-active,
+[data-theme='light'] .messages-action,
+[data-theme='light'] .friends-action{color:#fff}
+[data-theme='light'] .social-panel-sub,
+[data-theme='light'] .messages-row-preview,
+[data-theme='light'] .messages-row-time,
+[data-theme='light'] .messages-row-chevron,
+[data-theme='light'] .messages-thread-status,
+[data-theme='light'] .messages-section-title,
+[data-theme='light'] .messages-section-count,
+[data-theme='light'] .messages-char-count,
+[data-theme='light'] .messages-bubble-time,
+[data-theme='light'] .messages-composer-hint,
+[data-theme='light'] .messages-composer-disabled,
+[data-theme='light'] .messages-empty,
+[data-theme='light'] .messages-report-hint,
+[data-theme='light'] .messages-page-placeholder,
+[data-theme='light'] .messages-day span,
+[data-theme='light'] .friends-section-title,
+[data-theme='light'] .friends-section-count,
+[data-theme='light'] .friends-row-meta,
+[data-theme='light'] .friends-hint,
+[data-theme='light'] .friends-empty{color:rgba(255,255,255,.68)}
+[data-theme='light'] .messages-row.has-unread .messages-row-preview{color:#fff}
+[data-theme='light'] .friends-row.is-offline .friends-row-name{color:rgba(255,255,255,.55)}
+[data-theme='light'] .friends-row-level{color:var(--yellow)}
+[data-theme='light'] .messages-page-guest p{color:rgba(255,255,255,.8)}
+[data-theme='light'] .messages-search input::placeholder,
+[data-theme='light'] .friends-search input::placeholder,
+[data-theme='light'] .messages-composer textarea::placeholder{color:rgba(255,255,255,.5)}
+
+/* Bandes internes (onglets de la fenêtre, recherche, champ de saisie) :
+   voile sombre translucide, comme en thème sombre. */
+[data-theme='light'] .social-tabs{
+  background:rgba(7,8,20,.22);
+  border-bottom-color:rgba(255,255,255,.14);
+}
+[data-theme='light'] .messages-search,
+[data-theme='light'] .friends-search,
+[data-theme='light'] .messages-composer,
+[data-theme='light'] .messages-composer-hint,
+[data-theme='light'] .messages-composer-disabled{background:rgba(7,8,20,.22)}
+[data-theme='light'] .messages-search,
+[data-theme='light'] .friends-search{border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.66)}
+[data-theme='light'] .messages-search:focus-within,
+[data-theme='light'] .friends-search:focus-within{border-color:var(--cyan-bright);color:var(--cyan-bright)}
+[data-theme='light'] .messages-composer textarea{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.24);
+}
+[data-theme='light'] .messages-composer textarea:focus{border-color:var(--cyan-bright)}
+[data-theme='light'] .messages-report-note{background:rgba(7,8,20,.3);border-color:rgba(255,255,255,.24)}
+
+/* Onglets de la fenêtre : libellés blancs, actif cyan lumière (l'encre
+   cyan foncée du thème clair ne porte pas sur le violet), jaune réservé
+   à l'onglet Messages comme en thème sombre. */
+[data-theme='light'] .social-tab{color:rgba(255,255,255,.68)}
+[data-theme='light'] .social-tab:hover{color:#fff;background:rgba(255,255,255,.06)}
+[data-theme='light'] .social-tab.is-active{color:var(--cyan-bright);border-bottom-color:var(--cyan-bright)}
+[data-theme='light'] .social-tab-count{color:rgba(255,255,255,.85);border-color:rgba(255,255,255,.3)}
+[data-theme='light'] .social-tab.is-active .social-tab-count{color:var(--cyan-bright);border-color:rgba(34,211,238,.55)}
+[data-theme='light'] .social-tab--messages.lets-talk-label{color:#fff}
+[data-theme='light'] .social-tab--messages.lets-talk-label.is-active{color:var(--yellow);border-bottom-color:var(--yellow)}
+
+/* Outils (rafraîchir, fermer, retour, « … ») : boutons de verre blanc. */
+[data-theme='light'] .messages-tool,
+[data-theme='light'] .social-tool{
+  color:rgba(255,255,255,.78);
+  border-color:rgba(255,255,255,.22);
+  background:rgba(255,255,255,.06);
+}
+[data-theme='light'] .messages-tool:hover,
+[data-theme='light'] .social-tool:hover{
+  color:var(--cyan-bright);
+  border-color:rgba(255,255,255,.42);
+  background:rgba(255,255,255,.1);
+}
+[data-theme='light'] .messages-tool.is-flagged{color:var(--yellow);border-color:rgba(255,214,25,.55)}
+[data-theme='light'] .friends-action-profile,
+[data-theme='light'] .messages-tool-profile{
+  color:var(--cyan-bright);
+  border-color:rgba(34,211,238,.45);
+  background:rgba(34,211,238,.1);
+}
+[data-theme='light'] .friends-action-profile:hover,
+[data-theme='light'] .messages-tool-profile:hover{
+  color:var(--cyan-bright);
+  border-color:rgba(34,211,238,.8);
+  background:rgba(34,211,238,.16);
+}
+
+/* Lignes (discussions, amis) : survol en verre blanc, noms qui passent au
+   cyan lumière — les mêmes gestes qu'en thème sombre. */
+[data-theme='light'] .messages-row:hover,
+[data-theme='light'] .friends-row:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+[data-theme='light'] .messages-row-main:hover .messages-row-name,
+[data-theme='light'] .messages-thread-peer:hover .messages-thread-name,
+[data-theme='light'] .messages-thread-peer-link:hover .messages-thread-name,
+[data-theme='light'] .friends-row-main:hover .friends-row-name{color:var(--cyan-bright)}
+[data-theme='light'] .messages-row-main:hover .messages-row-chevron{color:var(--cyan-bright)}
+[data-theme='light'] .messages-thread-peer-link:hover{background:rgba(255,255,255,.08)}
+[data-theme='light'] .messages-section-title::after,
+[data-theme='light'] .friends-section-title::after{background:rgba(255,255,255,.18)}
+[data-theme='light'] .messages-empty,
+[data-theme='light'] .friends-empty{border-color:rgba(255,255,255,.3)}
+[data-theme='light'] .messages-empty-icon{
+  color:var(--cyan-bright);
+  border-color:rgba(34,211,238,.4);
+  background:rgba(34,211,238,.08);
+}
+
+/* Filets et puces du fil : jour séparateur, accusé de lecture, corbeille. */
+[data-theme='light'] .messages-day::before,
+[data-theme='light'] .messages-day::after{background:rgba(255,255,255,.18)}
+[data-theme='light'] .messages-day span{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22)}
+[data-theme='light'] .messages-bubble-read{color:var(--cyan-bright)}
+[data-theme='light'] .messages-link{color:var(--cyan-bright)}
+[data-theme='light'] .messages-bubble{
+  background:rgba(255,255,255,.1);
+  border-color:rgba(255,255,255,.18);
+  color:#fff;
+}
+[data-theme='light'] .messages-bubble-delete{
+  color:rgba(255,255,255,.6);
+  border-color:rgba(255,255,255,.22);
+  background:rgba(255,255,255,.08);
+}
+[data-theme='light'] .messages-bubble-delete:hover{color:#ff8c9d;border-color:rgba(255,140,157,.5);background:rgba(255,140,157,.14)}
+
+/* Bulle de suggestions à l'ouverture du fil : comme les bulles, elle vit sur
+   l'île violette en thème clair — encres blanches, accents en cyan lumière. */
+[data-theme='light'] .messages-suggest{border-color:rgba(34,211,238,.45)}
+[data-theme='light'] .messages-suggest-title{color:var(--cyan-bright)}
+[data-theme='light'] .messages-suggest-close{color:rgba(255,255,255,.6)}
+[data-theme='light'] .messages-suggest-close:hover{color:#fff;border-color:rgba(255,255,255,.28);background:rgba(255,255,255,.08)}
+[data-theme='light'] .messages-suggest-chip{background:rgba(7,8,20,.45);border-color:rgba(255,255,255,.24);color:#fff}
+[data-theme='light'] .messages-suggest-chip:hover{background:rgba(34,211,238,.14);border-color:var(--cyan-bright);color:#fff}
+
+/* Menu « … » : le volet reste sombre (dégradé d'origine, commun aux deux
+   thèmes) — ses libellés repassent donc en encre claire. */
+[data-theme='light'] .messages-more-menu{border-color:rgba(255,255,255,.2)}
+[data-theme='light'] .messages-more-item{color:rgba(255,255,255,.78)}
+[data-theme='light'] .messages-more-item:hover{color:#fff;background:rgba(255,255,255,.07)}
+
+/* Signalement : titre jaune de marque, vert « en ligne » d'origine. */
+[data-theme='light'] .messages-report-title{color:var(--yellow)}
+[data-theme='light'] .messages-report-reason{color:rgba(255,255,255,.72);border-color:rgba(255,255,255,.22)}
+[data-theme='light'] .messages-report-thanks{color:var(--friends-online,#10b981)}
+
+/* Actions secondaires ; les boutons jaunes (envoyer, actions primaires)
+   ne changent pas : le jaune de marque porte son encre sombre. */
+[data-theme='light'] .messages-action,
+[data-theme='light'] .friends-action{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.24);
+}
+[data-theme='light'] .messages-action:hover,
+[data-theme='light'] .friends-action:hover{
+  border-color:var(--cyan-bright);
+  color:var(--cyan-bright);
+  background:rgba(34,211,238,.12);
+}
+[data-theme='light'] .messages-action-quiet,
+[data-theme='light'] .friends-action-quiet{color:rgba(255,255,255,.6);background:transparent;border-color:transparent}
+[data-theme='light'] .messages-action-quiet:hover{color:var(--cyan-bright);border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.1)}
+[data-theme='light'] .friends-action-quiet:hover{color:#ff8c9d;border-color:rgba(255,140,157,.4);background:rgba(255,140,157,.1)}
+
+/* Alertes dans l'île : le rose néon d'origine remplace l'encre dangereuse
+   du thème clair (les erreurs posées sur la page claire gardent leur encre,
+   voir les re-overscores juste après). */
+[data-theme='light'] .messages-inline-error,
+[data-theme='light'] .friends-inline-error,
+[data-theme='light'] .messages-blocked-banner,
+[data-theme='light'] .messages-char-count.is-over{color:#ff8c9d}
+[data-theme='light'] .messages-blocked-banner{
+  background:rgba(255,140,157,.12);
+  border-bottom-color:rgba(255,140,157,.4);
+}
+[data-theme='light'] .messages-thread-status.is-online{color:var(--friends-online,#10b981)}
+[data-theme='light'] .messages-page-error,
+[data-theme='light'] .social-page-error{color:var(--danger)}
+
+/* États « service indisponible » : le jaune d'avertissement d'origine
+   tient le contraste sur le violet — il reste donc plein. */
+[data-theme='light'] .messages-unavailable,
+[data-theme='light'] .friends-unavailable{color:var(--yellow);border-color:rgba(255,214,25,.5)}
+
+/* Avatars : liseré blanc, initiales dans les accents lumière, point de
+   présence cerclé du violet de l'île (et non du blanc du thème clair). */
+[data-theme='light'] .messages-avatar img,
+[data-theme='light'] .messages-avatar-fallback,
+[data-theme='light'] .friends-avatar img,
+[data-theme='light'] .friends-avatar-fallback{
+  border-color:rgba(255,255,255,.3);
+  background:linear-gradient(135deg,#6d3fd4,#4f3494);
+}
+[data-theme='light'] .messages-avatar-fallback{color:var(--cyan-bright)}
+[data-theme='light'] .friends-avatar-fallback{color:var(--yellow)}
+[data-theme='light'] .friends-avatar-dot,
+[data-theme='light'] .messages-avatar-dot{border-color:#4f3494}
+
+/* Lanceur « Let’s Talk » : même violet que la fenêtre qu'il ouvre. */
+[data-theme='light'] .social-launcher:hover,
+[data-theme='light'] .social-dock.is-open .social-launcher{border-color:var(--cyan-bright)}
+[data-theme='light'] .social-launcher-meta{
+  color:rgba(255,255,255,.68);
+  border-left-color:rgba(255,255,255,.2);
+}
+[data-theme='light'] .social-launcher-meta-unread{color:var(--yellow)}
+
+/* Barres de défilement internes : pouce clair translucide sur l'île. */
+[data-theme='light'] .messages-page-list::-webkit-scrollbar,
+[data-theme='light'] .messages-body::-webkit-scrollbar,
+[data-theme='light'] .messages-thread::-webkit-scrollbar,
+[data-theme='light'] .friends-body::-webkit-scrollbar,
+[data-theme='light'] .social-page-panel::-webkit-scrollbar{background:transparent}
+[data-theme='light'] .messages-page-list::-webkit-scrollbar-thumb,
+[data-theme='light'] .messages-body::-webkit-scrollbar-thumb,
+[data-theme='light'] .messages-thread::-webkit-scrollbar-thumb,
+[data-theme='light'] .friends-body::-webkit-scrollbar-thumb,
+[data-theme='light'] .social-page-panel::-webkit-scrollbar-thumb{
+  background:rgba(255,255,255,.3);
+  border-color:transparent;
+}
+
 /* ============ 8. MÉDIAS : RESTENT SOMBRES ============ */
 /* Tout ce qui se pose sur une image, une vidéo ou un écran garde son voile
    sombre et son texte blanc. Cette section ré-affirme l'intention : elle vient
    après la section 3, donc elle a le dernier mot sur ces sélecteurs. */
+/* --- Appels vocaux / vidéo : un écran, sombre dans les deux thèmes --------
+   L'overlay d'appel (voile, carte entrante, panneau, scène, incrustation,
+   contrôles) est un écran : fond nuit, texte blanc, néons cyan/jaune —
+   c'est le seul endroit du site où le thème clair ne passe pas du tout.
+   Tout y est posé EN DUR dans src/messages/calls.css (aucun jeton de thème),
+   et le balayage d'encres exclut le motif `calls-`
+   (scripts/theme-ink-sweep.mjs) — rien à surcharger ici. Seule exception :
+   le bandeau `.calls-notice` est une surface d'interface (il s'affiche aussi
+   hors appel) et suit le thème, comme le reste des surfaces. */
 /* Le héros clair fait exception (key art sur fond clair) : voir le bloc
    « Héros clair » ci-dessous. */
 [data-theme='light'] .live-player,
 [data-theme='light'] .video-modal-player{background:#05060f}
 [data-theme='light'] .video-modal{background:rgba(10,11,26,.86)}
+/* Visionneuse des captures d'article : le voile et la scène (là où se pose le
+   visuel) sont un écran — sombres dans les deux thèmes, comme le lecteur
+   modal. Le cadre, son en-tête et son pied restent des surfaces d'interface :
+   ils suivent `--panel` et prennent donc l'encre sombre en thème clair, où le
+   jaune de marque passe à `--yellow-ink` (le #ffd619 tombe à 1,4:1 sur blanc).
+   Les flèches de navigation, elles, sont posées SUR le visuel : encre claire
+   conservée (voir la liste plus bas et le motif `article-lightbox-nav` du
+   balayage d'encres, scripts/theme-ink-sweep.mjs). */
+[data-theme='light'] .article-lightbox{background:rgba(10,11,26,.88)}
+[data-theme='light'] .article-lightbox-stage{background:#05060f}
+[data-theme='light'] .article-lightbox-kicker,
+[data-theme='light'] .article-lightbox-caption{color:var(--yellow-ink)}
 [data-theme='light'] .live-player--offline{
   background:
     radial-gradient(circle at 50% 42%,rgba(124,58,237,.28),transparent 45%),
@@ -760,6 +1113,7 @@
 [data-theme='light'] .live-offline strong,
 [data-theme='light'] .video-modal-head strong,
 [data-theme='light'] .video-modal-kicker,
+[data-theme='light'] .article-lightbox-nav,
 [data-theme='light'] .page-hero-visual-content strong,
 [data-theme='light'] .score-badge b,
 [data-theme='light'] .reel-label,
@@ -780,7 +1134,7 @@
 [data-theme='light'] .news-sentiment.negative{background:#b91c1c;border-color:rgba(185,28,28,.5)}
 [data-theme='light'] .page-hero-visual-content small{color:var(--yellow)}
 /* --- Héros clair : même visuel (image) qu'en sombre ------------------------
-   Le héros utilise une seule image (public/hero-keyart.jpg) dans les deux
+   Le héros utilise une seule image (public/hero-lets-play.jpg) dans les deux
    thèmes : aucun recadrage ni repositionnement spécifique au clair.
    Seul le voile sombre à gauche est renforcé pour garder le texte blanc et
    jaune lisible sans éclaircir ni dénaturer le visuel. */
@@ -791,7 +1145,7 @@
     linear-gradient(90deg,rgba(5,6,15,.70) 0%,rgba(5,6,15,.50) 30%,rgba(5,6,15,.22) 52%,rgba(5,6,15,.03) 76%,transparent 100%),
     linear-gradient(180deg,rgba(5,6,15,.18),transparent 36%,rgba(5,6,15,.35) 100%);
 }
-@media(max-width:800px){
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   /* mobile : renforce seulement le voile sombre à gauche pour la lisibilité. */
   [data-theme='light'] .hero-shade{background:linear-gradient(90deg,rgba(5,6,15,.84) 0%,rgba(5,6,15,.62) 58%,rgba(5,6,15,.18) 100%)}
 }
@@ -834,7 +1188,13 @@
 [data-theme='light'] .carousel-head h2 em,
 [data-theme='light'] .featured-dossier-copy h3 em,
 [data-theme='light'] .format-icon,
-[data-theme='light'] .live-head h2 em{text-shadow:none}
+[data-theme='light'] .live-head h2 em,
+[data-theme='light'] .news-hub-card--gaming h2 em,
+[data-theme='light'] .news-hub-card--cinema h2 em,
+[data-theme='light'] .news-hub-card--tech h2 em,
+[data-theme='light'] .news-carousel-head h1 em,
+[data-theme='light'] .daily-news-copy h2 em,
+[data-theme='light'] .daily-news-copy h3 em{text-shadow:none}
 [data-theme='light'] .card-gaming .format-icon{color:var(--yellow-ink)}
 [data-theme='light'] .featured-player,
 [data-theme='light'] .featured-dossier-player,
@@ -972,7 +1332,7 @@
 [data-theme='light'] .theme-toggle:hover{
   background:rgba(86,70,190,.10);border-color:rgba(86,70,190,.16);color:var(--ink);
 }
-@media (max-width:800px){
+@media (max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .theme-toggle{width:100%;height:48px;justify-content:space-between;padding:0 14px;border-radius:10px}
   .theme-toggle-label{display:inline}
 }
@@ -980,7 +1340,7 @@
 /* ============ ARTICLE HUD — LIGHT MODE ============ */
 [data-theme='light'] .article-hero::before{opacity:.42}
 [data-theme='light'] .article-heading h1{color:var(--ink)}
-[data-theme='light'] .article-heading h1 em{color:var(--violet)}
+[data-theme='light'] .article-heading h1 em{color:var(--violet);text-shadow:none}
 [data-theme='light'] .article-byline > span{
   background:rgba(255,255,255,.82);
   border-color:var(--line);
@@ -1007,11 +1367,146 @@
 [data-theme='light'] .news-carousel.is-grid .news-today{
   background:linear-gradient(155deg,#ffffff,#f3f4fb);
   border-color:var(--line);
-  box-shadow:var(--shadow-sm);
 }
-[data-theme='light'] .news-carousel.is-grid .news-carousel-card:hover,
-[data-theme='light'] .news-carousel.is-grid .news-today:hover{box-shadow:0 22px 44px -22px rgba(14,116,144,.38)}
+/* Ombre sur la cellule parente (pas sur la carte, rognée par son clip-path) —
+   même mécanique qu'en thème sombre, voir news-view-toggle.css. */
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell--today{filter:drop-shadow(0 4px 8px rgba(28,24,72,.10))}
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:hover{filter:drop-shadow(0 16px 22px rgba(14,116,144,.24))}
 [data-theme='light'] .news-carousel.is-grid .news-carousel-copy h2,
 [data-theme='light'] .news-carousel.is-grid .news-today .daily-news-copy h2{color:var(--ink)}
 [data-theme='light'] .news-carousel.is-grid .news-carousel-copy .read-link,
 [data-theme='light'] .news-carousel.is-grid .news-today .read-link{color:var(--yellow-ink)}
+
+/* ============ 14. ACTUS — HUB ET FLUX ============ */
+/* Le hub Actus (/news) et ses deux flux (/news/gaming, /news/cinema) ont été
+   construits après la passe de thème clair : cartes presque noires, accents
+   néon, filets blancs. Le balayage d'encre (section 3) remet le texte à
+   l'endroit ; le reste est mécanique et ne s'invente pas — surfaces de
+   papier, accents assombris dès qu'ils servent de texte, halos remplacés par
+   des ombres. `npm run check:light-news` vérifie l'ensemble.
+
+   Ne bougent pas les zones posées SUR une photo (règle n°2, section 8) : voile
+   des cartes du hub, chiffre « 01 / 02 », pastilles vues et sentiment — ni la
+   flèche « ↗ » du flux, qui garde une encre claire là où `--cyan` devient une
+   encre foncée. */
+
+/* Filet sous le libellé de section : le jaune de marque en aplat de 2px
+   devient invisible sur le fond clair — même dégradé, variante « encre ». */
+[data-theme='light'] .news-carousel-section > .section-label::after{
+  background:linear-gradient(90deg,var(--yellow-ink),var(--cyan),transparent);
+}
+
+/* --- Hub : les deux cartes d'univers --- */
+[data-theme='light'] .news-hub-card:hover{box-shadow:0 24px 46px -24px rgba(28,24,72,.45)}
+[data-theme='light'] .news-hub-card--gaming:hover{border-color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema:hover{border-color:#b45309}
+[data-theme='light'] .news-hub-card--tech:hover{border-color:#6d28d9}
+/* La deuxième ligne du titre garde la couleur de son univers, en version
+   *encre* : #22d3ee (cyan), #f59e0b (ambre) et #a855f7 (violet) tombent sous
+   2:1 sur blanc. */
+[data-theme='light'] .news-hub-card--gaming h2 em{color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema h2 em{color:#b45309}
+[data-theme='light'] .news-hub-card--tech h2 em{color:#6d28d9}
+/* Lien « entrer dans les actus… » : même code couleur que le titre. Ces règles
+   sont écrites ici et non laissées au balayage, qui les rabattrait toutes sur
+   le jaune d'encre. */
+[data-theme='light'] .news-hub-card--gaming .read-link{color:var(--cyan)}
+[data-theme='light'] .news-hub-card--cinema .read-link{color:#b45309}
+[data-theme='light'] .news-hub-card--tech .read-link{color:#6d28d9}
+/* Filet au-dessus du pied de carte : posé en blanc 8 %, il disparaissait. */
+[data-theme='light'] .news-hub-card-meta{border-top-color:var(--line)}
+
+/* --- Flux : la grille d'articles --- */
+/* Rail d'accent de 2px en tête de carte : une carte sur quatre le porte en
+   jaune de marque, illisible sur une carte blanche. Les halos qui
+   l'accompagnent ne se voient pas non plus sur papier (règle n°3). */
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{
+  background:var(--yellow-ink);
+}
+[data-theme='light'] .news-carousel.is-grid .news-carousel-card::before,
+[data-theme='light'] .news-carousel.is-grid .news-today::before,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(3n) .news-carousel-card::before,
+[data-theme='light'] .news-carousel.is-grid .news-grid-cell:nth-child(4n) .news-carousel-card::before{
+  box-shadow:none;
+}
+/* La flèche « ↗ » est posée sur la photo de l'article : elle garde une encre
+   claire, sinon `--cyan` (une encre foncée en thème clair) s'y perdrait. */
+[data-theme='light'] .news-feature-arrow{color:var(--cyan-bright)}
+/* Libellé texte « Messagerie » : encre sombre, il ne vit que sur le menu
+   mobile clair (le dock flottant, lui, n'affiche que le logo). Dans l'île
+   violette de la fenêtre sociale, le libellé de l'onglet reste blanc —
+   voir la section 7bis. */
+[data-theme='light'] .nav-link-desc.lets-talk-label,
+[data-theme='light'] .nav-messages-link .lets-talk-label{color:#0a0b1a}
+
+/* Contraste des commandes de la barre violette (desktop). Le menu mobile
+   reste clair : seuls son bandeau supérieur et son bouton burger sont violets. */
+@media (min-width:801px) and (hover:hover), (min-width:801px) and (min-device-width:601px){
+  [data-theme='light'] .nav .nav-primary a,
+  [data-theme='light'] .nav .nav-primary a:hover{color:#fff}
+  [data-theme='light'] .nav .nav-primary a:not(.active):hover{background:rgba(255,255,255,.16)}
+  [data-theme='light'] .nav .nav-search{
+    background:rgba(255,255,255,.94);
+    border-color:rgba(255,255,255,.48);
+  }
+  [data-theme='light'] .nav .nav-search:focus-within{background:#fff}
+  [data-theme='light'] .nav .theme-toggle{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.28);
+    color:#fff;
+  }
+  [data-theme='light'] .nav .theme-toggle:hover{
+    background:rgba(255,255,255,.22);
+    border-color:rgba(255,255,255,.42);
+    color:#fff;
+  }
+  [data-theme='light'] .nav .nav-account.nav-login{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.3);
+    color:#fff;
+  }
+  [data-theme='light'] .nav .nav-account.nav-login:hover{
+    background:rgba(255,255,255,.22);
+    border-color:rgba(255,255,255,.46);
+    color:#fff;
+  }
+  [data-theme='light'] .nav .nav-account.nav-register:hover{
+    background:var(--yellow);
+    border-color:var(--yellow);
+    color:var(--ink);
+  }
+  [data-theme='light'] .nav .nav-account.connected{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.28);
+  }
+  [data-theme='light'] .nav .nav-account.connected:hover{
+    background:rgba(255,255,255,.2);
+    border-color:rgba(255,255,255,.44);
+  }
+  [data-theme='light'] .nav .nav-account.connected .nav-account-name,
+  [data-theme='light'] .nav .nav-logout{color:#fff}
+  [data-theme='light'] .nav .nav-account.connected:hover .nav-account-name{color:var(--yellow)}
+  [data-theme='light'] .nav .nav-logout{
+    background:rgba(255,255,255,.12);
+    border-color:rgba(255,255,255,.28);
+  }
+  [data-theme='light'] .nav .nav-logout:hover{
+    background:rgba(190,18,60,.88);
+    border-color:rgba(255,255,255,.36);
+    color:#fff;
+  }
+}
+
+@media (max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  [data-theme='light'] .menu-button:not(.open){
+    background:rgba(255,255,255,.1);
+    border-color:rgba(255,255,255,.32);
+    color:#fff;
+  }
+  [data-theme='light'] .menu-button:not(.open):hover{
+    background:rgba(255,255,255,.2);
+    border-color:rgba(255,255,255,.52);
+    color:#fff;
+  }
+}

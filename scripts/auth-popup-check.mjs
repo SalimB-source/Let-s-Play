@@ -6,17 +6,19 @@
  * d'authentification doit donc lire ce paramètre : c'est le bug corrigé ici —
  * le bouton **S'inscrire** ouvrait le pop-up de connexion, parce que le mode
  * initial venait de la prop `initialMode` (« signin » par défaut) et ignorait la
- * requête. Quatre niveaux de contrôle :
+ * requête. Cinq niveaux de contrôle :
  *
  *   1. la résolution du mode (paramètre d'URL, prop `/register`, valeurs
  *      inconnues, paramètre absent) ;
  *   2. le rendu réel (SSR) de chaque URL : quel formulaire s'affiche ;
  *   3. les deux boutons de la navigation pointent bien sur `/auth?mode=…`, et
  *      le membre connecté voit à la place la pastille de compte suivie du
- *      bouton « Se déconnecter » (croix) ;
+ *      bouton « Se déconnecter » ;
  *   4. les garde-fous de source : le mode suit l'URL y compris quand le pop-up
  *      est déjà ouvert (effet sur `location.search`), et le fichier ne revient
- *      pas à un mode initial figé.
+ *      pas à un mode initial figé ;
+ *   5. navigation après connexion : accueil, profil toujours accessible,
+ *      récupération du mot de passe préservée.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -42,7 +44,7 @@ execFileSync(
   { cwd: root, stdio: 'inherit' }
 );
 
-const { AUTH_MODES, modeFromSearch, readAuthMode, renderAuth, renderNav } = await import(
+const { AUTH_MODES, modeFromSearch, readAuthMode, renderAuth, renderNav, Auth, AuthProvider, LanguageProvider, registerDemoProfiles } = await import(
   path.join(outDir, 'auth-popup-smoke.js')
 );
 
@@ -76,7 +78,7 @@ function formOf(html) {
 
 /* --------------------------------------------- 1. Résolution du mode */
 
-console.log('\n[1/4] lecture du mode : URL (les deux boutons) puis prop `/register`\n');
+console.log('\n[1/5] lecture du mode : URL (les deux boutons) puis prop `/register`\n');
 
 check('liste des modes acceptés', AUTH_MODES.join(', '), 'signin, signup');
 check('?mode=signup (bouton S’inscrire)', readAuthMode('', '?mode=signup'), 'signup');
@@ -92,7 +94,7 @@ check('modeFromSearch valide', modeFromSearch('?mode=signup'), 'signup');
 
 /* ------------------------------------------------ 2. Rendu réel (SSR) */
 
-console.log('\n[2/4] le rendu ouvre le formulaire annoncé par l’URL\n');
+console.log('\n[2/5] le rendu ouvre le formulaire annoncé par l’URL\n');
 
 const urls = [
   ['/auth?mode=signup (bouton S’inscrire)', { pathname: '/auth', search: '?mode=signup' }, 'signup'],
@@ -127,7 +129,7 @@ ok('la connexion garde « Mot de passe oublié ? »', signinHtml.includes('Forgo
 
 /* --------------------------------------- 3. Les boutons de la navigation */
 
-console.log('\n[3/4] les boutons de la navbar : visiteur (mode) et membre connecté (Log out)\n');
+console.log('\n[3/5] les boutons de la navbar : visiteur (mode) et membre connecté (Log out)\n');
 
 const navHtml = renderNav();
 ok('lien « Log in » → /auth?mode=signin', /href="\/auth\?mode=signin"/.test(navHtml));
@@ -135,7 +137,7 @@ ok('lien « Register » → /auth?mode=signup', /href="\/auth\?mode=signup"/.tes
 ok('visiteur : pas de bouton « Log out »', !/class="nav-logout"/.test(navHtml));
 
 // Membre connecté : la pastille de compte remplace les deux liens et le bouton
-// « Log out » (croix) ferme la rangée d'actions — donc tout à droite de la barre.
+// « Log out » ferme la rangée d'actions — donc tout à droite de la barre.
 const connectedHtml = renderNav({
   session: { user: { id: 'smoke-user', email: 'smoke@letsplay.dz', user_metadata: { gamertag: 'SmokeDZ' } } },
 });
@@ -145,7 +147,7 @@ ok('connecté (desktop) : niveau affiché dans la pastille', /class="nav-account
 const logoutIndex = connectedHtml.search(/<button[^>]*class="nav-logout"/);
 ok('connecté : bouton « Log out » présent', logoutIndex !== -1);
 ok('connecté : le bouton porte le libellé « Log out »', /class="nav-logout"[^>]*aria-label="Log out"/.test(connectedHtml));
-ok('connecté : icône croix (SVG) dans le bouton', /class="nav-logout-icon"/.test(connectedHtml));
+ok('connecté : icône de déconnexion (SVG) dans le bouton', /class="nav-logout-icon"/.test(connectedHtml));
 ok('connecté : le bouton vient après la pastille de compte', logoutIndex > connectedHtml.indexOf('nav-account connected'));
 ok('connecté : plus de lien « Log in » / « Register »', !/href="\/auth\?mode=(signin|signup)"/.test(connectedHtml));
 const quizIndex = connectedHtml.indexOf('href="/quizz"');
@@ -160,7 +162,7 @@ ok('visiteur : le lien Profil est aussi sous Quizz et mène à la connexion', gu
 
 /* ----------------------------------------- 4. Garde-fous de source */
 
-console.log('\n[4/4] garde-fous dans le code\n');
+console.log('\n[4/5] garde-fous dans le code\n');
 
 const authSource = readFileSync(path.join(root, 'src', 'pages', 'Auth.jsx'), 'utf8');
 const layoutSource = readFileSync(path.join(root, 'src', 'components', 'Layout.jsx'), 'utf8');
@@ -174,10 +176,77 @@ ok('le mode vient de l’URL, pas d’un « signin » figé', !/useState\(initia
 ok('la prop par défaut laisse l’URL décider', /initialMode = ''/.test(authSource));
 ok('« Register » reste un lien vers ?mode=signup', /to="\/auth\?mode=signup"/.test(layoutSource));
 ok('« Log in » reste un lien vers ?mode=signin', /to="\/auth\?mode=signin"/.test(layoutSource));
+ok('le bouton de déconnexion appelle le gestionnaire partagé', /className="nav-logout"\s+onClick=\{handleSignOut\}/.test(layoutSource));
+ok('la déconnexion ferme les menus, termine la session et revient à l’accueil', /const handleSignOut = \(\) => \{\s*setMenuOpen\(false\);\s*setProfileMenuOpen\(false\);\s*signOut\(\);\s*navigate\('\/'\);/.test(layoutSource));
+
+// Successful password sign-in and immediate sign-up both replace the auth URL.
+ok('connexion et inscription immédiate → accueil',
+  (authSource.match(/setConnectedPopup\(true\);\s*navigate\('\/', \{ replace: true \}\);/g) || []).length === 2);
+ok('aucune ancienne destination ne remplace l’accueil', !authSource.includes('returnToRef'));
+
+console.log('\n[5/5] navigation après connexion (DOM)\n');
+const { JSDOM } = await import('jsdom');
+const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', { url: 'https://letsplay.test/auth' });
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+const { createElement: h, act } = await import('react');
+const { createRoot } = await import('react-dom/client');
+const { createMemoryRouter, RouterProvider } = await import('react-router-dom');
+const { DEMO_PROFILE_FIXTURES } = await import('./demoFixtures.js');
+registerDemoProfiles(DEMO_PROFILE_FIXTURES);
+
+async function mountAuth(entry, session = null) {
+  const router = createMemoryRouter([
+    { path: '/auth', element: h(Auth) },
+    { path: '/', element: h('h1', null, 'Home') },
+  ], { initialEntries: [entry] });
+  const root = createRoot(document.getElementById('root'));
+  await act(async () => root.render(h(LanguageProvider, { lang: 'en' },
+    h(AuthProvider, { initialSession: session }, h(RouterProvider, { router })))));
+  return { router, close: async () => {
+    await act(async () => root.unmount());
+    router.dispose();
+    window.localStorage.clear();
+  } };
+}
+
+try {
+  // A stale comment return target must not override the new home landing page.
+  window.sessionStorage.setItem('letsplay_auth_return_to', JSON.stringify({ to: '/news', at: Date.now() }));
+  const login = await mountAuth({ pathname: '/auth', search: '?mode=signin', state: { from: '/news', mode: 'signin' } });
+  check('avant connexion : formulaire conservé', login.router.state.location.pathname, '/auth');
+  await act(async () => document.querySelector('.button-demo-primary').click());
+  check('nouvelle session : accueil', login.router.state.location.pathname, '/');
+  check('connexion remplace l’URL dans l’historique', login.router.state.historyAction, 'REPLACE');
+  await act(async () => login.router.navigate('/auth'));
+  check('le profil reste accessible après connexion', login.router.state.location.pathname, '/auth');
+  await login.close();
+
+  const session = { user: { id: 'smoke-user', email: 'smoke@letsplay.dz', user_metadata: { gamertag: 'SmokeDZ' } } };
+  const profile = await mountAuth('/auth', session);
+  check('session existante : pas de redirection du profil', profile.router.state.location.pathname, '/auth');
+  await profile.close();
+
+  const callback = await mountAuth('/auth#access_token=test&type=signup', session);
+  check('confirmation par e-mail : accueil', callback.router.state.location.pathname, '/');
+  await callback.close();
+
+  window.history.replaceState(null, '', '/auth#access_token=test&type=recovery');
+  const recovery = await mountAuth('/auth#access_token=test&type=recovery', session);
+  check('récupération : reste sur le formulaire', recovery.router.state.location.pathname, '/auth');
+  ok('récupération : formulaire de nouveau mot de passe', document.body.textContent.includes('UPDATE PASSWORD'));
+  await recovery.close();
+} finally {
+  dom.window.close();
+  delete globalThis.window;
+  delete globalThis.document;
+  delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+}
 
 console.log(
   failures === 0
-    ? '\nTout est bon : « S’inscrire » ouvre le formulaire d’inscription, « Se connecter » celui de connexion.\n'
+    ? '\nTout est bon : formulaires, navigation et accueil après connexion.\n'
     : `\n${failures} contrôle(s) en échec.\n`,
 );
 

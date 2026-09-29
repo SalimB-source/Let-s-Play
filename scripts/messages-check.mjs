@@ -6,24 +6,39 @@
  *    comptés, dernier message) ; les clés de conversation sont symétriques et
  *    sans caractère réservé ; la saisie est nettoyée et bornée ; l'accusé de
  *    lecture et les messages reçus en direct se fondent dans l'état sans
- *    doublon ; les erreurs du trigger sont reconnues.
+ *    doublon ; les erreurs du trigger sont reconnues ; les suggestions de la
+ *    bulle d'ouverture couvrent les quatre états du fil (vide, reçu en
+ *    question, reçu au calme, envoyé) dans les trois langues.
  * 2. Aperçu de démonstration : les discussions de départ ne citent que des
  *    amis existants, jamais soi-même ; il y a des non-lus et des discussions
  *    lues ; les réponses scriptées sont déterministes ; les messages scriptés
  *    arrivent à échéance, une seule fois ; bloquer / signaler sont réversibles
  *    et sans effet de bord.
+ *
+ * Les pseudos s'affichent en majuscules partout dans la messagerie
+ * (`pseudoLabel`) : la conversion est vérifiée sur la casse mixte, les accents,
+ * les espaces de bord et les pseudos absents, et les deux vues de messagerie
+ * sont rendues avec un pseudo en casse mixte.
  * 3. Rendu SSR : le hub /auth et un profil public se rendent dans les trois
- *    langues ; la fenêtre sociale unifiée (amis + messagerie) n'apparaît que
- *    pour un joueur connecté ; ouverte sur la messagerie, elle montre la
+ *    langues ; le lanceur reste visible pour un visiteur et l'envoie vers
+ *    la page de connexion, sans ouvrir les conversations ; pour un joueur
+ *    connecté, la fenêtre sociale ouverte sur la messagerie montre la
  *    liste des discussions puis la discussion en cours (bulles + champ de
- *    saisie) ; le bouton « Message » d'un profil ami est rendu, et propose la
+ *    saisie + bulle de suggestions à l'ouverture, fermable) ; le bouton
+ *    « Message » d'un profil ami est rendu, et propose la
  *    connexion à un visiteur. Le hub, lui, ne porte plus AUCUN raccourci de
  *    messagerie : ses seules sections sociales sont la liste d'amis et la
  *    fenêtre sociale (ou la page /messages sur mobile).
+ * 4. DOM : clic sur « Effacer la conversation » dans la page, annulation puis
+ *    confirmation, disparition des bulles et persistance au rechargement ;
+ *    clic sur la bulle de suggestions (remplissage sans envoi, fermeture
+ *    après choix ou frappe, retour à la réouverture).
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import assert from 'node:assert/strict';
+import { JSDOM } from 'jsdom';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'node_modules', '.cache', 'messages-smoke');
@@ -34,18 +49,35 @@ execFileSync(
   { cwd: root, stdio: 'inherit' },
 );
 
+// react-dom fige `canUseDOM` / `isInputEventSupported` au moment de son
+// évaluation : sans fenêtre réelle à cet instant, le branchement « input »
+// ne se monte jamais et aucun onChange de champ de saisie ne part en DOM.
+// On ouvre donc une JSDOM *avant* d'importer la fumée (react-dom inclus),
+// puis on rend l'environnement à son état d'origine pour les sections 1-3,
+// qui tournent sans fenêtre ; la même fenêtre revient en section 4.
+const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost' });
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+
 const smoke = await import(path.join(outDir, 'messages-smoke.js'));
 const {
   DEMO_INCOMING, DEMO_INITIAL_STATE, DEMO_PROFILES, DEMO_REPLIES, DEMO_THREADS,
   MESSAGE_MAX_LENGTH, REPORT_REASONS,
-  appendMessage, applyDemoBlock, applyDemoIncoming, applyDemoRead, applyDemoReply,
+  appendMessage, applyDemoBlock, applyDemoClear, applyDemoIncoming, applyDemoRead, applyDemoReply,
   applyDemoReport, applyDemoSend, applyDemoUnblock, applyReadReceipt,
-  conversationKey, demoReplyFor, demoThreads, dueDemoIncoming, friendsCopy,
-  isBlockedError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
-  markThreadReadLocal, mergeUnread, messagesCopy, normalizeMessage, peersFromKey,
-  prepareBody, reasonLabel, seedDemoThreadState, socialCopy, sortThreadsByActivity,
-  threadsFromRows, totalUnread, unreadFromRows, findDemoPlayer, renderApp,
+  clearThreadLocal, conversationKey, demoReplyFor, demoThreads, describeMessagesError, describeSupabaseError,
+  dueDemoIncoming, friendsCopy,
+  isAfterClear, isBlockedError, isMissingMessagesTable, isRateLimitedError, isRequiresFriendshipError,
+  makeStorage, markThreadReadLocal, mergeUnread, messageSuggestions, messagesCopy, normalizeMessage, peersFromKey,
+  prepareBody, pseudoLabel, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
+  sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, writeDemoMessages,
+  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp, renderFriendsTab,
+  renderInboxView, renderRequestsTab, renderThreadView, callsText,
 } = smoke;
+
+// Sections 1-3 : aucun besoin de fenêtre (voir le commentaire d'import).
+delete globalThis.window;
+delete globalThis.document;
 
 let failures = 0;
 function check(label, actual, expected = true) {
@@ -56,7 +88,7 @@ function check(label, actual, expected = true) {
 function strip(html) { return html.replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, '’').replace(/&amp;/g, '&').replace(/\s+/g, ' '); }
 
 /* ------------------------------------------------------------------------ */
-console.log('\n[1/3] logique pure\n');
+console.log('\n[1/4] logique pure\n');
 
 const me = 'aaaaaaaa-0000-0000-0000-000000000001';
 const bob = 'bbbbbbbb-0000-0000-0000-000000000002';
@@ -132,6 +164,27 @@ const receipted = applyReadReceipt(sent, { id: 'm8', read_at: '2026-01-01T10:07:
 check('accusé de lecture → « vu »', receipted[bob].messages.find((message) => message.id === 'm8').read, true);
 check('accusé inconnu → état inchangé', applyReadReceipt(sent, { id: 'zzz', read_at: 'x' }), sent);
 
+// Effacer pour soi : le fil, son aperçu et son badge disparaissent, mais ni
+// l'autre conversation ni la copie de l'interlocuteur ne sont modifiées.
+const bobView = threadsFromRows(rows, bob);
+const cleared = clearThreadLocal(threads, bob);
+check('effacement local → fil retiré', cleared[bob] === undefined);
+check('effacement local → les non-lus disparaissent', totalUnread(cleared), 0);
+check('effacement local → autre conversation intacte', cleared[carol], threads[carol]);
+check('effacement local → copie de l’autre joueur intacte', bobView[me].messages.length, 3);
+check('effacement d’un fil inexistant → inchangé', clearThreadLocal(threads, 'zzz'), threads);
+const clearedAt = '2026-01-01T10:04:00.123456+00:00';
+check('un ancien message reçu en retard reste masqué', appendMessage(cleared, me, rows[0], { [bob]: clearedAt }), cleared);
+check('comparaison précise avant la microseconde du repère', isAfterClear('2026-01-01T10:04:00.123455Z', clearedAt), false);
+check('comparaison précise après la microseconde du repère', isAfterClear('2026-01-01T10:04:00.123457Z', clearedAt));
+const resumed = appendMessage(cleared, me, {
+  id: 'm9', sender_id: bob, recipient_id: me, body: 'Nouveau message',
+  created_at: '2026-01-01T10:05:00Z', read_at: null,
+}, { [bob]: clearedAt });
+check('nouveau message après effacement → visible', resumed[bob].messages.map((message) => message.id).join(','), 'm9');
+check('nouveau message après effacement → non-lu', resumed[bob].unread, 1);
+check('l’ancien historique ne revient pas avec le nouveau message', resumed[bob].lastMessage.id, 'm9');
+
 check('saisie nettoyée', prepareBody('   salut   '), 'salut');
 check('retours Windows normalisés', prepareBody('a\r\nb'), 'a\nb');
 check('sauts de ligne répétés réduits', prepareBody('a\n\n\n\nb'), 'a\n\nb');
@@ -145,9 +198,60 @@ check('blocage reconnu', isBlockedError({ message: 'direct_message_blocked' }));
 check('amitié requise reconnue', isRequiresFriendshipError({ message: 'direct_message_requires_friendship' }));
 check('anti-spam reconnu', isRateLimitedError({ message: 'direct_message_rate_limited' }));
 check('une autre erreur n’est pas un blocage', isBlockedError({ message: 'connection reset' }), false);
+check('RPC non déployé → consigne de relancer le SQL', describeMessagesError({
+  code: 'PGRST202', message: 'Could not find the function public.clear_direct_conversation(target_id)',
+}, messagesCopy.fr), messagesCopy.fr.errClearUnavailable);
+
+// Description des erreurs Supabase : le diagnostic et les logs s'appuient sur
+// une forme plate, car `console.error(erreur)` perd `code`/`status`/`details`.
+const describedStorage = describeSupabaseError({ message: 'The object was not found', error: 'not_found', statusCode: '404' });
+check('erreur storage : statusCode devient status', describedStorage.status, 404);
+check('erreur storage : message conservé', describedStorage.message, 'The object was not found');
+check('erreur storage : champ error conservé', describedStorage.error, 'not_found');
+const describedPostgrest = describeSupabaseError({ code: 'P0001', message: 'direct_message_requires_friendship', details: null, hint: null });
+check('erreur postgrest : code conservé', describedPostgrest.code, 'P0001');
+check('erreur postgrest : pas de status inventé', describedPostgrest.status, null);
+const describedNested = describeSupabaseError(new Error('outer', { cause: { message: 'inner', code: '42501' } }));
+check('chaîne de cause parcourue', describedNested.cause.code, '42501');
+check('erreur null → null', describeSupabaseError(null), null);
+check('chaîne brute acceptée', describeSupabaseError('rate limit').message, 'rate limit');
+
+// Pseudos : la messagerie affiche tous les joueurs en majuscules. C'est une
+// règle de rendu — les données gardent leur casse, d'où ces quelques cas.
+check('pseudo en majuscules (casse mixte)', pseudoLabel('nova pixel'), 'NOVA PIXEL');
+check('pseudo déjà en majuscules inchangé', pseudoLabel('KAYZ_ORAN'), 'KAYZ_ORAN');
+check('pseudo en minuscules', pseudoLabel('kayz_oran'), 'KAYZ_ORAN');
+check('accents conservés en majuscules', pseudoLabel('éloïse_dz'), 'ÉLOÏSE_DZ');
+check('espaces de bord retirés', pseudoLabel('  vortex  '), 'VORTEX');
+check('pseudo absent → chaîne vide', pseudoLabel(null), '');
+check('pseudo vide → chaîne vide', pseudoLabel('   '), '');
+check('pseudo nul → repli possible', pseudoLabel(null) || '?', '?');
+check('pseudo : conversion idempotente', pseudoLabel(pseudoLabel('Vortex_DZ')), 'VORTEX_DZ');
+check('pseudo : règle d’affichage, pas un texte traduit', typeof messagesCopy.fr.pseudoLabel, 'undefined');
+
+// Bulle de suggestions à l'ouverture d'une discussion : trois propositions,
+// registre choisi selon l'état du fil, pseudo en majuscules dans le salut.
+for (const lang of ['en', 'fr', 'ar']) {
+  const t = messagesCopy[lang];
+  const empty = messageSuggestions(t, { name: 'nova pixel', lastMessage: null });
+  const asked = messageSuggestions(t, { name: 'nova pixel', lastMessage: { mine: false, body: 'On joue ?' } });
+  const told = messageSuggestions(t, { name: 'nova pixel', lastMessage: { mine: false, body: 'Parfait.' } });
+  const mine = messageSuggestions(t, { name: 'nova pixel', lastMessage: { mine: true, body: 'J’arrive.' } });
+  check(`[${lang}] suggestions : toujours trois propositions non vides`,
+    [empty, asked, told, mine].every((list) => list.length === 3 && list.every((entry) => entry.trim())));
+  check(`[${lang}] suggestions : fil vide → salut avec pseudo en majuscules`,
+    empty.includes(t.suggestGreet[0].replace('{name}', 'NOVA PIXEL')));
+  check(`[${lang}] suggestions : question reçue → réponses courtes`, asked.join('|'), t.suggestAnswer.join('|'));
+  const askedAr = messageSuggestions(t, { name: 'x', lastMessage: { mine: false, body: 'جولة؟' } });
+  check(`[${lang}] suggestions : point d’interrogation arabe reconnu`, askedAr.join('|'), t.suggestAnswer.join('|'));
+  check(`[${lang}] suggestions : constat reçu → réactions`, told.join('|'), t.suggestReply.join('|'));
+  check(`[${lang}] suggestions : dernier envoyé → relances`, mine.join('|'), t.suggestFollowUp.join('|'));
+}
+check('suggestions : message reçu vide → trois propositions quand même',
+  messageSuggestions(messagesCopy.fr, { name: 'Kayz', lastMessage: { mine: false, body: '  ' } }).length, 3);
 
 /* ------------------------------------------------------------------------ */
-console.log('\n[2/3] aperçu de démonstration\n');
+console.log('\n[2/4] aperçu de démonstration\n');
 
 const now = Date.UTC(2026, 8, 21, 12, 0, 0);
 
@@ -200,6 +304,20 @@ for (const [key, profile] of Object.entries(DEMO_PROFILES)) {
   check(`${key} : lecture → plus de non-lus`, demoThreads(readOnce, self)[anyPeer].unread, 0);
   check(`${key} : lecture d’une discussion déjà lue → inchangée`, applyDemoRead(readOnce, anyPeer), readOnce);
 
+  const clearedDemo = applyDemoClear(state, anyPeer);
+  check(`${key} : effacement → les deux sens du fil disparaissent`, demoThreads(clearedDemo, self)[anyPeer] === undefined);
+  check(`${key} : effacement → autres fils intacts`, clearedDemo.threads[peers[1]], state.threads[peers[1]]);
+  check(`${key} : effacement → baisse des non-lus`, totalUnread(demoThreads(clearedDemo, self)), totalUnread(normalized) - normalized[anyPeer].unread);
+  check(`${key} : effacement répété → inchangé`, applyDemoClear(clearedDemo, anyPeer), clearedDemo);
+  const newAfterClear = applyDemoReply(clearedDemo, anyPeer, now + 3000);
+  check(`${key} : un nouveau message recrée le fil sans l’historique`, demoThreads(newAfterClear, self)[anyPeer].messages.length, 1);
+  // Le stockage de la persona ne réensemence pas le fil effacé au rechargement.
+  const savedWindow = globalThis.window;
+  globalThis.window = { localStorage: makeStorage() };
+  writeDemoMessages(profile, clearedDemo);
+  check(`${key} : effacement persistant après rechargement démo`, demoThreads(readDemoMessages(profile), self)[anyPeer] === undefined);
+  globalThis.window = savedWindow;
+
   // Messages scriptés : rien avant l'échéance, une seule fois après.
   const seededAt = Date.parse(state.seededAt);
   const first = DEMO_INCOMING[key][0];
@@ -239,14 +357,19 @@ check('motifs de signalement connus du SQL', REPORT_REASONS.join(','), 'harassme
 check('les amis de la communauté existent', Object.values(DEMO_THREADS).flatMap(Object.keys).every((peerId) => findDemoPlayer(peerId)));
 
 /* ------------------------------------------------------------------------ */
-console.log('\n[3/3] rendu SSR\n');
+console.log('\n[3/4] rendu SSR\n');
 
 for (const lang of ['en', 'fr', 'ar']) {
   const t = messagesCopy[lang];
   const st = socialCopy[lang];
   try {
-    const guest = strip(renderApp('/auth', { lang }));
-    check(`[${lang}] visiteur : pas de fenêtre sociale`, guest.includes('social-launcher') || guest.includes(st.launcherOpen), false);
+    const guest = renderApp('/auth', { lang });
+    check(`[${lang}] visiteur : lanceur vers la messagerie visible`, guest.includes('social-launcher') && strip(guest).includes(st.launcher));
+    check(`[${lang}] visiteur : aucun panneau de discussions`, guest.includes('social-panel'), false);
+    check(`[${lang}] menu mobile : accès direct à /messages`, guest.includes('class="nav-messages-link') && guest.includes('href="/messages"'));
+    const gate = renderApp('/messages', { lang });
+    check(`[${lang}] visiteur : page de connexion et aucun fil`, strip(gate).includes(t.signInPrompt) && !gate.includes('messages-thread'));
+    check(`[${lang}] page /messages : pas de lanceur en double`, gate.includes('social-launcher'), false);
   } catch (e) { check(`[${lang}] /auth visiteur se rend`, e.message, ''); }
 
   try {
@@ -257,7 +380,6 @@ for (const lang of ['en', 'fr', 'ar']) {
     // Le profil du joueur n'affiche plus les raccourcis de messagerie : la
     // discussion se rejoint par la fenêtre sociale (ou la page /messages).
     check(`[${lang}] hub : aucun raccourci de messagerie`, text.includes(t.hubOpen), false);
-    check(`[${lang}] hub : plus de section « ${t.hubTitle} »`, text.includes(t.hubTitle), false);
   } catch (e) { check(`[${lang}] /auth persona se rend`, e.message, ''); }
 
   try {
@@ -277,6 +399,9 @@ for (const lang of ['en', 'fr', 'ar']) {
     check(`[${lang}] discussion ouverte : fil + champ de saisie`, html.includes('messages-thread') && html.includes('messages-composer'));
     check(`[${lang}] discussion ouverte : pseudo de l’ami`, text.includes(findDemoPlayer(peer).gamertag));
     check(`[${lang}] discussion ouverte : gestes bloquer / signaler`, html.includes(`aria-label="${t.block}"`) && html.includes(`aria-label="${t.report}"`));
+    check(`[${lang}] dock : option « ${t.clearConversation} »`, html.includes(`aria-label="${t.clearConversation}"`));
+    const pageThread = renderApp(`/messages/${peer}`, { lang, demoKey: 'vortex' });
+    check(`[${lang}] page : option « ${t.clearConversation} »`, pageThread.includes(`aria-label="${t.clearConversation}"`));
     check(`[${lang}] discussion ouverte : un message du fil`, text.includes(DEMO_THREADS.vortex[peer][0].body));
   } catch (e) { check(`[${lang}] discussion ouverte se rend`, e.message, ''); }
 
@@ -308,8 +433,83 @@ try {
   check('les textes des amis restent complets', Object.keys(friendsCopy.en).filter((entry) => !friendsCopy.fr[entry]).join(','), '');
 } catch (e) { check('la fenêtre sociale se rend', e.message, ''); }
 
+// Pseudos en majuscules : les gamertags des fixtures le sont déjà, donc on
+// rend les deux vues de la messagerie avec un pseudo en casse mixte — le
+// rendu doit le mettre en majuscules, dans le texte comme dans les libellés
+// accessibles.
+try {
+  const mixed = { id: 'demo-player-9001', name: 'nova pixel', avatar: null };
+  const seeded = {
+    peerId: mixed.id,
+    profile: mixed,
+    lastMessage: { id: 'm1', body: 'Salut !', mine: false, createdAt: '2026-01-01T10:00:00Z', read: true },
+    unread: 0,
+    lastAt: '2026-01-01T10:00:00Z',
+  };
+  const t = messagesCopy.fr;
+  const inboxRaw = renderInboxView([seeded], { lang: 'fr' });
+  const inbox = strip(inboxRaw);
+  check('liste : pseudo en majuscules', inbox.includes('NOVA PIXEL') && !inbox.includes('nova pixel'));
+  check('liste : libellé accessible en majuscules', inboxRaw.includes(`${t.openChat} — NOVA PIXEL`));
+
+  const blockedRaw = renderInboxView([], { lang: 'fr', blocked: [{ ...seeded, lastMessage: null, lastAt: null }] });
+  const blocked = strip(blockedRaw);
+  check('joueurs bloqués : pseudo en majuscules', blocked.includes('NOVA PIXEL') && !blocked.includes('nova pixel'));
+  check('joueurs bloqués : mention du blocage', blocked.includes(t.blockedNote) && blocked.includes(t.unblock));
+
+  const threadRaw = renderThreadView(mixed, {
+    lang: 'fr',
+    messages: [{ id: 'm1', body: 'Salut !', mine: false, createdAt: '2026-01-01T10:00:00Z', read: false }],
+  });
+  const thread = strip(threadRaw);
+  check('discussion : pseudo en majuscules', thread.includes('NOVA PIXEL') && !thread.includes('nova pixel'));
+  check('discussion : lien profil libellé en majuscules', threadRaw.includes(`${t.profile} — NOVA PIXEL`));
+  check('discussion : message du fil intact', thread.includes('Salut !'));
+  check('discussion : champ de saisie et bouton d’envoi', threadRaw.includes('messages-composer') && threadRaw.includes(`aria-label="${t.send}"`));
+  check('discussion : bulle de suggestions à l’ouverture', threadRaw.includes('messages-suggest') && threadRaw.includes(`aria-label="${t.suggestGroup}"`));
+  check('discussion : trois suggestions proposées', (threadRaw.match(/messages-suggest-chip/g) || []).length, 3);
+  check('discussion : suggestions fermables', threadRaw.includes(`aria-label="${t.suggestClose}"`));
+  const ct = callsText('fr');
+  check('discussion : boutons d’appel nommés', threadRaw.includes(`aria-label="${ct.callAudio}"`) && threadRaw.includes(`aria-label="${ct.callVideo}"`));
+  check('discussion : effacement pour soi toujours proposé', threadRaw.includes(`aria-label="${t.clearConversation}"`));
+} catch (e) { check('les vues de messagerie se rendent seules', e.message, ''); }
+
+// Onglets Amis / Demandes de la fenêtre sociale : la même règle s'applique —
+// les pseudos des amis ressortent en majuscules, dans le texte visible comme
+// dans les libellés accessibles (ouverture de discussion, bouton « Profil »).
+try {
+  const mixed = { id: 'demo-player-9001', name: 'nova pixel', avatar: null, online: true, level: 4 };
+  const t = messagesCopy.fr;
+  const ft = friendsCopy.fr;
+  const friendsRaw = renderFriendsTab([mixed], { lang: 'fr' });
+  const friendsView = strip(friendsRaw);
+  check('onglet amis : pseudo en majuscules', friendsView.includes('NOVA PIXEL') && !friendsView.includes('nova pixel'));
+  check('onglet amis : libellé d’ouverture en majuscules', friendsRaw.includes(`${t.openChat} — NOVA PIXEL`));
+  check('onglet amis : bouton profil libellé en majuscules', friendsRaw.includes(`${ft.viewProfile} — NOVA PIXEL`));
+  const requestsRaw = renderRequestsTab({ incoming: [{ ...mixed, online: false }], outgoing: [{ ...mixed, id: 'demo-player-9002' }], lang: 'fr' });
+  const requestsView = strip(requestsRaw);
+  check('onglet demandes : pseudo en majuscules', requestsView.includes('NOVA PIXEL') && !requestsView.includes('nova pixel'));
+} catch (e) { check('les onglets amis se rendent seuls', e.message, ''); }
+
+console.log('\n[4/4] gestes DOM : effacement et suggestions\n');
+// La fenêtre ouverte avant l'import de la fumée (react-dom a besoin d'une
+// fenêtre dès son évaluation — voir le commentaire au-dessus de l'import).
+globalThis.window = dom.window;
+globalThis.document = dom.window.document;
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+try {
+  await checkClearInteraction(assert);
+  check('annuler / confirmer : fil effacé et persistant pour la persona seulement', true);
+  await checkSuggestionInteraction(assert);
+  check('bulle de suggestions : clic, fermeture puis réouverture', true);
+} catch (e) {
+  check('gestes DOM de la page (effacement / suggestions)', e.message, '');
+} finally {
+  dom.window.close();
+}
+
 if (failures > 0) {
   console.error(`\n${failures} vérification(s) en échec.`);
   process.exit(1);
 }
-console.log('\n  OK — messagerie : discussions, non-lus, blocage / signalement, aperçu démo et rendu des pages\n');
+console.log('\n  OK — messagerie : discussions, non-lus, effacement pour soi, aperçu démo et rendu des pages\n');
