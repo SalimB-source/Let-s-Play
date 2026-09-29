@@ -1124,10 +1124,13 @@ export default function MirageOnline({
                 )}
               </div>
 
+                    {/* Le glissement sur la piste est lu par MirageWorld
+                        (mirageTouch.js) : ces boutons restent un recours pour
+                        qui préfère viser explicitement. */}
                     <div className="mirage-mobile-controls">
-                      <button type="button" onClick={() => actions.current?.('left')}>←</button>
-                      <button type="button" className="mirage-jump-control" onClick={() => actions.current?.('jump')}>SAUT ↑</button>
-                      <button type="button" onClick={() => actions.current?.('right')}>→</button>
+                      <button type="button" aria-label="Aller à gauche" onClick={() => actions.current?.('left')}>←</button>
+                      <button type="button" className="mirage-jump-control" aria-label="Sauter" onClick={() => actions.current?.('jump')}>SAUT ↑</button>
+                      <button type="button" aria-label="Aller à droite" onClick={() => actions.current?.('right')}>→</button>
                     </div>
                   </section>
                 </div>
