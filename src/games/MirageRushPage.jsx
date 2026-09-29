@@ -414,8 +414,6 @@ export default function MirageRushPage() {
               prepareSignal={runToken}
               onReady={() => setReady(true)}
               onHud={(next) => {
-                // Stampede hooves follow the horse: silent while it stands still (shot off the saddle).
-                audioRef.current?.setGallop(next.speed > 0 && !next.stunned, (next.speed || 15) / 15);
                 onHud(next);
               }}
               onFinish={onFinish}

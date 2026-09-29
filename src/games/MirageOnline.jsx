@@ -1020,7 +1020,6 @@ export default function MirageOnline({
                     setWorldError(message || 'Le jeu 3D n’a pas pu démarrer.');
                   }}
                   onHud={(p) => {
-                    audio.current?.setGallop(p.speed > 0 && !p.stunned, (p.speed || 15) / 15);
                     latest.current = p;
                     setHud(p);
                   }}
