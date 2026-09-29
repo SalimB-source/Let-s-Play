@@ -233,6 +233,9 @@ img{max-width:100%}
   .nav-search{min-width:140px}
   .nav-search-kbd{display:none}
   .brand-logo{height:34px}
+  .nav-primary{gap:1px;padding:2px}
+  .nav-primary a{padding:6px 7px;font-size:9.5px;letter-spacing:.08em}
+  .nav-actions{gap:6px}
 }
 /* Comptes — île : pilules arrondies, même langage que les liens */
 .nav-account.nav-login,

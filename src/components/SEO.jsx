@@ -44,6 +44,11 @@ const pageMeta = {
     description: 'Teste tes connaissances gaming : culture générale, rétro, souls-like, RPG, e-sport et studios. Un quizz du jour, des succès et de l’XP à gagner.',
     type: 'website',
   },
+  '/jeu': {
+    title: 'Mirage Rush — Jeu arcade 3D — Let’s Play',
+    description: 'Cours dans un désert surréaliste en blocs, évite les cactus et grimpe au classement communautaire de Let’s Play.',
+    type: 'website',
+  },
   '/news/kingdom-hearts-4-coco': {
     title: 'Kingdom Hearts 4 : pourquoi le monde de Coco colle à la saga — Let’s Play',
     description: 'Le monde de Coco est confirmé dans Kingdom Hearts 4, attendu fin 2027. Seconde mort, mémoire et symbolique du cœur : pourquoi ce choix de Disney et Tetsuya Nomura est bien plus cohérent qu’un simple coup marketing.',
