@@ -2,7 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
-import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_SPEED_BONUS, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible } from './mirageRules';
+import { sardiniaObstacle, sardiniaVillage } from './sardiniaStage';
+import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE } from './mirageRules';
 
 const LANES = [-2.1, 0, 2.1];
 const TRACK_MIN_Z = -40;
@@ -18,12 +19,12 @@ function block(geometry, material, parent, position, scale = null) {
   return mesh;
 }
 
-function makeExplorer(rival = false) {
+function makeExplorer(rival = false, palette = null) {
   const player = new THREE.Group();
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const mat = color => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true });
   const palettes = [[0xb87948,0x352638,0x285e79,0xffce68,0xffe3b3], [0x393744,0xd5dde1,0xad3756,0x8ce7e0,0x34293d], [0xe2d5bd,0x684532,0x387649,0xffdc87,0x624132], [0x654536,0x251f29,0x7951aa,0xffa85c,0x392947]];
-  const [coat, mane, cloth, trim, hood] = palettes[Number(rival) || 0].map(mat);
+  const [coat, mane, cloth, trim, hood] = (palette || palettes[Number(rival) || 0]).map(mat);
   // Horse faces -Z: hindquarters and the rider's back face the camera.
   block(cube, coat, player, [0, 0.95, 0], [0.82, 0.83, 1.65]);
   const neck = block(cube, coat, player, [0, 1.48, -0.64], [0.46, 1.02, 0.52]);
@@ -56,7 +57,17 @@ function makeExplorer(rival = false) {
     block(cube, mane, player, [x * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
   }
   player.userData.parts = { legs, tail, cape };
+  player.userData.materials = [coat, mane, cloth, trim, hood];
+  player.userData.basePalette = palette || palettes[Number(rival) || 0];
+  player.userData.painting = player.userData.basePalette;
   return player;
+}
+
+/** Recolor a rider made by makeExplorer with a 5-slot skin palette. */
+function paintModel(model, colors) {
+  const materials = model.userData.materials;
+  if (!materials || !colors) return;
+  colors.forEach((color, index) => materials[index]?.color.set(color));
 }
 
 function makeCactus() {
@@ -119,12 +130,13 @@ function makeScenery() {
   return group;
 }
 
-function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
+function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const western = stage === 'western';
   const prairie = stage === 'prairie';
+  const sardinia = stage === 'sardinia';
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(prairie ? 0xe5b373 : western ? 0xdba57b : 0x4b2860);
-  scene.fog = new THREE.Fog(prairie ? 0xe5b373 : western ? 0xdba57b : 0x4b2860, 27, 82);
+  scene.background = new THREE.Color(prairie ? 0xe5b373 : western ? 0xdba57b : sardinia ? 0xd79a6b : 0x4b2860);
+  scene.fog = new THREE.Fog(prairie ? 0xe5b373 : western ? 0xdba57b : sardinia ? 0xd79a6b : 0x4b2860, 27, 82);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
@@ -187,14 +199,21 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
   const secondSun = new THREE.Mesh(new THREE.SphereGeometry(1.7, 10, 8), secondSunMat);
   secondSun.position.set(12, 9, -42);
   scene.add(secondSun);
-  secondSun.visible = !western && !prairie;
+  secondSun.visible = !western && !prairie && !sardinia;
   if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
   if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+  if (sardinia) {
+    block(cube, new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+    // A flat sea band on the horizon, just visible over the low coastal hills.
+    const sea = block(new THREE.PlaneGeometry(240, 13), new THREE.MeshBasicMaterial({ color: 0x2f7f92 }), scene, [0, 6, -94]);
+    sea.renderOrder = -1;
+  }
 
-  const mountainMaterial = new THREE.MeshStandardMaterial({ color: 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie ? 0 : 13); i += 1) {
+  // Sardinia trades the purple desert peaks for a low, sun-baked coastline.
+  const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : 0x68466f, flatShading: true, roughness: 1 });
+  for (let i = 0; i < (prairie ? 0 : sardinia ? 9 : 13); i += 1) {
     const width = 5 + Math.random() * 9;
-    const height = 4 + Math.random() * 9;
+    const height = sardinia ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
     mountain.position.set((Math.random() - 0.5) * 45, height / 2 - 1, -38 - Math.random() * 26);
     mountain.scale.set(width, height, 3 + Math.random() * 5);
@@ -202,9 +221,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
   }
 
   const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const floor = [];
@@ -218,7 +237,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     }
   }
 
-  const player = makeExplorer();
+  let skinColors = getSkin?.() ?? null;
+  const player = makeExplorer(false, skinColors);
   scene.add(player);
   const rival = makeExplorer(true);
   rival.position.set(4.2, 0, -5);
@@ -231,6 +251,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     scene.add(rider);
     return rider;
   });
+  const skinPaint = (rider, colors) => {
+    const want = colors || rider.userData.basePalette;
+    if (rider.userData.painting === want) return;
+    paintModel(rider, want);
+    rider.userData.painting = want;
+  };
   const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xfdf0c8 });
   const finishMaterial = new THREE.MeshBasicMaterial({ color: 0x4ce9df });
   const startLine = block(new THREE.BoxGeometry(8.6, 0.05, 0.45), lineMaterial, scene, [1.05, 0.025, 1]);
@@ -259,7 +285,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     row.index = rowCounter++;
     row.gap = encounter.gap;
     row.items = encounter.items.map((spec, itemIndex) => {
-      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : makeHazard(spec.kind);
+      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : sardinia ? sardiniaObstacle(spec.kind) : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
@@ -294,6 +320,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
       scene.add(item);
       scenery.push(item);
     }
+  } else if (sardinia) {
+    for (let i = 0; i < 10; i++) for (const side of [-1, 1]) {
+      const item = sardiniaVillage(i, side);
+      scene.add(item);
+      scenery.push(item);
+    }
   } else for (let i = 0; i < 18; i++) {
     const item = makeScenery();
     item.position.z -= i * 4.8;
@@ -306,10 +338,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
   let distance = 0;
   let rivalDistance = 0;
   let baseSpeed = DUEL_BASE_SPEED;
-  let boost = 0;
+  let boost = SPEED_BOOST_NONE;
   let trace = [0];
   let seed = 0;
-  const npc = { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: 0, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 };
+  const npc = { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 };
   const npcEnsureCourse = () => {
     while (npc.genPos < npc.dist + 60) {
       const encounter = npc.gen();
@@ -327,8 +359,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     npc.cooldown = Math.max(0, npc.cooldown - dt);
     npc.invulnerable = Math.max(0, npc.invulnerable - dt);
     npc.base += (DUEL_BASE_SPEED - npc.base) * Math.min(1, dt * 0.65);
-    npc.boost = Math.max(0, npc.boost - dt * 0.85);
-    const speed = duelSpeed(npc.base, npc.boost);
+    npc.boost = tickSpeedBoost(npc.boost, dt);
+    const speed = duelSpeed(npc.base, npc.boost.bonus);
     const target = npc.course[npc.next];
     if (target) {
       const ahead = target.pos - npc.dist;
@@ -348,14 +380,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
         const hazard = target.items.find(item => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(near));
         if (hazard && !(hazard.kind === 'barrier' && height > 1.05) && npc.invulnerable <= 0) {
           npc.base = Math.max(8, speed * 0.55);
-          npc.boost = 0;
+          npc.boost = SPEED_BOOST_NONE;
           npc.invulnerable = 1.15;
         }
         const gem = target.items.find(item => item.kind === 'crystal' && Math.abs(npc.x - LANES[item.lane]) < 0.85 && (!item.raised || height > 1.05) && !sharedGems.has(item.key));
         if (gem) {
           sharedGems.add(gem.key);
           hidePlayerGem(gem.key);
-          npc.boost = Math.min(9, npc.boost + DUEL_SPEED_BONUS[gem.tier]);
+          npc.boost = speedBoostFor(gem.tier);
         }
         npc.next += 1;
       }
@@ -403,7 +435,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
       multiplier: (1 + Math.min(3, Math.floor(combo / 5) * 0.5)).toFixed(1),
       lives,
       remaining: Math.max(0, RUN_SECONDS - elapsed),
-      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed, boost), mode: race.mode,
+      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed, boost.bonus), boostLeft: boost.left, mode: race.mode,
       rivalName: race.challenge?.name || 'L’OMBRE',
     });
   };
@@ -429,7 +461,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     distance = 0;
     rivalDistance = 0;
     baseSpeed = DUEL_BASE_SPEED;
-    boost = 0;
+    boost = SPEED_BOOST_NONE;
     trace = [0];
     rival.visible = race.mode === 'duel';
     startLine.position.z = 1;
@@ -455,7 +487,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     nextEncounter = createCourse(race.mode !== 'rush' ? seededRandom(seed) : Math.random);
     rowCounter = 0;
     sharedGems.clear();
-    Object.assign(npc, { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: 0, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 });
+    Object.assign(npc, { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 });
     let z = -20;
     rows.forEach(row => {
       const gap = populateRow(row);
@@ -488,9 +520,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     const running = active;
     if (running && race.mode !== 'rush') {
       baseSpeed += (DUEL_BASE_SPEED - baseSpeed) * Math.min(1, dt * 0.65);
-      boost = Math.max(0, boost - dt * 0.85);
+      boost = tickSpeedBoost(boost, dt);
     }
-    const speed = running ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost) : 12 + Math.min(7, elapsed * 0.12) : 0;
+    const speed = running ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost.bonus) : 12 + Math.min(7, elapsed * 0.12) : 0;
     if (running) {
       elapsed += dt;
       if (race.mode !== 'rush') {
@@ -512,7 +544,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
       });
       scenery.forEach((item) => {
         item.position.z += speed * item.userData.speedFactor * dt;
-        if (item.position.z > (western || prairie ? 15 : 9)) item.position.z -= western || prairie ? 110 : 86;
+        if (item.position.z > (western || prairie || sardinia ? 15 : 9)) item.position.z -= western || prairie || sardinia ? 110 : 86;
       });
       rows.forEach((row) => {
         row.group.position.z += speed * dt;
@@ -528,7 +560,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
           const jumpedHighEnough = hazard?.kind === 'barrier' && jumpHeight(jumpLeft) > 1.05;
           const collided = Boolean(hazard && !jumpedHighEnough);
           if (collided && invulnerable <= 0) {
-            const impact = resolveCollision({ mode: race.mode, lives, speed: duelSpeed(baseSpeed, boost), boost });
+            const impact = resolveCollision({ mode: race.mode, lives, speed: duelSpeed(baseSpeed, boost.bonus), boost });
             lives = impact.lives;
             baseSpeed = impact.baseSpeed;
             boost = impact.boost;
@@ -549,7 +581,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
             combo += 1;
             const multiplier = 1 + Math.min(3, Math.floor(combo / 5) * 0.5);
             score += Math.round(CRYSTALS[crystal.tier].value * multiplier);
-            if (race.mode !== 'rush') boost = Math.min(9, boost + DUEL_SPEED_BONUS[crystal.tier]);
+            if (race.mode !== 'rush') boost = speedBoostFor(crystal.tier);
             if (combo === 5 || combo === 10 || combo === 15) {
               score += 150;
               poseLeft = 0.62;
@@ -602,6 +634,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
       rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, LANES[peer.lane], Math.min(1,dt*10));
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
+      skinPaint(rider, mine ? skinColors : null);
       rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running ? Math.sin(time*.018+i*2.2)*.65 : 0; });
     });
     rival.position.z = Math.max(-85, Math.min(16, distance - rivalDistance));
@@ -634,6 +667,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     pause() {
       active = false;
     },
+    setSkin(colors) {
+      skinColors = colors ?? null;
+      skinPaint(player, skinColors);
+    },
     action,
     destroy() {
       active = false;
@@ -653,9 +690,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network }) {
   const networkRef = useRef(network);
   networkRef.current = network;
+  const skinRef = useRef(skin);
+  skinRef.current = skin;
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const raceRef = useRef(race);
@@ -671,7 +710,7 @@ export default function MirageWorld({ active, race, stage, onReady, onHud, onFin
       crash: () => callbackRefs.current.onCrash?.(),
       pickup: (tier) => callbackRefs.current.onPickup?.(tier),
       cheer: () => callbackRefs.current.onCheer?.(),
-    }, () => raceRef.current, stage, () => networkRef.current);
+    }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
     worldRef.current = world;
     if (actionsRef) actionsRef.current = (name) => world.action(name);
     callbackRefs.current.onReady?.();
@@ -687,6 +726,10 @@ export default function MirageWorld({ active, race, stage, onReady, onHud, onFin
     if (active) worldRef.current.start();
     else worldRef.current.pause();
   }, [active]);
+
+  useEffect(() => {
+    worldRef.current?.setSkin?.(skin);
+  }, [skin]);
 
   return <div className="mirage-world" ref={mountRef} />;
 }

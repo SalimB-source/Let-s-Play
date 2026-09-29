@@ -1,11 +1,16 @@
 -- Mirage Rush multiplayer rooms. Apply in the Supabase SQL editor after schema.sql.
 -- Positions are polled; results are casual client-reported race results, not anti-cheat verified.
+--
+-- If this table already exists from an earlier version (without 'sardinia'), run first:
+--   alter table public.mirage_rooms drop constraint mirage_rooms_stage_check;
+--   alter table public.mirage_rooms add constraint mirage_rooms_stage_check
+--     check (stage in ('desert', 'western', 'prairie', 'sardinia'));
 create table if not exists public.mirage_rooms (
   code text primary key check (code ~ '^[A-F0-9]{8}$'),
   name text not null default 'Salon Mirage' check (char_length(trim(name)) between 1 and 60),
   password_hash text,
   host_id uuid not null references auth.users(id) on delete cascade,
-  stage text not null check (stage in ('desert', 'western', 'prairie')),
+  stage text not null check (stage in ('desert', 'western', 'prairie', 'sardinia')),
   status text not null default 'lobby' check (status in ('lobby', 'started')),
   seed bigint not null check (seed between 0 and 4294967295),
   started_at timestamptz,
@@ -109,7 +114,7 @@ begin
   end if;
 
   if p_action = 'create' then
-    if p_stage not in ('desert', 'western', 'prairie') or p_stage is null then
+    if p_stage not in ('desert', 'western', 'prairie', 'sardinia') or p_stage is null then
       raise exception 'Carte inconnue' using errcode = '22023';
     end if;
     perform pg_advisory_xact_lock(hashtextextended(uid::text, 0));

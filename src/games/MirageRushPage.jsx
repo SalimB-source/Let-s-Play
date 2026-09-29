@@ -6,8 +6,9 @@ import MirageOnline from './MirageOnline';
 import MirageCoursePicker from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DUEL_SPEED_BONUS } from './mirageRules';
+import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
+import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
 
 const BEST_KEY = 'letsplay_mirage_rush_best_v1';
@@ -65,6 +66,9 @@ export default function MirageRushPage() {
   const [boardState, setBoardState] = useState('loading');
   const [submitState, setSubmitState] = useState('');
   const [justFinished, setJustFinished] = useState(null);
+  const [progression, setProgression] = useState(() => loadProgress());
+  const [award, setAward] = useState(null);
+  const progressRef = useRef(progression);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
   const connected = Boolean(user?.id) && !isDemo;
@@ -101,6 +105,7 @@ export default function MirageRushPage() {
     setHud(EMPTY_HUD);
     setNewRecord(false);
     setJustFinished(null);
+    setAward(null);
     setSubmitState('');
     setPhase('playing');
     if (musicOn) audioRef.current?.start();
@@ -113,11 +118,22 @@ export default function MirageRushPage() {
     else audioRef.current?.stop();
   };
 
+  // Shared by every mode (rush, duel and online) so one finished run always
+  // feeds the same local progression.
+  const recordProgress = useCallback((result) => {
+    const outcome = applyRun(progressRef.current, result);
+    progressRef.current = outcome.progress;
+    setProgression(outcome.progress);
+    saveProgress(outcome.progress);
+    return outcome;
+  }, []);
+
   const onFinish = useCallback(async (result) => {
     setHud((current) => ({ ...current, score: result.score, gems: result.gems, remaining: Math.max(0, 60 - result.duration) }));
     setJustFinished(result);
     setPhase('finished');
     audioRef.current?.stop();
+    setAward(recordProgress(result));
     if (result.mode === 'duel') return;
     const isRecord = result.score > readBest();
     if (isRecord) {
@@ -138,7 +154,7 @@ export default function MirageRushPage() {
     }
     setSubmitState('saved');
     await refreshLeaderboard();
-  }, [backendEnabled, connected, refreshLeaderboard]);
+  }, [backendEnabled, connected, refreshLeaderboard, recordProgress]);
 
   const shareDuel = async () => {
     if (!justFinished || justFinished.mode !== 'duel') return;
@@ -155,6 +171,15 @@ export default function MirageRushPage() {
   const onHud = useCallback((next) => setHud(next), []);
   const trigger = (name) => actionsRef.current?.(name);
   const timePercent = useMemo(() => Math.max(0, Math.min(100, (hud.remaining / 60) * 100)), [hud.remaining]);
+  const levelInfo = useMemo(() => levelProgress(progression.xp), [progression.xp]);
+  const activeSkin = skinFor(progression);
+  const skinColors = activeSkin.colors;
+  const chooseSkin = (skinId) => {
+    const next = equipSkin(progressRef.current, skinId);
+    progressRef.current = next;
+    setProgression(next);
+    saveProgress(next);
+  };
 
   if (selectedMode === 'online') {
     return (
@@ -163,6 +188,8 @@ export default function MirageRushPage() {
         userId={user?.id}
         userName={currentUserName}
         initialStage={selectedStage}
+        skin={skinColors}
+        onRunFinish={recordProgress}
         onSelectMode={(mode) => {
           setPhase('intro');
           audioRef.current?.stop();
@@ -234,7 +261,7 @@ export default function MirageRushPage() {
       <div className="mirage-layout wrap">
         <section className={`mirage-game-shell${phase === 'playing' ? ' is-running' : ''}`} aria-label="Partie de Mirage Rush">
           <div className="mirage-game-topbar">
-            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
+            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
             <div className="mirage-game-controls-top">
               {phase === 'playing' && <span className="mirage-live-pill"><i /> EN PARTIE</span>}
               <button type="button" className={`mirage-sound-button${musicOn ? ' is-on' : ''}`} onClick={toggleMusic} aria-pressed={musicOn}>
@@ -248,6 +275,7 @@ export default function MirageRushPage() {
               active={phase === 'playing'}
               race={race}
               stage={stage}
+              skin={skinColors}
               onReady={() => setReady(true)}
               onHud={onHud}
               onFinish={onFinish}
@@ -261,7 +289,7 @@ export default function MirageRushPage() {
               <div className="mirage-hud" aria-live="polite">
                 <div className="mirage-hud-card mirage-hud-score"><small>SCORE</small><strong>{hud.score.toLocaleString('fr-FR')}</strong><span>✦ {hud.gems} fragments</span></div>
                 <div className="mirage-hud-center">{race.mode === 'duel' ? <><div className="mirage-clock">{Math.round(hud.distance || 0)} / {DUEL_DISTANCE} m</div><div className="mirage-time-track"><i style={{ width: `${Math.min(100, (hud.distance || 0) / DUEL_DISTANCE * 100)}%` }} /></div></> : <><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></>}</div>
-                <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b></small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
+                <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE{hud.boostLeft > 0 && <b> · BOOST</b>}</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b></small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
               </div>
             )}
 
@@ -272,7 +300,7 @@ export default function MirageRushPage() {
                 <MirageCoursePicker selectedMode={selectedMode} setSelectedMode={setSelectedMode} stage={stage} setSelectedStage={setSelectedStage} challenge={challenge} />
                 {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                 {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier le PNJ.</p>}
-                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval ; les chocs le ralentissent. Premier à ${DUEL_DISTANCE} m !` : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.'}</p>
+                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval ; les chocs le ralentissent. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.'}</p>
                 <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
                   {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
                 </button>
@@ -286,6 +314,7 @@ export default function MirageRushPage() {
                 <h2>{justFinished.won ? 'VICTOIRE' : 'LE RIVAL'} <em>{justFinished.won ? 'DU CAVALIER !' : 'L’EMPORTE.'}</em></h2>
                 <div className="mirage-final-score">{justFinished.duration.toFixed(1)} <small>SECONDES</small></div>
                 <div className="mirage-result-stats"><span>{justFinished.rivalName} : {justFinished.rivalDuration == null ? `${justFinished.rivalDistance} m` : `${justFinished.rivalDuration.toFixed(1)} s`}</span><span>◆ {justFinished.gems} cristaux</span><span>{justFinished.score.toLocaleString('fr-FR')} pts</span></div>
+                {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
                 <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
                 <button type="button" className="mirage-share-button" onClick={shareDuel}>PARTAGER UN DÉFI ↗</button>
                 <button type="button" className="mirage-share-button" onClick={() => setPhase('intro')}>CHOISIR UN MODE</button>
@@ -300,6 +329,7 @@ export default function MirageRushPage() {
                 <h2>{newRecord ? 'LE MIRAGE' : 'LE SABLE'} <em>{newRecord ? 'EST À TOI.' : 'T’A RATTRAPÉ.'}</em></h2>
                 <div className="mirage-final-score">{(justFinished?.score || 0).toLocaleString('fr-FR')} <small>PTS</small></div>
                 <div className="mirage-result-stats"><span>◆ {justFinished?.gems || 0} fragments</span><span>◷ {justFinished?.duration || 0} s</span><span>RECORD {best.toLocaleString('fr-FR')}</span></div>
+                {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
                 <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
                 <button type="button" className="mirage-share-button" onClick={() => setPhase('intro')}>CHOISIR UN MODE</button>
                 {submitState === 'saving' && <p className="mirage-save-note">Envoi du score au classement…</p>}
@@ -351,18 +381,59 @@ export default function MirageRushPage() {
             </div>
           </section>
 
+          <section className="mirage-progression panel-frame">
+            <div className="mirage-panel-heading">
+              <div><span className="mirage-panel-kicker">TON CAVALIER</span><h2>NIVEAU <em>{levelInfo.level}</em></h2></div>
+              <span className="mirage-trophy">♞</span>
+            </div>
+            <div className="mirage-xp-track" role="progressbar" aria-valuenow={levelInfo.percent} aria-valuemin="0" aria-valuemax="100" aria-label={`Expérience du niveau ${levelInfo.level}`}>
+              <i style={{ width: `${levelInfo.percent}%` }} />
+              <span>{levelInfo.next ? `${levelInfo.into} / ${levelInfo.need} XP` : 'NIVEAU MAXIMAL'}</span>
+            </div>
+            <p className="mirage-board-subtitle">
+              {levelInfo.next
+                ? <>
+                    Prochain skin au niveau {SKINS.find(skin => skin.level > levelInfo.level)?.level ?? levelInfo.next} —{' '}
+                    {SKINS.find(skin => skin.level > levelInfo.level)?.name ?? 'sagesse du désert'}.
+                  </>
+                : 'Tous les skins sont débloqués. Le désert te salue, cavalier.'}
+              {progression.runs > 0 && <> · {progression.runs} course{progression.runs > 1 ? 's' : ''} jouée{progression.runs > 1 ? 's' : ''}.</>}
+            </p>
+            <div className="mirage-skin-picker" role="group" aria-label="Skins du cavalier">
+              {SKINS.map(skin => {
+                const unlocked = isSkinUnlocked(skin, levelInfo.level);
+                const selected = skin.id === activeSkin.id;
+                return (
+                  <button
+                    type="button"
+                    key={skin.id}
+                    className={`mirage-skin-chip${selected ? ' is-selected' : ''}${unlocked ? '' : ' is-locked'}`}
+                    aria-pressed={selected}
+                    disabled={!unlocked}
+                    onClick={() => chooseSkin(skin.id)}
+                    title={unlocked ? skin.hint : `Débloqué au niveau ${skin.level}`}
+                  >
+                    <span className="mirage-skin-dye" aria-hidden="true" style={{ '--dye-coat': `#${skin.colors[0].toString(16).padStart(6, '0')}`, '--dye-cloth': `#${skin.colors[2].toString(16).padStart(6, '0')}`, '--dye-trim': `#${skin.colors[3].toString(16).padStart(6, '0')}` }} />
+                    <span className="mirage-skin-name">{skin.name}</span>
+                    <small>{selected ? 'ÉQUIPÉ' : unlocked ? skin.hint : `NIV. ${skin.level}`}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">MODE DUEL · PREMIER À 600 M</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>Un cavalier rival</strong><small>Défie L’Ombre : un PNJ qui change de voie, saute et te vole les diamants. Ou partage ton fantôme de course avec un autre joueur. Ce n’est pas du temps réel.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rose +{DUEL_SPEED_BONUS[1]} · Or +{DUEL_SPEED_BONUS[2]} m/s. Les boosts décroissent avec le temps.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rose +{DUEL_SPEED_BONUS[1]} · Or +{DUEL_SPEED_BONUS[2]} m/s, pendant {SPEED_BOOST_DURATION} s seulement. Les boosts ne s’accumulent pas : un cristal remplace le boost en cours, et un choc l’annule.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Collision</strong><small>Pas de vies perdues en duel : le cheval ralentit puis reprend son allure.</small></div></div>
           </section>
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rose : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses ou les hautes bottes de paille : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert) , les clôtures (western) et les bottes basses (plaine) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si un cactus ferme la troisième voie, le saut est obligatoire.</div>
+            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si un cactus ferme la troisième voie, le saut est obligatoire.</div>
           </section>
 
           <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>

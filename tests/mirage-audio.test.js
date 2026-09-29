@@ -1,21 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DesertGroove, PRAIRIE_BPM } from '../src/games/arcadeAudio.js';
+import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM } from '../src/games/arcadeAudio.js';
 
 test('prairie selects its own soundtrack and resets the phrase', () => {
   const audio = new DesertGroove();
   audio.step = 83;
   audio.setStage('prairie');
   assert.equal(audio.step, 0);
-  let prairie = 0, western = 0;
+  let prairie = 0, western = 0, sardinia = 0;
   audio.playPrairie = () => prairie++;
   audio.playWestern = () => western++;
+  audio.playSardinia = () => sardinia++;
   audio.playStep(0, 0);
   assert.equal(prairie, 1);
   assert.equal(western, 0);
   audio.setStage('western');
   audio.playStep(0, 0);
   assert.equal(western, 1);
+  audio.setStage('sardinia');
+  audio.playStep(0, 0);
+  assert.equal(sardinia, 1);
+});
+
+test('sardinia mafia-style score schedules finite, positive notes at its own tempo', () => {
+  const audio = new DesertGroove();
+  audio.setStage('sardinia');
+  const stepLength = 60 / SARDINIA_BPM / 4;
+  assert.ok(stepLength > 0);
+  const notes = [];
+  audio.noise = () => {};
+  audio.tone = (frequency, time, duration, type, volume) => {
+    assert.ok(Number.isFinite(frequency) && frequency > 0);
+    assert.ok(Number.isFinite(time) && time >= 0);
+    assert.ok(duration > 0 && volume > 0);
+    notes.push(frequency);
+  };
+  for (let bar = 0; bar < 8; bar++) {
+    for (let step = 0; step < 16; step++) {
+      audio.step = bar * 16 + step;
+      audio.playSardinia(step, audio.step * stepLength);
+    }
+  }
+  assert.ok(notes.length > 20, 'the mandolin and accordion motif produces plenty of notes');
 });
 
 test('sixteen-bar prairie score schedules finite, positive notes and varies phrases', () => {

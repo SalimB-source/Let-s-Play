@@ -22,6 +22,7 @@ const STAGE_LABELS = {
   desert: 'Dunes de l’Écho',
   western: 'Dust Creek',
   prairie: 'Plaines d’Or',
+  sardinia: 'Costa Omertà',
 };
 
 const QUICK_MESSAGES = [
@@ -54,7 +55,9 @@ export default function MirageOnline({
   userId,
   userName,
   initialStage = 'desert',
+  skin,
   onBack,
+  onRunFinish,
   onSelectMode,
 }) {
   const guestProfile = useMemo(() => getOrCreateGuestProfile(), []);
@@ -86,6 +89,7 @@ export default function MirageOnline({
   const [seconds, setSeconds] = useState(null);
   const [sound, setSound] = useState(true);
   const [hud, setHud] = useState({});
+  const [xp, setXp] = useState(null);
 
   const latest = useRef({});
   const done = useRef(false);
@@ -176,6 +180,7 @@ export default function MirageOnline({
         audio.current?.stop();
         setRoom(null);
         setFinished(false);
+        setXp(null);
         done.current = false;
         finishSent.current = false;
         fetchRoomsList(true);
@@ -492,6 +497,7 @@ export default function MirageOnline({
                         <option value="desert">01 · Dunes de l’Écho (Désert)</option>
                         <option value="western">02 · Dust Creek (Western)</option>
                         <option value="prairie">03 · Plaines d’Or (Prairie)</option>
+                        <option value="sardinia">04 · Costa Omertà (Sardaigne)</option>
                       </select>
                       <small>600 mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>
@@ -916,6 +922,7 @@ export default function MirageOnline({
                   active={active}
                   stage={stage}
                   race={{ mode: 'online', seed: room.seed }}
+                  skin={skin}
                   network={{ players: room.players, userId: effectivePlayer.id }}
                   actionsRef={actions}
                   onReady={() => setWorldReady(true)}
@@ -928,6 +935,7 @@ export default function MirageOnline({
                     done.current = true;
                     setActive(false);
                     setFinished(true);
+                    setXp(onRunFinish?.(p) ?? null);
                   }}
                   onPickup={(tier) => audio.current?.pickup(tier)}
                   onCheer={() => audio.current?.cheer()}
@@ -964,6 +972,15 @@ export default function MirageOnline({
               <small>
                 Positions actualisées environ 5 fois/s. Arrivées enregistrées par le salon ; classement amical.
               </small>
+              {finished && xp && (
+                <p className="mirage-xp-award" role="status">
+                  <strong>+{xp.xpGained} XP</strong>
+                  {xp.leveledUp && <span>NIVEAU {xp.level} !</span>}
+                  {xp.unlocked?.length > 0 && (
+                    <em>SKIN DÉBLOQUÉ : {xp.unlocked.map((skinEntry) => skinEntry.name).join(' · ')}</em>
+                  )}
+                </p>
+              )}
             </section>
           </>
         )}

@@ -2,6 +2,7 @@ const COWBOY_CRY_URL = new URL('./assets/cowboy-hey-haa.mp3', import.meta.url).h
 const MUSIC_VOLUME = 0.17;
 const BPM = 116;
 export const PRAIRIE_BPM = 126;
+export const SARDINIA_BPM = 92;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
 
@@ -50,7 +51,7 @@ export class DesertGroove {
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : BPM) / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -187,9 +188,63 @@ export class DesertGroove {
     if (heroic && step === 0 && phrase % 4 === 0) this.noise(time, beat * 1.5, 0.04, 6500);
   }
 
+  playSardinia(step, time) {
+    // An original coastal-village serenade — tremolo mandolin, a sighing
+    // accordion pad and a lonesome solo line — in the spirit of a classic
+    // Italian family-crime score, without quoting any existing melody.
+    const beat = 60 / SARDINIA_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const swell = phrase >= 8; // the second half of the loop thickens the texture
+    const chords = [
+      [73.42, 220, 261.63], [82.41, 196, 246.94],
+      [65.41, 196, 261.63], [73.42, 220, 277.18],
+      [73.42, 220, 261.63], [61.74, 185, 246.94],
+      [65.41, 196, 261.63], [73.42, 220, 261.63],
+    ];
+    const melody = [
+      [440, 493.88, 523.25, 0], [587.33, 523.25, 493.88, 440],
+      [392, 440, 493.88, 0], [523.25, 587.33, 659.25, 587.33],
+      [440, 493.88, 587.33, 0], [523.25, 493.88, 440, 392],
+      [349.23, 392, 440, 0], [493.88, 440, 392, 349.23],
+    ];
+    const chord = chords[bar];
+
+    // Accordion pad: a soft lowpassed sawtooth sustained under the whole bar.
+    if (step === 0) {
+      chord.forEach((note) => this.tone(note, time, beat * 3.7, 'sawtooth', swell ? 0.05 : 0.032, 950));
+      this.tone(chord[0] / 2, time, beat * 3.7, 'sine', 0.08);
+    }
+
+    // Tremolo mandolin: three fast re-picks per eighth note.
+    if (step % 2 === 0) {
+      const note = [chord[2], chord[1], chord[2] * 2, chord[1]][(step / 2) % 4];
+      for (let i = 0; i < 3; i++) this.tone(note, time + i * 0.045, 0.05, 'triangle', 0.1 - i * 0.02);
+    }
+
+    // Upright bass, waltz-like: root on the downbeat, two lighter offbeats.
+    if (step % 8 === 0) this.tone(chord[0] / 2, time, beat * 0.9, 'sine', 0.22);
+    if (step % 8 === 3 || step % 8 === 6) this.tone((chord[0] / 2) * 1.5, time, beat * 0.4, 'sine', 0.1);
+
+    // A lonesome solo line, answered every other bar.
+    if (step % 4 === 0) {
+      const note = melody[bar][step / 4];
+      if (note) {
+        const length = beat * (swell ? 1.05 : 0.85);
+        this.tone(note, time, length, 'sawtooth', swell ? 0.15 : 0.1, 2200);
+        this.tone(note * 2, time + 0.01, length * 0.6, 'sine', 0.02);
+      }
+    }
+
+    // Distant harbour bell and footsteps on cobblestone.
+    if ([0, 6, 10].includes(step)) this.noise(time, 0.03, 0.035, 3200);
+    if (step === 12 && bar % 4 === 0) this.tone(880, time, 0.5, 'sine', 0.05, 3000);
+  }
+
   playStep(step, time) {
     if (this.stage === 'prairie') { this.playPrairie(step, time); return; }
     if (this.stage === 'western') { this.playWestern(step, time); return; }
+    if (this.stage === 'sardinia') { this.playSardinia(step, time); return; }
     const beat = 60 / BPM;
     if ([0, 6, 8, 14].includes(step)) {
       this.tone(110, time, 0.18, 'sine', 0.34);

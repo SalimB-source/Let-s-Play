@@ -52,6 +52,35 @@ test('duel speed is capped, collision can slow down and gems boost', async () =>
   assert.deepEqual(Array.from({length: 5}, seededRandom(12)), Array.from({length: 5}, seededRandom(12)));
 });
 
+test('a speed bonus burns for one second and never stacks', async () => {
+  const { speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, SPEED_BOOST_DURATION, DUEL_SPEED_BONUS, DUEL_BASE_SPEED, duelSpeed } = await import('../src/games/mirageRules.js');
+  assert.equal(SPEED_BOOST_DURATION, 1);
+  assert.deepEqual(speedBoostFor(2), { bonus: DUEL_SPEED_BONUS[2], left: 1 });
+  // inside the window the burst runs at full strength, then it is gone outright (no slow decay)
+  let boost = tickSpeedBoost(speedBoostFor(1), 0.4);
+  assert.deepEqual(boost, { bonus: DUEL_SPEED_BONUS[1], left: 0.6 });
+  assert.equal(duelSpeed(DUEL_BASE_SPEED, boost.bonus), DUEL_BASE_SPEED + DUEL_SPEED_BONUS[1]);
+  boost = tickSpeedBoost(boost, 0.6);
+  assert.deepEqual(boost, SPEED_BOOST_NONE);
+  assert.equal(duelSpeed(DUEL_BASE_SPEED, boost.bonus), DUEL_BASE_SPEED);
+  // picking up again mid-burst restarts the window at the new gem's value: nothing is summed or carried over
+  const fading = tickSpeedBoost(speedBoostFor(2), 0.75);
+  assert.deepEqual(fading, { bonus: DUEL_SPEED_BONUS[2], left: 0.25 });
+  assert.deepEqual(speedBoostFor(0), { bonus: DUEL_SPEED_BONUS[0], left: SPEED_BOOST_DURATION });
+  assert.ok(speedBoostFor(0).bonus < fading.bonus + DUEL_SPEED_BONUS[0]);
+  // even a perfect gold-every-frame run cannot compound past a single burst
+  let chained = SPEED_BOOST_NONE;
+  let peak = 0;
+  for (let i = 0; i < 60; i++) {
+    chained = speedBoostFor(2);
+    peak = Math.max(peak, duelSpeed(DUEL_BASE_SPEED, chained.bonus));
+    chained = tickSpeedBoost(chained, 1 / 60);
+  }
+  assert.equal(peak, DUEL_BASE_SPEED + DUEL_SPEED_BONUS[2]);
+  assert.deepEqual(tickSpeedBoost(SPEED_BOOST_NONE, 0.5), SPEED_BOOST_NONE);
+  assert.deepEqual(SPEED_BOOST_NONE, { bonus: 0, left: 0 });
+});
+
 test('share link roundtrips and rejects malformed challenge', async () => {
   const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
   const { DUEL_DISTANCE } = await import('../src/games/mirageRules.js');
@@ -86,6 +115,13 @@ test('prairie stage is retained in challenge links', async () => {
   assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'prairie');
 });
 
+test('sardinia (Costa Omertà) stage is retained in challenge links and rejects unknown stages', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 600], name: 'Padrino', stage: 'sardinia' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'sardinia');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'atlantis' })).stage, undefined);
+});
+
 test('cowboy cry fires only on each fifth consecutive pickup, and resets on a miss or crash', async () => {
   const { advanceCowboyStreak } = await import('../src/games/mirageRules.js');
   let streak = 0;
@@ -102,16 +138,17 @@ test('cowboy cry fires only on each fifth consecutive pickup, and resets on a mi
 });
 
 test('rush collisions spend three lives and the third collision ends the run; duel collisions only slow down', async () => {
-  const { resolveCollision } = await import('../src/games/mirageRules.js');
+  const { resolveCollision, SPEED_BOOST_NONE, speedBoostFor } = await import('../src/games/mirageRules.js');
   let lives = 3;
   for (let hit = 1; hit <= 3; hit += 1) {
-    const result = resolveCollision({ mode: 'rush', lives, speed: 15, boost: 0 });
+    const result = resolveCollision({ mode: 'rush', lives, speed: 15, boost: SPEED_BOOST_NONE });
     lives = result.lives;
     assert.equal(result.gameOver, hit === 3);
     assert.equal(result.lives, 3 - hit);
   }
-  assert.deepEqual(resolveCollision({ mode: 'duel', lives: 3, speed: 19.4, boost: 4.4 }), {
-    lives: 3, baseSpeed: 10.67, boost: 0, gameOver: false,
+  // a duel crash wipes the burst too, so a rider cannot keep speed through a cactus
+  assert.deepEqual(resolveCollision({ mode: 'duel', lives: 3, speed: 19.4, boost: speedBoostFor(2) }), {
+    lives: 3, baseSpeed: 10.67, boost: SPEED_BOOST_NONE, gameOver: false,
   });
 });
 
