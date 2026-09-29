@@ -461,6 +461,14 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-howto > .mirage-panel-kicker { display: block; margin-bottom: 9px; }
 .mirage-rule { display: grid; grid-template-columns: 25px minmax(0, 1fr); gap: 9px; align-items: start; padding: 9px 0; border-top: 1px solid rgba(255, 255, 255, .07); }
 .mirage-rule-icon { font-size: 16px; line-height: 1.1; }
+.mirage-rule-image {
+  display: block;
+  width: 25px;
+  height: 25px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #fff;
+}
 .mirage-rule-icon.is-pink { color: #f477ad; }
 .mirage-rule-icon.is-red { color: #ff4a3d; }
 .mirage-rule-icon.is-green { color: #6dd6a1; }
@@ -1662,8 +1670,14 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 .mirage-powerup-icon {
-  font-size: 20px;
-  line-height: 1;
+  display: block;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  object-fit: cover;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .28);
 }
 
 .mirage-powerup-key {
@@ -1795,7 +1809,10 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     padding: 5px 6px;
   }
   .mirage-powerup-icon {
-    font-size: 16px;
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
   }
   .mirage-powerup-key {
     font-size: 7px;

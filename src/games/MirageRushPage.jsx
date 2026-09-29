@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import MirageWorld from './MirageWorld';
+import MiragePowerIcon from './MiragePowerIcon';
 import MirageOnline from './MirageOnline';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
@@ -533,7 +534,7 @@ export default function MirageRushPage() {
                   title="Bouclier (Q / A) — Se charge avec 3 diamants"
                 >
                   <div className="mirage-powerup-btn-top">
-                    <span className="mirage-powerup-icon">🛡️</span>
+                    <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
                     <span className="mirage-powerup-key">Q / A</span>
                   </div>
                   <div className="mirage-powerup-btn-name">
@@ -556,7 +557,7 @@ export default function MirageRushPage() {
                   title="Lasso (W / Z) — Se charge avec 3 diamants"
                 >
                   <div className="mirage-powerup-btn-top">
-                    <span className="mirage-powerup-icon">🪢</span>
+                    <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
                     <span className="mirage-powerup-key">W / Z</span>
                   </div>
                   <div className="mirage-powerup-btn-name">
@@ -579,7 +580,7 @@ export default function MirageRushPage() {
                   title="Pistolet (E) — Se charge avec 5 diamants"
                 >
                   <div className="mirage-powerup-btn-top">
-                    <span className="mirage-powerup-icon">🔫</span>
+                    <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
                     <span className="mirage-powerup-key">E</span>
                   </div>
                   <div className="mirage-powerup-btn-name">
@@ -794,7 +795,7 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-green">🛡️</span><div><strong>Charge des 3 objets</strong><small>Chaque diamant ramassé charge tes 3 objets ! Le Bouclier (3 diamants) protège 5s, le Lasso (3 diamants) ralentit l'adversaire, le Pistolet (5 diamants) fait tomber le leader de son cheval. Touches PC : QWE / AZE ou boutons tactiles sur mobile.</small></div></div>
+            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Charge des 3 objets</strong><small>Chaque diamant ramassé charge tes 3 objets ! Le Bouclier (3 diamants) protège 5s, le Lasso (3 diamants) ralentit l'adversaire, le Pistolet (5 diamants) fait tomber le leader de son cheval. Touches PC : QWE / AZE ou boutons tactiles sur mobile.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies, le saut est obligatoire.</div>

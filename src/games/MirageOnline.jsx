@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MirageCharacterPortrait from './MirageCharacterPortrait';
+import MiragePowerIcon from './MiragePowerIcon';
 import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
@@ -1126,7 +1127,7 @@ export default function MirageOnline({
                       title="Bouclier (Q / A)"
                     >
                       <div className="mirage-powerup-btn-top">
-                        <span className="mirage-powerup-icon">🛡️</span>
+                        <MiragePowerIcon type="shield" className="mirage-powerup-icon" />
                         <span className="mirage-powerup-key">Q / A</span>
                       </div>
                       <div className="mirage-powerup-btn-name">
@@ -1149,7 +1150,7 @@ export default function MirageOnline({
                       title="Lasso (W / Z)"
                     >
                       <div className="mirage-powerup-btn-top">
-                        <span className="mirage-powerup-icon">🪢</span>
+                        <MiragePowerIcon type="lasso" className="mirage-powerup-icon" />
                         <span className="mirage-powerup-key">W / Z</span>
                       </div>
                       <div className="mirage-powerup-btn-name">
@@ -1172,7 +1173,7 @@ export default function MirageOnline({
                       title="Pistolet (E) - 5 diamants"
                     >
                       <div className="mirage-powerup-btn-top">
-                        <span className="mirage-powerup-icon">🔫</span>
+                        <MiragePowerIcon type="pistol" className="mirage-powerup-icon" />
                         <span className="mirage-powerup-key">E</span>
                       </div>
                       <div className="mirage-powerup-btn-name">
