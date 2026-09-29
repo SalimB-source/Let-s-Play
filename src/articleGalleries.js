@@ -293,6 +293,26 @@ export const articleGalleries = {
     credit: 'Captures : Metroid Dread (Nintendo), à titre d’illustration de la série — Ravenous n’a montré que des extraits.',
   },
 
+  // ---- Actu du 29.09.2026 (gaming) -----------------------------------------
+  // Les trois visuels officiels publiés par Santa Monica Studio sur le
+  // PlayStation Blog (billet du 28.09.2026) : l'artwork de Faye face à
+  // Begtse, la présentation de l'arc-serpent et le contenu de l'édition
+  // numérique Deluxe. URL absolues, comme les visuels officiels des actus
+  // tech — aucun fichier à déposer dans public/screenshots/.
+  'god-of-war-laufey-precommandes-arc-serpent': {
+    label: 'GOD OF WAR LAUFEY', meta: 'SANTA MONICA STUDIO · PS BLOG',
+    items: [
+      { src: 'https://blog.fr.playstation.com/tachyon/sites/10/2026/09/5bd30eac480284e480a9ba68e9f06472584219f4.jpg', alt: 'God of War Laufey — artwork officiel de Faye face à Begtse, le cube Phranque à ses côtés', caption: '01 / Faye face à Begtse, artwork officiel' },
+      { src: 'https://blog.fr.playstation.com/tachyon/sites/10/2026/09/97cb9e29cc7c46dcccf299a9fd2b1bb1cb9a62e2-scaled.jpg', alt: 'God of War Laufey — présentation de l’arc-serpent, la nouvelle arme à distance de Faye dans l’Empyrée', caption: '02 / L’arc-serpent, la réponse à distance' },
+      { src: 'https://blog.fr.playstation.com/tachyon/sites/10/2026/09/7357ca0c49124559e0c438b9faf22650f7a64cbf.jpg', alt: 'God of War Laufey — contenu de l’édition numérique Deluxe : armure, lame, écailles d’archère et catalyseur Alchimie obscure', caption: '03 / L’édition numérique Deluxe et son Alchimie obscure' },
+    ],
+    credit: 'Visuels officiels publiés par Santa Monica Studio sur le PlayStation Blog (28.09.2026) — © Sony Interactive Entertainment.',
+    creditSources: [
+      { label: 'billet du PlayStation Blog', href: 'https://blog.fr.playstation.com/2026/09/28/les-precommandes-de-god-of-war-laufey-seront-disponibles-a-partir-du-29-septembre-details-des-editions/' },
+      { label: 'suivi de GamerGen', href: 'https://www.gamergen.com/actualites/god-of-war-laufey-nouveaux-details-arsenal-faye-et-point-editions-ouverture-precommandes-342698-1' },
+    ],
+  },
+
   // ---- Actus du 28.09.2026 (gaming) ----------------------------------------
   'minecraft-the-sift-nouvelle-dimension': {
     label: 'THE SIFT', meta: 'MOJANG · MINECRAFT LIVE',

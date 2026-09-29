@@ -93,6 +93,7 @@ export const ROUTES = [
     'halo-activision', 'minecraft-the-sift-nouvelle-dimension',
     'minecraft-world-hotel-chessington-2027',
     'the-witcher-3-remastered-sortie-29-septembre', 'xbox-nadella-restructuration',
+    'god-of-war-laufey-precommandes-arc-serpent',
   ].map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
   // Actus cinéma : route préfixée /news/cinema/:slug, clés d'article « cinema/<slug> ».
   ...[
