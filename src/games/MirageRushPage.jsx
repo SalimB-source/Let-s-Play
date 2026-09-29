@@ -8,6 +8,7 @@ import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
 import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
+import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
 
 const BEST_KEY = 'letsplay_mirage_rush_best_v1';
@@ -51,6 +52,9 @@ export default function MirageRushPage() {
   const [boardState, setBoardState] = useState('loading');
   const [submitState, setSubmitState] = useState('');
   const [justFinished, setJustFinished] = useState(null);
+  const [progression, setProgression] = useState(() => loadProgress());
+  const [award, setAward] = useState(null);
+  const progressRef = useRef(progression);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
   const connected = Boolean(user?.id) && !isDemo;
@@ -87,6 +91,7 @@ export default function MirageRushPage() {
     setHud(EMPTY_HUD);
     setNewRecord(false);
     setJustFinished(null);
+    setAward(null);
     setSubmitState('');
     setPhase('playing');
     if (musicOn) audioRef.current?.start();
@@ -99,11 +104,22 @@ export default function MirageRushPage() {
     else audioRef.current?.stop();
   };
 
+  // Shared by every mode (rush, duel and online) so one finished run always
+  // feeds the same local progression.
+  const recordProgress = useCallback((result) => {
+    const outcome = applyRun(progressRef.current, result);
+    progressRef.current = outcome.progress;
+    setProgression(outcome.progress);
+    saveProgress(outcome.progress);
+    return outcome;
+  }, []);
+
   const onFinish = useCallback(async (result) => {
     setHud((current) => ({ ...current, score: result.score, gems: result.gems, remaining: Math.max(0, 60 - result.duration) }));
     setJustFinished(result);
     setPhase('finished');
     audioRef.current?.stop();
+    setAward(recordProgress(result));
     if (result.mode === 'duel') return;
     const isRecord = result.score > readBest();
     if (isRecord) {
@@ -124,7 +140,7 @@ export default function MirageRushPage() {
     }
     setSubmitState('saved');
     await refreshLeaderboard();
-  }, [backendEnabled, connected, refreshLeaderboard]);
+  }, [backendEnabled, connected, refreshLeaderboard, recordProgress]);
 
   const shareDuel = async () => {
     if (!justFinished || justFinished.mode !== 'duel') return;
@@ -141,8 +157,17 @@ export default function MirageRushPage() {
   const onHud = useCallback((next) => setHud(next), []);
   const trigger = (name) => actionsRef.current?.(name);
   const timePercent = useMemo(() => Math.max(0, Math.min(100, (hud.remaining / 60) * 100)), [hud.remaining]);
+  const levelInfo = useMemo(() => levelProgress(progression.xp), [progression.xp]);
+  const activeSkin = skinFor(progression);
+  const skinColors = activeSkin.colors;
+  const chooseSkin = (skinId) => {
+    const next = equipSkin(progressRef.current, skinId);
+    progressRef.current = next;
+    setProgression(next);
+    saveProgress(next);
+  };
 
-  if (selectedMode === 'online') return <MirageOnline connected={connected} userId={user?.id} initialStage={selectedStage} onBack={() => setSelectedMode('rush')} />;
+  if (selectedMode === 'online') return <MirageOnline connected={connected} userId={user?.id} initialStage={selectedStage} skin={skinColors} onRunFinish={recordProgress} onBack={() => setSelectedMode('rush')} />;
 
   return (
     <div className="mirage-page">
@@ -176,6 +201,7 @@ export default function MirageRushPage() {
               active={phase === 'playing'}
               race={race}
               stage={stage}
+              skin={skinColors}
               onReady={() => setReady(true)}
               onHud={onHud}
               onFinish={onFinish}
@@ -214,6 +240,7 @@ export default function MirageRushPage() {
                 <h2>{justFinished.won ? 'VICTOIRE' : 'LE RIVAL'} <em>{justFinished.won ? 'DU CAVALIER !' : 'L’EMPORTE.'}</em></h2>
                 <div className="mirage-final-score">{justFinished.duration.toFixed(1)} <small>SECONDES</small></div>
                 <div className="mirage-result-stats"><span>{justFinished.rivalName} : {justFinished.rivalDuration == null ? `${justFinished.rivalDistance} m` : `${justFinished.rivalDuration.toFixed(1)} s`}</span><span>◆ {justFinished.gems} cristaux</span><span>{justFinished.score.toLocaleString('fr-FR')} pts</span></div>
+                {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
                 <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
                 <button type="button" className="mirage-share-button" onClick={shareDuel}>PARTAGER UN DÉFI ↗</button>
                 <button type="button" className="mirage-share-button" onClick={() => setPhase('intro')}>CHOISIR UN MODE</button>
@@ -228,6 +255,7 @@ export default function MirageRushPage() {
                 <h2>{newRecord ? 'LE MIRAGE' : 'LE SABLE'} <em>{newRecord ? 'EST À TOI.' : 'T’A RATTRAPÉ.'}</em></h2>
                 <div className="mirage-final-score">{(justFinished?.score || 0).toLocaleString('fr-FR')} <small>PTS</small></div>
                 <div className="mirage-result-stats"><span>◆ {justFinished?.gems || 0} fragments</span><span>◷ {justFinished?.duration || 0} s</span><span>RECORD {best.toLocaleString('fr-FR')}</span></div>
+                {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
                 <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
                 <button type="button" className="mirage-share-button" onClick={() => setPhase('intro')}>CHOISIR UN MODE</button>
                 {submitState === 'saving' && <p className="mirage-save-note">Envoi du score au classement…</p>}
@@ -276,6 +304,47 @@ export default function MirageRushPage() {
             <div className="mirage-board-footer">
               <span className={boardState === 'ready' ? 'is-online' : ''}><i /> {boardState === 'ready' ? 'CLASSEMENT DU SITE' : 'RECORD LOCAL'}</span>
               {boardState === 'ready' && <button type="button" onClick={refreshLeaderboard} aria-label="Actualiser le classement">↻</button>}
+            </div>
+          </section>
+
+          <section className="mirage-progression panel-frame">
+            <div className="mirage-panel-heading">
+              <div><span className="mirage-panel-kicker">TON CAVALIER</span><h2>NIVEAU <em>{levelInfo.level}</em></h2></div>
+              <span className="mirage-trophy">♞</span>
+            </div>
+            <div className="mirage-xp-track" role="progressbar" aria-valuenow={levelInfo.percent} aria-valuemin="0" aria-valuemax="100" aria-label={`Expérience du niveau ${levelInfo.level}`}>
+              <i style={{ width: `${levelInfo.percent}%` }} />
+              <span>{levelInfo.next ? `${levelInfo.into} / ${levelInfo.need} XP` : 'NIVEAU MAXIMAL'}</span>
+            </div>
+            <p className="mirage-board-subtitle">
+              {levelInfo.next
+                ? <>
+                    Prochain skin au niveau {SKINS.find(skin => skin.level > levelInfo.level)?.level ?? levelInfo.next} —{' '}
+                    {SKINS.find(skin => skin.level > levelInfo.level)?.name ?? 'sagesse du désert'}.
+                  </>
+                : 'Tous les skins sont débloqués. Le désert te salue, cavalier.'}
+              {progression.runs > 0 && <> · {progression.runs} course{progression.runs > 1 ? 's' : ''} jouée{progression.runs > 1 ? 's' : ''}.</>}
+            </p>
+            <div className="mirage-skin-picker" role="group" aria-label="Skins du cavalier">
+              {SKINS.map(skin => {
+                const unlocked = isSkinUnlocked(skin, levelInfo.level);
+                const selected = skin.id === activeSkin.id;
+                return (
+                  <button
+                    type="button"
+                    key={skin.id}
+                    className={`mirage-skin-chip${selected ? ' is-selected' : ''}${unlocked ? '' : ' is-locked'}`}
+                    aria-pressed={selected}
+                    disabled={!unlocked}
+                    onClick={() => chooseSkin(skin.id)}
+                    title={unlocked ? skin.hint : `Débloqué au niveau ${skin.level}`}
+                  >
+                    <span className="mirage-skin-dye" aria-hidden="true" style={{ '--dye-coat': `#${skin.colors[0].toString(16).padStart(6, '0')}`, '--dye-cloth': `#${skin.colors[2].toString(16).padStart(6, '0')}`, '--dye-trim': `#${skin.colors[3].toString(16).padStart(6, '0')}` }} />
+                    <span className="mirage-skin-name">{skin.name}</span>
+                    <small>{selected ? 'ÉQUIPÉ' : unlocked ? skin.hint : `NIV. ${skin.level}`}</small>
+                  </button>
+                );
+              })}
             </div>
           </section>
 

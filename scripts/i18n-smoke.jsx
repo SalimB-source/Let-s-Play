@@ -28,6 +28,7 @@ import QuizPage from '../src/quizzes/QuizPage';
 import Dossiers from '../src/pages/Dossiers';
 import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
+import MirageRushPage from '../src/games/MirageRushPage';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
 import { gameTests } from '../src/reviewsData';
@@ -50,6 +51,7 @@ export const ROUTES = [
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle]),
   ['/dossiers', Dossiers],
   ['/auth', Auth],
+  ['/jeu', MirageRushPage],
   ['/quizz', QuizzesPage],
   ['/quizz/culture-gaming', QuizPage, '/quizz/:slug'],
   ['/quizz/films-cultes', QuizPage, '/quizz/:slug'],
