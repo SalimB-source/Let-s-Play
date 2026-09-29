@@ -576,6 +576,11 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-intro-overlay > p { margin: 10px 0 12px; font-size: 12px; }
 .mirage-intro-overlay .mirage-overlay-hint { margin-top: 10px; }
 .mirage-course-picker { width: min(100%, 640px); text-align: left; }
+/* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
+   l'en-tête reste retirée) : les cartes du sélecteur d'origine, sans le
+   bloc terrain qui est désormais figé. */
+.mirage-mode-section { width: min(100%, 640px); text-align: left; }
+.mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
 .mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 8px; }
 .mirage-picker-label > span:last-child { color: #9e8e9d; text-align: right; }
 .mirage-mode-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
