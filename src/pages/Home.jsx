@@ -56,21 +56,22 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Actu à la une de l'accueil — choix éditorial : l'actu Minecraft × le Sift
-// (28.09.2026, visuel officiel Mojang hotlinké + carte SVG de repli) ouvre la
+// Actu à la une de l'accueil — choix éditorial : l'actu du Minecraft World
+// Hotel (29.09.2026, concept art officiel déposé dans
+// public/screenshots/minecraft-world-hotel/ + carte SVG de repli) ouvre la
 // page d'accueil, juste après les épisodes. Remettre la constante à null
 // laisse la une à la dernière actu publiée par le robot (autoNewsListing,
 // déjà triée du plus récent au plus ancien), puis en repli à l'actu manuelle
 // PHYSINT.
 const editorialTopStory = {
-  to: '/news/minecraft-the-sift-nouvelle-dimension',
-  image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg',
-  fallbackImage: 'minecraft-the-sift-news.svg',
-  alt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios',
-  badge: 'MINECRAFT · THE SIFT',
-  kicker: '28.09.2026 · MOJANG',
-  title: 'MINECRAFT OUVRE SA 4E DIMENSION.',
-  excerpt: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu après l’Overworld, le Nether et l’End — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.',
+  to: '/news/minecraft-world-hotel-chessington-2027',
+  image: 'screenshots/minecraft-world-hotel/01.jpg',
+  fallbackImage: 'minecraft-world-hotel-chessington-news.svg',
+  alt: 'Minecraft World Hotel — la chambre familiale aux lits superposés, concept art officiel Merlin Entertainments / Mojang Studios',
+  badge: 'MINECRAFT WORLD · CHESSINGTON',
+  kicker: '29.09.2026 · MERLIN ENTERTAINMENTS',
+  title: 'MINECRAFT DORT À CHESSINGTON EN 2027.',
+  excerpt: 'Le Minecraft Live du 26 septembre a livré la deuxième annonce du parc : le premier hôtel officiel Minecraft au monde, près de 70 chambres sur quatre étages, ouvrira en 2027 au land Minecraft World — en même temps que le rollercoaster Escape the Nether.',
   sentiment: 'positive',
 };
 
