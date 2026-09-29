@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
 import {
+  broadcastRoomEvent,
   getOrCreateGuestProfile,
   roomAction,
   roomCode,
@@ -91,6 +93,7 @@ export default function MirageOnline({
   const [hud, setHud] = useState({});
   const [xp, setXp] = useState(null);
   const [powerToast, setPowerToast] = useState(null);
+  const [gemPickups, setGemPickups] = useState({});
 
   const latest = useRef({});
   const done = useRef(false);
@@ -102,12 +105,15 @@ export default function MirageOnline({
   const audio = useRef(null);
   const mounted = useRef(true);
   const chatFeedRef = useRef(null);
+  const gemPickupTimers = useRef(new Map());
 
   useEffect(() => {
     mounted.current = true;
     audio.current = new DesertGroove();
     return () => {
       mounted.current = false;
+      gemPickupTimers.current.forEach((timer) => clearTimeout(timer));
+      gemPickupTimers.current.clear();
       audio.current?.destroy();
     };
   }, []);
@@ -144,6 +150,31 @@ export default function MirageOnline({
     return next;
   }
 
+  const handleRoomPickupEvent = useCallback((event) => {
+    if (
+      event?.type !== 'gem_pickup'
+      || event.code !== room?.code
+      || event.userId === effectivePlayer.id
+      || !event.gemKey
+    ) return;
+
+    const key = String(event.gemKey);
+    const expiresAt = Date.now() + 1000;
+    const previousTimer = gemPickupTimers.current.get(key);
+    if (previousTimer) clearTimeout(previousTimer);
+    setGemPickups((current) => ({ ...current, [key]: expiresAt }));
+    const timer = setTimeout(() => {
+      setGemPickups((current) => {
+        if (current[key] !== expiresAt) return current;
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+      gemPickupTimers.current.delete(key);
+    }, 1000);
+    gemPickupTimers.current.set(key, timer);
+  }, [effectivePlayer.id, room?.code]);
+
   async function command(action, customTarget = undefined, customArgs = {}) {
     generation.current += 1;
     commanding.current = true;
@@ -178,6 +209,11 @@ export default function MirageOnline({
       }
       if (action === 'leave') {
         setActive(false);
+        setWorldReady(false);
+        setHud({});
+        gemPickupTimers.current.forEach((timer) => clearTimeout(timer));
+        gemPickupTimers.current.clear();
+        setGemPickups({});
         audio.current?.stop();
         setRoom(null);
         setFinished(false);
@@ -237,14 +273,14 @@ export default function MirageOnline({
       if (!commanding.current && !active && room?.code) {
         request('get', room.code, {}).catch(() => {});
       }
-    });
+    }, handleRoomPickupEvent);
 
     return () => {
       cancelled = true;
       clearTimeout(timer);
       unsub();
     };
-  }, [room?.code, active, finished]);
+  }, [room?.code, active, finished, handleRoomPickupEvent]);
 
   // Race start countdown
   useEffect(() => {
@@ -332,8 +368,11 @@ export default function MirageOnline({
   const totalPlayers = room?.players?.length || 0;
   const allPlayersReady = totalPlayers > 0 && readyCount === totalPlayers;
   const canLaunchParty = Boolean(
-    room?.status === 'lobby' && isHost && allPlayersReady && worldReady && !busy,
+    room?.status === 'lobby' && isHost && allPlayersReady && !busy,
   );
+  // The server changes the room status only after the host starts the race.
+  // Do not mount/render the 3D course while everyone is still in the lobby.
+  const gameLaunched = room?.status === 'started';
 
   const standings = [...(room?.players || [])].sort((a, b) => {
     if (a.finished_at && b.finished_at) return Date.parse(a.finished_at) - Date.parse(b.finished_at);
@@ -362,6 +401,7 @@ export default function MirageOnline({
             2 à 4 cavaliers · 600 mètres · même parcours, cristaux individuels.{' '}
             <strong>Rejoins une room disponible ou crée la tienne, coordonne-toi dans le chat et lance la partie !</strong>
           </p>
+          <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
 
         <div className="mirage-mode-tabs" role="tablist" aria-label="Modes de jeu Mirage">
@@ -709,11 +749,12 @@ export default function MirageOnline({
                     type="button"
                     className="mirage-share-button is-danger"
                     disabled={busy}
+                    title={room.host_id === effectivePlayer.id && room.status === 'lobby'
+                      ? 'Quitter la room : elle sera fermée car tu en es l’hôte.'
+                      : 'Quitter la room'}
                     onClick={() => command('leave')}
                   >
-                    {room.host_id === effectivePlayer.id && room.status === 'lobby'
-                      ? 'FERMER LA ROOM'
-                      : 'QUITTER LA ROOM'}
+                    ← QUITTER LA ROOM
                   </button>
                 </div>
               </div>
@@ -910,9 +951,23 @@ export default function MirageOnline({
               </section>
             </div>
 
-            {/* 3D Game Viewport */}
-            <section className="mirage-game-shell">
-              <div className="mirage-game-topbar">
+            {!gameLaunched && (
+              <section className="panel-frame mirage-room-waiting-panel" role="status">
+                <span className="mirage-waiting-sun" aria-hidden="true">☀</span>
+                <div>
+                  <span className="mirage-panel-kicker">LA PISTE EST PRÊTE</span>
+                  <h2>EN ATTENTE DU <em>DÉPART</em></h2>
+                  <p>Le jeu apparaîtra ici dès que l’hôte lancera la partie.</p>
+                </div>
+                <span className="mirage-waiting-status"><i /> ROOM EN LOBBY</span>
+              </section>
+            )}
+
+            {gameLaunched && !finished && (
+              <div className="mirage-game-popup-backdrop">
+                <div className="mirage-game-popup" role="dialog" aria-modal="true" aria-label="Course Mirage Rush">
+                  <section className="mirage-game-shell">
+                    <div className="mirage-game-topbar">
                 <strong>
                   {Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS
                   {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
@@ -927,7 +982,7 @@ export default function MirageOnline({
                   stage={stage}
                   race={{ mode: 'online', seed: room.seed }}
                   skin={skin}
-                  network={{ players: room.players, userId: effectivePlayer.id }}
+                  network={{ players: room.players, userId: effectivePlayer.id, gemPickups: gemPickups }}
                   actionsRef={actions}
                   onReady={() => setWorldReady(true)}
                   onHud={(p) => {
@@ -941,7 +996,12 @@ export default function MirageOnline({
                     setFinished(true);
                     setXp(onRunFinish?.(p) ?? null);
                   }}
-                  onPickup={(tier) => audio.current?.pickup(tier)}
+                  onPickup={(tier, key) => {
+                    audio.current?.pickup(tier);
+                    if (key && room?.code) {
+                      roomAction('gem_pickup', room.code, { p_gem_key: key }, effectivePlayer).catch(()=>{});
+                    }
+                  }}
                   onCheer={() => audio.current?.cheer()}
                   onPowerUpPickup={(type) => {
                     if (type === 'shield') {
@@ -989,12 +1049,26 @@ export default function MirageOnline({
                   </div>
                 )}
               </div>
-              <div className="mirage-mobile-controls">
-                <button type="button" onClick={() => actions.current?.('left')}>←</button>
-                <button type="button" className="mirage-jump-control" onClick={() => actions.current?.('jump')}>SAUT ↑</button>
-                <button type="button" onClick={() => actions.current?.('right')}>→</button>
+                    <div className="mirage-mobile-controls">
+                      <button type="button" onClick={() => actions.current?.('left')}>←</button>
+                      <button type="button" className="mirage-jump-control" onClick={() => actions.current?.('jump')}>SAUT ↑</button>
+                      <button type="button" onClick={() => actions.current?.('right')}>→</button>
+                    </div>
+                  </section>
+                </div>
               </div>
-            </section>
+            )}
+
+            {finished && (
+              <section className="panel-frame mirage-room-finished-banner" role="status">
+                <span className="mirage-waiting-sun" aria-hidden="true">✓</span>
+                <div>
+                  <span className="mirage-panel-kicker">COURSE TERMINÉE</span>
+                  <h2>BIEN JOUÉ, <em>{effectivePlayer.name.toUpperCase()}</em> !</h2>
+                  <p>La course s’est refermée. Les résultats sont affichés dans le salon.</p>
+                </div>
+              </section>
+            )}
 
             {/* Live standings */}
             <section className="panel-frame mirage-room-panel">

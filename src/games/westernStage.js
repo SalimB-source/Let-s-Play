@@ -61,7 +61,10 @@ export function westernBuilding(index, side) {
   sign.position.set(side * 6.02, h - 0.7, 0);
   sign.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
   group.add(sign);
-  group.position.z = 6 - index * 11;
+  // Keep the saloon facades well outside the track's forward sightline so they
+  // frame Dust Creek at the edges instead of blocking the sunset ahead.
+  group.position.x = side * 8.5;
+  group.position.z = 6 - index * 11 + (side === 1 ? -4 : 0);
   group.userData.speedFactor = 1;
   return group;
 }

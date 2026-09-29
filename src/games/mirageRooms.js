@@ -18,6 +18,7 @@ let seedingEnabled = true;
 let broadcastRef = null;
 let realtimeRef = null;
 const listeners = new Set();
+const roomEventListeners = new Set();
 
 export const roomsAvailable = () => true;
 
@@ -215,8 +216,9 @@ function notifyAll(storeSnapshot) {
   }
 }
 
-export function subscribeRoomUpdates(onUpdate) {
+export function subscribeRoomUpdates(onUpdate, onRoomEvent) {
   if (typeof onUpdate === 'function') listeners.add(onUpdate);
+  if (typeof onRoomEvent === 'function') roomEventListeners.add(onRoomEvent);
 
   const onStorage = (event) => {
     if (event.key === STORAGE_KEY && event.newValue) {
@@ -243,6 +245,8 @@ export function subscribeRoomUpdates(onUpdate) {
             try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryStore)); } catch {}
           }
           onUpdate?.(memoryStore);
+        } else if (event?.data?.type === 'room_event' && event.data.event) {
+          onRoomEvent?.(event.data.event);
         }
       };
     } catch {}
@@ -263,12 +267,16 @@ export function subscribeRoomUpdates(onUpdate) {
             onUpdate?.(memoryStore);
           }
         })
+        .on('broadcast', { event: 'room_event' }, ({ payload }) => {
+          if (payload) onRoomEvent?.(payload);
+        })
         .subscribe();
     } catch {}
   }
 
   return () => {
     listeners.delete(onUpdate);
+    roomEventListeners.delete(onRoomEvent);
     if (typeof window !== 'undefined') {
       window.removeEventListener('storage', onStorage);
     }
@@ -278,6 +286,37 @@ export function subscribeRoomUpdates(onUpdate) {
       if (realtimeRef === rtChannel) realtimeRef = null;
     }
   };
+}
+
+export function broadcastRoomEvent(event) {
+  if (!event || event.type !== 'gem_pickup') return;
+  const payload = {
+    type: 'gem_pickup',
+    code: roomCode(event.code),
+    gemKey: String(event.gemKey || '').slice(0, 40),
+    userId: String(event.userId || '').slice(0, 100),
+    sentAt: Date.now(),
+  };
+  if (payload.code.length !== 8 || !payload.gemKey || !payload.userId) return;
+
+  // Deliver locally as well; BroadcastChannel does not echo to its sender.
+  for (const listener of roomEventListeners) {
+    try { listener(payload); } catch {}
+  }
+  if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+    try {
+      if (!broadcastRef) {
+        broadcastRef = new BroadcastChannel(BROADCAST_CHANNEL);
+        broadcastRef.unref?.();
+      }
+      broadcastRef.postMessage({ type: 'room_event', event: payload });
+    } catch {}
+  }
+  if (realtimeRef) {
+    try {
+      realtimeRef.send({ type: 'broadcast', event: 'room_event', payload });
+    } catch {}
+  }
 }
 
 export function resetLocalRoomsForTests({ seed = false } = {}) {
