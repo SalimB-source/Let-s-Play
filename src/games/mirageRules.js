@@ -5,8 +5,8 @@ const LANE_INDICES = LANES.map((_, lane) => lane);
 
 export const CRYSTALS = [
   { name: 'Cyan', color: 0x45e4ff, value: 100 },
-  // The red diamond is the gamble of the run: same points as ever, but half of
-  // them are cursed (see RED_TRAP_CHANCE) and brake the rider instead of
+  // The red diamond is the gamble of the run: same points as ever, but some
+  // of them are cursed (see RED_TRAP_CHANCE) and brake the rider instead of
   // launching it. Nothing on the mesh gives it away before the pickup.
   { name: 'Rouge', color: 0xf2352c, value: 150 },
   { name: 'Or', color: 0xffd15c, value: 250 },
@@ -241,12 +241,12 @@ export const POWER_UP_DEFS = {
 };
 
 // ── Red diamond trap ───────────────────────────────────────────────────
-// Every red diamond is a coin flip: half of them are cursed and slam the
+// Every red diamond is a small gamble: 15 % of them are cursed and slam the
 // brakes on instead of granting the usual speed burst. The points are paid
 // either way — the gamble is on speed, never on score. A fake gold diamond
 // pays like a red one, so it rolls for the curse too.
 export const RED_TRAP_TIER = 1;
-export const RED_TRAP_CHANCE = 0.5;
+export const RED_TRAP_CHANCE = 0.15;
 export const RED_TRAP_SLOW_DURATION = 1.6; // seconds the rider is braked
 export const RED_TRAP_SLOW_FACTOR = 0.55; // speed multiplier while braked
 

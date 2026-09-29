@@ -327,7 +327,7 @@ test('a collected diamond shatters into spread-out shards that settle back to no
   assert.equal(flashEnd.done, true);
 });
 
-test('the red diamond is a coin flip: half of them brake the rider instead of boosting it', async () => {
+test('the red diamond is a gamble: some are cursed and brake the rider instead of boosting it', async () => {
   const rules = await import('../src/games/mirageRules.js');
   const { CRYSTALS, crystalPickupEffect, rollRedTrap, RED_TRAP_TIER, RED_TRAP_CHANCE,
     RED_TRAP_SLOW_DURATION, RED_TRAP_SLOW_FACTOR, DUEL_SPEED_BONUS, SPEED_BOOST_NONE, seededRandom } = rules;
