@@ -56,23 +56,20 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Actu à la une de l'accueil — choix éditorial : l'actu du Minecraft World
-// Hotel (29.09.2026, concept art officiel déposé dans
-// public/screenshots/minecraft-world-hotel/ + carte SVG de repli) ouvre la
-// page d'accueil, juste après les épisodes. Remettre la constante à null
-// laisse la une à la dernière actu publiée par le robot (autoNewsListing,
-// déjà triée du plus récent au plus ancien), puis en repli à l'actu manuelle
-// PHYSINT.
+// Actu à la une de l'accueil — choix éditorial : l'actu Physint × Xbox
+// (29.09.2026, miniature kojima_mindplayer.png) ouvre la page d'accueil,
+// juste après les épisodes. Remettre la constante à null laisse la une à la
+// dernière actu publiée par le robot (autoNewsListing, déjà triée du plus
+// récent au plus ancien), puis en repli à l'actu manuelle PHYSINT.
 const editorialTopStory = {
-  to: '/news/minecraft-world-hotel-chessington-2027',
-  image: 'screenshots/minecraft-world-hotel/01.jpg',
-  fallbackImage: 'minecraft-world-hotel-chessington-news.svg',
-  alt: 'Minecraft World Hotel — la chambre familiale aux lits superposés, concept art officiel Merlin Entertainments / Mojang Studios',
-  badge: 'MINECRAFT WORLD · CHESSINGTON',
-  kicker: '29.09.2026 · MERLIN ENTERTAINMENTS',
-  title: 'MINECRAFT DORT À CHESSINGTON EN 2027.',
-  excerpt: 'Le Minecraft Live du 26 septembre a livré la deuxième annonce du parc : le premier hôtel officiel Minecraft au monde, près de 70 chambres sur quatre étages, ouvrira en 2027 au land Minecraft World — en même temps que le rollercoaster Escape the Nether.',
-  sentiment: 'positive',
+  to: '/news/physint-budget-400-millions-xbox',
+  image: 'kojima_mindplayer.png',
+  alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play',
+  badge: 'PHYSINT · XBOX',
+  kicker: '29.09.2026 · KOJIMA PRODUCTIONS',
+  title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.',
+  excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima, fraîchement repêché par Xbox après le retrait de PlayStation. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft s’est engagé sur un montant « nettement inférieur ».',
+  sentiment: 'mixed',
 };
 
 // Visuel de la une : URL absolue (image officielle) telle quelle, fichier

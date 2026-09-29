@@ -90,8 +90,8 @@ export const ROUTES = [
     'eshop-switch-2-20-septembre', 'netmarble-tgs-2026',
     'control-resonant-24-septembre', 'sorties-24-septembre',
     'sony-licence-jeux-numeriques', 'ea-sports-fc-27-carriere-dynamique',
-    'halo-activision', 'minecraft-the-sift-nouvelle-dimension',
-    'minecraft-world-hotel-chessington-2027',
+    'halo-activision', 'physint-budget-400-millions-xbox',
+    'minecraft-world-hotel-chessington-2027', 'minecraft-the-sift-nouvelle-dimension',
     'the-witcher-3-remastered-sortie-29-septembre', 'xbox-nadella-restructuration',
   ].map((slug) => [`/news/${slug}`, CurrentNews, '/news/:slug', { slug }]),
   // Actus cinéma : route préfixée /news/cinema/:slug, clés d'article « cinema/<slug> ».

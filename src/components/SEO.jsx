@@ -104,6 +104,11 @@ const pageMeta = {
     description: 'Valeur marchande recalculée chaque semaine avec TransferRoom (xTV), note globale dynamique, profils de croissance, scénarios communautaires et crises de vestiaire : ce que change la refonte du mode Carrière d’EA Sports FC 27, attendu le 25 septembre 2026.',
     image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', type: 'article', published: '2026-09-22', section: 'Actualités gaming',
   },
+  '/news/physint-budget-400-millions-xbox': {
+    title: 'Physint : un budget de 400 millions de dollars ? Xbox aurait signé pour beaucoup moins — Let’s Play',
+    description: 'Un chiffre de 400 millions de dollars a circulé autour de Physint, le jeu d’action-espionnage de Hideo Kojima repêché par Xbox. Christopher Dring évoque un simple bruit de couloir et Jason Schreier assure que Microsoft a signé pour un montant nettement inférieur.',
+    image: 'kojima_mindplayer.png', type: 'article', published: '2026-09-29', section: 'Actualités gaming',
+  },
   '/news/minecraft-world-hotel-chessington-2027': {
     title: 'Minecraft World Hotel : le premier hôtel officiel Minecraft ouvre en 2027 à Chessington — Let’s Play',
     description: 'Annoncé au Minecraft Live du 26 septembre 2026, le Minecraft World Hotel comptera près de 70 chambres sur quatre étages à Chessington (Grand Londres) : décors du jeu, restaurant inspiré des biomes océaniques, bar à potions et ascenseurs en portails du Nether, aux côtés du rollercoaster Escape the Nether.',
