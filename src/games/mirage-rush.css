@@ -565,6 +565,10 @@
 .mirage-choice-dot { position: absolute; right: 10px; top: 10px; width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgba(155, 139, 152, .45); color: #211824; text-align: center; font-size: 11px; }
 .mirage-mode-picker button[aria-pressed="true"] .mirage-choice-dot { background: #f6cd72; border-color: #f6cd72; }
 .mirage-stage-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.mirage-stage-locked { display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-radius: var(--mirage-radius); border: 1px dashed rgba(182, 160, 195, .32); background: rgba(37, 28, 41, .55); }
+.mirage-stage-locked-icon { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: rgba(246, 205, 114, .09); font-size: 14px; }
+.mirage-stage-locked p { margin: 0; font-size: 11.5px; line-height: 1.55; color: #cbb6c4; }
+.mirage-stage-locked strong { color: #ffdc85; }
 .mirage-map-card { position: relative; padding: 0; overflow: hidden; border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: #251c29; color: #fff1dc; text-align: left; cursor: pointer; transition: border-color .18s, transform .18s, box-shadow .18s; }
 .mirage-map-art { display: block; width: 100%; height: 72px; }
 .mirage-map-number { position: absolute; top: 7px; left: 8px; font: 700 9px var(--mono); padding: 3px 5px; background: rgba(37, 28, 41, .66); backdrop-filter: blur(4px); border-radius: 5px; color: #fff2d8; }

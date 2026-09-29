@@ -95,7 +95,7 @@ function Landscape({ map }) {
   </svg>;
 }
 
-export default function MirageCoursePicker({ selectedMode, setSelectedMode, stage, setSelectedStage, challenge }) {
+export default function MirageCoursePicker({ selectedMode, setSelectedMode, stage, setSelectedStage, challenge, modeChosen = true }) {
   const locked = selectedMode === 'duel' && Boolean(challenge);
   return <div className="mirage-course-picker">
     <div className="mirage-picker-label"><span>01 / TON DÉFI</span><span>À TOI DE JOUER</span></div>
@@ -104,21 +104,28 @@ export default function MirageCoursePicker({ selectedMode, setSelectedMode, stag
         { id: 'online', name: 'EN LIGNE', icon: '♞', tagline: 'Retrouve tes amis', info: 'Salon · 2 à 4 cavaliers' },
         { id: 'rush', name: 'RUÉE', icon: '↯', tagline: 'Bats ton record', info: '60 secondes · 3 vies' },
         { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : 'Devance ton rival', info: challenge ? 'Course fantôme · 600 m' : 'Face au PNJ · 600 m' },
-      ].map(mode => <button type="button" key={mode.id} aria-pressed={selectedMode === mode.id} onClick={() => setSelectedMode(mode.id)}>
+      ].map(mode => <button type="button" key={mode.id} aria-pressed={modeChosen && selectedMode === mode.id} onClick={() => setSelectedMode(mode.id)}>
         <span className="mirage-mode-symbol" aria-hidden="true">{mode.icon}</span>
         <span className="mirage-mode-copy"><strong>{mode.name}</strong><span>{mode.tagline}</span><small>{mode.info}</small></span>
-        <span className="mirage-choice-dot" aria-hidden="true">{selectedMode === mode.id ? '✓' : ''}</span>
+        <span className="mirage-choice-dot" aria-hidden="true">{modeChosen && selectedMode === mode.id ? '✓' : ''}</span>
       </button>)}
     </div>
-    <div className="mirage-picker-label"><span>02 / TON TERRAIN</span><span>{locked ? 'VERROUILLÉ PAR LE DÉFI' : '3 HORIZONS À EXPLORER'}</span></div>
-    <div className="mirage-stage-picker" role="group" aria-label="Choisir le stage">
-      {MAPS.map(map => <button type="button" key={map.id} className={`mirage-map-card is-${map.id}`} aria-pressed={stage === map.id} disabled={locked} onClick={() => setSelectedStage(map.id)}>
-        <Landscape map={map} />
-        <span className="mirage-map-number" aria-hidden="true">{map.number}</span>
-        <span className="mirage-map-check" aria-hidden="true">{stage === map.id ? '✓' : '↗'}</span>
-        <span className="mirage-map-copy"><strong>{map.name}</strong><span>{map.mood}</span><small>{map.detail}</small></span>
-        <span className="mirage-map-selected">{stage === map.id ? 'SÉLECTIONNÉ' : 'EXPLORER'}</span>
-      </button>)}
-    </div>
+    <div className="mirage-picker-label"><span>02 / TON TERRAIN</span><span>{!modeChosen ? 'DÉBLOQUÉ APRÈS LE MODE' : locked ? 'VERROUILLÉ PAR LE DÉFI' : '3 HORIZONS À EXPLORER'}</span></div>
+    {!modeChosen ? (
+      <div className="mirage-stage-locked" role="note">
+        <span className="mirage-stage-locked-icon" aria-hidden="true">🔒</span>
+        <p>Le terrain se choisit <strong>après</strong> le mode : sélectionne d’abord <strong>RUÉE</strong> ou <strong>DUEL</strong>, puis ta map.</p>
+      </div>
+    ) : (
+      <div className="mirage-stage-picker" role="group" aria-label="Choisir le stage">
+        {MAPS.map(map => <button type="button" key={map.id} className={`mirage-map-card is-${map.id}`} aria-pressed={stage === map.id} disabled={locked} onClick={() => setSelectedStage(map.id)}>
+          <Landscape map={map} />
+          <span className="mirage-map-number" aria-hidden="true">{map.number}</span>
+          <span className="mirage-map-check" aria-hidden="true">{stage === map.id ? '✓' : '↗'}</span>
+          <span className="mirage-map-copy"><strong>{map.name}</strong><span>{map.mood}</span><small>{map.detail}</small></span>
+          <span className="mirage-map-selected">{stage === map.id ? 'SÉLECTIONNÉ' : 'EXPLORER'}</span>
+        </button>)}
+      </div>
+    )}
   </div>;
 }

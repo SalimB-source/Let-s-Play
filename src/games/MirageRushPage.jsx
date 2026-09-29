@@ -42,6 +42,9 @@ export default function MirageRushPage() {
   const [selectedMode, setSelectedMode] = useState(
     initialModeParam === 'online' ? 'online' : challenge ? 'duel' : 'rush',
   );
+  // Étape 1 : choisir le mode (ruée/duel/en ligne). Étape 2 seulement : le terrain.
+  // Un lien de défi impose déjà le duel, donc le terrain est directement visible (verrouillé).
+  const [modeChosen, setModeChosen] = useState(Boolean(challenge));
   const currentUserName = useMemo(
     () =>
       user?.user_metadata?.gamertag
@@ -195,6 +198,14 @@ export default function MirageRushPage() {
     else audioRef.current?.stop();
   };
 
+  const chooseMode = useCallback((mode) => {
+    setPhase('intro');
+    audioRef.current?.stop();
+    setSelectedMode(mode);
+    // Le choix du mode débloque l'étape suivante : le terrain.
+    setModeChosen(true);
+  }, []);
+
   const backToCoursePicker = () => {
     setPhase('intro');
     setHud(EMPTY_HUD);
@@ -297,12 +308,11 @@ export default function MirageRushPage() {
         userName={currentUserName}
         initialStage={selectedStage}
         onRunFinish={recordProgress}
-        onSelectMode={(mode) => {
-          setPhase('intro');
-          audioRef.current?.stop();
-          setSelectedMode(mode);
+        onSelectMode={chooseMode}
+        onBack={() => {
+          setSelectedMode('rush');
+          setModeChosen(false);
         }}
-        onBack={() => setSelectedMode('rush')}
       />
     );
   }
@@ -323,11 +333,7 @@ export default function MirageRushPage() {
               role="tab"
               aria-selected={selectedMode === 'rush'}
               className={`mirage-mode-tab${selectedMode === 'rush' ? ' is-active' : ''}`}
-              onClick={() => {
-                setPhase('intro');
-                audioRef.current?.stop();
-                setSelectedMode('rush');
-              }}
+              onClick={() => chooseMode('rush')}
             >
               <span>↯</span> RUÉE
             </button>
@@ -336,11 +342,7 @@ export default function MirageRushPage() {
               role="tab"
               aria-selected={selectedMode === 'duel'}
               className={`mirage-mode-tab${selectedMode === 'duel' ? ' is-active' : ''}`}
-              onClick={() => {
-                setPhase('intro');
-                audioRef.current?.stop();
-                setSelectedMode('duel');
-              }}
+              onClick={() => chooseMode('duel')}
             >
               <span>⚔</span> DUEL
             </button>
@@ -348,11 +350,7 @@ export default function MirageRushPage() {
               type="button"
               role="tab"
               className="mirage-mode-tab"
-              onClick={() => {
-                setPhase('intro');
-                audioRef.current?.stop();
-                setSelectedMode('online');
-              }}
+              onClick={() => chooseMode('online')}
             >
               <span>♞</span> EN LIGNE
             </button>
@@ -500,21 +498,23 @@ export default function MirageRushPage() {
             {phase === 'intro' && (
               <div className="mirage-overlay mirage-intro-overlay">
                 <div className="mirage-overlay-kicker"><span>✦</span> CHOISIS TA COURSE <span>✦</span></div>
-                <h2>{selectedMode === 'duel' ? 'À TOI DE' : 'LE SABLE'} <em>{selectedMode === 'duel' ? 'GALOPER.' : 'SE RÉVEILLE.'}</em></h2>
-                <MirageCoursePicker selectedMode={selectedMode} setSelectedMode={setSelectedMode} stage={stage} setSelectedStage={setSelectedStage} challenge={challenge} />
+                <h2>{!modeChosen ? 'CHOISIS D’ABORD' : selectedMode === 'duel' ? 'À TOI DE' : 'LE SABLE'} <em>{!modeChosen ? 'TON MODE.' : selectedMode === 'duel' ? 'GALOPER.' : 'SE RÉVEILLE.'}</em></h2>
+                <MirageCoursePicker selectedMode={selectedMode} setSelectedMode={chooseMode} stage={stage} setSelectedStage={setSelectedStage} challenge={challenge} modeChosen={modeChosen} />
                 {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                 {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier le PNJ.</p>}
-                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval ; les chocs le ralentissent. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.'}</p>
-                <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
-                  {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
-                </button>
-                <div className="mirage-keys-hint" aria-label="Commandes clavier">
-                  <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
-                  <span><kbd>↑</kbd> sauter</span>
-                  <span><kbd>ESPACE</kbd> sauter</span>
-                  <span><kbd>ÉCHAP</kbd> pause</span>
-                </div>
-                <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · PISTE SANS OBJET « ? » · RECORD À BATTRE'}</div>
+                {modeChosen && <>
+                  <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval ; les chocs le ralentissent. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.'}</p>
+                  <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
+                    {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
+                  </button>
+                  <div className="mirage-keys-hint" aria-label="Commandes clavier">
+                    <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
+                    <span><kbd>↑</kbd> sauter</span>
+                    <span><kbd>ESPACE</kbd> sauter</span>
+                    <span><kbd>ÉCHAP</kbd> pause</span>
+                  </div>
+                  <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · PISTE SANS OBJET « ? » · RECORD À BATTRE'}</div>
+                </>}
               </div>
             )}
 
