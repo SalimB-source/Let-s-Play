@@ -118,7 +118,13 @@ const stories = {
     credit: 'Visuel : photographie de la keynote de Meta Connect 2026 — Minh Connors / Bloomberg / Getty Images, via CNBC.',
     sentiment: 'mixed'
   },
-  // Actu gaming du 29.09.2026 — Physint (Kojima Productions × Xbox).
+  // Actus gaming du 28 et 29.09.2026 — rédigées à la main au gabarit du robot
+  // (le déclenchement manuel du workflow n'étant pas possible depuis cette
+  // session). Visuels officiels hotlinkés + carte SVG de repli locale, sauf
+  // l'actu Physint × Xbox (miniature locale kojima_mindplayer.png) et l'actu
+  // Minecraft World Hotel, dont les concept arts officiels sont
+  // déposés dans public/screenshots/minecraft-world-hotel/ (la carte SVG
+  // reste le visuel de repli).
   'physint-budget-400-millions-xbox': {
     date: '29.09.2026', category: 'XBOX · KOJIMA PRODUCTIONS', image: 'kojima_mindplayer.png', thumbnail: 'kojima_mindplayer.png', imageAlt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', cover: 'PHYSINT',
     title: 'PHYSINT À 400 M$ ?', accent: 'XBOX A SIGNÉ POUR MOINS.', dek: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima, fraîchement repêché par Xbox après le retrait de PlayStation. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft s’est engagé sur un montant « nettement inférieur ».',
@@ -136,9 +142,23 @@ const stories = {
     credit: 'Visuel : illustration éditoriale Let’s Play (kojima_mindplayer.png).',
     sentiment: 'mixed'
   },
-  // Actus gaming du 28.09.2026 — rédigées à la main au gabarit du robot
-  // (le déclenchement manuel du workflow n'étant pas possible depuis cette
-  // session). Visuels officiels hotlinkés + carte SVG de repli locale.
+  'minecraft-world-hotel-chessington-2027': {
+    date: '29.09.2026', category: 'MINECRAFT · CHESSINGTON', image: 'minecraft-world-hotel-chessington-news.svg', thumbnail: 'screenshots/minecraft-world-hotel/01.jpg', fallbackImage: 'minecraft-world-hotel-chessington-news.svg', imageAlt: 'Minecraft World Hotel — la chambre familiale aux lits superposés, concept art officiel Merlin Entertainments / Mojang Studios', cover: 'MINECRAFT WORLD', video: '9njefMDxzqw', videoTitle: 'Minecraft Live — septembre 2026 (diffusion officielle)',
+    title: 'MINECRAFT DORT', accent: 'À CHESSINGTON EN 2027.', dek: 'Deuxième annonce du Minecraft Live du 26 septembre : le Minecraft World Hotel, près de 70 chambres sur quatre étages, ouvrira en 2027 dans le parc de Chessington — en même temps qu’Escape the Nether, le premier grand huit jamais construit autour du jeu.',
+    lead: 'Dormir dans Minecraft. Après quinze ans à poser des blocs virtuels, les fans pourront bientôt poser leurs valises dans un décor de blocs tout ce qu’il y a de plus réel : Merlin Entertainments et Mojang Studios ont profité du Minecraft Live du samedi 26 septembre pour dévoiler le Minecraft World Hotel, présenté comme le premier hôtel officiel Minecraft au monde.',
+    intro: 'Il ne s’agit pas d’une chambre repeinte aux couleurs du jeu. Le bâtiment doit prolonger le land Minecraft World — un projet de 50 millions de livres (environ 57 millions d’euros) dont l’ouverture est fixée à 2027 à Chessington World of Adventures, dans le Grand Londres — bien au-delà de la journée de visite. Un hôtel ne se termine pas à la fermeture des portes : il se vit la nuit.',
+    h2: 'PRÈS DE 70 CHAMBRES, UNE NUIT DANS LE JEU',
+    p1: 'L’hôtel comptera près de 70 chambres réparties sur quatre étages — 20 premium et 49 standard, précise le communiqué — inspirées des biomes, des mobs, des couleurs et des textures du jeu. Dès l’accueil, des arbres et des animaux en blocs installent l’Overworld ; les ascenseurs sont habillés en portails du Nether et les couloirs en galeries de mine, avec des diamants à repérer en chemin. Les chambres, décrites comme le « point de réapparition » des visiteurs, reprennent les blocs et les objets du jeu : lampes de redstone, meubles en forme de coffre, motifs Creeper et TNT. La restauration promet un restaurant inspiré des biomes océaniques et un bar à potions dans un décor de manoir sylvestre.',
+    quote: 'Non seulement les fans pourront vivre le jeu imaginé dans la vraie vie, mais ils pourront aussi y dormir, en étant sûrs de réapparaître exactement là où ils le souhaitent.', quoteBy: 'DAISY MERCEDES, PRODUCTRICE CRÉATIVE CHEZ MERLIN ENTERTAINMENTS',
+    h2b: 'ESCAPE THE NETHER SORT DU SOL',
+    p2: 'Au cœur du land, le premier rollercoaster Minecraft du monde a désormais un nom — et des rails. Escape the Nether alternera intérieur et extérieur : les visiteurs traverseront les galeries sombres d’une mine avant de jaillir du bâtiment par un portail du Nether, direction la zone Overworld. Les images en accéléré diffusées pendant le Minecraft Live montrent une voie déjà posée sur le chantier de Chessington, à 35 minutes de train direct de London Waterloo. Autour du grand huit, le land promet des aventures interactives, des aires de jeu construites en blocs, des boutiques thématiques et une zone de restauration aux couleurs du Nether.',
+    p3: '« Faire entrer Minecraft dans un tout nouveau médium a été un défi créatif fascinant, résume Filip Keatley Thoms, responsable créatif des parcs et expériences Minecraft chez Mojang Studios. Nous avons pensé à tout, de l’échelle des blocs à la façon dont les mobs et les biomes prennent vie dans le monde réel. » Merlin et Mojang gardent en revanche leurs cartes : aucune date d’ouverture précise, aucun tarif, aucune réservation annoncée et aucune fiche technique du grand huit. Selon le site spécialisé Lift Hills and Thrills, l’attraction serait un « multi-dimensional coaster » signé Intamin — une information à confirmer, Merlin n’ayant publié aucune caractéristique.',
+    p4: 'L’annonce s’inscrit dans un Minecraft Live particulièrement chargé, où Mojang a aussi dévoilé le Sift, quatrième dimension du jeu, et des grottes de glace pour le prochain game drop, avant l’arrivée de Minecraft sur Switch 2 le 27 octobre. Elle prolonge surtout une stratégie : après A Minecraft Movie, plus gros succès du box-office britannique en 2025, la licence se construit un ancrage physique, et un hôtel ne se visite pas en streaming — il se réserve des mois à l’avance. Et vous : réserveriez-vous une nuit dans un hôtel Minecraft, ou le jeu doit-il rester sur un écran ?',
+    take: 'À RETENIR', takeText: 'Merlin Entertainments et Mojang Studios ouvriront en 2027 le Minecraft World Hotel à Chessington, dans le Grand Londres : près de 70 chambres sur quatre étages, restaurant sous-marin et bar à potions, aux côtés du rollercoaster Escape the Nether et d’un land à 50 millions de livres.',
+    source: 'D’après le communiqué officiel de Merlin Entertainments « World-First Minecraft Hotel Expands New Minecraft World Offering » (26.09.2026), recoupé avec IGN France et Blooloop, consultés le 29.09.2026.', sourceUrl: 'https://www.merlinentertainments.biz/newsroom/news-releases/2026/minecraft-hotel-coming-to-chessington/', sourceDetail: 'Lire le communiqué de Merlin Entertainments',
+    credit: 'Visuels : concept arts officiels du Minecraft World Hotel — Merlin Entertainments / Mojang Studios. Rendus non définitifs : l’hôtel ouvre en 2027.',
+    sentiment: 'positive'
+  },
   'minecraft-the-sift-nouvelle-dimension': {
     date: '28.09.2026', category: 'MINECRAFT · MOJANG', image: 'minecraft-the-sift-news.svg', thumbnail: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg', fallbackImage: 'minecraft-the-sift-news.svg', imageAlt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios', cover: 'THE SIFT', video: '9njefMDxzqw', videoTitle: 'Minecraft Live — septembre 2026 (diffusion officielle)',
     title: 'MINECRAFT OUVRE', accent: 'UNE NOUVELLE DIMENSION.', dek: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu après l’Overworld, le Nether et l’End — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.',

@@ -1909,7 +1909,19 @@ robot (`/news/minecraft-the-sift-nouvelle-dimension`,
 `/news/the-witcher-3-remastered-sortie-29-septembre`,
 `/news/xbox-nadella-restructuration`) : entrées dans `CurrentNews.jsx`,
 cartes en tête de `GamingNews.jsx`, routes explicites dans `src/main.jsx`,
-recherche, SEO et sitemap. Fournée précédente (27.09.2026) :
+recherche, SEO et sitemap.
+
+Le 29.09.2026, une quatrième actu gaming suit le même chemin —
+`/news/minecraft-world-hotel-chessington-2027` (le premier hôtel officiel
+Minecraft, annoncé au Minecraft Live, en tête de `GamingNews.jsx` et de la
+une de l'accueil dans `Home.jsx`). Particularité : ses visuels ne sont pas
+hotlinkés depuis la source mais **hébergés dans le dépôt**
+(`public/screenshots/minecraft-world-hotel/01-05.jpg`, concept arts officiels
+publiés par Merlin Entertainments, crédités en pied de galerie). C'est
+l'exception plutôt que la règle : les autres actus hotlinkent les visuels
+officiels et ne gardent en local que la carte éditoriale SVG.
+
+Fournée précédente (27.09.2026) :
 
 - `/news/cinema/box-office-us-endgame-resident-evil` — la ressortie
   d’Avengers: Endgame face au reboot Resident Evil au box-office américain

@@ -347,6 +347,27 @@ export const articleGalleries = {
     ],
   },
 
+  // ---- Actu du 29.09.2026 (gaming) -----------------------------------------
+  // Les cinq concept arts officiels du Minecraft World Hotel publiés par
+  // Merlin Entertainments (communiqué du 26.09.2026) : la chambre familiale
+  // sert aussi de couverture à l’article, les quatre autres vivent ici — dont
+  // l’accueil, recadré depuis la planche de deux visuels du communiqué (la
+  // moitié droite, une chambre, redoublait la première image).
+  'minecraft-world-hotel-chessington-2027': {
+    label: 'MINECRAFT WORLD HOTEL', meta: 'MERLIN ENTERTAINMENTS · CONCEPT ARTS',
+    items: [
+      { src: 'screenshots/minecraft-world-hotel/01.jpg', alt: 'Minecraft World Hotel — la chambre familiale : lits superposés en blocs de bois, mur vert et fenêtre ouverte sur un panorama du jeu, concept art officiel', caption: '01 / La chambre familiale, lits superposés et mur végétal' },
+      { src: 'screenshots/minecraft-world-hotel/02.jpg', alt: 'Minecraft World Hotel — chambre premium avec tête de lit à l’effigie des personnages du jeu et lampe inspirée de la redstone, concept art officiel', caption: '02 / La chambre premium et son mur Overworld' },
+      { src: 'screenshots/minecraft-world-hotel/03.jpg', alt: 'Minecraft World Hotel — le restaurant sous-marin inspiré des biomes océaniques, aquarium en blocs et algues suspendues, concept art officiel', caption: '03 / Le restaurant, plongée dans les biomes océaniques' },
+      { src: 'screenshots/minecraft-world-hotel/04.jpg', alt: 'Minecraft World Hotel — l’accueil aux couleurs de l’Overworld : arbres en blocs, Creeper, Steve, panorama coloré, concept art officiel', caption: '04 / L’accueil, l’Overworld grandeur nature' },
+      { src: 'screenshots/minecraft-world-hotel/05.jpg', alt: 'Minecraft World Hotel — vue extérieure du bâtiment aux façades de briques, de bois et de pierre, avec un Creeper vert à l’entrée, concept art officiel', caption: '05 / Le bâtiment, à deux pas du land Minecraft World' },
+    ],
+    credit: 'Concept arts officiels du Minecraft World Hotel — Merlin Entertainments / Mojang Studios, communiqué du 26.09.2026. Rendus non définitifs : l’hôtel ouvre en 2027.',
+    creditSources: [
+      { label: 'communiqué de Merlin Entertainments', href: 'https://www.merlinentertainments.biz/newsroom/news-releases/2026/minecraft-hotel-coming-to-chessington/' },
+    ],
+  },
+
   // ---- Actus du 28.09.2026 (cinéma) ----------------------------------------
   'cinema/box-office-us-endgame-encore-26-millions': {
     label: 'LE PODIUM DU WEEK-END', meta: 'BOX-OFFICE US · 25-27.09',

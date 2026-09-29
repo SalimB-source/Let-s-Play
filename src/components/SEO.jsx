@@ -109,6 +109,11 @@ const pageMeta = {
     description: 'Un chiffre de 400 millions de dollars a circulé autour de Physint, le jeu d’action-espionnage de Hideo Kojima repêché par Xbox. Christopher Dring évoque un simple bruit de couloir et Jason Schreier assure que Microsoft a signé pour un montant nettement inférieur.',
     image: 'kojima_mindplayer.png', type: 'article', published: '2026-09-29', section: 'Actualités gaming',
   },
+  '/news/minecraft-world-hotel-chessington-2027': {
+    title: 'Minecraft World Hotel : le premier hôtel officiel Minecraft ouvre en 2027 à Chessington — Let’s Play',
+    description: 'Annoncé au Minecraft Live du 26 septembre 2026, le Minecraft World Hotel comptera près de 70 chambres sur quatre étages à Chessington (Grand Londres) : décors du jeu, restaurant inspiré des biomes océaniques, bar à potions et ascenseurs en portails du Nether, aux côtés du rollercoaster Escape the Nether.',
+    image: 'screenshots/minecraft-world-hotel/01.jpg', type: 'article', published: '2026-09-29', section: 'Actualités gaming',
+  },
   '/news/minecraft-the-sift-nouvelle-dimension': {
     title: 'Minecraft : le Sift, première nouvelle dimension depuis quinze ans — Let’s Play',
     description: 'Dévoilé au Minecraft Live du 26 septembre 2026, le Sift est la quatrième dimension de Minecraft après l’Overworld, le Nether et l’End. Il débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.',
