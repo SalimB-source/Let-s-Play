@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION } from './mirageRules';
+import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState } from './mirageRules';
 
 const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
@@ -105,6 +105,47 @@ function makeCrystal(tier) {
     ring.rotation.x = Math.PI / 2;
     group.add(ring);
   }
+  return group;
+}
+
+// ── Diamond shatter burst ────────────────────────────────────────────
+// A small pool of reusable bursts: picking a diamond up swaps one in at the
+// gem's position, tints it with the gem's colour and plays it for
+// GEM_BURST_DURATION. No allocation happens mid-run.
+const GEM_BURST_POOL = 7;
+
+function makeGemBurst() {
+  const group = new THREE.Group();
+  const shardGeometry = new THREE.OctahedronGeometry(0.17);
+  const shardMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0xffffff,
+    emissiveIntensity: 0.85,
+    metalness: 0.3,
+    roughness: 0.22,
+    flatShading: true,
+    transparent: true,
+    opacity: 1,
+    depthWrite: false,
+  });
+  const shards = [];
+  for (let i = 0; i < GEM_BURST_SHARDS; i += 1) {
+    const shard = new THREE.Mesh(shardGeometry, shardMaterial);
+    shard.scale.set(1, 1.5, 1);
+    shard.renderOrder = 2;
+    group.add(shard);
+    shards.push(shard);
+  }
+  // A flat shockwave ring facing the camera, plus a bright core that pops once.
+  const flashMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.4, 0.62, 20), flashMaterial);
+  ring.renderOrder = 3;
+  group.add(ring);
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.33), flashMaterial);
+  core.renderOrder = 3;
+  group.add(core);
+  group.visible = false;
+  group.userData = { shards, shardMaterial, flashMaterial, ring, core, specs: [], age: 0, active: false, tier: 0 };
   return group;
 }
 
@@ -514,6 +555,83 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     rows.push(row);
   }
 
+  // ── Diamond shatter bursts ────────────────────────────────────────
+  const reduceMotion = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+  const gemBursts = [];
+  for (let i = 0; i < GEM_BURST_POOL; i += 1) {
+    const burst = makeGemBurst();
+    scene.add(burst);
+    gemBursts.push(burst);
+  }
+  let burstCursor = 0;
+  const burstColor = new THREE.Color();
+
+  /** Play a shatter at a track position. `tier` picks the crystal colour. */
+  function spawnGemBurst(x, y, z, tier = 0) {
+    const burst = gemBursts.find((candidate) => !candidate.userData.active)
+      || gemBursts[(burstCursor += 1) % gemBursts.length];
+    const data = burst.userData;
+    data.active = true;
+    data.age = 0;
+    data.tier = tier;
+    // Reduced motion keeps the pickup readable with the flash alone, no debris.
+    data.specs = reduceMotion ? [] : gemBurstShards(GEM_BURST_SHARDS, Math.random);
+    burstColor.set(CRYSTALS[tier]?.color ?? CRYSTALS[0].color);
+    data.shardMaterial.color.copy(burstColor);
+    data.shardMaterial.emissive.copy(burstColor);
+    data.flashMaterial.color.copy(burstColor).lerp(new THREE.Color(0xffffff), 0.6);
+    burst.position.set(x, y, z);
+    burst.visible = true;
+    data.ring.quaternion.copy(camera.quaternion);
+    updateGemBurst(burst, 0);
+  }
+
+  /** Advance one burst by `dt` seconds and retire it once it has played out. */
+  function updateGemBurst(burst, dt) {
+    const data = burst.userData;
+    data.age += dt;
+    const flash = gemFlashState(data.age, data.tier);
+    data.flashMaterial.opacity = flash.opacity;
+    data.ring.scale.setScalar(flash.scale);
+    data.core.scale.setScalar(Math.max(0.001, (1 - flash.life) * 0.9));
+    data.shards.forEach((shard, index) => {
+      const spec = data.specs[index];
+      if (!spec) { shard.visible = false; return; }
+      const state = gemShardState(spec, data.age, data.tier);
+      shard.visible = true;
+      shard.position.set(...state.position);
+      shard.rotation.set(...state.rotation);
+      shard.scale.set(state.scale, state.scale * 1.5, state.scale);
+      data.shardMaterial.opacity = state.opacity;
+    });
+    if (data.age >= GEM_BURST_DURATION) {
+      data.active = false;
+      burst.visible = false;
+    }
+  }
+
+  /** Bursts are anchored to the track, so they drift back with the road. */
+  function updateGemBursts(dt, travel) {
+    for (const burst of gemBursts) {
+      if (!burst.userData.active) continue;
+      burst.position.z += travel;
+      updateGemBurst(burst, dt);
+    }
+  }
+
+  const clearGemBursts = () => gemBursts.forEach((burst) => {
+    burst.userData.active = false;
+    burst.userData.age = GEM_BURST_DURATION;
+    burst.visible = false;
+  });
+
+  /** Shatter a gem that is still on the track (player, rival or remote pickup). */
+  const burstGemItem = (row, item) => {
+    if (item.burst) return;
+    item.burst = true;
+    spawnGemBurst(item.object.position.x, item.object.position.y, row.group.position.z + item.object.position.z, item.tier ?? 0);
+  };
+
   // ── Power-ups system ──────────────────────────────────────────────
   const powerUps = [];
   for (let i = 0; i < 3; i++) {
@@ -583,7 +701,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     }
   };
   const hidePlayerGem = (key) => rows.forEach(row => row.items.forEach(item => {
-    if (item.key === key) { item.collected = true; item.object.visible = false; }
+    if (item.key !== key) return;
+    // The rival taking a diamond in front of us shatters it too.
+    if (item.object.visible) burstGemItem(row, item);
+    item.collected = true;
+    item.object.visible = false;
   }));
 
   // Power-up player state
@@ -946,6 +1068,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       z -= gap;
     });
     resetPowerUps();
+    clearGemBursts();
     emitHud(true);
   };
 
@@ -1045,6 +1168,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           if (item.kind !== 'crystal') return;
           const locallyCollected = item.collected || sharedGems.has(item.key);
           const hiddenByRemotePickup = Number(network?.gemPickups?.[item.key] || 0) > wallNow;
+          // A diamond snatched by another rider bursts on our screen as well.
+          if (hiddenByRemotePickup && item.object.visible) burstGemItem(row, item);
           item.object.visible = !locallyCollected && !hiddenByRemotePickup;
           if (item.object.visible) {
             item.object.rotation.y += dt * 1.8;
@@ -1076,6 +1201,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           if (crystal) {
             crystal.collected = true;
             sharedGems.add(crystal.key);
+            burstGemItem(row, crystal);
             crystal.object.visible = false;
             gems += 1;
             const tier = effectiveTier(crystal);
@@ -1210,6 +1336,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       if (race.mode !== 'rush' ? distance >= DUEL_DISTANCE : elapsed >= RUN_SECONDS) finish();
       emitHud();
     }
+
+    // Shatters keep playing out even on the frame the run ends.
+    updateGemBursts(dt, speed * dt);
 
     const targetX = LANES[laneIndex];
     player.position.x = playerLateralPosition(player.position.x, targetX, dt, jumpLeft);

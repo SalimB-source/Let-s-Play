@@ -56,6 +56,78 @@ export function createCourse(random = Math.random) {
   };
 }
 
+// ── Gem shatter burst ──────────────────────────────────────────────────
+// Every collected diamond explodes into a handful of shards plus a flash ring.
+// The maths lives here (pure, testable); MirageWorld only moves the meshes.
+export const GEM_BURST_DURATION = 0.52; // seconds a burst stays on screen
+export const GEM_BURST_SHARDS = 10; // shards thrown by one diamond
+export const GEM_BURST_GRAVITY = 12; // m/s², pulls the shards back down
+export const GEM_BURST_LIFT = 0.55; // m of upward kick, on top of the spread
+// Richer diamonds throw their shards further: cyan, rose, gold.
+export const GEM_BURST_SPEED = Object.freeze([3.6, 4.2, 5.1]);
+
+const clamp01 = (value) => Math.max(0, Math.min(1, value));
+
+export const gemBurstSpeed = (tier) => GEM_BURST_SPEED[tier] ?? GEM_BURST_SPEED[0];
+
+// The spread leans upwards (1 up, GEM_BURST_DOWNWARD down) so gravity has
+// something to work with and few shards get driven straight into the sand.
+const GEM_BURST_DOWNWARD = 0.55;
+
+/**
+ * Shard blueprints for one burst: directions spread over a dome (Fibonacci
+ * lattice, so no two shards overlap) with a random twist, speed and spin.
+ */
+export function gemBurstShards(count = GEM_BURST_SHARDS, random = Math.random) {
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const twist = random() * Math.PI * 2;
+  const shards = [];
+  for (let i = 0; i < count; i += 1) {
+    const y = 1 - ((i + 0.5) / count) * (1 + GEM_BURST_DOWNWARD);
+    const radius = Math.sqrt(Math.max(0, 1 - y * y));
+    const angle = twist + i * golden;
+    shards.push({
+      dir: [Math.cos(angle) * radius, y, Math.sin(angle) * radius],
+      speed: 0.72 + random() * 0.55,
+      size: 0.62 + random() * 0.62,
+      spin: [(random() - 0.5) * 22, (random() - 0.5) * 22, (random() - 0.5) * 22],
+    });
+  }
+  return shards;
+}
+
+/** Where one shard sits, how big and how opaque it is, `age` seconds into the burst. */
+export function gemShardState(shard, age, tier = 0) {
+  const life = clamp01(age / GEM_BURST_DURATION);
+  const ease = 1 - (1 - life) ** 2; // quick punch outwards, then it coasts
+  const reach = gemBurstSpeed(tier) * GEM_BURST_DURATION * shard.speed * ease;
+  const fall = 0.5 * GEM_BURST_GRAVITY * (life * GEM_BURST_DURATION) ** 2;
+  return {
+    life,
+    done: life >= 1,
+    position: [
+      shard.dir[0] * reach,
+      shard.dir[1] * reach + GEM_BURST_LIFT * ease - fall,
+      shard.dir[2] * reach,
+    ],
+    rotation: [shard.spin[0] * age, shard.spin[1] * age, shard.spin[2] * age],
+    scale: shard.size * (1 - life * life * 0.9),
+    opacity: 1 - life * life,
+  };
+}
+
+/** The shockwave ring: snaps open on pickup, then fades out. */
+export function gemFlashState(age, tier = 0) {
+  const life = clamp01(age / GEM_BURST_DURATION);
+  const ease = 1 - (1 - life) ** 3;
+  return {
+    life,
+    done: life >= 1,
+    scale: 0.45 + ease * (1.5 + tier * 0.28),
+    opacity: (1 - life) ** 1.6 * 0.85,
+  };
+}
+
 export const DUEL_DISTANCE = 600;
 export const DUEL_SPEED_BONUS = [1.6, 2.8, 4.4]; // cyan, rose, or; m/s
 export const DUEL_BASE_SPEED = 15;

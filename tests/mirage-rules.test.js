@@ -264,3 +264,44 @@ test('NPC can use the fourth lane, collect its gems and jump its barriers', asyn
   assert.equal(planNpcLane(jump, 1).lane, 3);
   assert.equal(planNpcLane(jump, 1).jump, true);
 });
+
+test('a collected diamond shatters into spread-out shards that settle back to nothing', async () => {
+  const { gemBurstShards, gemShardState, gemFlashState, GEM_BURST_DURATION, GEM_BURST_SHARDS } =
+    await import('../src/games/mirageRules.js');
+  let state = 7;
+  const random = () => ((state = (state * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  const shards = gemBurstShards(GEM_BURST_SHARDS, random);
+  assert.equal(shards.length, GEM_BURST_SHARDS);
+  for (const shard of shards) {
+    const length = Math.hypot(...shard.dir);
+    assert.ok(Math.abs(length - 1) < 1e-9, 'shard directions are unit vectors');
+    assert.ok(shard.size > 0 && shard.speed > 0);
+  }
+  // Shards must not all fly the same way: the spread covers both sides and heights.
+  assert.ok(shards.some(s => s.dir[0] > 0.3) && shards.some(s => s.dir[0] < -0.3));
+  assert.ok(shards.some(s => s.dir[1] > 0.3) && shards.some(s => s.dir[1] < -0.3));
+
+  const [shard] = shards;
+  const start = gemShardState(shard, 0, 2);
+  assert.deepEqual(start.position.map(v => Math.round(v * 1e6) / 1e6), [0, 0, 0]);
+  assert.equal(start.opacity, 1);
+  assert.equal(start.done, false);
+  const mid = gemShardState(shard, GEM_BURST_DURATION / 2, 2);
+  assert.ok(Math.hypot(...mid.position) > 0.3, 'shards travel away from the gem');
+  assert.ok(mid.opacity < start.opacity && mid.opacity > 0);
+  const end = gemShardState(shard, GEM_BURST_DURATION, 2);
+  assert.equal(end.done, true);
+  assert.equal(end.opacity, 0);
+  // Ages past the burst clamp instead of sending debris to infinity.
+  assert.deepEqual(gemShardState(shard, 99, 2).position, end.position);
+  // Gold diamonds throw their shards further than cyan ones.
+  assert.ok(Math.hypot(...gemShardState(shard, 0.2, 2).position) > Math.hypot(...gemShardState(shard, 0.2, 0).position));
+
+  const flashStart = gemFlashState(0, 0);
+  const flashMid = gemFlashState(GEM_BURST_DURATION / 2, 0);
+  const flashEnd = gemFlashState(GEM_BURST_DURATION, 0);
+  assert.ok(flashMid.scale > flashStart.scale && flashEnd.scale > flashMid.scale);
+  assert.ok(flashMid.opacity < flashStart.opacity);
+  assert.equal(flashEnd.opacity, 0);
+  assert.equal(flashEnd.done, true);
+});
