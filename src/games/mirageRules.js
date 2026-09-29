@@ -58,6 +58,58 @@ export const DUEL_MAX_SPEED = 26;
 export const SPEED_BOOST_DURATION = 1;
 export const SPEED_BOOST_NONE = Object.freeze({ bonus: 0, left: 0 });
 
+// ── Power-ups ──────────────────────────────────────────────────────────
+// Two launch power-ups for Mirage Rush — extensible for future items.
+export const POWER_UPS = {
+  LASSO: 'lasso',
+  SHIELD: 'shield',
+};
+
+// Lasso appearance chances by race position (1st → 4th)
+export const LASSO_CHANCES = [0, 0.3, 0.4, 0.6];
+// Shield appearance chance for all positions
+export const SHIELD_CHANCE = 0.3;
+
+export const SHIELD_DURATION = 5; // seconds the shield stays active
+export const LASSO_SLOW_DURATION = 2.5; // seconds target is slowed
+export const LASSO_SLOW_FACTOR = 0.45; // speed multiplier while slowed
+export const LASSO_PROJECTILE_DURATION = 0.45; // seconds rope flies
+
+export function getLassoChance(rank) {
+  const idx = Math.max(0, Math.min(3, (rank | 0) - 1));
+  return LASSO_CHANCES[idx] ?? 0;
+}
+
+// Roll a single power-up type for a player at `rank` (1 = leader).
+// Returns 'lasso' | 'shield' | null.
+// Priority: lasso first, then shield. This matches the spec:
+// - lasso has position-dependent chance
+// - shield has flat 30% chance
+export function rollPowerUpType(rank, random = Math.random) {
+  const lassoChance = getLassoChance(rank);
+  if (random() < lassoChance) return POWER_UPS.LASSO;
+  if (random() < SHIELD_CHANCE) return POWER_UPS.SHIELD;
+  return null;
+}
+
+// For future extensibility: describe all power-ups in one place
+export const POWER_UP_DEFS = {
+  [POWER_UPS.LASSO]: {
+    id: POWER_UPS.LASSO,
+    label: 'Lasso',
+    description: 'Lancé automatiquement sur l’adversaire le plus proche devant vous',
+    color: 0xd9913b,
+    emissive: 0x8a4a12,
+  },
+  [POWER_UPS.SHIELD]: {
+    id: POWER_UPS.SHIELD,
+    label: 'Bouclier',
+    description: 'Protège une fois d’une collision ou d’un lasso (5s)',
+    color: 0x4ce9df,
+    emissive: 0x1a7a74,
+  },
+};
+
 /** Grant the tier's burst and restart the 1-second window (previous boost is dropped). */
 export function speedBoostFor(tier) {
   const bonus = DUEL_SPEED_BONUS[tier] ?? 0;

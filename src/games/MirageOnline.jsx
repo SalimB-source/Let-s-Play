@@ -92,6 +92,7 @@ export default function MirageOnline({
   const [sound, setSound] = useState(true);
   const [hud, setHud] = useState({});
   const [xp, setXp] = useState(null);
+  const [powerToast, setPowerToast] = useState(null);
   const [gemPickups, setGemPickups] = useState({});
 
   const latest = useRef({});
@@ -967,54 +968,87 @@ export default function MirageOnline({
                 <div className="mirage-game-popup" role="dialog" aria-modal="true" aria-label="Course Mirage Rush">
                   <section className="mirage-game-shell">
                     <div className="mirage-game-topbar">
-                      <strong>
-                        {Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS
-                      </strong>
-                      <span>{active ? 'COURSE EN COURS' : 'DÉPART IMMINENT'}</span>
-                      <button
-                        type="button"
-                        className="mirage-share-button is-danger mirage-popup-leave-button"
-                        disabled={busy}
-                        onClick={() => command('leave')}
-                        aria-label="Quitter la room et fermer la course"
-                      >
-                        ← QUITTER LA ROOM
-                      </button>
-                    </div>
-                    <div className="mirage-online-world">
-                      <MirageWorld
-                        active={active}
-                        stage={stage}
-                        race={{ mode: 'online', seed: room.seed }}
-                        skin={skin}
-                        network={{ players: room.players, userId: effectivePlayer.id, gemPickups }}
-                        actionsRef={actions}
-                        onReady={() => setWorldReady(true)}
-                        onHud={(p) => {
-                          latest.current = p;
-                          setHud(p);
-                        }}
-                        onFinish={(p) => {
-                          latest.current = p;
-                          done.current = true;
-                          setActive(false);
-                          setFinished(true);
-                          setXp(onRunFinish?.(p) ?? null);
-                        }}
-                        onPickup={(tier, gemKey) => {
-                          audio.current?.pickup(tier);
-                          if (gemKey) {
-                            broadcastRoomEvent({
-                              type: 'gem_pickup',
-                              code: room.code,
-                              gemKey,
-                              userId: effectivePlayer.id,
-                            });
-                          }
-                        }}
-                        onCheer={() => audio.current?.cheer()}
-                      />
-                    </div>
+                <strong>
+                  {Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS
+                  {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
+                  {hud.slowed ? ' · 🪢 RALENTI' : ''}
+                  {hud.rank ? ` · #${hud.rank}` : ''}
+                </strong>
+                <span>{finished ? 'ARRIVÉE !' : active ? 'COURSE EN COURS' : 'PISTE PRÊTE'}</span>
+              </div>
+              <div className="mirage-online-world">
+                <MirageWorld
+                  active={active}
+                  stage={stage}
+                  race={{ mode: 'online', seed: room.seed }}
+                  skin={skin}
+                  network={{ players: room.players, userId: effectivePlayer.id, gemPickups: gemPickups }}
+                  actionsRef={actions}
+                  onReady={() => setWorldReady(true)}
+                  onHud={(p) => {
+                    latest.current = p;
+                    setHud(p);
+                  }}
+                  onFinish={(p) => {
+                    latest.current = p;
+                    done.current = true;
+                    setActive(false);
+                    setFinished(true);
+                    setXp(onRunFinish?.(p) ?? null);
+                  }}
+                  onPickup={(tier, key) => {
+                    audio.current?.pickup(tier);
+                    if (key && room?.code) {
+                      roomAction('gem_pickup', room.code, { p_gem_key: key }, effectivePlayer).catch(()=>{});
+                    }
+                  }}
+                  onCheer={() => audio.current?.cheer()}
+                  onPowerUpPickup={(type) => {
+                    if (type === 'shield') {
+                      setPowerToast('🛡️ Bouclier ramassé ! Protection 5s');
+                      setTimeout(()=> setPowerToast(null), 2500);
+                    } else if (type === 'lasso') {
+                      setPowerToast('🪢 Lasso ramassé ! Lancement auto…');
+                      setTimeout(()=> setPowerToast(null), 2000);
+                    }
+                    audio.current?.pickup(2);
+                  }}
+                  onLasso={async (targetPlayer) => {
+                    if (!room?.code || !targetPlayer) return;
+                    try {
+                      await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                    } catch {}
+                    setPowerToast(`🪢 Lasso lancé sur ${targetPlayer.name} !`);
+                    setTimeout(()=> setPowerToast(null), 2500);
+                  }}
+                  onShield={async (isActive) => {
+                    if (!room?.code) return;
+                    try {
+                      if (isActive) {
+                        await roomAction('shield', room.code, {}, effectivePlayer);
+                      } else {
+                        await roomAction('shield', room.code, { p_clear: true, p_active: false }, effectivePlayer);
+                      }
+                    } catch {}
+                  }}
+                  onLassoHit={(info) => {
+                    if (info?.target === 'player') {
+                      setPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par un lasso ! Ralenti…');
+                      setTimeout(()=> setPowerToast(null), 2500);
+                    }
+                  }}
+                />
+                {powerToast && (
+                  <div className="mirage-power-toast" role="status" aria-live="polite">
+                    {powerToast}
+                  </div>
+                )}
+                {active && hud.rank && (
+                  <div className="mirage-power-hint">
+                    <span>POS #{hud.rank} · LASSO {hud.rank===1? '0%' : hud.rank===2? '30%' : hud.rank===3? '40%' : '60%'} · BOUCLIER 30%</span>
+                  </div>
+                )}
+              </div>
                     <div className="mirage-mobile-controls">
                       <button type="button" onClick={() => actions.current?.('left')}>←</button>
                       <button type="button" className="mirage-jump-control" onClick={() => actions.current?.('jump')}>SAUT ↑</button>

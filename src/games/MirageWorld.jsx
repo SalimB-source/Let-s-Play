@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE } from './mirageRules';
+import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION } from './mirageRules';
 
 const LANES = [-2.1, 0, 2.1];
 const TRACK_MIN_Z = -40;
@@ -109,6 +109,99 @@ function makeHazard(kind) {
   block(cube, edge, group, [0, 0.93, 0], [4.05, 0.13, 1.13]);
   return group;
 }
+
+
+// ── Power-up meshes ──────────────────────────────────────────────────
+function makePowerUpLassoMesh() {
+  const group = new THREE.Group();
+  const cube = new THREE.BoxGeometry(1, 1, 1);
+  const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd9913b, roughness: 0.7, flatShading: true });
+  const glowMat = new THREE.MeshStandardMaterial({ color: 0xffb86a, emissive: 0x8a4a12, emissiveIntensity: 0.6, flatShading: true });
+  const torus = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.09, 6, 14), ropeMat);
+  torus.rotation.x = Math.PI / 2;
+  torus.position.y = 0.35;
+  group.add(torus);
+  const torus2 = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.07, 6, 12), ropeMat);
+  torus2.rotation.x = Math.PI / 2;
+  torus2.position.y = 0.55;
+  group.add(torus2);
+  const loop = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.035, 5, 12), glowMat);
+  loop.position.y = 1.05;
+  loop.rotation.x = Math.PI / 2.5;
+  group.add(loop);
+  block(cube, glowMat, group, [0, 0.12, 0], [0.5, 0.24, 0.5]);
+  group.userData.spin = true;
+  group.userData.type = POWER_UPS.LASSO;
+  return group;
+}
+
+function makePowerUpShieldMesh() {
+  const group = new THREE.Group();
+  const cube = new THREE.BoxGeometry(1, 1, 1);
+  const shieldMat = new THREE.MeshStandardMaterial({ color: 0x4ce9df, emissive: 0x1a7a74, emissiveIntensity: 0.65, metalness: 0.2, roughness: 0.3, flatShading: true, transparent: true, opacity: 0.95 });
+  const coreMat = new THREE.MeshStandardMaterial({ color: 0xb8fffb, emissive: 0x4ce9df, emissiveIntensity: 0.8, flatShading: true });
+  const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 0), shieldMat);
+  ico.position.y = 0.75;
+  group.add(ico);
+  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.22), coreMat);
+  core.position.y = 0.75;
+  group.add(core);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.04, 5, 16), shieldMat);
+  ring.position.y = 0.75;
+  ring.rotation.x = Math.PI / 2;
+  group.add(ring);
+  block(cube, shieldMat, group, [0, 0.12, 0], [0.5, 0.24, 0.5]);
+  group.userData.spin = true;
+  group.userData.type = POWER_UPS.SHIELD;
+  return group;
+}
+
+function makePowerUpMesh(type) {
+  if (type === POWER_UPS.LASSO) return makePowerUpLassoMesh();
+  if (type === POWER_UPS.SHIELD) return makePowerUpShieldMesh();
+  return makePowerUpShieldMesh();
+}
+
+function makeShieldBubble() {
+  const group = new THREE.Group();
+  const bubbleMat = new THREE.MeshStandardMaterial({
+    color: 0x7af0e6,
+    emissive: 0x1a7a74,
+    emissiveIntensity: 0.7,
+    transparent: true,
+    opacity: 0.38,
+    metalness: 0.1,
+    roughness: 0.2,
+    flatShading: true,
+  });
+  const rimMat = new THREE.MeshBasicMaterial({ color: 0xb8fffb, transparent: true, opacity: 0.55 });
+  const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.15, 12, 10), bubbleMat);
+  group.add(sphere);
+  const torus = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.06, 6, 18), rimMat);
+  torus.rotation.x = Math.PI / 2;
+  group.add(torus);
+  const torus2 = new THREE.Mesh(new THREE.TorusGeometry(1.15, 0.04, 6, 18), rimMat);
+  torus2.rotation.y = Math.PI / 2;
+  group.add(torus2);
+  group.visible = false;
+  return group;
+}
+
+function makeLassoRope() {
+  const group = new THREE.Group();
+  const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd9913b, emissive: 0x8a4a12, emissiveIntensity: 0.35, roughness: 0.7, flatShading: true });
+  const segments = 10;
+  const meshes = [];
+  for (let i = 0; i < segments; i++) {
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.38), ropeMat);
+    group.add(seg);
+    meshes.push(seg);
+  }
+  group.userData.segments = meshes;
+  group.visible = false;
+  return group;
+}
+
 
 function makeScenery() {
   const group = new THREE.Group();
@@ -281,15 +374,27 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let skinColors = getSkin?.() ?? null;
   const player = makeExplorer(false, skinColors);
   scene.add(player);
+  const playerShieldBubble = makeShieldBubble();
+  playerShieldBubble.position.set(0, 1.2, 0);
+  player.add(playerShieldBubble);
+
   const rival = makeExplorer(true);
   rival.position.set(4.2, 0, -5);
   rival.scale.setScalar(0.92);
   rival.visible = false;
   scene.add(rival);
+  const rivalShieldBubble = makeShieldBubble();
+  rivalShieldBubble.position.set(0, 1.2, 0);
+  rival.add(rivalShieldBubble);
   const onlineRiders = [0,1,2,3].map(slot => {
     const rider = makeExplorer(slot);
     rider.visible = false;
     scene.add(rider);
+    const sb = makeShieldBubble();
+    sb.position.set(0, 1.2, 0);
+    rider.add(sb);
+    rider.userData.shieldBubble = sb;
+    rider.userData.slowEffect = 0;
     return rider;
   });
   const skinPaint = (rider, colors) => {
@@ -348,6 +453,32 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     rows.push(row);
   }
 
+  // ── Power-ups system ──────────────────────────────────────────────
+  const POWER_UP_SPAWN_GAP_MIN = 28;
+  const POWER_UP_SPAWN_GAP_MAX = 46;
+  const powerUps = [];
+  for (let i = 0; i < 3; i++) {
+    const g = new THREE.Group();
+    scene.add(g);
+    powerUps.push({ group: g, type: null, lane: 1, collected: true, coursePos: 0, checked: false, mesh: null });
+  }
+
+  const lassoProjectiles = [];
+  const lassoRopePool = [];
+  function acquireRope() {
+    let rope = lassoRopePool.pop();
+    if (!rope) {
+      rope = makeLassoRope();
+      scene.add(rope);
+    }
+    rope.visible = true;
+    return rope;
+  }
+  function releaseRope(rope) {
+    rope.visible = false;
+    lassoRopePool.push(rope);
+  }
+
   const scenery = [];
   if (prairie) {
     for (let i = 0; i < 11; i++) for (const side of [-1, 1]) {
@@ -383,7 +514,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let boost = SPEED_BOOST_NONE;
   let trace = [0];
   let seed = 0;
-  const npc = { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 };
+  const npc = { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0 };
   const npcEnsureCourse = () => {
     while (npc.genPos < npc.dist + 60) {
       const encounter = npc.gen();
@@ -395,20 +526,226 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const hidePlayerGem = (key) => rows.forEach(row => row.items.forEach(item => {
     if (item.key === key) { item.collected = true; item.object.visible = false; }
   }));
+
+  // Power-up player state
+  let shieldActive = false;
+  let shieldTimer = 0;
+  let playerSlowTimer = 0;
+  let shieldFlash = 0;
+
+  const getCurrentRank = () => {
+    if (race.mode === 'online') {
+      const net = getNetwork?.();
+      if (net?.players?.length) {
+        const sorted = [...net.players].sort((a,b)=> (Number(b.distance)||0)-(Number(a.distance)||0));
+        const idx = sorted.findIndex(p=> p.user_id===net.userId);
+        if (idx >=0) return idx+1;
+        const myDist = distance;
+        let ahead = 0;
+        for (const p of net.players) if ((Number(p.distance)||0) > myDist) ahead++;
+        return ahead+1;
+      }
+      return 1;
+    }
+    if (race.mode === 'duel') {
+      return distance >= rivalDistance ? 1 : 2;
+    }
+    return 1;
+  };
+
+  const findLassoTarget = () => {
+    if (race.mode === 'online') {
+      const net = getNetwork?.();
+      if (!net?.players?.length) return null;
+      const myDist = distance;
+      const ahead = net.players
+        .filter(p=> p.user_id!==net.userId && (Number(p.distance)||0) > myDist + 1)
+        .sort((a,b)=> (Number(a.distance)||0)-(Number(b.distance)||0));
+      if (ahead.length>0) {
+        return { kind: 'online', player: ahead[0], distance: ahead[0].distance };
+      }
+      return null;
+    }
+    if (race.mode === 'duel') {
+      if (rivalDistance > distance + 1.5) {
+        return { kind: 'rival' };
+      }
+      return null;
+    }
+    return null;
+  };
+
+  const activateShield = (fromNetwork = false) => {
+    shieldActive = true;
+    shieldTimer = SHIELD_DURATION;
+    playerShieldBubble.visible = true;
+    shieldFlash = 0.3;
+    if (!fromNetwork) {
+      callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'activated' });
+      callbacks.shield?.(true);
+    }
+  };
+
+  const consumeShield = () => {
+    shieldActive = false;
+    shieldTimer = 0;
+    playerShieldBubble.visible = false;
+    shieldFlash = 0.4;
+    callbacks.shield?.(false);
+    callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'consumed' });
+  };
+
+  const applyPlayerSlow = (fromNetwork = false) => {
+    if (shieldActive) {
+      consumeShield();
+      return false;
+    }
+    playerSlowTimer = LASSO_SLOW_DURATION;
+    invulnerable = Math.max(invulnerable, 0.2);
+    crashAnimation = 0.32;
+    if (!fromNetwork) callbacks.lassoHit?.({ target: 'player' });
+    return true;
+  };
+
+  const applyNpcSlow = () => {
+    if (npc.shieldActive) {
+      npc.shieldActive = false;
+      npc.shieldTimer = 0;
+      rivalShieldBubble.visible = false;
+      return false;
+    }
+    npc.slowTimer = LASSO_SLOW_DURATION;
+    npc.invulnerable = Math.max(npc.invulnerable, 0.2);
+    return true;
+  };
+
+  const activateNpcShield = () => {
+    npc.shieldActive = true;
+    npc.shieldTimer = SHIELD_DURATION;
+    rivalShieldBubble.visible = true;
+  };
+
+  const fireLasso = (targetInfo) => {
+    if (!targetInfo) {
+      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: null });
+      return;
+    }
+    const rope = acquireRope();
+    const start = new THREE.Vector3(player.position.x, 1.2, 0);
+    let end;
+    if (targetInfo.kind === 'rival') {
+      end = new THREE.Vector3(rival.position.x, 1.0, rival.position.z);
+    } else if (targetInfo.kind === 'online') {
+      const net = getNetwork?.();
+      const peer = net?.players?.find(p=> p.user_id===targetInfo.player.user_id);
+      const slot = peer?.slot ?? 0;
+      const rider = onlineRiders[slot];
+      if (rider) end = new THREE.Vector3(rider.position.x, 1.0, rider.position.z);
+      else end = new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 1.0, distance - (targetInfo.player.distance||0));
+    } else {
+      end = new THREE.Vector3(player.position.x, 1.0, -12);
+    }
+    lassoProjectiles.push({
+      rope,
+      start: start.clone(),
+      end: end.clone(),
+      progress: 0,
+      target: targetInfo,
+      fromPlayer: true,
+    });
+    callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo });
+    if (targetInfo.kind === 'online') {
+      callbacks.lasso?.(targetInfo.player);
+    }
+  };
+
+  const handlePowerUpPickup = (pu) => {
+    pu.collected = true;
+    pu.group.visible = false;
+    const type = pu.type;
+    if (!type) return;
+    callbacks.powerUpPickup?.(type);
+    if (type === POWER_UPS.SHIELD) {
+      activateShield();
+    } else if (type === POWER_UPS.LASSO) {
+      const target = findLassoTarget();
+      fireLasso(target);
+    } else {
+      callbacks.powerUp?.({ type, action: 'activated' });
+    }
+  };
+
+  const spawnPowerUp = (pu, zPos) => {
+    const rank = getCurrentRank();
+    const type = rollPowerUpType(rank, Math.random);
+    pu.group.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+      if (obj.material) {
+        if (Array.isArray(obj.material)) obj.material.forEach(m=> m.dispose());
+        else { obj.material.map?.dispose(); obj.material.dispose(); }
+      }
+    });
+    pu.group.clear();
+    if (!type) {
+      pu.type = null;
+      pu.collected = true;
+      pu.group.visible = false;
+      pu.coursePos = distance - zPos;
+      pu.group.position.set(LANES[Math.floor(Math.random()*3)], 0, zPos);
+      pu.checked = false;
+      return;
+    }
+    pu.type = type;
+    pu.collected = false;
+    pu.lane = Math.floor(Math.random()*3);
+    pu.coursePos = distance - zPos;
+    const mesh = makePowerUpMesh(type);
+    pu.group.add(mesh);
+    pu.mesh = mesh;
+    pu.group.position.set(LANES[pu.lane], 0, zPos);
+    pu.group.visible = true;
+    pu.checked = false;
+  };
+
+  const resetPowerUps = () => {
+    let z = -40;
+    for (const pu of powerUps) {
+      const gap = POWER_UP_SPAWN_GAP_MIN + Math.random()*(POWER_UP_SPAWN_GAP_MAX-POWER_UP_SPAWN_GAP_MIN);
+      z -= gap;
+      spawnPowerUp(pu, z);
+    }
+    for (const proj of lassoProjectiles) releaseRope(proj.rope);
+    lassoProjectiles.length = 0;
+    shieldActive = false;
+    shieldTimer = 0;
+    playerSlowTimer = 0;
+    playerShieldBubble.visible = false;
+    npc.shieldActive = false;
+    npc.shieldTimer = 0;
+    npc.slowTimer = 0;
+    rivalShieldBubble.visible = false;
+  };
+
+
   const updateNpc = (dt) => {
     npcEnsureCourse();
     npc.jumpLeft = Math.max(0, npc.jumpLeft - dt);
     npc.cooldown = Math.max(0, npc.cooldown - dt);
     npc.invulnerable = Math.max(0, npc.invulnerable - dt);
+    npc.shieldTimer = Math.max(0, npc.shieldTimer - dt);
+    if (npc.shieldTimer <= 0) npc.shieldActive = false;
+    npc.slowTimer = Math.max(0, npc.slowTimer - dt);
+    const slowFactor = npc.slowTimer > 0 ? LASSO_SLOW_FACTOR : 1;
     npc.base += (DUEL_BASE_SPEED - npc.base) * Math.min(1, dt * 0.65);
     npc.boost = tickSpeedBoost(npc.boost, dt);
-    const speed = duelSpeed(npc.base, npc.boost.bonus);
+    const rawSpeed = duelSpeed(npc.base, npc.boost.bonus);
+    const speed = rawSpeed * slowFactor;
     const target = npc.course[npc.next];
     if (target) {
       const ahead = target.pos - npc.dist;
       if (npc.planned !== target.index && ahead < 24) {
         npc.planned = target.index;
-        npc.hesitate = Math.random() < 0.12; // occasional human-like mistake
+        npc.hesitate = Math.random() < 0.12;
         npc.plan = planNpcLane(target.items.map(item => ({ ...item, taken: sharedGems.has(item.key) })), npc.lane);
       }
       if (npc.plan && !npc.hesitate && npc.cooldown <= 0 && npc.lane !== npc.plan.lane && ahead < 20) {
@@ -421,9 +758,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         const near = lane => Math.abs(npc.x - LANES[lane]) < 0.95;
         const hazard = target.items.find(item => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(near));
         if (hazard && !(hazard.kind === 'barrier' && height > 1.05) && npc.invulnerable <= 0) {
-          npc.base = Math.max(8, speed * 0.55);
-          npc.boost = SPEED_BOOST_NONE;
-          npc.invulnerable = 1.15;
+          if (npc.shieldActive) {
+            npc.shieldActive = false;
+            npc.shieldTimer = 0;
+            npc.invulnerable = 0.6;
+          } else {
+            npc.base = Math.max(8, speed * 0.55);
+            npc.boost = SPEED_BOOST_NONE;
+            npc.invulnerable = 1.15;
+          }
         }
         const gem = target.items.find(item => item.kind === 'crystal' && Math.abs(npc.x - LANES[item.lane]) < 0.85 && (!item.raised || height > 1.05) && !sharedGems.has(item.key));
         if (gem) {
@@ -477,8 +820,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       multiplier: (1 + Math.min(3, Math.floor(combo / 5) * 0.5)).toFixed(1),
       lives,
       remaining: Math.max(0, RUN_SECONDS - elapsed),
-      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed, boost.bonus), boostLeft: boost.left, mode: race.mode,
+      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed * (playerSlowTimer>0?LASSO_SLOW_FACTOR:1), boost.bonus), boostLeft: boost.left, mode: race.mode,
       rivalName: race.challenge?.name || 'L’OMBRE',
+      shieldActive,
+      shieldLeft: shieldTimer,
+      slowed: playerSlowTimer>0,
+      slowLeft: playerSlowTimer,
+      rank: getCurrentRank(),
+      powerUps: powerUps.filter(p=>!p.collected).length,
     });
   };
 
@@ -529,13 +878,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     nextEncounter = createCourse(race.mode !== 'rush' ? seededRandom(seed) : Math.random);
     rowCounter = 0;
     sharedGems.clear();
-    Object.assign(npc, { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 });
+    Object.assign(npc, { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0 });
     let z = -20;
     rows.forEach(row => {
       const gap = populateRow(row);
       row.group.position.z = z;
       z -= gap;
     });
+    resetPowerUps();
     emitHud(true);
   };
 
@@ -563,10 +913,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const network = getNetwork?.();
     const wallNow = Date.now();
     if (running && race.mode !== 'rush') {
+      const slowFactor = playerSlowTimer > 0 ? LASSO_SLOW_FACTOR : 1;
       baseSpeed += (DUEL_BASE_SPEED - baseSpeed) * Math.min(1, dt * 0.65);
+      // if slowed, base tends to lower
+      if (playerSlowTimer > 0) baseSpeed = Math.max(DUEL_BASE_SPEED * 0.5, baseSpeed - dt * 8);
       boost = tickSpeedBoost(boost, dt);
     }
-    const speed = running ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost.bonus) : 12 + Math.min(7, elapsed * 0.12) : 0;
+    const slowMul = playerSlowTimer > 0 ? LASSO_SLOW_FACTOR : 1;
+    const speed = running ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost.bonus) * slowMul : (12 + Math.min(7, elapsed * 0.12)) * slowMul : 0;
     if (running) {
       elapsed += dt;
       if (race.mode !== 'rush') {
@@ -577,11 +931,41 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         while (trace.length * 0.5 <= elapsed && trace.length < 359) trace.push(Math.round(distance));
         startLine.position.z = 1 + distance;
         finishLine.position.z = distance - DUEL_DISTANCE;
+      } else {
+        distance += speed * dt;
       }
       jumpLeft = Math.max(0, jumpLeft - dt);
       poseLeft = Math.max(0, poseLeft - dt);
       crashAnimation = Math.max(0, crashAnimation - dt);
       invulnerable = Math.max(0, invulnerable - dt);
+      shieldTimer = Math.max(0, shieldTimer - dt);
+      if (shieldTimer <= 0 && shieldActive) {
+        shieldActive = false;
+        playerShieldBubble.visible = false;
+        callbacks.shield?.(false);
+      }
+      playerSlowTimer = Math.max(0, playerSlowTimer - dt);
+      shieldFlash = Math.max(0, shieldFlash - dt);
+
+      // Network-based shield/slow for local player (online)
+      if (race.mode === 'online') {
+        const net = getNetwork?.();
+        const me = net?.players?.find(p=> p.user_id===net.userId);
+        if (me) {
+          const now = Date.now();
+          const shieldUntil = me.shield_until ? Date.parse(me.shield_until) : 0;
+          const slowedUntil = me.slowed_until ? Date.parse(me.slowed_until) : 0;
+          if (shieldUntil > now && !shieldActive) {
+            activateShield(true);
+            shieldTimer = (shieldUntil - now)/1000;
+          }
+          if (slowedUntil > now && playerSlowTimer <= 0) {
+            applyPlayerSlow(true);
+            playerSlowTimer = (slowedUntil - now)/1000;
+          }
+        }
+      }
+
       floor.forEach((tile) => {
         tile.position.z += speed * dt;
         if (tile.position.z > 9) tile.position.z = TRACK_MIN_Z;
@@ -612,17 +996,21 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           const hazard = row.items.find((item) => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(lane => Math.abs(player.position.x - LANES[lane]) < 0.95));
           const jumpedHighEnough = hazard?.kind === 'barrier' && jumpHeight(jumpLeft) > 1.05;
           const collided = Boolean(hazard && !jumpedHighEnough);
-          if (collided && invulnerable <= 0) {
-            const impact = resolveCollision({ mode: race.mode, lives, speed: duelSpeed(baseSpeed, boost.bonus), boost });
-            lives = impact.lives;
-            baseSpeed = impact.baseSpeed;
-            boost = impact.boost;
-            combo = 0;
-            invulnerable = 1.15;
-            crashAnimation = 0.42;
-            crashDirection = laneIndex === 0 ? 1 : -1;
-            callbacks.crash?.();
-            if (impact.gameOver) finish();
+          if (collided) {
+            if (shieldActive) {
+              consumeShield();
+            } else if (invulnerable <= 0) {
+              const impact = resolveCollision({ mode: race.mode, lives, speed: duelSpeed(baseSpeed, boost.bonus), boost });
+              lives = impact.lives;
+              baseSpeed = impact.baseSpeed;
+              boost = impact.boost;
+              combo = 0;
+              invulnerable = 1.15;
+              crashAnimation = 0.42;
+              crashDirection = laneIndex === 0 ? 1 : -1;
+              callbacks.crash?.();
+              if (impact.gameOver) finish();
+            }
           }
           const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !item.collected && Number(network?.gemPickups?.[item.key] || 0) <= wallNow);
           if (crystal) {
@@ -640,7 +1028,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
               poseLeft = 0.62;
             }
           }
-          const streakResult = advanceCowboyStreak(cowboyStreak, Boolean(crystal), collided);
+          const streakResult = advanceCowboyStreak(cowboyStreak, Boolean(crystal), collided && !shieldActive);
           cowboyStreak = streakResult.streak;
           if (streakResult.cheer && active) {
             callbacks.cheer?.();
@@ -655,6 +1043,109 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           row.group.position.z = z;
         }
       });
+
+      // Power-ups movement & collection
+      for (const pu of powerUps) {
+        pu.group.position.z += speed * dt;
+        // spin animation
+        if (pu.group.visible && pu.mesh) {
+          pu.mesh.rotation.y += dt * 2.2;
+          pu.mesh.position.y = 0.75 + Math.sin(time*0.003 + pu.group.position.z)*0.12;
+        }
+        if (!pu.checked && !pu.collected && pu.group.position.z > -0.75 && pu.group.position.z < 1.05) {
+          pu.checked = true;
+          if (Math.abs(player.position.x - LANES[pu.lane]) < 0.9) {
+            handlePowerUpPickup(pu);
+            emitHud(true);
+          }
+        }
+        // NPC power-up collection (duel)
+        if (race.mode === 'duel' && !pu.collected && pu.type) {
+          const npcCoursePos = npc.dist;
+          if (Math.abs(npcCoursePos - pu.coursePos) < 1.2 && Math.abs(npc.x - LANES[pu.lane]) < 0.9) {
+            pu.collected = true;
+            pu.group.visible = false;
+            if (pu.type === POWER_UPS.SHIELD) {
+              activateNpcShield();
+            } else if (pu.type === POWER_UPS.LASSO) {
+              // NPC fires lasso at player if player ahead
+              if (distance > npc.dist + 1.5) {
+                const rope = acquireRope();
+                const start = new THREE.Vector3(npc.x, 1.2, distance - npc.dist);
+                const end = new THREE.Vector3(player.position.x, 1.0, 0);
+                lassoProjectiles.push({ rope, start, end, progress: 0, target: { kind: 'player' }, fromPlayer: false });
+              }
+            }
+          }
+        }
+        if (pu.group.position.z > 6) {
+          const farthest = powerUps.reduce((a,b)=> (b.group.position.z < a.group.position.z ? b : a));
+          const gap = POWER_UP_SPAWN_GAP_MIN + Math.random()*(POWER_UP_SPAWN_GAP_MAX-POWER_UP_SPAWN_GAP_MIN);
+          const newZ = farthest.group.position.z - gap;
+          spawnPowerUp(pu, newZ);
+        }
+      }
+
+      // Lasso projectiles
+      for (let i = lassoProjectiles.length-1; i>=0; i--) {
+        const proj = lassoProjectiles[i];
+        proj.progress += dt / LASSO_PROJECTILE_DURATION;
+        const t = Math.min(1, proj.progress);
+        // update rope segments
+        const segs = proj.rope.userData.segments;
+        const from = proj.start;
+        const to = proj.end;
+        // For moving targets, update end position
+        if (proj.target?.kind === 'rival') {
+          to.set(rival.position.x, 1.0, rival.position.z);
+        } else if (proj.target?.kind === 'online') {
+          const net = getNetwork?.();
+          const peer = net?.players?.find(p=> p.user_id===proj.target.player?.user_id);
+          if (peer) {
+            const slot = peer.slot ?? 0;
+            const rider = onlineRiders[slot];
+            if (rider) to.set(rider.position.x, 1.0, rider.position.z);
+          }
+        } else if (proj.target?.kind === 'player') {
+          to.set(player.position.x, 1.0, 0);
+        }
+        // interpolate rope
+        for (let s=0; s<segs.length; s++) {
+          const segT = (s+0.5)/segs.length;
+          // lerp + arc
+          const x = THREE.MathUtils.lerp(from.x, to.x, segT * t + (1-t)*0.1);
+          const y = THREE.MathUtils.lerp(from.y, to.y, segT * t) + Math.sin(segT*Math.PI)*0.6*(1-t*0.5);
+          const z = THREE.MathUtils.lerp(from.z, to.z, segT * t);
+          segs[s].position.set(x, y, z);
+          if (s < segs.length-1) {
+            const nextT = (s+1.5)/segs.length;
+            const nx = THREE.MathUtils.lerp(from.x, to.x, nextT * t + (1-t)*0.1);
+            const ny = THREE.MathUtils.lerp(from.y, to.y, nextT * t) + Math.sin(nextT*Math.PI)*0.6*(1-t*0.5);
+            const nz = THREE.MathUtils.lerp(from.z, to.z, nextT * t);
+            segs[s].lookAt(nx, ny, nz);
+          }
+        }
+        if (t >= 1) {
+          // hit
+          if (proj.fromPlayer) {
+            if (proj.target?.kind === 'rival') {
+              const slowed = applyNpcSlow();
+              callbacks.lassoHit?.({ target: 'rival', blocked: !slowed });
+            } else if (proj.target?.kind === 'online') {
+              // hit will be handled via network; locally show effect
+              callbacks.lassoHit?.({ target: 'online', player: proj.target.player });
+            }
+          } else {
+            // NPC lasso hits player
+            const blocked = shieldActive;
+            applyPlayerSlow();
+            callbacks.lassoHit?.({ target: 'player', from: 'npc', blocked });
+          }
+          releaseRope(proj.rope);
+          lassoProjectiles.splice(i,1);
+        }
+      }
+
       if (race.mode !== 'rush' ? distance >= DUEL_DISTANCE : elapsed >= RUN_SECONDS) finish();
       emitHud();
     }
@@ -676,6 +1167,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     player.rotation.x = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.16 : 0;
     player.scale.setScalar((poseLeft > 0 ? 1.035 : 1) * (crashAnimation > 0 ? 1 - Math.sin(crashProgress * Math.PI) * 0.09 : 1));
     player.visible = isPlayerVisible(race.mode, invulnerable, time);
+    // shield bubble pulse
+    if (shieldActive) {
+      const pulse = 1 + Math.sin(time*0.01)*0.06 + (shieldFlash>0? shieldFlash*0.3 : 0);
+      playerShieldBubble.scale.setScalar(pulse);
+      playerShieldBubble.rotation.y += dt*1.5;
+    }
+    if (npc.shieldActive) {
+      rivalShieldBubble.visible = true;
+      rivalShieldBubble.rotation.y += dt*1.5;
+    } else {
+      rivalShieldBubble.visible = npc.shieldActive;
+    }
     onlineRiders.forEach((rider, slot) => {
       const peer = network?.players?.find(p => p.slot === slot);
       const mine = peer?.user_id === network?.userId;
@@ -688,6 +1191,21 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rider.position.y = mine ? player.position.y : Number(peer.jump);
       skinPaint(rider, mine ? skinColors : null);
       rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running ? Math.sin(time*.018+i*2.2)*.65 : 0; });
+      // shield visual for online riders
+      if (rider.userData.shieldBubble) {
+        const now = Date.now();
+        const shieldUntil = peer?.shield_until ? Date.parse(peer.shield_until) : 0;
+        const slowedUntil = peer?.slowed_until ? Date.parse(peer.slowed_until) : 0;
+        const hasShield = shieldUntil > now;
+        const isSlowed = slowedUntil > now;
+        rider.userData.shieldBubble.visible = hasShield;
+        if (hasShield) rider.userData.shieldBubble.rotation.y += dt*1.5;
+        rider.userData.slowEffect = isSlowed ? 1 : Math.max(0, rider.userData.slowEffect - dt*2);
+        // visual slow: tint or scale
+        if (isSlowed) {
+          rider.position.y += Math.sin(time*0.02)*0.05;
+        }
+      }
     });
     rival.position.z = Math.max(-85, Math.min(16, distance - rivalDistance));
     const rivalParts = rival.userData.parts;
@@ -698,6 +1216,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rival.position.y = jumpHeight(npc.jumpLeft);
       rival.scale.setScalar(1);
       if (npc.jumpLeft > 0) rivalParts.legs.forEach((leg, index) => { leg.rotation.x = index < 2 ? -0.7 : 0.65; });
+      if (npc.slowTimer > 0) {
+        rival.position.y += Math.sin(time*0.02)*0.06;
+      }
     } else {
       rival.position.set(4.2, 0, rival.position.z);
       rival.scale.setScalar(0.92);
@@ -742,7 +1263,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -752,7 +1273,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
   const raceRef = useRef(race);
   raceRef.current = race;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onHud, onFinish, onCrash, onPickup, onCheer };
+  callbackRefs.current = { onReady, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -762,6 +1283,11 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
       crash: () => callbackRefs.current.onCrash?.(),
       pickup: (tier) => callbackRefs.current.onPickup?.(tier),
       cheer: () => callbackRefs.current.onCheer?.(),
+      powerUp: (info) => callbackRefs.current.onPowerUp?.(info),
+      powerUpPickup: (type) => callbackRefs.current.onPowerUpPickup?.(type),
+      lasso: (target) => callbackRefs.current.onLasso?.(target),
+      shield: (active) => callbackRefs.current.onShield?.(active),
+      lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
     }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
     worldRef.current = world;
     if (actionsRef) actionsRef.current = (name) => world.action(name);
@@ -782,6 +1308,10 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
   useEffect(() => {
     worldRef.current?.setSkin?.(skin);
   }, [skin]);
+
+  useEffect(() => {
+    if (!network) return;
+  }, [network]);
 
   return <div className="mirage-world" ref={mountRef} />;
 }
