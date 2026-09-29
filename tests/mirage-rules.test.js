@@ -101,6 +101,29 @@ test('cowboy cry fires only on each fifth consecutive pickup, and resets on a mi
   assert.deepEqual(advanceCowboyStreak(0, true), { streak: 1, cheer: false });
 });
 
+test('rush collisions spend three lives and the third collision ends the run; duel collisions only slow down', async () => {
+  const { resolveCollision } = await import('../src/games/mirageRules.js');
+  let lives = 3;
+  for (let hit = 1; hit <= 3; hit += 1) {
+    const result = resolveCollision({ mode: 'rush', lives, speed: 15, boost: 0 });
+    lives = result.lives;
+    assert.equal(result.gameOver, hit === 3);
+    assert.equal(result.lives, 3 - hit);
+  }
+  assert.deepEqual(resolveCollision({ mode: 'duel', lives: 3, speed: 19.4, boost: 4.4 }), {
+    lives: 3, baseSpeed: 10.67, boost: 0, gameOver: false,
+  });
+});
+
+test('hit animation visibility blinks in rush and duel but online local duplicate remains hidden', async () => {
+  const { isPlayerVisible } = await import('../src/games/mirageRules.js');
+  assert.equal(isPlayerVisible('duel', 1, 0), true);
+  assert.equal(isPlayerVisible('duel', 1, 100), false);
+  assert.equal(isPlayerVisible('rush', 1, 100), false);
+  assert.equal(isPlayerVisible('duel', 0, 100), true);
+  assert.equal(isPlayerVisible('online', 0, 0), false);
+});
+
 test('airborne player cannot change lanes or drift, and can move on landing', async () => {
   const { playerLaneAfterAction, playerLateralPosition } = await import('../src/games/mirageRules.js');
   for (const remaining of [0.82, 0.41, 0.001]) {
