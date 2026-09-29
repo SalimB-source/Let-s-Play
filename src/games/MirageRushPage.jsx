@@ -388,17 +388,22 @@ export default function MirageRushPage() {
             {phase === 'playing' && (
               <div className="mirage-live-callout" aria-hidden="true">
                 {hud.combo >= 5 && <span>✦ ÉCHO SOLAIRE ×{hud.multiplier} ✦</span>}
-                {hud.combo === 0 && hud.score === 0 && <span>ESQUIVE ← → <b>SAUTE ↑</b></span>}
+                {/* Sur téléphone, le rappel des touches est remplacé par la
+                    pastille « GLISSE ← → · ↑ » posée sur la piste. */}
+                {hud.combo === 0 && hud.score === 0 && <span className="mirage-callout-keys">ESQUIVE ← → <b>SAUTE ↑</b></span>}
               </div>
             )}
           </div>
 
           <div className="mirage-mobile-controls" aria-label="Commandes tactiles">
-            <button type="button" onClick={() => trigger('left')} aria-label="Aller à gauche">←</button>
-            <button type="button" className="mirage-jump-control" onClick={() => trigger('jump')} aria-label="Sauter">SAUT <span>↑</span></button>
-            <button type="button" onClick={() => trigger('right')} aria-label="Aller à droite">→</button>
+            <p className="mirage-touch-caption">GLISSE SUR LA PISTE : ← → CHANGE DE VOIE <b>·</b> ↑ SAUTE</p>
+            <div className="mirage-touch-buttons">
+              <button type="button" onClick={() => trigger('left')} aria-label="Aller à gauche">←</button>
+              <button type="button" className="mirage-jump-control" onClick={() => trigger('jump')} aria-label="Sauter">SAUT <span>↑</span></button>
+              <button type="button" onClick={() => trigger('right')} aria-label="Aller à droite">→</button>
+            </div>
           </div>
-          <div className="mirage-game-foot"><span>ZQSD / WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE · CHOCS = RALENTISSEMENT' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
+          <div className="mirage-game-foot"><span className="mirage-foot-touch">MOBILE : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ POUR SAUTER</span><span>ZQSD / WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE · CHOCS = RALENTISSEMENT' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
 
         <aside className="mirage-side-panel">

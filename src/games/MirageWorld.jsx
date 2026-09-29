@@ -5,6 +5,7 @@ import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
 import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpForMode, powerUpsEnabled, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, RED_TRAP_TIER, rollRedTrap, crystalPickupEffect } from './mirageRules';
+import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 
 const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
@@ -1118,6 +1119,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
   window.addEventListener('keydown', onKeyDown);
 
+  // Commandes tactiles « instinctives » : le doigt glisse directement sur la
+  // piste (← → pour changer de voie, ↑ pour sauter). Le canvas reçoit les
+  // gestes ; les overlays d'intro et de résultat sont au-dessus de lui, donc un
+  // bouton « LANCER » ou « REJOUER » ne déclenche jamais de saut. Le glisser à
+  // la souris fonctionne aussi, ce qui permet de vérifier le comportement sans
+  // téléphone.
+  const touchFeedback = createSwipeFeedback(mount);
+  const detachSwipe = attachSwipeControls(renderer.domElement, action, {
+    onGesture: (name) => touchFeedback.pulse(name),
+  });
+
   const animate = (time) => {
     raf = requestAnimationFrame(animate);
     const dt = Math.min(0.04, (time - lastFrame) / 1000);
@@ -1467,9 +1479,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       reset();
       active = true;
       lastFrame = performance.now();
+      // Le rappel des gestes n'apparaît qu'au départ d'une course (et le CSS le
+      // réserve aux écrans tactiles).
+      touchFeedback.showHint();
     },
     pause() {
       active = false;
+      touchFeedback.hideHint();
     },
     setSkin(colors) {
       skinColors = colors ?? null;
@@ -1481,6 +1497,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       cancelAnimationFrame(raf);
       observer.disconnect();
       window.removeEventListener('keydown', onKeyDown);
+      detachSwipe();
+      touchFeedback.destroy();
       scene.traverse((object) => {
         if (object.geometry) object.geometry.dispose();
         if (object.material) {

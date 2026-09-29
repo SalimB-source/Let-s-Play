@@ -1080,9 +1080,12 @@ export default function MirageOnline({
               </div>
 
                     <div className="mirage-mobile-controls">
-                      <button type="button" onClick={() => actions.current?.('left')}>←</button>
-                      <button type="button" className="mirage-jump-control" onClick={() => actions.current?.('jump')}>SAUT ↑</button>
-                      <button type="button" onClick={() => actions.current?.('right')}>→</button>
+                      <p className="mirage-touch-caption">GLISSE SUR LA PISTE : ← → CHANGE DE VOIE <b>·</b> ↑ SAUTE</p>
+                      <div className="mirage-touch-buttons">
+                        <button type="button" aria-label="Aller à gauche" onClick={() => actions.current?.('left')}>←</button>
+                        <button type="button" className="mirage-jump-control" aria-label="Sauter" onClick={() => actions.current?.('jump')}>SAUT ↑</button>
+                        <button type="button" aria-label="Aller à droite" onClick={() => actions.current?.('right')}>→</button>
+                      </div>
                     </div>
                   </section>
                 </div>
