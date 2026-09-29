@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { algerBuilding, algerObstacle } from './algerStage';
+import { algerBuilding, algerObstacle, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
 import {
   LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
@@ -1757,7 +1757,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rows.forEach((row) => {
         row.group.position.z += speed * dt;
         row.items.forEach((item) => {
-          if (item.kind !== 'crystal') return;
+          if (item.kind !== 'crystal') {
+            // Le gyrophare des voitures de police d'Alger la Blanche clignote
+            // en continu, même lorsque la rangée attend au fond du décor.
+            updatePoliceBeacon(item.object.userData.beacon, time * 0.001, reduceMotion);
+            return;
+          }
           const locallyHidden = isGemHidden(sharedGems, item.key, elapsed);
           const hiddenByRemotePickup = Number(network?.gemPickups?.[item.key] || 0) > wallNow;
           if (hiddenByRemotePickup && item.object.visible) burstGemItem(row, item);
