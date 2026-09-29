@@ -3,6 +3,7 @@ const MUSIC_VOLUME = 0.17;
 const BPM = 116;
 export const PRAIRIE_BPM = 126;
 export const SARDINIA_BPM = 92;
+export const ALGER_BPM = 104;
 export const JAPAN_BPM = 108;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
@@ -92,7 +93,7 @@ export class DesertGroove {
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'japan' ? JAPAN_BPM : BPM) / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -380,10 +381,81 @@ export class DesertGroove {
     }
   }
 
+  playAlger(step, time) {
+    // Original chaâbi algérois : darbuka sur un cycle maqsum, basse d'oud,
+    // arpèges de qanun et une ligne de violon en maqam Hijaz — dans l'esprit
+    // de la musique orientale algérienne, sans citer aucune mélodie existante.
+    const beat = 60 / ALGER_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const refrain = phrase >= 8; // la seconde moitié de la boucle s'épaissit
+    const chords = [
+      [73.42, 146.83, 185.0], [77.78, 155.56, 196.0],
+      [73.42, 146.83, 185.0], [65.41, 130.81, 174.61],
+      [73.42, 146.83, 185.0], [77.78, 155.56, 196.0],
+      [65.41, 130.81, 174.61], [73.42, 146.83, 185.0],
+    ];
+    const melody = [
+      [587.33, 739.99, 622.25, 587.33], [622.25, 587.33, 523.25, 587.33],
+      [466.16, 523.25, 587.33, 523.25], [440, 466.16, 523.25, 440],
+      [587.33, 622.25, 739.99, 880], [880, 783.99, 739.99, 622.25],
+      [739.99, 622.25, 587.33, 523.25], [587.33, 440, 587.33, 0],
+    ];
+    const chord = chords[bar];
+
+    // Darbuka : dum sur les temps forts, tek sur les contretemps (maqsum).
+    if (step === 0 || step === 8) {
+      this.tone(88, time, 0.16, 'sine', 0.22);
+      this.tone(58, time + 0.02, 0.2, 'sine', 0.15);
+      this.noise(time, 0.04, 0.05, 2200);
+    }
+    if (step === 2 || step === 6 || step === 12) {
+      this.noise(time, 0.03, 0.075, 4200);
+      this.tone(320, time, 0.04, 'triangle', 0.05);
+    }
+    if (step === 14 && bar % 2 === 1) {
+      this.noise(time, 0.025, 0.05, 5200);
+      this.tone(380, time, 0.035, 'triangle', 0.04);
+    }
+    // Bendir grave sur le premier temps de la mesure.
+    if (step === 0) this.tone(62, time, beat * 0.8, 'sine', 0.11);
+    // Riq : chuchotement de cymbalettes sur les doubles-croches.
+    if (step % 2 === 1) this.noise(time, 0.018, 0.022, 7000);
+
+    // Oud : basse pincée, quinte en fin de demi-mesure.
+    if (step % 8 === 0) this.tone(chord[0], time, beat * 0.7, 'triangle', 0.18);
+    if (step % 8 === 5) this.tone(chord[0] * 1.5, time, beat * 0.35, 'triangle', 0.09);
+
+    // Qanun : arpèges clairs sur les degrés du maqam.
+    if (step % 2 === 0) {
+      const note = [chord[1] * 2, chord[2] * 2, chord[1] * 2, chord[2] * 4][(step / 2) % 4];
+      this.tone(note, time, 0.06, 'triangle', refrain ? 0.08 : 0.055);
+      if (refrain) this.tone(note * 2, time + 0.035, 0.04, 'sine', 0.026);
+    }
+
+    // Violon : la ligne mélodique, doublée à l'octave dans le refrain.
+    if (step % 4 === 0) {
+      const note = melody[bar][step / 4];
+      if (note) {
+        const length = beat * (refrain ? 1.1 : 0.85);
+        this.tone(note, time, length, 'sawtooth', refrain ? 0.12 : 0.085, 2400);
+        this.tone(note * 2, time + 0.01, length * 0.55, 'sine', 0.022);
+        if (refrain) this.tone(note / 2, time + 0.015, length, 'triangle', 0.05, 1200);
+      }
+    }
+
+    // Roulement de darbuka qui relance le cycle.
+    if (phrase % 8 === 7 && step >= 12) {
+      this.tone(120 + (step - 12) * 30, time, 0.1, 'triangle', 0.07);
+      this.noise(time, 0.05, 0.035, 2600);
+    }
+  }
+
   playStep(step, time) {
     if (this.stage === 'prairie') { this.playPrairie(step, time); return; }
     if (this.stage === 'western') { this.playWestern(step, time); return; }
     if (this.stage === 'sardinia') { this.playSardinia(step, time); return; }
+    if (this.stage === 'alger') { this.playAlger(step, time); return; }
     if (this.stage === 'japan') { this.playJapan(step, time); return; }
     const beat = 60 / BPM;
     if ([0, 6, 8, 14].includes(step)) {

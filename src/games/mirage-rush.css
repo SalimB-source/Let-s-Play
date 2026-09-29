@@ -16,9 +16,12 @@
   --mirage-radius-lg: 16px;
   --mirage-radius: 12px;
   --mirage-radius-sm: 9px;
-  /* La barre de navigation est fixe (île à 16px + 64px de haut = 80px) :
-     sans respiration en haut, le titre « MIRAGE RUSH » passait dessous. */
-  padding: 116px 0 44px;
+  /* La barre de navigation est fixe (île à 16px + 64px de haut = 80px).
+     On garde juste assez de respiration (92px) pour ne pas passer dessous :
+     sans l’en-tête de titre ni la barre d’onglets, chaque pixel économisé
+     fait remonter le bouton « LANCER LA PARTIE » au-dessus de la ligne de
+     flottaison — il doit être visible sans défilement. */
+  padding: 92px 0 44px;
   color: var(--mirage-ink);
   background:
     radial-gradient(820px 420px at 12% -2%, rgba(226, 128, 86, .14), transparent 68%),
@@ -28,7 +31,9 @@
 .mirage-page .wrap { width: min(1320px, calc(100% - 44px)); margin-inline: auto; }
 .mirage-heading {
   display: flex; align-items: flex-end; justify-content: space-between; gap: 28px;
-  padding: 6px 0 26px;
+  /* En-tête réduit au minimum (eyebrow + lien de retour + record) : le titre
+     et la barre d’onglets ont été retirés, on ne garde que 12px sous la ligne. */
+  padding: 0 0 12px;
 }
 .mirage-heading-copy { min-width: 0; }
 .mirage-eyebrow, .mirage-panel-kicker, .mirage-record-label, .mirage-game-brand,
@@ -44,20 +49,11 @@
 .mirage-live-dot { animation: miragePulseDot 2.2s ease-in-out infinite; }
 @keyframes miragePulseDot { 50% { box-shadow: 0 0 4px rgba(98, 227, 165, .4); opacity: .72; } }
 .mirage-eyebrow-divider { color: #f2a15d; }
-.mirage-heading h1 {
-  margin: 12px 0 7px; font: 900 clamp(36px, 5.5vw, 68px)/.98 var(--font-gaming);
-  letter-spacing: -.055em; color: #fff5e4;
-}
-.mirage-heading h1 em {
-  color: var(--mirage-gold); font-style: normal;
-  animation: mirageTitleGlow 3.6s ease-in-out infinite alternate;
-}
-@keyframes mirageTitleGlow {
-  from { text-shadow: 0 0 16px rgba(243, 198, 91, .16); }
-  to { text-shadow: 0 0 34px rgba(243, 198, 91, .5); }
-}
-.mirage-heading-copy > p { max-width: 720px; margin: 11px 0 0; color: rgba(255, 242, 221, .67); font-size: 14px; line-height: 1.65; }
-.mirage-heading-copy > p strong { color: #fff4e1; }
+/* Le titre « MIRAGE RUSH » et son chapô ont été retirés du DOM pour les DEUX
+   thèmes (ils n'existent plus, ce n'est pas un affichage conditionné au
+   thème) : encre crème posée en dur, invisibles sur le fond clair du thème
+   Light — ne pas recréer de styles `.mirage-heading h1` /
+   `.mirage-heading-copy > p` sans jeton de thème. */
 .mirage-heading-side {
   display: flex; flex: 0 0 190px; flex-direction: column; align-items: flex-end; gap: 6px;
   padding: 0 0 2px; text-align: right;
@@ -75,6 +71,34 @@
   box-shadow: 0 24px 70px rgba(8, 5, 15, .38), inset 0 1px rgba(255, 255, 255, .03);
 }
 .mirage-game-shell { min-width: 0; overflow: hidden; }
+/* ── Plein écran (téléphone & application) ────────────────────────────────
+   Sur mobile et dans l'APK, « LANCER LA PARTIE » bascule cette coquille en
+   plein écran (classe `is-immersive`, posée par MirageRushPage au moment du
+   geste) : le plein écran natif quand la plateforme l'accepte, et cette
+   couche fixe comme repli universel (iOS Safari, WebViews sans Fullscreen
+   API — dans l'APK, l'event fullscreenchange repart de la même couche). */
+body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
+.mirage-game-shell.is-immersive {
+  position: fixed;
+  inset: 0;
+  z-index: 1500; /* au-dessus de la nav fixe (1000) et du menu mobile (1300) */
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  border: none;
+  border-radius: 0;
+  background: #0b0816;
+  box-shadow: none;
+}
+.mirage-game-shell.is-immersive .mirage-viewport {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+/* Les consignes du pied (touches, glissé…) vivent avec la page : en plein
+   écran elles voleraient de la place à la piste — chaque overlay porte déjà
+   ses propres rappels (kicker + hint). */
+.mirage-game-shell.is-immersive .mirage-game-foot { display: none; }
 .mirage-game-topbar {
   height: 50px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
   padding: 0 15px; border-bottom: 1px solid rgba(246, 210, 166, .12);
@@ -103,7 +127,10 @@
 
 /* Fenêtre de jeu : le canvas s'adapte tout seul (ResizeObserver dans
    MirageWorld). Le min(…, 88vh) évite qu'elle dépasse l'écran. */
-.mirage-viewport { position: relative; height: min(clamp(540px, 56vw, 780px), 88vh); min-height: 540px; overflow: hidden; isolation: isolate; background: #4b2860; }
+/* Fenêtre de jeu raccourcie : le sélecteur de carte a disparu de l’écran
+   d’accueil, et l’objectif est que « LANCER LA PARTIE » — centré dans
+   l’overlay — tienne au-dessus de la ligne de flottaison sans défilement. */
+.mirage-viewport { position: relative; height: min(clamp(460px, 50vw, 700px), 78vh); min-height: 460px; overflow: hidden; isolation: isolate; background: #4b2860; }
 .mirage-world { position: absolute; inset: 0; z-index: 0; }
 /* Le canvas est la surface de jeu tactile : `touch-action: none` est
    indispensable, sans lui un glissement vers le haut fait défiler la page au
@@ -515,6 +542,14 @@
 .mirage-howto > .mirage-panel-kicker { display: block; margin-bottom: 9px; }
 .mirage-rule { display: grid; grid-template-columns: 25px minmax(0, 1fr); gap: 9px; align-items: start; padding: 9px 0; border-top: 1px solid rgba(255, 255, 255, .07); }
 .mirage-rule-icon { font-size: 16px; line-height: 1.1; }
+.mirage-rule-image {
+  display: block;
+  width: 25px;
+  height: 25px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #fff;
+}
 .mirage-rule-icon.is-pink { color: #f477ad; }
 .mirage-rule-icon.is-red { color: #ff4a3d; }
 .mirage-rule-icon.is-green { color: #6dd6a1; }
@@ -535,24 +570,22 @@
 @media (max-width: 1050px) {
   .mirage-layout { grid-template-columns: minmax(0, 1fr) 285px; gap: 14px; }
   .mirage-side-panel .panel-frame { padding-inline: 13px; }
-  .mirage-viewport { height: min(640px, 88vh); }
+  .mirage-viewport { height: min(600px, 82vh); }
 }
 @media (max-width: 820px) {
   .mirage-layout { grid-template-columns: minmax(0, 1fr); }
   .mirage-side-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .mirage-leaderboard { grid-row: span 2; }
-  .mirage-viewport { height: min(clamp(520px, 86vw, 660px), 88vh); }
+  .mirage-viewport { height: min(clamp(460px, 86vw, 600px), 80vh); }
 }
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
-  /* Barre mobile : 68px de haut — on repart de 104px comme les autres pages
-     (23px laissaient le titre sous la barre). */
-  .mirage-page { padding-top: 104px; }
+  /* Barre mobile : 68px de haut — on repart de 88px (il suffit de 20px de
+     respiration, et le gain fait remonter « LANCER LA PARTIE »). */
+  .mirage-page { padding-top: 88px; }
   .mirage-page .wrap { width: min(100% - 24px, 520px); }
-  .mirage-heading { align-items: flex-start; gap: 10px; padding-bottom: 18px; }
+  .mirage-heading { align-items: flex-start; gap: 10px; padding-bottom: 10px; }
   .mirage-eyebrow { flex-wrap: wrap; gap: 6px; font-size: 8px; letter-spacing: .12em; }
-  .mirage-heading h1 { margin-top: 10px; font-size: clamp(33px, 10vw, 48px); }
-  .mirage-heading-copy > p { max-width: 390px; margin-top: 7px; font-size: 12px; }
-  .mirage-heading-side { flex-basis: auto; min-width: 95px; padding-top: 25px; }
+  .mirage-heading-side { flex-basis: auto; min-width: 95px; padding-top: 0; }
   .mirage-heading-side > strong { font-size: 19px; }
   .mirage-record-label { font-size: 7px; }
   .mirage-record-flare { font-size: 6px; letter-spacing: .09em; }
@@ -563,7 +596,7 @@
   .mirage-sound-button, .mirage-pause-button { padding: 6px 8px; font-size: 7px; letter-spacing: .06em; }
   .mirage-live-pill { font-size: 7px; }
   /* Fenêtre proportionnelle à l'écran du téléphone. */
-  .mirage-viewport { height: clamp(480px, 66vh, 620px); min-height: 480px; }
+  .mirage-viewport { height: clamp(420px, 62vh, 560px); min-height: 420px; }
   .mirage-hud { top: 9px; left: 8px; right: 8px; grid-template-columns: 1fr auto 1fr; gap: 4px; }
   .mirage-hud-card { min-width: 0; padding: 7px 8px; border-radius: 10px; }
   .mirage-hud-card strong { font-size: 17px; }
@@ -632,6 +665,11 @@
 .mirage-intro-overlay > p { margin: 10px 0 12px; font-size: 12px; }
 .mirage-intro-overlay .mirage-overlay-hint { margin-top: 10px; }
 .mirage-course-picker { width: min(100%, 640px); text-align: left; }
+/* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
+   l'en-tête reste retirée) : les cartes du sélecteur d'origine, suivies du
+   bloc terrain (cinq horizons, dont Alger la Blanche). */
+.mirage-mode-section { width: min(100%, 640px); text-align: left; }
+.mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
 .mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 8px; }
 .mirage-picker-label > span:last-child { color: #9e8e9d; text-align: right; }
 .mirage-mode-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
@@ -693,11 +731,13 @@
 }
 
 /* Top mode switcher tabs */
+/* Ne contenait les onglets RUÉE / DUEL / EN LIGNE en plus du record ; les
+   onglets ont été supprimés, il ne reste que le bloc record. */
 .mirage-heading-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 14px;
+  gap: 0;
 }
 .mirage-mode-tabs {
   display: inline-flex;
@@ -1815,13 +1855,25 @@
 }
 
 .mirage-powerup-icon {
-  font-size: 21px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  font-size: 20px;
   line-height: 1;
   transition: transform .18s, filter .18s;
 }
+img.mirage-powerup-icon {
+  display: block;
+  object-fit: cover;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .28);
+}
 
 .mirage-powerup-btn.is-ready .mirage-powerup-icon {
-  transform: scale(1.18);
+  transform: scale(1.14);
   filter: drop-shadow(0 0 10px rgba(255, 232, 133, .95));
 }
 
@@ -1991,6 +2043,7 @@
     align-items: flex-start;
     width: 100%;
   }
+  /* Toujours utilisés par le lobby « Mirage En Ligne » (MirageOnline.jsx). */
   .mirage-mode-tabs {
     width: 100%;
     justify-content: space-between;
@@ -2036,7 +2089,10 @@
     padding: 6px 6px;
   }
   .mirage-powerup-icon {
-    font-size: 16px;
+    flex-basis: 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
   }
   .mirage-powerup-gem-hint {
     font-size: 6.5px;
@@ -2212,7 +2268,6 @@
 /* Respect des préférences de mouvement réduit : on calme toutes les
    animations décoratives (shake, zoom, shimmer, pulsations…). */
 @media (prefers-reduced-motion: reduce) {
-  .mirage-heading h1 em,
   .mirage-live-dot,
   .mirage-live-pill i,
   .mirage-score-pop,

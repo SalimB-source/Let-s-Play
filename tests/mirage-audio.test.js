@@ -1,16 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, JAPAN_BPM } from '../src/games/arcadeAudio.js';
+import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM } from '../src/games/arcadeAudio.js';
 
 test('prairie selects its own soundtrack and resets the phrase', () => {
   const audio = new DesertGroove();
   audio.step = 83;
   audio.setStage('prairie');
   assert.equal(audio.step, 0);
-  let prairie = 0, western = 0, sardinia = 0, japan = 0;
+  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0;
   audio.playPrairie = () => prairie++;
   audio.playWestern = () => western++;
   audio.playSardinia = () => sardinia++;
+  audio.playAlger = () => alger++;
   audio.playJapan = () => japan++;
   audio.playStep(0, 0);
   assert.equal(prairie, 1);
@@ -21,6 +22,9 @@ test('prairie selects its own soundtrack and resets the phrase', () => {
   audio.setStage('sardinia');
   audio.playStep(0, 0);
   assert.equal(sardinia, 1);
+  audio.setStage('alger');
+  audio.playStep(0, 0);
+  assert.equal(alger, 1);
   audio.setStage('japan');
   audio.playStep(0, 0);
   assert.equal(japan, 1);
@@ -90,6 +94,38 @@ test('sixteen-bar prairie score schedules finite, positive notes and varies phra
   }
   assert.ok(new Set(bars).size >= 12);
   assert.notEqual(bars[0], bars[8], "refrain adds instrumentation");
+});
+
+test('alger chaabi score schedules finite, positive notes at its own tempo', () => {
+  const audio = new DesertGroove();
+  audio.setStage('alger');
+  const stepLength = 60 / ALGER_BPM / 4;
+  assert.ok(stepLength > 0);
+  assert.notEqual(ALGER_BPM, PRAIRIE_BPM);
+  assert.notEqual(ALGER_BPM, SARDINIA_BPM);
+  const bars = [];
+  audio.noise = () => {};
+  for (let bar = 0; bar < 16; bar++) {
+    const notes = [];
+    audio.tone = (frequency, time, duration, type, volume) => {
+      assert.ok(Number.isFinite(frequency) && frequency > 0);
+      assert.ok(Number.isFinite(time) && time >= 0);
+      assert.ok(duration > 0 && volume > 0 && volume <= 0.25);
+      notes.push(frequency);
+    };
+    for (let step = 0; step < 16; step++) {
+      audio.step = bar * 16 + step;
+      audio.playAlger(step, audio.step * stepLength);
+    }
+    bars.push(JSON.stringify(notes));
+  }
+  assert.ok(bars[0].length > 20, 'la darbuka, l’oud et le violon produisent un motif nourri');
+  assert.notEqual(bars[0], bars[8], 'le refrain épaissit l’instrumentation');
+  assert.ok(new Set(bars).size >= 6, 'les huit mesures varient');
+  // Le motif du refrain monte vers l’aigu (maqam Hijaz), il ne s’aplatit pas.
+  const firstHalf = JSON.parse(bars[0]);
+  const secondHalf = JSON.parse(bars[8]);
+  assert.ok(Math.max(...secondHalf) > Math.max(...firstHalf));
 });
 
 test('cowboy cry respects mute, loading, overlap, cooldown and stops without resuming later', () => {

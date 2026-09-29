@@ -200,3 +200,11 @@ test('pistol knocks the target off for two seconds; a shield stops the bullet', 
   assert.equal(blocked.players.find(p => p.user_id === guest.id).shield_until, null);
   assert.throws(() => localRoomAction('pistol', room.code, { p_target_id: 'nobody' }, host));
 });
+
+test('a room can be created on the alger stage and rejects unknown maps', async () => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'alger', p_name: 'Baie d’Alger', p_password: '' }, host);
+  assert.equal(created.stage, 'alger');
+  assert.equal(created.name, 'Baie d’Alger');
+  assert.throws(() => localRoomAction('create', null, { p_stage: 'atlantis' }, host), /Carte inconnue/);
+});

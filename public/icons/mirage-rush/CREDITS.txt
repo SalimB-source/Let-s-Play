@@ -1,0 +1,21 @@
+Mirage Rush power icons
+========================
+
+The three UI images in this directory are from 3Dicons by Vijay Verma.
+3Dicons releases its initial icon set under CC0, which permits use, remixing,
+and redistribution without attribution. This credit is kept as provenance.
+
+Shield
+  https://3dicons.co/icons/b91186-shield
+  https://bvconuycpdvgzbvbkijl.supabase.co/storage/v1/object/public/sizes/b91186-shield/dynamic/200/color.webp
+
+Link (used for the Lasso power)
+  https://3dicons.co/icons/2d9fa2-link
+  https://bvconuycpdvgzbvbkijl.supabase.co/storage/v1/object/public/sizes/2d9fa2-link/dynamic/400/color.webp
+
+Target (used for the Pistol power)
+  https://3dicons.co/icons/49b6f4-target
+  https://bvconuycpdvgzbvbkijl.supabase.co/storage/v1/object/public/sizes/49b6f4-target/dynamic/400/color.webp
+
+License reference: https://3dicons.co/about
+Downloaded 2026-09-29.

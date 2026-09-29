@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MirageCharacterPortrait from './MirageCharacterPortrait';
+import MiragePowerIcon from './MiragePowerIcon';
 import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
@@ -23,6 +24,7 @@ const STAGE_LABELS = {
   western: 'Dust Creek',
   prairie: 'Plaines d’Or',
   sardinia: 'Costa Omertà',
+  alger: 'Alger la Blanche',
   japan: 'Plaines de Yōtei',
 };
 
@@ -398,13 +400,10 @@ export default function MirageOnline({
             <span className="mirage-live-dot" /> LET’S PLAY ARCADE{' '}
             <span className="mirage-eyebrow-divider">/</span> MULTIJOUEUR EN LIGNE
           </div>
-          <h1>
-            MIRAGE <em>EN LIGNE</em>
-          </h1>
-          <p>
-            2 à 4 cavaliers · {DUEL_DISTANCE} mètres · même parcours, cristaux individuels.{' '}
-            <strong>Rejoins une room disponible ou crée la tienne, coordonne-toi dans le chat et lance la partie !</strong>
-          </p>
+          {/* Le titre « MIRAGE EN LIGNE » et son chapô sont retirés des DEUX
+              thèmes, comme sur la page principale de Mirage Rush : encre
+              crème posée en dur, invisibles sur le fond clair du thème Light,
+              et la demande est de ne plus les afficher du tout. */}
           <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
 
@@ -543,7 +542,8 @@ export default function MirageOnline({
                         <option value="western">02 · Dust Creek (Western)</option>
                         <option value="prairie">03 · Plaines d’Or (Prairie)</option>
                         <option value="sardinia">04 · Costa Omertà (Sardaigne)</option>
-                        <option value="japan">05 · Plaines de Yōtei (Mont Fuji · Nuit)</option>
+                        <option value="alger">05 · Alger la Blanche (Alger)</option>
+                        <option value="japan">06 · Plaines de Yōtei (Mont Fuji · Nuit)</option>
                       </select>
                       <small>{DUEL_DISTANCE} mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>
@@ -1164,7 +1164,7 @@ export default function MirageOnline({
                               title="Bouclier (Q / A) — Chargé par les diamants BLEUS. Utiliser cet objet ne décharge pas les autres."
                             >
                               <div className="mirage-powerup-btn-top">
-                                <span className="mirage-powerup-icon">🛡️</span>
+                                <MiragePowerIcon type="shield" className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-blue">◆ BLEU</span>
                                 <span className="mirage-powerup-key">Q / A</span>
                               </div>
@@ -1190,7 +1190,7 @@ export default function MirageOnline({
                               title="Lasso (W / Z) — Chargé par les diamants JAUNES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
                             >
                               <div className="mirage-powerup-btn-top">
-                                <span className="mirage-powerup-icon">🪢</span>
+                                <MiragePowerIcon type="lasso" className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-yellow">◆ JAUNE</span>
                                 <span className="mirage-powerup-key">W / Z</span>
                               </div>
@@ -1242,7 +1242,7 @@ export default function MirageOnline({
                               title="Pistolet (R) — Chargé par les diamants ROUGES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
                             >
                               <div className="mirage-powerup-btn-top">
-                                <span className="mirage-powerup-icon">🔫</span>
+                                <MiragePowerIcon type="pistol" className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-red">◆ ROUGE</span>
                                 <span className="mirage-powerup-key">R</span>
                               </div>
