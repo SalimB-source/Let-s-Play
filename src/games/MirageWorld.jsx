@@ -1166,17 +1166,23 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let raf = 0;
 
   const resize = () => {
-    const width = Math.max(1, mount.clientWidth);
-    const height = Math.max(1, mount.clientHeight);
+    const bounds = mount.getBoundingClientRect();
+    const width = Math.max(1, Math.floor(bounds.width || mount.clientWidth || 1));
+    const height = Math.max(1, Math.floor(bounds.height || mount.clientHeight || 1));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     // Preserve a minimum horizontal field of view so all four lanes fit on phones.
     camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(50) / 2) / Math.min(1, camera.aspect)));
     camera.updateProjectionMatrix();
   };
-  const observer = new ResizeObserver(resize);
-  observer.observe(mount);
+  const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
+  observer?.observe(mount);
+  // The online room mounts the course inside a modal. Give layout one frame to
+  // settle before sizing the WebGL canvas, and retain a resize fallback for
+  // embedded webviews without ResizeObserver.
+  window.addEventListener('resize', resize);
   resize();
+  const initialResizeFrame = requestAnimationFrame(resize);
 
   const emitHud = (force = false) => {
     const now = performance.now();
@@ -1641,6 +1647,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
     renderer.render(scene, camera);
   };
+  // Build the seeded track before the first frame, not only after the race
+  // countdown. This keeps the online canvas fully painted as soon as its modal
+  // appears instead of briefly presenting an empty/black scene.
+  reset();
   raf = requestAnimationFrame(animate);
 
   return {
@@ -1666,7 +1676,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     destroy() {
       active = false;
       cancelAnimationFrame(raf);
-      observer.disconnect();
+      cancelAnimationFrame(initialResizeFrame);
+      observer?.disconnect();
+      window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKeyDown);
       scene.traverse((object) => {
         if (object.geometry) object.geometry.dispose();
@@ -1681,7 +1693,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -1691,11 +1703,13 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
   const raceRef = useRef(race);
   raceRef.current = race;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
+  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
-    const world = makeWorld(mountRef.current, {
+    let world;
+    try {
+      world = makeWorld(mountRef.current, {
       hud: (data) => callbackRefs.current.onHud?.(data),
       finish: (data) => callbackRefs.current.onFinish?.(data),
       crash: () => callbackRefs.current.onCrash?.(),
@@ -1711,7 +1725,11 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
       lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
       pistol: (target) => callbackRefs.current.onPistol?.(target),
       pistolHit: (info) => callbackRefs.current.onPistolHit?.(info),
-    }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
+      }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
+    } catch (error) {
+      callbackRefs.current.onError?.(error instanceof Error ? error.message : String(error));
+      return undefined;
+    }
     worldRef.current = world;
     if (actionsRef) actionsRef.current = (name) => world.action(name);
     callbackRefs.current.onReady?.();
