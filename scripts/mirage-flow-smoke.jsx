@@ -74,11 +74,11 @@ export async function checkMirageFlow(assert) {
     assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 1,
       'le sélecteur de terrain (02 / ton terrain) est proposé dans l’overlay');
     const maps = [...page.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(maps.length, 5, 'cinq horizons sont proposés');
+    assert.equal(maps.length, 6, 'six horizons sont proposés');
     assert.deepEqual(
       maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
-      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche'],
-      'les cinq cartes de map sont dans l’ordre, Alger la Blanche en tête de la deuxième rangée');
+      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei'],
+      'les six cartes de map sont dans l’ordre (dont Alger la Blanche et Plaines de Yōtei)');
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
       'les Dunes de l’Écho sont sélectionnées par défaut');
 
@@ -87,9 +87,6 @@ export async function checkMirageFlow(assert) {
 
     const start = page.node.querySelector('.mirage-start-button');
     assert.ok(start, 'le bouton de lancement est présent dès l’arrivée');
-    // En jsdom le canvas 3D ne se rend pas : `ready` reste false et le bouton
-    // affiche son libellé d’attente. Dans un navigateur il devient
-    // « LANCER LA PARTIE » — l’essentiel ici est qu’il existe sans condition.
     assert.ok(start.textContent.includes('LANCER LA PARTIE') || start.textContent.includes('CHARGEMENT'),
       'le bouton propose « LANCER LA PARTIE » (ou l’attente du rendu 3D)');
     assert.ok(intro.contains(start), 'le bouton de lancement vit dans l’overlay d’intro, sous le choix du mode');
@@ -98,7 +95,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('RECORD À BATTRE'),
       'les consignes de la ruée sont révélées');
 
-    /* ---------------- 2. Le terrain se choisit (Alger la Blanche) -------- */
+    /* ---------------- 2. Le terrain se choisit (Alger & Yōtei) ----------- */
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
       'le bandeau de zone démarre sur le terrain par défaut (ZONE 01)');
     const algerCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
@@ -106,6 +103,11 @@ export async function checkMirageFlow(assert) {
     await act(async () => { algerCard.click(); });
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ALGER LA BLANCHE'),
       'choisir Alger la Blanche met à jour le bandeau (ZONE 05 · ALGER LA BLANCHE)');
+    const japanCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Plaines de Yōtei');
+    assert.ok(japanCard, 'la carte Plaines de Yōtei est proposée');
+    await act(async () => { japanCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('PLAINES DE YŌTEI'),
+      'choisir Plaines de Yōtei met à jour le bandeau (ZONE 06 · PLAINES DE YŌTEI)');
     await act(async () => { maps[0].click(); });
 
     /* --------------- 3. Le clic sur DUEL bascule l'overlay -------------- */
@@ -117,7 +119,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelStart.textContent.includes('LANCER LE DUEL') || duelStart.textContent.includes('CHARGEMENT'),
       'le bouton propose « LANCER LE DUEL » après le clic sur DUEL');
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('LE PLUS RAPIDE GAGNE'),
-      'les consignes du duel (600 m) apparaissent après le clic sur DUEL');
+      'les consignes du duel (800 m) apparaissent après le clic sur DUEL');
 
     /* ---------- Et le clic sur RUÉE revient à la ruée par défaut -------- */
     const rushButton = modeButtons(page.node).find((button) => button.querySelector('strong')?.textContent === 'RUÉE');
@@ -131,7 +133,7 @@ export async function checkMirageFlow(assert) {
   }
 
   /* ------------- 4. Lien de défi : le duel s'ouvre directement ---------- */
-  const code = encodeChallenge({ seed: 20260929, duration: 41.5, trace: [0, 240, 480, 600], name: 'Salim', stage: 'prairie' });
+  const code = encodeChallenge({ seed: 20260929, duration: 41.5, trace: [0, 240, 480, 800], name: 'Salim', stage: 'prairie' });
   const challenged = await mountPage(`/jeu?duel=${code}`);
   try {
     const intro = challenged.node.querySelector('.mirage-intro-overlay');
@@ -143,7 +145,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelButton.textContent.includes('Défi de Salim'),
       'la carte DUEL annonce le défi du joueur');
     const lockedMaps = [...challenged.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(lockedMaps.length, 5,
+    assert.equal(lockedMaps.length, 6,
       'le sélecteur de terrain reste lisible sur un lien de défi');
     assert.ok(lockedMaps.every((card) => card.disabled),
       'les cartes de terrain sont verrouillées : le stage est imposé par le défi');

@@ -6,6 +6,7 @@ import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
 import { algerBuilding, algerObstacle } from './algerStage';
+import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
 import {
   LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
   duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak,
@@ -14,6 +15,9 @@ import {
   stunPose, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION,
   GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState,
   crystalPickupEffect, POWER_UP_CHARGE_COST, DIAMOND_CHARGE_VALUE, POWER_UP_MAX_CHARGES,
+  createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, DUEL_RIVALS,
+  chooseNpcPowerAction, POWER_BOOST_DURATION, POWER_BOOST_BONUS,
+  GEM_RESPAWN_DELAY, markGemTaken, isGemHidden, prairieSunsetState,
 } from './mirageRules';
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 
@@ -67,8 +71,23 @@ function makeExplorer(rival = false, palette = null) {
   block(cube, cloth, riderBody, [0, 1.85, 0.05], [0.6, 0.75, 0.43]);
   const cape = block(cube, cloth, riderBody, [0, 1.7, 0.34], [0.72, 0.87, 0.13]);
   block(cube, trim, riderBody, [0, 1.72, 0.42], [0.12, 0.57, 0.03]);
-  block(cube, hood, riderBody, [0, 2.43, 0.02], [0.57, 0.55, 0.56]);
-  block(cube, trim, riderBody, [0, 2.49, 0.02], [0.59, 0.1, 0.58]);
+  block(cube, hood, riderBody, [0, 2.38, 0.02], [0.52, 0.46, 0.52]);
+
+  // Cowboy hat (Stetson: wide curled brim + trim hatband + pinched cattleman crown)
+  const baseColors = palette || palettes[Number(rival) || 0];
+  const hatColor = new THREE.Color(baseColors[0]).lerp(new THREE.Color(0x5c3318), 0.55);
+  const hatMat = mat(hatColor);
+  block(cube, hatMat, riderBody, [0, 2.59, 0.02], [0.98, 0.06, 0.94]);
+  block(cube, hatMat, riderBody, [0, 2.58, 0.02], [0.74, 0.05, 1.08]);
+  const leftBrim = block(cube, hatMat, riderBody, [-0.5, 2.65, 0.02], [0.16, 0.07, 0.86]);
+  leftBrim.rotation.z = -0.46;
+  const rightBrim = block(cube, hatMat, riderBody, [0.5, 2.65, 0.02], [0.16, 0.07, 0.86]);
+  rightBrim.rotation.z = 0.46;
+  block(cube, trim, riderBody, [0, 2.65, 0.02], [0.6, 0.09, 0.62]);
+  block(cube, hatMat, riderBody, [0, 2.77, 0.02], [0.56, 0.22, 0.58]);
+  block(cube, hatMat, riderBody, [-0.15, 2.91, 0.02], [0.21, 0.11, 0.52]);
+  block(cube, hatMat, riderBody, [0.15, 2.91, 0.02], [0.21, 0.11, 0.52]);
+
   for (const x of [-0.43, 0.43]) {
     block(cube, mane, riderBody, [x, 1.16, 0.05], [0.22, 0.57, 0.32]);
     const arm = block(cube, cloth, riderBody, [x * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
@@ -77,7 +96,8 @@ function makeExplorer(rival = false, palette = null) {
   }
   player.userData.parts = { legs, tail, cape, rider };
   player.userData.materials = [coat, mane, cloth, trim, hood];
-  player.userData.basePalette = palette || palettes[Number(rival) || 0];
+  player.userData.hatMaterial = hatMat;
+  player.userData.basePalette = baseColors;
   player.userData.painting = player.userData.basePalette;
   return player;
 }
@@ -124,6 +144,9 @@ function paintModel(model, colors) {
   const materials = model.userData.materials;
   if (!materials || !colors) return;
   colors.forEach((color, index) => materials[index]?.color.set(color));
+  if (model.userData.hatMaterial && colors[0] !== undefined) {
+    model.userData.hatMaterial.color.set(colors[0]).lerp(new THREE.Color(0x5c3318), 0.55);
+  }
 }
 
 function makeCactus() {
@@ -228,6 +251,118 @@ function makeShieldBubble() {
   return group;
 }
 
+function makeReadyAura() {
+  const group = new THREE.Group();
+  const outerMat = new THREE.MeshBasicMaterial({
+    color: 0xffd76b,
+    transparent: true,
+    opacity: 0.75,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const innerMat = new THREE.MeshBasicMaterial({
+    color: 0x4ce9df,
+    transparent: true,
+    opacity: 0.48,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const outerRing = new THREE.Mesh(new THREE.RingGeometry(0.86, 1.1, 24), outerMat);
+  outerRing.rotation.x = -Math.PI / 2;
+  outerRing.position.y = 0.025;
+  group.add(outerRing);
+
+  const innerRing = new THREE.Mesh(new THREE.RingGeometry(0.62, 0.76, 24), innerMat);
+  innerRing.rotation.x = -Math.PI / 2;
+  innerRing.position.y = 0.022;
+  group.add(innerRing);
+
+  group.userData = { outerMat, innerMat, outerRing, innerRing };
+  group.visible = false;
+  return group;
+}
+
+/**
+ * 3D Turbo / Speed-Boost animation group attached to a rider:
+ * emerald-cyan & solar-gold wind streaks streaming backward + sonic slipstream rings.
+ */
+function makeBoostStreaks() {
+  const group = new THREE.Group();
+  const streakEmerald = new THREE.MeshBasicMaterial({
+    color: 0x4effa1,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+  });
+  const streakGold = new THREE.MeshBasicMaterial({
+    color: 0xffe46b,
+    transparent: true,
+    opacity: 0.82,
+    depthWrite: false,
+  });
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0x6bffb8,
+    transparent: true,
+    opacity: 0.55,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+
+  const streakSpecs = [
+    [-0.86, 0.78, 0.0, true],
+    [0.86, 0.78, 0.5, true],
+    [-0.64, 1.38, 0.25, false],
+    [0.64, 1.38, 0.75, false],
+    [-0.48, 1.98, 0.12, true],
+    [0.48, 1.98, 0.62, true],
+    [-0.74, 1.05, 0.38, false],
+    [0.74, 1.05, 0.88, false],
+    [0.0, 2.28, 0.2, false],
+    [0.0, 0.52, 0.7, true],
+  ];
+  const streaks = streakSpecs.map(([x, y, phase, isEmerald]) => {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.055, 0.055, 1.85),
+      isEmerald ? streakEmerald : streakGold
+    );
+    mesh.position.set(x, y, 0);
+    mesh.userData = { baseX: x, baseY: y, phase };
+    group.add(mesh);
+    return mesh;
+  });
+
+  const rings = [0, 0.5].map((phase) => {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.88, 0.04, 6, 16), ringMat);
+    ring.position.set(0, 1.15, 0);
+    ring.userData = { phase };
+    group.add(ring);
+    return ring;
+  });
+
+  group.userData = { streaks, rings, streakEmerald, streakGold, ringMat };
+  group.visible = false;
+  return group;
+}
+
+function animateBoostStreaks(boostGroup, time) {
+  const { streaks, rings } = boostGroup.userData;
+  const tSec = time * 0.001;
+  streaks.forEach((streak, i) => {
+    const cycle = (tSec * 4.8 + streak.userData.phase) % 1;
+    // Stream rapidly from front of horse (-1.1) to behind tail (+2.8)
+    streak.position.z = -1.1 + cycle * 3.9;
+    streak.position.x = streak.userData.baseX + Math.sin(tSec * 14 + i) * 0.05;
+    streak.position.y = streak.userData.baseY + Math.cos(tSec * 12 + i) * 0.04;
+    streak.scale.z = 0.65 + Math.sin(cycle * Math.PI) * 0.95;
+  });
+  rings.forEach((ring) => {
+    const cycle = (tSec * 2.6 + ring.userData.phase) % 1;
+    ring.position.z = -0.95 + cycle * 3.1;
+    const s = 0.72 + cycle * 0.68;
+    ring.scale.set(s, s, 1);
+  });
+}
+
 function makeLassoRope() {
   const group = new THREE.Group();
   const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd9913b, emissive: 0x8a4a12, emissiveIntensity: 0.35, roughness: 0.7, flatShading: true });
@@ -268,6 +403,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const prairie = stage === 'prairie';
   const sardinia = stage === 'sardinia';
   const alger = stage === 'alger';
+  const japan = stage === 'japan';
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -299,12 +435,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
               sunBottom: [1.0, 0.42, 0.12], sunTop: [1.0, 0.72, 0.32], glow: [1.0, 0.80, 0.52],
               hemiSky: 0xd4e6f6, hemiGround: 0x9a9484, sunLight: 0xffd9a4, rimLight: 0x9cc6ea,
             }
-          : {
-            background: 0x604b70, fog: 0xd28e70, exposure: 1.12,
-            skyBottom: [0.97, 0.66, 0.42], skyHorizon: [0.83, 0.42, 0.35], skyTop: [0.40, 0.29, 0.50],
-            sunBottom: [1.0, 0.31, 0.06], sunTop: [1.0, 0.57, 0.19], glow: [1.0, 0.62, 0.33],
-            hemiSky: 0xffd6b1, hemiGround: 0x49374a, sunLight: 0xffbd70, rimLight: 0xe1a0d4,
-          };
+          : japan
+            ? {
+                background: 0x0d1526, fog: 0x16223b, exposure: 1.12,
+                skyBottom: [0.16, 0.23, 0.38], skyHorizon: [0.09, 0.14, 0.27], skyTop: [0.03, 0.05, 0.12],
+                sunBottom: [0.88, 0.93, 1.0], sunTop: [0.98, 0.99, 1.0], glow: [0.46, 0.62, 0.92],
+                hemiSky: 0x9bb8ff, hemiGround: 0x1d2738, sunLight: 0xd8e6ff, rimLight: 0xff6e54,
+              }
+            : {
+                background: 0x604b70, fog: 0xd28e70, exposure: 1.12,
+                skyBottom: [0.97, 0.66, 0.42], skyHorizon: [0.83, 0.42, 0.35], skyTop: [0.40, 0.29, 0.50],
+                sunBottom: [1.0, 0.31, 0.06], sunTop: [1.0, 0.57, 0.19], glow: [1.0, 0.62, 0.33],
+                hemiSky: 0xffd6b1, hemiGround: 0x49374a, sunLight: 0xffbd70, rimLight: 0xe1a0d4,
+              };
   scene.background = new THREE.Color(atmosphere.background);
   scene.fog = new THREE.Fog(atmosphere.fog, 27, 82);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
@@ -320,7 +463,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   renderer.domElement.setAttribute('aria-label', 'Jeu 3D Mirage Rush — évite les obstacles et ramasse les fragments solaires');
   mount.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(atmosphere.hemiSky, atmosphere.hemiGround, prairie ? 1.65 : 1.9));
+  const hemiLight = new THREE.HemisphereLight(atmosphere.hemiSky, atmosphere.hemiGround, prairie ? 1.65 : 1.9);
+  scene.add(hemiLight);
   const sunLight = new THREE.DirectionalLight(atmosphere.sunLight, prairie ? 1.8 : 2.1);
   sunLight.position.set(0, 5, -46);
   scene.add(sunLight);
@@ -339,7 +483,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: prairie ? 0 : 5.5 },
+      sunElevation: { value: japan ? 25.0 : 5.5 },
+      isNight: { value: japan ? 1.0 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
       void main() {
@@ -353,24 +498,61 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       uniform vec3 sunTop;
       uniform vec3 glow;
       uniform float sunElevation;
+      uniform float isNight;
       varying vec2 skyPoint;
       void main() {
         float height = skyPoint.y;
         vec3 sky = mix(skyBottom, skyHorizon, smoothstep(0.0, 23.0, height));
         sky = mix(sky, skyTop, smoothstep(18.0, 75.0, height));
         float radius = length(skyPoint - vec2(0.0, sunElevation));
-        float halo = exp(-radius * radius / 500.0) * 0.38;
+        float haloVisibility = clamp((sunElevation + 12.0) / 17.5, 0.0, 1.0);
+        float halo = exp(-radius * radius / 500.0) * 0.38 * haloVisibility;
         sky = mix(sky, glow, halo);
-        float disc = 1.0 - smoothstep(7.85, 8.0, radius);
-        vec3 sunColor = mix(sunBottom, sunTop, clamp(height / 8.0, 0.0, 1.0));
+        float aboveHorizon = step(0.0, height);
+        float disc = (1.0 - smoothstep(7.85, 8.0, radius)) * aboveHorizon;
+        if (isNight > 0.01 && height > 12.0 && disc < 0.01) {
+          vec2 cell = floor(skyPoint * 1.35);
+          float h = fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
+          if (h > 0.968) {
+            vec2 center = (cell + 0.5) / 1.35;
+            float d = length(skyPoint - center);
+            float star = smoothstep(0.28, 0.04, d) * smoothstep(12.0, 26.0, height) * (0.55 + 0.45 * fract(h * 91.3));
+            sky += vec3(0.85, 0.92, 1.0) * star * isNight;
+          }
+        }
+        vec3 sunColor = mix(sunBottom, sunTop, clamp((height - (sunElevation - 8.0)) / 16.0, 0.0, 1.0));
         gl_FragColor = vec4(mix(sky, sunColor, disc), 1.0);
       }`,
   }));
   sunset.position.set(0, 59.91, -95);
   sunset.renderOrder = -1;
   scene.add(sunset);
+
+  const applyPrairieSunset = (progress) => {
+    if (!prairie) return;
+    const state = prairieSunsetState(progress);
+    const u = sunset.material.uniforms;
+    u.sunElevation.value = state.sunElevation;
+    u.isNight.value = state.starAlpha;
+    u.skyBottom.value.set(...state.skyBottom);
+    u.skyHorizon.value.set(...state.skyHorizon);
+    u.skyTop.value.set(...state.skyTop);
+    u.glow.value.set(...state.glow);
+    scene.fog.color.setRGB(...state.fog);
+    scene.background.setRGB(...state.bg);
+    hemiLight.color.setRGB(...state.hemiSky);
+    hemiLight.groundColor.setRGB(...state.hemiGround);
+    hemiLight.intensity = state.hemiIntensity;
+    sunLight.color.setRGB(...state.sunLight);
+    sunLight.intensity = state.sunIntensity;
+    rimLight.intensity = state.rimIntensity;
+  };
   if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
   if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+  if (japan) {
+    block(cube, new THREE.MeshStandardMaterial({ color: 0x141e26, roughness: 1 }), scene, [0, -0.45, -35], [180, 0.6, 180]);
+    scene.add(makeMountFuji());
+  }
   if (alger) {
     // Le boulevard chaulé d'Alger la Blanche, puis la baie bleue au loin :
     // la mer ferme l'horizon sous le soleil couchant, comme au bout de la rue.
@@ -393,7 +575,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
+  for (let i = 0; i < (prairie || japan ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
@@ -405,9 +587,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const FLOOR_PERIOD = floorMaterials.length * 2;
@@ -435,15 +617,48 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const playerShieldBubble = makeShieldBubble();
   playerShieldBubble.position.set(0, 1.2, 0);
   player.add(playerShieldBubble);
+  const playerBoostStreaks = makeBoostStreaks();
+  player.add(playerBoostStreaks);
 
-  const rival = makeExplorer(true);
-  rival.position.set(LANES[LANE_COUNT - 1], 0, -5);
-  rival.scale.setScalar(0.92);
-  rival.visible = false;
-  scene.add(rival);
-  const rivalShieldBubble = makeShieldBubble();
-  rivalShieldBubble.position.set(0, 1.2, 0);
-  rival.add(rivalShieldBubble);
+  const duelRivals = DUEL_RIVALS.map((spec) => {
+    const mesh = makeExplorer(spec.paletteIndex, CHARACTER_PALETTES[spec.paletteIndex]);
+    mesh.position.set(LANES[spec.startLane], 0, -5);
+    mesh.visible = false;
+    scene.add(mesh);
+    const shieldBubble = makeShieldBubble();
+    shieldBubble.position.set(0, 1.2, 0);
+    mesh.add(shieldBubble);
+    const boostStreaks = makeBoostStreaks();
+    mesh.add(boostStreaks);
+    return {
+      ...spec,
+      mesh,
+      shieldBubble,
+      boostStreaks,
+      dist: 0,
+      lane: spec.startLane,
+      x: LANES[spec.startLane],
+      jumpLeft: 0,
+      base: DUEL_BASE_SPEED * (spec.pace ?? 1),
+      boost: SPEED_BOOST_NONE,
+      cooldown: 0,
+      finishedAt: null,
+      next: 0,
+      plan: null,
+      planned: -1,
+      hesitate: false,
+      invulnerable: 0,
+      shieldActive: false,
+      shieldTimer: 0,
+      slowTimer: 0,
+      slowFactor: LASSO_SLOW_FACTOR,
+      stunTimer: 0,
+      stunSide: 1,
+      powerState: createPowerUpState(),
+      powerCooldown: 0,
+      powerBoostTimer: 0,
+    };
+  });
   const onlineRiders = [0,1,2,3].map(slot => {
     const rider = makeExplorer(slot);
     rider.visible = false;
@@ -474,10 +689,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   playerShadow.rotation.x = -Math.PI / 2;
   playerShadow.position.y = 0.012;
   scene.add(playerShadow);
+  const playerReadyAura = makeReadyAura();
+  scene.add(playerReadyAura);
 
   let nextEncounter = createCourse();
   let rowCounter = 0;
-  const sharedGems = new Set();
+  let elapsed = 0;
+  const sharedGems = new Map();
   const rows = [];
   function populateRow(row) {
     row.group.traverse(object => {
@@ -489,14 +707,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     row.index = rowCounter++;
     row.gap = encounter.gap;
     row.items = encounter.items.map((spec, itemIndex) => {
-      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : sardinia ? sardiniaObstacle(spec.kind) : alger ? algerObstacle(spec.kind) : makeHazard(spec.kind);
+      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : sardinia ? sardiniaObstacle(spec.kind) : alger ? algerObstacle(spec.kind) : japan ? japanObstacle(spec.kind) : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
-      const taken = sharedGems.has(key);
+      const taken = isGemHidden(sharedGems, key, elapsed);
       object.visible = !taken;
       row.group.add(object);
-      return { ...spec, key, object, collected: taken };
+      return { ...spec, key, object, collected: false, burst: false };
     });
     row.checked = false;
     return encounter.gap;
@@ -657,6 +875,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       scene.add(item);
       scenery.push(item);
     }
+  } else if (japan) {
+    for (let i = 0; i < 11; i++) for (const side of [-1, 1]) {
+      const item = japanPlains(i, side);
+      scene.add(item);
+      scenery.push(item);
+    }
   } else for (let i = 0; i < 18; i++) {
     const item = makeScenery();
     item.position.z -= i * 4.8;
@@ -673,35 +897,38 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let boost = SPEED_BOOST_NONE;
   let trace = [0];
   let seed = 0;
-  const npc = { dist: 0, lane: 1, x: LANES[1], jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0, slowFactor: LASSO_SLOW_FACTOR };
-  const npcEnsureCourse = () => {
-    while (npc.genPos < npc.dist + 60) {
-      const encounter = npc.gen();
-      npc.course.push({ index: npc.genIndex, pos: npc.genPos, items: encounter.items.map((item, i) => ({ ...item, key: `${npc.genIndex}:${i}` })) });
-      npc.genIndex += 1;
-      npc.genPos += encounter.gap;
+  const npcCourseState = { course: [], gen: null, genPos: 20, genIndex: 0 };
+  const npcEnsureCourse = (maxDist) => {
+    while (npcCourseState.genPos < maxDist + 60) {
+      const encounter = npcCourseState.gen();
+      npcCourseState.course.push({
+        index: npcCourseState.genIndex,
+        pos: npcCourseState.genPos,
+        items: encounter.items.map((item, i) => ({ ...item, key: `${npcCourseState.genIndex}:${i}` })),
+      });
+      npcCourseState.genIndex += 1;
+      npcCourseState.genPos += encounter.gap;
     }
   };
-  const hidePlayerGem = (key) => rows.forEach(row => row.items.forEach(item => {
-    if (item.key !== key) return;
-    if (item.object.visible) burstGemItem(row, item);
-    item.collected = true;
-    item.object.visible = false;
-  }));
+  const hidePlayerGem = (key) => {
+    markGemTaken(sharedGems, key, elapsed, GEM_RESPAWN_DELAY);
+    rows.forEach(row => row.items.forEach(item => {
+      if (item.key !== key) return;
+      if (item.object.visible) burstGemItem(row, item);
+      item.object.visible = false;
+    }));
+  };
 
   // Power-up charging system: players collect diamonds to charge power-ups
   // Each diamond gives charge points based on tier (Cyan=1, Red=1, Green=2, Gold=3)
-  // Shield and Lasso need 3 points, Pistol takes 5 points
-  let shieldCharges = 0;
-  let lassoCharges = 0;
-  let pistolCharges = 0;
-  let shieldChargePoints = 0;
-  let lassoChargePoints = 0;
-  let pistolChargePoints = 0;
+  // Shield and Lasso need 8 points, Pistol takes 12 points.
+  // When any power-up is used, all power-ups reset to zero.
+  let powerState = createPowerUpState();
 
   // Power-up player state
   let shieldActive = false;
   let shieldTimer = 0;
+  let powerBoostTimer = 0;
   let playerSlowTimer = 0;
   let playerSlowFactor = LASSO_SLOW_FACTOR;
   let playerSlowKind = 'lasso';
@@ -709,6 +936,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let playerStun = 0;
   let playerStunSide = 1;
   let lastNetworkStun = 0;
+
+  const isGhostRival = (r) => Boolean(race.challenge && r.id === 'ombre');
+  const getRivalDisplayName = (r) => (isGhostRival(r) && race.challenge?.name ? race.challenge.name : r.name);
+  const getLeadingRival = () => duelRivals.reduce((best, r) => (!best || r.dist > best.dist ? r : best), duelRivals[0]);
 
   const getCurrentRank = () => {
     if (race.mode === 'online') {
@@ -725,7 +956,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return 1;
     }
     if (race.mode === 'duel') {
-      return distance >= rivalDistance ? 1 : 2;
+      return 1 + duelRivals.filter((r) => r.dist > distance).length;
     }
     return 1;
   };
@@ -736,7 +967,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       if (!net?.players?.length) return null;
       const myDist = distance;
       const ahead = net.players
-        .filter(p=> p.user_id!==net.userId && (Number(p.distance)||0) > myDist + 1)
+        .filter(p=> p.user_id!==net.userId && !p.finished_at && (Number(p.distance)||0) > myDist + 1)
         .sort((a,b)=> (Number(a.distance)||0)-(Number(b.distance)||0));
       if (ahead.length>0) {
         return { kind: 'online', player: ahead[0], distance: ahead[0].distance };
@@ -744,8 +975,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return null;
     }
     if (race.mode === 'duel') {
-      if (rivalDistance > distance + 1.5) {
-        return { kind: 'rival' };
+      const targetable = duelRivals.filter((r) => !isGhostRival(r) && r.finishedAt === null);
+      const ahead = targetable
+        .filter((r) => r.dist > distance + 1.2)
+        .sort((a, b) => a.dist - b.dist);
+      if (ahead.length > 0) {
+        return { kind: 'rival', npc: ahead[0] };
       }
       return null;
     }
@@ -786,23 +1021,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     return true;
   };
 
-  const applyNpcSlow = () => {
-    if (npc.shieldActive) {
-      npc.shieldActive = false;
-      npc.shieldTimer = 0;
-      rivalShieldBubble.visible = false;
+  const applyNpcSlow = (targetNpc = duelRivals[0]) => {
+    if (!targetNpc) return false;
+    if (targetNpc.shieldActive) {
+      targetNpc.shieldActive = false;
+      targetNpc.shieldTimer = 0;
+      targetNpc.shieldBubble.visible = false;
       return false;
     }
-    npc.slowTimer = LASSO_SLOW_DURATION;
-    npc.slowFactor = LASSO_SLOW_FACTOR;
-    npc.invulnerable = Math.max(npc.invulnerable, 0.2);
+    targetNpc.slowTimer = LASSO_SLOW_DURATION;
+    targetNpc.slowFactor = LASSO_SLOW_FACTOR;
+    targetNpc.invulnerable = Math.max(targetNpc.invulnerable, 0.2);
     return true;
-  };
-
-  const activateNpcShield = () => {
-    npc.shieldActive = true;
-    npc.shieldTimer = SHIELD_DURATION;
-    rivalShieldBubble.visible = true;
   };
 
   const fireLasso = (targetInfo) => {
@@ -814,7 +1044,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const start = new THREE.Vector3(player.position.x, 1.2, 0);
     let end;
     if (targetInfo.kind === 'rival') {
-      end = new THREE.Vector3(rival.position.x, 1.0, rival.position.z);
+      const targetMesh = (targetInfo.npc || duelRivals[0]).mesh;
+      end = new THREE.Vector3(targetMesh.position.x, 1.0, targetMesh.position.z);
     } else if (targetInfo.kind === 'online') {
       const net = getNetwork?.();
       const peer = net?.players?.find(p=> p.user_id===targetInfo.player.user_id);
@@ -847,7 +1078,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         .reduce((best, p) => (!best || (Number(p.distance) || 0) > (Number(best.distance) || 0) ? p : best), null);
       return leader && (Number(leader.distance) || 0) > distance ? { kind: 'online', player: leader } : null;
     }
-    if (race.mode === 'duel' && !race.challenge && npc.finishedAt === null && npc.dist > distance) return { kind: 'rival' };
+    if (race.mode === 'duel') {
+      const targetable = duelRivals.filter((r) => !isGhostRival(r) && r.finishedAt === null);
+      const ahead = targetable
+        .filter((r) => r.dist > distance)
+        .sort((a, b) => b.dist - a.dist);
+      if (ahead.length > 0) return { kind: 'rival', npc: ahead[0] };
+    }
     return null;
   };
 
@@ -864,17 +1101,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     return true;
   };
 
-  const stunNpc = () => {
-    if (npc.shieldActive) {
-      npc.shieldActive = false;
-      npc.shieldTimer = 0;
-      rivalShieldBubble.visible = false;
+  const stunNpc = (targetNpc = duelRivals[0]) => {
+    if (!targetNpc) return false;
+    if (targetNpc.shieldActive) {
+      targetNpc.shieldActive = false;
+      targetNpc.shieldTimer = 0;
+      targetNpc.shieldBubble.visible = false;
       return false;
     }
-    npc.stunTimer = PISTOL_STUN_DURATION;
-    npc.stunSide = npc.lane >= LANE_COUNT / 2 ? -1 : 1;
-    npc.boost = SPEED_BOOST_NONE;
-    npc.jumpLeft = 0;
+    targetNpc.stunTimer = PISTOL_STUN_DURATION;
+    targetNpc.stunSide = targetNpc.lane >= LANE_COUNT / 2 ? -1 : 1;
+    targetNpc.boost = SPEED_BOOST_NONE;
+    targetNpc.jumpLeft = 0;
     return true;
   };
 
@@ -887,9 +1125,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return;
     }
     if (targetInfo.kind === 'rival') {
-      spawnTracer(from, new THREE.Vector3(rival.position.x, rival.position.y + 1.9, rival.position.z));
-      const hit = stunNpc();
-      callbacks.pistolHit?.({ target: 'rival', blocked: !hit });
+      const targetNpc = targetInfo.npc || duelRivals[0];
+      const targetMesh = targetNpc.mesh;
+      spawnTracer(from, new THREE.Vector3(targetMesh.position.x, targetMesh.position.y + 1.9, targetMesh.position.z));
+      const hit = stunNpc(targetNpc);
+      callbacks.pistolHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !hit });
     } else if (targetInfo.kind === 'online') {
       const net = getNetwork?.();
       const peer = net?.players?.find(p => p.user_id === targetInfo.player.user_id);
@@ -904,32 +1144,55 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: targetInfo });
   };
 
-  // Power-up activation functions
+  // Power-up activation functions — using a power discharges ONLY that power-up
   const useShield = () => {
-    if (shieldCharges > 0 && !shieldActive) {
-      shieldCharges--;
-      activateShield();
-      callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'used', chargesLeft: shieldCharges });
-      emitHud(true);
-    }
+    if (!powerUpsEnabled(race.mode)) return;
+    const res = consumePowerUp(powerState, POWER_UPS.SHIELD);
+    if (!res.used) return;
+    powerState = res.state;
+    activateShield();
+    callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'used', chargesLeft: 0, resetAll: false });
+    emitHud(true);
   };
 
   const useLasso = () => {
-    if (lassoCharges > 0) {
-      lassoCharges--;
-      fireLasso(findLassoTarget());
-      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'used', chargesLeft: lassoCharges });
-      emitHud(true);
+    if (!powerUpsEnabled(race.mode) || (powerState.lassoCharges || 0) <= 0) return;
+    const target = findLassoTarget();
+    if (!target) {
+      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'no_target' });
+      return;
     }
+    const res = consumePowerUp(powerState, POWER_UPS.LASSO);
+    if (!res.used) return;
+    powerState = res.state;
+    fireLasso(target);
+    callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'used', chargesLeft: 0, resetAll: false });
+    emitHud(true);
   };
 
   const usePistol = () => {
-    if (pistolCharges > 0) {
-      pistolCharges--;
-      firePistol(findPistolTarget());
-      callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'used', chargesLeft: pistolCharges });
-      emitHud(true);
+    if (!powerUpsEnabled(race.mode) || (powerState.pistolCharges || 0) <= 0) return;
+    const target = findPistolTarget();
+    if (!target) {
+      callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'no_target' });
+      return;
     }
+    const res = consumePowerUp(powerState, POWER_UPS.PISTOL);
+    if (!res.used) return;
+    powerState = res.state;
+    firePistol(target);
+    callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'used', chargesLeft: 0, resetAll: false });
+    emitHud(true);
+  };
+
+  const useBoost = () => {
+    if (!powerUpsEnabled(race.mode)) return;
+    const res = consumePowerUp(powerState, POWER_UPS.BOOST);
+    if (!res.used) return;
+    powerState = res.state;
+    powerBoostTimer = POWER_BOOST_DURATION;
+    callbacks.powerUp?.({ type: POWER_UPS.BOOST, action: 'used', chargesLeft: 0, resetAll: false });
+    emitHud(true);
   };
 
   const resetPowerUps = () => {
@@ -937,57 +1200,162 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     lassoProjectiles.length = 0;
     shieldActive = false;
     shieldTimer = 0;
+    powerBoostTimer = 0;
     playerSlowTimer = 0;
     playerSlowFactor = LASSO_SLOW_FACTOR;
     playerStun = 0;
     lastNetworkStun = 0;
     playerShieldBubble.visible = false;
-    npc.shieldActive = false;
-    npc.shieldTimer = 0;
-    npc.slowTimer = 0;
-    npc.stunTimer = 0;
-    rivalShieldBubble.visible = false;
+    playerBoostStreaks.visible = false;
+    playerReadyAura.visible = false;
+    duelRivals.forEach((r) => {
+      r.shieldActive = false;
+      r.shieldTimer = 0;
+      r.powerBoostTimer = 0;
+      r.slowTimer = 0;
+      r.stunTimer = 0;
+      r.shieldBubble.visible = false;
+      r.boostStreaks.visible = false;
+      r.powerState = createPowerUpState();
+      r.powerCooldown = 0;
+    });
 
-    // Reset power-up charges
-    shieldCharges = 0;
-    lassoCharges = 0;
-    pistolCharges = 0;
-    shieldChargePoints = 0;
-    lassoChargePoints = 0;
-    pistolChargePoints = 0;
+    // Reset all power-up charges & points to zero
+    powerState = createPowerUpState();
   };
 
-  const updateNpc = (dt) => {
-    npcEnsureCourse();
+  const triggerNpcPowerAction = (npc) => {
+    if (isGhostRival(npc) || npc.finishedAt !== null) return;
+    const candidates = [];
+    if (distance < DUEL_DISTANCE) {
+      candidates.push({ kind: 'player', id: 'player', dist: distance });
+    }
+    for (const other of duelRivals) {
+      if (other !== npc && !isGhostRival(other) && other.finishedAt === null) {
+        candidates.push({ kind: 'rival', id: other.id, npc: other, dist: other.dist });
+      }
+    }
+    const decision = chooseNpcPowerAction(npc, candidates);
+    if (!decision) return;
+    const consumed = consumePowerUp(npc.powerState, decision.type);
+    if (!consumed.used) return;
+    npc.powerState = consumed.state;
+    npc.powerCooldown = 1.1;
+
+    const attackerName = getRivalDisplayName(npc);
+    if (decision.type === POWER_UPS.SHIELD) {
+      npc.shieldActive = true;
+      npc.shieldTimer = SHIELD_DURATION;
+      npc.shieldBubble.visible = true;
+      callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'npc_used', npcName: attackerName });
+      return;
+    }
+
+    if (decision.type === POWER_UPS.BOOST) {
+      npc.powerBoostTimer = POWER_BOOST_DURATION;
+      callbacks.powerUp?.({ type: POWER_UPS.BOOST, action: 'npc_used', npcName: attackerName });
+      return;
+    }
+
+    if (decision.type === POWER_UPS.LASSO && decision.target) {
+      const rope = acquireRope();
+      const start = new THREE.Vector3(npc.mesh.position.x, 1.2, npc.mesh.position.z);
+      let end;
+      if (decision.target.kind === 'player') {
+        end = new THREE.Vector3(player.position.x, 1.0, 0);
+      } else {
+        const targetMesh = (decision.target.npc || duelRivals[0]).mesh;
+        end = new THREE.Vector3(targetMesh.position.x, 1.0, targetMesh.position.z);
+      }
+      lassoProjectiles.push({
+        rope,
+        start: start.clone(),
+        end: end.clone(),
+        progress: 0,
+        target: decision.target,
+        fromPlayer: false,
+        fromNpc: npc,
+      });
+      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'npc_used', npcName: attackerName });
+      return;
+    }
+
+    if (decision.type === POWER_UPS.PISTOL && decision.target) {
+      const from = new THREE.Vector3(npc.mesh.position.x + 0.35, npc.mesh.position.y + 1.9, npc.mesh.position.z);
+      if (decision.target.kind === 'player') {
+        spawnTracer(from, new THREE.Vector3(player.position.x, player.position.y + 1.9, 0));
+        const blocked = shieldActive;
+        stunPlayer(true);
+        callbacks.pistolHit?.({ target: 'player', from: 'npc', attackerName, blocked });
+      } else if (decision.target.kind === 'rival' && decision.target.npc) {
+        const targetNpc = decision.target.npc;
+        const targetMesh = targetNpc.mesh;
+        spawnTracer(from, new THREE.Vector3(targetMesh.position.x, targetMesh.position.y + 1.9, targetMesh.position.z));
+        const hit = stunNpc(targetNpc);
+        callbacks.pistolHit?.({
+          target: 'npc_vs_npc',
+          from: 'npc',
+          attackerName,
+          name: getRivalDisplayName(targetNpc),
+          blocked: !hit,
+        });
+      }
+    }
+  };
+
+  const updateSingleNpc = (npc, dt) => {
+    if (isGhostRival(npc)) {
+      npc.dist = ghostDistance(race.challenge.trace, elapsed, race.challenge.duration);
+      npc.lane = LANE_COUNT - 1;
+      npc.x = LANES[npc.lane];
+      npc.jumpLeft = 0;
+      if (npc.dist >= DUEL_DISTANCE && npc.finishedAt === null) {
+        npc.finishedAt = race.challenge.duration;
+      }
+      return npc.dist;
+    }
+    npcEnsureCourse(npc.dist);
     npc.jumpLeft = Math.max(0, npc.jumpLeft - dt);
     npc.cooldown = Math.max(0, npc.cooldown - dt);
+    npc.powerCooldown = Math.max(0, (npc.powerCooldown || 0) - dt);
+    npc.powerBoostTimer = Math.max(0, (npc.powerBoostTimer || 0) - dt);
     npc.invulnerable = Math.max(0, npc.invulnerable - dt);
     npc.shieldTimer = Math.max(0, npc.shieldTimer - dt);
     if (npc.shieldTimer <= 0) npc.shieldActive = false;
     npc.slowTimer = Math.max(0, npc.slowTimer - dt);
     npc.stunTimer = Math.max(0, (npc.stunTimer || 0) - dt);
     const slowFactor = npc.slowTimer > 0 ? (npc.slowFactor ?? LASSO_SLOW_FACTOR) : 1;
-    npc.base += (DUEL_BASE_SPEED - npc.base) * Math.min(1, dt * 0.65);
+    const targetBaseSpeed = DUEL_BASE_SPEED * (npc.pace ?? 1);
+    npc.base += (targetBaseSpeed - npc.base) * Math.min(1, dt * 0.65);
     npc.boost = tickSpeedBoost(npc.boost, dt);
-    const rawSpeed = duelSpeed(npc.base, npc.boost.bonus);
+    const effectiveNpcBonus = Math.max(npc.boost.bonus, npc.powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0);
+    const rawSpeed = duelSpeed(npc.base, effectiveNpcBonus);
     const speed = npc.stunTimer > 0 ? 0 : rawSpeed * slowFactor;
-    const target = npc.course[npc.next];
+    const target = npcCourseState.course[npc.next];
     if (target) {
       const ahead = target.pos - npc.dist;
       if (npc.planned !== target.index && ahead < 24) {
         npc.planned = target.index;
-        npc.hesitate = Math.random() < 0.12;
-        npc.plan = planNpcLane(target.items.map(item => ({ ...item, taken: sharedGems.has(item.key) })), npc.lane);
+        npc.hesitate = Math.random() < (npc.hesitateChance ?? 0.12);
+        const occupiedLanes = duelRivals
+          .filter((other) => other !== npc && Math.abs(other.dist - npc.dist) < 8)
+          .map((other) => (other.planned === target.index && other.plan ? other.plan.lane : other.lane));
+        if (Math.abs(distance - npc.dist) < 5) occupiedLanes.push(laneIndex);
+        npc.plan = planNpcLane(
+          target.items.map((item) => ({ ...item, taken: isGemHidden(sharedGems, item.key, elapsed) })),
+          npc.lane,
+          occupiedLanes
+        );
       }
       if (npc.stunTimer <= 0 && npc.plan && !npc.hesitate && npc.cooldown <= 0 && npc.lane !== npc.plan.lane && ahead < 20) {
         npc.lane += Math.sign(npc.plan.lane - npc.lane);
-        npc.cooldown = 0.16 + Math.random() * 0.08;
+        npc.cooldown = 0.15 + Math.random() * 0.08;
       }
-      if (npc.stunTimer <= 0 && npc.plan?.jump && !npc.hesitate && npc.jumpLeft <= 0 && ahead / speed < 0.42 && ahead > 0) npc.jumpLeft = 0.82;
+      if (npc.stunTimer <= 0 && npc.plan?.jump && !npc.hesitate && npc.jumpLeft <= 0 && speed > 0 && ahead / speed < 0.42 && ahead > 0) npc.jumpLeft = 0.82;
       if (npc.dist + speed * dt >= target.pos) {
         const height = jumpHeight(npc.jumpLeft);
-        const near = lane => Math.abs(npc.x - LANES[lane]) < 0.95;
-        const hazard = target.items.find(item => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(near));
+        const near = (lane) => Math.abs(npc.x - LANES[lane]) < 0.95;
+        const hazard = target.items.find((item) => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(near));
         if (hazard && !(hazard.kind === 'barrier' && height > 1.05) && npc.invulnerable <= 0) {
           if (npc.shieldActive) {
             npc.shieldActive = false;
@@ -999,24 +1367,37 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             npc.invulnerable = 1.15;
           }
         }
-        const gem = target.items.find(item => item.kind === 'crystal' && Math.abs(npc.x - LANES[item.lane]) < 0.85 && (!item.raised || height > 1.05) && !sharedGems.has(item.key));
+        const gem = target.items.find((item) => item.kind === 'crystal' && Math.abs(npc.x - LANES[item.lane]) < 0.85 && (!item.raised || height > 1.05) && !isGemHidden(sharedGems, item.key, elapsed));
         if (gem) {
           const tier = gem.tier ?? 0;
           const effect = crystalPickupEffect(tier, false);
-          sharedGems.add(gem.key);
           hidePlayerGem(gem.key);
           npc.boost = effect.boost;
+          const chargeRes = chargePowerUps(npc.powerState, tier);
+          npc.powerState = chargeRes.state;
+          if (chargeRes.charged.length > 0 && npc.powerCooldown <= 0) {
+            npc.powerCooldown = 0.25 + Math.random() * 0.35;
+          }
         }
         npc.next += 1;
       }
     }
+    triggerNpcPowerAction(npc);
     npc.x += (LANES[npc.lane] - npc.x) * Math.min(1, dt * 12);
     npc.dist = Math.min(DUEL_DISTANCE, npc.dist + speed * dt);
     if (npc.dist >= DUEL_DISTANCE && npc.finishedAt === null) npc.finishedAt = elapsed;
     return npc.dist;
   };
 
-  let elapsed = 0;
+  const updateDuelRivals = (dt) => {
+    let maxDist = 0;
+    for (const r of duelRivals) {
+      const d = updateSingleNpc(r, dt);
+      if (d > maxDist) maxDist = d;
+    }
+    return maxDist;
+  };
+
   let score = 0;
   let gems = 0;
   let combo = 0;
@@ -1051,6 +1432,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const now = performance.now();
     if (!force && now - lastHud < 125) return;
     lastHud = now;
+    const leadingRival = getLeadingRival();
+    const effectivePlayerBonus = Math.max(boost.bonus, powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0);
     callbacks.hud?.({
       score,
       gems,
@@ -1058,8 +1441,23 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       multiplier: (1 + Math.min(3, Math.floor(combo / 5) * 0.5)).toFixed(1),
       lives,
       remaining: Math.max(0, RUN_SECONDS - elapsed),
-      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed * (playerSlowTimer>0?playerSlowFactor:1), boost.bonus), boostLeft: boost.left, mode: race.mode,
-      rivalName: race.challenge?.name || 'L’OMBRE',
+      distance,
+      lane: laneIndex,
+      jump: jumpHeight(jumpLeft),
+      rivalDistance,
+      speed: duelSpeed(baseSpeed * (playerSlowTimer > 0 ? playerSlowFactor : 1), effectivePlayerBonus),
+      boostLeft: Math.max(boost.left, powerBoostTimer),
+      powerBoostActive: powerBoostTimer > 0,
+      powerBoostLeft: powerBoostTimer,
+      mode: race.mode,
+      rivalName: leadingRival ? getRivalDisplayName(leadingRival) : (race.challenge?.name || 'L’OMBRE'),
+      rivals: duelRivals.map((r, idx) => ({
+        id: r.id,
+        slot: idx + 1,
+        name: getRivalDisplayName(r),
+        distance: Math.round(r.dist),
+      })),
+      totalRiders: 1 + duelRivals.length,
       shieldActive,
       shieldLeft: shieldTimer,
       slowed: playerSlowTimer>0,
@@ -1069,12 +1467,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       stunned: playerStun > 0,
       stunLeft: playerStun,
       // Power-up charges & charge progress for UI
-      shieldCharges,
-      shieldProgress: shieldCharges >= POWER_UP_MAX_CHARGES ? 1 : shieldChargePoints / POWER_UP_CHARGE_COST[POWER_UPS.SHIELD],
-      lassoCharges,
-      lassoProgress: lassoCharges >= POWER_UP_MAX_CHARGES ? 1 : lassoChargePoints / POWER_UP_CHARGE_COST[POWER_UPS.LASSO],
-      pistolCharges,
-      pistolProgress: pistolCharges >= POWER_UP_MAX_CHARGES ? 1 : pistolChargePoints / POWER_UP_CHARGE_COST[POWER_UPS.PISTOL],
+      ...powerUpHudState(powerState),
     });
   };
 
@@ -1082,14 +1475,36 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     if (!active) return;
     active = false;
     if (race.mode === 'online') {
-      callbacks.finish?.({ mode: 'online', score, gems, duration: elapsed, distance: 600, lane: laneIndex, jump: 0 });
+      callbacks.finish?.({ mode: 'online', score, gems, duration: elapsed, distance: DUEL_DISTANCE, lane: laneIndex, jump: 0 });
     } else if (race.mode !== 'rush') {
       trace.push(DUEL_DISTANCE);
-      callbacks.finish?.({ mode: 'duel', score, gems, duration: Math.round(elapsed * 10) / 10,
-        rivalDuration: race.challenge ? race.challenge.duration : npc.finishedAt === null ? null : Math.round(npc.finishedAt * 10) / 10,
+      const leadingRival = getLeadingRival();
+      const playerDuration = Math.round(elapsed * 10) / 10;
+      const rivalsSummary = duelRivals.map((r, idx) => ({
+        id: r.id,
+        slot: idx + 1,
+        name: getRivalDisplayName(r),
+        distance: Math.round(r.dist),
+        duration: r.finishedAt === null ? null : Math.round(r.finishedAt * 10) / 10,
+      }));
+      const aheadCount = duelRivals.filter((r) => (r.finishedAt !== null && r.finishedAt <= elapsed) || r.dist > distance).length;
+      const finalRank = 1 + aheadCount;
+      callbacks.finish?.({
+        mode: 'duel',
+        score,
+        gems,
+        duration: playerDuration,
+        rank: finalRank,
+        totalRiders: 1 + duelRivals.length,
+        rivals: rivalsSummary,
+        rivalDuration: leadingRival?.finishedAt === null ? null : Math.round((leadingRival?.finishedAt ?? 0) * 10) / 10,
         rivalDistance: Math.round(rivalDistance),
-        won: race.challenge ? elapsed < race.challenge.duration : npc.finishedAt === null || elapsed < npc.finishedAt,
-        seed, trace, stage, rivalName: race.challenge?.name || 'L’OMBRE' });
+        won: finalRank === 1,
+        seed,
+        trace,
+        stage,
+        rivalName: leadingRival ? getRivalDisplayName(leadingRival) : (race.challenge?.name || 'L’OMBRE'),
+      });
     } else callbacks.finish?.({ mode: 'rush', score, gems, duration: Math.max(1, Math.round(elapsed)) });
   };
 
@@ -1101,7 +1516,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     baseSpeed = DUEL_BASE_SPEED;
     boost = SPEED_BOOST_NONE;
     trace = [0];
-    rival.visible = race.mode === 'duel';
     startLine.position.z = 1;
     finishLine.position.z = -DUEL_DISTANCE;
     startLine.visible = race.mode !== 'rush';
@@ -1125,7 +1539,37 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     nextEncounter = createCourse(race.mode !== 'rush' ? seededRandom(seed) : Math.random);
     rowCounter = 0;
     sharedGems.clear();
-    Object.assign(npc, { dist: 0, lane: 1, x: LANES[1], jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0, slowFactor: LASSO_SLOW_FACTOR });
+    Object.assign(npcCourseState, {
+      course: [],
+      gen: createCourse(seededRandom(seed)),
+      genPos: 20,
+      genIndex: 0,
+    });
+    duelRivals.forEach((r) => {
+      Object.assign(r, {
+        dist: 0,
+        lane: r.startLane,
+        x: LANES[r.startLane],
+        jumpLeft: 0,
+        base: DUEL_BASE_SPEED * (r.pace ?? 1),
+        boost: SPEED_BOOST_NONE,
+        cooldown: 0,
+        finishedAt: null,
+        next: 0,
+        plan: null,
+        planned: -1,
+        hesitate: false,
+        invulnerable: 0,
+        shieldActive: false,
+        shieldTimer: 0,
+        slowTimer: 0,
+        slowFactor: LASSO_SLOW_FACTOR,
+        stunTimer: 0,
+        stunSide: 1,
+      });
+      r.mesh.position.set(LANES[r.startLane], 0, 0);
+      r.mesh.visible = race.mode === 'duel';
+    });
     let z = -20;
     rows.forEach(row => {
       const gap = populateRow(row);
@@ -1134,6 +1578,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     });
     resetPowerUps();
     clearGemBursts();
+    applyPrairieSunset(0);
     emitHud(true);
   };
 
@@ -1142,6 +1587,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     if (name === 'use_shield' || name === 'shield') useShield();
     else if (name === 'use_lasso' || name === 'lasso') useLasso();
     else if (name === 'use_pistol' || name === 'pistol') usePistol();
+    else if (name === 'use_boost' || name === 'boost') useBoost();
     else {
       laneIndex = playerLaneAfterAction(laneIndex, name, jumpLeft);
       if (name === 'jump' && jumpLeft <= 0) jumpLeft = 0.82;
@@ -1155,14 +1601,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const target = event.target?.tagName;
     if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
 
-    if (['arrowleft', 'arrowright', 'arrowup', ' ', 'a', 'q', 'd', 'w', 'z', 'e'].includes(key)) event.preventDefault();
+    if (['arrowleft', 'arrowright', 'arrowup', ' ', 'a', 'q', 'd', 'w', 'z', 'e', 'r'].includes(key)) event.preventDefault();
 
     // Movement
     if (key === 'arrowleft') action('left');
     if (key === 'arrowright') action('right');
     if (key === 'arrowup' || key === ' ') action('jump');
 
-    // Power-up shortcuts QWE / AZE
+    // Power-up shortcuts QWER / AZER
     // Q or A -> Shield
     if (code === 'KeyQ' || code === 'KeyA' || key === 'q' || key === 'a') {
       useShield();
@@ -1171,8 +1617,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     else if (code === 'KeyW' || code === 'KeyZ' || key === 'w' || key === 'z') {
       useLasso();
     }
-    // E -> Pistol
+    // E -> Boost (Turbo 3s)
     else if (code === 'KeyE' || key === 'e') {
+      useBoost();
+    }
+    // R -> Pistol (Tir)
+    else if (code === 'KeyR' || key === 'r') {
       usePistol();
     }
   };
@@ -1197,14 +1647,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       boost = tickSpeedBoost(boost, dt);
     }
     const slowMul = playerSlowTimer > 0 ? playerSlowFactor : 1;
-    const speed = running && playerStun <= 0 ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost.bonus) * slowMul : (12 + Math.min(7, elapsed * 0.12)) * slowMul : 0;
+    const effectivePlayerBonus = Math.max(boost.bonus, powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0);
+    const speed = running && playerStun <= 0
+      ? race.mode !== 'rush'
+        ? duelSpeed(baseSpeed, effectivePlayerBonus) * slowMul
+        : ((12 + Math.min(7, elapsed * 0.12)) + (powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0)) * slowMul
+      : 0;
     if (running) {
       elapsed += dt;
       if (race.mode !== 'rush') {
         distance = Math.min(DUEL_DISTANCE, distance + speed * dt);
-        rivalDistance = race.mode === 'online' ? 0 : race.challenge
-          ? ghostDistance(race.challenge.trace, elapsed, race.challenge.duration)
-          : updateNpc(dt);
+        rivalDistance = race.mode === 'online' ? 0 : updateDuelRivals(dt);
         while (trace.length * 0.5 <= elapsed && trace.length < 359) trace.push(Math.round(distance));
         startLine.position.z = 1 + distance;
         finishLine.position.z = distance - DUEL_DISTANCE;
@@ -1215,6 +1668,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       poseLeft = Math.max(0, poseLeft - dt);
       crashAnimation = Math.max(0, crashAnimation - dt);
       invulnerable = Math.max(0, invulnerable - dt);
+      powerBoostTimer = Math.max(0, powerBoostTimer - dt);
       shieldTimer = Math.max(0, shieldTimer - dt);
       if (shieldTimer <= 0 && shieldActive) {
         shieldActive = false;
@@ -1297,17 +1751,21 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             person.position.y = (person.userData.baseY || 0) + Math.abs(Math.sin(time * 0.0017 + bob)) * 0.012;
           }
         }
-        if (item.position.z > (western || prairie || sardinia || alger ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger ? 110 : 86;
+        if (item.position.z > (western || prairie || sardinia || alger || japan ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan ? 110 : 86;
       });
 
       rows.forEach((row) => {
         row.group.position.z += speed * dt;
         row.items.forEach((item) => {
           if (item.kind !== 'crystal') return;
-          const locallyCollected = item.collected || sharedGems.has(item.key);
+          const locallyHidden = isGemHidden(sharedGems, item.key, elapsed);
           const hiddenByRemotePickup = Number(network?.gemPickups?.[item.key] || 0) > wallNow;
           if (hiddenByRemotePickup && item.object.visible) burstGemItem(row, item);
-          item.object.visible = !locallyCollected && !hiddenByRemotePickup;
+          const shouldBeVisible = !locallyHidden && !hiddenByRemotePickup;
+          if (shouldBeVisible && !item.object.visible) {
+            item.burst = false;
+          }
+          item.object.visible = shouldBeVisible;
           if (item.object.visible) {
             item.object.rotation.y += dt * 1.8;
             item.object.rotation.x = Math.sin(time * 0.002 + row.group.position.z) * 0.1;
@@ -1335,14 +1793,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
               if (impact.gameOver) finish();
             }
           }
-          const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !item.collected && Number(network?.gemPickups?.[item.key] || 0) <= wallNow);
+          const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !isGemHidden(sharedGems, item.key, elapsed) && Number(network?.gemPickups?.[item.key] || 0) <= wallNow);
           if (crystal) {
             const tier = crystal.tier ?? 0; // 0=Cyan, 1=Red, 2=Green, 3=Gold
-            const points = DIAMOND_CHARGE_VALUE[tier] ?? 1;
-            crystal.collected = true;
-            sharedGems.add(crystal.key);
-            burstGemItem(row, crystal);
-            crystal.object.visible = false;
+            hidePlayerGem(crystal.key);
             gems += 1;
             callbacks.pickup?.(tier, crystal.key, false);
             combo += 1;
@@ -1350,29 +1804,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             score += Math.round(CRYSTALS[tier].value * multiplier);
             if (race.mode !== 'rush') boost = crystalPickupEffect(tier, false).boost;
 
-            // Power-up charging system: add charge points to all 3 objects
-            if (shieldCharges < POWER_UP_MAX_CHARGES) {
-              shieldChargePoints += points;
-              if (shieldChargePoints >= POWER_UP_CHARGE_COST[POWER_UPS.SHIELD]) {
-                shieldCharges = Math.min(POWER_UP_MAX_CHARGES, shieldCharges + 1);
-                shieldChargePoints = 0;
-                callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'charged', charges: shieldCharges });
-              }
-            }
-            if (lassoCharges < POWER_UP_MAX_CHARGES) {
-              lassoChargePoints += points;
-              if (lassoChargePoints >= POWER_UP_CHARGE_COST[POWER_UPS.LASSO]) {
-                lassoCharges = Math.min(POWER_UP_MAX_CHARGES, lassoCharges + 1);
-                lassoChargePoints = 0;
-                callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'charged', charges: lassoCharges });
-              }
-            }
-            if (pistolCharges < POWER_UP_MAX_CHARGES) {
-              pistolChargePoints += points;
-              if (pistolChargePoints >= POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]) {
-                pistolCharges = Math.min(POWER_UP_MAX_CHARGES, pistolCharges + 1);
-                pistolChargePoints = 0;
-                callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'charged', charges: pistolCharges });
+            // Power-up charging system (Duel & Online only)
+            if (powerUpsEnabled(race.mode)) {
+              const chargeResult = chargePowerUps(powerState, tier);
+              powerState = chargeResult.state;
+              if (chargeResult.charged.length > 0) {
+                callbacks.powerUp?.({
+                  type: chargeResult.charged[chargeResult.charged.length - 1],
+                  action: 'charged',
+                  chargedTypes: chargeResult.charged,
+                  charges: 1,
+                });
               }
             }
 
@@ -1404,9 +1846,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         const t = Math.min(1, proj.progress);
         const segs = proj.rope.userData.segments;
         const from = proj.start;
+        if (proj.fromPlayer) {
+          from.set(player.position.x, 1.2, 0);
+        } else if (proj.fromNpc) {
+          from.set(proj.fromNpc.mesh.position.x, 1.2, proj.fromNpc.mesh.position.z);
+        }
         const to = proj.end;
         if (proj.target?.kind === 'rival') {
-          to.set(rival.position.x, 1.0, rival.position.z);
+          const targetMesh = (proj.target.npc || duelRivals[0]).mesh;
+          to.set(targetMesh.position.x, 1.0, targetMesh.position.z);
         } else if (proj.target?.kind === 'online') {
           const net = getNetwork?.();
           const peer = net?.players?.find(p=> p.user_id===proj.target.player?.user_id);
@@ -1435,15 +1883,29 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         if (t >= 1) {
           if (proj.fromPlayer) {
             if (proj.target?.kind === 'rival') {
-              const slowed = applyNpcSlow();
-              callbacks.lassoHit?.({ target: 'rival', blocked: !slowed });
+              const targetNpc = proj.target.npc || duelRivals[0];
+              const slowed = applyNpcSlow(targetNpc);
+              callbacks.lassoHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !slowed });
             } else if (proj.target?.kind === 'online') {
               callbacks.lassoHit?.({ target: 'online', player: proj.target.player });
             }
           } else {
-            const blocked = shieldActive;
-            applyPlayerSlow();
-            callbacks.lassoHit?.({ target: 'player', from: 'npc', blocked });
+            const attackerName = proj.fromNpc ? getRivalDisplayName(proj.fromNpc) : 'L’OMBRE';
+            if (proj.target?.kind === 'rival') {
+              const targetNpc = proj.target.npc || duelRivals[0];
+              const slowed = applyNpcSlow(targetNpc);
+              callbacks.lassoHit?.({
+                target: 'npc_vs_npc',
+                from: 'npc',
+                attackerName,
+                name: getRivalDisplayName(targetNpc),
+                blocked: !slowed,
+              });
+            } else {
+              const blocked = shieldActive;
+              applyPlayerSlow(true);
+              callbacks.lassoHit?.({ target: 'player', from: 'npc', attackerName, blocked });
+            }
           }
           releaseRope(proj.rope);
           lassoProjectiles.splice(i,1);
@@ -1463,30 +1925,34 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const crashBounce = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.18 : 0;
     player.position.y = jumpHeight(jumpLeft) + crashBounce;
     const parts = player.userData.parts;
-    const runWave = Math.sin(time * (running ? 0.018 : 0.002));
+    const turboActive = running && powerBoostTimer > 0 && playerStun <= 0;
+    const gallopRate = turboActive ? 0.026 : 0.018;
+    const runWave = Math.sin(time * (running ? gallopRate : 0.002));
     const galloping = running && playerStun <= 0;
     parts.legs.forEach((leg, index) => {
-      leg.rotation.x = jumpLeft > 0 ? (index < 2 ? -0.7 : 0.65) : galloping ? Math.sin(time * 0.018 + index * 2.2) * 0.65 : 0;
+      leg.rotation.x = jumpLeft > 0 ? (index < 2 ? -0.7 : 0.65) : galloping ? Math.sin(time * gallopRate + index * 2.2) * (turboActive ? 0.82 : 0.65) : 0;
     });
     poseRider(player, playerStun, playerStunSide);
-    parts.tail.rotation.z = runWave * 0.18;
-    parts.cape.rotation.x = running ? -0.12 + runWave * 0.06 : 0;
+    if (turboActive) {
+      parts.rider.rotation.x -= 0.18;
+    }
+    parts.tail.rotation.z = runWave * (turboActive ? 0.28 : 0.18);
+    parts.cape.rotation.x = running ? (turboActive ? -0.46 + runWave * 0.12 : -0.12 + runWave * 0.06) : 0;
     const impactTilt = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.2 * crashDirection : 0;
     player.rotation.z = (targetX - player.position.x) * -0.055 + impactTilt;
-    player.rotation.x = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.16 : 0;
+    player.rotation.x = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.16 : turboActive ? -0.045 : 0;
     player.scale.setScalar((poseLeft > 0 ? 1.035 : 1) * (crashAnimation > 0 ? 1 - Math.sin(crashProgress * Math.PI) * 0.09 : 1));
     player.visible = isPlayerVisible(race.mode, invulnerable, time);
+
+    playerBoostStreaks.visible = turboActive;
+    if (turboActive) {
+      animateBoostStreaks(playerBoostStreaks, time);
+    }
 
     if (shieldActive) {
       const pulse = 1 + Math.sin(time*0.01)*0.06 + (shieldFlash>0? shieldFlash*0.3 : 0);
       playerShieldBubble.scale.setScalar(pulse);
       playerShieldBubble.rotation.y += dt*1.5;
-    }
-    if (npc.shieldActive) {
-      rivalShieldBubble.visible = true;
-      rivalShieldBubble.rotation.y += dt*1.5;
-    } else {
-      rivalShieldBubble.visible = npc.shieldActive;
     }
     onlineRiders.forEach((rider, slot) => {
       const peer = network?.players?.find(p => p.slot === slot);
@@ -1517,27 +1983,72 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
       }
     });
-    rival.position.z = Math.max(-85, Math.min(16, distance - rivalDistance));
-    const rivalParts = rival.userData.parts;
-    const rivalStun = race.mode === 'duel' && !race.challenge ? npc.stunTimer || 0 : 0;
-    rivalParts.legs.forEach((leg, index) => { leg.rotation.x = running && rivalStun <= 0 ? Math.sin(time * 0.018 + index * 2.2 + 1.3) * 0.65 : 0; });
-    poseRider(rival, rivalStun, npc.stunSide || 1);
-    rivalParts.tail.rotation.z = runWave * -0.2;
-    if (race.mode === 'duel' && !race.challenge) {
-      rival.position.x = npc.x;
-      rival.position.y = jumpHeight(npc.jumpLeft);
-      rival.scale.setScalar(1);
-      if (npc.jumpLeft > 0) rivalParts.legs.forEach((leg, index) => { leg.rotation.x = index < 2 ? -0.7 : 0.65; });
-      if (npc.slowTimer > 0) {
-        rival.position.y += Math.sin(time*0.02)*0.06;
+    duelRivals.forEach((r, idx) => {
+      const rivalMesh = r.mesh;
+      if (r.shieldActive) {
+        r.shieldBubble.visible = true;
+        r.shieldBubble.rotation.y += dt * 1.5;
+      } else {
+        r.shieldBubble.visible = false;
       }
-    } else {
-      rival.position.set(LANES[LANE_COUNT - 1], 0, rival.position.z);
-      rival.scale.setScalar(0.92);
-    }
-    rival.visible = race.mode === 'duel' && rival.position.z < 11 && rival.position.z > -74 && (npc.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
+      const rivalTurbo = running && r.powerBoostTimer > 0 && (r.stunTimer || 0) <= 0;
+      r.boostStreaks.visible = rivalTurbo;
+      if (rivalTurbo) {
+        animateBoostStreaks(r.boostStreaks, time + idx * 170);
+      }
+      rivalMesh.position.z = Math.max(-85, Math.min(16, distance - r.dist));
+      const rivalParts = rivalMesh.userData.parts;
+      const rivalStun = race.mode === 'duel' && !isGhostRival(r) ? r.stunTimer || 0 : 0;
+      const phaseOffset = 1.3 + idx * 0.9;
+      const rivalGallopRate = rivalTurbo ? 0.026 : 0.018;
+      rivalParts.legs.forEach((leg, index) => {
+        leg.rotation.x = running && rivalStun <= 0 ? Math.sin(time * rivalGallopRate + index * 2.2 + phaseOffset) * (rivalTurbo ? 0.82 : 0.65) : 0;
+      });
+      poseRider(rivalMesh, rivalStun, r.stunSide || 1);
+      if (rivalTurbo) {
+        rivalParts.rider.rotation.x -= 0.18;
+      }
+      rivalParts.tail.rotation.z = runWave * -0.2;
+      if (race.mode === 'duel' && !isGhostRival(r)) {
+        rivalMesh.position.x = r.x;
+        rivalMesh.position.y = jumpHeight(r.jumpLeft);
+        rivalMesh.scale.setScalar(1);
+        if (r.jumpLeft > 0) rivalParts.legs.forEach((leg, index) => { leg.rotation.x = index < 2 ? -0.7 : 0.65; });
+        if (r.slowTimer > 0) {
+          rivalMesh.position.y += Math.sin(time * 0.02 + idx) * 0.06;
+        }
+      } else {
+        rivalMesh.position.set(LANES[LANE_COUNT - 1], 0, rivalMesh.position.z);
+        rivalMesh.scale.setScalar(0.92);
+      }
+      rivalMesh.visible = race.mode === 'duel' && rivalMesh.position.z < 11 && rivalMesh.position.z > -74 && (r.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
+    });
     playerShadow.position.x = player.position.x;
     playerShadow.scale.set(1, 1.8, 1).multiplyScalar(Math.max(0.55, 1 - player.position.y * 0.12));
+    const anyReady = powerState.shieldCharges > 0 || powerState.lassoCharges > 0 || powerState.pistolCharges > 0 || powerState.boostCharges > 0;
+    const pistolReady = powerState.pistolCharges > 0;
+    const boostReady = powerState.boostCharges > 0;
+    playerReadyAura.visible = running && powerUpsEnabled(race.mode) && anyReady;
+    if (playerReadyAura.visible) {
+      playerReadyAura.position.x = player.position.x;
+      const readyPulse = 1 + Math.sin(time * 0.012) * 0.12;
+      playerReadyAura.scale.setScalar(readyPulse);
+      playerReadyAura.userData.outerRing.rotation.z = time * 0.0025;
+      playerReadyAura.userData.innerRing.rotation.z = -time * 0.0035;
+      playerReadyAura.userData.outerMat.color.setHex(pistolReady ? 0xff7066 : boostReady ? 0x4cd964 : 0xffdc6b);
+      playerReadyAura.userData.innerMat.color.setHex(pistolReady ? 0xffdc6b : boostReady ? 0xa3f7b5 : 0x4ce9df);
+      playerReadyAura.userData.outerMat.opacity = 0.65 + Math.sin(time * 0.015) * 0.22;
+    }
+    const targetFov = turboActive ? 61 : 50;
+    if (Math.abs(camera.fov - targetFov) > 0.02) {
+      camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 8);
+      camera.updateProjectionMatrix();
+    }
+    if (prairie) {
+      applyPrairieSunset(race.mode !== 'rush' ? distance / DUEL_DISTANCE : elapsed / RUN_SECONDS);
+    }
+    camera.position.y += ((turboActive ? 6.85 : 7.3) - camera.position.y) * Math.min(1, dt * 6);
+    camera.position.z += ((turboActive ? 10.05 : 9.4) - camera.position.z) * Math.min(1, dt * 6);
     camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
     renderer.render(scene, camera);
   };
@@ -1571,6 +2082,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       if (type === 'shield' || type === POWER_UPS.SHIELD) useShield();
       else if (type === 'lasso' || type === POWER_UPS.LASSO) useLasso();
       else if (type === 'pistol' || type === POWER_UPS.PISTOL) usePistol();
+      else if (type === 'boost' || type === POWER_UPS.BOOST) useBoost();
     },
     action,
     destroy() {

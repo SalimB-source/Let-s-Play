@@ -43,9 +43,10 @@ test('jump requires actual clearance, not simply a pressed button', () => {
   assert.deepEqual(CRYSTALS.map(c => c.value), [100, 150, 200, 250]);
 });
 
-test('duel speed is capped, collision can slow down and gems boost', async () => {
-  const { DUEL_BASE_SPEED, DUEL_SPEED_BONUS, duelSpeed, ghostDistance, DUEL_DISTANCE, seededRandom } = await import('../src/games/mirageRules.js');
-  assert.equal(duelSpeed(DUEL_BASE_SPEED, DUEL_SPEED_BONUS[3]), 19.4);
+test('duel speed is capped, collision can slow down and gems boost equally', async () => {
+  const { DUEL_BASE_SPEED, DUEL_SPEED_BONUS, DIAMOND_SPEED_BONUS, duelSpeed, ghostDistance, DUEL_DISTANCE, seededRandom } = await import('../src/games/mirageRules.js');
+  assert.deepEqual(DUEL_SPEED_BONUS, [DIAMOND_SPEED_BONUS, DIAMOND_SPEED_BONUS, DIAMOND_SPEED_BONUS, DIAMOND_SPEED_BONUS]);
+  assert.equal(duelSpeed(DUEL_BASE_SPEED, DUEL_SPEED_BONUS[3]), DUEL_BASE_SPEED + DIAMOND_SPEED_BONUS);
   assert.equal(duelSpeed(8, -50), 8);
   assert.equal(duelSpeed(25, 8), 26);
   assert.equal(ghostDistance([0, 7, 15, DUEL_DISTANCE], 0.25, 1.3), 3.5);
@@ -106,27 +107,32 @@ test('NPC avoids cacti, jumps barriers and chases valuable gems', async () => {
 
 test('duel links preserve western stage and accept older desert links', async () => {
   const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
-  const run = { seed: 42, duration: 40, trace: [0, 100, 600], name: 'Cowboy', stage: 'western' };
+  const { DUEL_DISTANCE } = await import('../src/games/mirageRules.js');
+  assert.equal(DUEL_DISTANCE, 800);
+  const run = { seed: 42, duration: 40, trace: [0, 100, DUEL_DISTANCE], name: 'Cowboy', stage: 'western' };
   assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'western');
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: undefined })).stage, undefined);
 });
 
 test('prairie stage is retained in challenge links', async () => {
   const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
-  const run = { seed: 42, duration: 40, trace: [0, 100, 600], name: 'Cavalier', stage: 'prairie' };
+  const { DUEL_DISTANCE } = await import('../src/games/mirageRules.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, DUEL_DISTANCE], name: 'Cavalier', stage: 'prairie' };
   assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'prairie');
 });
 
-test('sardinia (Costa Omertà) stage is retained in challenge links and rejects unknown stages', async () => {
+test('sardinia (Costa Omertà) and japan (Plaines de Yōtei) stages are retained in challenge links and reject unknown stages', async () => {
   const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
-  const run = { seed: 42, duration: 40, trace: [0, 100, 600], name: 'Padrino', stage: 'sardinia' };
+  const { DUEL_DISTANCE } = await import('../src/games/mirageRules.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, DUEL_DISTANCE], name: 'Padrino', stage: 'sardinia' };
   assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'sardinia');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'japan' })).stage, 'japan');
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'atlantis' })).stage, undefined);
 });
 
 test('alger (Alger la Blanche) stage is retained in challenge links and online rooms', async () => {
   const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
-  const run = { seed: 42, duration: 40, trace: [0, 100, 600], name: 'Casbah', stage: 'alger' };
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Casbah', stage: 'alger' };
   assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'alger');
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'atlantis' })).stage, undefined);
 });
@@ -189,12 +195,20 @@ test('airborne player cannot change lanes or drift, and can move on landing', as
 });
 
 test('special items charge costs and definition are properly configured', async () => {
-  const { POWER_UP_CHARGE_COST, POWER_UPS, POWER_UP_MAX_CHARGES, DIAMOND_CHARGE_VALUE } = await import('../src/games/mirageRules.js');
-  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.SHIELD], 3);
-  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.LASSO], 3);
-  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.PISTOL], 5, 'Pistol takes more diamonds to charge than shield and lasso');
+  const { POWER_UP_CHARGE_COST, POWER_UPS, POWER_UP_MAX_CHARGES, DIAMOND_CHARGE_VALUE, DIAMOND_POWER_CHARGE, POWER_BOOST_DURATION, POWER_BOOST_BONUS } = await import('../src/games/mirageRules.js');
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.SHIELD], 10);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.LASSO], 10);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.PISTOL], 12, 'Pistol takes more diamonds to charge than shield, lasso, and boost');
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.BOOST], 10);
+  assert.equal(POWER_BOOST_DURATION, 3);
+  assert.ok(POWER_BOOST_BONUS > 0);
   assert.equal(POWER_UP_MAX_CHARGES, 3);
-  assert.deepEqual(DIAMOND_CHARGE_VALUE, [1, 1, 2, 3]);
+  assert.deepEqual(DIAMOND_CHARGE_VALUE, [2, 2, 2, 2]);
+  // Blue (0) -> Shield only; Red (1) -> Pistol only; Green (2) -> Boost only; Yellow/Gold (3) -> Lasso only
+  assert.deepEqual(DIAMOND_POWER_CHARGE[0], { shield: 2, lasso: 0, pistol: 0, boost: 0 });
+  assert.deepEqual(DIAMOND_POWER_CHARGE[1], { shield: 0, lasso: 0, pistol: 2, boost: 0 });
+  assert.deepEqual(DIAMOND_POWER_CHARGE[2], { shield: 0, lasso: 0, pistol: 0, boost: 2 });
+  assert.deepEqual(DIAMOND_POWER_CHARGE[3], { shield: 0, lasso: 2, pistol: 0, boost: 0 });
   
   const { rollPowerUpForMode } = await import('../src/games/mirageRules.js');
   let seed = 3;
@@ -262,9 +276,9 @@ test('NPC can use the fourth lane, collect its gems and jump its barriers', asyn
   assert.equal(planNpcLane(jump, 1).jump, true);
 });
 
-test('power-ups are available in all modes via diamond charging and not on the road', async () => {
+test('power-ups are enabled in duel and online modes only (removed from rush mode) and not on the road', async () => {
   const { powerUpsEnabled, rollPowerUpForMode } = await import('../src/games/mirageRules.js');
-  assert.equal(powerUpsEnabled('rush'), true);
+  assert.equal(powerUpsEnabled('rush'), false);
   assert.equal(powerUpsEnabled('duel'), true);
   assert.equal(powerUpsEnabled('online'), true);
   
@@ -346,13 +360,192 @@ test('diamonds give speed boost without traps, green diamond gives 200 points', 
   }
 });
 
-test('pistol odds follow the race position and the shot rider remounts in one second', async () => {
-  const { powerUpOdds, stunPose, nearestRider, PISTOL_STUN_DURATION } = await import('../src/games/mirageRules.js');
+test('pistol odds follow the race position, the shot rider stays down for 2 seconds before remounting, and taken diamonds reappear after 0.5s', async () => {
+  const { powerUpOdds, stunPose, nearestRider, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, markGemTaken, isGemHidden } = await import('../src/games/mirageRules.js');
   assert.deepEqual([1, 2, 3, 4].map(rank => powerUpOdds(rank).pistol), [0, 0.05, 0.15, 0.3]);
-  assert.equal(PISTOL_STUN_DURATION, 1);
+  assert.equal(PISTOL_STUN_DURATION, 2);
   assert.deepEqual(stunPose(0), { x: 0, y: 0, roll: 0, pitch: 0 });
-  assert.ok(stunPose(0.6).y < -0.9); // on the sand
+  assert.ok(stunPose(1.2).y < -0.9); // on the sand
+  assert.ok(stunPose(0.6).y < -0.9); // still on the sand before remounting
   assert.ok(Math.abs(stunPose(0.001).y) < 0.05); // back in the saddle
   assert.equal(nearestRider(100, [{ id: 'a', distance: 130 }, { id: 'b', distance: 92 }]).id, 'b');
   assert.equal(nearestRider(100, []), null);
+
+  // Taken diamonds disappear for 0.5s and then reappear
+  assert.equal(GEM_RESPAWN_DELAY, 0.5);
+  const cooldowns = new Map();
+  markGemTaken(cooldowns, '4:2', 10.0);
+  assert.equal(isGemHidden(cooldowns, '4:2', 10.0), true);
+  assert.equal(isGemHidden(cooldowns, '4:2', 10.49), true);
+  assert.equal(isGemHidden(cooldowns, '4:2', 10.5), false);
+  assert.equal(cooldowns.has('4:2'), false);
 });
+
+test('each diamond color charges its dedicated power-up (blue=shield, yellow=lasso, red=pistol, green=boost) and using one does not discharge the others', async () => {
+  const {
+    POWER_UPS,
+    POWER_UP_CHARGE_COST,
+    createPowerUpState,
+    chargePowerUps,
+    consumePowerUp,
+    powerUpHudState,
+  } = await import('../src/games/mirageRules.js');
+
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.SHIELD], 10);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.LASSO], 10);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.PISTOL], 12);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.BOOST], 10);
+
+  let state = createPowerUpState();
+
+  // 1. Blue diamond (tier 0) charges ONLY Shield (+2)
+  state = chargePowerUps(state, 0).state;
+  assert.equal(powerUpHudState(state).shieldChargePoints, 2);
+  assert.equal(powerUpHudState(state).lassoChargePoints, 0);
+  assert.equal(powerUpHudState(state).pistolChargePoints, 0);
+  assert.equal(powerUpHudState(state).boostChargePoints, 0);
+
+  // 2. Yellow/Gold diamond (tier 3) charges ONLY Lasso (+2)
+  state = chargePowerUps(state, 3).state;
+  assert.equal(powerUpHudState(state).shieldChargePoints, 2);
+  assert.equal(powerUpHudState(state).lassoChargePoints, 2);
+  assert.equal(powerUpHudState(state).pistolChargePoints, 0);
+  assert.equal(powerUpHudState(state).boostChargePoints, 0);
+
+  // 3. Red diamond (tier 1) charges ONLY Pistol (+2)
+  state = chargePowerUps(state, 1).state;
+  assert.equal(powerUpHudState(state).shieldChargePoints, 2);
+  assert.equal(powerUpHudState(state).lassoChargePoints, 2);
+  assert.equal(powerUpHudState(state).pistolChargePoints, 2);
+  assert.equal(powerUpHudState(state).boostChargePoints, 0);
+
+  // 4. Green diamond (tier 2) charges ONLY Boost (+2), and NO LONGER charges the other powers
+  state = chargePowerUps(state, 2).state;
+  assert.equal(powerUpHudState(state).shieldChargePoints, 2);
+  assert.equal(powerUpHudState(state).lassoChargePoints, 2);
+  assert.equal(powerUpHudState(state).pistolChargePoints, 2);
+  assert.equal(powerUpHudState(state).boostChargePoints, 2);
+
+  // Collect 4 more Green diamonds (+8 -> 10): Boost becomes ready! Shield, Lasso and Pistol stay at 2
+  state = chargePowerUps(state, 2).state;
+  state = chargePowerUps(state, 2).state;
+  state = chargePowerUps(state, 2).state;
+  const boostReadyStep = chargePowerUps(state, 2);
+  state = boostReadyStep.state;
+  assert.deepEqual(boostReadyStep.charged, [POWER_UPS.BOOST]);
+  const hudBoostReady = powerUpHudState(state);
+  assert.equal(hudBoostReady.boostCharges, 1);
+  assert.equal(hudBoostReady.boostProgress, 1);
+  assert.equal(hudBoostReady.shieldCharges, 0);
+  assert.equal(hudBoostReady.shieldChargePoints, 2);
+  assert.equal(hudBoostReady.lassoCharges, 0);
+  assert.equal(hudBoostReady.lassoChargePoints, 2);
+  assert.equal(hudBoostReady.pistolCharges, 0);
+  assert.equal(hudBoostReady.pistolChargePoints, 2);
+  assert.equal(hudBoostReady.anyPowerReady, true);
+
+  // Using Boost resets ONLY Boost back to 0 and preserves Shield, Lasso and Pistol at 2
+  const usedBoost = consumePowerUp(state, POWER_UPS.BOOST);
+  assert.equal(usedBoost.used, true);
+  assert.equal(usedBoost.state.boostCharges, 0);
+  assert.equal(usedBoost.state.boostChargePoints, 0);
+  assert.equal(usedBoost.state.shieldChargePoints, 2);
+  assert.equal(usedBoost.state.lassoChargePoints, 2);
+  assert.equal(usedBoost.state.pistolChargePoints, 2);
+});
+
+test('duel mode has 3 AI rivals that spread across lanes and use their powers when charged', async () => {
+  const {
+    DUEL_RIVALS,
+    DUEL_RIVAL_COUNT,
+    POWER_UPS,
+    planNpcLane,
+    createPowerUpState,
+    chargePowerUps,
+    chooseNpcPowerAction,
+    consumePowerUp,
+  } = await import('../src/games/mirageRules.js');
+  assert.equal(DUEL_RIVAL_COUNT, 3);
+  assert.equal(DUEL_RIVALS.length, 3);
+  assert.deepEqual(DUEL_RIVALS.map((r) => r.startLane), [0, 2, 3]);
+  assert.deepEqual(DUEL_RIVALS.map((r) => r.paletteIndex), [1, 2, 3]);
+
+  // When lane 2 is already occupied by another rival, an NPC on lane 2 prefers an adjacent free lane if safe
+  const planWithCrowding = planNpcLane([], 2, [2]);
+  assert.notEqual(planWithCrowding.lane, 2);
+
+  // Charge an NPC's Lasso with 5 yellow diamonds (tier 3)
+  let npcPower = createPowerUpState();
+  for (let i = 0; i < 5; i += 1) npcPower = chargePowerUps(npcPower, 3).state;
+  assert.equal(npcPower.lassoCharges, 1);
+
+  const npc = { dist: 120, stunTimer: 0, powerCooldown: 0, shieldActive: false, powerState: npcPower };
+  const decision = chooseNpcPowerAction(npc, [
+    { kind: 'player', id: 'player', dist: 135 },
+    { kind: 'rival', id: 'sauge', dist: 110 },
+  ]);
+  assert.equal(decision.type, POWER_UPS.LASSO);
+  assert.equal(decision.target.id, 'player');
+
+  // After the NPC uses its Lasso, only Lasso resets to 0
+  const afterUse = consumePowerUp(npc.powerState, decision.type);
+  assert.equal(afterUse.used, true);
+  assert.deepEqual(afterUse.state, createPowerUpState());
+
+  // Charge an NPC's Boost with 5 green diamonds (tier 2)
+  let npcBoostPower = createPowerUpState();
+  for (let i = 0; i < 5; i += 1) npcBoostPower = chargePowerUps(npcBoostPower, 2).state;
+  assert.equal(npcBoostPower.boostCharges, 1);
+  const boostDecision = chooseNpcPowerAction(
+    { dist: 120, stunTimer: 0, powerCooldown: 0, shieldActive: false, powerBoostTimer: 0, powerState: npcBoostPower },
+    [{ kind: 'player', id: 'player', dist: 110 }]
+  );
+  assert.equal(boostDecision.type, POWER_UPS.BOOST);
+
+  // Lasso and Pistol cannot be used backwards (when all candidates are behind)
+  let npcLassoAndPistol = createPowerUpState();
+  for (let i = 0; i < 5; i += 1) npcLassoAndPistol = chargePowerUps(npcLassoAndPistol, 3).state; // Lasso
+  for (let i = 0; i < 6; i += 1) npcLassoAndPistol = chargePowerUps(npcLassoAndPistol, 1).state; // Pistol
+  assert.equal(npcLassoAndPistol.lassoCharges, 1);
+  assert.equal(npcLassoAndPistol.pistolCharges, 1);
+  const behindDecision = chooseNpcPowerAction(
+    { dist: 150, stunTimer: 0, powerCooldown: 0, shieldActive: false, powerBoostTimer: 0, powerState: npcLassoAndPistol },
+    [
+      { kind: 'player', id: 'player', dist: 140 },
+      { kind: 'rival', id: 'sauge', dist: 120 },
+    ]
+  );
+  assert.equal(behindDecision, null);
+});
+
+test('power-up shortcuts assign E to Boost (Turbo) and R to Pistol (Tir)', async () => {
+  const { POWER_UPS, POWER_UP_DEFS } = await import('../src/games/mirageRules.js');
+  assert.equal(POWER_UP_DEFS[POWER_UPS.SHIELD].keyHintPC, 'Q / A');
+  assert.equal(POWER_UP_DEFS[POWER_UPS.LASSO].keyHintPC, 'W / Z');
+  assert.equal(POWER_UP_DEFS[POWER_UPS.BOOST].keyHintPC, 'E');
+  assert.equal(POWER_UP_DEFS[POWER_UPS.PISTOL].keyHintPC, 'R');
+});
+
+test('prairieSunsetState transitions progressively from golden hour to starry night and sinks the sun below the horizon', async () => {
+  const { prairieSunsetState } = await import('../src/games/mirageRules.js');
+  const start = prairieSunsetState(0);
+  const mid = prairieSunsetState(0.5);
+  const end = prairieSunsetState(1);
+
+  assert.ok(start.sunElevation > 0, 'sun starts above the horizon');
+  assert.equal(start.sunVisible, true);
+  assert.equal(start.starAlpha, 0);
+
+  assert.ok(mid.sunElevation < start.sunElevation, 'sun sinks progressively');
+  assert.ok(end.sunElevation < -8, 'sun disappears completely below the horizon at the end');
+  assert.equal(end.sunVisible, false);
+  assert.equal(end.starAlpha, 1);
+
+  // Sky and lighting darken as night falls
+  assert.ok(end.skyTop[0] < start.skyTop[0] && end.skyTop[1] < start.skyTop[1]);
+  assert.ok(end.sunIntensity < start.sunIntensity);
+  assert.ok(end.hemiIntensity < start.hemiIntensity);
+});
+
+
+

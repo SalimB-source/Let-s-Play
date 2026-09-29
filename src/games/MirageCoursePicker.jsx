@@ -1,4 +1,5 @@
 import React from 'react';
+import { DUEL_DISTANCE } from './mirageRules';
 
 const MAPS = [
   { id: 'desert', number: '01', name: 'Dunes de l’Écho', mood: 'Mystique & solaire', detail: 'Désert · funk', sky: '#624575', sun: '#ffd57f', land: '#c99268' },
@@ -6,12 +7,13 @@ const MAPS = [
   { id: 'prairie', number: '03', name: 'Plaines d’Or', mood: 'La grande échappée', detail: 'Golden hour · épique', sky: '#b97553', sun: '#ffad48', land: '#b5a550' },
   { id: 'sardinia', number: '04', name: 'Costa Omertà', mood: 'Le clan veille sur la baie', detail: 'Village côtier · mandoline', sky: '#6b4a42', sun: '#f3b56a', land: '#c9895a' },
   { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Alger-Centre · chaâbi oriental', sky: '#7fb2d8', sun: '#ffd28a', land: '#e8e2d2' },
+  { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', sky: '#111a30', sun: '#eef4ff', land: '#1c2936' },
 ];
 
 function Landscape({ map }) {
   return <svg className="mirage-map-art" viewBox="0 0 240 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <rect width="240" height="110" fill={map.sky} />
-    <circle cx={map.id === 'prairie' || map.id === 'alger' ? 120 : 165} cy="43" r={map.id === 'prairie' ? 28 : 19} fill={map.sun} />
+    <circle cx={map.id === 'prairie' || map.id === 'alger' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />
     {map.id === 'desert' && <><path d="M0 70 42 36 85 72 128 47 195 76 240 54V110H0Z" fill="#8b6684" /><path d="M0 87Q55 48 120 84T240 79V110H0Z" fill={map.land} /></>}
     {map.id === 'western' && <><path d="M0 81V29H43V21H68V81M177 81V32H211V25H240V81" fill="#624236" /><path d="M4 39H65V46H4M179 42H240V49H179" stroke="#e5bd81" strokeWidth="5" /><path d="M17 54H29V68H17M41 54H53V68H41M190 58H201V73H190M216 58H229V73H216" fill="#e4b77c" /><path d="M0 81H240V110H0Z" fill={map.land} /></>}
     {map.id === 'prairie' && <>
@@ -119,12 +121,36 @@ function Landscape({ map }) {
       <rect x="188" y="76" width="18" height="12" fill="#1d3a2f" />
       <path d="M0 88H240V110H0Z" fill={map.land} />
     </>}
-    <path d="M109 72H130L168 110H73Z" fill="#f9deb1" opacity=".5" />
+    {map.id === 'japan' && <>
+      {/* Étoiles nocturnes */}
+      {[18, 42, 67, 174, 198, 224].map((sx, i) => (
+        <circle key={sx} cx={sx} cy={12 + (i % 3) * 8} r={i % 2 === 0 ? '1.1' : '0.8'} fill="#dce8ff" opacity=".85" />
+      ))}
+      {/* Silhouette du Mont Fuji / Mont Yōtei et sommet enneigé */}
+      <path d="M18 78Q82 66 106 30H134Q158 66 222 78Z" fill="#202d48" />
+      <path d="M106 30H134L145 48L136 44L129 51L120 43L111 51L104 44L95 48Z" fill="#eef4ff" />
+      {/* Brume nocturne au pied du Mont Fuji */}
+      <rect x="0" y="70" width="240" height="8" fill="#6884b8" opacity=".28" />
+      {/* Plaines sombres de Yōtei */}
+      <path d="M0 76Q60 72 120 76T240 75V110H0Z" fill={map.land} />
+      {/* Torii vermillon sur le côté */}
+      <g fill="#c93228">
+        <rect x="24" y="54" width="3" height="28" />
+        <rect x="43" y="54" width="3" height="28" />
+        <path d="M18 52Q35 49 52 52V56H18Z" />
+        <rect x="21" y="60" width="28" height="2.4" />
+      </g>
+      {/* Hautes herbes d’argent (susuki) au clair de lune */}
+      {[10, 20, 56, 68, 82, 158, 172, 186, 202, 216, 228].map(x => (
+        <path key={x} d={`M${x} 106Q${x + 3} 88 ${x + 6} 79`} stroke="#dce6f7" strokeWidth="1.5" fill="none" opacity=".78" />
+      ))}
+    </>}
+    <path d="M109 72H130L168 110H73Z" fill={map.id === 'japan' ? '#4a5d80' : '#f9deb1'} opacity=".5" />
     {map.id === 'desert' && <path d="M26 103V75m0 16H17V82m9 3H35V74" stroke="#355f55" strokeWidth="5" fill="none" />}
   </svg>;
 }
 
-/** Sélecteur de terrain : les cinq cartes illustrées de Mirage Rush. */
+/** Sélecteur de terrain : les cartes illustrées de Mirage Rush. */
 export function MirageStagePicker({ stage, setSelectedStage, locked = false, modeChosen = true }) {
   return <>
     <div className="mirage-picker-label"><span>02 / TON TERRAIN</span><span>{!modeChosen ? 'DÉBLOQUÉ APRÈS LE MODE' : locked ? 'VERROUILLÉ PAR LE DÉFI' : `${MAPS.length} HORIZONS À EXPLORER`}</span></div>
@@ -155,7 +181,7 @@ export default function MirageCoursePicker({ selectedMode, setSelectedMode, stag
       {[
         { id: 'online', name: 'EN LIGNE', icon: '♞', tagline: 'Retrouve tes amis', info: 'Salon · 2 à 4 cavaliers' },
         { id: 'rush', name: 'RUÉE', icon: '↯', tagline: 'Bats ton record', info: '60 secondes · 3 vies' },
-        { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : 'Devance ton rival', info: challenge ? 'Course fantôme · 600 m' : 'Face au PNJ · 600 m' },
+        { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : 'Course à 4 cavaliers', info: challenge ? `Fantôme + 2 PNJ · ${DUEL_DISTANCE} m` : `Face à 3 PNJ · ${DUEL_DISTANCE} m` },
       ].map(mode => <button type="button" key={mode.id} aria-pressed={modeChosen && selectedMode === mode.id} onClick={() => setSelectedMode(mode.id)}>
         <span className="mirage-mode-symbol" aria-hidden="true">{mode.icon}</span>
         <span className="mirage-mode-copy"><strong>{mode.name}</strong><span>{mode.tagline}</span><small>{mode.info}</small></span>

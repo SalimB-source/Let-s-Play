@@ -14,7 +14,7 @@ import {
   serverOffset,
   subscribeRoomUpdates,
 } from './mirageRooms';
-import { powerUpOdds } from './mirageRules';
+import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_BOOST_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
 
 const characters = CHARACTER_NAMES;
@@ -25,6 +25,7 @@ const STAGE_LABELS = {
   prairie: 'Plaines d’Or',
   sardinia: 'Costa Omertà',
   alger: 'Alger la Blanche',
+  japan: 'Plaines de Yōtei',
 };
 
 const QUICK_MESSAGES = [
@@ -35,7 +36,7 @@ const QUICK_MESSAGES = [
 ];
 
 const positionArgs = (p) => ({
-  p_distance: Math.min(600, Math.max(0, p.distance || 0)),
+  p_distance: Math.min(DUEL_DISTANCE, Math.max(0, p.distance || 0)),
   p_lane: p.lane ?? 1,
   p_jump: Math.min(1.7, p.jump || 0),
   p_score: p.score || 0,
@@ -160,7 +161,8 @@ export default function MirageOnline({
     ) return;
 
     const key = String(event.gemKey);
-    const expiresAt = Date.now() + 1000;
+    const respawnMs = GEM_RESPAWN_DELAY * 1000;
+    const expiresAt = Date.now() + respawnMs;
     const previousTimer = gemPickupTimers.current.get(key);
     if (previousTimer) clearTimeout(previousTimer);
     setGemPickups((current) => ({ ...current, [key]: expiresAt }));
@@ -172,7 +174,7 @@ export default function MirageOnline({
         return next;
       });
       gemPickupTimers.current.delete(key);
-    }, 1000);
+    }, respawnMs);
     gemPickupTimers.current.set(key, timer);
   }, [effectivePlayer.id, room?.code]);
 
@@ -541,8 +543,9 @@ export default function MirageOnline({
                         <option value="prairie">03 · Plaines d’Or (Prairie)</option>
                         <option value="sardinia">04 · Costa Omertà (Sardaigne)</option>
                         <option value="alger">05 · Alger la Blanche (Alger)</option>
+                        <option value="japan">06 · Plaines de Yōtei (Mont Fuji · Nuit)</option>
                       </select>
-                      <small>600 mètres · parcours synchronisé pour tous les cavaliers.</small>
+                      <small>{DUEL_DISTANCE} mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>
                   </div>
 
@@ -883,7 +886,7 @@ export default function MirageOnline({
                               ? `En attente que tous les joueurs soient prêts (${readyCount}/${totalPlayers})`
                               : !isHost
                                 ? 'Tous les joueurs sont prêts · L’hôte va lancer'
-                                : `Tout le monde est prêt (${readyCount}/${totalPlayers}) · Départ 600 m`}
+                                : `Tout le monde est prêt (${readyCount}/${totalPlayers}) · Départ ${DUEL_DISTANCE} m`}
                           </small>
                         </span>
                         <span className="mirage-launch-party-arrow" aria-hidden="true">↗</span>
@@ -993,122 +996,17 @@ export default function MirageOnline({
                 <div className="mirage-game-popup" role="dialog" aria-modal="true" aria-label="Course Mirage Rush">
                   <section className={`mirage-game-shell${active ? ' is-running' : ''}`}>
                     <div className="mirage-game-topbar">
-
-                <strong>
-                  {Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS
-                  {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
-                  {hud.slowed ? (hud.slowKind === 'trap' ? ' · ◆ PIÉGÉ' : ' · 🪢 RALENTI') : ''}
-                  {hud.stunned ? ' · 🔫 À TERRE' : ''}
-                  {hud.rank ? ` · #${hud.rank}` : ''}
-                </strong>
-                <span>{finished ? 'ARRIVÉE !' : active ? 'COURSE EN COURS' : 'PISTE PRÊTE'}</span>
-              </div>
-              <div className="mirage-online-world">
-                <MirageWorld
-                  active={active}
-                  stage={stage}
-                  race={worldRace}
-                  skin={selectedSkin}
-                  network={{ players: room.players, userId: effectivePlayer.id, gemPickups }}
-                  actionsRef={actions}
-                  onReady={() => {
-                    setWorldError('');
-                    setWorldReady(true);
-                  }}
-                  onError={(message) => {
-                    setWorldReady(false);
-                    setWorldError(message || 'Le jeu 3D n’a pas pu démarrer.');
-                  }}
-                  onHud={(p) => {
-                    latest.current = p;
-                    setHud(p);
-                  }}
-                  onFinish={(p) => {
-                    latest.current = p;
-                    done.current = true;
-                    setActive(false);
-                    setFinished(true);
-                    setXp(onRunFinish?.(p) ?? null);
-                  }}
-                  onPickup={(tier, key) => {
-                    audio.current?.pickup(tier);
-                    if (key && room?.code) {
-                      roomAction('gem_pickup', room.code, { p_gem_key: key }, effectivePlayer).catch(()=>{});
-                    }
-                  }}
-                  onCheer={() => audio.current?.cheer()}
-                  onPowerUp={(info) => {
-                    if (info?.action === 'used') {
-                      if (info.type === 'shield') {
-                        setPowerToast('🛡️ Bouclier activé !');
-                      } else if (info.type === 'lasso') {
-                        setPowerToast('🪢 Lasso envoyé !');
-                      } else if (info.type === 'pistol') {
-                        audio.current?.gunshot();
-                        setPowerToast('🔫 Tir de pistolet !');
-                      }
-                      setTimeout(() => setPowerToast(null), 2000);
-                    } else if (info?.action === 'charged') {
-                      if (info.type === 'shield') setPowerToast('🛡️ Bouclier prêt ! (Q / A)');
-                      else if (info.type === 'lasso') setPowerToast('🪢 Lasso prêt ! (W / Z)');
-                      else if (info.type === 'pistol') setPowerToast('🔫 Pistolet prêt ! (E)');
-                      setTimeout(() => setPowerToast(null), 2000);
-                    }
-                  }}
-                  onLasso={async (targetPlayer) => {
-                    if (!room?.code || !targetPlayer) return;
-                    try {
-                      await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
-                    } catch {}
-                    setPowerToast(`🪢 Lasso lancé sur ${targetPlayer.name} !`);
-                    setTimeout(()=> setPowerToast(null), 2500);
-                  }}
-                  onShield={async (isActive) => {
-                    if (!room?.code) return;
-                    try {
-                      if (isActive) {
-                        await roomAction('shield', room.code, {}, effectivePlayer);
-                      } else {
-                        await roomAction('shield', room.code, { p_clear: true, p_active: false }, effectivePlayer);
-                      }
-                    } catch {}
-                  }}
-                  onPistol={async (targetPlayer) => {
-                    if (!room?.code || !targetPlayer) return;
-                    try {
-                      await roomAction('pistol', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
-                    } catch {}
-                    setPowerToast(`🔫 PAN ! Tu tires sur ${targetPlayer.name} !`);
-                    setTimeout(()=> setPowerToast(null), 2500);
-                  }}
-                  onPistolHit={(info) => {
-                    if (info?.target === null) {
-                      setPowerToast('🔫 PAN ! Personne à portée…');
-                      setTimeout(()=> setPowerToast(null), 2000);
-                    } else if (info?.target === 'player') {
-                      audio.current?.gunshot();
-                      setPowerToast('🔫 Touché ! Tu tombes de cheval…');
-                      setTimeout(()=> setPowerToast(null), 2000);
-                    }
-                  }}
-                  onLassoHit={(info) => {
-                    if (info?.target === 'player') {
-                      setPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par un lasso ! Ralenti…');
-                      setTimeout(()=> setPowerToast(null), 2500);
-                    }
-                  }}
-                />
-                {worldError && (
-                  <div className="mirage-world-error" role="alert">
-                    <strong>Impossible d’afficher la piste</strong>
-                    <span>{worldError}</span>
-                    <button type="button" onClick={() => window.location.reload()}>RECHARGER LE JEU</button>
-                  </div>
-                )}
-                {powerToast && (
-                  <div className="mirage-power-toast" role="status" aria-live="polite">
-                    {powerToast}
-                         <button
+                      <strong>
+                        {Math.floor(hud.distance || 0)} / {DUEL_DISTANCE} M · {hud.score || 0} PTS
+                        {((hud.shieldCharges || 0) > 0 || (hud.lassoCharges || 0) > 0 || (hud.pistolCharges || 0) > 0 || (hud.boostCharges || 0) > 0) ? ' · ⚡ POUVOIR PRÊT !' : ''}
+                        {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
+                        {hud.powerBoostActive ? ` · ⚡ TURBO ${Math.ceil(hud.powerBoostLeft)}s` : ''}
+                        {hud.slowed ? (hud.slowKind === 'trap' ? ' · ◆ PIÉGÉ' : ' · 🪢 RALENTI') : ''}
+                        {hud.stunned ? ' · 🔫 À TERRE' : ''}
+                        {hud.rank ? ` · #${hud.rank}` : ''}
+                      </strong>
+                      <span>{finished ? 'ARRIVÉE !' : active ? 'COURSE EN COURS' : 'PISTE PRÊTE'}</span>
+                      <button
                         type="button"
                         className="mirage-share-button is-danger mirage-popup-leave-button"
                         disabled={busy}
@@ -1117,81 +1015,254 @@ export default function MirageOnline({
                       >
                         ← QUITTER LA ROOM
                       </button>
-               </div>
-                )}
-                {active && (
-                  <div className="mirage-powerup-bar" role="group" aria-label="Objets de puissance">
-                    <button
-                      type="button"
-                      className={`mirage-powerup-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
-                      onClick={() => actions.current?.('use_shield')}
-                      disabled={(hud.shieldCharges || 0) <= 0 && !hud.shieldActive}
-                      title="Bouclier (Q / A)"
-                    >
-                      <div className="mirage-powerup-btn-top">
-                        <MiragePowerIcon type="shield" className="mirage-powerup-icon" />
-                        <span className="mirage-powerup-key">Q / A</span>
-                      </div>
-                      <div className="mirage-powerup-btn-name">
-                        <span>Bouclier</span>
-                        {(hud.shieldCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.shieldCharges}</b>}
-                      </div>
-                      <div className="mirage-powerup-progress-bg">
+                    </div>
+                    <div className={`mirage-online-world${active && hud.powerBoostActive ? ' is-turbo' : ''}`}>
+                      <MirageWorld
+                        active={active}
+                        stage={stage}
+                        race={worldRace}
+                        skin={selectedSkin}
+                        network={{ players: room.players, userId: effectivePlayer.id, gemPickups }}
+                        actionsRef={actions}
+                        onReady={() => {
+                          setWorldError('');
+                          setWorldReady(true);
+                        }}
+                        onError={(message) => {
+                          setWorldReady(false);
+                          setWorldError(message || 'Le jeu 3D n’a pas pu démarrer.');
+                        }}
+                        onHud={(p) => {
+                          latest.current = p;
+                          setHud(p);
+                        }}
+                        onFinish={(p) => {
+                          latest.current = p;
+                          done.current = true;
+                          setActive(false);
+                          setFinished(true);
+                          setXp(onRunFinish?.(p) ?? null);
+                        }}
+                        onPickup={(tier, key) => {
+                          audio.current?.pickup(tier);
+                          if (key && room?.code) {
+                            broadcastRoomEvent({ type: 'gem_pickup', code: room.code, gemKey: key, userId: effectivePlayer.id });
+                            roomAction('gem_pickup', room.code, { p_gem_key: key }, effectivePlayer).catch(()=>{});
+                          }
+                        }}
+                        onCheer={() => audio.current?.cheer()}
+                        onPowerUp={(info) => {
+                          if (info?.action === 'no_target') {
+                            if (info.type === 'lasso') {
+                              setPowerToast('🪢 Aucun cavalier devant toi !');
+                            } else if (info.type === 'pistol') {
+                              setPowerToast('🔫 Aucun cavalier devant toi !');
+                            }
+                            setTimeout(() => setPowerToast(null), 1800);
+                          } else if (info?.action === 'used') {
+                            if (info.type === 'shield') {
+                              audio.current?.shieldGravity?.();
+                              setPowerToast('🛡️ Bouclier activé !');
+                            } else if (info.type === 'lasso') {
+                              audio.current?.lassoThrow?.();
+                              setPowerToast('🪢 Lasso envoyé !');
+                            } else if (info.type === 'pistol') {
+                              audio.current?.gunshot();
+                              setPowerToast('🔫 Tir de pistolet !');
+                            } else if (info.type === 'boost') {
+                              audio.current?.speedBoost?.();
+                              setPowerToast(`⚡ Turbo activé (${POWER_BOOST_DURATION}s) !`);
+                            }
+                            setTimeout(() => setPowerToast(null), 2200);
+                          } else if (info?.action === 'charged') {
+                            audio.current?.powerReady?.();
+                            if (info.type === 'shield') {
+                              setPowerToast('⚡ 🛡️ BOUCLIER PRÊT ! Appuie sur Q / A ou clique !');
+                            } else if (info.type === 'lasso') {
+                              setPowerToast('⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
+                            } else if (info.type === 'boost') {
+                              setPowerToast('⚡ 🚀 TURBO PRÊT ! Appuie sur E ou clique !');
+                            } else if (info.type === 'pistol') {
+                              setPowerToast('⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
+                            }
+                            setTimeout(() => setPowerToast(null), 2200);
+                          }
+                        }}
+                        onLasso={async (targetPlayer) => {
+                          if (!room?.code || !targetPlayer) return;
+                          try {
+                            await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                          } catch {}
+                          setPowerToast(`🪢 Lasso lancé sur ${targetPlayer.name} !`);
+                          setTimeout(()=> setPowerToast(null), 2500);
+                        }}
+                        onShield={async (isActive) => {
+                          if (!room?.code) return;
+                          try {
+                            if (isActive) {
+                              await roomAction('shield', room.code, {}, effectivePlayer);
+                            } else {
+                              await roomAction('shield', room.code, { p_clear: true, p_active: false }, effectivePlayer);
+                            }
+                          } catch {}
+                        }}
+                        onPistol={async (targetPlayer) => {
+                          if (!room?.code || !targetPlayer) return;
+                          try {
+                            await roomAction('pistol', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                          } catch {}
+                          setPowerToast(`🔫 PAN ! Tu tires sur ${targetPlayer.name} !`);
+                          setTimeout(()=> setPowerToast(null), 2500);
+                        }}
+                        onPistolHit={(info) => {
+                          if (info?.target === null) {
+                            setPowerToast('🔫 PAN ! Personne à portée…');
+                            setTimeout(()=> setPowerToast(null), 2000);
+                          } else if (info?.target === 'player') {
+                            audio.current?.gunshot();
+                            setPowerToast('🔫 Touché ! Tu tombes de cheval…');
+                            setTimeout(()=> setPowerToast(null), 2000);
+                          }
+                        }}
+                        onLassoHit={(info) => {
+                          if (info?.target === 'player') {
+                            audio.current?.lassoThrow?.();
+                            setPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par un lasso ! Ralenti…');
+                            setTimeout(()=> setPowerToast(null), 2500);
+                          }
+                        }}
+                      />
+                      {worldError && (
+                        <div className="mirage-world-error" role="alert">
+                          <strong>Impossible d’afficher la piste</strong>
+                          <span>{worldError}</span>
+                          <button type="button" onClick={() => window.location.reload()}>RECHARGER LE JEU</button>
+                        </div>
+                      )}
+                      {active && hud.powerBoostActive && (
+                        <div className="mirage-turbo-lines" aria-hidden="true">
+                          <i /><i /><i /><i /><i /><i /><i /><i />
+                        </div>
+                      )}
+                      {powerToast && (
+                        <div className="mirage-power-toast" role="status" aria-live="polite">
+                          {powerToast}
+                        </div>
+                      )}
+                      {active && (
                         <div
-                          className="mirage-powerup-progress-fill is-shield"
-                          style={{ width: `${Math.round((hud.shieldProgress || 0) * 100)}%` }}
-                        />
-                      </div>
-                    </button>
+                          className={`mirage-powerup-bar${((hud.shieldCharges || 0) > 0 || (hud.lassoCharges || 0) > 0 || (hud.pistolCharges || 0) > 0 || (hud.boostCharges || 0) > 0) ? ' has-ready' : ''}`}
+                          role="group"
+                          aria-label="Objets de puissance"
+                        >
+                          <div className="mirage-powerup-buttons-row">
+                            <button
+                              type="button"
+                              className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              onClick={() => actions.current?.('use_shield')}
+                              disabled={(hud.shieldCharges || 0) <= 0}
+                              title="Bouclier (Q / A) — Chargé par les diamants BLEUS. Utiliser cet objet ne décharge pas les autres."
+                            >
+                              <div className="mirage-powerup-btn-top">
+                                <MiragePowerIcon type="shield" className="mirage-powerup-icon" />
+                                <span className="mirage-powerup-gem-hint is-blue">◆ BLEU</span>
+                                <span className="mirage-powerup-key">Q / A</span>
+                              </div>
+                              <div className="mirage-powerup-btn-name">
+                                <span>Bouclier</span>
+                                {(hud.shieldCharges || 0) > 0
+                                  ? <b className="mirage-powerup-badge is-ready">⚡ PRÊT !</b>
+                                  : <span className="mirage-powerup-count">{hud.shieldChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.SHIELD]} ◆</span>}
+                              </div>
+                              <div className="mirage-powerup-progress-bg">
+                                <div
+                                  className="mirage-powerup-progress-fill is-shield"
+                                  style={{ width: `${(hud.shieldCharges || 0) > 0 ? 100 : Math.round((hud.shieldProgress || 0) * 100)}%` }}
+                                />
+                              </div>
+                            </button>
 
-                    <button
-                      type="button"
-                      className={`mirage-powerup-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
-                      onClick={() => actions.current?.('use_lasso')}
-                      disabled={(hud.lassoCharges || 0) <= 0}
-                      title="Lasso (W / Z)"
-                    >
-                      <div className="mirage-powerup-btn-top">
-                        <MiragePowerIcon type="lasso" className="mirage-powerup-icon" />
-                        <span className="mirage-powerup-key">W / Z</span>
-                      </div>
-                      <div className="mirage-powerup-btn-name">
-                        <span>Lasso</span>
-                        {(hud.lassoCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.lassoCharges}</b>}
-                      </div>
-                      <div className="mirage-powerup-progress-bg">
-                        <div
-                          className="mirage-powerup-progress-fill is-lasso"
-                          style={{ width: `${Math.round((hud.lassoProgress || 0) * 100)}%` }}
-                        />
-                      </div>
-                    </button>
+                            <button
+                              type="button"
+                              className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              onClick={() => actions.current?.('use_lasso')}
+                              disabled={(hud.lassoCharges || 0) <= 0}
+                              title="Lasso (W / Z) — Chargé par les diamants JAUNES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
+                            >
+                              <div className="mirage-powerup-btn-top">
+                                <MiragePowerIcon type="lasso" className="mirage-powerup-icon" />
+                                <span className="mirage-powerup-gem-hint is-yellow">◆ JAUNE</span>
+                                <span className="mirage-powerup-key">W / Z</span>
+                              </div>
+                              <div className="mirage-powerup-btn-name">
+                                <span>Lasso</span>
+                                {(hud.lassoCharges || 0) > 0
+                                  ? <b className="mirage-powerup-badge is-ready">⚡ PRÊT !</b>
+                                  : <span className="mirage-powerup-count">{hud.lassoChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.LASSO]} ◆</span>}
+                              </div>
+                              <div className="mirage-powerup-progress-bg">
+                                <div
+                                  className="mirage-powerup-progress-fill is-lasso"
+                                  style={{ width: `${(hud.lassoCharges || 0) > 0 ? 100 : Math.round((hud.lassoProgress || 0) * 100)}%` }}
+                                />
+                              </div>
+                            </button>
 
-                    <button
-                      type="button"
-                      className={`mirage-powerup-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
-                      onClick={() => actions.current?.('use_pistol')}
-                      disabled={(hud.pistolCharges || 0) <= 0}
-                      title="Pistolet (E) - 5 diamants"
-                    >
-                      <div className="mirage-powerup-btn-top">
-                        <MiragePowerIcon type="pistol" className="mirage-powerup-icon" />
-                        <span className="mirage-powerup-key">E</span>
-                      </div>
-                      <div className="mirage-powerup-btn-name">
-                        <span>Pistolet</span>
-                        {(hud.pistolCharges || 0) > 0 && <b className="mirage-powerup-badge">x{hud.pistolCharges}</b>}
-                      </div>
-                      <div className="mirage-powerup-progress-bg">
-                        <div
-                          className="mirage-powerup-progress-fill is-pistol"
-                          style={{ width: `${Math.round((hud.pistolProgress || 0) * 100)}%` }}
-                        />
-                      </div>
-                    </button>
-                  </div>
-                )}
-              </div>
+                            <button
+                              type="button"
+                              className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              onClick={() => actions.current?.('use_boost')}
+                              disabled={(hud.boostCharges || 0) <= 0}
+                              title={`Turbo (E) — Chargé par les diamants VERTS. Donne un boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                            >
+                              <div className="mirage-powerup-btn-top">
+                                <span className="mirage-powerup-icon">⚡</span>
+                                <span className="mirage-powerup-gem-hint is-green">◆ VERT</span>
+                                <span className="mirage-powerup-key">E</span>
+                              </div>
+                              <div className="mirage-powerup-btn-name">
+                                <span>Turbo</span>
+                                {(hud.boostCharges || 0) > 0
+                                  ? <b className="mirage-powerup-badge is-ready">⚡ PRÊT !</b>
+                                  : <span className="mirage-powerup-count">{hud.boostChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.BOOST]} ◆</span>}
+                              </div>
+                              <div className="mirage-powerup-progress-bg">
+                                <div
+                                  className="mirage-powerup-progress-fill is-boost"
+                                  style={{ width: `${(hud.boostCharges || 0) > 0 ? 100 : Math.round((hud.boostProgress || 0) * 100)}%` }}
+                                />
+                              </div>
+                            </button>
+
+                            <button
+                              type="button"
+                              className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              onClick={() => actions.current?.('use_pistol')}
+                              disabled={(hud.pistolCharges || 0) <= 0}
+                              title="Pistolet (R) — Chargé par les diamants ROUGES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
+                            >
+                              <div className="mirage-powerup-btn-top">
+                                <MiragePowerIcon type="pistol" className="mirage-powerup-icon" />
+                                <span className="mirage-powerup-gem-hint is-red">◆ ROUGE</span>
+                                <span className="mirage-powerup-key">R</span>
+                              </div>
+                              <div className="mirage-powerup-btn-name">
+                                <span>Pistolet</span>
+                                {(hud.pistolCharges || 0) > 0
+                                  ? <b className="mirage-powerup-badge is-ready">⚡ PRÊT !</b>
+                                  : <span className="mirage-powerup-count">{hud.pistolChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]} ◆</span>}
+                              </div>
+                              <div className="mirage-powerup-progress-bg">
+                                <div
+                                  className="mirage-powerup-progress-fill is-pistol"
+                                  style={{ width: `${(hud.pistolCharges || 0) > 0 ? 100 : Math.round((hud.pistolProgress || 0) * 100)}%` }}
+                                />
+                              </div>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Le glissement sur la piste est lu par MirageWorld
                         (mirageTouch.js) : ces boutons restent un recours pour
