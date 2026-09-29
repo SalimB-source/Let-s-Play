@@ -78,7 +78,6 @@ export default function MirageRushPage() {
   const audioRef = useRef(null);
   const fxTimer = useRef(null);
   const toastTimer = useRef(null);
-  const touchRef = useRef(null);
   const phaseRef = useRef(phase);
   const musicOnRef = useRef(musicOn);
   phaseRef.current = phase;
@@ -272,24 +271,10 @@ export default function MirageRushPage() {
     toastTimer.current = window.setTimeout(() => setPowerToast(null), 2400);
   }, []);
 
-  // ── Touch controls: swipe to dodge, swipe up or tap to jump ──────
-  const onTouchStart = (event) => {
-    if (phaseRef.current !== 'playing') return;
-    const touch = event.touches[0];
-    touchRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
-  };
-  const onTouchEnd = (event) => {
-    const start = touchRef.current;
-    touchRef.current = null;
-    if (!start || phaseRef.current !== 'playing') return;
-    const touch = event.changedTouches[0];
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    const elapsed = Date.now() - start.time;
-    if (Math.abs(dx) > 34 && Math.abs(dx) > Math.abs(dy) * 1.2) trigger(dx > 0 ? 'right' : 'left');
-    else if (dy < -34) trigger('jump');
-    else if (elapsed < 280 && Math.abs(dx) < 14 && Math.abs(dy) < 14) trigger('jump');
-  };
+  // Commandes tactiles : le glissement est lu directement sur le canvas par
+  // MirageWorld (src/games/mirageTouch.js), donc la ruée, le duel et les rooms
+  // en ligne partagent exactement le même geste — et il est reconnu pendant le
+  // mouvement, pas seulement au relâchement du doigt.
 
   const timePercent = useMemo(() => Math.max(0, Math.min(100, (hud.remaining / 60) * 100)), [hud.remaining]);
   const duelPercent = Math.min(100, Math.max(0, (hud.distance || 0) / DUEL_DISTANCE * 100));
@@ -400,12 +385,7 @@ export default function MirageRushPage() {
             </div>
           </div>
 
-          <div
-            className={`mirage-viewport${fx ? ` ${fx}` : ''}${phase === 'playing' ? ' is-live' : ''}`}
-            onTouchStart={onTouchStart}
-            onTouchEnd={onTouchEnd}
-            onTouchCancel={() => { touchRef.current = null; }}
-          >
+          <div className={`mirage-viewport${fx ? ` ${fx}` : ''}${phase === 'playing' ? ' is-live' : ''}`}>
             <MirageWorld
               active={phase === 'playing'}
               race={race}
@@ -458,9 +438,6 @@ export default function MirageRushPage() {
               onShield={() => {}}
             />
             <div className="mirage-sun-glare" aria-hidden="true" />
-            {phase === 'playing' && (
-              <div className="mirage-swipe-hint" aria-hidden="true">GLISSE ← → POUR ESQUIVER · TAPE POUR SAUTER</div>
-            )}
             {powerToast && (
               <div className="mirage-power-toast" role="status" aria-live="polite">
                 {powerToast}
@@ -599,7 +576,9 @@ export default function MirageRushPage() {
             {phase === 'playing' && (
               <div className="mirage-live-callout" aria-hidden="true">
                 {hud.combo >= 5 && <span>✦ ÉCHO SOLAIRE ×{hud.multiplier} ✦</span>}
-                {hud.combo === 0 && hud.score === 0 && <span>ESQUIVE ← → <b>SAUTE ↑</b></span>}
+                {/* Sur téléphone, le rappel des touches est remplacé par la
+                    pastille « GLISSE ← → · ↑ » posée sur la piste. */}
+                {hud.combo === 0 && hud.score === 0 && <span className="mirage-callout-keys">ESQUIVE ← → <b>SAUTE ↑</b></span>}
               </div>
             )}
           </div>
@@ -609,7 +588,7 @@ export default function MirageRushPage() {
             <button type="button" className="mirage-jump-control" onClick={() => trigger('jump')} aria-label="Sauter">SAUT <span>↑</span></button>
             <button type="button" onClick={() => trigger('right')} aria-label="Aller à droite">→</button>
           </div>
-          <div className="mirage-game-foot"><span>ZQSD / WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER <b>·</b> ÉCHAP POUR LA PAUSE</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE · CHOCS = RALENTISSEMENT' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
+          <div className="mirage-game-foot"><span className="mirage-foot-touch">MOBILE : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER</span><span>ZQSD / WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER <b>·</b> ÉCHAP POUR LA PAUSE</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE · CHOCS = RALENTISSEMENT' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
 
         <aside className="mirage-side-panel">
