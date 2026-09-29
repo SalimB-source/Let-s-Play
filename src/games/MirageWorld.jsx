@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState } from './mirageRules';
+import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, RED_TRAP_TIER, rollRedTrap, crystalPickupEffect } from './mirageRules';
 
 const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
@@ -91,6 +91,14 @@ const effectiveTier = (item) => {
   if (item.tier !== 2) return item.tier;
   if (item.fake === undefined) item.fake = Math.random() < FAKE_GOLD_CHANCE;
   return item.fake ? 1 : 2;
+};
+
+// Red diamonds (and the fake golds that pay like them) are a coin flip: the
+// curse is rolled once per diamond, the first time anybody rides through it.
+const isTrapGem = (item) => {
+  if (effectiveTier(item) !== RED_TRAP_TIER) return false;
+  if (item.trap === undefined) item.trap = rollRedTrap();
+  return item.trap;
 };
 
 function makeCrystal(tier) {
@@ -566,8 +574,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let burstCursor = 0;
   const burstColor = new THREE.Color();
 
+  // A cursed red diamond shatters into dark, smouldering debris instead of
+  // bright crystal, so the trap is unmistakable the instant it triggers.
+  const TRAP_SHARD_COLOR = 0x8c1220;
+  const TRAP_FLASH_COLOR = 0xff4433;
+
   /** Play a shatter at a track position. `tier` picks the crystal colour. */
-  function spawnGemBurst(x, y, z, tier = 0) {
+  function spawnGemBurst(x, y, z, tier = 0, trapped = false) {
     const burst = gemBursts.find((candidate) => !candidate.userData.active)
       || gemBursts[(burstCursor += 1) % gemBursts.length];
     const data = burst.userData;
@@ -576,10 +589,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     data.tier = tier;
     // Reduced motion keeps the pickup readable with the flash alone, no debris.
     data.specs = reduceMotion ? [] : gemBurstShards(GEM_BURST_SHARDS, Math.random);
-    burstColor.set(CRYSTALS[tier]?.color ?? CRYSTALS[0].color);
+    burstColor.set(trapped ? TRAP_SHARD_COLOR : (CRYSTALS[tier]?.color ?? CRYSTALS[0].color));
     data.shardMaterial.color.copy(burstColor);
     data.shardMaterial.emissive.copy(burstColor);
-    data.flashMaterial.color.copy(burstColor).lerp(new THREE.Color(0xffffff), 0.6);
+    if (trapped) data.flashMaterial.color.set(TRAP_FLASH_COLOR);
+    else data.flashMaterial.color.copy(burstColor).lerp(new THREE.Color(0xffffff), 0.6);
     burst.position.set(x, y, z);
     burst.visible = true;
     data.ring.quaternion.copy(camera.quaternion);
@@ -626,10 +640,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   });
 
   /** Shatter a gem that is still on the track (player, rival or remote pickup). */
-  const burstGemItem = (row, item) => {
+  const burstGemItem = (row, item, trapped = false) => {
     if (item.burst) return;
     item.burst = true;
-    spawnGemBurst(item.object.position.x, item.object.position.y, row.group.position.z + item.object.position.z, item.tier ?? 0);
+    spawnGemBurst(item.object.position.x, item.object.position.y, row.group.position.z + item.object.position.z, item.tier ?? 0, trapped);
   };
 
   // ── Power-ups system ──────────────────────────────────────────────
@@ -691,7 +705,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let boost = SPEED_BOOST_NONE;
   let trace = [0];
   let seed = 0;
-  const npc = { dist: 0, lane: 1, x: LANES[1], jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0 };
+  const npc = { dist: 0, lane: 1, x: LANES[1], jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0, slowFactor: LASSO_SLOW_FACTOR };
   const npcEnsureCourse = () => {
     while (npc.genPos < npc.dist + 60) {
       const encounter = npc.gen();
@@ -700,10 +714,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       npc.genPos += encounter.gap;
     }
   };
-  const hidePlayerGem = (key) => rows.forEach(row => row.items.forEach(item => {
+  const hidePlayerGem = (key, trapped = false) => rows.forEach(row => row.items.forEach(item => {
     if (item.key !== key) return;
     // The rival taking a diamond in front of us shatters it too.
-    if (item.object.visible) burstGemItem(row, item);
+    if (item.object.visible) burstGemItem(row, item, trapped);
     item.collected = true;
     item.object.visible = false;
   }));
@@ -712,6 +726,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let shieldActive = false;
   let shieldTimer = 0;
   let playerSlowTimer = 0;
+  // Lasso and red-diamond traps both brake the rider, each with its own bite.
+  let playerSlowFactor = LASSO_SLOW_FACTOR;
+  let playerSlowKind = 'lasso'; // what the HUD should blame for the brake
   let shieldFlash = 0;
 
   const getCurrentRank = () => {
@@ -782,6 +799,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return false;
     }
     playerSlowTimer = LASSO_SLOW_DURATION;
+    playerSlowFactor = LASSO_SLOW_FACTOR;
+    playerSlowKind = 'lasso';
     invulnerable = Math.max(invulnerable, 0.2);
     crashAnimation = 0.32;
     if (!fromNetwork) callbacks.lassoHit?.({ target: 'player' });
@@ -796,6 +815,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return false;
     }
     npc.slowTimer = LASSO_SLOW_DURATION;
+    npc.slowFactor = LASSO_SLOW_FACTOR;
     npc.invulnerable = Math.max(npc.invulnerable, 0.2);
     return true;
   };
@@ -900,6 +920,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     shieldActive = false;
     shieldTimer = 0;
     playerSlowTimer = 0;
+    playerSlowFactor = LASSO_SLOW_FACTOR;
     playerShieldBubble.visible = false;
     npc.shieldActive = false;
     npc.shieldTimer = 0;
@@ -916,7 +937,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     npc.shieldTimer = Math.max(0, npc.shieldTimer - dt);
     if (npc.shieldTimer <= 0) npc.shieldActive = false;
     npc.slowTimer = Math.max(0, npc.slowTimer - dt);
-    const slowFactor = npc.slowTimer > 0 ? LASSO_SLOW_FACTOR : 1;
+    const slowFactor = npc.slowTimer > 0 ? (npc.slowFactor ?? LASSO_SLOW_FACTOR) : 1;
     npc.base += (DUEL_BASE_SPEED - npc.base) * Math.min(1, dt * 0.65);
     npc.boost = tickSpeedBoost(npc.boost, dt);
     const rawSpeed = duelSpeed(npc.base, npc.boost.bonus);
@@ -951,9 +972,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
         const gem = target.items.find(item => item.kind === 'crystal' && Math.abs(npc.x - LANES[item.lane]) < 0.85 && (!item.raised || height > 1.05) && !sharedGems.has(item.key));
         if (gem) {
+          const trapped = isTrapGem(gem);
+          const effect = crystalPickupEffect(effectiveTier(gem), trapped);
           sharedGems.add(gem.key);
-          hidePlayerGem(gem.key);
-          npc.boost = speedBoostFor(effectiveTier(gem));
+          hidePlayerGem(gem.key, trapped);
+          npc.boost = effect.boost;
+          if (effect.trap) {
+            npc.slowTimer = Math.max(npc.slowTimer, effect.slowDuration);
+            npc.slowFactor = effect.slowFactor;
+          }
         }
         npc.next += 1;
       }
@@ -1003,12 +1030,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       multiplier: (1 + Math.min(3, Math.floor(combo / 5) * 0.5)).toFixed(1),
       lives,
       remaining: Math.max(0, RUN_SECONDS - elapsed),
-      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed * (playerSlowTimer>0?LASSO_SLOW_FACTOR:1), boost.bonus), boostLeft: boost.left, mode: race.mode,
+      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed * (playerSlowTimer>0?playerSlowFactor:1), boost.bonus), boostLeft: boost.left, mode: race.mode,
       rivalName: race.challenge?.name || 'L’OMBRE',
       shieldActive,
       shieldLeft: shieldTimer,
       slowed: playerSlowTimer>0,
       slowLeft: playerSlowTimer,
+      slowKind: playerSlowTimer>0 ? playerSlowKind : null,
       rank: getCurrentRank(),
       powerUps: powerUps.filter(p=>!p.collected).length,
     });
@@ -1060,7 +1088,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     nextEncounter = createCourse(race.mode !== 'rush' ? seededRandom(seed) : Math.random);
     rowCounter = 0;
     sharedGems.clear();
-    Object.assign(npc, { dist: 0, lane: 1, x: LANES[1], jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0 });
+    Object.assign(npc, { dist: 0, lane: 1, x: LANES[1], jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0, shieldActive: false, shieldTimer: 0, slowTimer: 0, slowFactor: LASSO_SLOW_FACTOR });
     let z = -20;
     rows.forEach(row => {
       const gap = populateRow(row);
@@ -1096,13 +1124,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const network = getNetwork?.();
     const wallNow = Date.now();
     if (running && race.mode !== 'rush') {
-      const slowFactor = playerSlowTimer > 0 ? LASSO_SLOW_FACTOR : 1;
       baseSpeed += (DUEL_BASE_SPEED - baseSpeed) * Math.min(1, dt * 0.65);
       // if slowed, base tends to lower
       if (playerSlowTimer > 0) baseSpeed = Math.max(DUEL_BASE_SPEED * 0.5, baseSpeed - dt * 8);
       boost = tickSpeedBoost(boost, dt);
     }
-    const slowMul = playerSlowTimer > 0 ? LASSO_SLOW_FACTOR : 1;
+    const slowMul = playerSlowTimer > 0 ? playerSlowFactor : 1;
     const speed = running ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost.bonus) * slowMul : (12 + Math.min(7, elapsed * 0.12)) * slowMul : 0;
     if (running) {
       elapsed += dt;
@@ -1199,17 +1226,28 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           }
           const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !item.collected && Number(network?.gemPickups?.[item.key] || 0) <= wallNow);
           if (crystal) {
+            const tier = effectiveTier(crystal);
+            const trapped = isTrapGem(crystal);
+            const effect = crystalPickupEffect(tier, trapped);
             crystal.collected = true;
             sharedGems.add(crystal.key);
-            burstGemItem(row, crystal);
+            burstGemItem(row, crystal, effect.trap);
             crystal.object.visible = false;
             gems += 1;
-            const tier = effectiveTier(crystal);
-            callbacks.pickup?.(tier, crystal.key);
+            callbacks.pickup?.(tier, crystal.key, effect.trap);
             combo += 1;
             const multiplier = 1 + Math.min(3, Math.floor(combo / 5) * 0.5);
+            // A cursed diamond still pays: the gamble costs speed, never points.
             score += Math.round(CRYSTALS[tier].value * multiplier);
-            if (race.mode !== 'rush') boost = speedBoostFor(tier);
+            if (race.mode !== 'rush') boost = effect.boost;
+            if (effect.trap) {
+              playerSlowTimer = Math.max(playerSlowTimer, effect.slowDuration);
+              playerSlowFactor = effect.slowFactor;
+              playerSlowKind = 'trap';
+              crashDirection = laneIndex === 0 ? 1 : -1;
+              crashAnimation = Math.max(crashAnimation, 0.3);
+              callbacks.gemTrap?.({ tier, duration: effect.slowDuration });
+            }
             if (combo === 5 || combo === 10 || combo === 15) {
               score += 150;
               poseLeft = 0.62;
@@ -1454,7 +1492,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -1464,7 +1502,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
   const raceRef = useRef(race);
   raceRef.current = race;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit };
+  callbackRefs.current = { onReady, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -1472,7 +1510,10 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
       hud: (data) => callbackRefs.current.onHud?.(data),
       finish: (data) => callbackRefs.current.onFinish?.(data),
       crash: () => callbackRefs.current.onCrash?.(),
-      pickup: (tier) => callbackRefs.current.onPickup?.(tier),
+      // Keep the gem key in the payload: online rooms broadcast it so a diamond
+      // taken by one rider disappears on every screen.
+      pickup: (tier, key, trapped) => callbackRefs.current.onPickup?.(tier, key, trapped),
+      gemTrap: (info) => callbackRefs.current.onGemTrap?.(info),
       cheer: () => callbackRefs.current.onCheer?.(),
       powerUp: (info) => callbackRefs.current.onPowerUp?.(info),
       powerUpPickup: (type) => callbackRefs.current.onPowerUpPickup?.(type),

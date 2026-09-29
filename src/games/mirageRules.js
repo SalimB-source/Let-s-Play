@@ -5,7 +5,10 @@ const LANE_INDICES = LANES.map((_, lane) => lane);
 
 export const CRYSTALS = [
   { name: 'Cyan', color: 0x45e4ff, value: 100 },
-  { name: 'Rose', color: 0xff65b8, value: 150 },
+  // The red diamond is the gamble of the run: same points as ever, but half of
+  // them are cursed (see RED_TRAP_CHANCE) and brake the rider instead of
+  // launching it. Nothing on the mesh gives it away before the pickup.
+  { name: 'Rouge', color: 0xf2352c, value: 150 },
   { name: 'Or', color: 0xffd15c, value: 250 },
 ];
 export const jumpHeight = (remaining) => remaining > 0 ? Math.sin((0.82 - remaining) / 0.82 * Math.PI) * 1.7 : 0;
@@ -63,7 +66,7 @@ export const GEM_BURST_DURATION = 0.52; // seconds a burst stays on screen
 export const GEM_BURST_SHARDS = 10; // shards thrown by one diamond
 export const GEM_BURST_GRAVITY = 12; // m/s², pulls the shards back down
 export const GEM_BURST_LIFT = 0.55; // m of upward kick, on top of the spread
-// Richer diamonds throw their shards further: cyan, rose, gold.
+// Richer diamonds throw their shards further: cyan, red, gold.
 export const GEM_BURST_SPEED = Object.freeze([3.6, 4.2, 5.1]);
 
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
@@ -129,7 +132,7 @@ export function gemFlashState(age, tier = 0) {
 }
 
 export const DUEL_DISTANCE = 600;
-export const DUEL_SPEED_BONUS = [1.6, 2.8, 4.4]; // cyan, rose, or; m/s
+export const DUEL_SPEED_BONUS = [1.6, 2.8, 4.4]; // cyan, rouge, or; m/s
 export const DUEL_BASE_SPEED = 15;
 export const DUEL_MIN_SPEED = 8;
 export const DUEL_MAX_SPEED = 26;
@@ -217,6 +220,30 @@ export const POWER_UP_DEFS = {
     emissive: 0x1a7a74,
   },
 };
+
+// ── Red diamond trap ───────────────────────────────────────────────────
+// Every red diamond is a coin flip: half of them are cursed and slam the
+// brakes on instead of granting the usual speed burst. The points are paid
+// either way — the gamble is on speed, never on score. A fake gold diamond
+// pays like a red one, so it rolls for the curse too.
+export const RED_TRAP_TIER = 1;
+export const RED_TRAP_CHANCE = 0.5;
+export const RED_TRAP_SLOW_DURATION = 1.6; // seconds the rider is braked
+export const RED_TRAP_SLOW_FACTOR = 0.55; // speed multiplier while braked
+
+/** Roll once, on pickup-time tier, whether this red diamond is cursed. */
+export const rollRedTrap = (random = Math.random) => random() < RED_TRAP_CHANCE;
+
+/**
+ * What a crystal does to the rider: a speed burst, or the red diamond's brake.
+ * Returns a plain description so world code stays free of the rules.
+ */
+export function crystalPickupEffect(tier, trapped = false) {
+  if (tier === RED_TRAP_TIER && trapped) {
+    return { trap: true, boost: SPEED_BOOST_NONE, slowDuration: RED_TRAP_SLOW_DURATION, slowFactor: RED_TRAP_SLOW_FACTOR };
+  }
+  return { trap: false, boost: speedBoostFor(tier), slowDuration: 0, slowFactor: 1 };
+}
 
 /** Grant the tier's burst and restart the 1-second window (previous boost is dropped). */
 export function speedBoostFor(tier) {

@@ -271,6 +271,16 @@ export class DesertGroove {
     this.noise(time, 0.05, 0.035, 9000);
   }
 
+  /** Cursed red diamond: the chime collapses into a dull, braking growl. */
+  trap() {
+    if (!this.running || !this.context || !this.master) return;
+    const time = this.context.currentTime + 0.005;
+    [392, 294, 208, 155].forEach((frequency, index) => {
+      this.tone(frequency, time + index * 0.06, 0.22, 'sawtooth', 0.13, 900);
+    });
+    this.noise(time + 0.05, 0.28, 0.05, 1400);
+  }
+
   async loadCry() {
     if (this.cryBuffer || this.cryLoading || !this.context) return;
     const context = this.context;

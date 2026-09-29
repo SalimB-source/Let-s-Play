@@ -189,6 +189,7 @@
 .mirage-rule { display: grid; grid-template-columns: 25px minmax(0,1fr); gap: 9px; align-items: start; padding: 9px 0; border-top: 1px solid rgba(255,255,255,.07); }
 .mirage-rule-icon { font-size: 16px; line-height: 1.1; }
 .mirage-rule-icon.is-pink { color: #f477ad; }
+.mirage-rule-icon.is-red { color: #ff4a3d; }
 .mirage-rule-icon.is-green { color: #6dd6a1; }
 .mirage-rule-icon.is-gold { color: #ffd866; }
 .mirage-rule-icon.is-rainbow { background: linear-gradient(120deg, #ff5f6d, #ffc371, #6dd6a1, #45e4ff, #a78bfa, #ff5f6d); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }

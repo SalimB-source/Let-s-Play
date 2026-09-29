@@ -305,3 +305,42 @@ test('a collected diamond shatters into spread-out shards that settle back to no
   assert.equal(flashEnd.opacity, 0);
   assert.equal(flashEnd.done, true);
 });
+
+test('the red diamond is a coin flip: half of them brake the rider instead of boosting it', async () => {
+  const rules = await import('../src/games/mirageRules.js');
+  const { CRYSTALS, crystalPickupEffect, rollRedTrap, RED_TRAP_TIER, RED_TRAP_CHANCE,
+    RED_TRAP_SLOW_DURATION, RED_TRAP_SLOW_FACTOR, DUEL_SPEED_BONUS, SPEED_BOOST_NONE, seededRandom } = rules;
+
+  // Tier 1 is the red diamond now: red channel dominates, points are untouched.
+  const red = CRYSTALS[RED_TRAP_TIER];
+  assert.equal(red.name, 'Rouge');
+  assert.equal(red.value, 150);
+  assert.ok((red.color >> 16 & 255) > 200);
+  assert.ok((red.color >> 16 & 255) > (red.color >> 8 & 255) * 2);
+  assert.ok((red.color >> 16 & 255) > (red.color & 255) * 2);
+
+  const safe = crystalPickupEffect(RED_TRAP_TIER, false);
+  assert.equal(safe.trap, false);
+  assert.equal(safe.boost.bonus, DUEL_SPEED_BONUS[RED_TRAP_TIER]);
+  assert.equal(safe.slowDuration, 0);
+
+  const cursed = crystalPickupEffect(RED_TRAP_TIER, true);
+  assert.equal(cursed.trap, true);
+  assert.equal(cursed.boost, SPEED_BOOST_NONE);
+  assert.equal(cursed.boost.bonus, 0);
+  assert.equal(cursed.slowDuration, RED_TRAP_SLOW_DURATION);
+  assert.equal(cursed.slowFactor, RED_TRAP_SLOW_FACTOR);
+  assert.ok(cursed.slowFactor > 0 && cursed.slowFactor < 1, 'a trap slows the rider, it never stops it');
+
+  // Only the red tier can be cursed: cyan and real gold always pay their boost.
+  for (const tier of [0, 2]) {
+    const effect = crystalPickupEffect(tier, true);
+    assert.equal(effect.trap, false);
+    assert.equal(effect.boost.bonus, DUEL_SPEED_BONUS[tier]);
+  }
+
+  const random = seededRandom(2024);
+  let traps = 0;
+  for (let i = 0; i < 4000; i += 1) if (rollRedTrap(random)) traps += 1;
+  assert.ok(Math.abs(traps / 4000 - RED_TRAP_CHANCE) < 0.03, `traps ${traps / 4000} close to ${RED_TRAP_CHANCE}`);
+});
