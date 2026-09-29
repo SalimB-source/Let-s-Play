@@ -36,9 +36,23 @@ export default function MirageRushPage() {
   const { user, isDemo } = useAuth();
   const [searchParams] = useSearchParams();
   const challengeCode = searchParams.get('duel');
+  const initialModeParam = searchParams.get('mode');
   const challenge = useMemo(() => decodeChallenge(challengeCode), [challengeCode]);
   const [selectedStage, setSelectedStage] = useState(challenge?.stage || 'desert');
-  const [selectedMode, setSelectedMode] = useState(challenge ? 'duel' : 'rush');
+  const [selectedMode, setSelectedMode] = useState(
+    initialModeParam === 'online' ? 'online' : challenge ? 'duel' : 'rush',
+  );
+  const currentUserName = useMemo(
+    () =>
+      user?.user_metadata?.gamertag
+      || user?.user_metadata?.display_name
+      || user?.user_metadata?.full_name
+      || user?.username
+      || user?.display_name
+      || user?.email?.split('@')[0]
+      || '',
+    [user],
+  );
   const stage = selectedMode === 'duel' && challenge ? challenge.stage || 'desert' : selectedStage;
   const [race, setRace] = useState({ mode: 'rush' });
   const [shareState, setShareState] = useState('');
@@ -167,7 +181,24 @@ export default function MirageRushPage() {
     saveProgress(next);
   };
 
-  if (selectedMode === 'online') return <MirageOnline connected={connected} userId={user?.id} initialStage={selectedStage} skin={skinColors} onRunFinish={recordProgress} onBack={() => setSelectedMode('rush')} />;
+  if (selectedMode === 'online') {
+    return (
+      <MirageOnline
+        connected={connected}
+        userId={user?.id}
+        userName={currentUserName}
+        initialStage={selectedStage}
+        skin={skinColors}
+        onRunFinish={recordProgress}
+        onSelectMode={(mode) => {
+          setPhase('intro');
+          audioRef.current?.stop();
+          setSelectedMode(mode);
+        }}
+        onBack={() => setSelectedMode('rush')}
+      />
+    );
+  }
 
   return (
     <div className="mirage-page">
@@ -175,12 +206,55 @@ export default function MirageRushPage() {
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow"><span className="mirage-live-dot" /> LET’S PLAY ARCADE <span className="mirage-eyebrow-divider">/</span> 3D VOXEL RUNNER</div>
           <h1>MIRAGE <em>RUSH</em></h1>
-          <p>Le désert se déforme. Les cristaux t’appellent. <strong>Choisis la ruée contre la montre ou un duel jusqu’à la ligne d’arrivée.</strong></p>
+          <p>Le désert se déforme. Les cristaux t’appellent. <strong>Choisis la ruée contre la montre, un duel ou une room en ligne.</strong></p>
         </div>
-        <div className="mirage-heading-side">
-          <span className="mirage-record-label">TON RECORD</span>
-          <strong>{best.toLocaleString('fr-FR')} <small>PTS</small></strong>
-          <span className="mirage-record-flare">✦ ÉCHO SOLAIRE ✦</span>
+        <div className="mirage-heading-right">
+          <div className="mirage-mode-tabs" role="tablist" aria-label="Modes de jeu Mirage">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedMode === 'rush'}
+              className={`mirage-mode-tab${selectedMode === 'rush' ? ' is-active' : ''}`}
+              onClick={() => {
+                setPhase('intro');
+                audioRef.current?.stop();
+                setSelectedMode('rush');
+              }}
+            >
+              <span>↯</span> RUÉE
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedMode === 'duel'}
+              className={`mirage-mode-tab${selectedMode === 'duel' ? ' is-active' : ''}`}
+              onClick={() => {
+                setPhase('intro');
+                audioRef.current?.stop();
+                setSelectedMode('duel');
+              }}
+            >
+              <span>⚔</span> DUEL
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={selectedMode === 'online'}
+              className="mirage-mode-tab"
+              onClick={() => {
+                setPhase('intro');
+                audioRef.current?.stop();
+                setSelectedMode('online');
+              }}
+            >
+              <span>♞</span> EN LIGNE
+            </button>
+          </div>
+          <div className="mirage-heading-side">
+            <span className="mirage-record-label">TON RECORD</span>
+            <strong>{best.toLocaleString('fr-FR')} <small>PTS</small></strong>
+            <span className="mirage-record-flare">✦ ÉCHO SOLAIRE ✦</span>
+          </div>
         </div>
       </header>
 
