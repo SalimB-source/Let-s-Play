@@ -413,7 +413,11 @@ export default function MirageRushPage() {
               skin={skinColors}
               prepareSignal={runToken}
               onReady={() => setReady(true)}
-              onHud={onHud}
+              onHud={(next) => {
+                // Stampede hooves follow the horse: silent while it stands still (shot off the saddle).
+                audioRef.current?.setGallop(next.speed > 0 && !next.stunned, (next.speed || 15) / 15);
+                onHud(next);
+              }}
               onFinish={onFinish}
               onCrash={() => flashFx('is-hit')}
               onPickup={(tier, key, trapped) => {
@@ -432,13 +436,25 @@ export default function MirageRushPage() {
               onPowerUpPickup={(type) => {
                 if (type === 'shield') showPowerToast('🛡️ Bouclier ramassé ! Protection 5s');
                 else if (type === 'lasso') showPowerToast('🪢 Lasso ramassé ! Lancement auto…');
-                audioRef.current?.pickup(2);
+                if (type === 'pistol') audioRef.current?.gunshot();
+                else audioRef.current?.pickup(2);
               }}
               onLassoHit={(info) => {
                 if (info?.target === 'rival') {
                   showPowerToast(info.blocked ? '🛡️ L’ombre a bloqué ton lasso !' : '🪢 L’ombre est ralentie !');
                 } else if (info?.target === 'player') {
                   showPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par le lasso de l’ombre !');
+                }
+              }}
+              onPistolHit={(info) => {
+                if (info?.target === 'rival') {
+                  showPowerToast(info.blocked ? '🛡️ L’ombre a arrêté ta balle avec son bouclier !' : '🔫 PAN ! L’ombre tombe de son cheval !');
+                } else if (info?.target === null) {
+                  showPowerToast('🔫 PAN ! Personne à portée…');
+                } else if (info?.target === 'player') {
+                  if (info.from === 'npc') audioRef.current?.gunshot();
+                  if (!info.blocked) flashFx('is-hit');
+                  showPowerToast(info.blocked ? '🛡️ Balle arrêtée par ton bouclier !' : '🔫 Touché ! Tu tombes de cheval…');
                 }
               }}
               onShield={() => {}}
@@ -461,6 +477,7 @@ export default function MirageRushPage() {
                     <i className="mirage-chip is-gem">◆ {hud.gems}</i>
                     {hud.shieldActive && <i className="mirage-chip is-shield">🛡️ {Math.ceil(hud.shieldLeft)}s</i>}
                     {hud.slowed && <i className="mirage-chip is-slow">{hud.slowKind === 'trap' ? '◆ PIÉGÉ' : '🪢 RALENTI'}</i>}
+                    {hud.stunned && <i className="mirage-chip is-slow">🔫 À TERRE</i>}
                   </span>
                 </div>
                 <div className="mirage-hud-center">
@@ -475,7 +492,7 @@ export default function MirageRushPage() {
                       <b className="mirage-race-dot is-you" style={{ left: `${duelPercent}%` }} />
                       <span className="mirage-race-flag">🏁</span>
                     </div>
-                    <small className="mirage-duel-odds">OBJET « ? » RARE · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</small>
+                    <small className="mirage-duel-odds">OBJET « ? » · PISTOLET {Math.round(powerUpOdds(hud.rank || 1).pistol * 100)}% · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</small>
                   </> : <>
                     <div className={`mirage-clock${hud.remaining <= 10 ? ' is-danger' : hud.remaining <= 20 ? ' is-warning' : ''}`}>{formatTime(hud.remaining)}</div>
                     <div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div>
@@ -676,7 +693,7 @@ export default function MirageRushPage() {
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Le diamant rouge est un pari</strong><small>Dans {Math.round(RED_TRAP_CHANCE * 100)} % des cas, il est piégé : au lieu du bonus de vitesse, il te ralentit pendant {RED_TRAP_SLOW_DURATION} s. Les points, eux, sont toujours encaissés. Rien ne le distingue avant de le traverser.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-rainbow" aria-hidden="true">?</span><div><strong>Objet mystère « ? » — duel & en ligne</strong><small>La ruée n’en contient aucun : il faut un rival à lasser ou un choc à absorber. En duel ou en ligne, il flotte en arc-en-ciel au milieu de la piste et ne dévoile son effet qu’une fois ramassé — lasso (ralentit l’adversaire devant toi) ou bouclier (absorbe un choc ou un lasso pendant 5 s).</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-rainbow" aria-hidden="true">?</span><div><strong>Objet mystère « ? » — duel & en ligne</strong><small>La ruée n’en contient aucun : il faut un rival à lasser ou un choc à absorber. En duel ou en ligne, il flotte en arc-en-ciel au milieu de la piste et ne dévoile son effet qu’une fois ramassé — pistolet (fait tomber de cheval le cavalier en tête, même très loin, pendant 1 s : 0 % en tête, 5 % 2e, 15 % 3e, 30 % 4e), lasso (ralentit l’adversaire devant toi) ou bouclier (absorbe un choc, un lasso ou une balle pendant 5 s). Il ne disparaît jamais quand quelqu’un le prend : chaque cavalier peut le ramasser.</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies, le saut est obligatoire.</div>
           </section>
 

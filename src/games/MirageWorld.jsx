@@ -1,10 +1,11 @@
 import { CHARACTER_PALETTES } from './mirageCharacters';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpForMode, powerUpsEnabled, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, RED_TRAP_TIER, rollRedTrap, crystalPickupEffect } from './mirageRules';
+import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, powerUpsEnabled, rollPowerUpSlot, rollPowerUpContent, PISTOL_STUN_DURATION, stunPose,  SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, RED_TRAP_TIER, rollRedTrap, crystalPickupEffect } from './mirageRules';
 
 const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
@@ -48,22 +49,74 @@ function makeExplorer(rival = false, palette = null) {
   tail.rotation.x = -0.35;
   block(cube, cloth, player, [0, 1.33, 0.05], [0.96, 0.14, 0.95]);
   block(cube, trim, player, [0, 1.43, 0.15], [0.66, 0.16, 0.6]);
-  block(cube, cloth, player, [0, 1.85, 0.05], [0.6, 0.75, 0.43]);
-  const cape = block(cube, cloth, player, [0, 1.7, 0.34], [0.72, 0.87, 0.13]);
-  block(cube, trim, player, [0, 1.72, 0.42], [0.12, 0.57, 0.03]);
-  block(cube, hood, player, [0, 2.43, 0.02], [0.57, 0.55, 0.56]);
-  block(cube, trim, player, [0, 2.49, 0.02], [0.59, 0.1, 0.58]);
+  // The cowboy lives in his own group so the pistol can knock him off the horse.
+  // Pivot at the hips (y 1.4) so a fall rolls him sideways out of the saddle.
+  const rider = new THREE.Group();
+  rider.position.y = 1.4;
+  player.add(rider);
+  const riderBody = new THREE.Group();
+  riderBody.position.y = -1.4;
+  rider.add(riderBody);
+  block(cube, cloth, riderBody, [0, 1.85, 0.05], [0.6, 0.75, 0.43]);
+  const cape = block(cube, cloth, riderBody, [0, 1.7, 0.34], [0.72, 0.87, 0.13]);
+  block(cube, trim, riderBody, [0, 1.72, 0.42], [0.12, 0.57, 0.03]);
+  block(cube, hood, riderBody, [0, 2.43, 0.02], [0.57, 0.55, 0.56]);
+  block(cube, trim, riderBody, [0, 2.49, 0.02], [0.59, 0.1, 0.58]);
   for (const x of [-0.43, 0.43]) {
-    block(cube, mane, player, [x, 1.16, 0.05], [0.22, 0.57, 0.32]);
-    const arm = block(cube, cloth, player, [x * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
+    block(cube, mane, riderBody, [x, 1.16, 0.05], [0.22, 0.57, 0.32]);
+    const arm = block(cube, cloth, riderBody, [x * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
     arm.rotation.x = -0.8;
-    block(cube, mane, player, [x * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
+    block(cube, mane, riderBody, [x * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
   }
-  player.userData.parts = { legs, tail, cape };
+  player.userData.parts = { legs, tail, cape, rider };
   player.userData.materials = [coat, mane, cloth, trim, hood];
   player.userData.basePalette = palette || palettes[Number(rival) || 0];
   player.userData.painting = player.userData.basePalette;
   return player;
+}
+
+/**
+ * Performance: roadside scenery is built from dozens of small boxes, one draw
+ * call each. Once built it never changes shape, so fold every static mesh that
+ * shares the same look into a single mesh (animated parts such as boats stay).
+ */
+const materialKey = (m) => [m.type, m.color?.getHex(), m.emissive?.getHex(), m.roughness, m.metalness, m.flatShading, m.side, m.transparent, m.opacity, m.depthWrite, m.map?.uuid].join('|');
+function bakeStaticScenery(group) {
+  const keep = new Set();
+  group.traverse((o) => { if (o.userData.bob !== undefined || o.userData.glow) o.traverse(c => keep.add(c)); });
+  group.updateMatrixWorld(true);
+  const inverse = new THREE.Matrix4().copy(group.matrixWorld).invert();
+  const buckets = new Map();
+  group.traverse((o) => {
+    if (!o.isMesh || keep.has(o) || Array.isArray(o.material)) return;
+    const g = o.geometry;
+    if (!g.attributes.position || !g.attributes.normal || !g.attributes.uv) return;
+    const key = materialKey(o.material);
+    if (!buckets.has(key)) buckets.set(key, { material: o.material, meshes: [] });
+    buckets.get(key).meshes.push(o);
+  });
+  for (const { material, meshes } of buckets.values()) {
+    if (meshes.length < 2) continue;
+    const parts = meshes.map((mesh) => {
+      const geometry = (mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone());
+      for (const name of Object.keys(geometry.attributes)) if (!['position', 'normal', 'uv'].includes(name)) geometry.deleteAttribute(name);
+      geometry.morphAttributes = {};
+      return geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, mesh.matrixWorld));
+    });
+    const merged = mergeGeometries(parts, false);
+    parts.forEach(part => part.dispose());
+    if (!merged) continue;
+    meshes.forEach((mesh) => mesh.parent.remove(mesh));
+    group.add(new THREE.Mesh(merged, material));
+  }
+}
+
+/** Knocked-off-the-horse animation: `left` seconds of pistol stun remaining (0 = in the saddle). */
+function poseRider(model, left, side = 1) {
+  const rider = model.userData.parts.rider;
+  const pose = stunPose(left, PISTOL_STUN_DURATION, side);
+  rider.position.set(pose.x, 1.4 + pose.y, 0);
+  rider.rotation.set(pose.pitch, 0, -pose.roll);
 }
 
 /** Recolor a rider made by makeExplorer with a 5-slot skin palette. */
@@ -472,15 +525,25 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
-  const floor = [];
-  for (let zIndex = 0; zIndex < 25; zIndex += 1) {
-    for (let lane = 0; lane < LANE_COUNT; lane += 1) {
-      const tile = new THREE.Mesh(floorGeometry, floorMaterials[(zIndex + lane) % floorMaterials.length]);
-      tile.position.set(LANES[lane], -0.34, TRACK_MIN_Z + zIndex * 2);
-      scene.add(tile);
-      floor.push(tile);
+  // The checkered track is one merged mesh per colour (3 draw calls instead of
+  // ~100 tiles). It scrolls by one colour period (3 rows = 6 m) and loops.
+  const FLOOR_PERIOD = floorMaterials.length * 2;
+  const floorGroup = new THREE.Group();
+  floorMaterials.forEach((material, m) => {
+    const parts = [];
+    for (let zIndex = 0; zIndex < 28; zIndex += 1) {
+      for (let lane = 0; lane < LANE_COUNT; lane += 1) {
+        if ((zIndex + lane) % floorMaterials.length !== m) continue;
+        parts.push(floorGeometry.clone().translate(LANES[lane], -0.34, TRACK_MIN_Z + zIndex * 2));
+      }
     }
-  }
+    floorGroup.add(new THREE.Mesh(mergeGeometries(parts, false), material));
+    parts.forEach(part => part.dispose());
+  });
+  scene.add(floorGroup);
+  let floorOffset = 0;
+  const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
+  placeFloor();
 
   let skinColors = getSkin?.() ?? null;
   const player = makeExplorer(false, skinColors);
@@ -650,11 +713,46 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
   // ── Power-ups system ──────────────────────────────────────────────
   const powerUps = [];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     const g = new THREE.Group();
+    g.visible = false;
     scene.add(g);
-    powerUps.push({ group: g, type: null, lane: 1, collected: true, coursePos: 0, checked: false, mesh: null });
+    powerUps.push({ group: g, filled: false, lane: 1, coursePos: 0, playerDone: false, npcDone: false, mesh: null });
   }
+  // Slot positions come from the race seed: every online client lays the same "?"s.
+  let puRandom = Math.random;
+  let puNextPos = 0;
+
+  // Pistol shots: a short-lived tracer plus a muzzle flash.
+  const shotTracers = [];
+  const tracerMaterial = new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0.95 });
+  const tracerGeometry = new THREE.BoxGeometry(0.06, 0.06, 1);
+  const flashGeometry = new THREE.SphereGeometry(0.22, 8, 6);
+  const spawnTracer = (from, to) => {
+    const group = new THREE.Group();
+    const beam = new THREE.Mesh(tracerGeometry, tracerMaterial.clone());
+    const length = from.distanceTo(to);
+    beam.scale.z = Math.max(0.1, length);
+    beam.position.copy(from).lerp(to, 0.5);
+    beam.lookAt(to);
+    const flash = new THREE.Mesh(flashGeometry, beam.material);
+    flash.position.copy(from);
+    group.add(beam, flash);
+    scene.add(group);
+    shotTracers.push({ group, life: 0.16 });
+  };
+  const updateTracers = (dt) => {
+    for (let i = shotTracers.length - 1; i >= 0; i--) {
+      const shot = shotTracers[i];
+      shot.life -= dt;
+      shot.group.children[0].material.opacity = Math.max(0, shot.life / 0.16);
+      if (shot.life <= 0) {
+        shot.group.children[0].material.dispose();
+        scene.remove(shot.group);
+        shotTracers.splice(i, 1);
+      }
+    }
+  };
 
   const lassoProjectiles = [];
   const lassoRopePool = [];
@@ -698,6 +796,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(item);
     scenery.push(item);
   }
+  scenery.forEach(bakeStaticScenery);
 
   let active = false;
   let race = { mode: 'rush' };
@@ -732,6 +831,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let playerSlowFactor = LASSO_SLOW_FACTOR;
   let playerSlowKind = 'lasso'; // what the HUD should blame for the brake
   let shieldFlash = 0;
+  let playerStun = 0; // seconds left on the sand after a pistol shot
+  let playerStunSide = 1;
+  let lastNetworkStun = 0;
 
   const getCurrentRank = () => {
     if (race.mode === 'online') {
@@ -862,71 +964,124 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     }
   };
 
-  const handlePowerUpPickup = (pu) => {
-    pu.collected = true;
-    pu.group.visible = false;
-    const type = pu.type;
-    if (!type) return;
+  // ── Pistol ──────────────────────────────────────────────────────────
+  // The pistol always aims at the race leader, however far ahead.
+  const findPistolTarget = () => {
+    if (race.mode === 'online') {
+      const net = getNetwork?.();
+      const leader = (net?.players || [])
+        .filter(p => p.user_id !== net.userId && !p.finished_at)
+        .reduce((best, p) => (!best || (Number(p.distance) || 0) > (Number(best.distance) || 0) ? p : best), null);
+      return leader && (Number(leader.distance) || 0) > distance ? { kind: 'online', player: leader } : null;
+    }
+    // The replay ghost cannot be shot; the live PNJ is the only other rider.
+    if (race.mode === 'duel' && !race.challenge && npc.finishedAt === null && npc.dist > distance) return { kind: 'rival' };
+    return null;
+  };
+
+  const stunPlayer = (fromNetwork = false) => {
+    if (shieldActive) {
+      consumeShield();
+      return false;
+    }
+    playerStun = PISTOL_STUN_DURATION;
+    playerStunSide = laneIndex >= LANE_COUNT / 2 ? -1 : 1;
+    boost = SPEED_BOOST_NONE;
+    jumpLeft = 0;
+    if (!fromNetwork) callbacks.pistolHit?.({ target: 'player' });
+    return true;
+  };
+
+  const stunNpc = () => {
+    if (npc.shieldActive) {
+      npc.shieldActive = false;
+      npc.shieldTimer = 0;
+      rivalShieldBubble.visible = false;
+      return false;
+    }
+    npc.stunTimer = PISTOL_STUN_DURATION;
+    npc.stunSide = npc.lane >= LANE_COUNT / 2 ? -1 : 1;
+    npc.boost = SPEED_BOOST_NONE;
+    npc.jumpLeft = 0;
+    return true;
+  };
+
+  const firePistol = (targetInfo) => {
+    const from = new THREE.Vector3(player.position.x + 0.35, player.position.y + 1.9, -0.5);
+    if (!targetInfo) {
+      spawnTracer(from, new THREE.Vector3(player.position.x, 3, -30));
+      callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: null });
+      callbacks.pistolHit?.({ target: null });
+      return;
+    }
+    if (targetInfo.kind === 'rival') {
+      spawnTracer(from, new THREE.Vector3(rival.position.x, rival.position.y + 1.9, rival.position.z));
+      const hit = stunNpc();
+      callbacks.pistolHit?.({ target: 'rival', blocked: !hit });
+    } else if (targetInfo.kind === 'online') {
+      const net = getNetwork?.();
+      const peer = net?.players?.find(p => p.user_id === targetInfo.player.user_id);
+      const rider = onlineRiders[peer?.slot ?? 0];
+      const to = rider?.visible
+        ? new THREE.Vector3(rider.position.x, rider.position.y + 1.9, rider.position.z)
+        : new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 1.9, Math.max(-70, Math.min(10, distance - (Number(targetInfo.player.distance) || 0))));
+      spawnTracer(from, to);
+      callbacks.pistol?.(targetInfo.player);
+      callbacks.pistolHit?.({ target: 'online', player: targetInfo.player });
+    }
+    callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: targetInfo });
+  };
+
+  const handlePowerUpPickup = () => {
+    // What is inside is decided now, from the picker's own race position.
+    const type = rollPowerUpContent(getCurrentRank(), Math.random);
     callbacks.powerUpPickup?.(type);
     if (type === POWER_UPS.SHIELD) {
       activateShield();
     } else if (type === POWER_UPS.LASSO) {
-      const target = findLassoTarget();
-      fireLasso(target);
-    } else {
-      callbacks.powerUp?.({ type, action: 'activated' });
+      fireLasso(findLassoTarget());
+    } else if (type === POWER_UPS.PISTOL) {
+      firePistol(findPistolTarget());
     }
   };
 
-  const spawnPowerUp = (pu, zPos) => {
-    // Ruée: the mode gate hands back null, so the slot stays empty and hidden.
-    const type = rollPowerUpForMode(race.mode, getCurrentRank(), Math.random);
-    pu.group.traverse(obj => {
-      if (obj.geometry) obj.geometry.dispose();
-      if (obj.material) {
-        if (Array.isArray(obj.material)) obj.material.forEach(m=> m.dispose());
-        else { obj.material.map?.dispose(); obj.material.dispose(); }
-      }
-    });
-    pu.group.clear();
-    if (!type) {
-      pu.type = null;
-      pu.collected = true;
-      pu.group.visible = false;
-      pu.coursePos = distance - zPos;
-      pu.group.position.set(LANES[Math.floor(Math.random() * LANE_COUNT)], 0, zPos);
-      pu.checked = false;
-      return;
+  /** Move a slot to the next seeded spot on the track (3 draws per slot, always). */
+  const spawnPowerUp = (pu) => {
+    const gap = POWER_UP_SPAWN_GAP_MIN + puRandom() * (POWER_UP_SPAWN_GAP_MAX - POWER_UP_SPAWN_GAP_MIN);
+    const filled = rollPowerUpSlot(puRandom);
+    const lane = Math.floor(puRandom() * LANE_COUNT);
+    puNextPos += gap;
+    pu.coursePos = puNextPos;
+    pu.lane = lane;
+    // Ruée: the mode gate keeps every slot empty.
+    pu.filled = filled && powerUpsEnabled(race.mode);
+    pu.playerDone = false;
+    pu.npcDone = false;
+    if (pu.filled && !pu.mesh) {
+      pu.mesh = makePowerUpMesh();
+      pu.group.add(pu.mesh);
     }
-    pu.type = type;
-    pu.collected = false;
-    pu.lane = Math.floor(Math.random() * LANE_COUNT);
-    pu.coursePos = distance - zPos;
-    const mesh = makePowerUpMesh(type);
-    pu.group.add(mesh);
-    pu.mesh = mesh;
-    pu.group.position.set(LANES[pu.lane], 0, zPos);
-    pu.group.visible = true;
-    pu.checked = false;
+    pu.group.position.set(LANES[lane], 0, distance - pu.coursePos);
+    pu.group.visible = false;
   };
 
   const resetPowerUps = () => {
-    let z = -40;
-    for (const pu of powerUps) {
-      const gap = POWER_UP_SPAWN_GAP_MIN + Math.random()*(POWER_UP_SPAWN_GAP_MAX-POWER_UP_SPAWN_GAP_MIN);
-      z -= gap;
-      spawnPowerUp(pu, z);
-    }
+    puRandom = seededRandom((seed ^ 0x5f3759df) >>> 0);
+    puNextPos = 0;
+    for (const pu of powerUps) spawnPowerUp(pu);
     for (const proj of lassoProjectiles) releaseRope(proj.rope);
     lassoProjectiles.length = 0;
     shieldActive = false;
     shieldTimer = 0;
     playerSlowTimer = 0;
     playerSlowFactor = LASSO_SLOW_FACTOR;
+    playerStun = 0;
+    lastNetworkStun = 0;
     playerShieldBubble.visible = false;
     npc.shieldActive = false;
     npc.shieldTimer = 0;
     npc.slowTimer = 0;
+    npc.stunTimer = 0;
     rivalShieldBubble.visible = false;
   };
 
@@ -939,11 +1094,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     npc.shieldTimer = Math.max(0, npc.shieldTimer - dt);
     if (npc.shieldTimer <= 0) npc.shieldActive = false;
     npc.slowTimer = Math.max(0, npc.slowTimer - dt);
+    npc.stunTimer = Math.max(0, (npc.stunTimer || 0) - dt);
     const slowFactor = npc.slowTimer > 0 ? (npc.slowFactor ?? LASSO_SLOW_FACTOR) : 1;
     npc.base += (DUEL_BASE_SPEED - npc.base) * Math.min(1, dt * 0.65);
     npc.boost = tickSpeedBoost(npc.boost, dt);
     const rawSpeed = duelSpeed(npc.base, npc.boost.bonus);
-    const speed = rawSpeed * slowFactor;
+    // Shot off his horse: fully stopped until he is back in the saddle.
+    const speed = npc.stunTimer > 0 ? 0 : rawSpeed * slowFactor;
     const target = npc.course[npc.next];
     if (target) {
       const ahead = target.pos - npc.dist;
@@ -952,11 +1109,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         npc.hesitate = Math.random() < 0.12;
         npc.plan = planNpcLane(target.items.map(item => ({ ...item, taken: sharedGems.has(item.key) })), npc.lane);
       }
-      if (npc.plan && !npc.hesitate && npc.cooldown <= 0 && npc.lane !== npc.plan.lane && ahead < 20) {
+      if (npc.stunTimer <= 0 && npc.plan && !npc.hesitate && npc.cooldown <= 0 && npc.lane !== npc.plan.lane && ahead < 20) {
         npc.lane += Math.sign(npc.plan.lane - npc.lane);
         npc.cooldown = 0.16 + Math.random() * 0.08;
       }
-      if (npc.plan?.jump && !npc.hesitate && npc.jumpLeft <= 0 && ahead / speed < 0.42 && ahead > 0) npc.jumpLeft = 0.82;
+      if (npc.stunTimer <= 0 && npc.plan?.jump && !npc.hesitate && npc.jumpLeft <= 0 && ahead / speed < 0.42 && ahead > 0) npc.jumpLeft = 0.82;
       if (npc.dist + speed * dt >= target.pos) {
         const height = jumpHeight(npc.jumpLeft);
         const near = lane => Math.abs(npc.x - LANES[lane]) < 0.95;
@@ -1046,7 +1203,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       slowLeft: playerSlowTimer,
       slowKind: playerSlowTimer>0 ? playerSlowKind : null,
       rank: getCurrentRank(),
-      powerUps: powerUps.filter(p=>!p.collected).length,
+      stunned: playerStun > 0,
+      stunLeft: playerStun,
+      powerUps: powerUps.filter(p => p.filled).length,
     });
   };
 
@@ -1091,7 +1250,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     crashAnimation = 0;
     crashDirection = 1;
     player.position.set(LANES[laneIndex], 0, 0);
-    floor.forEach((tile, index) => { tile.position.z = TRACK_MIN_Z + Math.floor(index / LANE_COUNT) * 2; });
+    floorOffset = 0;
+    placeFloor();
     player.visible = true;
     nextEncounter = createCourse(race.mode !== 'rush' ? seededRandom(seed) : Math.random);
     rowCounter = 0;
@@ -1109,7 +1269,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 
   const action = (name) => {
-    if (!active) return;
+    if (!active || playerStun > 0) return;
     laneIndex = playerLaneAfterAction(laneIndex, name, jumpLeft);
     if (name === 'jump' && jumpLeft <= 0) jumpLeft = 0.82;
   };
@@ -1138,7 +1298,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       boost = tickSpeedBoost(boost, dt);
     }
     const slowMul = playerSlowTimer > 0 ? playerSlowFactor : 1;
-    const speed = running ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost.bonus) * slowMul : (12 + Math.min(7, elapsed * 0.12)) * slowMul : 0;
+    const speed = running && playerStun <= 0 ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost.bonus) * slowMul : (12 + Math.min(7, elapsed * 0.12)) * slowMul : 0;
     if (running) {
       elapsed += dt;
       if (race.mode !== 'rush') {
@@ -1163,6 +1323,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         callbacks.shield?.(false);
       }
       playerSlowTimer = Math.max(0, playerSlowTimer - dt);
+      playerStun = Math.max(0, playerStun - dt);
       shieldFlash = Math.max(0, shieldFlash - dt);
 
       // Network-based shield/slow for local player (online)
@@ -1177,6 +1338,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             activateShield(true);
             shieldTimer = (shieldUntil - now)/1000;
           }
+          const stunnedUntil = me.stunned_until ? Date.parse(me.stunned_until) : 0;
+          if (stunnedUntil > now && stunnedUntil !== lastNetworkStun) {
+            lastNetworkStun = stunnedUntil;
+            if (playerStun <= 0) {
+              stunPlayer(true);
+              playerStun = Math.min(PISTOL_STUN_DURATION, (stunnedUntil - now) / 1000);
+              callbacks.pistolHit?.({ target: 'player', from: 'online' });
+            }
+          }
           if (slowedUntil > now && playerSlowTimer <= 0) {
             applyPlayerSlow(true);
             playerSlowTimer = (slowedUntil - now)/1000;
@@ -1184,10 +1354,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
       }
 
-      floor.forEach((tile) => {
-        tile.position.z += speed * dt;
-        if (tile.position.z > 9) tile.position.z = TRACK_MIN_Z;
-      });
+      floorOffset += speed * dt;
+      placeFloor();
       scenery.forEach((item) => {
         item.position.z += speed * item.userData.speedFactor * dt;
         const boat = item.userData.boat;
@@ -1277,46 +1445,51 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
       });
 
-      // Power-ups movement & collection — duel and online only, the Ruée is clean.
+      // Power-ups: shared "?"s — nobody's pickup removes them, every rider can take one.
       for (const pu of powerUpsEnabled(race.mode) ? powerUps : NO_POWER_UPS) {
-        pu.group.position.z += speed * dt;
-        // float + rainbow animation
+        const z = distance - pu.coursePos;
+        pu.group.position.z = z;
+        pu.group.visible = pu.filled && z > -90 && z < 6;
         if (pu.group.visible && pu.mesh) {
-          pu.mesh.position.y = 0.75 + Math.sin(time*0.003 + pu.group.position.z)*0.12;
+          pu.mesh.position.y = 0.75 + Math.sin(time*0.003 + pu.coursePos)*0.12;
           animatePowerUpMesh(pu.mesh, time, dt);
         }
-        if (!pu.checked && !pu.collected && pu.group.position.z > -0.75 && pu.group.position.z < 1.05) {
-          pu.checked = true;
-          if (Math.abs(player.position.x - LANES[pu.lane]) < 0.9) {
-            handlePowerUpPickup(pu);
+        if (pu.filled && !pu.playerDone && z > -0.75) {
+          pu.playerDone = true;
+          if (z < 1.05 && Math.abs(player.position.x - LANES[pu.lane]) < 0.9) {
+            handlePowerUpPickup();
             emitHud(true);
           }
         }
-        // NPC power-up collection (duel)
-        if (race.mode === 'duel' && !pu.collected && pu.type) {
-          const npcCoursePos = npc.dist;
-          if (Math.abs(npcCoursePos - pu.coursePos) < 1.2 && Math.abs(npc.x - LANES[pu.lane]) < 0.9) {
-            pu.collected = true;
-            pu.group.visible = false;
-            if (pu.type === POWER_UPS.SHIELD) {
+        // The PNJ rides through the same "?" whenever it gets there, ahead or behind.
+        const liveNpc = race.mode === 'duel' && !race.challenge;
+        if (liveNpc && pu.filled && !pu.npcDone && npc.dist > pu.coursePos - 1.2) {
+          pu.npcDone = true;
+          if (npc.dist < pu.coursePos + 1.2 && Math.abs(npc.x - LANES[pu.lane]) < 0.9) {
+            const npcRank = npc.dist >= distance ? 1 : 2;
+            const type = rollPowerUpContent(npcRank, Math.random);
+            if (type === POWER_UPS.SHIELD) {
               activateNpcShield();
-            } else if (pu.type === POWER_UPS.LASSO) {
-              // NPC fires lasso at player if player ahead
+            } else if (type === POWER_UPS.LASSO) {
               if (distance > npc.dist + 1.5) {
                 const rope = acquireRope();
                 const start = new THREE.Vector3(npc.x, 1.2, distance - npc.dist);
                 const end = new THREE.Vector3(player.position.x, 1.0, 0);
                 lassoProjectiles.push({ rope, start, end, progress: 0, target: { kind: 'player' }, fromPlayer: false });
               }
+            } else if (type === POWER_UPS.PISTOL) {
+              spawnTracer(
+                new THREE.Vector3(rival.position.x + 0.35, rival.position.y + 1.9, rival.position.z - 0.5),
+                new THREE.Vector3(player.position.x, player.position.y + 1.9, 0),
+              );
+              const blocked = shieldActive;
+              stunPlayer(true);
+              callbacks.pistolHit?.({ target: 'player', from: 'npc', blocked });
             }
           }
         }
-        if (pu.group.position.z > 6) {
-          const farthest = powerUps.reduce((a,b)=> (b.group.position.z < a.group.position.z ? b : a));
-          const gap = POWER_UP_SPAWN_GAP_MIN + Math.random()*(POWER_UP_SPAWN_GAP_MAX-POWER_UP_SPAWN_GAP_MIN);
-          const newZ = farthest.group.position.z - gap;
-          spawnPowerUp(pu, newZ);
-        }
+        const npcClear = !liveNpc || npc.finishedAt !== null || npc.dist > pu.coursePos + 2;
+        if (z > 6 && npcClear) spawnPowerUp(pu);
       }
 
       // Lasso projectiles
@@ -1385,6 +1558,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
     // Shatters keep playing out even on the frame the run ends.
     updateGemBursts(dt, speed * dt);
+    updateTracers(dt);
 
     const targetX = LANES[laneIndex];
     player.position.x = playerLateralPosition(player.position.x, targetX, dt, jumpLeft);
@@ -1393,9 +1567,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     player.position.y = jumpHeight(jumpLeft) + crashBounce;
     const parts = player.userData.parts;
     const runWave = Math.sin(time * (running ? 0.018 : 0.002));
+    const galloping = running && playerStun <= 0;
     parts.legs.forEach((leg, index) => {
-      leg.rotation.x = jumpLeft > 0 ? (index < 2 ? -0.7 : 0.65) : running ? Math.sin(time * 0.018 + index * 2.2) * 0.65 : 0;
+      leg.rotation.x = jumpLeft > 0 ? (index < 2 ? -0.7 : 0.65) : galloping ? Math.sin(time * 0.018 + index * 2.2) * 0.65 : 0;
     });
+    poseRider(player, playerStun, playerStunSide);
     parts.tail.rotation.z = runWave * 0.18;
     parts.cape.rotation.x = running ? -0.12 + runWave * 0.06 : 0;
     const impactTilt = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.2 * crashDirection : 0;
@@ -1426,7 +1602,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
       skinPaint(rider, CHARACTER_PALETTES[peer.character ?? peer.slot] || CHARACTER_PALETTES[0]);
-      rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running ? Math.sin(time*.018+i*2.2)*.65 : 0; });
+      const peerStun = !mine && peer.stunned_until ? Math.max(0, (Date.parse(peer.stunned_until) - wallNow) / 1000) : 0;
+      const stunLeft = mine ? playerStun : Math.min(PISTOL_STUN_DURATION, peerStun);
+      poseRider(rider, stunLeft, peer.lane >= LANE_COUNT / 2 ? -1 : 1);
+      rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running && stunLeft <= 0 ? Math.sin(time*.018+i*2.2)*.65 : 0; });
       // shield visual for online riders
       if (rider.userData.shieldBubble) {
         const now = Date.now();
@@ -1445,7 +1624,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     });
     rival.position.z = Math.max(-85, Math.min(16, distance - rivalDistance));
     const rivalParts = rival.userData.parts;
-    rivalParts.legs.forEach((leg, index) => { leg.rotation.x = running ? Math.sin(time * 0.018 + index * 2.2 + 1.3) * 0.65 : 0; });
+    const rivalStun = race.mode === 'duel' && !race.challenge ? npc.stunTimer || 0 : 0;
+    rivalParts.legs.forEach((leg, index) => { leg.rotation.x = running && rivalStun <= 0 ? Math.sin(time * 0.018 + index * 2.2 + 1.3) * 0.65 : 0; });
+    poseRider(rival, rivalStun, npc.stunSide || 1);
     rivalParts.tail.rotation.z = runWave * -0.2;
     if (race.mode === 'duel' && !race.challenge) {
       rival.position.x = npc.x;
@@ -1512,7 +1693,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, prepareSignal = 0 }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -1522,7 +1703,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
   const raceRef = useRef(race);
   raceRef.current = race;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap };
+  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -1542,6 +1723,8 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
       lasso: (target) => callbackRefs.current.onLasso?.(target),
       shield: (active) => callbackRefs.current.onShield?.(active),
       lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
+      pistol: (target) => callbackRefs.current.onPistol?.(target),
+      pistolHit: (info) => callbackRefs.current.onPistolHit?.(info),
       }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
     } catch (error) {
       callbackRefs.current.onError?.(error instanceof Error ? error.message : String(error));

@@ -12,6 +12,7 @@ export class DesertGroove {
     this.stage = 'desert';
     this.context = null;
     this.master = null;
+    this.whiteNoise = null;
     this.timer = null;
     this.step = 0;
     this.nextTime = 0;
@@ -21,6 +22,106 @@ export class DesertGroove {
     this.crySource = null;
     this.lastCry = -Infinity;
     this.session = 0;
+    this.hoofTime = 0;
+    this.hoofBeat = 0;
+    this.gallopOn = false;
+    this.gallopRate = 1;
+  }
+
+  /** Stampede layer: galloping hooves under the music while the race runs. */
+  setGallop(on, rate = 1) {
+    if (on && !this.gallopOn && this.context) this.hoofTime = this.context.currentTime + 0.05;
+    this.gallopOn = Boolean(on);
+    this.gallopRate = Math.max(0.4, Math.min(1.8, rate || 1));
+  }
+
+  /** One hoof strike: a dull low thud plus a short gritty dirt crack. */
+  hoof(time, volume = 1, pitch = 1) {
+    const ctx = this.context;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(115 * pitch, time);
+    osc.frequency.exponentialRampToValueAtTime(48 * pitch, time + 0.07);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.2 * volume, time + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.09);
+    osc.connect(gain);
+    gain.connect(this.master);
+    osc.start(time);
+    osc.stop(time + 0.1);
+    const src = ctx.createBufferSource();
+    const filter = ctx.createBiquadFilter();
+    const ng = ctx.createGain();
+    src.buffer = this.noiseBuffer();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(900 * pitch, time);
+    filter.Q.value = 0.9;
+    ng.gain.setValueAtTime(0.11 * volume, time);
+    ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    src.connect(filter);
+    filter.connect(ng);
+    ng.connect(this.master);
+    src.start(time, Math.random() * 0.9, 0.05);
+  }
+
+  /** Schedule the herd: several horses, each a 4-beat gallop, slightly out of phase. */
+  scheduleGallop() {
+    if (!this.gallopOn || !this.context) return;
+    const horizon = this.context.currentTime + 0.12;
+    if (this.hoofTime < this.context.currentTime - 0.2) this.hoofTime = this.context.currentTime + 0.02;
+    // Stride ≈ 0.4 s at race pace; the four hooves land in a quick roll then a pause.
+    const stride = 0.42 / this.gallopRate;
+    const pattern = [0, 0.11, 0.2, 0.27];
+    const herd = [[0, 1, 1], [0.19, 0.7, 0.86], [0.33, 0.55, 1.12]];
+    while (this.hoofTime < horizon) {
+      const beat = this.hoofBeat % 4;
+      herd.forEach(([offset, volume, pitch]) => {
+        const t = this.hoofTime + offset * stride + pattern[beat] * stride + (Math.random() - 0.5) * 0.012;
+        this.hoof(t, volume * (0.85 + Math.random() * 0.3), pitch * (0.95 + Math.random() * 0.1));
+      });
+      this.hoofBeat += 1;
+      this.hoofTime += beat === 3 ? stride - pattern[3] * stride : (pattern[beat + 1] - pattern[beat]) * stride;
+    }
+  }
+
+  /** Pistol shot: a sharp crack, a low boom and a desert echo. */
+  gunshot() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    const makeBurst = (at, duration, volume, type, freq) => {
+      const length = Math.ceil(ctx.sampleRate * duration);
+      const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i += 1) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (length * 0.18));
+      const src = ctx.createBufferSource();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+      src.buffer = buffer;
+      filter.type = type;
+      filter.frequency.setValueAtTime(freq, at);
+      gain.gain.value = volume;
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(at);
+    };
+    makeBurst(time, 0.35, 0.9, 'lowpass', 3200);
+    makeBurst(time, 0.08, 0.5, 'highpass', 2500);
+    makeBurst(time + 0.16, 0.4, 0.16, 'lowpass', 1400);
+    makeBurst(time + 0.34, 0.45, 0.07, 'lowpass', 900);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, time);
+    osc.frequency.exponentialRampToValueAtTime(38, time + 0.2);
+    gain.gain.setValueAtTime(0.7, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.25);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(time);
+    osc.stop(time + 0.26);
   }
 
   setStage(stage) {
@@ -57,6 +158,7 @@ export class DesertGroove {
       this.step += 1;
       this.nextTime += stepLength;
     }
+    this.scheduleGallop();
   }
 
   tone(frequency, time, duration, type, volume, filterFrequency = null) {
@@ -79,15 +181,22 @@ export class DesertGroove {
     oscillator.stop(time + duration + 0.025);
   }
 
+  /** One shared second of white noise, reused by every hit instead of a fresh buffer each time. */
+  noiseBuffer() {
+    if (!this.whiteNoise || this.whiteNoise.sampleRate !== this.context.sampleRate) {
+      const length = this.context.sampleRate;
+      this.whiteNoise = this.context.createBuffer(1, length, this.context.sampleRate);
+      const data = this.whiteNoise.getChannelData(0);
+      for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
+    }
+    return this.whiteNoise;
+  }
+
   noise(time, duration, volume, highpass = 5000) {
-    const length = Math.ceil(this.context.sampleRate * duration);
-    const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
     const source = this.context.createBufferSource();
     const filter = this.context.createBiquadFilter();
     const gain = this.context.createGain();
-    source.buffer = buffer;
+    source.buffer = this.noiseBuffer();
     filter.type = 'highpass';
     filter.frequency.setValueAtTime(highpass, time);
     gain.gain.setValueAtTime(volume, time);
@@ -95,8 +204,7 @@ export class DesertGroove {
     source.connect(filter);
     filter.connect(gain);
     gain.connect(this.master);
-    source.start(time);
-    source.stop(time + duration);
+    source.start(time, Math.random() * Math.max(0, 1 - duration), duration);
   }
 
   playWestern(step, time) {
