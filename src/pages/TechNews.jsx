@@ -24,7 +24,7 @@ export default function TechNews() {
   const copy = {
     en: {
       section: 'TECH NEWS',
-      updated: 'Updated 28.09.2026',
+      updated: 'Updated 29.09.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -37,7 +37,7 @@ export default function TechNews() {
     },
     fr: {
       section: 'ACTUS TECH',
-      updated: 'Mis à jour le 28.09.2026',
+      updated: 'Mis à jour le 29.09.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -50,7 +50,7 @@ export default function TechNews() {
     },
     ar: {
       section: 'أخبار التقنية',
-      updated: 'آخر تحديث 28.09.2026',
+      updated: 'آخر تحديث 29.09.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -63,7 +63,7 @@ export default function TechNews() {
     },
   }[lang] || {
     section: 'ACTUS TECH',
-    updated: 'Mis à jour le 28.09.2026',
+    updated: 'Mis à jour le 29.09.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -75,14 +75,17 @@ export default function TechNews() {
     back: 'Retour au hub',
   };
 
-  // Actus tech de la semaine du 21 au 28.09.2026 : SpaceX (vol 14 de Starship),
-  // Microsoft (Copilot Home / Code / Autopilot), Apple (verdict Taptic Engine),
-  // OpenAI (agent sorti du cadre en Australie) et Meta (Connect 2026). Les plus
-  // récentes ouvrent la page ; chaque carte affiche le visuel officiel publié
-  // par la marque ou par l’article source (page de lancement SpaceX, blog
-  // Microsoft, newsroom Meta, photo de presse The Verge / CNBC), avec la carte
-  // éditoriale du gabarit du robot (`fallbackImage`, public/*.svg) en repli.
+  // Actus tech du jour (29.09.2026) : bilan du vol 14 de Starship (première
+  // mise en orbite), plateforme de sécurité des agents de NVIDIA (OpenShell +
+  // Sentry) et déjeuner IA à la Maison-Blanche. Les plus récentes ouvrent la
+  // page ; chaque carte affiche le visuel officiel publié par la marque ou par
+  // l’article source (page de lancement SpaceX, communiqué NVIDIA, photo de
+  // presse Reuters / Semafor), avec la carte éditoriale du gabarit du robot
+  // (`fallbackImage`, public/*.svg) en repli.
   const articles = useMemo(() => [
+    { to: '/news/tech/starship-vol-14-orbite-atteinte', image: 'https://sxcontent9668.azureedge.us/cms-assets/assets/Flight_14_Website_Desktop_4_734a6bbf25.jpg', fallbackImage: 'starship-vol-14-orbite-news.svg', alt: 'Starship — visuel officiel du quatorzième vol d’essai sur la page de lancement de SpaceX', badge: 'SPACEX · ESPACE', kicker: '29.09.2026 · SPACEX', title: 'STARSHIP EST ENFIN EN ORBITE.', excerpt: 'Première mise en orbite de l’histoire de la fusée lundi, avec 26 satellites Starlink V3 déployés — une première. Une panne de moteur en montée a ramené le vaisseau après 3 h 09, et il a explosé en basculant après son amerrissage.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/tech/nvidia-open-agent-safety-platform', image: 'https://iprsoftwaremedia.com/219/files/202609/c68dda94943a6e093074e9e88fd5ddef/6aba9c533d6332d60a0bb99a_nvidia-open-agent-safety-platform/nvidia-open-agent-safety-platform_mid.png?v=f9cea0c6-00ad-4b7f-b0a0-6bc06b39af63', fallbackImage: 'nvidia-agent-safety-news.svg', alt: 'Visuel officiel du communiqué NVIDIA Open Agent Safety Platform', badge: 'NVIDIA · SÉCURITÉ IA', kicker: '29.09.2026 · NVIDIA', title: 'NVIDIA MET LES AGENTS EN CAGE.', excerpt: 'OpenShell, un bac à sable open source, et Sentry, une surveillance dans le silicium des DPU BlueField-4 : la nouvelle plateforme de NVIDIA contient les agents autonomes qui sortent de leur cadre. Plus de 100 partenaires, OpenAI absent.', read: copy.read, sentiment: 'mixed' },
+    { to: '/news/tech/midi-ia-maison-blanche', image: 'https://img.semafor.com/4edcc71f032e922ad0fa3f238b2206d9949f984f-2048x1294.jpg?w=740&q=75&auto=format&h=467', fallbackImage: 'ia-maison-blanche-news.svg', alt: 'Sam Altman (OpenAI) et Mark Zuckerberg (Meta) à un dîner d’État à la Maison-Blanche — photo de presse Evelyn Hockstein / Reuters', badge: 'MAISON-BLANCHE · IA', kicker: '29.09.2026 · REUTERS', title: 'TRUMP REÇOIT LES 6 BOSS DE L’IA.', excerpt: 'Zuckerberg, Amodei, Brockman, Pichai, Karp et Huang déjeunent à la Maison-Blanche pour arbitrer la régulation de l’IA. Le même jour, Hinton, Bengio et des chercheurs des grands laboratoires alertent sur une « explosion d’intelligence ».', read: copy.read, sentiment: 'mixed' },
     { to: '/news/tech/starship-flight-14-premier-vol-orbital', image: 'https://sxcontent9668.azureedge.us/cms-assets/assets/Flight_14_Website_Desktop_4_734a6bbf25.jpg', fallbackImage: 'starship-flight-14-news.svg', alt: 'Starship — visuel officiel du quatorzième vol d’essai sur la page de lancement de SpaceX', badge: 'SPACEX · ESPACE', kicker: '28.09.2026 · SPACEX', title: 'STARSHIP VISE L’ORBITE POUR DE VRAI.', excerpt: 'Quatorzième vol d’essai ce lundi : première insertion en orbite visée, puis le déploiement de 26 satellites Starlink V3 — jusqu’à 26 Tbps de capacité ajoutée. Fenêtre ouverte à 12 h 15 UTC, repli les 29 et 30 septembre.', read: copy.read, sentiment: 'positive' },
     { to: '/news/tech/copilot-home-code-autopilot', image: 'https://blogs.microsoft.com/wp-content/uploads/2026/09/OMB-Copilot-9-25-Hero-9_22_26.png', fallbackImage: 'copilot-autopilot-news.svg', alt: 'Les logos de Copilot et sa signature « The AI built for work » — visuel officiel de l’annonce Microsoft du 25 septembre 2026', badge: 'MICROSOFT · IA', kicker: '25.09.2026 · MICROSOFT', title: 'COPILOT DEVIENT UN AGENT.', excerpt: 'Home, Code, Autopilot : Microsoft réorganise son assistant autour de trois briques, dont un agent hébergé dans le cloud qui continue de travailler hors connexion. Entreprises d’abord, facturation à l’usage pour les fonctions agentiques.', read: copy.read, sentiment: 'mixed' },
     { to: '/news/tech/apple-taptic-engine-verdict-5-7-milliards', image: 'https://platform.theverge.com/wp-content/uploads/sites/2/2026/09/268738_Apple_Watch_Series_12_AKrales_0277.jpg?quality=90&strip=all&crop=0%2C0%2C100%2C100&w=1600', fallbackImage: 'apple-taptic-verdict-news.svg', alt: 'Apple Watch Series 12 — photo de presse d’Amelia Holowaty Krales pour The Verge', badge: 'APPLE · JUSTICE', kicker: '25.09.2026 · REUTERS', title: 'APPLE ÉCOPE À 5,7 MILLIARDS.', excerpt: 'Un jury fédéral de San Diego juge que le Taptic Engine des iPhone et Apple Watch contrefait deux brevets de Taction Technology. Le verdict le plus lourd jamais rendu contre une entreprise technologique aux États-Unis ; Apple fera appel.', read: copy.read, sentiment: 'negative' },

@@ -26,7 +26,7 @@ export default function CinemaNews() {
   const copy = {
     en: {
       section: 'CINEMA & SERIES NEWS',
-      updated: 'Updated 28.09.2026',
+      updated: 'Updated 29.09.2026',
       today: 'FEATURED STORY',
       read: 'READ THE STORY',
       seeAll: 'See all news',
@@ -39,7 +39,7 @@ export default function CinemaNews() {
     },
     fr: {
       section: 'ACTUS CINÉMA & SÉRIES',
-      updated: 'Mis à jour le 28.09.2026',
+      updated: 'Mis à jour le 29.09.2026',
       today: 'À LA UNE',
       read: 'LIRE L’ARTICLE',
       seeAll: 'Voir toutes les actus',
@@ -52,7 +52,7 @@ export default function CinemaNews() {
     },
     ar: {
       section: 'أخبار السينما والمسلسلات',
-      updated: 'آخر تحديث 28.09.2026',
+      updated: 'آخر تحديث 29.09.2026',
       today: 'الخبر الرئيسي',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل الأخبار',
@@ -65,7 +65,7 @@ export default function CinemaNews() {
     },
   }[lang] || {
     section: 'ACTUS CINÉMA & SÉRIES',
-    updated: 'Mis à jour le 28.09.2026',
+    updated: 'Mis à jour le 29.09.2026',
     today: 'À LA UNE',
     read: 'LIRE L’ARTICLE',
     seeAll: 'Voir toutes les actus',
@@ -80,9 +80,13 @@ export default function CinemaNews() {
   // TODO : brancher un vrai flux cinéma (API TMDB / robots d'actus) comme pour
   // le gaming. Pour l'instant, quelques actus de rédaction qui ouvrent la page
   // en beauté.
-  // Actus cinéma du jour (27.09.2026) : les plus récentes ouvrent la page —
-  // box-office, bande-annonce Werwulf et casting du biopic Fred Astaire.
+  // Actus cinéma du jour (29.09.2026) : les plus récentes ouvrent la page —
+  // box-office mondial d’Endgame, sortie numérique de Coyote vs. Acme et fin
+  // de la trilogie Mononoke sur Netflix.
   const articles = useMemo(() => [
+    { to: '/news/cinema/endgame-encore-record-avatar', image: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-avatar-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · MARVEL STUDIOS', alt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', badge: 'CINÉMA · BOX-OFFICE', kicker: '29.09.2026 · ONE MANN’S MOVIES', title: 'ENDGAME FRÔLE LE TRÔNE D’AVATAR.', excerpt: 'Le week-end mondial de la ressortie atteint 86 M$ (26 M$ en Amérique du Nord, 60 M$ à l’international) et porte le total à environ 2,885 milliard. À 39 millions du record d’Avatar, avec un démarrage record au Royaume-Uni (4,12 M£).', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/coyote-vs-acme-numerique', image: youTubeThumbUrl('Bpg3tJ4f3v0'), fallbackImage: 'coyote-vs-acme-numerique-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · KETCHUP ENTERTAINMENT', alt: 'Wile E. Coyote et l’avocat Kevin Avery dans la bande-annonce officielle de Coyote vs. Acme', badge: 'LOONEY TUNES · KETCHUP', kicker: '29.09.2026 · KETCHUP ENTERTAINMENT', title: 'COYOTE VS. ACME PASSE EN LIGNE.', excerpt: 'Le film sauvé de la déduction fiscale de Warner Bros. est disponible dès aujourd’hui en numérique (24,99 $) sur Prime Video, Apple TV et Fandango at Home. 96 % de la critique, plus de 100 M$ au box-office mondial.', read: copy.read, sentiment: 'positive' },
+    { to: '/news/cinema/mononoke-chapter-3-netflix', image: youTubeThumbUrl('R6PUcxSZ7YM'), fallbackImage: 'mononoke-chapter-3-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · NETFLIX ANIME', alt: 'Le Marchand de médicaments devant l’Ōoku dans la bande-annonce officielle de Mononoke The Movie: Chapter III', badge: 'MONONOKE · NETFLIX', kicker: '29.09.2026 · NETFLIX', title: 'MONONOKE CLÔTURE SA TRILOGIE.', excerpt: 'Chapter III – The Curse of the Serpent arrive ce soir sur Netflix dans le monde entier. Le Marchand de médicaments affronte une malédiction née dans les rangs supérieurs de l’Ōoku, pour le dernier film de la trilogie.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/box-office-us-endgame-encore-26-millions', image: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-encore-news.svg', imageCredit: 'BANDE-ANNONCE OFFICIELLE · MARVEL STUDIOS', alt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', badge: 'CINÉMA · BOX-OFFICE', kicker: '28.09.2026 · DEADLINE', title: 'ENDGAME GARDE LA TÊTE : 26 M$.', excerpt: 'Bilan consolidé du week-end américain : la ressortie d’Avengers: Endgame termine première avec 26 M$, devant Resident Evil (23,3 M$, plus de 100 M$ en dix jours). Meilleur 39e week-end depuis 2015 avec 122,3 M$.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/the-last-of-us-saison-3-john-goodman-laura-bailey', image: 'https://variety.com/wp-content/uploads/2026/09/LastofUs.Split_.1.jpg?w=1000&h=667&crop=1', fallbackImage: 'last-of-us-saison-3-casting-news.svg', imageCredit: 'PHOTOS DE PRESSE · GETTY IMAGES / HBO / VARIETY', alt: 'Photos de presse de Laura Bailey, John Goodman et Ian Alexander, nouveaux visages de la saison 3 de The Last of Us', badge: 'THE LAST OF US · HBO', kicker: '28.09.2026 · VARIETY', title: 'GOODMAN REJOINT THE LAST OF US.', excerpt: 'Pour The Last of Us Day, HBO annonce John Goodman, Ian Alexander et Laura Bailey — la voix d’Abby dans le jeu — au casting de la saison 3, attendue en 2027 avec Craig Mazin seul showrunner.', read: copy.read, sentiment: 'positive' },
     { to: '/news/cinema/godzilla-minus-zero-premiere-nyff', image: 'https://variety.com/wp-content/uploads/2026/09/GettyImages-2297305809.jpg?w=1000&h=667&crop=1', fallbackImage: 'godzilla-minus-zero-news.svg', imageCredit: 'PHOTO DE PRESSE · GETTY IMAGES / VARIETY', alt: 'Minami Hamabe, Ryunosuke Kamiki et Takashi Yamazaki sur le tapis rouge de Godzilla Minus Zero au New York Film Festival', badge: 'GODZILLA · NYFF', kicker: '28.09.2026 · VARIETY', title: 'GODZILLA RUGIT À NEW YORK.', excerpt: 'Première mondiale applaudie au New York Film Festival pour la suite de Godzilla Minus One, premier film de la saga classé R. Sortie le 3 novembre au Japon, le 4 en France et le 6 aux États-Unis.', read: copy.read, sentiment: 'positive' },
