@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
-import { sardiniaObstacle, sardiniaVillage } from './sardiniaStage';
+import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
 import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE } from './mirageRules';
 
 const LANES = [-2.1, 0, 2.1];
@@ -234,7 +234,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
   if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
   if (sardinia) {
-    block(cube, new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+    // The village only occupies the left bank: the ground stops at the quay on the right.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [-17.35, -0.64, -35], [45.3, 0.6, 160]);
+    // Open sea along the whole right-hand side, below the quay.
+    const bay = new THREE.Mesh(new THREE.PlaneGeometry(130, 170), new THREE.MeshStandardMaterial({ color: 0x2f7f92, roughness: 0.35, metalness: 0.1, flatShading: true }));
+    bay.rotation.x = -Math.PI / 2;
+    bay.position.set(70.3, -0.92, -35);
+    scene.add(bay);
     // A flat sea band on the horizon, just visible over the low coastal hills.
     const sea = block(new THREE.PlaneGeometry(240, 13), new THREE.MeshBasicMaterial({ color: 0x2f7f92 }), scene, [0, 6, -94]);
     sea.renderOrder = -1;
@@ -247,7 +253,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const height = sardinia ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
     const mountainSide = Math.random() > 0.5 ? 1 : -1;
-    mountain.position.set(mountainSide * (17 + Math.random() * 11), height / 2 - 1, -38 - Math.random() * 26);
+    // Keep the hills to the sides; Costa Omertà preserves its land-side hills
+    // and open sea horizon, without blocking the central sunset.
+    const mountainX = sardinia ? -18 - Math.random() * 15 : mountainSide * (17 + Math.random() * 11);
+    mountain.position.set(mountainX, height / 2 - 1, -38 - Math.random() * 26);
     mountain.scale.set(width, height, 3 + Math.random() * 5);
     scene.add(mountain);
   }
@@ -353,10 +362,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       scenery.push(item);
     }
   } else if (sardinia) {
-    for (let i = 0; i < 10; i++) for (const side of [-1, 1]) {
-      const item = sardiniaVillage(i, side);
-      scene.add(item);
-      scenery.push(item);
+    for (let i = 0; i < 10; i++) {
+      const village = sardiniaVillage(i, -1);
+      const seaside = sardiniaSeaside(i);
+      scene.add(village, seaside);
+      scenery.push(village, seaside);
     }
   } else for (let i = 0; i < 18; i++) {
     const item = makeScenery();
@@ -578,6 +588,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       });
       scenery.forEach((item) => {
         item.position.z += speed * item.userData.speedFactor * dt;
+        const boat = item.userData.boat;
+        if (boat) {
+          boat.position.y = -1.05 + Math.sin(time * 0.0017 + boat.userData.bob) * 0.07;
+          boat.rotation.z = Math.sin(time * 0.0013 + boat.userData.bob) * 0.05;
+        }
         if (item.position.z > (western || prairie || sardinia ? 15 : 9)) item.position.z -= western || prairie || sardinia ? 110 : 86;
       });
       rows.forEach((row) => {

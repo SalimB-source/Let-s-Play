@@ -3,7 +3,11 @@
   --mirage-dim: rgba(255, 242, 221, .64);
   --mirage-line: rgba(255, 218, 169, .18);
   --mirage-panel: #151020;
-  padding: 38px 0 30px;
+  /* La barre de navigation est fixe (île à 16px + 64px de haut = 80px) :
+     sans respiration en haut, le titre « MIRAGE RUSH » passait dessous et
+     la section semblait collée (voire coupée) en haut de l'écran. On aligne
+     la page sur les autres sections du site (110–128px). */
+  padding: 116px 0 44px;
   color: var(--mirage-ink);
   background:
     radial-gradient(760px 380px at 12% 0%, rgba(226, 128, 86, .12), transparent 68%),
@@ -67,7 +71,11 @@
 }
 .mirage-sound-button span { font-size: 14px; }
 .mirage-sound-button.is-on { color: #f5d276; border-color: rgba(245,210,118,.34); }
-.mirage-viewport { position: relative; height: clamp(410px, 48vw, 570px); min-height: 410px; overflow: hidden; isolation: isolate; background: #4b2860; }
+/* Fenêtre de jeu : plus haute qu'avant (410–570px) pour laisser respirer la
+   route, l'horizon et le ciel du désert. Le canvas s'adapte tout seul
+   (ResizeObserver dans MirageWorld), il n'y a rien à changer côté JS.
+   Le min(…, 88vh) évite qu'elle dépasse l'écran sur les portables peu hauts. */
+.mirage-viewport { position: relative; height: min(clamp(540px, 56vw, 780px), 88vh); min-height: 540px; overflow: hidden; isolation: isolate; background: #4b2860; }
 .mirage-world { position: absolute; inset: 0; z-index: 0; }
 .mirage-canvas { display: block; width: 100%; height: 100%; outline: 0; }
 .mirage-sun-glare { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(29, 17, 45, .2), transparent 38%, rgba(14, 10, 25, .38)); }
@@ -198,16 +206,18 @@
 @media (max-width: 1050px) {
   .mirage-layout { grid-template-columns: minmax(0,1fr) 285px; gap: 14px; }
   .mirage-side-panel .panel-frame { padding-inline: 13px; }
-  .mirage-viewport { height: 500px; }
+  .mirage-viewport { height: min(640px, 88vh); }
 }
 @media (max-width: 820px) {
   .mirage-layout { grid-template-columns: minmax(0,1fr); }
   .mirage-side-panel { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); align-items: start; }
   .mirage-leaderboard { grid-row: span 2; }
-  .mirage-viewport { height: clamp(440px, 74vw, 580px); }
+  .mirage-viewport { height: min(clamp(520px, 86vw, 660px), 88vh); }
 }
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
-  .mirage-page { padding-top: 23px; }
+  /* Barre mobile : 68px de haut sous l'encoche — on repart de 104px comme
+     les autres pages (23px laissaient le titre sous la barre). */
+  .mirage-page { padding-top: calc(104px + env(safe-area-inset-top, 0px)); }
   .mirage-page .wrap { width: min(100% - 24px, 520px); }
   .mirage-heading { align-items: flex-start; gap: 10px; padding-bottom: 18px; }
   .mirage-eyebrow { flex-wrap: wrap; gap: 6px; font-size: 8px; letter-spacing: .12em; }
@@ -223,7 +233,9 @@
   .mirage-game-controls-top { gap: 6px; }
   .mirage-sound-button { padding: 6px 7px; font-size: 7px; letter-spacing: .06em; }
   .mirage-live-pill { font-size: 7px; }
-  .mirage-viewport { height: 465px; min-height: 430px; }
+  /* Plus haute qu'avant (465px) mais proportionnelle à l'écran du téléphone,
+     pour ne pas devenir plus grande que la fenêtre sur les petits modèles. */
+  .mirage-viewport { height: clamp(480px, 66vh, 620px); min-height: 480px; }
   .mirage-hud { top: 9px; left: 8px; right: 8px; grid-template-columns: 1fr auto 1fr; gap: 4px; }
   .mirage-hud-card { min-width: 0; padding: 7px 8px; }
   .mirage-hud-card strong { font-size: 17px; }
@@ -1236,7 +1248,7 @@
 
 .mirage-room-panel { padding: 22px 24px; margin-block: 0; }
 .mirage-room-code { letter-spacing: .15em; color: #ffce68; user-select: all; }
-.mirage-online-world { position: relative; height: min(62vh, 560px); min-height: 350px; }
+.mirage-online-world { position: relative; height: min(70vh, 640px); min-height: 400px; }
 .mirage-room-error {
   padding: 14px 18px;
   border-radius: 8px;

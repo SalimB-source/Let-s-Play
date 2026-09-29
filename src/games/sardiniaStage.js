@@ -110,3 +110,93 @@ export function sardiniaVillage(index, side) {
   group.userData.speedFactor = 1;
   return group;
 }
+
+const BOAT_HULLS = [0x3e6e7a, 0xb3554d, 0xe7ddc8, 0x2f5a4a];
+
+/** Small wooden fishing boat (gozzo) moored off the quay. */
+function fishingBoat(index) {
+  const group = new THREE.Group();
+  const hull = material(BOAT_HULLS[index % BOAT_HULLS.length]);
+  const trim = material(0xe8d8b0);
+  const wood = material(0x7a5232);
+  box(group, hull, 0, 0.25, 0, 1.5, 0.5, 3.6);
+  const bow = new THREE.Mesh(new THREE.ConeGeometry(0.75, 1.1, 4), hull);
+  bow.rotation.x = -Math.PI / 2;
+  bow.rotation.y = Math.PI / 4;
+  bow.scale.set(1, 1, 0.5);
+  bow.position.set(0, 0.25, -2.3);
+  group.add(bow);
+  box(group, trim, 0, 0.52, 0, 1.56, 0.08, 3.66);
+  box(group, wood, 0, 0.45, 0.2, 1.3, 0.06, 2.6);
+  if (index % 2 === 0) {
+    box(group, wood, 0, 1.4, -0.3, 0.08, 1.9, 0.08);
+    const sail = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.4), new THREE.MeshStandardMaterial({ color: 0xf1e3c4, roughness: 0.9, side: THREE.DoubleSide }));
+    sail.rotation.y = Math.PI / 2;
+    sail.position.set(0, 1.45, 0.25);
+    group.add(sail);
+  } else {
+    box(group, material(0xe7ddc8), 0, 0.8, 0.6, 0.9, 0.6, 0.9);
+  }
+  return group;
+}
+
+/**
+ * Seaside segment for the right-hand side of Costa Omertà: a stone quay edge
+ * with bollards and lamp posts, the water below, and a boat moored now and then.
+ * Segments are 11 m long and scroll like the village houses on the other side.
+ */
+export function sardiniaSeaside(index) {
+  const group = new THREE.Group();
+  const stone = material(0xcabf9c);
+  const stoneDark = material(0xa89a78);
+  const iron = material(0x2e2620);
+  const foam = new THREE.MeshBasicMaterial({ color: 0xcfe9ea, transparent: true, opacity: 0.55, depthWrite: false });
+  // Capstones along the quay edge, alternating shades so the speed reads well.
+  for (let i = 0; i < 5; i++) {
+    const z = -4.4 + i * 2.2;
+    box(group, i % 2 ? stone : stoneDark, 5.9, -0.28, z, 1.2, 0.22, 2.16);
+    box(group, i % 2 ? stoneDark : stone, 6.45, -0.95, z, 0.12, 1.2, 2.16);
+  }
+  // Mooring bollard.
+  const bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 8), iron);
+  bollard.position.set(6, 0.08, -1.5);
+  group.add(bollard);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.08, 8), iron);
+  cap.position.set(6, 0.36, -1.5);
+  group.add(cap);
+  // Harbour lamp post every other segment.
+  if (index % 2 === 1) {
+    box(group, iron, 5.9, 1.3, 2.5, 0.12, 3, 0.12);
+    box(group, iron, 5.9, 2.85, 2.5, 0.3, 0.1, 0.3);
+    const lamp = box(group, new THREE.MeshBasicMaterial({ color: 0xffd98a }), 5.9, 2.65, 2.5, 0.24, 0.3, 0.24);
+    lamp.userData.glow = true;
+  }
+  // Foam streaks on the water to give the sea some movement.
+  for (let i = 0; i < 3; i++) {
+    const streak = new THREE.Mesh(new THREE.PlaneGeometry(1.6 + (i + index) % 3, 0.14), foam);
+    streak.rotation.x = -Math.PI / 2;
+    streak.position.set(8 + ((index * 7 + i * 5) % 17), -0.88, -4 + i * 3.4);
+    group.add(streak);
+  }
+  // A boat moored off the quay, bobbing on the swell.
+  if (index % 3 !== 2) {
+    const boat = fishingBoat(index);
+    boat.position.set(index % 2 ? 8.4 : 11.5, -1.05, 0);
+    boat.rotation.y = (index % 2 ? 0.05 : -0.2);
+    boat.userData.bob = index * 1.7;
+    group.add(boat);
+    group.userData.boat = boat;
+  }
+  // Rope from the bollard to the boat.
+  if (index % 3 !== 2 && index % 2) {
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2.4, 4), material(0xc9b27f));
+    rope.rotation.z = Math.PI / 2 - 0.22;
+    rope.rotation.y = 0.4;
+    rope.position.set(7.1, -0.1, -0.9);
+    group.add(rope);
+  }
+  group.position.z = 6 - index * 11;
+  group.userData.speedFactor = 1;
+  group.userData.seaside = true;
+  return group;
+}
