@@ -1287,6 +1287,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             }
           }
         }
+        const crowd = item.userData.people;
+        if (crowd?.length) {
+          // Les passants d'Alger la Blanche : balancement discret, un
+          // mouvement de tête suggéré — la foule respire sans coûter cher.
+          for (const person of crowd) {
+            const bob = person.userData.bob || 0;
+            person.rotation.y = (person.userData.baseRotation || 0) + Math.sin(time * 0.001 + bob) * 0.12;
+            person.position.y = (person.userData.baseY || 0) + Math.abs(Math.sin(time * 0.0017 + bob)) * 0.012;
+          }
+        }
         if (item.position.z > (western || prairie || sardinia || alger ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger ? 110 : 86;
       });
 
