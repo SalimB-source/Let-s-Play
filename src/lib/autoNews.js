@@ -11,7 +11,14 @@ const storyNumber = (label) => {
   return year * 10000 + month * 100 + day;
 };
 
+// Articles du robot repris en version éditoriale complète dans CurrentNews.jsx
+// (évite les doublons dans la grille GamingNews et dans la recherche).
+const SUPERSEDED_AUTO_SLUGS = new Set([
+  'physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de',
+]);
+
 export const autoNewsStories = Object.values(autoStories)
+  .filter((story) => !SUPERSEDED_AUTO_SLUGS.has(story.slug))
   .sort((a, b) => storyNumber(b.date) - storyNumber(a.date));
 
 const listingOf = (story) => ({

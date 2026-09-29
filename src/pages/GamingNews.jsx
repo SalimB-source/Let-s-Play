@@ -26,7 +26,7 @@ export default function News(){
         ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-      ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 28.09.2026', section: 'FEATURED NEWS', today: 'NEWS OF THE DAY'
+      ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 29.09.2026', section: 'FEATURED NEWS', today: 'NEWS OF THE DAY'
     },
     fr: {
       cards: [
@@ -34,7 +34,7 @@ export default function News(){
         ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-      ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 28.09.2026', section: 'ACTUS À LA UNE', today: 'NEWS DU JOUR'
+      ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 29.09.2026', section: 'ACTUS À LA UNE', today: 'NEWS DU JOUR'
     },
     ar: {
       cards: [
@@ -42,7 +42,7 @@ export default function News(){
         ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
         ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
         ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-      ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 28.09.2026', section: 'أبرز الأخبار', today: 'أخبار اليوم'
+      ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 29.09.2026', section: 'أبرز الأخبار', today: 'أخبار اليوم'
     }
   }[lang] || null;
   const featured = featuredCopy || null;
@@ -50,11 +50,12 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
-  // Les actus du 28.09.2026 (rédigées à la main au gabarit du robot — la
-  // première, Minecraft × le Sift, est aussi la une de l'accueil) ouvrent la
+  // Les actus du 28-29.09.2026 (rédigées à la main au gabarit du robot — la
+  // première, Physint × Xbox, est aussi la une de l'accueil) ouvrent la
   // liste, suivies de l'actu Halo × Activision ; les actus du jour du robot
   // suivent, puis les articles manuels de la rédaction dans l'ordre.
   const articles = useMemo(() => [
+    { to: '/news/physint-budget-400-millions-xbox', image: 'kojima_mindplayer.png', alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', badge: 'PHYSINT · XBOX', kicker: '29.09.2026 · KOJIMA PRODUCTIONS', title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.', excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft a signé pour un montant « nettement inférieur ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
     { to: '/news/minecraft-the-sift-nouvelle-dimension', image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg', fallbackImage: 'minecraft-the-sift-news.svg', alt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios', badge: 'MINECRAFT · THE SIFT', kicker: '28.09.2026 · MOJANG', title: 'MINECRAFT OUVRE SA 4E DIMENSION.', excerpt: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/the-witcher-3-remastered-sortie-29-septembre', image: 'https://public.cdn.cdpr.app/common/news/974db3ceaf0e6035a922cbbd7c7770b0_q90_1280x720.jpeg', fallbackImage: 'witcher-3-remastered-news.svg', alt: 'Geralt de Riv sur le visuel officiel de The Witcher 3: Wild Hunt – Remastered — CD PROJEKT RED', badge: 'THE WITCHER 3 · REMASTERED', kicker: '28.09.2026 · CD PROJEKT RED', title: 'THE WITCHER 3 REVIENT REMASTERISÉ.', excerpt: 'Déverrouillage mondial mardi à 10 h UTC (11 h à Alger) sur PC, PS5, Xbox Series X|S et Switch 2. Gratuit pour les propriétaires du jeu sur PC et consoles actuelles, environ 45 Go, sans préchargement.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/xbox-nadella-restructuration', image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', fallbackImage: 'xbox-nadella-news.svg', alt: 'Portrait officiel de Satya Nadella, PDG de Microsoft', badge: 'XBOX · MICROSOFT', kicker: '28.09.2026 · VGC', title: 'NADELLA DÉFEND LA CURE XBOX.', excerpt: 'Le PDG de Microsoft juge « formidable » la rationalisation menée par Asha Sharma et promet un retour à la croissance de Xbox, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },

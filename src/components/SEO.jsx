@@ -104,6 +104,11 @@ const pageMeta = {
     description: 'Valeur marchande recalculée chaque semaine avec TransferRoom (xTV), note globale dynamique, profils de croissance, scénarios communautaires et crises de vestiaire : ce que change la refonte du mode Carrière d’EA Sports FC 27, attendu le 25 septembre 2026.',
     image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', type: 'article', published: '2026-09-22', section: 'Actualités gaming',
   },
+  '/news/physint-budget-400-millions-xbox': {
+    title: 'Physint : un budget de 400 millions de dollars ? Xbox aurait signé pour beaucoup moins — Let’s Play',
+    description: 'Un chiffre de 400 millions de dollars a circulé autour de Physint, le jeu d’action-espionnage de Hideo Kojima repêché par Xbox. Christopher Dring évoque un simple bruit de couloir et Jason Schreier assure que Microsoft a signé pour un montant nettement inférieur.',
+    image: 'kojima_mindplayer.png', type: 'article', published: '2026-09-29', section: 'Actualités gaming',
+  },
   '/news/minecraft-the-sift-nouvelle-dimension': {
     title: 'Minecraft : le Sift, première nouvelle dimension depuis quinze ans — Let’s Play',
     description: 'Dévoilé au Minecraft Live du 26 septembre 2026, le Sift est la quatrième dimension de Minecraft après l’Overworld, le Nether et l’End. Il débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.',

@@ -56,22 +56,20 @@ const djezzyEpisode = {
   tone: 'djezzy',
 };
 
-// Actu à la une de l'accueil — choix éditorial : l'actu Minecraft × le Sift
-// (28.09.2026, visuel officiel Mojang hotlinké + carte SVG de repli) ouvre la
-// page d'accueil, juste après les épisodes. Remettre la constante à null
-// laisse la une à la dernière actu publiée par le robot (autoNewsListing,
-// déjà triée du plus récent au plus ancien), puis en repli à l'actu manuelle
-// PHYSINT.
+// Actu à la une de l'accueil — choix éditorial : l'actu Physint × Xbox
+// (29.09.2026, miniature kojima_mindplayer.png) ouvre la page d'accueil,
+// juste après les épisodes. Remettre la constante à null laisse la une à la
+// dernière actu publiée par le robot (autoNewsListing, déjà triée du plus
+// récent au plus ancien), puis en repli à l'actu manuelle PHYSINT.
 const editorialTopStory = {
-  to: '/news/minecraft-the-sift-nouvelle-dimension',
-  image: 'https://www.minecraft.net/content/dam/minecraftnet/games/spicewood/screenshots/MCL_Dungeons2_sift_1280x720.jpg',
-  fallbackImage: 'minecraft-the-sift-news.svg',
-  alt: 'Un portail ouvert vers le Sift, la nouvelle dimension de Minecraft, dans Minecraft Dungeons II — capture officielle Mojang Studios',
-  badge: 'MINECRAFT · THE SIFT',
-  kicker: '28.09.2026 · MOJANG',
-  title: 'MINECRAFT OUVRE SA 4E DIMENSION.',
-  excerpt: 'Lors du Minecraft Live du 26 septembre, Mojang a dévoilé le Sift, quatrième dimension du jeu après l’Overworld, le Nether et l’End — la première depuis quinze ans. Elle débute dans Minecraft Dungeons II le 29 septembre, avant les éditions Java et Bedrock en 2027.',
-  sentiment: 'positive',
+  to: '/news/physint-budget-400-millions-xbox',
+  image: 'kojima_mindplayer.png',
+  alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play',
+  badge: 'PHYSINT · XBOX',
+  kicker: '29.09.2026 · KOJIMA PRODUCTIONS',
+  title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.',
+  excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima, fraîchement repêché par Xbox après le retrait de PlayStation. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft s’est engagé sur un montant « nettement inférieur ».',
+  sentiment: 'mixed',
 };
 
 // Visuel de la une : URL absolue (image officielle) telle quelle, fichier
