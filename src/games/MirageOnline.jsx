@@ -90,6 +90,7 @@ export default function MirageOnline({
   const [sound, setSound] = useState(true);
   const [hud, setHud] = useState({});
   const [xp, setXp] = useState(null);
+  const [powerToast, setPowerToast] = useState(null);
 
   const latest = useRef({});
   const done = useRef(false);
@@ -914,6 +915,9 @@ export default function MirageOnline({
               <div className="mirage-game-topbar">
                 <strong>
                   {Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS
+                  {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
+                  {hud.slowed ? ' · 🪢 RALENTI' : ''}
+                  {hud.rank ? ` · #${hud.rank}` : ''}
                 </strong>
                 <span>{finished ? 'ARRIVÉE !' : active ? 'COURSE EN COURS' : 'PISTE PRÊTE'}</span>
               </div>
@@ -939,7 +943,51 @@ export default function MirageOnline({
                   }}
                   onPickup={(tier) => audio.current?.pickup(tier)}
                   onCheer={() => audio.current?.cheer()}
+                  onPowerUpPickup={(type) => {
+                    if (type === 'shield') {
+                      setPowerToast('🛡️ Bouclier ramassé ! Protection 5s');
+                      setTimeout(()=> setPowerToast(null), 2500);
+                    } else if (type === 'lasso') {
+                      setPowerToast('🪢 Lasso ramassé ! Lancement auto…');
+                      setTimeout(()=> setPowerToast(null), 2000);
+                    }
+                    audio.current?.pickup(2);
+                  }}
+                  onLasso={async (targetPlayer) => {
+                    if (!room?.code || !targetPlayer) return;
+                    try {
+                      await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                    } catch {}
+                    setPowerToast(`🪢 Lasso lancé sur ${targetPlayer.name} !`);
+                    setTimeout(()=> setPowerToast(null), 2500);
+                  }}
+                  onShield={async (isActive) => {
+                    if (!room?.code) return;
+                    try {
+                      if (isActive) {
+                        await roomAction('shield', room.code, {}, effectivePlayer);
+                      } else {
+                        await roomAction('shield', room.code, { p_clear: true, p_active: false }, effectivePlayer);
+                      }
+                    } catch {}
+                  }}
+                  onLassoHit={(info) => {
+                    if (info?.target === 'player') {
+                      setPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par un lasso ! Ralenti…');
+                      setTimeout(()=> setPowerToast(null), 2500);
+                    }
+                  }}
                 />
+                {powerToast && (
+                  <div className="mirage-power-toast" role="status" aria-live="polite">
+                    {powerToast}
+                  </div>
+                )}
+                {active && hud.rank && (
+                  <div className="mirage-power-hint">
+                    <span>POS #{hud.rank} · LASSO {hud.rank===1? '0%' : hud.rank===2? '30%' : hud.rank===3? '40%' : '60%'} · BOUCLIER 30%</span>
+                  </div>
+                )}
               </div>
               <div className="mirage-mobile-controls">
                 <button type="button" onClick={() => actions.current?.('left')}>←</button>

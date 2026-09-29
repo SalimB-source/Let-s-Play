@@ -68,6 +68,7 @@ export default function MirageRushPage() {
   const [justFinished, setJustFinished] = useState(null);
   const [progression, setProgression] = useState(() => loadProgress());
   const [award, setAward] = useState(null);
+  const [powerToast, setPowerToast] = useState(null);
   const progressRef = useRef(progression);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
@@ -283,13 +284,40 @@ export default function MirageRushPage() {
               onPickup={(tier) => audioRef.current?.pickup(tier)}
               onCheer={() => audioRef.current?.cheer()}
               actionsRef={actionsRef}
+              onPowerUpPickup={(type) => {
+                if (type === 'shield') {
+                  setPowerToast('🛡️ Bouclier ramassé ! Protection 5s');
+                } else if (type === 'lasso') {
+                  setPowerToast('🪢 Lasso ramassé ! Lancement auto…');
+                }
+                setTimeout(()=> setPowerToast(null), 2500);
+                audioRef.current?.pickup(2);
+              }}
+              onLassoHit={(info) => {
+                if (info?.target === 'rival') {
+                  setPowerToast(info.blocked ? '🛡️ L’ombre a bloqué ton lasso !' : '🪢 L’ombre est ralentie !');
+                } else if (info?.target === 'player') {
+                  setPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par le lasso de l’ombre !');
+                }
+                setTimeout(()=> setPowerToast(null), 2500);
+              }}
+              onShield={(active) => {
+                if (active) {
+                  // toast already shown via pickup
+                }
+              }}
             />
             <div className="mirage-sun-glare" aria-hidden="true" />
+            {powerToast && (
+              <div className="mirage-power-toast" role="status" aria-live="polite">
+                {powerToast}
+              </div>
+            )}
             {phase === 'playing' && (
               <div className="mirage-hud" aria-live="polite">
-                <div className="mirage-hud-card mirage-hud-score"><small>SCORE</small><strong>{hud.score.toLocaleString('fr-FR')}</strong><span>✦ {hud.gems} fragments</span></div>
-                <div className="mirage-hud-center">{race.mode === 'duel' ? <><div className="mirage-clock">{Math.round(hud.distance || 0)} / {DUEL_DISTANCE} m</div><div className="mirage-time-track"><i style={{ width: `${Math.min(100, (hud.distance || 0) / DUEL_DISTANCE * 100)}%` }} /></div></> : <><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></>}</div>
-                <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE{hud.boostLeft > 0 && <b> · BOOST</b>}</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b></small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
+                <div className="mirage-hud-card mirage-hud-score"><small>SCORE</small><strong>{hud.score.toLocaleString('fr-FR')}</strong><span>✦ {hud.gems} fragments {hud.shieldActive ? '· 🛡️' : ''} {hud.slowed ? '· 🪢' : ''}</span></div>
+                <div className="mirage-hud-center">{race.mode === 'duel' ? <><div className="mirage-clock">{Math.round(hud.distance || 0)} / {DUEL_DISTANCE} m {hud.rank ? `· #${hud.rank}` : ''}</div><div className="mirage-time-track"><i style={{ width: `${Math.min(100, (hud.distance || 0) / DUEL_DISTANCE * 100)}%` }} /></div><small style={{fontSize:'0.65rem',opacity:0.8}}>LASSO {hud.rank===1? '0%' : hud.rank===2? '30%' : '40%'} · BOUCLIER 30%</small></> : <><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></>}</div>
+                <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE{hud.boostLeft > 0 && <b> · BOOST</b>}{hud.shieldActive && <b> · 🛡️ {Math.ceil(hud.shieldLeft)}s</b>}{hud.slowed && <b> · 🪢 RALENTI</b>}</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b>{hud.shieldActive && <b> · 🛡️ {Math.ceil(hud.shieldLeft)}s</b>}</small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
               </div>
             )}
 
