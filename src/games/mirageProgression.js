@@ -53,7 +53,8 @@ export function xpForRun(result = {}) {
   const gems = Math.max(0, Number(result.gems) || 0);
   let xp = Math.round(score / 25) + gems * 3;
   if (result.mode === 'duel') xp += result.won ? 150 : 60;
-  return xp;
+  // Ten times slower progression; existing XP and unlocks are preserved.
+  return Math.floor(xp / 10);
 }
 
 export function isSkinUnlocked(skin, level) {

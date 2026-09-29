@@ -1,3 +1,4 @@
+import { CHARACTER_PALETTES } from './mirageCharacters';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
@@ -23,7 +24,7 @@ function makeExplorer(rival = false, palette = null) {
   const player = new THREE.Group();
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const mat = color => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true });
-  const palettes = [[0xb87948,0x352638,0x285e79,0xffce68,0xffe3b3], [0x393744,0xd5dde1,0xad3756,0x8ce7e0,0x34293d], [0xe2d5bd,0x684532,0x387649,0xffdc87,0x624132], [0x654536,0x251f29,0x7951aa,0xffa85c,0x392947]];
+  const palettes = CHARACTER_PALETTES;
   const [coat, mane, cloth, trim, hood] = (palette || palettes[Number(rival) || 0]).map(mat);
   // Horse faces -Z: hindquarters and the rider's back face the camera.
   block(cube, coat, player, [0, 0.95, 0], [0.82, 0.83, 1.65]);
@@ -686,7 +687,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, LANES[peer.lane], Math.min(1,dt*10));
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
-      skinPaint(rider, mine ? skinColors : null);
+      skinPaint(rider, CHARACTER_PALETTES[peer.character ?? peer.slot] || CHARACTER_PALETTES[0]);
       rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running ? Math.sin(time*.018+i*2.2)*.65 : 0; });
     });
     rival.position.z = Math.max(-85, Math.min(16, distance - rivalDistance));

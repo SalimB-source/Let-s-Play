@@ -1,0 +1,8 @@
+export const CHARACTER_PALETTES = [[0xb87948,0x352638,0x285e79,0xffce68,0xffe3b3], [0x393744,0xd5dde1,0xad3756,0x8ce7e0,0x34293d], [0xe2d5bd,0x684532,0x387649,0xffdc87,0x624132], [0x654536,0x251f29,0x7951aa,0xffa85c,0x392947]];
+
+export const CHARACTER_NAMES = [
+  "Sillage · bleu / alezan",
+  "L’Ombre · rouge / ardoise",
+  "Sauge · vert / ivoire",
+  "Améthyste · violet / bai",
+];
