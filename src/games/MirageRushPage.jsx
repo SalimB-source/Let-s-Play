@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import MirageWorld from './MirageWorld';
 import MiragePowerIcon from './MiragePowerIcon';
 import MirageOnline from './MirageOnline';
+import { MirageStagePicker } from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
 import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST } from './mirageRules';
@@ -42,9 +43,9 @@ export default function MirageRushPage() {
   const challengeCode = searchParams.get('duel');
   const initialModeParam = searchParams.get('mode');
   const challenge = useMemo(() => decodeChallenge(challengeCode), [challengeCode]);
-  // La sélection de carte (« 02 / ton terrain ») a été retirée : le terrain
-  // est figé sur les Dunes de l’Écho, sauf si un défi impose son parcours.
-  const [selectedStage] = useState(challenge?.stage || 'desert');
+  // Le terrain se choisit dans l’overlay d’intro (« 02 / ton terrain ») ;
+  // un défi imposé verrouille le parcours sur la carte du défi.
+  const [selectedStage, setSelectedStage] = useState(challenge?.stage || 'desert');
   const [selectedMode, setSelectedMode] = useState(
     initialModeParam === 'online' ? 'online' : challenge ? 'duel' : 'rush',
   );
@@ -404,7 +405,7 @@ export default function MirageRushPage() {
           aria-label="Partie de Mirage Rush"
         >
           <div className="mirage-game-topbar">
-            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
+            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'alger' ? 'ZONE 05 · ALGER LA BLANCHE' : stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
             <div className="mirage-game-controls-top">
               {phase === 'playing' && <>
                 <span className="mirage-live-pill"><i /> EN PARTIE</span>
@@ -614,8 +615,9 @@ export default function MirageRushPage() {
                 {/* Le choix du mode est remis DANS LE JEU (overlay d'intro),
                     l'ancienne barre d'onglets de l'en-tête reste retirée :
                     trois cartes réutilisant le style du sélecteur d'origine.
-                    Le terrain, lui, demeure figé (Dunes de l'Écho, ou
-                    parcours imposé par un défi). */}
+                    Le terrain (« 02 / ton terrain ») se choisit juste en
+                    dessous — cinq horizons — sauf si un défi impose son
+                    parcours, auquel cas les cartes sont verrouillées. */}
                 <div className="mirage-mode-section">
                   <div className="mirage-picker-label"><span>01 / TON MODE</span><span>À TOI DE JOUER</span></div>
                   <div className="mirage-mode-picker" role="group" aria-label="Mode de jeu Mirage">
@@ -630,11 +632,18 @@ export default function MirageRushPage() {
                     </button>)}
                   </div>
                 </div>
+                <div className="mirage-mode-section">
+                  <MirageStagePicker
+                    stage={stage}
+                    setSelectedStage={setSelectedStage}
+                    locked={selectedMode === 'duel' && Boolean(challenge)}
+                  />
+                </div>
                 {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                 {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier le PNJ.</p>}
-                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval et chargent tes 3 objets. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et charge tes objets.'}</p>
+                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval et chargent tes 3 objets. Premier à ${DUEL_DISTANCE} m !` : stage === 'alger' ? 'Galope sur les boulevards d’Alger la Blanche : saute les balustrades de la corniche, contourne les fontaines mauresques et fonce vers la baie bleue, entre immeubles haussmanniens, passants, voitures stationnées et musique chaâbi.' : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et charge tes objets.'}</p>
                 <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
-                  {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
+                  {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU PARCOURS…'} <span>↗</span>
                 </button>
                 <div className="mirage-keys-hint" aria-label="Commandes clavier">
                   <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
@@ -796,9 +805,9 @@ export default function MirageRushPage() {
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
             <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Charge des 3 objets</strong><small>Chaque diamant ramassé charge tes 3 objets ! Le Bouclier (3 diamants) protège 5s, le Lasso (3 diamants) ralentit l'adversaire, le Pistolet (5 diamants) fait tomber le leader de son cheval. Touches PC : QWE / AZE ou boutons tactiles sur mobile.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot ou les fontaines mauresques : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies, le saut est obligatoire.</div>
+            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine), les tonneaux (Costa Omertà) et les balustrades blanches (Alger) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies, le saut est obligatoire.</div>
           </section>
 
           <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>

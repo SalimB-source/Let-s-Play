@@ -24,6 +24,7 @@ const STAGE_LABELS = {
   western: 'Dust Creek',
   prairie: 'Plaines d’Or',
   sardinia: 'Costa Omertà',
+  alger: 'Alger la Blanche',
 };
 
 const QUICK_MESSAGES = [
@@ -539,6 +540,7 @@ export default function MirageOnline({
                         <option value="western">02 · Dust Creek (Western)</option>
                         <option value="prairie">03 · Plaines d’Or (Prairie)</option>
                         <option value="sardinia">04 · Costa Omertà (Sardaigne)</option>
+                        <option value="alger">05 · Alger la Blanche (Alger)</option>
                       </select>
                       <small>600 mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>

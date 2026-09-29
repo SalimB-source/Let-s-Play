@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
+import { algerBuilding, algerObstacle } from './algerStage';
 import {
   LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
   duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak,
@@ -266,6 +267,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const western = stage === 'western';
   const prairie = stage === 'prairie';
   const sardinia = stage === 'sardinia';
+  const alger = stage === 'alger';
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -288,7 +290,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             sunBottom: [1.0, 0.34, 0.09], sunTop: [1.0, 0.62, 0.25], glow: [1.0, 0.69, 0.4],
             hemiSky: 0xffd6ab, hemiGround: 0x52605b, sunLight: 0xffb96f, rimLight: 0x87c3c6,
           }
-        : {
+        : alger
+          ? {
+              // Alger la Blanche : ciel azuréen au-dessus de la baie, soleil
+              // doré qui descend vers la mer et brume saline bleutée au loin.
+              background: 0x7fb0d4, fog: 0xbcd2e4, exposure: 1.05,
+              skyBottom: [0.96, 0.80, 0.58], skyHorizon: [0.66, 0.72, 0.86], skyTop: [0.24, 0.45, 0.74],
+              sunBottom: [1.0, 0.42, 0.12], sunTop: [1.0, 0.72, 0.32], glow: [1.0, 0.80, 0.52],
+              hemiSky: 0xd4e6f6, hemiGround: 0x9a9484, sunLight: 0xffd9a4, rimLight: 0x9cc6ea,
+            }
+          : {
             background: 0x604b70, fog: 0xd28e70, exposure: 1.12,
             skyBottom: [0.97, 0.66, 0.42], skyHorizon: [0.83, 0.42, 0.35], skyTop: [0.40, 0.29, 0.50],
             sunBottom: [1.0, 0.31, 0.06], sunTop: [1.0, 0.57, 0.19], glow: [1.0, 0.62, 0.33],
@@ -360,6 +371,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   scene.add(sunset);
   if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
   if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+  if (alger) {
+    // Le boulevard chaulé d'Alger la Blanche, puis la baie bleue au loin :
+    // la mer ferme l'horizon sous le soleil couchant, comme au bout de la rue.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0xd6d0c0, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+    const coast = block(new THREE.PlaneGeometry(240, 4), new THREE.MeshBasicMaterial({ color: 0x8fc3de }), scene, [0, 15.2, -94]);
+    coast.renderOrder = -1;
+    const sea = block(new THREE.PlaneGeometry(240, 14), new THREE.MeshBasicMaterial({ color: 0x1d6a9c }), scene, [0, 6.2, -94]);
+    sea.renderOrder = -1;
+    const shallow = block(new THREE.PlaneGeometry(240, 2.2), new THREE.MeshBasicMaterial({ color: 0x3d8db8 }), scene, [0, 12.4, -94]);
+    shallow.renderOrder = -1;
+  }
   if (sardinia) {
     block(cube, new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [-17.35, -0.64, -35], [45.3, 0.6, 160]);
     const bay = new THREE.Mesh(new THREE.PlaneGeometry(130, 170), new THREE.MeshStandardMaterial({ color: 0x2f7f92, roughness: 0.35, metalness: 0.1, flatShading: true }));
@@ -370,22 +392,22 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     sea.renderOrder = -1;
   }
 
-  const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie ? 0 : sardinia ? 9 : 13); i += 1) {
+  const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
+  for (let i = 0; i < (prairie ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
-    const height = sardinia ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
+    const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
     const mountainSide = Math.random() > 0.5 ? 1 : -1;
-    const mountainX = sardinia ? -18 - Math.random() * 15 : mountainSide * (17 + Math.random() * 11);
+    const mountainX = sardinia ? -18 - Math.random() * 15 : alger ? -16 - Math.random() * 16 : mountainSide * (17 + Math.random() * 11);
     mountain.position.set(mountainX, height / 2 - 1, -38 - Math.random() * 26);
     mountain.scale.set(width, height, 3 + Math.random() * 5);
     scene.add(mountain);
   }
 
   const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const FLOOR_PERIOD = floorMaterials.length * 2;
@@ -467,7 +489,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     row.index = rowCounter++;
     row.gap = encounter.gap;
     row.items = encounter.items.map((spec, itemIndex) => {
-      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : sardinia ? sardiniaObstacle(spec.kind) : makeHazard(spec.kind);
+      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : sardinia ? sardiniaObstacle(spec.kind) : alger ? algerObstacle(spec.kind) : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
@@ -626,6 +648,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       const seaside = sardiniaSeaside(i);
       scene.add(village, seaside);
       scenery.push(village, seaside);
+    }
+  } else if (alger) {
+    // Deux rangées d'immeubles haussmanniens blancs encadrent le boulevard ;
+    // la baie bleue reste visible au bout de la perspective.
+    for (let i = 0; i < 10; i++) for (const side of [-1, 1]) {
+      const item = algerBuilding(i, side);
+      scene.add(item);
+      scenery.push(item);
     }
   } else for (let i = 0; i < 18; i++) {
     const item = makeScenery();
@@ -1257,7 +1287,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             }
           }
         }
-        if (item.position.z > (western || prairie || sardinia ? 15 : 9)) item.position.z -= western || prairie || sardinia ? 110 : 86;
+        const crowd = item.userData.people;
+        if (crowd?.length) {
+          // Les passants d'Alger la Blanche : balancement discret, un
+          // mouvement de tête suggéré — la foule respire sans coûter cher.
+          for (const person of crowd) {
+            const bob = person.userData.bob || 0;
+            person.rotation.y = (person.userData.baseRotation || 0) + Math.sin(time * 0.001 + bob) * 0.12;
+            person.position.y = (person.userData.baseY || 0) + Math.abs(Math.sin(time * 0.0017 + bob)) * 0.012;
+          }
+        }
+        if (item.position.z > (western || prairie || sardinia || alger ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger ? 110 : 86;
       });
 
       rows.forEach((row) => {
