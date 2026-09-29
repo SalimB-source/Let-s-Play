@@ -986,7 +986,7 @@ export default function MirageOnline({
                 <strong>
                   {Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS
                   {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
-                  {hud.slowed ? ' · 🪢 RALENTI' : ''}
+                  {hud.slowed ? (hud.slowKind === 'trap' ? ' · ◆ PIÉGÉ' : ' · 🪢 RALENTI') : ''}
                   {hud.rank ? ` · #${hud.rank}` : ''}
                 </strong>
                 <span>{finished ? 'ARRIVÉE !' : active ? 'COURSE EN COURS' : 'PISTE PRÊTE'}</span>
@@ -1011,13 +1011,18 @@ export default function MirageOnline({
                     setFinished(true);
                     setXp(onRunFinish?.(p) ?? null);
                   }}
-                  onPickup={(tier, key) => {
-                    audio.current?.pickup(tier);
+                  onPickup={(tier, key, trapped) => {
+                    if (trapped) audio.current?.trap();
+                    else audio.current?.pickup(tier);
                     if (key && room?.code) {
                       roomAction('gem_pickup', room.code, { p_gem_key: key }, effectivePlayer).catch(()=>{});
                     }
                   }}
                   onCheer={() => audio.current?.cheer()}
+                  onGemTrap={() => {
+                    setPowerToast('◆ DIAMANT PIÉGÉ ! Tu es ralenti…');
+                    setTimeout(()=> setPowerToast(null), 2000);
+                  }}
                   onPowerUpPickup={(type) => {
                     if (type === 'shield') {
                       setPowerToast('🛡️ Bouclier ramassé ! Protection 5s');

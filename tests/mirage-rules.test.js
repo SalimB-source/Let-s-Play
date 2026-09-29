@@ -285,3 +285,83 @@ test('special items stay out of the Ruée: only duel and online carry them', asy
   for (let i = 0; i < 2000; i++) if (rollPowerUpForMode('duel', 4, next)) found += 1;
   assert.ok(found > 0);
 });
+
+test('a collected diamond shatters into spread-out shards that settle back to nothing', async () => {
+  const { gemBurstShards, gemShardState, gemFlashState, GEM_BURST_DURATION, GEM_BURST_SHARDS } =
+    await import('../src/games/mirageRules.js');
+  let state = 7;
+  const random = () => ((state = (state * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  const shards = gemBurstShards(GEM_BURST_SHARDS, random);
+  assert.equal(shards.length, GEM_BURST_SHARDS);
+  for (const shard of shards) {
+    const length = Math.hypot(...shard.dir);
+    assert.ok(Math.abs(length - 1) < 1e-9, 'shard directions are unit vectors');
+    assert.ok(shard.size > 0 && shard.speed > 0);
+  }
+  // Shards must not all fly the same way: the spread covers both sides and heights.
+  assert.ok(shards.some(s => s.dir[0] > 0.3) && shards.some(s => s.dir[0] < -0.3));
+  assert.ok(shards.some(s => s.dir[1] > 0.3) && shards.some(s => s.dir[1] < -0.3));
+
+  const [shard] = shards;
+  const start = gemShardState(shard, 0, 2);
+  assert.deepEqual(start.position.map(v => Math.round(v * 1e6) / 1e6), [0, 0, 0]);
+  assert.equal(start.opacity, 1);
+  assert.equal(start.done, false);
+  const mid = gemShardState(shard, GEM_BURST_DURATION / 2, 2);
+  assert.ok(Math.hypot(...mid.position) > 0.3, 'shards travel away from the gem');
+  assert.ok(mid.opacity < start.opacity && mid.opacity > 0);
+  const end = gemShardState(shard, GEM_BURST_DURATION, 2);
+  assert.equal(end.done, true);
+  assert.equal(end.opacity, 0);
+  // Ages past the burst clamp instead of sending debris to infinity.
+  assert.deepEqual(gemShardState(shard, 99, 2).position, end.position);
+  // Gold diamonds throw their shards further than cyan ones.
+  assert.ok(Math.hypot(...gemShardState(shard, 0.2, 2).position) > Math.hypot(...gemShardState(shard, 0.2, 0).position));
+
+  const flashStart = gemFlashState(0, 0);
+  const flashMid = gemFlashState(GEM_BURST_DURATION / 2, 0);
+  const flashEnd = gemFlashState(GEM_BURST_DURATION, 0);
+  assert.ok(flashMid.scale > flashStart.scale && flashEnd.scale > flashMid.scale);
+  assert.ok(flashMid.opacity < flashStart.opacity);
+  assert.equal(flashEnd.opacity, 0);
+  assert.equal(flashEnd.done, true);
+});
+
+test('the red diamond is a coin flip: half of them brake the rider instead of boosting it', async () => {
+  const rules = await import('../src/games/mirageRules.js');
+  const { CRYSTALS, crystalPickupEffect, rollRedTrap, RED_TRAP_TIER, RED_TRAP_CHANCE,
+    RED_TRAP_SLOW_DURATION, RED_TRAP_SLOW_FACTOR, DUEL_SPEED_BONUS, SPEED_BOOST_NONE, seededRandom } = rules;
+
+  // Tier 1 is the red diamond now: red channel dominates, points are untouched.
+  const red = CRYSTALS[RED_TRAP_TIER];
+  assert.equal(red.name, 'Rouge');
+  assert.equal(red.value, 150);
+  assert.ok((red.color >> 16 & 255) > 200);
+  assert.ok((red.color >> 16 & 255) > (red.color >> 8 & 255) * 2);
+  assert.ok((red.color >> 16 & 255) > (red.color & 255) * 2);
+
+  const safe = crystalPickupEffect(RED_TRAP_TIER, false);
+  assert.equal(safe.trap, false);
+  assert.equal(safe.boost.bonus, DUEL_SPEED_BONUS[RED_TRAP_TIER]);
+  assert.equal(safe.slowDuration, 0);
+
+  const cursed = crystalPickupEffect(RED_TRAP_TIER, true);
+  assert.equal(cursed.trap, true);
+  assert.equal(cursed.boost, SPEED_BOOST_NONE);
+  assert.equal(cursed.boost.bonus, 0);
+  assert.equal(cursed.slowDuration, RED_TRAP_SLOW_DURATION);
+  assert.equal(cursed.slowFactor, RED_TRAP_SLOW_FACTOR);
+  assert.ok(cursed.slowFactor > 0 && cursed.slowFactor < 1, 'a trap slows the rider, it never stops it');
+
+  // Only the red tier can be cursed: cyan and real gold always pay their boost.
+  for (const tier of [0, 2]) {
+    const effect = crystalPickupEffect(tier, true);
+    assert.equal(effect.trap, false);
+    assert.equal(effect.boost.bonus, DUEL_SPEED_BONUS[tier]);
+  }
+
+  const random = seededRandom(2024);
+  let traps = 0;
+  for (let i = 0; i < 4000; i += 1) if (rollRedTrap(random)) traps += 1;
+  assert.ok(Math.abs(traps / 4000 - RED_TRAP_CHANCE) < 0.03, `traps ${traps / 4000} close to ${RED_TRAP_CHANCE}`);
+});

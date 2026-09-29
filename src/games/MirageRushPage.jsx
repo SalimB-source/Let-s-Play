@@ -6,7 +6,7 @@ import MirageOnline from './MirageOnline';
 import MirageCoursePicker from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, powerUpOdds } from './mirageRules';
+import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, powerUpOdds, RED_TRAP_CHANCE, RED_TRAP_SLOW_DURATION } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
@@ -417,9 +417,16 @@ export default function MirageRushPage() {
               onHud={onHud}
               onFinish={onFinish}
               onCrash={() => flashFx('is-hit')}
-              onPickup={(tier) => {
-                audioRef.current?.pickup(tier);
-                if (tier === 2) flashFx('is-glow');
+              onPickup={(tier, key, trapped) => {
+                if (trapped) audioRef.current?.trap();
+                else {
+                  audioRef.current?.pickup(tier);
+                  if (tier === 2) flashFx('is-glow');
+                }
+              }}
+              onGemTrap={() => {
+                flashFx('is-hit');
+                showPowerToast('◆ DIAMANT PIÉGÉ ! Tu es ralenti…');
               }}
               onCheer={() => audioRef.current?.cheer()}
               actionsRef={actionsRef}
@@ -454,7 +461,7 @@ export default function MirageRushPage() {
                   <span className="mirage-hud-chips">
                     <i className="mirage-chip is-gem">◆ {hud.gems}</i>
                     {hud.shieldActive && <i className="mirage-chip is-shield">🛡️ {Math.ceil(hud.shieldLeft)}s</i>}
-                    {hud.slowed && <i className="mirage-chip is-slow">🪢 RALENTI</i>}
+                    {hud.slowed && <i className="mirage-chip is-slow">{hud.slowKind === 'trap' ? '◆ PIÉGÉ' : '🪢 RALENTI'}</i>}
                   </span>
                 </div>
                 <div className="mirage-hud-center">
@@ -661,12 +668,13 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">MODE DUEL · PREMIER À 600 M</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>Un cavalier rival</strong><small>Défie L’Ombre : un PNJ qui change de voie, saute et te vole les diamants. Ou partage ton fantôme de course avec un autre joueur. Ce n’est pas du temps réel.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rose +{DUEL_SPEED_BONUS[1]} · Or +{DUEL_SPEED_BONUS[2]} m/s, pendant {SPEED_BOOST_DURATION} s seulement. Les boosts ne s’accumulent pas : un cristal remplace le boost en cours, et un choc l’annule.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rouge +{DUEL_SPEED_BONUS[1]} · Or +{DUEL_SPEED_BONUS[2]} m/s, pendant {SPEED_BOOST_DURATION} s seulement. Les boosts ne s’accumulent pas : un cristal remplace le boost en cours, et un choc l’annule.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Collision</strong><small>Pas de vies perdues en duel : le cheval ralentit puis reprend son allure.</small></div></div>
           </section>
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rose : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Le diamant rouge est un pari</strong><small>Une fois sur deux ({Math.round(RED_TRAP_CHANCE * 100)} %), il est piégé : au lieu du bonus de vitesse, il te ralentit pendant {RED_TRAP_SLOW_DURATION} s. Les points, eux, sont toujours encaissés. Rien ne le distingue avant de le traverser.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-rainbow" aria-hidden="true">?</span><div><strong>Objet mystère « ? » — duel & en ligne</strong><small>La ruée n’en contient aucun : il faut un rival à lasser ou un choc à absorber. En duel ou en ligne, il flotte en arc-en-ciel au milieu de la piste et ne dévoile son effet qu’une fois ramassé — lasso (ralentit l’adversaire devant toi) ou bouclier (absorbe un choc ou un lasso pendant 5 s).</small></div></div>
