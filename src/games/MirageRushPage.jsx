@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import MirageWorld from './MirageWorld';
 import MirageOnline from './MirageOnline';
-import MirageCoursePicker from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
 import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST } from './mirageRules';
@@ -42,11 +41,12 @@ export default function MirageRushPage() {
   const challengeCode = searchParams.get('duel');
   const initialModeParam = searchParams.get('mode');
   const challenge = useMemo(() => decodeChallenge(challengeCode), [challengeCode]);
-  const [selectedStage, setSelectedStage] = useState(challenge?.stage || 'desert');
+  // La sélection de carte (« 02 / ton terrain ») a été retirée : le terrain
+  // est figé sur les Dunes de l’Écho, sauf si un défi impose son parcours.
+  const [selectedStage] = useState(challenge?.stage || 'desert');
   const [selectedMode, setSelectedMode] = useState(
     initialModeParam === 'online' ? 'online' : challenge ? 'duel' : 'rush',
   );
-  const [modeChosen, setModeChosen] = useState(Boolean(challenge));
   const currentUserName = useMemo(
     () =>
       user?.user_metadata?.gamertag
@@ -269,7 +269,6 @@ export default function MirageRushPage() {
     setPhase('intro');
     audioRef.current?.stop();
     setSelectedMode(mode);
-    setModeChosen(true);
   }, []);
 
   const backToCoursePicker = () => {
@@ -368,7 +367,6 @@ export default function MirageRushPage() {
         onSelectMode={chooseMode}
         onBack={() => {
           setSelectedMode('rush');
-          setModeChosen(false);
         }}
       />
     );
@@ -386,35 +384,9 @@ export default function MirageRushPage() {
               L’eyebrow et le lien de retour suffisent. */}
           <Link className="mirage-back-link" to="/jeu">← RETOUR AUX JEUX</Link>
         </div>
+        {/* La barre d’onglets (RUÉE / DUEL / EN LIGNE) a été retirée : la page
+            lance directement la ruée, le duel arrive par lien de défi. */}
         <div className="mirage-heading-right">
-          <div className="mirage-mode-tabs" role="tablist" aria-label="Modes de jeu Mirage">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={selectedMode === 'rush'}
-              className={`mirage-mode-tab${selectedMode === 'rush' ? ' is-active' : ''}`}
-              onClick={() => chooseMode('rush')}
-            >
-              <span>↯</span> RUÉE
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={selectedMode === 'duel'}
-              className={`mirage-mode-tab${selectedMode === 'duel' ? ' is-active' : ''}`}
-              onClick={() => chooseMode('duel')}
-            >
-              <span>⚔</span> DUEL
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className="mirage-mode-tab"
-              onClick={() => chooseMode('online')}
-            >
-              <span>♞</span> EN LIGNE
-            </button>
-          </div>
           <div className="mirage-heading-side">
             <span className="mirage-record-label">TON RECORD</span>
             <strong>{best.toLocaleString('fr-FR')} <small>PTS</small></strong>
@@ -635,26 +607,23 @@ export default function MirageRushPage() {
 
             {phase === 'intro' && (
               <div className="mirage-overlay mirage-intro-overlay">
-                <div className="mirage-overlay-kicker"><span>✦</span> CHOISIS TA COURSE <span>✦</span></div>
-                <h2>{!modeChosen ? 'CHOISIS D’ABORD' : selectedMode === 'duel' ? 'À TOI DE' : 'LE SABLE'} <em>{!modeChosen ? 'TON MODE.' : selectedMode === 'duel' ? 'GALOPER.' : 'SE RÉVEILLE.'}</em></h2>
-                <MirageCoursePicker selectedMode={selectedMode} setSelectedMode={chooseMode} stage={stage} setSelectedStage={setSelectedStage} challenge={challenge} modeChosen={modeChosen} />
+                <div className="mirage-overlay-kicker"><span>✦</span> {selectedMode === 'duel' ? 'DUEL · PREMIER À 600 M' : 'RUÉE · 60 SECONDES'} <span>✦</span></div>
+                <h2>{selectedMode === 'duel' ? 'À TOI DE' : 'LE SABLE'} <em>{selectedMode === 'duel' ? 'GALOPER.' : 'SE RÉVEILLE.'}</em></h2>
                 {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                 {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier le PNJ.</p>}
-                {modeChosen && <>
-                  <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval et chargent tes 3 objets. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et charge tes objets.'}</p>
-                  <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
-                    {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
-                  </button>
-                  <div className="mirage-keys-hint" aria-label="Commandes clavier">
-                    <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
-                    <span><kbd>↑</kbd> sauter</span>
-                    <span><kbd>Q/A</kbd> Bouclier</span>
-                    <span><kbd>W/Z</kbd> Lasso</span>
-                    <span><kbd>E</kbd> Pistolet</span>
-                    <span><kbd>ÉCHAP</kbd> pause</span>
-                  </div>
-                  <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · OBJETS CHARGÉS PAR LES DIAMANTS · RECORD À BATTRE'}</div>
-                </>}
+                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval et chargent tes 3 objets. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et charge tes objets.'}</p>
+                <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
+                  {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
+                </button>
+                <div className="mirage-keys-hint" aria-label="Commandes clavier">
+                  <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
+                  <span><kbd>↑</kbd> sauter</span>
+                  <span><kbd>Q/A</kbd> Bouclier</span>
+                  <span><kbd>W/Z</kbd> Lasso</span>
+                  <span><kbd>E</kbd> Pistolet</span>
+                  <span><kbd>ÉCHAP</kbd> pause</span>
+                </div>
+                <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · OBJETS CHARGÉS PAR LES DIAMANTS · RECORD À BATTRE'}</div>
               </div>
             )}
 
