@@ -121,9 +121,27 @@ const stories = {
   // Actus gaming du 28 et 29.09.2026 — rédigées à la main au gabarit du robot
   // (le déclenchement manuel du workflow n'étant pas possible depuis cette
   // session). Visuels officiels hotlinkés + carte SVG de repli locale, sauf
-  // l'actu Minecraft World Hotel, dont les concept arts officiels sont
+  // l'actu Physint × Xbox (miniature locale kojima_mindplayer.png) et l'actu
+  // Minecraft World Hotel, dont les concept arts officiels sont
   // déposés dans public/screenshots/minecraft-world-hotel/ (la carte SVG
   // reste le visuel de repli).
+  'physint-budget-400-millions-xbox': {
+    date: '29.09.2026', category: 'XBOX · KOJIMA PRODUCTIONS', image: 'kojima_mindplayer.png', thumbnail: 'kojima_mindplayer.png', imageAlt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', cover: 'PHYSINT',
+    title: 'PHYSINT À 400 M$ ?', accent: 'XBOX A SIGNÉ POUR MOINS.', dek: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima, fraîchement repêché par Xbox après le retrait de PlayStation. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft s’est engagé sur un montant « nettement inférieur ».',
+    lead: 'En récupérant Physint après la rupture entre Hideo Kojima et PlayStation, Xbox s’est offert un joli coup de prestige. Mais à quel prix ? Tout le week-end, la rumeur d’un budget de 400 millions de dollars a affolé les compteurs — avant d’être sérieusement refroidie.',
+    intro: 'Alors que Bloomberg expliquait récemment le retrait de Sony par des retards accumulés, un budget déjà dépassé et la rentabilité décevante des dernières productions du studio, la question de l’addition payée par Microsoft devenait centrale pour savoir si Physint pourra un jour être rentable. Deux voix bien informées de l’industrie viennent de remettre les pendules à l’heure.',
+    h2: 'UN BRUIT DE COULOIR À 400 MILLIONS DE DOLLARS',
+    p1: 'La rumeur est partie d’un podcast du journaliste Christopher Dring (The Game Business), où ce montant de 400 millions de dollars a été évoqué. Devant l’ampleur prise par le chiffre ce week-end, l’intéressé a rapidement précisé qu’il rapportait un simple bruit de couloir entendu dans l’industrie, et non une donnée budgétaire précise. Si la flambée des coûts des blockbusters AAA ne surprend plus personne — surtout aux États-Unis, où les salaires pèsent lourd —, une telle somme semblait d’emblée excessive et peu vraisemblable pour une production japonaise menée à Tokyo.',
+    quote: 'Il y a beaucoup de chiffres différents ici : le chiffre initial pour Physint avec PlayStation, le budget vers lequel le projet se dirigeait, le chiffre évoqué lors des négociations, le coût estimé si certaines stars de premier plan avaient été impliquées, le montant accepté par Xbox et, enfin, le coût réel que le projet aurait coûté à sa sortie. Cela dit, une personne chez Xbox ayant une connaissance directe de l’accord m’a indiqué que le contrat pour Physint avait été signé pour un montant nettement inférieur.', quoteBy: 'JASON SCHREIER, JOURNALISTE CHEZ BLOOMBERG (SUR RESETERA)',
+    h2b: 'POURQUOI AUTANT DE CHIFFRES CIRCULENT',
+    p2: 'Sur le forum ResetEra, Jason Schreier a pris la parole pour dégonfler la bulle. S’il se refuse à avancer un montant exact sans avoir consulté les documents ou recoupé l’information auprès de plusieurs sources directes, il détaille la mécanique qui a fait enfler la rumeur : entre l’enveloppe initiale signée avec PlayStation, la dérive budgétaire redoutée par Sony, les montants évoqués autour de la table des négociations et le cachet d’un casting hollywoodien — Bill Skarsgård vient d’être officialisé en tête d’affiche au Tokyo Game Show —, les estimations se télescopent.',
+    p3: 'Surtout, l’hypothèse d’un chèque de 400 millions de dollars cadre mal avec la réalité actuelle de Microsoft. Au moment où le groupe cherche la moindre économie dans sa branche gaming — marquée par près de 3 200 suppressions de postes et la cure de rationalisation menée par Asha Sharma —, on voit mal Xbox s’engager sur une somme pareille, même pour un coup d’image face à PlayStation. En repêchant Physint aux côtés d’OD, Microsoft sécurise une vitrine japonaise de premier plan, mais dans une enveloppe manifestement bien plus contenue.',
+    p4: 'Reste à savoir si ce contrat revu à la baisse suffira à faire de Physint une opération rentable là où Sony a préféré jeter l’éponge. Entre les ambitions cinématographiques de Hideo Kojima et la nouvelle discipline budgétaire de Xbox, l’équilibre sera scruté de près jusqu’à la sortie. Et vous : pensez-vous que Xbox a fait une bonne affaire en récupérant Physint, ou que le projet reste trop risqué financièrement ?',
+    take: 'À RETENIR', takeText: 'Le chiffre de 400 millions de dollars évoqué pour Physint n’était qu’un bruit de couloir, a précisé Christopher Dring. Selon une source directe de Jason Schreier chez Xbox, Microsoft a signé avec Kojima Productions pour un budget « nettement inférieur ».',
+    source: 'D’après ActuGaming (28.09.2026), citant les déclarations de Christopher Dring (The Game Business) et de Jason Schreier (Bloomberg) sur ResetEra.', sourceUrl: 'https://www.actugaming.net/physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de-kojima-xbox-aurait-signe-pour-beaucoup-moins-que-cela-827065/', sourceDetail: 'Lire l’article d’ActuGaming',
+    credit: 'Visuel : illustration éditoriale Let’s Play (kojima_mindplayer.png).',
+    sentiment: 'mixed'
+  },
   'god-of-war-laufey-precommandes-arc-serpent': {
     date: '29.09.2026', category: 'GOD OF WAR LAUFEY · PS5', image: 'god-of-war-laufey-arc-serpent-news.svg', thumbnail: 'https://blog.fr.playstation.com/tachyon/sites/10/2026/09/5bd30eac480284e480a9ba68e9f06472584219f4.jpg?resize=1088%2C612&crop_strategy=smart', fallbackImage: 'god-of-war-laufey-arc-serpent-news.svg', imageAlt: 'God of War Laufey — artwork officiel de Faye face à Begtse, le cube Phranque à ses côtés (Santa Monica Studio)', cover: 'ARC-SERPENT',
     title: 'FAYE DÉGAINE', accent: 'L’ARC-SERPENT.', dek: 'Quelques heures avant l’ouverture des précommandes, Santa Monica Studio détaille la deuxième arme de Faye et la grille des éditions de God of War Laufey : 79,99 € en Standard, 89,99 € en numérique Deluxe, et aucun collector. Sortie le 16 février 2027, en exclusivité sur PS5.',
@@ -671,6 +689,7 @@ const stories = {
     sentiment: 'negative'
   }
 };
+stories['physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de'] = stories['physint-budget-400-millions-xbox'];
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 

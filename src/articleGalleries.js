@@ -18,6 +18,18 @@ import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
   // ---- Actus gaming -------------------------------------------------------
+  'physint-budget-400-millions-xbox': {
+    label: 'PHYSINT × XBOX', meta: 'KOJIMA PRODUCTIONS · XBOX',
+    items: [
+      { src: 'news-auto/physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de-official.jpg', alt: 'Physint — visuel clé officiel « Here Comes the Feeling » dévoilé par Kojima Productions', caption: '01 / « Here Comes the Feeling », key art officiel de Physint' },
+      { src: 'news-sources/kojima-asha-sharma-xbox-tokyo.jpg', alt: 'Hideo Kojima et Asha Sharma posent chez Kojima Productions à Tokyo avec les vestes Xbox', caption: '02 / Hideo Kojima et Asha Sharma chez Kojima Productions à Tokyo' },
+      { src: 'kojima-xbox-news.jpg', alt: 'Carte éditoriale Let’s Play récapitulant le passage de Kojima Productions chez Xbox avec Physint et OD', caption: '03 / Après PlayStation, Physint rejoint OD sous bannière Xbox' },
+    ],
+    credit: 'Visuels : affiche teaser officielle de Physint (Kojima Productions), photographie officielle Hideo Kojima & Asha Sharma (comptes X officiels, 14.09.2026) et composition éditoriale Let’s Play.',
+    creditSources: [
+      { label: 'article ActuGaming sur le budget de Physint chez Xbox', href: 'https://www.actugaming.net/physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de-kojima-xbox-aurait-signe-pour-beaucoup-moins-que-cela-827065/' },
+    ],
+  },
   'halo-activision': {
     label: 'HALO INFINITE', meta: '343 INDUSTRIES · XBOX',
     items: [
@@ -625,6 +637,8 @@ export const articleGalleries = {
 };
 
 // Récupère la galerie d’un article (undefined si l’article n’en a pas).
+articleGalleries['physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de'] = articleGalleries['physint-budget-400-millions-xbox'];
+
 export function getArticleGallery(key) {
   return articleGalleries[key];
 }
