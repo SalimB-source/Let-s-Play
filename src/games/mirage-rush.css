@@ -191,6 +191,7 @@
 .mirage-rule-icon.is-pink { color: #f477ad; }
 .mirage-rule-icon.is-green { color: #6dd6a1; }
 .mirage-rule-icon.is-gold { color: #ffd866; }
+.mirage-rule-icon.is-rainbow { background: linear-gradient(120deg, #ff5f6d, #ffc371, #6dd6a1, #45e4ff, #a78bfa, #ff5f6d); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }
 .mirage-rule strong { display: block; color: #fff0da; font-size: 10px; }
 .mirage-rule small { display: block; margin-top: 3px; color: rgba(255,240,219,.51); font-size: 9px; line-height: 1.45; }
 .mirage-score-tip { margin-top: 5px; padding: 10px; border-left: 2px solid #d876a4; background: rgba(228,110,155,.075); color: rgba(255,237,216,.64); font-size: 9px; line-height: 1.5; }

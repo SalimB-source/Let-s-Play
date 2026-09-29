@@ -12,6 +12,7 @@ import {
   serverOffset,
   subscribeRoomUpdates,
 } from './mirageRooms';
+import { powerUpOdds } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
 
 const characters = CHARACTER_NAMES;
@@ -1068,7 +1069,7 @@ export default function MirageOnline({
                 )}
                 {active && hud.rank && (
                   <div className="mirage-power-hint">
-                    <span>POS #{hud.rank} · LASSO {hud.rank===1? '0%' : hud.rank===2? '30%' : hud.rank===3? '40%' : '60%'} · BOUCLIER 30%</span>
+                    <span>POS #{hud.rank} · OBJET « ? » RARE · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</span>
                   </div>
                 )}
               </div>

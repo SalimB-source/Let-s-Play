@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION } from './mirageRules';
+import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION } from './mirageRules';
 
 const LANES = [-2.1, 0, 2.1];
 const TRACK_MIN_Z = -40;
@@ -112,55 +112,107 @@ function makeHazard(kind) {
 }
 
 
-// ── Power-up meshes ──────────────────────────────────────────────────
-function makePowerUpLassoMesh() {
-  const group = new THREE.Group();
-  const cube = new THREE.BoxGeometry(1, 1, 1);
-  const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd9913b, roughness: 0.7, flatShading: true });
-  const glowMat = new THREE.MeshStandardMaterial({ color: 0xffb86a, emissive: 0x8a4a12, emissiveIntensity: 0.6, flatShading: true });
-  const torus = new THREE.Mesh(new THREE.TorusGeometry(0.38, 0.09, 6, 14), ropeMat);
-  torus.rotation.x = Math.PI / 2;
-  torus.position.y = 0.35;
-  group.add(torus);
-  const torus2 = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.07, 6, 12), ropeMat);
-  torus2.rotation.x = Math.PI / 2;
-  torus2.position.y = 0.55;
-  group.add(torus2);
-  const loop = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.035, 5, 12), glowMat);
-  loop.position.y = 1.05;
-  loop.rotation.x = Math.PI / 2.5;
-  group.add(loop);
-  block(cube, glowMat, group, [0, 0.12, 0], [0.5, 0.24, 0.5]);
-  group.userData.spin = true;
-  group.userData.type = POWER_UPS.LASSO;
-  return group;
+// ── Mystery item mesh ────────────────────────────────────────────────
+// Every special item is the same surprise: a floating, rainbow "?" whose
+// effect (lasso or shield) is only revealed when the rider picks it up.
+const RAINBOW_SATURATION = 0.9;
+const RAINBOW_LIGHTNESS = 0.58;
+const RAINBOW_EMISSIVE_LIGHTNESS = 0.3;
+
+/** Sample the "?" glyph: the bowl over the top, the hook coming down, then the dot. */
+function questionMarkPath() {
+  const points = [];
+  const centerY = 0.9;
+  const radius = 0.4;
+  const from = 196 * Math.PI / 180;
+  const to = -46 * Math.PI / 180;
+  const steps = 18;
+  for (let i = 0; i <= steps; i++) {
+    const angle = from + (to - from) * (i / steps);
+    points.push([Math.cos(angle) * radius, centerY + Math.sin(angle) * radius]);
+  }
+  // The hook: the tail of the bowl dropping back towards the dot.
+  const [hookX, hookY] = points[points.length - 1];
+  const hookSteps = 4;
+  for (let i = 1; i <= hookSteps; i++) {
+    const t = i / hookSteps;
+    points.push([hookX + (0.08 - hookX) * t, hookY + (0.42 - hookY) * t]);
+  }
+  return points;
 }
 
-function makePowerUpShieldMesh() {
+function makePowerUpQuestionMarkMesh(type) {
   const group = new THREE.Group();
-  const cube = new THREE.BoxGeometry(1, 1, 1);
-  const shieldMat = new THREE.MeshStandardMaterial({ color: 0x4ce9df, emissive: 0x1a7a74, emissiveIntensity: 0.65, metalness: 0.2, roughness: 0.3, flatShading: true, transparent: true, opacity: 0.95 });
-  const coreMat = new THREE.MeshStandardMaterial({ color: 0xb8fffb, emissive: 0x4ce9df, emissiveIntensity: 0.8, flatShading: true });
-  const ico = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 0), shieldMat);
-  ico.position.y = 0.75;
-  group.add(ico);
-  const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.22), coreMat);
-  core.position.y = 0.75;
-  group.add(core);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.04, 5, 16), shieldMat);
-  ring.position.y = 0.75;
-  ring.rotation.x = Math.PI / 2;
-  group.add(ring);
-  block(cube, shieldMat, group, [0, 0.12, 0], [0.5, 0.24, 0.5]);
-  group.userData.spin = true;
-  group.userData.type = POWER_UPS.SHIELD;
+  const geometry = new THREE.BoxGeometry(1, 1, 1);
+  const rainbow = [];
+
+  const addRainbowBlock = (parent, position, scale, hue) => {
+    const color = new THREE.Color().setHSL(hue - Math.floor(hue), RAINBOW_SATURATION, RAINBOW_LIGHTNESS);
+    const material = new THREE.MeshStandardMaterial({
+      color,
+      emissive: color.clone().setHSL(hue - Math.floor(hue), RAINBOW_SATURATION, RAINBOW_EMISSIVE_LIGHTNESS),
+      metalness: 0.15,
+      roughness: 0.32,
+      flatShading: true,
+    });
+    material.userData.hue = hue - Math.floor(hue);
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(...position);
+    mesh.scale.set(...scale);
+    parent.add(mesh);
+    rainbow.push(material);
+    return mesh;
+  };
+
+  // The glyph: blocks threaded along the "?" outline, hue shifting along it.
+  const glyph = new THREE.Group();
+  const path = questionMarkPath();
+  path.forEach((point, index) => {
+    const t = index / (path.length - 1);
+    const before = path[Math.max(0, index - 1)];
+    const after = path[Math.min(path.length - 1, index + 1)];
+    const segment = addRainbowBlock(glyph, [point[0], point[1], 0], [0.22, 0.17, 0.17], t * 0.85);
+    segment.rotation.z = Math.atan2(after[1] - before[1], after[0] - before[0]);
+  });
+  const dot = addRainbowBlock(glyph, [0.08, 0.19, 0], [0.24, 0.24, 0.24], 0.92);
+  dot.rotation.z = Math.PI / 4;
+  group.add(glyph);
+
+  // A rainbow halo spinning at its feet, so the item reads from a distance.
+  const halo = new THREE.Group();
+  const haloSegments = 14;
+  for (let i = 0; i < haloSegments; i++) {
+    const angle = (i / haloSegments) * Math.PI * 2;
+    const segment = addRainbowBlock(halo, [Math.cos(angle) * 0.66, 0.05, Math.sin(angle) * 0.66], [0.26, 0.11, 0.13], i / haloSegments);
+    segment.rotation.y = -angle;
+  }
+  group.add(halo);
+
+  group.userData.glyph = glyph;
+  group.userData.halo = halo;
+  group.userData.rainbow = rainbow;
+  group.userData.phase = Math.random() * Math.PI * 2;
+  group.userData.type = type ?? null;
   return group;
 }
 
 function makePowerUpMesh(type) {
-  if (type === POWER_UPS.LASSO) return makePowerUpLassoMesh();
-  if (type === POWER_UPS.SHIELD) return makePowerUpShieldMesh();
-  return makePowerUpShieldMesh();
+  return makePowerUpQuestionMarkMesh(type);
+}
+
+/** Hue drift + gentle sway: the "?" stays readable, it never spins edge-on. */
+function animatePowerUpMesh(mesh, time, dt) {
+  const { glyph, halo, rainbow, phase } = mesh.userData;
+  if (halo) halo.rotation.y += dt * 1.5;
+  if (glyph) glyph.rotation.y = Math.sin(time * 0.0018 + (phase ?? 0)) * 0.42;
+  if (rainbow?.length) {
+    const shift = (time * 0.00012) % 1;
+    for (const material of rainbow) {
+      const hue = ((material.userData.hue ?? 0) + shift) % 1;
+      material.color.setHSL(hue, RAINBOW_SATURATION, RAINBOW_LIGHTNESS);
+      material.emissive.setHSL(hue, RAINBOW_SATURATION, RAINBOW_EMISSIVE_LIGHTNESS);
+    }
+  }
 }
 
 function makeShieldBubble() {
@@ -455,8 +507,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   // ── Power-ups system ──────────────────────────────────────────────
-  const POWER_UP_SPAWN_GAP_MIN = 28;
-  const POWER_UP_SPAWN_GAP_MAX = 46;
   const powerUps = [];
   for (let i = 0; i < 3; i++) {
     const g = new THREE.Group();
@@ -1048,10 +1098,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       // Power-ups movement & collection
       for (const pu of powerUps) {
         pu.group.position.z += speed * dt;
-        // spin animation
+        // float + rainbow animation
         if (pu.group.visible && pu.mesh) {
-          pu.mesh.rotation.y += dt * 2.2;
           pu.mesh.position.y = 0.75 + Math.sin(time*0.003 + pu.group.position.z)*0.12;
+          animatePowerUpMesh(pu.mesh, time, dt);
         }
         if (!pu.checked && !pu.collected && pu.group.position.z > -0.75 && pu.group.position.z < 1.05) {
           pu.checked = true;

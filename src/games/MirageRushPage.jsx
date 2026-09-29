@@ -6,7 +6,7 @@ import MirageOnline from './MirageOnline';
 import MirageCoursePicker from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION } from './mirageRules';
+import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, powerUpOdds } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
@@ -327,7 +327,7 @@ export default function MirageRushPage() {
             {phase === 'playing' && (
               <div className="mirage-hud" aria-live="polite">
                 <div className="mirage-hud-card mirage-hud-score"><small>SCORE</small><strong>{hud.score.toLocaleString('fr-FR')}</strong><span>✦ {hud.gems} fragments {hud.shieldActive ? '· 🛡️' : ''} {hud.slowed ? '· 🪢' : ''}</span></div>
-                <div className="mirage-hud-center">{race.mode === 'duel' ? <><div className="mirage-clock">{Math.round(hud.distance || 0)} / {DUEL_DISTANCE} m {hud.rank ? `· #${hud.rank}` : ''}</div><div className="mirage-time-track"><i style={{ width: `${Math.min(100, (hud.distance || 0) / DUEL_DISTANCE * 100)}%` }} /></div><small style={{fontSize:'0.65rem',opacity:0.8}}>LASSO {hud.rank===1? '0%' : hud.rank===2? '30%' : '40%'} · BOUCLIER 30%</small></> : <><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></>}</div>
+                <div className="mirage-hud-center">{race.mode === 'duel' ? <><div className="mirage-clock">{Math.round(hud.distance || 0)} / {DUEL_DISTANCE} m {hud.rank ? `· #${hud.rank}` : ''}</div><div className="mirage-time-track"><i style={{ width: `${Math.min(100, (hud.distance || 0) / DUEL_DISTANCE * 100)}%` }} /></div><small style={{fontSize:'0.65rem',opacity:0.8}}>OBJET « ? » RARE · LASSO {Math.round(powerUpOdds(hud.rank || 1).lasso * 100)}% · BOUCLIER {Math.round(powerUpOdds(hud.rank || 1).shield * 100)}%</small></> : <><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></>}</div>
                 <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE{hud.boostLeft > 0 && <b> · BOOST</b>}{hud.shieldActive && <b> · 🛡️ {Math.ceil(hud.shieldLeft)}s</b>}{hud.slowed && <b> · 🪢 RALENTI</b>}</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b>{hud.shieldActive && <b> · 🛡️ {Math.ceil(hud.shieldLeft)}s</b>}</small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
               </div>
             )}
@@ -472,6 +472,7 @@ export default function MirageRushPage() {
             <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rose : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-rainbow" aria-hidden="true">?</span><div><strong>Objet mystère « ? »</strong><small>Rare : il flotte en arc-en-ciel au milieu de la piste et ne dévoile son effet qu’une fois ramassé — lasso (ralentit l’adversaire devant toi) ou bouclier (absorbe un choc ou un lasso pendant 5 s).</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si un cactus ferme la troisième voie, le saut est obligatoire.</div>
           </section>
 
