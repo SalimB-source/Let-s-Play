@@ -118,6 +118,13 @@ export default function MirageRushPage() {
     else audioRef.current?.stop();
   };
 
+  const backToCoursePicker = () => {
+    setPhase('intro');
+    setHud(EMPTY_HUD);
+    setJustFinished(null);
+    audioRef.current?.stop();
+  };
+
   // Shared by every mode (rush, duel and online) so one finished run always
   // feeds the same local progression.
   const recordProgress = useCallback((result) => {
@@ -207,6 +214,7 @@ export default function MirageRushPage() {
           <div className="mirage-eyebrow"><span className="mirage-live-dot" /> LET’S PLAY ARCADE <span className="mirage-eyebrow-divider">/</span> 3D VOXEL RUNNER</div>
           <h1>MIRAGE <em>RUSH</em></h1>
           <p>Le désert se déforme. Les cristaux t’appellent. <strong>Choisis la ruée contre la montre, un duel ou une room en ligne.</strong></p>
+          <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
         <div className="mirage-heading-right">
           <div className="mirage-mode-tabs" role="tablist" aria-label="Modes de jeu Mirage">
@@ -263,7 +271,10 @@ export default function MirageRushPage() {
           <div className="mirage-game-topbar">
             <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
             <div className="mirage-game-controls-top">
-              {phase === 'playing' && <span className="mirage-live-pill"><i /> EN PARTIE</span>}
+              {phase === 'playing' && <>
+                <span className="mirage-live-pill"><i /> EN PARTIE</span>
+                <button type="button" className="mirage-back-game-button" onClick={backToCoursePicker} aria-label="Retour au choix de course">← RETOUR</button>
+              </>}
               <button type="button" className={`mirage-sound-button${musicOn ? ' is-on' : ''}`} onClick={toggleMusic} aria-pressed={musicOn}>
                 <span aria-hidden="true">{musicOn ? '♫' : '♪'}</span> {musicOn ? 'SON ON' : 'SON COUPÉ'}
               </button>
@@ -317,7 +328,7 @@ export default function MirageRushPage() {
                 {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
                 <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
                 <button type="button" className="mirage-share-button" onClick={shareDuel}>PARTAGER UN DÉFI ↗</button>
-                <button type="button" className="mirage-share-button" onClick={() => setPhase('intro')}>CHOISIR UN MODE</button>
+                <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR UNE COURSE</button>
                 {shareState && <p className="mirage-share-status" role="status">{shareState}</p>}
                 <div className="mirage-overlay-hint">Défi par fantôme enregistré · pas une course en direct</div>
               </div>
@@ -331,7 +342,7 @@ export default function MirageRushPage() {
                 <div className="mirage-result-stats"><span>◆ {justFinished?.gems || 0} fragments</span><span>◷ {justFinished?.duration || 0} s</span><span>RECORD {best.toLocaleString('fr-FR')}</span></div>
                 {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
                 <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
-                <button type="button" className="mirage-share-button" onClick={() => setPhase('intro')}>CHOISIR UN MODE</button>
+                <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR UNE COURSE</button>
                 {submitState === 'saving' && <p className="mirage-save-note">Envoi du score au classement…</p>}
                 {submitState === 'saved' && <p className="mirage-save-note is-success">Score enregistré dans le classement du site.</p>}
                 {submitState === 'login' && backendEnabled && <p className="mirage-save-note">Connecte-toi pour apparaître au classement <Link to="/auth">Connexion ↗</Link></p>}

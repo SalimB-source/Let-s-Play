@@ -1284,3 +1284,158 @@
     font-size: 9px;
   }
 }
+
+/* Clear return / exit controls across the arcade and online rooms. */
+.mirage-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  color: #f4cf79;
+  font: 800 9px var(--mono);
+  letter-spacing: .13em;
+  text-decoration: none;
+}
+.mirage-back-link:hover { color: #fff0bd; text-decoration: underline; }
+.mirage-back-link:focus-visible,
+.mirage-back-game-button:focus-visible {
+  outline: 2px solid #ffdb76;
+  outline-offset: 3px;
+}
+.mirage-back-game-button {
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 184, 196, .42);
+  border-radius: 5px;
+  background: rgba(104, 36, 55, .48);
+  color: #ffc3cd;
+  font: 800 8px var(--mono);
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+.mirage-back-game-button:hover { background: rgba(150, 52, 75, .62); }
+.mirage-lobby-toolbar-actions .mirage-share-button { margin: 0; }
+.mirage-room-header-buttons .mirage-share-button.is-danger { margin: 0; }
+.mirage-room-waiting-panel {
+  min-height: 190px;
+  padding: 26px 30px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  border-color: rgba(246, 204, 100, .35);
+  background:
+    radial-gradient(360px 180px at 18% 50%, rgba(243, 166, 85, .14), transparent 75%),
+    linear-gradient(145deg, rgba(35, 25, 47, .97), rgba(15, 13, 26, .98));
+}
+.mirage-waiting-sun {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
+  border: 1px solid rgba(255, 211, 122, .55);
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffdc8a 0 27%, rgba(255, 156, 80, .25) 29% 65%, transparent 68%);
+  color: #fff0b5;
+  font-size: 33px;
+  text-shadow: 0 0 24px #ffad55;
+  box-shadow: 0 0 36px rgba(255, 171, 76, .2);
+}
+.mirage-room-waiting-panel h2 {
+  margin: 6px 0 7px;
+  color: #fff5e4;
+  font: 900 clamp(20px, 3vw, 28px)/1.1 var(--font-gaming);
+}
+.mirage-room-waiting-panel h2 em { color: #f3c65b; font-style: normal; }
+.mirage-room-waiting-panel p { margin: 0; color: rgba(255, 242, 221, .7); font-size: 13px; }
+.mirage-waiting-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  color: rgba(255, 242, 221, .58);
+  font: 800 9px var(--mono);
+  letter-spacing: .1em;
+  white-space: nowrap;
+}
+.mirage-waiting-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f3c65b;
+  box-shadow: 0 0 10px #f3c65b;
+}
+@media (max-width: 600px) {
+  .mirage-room-waiting-panel { align-items: flex-start; flex-wrap: wrap; padding: 20px; gap: 14px; }
+  .mirage-waiting-sun { width: 48px; height: 48px; flex-basis: 48px; font-size: 25px; }
+  .mirage-waiting-status { width: 100%; margin: 0; }
+  .mirage-back-game-button { font-size: 7px; padding: 6px 7px; letter-spacing: .04em; }
+  .mirage-game-shell.is-running .mirage-game-brand > span:last-child { display: none; }
+}
+
+/* The multiplayer race is a focused popup over the room and disappears at finish. */
+.mirage-game-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: clamp(10px, 3vh, 28px);
+  background: rgba(9, 7, 16, .82);
+  backdrop-filter: blur(8px);
+  animation: mirage-popup-enter .2s ease-out both;
+}
+.mirage-game-popup {
+  width: min(1120px, 100%);
+  max-height: 94vh;
+  max-height: 94dvh;
+  overflow: auto;
+  border: 1px solid rgba(255, 218, 145, .58);
+  border-radius: 12px;
+  background: #100d1a;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, .65), 0 0 55px rgba(239, 155, 87, .12);
+}
+.mirage-game-popup .mirage-game-shell { border: 0; box-shadow: none; }
+.mirage-game-popup .mirage-game-topbar { gap: 12px; }
+.mirage-popup-leave-button {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 7px 10px;
+  border-radius: 5px;
+  font-size: 8px;
+  white-space: nowrap;
+}
+.mirage-room-finished-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 26px;
+  border-color: rgba(98, 227, 165, .34);
+}
+.mirage-room-finished-banner .mirage-waiting-sun {
+  border-color: rgba(98, 227, 165, .5);
+  background: radial-gradient(circle, #8bf0b8 0 27%, rgba(68, 207, 140, .18) 29% 65%, transparent 68%);
+  color: #123829;
+  text-shadow: 0 0 18px rgba(98, 227, 165, .6);
+  box-shadow: 0 0 30px rgba(98, 227, 165, .14);
+}
+.mirage-room-finished-banner h2 {
+  margin: 6px 0 7px;
+  color: #fff5e4;
+  font: 900 clamp(20px, 3vw, 28px)/1.1 var(--font-gaming);
+}
+.mirage-room-finished-banner h2 em { color: #8bf0b8; font-style: normal; }
+.mirage-room-finished-banner p { margin: 0; color: rgba(255, 242, 221, .7); font-size: 13px; }
+@keyframes mirage-popup-enter {
+  from { opacity: 0; transform: scale(.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (max-width: 600px) {
+  .mirage-game-popup-backdrop { padding: 8px; }
+  .mirage-game-popup { max-height: 96vh; max-height: 96dvh; border-radius: 8px; }
+  .mirage-game-popup .mirage-game-topbar { height: auto; min-height: 41px; flex-wrap: wrap; padding-block: 7px; }
+  .mirage-popup-leave-button { padding: 6px 7px; font-size: 7px; }
+  .mirage-room-finished-banner { align-items: flex-start; flex-wrap: wrap; padding: 18px; gap: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mirage-game-popup-backdrop { animation: none; }
+}
