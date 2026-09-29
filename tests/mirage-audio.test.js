@@ -1,16 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM } from '../src/games/arcadeAudio.js';
+import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, JAPAN_BPM } from '../src/games/arcadeAudio.js';
 
 test('prairie selects its own soundtrack and resets the phrase', () => {
   const audio = new DesertGroove();
   audio.step = 83;
   audio.setStage('prairie');
   assert.equal(audio.step, 0);
-  let prairie = 0, western = 0, sardinia = 0;
+  let prairie = 0, western = 0, sardinia = 0, japan = 0;
   audio.playPrairie = () => prairie++;
   audio.playWestern = () => western++;
   audio.playSardinia = () => sardinia++;
+  audio.playJapan = () => japan++;
   audio.playStep(0, 0);
   assert.equal(prairie, 1);
   assert.equal(western, 0);
@@ -20,6 +21,31 @@ test('prairie selects its own soundtrack and resets the phrase', () => {
   audio.setStage('sardinia');
   audio.playStep(0, 0);
   assert.equal(sardinia, 1);
+  audio.setStage('japan');
+  audio.playStep(0, 0);
+  assert.equal(japan, 1);
+});
+
+test('japan samurai score schedules finite, positive notes at its own tempo', () => {
+  const audio = new DesertGroove();
+  audio.setStage('japan');
+  const stepLength = 60 / JAPAN_BPM / 4;
+  assert.ok(stepLength > 0);
+  const notes = [];
+  audio.noise = () => {};
+  audio.tone = (frequency, time, duration, type, volume) => {
+    assert.ok(Number.isFinite(frequency) && frequency > 0);
+    assert.ok(Number.isFinite(time) && time >= 0);
+    assert.ok(duration > 0 && volume > 0);
+    notes.push(frequency);
+  };
+  for (let bar = 0; bar < 16; bar++) {
+    for (let step = 0; step < 16; step++) {
+      audio.step = bar * 16 + step;
+      audio.playJapan(step, audio.step * stepLength);
+    }
+  }
+  assert.ok(notes.length > 40, 'the shamisen, shakuhachi and taiko motif produces plenty of notes');
 });
 
 test('sardinia mafia-style score schedules finite, positive notes at its own tempo', () => {
@@ -149,3 +175,62 @@ test('game uses the unmodified user-uploaded MP3 rather than the generated voice
   assert.ok(audioModule.includes("new URL('./assets/cowboy-hey-haa.mp3', import.meta.url)"));
   assert.ok(!audioModule.includes('cowboy-hey-haa.wav'));
 });
+
+test('power-up sound effects (lassoThrow, speedBoost, shieldGravity) schedule tones and sweeps when running', () => {
+  const audio = new DesertGroove();
+  let tones = 0;
+  let noises = 0;
+  let oscillators = 0;
+  audio.tone = (frequency, time, duration, type, volume) => {
+    assert.ok(frequency > 0 && duration > 0 && volume > 0);
+    tones += 1;
+  };
+  audio.noise = (time, duration, volume) => {
+    assert.ok(duration > 0 && volume > 0);
+    noises += 1;
+  };
+  audio.context = {
+    currentTime: 5,
+    createOscillator: () => {
+      oscillators += 1;
+      return {
+        type: 'sine',
+        frequency: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+        connect() {},
+        start() {},
+        stop() {},
+      };
+    },
+    createGain: () => ({
+      gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+      connect() {},
+    }),
+    createBiquadFilter: () => ({
+      type: 'lowpass',
+      frequency: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },
+      connect() {},
+    }),
+  };
+  audio.master = {};
+
+  // Muted / not running: nothing scheduled
+  audio.lassoThrow();
+  audio.speedBoost();
+  audio.shieldGravity();
+  assert.equal(tones + noises + oscillators, 0);
+
+  audio.running = true;
+  audio.lassoThrow();
+  assert.ok(tones >= 2 && noises >= 3 && oscillators >= 2, 'lassoThrow schedules rope whooshes and whip snap');
+
+  const prevTones = tones;
+  const prevOsc = oscillators;
+  audio.speedBoost();
+  assert.ok(tones > prevTones && oscillators > prevOsc, 'speedBoost schedules turbine sweep and turbo arpeggio');
+
+  const prevTones2 = tones;
+  const prevOsc2 = oscillators;
+  audio.shieldGravity();
+  assert.ok(tones > prevTones2 && oscillators >= prevOsc2 + 2, 'shieldGravity schedules gravity pitch warp and harmonics');
+});
+

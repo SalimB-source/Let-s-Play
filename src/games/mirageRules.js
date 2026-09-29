@@ -36,18 +36,18 @@ export function createCourse(random = Math.random) {
     const lane = Math.floor(random() * LANE_COUNT);
     const gem = (l, raised = false) => {
       const roll = random();
-      // Adjusted probabilities: Cyan 55%, Red 25%, Green 15%, Gold 5% (reduced gold)
-      // Raised gems (on jumps) get higher tiers: Green or Gold
+      // Ground gems: 32% Bleu/Cyan (Shield), 24% Rouge (Pistol), 18% Vert (All slightly), 26% Jaune/Or (Lasso)
+      // Raised gems (on jumps): 45% Vert, 55% Jaune/Or (always tier >= 2)
       return {
         kind: 'crystal',
         lane: l,
         raised,
         tier: raised
-          ? (roll < 0.7 ? 2 : 3)  // Raised: 70% Green, 30% Gold
-          : roll < 0.55 ? 0       // Normal: 55% Cyan
-          : roll < 0.8 ? 1        // 25% Red
-          : roll < 0.95 ? 2       // 15% Green
-          : 3                     // 5% Gold (reduced gold)
+          ? (roll < 0.45 ? 2 : 3)
+          : roll < 0.32 ? 0
+          : roll < 0.56 ? 1
+          : roll < 0.74 ? 2
+          : 3
       };
     };
     let items;
@@ -139,8 +139,15 @@ export function gemFlashState(age, tier = 0) {
   };
 }
 
-export const DUEL_DISTANCE = 600;
-export const DUEL_SPEED_BONUS = [1.6, 2.8, 3.6, 4.4]; // cyan, rouge, verte, or; m/s
+export const DUEL_DISTANCE = 800;
+export const DIAMOND_SPEED_BONUS = 3.0;
+// Tous les diamants donnent le même boost de vitesse (+3.0 m/s pendant 1s)
+export const DUEL_SPEED_BONUS = [
+  DIAMOND_SPEED_BONUS,
+  DIAMOND_SPEED_BONUS,
+  DIAMOND_SPEED_BONUS,
+  DIAMOND_SPEED_BONUS,
+]; // cyan, rouge, verte, or; m/s
 export const DUEL_BASE_SPEED = 15;
 export const DUEL_MIN_SPEED = 8;
 export const DUEL_MAX_SPEED = 26;
@@ -153,33 +160,321 @@ export const POWER_UPS = {
   SHIELD: 'shield',
   LASSO: 'lasso',
   PISTOL: 'pistol',
+  BOOST: 'boost',
 };
 
-// Power-up charging: diamonds needed to charge each power-up
-// Pistol takes more diamonds to charge than lasso and shield
+// Power-up charging: points needed to charge each power-up.
+// Blue diamonds charge Shield (+2), Yellow diamonds charge Lasso (+2),
+// Red diamonds charge Pistol (+2), and Green diamonds charge Boost (+2).
 export const POWER_UP_CHARGE_COST = {
-  [POWER_UPS.SHIELD]: 3,   // 3 charge points
-  [POWER_UPS.LASSO]: 3,    // 3 charge points
-  [POWER_UPS.PISTOL]: 5,   // 5 charge points (harder/takes longer to charge)
+  [POWER_UPS.SHIELD]: 10,  // 5 blue diamonds
+  [POWER_UPS.LASSO]: 10,   // 5 yellow diamonds
+  [POWER_UPS.PISTOL]: 12,  // 6 red diamonds
+  [POWER_UPS.BOOST]: 10,   // 5 green diamonds
 };
 
-// Charge points gained per diamond tier
-export const DIAMOND_CHARGE_VALUE = [1, 1, 2, 3]; // Cyan=1, Red=1, Green=2, Gold=3
+// Three AI rivals in Duel mode (+ the player = 4 riders across the 4 lanes)
+export const DUEL_RIVALS = Object.freeze([
+  Object.freeze({ id: 'ombre', name: 'L’OMBRE', paletteIndex: 1, startLane: 0, pace: 1.0, hesitateChance: 0.11 }),
+  Object.freeze({ id: 'sauge', name: 'SAUGE', paletteIndex: 2, startLane: 2, pace: 0.985, hesitateChance: 0.14 }),
+  Object.freeze({ id: 'amethyste', name: 'AMÉTHYSTE', paletteIndex: 3, startLane: 3, pace: 0.97, hesitateChance: 0.17 }),
+]);
+export const DUEL_RIVAL_COUNT = DUEL_RIVALS.length;
+
+// Charge points gained per diamond tier:
+// Tier 0 (Bleu/Cyan)  -> charges ONLY Shield (+2)
+// Tier 1 (Rouge)      -> charges ONLY Pistol (+2)
+// Tier 2 (Vert)       -> charges ONLY Boost (+2)
+// Tier 3 (Jaune/Or)   -> charges ONLY Lasso (+2)
+export const DIAMOND_POWER_CHARGE = Object.freeze([
+  Object.freeze({ [POWER_UPS.SHIELD]: 2, [POWER_UPS.LASSO]: 0, [POWER_UPS.PISTOL]: 0, [POWER_UPS.BOOST]: 0 }),
+  Object.freeze({ [POWER_UPS.SHIELD]: 0, [POWER_UPS.LASSO]: 0, [POWER_UPS.PISTOL]: 2, [POWER_UPS.BOOST]: 0 }),
+  Object.freeze({ [POWER_UPS.SHIELD]: 0, [POWER_UPS.LASSO]: 0, [POWER_UPS.PISTOL]: 0, [POWER_UPS.BOOST]: 2 }),
+  Object.freeze({ [POWER_UPS.SHIELD]: 0, [POWER_UPS.LASSO]: 2, [POWER_UPS.PISTOL]: 0, [POWER_UPS.BOOST]: 0 }),
+]);
+
+// Total charge points contributed by each diamond tier
+export const DIAMOND_CHARGE_VALUE = [2, 2, 2, 2];
 
 // Maximum charges a player can hold per power-up
 export const POWER_UP_MAX_CHARGES = 3;
 
-export const POWER_UP_MODES = Object.freeze(['duel', 'online', 'rush']);
+export const POWER_UP_MODES = Object.freeze(['duel', 'online']);
 
 export function powerUpsEnabled(mode) {
-  return true;
+  return mode === 'duel' || mode === 'online';
+}
+
+/**
+ * Initial power-up charge state: all four powers start at 0 charges and 0 progress.
+ */
+export function createPowerUpState() {
+  return {
+    shieldCharges: 0,
+    lassoCharges: 0,
+    pistolCharges: 0,
+    boostCharges: 0,
+    shieldChargePoints: 0,
+    lassoChargePoints: 0,
+    pistolChargePoints: 0,
+    boostChargePoints: 0,
+  };
+}
+
+/**
+ * Charge power-ups according to the collected diamond `tier`:
+ * - Tier 0 (Bleu/Cyan): charges only Shield
+ * - Tier 1 (Rouge): charges only Pistol
+ * - Tier 2 (Vert): charges only Boost
+ * - Tier 3 (Jaune/Or): charges only Lasso
+ * Once a power-up reaches its cost, it stays ready (progress = 1, charges = 1)
+ * until ANY power-up is activated.
+ */
+export function chargePowerUps(state = createPowerUpState(), tier = 0) {
+  const delta = DIAMOND_POWER_CHARGE[tier] ?? DIAMOND_POWER_CHARGE[0];
+  const shieldDelta = delta[POWER_UPS.SHIELD] || 0;
+  const lassoDelta = delta[POWER_UPS.LASSO] || 0;
+  const pistolDelta = delta[POWER_UPS.PISTOL] || 0;
+  const boostDelta = delta[POWER_UPS.BOOST] || 0;
+
+  const shieldCost = POWER_UP_CHARGE_COST[POWER_UPS.SHIELD];
+  const lassoCost = POWER_UP_CHARGE_COST[POWER_UPS.LASSO];
+  const pistolCost = POWER_UP_CHARGE_COST[POWER_UPS.PISTOL];
+  const boostCost = POWER_UP_CHARGE_COST[POWER_UPS.BOOST];
+
+  let shieldCharges = state.shieldCharges || 0;
+  let lassoCharges = state.lassoCharges || 0;
+  let pistolCharges = state.pistolCharges || 0;
+  let boostCharges = state.boostCharges || 0;
+  let shieldChargePoints = state.shieldChargePoints || 0;
+  let lassoChargePoints = state.lassoChargePoints || 0;
+  let pistolChargePoints = state.pistolChargePoints || 0;
+  let boostChargePoints = state.boostChargePoints || 0;
+
+  const charged = [];
+
+  if (shieldCharges === 0) {
+    if (shieldDelta > 0) {
+      shieldChargePoints = Math.min(shieldCost, shieldChargePoints + shieldDelta);
+      if (shieldChargePoints >= shieldCost) {
+        shieldCharges = 1;
+        shieldChargePoints = shieldCost;
+        charged.push(POWER_UPS.SHIELD);
+      }
+    }
+  } else {
+    shieldChargePoints = shieldCost;
+  }
+
+  if (lassoCharges === 0) {
+    if (lassoDelta > 0) {
+      lassoChargePoints = Math.min(lassoCost, lassoChargePoints + lassoDelta);
+      if (lassoChargePoints >= lassoCost) {
+        lassoCharges = 1;
+        lassoChargePoints = lassoCost;
+        charged.push(POWER_UPS.LASSO);
+      }
+    }
+  } else {
+    lassoChargePoints = lassoCost;
+  }
+
+  if (pistolCharges === 0) {
+    if (pistolDelta > 0) {
+      pistolChargePoints = Math.min(pistolCost, pistolChargePoints + pistolDelta);
+      if (pistolChargePoints >= pistolCost) {
+        pistolCharges = 1;
+        pistolChargePoints = pistolCost;
+        charged.push(POWER_UPS.PISTOL);
+      }
+    }
+  } else {
+    pistolChargePoints = pistolCost;
+  }
+
+  if (boostCharges === 0) {
+    if (boostDelta > 0) {
+      boostChargePoints = Math.min(boostCost, boostChargePoints + boostDelta);
+      if (boostChargePoints >= boostCost) {
+        boostCharges = 1;
+        boostChargePoints = boostCost;
+        charged.push(POWER_UPS.BOOST);
+      }
+    }
+  } else {
+    boostChargePoints = boostCost;
+  }
+
+  return {
+    state: {
+      shieldCharges,
+      lassoCharges,
+      pistolCharges,
+      boostCharges,
+      shieldChargePoints,
+      lassoChargePoints,
+      pistolChargePoints,
+      boostChargePoints,
+    },
+    charged,
+  };
+}
+
+/**
+ * Decide whether an NPC rival should trigger one of its ready power-ups.
+ * Lasso and Pistol can ONLY be used forward (on targets ahead of the NPC).
+ * Returns `{ type, target }` or `null`.
+ */
+export function chooseNpcPowerAction(npc, candidates = []) {
+  const state = npc?.powerState;
+  if (!state || (npc.stunTimer || 0) > 0 || (npc.powerCooldown || 0) > 0) return null;
+
+  const ahead = candidates
+    .filter((c) => c.dist > npc.dist + 1.2)
+    .sort((a, b) => b.dist - a.dist); // leader / furthest ahead first
+
+  if ((state.pistolCharges || 0) > 0) {
+    const target = ahead[0];
+    if (target) return { type: POWER_UPS.PISTOL, target };
+  }
+
+  if ((state.lassoCharges || 0) > 0) {
+    const aheadInLassoRange = ahead
+      .filter((c) => c.dist - npc.dist <= 36)
+      .sort((a, b) => a.dist - b.dist);
+    const target = aheadInLassoRange[0];
+    if (target) return { type: POWER_UPS.LASSO, target };
+  }
+
+  if ((state.boostCharges || 0) > 0 && (npc.powerBoostTimer || 0) <= 0) {
+    return { type: POWER_UPS.BOOST, target: null };
+  }
+
+  if ((state.shieldCharges || 0) > 0 && !npc.shieldActive) {
+    return { type: POWER_UPS.SHIELD, target: null };
+  }
+
+  return null;
+}
+
+/**
+ * Use a ready power-up (`shield`, `lasso`, `pistol`, or `boost`).
+ * Using a power-up discharges ONLY that power-up and keeps all other power-ups intact.
+ */
+export function consumePowerUp(state = createPowerUpState(), type) {
+  const isReady =
+    (type === POWER_UPS.SHIELD && (state.shieldCharges || 0) > 0) ||
+    (type === POWER_UPS.LASSO && (state.lassoCharges || 0) > 0) ||
+    (type === POWER_UPS.PISTOL && (state.pistolCharges || 0) > 0) ||
+    (type === POWER_UPS.BOOST && (state.boostCharges || 0) > 0);
+
+  if (!isReady) {
+    return { used: false, type: null, state };
+  }
+
+  const nextState = {
+    shieldCharges: state.shieldCharges || 0,
+    lassoCharges: state.lassoCharges || 0,
+    pistolCharges: state.pistolCharges || 0,
+    boostCharges: state.boostCharges || 0,
+    shieldChargePoints: state.shieldChargePoints || 0,
+    lassoChargePoints: state.lassoChargePoints || 0,
+    pistolChargePoints: state.pistolChargePoints || 0,
+    boostChargePoints: state.boostChargePoints || 0,
+  };
+
+  if (type === POWER_UPS.SHIELD) {
+    nextState.shieldCharges = 0;
+    nextState.shieldChargePoints = 0;
+  } else if (type === POWER_UPS.LASSO) {
+    nextState.lassoCharges = 0;
+    nextState.lassoChargePoints = 0;
+  } else if (type === POWER_UPS.PISTOL) {
+    nextState.pistolCharges = 0;
+    nextState.pistolChargePoints = 0;
+  } else if (type === POWER_UPS.BOOST) {
+    nextState.boostCharges = 0;
+    nextState.boostChargePoints = 0;
+  }
+
+  return {
+    used: true,
+    type,
+    state: nextState,
+  };
+}
+
+/**
+ * Derive HUD-ready progress (0..1) and counters for the 4 power-ups.
+ * A ready power-up always reports progress = 1 (100% full bar).
+ */
+export function powerUpHudState(state = createPowerUpState()) {
+  const shieldCost = POWER_UP_CHARGE_COST[POWER_UPS.SHIELD];
+  const lassoCost = POWER_UP_CHARGE_COST[POWER_UPS.LASSO];
+  const pistolCost = POWER_UP_CHARGE_COST[POWER_UPS.PISTOL];
+  const boostCost = POWER_UP_CHARGE_COST[POWER_UPS.BOOST];
+
+  const shieldCharges = state.shieldCharges || 0;
+  const lassoCharges = state.lassoCharges || 0;
+  const pistolCharges = state.pistolCharges || 0;
+  const boostCharges = state.boostCharges || 0;
+
+  const shieldReady = shieldCharges > 0;
+  const lassoReady = lassoCharges > 0;
+  const pistolReady = pistolCharges > 0;
+  const boostReady = boostCharges > 0;
+
+  const shieldChargePoints = shieldReady ? shieldCost : Math.min(shieldCost, state.shieldChargePoints || 0);
+  const lassoChargePoints = lassoReady ? lassoCost : Math.min(lassoCost, state.lassoChargePoints || 0);
+  const pistolChargePoints = pistolReady ? pistolCost : Math.min(pistolCost, state.pistolChargePoints || 0);
+  const boostChargePoints = boostReady ? boostCost : Math.min(boostCost, state.boostChargePoints || 0);
+
+  return {
+    shieldCharges,
+    shieldChargePoints,
+    shieldProgress: shieldReady ? 1 : shieldChargePoints / shieldCost,
+    lassoCharges,
+    lassoChargePoints,
+    lassoProgress: lassoReady ? 1 : lassoChargePoints / lassoCost,
+    pistolCharges,
+    pistolChargePoints,
+    pistolProgress: pistolReady ? 1 : pistolChargePoints / pistolCost,
+    boostCharges,
+    boostChargePoints,
+    boostProgress: boostReady ? 1 : boostChargePoints / boostCost,
+    anyPowerReady: shieldReady || lassoReady || pistolReady || boostReady,
+  };
 }
 
 export const SHIELD_DURATION = 5; // seconds the shield stays active
 export const LASSO_SLOW_DURATION = 2.5; // seconds target is slowed
 export const LASSO_SLOW_FACTOR = 0.45; // speed multiplier while slowed
 export const LASSO_PROJECTILE_DURATION = 0.45; // seconds rope flies
-export const PISTOL_STUN_DURATION = 1; // seconds the shot rider is on the ground, fully stopped
+export const PISTOL_STUN_DURATION = 2; // seconds the shot rider is on the ground, fully stopped before remounting
+export const POWER_BOOST_DURATION = 3; // seconds the green-diamond Boost power-up lasts before returning to normal speed
+export const POWER_BOOST_BONUS = 6.5; // m/s speed boost granted by the Boost power-up during POWER_BOOST_DURATION
+export const GEM_RESPAWN_DELAY = 0.5; // seconds a taken diamond disappears before reappearing
+
+/**
+ * Mark a diamond key as temporarily hidden for `delay` seconds (`GEM_RESPAWN_DELAY = 0.5`).
+ */
+export function markGemTaken(gemCooldowns, key, now, delay = GEM_RESPAWN_DELAY) {
+  if (!gemCooldowns || !key) return;
+  gemCooldowns.set(key, Number(now) + delay);
+}
+
+/**
+ * Check whether a diamond key is currently hidden (`now < respawnAt`).
+ * Automatically removes expired entries once `now >= respawnAt`.
+ */
+export function isGemHidden(gemCooldowns, key, now) {
+  if (!gemCooldowns || !key) return false;
+  const respawnAt = gemCooldowns.get(key);
+  if (respawnAt === undefined) return false;
+  if (Number(now) < respawnAt) return true;
+  gemCooldowns.delete(key);
+  return false;
+}
 
 const rankIndex = (rank) => Math.max(0, Math.min(3, (rank | 0) - 1));
 
@@ -233,14 +528,14 @@ export function stunPose(left, duration = PISTOL_STUN_DURATION, side = 1) {
   const ease = (t) => t * t * (3 - 2 * t);
   let off;
   let hop = 0;
-  if (p < 0.28) { off = ease(p / 0.28); hop = Math.sin((p / 0.28) * Math.PI) * 0.45; }
-  else if (p < 0.5) off = 1;
-  else { const t = (p - 0.5) / 0.5; off = 1 - ease(t); hop = Math.sin(t * Math.PI) * 0.55; }
+  if (p < 0.22) { off = ease(p / 0.22); hop = Math.sin((p / 0.22) * Math.PI) * 0.45; }
+  else if (p < 0.75) off = 1;
+  else { const t = (p - 0.75) / 0.25; off = 1 - ease(t); hop = Math.sin(t * Math.PI) * 0.55; }
   return {
     x: side * off * 1.05,
     y: -off * 1.1 + hop,
     roll: side * off * 1.35,
-    pitch: p >= 0.5 ? -Math.sin(((p - 0.5) / 0.5) * Math.PI) * 0.5 : 0,
+    pitch: p >= 0.75 ? -Math.sin(((p - 0.75) / 0.25) * Math.PI) * 0.5 : 0,
   };
 }
 
@@ -265,12 +560,22 @@ export const POWER_UP_DEFS = {
     emissive: 0x8a4a12,
     cost: POWER_UP_CHARGE_COST[POWER_UPS.LASSO],
   },
+  [POWER_UPS.BOOST]: {
+    id: POWER_UPS.BOOST,
+    label: 'Turbo',
+    keyHintPC: 'E',
+    icon: '⚡',
+    description: `Boost de vitesse pendant ${POWER_BOOST_DURATION}s avant de revenir à la vitesse normale`,
+    color: 0x4cd964,
+    emissive: 0x1e7a34,
+    cost: POWER_UP_CHARGE_COST[POWER_UPS.BOOST],
+  },
   [POWER_UPS.PISTOL]: {
     id: POWER_UPS.PISTOL,
     label: 'Pistolet',
-    keyHintPC: 'E',
+    keyHintPC: 'R',
     icon: '🔫',
-    description: 'Fait tomber le cavalier en tête de cheval (se charge en 5 diamants)',
+    description: `Fait tomber le cavalier devant toi pendant ${PISTOL_STUN_DURATION}s avant de remonter (se charge en ${POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]} pts)`,
     color: 0xe05656,
     emissive: 0x801e1e,
     cost: POWER_UP_CHARGE_COST[POWER_UPS.PISTOL],
@@ -317,14 +622,15 @@ export function seededRandom(seed) {
   return () => ((state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 2 ** 32);
 }
 
-export function planNpcLane(items, currentLane) {
+export function planNpcLane(items, currentLane, occupiedLanes = []) {
   let best = { lane: currentLane, jump: false, value: -Infinity };
   for (let lane = 0; lane < LANE_COUNT; lane++) {
     if (items.some(item => item.kind === 'cactus' && item.lane === lane)) continue;
     const barrier = items.some(item => item.kind === 'barrier' && item.lanes.includes(lane));
     const gem = items.find(item => item.kind === 'crystal' && item.lane === lane && !item.taken);
     const jump = barrier || Boolean(gem?.raised);
-    const value = (gem ? CRYSTALS[gem.tier].value : 0) - Math.abs(lane - currentLane) * 45 - (barrier ? 10 : 0);
+    const crowdPenalty = occupiedLanes.includes(lane) ? 95 : 0;
+    const value = (gem ? CRYSTALS[gem.tier].value : 0) - Math.abs(lane - currentLane) * 45 - (barrier ? 10 : 0) - crowdPenalty;
     if (value > best.value) best = { lane, jump, value };
   }
   return best;
@@ -357,3 +663,83 @@ export function resolveCollision({ mode, lives, speed, boost }) {
 export function isPlayerVisible(mode, invulnerable, time) {
   return mode !== 'online' && (invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
 }
+
+function lerpVec3(a, b, t) {
+  return [
+    a[0] + (b[0] - a[0]) * t,
+    a[1] + (b[1] - a[1]) * t,
+    a[2] + (b[2] - a[2]) * t,
+  ];
+}
+
+/**
+ * Computes the dynamic sunset-to-night progression for the Prairie ('Plaines d’Or') stage.
+ * As `progress` goes from 0 (start of race) to 1 (end of race):
+ * - The sun sinks from above the horizon (+5.5) down below the horizon (-12.0),
+ *   with its top rim disappearing under the horizon (sunElevation + 8 <= 0) before the finish.
+ * - The sky transitions from Golden Hour (0) -> Crimson Dusk (0.55) -> Starry Night (1).
+ */
+export function prairieSunsetState(progress = 0) {
+  const p = Math.min(1, Math.max(0, Number(progress) || 0));
+  const sunElevation = 5.5 - 17.5 * p;
+  const sunVisible = sunElevation + 8.0 > 0;
+  const starAlpha = p <= 0.5 ? 0 : Math.min(1, (p - 0.5) / 0.45);
+
+  const golden = {
+    skyBottom: [0.90, 0.70, 0.45],
+    skyHorizon: [0.84, 0.52, 0.32],
+    skyTop: [0.46, 0.37, 0.44],
+    glow: [1.0, 0.58, 0.29],
+    fog: [0.851, 0.604, 0.439],
+    bg: [0.459, 0.376, 0.455],
+    hemiSky: [1.0, 0.875, 0.627],
+    hemiGround: [0.396, 0.322, 0.235],
+    sunLight: [1.0, 0.714, 0.329],
+  };
+  const dusk = {
+    skyBottom: [0.72, 0.28, 0.26],
+    skyHorizon: [0.45, 0.20, 0.36],
+    skyTop: [0.16, 0.13, 0.28],
+    glow: [0.95, 0.32, 0.18],
+    fog: [0.38, 0.21, 0.31],
+    bg: [0.18, 0.12, 0.23],
+    hemiSky: [0.82, 0.46, 0.48],
+    hemiGround: [0.22, 0.16, 0.21],
+    sunLight: [0.98, 0.38, 0.24],
+  };
+  const night = {
+    skyBottom: [0.11, 0.15, 0.28],
+    skyHorizon: [0.06, 0.09, 0.20],
+    skyTop: [0.02, 0.03, 0.09],
+    glow: [0.10, 0.14, 0.26],
+    fog: [0.07, 0.10, 0.18],
+    bg: [0.04, 0.06, 0.12],
+    hemiSky: [0.44, 0.55, 0.78],
+    hemiGround: [0.10, 0.13, 0.20],
+    sunLight: [0.48, 0.60, 0.86],
+  };
+
+  const from = p < 0.55 ? golden : dusk;
+  const to = p < 0.55 ? dusk : night;
+  const localT = p < 0.55 ? p / 0.55 : (p - 0.55) / 0.45;
+
+  return {
+    progress: p,
+    sunElevation,
+    sunVisible,
+    starAlpha,
+    skyBottom: lerpVec3(from.skyBottom, to.skyBottom, localT),
+    skyHorizon: lerpVec3(from.skyHorizon, to.skyHorizon, localT),
+    skyTop: lerpVec3(from.skyTop, to.skyTop, localT),
+    glow: lerpVec3(from.glow, to.glow, localT),
+    fog: lerpVec3(from.fog, to.fog, localT),
+    bg: lerpVec3(from.bg, to.bg, localT),
+    hemiSky: lerpVec3(from.hemiSky, to.hemiSky, localT),
+    hemiGround: lerpVec3(from.hemiGround, to.hemiGround, localT),
+    sunLight: lerpVec3(from.sunLight, to.sunLight, localT),
+    hemiIntensity: 1.65 - 0.72 * p,
+    sunIntensity: 1.8 - 1.12 * p,
+    rimIntensity: 0.45 - 0.22 * p,
+  };
+}
+

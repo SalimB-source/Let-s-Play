@@ -1,4 +1,4 @@
-import { LANE_COUNT } from './mirageRules.js';
+import { LANE_COUNT, PISTOL_STUN_DURATION, DUEL_DISTANCE } from './mirageRules.js';
 import { supabase } from '../lib/supabase.js';
 
 const STORAGE_KEY = 'letsplay_mirage_online_rooms_v2';
@@ -421,7 +421,7 @@ function advanceBotsInRace(room, nowMs) {
     const stunned = p.stunned_until && Date.parse(p.stunned_until) > nowMs;
     const nextDistance = stunned
       ? Number(p.distance || 0)
-      : Math.min(600, Math.max(Number(p.distance || 0), elapsedSec * speed + wave - Number(p.stun_lag || 0)));
+      : Math.min(DUEL_DISTANCE, Math.max(Number(p.distance || 0), elapsedSec * speed + wave - Number(p.stun_lag || 0)));
     const laneWave = Math.floor((elapsedSec + p.slot * 1.7) / 2.6) % LANE_COUNT;
     const jumpPhase = (elapsedSec + p.slot * 0.9) % 3.4;
     const jumpVal = jumpPhase < 0.55 ? Math.sin((jumpPhase / 0.55) * Math.PI) * 1.25 : 0;
@@ -437,7 +437,7 @@ function advanceBotsInRace(room, nowMs) {
       if (tpl) p.speed = tpl.speed;
       else p.speed = 16.2;
     }
-    if (p.distance >= 600 && !p.finished_at) {
+    if (p.distance >= DUEL_DISTANCE && !p.finished_at) {
       p.finished_at = nowIso;
       p.jump = 0;
     }
@@ -492,14 +492,14 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
   }
 
 
-  if (!['create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'add_bot', 'shield', 'lasso', 'pistol'].includes(action)) {
+  if (!['create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'add_bot', 'shield', 'lasso', 'pistol', 'gem_pickup'].includes(action)) {
 
     throw new Error('Action inconnue');
   }
 
   if (action === 'create') {
     const stage = extras.p_stage || 'desert';
-    if (!['desert', 'western', 'prairie', 'sardinia'].includes(stage)) {
+    if (!['desert', 'western', 'prairie', 'sardinia', 'japan'].includes(stage)) {
       throw new Error('Carte inconnue');
     }
     // Remove previous open lobby hosted by the same user
@@ -763,10 +763,10 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
     const lane = Number(extras.p_lane ?? 1);
     const jump = Number(extras.p_jump ?? 0);
     const score = Number(extras.p_score ?? 0);
-    if (dist < 0 || dist > 600 || !Number.isInteger(lane) || lane < 0 || lane >= LANE_COUNT || jump < 0 || jump > 1.7 || score < 0 || score > 200000) {
+    if (dist < 0 || dist > DUEL_DISTANCE || !Number.isInteger(lane) || lane < 0 || lane >= LANE_COUNT || jump < 0 || jump > 1.7 || score < 0 || score > 200000) {
       throw new Error('Position invalide');
     }
-    if (action === 'finish' && dist < 600) {
+    if (action === 'finish' && dist < DUEL_DISTANCE) {
       throw new Error('Arrivée non atteinte');
     }
     if (!existingPlayer.finished_at) {
@@ -865,8 +865,8 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
         created_at: nowIso,
       });
     } else {
-      target.stunned_until = new Date(nowMs + 1000).toISOString();
-      if (target.is_bot) target.stun_lag = Number(target.stun_lag || 0) + (target.speed || 16.2);
+      target.stunned_until = new Date(nowMs + PISTOL_STUN_DURATION * 1000).toISOString();
+      if (target.is_bot) target.stun_lag = Number(target.stun_lag || 0) + (target.speed || 16.2) * PISTOL_STUN_DURATION;
       room.messages.push({
         id: `msg-${nowMs}-pistol`,
         user_id: uid,
@@ -877,6 +877,13 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
       });
     }
     writeStore(store, true);
+    return serializeRoom(room, nowIso);
+  }
+
+  if (action === 'gem_pickup') {
+    if (extras.p_gem_key) {
+      broadcastRoomEvent({ type: 'gem_pickup', code: vCode, gemKey: extras.p_gem_key, userId: uid });
+    }
     return serializeRoom(room, nowIso);
   }
 

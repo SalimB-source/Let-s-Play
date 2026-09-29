@@ -177,14 +177,14 @@ test('rooms accept lane 3 for positions and finishes, but reject invalid lane in
   for (const lane of [-1, 4, 1.5, NaN, Infinity]) {
     assert.throws(() => localRoomAction('tick', created.code, { ...position, p_lane: lane }, host), /Position invalide/);
   }
-  const finished = localRoomAction('finish', created.code, { ...position, p_distance: 600 }, host);
+  const finished = localRoomAction('finish', created.code, { ...position, p_distance: 800 }, host);
   const player = finished.players.find(p => p.user_id === host.id);
   assert.equal(player.lane, 3);
-  assert.equal(player.distance, 600);
+  assert.equal(player.distance, 800);
   assert.ok(player.finished_at);
 });
 
-test('pistol knocks the target off for one second; a shield stops the bullet', async () => {
+test('pistol knocks the target off for two seconds; a shield stops the bullet', async () => {
   resetLocalRoomsForTests({ seed: false });
   const room = localRoomAction('create', null, { p_stage: 'desert', p_name: 'Duel', p_password: '' }, host);
   localRoomAction('join', room.code, {}, guest);
@@ -194,7 +194,7 @@ test('pistol knocks the target off for one second; a shield stops the bullet', a
   const shot = localRoomAction('pistol', room.code, { p_target_id: guest.id }, host);
   const target = shot.players.find(p => p.user_id === guest.id);
   const left = Date.parse(target.stunned_until) - Date.now();
-  assert.ok(left > 900 && left <= 1000, `stun ${left} ms`);
+  assert.ok(left > 1900 && left <= 2000, `stun ${left} ms`);
   localRoomAction('shield', room.code, {}, guest);
   const blocked = localRoomAction('pistol', room.code, { p_target_id: guest.id }, host);
   assert.equal(blocked.players.find(p => p.user_id === guest.id).shield_until, null);

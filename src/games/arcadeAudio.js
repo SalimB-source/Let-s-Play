@@ -3,6 +3,7 @@ const MUSIC_VOLUME = 0.17;
 const BPM = 116;
 export const PRAIRIE_BPM = 126;
 export const SARDINIA_BPM = 92;
+export const JAPAN_BPM = 108;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
 
@@ -91,7 +92,7 @@ export class DesertGroove {
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : BPM) / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'japan' ? JAPAN_BPM : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -287,10 +288,103 @@ export class DesertGroove {
     if (step === 12 && bar % 4 === 0) this.tone(880, time, 0.5, 'sine', 0.05, 3000);
   }
 
+  playJapan(step, time) {
+    // Original Samurai night ride across the plains of Yōtei / Mount Fuji:
+    // D In-sen pentatonic scale (D, Eb, G, A, C) with booming O-daiko drums,
+    // percussive Tsugaru shamisen plucks, koto cascades, and a haunting shakuhachi flute.
+    const beat = 60 / JAPAN_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const battle = phrase >= 8;
+
+    const chords = [
+      [73.42, 146.83, 220.0, 293.66],
+      [77.78, 155.56, 233.08, 311.13],
+      [65.41, 130.81, 196.0, 261.63],
+      [73.42, 146.83, 220.0, 311.13],
+      [73.42, 146.83, 220.0, 293.66],
+      [98.0, 196.0, 293.66, 392.0],
+      [77.78, 155.56, 261.63, 311.13],
+      [73.42, 146.83, 220.0, 293.66],
+    ];
+    const shakuhachi = [
+      [587.33, 622.25, 783.99, 880.0],
+      [783.99, 622.25, 587.33, 0],
+      [523.25, 587.33, 622.25, 783.99],
+      [622.25, 587.33, 440.0, 0],
+      [587.33, 783.99, 880.0, 1046.5],
+      [880.0, 783.99, 622.25, 587.33],
+      [622.25, 783.99, 587.33, 440.0],
+      [587.33, 440.0, 293.66, 0],
+    ];
+    const chord = chords[bar];
+
+    // Deep O-daiko war drums on heavy accents
+    if ([0, 6, 8, 14].includes(step) || (battle && step === 11)) {
+      const rootBoom = step === 0 ? chord[0] : chord[0] * 1.12;
+      this.tone(rootBoom, time, beat * 0.65, 'sine', step === 0 ? 0.28 : 0.2);
+      this.tone(rootBoom * 0.75, time + 0.02, beat * 0.45, 'triangle', 0.14);
+      this.noise(time, 0.05, 0.055, 1400);
+    }
+
+    // Sharp shime-daiko rim clicks (fuchi) & bamboo clappers (hyōshigi)
+    if ([4, 7, 12, 15].includes(step)) {
+      this.noise(time, 0.028, 0.065, 3800);
+      this.tone(step % 4 === 0 ? 440 : 520, time, 0.038, 'triangle', 0.075);
+    }
+
+    // Tsugaru shamisen percussive ostinato
+    if (step % 2 === 0) {
+      const shamisenNotes = [chord[1], chord[2], chord[3], chord[2]];
+      const note = shamisenNotes[(step / 2) % 4];
+      this.tone(note, time, beat * 0.36, 'sawtooth', 0.12, 2100);
+      this.tone(note * 2, time + 0.006, 0.07, 'triangle', 0.055);
+      if (battle && (step === 2 || step === 10)) {
+        // Rapid shamisen double-strike (tataki)
+        this.tone(note * 1.5, time + beat * 0.24, beat * 0.25, 'sawtooth', 0.085, 2200);
+      }
+    }
+
+    // Koto shimmering arpeggio on the downbeat of every other bar
+    if (step === 0 && bar % 2 === 0) {
+      [chord[1], chord[2], chord[3], chord[2] * 2].forEach((n, idx) => {
+        this.tone(n, time + idx * 0.045, beat * 1.1, 'triangle', 0.065);
+      });
+    }
+
+    // Haunting Shakuhachi bamboo flute melody with mountain echo
+    if (step % 4 === 0) {
+      const note = shakuhachi[bar][step / 4];
+      if (note) {
+        const length = step === 0 ? beat * 1.25 : beat * 0.9;
+        // Breathy bamboo attack (chiff)
+        this.noise(time, 0.045, 0.03, 4600);
+        this.tone(note, time, length, 'sine', battle ? 0.17 : 0.14);
+        this.tone(note * 0.5, time + 0.012, length * 0.95, 'triangle', battle ? 0.075 : 0.045);
+        this.tone(note * 2, time + 0.015, length * 0.65, 'sine', 0.022);
+        // Echo across the plains toward Mount Fuji
+        this.tone(note, time + beat * 0.75, length * 0.65, 'sine', 0.038);
+      }
+    }
+
+    // Taiko battle roll at the end of an 8-bar phrase
+    if (phrase % 8 === 7 && step >= 12) {
+      this.tone(82 + (step - 12) * 18, time, 0.12, 'sine', 0.16);
+      this.noise(time, 0.055, 0.05, 2100);
+    }
+
+    // Temple bell (Bonshō / Rin) chime on 4-bar boundaries
+    if (step === 0 && bar % 4 === 0) {
+      this.tone(1174.66, time, beat * 2.2, 'sine', 0.045);
+      this.tone(587.33, time + 0.01, beat * 2.5, 'sine', 0.04);
+    }
+  }
+
   playStep(step, time) {
     if (this.stage === 'prairie') { this.playPrairie(step, time); return; }
     if (this.stage === 'western') { this.playWestern(step, time); return; }
     if (this.stage === 'sardinia') { this.playSardinia(step, time); return; }
+    if (this.stage === 'japan') { this.playJapan(step, time); return; }
     const beat = 60 / BPM;
     if ([0, 6, 8, 14].includes(step)) {
       this.tone(110, time, 0.18, 'sine', 0.34);
@@ -325,6 +419,145 @@ export class DesertGroove {
       this.tone(frequency, time + index * 0.06, 0.22, 'sawtooth', 0.13, 900);
     });
     this.noise(time + 0.05, 0.28, 0.05, 1400);
+  }
+
+  /** Bright ascending arcade fanfare when a power-up finishes charging. */
+  powerReady() {
+    if (!this.running || !this.context || !this.master) return;
+    const time = this.context.currentTime + 0.01;
+    [587.33, 880, 1174.66, 1760].forEach((frequency, index) => {
+      this.tone(frequency, time + index * 0.055, 0.22, 'triangle', 0.22);
+    });
+  }
+
+  /** Lasso throw: two spinning rope whooshes followed by a sharp whip-crack snap. */
+  lassoThrow() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+
+    // Two fast spinning rope whooshes + whistling cord glissando
+    [0, 0.11].forEach((offset, idx) => {
+      const t = time + offset;
+      this.noise(t, 0.095, 0.14 + idx * 0.04, 1500 + idx * 500);
+      if (ctx.createOscillator && ctx.createGain) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(280 + idx * 80, t);
+        osc.frequency.exponentialRampToValueAtTime(760 + idx * 140, t + 0.085);
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.22, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.095);
+        osc.connect(gain);
+        gain.connect(this.master);
+        osc.start(t);
+        osc.stop(t + 0.11);
+      } else {
+        this.tone(420 + idx * 140, t, 0.09, 'sine', 0.2);
+      }
+    });
+
+    // Whip-snap & taut rope twang when the lasso flies forward
+    const snapAt = time + 0.22;
+    this.noise(snapAt, 0.075, 0.26, 3200);
+    this.tone(580, snapAt, 0.06, 'triangle', 0.24);
+    this.tone(240, snapAt + 0.035, 0.14, 'triangle', 0.18);
+  }
+
+  /** Speed boost (Turbo): rising turbine surge, high-velocity wind rush and heroic chord. */
+  speedBoost() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+
+    // Wind rush
+    this.noise(time, 0.38, 0.14, 1800);
+    this.noise(time + 0.12, 0.32, 0.12, 3600);
+
+    // Continuous pitch-ramping turbine sweep
+    if (ctx.createOscillator && ctx.createGain) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(150, time);
+      osc.frequency.exponentialRampToValueAtTime(880, time + 0.42);
+      gain.gain.setValueAtTime(0.0001, time);
+      gain.gain.exponentialRampToValueAtTime(0.2, time + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.45);
+      if (ctx.createBiquadFilter) {
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(700, time);
+        filter.frequency.exponentialRampToValueAtTime(3400, time + 0.42);
+        osc.connect(filter);
+        filter.connect(gain);
+      } else {
+        osc.connect(gain);
+      }
+      gain.connect(this.master);
+      osc.start(time);
+      osc.stop(time + 0.47);
+    }
+
+    // Bright ascending turbo arpeggio
+    [440, 554.37, 659.25, 880, 1108.73].forEach((freq, idx) => {
+      this.tone(freq, time + idx * 0.048, 0.22, 'triangle', 0.18);
+      this.tone(freq * 1.5, time + idx * 0.048 + 0.01, 0.16, 'sine', 0.08);
+    });
+  }
+
+  /** Shield activation: deep gravity-well warp, sub-bass drop and magnetic harmonic pulse. */
+  shieldGravity() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+
+    // Deep gravity-wave pitch bend (downward pull then upward force-field lock)
+    if (ctx.createOscillator && ctx.createGain) {
+      const sub = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(190, time);
+      sub.frequency.exponentialRampToValueAtTime(48, time + 0.24);
+      sub.frequency.exponentialRampToValueAtTime(110, time + 0.58);
+      subGain.gain.setValueAtTime(0.0001, time);
+      subGain.gain.exponentialRampToValueAtTime(0.36, time + 0.03);
+      subGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.62);
+      sub.connect(subGain);
+      subGain.connect(this.master);
+      sub.start(time);
+      sub.stop(time + 0.64);
+
+      const warp = ctx.createOscillator();
+      const warpGain = ctx.createGain();
+      warp.type = 'sawtooth';
+      warp.frequency.setValueAtTime(95, time);
+      warp.frequency.exponentialRampToValueAtTime(220, time + 0.52);
+      warpGain.gain.setValueAtTime(0.0001, time);
+      warpGain.gain.exponentialRampToValueAtTime(0.16, time + 0.05);
+      warpGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.56);
+      if (ctx.createBiquadFilter) {
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(320, time);
+        filter.frequency.exponentialRampToValueAtTime(1200, time + 0.35);
+        filter.frequency.exponentialRampToValueAtTime(420, time + 0.56);
+        warp.connect(filter);
+        filter.connect(warpGain);
+      } else {
+        warp.connect(warpGain);
+      }
+      warpGain.connect(this.master);
+      warp.start(time);
+      warp.stop(time + 0.58);
+    }
+
+    // Resonant magnetic gravity-dome harmonics
+    [110, 164.81, 220, 329.63, 440].forEach((freq, idx) => {
+      this.tone(freq, time + idx * 0.055, 0.36, 'sine', 0.14);
+      this.tone(freq * 1.01, time + idx * 0.055 + 0.015, 0.32, 'triangle', 0.09, 900);
+    });
   }
 
   async loadCry() {
