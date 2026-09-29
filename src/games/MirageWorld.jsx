@@ -118,7 +118,9 @@ function makeScenery() {
   const teal = new THREE.MeshStandardMaterial({ color: 0x287c7d, flatShading: true, roughness: 0.8 });
   const pick = (array) => array[Math.floor(Math.random() * array.length)];
   const side = Math.random() > 0.5 ? 1 : -1;
-  const x = side * (5.4 + Math.random() * 6.5);
+  // Keep desert rock formations out of the center lane; they frame the view
+  // from the far roadside instead of reading like structures in front of the sun.
+  const x = side * (13 + Math.random() * 4.5);
   const z = -Math.random() * 40;
   const h = 1.4 + Math.random() * 4.5;
   block(cube, pick([sandstone, lilac, teal]), group, [x, h / 2 - 0.5, z], [1.4 + Math.random() * 2.4, h, 1.4 + Math.random() * 2]);
@@ -135,8 +137,35 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const prairie = stage === 'prairie';
   const sardinia = stage === 'sardinia';
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(prairie ? 0xe5b373 : western ? 0xdba57b : sardinia ? 0xd79a6b : 0x4b2860);
-  scene.fog = new THREE.Fog(prairie ? 0xe5b373 : western ? 0xdba57b : sardinia ? 0xd79a6b : 0x4b2860, 27, 82);
+  const atmosphere = prairie
+    ? {
+        background: 0x756074, fog: 0xd99a70, exposure: 1.02,
+        skyBottom: [0.90, 0.70, 0.45], skyHorizon: [0.84, 0.52, 0.32], skyTop: [0.46, 0.37, 0.44],
+        sunBottom: [0.98, 0.25, 0.045], sunTop: [1.0, 0.49, 0.12], glow: [1.0, 0.58, 0.29],
+        hemiSky: 0xffdfa0, hemiGround: 0x65523c, sunLight: 0xffb654, rimLight: 0xf1bf77,
+      }
+    : western
+      ? {
+          background: 0x75596b, fog: 0xdba17c, exposure: 1.08,
+          skyBottom: [0.98, 0.72, 0.49], skyHorizon: [0.88, 0.48, 0.36], skyTop: [0.48, 0.36, 0.49],
+          sunBottom: [1.0, 0.32, 0.075], sunTop: [1.0, 0.59, 0.2], glow: [1.0, 0.67, 0.37],
+          hemiSky: 0xffd4a2, hemiGround: 0x594238, sunLight: 0xffb660, rimLight: 0xff9877,
+        }
+      : sardinia
+        ? {
+            background: 0x59647a, fog: 0xd99b76, exposure: 1.08,
+            skyBottom: [0.97, 0.70, 0.49], skyHorizon: [0.83, 0.46, 0.38], skyTop: [0.37, 0.40, 0.54],
+            sunBottom: [1.0, 0.34, 0.09], sunTop: [1.0, 0.62, 0.25], glow: [1.0, 0.69, 0.4],
+            hemiSky: 0xffd6ab, hemiGround: 0x52605b, sunLight: 0xffb96f, rimLight: 0x87c3c6,
+          }
+        : {
+            background: 0x604b70, fog: 0xd28e70, exposure: 1.12,
+            skyBottom: [0.97, 0.66, 0.42], skyHorizon: [0.83, 0.42, 0.35], skyTop: [0.40, 0.29, 0.50],
+            sunBottom: [1.0, 0.31, 0.06], sunTop: [1.0, 0.57, 0.19], glow: [1.0, 0.62, 0.33],
+            hemiSky: 0xffd6b1, hemiGround: 0x49374a, sunLight: 0xffbd70, rimLight: 0xe1a0d4,
+          };
+  scene.background = new THREE.Color(atmosphere.background);
+  scene.fog = new THREE.Fog(atmosphere.fog, 27, 82);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
@@ -145,61 +174,63 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = prairie ? 1.02 : 1.2;
+  renderer.toneMappingExposure = atmosphere.exposure;
   renderer.domElement.className = 'mirage-canvas';
-  renderer.domElement.setAttribute('aria-label', 'Jeu 3D Mirage Rush — évite les cactus et ramasse les fragments solaires');
+  renderer.domElement.setAttribute('aria-label', 'Jeu 3D Mirage Rush — évite les obstacles et ramasse les fragments solaires');
   mount.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(prairie ? 0xffdfa0 : 0xffd6b1, prairie ? 0x65523c : 0x211638, prairie ? 1.65 : 2.1));
-  const sunLight = new THREE.DirectionalLight(prairie ? 0xffb654 : 0xffcb81, prairie ? 1.8 : 2.4);
-  sunLight.position.set(prairie ? 0 : -8, prairie ? 5 : 12, prairie ? -46 : 6);
+  scene.add(new THREE.HemisphereLight(atmosphere.hemiSky, atmosphere.hemiGround, prairie ? 1.65 : 1.9));
+  const sunLight = new THREE.DirectionalLight(atmosphere.sunLight, prairie ? 1.8 : 2.1);
+  sunLight.position.set(0, 5, -46);
   scene.add(sunLight);
-  const rimLight = new THREE.DirectionalLight(prairie ? 0xf1bf77 : 0xc36df4, prairie ? 0.45 : 1.2);
+  const rimLight = new THREE.DirectionalLight(atmosphere.rimLight, prairie ? 0.45 : 0.8);
   rimLight.position.set(7, 6, -10);
   scene.add(rimLight);
 
   const cube = new THREE.BoxGeometry(1, 1, 1);
-  const sunMat = new THREE.MeshBasicMaterial({ color: 0xffcb78 });
-  const secondSunMat = new THREE.MeshBasicMaterial({ color: 0xeb6a9b });
-  const sun = new THREE.Mesh(new THREE.SphereGeometry(3.1, 12, 8), sunMat);
-  sun.position.set(prairie ? 0 : -12, prairie ? 3.3 : 12, -46);
-  if (prairie) {
-    sun.visible = false;
-    // A sky backdrop ends exactly at ground level. The orange disc is centred
-    // on its lower edge, so its lower half is genuinely hidden by the horizon.
-    const sunset = new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
-      depthWrite: false,
-      uniforms: {},
-      vertexShader: `varying vec2 skyPoint;
-        void main() {
-          skyPoint = position.xy + vec2(0.0, 60.0);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }`,
-      fragmentShader: `varying vec2 skyPoint;
-        void main() {
-          vec3 peach = vec3(0.90, 0.70, 0.45);
-          vec3 rose = vec3(0.84, 0.52, 0.32);
-          vec3 mauve = vec3(0.46, 0.37, 0.44);
-          float height = skyPoint.y;
-          vec3 sky = mix(peach, rose, smoothstep(0.0, 23.0, height));
-          sky = mix(sky, mauve, smoothstep(18.0, 75.0, height));
-          float radius = length(skyPoint);
-          float halo = exp(-radius * radius / 500.0) * 0.38;
-          sky = mix(sky, vec3(1.0, 0.58, 0.29), halo);
-          float disc = 1.0 - smoothstep(7.85, 8.0, radius);
-          vec3 orange = mix(vec3(0.98, 0.25, 0.045), vec3(1.0, 0.49, 0.12), clamp(height / 8.0, 0.0, 1.0));
-          gl_FragColor = vec4(mix(sky, orange, disc), 1.0);
-        }`,
-    }));
-    sunset.position.set(0, 59.91, -95);
-    sunset.renderOrder = -1;
-    scene.add(sunset);
-  }
-  scene.add(sun);
-  const secondSun = new THREE.Mesh(new THREE.SphereGeometry(1.7, 10, 8), secondSunMat);
-  secondSun.position.set(12, 9, -42);
-  scene.add(secondSun);
-  secondSun.visible = !western && !prairie && !sardinia;
+  // A shared horizon sky for every course, with a partly-set sun on the skyline.
+  // The lower edge of the backdrop sits at ground level, naturally hiding the
+  // lower half of the sun just like a real dawn or sunset.
+  const skyVector = (rgb) => new THREE.Vector3(...rgb);
+  const sunset = new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
+    depthWrite: false,
+    uniforms: {
+      skyBottom: { value: skyVector(atmosphere.skyBottom) },
+      skyHorizon: { value: skyVector(atmosphere.skyHorizon) },
+      skyTop: { value: skyVector(atmosphere.skyTop) },
+      sunBottom: { value: skyVector(atmosphere.sunBottom) },
+      sunTop: { value: skyVector(atmosphere.sunTop) },
+      glow: { value: skyVector(atmosphere.glow) },
+      sunElevation: { value: prairie ? 0 : 5.5 },
+    },
+    vertexShader: `varying vec2 skyPoint;
+      void main() {
+        skyPoint = position.xy + vec2(0.0, 60.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }`,
+    fragmentShader: `uniform vec3 skyBottom;
+      uniform vec3 skyHorizon;
+      uniform vec3 skyTop;
+      uniform vec3 sunBottom;
+      uniform vec3 sunTop;
+      uniform vec3 glow;
+      uniform float sunElevation;
+      varying vec2 skyPoint;
+      void main() {
+        float height = skyPoint.y;
+        vec3 sky = mix(skyBottom, skyHorizon, smoothstep(0.0, 23.0, height));
+        sky = mix(sky, skyTop, smoothstep(18.0, 75.0, height));
+        float radius = length(skyPoint - vec2(0.0, sunElevation));
+        float halo = exp(-radius * radius / 500.0) * 0.38;
+        sky = mix(sky, glow, halo);
+        float disc = 1.0 - smoothstep(7.85, 8.0, radius);
+        vec3 sunColor = mix(sunBottom, sunTop, clamp(height / 8.0, 0.0, 1.0));
+        gl_FragColor = vec4(mix(sky, sunColor, disc), 1.0);
+      }`,
+  }));
+  sunset.position.set(0, 59.91, -95);
+  sunset.renderOrder = -1;
+  scene.add(sunset);
   if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
   if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
   if (sardinia) {
@@ -212,10 +243,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   // Sardinia trades the purple desert peaks for a low, sun-baked coastline.
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : 0x68466f, flatShading: true, roughness: 1 });
   for (let i = 0; i < (prairie ? 0 : sardinia ? 9 : 13); i += 1) {
-    const width = 5 + Math.random() * 9;
+    const width = 5 + Math.random() * 7;
     const height = sardinia ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
-    mountain.position.set((Math.random() - 0.5) * 45, height / 2 - 1, -38 - Math.random() * 26);
+    const mountainSide = Math.random() > 0.5 ? 1 : -1;
+    mountain.position.set(mountainSide * (17 + Math.random() * 11), height / 2 - 1, -38 - Math.random() * 26);
     mountain.scale.set(width, height, 3 + Math.random() * 5);
     scene.add(mountain);
   }
@@ -518,6 +550,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const dt = Math.min(0.04, (time - lastFrame) / 1000);
     lastFrame = time;
     const running = active;
+    const network = getNetwork?.();
+    const wallNow = Date.now();
     if (running && race.mode !== 'rush') {
       baseSpeed += (DUEL_BASE_SPEED - baseSpeed) * Math.min(1, dt * 0.65);
       boost = tickSpeedBoost(boost, dt);
@@ -549,7 +583,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rows.forEach((row) => {
         row.group.position.z += speed * dt;
         row.items.forEach((item) => {
-          if (item.kind === 'crystal' && item.object.visible) {
+          if (item.kind !== 'crystal') return;
+          const locallyCollected = item.collected || sharedGems.has(item.key);
+          const hiddenByRemotePickup = Number(network?.gemPickups?.[item.key] || 0) > wallNow;
+          item.object.visible = !locallyCollected && !hiddenByRemotePickup;
+          if (item.object.visible) {
             item.object.rotation.y += dt * 1.8;
             item.object.rotation.x = Math.sin(time * 0.002 + row.group.position.z) * 0.1;
           }
@@ -571,13 +609,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             callbacks.crash?.();
             if (impact.gameOver) finish();
           }
-          const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !item.collected);
+          const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !item.collected && Number(network?.gemPickups?.[item.key] || 0) <= wallNow);
           if (crystal) {
             crystal.collected = true;
             sharedGems.add(crystal.key);
             crystal.object.visible = false;
             gems += 1;
-            callbacks.pickup?.(crystal.tier);
+            callbacks.pickup?.(crystal.tier, crystal.key);
             combo += 1;
             const multiplier = 1 + Math.min(3, Math.floor(combo / 5) * 0.5);
             score += Math.round(CRYSTALS[crystal.tier].value * multiplier);
@@ -623,7 +661,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     player.rotation.x = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.16 : 0;
     player.scale.setScalar((poseLeft > 0 ? 1.035 : 1) * (crashAnimation > 0 ? 1 - Math.sin(crashProgress * Math.PI) * 0.09 : 1));
     player.visible = isPlayerVisible(race.mode, invulnerable, time);
-    const network = getNetwork?.();
     onlineRiders.forEach((rider, slot) => {
       const peer = network?.players?.find(p => p.slot === slot);
       const mine = peer?.user_id === network?.userId;

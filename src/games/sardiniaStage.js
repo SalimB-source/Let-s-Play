@@ -103,7 +103,10 @@ export function sardiniaVillage(index, side) {
   sign.position.set(side * 6.05, h - 0.7, 0);
   sign.rotation.y = side === 1 ? -Math.PI / 2 : Math.PI / 2;
   group.add(sign);
-  group.position.z = 6 - index * 11;
+  // Move the houses to the roadside and stagger their rows to leave a clear
+  // central view of the coastal sunset down the course.
+  group.position.x = side * 8.5;
+  group.position.z = 6 - index * 11 + (side === 1 ? -4 : 0);
   group.userData.speedFactor = 1;
   return group;
 }
