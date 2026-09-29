@@ -75,11 +75,15 @@ export default function MirageRushPage() {
   const [justFinished, setJustFinished] = useState(null);
   const [progression, setProgression] = useState(() => loadProgress());
   const [award, setAward] = useState(null);
+  // Plein écran de la coquille de jeu (téléphone & app) — voir enterImmersive.
+  const [immersive, setImmersive] = useState(false);
   const [powerToast, setPowerToast] = useState(null);
   const [fx, setFx] = useState('');
   const progressRef = useRef(progression);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
+  const shellRef = useRef(null);
+  const immersiveRef = useRef(false);
   const fxTimer = useRef(null);
   const toastTimer = useRef(null);
   const phaseRef = useRef(phase);
@@ -115,7 +119,73 @@ export default function MirageRushPage() {
     };
   }, [refreshLeaderboard]);
 
+  // ── Plein écran (téléphone & application) ──────────────────────────────
+  // Sur mobile et dans l'APK, « LANCER » plonge la coquille de jeu en plein
+  // écran : Fullscreen API quand la plateforme l'accepte (Chrome, mais aussi
+  // la WebView de l'app grâce à son onShowCustomView existant → plein écran
+  // système immersif), et en repli — iOS Safari, WebViews sans Fullscreen
+  // API — une couche fixe posée sur tout l'écran (classe `is-immersive`).
+  const enterImmersive = useCallback(() => {
+    if (immersiveRef.current || typeof document === 'undefined') return;
+    const shell = shellRef.current;
+    if (!shell) return;
+    const inApp = typeof window !== 'undefined' && Boolean(window.LetsPlayAndroid);
+    const touchScreen = typeof window !== 'undefined'
+      && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+    if (!inApp && !touchScreen) return;
+    immersiveRef.current = true;
+    setImmersive(true);
+    document.body.classList.add('mirage-immersive-lock');
+    try {
+      // Demande pendant le geste (clic « LANCER », Entrée pour rejouer) :
+      // c'est la seule fenêtre où le navigateur l'accepte.
+      const request = shell.requestFullscreen || shell.webkitRequestFullscreen;
+      const done = request?.call(shell);
+      done?.catch?.(() => {}); // refus → le repli CSS suffit
+    } catch { /* repli CSS déjà en place */ }
+  }, []);
+
+  const exitImmersive = useCallback(() => {
+    if (!immersiveRef.current || typeof document === 'undefined') return;
+    immersiveRef.current = false;
+    setImmersive(false);
+    document.body.classList.remove('mirage-immersive-lock');
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      try {
+        const done = (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+        done?.catch?.(() => {});
+      } catch { /* rien à refermer */ }
+    }
+  }, []);
+
+  // Sorties du plein écran : retour au choix de course, démontage de la page,
+  // ou sortie « native » (bouton X / Échap du navigateur) — dans ce dernier
+  // cas l'événement arrive après notre propre sortie, sans effet de bord.
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      if (immersiveRef.current && !document.fullscreenElement && !document.webkitFullscreenElement) {
+        exitImmersive();
+      }
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+      exitImmersive();
+    };
+  }, [exitImmersive]);
+
+  // Dès que la page revient à l'intro (choix du mode, de la course, ou
+  // annulation du compte à rebours), le plein écran se referme.
+  useEffect(() => {
+    if (phase === 'intro') exitImmersive();
+  }, [phase, exitImmersive]);
+
   const startRun = useCallback(() => {
+    // Clic « LANCER » / Entrée pour rejouer : on demande le plein écran
+    // ici, synchronement dans le geste, sinon le navigateur le refuse.
+    enterImmersive();
     audioRef.current?.setStage(stage);
     setRace({ mode: selectedMode, stage, challenge: selectedMode === 'duel' ? challenge : null });
     setRunToken((token) => token + 1);
@@ -130,7 +200,7 @@ export default function MirageRushPage() {
     setCountdown(3);
     setPhase('countdown');
     if (musicOnRef.current) audioRef.current?.start();
-  }, [stage, selectedMode, challenge]);
+  }, [stage, selectedMode, challenge, enterImmersive]);
   const startRunRef = useRef(startRun);
   startRunRef.current = startRun;
 
@@ -309,8 +379,11 @@ export default function MirageRushPage() {
       <header className="mirage-heading wrap">
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow"><span className="mirage-live-dot" /> LET’S PLAY ARCADE <span className="mirage-eyebrow-divider">/</span> 3D VOXEL RUNNER</div>
-          <h1>MIRAGE <em>RUSH</em></h1>
-          <p>Le désert se déforme. Les cristaux t’appellent. <strong>Choisis la ruée contre la montre, un duel ou une room en ligne.</strong></p>
+          {/* Le titre « MIRAGE RUSH » et son chapô ont été retirés des DEUX
+              thèmes (aucun conditionnement par data-theme) : encre crème
+              posée en dur, ils étaient invisibles sur le fond clair du
+              thème Light, et la demande est de ne plus les afficher du tout.
+              L’eyebrow et le lien de retour suffisent. */}
           <Link className="mirage-back-link" to="/jeu">← RETOUR AUX JEUX</Link>
         </div>
         <div className="mirage-heading-right">
@@ -351,7 +424,11 @@ export default function MirageRushPage() {
       </header>
 
       <div className="mirage-layout wrap">
-        <section className={`mirage-game-shell${phase === 'playing' ? ' is-running' : ''}`} aria-label="Partie de Mirage Rush">
+        <section
+          ref={shellRef}
+          className={`mirage-game-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`}
+          aria-label="Partie de Mirage Rush"
+        >
           <div className="mirage-game-topbar">
             <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
             <div className="mirage-game-controls-top">

@@ -44,20 +44,11 @@
 .mirage-live-dot { animation: miragePulseDot 2.2s ease-in-out infinite; }
 @keyframes miragePulseDot { 50% { box-shadow: 0 0 4px rgba(98, 227, 165, .4); opacity: .72; } }
 .mirage-eyebrow-divider { color: #f2a15d; }
-.mirage-heading h1 {
-  margin: 12px 0 7px; font: 900 clamp(36px, 5.5vw, 68px)/.98 var(--font-gaming);
-  letter-spacing: -.055em; color: #fff5e4;
-}
-.mirage-heading h1 em {
-  color: var(--mirage-gold); font-style: normal;
-  animation: mirageTitleGlow 3.6s ease-in-out infinite alternate;
-}
-@keyframes mirageTitleGlow {
-  from { text-shadow: 0 0 16px rgba(243, 198, 91, .16); }
-  to { text-shadow: 0 0 34px rgba(243, 198, 91, .5); }
-}
-.mirage-heading-copy > p { max-width: 720px; margin: 11px 0 0; color: rgba(255, 242, 221, .67); font-size: 14px; line-height: 1.65; }
-.mirage-heading-copy > p strong { color: #fff4e1; }
+/* Le titre « MIRAGE RUSH » et son chapô ont été retirés du DOM pour les DEUX
+   thèmes (ils n'existent plus, ce n'est pas un affichage conditionné au
+   thème) : encre crème posée en dur, invisibles sur le fond clair du thème
+   Light — ne pas recréer de styles `.mirage-heading h1` /
+   `.mirage-heading-copy > p` sans jeton de thème. */
 .mirage-heading-side {
   display: flex; flex: 0 0 190px; flex-direction: column; align-items: flex-end; gap: 6px;
   padding: 0 0 2px; text-align: right;
@@ -75,6 +66,34 @@
   box-shadow: 0 24px 70px rgba(8, 5, 15, .38), inset 0 1px rgba(255, 255, 255, .03);
 }
 .mirage-game-shell { min-width: 0; overflow: hidden; }
+/* ── Plein écran (téléphone & application) ────────────────────────────────
+   Sur mobile et dans l'APK, « LANCER LA PARTIE » bascule cette coquille en
+   plein écran (classe `is-immersive`, posée par MirageRushPage au moment du
+   geste) : le plein écran natif quand la plateforme l'accepte, et cette
+   couche fixe comme repli universel (iOS Safari, WebViews sans Fullscreen
+   API — dans l'APK, l'event fullscreenchange repart de la même couche). */
+body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
+.mirage-game-shell.is-immersive {
+  position: fixed;
+  inset: 0;
+  z-index: 1500; /* au-dessus de la nav fixe (1000) et du menu mobile (1300) */
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  border: none;
+  border-radius: 0;
+  background: #0b0816;
+  box-shadow: none;
+}
+.mirage-game-shell.is-immersive .mirage-viewport {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+/* Les consignes du pied (touches, glissé…) vivent avec la page : en plein
+   écran elles voleraient de la place à la piste — chaque overlay porte déjà
+   ses propres rappels (kicker + hint). */
+.mirage-game-shell.is-immersive .mirage-game-foot { display: none; }
 .mirage-game-topbar {
   height: 50px; display: flex; justify-content: space-between; align-items: center; gap: 10px;
   padding: 0 15px; border-bottom: 1px solid rgba(246, 210, 166, .12);
@@ -469,8 +488,6 @@
   .mirage-page .wrap { width: min(100% - 24px, 520px); }
   .mirage-heading { align-items: flex-start; gap: 10px; padding-bottom: 18px; }
   .mirage-eyebrow { flex-wrap: wrap; gap: 6px; font-size: 8px; letter-spacing: .12em; }
-  .mirage-heading h1 { margin-top: 10px; font-size: clamp(33px, 10vw, 48px); }
-  .mirage-heading-copy > p { max-width: 390px; margin-top: 7px; font-size: 12px; }
   .mirage-heading-side { flex-basis: auto; min-width: 95px; padding-top: 25px; }
   .mirage-heading-side > strong { font-size: 19px; }
   .mirage-record-label { font-size: 7px; }
@@ -1930,7 +1947,6 @@
 /* Respect des préférences de mouvement réduit : on calme toutes les
    animations décoratives (shake, zoom, shimmer, pulsations…). */
 @media (prefers-reduced-motion: reduce) {
-  .mirage-heading h1 em,
   .mirage-live-dot,
   .mirage-live-pill i,
   .mirage-score-pop,
