@@ -18,12 +18,12 @@ function block(geometry, material, parent, position, scale = null) {
   return mesh;
 }
 
-function makeExplorer(rival = false) {
+function makeExplorer(rival = false, palette = null) {
   const player = new THREE.Group();
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const mat = color => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true });
   const palettes = [[0xb87948,0x352638,0x285e79,0xffce68,0xffe3b3], [0x393744,0xd5dde1,0xad3756,0x8ce7e0,0x34293d], [0xe2d5bd,0x684532,0x387649,0xffdc87,0x624132], [0x654536,0x251f29,0x7951aa,0xffa85c,0x392947]];
-  const [coat, mane, cloth, trim, hood] = palettes[Number(rival) || 0].map(mat);
+  const [coat, mane, cloth, trim, hood] = (palette || palettes[Number(rival) || 0]).map(mat);
   // Horse faces -Z: hindquarters and the rider's back face the camera.
   block(cube, coat, player, [0, 0.95, 0], [0.82, 0.83, 1.65]);
   const neck = block(cube, coat, player, [0, 1.48, -0.64], [0.46, 1.02, 0.52]);
@@ -56,7 +56,17 @@ function makeExplorer(rival = false) {
     block(cube, mane, player, [x * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
   }
   player.userData.parts = { legs, tail, cape };
+  player.userData.materials = [coat, mane, cloth, trim, hood];
+  player.userData.basePalette = palette || palettes[Number(rival) || 0];
+  player.userData.painting = player.userData.basePalette;
   return player;
+}
+
+/** Recolor a rider made by makeExplorer with a 5-slot skin palette. */
+function paintModel(model, colors) {
+  const materials = model.userData.materials;
+  if (!materials || !colors) return;
+  colors.forEach((color, index) => materials[index]?.color.set(color));
 }
 
 function makeCactus() {
@@ -119,7 +129,7 @@ function makeScenery() {
   return group;
 }
 
-function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
+function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const western = stage === 'western';
   const prairie = stage === 'prairie';
   const scene = new THREE.Scene();
@@ -218,7 +228,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     }
   }
 
-  const player = makeExplorer();
+  let skinColors = getSkin?.() ?? null;
+  const player = makeExplorer(false, skinColors);
   scene.add(player);
   const rival = makeExplorer(true);
   rival.position.set(4.2, 0, -5);
@@ -231,6 +242,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     scene.add(rider);
     return rider;
   });
+  const skinPaint = (rider, colors) => {
+    const want = colors || rider.userData.basePalette;
+    if (rider.userData.painting === want) return;
+    paintModel(rider, want);
+    rider.userData.painting = want;
+  };
   const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xfdf0c8 });
   const finishMaterial = new THREE.MeshBasicMaterial({ color: 0x4ce9df });
   const startLine = block(new THREE.BoxGeometry(8.6, 0.05, 0.45), lineMaterial, scene, [1.05, 0.025, 1]);
@@ -592,6 +609,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
       rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, LANES[peer.lane], Math.min(1,dt*10));
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
+      skinPaint(rider, mine ? skinColors : null);
       rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running ? Math.sin(time*.018+i*2.2)*.65 : 0; });
     });
     rival.position.z = Math.max(-85, Math.min(16, distance - rivalDistance));
@@ -624,6 +642,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     pause() {
       active = false;
     },
+    setSkin(colors) {
+      skinColors = colors ?? null;
+      skinPaint(player, skinColors);
+    },
     action,
     destroy() {
       active = false;
@@ -643,9 +665,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network }) {
   const networkRef = useRef(network);
   networkRef.current = network;
+  const skinRef = useRef(skin);
+  skinRef.current = skin;
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const raceRef = useRef(race);
@@ -661,7 +685,7 @@ export default function MirageWorld({ active, race, stage, onReady, onHud, onFin
       crash: () => callbackRefs.current.onCrash?.(),
       pickup: (tier) => callbackRefs.current.onPickup?.(tier),
       cheer: () => callbackRefs.current.onCheer?.(),
-    }, () => raceRef.current, stage, () => networkRef.current);
+    }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
     worldRef.current = world;
     if (actionsRef) actionsRef.current = (name) => world.action(name);
     callbackRefs.current.onReady?.();
@@ -677,6 +701,10 @@ export default function MirageWorld({ active, race, stage, onReady, onHud, onFin
     if (active) worldRef.current.start();
     else worldRef.current.pause();
   }, [active]);
+
+  useEffect(() => {
+    worldRef.current?.setSkin?.(skin);
+  }, [skin]);
 
   return <div className="mirage-world" ref={mountRef} />;
 }

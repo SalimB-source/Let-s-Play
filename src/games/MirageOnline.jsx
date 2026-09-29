@@ -6,7 +6,7 @@ import { DesertGroove } from './arcadeAudio';
 const characters = ['Sillage · bleu / alezan', 'L’Ombre · rouge / ardoise', 'Sauge · vert / ivoire', 'Améthyste · violet / bai'];
 const positionArgs = p => ({ p_distance: Math.min(600, Math.max(0, p.distance || 0)), p_lane: p.lane ?? 1, p_jump: Math.min(1.7, p.jump || 0), p_score: p.score || 0 });
 
-export default function MirageOnline({ connected, userId, initialStage, onBack }) {
+export default function MirageOnline({ connected, userId, initialStage, skin, onBack, onRunFinish }) {
   const [room, setRoom] = useState(null);
   const [stage, setStage] = useState(initialStage);
   const [code, setCode] = useState('');
@@ -18,6 +18,7 @@ export default function MirageOnline({ connected, userId, initialStage, onBack }
   const [seconds, setSeconds] = useState(null);
   const [sound, setSound] = useState(true);
   const [hud, setHud] = useState({});
+  const [xp, setXp] = useState(null);
   const latest = useRef({});
   const done = useRef(false);
   const generation = useRef(0);
@@ -119,10 +120,12 @@ export default function MirageOnline({ connected, userId, initialStage, onBack }
       </section>
       <section className="mirage-game-shell">
         <div className="mirage-game-topbar"><strong>{Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS</strong><span>{finished ? 'ARRIVÉE !' : 'COURSE EN LIGNE'}</span></div>
-        <div className="mirage-online-world"><MirageWorld active={active} stage={stage} race={{ mode: 'online', seed: room.seed }} network={{ players: room.players, userId }} actionsRef={actions} onReady={() => setReady(true)} onHud={p => { latest.current = p; setHud(p); }} onFinish={p => { latest.current = p; done.current = true; setActive(false); setFinished(true); }} onPickup={tier => audio.current?.pickup(tier)} onCheer={() => audio.current?.cheer()} /></div>
+        <div className="mirage-online-world"><MirageWorld active={active} stage={stage} race={{ mode: 'online', seed: room.seed }} skin={skin} network={{ players: room.players, userId }} actionsRef={actions} onReady={() => setReady(true)} onHud={p => { latest.current = p; setHud(p); }} onFinish={p => { latest.current = p; done.current = true; setActive(false); setFinished(true); setXp(onRunFinish?.(p) ?? null); }} onPickup={tier => audio.current?.pickup(tier)} onCheer={() => audio.current?.cheer()} /></div>
         <div className="mirage-mobile-controls"><button onClick={() => actions.current?.('left')}>←</button><button onClick={() => actions.current?.('jump')}>SAUT ↑</button><button onClick={() => actions.current?.('right')}>→</button></div>
       </section>
-      <section className="panel-frame mirage-room-panel"><h2>{finished ? 'Arrivées' : 'Positions en direct'}</h2><ol>{standings.map(p => <li key={p.user_id}>{p.name} · {Math.floor(p.distance)} m · {p.score} pts {p.finished_at ? '✓ Arrivé' : Date.now()+offset.current-Date.parse(p.last_seen)>10000 ? '· Connexion perdue' : '· En piste'}</li>)}</ol><small>Positions actualisées environ 5 fois/s. Arrivées enregistrées par le serveur ; classement amical, non homologué.</small></section>
+      <section className="panel-frame mirage-room-panel"><h2>{finished ? 'Arrivées' : 'Positions en direct'}</h2><ol>{standings.map(p => <li key={p.user_id}>{p.name} · {Math.floor(p.distance)} m · {p.score} pts {p.finished_at ? '✓ Arrivé' : Date.now()+offset.current-Date.parse(p.last_seen)>10000 ? '· Connexion perdue' : '· En piste'}</li>)}</ol><small>Positions actualisées environ 5 fois/s. Arrivées enregistrées par le serveur ; classement amical, non homologué.</small>
+        {finished && xp && <p className="mirage-xp-award" role="status"><strong>+{xp.xpGained} XP</strong>{xp.leveledUp && <span>NIVEAU {xp.level} !</span>}{xp.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {xp.unlocked.map(skinEntry => skinEntry.name).join(' · ')}</em>}</p>}
+      </section>
     </>}
     {error && <p className="mirage-room-error" role="alert">{error}</p>}
   </div></div>;
