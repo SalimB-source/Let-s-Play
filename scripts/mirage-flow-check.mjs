@@ -9,4 +9,4 @@ globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { checkMirageFlow } = await import('../node_modules/.cache/mirage-flow/mirage-flow-smoke.js');
 try { await checkMirageFlow(assert); } finally { dom.window.close(); }
-console.log('check:mirage-flow ✓ — plus de barre d’onglets ni de sélecteur de terrain : « LANCER LA PARTIE » est disponible d’emblée.');
+console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) remis dans l’overlay d’intro ; pas de barre d’onglets, terrain figé sur les Dunes de l’Écho.');

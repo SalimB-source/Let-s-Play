@@ -384,8 +384,9 @@ export default function MirageRushPage() {
               L’eyebrow et le lien de retour suffisent. */}
           <Link className="mirage-back-link" to="/jeu">← RETOUR AUX JEUX</Link>
         </div>
-        {/* La barre d’onglets (RUÉE / DUEL / EN LIGNE) a été retirée : la page
-            lance directement la ruée, le duel arrive par lien de défi. */}
+        {/* La barre d’onglets (RUÉE / DUEL / EN LIGNE) de l’en-tête est
+            retirée : le choix du mode vit maintenant dans l’overlay d’intro,
+            juste au-dessus du bouton de lancement. */}
         <div className="mirage-heading-right">
           <div className="mirage-heading-side">
             <span className="mirage-record-label">TON RECORD</span>
@@ -407,7 +408,7 @@ export default function MirageRushPage() {
               {phase === 'playing' && <>
                 <span className="mirage-live-pill"><i /> EN PARTIE</span>
                 <button type="button" className="mirage-pause-button" onClick={pauseGame} aria-label="Mettre la partie en pause">❚❚ PAUSE</button>
-                <button type="button" className="mirage-back-game-button" onClick={backToCoursePicker} aria-label="Retour au choix de course">← RETOUR</button>
+                <button type="button" className="mirage-back-game-button" onClick={backToCoursePicker} aria-label="Retour au choix du mode">← RETOUR</button>
               </>}
               {phase === 'paused' && <>
                 <span className="mirage-live-pill is-paused"><i /> EN PAUSE</span>
@@ -609,6 +610,25 @@ export default function MirageRushPage() {
               <div className="mirage-overlay mirage-intro-overlay">
                 <div className="mirage-overlay-kicker"><span>✦</span> {selectedMode === 'duel' ? 'DUEL · PREMIER À 600 M' : 'RUÉE · 60 SECONDES'} <span>✦</span></div>
                 <h2>{selectedMode === 'duel' ? 'À TOI DE' : 'LE SABLE'} <em>{selectedMode === 'duel' ? 'GALOPER.' : 'SE RÉVEILLE.'}</em></h2>
+                {/* Le choix du mode est remis DANS LE JEU (overlay d'intro),
+                    l'ancienne barre d'onglets de l'en-tête reste retirée :
+                    trois cartes réutilisant le style du sélecteur d'origine.
+                    Le terrain, lui, demeure figé (Dunes de l'Écho, ou
+                    parcours imposé par un défi). */}
+                <div className="mirage-mode-section">
+                  <div className="mirage-picker-label"><span>01 / TON MODE</span><span>À TOI DE JOUER</span></div>
+                  <div className="mirage-mode-picker" role="group" aria-label="Mode de jeu Mirage">
+                    {[
+                      { id: 'rush', name: 'RUÉE', icon: '↯', tagline: 'Bats ton record', info: '60 secondes · 3 vies' },
+                      { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : 'Devance ton rival', info: challenge ? 'Course fantôme · 600 m' : 'Face au PNJ · 600 m' },
+                      { id: 'online', name: 'EN LIGNE', icon: '♞', tagline: 'Retrouve tes amis', info: 'Salon · 2 à 4 cavaliers' },
+                    ].map(mode => <button type="button" key={mode.id} aria-pressed={selectedMode === mode.id} onClick={() => chooseMode(mode.id)}>
+                      <span className="mirage-mode-symbol" aria-hidden="true">{mode.icon}</span>
+                      <span className="mirage-mode-copy"><strong>{mode.name}</strong><span>{mode.tagline}</span><small>{mode.info}</small></span>
+                      <span className="mirage-choice-dot" aria-hidden="true">{selectedMode === mode.id ? '✓' : ''}</span>
+                    </button>)}
+                  </div>
+                </div>
                 {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                 {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier le PNJ.</p>}
                 <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval et chargent tes 3 objets. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et charge tes objets.'}</p>
@@ -655,7 +675,7 @@ export default function MirageRushPage() {
                 <div className="mirage-result-actions">
                   <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
                   <button type="button" className="mirage-share-button" onClick={shareDuel}>PARTAGER UN DÉFI ↗</button>
-                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR UNE COURSE</button>
+                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR TON MODE</button>
                 </div>
                 {shareState && <p className="mirage-share-status" role="status">{shareState}</p>}
                 <div className="mirage-overlay-hint">ENTRÉE POUR REJOUER · DÉFI PAR FANTÔME, PAS EN DIRECT</div>
@@ -672,7 +692,7 @@ export default function MirageRushPage() {
                 {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
                 <div className="mirage-result-actions">
                   <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
-                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR UNE COURSE</button>
+                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR TON MODE</button>
                 </div>
                 {submitState === 'saving' && <p className="mirage-save-note">Envoi du score au classement…</p>}
                 {submitState === 'saved' && <p className="mirage-save-note is-success">Score enregistré dans le classement du site.</p>}
