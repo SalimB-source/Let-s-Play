@@ -115,6 +115,13 @@ test('prairie stage is retained in challenge links', async () => {
   assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'prairie');
 });
 
+test('sardinia (Costa Omertà) stage is retained in challenge links and rejects unknown stages', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 600], name: 'Padrino', stage: 'sardinia' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'sardinia');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'atlantis' })).stage, undefined);
+});
+
 test('cowboy cry fires only on each fifth consecutive pickup, and resets on a miss or crash', async () => {
   const { advanceCowboyStreak } = await import('../src/games/mirageRules.js');
   let streak = 0;

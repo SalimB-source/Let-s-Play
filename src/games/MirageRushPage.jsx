@@ -187,7 +187,7 @@ export default function MirageRushPage() {
       <div className="mirage-layout wrap">
         <section className={`mirage-game-shell${phase === 'playing' ? ' is-running' : ''}`} aria-label="Partie de Mirage Rush">
           <div className="mirage-game-topbar">
-            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
+            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
             <div className="mirage-game-controls-top">
               {phase === 'playing' && <span className="mirage-live-pill"><i /> EN PARTIE</span>}
               <button type="button" className={`mirage-sound-button${musicOn ? ' is-on' : ''}`} onClick={toggleMusic} aria-pressed={musicOn}>
@@ -226,7 +226,7 @@ export default function MirageRushPage() {
                 <MirageCoursePicker selectedMode={selectedMode} setSelectedMode={setSelectedMode} stage={stage} setSelectedStage={setSelectedStage} challenge={challenge} />
                 {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                 {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier le PNJ.</p>}
-                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval ; les chocs le ralentissent. Premier à ${DUEL_DISTANCE} m !` : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.'}</p>
+                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval ; les chocs le ralentissent. Premier à ${DUEL_DISTANCE} m !` : stage === 'sardinia' ? 'Galope entre les tonnelles de la Costa Omertà : saute les tonneaux de vin alignés sur le port et contourne les cyprès en pot, sous le regard du village.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.'}</p>
                 <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
                   {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
                 </button>
@@ -357,9 +357,9 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rose : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses ou les hautes bottes de paille : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert) , les clôtures (western) et les bottes basses (plaine) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si un cactus ferme la troisième voie, le saut est obligatoire.</div>
+            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si un cactus ferme la troisième voie, le saut est obligatoire.</div>
           </section>
 
           <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>

@@ -101,7 +101,7 @@ export default function MirageOnline({ connected, userId, initialStage, skin, on
     {!room && <section className="panel-frame mirage-room-panel">
       <h2>Rassemble ta bande</h2>
       {!connected && <p>Connecte-toi avec un vrai compte pour créer ou rejoindre un salon. Le mode démo ne permet pas de jouer en ligne.</p>}
-      <label>Terrain de ta room <select value={stage} onChange={e => setStage(e.target.value)}><option value="desert">Dunes de l’Écho</option><option value="western">Dust Creek</option><option value="prairie">Plaines d’Or</option></select></label>
+      <label>Terrain de ta room <select value={stage} onChange={e => setStage(e.target.value)}><option value="desert">Dunes de l’Écho</option><option value="western">Dust Creek</option><option value="prairie">Plaines d’Or</option><option value="sardinia">Costa Omertà</option></select></label>
       <button className="mirage-start-button" disabled={busy || !connected || !roomsAvailable()} onClick={() => command('create')}>CRÉER UNE ROOM</button>
       <label>Code de la room <input value={code} onChange={e => setCode(roomCode(e.target.value))} maxLength={8} placeholder="8 caractères" autoComplete="off" /></label>
       <button className="mirage-share-button" disabled={busy || !connected || code.length !== 8} onClick={() => command('join')}>REJOINDRE</button>

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
+import { sardiniaObstacle, sardiniaVillage } from './sardiniaStage';
 import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE } from './mirageRules';
 
 const LANES = [-2.1, 0, 2.1];
@@ -132,9 +133,10 @@ function makeScenery() {
 function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const western = stage === 'western';
   const prairie = stage === 'prairie';
+  const sardinia = stage === 'sardinia';
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(prairie ? 0xe5b373 : western ? 0xdba57b : 0x4b2860);
-  scene.fog = new THREE.Fog(prairie ? 0xe5b373 : western ? 0xdba57b : 0x4b2860, 27, 82);
+  scene.background = new THREE.Color(prairie ? 0xe5b373 : western ? 0xdba57b : sardinia ? 0xd79a6b : 0x4b2860);
+  scene.fog = new THREE.Fog(prairie ? 0xe5b373 : western ? 0xdba57b : sardinia ? 0xd79a6b : 0x4b2860, 27, 82);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
@@ -197,14 +199,21 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const secondSun = new THREE.Mesh(new THREE.SphereGeometry(1.7, 10, 8), secondSunMat);
   secondSun.position.set(12, 9, -42);
   scene.add(secondSun);
-  secondSun.visible = !western && !prairie;
+  secondSun.visible = !western && !prairie && !sardinia;
   if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
   if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+  if (sardinia) {
+    block(cube, new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+    // A flat sea band on the horizon, just visible over the low coastal hills.
+    const sea = block(new THREE.PlaneGeometry(240, 13), new THREE.MeshBasicMaterial({ color: 0x2f7f92 }), scene, [0, 6, -94]);
+    sea.renderOrder = -1;
+  }
 
-  const mountainMaterial = new THREE.MeshStandardMaterial({ color: 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie ? 0 : 13); i += 1) {
+  // Sardinia trades the purple desert peaks for a low, sun-baked coastline.
+  const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : 0x68466f, flatShading: true, roughness: 1 });
+  for (let i = 0; i < (prairie ? 0 : sardinia ? 9 : 13); i += 1) {
     const width = 5 + Math.random() * 9;
-    const height = 4 + Math.random() * 9;
+    const height = sardinia ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
     mountain.position.set((Math.random() - 0.5) * 45, height / 2 - 1, -38 - Math.random() * 26);
     mountain.scale.set(width, height, 3 + Math.random() * 5);
@@ -212,9 +221,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const floor = [];
@@ -276,7 +285,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     row.index = rowCounter++;
     row.gap = encounter.gap;
     row.items = encounter.items.map((spec, itemIndex) => {
-      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : makeHazard(spec.kind);
+      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : sardinia ? sardiniaObstacle(spec.kind) : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
@@ -308,6 +317,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   } else if (western) {
     for (let i = 0; i < 10; i++) for (const side of [-1, 1]) {
       const item = westernBuilding(i, side);
+      scene.add(item);
+      scenery.push(item);
+    }
+  } else if (sardinia) {
+    for (let i = 0; i < 10; i++) for (const side of [-1, 1]) {
+      const item = sardiniaVillage(i, side);
       scene.add(item);
       scenery.push(item);
     }
@@ -529,7 +544,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       });
       scenery.forEach((item) => {
         item.position.z += speed * item.userData.speedFactor * dt;
-        if (item.position.z > (western || prairie ? 15 : 9)) item.position.z -= western || prairie ? 110 : 86;
+        if (item.position.z > (western || prairie || sardinia ? 15 : 9)) item.position.z -= western || prairie || sardinia ? 110 : 86;
       });
       rows.forEach((row) => {
         row.group.position.z += speed * dt;
