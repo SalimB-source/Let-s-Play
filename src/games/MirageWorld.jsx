@@ -1363,6 +1363,36 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           boat.position.y = -1.05 + Math.sin(time * 0.0017 + boat.userData.bob) * 0.07;
           boat.rotation.z = Math.sin(time * 0.0013 + boat.userData.bob) * 0.05;
         }
+        // Plaines d'Or — animation légère des animaux de ferme
+        const farmAnimals = item.userData.animals;
+        if (farmAnimals?.length) {
+          for (const animal of farmAnimals) {
+            if (!animal.userData?.isAnimal) continue;
+            const bob = animal.userData.bob || 0;
+            const type = animal.userData.animalType;
+            if (type === 'cow') {
+              // tête qui broute, queue qui chasse les mouches
+              animal.rotation.y += Math.sin(time * 0.0006 + bob) * 0.0006;
+              if (animal.children[animal.children.length - 2]) {
+                // petite oscillation de la queue
+                const tail = animal.children[animal.children.length - 1];
+                if (tail) tail.rotation.x = 0.25 + Math.sin(time * 0.003 + bob) * 0.35;
+              }
+            } else if (type === 'sheep') {
+              animal.position.y = Math.sin(time * 0.0015 + bob) * 0.04;
+            } else if (type === 'chicken') {
+              // picore le sol
+              animal.position.y = Math.abs(Math.sin(time * 0.008 + bob)) * 0.08;
+              animal.rotation.z = Math.sin(time * 0.006 + bob) * 0.12;
+              if (Math.floor(time * 0.002 + bob) % 3 === 0) {
+                animal.rotation.x = Math.sin(time * 0.02 + bob) * 0.15;
+              }
+            } else if (type === 'pig') {
+              animal.position.y = Math.sin(time * 0.0012 + bob) * 0.03;
+              animal.rotation.y += Math.sin(time * 0.0004 + bob) * 0.0008;
+            }
+          }
+        }
         if (item.position.z > (western || prairie || sardinia ? 15 : 9)) item.position.z -= western || prairie || sardinia ? 110 : 86;
       });
       rows.forEach((row) => {
