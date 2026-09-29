@@ -12,6 +12,7 @@ export class DesertGroove {
     this.stage = 'desert';
     this.context = null;
     this.master = null;
+    this.whiteNoise = null;
     this.timer = null;
     this.step = 0;
     this.nextTime = 0;
@@ -49,22 +50,19 @@ export class DesertGroove {
     gain.connect(this.master);
     osc.start(time);
     osc.stop(time + 0.1);
-    const length = Math.ceil(ctx.sampleRate * 0.05);
-    const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < length; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / length) ** 2;
     const src = ctx.createBufferSource();
     const filter = ctx.createBiquadFilter();
     const ng = ctx.createGain();
-    src.buffer = buffer;
+    src.buffer = this.noiseBuffer();
     filter.type = 'bandpass';
     filter.frequency.setValueAtTime(900 * pitch, time);
     filter.Q.value = 0.9;
-    ng.gain.value = 0.11 * volume;
+    ng.gain.setValueAtTime(0.11 * volume, time);
+    ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
     src.connect(filter);
     filter.connect(ng);
     ng.connect(this.master);
-    src.start(time);
+    src.start(time, Math.random() * 0.9, 0.05);
   }
 
   /** Schedule the herd: several horses, each a 4-beat gallop, slightly out of phase. */
@@ -183,15 +181,22 @@ export class DesertGroove {
     oscillator.stop(time + duration + 0.025);
   }
 
+  /** One shared second of white noise, reused by every hit instead of a fresh buffer each time. */
+  noiseBuffer() {
+    if (!this.whiteNoise || this.whiteNoise.sampleRate !== this.context.sampleRate) {
+      const length = this.context.sampleRate;
+      this.whiteNoise = this.context.createBuffer(1, length, this.context.sampleRate);
+      const data = this.whiteNoise.getChannelData(0);
+      for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
+    }
+    return this.whiteNoise;
+  }
+
   noise(time, duration, volume, highpass = 5000) {
-    const length = Math.ceil(this.context.sampleRate * duration);
-    const buffer = this.context.createBuffer(1, length, this.context.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < length; i += 1) data[i] = Math.random() * 2 - 1;
     const source = this.context.createBufferSource();
     const filter = this.context.createBiquadFilter();
     const gain = this.context.createGain();
-    source.buffer = buffer;
+    source.buffer = this.noiseBuffer();
     filter.type = 'highpass';
     filter.frequency.setValueAtTime(highpass, time);
     gain.gain.setValueAtTime(volume, time);
@@ -199,8 +204,7 @@ export class DesertGroove {
     source.connect(filter);
     filter.connect(gain);
     gain.connect(this.master);
-    source.start(time);
-    source.stop(time + duration);
+    source.start(time, Math.random() * Math.max(0, 1 - duration), duration);
   }
 
   playWestern(step, time) {

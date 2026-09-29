@@ -1,6 +1,7 @@
 import { CHARACTER_PALETTES } from './mirageCharacters';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
@@ -72,6 +73,42 @@ function makeExplorer(rival = false, palette = null) {
   player.userData.basePalette = palette || palettes[Number(rival) || 0];
   player.userData.painting = player.userData.basePalette;
   return player;
+}
+
+/**
+ * Performance: roadside scenery is built from dozens of small boxes, one draw
+ * call each. Once built it never changes shape, so fold every static mesh that
+ * shares the same look into a single mesh (animated parts such as boats stay).
+ */
+const materialKey = (m) => [m.type, m.color?.getHex(), m.emissive?.getHex(), m.roughness, m.metalness, m.flatShading, m.side, m.transparent, m.opacity, m.depthWrite, m.map?.uuid].join('|');
+function bakeStaticScenery(group) {
+  const keep = new Set();
+  group.traverse((o) => { if (o.userData.bob !== undefined || o.userData.glow) o.traverse(c => keep.add(c)); });
+  group.updateMatrixWorld(true);
+  const inverse = new THREE.Matrix4().copy(group.matrixWorld).invert();
+  const buckets = new Map();
+  group.traverse((o) => {
+    if (!o.isMesh || keep.has(o) || Array.isArray(o.material)) return;
+    const g = o.geometry;
+    if (!g.attributes.position || !g.attributes.normal || !g.attributes.uv) return;
+    const key = materialKey(o.material);
+    if (!buckets.has(key)) buckets.set(key, { material: o.material, meshes: [] });
+    buckets.get(key).meshes.push(o);
+  });
+  for (const { material, meshes } of buckets.values()) {
+    if (meshes.length < 2) continue;
+    const parts = meshes.map((mesh) => {
+      const geometry = (mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone());
+      for (const name of Object.keys(geometry.attributes)) if (!['position', 'normal', 'uv'].includes(name)) geometry.deleteAttribute(name);
+      geometry.morphAttributes = {};
+      return geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverse, mesh.matrixWorld));
+    });
+    const merged = mergeGeometries(parts, false);
+    parts.forEach(part => part.dispose());
+    if (!merged) continue;
+    meshes.forEach((mesh) => mesh.parent.remove(mesh));
+    group.add(new THREE.Mesh(merged, material));
+  }
 }
 
 /** Knocked-off-the-horse animation: `left` seconds of pistol stun remaining (0 = in the saddle). */
@@ -488,15 +525,25 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
-  const floor = [];
-  for (let zIndex = 0; zIndex < 25; zIndex += 1) {
-    for (let lane = 0; lane < LANE_COUNT; lane += 1) {
-      const tile = new THREE.Mesh(floorGeometry, floorMaterials[(zIndex + lane) % floorMaterials.length]);
-      tile.position.set(LANES[lane], -0.34, TRACK_MIN_Z + zIndex * 2);
-      scene.add(tile);
-      floor.push(tile);
+  // The checkered track is one merged mesh per colour (3 draw calls instead of
+  // ~100 tiles). It scrolls by one colour period (3 rows = 6 m) and loops.
+  const FLOOR_PERIOD = floorMaterials.length * 2;
+  const floorGroup = new THREE.Group();
+  floorMaterials.forEach((material, m) => {
+    const parts = [];
+    for (let zIndex = 0; zIndex < 28; zIndex += 1) {
+      for (let lane = 0; lane < LANE_COUNT; lane += 1) {
+        if ((zIndex + lane) % floorMaterials.length !== m) continue;
+        parts.push(floorGeometry.clone().translate(LANES[lane], -0.34, TRACK_MIN_Z + zIndex * 2));
+      }
     }
-  }
+    floorGroup.add(new THREE.Mesh(mergeGeometries(parts, false), material));
+    parts.forEach(part => part.dispose());
+  });
+  scene.add(floorGroup);
+  let floorOffset = 0;
+  const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
+  placeFloor();
 
   let skinColors = getSkin?.() ?? null;
   const player = makeExplorer(false, skinColors);
@@ -749,6 +796,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(item);
     scenery.push(item);
   }
+  scenery.forEach(bakeStaticScenery);
 
   let active = false;
   let race = { mode: 'rush' };
@@ -1196,7 +1244,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     crashAnimation = 0;
     crashDirection = 1;
     player.position.set(LANES[laneIndex], 0, 0);
-    floor.forEach((tile, index) => { tile.position.z = TRACK_MIN_Z + Math.floor(index / LANE_COUNT) * 2; });
+    floorOffset = 0;
+    placeFloor();
     player.visible = true;
     nextEncounter = createCourse(race.mode !== 'rush' ? seededRandom(seed) : Math.random);
     rowCounter = 0;
@@ -1299,10 +1348,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
       }
 
-      floor.forEach((tile) => {
-        tile.position.z += speed * dt;
-        if (tile.position.z > 9) tile.position.z = TRACK_MIN_Z;
-      });
+      floorOffset += speed * dt;
+      placeFloor();
       scenery.forEach((item) => {
         item.position.z += speed * item.userData.speedFactor * dt;
         const boat = item.userData.boat;
