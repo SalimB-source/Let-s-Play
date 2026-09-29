@@ -585,8 +585,8 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-intro-overlay .mirage-overlay-hint { margin-top: 10px; }
 .mirage-course-picker { width: min(100%, 640px); text-align: left; }
 /* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
-   l'en-tête reste retirée) : les cartes du sélecteur d'origine, sans le
-   bloc terrain qui est désormais figé. */
+   l'en-tête reste retirée) : les cartes du sélecteur d'origine, suivies du
+   bloc terrain (cinq horizons, dont Alger la Blanche). */
 .mirage-mode-section { width: min(100%, 640px); text-align: left; }
 .mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
 .mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 8px; }

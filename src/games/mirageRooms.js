@@ -499,7 +499,7 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
 
   if (action === 'create') {
     const stage = extras.p_stage || 'desert';
-    if (!['desert', 'western', 'prairie', 'sardinia'].includes(stage)) {
+    if (!['desert', 'western', 'prairie', 'sardinia', 'alger'].includes(stage)) {
       throw new Error('Carte inconnue');
     }
     // Remove previous open lobby hosted by the same user

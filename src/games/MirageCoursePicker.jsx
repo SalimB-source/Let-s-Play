@@ -5,12 +5,13 @@ const MAPS = [
   { id: 'western', number: '02', name: 'Dust Creek', mood: 'Au cœur du Far West', detail: 'Ville · cowboy', sky: '#c78768', sun: '#ffdf9a', land: '#a57650' },
   { id: 'prairie', number: '03', name: 'Plaines d’Or', mood: 'La grande échappée', detail: 'Golden hour · épique', sky: '#b97553', sun: '#ffad48', land: '#b5a550' },
   { id: 'sardinia', number: '04', name: 'Costa Omertà', mood: 'Le clan veille sur la baie', detail: 'Village côtier · mandoline', sky: '#6b4a42', sun: '#f3b56a', land: '#c9895a' },
+  { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Alger-Centre · chaâbi oriental', sky: '#7fb2d8', sun: '#ffd28a', land: '#e8e2d2' },
 ];
 
 function Landscape({ map }) {
   return <svg className="mirage-map-art" viewBox="0 0 240 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <rect width="240" height="110" fill={map.sky} />
-    <circle cx={map.id === 'prairie' ? 120 : 165} cy="43" r={map.id === 'prairie' ? 28 : 19} fill={map.sun} />
+    <circle cx={map.id === 'prairie' || map.id === 'alger' ? 120 : 165} cy="43" r={map.id === 'prairie' ? 28 : 19} fill={map.sun} />
     {map.id === 'desert' && <><path d="M0 70 42 36 85 72 128 47 195 76 240 54V110H0Z" fill="#8b6684" /><path d="M0 87Q55 48 120 84T240 79V110H0Z" fill={map.land} /></>}
     {map.id === 'western' && <><path d="M0 81V29H43V21H68V81M177 81V32H211V25H240V81" fill="#624236" /><path d="M4 39H65V46H4M179 42H240V49H179" stroke="#e5bd81" strokeWidth="5" /><path d="M17 54H29V68H17M41 54H53V68H41M190 58H201V73H190M216 58H229V73H216" fill="#e4b77c" /><path d="M0 81H240V110H0Z" fill={map.land} /></>}
     {map.id === 'prairie' && <>
@@ -90,9 +91,60 @@ function Landscape({ map }) {
       </g>
     </>}
     {map.id === 'sardinia' && <><path d="M0 76Q60 68 120 76T240 72V110H0Z" fill="#3f7f92" opacity=".55" /><path d="M0 88H30V66H16V58H30V66H46V88M96 88V62H112V54H128V62H144V88M186 88V60H204V52H220V60H236V88" fill="#7a4632" /><path d="M8 88H22V100H8M104 88H120V100H104M194 88H210V100H194" fill="#c9895a" />{[20, 216].map(x => <path key={x} d={`M${x} 88V64Q${x + 3} 52 ${x + 6} 64V88`} fill="#2c4a34" />)}<path d="M0 88H240V110H0Z" fill={map.land} /></>}
+    {map.id === 'alger' && <>
+      {/* La baie bleue au loin, visible entre les deux rangées d'immeubles */}
+      <rect x="52" y="56" width="136" height="11" fill="#1d6a9c" />
+      <rect x="52" y="63" width="136" height="4" fill="#3d8db8" />
+      <rect x="52" y="53.5" width="136" height="3" fill="#8fc3de" />
+      {/* Ville blanche en cascade sur la colline, à gauche */}
+      <rect x="0" y="34" width="30" height="54" fill="#f4f0e6" />
+      <rect x="26" y="26" width="24" height="62" fill="#eae4d4" />
+      <rect x="46" y="42" width="16" height="46" fill="#f1ecdf" />
+      <rect x="58" y="36" width="12" height="52" fill="#e6dfcd" />
+      {/* Immeubles haussmanniens blancs, côté droit */}
+      <rect x="170" y="38" width="18" height="50" fill="#f1ecdf" />
+      <rect x="184" y="30" width="26" height="58" fill="#f4f0e6" />
+      <rect x="206" y="24" width="34" height="64" fill="#ece5d4" />
+      {/* Toitures d'ardoise */}
+      <path d="M0 34 15 23 30 34M26 26 38 16 50 26M46 42 54 34 62 42M170 38 179 30 188 38M184 30 197 20 210 30M206 24 223 13 240 24" fill="#5a6570" />
+      {/* Fenêtres, balcons et devantures */}
+      {[4, 12, 20, 30, 38, 46, 52, 64, 176, 188, 196, 212, 222, 232].map((x, i) => (
+        <g key={`${map.id}-w-${x}`}>
+          <rect x={x} y={i % 3 === 0 ? 42 : 46} width="5" height="8" fill="#2e3d46" />
+          <rect x={x} y={i % 3 === 0 ? 56 : 60} width="5" height="8" fill="#2e3d46" />
+          <rect x={x - 0.8} y={i % 3 === 0 ? 50.5 : 54.5} width="6.6" height="1.2" fill="#2c2c30" />
+        </g>
+      ))}
+      <rect x="6" y="76" width="20" height="12" fill="#1d3a2f" />
+      <rect x="188" y="76" width="18" height="12" fill="#1d3a2f" />
+      <path d="M0 88H240V110H0Z" fill={map.land} />
+    </>}
     <path d="M109 72H130L168 110H73Z" fill="#f9deb1" opacity=".5" />
     {map.id === 'desert' && <path d="M26 103V75m0 16H17V82m9 3H35V74" stroke="#355f55" strokeWidth="5" fill="none" />}
   </svg>;
+}
+
+/** Sélecteur de terrain : les cinq cartes illustrées de Mirage Rush. */
+export function MirageStagePicker({ stage, setSelectedStage, locked = false, modeChosen = true }) {
+  return <>
+    <div className="mirage-picker-label"><span>02 / TON TERRAIN</span><span>{!modeChosen ? 'DÉBLOQUÉ APRÈS LE MODE' : locked ? 'VERROUILLÉ PAR LE DÉFI' : `${MAPS.length} HORIZONS À EXPLORER`}</span></div>
+    {!modeChosen ? (
+      <div className="mirage-stage-locked" role="note">
+        <span className="mirage-stage-locked-icon" aria-hidden="true">🔒</span>
+        <p>Le terrain se choisit <strong>après</strong> le mode : sélectionne d’abord <strong>RUÉE</strong> ou <strong>DUEL</strong>, puis ta map.</p>
+      </div>
+    ) : (
+      <div className="mirage-stage-picker" role="group" aria-label="Choisir le stage">
+        {MAPS.map(map => <button type="button" key={map.id} className={`mirage-map-card is-${map.id}`} aria-pressed={stage === map.id} disabled={locked} onClick={() => setSelectedStage(map.id)}>
+          <Landscape map={map} />
+          <span className="mirage-map-number" aria-hidden="true">{map.number}</span>
+          <span className="mirage-map-check" aria-hidden="true">{stage === map.id ? '✓' : '↗'}</span>
+          <span className="mirage-map-copy"><strong>{map.name}</strong><span>{map.mood}</span><small>{map.detail}</small></span>
+          <span className="mirage-map-selected">{stage === map.id ? 'SÉLECTIONNÉ' : 'EXPLORER'}</span>
+        </button>)}
+      </div>
+    )}
+  </>;
 }
 
 export default function MirageCoursePicker({ selectedMode, setSelectedMode, stage, setSelectedStage, challenge, modeChosen = true }) {
@@ -110,22 +162,6 @@ export default function MirageCoursePicker({ selectedMode, setSelectedMode, stag
         <span className="mirage-choice-dot" aria-hidden="true">{modeChosen && selectedMode === mode.id ? '✓' : ''}</span>
       </button>)}
     </div>
-    <div className="mirage-picker-label"><span>02 / TON TERRAIN</span><span>{!modeChosen ? 'DÉBLOQUÉ APRÈS LE MODE' : locked ? 'VERROUILLÉ PAR LE DÉFI' : '3 HORIZONS À EXPLORER'}</span></div>
-    {!modeChosen ? (
-      <div className="mirage-stage-locked" role="note">
-        <span className="mirage-stage-locked-icon" aria-hidden="true">🔒</span>
-        <p>Le terrain se choisit <strong>après</strong> le mode : sélectionne d’abord <strong>RUÉE</strong> ou <strong>DUEL</strong>, puis ta map.</p>
-      </div>
-    ) : (
-      <div className="mirage-stage-picker" role="group" aria-label="Choisir le stage">
-        {MAPS.map(map => <button type="button" key={map.id} className={`mirage-map-card is-${map.id}`} aria-pressed={stage === map.id} disabled={locked} onClick={() => setSelectedStage(map.id)}>
-          <Landscape map={map} />
-          <span className="mirage-map-number" aria-hidden="true">{map.number}</span>
-          <span className="mirage-map-check" aria-hidden="true">{stage === map.id ? '✓' : '↗'}</span>
-          <span className="mirage-map-copy"><strong>{map.name}</strong><span>{map.mood}</span><small>{map.detail}</small></span>
-          <span className="mirage-map-selected">{stage === map.id ? 'SÉLECTIONNÉ' : 'EXPLORER'}</span>
-        </button>)}
-      </div>
-    )}
+    <MirageStagePicker stage={stage} setSelectedStage={setSelectedStage} locked={locked} modeChosen={modeChosen} />
   </div>;
 }

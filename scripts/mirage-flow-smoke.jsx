@@ -2,20 +2,23 @@
  * Entrée SSR utilisée par scripts/mirage-flow-check.mjs — `npm run check:mirage-flow`.
  *
  * Vérifie le parcours d'entrée de Mirage Rush (page /jeu) : le choix du mode
- * (RUÉE / DUEL / EN LIGNE) est remis DANS LE JEU, dans l'overlay d'intro,
- * tandis que la barre d'onglets de l'en-tête et le sélecteur de terrain
- * restent retirés :
+ * (RUÉE / DUEL / EN LIGNE) et le choix du terrain sont DANS LE JEU, dans
+ * l'overlay d'intro, tandis que la barre d'onglets de l'en-tête reste
+ * retirée :
  *
  *   1. à l'arrivée, l'overlay d'intro propose le choix du mode (3 cartes,
- *      RUÉE sélectionnée par défaut) : ni barre d'onglets dans l'en-tête,
- *      ni sélecteur de terrain, et le bouton « LANCER LA PARTIE » est
+ *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (5 cartes,
+ *      Dunes de l'Écho par défaut, dont Alger la Blanche) : pas de barre
+ *      d'onglets dans l'en-tête, et le bouton « LANCER LA PARTIE » est
  *      présent d'emblée ;
  *   2. le clic sur DUEL bascule l'overlay en mode duel (« À TOI DE »,
  *      bouton « LANCER LE DUEL ») et le clic sur RUÉE revient en ruée ;
- *   3. le terrain est figé sur les Dunes de l'Écho (bandeau ZONE 01) ;
+ *   3. choisir Alger la Blanche met à jour le bandeau (ZONE 05 · ALGER LA
+ *      BLANCHE) ;
  *   4. un lien de défi (?duel=…) ouvre directement le duel : DUEL déjà
  *      sélectionné, bouton « LANCER LE DUEL », stage imposé par le défi
- *      (bandeau ZONE 03) et consignes des 600 m.
+ *      (bandeau ZONE 03, cartes de terrain verrouillées) et consignes des
+ *      600 m.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -68,10 +71,16 @@ export async function checkMirageFlow(assert) {
       'les modes RUÉE, DUEL et EN LIGNE sont choisis');
     assert.equal(buttons[0].getAttribute('aria-pressed'), 'true',
       'la RUÉE est sélectionnée par défaut');
-    assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 0,
-      'le sélecteur de terrain (02 / ton terrain) reste retiré');
-    assert.equal(page.node.querySelectorAll('.mirage-map-card').length, 0,
-      'aucune carte de map n’est proposée');
+    assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 1,
+      'le sélecteur de terrain (02 / ton terrain) est proposé dans l’overlay');
+    const maps = [...page.node.querySelectorAll('.mirage-map-card')];
+    assert.equal(maps.length, 5, 'cinq horizons sont proposés');
+    assert.deepEqual(
+      maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
+      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche'],
+      'les cinq cartes de map sont dans l’ordre, Alger la Blanche en tête de la deuxième rangée');
+    assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
+      'les Dunes de l’Écho sont sélectionnées par défaut');
 
     assert.ok(intro.querySelector('h2').textContent.includes('LE SABLE'),
       'le titre annonce la ruée par défaut');
@@ -81,7 +90,7 @@ export async function checkMirageFlow(assert) {
     // En jsdom le canvas 3D ne se rend pas : `ready` reste false et le bouton
     // affiche son libellé d’attente. Dans un navigateur il devient
     // « LANCER LA PARTIE » — l’essentiel ici est qu’il existe sans condition.
-    assert.ok(start.textContent.includes('LANCER LA PARTIE') || start.textContent.includes('CHARGEMENT DU DÉSERT'),
+    assert.ok(start.textContent.includes('LANCER LA PARTIE') || start.textContent.includes('CHARGEMENT'),
       'le bouton propose « LANCER LA PARTIE » (ou l’attente du rendu 3D)');
     assert.ok(intro.contains(start), 'le bouton de lancement vit dans l’overlay d’intro, sous le choix du mode');
 
@@ -89,9 +98,15 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('RECORD À BATTRE'),
       'les consignes de la ruée sont révélées');
 
-    /* ---------------- 2. Terrain figé sur les Dunes de l'Écho ----------- */
+    /* ---------------- 2. Le terrain se choisit (Alger la Blanche) -------- */
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
-      'le bandeau de zone reste sur le terrain par défaut (ZONE 01)');
+      'le bandeau de zone démarre sur le terrain par défaut (ZONE 01)');
+    const algerCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
+    assert.ok(algerCard, 'la carte Alger la Blanche est proposée');
+    await act(async () => { algerCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ALGER LA BLANCHE'),
+      'choisir Alger la Blanche met à jour le bandeau (ZONE 05 · ALGER LA BLANCHE)');
+    await act(async () => { maps[0].click(); });
 
     /* --------------- 3. Le clic sur DUEL bascule l'overlay -------------- */
     await act(async () => { buttons[1].click(); });
@@ -99,7 +114,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelIntro.querySelector('h2').textContent.includes('À TOI DE'),
       'cliquer DUEL passe l’overlay en mode duel');
     const duelStart = page.node.querySelector('.mirage-start-button');
-    assert.ok(duelStart.textContent.includes('LANCER LE DUEL') || duelStart.textContent.includes('CHARGEMENT DU DÉSERT'),
+    assert.ok(duelStart.textContent.includes('LANCER LE DUEL') || duelStart.textContent.includes('CHARGEMENT'),
       'le bouton propose « LANCER LE DUEL » après le clic sur DUEL');
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('LE PLUS RAPIDE GAGNE'),
       'les consignes du duel (600 m) apparaissent après le clic sur DUEL');
@@ -109,7 +124,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(rushButton, 'la carte RUÉE reste proposée après le passage en duel');
     await act(async () => { rushButton.click(); });
     const rushStart = page.node.querySelector('.mirage-start-button');
-    assert.ok(rushStart.textContent.includes('LANCER LA PARTIE') || rushStart.textContent.includes('CHARGEMENT DU DÉSERT'),
+    assert.ok(rushStart.textContent.includes('LANCER LA PARTIE') || rushStart.textContent.includes('CHARGEMENT'),
       'cliquer RUÉE revient au mode ruée');
   } finally {
     await page.unmount();
@@ -127,15 +142,21 @@ export async function checkMirageFlow(assert) {
       'le mode DUEL est déjà sélectionné sur un lien de défi');
     assert.ok(duelButton.textContent.includes('Défi de Salim'),
       'la carte DUEL annonce le défi du joueur');
-    assert.equal(challenged.node.querySelectorAll('.mirage-map-card').length, 0,
-      'le sélecteur de terrain reste absent, même avec un défi');
+    const lockedMaps = [...challenged.node.querySelectorAll('.mirage-map-card')];
+    assert.equal(lockedMaps.length, 5,
+      'le sélecteur de terrain reste lisible sur un lien de défi');
+    assert.ok(lockedMaps.every((card) => card.disabled),
+      'les cartes de terrain sont verrouillées : le stage est imposé par le défi');
+    assert.equal(lockedMaps.find((card) => card.getAttribute('aria-pressed') === 'true')
+      ?.querySelector('.mirage-map-copy strong')?.textContent, 'Plaines d’Or',
+    'la carte imposée par le défi est affichée comme sélectionnée');
     assert.ok(intro.textContent.includes('Stage imposé par le défi'),
       'l’encart précise que le stage est imposé');
     assert.ok(intro.querySelector('h2').textContent.includes('À TOI DE'),
       'le titre est en mode duel');
     const start = challenged.node.querySelector('.mirage-start-button');
     assert.ok(start, 'le bouton de lancement du défi est disponible d’emblée');
-    assert.ok(start.textContent.includes('LANCER LE DUEL') || start.textContent.includes('CHARGEMENT DU DÉSERT'),
+    assert.ok(start.textContent.includes('LANCER LE DUEL') || start.textContent.includes('CHARGEMENT'),
       'le bouton propose « LANCER LE DUEL » (ou l’attente du rendu 3D)');
     assert.ok(challenged.node.querySelector('.mirage-overlay-hint').textContent.includes('LE PLUS RAPIDE GAGNE'),
       'les consignes du duel (600 m) sont révélées dès l’arrivée sur le lien');
