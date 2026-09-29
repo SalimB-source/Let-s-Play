@@ -472,7 +472,7 @@ export default function MirageRushPage() {
             <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rose : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si un cactus ferme la troisième voie, le saut est obligatoire.</div>
+            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine) et les tonneaux (Costa Omertà) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies, le saut est obligatoire.</div>
           </section>
 
           <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>
