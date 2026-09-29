@@ -181,6 +181,34 @@ test('airborne player cannot change lanes or drift, and can move on landing', as
   assert.ok(playerLateralPosition(0.6, 2.1, 0.016, 0) > 0.6);
 });
 
+test('special items stay rare: slots are spread out and most of them are empty', async () => {
+  const { rollPowerUpType, powerUpOdds, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, POWER_UP_SPAWN_RATE, POWER_UPS } = await import('../src/games/mirageRules.js');
+  // Slots are further apart than the old 28–46 m cadence.
+  assert.ok(POWER_UP_SPAWN_GAP_MIN >= 40);
+  assert.ok(POWER_UP_SPAWN_GAP_MAX > POWER_UP_SPAWN_GAP_MIN);
+  assert.ok(POWER_UP_SPAWN_RATE < 1);
+  // A seeded roll: most slots are empty, and a leader never gets a lasso.
+  let seed = 7;
+  const next = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  let filled = 0;
+  const rolls = 4000;
+  for (let i = 0; i < rolls; i++) if (rollPowerUpType(4, next)) filled += 1;
+  assert.ok(filled / rolls < 0.5);
+  for (let i = 0; i < 500; i++) assert.notEqual(rollPowerUpType(1, next), POWER_UPS.LASSO);
+  // The HUD odds match what the roll actually produces.
+  for (const rank of [1, 2, 3, 4]) {
+    const odds = powerUpOdds(rank);
+    let lasso = 0;
+    let shield = 0;
+    for (let i = 0; i < rolls; i++) {
+      const type = rollPowerUpType(rank, next);
+      if (type === POWER_UPS.LASSO) lasso += 1;
+      else if (type === POWER_UPS.SHIELD) shield += 1;
+    }
+    assert.ok(Math.abs(lasso / rolls - odds.lasso) < 0.03, `lasso ${rank}: ${lasso / rolls} vs ${odds.lasso}`);
+    assert.ok(Math.abs(shield / rolls - odds.shield) < 0.03, `shield ${rank}: ${shield / rolls} vs ${odds.shield}`);
+  }
+});
 test('four lanes are centred, evenly spaced, and traversable in both directions', async () => {
   const { playerLaneAfterAction } = await import('../src/games/mirageRules.js');
   assert.equal(LANE_COUNT, 4);

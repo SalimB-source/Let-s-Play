@@ -78,6 +78,18 @@ export const POWER_UPS = {
   SHIELD: 'shield',
 };
 
+// Special items all wear the same skin: a floating rainbow "?" that only
+// reveals lasso or shield once the rider rides through it.
+//
+// Rarity is tuned by two knobs:
+//  - POWER_UP_SPAWN_GAP_MIN/MAX: how far apart the spawn slots are (metres).
+//  - POWER_UP_SPAWN_RATE: how often a slot actually holds an item (0 → never,
+//    1 → the raw lasso/shield chances below). Both raised/lowered together,
+//    they cut the old spawn cadence by roughly two thirds.
+export const POWER_UP_SPAWN_GAP_MIN = 45;
+export const POWER_UP_SPAWN_GAP_MAX = 75;
+export const POWER_UP_SPAWN_RATE = 0.6;
+
 // Lasso appearance chances by race position (1st → 4th)
 export const LASSO_CHANCES = [0, 0.3, 0.4, 0.6];
 // Shield appearance chance for all positions
@@ -93,12 +105,23 @@ export function getLassoChance(rank) {
   return LASSO_CHANCES[idx] ?? 0;
 }
 
+/** Odds, 0→1, that one spawn slot holds each item once the rarity knob is applied. */
+export function powerUpOdds(rank) {
+  const lasso = getLassoChance(rank);
+  return {
+    lasso: lasso * POWER_UP_SPAWN_RATE,
+    shield: (1 - lasso) * SHIELD_CHANCE * POWER_UP_SPAWN_RATE,
+  };
+}
+
 // Roll a single power-up type for a player at `rank` (1 = leader).
 // Returns 'lasso' | 'shield' | null.
 // Priority: lasso first, then shield. This matches the spec:
+// - POWER_UP_SPAWN_RATE gates every slot, so most of them stay empty
 // - lasso has position-dependent chance
 // - shield has flat 30% chance
 export function rollPowerUpType(rank, random = Math.random) {
+  if (random() >= POWER_UP_SPAWN_RATE) return null;
   const lassoChance = getLassoChance(rank);
   if (random() < lassoChance) return POWER_UPS.LASSO;
   if (random() < SHIELD_CHANCE) return POWER_UPS.SHIELD;
