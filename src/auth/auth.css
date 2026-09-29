@@ -3,7 +3,10 @@
    ========================================================================== */
 
 .auth-page {
+  /* `vh` d'abord (fallback), `dvh` ensuite : sur iPhone, 100vh ignore les
+     barres de Safari et donnerait une page trop haute. */
   min-height: calc(100vh - 160px);
+  min-height: calc(100dvh - 160px);
   padding-top: 130px;
   padding-bottom: 100px;
 }
@@ -1569,7 +1572,9 @@
 
 .delete-account-dialog {
   width: min(460px, 100%);
+  /* vh puis dvh : 100vh seul dépasserait sous la barre d'outils Safari. */
   max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   overflow-y: auto;
   padding: 32px;
   background: linear-gradient(145deg, rgba(22, 17, 35, .99), rgba(8, 10, 24, .99));
@@ -1955,57 +1960,22 @@
   color: var(--yellow);
 }
 
-/* Level badge */
-.nav-account-level {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 6px;
-  background: rgba(255, 214, 25, .12);
-  border: 1px solid rgba(255, 214, 25, .4);
-  color: var(--yellow);
-  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
-  letter-spacing: 0;
-  text-transform: uppercase;
-  flex: none;
-  line-height: 1;
-  transition: background .2s, border-color .2s, color .2s;
-}
+/* Le badge de niveau (pastille jaune « LV 12 ») est stylé dans styles.css,
+   avec le reste de la pastille de compte, en `nav-actions-grid`. Ce fichier
+   gardait une seconde définition, d'avant l'« île de verre » : fond jaune
+   translucide et encre *claire* (jaune puis blanc). Chargé après styles.css,
+   elle recolorait `small`/`strong` — les sélecteurs courts
+   `.nav-account-level small|strong` (0,1,1) l'emportaient sur l'héritage de
+   la pastille (0,4,0) — et posait du blanc sur l'aplat jaune du badge :
+   niveau invisible en thème sombre. Un seul propriétaire pour le badge. */
 
-.nav-account-level small {
-  font: 700 8px var(--mono);
-  letter-spacing: .12em;
-  line-height: 1;
-  color: var(--yellow);
-  transition: color .2s;
-}
-
-.nav-account-level strong {
-  font: 800 11px/1 var(--display);
-  letter-spacing: -.02em;
-  color: #fff;
-  text-transform: none;
-  transition: color .2s;
-}
-
-.nav-account.connected:hover .nav-account-level {
-  background: var(--yellow);
-  border-color: var(--yellow);
-  color: #0a0b1a;
-}
-
-.nav-account.connected:hover .nav-account-level small,
-.nav-account.connected:hover .nav-account-level strong {
-  color: #0a0b1a;
-}
-
-@media (min-width: 801px) and (max-width: 1160px) {
+@media (min-width: 801px) and (max-width: 1160px) and (hover:hover), (min-width: 801px) and (max-width: 1160px) and (min-device-width:601px) {
   .nav-account-name {
     max-width: 80px;
   }
 }
 
-@media (min-width: 801px) and (max-width: 980px) {
+@media (min-width: 801px) and (max-width: 980px) and (hover:hover), (min-width: 801px) and (max-width: 980px) and (min-device-width:601px) {
   .nav-account-name {
     max-width: 60px;
   }
@@ -2105,7 +2075,7 @@
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .nav-account {
     width: 100%;
     padding: 12px 0;
@@ -2283,5 +2253,5 @@
 .quiz-rank-heading{position:relative;z-index:1;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:26px}.quiz-rank-kicker{display:inline-flex;align-items:center;gap:8px;color:var(--yellow);font:700 10px var(--mono);letter-spacing:.18em}.quiz-rank-mark{font-size:18px;color:var(--cyan)}.quiz-rank-heading h2{font:800 clamp(25px,4vw,42px)/1 var(--display);letter-spacing:.02em;margin:10px 0 8px;color:#fff}.quiz-rank-heading p{max-width:620px;margin:0;color:var(--muted);font-size:14px;line-height:1.5}.quiz-rank-live{flex:0 0 auto;padding:7px 10px;border:1px solid rgba(34,211,238,.42);color:var(--cyan);background:rgba(34,211,238,.08);font:700 9px var(--mono);letter-spacing:.14em}
 .quiz-rank-cards{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1.35fr 1fr 1fr;gap:12px}.quiz-rank-hero-card,.quiz-rank-meta-card{position:relative;overflow:hidden;border:1px solid var(--line-strong);background:rgba(5,7,19,.72);padding:20px 18px;clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px)}.quiz-rank-hero-card::after{content:"";position:absolute;right:-14px;bottom:-28px;width:100px;height:100px;border:1px solid currentColor;border-radius:50%;opacity:.14}.quiz-rank-position{color:var(--yellow);border-color:rgba(255,214,25,.5);background:linear-gradient(145deg,rgba(255,214,25,.14),rgba(8,10,24,.82))}.quiz-rank-points{color:var(--cyan);border-color:rgba(34,211,238,.5);background:linear-gradient(145deg,rgba(34,211,238,.14),rgba(8,10,24,.82))}.quiz-rank-card-kicker{display:block;color:currentColor;font:700 9px var(--mono);letter-spacing:.15em;margin-bottom:12px}.quiz-rank-hero-value{position:relative;z-index:1;color:#fff;font:900 clamp(38px,5vw,66px)/.9 var(--display);letter-spacing:.02em;white-space:nowrap}.quiz-rank-points .quiz-rank-hero-value{font-size:clamp(31px,4.4vw,56px)}.quiz-rank-card-label{position:relative;z-index:1;margin-top:10px;color:var(--muted);font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase}.quiz-rank-meta-card{display:flex;flex-direction:column;justify-content:center;min-height:110px}.quiz-rank-meta-value{color:var(--yellow);font:800 clamp(28px,3vw,40px)/1 var(--display)}
 .quiz-global-rank .player-empty-note{position:relative;z-index:1;margin-top:4px}.quiz-global-rank .player-stats-grid{display:none}
-@media(max-width:800px){.quiz-rank-heading{align-items:flex-start;flex-direction:column;gap:14px}.quiz-rank-live{align-self:flex-start}.quiz-rank-cards{grid-template-columns:1fr 1fr}.quiz-rank-hero-card{min-height:136px}.quiz-rank-points{grid-column:span 2}.quiz-global-rank::after{right:8px;font-size:130px}}
-@media(max-width:460px){.quiz-global-rank{padding:22px 18px}.quiz-rank-cards{grid-template-columns:1fr}.quiz-rank-points{grid-column:auto}.quiz-rank-hero-card,.quiz-rank-meta-card{min-height:0;padding:17px}.quiz-rank-hero-value,.quiz-rank-points .quiz-rank-hero-value{font-size:42px}.quiz-rank-meta-card{display:grid;grid-template-columns:auto 1fr;align-items:end;gap:12px}.quiz-rank-meta-card .quiz-rank-card-label{margin:0}}
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.quiz-rank-heading{align-items:flex-start;flex-direction:column;gap:14px}.quiz-rank-live{align-self:flex-start}.quiz-rank-cards{grid-template-columns:1fr 1fr}.quiz-rank-hero-card{min-height:136px}.quiz-rank-points{grid-column:span 2}.quiz-global-rank::after{right:8px;font-size:130px}}
+@media(max-width:460px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.quiz-global-rank{padding:22px 18px}.quiz-rank-cards{grid-template-columns:1fr}.quiz-rank-points{grid-column:auto}.quiz-rank-hero-card,.quiz-rank-meta-card{min-height:0;padding:17px}.quiz-rank-hero-value,.quiz-rank-points .quiz-rank-hero-value{font-size:42px}.quiz-rank-meta-card{display:grid;grid-template-columns:auto 1fr;align-items:end;gap:12px}.quiz-rank-meta-card .quiz-rank-card-label{margin:0}}

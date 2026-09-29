@@ -14,10 +14,8 @@ import { Arrow, AwaitedBand, clockOffset } from '../components/ReleasesCalendar'
 // est partagé avec la page calendrier complet via clockOffset().
 const CLOCK_OFFSET = clockOffset();
 
-// Visuel unique du héros : une seule image, plein cadre, utilisée dans tous les
-// thèmes (les anciennes vidéos d'arrière-plan clair/sombre ont été retirées).
-// Pour changer le visuel, remplacer le fichier `public/hero-keyart.jpg`.
-const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-keyart.jpg`;
+// Visuel fixe du héros, utilisé dans les deux thèmes.
+const HERO_IMAGE = `${import.meta.env.BASE_URL}hero-lets-play.jpg`;
 
 const reels = [
   { id: '91eqLm2Hy9k', label: 'REEL 01' },
@@ -51,6 +49,19 @@ const djezzyEpisode = {
   href: 'https://www.youtube.com/watch?v=48U4aK0CnnI',
   title: '2026 World Cup changed mobile football games — 7ouma Arena by Djezzy',
   tone: 'djezzy',
+};
+
+// Actu mise en avant sur l'accueil : le trailer officiel de God of War Laufey
+// se lit directement dans la carte, sans quitter la page. Le lien éditorial
+// ouvre l'article complet consacré aux précommandes et à l'arc-serpent de Faye.
+const featuredNews = {
+  to: '/news/god-of-war-laufey-precommandes-arc-serpent',
+  video: 'CQve7-PraCM',
+  videoTitle: 'God of War Laufey - Pre-Orders Open Now | PS5 Games',
+  badge: 'GOD OF WAR LAUFEY · PRÉCOMMANDES',
+  kicker: '29.09.2026 · SANTA MONICA STUDIO',
+  title: 'FAYE DÉGAINE L’ARC-SERPENT.',
+  excerpt: 'Le trailer officiel dévoile l’arc-serpent de Faye et ses deux modes de tir. God of War Laufey est attendu le 16 février 2027, en exclusivité sur PS5.',
 };
 
 // YouTube resolves this permanent channel URL to the channel's active live
@@ -125,6 +136,41 @@ export default function Home() {
   };
   const head = headMap[lang] || headMap.fr;
 
+  // Head de la section « actu à la une » — même structure que la section épisodes.
+  const newsHeadMap = {
+    fr: {
+      label1: 'ACTU À LA UNE',
+      label2: 'GOD OF WAR LAUFEY · PS5',
+      eyebrow: 'Actu à la une',
+      h2a: 'L’ACTU',
+      h2b: 'À LA UNE.',
+      today: 'Actu du jour',
+      read: 'Lire l’article',
+      seeAll: 'Voir toutes les actus',
+    },
+    en: {
+      label1: 'FEATURED NEWS',
+      label2: 'GOD OF WAR LAUFEY · PS5',
+      eyebrow: 'Featured news',
+      h2a: 'TOP STORY,',
+      h2b: 'RIGHT NOW.',
+      today: 'News of the day',
+      read: 'Read the story',
+      seeAll: 'See all news',
+    },
+    ar: {
+      label1: 'أبرز الأخبار',
+      label2: 'GOD OF WAR LAUFEY · PS5',
+      eyebrow: 'خبر مميز',
+      h2a: 'الخبر',
+      h2b: 'المميز.',
+      today: 'خبر اليوم',
+      read: 'اقرأ المقال',
+      seeAll: 'عرض كل الأخبار',
+    },
+  };
+  const newsHead = newsHeadMap[lang] || newsHeadMap.fr;
+
   const episodes = [
     { ...headlineEpisode, copy: t.home.featured },
     { ...partnerEpisode, copy: t.home.featuredPartner },
@@ -139,8 +185,8 @@ export default function Home() {
   return (
     <>
       <section className="hero" id="top">
-        {/* Visuel du héros : une image, plein cadre, identique en thème clair
-            et sombre. `fetchPriority` évite qu'elle attende le reste de la page. */}
+        {/* Visuel fixe du héros : plein cadre, avec le voile existant pour
+            conserver le contraste du contenu éditorial. */}
         <img
           className="hero-bg hero-bg--keyart"
           src={HERO_IMAGE}
@@ -156,8 +202,16 @@ export default function Home() {
           <h1>{t.home.h1a}<br /><em>{t.home.h1b}</em></h1>
           <p className="hero-text">{t.home.heroText}</p>
           <div className="hero-actions">
-            <a className="button button-yellow" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.watchEpisodes} <Arrow /></a>
-            <Link className="button button-ghost" to="/news">{t.home.enterShow} <span aria-hidden="true">↓</span></Link>
+            <a className="hero-cta hero-cta--primary" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">
+              <span className="hero-cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9 5 11 7-11 7z" /></svg></span>
+              <span className="hero-cta-label">{t.home.watchEpisodes}</span>
+              <span className="hero-cta-arrow" aria-hidden="true">↗</span>
+            </a>
+            <Link className="hero-cta hero-cta--secondary" to="/news">
+              <span className="hero-cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4M12 7v10m-5-5h10" /></svg></span>
+              <span className="hero-cta-label">{t.home.enterShow}</span>
+              <span className="hero-cta-arrow" aria-hidden="true">→</span>
+            </Link>
           </div>
         </div>
         {/* LE PLUS ATTENDU — fine bande posée en bas du héros (à la place de
@@ -179,6 +233,41 @@ export default function Home() {
             </span>
           ))}
         </div>
+      </section>
+
+      {/* ACTU À LA UNE — première mise en avant après le ticker, trailer jouable sur place. */}
+      <section className="featured-dossiers featured-dossiers--news wrap" id="actu-une">
+        <div className="section-label"><span>{newsHead.label1}</span><span>{newsHead.label2}</span></div>
+        <div className="featured-dossiers-head">
+          <div>
+            <p className="eyebrow"><span className="live-dot" /> {newsHead.eyebrow}</p>
+            <h2>{newsHead.h2a}<br /><em>{newsHead.h2b}</em></h2>
+          </div>
+          <Link className="arrow-link" to="/news">{newsHead.seeAll} <Arrow /></Link>
+        </div>
+        <article className="daily-news-card home-news-card">
+          <div className="daily-news-image home-news-video">
+            <iframe
+              src={youTubeEmbedUrl(featuredNews.video)}
+              title={featuredNews.videoTitle}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+            <span className="news-feature-badge">{featuredNews.badge}</span>
+          </div>
+          <Link
+            className="daily-news-copy"
+            to={featuredNews.to}
+            aria-label={`${newsHead.read} : ${featuredNews.title}`}
+          >
+            <p className="eyebrow"><span className="live-dot" /> {newsHead.today}</p>
+            <span className="news-kicker">{featuredNews.kicker}</span>
+            <h3>{featuredNews.title}</h3>
+            <p>{featuredNews.excerpt}</p>
+            <span className="read-link">{newsHead.read} <Arrow /></span>
+          </Link>
+        </article>
       </section>
 
       {/* ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
@@ -290,7 +379,7 @@ export default function Home() {
         <div className="section-label"><span>{t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
-          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news">{t.home.formats.explore} <Arrow /></Link></article>
+          <article className="format-card card-movies"><span className="format-number">02</span><div className="format-icon">◎</div><h3>{t.home.formats.moviesTitle}</h3><p>{t.home.formats.moviesText}</p><Link to="/news/cinema">{t.home.formats.explore} <Arrow /></Link></article>
           <article className="format-card card-community"><span className="format-number">03</span><div className="format-icon">⌁</div><h3>{t.home.formats.communityTitle}</h3><p>{t.home.formats.communityText}</p><a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">{t.home.formats.joinUs} <Arrow /></a></article>
         </div>
       </section>

@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import useMediaQuery from '../lib/useMediaQuery';
+import { SOCIAL_MOBILE_MEDIA } from '../lib/phoneLayout';
 import { useAuth } from '../auth/AuthContext';
 import {
   DEMO_FRIENDS_SYNC_KEY,
@@ -123,7 +124,7 @@ export function FriendsProvider({ children }) {
   // Sur mobile, la fenêtre sociale (amis + messagerie) est une vraie page
   // (/messages) et non un pop-up : tous les raccourcis (« Mes amis »,
   // « Ajouter un ami » du hub, etc.) y naviguent au lieu d'ouvrir le dock.
-  const isMobile = useMediaQuery('(max-width: 760px)');
+  const isMobile = useMediaQuery(SOCIAL_MOBILE_MEDIA);
   const uid = user?.id ? String(user.id) : null;
   const mode = !uid ? 'none' : isDemo ? 'demo' : supabase ? 'supabase' : 'none';
 

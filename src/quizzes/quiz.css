@@ -14,7 +14,7 @@
 /* Sous 430px, on resserre l'échelle du titre : le clamp(34px…) d'origine
    faisait passer « PROUVE QUE TU / CONNAIS LE GAME. » sur quatre lignes.
    Même règle que le titre de la recherche (styles.css). */
-@media (max-width: 430px) {
+@media (max-width: 430px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-header h1 { font-size: clamp(28px, 8vw, 34px); }
 }
 .quiz-intro { max-width: 640px; color: var(--muted); }
@@ -369,14 +369,23 @@
      Toute la partie le réutilise (chrono, pastilles, boutons, verdicts) ;
      hors partie (intro, résultat), l'accent par défaut reste celui du site. */
   --quiz-accent: var(--cyan);
+  /* Aplat des boutons principaux. L'accent sert d'ENCRE (chrono, pastilles,
+     bordures) et s'assombrit en thème clair — le cyan du site y devient
+     #0e7490 — alors qu'un aplat garde la version « lumière » de la teinte
+     (règle n°1 du thème clair) : l'encre sombre posée dessus reste lisible
+     (10,8:1 au lieu de 3,6:1). En thème sombre, les deux versions coïncident.
+     Un accent redéclaré ailleurs (niveaux, Survival) redéclare son aplat. */
+  --quiz-accent-fill: var(--cyan-bright, var(--cyan));
   --quiz-accent-soft: rgba(34, 211, 238, .1);
   --quiz-good: #34d399;
   --quiz-bad: #f87171;
   max-width: 860px; margin: 0 auto;
 }
-.quiz-player--easy { --quiz-accent: #60a5fa; --quiz-accent-soft: rgba(96, 165, 250, .1); }
-.quiz-player--medium { --quiz-accent: var(--yellow); --quiz-accent-soft: rgba(255, 214, 25, .1); }
-.quiz-player--hard { --quiz-accent: #f87171; --quiz-accent-soft: rgba(248, 113, 113, .12); }
+/* Les accents des trois niveaux sont déjà des aplats (bleu clair, jaune, rouge
+   clair) : l'aplat est l'accent, dans les deux thèmes. */
+.quiz-player--easy { --quiz-accent: #60a5fa; --quiz-accent-fill: var(--quiz-accent); --quiz-accent-soft: rgba(96, 165, 250, .1); }
+.quiz-player--medium { --quiz-accent: var(--yellow); --quiz-accent-fill: var(--quiz-accent); --quiz-accent-soft: rgba(255, 214, 25, .1); }
+.quiz-player--hard { --quiz-accent: #f87171; --quiz-accent-fill: var(--quiz-accent); --quiz-accent-soft: rgba(248, 113, 113, .12); }
 
 /* Secousse d'une mauvaise réponse : trois allers-retours, 420 ms (le temps du
    `shakeTimerRef` du lecteur), désactivée en `prefers-reduced-motion`. */
@@ -418,9 +427,9 @@
 /* Difficultés : bleu = facile, jaune = confirmé, rouge = expert — la couleur
    du niveau teinte sa ligne (bordure, nom) et son bouton « Jouer ce niveau »
    via l'accent, puis suit en partie (chrono, pastilles, verdicts). */
-.quiz-level--easy { --quiz-accent: #60a5fa; --quiz-accent-soft: rgba(96, 165, 250, .1); border-inline-start-color: #60a5fa; }
-.quiz-level--medium { --quiz-accent: var(--yellow); --quiz-accent-soft: rgba(255, 214, 25, .1); border-inline-start-color: var(--yellow); }
-.quiz-level--hard { --quiz-accent: #f87171; --quiz-accent-soft: rgba(248, 113, 113, .12); border-inline-start-color: #f87171; }
+.quiz-level--easy { --quiz-accent: #60a5fa; --quiz-accent-fill: var(--quiz-accent); --quiz-accent-soft: rgba(96, 165, 250, .1); border-inline-start-color: #60a5fa; }
+.quiz-level--medium { --quiz-accent: var(--yellow); --quiz-accent-fill: var(--quiz-accent); --quiz-accent-soft: rgba(255, 214, 25, .1); border-inline-start-color: var(--yellow); }
+.quiz-level--hard { --quiz-accent: #f87171; --quiz-accent-fill: var(--quiz-accent); --quiz-accent-soft: rgba(248, 113, 113, .12); border-inline-start-color: #f87171; }
 .quiz-level--easy .quiz-level-name { color: #60a5fa; }
 .quiz-level--medium .quiz-level-name { color: var(--yellow); }
 .quiz-level--hard .quiz-level-name { color: #f87171; }
@@ -459,9 +468,12 @@
   transition: transform .15s, box-shadow .15s, background .15s, border-color .15s;
 }
 /* L'accent du contexte teinte le bouton principal ET son halo (le sélecteur
-   de niveaux pose l'accent de la difficulté sur chaque ligne). */
+   de niveaux pose l'accent de la difficulté sur chaque ligne). Aplat et encre
+   sont deux jetons (`--quiz-accent-fill` / `#0a0b1a`) : en thème clair, le
+   cyan du site est une encre sombre, l'aplat garde donc sa version claire. */
 .quiz-cta--primary {
-  background: var(--quiz-accent, var(--yellow)); color: #0a0b1a;
+  background: var(--quiz-accent-fill, var(--quiz-accent, var(--yellow)));
+  color: #0a0b1a;
   box-shadow: 0 0 18px color-mix(in srgb, var(--quiz-accent, var(--yellow)) 22%, transparent);
 }
 .quiz-cta--primary:hover { transform: translateY(-2px); box-shadow: 0 0 26px color-mix(in srgb, var(--quiz-accent, var(--yellow)) 42%, transparent); }
@@ -473,7 +485,7 @@
 .quiz-cta:focus-visible { outline: 2px solid var(--quiz-accent, var(--cyan)); outline-offset: 2px; }
 .quiz-cta:disabled { cursor: not-allowed; opacity: .6; transform: none; box-shadow: none; }
 
-/* Règles du niveau, sur chaque ligne du sélecteur (⏱ 10 s · ▤ 5 · ♥ 3 · ◐ 0). */
+/* Règles du niveau, sur chaque ligne du sélecteur (⏱ 10 s · ▤ 5 · ♥ 1 · ◐ 0). */
 .quiz-level-rules { color: var(--dim); font: 500 10px var(--mono); letter-spacing: .1em; }
 
 /* ---- Pastilles de progression -------------------------------------------- */
@@ -835,7 +847,7 @@
 @media (max-width: 1000px) {
   .quiz-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (max-width: 680px) {
+@media (max-width: 680px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
   /* Filtre : pastilles plus serrées — les cinq libellés tiennent sur deux
      rangées sans manger la grille. */
@@ -843,14 +855,14 @@
   .quiz-filter-chip { padding: 8px 11px; gap: 6px; font-size: 9.5px; }
   .quiz-filter-summary { font-size: 10px; }
 }
-@media (max-width: 460px) {
+@media (max-width: 460px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .quiz-card { padding: 7px; gap: 8px; }
   .quiz-card-copy h3 { font-size: 13px; }
   .quiz-card-meta { font-size: 9px; letter-spacing: .06em; gap: 4px 6px; }
   .quiz-card-copy .quiz-chips { flex-wrap: wrap; gap: 4px; }
 }
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-survival-card { grid-template-columns: 1fr; min-height: 0; }
   .quiz-survival-visual { min-height: 88px; border-left: 0; border-top: 1px solid rgba(185,28,28,.26); }
   .quiz-survival-infinity { font-size: 64px; }
@@ -862,7 +874,7 @@
 }
 /* Partie : une seule colonne de propositions sous 720 px (le pouce vise mieux
    une cible pleine largeur), et le bandeau s'empile proprement. */
-@media (max-width: 720px) {
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-choices, .quiz-choices--five { grid-template-columns: 1fr; }
   .quiz-choices--five .quiz-choice:last-child { grid-column: auto; }
   .quiz-hud { gap: 8px; }
@@ -887,7 +899,7 @@
   .quiz-cta, .quiz-choice, .quiz-joker, .quiz-sound-toggle { transition: none; }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-level { align-items: flex-start; }
   .quiz-level-play { width: 100%; justify-content: center; }
 }
@@ -1034,7 +1046,7 @@
 .quiz-confirm-hint { margin: 8px 0 0; color: var(--muted); font: 500 12px var(--body); line-height: 1.5; }
 .quiz-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
 .quiz-confirm-actions .quiz-cta { min-width: 110px; justify-content: center; }
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .quiz-confirm-dialog { padding: 20px 16px; }
   .quiz-confirm-actions { flex-direction: column-reverse; }
   .quiz-confirm-actions .quiz-cta { width: 100%; }
@@ -1055,7 +1067,10 @@
 .survival-horror {
   position: relative;
   background: #060608;
+  /* vh (fallback) puis dvh : sur iPhone 100vh seul ignore les barres de
+     Safari et la section débordait derrière la barre d'outils. */
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: clip;
   --horror-red: #ef4444;
   --horror-red-dark: #7f1d1d;
@@ -1160,6 +1175,7 @@
 .horror-case-file {
   max-width: 880px !important; position: relative;
   --quiz-accent: var(--horror-red) !important;
+  --quiz-accent-fill: var(--quiz-accent) !important;
   --quiz-accent-soft: rgba(239,68,68,.12) !important;
 }
 .horror-tape {
@@ -1295,6 +1311,7 @@
 .horror-play-root {
   max-width: 900px !important;
   --quiz-accent: var(--horror-red) !important;
+  --quiz-accent-fill: var(--quiz-accent) !important;
   --quiz-accent-soft: rgba(239,68,68,.12) !important;
   --quiz-good: #4ade80 !important;
   --quiz-bad: var(--horror-red) !important;
@@ -1501,7 +1518,7 @@
 .horror-empty { color: #fca5a5 !important; border-left: 2px solid var(--horror-red); padding-left: 10px; }
 
 /* Responsive */
-@media (max-width: 720px) {
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .horror-file-inner { padding: 48px 16px 48px !important; }
   .horror-play-root { padding: 14px 12px 18px; }
   .horror-hud-top { gap: 10px; }

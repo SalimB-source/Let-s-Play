@@ -81,6 +81,77 @@ dans les deux thèmes, le fond effectif de chaque texte est calculé en empilant
 les couches translucides, et tout ce qui passe sous le seuil WCAG AA est
 signalé. Onze pages sont aujourd'hui à zéro écart en clair.
 
+## Mise en page téléphone (iPhone, Android, WebView)
+
+Le site bascule sur sa mise en page mobile via des requêtes média
+`@media(max-width:800px)`. Or **la fenêtre de mise en page n'est pas toujours
+la largeur de l'écran** :
+
+- **Safari iOS mémorise un zoom par site** (menu « Aa » → −, pincement, ou
+  « version ordinateur ») et le réapplique au chargement : la fenêtre de mise en
+  page peut valoir 800–1100 px sur un écran de 390 px. Toutes les requêtes
+  `max-width:800px` sont alors ignorées, et le téléphone affiche la mise en page
+  du PC — barre de navigation complète, blocs côte à côte.
+- **Une WebView n'honore `<meta name="viewport">`** que si l'application le lui
+  demande ; sinon elle met la page en page à ~980 px, puis la réduit pour la
+  faire tenir dans l'écran. Même symptôme dans l'APK.
+
+Deux parades, dans cet ordre :
+
+1. **`normalizePhoneViewport()`** (`src/lib/phoneLayout.js`, appelé avant le
+   premier rendu dans `src/main.jsx`, puis deux fois après le montage — Safari
+   applique parfois son zoom une fois la page chargée) : sur un téléphone
+   (écran ≤ 600 px sur son petit côté) dont la fenêtre de mise en page dépasse
+   800 px **et** reste plus haute que large, le `<meta name="viewport">` est
+   réécrit — le navigateur recalcule alors la mise en page, qui revient à
+   l'échelle 1. La fenêtre est écrite une fois sous sa forme d'origine, puis une
+   fois sous une variante équivalente (`initial-scale=1` au lieu de `1.0`) : la
+   chaîne change, donc le recalcul est relancé même si le viewport était déjà le
+   bon, et au troisième appel il n'y a plus rien à faire. Un téléphone en
+   **paysage** (fenêtre 844 × 390) n'est jamais touché : sa fenêtre est la
+   largeur réelle de son écran, et la mise en page large y est celle voulue.
+2. **Les feuilles de style ne dépendent plus de la seule largeur.** Chaque
+   requête « petit écran » est écrite en OU d'une condition qui décrit un
+   téléphone d'après la **taille d'écran** (`max-device-width`, insensible au
+   zoom), et chaque requête « bureau » est restreinte aux appareils qui ne sont
+   pas des téléphones en portrait :
+
+   ```css
+   /* petit écran — un téléphone à fenêtre large est couvert aussi */
+   @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px){ … }
+
+   /* bureau — plus appliqué à un téléphone en portrait, mais toujours actif
+      sur ordinateur, tablette et téléphone en paysage */
+   @media(min-width:801px) and (hover:hover), (min-width:801px) and (min-device-width:601px){ … }
+   ```
+
+   Une liste média est fausse si **une** de ses conditions est inconnue du
+   navigateur : la mise en page d'origine continue donc de fonctionner partout
+   ailleurs (Firefox, qui ne connaît pas `device-width`, ignore simplement la
+   seconde condition). C'est le même critère qui pilote le JavaScript : les
+   décisions « mobile » de `Layout.jsx` (barre qui ne se cache pas au
+   défilement, pastille de navigation masquée) et des contextes social /
+   messagerie (`SOCIAL_MOBILE_MEDIA` : page `/messages` plutôt que pop-up)
+   passent par `isPhoneLayout()` / `isHandheld()` du même module.
+
+```bash
+npm run check:phone-css      # échoue si une requête média perd sa condition téléphone
+npm run check:phone-layout   # détection « téléphone » : zoom, paysage, iPad, bureau (jsdom)
+```
+
+`check:phone-css` relit toutes les feuilles, compte 86 requêtes « petit écran »
+et 12 requêtes « bureau » et échoue si l'une d'elles repart sans garde-fou : un
+nouveau composant qui écrirait `@media(max-width:700px)` sans la condition
+téléphone casse la vérification. C'est la règle à connaître avant d'ajouter une
+requête média. `check:phone-layout` rejoue les situations gênantes sur un faux
+DOM (écran de 390 px et fenêtre de 860 px, viewport élargi, paysage, iPad,
+ordinateur) et vérifie que la normalisation du viewport ne se déclenche que là
+où il faut — et une seule fois.
+
+Côté **APK Android**, la WebView reçoit `setUseWideViewPort(true)` et
+`setLoadWithOverviewMode(true)` (`android/app/src/main/java/dz/letsplay/officiel/MainActivity.java`) :
+sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
+
 ## Typographie : Orbitron pour les gros titres
 
 Deux familles, un partage net, et un seul fichier qui tranche —
@@ -198,14 +269,19 @@ site »).
   liste d'amis **en ligne / hors ligne** dans la fenêtre sociale en bas à
   droite, pour tout joueur connecté (voir « Amis : demandes, liste et
   présence »)
-- Messagerie : discussions **1-à-1 entre amis** en texte et en temps réel, avec
-  **non-lus**, accusé de lecture, **blocage** et **signalement**, dans la même
-  fenêtre sociale (voir « Messagerie : discussions 1-à-1 entre amis »)
+- Messagerie : discussions **1-à-1 entre amis** en texte et en temps réel,
+  avec **non-lus**, accusé de lecture, **blocage** et **signalement**, dans la
+  même fenêtre sociale (voir « Messagerie : discussions 1-à-1 entre amis »)
+- Appels **vocaux et vidéo** 1-à-1 entre amis, depuis l'en-tête d'une
+  discussion : pair-à-pair WebRTC signalé par Supabase Realtime, appel
+  entrant avec sonnerie, micro/caméra coupables, bascule de caméra,
+  refus / occupé / sans réponse, et **trace d'appel** déposée dans la
+  discussion (voir « Appels vocaux & vidéo entre amis »)
 - Amis + messagerie dans la **même fenêtre** : un seul lanceur « MESSAGERIE »
   (pastilles des non-lus et des demandes en attente, amis en ligne) ouvre un
   panneau à quatre onglets — Amis / Demandes / Ajouter / Messages ; sur mobile
-  (≤ 760 px), la messagerie s'ouvre sur une **vraie page** (`/messages`) et la
-  fenêtre ne concerne plus que les amis (pop-up plein écran)
+  (≤ 760 px), la page `/messages` regroupe les quatre onglets sans pop-up,
+  accessible aussi depuis le menu, même avant connexion
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -277,6 +353,12 @@ public by design — they ship inside the client bundle. The workflow accepts th
 still deploys but `/auth` stays in demo-preview mode, and the workflow logs a
 warning (`Supabase non configuré`).
 
+**Appels vocaux & vidéo (facultatif)** : `VITE_TURN_URL`, `VITE_TURN_USERNAME`
+et `VITE_TURN_CREDENTIAL` ajoutent un relais TURN pour fiabiliser les appels
+derrière les NAT stricts — mêmes règles (lues au build, redéploiement après
+changement). Détails et choix d'hébergement dans « Appels vocaux & vidéo entre
+amis ».
+
 If a variable is missing, `/auth` shows exactly which one under the form.
 
 ### Troubleshooting
@@ -301,7 +383,11 @@ If a variable is missing, `/auth` shows exactly which one under the form.
    friends list (see « Amis : demandes, liste et présence ») and the
    `direct_messages` / `message_blocks` / `message_reports` tables behind the
    1-à-1 messaging (see « Messagerie : discussions 1-à-1 entre amis »). The
-   script is idempotent: re-run it after pulling a newer version.
+   script is idempotent: re-run it after pulling a newer version. It also
+   creates the `kind` / `attachment_*` columns and the private `voice-messages`
+   Storage bucket inherited from the old voice messaging: nothing in the app
+   uses them any more (see « Nettoyage optionnel du schéma » in the messaging
+   section to drop them).
    The SQL Editor wraps the file in **one transaction**, so a single error used
    to roll everything back — and the script looks like it ran while nothing was
    created. It is therefore guarded: steps that depend on Supabase-internal
@@ -376,8 +462,12 @@ présente sur toutes les pages : un lanceur compact « MESSAGERIE » — avec le
 pastilles des **non-lus** (messagerie) et des **demandes en attente**, et le
 compteur d'amis en ligne — ouvre un panneau à **quatre onglets** (Amis /
 Demandes / Ajouter / Messages). Amis et messagerie partagent donc la même
-fenêtre ; le quatrième onglet est documenté plus bas. Un visiteur non connecté
-ne voit rien.
+fenêtre ; le quatrième onglet est documenté plus bas. Le lanceur « MESSAGERIE »
+reste visible pour un visiteur non connecté : il ouvre `/messages`, qui propose
+la connexion sans afficher de conversations. Dans l'APK Android, la WebView a
+une session distincte de celle du navigateur du téléphone : il faut s'y
+connecter pour retrouver ses discussions. Sur mobile, un lien « MESSAGERIE »
+est aussi présent dans le menu de navigation.
 
 | Onglet | Ce qui s'y trouve |
 | --- | --- |
@@ -390,12 +480,10 @@ L'état ouvert/fermé est mémorisé sur l'appareil ; Échap ferme le panneau. L
 notifications de succès partagent le coin : elles montent au-dessus du lanceur,
 et glissent à côté du panneau quand il est ouvert.
 
-**Sur mobile** (≤ 760 px), la fenêtre ouverte devient un **pop-up plein
-écran** : elle couvre tout l'écran (au-dessus de la navigation), l'arrière-plan
-ne défile plus, et la fermeture se fait par le bouton « × » de l'en-tête
-(`src/social/social.css`). Elle ne concerne plus que les **amis** : l'onglet
-« Messages » — comme toute ouverture de discussion — bascule vers la **page de
-messagerie** `/messages` (voir plus bas), où la fenêtre s'efface entièrement.
+**Sur mobile** (≤ 760 px), le lanceur nommé « MESSAGERIE » mène à la **page
+sociale** `/messages` (voir plus bas), sans pop-up : les onglets Amis, Demandes,
+Ajouter et Messages y sont accessibles et le bouton retour du téléphone revient
+à la page précédente. Le menu mobile propose également un lien direct.
 
 **Où envoyer une demande d'ami** (`src/friends/FriendButton.jsx`) :
 
@@ -491,7 +579,7 @@ chargement et lisait `DEMO_PROFILES.vortex.user_metadata` — registre vide, don
 | `src/friends/FriendsContext.jsx` | le contexte : amis / demandes / présence du joueur connecté, gestes (`sendRequest`, `accept`, `decline`, `cancel`, `unfriend`, `search`), et l'état de la **fenêtre sociale unifiée** (`dockOpen`, `dockTab` — l'onglet actif, `messages` inclus) ; inerte sans provider (SSR des scripts) |
 | `src/friends/friendsApi.js` | couche de données : requêtes `friendships` / `profiles`, replis quand une colonne ou la table manque, état des personas |
 | `src/friends/presence.js` | canal Realtime Presence + battement de cœur |
-| `src/friends/FriendsTabs.jsx` | les onglets Amis / Demandes / Ajouter de la fenêtre sociale |
+| `src/friends/FriendsTabs.jsx` | les onglets Amis / Demandes / Ajouter de la fenêtre sociale (pseudos **en majuscules**, comme dans la messagerie — `pseudoLabel`) |
 | `src/friends/FriendButton.jsx` | le bouton de demande d'ami (profil, commentaires, résultats de recherche) |
 | `src/friends/FriendsHubSection.jsx` | la section « Mes amis » du hub : la liste des amis, chaque ligne menant à son profil |
 | `src/friends/friendsCopy.js` | textes FR / EN / AR |
@@ -538,10 +626,31 @@ Un visiteur non connecté ne voit rien (carte de connexion sur la page).
 | Niveau | Ce qui s'y trouve |
 | --- | --- |
 | **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
-| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
+| **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; à l'ouverture, une **bulle de suggestions** propose trois messages selon l'état du fil — salut si la discussion est vide, réponses si l'ami posait une question, réactions ou relances sinon — : un clic les place dans le champ (rien ne part sans validation) et la bulle se referme au premier choix, à la première frappe ou sur « Masquer » ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
+
+**Les pseudos s'affichent en majuscules** partout dans la messagerie :
+lignes de la liste des discussions, joueurs bloqués, en-tête de discussion,
+titres de la fenêtre de signalement, confirmations de blocage et d'effacement,
+infobulles d'appel et cartes d'appel, et les onglets **Amis / Demandes /
+Ajouter** de la fenêtre sociale (lignes, libellés accessibles, bouton
+« Profil », confirmation de retrait). C'est une règle d'**affichage** appliquée au rendu
+par `pseudoLabel` (`src/messages/messagesCopy.js`) : les données gardent leur
+casse d'origine et la **recherche** de la liste continue de comparer les
+pseudos bruts, sans tenir compte de la casse (chercher « kayz » trouve
+`KAYZ_ORAN`). Hors messagerie, rien ne change : la liste d'amis du hub
+joueur, les profils et les commentaires affichent le pseudo tel qu'il a été
+saisi.
 
 L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil ;
 Échap remonte à la liste puis ferme la fenêtre.
+
+**Le message vocal a été retiré** : le bouton micro, l'enregistreur, la bulle
+de lecture, l'upload dans le bucket `voice-messages` et le diagnostic
+`window.__lpVoiceDiag()` n'existent plus — la messagerie est **texte
+uniquement**. Les colonnes `kind` / `attachment_*` et le bucket restent dans
+`supabase/schema.sql` (le script est rejoué tel quel sur les projets déjà en
+place) ; voir « Nettoyage optionnel du schéma » à la fin de cette section si
+tu veux les effacer.
 
 **Où écrire à un ami** :
 
@@ -566,15 +675,28 @@ Les messages vivent dans `public.direct_messages` (`supabase/schema.sql`,
 triés et séparés par `_` (les deux sens d'un échange partagent la même clé),
 `read_at` à NULL tant que le destinataire n'a pas ouvert la discussion — c'est
 ce qui compte les **non-lus**. Un trigger (`prepare_direct_message`) impose
-côté serveur : expéditeur = joueur connecté, **amitié `accepted` obligatoire**,
-aucun blocage entre les deux joueurs, message non vide et ≤ 1 000 caractères,
-20 messages par minute au plus. Un second trigger
+côté serveur : expéditeur = joueur connecté, **amitié `accepted`
+obligatoire**, aucun blocage entre les deux joueurs, 20 messages par minute au
+plus, et un message non vide de 1 000 caractères au maximum. Un second trigger
 (`restrict_direct_message_update`) fait en sorte qu'une mise à jour ne puisse
 **que** poser `read_at` (accusé de lecture) : ni le texte, ni l'expéditeur, ni
 l'horodatage ne peuvent être modifiés, et un message lu ne redevient jamais
 non-lu. Row Level Security : un joueur ne lit que ses propres échanges et
-n'écrit qu'en son nom.
+n'écrit qu'en son nom. Le trigger fixe aussi `created_at` côté serveur : aucun
+client ne peut contourner un effacement avec un horodatage futur.
 
+- **Effacer la conversation** — dans le menu « … » du fil (dock sur bureau et
+  page `/messages`), après confirmation. `clear_direct_conversation` enregistre
+  dans `public.message_conversation_clears` un repère **par compte et par ami**
+  à l'heure du serveur. La politique RLS de `direct_messages` masque alors tous
+  les messages antérieurs **pour ce compte seulement**, y compris les non-lus
+  et les messages plus anciens que la fenêtre chargée ; l'autre participant
+  conserve son historique. Les nouveaux messages restent possibles et
+  visibles. Le fil s'efface immédiatement à l'écran et l'effacement persiste
+  après reconnexion (pas seulement dans le navigateur). L'aperçu démo efface
+  localement la discussion de la persona courante. Cela ne remplace pas le
+  bouton « Supprimer » sur un message envoyé, qui le retire pour les deux
+  participants.
 - **Temps réel** — la fenêtre écoute `direct_messages` sur deux canaux
   Realtime : `recipient_id = moi` pour les messages reçus (le badge des
   non-lus bouge tout de suite, quelle que soit la discussion ouverte) et
@@ -592,14 +714,49 @@ n'écrit qu'en son nom.
   dernier message reçu. Un seul signalement par joueur signalé (le second met
   à jour le motif) ; le bouton passe à « Signalé ».
 
-Rien d'autre à configurer une fois le SQL relancé — le tableau de contrôle en
-fin de script doit afficher `OK` pour `table public.direct_messages`,
-`politiques RLS direct_messages (3)`, `trigger message 1-à-1`, `trigger accusé
-de lecture seul modifiable`, `tables blocages / signalements` et `politiques
-RLS blocages (3) / signalements (2)` ; `realtime direct_messages` peut rester
-`ABSENT` (la messagerie se rafraîchit alors toutes les minutes). Tant que la
-table manque, la fenêtre l'explique (« La messagerie n'est pas encore activée
-sur ce déploiement… ») sans rien casser d'autre.
+**Relancer `supabase/schema.sql` sur les projets déjà en place** pour créer le
+repère et le RPC avant d'utiliser le bouton. Le tableau de contrôle en fin de
+script doit afficher `OK` pour `table public.direct_messages`,
+`politiques RLS direct_messages (4)`, `trigger message 1-à-1`, `trigger accusé
+de lecture seul modifiable`, `tables blocages / signalements`, `politiques
+RLS blocages (3) / signalements (2)` et `effacement des conversations pour soi
+(table, RLS, RPC, filtre messages)` ; `realtime direct_messages` peut rester
+`ABSENT` (la messagerie se rafraîchit alors toutes les minutes). La dernière
+ligne du tableau, `messages vocaux (colonnes + bucket + politiques de
+stockage)`, est **héritée de l'ancienne messagerie vocale** : elle peut rester
+`ABSENT` sans conséquence, plus rien dans l'application ne s'en sert. Tant que
+la table manque, la fenêtre l'explique (« La messagerie n'est pas encore
+activée sur ce déploiement… ») sans rien casser d'autre.
+
+### Nettoyage optionnel du schéma
+
+Le message vocal ayant été retiré de l'application, les objets SQL qui le
+servaient ne sont plus utilisés : les colonnes `kind`, `attachment_path`,
+`attachment_duration`, `attachment_mime` de `direct_messages` et le bucket
+privé `voice-messages`. `supabase/schema.sql` continue de les créer (le script
+est rejoué tel quel sur les projets existants, et les retirer du fichier ne
+les supprimerait pas d'une base déjà à jour). Pour les effacer réellement —
+**opération définitive : les messages vocaux encore stockés sont perdus** —,
+dans Dashboard → SQL Editor :
+
+```sql
+drop policy if exists "Players upload their own voice messages" on storage.objects;
+drop policy if exists "Conversation participants read voice messages" on storage.objects;
+drop policy if exists "Senders delete their own voice messages" on storage.objects;
+delete from storage.objects where bucket_id = 'voice-messages';
+delete from storage.buckets where id = 'voice-messages';
+-- Messages vocaux restés en base : leur `body` est vide, ils s'afficheraient
+-- comme des bulles vides. À supprimer AVANT de retirer la colonne `kind`.
+delete from public.direct_messages where kind = 'voice';
+alter table public.direct_messages
+  drop column if exists kind,
+  drop column if exists attachment_path,
+  drop column if exists attachment_duration,
+  drop column if exists attachment_mime;
+```
+
+Sans ce nettoyage, la messagerie fonctionne exactement pareil : colonnes vides
+et bucket inutilisé.
 
 ### Personas de démonstration (fixtures de test)
 
@@ -617,13 +774,13 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
-| `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, lignes → discussions, non-lus, repli quand la table manque, état des personas |
+| `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `clearConversation`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
+| `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, RPC d'effacement pour soi, lignes → discussions, non-lus, repli quand la table manque, état des personas |
 | `src/messages/demoThreads.js` | discussions de départ, réponses scriptées et messages entrants de l'aperçu démo |
-| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, champ de saisie, accès « Profil », bloquer / signaler |
+| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, **bulle de suggestions à l'ouverture du fil**, champ de saisie, accès « Profil », bloquer / signaler / effacer la conversation |
 | `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
 | `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
-| `src/messages/messagesCopy.js` | textes FR / EN / AR |
+| `src/messages/messagesCopy.js` | textes FR / EN / AR, `pseudoLabel` : les pseudos affichés en majuscules (règle de rendu, les données gardent leur casse), et `messageSuggestions` : les trois suggestions de la bulle d'ouverture selon l'état du fil |
 | `src/messages/messages.css` | styles (liste, bulles, signalement, page `/messages`) |
 
 ### Vérifications
@@ -631,18 +788,259 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 - `npm run check:messages` — logique pure (lignes `direct_messages` →
   discussions : les deux sens regroupés, fil retrié, non-lus comptés, accusé de
   lecture, messages reçus en direct sans doublon ; clés de conversation
-  symétriques ; saisie nettoyée et bornée ; erreurs du trigger reconnues),
-  cohérence de l'aperçu de démonstration (discussions entre **amis**
-  existants, jamais soi-même, non-lus et discussions lues, réponses
-  déterministes, messages scriptés livrés une seule fois, blocage /
-  signalement réversibles, textes complets dans les trois langues), puis rendu
-  SSR du hub, de la fenêtre (fermée / liste / discussion ouverte) et de profils
-  publics — visiteur, ami et non-ami — dans les trois langues.
+  symétriques ; saisie nettoyée et bornée ; erreurs du trigger reconnues ;
+  pseudos mis en majuscules — casse mixte, accents, espaces de bord, pseudo
+  absent),
+  cohérence de l'aperçu de démonstration (discussions entre **amis** existants,
+  jamais soi-même, non-lus et discussions lues, réponses déterministes,
+  messages scriptés livrés une seule fois, effacement propre à la persona et
+  persistant, blocage / signalement réversibles, textes complets dans les trois
+  langues, suggestions de la bulle d'ouverture cohérentes avec l'état du fil —
+  salut, réponse à la question, réaction, relance — en trois langues), puis rendu SSR du hub, de la fenêtre
+  (fermée / liste / discussion ouverte) et de profils publics — visiteur, ami
+  et non-ami — dans les trois langues ; un test DOM clique aussi sur
+  « Effacer la conversation », vérifie l'annulation, la confirmation et la
+  persistance après réouverture, puis sur la **bulle de suggestions**
+  (remplissage sans envoi, fermeture après choix ou frappe, retour à la
+  réouverture) ; les deux vues de messagerie **et les onglets Amis /
+  Demandes** de la fenêtre sociale sont aussi rendus avec un pseudo **en
+  casse mixte** : il doit ressortir en majuscules, dans le texte visible
+  comme dans les libellés accessibles.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
   continuent de passer : amis et messagerie partagent la même fenêtre sociale
   (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page
   `/messages` et le pop-up reste pour les amis), et les contextes par défaut
   sont inertes.
+
+## Appels vocaux & vidéo entre amis
+
+Dans l'en-tête de chaque discussion (fenêtre sociale sur bureau, page
+`/messages` partout), deux boutons à côté de « Profil » : **téléphone** (appel
+vocal) et **caméra** (appel vidéo). Comme la messagerie, les appels sont
+réservés aux **amis**. Un bouton grisé s'explique toujours au survol
+(« aperçu démo », « connexion sécurisée (HTTPS) exigée », « deviens ami avec
+ce joueur »…). Un ami qui **semble hors ligne** ne grise PAS le bouton : la
+présence est une estimation (canal de présence, dernier passage vu), l'appel
+part quand même et conclut « Sans réponse » s'il n'aboutit pas — l'infobulle
+prévient. Un appel impossible le dit aussi à l'écran (bandeau en bas), jamais
+de clic muet.
+
+**Comment ça marche** (trois étages, tous sans serveur en plus) :
+
+| Étage | Ce qui fait le travail |
+| --- | --- |
+| **Signalisation** | Supabase Realtime (Broadcast) — sonnerie, réponse, offre/réponse SDP, candidats ICE, raccrocher. Chaque joueur écoute en permanence **son** canal `calls:user:{uid}` ; on n'envoie que sur le canal du destinataire, et chaque événement `{v, t, callId, from, to}` est validé (destinataire, appel courant, amitié et blocage revérifiés à l'arrivée) |
+| **Médias** | WebRTC **pair-à-pair** (`getUserMedia` + `RTCPeerConnection`) : le son et l'image ne passent jamais par un serveur. STUN public livré par défaut ; TURN optionnel (voir plus bas) pour les NAT stricts |
+| **État & interface** | `CallsContext` expose la phase (`idle → incoming/outgoing → connecting → active → ended`), les flux `<video>`, le micro / la caméra, la durée, le motif de fin ; `CallOverlays` rend l'appel entrant (carte + sonnerie) et le panneau d'appel (vidéo de l'ami en grand, la nôtre en incrustation **miroir**, chrono, contrôles) |
+
+**L'interface, en mode HUD de jeu.** L'overlay d'appel est traité comme un
+*écran* : sombre dans les deux thèmes (règle « les médias restent sombres »,
+section 8 de `theme.css`), encres posées **en dur** dans `src/messages/calls.css`
+— c'est le motif `calls-` du balayage d'encres (`scripts/theme-ink-sweep.mjs`)
+qui garantit qu'aucune de ces couleurs ne bascule en thème clair. L'habillage
+gaming :
+
+- **équerres néon** dans les angles (`.calls-frame`, le même geste que
+  `.hud-frame` sur le site) — le cadre du panneau « respire » en cours
+  d'appel et passe **au rouge** une fois l'appel terminé ;
+- **radar** autour de l'avatar (balayage conique + cadran pointillé) :
+  sonnerie entrante et scène de l'appel vocal ;
+- **LED d'état** dans l'en-tête (jaune en cours d'établissement, vert
+  clignotant en appel, rouge à la fin) et **chrono Orbitron** en pastille
+  néon — le pseudo de l'ami et les initiales d'avatar portent aussi
+  Orbitron (`src/typography.css`, bloc 6) ;
+- **scène vidéo** : viseur aux quatre coins, scanlines et vignette posées
+  sur l'image ; **scène audio** : égaliseur à sept barres (la médiane porte
+  le jaune de marque) et indicateur de signal en cascade ;
+- **boutons néon** : le « Répondre » pulse, micro/caméra coupés virent au
+  rouge, les boutons téléphone/caméra de l'en-tête de discussion
+  (`.messages-tool.is-call`) s'illuminent en cyan au survol.
+
+Tout le décoratif est `aria-hidden` : l'accessible reste le texte (libellé,
+pseudo, état, chrono), et `prefers-reduced-motion` coupe le mouvement sans
+enlever d'information.
+
+**Le scénario complet** : l'appelant obtient micro/caméra (la permission est
+demandée **avant** de sonner), puis l'ami reçoit l'appel entrant (sonnerie,
+carte « Répondre / Refuser »). Répondre lance la connexion P2P ; refuser
+affiche « Appel refusé » chez l'appelant ; appeler un ami déjà en appel répond
+**occupé** tout seul ; sonner 30 s sans réponse conclut « sans réponse ». En
+cours d'appel : micro et caméra coupables, **changement de caméra** (selfie ↔
+dos) sans coupure, **résistance aux micro-coupures** (6 s de grâce avant de
+conclure « Connexion perdue »). Caméra refusée sur un appel vidéo ? L'appel
+continue **en audio** plutôt que d'échouer.
+
+**Appel vocal** : il n'y a pas d'image, donc pas de `<video>` visible — mais le
+son de l'ami doit quand même être joué, dans un `<video playsinline>` (le même
+chemin que l'appel vidéo). Un `<audio>` reste souvent silencieux sur iOS et
+part dans l'écouteur sur Android. Sans cet élément, l'appel « s'établit », le
+chrono tourne, et personne n'entend rien : c'est le symptôme « la vidéo marche,
+le vocal non ». Dans l'APK, le haut-parleur est forcé le temps de l'appel
+(`LetsPlayAndroid.setCallAudio`) pour la même raison.
+
+**Trace d'appel** : à la fin, l'appelant dépose un message normal dans la
+discussion — `📞 Appel vidéo · 02:14`, `📞 Appel audio sans réponse`,
+`📞 Appel audio refusé`, `📞 Appel audio — occupé`. Rien de nouveau à
+provisionner : non-lus, temps réel et suppression sont ceux de la messagerie.
+(Ce message suit la langue de l'appelant — limite assumée, documentée ici.)
+
+**Sécurité & limites honnêtes** :
+
+- les canaux de signalisation sont publics par nom : les événements sont
+  filtrés (destinataire + amitié + blocage + appel courant), mais ils restent
+  visibles d'un client qui joindrait le canal ; seuls des identifiants et une
+  offre SDP y transitent (jamais de média) — pour blinder, passer les canaux
+  Realtime en `private` (RLS `realtime.channels`) ;
+- deux onglets du même compte sonnent ensemble ; répondre dans l'un laisse
+  l'autre finir sa sonnerie (35 s max) ;
+- `getUserMedia` exige HTTPS (ou localhost) : les boutons s'expliquent sinon ;
+- les personas de démonstration n'ont pas de correspondant réel : les boutons
+  y sont grisés avec l'explication, et `check:calls` le vérifie.
+
+### Dépannage « l'appel semble marcher mais… »
+
+Historique et réglages des pannes d'image réelles (testé avec deux comptes
+amis — un téléphone + un ordinateur, appel vidéo depuis la discussion) :
+
+- **Écran noir en appel vidéo, le son passe, APK Android** : la WebView
+  exigeait un geste utilisateur pour chaque lecture de média — l'image de
+  l'ami arrive quelques secondes après le clic « Répondre », sa lecture était
+  rejetée et l'ancien code avalait le rejet pour toujours. Réglé des deux
+  côtés : `setMediaPlaybackRequiresUserGesture(false)` dans l'APK **1.0.2**,
+  et le site rejoue désormais `play()` de lui-même (métadonnées, gestes,
+  relances) au lieu d'avaler le rejet. Mettre les deux joueurs à jour.
+- **Aucune image nulle part, appel devenu « vocal » sans prévenir** : la
+  caméra était refusée/occupée — pire, la WebView Android peut répondre à
+  `getUserMedia({audio, video})` avec un **accord partiel** (micro oui,
+  caméra non) SANS erreur : l'appel restait étiqueté « vidéo » avec un écran
+  vide. Désormais le repli audio est détecté (même sans erreur) et **expliqué
+  à l'écran** — bandeau + pastille « Caméra indisponible — l'appel continue
+  en audio, sans image » ; si c'est la caméra de l'AMI qui manque, l'appelant
+  est prévenu aussi (événement de signalisation `media`).
+- **Appel vocal sans voix** : le panneau ne branchait le flux distant sur un
+  élément média QUE quand il avait une image — un appel vocal ne jouait donc
+  jamais la voix de l'ami (et l'appel vocal passait `video: false` à
+  `getUserMedia`, que certaines WebView refusent). Désormais le son est joué
+  dans un `<video playsinline>` dédié même sans image, et l'APK force le
+  **haut-parleur** pendant l'appel (`LetsPlayAndroid.setCallAudio`) — sinon
+  la voix part dans l'écouteur et on croit l'appel muet.
+- **Rien ne passe du tout (ni son ni image) en 4G/5G** : connexions
+  pair-à-pair bloquées par le NAT de l'opérateur → relais TURN (ci-dessous).
+  Si le SON passe mais pas l'image, le TURN n'est pas le coupable : la
+  connexion existe déjà.
+- **« Ça me demande d'activer le micro mais c'est déjà fait »** : c'était
+  l'en-tête `Permissions-Policy` servi par le déploiement (corrigé :
+  `microphone=(self), camera=(self)` dans `vercel.json` — `check:calls`
+  surveille qu'il ne revienne pas). Dans une iframe, il faut en plus
+  `allow="microphone; camera"` sur l'iframe.
+- **APK : la demande d'autorisation n'apparaît jamais** : Android a un refus
+  en mémoire (« Ne plus demander ») — Paramètres → Applications → Let's Play →
+  Autorisations → Micro/Caméra → Autoriser (voir `android/README.md`).
+
+### Serveur TURN (recommandé en production)
+
+Le STUN public de Google suffit derrière la plupart des box internet, mais les
+**NAT des opérateurs mobiles** (3G/4G) font échouer une partie des connexions
+directes. Un serveur **TURN** (relais) règle ça — variables lues au build,
+donc **redéploiement après changement** :
+
+```bash
+VITE_TURN_URL=turn:turn.votre-domaine.com:3478          # URLs multiples acceptées (virgules)
+VITE_TURN_USERNAME=letsplay
+VITE_TURN_CREDENTIAL=le-mot-de-passe-turn
+```
+
+Deux options éprouvées : **Coturn** auto-hébergé sur un petit VPS (gratuit,
+~20 lignes de `turnserver.conf`), ou un TURN managé (Cloudflare Calls,
+Metered…) si l'on ne veut rien exploiter. Sans TURN, les appels fonctionnent
+quand même : simplement moins souvent du premier coup en mobile.
+
+### Où vit le code
+
+| Fichier | Rôle |
+| --- | --- |
+| `src/messages/CallsContext.jsx` | le moteur et l'état : sonneries entrantes (canal personnel permanent, sonnerie gardée tant que la liste d'amis n'est pas chargée), `startCall` / `acceptCall` / `declineCall` / `endCall`, micro / caméra / bascule de caméra, **repli caméra détecté et expliqué** (`cameraFallback`, événement `media` vers l'ami), connexions P2P, traces d'appel, `blockerFor` (boutons grisés) et `warningFor` (avertissements), `notice` (un échec s'explique) |
+| `src/messages/callsCore.js` | la logique pure (vérifiable sans navigateur) : ICE/TURN, identifiants et canaux, validation des événements, `ringDecision`, `effectiveStreamKind` (appel vidéo sans piste vidéo → audio), durées, classification des erreurs de média |
+| `src/messages/CallOverlays.jsx` | les surfaces : carte d'appel entrant (**Répondre / Refuser**, pseudo de l'ami **en majuscules** comme dans la messagerie), panneau d'appel (vidéo, PiP miroir, chrono, contrôles, pastille de repli caméra, `play()` fiable avec relances), bandeau d'avertissement |
+| `src/messages/callSounds.js` | sons synthétisés (Web Audio) : sonnerie, tonalité, connexion, fin |
+| `src/messages/callsCopy.js` | textes EN / FR / AR, libellés de blocage, traces d'appel — le site étant publié en français, EN / AR restent en filet de sécurité, comme les dictionnaires du site |
+| `src/messages/calls.css` | styles des overlays (plein écran, coins coupés, mobile, `prefers-reduced-motion`) |
+| `src/messages/MessagesTabs.jsx` | les deux boutons d'appel de l'en-tête de discussion (fenêtre sociale **et** page `/messages`) |
+
+### Vérifications
+
+- `npm run check:calls` — deux étapes :
+  - **logique pure + rendu SSR** (`scripts/calls-check.mjs`) : ICE/TURN par
+    variables d'environnement, canaux de signalisation, événements broadcast
+    validés (version, type, appel, destinataire, émetteur), décision de
+    sonnerie (ami / bloqué / liste d'amis pas encore chargée), durées,
+    classification des erreurs de micro/caméra, traces d'appel et libellés
+    complets dans les trois langues ; puis visiteur sans bouton ni panneau,
+    discussion de démonstration avec les deux boutons **grisés et expliqués**
+    (pas de WebRTC entre personas), rien dans la liste des discussions,
+    libellés EN / FR / AR, jamais appelable soi-même ;
+  - **un appel de bout en bout entre deux joueurs** (`scripts/calls-e2e-check.mjs`) :
+    deux arbres React montés côte à côte, chacun avec son propre client
+    Supabase (comme deux navigateurs), un bus Realtime et un WebRTC simulés.
+    Le script déroule sonnerie entrante → **pop-up Répondre / Refuser** →
+    refus → appel établi (média des deux côtés) → occupé → raccrocher →
+    annuler, puis les dégradations : sonnerie reçue avant que la liste d'amis
+    soit chargée, appel impossible expliqué, ami « hors ligne » quand même
+    appelable, canal de signalisation en échec puis rétabli. Tout événement
+    perdu sur un canal non joint est compté comme une panne.
+- `npm run check:messages`, `check:friends` et `check:i18n` continuent de
+  passer : les appels se greffent sur la messagerie sans rien redonder.
+
+### Tester un vrai appel
+
+Il faut deux **comptes Supabase amis** (deux navigateurs, ou un ordinateur +
+un téléphone sur le déploiement HTTPS) : ouvrir la discussion, appuyer sur le
+téléphone ou la caméra, répondre de l'autre côté. En local (`npm run dev` sur
+localhost), les appels entre deux onglets fonctionnent — les permissions
+micro/caméra se demandent normalement.
+
+Si rien ne se passe, dans l'ordre :
+
+1. **les deux joueurs sont connectés avec un vrai compte** (pas une persona de
+   démo) et **amis** — le bouton est grisé avec la raison au survol sinon ;
+2. **HTTPS** (ou localhost) : en HTTP, `getUserMedia` est absent et les
+   boutons l'expliquent ;
+3. **la permission micro/caméra** a été accordée dans le navigateur — quatre
+   causes, quatre réglages quand le navigateur dit « accès refusé » :
+
+   | Symptôme à l'écran | Cause | Où agir |
+   | --- | --- | --- |
+   | « Micro bloqué — la page est dans une iframe… » | page dans une `<iframe>` sans `allow=\"microphone\"` | ajouter `allow=\"microphone; camera\"` à l'iframe ou ouvrir le site directement |
+   | « Micro bloqué pour ce site… » | micro déjà bloqué pour l'origine (le navigateur ne redemande plus) | cadenas dans la barre d'adresse → Paramètres du site → Microphone → Autoriser, puis recharger |
+   | « Accès au micro refusé… » | refus au moment de la demande | autoriser quand le navigateur le demande, puis relancer l'appel |
+   | « Le micro est bien autorisé, mais cette page n’a pas le droit de l’utiliser… » | la page elle-même refuse la capture (en-tête `Permissions-Policy` du site, conteneur tiers) | côté déploiement, pas côté joueur : `vercel.json` doit laisser `microphone=(self), camera=(self)` — les réglages du joueur sont déjà corrects |
+
+   Le code distingue les quatre cas par `isEmbedded()` (page dans une iframe ?)
+   croisé avec `navigator.permissions.query({name:'microphone'})`
+   (`permissionFailureKind`) — quatre messages EN/FR/AR, vérifiés par
+   `npm run check:calls`. Le quatrième cas (permission accordée mais capture
+   refusée) a été la vraie panne des appels déployés : l’en-tête de
+   sécurité `Permissions-Policy` de `vercel.json` écrivait
+   `microphone=(), camera=()` et désactivait micro et caméra sur **tout** le
+   déploiement Vercel (celui que charge l’APK), permissions du joueur mises
+   à part. `npm run check:calls` vérifie désormais que cet en-tête ne les
+   coupe plus.
+
+4. **l'appel sonne mais ne s'établit pas** (« Connexion… » puis échec) : il
+   manque un relais **TURN** (voir ci-dessus) — c'est le cas typique en 4G/5G ;
+5. **dans l'APK Android** : les autorisations micro et caméra doivent avoir
+   été accordées à l'application (voir `android/README.md`) — sans elles, la
+   WebView refuse `getUserMedia` et aucun appel n'est possible. Et comme l’APK
+   charge le site en ligne, c’est bien l’en-tête `Permissions-Policy` servi
+   par Vercel qui décide au final : il doit laisser `microphone=(self)` et
+   `camera=(self)` (voir le tableau ci-dessus). L'APK envoie aussi la voix
+   dans le **haut-parleur** (pas l'écouteur) le temps de l'appel — sinon, à
+   côté d'un appel vidéo audible, le vocal semble muet ;
+6. **l'appel vidéo s'entend, l'appel vocal non** (chrono qui tourne, silence) :
+   le flux distant n'était branché sur aucun élément média. Le correctif joue
+   ce flux dans un `<video playsinline>` non muet, comme l'image de l'appel
+   vidéo. `npm run check:calls` vérifie que ce lecteur est bien là, des deux
+   côtés, une fois l'appel vocal établi.
 
 ## Succès débloqués par les actions du site
 
@@ -890,8 +1288,9 @@ mais la structure de données les accepte déjà.
   (Tech et PC → Tech, Cinéma et Séries → Cinéma, E-sport → E-sport, le reste →
   Gaming ; famille absente ou inconnue : repli sur Gaming, jamais de quizz
   perdu). **Chaque quizz porte trois niveaux** (`levels.easy` /
-  `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit questions par niveau —
-  soit 24 questions par quizz, 600 au total. Les helpers
+  `levels.medium` / `levels.hard`, `QUIZ_LEVELS`), huit questions dans chaque
+  banque (24 questions uniques par quizz, 600 au total). L'Expert en tire dix
+  différentes à chaque tentative depuis l'ensemble de ces trois banques. Les helpers
   `quizLevelQuestions(quiz, level)` et `quizQuestionsCount(quiz)` évitent
   d'accéder aux niveaux à la main
   (`QUIZ_DIFFICULTIES` reste exporté comme alias de `QUIZ_LEVELS`, et
@@ -951,14 +1350,19 @@ mais la structure de données les accepte déjà.
   manque — aucune requête `i.ytimg.com` dans le cas nominal. Ajouter un
   quizz = déposer son illustration sous ce nom, `check:thumbs` le vérifie.
 - **Moteur** — `src/quizzes/engine.js` (pur, sans React, importable par Node) :
-  `prepareQuiz(quiz, level, seed, { extraDistractors })` ne pose que les
-  questions du niveau demandé (ordre et choix mélangés, la bonne réponse
-  voyageant avec son choix — et, en expert, un **piège** tiré des réponses
-  d'autres questions du même quizz, jamais la bonne réponse et jamais un
-  doublon),
-  mélange déterministe par graine (le quizz du jour est le même pour tous),
-  barème, paliers de résultat (`rookie` → `legend`), meilleure série de jours
-  consécutifs, et les **multiplicateurs de niveau** (`DIFFICULTY_MULTIPLIER` :
+  `prepareQuiz(quiz, level, seed, { extraDistractors, questionPool, questionCount })`
+  utilise la banque du niveau demandé, sauf si un pool et une limite sont
+  fournis. En Expert, le lecteur tire **10 questions distinctes** dans la
+  banque complète du quizz (24 questions, tous niveaux confondus), avec un
+  nouveau tirage à chaque tentative et sans reprendre les questions de la
+  tentative précédente. L'ordre et les choix sont mélangés, la bonne réponse
+  voyage avec son choix ; le piège Expert est tiré des autres réponses de la
+  banque, jamais de la bonne réponse et jamais en doublon. Le mélange des
+  niveaux Facile/Confirmé du quizz du jour reste déterministe par graine :
+  même tirage pour tout le monde ; l'Expert est volontairement aléatoire. Le
+  moteur gère aussi le barème, les paliers de résultat (`rookie` → `legend`),
+  la meilleure série de jours consécutifs et les **multiplicateurs de niveau**
+  (`DIFFICULTY_MULTIPLIER` :
   Facile ×1, Confirmé ×1,5, Expert ×2 — `quizPointsFor` met le barème base +
   rapidité + combo à l'échelle, plafond 200/300/400 par question, revérifié
   côté serveur). Le niveau joué voyage avec la partie préparée
@@ -967,20 +1371,22 @@ mais la structure de données les accepte déjà.
   questions et les points, il change **la façon de jouer** — temps par
   question, nombre de propositions, vies, jokers et durée du gel de verdict :
 
-  | Niveau | Temps | Propositions | Vies | Jokers (50/50 + gel) | Gel de verdict |
-  | --- | --- | --- | --- | --- | --- |
-  | Facile | 20 s | 4 | — | 2 + 1 | 600 ms |
-  | Confirmé | 15 s | 4 | — | 1 + 1 | 600 ms |
-  | Expert | 10 s | 5 (dont un piège) | 3 | aucun | 450 ms |
+  | Niveau | Questions par tentative | Temps | Propositions | Vies | Jokers (50/50 + gel) | Gel de verdict |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Facile | 8 | 20 s | 4 | — | 2 + 1 | 600 ms |
+  | Confirmé | 8 | 15 s | 4 | — | 1 + 1 | 600 ms |
+  | Expert | 10 tirées au hasard | 10 s | 5 (dont un piège) | 1 | aucun | 450 ms |
 
   `QUESTION_TIME.seconds` (15 s) reste la **référence** : chaque niveau la met
   à l'échelle (`questionBudgetMs`), donc raccourcir la référence raccourcit les
   trois budgets ensemble. Ces règles sont annoncées **avant** de jouer (carte
   « Règles de ce niveau » du sélecteur, `levelBrief`) et appliquées en partie
-  (`resetRun`) — pas de piège pour le joueur. L'expert est plus dur sur tous
-  les axes : trois fois moins de temps par proposition qu'en facile, une
-  proposition de plus, une partie qui s'arrête à la troisième erreur, et
-  aucune aide.
+  (`resetRun`) — pas de piège pour le joueur. L'Expert se rejoue autant de fois
+  que nécessaire : une erreur ou un temps écoulé l'élimine immédiatement ; le
+  bouton « Réessayer » relance une tentative avec dix questions inédites. Le
+  niveau n'est validé et ne crédite points/XP, record ou classement qu'après
+  un 10/10 sans faute. Une fois réussi, il rapporte comme les autres niveaux
+  une seule fois.
 - **Jokers** — deux par partie, hors expert : **50/50** (deux mauvaises
   propositions passent en `is-eliminated`, sans jamais toucher la bonne réponse
   ni décaler la grille — le bouton reste en place, cliquable en apparence
@@ -988,12 +1394,12 @@ mais la structure de données les accepte déjà.
   `FREEZE_BONUS.seconds` = 8 s, ce qui rend la partie possible sans rendre la
   question plus simple). Les boutons affichent le nombre restant, sont coupés
   pendant le gel de verdict et se jouent aussi au clavier (`D` et `F`).
-- **Vies & fin de partie** — dès qu'un niveau en a (l'expert), chaque erreur ou
-  temps écoulé retire un cœur : au dernier, la partie **s'arrête** — écran de
-  résultat avec « Plus de vies », le rang où elle s'est arrêtée, les
-  corrections de tout le niveau et les questions non jouées comptées comme
-  ratées. `gradeQuiz` renvoie `answered` (questions réellement jouées) pour que
-  ce cas ne soit jamais pris pour un sans-faute.
+- **Vies & fin de partie** — en Expert, une seule vie : la première erreur ou
+  expiration du chrono élimine le joueur immédiatement. L'écran affiche le
+  résultat partiel et les corrections des dix questions ; « Réessayer » lance
+  une nouvelle sélection aléatoire, sans points, XP, record, classement ni
+  progression crédités sur une tentative éliminée. Seul un 10/10 sans faute
+  valide ce niveau et attribue les points.
 - **Minuteur** — budget par question selon le niveau (20 s / 15 s / 10 s,
   `questionBudgetMs`) : une barre de décompte passe au rouge dans les 3
   dernières secondes et, à zéro, la question avance sans réponse (comptée
@@ -1118,8 +1524,8 @@ mais la structure de données les accepte déjà.
   jamais cette opération : lance le fichier de maintenance séparément.
 - **Vérification** — `npm run check:quiz` : moteur (jour, mélange, barème,
   multiplicateurs ×1/×1,5/×2 par niveau, points bornés (200/300/400 par
-  question) qui font le classement, série, minuteur à 15 s,
-  trois niveaux de huit questions par quizz sans identifiant partagé), règles de
+  question) qui font le classement, série, minuteur à 15 s, banques de huit
+  questions par niveau sans identifiant partagé et tirage Expert de dix sur 24), règles de
   déblocage en cascade (`quizProgress` : Facile ouvert, Confirmé puis Expert
   débloqués), miniatures (une illustration distincte par quizz, demandée par
   les cartes rendues — aucune requête YouTube), partie complète jouée en jsdom
@@ -1134,9 +1540,12 @@ mais la structure de données les accepte déjà.
   départage aux bonnes réponses), classement par points (points affichés en
   premier, score/total en secondaire, repli ancien backend) et position au
   classement global affichée sur la page de profil (repli hors-ligne expliqué),
-  règles par niveau (20 s / 15 s / 10 s, cinq propositions et trois vies en
-  expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons
-  ni doublés, `answered` d'une partie arrêtée), verdict (gel avec choix
+  règles par niveau (20 s / 15 s / 10 s, cinq propositions et une vie en
+  Expert, jokers 50/50 + gel du chrono hors expert, pièges experts jamais bons
+  ni doublés, élimination au premier échec, aucun point sur une défaite, dix
+  questions renouvelées sans répétition entre l'échec et la reprise, bouton
+  « Réessayer » Expert uniquement, progression débloquée après 10/10), verdict
+  (gel avec choix
   verrouillés, vert/rouge, bonne réponse révélée, bandeau avec points),
   raccourcis clavier 1–5 (+ `D` et `F` pour les jokers ; la touche pendant le
   gel est ignorée), sons (tempo qui accélère sans jamais ralentir et sans
@@ -1146,8 +1555,9 @@ mais la structure de données les accepte déjà.
   Web Audio), refonte du lecteur (CTA compacts, pastilles de progression,
   50/50 qui élimine deux mauvaises réponses sans toucher la bonne, gel du
   chrono, détail de partie) et niveau expert en conditions réelles (cinq
-  propositions, une vie perdue par erreur, fin de partie à la troisième,
-  « Plus de vies », base ×2 par bonne réponse, touche 5) et état « terminé »
+  propositions, une seule vie, élimination dès la première erreur, points
+  crédités uniquement après 10/10, retry réservé aux défaites Expert, questions
+  renouvelées entre tentatives, points ×2 sur un sans-faute, et état « terminé »
   (`isQuizFinished` : carte grisée rendue en `<div>` sans lien ni flèche,
   drapeau `✓ TERMINÉ` sur la miniature, tampon à la place de la pastille
   « n/3 niveaux », bannière du jour verrouillée sans compte à rebours avec son
@@ -1417,6 +1827,258 @@ qualité disponible pour cette vidéo.
   ni de chemin `public/quizzes/` hors de `src/quizzesData.js`, les deux chemins
   du repli présents).
 
+## Dossiers : la vidéo, le chapitrage et les captures de l'épisode
+
+Chaque dossier (`/dossiers/...`, gabarits `src/pages/Dossier*.jsx`) s'ouvre sur
+l'épisode YouTube qui l'accompagne, suivi de trois captures de cette vidéo, le
+chapitrage venant ensuite et le texte de l'article après.
+
+### L'ordre des blocs, bureau et mobile
+
+La lecture est une grille à zones (`src/dossier-article.css`,
+`.dossier-reading`) : `"video sidebar" / "main sidebar"` sur ordinateur — la
+vidéo en haut à gauche, le chapitrage collant à droite (`position: sticky`),
+le texte dessous — et `"video" "sidebar" "main"` sur téléphone. L'ordre mobile
+est donc **vidéo + captures → chapitrage → texte** : on voit d'abord ce dont
+parle l'épisode, puis le sommaire du chapitrage, puis l'article. Auparavant,
+le chapitrage passait avant la vidéo sur mobile (`grid-row: 1`) : le sommaire
+s'affichait avant la vidéo qu'il découpait.
+
+L'ordre du DOM suit le flux mobile (bloc vidéo, puis `<aside>` du chapitrage,
+puis colonne de texte) : les lecteurs d'écran lisent les blocs dans le même
+ordre que l'affichage, sur les deux supports. `useChapterVideo` n'a rien vu
+changer : la référence reste accrochée à `.dossier-video`, quel que soit
+l'endroit du bloc dans la page.
+
+### Les captures de l'épisode
+
+Les trois captures sont des **photogrammes de la vidéo elle-même** : YouTube
+extrait automatiquement trois images de chaque vidéo (autour du quart, de la
+moitié et des trois quarts de sa durée), publiées à côté des miniatures sous
+les noms `hq1.jpg`, `hq2.jpg` et `hq3.jpg`. Elles existent pour toute vidéo
+visible, comme `hqdefault`, et sont servies par le même hôte `i.ytimg.com` —
+aucun fichier à déposer dans le dépôt, et aucune image inventée.
+
+- `youTubeFrameUrl(id, frame)` (`src/lib/videoThumbnails.js`) construit l'URL ;
+  la fabrique reste la seule du site à écrire une URL `i.ytimg.com` (règle
+  `check:thumbs`). Le cadre 16/9 de la galerie (`object-fit: cover`) recadre
+  la marge 4:3 que YouTube ajoute autour de ces photogrammes ;
+- les galeries vivent dans `src/articleGalleries.js` (clés `dossier-souls`,
+  `dossier-awards`, `dossier-comiccon`, `dossier-generations`, `dossier-goya`,
+  `dossier-playstation-1`, `dossier-playstation-2`, `dossier-xbox-360`) et sont
+  rendues par le composant partagé `ArticleGallery`, comme les actus. Légendes
+  et textes alternatifs reprennent le thème du passage où chaque photogramme
+  est capturé — sans promettre une seconde précise — et le crédit renvoie à
+  l'épisode sur la chaîne Let's Play Official.
+
+```jsx
+const gallery = getArticleGallery('dossier-souls');
+// …dans le bloc vidéo du dossier, sous la note :
+{gallery ? <ArticleGallery {...gallery} /> : null}
+```
+
+### Les captures s'ouvrent en grand (visionneuse)
+
+La grille recadre les visuels en 16/9 (`object-fit: cover`) : c'est bon pour la
+mise en page, mauvais pour lire un tableau d'éditions ou détailler un artwork.
+**Chaque capture est donc cliquable** et ouvre une visionneuse — dans les actus,
+les dossiers et les tests à la fois, puisque tout passe par le même composant
+`src/components/ArticleGallery.jsx`. Rien à déclarer dans
+`src/articleGalleries.js` : le comportement vient avec la galerie.
+
+- **Ouvrir** : clic ou touche Entrée sur une capture. Chaque vignette est un
+  vrai `<button>` (`aria-haspopup="dialog"`) qui annonce le visuel et sa
+  position — « Agrandir le visuel 2 sur 3 : … » — et une pastille loupe
+  apparaît au survol (toujours visible au doigt, faute de survol).
+- **Regarder** : le visuel est affiché entier (`object-fit: contain`), sans
+  recadrage, sur une scène noire, avec sa légende et un compteur `02 / 03`.
+  Une entrée peut porter un `full` — une version plus grande servie uniquement
+  dans la visionneuse, la grille gardant `src`.
+- **Parcourir** : flèches à l'écran, flèches du clavier, Début / Fin, et
+  balayage horizontal au doigt (48 px). La navigation boucle.
+- **Fermer** : bouton ✕, touche Échap ou clic sur le fond — jamais sur le
+  cadre. Le défilement de la page est verrouillé pendant l'ouverture puis
+  rendu, et **le focus revient à la vignette cliquée** : au clavier, on ne se
+  retrouve pas renvoyé en haut de page.
+- **Cohabitation** : la visionneuse est un portail sur `<body>` (z-index 1400,
+  au-dessus de la navigation, de la barre de lecture, de la fenêtre sociale et
+  des succès, sous les appels) et met les lecteurs vidéo de la page en pause à
+  l'ouverture, comme le lecteur modal des tests — règle « une seule vidéo à la
+  fois ». Côté thème, le voile et la scène restent sombres dans les deux
+  thèmes (section 8 de `theme.css`) tandis que l'en-tête et le pied sont des
+  surfaces : en thème clair, ils passent à l'encre sombre et le jaune de marque
+  à `--yellow-ink`.
+
+### Vérification
+
+- `npm run check:gallery` monte la galerie dans jsdom et **clique réellement** :
+  ouverture par la deuxième vignette, portail sur `<body>`, `full` servi à la
+  place de `src`, navigation clavier et boutons avec bouclage, fermeture par
+  Échap / ✕ / fond (mais pas par le cadre), défilement et focus rendus, cas
+  d'une capture seule (aucune flèche) et d'une galerie vide, absence de
+  visionneuse dans le rendu serveur, et enfin un passage sur le catalogue —
+  aucun visuel sans texte alternatif ni sans source.
+- `npm run check:thumbs` couvre aussi ces captures : la fabrique est la seule
+  source d'URL `i.ytimg.com` du site, et le rendu SSR des pages reste contrôlé.
+- `npm run check:phone-layout` / `check:phone-css` : la bascule d'ordre passe
+  par les mêmes media queries « petit écran » que le reste du site (largeur
+  ≤ 800 px et pointeur grossier), sans dépendre de la largeur de fenêtre.
+- `npm run check:light-news` : le thème clair des pages Actus, galeries
+  comprises.
+
+## Actus cinéma du jour
+
+Le hub Actus (`/news`) ouvre sur trois zones — gaming, cinéma & séries et
+tech ; la page
+`/news/cinema` (`src/pages/CinemaNews.jsx`) rassemble les actus cinéma &
+séries de la rédaction, au même gabarit éditorial que le jeu vidéo — titre
+en deux temps, chapô, deux sections titrées, citation et encadré
+« À RETENIR », source d’origine citée et liée. Fournée du 28.09.2026 :
+
+- `/news/cinema/box-office-us-endgame-encore-26-millions` — le bilan
+  consolidé du week-end américain : Endgame – Encore premier à 26 M$,
+  Resident Evil au-delà des 100 M$ (Deadline) ;
+- `/news/cinema/the-last-of-us-saison-3-john-goodman-laura-bailey` — John
+  Goodman, Ian Alexander et Laura Bailey (la voix d’Abby dans le jeu)
+  rejoignent la saison 3 de The Last of Us (Variety) ;
+- `/news/cinema/godzilla-minus-zero-premiere-nyff` — première mondiale au
+  New York Film Festival de la suite de Godzilla Minus One, premier film de
+  la saga classé R, dates de sortie confirmées (Variety, Toho).
+
+Le même jour, trois actus gaming ont été rédigées à la main au gabarit du
+robot (`/news/minecraft-the-sift-nouvelle-dimension`,
+`/news/the-witcher-3-remastered-sortie-29-septembre`,
+`/news/xbox-nadella-restructuration`) : entrées dans `CurrentNews.jsx`,
+cartes en tête de `GamingNews.jsx`, routes explicites dans `src/main.jsx`,
+recherche, SEO et sitemap.
+
+Le 29.09.2026, une quatrième actu gaming suit le même chemin —
+`/news/minecraft-world-hotel-chessington-2027` (le premier hôtel officiel
+Minecraft, annoncé au Minecraft Live, en tête de `GamingNews.jsx` et de la
+une de l'accueil dans `Home.jsx`). Particularité : ses visuels ne sont pas
+hotlinkés depuis la source mais **hébergés dans le dépôt**
+(`public/screenshots/minecraft-world-hotel/01-05.jpg`, concept arts officiels
+publiés par Merlin Entertainments, crédités en pied de galerie). C'est
+l'exception plutôt que la règle : les autres actus hotlinkent les visuels
+officiels et ne gardent en local que la carte éditoriale SVG.
+
+Fournée précédente (27.09.2026) :
+
+- `/news/cinema/box-office-us-endgame-resident-evil` — la ressortie
+  d’Avengers: Endgame face au reboot Resident Evil au box-office américain
+  (Deadline, chiffres provisoires) ;
+- `/news/cinema/werwulf-trailer-eggers` — la deuxième bande-annonce du
+  Werwulf de Robert Eggers, sortie un jour de pleine lune (Focus Features) ;
+- `/news/cinema/fred-astaire-biopic-tom-holland` — le casting du biopic
+  Fred Astaire : Tom Holland, Margaret Qualley et Sabrina Carpenter (Sony).
+
+Concrètement, une actu cinéma suit le chemin des actus cinéma existantes :
+entrée dans `src/pages/CurrentNews.jsx` avec une clé préfixée `cinema/`
+(servie par la route générique `/news/cinema/:slug` — rien à déclarer dans
+`src/main.jsx`), carte en tête de la liste de `CinemaNews.jsx` (les plus
+récentes ouvrent la grille, la première est « À la une »), entrée dans
+`src/search/searchIndex.js`, méta `SEO.jsx` (section « Actualités cinéma »)
+et URL dans `public/sitemap.xml`. Le visuel principal est, quand il existe,
+une image officielle hotlinkée (`thumbnail` : miniature YouTube d’une
+bande-annonce officielle, visuel presse d’un distributeur…) ; une carte
+éditoriale SVG 1280×720 générée par `scripts/news-bot/lib/cover.mjs`
+(`image` / `fallbackImage`, dans `public/`) prend le relais si l’image
+distante ne répond plus — aucune image de droit n’est embarquée. Les crédits
+des visuels sont consignés dans `public/cinema-image-credits.txt`.
+
+### Bandes-annonces et teasers intégrés
+
+Chaque actu cinéma montre la vidéo officielle du distributeur — bande-annonce,
+teaser ou extrait — dans le corps de l’article, juste après le chapô. Les vidéos
+sont listées dans `src/articleTrailers.js`, une entrée par clé d’article (la même
+clé que les cartes du hub, préfixée `cinema/`), rendue par
+`src/components/ArticleTrailer.jsx` dans `CurrentNews.jsx` : la même mécanique
+que les galeries de captures (`src/articleGalleries.js`), avec ses styles dans
+`src/news-article.css`.
+
+Le bloc affiche un lecteur 16/9 (l’embed passe par `youTubeEmbedUrl()`, donc par
+le coordinateur « une seule vidéo à la fois »), la nature de la vidéo
+(`BANDE-ANNONCE`, `TEASER`, `EXTRAIT`), son titre, sa chaîne, un lien « Voir sur
+YouTube » et la mention de crédit — puis, quand l’article a plusieurs vidéos, un
+sélecteur de miniatures (`VideoThumb`, donc l’échelle de repli habituelle). Les
+cartes du hub `/news/cinema` portent sur leur vignette une pastille `▶` reprenant
+le libellé de la première vidéo (`src/cinema-news.css`).
+
+La règle éditoriale est stricte : **seules les vidéos publiées par la chaîne
+officielle** du studio ou du diffuseur sont intégrées (Marvel Entertainment, Sony
+Pictures Entertainment, Warner Bros., Netflix, Netflix Anime, HBO Max, Focus
+Features, GODZILLA OFFICIAL by TOHO). Les montages de fans, les comptes régionaux
+et les « trailers » générés par IA — très nombreux autour de Blade, de Dune ou de
+Resident Evil — sont écartés. Chaque identifiant est vérifié sur YouTube avant
+d’être écrit (oEmbed : `https://www.youtube.com/oembed?url=…&format=json` renvoie
+le titre exact et la chaîne), et la date du contrôle est consignée dans
+`verified`.
+
+Deux cas particuliers, pour que rien ne reste implicite :
+
+- une vidéo d’**illustration** — la bande-annonce de la saison 2 pour une saison
+  3 encore en tournage, la mise à jour d’une annonce périmée — porte un `note`
+  affiché sous le lecteur, qui dit au lecteur ce qu’il regarde ;
+- une actu **sans vidéo officielle** (le biopic Fred Astaire, sans titre ni date ;
+  le Blade de Mahershala Ali ; la série animée Diablo) porte `pending` : la
+  mention « Aucune bande-annonce : … » s’affiche à la place du lecteur et la carte
+  du hub ne porte aucune pastille. Un bloc oublié laisserait croire que la vidéo
+  n’existe pas ; `check:trailers` refuse qu’une actu cinéma n’ait ni l’un ni
+  l’autre.
+
+### Vérification
+
+- `npm run check:trailers` — les données (identifiant YouTube à onze caractères,
+  nature connue, chaîne officielle déclarée **et admise**, titre renseigné,
+  contrôle daté, crédit présent, aucune entrée muette, aucune vidéo en double
+  dans un article), la couverture (chaque clé `cinema/` de `CurrentNews.jsx` et
+  chaque carte du hub `CinemaNews.jsx` a une entrée, aucune entrée ne pointe vers
+  un article inexistant, pastille conforme à la première vidéo), le **rendu réel**
+  en SSR via `scripts/trailer-smoke.jsx` (un seul lecteur par article, l’embed
+  sorti de `youTubeEmbedUrl()`, le sélecteur et ses miniatures, le lien YouTube,
+  la note et la mention d’absence telles qu’écrites, les pastilles rendues sur les
+  cartes du hub) et la source (aucun embed ni aucune miniature codé en dur hors
+  des fabriques du site).
+- `npm run check:videos` et `npm run check:thumbs` continuent de s’appliquer : les
+  lecteurs du bloc passent par la fabrique d’embed, les miniatures du sélecteur
+  par `VideoThumb`.
+
+## Actus tech du jour
+
+Troisième zone du hub Actus (`/news`) : la page `/news/tech`
+(`src/pages/TechNews.jsx`) rassemble les actus tech de la semaine, au même
+gabarit éditorial que le gaming et le cinéma. Fournée du 21-28.09.2026 :
+
+- `/news/tech/starship-flight-14-premier-vol-orbital` — le vol 14 de Starship
+  vise la première mise en orbite et le déploiement de 26 satellites
+  Starlink V3 (SpaceX, FAA, CNBC, Numerama) ;
+- `/news/tech/copilot-home-code-autopilot` — Microsoft réorganise Copilot
+  autour de Home, Code et Autopilot, dont un agent cloud persistant
+  (Microsoft, Frandroid) ;
+- `/news/tech/apple-taptic-engine-verdict-5-7-milliards` — un jury fédéral de
+  San Diego condamne Apple à plus de 5,7 milliards de dollars sur le Taptic
+  Engine (Reuters, CNBC) ;
+- `/news/tech/agent-openai-portail-australien` — un agent OpenAI franchit les
+  protections d’un portail de statistiques australien en juin, l’Australie
+  n’est prévenue que le 10 septembre (CNBC, The Guardian) ;
+- `/news/tech/meta-connect-2026-lunettes-muse-charm` — Meta Connect 2026 :
+  lunettes VR à 1 299 $, Muse Charm et agent Muse (Meta, CNBC).
+
+Concrètement, une actu tech suit exactement le chemin des actus cinéma :
+entrée dans `src/pages/CurrentNews.jsx` avec une clé préfixée `tech/` (servie
+par la route générique `/news/tech/:slug`, déclarée une fois dans
+`src/main.jsx` à côté de celle du cinéma), carte en tête de la liste de
+`TechNews.jsx` (les plus récentes ouvrent la grille, la première est
+« À la une »), entrée dans `src/search/searchIndex.js`, méta `SEO.jsx`
+(section « Actualités tech ») et URL dans `public/sitemap.xml`. Les visuels
+sont des cartes éditoriales SVG 1280×720 produites par le générateur du robot
+(`scripts/news-bot/lib/cover.mjs`, dans `public/`) : aucune photo de droit
+n’est embarquée, et le crédit affiché en pied d’article le rappelle.
+Le hub, lui, ajoute une troisième carte (`03 / TECH`) dans `News.jsx`, avec
+sa couleur d’univers (violet #a855f7, #6d28d9 en thème clair) déclinée dans
+`src/news-carousel.css` et `src/theme.css` — la grille passe à trois colonnes
+sur desktop, deux sous 1100 px, une sous 780 px.
+
 ## Robot actus du jour
 
 La page Actus s’alimente toute seule : un robot (`scripts/news-bot/`) tourne
@@ -1518,6 +2180,12 @@ Tous les visiteurs voient le total partagé et la répartition en pourcentages
 son choix ou cliquer à nouveau pour le retirer. La clé primaire impose un seul
 vote par compte et par article, y compris sur plusieurs appareils. Les RPC
 n'exposent pas les identités des votants et l'identité d'écriture est issue de
+`auth.uid()`. Les comptes démo ne votent pas. La tendance est relue toutes les
+30 secondes, au retour sur la fenêtre et après chaque vote.
+
+Les anciens compteurs locaux ne sont pas importés : ils ne constituent pas des
+votes vérifiables. En cas de panne ou de migration manquante, une erreur est
+affichée, sans simuler un enregistrement local.ts et l'identité d'écriture est issue de
 `auth.uid()`. Les comptes démo ne votent pas. La tendance est relue toutes les
 30 secondes, au retour sur la fenêtre et après chaque vote.
 

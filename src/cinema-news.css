@@ -1,0 +1,15 @@
+.cinema-image-credit{color:var(--cyan);font:600 9px var(--mono);letter-spacing:.09em;line-height:1.4}
+
+/* Pastille « bande-annonce » des cartes du hub cinéma : elle annonce qu'une
+   vidéo officielle (bande-annonce, teaser, extrait) est intégrée à l'article.
+   Posée sur la vignette, à mi-hauteur du bord gauche — le coin haut gauche
+   porte déjà le badge de rubrique, le haut droit le smiley de sentiment, le
+   bas gauche le compteur de vues et le bas droit la flèche. Les médias restent
+   sombres dans les deux thèmes (règle n°2 de theme.css). */
+.news-trailer-flag{position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:2;display:inline-flex;align-items:center;gap:7px;max-width:calc(100% - 20px);padding:6px 9px;border-radius:999px;background:rgba(5,6,15,.84);backdrop-filter:blur(8px);border:1px solid rgba(255,214,25,.42);color:#ffd619;font:600 9px var(--mono);letter-spacing:.14em;text-transform:uppercase;box-shadow:0 4px 14px rgba(0,0,0,.36);pointer-events:none}
+.news-trailer-flag svg{width:11px;height:11px;flex:none;display:block;fill:currentColor}
+@media(max-width:650px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  /* Cartes plus étroites (deux colonnes) : la pastille se fait discrète. */
+  .news-trailer-flag{left:8px;gap:5px;padding:5px 7px;font:600 8px var(--mono);letter-spacing:.1em}
+  .news-trailer-flag svg{width:9px;height:9px}
+}

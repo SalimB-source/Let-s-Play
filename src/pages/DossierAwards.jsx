@@ -2,8 +2,11 @@ import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 
 const videoId = '0ThNyFItASM';
+const gallery = getArticleGallery('dossier-awards');
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -37,12 +40,34 @@ export default function DossierAwards() {
       </header>
 
       <section className="dossier-reading wrap">
-        <div className="dossier-main-column">
+        <div className="dossier-video-block">
           <div className="dossier-video hud-frame" ref={videoRef}>
             <iframe src={youTubeEmbedUrl(videoId)} title="Let’s Play Awards 2025 — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Ce dossier accompagne l’épisode spécial des Let’s Play Awards 2025, une sélection éditoriale fondée sur les expériences et les tests de l’équipe en Algérie.</p>
+          {gallery ? <ArticleGallery {...gallery} /> : null}
+        </div>
 
+        <aside className="dossier-sidebar">
+          <div className="dossier-sidebar-inner">
+            <p className="dossier-kicker">DANS CET ÉPISODE</p>
+            <h3>LE CHAPITRAGE</h3>
+            <ol className="chapter-list">
+              {chapters.map(([time, seconds, label]) => (
+                <li key={time}>
+                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo à ${time} : ${label}`}>
+                    <time>{time}</time>
+                    <span>{label}</span>
+                    <span aria-hidden="true">▸</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
+          </div>
+        </aside>
+
+        <div className="dossier-main-column">
           <div className="dossier-intro">
             <p className="dossier-kicker">LE SUJET</p>
             <p className="dossier-lead">2025 n’a pas été l’année d’un seul jeu. Elle a été une année de contrastes, où les grosses productions, les expériences narratives et les créations indépendantes ont chacune trouvé une manière de se distinguer.</p>
@@ -75,24 +100,6 @@ export default function DossierAwards() {
           </div>
         </div>
 
-        <aside className="dossier-sidebar">
-          <div className="dossier-sidebar-inner">
-            <p className="dossier-kicker">DANS CET ÉPISODE</p>
-            <h3>LE CHAPITRAGE</h3>
-            <ol className="chapter-list">
-              {chapters.map(([time, seconds, label]) => (
-                <li key={time}>
-                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo à ${time} : ${label}`}>
-                    <time>{time}</time>
-                    <span>{label}</span>
-                    <span aria-hidden="true">▸</span>
-                  </button>
-                </li>
-              ))}
-            </ol>
-            <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
-          </div>
-        </aside>
       </section>
 
       <section className="dossier-take wrap">

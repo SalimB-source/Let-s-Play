@@ -28,19 +28,33 @@ const write = process.argv.includes('--write');
    - médias : le texte est posé sur une image ou un lecteur vidéo ;
    - bandeaux de marque : le ticker et l'appel final deviennent des aplats
      saturés, l'encre claire y reste juste ;
-   - pastilles colorées : fond de marque plein, l'encre claire est le sujet. */
+   - pastilles colorées : fond de marque plein, l'encre claire est le sujet.
+   - appels (motif `calls-`) : l'overlay d'appel est un ÉCRAN — sombre dans
+     les deux thèmes (règle « les médias restent sombres », section 8 de
+     theme.css). Ses encres sont posées en dur dans src/messages/calls.css et
+     ne doivent PAS basculer en encre sombre en thème clair. (Seule le
+     `.calls-notice`, surface d'interface, suit le thème — elle n'y pose que
+     des jetons, donc rien à exclure de plus.) */
 /* NB : `\\.play\\b` vise le bouton lecture, pas `.player-*` (page profil) ;
    `\\.hero\\b` vise le héros photo, pas `.arena-hero` ni `.quiz-rank-hero-*`. */
 const KEEP = new RegExp([
   '\\.hero\\b', 'video-modal', 'live-player', 'live-offline', 'page-hero-visual',
   'video-image', 'latest-test-image', 'news-carousel-image', 'reel-', 'insta-',
   'dossier-feature-card-media', 'article-cover', 'score-badge',
+  // légende et loupe posées sur une capture, flèches de la visionneuse posées
+  // sur le visuel agrandi : encre claire dans les deux thèmes. L'en-tête et
+  // le pied de la visionneuse, eux, sont des surfaces et suivent le thème.
+  'article-gallery-item figcaption', 'article-gallery-zoom', 'article-lightbox-nav',
+  // chiffre « 01 / 02 » posé sur la photo des cartes du hub Actus
+  'news-hub-card-num',
   'featured-dossier-badge', 'social-slide-overlay', 'video-thumb-fallback',
   'button-ghost', 'ticker', 'cta', 'partner-mark-badge', 'messages-bubble.is-mine',
   'delete-account-confirm', 'nav-register', 'filter.active', '\\.play\\b',
   'button-yellow', 'awaited-band',
   // pastilles de statut pleines : le fond saturé porte l'encre claire
   'sentiment', 'article-views-inline',
+  // appels vocaux/vidéo : écran, sombre dans les deux thèmes
+  'calls-',
 ].join('|'));
 
 /* Encres de statut, lisibles sur noir mais pas sur blanc (le rouge clair

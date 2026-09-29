@@ -2,8 +2,11 @@ import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
+import ArticleGallery from '../components/ArticleGallery';
+import { getArticleGallery } from '../articleGalleries';
 
 const videoId = 'A2VPhWOUMHI';
+const gallery = getArticleGallery('dossier-playstation-2');
 
 const chapters = [
   ['00:00', 0, 'Introduction'],
@@ -41,12 +44,34 @@ export default function DossierPlayStation2() {
       </header>
 
       <section className="dossier-reading wrap">
-        <div className="dossier-main-column">
+        <div className="dossier-video-block">
           <div className="dossier-video hud-frame" ref={videoRef}>
             <iframe src={youTubeEmbedUrl(videoId)} title="PS2 Turns 25 — Let’s Play Official" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
           <p className="dossier-video-note">Ce dossier accompagne l’épisode de <em>Journal du Geek</em> consacré aux 25 ans de la PlayStation 2, avec Chaft et Papou.</p>
+          {gallery ? <ArticleGallery {...gallery} /> : null}
+        </div>
 
+        <aside className="dossier-sidebar">
+          <div className="dossier-sidebar-inner">
+            <p className="dossier-kicker">DANS CET ÉPISODE</p>
+            <h3>LE CHAPITRAGE</h3>
+            <ol className="chapter-list">
+              {chapters.map(([time, seconds, label]) => (
+                <li key={time}>
+                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo à ${time} : ${label}`}>
+                    <time>{time}</time>
+                    <span>{label}</span>
+                    <span aria-hidden="true">▸</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
+          </div>
+        </aside>
+
+        <div className="dossier-main-column">
           <div className="dossier-intro">
             <p className="dossier-kicker">LE SUJET</p>
             <p className="dossier-lead">La PlayStation 2 est devenue la console la plus vendue de l’histoire parce qu’elle a compris que le jeu vidéo pouvait être à la fois une machine, un lecteur multimédia et un objet culturel.</p>
@@ -104,24 +129,6 @@ export default function DossierPlayStation2() {
           </div>
         </div>
 
-        <aside className="dossier-sidebar">
-          <div className="dossier-sidebar-inner">
-            <p className="dossier-kicker">DANS CET ÉPISODE</p>
-            <h3>LE CHAPITRAGE</h3>
-            <ol className="chapter-list">
-              {chapters.map(([time, seconds, label]) => (
-                <li key={time}>
-                  <button type="button" onClick={() => seekTo(seconds)} aria-label={`Lire la vidéo à ${time} : ${label}`}>
-                    <time>{time}</time>
-                    <span>{label}</span>
-                    <span aria-hidden="true">▸</span>
-                  </button>
-                </li>
-              ))}
-            </ol>
-            <a className="button button-yellow dossier-sidebar-button" href={`https://www.youtube.com/watch?v=${videoId}`} target="_blank" rel="noreferrer">Voir l’épisode <Arrow /></a>
-          </div>
-        </aside>
       </section>
 
       <section className="dossier-take wrap">

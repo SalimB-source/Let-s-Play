@@ -10,8 +10,11 @@
  *     n'a pas ouvert la discussion — c'est ce qui compte les non-lus. Côté
  *     serveur, un trigger impose : expéditeur = joueur connecté, amitié
  *     `accepted` obligatoire, aucun blocage entre les deux joueurs, 20
- *     messages par minute au plus. Les joueurs bloqués vivent dans
- *     `public.message_blocks`, les signalements dans `public.message_reports`.
+ *     messages par minute au plus. Un repère dans
+ *     `public.message_conversation_clears` masque l'historique uniquement pour
+ *     le joueur qui l'efface (la RLS filtre aussi les non-lus). Les joueurs
+ *     bloqués vivent dans `public.message_blocks`, les signalements dans
+ *     `public.message_reports`.
  *
  *   - **Personas de démonstration** (pas de session) : les discussions vivent
  *     dans localStorage, par persona et par appareil, avec des réponses
@@ -37,6 +40,57 @@ export const REPORT_REASONS = ['harassment', 'spam', 'hate', 'inappropriate', 'o
 // ---------------------------------------------------------------------------
 // Erreurs
 // ---------------------------------------------------------------------------
+
+/**
+ * Décrit une erreur Supabase sous une forme plate et lisible.
+ *
+ * Le client renvoie des objets aux formes variées (`PostgrestError` est un
+ * simple objet, `AuthError` une classe, et un échec réseau une `Error`
+ * ordinaire) ; or ce sont précisément `code`, `status`, `details` et `hint`
+ * qui distinguent un refus RLS (403 / `42501`), une table absente (404) ou un
+ * trigger qui lève (`P0001`).
+ * `console.error(objet)` ne les affiche pas de façon fiable une fois le bundle
+ * minifié : on les extrait donc explicitement.
+ *
+ * @param {*} error Erreur (ou objet d'erreur) renvoyée par supabase-js.
+ * @param {number} depth Garde-fou contre une chaîne de `cause` cyclique.
+ * @returns {{name: string|null, message: string|null, code: string|null,
+ *   status: number|string|null, error: string|null, details: string|null,
+ *   hint: string|null, cause: object|null}|null}
+ */
+export function describeSupabaseError(error, depth = 0) {
+  if (error === null || error === undefined) return null;
+  if (depth > 3) return { message: '[cause chain too deep]' };
+
+  const pick = (...values) => {
+    for (const value of values) {
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    return null;
+  };
+
+  // `PostgrestError` n'a pas de `status` ; un échec `fetch` remonte parfois
+  // sa réponse d'origine, d'où les autres champs sondés ci-dessous.
+  const rawStatus = pick(error.status, error.statusCode, error.response?.status, error.__httpStatus);
+  const numericStatus = Number(rawStatus);
+
+  const described = {
+    name: pick(error.name),
+    message: pick(error.message, error.error_description, error.msg),
+    code: pick(error.code, error.errorCode, error.name === 'AuthError' ? error.name : null),
+    status: rawStatus === null ? null : (Number.isFinite(numericStatus) ? numericStatus : rawStatus),
+    error: pick(error.error),
+    details: pick(error.details),
+    hint: pick(error.hint),
+  };
+
+  if (typeof error === 'string') described.message = error;
+  if (error instanceof Error && !described.name) described.name = error.name;
+
+  const cause = error.cause && error.cause !== error ? describeSupabaseError(error.cause, depth + 1) : null;
+  if (cause) described.cause = cause;
+  return described;
+}
 
 /** Vrai quand `public.direct_messages` n'existe pas (schéma SQL pas relancé). */
 export function isMissingMessagesTable(error) {
@@ -225,10 +279,33 @@ export function markThreadReadLocal(threads, peerId) {
   };
 }
 
+/** Effacement local : plus de bulles, d'aperçu ni de badge pour cet ami. */
+export function clearThreadLocal(threads, peerId) {
+  if (!peerId || !threads?.[peerId]) return threads;
+  const next = { ...threads };
+  delete next[peerId];
+  return next;
+}
+
+/**
+ * Un événement Realtime/envoi retardé ne doit pas ressusciter un ancien
+ * message après un effacement. PostgreSQL garde les microsecondes alors que
+ * Date.parse les tronque aux millisecondes : comparer aussi le reste.
+ */
+export function isAfterClear(createdAt, clearedAt) {
+  if (!clearedAt) return true;
+  const createdMs = Date.parse(createdAt || '');
+  const clearedMs = Date.parse(clearedAt);
+  if (!Number.isFinite(createdMs) || !Number.isFinite(clearedMs)) return false;
+  if (createdMs !== clearedMs) return createdMs > clearedMs;
+  const micros = (iso) => Number((String(iso).match(/\.(\d+)/)?.[1] || '').padEnd(6, '0').slice(0, 6));
+  return micros(createdAt) > micros(clearedAt);
+}
+
 /** Ajoute un message à une discussion (temps réel : reçu ou envoyé ailleurs). */
-export function appendMessage(threads, uid, row) {
+export function appendMessage(threads, uid, row, clearedByPeer = {}) {
   const message = normalizeMessage(row, uid);
-  if (!message) return threads;
+  if (!message || !isAfterClear(message.createdAt, clearedByPeer[message.peerId])) return threads;
   const next = { ...threads };
   const thread = next[message.peerId] || {
     peerId: message.peerId, key: message.key, messages: [], lastMessage: null, lastAt: null, unread: 0,
@@ -313,7 +390,7 @@ export function removeMessageById(threads, messageId) {
 // Supabase
 // ---------------------------------------------------------------------------
 
-/** Messages récents du joueur (les deux sens), du plus récent au plus ancien. */
+/** Messages récents du joueur (les deux sens), du plus récent au plus ancien). */
 export async function fetchRecentMessages(uid, limit = 200) {
   if (!supabase || !uid) return [];
   const { data, error } = await supabase
@@ -381,6 +458,20 @@ export async function deleteMessage(uid, messageId) {
     throw Object.assign(new Error('direct_message_not_found'), { code: 'P0001' });
   }
   return data[0];
+}
+
+/**
+ * Efface le fil pour l'utilisateur connecté seulement (pas de DELETE sur les
+ * messages partagés). Le serveur fixe l'heure, le propriétaire et le filtre
+ * RLS ; le client ne lui transmet que l'identifiant de l'interlocuteur.
+ */
+export async function clearConversation(uid, peerId) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  if (!conversationKey(uid, peerId)) throw new Error('direct_conversation_invalid_peer');
+  const { data, error } = await supabase.rpc('clear_direct_conversation', { target_id: peerId });
+  if (error) throw error;
+  if (!data || !Number.isFinite(Date.parse(data))) throw new Error('direct_conversation_clear_failed');
+  return data;
 }
 
 /** Accusé de lecture : `read_at` des messages reçus non lus de cet ami. */
@@ -479,7 +570,7 @@ function cleanDemoState(raw, personaKey, now) {
       .map((message, index) => ({
         id: message.id || `demo-${peerId}-${index + 1}`,
         from: message.from === 'me' ? 'me' : 'them',
-        body: String(message.body).slice(0, MESSAGE_MAX_LENGTH),
+        body: message.body.slice(0, MESSAGE_MAX_LENGTH),
         at: typeof message.at === 'string' ? message.at : state.seededAt,
         read: message.from === 'me' ? true : message.read !== false,
       }));
@@ -526,7 +617,7 @@ function demoThread(peerId, uid, messages) {
     peerId,
     key: conversationKey(uid, peerId),
     mine: message.from === 'me',
-    body: message.body,
+    body: message.body || '',
     createdAt: message.at,
     read: message.from === 'me' ? true : message.read !== false,
   }));
@@ -554,7 +645,13 @@ export function demoThreads(state, uid) {
 /** Ajoute un message à l'état démo (immuable) et renvoie le nouvel état. */
 function appendDemoMessage(state, peerId, from, body, at, read) {
   const messages = [...(state.threads[peerId] || [])];
-  messages.push({ id: `demo-${peerId}-${messages.length + 1}-${at.slice(11, 19).replace(/:/g, '')}`, from, body, at, read });
+  messages.push({
+    id: `demo-${peerId}-${messages.length + 1}-${at.slice(11, 19).replace(/:/g, '')}`,
+    from,
+    body,
+    at,
+    read,
+  });
   return { ...state, threads: { ...state.threads, [peerId]: messages } };
 }
 
@@ -630,4 +727,12 @@ export function applyDemoDelete(state, peerId, messageId) {
   const remaining = list.filter((message) => !(message.id === messageId && message.from === 'me'));
   if (remaining.length === list.length) return state;
   return { ...state, threads: { ...state.threads, [peerId]: remaining } };
+}
+
+/** Efface les deux sens d'un fil pour cette persona sans toucher aux autres. */
+export function applyDemoClear(state, peerId) {
+  if (!peerId || !Object.prototype.hasOwnProperty.call(state.threads || {}, peerId)) return state;
+  const threads = { ...state.threads };
+  delete threads[peerId];
+  return { ...state, threads };
 }

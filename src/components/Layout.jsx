@@ -8,10 +8,13 @@ import { searchContent } from '../search/searchIndex';
 import { useAchievementAction, useAchievements } from '../achievements/AchievementContext';
 import { levelTitle } from '../achievements/catalog';
 import { avatarFor, displayNameFor } from '../lib/comments';
+import { isPhoneLayout } from '../lib/phoneLayout';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
 import ArticleReadingTools from './ArticleReadingTools';
 import NeonBackdrop from './NeonBackdrop';
+import { socialText } from '../social/socialCopy';
+import LetsTalkLogo, { LetsTalkMark } from '../social/LetsTalkLogo';
 
 const base = import.meta.env.BASE_URL;
 
@@ -56,8 +59,11 @@ export default function Layout({ children }) {
         const last = lastScroll.current;
         const goingDown = y > last + 8;
         const goingUp = y < last - 8;
-        // ne cache que sur desktop et quand aucun overlay n'est ouvert
-        const isDesktop = window.innerWidth > 800;
+        // ne cache que sur desktop et quand aucun overlay n'est ouvert.
+        // `isPhoneLayout()` compte aussi les téléphones dont le navigateur a
+        // élargi la fenêtre de mise en page (zoom Safari, version ordinateur,
+        // WebView) : leur barre est celle du menu mobile, elle ne se cache pas.
+        const isDesktop = !isPhoneLayout();
         const anyOverlay = menuOpen || paletteOpen || profileMenuOpen;
         if (isDesktop && !anyOverlay && y > 120 && goingDown) {
           setNavHidden(true);
@@ -75,7 +81,10 @@ export default function Layout({ children }) {
   // pill indicator qui glisse
   const updateIndicator = () => {
     const el = navPrimaryRef.current;
-    if (!el || window.innerWidth <= 800) {
+    // La pastille qui glisse n'existe que sur la barre « bureau » : sur un
+    // téléphone (même à fenêtre large, voir `isPhoneLayout`), le menu mobile
+    // prend le relais et la pastille reste masquée.
+    if (!el || isPhoneLayout()) {
       setIndicator((p) => ({ ...p, opacity: 0 }));
       return;
     }
@@ -234,6 +243,7 @@ export default function Layout({ children }) {
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
     { to: '/quizz', label: t.nav.quiz, num: '05', desc: 'QUIZZ / PLAY' },
+    { to: '/jeu', label: t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / PLAY' },
   ];
 
   const profileMeta = user?.user_metadata || {};
@@ -317,15 +327,38 @@ export default function Layout({ children }) {
                   <span className="nav-link-arrow" aria-hidden="true">↗</span>
                 </Link>
               ))}
+              {/* Sur téléphone, un accès nommé reste disponible dans le menu,
+                  même avant connexion (la page /messages affiche le portail). */}
+              <Link
+                to="/messages"
+                className={`nav-messages-link${location.pathname.startsWith('/messages') || location.pathname.startsWith('/messagerie') ? ' active' : ''}`}
+                aria-current={location.pathname.startsWith('/messages') || location.pathname.startsWith('/messagerie') ? 'page' : undefined}
+                onClick={() => setMenuOpen(false)}
+                style={{ '--i': primaryLinks.length }}
+              >
+                <span className="nav-link-main">
+                  <span className="nav-link-num">07</span>
+                  <span className="nav-link-text">
+                    {/* La messagerie a son propre logo : il remplace le libellé
+                        texte, gardé pour les lecteurs d'écran. */}
+                    <span className="nav-link-label nav-link-label-logo">
+                      <LetsTalkLogo className="nav-lets-talk-logo" />
+                      <span className="sr-only">{socialText(lang).title}</span>
+                    </span>
+                    <span className="nav-link-desc lets-talk-label">{socialText(lang).tabMessages}</span>
+                  </span>
+                </span>
+                <span className="nav-link-arrow" aria-hidden="true">↗</span>
+              </Link>
               <Link
                 to={profileHref}
                 className={`nav-profile-link${user ? ' is-player' : ' is-guest'}${isActive('/auth') ? ' active' : ''}`}
                 onClick={() => setMenuOpen(false)}
-                style={{ '--i': primaryLinks.length }}
+                style={{ '--i': primaryLinks.length + 1 }}
                 aria-label={profileAria}
               >
                 <span className="nav-link-main">
-                        <span className="nav-link-num">07</span>
+                        <span className="nav-link-num">08</span>
                   <span className="nav-profile-avatar" aria-hidden="true">
                     <span className="nav-profile-avatar-face">
                       {profileAvatar ? (
@@ -400,65 +433,79 @@ export default function Layout({ children }) {
               <div className="nav-actions-grid">
                 <ThemeToggle />
                 {user ? (
-                  <div className="nav-profile-wrap" ref={profileWrapRef} onMouseEnter={() => setProfileMenuOpen(true)} onMouseLeave={() => setProfileMenuOpen(false)}>
-                    <Link
-                      to="/auth"
-                      className="nav-account connected"
-                      onClick={() => setMenuOpen(false)}
-                      aria-label={profileAria}
-                      title={profileAria}
-                      aria-current={isActive('/auth') ? 'page' : undefined}
-                      aria-expanded={profileMenuOpen}
-                      aria-haspopup="menu"
-                      onFocus={() => setProfileMenuOpen(true)}
-                    >
-                      <span className="nav-account-inner">
-                        <span className="nav-account-avatar" aria-hidden="true">
-                          <span className="nav-account-avatar-face">
-                            {profileAvatar ? (
-                              <img src={profileAvatar} alt="" />
-                            ) : (
-                              <span className="nav-account-initials">{profileInitials}</span>
-                            )}
+                  <>
+                    <div className="nav-profile-wrap" ref={profileWrapRef} onMouseEnter={() => setProfileMenuOpen(true)} onMouseLeave={() => setProfileMenuOpen(false)}>
+                      <Link
+                        to="/auth"
+                        className="nav-account connected"
+                        onClick={() => setMenuOpen(false)}
+                        aria-label={profileAria}
+                        title={profileAria}
+                        aria-current={isActive('/auth') ? 'page' : undefined}
+                        aria-expanded={profileMenuOpen}
+                        aria-haspopup="menu"
+                        onFocus={() => setProfileMenuOpen(true)}
+                      >
+                        <span className="nav-account-inner">
+                          <span className="nav-account-avatar" aria-hidden="true">
+                            <span className="nav-account-avatar-face">
+                              {profileAvatar ? (
+                                <img src={profileAvatar} alt="" />
+                              ) : (
+                                <span className="nav-account-initials">{profileInitials}</span>
+                              )}
+                            </span>
+                            <span className="nav-online-dot" />
                           </span>
-                          <span className="nav-online-dot" />
-                        </span>
-                        <span className="nav-account-name">
-                          {profileName || user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
-                        </span>
-                        {profileLevel != null && (
-                          <span className="nav-account-level" aria-hidden="true">
-                            <small>{t.nav.levelShort}</small>
-                            <strong>{profileLevel}</strong>
+                          <span className="nav-account-name">
+                            {profileName || user.user_metadata?.gamertag || user.email?.split('@')[0] || 'Account'}
                           </span>
-                        )}
-                      </span>
-                    </Link>
-                    <div className={`nav-profile-dropdown${profileMenuOpen ? ' open' : ''}`} role="menu" aria-hidden={!profileMenuOpen}>
-                      <div className="nav-profile-dropdown-head">
-                        <span className="nav-profile-dropdown-avatar" aria-hidden="true">
-                          {profileAvatar ? <img src={profileAvatar} alt="" /> : <span>{profileInitials}</span>}
-                          <span className="nav-online-dot" />
+                          {profileLevel != null && (
+                            <span className="nav-account-level" aria-hidden="true">
+                              <small>{t.nav.levelShort}</small>
+                              <strong>{profileLevel}</strong>
+                            </span>
+                          )}
                         </span>
-                        <span className="nav-profile-dropdown-meta">
-                          <strong>{profileName}</strong>
-                          <small>{profileRank} · {t.nav.levelShort} {profileLevel}</small>
-                        </span>
+                      </Link>
+                      <div className={`nav-profile-dropdown${profileMenuOpen ? ' open' : ''}`} role="menu" aria-hidden={!profileMenuOpen}>
+                        <div className="nav-profile-dropdown-head">
+                          <span className="nav-profile-dropdown-avatar" aria-hidden="true">
+                            {profileAvatar ? <img src={profileAvatar} alt="" /> : <span>{profileInitials}</span>}
+                            <span className="nav-online-dot" />
+                          </span>
+                          <span className="nav-profile-dropdown-meta">
+                            <strong>{profileName}</strong>
+                            <small>{profileRank} · {t.nav.levelShort} {profileLevel}</small>
+                          </span>
+                        </div>
+                        <div className="nav-profile-dropdown-progress" aria-hidden="true">
+                          <span style={{ width: `${Math.min(100, ((summary?.xpProgress ?? 0) * 100) || 34)}%` }} />
+                        </div>
+                        <nav className="nav-profile-dropdown-links">
+                          <Link to="/auth" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
+                          <Link to="/messages" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span className="nav-dropdown-mark"><LetsTalkMark /></span> Messages <em>↗</em></Link>
+                          <Link to="/auth#achievements" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>🏆</span> Succès <em>↗</em></Link>
+                        </nav>
+                        <button type="button" className="nav-profile-dropdown-logout" onClick={handleSignOut} role="menuitem">
+                          <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+                          {logoutLabel}
+                        </button>
                       </div>
-                      <div className="nav-profile-dropdown-progress" aria-hidden="true">
-                        <span style={{ width: `${Math.min(100, ((summary?.xpProgress ?? 0) * 100) || 34)}%` }} />
-                      </div>
-                      <nav className="nav-profile-dropdown-links">
-                        <Link to="/auth" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
-                        <Link to="/messages" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>✉</span> Messages <em>↗</em></Link>
-                        <Link to="/auth#achievements" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>🏆</span> Succès <em>↗</em></Link>
-                      </nav>
-                      <button type="button" className="nav-profile-dropdown-logout" onClick={handleSignOut} role="menuitem">
-                        <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
-                        {logoutLabel}
-                      </button>
                     </div>
-                  </div>
+                    <button
+                      type="button"
+                      className="nav-logout"
+                      onClick={handleSignOut}
+                      aria-label={logoutLabel}
+                      title={logoutLabel}
+                    >
+                      <svg className="nav-logout-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M9 21H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5M16 17l5-5-5-5M21 12H9" />
+                      </svg>
+                      <span className="nav-logout-label">{logoutLabel}</span>
+                    </button>
+                  </>
                 ) : (
                   <>
                     <Link
@@ -588,6 +635,7 @@ export default function Layout({ children }) {
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
           <Link to="/quizz">{t.nav.quiz}</Link>
+          <Link to="/jeu">{t.nav.games || t.nav.game}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>
           <a href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">YouTube</a>
           <span>{t.footer.copyright}</span>

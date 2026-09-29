@@ -8,7 +8,8 @@
  * conversation, lignes → discussions, non-lus, gestes de démonstration) pour
  * la vérifier sans DOM.
  */
-import React from 'react';
+import React, { act } from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from '../src/i18n/LanguageContext';
@@ -20,7 +21,14 @@ import SocialDock from '../src/social/SocialDock';
 import Layout from '../src/components/Layout';
 import Auth from '../src/pages/Auth';
 import Profile from '../src/pages/Profile';
+import MessagesPage from '../src/messages/MessagesPage';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
+import { readDemoMessages } from '../src/messages/messagesApi';
+import { InboxView, ThreadView } from '../src/messages/MessagesTabs';
+import { FriendsTab, RequestsTab } from '../src/friends/FriendsTabs';
+import { messagesText } from '../src/messages/messagesCopy';
+import { callsText } from '../src/messages/callsCopy';
+import { friendsText } from '../src/friends/friendsCopy';
 // Fixtures : réinjecte les personas de démonstration dans le registre de
 // l'application (livré vide) avant tout rendu — voir scripts/demoFixtures.js.
 import { DEMO_PROFILE_FIXTURES, seedDemoProfiles } from './demoFixtures';
@@ -44,6 +52,7 @@ export {
   REPORT_REASONS,
   appendMessage,
   applyDemoBlock,
+  applyDemoClear,
   applyDemoDelete,
   applyDemoIncoming,
   applyDemoRead,
@@ -52,9 +61,12 @@ export {
   applyDemoSend,
   applyDemoUnblock,
   applyReadReceipt,
+  clearThreadLocal,
   conversationKey,
   deleteMessage,
   demoThreads,
+  describeSupabaseError,
+  isAfterClear,
   isBlockedError,
   isMissingMessagesTable,
   isRateLimitedError,
@@ -70,8 +82,16 @@ export {
   threadsFromRows,
   totalUnread,
   unreadFromRows,
+  writeDemoMessages,
 } from '../src/messages/messagesApi';
-export { messagesCopy, reasonLabel } from '../src/messages/messagesCopy';
+export { describeMessagesError, messageSuggestions, messagesCopy, pseudoLabel, reasonLabel } from '../src/messages/messagesCopy';
+export { callsText } from '../src/messages/callsCopy';
+export { readDemoMessages };
+// Les deux vues de la messagerie sont exportées telles quelles : `check:messages`
+// les rend seules (`renderInboxView` / `renderThreadView` ci-dessous) avec un
+// pseudo volontairement en casse mixte — les gamertags des fixtures sont déjà
+// en majuscules, donc l'application seule ne prouverait rien.
+export { InboxView, ThreadView };
 
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
 
@@ -115,6 +135,8 @@ export function createApp(path, { lang = 'fr' } = {}) {
                   Routes,
                   null,
                   React.createElement(Route, { path: '/auth', element: React.createElement(Auth) }),
+                  React.createElement(Route, { path: '/messages', element: React.createElement(MessagesPage) }),
+                  React.createElement(Route, { path: '/messages/:peerId', element: React.createElement(MessagesPage) }),
                   React.createElement(Route, { path: '/profile/:userId', element: React.createElement(Profile) }),
                 ),
               ),
@@ -143,4 +165,211 @@ export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false,
   if (demoKey) entries[DEMO_STORAGE_KEY] = JSON.stringify(DEMO_PROFILE_FIXTURES[demoKey]);
   globalThis.window = { localStorage: makeStorage(entries) };
   return renderToString(createApp(path, { lang }));
+}
+
+/**
+ * Rendu SSR d'une vue de messagerie **seule**, avec des données fabriquées.
+ * `check:messages` y passe un pseudo en casse mixte pour vérifier qu'il
+ * s'affiche en majuscules dans la liste, chez les joueurs bloqués et dans la
+ * discussion — sans monter la pile complète de l'application.
+ */
+export function renderInboxView(conversations, { lang = 'fr', blocked = [] } = {}) {
+  globalThis.window = { localStorage: makeStorage() };
+  return renderToString(React.createElement(
+    MemoryRouter,
+    { initialEntries: ['/messages'] },
+    React.createElement(InboxView, {
+      t: messagesText(lang),
+      lang,
+      conversations,
+      blocked,
+      isOnline: () => false,
+      onOpen: () => {},
+      onUnblock: () => {},
+    }),
+  ));
+}
+
+export function renderThreadView(profile, { lang = 'fr', messages = [], blocked = false, canWrite = true } = {}) {
+  globalThis.window = { localStorage: makeStorage() };
+  return renderToString(React.createElement(
+    MemoryRouter,
+    { initialEntries: [`/messages/${profile.id}`] },
+    React.createElement(ThreadView, {
+      peerId: profile.id,
+      t: messagesText(lang),
+      ft: friendsText(lang),
+      ct: callsText(lang),
+      lang,
+      thread: { messages },
+      profile,
+      online: true,
+      blocked,
+      reported: false,
+      canWrite,
+      onBack: () => {},
+      onSend: () => {},
+      onDelete: () => {},
+      onClear: () => {},
+      onBlock: () => {},
+      onUnblock: () => {},
+      onReport: () => {},
+      onCall: () => {},
+    }),
+  ));
+}
+
+/**
+ * Rendu SSR des onglets **Amis** et **Demandes** de la fenêtre sociale,
+ * seuls, avec des données fabriquées. `check:messages` y passe un pseudo en
+ * casse mixte pour vérifier qu'il ressort en majuscules — même règle que le
+ * reste de la messagerie — sans monter la pile complète de l'application.
+ */
+export function renderFriendsTab(friends, { lang = 'fr' } = {}) {
+  globalThis.window = { localStorage: makeStorage() };
+  return renderToString(React.createElement(
+    MemoryRouter,
+    { initialEntries: ['/messages?tab=friends'] },
+    React.createElement(FriendsTab, {
+      friends,
+      t: friendsText(lang),
+      lang,
+      unfriend: () => {},
+      onOpenThread: () => {},
+      chatLabel: messagesText(lang).openChat,
+      profileLabel: friendsText(lang).profileShort,
+    }),
+  ));
+}
+
+export function renderRequestsTab({ incoming = [], outgoing = [], lang = 'fr' } = {}) {
+  globalThis.window = { localStorage: makeStorage() };
+  return renderToString(React.createElement(
+    MemoryRouter,
+    { initialEntries: ['/messages?tab=requests'] },
+    React.createElement(RequestsTab, {
+      incoming,
+      outgoing,
+      t: friendsText(lang),
+      lang,
+      accept: () => {},
+      decline: () => {},
+      cancel: () => {},
+    }),
+  ));
+}
+
+/** Clic réel (DOM) : annulation, confirmation, disparition puis rechargement. */
+export async function checkClearInteraction(assert) {
+  const user = DEMO_PROFILE_FIXTURES.vortex;
+  const peer = 'demo-player-3105';
+  window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(user));
+  window.scrollTo = () => {};
+  const node = document.createElement('div');
+  document.body.append(node);
+  let root = createRoot(node);
+  const bubbles = () => node.querySelectorAll('.messages-bubble-row').length;
+  const click = async (selector) => {
+    const button = node.querySelector(selector);
+    assert.ok(button, `${selector} présent`);
+    await act(async () => button.click());
+  };
+
+  try {
+    await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
+    const before = bubbles();
+    assert.ok(before > 0, 'le fil démo contient des messages');
+    const prompts = [];
+    window.confirm = (text) => { prompts.push(text); return false; };
+    await click('.messages-tool-more');
+    await click('.messages-more-item[aria-label="Effacer la conversation"]');
+    assert.equal(bubbles(), before, 'annuler conserve le fil');
+    assert.equal(prompts.length, 1, 'l’effacement demande confirmation');
+    assert.match(prompts[0], /pour toi uniquement.*resteront visibles pour l’autre personne/i);
+
+    window.confirm = (text) => { prompts.push(text); return true; };
+    await click('.messages-tool-more');
+    await click('.messages-more-item[aria-label="Effacer la conversation"]');
+    assert.equal(bubbles(), 0, 'le fil effacé est immédiatement vide');
+    assert.ok(node.textContent.includes('Aucun message pour l’instant'), 'la discussion reste ouverte');
+    const state = readDemoMessages(user);
+    assert.equal(state.threads[peer], undefined, 'le fil effacé reste absent du stockage de ce joueur');
+    assert.ok(state.threads['demo-player-4820']?.length > 0, 'les autres discussions sont intactes');
+    await act(async () => root.unmount());
+    root = createRoot(node);
+    await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
+    assert.equal(bubbles(), 0, 'le fil reste vide après remontage');
+  } finally {
+    await act(async () => root.unmount());
+    node.remove();
+  }
+}
+
+/**
+ * Clic réel (DOM) sur la bulle de suggestions : elle ouvre avec la
+ * discussion, un clic remplit le champ sans rien envoyer, elle se referme
+ * (au choix comme à la frappe) et revient à la réouverture.
+ *
+ * Les comptages servent d'assertions plutôt que les nœuds eux-mêmes : en
+ * cas d'échec, `assert` inspecte alors un simple nombre au lieu de l'arbre
+ * React/jsdom (l'inspection d'un tel nœud peut coûter très cher).
+ */
+export async function checkSuggestionInteraction(assert) {
+  const user = DEMO_PROFILE_FIXTURES.vortex;
+  const peer = 'demo-player-3105';
+  window.localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(user));
+  window.scrollTo = () => {};
+  const node = document.createElement('div');
+  document.body.append(node);
+  let root = createRoot(node);
+  const suggestCount = () => node.querySelectorAll('.messages-suggest').length;
+  const chips = () => [...node.querySelectorAll('.messages-suggest-chip')];
+  const textarea = () => node.querySelector('.messages-composer textarea');
+  const bubbleRows = () => node.querySelectorAll('.messages-bubble-row').length;
+  const click = async (element) => { await act(async () => element.click()); };
+  // Saisie contrôlée React : passer par le setter natif, sinon React prend
+  // la valeur pour inchangée et « input » ne déclenche aucun onChange.
+  const typeIn = async (value) => {
+    const area = textarea();
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+    await act(async () => {
+      setter.call(area, value);
+      area.dispatchEvent(new window.Event('input', { bubbles: true }));
+    });
+  };
+
+  try {
+    await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
+    assert.equal(suggestCount(), 1, 'la bulle de suggestions ouvre avec la discussion');
+    assert.equal(chips().length, 3, 'trois suggestions sont proposées');
+
+    // Un clic place le texte dans le champ : rien n'est envoyé tout seul.
+    const before = bubbleRows();
+    const first = chips()[0];
+    const label = first.textContent;
+    await click(first);
+    assert.equal(textarea().value, label, 'le clic remplit le champ');
+    assert.equal(bubbleRows(), before, 'aucun message n’est parti sans validation');
+    assert.equal(node.querySelector('.messages-send').disabled, false, 'le champ est prêt à envoyer');
+    assert.equal(suggestCount(), 0, 'la bulle se referme après le choix');
+
+    // Effacer le brouillon ne fait pas revenir la bulle : le choix est pris.
+    await typeIn('');
+    assert.equal(suggestCount(), 0, 'effacer le brouillon ne fait pas revenir la bulle');
+
+    // Réouvrir la discussion : la bulle revient, comme à toute première visite.
+    await act(async () => root.unmount());
+    root = createRoot(node);
+    await act(async () => root.render(createApp(`/messages/${peer}`, { lang: 'fr' })));
+    assert.equal(suggestCount(), 1, 'la bulle revient à la réouverture de la discussion');
+
+    // Taper soi-même referme la bulle pour de bon.
+    await typeIn('Salut');
+    assert.equal(suggestCount(), 0, 'la première frappe referme la bulle');
+    await typeIn('');
+    assert.equal(suggestCount(), 0, 'la bulle reste fermée après effacement');
+  } finally {
+    await act(async () => root.unmount());
+    node.remove();
+  }
 }

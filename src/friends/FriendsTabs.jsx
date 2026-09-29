@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { formatCommentDate } from '../lib/comments';
 import FriendButton from './FriendButton';
 import { describeFriendsError, fill } from './friendsCopy';
+import { pseudoLabel } from '../messages/messagesCopy';
 
 /**
  * Onglets du côté « amis » de la fenêtre sociale unifiée
@@ -20,6 +21,12 @@ import { describeFriendsError, fill } from './friendsCopy';
  * Les trois composants sont autonomes (props) : la fenêtre porte l'état,
  * les contextes (`FriendsContext`, `MessagesContext` via `onOpenThread`)
  * fournissent les données et les gestes.
+ *
+ * Comme dans toute la messagerie, les pseudos s'affichent **en majuscules**
+ * (`pseudoLabel`) : lignes des trois onglets, libellés accessibles, boutons
+ * « Profil » et confirmations de retrait. Les données gardent leur casse
+ * d'origine ; hors de la fenêtre sociale (hub joueur, profils, commentaires),
+ * le pseudo reste tel qu'il a été saisi.
  */
 
 function initialsFor(name) {
@@ -58,14 +65,16 @@ function Avatar({ name, src, online }) {
  */
 function PlayerRow({ player, t, lang, meta, children, onOpen, openTitle }) {
   const href = `/profile/${encodeURIComponent(player.id)}`;
+  // Pseudo en majuscules, comme partout dans la messagerie (`pseudoLabel`).
+  const name = pseudoLabel(player.name);
   const statusText = player.online
     ? t.onlineShort
     : (player.lastSeenAt ? fill(t.lastSeen, { when: formatCommentDate(player.lastSeenAt, lang) }) : t.offlineShort);
   const identity = (
     <>
-      <Avatar name={player.name} src={player.avatar} online={player.online} />
+      <Avatar name={name} src={player.avatar} online={player.online} />
       <span className="friends-row-text">
-        <span className="friends-row-name">{player.name}</span>
+        <span className="friends-row-name">{name}</span>
         <span className="friends-row-meta">
           <span className={`friends-row-status${player.online ? ' is-online' : ''}`}>{meta || statusText}</span>
           {player.level != null && <span className="friends-row-level">{fill(t.level, { level: player.level })}</span>}
@@ -76,7 +85,7 @@ function PlayerRow({ player, t, lang, meta, children, onOpen, openTitle }) {
   return (
     <li className={`friends-row${player.online ? ' is-online' : ' is-offline'}`}>
       {onOpen ? (
-        <button type="button" className="friends-row-main" title={openTitle} aria-label={`${openTitle} — ${player.name}`} onClick={() => onOpen(player.id)}>
+        <button type="button" className="friends-row-main" title={openTitle} aria-label={`${openTitle} — ${name}`} onClick={() => onOpen(player.id)}>
           {identity}
         </button>
       ) : (
@@ -151,15 +160,20 @@ export function FriendsTab({ friends, t, lang, unfriend, onOpenThread, chatLabel
   if (friends.length === 0) {
     return <p className="friends-empty">{t.emptyFriends}</p>;
   }
-  const row = (friend) => (
-    <>
-      <ProfileButton userId={friend.id} name={friend.name} label={profileLabel} title={t.viewProfile} />
-      <ActionButton t={t} className="friends-action-quiet" onAction={() => {
-        if (typeof window !== 'undefined' && !window.confirm(fill(t.removeConfirm, { name: friend.name }))) return undefined;
-        return unfriend(friend.id);
-      }}>{t.remove}</ActionButton>
-    </>
-  );
+  const row = (friend) => {
+    // Le pseudo passe en majuscules jusque dans le bouton « Profil » et la
+    // confirmation de retrait — même règle que le reste de la messagerie.
+    const name = pseudoLabel(friend.name);
+    return (
+      <>
+        <ProfileButton userId={friend.id} name={name} label={profileLabel} title={t.viewProfile} />
+        <ActionButton t={t} className="friends-action-quiet" onAction={() => {
+          if (typeof window !== 'undefined' && !window.confirm(fill(t.removeConfirm, { name }))) return undefined;
+          return unfriend(friend.id);
+        }}>{t.remove}</ActionButton>
+      </>
+    );
+  };
   return (
     <>
       <SectionTitle count={online.length}>{t.sectionOnline}</SectionTitle>
@@ -296,7 +310,7 @@ export function AddTab({ t, lang, search, isOnline, relationWith }) {
             const meta = relation?.kind === 'friend' ? t.friends : relation?.kind === 'outgoing' ? t.sent : relation?.kind === 'incoming' ? t.pendingYou : null;
             return (
               <PlayerRow key={player.id} player={{ ...player, online: isOnline(player.id) }} t={t} lang={lang} meta={meta}>
-                <FriendButton userId={player.id} name={player.name} variant="compact" />
+                <FriendButton userId={player.id} name={pseudoLabel(player.name)} variant="compact" />
               </PlayerRow>
             );
           })}

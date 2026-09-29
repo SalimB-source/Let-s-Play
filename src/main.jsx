@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
 import './profile-lists.css';
 import './news-article.css';
+import './components/SpoilerAlert.css';
 import './auth/auth.css';
 import './news-carousel.css';
 import './news-view-toggle.css';
@@ -16,6 +17,7 @@ import './achievements/achievements.css';
 import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
+import './messages/calls.css';
 import './social/social.css';
 import './typography.css';
 import './theme.css';        // thème clair : importé en dernier (surcharge)
@@ -24,6 +26,9 @@ import { ThemeProvider } from './theme/ThemeContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import News from './pages/News';
+import GamingNews from './pages/GamingNews';
+import CinemaNews from './pages/CinemaNews';
+import TechNews from './pages/TechNews';
 import Calendar from './pages/Calendar';
 import Physint from './pages/Physint';
 import MetroidRavenous from './pages/MetroidRavenous';
@@ -51,6 +56,7 @@ import Search from './pages/Search';
 import QuizzesPage from './quizzes/QuizzesPage';
 import QuizPage from './quizzes/QuizPage';
 import NotFound from './pages/NotFound';
+import Games from './pages/Games';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import MessagesPage from './messages/MessagesPage';
@@ -60,8 +66,13 @@ import AchievementTracker from './achievements/AchievementTracker';
 import AchievementPopup from './achievements/AchievementPopup';
 import { FriendsProvider } from './friends/FriendsContext';
 import { MessagesProvider } from './messages/MessagesContext';
+import { CallsProvider } from './messages/CallsContext';
+import CallOverlays from './messages/CallOverlays';
 import SocialDock from './social/SocialDock';
 import { initSinglePlayback } from './lib/videoPlayback';
+import { normalizePhoneViewport } from './lib/phoneLayout';
+
+const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
 
 function App() {
   return (
@@ -79,12 +90,31 @@ function App() {
               raccourcis du hub lisent les deux mêmes contextes. */}
           <FriendsProvider>
           <MessagesProvider>
+          {/* Les appels vocaux/vidéo vivent à côté de la messagerie : ils
+              s'adressent aux amis en ligne, vérifient les blocages et
+              déposent leur trace dans les discussions. Les surfaces
+              (appel entrant, panneau d'appel) se rendent au-dessus de
+              tout, comme la fenêtre sociale. */}
+          <CallsProvider>
           <AchievementProvider>
             <Layout>
               <AchievementTracker />
               <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/news" element={<News />} />
+            <Route path="/news/gaming" element={<GamingNews />} />
+            <Route path="/news/cinema" element={<CinemaNews />} />
+            {/* Actus cinéma : les cartes du hub `/news/cinema` pointent vers
+                /news/cinema/<slug> ; les clés d'article correspondantes dans
+                CurrentNews sont préfixées « cinema/ » (ex. :
+                cinema/jojo-steel-ball-run-episode-2). */}
+            <Route path="/news/cinema/:slug" element={<CurrentNews slugPrefix="cinema/" />} />
+            {/* Actus tech : troisième zone du hub `/news` (gaming / cinéma /
+                tech), même mécanique que le cinéma — clés d'article préfixées
+                « tech/ » dans CurrentNews (ex. :
+                tech/starship-flight-14-premier-vol-orbital). */}
+            <Route path="/news/tech" element={<TechNews />} />
+            <Route path="/news/tech/:slug" element={<CurrentNews slugPrefix="tech/" />} />
             <Route path="/calendrier" element={<Calendar />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/news/physint" element={<Physint />} />
@@ -115,6 +145,12 @@ function App() {
             <Route path="/news/sorties-24-septembre" element={<CurrentNews slug="sorties-24-septembre" />} />
             <Route path="/news/sony-licence-jeux-numeriques" element={<CurrentNews slug="sony-licence-jeux-numeriques" />} />
             <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
+            <Route path="/news/physint-budget-400-millions-xbox" element={<CurrentNews slug="physint-budget-400-millions-xbox" />} />
+            <Route path="/news/minecraft-the-sift-nouvelle-dimension" element={<CurrentNews slug="minecraft-the-sift-nouvelle-dimension" />} />
+            <Route path="/news/god-of-war-laufey-precommandes-arc-serpent" element={<CurrentNews slug="god-of-war-laufey-precommandes-arc-serpent" />} />
+            <Route path="/news/minecraft-world-hotel-chessington-2027" element={<CurrentNews slug="minecraft-world-hotel-chessington-2027" />} />
+            <Route path="/news/the-witcher-3-remastered-sortie-29-septembre" element={<CurrentNews slug="the-witcher-3-remastered-sortie-29-septembre" />} />
+            <Route path="/news/xbox-nadella-restructuration" element={<CurrentNews slug="xbox-nadella-restructuration" />} />
             {/* Actus du jour générées par le robot (scripts/news-bot/) :
                 /news/<slug> lit src/news/autoIndex.js. Les slugs statiques
                 ci-dessus restent prioritaires ; un slug inconnu affiche la
@@ -139,6 +175,11 @@ function App() {
             <Route path="/quizzes" element={<QuizzesPage />} />
             <Route path="/quizz/:slug" element={<QuizPage />} />
             <Route path="/quiz/:slug" element={<QuizPage />} />
+            {/* Arcade : `/jeu` est la vitrine des jeux de la maison (Mirage
+                Rush n'est qu'une des cartes), chaque jeu a sa propre route. */}
+            <Route path="/jeu" element={<Games />} />
+            <Route path="/jeux" element={<Games />} />
+            <Route path="/jeu/mirage-rush" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Mirage Rush…</div>}><MirageRushPage /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />
@@ -156,7 +197,9 @@ function App() {
             </Layout>
             <AchievementPopup />
             <SocialDock />
+            <CallOverlays />
           </AchievementProvider>
+          </CallsProvider>
           </MessagesProvider>
           </FriendsProvider>
         </BrowserRouter>
@@ -170,4 +213,15 @@ function App() {
 // coordinateur met en pause tous les autres lecteurs de la page.
 initSinglePlayback();
 
+// Sur un téléphone dont le navigateur a élargi la fenêtre de mise en page
+// (zoom de page mémorisé par Safari, « version ordinateur », WebView qui
+// ignore `<meta viewport>`), on réapplique le viewport de l'écran AVANT le
+// premier rendu : la page repart à l'échelle 1 et les requêtes média mobiles
+// s'appliquent. Appelée aussi juste après le montage : Safari applique
+// parfois son zoom mémorisé une fois la page déjà chargée.
+normalizePhoneViewport();
+
 createRoot(document.getElementById('root')).render(<App />);
+
+setTimeout(normalizePhoneViewport, 400);
+setTimeout(normalizePhoneViewport, 1500);

@@ -5,18 +5,22 @@ import { useFriends } from '../friends/FriendsContext';
 import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy';
 import { AddTab, FriendsTab, RequestsTab } from '../friends/FriendsTabs';
 import { useMessages } from '../messages/MessagesContext';
+import { useCalls } from '../messages/CallsContext';
+import { callsText } from '../messages/callsCopy';
 import { describeMessagesError, messagesText } from '../messages/messagesCopy';
 import { InboxView, ThreadView } from '../messages/MessagesTabs';
 import useMediaQuery from '../lib/useMediaQuery';
+import { SOCIAL_MOBILE_MEDIA } from '../lib/phoneLayout';
 import { socialText } from './socialCopy';
+import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
 
 /**
  * Fenêtre sociale unifiée — amis + messagerie dans la même fenêtre, ancrée
  * en bas à droite.
  * ---------------------------------------------------------------------------
- * Un seul lanceur compact (« MESSAGERIE » : pastilles des non-lus et des
- * demandes d'amis reçues, compteur d'amis en ligne) ouvre un panneau à
- * quatre onglets :
+ * Un seul lanceur compact — le logo « Let’s Talk » (voir `LetsTalkLogo`),
+ * les pastilles des non-lus et des demandes d'amis reçues, le compteur d'amis
+ * en ligne — ouvre un panneau à quatre onglets :
  *
  *   - **Amis** / **Demandes** / **Ajouter** : le module ami
  *     (`FriendsTabs`, données de `FriendsContext`) ;
@@ -35,15 +39,6 @@ import { socialText } from './socialCopy';
  * c'est la page qui porte la messagerie, rien ne flotte par-dessus.
  */
 
-function SocialIcon({ size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20.5 12.2c0 4-3.8 7.2-8.5 7.2-1 0-2-.15-2.9-.42L4.5 20.5l1.2-3.3C4.3 15.9 3.5 14.1 3.5 12.2 3.5 8.2 7.3 5 12 5s8.5 3.2 8.5 7.2z" />
-      <circle cx="12" cy="10.4" r="2.1" />
-      <path d="M8.6 15.3c.7-1.6 2-2.4 3.4-2.4s2.7.8 3.4 2.4" />
-    </svg>
-  );
-}
 function CloseIcon({ size = 14 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
@@ -63,17 +58,19 @@ function RefreshIcon({ size = 14 }) {
 export default function SocialDock() {
   const friends = useFriends();
   const messages = useMessages();
+  const calls = useCalls();
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const t = socialText(lang);
   const ft = friendsText(lang);
   const mt = messagesText(lang);
+  const ct = callsText(lang);
   // Mobile : toute la fenêtre sociale (amis + messagerie) vit sur la page
   // /messages — pas de pop-up : l'expérience est plein écran, avec de vrais
   // onglets et un historique de navigation (le bouton retour du téléphone
   // fonctionne).
-  const isMobile = useMediaQuery('(max-width: 760px)');
+  const isMobile = useMediaQuery(SOCIAL_MOBILE_MEDIA);
   // Sur la page sociale, le lanceur flottant disparaît : la page se suffit
   // à elle-même.
   const onSocialRoute = /^\/(messages|messagerie)(\/|$)/.test(location.pathname || '');
@@ -91,12 +88,12 @@ export default function SocialDock() {
     conversations, blockedConversations, unreadTotal, unreadFor, threadFor,
     dockOpen: messagesOpen, activePeerId, openThread, backToInbox,
     closeDock: closeMessagesDock,
-    send, deleteMessage, markRead, block, unblock, report,
+    send, deleteMessage, clearConversation, markRead, block, unblock, report,
     canMessage, isBlocked, reportedReason, refresh: refreshMessages,
   } = messages;
 
   const enabled = friendsEnabled || messagesEnabled;
-  const open = !isMobile && (friendsOpen || messagesOpen);
+  const open = enabled && !isMobile && (friendsOpen || messagesOpen);
   const inThread = Boolean(activePeerId);
   // Onglet actif : une discussion ouverte occupe tout le panneau ; sinon,
   // l'onglet mémorisé par le contexte amis (« messages » inclus), ou
@@ -130,10 +127,12 @@ export default function SocialDock() {
   };
 
   const toggle = () => {
+    // Sans compte, le panneau n'a aucune donnée à montrer : la page dédiée
+    // explique la connexion au lieu d'ouvrir une fenêtre sociale vide.
+    if (!enabled) { goSocial('messages'); return; }
     if (isMobile) {
       // Sur mobile, le lanceur ouvre toujours la page sociale (inbox).
-      if (onSocialRoute) navigate(-1);
-      else goSocial('messages');
+      goSocial('messages');
       return;
     }
     if (open) { closeAll(); return; }
@@ -166,7 +165,7 @@ export default function SocialDock() {
   // local (état « bureau »), on redirige vers la page au lieu de rouvrir le
   // pop-up plein écran.
   useEffect(() => {
-    if (!isMobile || !friendsOpen && !messagesOpen) return;
+    if (!isMobile || !enabled || (!friendsOpen && !messagesOpen)) return;
     if (onSocialRoute) {
       // Déjà sur la page : on ferme juste le pop-up.
       closeFriendsDock();
@@ -178,14 +177,17 @@ export default function SocialDock() {
     closeMessagesDock();
     backToInbox();
     navigate(target);
-  }, [isMobile, friendsOpen, messagesOpen, onSocialRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
+  }, [isMobile, enabled, friendsOpen, messagesOpen, onSocialRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
 
   // Classes sur <body> : social.css y lit la place prise par le lanceur ou la
   // fenêtre pour décaler les notifications de succès. Sur mobile, rien ne
   // verrouille le scroll (pas de pop-up plein écran puisque tout se passe
   // dans une vraie page). Sur la page sociale, le lanceur flottant étant
   // masqué, aucune classe n'est posée.
-  const dockVisible = enabled && !onSocialRoute;
+  // La WebView de l'APK possède sa propre session : même si le joueur n'y est
+  // pas encore connecté, garder un accès visible à /messages, qui affiche
+  // alors l'invitation à se connecter (sans exposer les conversations).
+  const dockVisible = !onSocialRoute;
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { classList } = document.body;
@@ -322,6 +324,7 @@ export default function SocialDock() {
           peerId={activePeerId}
           t={mt}
           ft={ft}
+          ct={ct}
           lang={lang}
           thread={threadFor(activePeerId)}
           profile={resolvedProfile}
@@ -330,8 +333,12 @@ export default function SocialDock() {
           reported={reportedReason(activePeerId)}
           canWrite={canMessage(activePeerId)}
           onBack={backFromThread}
+          onCall={calls.startCall}
+          callBlocker={calls.blockerFor}
+          callWarning={calls.warningFor}
           onSend={send}
           onDelete={deleteMessage}
+          onClear={clearConversation}
           onBlock={block}
           onUnblock={unblock}
           onReport={(reason, note) => report(activePeerId, reason, note)}
@@ -358,7 +365,9 @@ export default function SocialDock() {
           {!inThread && (
             <header className="social-panel-head">
               <div className="social-panel-title">
-                <span className="social-panel-kicker"><SocialIcon size={14} /> {t.title}</span>
+                <span className="social-panel-kicker">
+                  <LetsTalkLogo className="social-panel-logo" title={t.title} />
+                </span>
                 <span className="social-panel-sub">{subtitle}</span>
               </div>
               <div className="social-panel-tools">
@@ -391,10 +400,11 @@ export default function SocialDock() {
                 <button
                   key={item.id}
                   type="button"
-                  className={`social-tab${tab === item.id ? ' is-active' : ''}${item.alert ? ' has-alert' : ''}`}
+                  className={`social-tab${item.id === 'messages' ? ' social-tab--messages lets-talk-label' : ''}${tab === item.id ? ' is-active' : ''}${item.alert ? ' has-alert' : ''}`}
                   onClick={() => selectTab(item.id)}
                   aria-pressed={tab === item.id}
                 >
+                  {item.id === 'messages' && <LetsTalkMark className="social-tab-mark" />}
                   {item.label}
                   {item.count != null && item.count > 0 && <span className="social-tab-count">{item.count}</span>}
                 </button>
@@ -405,25 +415,26 @@ export default function SocialDock() {
           {mode === 'demo' && <footer className="social-panel-foot">{t.demoNote}</footer>}
         </section>
       )}
-      {/* Le bouton est découpé (coins coupés en `clip-path`) : une pastille
-          posée sur son coin serait rognée si elle restait dedans. Les deux
-          pastilles vivent donc dans ce conteneur, au-dessus du bouton, où
-          elles s'affichent en entier. */}
+      {/* Les pastilles de notification vivent dans un conteneur dédié : elles
+          peuvent dépasser légèrement du bouton arrondi sans être rognées. */}
       <span className="social-launcher-wrap">
         <button
           type="button"
           className={`social-launcher${unreadTotal > 0 || pendingCount > 0 ? ' has-alert' : ''}`}
           onClick={toggle}
           aria-expanded={open}
-          aria-label={open ? t.launcherClose : t.launcherOpen}
-          title={open ? t.launcherClose : t.launcherOpen}
+          aria-label={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
+          title={!enabled ? mt.signInPrompt : open ? t.launcherClose : t.launcherOpen}
         >
-          <span className="social-launcher-icon"><SocialIcon /></span>
-          <span className="social-launcher-label">{t.launcher}</span>
-          <span className="social-launcher-meta">
+          {/* Le logo porte le nom visible ; le libellé texte reste dans le
+              DOM pour les lecteurs d'écran et les rendus sans SVG. Les trois
+              points de la bulle ondulent tant que des messages attendent. */}
+          <LetsTalkLogo className="social-launcher-logo" typing={unreadTotal > 0} />
+          <span className="sr-only">{t.launcher}</span>
+          {enabled && <span className="social-launcher-meta">
             <span className={`social-launcher-dot${onlineCount > 0 ? ' is-online' : ''}`} aria-hidden="true" />
             {onlineCount} {ft.online}
-          </span>
+          </span>}
           {unreadTotal > 0 && (
             <span className="social-launcher-meta social-launcher-meta-unread">{unreadTotal} {mt.unread}</span>
           )}

@@ -12,6 +12,8 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import Layout from '../src/components/Layout';
 import Home from '../src/pages/Home';
 import News from '../src/pages/News';
+import CinemaNews from '../src/pages/CinemaNews';
+import TechNews from '../src/pages/TechNews';
 import Calendar from '../src/pages/Calendar';
 import Physint from '../src/pages/Physint';
 import MetroidRavenous from '../src/pages/MetroidRavenous';
@@ -26,6 +28,8 @@ import QuizPage from '../src/quizzes/QuizPage';
 import Dossiers from '../src/pages/Dossiers';
 import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
+import Games from '../src/pages/Games';
+import MirageRushPage from '../src/games/MirageRushPage';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
 import { gameTests } from '../src/reviewsData';
@@ -35,6 +39,8 @@ export { translations };
 export const ROUTES = [
   ['/', Home],
   ['/news', News],
+  ['/news/cinema', CinemaNews],
+  ['/news/tech', TechNews],
   ['/calendrier', Calendar],
   ['/news/physint', Physint],
   ['/news/metroid-ravenous', MetroidRavenous],
@@ -46,6 +52,8 @@ export const ROUTES = [
   ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle]),
   ['/dossiers', Dossiers],
   ['/auth', Auth],
+  ['/jeu', Games],
+  ['/jeu/mirage-rush', MirageRushPage],
   ['/quizz', QuizzesPage],
   ['/quizz/culture-gaming', QuizPage, '/quizz/:slug'],
   ['/quizz/films-cultes', QuizPage, '/quizz/:slug'],
