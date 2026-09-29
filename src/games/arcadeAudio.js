@@ -317,7 +317,7 @@ export class DesertGroove {
     this.noise(time, 0.05, 0.035, 9000);
   }
 
-  /** Cursed red diamond: the chime collapses into a dull, braking growl. */
+  /** Cursed diamond: the chime collapses into a dull, braking growl. */
   trap() {
     if (!this.running || !this.context || !this.master) return;
     const time = this.context.currentTime + 0.005;

@@ -6,7 +6,7 @@ import MirageOnline from './MirageOnline';
 import MirageCoursePicker from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, powerUpOdds, RED_TRAP_CHANCE, RED_TRAP_SLOW_DURATION } from './mirageRules';
+import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, powerUpOdds, GEM_TRAP_CHANCE, GEM_TRAP_SLOW_DURATION } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
@@ -688,7 +688,7 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Le diamant rouge est un pari</strong><small>Dans {Math.round(RED_TRAP_CHANCE * 100)} % des cas, il est piégé : au lieu du bonus de vitesse, il te ralentit pendant {RED_TRAP_SLOW_DURATION} s. Les points, eux, sont toujours encaissés. Rien ne le distingue avant de le traverser.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Tous les diamants peuvent être piégés</strong><small>{Math.round(GEM_TRAP_CHANCE * 100)} % de chances, quelle que soit la couleur — cyan, rouge ou or : au lieu du bonus de vitesse, le diamant te ralentit pendant {GEM_TRAP_SLOW_DURATION} s. Les points, eux, sont toujours encaissés. Rien ne le distingue avant de le traverser.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille ou les cyprès en pot : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-rainbow" aria-hidden="true">?</span><div><strong>Objet mystère « ? » — duel & en ligne</strong><small>La ruée n’en contient aucun : il faut un rival à lasser ou un choc à absorber. En duel ou en ligne, il flotte en arc-en-ciel au milieu de la piste et ne dévoile son effet qu’une fois ramassé — pistolet (fait tomber de cheval le cavalier en tête, même très loin, pendant 1 s : 0 % en tête, 5 % 2e, 15 % 3e, 30 % 4e), lasso (ralentit l’adversaire devant toi) ou bouclier (absorbe un choc, un lasso ou une balle pendant 5 s). Il ne disparaît jamais quand quelqu’un le prend : chaque cavalier peut le ramasser.</small></div></div>

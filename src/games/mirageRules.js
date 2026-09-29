@@ -5,9 +5,10 @@ const LANE_INDICES = LANES.map((_, lane) => lane);
 
 export const CRYSTALS = [
   { name: 'Cyan', color: 0x45e4ff, value: 100 },
-  // The red diamond is the gamble of the run: same points as ever, but some
-  // of them are cursed (see RED_TRAP_CHANCE) and brake the rider instead of
-  // launching it. Nothing on the mesh gives it away before the pickup.
+  // Every diamond is the gamble of the run: same points as ever, but 8 % of
+  // them are cursed (see GEM_TRAP_CHANCE) and brake the rider instead of
+  // launching it — cyan, red and gold alike. Nothing on the mesh gives it
+  // away before the pickup.
   { name: 'Rouge', color: 0xf2352c, value: 150 },
   { name: 'Or', color: 0xffd15c, value: 250 },
 ];
@@ -288,26 +289,24 @@ export const POWER_UP_DEFS = {
   },
 };
 
-// ── Red diamond trap ───────────────────────────────────────────────────
-// Every red diamond is a small gamble: 15 % of them are cursed and slam the
-// brakes on instead of granting the usual speed burst. The points are paid
-// either way — the gamble is on speed, never on score. A fake gold diamond
-// pays like a red one, so it rolls for the curse too.
-export const RED_TRAP_TIER = 1;
-export const RED_TRAP_CHANCE = 0.15;
-export const RED_TRAP_SLOW_DURATION = 1.6; // seconds the rider is braked
-export const RED_TRAP_SLOW_FACTOR = 0.55; // speed multiplier while braked
+// ── Cursed diamonds ────────────────────────────────────────────────────
+// Every diamond is a small gamble, whatever its tier: 8 % of them are cursed
+// and slam the brakes on instead of granting the usual speed burst. The points
+// are paid either way — the gamble is on speed, never on score.
+export const GEM_TRAP_CHANCE = 0.08;
+export const GEM_TRAP_SLOW_DURATION = 1.6; // seconds the rider is braked
+export const GEM_TRAP_SLOW_FACTOR = 0.55; // speed multiplier while braked
 
-/** Roll once, on pickup-time tier, whether this red diamond is cursed. */
-export const rollRedTrap = (random = Math.random) => random() < RED_TRAP_CHANCE;
+/** Roll once per diamond, the first time anybody rides through it. */
+export const rollGemTrap = (random = Math.random) => random() < GEM_TRAP_CHANCE;
 
 /**
- * What a crystal does to the rider: a speed burst, or the red diamond's brake.
+ * What a crystal does to the rider: its speed burst, or a cursed brake.
  * Returns a plain description so world code stays free of the rules.
  */
 export function crystalPickupEffect(tier, trapped = false) {
-  if (tier === RED_TRAP_TIER && trapped) {
-    return { trap: true, boost: SPEED_BOOST_NONE, slowDuration: RED_TRAP_SLOW_DURATION, slowFactor: RED_TRAP_SLOW_FACTOR };
+  if (trapped) {
+    return { trap: true, boost: SPEED_BOOST_NONE, slowDuration: GEM_TRAP_SLOW_DURATION, slowFactor: GEM_TRAP_SLOW_FACTOR };
   }
   return { trap: false, boost: speedBoostFor(tier), slowDuration: 0, slowFactor: 1 };
 }

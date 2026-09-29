@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, powerUpsEnabled, rollPowerUpSlot, rollPowerUpContent, PISTOL_STUN_DURATION, stunPose,  SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, RED_TRAP_TIER, rollRedTrap, crystalPickupEffect } from './mirageRules';
+import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, powerUpsEnabled, rollPowerUpSlot, rollPowerUpContent, PISTOL_STUN_DURATION, stunPose,  SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, rollGemTrap, crystalPickupEffect } from './mirageRules';
 
 const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
@@ -148,11 +148,10 @@ const effectiveTier = (item) => {
   return item.fake ? 1 : 2;
 };
 
-// Red diamonds (and the fake golds that pay like them) are a gamble: the
-// curse is rolled once per diamond, the first time anybody rides through it.
+// Every diamond is a gamble: the curse is rolled once per diamond, the first
+// time anybody rides through it — cyan, red, gold or a fake gold alike.
 const isTrapGem = (item) => {
-  if (effectiveTier(item) !== RED_TRAP_TIER) return false;
-  if (item.trap === undefined) item.trap = rollRedTrap();
+  if (item.trap === undefined) item.trap = rollGemTrap();
   return item.trap;
 };
 
@@ -639,7 +638,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let burstCursor = 0;
   const burstColor = new THREE.Color();
 
-  // A cursed red diamond shatters into dark, smouldering debris instead of
+  // A cursed diamond shatters into dark, smouldering debris instead of
   // bright crystal, so the trap is unmistakable the instant it triggers.
   const TRAP_SHARD_COLOR = 0x8c1220;
   const TRAP_FLASH_COLOR = 0xff4433;
@@ -827,7 +826,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let shieldActive = false;
   let shieldTimer = 0;
   let playerSlowTimer = 0;
-  // Lasso and red-diamond traps both brake the rider, each with its own bite.
+  // Lasso and cursed-diamond traps both brake the rider, each with its own bite.
   let playerSlowFactor = LASSO_SLOW_FACTOR;
   let playerSlowKind = 'lasso'; // what the HUD should blame for the brake
   let shieldFlash = 0;
