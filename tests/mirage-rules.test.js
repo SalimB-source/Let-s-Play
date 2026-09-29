@@ -526,6 +526,20 @@ test('power-up shortcuts assign E to Boost (Turbo) and R to Pistol (Tir)', async
   assert.equal(POWER_UP_DEFS[POWER_UPS.PISTOL].keyHintPC, 'R');
 });
 
+test('all four special items (shield, lasso, boost, pistol) have dedicated vector power icons and metadata', async () => {
+  const { POWER_UPS } = await import('../src/games/mirageRules.js');
+  const { MIRAGE_POWER_ICONS, miragePowerIcon } = await import('../src/games/miragePowerIcons.js');
+
+  for (const type of [POWER_UPS.SHIELD, POWER_UPS.LASSO, POWER_UPS.BOOST, POWER_UPS.PISTOL]) {
+    const icon = miragePowerIcon(type);
+    assert.ok(MIRAGE_POWER_ICONS[type], `icon registered for ${type}`);
+    assert.equal(icon.id, type);
+    assert.ok(icon.src.endsWith(`/icons/mirage-rush/${type}.svg`), `expected ${type}.svg asset, got ${icon.src}`);
+    assert.ok(icon.alt && icon.alt.length > 10, `accessible alt description for ${type}`);
+    assert.ok(icon.label && icon.accent && icon.gemColor, `label, accent, and gemColor defined for ${type}`);
+  }
+});
+
 test('prairieSunsetState transitions progressively from golden hour to starry night and sinks the sun below the horizon', async () => {
   const { prairieSunsetState } = await import('../src/games/mirageRules.js');
   const start = prairieSunsetState(0);

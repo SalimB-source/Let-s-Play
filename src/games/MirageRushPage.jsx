@@ -544,10 +544,10 @@ export default function MirageRushPage() {
                         ⚡ {(Number((hud.shieldCharges || 0) > 0) + Number((hud.lassoCharges || 0) > 0) + Number((hud.pistolCharges || 0) > 0) + Number((hud.boostCharges || 0) > 0)) > 1 ? 'POUVOIRS PRÊTS' : 'POUVOIR PRÊT'}
                       </i>
                     )}
-                    {race.mode !== 'rush' && hud.shieldActive && <i className="mirage-chip is-shield">🛡️ {Math.ceil(hud.shieldLeft)}s</i>}
-                    {race.mode !== 'rush' && hud.powerBoostActive && <i className="mirage-chip is-boost">⚡ TURBO {Math.ceil(hud.powerBoostLeft)}s</i>}
-                    {race.mode !== 'rush' && hud.slowed && <i className="mirage-chip is-slow">🪢 RALENTI</i>}
-                    {race.mode !== 'rush' && hud.stunned && <i className="mirage-chip is-slow">🔫 À TERRE</i>}
+                    {race.mode !== 'rush' && hud.shieldActive && <i className="mirage-chip is-shield"><MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-chip-power-icon" /> {Math.ceil(hud.shieldLeft)}s</i>}
+                    {race.mode !== 'rush' && hud.powerBoostActive && <i className="mirage-chip is-boost"><MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-chip-power-icon" /> TURBO {Math.ceil(hud.powerBoostLeft)}s</i>}
+                    {race.mode !== 'rush' && hud.slowed && <i className="mirage-chip is-slow"><MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-chip-power-icon" /> RALENTI</i>}
+                    {race.mode !== 'rush' && hud.stunned && <i className="mirage-chip is-slow"><MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-chip-power-icon" /> À TERRE</i>}
                   </span>
                 </div>
                 <div className="mirage-hud-center">
@@ -659,7 +659,7 @@ export default function MirageRushPage() {
                     title={`Turbo (E) — Chargé par les diamants VERTS. Donne un boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
-                      <span className="mirage-powerup-icon">⚡</span>
+                      <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
                       <span className="mirage-powerup-gem-hint is-green">◆ VERT</span>
                       <span className="mirage-powerup-key">E</span>
                     </div>
@@ -757,10 +757,10 @@ export default function MirageRushPage() {
                   <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
                   <span><kbd>↑</kbd> sauter</span>
                   {selectedMode === 'duel' && <>
-                    <span><kbd>Q/A</kbd> Bouclier</span>
-                    <span><kbd>W/Z</kbd> Lasso</span>
-                    <span><kbd>E</kbd> Turbo</span>
-                    <span><kbd>R</kbd> Pistolet</span>
+                    <span><kbd>Q/A</kbd> <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-key-power-icon" /> Bouclier</span>
+                    <span><kbd>W/Z</kbd> <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-key-power-icon" /> Lasso</span>
+                    <span><kbd>E</kbd> <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-key-power-icon" /> Turbo</span>
+                    <span><kbd>R</kbd> <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-key-power-icon" /> Pistolet</span>
                   </>}
                   <span><kbd>ÉCHAP</kbd> pause</span>
                 </div>
@@ -915,7 +915,19 @@ export default function MirageRushPage() {
             <span className="mirage-panel-kicker">MODE DUEL · 4 CAVALIERS · PREMIER À {DUEL_DISTANCE} M</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>Trois cavaliers rivaux</strong><small>Défie L’Ombre, Sauge et Améthyste : 3 PNJ qui changent de voie, sautent, ramassent les diamants et utilisent leurs propres pouvoirs contre toi et entre eux !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Même boost de vitesse & réapparition ({GEM_RESPAWN_DELAY} s)</strong><small>Tous les diamants donnent le même boost de vitesse (+{DUEL_SPEED_BONUS[0]} m/s pendant {SPEED_BOOST_DURATION} s). Un diamant pris disparaît seulement pendant {GEM_RESPAWN_DELAY} s puis réapparaît !</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-green">🛡️</span><div><strong>1 couleur de diamant = 1 pouvoir (Duel & En ligne)</strong><small>Les diamants <b>bleus</b> chargent le <b>Bouclier</b> (Q/A), les <b>jaunes</b> chargent le <b>Lasso</b> (W/Z : cible devant toi), les <b>verts</b> chargent le <b>Turbo</b> (E : boost de vitesse pendant {POWER_BOOST_DURATION}s) et les <b>rouges</b> chargent le <b>Pistolet</b> (R : fait tomber la cible devant toi pendant {PISTOL_STUN_DURATION}s). Utiliser un objet ne décharge pas les autres !</small></div></div>
+            <div className="mirage-rule">
+              <MiragePowerIcon type={POWER_UPS.LASSO} decorative={false} className="mirage-rule-image" />
+              <div>
+                <strong>1 couleur de diamant = 1 pouvoir (Duel & En ligne)</strong>
+                <small>Les diamants <b>bleus</b> chargent le <b>Bouclier</b> (Q/A), les <b>jaunes</b> chargent le <b>Lasso</b> (W/Z : cible devant toi), les <b>verts</b> chargent le <b>Turbo</b> (E : boost de vitesse pendant {POWER_BOOST_DURATION}s) et les <b>rouges</b> chargent le <b>Pistolet</b> (R : fait tomber la cible devant toi pendant {PISTOL_STUN_DURATION}s). Utiliser un objet ne décharge pas les autres !</small>
+                <div className="mirage-rule-powers-grid" aria-label="Les 4 objets spéciaux">
+                  <span className="mirage-rule-power-pill is-blue"><MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-rule-pill-icon" /><b>Bouclier</b><i>Q/A</i></span>
+                  <span className="mirage-rule-power-pill is-yellow"><MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-rule-pill-icon" /><b>Lasso</b><i>W/Z</i></span>
+                  <span className="mirage-rule-power-pill is-green"><MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-rule-pill-icon" /><b>Turbo</b><i>E</i></span>
+                  <span className="mirage-rule-power-pill is-red"><MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-rule-pill-icon" /><b>Pistolet</b><i>R</i></span>
+                </div>
+              </div>
+            </div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Collision</strong><small>Pas de vies perdues en duel : le cheval ralentit puis reprend son allure.</small></div></div>
           </section>
           <section className="mirage-howto panel-frame">

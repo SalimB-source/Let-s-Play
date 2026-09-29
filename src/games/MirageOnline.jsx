@@ -1164,7 +1164,7 @@ export default function MirageOnline({
                               title="Bouclier (Q / A) — Chargé par les diamants BLEUS. Utiliser cet objet ne décharge pas les autres."
                             >
                               <div className="mirage-powerup-btn-top">
-                                <MiragePowerIcon type="shield" className="mirage-powerup-icon" />
+                                <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-blue">◆ BLEU</span>
                                 <span className="mirage-powerup-key">Q / A</span>
                               </div>
@@ -1190,7 +1190,7 @@ export default function MirageOnline({
                               title="Lasso (W / Z) — Chargé par les diamants JAUNES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
                             >
                               <div className="mirage-powerup-btn-top">
-                                <MiragePowerIcon type="lasso" className="mirage-powerup-icon" />
+                                <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-yellow">◆ JAUNE</span>
                                 <span className="mirage-powerup-key">W / Z</span>
                               </div>
@@ -1216,7 +1216,7 @@ export default function MirageOnline({
                               title={`Turbo (E) — Chargé par les diamants VERTS. Donne un boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
-                                <span className="mirage-powerup-icon">⚡</span>
+                                <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-green">◆ VERT</span>
                                 <span className="mirage-powerup-key">E</span>
                               </div>
@@ -1242,7 +1242,7 @@ export default function MirageOnline({
                               title="Pistolet (R) — Chargé par les diamants ROUGES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
                             >
                               <div className="mirage-powerup-btn-top">
-                                <MiragePowerIcon type="pistol" className="mirage-powerup-icon" />
+                                <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-red">◆ ROUGE</span>
                                 <span className="mirage-powerup-key">R</span>
                               </div>
