@@ -336,6 +336,7 @@ function serializeRoom(room, nowIso = new Date().toISOString()) {
       user_id: p.user_id,
       name: p.name,
       slot: p.slot,
+      character: p.character ?? p.slot,
       ready: Boolean(p.ready),
       is_bot: Boolean(p.is_bot),
       distance: Number(p.distance || 0),
@@ -484,7 +485,9 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
     return { server_now: nowIso, rooms };
   }
 
-  if (!['create', 'join', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'add_bot', 'shield', 'lasso'].includes(action)) {
+
+  if (!['create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'add_bot', 'shield', 'lasso'].includes(action)) {
+
     throw new Error('Action inconnue');
   }
 
@@ -606,6 +609,17 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
 
   existingPlayer.name = uname;
   existingPlayer.last_seen = nowIso;
+
+  if (action === 'character') {
+    if (room.status !== 'lobby') throw new Error('Personnage verrouillé : course déjà lancée');
+    if (!Number.isInteger(extras.p_character) || extras.p_character < 0 || extras.p_character > 3) {
+      throw new Error('Personnage inconnu');
+    }
+    existingPlayer.character = extras.p_character;
+    existingPlayer.ready = false;
+    writeStore(store, true);
+    return serializeRoom(room, nowIso);
+  }
 
   if (action === 'ready') {
     if (room.status !== 'lobby') {

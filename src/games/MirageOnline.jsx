@@ -1,3 +1,4 @@
+import { CHARACTER_NAMES } from './mirageCharacters';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
@@ -13,12 +14,7 @@ import {
 } from './mirageRooms';
 import { DesertGroove } from './arcadeAudio';
 
-const characters = [
-  'Sillage · bleu / alezan',
-  'L’Ombre · rouge / ardoise',
-  'Sauge · vert / ivoire',
-  'Améthyste · violet / bai',
-];
+const characters = CHARACTER_NAMES;
 
 const STAGE_LABELS = {
   desert: 'Dunes de l’Écho',
@@ -57,7 +53,6 @@ export default function MirageOnline({
   userId,
   userName,
   initialStage = 'desert',
-  skin,
   onBack,
   onRunFinish,
   onSelectMode,
@@ -782,6 +777,24 @@ export default function MirageOnline({
                   )}
                 </div>
 
+                <div className="mirage-skin-picker" role="group" aria-label="Choisir ton personnage">
+                  {characters.map((name, index) => (
+                    <button
+                      type="button"
+                      key={name}
+                      className={`mirage-skin-chip${(myPlayer?.character ?? myPlayer?.slot) === index ? ' is-selected' : ''}`}
+                      aria-pressed={(myPlayer?.character ?? myPlayer?.slot) === index}
+                      disabled={busy || room.status !== 'lobby'}
+                      onClick={() => command('character', room.code, { p_character: index })}
+                    >{name}</button>
+                  ))}
+                </div>
+                <p className="mirage-ready-hint">
+                  {room.status === 'lobby'
+                    ? 'Choisis ton personnage, puis confirme que tu es prêt. Il sera verrouillé dès le lancement.'
+                    : 'Personnage verrouillé pour cette course.'}
+                </p>
+
                 <ol className="mirage-room-players">
                   {room.players.map((p) => {
                     const isMe = p.user_id === effectivePlayer.id;
@@ -802,7 +815,7 @@ export default function MirageOnline({
                               {isMe ? ' (toi)' : ''}
                               {isRoomHost && <em className="mirage-host-tag">HÔTE</em>}
                             </strong>
-                            <span className="mirage-player-mount">{characters[p.slot] || characters[0]}</span>
+                            <span className="mirage-player-mount">{characters[p.character ?? p.slot] || characters[0]}</span>
                           </div>
                         </div>
 
@@ -968,6 +981,7 @@ export default function MirageOnline({
                 <div className="mirage-game-popup" role="dialog" aria-modal="true" aria-label="Course Mirage Rush">
                   <section className="mirage-game-shell">
                     <div className="mirage-game-topbar">
+
                 <strong>
                   {Math.floor(hud.distance || 0)} / 600 M · {hud.score || 0} PTS
                   {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
@@ -1041,7 +1055,16 @@ export default function MirageOnline({
                 {powerToast && (
                   <div className="mirage-power-toast" role="status" aria-live="polite">
                     {powerToast}
-                  </div>
+                         <button
+                        type="button"
+                        className="mirage-share-button is-danger mirage-popup-leave-button"
+                        disabled={busy}
+                        onClick={() => command('leave')}
+                        aria-label="Quitter la room et fermer la course"
+                      >
+                        ← QUITTER LA ROOM
+                      </button>
+               </div>
                 )}
                 {active && hud.rank && (
                   <div className="mirage-power-hint">
@@ -1049,6 +1072,7 @@ export default function MirageOnline({
                   </div>
                 )}
               </div>
+
                     <div className="mirage-mobile-controls">
                       <button type="button" onClick={() => actions.current?.('left')}>←</button>
                       <button type="button" className="mirage-jump-control" onClick={() => actions.current?.('jump')}>SAUT ↑</button>

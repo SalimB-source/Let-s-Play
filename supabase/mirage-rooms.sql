@@ -57,6 +57,11 @@ revoke all on public.mirage_rooms, public.mirage_room_players, public.mirage_roo
 
 drop function if exists public.mirage_room_action(text, text, text, numeric, integer, numeric, integer);
 
+-- Upgrade the previous RPC signature without leaving an ambiguous overload.
+drop function if exists public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text);
+alter table public.mirage_room_players
+  add column if not exists character integer check (character between 0 and 3);
+
 -- One transactional gate for list/create/join/ready/chat/poll/start/position/finish/leave.
 -- Locking the room row makes join capacity, ready checks, and host start decisions atomic.
 create or replace function public.mirage_room_action(
@@ -70,7 +75,8 @@ create or replace function public.mirage_room_action(
   p_name text default null,
   p_password text default null,
   p_ready boolean default null,
-  p_message text default null
+  p_message text default null,
+  p_character integer default null
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   r public.mirage_rooms%rowtype;
@@ -109,7 +115,7 @@ begin
   end if;
 
   if uid is null then raise exception 'Connexion requise' using errcode = '42501'; end if;
-  if p_action not in ('create', 'join', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave') then
+  if p_action not in ('create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave') then
     raise exception 'Action inconnue' using errcode = '22023';
   end if;
 
@@ -169,7 +175,15 @@ begin
       raise exception 'Tu ne fais pas partie de ce salon' using errcode = '42501';
     end if;
 
-    if p_action = 'ready' then
+    if p_action = 'character' then
+      if r.status <> 'lobby' then raise exception 'Personnage verrouillé : course déjà lancée' using errcode = '22023'; end if;
+      if p_character is null or p_character not between 0 and 3 then
+        raise exception 'Personnage inconnu' using errcode = '22023';
+      end if;
+      update public.mirage_room_players
+        set character = p_character, ready = false, last_seen = now()
+        where room_code = v_code and user_id = uid;
+    elsif p_action = 'ready' then
       if r.status <> 'lobby' then raise exception 'Course déjà lancée' using errcode = '22023'; end if;
       update public.mirage_room_players
         set ready = coalesce(p_ready, not ready), last_seen = now()
@@ -235,6 +249,7 @@ begin
         'user_id', p.user_id,
         'name', left(coalesce(nullif(prof.display_name, ''), nullif(prof.username, ''), 'Cavalier'), 24),
         'slot', p.slot,
+        'character', coalesce(p.character, p.slot),
         'ready', p.ready,
         'distance', p.distance,
         'lane', p.lane,
@@ -270,5 +285,5 @@ begin
 end;
 $$;
 
-revoke all on function public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text) from public;
-grant execute on function public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text) to anon, authenticated;
+revoke all on function public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text, integer) from public;
+grant execute on function public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text, integer) to anon, authenticated;

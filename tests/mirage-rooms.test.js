@@ -143,3 +143,22 @@ test('players must set ready status before host can launch the game', async () =
   assert.ok(started.started_at);
   assert.equal(roomCode(started.code).length, 8);
 });
+
+test('characters are shared in the lobby and locked as soon as the host starts', async () => {
+  resetLocalRoomsForTests({ seed: false });
+  const room = await roomAction('create', null, { p_stage: 'desert' }, host);
+  await roomAction('join', room.code, {}, guest);
+  await roomAction('ready', room.code, { p_ready: true }, guest);
+  const chosen = await roomAction('character', room.code, { p_character: 3 }, guest);
+  assert.equal(chosen.players[1].character, 3);
+  assert.equal(chosen.players[1].ready, false);
+  assert.equal((await roomAction('get', room.code, {}, host)).players[1].character, 3);
+  for (const invalid of [-1, 4, 1.5, null, '2']) {
+    await assert.rejects(() => roomAction('character', room.code, { p_character: invalid }, guest), /Personnage inconnu/);
+  }
+  await roomAction('ready', room.code, { p_ready: true }, host);
+  await roomAction('ready', room.code, { p_ready: true }, guest);
+  await roomAction('start', room.code, {}, host);
+  await assert.rejects(() => roomAction('character', room.code, { p_character: 0 }, guest), /verrouillé/);
+  assert.equal((await roomAction('get', room.code, {}, host)).players[1].character, 3);
+});

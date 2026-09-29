@@ -40,11 +40,13 @@ test('xpForRun rewards score, gems and duel wins, and never goes negative', () =
   assert.equal(xpForRun({}), 0);
   assert.equal(xpForRun({ score: -1000, gems: -5 }), 0);
   const rush = xpForRun({ mode: 'rush', score: 5000, gems: 20 });
-  assert.ok(rush > 0);
+  assert.equal(rush, 26);
+  assert.equal(xpForRun({ mode: 'online', score: 5000, gems: 20 }), 26);
+  assert.equal(levelForXp(rush), 1);
   const duelLoss = xpForRun({ mode: 'duel', score: 5000, gems: 20 });
   const duelWin = xpForRun({ mode: 'duel', score: 5000, gems: 20, won: true });
   assert.ok(duelWin > duelLoss);
-  assert.equal(duelWin - duelLoss, 90);
+  assert.equal(duelWin - duelLoss, 9);
   assert.ok(xpForRun({ mode: 'rush', score: 6000, gems: 20 }) > rush);
 });
 
@@ -57,7 +59,7 @@ test('applyRun accumulates XP and runs, and unlocks skins exactly at their level
   progress = first.progress;
 
   // Pump enough XP to cross several unlock thresholds.
-  const pumped = applyRun(progress, { mode: 'duel', score: 100_000, gems: 100, won: true });
+  const pumped = applyRun(progress, { mode: 'duel', score: 1_000_000, gems: 100, won: true });
   assert.ok(pumped.xpGained > 0);
   assert.equal(pumped.progress.runs, 2);
   assert.ok(pumped.level >= 5);
@@ -67,7 +69,7 @@ test('applyRun accumulates XP and runs, and unlocks skins exactly at their level
   for (const skin of SKINS) assert.equal(isSkinUnlocked(skin, pumped.level), pumped.level >= skin.level);
 
   // A second huge run must not re-announce skins already owned.
-  const again = applyRun(pumped.progress, { mode: 'duel', score: 100_000, gems: 100, won: true });
+  const again = applyRun(pumped.progress, { mode: 'duel', score: 1_000_000, gems: 100, won: true });
   for (const skin of again.unlocked) assert.ok(!unlockedIds.includes(skin.id), `${skin.id} must unlock only once`);
 });
 
