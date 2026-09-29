@@ -4,11 +4,13 @@ import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpType, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION } from './mirageRules';
+import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, rollPowerUpForMode, powerUpsEnabled, getLassoChance, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION } from './mirageRules';
 
 const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
 const RUN_SECONDS = 60;
+// Modes without special items (the Ruée) iterate over nothing instead of a live slot list.
+const NO_POWER_UPS = Object.freeze([]);
 
 function block(geometry, material, parent, position, scale = null) {
   const mesh = new THREE.Mesh(geometry, material);
@@ -735,8 +737,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 
   const spawnPowerUp = (pu, zPos) => {
-    const rank = getCurrentRank();
-    const type = rollPowerUpType(rank, Math.random);
+    // Ruée: the mode gate hands back null, so the slot stays empty and hidden.
+    const type = rollPowerUpForMode(race.mode, getCurrentRank(), Math.random);
     pu.group.traverse(obj => {
       if (obj.geometry) obj.geometry.dispose();
       if (obj.material) {
@@ -1105,8 +1107,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
       });
 
-      // Power-ups movement & collection
-      for (const pu of powerUps) {
+      // Power-ups movement & collection — duel and online only, the Ruée is clean.
+      for (const pu of powerUpsEnabled(race.mode) ? powerUps : NO_POWER_UPS) {
         pu.group.position.z += speed * dt;
         // float + rainbow animation
         if (pu.group.visible && pu.mesh) {
