@@ -146,6 +146,7 @@ function App() {
             <Route path="/news/ea-sports-fc-27-carriere-dynamique" element={<CurrentNews slug="ea-sports-fc-27-carriere-dynamique" />} />
             <Route path="/news/physint-budget-400-millions-xbox" element={<CurrentNews slug="physint-budget-400-millions-xbox" />} />
             <Route path="/news/minecraft-the-sift-nouvelle-dimension" element={<CurrentNews slug="minecraft-the-sift-nouvelle-dimension" />} />
+            <Route path="/news/god-of-war-laufey-precommandes-arc-serpent" element={<CurrentNews slug="god-of-war-laufey-precommandes-arc-serpent" />} />
             <Route path="/news/minecraft-world-hotel-chessington-2027" element={<CurrentNews slug="minecraft-world-hotel-chessington-2027" />} />
             <Route path="/news/the-witcher-3-remastered-sortie-29-septembre" element={<CurrentNews slug="the-witcher-3-remastered-sortie-29-septembre" />} />
             <Route path="/news/xbox-nadella-restructuration" element={<CurrentNews slug="xbox-nadella-restructuration" />} />

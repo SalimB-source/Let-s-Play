@@ -1877,13 +1877,54 @@ const gallery = getArticleGallery('dossier-souls');
 {gallery ? <ArticleGallery {...gallery} /> : null}
 ```
 
+### Les captures s'ouvrent en grand (visionneuse)
+
+La grille recadre les visuels en 16/9 (`object-fit: cover`) : c'est bon pour la
+mise en page, mauvais pour lire un tableau d'éditions ou détailler un artwork.
+**Chaque capture est donc cliquable** et ouvre une visionneuse — dans les actus,
+les dossiers et les tests à la fois, puisque tout passe par le même composant
+`src/components/ArticleGallery.jsx`. Rien à déclarer dans
+`src/articleGalleries.js` : le comportement vient avec la galerie.
+
+- **Ouvrir** : clic ou touche Entrée sur une capture. Chaque vignette est un
+  vrai `<button>` (`aria-haspopup="dialog"`) qui annonce le visuel et sa
+  position — « Agrandir le visuel 2 sur 3 : … » — et une pastille loupe
+  apparaît au survol (toujours visible au doigt, faute de survol).
+- **Regarder** : le visuel est affiché entier (`object-fit: contain`), sans
+  recadrage, sur une scène noire, avec sa légende et un compteur `02 / 03`.
+  Une entrée peut porter un `full` — une version plus grande servie uniquement
+  dans la visionneuse, la grille gardant `src`.
+- **Parcourir** : flèches à l'écran, flèches du clavier, Début / Fin, et
+  balayage horizontal au doigt (48 px). La navigation boucle.
+- **Fermer** : bouton ✕, touche Échap ou clic sur le fond — jamais sur le
+  cadre. Le défilement de la page est verrouillé pendant l'ouverture puis
+  rendu, et **le focus revient à la vignette cliquée** : au clavier, on ne se
+  retrouve pas renvoyé en haut de page.
+- **Cohabitation** : la visionneuse est un portail sur `<body>` (z-index 1400,
+  au-dessus de la navigation, de la barre de lecture, de la fenêtre sociale et
+  des succès, sous les appels) et met les lecteurs vidéo de la page en pause à
+  l'ouverture, comme le lecteur modal des tests — règle « une seule vidéo à la
+  fois ». Côté thème, le voile et la scène restent sombres dans les deux
+  thèmes (section 8 de `theme.css`) tandis que l'en-tête et le pied sont des
+  surfaces : en thème clair, ils passent à l'encre sombre et le jaune de marque
+  à `--yellow-ink`.
+
 ### Vérification
 
+- `npm run check:gallery` monte la galerie dans jsdom et **clique réellement** :
+  ouverture par la deuxième vignette, portail sur `<body>`, `full` servi à la
+  place de `src`, navigation clavier et boutons avec bouclage, fermeture par
+  Échap / ✕ / fond (mais pas par le cadre), défilement et focus rendus, cas
+  d'une capture seule (aucune flèche) et d'une galerie vide, absence de
+  visionneuse dans le rendu serveur, et enfin un passage sur le catalogue —
+  aucun visuel sans texte alternatif ni sans source.
 - `npm run check:thumbs` couvre aussi ces captures : la fabrique est la seule
   source d'URL `i.ytimg.com` du site, et le rendu SSR des pages reste contrôlé.
 - `npm run check:phone-layout` / `check:phone-css` : la bascule d'ordre passe
   par les mêmes media queries « petit écran » que le reste du site (largeur
   ≤ 800 px et pointeur grossier), sans dépendre de la largeur de fenêtre.
+- `npm run check:light-news` : le thème clair des pages Actus, galeries
+  comprises.
 
 ## Actus cinéma du jour
 
