@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import MirageWorld from './MirageWorld';
+import MirageOnline from './MirageOnline';
+import MirageCoursePicker from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
+import { DUEL_DISTANCE, DUEL_SPEED_BONUS } from './mirageRules';
+import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import './mirage-rush.css';
 
 const BEST_KEY = 'letsplay_mirage_rush_best_v1';
@@ -29,6 +33,14 @@ function playerName(entry) {
 
 export default function MirageRushPage() {
   const { user, isDemo } = useAuth();
+  const [searchParams] = useSearchParams();
+  const challengeCode = searchParams.get('duel');
+  const challenge = useMemo(() => decodeChallenge(challengeCode), [challengeCode]);
+  const [selectedStage, setSelectedStage] = useState(challenge?.stage || 'desert');
+  const [selectedMode, setSelectedMode] = useState(challenge ? 'duel' : 'rush');
+  const stage = selectedMode === 'duel' && challenge ? challenge.stage || 'desert' : selectedStage;
+  const [race, setRace] = useState({ mode: 'rush' });
+  const [shareState, setShareState] = useState('');
   const [phase, setPhase] = useState('intro');
   const [ready, setReady] = useState(false);
   const [hud, setHud] = useState(EMPTY_HUD);
@@ -69,6 +81,9 @@ export default function MirageRushPage() {
   }, [refreshLeaderboard]);
 
   const startRun = () => {
+    audioRef.current?.setStage(stage);
+    setRace({ mode: selectedMode, stage, challenge: selectedMode === 'duel' ? challenge : null });
+    setShareState('');
     setHud(EMPTY_HUD);
     setNewRecord(false);
     setJustFinished(null);
@@ -89,6 +104,7 @@ export default function MirageRushPage() {
     setJustFinished(result);
     setPhase('finished');
     audioRef.current?.stop();
+    if (result.mode === 'duel') return;
     const isRecord = result.score > readBest();
     if (isRecord) {
       writeBest(result.score);
@@ -110,9 +126,23 @@ export default function MirageRushPage() {
     await refreshLeaderboard();
   }, [backendEnabled, connected, refreshLeaderboard]);
 
+  const shareDuel = async () => {
+    if (!justFinished || justFinished.mode !== 'duel') return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('duel', encodeChallenge({ ...justFinished, name: user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'Cavalier' }));
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setShareState('Lien copié ! Envoie-le à ton adversaire.');
+    } catch {
+      setShareState(url.toString());
+    }
+  };
+
   const onHud = useCallback((next) => setHud(next), []);
   const trigger = (name) => actionsRef.current?.(name);
   const timePercent = useMemo(() => Math.max(0, Math.min(100, (hud.remaining / 60) * 100)), [hud.remaining]);
+
+  if (selectedMode === 'online') return <MirageOnline connected={connected} userId={user?.id} initialStage={selectedStage} onBack={() => setSelectedMode('rush')} />;
 
   return (
     <div className="mirage-page">
@@ -120,7 +150,7 @@ export default function MirageRushPage() {
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow"><span className="mirage-live-dot" /> LET’S PLAY ARCADE <span className="mirage-eyebrow-divider">/</span> 3D VOXEL RUNNER</div>
           <h1>MIRAGE <em>RUSH</em></h1>
-          <p>Le désert se déforme. Les cristaux t’appellent. <strong>Tiens 60 secondes et fais exploser ton record.</strong></p>
+          <p>Le désert se déforme. Les cristaux t’appellent. <strong>Choisis la ruée contre la montre ou un duel jusqu’à la ligne d’arrivée.</strong></p>
         </div>
         <div className="mirage-heading-side">
           <span className="mirage-record-label">TON RECORD</span>
@@ -132,11 +162,11 @@ export default function MirageRushPage() {
       <div className="mirage-layout wrap">
         <section className={`mirage-game-shell${phase === 'playing' ? ' is-running' : ''}`} aria-label="Partie de Mirage Rush">
           <div className="mirage-game-topbar">
-            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>ZONE 01 <b>·</b> DUNES DE L’ÉCHO</span></div>
+            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
             <div className="mirage-game-controls-top">
               {phase === 'playing' && <span className="mirage-live-pill"><i /> EN PARTIE</span>}
               <button type="button" className={`mirage-sound-button${musicOn ? ' is-on' : ''}`} onClick={toggleMusic} aria-pressed={musicOn}>
-                <span aria-hidden="true">{musicOn ? '♫' : '♪'}</span> {musicOn ? 'MUSIQUE ON' : 'SON COUPÉ'}
+                <span aria-hidden="true">{musicOn ? '♫' : '♪'}</span> {musicOn ? 'SON ON' : 'SON COUPÉ'}
               </button>
             </div>
           </div>
@@ -144,40 +174,62 @@ export default function MirageRushPage() {
           <div className="mirage-viewport">
             <MirageWorld
               active={phase === 'playing'}
+              race={race}
+              stage={stage}
               onReady={() => setReady(true)}
               onHud={onHud}
               onFinish={onFinish}
               onCrash={() => {}}
+              onPickup={(tier) => audioRef.current?.pickup(tier)}
+              onCheer={() => audioRef.current?.cheer()}
               actionsRef={actionsRef}
             />
             <div className="mirage-sun-glare" aria-hidden="true" />
             {phase === 'playing' && (
               <div className="mirage-hud" aria-live="polite">
                 <div className="mirage-hud-card mirage-hud-score"><small>SCORE</small><strong>{hud.score.toLocaleString('fr-FR')}</strong><span>✦ {hud.gems} fragments</span></div>
-                <div className="mirage-hud-center"><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></div>
-                <div className="mirage-hud-card mirage-hud-streak"><small>COMBO <b>×{hud.multiplier}</b></small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></div>
+                <div className="mirage-hud-center">{race.mode === 'duel' ? <><div className="mirage-clock">{Math.round(hud.distance || 0)} / {DUEL_DISTANCE} m</div><div className="mirage-time-track"><i style={{ width: `${Math.min(100, (hud.distance || 0) / DUEL_DISTANCE * 100)}%` }} /></div></> : <><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></>}</div>
+                <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b></small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
               </div>
             )}
 
             {phase === 'intro' && (
               <div className="mirage-overlay mirage-intro-overlay">
-                <div className="mirage-overlay-kicker"><span>✦</span> UNE COURSE CONTRE LE MIRAGE <span>✦</span></div>
-                <h2>LE SABLE <em>SE RÉVEILLE.</em></h2>
-                <p>Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.</p>
+                <div className="mirage-overlay-kicker"><span>✦</span> CHOISIS TA COURSE <span>✦</span></div>
+                <h2>{selectedMode === 'duel' ? 'À TOI DE' : 'LE SABLE'} <em>{selectedMode === 'duel' ? 'GALOPER.' : 'SE RÉVEILLE.'}</em></h2>
+                <MirageCoursePicker selectedMode={selectedMode} setSelectedMode={setSelectedMode} stage={stage} setSelectedStage={setSelectedStage} challenge={challenge} />
+                {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
+                {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier le PNJ.</p>}
+                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme)' : 'L’Ombre (PNJ)'}. Les cristaux accélèrent ton cheval ; les chocs le ralentissent. Premier à ${DUEL_DISTANCE} m !` : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo.'}</p>
                 <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
-                  {ready ? 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
+                  {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU DÉSERT…'} <span>↗</span>
                 </button>
-                <div className="mirage-overlay-hint">60 SECONDES <span>·</span> 3 VIES <span>·</span> RECORD À BATTRE</div>
+                <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · RECORD À BATTRE'}</div>
               </div>
             )}
 
-            {phase === 'finished' && (
+            {phase === 'finished' && justFinished?.mode === 'duel' && (
+              <div className="mirage-overlay mirage-result-overlay">
+                <div className="mirage-overlay-kicker"><span>✦</span> ARRIVÉE · DUEL <span>✦</span></div>
+                <h2>{justFinished.won ? 'VICTOIRE' : 'LE RIVAL'} <em>{justFinished.won ? 'DU CAVALIER !' : 'L’EMPORTE.'}</em></h2>
+                <div className="mirage-final-score">{justFinished.duration.toFixed(1)} <small>SECONDES</small></div>
+                <div className="mirage-result-stats"><span>{justFinished.rivalName} : {justFinished.rivalDuration == null ? `${justFinished.rivalDistance} m` : `${justFinished.rivalDuration.toFixed(1)} s`}</span><span>◆ {justFinished.gems} cristaux</span><span>{justFinished.score.toLocaleString('fr-FR')} pts</span></div>
+                <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
+                <button type="button" className="mirage-share-button" onClick={shareDuel}>PARTAGER UN DÉFI ↗</button>
+                <button type="button" className="mirage-share-button" onClick={() => setPhase('intro')}>CHOISIR UN MODE</button>
+                {shareState && <p className="mirage-share-status" role="status">{shareState}</p>}
+                <div className="mirage-overlay-hint">Défi par fantôme enregistré · pas une course en direct</div>
+              </div>
+            )}
+
+            {phase === 'finished' && justFinished?.mode !== 'duel' && (
               <div className="mirage-overlay mirage-result-overlay">
                 <div className="mirage-overlay-kicker"><span>✦</span> {newRecord ? 'NOUVEAU RECORD PERSONNEL' : 'FIN DE LA RUÉE'} <span>✦</span></div>
                 <h2>{newRecord ? 'LE MIRAGE' : 'LE SABLE'} <em>{newRecord ? 'EST À TOI.' : 'T’A RATTRAPÉ.'}</em></h2>
                 <div className="mirage-final-score">{(justFinished?.score || 0).toLocaleString('fr-FR')} <small>PTS</small></div>
                 <div className="mirage-result-stats"><span>◆ {justFinished?.gems || 0} fragments</span><span>◷ {justFinished?.duration || 0} s</span><span>RECORD {best.toLocaleString('fr-FR')}</span></div>
                 <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
+                <button type="button" className="mirage-share-button" onClick={() => setPhase('intro')}>CHOISIR UN MODE</button>
                 {submitState === 'saving' && <p className="mirage-save-note">Envoi du score au classement…</p>}
                 {submitState === 'saved' && <p className="mirage-save-note is-success">Score enregistré dans le classement du site.</p>}
                 {submitState === 'login' && backendEnabled && <p className="mirage-save-note">Connecte-toi pour apparaître au classement <Link to="/auth">Connexion ↗</Link></p>}
@@ -198,7 +250,7 @@ export default function MirageRushPage() {
             <button type="button" className="mirage-jump-control" onClick={() => trigger('jump')} aria-label="Sauter">SAUT <span>↑</span></button>
             <button type="button" onClick={() => trigger('right')} aria-label="Aller à droite">→</button>
           </div>
-          <div className="mirage-game-foot"><span>WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER</span><span>UN RUN = UN RECORD <b>·</b> PAS DE PAY-TO-WIN</span></div>
+          <div className="mirage-game-foot"><span>ZQSD / WASD / FLÈCHES <b>·</b> ESPACE POUR SAUTER</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE · CHOCS = RALENTISSEMENT' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
 
         <aside className="mirage-side-panel">
@@ -228,11 +280,17 @@ export default function MirageRushPage() {
           </section>
 
           <section className="mirage-howto panel-frame">
-            <span className="mirage-panel-kicker">LES RÈGLES DU DÉSERT</span>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Ramasse les fragments</strong><small>Chaque cristal augmente tes points et ton combo.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les cactus</strong><small>Trois chocs et la ruée s’arrête.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux.</small></div></div>
-            <div className="mirage-score-tip"><span>ASTUCE</span> Garde ton saut pour les blocs violets — une esquive bien timée vaut plus qu’un détour.</div>
+            <span className="mirage-panel-kicker">MODE DUEL · PREMIER À 600 M</span>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>Un cavalier rival</strong><small>Défie L’Ombre : un PNJ qui change de voie, saute et te vole les diamants. Ou partage ton fantôme de course avec un autre joueur. Ce n’est pas du temps réel.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rose +{DUEL_SPEED_BONUS[1]} · Or +{DUEL_SPEED_BONUS[2]} m/s. Les boosts décroissent avec le temps.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Collision</strong><small>Pas de vies perdues en duel : le cheval ralentit puis reprend son allure.</small></div></div>
+          </section>
+          <section className="mirage-howto panel-frame">
+            <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rose : 150 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses ou les hautes bottes de paille : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
+            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert) , les clôtures (western) et les bottes basses (plaine) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si un cactus ferme la troisième voie, le saut est obligatoire.</div>
           </section>
 
           <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>

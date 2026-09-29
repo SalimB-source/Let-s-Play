@@ -1,0 +1,125 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { DesertGroove, PRAIRIE_BPM } from '../src/games/arcadeAudio.js';
+
+test('prairie selects its own soundtrack and resets the phrase', () => {
+  const audio = new DesertGroove();
+  audio.step = 83;
+  audio.setStage('prairie');
+  assert.equal(audio.step, 0);
+  let prairie = 0, western = 0;
+  audio.playPrairie = () => prairie++;
+  audio.playWestern = () => western++;
+  audio.playStep(0, 0);
+  assert.equal(prairie, 1);
+  assert.equal(western, 0);
+  audio.setStage('western');
+  audio.playStep(0, 0);
+  assert.equal(western, 1);
+});
+
+test('sixteen-bar prairie score schedules finite, positive notes and varies phrases', () => {
+  const audio = new DesertGroove();
+  const bars = [];
+  audio.noise = () => {};
+  for (let bar = 0; bar < 16; bar++) {
+    const notes = [];
+    audio.tone = (frequency, time, duration, type, volume) => {
+      assert.ok(Number.isFinite(frequency) && frequency > 0);
+      assert.ok(Number.isFinite(time) && time >= 0);
+      assert.ok(duration > 0 && volume > 0 && volume <= 0.2);
+      notes.push(frequency);
+    };
+    for (let step = 0; step < 16; step++) {
+      audio.step = bar * 16 + step;
+      audio.playPrairie(step, audio.step * 60 / PRAIRIE_BPM / 4);
+    }
+    bars.push(JSON.stringify(notes));
+  }
+  assert.ok(new Set(bars).size >= 12);
+  assert.notEqual(bars[0], bars[8], "refrain adds instrumentation");
+});
+
+test('cowboy cry respects mute, loading, overlap, cooldown and stops without resuming later', () => {
+  const audio = new DesertGroove();
+  const sources = [];
+  const ducking = [];
+  const gainParam = { cancelScheduledValues: () => {}, setValueAtTime: v => ducking.push(v), linearRampToValueAtTime: v => ducking.push(v) };
+  audio.context = {
+    state: 'running', currentTime: 10, destination: {},
+    suspend() { this.state = 'suspended'; },
+    createBufferSource: () => {
+      const source = { connect() {}, disconnect() {}, start() { this.started = true; }, stop() { this.stopped = true; this.onended?.(); } };
+      sources.push(source);
+      return source;
+    },
+    createGain: () => ({ gain: { value: 0 }, connect() {}, disconnect() {} }),
+  };
+  audio.master = { gain: gainParam };
+  audio.cheer();
+  assert.equal(sources.length, 0, 'muted');
+  audio.running = true;
+  audio.cheer();
+  assert.equal(sources.length, 0, 'not loaded');
+  audio.cryBuffer = { duration: 1.96 };
+  audio.cheer();
+  assert.equal(sources.length, 1);
+  assert.equal(sources[0].started, true);
+  assert.ok(ducking.includes(0.07), 'music ducks under voice');
+  audio.cheer();
+  assert.equal(sources.length, 1, 'no overlap');
+  sources[0].onended();
+  audio.context.currentTime = 11;
+  audio.cheer();
+  assert.equal(sources.length, 1, 'cooldown');
+  audio.context.currentTime = 15;
+  audio.cheer();
+  assert.equal(sources.length, 2);
+  audio.stop();
+  assert.equal(sources[1].stopped, true);
+  assert.equal(audio.crySource, null);
+  assert.equal(ducking.at(-1), 0.17, 'normal music level restored');
+  audio.cheer();
+  assert.equal(sources.length, 2, 'no cry while stopped');
+  audio.setStage('prairie');
+  assert.equal(audio.lastCry, -Infinity, 'new race resets cooldown');
+});
+
+test('a pending start cannot reactivate sound after stop', async () => {
+  const audio = new DesertGroove();
+  let resumed;
+  audio.context = { state: 'suspended', resume: () => new Promise(resolve => { resumed = resolve; }) };
+  const originalWindow = globalThis.window;
+  globalThis.window = { AudioContext: function () {} };
+  try {
+    const start = audio.start();
+    audio.stop();
+    resumed();
+    await start;
+    assert.equal(audio.running, false);
+    assert.equal(audio.timer, null);
+  } finally { globalThis.window = originalWindow; }
+});
+
+test('voice load failure stays silent and does not interrupt the game', async () => {
+  const originalFetch = globalThis.fetch;
+  const audio = new DesertGroove();
+  audio.context = {};
+  globalThis.fetch = async () => { throw new Error('Offline'); };
+  try {
+    await audio.loadCry();
+    assert.equal(audio.cryBuffer, null);
+    assert.equal(audio.cryLoading, null);
+  } finally { globalThis.fetch = originalFetch; }
+});
+
+test('game uses the unmodified user-uploaded MP3 rather than the generated voice', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { createHash } = await import('node:crypto');
+  const data = await readFile(new URL('../src/games/assets/cowboy-hey-haa.mp3', import.meta.url));
+  const hash = createHash('sha1').update(`blob ${data.length}\0`).update(data).digest('hex');
+  assert.equal(hash, '5490bc87ec38e0d5e651260f2ad280f40025cdac');
+  const audioModule = await readFile(new URL('../src/games/arcadeAudio.js', import.meta.url), 'utf8');
+  assert.ok(audioModule.includes("new URL('./assets/cowboy-hey-haa.mp3', import.meta.url)"));
+  assert.ok(!audioModule.includes('cowboy-hey-haa.wav'));
+});

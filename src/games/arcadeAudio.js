@@ -1,16 +1,31 @@
+const COWBOY_CRY_URL = new URL('./assets/cowboy-hey-haa.mp3', import.meta.url).href;
+const MUSIC_VOLUME = 0.17;
 const BPM = 116;
+export const PRAIRIE_BPM = 126;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
 
-/** An original, lightweight Web Audio desert-funk loop (no external track). */
+/** Original lightweight Web Audio soundtracks, selected per stage (no external tracks). */
 export class DesertGroove {
   constructor() {
+    this.stage = 'desert';
     this.context = null;
     this.master = null;
     this.timer = null;
     this.step = 0;
     this.nextTime = 0;
     this.running = false;
+    this.cryBuffer = null;
+    this.cryLoading = null;
+    this.crySource = null;
+    this.lastCry = -Infinity;
+    this.session = 0;
+  }
+
+  setStage(stage) {
+    this.stage = stage;
+    this.step = 0;
+    this.lastCry = -Infinity;
   }
 
   async start() {
@@ -18,20 +33,24 @@ export class DesertGroove {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     this.context ||= new AudioContext();
-    await this.context.resume();
+    const context = this.context;
+    const session = ++this.session;
+    try { await context.resume(); } catch { return; }
+    if (this.context !== context || this.session !== session) return;
     if (!this.master) {
       this.master = this.context.createGain();
-      this.master.gain.value = 0.17;
+      this.master.gain.value = MUSIC_VOLUME;
       this.master.connect(this.context.destination);
     }
     this.running = true;
+    void this.loadCry();
     this.nextTime = this.context.currentTime + 0.06;
     this.timer = window.setInterval(() => this.schedule(), 35);
   }
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / BPM / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -79,7 +98,98 @@ export class DesertGroove {
     source.stop(time + duration);
   }
 
+  playWestern(step, time) {
+    // Original E-minor cowboy motif: whistle, plucked strings, galloping percussion.
+    const melody = [659.25, 0, 783.99, 739.99, 659.25, 0, 493.88, 0, 587.33, 659.25, 0, 783.99, 880, 783.99, 739.99, 0];
+    const phrase = Math.floor(this.step / 16) % 4;
+    const root = [82.41, 82.41, 73.42, 61.74][phrase];
+    if (step % 4 === 0) {
+      this.tone(root, time, 0.22, 'triangle', 0.22);
+      this.tone(90, time, 0.07, 'sine', 0.17);
+    }
+    if ([2, 6, 10, 14].includes(step)) {
+      [2, 3, 4.75].forEach((ratio, i) => this.tone(root * ratio, time + i * 0.014, 0.16, 'triangle', 0.09));
+    }
+    if ([0, 3, 4, 7, 8, 11, 12, 15].includes(step)) {
+      this.noise(time, 0.027, 0.08, 2200);
+      this.tone(260, time, 0.04, 'triangle', 0.06);
+    }
+    if (melody[step]) {
+      const note = melody[step] * (phrase === 3 ? 0.75 : 1);
+      this.tone(note, time, 0.24, 'sine', 0.2);
+      this.tone(note * 2, time + 0.008, 0.18, 'sine', 0.025);
+    }
+    if (step === 12) this.noise(time, 0.09, 0.08, 1200);
+  }
+
+  playPrairie(step, time) {
+    // Sixteen-bar western escape: rising whistle, warm brass and driving gallop.
+    // The second four bars answer the first, avoiding a one-bar repeated hook.
+    const beat = 60 / PRAIRIE_BPM;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const heroic = phrase >= 8;
+    const bar = Math.floor(this.step / 16) % 8;
+    const chords = [
+      [98, 246.94, 293.66], [73.42, 220, 293.66],
+      [82.41, 196, 246.94], [65.41, 196, 261.63],
+      [98, 246.94, 293.66], [65.41, 196, 261.63],
+      [73.42, 220, 293.66], [98, 246.94, 293.66],
+    ];
+    const melody = [
+      [392, 493.88, 587.33, 783.99], [739.99, 587.33, 440, 0],
+      [493.88, 587.33, 659.25, 783.99], [659.25, 523.25, 392, 0],
+      [587.33, 783.99, 987.77, 880], [783.99, 659.25, 523.25, 0],
+      [587.33, 659.25, 739.99, 880], [783.99, 587.33, 392, 0],
+    ];
+    const chord = chords[bar];
+    if (step === 0 || step === 8) {
+      this.tone(chord[0] * (step === 8 ? 1.5 : 1), time, beat * 0.8, 'triangle', 0.2);
+    }
+    if (step % 2 === 0) {
+      // Picked-guitar / banjo-like arpeggio, softer than Dust Creek's strums.
+      const note = [chord[0] * 2, chord[1], chord[2], chord[1]][(step / 2) % 4];
+      this.tone(note, time, beat * 0.55, 'triangle', 0.11);
+      if (heroic) this.tone(note * 2, time + beat * 0.25, beat * 0.3, 'triangle', 0.045);
+      this.tone(note * 2, time, 0.09, 'sine', 0.025);
+    }
+    if (step % 4 === 0) {
+      const note = melody[bar][step / 4];
+      if (note) {
+        const length = step === 8 ? beat * 1.4 : beat * 0.85;
+        this.tone(note, time, length, 'sine', 0.15);
+        // Filtered brass doubles the refrain an octave below the whistle.
+        if (heroic) {
+          this.tone(note / 2, time, length * 1.15, 'sawtooth', 0.065, 1500);
+          this.tone(note / 2 * 1.003, time + 0.018, length, 'triangle', 0.045);
+        }
+        this.tone(note * 2, time + 0.008, length * 0.8, 'sine', 0.018);
+        // Quiet delayed echo suggests an open landscape, without audio assets.
+        this.tone(note, time + beat * 0.75, length * 0.7, 'sine', 0.035);
+      }
+    }
+    if (step === 0) {
+      [chord[1], chord[2]].forEach(note => {
+        this.tone(note, time, beat * 3.5, 'sine', 0.035);
+        if (heroic) this.tone(note * 2, time, beat * 3.5, 'sawtooth', 0.022, 900);
+      });
+    }
+    if ([0, 3, 6, 8, 11, 14].includes(step)) {
+      this.noise(time, 0.035, 0.065, 1800);
+      this.tone(step % 8 === 0 ? 65 : 95, time, 0.16, 'sine', 0.15);
+      this.tone(170, time, 0.045, 'triangle', 0.045);
+    }
+    if (step === 4 || step === 12) this.noise(time, 0.10, heroic ? 0.065 : 0.04, 2600);
+    // Drum pickup into the refrain; a sparse first half keeps the build audible.
+    if (phrase % 8 === 7 && step >= 12) {
+      this.tone(110 + (step - 12) * 22, time, 0.12, 'triangle', 0.085);
+      this.noise(time, 0.07, 0.04, 1900);
+    }
+    if (heroic && step === 0 && phrase % 4 === 0) this.noise(time, beat * 1.5, 0.04, 6500);
+  }
+
   playStep(step, time) {
+    if (this.stage === 'prairie') { this.playPrairie(step, time); return; }
+    if (this.stage === 'western') { this.playWestern(step, time); return; }
     const beat = 60 / BPM;
     if ([0, 6, 8, 14].includes(step)) {
       this.tone(110, time, 0.18, 'sine', 0.34);
@@ -97,8 +207,67 @@ export class DesertGroove {
     if (hook) this.tone(hook, time, beat * 0.32, 'square', 0.035, 1700);
   }
 
+  /** Crystal pickup chime; rarer crystals sound brighter and richer. */
+  pickup(tier = 0) {
+    if (!this.running || !this.context || !this.master) return;
+    const time = this.context.currentTime + 0.005;
+    const notes = [[1046.5, 1568], [1174.7, 1760], [1318.5, 1975.5, 2637]][tier] || [1046.5, 1568];
+    notes.forEach((frequency, index) => this.tone(frequency, time + index * 0.055, 0.2, 'triangle', 0.16 + tier * 0.025));
+    this.noise(time, 0.05, 0.035, 9000);
+  }
+
+  async loadCry() {
+    if (this.cryBuffer || this.cryLoading || !this.context) return;
+    const context = this.context;
+    this.cryLoading = (async () => {
+      try {
+        const response = await fetch(COWBOY_CRY_URL);
+        if (!response.ok) return;
+        const buffer = await context.decodeAudioData(await response.arrayBuffer());
+        if (this.context === context) this.cryBuffer = buffer;
+      } catch { /* An unavailable voice asset must never interrupt the race. */ }
+    })();
+    try { await this.cryLoading; } finally { this.cryLoading = null; }
+  }
+
+  cheer() {
+    // Do not queue late playback: mute, overlap and cooldown always win.
+    if (!this.running || this.context?.state !== 'running' || !this.master || !this.cryBuffer || this.crySource) return;
+    const now = this.context.currentTime;
+    if (now - this.lastCry < 4) return;
+    const source = this.context.createBufferSource();
+    const gain = this.context.createGain();
+    source.buffer = this.cryBuffer;
+    gain.gain.value = 0.24;
+    source.connect(gain);
+    gain.connect(this.context.destination);
+    this.crySource = source;
+    this.lastCry = now;
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+      if (this.crySource === source) this.crySource = null;
+    };
+    const music = this.master.gain;
+    music.cancelScheduledValues(now);
+    music.setValueAtTime(MUSIC_VOLUME, now);
+    music.linearRampToValueAtTime(0.07, now + 0.03);
+    music.setValueAtTime(0.07, now + source.buffer.duration);
+    music.linearRampToValueAtTime(MUSIC_VOLUME, now + source.buffer.duration + 0.2);
+    source.start(now);
+  }
+
   stop() {
     this.running = false;
+    this.session += 1;
+    if (this.crySource) {
+      this.crySource.stop();
+      this.crySource = null;
+    }
+    if (this.master && this.context) {
+      this.master.gain.cancelScheduledValues(this.context.currentTime);
+      this.master.gain.setValueAtTime(MUSIC_VOLUME, this.context.currentTime);
+    }
     if (this.timer) window.clearInterval(this.timer);
     this.timer = null;
     if (this.context?.state === 'running') this.context.suspend();
@@ -109,5 +278,6 @@ export class DesertGroove {
     if (this.context) this.context.close();
     this.context = null;
     this.master = null;
+    this.cryBuffer = null;
   }
 }
