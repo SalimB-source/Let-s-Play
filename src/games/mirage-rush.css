@@ -463,9 +463,9 @@
   .mirage-viewport { height: min(clamp(520px, 86vw, 660px), 88vh); }
 }
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
-  /* Barre mobile : 68px de haut sous l'encoche — on repart de 104px comme
-     les autres pages (23px laissaient le titre sous la barre). */
-  .mirage-page { padding-top: calc(104px + env(safe-area-inset-top, 0px)); }
+  /* Barre mobile : 68px de haut — on repart de 104px comme les autres pages
+     (23px laissaient le titre sous la barre). */
+  .mirage-page { padding-top: 104px; }
   .mirage-page .wrap { width: min(100% - 24px, 520px); }
   .mirage-heading { align-items: flex-start; gap: 10px; padding-bottom: 18px; }
   .mirage-eyebrow { flex-wrap: wrap; gap: 6px; font-size: 8px; letter-spacing: .12em; }
