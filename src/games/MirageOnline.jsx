@@ -1,5 +1,6 @@
-import { CHARACTER_NAMES } from './mirageCharacters';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import MirageCharacterPortrait from './MirageCharacterPortrait';
+import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
 import {
@@ -67,6 +68,7 @@ export default function MirageOnline({
   }, [connected, customPseudo, guestProfile.id, guestProfile.name, userId, userName]);
 
   const [room, setRoom] = useState(null);
+  const worldRace = useMemo(() => ({ mode: 'online', seed: room?.seed }), [room?.seed]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [loadingRooms, setLoadingRooms] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -82,6 +84,7 @@ export default function MirageOnline({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [worldReady, setWorldReady] = useState(false);
+  const [worldError, setWorldError] = useState('');
   const [active, setActive] = useState(false);
   const [finished, setFinished] = useState(false);
   const [seconds, setSeconds] = useState(null);
@@ -206,6 +209,7 @@ export default function MirageOnline({
       if (action === 'leave') {
         setActive(false);
         setWorldReady(false);
+        setWorldError('');
         setHud({});
         gemPickupTimers.current.forEach((timer) => clearTimeout(timer));
         gemPickupTimers.current.clear();
@@ -357,6 +361,8 @@ export default function MirageOnline({
   };
 
   const myPlayer = room?.players?.find((p) => p.user_id === effectivePlayer.id);
+  const characterIndex = Math.max(0, Math.min(CHARACTER_NAMES.length - 1, Number(myPlayer?.character ?? myPlayer?.slot) || 0));
+  const selectedSkin = CHARACTER_PALETTES[characterIndex];
   const isHost = Boolean(
     room && (room.host_id === effectivePlayer.id || String(room.host_id).startsWith('bot-')),
   );
@@ -783,11 +789,15 @@ export default function MirageOnline({
                     <button
                       type="button"
                       key={name}
-                      className={`mirage-skin-chip${(myPlayer?.character ?? myPlayer?.slot) === index ? ' is-selected' : ''}`}
-                      aria-pressed={(myPlayer?.character ?? myPlayer?.slot) === index}
+                      className={`mirage-skin-chip${characterIndex === index ? ' is-selected' : ''}`}
+                      aria-pressed={characterIndex === index}
                       disabled={busy || room.status !== 'lobby'}
                       onClick={() => command('character', room.code, { p_character: index })}
-                    >{name}</button>
+                    >
+                      <MirageCharacterPortrait character={index} className="mirage-skin-portrait" decorative />
+                      <span className="mirage-skin-name">{name.split(' · ')[0]}</span>
+                      <small>{characterIndex === index ? 'PERSONNAGE CHOISI' : 'CHOISIR'}</small>
+                    </button>
                   ))}
                 </div>
                 <p className="mirage-ready-hint">
@@ -807,9 +817,10 @@ export default function MirageOnline({
                         className={`mirage-player-slot-card${p.ready ? ' is-player-ready' : ' is-player-waiting'}`}
                       >
                         <div className="mirage-player-slot-head">
-                          <span className="mirage-player-avatar" aria-hidden="true">
-                            {(p.name || 'C').slice(0, 1).toUpperCase()}
-                          </span>
+                          <MirageCharacterPortrait
+                            character={p.character ?? p.slot}
+                            className="mirage-player-character"
+                          />
                           <div className="mirage-player-identity">
                             <strong>
                               {p.name}
@@ -995,11 +1006,18 @@ export default function MirageOnline({
                 <MirageWorld
                   active={active}
                   stage={stage}
-                  race={{ mode: 'online', seed: room.seed }}
-                  skin={skin}
-                  network={{ players: room.players, userId: effectivePlayer.id, gemPickups: gemPickups }}
+                  race={worldRace}
+                  skin={selectedSkin}
+                  network={{ players: room.players, userId: effectivePlayer.id, gemPickups }}
                   actionsRef={actions}
-                  onReady={() => setWorldReady(true)}
+                  onReady={() => {
+                    setWorldError('');
+                    setWorldReady(true);
+                  }}
+                  onError={(message) => {
+                    setWorldReady(false);
+                    setWorldError(message || 'Le jeu 3D n’a pas pu démarrer.');
+                  }}
                   onHud={(p) => {
                     latest.current = p;
                     setHud(p);
@@ -1058,6 +1076,13 @@ export default function MirageOnline({
                     }
                   }}
                 />
+                {worldError && (
+                  <div className="mirage-world-error" role="alert">
+                    <strong>Impossible d’afficher la piste</strong>
+                    <span>{worldError}</span>
+                    <button type="button" onClick={() => window.location.reload()}>RECHARGER LE JEU</button>
+                  </div>
+                )}
                 {powerToast && (
                   <div className="mirage-power-toast" role="status" aria-live="polite">
                     {powerToast}
