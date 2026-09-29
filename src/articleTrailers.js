@@ -66,6 +66,29 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // ---- Fournée du 29.09.2026 ------------------------------------------------
+  'cinema/endgame-encore-record-avatar': {
+    label: 'ENDGAME – ENCORE', meta: 'MARVEL STUDIOS',
+    items: [
+      { id: 'L2NAh3CIdig', kind: 'trailer', title: 'Avengers Endgame: Encore | Official Trailer | In Theaters Sep 25', channel: 'Marvel Entertainment', verified: '29.09.2026' },
+    ],
+    credit: 'Vidéo officielle : Marvel Entertainment, sur YouTube.',
+  },
+  'cinema/coyote-vs-acme-numerique': {
+    label: 'COYOTE VS. ACME', meta: 'KETCHUP ENTERTAINMENT · WARNER BROS. ANIMATION',
+    items: [
+      { id: 'Bpg3tJ4f3v0', kind: 'trailer', title: 'Coyote vs. ACME | Final Trailer', channel: 'Ketchup Entertainment', verified: '29.09.2026' },
+    ],
+    credit: 'Vidéo officielle : Ketchup Entertainment, sur YouTube.',
+  },
+  'cinema/mononoke-chapter-3-netflix': {
+    label: 'MONONOKE – CHAPTER III', meta: 'NETFLIX · STUDIO KAFKA / EOTA',
+    items: [
+      { id: 'R6PUcxSZ7YM', kind: 'trailer', title: 'Mononoke The Movie: Chapter Ⅲ - The Curse of the Serpent | Official Trailer | Netflix Anime', channel: 'Netflix Anime', verified: '29.09.2026' },
+    ],
+    credit: 'Vidéo officielle : Netflix Anime, sur YouTube — © EOTA / Studio Kafka / Twin Engine.',
+  },
+
   // ---- Fournée du 28.09.2026 ------------------------------------------------
   'cinema/box-office-us-endgame-encore-26-millions': {
     label: 'LE PODIUM DU WEEK-END', meta: 'MARVEL STUDIOS · SONY PICTURES',

@@ -7,11 +7,12 @@
  *   - glisser vers la gauche  → voie de gauche ;
  *   - glisser vers la droite  → voie de droite ;
  *   - glisser vers le haut    → saut ;
+ *   - taper (appui bref sans bouger) → saut ;
  *   - garder le doigt posé et continuer à glisser enchaîne les changements de
- *     voie (le doigt pilote le cheval comme un petit joystick) ;
- *   - une diagonale haut + côté fait les deux (le saut part après le
- *     changement de voie, pour que la diagonale ne soit pas « mangée » par le
- *     blocage des voies pendant le saut).
+ *     voie (le doigt pilote le cheval comme un petit joystick) : le geste est
+ *     lu pendant le mouvement, pas seulement au relâchement ;
+ *   - une diagonale haut + côté fait les deux (le changement de voie part
+ *     avant le saut, sinon il serait avalé par le blocage des voies en l'air).
  *
  * Le module est volontairement coupé en trois :
  *
@@ -38,6 +39,10 @@ export const SWIPE_MIN_DISTANCE = 34;
 export const SWIPE_REPEAT_DISTANCE = 60;
 /** Distance verticale (px) vers le haut qui déclenche le saut. */
 export const SWIPE_JUMP_DISTANCE = 30;
+/** Au-delà de cette amplitude, un appui n'est plus une tape mais un glissement. */
+export const TAP_MAX_DISTANCE = 14;
+/** Durée maximale (ms) d'une tape qui saute. */
+export const TAP_MAX_DURATION = 280;
 /**
  * Garde-fou : un navigateur peut livrer des `pointermove` groupés après un
  * geste très rapide. On borne le nombre d'actions produites par échantillon
@@ -45,29 +50,43 @@ export const SWIPE_JUMP_DISTANCE = 30;
  */
 const MAX_ACTIONS_PER_SAMPLE = 4;
 
+/** Horloge du geste : `at` s'il est exploitable, sinon l'horloge système. */
+function clockAt(at) {
+  return Number.isFinite(at) ? at : Date.now();
+}
+
 /**
  * Suivi d'un geste, en coordonnées d'écran (clientX/clientY, y vers le bas).
- * `begin()` ouvre le geste, `sample()` est appelé à chaque mouvement,
- * `end()` au relâchement (le dernier échantillon compte : un geste très bref
- * peut ne livrer qu'un seul `move`, voire aucun).
+ * `begin()` ouvre le geste, `sample()` est appelé à chaque mouvement, `end()`
+ * au relâchement (le dernier échantillon compte : un geste très bref peut ne
+ * livrer qu'un seul `move`, voire aucun).
  */
 export function createSwipeTracker(options = {}) {
   const minDistance = options.minDistance ?? SWIPE_MIN_DISTANCE;
   const repeatDistance = options.repeatDistance ?? SWIPE_REPEAT_DISTANCE;
   const jumpDistance = options.jumpDistance ?? SWIPE_JUMP_DISTANCE;
+  const tapToJump = options.tapToJump ?? true;
+  const tapMaxDistance = options.tapMaxDistance ?? TAP_MAX_DISTANCE;
+  const tapMaxDuration = options.tapMaxDuration ?? TAP_MAX_DURATION;
 
   let tracking = false;
+  let startX = 0;
   let startY = 0;
+  let startedAt = 0;
   let anchorX = 0;
   let laneChanges = 0;
   let jumpFired = false;
+  let firedAny = false;
 
-  const begin = (x, y) => {
+  const begin = (x, y, at) => {
     tracking = true;
+    startX = x;
     startY = y;
+    startedAt = clockAt(at);
     anchorX = x;
     laneChanges = 0;
     jumpFired = false;
+    firedAny = false;
     return [];
   };
 
@@ -91,14 +110,20 @@ export function createSwipeTracker(options = {}) {
       actions.push('jump');
       jumpFired = true;
     }
+    if (actions.length > 0) firedAny = true;
     return actions;
   };
 
-  const end = (x, y) => {
+  /** `allowTap` laisse l'appelant refuser la tape (souris, par exemple). */
+  const end = (x, y, at, allowTap = true) => {
     if (!tracking) return [];
     const actions = sample(x, y);
     tracking = false;
-    return actions;
+    if (firedAny || !tapToJump || !allowTap) return actions;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return actions;
+    const brief = clockAt(at) - startedAt <= tapMaxDuration;
+    const still = Math.abs(x - startX) <= tapMaxDistance && Math.abs(y - startY) <= tapMaxDistance;
+    return brief && still ? ['jump'] : actions;
   };
 
   const cancel = () => {
@@ -133,8 +158,8 @@ function idFrom(event) {
  * Branche les gestes de glissement sur `element` (le canvas du jeu).
  * Retourne la fonction qui détache tous les écouteurs.
  *
- * `onAction(name)` reçoit `left`, `right` ou `jump` ; `onGesture(name)` (facultatif)
- * est appelé juste avant, pour le retour visuel, même si le jeu n'est pas actif.
+ * `onAction(name)` reçoit `left`, `right` ou `jump` ; `onGesture(name)`
+ * (facultatif) est appelé juste avant, pour le retour visuel.
  *
  * Le défilement de la page est neutralisé par `touch-action: none` sur le
  * canvas (voir mirage-rush.css) : sans lui, un glissement vertical ferait
@@ -170,7 +195,7 @@ export function attachSwipeControls(element, onAction, options = {}) {
     const point = pointFrom(event);
     if (!point) return;
     trackedId = idFrom(event);
-    tracker.begin(point.x, point.y);
+    tracker.begin(point.x, point.y, event.timeStamp);
     if (supportsPointer && event.pointerId != null) {
       // La capture garde le suivi même si le doigt sort du canvas en glissant.
       try { element.setPointerCapture?.(event.pointerId); } catch { /* capture refusée */ }
@@ -190,7 +215,9 @@ export function attachSwipeControls(element, onAction, options = {}) {
     const point = pointFrom(event);
     release();
     trackedId = null;
-    emit(tracker.end(point?.x, point?.y));
+    // La tape qui saute reste un geste du pouce : un clic de souris sur la
+    // piste ne doit pas faire bondir le cheval à l'improviste.
+    emit(tracker.end(point?.x, point?.y, event.timeStamp, event.pointerType !== 'mouse'));
   };
 
   const abort = (event) => {
@@ -216,17 +243,18 @@ export function attachSwipeControls(element, onAction, options = {}) {
 }
 
 /**
- * Retour visuel des gestes, posé dans le même conteneur que le canvas.
+ * Retour visuel des gestes, posé dans le même conteneur que le canvas :
  * - `pulse(action)` : une flèche part dans le sens du geste ;
- * - `showHint()` / `hideHint()` : le rappel « glisse ← → · ↑ saut », affiché en
- *   début de course puis effacé dès que le joueur a compris (ou après quelques
- *   secondes) — visible uniquement sur écran tactile, grâce au CSS.
+ * - `showHint()` / `hideHint()` : la pastille « GLISSE ← → … », affichée au
+ *   départ d'une course puis effacée dès que le joueur a compris (ou après
+ *   quelques secondes). Elle porte la classe `mirage-swipe-hint` du reste de
+ *   l'interface, et le CSS ne l'affiche que sur écran tactile.
  */
 export function createSwipeFeedback(mount, options = {}) {
   if (!mount || typeof document === 'undefined') {
     return { pulse() {}, showHint() {}, hideHint() {}, destroy() {} };
   }
-  const hintText = options.hint || 'GLISSE ← → POUR CHANGER DE VOIE · ↑ POUR SAUTER';
+  const hintText = options.hint || 'GLISSE ← → POUR ESQUIVER · ↑ OU TAPE POUR SAUTER';
   const hintTimeout = options.hintTimeout ?? 6000;
   const hintGestures = options.hintGestures ?? 3;
 
@@ -238,7 +266,7 @@ export function createSwipeFeedback(mount, options = {}) {
   pulse.className = 'mirage-touch-pulse';
 
   const hint = document.createElement('span');
-  hint.className = 'mirage-touch-hint';
+  hint.className = 'mirage-swipe-hint';
   hint.textContent = hintText;
 
   layer.append(pulse, hint);

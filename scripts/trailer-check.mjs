@@ -80,6 +80,10 @@ const OFFICIAL_CHANNELS = new Set([
   'HBO Max',
   'Focus Features',
   'GODZILLA OFFICIAL by TOHO',
+  // Distributeur indépendant de Coyote vs. Acme (rachat des droits à Warner
+  // Bros. en mars 2025) — chaîne vérifiée sur YouTube (oEmbed) le 29.09.2026
+  // sur la vidéo « Coyote vs. ACME | Final Trailer » (Bpg3tJ4f3v0).
+  'Ketchup Entertainment',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */

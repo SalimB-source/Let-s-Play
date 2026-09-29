@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import {
   SWIPE_JUMP_DISTANCE, SWIPE_MIN_DISTANCE, SWIPE_REPEAT_DISTANCE,
+  TAP_MAX_DISTANCE, TAP_MAX_DURATION,
   attachSwipeControls, createSwipeFeedback, createSwipeTracker,
 } from '../src/games/mirageTouch.js';
 
@@ -31,11 +32,12 @@ test('a swipe up jumps', () => {
 
 test('a trembling finger below the threshold does not move the rider', () => {
   const jitter = tracker();
-  jitter.begin(ORIGIN.x, ORIGIN.y);
+  jitter.begin(ORIGIN.x, ORIGIN.y, 1000);
   assert.deepEqual(jitter.sample(ORIGIN.x + 7, ORIGIN.y - 4), []);
   assert.deepEqual(jitter.sample(ORIGIN.x - 9, ORIGIN.y + 6), []);
   assert.deepEqual(jitter.sample(ORIGIN.x + 2, ORIGIN.y - SWIPE_JUMP_DISTANCE + 1), []);
-  assert.deepEqual(jitter.end(ORIGIN.x - 4, ORIGIN.y + 2), []);
+  // Geste long : ce n'est ni un glissement, ni une tape.
+  assert.deepEqual(jitter.end(ORIGIN.x - 4, ORIGIN.y + 2, 1000 + TAP_MAX_DURATION + 40), []);
 });
 
 test('a swipe down is not a jump and changes nothing', () => {
@@ -312,7 +314,7 @@ test('the feedback layer announces each gesture and leaves with the world', () =
   const layer = mount.querySelector('.mirage-touch-layer');
   assert.ok(layer, 'the layer must be mounted next to the canvas');
   assert.equal(layer.getAttribute('aria-hidden'), 'true', 'pure decoration: hidden from screen readers');
-  const hint = mount.querySelector('.mirage-touch-hint');
+  const hint = mount.querySelector('.mirage-swipe-hint');
   const pulse = mount.querySelector('.mirage-touch-pulse');
   assert.match(hint.textContent, /GLISSE/);
   assert.match(hint.textContent, /SAUTER/);
@@ -341,3 +343,58 @@ test('the feedback layer is skipped when there is no DOM (server render)', () =>
   feedback.hideHint();
   feedback.destroy();
 });
+
+test('a short tap jumps, a long press does not', () => {
+  const tap = tracker();
+  tap.begin(ORIGIN.x, ORIGIN.y, 1000);
+  assert.deepEqual(tap.end(ORIGIN.x + 4, ORIGIN.y - 6, 1120), ['jump']);
+
+  // Le pouce qui reste posé (le joueur regarde la piste) ne fait pas sauter.
+  const press = tracker();
+  press.begin(ORIGIN.x, ORIGIN.y, 1000);
+  assert.deepEqual(press.end(ORIGIN.x + 3, ORIGIN.y - 2, 1000 + TAP_MAX_DURATION + 1), []);
+
+  // Un appui qui dérive au-delà de la tape n'est pas une tape non plus.
+  const drift = tracker();
+  drift.begin(ORIGIN.x, ORIGIN.y, 1000);
+  assert.deepEqual(drift.end(ORIGIN.x + TAP_MAX_DISTANCE + 1, ORIGIN.y, 1060), []);
+});
+
+test('a gesture that already steered never adds a parasitic jump on release', () => {
+  const flick = tracker();
+  flick.begin(ORIGIN.x, ORIGIN.y, 1000);
+  // Aller-retour très rapide : la voie change à l'aller, le doigt revient au
+  // point de départ avant le relâchement.
+  assert.deepEqual(flick.sample(ORIGIN.x + SWIPE_MIN_DISTANCE + 6, ORIGIN.y), ['right']);
+  assert.deepEqual(flick.end(ORIGIN.x + 2, ORIGIN.y - 2, 1120), []);
+});
+
+test('tap-to-jump can be refused (mouse) or disabled altogether', () => {
+  const mouse = tracker();
+  mouse.begin(ORIGIN.x, ORIGIN.y, 1000);
+  assert.deepEqual(mouse.end(ORIGIN.x + 2, ORIGIN.y - 2, 1080, false), []);
+
+  const noTap = createSwipeTracker({ tapToJump: false });
+  noTap.begin(ORIGIN.x, ORIGIN.y, 1000);
+  assert.deepEqual(noTap.end(ORIGIN.x + 2, ORIGIN.y - 2, 1080), []);
+});
+
+test('a real tap on the canvas jumps, but a mouse click does not', () => withDom('<div id="mount"><canvas id="track"></canvas></div>', (dom) => {
+  const canvas = dom.window.document.getElementById('track');
+  const actions = [];
+  const detach = attachSwipeControls(canvas, (name) => actions.push(name));
+  const send = (type, x, y, pointerType) => canvas.dispatchEvent(new dom.window.PointerEvent(type, {
+    clientX: x, clientY: y, pointerId: 9, pointerType, bubbles: true, cancelable: true,
+  }));
+
+  send('pointerdown', 150, 250, 'touch');
+  send('pointerup', 153, 246, 'touch');
+  assert.deepEqual(actions, ['jump']);
+
+  actions.length = 0;
+  send('pointerdown', 150, 250, 'mouse');
+  send('pointerup', 151, 250, 'mouse');
+  assert.deepEqual(actions, [], 'a desktop click must not make the horse jump');
+
+  detach();
+}));

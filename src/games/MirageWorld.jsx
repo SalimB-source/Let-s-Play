@@ -96,7 +96,7 @@ const effectiveTier = (item) => {
   return item.fake ? 1 : 2;
 };
 
-// Red diamonds (and the fake golds that pay like them) are a coin flip: the
+// Red diamonds (and the fake golds that pay like them) are a gamble: the
 // curse is rolled once per diamond, the first time anybody rides through it.
 const isTrapGem = (item) => {
   if (effectiveTier(item) !== RED_TRAP_TIER) return false;
@@ -1010,17 +1010,23 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let raf = 0;
 
   const resize = () => {
-    const width = Math.max(1, mount.clientWidth);
-    const height = Math.max(1, mount.clientHeight);
+    const bounds = mount.getBoundingClientRect();
+    const width = Math.max(1, Math.floor(bounds.width || mount.clientWidth || 1));
+    const height = Math.max(1, Math.floor(bounds.height || mount.clientHeight || 1));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     // Preserve a minimum horizontal field of view so all four lanes fit on phones.
     camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(50) / 2) / Math.min(1, camera.aspect)));
     camera.updateProjectionMatrix();
   };
-  const observer = new ResizeObserver(resize);
-  observer.observe(mount);
+  const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
+  observer?.observe(mount);
+  // The online room mounts the course inside a modal. Give layout one frame to
+  // settle before sizing the WebGL canvas, and retain a resize fallback for
+  // embedded webviews without ResizeObserver.
+  window.addEventListener('resize', resize);
   resize();
+  const initialResizeFrame = requestAnimationFrame(resize);
 
   const emitHud = (force = false) => {
     const now = performance.now();
@@ -1120,15 +1126,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   window.addEventListener('keydown', onKeyDown);
 
   // Commandes tactiles « instinctives » : le doigt glisse directement sur la
-  // piste (← → pour changer de voie, ↑ pour sauter). Le canvas reçoit les
-  // gestes ; les overlays d'intro et de résultat sont au-dessus de lui, donc un
-  // bouton « LANCER » ou « REJOUER » ne déclenche jamais de saut. Le glisser à
-  // la souris fonctionne aussi, ce qui permet de vérifier le comportement sans
-  // téléphone.
+  // piste (← → pour changer de voie, ↑ ou tape pour sauter). Le canvas reçoit
+  // les gestes ; les overlays (intro, compte à rebours, pause, résultat) sont
+  // posés au-dessus de lui, donc presser « LANCER » ou « REJOUER » ne déclenche
+  // jamais de saut. Le glisser à la souris fonctionne aussi, ce qui permet de
+  // vérifier le comportement sans téléphone.
   const touchFeedback = createSwipeFeedback(mount);
   const detachSwipe = attachSwipeControls(renderer.domElement, action, {
     onGesture: (name) => touchFeedback.pulse(name),
   });
+  // `prepare()` monte la course derrière le compte à rebours 3-2-1 : le rappel
+  // des gestes doit apparaître au feu vert, pas pendant le décompte.
+  let hintPending = false;
 
   const animate = (time) => {
     raf = requestAnimationFrame(animate);
@@ -1472,19 +1481,33 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
     renderer.render(scene, camera);
   };
+  // Build the seeded track before the first frame, not only after the race
+  // countdown. This keeps the online canvas fully painted as soon as its modal
+  // appears instead of briefly presenting an empty/black scene.
+  reset();
   raf = requestAnimationFrame(animate);
 
   return {
     start() {
-      reset();
+      // Only reset when a brand-new race arrives: resuming from pause keeps
+      // the very same race object and must not rewind the run.
+      const freshRace = race !== getRace();
+      if (freshRace) reset();
       active = true;
       lastFrame = performance.now();
-      // Le rappel des gestes n'apparaît qu'au départ d'une course (et le CSS le
-      // réserve aux écrans tactiles).
-      touchFeedback.showHint();
+      // Le rappel des gestes n'apparaît qu'au départ d'une course — jamais en
+      // reprenant une pause — et le CSS le réserve aux écrans tactiles.
+      if (freshRace || hintPending) touchFeedback.showHint();
+      hintPending = false;
+    },
+    /** Stage the next race while the world is idle (e.g. during the 3-2-1 countdown). */
+    prepare() {
+      if (!active) reset();
+      hintPending = true;
     },
     pause() {
       active = false;
+      hintPending = false;
       touchFeedback.hideHint();
     },
     setSkin(colors) {
@@ -1495,7 +1518,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     destroy() {
       active = false;
       cancelAnimationFrame(raf);
-      observer.disconnect();
+      cancelAnimationFrame(initialResizeFrame);
+      observer?.disconnect();
+      window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKeyDown);
       detachSwipe();
       touchFeedback.destroy();
@@ -1512,7 +1537,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -1522,11 +1547,13 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
   const raceRef = useRef(race);
   raceRef.current = race;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap };
+  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
-    const world = makeWorld(mountRef.current, {
+    let world;
+    try {
+      world = makeWorld(mountRef.current, {
       hud: (data) => callbackRefs.current.onHud?.(data),
       finish: (data) => callbackRefs.current.onFinish?.(data),
       crash: () => callbackRefs.current.onCrash?.(),
@@ -1540,7 +1567,11 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
       lasso: (target) => callbackRefs.current.onLasso?.(target),
       shield: (active) => callbackRefs.current.onShield?.(active),
       lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
-    }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
+      }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
+    } catch (error) {
+      callbackRefs.current.onError?.(error instanceof Error ? error.message : String(error));
+      return undefined;
+    }
     worldRef.current = world;
     if (actionsRef) actionsRef.current = (name) => world.action(name);
     callbackRefs.current.onReady?.();
@@ -1560,6 +1591,12 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onHud,
   useEffect(() => {
     worldRef.current?.setSkin?.(skin);
   }, [skin]);
+
+  // The page bumps prepareSignal right before the countdown so the fresh
+  // course is already staged behind the 3-2-1 overlay.
+  useEffect(() => {
+    if (prepareSignal > 0) worldRef.current?.prepare?.();
+  }, [prepareSignal]);
 
   useEffect(() => {
     if (!network) return;

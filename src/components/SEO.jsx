@@ -134,6 +134,21 @@ const pageMeta = {
     description: 'Le PDG de Microsoft juge « formidable » la rationalisation de Xbox menée par Asha Sharma et promet un retour à la croissance dès le prochain exercice fiscal, alors que près de 3 200 postes sont supprimés et que Halo passe chez Activision.',
     image: 'https://news.microsoft.com/source/wp-content/uploads/2024/10/MS-Exec-Nadella-Satya.jpg', type: 'article', published: '2026-09-28', section: 'Actualités gaming',
   },
+  '/news/tech/starship-vol-14-orbite-atteinte': {
+    title: 'Starship atteint enfin l’orbite : 26 satellites Starlink V3 déployés — Let’s Play',
+    description: 'Le 28 septembre 2026, le vol 14 de Starship a atteint l’orbite pour la première fois et déployé 26 satellites Starlink V3 opérationnels. Une panne d’un Raptor Vacuum en montée a ramené le vaisseau dans le Pacifique nord après 3 h 09, au lieu des dix heures prévues.',
+    image: 'https://sxcontent9668.azureedge.us/cms-assets/assets/Flight_14_Website_Desktop_4_734a6bbf25.jpg', type: 'article', published: '2026-09-29', section: 'Actualités tech',
+  },
+  '/news/tech/nvidia-open-agent-safety-platform': {
+    title: 'NVIDIA Open Agent Safety Platform : OpenShell et Sentry contre les agents fous — Let’s Play',
+    description: 'Présentée le 28 septembre 2026 par NVIDIA, l’Open Agent Safety Platform combine OpenShell, un bac à sable open source qui applique une politique vérifiable aux agents autonomes, et Sentry, une surveillance matérielle sur DPU BlueField-4 qui les met en quarantaine en quelques millisecondes.',
+    image: 'https://iprsoftwaremedia.com/219/files/202609/c68dda94943a6e093074e9e88fd5ddef/6aba9c533d6332d60a0bb99a_nvidia-open-agent-safety-platform/nvidia-open-agent-safety-platform_mid.png?v=f9cea0c6-00ad-4b7f-b0a0-6bc06b39af63', type: 'article', published: '2026-09-29', section: 'Actualités tech',
+  },
+  '/news/tech/midi-ia-maison-blanche': {
+    title: 'Déjeuner IA à la Maison-Blanche : Trump reçoit les 6 boss de l’IA — Let’s Play',
+    description: 'Le 29 septembre 2026, Donald Trump reçoit les patrons de Meta, Anthropic, OpenAI, Google, Palantir et Nvidia pour discuter de la régulation de l’IA, sous la pression d’un livre blanc de chercheurs — Hinton et Bengio en tête — qui réclame des règles contraignantes.',
+    image: 'https://img.semafor.com/4edcc71f032e922ad0fa3f238b2206d9949f984f-2048x1294.jpg?w=740&q=75&auto=format&h=467', type: 'article', published: '2026-09-29', section: 'Actualités tech',
+  },
   '/news/tech/starship-flight-14-premier-vol-orbital': {
     title: 'Starship : le vol 14 vise la première mise en orbite — Let’s Play',
     description: 'Le quatorzième vol d’essai de Starship, prévu le 28 septembre 2026 depuis Starbase, doit placer la fusée en orbite pour la première fois et déployer 26 satellites Starlink V3 (jusqu’à 26 Tbps). Fenêtre ouverte à 12 h 15 UTC, repli les 29 et 30 septembre.',
@@ -158,6 +173,21 @@ const pageMeta = {
     title: 'Meta Connect 2026 : lunettes VR à 1 299 $ et Muse Charm — Let’s Play',
     description: 'Meta a présenté le 23 septembre 2026 des lunettes de réalité virtuelle à 1 299 dollars, attendues au printemps 2027, et le Muse Charm, un accessoire à porter sur soi pour parler à l’agent Muse, annoncé pour décembre sans prix.',
     image: 'https://image.cnbcfm.com/api/v1/image/108367218-Julia_Meta_VR_2.jpg?v=1790211668&w=1600&h=900&vtcrop=y', type: 'article', published: '2026-0-23', section: 'Actualités tech',
+  },
+  '/news/cinema/endgame-encore-record-avatar': {
+    title: 'Box-office mondial : Endgame frôle le trône d’Avatar — Let’s Play',
+    description: 'Avec 86 M$ ce week-end (26 M$ en Amérique du Nord, 60 M$ à l’international), la ressortie d’Avengers: Endgame porte son total mondial à environ 2,885 milliard et revient à 39 millions du record d’Avatar ; le Royaume-Uni signe le plus gros démarrage de ressortie de son histoire.',
+    image: youTubeThumbUrl('L2NAh3CIdig'), type: 'article', published: '2026-09-29', section: 'Actualités cinéma',
+  },
+  '/news/cinema/coyote-vs-acme-numerique': {
+    title: 'Coyote vs. Acme : le film sauvé de Warner passe en ligne — Let’s Play',
+    description: 'Coyote vs. Acme est disponible en numérique dès le 29 septembre 2026 à 24,99 $ sur Prime Video, Apple TV et Fandango at Home. Racheté par Ketchup Entertainment après sa suppression par Warner Bros., le film a dépassé les 100 millions de dollars au box-office mondial.',
+    image: youTubeThumbUrl('Bpg3tJ4f3v0'), type: 'article', published: '2026-09-29', section: 'Actualités cinéma',
+  },
+  '/news/cinema/mononoke-chapter-3-netflix': {
+    title: 'Mononoke : Chapter III clôture la trilogie sur Netflix — Let’s Play',
+    description: 'Mononoke The Movie: Chapter III – The Curse of the Serpent est disponible sur Netflix le 29 septembre 2026 : le Marchand de médicaments affronte une malédiction née dans les rangs supérieurs de l’Ōoku, dans le dernier film de la trilogie de Kenji Nakamura.',
+    image: youTubeThumbUrl('R6PUcxSZ7YM'), type: 'article', published: '2026-09-29', section: 'Actualités cinéma',
   },
   '/news/cinema/box-office-us-endgame-encore-26-millions': {
     title: 'Box-office : Avengers Endgame – Encore confirme ses 26 millions de dollars — Let’s Play',
