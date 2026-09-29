@@ -142,7 +142,7 @@ const pageMeta = {
   '/news/cinema/box-office-us-endgame-encore-26-millions': {
     title: 'Box-office : Avengers Endgame – Encore confirme ses 26 millions de dollars — Let’s Play',
     description: 'Bilan consolidé du week-end américain des 25-27 septembre 2026 : Endgame – Encore premier avec 26 M$ (deuxième meilleure ressortie de l’histoire), Resident Evil deuxième à 23,3 M$ et plus de 100 M$ en dix jours. Meilleur 39e week-end depuis 2015 avec 122,3 M$.',
-    image: youTubeThumbUrl('WsBwTw_P1Do'), type: 'article', published: '2026-09-28', section: 'Actualités cinéma',
+    image: youTubeThumbUrl('L2NAh3CIdig'), type: 'article', published: '2026-09-28', section: 'Actualités cinéma',
   },
   '/news/cinema/the-last-of-us-saison-3-john-goodman-laura-bailey': {
     title: 'The Last of Us saison 3 : John Goodman, Laura Bailey et Ian Alexander au casting — Let’s Play',

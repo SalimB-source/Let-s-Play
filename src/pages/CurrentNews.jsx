@@ -194,7 +194,7 @@ const stories = {
   // et festival. Même gabarit que la fournée du 27.09 ; visuels officiels
   // hotlinkés avec carte SVG de repli locale.
   'cinema/box-office-us-endgame-encore-26-millions': {
-    date: '28.09.2026', category: 'CINÉMA · BOX-OFFICE', image: 'box-office-endgame-encore-news.svg', thumbnail: youTubeThumbUrl('WsBwTw_P1Do'), fallbackImage: 'box-office-endgame-encore-news.svg', imageAlt: 'Visuel officiel Sony Pictures pour Resident Evil, tiré de sa bande-annonce', cover: 'BOX-OFFICE US',
+    date: '28.09.2026', category: 'CINÉMA · BOX-OFFICE', image: 'box-office-endgame-encore-news.svg', thumbnail: youTubeThumbUrl('L2NAh3CIdig'), fallbackImage: 'box-office-endgame-encore-news.svg', imageAlt: 'Visuel officiel Marvel Studios pour Avengers: Endgame Encore, tiré de sa bande-annonce', cover: 'BOX-OFFICE US',
     title: 'ENDGAME CONFIRME', accent: 'SES 26 MILLIONS.', dek: 'Le bilan consolidé du week-end des 25-27 septembre est tombé : la ressortie d’Avengers: Endgame termine première avec 26 millions de dollars, devant Resident Evil (23,3 M$). Avec 122,3 M$ cumulés, le marché américain signe son meilleur 39e week-end de l’année depuis 2015.',
     lead: 'Le verdict de dimanche soir a confirmé la tendance de vendredi. Selon le bilan consolidé de Deadline, Avengers: Endgame – Encore, la ressortie augmentée du film de 2019, a rapporté 26 millions de dollars en trois jours dans 3 060 salles nord-américaines, prenant la tête d’un week-end exceptionnellement dense pour une fin septembre.',
     intro: 'Le top 5 aligne quatre films au-dessus des 19 millions de dollars : la ressortie Marvel, le Resident Evil de Zach Cregger, The Heart of the Beast avec Brad Pitt et Primetime, le film A24 où Robert Pattinson incarne Chris Hansen. Au total, le marché américain a engrangé 122,3 millions de dollars, son meilleur 39e week-end depuis 2015 (137,8 M$), sans que la tempête qui a frappé la côte Est n’entame la fréquentation.',
@@ -207,7 +207,7 @@ const stories = {
     p4: 'Le week-end raconte une industrie qui a retrouvé ses volumes, avec un mélange curieux : une ressortie, une adaptation de jeu vidéo, deux films originaux et une animation se partagent les recettes. Pour Sony, Resident Evil a désormais la carrure d’une franchise relancée ; pour Disney, Encore prouve qu’un aperçu bien placé vaut une campagne. Et vous : l’argument des scènes inédites vous a-t-il fait retourner voir Endgame, ou trouvez-vous que les ressorties encombrent les salles ?',
     take: 'À RETENIR', takeText: 'Avengers: Endgame – Encore termine premier du week-end américain des 25-27 septembre avec 26 M$ (deuxième meilleure ressortie de l’histoire), devant Resident Evil (23,3 M$, 103,4 M$ en dix jours). Le marché signe son meilleur 39e week-end depuis 2015 avec 122,3 M$.',
     source: 'D’après le bilan de dimanche de Deadline (27.09.2026). Chiffres du week-end des 25-27 septembre : estimations consolidées de dimanche, les résultats définitifs du lundi pouvant encore varier à la marge.', sourceUrl: 'https://deadline.com/2026/09/box-office-avengers-endgame-primetime-heart-of-the-beast-1237111302/', sourceDetail: 'Lire le bilan box-office de Deadline',
-    credit: 'Visuel : bande-annonce officielle de Resident Evil — Sony Pictures Entertainment.',
+    credit: 'Visuel : bande-annonce officielle d’Avengers: Endgame – Encore — Marvel Studios.',
     sentiment: 'positive'
   },
   'cinema/the-last-of-us-saison-3-john-goodman-laura-bailey': {
