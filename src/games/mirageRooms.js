@@ -345,6 +345,8 @@ function serializeRoom(room, nowIso = new Date().toISOString()) {
       score: Number(p.score || 0),
       finished_at: p.finished_at || null,
       last_seen: p.last_seen || nowIso,
+      shield_until: p.shield_until || null,
+      slowed_until: p.slowed_until || null,
     }));
   const messages = [...(room.messages || [])].slice(-50).map((m) => ({
     id: m.id,
@@ -408,7 +410,10 @@ function advanceBotsInRace(room, nowMs) {
   const nowIso = new Date(nowMs).toISOString();
   for (const p of room.players) {
     if (!p.is_bot || p.finished_at) continue;
-    const speed = p.speed || 16.2;
+    const slowedUntil = p.slowed_until ? Date.parse(p.slowed_until) : 0;
+    const isSlowed = slowedUntil > nowMs;
+    const baseSpeed = isSlowed ? (p.speed || 16.2) * 0.45 : (p.speed || 16.2);
+    const speed = baseSpeed;
     const wave = Math.sin(elapsedSec * 1.3 + p.slot * 1.9) * 0.8;
     const nextDistance = Math.min(600, Math.max(Number(p.distance || 0), elapsedSec * speed + wave));
     const laneWave = Math.floor((elapsedSec + p.slot * 1.7) / 2.6) % 3;
@@ -419,6 +424,13 @@ function advanceBotsInRace(room, nowMs) {
     p.jump = Number(jumpVal.toFixed(2));
     p.score = Math.min(200000, Math.round(p.distance * 14 + p.slot * 50));
     p.last_seen = nowIso;
+    // restore speed after slow expires
+    if (!isSlowed && p.speed && p.speed < 12) {
+      // find original bot speed from pool
+      const tpl = BOT_POOL.find(b=> b.id===p.user_id);
+      if (tpl) p.speed = tpl.speed;
+      else p.speed = 16.2;
+    }
     if (p.distance >= 600 && !p.finished_at) {
       p.finished_at = nowIso;
       p.jump = 0;
@@ -473,7 +485,9 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
     return { server_now: nowIso, rooms };
   }
 
-  if (!['create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'add_bot'].includes(action)) {
+
+  if (!['create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'add_bot', 'shield', 'lasso'].includes(action)) {
+
     throw new Error('Action inconnue');
   }
 
@@ -759,6 +773,67 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
       }
     }
     advanceBotsInRace(room, nowMs);
+    writeStore(store, true);
+    return serializeRoom(room, nowIso);
+  }
+
+  if (action === 'shield') {
+    if (room.status !== 'started') {
+      throw new Error('Course non lancée');
+    }
+    if (extras.p_clear || extras.p_active === false) {
+      existingPlayer.shield_until = null;
+    } else {
+      // 5 seconds shield
+      const until = new Date(nowMs + 5000).toISOString();
+      existingPlayer.shield_until = until;
+    }
+    writeStore(store, true);
+    return serializeRoom(room, nowIso);
+  }
+
+  if (action === 'lasso') {
+    if (room.status !== 'started') {
+      throw new Error('Course non lancée');
+    }
+    const targetId = String(extras.p_target_id || extras.p_target || '').trim();
+    if (!targetId) {
+      throw new Error('Cible manquante');
+    }
+    const target = room.players.find(p=> p.user_id===targetId);
+    if (!target) {
+      throw new Error('Cible introuvable');
+    }
+    // If target has active shield, consume shield and block lasso
+    const shieldUntil = target.shield_until ? Date.parse(target.shield_until) : 0;
+    if (shieldUntil > nowMs) {
+      target.shield_until = null;
+      room.messages.push({
+        id: `msg-${nowMs}-shieldblock`,
+        user_id: target.user_id,
+        name: target.name,
+        slot: target.slot,
+        body: `🛡️ ${target.name} a bloqué un lasso avec son bouclier !`,
+        created_at: nowIso,
+      });
+    } else {
+      const slowedUntil = new Date(nowMs + 2500).toISOString();
+      target.slowed_until = slowedUntil;
+      room.messages.push({
+        id: `msg-${nowMs}-lasso`,
+        user_id: uid,
+        name: uname,
+        slot: existingPlayer.slot,
+        body: `🪢 ${uname} a attrapé ${target.name} au lasso !`,
+        created_at: nowIso,
+      });
+      // Slow bots by reducing their speed temporarily (handled via slowed_until check in advanceBotsInRace)
+      if (target.is_bot) {
+        target.slowed_until = slowedUntil;
+        // also reduce speed for next ticks
+        target.speed = Math.max(8, (target.speed || 16) * 0.45);
+      }
+    }
     writeStore(store, true);
     return serializeRoom(room, nowIso);
   }
