@@ -153,6 +153,17 @@ export const POWER_UPS = {
   SHIELD: 'shield',
 };
 
+// ── Which modes carry the "?" items ────────────────────────────────────
+// A special item needs a rival to lasso or a hit to absorb, so only the duel
+// (PNJ or shared ghost) and the online rooms keep them. The Ruée is a solo
+// time attack scored on 3 lives: its track stays clean, crystals and hazards
+// only. Adding a mode here is all it takes to give it the "?" items back.
+export const POWER_UP_MODES = Object.freeze(['duel', 'online']);
+
+export function powerUpsEnabled(mode) {
+  return POWER_UP_MODES.includes(mode);
+}
+
 // Special items all wear the same skin: a floating rainbow "?" that only
 // reveals lasso or shield once the rider rides through it.
 //
@@ -201,6 +212,14 @@ export function rollPowerUpType(rank, random = Math.random) {
   if (random() < lassoChance) return POWER_UPS.LASSO;
   if (random() < SHIELD_CHANCE) return POWER_UPS.SHIELD;
   return null;
+}
+
+/**
+ * Roll one spawn slot for a given mode. The Ruée never yields anything: the
+ * mode gate sits here so the world can ask for a type without knowing the rules.
+ */
+export function rollPowerUpForMode(mode, rank, random = Math.random) {
+  return powerUpsEnabled(mode) ? rollPowerUpType(rank, random) : null;
 }
 
 // For future extensibility: describe all power-ups in one place
