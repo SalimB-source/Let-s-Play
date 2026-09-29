@@ -264,3 +264,24 @@ test('NPC can use the fourth lane, collect its gems and jump its barriers', asyn
   assert.equal(planNpcLane(jump, 1).lane, 3);
   assert.equal(planNpcLane(jump, 1).jump, true);
 });
+
+test('special items stay out of the Ruée: only duel and online carry them', async () => {
+  const { powerUpsEnabled, rollPowerUpForMode, POWER_UP_MODES } = await import('../src/games/mirageRules.js');
+  assert.deepEqual([...POWER_UP_MODES], ['duel', 'online']);
+  assert.equal(powerUpsEnabled('rush'), false);
+  assert.equal(powerUpsEnabled('duel'), true);
+  assert.equal(powerUpsEnabled('online'), true);
+  // A mode the game does not know never grows items either.
+  assert.equal(powerUpsEnabled(undefined), false);
+  assert.equal(powerUpsEnabled('Rush'), false);
+  // Even with a generous roll, the Ruée track yields nothing at any rank.
+  let seed = 3;
+  const next = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  for (const rank of [1, 2, 3, 4]) {
+    for (let i = 0; i < 2000; i++) assert.equal(rollPowerUpForMode('rush', rank, next), null);
+  }
+  // The duel (and online) still spawns them, so the gate is not a global off switch.
+  let found = 0;
+  for (let i = 0; i < 2000; i++) if (rollPowerUpForMode('duel', 4, next)) found += 1;
+  assert.ok(found > 0);
+});
