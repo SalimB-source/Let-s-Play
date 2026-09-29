@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
-import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, powerUpsEnabled, rollPowerUpSlot, rollPowerUpContent, PISTOL_STUN_DURATION, stunPose, nearestRider, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, RED_TRAP_TIER, rollRedTrap, crystalPickupEffect } from './mirageRules';
+import { LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, POWER_UP_SPAWN_GAP_MIN, POWER_UP_SPAWN_GAP_MAX, powerUpsEnabled, rollPowerUpSlot, rollPowerUpContent, PISTOL_STUN_DURATION, stunPose,  SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION, GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState, RED_TRAP_TIER, rollRedTrap, crystalPickupEffect } from './mirageRules';
 
 const TRACK_WIDTH = LANE_COUNT * 2.1;
 const TRACK_MIN_Z = -40;
@@ -917,17 +917,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 
   // ── Pistol ──────────────────────────────────────────────────────────
+  // The pistol always aims at the race leader, however far ahead.
   const findPistolTarget = () => {
     if (race.mode === 'online') {
       const net = getNetwork?.();
-      const others = (net?.players || [])
+      const leader = (net?.players || [])
         .filter(p => p.user_id !== net.userId && !p.finished_at)
-        .map(p => ({ player: p, distance: Number(p.distance) || 0 }));
-      const nearest = nearestRider(distance, others);
-      return nearest ? { kind: 'online', player: nearest.player } : null;
+        .reduce((best, p) => (!best || (Number(p.distance) || 0) > (Number(best.distance) || 0) ? p : best), null);
+      return leader && (Number(leader.distance) || 0) > distance ? { kind: 'online', player: leader } : null;
     }
     // The replay ghost cannot be shot; the live PNJ is the only other rider.
-    if (race.mode === 'duel' && !race.challenge && npc.finishedAt === null) return { kind: 'rival' };
+    if (race.mode === 'duel' && !race.challenge && npc.finishedAt === null && npc.dist > distance) return { kind: 'rival' };
     return null;
   };
 

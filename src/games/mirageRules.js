@@ -282,7 +282,7 @@ export const POWER_UP_DEFS = {
   [POWER_UPS.PISTOL]: {
     id: POWER_UPS.PISTOL,
     label: 'Pistolet',
-    description: 'Tire sur le cavalier le plus proche : il tombe de cheval 1 s',
+    description: 'Tire sur le cavalier en tête, même loin : il tombe de cheval 1 s',
     color: 0x444444,
     emissive: 0x111111,
   },
