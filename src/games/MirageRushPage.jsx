@@ -6,7 +6,7 @@ import MirageOnline from './MirageOnline';
 import MirageCoursePicker from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DUEL_SPEED_BONUS } from './mirageRules';
+import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import './mirage-rush.css';
 
@@ -189,7 +189,7 @@ export default function MirageRushPage() {
               <div className="mirage-hud" aria-live="polite">
                 <div className="mirage-hud-card mirage-hud-score"><small>SCORE</small><strong>{hud.score.toLocaleString('fr-FR')}</strong><span>✦ {hud.gems} fragments</span></div>
                 <div className="mirage-hud-center">{race.mode === 'duel' ? <><div className="mirage-clock">{Math.round(hud.distance || 0)} / {DUEL_DISTANCE} m</div><div className="mirage-time-track"><i style={{ width: `${Math.min(100, (hud.distance || 0) / DUEL_DISTANCE * 100)}%` }} /></div></> : <><div className="mirage-clock">{formatTime(hud.remaining)}</div><div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div></>}</div>
-                <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b></small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
+                <div className="mirage-hud-card mirage-hud-streak">{race.mode === 'duel' ? <><small>VITESSE{hud.boostLeft > 0 && <b> · BOOST</b>}</small><strong>{Math.round((hud.speed || 15) * 3.6)} <small>KM/H</small></strong><span>{Math.round(hud.rivalDistance || 0)} m · {hud.rivalName}</span></> : <><small>COMBO <b>×{hud.multiplier}</b></small><strong>{hud.combo.toString().padStart(2, '0')}</strong><span>{'◆'.repeat(hud.lives)}<i>{'◆'.repeat(3 - hud.lives)}</i></span></>}</div>
               </div>
             )}
 
@@ -282,7 +282,7 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">MODE DUEL · PREMIER À 600 M</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>Un cavalier rival</strong><small>Défie L’Ombre : un PNJ qui change de voie, saute et te vole les diamants. Ou partage ton fantôme de course avec un autre joueur. Ce n’est pas du temps réel.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rose +{DUEL_SPEED_BONUS[1]} · Or +{DUEL_SPEED_BONUS[2]} m/s. Les boosts décroissent avec le temps.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-pink">◆</span><div><strong>Bonus de vitesse</strong><small>Cyan +{DUEL_SPEED_BONUS[0]} · Rose +{DUEL_SPEED_BONUS[1]} · Or +{DUEL_SPEED_BONUS[2]} m/s, pendant {SPEED_BOOST_DURATION} s seulement. Les boosts ne s’accumulent pas : un cristal remplace le boost en cours, et un choc l’annule.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Collision</strong><small>Pas de vies perdues en duel : le cheval ralentit puis reprend son allure.</small></div></div>
           </section>
           <section className="mirage-howto panel-frame">

@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
-import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_SPEED_BONUS, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible } from './mirageRules';
+import { CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED, duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak, playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible, speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE } from './mirageRules';
 
 const LANES = [-2.1, 0, 2.1];
 const TRACK_MIN_Z = -40;
@@ -306,10 +306,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
   let distance = 0;
   let rivalDistance = 0;
   let baseSpeed = DUEL_BASE_SPEED;
-  let boost = 0;
+  let boost = SPEED_BOOST_NONE;
   let trace = [0];
   let seed = 0;
-  const npc = { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: 0, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 };
+  const npc = { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: null, genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 };
   const npcEnsureCourse = () => {
     while (npc.genPos < npc.dist + 60) {
       const encounter = npc.gen();
@@ -327,8 +327,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     npc.cooldown = Math.max(0, npc.cooldown - dt);
     npc.invulnerable = Math.max(0, npc.invulnerable - dt);
     npc.base += (DUEL_BASE_SPEED - npc.base) * Math.min(1, dt * 0.65);
-    npc.boost = Math.max(0, npc.boost - dt * 0.85);
-    const speed = duelSpeed(npc.base, npc.boost);
+    npc.boost = tickSpeedBoost(npc.boost, dt);
+    const speed = duelSpeed(npc.base, npc.boost.bonus);
     const target = npc.course[npc.next];
     if (target) {
       const ahead = target.pos - npc.dist;
@@ -348,14 +348,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
         const hazard = target.items.find(item => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(near));
         if (hazard && !(hazard.kind === 'barrier' && height > 1.05) && npc.invulnerable <= 0) {
           npc.base = Math.max(8, speed * 0.55);
-          npc.boost = 0;
+          npc.boost = SPEED_BOOST_NONE;
           npc.invulnerable = 1.15;
         }
         const gem = target.items.find(item => item.kind === 'crystal' && Math.abs(npc.x - LANES[item.lane]) < 0.85 && (!item.raised || height > 1.05) && !sharedGems.has(item.key));
         if (gem) {
           sharedGems.add(gem.key);
           hidePlayerGem(gem.key);
-          npc.boost = Math.min(9, npc.boost + DUEL_SPEED_BONUS[gem.tier]);
+          npc.boost = speedBoostFor(gem.tier);
         }
         npc.next += 1;
       }
@@ -403,7 +403,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
       multiplier: (1 + Math.min(3, Math.floor(combo / 5) * 0.5)).toFixed(1),
       lives,
       remaining: Math.max(0, RUN_SECONDS - elapsed),
-      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed, boost), mode: race.mode,
+      distance, lane: laneIndex, jump: jumpHeight(jumpLeft), rivalDistance, speed: duelSpeed(baseSpeed, boost.bonus), boostLeft: boost.left, mode: race.mode,
       rivalName: race.challenge?.name || 'L’OMBRE',
     });
   };
@@ -429,7 +429,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     distance = 0;
     rivalDistance = 0;
     baseSpeed = DUEL_BASE_SPEED;
-    boost = 0;
+    boost = SPEED_BOOST_NONE;
     trace = [0];
     rival.visible = race.mode === 'duel';
     startLine.position.z = 1;
@@ -455,7 +455,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     nextEncounter = createCourse(race.mode !== 'rush' ? seededRandom(seed) : Math.random);
     rowCounter = 0;
     sharedGems.clear();
-    Object.assign(npc, { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: 0, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 });
+    Object.assign(npc, { dist: 0, lane: 1, x: 0, jumpLeft: 0, base: DUEL_BASE_SPEED, boost: SPEED_BOOST_NONE, cooldown: 0, finishedAt: null, course: [], next: 0, gen: createCourse(seededRandom(seed)), genPos: 20, genIndex: 0, plan: null, planned: -1, hesitate: false, invulnerable: 0 });
     let z = -20;
     rows.forEach(row => {
       const gap = populateRow(row);
@@ -488,9 +488,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
     const running = active;
     if (running && race.mode !== 'rush') {
       baseSpeed += (DUEL_BASE_SPEED - baseSpeed) * Math.min(1, dt * 0.65);
-      boost = Math.max(0, boost - dt * 0.85);
+      boost = tickSpeedBoost(boost, dt);
     }
-    const speed = running ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost) : 12 + Math.min(7, elapsed * 0.12) : 0;
+    const speed = running ? race.mode !== 'rush' ? duelSpeed(baseSpeed, boost.bonus) : 12 + Math.min(7, elapsed * 0.12) : 0;
     if (running) {
       elapsed += dt;
       if (race.mode !== 'rush') {
@@ -528,7 +528,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
           const jumpedHighEnough = hazard?.kind === 'barrier' && jumpHeight(jumpLeft) > 1.05;
           const collided = Boolean(hazard && !jumpedHighEnough);
           if (collided && invulnerable <= 0) {
-            const impact = resolveCollision({ mode: race.mode, lives, speed: duelSpeed(baseSpeed, boost), boost });
+            const impact = resolveCollision({ mode: race.mode, lives, speed: duelSpeed(baseSpeed, boost.bonus), boost });
             lives = impact.lives;
             baseSpeed = impact.baseSpeed;
             boost = impact.boost;
@@ -549,7 +549,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork) {
             combo += 1;
             const multiplier = 1 + Math.min(3, Math.floor(combo / 5) * 0.5);
             score += Math.round(CRYSTALS[crystal.tier].value * multiplier);
-            if (race.mode !== 'rush') boost = Math.min(9, boost + DUEL_SPEED_BONUS[crystal.tier]);
+            if (race.mode !== 'rush') boost = speedBoostFor(crystal.tier);
             if (combo === 5 || combo === 10 || combo === 15) {
               score += 150;
               poseLeft = 0.62;

@@ -49,6 +49,27 @@ export const DUEL_BASE_SPEED = 15;
 export const DUEL_MIN_SPEED = 8;
 export const DUEL_MAX_SPEED = 26;
 
+/**
+ * A speed bonus is a single burst of SPEED_BOOST_DURATION seconds and nothing more:
+ * a new crystal replaces the live boost instead of adding to it, so no rider can
+ * bank speed and pull a decisive lead. Boost state is { bonus, left } and is never
+ * mutated in place — every helper returns a new object.
+ */
+export const SPEED_BOOST_DURATION = 1;
+export const SPEED_BOOST_NONE = Object.freeze({ bonus: 0, left: 0 });
+
+/** Grant the tier's burst and restart the 1-second window (previous boost is dropped). */
+export function speedBoostFor(tier) {
+  const bonus = DUEL_SPEED_BONUS[tier] ?? 0;
+  return bonus > 0 ? { bonus, left: SPEED_BOOST_DURATION } : SPEED_BOOST_NONE;
+}
+
+/** Run the clock down; once the window closes the bonus is gone outright. */
+export function tickSpeedBoost(boost, dt) {
+  const left = Math.max(0, (boost?.left ?? 0) - dt);
+  return left > 0 && boost?.bonus > 0 ? { bonus: boost.bonus, left } : SPEED_BOOST_NONE;
+}
+
 export function duelSpeed(base, bonus) {
   return Math.min(DUEL_MAX_SPEED, Math.max(DUEL_MIN_SPEED, base + bonus));
 }
@@ -102,13 +123,13 @@ export function playerLateralPosition(x, targetX, dt, jumpRemaining) {
   return jumpRemaining > 0 ? x : x + (targetX - x) * Math.min(1, dt * 12);
 }
 
-/** Apply one collision: rush consumes a life; races slow the rider without ending. */
+/** Apply one collision: rush consumes a life; races slow the rider and drop its burst. */
 export function resolveCollision({ mode, lives, speed, boost }) {
   if (mode === 'rush') {
     const nextLives = Math.max(0, lives - 1);
     return { lives: nextLives, baseSpeed: speed, boost, gameOver: nextLives === 0 };
   }
-  return { lives, baseSpeed: Math.max(8, speed * 0.55), boost: 0, gameOver: false };
+  return { lives, baseSpeed: Math.max(8, speed * 0.55), boost: SPEED_BOOST_NONE, gameOver: false };
 }
 
 /** Keep online's locally-rendered duplicate hidden while blinking a hit rider. */
