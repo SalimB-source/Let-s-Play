@@ -2,12 +2,12 @@
  * Entrée SSR utilisée par scripts/mirage-flow-check.mjs — `npm run check:mirage-flow`.
  *
  * Vérifie le parcours d'entrée de Mirage Rush (page /jeu) : le choix du mode
- * (RUÉE / DUEL / EN LIGNE) et le choix du terrain sont DANS LE JEU, dans
- * l'overlay d'intro, tandis que la barre d'onglets de l'en-tête reste
+ * (RUÉE / DUEL / COUPE / EN LIGNE) et le choix du terrain sont DANS LE JEU,
+ * dans l'overlay d'intro, tandis que la barre d'onglets de l'en-tête reste
  * retirée :
  *
- *   1. à l'arrivée, l'overlay d'intro propose le choix du mode (3 cartes,
- *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (5 cartes,
+ *   1. à l'arrivée, l'overlay d'intro propose le choix du mode (4 cartes,
+ *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (6 cartes,
  *      Dunes de l'Écho par défaut, dont Alger la Blanche) : pas de barre
  *      d'onglets dans l'en-tête, et le bouton « LANCER LA PARTIE » est
  *      présent d'emblée ;
@@ -15,10 +15,17 @@
  *      bouton « LANCER LE DUEL ») et le clic sur RUÉE revient en ruée ;
  *   3. choisir Alger la Blanche met à jour le bandeau (ZONE 05 · ALGER LA
  *      BLANCHE) ;
- *   4. un lien de défi (?duel=…) ouvre directement le duel : DUEL déjà
+ *   4. le clic sur COUPE remplace le choix du terrain par celui de la coupe
+ *      (Coupe du Désert : Dunes de l'Écho, Dust Creek, Plaines d'Or, dans
+ *      cet ordre, et le barème des points), « LANCER LA COUPE » ; un lien
+ *      ?mode=cup ouvre directement ce mode ;
+ *   5. un lien de défi (?duel=…) ouvre directement le duel : DUEL déjà
  *      sélectionné, bouton « LANCER LE DUEL », stage imposé par le défi
  *      (bandeau ZONE 03, cartes de terrain verrouillées) et consignes des
- *      600 m.
+ *      800 m.
+ *
+ * Le déroulé complet d'une coupe (3 courses, points, trophée) est vérifié
+ * par scripts/mirage-cup-smoke.jsx — `npm run check:mirage-cup`.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -52,6 +59,40 @@ function modeButtons(node) {
   return picker ? [...picker.querySelectorAll('button')] : [];
 }
 
+// Intro du mode COUPE : la coupe remplace le choix du terrain.
+function assertCupIntro(assert, node) {
+  const intro = node.querySelector('.mirage-intro-overlay');
+  assert.ok(intro, 'l’overlay d’intro est affiché en mode coupe');
+  assert.ok(intro.querySelector('h2').textContent.includes('TROPHÉE'), 'le titre annonce le trophée');
+  assert.equal(node.querySelectorAll('.mirage-stage-picker').length, 0,
+    'le terrain est imposé par la coupe : plus de sélecteur de terrain');
+  const cards = [...node.querySelectorAll('.mirage-cup-card')];
+  assert.equal(cards.length, 1, 'une seule coupe pour l’instant');
+  assert.equal(cards[0].getAttribute('aria-pressed'), 'true', 'la Coupe du Désert est sélectionnée');
+  assert.equal(cards[0].querySelector('.mirage-cup-card-title strong')?.textContent, 'Coupe du Désert');
+  assert.deepEqual(
+    [...cards[0].querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
+    ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or'],
+    'la coupe enchaîne Dunes de l’Écho, Dust Creek puis Plaines d’Or, dans cet ordre');
+  assert.deepEqual(
+    [...cards[0].querySelectorAll('.mirage-cup-stop-number')].map((el) => el.textContent),
+    ['COURSE 1', 'COURSE 2', 'COURSE 3']);
+  assert.deepEqual(
+    [...cards[0].querySelectorAll('.mirage-cup-points > span')].map((el) => el.textContent.replace(/\s+/g, ' ').trim()),
+    ['1ᵉʳ 10 pts', '2ᵉ 7 pts', '3ᵉ 4 pts', '4ᵉ 2 pts'],
+    'le barème des points est affiché, décroissant de la 1ʳᵉ à la 4ᵉ place');
+  assert.ok(node.querySelector('.mirage-cup-name-field input'), 'le nom du trophée est modifiable');
+  const start = node.querySelector('.mirage-start-button');
+  assert.ok(start.textContent.includes('LANCER LA COUPE') || start.textContent.includes('CHARGEMENT'),
+    'le bouton propose « LANCER LA COUPE » (ou l’attente du rendu 3D)');
+  assert.ok(node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
+    'le bandeau de zone annonce la première course de la coupe');
+  const hint = node.querySelector('.mirage-overlay-hint').textContent;
+  assert.ok(hint.includes('3 COURSES') && hint.includes('1ᵉʳ 10 PTS'), 'la consigne rappelle les 3 courses et le barème');
+  const keyPowerIcons = [...node.querySelectorAll('.mirage-keys-hint [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
+  assert.deepEqual(keyPowerIcons, ['shield', 'lasso', 'boost', 'pistol'], 'les pouvoirs du duel sont rappelés : ils servent aussi en coupe');
+}
+
 export async function checkMirageFlow(assert) {
   /* ---------------- 1. Écran d'entrée : le choix du mode est là --------- */
   const page = await mountPage('/jeu');
@@ -60,15 +101,15 @@ export async function checkMirageFlow(assert) {
     assert.ok(intro, 'l’overlay d’intro est affiché');
 
     assert.equal(page.node.querySelectorAll('.mirage-mode-tabs').length, 0,
-      'la barre d’onglets (RUÉE / DUEL / EN LIGNE) n’est pas revenue dans l’en-tête');
+      'la barre d’onglets (RUÉE / DUEL / COUPE / EN LIGNE) n’est pas revenue dans l’en-tête');
 
     const buttons = modeButtons(page.node);
     assert.ok(intro.querySelector('.mirage-mode-picker'), 'le sélecteur de mode est remis dans l’overlay d’intro');
-    assert.equal(buttons.length, 3, 'trois modes sont proposés');
+    assert.equal(buttons.length, 4, 'quatre modes sont proposés');
     assert.deepEqual(
       buttons.map((button) => button.querySelector('strong')?.textContent),
-      ['RUÉE', 'DUEL', 'EN LIGNE'],
-      'les modes RUÉE, DUEL et EN LIGNE sont choisis');
+      ['RUÉE', 'DUEL', 'COUPE', 'EN LIGNE'],
+      'les modes RUÉE, DUEL, COUPE et EN LIGNE sont proposés');
     assert.equal(buttons[0].getAttribute('aria-pressed'), 'true',
       'la RUÉE est sélectionnée par défaut');
     assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 1,
@@ -134,8 +175,24 @@ export async function checkMirageFlow(assert) {
     const rushStart = page.node.querySelector('.mirage-start-button');
     assert.ok(rushStart.textContent.includes('LANCER LA PARTIE') || rushStart.textContent.includes('CHARGEMENT'),
       'cliquer RUÉE revient au mode ruée');
+
+    /* ------- 4. Le clic sur COUPE propose la Coupe du Désert ------------ */
+    const cupButton = modeButtons(page.node).find((button) => button.querySelector('strong')?.textContent === 'COUPE');
+    assert.ok(cupButton, 'la carte COUPE est proposée');
+    await act(async () => { cupButton.click(); });
+    assertCupIntro(assert, page.node);
   } finally {
     await page.unmount();
+  }
+
+  /* ------ 4 bis. ?mode=cup ouvre directement la Coupe du Désert ---------- */
+  const cupPage = await mountPage('/jeu?mode=cup');
+  try {
+    assertCupIntro(assert, cupPage.node);
+    assert.equal(modeButtons(cupPage.node).find((button) => button.getAttribute('aria-pressed') === 'true')
+      ?.querySelector('strong')?.textContent, 'COUPE', 'le lien ?mode=cup sélectionne le mode COUPE');
+  } finally {
+    await cupPage.unmount();
   }
 
   /* ------------- 4. Lien de défi : le duel s'ouvre directement ---------- */
@@ -167,7 +224,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(start.textContent.includes('LANCER LE DUEL') || start.textContent.includes('CHARGEMENT'),
       'le bouton propose « LANCER LE DUEL » (ou l’attente du rendu 3D)');
     assert.ok(challenged.node.querySelector('.mirage-overlay-hint').textContent.includes('LE PLUS RAPIDE GAGNE'),
-      'les consignes du duel (600 m) sont révélées dès l’arrivée sur le lien');
+      'les consignes du duel (800 m) sont révélées dès l’arrivée sur le lien');
     assert.ok(challenged.node.querySelector('.mirage-game-brand').textContent.includes('PLAINES D’OR'),
       'le stage du défi (ZONE 03 · Plaines d’Or) est bien appliqué');
   } finally {

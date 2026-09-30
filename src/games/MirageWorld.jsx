@@ -37,7 +37,7 @@ function block(geometry, material, parent, position, scale = null) {
   return mesh;
 }
 
-function makeExplorer(rival = false, palette = null) {
+export function makeExplorer(rival = false, palette = null) {
   const player = new THREE.Group();
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const mat = color => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true });

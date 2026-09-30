@@ -1,5 +1,7 @@
 import React from 'react';
 import { DUEL_DISTANCE } from './mirageRules';
+import { CUPS, CUP_POINTS, MAX_RIDER_NAME, placeLabel } from './mirageCup';
+import MirageTrophyIcon from './MirageTrophyIcon';
 
 const MAPS = [
   { id: 'desert', number: '01', name: 'Dunes de l’Écho', mood: 'Mystique & solaire', detail: 'Désert · funk', sky: '#624575', sun: '#ffd57f', land: '#c99268' },
@@ -9,6 +11,11 @@ const MAPS = [
   { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Alger-Centre · chaâbi oriental', sky: '#7fb2d8', sun: '#ffd28a', land: '#e8e2d2' },
   { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', sky: '#111a30', sun: '#eef4ff', land: '#1c2936' },
 ];
+
+/** Nom affichable d’un terrain (`desert` → « Dunes de l’Écho »). */
+export function stageName(stageId) {
+  return MAPS.find((map) => map.id === stageId)?.name ?? stageId;
+}
 
 function Landscape({ map }) {
   return <svg className="mirage-map-art" viewBox="0 0 240 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
@@ -183,6 +190,52 @@ export function MirageStagePicker({ stage, setSelectedStage, locked = false, mod
         </button>)}
       </div>
     )}
+  </>;
+}
+
+/**
+ * Mode COUPE : à la place du choix de terrain, on choisit une coupe — une suite
+ * de courses sur des terrains imposés, avec le barème des points — et le nom
+ * qui s’affichera sur le trophée. Une carte par entrée de `CUPS` : en ajouter
+ * une dans le catalogue suffit.
+ */
+export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defaultRiderName }) {
+  return <>
+    <div className="mirage-picker-label"><span>02 / TA COUPE</span><span>{CUPS.length} COUPE{CUPS.length > 1 ? 'S' : ''} DISPONIBLE{CUPS.length > 1 ? 'S' : ''}</span></div>
+    <div className="mirage-cup-picker" role="group" aria-label="Choisir la coupe">
+      {CUPS.map(cup => <button type="button" key={cup.id} className={`mirage-cup-card is-${cup.id}`} aria-pressed={cupId === cup.id} onClick={() => setCupId(cup.id)}>
+        <span className="mirage-cup-card-head">
+          <span className="mirage-cup-emblem" aria-hidden="true"><MirageTrophyIcon /></span>
+          <span className="mirage-cup-card-title"><strong>{cup.name}</strong><span>{cup.tagline}</span></span>
+          <span className="mirage-choice-dot" aria-hidden="true">{cupId === cup.id ? '✓' : ''}</span>
+        </span>
+        <span className="mirage-cup-route" role="list" aria-label="Les courses, dans l’ordre">
+          {cup.stages.map((stageId, index) => {
+            const map = MAPS.find(entry => entry.id === stageId);
+            return <span className="mirage-cup-stop" role="listitem" key={`${stageId}-${index}`}>
+              <Landscape map={map} />
+              <span className="mirage-cup-stop-number">COURSE {index + 1}</span>
+              <strong>{map.name}</strong>
+            </span>;
+          })}
+        </span>
+        <span className="mirage-cup-points" role="list" aria-label="Points par place">
+          {CUP_POINTS.map((points, index) => <span role="listitem" key={index}><b>{placeLabel(index + 1)}</b> {points} pts</span>)}
+        </span>
+      </button>)}
+    </div>
+    <label className="mirage-cup-name-field">
+      <span>NOM SUR LE TROPHÉE</span>
+      <input
+        type="text"
+        value={riderName}
+        maxLength={MAX_RIDER_NAME}
+        placeholder={defaultRiderName}
+        onChange={event => setRiderName(event.target.value)}
+        autoComplete="nickname"
+        spellCheck={false}
+      />
+    </label>
   </>;
 }
 

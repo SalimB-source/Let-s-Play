@@ -733,16 +733,18 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
    l'en-tête reste retirée) : les cartes du sélecteur d'origine, suivies du
    bloc terrain (cinq horizons, dont Alger la Blanche). */
-.mirage-mode-section { width: min(100%, 640px); text-align: left; }
+.mirage-mode-section { width: min(100%, 720px); text-align: left; }
 .mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
 .mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 8px; }
 .mirage-picker-label > span:last-child { color: #9e8e9d; text-align: right; }
-.mirage-mode-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-.mirage-mode-picker button { position: relative; display: flex; align-items: center; gap: 13px; padding: 13px; min-height: 82px; border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: linear-gradient(125deg, rgba(50, 35, 57, .9), rgba(33, 26, 42, .92)); color: #fff2dd; text-align: left; cursor: pointer; transition: border-color .18s, transform .18s, background .18s, box-shadow .18s; }
+/* Quatre modes (RUÉE · DUEL · COUPE · EN LIGNE) : des tuiles verticales, sinon
+   les cartes horizontales seraient trop étroites pour leur texte. */
+.mirage-mode-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+.mirage-mode-picker button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 9px; padding: 13px; min-height: 112px; border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: linear-gradient(125deg, rgba(50, 35, 57, .9), rgba(33, 26, 42, .92)); color: #fff2dd; text-align: left; cursor: pointer; transition: border-color .18s, transform .18s, background .18s, box-shadow .18s; }
 .mirage-mode-picker button[aria-pressed="true"] { border-color: #f6cd72; background: linear-gradient(120deg, rgba(103, 67, 44, .6), rgba(48, 34, 50, .95)); box-shadow: inset 0 0 0 1px rgba(246, 205, 114, .15), 0 6px 22px rgba(0, 0, 0, .28), 0 0 24px rgba(243, 198, 91, .12); }
-.mirage-mode-symbol { display: grid; place-items: center; width: 40px; height: 44px; flex-shrink: 0; border-radius: 9px; background: rgba(255, 242, 212, .045); font-size: 28px; color: #dec1a0; }
+.mirage-mode-symbol { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 9px; background: rgba(255, 242, 212, .045); font-size: 28px; color: #dec1a0; }
 .mirage-mode-picker button[aria-pressed="true"] .mirage-mode-symbol { color: #ffdc85; background: rgba(255, 220, 133, .08); }
-.mirage-mode-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-right: 14px; }
+.mirage-mode-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .mirage-mode-copy strong { font: 900 16px var(--font-gaming); letter-spacing: .05em; }
 .mirage-mode-copy > span { font-size: 11px; color: #ead7c7; overflow-wrap: anywhere; }
 .mirage-mode-copy small { color: #bbaaaf; font: 9px var(--mono); }
@@ -775,7 +777,8 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .mirage-intro-overlay { padding: 16px 12px; }
   .mirage-intro-overlay h2 { font-size: 22px; margin: 6px 0 10px; }
   .mirage-mode-picker { grid-template-columns: 1fr; gap: 7px; margin-bottom: 12px; }
-  .mirage-mode-picker button { min-height: 68px; padding: 10px 8px; gap: 7px; }
+  .mirage-mode-picker button { flex-direction: row; align-items: center; min-height: 68px; padding: 10px 8px; gap: 7px; }
+  .mirage-mode-copy { padding-right: 14px; }
   .mirage-mode-symbol { width: 24px; font-size: 22px; }
   .mirage-mode-copy strong { font-size: 13px; }
   .mirage-mode-copy > span { font-size: 10px; }
@@ -2282,4 +2285,301 @@ img.mirage-powerup-icon {
   .mirage-back-game-button, .mirage-sound-button, .mirage-pause-button, .mirage-board-list li {
     transition: none;
   }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   COUPE — sélecteur de coupe, classement entre les courses, écran du trophée
+   ════════════════════════════════════════════════════════════════════════ */
+.mirage-chip.is-cup { background: rgba(255, 215, 107, .14); border: 1px solid rgba(255, 215, 107, .42); color: #ffe08a; }
+/* La puce de la coupe vit sous la jauge de course, au centre : les cartes de score et de vitesse gardent leur largeur. */
+.mirage-hud-cup { display: flex; justify-content: center; margin-top: 7px; }
+.mirage-hud-cup .mirage-chip { white-space: nowrap; }
+/* Le petit trophée SVG se cale sur la hauteur du texte voisin (puce du HUD, boutons). */
+.mirage-inline-trophy { display: inline-block; flex-shrink: 0; width: 1.3em; height: 1.3em; vertical-align: -.25em; }
+.mirage-start-button .mirage-inline-trophy { width: 18px; height: 18px; }
+
+/* ── Sélecteur de coupe (overlay d'intro) ── */
+.mirage-cup-picker { display: grid; gap: 10px; }
+.mirage-cup-card {
+  position: relative; display: flex; flex-direction: column; gap: 12px; padding: 14px;
+  border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2);
+  background: linear-gradient(125deg, rgba(50, 35, 57, .9), rgba(33, 26, 42, .92));
+  color: #fff2dd; text-align: left; cursor: pointer;
+  transition: border-color .18s, transform .18s, box-shadow .18s;
+}
+.mirage-cup-card[aria-pressed="true"] {
+  border-color: #f6cd72;
+  background: linear-gradient(120deg, rgba(103, 67, 44, .6), rgba(48, 34, 50, .95));
+  box-shadow: inset 0 0 0 1px rgba(246, 205, 114, .15), 0 6px 22px rgba(0, 0, 0, .28), 0 0 24px rgba(243, 198, 91, .12);
+}
+.mirage-cup-card[aria-pressed="true"] .mirage-choice-dot { background: #f6cd72; border-color: #f6cd72; }
+.mirage-cup-card:focus-visible { outline: 2px solid #fff1c9; outline-offset: 3px; }
+.mirage-cup-card-head { display: flex; align-items: center; gap: 12px; padding-right: 22px; }
+.mirage-cup-emblem {
+  display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px;
+  background: radial-gradient(circle at 50% 30%, rgba(255, 220, 133, .3), rgba(255, 220, 133, .06));
+}
+.mirage-cup-emblem svg { display: block; width: 28px; height: 28px; filter: drop-shadow(0 2px 6px rgba(255, 190, 70, .35)); }
+.mirage-cup-card-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mirage-cup-card-title strong { font: 900 17px var(--font-gaming); letter-spacing: .04em; }
+.mirage-cup-card-title span { font-size: 11px; color: #ead7c7; }
+.mirage-cup-route { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
+.mirage-cup-stop { position: relative; display: flex; flex-direction: column; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .09); background: #251c29; }
+.mirage-cup-stop .mirage-map-art { height: 62px; border-radius: 9px 9px 0 0; }
+.mirage-cup-stop-number {
+  position: absolute; top: 6px; left: 6px; padding: 3px 6px; border-radius: 5px;
+  background: rgba(33, 24, 38, .74); backdrop-filter: blur(4px); color: #ffdb87; font: 800 8px var(--mono); letter-spacing: .1em;
+}
+.mirage-cup-stop strong { padding: 7px 9px 8px; font: 800 10px var(--font-gaming); line-height: 1.35; }
+/* Petite flèche entre deux courses consécutives. */
+.mirage-cup-stop + .mirage-cup-stop::before {
+  content: '›'; position: absolute; top: 18px; left: -16px; width: 16px; text-align: center;
+  color: #f6cd72; font: 900 20px/1 var(--font-gaming);
+}
+.mirage-cup-points { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.mirage-cup-points > span {
+  padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255, 224, 166, .2); background: rgba(255, 255, 255, .045);
+  color: rgba(255, 241, 218, .85); font: 800 9px var(--mono); letter-spacing: .08em;
+}
+.mirage-cup-points b { margin-right: 5px; color: #ffdc72; }
+.mirage-cup-name-field {
+  display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 9px 12px;
+  border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: rgba(37, 28, 41, .6);
+}
+.mirage-cup-name-field > span { flex-shrink: 0; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; }
+.mirage-cup-name-field input {
+  flex: 1; min-width: 0; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255, 224, 166, .25);
+  background: rgba(0, 0, 0, .28); color: #fff2dd; font: 700 12px var(--font-gaming); letter-spacing: .03em;
+}
+.mirage-cup-name-field input::placeholder { color: rgba(255, 242, 221, .38); }
+.mirage-cup-name-field input:focus-visible { outline: 2px solid #ffdb76; outline-offset: 2px; }
+@media (hover: hover) {
+  .mirage-cup-card:hover { transform: translateY(-2px); border-color: #f6cd72; }
+}
+
+/* ── Classement (entre les courses et sur l'écran final) ── */
+.mirage-cup-standings { list-style: none; width: min(100%, 520px); margin: 0; padding: 0; display: grid; gap: 6px; }
+.mirage-cup-row {
+  display: grid; grid-template-columns: 30px 38px minmax(0, 1fr) auto auto; align-items: center; gap: 10px;
+  padding: var(--cup-row-pad, 6px) 12px var(--cup-row-pad, 6px) 8px; border-radius: 12px; text-align: left;
+  border: 1px solid rgba(255, 224, 166, .14); background: rgba(255, 255, 255, .05);
+  animation: mirageCupRow .5s cubic-bezier(.2, .9, .3, 1.2) both; animation-delay: calc(var(--row, 0) * 90ms + 120ms);
+}
+.mirage-cup-standings.is-final .mirage-cup-row { grid-template-columns: 30px 38px minmax(0, 1fr) auto; }
+.mirage-cup-row.is-me { border-color: rgba(255, 220, 114, .62); background: linear-gradient(100deg, rgba(255, 215, 107, .2), rgba(255, 255, 255, .05)); }
+.mirage-cup-row.is-leader .mirage-cup-total b { color: #ffdc72; text-shadow: 0 0 14px rgba(255, 210, 98, .4); }
+.mirage-cup-rank {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid rgba(255, 224, 166, .22); background: rgba(255, 255, 255, .06);
+  color: rgba(255, 241, 218, .75); font: 900 12px var(--font-gaming);
+}
+.mirage-cup-rank.is-place-1 { border-color: #ffe29a; background: linear-gradient(140deg, #ffe48a, #e8a23c); color: #2a1a06; box-shadow: 0 0 14px rgba(255, 200, 92, .4); }
+.mirage-cup-rank.is-place-2 { border-color: #eef2f7; background: linear-gradient(140deg, #f4f7fb, #aab4c4); color: #1d2430; }
+.mirage-cup-rank.is-place-3 { border-color: #f0b98a; background: linear-gradient(140deg, #f0b98a, #b9703c); color: #2a1408; }
+.mirage-cup-portrait { display: block; width: var(--cup-portrait, 38px); height: var(--cup-portrait, 38px); border-radius: 10px; }
+.mirage-cup-name { min-width: 0; }
+.mirage-cup-name strong { font: 900 12px var(--font-gaming); letter-spacing: .04em; text-transform: uppercase; overflow-wrap: anywhere; }
+.mirage-cup-name i {
+  margin-left: 8px; padding: 2px 6px; border-radius: 999px; background: #ffd76b; color: #24142e;
+  font: 900 7px var(--mono); font-style: normal; letter-spacing: .12em; vertical-align: 2px;
+}
+.mirage-cup-name small { display: block; margin-top: 2px; color: rgba(255, 241, 218, .6); font: 700 9px var(--mono); letter-spacing: .05em; }
+.mirage-cup-gain { color: #8ce9b4; font: 900 13px var(--font-gaming); }
+.mirage-cup-total { min-width: 38px; text-align: right; }
+.mirage-cup-total b { display: block; color: #fff4df; font: 900 19px/1 var(--font-gaming); }
+.mirage-cup-total small { display: block; margin-top: 3px; color: #bbaaaf; font: 800 7px/1 var(--mono); letter-spacing: .16em; }
+@keyframes mirageCupRow { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+
+/* ── Arrivée d'une course de la coupe ── */
+.mirage-cup-results { display: block; padding: 0; container: cupresults / size; }
+.mirage-cup-results-body {
+  box-sizing: border-box; width: 100%; height: 100%; overflow-y: auto; padding: 18px 24px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; justify-content: safe center;
+}
+.mirage-cup-results-body > * { flex-shrink: 0; }
+.mirage-cup-results h2 { margin: 8px 0 4px; font-size: clamp(22px, 3.2vw, 34px); }
+.mirage-cup-progress { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px 0 0; padding: 0; }
+.mirage-cup-progress li {
+  display: flex; align-items: center; gap: 6px; padding: 4px 11px 4px 5px; border-radius: 999px;
+  border: 1px solid rgba(255, 224, 166, .16); background: rgba(255, 255, 255, .04);
+  color: rgba(255, 241, 218, .55); font: 800 8px var(--mono); letter-spacing: .08em; text-transform: uppercase;
+}
+.mirage-cup-progress li b { display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: rgba(255, 255, 255, .1); font-size: 9px; }
+.mirage-cup-progress li.is-done { border-color: rgba(140, 233, 180, .38); color: #8ce9b4; }
+.mirage-cup-progress li.is-done b { background: #8ce9b4; color: #1c2a22; }
+.mirage-cup-progress li.is-next { border-color: #f6cd72; color: #ffdc72; }
+.mirage-cup-results p.mirage-cup-gained { display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 2px 0 10px; }
+.mirage-cup-gained strong { color: #ffdc72; font: 900 clamp(20px, 3.4vw, 30px)/1.1 var(--font-gaming); text-shadow: 0 0 24px rgba(255, 210, 98, .3); animation: miragePopIn .5s cubic-bezier(.2, .9, .3, 1.35) both; }
+.mirage-cup-gained span { color: rgba(255, 241, 218, .75); font: 800 10px var(--mono); letter-spacing: .1em; }
+.mirage-cup-results .mirage-cup-standings { margin-bottom: 12px; }
+.mirage-cup-results .mirage-xp-award { margin-bottom: 12px; }
+
+/* ── Écran du trophée ── */
+.mirage-trophy-screen {
+  position: absolute; z-index: 5; inset: 0; overflow: hidden; color: #fff4df; text-align: center;
+  container: trophy / size;
+  background: radial-gradient(75% 70% at 50% 54%, #62358a 0%, #2d1748 56%, #150b27 100%);
+  animation: mirageOverlayIn .4s ease-out;
+}
+/* Rayons dorés qui tournent doucement derrière le trophée. */
+.mirage-trophy-rays {
+  position: absolute; left: 50%; top: 54%; width: 230%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(from 0deg, rgba(255, 214, 120, .17) 0deg 6deg, rgba(255, 214, 120, 0) 6deg 18deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .55) 24%, transparent 56%);
+  mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .55) 24%, transparent 56%);
+  animation: mirageRaysSpin 46s linear infinite;
+}
+@keyframes mirageRaysSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.mirage-trophy-canvas { position: absolute; inset: 0; }
+.mirage-trophy-webgl { display: block; width: 100%; height: 100%; }
+.mirage-trophy-layout {
+  position: relative; z-index: 1; height: 100%; box-sizing: border-box; overflow-y: auto;
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(190px, 1fr) auto;
+  grid-template-areas: "head" "slot" "panel"; gap: 6px; padding: 18px 14px 14px;
+  pointer-events: none; /* la scène 3D reste visible et le reste se clique : voir les enfants */
+}
+.mirage-trophy-head, .mirage-trophy-panel { pointer-events: auto; }
+.mirage-trophy-head { grid-area: head; }
+.mirage-trophy-slot { grid-area: slot; position: relative; min-height: 0; }
+.mirage-trophy-title {
+  margin: 8px auto 0; font: 900 clamp(28px, 6vw, 54px)/1.05 var(--font-gaming); letter-spacing: -.02em;
+  background: linear-gradient(110deg, #ffd76b 0%, #fff3c4 32%, #ffb347 55%, #ffd76b 100%); background-size: 220% 100%;
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 4px 18px rgba(10, 4, 20, .7));
+  animation: mirageShimmer 3.2s linear infinite, mirageTitleIn .7s cubic-bezier(.2, .9, .3, 1.3) both;
+}
+@keyframes mirageTitleIn { from { opacity: 0; transform: translateY(-14px) scale(.85); } to { opacity: 1; transform: none; } }
+.mirage-trophy-panel {
+  grid-area: panel; align-self: center; width: min(100%, 440px); margin: 0 auto; box-sizing: border-box; padding: 14px;
+  border-radius: 18px; border: 1px solid rgba(255, 224, 166, .24);
+  background: rgba(21, 11, 36, .62); backdrop-filter: blur(10px); box-shadow: 0 14px 44px rgba(6, 2, 14, .5);
+  animation: miragePopIn .6s .35s cubic-bezier(.2, .9, .3, 1.25) both;
+}
+.mirage-trophy-winner { margin: 0 0 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mirage-trophy-winner small { color: #e7c98a; font: 800 8px var(--mono); letter-spacing: .2em; }
+.mirage-trophy-name {
+  max-width: 100%; color: #fff4df; font: 900 clamp(22px, 4.4vw, 38px)/1.1 var(--font-gaming); text-transform: uppercase; overflow-wrap: anywhere;
+  text-shadow: 0 0 26px rgba(255, 210, 98, .42), 0 3px 14px rgba(10, 4, 20, .85);
+}
+.mirage-trophy-crown { margin-right: 4px; color: #ffd76b; }
+.mirage-trophy-lede { margin: 8px 0 12px; color: rgba(255, 244, 226, .86); font-size: 12px; line-height: 1.55; }
+.mirage-trophy-lede b { color: #ffdc72; }
+.mirage-trophy-panel .mirage-cup-standings { width: 100%; margin-bottom: 14px; }
+.mirage-trophy-panel .mirage-cup-row { padding: 5px 10px 5px 6px; }
+.mirage-trophy-panel .mirage-overlay-hint { margin-top: 10px; }
+.mirage-trophy-screen.is-player-win .mirage-trophy-panel { border-color: rgba(255, 220, 114, .55); box-shadow: 0 14px 44px rgba(6, 2, 14, .5), 0 0 40px rgba(255, 200, 92, .18); }
+
+/* Deux colonnes dès que l'écran du trophée est assez large : la scène 3D à gauche
+   (le « slot » est l'emplacement où elle se cadre), le palmarès à droite. */
+@container trophy (min-width: 700px) {
+  .mirage-trophy-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "head head" "slot panel"; gap: 4px 18px; padding: 20px 26px 22px;
+  }
+  .mirage-trophy-panel { width: 100%; margin: 0; max-height: 100%; overflow-y: auto; }
+}
+@supports not (container-type: inline-size) {
+  @media (min-width: 1000px) {
+    .mirage-trophy-layout {
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); grid-template-rows: auto minmax(0, 1fr);
+      grid-template-areas: "head head" "slot panel"; gap: 4px 18px; padding: 20px 26px 22px;
+    }
+    .mirage-trophy-panel { width: 100%; margin: 0; max-height: 100%; overflow-y: auto; }
+  }
+}
+/* Petits écrans : le palmarès se tasse pour laisser de la place à la scène. */
+@container trophy (max-width: 520px) {
+  .mirage-trophy-lede { display: none; }
+  .mirage-trophy-panel { padding: 10px; }
+  .mirage-cup-row { gap: 8px; padding: 4px 9px 4px 5px; grid-template-columns: 24px 32px minmax(0, 1fr) auto auto; }
+  .mirage-cup-standings.is-final .mirage-cup-row { grid-template-columns: 24px 32px minmax(0, 1fr) auto; }
+  .mirage-cup-portrait { width: 32px; height: 32px; border-radius: 8px; }
+  .mirage-cup-name small { font-size: 8px; }
+  .mirage-cup-total b { font-size: 16px; }
+  .mirage-trophy-panel .mirage-result-actions { flex-direction: column; align-items: stretch; }
+  .mirage-trophy-panel .mirage-start-button { min-width: 0; padding: 12px 16px; }
+}
+
+/* Arrivée d'une course sur un écran peu haut : tout tient sans défiler (ou presque). */
+@container cupresults (max-height: 520px) {
+  .mirage-cup-results-body { padding-top: 10px; padding-bottom: 10px; }
+  .mirage-cup-progress, .mirage-cup-results .mirage-overlay-hint { display: none; }
+  .mirage-cup-results h2 { margin: 4px 0 2px; font-size: clamp(20px, 3.4vw, 28px); }
+  .mirage-cup-results p.mirage-cup-gained { flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 0 12px; margin: 0 0 8px; }
+  .mirage-cup-gained strong { font-size: 22px; }
+  .mirage-cup-standings { --cup-portrait: 30px; --cup-row-pad: 2px; }
+  .mirage-cup-results .mirage-cup-standings { margin-bottom: 6px; gap: 3px; }
+  .mirage-cup-results .mirage-xp-award { margin-bottom: 6px; }
+  .mirage-cup-results .mirage-start-button { padding: 10px 18px; }
+  .mirage-cup-results .mirage-share-button { padding: 10px 14px; }
+}
+
+/* Écrans peu hauts (téléphone en paysage…) : titre et palmarès se compactent pour tenir
+   sans masquer la scène ; si malgré tout ça déborde, le palmarès défile sur place. */
+@container trophy (max-height: 520px) {
+  .mirage-trophy-layout { padding-top: 8px; padding-bottom: 8px; gap: 2px 18px; }
+  .mirage-trophy-head .mirage-overlay-kicker { display: none; }
+  .mirage-trophy-title { margin-top: 0; font-size: clamp(22px, 6vw, 34px); }
+  .mirage-trophy-lede, .mirage-trophy-panel .mirage-overlay-hint { display: none; }
+  .mirage-cup-standings { --cup-portrait: 30px; --cup-row-pad: 2px; }
+  .mirage-trophy-panel { padding: 8px 10px; }
+  .mirage-trophy-winner { margin-bottom: 4px; }
+  .mirage-trophy-winner small { font-size: 7px; }
+  .mirage-trophy-name { font-size: clamp(18px, 4vw, 26px); }
+  .mirage-trophy-panel .mirage-cup-standings { margin-bottom: 8px; gap: 3px; }
+  .mirage-trophy-panel .mirage-result-actions { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .mirage-trophy-panel .mirage-start-button { padding: 9px 14px; min-width: 0; flex: 1 1 auto; }
+  .mirage-trophy-panel .mirage-share-button { padding: 9px 12px; }
+}
+
+/* Repli sans WebGL : un trophée CSS qui tourne et quelques étincelles. */
+.mirage-trophy-fallback { position: absolute; inset: 0; display: grid; place-items: center; perspective: 700px; }
+.mirage-trophy-fallback-cup {
+  display: block; width: clamp(92px, 22vw, 190px); height: auto; aspect-ratio: 1; transform-style: preserve-3d;
+  filter: drop-shadow(0 12px 28px rgba(255, 190, 70, .5));
+  animation: mirageTrophySpin 4.2s linear infinite;
+}
+@keyframes mirageTrophySpin { to { transform: rotateY(360deg); } }
+.mirage-trophy-fallback i {
+  position: absolute; width: 10px; height: 10px; background: #fff3c4;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: mirageTwinkle 1.8s ease-in-out infinite;
+}
+.mirage-trophy-fallback i:nth-of-type(1) { left: 22%; top: 24%; }
+.mirage-trophy-fallback i:nth-of-type(2) { left: 74%; top: 18%; animation-delay: -.4s; }
+.mirage-trophy-fallback i:nth-of-type(3) { left: 82%; top: 58%; animation-delay: -.9s; }
+.mirage-trophy-fallback i:nth-of-type(4) { left: 16%; top: 64%; animation-delay: -1.3s; }
+.mirage-trophy-fallback i:nth-of-type(5) { left: 60%; top: 82%; animation-delay: -.2s; }
+.mirage-trophy-fallback i:nth-of-type(6) { left: 38%; top: 12%; animation-delay: -1.1s; }
+@keyframes mirageTwinkle { 0%, 100% { opacity: .15; transform: scale(.4); } 50% { opacity: 1; transform: scale(1.3); } }
+
+/* ── Règles de la coupe (panneau latéral) ── */
+.mirage-cup-points-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mirage-cup-points-pill {
+  display: inline-flex; align-items: baseline; gap: 6px; padding: 4px 9px; border-radius: 999px;
+  border: 1px solid rgba(255, 224, 166, .28); background: rgba(255, 215, 107, .08);
+}
+.mirage-cup-points-pill b { color: #ffdc72; font: 900 9px var(--mono); }
+.mirage-cup-points-pill i { color: rgba(255, 241, 218, .8); font: 800 9px var(--mono); font-style: normal; }
+.mirage-cup-points-pill.is-place-1 { background: rgba(255, 215, 107, .2); }
+
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .mirage-cup-card { padding: 11px; gap: 10px; }
+  .mirage-cup-route { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .mirage-cup-stop .mirage-map-art { height: 48px; }
+  .mirage-cup-stop strong { padding: 6px 6px 7px; font-size: 8px; }
+  .mirage-cup-stop-number { font-size: 6px; padding: 2px 4px; }
+  .mirage-cup-stop + .mirage-cup-stop::before { left: -12px; width: 12px; top: 12px; font-size: 16px; }
+  .mirage-cup-name-field { flex-direction: column; align-items: stretch; gap: 6px; }
+  .mirage-cup-results { padding: 14px 10px; }
+  .mirage-cup-row { gap: 8px; padding: 4px 9px 4px 5px; grid-template-columns: 24px 32px minmax(0, 1fr) auto auto; }
+  .mirage-cup-portrait { width: 32px; height: 32px; border-radius: 8px; }
+  .mirage-cup-total b { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mirage-cup-card { transition: none; }
+  .mirage-cup-card:hover { transform: none; }
+  .mirage-cup-row, .mirage-cup-gained strong, .mirage-trophy-screen, .mirage-trophy-rays,
+  .mirage-trophy-title, .mirage-trophy-panel, .mirage-trophy-fallback-cup, .mirage-trophy-fallback i { animation: none !important; }
+  .mirage-trophy-fallback i { opacity: .8; }
 }

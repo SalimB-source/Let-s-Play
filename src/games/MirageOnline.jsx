@@ -429,6 +429,15 @@ export default function MirageOnline({
           <button
             type="button"
             role="tab"
+            aria-selected="false"
+            className="mirage-mode-tab"
+            onClick={() => switchMode('cup')}
+          >
+            <span>♛</span> COUPE
+          </button>
+          <button
+            type="button"
+            role="tab"
             aria-selected="true"
             className="mirage-mode-tab is-active"
           >

@@ -5,11 +5,17 @@ function toHex(color) {
   return `#${Number(color).toString(16).padStart(6, '0')}`;
 }
 
-/** Small, self-contained character illustration used by the online room UI. */
-export default function MirageCharacterPortrait({ character = 0, className = '', decorative = false }) {
+/**
+ * Small, self-contained character illustration used by the online room UI and
+ * the cup standings. `colors` ([coat, mane, cloth, trim, hood]) paints any
+ * palette — the equipped skin, say — instead of a `character` preset; `label`
+ * overrides the accessible name.
+ */
+export default function MirageCharacterPortrait({ character = 0, colors = null, label = null, className = '', decorative = false }) {
   const index = ((Number(character) || 0) % CHARACTER_PALETTES.length + CHARACTER_PALETTES.length) % CHARACTER_PALETTES.length;
-  const [coat, mane, cloth, trim, hood] = CHARACTER_PALETTES[index].map(toHex);
-  const title = CHARACTER_NAMES[index];
+  const custom = Array.isArray(colors) && colors.length >= 5 && colors.slice(0, 5).every(Number.isFinite);
+  const [coat, mane, cloth, trim, hood] = (custom ? colors : CHARACTER_PALETTES[index]).slice(0, 5).map(toHex);
+  const title = label || CHARACTER_NAMES[index];
   const uniqueId = useId().replace(/:/g, '');
   const gradientId = `mirage-portrait-sky-${index}-${uniqueId}`;
 
