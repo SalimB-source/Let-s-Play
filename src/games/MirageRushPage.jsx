@@ -103,6 +103,8 @@ export default function MirageRushPage() {
   const [immersive, setImmersive] = useState(false);
   const [powerToast, setPowerToast] = useState(null);
   const [fx, setFx] = useState('');
+  // Détection tactile pour adapter l'UI (dpad + losange sur mobile, barre horizontale sur PC)
+  const [isTouch, setIsTouch] = useState(false);
   const progressRef = useRef(progression);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
@@ -116,6 +118,18 @@ export default function MirageRushPage() {
   musicOnRef.current = musicOn;
   const connected = Boolean(user?.id) && !isDemo;
   const backendEnabled = mirageApiEnabled();
+
+  // Détection d'écran tactile (pointer: coarse) — mobile : dpad + losange,
+  // PC : barre de pouvoirs horizontale comme avant.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mq = window.matchMedia('(pointer: coarse)');
+      setIsTouch(mq.matches);
+      const handler = (e) => setIsTouch(e.matches);
+      mq.addEventListener?.('change', handler);
+      return () => mq.removeEventListener?.('change', handler);
+    }
+  }, []);
 
   const refreshLeaderboard = useCallback(async () => {
     if (!backendEnabled) {
@@ -619,8 +633,9 @@ export default function MirageRushPage() {
             )}
 
             {/* Manette tactile — flèches de déplacement à gauche de l'écran
-                (gauche · haut · droite), disposées comme une croix directionnelle. */}
-            {phase === 'playing' && (
+                (gauche · haut · droite), disposées comme une croix directionnelle.
+                Affichée uniquement sur appareils tactiles (mobile). */}
+            {phase === 'playing' && isTouch && (
               <div className="mirage-touch-dpad" role="group" aria-label="Déplacements">
                 <button
                   type="button"
@@ -643,9 +658,119 @@ export default function MirageRushPage() {
               </div>
             )}
 
-            {/* Objets spéciaux — disposés en losange à droite de l'écran, comme
-                les boutons de face d'une manette (Duel & En ligne). */}
-            {phase === 'playing' && race.mode !== 'rush' && (
+            {/* Objets spéciaux — sur PC : barre horizontale ; sur mobile : losange (manette). */}
+            {phase === 'playing' && race.mode !== 'rush' && !isTouch && (
+              <div
+                className="mirage-powerup-bar"
+                role="group"
+                aria-label="Objets de puissance"
+              >
+                <div className="mirage-powerup-buttons-row">
+                  <button
+                    type="button"
+                    className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
+                    onClick={() => trigger('use_shield')}
+                    disabled={(hud.shieldCharges || 0) <= 0}
+                    title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
+                  >
+                    <div className="mirage-powerup-btn-top">
+                      <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
+                      <span className="mirage-powerup-key">AUTO</span>
+                    </div>
+                    <div className="mirage-powerup-btn-name">
+                      <span>Bouclier</span>
+                      {(hud.shieldCharges || 0) > 0
+                        ? <b className="mirage-powerup-count is-charges">×{hud.shieldCharges}</b>
+                        : <span className="mirage-powerup-count">{hud.shieldChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.SHIELD]} ◆</span>}
+                    </div>
+                    <div className="mirage-powerup-progress-bg">
+                      <div
+                        className="mirage-powerup-progress-fill is-shield"
+                        style={{ width: `${(hud.shieldCharges || 0) > 0 ? 100 : Math.round((hud.shieldProgress || 0) * 100)}%` }}
+                      />
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
+                    onClick={() => trigger('use_lasso')}
+                    disabled={(hud.lassoCharges || 0) <= 0}
+                    title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
+                  >
+                    <div className="mirage-powerup-btn-top">
+                      <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
+                      <span className="mirage-powerup-key">W / Z</span>
+                    </div>
+                    <div className="mirage-powerup-btn-name">
+                      <span>Lasso</span>
+                      {(hud.lassoCharges || 0) > 0
+                        ? <b className="mirage-powerup-count is-charges">×{hud.lassoCharges}</b>
+                        : <span className="mirage-powerup-count">{hud.lassoChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.LASSO]} ◆</span>}
+                    </div>
+                    <div className="mirage-powerup-progress-bg">
+                      <div
+                        className="mirage-powerup-progress-fill is-lasso"
+                        style={{ width: `${(hud.lassoCharges || 0) > 0 ? 100 : Math.round((hud.lassoProgress || 0) * 100)}%` }}
+                      />
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
+                    onClick={() => trigger('use_boost')}
+                    disabled={(hud.boostCharges || 0) <= 0}
+                    title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s’active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                  >
+                    <div className="mirage-powerup-btn-top">
+                      <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
+                      <span className="mirage-powerup-key">AUTO</span>
+                    </div>
+                    <div className="mirage-powerup-btn-name">
+                      <span>Turbo</span>
+                      {(hud.boostCharges || 0) > 0
+                        ? <b className="mirage-powerup-count is-charges">×{hud.boostCharges}</b>
+                        : <span className="mirage-powerup-count">{hud.boostChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.BOOST]} ◆</span>}
+                    </div>
+                    <div className="mirage-powerup-progress-bg">
+                      <div
+                        className="mirage-powerup-progress-fill is-boost"
+                        style={{ width: `${(hud.boostCharges || 0) > 0 ? 100 : Math.round((hud.boostProgress || 0) * 100)}%` }}
+                      />
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
+                    onClick={() => trigger('use_pistol')}
+                    disabled={(hud.pistolCharges || 0) <= 0}
+                    title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Fait tomber la cible devant toi pendant ${PISTOL_STUN_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                  >
+                    <div className="mirage-powerup-btn-top">
+                      <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
+                      <span className="mirage-powerup-key">R</span>
+                    </div>
+                    <div className="mirage-powerup-btn-name">
+                      <span>Pistolet</span>
+                      {(hud.pistolCharges || 0) > 0
+                        ? <b className="mirage-powerup-count is-charges">×{hud.pistolCharges}</b>
+                        : <span className="mirage-powerup-count">{hud.pistolChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]} ◆</span>}
+                    </div>
+                    <div className="mirage-powerup-progress-bg">
+                      <div
+                        className="mirage-powerup-progress-fill is-pistol"
+                        style={{ width: `${(hud.pistolCharges || 0) > 0 ? 100 : Math.round((hud.pistolProgress || 0) * 100)}%` }}
+                      />
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Losange des pouvoirs (mobile / tactile) */}
+            {phase === 'playing' && race.mode !== 'rush' && isTouch && (
               <div
                 className="mirage-powerup-bar is-gamepad"
                 role="group"
@@ -657,7 +782,7 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-diamond pos-top is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_shield')}
                     disabled={(hud.shieldCharges || 0) <= 0}
-                    title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
+                    title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s'active tout seul dès qu'elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
                       <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
@@ -707,7 +832,7 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-diamond pos-right is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_boost')}
                     disabled={(hud.boostCharges || 0) <= 0}
-                    title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s’active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                    title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s'active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
                       <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
