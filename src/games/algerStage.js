@@ -33,45 +33,157 @@ function whiteBalustrade() {
   return group;
 }
 
+// ── Barrage de police : la voiture qui ferme la voie ───────────────────
+// Gyrophare bleu/rouge : deux éclairs bleus, une pause, deux éclairs
+// rouges, une pause — la séquence des voitures de la Sûreté nationale.
+export const POLICE_BEACON_PERIOD = 1.2; // secondes pour un cycle complet
+const BEACON_ON = { blue: 0x3f95ff, red: 0xff3a24 };
+const BEACON_OFF = { blue: 0x1a2a3d, red: 0x3d1a17 };
+
+/** Couleur allumée à l'instant `phase` (secondes) : 'blue', 'red' ou null. */
+export function policeBeaconPhase(phase) {
+  const t = ((phase % POLICE_BEACON_PERIOD) + POLICE_BEACON_PERIOD) % POLICE_BEACON_PERIOD;
+  if (t < 0.1 || (t >= 0.14 && t < 0.24)) return 'blue';
+  if (t >= 0.42 && t < 0.52) return 'red';
+  if (t >= 0.56 && t < 0.66) return 'red';
+  return null;
+}
+
 /**
- * Fontaine mauresque : bassin octogonal, colonne cannelée, bande de zellige
- * bleu et coupole. Haute : on la contourne, comme les cactus ou les cyprès.
+ * Anime le gyrophare d'une voiture de police. Les couleurs ne sont écrites
+ * que lorsqu'un éclair change, et `steady` fige les deux feux allumés
+ * (préférence « animations réduites »).
  */
-function moresqueFountain() {
+export function updatePoliceBeacon(beacon, seconds, steady = false) {
+  if (!beacon) return;
+  const state = steady ? 'steady' : policeBeaconPhase(seconds + beacon.offset);
+  if (state === beacon.state) return;
+  beacon.state = state;
+  const blue = state === 'blue' || state === 'steady';
+  const red = state === 'red' || state === 'steady';
+  for (const lamp of beacon.blue) lamp.material.color.setHex(blue ? BEACON_ON.blue : BEACON_OFF.blue);
+  for (const lamp of beacon.red) lamp.material.color.setHex(red ? BEACON_ON.red : BEACON_OFF.red);
+}
+
+// Bandeau latéral « POLICE » dessiné une seule fois, partagé par toutes les
+// voitures (les matériaux, eux, restent propres à chaque exemplaire).
+let sideBandTexture = null;
+function policeSideBand() {
+  if (sideBandTexture) return sideBandTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#123c98';
+  ctx.fillRect(0, 0, 512, 96);
+  ctx.fillStyle = '#7d9be0';
+  ctx.fillRect(0, 6, 512, 4);
+  ctx.fillStyle = '#f7f9fc';
+  ctx.fillRect(0, 84, 512, 5);
+  ctx.font = 'bold 56px Georgia';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('POLICE', 256, 48, 470);
+  sideBandTexture = new THREE.CanvasTexture(canvas);
+  sideBandTexture.colorSpace = THREE.SRGBColorSpace;
+  return sideBandTexture;
+}
+
+let hoodDecalTexture = null;
+function policeHoodDecal() {
+  if (hoodDecalTexture) return hoodDecalTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#123c98';
+  ctx.font = 'bold 58px Georgia';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('POLICE', 128, 64, 236);
+  hoodDecalTexture = new THREE.CanvasTexture(canvas);
+  hoodDecalTexture.colorSpace = THREE.SRGBColorSpace;
+  return hoodDecalTexture;
+}
+
+/**
+ * Voiture de police blanche de la Sûreté nationale, arrêtée en travers de la
+ * voie : bandeau bleu « POLICE », gyrophare bleu/rouge, pare-buffle. Haute :
+ * on la contourne, comme la fontaine mauresque qu'elle remplace. Largeur
+ * contenue dans une voie (1,82 m pour une zone de collision de 1,9 m).
+ */
+function policeCar() {
   const group = new THREE.Group();
-  const white = material(0xf2ede1);
-  const shade = material(0xd9d2c0);
-  const zellige = material(0x1d6f9c);
-  const water = new THREE.MeshBasicMaterial({ color: 0x4fa8c9, transparent: true, opacity: 0.85 });
-  const basin = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 1.02, 0.42, 8), white);
-  basin.position.y = 0.21;
-  group.add(basin);
-  const lip = new THREE.Mesh(new THREE.CylinderGeometry(1.02, 1.02, 0.1, 8), shade);
-  lip.position.y = 0.44;
-  group.add(lip);
-  const pool = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 0.04, 8), water);
-  pool.position.y = 0.46;
-  group.add(pool);
-  const column = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.26, 1.05, 8), white);
-  column.position.y = 1.0;
-  group.add(column);
-  const band = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.16, 8), zellige);
-  band.position.y = 1.12;
-  group.add(band);
-  const capital = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.22, 0.22, 8), shade);
-  capital.position.y = 1.62;
-  group.add(capital);
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), zellige);
-  dome.position.y = 1.72;
-  group.add(dome);
-  const finial = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.22, 6), shade);
-  finial.position.y = 2.06;
-  group.add(finial);
+  const body = material(0xf4f6f8);
+  const shade = material(0xdbe0e6);
+  const dark = material(0x1e2226);
+  const glass = material(0x2b3a44);
+  const headlight = material(0xf6ecc8);
+  const tail = material(0xb3402e);
+  // Caisse, capot, malle, vitrage et pavillon : la voiture regarde le joueur.
+  box(group, body, 0, 0.55, 0, 1.66, 0.52, 3.86);
+  // Bas de caisse plus étroit que les roues : celles-ci restent bien visibles.
+  box(group, shade, 0, 0.32, 0, 1.5, 0.24, 3.9);
+  box(group, body, 0, 0.88, 1.14, 1.58, 0.16, 1.5);
+  box(group, body, 0, 0.88, -1.2, 1.58, 0.16, 1.4);
+  box(group, glass, 0, 1.1, 0.06, 1.42, 0.44, 1.86);
+  box(group, body, 0, 1.36, 0.06, 1.54, 0.16, 1.96);
+  // Roues : quatre cylindres, pneus sombres et enjoliveurs clairs.
+  for (const x of [-0.83, 0.83]) for (const z of [-1.3, 1.3]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.22, 10), dark);
+    wheel.rotation.z = Math.PI / 2;
+    wheel.position.set(x, 0.3, z);
+    group.add(wheel);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.24, 8), shade);
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(x, 0.3, z);
+    group.add(hub);
+  }
+  // Face avant pour le joueur : calandre, phares, pare-chocs et pare-buffle.
+  box(group, dark, 0, 0.62, 1.94, 1.02, 0.22, 0.06);
+  for (const x of [-0.62, 0.62]) box(group, headlight, x, 0.72, 1.95, 0.36, 0.18, 0.07);
+  box(group, shade, 0, 0.42, 1.96, 1.62, 0.2, 0.1);
+  for (const x of [-0.34, 0.34]) box(group, dark, x, 0.72, 2.03, 0.09, 0.62, 0.09);
+  box(group, dark, 0, 0.92, 2.03, 1.5, 0.09, 0.09);
+  box(group, dark, 0, 0.55, 2.03, 1.5, 0.09, 0.09);
+  // Arrière : feux rouges et pare-chocs.
+  for (const x of [-0.6, 0.6]) box(group, tail, x, 0.72, -1.95, 0.34, 0.16, 0.07);
+  box(group, shade, 0, 0.42, -1.96, 1.62, 0.2, 0.1);
+  // Rétroviseurs, puis lettres « POLICE » sur les portières et le capot.
+  for (const x of [-0.86, 0.86]) box(group, body, x, 1.02, 0.95, 0.14, 0.1, 0.1);
+  const band = new THREE.MeshBasicMaterial({ map: policeSideBand() });
+  for (const side of [-1, 1]) {
+    const decal = new THREE.Mesh(new THREE.PlaneGeometry(2.05, 0.38), band);
+    decal.position.set(side * 0.845, 0.66, 0);
+    decal.rotation.y = side * Math.PI / 2;
+    group.add(decal);
+  }
+  const lettering = new THREE.MeshBasicMaterial({ map: policeHoodDecal(), transparent: true });
+  const hood = new THREE.Mesh(new THREE.PlaneGeometry(1.32, 0.62), lettering);
+  hood.position.set(0, 0.968, 1.14);
+  hood.rotation.x = -Math.PI / 2;
+  group.add(hood);
+  // Le toit est la face la plus visible depuis la caméra du jeu : le nom y
+  // reste lisible, juste derrière la barre de gyrophares.
+  const roof = new THREE.Mesh(new THREE.PlaneGeometry(1.34, 0.56), lettering);
+  roof.position.set(0, 1.448, -0.48);
+  roof.rotation.x = -Math.PI / 2;
+  group.add(roof);
+  // Barre de gyrophares : deux feux bleus à gauche, deux rouges à droite.
+  box(group, dark, 0, 1.48, 0.06, 1.34, 0.08, 0.3);
+  const beacon = { blue: [], red: [], state: null, offset: Math.random() * POLICE_BEACON_PERIOD };
+  for (const [color, xs] of [['blue', [-0.45, -0.15]], ['red', [0.15, 0.45]]]) {
+    for (const x of xs) {
+      const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.14, 0.26), new THREE.MeshBasicMaterial({ color: BEACON_OFF[color] }));
+      lamp.position.set(x, 1.56, 0.06);
+      group.add(lamp);
+      beacon[color].push(lamp);
+    }
+  }
+  group.userData.beacon = beacon;
   return group;
 }
 
 export function algerObstacle(kind) {
-  return kind === 'barrier' ? whiteBalustrade() : moresqueFountain();
+  return kind === 'barrier' ? whiteBalustrade() : policeCar();
 }
 
 const SIGN_WORDS = ['CAFÉ ALGER', 'PÂTISSERIE', 'LIBRAIRIE', 'PHARMACIE', 'HÔTEL', 'BOULANGERIE'];

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="boost-bg" cx="50%" cy="35%" r="72%">
+      <stop offset="0%" stop-color="#14593b" />
+      <stop offset="60%" stop-color="#092b1d" />
+      <stop offset="100%" stop-color="#04140d" />
+    </radialGradient>
+    <linearGradient id="boost-wing" x1="10" y1="16" x2="54" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#c4ffdf" />
+      <stop offset="48%" stop-color="#35e892" />
+      <stop offset="100%" stop-color="#0e874d" />
+    </linearGradient>
+    <linearGradient id="boost-bolt" x1="26" y1="8" x2="38" y2="55" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="32%" stop-color="#fff28c" />
+      <stop offset="72%" stop-color="#57f7a4" />
+      <stop offset="100%" stop-color="#18b868" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#boost-bg)" stroke="#52eda0" stroke-width="2" stroke-opacity="0.68" />
+  <rect x="5" y="5" width="54" height="54" rx="11" stroke="#a3ffd0" stroke-width="1" stroke-opacity="0.22" />
+  <!-- Speed lines -->
+  <path d="M11 22H21M9 32H17M12 42H22M43 20H53M46 32H55M42 44H52" stroke="#6ef7af" stroke-width="1.8" stroke-linecap="round" stroke-opacity="0.45" />
+  <!-- Twin emerald turbo wings / horseshoe arc -->
+  <path d="M21 17C14 23 13 36 20 45C24.5 50.5 30 52.5 32 52.5C34 52.5 39.5 50.5 44 45C51 36 50 23 43 17L38.5 21.5C43 26 43.5 34.5 39 40.5C36.8 43.4 34.4 45 32 45C29.6 45 27.2 43.4 25 40.5C20.5 34.5 21 26 25.5 21.5L21 17Z" fill="url(#boost-wing)" stroke="#052114" stroke-width="2" stroke-linejoin="round" />
+  <!-- Central high-voltage lightning bolt -->
+  <path d="M36.5 9L20.5 32.5H31.5L26.5 55L44.5 29.5H33.2L36.5 9Z" fill="url(#boost-bolt)" stroke="#072415" stroke-width="2.2" stroke-linejoin="round" />
+  <!-- Inner lightning specular core -->
+  <path d="M34.8 14.5L24.2 30.5H32.6L29.5 46.5L40.4 31.2H31.8L34.8 14.5Z" fill="#ffffff" fill-opacity="0.55" />
+  <!-- Emerald diamond spark at top-right -->
+  <path d="M48 11L51 15L48 19L45 15L48 11Z" fill="#a8ffcf" stroke="#062617" stroke-width="1.1" />
+</svg>

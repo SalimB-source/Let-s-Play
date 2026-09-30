@@ -120,6 +120,12 @@ export async function checkMirageFlow(assert) {
       'le bouton propose « LANCER LE DUEL » après le clic sur DUEL');
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('LE PLUS RAPIDE GAGNE'),
       'les consignes du duel (800 m) apparaissent après le clic sur DUEL');
+    const keyPowerIcons = [...page.node.querySelectorAll('.mirage-keys-hint [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
+    assert.deepEqual(keyPowerIcons, ['shield', 'lasso', 'boost', 'pistol'],
+      'les 4 icônes vectorielles des objets spéciaux (shield, lasso, boost, pistol) sont affichées dans les raccourcis duel');
+    const rulePowerIcons = [...page.node.querySelectorAll('.mirage-rule-powers-grid [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
+    assert.deepEqual(rulePowerIcons, ['shield', 'lasso', 'boost', 'pistol'],
+      'les 4 icônes vectorielles des objets spéciaux sont illustrées dans le panneau des règles');
 
     /* ---------- Et le clic sur RUÉE revient à la ruée par défaut -------- */
     const rushButton = modeButtons(page.node).find((button) => button.querySelector('strong')?.textContent === 'RUÉE');

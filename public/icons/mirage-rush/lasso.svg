@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="lasso-bg" cx="50%" cy="35%" r="72%">
+      <stop offset="0%" stop-color="#5c3612" />
+      <stop offset="60%" stop-color="#2c1707" />
+      <stop offset="100%" stop-color="#140a03" />
+    </radialGradient>
+    <linearGradient id="lasso-rope" x1="12" y1="12" x2="54" y2="52" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fff0b8" />
+      <stop offset="45%" stop-color="#f7b948" />
+      <stop offset="85%" stop-color="#b86b19" />
+      <stop offset="100%" stop-color="#e89d2c" />
+    </linearGradient>
+    <linearGradient id="lasso-gem" x1="28" y1="19" x2="38" y2="33" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="45%" stop-color="#ffe680" />
+      <stop offset="100%" stop-color="#f39c38" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#lasso-bg)" stroke="#ffd15c" stroke-width="2" stroke-opacity="0.68" />
+  <rect x="5" y="5" width="54" height="54" rx="11" stroke="#ffe89e" stroke-width="1" stroke-opacity="0.22" />
+  <!-- Motion swirl arc -->
+  <path d="M12 24C16 12 36 8 49 16" stroke="#ffe484" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="3 3" stroke-opacity="0.48" />
+  <!-- Back coils in hand reserve -->
+  <ellipse cx="23" cy="46" rx="9.5" ry="5.2" transform="rotate(-14 23 46)" stroke="#8c4f12" stroke-width="4.6" />
+  <ellipse cx="23" cy="46" rx="9.5" ry="5.2" transform="rotate(-14 23 46)" stroke="#dca03a" stroke-width="2.6" />
+  <!-- Trailing whip tail -->
+  <path d="M26 37C19 42 15 49 11 54" stroke="#1e1005" stroke-width="6.4" stroke-linecap="round" />
+  <path d="M26 37C19 42 15 49 11 54" stroke="url(#lasso-rope)" stroke-width="3.8" stroke-linecap="round" />
+  <!-- Main thrown lasso noose loop -->
+  <ellipse cx="34" cy="26.5" rx="17.5" ry="11.5" transform="rotate(-18 34 26.5)" stroke="#1e1005" stroke-width="7.4" />
+  <ellipse cx="34" cy="26.5" rx="17.5" ry="11.5" transform="rotate(-18 34 26.5)" stroke="url(#lasso-rope)" stroke-width="4.6" />
+  <!-- Braided rope twist ticks along the loop -->
+  <ellipse cx="34" cy="26.5" rx="17.5" ry="11.5" transform="rotate(-18 34 26.5)" stroke="#6e3809" stroke-width="4.4" stroke-dasharray="2.2 4.4" stroke-opacity="0.65" />
+  <ellipse cx="34" cy="26.5" rx="17.5" ry="11.5" transform="rotate(-18 34 26.5)" stroke="#fff7d1" stroke-width="1.2" stroke-dasharray="3 6" stroke-opacity="0.65" />
+  <!-- Honda knot (slide ring) -->
+  <g transform="translate(25.5 36.5) rotate(-25)">
+    <rect x="-4.5" y="-3.4" width="9" height="6.8" rx="3.2" fill="#d97b24" stroke="#1e1005" stroke-width="1.8" />
+    <rect x="-2.2" y="-3.4" width="4.4" height="6.8" rx="1.2" fill="#ffe28a" stroke="#5e2f07" stroke-width="1" />
+  </g>
+  <!-- Center yellow diamond target spark -->
+  <path d="M35 19.5L40.2 26L35 32.5L29.8 26L35 19.5Z" fill="url(#lasso-gem)" stroke="#2b1604" stroke-width="1.4" stroke-linejoin="round" />
+  <path d="M35 21.5L38 26L35 27.6L32 26L35 21.5Z" fill="#ffffff" fill-opacity="0.75" />
+</svg>

@@ -1,32 +1,56 @@
-import { POWER_UPS } from './mirageRules';
+import { POWER_UPS } from './mirageRules.js';
 
-const asset = (name) => `${import.meta.env.BASE_URL}icons/mirage-rush/${name}.webp`;
+const baseUrl = typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
+  ? import.meta.env.BASE_URL
+  : '/';
+const asset = (name) => `${baseUrl}icons/mirage-rush/${name}.svg`;
 
 /**
- * Local copies of the CC0 3Dicons used by Mirage Rush.
- *
- * The game keeps a local asset instead of hotlinking 3dicons.co so a race
- * still works offline and the icon cannot disappear if the catalogue changes.
- * `source` and `license` are deliberately exposed for the credits panel and
- * for future asset audits.
+ * Définition des 4 icônes d’objets spéciaux de Mirage Rush :
+ * - Bouclier (diamants bleus, Q/A)
+ * - Lasso (diamants jaunes, W/Z)
+ * - Turbo (diamants verts, E)
+ * - Pistolet (diamants rouges, R)
  */
 export const MIRAGE_POWER_ICONS = Object.freeze({
   [POWER_UPS.SHIELD]: Object.freeze({
+    id: POWER_UPS.SHIELD,
+    label: 'Bouclier',
+    gemColor: 'blue',
+    accent: '#4ce9df',
     src: asset('shield'),
-    alt: 'Icône 3D de bouclier',
-    source: 'https://3dicons.co/icons/b91186-shield',
+    alt: 'Icône de Bouclier astral serti d’un diamant bleu',
+    source: 'Let’s Play Arcade — Mirage Rush original vector icon',
     license: 'CC0',
   }),
   [POWER_UPS.LASSO]: Object.freeze({
-    src: asset('link'),
-    alt: 'Icône 3D de maillons rouges pour le lasso',
-    source: 'https://3dicons.co/icons/2d9fa2-link',
+    id: POWER_UPS.LASSO,
+    label: 'Lasso',
+    gemColor: 'yellow',
+    accent: '#ffd15c',
+    src: asset('lasso'),
+    alt: 'Icône de Lasso western tressé et diamant jaune',
+    source: 'Let’s Play Arcade — Mirage Rush original vector icon',
+    license: 'CC0',
+  }),
+  [POWER_UPS.BOOST]: Object.freeze({
+    id: POWER_UPS.BOOST,
+    label: 'Turbo',
+    gemColor: 'green',
+    accent: '#52eda0',
+    src: asset('boost'),
+    alt: 'Icône de Turbo émeraude à éclair et fer ailé',
+    source: 'Let’s Play Arcade — Mirage Rush original vector icon',
     license: 'CC0',
   }),
   [POWER_UPS.PISTOL]: Object.freeze({
-    src: asset('target'),
-    alt: 'Icône 3D de cible et flèche pour le pistolet',
-    source: 'https://3dicons.co/icons/49b6f4-target',
+    id: POWER_UPS.PISTOL,
+    label: 'Pistolet',
+    gemColor: 'red',
+    accent: '#ff6e66',
+    src: asset('pistol'),
+    alt: 'Icône de Revolver six-coups western et détonation écarlate',
+    source: 'Let’s Play Arcade — Mirage Rush original vector icon',
     license: 'CC0',
   }),
 });
