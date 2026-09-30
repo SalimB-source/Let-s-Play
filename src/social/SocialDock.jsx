@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useFriends } from '../friends/FriendsContext';
 import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy';
-import { AddTab, FriendsTab, RequestsTab } from '../friends/FriendsTabs';
+import { AddTab, RequestsTab } from '../friends/FriendsTabs';
 import { useMessages } from '../messages/MessagesContext';
 import { useCalls } from '../messages/CallsContext';
 import { callsText } from '../messages/callsCopy';
@@ -20,14 +20,17 @@ import LetsTalkLogo, { LetsTalkMark } from './LetsTalkLogo';
  * ---------------------------------------------------------------------------
  * Un seul lanceur compact — le logo « Let’s Talk » (voir `LetsTalkLogo`),
  * les pastilles des non-lus et des demandes d'amis reçues, le compteur d'amis
- * en ligne — ouvre un panneau à quatre onglets :
+ * en ligne — ouvre un panneau à trois onglets :
  *
- *   - **Amis** / **Demandes** / **Ajouter** : le module ami
- *     (`FriendsTabs`, données de `FriendsContext`) ;
- *   - **Messages** : la messagerie — sur bureau, la liste des discussions puis
- *     la discussion ouverte (`MessagesTabs`) ; sur mobile, la **page dédiée**
- *     `/messages` (alias `/messagerie`) : l'onglet et toute ouverture de
- *     discussion y naviguent, le pop-up ne concerne plus que les amis.
+ *   - **Messages** : la liste unique amis + discussions (`InboxView`) —
+ *     chaque ligne est un ami, discussion ouverte au clic, présence et accès
+ *     profil sur la ligne ; sur bureau, la discussion ouverte s'affiche
+ *     ensuite dans le panneau (`MessagesTabs`) ; sur mobile, la **page
+ *     dédiée** `/messages` (alias `/messagerie`) : l'onglet et toute
+ *     ouverture de discussion y naviguent, le pop-up ne concerne plus rien ;
+ *   - **Demandes** / **Ajouter** : le module ami (`FriendsTabs`, données de
+ *     `FriendsContext`) — l'ancien onglet « Amis » a fusionné avec la liste
+ *     des discussions, les deux listes étaient redondantes.
  *
  * La fenêtre n'est ouverte que pour un joueur connecté (compte ou persona de
  * démo). L'ouverture est pilotée par les deux contextes : les boutons « Mes
@@ -79,7 +82,7 @@ export default function SocialDock() {
     enabled: friendsEnabled, status: friendsStatus, error: friendsError,
     friends: friendsList, incoming, outgoing, onlineCount, pendingCount,
     dockOpen: friendsOpen, dockTab, openDock, closeDock: closeFriendsDock,
-    accept, decline, cancel, unfriend, search, isOnline, relationWith,
+    accept, decline, cancel, search, isOnline, relationWith,
     refresh: refreshFriends,
   } = friends;
 
@@ -275,45 +278,40 @@ export default function SocialDock() {
     messagesBody = (
       <InboxView
         t={mt}
+        ft={ft}
+        friends={friendsList}
         lang={lang}
         conversations={conversations}
         blocked={blockedConversations}
         isOnline={isOnline}
+        profileLabel={ft.profileShort}
         onOpen={openThread}
         onUnblock={unblock}
       />
     );
   }
 
-  // Contenu des onglets amis : l'état du module amis protège les trois.
-  let friendsBody;
-  if (friendsStatus === 'unavailable') {
-    friendsBody = <p className="friends-empty friends-unavailable">{ft.unavailable}</p>;
-  } else if (friendsStatus === 'loading' || friendsStatus === 'idle') {
-    friendsBody = <p className="friends-empty" aria-busy="true">{ft.loading}</p>;
-  } else if (friendsStatus === 'error' && friendsList.length === 0) {
-    friendsBody = (
-      <div className="friends-empty">
-        <p className="friends-inline-error" role="alert">{describeFriendsError(friendsError, ft)}</p>
-        <button type="button" className="friends-action friends-action-primary" onClick={() => refreshFriends()}>{ft.refresh}</button>
-      </div>
-    );
-  } else if (tab === 'requests') {
-    friendsBody = <RequestsTab incoming={incoming} outgoing={outgoing} t={ft} lang={lang} accept={accept} decline={decline} cancel={cancel} />;
-  } else if (tab === 'add') {
-    friendsBody = <AddTab t={ft} lang={lang} search={search} isOnline={isOnline} relationWith={relationWith} />;
-  } else {
-    friendsBody = (
-      <FriendsTab
-        friends={friendsList}
-        t={ft}
-        lang={lang}
-        unfriend={unfriend}
-        onOpenThread={openThread}
-        chatLabel={mt.openChat}
-        profileLabel={ft.profileShort}
-      />
-    );
+  // Contenu des onglets « Demandes » / « Ajouter » : l'état du module amis
+  // protège les deux. La liste des amis elle-même n'a plus d'onglet : elle
+  // vit dans la boîte de réception (`InboxView`), ci-dessus.
+  let friendsBody = null;
+  if (tab === 'requests' || tab === 'add') {
+    if (friendsStatus === 'unavailable') {
+      friendsBody = <p className="friends-empty friends-unavailable">{ft.unavailable}</p>;
+    } else if (friendsStatus === 'loading' || friendsStatus === 'idle') {
+      friendsBody = <p className="friends-empty" aria-busy="true">{ft.loading}</p>;
+    } else if (friendsStatus === 'error' && friendsList.length === 0) {
+      friendsBody = (
+        <div className="friends-empty">
+          <p className="friends-inline-error" role="alert">{describeFriendsError(friendsError, ft)}</p>
+          <button type="button" className="friends-action friends-action-primary" onClick={() => refreshFriends()}>{ft.refresh}</button>
+        </div>
+      );
+    } else if (tab === 'requests') {
+      friendsBody = <RequestsTab incoming={incoming} outgoing={outgoing} t={ft} lang={lang} accept={accept} decline={decline} cancel={cancel} />;
+    } else {
+      friendsBody = <AddTab t={ft} lang={lang} search={search} isOnline={isOnline} relationWith={relationWith} />;
+    }
   }
 
   let body;
@@ -345,17 +343,16 @@ export default function SocialDock() {
         />
       </div>
     );
-  } else if (tab === 'messages') {
-    body = <div className="messages-body">{messagesBody}</div>;
-  } else {
+  } else if (tab === 'requests' || tab === 'add') {
     body = <div className="friends-body">{friendsBody}</div>;
+  } else {
+    body = <div className="messages-body">{messagesBody}</div>;
   }
 
   const tabs = [
-    { id: 'friends', label: ft.tabFriends, count: friendsList.length },
+    { id: 'messages', label: t.tabMessages, count: unreadTotal, alert: unreadTotal > 0 },
     { id: 'requests', label: ft.tabRequests, count: pendingCount, alert: pendingCount > 0 },
     { id: 'add', label: ft.tabAdd },
-    { id: 'messages', label: t.tabMessages, count: unreadTotal, alert: unreadTotal > 0 },
   ];
 
   return (

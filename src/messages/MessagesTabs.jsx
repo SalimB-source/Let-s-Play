@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
+import { ProfileIcon } from '../friends/FriendsTabs';
 import { callBlockLabel } from './callsCopy';
 import { describeMessagesError, messageSuggestions, pseudoLabel, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
@@ -10,9 +11,13 @@ import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
  * Vues de messagerie — partagées par la fenêtre sociale (bureau) et la page
  * `/messages` (mobile surtout) :
  *
- *   - `InboxView` : la liste des discussions (un ami par ligne, dernier
- *     message, heure, badge des non-lus ; en dessous, les amis sans
- *     discussion et les joueurs bloqués, à débloquer) ;
+ *   - `InboxView` : **la liste unique amis + discussions** (l'ancien onglet
+ *     « Amis » y a fusionné : chaque ligne est un ami — discussion ouverte
+ *     au clic, point de présence sur l'avatar, bouton « Profil » à droite ;
+ *     les amis sans message montrent leur présence — « EN LIGNE », « vu il y
+ *     a… » — à la place de l'aperçu). Sections : les discussions (un ami par
+ *     ligne, dernier message, heure, badge des non-lus), les amis sans
+ *     discussion (en ligne d'abord), et les joueurs bloqués, à débloquer ;
  *   - `ThreadView` : la discussion ouverte (séparateurs de jour, fil de
  *     bulles, accusé de lecture, **bulle de suggestions** à l'ouverture —
  *     trois messages prêts à glisser dans le champ —, champ qui s'agrandit,
@@ -184,10 +189,12 @@ function messagePreview(message, t) {
   return `${message.mine ? '→ ' : ''}${message.body}`;
 }
 
-function ConversationRow({ entry, t, lang, online, onOpen }) {
+function ConversationRow({ entry, t, lang, online, presence, profileLabel, onOpen }) {
   const { profile, lastMessage, unread, lastAt } = entry;
   const name = pseudoLabel(profile.name);
-  const preview = messagePreview(lastMessage, t);
+  // Sans discussion, la ligne d'aperçu porte la présence de l'ami (l'apport
+  // de l'ancien onglet « Amis ») : « EN LIGNE », « vu il y a… », « HORS LIGNE ».
+  const preview = lastMessage ? messagePreview(lastMessage, t) : (presence || t.noMessageYet);
   return (
     <li className={`messages-row${unread > 0 ? ' has-unread' : ''}`}>
       <button
@@ -203,7 +210,7 @@ function ConversationRow({ entry, t, lang, online, onOpen }) {
             <span className="messages-row-name">{name}</span>
             {lastAt && <span className="messages-row-time">{formatCommentDate(lastAt, lang)}</span>}
           </span>
-          <span className="messages-row-preview">{preview}</span>
+          <span className={`messages-row-preview${!lastMessage && online ? ' is-online' : ''}`}>{preview}</span>
         </span>
         <span className="messages-row-side">
           {unread > 0
@@ -211,6 +218,18 @@ function ConversationRow({ entry, t, lang, online, onOpen }) {
             : <span className="messages-row-chevron"><ChevronIcon /></span>}
         </span>
       </button>
+      {/* Accès profil explicite, hérité de l'ancien onglet « Amis » : la
+          liste reste une porte vers la fiche du joueur, pas seulement vers
+          le chat. Lien (pas un bouton) : même navigation que partout. */}
+      <Link
+        to={`/profile/${encodeURIComponent(entry.peerId)}`}
+        className="messages-action messages-action-quiet messages-action-profile"
+        title={profileLabel}
+        aria-label={`${profileLabel} — ${name}`}
+      >
+        <ProfileIcon />
+        <span>{profileLabel}</span>
+      </Link>
     </li>
   );
 }
@@ -233,14 +252,33 @@ function BlockedRow({ entry, t, lang, onUnblock }) {
   );
 }
 
-export function InboxView({ t, lang, conversations, blocked, isOnline, onOpen, onUnblock }) {
+export function InboxView({ t, ft, friends, lang, conversations, blocked, isOnline, profileLabel, onOpen, onUnblock }) {
   const [query, setQuery] = useState('');
   const term = query.trim().toLowerCase();
   const filtered = term
     ? conversations.filter((entry) => String(entry.profile.name || '').toLowerCase().includes(term))
     : conversations;
   const withMessages = filtered.filter((entry) => entry.lastMessage);
-  const withoutMessages = filtered.filter((entry) => !entry.lastMessage);
+  // Amis sans discussion : les en ligne d'abord (l'esprit de l'ancien onglet
+  // « Amis »), puis par pseudo.
+  const withoutMessages = filtered
+    .filter((entry) => !entry.lastMessage)
+    .sort((a, b) => (
+      Number(Boolean(isOnline(b.peerId))) - Number(Boolean(isOnline(a.peerId)))
+      || String(a.profile.name || '').localeCompare(String(b.profile.name || ''))
+    ));
+
+  // Présence de chaque ami (« EN LIGNE », « vu il y a… », « HORS LIGNE ») :
+  // les libellés viennent du module ami (`friendsCopy`), ce sont les mêmes
+  // que dans le hub joueur.
+  const friendById = useMemo(() => new Map((friends || []).map((friend) => [friend.id, friend])), [friends]);
+  const presenceFor = (entry) => {
+    const friend = friendById.get(entry.peerId);
+    if (!friend) return null;
+    if (friend.online) return ft.onlineShort;
+    if (friend.lastSeenAt) return fill(ft.lastSeen, { when: formatCommentDate(friend.lastSeenAt, lang) });
+    return ft.offlineShort;
+  };
 
   return (
     <>
@@ -273,7 +311,7 @@ export function InboxView({ t, lang, conversations, blocked, isOnline, onOpen, o
           <SectionTitle count={withMessages.length}>{t.sectionConversations}</SectionTitle>
           <ul className="messages-list">
             {withMessages.map((entry) => (
-              <ConversationRow key={entry.peerId} entry={entry} t={t} lang={lang} online={isOnline(entry.peerId)} onOpen={onOpen} />
+              <ConversationRow key={entry.peerId} entry={entry} t={t} lang={lang} online={isOnline(entry.peerId)} presence={presenceFor(entry)} profileLabel={profileLabel} onOpen={onOpen} />
             ))}
           </ul>
         </>
@@ -283,7 +321,7 @@ export function InboxView({ t, lang, conversations, blocked, isOnline, onOpen, o
           <SectionTitle count={withoutMessages.length}>{t.sectionFriends}</SectionTitle>
           <ul className="messages-list">
             {withoutMessages.map((entry) => (
-              <ConversationRow key={entry.peerId} entry={entry} t={t} lang={lang} online={isOnline(entry.peerId)} onOpen={onOpen} />
+              <ConversationRow key={entry.peerId} entry={entry} t={t} lang={lang} online={isOnline(entry.peerId)} presence={presenceFor(entry)} profileLabel={profileLabel} onOpen={onOpen} />
             ))}
           </ul>
         </>

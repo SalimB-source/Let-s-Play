@@ -141,6 +141,9 @@
    `body *` ramène tout à 400, ces déclarations ne servent que de repli. */
 .messages-row.has-unread .messages-row-preview { color: var(--ink); font-weight: 700; }
 .messages-row.has-unread .messages-row-time { font-weight: 700; }
+/* Présence affichée à la place de l'aperçu (amis sans discussion) : la
+   mention « EN LIGNE » reprend la couleur du point de présence. */
+.messages-row-preview.is-online { color: var(--friends-online, #10b981); }
 .messages-row-side {
   display: inline-flex;
   flex-direction: column;

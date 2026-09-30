@@ -6,27 +6,29 @@ import { describeFriendsError, fill } from './friendsCopy';
 import { pseudoLabel } from '../messages/messagesCopy';
 
 /**
- * Onglets du côté « amis » de la fenêtre sociale unifiée
+ * Onglets « gestion » de la fenêtre sociale unifiée
  * (`src/social/SocialDock.jsx`) :
  *
- *   - **Amis** : les amis en ligne d'abord, puis hors ligne (avec « vu il y
- *     a… »). La photo ou le nom d'un ami **ouvre la discussion** avec lui (le
- *     chat est le geste principal) ; l'accès au profil passe par le bouton
- *     « Profil », bien visible à droite de la ligne.
  *   - **Demandes** : reçues (accepter / refuser) et envoyées (annuler) ;
  *   - **Ajouter** : recherche d'un joueur par pseudo, demande en un clic.
  *     Pas encore amis : la ligne renvoie au profil (pas de discussion
  *     possible), comme partout sur le site.
  *
- * Les trois composants sont autonomes (props) : la fenêtre porte l'état,
- * les contextes (`FriendsContext`, `MessagesContext` via `onOpenThread`)
- * fournissent les données et les gestes.
+ * La liste des amis elle-même n'a plus d'onglet : elle vit dans la **boîte de
+ * réception** de la messagerie (`InboxView` de `src/messages/MessagesTabs.jsx`)
+ * — ouvrir une discussion et voir ses amis, c'est le même geste, pas deux
+ * listes redondantes. `ProfileIcon` reste exporté d'ici : c'est l'icône du
+ * bouton « Profil » des lignes de la boîte de réception.
+ *
+ * Les composants sont autonomes (props) : la fenêtre porte l'état, les
+ * contextes (`FriendsContext`, `MessagesContext`) fournissent les données et
+ * les gestes.
  *
  * Comme dans toute la messagerie, les pseudos s'affichent **en majuscules**
- * (`pseudoLabel`) : lignes des trois onglets, libellés accessibles, boutons
- * « Profil » et confirmations de retrait. Les données gardent leur casse
- * d'origine ; hors de la fenêtre sociale (hub joueur, profils, commentaires),
- * le pseudo reste tel qu'il a été saisi.
+ * (`pseudoLabel`) : lignes des deux onglets, libellés accessibles et
+ * confirmations. Les données gardent leur casse d'origine ; hors de la
+ * fenêtre sociale (hub joueur, profils, commentaires), le pseudo reste tel
+ * qu'il a été saisi.
  */
 
 function initialsFor(name) {
@@ -98,20 +100,6 @@ function PlayerRow({ player, t, lang, meta, children, onOpen, openTitle }) {
   );
 }
 
-/** Bouton « Profil » bien visible : l'accès au profil explicite des listes. */
-function ProfileButton({ userId, name, label, title }) {
-  return (
-    <Link
-      to={`/profile/${encodeURIComponent(userId)}`}
-      className="friends-action friends-action-profile"
-      title={title}
-      aria-label={`${title} — ${name}`}
-    >
-      <ProfileIcon /> {label}
-    </Link>
-  );
-}
-
 function SectionTitle({ children, count }) {
   return (
     <h4 className="friends-section-title">
@@ -145,59 +133,6 @@ function ActionButton({ onAction, className = '', children, t }) {
         {children}
       </button>
       {error && <span className="friends-inline-error" role="alert">{error}</span>}
-    </>
-  );
-}
-
-/* ------------------------------ onglet Amis ------------------------------ */
-
-export function FriendsTab({ friends, t, lang, unfriend, onOpenThread, chatLabel, profileLabel }) {
-  // La photo ou le nom d'un ami ouvre la discussion (`onOpenThread`, qui
-  // navigue vers la page de messagerie sur mobile) ; le bouton « Profil »
-  // remplace l'ancienne icône « Message » : l'accès profil est explicite.
-  const online = friends.filter((friend) => friend.online);
-  const offline = friends.filter((friend) => !friend.online);
-  if (friends.length === 0) {
-    return <p className="friends-empty">{t.emptyFriends}</p>;
-  }
-  const row = (friend) => {
-    // Le pseudo passe en majuscules jusque dans le bouton « Profil » et la
-    // confirmation de retrait — même règle que le reste de la messagerie.
-    const name = pseudoLabel(friend.name);
-    return (
-      <>
-        <ProfileButton userId={friend.id} name={name} label={profileLabel} title={t.viewProfile} />
-        <ActionButton t={t} className="friends-action-quiet" onAction={() => {
-          if (typeof window !== 'undefined' && !window.confirm(fill(t.removeConfirm, { name }))) return undefined;
-          return unfriend(friend.id);
-        }}>{t.remove}</ActionButton>
-      </>
-    );
-  };
-  return (
-    <>
-      <SectionTitle count={online.length}>{t.sectionOnline}</SectionTitle>
-      {online.length > 0 ? (
-        <ul className="friends-list">
-          {online.map((friend) => (
-            <PlayerRow key={friend.id} player={friend} t={t} lang={lang} onOpen={onOpenThread} openTitle={chatLabel}>
-              {row(friend)}
-            </PlayerRow>
-          ))}
-        </ul>
-      ) : <p className="friends-empty friends-empty-small">{t.emptyOnline}</p>}
-      {offline.length > 0 && (
-        <>
-          <SectionTitle count={offline.length}>{t.sectionOffline}</SectionTitle>
-          <ul className="friends-list">
-            {offline.map((friend) => (
-              <PlayerRow key={friend.id} player={friend} t={t} lang={lang} onOpen={onOpenThread} openTitle={chatLabel}>
-                {row(friend)}
-              </PlayerRow>
-            ))}
-          </ul>
-        </>
-      )}
     </>
   );
 }
