@@ -49,6 +49,16 @@ const pageMeta = {
     description: 'La vitrine arcade de Let’s Play : Mirage Rush, runner 3D western dans le désert, et les prochains jeux en préparation. Tout se joue directement dans la page.',
     type: 'website',
   },
+  '/communaute': {
+    title: 'Communauté gaming — groupes et discussions — Let’s Play',
+    description: 'Créez des groupes de discussion, retrouvez les joueurs qui partagent vos univers et échangez dans la communauté gaming Let’s Play.',
+    type: 'website',
+  },
+  '/community': {
+    title: 'Gaming community — groups and discussions — Let’s Play',
+    description: 'Create discussion groups, find players who share your worlds and join the Let’s Play gaming community.',
+    type: 'website',
+  },
   '/jeu/mirage-rush': {
     title: 'Mirage Rush — Jeu arcade 3D — Let’s Play',
     description: 'Cours dans un désert surréaliste en blocs, évite les cactus et grimpe au classement communautaire de Let’s Play.',

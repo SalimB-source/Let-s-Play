@@ -29,6 +29,7 @@ import Dossiers from '../src/pages/Dossiers';
 import NotFound from '../src/pages/NotFound';
 import Auth from '../src/pages/Auth';
 import Games from '../src/pages/Games';
+import CommunityPage from '../src/community/CommunityPage';
 import MirageRushPage from '../src/games/MirageRushPage';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
@@ -53,6 +54,7 @@ export const ROUTES = [
   ['/dossiers', Dossiers],
   ['/auth', Auth],
   ['/jeu', Games],
+  ['/communaute', CommunityPage],
   ['/jeu/mirage-rush', MirageRushPage],
   ['/quizz', QuizzesPage],
   ['/quizz/culture-gaming', QuizPage, '/quizz/:slug'],

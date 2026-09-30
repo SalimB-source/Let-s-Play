@@ -180,3 +180,63 @@ html body :is(.calls-card-name, .calls-name, .calls-timer, .calls-avatar-fallbac
 html body :is(.calls-card-name, .calls-name, .calls-timer, .calls-avatar-fallback) {
   font-weight: 700 !important;
 }
+
+/* ============ 7. COMMUNAUTÉ : ACTIONS ET IDENTIFIANTS ============ */
+/* Les styles de communauté déclarent leurs poids localement ; cette règle
+   les protège du reset `body *` ci-dessus, tout en gardant Google Sans pour
+   les petits libellés et les paragraphes de discussion. Les grands titres
+   h1-h3 restent gérés par le bloc 2. */
+html body .community-page :is(
+  .community-hero-copy .eyebrow,
+  .community-section-heading .eyebrow,
+  .community-button,
+  .community-hero-footline strong,
+  .community-feature-code,
+  .community-feature-live,
+  .community-feature-kicker,
+  .community-feature-card h2,
+  .community-feature-tags,
+  .community-hero-coordinate,
+  .community-panel-kicker,
+  .community-directory-head strong,
+  .community-directory-signal,
+  .community-filters button,
+  .community-group-card-topline,
+  .community-group-card-copy > strong,
+  .community-group-card-bottom,
+  .community-group-index,
+  .community-directory-create,
+  .community-live-indicator,
+  .community-example-tag,
+  .community-discussion-title h3,
+  .community-discussion-meta,
+  .community-thread-head strong,
+  .community-avatar,
+  .community-comment-meta strong,
+  .community-comment-local,
+  .community-character-count,
+  .community-post-button,
+  .community-signin-card strong,
+  .community-bottom-note,
+  .community-modal-topline,
+  .community-modal-mark,
+  .community-field > span,
+  .community-field > small,
+  .community-modal-cancel
+),
+html body .community-page :is(
+  .community-button,
+  .community-feature-tags,
+  .community-directory-head strong,
+  .community-group-card-topline,
+  .community-group-card-copy > strong,
+  .community-group-card-bottom,
+  .community-directory-create,
+  .community-thread-head strong,
+  .community-comment-meta,
+  .community-modal-topline,
+  .community-modal-mark,
+  .community-modal-cancel
+) * {
+  font-weight: 700 !important;
+}
