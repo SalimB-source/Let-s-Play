@@ -464,6 +464,24 @@ drop policy if exists "Players delete their own community comments" on public.co
 create policy "Players delete their own community comments"
 on public.community_comments for delete to authenticated using (auth.uid() = user_id);
 
+-- Le créateur du groupe peut supprimer son groupe
+drop policy if exists "Group creator can delete their group" on public.community_groups;
+create policy "Group creator can delete their group"
+on public.community_groups for delete to authenticated
+using (auth.uid() = created_by);
+
+-- Le créateur du groupe peut supprimer n'importe quel commentaire dans son groupe (modération)
+drop policy if exists "Group creator can moderate comments in their group" on public.community_comments;
+create policy "Group creator can moderate comments in their group"
+on public.community_comments for delete to authenticated
+using (
+  exists (
+    select 1 from public.community_groups g
+    where g.id = community_comments.group_id
+      and g.created_by = auth.uid()
+  )
+);
+
 create or replace function public.set_community_group_author()
 returns trigger
 language plpgsql
@@ -584,6 +602,72 @@ create trigger on_community_comment_insert
 before insert on public.community_comments
 for each row execute procedure public.set_community_comment_author();
 
+
+-- ----------------------------------------------------------------------------
+-- 3c2. Community moderation RPC functions
+-- ----------------------------------------------------------------------------
+-- Allows group creator to delete their group (cascades to comments via FK)
+create or replace function public.delete_community_group(p_group_id uuid)
+returns void
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'community_group_delete_requires_auth' using errcode = '42501';
+  end if;
+  
+  -- Verify the caller is the group creator
+  if not exists (
+    select 1 from public.community_groups 
+    where id = p_group_id and created_by = auth.uid()
+  ) then
+    raise exception 'not_group_creator' using errcode = '42501';
+  end if;
+  
+  delete from public.community_groups where id = p_group_id;
+end;
+$$;
+
+revoke all on function public.delete_community_group(uuid) from public, anon;
+grant execute on function public.delete_community_group(uuid) to authenticated;
+
+-- Le créateur du groupe peut modérer (supprimer) n'importe quel commentaire dans son groupe
+create or replace function public.moderate_community_comment(p_comment_id uuid, p_group_id uuid)
+returns void
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'community_comment_moderate_requires_auth' using errcode = '42501';
+  end if;
+  
+  -- Verify the caller is the group creator
+  if not exists (
+    select 1 from public.community_groups 
+    where id = p_group_id and created_by = auth.uid()
+  ) then
+    raise exception 'not_group_creator' using errcode = '42501';
+  end if;
+  
+  -- Verify the comment belongs to the group
+  if not exists (
+    select 1 from public.community_comments 
+    where id = p_comment_id and group_id = p_group_id
+  ) then
+    raise exception 'comment_not_in_group' using errcode = 'P0001';
+  end if;
+  
+  delete from public.community_comments where id = p_comment_id;
+end;
+$$;
+
+revoke all on function public.delete_community_group(uuid) from public, anon;
+grant execute on function public.delete_community_group(uuid) to authenticated;
+
+revoke all on function public.moderate_community_comment(uuid, uuid) from public, anon;
+grant execute on function public.moderate_community_comment(uuid, uuid) to authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 3d. Amis : demandes, liste d'amis, présence en ligne
