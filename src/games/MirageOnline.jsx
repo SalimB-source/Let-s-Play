@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MirageCharacterPortrait from './MirageCharacterPortrait';
+import MirageSkinPreview from './MirageSkinPreview';
+import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import MiragePowerIcon from './MiragePowerIcon';
 import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
 import { Link } from 'react-router-dom';
@@ -249,6 +251,12 @@ export default function MirageOnline({
       unsub();
     };
   }, [room?.code, fetchRoomsList]);
+
+  // Les aperçus 3D des personnages se figent pendant la course (GPU réservé au jeu).
+  useEffect(() => {
+    setMirageSkinPreviewsPaused(active);
+    return () => setMirageSkinPreviewsPaused(false);
+  }, [active]);
 
   // Poll active room state while inside a room
   useEffect(() => {
@@ -797,7 +805,10 @@ export default function MirageOnline({
                       disabled={busy || room.status !== 'lobby'}
                       onClick={() => command('character', room.code, { p_character: index })}
                     >
-                      <MirageCharacterPortrait character={index} className="mirage-skin-portrait" decorative />
+                      {/* Aperçu 3D du personnage en rotation continue (même modèle qu'en course). */}
+                      <span className="mirage-skin-stage">
+                        <MirageSkinPreview palette={CHARACTER_PALETTES[index]} className="mirage-skin-model" />
+                      </span>
                       <span className="mirage-skin-name">{name.split(' · ')[0]}</span>
                       <small>{characterIndex === index ? 'PERSONNAGE CHOISI' : 'CHOISIR'}</small>
                     </button>

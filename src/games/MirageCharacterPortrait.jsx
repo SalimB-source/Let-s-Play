@@ -1,5 +1,6 @@
 import React, { useId } from 'react';
 import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
+import { normalizePalette } from './mirageExplorer';
 
 function toHex(color) {
   return `#${Number(color).toString(16).padStart(6, '0')}`;
@@ -8,7 +9,7 @@ function toHex(color) {
 /** Small, self-contained character illustration used by the online room UI. */
 export default function MirageCharacterPortrait({ character = 0, className = '', decorative = false }) {
   const index = ((Number(character) || 0) % CHARACTER_PALETTES.length + CHARACTER_PALETTES.length) % CHARACTER_PALETTES.length;
-  const [coat, mane, cloth, trim, hood] = CHARACTER_PALETTES[index].map(toHex);
+  const [coat, mane, cloth, trim, hood, hat] = normalizePalette(CHARACTER_PALETTES[index]).map(toHex);
   const title = CHARACTER_NAMES[index];
   const uniqueId = useId().replace(/:/g, '');
   const gradientId = `mirage-portrait-sky-${index}-${uniqueId}`;
@@ -47,9 +48,9 @@ export default function MirageCharacterPortrait({ character = 0, className = '',
       <path d="M52 43 Q56 38 61 43 L66 51 L61 54 L55 49Z" fill={mane} stroke="#2d2334" strokeWidth="2.5" strokeLinejoin="round" />
       <path d="M42 42 Q40 35 46 31 L57 31 Q63 35 60 44 L54 49 L46 47Z" fill={hood} stroke="#2d2334" strokeWidth="3" strokeLinejoin="round" />
       {/* Cowboy Hat (pinched crown + trim hatband + wide curved brim) */}
-      <path d="M41 31 L43 20 Q47 17 51 22 Q55 17 59 20 L61 31Z" fill="#6b3e23" stroke="#2d2334" strokeWidth="2.6" strokeLinejoin="round" />
+      <path d="M41 31 L43 20 Q47 17 51 22 Q55 17 59 20 L61 31Z" fill={hat} stroke="#2d2334" strokeWidth="2.6" strokeLinejoin="round" />
       <path d="M41 28 L61 28 L61 31 L41 31Z" fill={trim} stroke="#2d2334" strokeWidth="2" strokeLinejoin="round" />
-      <path d="M31 28 Q36 34 51 33 Q66 34 71 27 Q66 31 51 30 Q36 31 31 28Z" fill="#7c4929" stroke="#2d2334" strokeWidth="2.6" strokeLinejoin="round" />
+      <path d="M31 28 Q36 34 51 33 Q66 34 71 27 Q66 31 51 30 Q36 31 31 28Z" fill={hat} stroke="#2d2334" strokeWidth="2.6" strokeLinejoin="round" />
       <path d="M49 49 L50 61" stroke={trim} strokeWidth="3" strokeLinecap="round" />
       <path d="M54 61 Q62 63 67 60" fill="none" stroke="#2d2334" strokeWidth="2" strokeLinecap="round" />
       <rect x="2" y="2" width="96" height="96" rx="22" fill="none" stroke="rgba(255,244,220,.42)" strokeWidth="2" />
