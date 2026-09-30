@@ -7,6 +7,7 @@ import sardiniaThumbnail from './assets/maps/sardinia.webp';
 import algerThumbnail from './assets/maps/alger.webp';
 import japanThumbnail from './assets/maps/japan.webp';
 import rampartsThumbnail from './assets/maps/ramparts.webp';
+import infinityThumbnail from './assets/maps/infinity.webp';
 
 const MAPS = [
   { id: 'desert', number: '01', name: 'Dunes de l’Écho', mood: 'Mystique & solaire', detail: 'Désert · funk', thumbnail: desertThumbnail },
@@ -16,6 +17,7 @@ const MAPS = [
   { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Corniche · palmiers · chaâbi oriental', thumbnail: algerThumbnail },
   { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', thumbnail: japanThumbnail },
   { id: 'ramparts', number: '07', name: 'Remparts d’Ocre', mood: 'Rush B… ou Long A ?', detail: 'Hommage Counter-Strike · Mid', thumbnail: rampartsThumbnail },
+  { id: 'infinity', number: '08', name: 'Château de l’Infini', mood: 'Au son du biwa de Nakime', detail: 'Hommage Demon Slayer · shōji & biwa', thumbnail: infinityThumbnail },
 ];
 
 function MapThumbnail({ map }) {
