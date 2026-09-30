@@ -22,8 +22,8 @@ export const jumpHeight = (remaining) => remaining > 0 ? Math.sin((0.82 - remain
 // Appearing occasionally on open lanes, mud puddles slow down the mount
 // when stepped in on the ground (jumping clears them).
 export const MUD_SPAWN_CHANCE = 0.42;
-export const MUD_SLOW_DURATION = 1.8; // seconds the mount is slowed by mud
-export const MUD_SLOW_FACTOR = 0.55; // speed multiplier while wading through mud
+export const MUD_SLOW_DURATION = 1.2; // seconds the mount is slowed by mud
+export const MUD_SLOW_FACTOR = 0.7; // speed multiplier while wading through mud
 export const MUD_JUMP_CLEARANCE = 0.45; // jump height above which the mount leaps over a mud puddle
 
 // Shuffle a bag of encounters: no adjacent repeats, always a traversable route.
@@ -229,6 +229,30 @@ export const POWER_UP_MODES = Object.freeze(['duel', 'online']);
 
 export function powerUpsEnabled(mode) {
   return mode === 'duel' || mode === 'online';
+}
+
+// ── Automatic power-ups (shield & boost) ─────────────────────────────
+// Shield and Boost have no target to pick: they fire by themselves as soon as
+// their charge bar is full. Lasso and Pistol stay manual because the player
+// chooses who to catch or shoot.
+export const AUTO_LAUNCH_POWERS = Object.freeze([POWER_UPS.SHIELD, POWER_UPS.BOOST]);
+
+export function autoLaunchesWhenCharged(type) {
+  return AUTO_LAUNCH_POWERS.includes(type);
+}
+
+/**
+ * Split the powers that just finished charging into the ones that fire
+ * instantly (`auto`) and the ones the player still triggers by hand (`manual`).
+ */
+export function splitChargedPowers(charged = []) {
+  const auto = [];
+  const manual = [];
+  for (const type of charged) {
+    if (autoLaunchesWhenCharged(type)) auto.push(type);
+    else manual.push(type);
+  }
+  return { auto, manual };
 }
 
 /**
@@ -473,8 +497,8 @@ export function powerUpHudState(state = createPowerUpState()) {
 }
 
 export const SHIELD_DURATION = 5; // seconds the shield stays active
-export const LASSO_SLOW_DURATION = 2.5; // seconds target is slowed
-export const LASSO_SLOW_FACTOR = 0.45; // speed multiplier while slowed
+export const LASSO_SLOW_DURATION = 1.5; // seconds target is slowed
+export const LASSO_SLOW_FACTOR = 0.65; // speed multiplier while slowed
 export const LASSO_PROJECTILE_DURATION = 0.45; // seconds rope flies
 export const PISTOL_STUN_DURATION = 2; // seconds the shot rider is on the ground, fully stopped before remounting
 export const POWER_BOOST_DURATION = 3; // seconds the green-diamond Boost power-up lasts before returning to normal speed
@@ -569,9 +593,9 @@ export const POWER_UP_DEFS = {
   [POWER_UPS.SHIELD]: {
     id: POWER_UPS.SHIELD,
     label: 'Bouclier',
-    keyHintPC: 'Q / A',
+    keyHintPC: 'AUTO',
     icon: '🛡️',
-    description: 'Protège d’un choc, lasso ou tir (5s)',
+    description: 'S’active automatiquement dès que la barre est pleine : protège d’un choc, lasso ou tir (5s)',
     color: 0x4ce9df,
     emissive: 0x1a7a74,
     cost: POWER_UP_CHARGE_COST[POWER_UPS.SHIELD],
@@ -589,9 +613,9 @@ export const POWER_UP_DEFS = {
   [POWER_UPS.BOOST]: {
     id: POWER_UPS.BOOST,
     label: 'Turbo',
-    keyHintPC: 'E',
+    keyHintPC: 'AUTO',
     icon: '⚡',
-    description: `Boost de vitesse pendant ${POWER_BOOST_DURATION}s avant de revenir à la vitesse normale`,
+    description: `S’active automatiquement dès que la barre est pleine : boost de vitesse pendant ${POWER_BOOST_DURATION}s avant de revenir à la vitesse normale`,
     color: 0x4cd964,
     emissive: 0x1e7a34,
     cost: POWER_UP_CHARGE_COST[POWER_UPS.BOOST],

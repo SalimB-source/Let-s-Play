@@ -518,12 +518,79 @@ test('duel mode has 3 AI rivals that spread across lanes and use their powers wh
   assert.equal(behindDecision, null);
 });
 
-test('power-up shortcuts assign E to Boost (Turbo) and R to Pistol (Tir)', async () => {
+test('power-up shortcuts: shield and boost are automatic, lasso (W/Z) and pistol (R) stay manual', async () => {
   const { POWER_UPS, POWER_UP_DEFS } = await import('../src/games/mirageRules.js');
-  assert.equal(POWER_UP_DEFS[POWER_UPS.SHIELD].keyHintPC, 'Q / A');
+  assert.equal(POWER_UP_DEFS[POWER_UPS.SHIELD].keyHintPC, 'AUTO');
   assert.equal(POWER_UP_DEFS[POWER_UPS.LASSO].keyHintPC, 'W / Z');
-  assert.equal(POWER_UP_DEFS[POWER_UPS.BOOST].keyHintPC, 'E');
+  assert.equal(POWER_UP_DEFS[POWER_UPS.BOOST].keyHintPC, 'AUTO');
   assert.equal(POWER_UP_DEFS[POWER_UPS.PISTOL].keyHintPC, 'R');
+  assert.match(POWER_UP_DEFS[POWER_UPS.SHIELD].description, /automatiquement/i);
+  assert.match(POWER_UP_DEFS[POWER_UPS.BOOST].description, /automatiquement/i);
+});
+
+test('shield and boost fire on their own once their bar is full, lasso and pistol never do', async () => {
+  const {
+    POWER_UPS,
+    AUTO_LAUNCH_POWERS,
+    autoLaunchesWhenCharged,
+    splitChargedPowers,
+    chargePowerUps,
+    createPowerUpState,
+    DIAMOND_POWER_CHARGE,
+  } = await import('../src/games/mirageRules.js');
+
+  assert.deepEqual([...AUTO_LAUNCH_POWERS], [POWER_UPS.SHIELD, POWER_UPS.BOOST]);
+  assert.equal(autoLaunchesWhenCharged(POWER_UPS.SHIELD), true);
+  assert.equal(autoLaunchesWhenCharged(POWER_UPS.BOOST), true);
+  assert.equal(autoLaunchesWhenCharged(POWER_UPS.LASSO), false);
+  assert.equal(autoLaunchesWhenCharged(POWER_UPS.PISTOL), false);
+
+  const split = splitChargedPowers([POWER_UPS.SHIELD, POWER_UPS.LASSO, POWER_UPS.BOOST, POWER_UPS.PISTOL]);
+  assert.deepEqual(split.auto, [POWER_UPS.SHIELD, POWER_UPS.BOOST]);
+  assert.deepEqual(split.manual, [POWER_UPS.LASSO, POWER_UPS.PISTOL]);
+  assert.deepEqual(splitChargedPowers([]), { auto: [], manual: [] });
+
+  // Tier 0 (blue) diamonds fill the shield bar: the charge lands on the very diamond that completes it.
+  let shieldState = createPowerUpState();
+  let shieldCharged = [];
+  for (let i = 0; i < 5; i += 1) {
+    const res = chargePowerUps(shieldState, 0);
+    shieldState = res.state;
+    shieldCharged = res.charged;
+  }
+  assert.equal(DIAMOND_POWER_CHARGE[0][POWER_UPS.SHIELD], 2);
+  assert.equal(shieldState.shieldCharges, 1);
+  assert.deepEqual(splitChargedPowers(shieldCharged).auto, [POWER_UPS.SHIELD]);
+
+  // Tier 2 (green) diamonds fill the boost bar the same way.
+  let boostState = createPowerUpState();
+  let boostCharged = [];
+  for (let i = 0; i < 5; i += 1) {
+    const res = chargePowerUps(boostState, 2);
+    boostState = res.state;
+    boostCharged = res.charged;
+  }
+  assert.equal(boostState.boostCharges, 1);
+  assert.deepEqual(splitChargedPowers(boostCharged).auto, [POWER_UPS.BOOST]);
+});
+
+test('lasso and mud slows are short and light', async () => {
+  const {
+    LASSO_SLOW_DURATION,
+    LASSO_SLOW_FACTOR,
+    MUD_SLOW_DURATION,
+    MUD_SLOW_FACTOR,
+  } = await import('../src/games/mirageRules.js');
+
+  assert.equal(LASSO_SLOW_DURATION, 1.5);
+  assert.equal(LASSO_SLOW_FACTOR, 0.65);
+  assert.equal(MUD_SLOW_DURATION, 1.2);
+  assert.equal(MUD_SLOW_FACTOR, 0.7);
+  // The lasso remains the harshest effect of the two, but both stay under 2 seconds.
+  assert.ok(LASSO_SLOW_FACTOR < MUD_SLOW_FACTOR);
+  assert.ok(LASSO_SLOW_DURATION < 2 && MUD_SLOW_DURATION < 2);
+  // A lasso slow still survives a mud splash (resolveMudSlow keeps the stronger effect).
+  assert.ok(LASSO_SLOW_DURATION > MUD_SLOW_DURATION);
 });
 
 test('all four special items (shield, lasso, boost, pistol) have dedicated vector power icons and metadata', async () => {

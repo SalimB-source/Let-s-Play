@@ -1067,7 +1067,7 @@ export default function MirageOnline({
                           } else if (info?.action === 'used') {
                             if (info.type === 'shield') {
                               audio.current?.shieldGravity?.();
-                              setPowerToast('🛡️ Bouclier activé !');
+                              setPowerToast('🛡️ Bouclier activé automatiquement !');
                             } else if (info.type === 'lasso') {
                               audio.current?.lassoThrow?.();
                               setPowerToast('🪢 Lasso envoyé !');
@@ -1076,17 +1076,13 @@ export default function MirageOnline({
                               setPowerToast('🔫 Tir de pistolet !');
                             } else if (info.type === 'boost') {
                               audio.current?.speedBoost?.();
-                              setPowerToast(`⚡ Turbo activé (${POWER_BOOST_DURATION}s) !`);
+                              setPowerToast(`⚡ Turbo activé automatiquement (${POWER_BOOST_DURATION}s) !`);
                             }
                             setTimeout(() => setPowerToast(null), 2200);
                           } else if (info?.action === 'charged') {
                             audio.current?.powerReady?.();
-                            if (info.type === 'shield') {
-                              setPowerToast('⚡ 🛡️ BOUCLIER PRÊT ! Appuie sur Q / A ou clique !');
-                            } else if (info.type === 'lasso') {
+                            if (info.type === 'lasso') {
                               setPowerToast('⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
-                            } else if (info.type === 'boost') {
-                              setPowerToast('⚡ 🚀 TURBO PRÊT ! Appuie sur E ou clique !');
                             } else if (info.type === 'pistol') {
                               setPowerToast('⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
                             }
@@ -1166,12 +1162,12 @@ export default function MirageOnline({
                               className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_shield')}
                               disabled={(hud.shieldCharges || 0) <= 0}
-                              title="Bouclier (Q / A) — Chargé par les diamants BLEUS. Utiliser cet objet ne décharge pas les autres."
+                              title="Bouclier — Chargé par les diamants BLEUS, il s’active tout seul dès que la barre est pleine. Utiliser cet objet ne décharge pas les autres."
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-blue">◆ BLEU</span>
-                                <span className="mirage-powerup-key">Q / A</span>
+                                <span className="mirage-powerup-key">AUTO</span>
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>Bouclier</span>
@@ -1218,12 +1214,12 @@ export default function MirageOnline({
                               className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_boost')}
                               disabled={(hud.boostCharges || 0) <= 0}
-                              title={`Turbo (E) — Chargé par les diamants VERTS. Donne un boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                              title={`Turbo — Chargé par les diamants VERTS, il s’active tout seul dès que la barre est pleine : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-gem-hint is-green">◆ VERT</span>
-                                <span className="mirage-powerup-key">E</span>
+                                <span className="mirage-powerup-key">AUTO</span>
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>Turbo</span>
