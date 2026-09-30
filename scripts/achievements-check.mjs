@@ -27,6 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   METRICS,
+  MIRAGE_CUP_TROPHIES_KEY,
   STATE_VERSION,
   createState,
   dayKey,
@@ -526,6 +527,21 @@ const saved = reduce(savedState, { type: 'article_read', kind: 'news', id: 'zeld
 const withProgress = profileAchievements('fr', saved, { demo: true });
 const unlockedCards = (withProgress.html.match(/achievement-card rarity-[a-z]+ unlocked/g) || []).length;
 ok('progression enregistrée reprise dans le profil', unlockedCards >= 1, `${unlockedCards} succès affichés comme débloqués`);
+
+// Les trophées de coupe sont eux aussi visibles dans le vrai hub / profil,
+// et la collection affiche une seule carte même après plusieurs victoires.
+let cupTrophyState = reduce(createState(), { type: 'mirage_cup_won', cupId: 'desert' }).state;
+cupTrophyState = reduce(cupTrophyState, { type: 'mirage_cup_won', cupId: 'desert' }).state;
+cupTrophyState = reduce(cupTrophyState, { type: 'mirage_cup_won', cupId: 'worldtour' }).state;
+const profileWithCupTrophy = profileAchievements('fr', cupTrophyState, { demo: true });
+const desertTrophyCards = (profileWithCupTrophy.html.match(/data-cup-id="desert"/g) || []).length;
+const grandTourTrophyCards = (profileWithCupTrophy.html.match(/data-cup-id="worldtour"/g) || []).length;
+const trophyDesigns = [...profileWithCupTrophy.html.matchAll(/data-trophy-design="([^"]+)"/g)].map((match) => match[1]);
+ok('le profil affiche la collection Mirage Rush', profileWithCupTrophy.html.includes('Trophées Mirage Rush') && profileWithCupTrophy.html.includes('Coupe du Désert'));
+check('le profil n’affiche qu’une fois un trophée rejoué', desertTrophyCards, 1);
+check('la Coupe Grand Tour a sa propre carte de trophée', grandTourTrophyCards, 1);
+check('les trophées affichés ont des designs distincts', new Set(trophyDesigns).size, 2);
+check('la clé des trophées est bien persistée dans les ensembles', cupTrophyState.sets[MIRAGE_CUP_TROPHIES_KEY].join(','), 'desert,worldtour');
 
 // RÉGRESSION : un compte tout juste créé sur un appareil où l'on a déjà joué
 // démarre au niveau 1, sans aucun succès — la progression laissée sur

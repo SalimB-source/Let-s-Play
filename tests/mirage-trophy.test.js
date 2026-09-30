@@ -36,6 +36,20 @@ test('the trophy is made of well-formed voxel boxes', () => {
   assertWellFormed(podiumBoxes());
 });
 
+test('the Grand Tour gets a distinct platinum-and-globe trophy design', () => {
+  const desert = trophyBoxes('desert');
+  const grandTour = trophyBoxes('worldtour');
+  assertWellFormed(grandTour);
+  assert.notDeepEqual(grandTour, desert, 'the two cups do not share the same trophy geometry');
+  assert.ok(grandTour.some((box) => box.material === 'globe'));
+  assert.ok(grandTour.some((box) => box.material === 'globeLand'));
+  assert.ok(grandTour.some((box) => box.part.startsWith('meridian-')));
+  assert.ok(!grandTour.some((box) => box.part.startsWith('emblem-')), 'the globe replaces the Desert diamond');
+  const globeCells = grandTour.filter((box) => box.part.startsWith('globe-'));
+  assert.ok(globeCells.some((box) => box.center[2] > 0), 'globe relief on the front');
+  assert.ok(globeCells.some((box) => box.center[2] < 0), 'globe relief on the back');
+});
+
 test('the trophy stands on the ground line and reaches its announced height', () => {
   const boxes = trophyBoxes();
   assert.ok(close(Math.min(...boxes.map(bottom)), 0));

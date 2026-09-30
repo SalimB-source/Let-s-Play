@@ -22,6 +22,7 @@ import TopGamePill from '../components/TopGamePill';
 import SignupProtection from '../components/SignupProtection';
 import FriendsHubSection from '../friends/FriendsHubSection';
 import QuizGlobalRank from '../quizzes/QuizGlobalRank';
+import MirageCupTrophyCollection from '../games/MirageCupTrophyCollection';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
 
 /* ------------------------------------------------------------------ */
@@ -1224,6 +1225,9 @@ export default function Auth({ initialMode = '' }) {
           <div className="player-section achievements-section">
             <AchievementsPanel variant="compact" limit={5} />
           </div>
+
+          {/* TROPHÉES DE COUPE — une victoire par coupe, synchronisée avec la progression du joueur. */}
+          <MirageCupTrophyCollection />
 
           {/* CONSOLES POSSÉDÉES + JEUX TESTÉS — multi-sélection persistée
               dans les métadonnées du compte (ou de la persona démo) et poussée

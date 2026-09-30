@@ -1,0 +1,40 @@
+import React from 'react';
+import { useAchievements } from '../achievements/AchievementContext';
+import { MIRAGE_CUP_TROPHIES_KEY } from '../achievements/engine';
+import MirageCupTrophyEmblem from './MirageCupTrophyEmblem';
+import { CUPS } from './mirageCup';
+import './mirage-cup-trophy-collection.css';
+
+/** Collection personnelle : un seul trophée affiché par coupe remportée. */
+export default function MirageCupTrophyCollection() {
+  const { state } = useAchievements();
+  const earnedIds = new Set(state?.sets?.[MIRAGE_CUP_TROPHIES_KEY] || []);
+  const trophies = CUPS.filter((cup) => earnedIds.has(cup.id));
+
+  return (
+    <section className="player-section mirage-profile-trophies" aria-labelledby="mirage-profile-trophies-title">
+      <div className="player-section-header">
+        <h2 id="mirage-profile-trophies-title">Trophées Mirage Rush</h2>
+        <p>Chaque coupe remportée est conservée ici une seule fois.</p>
+      </div>
+
+      {trophies.length > 0 ? (
+        <ul className="mirage-profile-trophy-grid" aria-label="Coupes Mirage Rush remportées">
+          {trophies.map((cup) => (
+            <li className={`mirage-profile-trophy-card is-${cup.trophyDesign}`} data-cup-id={cup.id} data-trophy-design={cup.trophyDesign} key={cup.id}>
+              <span className="mirage-profile-trophy-emblem" aria-hidden="true"><MirageCupTrophyEmblem design={cup.trophyDesign} /></span>
+              <span className="mirage-profile-trophy-copy">
+                <small>MODE COUPE · VAINQUEUR</small>
+                <strong>{cup.name}</strong>
+                <span>{cup.stages.length} courses · trophée remporté</span>
+              </span>
+              <span className="mirage-profile-trophy-owned">ACQUIS</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="player-empty-note">Aucun trophée remporté pour l’instant. Termine une coupe à la première place pour l’ajouter à ta collection.</p>
+      )}
+    </section>
+  );
+}

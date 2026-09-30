@@ -2739,6 +2739,25 @@ img.mirage-powerup-icon {
   background: radial-gradient(75% 70% at 50% 54%, #62358a 0%, #2d1748 56%, #150b27 100%);
   animation: mirageOverlayIn .4s ease-out;
 }
+.mirage-trophy-screen.is-worldtour {
+  background: radial-gradient(75% 70% at 50% 54%, #176083 0%, #123353 56%, #08172f 100%);
+}
+.mirage-trophy-screen.is-worldtour .mirage-trophy-rays {
+  background: repeating-conic-gradient(from 0deg, rgba(104, 239, 239, .17) 0deg 6deg, rgba(104, 239, 239, 0) 6deg 18deg);
+}
+.mirage-trophy-screen.is-worldtour .mirage-trophy-title {
+  background-image: linear-gradient(110deg, #8af1e1 0%, #e6feff 32%, #77cde8 55%, #8af1e1 100%);
+}
+.mirage-trophy-screen.is-worldtour .mirage-trophy-panel {
+  border-color: rgba(114, 228, 235, .32);
+}
+.mirage-trophy-screen.is-worldtour .mirage-trophy-winner small { color: #8af1e1; }
+.mirage-trophy-screen.is-worldtour .mirage-trophy-crown,
+.mirage-trophy-screen.is-worldtour .mirage-trophy-lede b { color: #8af1e1; }
+.mirage-trophy-screen.is-worldtour.is-player-win .mirage-trophy-panel {
+  border-color: rgba(114, 228, 235, .62);
+  box-shadow: 0 14px 44px rgba(6, 2, 14, .5), 0 0 40px rgba(77, 219, 229, .2);
+}
 /* Rayons dorés qui tournent doucement derrière le trophée. */
 .mirage-trophy-rays {
   position: absolute; left: 50%; top: 54%; width: 230%; aspect-ratio: 1; transform: translate(-50%, -50%);
@@ -2844,9 +2863,12 @@ img.mirage-powerup-icon {
 /* Repli sans WebGL : un trophée CSS qui tourne et quelques étincelles. */
 .mirage-trophy-fallback { position: absolute; inset: 0; display: grid; place-items: center; perspective: 700px; }
 .mirage-trophy-fallback-cup {
-  display: block; width: clamp(92px, 22vw, 190px); height: auto; aspect-ratio: 1; transform-style: preserve-3d;
+  display: block; width: clamp(92px, 22vw, 190px); height: auto; aspect-ratio: 64 / 72; transform-style: preserve-3d;
   filter: drop-shadow(0 12px 28px rgba(255, 190, 70, .5));
   animation: mirageTrophySpin 4.2s linear infinite;
+}
+.mirage-trophy-screen.is-worldtour .mirage-trophy-fallback-cup {
+  filter: drop-shadow(0 12px 28px rgba(77, 219, 229, .5));
 }
 @keyframes mirageTrophySpin { to { transform: rotateY(360deg); } }
 .mirage-trophy-fallback i {
