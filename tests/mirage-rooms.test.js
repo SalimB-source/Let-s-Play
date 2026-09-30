@@ -208,3 +208,10 @@ test('a room can be created on the alger stage and rejects unknown maps', async 
   assert.equal(created.name, 'Baie d’Alger');
   assert.throws(() => localRoomAction('create', null, { p_stage: 'atlantis' }, host), /Carte inconnue/);
 });
+
+test('a room can be created on the dust2 stage', async () => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'dust2', p_name: 'Rush B', p_password: '' }, host);
+  assert.equal(created.stage, 'dust2');
+  assert.equal(created.name, 'Rush B');
+});

@@ -8,12 +8,13 @@ const MAPS = [
   { id: 'sardinia', number: '04', name: 'Costa Omertà', mood: 'Un été sur la baie', detail: 'Terrasses · soleil · mandoline', sky: '#4da9dc', sun: '#ffebaa', land: '#c9895a' },
   { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Alger-Centre · chaâbi oriental', sky: '#7fb2d8', sun: '#ffd28a', land: '#e8e2d2' },
   { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', sky: '#111a30', sun: '#eef4ff', land: '#1c2936' },
+  { id: 'dust2', number: '07', name: 'Dust II', mood: 'Rush B… ou Long A ?', detail: 'Hommage Counter-Strike · Mid', sky: '#6fb0e0', sun: '#fff6d6', land: '#d9b884' },
 ];
 
 function Landscape({ map }) {
   return <svg className="mirage-map-art" viewBox="0 0 240 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <rect width="240" height="110" fill={map.sky} />
-    {map.id !== 'desert' && <circle cx={map.id === 'prairie' || map.id === 'alger' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : map.id === 'sardinia' ? 29 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />}
+    {map.id !== 'desert' && map.id !== 'dust2' && <circle cx={map.id === 'prairie' || map.id === 'alger' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : map.id === 'sardinia' ? 29 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />}
     {map.id === 'desert' && <>
       <defs>
         <linearGradient id="mirage-desert-sky" x1="0" y1="0" x2="0" y2="1">
@@ -210,7 +211,51 @@ function Landscape({ map }) {
         <path key={x} d={`M${x} 106Q${x + 3} 88 ${x + 6} 79`} stroke="#dce6f7" strokeWidth="1.5" fill="none" opacity=".78" />
       ))}
     </>}
-    {map.id !== 'desert' && <path d="M109 72H130L168 110H73Z" fill={map.id === 'japan' ? '#4a5d80' : '#f9deb1'} opacity=".5" />}
+    {map.id === 'dust2' && <>
+      <defs>
+        <linearGradient id="mirage-dust2-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#3f86c9" />
+          <stop offset=".72" stopColor="#a9d0ea" />
+          <stop offset="1" stopColor="#f0dcb4" />
+        </linearGradient>
+      </defs>
+      {/* Grand ciel bleu et soleil blanc d'après-midi */}
+      <rect width="240" height="72" fill="url(#mirage-dust2-sky)" />
+      <circle cx="120" cy="24" r="15" fill="#fff6d6" opacity=".35" />
+      <circle cx="120" cy="24" r="8.5" fill={map.sun} />
+      {/* Toits crénelés de la ville, dans la brume de chaleur */}
+      <path d="M62 66V53H73V48H84V56H95V51H103V66ZM137 66V51H146V45H156V54H168V49H178V66Z" fill="#ead4a8" opacity=".85" />
+      <rect y="70" width="240" height="40" fill={map.land} />
+      {/* Les portes du Mid : rempart percé d'une arche, vantaux gris grands ouverts */}
+      <path d="M82 72V40H158V72H133V58A13 13 0 0 0 107 58V72Z" fill="#d39c61" />
+      {[84, 93, 102, 111, 120, 129, 138, 147, 154].map(x => <rect key={`gate-${x}`} x={x - 2} y="36.5" width="4" height="4" rx="1.6" fill="#c98a50" />)}
+      <path d="M107 72V58A13 13 0 0 1 133 58V72Z" fill="#f4e5c6" />
+      <path d="M107 72V59L99.5 61V75ZM133 72V59L140.5 61V75Z" fill="#8f887c" />
+      {/* Site B, à gauche : rempart, tunnel sous « RUSH B » et panneau B */}
+      <path d="M0 92V26H70V92Z" fill="#d7a468" />
+      {[4, 13, 22, 31, 40, 49, 58, 66].map(x => <rect key={`b-${x}`} x={x - 2} y="22.5" width="4" height="4" rx="1.6" fill="#c98a50" />)}
+      <path d="M13 92V72A10 10 0 0 1 33 72V92Z" fill="#231b14" />
+      <text x="24" y="63" textAnchor="middle" fontSize="9.5" fontWeight="900" fill="#c3231c" fontFamily="Impact, 'Arial Black', Arial, sans-serif" transform="rotate(-4 24 63)">RUSH B</text>
+      <rect x="43" y="36" width="17" height="17" fill="#f2ede1" stroke="#302d2a" strokeWidth="1" />
+      <text x="51.5" y="49.5" textAnchor="middle" fontSize="14" fontWeight="900" fill="#cf2f27" fontFamily="Arial, Helvetica, sans-serif">B</text>
+      {/* Site A, à droite : panneau A, portes bleues de Long et palmier */}
+      <path d="M170 92V24H240V92Z" fill="#d7a468" />
+      {[174, 183, 192, 201, 210, 219, 228, 236].map(x => <rect key={`a-${x}`} x={x - 2} y="20.5" width="4" height="4" rx="1.6" fill="#c98a50" />)}
+      <path d="M226 24Q227 14 225 7" stroke="#86673f" strokeWidth="2" fill="none" />
+      <path d="M225 7Q216 4 211 10M225 7Q222 0 216 -1M225 7Q231 0 237 1M225 7Q234 6 239 12" stroke="#587f35" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+      <rect x="179" y="36" width="17" height="17" fill="#f2ede1" stroke="#302d2a" strokeWidth="1" />
+      <text x="187.5" y="49.5" textAnchor="middle" fontSize="14" fontWeight="900" fill="#cf2f27" fontFamily="Arial, Helvetica, sans-serif">A</text>
+      <rect x="203" y="63" width="24" height="29" fill="#ecd3a4" />
+      <rect x="205" y="65" width="20" height="27" fill="#231b14" />
+      <rect x="205" y="65" width="9.5" height="27" fill="#3f78a8" />
+      <path d="M215.5 65L223.5 67V92H215.5Z" fill="#4f8cbd" />
+      {/* La piste du Mid et, au milieu, la Xbox */}
+      <path d="M104 72H136L174 110H66Z" fill="#ecd6a8" opacity=".85" />
+      <rect x="113" y="76" width="14" height="12" fill="#c9ab7b" stroke="#76593b" strokeWidth="1.3" />
+      <path d="M114 77L126 87M126 77L114 87" stroke="#76593b" strokeWidth="1.3" />
+      <rect x="115" y="70.5" width="10" height="5.5" fill="#adbb8c" stroke="#76593b" strokeWidth=".8" />
+    </>}
+    {map.id !== 'desert' && map.id !== 'dust2' && <path d="M109 72H130L168 110H73Z" fill={map.id === 'japan' ? '#4a5d80' : '#f9deb1'} opacity=".5" />}
   </svg>;
 }
 

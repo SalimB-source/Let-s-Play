@@ -74,11 +74,13 @@ export async function checkMirageFlow(assert) {
     assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 1,
       'le sélecteur de terrain (02 / ton terrain) est proposé dans l’overlay');
     const maps = [...page.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(maps.length, 6, 'six horizons sont proposés');
+    assert.equal(maps.length, 7, 'sept horizons sont proposés');
     assert.deepEqual(
       maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
-      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei'],
-      'les six cartes de map sont dans l’ordre (dont Alger la Blanche et Plaines de Yōtei)');
+      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Dust II'],
+      'les sept cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei et Dust II)');
+    assert.ok([...page.node.querySelectorAll('.mirage-picker-label')].some((label) => label.textContent.includes('7 HORIZONS À EXPLORER')),
+      'le compteur de terrains suit le nombre de cartes');
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
       'les Dunes de l’Écho sont sélectionnées par défaut');
 
@@ -95,7 +97,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('RECORD À BATTRE'),
       'les consignes de la ruée sont révélées');
 
-    /* ---------------- 2. Le terrain se choisit (Alger & Yōtei) ----------- */
+    /* ------------- 2. Le terrain se choisit (Alger, Yōtei, Dust II) ------ */
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
       'le bandeau de zone démarre sur le terrain par défaut (ZONE 01)');
     const algerCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
@@ -108,6 +110,13 @@ export async function checkMirageFlow(assert) {
     await act(async () => { japanCard.click(); });
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('PLAINES DE YŌTEI'),
       'choisir Plaines de Yōtei met à jour le bandeau (ZONE 06 · PLAINES DE YŌTEI)');
+    const dust2Card = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Dust II');
+    assert.ok(dust2Card, 'la carte Dust II est proposée');
+    assert.ok(dust2Card.classList.contains('is-dust2'), 'la carte Dust II porte son identifiant de stage');
+    await act(async () => { dust2Card.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 07 · DUST II'),
+      'choisir Dust II met à jour le bandeau (ZONE 07 · DUST II)');
+    assert.equal(dust2Card.getAttribute('aria-pressed'), 'true', 'la carte Dust II est marquée sélectionnée');
     await act(async () => { maps[0].click(); });
 
     /* --------------- 3. Le clic sur DUEL bascule l'overlay -------------- */
@@ -151,7 +160,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelButton.textContent.includes('Défi de Salim'),
       'la carte DUEL annonce le défi du joueur');
     const lockedMaps = [...challenged.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(lockedMaps.length, 6,
+    assert.equal(lockedMaps.length, 7,
       'le sélecteur de terrain reste lisible sur un lien de défi');
     assert.ok(lockedMaps.every((card) => card.disabled),
       'les cartes de terrain sont verrouillées : le stage est imposé par le défi');

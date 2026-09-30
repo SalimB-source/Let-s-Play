@@ -137,6 +137,13 @@ test('alger (Alger la Blanche) stage is retained in challenge links and online r
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'atlantis' })).stage, undefined);
 });
 
+test('dust2 (Dust II) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Rush B', stage: 'dust2' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'dust2');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
+});
+
 test('cowboy cry fires only on each fifth consecutive pickup, and resets on a miss or crash', async () => {
   const { advanceCowboyStreak } = await import('../src/games/mirageRules.js');
   let streak = 0;

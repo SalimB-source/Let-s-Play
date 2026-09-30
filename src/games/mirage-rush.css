@@ -738,7 +738,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-course-picker { width: min(100%, 640px); text-align: left; }
 /* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
    l'en-tête reste retirée) : les cartes du sélecteur d'origine, suivies du
-   bloc terrain (cinq horizons, dont Alger la Blanche). */
+   bloc terrain (sept horizons, jusqu’à Dust II). */
 .mirage-mode-section { width: min(100%, 640px); text-align: left; }
 .mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
 .mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 6px; }
@@ -754,7 +754,11 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-mode-copy small { color: #bbaaaf; font: 9px var(--mono); }
 .mirage-choice-dot { position: absolute; right: 10px; top: 10px; width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgba(155, 139, 152, .45); color: #211824; text-align: center; font-size: 11px; }
 .mirage-mode-picker button[aria-pressed="true"] .mirage-choice-dot { background: #f6cd72; border-color: #f6cd72; }
-.mirage-stage-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+/* Sept horizons : 4 + 3 cartes sur deux rangées au bureau (3 + 3 + 1 sur
+   mobile), rangée incomplète centrée — l'intro garde la hauteur qu'elle avait
+   avec six cartes. */
+.mirage-stage-picker { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.mirage-stage-picker > .mirage-map-card { flex: 0 0 calc((100% - 30px) / 4); min-width: 0; }
 .mirage-stage-locked { display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-radius: var(--mirage-radius); border: 1px dashed rgba(182, 160, 195, .32); background: rgba(37, 28, 41, .55); }
 .mirage-stage-locked-icon { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: rgba(246, 205, 114, .09); font-size: 14px; }
 .mirage-stage-locked p { margin: 0; font-size: 11.5px; line-height: 1.55; color: #cbb6c4; }
@@ -789,6 +793,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .mirage-mode-copy > span { font-size: 10px; }
   .mirage-mode-copy small { font-size: 8px; }
   .mirage-stage-picker { gap: 6px; }
+  .mirage-stage-picker > .mirage-map-card { flex-basis: calc((100% - 12px) / 3); }
   .mirage-map-art { height: 42px; }
   .mirage-map-number { top: 4px; left: 5px; font-size: 7px; }
   .mirage-map-check { top: 4px; right: 4px; width: 15px; height: 15px; font-size: 9px; }

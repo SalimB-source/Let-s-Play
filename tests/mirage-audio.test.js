@@ -1,18 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM } from '../src/games/arcadeAudio.js';
+import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, DUST2_BPM } from '../src/games/arcadeAudio.js';
 
 test('prairie selects its own soundtrack and resets the phrase', () => {
   const audio = new DesertGroove();
   audio.step = 83;
   audio.setStage('prairie');
   assert.equal(audio.step, 0);
-  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0;
+  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0, dust2 = 0;
   audio.playPrairie = () => prairie++;
   audio.playWestern = () => western++;
   audio.playSardinia = () => sardinia++;
   audio.playAlger = () => alger++;
   audio.playJapan = () => japan++;
+  audio.playDust2 = () => dust2++;
   audio.playStep(0, 0);
   assert.equal(prairie, 1);
   assert.equal(western, 0);
@@ -28,6 +29,37 @@ test('prairie selects its own soundtrack and resets the phrase', () => {
   audio.setStage('japan');
   audio.playStep(0, 0);
   assert.equal(japan, 1);
+  audio.setStage('dust2');
+  audio.playStep(0, 0);
+  assert.equal(dust2, 1);
+  assert.equal(japan, 1, 'Dust II ne rejoue pas la piste de Yōtei');
+});
+
+test('dust2 tactical score schedules finite notes, then the bomb beep quickens', () => {
+  const audio = new DesertGroove();
+  audio.setStage('dust2');
+  assert.ok(DUST2_BPM > JAPAN_BPM, 'un tempo plus nerveux que les plaines de Yōtei');
+  const stepLength = 60 / DUST2_BPM / 4;
+  const beepsPerPhrase = new Array(16).fill(0);
+  let notes = 0;
+  audio.noise = () => {};
+  audio.tone = (frequency, time, duration, type, volume) => {
+    assert.ok(Number.isFinite(frequency) && frequency > 0);
+    assert.ok(Number.isFinite(time) && time >= 0);
+    assert.ok(duration > 0 && volume > 0);
+    notes += 1;
+    if (frequency === 2093) beepsPerPhrase[Math.floor(audio.step / 16) % 16] += 1;
+  };
+  for (let bar = 0; bar < 16; bar++) {
+    for (let step = 0; step < 16; step++) {
+      audio.step = bar * 16 + step;
+      audio.playDust2(step, audio.step * stepLength);
+    }
+  }
+  assert.ok(notes > 200, 'kick, basse, stabs et nappes produisent de nombreuses notes');
+  assert.equal(beepsPerPhrase.slice(0, 8).reduce((a, b) => a + b, 0), 0, 'pas de bip avant la pose de la bombe');
+  assert.equal(beepsPerPhrase[8], 2, 'un bip toutes les demi-mesures une fois la bombe posée');
+  assert.equal(beepsPerPhrase[15], 4, 'le bip s’accélère dans les dernières mesures');
 });
 
 test('japan samurai score schedules finite, positive notes at its own tempo', () => {
