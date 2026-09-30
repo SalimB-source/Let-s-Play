@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { useAchievementAction } from '../achievements/AchievementContext';
 import MirageWorld from './MirageWorld';
 import MiragePowerIcon from './MiragePowerIcon';
 import MirageOnline from './MirageOnline';
@@ -17,7 +18,7 @@ import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_U
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import {
   CUPS, CUP_POINTS, DEFAULT_CUP_ID, cleanRiderName, createCupRun, cupCurrentStage, cupStandings,
-  getCup, isCupComplete, placeLabel, recordCupRace,
+  getCup, isCupComplete, cupWinner, placeLabel, recordCupRace,
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
@@ -73,6 +74,7 @@ function frenchList(names) {
 
 export default function MirageRushPage() {
   const { user, isDemo } = useAuth();
+  const trackAchievement = useAchievementAction();
   const [searchParams] = useSearchParams();
   const challengeCode = searchParams.get('duel');
   const initialModeParam = searchParams.get('mode');
@@ -462,9 +464,16 @@ export default function MirageRushPage() {
     audioRef.current?.stop();
     setAward(recordProgress(result));
     if (cupRunRef.current && result.mode === 'duel') {
-      const next = recordCupRace(cupRunRef.current, result);
+      const currentRun = cupRunRef.current;
+      const next = recordCupRace(currentRun, result);
       cupRunRef.current = next;
       setCupRun(next);
+      // Seul le vainqueur du classement général remporte le trophée — gagner
+      // une course isolée ne suffit pas. L'ensemble de succès déduplique par
+      // identifiant de coupe et le synchronise aussi avec le compte connecté.
+      if (next !== currentRun && isCupComplete(next) && cupWinner(next)?.isPlayer) {
+        trackAchievement('mirage_cup_won', { cupId: next.cupId });
+      }
       return;
     }
     if (result.mode === 'duel') return;
@@ -487,7 +496,7 @@ export default function MirageRushPage() {
     }
     setSubmitState('saved');
     await refreshLeaderboard();
-  }, [backendEnabled, connected, refreshLeaderboard, recordProgress]);
+  }, [backendEnabled, connected, refreshLeaderboard, recordProgress, trackAchievement]);
 
   const shareDuel = async () => {
     if (!justFinished || justFinished.mode !== 'duel') return;

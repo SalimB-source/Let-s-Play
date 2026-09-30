@@ -9,7 +9,9 @@
 export const VOXEL = 0.25;
 
 /** Matériaux référencés par les boîtes ; la scène décide de leur rendu. */
-export const TROPHY_MATERIALS = Object.freeze(['gold', 'goldDark', 'goldLight', 'gem', 'stone', 'stoneLight', 'stoneDark']);
+export const TROPHY_MATERIALS = Object.freeze([
+  'gold', 'goldDark', 'goldLight', 'gem', 'globe', 'globeLand', 'stone', 'stoneLight', 'stoneDark',
+]);
 
 // Dalle carrée centrée sur l’axe : `y` et `height` sont comptés en voxels.
 function slab(part, material, y, width, height = 1, depth = width) {
@@ -34,6 +36,29 @@ function cell(part, material, [x, y, z], [width, height, depth]) {
 // Profil de la coupe : largeur (en voxels) de chaque assise, de bas en haut.
 // Les quatre premières s’évasent, les six suivantes forment la panse droite.
 const BOWL_WIDTHS = Object.freeze([6, 8, 10, 12, 13, 13, 13, 13, 13, 13]);
+const GRAND_TOUR_BOWL_WIDTHS = Object.freeze([5, 7, 9, 11, 12, 12, 12, 12, 12, 12, 12]);
+const GRAND_TOUR_GLOBE = Object.freeze([
+  '...###...',
+  '..#####..',
+  '.#######.',
+  '#########',
+  '#########',
+  '#########',
+  '.#######.',
+  '..#####..',
+  '...###...',
+]);
+const GRAND_TOUR_LAND = Object.freeze([
+  '....#....',
+  '...##....',
+  '.###.....',
+  '..###....',
+  '....####.',
+  '....###..',
+  '...##....',
+  '..##.....',
+  '.........',
+]);
 const BOWL_BASE = 10; // première assise de la coupe, en voxels depuis le pied
 export const TROPHY_HEIGHT_VOXELS = BOWL_BASE + BOWL_WIDTHS.length + 1; // + le rebord
 export const TROPHY_HEIGHT = TROPHY_HEIGHT_VOXELS * VOXEL;
@@ -44,7 +69,8 @@ export const TROPHY_HEIGHT = TROPHY_HEIGHT_VOXELS * VOXEL;
  * en relief sur la face avant ET la face arrière (il tourne, donc on le voit
  * passer). Les diamants sont l’emblème de Mirage Rush.
  */
-export function trophyBoxes() {
+export function trophyBoxes(design = 'desert') {
+  const bowlWidths = design === 'worldtour' ? GRAND_TOUR_BOWL_WIDTHS : BOWL_WIDTHS;
   const boxes = [
     slab('foot', 'goldDark', 0, 12, 2),
     slab('foot-step', 'gold', 2, 9),
@@ -53,12 +79,12 @@ export function trophyBoxes() {
     slab('stem', 'gold', 6, 3, 3),
     slab('collar', 'goldLight', 9, 5),
   ];
-  BOWL_WIDTHS.forEach((width, index) => boxes.push(slab(`bowl-${index}`, 'gold', BOWL_BASE + index, width)));
-  const rimY = BOWL_BASE + BOWL_WIDTHS.length;
+  bowlWidths.forEach((width, index) => boxes.push(slab(`bowl-${index}`, 'gold', BOWL_BASE + index, width)));
+  const rimY = BOWL_BASE + bowlWidths.length;
   boxes.push(slab('rim', 'goldLight', rimY, 14));
 
   // Anses : deux taquets horizontaux reliés par une barre verticale, épaisseur 2.
-  const firstWide = BOWL_WIDTHS.findIndex((width) => width === 13);
+  const firstWide = bowlWidths.findIndex((width) => width === Math.max(...bowlWidths));
   const handleBottom = BOWL_BASE + firstWide; // première assise pleine largeur
   const handleTop = rimY - 2;
   for (const side of [-1, 1]) {
@@ -66,6 +92,31 @@ export function trophyBoxes() {
     boxes.push(cell(`handle-bottom-${side}`, 'goldDark', [side * 7.5, handleBottom + 0.5, 0], [2, 1, 2]));
     const barHeight = handleTop - handleBottom + 1;
     boxes.push(cell(`handle-bar-${side}`, 'goldDark', [side * 9, handleBottom + barHeight / 2, 0], [1, barHeight, 2]));
+  }
+
+  if (design === 'worldtour') {
+    // La Grand Tour remplace le diamant par un globe en relief (face avant et
+    // arrière), et sa coupe est plus haute et plus élancée que celle du Désert.
+    const globeBase = rimY - GRAND_TOUR_GLOBE.length;
+    const faceZ = Math.max(...bowlWidths.slice(-GRAND_TOUR_GLOBE.length)) / 2 + 0.25;
+    for (const side of [-1, 1]) {
+      GRAND_TOUR_GLOBE.forEach((line, row) => {
+        [...line].forEach((pixel, column) => {
+          if (pixel !== '#') return;
+          const material = GRAND_TOUR_LAND[row][column] === '#' ? 'globeLand' : 'globe';
+          boxes.push(cell(
+            `globe-${side}-${row}-${column}`,
+            material,
+            [column - 4, globeBase + GRAND_TOUR_GLOBE.length - row - 0.5, side * faceZ],
+            [1, 1, 0.5],
+          ));
+        });
+      });
+      // Petit méridien doré qui encadre le globe comme une rose des vents.
+      boxes.push(cell(`meridian-${side}-top`, 'goldLight', [0, globeBase + GRAND_TOUR_GLOBE.length - 0.5, side * (faceZ + 0.5)], [1, 1, 0.5]));
+      boxes.push(cell(`meridian-${side}-bottom`, 'goldLight', [0, globeBase + 0.5, side * (faceZ + 0.5)], [1, 1, 0.5]));
+    }
+    return boxes;
   }
 
   // Diamant en relief : 1, 3, 5, 3, 1 voxels de large, collé sur la panse droite.

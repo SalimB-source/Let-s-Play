@@ -23,6 +23,7 @@ import {
 import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, laneCount, setLaneCount } from '../src/games/mirageRules.js';
 import { CHARACTER_PALETTES } from '../src/games/mirageCharacters.js';
 import { SKINS } from '../src/games/mirageProgression.js';
+import { MIRAGE_CUP_TROPHIES_KEY, createState, mergeStates, normalizeState, reduce } from '../src/achievements/engine.js';
 
 // Résultat tel que MirageWorld.finish() l’émet en duel : les rivaux déjà
 // arrivés portent leur chrono, les autres `null` et leur position en mètres.
@@ -79,6 +80,37 @@ test('the points table rewards every place strictly more than the one below it',
   assert.equal(pointsForPlace('x'), 0);
 });
 
+test('a cup trophy is kept once per cup and merges between a player’s devices', () => {
+  const firstWin = reduce(createState(), {
+    type: 'mirage_cup_won',
+    cupId: 'desert',
+    at: '2026-09-30T12:00:00.000Z',
+  }).state;
+  const replayWin = reduce(firstWin, {
+    type: 'mirage_cup_won',
+    cupId: 'desert',
+    at: '2026-10-01T12:00:00.000Z',
+  }).state;
+  const anotherCup = reduce(createState(), {
+    type: 'mirage_cup_won',
+    cupId: 'worldtour',
+    at: '2026-10-02T12:00:00.000Z',
+  }).state;
+
+  assert.deepEqual(firstWin.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert']);
+  assert.deepEqual(replayWin.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert'], 'replaying a won cup adds no duplicate');
+  assert.deepEqual(
+    mergeStates(firstWin, anotherCup).sets[MIRAGE_CUP_TROPHIES_KEY],
+    ['desert', 'worldtour'],
+    'unique trophies survive account/device sync',
+  );
+  const restored = normalizeState({
+    ...firstWin,
+    sets: { ...firstWin.sets, [MIRAGE_CUP_TROPHIES_KEY]: ['desert', 'desert'] },
+  });
+  assert.deepEqual(restored.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert'], 'stored duplicates are normalized away');
+});
+
 test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust Creek, Plaines d’Or', () => {
   assert.equal(DEFAULT_CUP_ID, 'desert');
   const cup = getCup('desert');
@@ -86,6 +118,7 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
   assert.deepEqual([...cup.stages], ['desert', 'western', 'prairie']);
   assert.equal(getCup('inconnue'), null);
   assert.equal(new Set(CUPS.map((entry) => entry.id)).size, CUPS.length, 'cup ids are unique');
+  assert.equal(new Set(CUPS.map((entry) => entry.trophyDesign)).size, CUPS.length, 'every cup has its own trophy design');
   for (const entry of CUPS) {
     assert.ok(entry.stages.length >= 2, `${entry.id} chains several races`);
     assert.ok(Object.isFrozen(entry) && Object.isFrozen(entry.stages), 'the catalogue is immutable');
