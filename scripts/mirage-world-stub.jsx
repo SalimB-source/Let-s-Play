@@ -1,5 +1,6 @@
 /**
- * Doublure de src/games/MirageWorld.jsx pour `npm run check:mirage-cup`.
+ * Doublure de src/games/MirageWorld.jsx pour `npm run check:mirage-cup` et
+ * `npm run check:mirage-scoreboard`.
  *
  * jsdom n'a pas de WebGL : le vrai moteur ne devient jamais « prêt » et aucune
  * course ne peut partir. Cette doublure se déclare prête au montage et garde

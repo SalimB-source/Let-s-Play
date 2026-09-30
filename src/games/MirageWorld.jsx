@@ -1736,6 +1736,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         id: r.id,
         slot: idx + 1,
         name: getRivalDisplayName(r),
+        // Fantôme d'un lien de défi : il court sous le nom de son auteur (tableau des positions).
+        ghost: isGhostRival(r),
         distance: Math.round(r.dist),
         duration: r.finishedAt === null ? null : Math.round(r.finishedAt * 10) / 10,
       }));

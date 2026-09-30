@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext';
 import MirageWorld from './MirageWorld';
 import MiragePowerIcon from './MiragePowerIcon';
 import MirageOnline from './MirageOnline';
+import MirageScoreboard from './MirageScoreboard';
 import MirageSkinPreview from './MirageSkinPreview';
 import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import { MirageCupPicker, MirageStagePicker, stageName } from './MirageCoursePicker';
@@ -18,6 +19,7 @@ import {
   CUPS, CUP_POINTS, DEFAULT_CUP_ID, cleanRiderName, createCupRun, cupCurrentStage, cupStandings,
   getCup, isCupComplete, placeLabel, recordCupRace,
 } from './mirageCup';
+import { buildDuelStandings, rankLabel } from './mirageStandings';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
 
@@ -531,6 +533,13 @@ export default function MirageRushPage() {
   }, [racing]);
   const activeSkin = skinFor(progression);
   const skinColors = activeSkin.colors;
+  // Tableau des positions de l'arrivée d'un duel : le joueur et ses rivaux, classés.
+  const duelStandings = useMemo(
+    () => (justFinished?.mode === 'duel'
+      ? buildDuelStandings(justFinished, { playerName: currentUserName || 'Cavalier', playerPalette: skinColors })
+      : null),
+    [justFinished, currentUserName, skinColors],
+  );
   const chooseSkin = (skinId) => {
     const next = equipSkin(progressRef.current, skinId);
     progressRef.current = next;
@@ -1065,16 +1074,15 @@ export default function MirageRushPage() {
               <MirageCupTrophy cup={activeCup} run={cupRun} onReplay={startCup} onQuit={backToCoursePicker} />
             )}
 
-            {phase === 'finished' && !(cupRun && cupRun.races.length > 0) && justFinished?.mode === 'duel' && (
-              <div className="mirage-overlay mirage-result-overlay">
-                <div className="mirage-overlay-kicker"><span>✦</span> ARRIVÉE · DUEL ({justFinished.rank === 1 ? '1ᵉʳ' : `${justFinished.rank || 2}ᵉ`} / {justFinished.totalRiders || 4}) <span>✦</span></div>
-                <h2>{justFinished.won ? 'VICTOIRE' : 'UN RIVAL'} <em>{justFinished.won ? 'DU CAVALIER !' : 'L’EMPORTE.'}</em></h2>
-                <div className="mirage-final-score">{justFinished.duration.toFixed(1)} <small>SECONDES</small></div>
+            {/* Arrivée d'un duel ordinaire : le tableau des positions. Une course de
+                coupe a son propre écran (classement général, juste au-dessus). */}
+            {phase === 'finished' && !(cupRun && cupRun.races.length > 0) && duelStandings && (
+              <div className="mirage-overlay mirage-result-overlay has-scoreboard">
+                <div className="mirage-overlay-kicker"><span>✦</span> ARRIVÉE · DUEL ({rankLabel(duelStandings.playerRank)} / {duelStandings.total}) <span>✦</span></div>
+                <h2>{duelStandings.playerWon ? 'VICTOIRE' : 'UN RIVAL'} <em>{duelStandings.playerWon ? 'DU CAVALIER !' : 'L’EMPORTE.'}</em></h2>
+                <MirageScoreboard rows={duelStandings.rows} caption="Classement du duel" />
                 <div className="mirage-result-stats">
-                  {(justFinished.rivals?.length ? justFinished.rivals : [{ name: justFinished.rivalName, duration: justFinished.rivalDuration, distance: justFinished.rivalDistance }]).map((r, i) => (
-                    <span key={r.id || i}>{r.name} : {r.duration == null ? `${r.distance} m` : `${r.duration.toFixed(1)} s`}</span>
-                  ))}
-                  <span>◆ {justFinished.gems} cristaux · {justFinished.score.toLocaleString('fr-FR')} pts</span>
+                  <span>◆ {duelStandings.gems} cristaux · {duelStandings.score.toLocaleString('fr-FR')} pts</span>
                 </div>
                 {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
                 <div className="mirage-result-actions">

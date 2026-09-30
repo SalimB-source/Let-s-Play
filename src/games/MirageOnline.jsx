@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MirageCharacterPortrait from './MirageCharacterPortrait';
+import MirageScoreboard from './MirageScoreboard';
+import MirageRoomResults from './MirageRoomResults';
 import MirageSkinPreview from './MirageSkinPreview';
 import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import MiragePowerIcon from './MiragePowerIcon';
@@ -18,6 +20,7 @@ import {
 } from './mirageRooms';
 import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
+import { buildRoomStandings } from './mirageStandings';
 
 const characters = CHARACTER_NAMES;
 
@@ -95,6 +98,10 @@ export default function MirageOnline({
   const [worldError, setWorldError] = useState('');
   const [active, setActive] = useState(false);
   const [finished, setFinished] = useState(false);
+  // Arrivée du joueur local : heure du salon estimée au franchissement de la ligne (sert au
+  // classement tant que le salon n'a pas enregistré la sienne), score et cristaux.
+  const [myFinish, setMyFinish] = useState(null);
+  const [resultsOpen, setResultsOpen] = useState(false);
   const [seconds, setSeconds] = useState(null);
   const [sound, setSound] = useState(true);
   const [hud, setHud] = useState({});
@@ -226,6 +233,8 @@ export default function MirageOnline({
         audio.current?.stop();
         setRoom(null);
         setFinished(false);
+        setMyFinish(null);
+        setResultsOpen(false);
         setXp(null);
         done.current = false;
         finishSent.current = false;
@@ -391,17 +400,74 @@ export default function MirageOnline({
   // Do not mount/render the 3D course while everyone is still in the lobby.
   const gameLaunched = room?.status === 'started';
 
-  const standings = [...(room?.players || [])].sort((a, b) => {
-    if (a.finished_at && b.finished_at) return Date.parse(a.finished_at) - Date.parse(b.finished_at);
-    if (a.finished_at) return -1;
-    if (b.finished_at) return 1;
-    return Number(b.distance) - Number(a.distance);
+  // Classement de la course (voir mirageStandings.js). Recalculé à chaque rendu : le salon est
+  // relu plusieurs fois par seconde et ils ne sont que quatre. Dès que le joueur franchit la
+  // ligne, son arrivée compte sans attendre que le salon l'ait enregistrée.
+  const standings = buildRoomStandings(room, {
+    meId: effectivePlayer.id,
+    now: Date.now() + offset.current,
+    myFinishedAt: finished ? myFinish?.at : null,
+    myScore: finished ? myFinish?.score : null,
   });
 
   const switchMode = (targetMode) => {
     if (onSelectMode) onSelectMode(targetMode);
     else if (targetMode !== 'online' && onBack) onBack();
   };
+
+  // Bandeau « course terminée » + classement du salon. Pendant le lobby : la liste des joueurs
+  // et de leur statut ; dès le départ : le tableau des positions (le même que dans la fenêtre
+  // de résultats). Affiché sous le salon, puis remonté en tête une fois la ligne franchie.
+  const resultsPanels = room ? (
+    <>
+      {finished && (
+        <section className="panel-frame mirage-room-finished-banner" role="status">
+          <span className="mirage-waiting-sun" aria-hidden="true">✓</span>
+          <div>
+            <span className="mirage-panel-kicker">COURSE TERMINÉE</span>
+            <h2>BIEN JOUÉ, <em>{effectivePlayer.name.toUpperCase()}</em> !</h2>
+            <p>Tu as franchi la ligne. Le classement se met à jour jusqu’à l’arrivée du dernier cavalier.</p>
+          </div>
+        </section>
+      )}
+
+      {/* Live standings */}
+      <section className="panel-frame mirage-room-panel">
+        <div className="mirage-panel-heading">
+          <div>
+            <span className="mirage-panel-kicker">CLASSEMENT DE LA COURSE</span>
+            <h2>{finished ? <>LES <em>ARRIVÉES</em></> : <>POSITIONS <em>EN DIRECT</em></>}</h2>
+          </div>
+        </div>
+        {room.status === 'lobby' ? (
+          <ol className="mirage-standings-list">
+            {room.players.map((p, idx) => (
+              <li key={p.user_id}>
+                <span className="mirage-standing-rank">#{idx + 1}</span>
+                <strong>{p.name}{p.user_id === effectivePlayer.id ? ' (toi)' : ''}</strong>
+                <span>{Math.floor(p.distance || 0)} m · {p.score || 0} pts</span>
+                <em>{p.ready ? '✓ Prêt' : '⏳ Joueur pas encore prêt'}</em>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <MirageScoreboard rows={standings.rows} caption={finished ? 'Arrivées de la course' : 'Positions en direct'} />
+        )}
+        <small>
+          Positions actualisées environ 5 fois/s. Arrivées enregistrées par le salon ; classement amical.
+        </small>
+        {finished && xp && (
+          <p className="mirage-xp-award" role="status">
+            <strong>+{xp.xpGained} XP</strong>
+            {xp.leveledUp && <span>NIVEAU {xp.level} !</span>}
+            {xp.unlocked?.length > 0 && (
+              <em>SKIN DÉBLOQUÉ : {xp.unlocked.map((skinEntry) => skinEntry.name).join(' · ')}</em>
+            )}
+          </p>
+        )}
+      </section>
+    </>
+  ) : null;
 
   return (
     <div className="mirage-page">
@@ -784,6 +850,9 @@ export default function MirageOnline({
               </div>
             </section>
 
+            {/* Course terminée : le classement passe en tête du salon, sans défilement pour le trouver. */}
+            {finished && resultsPanels}
+
             {/* Inside the room: Players + Ready status + Launch button on the left, Chat on the right */}
             <div className="mirage-room-interior-grid">
               <section className="panel-frame mirage-room-players-panel" aria-label="Joueurs de la room">
@@ -1063,6 +1132,14 @@ export default function MirageOnline({
                           done.current = true;
                           setActive(false);
                           setFinished(true);
+                          // Heure du salon estimée à l'instant précis du franchissement (jamais d'exception ici : un
+                          // décalage d'horloge illisible ne doit pas faire perdre la fin de course, ni l'XP).
+                          setMyFinish({
+                            at: new Date(Date.now() + (Number.isFinite(offset.current) ? offset.current : 0)).toISOString(),
+                            score: p.score,
+                            gems: p.gems,
+                          });
+                          setResultsOpen(true);
                           setXp(onRunFinish?.(p) ?? null);
                         }}
                         onMud={() => {
@@ -1290,51 +1367,18 @@ export default function MirageOnline({
               </div>
             )}
 
-            {finished && (
-              <section className="panel-frame mirage-room-finished-banner" role="status">
-                <span className="mirage-waiting-sun" aria-hidden="true">✓</span>
-                <div>
-                  <span className="mirage-panel-kicker">COURSE TERMINÉE</span>
-                  <h2>BIEN JOUÉ, <em>{effectivePlayer.name.toUpperCase()}</em> !</h2>
-                  <p>La course s’est refermée. Les résultats sont affichés dans le salon.</p>
-                </div>
-              </section>
-            )}
+            {!finished && resultsPanels}
 
-            {/* Live standings */}
-            <section className="panel-frame mirage-room-panel">
-              <h2>{finished ? 'Arrivées' : 'Positions en direct'}</h2>
-              <ol className="mirage-standings-list">
-                {standings.map((p, idx) => (
-                  <li key={p.user_id}>
-                    <span className="mirage-standing-rank">#{idx + 1}</span>
-                    <strong>{p.name}{p.user_id === effectivePlayer.id ? ' (toi)' : ''}</strong>
-                    <span>{Math.floor(p.distance || 0)} m · {p.score || 0} pts</span>
-                    <em className={p.finished_at ? 'is-finished' : ''}>
-                      {p.finished_at
-                        ? '✓ Arrivé'
-                        : room.status === 'lobby'
-                          ? (p.ready ? '✓ Prêt' : '⏳ Joueur pas encore prêt')
-                          : Date.now() + offset.current - Date.parse(p.last_seen) > 10000
-                            ? '· Connexion perdue'
-                            : '· En piste'}
-                    </em>
-                  </li>
-                ))}
-              </ol>
-              <small>
-                Positions actualisées environ 5 fois/s. Arrivées enregistrées par le salon ; classement amical.
-              </small>
-              {finished && xp && (
-                <p className="mirage-xp-award" role="status">
-                  <strong>+{xp.xpGained} XP</strong>
-                  {xp.leveledUp && <span>NIVEAU {xp.level} !</span>}
-                  {xp.unlocked?.length > 0 && (
-                    <em>SKIN DÉBLOQUÉ : {xp.unlocked.map((skinEntry) => skinEntry.name).join(' · ')}</em>
-                  )}
-                </p>
-              )}
-            </section>
+            {finished && resultsOpen && (
+              <MirageRoomResults
+                standings={standings}
+                result={myFinish}
+                xp={xp}
+                busy={busy}
+                onClose={() => setResultsOpen(false)}
+                onLeave={() => command('leave')}
+              />
+            )}
           </>
         )}
 
