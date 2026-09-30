@@ -179,6 +179,14 @@ l'étendre (les grands chiffres d'un compte à rebours, le score d'un test, un
 futur titre en h4), il suffit d'ajouter les sélecteurs concernés à la liste du
 bloc 2 de `typography.css`.
 
+**Le gras se décide ici aussi.** La règle `body *` du bloc 1 impose
+`font-weight: 400 !important` à tout le site — `strong` et `b` compris — et
+coiffe donc un `font-weight: 700` écrit dans une feuille de section. Les
+exceptions sont listées dans ce fichier : les titres (blocs 2 et 4) et, pour la
+messagerie, le bloc 5 (pseudos, navigation, aperçu et heure des discussions non
+lues — voir « Messagerie »). Pour qu'un autre texte ressorte en gras, on ajoute
+ses sélecteurs au bloc concerné.
+
 **Trois lignes maximum.** Un gros titre du site tient sur trois lignes, jamais
 plus. La règle se joue d'abord sur le texte : les titres sont écrits dans ce
 budget (le robot actus refuse un couple `title` + `accent` au-delà de
@@ -661,7 +669,7 @@ Un visiteur non connecté ne voit rien (carte de connexion sur la page).
 
 | Niveau | Ce qui s'y trouve |
 | --- | --- |
-| **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
+| **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus — et **en gras** l'aperçu et l'heure d'une discussion qui a reçu de nouveaux messages ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
 | **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; à l'ouverture, une **bulle de suggestions** propose trois messages selon l'état du fil — salut si la discussion est vide, réponses si l'ami posait une question, réactions ou relances sinon — : un clic les place dans le champ (rien ne part sans validation) et la bulle se referme au premier choix, à la première frappe ou sur « Masquer » ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
 
 **Les pseudos s'affichent en majuscules** partout dans la messagerie :
@@ -676,6 +684,24 @@ pseudos bruts, sans tenir compte de la casse (chercher « kayz » trouve
 `KAYZ_ORAN`). Hors messagerie, rien ne change : la liste d'amis du hub
 joueur, les profils et les commentaires affichent le pseudo tel qu'il a été
 saisi.
+
+**Les nouveaux messages ressortent en gras.** Dans la liste des discussions,
+une ligne qui a reçu des messages pas encore ouverts (`has-unread`, portée par
+`ConversationRow`) met en gras l'**aperçu du dernier message** et son
+**heure** — le pseudo l'est déjà — en plus de la pastille du nombre et du
+cadre jaune. Une discussion lue reste en texte normal, et la ligne redevient
+normale dès qu'on ouvre la discussion, puisque l'ouverture marque les messages
+comme lus. Le rendu est le même dans la fenêtre sociale et sur la page
+`/messages`, en thème sombre comme en thème clair ; seule l'épaisseur change,
+pas les couleurs. Le fil ouvert ne bouge pas : à son ouverture, tout y est déjà
+lu.
+
+Ce gras se règle dans **`src/typography.css`** (bloc 5), pas seulement dans
+`messages.css` : la règle `body * { font-weight: 400 !important }` du bloc 1
+ramène tout le site à 400 (`strong` et `b` compris), si bien qu'un
+`font-weight: 700` écrit dans `messages.css` seul resterait sans effet.
+`messages.css` garde la même déclaration, comme les feuilles de section
+gardent leurs `font-family`, mais c'est `typography.css` qui tranche.
 
 L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil ;
 Échap remonte à la liste puis ferme la fenêtre.
@@ -841,7 +867,12 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   réouverture) ; les deux vues de messagerie **et les onglets Amis /
   Demandes** de la fenêtre sociale sont aussi rendus avec un pseudo **en
   casse mixte** : il doit ressortir en majuscules, dans le texte visible
-  comme dans les libellés accessibles.
+  comme dans les libellés accessibles. Les **non-lus en gras** sont vérifiés
+  de bout en bout : la ligne d'une discussion non lue porte `has-unread` et sa
+  pastille, une discussion lue non, puis le style *calculé* avec les vraies
+  feuilles de style (celles de `src/main.jsx`, thème sombre et clair) donne 700
+  à l'aperçu et à l'heure de la première, 400 à ceux de la seconde — le test
+  échoue si la règle de `typography.css` disparaît.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
   continuent de passer : amis et messagerie partagent la même fenêtre sociale
   (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page
