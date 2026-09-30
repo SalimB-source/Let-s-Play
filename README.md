@@ -152,6 +152,49 @@ Côté **APK Android**, la WebView reçoit `setUseWideViewPort(true)` et
 `setLoadWithOverviewMode(true)` (`android/app/src/main/java/dz/letsplay/officiel/MainActivity.java`) :
 sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
 
+## Barre de navigation : le logo et le menu « Jeux »
+
+Deux choses à savoir avant de toucher à la barre (`src/components/Layout.jsx`,
+et les règles `.nav-*` de `src/styles.css`).
+
+- **Le logo n'est jamais écrasé.** `public/lets-play-logo.png` est un lockup
+  empilé (« Let's » au-dessus de « Play ») de **1248 × 905**. La barre le pose
+  en `height: 42px; width: auto` (38 px entre 801 et 950 px, 40 px sur
+  téléphone, 44 px dans le pied de page) et verrouille le dessin deux fois :
+  les attributs `width` / `height` de la balise `img` portent le ratio natif —
+  la place est réservée avant même le chargement — et la feuille ajoute
+  `aspect-ratio: 1248/905` avec `object-fit: contain`. Un fichier différent
+  (cache, CDN, export carré) est donc **ajusté** dans la boîte au lieu d'être
+  étiré en largeur : c'est ce qui manquait quand le logo paraissait comprimé
+  dans la barre.
+- **« Jeux » est une entrée de section.** Elle regroupe les deux pages du pôle
+  jeu — **Jeux-vidéo** (`/jeu`) et **Quizz** (`/quizz`) — sur un seul
+  emplacement de la barre au lieu de deux pastilles. Le lien continue de
+  naviguer vers `/jeu` ; un chevron (`button.nav-submenu-toggle`) ouvre le
+  panneau.
+  - Sur ordinateur, le panneau se déplie au survol, au clic sur le chevron et
+    dès que le focus entre dans l'entrée ; il se referme à Échap, au clic à
+    l'extérieur, après 200 ms de sortie du survol et à chaque changement de
+    route. Un pont invisible (`.nav-submenu::before`) laisse la souris
+    descendre de la pastille au panneau sans le refermer.
+  - Sur téléphone, plus de panneau : les deux pages sont posées sous « Jeux »
+    dans le menu plein écran, toujours visibles (rien à survoler sur un écran
+    tactile).
+  - Les sous-pages gardent l'entrée active : `/jeu/mirage-rush` ou
+    `/quizz/survival` éclairent « Jeux » (`isSection`, dans `Layout`). Les
+    liens du panneau ne portent **jamais** la classe `active` (seulement
+    `is-current`) : `updateIndicator` cherche `a.active` dans la pastille, et
+    la pastille jaune partirait se cacher dans le panneau. C'est l'enveloppe
+    `.nav-item` qui porte l'état actif, donc la pastille couvre le libellé
+    **et** le chevron.
+  - Les libellés viennent de l'i18n (`nav.games`, `nav.videoGames`,
+    `nav.quiz`, `nav.gamesMenuAria`) : les trois dictionnaires doivent rester
+    complets, `npm run check:i18n` le vérifie.
+
+Vérification : `npm run check:nav` (jsdom, pile réelle de l'application) —
+ratio du logo, les deux pages du panneau, ouverture au chevron, fermeture par
+Échap et par un clic à l'extérieur, état actif sur les sous-pages.
+
 ## Typographie : Orbitron pour les gros titres
 
 Deux familles, un partage net, et un seul fichier qui tranche —
@@ -1319,6 +1362,11 @@ Nouvelle section éditoriale : `/quizz` (grille + quizz du jour) et
 `/quizz/:slug` (partie, corrections, commentaires), alias anglais `/quiz` et
 `/quizzes`. Le rendu se replie sur `fr` tant qu'une traduction `en`/`ar` manque,
 mais la structure de données les accepte déjà.
+
+Dans la barre de navigation, les quizz ne prennent plus une pastille à part :
+ils vivent dans le sous-menu de l'entrée **Jeux** — **Jeux-vidéo** (`/jeu`) et
+**Quizz** (`/quizz`) — voir « Barre de navigation : le logo et le menu Jeux ».
+Les routes, elles, ne bougent pas.
 
 - **Filtre par famille** — au-dessus de la grille, cinq pastilles : **Tous**
   (le catalogue entier, actif par défaut), **Gaming**, **Tech**, **Cinéma** et
