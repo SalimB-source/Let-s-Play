@@ -20,8 +20,9 @@ import {
   pointsForPlace,
   recordCupRace,
 } from '../src/games/mirageCup.js';
-import { DUEL_DISTANCE, DUEL_RIVALS } from '../src/games/mirageRules.js';
+import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, laneCount, setLaneCount } from '../src/games/mirageRules.js';
 import { CHARACTER_PALETTES } from '../src/games/mirageCharacters.js';
+import { SKINS } from '../src/games/mirageProgression.js';
 
 // Résultat tel que MirageWorld.finish() l’émet en duel : les rivaux déjà
 // arrivés portent leur chrono, les autres `null` et leur position en mètres.
@@ -339,4 +340,51 @@ test('equal totals and equal wins are settled by the last race', () => {
   // Dernière course : Sauge 2ᵉ, Améthyste 3ᵉ, L’Ombre 4ᵉ.
   assert.deepEqual(idsOf(standings), ['player', 'sauge', 'amethyste', 'ombre']);
   assert.deepEqual(standings.map((row) => row.rank), [1, 2, 3, 4]);
+});
+
+test('the riders follow the track: three lanes (the app) leave room for the player, L’Ombre and Sauge only', () => {
+  assert.equal(laneCount(), 4, 'the site races on four lanes');
+  assert.deepEqual(idsOf(createCupRun('desert').riders), [PLAYER_RIDER_ID, 'ombre', 'sauge', 'amethyste']);
+  setLaneCount(3);
+  try {
+    const run = createCupRun('desert', { playerName: 'Salim' });
+    assert.deepEqual(idsOf(run.riders), [PLAYER_RIDER_ID, 'ombre', 'sauge']);
+    assert.deepEqual(run.riders.map((rider) => rider.slot), [0, 1, 2]);
+    // Sur cette piste le moteur n’aligne que deux rivaux : pas de 4ᵉ cavalier fantôme.
+    const rivals = duelRivalsForTrack().map((rival, index) => ({
+      id: rival.id, slot: index + 1, name: rival.name, distance: DUEL_DISTANCE, duration: 48 + index * 4,
+    }));
+    const placements = classifyRace({ mode: 'duel', stage: 'desert', duration: 50, rivals }, run.riders);
+    assert.deepEqual(
+      placements.map((line) => [line.riderId, line.place, line.points]),
+      [['ombre', 1, 10], [PLAYER_RIDER_ID, 2, 7], ['sauge', 3, 4]],
+      'trois places, donc 10 / 7 / 4 points',
+    );
+    let cup = run;
+    for (const stage of run.stages) cup = recordCupRace(cup, { mode: 'duel', stage, duration: 50, rivals });
+    assert.equal(isCupComplete(cup), true);
+    assert.deepEqual(cupStandings(cup).map((row) => [row.id, row.points]), [['ombre', 30], [PLAYER_RIDER_ID, 21], ['sauge', 12]]);
+    assert.equal(cupWinner(cup).id, 'ombre');
+  } finally {
+    setLaneCount(4);
+  }
+  assert.equal(createCupRun('desert').riders.length, CUP_RIDER_COUNT, 'the four-lane track is back');
+});
+
+test('the rivals of a cup can be chosen explicitly', () => {
+  const run = createCupRun('desert', { rivals: [DUEL_RIVALS[2]] });
+  assert.deepEqual(idsOf(run.riders), [PLAYER_RIDER_ID, 'amethyste']);
+  assert.deepEqual(run.riders.map((rider) => rider.slot), [0, 1]);
+  assert.equal(run.riders[1].name, DUEL_RIVALS[2].name);
+});
+
+test('riders keep the hat and markings of a seven-slot palette for the trophy horse', () => {
+  const seven = SKINS[0].colors;
+  assert.equal(seven.length, 7, 'the equipped skin carries coat, mane, cloth, trim, head, hat and markings');
+  assert.deepEqual(createCupRun('desert', { playerColors: seven }).riders[0].colors, [...seven]);
+  assert.deepEqual(createCupRun('desert').riders[1].colors, [...CHARACTER_PALETTES[DUEL_RIVALS[0].paletteIndex]]);
+  // Les anciennes palettes à cinq couleurs restent valides ; un chapeau illisible est ignoré.
+  assert.deepEqual(createCupRun('desert', { playerColors: [1, 2, 3, 4, 5] }).riders[0].colors, [1, 2, 3, 4, 5]);
+  assert.deepEqual(createCupRun('desert', { playerColors: [1, 2, 3, 4, 5, 6] }).riders[0].colors, [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(createCupRun('desert', { playerColors: [1, 2, 3, 4, 5, 6, 'x'] }).riders[0].colors, [1, 2, 3, 4, 5]);
 });

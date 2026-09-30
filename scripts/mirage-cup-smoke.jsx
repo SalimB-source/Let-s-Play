@@ -17,13 +17,16 @@
  *      rival gagne : le message le dit et rappelle ta place.
  *   3. Abandon : « CHOISIR TON MODE », « ABANDONNER LA COUPE » et Échap pendant
  *      le compte à rebours ramènent à l'intro, et la coupe suivante repart de 0.
+ *   4. Piste à trois voies de l'application (`setLaneCount(3)`) : le moteur n'aligne
+ *      que deux rivaux, la coupe compte donc trois cavaliers (le joueur, L'Ombre et
+ *      Sauge), trois places au barème (10 / 7 / 4) et aucun cavalier fantôme.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import MirageRushPage from '../src/games/MirageRushPage';
-import { DUEL_DISTANCE, DUEL_RIVALS } from '../src/games/mirageRules';
+import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, setLaneCount } from '../src/games/mirageRules';
 import { worldProbe } from './mirage-world-stub.jsx';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -80,10 +83,12 @@ async function typeName(input, value) {
 }
 
 // Résultat de course tel que le moteur l'émet à l'arrivée du joueur. `order` classe les
-// quatre cavaliers du 1ᵉʳ au dernier ; ceux qui finissent derrière le joueur sont encore en piste.
+// cavaliers de la piste du 1ᵉʳ au dernier ; ceux qui finissent derrière le joueur sont
+// encore en piste. Seuls les rivaux de la piste courante (trois, ou deux à trois voies)
+// figurent dans le résultat, comme pour le vrai moteur.
 function duelResult(stage, order) {
   const at = order.indexOf('player');
-  const rivals = DUEL_RIVALS.map((rival, index) => {
+  const rivals = duelRivalsForTrack().map((rival, index) => {
     const position = order.indexOf(rival.id);
     const arrived = position < at;
     return {
@@ -94,7 +99,7 @@ function duelResult(stage, order) {
       distance: arrived ? DUEL_DISTANCE : DUEL_DISTANCE - 10 * (position - at),
     };
   });
-  return { mode: 'duel', stage, duration: 40 + at + 0.5, rank: at + 1, totalRiders: 4, rivals, won: at === 0, score: 1200, gems: 9 };
+  return { mode: 'duel', stage, duration: 40 + at + 0.5, rank: at + 1, totalRiders: order.length, rivals, won: at === 0, score: 1200, gems: 9 };
 }
 
 const finishRace = (order) => act(async () => {
@@ -262,5 +267,37 @@ export async function checkMirageCup(assert) {
   } finally {
     timers.restore();
     await unmount();
+  }
+
+  // ── 4. Piste à trois voies : trois cavaliers, barème 10 / 7 / 4 ──────────
+  setLaneCount(3);
+  const appTimers = patchTimers();
+  const app = await mountPage('/jeu?mode=cup');
+  try {
+    assert.equal(duelRivalsForTrack().length, 2, 'la piste à trois voies n’aligne que deux rivaux');
+    await startCupFromIntro(app.node);
+    // Course 1 : le joueur gagne. Course 2 : L'Ombre gagne. Course 3 : le joueur gagne,
+    // devant Sauge, à 18 – 18 avec L'Ombre — qui a une victoire de plus.
+    const orders = [['player', 'sauge', 'ombre'], ['ombre', 'player', 'sauge'], ['player', 'sauge', 'ombre']];
+    let results;
+    for (let race = 0; race < 3; race += 1) {
+      if (race > 0) await click(nextButton(app.node));
+      await waitForCountdown(app.node);
+      await waitForRace(app.node);
+      await finishRace(orders[race]);
+      results = await waitForResults(app.node);
+      assert.equal(results.querySelectorAll('.mirage-cup-row').length, 3, 'trois cavaliers au classement, pas de fantôme');
+      assert.ok(!results.textContent.includes(amethyste), 'Améthyste ne court pas à trois voies');
+    }
+    assert.deepEqual(standings(results), ['Salim 27', `${ombre} 18`, `${sauge} 18`]);
+    await click(nextButton(app.node));
+    const trophy = await until(() => app.node.querySelector('.mirage-trophy-screen'), 'le trophée à trois cavaliers');
+    assert.equal(text(trophy.querySelector('.mirage-trophy-title')), 'FÉLICITATIONS');
+    assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe du Désert avec 27 points/);
+    assert.deepEqual(standings(trophy), ['Salim 27', `${ombre} 18`, `${sauge} 18`]);
+  } finally {
+    appTimers.restore();
+    await app.unmount();
+    setLaneCount(4);
   }
 }

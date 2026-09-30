@@ -14,7 +14,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { CRYSTALS } from './mirageRules';
 import { CONFETTI_COLORS, PODIUM_HEIGHT, TROPHY_HEIGHT, podiumBoxes, trophyBoxes } from './mirageTrophy';
-import { makeExplorer } from './MirageWorld';
+import { disposeExplorer, makeExplorer } from './mirageExplorer';
 
 // Le trophée et son podium sont décalés vers la gauche pour laisser la place
 // du cavalier à droite ; l’ensemble reste centré sur x = 0.
@@ -426,12 +426,8 @@ function buildTrophyScene(renderer, mount, { riderColors = null, slot = null, re
       cancelAnimationFrame(raf);
       observer?.disconnect();
       window.removeEventListener('resize', frame);
-      // Les matériaux du cavalier et toutes les géométries créées ici.
-      rider.traverse((object) => {
-        if (!object.isMesh) return;
-        object.geometry?.dispose?.();
-        [].concat(object.material || []).forEach((material) => material.dispose?.());
-      });
+      // Le cavalier (géométries et matériaux), puis tout ce qui a été créé ici.
+      disposeExplorer(rider);
       disposables.forEach((item) => item?.dispose?.());
       environment.dispose();
       renderer.dispose();

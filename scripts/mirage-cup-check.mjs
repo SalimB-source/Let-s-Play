@@ -8,7 +8,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const stub = path.join(root, 'scripts', 'mirage-world-stub.jsx');
 
 // jsdom n'a pas de WebGL : on remplace le moteur 3D par une doublure au moment de
-// résoudre les imports de « MirageWorld » (page, lobby en ligne, scène du trophée).
+// résoudre les imports de « MirageWorld » (page, lobby en ligne).
 // `build()` fixe NODE_ENV=production dans ce processus ; React chargerait alors son build de
 // production, sans `act` : on remet l'environnement d'avant une fois le bundle construit.
 const previousEnv = process.env.NODE_ENV;
@@ -38,4 +38,4 @@ console.error = (...args) => {
 
 const { checkMirageCup } = await import('../node_modules/.cache/mirage-cup/mirage-cup-smoke.js');
 try { await checkMirageCup(assert); } finally { console.error = consoleError; dom.window.close(); }
-console.log('check:mirage-cup ✓ — Coupe du Désert jouée de bout en bout (3 courses Dunes de l’Écho → Dust Creek → Plaines d’Or, 4 cavaliers, barème 10/7/4/2, égalités départagées, Entrée pour enchaîner sans que « R » saute le classement), écran du trophée (vainqueur, félicitations, moteur 3D démonté, repli sans WebGL), « Rejouer » repart de zéro, abandon par le bouton ou Échap.');
+console.log('check:mirage-cup ✓ — Coupe du Désert jouée de bout en bout (3 courses Dunes de l’Écho → Dust Creek → Plaines d’Or, 4 cavaliers, barème 10/7/4/2, égalités départagées, Entrée pour enchaîner sans que « R » saute le classement), écran du trophée (vainqueur, félicitations, moteur 3D démonté, repli sans WebGL), « Rejouer » repart de zéro, abandon par le bouton ou Échap ; piste à trois voies de l’app : trois cavaliers, barème 10/7/4, pas de cavalier fantôme.');

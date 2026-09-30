@@ -19,6 +19,14 @@
  * (`pseudoLabel`) : la conversion est vérifiée sur la casse mixte, les accents,
  * les espaces de bord et les pseudos absents, et les deux vues de messagerie
  * sont rendues avec un pseudo en casse mixte.
+ *
+ * Les discussions qui ont reçu de nouveaux messages ressortent en gras
+ * (aperçu du dernier message et heure) : le rendu SSR pose `has-unread` sur
+ * la bonne ligne, puis le style *calculé* avec les vraies feuilles de style
+ * (celles de src/main.jsx, en thème sombre et clair) vaut 700 pour une
+ * discussion non lue et 400 pour une discussion lue. La règle `body *` de
+ * typography.css impose 400 en `!important` : le gras ne tient que grâce au
+ * bloc dédié de ce même fichier.
  * 3. Rendu SSR : le hub /auth et un profil public se rendent dans les trois
  *    langues ; le lanceur reste visible pour un visiteur et l'envoie vers
  *    la page de connexion, sans ouvrir les conversations ; pour un joueur
@@ -35,6 +43,7 @@
  *    après choix ou frappe, retour à la réouverture).
  */
 import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import assert from 'node:assert/strict';
@@ -71,7 +80,7 @@ const {
   makeStorage, markThreadReadLocal, mergeUnread, messageSuggestions, messagesCopy, normalizeMessage, peersFromKey,
   prepareBody, pseudoLabel, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
   sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, writeDemoMessages,
-  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp, renderFriendsTab,
+  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp,
   renderInboxView, renderRequestsTab, renderThreadView, callsText,
 } = smoke;
 
@@ -429,7 +438,8 @@ try {
   const html = renderApp('/auth', { lang: 'fr', demoKey: 'vortex' });
   check('une seule fenêtre sociale', (html.match(/class="social-launcher( |")/g) || []).length, 1);
   const opened = strip(renderApp('/auth', { lang: 'fr', demoKey: 'vortex', friendsOpen: true }));
-  check('fenêtre unifiée : onglets Amis et Messages', opened.includes(friendsCopy.fr.tabFriends) && opened.includes(socialCopy.fr.tabMessages));
+  check('fenêtre unifiée : trois onglets (Messages, Demandes, Ajouter)', opened.includes(socialCopy.fr.tabMessages) && opened.includes(friendsCopy.fr.tabRequests) && opened.includes(friendsCopy.fr.tabAdd));
+  check('fenêtre unifiée : plus d’onglet Amis séparé', !opened.includes('>Amis<'));
   check('les textes des amis restent complets', Object.keys(friendsCopy.en).filter((entry) => !friendsCopy.fr[entry]).join(','), '');
 } catch (e) { check('la fenêtre sociale se rend', e.message, ''); }
 
@@ -474,22 +484,75 @@ try {
   check('discussion : effacement pour soi toujours proposé', threadRaw.includes(`aria-label="${t.clearConversation}"`));
 } catch (e) { check('les vues de messagerie se rendent seules', e.message, ''); }
 
-// Onglets Amis / Demandes de la fenêtre sociale : la même règle s'applique —
-// les pseudos des amis ressortent en majuscules, dans le texte visible comme
-// dans les libellés accessibles (ouverture de discussion, bouton « Profil »).
+// La liste unique amis + discussions (l'ancien onglet « Amis » y a fusionné)
+// et l'onglet Demandes : la même règle s'applique — les pseudos ressortent en
+// majuscules, dans le texte visible comme dans les libellés accessibles
+// (ouverture de discussion, bouton « Profil », présence de l'ami).
 try {
   const mixed = { id: 'demo-player-9001', name: 'nova pixel', avatar: null, online: true, level: 4 };
   const t = messagesCopy.fr;
   const ft = friendsCopy.fr;
-  const friendsRaw = renderFriendsTab([mixed], { lang: 'fr' });
-  const friendsView = strip(friendsRaw);
-  check('onglet amis : pseudo en majuscules', friendsView.includes('NOVA PIXEL') && !friendsView.includes('nova pixel'));
-  check('onglet amis : libellé d’ouverture en majuscules', friendsRaw.includes(`${t.openChat} — NOVA PIXEL`));
-  check('onglet amis : bouton profil libellé en majuscules', friendsRaw.includes(`${ft.viewProfile} — NOVA PIXEL`));
+  const friendless = { peerId: mixed.id, profile: mixed, lastMessage: null, lastAt: null, unread: 0 };
+  const friendsInboxRaw = renderInboxView([friendless], { lang: 'fr', friends: [mixed] });
+  const friendsInbox = strip(friendsInboxRaw);
+  check('liste amis + discussions : section Amis présente', friendsInbox.includes(t.sectionFriends));
+  check('liste amis + discussions : pseudo en majuscules', friendsInbox.includes('NOVA PIXEL') && !friendsInbox.includes('nova pixel'));
+  check('liste amis + discussions : présence de l’ami sans message', friendsInbox.includes(ft.onlineShort));
+  check('liste amis + discussions : libellé d’ouverture en majuscules', friendsInboxRaw.includes(`${t.openChat} — NOVA PIXEL`));
+  check('liste amis + discussions : bouton profil sur la ligne', friendsInboxRaw.includes(`${ft.profileShort} — NOVA PIXEL`));
   const requestsRaw = renderRequestsTab({ incoming: [{ ...mixed, online: false }], outgoing: [{ ...mixed, id: 'demo-player-9002' }], lang: 'fr' });
   const requestsView = strip(requestsRaw);
   check('onglet demandes : pseudo en majuscules', requestsView.includes('NOVA PIXEL') && !requestsView.includes('nova pixel'));
-} catch (e) { check('les onglets amis se rendent seuls', e.message, ''); }
+} catch (e) { check('la liste amis + discussions se rend seule', e.message, ''); }
+
+// Non-lus en gras : une discussion qui a reçu de nouveaux messages ressort —
+// aperçu du dernier message et heure en gras, le pseudo l'est déjà — et une
+// discussion lue reste en texte normal. Le JSX se contente de poser
+// `has-unread` ; le gras se joue dans la cascade : `body * { font-weight: 400
+// !important }` (src/typography.css) ramène tout à 400 et seul le bloc dédié de
+// ce fichier le rétablit, un `font-weight` écrit dans messages.css ne suffirait
+// pas. On rend donc la liste, puis on lit le style *calculé* avec les vraies
+// feuilles de style, dans l'ordre de src/main.jsx, en thème sombre et clair.
+try {
+  const friendA = { id: 'demo-player-9001', name: 'NOVA PIXEL', avatar: null };
+  const friendB = { id: 'demo-player-9002', name: 'KAYZ ORAN', avatar: null };
+  const received = { id: 'm1', body: 'On joue ce soir ?', mine: false, createdAt: '2026-01-01T10:00:00Z', read: false };
+  const seen = { id: 'm2', body: 'À tout à l’heure', mine: false, createdAt: '2026-01-01T09:00:00Z', read: true };
+  const unreadConversation = { peerId: friendA.id, profile: friendA, lastMessage: received, unread: 2, lastAt: received.createdAt };
+  const readConversation = { peerId: friendB.id, profile: friendB, lastMessage: seen, unread: 0, lastAt: seen.createdAt };
+  const listRaw = renderInboxView([unreadConversation, readConversation], { lang: 'fr' });
+  const rowTags = listRaw.match(/<li class="messages-row[^"]*"/g) || [];
+  check('non-lus : deux discussions rendues', rowTags.length, 2);
+  check('non-lus : la discussion avec des messages reçus porte « has-unread »', Boolean(rowTags[0]?.includes('has-unread')), true);
+  check('non-lus : la discussion lue ne la porte pas', Boolean(rowTags[1]?.includes('has-unread')), false);
+  check('non-lus : pastille avec le nombre de messages reçus', listRaw.includes('<span class="messages-unread-badge">2</span>'));
+
+  // Les feuilles qui habillent la messagerie et la typographie globale, dans
+  // l'ordre de chargement de main.jsx (à égalité, la dernière l'emporte).
+  const mainSource = fs.readFileSync(path.join(root, 'src', 'main.jsx'), 'utf8');
+  const imported = [...mainSource.matchAll(/^import\s+'\.\/([^']+\.css)';/gm)].map((match) => match[1]);
+  const wanted = ['styles.css', 'friends/friends.css', 'messages/messages.css', 'social/social.css', 'typography.css', 'theme.css'];
+  const sheets = imported.filter((file) => wanted.includes(file));
+  check('non-lus : feuilles de style retrouvées dans main.jsx', sheets.length, wanted.length);
+
+  const page = new JSDOM('<!doctype html><html data-theme="dark"><head></head><body></body></html>');
+  const inlineStyle = page.window.document.createElement('style');
+  inlineStyle.textContent = sheets.map((file) => fs.readFileSync(path.join(root, 'src', file), 'utf8')).join('\n');
+  page.window.document.head.append(inlineStyle);
+  page.window.document.body.innerHTML = listRaw;
+  const rows = page.window.document.querySelectorAll('.messages-row');
+  const weight = (index, part) => page.window.getComputedStyle(rows[index].querySelector(`.messages-row-${part}`)).fontWeight;
+  for (const theme of ['dark', 'light']) {
+    page.window.document.documentElement.setAttribute('data-theme', theme);
+    check(`non-lus (${theme}) : aperçu du dernier message en gras`, weight(0, 'preview'), '700');
+    check(`non-lus (${theme}) : heure en gras`, weight(0, 'time'), '700');
+    check(`non-lus (${theme}) : pseudo en gras`, weight(0, 'name'), '700');
+    check(`discussion lue (${theme}) : aperçu en texte normal`, weight(1, 'preview'), '400');
+    check(`discussion lue (${theme}) : heure en texte normal`, weight(1, 'time'), '400');
+    check(`discussion lue (${theme}) : pseudo toujours en gras`, weight(1, 'name'), '700');
+  }
+  page.window.close();
+} catch (e) { check('les non-lus se rendent en gras', e.message, ''); }
 
 console.log('\n[4/4] gestes DOM : effacement et suggestions\n');
 // La fenêtre ouverte avant l'import de la fumée (react-dom a besoin d'une

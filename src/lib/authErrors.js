@@ -39,6 +39,10 @@ export function describeAuthError(error, t, fallback) {
     return `${t.errProviderDisabled}${details}`;
   }
 
+  if (code === 'captcha_failed' || /captcha|turnstile/i.test(message)) {
+    return `${t.captchaError || fallback}${details}`;
+  }
+
   if (
     code === 'over_email_send_rate_limit'
     || code === 'over_request_rate_limit'

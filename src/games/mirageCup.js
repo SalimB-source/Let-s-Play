@@ -3,6 +3,9 @@
 //
 // Une coupe enchaîne plusieurs courses DUEL à quatre cavaliers (le joueur +
 // L’Ombre, Sauge et Améthyste) sur des terrains imposés, dans un ordre fixe.
+// Sur une piste à trois voies (l’application, voir `mirageLanes.js`), il n’y a
+// de place que pour trois cavaliers : la coupe suit le duel et n’aligne alors
+// que L’Ombre et Sauge.
 // Chaque arrivée rapporte des points selon la place — plus on finit haut, plus
 // on en gagne —, les points s’additionnent d’une course à l’autre, et le
 // meilleur total soulève le trophée après la dernière course.
@@ -11,11 +14,11 @@
 // (mêmes pouvoirs, mêmes rivaux) et la page n’a qu’à nourrir `recordCupRace`
 // avec le résultat que `MirageWorld` émet à l’arrivée du joueur.
 import { CHARACTER_PALETTES } from './mirageCharacters.js';
-import { DUEL_DISTANCE, DUEL_RIVALS } from './mirageRules.js';
+import { DUEL_DISTANCE, duelRivalsForTrack } from './mirageRules.js';
 
 /** Points par place : 1ᵉʳ, 2ᵉ, 3ᵉ, 4ᵉ — strictement décroissant. */
 export const CUP_POINTS = Object.freeze([10, 7, 4, 2]);
-/** Le joueur + les trois rivaux PNJ. */
+/** Le joueur + les trois rivaux PNJ de la piste à quatre voies (le site). */
 export const CUP_RIDER_COUNT = CUP_POINTS.length;
 export const PLAYER_RIDER_ID = 'player';
 export const MAX_RIDER_NAME = 20;
@@ -63,17 +66,23 @@ export function cleanRiderName(raw, fallback = DEFAULT_RIDER_NAME) {
   return clipped || fallback;
 }
 
+// Palette de `mirageExplorer.js` : 5 couleurs de base, plus le chapeau et les
+// balzanes quand le skin en a (sinon le modèle les déduit de la robe).
 function paletteOf(colors, fallback) {
   const valid = Array.isArray(colors) && colors.length >= 5 && colors.slice(0, 5).every(Number.isFinite);
-  return [...(valid ? colors : fallback).slice(0, 5)];
+  const source = valid ? colors : fallback;
+  const base = source.slice(0, 5);
+  const extra = source.slice(5, 7);
+  return extra.every(Number.isFinite) ? [...base, ...extra] : base;
 }
 
 /**
- * Démarre une coupe : les quatre cavaliers (le joueur toujours en tête de
- * liste) et aucune course courue. Renvoie `null` si la coupe n’existe pas.
- * L’objet est de la donnée pure : chaque étape en produit un nouveau.
+ * Démarre une coupe : le joueur (toujours en tête de liste) et les rivaux de
+ * la piste — trois par défaut, `duelRivalsForTrack()` — et aucune course
+ * courue. Renvoie `null` si la coupe n’existe pas. L’objet est de la donnée
+ * pure : chaque étape en produit un nouveau.
  */
-export function createCupRun(cupId, { playerName, playerColors } = {}) {
+export function createCupRun(cupId, { playerName, playerColors, rivals = duelRivalsForTrack() } = {}) {
   const cup = getCup(cupId);
   if (!cup) return null;
   return {
@@ -87,7 +96,7 @@ export function createCupRun(cupId, { playerName, playerColors } = {}) {
         slot: 0,
         colors: paletteOf(playerColors, CHARACTER_PALETTES[0]),
       },
-      ...DUEL_RIVALS.map((rival, index) => ({
+      ...rivals.map((rival, index) => ({
         id: rival.id,
         name: rival.name,
         isPlayer: false,

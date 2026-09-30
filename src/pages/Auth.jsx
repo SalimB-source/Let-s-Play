@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase, authRedirectUrl, supabaseConfigStatus } from '../lib/supabase';
+import { supabase, authRedirectUrl, supabaseConfigStatus, turnstileSiteKey } from '../lib/supabase';
 import { syncDemoCommentsForUser, syncSupabaseProfileAndComments } from '../lib/comments';
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -19,6 +19,7 @@ import {
 } from '../lib/gameLibrary';
 import ConsoleLogo from '../components/ConsoleLogo';
 import TopGamePill from '../components/TopGamePill';
+import SignupProtection from '../components/SignupProtection';
 import FriendsHubSection from '../friends/FriendsHubSection';
 import QuizGlobalRank from '../quizzes/QuizGlobalRank';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
@@ -154,6 +155,13 @@ const copy = {
     errRateLimited: 'Too many attempts — wait a few minutes before trying again.',
     errProviderDisabled: 'This sign-in provider is not enabled on the Supabase project yet — enable it in Authentication → Providers, or sign in with your email address.',
     unavailable: 'Supabase authentication is not configured in this environment. You can use the Demo Preview below.',
+    captchaLabel: 'SECURITY CHECK',
+    captchaInstructions: 'Complete the security check before continuing.',
+    captchaLoading: 'Loading the security check…',
+    captchaError: 'The security check could not load. Disable blockers or try again.',
+    captchaNotConfigured: 'Authentication protection is not configured for this deployment. Add VITE_TURNSTILE_SITE_KEY and redeploy.',
+    captchaRequired: 'Complete the security check to continue.',
+    botCheckError: 'This request could not be verified. Please try again.',
     diagMissing: 'Missing configuration:',
     diagHelp: 'Build-time variables: Vercel → Settings → Environment Variables, GitHub Pages → Settings → Secrets and variables → Actions → Variables (both names above), or a local .env.local copied from .env.example. Redeploy after adding them.',
     demoOptionTitle: 'DEMO / PREVIEW ACCESS',
@@ -271,6 +279,13 @@ const copy = {
     errRateLimited: 'Trop de tentatives — patiente quelques minutes avant de réessayer.',
     errProviderDisabled: 'Ce fournisseur de connexion n’est pas encore activé sur le projet Supabase — active-le dans Authentication → Providers, ou connecte-toi avec ton adresse e-mail.',
     unavailable: "L'authentification Supabase n'est pas configurée dans cet environnement. Utilisez l'aperçu Démo ci-dessous.",
+    captchaLabel: 'VÉRIFICATION DE SÉCURITÉ',
+    captchaInstructions: 'Complète la vérification avant de continuer.',
+    captchaLoading: 'Chargement de la vérification…',
+    captchaError: 'La vérification n’a pas pu charger. Désactive les bloqueurs ou réessaie.',
+    captchaNotConfigured: 'La protection de l’authentification n’est pas configurée pour ce déploiement. Ajoute VITE_TURNSTILE_SITE_KEY puis redéploie.',
+    captchaRequired: 'Complète la vérification pour continuer.',
+    botCheckError: 'Cette demande n’a pas pu être vérifiée. Réessaie.',
     diagMissing: 'Configuration manquante :',
     diagHelp: 'Variables lues à la compilation : Vercel → Settings → Environment Variables, GitHub Pages → Settings → Secrets and variables → Actions → Variables (les deux noms ci-dessus), ou un fichier .env.local copié depuis .env.example. Redéployez après les avoir ajoutées.',
     demoOptionTitle: 'ACCÈS DÉMO / APERÇU',
@@ -388,6 +403,13 @@ const copy = {
     errRateLimited: 'محاولات كثيرة — انتظر بضع دقائق ثم أعد المحاولة.',
     errProviderDisabled: 'مزوّد تسجيل الدخول هذا غير مُفعّل بعد في مشروع Supabase — فعّله من Authentication ← Providers أو سجّل الدخول ببريدك الإلكتروني.',
     unavailable: 'المصادقة عبر Supabase غير مهيأة في هذه البيئة. يمكنك استخدام الحساب التجريبي أدناه.',
+    captchaLabel: 'تحقق أمني',
+    captchaInstructions: 'أكمل التحقق قبل المتابعة.',
+    captchaLoading: 'جارٍ تحميل التحقق الأمني…',
+    captchaError: 'تعذّر تحميل التحقق. عطّل أدوات الحجب أو حاول مرة أخرى.',
+    captchaNotConfigured: 'حماية المصادقة غير مهيأة لهذا النشر. أضف VITE_TURNSTILE_SITE_KEY ثم أعد النشر.',
+    captchaRequired: 'أكمل التحقق الأمني للمتابعة.',
+    botCheckError: 'تعذّر التحقق من هذا الطلب. حاول مرة أخرى.',
     diagMissing: 'الإعدادات الناقصة:',
     diagHelp: 'المتغيرات تُقرأ وقت البناء: في Vercel ← Settings ← Environment Variables، وفي GitHub Pages ← Settings ← Secrets and variables ← Actions ← Variables (الاسمان أعلاه)، أو ملف .env.local محلي منسوخ من .env.example. أعد النشر بعد إضافتها.',
     demoOptionTitle: 'الوصول التجريبي / المعاينة',
@@ -514,6 +536,9 @@ function compressImageToDataUrl(file) {
 // The two forms the pop-up can show when the visitor is signed out. `update`
 // (password recovery) is added by the recovery guard, not by a link.
 export const AUTH_MODES = ['signin', 'signup'];
+// Supabase applies CAPTCHA protection to password sign-in, sign-up and
+// password-reset requests. Keep one token flow for all three forms.
+const CAPTCHA_MODES = ['signin', 'signup', 'forgot'];
 
 function normalizeMode(value) {
   return AUTH_MODES.includes(value) ? value : '';
@@ -597,7 +622,36 @@ export default function Auth({ initialMode = '' }) {
   const [connectedPopup, setConnectedPopup] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarNote, setAvatarNote] = useState(null); // { text, isError }
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+  const signupHoneypotRef = useRef('');
+  const previousModeRef = useRef(mode);
   const fileInputRef = useRef(null);
+
+  const handleCaptchaToken = useCallback((token) => {
+    setCaptchaToken(token || '');
+  }, []);
+  // Production builds fail closed when Supabase CAPTCHA is enabled but the
+  // public widget key was omitted from the build. Local development remains
+  // usable without a widget until the provider is configured.
+  const captchaRequiredForBuild = Boolean(turnstileSiteKey) || Boolean(import.meta.env?.PROD);
+  const captchaMode = CAPTCHA_MODES.includes(mode);
+
+  // A hidden honeypot catches unsophisticated form-fill bots. The CAPTCHA is
+  // the real control; this cheap signal is only a second layer and never
+  // replaces provider-side verification.
+  useEffect(() => {
+    if (captchaMode && previousModeRef.current !== mode) {
+      signupHoneypotRef.current = '';
+      setCaptchaToken('');
+      setCaptchaResetSignal((value) => value + 1);
+    }
+    if (!captchaMode) {
+      signupHoneypotRef.current = '';
+      setCaptchaToken('');
+    }
+    previousModeRef.current = mode;
+  }, [mode, captchaMode]);
 
   // The "You are connected" popup stays on screen briefly, then fades.
   useEffect(() => {
@@ -710,6 +764,18 @@ export default function Auth({ initialMode = '' }) {
       setError(t.gamertagRequired);
       return;
     }
+    if (mode === 'signup' && signupHoneypotRef.current.trim()) {
+      setError(t.botCheckError);
+      return;
+    }
+    if (captchaMode && captchaRequiredForBuild && !turnstileSiteKey) {
+      setError(t.captchaNotConfigured);
+      return;
+    }
+    if (captchaMode && captchaRequiredForBuild && !captchaToken) {
+      setError(t.captchaRequired);
+      return;
+    }
 
     setBusy(true);
 
@@ -728,8 +794,12 @@ export default function Auth({ initialMode = '' }) {
           options: {
             data: { gamertag: tag, full_name: tag, fullName: tag, name: tag },
             emailRedirectTo: authRedirectUrl(),
+            ...(captchaToken ? { captchaToken } : {}),
           },
         });
+        // Turnstile tokens are single-use; never allow a retry to reuse one.
+        setCaptchaToken('');
+        setCaptchaResetSignal((value) => value + 1);
         if (signUpError) {
           setError(describeAuthError(signUpError, t, t.error));
         } else if (data.session) {
@@ -752,7 +822,13 @@ export default function Auth({ initialMode = '' }) {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
+          options: {
+            ...(captchaToken ? { captchaToken } : {}),
+          },
         });
+        // A Turnstile token is single-use for sign-in as well as sign-up.
+        setCaptchaToken('');
+        setCaptchaResetSignal((value) => value + 1);
         if (signInError) {
           setError(describeAuthError(signInError, t, t.error));
         } else {
@@ -764,7 +840,10 @@ export default function Auth({ initialMode = '' }) {
       } else if (mode === 'forgot') {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
           redirectTo: authRedirectUrl(),
+          ...(captchaToken ? { captchaToken } : {}),
         });
+        setCaptchaToken('');
+        setCaptchaResetSignal((value) => value + 1);
         if (resetError) {
           setError(describeAuthError(resetError, t, t.error));
         } else {
@@ -796,6 +875,14 @@ export default function Auth({ initialMode = '' }) {
   const resendConfirmation = async () => {
     setError('');
     setMessage('');
+    if (captchaRequiredForBuild && !turnstileSiteKey) {
+      setError(t.captchaNotConfigured);
+      return;
+    }
+    if (captchaRequiredForBuild && !captchaToken) {
+      setError(t.captchaRequired);
+      return;
+    }
     setBusy(true);
     if (!configured || !supabase) {
       setBusy(false);
@@ -805,7 +892,12 @@ export default function Auth({ initialMode = '' }) {
     const { error: resendError } = await supabase.auth.resend({
       type: 'signup',
       email: email.trim(),
+      options: {
+        ...(captchaToken ? { captchaToken } : {}),
+      },
     });
+    setCaptchaToken('');
+    setCaptchaResetSignal((value) => value + 1);
     setBusy(false);
     if (resendError) {
       setError(describeAuthError(resendError, t, t.error));
@@ -1216,6 +1308,19 @@ export default function Auth({ initialMode = '' }) {
         {/* EMAIL / PASSWORD FORM */}
         <form className="auth-form" onSubmit={submit}>
           {mode === 'signup' && (
+            <div className="auth-honeypot" aria-hidden="true">
+              <label htmlFor="signup-website">Website</label>
+              <input
+                id="signup-website"
+                name="website"
+                type="text"
+                tabIndex="-1"
+                autoComplete="off"
+                onChange={(event) => { signupHoneypotRef.current = event.target.value; }}
+              />
+            </div>
+          )}
+          {mode === 'signup' && (
             <label>
               {t.gamertag}
               <input
@@ -1255,7 +1360,24 @@ export default function Auth({ initialMode = '' }) {
             'new-password',
           )}
           {showConfirm && <p className="auth-field-hint auth-pw-hint">{t.passwordHint}</p>}
-          <button className="button button-yellow" disabled={busy}>
+          {captchaMode && (
+            <SignupProtection
+              siteKey={turnstileSiteKey}
+              label={t.captchaLabel}
+              instructions={t.captchaInstructions}
+              loadingLabel={t.captchaLoading}
+              errorLabel={t.captchaError}
+              resetSignal={captchaResetSignal}
+              onTokenChange={handleCaptchaToken}
+            />
+          )}
+          {captchaMode && captchaRequiredForBuild && !turnstileSiteKey && (
+            <p className="auth-message auth-error auth-config-box">{t.captchaNotConfigured}</p>
+          )}
+          <button
+            className="button button-yellow"
+            disabled={busy || (captchaMode && captchaRequiredForBuild && (!turnstileSiteKey || !captchaToken))}
+          >
             {busy && <span className="auth-btn-spinner" aria-hidden="true" />}
             {mode === 'signup' ? t.signUp : mode === 'signin' ? t.signIn : mode === 'forgot' ? t.sendReset : t.updatePassword}
             {!busy && <span>↗</span>}

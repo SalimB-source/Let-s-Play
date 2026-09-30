@@ -17,11 +17,10 @@
   --mirage-radius: 12px;
   --mirage-radius-sm: 9px;
   /* La barre de navigation est fixe (île à 16px + 64px de haut = 80px).
-     On garde juste assez de respiration (92px) pour ne pas passer dessous :
-     sans l’en-tête de titre ni la barre d’onglets, chaque pixel économisé
-     fait remonter le bouton « LANCER LA PARTIE » au-dessus de la ligne de
-     flottaison — il doit être visible sans défilement. */
-  padding: 92px 0 44px;
+     Le bloc « TON RECORD » a été retiré de l’en-tête : on colle donc le
+     jeu juste sous la navbar (84px = 80px + 4px de respiration) pour que
+     « LANCER LA PARTIE » reste au-dessus de la ligne de flottaison. */
+  padding: 84px 0 44px;
   color: var(--mirage-ink);
   background:
     radial-gradient(820px 420px at 12% -2%, rgba(226, 128, 86, .14), transparent 68%),
@@ -30,15 +29,16 @@
 }
 .mirage-page .wrap { width: min(1320px, calc(100% - 44px)); margin-inline: auto; }
 .mirage-heading {
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 28px;
-  /* En-tête réduit au minimum (eyebrow + lien de retour + record) : le titre
-     et la barre d’onglets ont été retirés, on ne garde que 12px sous la ligne. */
-  padding: 0 0 12px;
+  display: flex; align-items: flex-end; justify-content: flex-start; gap: 28px;
+  /* En-tête réduit au minimum (eyebrow + lien de retour) : le titre, la
+     barre d’onglets et le bloc « TON RECORD » ont été retirés, on ne garde
+     que 6px sous la ligne pour coller le jeu à la navbar. */
+  padding: 0 0 6px;
 }
 .mirage-heading-copy { min-width: 0; }
-.mirage-eyebrow, .mirage-panel-kicker, .mirage-record-label, .mirage-game-brand,
+.mirage-eyebrow, .mirage-panel-kicker, .mirage-game-brand,
 .mirage-overlay-kicker, .mirage-overlay-hint, .mirage-game-foot, .mirage-board-footer,
-.mirage-score-tip > span, .mirage-record-flare {
+.mirage-score-tip > span {
   font-family: var(--mono); font-size: 10px; font-weight: 800; letter-spacing: .17em;
 }
 .mirage-eyebrow { display: flex; align-items: center; gap: 9px; color: #d5a3d1; }
@@ -54,14 +54,10 @@
    thème) : encre crème posée en dur, invisibles sur le fond clair du thème
    Light — ne pas recréer de styles `.mirage-heading h1` /
    `.mirage-heading-copy > p` sans jeton de thème. */
-.mirage-heading-side {
-  display: flex; flex: 0 0 190px; flex-direction: column; align-items: flex-end; gap: 6px;
-  padding: 0 0 2px; text-align: right;
-}
-.mirage-record-label { color: rgba(255, 242, 221, .46); }
-.mirage-heading-side > strong { color: #ffd667; font: 800 30px/1 var(--font-gaming); }
-.mirage-heading-side > strong small { color: #fff1d2; font: 700 10px var(--mono); letter-spacing: .15em; }
-.mirage-record-flare { color: #dc98dc; font-size: 8px; }
+/* Le bloc « TON RECORD » de l’en-tête (label, score, « ÉCHO SOLAIRE ») a été
+   retiré du DOM : ses styles `.mirage-heading-side` / `.mirage-record-label` /
+   `.mirage-record-flare` ont été supprimés. Le record personnel reste affiché
+   dans l’écran de fin de partie. */
 
 .mirage-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 20px; }
 .mirage-game-shell, .panel-frame {
@@ -414,7 +410,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-overlay-hint { margin-top: 17px; color: rgba(255, 242, 219, .62); font-size: 8px; letter-spacing: .15em; }
 .mirage-overlay-hint span { padding: 0 5px; color: #e998c7; }
 /* Keyboard keycaps in the intro. */
-.mirage-keys-hint { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 18px; margin-top: 15px; color: rgba(255, 242, 219, .58); font: 700 9px var(--mono); letter-spacing: .08em; }
+.mirage-keys-hint { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 18px; margin-top: 12px; color: rgba(255, 242, 219, .58); font: 700 9px var(--mono); letter-spacing: .08em; }
 .mirage-keys-hint span { display: inline-flex; align-items: center; gap: 5px; }
 .mirage-keys-hint kbd {
   display: inline-grid; place-items: center; min-width: 23px; height: 22px; padding: 0 6px;
@@ -540,8 +536,8 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-xp-track > span { position: relative; z-index: 1; width: 100%; padding-inline: 11px; color: #ffeecf; font: 800 8px var(--mono); letter-spacing: .13em; text-align: right; text-shadow: 0 1px 4px rgba(20, 10, 26, .9); }
 .mirage-skin-picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 4px; }
 .mirage-skin-chip {
-  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 78px auto auto; gap: 5px; justify-items: center; align-items: center;
-  min-height: 124px; padding: 9px 8px; border-radius: var(--mirage-radius-sm); border: 1px solid rgba(255, 255, 255, .1);
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; gap: 5px; justify-items: center; align-items: center;
+  min-height: 124px; padding: 8px 8px 9px; border-radius: var(--mirage-radius-sm); border: 1px solid rgba(255, 255, 255, .1);
   background: rgba(255, 255, 255, .03); color: #fff0da; text-align: center; cursor: pointer;
   transition: border-color .16s, background .16s, transform .16s;
 }
@@ -551,7 +547,21 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-skin-chip:disabled { cursor: not-allowed; opacity: .55; }
 .mirage-skin-chip.is-selected { border-color: rgba(246, 205, 114, .75); background: rgba(246, 205, 114, .1); }
 .mirage-skin-chip:focus-visible { outline: 2px solid #fff1c9; outline-offset: 2px; }
-.mirage-skin-dye { grid-row: span 2; width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, var(--dye-coat) 50%, var(--dye-cloth) 50%); border: 1px solid var(--dye-trim); box-shadow: inset 0 -7px 0 -3px var(--dye-trim); }
+/* Aperçu 3D rotatif du skin (MirageSkinPreview) : scène « coucher de soleil »
+   derrière le cheval, cadenas par-dessus les skins pas encore débloqués. */
+.mirage-skin-stage {
+  position: relative; display: block; width: 100%; height: 104px; overflow: hidden; border-radius: 10px;
+  background: radial-gradient(ellipse 70% 55% at 50% 100%, rgba(255, 190, 120, .32), transparent 70%),
+              linear-gradient(180deg, rgba(118, 83, 116, .45), rgba(212, 125, 96, .22) 70%, rgba(240, 189, 119, .18));
+  box-shadow: inset 0 0 0 1px rgba(255, 238, 210, .06);
+}
+.mirage-skin-model { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.mirage-skin-3d.is-fallback { display: grid; place-items: center; color: rgba(255, 236, 205, .6); font-size: 34px; }
+.mirage-skin-chip.is-locked .mirage-skin-model { filter: grayscale(1) brightness(.45) contrast(1.1); }
+.mirage-skin-lock { position: absolute; inset: 0; display: grid; place-items: center; font-size: 22px; text-shadow: 0 2px 8px rgba(0, 0, 0, .6); }
+.mirage-skin-chip.is-selected .mirage-skin-stage { box-shadow: inset 0 0 0 1px rgba(246, 205, 114, .45), 0 0 18px rgba(246, 205, 114, .12); }
+.mirage-skin-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.mirage-skin-tags i { padding: 2px 6px; border-radius: 999px; background: rgba(255, 240, 219, .07); border: 1px solid rgba(255, 240, 219, .1); color: rgba(255, 236, 214, .78); font: 700 7px var(--mono); font-style: normal; letter-spacing: .06em; white-space: nowrap; }
 .mirage-skin-name { min-width: 0; max-width: 100%; overflow: hidden; color: #ffeede; font: 800 9px var(--mono); letter-spacing: .05em; text-overflow: ellipsis; white-space: nowrap; }
 .mirage-skin-chip small { color: rgba(255, 240, 219, .52); font-size: 7px; line-height: 1.3; }
 .mirage-skin-chip.is-selected small { color: #8ce9b4; }
@@ -644,16 +654,12 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .mirage-viewport { height: min(clamp(460px, 86vw, 600px), 80vh); }
 }
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
-  /* Barre mobile : 68px de haut — on repart de 88px (il suffit de 20px de
-     respiration, et le gain fait remonter « LANCER LA PARTIE »). */
-  .mirage-page { padding-top: 88px; }
+  /* Barre mobile : 68px de haut — on colle le jeu juste dessous (72px),
+     sans le bloc record retiré de l’en-tête. */
+  .mirage-page { padding-top: 72px; }
   .mirage-page .wrap { width: min(100% - 24px, 520px); }
-  .mirage-heading { align-items: flex-start; gap: 10px; padding-bottom: 10px; }
+  .mirage-heading { align-items: flex-start; gap: 10px; padding-bottom: 6px; }
   .mirage-eyebrow { flex-wrap: wrap; gap: 6px; font-size: 8px; letter-spacing: .12em; }
-  .mirage-heading-side { flex-basis: auto; min-width: 95px; padding-top: 0; }
-  .mirage-heading-side > strong { font-size: 19px; }
-  .mirage-record-label { font-size: 7px; }
-  .mirage-record-flare { font-size: 6px; letter-spacing: .09em; }
   .mirage-layout { gap: 12px; }
   .mirage-game-topbar { height: 44px; padding-inline: 9px; }
   .mirage-game-brand { font-size: 7px; gap: 5px; letter-spacing: .08em; }
@@ -724,46 +730,57 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-duel-warning { color: #ffd76b !important; }
 
 /* Course selection: compact mode cards and illustrated destinations. */
-.mirage-intro-overlay { overflow-y: auto; justify-content: safe center; padding: 20px 22px; background: linear-gradient(180deg, rgba(20, 13, 32, .82), rgba(17, 11, 27, .94)); backdrop-filter: blur(8px); }
+.mirage-intro-overlay { overflow-y: auto; justify-content: safe center; padding: 16px 20px; background: linear-gradient(180deg, rgba(20, 13, 32, .82), rgba(17, 11, 27, .94)); backdrop-filter: blur(8px); }
 .mirage-intro-overlay > * { flex-shrink: 0; }
-.mirage-intro-overlay h2 { font-size: clamp(23px, 3vw, 32px); margin: 8px 0 12px; }
-.mirage-intro-overlay > p { margin: 10px 0 12px; font-size: 12px; }
+.mirage-intro-overlay h2 { font-size: clamp(21px, 2.7vw, 28px); margin: 6px 0 10px; }
+.mirage-intro-overlay > p { margin: 8px 0 10px; font-size: 12px; }
 .mirage-intro-overlay .mirage-overlay-hint { margin-top: 10px; }
 .mirage-course-picker { width: min(100%, 640px); text-align: left; }
 /* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
    l'en-tête reste retirée) : les cartes du sélecteur d'origine, suivies du
-   bloc terrain (cinq horizons, dont Alger la Blanche). */
-.mirage-mode-section { width: min(100%, 720px); text-align: left; }
+   bloc terrain (neuf horizons, jusqu’à Thunder Airbase). */
+.mirage-mode-section { width: min(100%, 640px); text-align: left; }
 .mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
-.mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 8px; }
+.mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 6px; }
 .mirage-picker-label > span:last-child { color: #9e8e9d; text-align: right; }
-/* Quatre modes (RUÉE · DUEL · COUPE · EN LIGNE) : des tuiles verticales, sinon
-   les cartes horizontales seraient trop étroites pour leur texte. */
+/* Quatre modes (RUÉE · DUEL · COUPE · EN LIGNE) côte à côte : l'icône et le nom
+   partagent la première ligne, l'accroche et le détail passent dessous — sinon
+   les cartes horizontales seraient trop étroites pour leur texte. La tuile garde
+   ainsi la hauteur des trois cartes d'origine (l'intro n'a pas à défiler de plus). */
 .mirage-mode-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
-.mirage-mode-picker button { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 9px; padding: 13px; min-height: 112px; border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: linear-gradient(125deg, rgba(50, 35, 57, .9), rgba(33, 26, 42, .92)); color: #fff2dd; text-align: left; cursor: pointer; transition: border-color .18s, transform .18s, background .18s, box-shadow .18s; }
+.mirage-mode-picker button { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: center; align-items: center; gap: 3px 8px; padding: 8px 10px; min-height: 70px; border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: linear-gradient(125deg, rgba(50, 35, 57, .9), rgba(33, 26, 42, .92)); color: #fff2dd; text-align: left; cursor: pointer; transition: border-color .18s, transform .18s, background .18s, box-shadow .18s; }
 .mirage-mode-picker button[aria-pressed="true"] { border-color: #f6cd72; background: linear-gradient(120deg, rgba(103, 67, 44, .6), rgba(48, 34, 50, .95)); box-shadow: inset 0 0 0 1px rgba(246, 205, 114, .15), 0 6px 22px rgba(0, 0, 0, .28), 0 0 24px rgba(243, 198, 91, .12); }
-.mirage-mode-symbol { display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 9px; background: rgba(255, 242, 212, .045); font-size: 28px; color: #dec1a0; }
+.mirage-mode-symbol { display: grid; place-items: center; width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: rgba(255, 242, 212, .045); font-size: 17px; color: #dec1a0; }
 .mirage-mode-picker button[aria-pressed="true"] .mirage-mode-symbol { color: #ffdc85; background: rgba(255, 220, 133, .08); }
-.mirage-mode-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.mirage-mode-copy strong { font: 900 16px var(--font-gaming); letter-spacing: .05em; }
-.mirage-mode-copy > span { font-size: 11px; color: #ead7c7; overflow-wrap: anywhere; }
-.mirage-mode-copy small { color: #bbaaaf; font: 9px var(--mono); }
+.mirage-mode-copy { display: contents; }
+.mirage-mode-copy strong { grid-column: 2; min-width: 0; padding-right: 16px; font: 900 14px var(--font-gaming); letter-spacing: .05em; }
+.mirage-mode-copy > span { grid-column: 1 / -1; font-size: 11px; color: #ead7c7; overflow-wrap: anywhere; }
+.mirage-mode-copy small { grid-column: 1 / -1; color: #bbaaaf; font: 9px var(--mono); }
 .mirage-choice-dot { position: absolute; right: 10px; top: 10px; width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgba(155, 139, 152, .45); color: #211824; text-align: center; font-size: 11px; }
 .mirage-mode-picker button[aria-pressed="true"] .mirage-choice-dot { background: #f6cd72; border-color: #f6cd72; }
-.mirage-stage-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+/* Neuf horizons : 4 + 4 + 1 cartes sur trois rangées au bureau (3 + 3 + 3 sur
+   mobile), rangée incomplète centrée — l'intro garde la hauteur qu'elle avait
+   avec six cartes. */
+.mirage-stage-picker { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.mirage-stage-picker > .mirage-map-card { flex: 0 0 calc((100% - 30px) / 4); min-width: 0; }
 .mirage-stage-locked { display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-radius: var(--mirage-radius); border: 1px dashed rgba(182, 160, 195, .32); background: rgba(37, 28, 41, .55); }
 .mirage-stage-locked-icon { display: grid; place-items: center; width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%; background: rgba(246, 205, 114, .09); font-size: 14px; }
 .mirage-stage-locked p { margin: 0; font-size: 11.5px; line-height: 1.55; color: #cbb6c4; }
 .mirage-stage-locked strong { color: #ffdc85; }
 .mirage-map-card { position: relative; padding: 0; overflow: hidden; border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: #251c29; color: #fff1dc; text-align: left; cursor: pointer; transition: border-color .18s, transform .18s, box-shadow .18s; }
-.mirage-map-art { display: block; width: 100%; height: 72px; }
-.mirage-map-number { position: absolute; top: 7px; left: 8px; font: 700 9px var(--mono); padding: 3px 5px; background: rgba(37, 28, 41, .66); backdrop-filter: blur(4px); border-radius: 5px; color: #fff2d8; }
-.mirage-map-check { position: absolute; top: 7px; right: 7px; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(33, 24, 38, .72); backdrop-filter: blur(4px); color: #fff3d7; font-size: 12px; }
-.mirage-map-copy { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; }
-.mirage-map-copy strong { font: 800 11px var(--font-gaming); }
-.mirage-map-copy > span { font-size: 10px; color: #d9bdb0; }
-.mirage-map-copy small { font: 8px var(--mono); color: #a99aa8; }
-.mirage-map-selected { display: block; padding: 5px 10px; border-top: 1px solid rgba(255, 255, 255, .04); font: 700 7px var(--mono); letter-spacing: .14em; color: #9d8e9c; }
+/* Panoramas locaux : le cadre garde ses 46px pour ne pas repousser
+   « LANCER LA PARTIE ». Le recadrage préserve les repères à l’horizon. */
+.mirage-map-visual { position: relative; display: block; height: 46px; overflow: hidden; background: #38243e; }
+.mirage-map-visual::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(21, 16, 32, .16), transparent 45%, rgba(37, 28, 41, .22)); box-shadow: inset 0 -1px rgba(255, 229, 190, .12); }
+.mirage-map-art { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; user-select: none; transition: transform .35s ease; }
+.mirage-map-card.is-japan .mirage-map-art { object-position: 25% 40%; }
+.mirage-map-number { position: absolute; top: 5px; left: 6px; font: 700 8px var(--mono); padding: 2px 4px; background: rgba(37, 28, 41, .66); backdrop-filter: blur(4px); border-radius: 5px; color: #fff2d8; }
+.mirage-map-check { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; background: rgba(33, 24, 38, .72); backdrop-filter: blur(4px); color: #fff3d7; font-size: 10px; }
+.mirage-map-copy { display: flex; flex-direction: column; gap: 2px; padding: 5px 9px; }
+.mirage-map-copy strong { font: 800 10px var(--font-gaming); }
+.mirage-map-copy > span { font-size: 9px; color: #d9bdb0; }
+.mirage-map-copy small { font: 7px var(--mono); color: #a99aa8; }
+.mirage-map-selected { display: block; padding: 3px 9px; border-top: 1px solid rgba(255, 255, 255, .04); font: 700 7px var(--mono); letter-spacing: .14em; color: #9d8e9c; }
 .mirage-map-card[aria-pressed="true"] { border-color: #f6cd72; box-shadow: 0 0 0 1px rgba(246, 205, 114, .2), 0 8px 22px rgba(0, 0, 0, .3), 0 0 26px rgba(243, 198, 91, .14); }
 .mirage-map-card[aria-pressed="true"] .mirage-map-selected { background: rgba(246, 205, 114, .08); color: #ffdb87; }
 .mirage-map-card[aria-pressed="true"] .mirage-map-check { background: #ffdb87; color: #302232; }
@@ -772,41 +789,43 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-mode-picker button:focus-visible, .mirage-map-card:focus-visible { outline: 2px solid #fff1c9; outline-offset: 3px; }
 @media (hover: hover) {
   .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled) { transform: translateY(-2px); border-color: #f6cd72; }
+  .mirage-map-card:hover:not(:disabled) .mirage-map-art { transform: scale(1.055); }
 }
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .mirage-intro-overlay { padding: 16px 12px; }
   .mirage-intro-overlay h2 { font-size: 22px; margin: 6px 0 10px; }
-  .mirage-mode-picker { grid-template-columns: 1fr; gap: 7px; margin-bottom: 12px; }
-  .mirage-mode-picker button { flex-direction: row; align-items: center; min-height: 68px; padding: 10px 8px; gap: 7px; }
-  .mirage-mode-copy { padding-right: 14px; }
-  .mirage-mode-symbol { width: 24px; font-size: 22px; }
+  /* Quatre modes : deux par rangée, sinon la pile de cartes repousse le terrain hors de l'écran. */
+  .mirage-mode-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-bottom: 12px; }
+  .mirage-mode-picker button { display: flex; flex-direction: row; align-items: center; min-height: 68px; padding: 10px 8px; gap: 7px; }
+  .mirage-mode-copy { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding-right: 14px; }
+  .mirage-mode-copy strong { padding-right: 0; }
+  .mirage-mode-symbol { width: 24px; height: 38px; border-radius: 8px; font-size: 22px; }
   .mirage-mode-copy strong { font-size: 13px; }
   .mirage-mode-copy > span { font-size: 10px; }
   .mirage-mode-copy small { font-size: 8px; }
   .mirage-stage-picker { gap: 6px; }
-  .mirage-map-art { height: 60px; }
-  .mirage-map-copy { padding: 8px 6px; }
-  .mirage-map-copy strong { font-size: 10px; line-height: 1.4; min-height: 28px; }
-  .mirage-map-copy > span { font-size: 9px; min-height: 24px; }
-  .mirage-map-copy small { font-size: 7px; min-height: 18px; }
-  .mirage-map-selected { padding: 5px 6px; font-size: 6px; letter-spacing: .06em; }
+  .mirage-stage-picker > .mirage-map-card { flex-basis: calc((100% - 12px) / 3); }
+  .mirage-map-visual { height: 42px; }
+  .mirage-map-number { top: 4px; left: 5px; font-size: 7px; }
+  .mirage-map-check { top: 4px; right: 4px; width: 15px; height: 15px; font-size: 9px; }
+  .mirage-map-copy { padding: 4px 5px; gap: 1px; }
+  .mirage-map-copy strong { font-size: 9px; line-height: 1.3; min-height: 0; }
+  .mirage-map-copy > span { font-size: 8px; min-height: 0; }
+  .mirage-map-copy small { font-size: 6.5px; min-height: 0; }
+  .mirage-map-selected { padding: 3px 6px; font-size: 6px; letter-spacing: .06em; }
   .mirage-picker-label { font-size: 7px; letter-spacing: .07em; }
   .mirage-intro-overlay > p { font-size: 11px; margin: 8px 0 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mirage-mode-picker button, .mirage-map-card { transition: none; }
-  .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled) { transform: none; }
+  .mirage-mode-picker button, .mirage-map-card, .mirage-map-art { transition: none; }
+  .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled),
+  .mirage-map-card:hover:not(:disabled) .mirage-map-art { transform: none; }
 }
 
 /* Top mode switcher tabs */
-/* Ne contenait les onglets RUÉE / DUEL / EN LIGNE en plus du record ; les
-   onglets ont été supprimés, il ne reste que le bloc record. */
-.mirage-heading-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0;
-}
+/* Le conteneur `.mirage-heading-right` n’existait que pour le bloc record
+   de l’en-tête (supprimé) : ses styles ont été retirés. Les onglets de mode
+   ci-dessous restent utilisés par le lobby « Mirage En Ligne ». */
 .mirage-mode-tabs {
   display: inline-flex;
   align-items: center;
@@ -2003,6 +2022,100 @@ img.mirage-powerup-icon {
   box-shadow: 0 0 12px color-mix(in srgb, var(--mirage-power) 75%, transparent);
   filter: brightness(1.15);
 }
+
+/* ── Manette tactile : objets spéciaux en losange (droite) ─────────────── */
+/* Les quatre objets spéciaux sont disposés comme les boutons de face d'une
+   manette : bouclier en haut, lasso à gauche, turbo à droite, pistolet en bas,
+   le tout ancré en bas à droite de l'écran de jeu. */
+.mirage-powerup-bar.is-gamepad {
+  left: auto;
+  right: 18px;
+  bottom: 18px;
+  transform: none;
+  align-items: flex-end;
+}
+
+.mirage-powerup-diamond {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(3, auto);
+  gap: 8px;
+  place-items: center;
+}
+.mirage-powerup-btn.pos-top { grid-column: 2; grid-row: 1; }
+.mirage-powerup-btn.pos-left { grid-column: 1; grid-row: 2; }
+.mirage-powerup-btn.pos-right { grid-column: 3; grid-row: 2; }
+.mirage-powerup-btn.pos-bottom { grid-column: 2; grid-row: 3; }
+
+/* Boutons compacts pour tenir dans le losange. */
+.mirage-powerup-btn.is-diamond {
+  min-width: 0;
+  width: 96px;
+  padding: 7px 8px 8px;
+  gap: 4px;
+  border-radius: 14px;
+}
+
+/* ── Manette tactile : croix directionnelle (gauche) ──────────────────── */
+/* Flèches gauche · haut · droite ancrées en bas à gauche de l'écran, la
+   flèche du haut au centre au-dessus des deux autres, comme une croix. */
+.mirage-touch-dpad {
+  position: absolute;
+  z-index: 4;
+  left: 18px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  grid-template-rows: repeat(2, 58px);
+  gap: 8px;
+  place-items: center;
+}
+.mirage-dpad-btn.is-up { grid-column: 2; grid-row: 1; }
+.mirage-dpad-btn.is-left { grid-column: 1; grid-row: 2; }
+.mirage-dpad-btn.is-right { grid-column: 3; grid-row: 2; }
+
+.mirage-dpad-btn {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 220, 153, .34);
+  background: linear-gradient(180deg, #3b2d5e 0%, #261b40 50%, #180f2b 100%);
+  color: #fff0d5;
+  font: 800 26px var(--font-gaming);
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    inset 0 -8px 12px rgba(0, 0, 0, .3),
+    0 4px 0 #0d0819,
+    0 10px 18px rgba(0, 0, 0, .45);
+  transition: transform .12s, box-shadow .12s, background .12s;
+}
+.mirage-dpad-btn.is-up {
+  color: #f7bcd9;
+  border-color: rgba(242, 119, 169, .42);
+}
+.mirage-dpad-btn:hover {
+  transform: translateY(-2px);
+}
+.mirage-dpad-btn:active {
+  transform: translateY(3px);
+  background: linear-gradient(180deg, #4a396f 0%, #221537 100%);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, .45),
+    0 1px 0 #0d0819,
+    0 4px 10px rgba(0, 0, 0, .5);
+}
+.mirage-dpad-btn:focus-visible {
+  outline: 2px solid #ffdb76;
+  outline-offset: 3px;
+}
+
 .mirage-power-toast {
   position: absolute;
   z-index: 5;
@@ -2047,10 +2160,6 @@ img.mirage-powerup-icon {
 }
 
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
-  .mirage-heading-right {
-    align-items: flex-start;
-    width: 100%;
-  }
   /* Toujours utilisés par le lobby « Mirage En Ligne » (MirageOnline.jsx). */
   .mirage-mode-tabs {
     width: 100%;
@@ -2077,6 +2186,50 @@ img.mirage-powerup-icon {
     width: calc(100% - 16px);
     max-width: 390px;
   }
+  /* Manette tactile : le losange s'ancre à droite, la croix à gauche.
+     Les deux blocs sont remontés au-dessus de la zone gestuelle du téléphone
+     (barre de navigation Android, indicateur d'accueil iOS) : collés au bord
+     (`bottom: 8px`), les flèches passaient sous le geste système et le pouce
+     les atteignait mal. `env(safe-area-inset-bottom)` ajoute la réserve
+     propre aux écrans à encoche quand le navigateur la connaît (dans l'APK,
+     les marges sont déjà retirées par la WebView : la valeur vaut 0 et la
+     hauteur relative suffit). */
+  .mirage-powerup-bar.is-gamepad {
+    right: 8px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(18px, 4.5vh, 40px));
+    width: auto;
+    max-width: none;
+  }
+  .mirage-powerup-diamond {
+    gap: 4px;
+  }
+  .mirage-powerup-btn.is-diamond {
+    width: 64px;
+    padding: 4px 4px 5px;
+    gap: 3px;
+  }
+  .mirage-touch-dpad {
+    left: 6px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(18px, 4.5vh, 40px));
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(2, 44px);
+    gap: 6px;
+  }
+  /* Plein écran de jeu (mobile & application, classe `is-immersive`) : la
+     coquille occupe tout l'écran, donc le bas de la piste est collé au geste
+     système — les commandes remontent d'un cran de plus. */
+  .mirage-game-shell.is-immersive .mirage-touch-dpad,
+  .mirage-game-shell.is-immersive .mirage-powerup-bar.is-gamepad {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(26px, 6.5vh, 58px));
+  }
+  .mirage-dpad-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+  .mirage-powerup-bar.is-gamepad {
+    right: 6px;
+  }
   .mirage-powerup-buttons-row {
     width: 100%;
     gap: 6px;
@@ -2085,6 +2238,10 @@ img.mirage-powerup-icon {
     flex: 1;
     min-width: 0;
     padding: 6px 6px 8px;
+  }
+  /* Le losange l'emporte sur l'étirement plein largeur du bouton. */
+  .mirage-powerup-btn.is-diamond {
+    flex: none;
   }
   .mirage-powerup-icon {
     flex-basis: 26px;
@@ -2334,7 +2491,7 @@ img.mirage-powerup-icon {
 .mirage-cup-card-title span { font-size: 11px; color: #ead7c7; }
 .mirage-cup-route { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
 .mirage-cup-stop { position: relative; display: flex; flex-direction: column; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .09); background: #251c29; }
-.mirage-cup-stop .mirage-map-art { height: 62px; border-radius: 9px 9px 0 0; }
+.mirage-cup-stop .mirage-map-visual { height: 62px; border-radius: 9px 9px 0 0; }
 .mirage-cup-stop-number {
   position: absolute; top: 6px; left: 6px; padding: 3px 6px; border-radius: 5px;
   background: rgba(33, 24, 38, .74); backdrop-filter: blur(4px); color: #ffdb87; font: 800 8px var(--mono); letter-spacing: .1em;
@@ -2566,7 +2723,7 @@ img.mirage-powerup-icon {
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .mirage-cup-card { padding: 11px; gap: 10px; }
   .mirage-cup-route { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .mirage-cup-stop .mirage-map-art { height: 48px; }
+  .mirage-cup-stop .mirage-map-visual { height: 48px; }
   .mirage-cup-stop strong { padding: 6px 6px 7px; font-size: 8px; }
   .mirage-cup-stop-number { font-size: 6px; padding: 2px 4px; }
   .mirage-cup-stop + .mirage-cup-stop::before { left: -12px; width: 12px; top: 12px; font-size: 16px; }

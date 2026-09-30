@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'reac
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useFriends } from '../friends/FriendsContext';
-import { AddTab, FriendsTab, RequestsTab } from '../friends/FriendsTabs';
+import { AddTab, RequestsTab } from '../friends/FriendsTabs';
 import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy';
 import { useMessages } from './MessagesContext';
 import { useCalls } from './CallsContext';
@@ -17,11 +17,13 @@ import { socialText } from '../social/socialCopy';
  * Page sociale — `/messages` (liste) et `/messages/:peerId`
  * (discussion ouverte ; alias `/messagerie`).
  * ----------------------------------------------------------------------
- * Sur mobile, TOUTE la fenêtre sociale (amis + demandes + ajouter +
- * messagerie) vit sur cette page — pas de pop-up : plein écran, de grands
- * appuis, un vrai bouton retour (qui ramène à la page précédente, pas
- * « derrière » un overlay), et les onglets Amis / Demandes / Ajouter /
- * Messages permettent de naviguer sans être piégé.
+ * Sur mobile, TOUTE la fenêtre sociale (messages + demandes + ajouter) vit
+ * sur cette page — pas de pop-up : plein écran, de grands appuis, un vrai
+ * bouton retour (qui ramène à la page précédente, pas « derrière » un
+ * overlay), et les onglets Messages / Demandes / Ajouter permettent de
+ * naviguer sans être piégé. La liste des amis n'a plus d'onglet propre :
+ * elle vit dans la boîte de réception (l'ancien onglet « Amis » et la liste
+ * des discussions étaient redondants).
  *
  * Sur bureau, la page garde son affichage deux-colonnes (liste à gauche,
  * fil à droite) qui reste praticable au clavier et partageable par URL ;
@@ -53,16 +55,6 @@ function BackIcon({ size = 20 }) {
   );
 }
 
-function PeopleIcon({ size = 15 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="9" cy="8" r="3.2" />
-      <path d="M2.5 19c.7-3.2 3.2-4.8 6.5-4.8s5.8 1.6 6.5 4.8" />
-      <circle cx="17" cy="9" r="2.5" />
-      <path d="M15 15c2.5-.3 4.5 1 5.5 4" />
-    </svg>
-  );
-}
 
 export default function MessagesPage() {
   const { peerId } = useParams();
@@ -78,10 +70,12 @@ export default function MessagesPage() {
   const ft = friendsText(lang);
   const st = socialText(lang);
 
-  // Onglet actif (lecture depuis ?tab=friends|requests|add|messages).
-  // Quand un fil est ouvert (peerId), on est implicitement sur Messages.
+  // Onglet actif (lecture depuis ?tab=requests|add ; « messages » par
+  // défaut). L'ancien ?tab=friends retombe sur Messages : la liste des amis
+  // vit désormais dans la boîte de réception. Quand un fil est ouvert
+  // (peerId), on est implicitement sur Messages.
   const rawTab = searchParams.get('tab') || 'messages';
-  const activeTab = peerId ? 'messages' : (['friends', 'requests', 'add', 'messages'].includes(rawTab) ? rawTab : 'messages');
+  const activeTab = peerId ? 'messages' : (['requests', 'add', 'messages'].includes(rawTab) ? rawTab : 'messages');
 
   const {
     enabled: messagesEnabled, mode, status, error, conversations, blockedConversations, unreadTotal,
@@ -92,8 +86,8 @@ export default function MessagesPage() {
   const {
     enabled: friendsEnabled, status: friendsStatus, error: friendsError,
     friends: friendsList, incoming, outgoing, onlineCount, pendingCount,
-    accept, decline, cancel, unfriend, search, isOnline, relationWith,
-    refresh: refreshFriends, openThread: friendsOpenThread,
+    accept, decline, cancel, search, isOnline, relationWith,
+    refresh: refreshFriends,
   } = friends;
 
   const enabled = messagesEnabled || friendsEnabled;
@@ -215,50 +209,43 @@ export default function MessagesPage() {
     messagesBody = (
       <InboxView
         t={t}
+        ft={ft}
+        friends={friendsList}
         lang={lang}
         conversations={conversations}
         blocked={blockedConversations}
         isOnline={friends.isOnline}
+        profileLabel={ft.profileShort}
         onOpen={openConversation}
         onUnblock={unblock}
       />
     );
   }
 
-  // Listes d'amis.
-  let friendsBody;
-  if (friendsStatus === 'unavailable') {
-    friendsBody = <p className="friends-empty friends-unavailable">{ft.unavailable}</p>;
-  } else if (friendsStatus === 'loading' || friendsStatus === 'idle') {
-    friendsBody = <p className="friends-empty" aria-busy="true">{ft.loading}</p>;
-  } else if (friendsStatus === 'error' && friendsList.length === 0) {
-    friendsBody = null; // handled below by falling back to messages
-  } else if (activeTab === 'requests') {
-    friendsBody = <RequestsTab incoming={incoming} outgoing={outgoing} t={ft} lang={lang} accept={accept} decline={decline} cancel={cancel} />;
-  } else if (activeTab === 'add') {
-    friendsBody = <AddTab t={ft} lang={lang} search={search} isOnline={isOnline} relationWith={relationWith} />;
-  } else if (activeTab === 'friends') {
-    friendsBody = (
-      <FriendsTab
-        friends={friendsList}
-        t={ft}
-        lang={lang}
-        unfriend={unfriend}
-        onOpenThread={openConversation}
-        chatLabel={t.openChat}
-        profileLabel={ft.profileShort}
-      />
-    );
+  // Listes d'amis (onglets Demandes / Ajouter uniquement : la liste des amis
+  // elle-même vit dans la boîte de réception, ci-dessus).
+  let friendsBody = null;
+  if (activeTab === 'requests' || activeTab === 'add') {
+    if (friendsStatus === 'unavailable') {
+      friendsBody = <p className="friends-empty friends-unavailable">{ft.unavailable}</p>;
+    } else if (friendsStatus === 'loading' || friendsStatus === 'idle') {
+      friendsBody = <p className="friends-empty" aria-busy="true">{ft.loading}</p>;
+    } else if (friendsStatus === 'error' && friendsList.length === 0) {
+      friendsBody = null; // handled below by falling back to messages
+    } else if (activeTab === 'requests') {
+      friendsBody = <RequestsTab incoming={incoming} outgoing={outgoing} t={ft} lang={lang} accept={accept} decline={decline} cancel={cancel} />;
+    } else {
+      friendsBody = <AddTab t={ft} lang={lang} search={search} isOnline={isOnline} relationWith={relationWith} />;
+    }
   }
 
   const tabs = [
-    { id: 'friends', label: ft.tabFriends, count: friendsList.length, icon: <PeopleIcon size={13} /> },
+    { id: 'messages', label: t.title, count: unreadTotal, alert: unreadTotal > 0, icon: <LetsTalkMark className="social-page-tab-mark" /> },
     { id: 'requests', label: ft.tabRequests, count: pendingCount, alert: pendingCount > 0 },
     { id: 'add', label: ft.tabAdd },
-    { id: 'messages', label: t.title, count: unreadTotal, alert: unreadTotal > 0, icon: <LetsTalkMark className="social-page-tab-mark" /> },
   ];
 
-  const pageTitle = activeTab === 'messages' ? t.title : ft.tabFriends;
+  const pageTitle = activeTab === 'messages' ? t.title : activeTab === 'requests' ? ft.tabRequests : ft.tabAdd;
 
   return (
     <section className="messages-page social-page">
@@ -297,8 +284,8 @@ export default function MessagesPage() {
         </header>
 
         {/* Onglets sociaux — toujours visibles sur la page, permettant
-            de naviguer entre Amis / Demandes / Ajouter / Messages sans
-            jamais être « piégé » dans un onglet. */}
+            de naviguer entre Messages / Demandes / Ajouter sans jamais
+            être « piégé » dans un onglet. */}
         <nav className="social-page-tabs" aria-label={pageTitle}>
           {tabs.map((item) => {
             const isActive = activeTab === item.id && !peerId;

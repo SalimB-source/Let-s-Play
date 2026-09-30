@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCourse, jumpHeight, CRYSTALS, LANES, LANE_COUNT, seededRandom } from '../src/games/mirageRules.js';
+import { createCourse, jumpHeight, CRYSTALS, LANES, laneCount, seededRandom } from '../src/games/mirageRules.js';
 
 test('encounters remain varied and traversable over 1000 rows', () => {
   let seed = 42;
@@ -14,20 +14,20 @@ test('encounters remain varied and traversable over 1000 rows', () => {
     patterns.add(row.pattern);
     assert.ok(row.gap >= 18 && row.gap <= 25);
     const cacti = row.items.filter(item => item.kind === 'cactus');
-    assert.ok(cacti.length < LANE_COUNT);
+    assert.ok(cacti.length < laneCount());
     assert.ok(LANES.some((_, lane) => !cacti.some(item => item.lane === lane)));
     for (const item of row.items) {
-      assert.ok(item.lane >= 0 && item.lane < LANE_COUNT);
+      assert.ok(item.lane >= 0 && item.lane < laneCount());
       if (item.kind === 'barrier') {
         assert.equal(item.lanes.length, 2);
-        assert.ok(item.lanes.every(l => l >= 0 && l < LANE_COUNT));
+        assert.ok(item.lanes.every(l => l >= 0 && l < laneCount()));
         assert.equal(item.lanes[1] - item.lanes[0], 1);
         assert.ok(item.lanes.every(l => !cacti.some(c => c.lane === l)));
       }
       if (item.kind === 'crystal') assert.ok(CRYSTALS[item.tier]);
     }
     if (row.pattern === 'jump') {
-      assert.equal(cacti.length, LANE_COUNT - 2);
+      assert.equal(cacti.length, laneCount() - 2);
       assert.ok(row.items.some(item => item.kind === 'crystal' && item.raised && item.tier >= 2));
     }
   }
@@ -43,45 +43,45 @@ test('jump requires actual clearance, not simply a pressed button', () => {
   assert.deepEqual(CRYSTALS.map(c => c.value), [100, 150, 200, 250]);
 });
 
-test('duel speed is capped, collision can slow down and gems boost equally', async () => {
-  const { DUEL_BASE_SPEED, DUEL_SPEED_BONUS, DIAMOND_SPEED_BONUS, duelSpeed, ghostDistance, DUEL_DISTANCE, seededRandom } = await import('../src/games/mirageRules.js');
-  assert.deepEqual(DUEL_SPEED_BONUS, [DIAMOND_SPEED_BONUS, DIAMOND_SPEED_BONUS, DIAMOND_SPEED_BONUS, DIAMOND_SPEED_BONUS]);
-  assert.equal(duelSpeed(DUEL_BASE_SPEED, DUEL_SPEED_BONUS[3]), DUEL_BASE_SPEED + DIAMOND_SPEED_BONUS);
-  assert.equal(duelSpeed(8, -50), 8);
-  assert.equal(duelSpeed(25, 8), 26);
+test('duel speed is capped, collisions slow down, and each gem color has its own multiplier', async () => {
+  const { DUEL_BASE_SPEED, DIAMOND_SPEED_MULTIPLIERS, duelSpeed, ghostDistance, DUEL_DISTANCE, seededRandom } = await import('../src/games/mirageRules.js');
+  assert.deepEqual(DIAMOND_SPEED_MULTIPLIERS, [1.3, 1.4, 1.2, 1.3]);
+  assert.equal(duelSpeed(DUEL_BASE_SPEED, DIAMOND_SPEED_MULTIPLIERS[3]), DUEL_BASE_SPEED * 1.3);
+  assert.equal(duelSpeed(8, 1), 8);
+  assert.equal(duelSpeed(25, 1.5), 26);
   assert.equal(ghostDistance([0, 7, 15, DUEL_DISTANCE], 0.25, 1.3), 3.5);
   assert.ok(ghostDistance([0, 7, 15, DUEL_DISTANCE], 1.2, 1.3) < DUEL_DISTANCE);
   assert.equal(ghostDistance([0, 7, 15, DUEL_DISTANCE], 1.3, 1.3), DUEL_DISTANCE);
   assert.deepEqual(Array.from({length: 5}, seededRandom(12)), Array.from({length: 5}, seededRandom(12)));
 });
 
-test('a speed bonus burns for one second and never stacks', async () => {
-  const { speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, SPEED_BOOST_DURATION, DUEL_SPEED_BONUS, DUEL_BASE_SPEED, duelSpeed } = await import('../src/games/mirageRules.js');
+test('a color-specific speed multiplier lasts one second and never stacks', async () => {
+  const { speedBoostFor, tickSpeedBoost, SPEED_BOOST_NONE, SPEED_BOOST_DURATION, DIAMOND_SPEED_MULTIPLIERS, DUEL_BASE_SPEED, duelSpeed } = await import('../src/games/mirageRules.js');
   assert.equal(SPEED_BOOST_DURATION, 1);
-  assert.deepEqual(speedBoostFor(2), { bonus: DUEL_SPEED_BONUS[2], left: 1 });
-  // inside the window the burst runs at full strength, then it is gone outright (no slow decay)
+  assert.deepEqual(speedBoostFor(2), { multiplier: 1.2, left: 1 });
+  // Blue=1.3x, red=1.4x, green=1.2x, yellow=1.3x.
+  assert.deepEqual(DIAMOND_SPEED_MULTIPLIERS, [1.3, 1.4, 1.2, 1.3]);
   let boost = tickSpeedBoost(speedBoostFor(1), 0.4);
-  assert.deepEqual(boost, { bonus: DUEL_SPEED_BONUS[1], left: 0.6 });
-  assert.equal(duelSpeed(DUEL_BASE_SPEED, boost.bonus), DUEL_BASE_SPEED + DUEL_SPEED_BONUS[1]);
+  assert.deepEqual(boost, { multiplier: 1.4, left: 0.6 });
+  assert.equal(duelSpeed(DUEL_BASE_SPEED, boost.multiplier), DUEL_BASE_SPEED * 1.4);
   boost = tickSpeedBoost(boost, 0.6);
   assert.deepEqual(boost, SPEED_BOOST_NONE);
-  assert.equal(duelSpeed(DUEL_BASE_SPEED, boost.bonus), DUEL_BASE_SPEED);
-  // picking up again mid-burst restarts the window at the new gem's value: nothing is summed or carried over
+  assert.equal(duelSpeed(DUEL_BASE_SPEED, boost.multiplier), DUEL_BASE_SPEED);
+  // Picking up again mid-burst restarts the window at the new gem's value.
   const fading = tickSpeedBoost(speedBoostFor(2), 0.75);
-  assert.deepEqual(fading, { bonus: DUEL_SPEED_BONUS[2], left: 0.25 });
-  assert.deepEqual(speedBoostFor(0), { bonus: DUEL_SPEED_BONUS[0], left: SPEED_BOOST_DURATION });
-  assert.ok(speedBoostFor(0).bonus < fading.bonus + DUEL_SPEED_BONUS[0]);
-  // even a perfect gold-every-frame run cannot compound past a single burst
+  assert.deepEqual(fading, { multiplier: 1.2, left: 0.25 });
+  assert.deepEqual(speedBoostFor(0), { multiplier: 1.3, left: SPEED_BOOST_DURATION });
+  // Even repeated gems do not compound beyond one color's multiplier.
   let chained = SPEED_BOOST_NONE;
   let peak = 0;
   for (let i = 0; i < 60; i++) {
     chained = speedBoostFor(2);
-    peak = Math.max(peak, duelSpeed(DUEL_BASE_SPEED, chained.bonus));
+    peak = Math.max(peak, duelSpeed(DUEL_BASE_SPEED, chained.multiplier));
     chained = tickSpeedBoost(chained, 1 / 60);
   }
-  assert.equal(peak, DUEL_BASE_SPEED + DUEL_SPEED_BONUS[2]);
+  assert.equal(peak, DUEL_BASE_SPEED * 1.2);
   assert.deepEqual(tickSpeedBoost(SPEED_BOOST_NONE, 0.5), SPEED_BOOST_NONE);
-  assert.deepEqual(SPEED_BOOST_NONE, { bonus: 0, left: 0 });
+  assert.deepEqual(SPEED_BOOST_NONE, { multiplier: 1, left: 0 });
 });
 
 test('share link roundtrips and rejects malformed challenge', async () => {
@@ -135,6 +135,26 @@ test('alger (Alger la Blanche) stage is retained in challenge links and online r
   const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Casbah', stage: 'alger' };
   assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'alger');
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'atlantis' })).stage, undefined);
+});
+
+test('ramparts (Remparts d’Ocre) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Rush B', stage: 'ramparts' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'ramparts');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
+});
+
+test('infinity (Château de l’Infini) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Nakime', stage: 'infinity' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'infinity');
+});
+
+test('airbase (Thunder Airbase) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Guile', stage: 'airbase' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'airbase');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
 });
 
 test('cowboy cry fires only on each fifth consecutive pickup, and resets on a miss or crash', async () => {
@@ -195,11 +215,12 @@ test('airborne player cannot change lanes or drift, and can move on landing', as
 });
 
 test('special items charge costs and definition are properly configured', async () => {
-  const { POWER_UP_CHARGE_COST, POWER_UPS, POWER_UP_MAX_CHARGES, DIAMOND_CHARGE_VALUE, DIAMOND_POWER_CHARGE, POWER_BOOST_DURATION, POWER_BOOST_BONUS } = await import('../src/games/mirageRules.js');
-  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.SHIELD], 10);
+  const { POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_UPS, POWER_UP_MAX_CHARGES, DIAMOND_CHARGE_VALUE, DIAMOND_POWER_CHARGE, POWER_BOOST_DURATION, POWER_BOOST_BONUS } = await import('../src/games/mirageRules.js');
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.SHIELD], 8);
   assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.LASSO], 10);
   assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.PISTOL], 12, 'Pistol takes more diamonds to charge than shield, lasso, and boost');
-  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.BOOST], 10);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.BOOST], 8);
+  assert.deepEqual(POWER_UP_DIAMOND_COST, { shield: 4, lasso: 5, pistol: 6, boost: 4 });
   assert.equal(POWER_BOOST_DURATION, 3);
   assert.ok(POWER_BOOST_BONUS > 0);
   assert.equal(POWER_UP_MAX_CHARGES, 3);
@@ -222,10 +243,10 @@ test('special items charge costs and definition are properly configured', async 
 });
 test('four lanes are centred, evenly spaced, and traversable in both directions', async () => {
   const { playerLaneAfterAction } = await import('../src/games/mirageRules.js');
-  assert.equal(LANE_COUNT, 4);
+  assert.equal(laneCount(), 4);
   assert.equal(LANES[0] + LANES[3], 0);
   assert.equal(LANES[1] + LANES[2], 0);
-  for (let lane = 1; lane < LANE_COUNT; lane++) {
+  for (let lane = 1; lane < laneCount(); lane++) {
     assert.ok(Math.abs(LANES[lane] - LANES[lane - 1] - 2.1) < 1e-10);
   }
   let lane = 0;
@@ -335,7 +356,7 @@ test('a collected diamond shatters into spread-out shards that settle back to no
 
 test('diamonds give speed boost without traps, green diamond gives 200 points', async () => {
   const rules = await import('../src/games/mirageRules.js');
-  const { CRYSTALS, crystalPickupEffect, DUEL_SPEED_BONUS } = rules;
+  const { CRYSTALS, crystalPickupEffect, DIAMOND_SPEED_MULTIPLIERS } = rules;
 
   // Green diamond is between Red and Gold
   const green = CRYSTALS[2];
@@ -355,15 +376,15 @@ test('diamonds give speed boost without traps, green diamond gives 200 points', 
   for (let tier = 0; tier < CRYSTALS.length; tier += 1) {
     const effect = crystalPickupEffect(tier);
     assert.equal(effect.trap, false, 'traps are removed');
-    assert.equal(effect.boost.bonus, DUEL_SPEED_BONUS[tier]);
+    assert.equal(effect.boost.multiplier, DIAMOND_SPEED_MULTIPLIERS[tier]);
     assert.equal(effect.slowDuration, 0);
   }
 });
 
-test('pistol odds follow the race position, the shot rider stays down for 2 seconds before remounting, and taken diamonds reappear after 0.5s', async () => {
+test('pistol odds follow the race position, the shot rider stays down for 2.5 seconds before remounting, and taken diamonds reappear after 0.5s', async () => {
   const { powerUpOdds, stunPose, nearestRider, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, markGemTaken, isGemHidden } = await import('../src/games/mirageRules.js');
   assert.deepEqual([1, 2, 3, 4].map(rank => powerUpOdds(rank).pistol), [0, 0.05, 0.15, 0.3]);
-  assert.equal(PISTOL_STUN_DURATION, 2);
+  assert.equal(PISTOL_STUN_DURATION, 2.5);
   assert.deepEqual(stunPose(0), { x: 0, y: 0, roll: 0, pitch: 0 });
   assert.ok(stunPose(1.2).y < -0.9); // on the sand
   assert.ok(stunPose(0.6).y < -0.9); // still on the sand before remounting
@@ -391,10 +412,10 @@ test('each diamond color charges its dedicated power-up (blue=shield, yellow=las
     powerUpHudState,
   } = await import('../src/games/mirageRules.js');
 
-  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.SHIELD], 10);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.SHIELD], 8);
   assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.LASSO], 10);
   assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.PISTOL], 12);
-  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.BOOST], 10);
+  assert.equal(POWER_UP_CHARGE_COST[POWER_UPS.BOOST], 8);
 
   let state = createPowerUpState();
 
@@ -426,8 +447,7 @@ test('each diamond color charges its dedicated power-up (blue=shield, yellow=las
   assert.equal(powerUpHudState(state).pistolChargePoints, 2);
   assert.equal(powerUpHudState(state).boostChargePoints, 2);
 
-  // Collect 4 more Green diamonds (+8 -> 10): Boost becomes ready! Shield, Lasso and Pistol stay at 2
-  state = chargePowerUps(state, 2).state;
+  // Collect 2 more Green diamonds (+4 -> 8): Boost becomes ready! Shield, Lasso and Pistol stay at 2
   state = chargePowerUps(state, 2).state;
   state = chargePowerUps(state, 2).state;
   const boostReadyStep = chargePowerUps(state, 2);
@@ -492,9 +512,9 @@ test('duel mode has 3 AI rivals that spread across lanes and use their powers wh
   assert.equal(afterUse.used, true);
   assert.deepEqual(afterUse.state, createPowerUpState());
 
-  // Charge an NPC's Boost with 5 green diamonds (tier 2)
+  // Charge an NPC's Boost with 4 green diamonds (tier 2)
   let npcBoostPower = createPowerUpState();
-  for (let i = 0; i < 5; i += 1) npcBoostPower = chargePowerUps(npcBoostPower, 2).state;
+  for (let i = 0; i < 4; i += 1) npcBoostPower = chargePowerUps(npcBoostPower, 2).state;
   assert.equal(npcBoostPower.boostCharges, 1);
   const boostDecision = chooseNpcPowerAction(
     { dist: 120, stunTimer: 0, powerCooldown: 0, shieldActive: false, powerBoostTimer: 0, powerState: npcBoostPower },
@@ -553,7 +573,7 @@ test('shield and boost fire on their own once their bar is full, lasso and pisto
   // Tier 0 (blue) diamonds fill the shield bar: the charge lands on the very diamond that completes it.
   let shieldState = createPowerUpState();
   let shieldCharged = [];
-  for (let i = 0; i < 5; i += 1) {
+  for (let i = 0; i < 4; i += 1) {
     const res = chargePowerUps(shieldState, 0);
     shieldState = res.state;
     shieldCharged = res.charged;
@@ -565,7 +585,7 @@ test('shield and boost fire on their own once their bar is full, lasso and pisto
   // Tier 2 (green) diamonds fill the boost bar the same way.
   let boostState = createPowerUpState();
   let boostCharged = [];
-  for (let i = 0; i < 5; i += 1) {
+  for (let i = 0; i < 4; i += 1) {
     const res = chargePowerUps(boostState, 2);
     boostState = res.state;
     boostCharged = res.charged;
@@ -633,7 +653,7 @@ test('mud puddles spawn occasionally, slow down the mount on the ground, can be 
     createCourse,
     seededRandom,
     LANES,
-    LANE_COUNT,
+    laneCount,
     MUD_SLOW_DURATION,
     MUD_SLOW_FACTOR,
     MUD_JUMP_CLEARANCE,
@@ -654,7 +674,7 @@ test('mud puddles spawn occasionally, slow down the mount on the ground, can be 
     if (muds.length > 0) {
       mudRows += 1;
       assert.equal(muds.length, 1, 'at most one mud puddle per row');
-      assert.ok(muds[0].lane >= 0 && muds[0].lane < LANE_COUNT);
+      assert.ok(muds[0].lane >= 0 && muds[0].lane < laneCount());
       // Every row with mud still leaves at least one clean non-cactus, non-mud lane
       assert.ok(
         LANES.some((_, lane) => !row.items.some((it) => (it.kind === 'cactus' || it.kind === 'mud') && it.lane === lane)),

@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MirageCharacterPortrait from './MirageCharacterPortrait';
+import MirageSkinPreview from './MirageSkinPreview';
+import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import MiragePowerIcon from './MiragePowerIcon';
 import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
 import { Link } from 'react-router-dom';
@@ -14,7 +16,7 @@ import {
   serverOffset,
   subscribeRoomUpdates,
 } from './mirageRooms';
-import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_BOOST_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
+import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
 
 const characters = CHARACTER_NAMES;
@@ -26,6 +28,9 @@ const STAGE_LABELS = {
   sardinia: 'Costa Omertà',
   alger: 'Alger la Blanche',
   japan: 'Plaines de Yōtei',
+  ramparts: 'Remparts d’Ocre',
+  infinity: 'Château de l’Infini',
+  airbase: 'Thunder Airbase',
 };
 
 const QUICK_MESSAGES = [
@@ -249,6 +254,12 @@ export default function MirageOnline({
       unsub();
     };
   }, [room?.code, fetchRoomsList]);
+
+  // Les aperçus 3D des personnages se figent pendant la course (GPU réservé au jeu).
+  useEffect(() => {
+    setMirageSkinPreviewsPaused(active);
+    return () => setMirageSkinPreviewsPaused(false);
+  }, [active]);
 
   // Poll active room state while inside a room
   useEffect(() => {
@@ -553,6 +564,9 @@ export default function MirageOnline({
                         <option value="sardinia">04 · Costa Omertà (Sardaigne)</option>
                         <option value="alger">05 · Alger la Blanche (Alger)</option>
                         <option value="japan">06 · Plaines de Yōtei (Mont Fuji · Nuit)</option>
+                        <option value="ramparts">07 · Remparts d’Ocre (hommage Counter-Strike)</option>
+                        <option value="infinity">08 · Château de l’Infini (hommage Demon Slayer)</option>
+                        <option value="airbase">09 · Thunder Airbase (hommage Street Fighter · Guile)</option>
                       </select>
                       <small>{DUEL_DISTANCE} mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>
@@ -806,7 +820,10 @@ export default function MirageOnline({
                       disabled={busy || room.status !== 'lobby'}
                       onClick={() => command('character', room.code, { p_character: index })}
                     >
-                      <MirageCharacterPortrait character={index} className="mirage-skin-portrait" decorative />
+                      {/* Aperçu 3D du personnage en rotation continue (même modèle qu'en course). */}
+                      <span className="mirage-skin-stage">
+                        <MirageSkinPreview palette={CHARACTER_PALETTES[index]} className="mirage-skin-model" />
+                      </span>
                       <span className="mirage-skin-name">{name.split(' · ')[0]}</span>
                       <small>{characterIndex === index ? 'PERSONNAGE CHOISI' : 'CHOISIR'}</small>
                     </button>
@@ -1099,12 +1116,14 @@ export default function MirageOnline({
                           }
                         }}
                         onLasso={async (targetPlayer) => {
-                          if (!room?.code || !targetPlayer) return;
+                          if (!room?.code || !targetPlayer) return null;
+                          let result = null;
                           try {
-                            await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                            result = await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
                           } catch {}
                           setPowerToast(`🪢 Lasso lancé sur ${targetPlayer.name} !`);
                           setTimeout(()=> setPowerToast(null), 2500);
+                          return result;
                         }}
                         onShield={async (isActive) => {
                           if (!room?.code) return;
@@ -1160,18 +1179,40 @@ export default function MirageOnline({
                         </div>
                       )}
                       {active && (
+                        <div className="mirage-touch-dpad" role="group" aria-label="Déplacements">
+                          <button
+                            type="button"
+                            className="mirage-dpad-btn is-up"
+                            onPointerDown={(e) => { e.preventDefault(); actions.current?.('jump'); }}
+                            aria-label="Sauter"
+                          >↑</button>
+                          <button
+                            type="button"
+                            className="mirage-dpad-btn is-left"
+                            onPointerDown={(e) => { e.preventDefault(); actions.current?.('left'); }}
+                            aria-label="Aller à gauche"
+                          >←</button>
+                          <button
+                            type="button"
+                            className="mirage-dpad-btn is-right"
+                            onPointerDown={(e) => { e.preventDefault(); actions.current?.('right'); }}
+                            aria-label="Aller à droite"
+                          >→</button>
+                        </div>
+                      )}
+                      {active && (
                         <div
-                          className="mirage-powerup-bar"
+                          className="mirage-powerup-bar is-gamepad"
                           role="group"
                           aria-label="Objets de puissance"
                         >
-                          <div className="mirage-powerup-buttons-row">
+                          <div className="mirage-powerup-diamond">
                             <button
                               type="button"
-                              className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              className={`mirage-powerup-btn is-diamond pos-top is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_shield')}
                               disabled={(hud.shieldCharges || 0) <= 0}
-                              title="Bouclier — Chargé par les diamants BLEUS, il s’active tout seul dès que la barre est pleine. Utiliser cet objet ne décharge pas les autres."
+                              title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
@@ -1193,10 +1234,10 @@ export default function MirageOnline({
 
                             <button
                               type="button"
-                              className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              className={`mirage-powerup-btn is-diamond pos-left is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_lasso')}
                               disabled={(hud.lassoCharges || 0) <= 0}
-                              title="Lasso (W / Z) — Chargé par les diamants JAUNES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
+                              title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
@@ -1218,10 +1259,10 @@ export default function MirageOnline({
 
                             <button
                               type="button"
-                              className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              className={`mirage-powerup-btn is-diamond pos-right is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_boost')}
                               disabled={(hud.boostCharges || 0) <= 0}
-                              title={`Turbo — Chargé par les diamants VERTS, il s’active tout seul dès que la barre est pleine : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                              title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s’active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
@@ -1243,10 +1284,10 @@ export default function MirageOnline({
 
                             <button
                               type="button"
-                              className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              className={`mirage-powerup-btn is-diamond pos-bottom is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_pistol')}
                               disabled={(hud.pistolCharges || 0) <= 0}
-                              title="Pistolet (R) — Chargé par les diamants ROUGES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
+                              title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
@@ -1270,14 +1311,6 @@ export default function MirageOnline({
                       )}
                     </div>
 
-                    {/* Le glissement sur la piste est lu par MirageWorld
-                        (mirageTouch.js) : ces boutons restent un recours pour
-                        qui préfère viser explicitement. */}
-                    <div className="mirage-mobile-controls">
-                      <button type="button" aria-label="Aller à gauche" onClick={() => actions.current?.('left')}>←</button>
-                      <button type="button" className="mirage-jump-control" aria-label="Sauter" onClick={() => actions.current?.('jump')}>SAUT ↑</button>
-                      <button type="button" aria-label="Aller à droite" onClick={() => actions.current?.('right')}>→</button>
-                    </div>
                   </section>
                 </div>
               </div>

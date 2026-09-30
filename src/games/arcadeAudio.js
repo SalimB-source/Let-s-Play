@@ -5,6 +5,9 @@ export const PRAIRIE_BPM = 126;
 export const SARDINIA_BPM = 92;
 export const ALGER_BPM = 104;
 export const JAPAN_BPM = 108;
+export const RAMPARTS_BPM = 128;
+export const INFINITY_BPM = 134;
+export const AIRBASE_BPM = 138;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
 
@@ -130,7 +133,7 @@ export class DesertGroove {
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : BPM) / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : this.stage === 'ramparts' ? RAMPARTS_BPM : this.stage === 'infinity' ? INFINITY_BPM : this.stage === 'airbase' ? AIRBASE_BPM : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -488,7 +491,251 @@ export class DesertGroove {
     }
   }
 
+  playRamparts(step, time) {
+    // Original « tactical desert » groove for Remparts d’Ocre, the de_dust2 homage: E Phrygian
+    // dominant (E F G# A B C D) over a four-on-the-floor pulse, offbeat bass,
+    // syncopated synth stabs and a Phrygian descent (D, C, B, back to E). Each
+    // eight-bar phrase opens with a radio click; in the second half the bomb
+    // is "planted" and its beep quickens toward the end of the loop. No
+    // existing Counter-Strike music or melody is quoted.
+    const beat = 60 / RAMPARTS_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const planted = phrase >= 8;
+    const roots = [82.41, 82.41, 87.31, 82.41, 73.42, 73.42, 65.41, 61.74];
+    const pads = [
+      [329.63, 493.88], [329.63, 493.88], [349.23, 523.25], [329.63, 493.88],
+      [293.66, 440.0], [293.66, 440.0], [261.63, 329.63], [246.94, 415.3],
+    ];
+    const stabs = [
+      [659.25, 698.46, 659.25, 587.33, 523.25, 493.88],
+      [493.88, 523.25, 587.33, 523.25, 493.88, 415.3],
+      [698.46, 659.25, 698.46, 830.61, 698.46, 659.25],
+      [659.25, 0, 587.33, 0, 659.25, 0],
+      [587.33, 659.25, 698.46, 659.25, 587.33, 523.25],
+      [523.25, 587.33, 523.25, 493.88, 440.0, 493.88],
+      [523.25, 493.88, 440.0, 415.3, 440.0, 493.88],
+      [415.3, 0, 493.88, 0, 329.63, 0],
+    ];
+    const stabSteps = [0, 3, 6, 8, 11, 14]; // syncope 3-3-2
+    const root = roots[bar];
+
+    // Kick on every beat, double clap on 2 and 4.
+    if (step % 4 === 0) {
+      this.tone(120, time, 0.1, 'sine', 0.36);
+      this.tone(50, time + 0.012, 0.15, 'sine', 0.26);
+    }
+    if (step === 4 || step === 12) {
+      this.noise(time, 0.08, 0.09, 1800);
+      this.noise(time + 0.014, 0.06, 0.06, 1200);
+    }
+    // Hi-hats: ticking sixteenths, an open hat on each offbeat eighth.
+    if (step % 2 === 1) this.noise(time, 0.02, 0.026, 8200);
+    if (step % 4 === 2) this.noise(time, 0.08, 0.034, 6200);
+
+    // Offbeat bass, with an octave ghost note before the snare.
+    if (step % 4 === 2) {
+      this.tone(root, time, beat * 0.42, 'sawtooth', 0.16, 480);
+      this.tone(root / 2, time, beat * 0.42, 'sine', 0.12);
+    }
+    if (step === 3 || step === 11) this.tone(root * 2, time, beat * 0.2, 'sawtooth', 0.06, 700);
+
+    // Pad: a sustained dyad under each bar, a little brighter once planted.
+    if (step === 0) pads[bar].forEach(note => this.tone(note, time, beat * 3.8, 'sawtooth', planted ? 0.036 : 0.027, 850));
+
+    // Synth stabs: soft plucks first, then saw + octave once the bomb is down.
+    const slot = stabSteps.indexOf(step);
+    const stab = slot >= 0 ? stabs[bar][slot] : 0;
+    if (stab && (planted || bar % 2 === 0 || slot < 3)) {
+      if (planted) {
+        this.tone(stab, time, beat * 0.32, 'sawtooth', 0.09, 2400);
+        this.tone(stab * 2, time + 0.008, beat * 0.2, 'square', 0.018, 3200);
+      } else {
+        this.tone(stab / 2, time, beat * 0.3, 'triangle', 0.11);
+      }
+    }
+
+    // Radio click at the top of each eight-bar phrase — "go, go, go!" without words.
+    if (step === 0 && phrase % 8 === 0) {
+      this.noise(time, 0.12, 0.045, 2400);
+      this.tone(1318.51, time + 0.02, 0.045, 'square', 0.025, 3000);
+    }
+
+    // Bomb beep: every half bar after the plant, every beat in the last two bars.
+    if (planted && step % (phrase >= 14 ? 4 : 8) === 2) this.tone(2093, time, 0.06, 'sine', 0.035);
+
+    // Snare roll into the next phrase.
+    if (phrase % 8 === 7 && step >= 8 && step % 2 === 0) {
+      this.noise(time, 0.05, 0.04 + (step - 8) * 0.006, 1600);
+      this.tone(150 + (step - 8) * 20, time, 0.06, 'triangle', 0.05);
+    }
+  }
+
+  playAirbase(step, time) {
+    // Original « flight-line rock » for Thunder Airbase, the Street Fighter II Guile-stage
+    // homage: a driving martial snare over a four-on-the-floor kick, punchy muted-guitar
+    // offbeats, a rolling bass and a bright brass fanfare answering the riff. Upbeat,
+    // patriotic parade energy — without quoting Guile's theme or any existing melody.
+    const beat = 60 / AIRBASE_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const flyby = phrase >= 8; // the second half opens the throttle: jets overhead
+    const roots = [65.41, 65.41, 87.31, 98.0, 65.41, 87.31, 98.0, 65.41]; // C C F G C F G C
+    const riffs = [
+      [523.25, 587.33, 659.25, 783.99, 659.25, 587.33],
+      [523.25, 659.25, 783.99, 659.25, 587.33, 523.25],
+      [698.46, 783.99, 880.0, 783.99, 698.46, 659.25],
+      [783.99, 880.0, 783.99, 659.25, 587.33, 523.25],
+      [523.25, 587.33, 659.25, 783.99, 880.0, 783.99],
+      [698.46, 880.0, 783.99, 698.46, 659.25, 587.33],
+      [783.99, 880.0, 1046.5, 880.0, 783.99, 659.25],
+      [783.99, 659.25, 587.33, 523.25, 392.0, 523.25],
+    ];
+    const fanfare = [
+      [261.63, 329.63, 392.0], [261.63, 329.63, 392.0],
+      [349.23, 440.0, 523.25], [392.0, 493.88, 587.33],
+      [261.63, 329.63, 392.0], [349.23, 440.0, 523.25],
+      [392.0, 493.88, 587.33], [261.63, 329.63, 392.0],
+    ];
+    const riffSteps = [0, 2, 4, 8, 10, 12];
+    const root = roots[bar];
+
+    // Kick on every beat, martial snare on 2 and 4 (plus a pickup roll into bar 8).
+    if (step % 4 === 0) {
+      this.tone(110, time, 0.11, 'sine', 0.32);
+      this.tone(52, time + 0.01, 0.14, 'sine', 0.22);
+    }
+    if (step === 4 || step === 12) {
+      this.noise(time, 0.09, flyby ? 0.11 : 0.085, 2000);
+      this.tone(190, time, 0.08, 'triangle', 0.11);
+    }
+    if (step % 2 === 1) this.noise(time, 0.018, 0.024, 8400);
+    if (step % 4 === 2) this.noise(time, 0.07, 0.03, 6400);
+
+    // Rolling bass: root eighths with a fifth lift before each snare hit.
+    if (step % 2 === 0) {
+      this.tone(root, time, beat * 0.4, 'triangle', 0.17);
+      this.tone(root / 2, time, beat * 0.4, 'sine', 0.1);
+    }
+    if (step === 3 || step === 11) this.tone(root * 1.5, time, beat * 0.22, 'triangle', 0.09);
+
+    // Muted-guitar riff: short plucks on the offbeats, doubled an octave up on flyby.
+    const slot = riffSteps.indexOf(step);
+    const riff = slot >= 0 ? riffs[bar][slot] : 0;
+    if (riff) {
+      this.tone(riff / 2, time, beat * 0.26, 'sawtooth', flyby ? 0.075 : 0.06, 1900);
+      if (flyby) this.tone(riff, time + 0.006, beat * 0.18, 'square', 0.02, 3400);
+    }
+
+    // Brass fanfare: a bright triad stabbed on the downbeat, sustained on bar 8.
+    if (step === 0) {
+      const length = bar === 7 ? beat * 3.6 : beat * 0.55;
+      fanfare[bar].forEach((note) => this.tone(note, time, length, 'sawtooth', flyby ? 0.05 : 0.038, 1500));
+      this.tone(root * 2, time, length, 'triangle', 0.04);
+    }
+
+    // Jet flyby at the top of the second half: rising turbine sweep + wind rush.
+    if (flyby && step === 0 && phrase % 8 === 0) {
+      this.noise(time, beat * 2.2, 0.05, 900);
+      [220, 277.18, 329.63, 440].forEach((freq, idx) => {
+        this.tone(freq, time + idx * beat * 0.5, beat * 0.6, 'sawtooth', 0.045, 2600);
+      });
+    }
+
+    // Snare pickup roll into the next phrase.
+    if (phrase % 8 === 7 && step >= 8 && step % 2 === 0) {
+      this.noise(time, 0.05, 0.045 + (step - 8) * 0.007, 2200);
+      this.tone(170 + (step - 8) * 22, time, 0.06, 'triangle', 0.055);
+    }
+  }
+
+  playInfinity(step, time) {
+    // Original « Château de l’Infini » score (Demon Slayer homage):
+    // E Miyako-bushi / In-sen dark scale (E, F, A, B, C) driven by Nakime’s
+    // sharp Biwa strikes (sawari buzz + resonant fifth), thunderous O-daiko
+    // war drums, rapid koto/shamisen ostinato, and a tragic shakuhachi/brass
+    // theme that intensifies when the fortress shifts in the second 8-bar half.
+    const beat = 60 / INFINITY_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const shifted = phrase >= 8;
+
+    const chords = [
+      [82.41, 164.81, 246.94, 329.63],
+      [87.31, 174.61, 261.63, 349.23],
+      [110.0, 220.0, 261.63, 329.63],
+      [82.41, 164.81, 246.94, 349.23],
+      [82.41, 164.81, 246.94, 329.63],
+      [98.0, 196.0, 246.94, 349.23],
+      [87.31, 174.61, 246.94, 329.63],
+      [82.41, 164.81, 246.94, 329.63],
+    ];
+    const melody = [
+      [659.25, 698.46, 987.77, 880.0],
+      [987.77, 698.46, 659.25, 0],
+      [523.25, 659.25, 698.46, 987.77],
+      [880.0, 698.46, 659.25, 0],
+      [659.25, 987.77, 1046.5, 1318.51],
+      [1046.5, 987.77, 880.0, 698.46],
+      [987.77, 880.0, 698.46, 659.25],
+      [698.46, 659.25, 493.88, 0],
+    ];
+    const chord = chords[bar];
+
+    // Nakime's Biwa strike ("Ben!") at the start of every 2-bar cell (and on step 10 when shifted):
+    // sharp plectrum snap + resonant sawari buzz over fifths.
+    if ((step === 0 && bar % 2 === 0) || (shifted && step === 10 && bar % 2 === 1)) {
+      this.noise(time, 0.035, 0.09, 2800);
+      this.tone(chord[1], time, beat * 0.75, 'sawtooth', 0.16, 2600);
+      this.tone(chord[2], time + 0.014, beat * 0.7, 'sawtooth', 0.13, 2900);
+      this.tone(chord[3] * 2, time + 0.026, beat * 0.45, 'triangle', 0.09);
+    }
+
+    // Thunderous O-daiko drums on urgent syncopations
+    if ([0, 3, 6, 8, 12, 14].includes(step)) {
+      const accent = step === 0 || step === 8;
+      this.tone(accent ? chord[0] : chord[0] * 1.15, time, beat * 0.55, 'sine', accent ? 0.28 : 0.19);
+      this.tone(52, time + 0.015, 0.14, 'sine', accent ? 0.22 : 0.14);
+    }
+
+    // Shime-daiko rim shots & wooden clappers (hyōshigi)
+    if (step === 4 || step === 12 || (shifted && step % 4 === 2)) {
+      this.noise(time, 0.032, 0.075, 3600);
+      this.tone(540, time, 0.035, 'triangle', 0.08);
+    }
+
+    // Rapid koto / shamisen sixteenth-note cascade in E In-sen
+    const kotoRun = [chord[1], chord[2], chord[3], chord[2] * 2];
+    const kotoNote = kotoRun[step % 4] * (step >= 8 ? 1.25 : 1);
+    if (step % 2 === 0 || shifted) {
+      this.tone(kotoNote, time, beat * 0.28, 'triangle', shifted ? 0.1 : 0.08);
+    }
+
+    // Tragic shakuhachi & demonic brass theme
+    if (step % 4 === 0) {
+      const note = melody[bar][step / 4];
+      if (note) {
+        const length = beat * (shifted ? 1.1 : 0.85);
+        this.tone(note, time, length, 'sawtooth', shifted ? 0.13 : 0.095, 2300);
+        this.tone(note * 0.5, time + 0.01, length, 'triangle', shifted ? 0.09 : 0.055);
+        if (shifted) {
+          this.tone(note * 2, time + 0.015, length * 0.65, 'sine', 0.03);
+        }
+      }
+    }
+
+    // Sliding fusuma / taiko crescendo at the end of each 8-bar phrase
+    if (phrase % 8 === 7 && step >= 10) {
+      this.tone(90 + (step - 10) * 24, time, 0.1, 'sine', 0.16);
+      this.noise(time, 0.05, 0.06, 2000);
+    }
+  }
+
+
   playStep(step, time) {
+    if (this.stage === 'infinity') { this.playInfinity(step, time); return; }
+    if (this.stage === 'airbase') { this.playAirbase(step, time); return; }
+    if (this.stage === 'ramparts') { this.playRamparts(step, time); return; }
     if (this.stage === 'prairie') { this.playPrairie(step, time); return; }
     if (this.stage === 'western') { this.playWestern(step, time); return; }
     if (this.stage === 'sardinia') { this.playSardinia(step, time); return; }

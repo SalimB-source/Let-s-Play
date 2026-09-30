@@ -12,11 +12,6 @@ import React, { useEffect } from 'react';
 
 export const worldProbe = { mounted: 0, props: null };
 
-// mirageTrophyScene.js l'importe ; sans WebGL la scène du trophée échoue avant de l'appeler.
-export function makeExplorer() {
-  throw new Error('makeExplorer : pas de WebGL dans ce test');
-}
-
 export default function MirageWorldStub(props) {
   worldProbe.props = props;
   useEffect(() => {

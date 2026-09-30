@@ -179,6 +179,14 @@ l'étendre (les grands chiffres d'un compte à rebours, le score d'un test, un
 futur titre en h4), il suffit d'ajouter les sélecteurs concernés à la liste du
 bloc 2 de `typography.css`.
 
+**Le gras se décide ici aussi.** La règle `body *` du bloc 1 impose
+`font-weight: 400 !important` à tout le site — `strong` et `b` compris — et
+coiffe donc un `font-weight: 700` écrit dans une feuille de section. Les
+exceptions sont listées dans ce fichier : les titres (blocs 2 et 4) et, pour la
+messagerie, le bloc 5 (pseudos, navigation, aperçu et heure des discussions non
+lues — voir « Messagerie »). Pour qu'un autre texte ressorte en gras, on ajoute
+ses sélecteurs au bloc concerné.
+
 **Trois lignes maximum.** Un gros titre du site tient sur trois lignes, jamais
 plus. La règle se joue d'abord sur le texte : les titres sont écrits dans ce
 budget (le robot actus refuse un couple `title` + `accent` au-delà de
@@ -279,9 +287,10 @@ site »).
   discussion (voir « Appels vocaux & vidéo entre amis »)
 - Amis + messagerie dans la **même fenêtre** : un seul lanceur « MESSAGERIE »
   (pastilles des non-lus et des demandes en attente, amis en ligne) ouvre un
-  panneau à quatre onglets — Amis / Demandes / Ajouter / Messages ; sur mobile
-  (≤ 760 px), la page `/messages` regroupe les quatre onglets sans pop-up,
-  accessible aussi depuis le menu, même avant connexion
+  panneau à trois onglets — Messages / Demandes / Ajouter (la liste des amis
+  vit dans l'onglet Messages, avec les discussions) ; sur mobile (≤ 760 px),
+  la page `/messages` regroupe les trois onglets sans pop-up, accessible
+  aussi depuis le menu, même avant connexion
 
 Les visuels des cartes vidéo utilisent les miniatures publiques YouTube des épisodes correspondants
 (voir « Miniatures YouTube » plus bas : aucune carte ne reste sans image).
@@ -320,6 +329,7 @@ Local development — copy `.env.example` to `.env.local`:
 ```bash
 VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_or_anon_key
+VITE_TURNSTILE_SITE_KEY=0x4AAAAAAA... # site key publique, facultative en local
 ```
 
 Find both values in Supabase Dashboard → Settings → API (Project URL and the
@@ -335,7 +345,8 @@ Vite embeds them at build time):
    public values into the client bundle at build time, so nothing else is needed.
 2. **Manual variables**: Vercel → Settings → Environment Variables → add
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for Production
-   (and Preview if you want auth on preview deploys).
+   (and Preview if you want auth on preview deploys), plus
+   `VITE_TURNSTILE_SITE_KEY` for the signup anti-bot check.
 
 **These values are read at build time.** Vite inlines them into the bundle, so
 adding a variable without rebuilding/redeploying changes nothing. Each target
@@ -345,13 +356,47 @@ needs its own copy:
 | --- | --- |
 | Local `npm run dev` / Arena preview | `.env.local` at the repo root (never committed) |
 | Vercel | Settings → Environment Variables, or the Supabase marketplace integration |
-| GitHub Pages (`.github/workflows/deploy.yml`) | Settings → Secrets and variables → Actions → **Variables**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
+| GitHub Pages (`.github/workflows/deploy.yml`) | Settings → Secrets and variables → Actions → **Variables**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY` |
 
-Repository *variables* (not secrets) are enough for Pages: both values are
+Repository *variables* (not secrets) are enough for Pages: these values are
 public by design — they ship inside the client bundle. The workflow accepts the
-`SUPABASE_URL` / `SUPABASE_ANON_KEY` names too. When they are absent, the build
-still deploys but `/auth` stays in demo-preview mode, and the workflow logs a
-warning (`Supabase non configuré`).
+`SUPABASE_URL` / `SUPABASE_ANON_KEY` names too. When the Supabase values are
+absent, the build still deploys but `/auth` stays in demo-preview mode, and the
+workflow logs a warning (`Supabase non configuré`).
+
+### Protection anti-bots des inscriptions (Turnstile + Supabase)
+
+Le formulaire d’inscription embarque un widget **Cloudflare Turnstile**
+uniquement lorsque `VITE_TURNSTILE_SITE_KEY` est défini. Le jeton à usage unique
+est envoyé à Supabase Auth dans l’appel `signUp`; un honeypot discret complète
+ce contrôle pour les robots les plus simples. Le widget côté navigateur n’est
+pas une protection suffisante à lui seul : il faut impérativement activer le
+CAPTCHA côté serveur dans Supabase.
+
+Mise en place en production :
+
+1. Cloudflare → Turnstile → créer un widget en mode *Managed*, avec le domaine
+   Vercel de production, le domaine GitHub Pages et, si nécessaire, les domaines
+   de prévisualisation autorisés. Copier la **site key** (publique).
+2. Vercel → Settings → Environment Variables : ajouter
+   `VITE_TURNSTILE_SITE_KEY` pour Production (et Preview si les préviews doivent
+   aussi permettre l’inscription), puis redéployer.
+3. GitHub → Settings → Secrets and variables → Actions → Variables : ajouter
+   `VITE_TURNSTILE_SITE_KEY` pour le workflow Pages. Une site key est publique,
+   mais elle ne doit jamais être confondue avec la **secret key** Cloudflare.
+4. Supabase → Authentication → CAPTCHA : sélectionner **Cloudflare Turnstile**,
+   coller la secret key Cloudflare et activer le CAPTCHA. Sans cette étape, un
+   bot peut appeler Supabase directement en contournant l’interface.
+5. Supabase → Authentication → Sign In / Up : laisser **Confirm email** activé,
+   désactiver les inscriptions anonymes et les fournisseurs OAuth inutilisés,
+   conserver les limites de requêtes par défaut (ou les durcir), activer la
+   protection contre les mots de passe compromis et configurer un SMTP fiable.
+
+Le build Pages affiche un avertissement si la site key manque. En local, on
+peut laisser `VITE_TURNSTILE_SITE_KEY` vide pour travailler sans CAPTCHA, mais
+il ne faut jamais publier ainsi si les inscriptions publiques sont ouvertes.
+Après configuration, tester une inscription normale, une inscription bloquée
+par Turnstile, puis le dépassement des limites dans les logs Supabase.
 
 **Appels vocaux & vidéo (facultatif)** : `VITE_TURN_URL`, `VITE_TURN_USERNAME`
 et `VITE_TURN_CREDENTIAL` ajoutent un relais TURN pour fiabiliser les appels
@@ -460,9 +505,10 @@ Tout joueur connecté (compte Supabase — ou persona de démonstration dans les
 scripts de vérification) dispose d'une liste d'amis. Elle vit dans la **fenêtre sociale** en bas à droite,
 présente sur toutes les pages : un lanceur compact « MESSAGERIE » — avec les
 pastilles des **non-lus** (messagerie) et des **demandes en attente**, et le
-compteur d'amis en ligne — ouvre un panneau à **quatre onglets** (Amis /
-Demandes / Ajouter / Messages). Amis et messagerie partagent donc la même
-fenêtre ; le quatrième onglet est documenté plus bas. Le lanceur « MESSAGERIE »
+compteur d'amis en ligne — ouvre un panneau à **trois onglets** (Messages /
+Demandes / Ajouter). Amis et messagerie partagent donc la même fenêtre — la
+liste des amis vit **dans** l'onglet Messages, avec les discussions : voir le
+tableau plus bas. Le lanceur « MESSAGERIE »
 reste visible pour un visiteur non connecté : il ouvre `/messages`, qui propose
 la connexion sans afficher de conversations. Dans l'APK Android, la WebView a
 une session distincte de celle du navigateur du téléphone : il faut s'y
@@ -471,18 +517,17 @@ est aussi présent dans le menu de navigation.
 
 | Onglet | Ce qui s'y trouve |
 | --- | --- |
-| **Amis** | les amis **en ligne** d'abord (point vert, « EN LIGNE »), puis **hors ligne** (avatar grisé, « Vu il y a 2 h »), chacun avec son niveau ; **la photo ou le nom ouvre la discussion** avec lui, le bouton **« Profil »** bien visible mène à sa fiche, et « Retirer » enlève l'ami (confirmation) |
+| **Messages** | la messagerie 1-à-1 **et** la liste des amis, fusionnées : chaque ligne est un ami — **la photo ou le nom ouvre la discussion**, le point de présence et la mention « EN LIGNE » / « Vu il y a 2 h » restent visibles, et un bouton **« Profil »** (les amis sans discussion, classés en ligne d'abord, sous la section « DISCUSSIONS ») mène à sa fiche ; « Retirer » reste sur la fiche de profil. La liste des discussions puis le fil sont décrits plus bas |
 | **Demandes** | les demandes **reçues** (Accepter / Refuser) et **envoyées** (Annuler) |
 | **Ajouter** | recherche d'un joueur par pseudo (2 caractères minimum), demande en un clic |
-| **Messages** | la messagerie 1-à-1 : liste des discussions puis fil (voir plus bas) |
 
 L'état ouvert/fermé est mémorisé sur l'appareil ; Échap ferme le panneau. Les
 notifications de succès partagent le coin : elles montent au-dessus du lanceur,
 et glissent à côté du panneau quand il est ouvert.
 
 **Sur mobile** (≤ 760 px), le lanceur nommé « MESSAGERIE » mène à la **page
-sociale** `/messages` (voir plus bas), sans pop-up : les onglets Amis, Demandes,
-Ajouter et Messages y sont accessibles et le bouton retour du téléphone revient
+sociale** `/messages` (voir plus bas), sans pop-up : les onglets Messages,
+Demandes et Ajouter y sont accessibles et le bouton retour du téléphone revient
 à la page précédente. Le menu mobile propose également un lien direct.
 
 **Où envoyer une demande d'ami** (`src/friends/FriendButton.jsx`) :
@@ -579,14 +624,14 @@ chargement et lisait `DEMO_PROFILES.vortex.user_metadata` — registre vide, don
 | `src/friends/FriendsContext.jsx` | le contexte : amis / demandes / présence du joueur connecté, gestes (`sendRequest`, `accept`, `decline`, `cancel`, `unfriend`, `search`), et l'état de la **fenêtre sociale unifiée** (`dockOpen`, `dockTab` — l'onglet actif, `messages` inclus) ; inerte sans provider (SSR des scripts) |
 | `src/friends/friendsApi.js` | couche de données : requêtes `friendships` / `profiles`, replis quand une colonne ou la table manque, état des personas |
 | `src/friends/presence.js` | canal Realtime Presence + battement de cœur |
-| `src/friends/FriendsTabs.jsx` | les onglets Amis / Demandes / Ajouter de la fenêtre sociale (pseudos **en majuscules**, comme dans la messagerie — `pseudoLabel`) |
+| `src/friends/FriendsTabs.jsx` | les onglets Demandes / Ajouter de la fenêtre sociale, et l'icône « Profil » des lignes de la messagerie (pseudos **en majuscules**, comme dans la messagerie — `pseudoLabel`) |
 | `src/friends/FriendButton.jsx` | le bouton de demande d'ami (profil, commentaires, résultats de recherche) |
 | `src/friends/FriendsHubSection.jsx` | la section « Mes amis » du hub : la liste des amis, chaque ligne menant à son profil |
 | `src/friends/friendsCopy.js` | textes FR / EN / AR |
 | `src/auth/demoProfiles.js` | registre des personas : **vide** dans le bundle livré, `registerDemoProfiles()` pour les scripts |
 | `scripts/demoFixtures.js` | les deux personas en fixtures de test, semées par les entrées SSR |
 | `src/friends/friends.css` | styles des onglets (listes, avatars, boutons) |
-| `src/social/SocialDock.jsx` | la fenêtre sociale unifiée : un lanceur, un panneau à quatre onglets ; sur mobile, la messagerie part vers la page dédiée |
+| `src/social/SocialDock.jsx` | la fenêtre sociale unifiée : un lanceur, un panneau à trois onglets (Messages / Demandes / Ajouter) ; sur mobile, la messagerie part vers la page dédiée |
 | `src/social/socialCopy.js` | textes de la fenêtre (FR / EN / AR) |
 | `src/social/social.css` | position du lanceur/panneau, cohabitation avec les notifications, pop-up plein écran mobile (amis) |
 
@@ -616,30 +661,48 @@ est une **vraie page** : `/messages` (alias `/messagerie`) pour la liste,
 d'appui, le champ toujours à portée de pouce ; tous les points d'entrée
 (bouton « Message » d'un profil, photo ou nom d'un ami dans la fenêtre
 sociale) y naviguent.
-La page existe aussi sur bureau, en deux colonnes. Sur la page, **la photo ou
-le nom d'un interlocuteur ouvre la discussion** (jamais son profil : le
-bouton « Profil » de l'en-tête de discussion y mène), et dans la liste d'amis
-de la fenêtre, la photo/le nom d'un ami ouvre le chat tandis que le bouton
-**« Profil »** bien visible remplace l'ancienne icône « Message ».
+La page existe aussi sur bureau, en deux colonnes. Sur la page comme dans la
+fenêtre, **la photo ou le nom d'un interlocuteur ouvre la discussion** (jamais
+son profil : le bouton « Profil » de l'en-tête de discussion y mène), et
+chaque ligne de la liste porte un bouton **« Profil »** bien visible — la
+liste des amis et celle des discussions ne font qu'un.
 Un visiteur non connecté ne voit rien (carte de connexion sur la page).
 
 | Niveau | Ce qui s'y trouve |
 | --- | --- |
-| **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus ; puis les **amis sans discussion** (« ÉCRIRE À UN AMI ») et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
+| **Liste des discussions** | un ami par ligne : avatar et point de présence, dernier message, « il y a 5 min », badge des non-lus, bouton « Profil » — et **en gras** l'aperçu et l'heure d'une discussion qui a reçu de nouveaux messages ; puis les **amis sans discussion** (section « AMIS » — présence affichée, en ligne d'abord) et les **joueurs bloqués** (à débloquer) ; un champ filtre les amis par pseudo |
 | **Discussion** | le fil de bulles (les miennes à droite, avec **Vu** quand l'ami a ouvert), le statut de l'ami, le champ de saisie (Entrée pour envoyer, Maj + Entrée pour un saut de ligne, 1 000 caractères), et dans l'en-tête les gestes **Bloquer** et **Signaler** ; à l'ouverture, une **bulle de suggestions** propose trois messages selon l'état du fil — salut si la discussion est vide, réponses si l'ami posait une question, réactions ou relances sinon — : un clic les place dans le champ (rien ne part sans validation) et la bulle se referme au premier choix, à la première frappe ou sur « Masquer » ; la discussion ouverte prend tout le panneau, l'icône « back » revient à la liste |
 
 **Les pseudos s'affichent en majuscules** partout dans la messagerie :
 lignes de la liste des discussions, joueurs bloqués, en-tête de discussion,
 titres de la fenêtre de signalement, confirmations de blocage et d'effacement,
-infobulles d'appel et cartes d'appel, et les onglets **Amis / Demandes /
-Ajouter** de la fenêtre sociale (lignes, libellés accessibles, bouton
-« Profil », confirmation de retrait). C'est une règle d'**affichage** appliquée au rendu
+infobulles d'appel et cartes d'appel, les lignes de la liste unique amis +
+discussions (libellés accessibles, bouton « Profil », présence) et les
+onglets **Demandes / Ajouter** de la fenêtre sociale. C'est une règle d'**affichage** appliquée au rendu
 par `pseudoLabel` (`src/messages/messagesCopy.js`) : les données gardent leur
 casse d'origine et la **recherche** de la liste continue de comparer les
 pseudos bruts, sans tenir compte de la casse (chercher « kayz » trouve
 `KAYZ_ORAN`). Hors messagerie, rien ne change : la liste d'amis du hub
 joueur, les profils et les commentaires affichent le pseudo tel qu'il a été
 saisi.
+
+**Les nouveaux messages ressortent en gras.** Dans la liste des discussions,
+une ligne qui a reçu des messages pas encore ouverts (`has-unread`, portée par
+`ConversationRow`) met en gras l'**aperçu du dernier message** et son
+**heure** — le pseudo l'est déjà — en plus de la pastille du nombre et du
+cadre jaune. Une discussion lue reste en texte normal, et la ligne redevient
+normale dès qu'on ouvre la discussion, puisque l'ouverture marque les messages
+comme lus. Le rendu est le même dans la fenêtre sociale et sur la page
+`/messages`, en thème sombre comme en thème clair ; seule l'épaisseur change,
+pas les couleurs. Le fil ouvert ne bouge pas : à son ouverture, tout y est déjà
+lu.
+
+Ce gras se règle dans **`src/typography.css`** (bloc 5), pas seulement dans
+`messages.css` : la règle `body * { font-weight: 400 !important }` du bloc 1
+ramène tout le site à 400 (`strong` et `b` compris), si bien qu'un
+`font-weight: 700` écrit dans `messages.css` seul resterait sans effet.
+`messages.css` garde la même déclaration, comme les feuilles de section
+gardent leurs `font-family`, mais c'est `typography.css` qui tranche.
 
 L'état ouvert/fermé et la discussion en cours sont mémorisés sur l'appareil ;
 Échap remonte à la liste puis ferme la fenêtre.
@@ -658,7 +721,7 @@ tu veux les effacer.
   bouton « Ajouter en ami » — grisé avec l'explication « Deviens ami avec ce
   joueur pour lui écrire » tant que l'amitié n'est pas acceptée, avec le
   nombre de non-lus en pastille sinon ;
-- la **photo ou le nom** de chaque ami (onglet Amis de la fenêtre sociale) :
+- la **photo ou le nom** de chaque ami (liste unique de l'onglet Messages) :
   le geste ouvre directement la discussion avec lui ;
 - le **lanceur de la fenêtre sociale** (en bas à droite), qui rouvre la liste
   des discussions — et sur mobile la page `/messages`, plein écran.
@@ -777,7 +840,7 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
 | `src/messages/MessagesContext.jsx` | le contexte : discussions / non-lus / blocages / signalements du joueur connecté, gestes (`openThread`, `openInbox`, `viewThread`, `send`, `clearConversation`, `markRead`, `block`, `unblock`, `report`), canaux temps réel ; `openThread` / `openInbox` ouvrent la **fenêtre sociale** sur l'onglet « Messages » sur bureau, et **naviguent vers la page `/messages`** sur mobile (l'onglet actif est porté par le contexte des amis) ; inerte sans provider (SSR des scripts) |
 | `src/messages/messagesApi.js` | couche de données : requêtes `direct_messages` / `message_blocks` / `message_reports`, RPC d'effacement pour soi, lignes → discussions, non-lus, repli quand la table manque, état des personas |
 | `src/messages/demoThreads.js` | discussions de départ, réponses scriptées et messages entrants de l'aperçu démo |
-| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : liste des discussions, fil avec séparateurs de jour, **bulle de suggestions à l'ouverture du fil**, champ de saisie, accès « Profil », bloquer / signaler / effacer la conversation |
+| `src/messages/MessagesTabs.jsx` | les vues de messagerie (fenêtre sociale **et** page dédiée) : la liste unique amis + discussions (présence, bouton « Profil »), fil avec séparateurs de jour, **bulle de suggestions à l'ouverture du fil**, champ de saisie, accès « Profil », bloquer / signaler / effacer la conversation |
 | `src/messages/MessagesPage.jsx` | la **page de messagerie** `/messages` + `/messages/:peerId` (alias `/messagerie`) : plein écran sur mobile, deux colonnes sur bureau |
 | `src/messages/MessageButton.jsx` | le bouton « Message » des profils publics (ouvre le chat) |
 | `src/messages/messagesCopy.js` | textes FR / EN / AR, `pseudoLabel` : les pseudos affichés en majuscules (règle de rendu, les données gardent leur casse), et `messageSuggestions` : les trois suggestions de la bulle d'ouverture selon l'état du fil |
@@ -802,15 +865,21 @@ réponses, et un signalement y est enregistré comme sur un vrai compte.
   « Effacer la conversation », vérifie l'annulation, la confirmation et la
   persistance après réouverture, puis sur la **bulle de suggestions**
   (remplissage sans envoi, fermeture après choix ou frappe, retour à la
-  réouverture) ; les deux vues de messagerie **et les onglets Amis /
-  Demandes** de la fenêtre sociale sont aussi rendus avec un pseudo **en
-  casse mixte** : il doit ressortir en majuscules, dans le texte visible
-  comme dans les libellés accessibles.
+  réouverture) ; la liste unique amis + discussions (avec la présence et le
+  bouton « Profil ») **et l'onglet Demandes** de la fenêtre sociale sont aussi
+  rendus avec un pseudo **en casse mixte** : il doit ressortir en majuscules,
+  dans le texte visible comme dans les libellés accessibles. Les **non-lus en
+  gras** sont vérifiés de bout en bout : la ligne d'une discussion non lue
+  porte `has-unread` et sa pastille, une discussion lue non, puis le style
+  *calculé* avec les vraies feuilles de style (celles de `src/main.jsx`,
+  thème sombre et clair) donne 700 à l'aperçu et à l'heure de la première,
+  400 à ceux de la seconde — le test échoue si la règle de `typography.css`
+  disparaît.
 - `npm run check:friends`, `npm run check:i18n` et `npm run check:achievements`
   continuent de passer : amis et messagerie partagent la même fenêtre sociale
-  (un seul lanceur, quatre onglets ; sur mobile, la messagerie ouvre la page
-  `/messages` et le pop-up reste pour les amis), et les contextes par défaut
-  sont inertes.
+  (un seul lanceur, trois onglets — Messages / Demandes / Ajouter ; sur
+  mobile, la messagerie ouvre la page `/messages`), et les contextes par
+  défaut sont inertes.
 
 ## Appels vocaux & vidéo entre amis
 

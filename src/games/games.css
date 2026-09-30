@@ -22,17 +22,17 @@
   /* néon fixe : posé sur la vignette, hors thème */
   --games-neon: #22d3ee;
   --games-ink-on-neon: #06131a;
-  padding: 116px 0 90px;
+  padding: 100px 0 70px;
 }
 
-.games-page-head { padding: 38px 0 0; }
+.games-page-head { padding: 24px 0 0; }
 .games-page-head h2 {
   font-family: var(--display);
   font-weight: 800;
-  font-size: clamp(38px, 5vw, 64px);
+  font-size: clamp(32px, 4vw, 50px);
   line-height: 1.05;
   letter-spacing: .005em;
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   text-transform: uppercase;
 }
 .games-page-head h2 em {
@@ -41,19 +41,23 @@
   text-shadow: 0 0 24px var(--games-gold-soft);
 }
 .games-page-intro {
-  max-width: 660px;
-  margin: 20px 0 0;
-  font-size: 15px;
+  max-width: 620px;
+  margin: 14px 0 0;
+  font-size: 14px;
   line-height: 1.65;
   color: var(--muted);
 }
 
 /* ── Grille ──────────────────────────────────────────────────────── */
+/* Cartes compactes et de même taille : les trois jeux tiennent sur une
+   seule rangée (avant, Mirage Rush prenait deux colonnes avec une vignette
+   géante et « Projet 03 » se retrouvait seul sur une deuxième ligne). */
 .games-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 28px;
-  margin-top: 46px;
+  gap: 20px;
+  max-width: 1040px;
+  margin-top: 32px;
 }
 
 /* ── Carte ───────────────────────────────────────────────────────── */
@@ -61,7 +65,7 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--panel);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-md, 0 24px 70px rgba(8, 5, 15, .38));
@@ -75,9 +79,9 @@
   color: inherit;
   text-decoration: none;
 }
-/* La première carte occupe deux colonnes : Mirage Rush est le jeu phare,
-   mais il reste une carte parmi d'autres. */
-.game-card.is-featured { grid-column: span 2; }
+/* Mirage Rush reste le jeu phare, mais à taille égale : il se distingue
+   par un liseré doré plutôt que par une double largeur. */
+.game-card.is-featured { border-color: var(--games-gold-soft); }
 
 .game-card:not(.is-locked):hover,
 .game-card:not(.is-locked):focus-within {
@@ -114,7 +118,6 @@
     linear-gradient(var(--games-neon), var(--games-neon)) right bottom / 2px 22px no-repeat;
   opacity: .85;
 }
-.game-card.is-featured .game-card-media { aspect-ratio: 16 / 8.4; }
 .game-card-thumb {
   position: absolute;
   inset: 0;
@@ -216,20 +219,19 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 10px;
-  padding: 22px 22px 24px;
+  gap: 7px;
+  padding: 14px 16px 16px;
 }
 .game-card-copy h3 {
   margin: 0;
   font-family: var(--display);
   font-weight: 800;
-  font-size: clamp(20px, 1.9vw, 28px);
+  font-size: clamp(17px, 1.5vw, 21px);
   line-height: 1.08;
   letter-spacing: .005em;
   text-transform: uppercase;
   color: var(--ink);
 }
-.game-card.is-featured .game-card-copy h3 { font-size: clamp(26px, 2.6vw, 38px); }
 .game-card-subtitle {
   margin: 0;
   font-family: var(--mono);
@@ -241,20 +243,25 @@
 }
 .game-card-desc {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 12.5px;
+  line-height: 1.5;
   color: var(--muted);
+  /* 3 lignes max : toutes les cartes gardent la même hauteur. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .game-card-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  gap: 5px;
   margin-top: 2px;
 }
 .game-card-tag {
-  padding: 4px 9px;
+  padding: 3px 7px;
   font-family: var(--mono);
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
@@ -267,7 +274,7 @@
   align-items: center;
   gap: 8px;
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: 8px;
   font-family: var(--mono);
   font-size: 10px;
   font-weight: 800;
@@ -282,15 +289,12 @@
 .game-card.is-locked .game-card-copy h3 { color: var(--muted); }
 
 /* ── Adaptations ─────────────────────────────────────────────────── */
-@media (max-width: 1080px) {
-  .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
-  .game-card.is-featured { grid-column: span 2; }
+@media (max-width: 860px) {
+  .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 }
-@media (max-width: 680px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
-  .games-page { padding: 96px 0 60px; }
-  .games-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
-  .game-card.is-featured { grid-column: span 1; }
-  .game-card.is-featured .game-card-media { aspect-ratio: 16 / 9; }
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .games-page { padding: 88px 0 50px; }
+  .games-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; max-width: 440px; margin-inline: auto; }
 }
 
 /* Sens de lecture arabe : le badge suit le coin droit. */

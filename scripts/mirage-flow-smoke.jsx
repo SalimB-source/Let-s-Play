@@ -7,7 +7,7 @@
  * retirée :
  *
  *   1. à l'arrivée, l'overlay d'intro propose le choix du mode (4 cartes,
- *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (6 cartes,
+ *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (9 cartes,
  *      Dunes de l'Écho par défaut, dont Alger la Blanche) : pas de barre
  *      d'onglets dans l'en-tête, et le bouton « LANCER LA PARTIE » est
  *      présent d'emblée ;
@@ -23,8 +23,12 @@
  *      COUPE, EN LIGNE) : l'onglet COUPE ramène à l'intro de la coupe ;
  *   6. un lien de défi (?duel=…) ouvre directement le duel : DUEL déjà
  *      sélectionné, bouton « LANCER LE DUEL », stage imposé par le défi
- *      (bandeau ZONE 03, cartes de terrain verrouillées) et consignes des
- *      800 m.
+ *      (bandeau ZONE 03, cartes de terrain verrouillées) et consignes de
+ *      course ;
+ *   7. la piste de l'application (trois voies, `setLaneCount(3)`) fait suivre
+ *      les textes : deux rivaux (L'Ombre et Sauge), « 3 CAVALIERS » et
+ *      « sur les 3 voies » dans l'overlay — voir src/games/mirageLanes.js —
+ *      et la coupe passe elle aussi à trois cavaliers (barème 10 / 7 / 4).
  *
  * Le déroulé complet d'une coupe (3 courses, points, trophée) est vérifié
  * par scripts/mirage-cup-smoke.jsx — `npm run check:mirage-cup`.
@@ -35,6 +39,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import MirageRushPage from '../src/games/MirageRushPage';
 import { encodeChallenge } from '../src/games/duelChallenge';
+import { laneCount, setLaneCount } from '../src/games/mirageRules';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -91,6 +96,10 @@ function assertCupIntro(assert, node) {
     'le bandeau de zone annonce la première course de la coupe');
   const hint = node.querySelector('.mirage-overlay-hint').textContent;
   assert.ok(hint.includes('3 COURSES') && hint.includes('1ᵉʳ 10 PTS'), 'la consigne rappelle les 3 courses et le barème');
+  assert.ok(intro.querySelector('.mirage-overlay-kicker').textContent.includes('COUPE · 3 COURSES · 4 CAVALIERS'),
+    'la coupe se court à quatre cavaliers sur la piste à quatre voies');
+  assert.ok(intro.textContent.includes('contre L’Ombre, Sauge et Améthyste'),
+    'les trois rivaux de la piste à quatre voies sont nommés');
   const keyPowerIcons = [...node.querySelectorAll('.mirage-keys-hint [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
   assert.deepEqual(keyPowerIcons, ['shield', 'lasso', 'boost', 'pistol'], 'les pouvoirs du duel sont rappelés : ils servent aussi en coupe');
 }
@@ -117,13 +126,41 @@ export async function checkMirageFlow(assert) {
     assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 1,
       'le sélecteur de terrain (02 / ton terrain) est proposé dans l’overlay');
     const maps = [...page.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(maps.length, 6, 'six horizons sont proposés');
+    assert.equal(maps.length, 9, 'neuf horizons sont proposés');
     assert.deepEqual(
       maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
-      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei'],
-      'les six cartes de map sont dans l’ordre (dont Alger la Blanche et Plaines de Yōtei)');
+      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre', 'Château de l’Infini', 'Thunder Airbase'],
+      'les neuf cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei, Remparts d’Ocre, Château de l’Infini et Thunder Airbase)');
+    assert.ok([...page.node.querySelectorAll('.mirage-picker-label')].some((label) => label.textContent.includes('9 HORIZONS À EXPLORER')),
+      'le compteur de terrains suit le nombre de cartes');
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
       'les Dunes de l’Écho sont sélectionnées par défaut');
+
+    const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase'];
+    const thumbnails = maps.map((card, index) => {
+      const image = card.querySelector('img.mirage-map-art');
+      assert.ok(image, `${mapIds[index]} possède sa miniature illustrée`);
+      assert.equal(card.querySelectorAll('img.mirage-map-art').length, 1,
+        'une seule image par carte, sans rendu 3D supplémentaire');
+      assert.match(image.getAttribute('src'), new RegExp(`/${mapIds[index]}-[a-zA-Z0-9_-]+[.]webp$`),
+        'chaque carte utilise son illustration locale, versionnée par Vite');
+      assert.equal(image.getAttribute('width'), '768', 'largeur intrinsèque du panorama');
+      assert.equal(image.getAttribute('height'), '256', 'hauteur intrinsèque du panorama');
+      assert.equal(image.getAttribute('alt'), '', 'le nom visible suffit à nommer le bouton');
+      assert.equal(image.parentElement.getAttribute('aria-hidden'), 'true', 'image décorative pour les lecteurs d’écran');
+      assert.equal(image.getAttribute('draggable'), 'false', 'pas de glisser-déposer qui gêne les gestes tactiles');
+      assert.equal(image.getAttribute('loading'), 'eager', 'les miniatures sont chargées dès l’intro');
+      return image.getAttribute('src');
+    });
+    assert.equal(new Set(thumbnails).size, 9, 'neuf illustrations distinctes');
+
+    for (const card of maps) {
+      await act(async () => { card.click(); });
+      assert.equal(card.getAttribute('aria-pressed'), 'true', 'chaque miniature permet de sélectionner son terrain');
+      assert.equal(maps.filter((map) => map.getAttribute('aria-pressed') === 'true').length, 1,
+        'un seul terrain sélectionné à la fois');
+    }
+    await act(async () => { maps[0].click(); });
 
     assert.ok(intro.querySelector('h2').textContent.includes('LE SABLE'),
       'le titre annonce la ruée par défaut');
@@ -138,7 +175,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('RECORD À BATTRE'),
       'les consignes de la ruée sont révélées');
 
-    /* ---------------- 2. Le terrain se choisit (Alger & Yōtei) ----------- */
+    /* ---- 2. Le terrain se choisit (Alger, Yōtei, Remparts, Infini, Airbase) */
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
       'le bandeau de zone démarre sur le terrain par défaut (ZONE 01)');
     const algerCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
@@ -151,6 +188,27 @@ export async function checkMirageFlow(assert) {
     await act(async () => { japanCard.click(); });
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('PLAINES DE YŌTEI'),
       'choisir Plaines de Yōtei met à jour le bandeau (ZONE 06 · PLAINES DE YŌTEI)');
+    const rampartsCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Remparts d’Ocre');
+    assert.ok(rampartsCard, 'la carte Remparts d’Ocre est proposée');
+    assert.ok(rampartsCard.classList.contains('is-ramparts'), 'la carte Remparts d’Ocre porte son identifiant de stage');
+    await act(async () => { rampartsCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 07 · REMPARTS D’OCRE'),
+      'choisir Remparts d’Ocre met à jour le bandeau (ZONE 07 · REMPARTS D’OCRE)');
+    assert.equal(rampartsCard.getAttribute('aria-pressed'), 'true', 'la carte Remparts d’Ocre est marquée sélectionnée');
+    const infinityCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Château de l’Infini');
+    assert.ok(infinityCard, 'la carte Château de l’Infini est proposée');
+    assert.ok(infinityCard.classList.contains('is-infinity'), 'la carte Château de l’Infini porte son identifiant de stage');
+    await act(async () => { infinityCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 08 · CHÂTEAU DE L’INFINI'),
+      'choisir Château de l’Infini met à jour le bandeau (ZONE 08 · CHÂTEAU DE L’INFINI)');
+    assert.equal(infinityCard.getAttribute('aria-pressed'), 'true', 'la carte Château de l’Infini est marquée sélectionnée');
+    const airbaseCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Thunder Airbase');
+    assert.ok(airbaseCard, 'la carte Thunder Airbase est proposée');
+    assert.ok(airbaseCard.classList.contains('is-airbase'), 'la carte Thunder Airbase porte son identifiant de stage');
+    await act(async () => { airbaseCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 09 · THUNDER AIRBASE'),
+      'choisir Thunder Airbase met à jour le bandeau (ZONE 09 · THUNDER AIRBASE)');
+    assert.equal(airbaseCard.getAttribute('aria-pressed'), 'true', 'la carte Thunder Airbase est marquée sélectionnée');
     await act(async () => { maps[0].click(); });
 
     /* --------------- 3. Le clic sur DUEL bascule l'overlay -------------- */
@@ -197,7 +255,7 @@ export async function checkMirageFlow(assert) {
     await cupPage.unmount();
   }
 
-  /* ------ 4 ter. Le lobby EN LIGNE garde sa barre d'onglets, COUPE comprise -- */
+  /* ------ 5. Le lobby EN LIGNE garde sa barre d'onglets, COUPE comprise ------ */
   const lobby = await mountPage('/jeu?mode=online');
   try {
     assert.ok(lobby.node.querySelector('.mirage-heading.has-mode-tabs'), 'l’en-tête du lobby porte sa barre d’onglets');
@@ -212,7 +270,7 @@ export async function checkMirageFlow(assert) {
     await lobby.unmount();
   }
 
-  /* ------------- 4. Lien de défi : le duel s'ouvre directement ---------- */
+  /* ------------- 6. Lien de défi : le duel s'ouvre directement ---------- */
   const code = encodeChallenge({ seed: 20260929, duration: 41.5, trace: [0, 240, 480, 800], name: 'Salim', stage: 'prairie' });
   const challenged = await mountPage(`/jeu?duel=${code}`);
   try {
@@ -225,10 +283,13 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelButton.textContent.includes('Défi de Salim'),
       'la carte DUEL annonce le défi du joueur');
     const lockedMaps = [...challenged.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(lockedMaps.length, 6,
+    assert.equal(lockedMaps.length, 9,
       'le sélecteur de terrain reste lisible sur un lien de défi');
     assert.ok(lockedMaps.every((card) => card.disabled),
       'les cartes de terrain sont verrouillées : le stage est imposé par le défi');
+    assert.equal(lockedMaps.filter((card) => card.querySelector('img.mirage-map-art')).length, 9,
+      'les neuf miniatures restent visibles sur un défi verrouillé');
+    await act(async () => { lockedMaps[0].click(); });
     assert.equal(lockedMaps.find((card) => card.getAttribute('aria-pressed') === 'true')
       ?.querySelector('.mirage-map-copy strong')?.textContent, 'Plaines d’Or',
     'la carte imposée par le défi est affichée comme sélectionnée');
@@ -246,5 +307,54 @@ export async function checkMirageFlow(assert) {
       'le stage du défi (ZONE 03 · Plaines d’Or) est bien appliqué');
   } finally {
     await challenged.unmount();
+  }
+
+  /* ------- 7. Piste de l'application : trois voies, deux rivaux -------- */
+  // L'APK joue sur trois voies (voir src/games/mirageLanes.js) : l'overlay
+  // d'intro et le panneau des règles suivent le nombre de voies et de rivaux.
+  setLaneCount(3);
+  const app = await mountPage('/jeu');
+  try {
+    assert.equal(laneCount(), 3, 'la piste de l’app compte trois voies');
+    const duelCard = modeButtons(app.node).find((button) => button.querySelector('strong')?.textContent === 'DUEL');
+    assert.ok(duelCard.textContent.includes('Face aux 2 PNJ · 800 m'),
+      'la carte DUEL annonce deux PNJ et 800 m sur la piste à trois voies');
+    await act(async () => { duelCard.click(); });
+    const intro = app.node.querySelector('.mirage-intro-overlay');
+    assert.ok(intro.textContent.includes('sur les 3 voies'),
+      'l’overlay annonce une piste à trois voies');
+    assert.ok(intro.textContent.includes('2 cavaliers rivaux IA (L’Ombre et Sauge)'),
+      'deux rivaux entrent en piste à trois voies, Améthyste reste au vestiaire');
+    assert.ok(app.node.querySelector('.mirage-overlay-hint').textContent.includes('3 CAVALIERS'),
+      'le rappel de départ compte trois cavaliers (toi + deux rivaux)');
+    const duelRules = [...app.node.querySelectorAll('.mirage-howto')]
+      .find((section) => section.textContent.includes('MODE DUEL'));
+    assert.ok(duelRules.textContent.includes('MODE DUEL · 3 CAVALIERS'),
+      'le panneau des règles annonce trois cavaliers');
+    assert.ok(duelRules.textContent.includes('2 cavaliers rivaux'),
+      'le panneau des règles annonce deux rivaux');
+
+    // La coupe suit le duel : trois cavaliers, donc trois places au barème.
+    const cupCard = modeButtons(app.node).find((button) => button.querySelector('strong')?.textContent === 'COUPE');
+    assert.ok(cupCard.textContent.includes('3 courses · 3 cavaliers'),
+      'la carte COUPE annonce trois cavaliers sur la piste à trois voies');
+    await act(async () => { cupCard.click(); });
+    const cupIntro = app.node.querySelector('.mirage-intro-overlay');
+    assert.ok(cupIntro.querySelector('.mirage-overlay-kicker').textContent.includes('COUPE · 3 COURSES · 3 CAVALIERS'),
+      'le bandeau de la coupe compte trois cavaliers');
+    assert.ok(cupIntro.textContent.includes('contre L’Ombre et Sauge'),
+      'seuls L’Ombre et Sauge entrent en piste, comme en duel');
+    assert.ok(!cupIntro.textContent.includes('Améthyste'), 'Améthyste reste au vestiaire');
+    assert.deepEqual(
+      [...cupIntro.querySelectorAll('.mirage-cup-points > span')].map((el) => el.textContent.replace(/\s+/g, ' ').trim()),
+      ['1ᵉʳ 10 pts', '2ᵉ 7 pts', '3ᵉ 4 pts'],
+      'le barème s’arrête à la 3ᵉ place : il n’y a que trois cavaliers');
+    const cupRules = [...app.node.querySelectorAll('.mirage-howto')]
+      .find((section) => section.textContent.includes('MODE COUPE'));
+    assert.ok(cupRules.textContent.includes('MODE COUPE · 3 CAVALIERS'), 'le panneau des règles annonce trois cavaliers en coupe');
+    assert.equal(cupRules.querySelectorAll('.mirage-cup-points-pill').length, 3, 'trois places au barème du panneau des règles');
+  } finally {
+    await app.unmount();
+    setLaneCount(4);
   }
 }
