@@ -7,7 +7,7 @@
  * retirée :
  *
  *   1. à l'arrivée, l'overlay d'intro propose le choix du mode (3 cartes,
- *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (5 cartes,
+ *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (7 cartes,
  *      Dunes de l'Écho par défaut, dont Alger la Blanche) : pas de barre
  *      d'onglets dans l'en-tête, et le bouton « LANCER LA PARTIE » est
  *      présent d'emblée ;
@@ -83,6 +83,32 @@ export async function checkMirageFlow(assert) {
       'le compteur de terrains suit le nombre de cartes');
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
       'les Dunes de l’Écho sont sélectionnées par défaut');
+
+    const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts'];
+    const thumbnails = maps.map((card, index) => {
+      const image = card.querySelector('img.mirage-map-art');
+      assert.ok(image, `${mapIds[index]} possède sa miniature illustrée`);
+      assert.equal(card.querySelectorAll('img.mirage-map-art').length, 1,
+        'une seule image par carte, sans rendu 3D supplémentaire');
+      assert.match(image.getAttribute('src'), new RegExp(`/${mapIds[index]}-[a-zA-Z0-9_-]+[.]webp$`),
+        'chaque carte utilise son illustration locale, versionnée par Vite');
+      assert.equal(image.getAttribute('width'), '768', 'largeur intrinsèque du panorama');
+      assert.equal(image.getAttribute('height'), '256', 'hauteur intrinsèque du panorama');
+      assert.equal(image.getAttribute('alt'), '', 'le nom visible suffit à nommer le bouton');
+      assert.equal(image.parentElement.getAttribute('aria-hidden'), 'true', 'image décorative pour les lecteurs d’écran');
+      assert.equal(image.getAttribute('draggable'), 'false', 'pas de glisser-déposer qui gêne les gestes tactiles');
+      assert.equal(image.getAttribute('loading'), 'eager', 'les miniatures sont chargées dès l’intro');
+      return image.getAttribute('src');
+    });
+    assert.equal(new Set(thumbnails).size, 7, 'sept illustrations distinctes');
+
+    for (const card of maps) {
+      await act(async () => { card.click(); });
+      assert.equal(card.getAttribute('aria-pressed'), 'true', 'chaque miniature permet de sélectionner son terrain');
+      assert.equal(maps.filter((map) => map.getAttribute('aria-pressed') === 'true').length, 1,
+        'un seul terrain sélectionné à la fois');
+    }
+    await act(async () => { maps[0].click(); });
 
     assert.ok(intro.querySelector('h2').textContent.includes('LE SABLE'),
       'le titre annonce la ruée par défaut');
@@ -164,6 +190,9 @@ export async function checkMirageFlow(assert) {
       'le sélecteur de terrain reste lisible sur un lien de défi');
     assert.ok(lockedMaps.every((card) => card.disabled),
       'les cartes de terrain sont verrouillées : le stage est imposé par le défi');
+    assert.equal(lockedMaps.filter((card) => card.querySelector('img.mirage-map-art')).length, 7,
+      'les sept miniatures restent visibles sur un défi verrouillé');
+    await act(async () => { lockedMaps[0].click(); });
     assert.equal(lockedMaps.find((card) => card.getAttribute('aria-pressed') === 'true')
       ?.querySelector('.mirage-map-copy strong')?.textContent, 'Plaines d’Or',
     'la carte imposée par le défi est affichée comme sélectionnée');

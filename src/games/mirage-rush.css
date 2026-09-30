@@ -764,9 +764,12 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-stage-locked p { margin: 0; font-size: 11.5px; line-height: 1.55; color: #cbb6c4; }
 .mirage-stage-locked strong { color: #ffdc85; }
 .mirage-map-card { position: relative; padding: 0; overflow: hidden; border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: #251c29; color: #fff1dc; text-align: left; cursor: pointer; transition: border-color .18s, transform .18s, box-shadow .18s; }
-/* Cartes terrain compactées (vignette 72→46px, texte resserré) pour que
-   « LANCER LA PARTIE » reste visible sans défilement dans l’intro. */
-.mirage-map-art { display: block; width: 100%; height: 46px; }
+/* Panoramas locaux : le cadre garde ses 46px pour ne pas repousser
+   « LANCER LA PARTIE ». Le recadrage préserve les repères à l’horizon. */
+.mirage-map-visual { position: relative; display: block; height: 46px; overflow: hidden; background: #38243e; }
+.mirage-map-visual::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(21, 16, 32, .16), transparent 45%, rgba(37, 28, 41, .22)); box-shadow: inset 0 -1px rgba(255, 229, 190, .12); }
+.mirage-map-art { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; user-select: none; transition: transform .35s ease; }
+.mirage-map-card.is-japan .mirage-map-art { object-position: 25% 40%; }
 .mirage-map-number { position: absolute; top: 5px; left: 6px; font: 700 8px var(--mono); padding: 2px 4px; background: rgba(37, 28, 41, .66); backdrop-filter: blur(4px); border-radius: 5px; color: #fff2d8; }
 .mirage-map-check { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; background: rgba(33, 24, 38, .72); backdrop-filter: blur(4px); color: #fff3d7; font-size: 10px; }
 .mirage-map-copy { display: flex; flex-direction: column; gap: 2px; padding: 5px 9px; }
@@ -782,6 +785,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-mode-picker button:focus-visible, .mirage-map-card:focus-visible { outline: 2px solid #fff1c9; outline-offset: 3px; }
 @media (hover: hover) {
   .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled) { transform: translateY(-2px); border-color: #f6cd72; }
+  .mirage-map-card:hover:not(:disabled) .mirage-map-art { transform: scale(1.055); }
 }
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .mirage-intro-overlay { padding: 16px 12px; }
@@ -794,7 +798,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .mirage-mode-copy small { font-size: 8px; }
   .mirage-stage-picker { gap: 6px; }
   .mirage-stage-picker > .mirage-map-card { flex-basis: calc((100% - 12px) / 3); }
-  .mirage-map-art { height: 42px; }
+  .mirage-map-visual { height: 42px; }
   .mirage-map-number { top: 4px; left: 5px; font-size: 7px; }
   .mirage-map-check { top: 4px; right: 4px; width: 15px; height: 15px; font-size: 9px; }
   .mirage-map-copy { padding: 4px 5px; gap: 1px; }
@@ -806,8 +810,9 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .mirage-intro-overlay > p { font-size: 11px; margin: 8px 0 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mirage-mode-picker button, .mirage-map-card { transition: none; }
-  .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled) { transform: none; }
+  .mirage-mode-picker button, .mirage-map-card, .mirage-map-art { transition: none; }
+  .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled),
+  .mirage-map-card:hover:not(:disabled) .mirage-map-art { transform: none; }
 }
 
 /* Top mode switcher tabs */
