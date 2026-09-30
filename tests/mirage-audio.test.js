@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, RAMPARTS_BPM, INFINITY_BPM } from '../src/games/arcadeAudio.js';
+import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, RAMPARTS_BPM, INFINITY_BPM, AIRBASE_BPM } from '../src/games/arcadeAudio.js';
 
 test('prairie selects its own soundtrack and resets the phrase', () => {
   const audio = new DesertGroove();
   audio.step = 83;
   audio.setStage('prairie');
   assert.equal(audio.step, 0);
-  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0, ramparts = 0, infinity = 0;
+  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0, ramparts = 0, infinity = 0, airbase = 0;
   audio.playPrairie = () => prairie++;
   audio.playWestern = () => western++;
   audio.playSardinia = () => sardinia++;
@@ -15,6 +15,7 @@ test('prairie selects its own soundtrack and resets the phrase', () => {
   audio.playJapan = () => japan++;
   audio.playRamparts = () => ramparts++;
   audio.playInfinity = () => infinity++;
+  audio.playAirbase = () => airbase++;
   audio.playStep(0, 0);
   assert.equal(prairie, 1);
   assert.equal(western, 0);
@@ -38,6 +39,10 @@ test('prairie selects its own soundtrack and resets the phrase', () => {
   audio.playStep(0, 0);
   assert.equal(infinity, 1);
   assert.equal(ramparts, 1, 'le Château de l’Infini a sa propre partition au biwa');
+  audio.setStage('airbase');
+  audio.playStep(0, 0);
+  assert.equal(airbase, 1);
+  assert.equal(ramparts, 1, 'Thunder Airbase ne rejoue pas la piste des Remparts d’Ocre');
 });
 
 test('infinity castle biwa & taiko score schedules finite notes and intensifies on the shift', () => {
@@ -90,6 +95,33 @@ test('ramparts tactical score schedules finite notes, then the bomb beep quicken
   assert.equal(beepsPerPhrase.slice(0, 8).reduce((a, b) => a + b, 0), 0, 'pas de bip avant la pose de la bombe');
   assert.equal(beepsPerPhrase[8], 2, 'un bip toutes les demi-mesures une fois la bombe posée');
   assert.equal(beepsPerPhrase[15], 4, 'le bip s’accélère dans les dernières mesures');
+});
+
+test('airbase flight-line rock schedules finite notes and varies its eight bars', () => {
+  const audio = new DesertGroove();
+  audio.setStage('airbase');
+  assert.ok(AIRBASE_BPM > RAMPARTS_BPM, 'un tempo plus pressé que les Remparts d’Ocre');
+  const stepLength = 60 / AIRBASE_BPM / 4;
+  const bars = [];
+  audio.noise = () => {};
+  for (let bar = 0; bar < 16; bar++) {
+    const notes = [];
+    audio.tone = (frequency, time, duration, type, volume) => {
+      assert.ok(Number.isFinite(frequency) && frequency > 0);
+      assert.ok(Number.isFinite(time) && time >= 0);
+      assert.ok(duration > 0 && volume > 0);
+      notes.push(frequency);
+    };
+    for (let step = 0; step < 16; step++) {
+      audio.step = bar * 16 + step;
+      audio.playAirbase(step, audio.step * stepLength);
+    }
+    bars.push(JSON.stringify(notes));
+  }
+  const total = bars.reduce((count, bar) => count + JSON.parse(bar).length, 0);
+  assert.ok(total > 200, 'grosse caisse, caisse claire, basse, riff et fanfare produisent de nombreuses notes');
+  assert.notEqual(bars[0], bars[8], 'le passage des jets épaissit l’instrumentation');
+  assert.ok(new Set(bars).size >= 6, 'les huit mesures varient');
 });
 
 test('japan samurai score schedules finite, positive notes at its own tempo', () => {

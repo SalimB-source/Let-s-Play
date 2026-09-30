@@ -8,6 +8,7 @@ import algerThumbnail from './assets/maps/alger.webp';
 import japanThumbnail from './assets/maps/japan.webp';
 import rampartsThumbnail from './assets/maps/ramparts.webp';
 import infinityThumbnail from './assets/maps/infinity.webp';
+import airbaseThumbnail from './assets/maps/airbase.webp';
 
 const MAPS = [
   { id: 'desert', number: '01', name: 'Dunes de l’Écho', mood: 'Mystique & solaire', detail: 'Désert · funk', thumbnail: desertThumbnail },
@@ -18,6 +19,7 @@ const MAPS = [
   { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', thumbnail: japanThumbnail },
   { id: 'ramparts', number: '07', name: 'Remparts d’Ocre', mood: 'Rush B… ou Long A ?', detail: 'Hommage Counter-Strike · Mid', thumbnail: rampartsThumbnail },
   { id: 'infinity', number: '08', name: 'Château de l’Infini', mood: 'Au son du biwa de Nakime', detail: 'Hommage Demon Slayer · shōji & biwa', thumbnail: infinityThumbnail },
+  { id: 'airbase', number: '09', name: 'Thunder Airbase', mood: 'Sonic Boom sur la piste !', detail: 'Hommage Street Fighter · Guile', thumbnail: airbaseThumbnail },
 ];
 
 function MapThumbnail({ map }) {

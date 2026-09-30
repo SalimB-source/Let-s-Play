@@ -10,7 +10,7 @@ create table if not exists public.mirage_rooms (
   name text not null default 'Salon Mirage' check (char_length(trim(name)) between 1 and 60),
   password_hash text,
   host_id uuid not null references auth.users(id) on delete cascade,
-  stage text not null check (stage in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity')),
+  stage text not null check (stage in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase')),
   status text not null default 'lobby' check (status in ('lobby', 'started')),
   seed bigint not null check (seed between 0 and 4294967295),
   started_at timestamptz,
@@ -27,10 +27,10 @@ alter table public.mirage_rooms
 -- Salons créés sur un terrain retiré ou renommé : repli sur le désert, sinon la contrainte ne s'applique pas.
 update public.mirage_rooms
   set stage = 'desert'
-  where stage not in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity');
+  where stage not in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase');
 alter table public.mirage_rooms
   add constraint mirage_rooms_stage_check
-  check (stage in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity'));
+  check (stage in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase'));
 
 create table if not exists public.mirage_room_players (
   room_code text not null references public.mirage_rooms(code) on delete cascade,
@@ -137,7 +137,7 @@ begin
   end if;
 
   if p_action = 'create' then
-    if p_stage not in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity') or p_stage is null then
+    if p_stage not in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase') or p_stage is null then
       raise exception 'Carte inconnue' using errcode = '22023';
     end if;
     perform pg_advisory_xact_lock(hashtextextended(uid::text, 0));

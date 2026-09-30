@@ -7,7 +7,7 @@
  * retirée :
  *
  *   1. à l'arrivée, l'overlay d'intro propose le choix du mode (3 cartes,
- *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (7 cartes,
+ *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (9 cartes,
  *      Dunes de l'Écho par défaut, dont Alger la Blanche) : pas de barre
  *      d'onglets dans l'en-tête, et le bouton « LANCER LA PARTIE » est
  *      présent d'emblée ;
@@ -78,17 +78,17 @@ export async function checkMirageFlow(assert) {
     assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 1,
       'le sélecteur de terrain (02 / ton terrain) est proposé dans l’overlay');
     const maps = [...page.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(maps.length, 8, 'huit horizons sont proposés');
+    assert.equal(maps.length, 9, 'neuf horizons sont proposés');
     assert.deepEqual(
       maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
-      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre', 'Château de l’Infini'],
-      'les huit cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei, Remparts d’Ocre et Château de l’Infini)');
-    assert.ok([...page.node.querySelectorAll('.mirage-picker-label')].some((label) => label.textContent.includes('8 HORIZONS À EXPLORER')),
+      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre', 'Château de l’Infini', 'Thunder Airbase'],
+      'les neuf cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei, Remparts d’Ocre, Château de l’Infini et Thunder Airbase)');
+    assert.ok([...page.node.querySelectorAll('.mirage-picker-label')].some((label) => label.textContent.includes('9 HORIZONS À EXPLORER')),
       'le compteur de terrains suit le nombre de cartes');
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
       'les Dunes de l’Écho sont sélectionnées par défaut');
 
-    const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity'];
+    const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase'];
     const thumbnails = maps.map((card, index) => {
       const image = card.querySelector('img.mirage-map-art');
       assert.ok(image, `${mapIds[index]} possède sa miniature illustrée`);
@@ -104,7 +104,7 @@ export async function checkMirageFlow(assert) {
       assert.equal(image.getAttribute('loading'), 'eager', 'les miniatures sont chargées dès l’intro');
       return image.getAttribute('src');
     });
-    assert.equal(new Set(thumbnails).size, 8, 'huit illustrations distinctes');
+    assert.equal(new Set(thumbnails).size, 9, 'neuf illustrations distinctes');
 
     for (const card of maps) {
       await act(async () => { card.click(); });
@@ -127,7 +127,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('RECORD À BATTRE'),
       'les consignes de la ruée sont révélées');
 
-    /* ------------- 2. Le terrain se choisit (Alger, Yōtei, Remparts) ------ */
+    /* ---- 2. Le terrain se choisit (Alger, Yōtei, Remparts, Infini, Airbase) */
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
       'le bandeau de zone démarre sur le terrain par défaut (ZONE 01)');
     const algerCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
@@ -154,6 +154,13 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 08 · CHÂTEAU DE L’INFINI'),
       'choisir Château de l’Infini met à jour le bandeau (ZONE 08 · CHÂTEAU DE L’INFINI)');
     assert.equal(infinityCard.getAttribute('aria-pressed'), 'true', 'la carte Château de l’Infini est marquée sélectionnée');
+    const airbaseCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Thunder Airbase');
+    assert.ok(airbaseCard, 'la carte Thunder Airbase est proposée');
+    assert.ok(airbaseCard.classList.contains('is-airbase'), 'la carte Thunder Airbase porte son identifiant de stage');
+    await act(async () => { airbaseCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 09 · THUNDER AIRBASE'),
+      'choisir Thunder Airbase met à jour le bandeau (ZONE 09 · THUNDER AIRBASE)');
+    assert.equal(airbaseCard.getAttribute('aria-pressed'), 'true', 'la carte Thunder Airbase est marquée sélectionnée');
     await act(async () => { maps[0].click(); });
 
     /* --------------- 3. Le clic sur DUEL bascule l'overlay -------------- */
@@ -197,12 +204,12 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelButton.textContent.includes('Défi de Salim'),
       'la carte DUEL annonce le défi du joueur');
     const lockedMaps = [...challenged.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(lockedMaps.length, 8,
+    assert.equal(lockedMaps.length, 9,
       'le sélecteur de terrain reste lisible sur un lien de défi');
     assert.ok(lockedMaps.every((card) => card.disabled),
       'les cartes de terrain sont verrouillées : le stage est imposé par le défi');
-    assert.equal(lockedMaps.filter((card) => card.querySelector('img.mirage-map-art')).length, 8,
-      'les huit miniatures restent visibles sur un défi verrouillé');
+    assert.equal(lockedMaps.filter((card) => card.querySelector('img.mirage-map-art')).length, 9,
+      'les neuf miniatures restent visibles sur un défi verrouillé');
     await act(async () => { lockedMaps[0].click(); });
     assert.equal(lockedMaps.find((card) => card.getAttribute('aria-pressed') === 'true')
       ?.querySelector('.mirage-map-copy strong')?.textContent, 'Plaines d’Or',
