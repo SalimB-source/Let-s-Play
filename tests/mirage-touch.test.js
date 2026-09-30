@@ -109,7 +109,8 @@ test('the release is enough to read a flick that no move event reported', () => 
 test('a finished or cancelled gesture stops answering, and a new one starts clean', () => {
   const run = tracker();
   run.begin(ORIGIN.x, ORIGIN.y);
-  assert.deepEqual(run.end(ORIGIN.x + 60, ORIGIN.y), ['right']);
+  // Un coup de doigt juste au-delà du seuil : une seule voie.
+  assert.deepEqual(run.end(ORIGIN.x + SWIPE_MIN_DISTANCE + 6, ORIGIN.y), ['right']);
   assert.equal(run.isTracking(), false);
   // Après la fin du geste, le doigt qui traîne ne pilote plus rien.
   assert.deepEqual(run.sample(ORIGIN.x + 200, ORIGIN.y - 200), []);
@@ -117,7 +118,7 @@ test('a finished or cancelled gesture stops answering, and a new one starts clea
 
   run.begin(ORIGIN.x, ORIGIN.y);
   assert.equal(run.isTracking(), true);
-  assert.deepEqual(run.sample(ORIGIN.x + 60, ORIGIN.y), ['right']);
+  assert.deepEqual(run.sample(ORIGIN.x + SWIPE_MIN_DISTANCE + 6, ORIGIN.y), ['right']);
 
   const cancelled = tracker();
   cancelled.begin(ORIGIN.x, ORIGIN.y);

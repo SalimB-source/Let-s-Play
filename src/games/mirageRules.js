@@ -2,8 +2,8 @@
 // L'ordinateur et la tablette jouent sur quatre voies ; le téléphone —
 // navigateur comme application — sur trois (voir `mirageLanes.js`) : sur un
 // téléphone tenu à deux mains, quatre couloirs de 2,1 m sont trop fins à
-// viser, et la croix directionnelle obligeait à traverser trois cases d'un
-// coup pour changer de côté.
+// viser. La piste compacte roule aussi un peu plus lentement (`PHONE_PACE`,
+// toujours dans `mirageLanes.js`) — le pouce a moins de marge qu'un clavier.
 //
 // Le rendu, les règles et le décor lisent donc une piste *vivante* :
 //
@@ -89,7 +89,28 @@ export const CRYSTALS = [
 ];
 export const CRYSTAL_COUNT = CRYSTALS.length;
 
-export const jumpHeight = (remaining) => remaining > 0 ? Math.sin((0.82 - remaining) / 0.82 * Math.PI) * 1.7 : 0;
+/** Durée d'un saut (s), du décollage à la retombée. */
+export const JUMP_DURATION = 0.82;
+/**
+ * Fenêtre (s) pendant laquelle un saut demandé **en l'air** est conservé puis
+ * rejoué à l'atterrissage (buffer d'entrée) : le joueur qui tape « sauter »
+ * juste avant de toucher le sol n'a pas à retaper.
+ */
+export const JUMP_BUFFER = 0.22;
+
+export const jumpHeight = (remaining) => remaining > 0 ? Math.sin((JUMP_DURATION - remaining) / JUMP_DURATION * Math.PI) * 1.7 : 0;
+
+/**
+ * Avance l'état du saut d'une frame : le saut en cours descend, la demande en
+ * attente vieillit, et dès que le cheval a les sabots au sol la demande
+ * repart. Renvoie `{ jumpLeft, buffer }` — jamais de saut négatif.
+ */
+export function advanceJump(jumpLeft, buffer, dt) {
+  const left = Math.max(0, jumpLeft - dt);
+  const pending = Math.max(0, buffer - dt);
+  if (left <= 0 && pending > 0) return { jumpLeft: JUMP_DURATION, buffer: 0 };
+  return { jumpLeft: left, buffer: pending };
+}
 
 // ── Mud puddles (flaques de boue) ──────────────────────────────────────
 // Appearing occasionally on open lanes, mud puddles slow down the mount
@@ -809,15 +830,38 @@ export function advanceCowboyStreak(current, collected, crashed = false) {
   return { streak, cheer: streak > 0 && streak % 5 === 0 };
 }
 
-export function playerLaneAfterAction(lane, action, jumpRemaining) {
-  if (jumpRemaining > 0) return lane;
+/**
+ * Voie du joueur après une action (gauche / droite ; toute autre action laisse
+ * la voie en place).
+ *
+ * Le saut ne verrouille plus les voies : sur téléphone, le pouce enchaîne
+ * « sauter » puis « glisser sur le côté » — et l'inverse — sans qu'aucun des
+ * deux gestes ne soit avalé par celui qui vient de partir (l'ancien verrou
+ * `jumpRemaining > 0`, qui rendait le cheval sourd aux côtés pendant 0,82 s,
+ * est décrit par `tests/mirage-rules.test.js`). Seules les bornes de la piste
+ * arrêtent le cavalier ; `laneCount()` suit l'appareil (3 sur téléphone,
+ * 4 sur ordinateur et tablette).
+ */
+export function playerLaneAfterAction(lane, action) {
   if (action === 'left') return Math.max(0, lane - 1);
   if (action === 'right') return Math.min(laneCount() - 1, lane + 1);
   return lane;
 }
 
-export function playerLateralPosition(x, targetX, dt, jumpRemaining) {
-  return jumpRemaining > 0 ? x : x + (targetX - x) * Math.min(1, dt * 12);
+/**
+ * Vitesse de traversée latérale (par seconde) : `x` rejoint la voie visée en
+ * `1 / LATERAL_LANE_SPEED` s. Passée de 12 à 22, la glissade répond au doigt
+ * sur téléphone au lieu de s'étaler sur ~0,2 s.
+ */
+export const LATERAL_LANE_SPEED = 22;
+
+/**
+ * Position latérale du cavalier : il glisse vers la voie visée, doigt posé
+ * comme doigt relâché, et **en plein saut aussi** — la glissade n'attend plus
+ * l'atterrissage (elle était gelée tant que `jumpRemaining > 0`).
+ */
+export function playerLateralPosition(x, targetX, dt) {
+  return x + (targetX - x) * Math.min(1, dt * LATERAL_LANE_SPEED);
 }
 
 export function resolveCollision({ mode, lives, speed, boost }) {

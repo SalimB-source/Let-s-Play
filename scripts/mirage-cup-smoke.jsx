@@ -292,10 +292,26 @@ export async function checkMirageCup(assert) {
     // devant Sauge, à 18 – 18 avec L'Ombre — qui a une victoire de plus.
     const orders = [['player', 'sauge', 'ombre'], ['ombre', 'player', 'sauge'], ['player', 'sauge', 'ombre']];
     let results;
+    let layoutChecked = false;
     for (let race = 0; race < 3; race += 1) {
       if (race > 0) await click(nextButton(app.node));
       await waitForCountdown(app.node);
       await waitForRace(app.node);
+      if (!layoutChecked) {
+        // Les boutons de la course : une seule barre d'objets, la disposition
+        // du PC, sur téléphone comme ailleurs — plus de croix directionnelle
+        // ni de losange de manette (on esquive au glissement).
+        const bars = app.node.querySelectorAll('.mirage-powerup-bar');
+        assert.equal(bars.length, 1, 'une seule barre d’objets pendant la course');
+        assert.ok(!bars[0].className.includes('is-gamepad'), 'la barre n’est plus ancrée en manette');
+        assert.ok(bars[0].querySelector('.mirage-powerup-buttons-row'), 'les objets forment la rangée horizontale du PC');
+        assert.equal(bars[0].querySelectorAll('.mirage-powerup-btn').length, 4, 'les quatre objets sont là');
+        for (const selector of ['.mirage-touch-dpad', '.mirage-dpad-btn', '.mirage-powerup-diamond',
+          '.mirage-powerup-btn.is-diamond']) {
+          assert.equal(app.node.querySelectorAll(selector).length, 0, `${selector} a bien disparu de la course`);
+        }
+        layoutChecked = true;
+      }
       await finishRace(orders[race]);
       results = await waitForResults(app.node);
       assert.equal(results.querySelectorAll('.mirage-cup-row').length, 3, 'trois cavaliers au classement, pas de fantôme');

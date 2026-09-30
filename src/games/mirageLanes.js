@@ -3,11 +3,15 @@
  *
  * On joue au doigt sur **trois** voies, à la souris ou au doigt sur un grand
  * écran sur **quatre**. Sur un téléphone tenu à deux mains, quatre couloirs de
- * 2,1 m sont trop fins à viser, et la croix directionnelle obligeait à
- * traverser trois cases d'un coup pour changer de côté. Ordinateur et tablette
- * gardent leurs quatre voies — y compris dans un même salon en ligne, où la
- * piste de chacun est bornée à l'affichage (voir `lanePosition()` dans
- * `mirageRules.js`).
+ * 2,1 m sont trop fins à viser — et la croix directionnelle d'alors obligeait
+ * à traverser trois cases d'un coup pour changer de côté (elle a depuis été
+ * retirée : on esquive au glissement, la barre d'objets du PC reste seule à
+ * l'écran). Ordinateur et tablette gardent leurs quatre voies — y compris
+ * dans un même salon en ligne, où la piste de chacun est bornée à l'affichage
+ * (voir `lanePosition()` dans `mirageRules.js`).
+ *
+ * La piste du téléphone porte en plus un **rythme** plus doux (`PHONE_PACE`,
+ * 15 % plus lent) : voir `paceForTrack()`.
  *
  * Deux signaux décident de la piste compacte, et ils se complètent :
  *
@@ -138,4 +142,26 @@ export function applyLaneCountForDevice() {
 /** Vrai si la piste courante est la piste compacte. */
 export function isCompactTrack() {
   return laneCount() === PHONE_LANE_COUNT;
+}
+
+/**
+ * Rythme de la course sur la piste du téléphone : 15 % plus lent.
+ *
+ * À trois voies, un obstacle arrive aussi vite qu'à quatre alors qu'il reste
+ * moins de place pour l'éviter : le pouce n'a pas le luxe d'un clavier. On
+ * ralentit donc **toute** la course (le cavalier comme ses rivaux, dont le
+ * défilement des rangées) pour que le duel reste équilibré — seul le rythme
+ * change, pas la difficulté relative. L'ordinateur et la tablette gardent
+ * `1` : leur piste ne bouge pas.
+ *
+ * En ligne, le rythme reste celui de la course : les clients ne partagent pas
+ * leur appareil, et un téléphone plus lent perdrait tous ses duels contre un
+ * ordinateur (voir `MirageWorld`, où `race.mode === 'online'` ignore ce
+ * facteur).
+ */
+export const PHONE_PACE = 0.85;
+
+/** Multiplicateur de vitesse de la partie en cours : 1 hors piste compacte. */
+export function paceForTrack() {
+  return isCompactTrack() ? PHONE_PACE : 1;
 }

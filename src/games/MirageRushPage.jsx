@@ -147,7 +147,9 @@ export default function MirageRushPage() {
   const [immersive, setImmersive] = useState(false);
   const [powerToast, setPowerToast] = useState(null);
   const [fx, setFx] = useState('');
-  // Détection tactile pour adapter l'UI (dpad + losange sur mobile, barre horizontale sur PC)
+  // Détection tactile : elle ne change plus les boutons (la barre d'objets du
+  // PC est la même partout) mais la *consigne* de l'écran des maps — gestes
+  // du pouce sur téléphone, touches du clavier sur ordinateur.
   const [isTouch, setIsTouch] = useState(false);
   const progressRef = useRef(progression);
   const cupRunRef = useRef(null);
@@ -164,8 +166,8 @@ export default function MirageRushPage() {
   const connected = Boolean(user?.id) && !isDemo;
   const backendEnabled = mirageApiEnabled();
 
-  // Détection d'écran tactile (pointer: coarse) — mobile : dpad + losange,
-  // PC : barre de pouvoirs horizontale comme avant.
+  // Détection d'écran tactile (pointer: coarse) : téléphone et application
+  // lisent les consignes de glissement, l'ordinateur ses raccourcis clavier.
   useEffect(() => {
     if (typeof window !== 'undefined' && window.matchMedia) {
       const mq = window.matchMedia('(pointer: coarse)');
@@ -828,34 +830,12 @@ export default function MirageRushPage() {
               </div>
             )}
 
-            {/* Manette tactile — flèches de déplacement à gauche de l'écran
-                (gauche · haut · droite), disposées comme une croix directionnelle.
-                Affichée uniquement sur appareils tactiles (mobile). */}
-            {phase === 'playing' && isTouch && (
-              <div className="mirage-touch-dpad" role="group" aria-label="Déplacements">
-                <button
-                  type="button"
-                  className="mirage-dpad-btn is-up"
-                  onPointerDown={(e) => { e.preventDefault(); trigger('jump'); }}
-                  aria-label="Sauter"
-                >↑</button>
-                <button
-                  type="button"
-                  className="mirage-dpad-btn is-left"
-                  onPointerDown={(e) => { e.preventDefault(); trigger('left'); }}
-                  aria-label="Aller à gauche"
-                >←</button>
-                <button
-                  type="button"
-                  className="mirage-dpad-btn is-right"
-                  onPointerDown={(e) => { e.preventDefault(); trigger('right'); }}
-                  aria-label="Aller à droite"
-                >→</button>
-              </div>
-            )}
-
-            {/* Objets spéciaux — sur PC : barre horizontale ; sur mobile : losange (manette). */}
-            {phase === 'playing' && race.mode !== 'rush' && !isTouch && (
+            {/* Objets spéciaux — la barre horizontale du PC, sur tous les
+                appareils : téléphone et application comprises. La croix
+                directionnelle et le losange ont été retirés (demande du
+                30/09) : on esquive au glissement, le pouce ne quitte plus la
+                piste, et les objets restent là où ils sont sur ordinateur. */}
+            {phase === 'playing' && race.mode !== 'rush' && (
               <div
                 className="mirage-powerup-bar"
                 role="group"
@@ -965,117 +945,6 @@ export default function MirageRushPage() {
               </div>
             )}
 
-            {/* Losange des pouvoirs (mobile / tactile) */}
-            {phase === 'playing' && race.mode !== 'rush' && isTouch && (
-              <div
-                className="mirage-powerup-bar is-gamepad"
-                role="group"
-                aria-label="Objets de puissance"
-              >
-                <div className="mirage-powerup-diamond">
-                  <button
-                    type="button"
-                    className={`mirage-powerup-btn is-diamond pos-top is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
-                    onClick={() => trigger('use_shield')}
-                    disabled={(hud.shieldCharges || 0) <= 0}
-                    title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s'active tout seul dès qu'elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
-                  >
-                    <div className="mirage-powerup-btn-top">
-                      <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
-                      <span className="mirage-powerup-key">AUTO</span>
-                    </div>
-                    <div className="mirage-powerup-btn-name">
-                      <span>Bouclier</span>
-                      {(hud.shieldCharges || 0) > 0
-                        ? <b className="mirage-powerup-count is-charges">×{hud.shieldCharges}</b>
-                        : <span className="mirage-powerup-count">{hud.shieldChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.SHIELD]} ◆</span>}
-                    </div>
-                    <div className="mirage-powerup-progress-bg">
-                      <div
-                        className="mirage-powerup-progress-fill is-shield"
-                        style={{ width: `${(hud.shieldCharges || 0) > 0 ? 100 : Math.round((hud.shieldProgress || 0) * 100)}%` }}
-                      />
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`mirage-powerup-btn is-diamond pos-left is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
-                    onClick={() => trigger('use_lasso')}
-                    disabled={(hud.lassoCharges || 0) <= 0}
-                    title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
-                  >
-                    <div className="mirage-powerup-btn-top">
-                      <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
-                      <span className="mirage-powerup-key">W / Z</span>
-                    </div>
-                    <div className="mirage-powerup-btn-name">
-                      <span>Lasso</span>
-                      {(hud.lassoCharges || 0) > 0
-                        ? <b className="mirage-powerup-count is-charges">×{hud.lassoCharges}</b>
-                        : <span className="mirage-powerup-count">{hud.lassoChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.LASSO]} ◆</span>}
-                    </div>
-                    <div className="mirage-powerup-progress-bg">
-                      <div
-                        className="mirage-powerup-progress-fill is-lasso"
-                        style={{ width: `${(hud.lassoCharges || 0) > 0 ? 100 : Math.round((hud.lassoProgress || 0) * 100)}%` }}
-                      />
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`mirage-powerup-btn is-diamond pos-right is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
-                    onClick={() => trigger('use_boost')}
-                    disabled={(hud.boostCharges || 0) <= 0}
-                    title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s'active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
-                  >
-                    <div className="mirage-powerup-btn-top">
-                      <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
-                      <span className="mirage-powerup-key">AUTO</span>
-                    </div>
-                    <div className="mirage-powerup-btn-name">
-                      <span>Turbo</span>
-                      {(hud.boostCharges || 0) > 0
-                        ? <b className="mirage-powerup-count is-charges">×{hud.boostCharges}</b>
-                        : <span className="mirage-powerup-count">{hud.boostChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.BOOST]} ◆</span>}
-                    </div>
-                    <div className="mirage-powerup-progress-bg">
-                      <div
-                        className="mirage-powerup-progress-fill is-boost"
-                        style={{ width: `${(hud.boostCharges || 0) > 0 ? 100 : Math.round((hud.boostProgress || 0) * 100)}%` }}
-                      />
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`mirage-powerup-btn is-diamond pos-bottom is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
-                    onClick={() => trigger('use_pistol')}
-                    disabled={(hud.pistolCharges || 0) <= 0}
-                    title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Fait tomber la cible devant toi pendant ${PISTOL_STUN_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
-                  >
-                    <div className="mirage-powerup-btn-top">
-                      <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
-                      <span className="mirage-powerup-key">R</span>
-                    </div>
-                    <div className="mirage-powerup-btn-name">
-                      <span>Pistolet</span>
-                      {(hud.pistolCharges || 0) > 0
-                        ? <b className="mirage-powerup-count is-charges">×{hud.pistolCharges}</b>
-                        : <span className="mirage-powerup-count">{hud.pistolChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]} ◆</span>}
-                    </div>
-                    <div className="mirage-powerup-progress-bg">
-                      <div
-                        className="mirage-powerup-progress-fill is-pistol"
-                        style={{ width: `${(hud.pistolCharges || 0) > 0 ? 100 : Math.round((hud.pistolProgress || 0) * 100)}%` }}
-                      />
-                    </div>
-                  </button>
-                </div>
-              </div>
-            )}
-
             {phase === 'countdown' && (
               <div className="mirage-overlay mirage-countdown-overlay" role="status" aria-live="assertive">
                 <div className="mirage-overlay-kicker"><span>✦</span> {race.cup ? `${activeCup.name.toUpperCase()} · COURSE ${race.cup.index + 1} / ${race.cup.total} · ${stageName(race.stage).toUpperCase()}` : selectedMode === 'duel' ? `DUEL À ${riderCount} CAVALIERS · PREMIER À ${DUEL_DISTANCE} M` : 'RUÉE · 60 SECONDES · 3 VIES'} <span>✦</span></div>
@@ -1151,17 +1020,29 @@ export default function MirageRushPage() {
                         : ready ? isCup ? 'LANCER LA COUPE' : selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU PARCOURS…'} <span>↗</span>
                     </button>
                   </div>
-                  {selectedMode !== 'online' && <div className="mirage-keys-hint" aria-label="Commandes clavier">
-                    <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
-                    <span><kbd>↑</kbd> sauter</span>
-                    {(selectedMode === 'duel' || isCup) && <>
-                      <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-key-power-icon" /> Bouclier</span>
-                      <span><kbd>W/Z</kbd> <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-key-power-icon" /> Lasso</span>
-                      <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-key-power-icon" /> Turbo</span>
-                      <span><kbd>R</kbd> <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-key-power-icon" /> Pistolet</span>
-                    </>}
-                    <span><kbd>ÉCHAP</kbd> pause</span>
-                  </div>}
+                  {selectedMode !== 'online' && (isTouch ? (
+                    /* Téléphone & application : plus de croix directionnelle à
+                       l'écran, on esquive au glissement — la consigne dit le
+                       geste, pas la touche. Les objets se touchent sur la
+                       barre du bas, comme sur ordinateur. */
+                    <div className="mirage-keys-hint" aria-label="Commandes tactiles">
+                      <span>GLISSE ← → POUR ESQUIVER</span>
+                      <span>TAPE POUR SAUTER</span>
+                      {(selectedMode === 'duel' || isCup) && <span>TOUCHE UN OBJET EN BAS POUR LE LANCER</span>}
+                    </div>
+                  ) : (
+                    <div className="mirage-keys-hint" aria-label="Commandes clavier">
+                      <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
+                      <span><kbd>↑</kbd> sauter</span>
+                      {(selectedMode === 'duel' || isCup) && <>
+                        <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-key-power-icon" /> Bouclier</span>
+                        <span><kbd>W/Z</kbd> <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-key-power-icon" /> Lasso</span>
+                        <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-key-power-icon" /> Turbo</span>
+                        <span><kbd>R</kbd> <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-key-power-icon" /> Pistolet</span>
+                      </>}
+                      <span><kbd>ÉCHAP</kbd> pause</span>
+                    </div>
+                  ))}
                   <div className="mirage-overlay-hint">{stageHint}</div>
                 </>}
               </div>
@@ -1242,7 +1123,7 @@ export default function MirageRushPage() {
             )}
           </div>
 
-          <div className="mirage-game-foot"><span className="mirage-foot-touch">MOBILE : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER</span><span>TOUCHES DIRECTIONNELLES / FLÈCHES <b>·</b> SAUT (ESPACE/↑){race.mode === 'duel' ? <> <b>·</b> POUVOIRS (QWER / AZER)</> : ''}</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE & CHARGE D’OBJETS' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
+          <div className="mirage-game-foot"><span className="mirage-foot-touch">TÉLÉPHONE &amp; APPLICATION : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER <b>·</b> OBJETS : BARRE EN BAS</span><span className="mirage-foot-keys">FLÈCHES <b>·</b> SAUT (ESPACE/↑){race.mode === 'duel' ? <> <b>·</b> POUVOIRS (QWER / AZER)</> : ''}</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE & CHARGE D’OBJETS' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
 
         <aside className="mirage-side-panel">
