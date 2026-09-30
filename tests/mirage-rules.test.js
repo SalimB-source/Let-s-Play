@@ -137,10 +137,10 @@ test('alger (Alger la Blanche) stage is retained in challenge links and online r
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'atlantis' })).stage, undefined);
 });
 
-test('dust2 (Dust II) stage is retained in challenge links', async () => {
+test('ramparts (Remparts d’Ocre) stage is retained in challenge links', async () => {
   const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
-  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Rush B', stage: 'dust2' };
-  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'dust2');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Rush B', stage: 'ramparts' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'ramparts');
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
 });
 

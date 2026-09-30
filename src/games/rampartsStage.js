@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
 /*
- * ZONE 07 · DUST II — hommage à de_dust2 (Counter-Strike) pour Mirage Rush.
+ * ZONE 07 · REMPARTS D’OCRE — hommage à de_dust2 (Counter-Strike) pour Mirage Rush.
  *
- * La piste est le MID de Dust II, remonté depuis le spawn T comme sur le
+ * La piste reprend le MID de de_dust2, remonté depuis le spawn T comme sur le
  * radar : le site B défile à GAUCHE, le site A à DROITE. Chaque côté enchaîne
  * ses callouts les plus célèbres sur une boucle de 110 m (10 segments de 11 m,
  * recyclés par MirageWorld comme ceux des autres stages) :
@@ -26,10 +26,10 @@ import * as THREE from 'three';
  * jamais la piste.
  */
 
-export const DUST2_SEGMENT_LENGTH = 11;
-export const DUST2_SEGMENT_COUNT = 10;
+export const RAMPARTS_SEGMENT_LENGTH = 11;
+export const RAMPARTS_SEGMENT_COUNT = 10;
 /** Segment de la boucle où se dressent les portes du Mid (visibles dès le départ). */
-export const DUST2_GATE_INDEX = 5;
+export const RAMPARTS_GATE_INDEX = 5;
 /** Comme sur le radar de de_dust2 en remontant le Mid : A à droite, B à gauche. */
 export const SITE_A_SIDE = 1;
 export const SITE_B_SIDE = -1;
@@ -49,7 +49,7 @@ const PALETTE = Object.freeze({
   wallShade: 0xb98552, // enduit écaillé, à l'ombre
   plinth: 0xa9784a,
   coping: 0xecd3a4, // chaperons et encadrements en pierre claire
-  merlon: 0xcf8b50, // petits merlons arrondis, comme sur Dust II
+  merlon: 0xcf8b50, // petits merlons arrondis, comme sur de_dust2
   ground: 0xd8b582,
   groundDark: 0xc49c68,
   curb: 0xe6d0a2,
@@ -138,7 +138,7 @@ function canvasTexture(key, width, height, draw) {
 
 /** Panneau de bombsite façon CS2 : plaque blanche, grande lettre rouge. */
 function siteSignTexture(letter) {
-  return canvasTexture(`dust2-site-${letter}`, 256, 256, (ctx, w, h) => {
+  return canvasTexture(`ramparts-site-${letter}`, 256, 256, (ctx, w, h) => {
     ctx.fillStyle = '#f2ede1';
     ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = '#d8cfbb';
@@ -154,7 +154,7 @@ function siteSignTexture(letter) {
 
 /** Le mème indissociable du site B, bombé en rouge au-dessus des tunnels. */
 function rushBTexture() {
-  return canvasTexture('dust2-rush-b', 512, 160, (ctx, w, h) => {
+  return canvasTexture('ramparts-rush-b', 512, 160, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     ctx.save();
     ctx.translate(w / 2 - 24, h / 2);
@@ -184,7 +184,7 @@ function rushBTexture() {
 
 /** Le graffiti d'oie qui a donné son nom au coin « Goose » du site A. */
 function gooseTexture() {
-  return canvasTexture('dust2-goose', 256, 256, (ctx, w, h) => {
+  return canvasTexture('ramparts-goose', 256, 256, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = '#f4efe2';
     ctx.strokeStyle = '#f4efe2';
@@ -242,7 +242,7 @@ function gooseTexture() {
 
 /** Maille losangée du grillage de B (plaquée avec alphaTest). */
 function fenceTexture() {
-  const texture = canvasTexture('dust2-fence', 64, 64, (ctx, w, h) => {
+  const texture = canvasTexture('ramparts-fence', 64, 64, (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
     ctx.strokeStyle = '#9aa0a4';
     ctx.lineWidth = 5;
@@ -356,7 +356,7 @@ function doorLeaf(M, colorKey, darkKey, width, height) {
 }
 
 /**
- * Caisse façon Dust II : bois pâle, cornières sombres ; options : croisillons
+ * Caisse façon de_dust2 : bois pâle, cornières sombres ; options : croisillons
  * en X (la « Xbox »), couvercle coloré (caisses du site A) ou bâche (B).
  */
 function crate(parent, M, x, y, z, w, h, d, { brace = false, lid = false, tarp = false, rotation = 0 } = {}) {
@@ -459,7 +459,7 @@ function sagWire(parent, M, from, to, sag = 0.5) {
   }
 }
 
-/** Parabole satellite plantée sur un toit (il y en a partout dans Dust II). */
+/** Parabole satellite plantée sur un toit (il y en a partout sur de_dust2). */
 function dish(parent, M, x, y, z, facing) {
   cylinder(parent, M('iron'), x, y + 0.3, z, 0.03, 0.03, 0.6, 4);
   const plate = cylinder(parent, M('coping'), x, y + 0.72, z, 0.42, 0.34, 0.08, 10);
@@ -616,7 +616,7 @@ function midWall(M) {
   return group;
 }
 
-export function dust2Obstacle(kind) {
+export function rampartsObstacle(kind) {
   const M = palette();
   return kind === 'barrier' ? midWall(M) : xbox(M);
 }
@@ -627,14 +627,14 @@ export function dust2Obstacle(kind) {
 
 function segmentGroup(index) {
   const group = new THREE.Group();
-  group.position.z = 6 - index * DUST2_SEGMENT_LENGTH;
+  group.position.z = 6 - index * RAMPARTS_SEGMENT_LENGTH;
   group.userData.speedFactor = 1;
   return group;
 }
 
 function sideBase(group, M, side, index, { wallHeight = null, tower = null, palmBehind = false, wire = false } = {}) {
   const s = side;
-  const L = DUST2_SEGMENT_LENGTH + 0.02;
+  const L = RAMPARTS_SEGMENT_LENGTH + 0.02;
   const rnd = seeded(index * 131 + (s > 0 ? 17 : 83));
   const height = wallHeight ?? 5 + ((index * 2 + (s > 0 ? 1 : 0)) % 3) * 0.6;
   // Sol de terre battue (glisse sous le bord des dalles de la piste) et bordure.
@@ -657,7 +657,7 @@ function sideBase(group, M, side, index, { wallHeight = null, tower = null, palm
   }
   if (tower) addTower(group, M, s, tower.z, tower.height, tower);
   if (palmBehind) palm(group, M, s * (WALL_FACE + 2.4), -1.5 + rnd() * 3, { height: height + 1.6, lean: 0.08, twist: rnd() * 3 });
-  // Câble électrique agrafé le long du rempart, comme partout dans Dust II.
+  // Câble électrique agrafé le long du rempart, comme partout sur de_dust2.
   if (wire) sagWire(group, M, [s * (WALL_FACE - 0.25), height - 0.35, 5.45], [s * (WALL_FACE - 0.25), height - 0.35, -5.45], 0.55);
   return height;
 }
@@ -820,17 +820,17 @@ function ctCorner(group, M) {
  * Segment du site A (droite de la piste, x > 0). Dix segments forment une
  * boucle de 110 m qui suit Long jusqu'au site, puis Goose, Short et le CT.
  */
-export function dust2SiteA(index) {
+export function rampartsSiteA(index) {
   const s = SITE_A_SIDE;
   const group = segmentGroup(index);
   const M = palette();
   const bombs = [];
-  const slot = index % DUST2_SEGMENT_COUNT;
+  const slot = index % RAMPARTS_SEGMENT_COUNT;
   const callouts = {
     1: 'long-doors', 2: 'blue', 3: 'car-pit', 4: 'a-site', 6: 'goose', 7: 'catwalk', 8: 'ct-spawn',
   };
   sideBase(group, M, s, index, {
-    wallHeight: slot === DUST2_GATE_INDEX ? 6.6 : null,
+    wallHeight: slot === RAMPARTS_GATE_INDEX ? 6.6 : null,
     tower: slot === 0 || slot === 3 || slot === 9 ? { z: slot === 3 ? -3 : 0.5, height: 8.6 + (slot % 2) * 0.8, dishOnRoof: slot !== 3 } : null,
     palmBehind: slot === 2 || slot === 6,
     wire: slot === 1 || slot === 8,
@@ -842,9 +842,9 @@ export function dust2SiteA(index) {
   else if (slot === 6) gooseCorner(group, M);
   else if (slot === 7) catwalk(group, M);
   else if (slot === 8) ctCorner(group, M);
-  else if (slot !== DUST2_GATE_INDEX) fillerProps(group, M, s, slot);
+  else if (slot !== RAMPARTS_GATE_INDEX) fillerProps(group, M, s, slot);
   group.userData.site = 'A';
-  group.userData.callout = callouts[slot] ?? (slot === DUST2_GATE_INDEX ? 'mid-doors' : 'long');
+  group.userData.callout = callouts[slot] ?? (slot === RAMPARTS_GATE_INDEX ? 'mid-doors' : 'long');
   if (bombs.length) group.userData.bombs = bombs;
   return group;
 }
@@ -963,17 +963,17 @@ function closet(group, M) {
  * Segment du site B (gauche de la piste, x < 0) : des tunnels jusqu'au site,
  * puis la voiture, la fenêtre, les portes et le closet.
  */
-export function dust2SiteB(index) {
+export function rampartsSiteB(index) {
   const s = SITE_B_SIDE;
   const group = segmentGroup(index);
   const M = palette();
   const bombs = [];
-  const slot = index % DUST2_SEGMENT_COUNT;
+  const slot = index % RAMPARTS_SEGMENT_COUNT;
   const callouts = {
     1: 'upper-tunnels', 2: 'tunnel-holes', 3: 'b-site', 4: 'b-car', 6: 'b-window', 7: 'b-doors', 8: 'closet',
   };
   sideBase(group, M, s, index, {
-    wallHeight: slot === DUST2_GATE_INDEX ? 6.6 : null,
+    wallHeight: slot === RAMPARTS_GATE_INDEX ? 6.6 : null,
     tower: slot === 0 || slot === 4 || slot === 9 ? { z: slot === 4 ? -3.2 : -0.5, height: 8.8 + (slot % 2) * 0.6, dishOnRoof: slot !== 9 } : null,
     palmBehind: slot === 3 || slot === 7,
     wire: slot === 2 || slot === 9,
@@ -985,9 +985,9 @@ export function dust2SiteB(index) {
   else if (slot === 6) bWindow(group, M);
   else if (slot === 7) bDoors(group, M);
   else if (slot === 8) closet(group, M);
-  else if (slot !== DUST2_GATE_INDEX) fillerProps(group, M, s, slot);
+  else if (slot !== RAMPARTS_GATE_INDEX) fillerProps(group, M, s, slot);
   group.userData.site = 'B';
-  group.userData.callout = callouts[slot] ?? (slot === DUST2_GATE_INDEX ? 'mid-doors' : 'tunnels');
+  group.userData.callout = callouts[slot] ?? (slot === RAMPARTS_GATE_INDEX ? 'mid-doors' : 'tunnels');
   if (bombs.length) group.userData.bombs = bombs;
   return group;
 }
@@ -1001,7 +1001,7 @@ export function dust2SiteB(index) {
  * rempart percé d'une arche dont la clé passe au-dessus de la caméra, deux
  * vantaux gris grands ouverts le long du couloir, hors de la piste.
  */
-export function dust2MidDoors(index = DUST2_GATE_INDEX) {
+export function rampartsMidDoors(index = RAMPARTS_GATE_INDEX) {
   const group = segmentGroup(index);
   const M = palette();
   const { halfWidth, spring, top } = MID_DOORS_ARCH;
@@ -1047,7 +1047,7 @@ export function dust2MidDoors(index = DUST2_GATE_INDEX) {
  * Silhouettes de la ville au loin (statiques, noyées dans la brume de chaleur),
  * de part et d'autre du Mid : tours crénelées, toits et quelques palmiers.
  */
-export function makeDust2Skyline() {
+export function makeRampartsSkyline() {
   const group = new THREE.Group();
   const M = palette();
   const rnd = seeded(2002);
@@ -1067,4 +1067,4 @@ export function makeDust2Skyline() {
 }
 
 /** Utilitaire des tests : aucun décor ne déborde sur les voies (|x| < 4,2) sous la caméra. */
-export const DUST2_TRACK_EDGE = TRACK_EDGE;
+export const RAMPARTS_TRACK_EDGE = TRACK_EDGE;

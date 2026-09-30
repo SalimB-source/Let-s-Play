@@ -9,4 +9,4 @@ globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { checkMirageFlow } = await import('../node_modules/.cache/mirage-flow/mirage-flow-smoke.js');
 try { await checkMirageFlow(assert); } finally { dom.window.close(); }
-console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) et du terrain (7 horizons, dont Alger la Blanche, Plaines de Yōtei et Dust II) dans l’overlay d’intro ; pas de barre d’onglets, terrain imposé par un défi verrouille les cartes.');
+console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) et du terrain (7 horizons, dont Alger la Blanche, Plaines de Yōtei et Remparts d’Ocre) dans l’overlay d’intro ; pas de barre d’onglets, terrain imposé par un défi verrouille les cartes.');

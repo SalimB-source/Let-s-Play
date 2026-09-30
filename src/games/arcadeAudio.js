@@ -5,7 +5,7 @@ export const PRAIRIE_BPM = 126;
 export const SARDINIA_BPM = 92;
 export const ALGER_BPM = 104;
 export const JAPAN_BPM = 108;
-export const DUST2_BPM = 128;
+export const RAMPARTS_BPM = 128;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
 
@@ -94,7 +94,7 @@ export class DesertGroove {
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : this.stage === 'dust2' ? DUST2_BPM : BPM) / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : this.stage === 'ramparts' ? RAMPARTS_BPM : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -452,14 +452,14 @@ export class DesertGroove {
     }
   }
 
-  playDust2(step, time) {
-    // Original « tactical desert » groove for the Dust II homage: E Phrygian
+  playRamparts(step, time) {
+    // Original « tactical desert » groove for Remparts d’Ocre, the de_dust2 homage: E Phrygian
     // dominant (E F G# A B C D) over a four-on-the-floor pulse, offbeat bass,
     // syncopated synth stabs and a Phrygian descent (D, C, B, back to E). Each
     // eight-bar phrase opens with a radio click; in the second half the bomb
     // is "planted" and its beep quickens toward the end of the loop. No
     // existing Counter-Strike music or melody is quoted.
-    const beat = 60 / DUST2_BPM;
+    const beat = 60 / RAMPARTS_BPM;
     const bar = Math.floor(this.step / 16) % 8;
     const phrase = Math.floor(this.step / 16) % 16;
     const planted = phrase >= 8;
@@ -533,7 +533,7 @@ export class DesertGroove {
   }
 
   playStep(step, time) {
-    if (this.stage === 'dust2') { this.playDust2(step, time); return; }
+    if (this.stage === 'ramparts') { this.playRamparts(step, time); return; }
     if (this.stage === 'prairie') { this.playPrairie(step, time); return; }
     if (this.stage === 'western') { this.playWestern(step, time); return; }
     if (this.stage === 'sardinia') { this.playSardinia(step, time); return; }

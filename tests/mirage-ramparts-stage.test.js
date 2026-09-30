@@ -13,24 +13,24 @@ globalThis.document = {
 };
 
 const {
-  dust2Obstacle, dust2SiteA, dust2SiteB, dust2MidDoors, makeDust2Skyline,
+  rampartsObstacle, rampartsSiteA, rampartsSiteB, rampartsMidDoors, makeRampartsSkyline,
   bombLedOn, updateBombBlink, BOMB_BEEP_PERIOD, MID_DOORS_ARCH,
-  DUST2_SEGMENT_COUNT, DUST2_SEGMENT_LENGTH, DUST2_GATE_INDEX, SITE_A_SIDE, SITE_B_SIDE,
-} = await import('../src/games/dust2Stage.js');
+  RAMPARTS_SEGMENT_COUNT, RAMPARTS_SEGMENT_LENGTH, RAMPARTS_GATE_INDEX, SITE_A_SIDE, SITE_B_SIDE,
+} = await import('../src/games/rampartsStage.js');
 const { LANES } = await import('../src/games/mirageRules.js');
 
 const TRACK_EDGE = LANES[LANES.length - 1] + 1.05;
 const sizeOf = (object) => new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
-const segments = () => Array.from({ length: DUST2_SEGMENT_COUNT }, (_, i) => [dust2SiteA(i), dust2SiteB(i)]).flat();
+const segments = () => Array.from({ length: RAMPARTS_SEGMENT_COUNT }, (_, i) => [rampartsSiteA(i), rampartsSiteB(i)]).flat();
 
 test('the Xbox is a tall one-lane obstacle you have to dodge', () => {
-  const size = sizeOf(dust2Obstacle('cactus'));
+  const size = sizeOf(rampartsObstacle('cactus'));
   assert.ok(size.x > 1 && size.x < 1.9, `largeur ${size.x} hors d’une voie`);
   assert.ok(size.y > 1.6 && size.y < 2.3, `hauteur ${size.y} : trop basse pour ne pas se sauter`);
 });
 
 test('the Mid low wall spans two lanes and stays jumpable', () => {
-  const size = sizeOf(dust2Obstacle('barrier'));
+  const size = sizeOf(rampartsObstacle('barrier'));
   assert.ok(size.x > 3.8 && size.x <= 4.2, `largeur ${size.x} : doit couvrir deux voies`);
   assert.ok(size.y <= 1, `hauteur ${size.y} : le saut (1,05 m) doit passer au-dessus`);
 });
@@ -52,13 +52,13 @@ test('site A scenery runs along the right, site B along the left', () => {
 });
 
 test('each side walks through the famous callouts in order', () => {
-  const calloutsA = Array.from({ length: DUST2_SEGMENT_COUNT }, (_, i) => dust2SiteA(i).userData.callout);
-  const calloutsB = Array.from({ length: DUST2_SEGMENT_COUNT }, (_, i) => dust2SiteB(i).userData.callout);
+  const calloutsA = Array.from({ length: RAMPARTS_SEGMENT_COUNT }, (_, i) => rampartsSiteA(i).userData.callout);
+  const calloutsB = Array.from({ length: RAMPARTS_SEGMENT_COUNT }, (_, i) => rampartsSiteB(i).userData.callout);
   assert.deepEqual(calloutsA.slice(1, 9), ['long-doors', 'blue', 'car-pit', 'a-site', 'mid-doors', 'goose', 'catwalk', 'ct-spawn']);
   assert.deepEqual(calloutsB.slice(1, 9), ['upper-tunnels', 'tunnel-holes', 'b-site', 'b-car', 'mid-doors', 'b-window', 'b-doors', 'closet']);
-  for (let i = 0; i < DUST2_SEGMENT_COUNT; i += 1) {
-    assert.equal(dust2SiteA(i).userData.site, 'A');
-    assert.equal(dust2SiteB(i).userData.site, 'B');
+  for (let i = 0; i < RAMPARTS_SEGMENT_COUNT; i += 1) {
+    assert.equal(rampartsSiteA(i).userData.site, 'A');
+    assert.equal(rampartsSiteB(i).userData.site, 'B');
   }
 });
 
@@ -84,7 +84,7 @@ test('the bomb LED flashes briefly once per beep', () => {
 });
 
 test('updateBombBlink drives the LED and halo, and holds steady for reduced motion', () => {
-  const [bomb] = dust2SiteA(4).userData.bombs;
+  const [bomb] = rampartsSiteA(4).userData.bombs;
   updateBombBlink([bomb], -bomb.offset);
   assert.equal(bomb.halo.visible, true);
   const litColor = bomb.led.material.color.getHex();
@@ -112,7 +112,7 @@ test('side scenery never rises inside the four lanes', () => {
 });
 
 test('the Mid doors arch clears the lanes, the riders and the camera', () => {
-  const gate = dust2MidDoors();
+  const gate = rampartsMidDoors();
   gate.updateMatrixWorld(true);
   const raycaster = new THREE.Raycaster();
   const blocked = (x, y) => {
@@ -145,21 +145,21 @@ test('the Mid doors arch clears the lanes, the riders and the camera', () => {
 });
 
 test('segments tile one 110 m loop and the Mid doors close it once', () => {
-  for (let i = 0; i < DUST2_SEGMENT_COUNT; i += 1) {
-    for (const segment of [dust2SiteA(i), dust2SiteB(i)]) {
-      assert.equal(segment.position.z, 6 - i * DUST2_SEGMENT_LENGTH);
+  for (let i = 0; i < RAMPARTS_SEGMENT_COUNT; i += 1) {
+    for (const segment of [rampartsSiteA(i), rampartsSiteB(i)]) {
+      assert.equal(segment.position.z, 6 - i * RAMPARTS_SEGMENT_LENGTH);
       assert.equal(segment.userData.speedFactor, 1);
     }
   }
-  assert.equal(DUST2_SEGMENT_COUNT * DUST2_SEGMENT_LENGTH, 110, 'boucle alignée sur le recyclage à 110 m du monde');
-  const gate = dust2MidDoors();
-  assert.equal(gate.position.z, 6 - DUST2_GATE_INDEX * DUST2_SEGMENT_LENGTH);
+  assert.equal(RAMPARTS_SEGMENT_COUNT * RAMPARTS_SEGMENT_LENGTH, 110, 'boucle alignée sur le recyclage à 110 m du monde');
+  const gate = rampartsMidDoors();
+  assert.equal(gate.position.z, 6 - RAMPARTS_GATE_INDEX * RAMPARTS_SEGMENT_LENGTH);
   assert.equal(gate.userData.speedFactor, 1);
   assert.equal(gate.userData.callout, 'mid-doors');
 });
 
 test('the far skyline stays behind the fog, beyond the ramparts', () => {
-  const skyline = makeDust2Skyline();
+  const skyline = makeRampartsSkyline();
   const box = new THREE.Box3().setFromObject(skyline);
   assert.ok(box.max.z < -40, 'horizon lointain');
   assert.ok(!box.isEmpty());

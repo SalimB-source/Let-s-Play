@@ -77,8 +77,8 @@ export async function checkMirageFlow(assert) {
     assert.equal(maps.length, 7, 'sept horizons sont proposés');
     assert.deepEqual(
       maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
-      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Dust II'],
-      'les sept cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei et Dust II)');
+      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre'],
+      'les sept cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei et Remparts d’Ocre)');
     assert.ok([...page.node.querySelectorAll('.mirage-picker-label')].some((label) => label.textContent.includes('7 HORIZONS À EXPLORER')),
       'le compteur de terrains suit le nombre de cartes');
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
@@ -97,7 +97,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('RECORD À BATTRE'),
       'les consignes de la ruée sont révélées');
 
-    /* ------------- 2. Le terrain se choisit (Alger, Yōtei, Dust II) ------ */
+    /* ------------- 2. Le terrain se choisit (Alger, Yōtei, Remparts) ------ */
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
       'le bandeau de zone démarre sur le terrain par défaut (ZONE 01)');
     const algerCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
@@ -110,13 +110,13 @@ export async function checkMirageFlow(assert) {
     await act(async () => { japanCard.click(); });
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('PLAINES DE YŌTEI'),
       'choisir Plaines de Yōtei met à jour le bandeau (ZONE 06 · PLAINES DE YŌTEI)');
-    const dust2Card = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Dust II');
-    assert.ok(dust2Card, 'la carte Dust II est proposée');
-    assert.ok(dust2Card.classList.contains('is-dust2'), 'la carte Dust II porte son identifiant de stage');
-    await act(async () => { dust2Card.click(); });
-    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 07 · DUST II'),
-      'choisir Dust II met à jour le bandeau (ZONE 07 · DUST II)');
-    assert.equal(dust2Card.getAttribute('aria-pressed'), 'true', 'la carte Dust II est marquée sélectionnée');
+    const rampartsCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Remparts d’Ocre');
+    assert.ok(rampartsCard, 'la carte Remparts d’Ocre est proposée');
+    assert.ok(rampartsCard.classList.contains('is-ramparts'), 'la carte Remparts d’Ocre porte son identifiant de stage');
+    await act(async () => { rampartsCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 07 · REMPARTS D’OCRE'),
+      'choisir Remparts d’Ocre met à jour le bandeau (ZONE 07 · REMPARTS D’OCRE)');
+    assert.equal(rampartsCard.getAttribute('aria-pressed'), 'true', 'la carte Remparts d’Ocre est marquée sélectionnée');
     await act(async () => { maps[0].click(); });
 
     /* --------------- 3. Le clic sur DUEL bascule l'overlay -------------- */

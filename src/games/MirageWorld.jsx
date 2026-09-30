@@ -7,7 +7,7 @@ import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } from './sardiniaStage';
 import { algerBuilding, algerObstacle, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
-import { dust2MidDoors, dust2Obstacle, dust2SiteA, dust2SiteB, makeDust2Skyline, updateBombBlink } from './dust2Stage';
+import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeRampartsSkyline, updateBombBlink } from './rampartsStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
   LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
@@ -443,9 +443,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const sardinia = stage === 'sardinia';
   const alger = stage === 'alger';
   const japan = stage === 'japan';
-  const dust2 = stage === 'dust2';
+  const ramparts = stage === 'ramparts';
   // Dunes de l’Écho : le stage par défaut (et le repli pour tout identifiant inconnu).
-  const desert = !western && !prairie && !sardinia && !alger && !japan && !dust2;
+  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts;
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -484,9 +484,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                 sunBottom: [0.88, 0.93, 1.0], sunTop: [0.98, 0.99, 1.0], glow: [0.46, 0.62, 0.92],
                 hemiSky: 0x9bb8ff, hemiGround: 0x1d2738, sunLight: 0xd8e6ff, rimLight: 0xff6e54,
               }
-            : dust2
+            : ramparts
               ? {
-                  // Dust II : grand ciel bleu au-dessus du Mid, soleil blanc
+                  // Remparts d’Ocre : grand ciel bleu au-dessus du Mid, soleil blanc
                   // d'après-midi et brume de chaleur ocre sur les remparts.
                   background: 0x8fbfe0, fog: 0xe6cfa6, exposure: 1.06,
                   skyBottom: [0.94, 0.84, 0.66], skyHorizon: [0.62, 0.79, 0.93], skyTop: [0.22, 0.50, 0.84],
@@ -536,9 +536,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : dust2 ? 11.0 : 5.5 },
-      sunX: { value: sardinia ? 18.0 : dust2 ? -24.0 : 0.0 },
-      sunRadius: { value: sardinia ? 5.5 : dust2 ? 4.6 : 8.0 },
+      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : ramparts ? 11.0 : 5.5 },
+      sunX: { value: sardinia ? 18.0 : ramparts ? -24.0 : 0.0 },
+      sunRadius: { value: sardinia ? 5.5 : ramparts ? 4.6 : 8.0 },
       isNight: { value: japan ? 1.0 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
@@ -633,17 +633,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     sea.renderOrder = -1;
   }
 
-  if (dust2) {
+  if (ramparts) {
     // Terre battue autour du Mid, et au loin les toits crénelés de la ville
     // noyés dans la brume de chaleur.
     block(cube, new THREE.MeshStandardMaterial({ color: 0xc7a06c, roughness: 1 }), scene, [0, -0.64, -35], [90, 0.6, 160]);
-    const skyline = makeDust2Skyline();
+    const skyline = makeRampartsSkyline();
     bakeStaticScenery(skyline);
     scene.add(skyline);
   }
 
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie || japan || desert || dust2 ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
+  for (let i = 0; i < (prairie || japan || desert || ramparts ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
@@ -655,9 +655,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : dust2 ? 0xd7b784 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : dust2 ? 0xe1c493 : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : dust2 ? 0xcaa673 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const FLOOR_PERIOD = floorMaterials.length * 2;
@@ -796,8 +796,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                   ? algerObstacle(spec.kind)
                   : japan
                     ? japanObstacle(spec.kind)
-                    : dust2
-                      ? dust2Obstacle(spec.kind)
+                    : ramparts
+                      ? rampartsObstacle(spec.kind)
                       : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
@@ -976,17 +976,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       scene.add(item);
       scenery.push(item);
     }
-  } else if (dust2) {
-    // Le Mid de Dust II, remonté depuis le spawn T comme sur le radar : le
+  } else if (ramparts) {
+    // Remparts d’Ocre, le Mid de de_dust2 remonté depuis le spawn T comme sur le radar : le
     // site B défile à gauche, le site A à droite, et les portes du Mid
     // enjambent la piste une fois par boucle de 110 m.
     for (let i = 0; i < 10; i++) {
-      const siteB = dust2SiteB(i);
-      const siteA = dust2SiteA(i);
+      const siteB = rampartsSiteB(i);
+      const siteA = rampartsSiteA(i);
       scene.add(siteB, siteA);
       scenery.push(siteB, siteA);
     }
-    const midDoors = dust2MidDoors();
+    const midDoors = rampartsMidDoors();
     scene.add(midDoors);
     scenery.push(midDoors);
   } else {
@@ -1917,9 +1917,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             person.position.y = (person.userData.baseY || 0) + Math.abs(Math.sin(time * 0.0017 + bob)) * 0.012;
           }
         }
-        // Les C4 posées sur les sites A et B de Dust II clignotent à chaque bip.
+        // Les C4 posées sur les sites A et B des Remparts d’Ocre clignotent à chaque bip.
         updateBombBlink(item.userData.bombs, time * 0.001, reduceMotion);
-        if (item.position.z > (western || prairie || sardinia || alger || japan || dust2 ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || dust2 ? 110 : 86;
+        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts ? 110 : 86;
       });
 
       rows.forEach((row) => {

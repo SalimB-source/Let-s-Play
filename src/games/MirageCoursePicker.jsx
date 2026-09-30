@@ -8,13 +8,13 @@ const MAPS = [
   { id: 'sardinia', number: '04', name: 'Costa Omertà', mood: 'Un été sur la baie', detail: 'Terrasses · soleil · mandoline', sky: '#4da9dc', sun: '#ffebaa', land: '#c9895a' },
   { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Alger-Centre · chaâbi oriental', sky: '#7fb2d8', sun: '#ffd28a', land: '#e8e2d2' },
   { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', sky: '#111a30', sun: '#eef4ff', land: '#1c2936' },
-  { id: 'dust2', number: '07', name: 'Dust II', mood: 'Rush B… ou Long A ?', detail: 'Hommage Counter-Strike · Mid', sky: '#6fb0e0', sun: '#fff6d6', land: '#d9b884' },
+  { id: 'ramparts', number: '07', name: 'Remparts d’Ocre', mood: 'Rush B… ou Long A ?', detail: 'Hommage Counter-Strike · Mid', sky: '#6fb0e0', sun: '#fff6d6', land: '#d9b884' },
 ];
 
 function Landscape({ map }) {
   return <svg className="mirage-map-art" viewBox="0 0 240 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <rect width="240" height="110" fill={map.sky} />
-    {map.id !== 'desert' && map.id !== 'dust2' && <circle cx={map.id === 'prairie' || map.id === 'alger' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : map.id === 'sardinia' ? 29 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />}
+    {map.id !== 'desert' && map.id !== 'ramparts' && <circle cx={map.id === 'prairie' || map.id === 'alger' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : map.id === 'sardinia' ? 29 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />}
     {map.id === 'desert' && <>
       <defs>
         <linearGradient id="mirage-desert-sky" x1="0" y1="0" x2="0" y2="1">
@@ -211,16 +211,16 @@ function Landscape({ map }) {
         <path key={x} d={`M${x} 106Q${x + 3} 88 ${x + 6} 79`} stroke="#dce6f7" strokeWidth="1.5" fill="none" opacity=".78" />
       ))}
     </>}
-    {map.id === 'dust2' && <>
+    {map.id === 'ramparts' && <>
       <defs>
-        <linearGradient id="mirage-dust2-sky" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="mirage-ramparts-sky" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#3f86c9" />
           <stop offset=".72" stopColor="#a9d0ea" />
           <stop offset="1" stopColor="#f0dcb4" />
         </linearGradient>
       </defs>
       {/* Grand ciel bleu et soleil blanc d'après-midi */}
-      <rect width="240" height="72" fill="url(#mirage-dust2-sky)" />
+      <rect width="240" height="72" fill="url(#mirage-ramparts-sky)" />
       <circle cx="120" cy="24" r="15" fill="#fff6d6" opacity=".35" />
       <circle cx="120" cy="24" r="8.5" fill={map.sun} />
       {/* Toits crénelés de la ville, dans la brume de chaleur */}
@@ -255,7 +255,7 @@ function Landscape({ map }) {
       <path d="M114 77L126 87M126 77L114 87" stroke="#76593b" strokeWidth="1.3" />
       <rect x="115" y="70.5" width="10" height="5.5" fill="#adbb8c" stroke="#76593b" strokeWidth=".8" />
     </>}
-    {map.id !== 'desert' && map.id !== 'dust2' && <path d="M109 72H130L168 110H73Z" fill={map.id === 'japan' ? '#4a5d80' : '#f9deb1'} opacity=".5" />}
+    {map.id !== 'desert' && map.id !== 'ramparts' && <path d="M109 72H130L168 110H73Z" fill={map.id === 'japan' ? '#4a5d80' : '#f9deb1'} opacity=".5" />}
   </svg>;
 }
 

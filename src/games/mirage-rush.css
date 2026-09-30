@@ -738,7 +738,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-course-picker { width: min(100%, 640px); text-align: left; }
 /* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
    l'en-tête reste retirée) : les cartes du sélecteur d'origine, suivies du
-   bloc terrain (sept horizons, jusqu’à Dust II). */
+   bloc terrain (sept horizons, jusqu’aux Remparts d’Ocre). */
 .mirage-mode-section { width: min(100%, 640px); text-align: left; }
 .mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
 .mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 6px; }

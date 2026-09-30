@@ -28,7 +28,7 @@ const STAGE_LABELS = {
   sardinia: 'Costa Omertà',
   alger: 'Alger la Blanche',
   japan: 'Plaines de Yōtei',
-  dust2: 'Dust II',
+  ramparts: 'Remparts d’Ocre',
 };
 
 const QUICK_MESSAGES = [
@@ -553,7 +553,7 @@ export default function MirageOnline({
                         <option value="sardinia">04 · Costa Omertà (Sardaigne)</option>
                         <option value="alger">05 · Alger la Blanche (Alger)</option>
                         <option value="japan">06 · Plaines de Yōtei (Mont Fuji · Nuit)</option>
-                        <option value="dust2">07 · Dust II (Counter-Strike · Mid)</option>
+                        <option value="ramparts">07 · Remparts d’Ocre (hommage Counter-Strike)</option>
                       </select>
                       <small>{DUEL_DISTANCE} mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>
