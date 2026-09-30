@@ -9,6 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "check:i18n": "node scripts/i18n-smoke.mjs",
     "check:auth": "node scripts/auth-popup-check.mjs",
+    "check:auth-protection": "node scripts/auth-protection-check.mjs",
     "check:videos": "node scripts/video-playback-check.mjs",
     "check:thumbs": "node scripts/thumbnail-check.mjs",
     "check:trailers": "node scripts/trailer-check.mjs",

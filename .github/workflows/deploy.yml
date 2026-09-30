@@ -34,6 +34,7 @@ jobs:
     env:
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || vars.SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -52,6 +53,11 @@ jobs:
             echo "::warning title=Supabase non configuré::Ce build part sans clés Supabase : /auth restera en mode démo. Ajoutez les variables de dépôt VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY (Settings → Secrets and variables → Actions → Variables), puis relancez le déploiement."
           else
             echo "Supabase configuré pour ce build : $VITE_SUPABASE_URL"
+          fi
+          if [ -z "$VITE_TURNSTILE_SITE_KEY" ]; then
+            echo "::warning title=Protection anti-bot inactive::Ajoutez la variable publique VITE_TURNSTILE_SITE_KEY et activez Turnstile dans Supabase Authentication → CAPTCHA pour protéger les inscriptions."
+          else
+            echo "Protection anti-bot Turnstile configurée pour ce build."
           fi
       - name: Build
         run: npm run build

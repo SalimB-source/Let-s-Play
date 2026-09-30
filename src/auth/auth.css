@@ -53,6 +53,63 @@
   gap: 16px;
 }
 
+/* Invisible trap for basic form-fill bots. It must stay in the DOM so a bot
+   that fills every named field reveals itself, but it is unreachable to
+   keyboard and screen-reader users. */
+.auth-honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.auth-honeypot input {
+  position: absolute;
+  left: -10000px;
+}
+
+/* Signup CAPTCHA --------------------------------------------------------- */
+.auth-protection {
+  display: grid;
+  gap: 7px;
+  padding: 12px 14px;
+  border: 1px solid rgba(34, 211, 238, .26);
+  background: rgba(34, 211, 238, .045);
+}
+
+.auth-protection-label {
+  margin: 0;
+  color: var(--cyan);
+  font: 600 10px var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.auth-protection-hint,
+.auth-protection-status {
+  margin: 0;
+  color: var(--muted);
+  font: 12px/1.45 var(--body);
+}
+
+.auth-protection-status-error {
+  color: #ff8c9d;
+}
+
+.auth-turnstile {
+  min-height: 65px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.auth-turnstile > div {
+  max-width: 100%;
+}
+
 .auth-form label {
   display: grid;
   gap: 8px;
