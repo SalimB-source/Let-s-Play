@@ -144,6 +144,13 @@ test('ramparts (Remparts d’Ocre) stage is retained in challenge links', async 
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
 });
 
+test('airbase (Thunder Airbase) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Guile', stage: 'airbase' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'airbase');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
+});
+
 test('cowboy cry fires only on each fifth consecutive pickup, and resets on a miss or crash', async () => {
   const { advanceCowboyStreak } = await import('../src/games/mirageRules.js');
   let streak = 0;

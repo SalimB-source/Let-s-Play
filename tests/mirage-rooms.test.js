@@ -215,3 +215,10 @@ test('a room can be created on the ramparts stage', async () => {
   assert.equal(created.stage, 'ramparts');
   assert.equal(created.name, 'Rush B');
 });
+
+test('a room can be created on the airbase stage', async () => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'airbase', p_name: 'Sonic Boom', p_password: '' }, host);
+  assert.equal(created.stage, 'airbase');
+  assert.equal(created.name, 'Sonic Boom');
+});

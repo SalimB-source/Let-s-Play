@@ -8,6 +8,7 @@ import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } f
 import { algerBuilding, algerObstacle, algerSeaside, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
 import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeRampartsSkyline, updateBombBlink } from './rampartsStage';
+import { airbaseGate, airbaseObstacle, airbaseOps, airbaseStands, makeAirbaseSkyline, updateAirbaseBeacon } from './airbaseStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
   LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
@@ -444,8 +445,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const alger = stage === 'alger';
   const japan = stage === 'japan';
   const ramparts = stage === 'ramparts';
+  const airbase = stage === 'airbase';
   // Dunes de l’Écho : le stage par défaut (et le repli pour tout identifiant inconnu).
-  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts;
+  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts && !airbase;
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -493,6 +495,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                   sunBottom: [1.0, 0.90, 0.62], sunTop: [1.0, 0.98, 0.86], glow: [1.0, 0.93, 0.74],
                   hemiSky: 0xfff0d8, hemiGround: 0xa47d52, sunLight: 0xfff0d0, rimLight: 0xb0d2f2,
                 }
+              : airbase
+              ? {
+                  // Thunder Airbase : plein jour éclatant sur le taxiway, soleil haut
+                  // et brume légère bleu pâle au-dessus de l'herbe, comme le stage
+                  // ensoleillé de Guile.
+                  background: 0x87b8e0, fog: 0xc3d8ea, exposure: 1.1,
+                  skyBottom: [0.78, 0.89, 0.97], skyHorizon: [0.45, 0.70, 0.92], skyTop: [0.15, 0.42, 0.80],
+                  sunBottom: [1.0, 0.90, 0.66], sunTop: [1.0, 0.99, 0.88], glow: [1.0, 0.95, 0.80],
+                  hemiSky: 0xe8f2ff, hemiGround: 0x8a8f7a, sunLight: 0xfff4dc, rimLight: 0xbfe0ff,
+                }
               : {
                   // Brume d'horizon = couleur du bas du ciel de desertStage.js : le sable
                   // se fond dans le ciel sans couture.
@@ -536,9 +548,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
-      sunX: { value: sardinia || alger ? 18.0 : ramparts ? -24.0 : 0.0 },
-      sunRadius: { value: sardinia ? 5.5 : ramparts ? 4.6 : 8.0 },
+      sunElevation: { value: japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
+      sunX: { value: sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
+      sunRadius: { value: sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
       isNight: { value: japan ? 1.0 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
@@ -646,9 +658,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     bakeStaticScenery(skyline);
     scene.add(skyline);
   }
+  if (airbase) {
+    // Herbe verte autour du taxiway, comme les abords du stage de Guile ;
+    // au loin, les hangars, la tour et un F-16 en vol dans la brume légère.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0x63a34e, roughness: 1 }), scene, [0, -0.64, -35], [90, 0.6, 160]);
+    const skyline = makeAirbaseSkyline();
+    bakeStaticScenery(skyline);
+    scene.add(skyline);
+  }
 
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie || japan || desert || ramparts ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
+  for (let i = 0; i < (prairie || japan || desert || ramparts || airbase ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
@@ -660,9 +680,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : airbase ? 0x767c88 : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : airbase ? 0x7f8593 : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : airbase ? 0x6e7482 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const FLOOR_PERIOD = floorMaterials.length * 2;
@@ -803,7 +823,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                     ? japanObstacle(spec.kind)
                     : ramparts
                       ? rampartsObstacle(spec.kind)
-                      : makeHazard(spec.kind);
+                      : airbase
+                        ? airbaseObstacle(spec.kind)
+                        : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
@@ -996,6 +1018,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const midDoors = rampartsMidDoors();
     scene.add(midDoors);
     scenery.push(midDoors);
+  } else if (airbase) {
+    // Thunder Airbase : les opérations (hangar, F-16, tour…) défilent à
+    // gauche, le public (drapeau géant, gradins, panneau SONIC BOOM) à
+    // droite, et le portique enjambe le taxiway une fois par boucle de 110 m.
+    for (let i = 0; i < 10; i++) {
+      const ops = airbaseOps(i);
+      const stands = airbaseStands(i);
+      scene.add(ops, stands);
+      scenery.push(ops, stands);
+    }
+    const gate = airbaseGate();
+    scene.add(gate);
+    scenery.push(gate);
   } else {
     // Dunes de l'Écho : dunes qui défilent avec la piste, accessoires, mirage, ciel… (desertStage.js)
     desertScenery = makeDesertScenery({ reduceMotion });
@@ -1926,7 +1961,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
         // Les C4 posées sur les sites A et B des Remparts d’Ocre clignotent à chaque bip.
         updateBombBlink(item.userData.bombs, time * 0.001, reduceMotion);
-        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts ? 110 : 86;
+        // Thunder Airbase : gyrophares de la tour, de la jeep et du portique.
+        updateAirbaseBeacon(item.userData.airbaseBeacons, time * 0.001, reduceMotion);
+        const airbaseRadar = item.userData.radar;
+        if (airbaseRadar && !reduceMotion) airbaseRadar.rotation.y += dt * 1.4;
+        const airbaseFlag = item.userData.flag;
+        if (airbaseFlag && !reduceMotion) {
+          airbaseFlag.rotation.y = airbaseFlag.userData.baseRotation + Math.sin(time * 0.004 + (airbaseFlag.userData.bob || 0)) * 0.14;
+        }
+        const jetFlame = item.userData.jetFlame;
+        if (jetFlame && !reduceMotion) {
+          const flamePulse = 1 + Math.sin(time * 0.02) * 0.14;
+          jetFlame.scale.set(flamePulse, flamePulse, 1 + Math.sin(time * 0.026) * 0.22);
+        }
+        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts || airbase ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts || airbase ? 110 : 86;
       });
 
       rows.forEach((row) => {
