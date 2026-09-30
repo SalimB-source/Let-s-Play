@@ -1743,82 +1743,40 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 /* Power-ups: charging & action bar */
+/* La barre n'est plus qu'un conteneur : aucun cadre, fond ni ombre ne
+   l'entoure — chaque bouton porte seul son relief (face avant, tranche
+   inférieure, ombre portée) et son propre état « chargé », encadré par
+   la couleur du diamant qui le charge. */
 .mirage-powerup-bar {
   position: absolute;
   z-index: 4;
-  bottom: 14px;
+  bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
-  border-radius: var(--mirage-radius);
-  background: linear-gradient(160deg, rgba(20, 14, 32, .92), rgba(12, 8, 22, .95));
-  border: 1px solid rgba(255, 218, 169, .24);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
-  transition: border-color .2s, box-shadow .2s, background .2s;
-}
-
-.mirage-powerup-bar.has-ready {
-  border: 2px solid #ffe484;
-  background: linear-gradient(160deg, rgba(38, 24, 54, .96), rgba(18, 11, 32, .98));
-  box-shadow:
-    0 14px 38px rgba(0, 0, 0, .6),
-    0 0 36px rgba(255, 214, 102, .48),
-    inset 0 0 22px rgba(255, 214, 102, .16);
-}
-
-.mirage-powerup-ready-callout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  width: 100%;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid #fff0b3;
-  background: linear-gradient(125deg, #ffe375 0%, #f5b638 55%, #ff9d47 100%);
-  color: #190e24;
-  box-shadow: 0 0 22px rgba(255, 214, 102, .75);
-  animation: mirageReadyBannerPulse .9s ease-in-out infinite alternate;
-}
-
-@keyframes mirageReadyBannerPulse {
-  from { transform: scale(1); box-shadow: 0 0 16px rgba(255, 214, 102, .6); }
-  to { transform: scale(1.025); box-shadow: 0 0 28px rgba(255, 226, 128, .95); }
-}
-
-.mirage-ready-bolt {
-  font-size: 14px;
-  line-height: 1;
-}
-
-.mirage-powerup-ready-callout strong {
-  font: 900 10px var(--mono);
-  letter-spacing: .09em;
-  color: #190e24;
-}
-
-.mirage-powerup-ready-callout small {
-  padding: 2px 7px;
-  border-radius: 999px;
-  background: rgba(25, 14, 36, .18);
-  font: 800 8px var(--mono);
-  letter-spacing: .07em;
-  color: #241334;
 }
 
 .mirage-powerup-buttons-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 12px;
 }
 
+/* Une teinte par objet — celle du diamant qui le charge. Elle colore
+   l'encadrement du bouton dès qu'il est prêt ; plus aucun mot
+   « BLEU / JAUNE / VERT / ROUGE » n'est écrit sur le bouton. */
+.mirage-powerup-btn.is-shield-btn { --mirage-power: #4ce9df; --mirage-power-deep: #0f5f68; }
+.mirage-powerup-btn.is-lasso-btn { --mirage-power: #ffc44f; --mirage-power-deep: #7a5312; }
+.mirage-powerup-btn.is-boost-btn { --mirage-power: #52eda0; --mirage-power-deep: #12693f; }
+.mirage-powerup-btn.is-pistol-btn { --mirage-power: #ff6e66; --mirage-power-deep: #7a2420; }
+
+/* Le relief est une tranche sombre sous la face (0 4px 0), un liseré clair
+   en haut (inset) et une ombre portée : le bouton a une épaisseur, il
+   s'enfonce quand on appuie et se soulève quand on le survole. */
 .mirage-powerup-btn {
   position: relative;
   display: flex;
@@ -1826,89 +1784,92 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   align-items: center;
   gap: 5px;
   min-width: 104px;
-  padding: 8px 10px;
-  border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, .14);
-  background: rgba(16, 11, 26, .75);
+  padding: 8px 10px 10px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #3b2d5e 0%, #261b40 50%, #180f2b 100%);
   color: #c9bfa8;
   cursor: pointer;
   overflow: hidden;
-  transition: transform .18s, border-color .18s, background .18s, box-shadow .18s;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    inset 0 -10px 14px rgba(0, 0, 0, .3),
+    0 4px 0 #0d0819,
+    0 10px 20px rgba(0, 0, 0, .45);
+  transition: transform .16s, box-shadow .16s, border-color .18s, background .18s;
   touch-action: manipulation;
 }
 
+/* Pas encore chargé : la tranche s'amincit, le bouton paraît plus plat. */
 .mirage-powerup-btn:disabled {
-  opacity: .56;
+  opacity: .6;
   cursor: default;
-}
-
-.mirage-powerup-btn.is-ready {
-  opacity: 1;
-  transform: translateY(-4px) scale(1.05);
-  border: 2px solid #ffe885;
-  background: linear-gradient(150deg, rgba(255, 219, 102, .34), rgba(243, 156, 56, .24));
-  color: #fff4df;
   box-shadow:
-    0 0 24px rgba(255, 214, 102, .65),
-    0 8px 20px rgba(0, 0, 0, .45),
-    inset 0 0 16px rgba(255, 232, 133, .28);
-  animation: miragePowerReadyPulse .85s ease-in-out infinite alternate;
+    inset 0 1px 0 rgba(255, 255, 255, .09),
+    inset 0 -8px 12px rgba(0, 0, 0, .34),
+    0 2px 0 #0b0716,
+    0 6px 12px rgba(0, 0, 0, .4);
 }
 
-.mirage-powerup-btn.is-shield-btn.is-ready {
-  border-color: #7df9f0;
-  background: linear-gradient(150deg, rgba(76, 233, 223, .42), rgba(243, 198, 91, .28));
+.mirage-powerup-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
   box-shadow:
-    0 0 26px rgba(76, 233, 223, .75),
-    0 0 44px rgba(243, 198, 91, .38),
-    inset 0 0 16px rgba(125, 249, 240, .32);
-}
-
-.mirage-powerup-btn.is-lasso-btn.is-ready {
-  border-color: #ffd86b;
-  background: linear-gradient(150deg, rgba(243, 166, 56, .48), rgba(255, 224, 112, .3));
-  box-shadow:
-    0 0 26px rgba(255, 204, 92, .8),
-    0 0 44px rgba(243, 156, 56, .42),
-    inset 0 0 16px rgba(255, 224, 130, .32);
-}
-
-.mirage-powerup-btn.is-pistol-btn.is-ready {
-  border-color: #ff8f85;
-  background: linear-gradient(150deg, rgba(235, 76, 76, .52), rgba(255, 196, 86, .34));
-  box-shadow:
-    0 0 28px rgba(255, 104, 94, .85),
-    0 0 48px rgba(255, 206, 92, .48),
-    inset 0 0 18px rgba(255, 143, 133, .36);
-}
-
-.mirage-powerup-btn.is-boost-btn.is-ready {
-  border-color: #6ef7af;
-  background: linear-gradient(150deg, rgba(41, 217, 132, .5), rgba(243, 206, 92, .32));
-  box-shadow:
-    0 0 28px rgba(41, 217, 132, .82),
-    0 0 48px rgba(243, 206, 92, .42),
-    inset 0 0 18px rgba(110, 247, 175, .36);
-}
-
-@keyframes miragePowerReadyPulse {
-  from {
-    transform: translateY(-3px) scale(1.03);
-    filter: brightness(1);
-  }
-  to {
-    transform: translateY(-6px) scale(1.07);
-    filter: brightness(1.16);
-  }
-}
-
-.mirage-powerup-btn.is-ready:hover:not(:disabled) {
-  transform: translateY(-7px) scale(1.09);
-  border-color: #fff3b8;
+    inset 0 1px 0 rgba(255, 255, 255, .3),
+    inset 0 -10px 14px rgba(0, 0, 0, .28),
+    0 6px 0 #0d0819,
+    0 16px 26px rgba(0, 0, 0, .5);
 }
 
 .mirage-powerup-btn:active:not(:disabled) {
-  transform: scale(.96);
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, .45),
+    0 1px 0 #0d0819,
+    0 4px 10px rgba(0, 0, 0, .5);
+}
+
+/* Prêt : l'encadrement prend la couleur du diamant correspondant. */
+.mirage-powerup-btn.is-ready {
+  opacity: 1;
+  transform: translateY(-3px);
+  border: 2px solid var(--mirage-power);
+  color: #fff4df;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, 0) 48%),
+    linear-gradient(180deg, color-mix(in srgb, var(--mirage-power) 32%, #261b40), color-mix(in srgb, var(--mirage-power) 10%, #150d26));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .42),
+    inset 0 -10px 16px rgba(0, 0, 0, .28),
+    0 0 22px color-mix(in srgb, var(--mirage-power) 45%, transparent),
+    0 5px 0 var(--mirage-power-deep),
+    0 14px 24px rgba(0, 0, 0, .5);
+  animation: miragePowerReadyPulse .9s ease-in-out infinite alternate;
+}
+
+.mirage-powerup-btn.is-ready:hover:not(:disabled) {
+  transform: translateY(-5px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .5),
+    inset 0 -10px 16px rgba(0, 0, 0, .26),
+    0 0 30px color-mix(in srgb, var(--mirage-power) 60%, transparent),
+    0 7px 0 var(--mirage-power-deep),
+    0 18px 28px rgba(0, 0, 0, .55);
+}
+
+.mirage-powerup-btn.is-ready:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, .42),
+    0 0 26px color-mix(in srgb, var(--mirage-power) 50%, transparent),
+    0 1px 0 var(--mirage-power-deep),
+    0 6px 12px rgba(0, 0, 0, .5);
+}
+
+/* La pulsation ne joue que sur la luminance : les translations restent
+   au seul endroit où l'on décide de la profondeur du bouton. */
+@keyframes miragePowerReadyPulse {
+  from { filter: brightness(1); }
+  to { filter: brightness(1.16); }
 }
 
 .mirage-powerup-btn-top {
@@ -1938,48 +1899,8 @@ img.mirage-powerup-icon {
 }
 
 .mirage-powerup-btn.is-ready .mirage-powerup-icon {
-  transform: scale(1.15);
-  filter: drop-shadow(0 0 10px rgba(255, 232, 133, .95));
-}
-.mirage-powerup-btn.is-shield-btn.is-ready .mirage-powerup-icon {
-  filter: drop-shadow(0 0 11px rgba(76, 233, 223, .95));
-}
-.mirage-powerup-btn.is-lasso-btn.is-ready .mirage-powerup-icon {
-  filter: drop-shadow(0 0 11px rgba(255, 209, 92, .95));
-}
-.mirage-powerup-btn.is-boost-btn.is-ready .mirage-powerup-icon {
-  filter: drop-shadow(0 0 11px rgba(82, 237, 160, .95));
-}
-.mirage-powerup-btn.is-pistol-btn.is-ready .mirage-powerup-icon {
-  filter: drop-shadow(0 0 11px rgba(255, 110, 102, .95));
-}
-
-.mirage-powerup-gem-hint {
-  padding: 1.5px 5px;
-  border-radius: 999px;
-  font: 800 7.5px var(--mono);
-  letter-spacing: .06em;
-  white-space: nowrap;
-}
-.mirage-powerup-gem-hint.is-blue {
-  background: rgba(69, 228, 255, .18);
-  border: 1px solid rgba(69, 228, 255, .55);
-  color: #7eeeff;
-}
-.mirage-powerup-gem-hint.is-yellow {
-  background: rgba(255, 209, 92, .18);
-  border: 1px solid rgba(255, 209, 92, .55);
-  color: #ffe07d;
-}
-.mirage-powerup-gem-hint.is-red {
-  background: rgba(242, 53, 44, .2);
-  border: 1px solid rgba(255, 110, 102, .55);
-  color: #ff9c97;
-}
-.mirage-powerup-gem-hint.is-green {
-  background: rgba(41, 217, 132, .2);
-  border: 1px solid rgba(82, 237, 160, .6);
-  color: #79f7b4;
+  transform: scale(1.14);
+  filter: drop-shadow(0 0 10px color-mix(in srgb, var(--mirage-power) 80%, transparent));
 }
 
 .mirage-powerup-key {
@@ -1994,11 +1915,11 @@ img.mirage-powerup-icon {
 }
 
 .mirage-powerup-btn.is-ready .mirage-powerup-key {
-  background: #ffe27a;
-  border-color: #fff4c2;
+  background: var(--mirage-power);
+  border-color: rgba(255, 255, 255, .6);
   color: #190e24;
   font-weight: 900;
-  box-shadow: 0 0 10px rgba(255, 226, 122, .8);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--mirage-power) 70%, transparent);
 }
 
 .mirage-powerup-btn-name {
@@ -2018,16 +1939,15 @@ img.mirage-powerup-icon {
   letter-spacing: .05em;
 }
 
-.mirage-powerup-badge {
-  padding: 2px 6px;
+/* Chargé : le compteur devient une pastille aux couleurs du diamant et
+   affiche le nombre de charges en réserve (×1, ×2, ×3). */
+.mirage-powerup-count.is-charges {
+  padding: 1.5px 6px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #ffe98a, #f5b935);
-  border: 1px solid #fff5c8;
-  color: #190e24;
-  font: 900 8.5px var(--mono);
-  letter-spacing: .06em;
-  box-shadow: 0 0 12px rgba(255, 222, 106, .85);
-  white-space: nowrap;
+  background: color-mix(in srgb, var(--mirage-power) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mirage-power) 55%, transparent);
+  color: var(--mirage-power);
+  font-weight: 900;
 }
 
 .mirage-powerup-progress-bg {
@@ -2042,7 +1962,7 @@ img.mirage-powerup-icon {
 .mirage-powerup-btn.is-ready .mirage-powerup-progress-bg {
   height: 7px;
   background: rgba(255, 255, 255, .28);
-  box-shadow: 0 0 10px rgba(255, 226, 122, .65);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--mirage-power) 55%, transparent);
 }
 
 .mirage-powerup-progress-fill {
@@ -2068,10 +1988,9 @@ img.mirage-powerup-icon {
 }
 
 .mirage-powerup-btn.is-ready .mirage-powerup-progress-fill {
-  box-shadow: 0 0 12px rgba(255, 240, 170, .9);
-  filter: brightness(1.2);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--mirage-power) 75%, transparent);
+  filter: brightness(1.15);
 }
-
 .mirage-power-toast {
   position: absolute;
   z-index: 5;
@@ -2139,22 +2058,12 @@ img.mirage-powerup-icon {
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  /* Pas de cadre autour des boutons : la barre ne garde que l'ancrage. */
   .mirage-powerup-bar {
-    bottom: 8px;
-    padding: 6px 8px;
+    bottom: 10px;
     gap: 5px;
     width: calc(100% - 16px);
     max-width: 390px;
-  }
-  .mirage-powerup-ready-callout {
-    padding: 4px 8px;
-    gap: 4px 6px;
-  }
-  .mirage-powerup-ready-callout strong {
-    font-size: 8px;
-  }
-  .mirage-powerup-ready-callout small {
-    font-size: 7px;
   }
   .mirage-powerup-buttons-row {
     width: 100%;
@@ -2163,17 +2072,13 @@ img.mirage-powerup-icon {
   .mirage-powerup-btn {
     flex: 1;
     min-width: 0;
-    padding: 6px 6px;
+    padding: 6px 6px 8px;
   }
   .mirage-powerup-icon {
     flex-basis: 26px;
     width: 26px;
     height: 26px;
     border-radius: 6px;
-  }
-  .mirage-powerup-gem-hint {
-    font-size: 6.5px;
-    padding: 1px 4px;
   }
   .mirage-powerup-key {
     font-size: 7px;
@@ -2182,7 +2087,7 @@ img.mirage-powerup-icon {
   .mirage-powerup-btn-name {
     font-size: 8px;
   }
-  .mirage-powerup-badge {
+  .mirage-powerup-count.is-charges {
     font-size: 7.5px;
     padding: 1px 4px;
   }
@@ -2360,7 +2265,6 @@ img.mirage-powerup-icon {
   .mirage-chip.is-shield,
   .mirage-chip.is-slow,
   .mirage-chip.is-power-ready,
-  .mirage-powerup-ready-callout,
   .mirage-powerup-btn.is-ready,
   .mirage-turbo-lines::before,
   .mirage-turbo-lines::after,
