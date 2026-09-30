@@ -200,6 +200,11 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: mirageHitFlash .5s ease-out both;
 }
 .mirage-viewport.is-hit .mirage-world { animation: mirageShake .42s linear; }
+.mirage-viewport.is-mud::before {
+  content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 68%, transparent 45%, rgba(128, 76, 36, .46));
+  animation: mirageHitFlash .45s ease-out both;
+}
 .mirage-viewport.is-glow::before {
   content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none;
   background: radial-gradient(110% 90% at 50% 62%, rgba(255, 214, 110, .3), transparent 58%);
@@ -314,6 +319,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-chip.is-shield { background: rgba(76, 233, 223, .12); border: 1px solid rgba(76, 233, 223, .4); color: #8ff2ea; animation: mirageChipPulse 1.4s ease-in-out infinite; }
 .mirage-chip.is-boost { background: rgba(41, 217, 132, .18); border: 1px solid rgba(41, 217, 132, .55); color: #6ef7af; box-shadow: 0 0 12px rgba(41, 217, 132, .45); animation: mirageChipPulse .9s ease-in-out infinite; }
 .mirage-chip.is-slow { background: rgba(255, 123, 123, .14); border: 1px solid rgba(255, 123, 123, .42); color: #ff9d9d; animation: mirageChipPulse 1s ease-in-out infinite; }
+.mirage-chip.is-slow.is-mud { background: rgba(140, 86, 43, .26); border-color: rgba(214, 148, 86, .58); color: #f7c997; }
 .mirage-chip-power-icon {
   display: inline-block;
   width: 14px;
@@ -2364,6 +2370,7 @@ img.mirage-powerup-icon {
     animation: none !important;
   }
   .mirage-viewport.is-hit::before,
+  .mirage-viewport.is-mud::before,
   .mirage-viewport.is-glow::before,
   .mirage-viewport.is-power-ready::before { animation: none !important; opacity: 0; }
   .mirage-touch-layer .mirage-swipe-hint.is-on { animation: none; opacity: 1; }

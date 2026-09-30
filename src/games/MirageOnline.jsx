@@ -1001,7 +1001,7 @@ export default function MirageOnline({
                         {((hud.shieldCharges || 0) > 0 || (hud.lassoCharges || 0) > 0 || (hud.pistolCharges || 0) > 0 || (hud.boostCharges || 0) > 0) ? ' · ⚡ POUVOIR PRÊT !' : ''}
                         {hud.shieldActive ? ' · 🛡️ BOUCLIER' : ''}
                         {hud.powerBoostActive ? ` · ⚡ TURBO ${Math.ceil(hud.powerBoostLeft)}s` : ''}
-                        {hud.slowed ? (hud.slowKind === 'trap' ? ' · ◆ PIÉGÉ' : ' · 🪢 RALENTI') : ''}
+                        {hud.slowed ? (hud.slowKind === 'mud' ? ' · 🟤 BOUE' : hud.slowKind === 'trap' ? ' · ◆ PIÉGÉ' : ' · 🪢 RALENTI') : ''}
                         {hud.stunned ? ' · 🔫 À TERRE' : ''}
                         {hud.rank ? ` · #${hud.rank}` : ''}
                       </strong>
@@ -1042,6 +1042,11 @@ export default function MirageOnline({
                           setActive(false);
                           setFinished(true);
                           setXp(onRunFinish?.(p) ?? null);
+                        }}
+                        onMud={() => {
+                          audio.current?.mudSplash?.();
+                          setPowerToast('🟤 Flaque de boue ! Monture ralentie…');
+                          setTimeout(() => setPowerToast(null), 1800);
                         }}
                         onPickup={(tier, key) => {
                           audio.current?.pickup(tier);

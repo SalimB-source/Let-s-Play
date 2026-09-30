@@ -493,6 +493,17 @@ export class DesertGroove {
     this.noise(time + 0.05, 0.28, 0.05, 1400);
   }
 
+  /** Mud puddle splash: wet squelch, heavy hoof suction and bubbling mire drops. */
+  mudSplash() {
+    if (!this.running || !this.context || !this.master) return;
+    const time = this.context.currentTime + 0.005;
+    this.noise(time, 0.24, 0.11, 850);
+    this.noise(time + 0.06, 0.18, 0.07, 1600);
+    [220, 165, 118, 86].forEach((frequency, index) => {
+      this.tone(frequency, time + index * 0.045, 0.19, 'triangle', 0.15, 680);
+    });
+  }
+
   /** Bright ascending arcade fanfare when a power-up finishes charging. */
   powerReady() {
     if (!this.running || !this.context || !this.master) return;

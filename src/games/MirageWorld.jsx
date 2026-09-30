@@ -18,6 +18,7 @@ import {
   createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, DUEL_RIVALS,
   chooseNpcPowerAction, POWER_BOOST_DURATION, POWER_BOOST_BONUS,
   GEM_RESPAWN_DELAY, markGemTaken, isGemHidden, prairieSunsetState,
+  MUD_SLOW_DURATION, MUD_SLOW_FACTOR, hitsMudPuddle, resolveMudSlow,
 } from './mirageRules';
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 
@@ -215,7 +216,100 @@ function makeGemBurst() {
   return group;
 }
 
+function makeMudPuddle() {
+  const group = new THREE.Group();
+  const bankMat = new THREE.MeshStandardMaterial({
+    color: 0x3b2313,
+    roughness: 0.92,
+    flatShading: true,
+  });
+  const mudMat = new THREE.MeshStandardMaterial({
+    color: 0x5c381e,
+    emissive: 0x241207,
+    emissiveIntensity: 0.25,
+    roughness: 0.18,
+    metalness: 0.28,
+    flatShading: true,
+  });
+  const sheenMat = new THREE.MeshStandardMaterial({
+    color: 0x784b2a,
+    emissive: 0x381e0c,
+    emissiveIntensity: 0.3,
+    roughness: 0.12,
+    metalness: 0.35,
+    flatShading: true,
+  });
+
+  // Main outer dark earth bank
+  const bank = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.98, 0.045, 14), bankMat);
+  bank.position.set(0, 0.022, 0);
+  bank.scale.set(0.95, 1, 1.38);
+  group.add(bank);
+
+  // Organic secondary mud lobes
+  const lobeFront = new THREE.Mesh(new THREE.CylinderGeometry(0.54, 0.6, 0.042, 10), bankMat);
+  lobeFront.position.set(-0.26, 0.021, -0.68);
+  lobeFront.scale.set(1.05, 1, 1.15);
+  group.add(lobeFront);
+
+  const lobeBack = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.62, 0.042, 10), bankMat);
+  lobeBack.position.set(0.24, 0.021, 0.66);
+  lobeBack.scale.set(1.06, 1, 1.12);
+  group.add(lobeBack);
+
+  // Glossy wet mud pool
+  const pool = new THREE.Mesh(new THREE.CylinderGeometry(0.76, 0.8, 0.052, 14), mudMat);
+  pool.position.set(0, 0.028, 0);
+  pool.scale.set(0.9, 1, 1.3);
+  group.add(pool);
+
+  const poolFront = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.46, 0.05, 10), mudMat);
+  poolFront.position.set(-0.24, 0.027, -0.64);
+  poolFront.scale.set(1, 1, 1.1);
+  group.add(poolFront);
+
+  const poolBack = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.48, 0.05, 10), mudMat);
+  poolBack.position.set(0.22, 0.027, 0.62);
+  poolBack.scale.set(1, 1, 1.08);
+  group.add(poolBack);
+
+  // Central wet mire sheen
+  const sheen = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.48, 0.056, 12), sheenMat);
+  sheen.position.set(0.05, 0.031, -0.06);
+  sheen.scale.set(0.86, 1, 1.2);
+  group.add(sheen);
+
+  // Raised mud clods along the rim + surface mud bubbles
+  const clodGeo = new THREE.OctahedronGeometry(0.11);
+  for (const [cx, cy, cz, sx, sy, sz] of [
+    [-0.68, 0.055, -0.42, 1.2, 0.65, 1.1],
+    [0.66, 0.055, 0.36, 1.1, 0.6, 1.25],
+    [-0.4, 0.05, 0.88, 1.15, 0.6, 1.0],
+    [0.44, 0.055, -0.82, 1.0, 0.65, 1.15],
+  ]) {
+    const clod = new THREE.Mesh(clodGeo, bankMat);
+    clod.position.set(cx, cy, cz);
+    clod.scale.set(sx, sy, sz);
+    group.add(clod);
+  }
+
+  const bubbleGeo = new THREE.SphereGeometry(0.075, 7, 6);
+  for (const [bx, by, bz, bs] of [
+    [-0.18, 0.052, -0.34, 1.0],
+    [0.22, 0.056, 0.26, 1.15],
+    [-0.04, 0.048, 0.56, 0.85],
+  ]) {
+    const bubble = new THREE.Mesh(bubbleGeo, sheenMat);
+    bubble.position.set(bx, by, bz);
+    bubble.scale.set(bs, bs * 0.55, bs);
+    group.add(bubble);
+  }
+
+  return group;
+}
+
 function makeHazard(kind) {
+  if (kind === 'mud') return makeMudPuddle();
   if (kind === 'cactus') return makeCactus();
   const group = new THREE.Group();
   const cube = new THREE.BoxGeometry(1, 1, 1);
@@ -707,11 +801,25 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     row.index = rowCounter++;
     row.gap = encounter.gap;
     row.items = encounter.items.map((spec, itemIndex) => {
-      const object = spec.kind === 'crystal' ? makeCrystal(spec.tier) : prairie ? prairieObstacle(spec.kind) : western ? westernObstacle(spec.kind) : sardinia ? sardiniaObstacle(spec.kind) : alger ? algerObstacle(spec.kind) : japan ? japanObstacle(spec.kind) : makeHazard(spec.kind);
+      const object = spec.kind === 'crystal'
+        ? makeCrystal(spec.tier)
+        : spec.kind === 'mud'
+          ? makeMudPuddle()
+          : prairie
+            ? prairieObstacle(spec.kind)
+            : western
+              ? westernObstacle(spec.kind)
+              : sardinia
+                ? sardiniaObstacle(spec.kind)
+                : alger
+                  ? algerObstacle(spec.kind)
+                  : japan
+                    ? japanObstacle(spec.kind)
+                    : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
-      const taken = isGemHidden(sharedGems, key, elapsed);
+      const taken = spec.kind === 'crystal' && isGemHidden(sharedGems, key, elapsed);
       object.visible = !taken;
       row.group.add(object);
       return { ...spec, key, object, collected: false, burst: false };
@@ -739,7 +847,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let burstCursor = 0;
   const burstColor = new THREE.Color();
 
-  function spawnGemBurst(x, y, z, tier = 0) {
+  function spawnGemBurst(x, y, z, tier = 0, customColor = null) {
     const burst = gemBursts.find((candidate) => !candidate.userData.active)
       || gemBursts[(burstCursor += 1) % gemBursts.length];
     const data = burst.userData;
@@ -747,10 +855,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     data.age = 0;
     data.tier = tier;
     data.specs = reduceMotion ? [] : gemBurstShards(GEM_BURST_SHARDS, Math.random);
-    burstColor.set(CRYSTALS[tier]?.color ?? CRYSTALS[0].color);
+    burstColor.set(customColor ?? CRYSTALS[tier]?.color ?? CRYSTALS[0].color);
     data.shardMaterial.color.copy(burstColor);
     data.shardMaterial.emissive.copy(burstColor);
-    data.flashMaterial.color.copy(burstColor).lerp(new THREE.Color(0xffffff), 0.6);
+    data.flashMaterial.color.copy(burstColor).lerp(new THREE.Color(customColor ? 0x8f5b34 : 0xffffff), 0.6);
     burst.position.set(x, y, z);
     burst.visible = true;
     data.ring.quaternion.copy(camera.quaternion);
@@ -1355,7 +1463,24 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       if (npc.dist + speed * dt >= target.pos) {
         const height = jumpHeight(npc.jumpLeft);
         const near = (lane) => Math.abs(npc.x - LANES[lane]) < 0.95;
-        const hazard = target.items.find((item) => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(near));
+        const mud = target.items.find((item) => hitsMudPuddle(item, npc.x, height));
+        if (mud && !npc.shieldActive) {
+          const mudSlow = resolveMudSlow({
+            baseSpeed: npc.base,
+            mode: race.mode,
+            slowTimer: npc.slowTimer,
+            slowFactor: npc.slowFactor,
+            slowKind: 'mud',
+          });
+          npc.slowTimer = mudSlow.slowTimer;
+          npc.slowFactor = mudSlow.slowFactor;
+          npc.base = mudSlow.baseSpeed;
+          npc.boost = mudSlow.boost;
+          if (Math.abs(distance - npc.dist) < 42) {
+            spawnGemBurst(npc.x, 0.32, distance - npc.dist, 1, 0x5c371d);
+          }
+        }
+        const hazard = target.items.find((item) => item.kind !== 'crystal' && item.kind !== 'mud' && (item.lanes || [item.lane]).some(near));
         if (hazard && !(hazard.kind === 'barrier' && height > 1.05) && npc.invulnerable <= 0) {
           if (npc.shieldActive) {
             npc.shieldActive = false;
@@ -1434,6 +1559,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     lastHud = now;
     const leadingRival = getLeadingRival();
     const effectivePlayerBonus = Math.max(boost.bonus, powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0);
+    const hudSlowMul = playerSlowTimer > 0 ? playerSlowFactor : 1;
     callbacks.hud?.({
       score,
       gems,
@@ -1445,7 +1571,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       lane: laneIndex,
       jump: jumpHeight(jumpLeft),
       rivalDistance,
-      speed: duelSpeed(baseSpeed * (playerSlowTimer > 0 ? playerSlowFactor : 1), effectivePlayerBonus),
+      speed: duelSpeed(baseSpeed, effectivePlayerBonus) * hudSlowMul,
       boostLeft: Math.max(boost.left, powerBoostTimer),
       powerBoostActive: powerBoostTimer > 0,
       powerBoostLeft: powerBoostTimer,
@@ -1779,8 +1905,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
         if (!row.checked && row.group.position.z > -0.65 && row.group.position.z < 0.95) {
           row.checked = true;
-          const hazard = row.items.find((item) => item.kind !== 'crystal' && (item.lanes || [item.lane]).some(lane => Math.abs(player.position.x - LANES[lane]) < 0.95));
-          const jumpedHighEnough = hazard?.kind === 'barrier' && jumpHeight(jumpLeft) > 1.05;
+          const playerJumpY = jumpHeight(jumpLeft);
+          const hazard = row.items.find((item) => item.kind !== 'crystal' && item.kind !== 'mud' && (item.lanes || [item.lane]).some(lane => Math.abs(player.position.x - LANES[lane]) < 0.95));
+          const jumpedHighEnough = hazard?.kind === 'barrier' && playerJumpY > 1.05;
           const collided = Boolean(hazard && !jumpedHighEnough);
           if (collided) {
             if (shieldActive) {
@@ -1797,6 +1924,25 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
               callbacks.crash?.();
               if (impact.gameOver) finish();
             }
+          }
+          const mud = row.items.find((item) => hitsMudPuddle(item, player.position.x, playerJumpY));
+          if (mud && !collided && !shieldActive) {
+            const mudSlow = resolveMudSlow({
+              baseSpeed,
+              mode: race.mode,
+              slowTimer: playerSlowTimer,
+              slowFactor: playerSlowFactor,
+              slowKind: playerSlowKind,
+            });
+            playerSlowTimer = mudSlow.slowTimer;
+            playerSlowFactor = mudSlow.slowFactor;
+            playerSlowKind = mudSlow.slowKind;
+            baseSpeed = mudSlow.baseSpeed;
+            boost = mudSlow.boost;
+            crashAnimation = Math.max(crashAnimation, 0.24);
+            crashDirection = laneIndex === 0 ? 1 : -1;
+            spawnGemBurst(player.position.x, 0.32, row.group.position.z + mud.object.position.z, 1, 0x5c371d);
+            callbacks.mud?.();
           }
           const crystal = row.items.find((item) => item.kind === 'crystal' && Math.abs(player.position.x - LANES[item.lane]) < 0.85 && (!item.raised || jumpHeight(jumpLeft) > 1.05) && !isGemHidden(sharedGems, item.key, elapsed) && Number(network?.gemPickups?.[item.key] || 0) <= wallNow);
           if (crystal) {
@@ -1928,14 +2074,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     player.position.x = playerLateralPosition(player.position.x, targetX, dt, jumpLeft);
     const crashProgress = crashAnimation > 0 ? 1 - crashAnimation / 0.42 : 0;
     const crashBounce = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.18 : 0;
-    player.position.y = jumpHeight(jumpLeft) + crashBounce;
+    const mudSlowed = running && playerSlowTimer > 0 && playerSlowKind === 'mud' && playerStun <= 0;
+    const mudBob = mudSlowed && jumpLeft <= 0 ? -0.05 + Math.sin(time * 0.022) * 0.035 : 0;
+    player.position.y = Math.max(0, jumpHeight(jumpLeft) + crashBounce + mudBob);
     const parts = player.userData.parts;
     const turboActive = running && powerBoostTimer > 0 && playerStun <= 0;
-    const gallopRate = turboActive ? 0.026 : 0.018;
+    const gallopRate = turboActive ? 0.026 : mudSlowed ? 0.011 : 0.018;
     const runWave = Math.sin(time * (running ? gallopRate : 0.002));
     const galloping = running && playerStun <= 0;
     parts.legs.forEach((leg, index) => {
-      leg.rotation.x = jumpLeft > 0 ? (index < 2 ? -0.7 : 0.65) : galloping ? Math.sin(time * gallopRate + index * 2.2) * (turboActive ? 0.82 : 0.65) : 0;
+      leg.rotation.x = jumpLeft > 0 ? (index < 2 ? -0.7 : 0.65) : galloping ? Math.sin(time * gallopRate + index * 2.2) * (turboActive ? 0.82 : mudSlowed ? 0.45 : 0.65) : 0;
     });
     poseRider(player, playerStun, playerStunSide);
     if (turboActive) {
@@ -2112,7 +2260,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -2122,7 +2270,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
   const raceRef = useRef(race);
   raceRef.current = race;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
+  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -2132,6 +2280,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
         hud: (data) => callbackRefs.current.onHud?.(data),
         finish: (data) => callbackRefs.current.onFinish?.(data),
         crash: () => callbackRefs.current.onCrash?.(),
+        mud: () => callbackRefs.current.onMud?.(),
         pickup: (tier, key) => callbackRefs.current.onPickup?.(tier, key),
         cheer: () => callbackRefs.current.onCheer?.(),
         powerUp: (info) => callbackRefs.current.onPowerUp?.(info),
