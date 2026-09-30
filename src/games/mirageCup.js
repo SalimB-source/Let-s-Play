@@ -3,9 +3,9 @@
 //
 // Une coupe enchaîne plusieurs courses DUEL à quatre cavaliers (le joueur +
 // L’Ombre, Sauge et Améthyste) sur des terrains imposés, dans un ordre fixe.
-// Sur une piste à trois voies (l’application, voir `mirageLanes.js`), il n’y a
-// de place que pour trois cavaliers : la coupe suit le duel et n’aligne alors
-// que L’Ombre et Sauge.
+// Sur une piste à trois voies (le téléphone, navigateur comme application —
+// voir `mirageLanes.js`), il n’y a de place que pour trois cavaliers : la
+// coupe suit le duel et n’aligne alors que L’Ombre et Sauge.
 // Chaque arrivée rapporte des points selon la place — plus on finit haut, plus
 // on en gagne —, les points s’additionnent d’une course à l’autre, et le
 // meilleur total soulève le trophée après la dernière course.
@@ -18,7 +18,7 @@ import { DUEL_DISTANCE, duelRivalsForTrack } from './mirageRules.js';
 
 /** Points par place : 1ᵉʳ, 2ᵉ, 3ᵉ, 4ᵉ — strictement décroissant. */
 export const CUP_POINTS = Object.freeze([10, 7, 4, 2]);
-/** Le joueur + les trois rivaux PNJ de la piste à quatre voies (le site). */
+/** Le joueur + les trois rivaux PNJ de piste à quatre voies (grand écran). */
 export const CUP_RIDER_COUNT = CUP_POINTS.length;
 export const PLAYER_RIDER_ID = 'player';
 export const MAX_RIDER_NAME = 20;

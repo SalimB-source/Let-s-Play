@@ -225,10 +225,11 @@ initSinglePlayback();
 // parfois son zoom mémorisé une fois la page déjà chargée.
 normalizePhoneViewport();
 
-// Mirage Rush se joue sur trois voies dans l'application Android et sur quatre
-// sur le site (voir src/games/mirageLanes.js). Le choix est fait ici, une seule
-// fois, AVANT le premier rendu : les courses, les rivaux du Duel et le décor
-// lisent la piste au moment de construire la partie.
+// Mirage Rush se joue sur trois voies sur téléphone — navigateur comme
+// application — et sur quatre sur ordinateur et tablette (voir
+// src/games/mirageLanes.js). Le choix est fait ici, une seule fois, AVANT le
+// premier rendu : les courses, les rivaux du Duel et le décor lisent la piste
+// au moment de construire la partie.
 applyLaneCountForDevice();
 
 createRoot(document.getElementById('root')).render(<App />);

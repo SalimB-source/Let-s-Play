@@ -17,7 +17,7 @@
  *      rival gagne : le message le dit et rappelle ta place.
  *   3. Abandon : « CHOISIR TON MODE », « ABANDONNER LA COUPE » et Échap pendant
  *      le compte à rebours ramènent à l'intro, et la coupe suivante repart de 0.
- *   4. Piste à trois voies de l'application (`setLaneCount(3)`) : le moteur n'aligne
+ *   4. Piste à trois voies du téléphone (`setLaneCount(3)`) : le moteur n'aligne
  *      que deux rivaux, la coupe compte donc trois cavaliers (le joueur, L'Ombre et
  *      Sauge), trois places au barème (10 / 7 / 4) et aucun cavalier fantôme.
  */

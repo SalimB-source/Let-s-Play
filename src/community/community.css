@@ -527,7 +527,7 @@
   .community-comment-feed { padding-left: 16px; padding-right: 16px; }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .community-hero { padding: 100px 0 48px; }
   .community-hero-grid { grid-template-columns: 1fr; gap: 12px; padding-top: 37px; }
   .community-hero-copy { max-width: 640px; }
@@ -547,7 +547,7 @@
   .community-comment-feed { max-height: 440px; }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .community-hero { padding: 89px 0 35px; }
   .community-hero-inner,
   .community-workspace { width: min(100% - 30px, 1240px); }
