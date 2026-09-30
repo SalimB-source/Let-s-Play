@@ -21,7 +21,7 @@ const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60_000).toISOStr
 export const FEATURED_COMMUNITY_GROUP = {
   id: SOULSLIKE_GROUP_ID,
   name: 'Les joueurs de soulslike',
-  description: 'Boss impossibles, builds improbables et lore à décrypter : un espace pour parler des Souls, d’Elden Ring, de Sekiro et de tous les jeux qui nous font recommencer.',
+  description: 'Boss impossibles, builds improbables et lore à décrypter : un espace pour parler des Souls, d\'Elden Ring, de Sekiro et de tous les jeux qui nous font recommencer.',
   category: 'Soulslike',
   tags: ['Elden Ring', 'Dark Souls', 'Sekiro'],
   created_by_name: 'La communauté',
@@ -47,7 +47,7 @@ export const SOULSLIKE_STARTER_COMMENTS = [
     user_id: 'community-player-pixelnoir',
     author_name: 'PixelNoir',
     author_avatar: null,
-    body: 'La première victoire contre Malenia sans invocation… j’ai encore les mains qui tremblent. Quel boss vous a demandé le plus de tentatives ?',
+    body: 'La première victoire contre Malenia sans invocation… j\'ai encore les mains qui tremblent. Quel boss vous a demandé le plus de tentatives ?',
     created_at: minutesAgo(74),
     is_seed: true,
   },
@@ -57,7 +57,7 @@ export const SOULSLIKE_STARTER_COMMENTS = [
     user_id: 'community-player-paradeparfaite',
     author_name: 'ParadeParfaite',
     author_avatar: null,
-    body: 'Sekiro reste mon meilleur entraînement à la patience. Genichiro m’a appris à parer plutôt qu’à fuir — et vous, quel jeu vous a fait progresser ?',
+    body: 'Sekiro reste mon meilleur entraînement à la patience. Genichiro m\'a appris à parer plutôt qu\'à fuir — et vous, quel jeu vous a fait progresser ?',
     created_at: minutesAgo(18),
     is_seed: true,
   },
@@ -221,6 +221,18 @@ export async function createRemoteCommunityComment(groupId, body) {
   return comment;
 }
 
+export async function deleteRemoteCommunityGroup(groupId) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  const { error } = await supabase.rpc('delete_community_group', { p_group_id: groupId });
+  if (error) throw error;
+}
+
+export async function moderateRemoteCommunityComment(commentId, groupId) {
+  if (!supabase) throw new Error('Supabase is not configured');
+  const { error } = await supabase.rpc('moderate_community_comment', { p_comment_id: commentId, p_group_id: groupId });
+  if (error) throw error;
+}
+
 function randomId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
@@ -261,6 +273,24 @@ export function createLocalCommunityComment(groupId, body, user) {
     comments: { ...state.comments, [groupId]: [...previous, comment] },
   });
   return comment;
+}
+
+export function deleteLocalCommunityGroup(groupId) {
+  const state = readLocalCommunityState();
+  state.groups = state.groups.filter(g => g.id !== groupId);
+  delete state.comments[groupId];
+  writeLocalCommunityState(state);
+}
+
+export function deleteLocalCommunityComment(groupId, commentId) {
+  const state = readLocalCommunityState();
+  if (!state.comments[groupId]) return;
+  state.comments[groupId] = state.comments[groupId].filter(c => c.id !== commentId);
+  writeLocalCommunityState(state);
+}
+
+export function isGroupCreator(group, userId) {
+  return group && group.created_by === userId;
 }
 
 export function isMissingCommunityTable(error) {

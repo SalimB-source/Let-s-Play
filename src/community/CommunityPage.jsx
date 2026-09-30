@@ -18,10 +18,15 @@ import {
   createLocalCommunityGroup,
   createRemoteCommunityComment,
   createRemoteCommunityGroup,
+  deleteLocalCommunityComment,
+  deleteLocalCommunityGroup,
+  deleteRemoteCommunityGroup,
   fetchCommunityComments,
   fetchCommunityGroups,
+  isGroupCreator,
   mergeCommunityComments,
   mergeCommunityGroups,
+  moderateRemoteCommunityComment,
   readLocalCommunityComments,
   readLocalCommunityGroups,
 } from './communityData';
@@ -108,6 +113,14 @@ const COPY = {
     commentPosted: 'Message publié.',
     composerLocalHint: 'Publication locale : elle ne sera visible que sur cet appareil.',
     footerHint: 'Une communauté se construit à plusieurs.',
+    groupDeleted: 'Groupe supprimé.',
+    commentDeleted: 'Commentaire supprimé.',
+    deleteGroupConfirm: 'Êtes-vous sûr de vouloir supprimer ce groupe ? Cette action est irréversible.',
+    deleteGroupAria: 'Supprimer le groupe',
+    deleteGroupTitle: 'Supprimer le groupe',
+    deleteCommentConfirm: 'Êtes-vous sûr de vouloir supprimer ce commentaire ? Cette action est irréversible.',
+    moderateCommentAria: 'Modérer le commentaire',
+    moderateCommentTitle: 'Supprimer le commentaire',
     starterComments: [
       'Je repars sur Elden Ring en build force. Vous conseillez quelle arme pour traverser le début du jeu sans trop souffrir ?',
       'La première victoire contre Malenia sans invocation… j’ai encore les mains qui tremblent. Quel boss vous a demandé le plus de tentatives ?',
@@ -121,7 +134,7 @@ const COPY = {
     localMode: 'Preview mode: your groups and comments are saved on this device.', localFallback: 'The community server is unavailable. Your post is saved on this device.', sharedMode: 'Community space connected', syncError: 'Sync is unavailable right now. Please try again in a moment.',
     groupsKicker: 'FIND YOUR PEOPLE', groupsTitleA: 'CONVERSATIONS', groupsTitleB: 'START HERE.', groupsText: 'Pick a universe or create your own.', createShort: 'New group', searchLabel: 'Search groups', searchPlaceholder: 'A game, a genre, a feeling…', all: 'All groups', listHeading: 'OPEN GROUPS', example: 'EXAMPLE', author: 'Created by', open: 'OPEN', emptyGroups: 'No groups found. Try another filter or start your own.', selectedGroup: 'DISCUSSION GROUP', featuredLabel: 'EXAMPLE GROUP', messages: 'MESSAGES', memberLabel: 'Open community', commentsTitle: 'The conversation', commentsIntro: 'Share a tip, a question or a victory — just mark your spoilers.', emptyComments: 'The discussion starts here. Post the first topic!', localTag: 'ON THIS DEVICE', refresh: 'Refresh discussion', commentPlaceholder: 'Write your message…', commentLabel: 'Your comment', commentHint: 'Be kind, respect other players and mark spoilers.', send: 'Post', sending: 'Posting…', signInTitle: 'Join the conversation', signInText: 'Sign in to post a message or create a group shared with the community.', signIn: 'Sign in', character: 'characters',
     groupModalKicker: 'NEW PLAY SPACE', groupModalTitle: 'Create your group.', groupModalText: 'A good group starts with a clear topic and a welcoming community.', nameLabel: 'Group name', namePlaceholder: 'e.g. Open-world explorers', descriptionLabel: 'Description', descriptionPlaceholder: 'What do you talk about here? Give other players a reason to join.', categoryLabel: 'Universe', tagsLabel: 'Games or keywords', tagsPlaceholder: 'Elden Ring, co-op, indie…', tagsHint: 'Separate keywords with commas (up to 4).', createSubmit: 'Create group', creating: 'Creating…', cancel: 'Cancel', close: 'Close', nameError: 'Name must be between 3 and 56 characters.', descriptionError: 'Description must contain at least 12 characters.', duplicateError: 'A group with that name already exists.', commentError: 'Your comment must contain between 1 and 1,000 characters.', rateLimitError: 'Slow down! Wait a moment before posting again.', authError: 'Your session expired. Sign in to post.', actionError: 'Could not post right now. Please try again.', groupError: 'Could not create this group right now. Please try again.',
-    exampleDescription: 'Impossible bosses, unexpected builds and lore to decode: a space to talk about Souls, Elden Ring, Sekiro and every game that sends us back to the start.', categoryLabels: { Soulslike: 'Soulslike', RPG: 'RPG', Coop: 'Co-op', FPS: 'FPS', Indé: 'Indie', Autre: 'Other' }, categoryDescription: 'UNIVERSE', groupCreated: 'Group created. Start the conversation!', commentPosted: 'Message posted.', composerLocalHint: 'Local post: only visible on this device.', footerHint: 'A community is built together.', starterComments: [
+    exampleDescription: 'Impossible bosses, unexpected builds and lore to decode: a space to talk about Souls, Elden Ring, Sekiro and every game that sends us back to the start.', categoryLabels: { Soulslike: 'Soulslike', RPG: 'RPG', Coop: 'Co-op', FPS: 'FPS', Indé: 'Indie', Autre: 'Other' }, categoryDescription: 'UNIVERSE', groupCreated: 'Group created. Start the conversation!', commentPosted: 'Message posted.', composerLocalHint: 'Local post: only visible on this device.', footerHint: 'A community is built together.', groupDeleted: 'Group deleted.', commentDeleted: 'Comment deleted.', deleteGroupConfirm: 'Are you sure you want to delete this group? This action cannot be undone.', deleteGroupAria: 'Delete group', deleteGroupTitle: 'Delete group', deleteCommentConfirm: 'Are you sure you want to delete this comment? This action cannot be undone.', moderateCommentAria: 'Moderate comment', moderateCommentTitle: 'Delete comment', starterComments: [
       'I’m starting Elden Ring again with a strength build. Which weapon would you recommend for the early game?',
       'My first Malenia win without a summon… my hands are still shaking. Which boss took you the most tries?',
       'Sekiro is still my favorite lesson in patience. Genichiro taught me to parry instead of running away — what game helped you improve?',
@@ -134,7 +147,7 @@ const COPY = {
     localMode: 'وضع المعاينة: تُحفظ مجموعاتك وتعليقاتك على هذا الجهاز.', localFallback: 'خادم المجتمع غير متاح. حُفظت مشاركتك على هذا الجهاز.', sharedMode: 'المجتمع متصل', syncError: 'المزامنة غير متاحة الآن. حاول مجدداً بعد قليل.',
     groupsKicker: 'اعثر على مجموعتك', groupsTitleA: 'النقاشات', groupsTitleB: 'تبدأ هنا.', groupsText: 'اختر عالماً أو أنشئ مجموعتك.', createShort: 'مجموعة جديدة', searchLabel: 'ابحث عن مجموعة', searchPlaceholder: 'لعبة أو نوع أو فكرة…', all: 'كل المجموعات', listHeading: 'مجموعات مفتوحة', example: 'مثال', author: 'أنشأها', open: 'مفتوحة', emptyGroups: 'لم نعثر على مجموعات. جرّب مرشحاً آخر أو أنشئ مجموعتك.', selectedGroup: 'مجموعة نقاش', featuredLabel: 'مجموعة نموذجية', messages: 'رسائل', memberLabel: 'مجتمع مفتوح', commentsTitle: 'المحادثة', commentsIntro: 'شارك نصيحة أو سؤالاً أو انتصاراً — ولا تنسَ الإشارة إلى الحرق.', emptyComments: 'يبدأ النقاش هنا. اطرح أول موضوع!', localTag: 'على هذا الجهاز', refresh: 'حدّث النقاش', commentPlaceholder: 'اكتب رسالتك…', commentLabel: 'تعليقك', commentHint: 'كن لطيفاً واحترم اللاعبين وأشر إلى الحرق.', send: 'انشر', sending: 'جارٍ النشر…', signInTitle: 'انضم إلى النقاش', signInText: 'سجّل الدخول لنشر رسالة أو إنشاء مجموعة مشتركة مع المجتمع.', signIn: 'تسجيل الدخول', character: 'حرفاً',
     groupModalKicker: 'مساحة لعب جديدة', groupModalTitle: 'أنشئ مجموعتك.', groupModalText: 'تبدأ المجموعة الجيدة بموضوع واضح ومجتمع مرحّب.', nameLabel: 'اسم المجموعة', namePlaceholder: 'مثال: مستكشفو العوالم المفتوحة', descriptionLabel: 'الوصف', descriptionPlaceholder: 'ما موضوع النقاش؟ شجّع اللاعبين على الانضمام.', categoryLabel: 'العالم', tagsLabel: 'ألعاب أو كلمات مفتاحية', tagsPlaceholder: 'Elden Ring، تعاوني، مستقل…', tagsHint: 'افصل الكلمات بفواصل (4 كحد أقصى).', createSubmit: 'أنشئ المجموعة', creating: 'جارٍ الإنشاء…', cancel: 'إلغاء', close: 'إغلاق', nameError: 'يجب أن يتراوح الاسم بين 3 و56 حرفاً.', descriptionError: 'يجب ألا يقل الوصف عن 12 حرفاً.', duplicateError: 'توجد مجموعة بهذا الاسم بالفعل.', commentError: 'يجب أن يتراوح التعليق بين حرف واحد و1000 حرف.', rateLimitError: 'تمهّل قليلاً قبل النشر مجدداً.', authError: 'انتهت جلستك. سجّل الدخول للنشر.', actionError: 'تعذّر النشر الآن. حاول مجدداً.', groupError: 'تعذّر إنشاء المجموعة الآن. حاول مجدداً.',
-    exampleDescription: 'زعماء مستحيلون وبُنى غير متوقعة وأسرار لفكّها: مساحة للحديث عن ألعاب Souls وElden Ring وSekiro وكل لعبة تعيدنا إلى البداية.', categoryLabels: { Soulslike: 'سولزلايك', RPG: 'أدوار', Coop: 'تعاوني', FPS: 'تصويب', Indé: 'مستقل', Autre: 'أخرى' }, categoryDescription: 'العالم', groupCreated: 'أُنشئت المجموعة. ابدأ النقاش!', commentPosted: 'نُشرت الرسالة.', composerLocalHint: 'نشر محلي: لا يظهر إلا على هذا الجهاز.', footerHint: 'المجتمع يُبنى معاً.', starterComments: [
+    exampleDescription: 'زعماء مستحيلون وبُنى غير متوقعة وأسرار لفكّها: مساحة للحديث عن ألعاب Souls وElden Ring وSekiro وكل لعبة تعيدنا إلى البداية.', categoryLabels: { Soulslike: 'سولزلايك', RPG: 'أدوار', Coop: 'تعاوني', FPS: 'تصويب', Indé: 'مستقل', Autre: 'أخرى' }, categoryDescription: 'العالم', groupCreated: 'أُنشئت المجموعة. ابدأ النقاش!', commentPosted: 'نُشرت الرسالة.', composerLocalHint: 'نشر محلي: لا يظهر إلا على هذا الجهاز.', footerHint: 'المجتمع يُبنى معاً.', groupDeleted: 'تم حذف المجموعة.', commentDeleted: 'تم حذف التعليق.', deleteGroupConfirm: 'هل أنت متأكد من حذف هذه المجموعة؟ لا يمكن التراجع عن هذا الإجراء.', deleteGroupAria: 'حذف المجموعة', deleteGroupTitle: 'حذف المجموعة', deleteCommentConfirm: 'هل أنت متأكد من حذف هذا التعليق؟ لا يمكن التراجع عن هذا الإجراء.', moderateCommentAria: 'إدارة التعليق', moderateCommentTitle: 'حذف التعليق', starterComments: [
       'أبدأ Elden Ring مجدداً ببناء يعتمد على القوة. ما السلاح الذي تنصحون به لبداية أسهل؟',
       'هزيمتي الأولى لمالينيا من دون استدعاء... ما زالت يداي ترتجفان. أي زعيم احتجتم إلى أكبر عدد من المحاولات له؟',
       'ما زالت Sekiro لعبتي المفضلة لتعلّم الصبر. علّمني جينيتشيرو التصدي بدلاً من الهرب؛ أي لعبة جعلتكم أفضل؟',
@@ -174,6 +187,14 @@ function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="m3 3 10 10M13 3 3 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -519,6 +540,121 @@ export default function CommunityPage() {
     }
   };
 
+  // Handler for group creator to delete their group
+  const handleDeleteGroup = async (groupId) => {
+    if (!confirm(copy.deleteGroupConfirm || 'Are you sure you want to delete this group? This action cannot be undone.')) {
+      return;
+    }
+    setActionError('');
+    setNotice('');
+    try {
+      const canUseRemote = communityBackendEnabled
+        && connection === 'shared'
+        && user
+        && !isDemo
+        && !String(groupId).startsWith('local-');
+      if (canUseRemote) {
+        try {
+          await deleteRemoteCommunityGroup(groupId);
+          // Remove from local state
+          setRemoteGroups((current) => current.filter((g) => g.id !== groupId));
+          // If the deleted group was selected, select another group
+          if (selectedGroupId === groupId) {
+            const remainingGroups = groups.filter((g) => g.id !== groupId);
+            if (remainingGroups.length > 0) {
+              handleGroupSelect(remainingGroups[0].id);
+            } else {
+              setSelectedGroupId(null);
+            }
+          }
+        } catch (error) {
+          if (!canFallBackToLocalCommunity(error)) throw error;
+          deleteLocalCommunityGroup(groupId);
+          setLocalGroups((current) => current.filter((g) => g.id !== groupId));
+          if (selectedGroupId === groupId) {
+            const remainingGroups = groups.filter((g) => g.id !== groupId);
+            if (remainingGroups.length > 0) {
+              handleGroupSelect(remainingGroups[0].id);
+            } else {
+              setSelectedGroupId(null);
+            }
+          }
+          syncErrorRef.current = error;
+          setConnection('local');
+          setSyncError(error);
+        }
+      } else {
+        deleteLocalCommunityGroup(groupId);
+        setLocalGroups((current) => current.filter((g) => g.id !== groupId));
+        if (selectedGroupId === groupId) {
+          const remainingGroups = groups.filter((g) => g.id !== groupId);
+          if (remainingGroups.length > 0) {
+            handleGroupSelect(remainingGroups[0].id);
+          } else {
+            setSelectedGroupId(null);
+          }
+        }
+      }
+      setNotice(copy.groupDeleted || 'Group deleted.');
+      track('group_deleted');
+    } catch (error) {
+      setActionError(actionErrorCopy(error, copy, copy.groupError || 'Could not delete group.'));
+    }
+  };
+
+  // Handler for group creator to moderate (delete) any comment in their group
+  const handleModerateComment = async (commentId, groupId) => {
+    if (!confirm(copy.deleteCommentConfirm || 'Are you sure you want to delete this comment? This action cannot be undone.')) {
+      return;
+    }
+    setActionError('');
+    setNotice('');
+    try {
+      const canUseRemote = communityBackendEnabled
+        && connection === 'shared'
+        && user
+        && !isDemo
+        && !String(groupId).startsWith('local-');
+      if (canUseRemote) {
+        try {
+          await moderateRemoteCommunityComment(commentId, groupId);
+          setRemoteComments((current) => current.filter((c) => c.id !== commentId));
+        } catch (error) {
+          if (!canFallBackToLocalCommunity(error)) throw error;
+          deleteLocalCommunityComment(commentId);
+          setLocalComments((current) => current.filter((c) => c.id !== commentId));
+          syncErrorRef.current = error;
+          setConnection('local');
+          setSyncError(error);
+        }
+      } else {
+        deleteLocalCommunityComment(commentId);
+        setLocalComments((current) => current.filter((c) => c.id !== commentId));
+      }
+      setNotice(copy.commentDeleted || 'Comment deleted.');
+      track('comment_moderated');
+    } catch (error) {
+      setActionError(actionErrorCopy(error, copy, copy.commentError || 'Could not delete comment.'));
+    }
+  };
+
+  // Check if current user is the creator of the group
+  const isGroupCreator = (group) => {
+    if (!user) return false;
+    if (group.is_local) {
+      return group.created_by === user.id;
+    }
+    return group.created_by === user.id;
+  };
+
+  // Check if current user can moderate a comment (group creator can delete any comment)
+  const canModerateComment = (comment) => {
+    if (!user) return false;
+    const group = groups.find((g) => g.id === selectedGroupId);
+    if (!group) return false;
+    return isGroupCreator(group);
+  };
+
   const handleGroupSelect = (groupId) => {
     selectedGroupIdRef.current = groupId;
     setSelectedGroupId(groupId);
@@ -649,26 +785,39 @@ export default function CommunityPage() {
             <div className="community-group-list" role="group" aria-label={copy.listHeading}>
               {filteredGroups.map((group, index) => {
                 const active = group.id === selectedGroupId;
+                const creator = isGroupCreator(group);
                 return (
-                  <button
-                    type="button"
-                    key={group.id}
-                    className={`community-group-card${active ? ' is-active' : ''}${group.is_featured ? ' is-featured' : ''}`}
-                    onClick={() => handleGroupSelect(group.id)}
-                    aria-pressed={active}
-                  >
-                    <span className="community-group-card-icon" aria-hidden="true">{CATEGORY_ICON[group.category] || '💬'}</span>
-                    <span className="community-group-card-copy">
-                      <span className="community-group-card-topline"><small>{prettyCategory(group.category, copy)}</small>{group.is_featured && <b>{copy.example}</b>}</span>
-                      <strong>{group.name}</strong>
-                      <span className="community-group-card-desc">{group.description}</span>
-                      <span className="community-group-card-bottom">
-                        <span className="community-group-status"><i /> {copy.open}</span>
-                        <span className="community-group-card-arrow" aria-hidden="true">↗</span>
+                  <div className={`community-group-card-wrapper${active ? ' is-active' : ''}${group.is_featured ? ' is-featured' : ''}`} key={group.id}>
+                    <button
+                      type="button"
+                      className={`community-group-card${active ? ' is-active' : ''}${group.is_featured ? ' is-featured' : ''}`}
+                      onClick={() => handleGroupSelect(group.id)}
+                      aria-pressed={active}
+                    >
+                      <span className="community-group-card-icon" aria-hidden="true">{CATEGORY_ICON[group.category] || '💬'}</span>
+                      <span className="community-group-card-copy">
+                        <span className="community-group-card-topline"><small>{prettyCategory(group.category, copy)}</small>{group.is_featured && <b>{copy.example}</b>}</span>
+                        <strong>{group.name}</strong>
+                        <span className="community-group-card-desc">{group.description}</span>
+                        <span className="community-group-card-bottom">
+                          <span className="community-group-status"><i /> {copy.open}</span>
+                          <span className="community-group-card-arrow" aria-hidden="true">↗</span>
+                        </span>
                       </span>
-                    </span>
-                    <span className="community-group-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-                  </button>
+                      <span className="community-group-index" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                    </button>
+                    {creator && (
+                      <button
+                        type="button"
+                        className="community-group-card-delete"
+                        onClick={(event) => { event.stopPropagation(); handleDeleteGroup(group.id); }}
+                        aria-label={copy.deleteGroupAria || 'Delete group'}
+                        title={copy.deleteGroupTitle || 'Delete group'}
+                      >
+                        <DeleteIcon />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
               {!loadingGroups && filteredGroups.length === 0 && (
@@ -707,9 +856,22 @@ export default function CommunityPage() {
                   </div>
                 </div>
               </div>
-              <button type="button" className={`community-refresh${refreshing ? ' is-spinning' : ''}`} onClick={refreshDiscussion} disabled={refreshing} aria-label={copy.refresh} title={copy.refresh}>
-                <RefreshIcon />
-              </button>
+              <div className="community-discussion-actions">
+                {isGroupCreator(selectedGroup) && (
+                  <button
+                    type="button"
+                    className="community-delete-group-btn"
+                    onClick={() => handleDeleteGroup(selectedGroup.id)}
+                    aria-label={copy.deleteGroupAria || 'Delete group'}
+                    title={copy.deleteGroupTitle || 'Delete group'}
+                  >
+                    <DeleteIcon />
+                  </button>
+                )}
+                <button type="button" className={`community-refresh${refreshing ? ' is-spinning' : ''}`} onClick={refreshDiscussion} disabled={refreshing} aria-label={copy.refresh} title={copy.refresh}>
+                  <RefreshIcon />
+                </button>
+              </div>
             </header>
 
             <div className="community-discussion-about">
@@ -737,19 +899,33 @@ export default function CommunityPage() {
                   <p>{copy.emptyComments}</p>
                 </div>
               )}
-              {displayComments.map((comment) => (
-                <article className={`community-comment${comment.is_local ? ' is-local' : ''}`} key={comment.id}>
-                  <Avatar name={comment.author_name} src={comment.author_avatar} />
-                  <div className="community-comment-main">
-                    <div className="community-comment-meta">
-                      <strong>{comment.author_name}</strong>
-                      <time dateTime={comment.created_at}>{formatCommentDate(comment.created_at, lang)}</time>
-                      {comment.is_local && <span className="community-comment-local">{copy.localTag}</span>}
+              {displayComments.map((comment) => {
+                const canModerate = canModerateComment(comment);
+                return (
+                  <article className={`community-comment${comment.is_local ? ' is-local' : ''}`} key={comment.id}>
+                    <Avatar name={comment.author_name} src={comment.author_avatar} />
+                    <div className="community-comment-main">
+                      <div className="community-comment-meta">
+                        <strong>{comment.author_name}</strong>
+                        <time dateTime={comment.created_at}>{formatCommentDate(comment.created_at, lang)}</time>
+                        {comment.is_local && <span className="community-comment-local">{copy.localTag}</span>}
+                      </div>
+                      <p>{comment.body}</p>
+                      {canModerate && (
+                        <button
+                          type="button"
+                          className="community-comment-moderate"
+                          onClick={() => handleModerateComment(comment.id, selectedGroup.id)}
+                          aria-label={copy.moderateCommentAria || 'Moderate comment'}
+                          title={copy.moderateCommentTitle || 'Delete comment'}
+                        >
+                          <DeleteIcon />
+                        </button>
+                      )}
                     </div>
-                    <p>{comment.body}</p>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                );
+              })}
             </div>
 
             <div className="community-composer-wrap">
