@@ -29,6 +29,7 @@ const STAGE_LABELS = {
   alger: 'Alger la Blanche',
   japan: 'Plaines de Yōtei',
   ramparts: 'Remparts d’Ocre',
+  infinity: 'Château de l’Infini',
 };
 
 const QUICK_MESSAGES = [
@@ -554,6 +555,7 @@ export default function MirageOnline({
                         <option value="alger">05 · Alger la Blanche (Alger)</option>
                         <option value="japan">06 · Plaines de Yōtei (Mont Fuji · Nuit)</option>
                         <option value="ramparts">07 · Remparts d’Ocre (hommage Counter-Strike)</option>
+                        <option value="infinity">08 · Château de l’Infini (hommage Demon Slayer)</option>
                       </select>
                       <small>{DUEL_DISTANCE} mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>

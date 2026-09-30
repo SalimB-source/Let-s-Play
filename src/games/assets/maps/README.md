@@ -13,10 +13,11 @@ sont des illustrations d’ambiance, pas des captures de parties.
 | `alger.webp` | Alger la Blanche | Corniche, façades blanches, palmiers et baie bleue |
 | `japan.webp` | Plaines de Yōtei | Mont enneigé, torii et herbes d’argent au clair de lune |
 | `ramparts.webp` | Remparts d’Ocre | Remparts crénelés, portes du Mid grandes ouvertes, portes bleues et container |
+| `infinity.webp` | Château de l’Infini | Pont de bois laqué, cloisons shōji ambrées, pagodes renversées et lanternes flottantes |
 
 Chaque image est un panorama WebP **768 × 256**, sans texte intégré. Les noms
 restent du texte HTML, avec les états de sélection et de verrouillage habituels.
-Les sept fichiers totalisent moins de 210 Ko. Pas de requête vers un hébergeur
+Les huit fichiers totalisent moins de 250 Ko. Pas de requête vers un hébergeur
 externe, pas de rendu WebGL supplémentaire pour les miniatures.
 
 Les imports dans `MirageCoursePicker.jsx` permettent à Vite de versionner les
