@@ -116,8 +116,11 @@ public class MainActivity extends Activity {
         // clic « Répondre ». Sans ça, la WebView peut refuser de le jouer.
         settings.setMediaPlaybackRequiresUserGesture(false);
         webView.setBackgroundColor(Color.BLACK);
-        // Le site demande le haut-parleur le temps de l'appel (voir
-        // preferLoudspeaker dans CallsContext). Inerte hors de l'APK.
+        // Pont du site vers l'app : haut-parleur des appels (voir
+        // preferLoudspeaker dans CallsContext) et tirer-pour-rafraîchir coupé
+        // pendant une course en pop-up (src/lib/appBridge.js). Sa seule
+        // présence signale aussi au site qu'il tourne dans l'app
+        // (isAndroidApp(), src/lib/phoneLayout.js). Inerte hors de l'APK.
         webView.addJavascriptInterface(new CallAudioBridge(), "LetsPlayAndroid");
 
         webView.setWebViewClient(new WebViewClient() {
@@ -283,7 +286,14 @@ public class MainActivity extends Activity {
         callAudioRouted = false;
     }
 
-    /** Pont appelé par le site : `LetsPlayAndroid.setCallAudio(true|false)`. */
+    /**
+     * Pont appelé par le site : `LetsPlayAndroid.setCallAudio(true|false)` et
+     * `LetsPlayAndroid.setPullToRefresh(true|false)`.
+     *
+     * Le site est servi en ligne et peut donc être plus récent que l'APK
+     * installée : chaque appel est optionnel côté JavaScript (`?.`), et une
+     * ancienne app se contente d'ignorer la méthode qu'elle ne connaît pas.
+     */
     private final class CallAudioBridge {
         @JavascriptInterface
         public void setCallAudio(boolean active) {
@@ -294,6 +304,18 @@ public class MainActivity extends Activity {
                     restoreAudioRoute();
                 }
             });
+        }
+
+        /**
+         * Tirer-pour-rafraîchir. Quand le site gèle la page pour une course en
+         * pop-up (Mirage Rush), la WebView n'a plus rien à faire défiler : le
+         * geste vers le bas serait alors pris par l'indicateur de rafraîchissement
+         * et rechargerait la page en pleine manche. Le site coupe donc le geste
+         * le temps du pop-up (`src/lib/usePageScrollLock.js`).
+         */
+        @JavascriptInterface
+        public void setPullToRefresh(boolean enabled) {
+            runOnUiThread(() -> refreshLayout.setEnabled(enabled));
         }
     }
 

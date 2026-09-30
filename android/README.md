@@ -10,7 +10,10 @@ accéder à la messagerie, il faut se connecter dans l'application.
 
 - Nom affiché : **Let's Play**
 - Identifiant : `dz.letsplay.officiel`
-- Version actuelle : **1.0.3** (versionCode 4 — voir `app/build.gradle`)
+- Version actuelle : **1.0.4** (versionCode 5 — voir `app/build.gradle` ; la
+  méthode `setPullToRefresh` du pont est arrivée en 1.0.3, mais les deux
+  branches qui l'ont introduite portaient le même numéro : le renfort du
+  merge repart donc en 1.0.4 pour qu'Android propose vraiment la mise à jour)
 - URL embarquée : <https://let-s-play-nu.vercel.app> (constante `SITE_HOST`
   dans `app/src/main/java/dz/letsplay/officiel/MainActivity.java`)
 - Android minimum : 6.0 (API 23) · cible : API 35
@@ -45,6 +48,21 @@ accéder à la messagerie, il faut se connecter dans l'application.
   arrivent plusieurs secondes après le clic « Répondre » — avec le réglage par
   défaut de la WebView, la lecture était refusée et l'écran restait noir
   pendant que le son passait (corrigé en 1.0.2).
+- **Courses en pop-up** : le pont natif de l'appel
+  (`addJavascriptInterface(…, "LetsPlayAndroid")`) sert aussi de signature au
+  site, qui le reconnaît (`isAndroidApp()` dans `src/lib/phoneLayout.js`). Dans
+  l'app, les manches de Mirage Rush s'ouvrent donc en plein écran et le
+  défilement de la page est gelé, même en paysage où la WebView n'applique pas
+  la mise en page téléphone. Voir « Mirage Rush : les courses s'ouvrent en
+  pop-up » dans le README principal.
+- **Tirer-pour-rafraîchir** : la page gelée n'a plus rien à faire défiler, et le
+  geste vers le bas partait alors à l'indicateur `SwipeRefreshLayout` — un
+  rechargement en pleine manche. Le site coupe donc le geste pendant un pop-up
+  (`LetsPlayAndroid.setPullToRefresh(false)`, méthode ajoutée à côté de
+  `setCallAudio`, appelée par `src/lib/usePageScrollLock.js`) et le rend à la
+  fermeture. Les appels sont optionnels côté site : une APK antérieure à cette
+  méthode l'ignore, sans erreur — il faut donc **republier l'APK** pour que le
+  correctif soit actif dans l'app.
 
 ## Dépannage
 

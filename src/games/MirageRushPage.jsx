@@ -12,6 +12,10 @@ import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './m
 import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_BOOST_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
+import { RACE_POPUP_MEDIA, racePopupLayout, racePopupOpen } from './racePopup';
+import useMediaQuery from '../lib/useMediaQuery';
+import usePageScrollLock from '../lib/usePageScrollLock';
+import { isAndroidApp } from '../lib/phoneLayout';
 import './mirage-rush.css';
 
 const BEST_KEY = 'letsplay_mirage_rush_best_v1';
@@ -98,6 +102,22 @@ export default function MirageRushPage() {
   musicOnRef.current = musicOn;
   const connected = Boolean(user?.id) && !isDemo;
   const backendEnabled = mirageApiEnabled();
+  // Sur téléphone, tablette et dans l'app Android, la manche est décollée en
+  // pop-up plein écran : le défilement de la page est gelé pendant la course,
+  // pour qu'un balayage destiné à esquiver ne fasse jamais bouger la page
+  // (voir src/games/racePopup.js et src/lib/usePageScrollLock.js).
+  const touchLayout = useMediaQuery(RACE_POPUP_MEDIA);
+  const raceInPopup = racePopupOpen(phase, racePopupLayout(touchLayout, isAndroidApp()));
+  usePageScrollLock(raceInPopup);
+  // Le pop-up s'annonce comme un dialogue : la croix prend le focus à
+  // l'ouverture, comme la fermeture des autres fenêtres du site. Rien à faire
+  // pour la souris, et sur téléphone le doigt n'a pas de bague de focus.
+  const closeButtonRef = useRef(null);
+  const popupWasOpen = useRef(false);
+  useEffect(() => {
+    if (raceInPopup && !popupWasOpen.current) closeButtonRef.current?.focus?.({ preventScroll: true });
+    popupWasOpen.current = raceInPopup;
+  }, [raceInPopup]);
 
   const refreshLeaderboard = useCallback(async () => {
     if (!backendEnabled) {
@@ -384,7 +404,7 @@ export default function MirageRushPage() {
   }
 
   return (
-    <div className="mirage-page">
+    <div className={`mirage-page${raceInPopup ? ' is-race-popup' : ''}`}>
       <header className="mirage-heading wrap">
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow"><span className="mirage-live-dot" /> LET’S PLAY ARCADE <span className="mirage-eyebrow-divider">/</span> 3D VOXEL RUNNER</div>
@@ -404,10 +424,19 @@ export default function MirageRushPage() {
       </header>
 
       <div className="mirage-layout wrap">
+        {/* Une seule et même fenêtre de jeu pour les deux mécanismes : elle
+            est décollée en pop-up par la classe `is-race-popup` de la page
+            (téléphone, tablette, app — voir src/games/racePopup.js), et le
+            plein écran natif demandé au geste ajoute `is-immersive` sur cette
+            même coquille (repli iOS Safari / WebView sans Fullscreen API).
+            Aucun portail, donc aucun remontage de MirageWorld : la manche en
+            cours survit à l'ouverture. */}
         <section
           ref={shellRef}
           className={`mirage-game-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`}
           aria-label="Partie de Mirage Rush"
+          role={raceInPopup ? 'dialog' : undefined}
+          aria-modal={raceInPopup ? 'true' : undefined}
         >
           <div className="mirage-game-topbar">
             <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'japan' ? 'ZONE 06 · PLAINES DE YŌTEI' : stage === 'alger' ? 'ZONE 05 · ALGER LA BLANCHE' : stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
@@ -421,6 +450,13 @@ export default function MirageRushPage() {
                 <span className="mirage-live-pill is-paused"><i /> EN PAUSE</span>
                 <button type="button" className="mirage-pause-button is-resume" onClick={resumeGame} aria-label="Reprendre la partie">▶ REPRENDRE</button>
               </>}
+              {raceInPopup && phase !== 'playing' && (
+                // Pop-up : plus de touche ÉCHAP sous la main. Décompte, pause et
+                // arrivée ont donc leur croix, qui ramène au choix de la course.
+                <button type="button" ref={closeButtonRef} className="mirage-popup-close-button" onClick={backToCoursePicker} aria-label="Fermer la course">
+                  <span aria-hidden="true">✕</span>
+                </button>
+              )}
               <button type="button" className={`mirage-sound-button${musicOn ? ' is-on' : ''}`} onClick={toggleMusic} aria-pressed={musicOn}>
                 <span aria-hidden="true">{musicOn ? '♫' : '♪'}</span> {musicOn ? 'SON ON' : 'SON COUPÉ'}
               </button>
@@ -717,7 +753,7 @@ export default function MirageRushPage() {
                 {countdown > 0
                   ? <div className="mirage-countdown-number" key={countdown}>{countdown}</div>
                   : <div className="mirage-countdown-go" key="go">GALOPE&nbsp;!</div>}
-                <div className="mirage-overlay-hint">ÉCHAP POUR ANNULER</div>
+                <div className="mirage-overlay-hint">{raceInPopup ? '✕ POUR ANNULER' : 'ÉCHAP POUR ANNULER'}</div>
               </div>
             )}
 
@@ -953,6 +989,11 @@ export default function MirageRushPage() {
           <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>
         </aside>
       </div>
+      {/* Voile du pop-up : posé derrière la fenêtre de jeu décollée (voir
+          .mirage-page.is-race-popup dans mirage-rush.css). Rendu à côté de la
+          grille — jamais autour — pour que MirageWorld et son canvas WebGL ne
+          soient pas remontés (la manche en cours survivrait mal à un remontage). */}
+      {raceInPopup && <div className="mirage-race-popup-backdrop" aria-hidden="true" />}
       <footer className="mirage-page-footer wrap"><Link to="/jeu">← Retour aux jeux</Link><span>LET’S PLAY ARCADE <i>·</i> MIRAGE RUSH — ALGERIA</span></footer>
     </div>
   );

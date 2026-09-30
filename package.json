@@ -26,6 +26,7 @@
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
     "check:quiz": "node scripts/quiz-check.mjs",
+    "check:race-popup": "node scripts/race-popup-check.mjs",
     "check:calls": "node scripts/calls-check.mjs && node scripts/calls-e2e-check.mjs",
     "theme:ink-sweep": "node scripts/theme-ink-sweep.mjs --write"
   },
