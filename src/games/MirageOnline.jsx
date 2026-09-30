@@ -394,7 +394,7 @@ export default function MirageOnline({
 
   return (
     <div className="mirage-page">
-      <header className="mirage-heading wrap">
+      <header className="mirage-heading wrap has-mode-tabs">
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow">
             <span className="mirage-live-dot" /> LET’S PLAY ARCADE{' '}

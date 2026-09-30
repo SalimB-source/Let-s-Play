@@ -845,6 +845,15 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 4px 18px rgba(243, 198, 91, .35);
 }
 .mirage-mode-tab:focus-visible { outline: 2px solid #fff1c9; outline-offset: 2px; }
+/* Quatre onglets (RUÉE · DUEL · COUPE · EN LIGNE) ne tiennent plus à côté du texte de
+   l'en-tête du lobby sur un écran étroit : la barre passe sur sa propre ligne plutôt que
+   d'écraser le texte en une colonne de quelques pixels (et les onglets se serrent un peu
+   pour tenir jusqu'aux écrans de 320 px). */
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .mirage-heading.has-mode-tabs { flex-wrap: wrap; }
+  .mirage-heading.has-mode-tabs .mirage-mode-tabs { flex: 1 1 100%; }
+  .mirage-heading.has-mode-tabs .mirage-mode-tab { gap: 5px; padding-inline: 5px; }
+}
 
 /* Mirage En Ligne Lobby & Room Interior */
 .mirage-online {
@@ -2477,15 +2486,6 @@ img.mirage-powerup-icon {
     grid-template-areas: "head head" "slot panel"; gap: 4px 18px; padding: 20px 26px 22px;
   }
   .mirage-trophy-panel { width: 100%; margin: 0; max-height: 100%; overflow-y: auto; }
-}
-@supports not (container-type: inline-size) {
-  @media (min-width: 1000px) {
-    .mirage-trophy-layout {
-      grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); grid-template-rows: auto minmax(0, 1fr);
-      grid-template-areas: "head head" "slot panel"; gap: 4px 18px; padding: 20px 26px 22px;
-    }
-    .mirage-trophy-panel { width: 100%; margin: 0; max-height: 100%; overflow-y: auto; }
-  }
 }
 /* Petits écrans : le palmarès se tasse pour laisser de la place à la scène. */
 @container trophy (max-width: 520px) {
