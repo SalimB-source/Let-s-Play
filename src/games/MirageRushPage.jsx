@@ -4,6 +4,8 @@ import { useAuth } from '../auth/AuthContext';
 import MirageWorld from './MirageWorld';
 import MiragePowerIcon from './MiragePowerIcon';
 import MirageOnline from './MirageOnline';
+import MirageSkinPreview from './MirageSkinPreview';
+import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import { MirageStagePicker } from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
@@ -350,6 +352,12 @@ export default function MirageRushPage() {
   const timePercent = useMemo(() => Math.max(0, Math.min(100, (hud.remaining / 60) * 100)), [hud.remaining]);
   const duelPercent = Math.min(100, Math.max(0, (hud.distance || 0) / DUEL_DISTANCE * 100));
   const levelInfo = useMemo(() => levelProgress(progression.xp), [progression.xp]);
+  // Les skins 3D de « TON CAVALIER » se figent pendant une course : le GPU reste au jeu.
+  const racing = phase === 'playing' || phase === 'countdown';
+  useEffect(() => {
+    setMirageSkinPreviewsPaused(racing);
+    return () => setMirageSkinPreviewsPaused(false);
+  }, [racing]);
   const activeSkin = skinFor(progression);
   const skinColors = activeSkin.colors;
   const chooseSkin = (skinId) => {
@@ -389,14 +397,10 @@ export default function MirageRushPage() {
         </div>
         {/* La barre d’onglets (RUÉE / DUEL / EN LIGNE) de l’en-tête est
             retirée : le choix du mode vit maintenant dans l’overlay d’intro,
-            juste au-dessus du bouton de lancement. */}
-        <div className="mirage-heading-right">
-          <div className="mirage-heading-side">
-            <span className="mirage-record-label">TON RECORD</span>
-            <strong>{best.toLocaleString('fr-FR')} <small>PTS</small></strong>
-            <span className="mirage-record-flare">✦ ÉCHO SOLAIRE ✦</span>
-          </div>
-        </div>
+            juste au-dessus du bouton de lancement.
+            Le bloc « TON RECORD » a lui aussi été retiré de l’en-tête pour
+            faire remonter le jeu juste sous la navbar ; le record reste
+            visible dans l’écran de fin de partie. */}
       </header>
 
       <div className="mirage-layout wrap">
@@ -903,8 +907,13 @@ export default function MirageRushPage() {
                     onClick={() => chooseSkin(skin.id)}
                     title={unlocked ? skin.hint : `Débloqué au niveau ${skin.level}`}
                   >
-                    <span className="mirage-skin-dye" aria-hidden="true" style={{ '--dye-coat': `#${skin.colors[0].toString(16).padStart(6, '0')}`, '--dye-cloth': `#${skin.colors[2].toString(16).padStart(6, '0')}`, '--dye-trim': `#${skin.colors[3].toString(16).padStart(6, '0')}` }} />
+                    {/* Aperçu 3D du skin (cheval + cavalier du jeu) qui tourne en continu. */}
+                    <span className="mirage-skin-stage">
+                      <MirageSkinPreview palette={skin.colors} className="mirage-skin-model" />
+                      {!unlocked && <span className="mirage-skin-lock" aria-hidden="true">🔒</span>}
+                    </span>
                     <span className="mirage-skin-name">{skin.name}</span>
+                    <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}`}><i>♞ {skin.horse}</i><i>🤠 {skin.hat}</i></span>
                     <small>{selected ? 'ÉQUIPÉ' : unlocked ? skin.hint : `NIV. ${skin.level}`}</small>
                   </button>
                 );
