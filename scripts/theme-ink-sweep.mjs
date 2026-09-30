@@ -55,6 +55,10 @@ const KEEP = new RegExp([
   'sentiment', 'article-views-inline',
   // appels vocaux/vidéo : écran, sombre dans les deux thèmes
   'calls-',
+  // Community hero cards and the create-group modal are deliberate dark
+  // stages in both themes; their white ink must not be swept onto a light page.
+  'community-hero', 'community-feature-', 'community-modal', 'community-field',
+  'community-avatar', 'community-form-error',
 ].join('|'));
 
 /* Encres de statut, lisibles sur noir mais pas sur blanc (le rouge clair

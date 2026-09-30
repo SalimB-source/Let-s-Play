@@ -60,6 +60,7 @@ import Games from './pages/Games';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import MessagesPage from './messages/MessagesPage';
+import CommunityPage from './community/CommunityPage';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
@@ -189,6 +190,8 @@ function App() {
             {/* Messagerie : une vraie page (surtout pour le mobile, où le
                 pop-up laisse place au plein écran) — liste et discussion par
                 URL, alias français `/messagerie`. */}
+            <Route path="/communaute" element={<CommunityPage />} />
+            <Route path="/community" element={<CommunityPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:peerId" element={<MessagesPage />} />
             <Route path="/messagerie" element={<MessagesPage />} />

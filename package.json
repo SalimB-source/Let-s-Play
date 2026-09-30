@@ -17,6 +17,7 @@
     "check:achievements": "node scripts/achievements-check.mjs",
     "check:countdown": "node scripts/countdown-check.mjs",
     "check:friends": "node scripts/friends-check.mjs",
+    "check:community": "node scripts/community-check.mjs",
     "check:messages": "node scripts/messages-check.mjs",
     "check:newsbot": "node scripts/news-bot/check.mjs",
     "check:light-news": "node scripts/light-news-check.mjs",
