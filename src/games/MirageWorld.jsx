@@ -12,9 +12,10 @@ import { infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWi
 import { airbaseGate, airbaseObstacle, airbaseOps, airbaseStands, makeAirbaseSkyline, updateAirbaseBeacon } from './airbaseStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
-  LANES, laneCount, lanePosition, trackWidth, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
+  LANES, laneCount, lanePosition, trackWidth, CRYSTALS, createCourse, jumpHeight, JUMP_DURATION, DUEL_DISTANCE, DUEL_BASE_SPEED,
   duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak,
   playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible,
+  advanceJump, JUMP_BUFFER,
   tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, powerUpsEnabled, PISTOL_STUN_DURATION,
   stunPose, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION,
   GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState,
@@ -25,6 +26,8 @@ import {
   MUD_SLOW_DURATION, MUD_SLOW_FACTOR, hitsMudPuddle, resolveMudSlow,
 } from './mirageRules';
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
+// Rythme de la course : un peu plus lent sur la piste du téléphone (3 voies).
+import { paceForTrack } from './mirageLanes';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { block, makeExplorer, paintModel } from './mirageExplorer';
 
@@ -1084,6 +1087,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let distance = 0;
   let rivalDistance = 0;
   let baseSpeed = DUEL_BASE_SPEED;
+  // Facteur de rythme de la course en cours (0,85 sur téléphone/application,
+  // 1 partout ailleurs) — repris à chaque `reset()`.
+  let pace = 1;
   let boost = SPEED_BOOST_NONE;
   let trace = [0];
   let seed = 0;
@@ -1547,7 +1553,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     npc.boost = tickSpeedBoost(npc.boost, dt);
     const effectiveNpcMultiplier = Math.max(1, npc.boost.multiplier);
     const powerBoostBonus = npc.powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0;
-    const rawSpeed = duelSpeed(npc.base * effectiveNpcMultiplier + powerBoostBonus);
+    const rawSpeed = duelSpeed(npc.base * effectiveNpcMultiplier + powerBoostBonus) * pace;
     const speed = npc.stunTimer > 0 ? 0 : rawSpeed * slowFactor;
     const target = npcCourseState.course[npc.next];
     if (target) {
@@ -1569,7 +1575,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         npc.lane += Math.sign(npc.plan.lane - npc.lane);
         npc.cooldown = 0.15 + Math.random() * 0.08;
       }
-      if (npc.stunTimer <= 0 && npc.plan?.jump && !npc.hesitate && npc.jumpLeft <= 0 && speed > 0 && ahead / speed < 0.42 && ahead > 0) npc.jumpLeft = 0.82;
+      if (npc.stunTimer <= 0 && npc.plan?.jump && !npc.hesitate && npc.jumpLeft <= 0 && speed > 0 && ahead / speed < 0.42 && ahead > 0) npc.jumpLeft = JUMP_DURATION;
       if (npc.dist + speed * dt >= target.pos) {
         const height = jumpHeight(npc.jumpLeft);
         const near = (lane) => Math.abs(npc.x - LANES[lane]) < 0.95;
@@ -1644,6 +1650,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let lives = 3;
   let laneIndex = 1;
   let jumpLeft = 0;
+  // Saut demandé pendant qu'on est déjà en l'air (voir `action()`), rejoué à
+  // l'atterrissage si la fenêtre n'est pas écoulée.
+  let jumpBuffer = 0;
   let poseLeft = 0;
   let invulnerable = 0;
   let crashAnimation = 0;
@@ -1688,7 +1697,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rivalDistance,
       speed: (race.mode === 'rush'
         ? (12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus
-        : duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus)) * hudSlowMul,
+        : duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus)) * hudSlowMul * pace,
       boostLeft: Math.max(boost.left, powerBoostTimer),
       powerBoostActive: powerBoostTimer > 0,
       powerBoostLeft: powerBoostTimer,
@@ -1753,6 +1762,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
   const reset = () => {
     race = getRace();
+    // Un téléphone et un ordinateur ne partagent pas le même rythme en ligne :
+    // la course garde alors sa vitesse, pour que le duel reste juste.
+    pace = race.mode === 'online' ? 1 : paceForTrack();
     seed = race.seed ?? race.challenge?.seed ?? (Math.random() * 0xffffffff) >>> 0;
     distance = 0;
     rivalDistance = 0;
@@ -1772,6 +1784,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     lives = 3;
     laneIndex = 1;
     jumpLeft = 0;
+    jumpBuffer = 0;
     poseLeft = 0;
     invulnerable = 0;
     crashAnimation = 0;
@@ -1834,8 +1847,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     else if (name === 'use_pistol' || name === 'pistol') usePistol();
     else if (name === 'use_boost' || name === 'boost') useBoost();
     else {
-      laneIndex = playerLaneAfterAction(laneIndex, name, jumpLeft);
-      if (name === 'jump' && jumpLeft <= 0) jumpLeft = 0.82;
+      // La voie change même en plein saut : le doigt n'est jamais ignoré.
+      laneIndex = playerLaneAfterAction(laneIndex, name);
+      if (name === 'jump') {
+        // Saut demandé en l'air : il part à l'atterrissage (fenêtre courte),
+        // au lieu d'être perdu — c'est ce qui donnait l'impression que le
+        // bouton « ne répond pas » quand on tapait juste avant de retomber.
+        if (jumpLeft <= 0) jumpLeft = JUMP_DURATION;
+        else jumpBuffer = JUMP_BUFFER;
+      }
     }
   };
 
@@ -1898,9 +1918,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const effectivePlayerMultiplier = Math.max(1, boost.multiplier);
     const powerBoostBonus = powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0;
     const speed = running && playerStun <= 0
-      ? race.mode !== 'rush'
+      ? (race.mode !== 'rush'
         ? duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus) * slowMul
-        : ((12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus) * slowMul
+        : ((12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus) * slowMul) * pace
       : 0;
     if (running) {
       elapsed += dt;
@@ -1913,7 +1933,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       } else {
         distance += speed * dt;
       }
-      jumpLeft = Math.max(0, jumpLeft - dt);
+      // Tap sur « sauter » juste avant de toucher le sol : le saut repart à
+      // l'atterrissage, comme si le doigt avait été obéi sur-le-champ.
+      ({ jumpLeft, buffer: jumpBuffer } = advanceJump(jumpLeft, jumpBuffer, dt));
       poseLeft = Math.max(0, poseLeft - dt);
       crashAnimation = Math.max(0, crashAnimation - dt);
       invulnerable = Math.max(0, invulnerable - dt);
@@ -2268,7 +2290,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     updateTracers(dt);
 
     const targetX = LANES[laneIndex];
-    player.position.x = playerLateralPosition(player.position.x, targetX, dt, jumpLeft);
+    // Glissade latérale : plus jamais gelée pendant le saut, et plus nerveuse
+    // (LATERAL_LANE_SPEED) pour que le doigt voie la voie changer tout de suite.
+    player.position.x = playerLateralPosition(player.position.x, targetX, dt);
     const crashProgress = crashAnimation > 0 ? 1 - crashAnimation / 0.42 : 0;
     const crashBounce = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.18 : 0;
     const mudSlowed = running && playerSlowTimer > 0 && playerSlowKind === 'mud' && playerStun <= 0;

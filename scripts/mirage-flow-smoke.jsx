@@ -20,7 +20,13 @@
  *      (RUÉE, DUEL, COUPE, EN LIGNE) : le bouton COUPE ramène à la coupe ;
  *   7. la piste du téléphone (trois voies, `setLaneCount(3)`) fait suivre
  *      les textes : deux rivaux, « 3 CAVALIERS » et « sur les 3 voies » — et
- *      la coupe passe elle aussi à trois cavaliers (barème 10 / 7 / 4).
+ *      la coupe passe elle aussi à trois cavaliers (barème 10 / 7 / 4) ;
+ *   8. sur un écran tactile (faux `matchMedia` « pointer: coarse »), l'écran
+ *      des maps explique les gestes — GLISSE ← →, TAPE — sans annoncer une
+ *      seule touche de clavier, et plus aucune trace de la manette tactile
+ *      (croix directionnelle, losange) ne subsiste dans la page : les boutons
+ *      de la course sont ceux du PC (vérifiés pendant une vraie course par
+ *      `npm run check:mirage-cup`).
  *
  * Le déroulé complet d'une coupe (3 courses, points, trophée) est vérifié
  * par scripts/mirage-cup-smoke.jsx — `npm run check:mirage-cup`.
@@ -34,6 +40,27 @@ import { encodeChallenge } from '../src/games/duelChallenge';
 import { laneCount, setLaneCount } from '../src/games/mirageRules';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Simule un téléphone dans le jsdom du check : `window.matchMedia` répond
+ * « oui » au pointeur grossier (`(pointer: coarse)`), comme le ferait un écran
+ * tactile. La page n'a plus qu'une seule disposition — la barre d'objets du
+ * PC, sans croix directionnelle ni losange — et c'est l'aide d'intro qui
+ * change : les gestes remplacent les touches du clavier.
+ */
+function stubCoarsePointer() {
+  const previous = window.matchMedia;
+  window.matchMedia = (query) => ({
+    matches: /pointer:\s*coarse/.test(query),
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent() { return false; },
+  });
+  return () => { window.matchMedia = previous; };
+}
 
 async function mountPage(entry) {
   const node = document.createElement('div');
@@ -364,6 +391,42 @@ export async function checkMirageFlow(assert) {
     assert.equal(threeCupRules.querySelectorAll('.mirage-cup-points-pill').length, 3, 'trois places au barème du panneau des règles');
   } finally {
     await app.unmount();
+    setLaneCount(4);
+  }
+
+  /* ------ 7. Téléphone / application : les boutons du PC, rien d'autre ------ */
+  // Mêmes boutons que sur ordinateur (barre d'objets), aucune croix
+  // directionnelle à l'écran : on esquive au glissement, et l'aide d'intro le
+  // dit. La vitesse du jeu, elle, est un peu plus lente (voir mirageLanes).
+  const restoreMatchMedia = stubCoarsePointer();
+  const phone = await mountPage('/jeu');
+  try {
+    await act(async () => { modeButtons(phone.node)
+      .find((button) => button.querySelector('strong')?.textContent === 'DUEL').click(); });
+    await act(async () => { await sleep(0); });
+    const touchHint = phone.node.querySelector('.mirage-keys-hint');
+    assert.ok(touchHint, 'l’aide de l’écran des maps est affichée sur téléphone');
+    assert.equal(touchHint.getAttribute('aria-label'), 'Commandes tactiles', 'l’aide parle gestes, pas clavier');
+    assert.match(touchHint.textContent, /GLISSE ← → POUR ESQUIVER/,
+      'la consigne du téléphone explique le glissement latéral');
+    assert.match(touchHint.textContent, /TAPE POUR SAUTER/, 'la consigne du téléphone explique le saut');
+    assert.equal(touchHint.querySelectorAll('kbd').length, 0,
+      'aucune touche de clavier n’est annoncée sur téléphone');
+
+    // Plus aucune trace de la manette tactile : ni croix, ni losange.
+    for (const selector of ['.mirage-touch-dpad', '.mirage-dpad-btn', '.mirage-powerup-diamond',
+      '.mirage-powerup-bar.is-gamepad', '.mirage-powerup-btn.is-diamond']) {
+      assert.equal(phone.node.querySelectorAll(selector).length, 0, `${selector} a bien disparu`);
+    }
+
+    // La barre d'objets (rendue pendant la course) est vérifiée dans
+    // `check:mirage-cup`, qui va jusqu'au départ ; ici on s'assure qu'il n'en
+    // reste qu'une seule définition dans la page, celle du PC.
+    assert.equal(phone.node.querySelectorAll('.mirage-powerup-bar').length, 0,
+      'aucune barre doublée hors course sur téléphone');
+  } finally {
+    await phone.unmount();
+    restoreMatchMedia();
     setLaneCount(4);
   }
 }

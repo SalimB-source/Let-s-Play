@@ -196,22 +196,52 @@ test('hit animation visibility blinks in rush and duel but online local duplicat
   assert.equal(isPlayerVisible('online', 0, 0), false);
 });
 
-test('airborne player cannot change lanes or drift, and can move on landing', async () => {
-  const { playerLaneAfterAction, playerLateralPosition } = await import('../src/games/mirageRules.js');
-  for (const remaining of [0.82, 0.41, 0.001]) {
-    assert.equal(playerLaneAfterAction(1, 'left', remaining), 1);
-    assert.equal(playerLaneAfterAction(1, 'right', remaining), 1);
-    assert.equal(playerLateralPosition(0.6, 2.1, 0.016, remaining), 0.6);
-  }
-  assert.equal(playerLaneAfterAction(1, 'left', 0), 0);
-  assert.equal(playerLaneAfterAction(1, 'right', 0), 2);
-  assert.equal(playerLaneAfterAction(0, 'left', 0), 0);
-  assert.equal(playerLaneAfterAction(2, 'right', 0), 3);
-  assert.equal(playerLaneAfterAction(3, 'right', 0), 3);
-  assert.equal(playerLaneAfterAction(3, 'left', 0), 2);
-  assert.equal(playerLaneAfterAction(3, 'left', 0.41), 3);
-  assert.equal(playerLaneAfterAction(1, 'jump', 0), 1);
-  assert.ok(playerLateralPosition(0.6, 2.1, 0.016, 0) > 0.6);
+test('the rider changes lane mid-air too: the jump never blocks a slide', async () => {
+  const { playerLaneAfterAction } = await import('../src/games/mirageRules.js');
+  // Le geste « sauter puis glisser » (ou l'inverse) doit passer : la voie
+  // change quel que soit le moment du saut, exactement comme au sol.
+  assert.equal(playerLaneAfterAction(1, 'left'), 0);
+  assert.equal(playerLaneAfterAction(1, 'right'), 2);
+  assert.equal(playerLaneAfterAction(0, 'left'), 0);
+  assert.equal(playerLaneAfterAction(2, 'right'), 3);
+  assert.equal(playerLaneAfterAction(3, 'right'), 3);
+  assert.equal(playerLaneAfterAction(3, 'left'), 2);
+  assert.equal(playerLaneAfterAction(1, 'jump'), 1);
+});
+
+test('the lateral slide is quick, and it keeps working while airborne', async () => {
+  const { playerLateralPosition, LATERAL_LANE_SPEED } = await import('../src/games/mirageRules.js');
+  // Vitesse de traversée : la glissade part vite (l'ancien `dt * 12` gelait en
+  // plus la position tant que le cheval était en l'air).
+  assert.ok(LATERAL_LANE_SPEED >= 20, 'la glissade doit être nerveuse');
+  assert.ok(playerLateralPosition(0.6, 2.1, 1 / 60) > 0.9, 'la voie doit se sentir au premier geste');
+  assert.equal(playerLateralPosition(0.6, 2.1, 0), 0.6, 'une frame nulle ne bouge pas');
+  // Après ~100 ms la glissade a rejoint la voie visée (à 10 % près).
+  let x = 0.6;
+  for (let frame = 0; frame < 6; frame++) x = playerLateralPosition(x, 2.1, 1 / 60);
+  assert.ok(Math.abs(2.1 - x) < 0.15, `glissade trop lente : x = ${x}`);
+  // Jamais de dépassement : la position converge vers la voie visée.
+  assert.ok(x <= 2.1);
+});
+
+test('a jump asked for in the air is kept and fired on landing', async () => {
+  const { advanceJump, JUMP_DURATION, JUMP_BUFFER } = await import('../src/games/mirageRules.js');
+  // Saut en cours : le temps descend, rien ne repart tant qu'on est en l'air.
+  let state = advanceJump(JUMP_DURATION, 0, 0.2);
+  assert.ok(state.jumpLeft > 0 && state.jumpLeft < JUMP_DURATION);
+  assert.equal(state.buffer, 0);
+  // Demande en l'air : elle est gardée puis rejouée dès que les sabots
+  // touchent le sol (le bouton « ne répond plus » quand on tape trop tôt).
+  state = advanceJump(0.03, JUMP_BUFFER, 0.05);
+  assert.equal(state.jumpLeft, JUMP_DURATION, 'le saut repart à l’atterrissage');
+  assert.equal(state.buffer, 0, 'la demande consommée ne rejoue pas deux fois');
+  // Demande trop vieille : oubliée, le cheval garde les sabots au sol.
+  state = advanceJump(0, 0.01, 0.05);
+  assert.equal(state.jumpLeft, 0);
+  assert.equal(state.buffer, 0);
+  // Un saut déjà en l'air n'est pas relancé par la décroissance.
+  state = advanceJump(JUMP_DURATION, 0, 0.01);
+  assert.ok(state.jumpLeft < JUMP_DURATION && state.jumpLeft > 0);
 });
 
 test('special items charge costs and definition are properly configured', async () => {
@@ -251,11 +281,11 @@ test('four lanes are centred, evenly spaced, and traversable in both directions'
   }
   let lane = 0;
   for (const expected of [1, 2, 3, 3]) {
-    lane = playerLaneAfterAction(lane, 'right', 0);
+    lane = playerLaneAfterAction(lane, 'right');
     assert.equal(lane, expected);
   }
   for (const expected of [2, 1, 0, 0]) {
-    lane = playerLaneAfterAction(lane, 'left', 0);
+    lane = playerLaneAfterAction(lane, 'left');
     assert.equal(lane, expected);
   }
 });

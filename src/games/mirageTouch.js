@@ -12,7 +12,8 @@
  *     voie (le doigt pilote le cheval comme un petit joystick) : le geste est
  *     lu pendant le mouvement, pas seulement au relâchement ;
  *   - une diagonale haut + côté fait les deux (le changement de voie part
- *     avant le saut, sinon il serait avalé par le blocage des voies en l'air).
+ *     avant le saut, pour que le cheval soit déjà sur la bonne voie en
+ *     retombant).
  *
  * Le module est volontairement coupé en trois :
  *
@@ -28,21 +29,27 @@
  * attendues par `world.action()` et `playerLaneAfterAction()` de mirageRules.
  */
 
-/** Distance horizontale (px) qui déclenche le premier changement de voie. */
-export const SWIPE_MIN_DISTANCE = 34;
+/**
+ * Distance horizontale (px) qui déclenche le premier changement de voie.
+ * Mesurée au pouce : 22 px ≈ 4 mm sur un téléphone de 390 pt, soit un petit
+ * coup de doigt. L'ancien seuil de 34 px demandait moitié plus de geste — la
+ * glissade semblait ne pas répondre.
+ */
+export const SWIPE_MIN_DISTANCE = 22;
 /**
  * Distance horizontale (px) entre deux changements de voie d'un même
  * glissement. Plus longue que la première : un geste diagonal ne doit pas
  * traverser trois voies d'un coup, alors qu'un petit coup de doigt doit se
- * sentir immédiatement.
+ * sentir immédiatement. 36 px laissent enchaîner deux voies d'un seul
+ * glissement continu (l'ancien 60 px obligeait à lever le doigt).
  */
-export const SWIPE_REPEAT_DISTANCE = 60;
+export const SWIPE_REPEAT_DISTANCE = 36;
 /** Distance verticale (px) vers le haut qui déclenche le saut. */
-export const SWIPE_JUMP_DISTANCE = 30;
+export const SWIPE_JUMP_DISTANCE = 20;
 /** Au-delà de cette amplitude, un appui n'est plus une tape mais un glissement. */
 export const TAP_MAX_DISTANCE = 14;
-/** Durée maximale (ms) d'une tape qui saute. */
-export const TAP_MAX_DURATION = 280;
+/** Durée maximale (ms) d'une tape qui saute (320 : une tape de pouce ordinaire). */
+export const TAP_MAX_DURATION = 320;
 /**
  * Garde-fou : un navigateur peut livrer des `pointermove` groupés après un
  * geste très rapide. On borne le nombre d'actions produites par échantillon
@@ -104,8 +111,9 @@ export function createSwipeTracker(options = {}) {
       travelled = x - anchorX;
       laneChanges += 1;
     }
-    // Le saut ne part qu'une fois par geste : en l'air, les voies sont de toute
-    // façon verrouillées (voir `playerLaneAfterAction`).
+    // Le saut ne part qu'une fois par geste ; à l'atterrissage, le moteur
+    // garde la fenêtre courte de `jumpBuffer` (MirageWorld) pour ne pas perdre
+    // une tape faite juste avant de toucher le sol.
     if (!jumpFired && startY - y >= jumpDistance) {
       actions.push('jump');
       jumpFired = true;
@@ -227,13 +235,19 @@ export function attachSwipeControls(element, onAction, options = {}) {
     tracker.cancel();
   };
 
+  // `lostpointercapture` referme le geste quand le navigateur reprend la main
+  // (appel entrant, geste système, capture volée) : sans lui, un doigt dont le
+  // relâchement n'est jamais livré garderait `trackedId` occupé et **toutes**
+  // les glissades suivantes seraient ignorées — le jeu paraîtrait bloqué.
   const names = supportsPointer
-    ? ['pointerdown', 'pointermove', 'pointerup', 'pointercancel']
+    ? ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']
     : ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
-  const handlers = [start, move, finish, abort];
+  const handlers = supportsPointer
+    ? [start, move, finish, abort, abort]
+    : [start, move, finish, abort];
   // `pointermove` / `touchmove` restent non passifs pour pouvoir bloquer le
   // défilement si `touch-action` n'est pas appliqué (vieux WebView).
-  const passive = [true, false, true, true];
+  const passive = [true, false, true, true, true];
   names.forEach((name, index) => element.addEventListener(name, handlers[index], { passive: passive[index] }));
 
   return () => {
