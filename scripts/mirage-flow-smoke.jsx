@@ -3,16 +3,27 @@
  *
  * Vérifie le nouveau parcours d'entrée de Mirage Rush :
  *
- *   1. à l'arrivée, l'overlay affiche uniquement trois vrais boutons de mode
- *      (RUÉE / DUEL / EN LIGNE), sans maps ni bouton de lancement ;
+ *   1. à l'arrivée, l'overlay affiche uniquement quatre vrais boutons de mode
+ *      (RUÉE / DUEL / COUPE / EN LIGNE), sans maps ni bouton de lancement ;
  *   2. le clic sur RUÉE ou DUEL ouvre l'écran suivant, où les 9 maps et le
  *      bouton de lancement apparaissent ;
- *   3. un lien de défi ouvre directement l'écran des maps, verrouillé sur le
+ *   3. le clic sur COUPE ouvre ce même écran, mais le choix de la map y est
+ *      remplacé par celui de la coupe (Coupe du Désert : Dunes de l'Écho,
+ *      Dust Creek, Plaines d'Or, dans cet ordre, et le barème des points) et
+ *      « LANCER LA COUPE » ; un lien ?mode=cup y arrive directement ;
+ *   4. un lien de défi ouvre directement l'écran des maps, verrouillé sur le
  *      terrain imposé ;
- *   4. le panneau latéral est regroupé dans PARAMÈTRES avec trois onglets :
- *      La communauté, Ton cavalier, Informations ;
- *   5. la piste de l'application (trois voies, `setLaneCount(3)`) fait suivre
- *      les textes : deux rivaux, « 3 CAVALIERS » et « sur les 3 voies ».
+ *   5. le panneau latéral est regroupé dans PARAMÈTRES avec trois onglets :
+ *      La communauté, Ton cavalier, Informations (les règles de la COUPE y
+ *      figurent) ;
+ *   6. le lobby EN LIGNE (?mode=online) garde sa barre de boutons de mode
+ *      (RUÉE, DUEL, COUPE, EN LIGNE) : le bouton COUPE ramène à la coupe ;
+ *   7. la piste de l'application (trois voies, `setLaneCount(3)`) fait suivre
+ *      les textes : deux rivaux, « 3 CAVALIERS » et « sur les 3 voies » — et
+ *      la coupe passe elle aussi à trois cavaliers (barème 10 / 7 / 4).
+ *
+ * Le déroulé complet d'une coupe (3 courses, points, trophée) est vérifié
+ * par scripts/mirage-cup-smoke.jsx — `npm run check:mirage-cup`.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -88,6 +99,44 @@ function assertNineMaps(assert, node) {
   return maps;
 }
 
+// Écran 02 du mode COUPE : la coupe remplace le choix de la map.
+function assertCupIntro(assert, node) {
+  const intro = node.querySelector('.mirage-intro-overlay');
+  assert.ok(intro, 'l’overlay d’intro est affiché en mode coupe');
+  assert.ok(intro.classList.contains('is-stage-step'), 'la coupe s’ouvre sur l’écran 02, celui du lancement');
+  assert.ok(intro.querySelector('.mirage-selected-mode-pill')?.textContent.includes('COUPE'),
+    'le mode COUPE est rappelé sur l’écran de la coupe');
+  assert.ok(intro.querySelector('h2').textContent.includes('TROPHÉE'), 'le titre annonce le trophée');
+  assert.equal(node.querySelectorAll('.mirage-stage-picker').length, 0,
+    'le terrain est imposé par la coupe : plus de sélecteur de terrain');
+  const cards = [...node.querySelectorAll('.mirage-cup-card')];
+  assert.equal(cards.length, 1, 'une seule coupe pour l’instant');
+  assert.equal(cards[0].getAttribute('aria-pressed'), 'true', 'la Coupe du Désert est sélectionnée');
+  assert.equal(cards[0].querySelector('.mirage-cup-card-title strong')?.textContent, 'Coupe du Désert');
+  assert.deepEqual(
+    [...cards[0].querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
+    ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or'],
+    'la coupe enchaîne Dunes de l’Écho, Dust Creek puis Plaines d’Or, dans cet ordre');
+  assert.deepEqual(
+    [...cards[0].querySelectorAll('.mirage-cup-stop-number')].map((el) => el.textContent),
+    ['COURSE 1', 'COURSE 2', 'COURSE 3']);
+  assert.ok(node.querySelector('.mirage-cup-name-field input'), 'le nom du trophée est modifiable');
+  const start = node.querySelector('.mirage-start-button');
+  assert.ok(start.textContent.includes('LANCER LA COUPE') || start.textContent.includes('CHARGEMENT'),
+    'le bouton propose « LANCER LA COUPE » (ou l’attente du rendu 3D)');
+  assert.ok(node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
+    'le bandeau de zone annonce la première course de la coupe');
+  const hint = node.querySelector('.mirage-overlay-hint').textContent;
+  assert.ok(hint.includes('3 COURSES') && hint.includes('1ᵉʳ 10 PTS'), 'la consigne rappelle les 3 courses et le barème');
+  const keyPowerIcons = [...node.querySelectorAll('.mirage-keys-hint [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
+  assert.deepEqual(keyPowerIcons, ['shield', 'lasso', 'boost', 'pistol'], 'les pouvoirs du duel sont rappelés : ils servent aussi en coupe');
+  return cards[0];
+}
+
+function cupPoints(card) {
+  return [...card.querySelectorAll('.mirage-cup-points > span')].map((el) => el.textContent.replace(/\s+/g, ' ').trim());
+}
+
 export async function checkMirageFlow(assert) {
   /* ---------------- 1. Écran d'entrée : vrais boutons de mode ----------- */
   const page = await mountPage('/jeu');
@@ -97,14 +146,14 @@ export async function checkMirageFlow(assert) {
     assert.ok(intro.classList.contains('is-mode-step'), 'l’arrivée se fait sur l’écran 01 des modes');
 
     assert.equal(page.node.querySelectorAll('.mirage-mode-tabs').length, 0,
-      'la barre d’onglets (RUÉE / DUEL / EN LIGNE) n’est pas revenue dans l’en-tête principal');
+      'la barre d’onglets (RUÉE / DUEL / COUPE / EN LIGNE) n’est pas revenue dans l’en-tête principal');
 
     const buttons = modeButtons(page.node);
-    assert.equal(buttons.length, 3, 'trois modes sont proposés');
+    assert.equal(buttons.length, 4, 'quatre modes sont proposés');
     assert.deepEqual(
       buttons.map((button) => button.querySelector('strong')?.textContent),
-      ['RUÉE', 'DUEL', 'EN LIGNE'],
-      'les modes RUÉE, DUEL et EN LIGNE sont proposés',
+      ['RUÉE', 'DUEL', 'COUPE', 'EN LIGNE'],
+      'les modes RUÉE, DUEL, COUPE et EN LIGNE sont proposés',
     );
     for (const button of buttons) {
       assert.equal(button.tagName, 'BUTTON', `${button.textContent} est un vrai bouton`);
@@ -184,6 +233,21 @@ export async function checkMirageFlow(assert) {
     assert.deepEqual(rulePowerIcons, ['shield', 'lasso', 'boost', 'pistol'],
       'les 4 icônes vectorielles des objets spéciaux restent dans l’onglet Informations');
 
+    /* ------- 4 bis. Clic COUPE : la Coupe du Désert remplace les maps ---- */
+    await act(async () => { page.node.querySelector('.mirage-secondary-button').click(); });
+    await openMode(assert, page.node, 'COUPE');
+    const cupCard = assertCupIntro(assert, page.node);
+    assert.deepEqual(cupPoints(cupCard), ['1ᵉʳ 10 pts', '2ᵉ 7 pts', '3ᵉ 4 pts', '4ᵉ 2 pts'],
+      'le barème des points est affiché, décroissant de la 1ʳᵉ à la 4ᵉ place');
+    const cupIntro = page.node.querySelector('.mirage-intro-overlay');
+    assert.ok(cupIntro.querySelector('.mirage-overlay-kicker').textContent.includes('COUPE · 3 COURSES · 4 CAVALIERS'),
+      'la coupe se court à quatre cavaliers sur la piste à quatre voies');
+    assert.ok(cupIntro.textContent.includes('contre L’Ombre, Sauge et Améthyste'),
+      'les trois rivaux de la piste à quatre voies sont nommés');
+    const cupRules = page.node.querySelector('#mirage-panel-info .mirage-cup-rules');
+    assert.ok(cupRules, 'les règles de la coupe sont rangées dans Informations');
+    assert.ok(cupRules.textContent.includes('MODE COUPE · 4 CAVALIERS'), 'le panneau des règles annonce quatre cavaliers en coupe');
+
     /* ---------------- 5. Clic EN LIGNE : maps avant lobby -------------- */
     await act(async () => { page.node.querySelector('.mirage-secondary-button').click(); });
     await openMode(assert, page.node, 'EN LIGNE');
@@ -200,7 +264,31 @@ export async function checkMirageFlow(assert) {
     await page.unmount();
   }
 
-  /* ------------- 5. Lien de défi : maps directes et verrouillées -------- */
+  /* ------ 5 bis. ?mode=cup ouvre directement la Coupe du Désert ---------- */
+  const cupPage = await mountPage('/jeu?mode=cup');
+  try {
+    assertCupIntro(assert, cupPage.node);
+    assert.equal(modeButtons(cupPage.node).length, 0, 'le lien ?mode=cup ne repasse pas par l’écran des modes');
+  } finally {
+    await cupPage.unmount();
+  }
+
+  /* ------ 5 ter. Le lobby EN LIGNE garde ses boutons de mode, COUPE comprise ------ */
+  const lobby = await mountPage('/jeu?mode=online');
+  try {
+    assert.ok(lobby.node.querySelector('.mirage-heading.has-mode-tabs'), 'l’en-tête du lobby porte sa barre de modes');
+    const tabs = [...lobby.node.querySelectorAll('.mirage-mode-tabs .mirage-mode-tab')];
+    const label = (tab) => tab.textContent.replace(tab.querySelector('span').textContent, '').trim();
+    assert.deepEqual(tabs.map(label), ['RUÉE', 'DUEL', 'COUPE', 'EN LIGNE'], 'le lobby propose les quatre modes');
+    assert.equal(label(tabs.find((tab) => tab.classList.contains('is-active'))), 'EN LIGNE', 'EN LIGNE est le bouton actif du lobby');
+    await act(async () => { tabs.find((tab) => label(tab) === 'COUPE').click(); });
+    assert.equal(lobby.node.querySelectorAll('.mirage-mode-tabs').length, 0, 'le bouton COUPE quitte le lobby pour la page du jeu');
+    assertCupIntro(assert, lobby.node);
+  } finally {
+    await lobby.unmount();
+  }
+
+  /* ------------- 5 quater. Lien de défi : maps directes et verrouillées -------- */
   const code = encodeChallenge({ seed: 20260929, duration: 41.5, trace: [0, 240, 480, 800], name: 'Salim', stage: 'prairie' });
   const challenged = await mountPage(`/jeu?duel=${code}`);
   try {
@@ -241,6 +329,9 @@ export async function checkMirageFlow(assert) {
     const duelCard = modeButtons(app.node).find((button) => button.querySelector('strong')?.textContent === 'DUEL');
     assert.ok(duelCard.textContent.includes('Face aux 2 PNJ · 800 m'),
       'le bouton DUEL annonce deux PNJ et 800 m sur la piste à trois voies');
+    const threeLaneCup = modeButtons(app.node).find((button) => button.querySelector('strong')?.textContent === 'COUPE');
+    assert.ok(threeLaneCup.textContent.includes('3 courses · 3 cavaliers'),
+      'le bouton COUPE annonce trois cavaliers sur la piste à trois voies');
     await act(async () => { duelCard.click(); });
     const intro = app.node.querySelector('.mirage-intro-overlay');
     assert.ok(intro.textContent.includes('sur les 3 voies'),
@@ -255,6 +346,22 @@ export async function checkMirageFlow(assert) {
       'le panneau des règles annonce trois cavaliers');
     assert.ok(duelRules.textContent.includes('2 cavaliers rivaux'),
       'le panneau des règles annonce deux rivaux');
+
+    // La coupe suit le duel : trois cavaliers, donc trois places au barème.
+    await act(async () => { app.node.querySelector('.mirage-secondary-button').click(); });
+    await openMode(assert, app.node, 'COUPE');
+    const threeCupCard = assertCupIntro(assert, app.node);
+    const threeCupIntro = app.node.querySelector('.mirage-intro-overlay');
+    assert.ok(threeCupIntro.querySelector('.mirage-overlay-kicker').textContent.includes('COUPE · 3 COURSES · 3 CAVALIERS'),
+      'le bandeau de la coupe compte trois cavaliers');
+    assert.ok(threeCupIntro.textContent.includes('contre L’Ombre et Sauge'),
+      'seuls L’Ombre et Sauge entrent en piste, comme en duel');
+    assert.ok(!threeCupIntro.textContent.includes('Améthyste'), 'Améthyste reste au vestiaire');
+    assert.deepEqual(cupPoints(threeCupCard), ['1ᵉʳ 10 pts', '2ᵉ 7 pts', '3ᵉ 4 pts'],
+      'le barème s’arrête à la 3ᵉ place : il n’y a que trois cavaliers');
+    const threeCupRules = app.node.querySelector('.mirage-cup-rules');
+    assert.ok(threeCupRules.textContent.includes('MODE COUPE · 3 CAVALIERS'), 'le panneau des règles annonce trois cavaliers en coupe');
+    assert.equal(threeCupRules.querySelectorAll('.mirage-cup-points-pill').length, 3, 'trois places au barème du panneau des règles');
   } finally {
     await app.unmount();
     setLaneCount(4);

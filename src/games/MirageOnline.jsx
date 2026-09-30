@@ -405,7 +405,7 @@ export default function MirageOnline({
 
   return (
     <div className="mirage-page">
-      <header className="mirage-heading wrap">
+      <header className="mirage-heading wrap has-mode-tabs">
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow">
             <span className="mirage-live-dot" /> LET’S PLAY ARCADE{' '}
@@ -434,6 +434,14 @@ export default function MirageOnline({
             onClick={() => switchMode('duel')}
           >
             <span>⚔</span> DUEL
+          </button>
+          <button
+            type="button"
+            aria-pressed="false"
+            className="mirage-mode-tab"
+            onClick={() => switchMode('cup')}
+          >
+            <span>♛</span> COUPE
           </button>
           <button
             type="button"

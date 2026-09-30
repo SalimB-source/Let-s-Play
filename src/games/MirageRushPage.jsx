@@ -6,15 +6,24 @@ import MiragePowerIcon from './MiragePowerIcon';
 import MirageOnline from './MirageOnline';
 import MirageSkinPreview from './MirageSkinPreview';
 import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
-import { MirageStagePicker } from './MirageCoursePicker';
+import { MirageCupPicker, MirageStagePicker, stageName } from './MirageCoursePicker';
+import MirageCupResults from './MirageCupResults';
+import MirageCupTrophy from './MirageCupTrophy';
+import MirageTrophyIcon from './MirageTrophyIcon';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
 import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
+import {
+  CUPS, CUP_POINTS, DEFAULT_CUP_ID, cleanRiderName, createCupRun, cupCurrentStage, cupStandings,
+  getCup, isCupComplete, placeLabel, recordCupRace,
+} from './mirageCup';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
 
 const BEST_KEY = 'letsplay_mirage_rush_best_v1';
+// Nom imprimé sur le trophée de la Coupe (saisi dans le sélecteur de coupe).
+const RIDER_NAME_KEY = 'letsplay_mirage_cup_name_v1';
 const EMPTY_HUD = {
   score: 0, gems: 0, combo: 0, multiplier: '1.0', lives: 3, remaining: 60,
   shieldCharges: 0, lassoCharges: 0, pistolCharges: 0, boostCharges: 0,
@@ -30,6 +39,18 @@ function readBest() {
 
 function writeBest(score) {
   try { window.localStorage.setItem(BEST_KEY, String(score)); } catch {}
+}
+
+function readRiderName() {
+  try { return cleanRiderName(window.localStorage.getItem(RIDER_NAME_KEY), ''); }
+  catch { return ''; }
+}
+
+function writeRiderName(name) {
+  try {
+    if (name.trim()) window.localStorage.setItem(RIDER_NAME_KEY, name);
+    else window.localStorage.removeItem(RIDER_NAME_KEY);
+  } catch {}
 }
 
 function formatTime(seconds) {
@@ -58,11 +79,19 @@ export default function MirageRushPage() {
   // un défi imposé verrouille le parcours sur la carte du défi.
   const [selectedStage, setSelectedStage] = useState(challenge?.stage || 'desert');
   const [selectedMode, setSelectedMode] = useState(
-    initialModeParam === 'online' ? 'online' : challenge ? 'duel' : 'rush',
+    initialModeParam === 'online' ? 'online' : initialModeParam === 'cup' ? 'cup' : challenge ? 'duel' : 'rush',
   );
+  // COUPE : une suite de duels (4 cavaliers, 3 à trois voies) sur des terrains imposés. Le
+  // moteur 3D ne voit que des duels ordinaires ; `cupRun` accumule les places,
+  // les points et, à la fin, le vainqueur du trophée (voir mirageCup.js).
+  const [cupId, setCupId] = useState(DEFAULT_CUP_ID);
+  const [riderName, setRiderName] = useState(readRiderName);
+  const [cupRun, setCupRun] = useState(null);
+  const isCup = selectedMode === 'cup';
+  const activeCup = getCup(cupId) || CUPS[0];
   // L'intro devient un vrai tunnel : d'abord un écran de boutons de mode,
   // puis seulement l'écran suivant avec les maps et le lancement.
-  const [introStep, setIntroStep] = useState(() => (challenge || initialModeParam === 'online' ? 'stage' : 'mode'));
+  const [introStep, setIntroStep] = useState(() => (challenge || initialModeParam === 'online' || initialModeParam === 'cup' ? 'stage' : 'mode'));
   const [onlineOpen, setOnlineOpen] = useState(initialModeParam === 'online');
   const [settingsTab, setSettingsTab] = useState('community');
   const currentUserName = useMemo(
@@ -76,7 +105,8 @@ export default function MirageRushPage() {
       || '',
     [user],
   );
-  const stage = selectedMode === 'duel' && challenge ? challenge.stage || 'desert' : selectedStage;
+  const defaultRiderName = cleanRiderName(currentUserName);
+  const effectiveRiderName = cleanRiderName(riderName, defaultRiderName);
   // Piste de la partie : trois voies et deux rivaux dans l'application, quatre
   // voies et trois rivaux sur le site (voir src/games/mirageLanes.js). Relu à
   // chaque rendu — la piste est choisie au démarrage, avant le premier rendu.
@@ -89,6 +119,12 @@ export default function MirageRushPage() {
   // restent en piste à ses côtés.
   const chaseRivalNames = frenchList(trackRivals.filter((rival) => rival.id !== 'ombre').map((rival) => rival.label));
   const [race, setRace] = useState({ mode: 'rush' });
+  // En coupe, le terrain est celui de la course en cours (ou de la dernière,
+  // tant que l’overlay d’arrivée est affiché) ; avant le départ, celui de la
+  // 1ʳᵉ course.
+  const stage = isCup
+    ? (cupRun && race.cup ? race.stage : activeCup.stages[0])
+    : selectedMode === 'duel' && challenge ? challenge.stage || 'desert' : selectedStage;
   const [shareState, setShareState] = useState('');
   const [phase, setPhase] = useState('intro');
   const [countdown, setCountdown] = useState(3);
@@ -111,6 +147,7 @@ export default function MirageRushPage() {
   // Détection tactile pour adapter l'UI (dpad + losange sur mobile, barre horizontale sur PC)
   const [isTouch, setIsTouch] = useState(false);
   const progressRef = useRef(progression);
+  const cupRunRef = useRef(null);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
   const shellRef = useRef(null);
@@ -225,12 +262,14 @@ export default function MirageRushPage() {
     if (phase === 'intro') exitImmersive();
   }, [phase, exitImmersive]);
 
-  const startRun = useCallback(() => {
+  // Lance une course (compte à rebours, puis le moteur démarre) : commun à la
+  // ruée, au duel et à chaque course d’une coupe.
+  const beginRace = useCallback((nextRace) => {
     // Clic « LANCER » / Entrée pour rejouer : on demande le plein écran
     // ici, synchronement dans le geste, sinon le navigateur le refuse.
     enterImmersive();
-    audioRef.current?.setStage(stage);
-    setRace({ mode: selectedMode, stage, challenge: selectedMode === 'duel' ? challenge : null });
+    audioRef.current?.setStage(nextRace.stage);
+    setRace(nextRace);
     setRunToken((token) => token + 1);
     setShareState('');
     setHud(EMPTY_HUD);
@@ -243,7 +282,62 @@ export default function MirageRushPage() {
     setCountdown(3);
     setPhase('countdown');
     if (musicOnRef.current) audioRef.current?.start();
-  }, [stage, selectedMode, challenge, enterImmersive]);
+  }, [enterImmersive]);
+
+  // ── Coupe ──────────────────────────────────────────────────────────────
+  // Une course de coupe est un duel ordinaire, marqué `cup` pour l’interface :
+  // le moteur, les pouvoirs et le classement en course ne changent pas.
+  const cupRace = useCallback((run) => ({
+    mode: 'duel',
+    stage: cupCurrentStage(run),
+    challenge: null,
+    cup: { id: run.cupId, index: run.races.length, total: run.stages.length },
+  }), []);
+
+  const clearCup = useCallback(() => {
+    cupRunRef.current = null;
+    setCupRun(null);
+  }, []);
+
+  // « LANCER LA COUPE » / « REJOUER LA COUPE » : une coupe neuve, 0 point.
+  const startCup = useCallback(() => {
+    const run = createCupRun(activeCup.id, {
+      playerName: effectiveRiderName,
+      playerColors: skinFor(progressRef.current).colors,
+      // Les rivaux de la piste courante : trois sur le site, deux à trois voies.
+      rivals: trackRivals,
+    });
+    if (!run) return;
+    cupRunRef.current = run;
+    setCupRun(run);
+    beginRace(cupRace(run));
+  }, [activeCup.id, effectiveRiderName, trackRivals, beginRace, cupRace]);
+
+  const showCupTrophy = useCallback(() => {
+    setPhase('trophy');
+    // Lancé dans le geste du joueur (clic / Entrée), sinon le navigateur refuse le son.
+    if (musicOnRef.current) audioRef.current?.fanfare();
+  }, []);
+
+  // « COURSE SUIVANTE » (ou « VOIR LE PODIUM » après la dernière course).
+  const advanceCup = useCallback(() => {
+    const run = cupRunRef.current;
+    if (!run) return;
+    if (isCupComplete(run)) showCupTrophy();
+    else beginRace(cupRace(run));
+  }, [beginRace, cupRace, showCupTrophy]);
+  const startCupRef = useRef(startCup);
+  startCupRef.current = startCup;
+  const advanceCupRef = useRef(advanceCup);
+  advanceCupRef.current = advanceCup;
+
+  const startRun = useCallback(() => {
+    if (selectedMode === 'cup') {
+      startCup();
+      return;
+    }
+    beginRace({ mode: selectedMode, stage, challenge: selectedMode === 'duel' ? challenge : null });
+  }, [stage, selectedMode, challenge, beginRace, startCup]);
   const startRunRef = useRef(startRun);
   startRunRef.current = startRun;
 
@@ -274,7 +368,8 @@ export default function MirageRushPage() {
     setIntroStep('stage');
     setHud(EMPTY_HUD);
     audioRef.current?.stop();
-  }, []);
+    clearCup();
+  }, [clearCup]);
 
   useEffect(() => {
     const onKey = (event) => {
@@ -287,9 +382,19 @@ export default function MirageRushPage() {
         else if (phaseRef.current === 'paused') { event.preventDefault(); resumeGame(); }
         else if (phaseRef.current === 'countdown') { event.preventDefault(); cancelCountdown(); }
       }
-      if ((key === 'enter' || key === 'r') && phaseRef.current === 'finished' && target !== 'BUTTON') {
+      if (target !== 'BUTTON' && phaseRef.current === 'finished' && cupRunRef.current?.races.length) {
+        // Coupe : Entrée enchaîne. Pas « R » — c’est le pistolet, et un tir
+        // tardif ne doit pas sauter le classement.
+        if (key === 'enter') {
+          event.preventDefault();
+          advanceCupRef.current?.();
+        }
+      } else if ((key === 'enter' || key === 'r') && phaseRef.current === 'finished' && target !== 'BUTTON') {
         event.preventDefault();
         startRunRef.current?.();
+      } else if (key === 'enter' && phaseRef.current === 'trophy' && target !== 'BUTTON') {
+        event.preventDefault();
+        startCupRef.current?.();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -312,10 +417,11 @@ export default function MirageRushPage() {
   const chooseMode = useCallback((mode) => {
     setPhase('intro');
     audioRef.current?.stop();
+    clearCup();
     setOnlineOpen(false);
     setSelectedMode(mode);
     setIntroStep('stage');
-  }, []);
+  }, [clearCup]);
 
   const openOnlineLobby = useCallback(() => {
     setPhase('intro');
@@ -332,6 +438,7 @@ export default function MirageRushPage() {
     setFx('');
     setPowerToast(null);
     audioRef.current?.stop();
+    clearCup(); // quitter en cours de route = abandonner la coupe
   };
 
   const recordProgress = useCallback((result) => {
@@ -348,6 +455,12 @@ export default function MirageRushPage() {
     setPhase('finished');
     audioRef.current?.stop();
     setAward(recordProgress(result));
+    if (cupRunRef.current && result.mode === 'duel') {
+      const next = recordCupRace(cupRunRef.current, result);
+      cupRunRef.current = next;
+      setCupRun(next);
+      return;
+    }
     if (result.mode === 'duel') return;
     const isRecord = result.score > readBest();
     if (isRecord) {
@@ -400,6 +513,12 @@ export default function MirageRushPage() {
   const timePercent = useMemo(() => Math.max(0, Math.min(100, (hud.remaining / 60) * 100)), [hud.remaining]);
   const duelPercent = Math.min(100, Math.max(0, (hud.distance || 0) / DUEL_DISTANCE * 100));
   const levelInfo = useMemo(() => levelProgress(progression.xp), [progression.xp]);
+  // Points que le joueur a déjà gagnés dans la coupe en cours (chip du HUD).
+  const cupPlayerPoints = useMemo(
+    () => (cupRun ? cupStandings(cupRun).find((row) => row.isPlayer)?.points ?? 0 : 0),
+    [cupRun],
+  );
+  const cupPointsLine = CUP_POINTS.slice(0, riderCount).map((points, index) => `${placeLabel(index + 1)} ${points} PTS`).join(' · ');
   // Les skins 3D de « TON CAVALIER » se figent pendant une course : le GPU reste au jeu.
   const racing = phase === 'playing' || phase === 'countdown';
   useEffect(() => {
@@ -418,16 +537,21 @@ export default function MirageRushPage() {
   const modeChoices = [
     { id: 'rush', name: 'RUÉE', icon: '↯', tagline: 'Bats ton record', info: '60 secondes · 3 vies', cta: 'CHOISIR LA RUÉE' },
     { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : 'Devance tes rivaux', info: challenge ? `Course fantôme · ${DUEL_DISTANCE} m` : `Face aux ${rivalCount} PNJ · ${DUEL_DISTANCE} m`, cta: 'CHOISIR LE DUEL' },
+    { id: 'cup', name: 'COUPE', icon: '♛', tagline: 'Vise le trophée', info: `${activeCup.stages.length} courses · ${riderCount} cavaliers`, cta: 'CHOISIR LA COUPE' },
     { id: 'online', name: 'EN LIGNE', icon: '♞', tagline: 'Retrouve tes amis', info: 'Salon · 2 à 4 cavaliers', cta: 'OUVRIR LES SALONS' },
   ];
   const selectedModeChoice = modeChoices.find((mode) => mode.id === selectedMode) || modeChoices[0];
   const introKicker = selectedMode === 'online'
     ? 'EN LIGNE · SALONS MULTIJOUEURS'
+    : isCup ? `COUPE · ${activeCup.stages.length} COURSES · ${riderCount} CAVALIERS`
     : selectedMode === 'duel' ? `DUEL · PREMIER À ${DUEL_DISTANCE} M` : 'RUÉE · 60 SECONDES';
   const introTitle = selectedMode === 'online'
     ? ['CHOISIS', 'TA MAP.']
+    : isCup ? ['VISE LE', 'TROPHÉE.']
     : selectedMode === 'duel' ? ['À TOI DE', 'GALOPER.'] : ['LE SABLE', 'SE RÉVEILLE.'];
-  const stageDescription = selectedMode === 'duel'
+  const stageDescription = isCup
+    ? `Enchaîne ${activeCup.stages.length} courses à ${riderCount} cavaliers (${activeCup.stages.map(stageName).join(' → ')}) contre ${rivalNameList}, avec les mêmes pouvoirs qu’en duel. Chaque arrivée rapporte des points — plus tu finis haut, plus tu en gagnes — et le meilleur total après la dernière course soulève le trophée !`
+    : selectedMode === 'duel'
     ? `Affronte ${challenge ? `${challenge.name} (course fantôme) ainsi que ${chaseRivalNames}` : `${rivalCount} cavaliers rivaux IA (${rivalNameList})`} sur les ${trackLanes} voies. Les cristaux accélèrent ton cheval et chargent tes pouvoirs. Premier à ${DUEL_DISTANCE} m !`
     : stage === 'airbase' ? 'Décolle sur le taxiway de Thunder Airbase, hommage au stage de Guile : F-16 garé à gauche, drapeau américain géant, soldats qui applaudissent dans les gradins et panneau SONIC BOOM. Saute les barrières de piste et contourne les fûts de kérosène !'
     : stage === 'infinity' ? 'Galope sur le pont suspendu du Château de l’Infini au son du biwa de Nakime : saute les paravents shōji d’engawa et contourne les piliers-lanternes Andon au cœur d’un labyrinthe sans gravité de tatamis, d’escaliers flottants et de pagodes renversées !'
@@ -443,9 +567,11 @@ export default function MirageRushPage() {
     : stageDescription;
   const stageHint = selectedMode === 'online'
     ? 'ÉCRAN 02 · MAP DU SALON · 2 À 4 CAVALIERS EN LIGNE'
-    : selectedMode === 'duel'
-      ? `${riderCount} CAVALIERS · DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE`
-      : '60 SECONDES · 3 VIES · MULTIPLICATEUR DE COMBO · RECORD À BATTRE';
+    : isCup
+      ? `${activeCup.stages.length} COURSES · ${cupPointsLine}`
+      : selectedMode === 'duel'
+        ? `${riderCount} CAVALIERS · DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE`
+        : '60 SECONDES · 3 VIES · MULTIPLICATEUR DE COMBO · RECORD À BATTRE';
 
   if (selectedMode === 'online' && onlineOpen) {
     return (
@@ -510,7 +636,9 @@ export default function MirageRushPage() {
           </div>
 
           <div className={`mirage-viewport${fx ? ` ${fx}` : ''}${phase === 'playing' ? ' is-live' : ''}${phase === 'playing' && hud.powerBoostActive ? ' is-turbo' : ''}`}>
-            <MirageWorld
+            {/* Pendant la remise du trophée, le moteur de course est démonté : un
+                seul contexte WebGL à la fois, et pas de course qui tourne dans le dos. */}
+            {phase !== 'trophy' && <MirageWorld
               active={phase === 'playing'}
               race={race}
               stage={stage}
@@ -607,7 +735,7 @@ export default function MirageRushPage() {
                 }
               }}
               onShield={() => {}}
-            />
+            />}
             <div className="mirage-sun-glare" aria-hidden="true" />
             {phase === 'playing' && hud.powerBoostActive && (
               <div className="mirage-turbo-lines" aria-hidden="true">
@@ -663,6 +791,13 @@ export default function MirageRushPage() {
                       <b className="mirage-race-dot is-you" style={{ left: `${duelPercent}%` }} title="Toi" />
                       <span className="mirage-race-flag">🏁</span>
                     </div>
+                    {race.cup && cupRun && (
+                      <div className="mirage-hud-cup">
+                        <i className="mirage-chip is-cup" title={`${activeCup.name} : points déjà gagnés`}>
+                          <MirageTrophyIcon className="mirage-inline-trophy" /> COURSE {race.cup.index + 1}/{race.cup.total} · {cupPlayerPoints} PTS
+                        </i>
+                      </div>
+                    )}
                   </> : <>
                     <div className={`mirage-clock${hud.remaining <= 10 ? ' is-danger' : hud.remaining <= 20 ? ' is-warning' : ''}`}>{formatTime(hud.remaining)}</div>
                     <div className="mirage-time-track"><i style={{ width: `${timePercent}%` }} /></div>
@@ -932,11 +1067,11 @@ export default function MirageRushPage() {
 
             {phase === 'countdown' && (
               <div className="mirage-overlay mirage-countdown-overlay" role="status" aria-live="assertive">
-                <div className="mirage-overlay-kicker"><span>✦</span> {selectedMode === 'duel' ? `DUEL À ${riderCount} CAVALIERS · PREMIER À ${DUEL_DISTANCE} M` : 'RUÉE · 60 SECONDES · 3 VIES'} <span>✦</span></div>
+                <div className="mirage-overlay-kicker"><span>✦</span> {race.cup ? `${activeCup.name.toUpperCase()} · COURSE ${race.cup.index + 1} / ${race.cup.total} · ${stageName(race.stage).toUpperCase()}` : selectedMode === 'duel' ? `DUEL À ${riderCount} CAVALIERS · PREMIER À ${DUEL_DISTANCE} M` : 'RUÉE · 60 SECONDES · 3 VIES'} <span>✦</span></div>
                 {countdown > 0
                   ? <div className="mirage-countdown-number" key={countdown}>{countdown}</div>
                   : <div className="mirage-countdown-go" key="go">GALOPE&nbsp;!</div>}
-                <div className="mirage-overlay-hint">ÉCHAP POUR ANNULER</div>
+                <div className="mirage-overlay-hint">{race.cup && cupRun?.races.length ? 'ÉCHAP POUR ABANDONNER LA COUPE' : 'ÉCHAP POUR ANNULER'}</div>
               </div>
             )}
 
@@ -945,7 +1080,7 @@ export default function MirageRushPage() {
                 {introStep === 'mode' ? <>
                   <div className="mirage-overlay-kicker"><span>✦</span> CHOISIS TON MODE <span>✦</span></div>
                   <h2>MIRAGE <em>RUSH.</em></h2>
-                  <p className="mirage-intro-lead">Sélectionne un vrai bouton de mode : les maps s’ouvrent à l’écran suivant, puis tu lances la Ruée, le Duel ou le lobby En ligne.</p>
+                  <p className="mirage-intro-lead">Sélectionne un vrai bouton de mode : les maps s’ouvrent à l’écran suivant, puis tu lances la Ruée, le Duel, la Coupe ou le lobby En ligne.</p>
                   <div className="mirage-mode-section">
                     <div className="mirage-picker-label"><span>01 / TON MODE</span><span>BOUTONS DE DÉPART</span></div>
                     <div className="mirage-mode-picker is-actions" role="group" aria-label="Choisir un mode Mirage">
@@ -962,7 +1097,7 @@ export default function MirageRushPage() {
                     </div>
                   </div>
                   {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même choisir un mode et défier les {rivalCount} PNJ.</p>}
-                  <div className="mirage-overlay-hint">ÉCRAN 01 · CHOISIS RUÉE, DUEL OU EN LIGNE</div>
+                  <div className="mirage-overlay-hint">ÉCRAN 01 · CHOISIS RUÉE, DUEL, COUPE OU EN LIGNE</div>
                 </> : <>
                   <div className="mirage-overlay-kicker"><span>✦</span> {introKicker} <span>✦</span></div>
                   <div className="mirage-intro-toolbar">
@@ -973,11 +1108,22 @@ export default function MirageRushPage() {
                   {/* Les modes sont de vrais boutons sur l'écran précédent ;
                       les maps n'apparaissent maintenant qu'ici, à l'écran 02. */}
                   <div className="mirage-mode-section">
-                    <MirageStagePicker
-                      stage={stage}
-                      setSelectedStage={setSelectedStage}
-                      locked={selectedMode === 'duel' && Boolean(challenge)}
-                    />
+                    {isCup ? (
+                      <MirageCupPicker
+                        cupId={activeCup.id}
+                        setCupId={setCupId}
+                        riderName={riderName}
+                        setRiderName={(value) => { setRiderName(value); writeRiderName(value); }}
+                        defaultRiderName={defaultRiderName}
+                        riderCount={riderCount}
+                      />
+                    ) : (
+                      <MirageStagePicker
+                        stage={stage}
+                        setSelectedStage={setSelectedStage}
+                        locked={selectedMode === 'duel' && Boolean(challenge)}
+                      />
+                    )}
                   </div>
                   {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                   {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier les {rivalCount} PNJ.</p>}
@@ -991,13 +1137,13 @@ export default function MirageRushPage() {
                     >
                       {selectedMode === 'online'
                         ? 'OUVRIR LES SALONS'
-                        : ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU PARCOURS…'} <span>↗</span>
+                        : ready ? isCup ? 'LANCER LA COUPE' : selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU PARCOURS…'} <span>↗</span>
                     </button>
                   </div>
                   {selectedMode !== 'online' && <div className="mirage-keys-hint" aria-label="Commandes clavier">
                     <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
                     <span><kbd>↑</kbd> sauter</span>
-                    {selectedMode === 'duel' && <>
+                    {(selectedMode === 'duel' || isCup) && <>
                       <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-key-power-icon" /> Bouclier</span>
                       <span><kbd>W/Z</kbd> <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-key-power-icon" /> Lasso</span>
                       <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-key-power-icon" /> Turbo</span>
@@ -1022,13 +1168,21 @@ export default function MirageRushPage() {
                 </div>
                 <div className="mirage-result-actions">
                   <button type="button" className="mirage-start-button" onClick={resumeGame}>REPRENDRE <span>▶</span></button>
-                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← QUITTER LA COURSE</button>
+                  <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>{race.cup ? '← ABANDONNER LA COUPE' : '← QUITTER LA COURSE'}</button>
                 </div>
                 <div className="mirage-overlay-hint">ÉCHAP POUR REPRENDRE</div>
               </div>
             )}
 
-            {phase === 'finished' && justFinished?.mode === 'duel' && (
+            {phase === 'finished' && cupRun && cupRun.races.length > 0 && justFinished?.mode === 'duel' && (
+              <MirageCupResults cup={activeCup} run={cupRun} award={award} onNext={advanceCup} onQuit={backToCoursePicker} />
+            )}
+
+            {phase === 'trophy' && cupRun && (
+              <MirageCupTrophy cup={activeCup} run={cupRun} onReplay={startCup} onQuit={backToCoursePicker} />
+            )}
+
+            {phase === 'finished' && !(cupRun && cupRun.races.length > 0) && justFinished?.mode === 'duel' && (
               <div className="mirage-overlay mirage-result-overlay">
                 <div className="mirage-overlay-kicker"><span>✦</span> ARRIVÉE · DUEL ({justFinished.rank === 1 ? '1ᵉʳ' : `${justFinished.rank || 2}ᵉ`} / {justFinished.totalRiders || 4}) <span>✦</span></div>
                 <h2>{justFinished.won ? 'VICTOIRE' : 'UN RIVAL'} <em>{justFinished.won ? 'DU CAVALIER !' : 'L’EMPORTE.'}</em></h2>
@@ -1187,6 +1341,29 @@ export default function MirageRushPage() {
               aria-labelledby="mirage-tab-info"
               hidden={settingsTab !== 'info'}
             >
+              <section className="mirage-howto mirage-cup-rules">
+                <span className="mirage-panel-kicker">MODE COUPE · {riderCount} CAVALIERS · DES COURSES À LA SUITE</span>
+                {CUPS.map((cup) => (
+                  <div className="mirage-rule" key={cup.id}>
+                    <span className="mirage-rule-icon is-gold">♛</span>
+                    <div>
+                      <strong>{cup.name}</strong>
+                      <small>{cup.stages.map((id, index) => `${index + 1}. ${stageName(id)}`).join(' · ')} : {cup.stages.length} duels d’affilée contre {rivalNameList}, avec les mêmes pouvoirs qu’en duel.</small>
+                    </div>
+                  </div>
+                ))}
+                <div className="mirage-rule">
+                  <span className="mirage-rule-icon is-green">✦</span>
+                  <div>
+                    <strong>Des points à chaque arrivée</strong>
+                    <small>Plus tu finis haut, plus tu gagnes de points, et ils s’additionnent d’une course à l’autre.</small>
+                    <div className="mirage-cup-points-grid" aria-label="Points par place">
+                      {CUP_POINTS.slice(0, riderCount).map((points, index) => <span key={index} className={`mirage-cup-points-pill is-place-${index + 1}`}><b>{placeLabel(index + 1)}</b><i>{points} pts</i></span>)}
+                    </div>
+                  </div>
+                </div>
+                <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Le trophée</strong><small>Après la dernière course, les points sont totalisés et le vainqueur soulève le trophée sur son podium tournant. En cas d’égalité : le plus de victoires, puis la meilleure place à la dernière course.</small></div></div>
+              </section>
               <section className="mirage-howto">
             <span className="mirage-panel-kicker">MODE DUEL · {riderCount} CAVALIERS · PREMIER À {DUEL_DISTANCE} M</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>{rivalCount > 2 ? 'Trois cavaliers rivaux' : `${rivalCount} cavaliers rivaux`}</strong><small>Défie {rivalNameList} : {rivalCount} PNJ qui changent de voie, sautent, ramassent les diamants et utilisent leurs propres pouvoirs contre toi et entre eux !</small></div></div>
