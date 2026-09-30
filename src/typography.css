@@ -109,7 +109,7 @@ html body .social-panel-kicker {
   font-weight: 700 !important;
 }
 
-/* ============ 5. MESSAGERIE : PSEUDOS + NAVIGATION EN GRAS ============ */
+/* ============ 5. MESSAGERIE : PSEUDOS, NAVIGATION ET NON-LUS EN GRAS ============ */
 /* Les pseudos des joueurs et les liens de navigation de la messagerie
    restent en Google Sans (lisible à petit corps), mais en gras (700) pour
    les distinguer du texte courant. Sans ce bloc, la règle `body *` du
@@ -150,6 +150,17 @@ html body :is(
   .friends-action-profile,
   .nav-messages-link .nav-link-label
 ) * {
+  font-weight: 700 !important;
+}
+
+/* Non-lus : une discussion qui a reçu de nouveaux messages ressort comme dans
+   une boîte de réception — l'aperçu du dernier message et son heure passent en
+   gras (le pseudo l'est déjà, ci-dessus), en plus du badge jaune. C'est la
+   classe `has-unread` de la ligne (MessagesTabs.jsx) qui pilote : elle tombe à
+   l'ouverture de la discussion, et le texte repasse alors en 400 tout seul.
+   Le sélecteur (0,3,2) coiffe `body *` du bloc 1 ; le `font-weight` posé dans
+   messages.css ne serait sinon jamais appliqué. */
+html body .messages-row.has-unread :is(.messages-row-preview, .messages-row-time) {
   font-weight: 700 !important;
 }
 
