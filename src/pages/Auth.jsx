@@ -1730,11 +1730,11 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
     <>
       {/* CONSOLES POSSÉDÉES */}
       <div className="player-section">
-        <div className="player-section-header player-games-section-header">
+        <div className="player-section-header player-platforms-section-header">
           <div><h2>{t.platformsHeading}</h2><p>{t.consolesHint}</p></div>
-          <button type="button" className={`player-games-action-btn${isEditingPlatforms ? ' active' : ''}`}
+          <button type="button" className={`player-gear-action-btn${isEditingPlatforms ? ' active' : ''}`}
             onClick={() => setIsEditingPlatforms((value) => !value)} aria-expanded={isEditingPlatforms}>
-            {isEditingPlatforms ? 'Fermer' : 'Modifier'}
+            {isEditingPlatforms ? (t.closePlatforms || 'Fermer les consoles') : (t.editPlatforms || 'Modifier les consoles')}
           </button>
         </div>
         <div className={isEditingPlatforms ? 'player-console-grid' : 'player-platforms-row'}>
@@ -1789,7 +1789,7 @@ export function PlayerGearEditor({ t, isDemo, user, meta, updateDemoProfile }) {
         </div>
         {draftGames.length > 0 ? (
           <div className="player-games-row">
-            {(isEditingGames ? draftGames : draftGames.slice(0, 3)).map((title, index) => (
+            {draftGames.map((title, index) => (
               <TopGamePill key={title} title={title} rank={index + 1}>
                 {isEditingGames && (
                   <button type="button" className="player-game-chip-remove" onClick={() => toggleGame(title)}

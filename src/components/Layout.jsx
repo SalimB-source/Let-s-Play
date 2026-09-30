@@ -34,11 +34,55 @@ export default function Layout({ children }) {
   const navPrimaryRef = useRef(null);
   const profileWrapRef = useRef(null);
   const paletteInputRef = useRef(null);
+  const profileCloseTimerRef = useRef(null);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState('');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
+
+  const handleProfileMouseEnter = () => {
+    if (profileCloseTimerRef.current) {
+      clearTimeout(profileCloseTimerRef.current);
+      profileCloseTimerRef.current = null;
+    }
+    setProfileMenuOpen(true);
+  };
+
+  const handleProfileMouseLeave = () => {
+    if (profileCloseTimerRef.current) {
+      clearTimeout(profileCloseTimerRef.current);
+    }
+    profileCloseTimerRef.current = setTimeout(() => {
+      setProfileMenuOpen(false);
+    }, 220);
+  };
+
+  const handleProfileBlur = (e) => {
+    if (!profileWrapRef.current?.contains(e.relatedTarget)) {
+      if (profileCloseTimerRef.current) {
+        clearTimeout(profileCloseTimerRef.current);
+        profileCloseTimerRef.current = null;
+      }
+      setProfileMenuOpen(false);
+    }
+  };
+
+  const closeProfileMenu = () => {
+    if (profileCloseTimerRef.current) {
+      clearTimeout(profileCloseTimerRef.current);
+      profileCloseTimerRef.current = null;
+    }
+    setProfileMenuOpen(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (profileCloseTimerRef.current) {
+        clearTimeout(profileCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   // scrolled shrink
   useEffect(() => {
@@ -114,6 +158,7 @@ export default function Layout({ children }) {
   useEffect(() => {
     setMenuOpen(false);
     setPaletteOpen(false);
+    if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
     setProfileMenuOpen(false);
     const target = location.hash ? document.getElementById(location.hash.slice(1)) : null;
     if (target) {
@@ -151,6 +196,7 @@ export default function Layout({ children }) {
     const onKey = (e) => {
       if (e.key === 'Escape') {
         setPaletteOpen(false);
+        if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
         setProfileMenuOpen(false);
         setSearchOpen(false);
       }
@@ -187,7 +233,10 @@ export default function Layout({ children }) {
   useEffect(() => {
     const closeOnOutsideClick = (event) => {
       if (!searchRef.current?.contains(event.target)) setSearchOpen(false);
-      if (profileWrapRef.current && !profileWrapRef.current.contains(event.target)) setProfileMenuOpen(false);
+      if (profileWrapRef.current && !profileWrapRef.current.contains(event.target)) {
+        if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
+        setProfileMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', closeOnOutsideClick);
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
@@ -436,17 +485,23 @@ export default function Layout({ children }) {
                 <ThemeToggle />
                 {user ? (
                   <>
-                    <div className="nav-profile-wrap" ref={profileWrapRef} onMouseEnter={() => setProfileMenuOpen(true)} onMouseLeave={() => setProfileMenuOpen(false)}>
+                    <div
+                      className="nav-profile-wrap"
+                      ref={profileWrapRef}
+                      onMouseEnter={handleProfileMouseEnter}
+                      onMouseLeave={handleProfileMouseLeave}
+                      onFocus={handleProfileMouseEnter}
+                      onBlur={handleProfileBlur}
+                    >
                       <Link
                         to="/auth"
                         className="nav-account connected"
-                        onClick={() => setMenuOpen(false)}
+                        onClick={() => { setMenuOpen(false); closeProfileMenu(); }}
                         aria-label={profileAria}
                         title={profileAria}
                         aria-current={isActive('/auth') ? 'page' : undefined}
                         aria-expanded={profileMenuOpen}
                         aria-haspopup="menu"
-                        onFocus={() => setProfileMenuOpen(true)}
                       >
                         <span className="nav-account-inner">
                           <span className="nav-account-avatar" aria-hidden="true">
@@ -485,9 +540,9 @@ export default function Layout({ children }) {
                           <span style={{ width: `${Math.min(100, ((summary?.xpProgress ?? 0) * 100) || 34)}%` }} />
                         </div>
                         <nav className="nav-profile-dropdown-links">
-                          <Link to="/auth" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
-                          <Link to="/messages" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span className="nav-dropdown-mark"><LetsTalkMark /></span> Messages <em>↗</em></Link>
-                          <Link to="/auth#achievements" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>🏆</span> Succès <em>↗</em></Link>
+                          <Link to="/auth" role="menuitem" onClick={closeProfileMenu}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
+                          <Link to="/messages" role="menuitem" onClick={closeProfileMenu}><span className="nav-dropdown-mark"><LetsTalkMark /></span> Messages <em>↗</em></Link>
+                          <Link to="/auth#achievements" role="menuitem" onClick={closeProfileMenu}><span>🏆</span> Succès <em>↗</em></Link>
                         </nav>
                         <button type="button" className="nav-profile-dropdown-logout" onClick={handleSignOut} role="menuitem">
                           <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>

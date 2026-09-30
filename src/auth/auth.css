@@ -1376,7 +1376,8 @@
   flex-shrink: 0;
 }
 
-.player-games-action-btn {
+.player-games-action-btn,
+.player-gear-action-btn {
   padding: 8px 12px;
   background: rgba(34, 211, 238, .08);
   border: 1px solid rgba(34, 211, 238, .3);
@@ -1390,7 +1391,9 @@
 }
 
 .player-games-action-btn:hover,
-.player-games-action-btn.active {
+.player-games-action-btn.active,
+.player-gear-action-btn:hover,
+.player-gear-action-btn.active {
   background: rgba(34, 211, 238, .18);
   border-color: var(--cyan);
   color: #fff;
