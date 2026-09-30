@@ -5,7 +5,7 @@ const MAPS = [
   { id: 'desert', number: '01', name: 'Dunes de l’Écho', mood: 'Mystique & solaire', detail: 'Désert · funk', sky: '#624575', sun: '#ffd57f', land: '#c99268' },
   { id: 'western', number: '02', name: 'Dust Creek', mood: 'Au cœur du Far West', detail: 'Ville · cowboy', sky: '#c78768', sun: '#ffdf9a', land: '#a57650' },
   { id: 'prairie', number: '03', name: 'Plaines d’Or', mood: 'La grande échappée', detail: 'Golden hour · épique', sky: '#b97553', sun: '#ffad48', land: '#b5a550' },
-  { id: 'sardinia', number: '04', name: 'Costa Omertà', mood: 'Le clan veille sur la baie', detail: 'Village côtier · mandoline', sky: '#6b4a42', sun: '#f3b56a', land: '#c9895a' },
+  { id: 'sardinia', number: '04', name: 'Costa Omertà', mood: 'Un été sur la baie', detail: 'Terrasses · soleil · mandoline', sky: '#4da9dc', sun: '#ffebaa', land: '#c9895a' },
   { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Alger-Centre · chaâbi oriental', sky: '#7fb2d8', sun: '#ffd28a', land: '#e8e2d2' },
   { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', sky: '#111a30', sun: '#eef4ff', land: '#1c2936' },
 ];
@@ -13,7 +13,7 @@ const MAPS = [
 function Landscape({ map }) {
   return <svg className="mirage-map-art" viewBox="0 0 240 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <rect width="240" height="110" fill={map.sky} />
-    <circle cx={map.id === 'prairie' || map.id === 'alger' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />
+    <circle cx={map.id === 'prairie' || map.id === 'alger' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : map.id === 'sardinia' ? 29 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />
     {map.id === 'desert' && <><path d="M0 70 42 36 85 72 128 47 195 76 240 54V110H0Z" fill="#8b6684" /><path d="M0 87Q55 48 120 84T240 79V110H0Z" fill={map.land} /></>}
     {map.id === 'western' && <><path d="M0 81V29H43V21H68V81M177 81V32H211V25H240V81" fill="#624236" /><path d="M4 39H65V46H4M179 42H240V49H179" stroke="#e5bd81" strokeWidth="5" /><path d="M17 54H29V68H17M41 54H53V68H41M190 58H201V73H190M216 58H229V73H216" fill="#e4b77c" /><path d="M0 81H240V110H0Z" fill={map.land} /></>}
     {map.id === 'prairie' && <>
@@ -92,7 +92,20 @@ function Landscape({ map }) {
         <path d="M-2.5 -1.2h5l-1 1.5h-3z" fill="#3a2a1e" />
       </g>
     </>}
-    {map.id === 'sardinia' && <><path d="M0 76Q60 68 120 76T240 72V110H0Z" fill="#3f7f92" opacity=".55" /><path d="M0 88H30V66H16V58H30V66H46V88M96 88V62H112V54H128V62H144V88M186 88V60H204V52H220V60H236V88" fill="#7a4632" /><path d="M8 88H22V100H8M104 88H120V100H104M194 88H210V100H194" fill="#c9895a" />{[20, 216].map(x => <path key={x} d={`M${x} 88V64Q${x + 3} 52 ${x + 6} 64V88`} fill="#2c4a34" />)}<path d="M0 88H240V110H0Z" fill={map.land} /></>}
+    {map.id === 'sardinia' && <><path d="M0 76Q60 68 120 76T240 72V110H0Z" fill="#3f7f92" opacity=".55" /><path d="M0 88H30V66H16V58H30V66H46V88M96 88V62H112V54H128V62H144V88M186 88V60H204V52H220V60H236V88" fill="#7a4632" /><path d="M8 88H22V100H8M104 88H120V100H104M194 88H210V100H194" fill="#c9895a" />{[20, 216].map(x => <path key={x} d={`M${x} 88V64Q${x + 3} 52 ${x + 6} 64V88`} fill="#2c4a34" />)}<path d="M0 88H240V110H0Z" fill={map.land} />
+      {/* Parasols et vacanciers sur les terrasses à gauche. */}
+      {[35, 68].map((x, i) => <g key={x}>
+        <path d={`M${x} 67v22`} stroke="#57493c" strokeWidth="1.4" />
+        <path d={`M${x - 15} 71Q${x} ${i ? 55 : 53} ${x + 15} 71Z`} fill={i ? '#f9edcf' : '#e58361'} />
+        <path d={`M${x} 61Q${x + 7} 63 ${x + 15} 71H${x}Z`} fill={i ? '#61b2bb' : '#f9edcf'} />
+        <path d={`M${x - 6} 83v6m12-6v6`} stroke="#6b5543" strokeWidth="1.3" />
+        <ellipse cx={x} cy="82" rx="7" ry="1.7" fill="#f8e9ce" />
+        {[-9, 9].map(dx => <g key={dx}>
+          <circle cx={x + dx} cy="79" r="2.3" fill="#d9a378" />
+          <path d={`M${x + dx - 2} 82h4v6h-4z`} fill={dx < 0 ? '#4c9ca5' : '#e8c05c'} />
+        </g>)}
+      </g>)}
+    </>}
     {map.id === 'alger' && <>
       {/* La baie bleue au loin, visible entre les deux rangées d'immeubles */}
       <rect x="52" y="56" width="136" height="11" fill="#1d6a9c" />

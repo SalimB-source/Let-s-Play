@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
-import { sardiniaObstacle, sardiniaSeaside, sardiniaVillage } from './sardiniaStage';
+import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } from './sardiniaStage';
 import { algerBuilding, algerObstacle } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
 import {
@@ -421,10 +421,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
       : sardinia
         ? {
-            background: 0x59647a, fog: 0xd99b76, exposure: 1.08,
-            skyBottom: [0.97, 0.70, 0.49], skyHorizon: [0.83, 0.46, 0.38], skyTop: [0.37, 0.40, 0.54],
-            sunBottom: [1.0, 0.34, 0.09], sunTop: [1.0, 0.62, 0.25], glow: [1.0, 0.69, 0.4],
-            hemiSky: 0xffd6ab, hemiGround: 0x52605b, sunLight: 0xffb96f, rimLight: 0x87c3c6,
+            background: 0x72c4eb, fog: 0xb9dce3, exposure: 1.12,
+            skyBottom: [0.66, 0.87, 0.94], skyHorizon: [0.39, 0.72, 0.92], skyTop: [0.12, 0.45, 0.78],
+            sunBottom: [1.0, 0.84, 0.46], sunTop: [1.0, 0.97, 0.78], glow: [1.0, 0.90, 0.63],
+            hemiSky: 0xe5f3f6, hemiGround: 0x9e8262, sunLight: 0xffe5b0, rimLight: 0x9edfe8,
           }
         : alger
           ? {
@@ -483,7 +483,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : 5.5 },
+      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : 5.5 },
+      sunX: { value: sardinia ? 18.0 : 0.0 },
+      sunRadius: { value: sardinia ? 5.5 : 8.0 },
       isNight: { value: japan ? 1.0 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
@@ -498,18 +500,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       uniform vec3 sunTop;
       uniform vec3 glow;
       uniform float sunElevation;
+      uniform float sunX;
+      uniform float sunRadius;
       uniform float isNight;
       varying vec2 skyPoint;
       void main() {
         float height = skyPoint.y;
         vec3 sky = mix(skyBottom, skyHorizon, smoothstep(0.0, 23.0, height));
         sky = mix(sky, skyTop, smoothstep(18.0, 75.0, height));
-        float radius = length(skyPoint - vec2(0.0, sunElevation));
+        float radius = length(skyPoint - vec2(sunX, sunElevation));
         float haloVisibility = clamp((sunElevation + 12.0) / 17.5, 0.0, 1.0);
         float halo = exp(-radius * radius / 500.0) * 0.38 * haloVisibility;
         sky = mix(sky, glow, halo);
         float aboveHorizon = step(0.0, height);
-        float disc = (1.0 - smoothstep(7.85, 8.0, radius)) * aboveHorizon;
+        float disc = (1.0 - smoothstep(sunRadius - 0.15, sunRadius, radius)) * aboveHorizon;
         if (isNight > 0.01 && height > 12.0 && disc < 0.01) {
           vec2 cell = floor(skyPoint * 1.35);
           float h = fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
@@ -566,11 +570,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
   if (sardinia) {
     block(cube, new THREE.MeshStandardMaterial({ color: 0xc9895a, roughness: 1 }), scene, [-17.35, -0.64, -35], [45.3, 0.6, 160]);
-    const bay = new THREE.Mesh(new THREE.PlaneGeometry(130, 170), new THREE.MeshStandardMaterial({ color: 0x2f7f92, roughness: 0.35, metalness: 0.1, flatShading: true }));
+    const bay = new THREE.Mesh(new THREE.PlaneGeometry(130, 170), new THREE.MeshStandardMaterial({ color: 0x2f8da3, roughness: 0.35, metalness: 0.1, flatShading: true }));
     bay.rotation.x = -Math.PI / 2;
     bay.position.set(70.3, -0.92, -35);
     scene.add(bay);
-    const sea = block(new THREE.PlaneGeometry(240, 13), new THREE.MeshBasicMaterial({ color: 0x2f7f92 }), scene, [0, 6, -94]);
+    // Keep the distant water below the midday sun so the blue sky stays visible.
+    const sea = block(new THREE.PlaneGeometry(240, 8), new THREE.MeshBasicMaterial({ color: 0x2f8da3 }), scene, [0, 2, -94]);
     sea.renderOrder = -1;
   }
 
@@ -864,8 +869,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     for (let i = 0; i < 10; i++) {
       const village = sardiniaVillage(i, -1);
       const seaside = sardiniaSeaside(i);
-      scene.add(village, seaside);
-      scenery.push(village, seaside);
+      const terrace = sardiniaTerrace(i);
+      scene.add(village, terrace, seaside);
+      scenery.push(village, terrace, seaside);
     }
   } else if (alger) {
     // Deux rangées d'immeubles haussmanniens blancs encadrent le boulevard ;
