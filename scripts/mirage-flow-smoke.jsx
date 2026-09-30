@@ -110,16 +110,26 @@ function assertCupIntro(assert, node) {
   assert.equal(node.querySelectorAll('.mirage-stage-picker').length, 0,
     'le terrain est imposé par la coupe : plus de sélecteur de terrain');
   const cards = [...node.querySelectorAll('.mirage-cup-card')];
-  assert.equal(cards.length, 1, 'une seule coupe pour l’instant');
-  assert.equal(cards[0].getAttribute('aria-pressed'), 'true', 'la Coupe du Désert est sélectionnée');
-  assert.equal(cards[0].querySelector('.mirage-cup-card-title strong')?.textContent, 'Coupe du Désert');
+  assert.ok(cards.length >= 2, 'plusieurs coupes sont proposées (Désert + Grand Tour)');
+  const desertCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe du Désert');
+  assert.ok(desertCard, 'la Coupe du Désert est présente');
+  assert.equal(cards[0].getAttribute('aria-pressed'), 'true', 'la première coupe est sélectionnée par défaut');
   assert.deepEqual(
-    [...cards[0].querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
+    [...desertCard.querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
     ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or'],
-    'la coupe enchaîne Dunes de l’Écho, Dust Creek puis Plaines d’Or, dans cet ordre');
+    'la Coupe du Désert enchaîne Dunes de l’Écho, Dust Creek puis Plaines d’Or, dans cet ordre');
   assert.deepEqual(
-    [...cards[0].querySelectorAll('.mirage-cup-stop-number')].map((el) => el.textContent),
+    [...desertCard.querySelectorAll('.mirage-cup-stop-number')].map((el) => el.textContent),
     ['COURSE 1', 'COURSE 2', 'COURSE 3']);
+  const worldtourCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe Grand Tour');
+  assert.ok(worldtourCard, 'la Coupe Grand Tour (4 cartes) est proposée');
+  assert.deepEqual(
+    [...worldtourCard.querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
+    ['Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Thunder Airbase'],
+    'la Coupe Grand Tour enchaîne Costa Omertà, Alger la Blanche, Plaines de Yōtei puis Thunder Airbase');
+  assert.deepEqual(
+    [...worldtourCard.querySelectorAll('.mirage-cup-stop-number')].map((el) => el.textContent),
+    ['COURSE 1', 'COURSE 2', 'COURSE 3', 'COURSE 4']);
   assert.ok(node.querySelector('.mirage-cup-name-field input'), 'le nom du trophée est modifiable');
   const start = node.querySelector('.mirage-start-button');
   assert.ok(start.textContent.includes('LANCER LA COUPE') || start.textContent.includes('CHARGEMENT'),
