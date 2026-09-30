@@ -6,8 +6,8 @@ import {
   trackWidth,
 } from '../src/games/mirageRules.js';
 import {
-  DESKTOP_LANE_COUNT, PHONE_LANE_COUNT, applyLaneCountForDevice, isAndroidWebView,
-  isCompactTrack, laneCountForDevice, runningInAndroidApp, usesCompactTrack,
+  DESKTOP_LANE_COUNT, PHONE_LANE_COUNT, PHONE_PACE, applyLaneCountForDevice, isAndroidWebView,
+  isCompactTrack, laneCountForDevice, paceForTrack, runningInAndroidApp, usesCompactTrack,
 } from '../src/games/mirageLanes.js';
 
 /*
@@ -100,9 +100,9 @@ test('les voies hors piste sont ramenées sur la dernière voie (clients à quat
 test('les règles butent sur la dernière voie de la piste courante', (t) => {
   t.after(() => setLaneCount(DESKTOP_LANE_COUNT));
   setLaneCount(PHONE_LANE_COUNT);
-  assert.equal(playerLaneAfterAction(2, 'right', 0), 2);
-  assert.equal(playerLaneAfterAction(0, 'left', 0), 0);
-  assert.equal(playerLaneAfterAction(1, 'right', 0), 2);
+  assert.equal(playerLaneAfterAction(2, 'right'), 2);
+  assert.equal(playerLaneAfterAction(0, 'left'), 0);
+  assert.equal(playerLaneAfterAction(1, 'right'), 2);
   assert.equal(planNpcLane([], 2, []).lane, 2);
   const planned = planNpcLane(
     [{ kind: 'cactus', lane: 0 }, { kind: 'cactus', lane: 1 }, { kind: 'crystal', lane: 2, tier: 3 }],
@@ -112,7 +112,7 @@ test('les règles butent sur la dernière voie de la piste courante', (t) => {
   assert.equal(planned.lane, 2);
 
   setLaneCount(DESKTOP_LANE_COUNT);
-  assert.equal(playerLaneAfterAction(3, 'right', 0), 3);
+  assert.equal(playerLaneAfterAction(3, 'right'), 3);
 });
 
 /* ── La matrice des appareils ────────────────────────────────────────────── */
@@ -406,4 +406,21 @@ test('sans `window` (rendu serveur), la piste reste à quatre voies', (t) => {
   assert.equal(usesCompactTrack(), false);
   assert.equal(laneCountForDevice(), DESKTOP_LANE_COUNT);
   assert.equal(applyLaneCountForDevice(), 4);
+});
+
+test('la course est un peu plus lente sur la piste du téléphone', (t) => {
+  t.after(() => setLaneCount(DESKTOP_LANE_COUNT));
+
+  // Trois voies : le rythme baisse, mais pas la difficulté relative — le
+  // joueur comme ses rivaux lisent le même facteur dans MirageWorld.
+  setLaneCount(PHONE_LANE_COUNT);
+  assert.equal(isCompactTrack(), true);
+  assert.equal(paceForTrack(), PHONE_PACE);
+  assert.ok(PHONE_PACE < 1 && PHONE_PACE >= 0.8, `rythme du téléphone inattendu : ${PHONE_PACE}`);
+  assert.equal(PHONE_PACE, 0.85);
+
+  // Quatre voies (ordinateur, tablette) : rien ne change.
+  setLaneCount(DESKTOP_LANE_COUNT);
+  assert.equal(isCompactTrack(), false);
+  assert.equal(paceForTrack(), 1);
 });
