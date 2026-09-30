@@ -17,8 +17,11 @@
  *      BLANCHE) ;
  *   4. un lien de défi (?duel=…) ouvre directement le duel : DUEL déjà
  *      sélectionné, bouton « LANCER LE DUEL », stage imposé par le défi
- *      (bandeau ZONE 03, cartes de terrain verrouillées) et consignes des
- *      600 m.
+ *      (bandeau ZONE 03, cartes de terrain verrouillées) et consignes de
+ *      course ;
+ *   5. la piste de l'application (trois voies, `setLaneCount(3)`) fait suivre
+ *      les textes : deux rivaux (L'Ombre et Sauge), « 3 CAVALIERS » et
+ *      « sur les 3 voies » dans l'overlay — voir src/games/mirageLanes.js.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -26,6 +29,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import MirageRushPage from '../src/games/MirageRushPage';
 import { encodeChallenge } from '../src/games/duelChallenge';
+import { laneCount, setLaneCount } from '../src/games/mirageRules';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -210,5 +214,34 @@ export async function checkMirageFlow(assert) {
       'le stage du défi (ZONE 03 · Plaines d’Or) est bien appliqué');
   } finally {
     await challenged.unmount();
+  }
+
+  /* ------- 5. Piste de l'application : trois voies, deux rivaux -------- */
+  // L'APK joue sur trois voies (voir src/games/mirageLanes.js) : l'overlay
+  // d'intro et le panneau des règles suivent le nombre de voies et de rivaux.
+  setLaneCount(3);
+  const app = await mountPage('/jeu');
+  try {
+    assert.equal(laneCount(), 3, 'la piste de l’app compte trois voies');
+    const duelCard = modeButtons(app.node).find((button) => button.querySelector('strong')?.textContent === 'DUEL');
+    assert.ok(duelCard.textContent.includes('Face aux 2 PNJ · 800 m'),
+      'la carte DUEL annonce deux PNJ et 800 m sur la piste à trois voies');
+    await act(async () => { duelCard.click(); });
+    const intro = app.node.querySelector('.mirage-intro-overlay');
+    assert.ok(intro.textContent.includes('sur les 3 voies'),
+      'l’overlay annonce une piste à trois voies');
+    assert.ok(intro.textContent.includes('2 cavaliers rivaux IA (L’Ombre et Sauge)'),
+      'deux rivaux entrent en piste à trois voies, Améthyste reste au vestiaire');
+    assert.ok(app.node.querySelector('.mirage-overlay-hint').textContent.includes('3 CAVALIERS'),
+      'le rappel de départ compte trois cavaliers (toi + deux rivaux)');
+    const duelRules = [...app.node.querySelectorAll('.mirage-howto')]
+      .find((section) => section.textContent.includes('MODE DUEL'));
+    assert.ok(duelRules.textContent.includes('MODE DUEL · 3 CAVALIERS'),
+      'le panneau des règles annonce trois cavaliers');
+    assert.ok(duelRules.textContent.includes('2 cavaliers rivaux'),
+      'le panneau des règles annonce deux rivaux');
+  } finally {
+    await app.unmount();
+    setLaneCount(4);
   }
 }

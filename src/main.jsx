@@ -71,6 +71,7 @@ import CallOverlays from './messages/CallOverlays';
 import SocialDock from './social/SocialDock';
 import { initSinglePlayback } from './lib/videoPlayback';
 import { normalizePhoneViewport } from './lib/phoneLayout';
+import { applyLaneCountForDevice } from './games/mirageLanes';
 
 const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
 
@@ -220,6 +221,12 @@ initSinglePlayback();
 // s'appliquent. Appelée aussi juste après le montage : Safari applique
 // parfois son zoom mémorisé une fois la page déjà chargée.
 normalizePhoneViewport();
+
+// Mirage Rush se joue sur trois voies dans l'application Android et sur quatre
+// sur le site (voir src/games/mirageLanes.js). Le choix est fait ici, une seule
+// fois, AVANT le premier rendu : les courses, les rivaux du Duel et le décor
+// lisent la piste au moment de construire la partie.
+applyLaneCountForDevice();
 
 createRoot(document.getElementById('root')).render(<App />);
 

@@ -8,6 +8,15 @@ Exécuter `supabase/mirage-rooms.sql` dans le SQL Editor du projet Supabase déj
 
 Réexécuter `supabase/mirage-rooms.sql` sur les installations existantes, avant de déployer le client à quatre voies. Le script remplace la contrainte de position et met à jour la validation RPC pour accepter les voies `0` à `3`, sans supprimer les salons ni les joueurs. Les clients d'une même course doivent utiliser la même version du jeu (le parcours généré a changé).
 
+## Piste à trois voies dans l'application
+
+L'application Android serre la piste de Mirage Rush à **trois voies** (le site
+en garde quatre) : voir `src/games/mirageLanes.js` et `mirageRules.js`. Aucune
+migration n'est nécessaire — la validation RPC accepte les voies `0` à `3`, et
+un client à trois voies n'envoie que `0`, `1` ou `2`. Dans un salon mixte, un
+cavalier à la voie `3` vu depuis l'app est simplement ramené sur la dernière
+voie à l'affichage (`lanePosition()`), la course restant jugée sur la distance.
+
 ## Fonctionnalités des rooms
 
 1. **Liste des rooms disponibles (`list`)** : affiche les rooms en statut `lobby` (nom de la room, terrain, hôte, nombre de joueurs, nombre de joueurs prêts, indicateur de mot de passe).

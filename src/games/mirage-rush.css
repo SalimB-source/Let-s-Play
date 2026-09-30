@@ -2170,10 +2170,17 @@ img.mirage-powerup-icon {
     width: calc(100% - 16px);
     max-width: 390px;
   }
-  /* Manette tactile : le losange s'ancre à droite, la croix à gauche. */
+  /* Manette tactile : le losange s'ancre à droite, la croix à gauche.
+     Les deux blocs sont remontés au-dessus de la zone gestuelle du téléphone
+     (barre de navigation Android, indicateur d'accueil iOS) : collés au bord
+     (`bottom: 8px`), les flèches passaient sous le geste système et le pouce
+     les atteignait mal. `env(safe-area-inset-bottom)` ajoute la réserve
+     propre aux écrans à encoche quand le navigateur la connaît (dans l'APK,
+     les marges sont déjà retirées par la WebView : la valeur vaut 0 et la
+     hauteur relative suffit). */
   .mirage-powerup-bar.is-gamepad {
     right: 8px;
-    bottom: 8px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(18px, 4.5vh, 40px));
     width: auto;
     max-width: none;
   }
@@ -2187,10 +2194,17 @@ img.mirage-powerup-icon {
   }
   .mirage-touch-dpad {
     left: 6px;
-    bottom: 8px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(18px, 4.5vh, 40px));
     grid-template-columns: repeat(3, 44px);
     grid-template-rows: repeat(2, 44px);
     gap: 6px;
+  }
+  /* Plein écran de jeu (mobile & application, classe `is-immersive`) : la
+     coquille occupe tout l'écran, donc le bas de la piste est collé au geste
+     système — les commandes remontent d'un cran de plus. */
+  .mirage-game-shell.is-immersive .mirage-touch-dpad,
+  .mirage-game-shell.is-immersive .mirage-powerup-bar.is-gamepad {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(26px, 6.5vh, 58px));
   }
   .mirage-dpad-btn {
     width: 44px;
