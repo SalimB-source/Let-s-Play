@@ -1,6 +1,18 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
+
+let thumbnailBytes = 0;
+for (const id of ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan']) {
+  const image = readFileSync(new URL(`../src/games/assets/maps/${id}.webp`, import.meta.url));
+  assert.equal(image.toString('ascii', 0, 4), 'RIFF', `${id} est un fichier WebP`);
+  assert.equal(image.toString('ascii', 8, 12), 'WEBP', `${id} est un fichier WebP`);
+  assert.ok(image.length < 50 * 1024, `${id} reste sous 50 Kio`);
+  thumbnailBytes += image.length;
+}
+assert.ok(thumbnailBytes < 256 * 1024, 'les six miniatures restent sous 256 Kio au total');
+
 execFileSync('npx', ['vite', 'build', '--ssr', 'scripts/mirage-flow-smoke.jsx', '--outDir', 'node_modules/.cache/mirage-flow', '--emptyOutDir', '--logLevel', 'error'], { stdio: 'inherit' });
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/jeu' });
 globalThis.window = dom.window;
@@ -9,4 +21,4 @@ globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { checkMirageFlow } = await import('../node_modules/.cache/mirage-flow/mirage-flow-smoke.js');
 try { await checkMirageFlow(assert); } finally { dom.window.close(); }
-console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) et du terrain (5 horizons, dont Alger la Blanche) dans l’overlay d’intro ; pas de barre d’onglets, terrain imposé par un défi verrouille les cartes.');
+console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) et du terrain (6 horizons et leurs miniatures WebP) dans l’overlay d’intro ; pas de barre d’onglets, terrain imposé par un défi verrouille les cartes.');
