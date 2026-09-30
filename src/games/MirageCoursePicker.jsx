@@ -2,6 +2,7 @@ import React from 'react';
 import { DUEL_DISTANCE, duelRivalsForTrack, laneCount } from './mirageRules';
 import { CUPS, CUP_POINTS, MAX_RIDER_NAME, placeLabel } from './mirageCup';
 import MirageTrophyIcon from './MirageTrophyIcon';
+import { getTrophyDesign } from './mirageTrophy';
 import desertThumbnail from './assets/maps/desert.webp';
 import westernThumbnail from './assets/maps/western.webp';
 import prairieThumbnail from './assets/maps/prairie.webp';
@@ -73,7 +74,7 @@ export function MirageStagePicker({ stage, setSelectedStage, locked = false, mod
  * Mode COUPE : à la place du choix de terrain, on choisit une coupe — une suite
  * de courses sur des terrains imposés, avec le barème des points — et le nom
  * qui s’affichera sur le trophée. Une carte par entrée de `CUPS` : en ajouter
- * une dans le catalogue suffit.
+ * une dans le catalogue, avec son design dans `mirageTrophy.js`, suffit.
  */
 export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defaultRiderName, riderCount = CUP_POINTS.length }) {
   return <>
@@ -81,8 +82,8 @@ export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defa
     <div className="mirage-cup-picker" role="group" aria-label="Choisir la coupe">
       {CUPS.map(cup => <button type="button" key={cup.id} className={`mirage-cup-card is-${cup.id}`} aria-pressed={cupId === cup.id} onClick={() => setCupId(cup.id)}>
         <span className="mirage-cup-card-head">
-          <span className="mirage-cup-emblem" aria-hidden="true"><MirageTrophyIcon /></span>
-          <span className="mirage-cup-card-title"><strong>{cup.name}</strong><span>{cup.tagline}</span></span>
+          <span className="mirage-cup-emblem" aria-hidden="true"><MirageTrophyIcon cupId={cup.id} /></span>
+          <span className="mirage-cup-card-title"><strong>{cup.name}</strong><span>{cup.tagline}</span><small>TROPHÉE · {getTrophyDesign(cup.id).name}</small></span>
           <span className="mirage-choice-dot" aria-hidden="true">{cupId === cup.id ? '✓' : ''}</span>
         </span>
         <span className="mirage-cup-route" role="list" aria-label="Les courses, dans l’ordre">
