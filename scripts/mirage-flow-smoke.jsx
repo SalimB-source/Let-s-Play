@@ -19,7 +19,9 @@
  *      (Coupe du Désert : Dunes de l'Écho, Dust Creek, Plaines d'Or, dans
  *      cet ordre, et le barème des points), « LANCER LA COUPE » ; un lien
  *      ?mode=cup ouvre directement ce mode ;
- *   5. un lien de défi (?duel=…) ouvre directement le duel : DUEL déjà
+ *   5. le lobby EN LIGNE (?mode=online) garde sa barre d'onglets (RUÉE, DUEL,
+ *      COUPE, EN LIGNE) : l'onglet COUPE ramène à l'intro de la coupe ;
+ *   6. un lien de défi (?duel=…) ouvre directement le duel : DUEL déjà
  *      sélectionné, bouton « LANCER LE DUEL », stage imposé par le défi
  *      (bandeau ZONE 03, cartes de terrain verrouillées) et consignes des
  *      800 m.
@@ -193,6 +195,21 @@ export async function checkMirageFlow(assert) {
       ?.querySelector('strong')?.textContent, 'COUPE', 'le lien ?mode=cup sélectionne le mode COUPE');
   } finally {
     await cupPage.unmount();
+  }
+
+  /* ------ 4 ter. Le lobby EN LIGNE garde sa barre d'onglets, COUPE comprise -- */
+  const lobby = await mountPage('/jeu?mode=online');
+  try {
+    assert.ok(lobby.node.querySelector('.mirage-heading.has-mode-tabs'), 'l’en-tête du lobby porte sa barre d’onglets');
+    const tabs = [...lobby.node.querySelectorAll('.mirage-mode-tabs .mirage-mode-tab')];
+    const label = (tab) => tab.textContent.replace(tab.querySelector('span').textContent, '').trim();
+    assert.deepEqual(tabs.map(label), ['RUÉE', 'DUEL', 'COUPE', 'EN LIGNE'], 'le lobby propose les quatre modes');
+    assert.equal(label(tabs.find((tab) => tab.classList.contains('is-active'))), 'EN LIGNE', 'EN LIGNE est l’onglet actif du lobby');
+    await act(async () => { tabs.find((tab) => label(tab) === 'COUPE').click(); });
+    assert.equal(lobby.node.querySelectorAll('.mirage-mode-tabs').length, 0, 'l’onglet COUPE quitte le lobby pour la page du jeu');
+    assertCupIntro(assert, lobby.node);
+  } finally {
+    await lobby.unmount();
   }
 
   /* ------------- 4. Lien de défi : le duel s'ouvre directement ---------- */
