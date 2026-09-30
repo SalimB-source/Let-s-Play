@@ -7,6 +7,7 @@ import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } from './sardiniaStage';
 import { algerBuilding, algerObstacle, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
+import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
   LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
   duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak,
@@ -389,32 +390,14 @@ function makeLassoRope() {
   return group;
 }
 
-function makeScenery() {
-  const group = new THREE.Group();
-  const cube = new THREE.BoxGeometry(1, 1, 1);
-  const sandstone = new THREE.MeshStandardMaterial({ color: 0x986445, flatShading: true, roughness: 1 });
-  const lilac = new THREE.MeshStandardMaterial({ color: 0x72517e, flatShading: true, roughness: 0.95 });
-  const teal = new THREE.MeshStandardMaterial({ color: 0x287c7d, flatShading: true, roughness: 0.8 });
-  const pick = (array) => array[Math.floor(Math.random() * array.length)];
-  const side = Math.random() > 0.5 ? 1 : -1;
-  const x = side * (13 + Math.random() * 4.5);
-  const z = -Math.random() * 40;
-  const h = 1.4 + Math.random() * 4.5;
-  block(cube, pick([sandstone, lilac, teal]), group, [x, h / 2 - 0.5, z], [1.4 + Math.random() * 2.4, h, 1.4 + Math.random() * 2]);
-  if (Math.random() > 0.44) {
-    block(cube, pick([sandstone, lilac]), group, [x + side * 1.25, h * 0.35, z], [2.7, 0.6, 0.8]);
-    block(cube, pick([sandstone, lilac]), group, [x + side * 2.35, h * 0.2 + 0.45, z], [0.65, 1.6, 0.8]);
-  }
-  group.userData.speedFactor = 0.5 + Math.random() * 0.22;
-  return group;
-}
-
 function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const western = stage === 'western';
   const prairie = stage === 'prairie';
   const sardinia = stage === 'sardinia';
   const alger = stage === 'alger';
   const japan = stage === 'japan';
+  // Dunes de l’Écho : le stage par défaut (et le repli pour tout identifiant inconnu).
+  const desert = !western && !prairie && !sardinia && !alger && !japan;
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -454,7 +437,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                 hemiSky: 0x9bb8ff, hemiGround: 0x1d2738, sunLight: 0xd8e6ff, rimLight: 0xff6e54,
               }
             : {
-                background: 0x604b70, fog: 0xd28e70, exposure: 1.12,
+                // Brume d'horizon = couleur du bas du ciel de desertStage.js : le sable
+                // se fond dans le ciel sans couture.
+                background: DESERT_PALETTE.horizon, fog: DESERT_PALETTE.horizon, exposure: 1.12,
                 skyBottom: [0.97, 0.66, 0.42], skyHorizon: [0.83, 0.42, 0.35], skyTop: [0.40, 0.29, 0.50],
                 sunBottom: [1.0, 0.31, 0.06], sunTop: [1.0, 0.57, 0.19], glow: [1.0, 0.62, 0.33],
                 hemiSky: 0xffd6b1, hemiGround: 0x49374a, sunLight: 0xffbd70, rimLight: 0xe1a0d4,
@@ -541,6 +526,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }));
   sunset.position.set(0, 59.91, -95);
   sunset.renderOrder = -1;
+  sunset.visible = !desert; // le désert a son propre ciel (desertStage.js)
   scene.add(sunset);
 
   const applyPrairieSunset = (progress) => {
@@ -591,7 +577,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie || japan ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
+  for (let i = 0; i < (prairie || japan || desert ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
@@ -610,12 +596,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const FLOOR_PERIOD = floorMaterials.length * 2;
   const floorGroup = new THREE.Group();
+  // Dans le désert la piste se prolonge jusqu'à la brume (44 rangées au lieu de 28) : elle file
+  // droit vers le mirage au lieu de s'arrêter net devant le vide.
+  const floorRows = desert ? 44 : 28;
+  const floorMinZ = desert ? TRACK_MIN_Z - 32 : TRACK_MIN_Z;
   floorMaterials.forEach((material, m) => {
     const parts = [];
-    for (let zIndex = 0; zIndex < 28; zIndex += 1) {
+    for (let zIndex = 0; zIndex < floorRows; zIndex += 1) {
       for (let lane = 0; lane < LANE_COUNT; lane += 1) {
         if ((zIndex + lane) % floorMaterials.length !== m) continue;
-        parts.push(floorGeometry.clone().translate(LANES[lane], -0.34, TRACK_MIN_Z + zIndex * 2));
+        parts.push(floorGeometry.clone().translate(LANES[lane], -0.34, floorMinZ + zIndex * 2));
       }
     }
     floorGroup.add(new THREE.Mesh(mergeGeometries(parts, false), material));
@@ -878,6 +868,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const scenery = [];
+  let desertScenery = null;
   if (prairie) {
     for (let i = 0; i < 11; i++) for (const side of [-1, 1]) {
       const item = prairieField(i, side);
@@ -912,11 +903,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       scene.add(item);
       scenery.push(item);
     }
-  } else for (let i = 0; i < 18; i++) {
-    const item = makeScenery();
-    item.position.z -= i * 4.8;
-    scene.add(item);
-    scenery.push(item);
+  } else {
+    // Dunes de l'Écho : dunes qui défilent avec la piste, accessoires, mirage, ciel… (desertStage.js)
+    desertScenery = makeDesertScenery({ reduceMotion });
+    scene.add(desertScenery.group);
   }
   scenery.forEach(bakeStaticScenery);
 
@@ -1623,6 +1613,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     rows.forEach(row => {
       const gap = populateRow(row);
       row.group.position.z = z;
+      row.group.visible = !desert || z > DESERT_CULL_Z;
       z -= gap;
     });
     resetPowerUps();
@@ -1917,6 +1908,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           populateRow(row);
           row.group.position.z = z;
         }
+        // Au-delà de ce point les obstacles sont déjà 100 % dans la brume : on les retire
+        // pour qu'ils ne se découpent pas en taches devant le mirage.
+        if (desert) row.group.visible = row.group.position.z > DESERT_CULL_Z;
       });
 
       // Lasso projectiles
@@ -2132,6 +2126,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     camera.position.y += ((turboActive ? 6.85 : 7.3) - camera.position.y) * Math.min(1, dt * 6);
     camera.position.z += ((turboActive ? 10.05 : 9.4) - camera.position.z) * Math.min(1, dt * 6);
     camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
+    desertScenery?.update({
+      time,
+      offset: floorOffset,
+      progress: race.mode !== 'rush' ? distance / DUEL_DISTANCE : elapsed / RUN_SECONDS,
+      camera,
+      renderer,
+    });
     renderer.render(scene, camera);
   };
 
@@ -2183,6 +2184,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           else { object.material.map?.dispose(); object.material.dispose(); }
         }
       });
+      desertScenery?.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     },
