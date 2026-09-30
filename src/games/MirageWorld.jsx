@@ -8,6 +8,7 @@ import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } f
 import { algerBuilding, algerObstacle, algerSeaside, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
 import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeRampartsSkyline, updateBombBlink } from './rampartsStage';
+import { infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWing, makeInfinityHorizon, updateInfinityLanterns } from './infinityStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
   LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
@@ -444,8 +445,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const alger = stage === 'alger';
   const japan = stage === 'japan';
   const ramparts = stage === 'ramparts';
+  const infinity = stage === 'infinity';
   // Dunes de l’Écho : le stage par défaut (et le repli pour tout identifiant inconnu).
-  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts;
+  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts && !infinity;
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -493,7 +495,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                   sunBottom: [1.0, 0.90, 0.62], sunTop: [1.0, 0.98, 0.86], glow: [1.0, 0.93, 0.74],
                   hemiSky: 0xfff0d8, hemiGround: 0xa47d52, sunLight: 0xfff0d0, rimLight: 0xb0d2f2,
                 }
-              : {
+              : infinity
+                ? {
+                    // Château de l’Infini : gouffre dimensionnel écarlate et ambré,
+                    // baigné par la lueur dorée des milliers de cloisons shōji.
+                    background: 0x1a0b12, fog: 0x381720, exposure: 1.14,
+                    skyBottom: [0.68, 0.32, 0.16], skyHorizon: [0.34, 0.12, 0.15], skyTop: [0.08, 0.03, 0.07],
+                    sunBottom: [1.0, 0.45, 0.16], sunTop: [1.0, 0.82, 0.38], glow: [0.96, 0.48, 0.22],
+                    hemiSky: 0xffca7a, hemiGround: 0x261118, sunLight: 0xffba66, rimLight: 0xf25252,
+                  }
+                : {
                   // Brume d'horizon = couleur du bas du ciel de desertStage.js : le sable
                   // se fond dans le ciel sans couture.
                   background: DESERT_PALETTE.horizon, fog: DESERT_PALETTE.horizon, exposure: 1.12,
@@ -536,10 +547,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
+      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : infinity ? 8.5 : 5.5 },
       sunX: { value: sardinia || alger ? 18.0 : ramparts ? -24.0 : 0.0 },
-      sunRadius: { value: sardinia ? 5.5 : ramparts ? 4.6 : 8.0 },
-      isNight: { value: japan ? 1.0 : 0.0 },
+      sunRadius: { value: sardinia ? 5.5 : ramparts ? 4.6 : infinity ? 7.2 : 8.0 },
+      isNight: { value: japan ? 1.0 : infinity ? 0.65 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
       void main() {
@@ -647,8 +658,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(skyline);
   }
 
+  if (infinity) {
+    // Abîme sombre sous le grand pont de bois laqué, et à l'horizon les
+    // tours de shōji et les pagodes renversées du Château de l’Infini.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0x160a10, roughness: 1 }), scene, [0, -6.5, -35], [180, 0.6, 180]);
+    const horizon = makeInfinityHorizon();
+    bakeStaticScenery(horizon);
+    scene.add(horizon);
+  }
+
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie || japan || desert || ramparts ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
+  for (let i = 0; i < (prairie || japan || desert || ramparts || infinity ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
@@ -660,9 +680,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : infinity ? 0x3d2023 : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : infinity ? 0x4b282b : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : infinity ? 0x2f171a : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const FLOOR_PERIOD = floorMaterials.length * 2;
@@ -803,7 +823,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                     ? japanObstacle(spec.kind)
                     : ramparts
                       ? rampartsObstacle(spec.kind)
-                      : makeHazard(spec.kind);
+                      : infinity
+                        ? infinityObstacle(spec.kind)
+                        : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
@@ -996,6 +1018,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const midDoors = rampartsMidDoors();
     scene.add(midDoors);
     scenery.push(midDoors);
+  } else if (infinity) {
+    // Château de l’Infini : les galeries de shōji, l'estrade du biwa de Nakime,
+    // les escaliers impossibles et les pagodes renversées défilent de part et
+    // d'autre du pont, franchi une fois par boucle par la Grande Arche.
+    for (let i = 0; i < 10; i++) {
+      const leftWing = infinityLeftWing(i);
+      const rightWing = infinityRightWing(i);
+      scene.add(leftWing, rightWing);
+      scenery.push(leftWing, rightWing);
+    }
+    const bridgeGate = infinityBridgeGate();
+    scene.add(bridgeGate);
+    scenery.push(bridgeGate);
   } else {
     // Dunes de l'Écho : dunes qui défilent avec la piste, accessoires, mirage, ciel… (desertStage.js)
     desertScenery = makeDesertScenery({ reduceMotion });
@@ -1926,7 +1961,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
         // Les C4 posées sur les sites A et B des Remparts d’Ocre clignotent à chaque bip.
         updateBombBlink(item.userData.bombs, time * 0.001, reduceMotion);
-        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts ? 110 : 86;
+        // Les lanternes flottantes du Château de l’Infini pulsent au son du biwa.
+        updateInfinityLanterns(item.userData.lanterns, time * 0.001, reduceMotion);
+        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts || infinity ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts || infinity ? 110 : 86;
       });
 
       rows.forEach((row) => {

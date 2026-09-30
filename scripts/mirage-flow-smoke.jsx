@@ -74,17 +74,17 @@ export async function checkMirageFlow(assert) {
     assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 1,
       'le sélecteur de terrain (02 / ton terrain) est proposé dans l’overlay');
     const maps = [...page.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(maps.length, 7, 'sept horizons sont proposés');
+    assert.equal(maps.length, 8, 'huit horizons sont proposés');
     assert.deepEqual(
       maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
-      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre'],
-      'les sept cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei et Remparts d’Ocre)');
-    assert.ok([...page.node.querySelectorAll('.mirage-picker-label')].some((label) => label.textContent.includes('7 HORIZONS À EXPLORER')),
+      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre', 'Château de l’Infini'],
+      'les huit cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei, Remparts d’Ocre et Château de l’Infini)');
+    assert.ok([...page.node.querySelectorAll('.mirage-picker-label')].some((label) => label.textContent.includes('8 HORIZONS À EXPLORER')),
       'le compteur de terrains suit le nombre de cartes');
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
       'les Dunes de l’Écho sont sélectionnées par défaut');
 
-    const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts'];
+    const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity'];
     const thumbnails = maps.map((card, index) => {
       const image = card.querySelector('img.mirage-map-art');
       assert.ok(image, `${mapIds[index]} possède sa miniature illustrée`);
@@ -100,7 +100,7 @@ export async function checkMirageFlow(assert) {
       assert.equal(image.getAttribute('loading'), 'eager', 'les miniatures sont chargées dès l’intro');
       return image.getAttribute('src');
     });
-    assert.equal(new Set(thumbnails).size, 7, 'sept illustrations distinctes');
+    assert.equal(new Set(thumbnails).size, 8, 'huit illustrations distinctes');
 
     for (const card of maps) {
       await act(async () => { card.click(); });
@@ -143,6 +143,13 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 07 · REMPARTS D’OCRE'),
       'choisir Remparts d’Ocre met à jour le bandeau (ZONE 07 · REMPARTS D’OCRE)');
     assert.equal(rampartsCard.getAttribute('aria-pressed'), 'true', 'la carte Remparts d’Ocre est marquée sélectionnée');
+    const infinityCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Château de l’Infini');
+    assert.ok(infinityCard, 'la carte Château de l’Infini est proposée');
+    assert.ok(infinityCard.classList.contains('is-infinity'), 'la carte Château de l’Infini porte son identifiant de stage');
+    await act(async () => { infinityCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 08 · CHÂTEAU DE L’INFINI'),
+      'choisir Château de l’Infini met à jour le bandeau (ZONE 08 · CHÂTEAU DE L’INFINI)');
+    assert.equal(infinityCard.getAttribute('aria-pressed'), 'true', 'la carte Château de l’Infini est marquée sélectionnée');
     await act(async () => { maps[0].click(); });
 
     /* --------------- 3. Le clic sur DUEL bascule l'overlay -------------- */
@@ -186,12 +193,12 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelButton.textContent.includes('Défi de Salim'),
       'la carte DUEL annonce le défi du joueur');
     const lockedMaps = [...challenged.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(lockedMaps.length, 7,
+    assert.equal(lockedMaps.length, 8,
       'le sélecteur de terrain reste lisible sur un lien de défi');
     assert.ok(lockedMaps.every((card) => card.disabled),
       'les cartes de terrain sont verrouillées : le stage est imposé par le défi');
-    assert.equal(lockedMaps.filter((card) => card.querySelector('img.mirage-map-art')).length, 7,
-      'les sept miniatures restent visibles sur un défi verrouillé');
+    assert.equal(lockedMaps.filter((card) => card.querySelector('img.mirage-map-art')).length, 8,
+      'les huit miniatures restent visibles sur un défi verrouillé');
     await act(async () => { lockedMaps[0].click(); });
     assert.equal(lockedMaps.find((card) => card.getAttribute('aria-pressed') === 'true')
       ?.querySelector('.mirage-map-copy strong')?.textContent, 'Plaines d’Or',
