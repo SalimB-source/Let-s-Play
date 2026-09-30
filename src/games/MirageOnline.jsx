@@ -1152,7 +1152,7 @@ export default function MirageOnline({
                       )}
                       {active && (
                         <div
-                          className={`mirage-powerup-bar${((hud.shieldCharges || 0) > 0 || (hud.lassoCharges || 0) > 0 || (hud.pistolCharges || 0) > 0 || (hud.boostCharges || 0) > 0) ? ' has-ready' : ''}`}
+                          className="mirage-powerup-bar"
                           role="group"
                           aria-label="Objets de puissance"
                         >
@@ -1166,13 +1166,12 @@ export default function MirageOnline({
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
-                                <span className="mirage-powerup-gem-hint is-blue">◆ BLEU</span>
                                 <span className="mirage-powerup-key">AUTO</span>
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>Bouclier</span>
                                 {(hud.shieldCharges || 0) > 0
-                                  ? <b className="mirage-powerup-badge is-ready">⚡ PRÊT !</b>
+                                  ? <b className="mirage-powerup-count is-charges">×{hud.shieldCharges}</b>
                                   : <span className="mirage-powerup-count">{hud.shieldChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.SHIELD]} ◆</span>}
                               </div>
                               <div className="mirage-powerup-progress-bg">
@@ -1192,13 +1191,12 @@ export default function MirageOnline({
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
-                                <span className="mirage-powerup-gem-hint is-yellow">◆ JAUNE</span>
                                 <span className="mirage-powerup-key">W / Z</span>
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>Lasso</span>
                                 {(hud.lassoCharges || 0) > 0
-                                  ? <b className="mirage-powerup-badge is-ready">⚡ PRÊT !</b>
+                                  ? <b className="mirage-powerup-count is-charges">×{hud.lassoCharges}</b>
                                   : <span className="mirage-powerup-count">{hud.lassoChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.LASSO]} ◆</span>}
                               </div>
                               <div className="mirage-powerup-progress-bg">
@@ -1218,13 +1216,12 @@ export default function MirageOnline({
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
-                                <span className="mirage-powerup-gem-hint is-green">◆ VERT</span>
                                 <span className="mirage-powerup-key">AUTO</span>
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>Turbo</span>
                                 {(hud.boostCharges || 0) > 0
-                                  ? <b className="mirage-powerup-badge is-ready">⚡ PRÊT !</b>
+                                  ? <b className="mirage-powerup-count is-charges">×{hud.boostCharges}</b>
                                   : <span className="mirage-powerup-count">{hud.boostChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.BOOST]} ◆</span>}
                               </div>
                               <div className="mirage-powerup-progress-bg">
@@ -1244,13 +1241,12 @@ export default function MirageOnline({
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
-                                <span className="mirage-powerup-gem-hint is-red">◆ ROUGE</span>
                                 <span className="mirage-powerup-key">R</span>
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>Pistolet</span>
                                 {(hud.pistolCharges || 0) > 0
-                                  ? <b className="mirage-powerup-badge is-ready">⚡ PRÊT !</b>
+                                  ? <b className="mirage-powerup-count is-charges">×{hud.pistolCharges}</b>
                                   : <span className="mirage-powerup-count">{hud.pistolChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]} ◆</span>}
                               </div>
                               <div className="mirage-powerup-progress-bg">
