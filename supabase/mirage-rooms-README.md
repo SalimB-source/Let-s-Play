@@ -8,10 +8,19 @@ Exécuter `supabase/mirage-rooms.sql` dans le SQL Editor du projet Supabase déj
 
 Réexécuter `supabase/mirage-rooms.sql` sur les installations existantes, avant de déployer le client à quatre voies. Le script remplace la contrainte de position et met à jour la validation RPC pour accepter les voies `0` à `3`, sans supprimer les salons ni les joueurs. Les clients d'une même course doivent utiliser la même version du jeu (le parcours généré a changé).
 
+## Piste à trois voies dans l'application
+
+L'application Android serre la piste de Mirage Rush à **trois voies** (le site
+en garde quatre) : voir `src/games/mirageLanes.js` et `mirageRules.js`. Aucune
+migration n'est nécessaire — la validation RPC accepte les voies `0` à `3`, et
+un client à trois voies n'envoie que `0`, `1` ou `2`. Dans un salon mixte, un
+cavalier à la voie `3` vu depuis l'app est simplement ramené sur la dernière
+voie à l'affichage (`lanePosition()`), la course restant jugée sur la distance.
+
 ## Fonctionnalités des rooms
 
 1. **Liste des rooms disponibles (`list`)** : affiche les rooms en statut `lobby` (nom de la room, terrain, hôte, nombre de joueurs, nombre de joueurs prêts, indicateur de mot de passe).
-2. **Création de room (`create`)** : permet de donner un **nom** à la room, un **mot de passe optionnel** (peut rester vide pour une room ouverte) et de choisir le terrain (`desert`, `western`, `prairie`, `sardinia`, `alger`, `japan`, `ramparts`, `airbase`). Après l’ajout d’une map, rejouez `mirage-rooms.sql` dans l’éditeur SQL de Supabase : le script recrée la contrainte `mirage_rooms_stage_check` et remplace la fonction RPC.
+2. **Création de room (`create`)** : permet de donner un **nom** à la room, un **mot de passe optionnel** (peut rester vide pour une room ouverte) et de choisir le terrain (`desert`, `western`, `prairie`, `sardinia`, `alger`, `japan`, `ramparts`, `infinity`, `airbase`). Après l’ajout d’une map, rejouez `mirage-rooms.sql` dans l’éditeur SQL de Supabase : le script recrée la contrainte `mirage_rooms_stage_check` et remplace la fonction RPC.
 3. **Statut prêt (`ready`)** : chaque joueur apparaît comme « Joueur pas encore prêt » tant qu'il n'a pas activé son statut « Prêt ».
 4. **Chat de coordination (`chat`)** : messagerie intégrée au salon pour communiquer et se coordonner avant de lancer la partie.
 5. **Lancement (`start`)** : disponible lorsque les joueurs du salon sont prêts, déclenchant un compte à rebours synchronisé de 5 secondes avant le départ de la course de 600 m.

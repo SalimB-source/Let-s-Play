@@ -9,7 +9,7 @@ import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import { MirageStagePicker } from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY } from './mirageRules';
+import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
@@ -41,6 +41,13 @@ function playerName(entry) {
   return entry?.username || entry?.display_name || 'Joueur';
 }
 
+/** « L’Ombre, Sauge et Améthyste » — la liste des rivaux dans les textes. */
+function frenchList(names) {
+  const list = (names || []).filter(Boolean);
+  if (list.length <= 1) return list[0] || '';
+  return `${list.slice(0, -1).join(', ')} et ${list[list.length - 1]}`;
+}
+
 export default function MirageRushPage() {
   const { user, isDemo } = useAuth();
   const [searchParams] = useSearchParams();
@@ -65,6 +72,17 @@ export default function MirageRushPage() {
     [user],
   );
   const stage = selectedMode === 'duel' && challenge ? challenge.stage || 'desert' : selectedStage;
+  // Piste de la partie : trois voies et deux rivaux dans l'application, quatre
+  // voies et trois rivaux sur le site (voir src/games/mirageLanes.js). Relu à
+  // chaque rendu — la piste est choisie au démarrage, avant le premier rendu.
+  const trackLanes = laneCount();
+  const trackRivals = useMemo(() => duelRivalsForTrack(trackLanes), [trackLanes]);
+  const rivalCount = trackRivals.length;
+  const riderCount = rivalCount + 1;
+  const rivalNameList = frenchList(trackRivals.map((rival) => rival.label));
+  // En défi, L'Ombre est le fantôme du lien : ce sont les autres rivaux qui
+  // restent en piste à ses côtés.
+  const chaseRivalNames = frenchList(trackRivals.filter((rival) => rival.id !== 'ombre').map((rival) => rival.label));
   const [race, setRace] = useState({ mode: 'rush' });
   const [shareState, setShareState] = useState('');
   const [phase, setPhase] = useState('intro');
@@ -410,7 +428,7 @@ export default function MirageRushPage() {
           aria-label="Partie de Mirage Rush"
         >
           <div className="mirage-game-topbar">
-            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'airbase' ? 'ZONE 08 · THUNDER AIRBASE' : stage === 'ramparts' ? 'ZONE 07 · REMPARTS D’OCRE' : stage === 'japan' ? 'ZONE 06 · PLAINES DE YŌTEI' : stage === 'alger' ? 'ZONE 05 · ALGER LA BLANCHE' : stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
+            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'airbase' ? 'ZONE 09 · THUNDER AIRBASE' : stage === 'infinity' ? 'ZONE 08 · CHÂTEAU DE L’INFINI' : stage === 'ramparts' ? 'ZONE 07 · REMPARTS D’OCRE' : stage === 'japan' ? 'ZONE 06 · PLAINES DE YŌTEI' : stage === 'alger' ? 'ZONE 05 · ALGER LA BLANCHE' : stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
             <div className="mirage-game-controls-top">
               {phase === 'playing' && <>
                 <span className="mirage-live-pill"><i /> EN PARTIE</span>
@@ -563,7 +581,7 @@ export default function MirageRushPage() {
                   {race.mode === 'duel' ? <>
                     <div className="mirage-clock">
                       {Math.round(hud.distance || 0)}<small> / {DUEL_DISTANCE} m</small>
-                      {hud.rank > 0 && <b className={`mirage-rank-badge${hud.rank === 1 ? ' is-lead' : ''}`}>{hud.rank === 1 ? '1ᵉʳ' : `${hud.rank}ᵉ`} / 4</b>}
+                      {hud.rank > 0 && <b className={`mirage-rank-badge${hud.rank === 1 ? ' is-lead' : ''}`}>{hud.rank === 1 ? '1ᵉʳ' : `${hud.rank}ᵉ`} / {hud.totalRiders || riderCount}</b>}
                     </div>
                     <div className="mirage-race-track" aria-hidden="true">
                       <i style={{ width: `${duelPercent}%` }} />
@@ -600,17 +618,43 @@ export default function MirageRushPage() {
               </div>
             )}
 
-            {/* Power-up Charging & Activation Bar (Duel Mode only) */}
+            {/* Manette tactile — flèches de déplacement à gauche de l'écran
+                (gauche · haut · droite), disposées comme une croix directionnelle. */}
+            {phase === 'playing' && (
+              <div className="mirage-touch-dpad" role="group" aria-label="Déplacements">
+                <button
+                  type="button"
+                  className="mirage-dpad-btn is-up"
+                  onPointerDown={(e) => { e.preventDefault(); trigger('jump'); }}
+                  aria-label="Sauter"
+                >↑</button>
+                <button
+                  type="button"
+                  className="mirage-dpad-btn is-left"
+                  onPointerDown={(e) => { e.preventDefault(); trigger('left'); }}
+                  aria-label="Aller à gauche"
+                >←</button>
+                <button
+                  type="button"
+                  className="mirage-dpad-btn is-right"
+                  onPointerDown={(e) => { e.preventDefault(); trigger('right'); }}
+                  aria-label="Aller à droite"
+                >→</button>
+              </div>
+            )}
+
+            {/* Objets spéciaux — disposés en losange à droite de l'écran, comme
+                les boutons de face d'une manette (Duel & En ligne). */}
             {phase === 'playing' && race.mode !== 'rush' && (
               <div
-                className="mirage-powerup-bar"
+                className="mirage-powerup-bar is-gamepad"
                 role="group"
                 aria-label="Objets de puissance"
               >
-                <div className="mirage-powerup-buttons-row">
+                <div className="mirage-powerup-diamond">
                   <button
                     type="button"
-                    className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
+                    className={`mirage-powerup-btn is-diamond pos-top is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_shield')}
                     disabled={(hud.shieldCharges || 0) <= 0}
                     title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
@@ -635,7 +679,7 @@ export default function MirageRushPage() {
 
                   <button
                     type="button"
-                    className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
+                    className={`mirage-powerup-btn is-diamond pos-left is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_lasso')}
                     disabled={(hud.lassoCharges || 0) <= 0}
                     title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
@@ -660,7 +704,7 @@ export default function MirageRushPage() {
 
                   <button
                     type="button"
-                    className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
+                    className={`mirage-powerup-btn is-diamond pos-right is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_boost')}
                     disabled={(hud.boostCharges || 0) <= 0}
                     title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s’active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
@@ -685,7 +729,7 @@ export default function MirageRushPage() {
 
                   <button
                     type="button"
-                    className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
+                    className={`mirage-powerup-btn is-diamond pos-bottom is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_pistol')}
                     disabled={(hud.pistolCharges || 0) <= 0}
                     title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Fait tomber la cible devant toi pendant ${PISTOL_STUN_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
@@ -713,7 +757,7 @@ export default function MirageRushPage() {
 
             {phase === 'countdown' && (
               <div className="mirage-overlay mirage-countdown-overlay" role="status" aria-live="assertive">
-                <div className="mirage-overlay-kicker"><span>✦</span> {selectedMode === 'duel' ? `DUEL À 4 CAVALIERS · PREMIER À ${DUEL_DISTANCE} M` : 'RUÉE · 60 SECONDES · 3 VIES'} <span>✦</span></div>
+                <div className="mirage-overlay-kicker"><span>✦</span> {selectedMode === 'duel' ? `DUEL À ${riderCount} CAVALIERS · PREMIER À ${DUEL_DISTANCE} M` : 'RUÉE · 60 SECONDES · 3 VIES'} <span>✦</span></div>
                 {countdown > 0
                   ? <div className="mirage-countdown-number" key={countdown}>{countdown}</div>
                   : <div className="mirage-countdown-go" key="go">GALOPE&nbsp;!</div>}
@@ -723,20 +767,20 @@ export default function MirageRushPage() {
 
             {phase === 'intro' && (
               <div className="mirage-overlay mirage-intro-overlay">
-                <div className="mirage-overlay-kicker"><span>✦</span> {selectedMode === 'duel' ? 'DUEL · PREMIER À 600 M' : 'RUÉE · 60 SECONDES'} <span>✦</span></div>
+                <div className="mirage-overlay-kicker"><span>✦</span> {selectedMode === 'duel' ? `DUEL · PREMIER À ${DUEL_DISTANCE} M` : 'RUÉE · 60 SECONDES'} <span>✦</span></div>
                 <h2>{selectedMode === 'duel' ? 'À TOI DE' : 'LE SABLE'} <em>{selectedMode === 'duel' ? 'GALOPER.' : 'SE RÉVEILLE.'}</em></h2>
                 {/* Le choix du mode est remis DANS LE JEU (overlay d'intro),
                     l'ancienne barre d'onglets de l'en-tête reste retirée :
                     trois cartes réutilisant le style du sélecteur d'origine.
                     Le terrain (« 02 / ton terrain ») se choisit juste en
-                    dessous — huit horizons — sauf si un défi impose son
+                    dessous — neuf horizons — sauf si un défi impose son
                     parcours, auquel cas les cartes sont verrouillées. */}
                 <div className="mirage-mode-section">
                   <div className="mirage-picker-label"><span>01 / TON MODE</span><span>À TOI DE JOUER</span></div>
                   <div className="mirage-mode-picker" role="group" aria-label="Mode de jeu Mirage">
                     {[
                       { id: 'rush', name: 'RUÉE', icon: '↯', tagline: 'Bats ton record', info: '60 secondes · 3 vies' },
-                      { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : 'Devance ton rival', info: challenge ? 'Course fantôme · 600 m' : 'Face au PNJ · 600 m' },
+                      { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : 'Devance tes rivaux', info: challenge ? `Course fantôme · ${DUEL_DISTANCE} m` : `Face aux ${rivalCount} PNJ · ${DUEL_DISTANCE} m` },
                       { id: 'online', name: 'EN LIGNE', icon: '♞', tagline: 'Retrouve tes amis', info: 'Salon · 2 à 4 cavaliers' },
                     ].map(mode => <button type="button" key={mode.id} aria-pressed={selectedMode === mode.id} onClick={() => chooseMode(mode.id)}>
                       <span className="mirage-mode-symbol" aria-hidden="true">{mode.icon}</span>
@@ -753,8 +797,8 @@ export default function MirageRushPage() {
                   />
                 </div>
                 {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
-                {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier les 3 PNJ.</p>}
-                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? challenge.name + ' (course fantôme) ainsi que Sauge et Améthyste' : '3 cavaliers rivaux IA (L’Ombre, Sauge et Améthyste)'} sur les 4 voies. Les cristaux accélèrent ton cheval et chargent tes pouvoirs. Premier à ${DUEL_DISTANCE} m !` : stage === 'airbase' ? 'Décolle sur le taxiway de Thunder Airbase, hommage au stage de Guile : F-16 garé à gauche, drapeau américain géant, soldats qui applaudissent dans les gradins et panneau SONIC BOOM. Saute les barrières de piste et contourne les fûts de kérosène !' : stage === 'ramparts' ? 'Remonte le Mid des Remparts d’Ocre au galop : le site B à gauche (Rush B, tunnels, portes B), le site A à droite (Long, Goose, la C4 posée). Saute les murets criblés d’impacts et contourne les Xbox !' : stage === 'japan' ? 'Galope de nuit à travers les plaines d’argent vers le Mont Fuji illuminé par la lune : saute les palissades de bambou et contourne les lanternes de pierre sacrées au son du shamisen et des tambours taiko.' : stage === 'alger' ? 'Galope sur les boulevards d’Alger la Blanche : saute les balustrades de la corniche, contourne les voitures de police qui ferment le boulevard et fonce vers la baie bleue, entre immeubles haussmanniens, palmiers face à la mer, passants, voitures stationnées et musique chaâbi.' : stage === 'sardinia' ? 'Galope sous le soleil de la Costa Omertà, entre terrasses animées et mer turquoise : saute les tonneaux du port et contourne les cyprès en pot.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et ton score.'}</p>
+                {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier les {rivalCount} PNJ.</p>}
+                <p>{selectedMode === 'duel' ? `Affronte ${challenge ? `${challenge.name} (course fantôme) ainsi que ${chaseRivalNames}` : `${rivalCount} cavaliers rivaux IA (${rivalNameList})`} sur les ${trackLanes} voies. Les cristaux accélèrent ton cheval et chargent tes pouvoirs. Premier à ${DUEL_DISTANCE} m !` : stage === 'airbase' ? 'Décolle sur le taxiway de Thunder Airbase, hommage au stage de Guile : F-16 garé à gauche, drapeau américain géant, soldats qui applaudissent dans les gradins et panneau SONIC BOOM. Saute les barrières de piste et contourne les fûts de kérosène !' : stage === 'infinity' ? 'Galope sur le pont suspendu du Château de l’Infini au son du biwa de Nakime : saute les paravents shōji d’engawa et contourne les piliers-lanternes Andon au cœur d’un labyrinthe sans gravité de tatamis, d’escaliers flottants et de pagodes renversées !' : stage === 'ramparts' ? 'Remonte le Mid des Remparts d’Ocre au galop : le site B à gauche (Rush B, tunnels, portes B), le site A à droite (Long, Goose, la C4 posée). Saute les murets criblés d’impacts et contourne les Xbox !' : stage === 'japan' ? 'Galope de nuit à travers les plaines d’argent vers le Mont Fuji illuminé par la lune : saute les palissades de bambou et contourne les lanternes de pierre sacrées au son du shamisen et des tambours taiko.' : stage === 'alger' ? 'Galope sur les boulevards d’Alger la Blanche : saute les balustrades de la corniche, contourne les voitures de police qui ferment le boulevard et fonce vers la baie bleue, entre immeubles haussmanniens, palmiers face à la mer, passants, voitures stationnées et musique chaâbi.' : stage === 'sardinia' ? 'Galope sous le soleil de la Costa Omertà, entre terrasses animées et mer turquoise : saute les tonneaux du port et contourne les cyprès en pot.' : stage === 'prairie' ? 'Galope vers le soleil couchant ! Saute les bottes de paille basses et contourne les piles hautes, entre herbes dorées et champs de blé.' : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !' : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et ton score.'}</p>
                 <button type="button" className="mirage-start-button" onClick={startRun} disabled={!ready}>
                   {ready ? selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU PARCOURS…'} <span>↗</span>
                 </button>
@@ -769,7 +813,7 @@ export default function MirageRushPage() {
                   </>}
                   <span><kbd>ÉCHAP</kbd> pause</span>
                 </div>
-                <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `4 CAVALIERS · DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · MULTIPLICATEUR DE COMBO · RECORD À BATTRE'}</div>
+                <div className="mirage-overlay-hint">{selectedMode === 'duel' ? `${riderCount} CAVALIERS · DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE` : '60 SECONDES · 3 VIES · MULTIPLICATEUR DE COMBO · RECORD À BATTRE'}</div>
               </div>
             )}
 
@@ -841,11 +885,6 @@ export default function MirageRushPage() {
             )}
           </div>
 
-          <div className="mirage-mobile-controls" aria-label="Commandes tactiles">
-            <button type="button" onClick={() => trigger('left')} aria-label="Aller à gauche">←</button>
-            <button type="button" className="mirage-jump-control" onClick={() => trigger('jump')} aria-label="Sauter">SAUT <span>↑</span></button>
-            <button type="button" onClick={() => trigger('right')} aria-label="Aller à droite">→</button>
-          </div>
           <div className="mirage-game-foot"><span className="mirage-foot-touch">MOBILE : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER</span><span>TOUCHES DIRECTIONNELLES / FLÈCHES <b>·</b> SAUT (ESPACE/↑){race.mode === 'duel' ? <> <b>·</b> POUVOIRS (QWER / AZER)</> : ''}</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE & CHARGE D’OBJETS' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
 
@@ -922,8 +961,8 @@ export default function MirageRushPage() {
           </section>
 
           <section className="mirage-howto panel-frame">
-            <span className="mirage-panel-kicker">MODE DUEL · 4 CAVALIERS · PREMIER À {DUEL_DISTANCE} M</span>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>Trois cavaliers rivaux</strong><small>Défie L’Ombre, Sauge et Améthyste : 3 PNJ qui changent de voie, sautent, ramassent les diamants et utilisent leurs propres pouvoirs contre toi et entre eux !</small></div></div>
+            <span className="mirage-panel-kicker">MODE DUEL · {riderCount} CAVALIERS · PREMIER À {DUEL_DISTANCE} M</span>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>{rivalCount > 2 ? 'Trois cavaliers rivaux' : `${rivalCount} cavaliers rivaux`}</strong><small>Défie {rivalNameList} : {rivalCount} PNJ qui changent de voie, sautent, ramassent les diamants et utilisent leurs propres pouvoirs contre toi et entre eux !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Boosts de vitesse & réapparition ({GEM_RESPAWN_DELAY} s)</strong><small>Chaque diamant accélère ta monture pendant {SPEED_BOOST_DURATION} s : bleu ×{DIAMOND_SPEED_MULTIPLIERS[0].toFixed(1)}, rouge ×{DIAMOND_SPEED_MULTIPLIERS[1].toFixed(1)}, vert ×{DIAMOND_SPEED_MULTIPLIERS[2].toFixed(1)}, jaune ×{DIAMOND_SPEED_MULTIPLIERS[3].toFixed(1)}. Un diamant pris disparaît {GEM_RESPAWN_DELAY} s puis réapparaît !</small></div></div>
             <div className="mirage-rule">
               <MiragePowerIcon type={POWER_UPS.LASSO} decorative={false} className="mirage-rule-image" />
@@ -944,10 +983,10 @@ export default function MirageRushPage() {
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
             <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur charge son pouvoir dédié : Bleu = Bouclier ({POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]}), Jaune = Lasso W/Z ({POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]}), Vert = Turbo ({POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]}), Rouge = Pistolet R ({POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]}). Bouclier et Turbo partent automatiquement ; Lasso et Pistolet se déclenchent à la main.</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger, les lanternes de pierre, les Xbox des Remparts d’Ocre ou les fûts de kérosène de Thunder Airbase : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger, les lanternes de pierre, les Xbox des Remparts d’Ocre, les piliers Andon du Château de l’Infini ou les fûts de kérosène de Thunder Airbase : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine), les tonneaux (Costa Omertà), les balustrades blanches (Alger), les barrières de bambou (Yōtei), les murets du Mid (Remparts d’Ocre) et les barrières de piste (Thunder Airbase) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies, le saut est obligatoire.</div>
+            <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine), les tonneaux (Costa Omertà), les balustrades blanches (Alger), les barrières de bambou (Yōtei), les murets du Mid (Remparts d’Ocre), les paravents shōji (Château de l’Infini) et les barrières de piste (Thunder Airbase) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies {trackLanes > 3 ? 'Si des obstacles ferment les deux autres voies' : 'Si un obstacle ferme la dernière voie'}, le saut est obligatoire.</div>
           </section>
 
           <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>

@@ -8,17 +8,18 @@ import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } f
 import { algerBuilding, algerObstacle, algerSeaside, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
 import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeRampartsSkyline, updateBombBlink } from './rampartsStage';
+import { infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWing, makeInfinityHorizon, updateInfinityLanterns } from './infinityStage';
 import { airbaseGate, airbaseObstacle, airbaseOps, airbaseStands, makeAirbaseSkyline, updateAirbaseBeacon } from './airbaseStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
-  LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
+  LANES, laneCount, lanePosition, trackWidth, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
   duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak,
   playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible,
   tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, powerUpsEnabled, PISTOL_STUN_DURATION,
   stunPose, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION,
   GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState,
   crystalPickupEffect, POWER_UP_CHARGE_COST, DIAMOND_CHARGE_VALUE, POWER_UP_MAX_CHARGES,
-  createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, DUEL_RIVALS,
+  createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, duelRivalsForTrack,
   chooseNpcPowerAction, splitChargedPowers, POWER_BOOST_DURATION, POWER_BOOST_BONUS,
   GEM_RESPAWN_DELAY, markGemTaken, isGemHidden, prairieSunsetState,
   MUD_SLOW_DURATION, MUD_SLOW_FACTOR, hitsMudPuddle, resolveMudSlow,
@@ -27,7 +28,10 @@ import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { block, makeExplorer, paintModel } from './mirageExplorer';
 
-const TRACK_WIDTH = LANE_COUNT * 2.1;
+// La largeur de la piste n'est plus une constante de module : elle dépend du
+// nombre de voies (3 dans l'app, 4 sur le site), choisi au démarrage — voir
+// `trackWidth()` et `mirageLanes.js`. Les lignes de départ et d'arrivée la
+// lisent au moment de construire la scène, plus bas.
 const TRACK_MIN_Z = -40;
 const RUN_SECONDS = 60;
 const NO_POWER_UPS = Object.freeze([]);
@@ -445,9 +449,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const alger = stage === 'alger';
   const japan = stage === 'japan';
   const ramparts = stage === 'ramparts';
+  const infinity = stage === 'infinity';
   const airbase = stage === 'airbase';
   // Dunes de l’Écho : le stage par défaut (et le repli pour tout identifiant inconnu).
-  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts && !airbase;
+  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts && !infinity && !airbase;
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -505,7 +510,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                   sunBottom: [1.0, 0.90, 0.66], sunTop: [1.0, 0.99, 0.88], glow: [1.0, 0.95, 0.80],
                   hemiSky: 0xe8f2ff, hemiGround: 0x8a8f7a, sunLight: 0xfff4dc, rimLight: 0xbfe0ff,
                 }
-              : {
+              : infinity
+                ? {
+                    // Château de l’Infini : gouffre dimensionnel écarlate et ambré,
+                    // baigné par la lueur dorée des milliers de cloisons shōji.
+                    background: 0x1a0b12, fog: 0x381720, exposure: 1.14,
+                    skyBottom: [0.68, 0.32, 0.16], skyHorizon: [0.34, 0.12, 0.15], skyTop: [0.08, 0.03, 0.07],
+                    sunBottom: [1.0, 0.45, 0.16], sunTop: [1.0, 0.82, 0.38], glow: [0.96, 0.48, 0.22],
+                    hemiSky: 0xffca7a, hemiGround: 0x261118, sunLight: 0xffba66, rimLight: 0xf25252,
+                  }
+                : {
                   // Brume d'horizon = couleur du bas du ciel de desertStage.js : le sable
                   // se fond dans le ciel sans couture.
                   background: DESERT_PALETTE.horizon, fog: DESERT_PALETTE.horizon, exposure: 1.12,
@@ -548,10 +562,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
+      sunElevation: { value: japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : infinity ? 8.5 : 5.5 },
       sunX: { value: sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
-      sunRadius: { value: sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
-      isNight: { value: japan ? 1.0 : 0.0 },
+      sunRadius: { value: sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : infinity ? 7.2 : 8.0 },
+      isNight: { value: japan ? 1.0 : infinity ? 0.65 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
       void main() {
@@ -667,8 +681,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(skyline);
   }
 
+  if (infinity) {
+    // Abîme sombre sous le grand pont de bois laqué, et à l'horizon les
+    // tours de shōji et les pagodes renversées du Château de l’Infini.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0x160a10, roughness: 1 }), scene, [0, -6.5, -35], [180, 0.6, 180]);
+    const horizon = makeInfinityHorizon();
+    bakeStaticScenery(horizon);
+    scene.add(horizon);
+  }
+
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie || japan || desert || ramparts || airbase ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
+  for (let i = 0; i < (prairie || japan || desert || ramparts || infinity || airbase ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
@@ -680,9 +703,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : airbase ? 0x767c88 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : airbase ? 0x7f8593 : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : airbase ? 0x6e7482 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : infinity ? 0x3d2023 : airbase ? 0x767c88 : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : infinity ? 0x4b282b : airbase ? 0x7f8593 : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : infinity ? 0x2f171a : airbase ? 0x6e7482 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const FLOOR_PERIOD = floorMaterials.length * 2;
@@ -694,7 +717,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   floorMaterials.forEach((material, m) => {
     const parts = [];
     for (let zIndex = 0; zIndex < floorRows; zIndex += 1) {
-      for (let lane = 0; lane < LANE_COUNT; lane += 1) {
+      for (let lane = 0; lane < laneCount(); lane += 1) {
         if ((zIndex + lane) % floorMaterials.length !== m) continue;
         parts.push(floorGeometry.clone().translate(LANES[lane], -0.34, floorMinZ + zIndex * 2));
       }
@@ -717,7 +740,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const playerBoostStreaks = makeBoostStreaks();
   player.add(playerBoostStreaks);
 
-  const duelRivals = DUEL_RIVALS.map((spec) => {
+  const duelRivals = duelRivalsForTrack().map((spec) => {
     const mesh = makeExplorer(spec.paletteIndex, CHARACTER_PALETTES[spec.paletteIndex]);
     mesh.position.set(LANES[spec.startLane], 0, -5);
     mesh.visible = false;
@@ -775,8 +798,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
   const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xfdf0c8 });
   const finishMaterial = new THREE.MeshBasicMaterial({ color: 0x4ce9df });
-  const startLine = block(new THREE.BoxGeometry(TRACK_WIDTH, 0.05, 0.45), lineMaterial, scene, [0, 0.025, 1]);
-  const finishLine = block(new THREE.BoxGeometry(TRACK_WIDTH, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
+  // Largeur de la piste courante (6,3 m à trois voies, 8,4 m à quatre) : les
+  // deux lignes couvrent exactement les voies jouables.
+  const trackWidthM = trackWidth();
+  const startLine = block(new THREE.BoxGeometry(trackWidthM, 0.05, 0.45), lineMaterial, scene, [0, 0.025, 1]);
+  const finishLine = block(new THREE.BoxGeometry(trackWidthM, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
   startLine.visible = false;
   finishLine.visible = false;
   const playerShadow = new THREE.Mesh(
@@ -825,6 +851,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                       ? rampartsObstacle(spec.kind)
                       : airbase
                         ? airbaseObstacle(spec.kind)
+                      : infinity
+                        ? infinityObstacle(spec.kind)
                         : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
@@ -1031,6 +1059,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const gate = airbaseGate();
     scene.add(gate);
     scenery.push(gate);
+  } else if (infinity) {
+    // Château de l’Infini : les galeries de shōji, l'estrade du biwa de Nakime,
+    // les escaliers impossibles et les pagodes renversées défilent de part et
+    // d'autre du pont, franchi une fois par boucle par la Grande Arche.
+    for (let i = 0; i < 10; i++) {
+      const leftWing = infinityLeftWing(i);
+      const rightWing = infinityRightWing(i);
+      scene.add(leftWing, rightWing);
+      scenery.push(leftWing, rightWing);
+    }
+    const bridgeGate = infinityBridgeGate();
+    scene.add(bridgeGate);
+    scenery.push(bridgeGate);
   } else {
     // Dunes de l'Écho : dunes qui défilent avec la piste, accessoires, mirage, ciel… (desertStage.js)
     desertScenery = makeDesertScenery({ reduceMotion });
@@ -1201,7 +1242,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       const slot = peer?.slot ?? 0;
       const rider = onlineRiders[slot];
       if (rider) end = new THREE.Vector3(rider.position.x, 2.15 + rider.position.y, rider.position.z);
-      else end = new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 2.15, distance - (targetInfo.player.distance||0));
+      else end = new THREE.Vector3(lanePosition(targetInfo.player.lane), 2.15, distance - (targetInfo.player.distance||0));
     } else {
       end = new THREE.Vector3(player.position.x, 2.15 + player.position.y, -12);
     }
@@ -1270,7 +1311,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return false;
     }
     playerStun = PISTOL_STUN_DURATION;
-    playerStunSide = laneIndex >= LANE_COUNT / 2 ? -1 : 1;
+    playerStunSide = laneIndex >= laneCount() / 2 ? -1 : 1;
     boost = SPEED_BOOST_NONE;
     jumpLeft = 0;
     if (!fromNetwork) callbacks.pistolHit?.({ target: 'player' });
@@ -1286,7 +1327,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return false;
     }
     targetNpc.stunTimer = PISTOL_STUN_DURATION;
-    targetNpc.stunSide = targetNpc.lane >= LANE_COUNT / 2 ? -1 : 1;
+    targetNpc.stunSide = targetNpc.lane >= laneCount() / 2 ? -1 : 1;
     targetNpc.boost = SPEED_BOOST_NONE;
     targetNpc.jumpLeft = 0;
     return true;
@@ -1312,7 +1353,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       const rider = onlineRiders[peer?.slot ?? 0];
       const to = rider?.visible
         ? new THREE.Vector3(rider.position.x, rider.position.y + 1.9, rider.position.z)
-        : new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 1.9, Math.max(-70, Math.min(10, distance - (Number(targetInfo.player.distance) || 0))));
+        : new THREE.Vector3(lanePosition(targetInfo.player.lane), 1.9, Math.max(-70, Math.min(10, distance - (Number(targetInfo.player.distance) || 0))));
       spawnTracer(from, to);
       callbacks.pistol?.(targetInfo.player);
       callbacks.pistolHit?.({ target: 'online', player: targetInfo.player });
@@ -1482,7 +1523,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const updateSingleNpc = (npc, dt) => {
     if (isGhostRival(npc)) {
       npc.dist = ghostDistance(race.challenge.trace, elapsed, race.challenge.duration);
-      npc.lane = LANE_COUNT - 1;
+      npc.lane = laneCount() - 1;
       npc.x = LANES[npc.lane];
       npc.jumpLeft = 0;
       if (npc.dist >= DUEL_DISTANCE && npc.finishedAt === null) {
@@ -1961,6 +2002,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
         // Les C4 posées sur les sites A et B des Remparts d’Ocre clignotent à chaque bip.
         updateBombBlink(item.userData.bombs, time * 0.001, reduceMotion);
+        // Les lanternes flottantes du Château de l’Infini pulsent au son du biwa.
+        updateInfinityLanterns(item.userData.lanterns, time * 0.001, reduceMotion);
         // Thunder Airbase : gyrophares de la tour, de la jeep et du portique.
         updateAirbaseBeacon(item.userData.airbaseBeacons, time * 0.001, reduceMotion);
         const airbaseRadar = item.userData.radar;
@@ -1974,7 +2017,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           const flamePulse = 1 + Math.sin(time * 0.02) * 0.14;
           jetFlame.scale.set(flamePulse, flamePulse, 1 + Math.sin(time * 0.026) * 0.22);
         }
-        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts || airbase ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts || airbase ? 110 : 86;
+        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts || infinity || airbase ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts || infinity || airbase ? 110 : 86;
       });
 
       rows.forEach((row) => {
@@ -2268,13 +2311,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       if (!rider.visible) return;
       const z = mine ? 0 : distance - Number(peer.distance);
       rider.visible = z > -74 && z < 11;
-      rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, LANES[peer.lane], Math.min(1,dt*10));
+      rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, lanePosition(peer.lane), Math.min(1,dt*10));
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
       skinPaint(rider, CHARACTER_PALETTES[peer.character ?? peer.slot] || CHARACTER_PALETTES[0]);
       const peerStun = !mine && peer.stunned_until ? Math.max(0, (Date.parse(peer.stunned_until) - wallNow) / 1000) : 0;
       const stunLeft = mine ? playerStun : Math.min(PISTOL_STUN_DURATION, peerStun);
-      poseRider(rider, stunLeft, peer.lane >= LANE_COUNT / 2 ? -1 : 1);
+      poseRider(rider, stunLeft, peer.lane >= laneCount() / 2 ? -1 : 1);
       rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running && stunLeft <= 0 ? Math.sin(time*.018+i*2.2)*.65 : 0; });
       if (rider.userData.shieldBubble) {
         const now = Date.now();
@@ -2339,7 +2382,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           rivalMesh.position.y += Math.sin(time * 0.02 + idx) * 0.06;
         }
       } else {
-        rivalMesh.position.set(LANES[LANE_COUNT - 1], 0, rivalMesh.position.z);
+        rivalMesh.position.set(LANES[laneCount() - 1], 0, rivalMesh.position.z);
         rivalMesh.scale.setScalar(0.92);
       }
       rivalMesh.visible = race.mode === 'duel' && rivalMesh.position.z < 11 && rivalMesh.position.z > -74 && (r.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);

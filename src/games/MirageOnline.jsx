@@ -29,6 +29,7 @@ const STAGE_LABELS = {
   alger: 'Alger la Blanche',
   japan: 'Plaines de Yōtei',
   ramparts: 'Remparts d’Ocre',
+  infinity: 'Château de l’Infini',
   airbase: 'Thunder Airbase',
 };
 
@@ -555,7 +556,8 @@ export default function MirageOnline({
                         <option value="alger">05 · Alger la Blanche (Alger)</option>
                         <option value="japan">06 · Plaines de Yōtei (Mont Fuji · Nuit)</option>
                         <option value="ramparts">07 · Remparts d’Ocre (hommage Counter-Strike)</option>
-                        <option value="airbase">08 · Thunder Airbase (hommage Street Fighter · Guile)</option>
+                        <option value="infinity">08 · Château de l’Infini (hommage Demon Slayer)</option>
+                        <option value="airbase">09 · Thunder Airbase (hommage Street Fighter · Guile)</option>
                       </select>
                       <small>{DUEL_DISTANCE} mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>
@@ -1168,15 +1170,37 @@ export default function MirageOnline({
                         </div>
                       )}
                       {active && (
+                        <div className="mirage-touch-dpad" role="group" aria-label="Déplacements">
+                          <button
+                            type="button"
+                            className="mirage-dpad-btn is-up"
+                            onPointerDown={(e) => { e.preventDefault(); actions.current?.('jump'); }}
+                            aria-label="Sauter"
+                          >↑</button>
+                          <button
+                            type="button"
+                            className="mirage-dpad-btn is-left"
+                            onPointerDown={(e) => { e.preventDefault(); actions.current?.('left'); }}
+                            aria-label="Aller à gauche"
+                          >←</button>
+                          <button
+                            type="button"
+                            className="mirage-dpad-btn is-right"
+                            onPointerDown={(e) => { e.preventDefault(); actions.current?.('right'); }}
+                            aria-label="Aller à droite"
+                          >→</button>
+                        </div>
+                      )}
+                      {active && (
                         <div
-                          className="mirage-powerup-bar"
+                          className="mirage-powerup-bar is-gamepad"
                           role="group"
                           aria-label="Objets de puissance"
                         >
-                          <div className="mirage-powerup-buttons-row">
+                          <div className="mirage-powerup-diamond">
                             <button
                               type="button"
-                              className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              className={`mirage-powerup-btn is-diamond pos-top is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_shield')}
                               disabled={(hud.shieldCharges || 0) <= 0}
                               title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
@@ -1201,7 +1225,7 @@ export default function MirageOnline({
 
                             <button
                               type="button"
-                              className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              className={`mirage-powerup-btn is-diamond pos-left is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_lasso')}
                               disabled={(hud.lassoCharges || 0) <= 0}
                               title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
@@ -1226,7 +1250,7 @@ export default function MirageOnline({
 
                             <button
                               type="button"
-                              className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              className={`mirage-powerup-btn is-diamond pos-right is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_boost')}
                               disabled={(hud.boostCharges || 0) <= 0}
                               title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s’active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
@@ -1251,7 +1275,7 @@ export default function MirageOnline({
 
                             <button
                               type="button"
-                              className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
+                              className={`mirage-powerup-btn is-diamond pos-bottom is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_pistol')}
                               disabled={(hud.pistolCharges || 0) <= 0}
                               title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
@@ -1278,14 +1302,6 @@ export default function MirageOnline({
                       )}
                     </div>
 
-                    {/* Le glissement sur la piste est lu par MirageWorld
-                        (mirageTouch.js) : ces boutons restent un recours pour
-                        qui préfère viser explicitement. */}
-                    <div className="mirage-mobile-controls">
-                      <button type="button" aria-label="Aller à gauche" onClick={() => actions.current?.('left')}>←</button>
-                      <button type="button" className="mirage-jump-control" aria-label="Sauter" onClick={() => actions.current?.('jump')}>SAUT ↑</button>
-                      <button type="button" aria-label="Aller à droite" onClick={() => actions.current?.('right')}>→</button>
-                    </div>
                   </section>
                 </div>
               </div>

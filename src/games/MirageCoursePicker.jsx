@@ -1,5 +1,5 @@
 import React from 'react';
-import { DUEL_DISTANCE } from './mirageRules';
+import { DUEL_DISTANCE, duelRivalsForTrack, laneCount } from './mirageRules';
 import desertThumbnail from './assets/maps/desert.webp';
 import westernThumbnail from './assets/maps/western.webp';
 import prairieThumbnail from './assets/maps/prairie.webp';
@@ -7,6 +7,7 @@ import sardiniaThumbnail from './assets/maps/sardinia.webp';
 import algerThumbnail from './assets/maps/alger.webp';
 import japanThumbnail from './assets/maps/japan.webp';
 import rampartsThumbnail from './assets/maps/ramparts.webp';
+import infinityThumbnail from './assets/maps/infinity.webp';
 import airbaseThumbnail from './assets/maps/airbase.webp';
 
 const MAPS = [
@@ -17,7 +18,8 @@ const MAPS = [
   { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Corniche · palmiers · chaâbi oriental', thumbnail: algerThumbnail },
   { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', thumbnail: japanThumbnail },
   { id: 'ramparts', number: '07', name: 'Remparts d’Ocre', mood: 'Rush B… ou Long A ?', detail: 'Hommage Counter-Strike · Mid', thumbnail: rampartsThumbnail },
-  { id: 'airbase', number: '08', name: 'Thunder Airbase', mood: 'Sonic Boom sur la piste !', detail: 'Hommage Street Fighter · Guile', thumbnail: airbaseThumbnail },
+  { id: 'infinity', number: '08', name: 'Château de l’Infini', mood: 'Au son du biwa de Nakime', detail: 'Hommage Demon Slayer · shōji & biwa', thumbnail: infinityThumbnail },
+  { id: 'airbase', number: '09', name: 'Thunder Airbase', mood: 'Sonic Boom sur la piste !', detail: 'Hommage Street Fighter · Guile', thumbnail: airbaseThumbnail },
 ];
 
 function MapThumbnail({ map }) {
@@ -62,13 +64,16 @@ export function MirageStagePicker({ stage, setSelectedStage, locked = false, mod
 
 export default function MirageCoursePicker({ selectedMode, setSelectedMode, stage, setSelectedStage, challenge, modeChosen = true }) {
   const locked = selectedMode === 'duel' && Boolean(challenge);
+  // Trois voies et deux rivaux dans l'application, quatre voies et trois
+  // rivaux sur le site (voir src/games/mirageLanes.js).
+  const rivalCount = duelRivalsForTrack(laneCount()).length;
   return <div className="mirage-course-picker">
     <div className="mirage-picker-label"><span>01 / TON DÉFI</span><span>À TOI DE JOUER</span></div>
     <div className="mirage-mode-picker" role="group" aria-label="Mode de jeu">
       {[
         { id: 'online', name: 'EN LIGNE', icon: '♞', tagline: 'Retrouve tes amis', info: 'Salon · 2 à 4 cavaliers' },
         { id: 'rush', name: 'RUÉE', icon: '↯', tagline: 'Bats ton record', info: '60 secondes · 3 vies' },
-        { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : 'Course à 4 cavaliers', info: challenge ? `Fantôme + 2 PNJ · ${DUEL_DISTANCE} m` : `Face à 3 PNJ · ${DUEL_DISTANCE} m` },
+        { id: 'duel', name: 'DUEL', icon: '⚔', tagline: challenge ? `Défi de ${challenge.name}` : `Course à ${1 + rivalCount} cavaliers`, info: challenge ? `Fantôme + ${rivalCount - 1} PNJ · ${DUEL_DISTANCE} m` : `Face à ${rivalCount} PNJ · ${DUEL_DISTANCE} m` },
       ].map(mode => <button type="button" key={mode.id} aria-pressed={modeChosen && selectedMode === mode.id} onClick={() => setSelectedMode(mode.id)}>
         <span className="mirage-mode-symbol" aria-hidden="true">{mode.icon}</span>
         <span className="mirage-mode-copy"><strong>{mode.name}</strong><span>{mode.tagline}</span><small>{mode.info}</small></span>

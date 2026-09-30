@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /*
- * ZONE 08 · THUNDER AIRBASE — hommage au stage de Guile (Street Fighter II) pour Mirage Rush.
+ * ZONE 09 · THUNDER AIRBASE — hommage au stage de Guile (Street Fighter II) pour Mirage Rush.
  *
  * La piste est un taxiway qui traverse une base aérienne américaine en pleine journée :
  * le tarmac gris file entre la zone opérations (à GAUCHE) et le public (à DROITE),

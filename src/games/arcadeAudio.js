@@ -6,6 +6,7 @@ export const SARDINIA_BPM = 92;
 export const ALGER_BPM = 104;
 export const JAPAN_BPM = 108;
 export const RAMPARTS_BPM = 128;
+export const INFINITY_BPM = 134;
 export const AIRBASE_BPM = 138;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
@@ -95,7 +96,7 @@ export class DesertGroove {
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : this.stage === 'ramparts' ? RAMPARTS_BPM : this.stage === 'airbase' ? AIRBASE_BPM : BPM) / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : this.stage === 'ramparts' ? RAMPARTS_BPM : this.stage === 'infinity' ? INFINITY_BPM : this.stage === 'airbase' ? AIRBASE_BPM : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -611,7 +612,91 @@ export class DesertGroove {
     }
   }
 
+  playInfinity(step, time) {
+    // Original « Château de l’Infini » score (Demon Slayer homage):
+    // E Miyako-bushi / In-sen dark scale (E, F, A, B, C) driven by Nakime’s
+    // sharp Biwa strikes (sawari buzz + resonant fifth), thunderous O-daiko
+    // war drums, rapid koto/shamisen ostinato, and a tragic shakuhachi/brass
+    // theme that intensifies when the fortress shifts in the second 8-bar half.
+    const beat = 60 / INFINITY_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const shifted = phrase >= 8;
+
+    const chords = [
+      [82.41, 164.81, 246.94, 329.63],
+      [87.31, 174.61, 261.63, 349.23],
+      [110.0, 220.0, 261.63, 329.63],
+      [82.41, 164.81, 246.94, 349.23],
+      [82.41, 164.81, 246.94, 329.63],
+      [98.0, 196.0, 246.94, 349.23],
+      [87.31, 174.61, 246.94, 329.63],
+      [82.41, 164.81, 246.94, 329.63],
+    ];
+    const melody = [
+      [659.25, 698.46, 987.77, 880.0],
+      [987.77, 698.46, 659.25, 0],
+      [523.25, 659.25, 698.46, 987.77],
+      [880.0, 698.46, 659.25, 0],
+      [659.25, 987.77, 1046.5, 1318.51],
+      [1046.5, 987.77, 880.0, 698.46],
+      [987.77, 880.0, 698.46, 659.25],
+      [698.46, 659.25, 493.88, 0],
+    ];
+    const chord = chords[bar];
+
+    // Nakime's Biwa strike ("Ben!") at the start of every 2-bar cell (and on step 10 when shifted):
+    // sharp plectrum snap + resonant sawari buzz over fifths.
+    if ((step === 0 && bar % 2 === 0) || (shifted && step === 10 && bar % 2 === 1)) {
+      this.noise(time, 0.035, 0.09, 2800);
+      this.tone(chord[1], time, beat * 0.75, 'sawtooth', 0.16, 2600);
+      this.tone(chord[2], time + 0.014, beat * 0.7, 'sawtooth', 0.13, 2900);
+      this.tone(chord[3] * 2, time + 0.026, beat * 0.45, 'triangle', 0.09);
+    }
+
+    // Thunderous O-daiko drums on urgent syncopations
+    if ([0, 3, 6, 8, 12, 14].includes(step)) {
+      const accent = step === 0 || step === 8;
+      this.tone(accent ? chord[0] : chord[0] * 1.15, time, beat * 0.55, 'sine', accent ? 0.28 : 0.19);
+      this.tone(52, time + 0.015, 0.14, 'sine', accent ? 0.22 : 0.14);
+    }
+
+    // Shime-daiko rim shots & wooden clappers (hyōshigi)
+    if (step === 4 || step === 12 || (shifted && step % 4 === 2)) {
+      this.noise(time, 0.032, 0.075, 3600);
+      this.tone(540, time, 0.035, 'triangle', 0.08);
+    }
+
+    // Rapid koto / shamisen sixteenth-note cascade in E In-sen
+    const kotoRun = [chord[1], chord[2], chord[3], chord[2] * 2];
+    const kotoNote = kotoRun[step % 4] * (step >= 8 ? 1.25 : 1);
+    if (step % 2 === 0 || shifted) {
+      this.tone(kotoNote, time, beat * 0.28, 'triangle', shifted ? 0.1 : 0.08);
+    }
+
+    // Tragic shakuhachi & demonic brass theme
+    if (step % 4 === 0) {
+      const note = melody[bar][step / 4];
+      if (note) {
+        const length = beat * (shifted ? 1.1 : 0.85);
+        this.tone(note, time, length, 'sawtooth', shifted ? 0.13 : 0.095, 2300);
+        this.tone(note * 0.5, time + 0.01, length, 'triangle', shifted ? 0.09 : 0.055);
+        if (shifted) {
+          this.tone(note * 2, time + 0.015, length * 0.65, 'sine', 0.03);
+        }
+      }
+    }
+
+    // Sliding fusuma / taiko crescendo at the end of each 8-bar phrase
+    if (phrase % 8 === 7 && step >= 10) {
+      this.tone(90 + (step - 10) * 24, time, 0.1, 'sine', 0.16);
+      this.noise(time, 0.05, 0.06, 2000);
+    }
+  }
+
+
   playStep(step, time) {
+    if (this.stage === 'infinity') { this.playInfinity(step, time); return; }
     if (this.stage === 'airbase') { this.playAirbase(step, time); return; }
     if (this.stage === 'ramparts') { this.playRamparts(step, time); return; }
     if (this.stage === 'prairie') { this.playPrairie(step, time); return; }

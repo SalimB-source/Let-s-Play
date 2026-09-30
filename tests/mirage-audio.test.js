@@ -1,19 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, RAMPARTS_BPM, AIRBASE_BPM } from '../src/games/arcadeAudio.js';
+import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, RAMPARTS_BPM, INFINITY_BPM, AIRBASE_BPM } from '../src/games/arcadeAudio.js';
 
 test('prairie selects its own soundtrack and resets the phrase', () => {
   const audio = new DesertGroove();
   audio.step = 83;
   audio.setStage('prairie');
   assert.equal(audio.step, 0);
-  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0, ramparts = 0, airbase = 0;
+  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0, ramparts = 0, infinity = 0, airbase = 0;
   audio.playPrairie = () => prairie++;
   audio.playWestern = () => western++;
   audio.playSardinia = () => sardinia++;
   audio.playAlger = () => alger++;
   audio.playJapan = () => japan++;
   audio.playRamparts = () => ramparts++;
+  audio.playInfinity = () => infinity++;
   audio.playAirbase = () => airbase++;
   audio.playStep(0, 0);
   assert.equal(prairie, 1);
@@ -34,10 +35,39 @@ test('prairie selects its own soundtrack and resets the phrase', () => {
   audio.playStep(0, 0);
   assert.equal(ramparts, 1);
   assert.equal(japan, 1, 'les Remparts d’Ocre ne rejouent pas la piste de Yōtei');
+  audio.setStage('infinity');
+  audio.playStep(0, 0);
+  assert.equal(infinity, 1);
+  assert.equal(ramparts, 1, 'le Château de l’Infini a sa propre partition au biwa');
   audio.setStage('airbase');
   audio.playStep(0, 0);
   assert.equal(airbase, 1);
   assert.equal(ramparts, 1, 'Thunder Airbase ne rejoue pas la piste des Remparts d’Ocre');
+});
+
+test('infinity castle biwa & taiko score schedules finite notes and intensifies on the shift', () => {
+  const audio = new DesertGroove();
+  audio.setStage('infinity');
+  assert.ok(INFINITY_BPM > RAMPARTS_BPM, 'un tempo haletant pour le Château de l’Infini');
+  const stepLength = 60 / INFINITY_BPM / 4;
+  const firstHalf = [];
+  const secondHalf = [];
+  audio.noise = () => {};
+  audio.tone = (frequency, time, duration, type, volume) => {
+    assert.ok(Number.isFinite(frequency) && frequency > 0);
+    assert.ok(Number.isFinite(time) && time >= 0);
+    assert.ok(duration > 0 && volume > 0);
+    if (audio.step < 128) firstHalf.push(frequency);
+    else secondHalf.push(frequency);
+  };
+  for (let bar = 0; bar < 16; bar++) {
+    for (let step = 0; step < 16; step++) {
+      audio.step = bar * 16 + step;
+      audio.playInfinity(step, audio.step * stepLength);
+    }
+  }
+  assert.ok(firstHalf.length > 80, 'biwa, koto et taiko produisent un motif dense');
+  assert.ok(secondHalf.length > firstHalf.length, 'la seconde moitié du cycle densifie les arpèges et les frappes de biwa');
 });
 
 test('ramparts tactical score schedules finite notes, then the bomb beep quickens', () => {
