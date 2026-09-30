@@ -127,6 +127,16 @@ const waitForRace = (node) => until(() => node.querySelector('.mirage-hud'), 'le
 const waitForResults = (node) => until(() => node.querySelector('.mirage-cup-results'), 'l’overlay d’arrivée de la coupe');
 const waitForIntro = (node) => until(() => node.querySelector('.mirage-intro-overlay'), 'l’overlay d’intro');
 
+// Écran 01 (les boutons de mode), où l'on retombe en quittant une coupe : COUPE rouvre son écran.
+async function openCupFromModes(node, assert) {
+  const intro = await waitForIntro(node);
+  assert.ok(intro.classList.contains('is-mode-step'), 'quitter la coupe ramène à l’écran des modes');
+  const cup = [...intro.querySelectorAll('.mirage-mode-picker button')].find((button) => text(button.querySelector('strong')) === 'COUPE');
+  assert.ok(cup, 'le bouton COUPE est proposé');
+  await click(cup);
+  await until(() => node.querySelector('.mirage-cup-card'), 'le choix de la coupe');
+}
+
 export async function checkMirageCup(assert) {
   const [ombre, sauge, amethyste] = DUEL_RIVALS.map((rival) => rival.name);
   assert.deepEqual(DUEL_RIVALS.map((rival) => rival.id), ['ombre', 'sauge', 'amethyste'], 'les 3 rivaux de la coupe');
@@ -227,11 +237,12 @@ export async function checkMirageCup(assert) {
     assert.match(text(trophy.querySelector('.mirage-trophy-lede')), new RegExp(`${ombre} remporte la Coupe du Désert avec 30 points\\. Tu termines 4ᵉ avec 6 points`));
 
     // ── 3. Abandons ─────────────────────────────────────────────────────────
-    // « CHOISIR TON MODE » : retour à l'intro de la coupe.
+    // « CHOISIR TON MODE » : retour à l'écran des modes, d'où COUPE rouvre la coupe.
     await click(trophy.querySelector('.mirage-share-button'));
     await waitForIntro(node);
-    assert.ok(node.querySelector('.mirage-cup-card'), 'retour au choix de la coupe');
     assert.ok(!node.querySelector('.mirage-trophy-screen'));
+    await openCupFromModes(node, assert);
+    assert.ok(node.querySelector('.mirage-cup-card'), 'retour au choix de la coupe');
 
     // « ABANDONNER LA COUPE » entre deux courses.
     await startCupFromIntro(node);
@@ -243,6 +254,7 @@ export async function checkMirageCup(assert) {
     await click(results.querySelector('.mirage-share-button'));
     await waitForIntro(node);
     assert.ok(!node.querySelector('.mirage-cup-results'));
+    await openCupFromModes(node, assert);
 
     // Échap pendant le compte à rebours de la course suivante.
     await startCupFromIntro(node);

@@ -418,11 +418,10 @@ export default function MirageOnline({
           <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
 
-        <div className="mirage-mode-tabs" role="tablist" aria-label="Modes de jeu Mirage">
+        <div className="mirage-mode-tabs" aria-label="Boutons de mode Mirage">
           <button
             type="button"
-            role="tab"
-            aria-selected="false"
+            aria-pressed="false"
             className="mirage-mode-tab"
             onClick={() => switchMode('rush')}
           >
@@ -430,8 +429,7 @@ export default function MirageOnline({
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected="false"
+            aria-pressed="false"
             className="mirage-mode-tab"
             onClick={() => switchMode('duel')}
           >
@@ -439,8 +437,7 @@ export default function MirageOnline({
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected="false"
+            aria-pressed="false"
             className="mirage-mode-tab"
             onClick={() => switchMode('cup')}
           >
@@ -448,8 +445,7 @@ export default function MirageOnline({
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected="true"
+            aria-pressed="true"
             className="mirage-mode-tab is-active"
           >
             <span>♞</span> EN LIGNE
