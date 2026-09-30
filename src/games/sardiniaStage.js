@@ -111,6 +111,125 @@ export function sardiniaVillage(index, side) {
   return group;
 }
 
+// Café terraces occupy the strip between the shopfronts (x ≈ -14.5)
+// and the left edge of the track (x = -4.2). They are scenery only.
+const TERRACE_SHIRTS = [0xe38161, 0x4c9ca5, 0xe4c057, 0x779b6d, 0xede2c8];
+const TERRACE_SKIN = [0xc58a60, 0xe4b98c, 0x88563d, 0xf1c9a0];
+
+function terraceGuest(parent, x, z, facing, variant) {
+  const group = new THREE.Group();
+  group.position.set(x, 0, z);
+  group.userData.terraceGuest = true;
+  parent.add(group);
+  const shirt = material(TERRACE_SHIRTS[variant % TERRACE_SHIRTS.length]);
+  const skin = material(TERRACE_SKIN[variant % TERRACE_SKIN.length]);
+  const hair = material([0x49302b, 0x322d29, 0x996d43, 0x533c2c][variant % 4]);
+  const trousers = material(variant % 2 ? 0xe6d6b4 : 0x374f60);
+  // Both knees project toward the table: these are seated patrons, not walkers.
+  box(group, trousers, 0, 0.63, -facing * 0.19, 0.48, 0.18, 0.62);
+  for (const dx of [-0.15, 0.15]) {
+    box(group, trousers, dx, 0.32, -facing * 0.46, 0.17, 0.5, 0.17);
+    box(group, hair, dx, 0.09, -facing * 0.49, 0.2, 0.12, 0.28);
+    const arm = box(group, skin, dx * 2.3, 1.08, -facing * 0.24, 0.13, 0.15, 0.58);
+    arm.rotation.x = facing * 0.12;
+  }
+  box(group, shirt, 0, 1.07, 0, 0.63, 0.76, 0.4);
+  box(group, skin, 0, 1.52, 0, 0.14, 0.18, 0.14);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.27, 8, 6), skin);
+  head.position.set(0, 1.77, 0);
+  group.add(head);
+  // Hair on the back of the head, or a little sun hat for some guests.
+  if (variant % 3 === 0) {
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.38, 0.055, 10), material(0xe7d29b));
+    brim.position.y = 2.03;
+    group.add(brim);
+    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.25, 0.17, 10), material(0xd5b77b));
+    crown.position.y = 2.13;
+    group.add(crown);
+  } else {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.48), hair);
+    cap.position.y = 1.8;
+    group.add(cap);
+  }
+}
+
+function terraceTable(parent, x, z, variant, parasol) {
+  const table = new THREE.Group();
+  table.position.set(x, 0, z);
+  parent.add(table);
+  const wicker = material(0x92704e);
+  const iron = material(0x394e50);
+  const linen = material(0xf6ead1);
+  const glass = new THREE.MeshStandardMaterial({ color: 0x81c8cb, transparent: true, opacity: 0.75, roughness: 0.18 });
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 0.09, 12), linen);
+  top.position.y = 0.9;
+  table.add(top);
+  box(table, iron, 0, 0.45, 0, 0.09, 0.9, 0.09);
+  box(table, iron, 0, 0.05, 0, 0.75, 0.08, 0.12);
+  // Two espresso glasses and a little terracotta flower pot.
+  for (const dx of [-0.32, 0.32]) {
+    const drink = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.07, 0.15, 8), glass);
+    drink.position.set(dx, 1.02, 0.12);
+    table.add(drink);
+  }
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.2, 7), material(0xb66142));
+  pot.position.set(0, 1.04, -0.2);
+  table.add(pot);
+  const flower = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 4), material(0xe8a45c));
+  flower.position.set(0, 1.2, -0.2);
+  table.add(flower);
+
+  for (const side of [-1, 1]) {
+    const chairZ = side * 1.13;
+    box(table, wicker, 0, 0.53, chairZ, 0.65, 0.11, 0.54);
+    box(table, wicker, 0, 0.91, chairZ + side * 0.32, 0.67, 0.85, 0.11);
+    for (const dx of [-0.25, 0.25]) for (const dz of [-0.18, 0.18]) {
+      box(table, iron, dx, 0.26, chairZ + dz, 0.07, 0.5, 0.07);
+    }
+    terraceGuest(table, 0, chairZ, side, variant + (side + 1) / 2);
+  }
+
+  if (parasol) {
+    // Alternating canvas panels give the parasol a sun-drenched café look.
+    const shade = new THREE.Group();
+    // Plant the parasol beside the table, so the seated guests remain visible.
+    shade.position.set(-1.4, 0, 0.2);
+    table.add(shade);
+    const pole = material(0xeee2c7);
+    const canvas = [variant % 2 ? 0xf8eed5 : 0xe48461, variant % 2 ? 0x51a4ae : 0xf8eed5];
+    const fabric = canvas.map(color => new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide, roughness: 0.95, flatShading: true }));
+    box(shade, pole, 0, 2.14, 0, 0.075, 2.35, 0.075);
+    for (let i = 0; i < 10; i++) {
+      const a = i * Math.PI / 5;
+      const b = (i + 1) * Math.PI / 5;
+      const canopy = new THREE.Mesh(new THREE.BufferGeometry(), fabric[i % 2]);
+      canopy.geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+        0, 3.28, 0, Math.cos(a) * 1.9, 2.64, Math.sin(a) * 1.9,
+        Math.cos(b) * 1.9, 2.64, Math.sin(b) * 1.9,
+      ], 3));
+      canopy.geometry.computeVertexNormals();
+      shade.add(canopy);
+    }
+    const finial = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 4), pole);
+    finial.position.y = 3.33;
+    shade.add(finial);
+  }
+}
+
+/** Repeating, non-collidable pavement cafés along the left of Costa Omertà. */
+export function sardiniaTerrace(index) {
+  const group = new THREE.Group();
+  const paving = material(index % 2 ? 0xdac6a0 : 0xe4d2ad);
+  box(group, paving, -9.55, -0.17, 0, 9.1, 0.3, 10.8);
+  // A low curb separates the tables from the horses without entering a lane.
+  box(group, material(0xf3e3c0), -4.95, 0.08, 0, 0.22, 0.2, 10.8);
+  terraceTable(group, -8.05, index % 2 ? -1.3 : 0.7, index * 2, true);
+  if (index % 2 === 0) terraceTable(group, -11.5, -2.5, index * 2 + 2, false);
+  group.position.z = 6 - index * 11;
+  group.userData.speedFactor = 1;
+  return group;
+}
+
 const BOAT_HULLS = [0x3e6e7a, 0xb3554d, 0xe7ddc8, 0x2f5a4a];
 
 /** Small wooden fishing boat (gozzo) moored off the quay. */
