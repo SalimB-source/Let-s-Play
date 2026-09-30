@@ -186,6 +186,165 @@ export function algerObstacle(kind) {
   return kind === 'barrier' ? whiteBalustrade() : policeCar();
 }
 
+// ── La corniche : palmiers et promenade au bord de la baie ─────────────
+
+const PALM_TRUNKS = [0xa1814f, 0x96754a, 0xab8a58];
+const PALM_LEAVES = [0x3f7d46, 0x2f6b3d, 0x4c8a4a];
+
+/**
+ * Palmier dattier en voxels : tronc penché qui s'affine vers la tête,
+ * couronne de palmes retombantes et régime de dattes dorées. Chaque graine
+ * donne un sujet différent (hauteur, aplomb, teinte) sans hasard au runtime.
+ */
+function palmTree(seed) {
+  const group = new THREE.Group();
+  const trunk = material(PALM_TRUNKS[seed % PALM_TRUNKS.length]);
+  const leaf = material(PALM_LEAVES[seed % PALM_LEAVES.length]);
+  const dates = material(0xd99a3b);
+  const height = 3.1 + (seed % 4) * 0.5;
+  const lean = ((seed * 37) % 9) / 9 - 0.4;
+  const tiers = 5;
+  for (let t = 0; t < tiers; t += 1) {
+    const width = 0.36 - t * 0.045;
+    const tierHeight = height / tiers;
+    const trunkPart = box(group, trunk, lean * 0.16 * (t + 0.5), tierHeight * t + tierHeight / 2, 0, width, tierHeight * 1.08, width);
+    trunkPart.rotation.z = lean * 0.16;
+  }
+  // La couronne : huit palmes, chacune une lame dressée puis une pointe qui
+  // retombe, plus un cœur de dattes dorées sous les palmes.
+  const crown = new THREE.Group();
+  crown.position.set(lean * 0.16 * tiers, height, 0);
+  box(crown, trunk, 0, 0.08, 0, 0.34, 0.3, 0.34);
+  for (let i = 0; i < 8; i += 1) {
+    const yaw = new THREE.Group();
+    yaw.rotation.y = (i / 8) * Math.PI * 2 + seed * 0.7;
+    const droop = new THREE.Group();
+    droop.rotation.x = 0.12 + ((i + seed) % 3) * 0.16;
+    const blade = box(droop, leaf, 0, 0.09, 0.78, 0.2, 0.08, 1.6);
+    blade.rotation.x = -0.38;
+    const tip = box(droop, leaf, 0, -0.05, 1.72, 0.14, 0.06, 1.15);
+    tip.rotation.x = 0.85;
+    yaw.add(droop);
+    crown.add(yaw);
+  }
+  box(crown, dates, 0.17, -0.2, 0.12, 0.22, 0.3, 0.22);
+  box(crown, dates, -0.15, -0.24, -0.11, 0.2, 0.34, 0.2);
+  group.add(crown);
+  return group;
+}
+
+const ALGER_HULLS = [0xf2efe4, 0xe8e4d4, 0x9fb8c8];
+
+/**
+ * Barque blanche de la baie d'Alger : coque claire au liseré bleu, pont de
+ * bois ; un sujet sur deux porte une voile latine, l'autre une cabine blanche.
+ */
+function algerBoat(index) {
+  const group = new THREE.Group();
+  const hull = material(ALGER_HULLS[index % ALGER_HULLS.length]);
+  const trim = material(0x2e6f8f);
+  const wood = material(0x8a6a42);
+  box(group, hull, 0, 0.25, 0, 1.4, 0.5, 3.2);
+  const bow = new THREE.Mesh(new THREE.ConeGeometry(0.68, 1.0, 4), hull);
+  bow.rotation.x = -Math.PI / 2;
+  bow.rotation.y = Math.PI / 4;
+  bow.scale.set(1, 1, 0.5);
+  bow.position.set(0, 0.25, -2.05);
+  group.add(bow);
+  box(group, trim, 0, 0.52, 0, 1.46, 0.09, 3.26);
+  box(group, wood, 0, 0.46, 0.25, 1.16, 0.06, 2.0);
+  if (index % 2 === 0) {
+    box(group, wood, 0, 1.3, -0.2, 0.09, 2.2, 0.09);
+    const sail = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshStandardMaterial({ color: 0xf4ead0, roughness: 0.9, side: THREE.DoubleSide }));
+    sail.geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+      0, 0.4, -0.2, 0, 2.5, -0.5, 0, 1.2, -2.4,
+    ], 3));
+    sail.geometry.computeVertexNormals();
+    group.add(sail);
+  } else {
+    box(group, hull, 0, 0.82, 0.5, 0.95, 0.62, 1.1);
+    box(group, trim, 0, 1.16, 0.5, 1.02, 0.08, 1.18);
+  }
+  return group;
+}
+
+/**
+ * Corniche d'Alger la Blanche : le côté droit du boulevard s'ouvre sur la
+ * baie. Promenoir chaulé, balustrade blanche, palmiers dattiers, réverbères
+ * Belle Époque et bancs tournés vers la mer ; les barques blanches dansent
+ * sur l'eau. Chaque segment fait 11 m et défile comme les immeubles d'en face.
+ */
+export function algerSeaside(index) {
+  const group = new THREE.Group();
+  const paving = material(index % 2 ? 0xdcd6c4 : 0xe4dfcf);
+  const stone = material(0xcfc6b0);
+  const stoneDark = material(0xa89a78);
+  const cream = material(0xf3e3c0);
+  const iron = material(0x2c2c30);
+  const wood = material(0x8a5a34);
+  // Promenoir continu, au niveau du trottoir des immeubles.
+  box(group, paving, 7.6, -0.31, 0, 6.0, 0.26, 11);
+  // Muret côté voie : la même bordure basse que les terrasses de Costa Omertà.
+  box(group, cream, 4.55, 0.08, 0, 0.22, 0.2, 11);
+  // Pierres de couronnement le long du quai, alternées pour lire la vitesse.
+  for (let i = 0; i < 5; i += 1) {
+    const z = -4.4 + i * 2.2;
+    box(group, i % 2 ? stone : stoneDark, 10.8, -0.29, z, 1.2, 0.22, 2.16);
+    box(group, i % 2 ? stoneDark : stone, 11.35, -0.95, z, 0.12, 1.2, 2.16);
+  }
+  // La balustrade blanche de la corniche, tournée dans l'axe du boulevard.
+  for (const z of [-3.66, 0, 3.66]) {
+    const rail = whiteBalustrade();
+    rail.position.set(10.32, -0.18, z);
+    rail.rotation.y = Math.PI / 2;
+    group.add(rail);
+  }
+  // Palmiers : deux par segment, hauteur et aplomb variés.
+  const palmA = palmTree(index * 2);
+  palmA.position.set(6.2 + (index % 3) * 0.55, -0.18, -3.2 + (index % 2) * 1.5);
+  palmA.rotation.y = index * 0.9;
+  group.add(palmA);
+  const palmB = palmTree(index * 2 + 1);
+  palmB.position.set(8.9 - (index % 2) * 0.7, -0.18, 2.6 - (index % 3));
+  palmB.rotation.y = index * 1.7 + 1;
+  group.add(palmB);
+  // Réverbère Belle Époque un segment sur deux.
+  if (index % 2 === 0) {
+    box(group, iron, 5.15, 1.11, -1.4, 0.1, 2.58, 0.1);
+    box(group, iron, 5.15, 2.42, -1.4, 0.3, 0.08, 0.3);
+    const lamp = box(group, new THREE.MeshBasicMaterial({ color: 0xffd98a }), 5.15, 2.62, -1.4, 0.22, 0.3, 0.22);
+    lamp.userData.glow = true;
+    box(group, iron, 5.15, 2.82, -1.4, 0.3, 0.07, 0.3);
+  }
+  // Banc tourné vers la mer, un segment sur trois.
+  if (index % 3 === 1) {
+    box(group, iron, 9.3, 0.03, 0.95, 0.5, 0.42, 0.09);
+    box(group, iron, 9.3, 0.03, 2.25, 0.5, 0.42, 0.09);
+    box(group, wood, 9.45, 0.28, 1.6, 0.55, 0.09, 1.7);
+    box(group, wood, 9.68, 0.6, 1.6, 0.09, 0.55, 1.7);
+  }
+  // Écume à la surface de la baie, pour donner du mouvement à l'eau.
+  const foam = new THREE.MeshBasicMaterial({ color: 0xcfe9ea, transparent: true, opacity: 0.55, depthWrite: false });
+  for (let i = 0; i < 3; i += 1) {
+    const streak = new THREE.Mesh(new THREE.PlaneGeometry(1.6 + ((i + index) % 3), 0.14), foam);
+    streak.rotation.x = -Math.PI / 2;
+    streak.position.set(13.2 + ((index * 7 + i * 5) % 15), -0.88, -4 + i * 3.4);
+    group.add(streak);
+  }
+  // Barque blanche au large, bercée par la houle.
+  if (index % 3 !== 2) {
+    const boat = algerBoat(index);
+    boat.position.set(index % 2 ? 13.6 : 17.2, -1.05, index % 2 ? 0.8 : -1.6);
+    boat.rotation.y = index % 2 ? 0.12 : -0.25;
+    boat.userData.bob = index * 1.7;
+    group.add(boat);
+    group.userData.boat = boat;
+  }
+  group.position.z = 6 - index * 11;
+  group.userData.speedFactor = 1;
+  return group;
+}
+
 const SIGN_WORDS = ['CAFÉ ALGER', 'PÂTISSERIE', 'LIBRAIRIE', 'PHARMACIE', 'HÔTEL', 'BOULANGERIE'];
 const FACADES = [0xf5f1e8, 0xece5d4, 0xf1ecdf, 0xe6dfcd];
 
@@ -275,8 +434,9 @@ function parkedCar(index, variant) {
 /**
  * Immeuble haussmannien blanc d'Alger la Blanche : façade chaulée, étages
  * à hautes fenêtres, balcons de fer forgé, toiture d'ardoise à mansarde et
- * devanture de commerce peinte. Les deux rangées encadrent le boulevard —
- * avec leur trottoir animé de passants et bordé de voitures stationnées.
+ * devanture de commerce peinte. La rangée borde le côté gauche du boulevard
+ * (le droit s'ouvre sur la baie, voir algerSeaside), avec son trottoir
+ * animé de passants et bordé de voitures stationnées.
  */
 export function algerBuilding(index, side) {
   const group = new THREE.Group();
@@ -385,7 +545,7 @@ export function algerBuilding(index, side) {
     crowd.push(person);
   }
   if (crowd.length) group.userData.people = crowd;
-  // Les deux rangées encadrent le boulevard au plus près, comme les façades
+  // La rangée serre le boulevard au plus près, comme les façades
   // d'Alger-Centre : la baie bleue reste visible au bout de la perspective.
   group.position.x = side * 2.5;
   group.position.z = 6 - index * 11 + (side === 1 ? -4 : 0);
