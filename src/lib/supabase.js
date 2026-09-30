@@ -30,6 +30,13 @@ export const supabaseConfigStatus = {
   hasKey: Boolean(supabaseKey),
 };
 
+// Cloudflare Turnstile site keys are public by design. When present, the
+// registration form renders the challenge and sends its one-time token to
+// Supabase Auth. The provider must also be enabled in Supabase Dashboard →
+// Authentication → CAPTCHA; without that server-side setting, a client-only
+// widget would not be a meaningful anti-bot control.
+export const turnstileSiteKey = firstNonEmpty(import.meta.env?.VITE_TURNSTILE_SITE_KEY);
+
 // Host of the Supabase project this build talks to (no key, safe to surface).
 // Shown next to network errors so a wrong project URL is immediately visible.
 export const supabaseHost = (() => {

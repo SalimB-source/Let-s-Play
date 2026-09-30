@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { supabase, authRedirectUrl, supabaseConfigStatus } from '../lib/supabase';
+import { supabase, authRedirectUrl, supabaseConfigStatus, turnstileSiteKey } from '../lib/supabase';
 import { syncDemoCommentsForUser, syncSupabaseProfileAndComments } from '../lib/comments';
 import { useAuth } from '../auth/AuthContext';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -19,6 +19,7 @@ import {
 } from '../lib/gameLibrary';
 import ConsoleLogo from '../components/ConsoleLogo';
 import TopGamePill from '../components/TopGamePill';
+import SignupProtection from '../components/SignupProtection';
 import FriendsHubSection from '../friends/FriendsHubSection';
 import QuizGlobalRank from '../quizzes/QuizGlobalRank';
 import { DEMO_PROFILES } from '../auth/demoProfiles';
@@ -154,6 +155,12 @@ const copy = {
     errRateLimited: 'Too many attempts — wait a few minutes before trying again.',
     errProviderDisabled: 'This sign-in provider is not enabled on the Supabase project yet — enable it in Authentication → Providers, or sign in with your email address.',
     unavailable: 'Supabase authentication is not configured in this environment. You can use the Demo Preview below.',
+    captchaLabel: 'SECURITY CHECK',
+    captchaInstructions: 'Complete the check before creating your account.',
+    captchaLoading: 'Loading the security check…',
+    captchaError: 'The security check could not load. Disable blockers or try again.',
+    captchaRequired: 'Complete the security check to create an account.',
+    botCheckError: 'This request could not be verified. Please try again.',
     diagMissing: 'Missing configuration:',
     diagHelp: 'Build-time variables: Vercel → Settings → Environment Variables, GitHub Pages → Settings → Secrets and variables → Actions → Variables (both names above), or a local .env.local copied from .env.example. Redeploy after adding them.',
     demoOptionTitle: 'DEMO / PREVIEW ACCESS',
@@ -271,6 +278,12 @@ const copy = {
     errRateLimited: 'Trop de tentatives — patiente quelques minutes avant de réessayer.',
     errProviderDisabled: 'Ce fournisseur de connexion n’est pas encore activé sur le projet Supabase — active-le dans Authentication → Providers, ou connecte-toi avec ton adresse e-mail.',
     unavailable: "L'authentification Supabase n'est pas configurée dans cet environnement. Utilisez l'aperçu Démo ci-dessous.",
+    captchaLabel: 'VÉRIFICATION DE SÉCURITÉ',
+    captchaInstructions: 'Complète la vérification avant de créer ton compte.',
+    captchaLoading: 'Chargement de la vérification…',
+    captchaError: 'La vérification n’a pas pu charger. Désactive les bloqueurs ou réessaie.',
+    captchaRequired: 'Complète la vérification pour créer un compte.',
+    botCheckError: 'Cette demande n’a pas pu être vérifiée. Réessaie.',
     diagMissing: 'Configuration manquante :',
     diagHelp: 'Variables lues à la compilation : Vercel → Settings → Environment Variables, GitHub Pages → Settings → Secrets and variables → Actions → Variables (les deux noms ci-dessus), ou un fichier .env.local copié depuis .env.example. Redéployez après les avoir ajoutées.',
     demoOptionTitle: 'ACCÈS DÉMO / APERÇU',
@@ -388,6 +401,12 @@ const copy = {
     errRateLimited: 'محاولات كثيرة — انتظر بضع دقائق ثم أعد المحاولة.',
     errProviderDisabled: 'مزوّد تسجيل الدخول هذا غير مُفعّل بعد في مشروع Supabase — فعّله من Authentication ← Providers أو سجّل الدخول ببريدك الإلكتروني.',
     unavailable: 'المصادقة عبر Supabase غير مهيأة في هذه البيئة. يمكنك استخدام الحساب التجريبي أدناه.',
+    captchaLabel: 'تحقق أمني',
+    captchaInstructions: 'أكمل التحقق قبل إنشاء حسابك.',
+    captchaLoading: 'جارٍ تحميل التحقق الأمني…',
+    captchaError: 'تعذّر تحميل التحقق. عطّل أدوات الحجب أو حاول مرة أخرى.',
+    captchaRequired: 'أكمل التحقق الأمني لإنشاء حساب.',
+    botCheckError: 'تعذّر التحقق من هذا الطلب. حاول مرة أخرى.',
     diagMissing: 'الإعدادات الناقصة:',
     diagHelp: 'المتغيرات تُقرأ وقت البناء: في Vercel ← Settings ← Environment Variables، وفي GitHub Pages ← Settings ← Secrets and variables ← Actions ← Variables (الاسمان أعلاه)، أو ملف .env.local محلي منسوخ من .env.example. أعد النشر بعد إضافتها.',
     demoOptionTitle: 'الوصول التجريبي / المعاينة',
@@ -597,7 +616,31 @@ export default function Auth({ initialMode = '' }) {
   const [connectedPopup, setConnectedPopup] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarNote, setAvatarNote] = useState(null); // { text, isError }
+  const [captchaToken, setCaptchaToken] = useState('');
+  const [captchaResetSignal, setCaptchaResetSignal] = useState(0);
+  const signupHoneypotRef = useRef('');
+  const previousModeRef = useRef(mode);
   const fileInputRef = useRef(null);
+
+  const handleCaptchaToken = useCallback((token) => {
+    setCaptchaToken(token || '');
+  }, []);
+
+  // A hidden honeypot catches unsophisticated form-fill bots. The CAPTCHA is
+  // the real control; this cheap signal is only a second layer and never
+  // replaces provider-side verification.
+  useEffect(() => {
+    if (mode === 'signup' && previousModeRef.current !== 'signup') {
+      signupHoneypotRef.current = '';
+      setCaptchaToken('');
+      setCaptchaResetSignal((value) => value + 1);
+    }
+    if (mode !== 'signup') {
+      signupHoneypotRef.current = '';
+      setCaptchaToken('');
+    }
+    previousModeRef.current = mode;
+  }, [mode]);
 
   // The "You are connected" popup stays on screen briefly, then fades.
   useEffect(() => {
@@ -710,6 +753,14 @@ export default function Auth({ initialMode = '' }) {
       setError(t.gamertagRequired);
       return;
     }
+    if (mode === 'signup' && signupHoneypotRef.current.trim()) {
+      setError(t.botCheckError);
+      return;
+    }
+    if (mode === 'signup' && turnstileSiteKey && !captchaToken) {
+      setError(t.captchaRequired);
+      return;
+    }
 
     setBusy(true);
 
@@ -728,8 +779,12 @@ export default function Auth({ initialMode = '' }) {
           options: {
             data: { gamertag: tag, full_name: tag, fullName: tag, name: tag },
             emailRedirectTo: authRedirectUrl(),
+            ...(captchaToken ? { captchaToken } : {}),
           },
         });
+        // Turnstile tokens are single-use; never allow a retry to reuse one.
+        setCaptchaToken('');
+        setCaptchaResetSignal((value) => value + 1);
         if (signUpError) {
           setError(describeAuthError(signUpError, t, t.error));
         } else if (data.session) {
@@ -1216,6 +1271,19 @@ export default function Auth({ initialMode = '' }) {
         {/* EMAIL / PASSWORD FORM */}
         <form className="auth-form" onSubmit={submit}>
           {mode === 'signup' && (
+            <div className="auth-honeypot" aria-hidden="true">
+              <label htmlFor="signup-website">Website</label>
+              <input
+                id="signup-website"
+                name="website"
+                type="text"
+                tabIndex="-1"
+                autoComplete="off"
+                onChange={(event) => { signupHoneypotRef.current = event.target.value; }}
+              />
+            </div>
+          )}
+          {mode === 'signup' && (
             <label>
               {t.gamertag}
               <input
@@ -1255,7 +1323,21 @@ export default function Auth({ initialMode = '' }) {
             'new-password',
           )}
           {showConfirm && <p className="auth-field-hint auth-pw-hint">{t.passwordHint}</p>}
-          <button className="button button-yellow" disabled={busy}>
+          {mode === 'signup' && (
+            <SignupProtection
+              siteKey={turnstileSiteKey}
+              label={t.captchaLabel}
+              instructions={t.captchaInstructions}
+              loadingLabel={t.captchaLoading}
+              errorLabel={t.captchaError}
+              resetSignal={captchaResetSignal}
+              onTokenChange={handleCaptchaToken}
+            />
+          )}
+          <button
+            className="button button-yellow"
+            disabled={busy || (mode === 'signup' && Boolean(turnstileSiteKey) && !captchaToken)}
+          >
             {busy && <span className="auth-btn-spinner" aria-hidden="true" />}
             {mode === 'signup' ? t.signUp : mode === 'signin' ? t.signIn : mode === 'forgot' ? t.sendReset : t.updatePassword}
             {!busy && <span>↗</span>}

@@ -320,6 +320,7 @@ Local development — copy `.env.example` to `.env.local`:
 ```bash
 VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_or_anon_key
+VITE_TURNSTILE_SITE_KEY=0x4AAAAAAA... # site key publique, facultative en local
 ```
 
 Find both values in Supabase Dashboard → Settings → API (Project URL and the
@@ -335,7 +336,8 @@ Vite embeds them at build time):
    public values into the client bundle at build time, so nothing else is needed.
 2. **Manual variables**: Vercel → Settings → Environment Variables → add
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for Production
-   (and Preview if you want auth on preview deploys).
+   (and Preview if you want auth on preview deploys), plus
+   `VITE_TURNSTILE_SITE_KEY` for the signup anti-bot check.
 
 **These values are read at build time.** Vite inlines them into the bundle, so
 adding a variable without rebuilding/redeploying changes nothing. Each target
@@ -345,13 +347,47 @@ needs its own copy:
 | --- | --- |
 | Local `npm run dev` / Arena preview | `.env.local` at the repo root (never committed) |
 | Vercel | Settings → Environment Variables, or the Supabase marketplace integration |
-| GitHub Pages (`.github/workflows/deploy.yml`) | Settings → Secrets and variables → Actions → **Variables**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` |
+| GitHub Pages (`.github/workflows/deploy.yml`) | Settings → Secrets and variables → Actions → **Variables**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_TURNSTILE_SITE_KEY` |
 
-Repository *variables* (not secrets) are enough for Pages: both values are
+Repository *variables* (not secrets) are enough for Pages: these values are
 public by design — they ship inside the client bundle. The workflow accepts the
-`SUPABASE_URL` / `SUPABASE_ANON_KEY` names too. When they are absent, the build
-still deploys but `/auth` stays in demo-preview mode, and the workflow logs a
-warning (`Supabase non configuré`).
+`SUPABASE_URL` / `SUPABASE_ANON_KEY` names too. When the Supabase values are
+absent, the build still deploys but `/auth` stays in demo-preview mode, and the
+workflow logs a warning (`Supabase non configuré`).
+
+### Protection anti-bots des inscriptions (Turnstile + Supabase)
+
+Le formulaire d’inscription embarque un widget **Cloudflare Turnstile**
+uniquement lorsque `VITE_TURNSTILE_SITE_KEY` est défini. Le jeton à usage unique
+est envoyé à Supabase Auth dans l’appel `signUp`; un honeypot discret complète
+ce contrôle pour les robots les plus simples. Le widget côté navigateur n’est
+pas une protection suffisante à lui seul : il faut impérativement activer le
+CAPTCHA côté serveur dans Supabase.
+
+Mise en place en production :
+
+1. Cloudflare → Turnstile → créer un widget en mode *Managed*, avec le domaine
+   Vercel de production, le domaine GitHub Pages et, si nécessaire, les domaines
+   de prévisualisation autorisés. Copier la **site key** (publique).
+2. Vercel → Settings → Environment Variables : ajouter
+   `VITE_TURNSTILE_SITE_KEY` pour Production (et Preview si les préviews doivent
+   aussi permettre l’inscription), puis redéployer.
+3. GitHub → Settings → Secrets and variables → Actions → Variables : ajouter
+   `VITE_TURNSTILE_SITE_KEY` pour le workflow Pages. Une site key est publique,
+   mais elle ne doit jamais être confondue avec la **secret key** Cloudflare.
+4. Supabase → Authentication → CAPTCHA : sélectionner **Cloudflare Turnstile**,
+   coller la secret key Cloudflare et activer le CAPTCHA. Sans cette étape, un
+   bot peut appeler Supabase directement en contournant l’interface.
+5. Supabase → Authentication → Sign In / Up : laisser **Confirm email** activé,
+   désactiver les inscriptions anonymes et les fournisseurs OAuth inutilisés,
+   conserver les limites de requêtes par défaut (ou les durcir), activer la
+   protection contre les mots de passe compromis et configurer un SMTP fiable.
+
+Le build Pages affiche un avertissement si la site key manque. En local, on
+peut laisser `VITE_TURNSTILE_SITE_KEY` vide pour travailler sans CAPTCHA, mais
+il ne faut jamais publier ainsi si les inscriptions publiques sont ouvertes.
+Après configuration, tester une inscription normale, une inscription bloquée
+par Turnstile, puis le dépassement des limites dans les logs Supabase.
 
 **Appels vocaux & vidéo (facultatif)** : `VITE_TURN_URL`, `VITE_TURN_USERNAME`
 et `VITE_TURN_CREDENTIAL` ajoutent un relais TURN pour fiabiliser les appels
