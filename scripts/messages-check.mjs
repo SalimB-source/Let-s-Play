@@ -71,7 +71,7 @@ const {
   makeStorage, markThreadReadLocal, mergeUnread, messageSuggestions, messagesCopy, normalizeMessage, peersFromKey,
   prepareBody, pseudoLabel, readDemoMessages, reasonLabel, seedDemoThreadState, socialCopy,
   sortThreadsByActivity, threadsFromRows, totalUnread, unreadFromRows, writeDemoMessages,
-  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp, renderFriendsTab,
+  checkClearInteraction, checkSuggestionInteraction, findDemoPlayer, renderApp,
   renderInboxView, renderRequestsTab, renderThreadView, callsText,
 } = smoke;
 
@@ -429,7 +429,8 @@ try {
   const html = renderApp('/auth', { lang: 'fr', demoKey: 'vortex' });
   check('une seule fenêtre sociale', (html.match(/class="social-launcher( |")/g) || []).length, 1);
   const opened = strip(renderApp('/auth', { lang: 'fr', demoKey: 'vortex', friendsOpen: true }));
-  check('fenêtre unifiée : onglets Amis et Messages', opened.includes(friendsCopy.fr.tabFriends) && opened.includes(socialCopy.fr.tabMessages));
+  check('fenêtre unifiée : trois onglets (Messages, Demandes, Ajouter)', opened.includes(socialCopy.fr.tabMessages) && opened.includes(friendsCopy.fr.tabRequests) && opened.includes(friendsCopy.fr.tabAdd));
+  check('fenêtre unifiée : plus d’onglet Amis séparé', !opened.includes('>Amis<'));
   check('les textes des amis restent complets', Object.keys(friendsCopy.en).filter((entry) => !friendsCopy.fr[entry]).join(','), '');
 } catch (e) { check('la fenêtre sociale se rend', e.message, ''); }
 
@@ -474,22 +475,26 @@ try {
   check('discussion : effacement pour soi toujours proposé', threadRaw.includes(`aria-label="${t.clearConversation}"`));
 } catch (e) { check('les vues de messagerie se rendent seules', e.message, ''); }
 
-// Onglets Amis / Demandes de la fenêtre sociale : la même règle s'applique —
-// les pseudos des amis ressortent en majuscules, dans le texte visible comme
-// dans les libellés accessibles (ouverture de discussion, bouton « Profil »).
+// La liste unique amis + discussions (l'ancien onglet « Amis » y a fusionné)
+// et l'onglet Demandes : la même règle s'applique — les pseudos ressortent en
+// majuscules, dans le texte visible comme dans les libellés accessibles
+// (ouverture de discussion, bouton « Profil », présence de l'ami).
 try {
   const mixed = { id: 'demo-player-9001', name: 'nova pixel', avatar: null, online: true, level: 4 };
   const t = messagesCopy.fr;
   const ft = friendsCopy.fr;
-  const friendsRaw = renderFriendsTab([mixed], { lang: 'fr' });
-  const friendsView = strip(friendsRaw);
-  check('onglet amis : pseudo en majuscules', friendsView.includes('NOVA PIXEL') && !friendsView.includes('nova pixel'));
-  check('onglet amis : libellé d’ouverture en majuscules', friendsRaw.includes(`${t.openChat} — NOVA PIXEL`));
-  check('onglet amis : bouton profil libellé en majuscules', friendsRaw.includes(`${ft.viewProfile} — NOVA PIXEL`));
+  const friendless = { peerId: mixed.id, profile: mixed, lastMessage: null, lastAt: null, unread: 0 };
+  const friendsInboxRaw = renderInboxView([friendless], { lang: 'fr', friends: [mixed] });
+  const friendsInbox = strip(friendsInboxRaw);
+  check('liste amis + discussions : section Amis présente', friendsInbox.includes(t.sectionFriends));
+  check('liste amis + discussions : pseudo en majuscules', friendsInbox.includes('NOVA PIXEL') && !friendsInbox.includes('nova pixel'));
+  check('liste amis + discussions : présence de l’ami sans message', friendsInbox.includes(ft.onlineShort));
+  check('liste amis + discussions : libellé d’ouverture en majuscules', friendsInboxRaw.includes(`${t.openChat} — NOVA PIXEL`));
+  check('liste amis + discussions : bouton profil sur la ligne', friendsInboxRaw.includes(`${ft.profileShort} — NOVA PIXEL`));
   const requestsRaw = renderRequestsTab({ incoming: [{ ...mixed, online: false }], outgoing: [{ ...mixed, id: 'demo-player-9002' }], lang: 'fr' });
   const requestsView = strip(requestsRaw);
   check('onglet demandes : pseudo en majuscules', requestsView.includes('NOVA PIXEL') && !requestsView.includes('nova pixel'));
-} catch (e) { check('les onglets amis se rendent seuls', e.message, ''); }
+} catch (e) { check('la liste amis + discussions se rend seule', e.message, ''); }
 
 console.log('\n[4/4] gestes DOM : effacement et suggestions\n');
 // La fenêtre ouverte avant l'import de la fumée (react-dom a besoin d'une

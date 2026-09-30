@@ -40,7 +40,8 @@ import { demoPresence, findDemoPlayer, isDemoPlayerId } from './demoRoster';
  *     `search` ; `relationWith(id)` pour afficher le bon bouton sur un profil ;
  *   - l'état de la **fenêtre sociale unifiée** (`src/social/SocialDock.jsx`,
  *     amis + messagerie) : `dockOpen` (la fenêtre ouverte ou fermée) et
- *     `dockTab` (l'onglet actif : `friends` | `requests` | `add` | `messages`)
+ *     `dockTab` (l'onglet actif : `messages` | `requests` | `add` — la liste
+ *     des amis vit dans l'onglet « Messages », fusion amicable des deux)
  *     que les raccourcis du hub, les boutons « Message » et la fenêtre
  *     partagent.
  *
@@ -82,7 +83,7 @@ export const FriendsContext = createContext({
   search: async () => [],
   refresh: asyncNoop,
   dockOpen: false,
-  dockTab: 'friends',
+  dockTab: 'messages',
   openDock: noop,
   closeDock: noop,
   toggleDock: noop,
@@ -142,7 +143,7 @@ export function FriendsProvider({ children }) {
   const [error, setError] = useState(null);
   const [now, setNow] = useState(() => Date.now());
   const [dockOpen, setDockOpenState] = useState(readDockOpen);
-  const [dockTab, setDockTab] = useState('friends');
+  const [dockTab, setDockTab] = useState('messages');
 
   // Dernier utilisateur connu (battement de cœur, présence) sans relancer les
   // effets à chaque édition de profil.
@@ -464,7 +465,7 @@ export function FriendsProvider({ children }) {
   const openDock = useCallback((tab) => {
     if (isMobile) {
       // Mobile : on navigue vers la page sociale (pas de pop-up).
-      const tabId = tab || 'friends';
+      const tabId = tab || 'messages';
       navigate(tabId === 'messages' ? '/messages' : `/messages?tab=${tabId}`);
       return;
     }

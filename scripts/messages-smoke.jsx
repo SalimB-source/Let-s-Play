@@ -25,7 +25,7 @@ import MessagesPage from '../src/messages/MessagesPage';
 import { DEMO_PROFILES } from '../src/auth/demoProfiles';
 import { readDemoMessages } from '../src/messages/messagesApi';
 import { InboxView, ThreadView } from '../src/messages/MessagesTabs';
-import { FriendsTab, RequestsTab } from '../src/friends/FriendsTabs';
+import { RequestsTab } from '../src/friends/FriendsTabs';
 import { messagesText } from '../src/messages/messagesCopy';
 import { callsText } from '../src/messages/callsCopy';
 import { friendsText } from '../src/friends/friendsCopy';
@@ -173,17 +173,20 @@ export function renderApp(path, { lang = 'fr', demoKey = null, dockOpen = false,
  * s'affiche en majuscules dans la liste, chez les joueurs bloqués et dans la
  * discussion — sans monter la pile complète de l'application.
  */
-export function renderInboxView(conversations, { lang = 'fr', blocked = [] } = {}) {
+export function renderInboxView(conversations, { lang = 'fr', blocked = [], friends = [] } = {}) {
   globalThis.window = { localStorage: makeStorage() };
   return renderToString(React.createElement(
     MemoryRouter,
     { initialEntries: ['/messages'] },
     React.createElement(InboxView, {
       t: messagesText(lang),
+      ft: friendsText(lang),
+      friends,
       lang,
       conversations,
       blocked,
-      isOnline: () => false,
+      isOnline: (peerId) => Boolean(friends.find((friend) => friend.id === peerId)?.online),
+      profileLabel: friendsText(lang).profileShort,
       onOpen: () => {},
       onUnblock: () => {},
     }),
@@ -220,28 +223,12 @@ export function renderThreadView(profile, { lang = 'fr', messages = [], blocked 
 }
 
 /**
- * Rendu SSR des onglets **Amis** et **Demandes** de la fenêtre sociale,
- * seuls, avec des données fabriquées. `check:messages` y passe un pseudo en
- * casse mixte pour vérifier qu'il ressort en majuscules — même règle que le
- * reste de la messagerie — sans monter la pile complète de l'application.
+ * Rendu SSR de l'onglet **Demandes** de la fenêtre sociale, seul, avec des
+ * données fabriquées. `check:messages` y passe un pseudo en casse mixte pour
+ * vérifier qu'il ressort en majuscules — même règle que le reste de la
+ * messagerie — sans monter la pile complète de l'application. (La liste des
+ * amis, elle, vit dans la boîte de réception : voir `renderInboxView`.)
  */
-export function renderFriendsTab(friends, { lang = 'fr' } = {}) {
-  globalThis.window = { localStorage: makeStorage() };
-  return renderToString(React.createElement(
-    MemoryRouter,
-    { initialEntries: ['/messages?tab=friends'] },
-    React.createElement(FriendsTab, {
-      friends,
-      t: friendsText(lang),
-      lang,
-      unfriend: () => {},
-      onOpenThread: () => {},
-      chatLabel: messagesText(lang).openChat,
-      profileLabel: friendsText(lang).profileShort,
-    }),
-  ));
-}
-
 export function renderRequestsTab({ incoming = [], outgoing = [], lang = 'fr' } = {}) {
   globalThis.window = { localStorage: makeStorage() };
   return renderToString(React.createElement(

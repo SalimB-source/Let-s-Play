@@ -137,6 +137,9 @@
   overflow: hidden;
 }
 .messages-row.has-unread .messages-row-preview { color: var(--ink); }
+/* Présence affichée à la place de l'aperçu (amis sans discussion) : la
+   mention « EN LIGNE » reprend la couleur du point de présence. */
+.messages-row-preview.is-online { color: var(--friends-online, #10b981); }
 .messages-row-side {
   display: inline-flex;
   flex-direction: column;
