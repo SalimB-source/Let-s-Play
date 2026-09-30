@@ -159,6 +159,7 @@ const copy = {
     captchaInstructions: 'Complete the check before creating your account.',
     captchaLoading: 'Loading the security check…',
     captchaError: 'The security check could not load. Disable blockers or try again.',
+    captchaNotConfigured: 'Signup protection is not configured for this deployment. Add VITE_TURNSTILE_SITE_KEY and redeploy.',
     captchaRequired: 'Complete the security check to create an account.',
     botCheckError: 'This request could not be verified. Please try again.',
     diagMissing: 'Missing configuration:',
@@ -282,6 +283,7 @@ const copy = {
     captchaInstructions: 'Complète la vérification avant de créer ton compte.',
     captchaLoading: 'Chargement de la vérification…',
     captchaError: 'La vérification n’a pas pu charger. Désactive les bloqueurs ou réessaie.',
+    captchaNotConfigured: 'La protection des inscriptions n’est pas configurée pour ce déploiement. Ajoute VITE_TURNSTILE_SITE_KEY puis redéploie.',
     captchaRequired: 'Complète la vérification pour créer un compte.',
     botCheckError: 'Cette demande n’a pas pu être vérifiée. Réessaie.',
     diagMissing: 'Configuration manquante :',
@@ -405,6 +407,7 @@ const copy = {
     captchaInstructions: 'أكمل التحقق قبل إنشاء حسابك.',
     captchaLoading: 'جارٍ تحميل التحقق الأمني…',
     captchaError: 'تعذّر تحميل التحقق. عطّل أدوات الحجب أو حاول مرة أخرى.',
+    captchaNotConfigured: 'حماية التسجيل غير مهيأة لهذا النشر. أضف VITE_TURNSTILE_SITE_KEY ثم أعد النشر.',
     captchaRequired: 'أكمل التحقق الأمني لإنشاء حساب.',
     botCheckError: 'تعذّر التحقق من هذا الطلب. حاول مرة أخرى.',
     diagMissing: 'الإعدادات الناقصة:',
@@ -625,6 +628,10 @@ export default function Auth({ initialMode = '' }) {
   const handleCaptchaToken = useCallback((token) => {
     setCaptchaToken(token || '');
   }, []);
+  // Production builds fail closed when Supabase CAPTCHA is enabled but the
+  // public widget key was omitted from the build. Local development remains
+  // usable without a widget until the provider is configured.
+  const captchaRequiredForBuild = Boolean(turnstileSiteKey) || Boolean(import.meta.env?.PROD);
 
   // A hidden honeypot catches unsophisticated form-fill bots. The CAPTCHA is
   // the real control; this cheap signal is only a second layer and never
@@ -757,7 +764,11 @@ export default function Auth({ initialMode = '' }) {
       setError(t.botCheckError);
       return;
     }
-    if (mode === 'signup' && turnstileSiteKey && !captchaToken) {
+    if (mode === 'signup' && captchaRequiredForBuild && !turnstileSiteKey) {
+      setError(t.captchaNotConfigured);
+      return;
+    }
+    if (mode === 'signup' && captchaRequiredForBuild && !captchaToken) {
       setError(t.captchaRequired);
       return;
     }
@@ -1334,9 +1345,12 @@ export default function Auth({ initialMode = '' }) {
               onTokenChange={handleCaptchaToken}
             />
           )}
+          {mode === 'signup' && captchaRequiredForBuild && !turnstileSiteKey && (
+            <p className="auth-message auth-error auth-config-box">{t.captchaNotConfigured}</p>
+          )}
           <button
             className="button button-yellow"
-            disabled={busy || (mode === 'signup' && Boolean(turnstileSiteKey) && !captchaToken)}
+            disabled={busy || (mode === 'signup' && captchaRequiredForBuild && (!turnstileSiteKey || !captchaToken))}
           >
             {busy && <span className="auth-btn-spinner" aria-hidden="true" />}
             {mode === 'signup' ? t.signUp : mode === 'signin' ? t.signIn : mode === 'forgot' ? t.sendReset : t.updatePassword}

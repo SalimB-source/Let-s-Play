@@ -20,7 +20,8 @@ const readme = read('README.md');
 
 const checks = [
   ['le formulaire contient un honeypot hors écran', auth.includes('name="website"') && auth.includes('auth-honeypot')],
-  ['le formulaire exige le CAPTCHA lorsqu’une site key existe', auth.includes('turnstileSiteKey && !captchaToken')],
+  ['le formulaire exige le CAPTCHA lorsqu’une site key existe', auth.includes('captchaRequiredForBuild && !captchaToken')],
+  ['la production bloque un build sans site key', auth.includes('captchaNotConfigured') && auth.includes('Boolean(import.meta.env?.PROD)')],
   ['le jeton est envoyé à Supabase signUp', auth.includes('...(captchaToken ? { captchaToken } : {})')],
   ['le jeton est invalidé après chaque tentative', auth.includes('Turnstile tokens are single-use')],
   ['le widget est rendu avec la site key', protection.includes('turnstile.render') && protection.includes('sitekey: siteKey')],
