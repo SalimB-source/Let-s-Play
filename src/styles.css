@@ -336,9 +336,17 @@ img{max-width:100%}
   transform:rotate(45deg); backdrop-filter:blur(18px);
 }
 .nav-profile-dropdown::after{
-  content:""; position:absolute; top:-24px; left:-14px; right:-14px;
-  height:24px; background:transparent;
+  content:""; position:absolute; top:-32px; left:-40px; right:-14px;
+  height:32px; background:transparent;
 }
+/* Pont invisible sous le bouton profil : le pointeur reste « dans » le wrapper
+   pendant le trajet bouton → menu, même si on bouge la souris très vite. */
+.nav-profile-wrap::after{
+  content:""; position:absolute; top:100%; left:-16px; right:-16px;
+  height:20px; background:transparent; pointer-events:none;
+}
+.nav-profile-wrap:hover::after,
+.nav-profile-wrap:focus-within::after{pointer-events:auto}
 .nav-profile-dropdown-head{
   display:flex; align-items:center; gap:12px;
   padding:4px 4px 12px;

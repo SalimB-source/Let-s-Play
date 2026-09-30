@@ -55,7 +55,7 @@ export default function Layout({ children }) {
     }
     profileCloseTimerRef.current = setTimeout(() => {
       setProfileMenuOpen(false);
-    }, 220);
+    }, 450);
   };
 
   const handleProfileBlur = (e) => {
