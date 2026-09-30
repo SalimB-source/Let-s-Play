@@ -2006,6 +2006,100 @@ img.mirage-powerup-icon {
   box-shadow: 0 0 12px color-mix(in srgb, var(--mirage-power) 75%, transparent);
   filter: brightness(1.15);
 }
+
+/* ── Manette tactile : objets spéciaux en losange (droite) ─────────────── */
+/* Les quatre objets spéciaux sont disposés comme les boutons de face d'une
+   manette : bouclier en haut, lasso à gauche, turbo à droite, pistolet en bas,
+   le tout ancré en bas à droite de l'écran de jeu. */
+.mirage-powerup-bar.is-gamepad {
+  left: auto;
+  right: 18px;
+  bottom: 18px;
+  transform: none;
+  align-items: flex-end;
+}
+
+.mirage-powerup-diamond {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(3, auto);
+  gap: 8px;
+  place-items: center;
+}
+.mirage-powerup-btn.pos-top { grid-column: 2; grid-row: 1; }
+.mirage-powerup-btn.pos-left { grid-column: 1; grid-row: 2; }
+.mirage-powerup-btn.pos-right { grid-column: 3; grid-row: 2; }
+.mirage-powerup-btn.pos-bottom { grid-column: 2; grid-row: 3; }
+
+/* Boutons compacts pour tenir dans le losange. */
+.mirage-powerup-btn.is-diamond {
+  min-width: 0;
+  width: 96px;
+  padding: 7px 8px 8px;
+  gap: 4px;
+  border-radius: 14px;
+}
+
+/* ── Manette tactile : croix directionnelle (gauche) ──────────────────── */
+/* Flèches gauche · haut · droite ancrées en bas à gauche de l'écran, la
+   flèche du haut au centre au-dessus des deux autres, comme une croix. */
+.mirage-touch-dpad {
+  position: absolute;
+  z-index: 4;
+  left: 18px;
+  bottom: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 58px);
+  grid-template-rows: repeat(2, 58px);
+  gap: 8px;
+  place-items: center;
+}
+.mirage-dpad-btn.is-up { grid-column: 2; grid-row: 1; }
+.mirage-dpad-btn.is-left { grid-column: 1; grid-row: 2; }
+.mirage-dpad-btn.is-right { grid-column: 3; grid-row: 2; }
+
+.mirage-dpad-btn {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 220, 153, .34);
+  background: linear-gradient(180deg, #3b2d5e 0%, #261b40 50%, #180f2b 100%);
+  color: #fff0d5;
+  font: 800 26px var(--font-gaming);
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .24),
+    inset 0 -8px 12px rgba(0, 0, 0, .3),
+    0 4px 0 #0d0819,
+    0 10px 18px rgba(0, 0, 0, .45);
+  transition: transform .12s, box-shadow .12s, background .12s;
+}
+.mirage-dpad-btn.is-up {
+  color: #f7bcd9;
+  border-color: rgba(242, 119, 169, .42);
+}
+.mirage-dpad-btn:hover {
+  transform: translateY(-2px);
+}
+.mirage-dpad-btn:active {
+  transform: translateY(3px);
+  background: linear-gradient(180deg, #4a396f 0%, #221537 100%);
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, .45),
+    0 1px 0 #0d0819,
+    0 4px 10px rgba(0, 0, 0, .5);
+}
+.mirage-dpad-btn:focus-visible {
+  outline: 2px solid #ffdb76;
+  outline-offset: 3px;
+}
+
 .mirage-power-toast {
   position: absolute;
   z-index: 5;
@@ -2076,6 +2170,36 @@ img.mirage-powerup-icon {
     width: calc(100% - 16px);
     max-width: 390px;
   }
+  /* Manette tactile : le losange s'ancre à droite, la croix à gauche. */
+  .mirage-powerup-bar.is-gamepad {
+    right: 8px;
+    bottom: 8px;
+    width: auto;
+    max-width: none;
+  }
+  .mirage-powerup-diamond {
+    gap: 4px;
+  }
+  .mirage-powerup-btn.is-diamond {
+    width: 64px;
+    padding: 4px 4px 5px;
+    gap: 3px;
+  }
+  .mirage-touch-dpad {
+    left: 6px;
+    bottom: 8px;
+    grid-template-columns: repeat(3, 44px);
+    grid-template-rows: repeat(2, 44px);
+    gap: 6px;
+  }
+  .mirage-dpad-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+  .mirage-powerup-bar.is-gamepad {
+    right: 6px;
+  }
   .mirage-powerup-buttons-row {
     width: 100%;
     gap: 6px;
@@ -2084,6 +2208,10 @@ img.mirage-powerup-icon {
     flex: 1;
     min-width: 0;
     padding: 6px 6px 8px;
+  }
+  /* Le losange l'emporte sur l'étirement plein largeur du bouton. */
+  .mirage-powerup-btn.is-diamond {
+    flex: none;
   }
   .mirage-powerup-icon {
     flex-basis: 26px;
