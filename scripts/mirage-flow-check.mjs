@@ -21,4 +21,4 @@ globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { checkMirageFlow } = await import('../node_modules/.cache/mirage-flow/mirage-flow-smoke.js');
 try { await checkMirageFlow(assert); } finally { dom.window.close(); }
-console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) et du terrain (9 horizons et leurs miniatures WebP, jusqu’à Thunder Airbase) dans l’overlay d’intro ; pas de barre d’onglets, terrain imposé par un défi verrouille les cartes ; piste de l’app à trois voies et deux rivaux (textes de l’overlay et des règles alignés).');
+console.log('check:mirage-flow ✓ — Mirage Rush ouvre sur de vrais boutons RUÉE / DUEL / EN LIGNE, puis affiche les 9 maps à l’écran suivant ; Paramètres regroupe La communauté, Ton cavalier et Informations ; un défi verrouille sa map ; piste de l’app à trois voies et deux rivaux alignée.');
