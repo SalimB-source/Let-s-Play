@@ -375,17 +375,63 @@ function animateBoostStreaks(boostGroup, time) {
   });
 }
 
+function makePlayerArrow() {
+  const group = new THREE.Group();
+  const arrowShape = new THREE.Shape();
+  arrowShape.moveTo(-0.12, 0.48);
+  arrowShape.lineTo(0.12, 0.48);
+  arrowShape.lineTo(0.12, 0.18);
+  arrowShape.lineTo(0.34, 0.18);
+  arrowShape.lineTo(0, -0.16);
+  arrowShape.lineTo(-0.34, 0.18);
+  arrowShape.lineTo(-0.12, 0.18);
+  arrowShape.closePath();
+  const geometry = new THREE.ShapeGeometry(arrowShape);
+  const shadow = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
+    color: 0x201522,
+    transparent: true,
+    opacity: 0.9,
+    side: THREE.DoubleSide,
+    depthTest: false,
+    depthWrite: false,
+  }));
+  shadow.scale.set(1.22, 1.16, 1);
+  shadow.position.z = -0.035;
+  shadow.renderOrder = 30;
+  const face = new THREE.Mesh(geometry.clone(), new THREE.MeshBasicMaterial({
+    color: 0xffdf67,
+    side: THREE.DoubleSide,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  }));
+  face.position.z = 0.02;
+  face.renderOrder = 31;
+  group.add(shadow, face);
+  group.scale.setScalar(0.82);
+  group.renderOrder = 30;
+  group.visible = false;
+  return group;
+}
+
 function makeLassoRope() {
   const group = new THREE.Group();
-  const ropeMat = new THREE.MeshStandardMaterial({ color: 0xd9913b, emissive: 0x8a4a12, emissiveIntensity: 0.35, roughness: 0.7, flatShading: true });
-  const segments = 10;
+  const ropeMat = new THREE.MeshStandardMaterial({ color: 0xe6a943, emissive: 0xa85e16, emissiveIntensity: 0.45, roughness: 0.58, flatShading: true });
+  const segments = 12;
   const meshes = [];
   for (let i = 0; i < segments; i++) {
-    const seg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.38), ropeMat);
+    const seg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.4), ropeMat);
     group.add(seg);
     meshes.push(seg);
   }
+  const attachments = [
+    new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 7, 12), ropeMat),
+    new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.055, 8, 18), ropeMat),
+  ];
+  attachments.forEach(loop => group.add(loop));
   group.userData.segments = meshes;
+  group.userData.attachments = attachments;
+  group.userData.ropeMaterial = ropeMat;
   group.visible = false;
   return group;
 }
@@ -697,10 +743,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   scene.add(playerShadow);
   const playerReadyAura = makeReadyAura();
   scene.add(playerReadyAura);
+  const playerIndicator = makePlayerArrow();
+  scene.add(playerIndicator);
 
   let nextEncounter = createCourse();
   let rowCounter = 0;
   let elapsed = 0;
+  let playerIndicatorTimer = 0;
   const sharedGems = new Map();
   const rows = [];
   function populateRow(row) {
@@ -853,6 +902,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
   const lassoProjectiles = [];
   const lassoRopePool = [];
+  const lassoPointStart = new THREE.Vector3();
+  const lassoPointEnd = new THREE.Vector3();
   function acquireRope() {
     let rope = lassoRopePool.pop();
     if (!rope) {
@@ -941,8 +992,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 
   // Power-up charging system: players collect diamonds to charge power-ups
-  // Each diamond gives charge points based on tier (Cyan=1, Red=1, Green=2, Gold=3)
-  // Shield and Lasso need 8 points, Pistol takes 12 points.
+  // Each color charges only its matching power-up. Shield and Boost need 4 gems,
+  // Lasso needs 5, and Pistol needs 6 (each gem contributes 2 charge points).
   // When any power-up is used, all power-ups reset to zero.
   let powerState = createPowerUpState();
 
@@ -1062,32 +1113,59 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return;
     }
     const rope = acquireRope();
-    const start = new THREE.Vector3(player.position.x, 1.2, 0);
+    const start = new THREE.Vector3(player.position.x + 0.32, 1.95 + player.position.y, -0.56);
     let end;
     if (targetInfo.kind === 'rival') {
       const targetMesh = (targetInfo.npc || duelRivals[0]).mesh;
-      end = new THREE.Vector3(targetMesh.position.x, 1.0, targetMesh.position.z);
+      end = new THREE.Vector3(targetMesh.position.x, 2.15 + targetMesh.position.y, targetMesh.position.z);
     } else if (targetInfo.kind === 'online') {
       const net = getNetwork?.();
       const peer = net?.players?.find(p=> p.user_id===targetInfo.player.user_id);
       const slot = peer?.slot ?? 0;
       const rider = onlineRiders[slot];
-      if (rider) end = new THREE.Vector3(rider.position.x, 1.0, rider.position.z);
-      else end = new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 1.0, distance - (targetInfo.player.distance||0));
+      if (rider) end = new THREE.Vector3(rider.position.x, 2.15 + rider.position.y, rider.position.z);
+      else end = new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 2.15, distance - (targetInfo.player.distance||0));
     } else {
-      end = new THREE.Vector3(player.position.x, 1.0, -12);
+      end = new THREE.Vector3(player.position.x, 2.15 + player.position.y, -12);
     }
-    lassoProjectiles.push({
+    const projectile = {
       rope,
       start: start.clone(),
       end: end.clone(),
       progress: 0,
       target: targetInfo,
       fromPlayer: true,
-    });
+      attached: false,
+      tetherLeft: 0,
+      remoteHitResolved: false,
+      remoteHitConnected: false,
+    };
+    lassoProjectiles.push(projectile);
     callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo });
     if (targetInfo.kind === 'online') {
-      callbacks.lasso?.(targetInfo.player);
+      const result = callbacks.lasso?.(targetInfo.player);
+      if (result && typeof result.then === 'function') {
+        result.then((room) => {
+          const targetPlayer = room?.players?.find((player) => player.user_id === targetInfo.player.user_id);
+          const serverNow = Date.parse(room?.server_now || '');
+          const slowedUntil = Date.parse(targetPlayer?.slowed_until || '');
+          projectile.remoteHitResolved = true;
+          projectile.remoteHitConnected = Number.isFinite(serverNow) && slowedUntil > serverNow;
+          if (projectile.remoteHitConnected) {
+            projectile.remoteSlowRemaining = Math.max(0, (slowedUntil - serverNow) / 1000);
+            projectile.remoteSlowReceivedAt = performance.now();
+            if (projectile.attached) {
+              projectile.tetherLeft = Math.max(0, projectile.remoteSlowRemaining - (performance.now() - projectile.remoteSlowReceivedAt) / 1000);
+            }
+          } else if (projectile.attached) {
+            projectile.tetherLeft = 0;
+          }
+        }).catch(() => {
+          projectile.remoteHitResolved = true;
+          projectile.remoteHitConnected = false;
+          if (projectile.attached) projectile.tetherLeft = 0;
+        });
+      }
     }
   };
 
@@ -1280,13 +1358,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
     if (decision.type === POWER_UPS.LASSO && decision.target) {
       const rope = acquireRope();
-      const start = new THREE.Vector3(npc.mesh.position.x, 1.2, npc.mesh.position.z);
+      const start = new THREE.Vector3(npc.mesh.position.x + 0.32, 1.95 + npc.mesh.position.y, npc.mesh.position.z - 0.56);
       let end;
       if (decision.target.kind === 'player') {
-        end = new THREE.Vector3(player.position.x, 1.0, 0);
+        end = new THREE.Vector3(player.position.x, 2.15 + player.position.y, 0);
       } else {
         const targetMesh = (decision.target.npc || duelRivals[0]).mesh;
-        end = new THREE.Vector3(targetMesh.position.x, 1.0, targetMesh.position.z);
+        end = new THREE.Vector3(targetMesh.position.x, 2.15 + targetMesh.position.y, targetMesh.position.z);
       }
       lassoProjectiles.push({
         rope,
@@ -1349,8 +1427,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const targetBaseSpeed = DUEL_BASE_SPEED * (npc.pace ?? 1);
     npc.base += (targetBaseSpeed - npc.base) * Math.min(1, dt * 0.65);
     npc.boost = tickSpeedBoost(npc.boost, dt);
-    const effectiveNpcBonus = Math.max(npc.boost.bonus, npc.powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0);
-    const rawSpeed = duelSpeed(npc.base, effectiveNpcBonus);
+    const effectiveNpcMultiplier = Math.max(1, npc.boost.multiplier);
+    const powerBoostBonus = npc.powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0;
+    const rawSpeed = duelSpeed(npc.base * effectiveNpcMultiplier + powerBoostBonus);
     const speed = npc.stunTimer > 0 ? 0 : rawSpeed * slowFactor;
     const target = npcCourseState.course[npc.next];
     if (target) {
@@ -1377,6 +1456,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         const height = jumpHeight(npc.jumpLeft);
         const near = (lane) => Math.abs(npc.x - LANES[lane]) < 0.95;
         const mud = target.items.find((item) => hitsMudPuddle(item, npc.x, height));
+        if (mud) npc.powerBoostTimer = 0;
         if (mud && !npc.shieldActive) {
           const mudSlow = resolveMudSlow({
             baseSpeed: npc.base,
@@ -1394,15 +1474,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           }
         }
         const hazard = target.items.find((item) => item.kind !== 'crystal' && item.kind !== 'mud' && (item.lanes || [item.lane]).some(near));
-        if (hazard && !(hazard.kind === 'barrier' && height > 1.05) && npc.invulnerable <= 0) {
-          if (npc.shieldActive) {
-            npc.shieldActive = false;
-            npc.shieldTimer = 0;
-            npc.invulnerable = 0.6;
-          } else {
-            npc.base = Math.max(8, speed * 0.55);
-            npc.boost = SPEED_BOOST_NONE;
-            npc.invulnerable = 1.15;
+        if (hazard && !(hazard.kind === 'barrier' && height > 1.05)) {
+          npc.powerBoostTimer = 0;
+          if (npc.invulnerable <= 0) {
+            if (npc.shieldActive) {
+              npc.shieldActive = false;
+              npc.shieldTimer = 0;
+              npc.invulnerable = 0.6;
+            } else {
+              npc.base = Math.max(8, speed * 0.55);
+              npc.boost = SPEED_BOOST_NONE;
+              npc.invulnerable = 1.15;
+            }
           }
         }
         const gem = target.items.find((item) => item.kind === 'crystal' && Math.abs(npc.x - LANES[item.lane]) < 0.85 && (!item.raised || height > 1.05) && !isGemHidden(sharedGems, item.key, elapsed));
@@ -1471,7 +1554,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     if (!force && now - lastHud < 125) return;
     lastHud = now;
     const leadingRival = getLeadingRival();
-    const effectivePlayerBonus = Math.max(boost.bonus, powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0);
+    const effectivePlayerMultiplier = Math.max(1, boost.multiplier);
+    const powerBoostBonus = powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0;
     const hudSlowMul = playerSlowTimer > 0 ? playerSlowFactor : 1;
     callbacks.hud?.({
       score,
@@ -1484,7 +1568,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       lane: laneIndex,
       jump: jumpHeight(jumpLeft),
       rivalDistance,
-      speed: duelSpeed(baseSpeed, effectivePlayerBonus) * hudSlowMul,
+      speed: (race.mode === 'rush'
+        ? (12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus
+        : duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus)) * hudSlowMul,
       boostLeft: Math.max(boost.left, powerBoostTimer),
       powerBoostActive: powerBoostTimer > 0,
       powerBoostLeft: powerBoostTimer,
@@ -1560,6 +1646,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     startLine.visible = race.mode !== 'rush';
     finishLine.visible = race.mode !== 'rush';
     elapsed = 0;
+    playerIndicatorTimer = 0;
     score = 0;
     gems = 0;
     combo = 0;
@@ -1681,17 +1768,21 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const running = active;
     const network = getNetwork?.();
     const wallNow = Date.now();
-    if (running && race.mode !== 'rush') {
-      baseSpeed += (DUEL_BASE_SPEED - baseSpeed) * Math.min(1, dt * 0.65);
-      if (playerSlowTimer > 0) baseSpeed = Math.max(DUEL_BASE_SPEED * 0.5, baseSpeed - dt * 8);
+    if (running) {
       boost = tickSpeedBoost(boost, dt);
+      playerIndicatorTimer = Math.max(0, playerIndicatorTimer - dt);
+      if (race.mode !== 'rush') {
+        baseSpeed += (DUEL_BASE_SPEED - baseSpeed) * Math.min(1, dt * 0.65);
+        if (playerSlowTimer > 0) baseSpeed = Math.max(DUEL_BASE_SPEED * 0.5, baseSpeed - dt * 8);
+      }
     }
     const slowMul = playerSlowTimer > 0 ? playerSlowFactor : 1;
-    const effectivePlayerBonus = Math.max(boost.bonus, powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0);
+    const effectivePlayerMultiplier = Math.max(1, boost.multiplier);
+    const powerBoostBonus = powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0;
     const speed = running && playerStun <= 0
       ? race.mode !== 'rush'
-        ? duelSpeed(baseSpeed, effectivePlayerBonus) * slowMul
-        : ((12 + Math.min(7, elapsed * 0.12)) + (powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0)) * slowMul
+        ? duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus) * slowMul
+        : ((12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus) * slowMul
       : 0;
     if (running) {
       elapsed += dt;
@@ -1824,10 +1915,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           const jumpedHighEnough = hazard?.kind === 'barrier' && playerJumpY > 1.05;
           const collided = Boolean(hazard && !jumpedHighEnough);
           if (collided) {
+            powerBoostTimer = 0;
             if (shieldActive) {
               consumeShield();
             } else if (invulnerable <= 0) {
-              const impact = resolveCollision({ mode: race.mode, lives, speed: duelSpeed(baseSpeed, boost.bonus), boost });
+              const impact = resolveCollision({ mode: race.mode, lives, speed, boost });
               lives = impact.lives;
               baseSpeed = impact.baseSpeed;
               boost = impact.boost;
@@ -1840,6 +1932,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             }
           }
           const mud = row.items.find((item) => hitsMudPuddle(item, player.position.x, playerJumpY));
+          if (mud) powerBoostTimer = 0;
           if (mud && !collided && !shieldActive) {
             const mudSlow = resolveMudSlow({
               baseSpeed,
@@ -1867,7 +1960,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             combo += 1;
             const multiplier = 1 + Math.min(3, Math.floor(combo / 5) * 0.5);
             score += Math.round(CRYSTALS[tier].value * multiplier);
-            if (race.mode !== 'rush') boost = crystalPickupEffect(tier, false).boost;
+            boost = crystalPickupEffect(tier, false).boost;
 
             // Power-up charging system (Duel & Online only)
             if (powerUpsEnabled(race.mode)) {
@@ -1913,78 +2006,124 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         if (desert) row.group.visible = row.group.position.z > DESERT_CULL_Z;
       });
 
-      // Lasso projectiles
-      for (let i = lassoProjectiles.length-1; i>=0; i--) {
+      // Lasso rope flies to its target, then stays attached for the full slow.
+      for (let i = lassoProjectiles.length - 1; i >= 0; i--) {
         const proj = lassoProjectiles[i];
-        proj.progress += dt / LASSO_PROJECTILE_DURATION;
-        const t = Math.min(1, proj.progress);
+        if (proj.attached) {
+          proj.tetherLeft -= dt;
+        } else {
+          proj.progress += dt / LASSO_PROJECTILE_DURATION;
+        }
+        const t = proj.attached ? 1 : Math.min(1, proj.progress);
         const segs = proj.rope.userData.segments;
         const from = proj.start;
         if (proj.fromPlayer) {
-          from.set(player.position.x, 1.2, 0);
+          from.set(player.position.x + 0.32, 1.95 + player.position.y, -0.56);
         } else if (proj.fromNpc) {
-          from.set(proj.fromNpc.mesh.position.x, 1.2, proj.fromNpc.mesh.position.z);
+          from.set(proj.fromNpc.mesh.position.x + 0.32, 1.95 + proj.fromNpc.mesh.position.y, proj.fromNpc.mesh.position.z - 0.56);
         }
         const to = proj.end;
         if (proj.target?.kind === 'rival') {
           const targetMesh = (proj.target.npc || duelRivals[0]).mesh;
-          to.set(targetMesh.position.x, 1.0, targetMesh.position.z);
+          to.set(targetMesh.position.x, 2.15 + targetMesh.position.y, targetMesh.position.z);
         } else if (proj.target?.kind === 'online') {
           const net = getNetwork?.();
-          const peer = net?.players?.find(p=> p.user_id===proj.target.player?.user_id);
+          const peer = net?.players?.find(p => p.user_id === proj.target.player?.user_id);
           if (peer) {
-            const slot = peer.slot ?? 0;
-            const rider = onlineRiders[slot];
-            if (rider) to.set(rider.position.x, 1.0, rider.position.z);
+            const rider = onlineRiders[peer.slot ?? 0];
+            if (rider) to.set(rider.position.x, 2.15 + rider.position.y, rider.position.z);
           }
         } else if (proj.target?.kind === 'player') {
-          to.set(player.position.x, 1.0, 0);
+          to.set(player.position.x, 2.15 + player.position.y, 0);
         }
-        for (let s=0; s<segs.length; s++) {
-          const segT = (s+0.5)/segs.length;
-          const x = THREE.MathUtils.lerp(from.x, to.x, segT * t + (1-t)*0.1);
-          const y = THREE.MathUtils.lerp(from.y, to.y, segT * t) + Math.sin(segT*Math.PI)*0.6*(1-t*0.5);
-          const z = THREE.MathUtils.lerp(from.z, to.z, segT * t);
-          segs[s].position.set(x, y, z);
-          if (s < segs.length-1) {
-            const nextT = (s+1.5)/segs.length;
-            const nx = THREE.MathUtils.lerp(from.x, to.x, nextT * t + (1-t)*0.1);
-            const ny = THREE.MathUtils.lerp(from.y, to.y, nextT * t) + Math.sin(nextT*Math.PI)*0.6*(1-t*0.5);
-            const nz = THREE.MathUtils.lerp(from.z, to.z, nextT * t);
-            segs[s].lookAt(nx, ny, nz);
-          }
+
+        const pointOnRope = (along, out) => {
+          const travel = proj.attached ? along : along * t;
+          const wave = proj.attached ? Math.sin(time * 0.012 + along * Math.PI * 5) * 0.055 : 0;
+          const vertical = proj.attached
+            ? Math.sin(along * Math.PI) * 0.16 + Math.sin(time * 0.014 + along * 9) * 0.035
+            : Math.sin(along * Math.PI) * 0.6 * (1 - t * 0.5);
+          const depthWave = proj.attached ? Math.cos(time * 0.01 + along * Math.PI * 5) * 0.045 : 0;
+          return out.set(
+            THREE.MathUtils.lerp(from.x, to.x, travel) + wave,
+            THREE.MathUtils.lerp(from.y, to.y, travel) + vertical,
+            THREE.MathUtils.lerp(from.z, to.z, travel) + depthWave,
+          );
+        };
+        const attachments = proj.rope.userData.attachments || [];
+        if (attachments[0] && attachments[1]) {
+          attachments[0].visible = true;
+          attachments[1].visible = proj.attached;
+          attachments[0].position.copy(from);
+          attachments[1].position.copy(to);
+          attachments[0].lookAt(to);
+          // Keep the target loop horizontal so it reads as a lasso cinched
+          // around the rider's neck, not just another rope segment.
+          attachments[1].rotation.set(Math.PI / 2, 0, 0);
+          const pulse = 0.92 + Math.sin(time * 0.014) * 0.1;
+          attachments.forEach(loop => loop.scale.setScalar(pulse));
         }
-        if (t >= 1) {
+        const ropeMaterial = proj.rope.userData.ropeMaterial;
+        if (ropeMaterial) ropeMaterial.emissiveIntensity = proj.attached ? 0.72 + Math.sin(time * 0.018) * 0.18 : 0.45;
+
+        for (let s = 0; s < segs.length; s++) {
+          const startPoint = pointOnRope(s / segs.length, lassoPointStart);
+          const endPoint = pointOnRope((s + 1) / segs.length, lassoPointEnd);
+          segs[s].position.copy(startPoint).add(endPoint).multiplyScalar(0.5);
+          segs[s].lookAt(endPoint);
+          // Stretch each braided segment to meet the next so the tether stays
+          // continuous even when riders are several lanes or metres apart.
+          segs[s].scale.z = Math.max(0.12, startPoint.distanceTo(endPoint) / 0.4 * 1.06);
+        }
+
+        if (!proj.attached && t >= 1) {
+          let connected = false;
           if (proj.fromPlayer) {
             if (proj.target?.kind === 'rival') {
               const targetNpc = proj.target.npc || duelRivals[0];
-              const slowed = applyNpcSlow(targetNpc);
-              callbacks.lassoHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !slowed });
+              connected = applyNpcSlow(targetNpc);
+              callbacks.lassoHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !connected });
             } else if (proj.target?.kind === 'online') {
-              callbacks.lassoHit?.({ target: 'online', player: proj.target.player });
+              connected = proj.remoteHitResolved ? proj.remoteHitConnected : true;
+              callbacks.lassoHit?.({ target: 'online', player: proj.target.player, blocked: !connected });
             }
           } else {
             const attackerName = proj.fromNpc ? getRivalDisplayName(proj.fromNpc) : 'L’OMBRE';
             if (proj.target?.kind === 'rival') {
               const targetNpc = proj.target.npc || duelRivals[0];
-              const slowed = applyNpcSlow(targetNpc);
+              connected = applyNpcSlow(targetNpc);
               callbacks.lassoHit?.({
                 target: 'npc_vs_npc',
                 from: 'npc',
                 attackerName,
                 name: getRivalDisplayName(targetNpc),
-                blocked: !slowed,
+                blocked: !connected,
               });
             } else {
-              const blocked = shieldActive;
-              applyPlayerSlow(true);
-              callbacks.lassoHit?.({ target: 'player', from: 'npc', attackerName, blocked });
+              connected = applyPlayerSlow(true);
+              callbacks.lassoHit?.({ target: 'player', from: 'npc', attackerName, blocked: !connected });
             }
           }
+
+          if (connected) {
+            proj.attached = true;
+            proj.tetherLeft = LASSO_SLOW_DURATION;
+            if (proj.target?.kind === 'online' && proj.remoteHitResolved && proj.remoteHitConnected && Number.isFinite(proj.remoteSlowReceivedAt)) {
+              proj.tetherLeft = Math.max(0, proj.remoteSlowRemaining - (performance.now() - proj.remoteSlowReceivedAt) / 1000);
+            }
+          } else {
+            releaseRope(proj.rope);
+            lassoProjectiles.splice(i, 1);
+            continue;
+          }
+        }
+
+        if (proj.attached && proj.tetherLeft <= 0) {
           releaseRope(proj.rope);
-          lassoProjectiles.splice(i,1);
+          lassoProjectiles.splice(i, 1);
         }
       }
+
 
       if (race.mode !== 'rush' ? distance >= DUEL_DISTANCE : elapsed >= RUN_SECONDS) finish();
       emitHud();
@@ -2059,6 +2198,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
       }
     });
+    const localOnlinePeer = race.mode === 'online'
+      ? network?.players?.find(peer => peer.user_id === network.userId)
+      : null;
+    const markedRider = race.mode === 'online' && localOnlinePeer
+      ? onlineRiders[localOnlinePeer.slot ?? 0]
+      : player;
+    playerIndicator.visible = running && playerIndicatorTimer > 0;
+    if (playerIndicator.visible && markedRider) {
+      const bounce = Math.sin(time * 0.012) * 0.09;
+      playerIndicator.position.set(markedRider.position.x, markedRider.position.y + 3.24 + bounce, markedRider.position.z + 0.16);
+      playerIndicator.rotation.y = camera.rotation.y;
+      playerIndicator.scale.setScalar(0.82 + Math.sin(time * 0.012) * 0.045);
+    }
+
     duelRivals.forEach((r, idx) => {
       const rivalMesh = r.mesh;
       if (r.shieldActive) {
@@ -2143,6 +2296,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     start() {
       const freshRace = race !== getRace();
       if (freshRace) reset();
+      if (elapsed === 0) playerIndicatorTimer = 3.8;
       active = true;
       lastFrame = performance.now();
       if (freshRace || hintPending) touchFeedback.showHint();

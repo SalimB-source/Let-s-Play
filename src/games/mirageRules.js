@@ -166,20 +166,14 @@ export function gemFlashState(age, tier = 0) {
 }
 
 export const DUEL_DISTANCE = 800;
-export const DIAMOND_SPEED_BONUS = 3.0;
-// Tous les diamants donnent le même boost de vitesse (+3.0 m/s pendant 1s)
-export const DUEL_SPEED_BONUS = [
-  DIAMOND_SPEED_BONUS,
-  DIAMOND_SPEED_BONUS,
-  DIAMOND_SPEED_BONUS,
-  DIAMOND_SPEED_BONUS,
-]; // cyan, rouge, verte, or; m/s
+// Multiplicateur de vitesse temporaire par couleur : bleu, rouge, vert, jaune.
+export const DIAMOND_SPEED_MULTIPLIERS = Object.freeze([1.3, 1.4, 1.2, 1.3]);
 export const DUEL_BASE_SPEED = 15;
 export const DUEL_MIN_SPEED = 8;
 export const DUEL_MAX_SPEED = 26;
 
 export const SPEED_BOOST_DURATION = 1;
-export const SPEED_BOOST_NONE = Object.freeze({ bonus: 0, left: 0 });
+export const SPEED_BOOST_NONE = Object.freeze({ multiplier: 1, left: 0 });
 
 // ── Power-ups ──────────────────────────────────────────────────────────
 export const POWER_UPS = {
@@ -193,10 +187,10 @@ export const POWER_UPS = {
 // Blue diamonds charge Shield (+2), Yellow diamonds charge Lasso (+2),
 // Red diamonds charge Pistol (+2), and Green diamonds charge Boost (+2).
 export const POWER_UP_CHARGE_COST = {
-  [POWER_UPS.SHIELD]: 10,  // 5 blue diamonds
+  [POWER_UPS.SHIELD]: 8,   // 4 blue diamonds
   [POWER_UPS.LASSO]: 10,   // 5 yellow diamonds
   [POWER_UPS.PISTOL]: 12,  // 6 red diamonds
-  [POWER_UPS.BOOST]: 10,   // 5 green diamonds
+  [POWER_UPS.BOOST]: 8,    // 4 green diamonds
 };
 
 // Three AI rivals in Duel mode (+ the player = 4 riders across the 4 lanes)
@@ -221,6 +215,11 @@ export const DIAMOND_POWER_CHARGE = Object.freeze([
 
 // Total charge points contributed by each diamond tier
 export const DIAMOND_CHARGE_VALUE = [2, 2, 2, 2];
+
+// Number of matching-color diamonds needed to fill each power-up bar.
+export const POWER_UP_DIAMOND_COST = Object.freeze(Object.fromEntries(
+  Object.entries(POWER_UP_CHARGE_COST).map(([type, points]) => [type, points / DIAMOND_CHARGE_VALUE[0]])
+));
 
 // Maximum charges a player can hold per power-up
 export const POWER_UP_MAX_CHARGES = 3;
@@ -500,7 +499,7 @@ export const SHIELD_DURATION = 5; // seconds the shield stays active
 export const LASSO_SLOW_DURATION = 1.5; // seconds target is slowed
 export const LASSO_SLOW_FACTOR = 0.65; // speed multiplier while slowed
 export const LASSO_PROJECTILE_DURATION = 0.45; // seconds rope flies
-export const PISTOL_STUN_DURATION = 2; // seconds the shot rider is on the ground, fully stopped before remounting
+export const PISTOL_STUN_DURATION = 2.5; // seconds the shot rider is on the ground, fully stopped before remounting
 export const POWER_BOOST_DURATION = 3; // seconds the green-diamond Boost power-up lasts before returning to normal speed
 export const POWER_BOOST_BONUS = 6.5; // m/s speed boost granted by the Boost power-up during POWER_BOOST_DURATION
 export const GEM_RESPAWN_DELAY = 0.5; // seconds a taken diamond disappears before reappearing
@@ -642,17 +641,19 @@ export function crystalPickupEffect(tier, trapped = false) {
 }
 
 export function speedBoostFor(tier) {
-  const bonus = DUEL_SPEED_BONUS[tier] ?? 0;
-  return bonus > 0 ? { bonus, left: SPEED_BOOST_DURATION } : SPEED_BOOST_NONE;
+  const multiplier = DIAMOND_SPEED_MULTIPLIERS[tier] ?? 1;
+  return multiplier > 1 ? { multiplier, left: SPEED_BOOST_DURATION } : SPEED_BOOST_NONE;
 }
 
 export function tickSpeedBoost(boost, dt) {
   const left = Math.max(0, (boost?.left ?? 0) - dt);
-  return left > 0 && boost?.bonus > 0 ? { bonus: boost.bonus, left } : SPEED_BOOST_NONE;
+  return left > 0 && boost?.multiplier > 1
+    ? { multiplier: boost.multiplier, left }
+    : SPEED_BOOST_NONE;
 }
 
-export function duelSpeed(base, bonus) {
-  return Math.min(DUEL_MAX_SPEED, Math.max(DUEL_MIN_SPEED, base + bonus));
+export function duelSpeed(base, multiplier = 1) {
+  return Math.min(DUEL_MAX_SPEED, Math.max(DUEL_MIN_SPEED, base * multiplier));
 }
 
 export function ghostDistance(trace, seconds, duration) {

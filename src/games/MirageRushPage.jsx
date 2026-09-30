@@ -9,7 +9,7 @@ import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import { MirageStagePicker } from './MirageCoursePicker';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DUEL_SPEED_BONUS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_BOOST_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY } from './mirageRules';
+import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import './mirage-rush.css';
@@ -613,7 +613,7 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_shield')}
                     disabled={(hud.shieldCharges || 0) <= 0}
-                    title="Bouclier — Chargé par les diamants BLEUS, il s’active tout seul dès que la barre est pleine. Utiliser cet objet ne décharge pas les autres."
+                    title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
                       <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
@@ -638,7 +638,7 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_lasso')}
                     disabled={(hud.lassoCharges || 0) <= 0}
-                    title="Lasso (W / Z) — Chargé par les diamants JAUNES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
+                    title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
                       <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
@@ -663,7 +663,7 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_boost')}
                     disabled={(hud.boostCharges || 0) <= 0}
-                    title={`Turbo — Chargé par les diamants VERTS, il s’active tout seul dès que la barre est pleine : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                    title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s’active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
                       <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
@@ -688,7 +688,7 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_pistol')}
                     disabled={(hud.pistolCharges || 0) <= 0}
-                    title={`Pistolet (R) — Chargé par les diamants ROUGES. Fait tomber la cible devant toi pendant ${PISTOL_STUN_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                    title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Fait tomber la cible devant toi pendant ${PISTOL_STUN_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
                       <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
@@ -924,12 +924,12 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">MODE DUEL · 4 CAVALIERS · PREMIER À {DUEL_DISTANCE} M</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>Trois cavaliers rivaux</strong><small>Défie L’Ombre, Sauge et Améthyste : 3 PNJ qui changent de voie, sautent, ramassent les diamants et utilisent leurs propres pouvoirs contre toi et entre eux !</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Même boost de vitesse & réapparition ({GEM_RESPAWN_DELAY} s)</strong><small>Tous les diamants donnent le même boost de vitesse (+{DUEL_SPEED_BONUS[0]} m/s pendant {SPEED_BOOST_DURATION} s). Un diamant pris disparaît seulement pendant {GEM_RESPAWN_DELAY} s puis réapparaît !</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Boosts de vitesse & réapparition ({GEM_RESPAWN_DELAY} s)</strong><small>Chaque diamant accélère ta monture pendant {SPEED_BOOST_DURATION} s : bleu ×{DIAMOND_SPEED_MULTIPLIERS[0].toFixed(1)}, rouge ×{DIAMOND_SPEED_MULTIPLIERS[1].toFixed(1)}, vert ×{DIAMOND_SPEED_MULTIPLIERS[2].toFixed(1)}, jaune ×{DIAMOND_SPEED_MULTIPLIERS[3].toFixed(1)}. Un diamant pris disparaît {GEM_RESPAWN_DELAY} s puis réapparaît !</small></div></div>
             <div className="mirage-rule">
               <MiragePowerIcon type={POWER_UPS.LASSO} decorative={false} className="mirage-rule-image" />
               <div>
                 <strong>1 couleur de diamant = 1 pouvoir (Duel & En ligne)</strong>
-                <small>Les diamants <b>bleus</b> chargent le <b>Bouclier</b> et les <b>verts</b> le <b>Turbo</b> : ces deux-là partent tout seuls dès que la barre est pleine (bouclier 5s, boost de vitesse pendant {POWER_BOOST_DURATION}s). Les <b>jaunes</b> chargent le <b>Lasso</b> (W/Z : cible devant toi) et les <b>rouges</b> le <b>Pistolet</b> (R : fait tomber la cible devant toi pendant {PISTOL_STUN_DURATION}s), à déclencher à la main. Utiliser un objet ne décharge pas les autres !</small>
+                <small>Le <b>Bouclier</b> se charge avec {POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants <b>bleus</b> et le <b>Turbo</b> avec {POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants <b>verts</b> ; ils partent seuls quand la barre est pleine (bouclier 5 s, turbo {POWER_BOOST_DURATION} s). Le <b>Lasso</b> demande {POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants <b>jaunes</b> (W/Z : cible devant toi) et le <b>Pistolet</b> {POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants <b>rouges</b> (R : immobilise la cible devant toi pendant {PISTOL_STUN_DURATION} s) ; ces deux pouvoirs se déclenchent à la main. Utiliser un objet ne décharge pas les autres !</small>
                 <div className="mirage-rule-powers-grid" aria-label="Les 4 objets spéciaux">
                   <span className="mirage-rule-power-pill is-blue"><MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-rule-pill-icon" /><b>Bouclier</b><i>AUTO</i></span>
                   <span className="mirage-rule-power-pill is-yellow"><MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-rule-pill-icon" /><b>Lasso</b><i>W/Z</i></span>
@@ -943,7 +943,7 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur de diamant charge son pouvoir dédié (Bleu = Bouclier, Jaune = Lasso W/Z, Vert = Turbo, Rouge = Pistolet R). Bouclier et Turbo partent tout seuls dès que leur barre est pleine ; Lasso et Pistolet se déclenchent à la main.</small></div></div>
+            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur charge son pouvoir dédié : Bleu = Bouclier ({POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]}), Jaune = Lasso W/Z ({POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]}), Vert = Turbo ({POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]}), Rouge = Pistolet R ({POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]}). Bouclier et Turbo partent automatiquement ; Lasso et Pistolet se déclenchent à la main.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger ou les lanternes de pierre : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>

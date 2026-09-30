@@ -16,7 +16,7 @@ import {
   serverOffset,
   subscribeRoomUpdates,
 } from './mirageRooms';
-import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_BOOST_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
+import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
 
 const characters = CHARACTER_NAMES;
@@ -1101,12 +1101,14 @@ export default function MirageOnline({
                           }
                         }}
                         onLasso={async (targetPlayer) => {
-                          if (!room?.code || !targetPlayer) return;
+                          if (!room?.code || !targetPlayer) return null;
+                          let result = null;
                           try {
-                            await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                            result = await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
                           } catch {}
                           setPowerToast(`🪢 Lasso lancé sur ${targetPlayer.name} !`);
                           setTimeout(()=> setPowerToast(null), 2500);
+                          return result;
                         }}
                         onShield={async (isActive) => {
                           if (!room?.code) return;
@@ -1173,7 +1175,7 @@ export default function MirageOnline({
                               className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_shield')}
                               disabled={(hud.shieldCharges || 0) <= 0}
-                              title="Bouclier — Chargé par les diamants BLEUS, il s’active tout seul dès que la barre est pleine. Utiliser cet objet ne décharge pas les autres."
+                              title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
@@ -1198,7 +1200,7 @@ export default function MirageOnline({
                               className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_lasso')}
                               disabled={(hud.lassoCharges || 0) <= 0}
-                              title="Lasso (W / Z) — Chargé par les diamants JAUNES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
+                              title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
@@ -1223,7 +1225,7 @@ export default function MirageOnline({
                               className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_boost')}
                               disabled={(hud.boostCharges || 0) <= 0}
-                              title={`Turbo — Chargé par les diamants VERTS, il s’active tout seul dès que la barre est pleine : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                              title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s’active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
@@ -1248,7 +1250,7 @@ export default function MirageOnline({
                               className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_pistol')}
                               disabled={(hud.pistolCharges || 0) <= 0}
-                              title="Pistolet (R) — Chargé par les diamants ROUGES. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres."
+                              title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />

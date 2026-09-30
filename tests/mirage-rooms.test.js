@@ -184,7 +184,7 @@ test('rooms accept lane 3 for positions and finishes, but reject invalid lane in
   assert.ok(player.finished_at);
 });
 
-test('pistol knocks the target off for two seconds; a shield stops the bullet', async () => {
+test('pistol knocks the target off for 2.5 seconds; a shield stops the bullet', async () => {
   resetLocalRoomsForTests({ seed: false });
   const room = localRoomAction('create', null, { p_stage: 'desert', p_name: 'Duel', p_password: '' }, host);
   localRoomAction('join', room.code, {}, guest);
@@ -194,7 +194,7 @@ test('pistol knocks the target off for two seconds; a shield stops the bullet', 
   const shot = localRoomAction('pistol', room.code, { p_target_id: guest.id }, host);
   const target = shot.players.find(p => p.user_id === guest.id);
   const left = Date.parse(target.stunned_until) - Date.now();
-  assert.ok(left > 1900 && left <= 2000, `stun ${left} ms`);
+  assert.ok(left > 2400 && left <= 2500, `stun ${left} ms`);
   localRoomAction('shield', room.code, {}, guest);
   const blocked = localRoomAction('pistol', room.code, { p_target_id: guest.id }, host);
   assert.equal(blocked.players.find(p => p.user_id === guest.id).shield_until, null);
