@@ -18,6 +18,14 @@ export const CRYSTAL_COUNT = CRYSTALS.length;
 
 export const jumpHeight = (remaining) => remaining > 0 ? Math.sin((0.82 - remaining) / 0.82 * Math.PI) * 1.7 : 0;
 
+// ── Mud puddles (flaques de boue) ──────────────────────────────────────
+// Appearing occasionally on open lanes, mud puddles slow down the mount
+// when stepped in on the ground (jumping clears them).
+export const MUD_SPAWN_CHANCE = 0.42;
+export const MUD_SLOW_DURATION = 1.8; // seconds the mount is slowed by mud
+export const MUD_SLOW_FACTOR = 0.55; // speed multiplier while wading through mud
+export const MUD_JUMP_CLEARANCE = 0.45; // jump height above which the mount leaps over a mud puddle
+
 // Shuffle a bag of encounters: no adjacent repeats, always a traversable route.
 export function createCourse(random = Math.random) {
   let bag = [];
@@ -62,15 +70,33 @@ export function createCourse(random = Math.random) {
       items = LANE_INDICES.map(l => l === lane ? gem(l) : { kind: 'cactus', lane: l });
     } else if (pattern === 'trail') {
       items = LANE_INDICES.map(l => gem(l));
+      if (random() < MUD_SPAWN_CHANCE) {
+        const mudLane = Math.floor(random() * LANE_COUNT);
+        items[mudLane] = { kind: 'mud', lane: mudLane };
+      }
     } else if (pattern === 'fork') {
       const start = Math.floor(random() * (LANE_COUNT - 1));
+      const groundLanes = LANE_INDICES.filter(l => l !== start && l !== start + 1);
+      const mudLane = random() < MUD_SPAWN_CHANCE
+        ? groundLanes[Math.floor(random() * groundLanes.length)]
+        : -1;
       items = [
         { kind: 'barrier', lane: start, lanes: [start, start + 1] },
-        ...LANE_INDICES.filter(l => l !== start && l !== start + 1).map(l => gem(l)),
+        ...groundLanes.map(l => (l === mudLane ? { kind: 'mud', lane: l } : gem(l))),
         gem(start, true),
       ];
     } else {
-      items = LANE_INDICES.map(l => l === lane ? { kind: 'cactus', lane: l } : gem(l));
+      const freeLanes = LANE_INDICES.filter(l => l !== lane);
+      const mudLane = random() < MUD_SPAWN_CHANCE
+        ? freeLanes[Math.floor(random() * freeLanes.length)]
+        : -1;
+      items = LANE_INDICES.map(l => (
+        l === lane
+          ? { kind: 'cactus', lane: l }
+          : l === mudLane
+            ? { kind: 'mud', lane: l }
+            : gem(l)
+      ));
     }
     return { pattern, items, gap: 18 + random() * 7 };
   };
@@ -627,13 +653,37 @@ export function planNpcLane(items, currentLane, occupiedLanes = []) {
   for (let lane = 0; lane < LANE_COUNT; lane++) {
     if (items.some(item => item.kind === 'cactus' && item.lane === lane)) continue;
     const barrier = items.some(item => item.kind === 'barrier' && item.lanes.includes(lane));
+    const mud = items.some(item => item.kind === 'mud' && item.lane === lane);
     const gem = items.find(item => item.kind === 'crystal' && item.lane === lane && !item.taken);
-    const jump = barrier || Boolean(gem?.raised);
+    const jump = barrier || mud || Boolean(gem?.raised);
     const crowdPenalty = occupiedLanes.includes(lane) ? 95 : 0;
-    const value = (gem ? CRYSTALS[gem.tier].value : 0) - Math.abs(lane - currentLane) * 45 - (barrier ? 10 : 0) - crowdPenalty;
+    const value = (gem ? CRYSTALS[gem.tier].value : 0) - Math.abs(lane - currentLane) * 45 - (barrier ? 10 : 0) - (mud ? 110 : 0) - crowdPenalty;
     if (value > best.value) best = { lane, jump, value };
   }
   return best;
+}
+
+export function hitsMudPuddle(item, riderX, jumpY = 0) {
+  if (!item || item.kind !== 'mud') return false;
+  if (jumpY > MUD_JUMP_CLEARANCE) return false;
+  return Math.abs(riderX - LANES[item.lane]) < 0.92;
+}
+
+export function resolveMudSlow({
+  baseSpeed = DUEL_BASE_SPEED,
+  mode = 'rush',
+  slowTimer = 0,
+  slowFactor = 1,
+  slowKind = null,
+} = {}) {
+  const keepLasso = slowKind === 'lasso' && slowTimer > MUD_SLOW_DURATION;
+  return {
+    slowTimer: Math.max(slowTimer, MUD_SLOW_DURATION),
+    slowFactor: keepLasso ? LASSO_SLOW_FACTOR : MUD_SLOW_FACTOR,
+    slowKind: keepLasso ? 'lasso' : 'mud',
+    baseSpeed: mode === 'rush' ? baseSpeed : Math.max(DUEL_MIN_SPEED, baseSpeed * 0.78),
+    boost: SPEED_BOOST_NONE,
+  };
 }
 
 export function advanceCowboyStreak(current, collected, crashed = false) {

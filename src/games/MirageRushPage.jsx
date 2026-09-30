@@ -436,6 +436,11 @@ export default function MirageRushPage() {
               }}
               onFinish={onFinish}
               onCrash={() => flashFx('is-hit')}
+              onMud={() => {
+                audioRef.current?.mudSplash?.();
+                flashFx('is-mud');
+                showPowerToast('🟤 Flaque de boue ! Monture ralentie…');
+              }}
               onPickup={(tier) => {
                 audioRef.current?.pickup(tier);
                 if (tier === 3) flashFx('is-glow');
@@ -546,7 +551,11 @@ export default function MirageRushPage() {
                     )}
                     {race.mode !== 'rush' && hud.shieldActive && <i className="mirage-chip is-shield"><MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-chip-power-icon" /> {Math.ceil(hud.shieldLeft)}s</i>}
                     {race.mode !== 'rush' && hud.powerBoostActive && <i className="mirage-chip is-boost"><MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-chip-power-icon" /> TURBO {Math.ceil(hud.powerBoostLeft)}s</i>}
-                    {race.mode !== 'rush' && hud.slowed && <i className="mirage-chip is-slow"><MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-chip-power-icon" /> RALENTI</i>}
+                    {hud.slowed && (
+                      <i className={`mirage-chip is-slow${hud.slowKind === 'mud' ? ' is-mud' : ''}`}>
+                        {hud.slowKind === 'mud' ? '🟤 BOUE · RALENTI' : <><MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-chip-power-icon" /> RALENTI</>}
+                      </i>
+                    )}
                     {race.mode !== 'rush' && hud.stunned && <i className="mirage-chip is-slow"><MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-chip-power-icon" /> À TERRE</i>}
                   </span>
                 </div>
@@ -935,6 +944,7 @@ export default function MirageRushPage() {
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
             <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur de diamant charge son pouvoir dédié (Bleu = Bouclier Q/A, Jaune = Lasso W/Z, Vert = Turbo E, Rouge = Pistolet R).</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger ou les lanternes de pierre : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine), les tonneaux (Costa Omertà), les balustrades blanches (Alger) et les barrières de bambou (Yōtei) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies, le saut est obligatoire.</div>
           </section>

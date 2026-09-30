@@ -253,6 +253,7 @@ test('power-up sound effects (lassoThrow, speedBoost, shieldGravity) schedule to
   audio.lassoThrow();
   audio.speedBoost();
   audio.shieldGravity();
+  audio.mudSplash();
   assert.equal(tones + noises + oscillators, 0);
 
   audio.running = true;
@@ -268,5 +269,10 @@ test('power-up sound effects (lassoThrow, speedBoost, shieldGravity) schedule to
   const prevOsc2 = oscillators;
   audio.shieldGravity();
   assert.ok(tones > prevTones2 && oscillators >= prevOsc2 + 2, 'shieldGravity schedules gravity pitch warp and harmonics');
+
+  const prevTones3 = tones;
+  const prevNoises3 = noises;
+  audio.mudSplash();
+  assert.ok(tones >= prevTones3 + 4 && noises >= prevNoises3 + 2, 'mudSplash schedules squelchy noise bursts and descending tones');
 });
 

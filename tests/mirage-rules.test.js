@@ -561,5 +561,92 @@ test('prairieSunsetState transitions progressively from golden hour to starry ni
   assert.ok(end.hemiIntensity < start.hemiIntensity);
 });
 
+test('mud puddles spawn occasionally, slow down the mount on the ground, can be jumped over, and are avoided by NPCs', async () => {
+  const {
+    createCourse,
+    seededRandom,
+    LANES,
+    LANE_COUNT,
+    MUD_SLOW_DURATION,
+    MUD_SLOW_FACTOR,
+    MUD_JUMP_CLEARANCE,
+    LASSO_SLOW_FACTOR,
+    DUEL_BASE_SPEED,
+    SPEED_BOOST_NONE,
+    hitsMudPuddle,
+    resolveMudSlow,
+    planNpcLane,
+    jumpHeight,
+  } = await import('../src/games/mirageRules.js');
+
+  const next = createCourse(seededRandom(99));
+  let mudRows = 0;
+  for (let i = 0; i < 300; i += 1) {
+    const row = next();
+    const muds = row.items.filter((item) => item.kind === 'mud');
+    if (muds.length > 0) {
+      mudRows += 1;
+      assert.equal(muds.length, 1, 'at most one mud puddle per row');
+      assert.ok(muds[0].lane >= 0 && muds[0].lane < LANE_COUNT);
+      // Every row with mud still leaves at least one clean non-cactus, non-mud lane
+      assert.ok(
+        LANES.some((_, lane) => !row.items.some((it) => (it.kind === 'cactus' || it.kind === 'mud') && it.lane === lane)),
+        'at least one clean lane remains alongside mud'
+      );
+    }
+  }
+  assert.ok(mudRows >= 30 && mudRows <= 180, 'mud puddles appear occasionally across a run');
+
+  // Ground contact slows the mount; jumping clears the puddle
+  const puddle = { kind: 'mud', lane: 1 };
+  assert.equal(hitsMudPuddle(puddle, LANES[1], 0), true);
+  assert.equal(hitsMudPuddle(puddle, LANES[2], 0), false);
+  assert.equal(hitsMudPuddle(puddle, LANES[1], jumpHeight(0.41)), false, 'mid-air jump clears the mud puddle');
+  assert.ok(jumpHeight(0.41) > MUD_JUMP_CLEARANCE);
+
+  const rushSlow = resolveMudSlow({ baseSpeed: DUEL_BASE_SPEED, mode: 'rush' });
+  assert.equal(rushSlow.slowTimer, MUD_SLOW_DURATION);
+  assert.equal(rushSlow.slowFactor, MUD_SLOW_FACTOR);
+  assert.equal(rushSlow.slowKind, 'mud');
+  assert.deepEqual(rushSlow.boost, SPEED_BOOST_NONE);
+
+  const duelSlow = resolveMudSlow({ baseSpeed: DUEL_BASE_SPEED, mode: 'duel' });
+  assert.ok(duelSlow.baseSpeed < DUEL_BASE_SPEED, 'duel base speed is dampened by mud');
+  assert.equal(duelSlow.slowFactor, MUD_SLOW_FACTOR);
+
+  // Stronger active lasso slow is preserved if longer than mud slow
+  const lassoPreserved = resolveMudSlow({
+    baseSpeed: DUEL_BASE_SPEED,
+    mode: 'duel',
+    slowTimer: MUD_SLOW_DURATION + 0.5,
+    slowFactor: LASSO_SLOW_FACTOR,
+    slowKind: 'lasso',
+  });
+  assert.equal(lassoPreserved.slowKind, 'lasso');
+  assert.equal(lassoPreserved.slowFactor, LASSO_SLOW_FACTOR);
+
+  // NPCs avoid mud lanes when a clean adjacent lane is available, and jump if staying on a mud lane
+  const mudRow = [
+    { kind: 'crystal', lane: 0, tier: 0 },
+    { kind: 'mud', lane: 1 },
+    { kind: 'crystal', lane: 2, tier: 0 },
+    { kind: 'crystal', lane: 3, tier: 0 },
+  ];
+  const npcChoice = planNpcLane(mudRow, 1);
+  assert.notEqual(npcChoice.lane, 1, 'NPC steers out of the mud lane');
+  const forcedMudChoice = planNpcLane(
+    [
+      { kind: 'cactus', lane: 0 },
+      { kind: 'mud', lane: 1 },
+      { kind: 'cactus', lane: 2 },
+      { kind: 'cactus', lane: 3 },
+    ],
+    1
+  );
+  assert.equal(forcedMudChoice.lane, 1);
+  assert.equal(forcedMudChoice.jump, true, 'NPC jumps when forced over a mud puddle');
+});
+
+
 
 
