@@ -27,8 +27,9 @@ export const DEFAULT_RIDER_NAME = 'Cavalier';
 /**
  * Catalogue des coupes. Pour en ajouter une : un nouvel objet ici, avec des
  * identifiants de terrain déjà connus de `MirageCoursePicker` (`desert`,
- * `western`, `prairie`, `sardinia`, `alger`, `japan`). Le sélecteur de coupe,
- * l’enchaînement des courses et l’écran du trophée suivent tout seuls.
+ * `western`, `prairie`, `sardinia`, `alger`, `japan`, `ramparts`,
+ * `infinity`, `airbase`). Le sélecteur de coupe, l’enchaînement des courses
+ * et l’écran du trophée suivent tout seuls.
  */
 export const CUPS = Object.freeze([
   Object.freeze({
@@ -37,6 +38,13 @@ export const CUPS = Object.freeze([
     tagline: 'Trois courses, un seul trophée',
     // Dunes de l’Écho → Dust Creek → Plaines d’Or
     stages: Object.freeze(['desert', 'western', 'prairie']),
+  }),
+  Object.freeze({
+    id: 'worldtour',
+    name: 'Coupe Grand Tour',
+    tagline: 'Quatre cartes, un seul trophée',
+    // Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase
+    stages: Object.freeze(['sardinia', 'alger', 'japan', 'airbase']),
   }),
 ]);
 export const DEFAULT_CUP_ID = CUPS[0].id;
