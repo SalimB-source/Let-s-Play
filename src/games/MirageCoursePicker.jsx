@@ -1,5 +1,7 @@
 import React from 'react';
 import { DUEL_DISTANCE, duelRivalsForTrack, laneCount } from './mirageRules';
+import { CUPS, CUP_POINTS, MAX_RIDER_NAME, placeLabel } from './mirageCup';
+import MirageTrophyIcon from './MirageTrophyIcon';
 import desertThumbnail from './assets/maps/desert.webp';
 import westernThumbnail from './assets/maps/western.webp';
 import prairieThumbnail from './assets/maps/prairie.webp';
@@ -21,6 +23,11 @@ const MAPS = [
   { id: 'infinity', number: '08', name: 'Château de l’Infini', mood: 'Au son du biwa de Nakime', detail: 'Hommage Demon Slayer · shōji & biwa', thumbnail: infinityThumbnail },
   { id: 'airbase', number: '09', name: 'Thunder Airbase', mood: 'Sonic Boom sur la piste !', detail: 'Hommage Street Fighter · Guile', thumbnail: airbaseThumbnail },
 ];
+
+/** Nom affichable d’un terrain (`desert` → « Dunes de l’Écho »). */
+export function stageName(stageId) {
+  return MAPS.find((map) => map.id === stageId)?.name ?? stageId;
+}
 
 function MapThumbnail({ map }) {
   // Decorative: the card's visible name already labels its button.
@@ -62,10 +69,57 @@ export function MirageStagePicker({ stage, setSelectedStage, locked = false, mod
   </>;
 }
 
+/**
+ * Mode COUPE : à la place du choix de terrain, on choisit une coupe — une suite
+ * de courses sur des terrains imposés, avec le barème des points — et le nom
+ * qui s’affichera sur le trophée. Une carte par entrée de `CUPS` : en ajouter
+ * une dans le catalogue suffit.
+ */
+export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defaultRiderName, riderCount = CUP_POINTS.length }) {
+  return <>
+    <div className="mirage-picker-label"><span>02 / TA COUPE</span><span>{CUPS.length} COUPE{CUPS.length > 1 ? 'S' : ''} DISPONIBLE{CUPS.length > 1 ? 'S' : ''}</span></div>
+    <div className="mirage-cup-picker" role="group" aria-label="Choisir la coupe">
+      {CUPS.map(cup => <button type="button" key={cup.id} className={`mirage-cup-card is-${cup.id}`} aria-pressed={cupId === cup.id} onClick={() => setCupId(cup.id)}>
+        <span className="mirage-cup-card-head">
+          <span className="mirage-cup-emblem" aria-hidden="true"><MirageTrophyIcon /></span>
+          <span className="mirage-cup-card-title"><strong>{cup.name}</strong><span>{cup.tagline}</span></span>
+          <span className="mirage-choice-dot" aria-hidden="true">{cupId === cup.id ? '✓' : ''}</span>
+        </span>
+        <span className="mirage-cup-route" role="list" aria-label="Les courses, dans l’ordre">
+          {cup.stages.map((stageId, index) => {
+            const map = MAPS.find(entry => entry.id === stageId);
+            return <span className="mirage-cup-stop" role="listitem" key={`${stageId}-${index}`}>
+              <MapThumbnail map={map} />
+              <span className="mirage-cup-stop-number">COURSE {index + 1}</span>
+              <strong>{map.name}</strong>
+            </span>;
+          })}
+        </span>
+        <span className="mirage-cup-points" role="list" aria-label="Points par place">
+          {CUP_POINTS.slice(0, riderCount).map((points, index) => <span role="listitem" key={index}><b>{placeLabel(index + 1)}</b> {points} pts</span>)}
+        </span>
+      </button>)}
+    </div>
+    <label className="mirage-cup-name-field">
+      <span>NOM SUR LE TROPHÉE</span>
+      <input
+        type="text"
+        value={riderName}
+        maxLength={MAX_RIDER_NAME}
+        placeholder={defaultRiderName}
+        onChange={event => setRiderName(event.target.value)}
+        autoComplete="nickname"
+        spellCheck={false}
+      />
+    </label>
+  </>;
+}
+
 export default function MirageCoursePicker({ selectedMode, setSelectedMode, stage, setSelectedStage, challenge, modeChosen = true }) {
   const locked = selectedMode === 'duel' && Boolean(challenge);
-  // Trois voies et deux rivaux dans l'application, quatre voies et trois
-  // rivaux sur le site (voir src/games/mirageLanes.js).
+  // Trois voies et deux rivaux sur téléphone (navigateur comme application),
+  // quatre voies et trois rivaux sur ordinateur et tablette (voir
+  // src/games/mirageLanes.js).
   const rivalCount = duelRivalsForTrack(laneCount()).length;
   return <div className="mirage-course-picker">
     <div className="mirage-picker-label"><span>01 / TON DÉFI</span><span>À TOI DE JOUER</span></div>

@@ -28,6 +28,6 @@ try {
 } finally {
   dom.window.close();
 }
-console.log('check:mirage-scoreboard ✓ — tableau des positions de fin de course : composant (ordre, médailles, ligne TOI, temps / retards / distance restante, colonne des points, hors ligne, fantôme de défi) ; Duel (overlay d’arrivée classé, victoire et défaite, lien de défi) ; En ligne (fenêtre de résultats, classement provisoire puis final en direct, focus et Échap, même classement dans le salon, sortie du salon).');
+console.log('check:mirage-scoreboard ✓ — tableau des positions de fin de course : composant (ordre, médailles, ligne TOI, temps / retards / distance restante, colonne des points, hors ligne, fantôme de défi) ; Duel (overlay d’arrivée classé, victoire et défaite, lien de défi) ; Coupe (son écran d’arrivée reste seul, sans le tableau du duel) ; En ligne (fenêtre de résultats, classement provisoire puis final en direct, focus et Échap, même classement dans le salon, sortie du salon).');
 // Les salons locaux ouvrent un BroadcastChannel (comme le ferait un second onglet) qui garderait le processus en vie.
 process.exit(0);

@@ -11,6 +11,8 @@
  *      (seulement quand il y a des scores à comparer), cavalier hors ligne, fantôme de défi ;
  *   2. Duel : à l'arrivée, l'overlay affiche le tableau classé (défaite, victoire, fantôme
  *      d'un lien de défi) avec le rang du joueur dans l'en-tête, ses cristaux et ses points ;
+ *      Une course de COUPE garde son écran d'arrivée (points, classement général) : le tableau
+ *      du duel ne s'y ajoute pas.
  *   3. En ligne : créer un salon, lancer la course, franchir la ligne → une fenêtre de
  *      résultats s'ouvre (classement provisoire tant qu'un cavalier est en piste, final
  *      ensuite, mis à jour en direct), le focus y reste, Échap la ferme, le salon garde le
@@ -25,7 +27,7 @@ import MirageScoreboard from '../src/games/MirageScoreboard';
 import { buildDuelStandings, buildRoomStandings } from '../src/games/mirageStandings';
 import { resetLocalRoomsForTests } from '../src/games/mirageRooms';
 import { encodeChallenge } from '../src/games/duelChallenge';
-import { worldControl } from './mirage-world-stub.jsx';
+import { worldProbe } from './mirage-world-stub.jsx';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const squash = (text) => String(text ?? '').replace(/[\s\u202f\u00a0]+/g, ' ').trim();
@@ -164,10 +166,10 @@ export async function checkMirageScoreboard(assert) {
   try {
     const duelButton = [...duel.node.querySelectorAll('.mirage-mode-picker button')].find((button) => button.querySelector('strong')?.textContent === 'DUEL');
     await click(duelButton);
-    assert.ok(worldControl.props, 'le moteur (remplacé) est monté');
+    assert.ok(worldProbe.props, 'le moteur (remplacé) est monté');
     assert.ok(!duel.node.querySelector('.mirage-result-overlay'), 'pas de résultats avant l’arrivée');
 
-    await act(async () => { worldControl.props.onFinish(DUEL_LOSS); });
+    await act(async () => { worldProbe.props.onFinish(DUEL_LOSS); });
     const overlay = duel.node.querySelector('.mirage-result-overlay.has-scoreboard');
     assert.ok(overlay, 'l’overlay d’arrivée du duel contient le tableau des positions');
     assert.ok(squash(overlay.querySelector('.mirage-overlay-kicker').textContent).includes('ARRIVÉE · DUEL (4ᵉ / 4)'),
@@ -187,7 +189,7 @@ export async function checkMirageScoreboard(assert) {
     assert.ok(!overlay.querySelector('.mirage-final-score'), 'le chrono géant cède la place au tableau');
 
     // Victoire : le joueur passe en tête, les rivaux se classent derrière lui.
-    await act(async () => { worldControl.props.onFinish(DUEL_WIN); });
+    await act(async () => { worldProbe.props.onFinish(DUEL_WIN); });
     const won = duel.node.querySelector('.mirage-result-overlay.has-scoreboard');
     assert.equal(squash(won.querySelector('h2').textContent), 'VICTOIRE DU CAVALIER !');
     assert.ok(squash(won.querySelector('.mirage-overlay-kicker').textContent).includes('(1ᵉʳ / 4)'));
@@ -200,7 +202,7 @@ export async function checkMirageScoreboard(assert) {
   const challenged = await mountPage(`/jeu?duel=${code}`);
   try {
     await act(async () => {
-      worldControl.props.onFinish(duelResult({
+      worldProbe.props.onFinish(duelResult({
         duration: 44.2, rank: 2, totalRiders: 4, won: false, stage: 'prairie',
         rivals: [rival('ombre', 1, 'Salim', 800, 41.5, true), rival('sauge', 2, 'SAUGE', 610, null), rival('amethyste', 3, 'AMÉTHYSTE', 590, null)],
       }));
@@ -209,6 +211,21 @@ export async function checkMirageScoreboard(assert) {
     assert.deepEqual(board.map((row) => row.name), ['Salim', 'Cavalier', 'Sauge', 'Améthyste']);
     assert.deepEqual(board[0].tags, ['FANTÔME'], 'le fantôme du défi est identifié dans le classement');
   } finally { await challenged.unmount(); }
+
+  // Coupe : une course de coupe est un duel pour le moteur, mais elle a son propre écran d'arrivée
+  // (points et classement général) — le tableau du duel ne doit pas s'y ajouter.
+  const cup = await mountPage('/jeu?mode=cup');
+  try {
+    const start = await waitUntil(() => {
+      const button = cup.node.querySelector('.mirage-intro-overlay .mirage-start-button');
+      return button && !button.disabled ? button : null;
+    }, 'le bouton de lancement de la coupe est actif');
+    await click(start);
+    await act(async () => { worldProbe.props.onFinish({ ...DUEL_LOSS, stage: worldProbe.props.race.stage }); });
+    assert.ok(cup.node.querySelector('.mirage-cup-results'), 'la course de coupe se termine sur l’écran de la coupe');
+    assert.ok(!cup.node.querySelector('.mirage-scoreboard'), 'le tableau du duel ne s’ajoute pas à l’écran de la coupe');
+    assert.equal(cup.node.querySelectorAll('.mirage-result-overlay').length, 1, 'un seul écran d’arrivée');
+  } finally { await cup.unmount(); }
 
   /* --------- 3. En ligne : fenêtre de résultats, classement en direct, salon --------- */
   // Les salons locaux et le décompte lisent `Date.now()` : on l'avance pour ne pas attendre les
@@ -235,7 +252,7 @@ export async function checkMirageScoreboard(assert) {
     await waitUntil(() => squash(online.node.querySelector('.mirage-game-popup')?.textContent).includes('COURSE EN COURS'), 'la course démarre');
 
     await act(async () => {
-      worldControl.props.onFinish({ mode: 'online', score: 2150, gems: 12, duration: 50, distance: 800, lane: 1, jump: 0 });
+      worldProbe.props.onFinish({ mode: 'online', score: 2150, gems: 12, duration: 50, distance: 800, lane: 1, jump: 0 });
     });
     const dialog = await waitUntil(() => online.node.querySelector('.mirage-results-dialog'), 'la fenêtre de résultats s’ouvre');
     assert.equal(dialog.getAttribute('role'), 'dialog');

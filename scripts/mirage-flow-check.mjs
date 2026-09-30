@@ -21,4 +21,4 @@ globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { checkMirageFlow } = await import('../node_modules/.cache/mirage-flow/mirage-flow-smoke.js');
 try { await checkMirageFlow(assert); } finally { dom.window.close(); }
-console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) et du terrain (9 horizons et leurs miniatures WebP, jusqu’à Thunder Airbase) dans l’overlay d’intro ; pas de barre d’onglets, terrain imposé par un défi verrouille les cartes ; piste de l’app à trois voies et deux rivaux (textes de l’overlay et des règles alignés).');
+console.log('check:mirage-flow ✓ — Mirage Rush ouvre sur de vrais boutons RUÉE / DUEL / COUPE / EN LIGNE, puis affiche les 9 maps à l’écran suivant (la COUPE y propose la Coupe du Désert, ses 3 courses et son barème à la place des maps) ; Paramètres regroupe La communauté, Ton cavalier et Informations ; ?mode=cup ouvre la coupe ; le lobby EN LIGNE garde ses 4 boutons de mode (COUPE ramène à la coupe) ; un défi verrouille sa map ; piste du téléphone (navigateur comme application) à trois voies, deux rivaux et coupe à trois cavaliers alignés.');

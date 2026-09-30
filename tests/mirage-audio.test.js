@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, RAMPARTS_BPM, INFINITY_BPM, AIRBASE_BPM } from '../src/games/arcadeAudio.js';
+import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, RAMPARTS_BPM, INFINITY_BPM, AIRBASE_BPM, cupFanfareScore } from '../src/games/arcadeAudio.js';
 
 test('prairie selects its own soundtrack and resets the phrase', () => {
   const audio = new DesertGroove();
@@ -370,3 +370,91 @@ test('power-up sound effects (lassoThrow, speedBoost, shieldGravity) schedule to
   assert.ok(tones >= prevTones3 + 4 && noises >= prevNoises3 + 2, 'mudSplash schedules squelchy noise bursts and descending tones');
 });
 
+test('the cup fanfare is a finite, ordered score: a call, an answer, then a held chord with timpani and cymbal', () => {
+  const score = cupFanfareScore();
+  assert.ok(score.length > 15);
+  let previous = 0;
+  for (const event of score) {
+    assert.ok(Number.isFinite(event.at) && event.at >= previous, 'events are sorted by start time');
+    previous = event.at;
+    assert.ok(event.duration > 0 && event.volume > 0 && event.volume <= 0.5, 'audible but never clipping on its own');
+    if (event.kind === 'tone') assert.ok(event.frequency > 0 && typeof event.type === 'string');
+    else {
+      assert.equal(event.kind, 'noise');
+      assert.ok(event.highpass > 0);
+    }
+  }
+  const end = Math.max(...score.map((event) => event.at + event.duration));
+  assert.ok(end > 2 && end < 4, `the fanfare lasts about three seconds, not ${end.toFixed(2)}`);
+  const held = score.filter((event) => event.kind === 'tone' && event.duration >= 1.4 && event.type === 'sawtooth');
+  assert.ok(held.length >= 5, 'the final chord stacks at least five brass voices');
+  assert.equal(new Set(held.map((event) => event.at)).size, 1, 'they start together');
+  assert.ok(score.some((event) => event.kind === 'tone' && event.frequency < 100), 'a timpani hit');
+  assert.ok(score.some((event) => event.kind === 'noise' && event.duration > 1), 'a cymbal wash');
+});
+
+test('the fanfare plays on its own bus even though the music is stopped, and stop() fades it out', async () => {
+  const audio = new DesertGroove();
+  const events = [];
+  const ramps = [];
+  const timeouts = [];
+  let resumed = 0;
+  const context = {
+    state: 'suspended',
+    currentTime: 10,
+    destination: {},
+    resume: async () => { context.state = 'running'; resumed += 1; },
+    suspend() { context.state = 'suspended'; },
+    createGain: () => ({
+      gain: { value: 1, cancelScheduledValues() {}, setValueAtTime() {}, linearRampToValueAtTime: (value, time) => ramps.push([value, time]) },
+      connect() {},
+      disconnect() {},
+    }),
+    createDynamicsCompressor: () => ({ connect() {} }),
+  };
+  audio.context = context;
+  audio.master = { gain: { cancelScheduledValues() {}, setValueAtTime() {} } };
+  audio.tone = (frequency, time, duration, type, volume, filter, destination) => events.push({ time, destination });
+  audio.noise = (time, duration, volume, highpass, destination) => events.push({ time, destination });
+  const originalWindow = globalThis.window;
+  globalThis.window = { AudioContext: function () {}, setTimeout: (callback) => { timeouts.push(callback); return 0; } };
+  try {
+    await audio.fanfare();
+    assert.equal(resumed, 1, 'a context suspended by the end of the race is resumed');
+    assert.equal(audio.running, false, 'no music is started');
+    assert.equal(events.length, cupFanfareScore().length, 'every note of the score is scheduled');
+    const buses = new Set(events.map((event) => event.destination));
+    assert.equal(buses.size, 1, 'every note goes through the same bus');
+    const [bus] = buses;
+    assert.ok(bus && bus !== audio.master, 'and that bus is not the music master');
+    assert.equal(audio.fanfareBus, bus);
+    assert.ok(events.every((event) => event.time >= 10.05), 'nothing is scheduled in the past');
+
+    audio.stop();
+    assert.equal(audio.fanfareBus, null, 'leaving the screen silences the fanfare');
+    assert.deepEqual(ramps.at(-1)?.[0], 0, 'with a fade to zero rather than a click');
+    assert.equal(timeouts.length, 1);
+    timeouts[0]();
+  } finally { globalThis.window = originalWindow; }
+});
+
+test('a fanfare still waiting for the audio context is cancelled by stop, and no AudioContext stays silent', async () => {
+  const originalWindow = globalThis.window;
+  try {
+    const audio = new DesertGroove();
+    let release;
+    audio.context = { state: 'suspended', resume: () => new Promise((resolve) => { release = resolve; }) };
+    globalThis.window = { AudioContext: function () {} };
+    const pending = audio.fanfare();
+    audio.stop();
+    release();
+    await pending;
+    assert.equal(audio.fanfareBus, null);
+
+    const mute = new DesertGroove();
+    globalThis.window = {};
+    await mute.fanfare();
+    assert.equal(mute.context, null);
+    assert.equal(mute.fanfareBus, null);
+  } finally { globalThis.window = originalWindow; }
+});

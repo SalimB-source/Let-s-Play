@@ -1,20 +1,25 @@
+/**
+ * Doublure de src/games/MirageWorld.jsx pour `npm run check:mirage-cup` et
+ * `npm run check:mirage-scoreboard`.
+ *
+ * jsdom n'a pas de WebGL : le vrai moteur ne devient jamais « prêt » et aucune
+ * course ne peut partir. Cette doublure se déclare prête au montage et garde
+ * les props courantes de la page (`worldProbe.props`), de sorte que le test
+ * termine une course avec le résultat de son choix via `props.onFinish`.
+ * Seul le moteur 3D est remplacé : la page, la coupe et l'écran du trophée
+ * sont les vrais.
+ */
 import React, { useEffect } from 'react';
 
-/**
- * Remplaçant de `MirageWorld` (le moteur Three.js) pour les contrôles qui tournent
- * sans WebGL : jsdom (`npm run check:mirage-scoreboard`) ou un navigateur piloté à la
- * main. Il ne dessine rien : il se déclare prêt et expose ses props, ce qui permet au
- * test de franchir la ligne d'arrivée quand il veut en appelant `onFinish(résultat)`,
- * exactement comme le fait le vrai moteur.
- *
- * Il prend la place de `./MirageWorld` par un alias au moment du build SSR du test.
- */
-export const worldControl = { props: null };
+export const worldProbe = { mounted: 0, props: null };
 
 export default function MirageWorldStub(props) {
-  // Dernières props reçues, lues par le test (et par `window.__mirageWorldProps` en navigateur).
-  worldControl.props = props;
-  if (typeof window !== 'undefined') window.__mirageWorldProps = props;
-  useEffect(() => { props.onReady?.(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  return <div className="mirage-world" data-stub="mirage-world" />;
+  worldProbe.props = props;
+  useEffect(() => {
+    worldProbe.mounted += 1;
+    return () => { worldProbe.mounted -= 1; };
+  }, []);
+  // Le vrai moteur se reconstruit (et se redéclare prêt) quand le terrain change.
+  useEffect(() => { props.onReady?.(); }, [props.stage]);
+  return <div className="mirage-world-stub" data-stage={props.stage} />;
 }

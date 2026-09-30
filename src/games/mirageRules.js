@@ -1,8 +1,9 @@
 // ── Les voies de la piste ───────────────────────────────────────────────
-// Le site joue sur quatre voies, l'application Android sur trois (voir
-// `mirageLanes.js`) : sur un téléphone tenu à deux mains, quatre couloirs de
-// 2,1 m sont trop fins à viser, et la croix directionnelle obligeait à
-// traverser trois cases d'un coup pour changer de côté.
+// L'ordinateur et la tablette jouent sur quatre voies ; le téléphone —
+// navigateur comme application — sur trois (voir `mirageLanes.js`) : sur un
+// téléphone tenu à deux mains, quatre couloirs de 2,1 m sont trop fins à
+// viser, et la croix directionnelle obligeait à traverser trois cases d'un
+// coup pour changer de côté.
 //
 // Le rendu, les règles et le décor lisent donc une piste *vivante* :
 //
@@ -11,13 +12,13 @@
 //     `LANES[2]`, `LANES.length`… suivent la nouvelle piste sans rien
 //     propager. C'est pour cette raison qu'il n'est PAS gelé ;
 //   - `laneCount()` remplace l'ancienne constante `LANE_COUNT` : le nombre de
-//     voies change au démarrage de l'app, un export figé ne pourrait pas le
-//     suivre. Les valeurs dépendant des voies se calculent donc à l'intérieur
-//     des fonctions (jamais au chargement d'un module, qui précède le choix de
+//     voies change au démarrage, un export figé ne pourrait pas le suivre.
+//     Les valeurs dépendant des voies se calculent donc à l'intérieur des
+//     fonctions (jamais au chargement d'un module, qui précède le choix de
 //     la piste) ;
 //   - `lanePosition(lane)` ramène une voie hors piste sur la dernière voie
-//     disponible — un cavalier à la voie 3 vu depuis l'app (3 voies) court
-//     sur la voie 2 au lieu de sortir de l'écran.
+//     disponible — un cavalier à la voie 3 vu depuis un téléphone (3 voies)
+//     court sur la voie 2 au lieu de sortir de l'écran.
 //
 // La largeur d'une voie ne change pas (2,1 m) : seule la largeur de la piste
 // suit le nombre de voies — 6,3 m à trois voies, 8,4 m à quatre.
@@ -32,7 +33,7 @@ export const LANE_COUNTS = Object.freeze([3, 4]);
 export const LANES = [...LANE_POSITIONS[4]];
 let activeLaneCount = LANES.length;
 
-/** Nombre de voies de la piste courante (3 dans l'app, 4 sur le site). */
+/** Nombre de voies de la piste courante (3 sur téléphone, 4 sur grand écran). */
 export function laneCount() {
   return activeLaneCount;
 }
@@ -48,10 +49,11 @@ export function laneIndices() {
 }
 
 /**
- * Choisit la piste : `setLaneCount(3)` pour l'app, `setLaneCount(4)` pour le
- * site (voir `applyLaneCountForDevice()` dans `mirageLanes.js`). À appeler au
- * démarrage, avant la première course : les rangées d'obstacles, les lignes de
- * départ et d'arrivée et le sol se construisent ensuite à partir de `LANES`.
+ * Choisit la piste : `setLaneCount(3)` sur téléphone, `setLaneCount(4)` sur
+ * ordinateur et tablette (voir `applyLaneCountForDevice()` dans
+ * `mirageLanes.js`). À appeler au démarrage, avant la première course : les
+ * rangées d'obstacles, les lignes de départ et d'arrivée et le sol se
+ * construisent ensuite à partir de `LANES`.
  */
 export function setLaneCount(count) {
   const positions = LANE_POSITIONS[count];
@@ -281,9 +283,9 @@ export const DUEL_RIVALS = Object.freeze([
 export const DUEL_RIVAL_COUNT = DUEL_RIVALS.length;
 
 /**
- * Rivaux alignés sur la piste courante (voir `DUEL_RIVALS`) : trois sur le
- * site, deux dans l'application à trois voies. Une voie de départ trop large
- * pour la piste est ramenée sur la dernière voie.
+ * Rivaux alignés sur la piste courante (voir `DUEL_RIVALS`) : trois sur
+ * ordinateur et tablette, deux sur le téléphone à trois voies. Une voie de
+ * départ trop large pour la piste est ramenée sur la dernière voie.
  */
 export function duelRivalsForTrack(count = laneCount()) {
   const wanted = Math.max(1, Math.min(count, LANE_COUNTS[LANE_COUNTS.length - 1]) - 1);

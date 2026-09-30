@@ -170,7 +170,8 @@ export default function Layout({ children }) {
     }
   }, [paletteOpen]);
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname === path
+    || (path === '/communaute' && location.pathname === '/community');
   const isHome = location.pathname === '/';
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -242,8 +243,9 @@ export default function Layout({ children }) {
     { to: '/news', label: t.nav.news, num: '02', desc: 'NEWS / DROPS' },
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
-    { to: '/quizz', label: t.nav.quiz, num: '05', desc: 'QUIZZ / PLAY' },
-    { to: '/jeu', label: t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / PLAY' },
+    { to: '/communaute', label: t.nav.community || 'Communauté', num: '05', desc: 'COMMUNITY / TALK' },
+    { to: '/quizz', label: t.nav.quiz, num: '06', desc: 'QUIZZ / PLAY' },
+    { to: '/jeu', label: t.nav.games || t.nav.game, num: '07', desc: 'ARCADE / PLAY' },
   ];
 
   const profileMeta = user?.user_metadata || {};
@@ -337,7 +339,7 @@ export default function Layout({ children }) {
                 style={{ '--i': primaryLinks.length }}
               >
                 <span className="nav-link-main">
-                  <span className="nav-link-num">07</span>
+                  <span className="nav-link-num">08</span>
                   <span className="nav-link-text">
                     {/* La messagerie a son propre logo : il remplace le libellé
                         texte, gardé pour les lecteurs d'écran. */}
@@ -358,7 +360,7 @@ export default function Layout({ children }) {
                 aria-label={profileAria}
               >
                 <span className="nav-link-main">
-                        <span className="nav-link-num">08</span>
+                        <span className="nav-link-num">09</span>
                   <span className="nav-profile-avatar" aria-hidden="true">
                     <span className="nav-profile-avatar-face">
                       {profileAvatar ? (
@@ -634,6 +636,7 @@ export default function Layout({ children }) {
           <Link to="/news">{t.nav.news}</Link>
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
+          <Link to="/communaute">{t.nav.community || 'Communauté'}</Link>
           <Link to="/quizz">{t.nav.quiz}</Link>
           <Link to="/jeu">{t.nav.games || t.nav.game}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>

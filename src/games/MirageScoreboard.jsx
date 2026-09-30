@@ -58,7 +58,7 @@ export default function MirageScoreboard({ rows = [], caption = 'Classement de l
                 <div>
                   <MirageCharacterPortrait
                     character={row.character}
-                    palette={row.palette}
+                    colors={row.palette}
                     className="mirage-sb-portrait"
                     decorative
                   />

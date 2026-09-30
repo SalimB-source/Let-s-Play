@@ -11,6 +11,40 @@ export const AIRBASE_BPM = 138;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
 
+/**
+ * Partition de la fanfare du trophée (Coupe), en secondes depuis la première
+ * note : un appel de trois notes, une réponse montante, puis un accord de do
+ * majeur tenu sur un coup de timbale et une vague de cymbale, et enfin un
+ * arpège scintillant. Elle reste séparée de la lecture pour pouvoir être
+ * vérifiée sans Web Audio. `kind: 'tone'` → `tone()`, `kind: 'noise'` → `noise()`.
+ */
+export function cupFanfareScore() {
+  const score = [];
+  const brass = (frequency, at, duration, volume = 0.1) =>
+    score.push({ kind: 'tone', frequency, at, duration, type: 'sawtooth', volume, filter: 2600 });
+  // Appel : sol · sol · sol, puis un do tenu.
+  [0, 0.13, 0.26].forEach((at) => brass(392, at, 0.11));
+  brass(523.25, 0.39, 0.4);
+  // Réponse montante : mi · sol.
+  brass(659.25, 0.86, 0.12);
+  brass(784, 1.0, 0.12);
+  // Accord final de do majeur, tenu.
+  const chordAt = 1.14;
+  [130.81, 196, 261.63, 329.63, 392, 523.25].forEach((frequency) => brass(frequency, chordAt, 1.5, 0.07));
+  brass(1046.5, chordAt, 1.5, 0.09);
+  // Timbale sur la note tenue et sur l’accord, cymbale sur l’accord.
+  [0.39, chordAt].forEach((at) => {
+    score.push({ kind: 'tone', frequency: 73.4, at, duration: 0.34, type: 'sine', volume: 0.42 });
+    score.push({ kind: 'noise', at, duration: 0.12, volume: 0.12, highpass: 300 });
+  });
+  score.push({ kind: 'noise', at: chordAt, duration: 1.4, volume: 0.16, highpass: 6500 });
+  // Scintillement : arpège aigu qui s’évapore.
+  [1046.5, 1318.5, 1568, 2093].forEach((frequency, index) => {
+    score.push({ kind: 'tone', frequency, at: chordAt + 0.35 + index * 0.09, duration: 0.5, type: 'sine', volume: 0.06 });
+  });
+  return score.sort((a, b) => a.at - b.at);
+}
+
 /** Original lightweight Web Audio soundtracks, selected per stage (no external tracks). */
 export class DesertGroove {
   constructor() {
@@ -27,6 +61,8 @@ export class DesertGroove {
     this.crySource = null;
     this.lastCry = -Infinity;
     this.session = 0;
+    this.fanfareBus = null;
+    this.fanfareSession = 0;
   }
 
   /** Pistol shot: a sharp crack, a low boom and a desert echo. */
@@ -75,6 +111,7 @@ export class DesertGroove {
   }
 
   async start() {
+    this.stopFanfare();
     if (this.running) return;
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
@@ -104,7 +141,7 @@ export class DesertGroove {
     }
   }
 
-  tone(frequency, time, duration, type, volume, filterFrequency = null) {
+  tone(frequency, time, duration, type, volume, filterFrequency = null, destination = this.master) {
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
     oscillator.type = type;
@@ -119,7 +156,7 @@ export class DesertGroove {
     gain.gain.setValueAtTime(0.0001, time);
     gain.gain.exponentialRampToValueAtTime(volume, time + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-    gain.connect(this.master);
+    gain.connect(destination);
     oscillator.start(time);
     oscillator.stop(time + duration + 0.025);
   }
@@ -135,7 +172,7 @@ export class DesertGroove {
     return this.whiteNoise;
   }
 
-  noise(time, duration, volume, highpass = 5000) {
+  noise(time, duration, volume, highpass = 5000, destination = this.master) {
     const source = this.context.createBufferSource();
     const filter = this.context.createBiquadFilter();
     const gain = this.context.createGain();
@@ -146,7 +183,7 @@ export class DesertGroove {
     gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
     source.connect(filter);
     filter.connect(gain);
-    gain.connect(this.master);
+    gain.connect(destination);
     source.start(time, Math.random() * Math.max(0, 1 - duration), duration);
   }
 
@@ -931,9 +968,62 @@ export class DesertGroove {
     source.start(now);
   }
 
+  /**
+   * Fanfare de victoire de l’écran du trophée. La musique est déjà arrêtée à
+   * ce moment-là : elle passe par son propre bus (avec un compresseur pour
+   * éviter la saturation) que `stopFanfare()` — appelé par `stop()` et par
+   * `start()` — coupe en fondu si le joueur repart avant la fin.
+   */
+  async fanfare() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    this.stopFanfare();
+    this.context ||= new AudioContext();
+    const context = this.context;
+    const session = ++this.fanfareSession;
+    try { await context.resume(); } catch { return; }
+    if (this.context !== context || this.fanfareSession !== session) return;
+    try {
+      const compressor = context.createDynamicsCompressor();
+      const bus = context.createGain();
+      bus.gain.value = 1;
+      bus.connect(compressor);
+      compressor.connect(context.destination);
+      this.fanfareBus = bus;
+      const start = context.currentTime + 0.05;
+      for (const event of cupFanfareScore()) {
+        const time = start + event.at;
+        if (event.kind === 'noise') this.noise(time, event.duration, event.volume, event.highpass, bus);
+        else this.tone(event.frequency, time, event.duration, event.type, event.volume, event.filter ?? null, bus);
+      }
+    } catch {
+      // Une fanfare qui ne peut pas jouer ne doit jamais gêner l’écran du trophée.
+      this.stopFanfare();
+    }
+  }
+
+  /** Coupe la fanfare en fondu (sans effet si elle ne joue pas). */
+  stopFanfare() {
+    this.fanfareSession += 1;
+    const bus = this.fanfareBus;
+    if (!bus) return;
+    this.fanfareBus = null;
+    const context = this.context;
+    try {
+      if (context && context.state === 'running') {
+        const now = context.currentTime;
+        bus.gain.cancelScheduledValues(now);
+        bus.gain.setValueAtTime(bus.gain.value, now);
+        bus.gain.linearRampToValueAtTime(0, now + 0.12);
+      }
+    } catch { /* le bus est déjà libéré */ }
+    window.setTimeout(() => { try { bus.disconnect(); } catch { /* déjà débranché */ } }, 250);
+  }
+
   stop() {
     this.running = false;
     this.session += 1;
+    this.stopFanfare();
     if (this.crySource) {
       this.crySource.stop();
       this.crySource = null;

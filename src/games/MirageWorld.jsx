@@ -29,9 +29,9 @@ import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 import { block, makeExplorer, paintModel } from './mirageExplorer';
 
 // La largeur de la piste n'est plus une constante de module : elle dépend du
-// nombre de voies (3 dans l'app, 4 sur le site), choisi au démarrage — voir
-// `trackWidth()` et `mirageLanes.js`. Les lignes de départ et d'arrivée la
-// lisent au moment de construire la scène, plus bas.
+// nombre de voies (3 sur téléphone, 4 sur ordinateur et tablette), choisi au
+// démarrage — voir `trackWidth()` et `mirageLanes.js`. Les lignes de départ et
+// d'arrivée la lisent au moment de construire la scène, plus bas.
 const TRACK_MIN_Z = -40;
 const RUN_SECONDS = 60;
 const NO_POWER_UPS = Object.freeze([]);

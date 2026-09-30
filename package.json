@@ -17,6 +17,7 @@
     "check:achievements": "node scripts/achievements-check.mjs",
     "check:countdown": "node scripts/countdown-check.mjs",
     "check:friends": "node scripts/friends-check.mjs",
+    "check:community": "node scripts/community-check.mjs",
     "check:messages": "node scripts/messages-check.mjs",
     "check:newsbot": "node scripts/news-bot/check.mjs",
     "check:light-news": "node scripts/light-news-check.mjs",
@@ -27,6 +28,7 @@
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",
+    "check:mirage-cup": "node scripts/mirage-cup-check.mjs",
     "check:quiz": "node scripts/quiz-check.mjs",
     "check:calls": "node scripts/calls-check.mjs && node scripts/calls-e2e-check.mjs",
     "theme:ink-sweep": "node scripts/theme-ink-sweep.mjs --write"

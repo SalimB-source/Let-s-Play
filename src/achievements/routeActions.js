@@ -25,6 +25,8 @@ export const SECTION_ROUTES = {
   '/quiz': 'quizzes',
   '/jeu': 'arcade',
   '/jeux': 'arcade',
+  '/communaute': 'community',
+  '/community': 'community',
   '/quizzes': 'quizzes',
   '/auth': 'account',
   '/register': 'account',

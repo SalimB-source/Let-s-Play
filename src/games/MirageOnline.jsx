@@ -471,7 +471,7 @@ export default function MirageOnline({
 
   return (
     <div className="mirage-page">
-      <header className="mirage-heading wrap">
+      <header className="mirage-heading wrap has-mode-tabs">
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow">
             <span className="mirage-live-dot" /> LET’S PLAY ARCADE{' '}
@@ -484,11 +484,10 @@ export default function MirageOnline({
           <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
 
-        <div className="mirage-mode-tabs" role="tablist" aria-label="Modes de jeu Mirage">
+        <div className="mirage-mode-tabs" aria-label="Boutons de mode Mirage">
           <button
             type="button"
-            role="tab"
-            aria-selected="false"
+            aria-pressed="false"
             className="mirage-mode-tab"
             onClick={() => switchMode('rush')}
           >
@@ -496,8 +495,7 @@ export default function MirageOnline({
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected="false"
+            aria-pressed="false"
             className="mirage-mode-tab"
             onClick={() => switchMode('duel')}
           >
@@ -505,8 +503,15 @@ export default function MirageOnline({
           </button>
           <button
             type="button"
-            role="tab"
-            aria-selected="true"
+            aria-pressed="false"
+            className="mirage-mode-tab"
+            onClick={() => switchMode('cup')}
+          >
+            <span>♛</span> COUPE
+          </button>
+          <button
+            type="button"
+            aria-pressed="true"
             className="mirage-mode-tab is-active"
           >
             <span>♞</span> EN LIGNE
