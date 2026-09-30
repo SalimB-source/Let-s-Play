@@ -451,7 +451,7 @@ export default function MirageRushPage() {
                 if (info?.action === 'used') {
                   if (info.type === 'shield') {
                     audioRef.current?.shieldGravity?.();
-                    showPowerToast('🛡️ Bouclier activé !');
+                    showPowerToast('🛡️ Bouclier activé automatiquement !');
                   } else if (info.type === 'lasso') {
                     audioRef.current?.lassoThrow?.();
                     showPowerToast('🪢 Lasso envoyé !');
@@ -460,7 +460,7 @@ export default function MirageRushPage() {
                     showPowerToast('🔫 Tir de pistolet !');
                   } else if (info.type === 'boost') {
                     audioRef.current?.speedBoost?.();
-                    showPowerToast(`⚡ Turbo activé (${POWER_BOOST_DURATION}s) !`);
+                    showPowerToast(`⚡ Turbo activé automatiquement (${POWER_BOOST_DURATION}s) !`);
                   }
                 } else if (info?.action === 'no_target') {
                   if (info.type === 'lasso') showPowerToast('🪢 Aucun cavalier devant toi !');
@@ -476,12 +476,8 @@ export default function MirageRushPage() {
                 } else if (info?.action === 'charged') {
                   audioRef.current?.powerReady?.();
                   flashFx('is-power-ready');
-                  if (info.type === 'shield') {
-                    showPowerToast('⚡ 🛡️ BOUCLIER PRÊT ! Appuie sur Q / A ou clique !');
-                  } else if (info.type === 'lasso') {
+                  if (info.type === 'lasso') {
                     showPowerToast('⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
-                  } else if (info.type === 'boost') {
-                    showPowerToast('⚡ 🚀 TURBO PRÊT ! Appuie sur E ou clique !');
                   } else if (info.type === 'pistol') {
                     showPowerToast('⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
                   }
@@ -613,11 +609,11 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_shield')}
                     disabled={(hud.shieldCharges || 0) <= 0}
-                    title="Bouclier (Q / A) — Chargé par les diamants BLEUS. Utiliser cet objet ne décharge pas les autres."
+                    title="Bouclier — Chargé par les diamants BLEUS, il s’active tout seul dès que la barre est pleine. Utiliser cet objet ne décharge pas les autres."
                   >
                     <div className="mirage-powerup-btn-top">
                       <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-powerup-icon" />
-                      <span className="mirage-powerup-key">Q / A</span>
+                      <span className="mirage-powerup-key">AUTO</span>
                     </div>
                     <div className="mirage-powerup-btn-name">
                       <span>Bouclier</span>
@@ -663,11 +659,11 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_boost')}
                     disabled={(hud.boostCharges || 0) <= 0}
-                    title={`Turbo (E) — Chargé par les diamants VERTS. Donne un boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                    title={`Turbo — Chargé par les diamants VERTS, il s’active tout seul dès que la barre est pleine : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
                       <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-powerup-icon" />
-                      <span className="mirage-powerup-key">E</span>
+                      <span className="mirage-powerup-key">AUTO</span>
                     </div>
                     <div className="mirage-powerup-btn-name">
                       <span>Turbo</span>
@@ -762,9 +758,9 @@ export default function MirageRushPage() {
                   <span><kbd>←</kbd><kbd>→</kbd> esquiver</span>
                   <span><kbd>↑</kbd> sauter</span>
                   {selectedMode === 'duel' && <>
-                    <span><kbd>Q/A</kbd> <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-key-power-icon" /> Bouclier</span>
+                    <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-key-power-icon" /> Bouclier</span>
                     <span><kbd>W/Z</kbd> <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-key-power-icon" /> Lasso</span>
-                    <span><kbd>E</kbd> <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-key-power-icon" /> Turbo</span>
+                    <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-key-power-icon" /> Turbo</span>
                     <span><kbd>R</kbd> <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-key-power-icon" /> Pistolet</span>
                   </>}
                   <span><kbd>ÉCHAP</kbd> pause</span>
@@ -924,11 +920,11 @@ export default function MirageRushPage() {
               <MiragePowerIcon type={POWER_UPS.LASSO} decorative={false} className="mirage-rule-image" />
               <div>
                 <strong>1 couleur de diamant = 1 pouvoir (Duel & En ligne)</strong>
-                <small>Les diamants <b>bleus</b> chargent le <b>Bouclier</b> (Q/A), les <b>jaunes</b> chargent le <b>Lasso</b> (W/Z : cible devant toi), les <b>verts</b> chargent le <b>Turbo</b> (E : boost de vitesse pendant {POWER_BOOST_DURATION}s) et les <b>rouges</b> chargent le <b>Pistolet</b> (R : fait tomber la cible devant toi pendant {PISTOL_STUN_DURATION}s). Utiliser un objet ne décharge pas les autres !</small>
+                <small>Les diamants <b>bleus</b> chargent le <b>Bouclier</b> et les <b>verts</b> le <b>Turbo</b> : ces deux-là partent tout seuls dès que la barre est pleine (bouclier 5s, boost de vitesse pendant {POWER_BOOST_DURATION}s). Les <b>jaunes</b> chargent le <b>Lasso</b> (W/Z : cible devant toi) et les <b>rouges</b> le <b>Pistolet</b> (R : fait tomber la cible devant toi pendant {PISTOL_STUN_DURATION}s), à déclencher à la main. Utiliser un objet ne décharge pas les autres !</small>
                 <div className="mirage-rule-powers-grid" aria-label="Les 4 objets spéciaux">
-                  <span className="mirage-rule-power-pill is-blue"><MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-rule-pill-icon" /><b>Bouclier</b><i>Q/A</i></span>
+                  <span className="mirage-rule-power-pill is-blue"><MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-rule-pill-icon" /><b>Bouclier</b><i>AUTO</i></span>
                   <span className="mirage-rule-power-pill is-yellow"><MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-rule-pill-icon" /><b>Lasso</b><i>W/Z</i></span>
-                  <span className="mirage-rule-power-pill is-green"><MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-rule-pill-icon" /><b>Turbo</b><i>E</i></span>
+                  <span className="mirage-rule-power-pill is-green"><MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-rule-pill-icon" /><b>Turbo</b><i>AUTO</i></span>
                   <span className="mirage-rule-power-pill is-red"><MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-rule-pill-icon" /><b>Pistolet</b><i>R</i></span>
                 </div>
               </div>
@@ -938,7 +934,7 @@ export default function MirageRushPage() {
           <section className="mirage-howto panel-frame">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur de diamant charge son pouvoir dédié (Bleu = Bouclier Q/A, Jaune = Lasso W/Z, Vert = Turbo E, Rouge = Pistolet R).</small></div></div>
+            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur de diamant charge son pouvoir dédié (Bleu = Bouclier, Jaune = Lasso W/Z, Vert = Turbo, Rouge = Pistolet R). Bouclier et Turbo partent tout seuls dès que leur barre est pleine ; Lasso et Pistolet se déclenchent à la main.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger ou les lanternes de pierre : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>

@@ -7,9 +7,9 @@ const asset = (name) => `${baseUrl}icons/mirage-rush/${name}.svg`;
 
 /**
  * Définition des 4 icônes d’objets spéciaux de Mirage Rush :
- * - Bouclier (diamants bleus, Q/A)
+ * - Bouclier (diamants bleus, activation automatique)
  * - Lasso (diamants jaunes, W/Z)
- * - Turbo (diamants verts, E)
+ * - Turbo (diamants verts, activation automatique)
  * - Pistolet (diamants rouges, R)
  */
 export const MIRAGE_POWER_ICONS = Object.freeze({

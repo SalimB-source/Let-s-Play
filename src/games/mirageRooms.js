@@ -1,4 +1,6 @@
-import { LANE_COUNT, PISTOL_STUN_DURATION, DUEL_DISTANCE } from './mirageRules.js';
+import {
+  LANE_COUNT, PISTOL_STUN_DURATION, DUEL_DISTANCE, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR,
+} from './mirageRules.js';
 import { supabase } from '../lib/supabase.js';
 
 const STORAGE_KEY = 'letsplay_mirage_online_rooms_v2';
@@ -414,7 +416,7 @@ function advanceBotsInRace(room, nowMs) {
     if (!p.is_bot || p.finished_at) continue;
     const slowedUntil = p.slowed_until ? Date.parse(p.slowed_until) : 0;
     const isSlowed = slowedUntil > nowMs;
-    const baseSpeed = isSlowed ? (p.speed || 16.2) * 0.45 : (p.speed || 16.2);
+    const baseSpeed = isSlowed ? (p.speed || 16.2) * LASSO_SLOW_FACTOR : (p.speed || 16.2);
     const speed = baseSpeed;
     const wave = Math.sin(elapsedSec * 1.3 + p.slot * 1.9) * 0.8;
     // Shot off its horse: the bot stands still, and the lost ground is never given back.
@@ -430,12 +432,12 @@ function advanceBotsInRace(room, nowMs) {
     p.jump = Number(jumpVal.toFixed(2));
     p.score = Math.min(200000, Math.round(p.distance * 14 + p.slot * 50));
     p.last_seen = nowIso;
-    // restore speed after slow expires
-    if (!isSlowed && p.speed && p.speed < 12) {
-      // find original bot speed from pool
-      const tpl = BOT_POOL.find(b=> b.id===p.user_id);
-      if (tpl) p.speed = tpl.speed;
-      else p.speed = 16.2;
+    // Safety net: put a bot back to its full pace once the slow has expired
+    // (also repairs bots stored by an older version that hard-reduced p.speed).
+    if (!isSlowed && p.speed) {
+      const tpl = BOT_POOL.find(b => b.id === p.user_id);
+      const fullSpeed = tpl ? tpl.speed : 16.2;
+      if (p.speed < fullSpeed) p.speed = fullSpeed;
     }
     if (p.distance >= DUEL_DISTANCE && !p.finished_at) {
       p.finished_at = nowIso;
@@ -823,7 +825,7 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
         created_at: nowIso,
       });
     } else {
-      const slowedUntil = new Date(nowMs + 2500).toISOString();
+      const slowedUntil = new Date(nowMs + Math.round(LASSO_SLOW_DURATION * 1000)).toISOString();
       target.slowed_until = slowedUntil;
       room.messages.push({
         id: `msg-${nowMs}-lasso`,
@@ -833,11 +835,10 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
         body: `🪢 ${uname} a attrapé ${target.name} au lasso !`,
         created_at: nowIso,
       });
-      // Slow bots by reducing their speed temporarily (handled via slowed_until check in advanceBotsInRace)
+      // Bots are slowed from `slowed_until` alone (see advanceBotsInRace): their
+      // base speed stays untouched so the factor is never applied twice.
       if (target.is_bot) {
         target.slowed_until = slowedUntil;
-        // also reduce speed for next ticks
-        target.speed = Math.max(8, (target.speed || 16) * 0.45);
       }
     }
     writeStore(store, true);

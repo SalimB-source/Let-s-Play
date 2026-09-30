@@ -16,7 +16,7 @@ import {
   GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState,
   crystalPickupEffect, POWER_UP_CHARGE_COST, DIAMOND_CHARGE_VALUE, POWER_UP_MAX_CHARGES,
   createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, DUEL_RIVALS,
-  chooseNpcPowerAction, POWER_BOOST_DURATION, POWER_BOOST_BONUS,
+  chooseNpcPowerAction, splitChargedPowers, POWER_BOOST_DURATION, POWER_BOOST_BONUS,
   GEM_RESPAWN_DELAY, markGemTaken, isGemHidden, prairieSunsetState,
   MUD_SLOW_DURATION, MUD_SLOW_FACTOR, hitsMudPuddle, resolveMudSlow,
 } from './mirageRules';
@@ -1965,13 +1965,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             if (powerUpsEnabled(race.mode)) {
               const chargeResult = chargePowerUps(powerState, tier);
               powerState = chargeResult.state;
-              if (chargeResult.charged.length > 0) {
+              // Shield & Boost have no target: they fire the moment their bar is full.
+              const { auto, manual } = splitChargedPowers(chargeResult.charged);
+              if (manual.length > 0) {
                 callbacks.powerUp?.({
-                  type: chargeResult.charged[chargeResult.charged.length - 1],
+                  type: manual[manual.length - 1],
                   action: 'charged',
-                  chargedTypes: chargeResult.charged,
+                  chargedTypes: manual,
                   charges: 1,
                 });
+              }
+              for (const type of auto) {
+                if (type === POWER_UPS.SHIELD) useShield();
+                else if (type === POWER_UPS.BOOST) useBoost();
               }
             }
 
