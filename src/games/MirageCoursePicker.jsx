@@ -117,8 +117,9 @@ export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defa
 
 export default function MirageCoursePicker({ selectedMode, setSelectedMode, stage, setSelectedStage, challenge, modeChosen = true }) {
   const locked = selectedMode === 'duel' && Boolean(challenge);
-  // Trois voies et deux rivaux dans l'application, quatre voies et trois
-  // rivaux sur le site (voir src/games/mirageLanes.js).
+  // Trois voies et deux rivaux sur téléphone (navigateur comme application),
+  // quatre voies et trois rivaux sur ordinateur et tablette (voir
+  // src/games/mirageLanes.js).
   const rivalCount = duelRivalsForTrack(laneCount()).length;
   return <div className="mirage-course-picker">
     <div className="mirage-picker-label"><span>01 / TON DÉFI</span><span>À TOI DE JOUER</span></div>

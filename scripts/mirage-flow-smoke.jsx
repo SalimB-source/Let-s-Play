@@ -18,7 +18,7 @@
  *      figurent) ;
  *   6. le lobby EN LIGNE (?mode=online) garde sa barre de boutons de mode
  *      (RUÉE, DUEL, COUPE, EN LIGNE) : le bouton COUPE ramène à la coupe ;
- *   7. la piste de l'application (trois voies, `setLaneCount(3)`) fait suivre
+ *   7. la piste du téléphone (trois voies, `setLaneCount(3)`) fait suivre
  *      les textes : deux rivaux, « 3 CAVALIERS » et « sur les 3 voies » — et
  *      la coupe passe elle aussi à trois cavaliers (barème 10 / 7 / 4).
  *
@@ -321,11 +321,11 @@ export async function checkMirageFlow(assert) {
     await challenged.unmount();
   }
 
-  /* ------- 6. Piste de l'application : trois voies, deux rivaux -------- */
+  /* ------- 6. Piste du téléphone : trois voies, deux rivaux ----------- */
   setLaneCount(3);
   const app = await mountPage('/jeu');
   try {
-    assert.equal(laneCount(), 3, 'la piste de l’app compte trois voies');
+    assert.equal(laneCount(), 3, 'la piste du téléphone compte trois voies');
     const duelCard = modeButtons(app.node).find((button) => button.querySelector('strong')?.textContent === 'DUEL');
     assert.ok(duelCard.textContent.includes('Face aux 2 PNJ · 800 m'),
       'le bouton DUEL annonce deux PNJ et 800 m sur la piste à trois voies');

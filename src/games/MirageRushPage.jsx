@@ -107,9 +107,10 @@ export default function MirageRushPage() {
   );
   const defaultRiderName = cleanRiderName(currentUserName);
   const effectiveRiderName = cleanRiderName(riderName, defaultRiderName);
-  // Piste de la partie : trois voies et deux rivaux dans l'application, quatre
-  // voies et trois rivaux sur le site (voir src/games/mirageLanes.js). Relu à
-  // chaque rendu — la piste est choisie au démarrage, avant le premier rendu.
+  // Piste de la partie : trois voies et deux rivaux sur téléphone (navigateur
+  // comme application), quatre voies et trois rivaux sur ordinateur et
+  // tablette (voir src/games/mirageLanes.js). Relu à chaque rendu — la piste
+  // est choisie au démarrage, avant le premier rendu.
   const trackLanes = laneCount();
   const trackRivals = useMemo(() => duelRivalsForTrack(trackLanes), [trackLanes]);
   const rivalCount = trackRivals.length;
@@ -304,7 +305,8 @@ export default function MirageRushPage() {
     const run = createCupRun(activeCup.id, {
       playerName: effectiveRiderName,
       playerColors: skinFor(progressRef.current).colors,
-      // Les rivaux de la piste courante : trois sur le site, deux à trois voies.
+      // Les rivaux de la piste courante : trois sur ordinateur et tablette,
+      // deux sur le téléphone à trois voies.
       rivals: trackRivals,
     });
     if (!run) return;
