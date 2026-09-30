@@ -41,6 +41,20 @@ test('the trophy is made of well-formed voxel boxes', () => {
   assertWellFormed(podiumBoxes());
 });
 
+test('the Grand Tour gets a distinct platinum-and-globe trophy design', () => {
+  const desert = trophyBoxes('desert');
+  const grandTour = trophyBoxes('worldtour');
+  assertWellFormed(grandTour);
+  assert.notDeepEqual(grandTour, desert, 'the two cups do not share the same trophy geometry');
+  assert.ok(grandTour.some((box) => box.material === 'ocean'));
+  assert.ok(grandTour.some((box) => box.material === 'land'));
+  assert.ok(grandTour.some((box) => box.part.startsWith('meridian-')));
+  assert.ok(!grandTour.some((box) => box.part.startsWith('emblem-')), 'the globe replaces the Desert diamond');
+  const globeCells = grandTour.filter((box) => box.part.startsWith('globe-'));
+  assert.ok(globeCells.some((box) => box.center[2] > 0), 'globe volume on the front');
+  assert.ok(globeCells.some((box) => box.center[2] < 0), 'globe volume on the back');
+});
+
 test('the trophy stands on the ground line and reaches its announced height', () => {
   const boxes = trophyBoxes();
   assert.ok(close(Math.min(...boxes.map(bottom)), 0));
@@ -150,6 +164,7 @@ test('every cup has its own named, immutable trophy design', () => {
     assert.ok(Object.hasOwn(TROPHY_DESIGNS, cup.id), `${cup.id} needs its own trophy`);
     const design = getTrophyDesign(cup.id);
     assert.equal(design.id, cup.id);
+    assert.equal(getTrophyDesign(cup.trophyDesign).id, design.id);
     assert.ok(design.name && design.description);
     assert.ok(Object.isFrozen(design));
     assert.ok(Number.isInteger(design.accent) && design.accent >= 0 && design.accent <= 0xffffff);

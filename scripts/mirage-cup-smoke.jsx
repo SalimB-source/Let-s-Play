@@ -28,6 +28,10 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
+import { AchievementProvider } from '../src/achievements/AchievementContext';
+import { MIRAGE_CUP_TROPHIES_KEY } from '../src/achievements/engine.js';
+import { STORAGE_KEY } from '../src/achievements/storage.js';
+import MirageCupTrophyCollection from '../src/games/MirageCupTrophyCollection';
 import MirageRushPage from '../src/games/MirageRushPage';
 import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, setLaneCount } from '../src/games/mirageRules';
 import { worldProbe } from './mirage-world-stub.jsx';
@@ -51,7 +55,10 @@ async function mountPage(entry) {
   await act(async () => root.render(
     <AuthProvider>
       <MemoryRouter initialEntries={[entry]}>
-        <MirageRushPage />
+        <AchievementProvider>
+          <MirageCupTrophyCollection />
+          <MirageRushPage />
+        </AchievementProvider>
       </MemoryRouter>
     </AuthProvider>,
   ));
@@ -148,6 +155,11 @@ export async function checkMirageCup(assert) {
   const timers = patchTimers();
   const { node, unmount } = await mountPage('/jeu?mode=cup');
   try {
+    // La collection du profil est visible même vide, puis ajoute un seul
+    // trophée lorsqu'une coupe est remportée.
+    assert.match(text(node.querySelector('.mirage-profile-trophies')), /Aucun trophée remporté/);
+    assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 0);
+
     // ── 1. Le joueur remporte la Coupe du Désert ───────────────────────────
     assert.equal(node.querySelector('.mirage-cup-card.is-desert svg').dataset.trophy, 'desert');
     assert.equal(node.querySelector('.mirage-cup-card.is-worldtour svg').dataset.trophy, 'worldtour');
@@ -202,6 +214,11 @@ export async function checkMirageCup(assert) {
     assert.equal(worldProbe.props.stage, 'prairie');
     assert.equal(text(node.querySelector('.mirage-chip.is-cup')), 'COURSE 3/3 · 17 PTS');
     await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
+    assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 1, 'la victoire ajoute un trophée au profil');
+    assert.equal(node.querySelector('.mirage-profile-trophy-card')?.getAttribute('data-cup-id'), 'desert');
+    assert.equal(node.querySelector('.mirage-profile-trophy-card')?.getAttribute('data-trophy-design'), 'desert');
+    const savedAchievements = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
+    assert.deepEqual(savedAchievements.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert'], 'le trophée est persisté une seule fois');
 
     results = await waitForResults(node);
     assert.deepEqual(standings(results), ['Salim 27', `${ombre} 24`, `${sauge} 10`, `${amethyste} 8`]);
@@ -211,6 +228,7 @@ export async function checkMirageCup(assert) {
     // Le trophée
     let trophy = await until(() => node.querySelector('.mirage-trophy-screen'), 'l’écran du trophée');
     assert.equal(text(trophy.querySelector('.mirage-trophy-title')), 'FÉLICITATIONS');
+    assert.ok(trophy.classList.contains('is-desert'), 'l’écran reprend le design propre à la coupe');
     assert.equal(text(trophy.querySelector('.mirage-trophy-name')).replace(/^♛\s*/, ''), 'Salim');
     assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe du Désert avec 27 points/);
     assert.ok(trophy.classList.contains('is-player-win'));
@@ -221,6 +239,7 @@ export async function checkMirageCup(assert) {
     assert.equal(trophy.dataset.trophy, 'desert');
     assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').dataset.trophy, 'desert');
     assert.equal(text(trophy.querySelector('.mirage-trophy-design')), 'Calice des Dunes');
+    assert.ok(trophy.querySelector('.mirage-trophy-fallback-cup')?.classList.contains('is-desert'), 'le repli garde le dessin de la Coupe du Désert');
 
     // ── 2. Entrée relance une coupe neuve ; cette fois l'Ombre gagne ───────
     await press('Enter');
@@ -244,6 +263,7 @@ export async function checkMirageCup(assert) {
     trophy = await until(() => node.querySelector('.mirage-trophy-screen'), 'le trophée de la 2ᵉ coupe');
     assert.equal(text(trophy.querySelector('.mirage-trophy-name')).replace(/^♛\s*/, ''), ombre);
     assert.ok(!trophy.classList.contains('is-player-win'));
+    assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 1, 'une victoire PNJ n’ajoute pas de trophée et le précédent reste unique');
     assert.match(text(trophy.querySelector('.mirage-trophy-lede')), new RegExp(`${ombre} remporte la Coupe du Désert avec 30 points\\. Tu termines 4ᵉ avec 6 points`));
 
     // ── 3. Abandons ─────────────────────────────────────────────────────────
@@ -363,6 +383,12 @@ export async function checkMirageCup(assert) {
       results = await waitForResults(tour.node);
     }
     assert.deepEqual(standings(results), ['Salim 40', `${ombre} 28`, `${sauge} 16`, `${amethyste} 8`]);
+    assert.equal(tour.node.querySelectorAll('.mirage-profile-trophy-card').length, 2, 'la collection conserve un trophée par coupe remportée');
+    const collectedGlobe = tour.node.querySelector('.mirage-profile-trophy-card[data-cup-id="worldtour"] svg');
+    assert.equal(collectedGlobe.dataset.trophy, 'worldtour');
+    assert.equal(collectedGlobe.innerHTML, tourIcon, 'la collection partage le globe du sélecteur et du podium');
+    const savedCollection = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
+    assert.deepEqual(savedCollection.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert', 'worldtour']);
     assert.equal(nextButton(tour.node).querySelector('svg').dataset.trophy, 'worldtour', 'le bouton du podium annonce le même globe');
     await click(nextButton(tour.node));
     const trophy = await until(() => tour.node.querySelector('.mirage-trophy-screen'), 'le podium du Grand Tour');

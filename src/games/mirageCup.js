@@ -36,6 +36,7 @@ export const CUPS = Object.freeze([
   Object.freeze({
     id: 'desert',
     name: 'Coupe du Désert',
+    trophyDesign: 'desert',
     tagline: 'Trois courses, un seul trophée',
     // Dunes de l’Écho → Dust Creek → Plaines d’Or
     stages: Object.freeze(['desert', 'western', 'prairie']),
@@ -43,6 +44,7 @@ export const CUPS = Object.freeze([
   Object.freeze({
     id: 'worldtour',
     name: 'Coupe Grand Tour',
+    trophyDesign: 'worldtour',
     tagline: 'Quatre cartes, un seul trophée',
     // Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase
     stages: Object.freeze(['sardinia', 'alger', 'japan', 'airbase']),

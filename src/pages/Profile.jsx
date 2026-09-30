@@ -16,6 +16,7 @@ import { normalizePlatforms, gamePlatforms } from '../lib/gameLibrary';
 import ConsoleLogo from '../components/ConsoleLogo';
 import TopGamePill from '../components/TopGamePill';
 import QuizGlobalRank from '../quizzes/QuizGlobalRank';
+import MirageCupTrophyCollection from '../games/MirageCupTrophyCollection';
 import { MAX_TESTED_GAMES } from '../lib/gameLibrary';
 
 function formatJoined(iso) {
@@ -336,6 +337,8 @@ export default function Profile() {
               sur tous les quizz, RPC `get_quiz_global_rank`). En aperçu sans
               backend, on affiche un rang scripté pour éviter une section vide. */}
           <QuizGlobalRank userId={me.id} self scriptedFallback={{ level: lvl, xp }} />
+
+          <MirageCupTrophyCollection />
 
           {/* CONSOLES POSSÉDÉES — sélection faite dans le hub joueur */}
           <div className="player-section">

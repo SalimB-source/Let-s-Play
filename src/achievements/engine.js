@@ -22,6 +22,10 @@ import { bestDayRun } from '../quizzes/engine.js';
 
 export const STATE_VERSION = 2;
 
+// Ensemble des coupes Mirage Rush remportées. La clé vit dans l'état des
+// succès pour profiter de la même persistance locale / synchronisation compte.
+export const MIRAGE_CUP_TROPHIES_KEY = 'mirage_cup_trophies';
+
 // Invalidation indépendante de la version globale : la remise à zéro des
 // quizz doit supprimer les anciennes parties sur les copies locales et dans
 // le cache d'un compte, sans effacer les succès de lecture, vidéo ou communauté.
@@ -299,6 +303,12 @@ export function reduce(state, action = {}) {
 
     case 'profile_updated':
       next = counter(current, 'profile_updated');
+      break;
+
+    // Trophée de coupe : un identifiant par coupe, sans doublon même si le
+    // joueur rejoue et remporte plusieurs fois la même compétition.
+    case 'mirage_cup_won':
+      next = addToSet(current, MIRAGE_CUP_TROPHIES_KEY, action.cupId);
       break;
 
     default:

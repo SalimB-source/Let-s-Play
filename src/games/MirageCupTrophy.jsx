@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import MirageCupStandings from './MirageCupStandings';
-import MirageTrophyIcon from './MirageTrophyIcon';
+import MirageCupTrophyEmblem from './MirageCupTrophyEmblem';
 import { cupStandings, placeLabel } from './mirageCup';
 import { makeTrophyScene } from './mirageTrophyScene';
 import { getTrophyDesign } from './mirageTrophy';
@@ -16,7 +16,7 @@ function prefersReducedMotion() {
  * prend le relais — le texte, lui, est toujours du vrai HTML.
  */
 export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
-  const trophy = getTrophyDesign(cup.id);
+  const trophy = getTrophyDesign(cup.trophyDesign || cup.id);
   const standings = useMemo(() => cupStandings(run), [run]);
   const winner = standings[0];
   const me = standings.find((row) => row.isPlayer);
@@ -31,7 +31,12 @@ export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
     let scene;
     setWebgl(true);
     try {
-      scene = makeTrophyScene(mount, { cupId: trophy.id, riderColors: winner.colors, slot: slotRef.current, reducedMotion: prefersReducedMotion() });
+      scene = makeTrophyScene(mount, {
+        trophyDesign: trophy.id,
+        riderColors: winner.colors,
+        slot: slotRef.current,
+        reducedMotion: prefersReducedMotion(),
+      });
     } catch {
       setWebgl(false);
       return undefined;
@@ -40,7 +45,7 @@ export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
   }, [trophy.id, winner.colors]);
 
   return (
-    <section className={`mirage-trophy-screen${playerWon ? ' is-player-win' : ''}`} data-trophy={trophy.id} aria-labelledby="mirage-trophy-title">
+    <section className={`mirage-trophy-screen is-${trophy.id}${playerWon ? ' is-player-win' : ''}`} data-trophy={trophy.id} aria-labelledby="mirage-trophy-title">
       <div className="mirage-trophy-rays" aria-hidden="true" />
       <div className="mirage-trophy-canvas" ref={mountRef} aria-hidden="true" />
       <div className="mirage-trophy-layout">
@@ -52,7 +57,7 @@ export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
         <div className="mirage-trophy-slot" ref={slotRef}>
           {!webgl && (
             <div className="mirage-trophy-fallback" aria-hidden="true">
-              <MirageTrophyIcon cupId={trophy.id} className="mirage-trophy-fallback-cup" />
+              <MirageCupTrophyEmblem design={trophy.id} className="mirage-trophy-fallback-cup" />
               <i /><i /><i /><i /><i /><i />
             </div>
           )}
