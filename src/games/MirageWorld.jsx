@@ -5,7 +5,7 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
 import { westernBuilding, westernObstacle } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } from './sardiniaStage';
-import { algerBuilding, algerObstacle, updatePoliceBeacon } from './algerStage';
+import { algerBuilding, algerObstacle, algerSeaside, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
@@ -525,8 +525,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : 5.5 },
-      sunX: { value: sardinia ? 18.0 : 0.0 },
+      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : alger ? 7.0 : 5.5 },
+      sunX: { value: sardinia || alger ? 18.0 : 0.0 },
       sunRadius: { value: sardinia ? 5.5 : 8.0 },
       isNight: { value: japan ? 1.0 : 0.0 },
     },
@@ -601,9 +601,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(makeMountFuji());
   }
   if (alger) {
-    // Le boulevard chaulé d'Alger la Blanche, puis la baie bleue au loin :
-    // la mer ferme l'horizon sous le soleil couchant, comme au bout de la rue.
-    block(cube, new THREE.MeshStandardMaterial({ color: 0xd6d0c0, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
+    // Le boulevard chaulé d'Alger la Blanche longe la baie sur sa droite :
+    // la mer s'étend au pied de la corniche et ferme aussi l'horizon sous
+    // le soleil couchant, comme au bout de la rue.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0xd6d0c0, roughness: 1 }), scene, [-14.7, -0.64, -35], [50.6, 0.6, 160]);
+    const bay = new THREE.Mesh(new THREE.PlaneGeometry(150, 170), new THREE.MeshStandardMaterial({ color: 0x2278a6, roughness: 0.35, metalness: 0.1, flatShading: true }));
+    bay.rotation.x = -Math.PI / 2;
+    bay.position.set(85.6, -0.92, -35);
+    scene.add(bay);
     const coast = block(new THREE.PlaneGeometry(240, 4), new THREE.MeshBasicMaterial({ color: 0x8fc3de }), scene, [0, 15.2, -94]);
     coast.renderOrder = -1;
     const sea = block(new THREE.PlaneGeometry(240, 14), new THREE.MeshBasicMaterial({ color: 0x1d6a9c }), scene, [0, 6.2, -94]);
@@ -941,12 +946,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       scenery.push(village, terrace, seaside);
     }
   } else if (alger) {
-    // Deux rangées d'immeubles haussmanniens blancs encadrent le boulevard ;
-    // la baie bleue reste visible au bout de la perspective.
-    for (let i = 0; i < 10; i++) for (const side of [-1, 1]) {
-      const item = algerBuilding(i, side);
-      scene.add(item);
-      scenery.push(item);
+    // Les immeubles haussmanniens blancs bordent le boulevard à gauche ;
+    // à droite, la corniche s'ouvre sur la baie : balustrade blanche,
+    // palmiers dattiers et barques blanches sur l'eau.
+    for (let i = 0; i < 10; i++) {
+      const item = algerBuilding(i, -1);
+      const seaside = algerSeaside(i);
+      scene.add(item, seaside);
+      scenery.push(item, seaside);
     }
   } else if (japan) {
     for (let i = 0; i < 11; i++) for (const side of [-1, 1]) {

@@ -6,14 +6,14 @@ const MAPS = [
   { id: 'western', number: '02', name: 'Dust Creek', mood: 'Au cœur du Far West', detail: 'Ville · cowboy', sky: '#c78768', sun: '#ffdf9a', land: '#a57650' },
   { id: 'prairie', number: '03', name: 'Plaines d’Or', mood: 'La grande échappée', detail: 'Golden hour · épique', sky: '#b97553', sun: '#ffad48', land: '#b5a550' },
   { id: 'sardinia', number: '04', name: 'Costa Omertà', mood: 'Un été sur la baie', detail: 'Terrasses · soleil · mandoline', sky: '#4da9dc', sun: '#ffebaa', land: '#c9895a' },
-  { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Alger-Centre · chaâbi oriental', sky: '#7fb2d8', sun: '#ffd28a', land: '#e8e2d2' },
+  { id: 'alger', number: '05', name: 'Alger la Blanche', mood: 'La ville blanche face à la baie', detail: 'Corniche · palmiers · chaâbi oriental', sky: '#7fb2d8', sun: '#ffd28a', land: '#e8e2d2' },
   { id: 'japan', number: '06', name: 'Plaines de Yōtei', mood: 'Sous la lune du Mont Fuji', detail: 'Nuit · shamisen & taiko', sky: '#111a30', sun: '#eef4ff', land: '#1c2936' },
 ];
 
 function Landscape({ map }) {
   return <svg className="mirage-map-art" viewBox="0 0 240 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
     <rect width="240" height="110" fill={map.sky} />
-    {map.id !== 'desert' && <circle cx={map.id === 'prairie' || map.id === 'alger' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : map.id === 'sardinia' ? 29 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />}
+    {map.id !== 'desert' && <circle cx={map.id === 'prairie' || map.id === 'japan' ? 120 : 165} cy={map.id === 'japan' ? 28 : map.id === 'sardinia' ? 29 : 43} r={map.id === 'prairie' ? 28 : map.id === 'japan' ? 21 : 19} fill={map.sun} />}
     {map.id === 'desert' && <>
       <defs>
         <linearGradient id="mirage-desert-sky" x1="0" y1="0" x2="0" y2="1">
@@ -159,23 +159,22 @@ function Landscape({ map }) {
       </g>)}
     </>}
     {map.id === 'alger' && <>
-      {/* La baie bleue au loin, visible entre les deux rangées d'immeubles */}
-      <rect x="52" y="56" width="136" height="11" fill="#1d6a9c" />
-      <rect x="52" y="63" width="136" height="4" fill="#3d8db8" />
-      <rect x="52" y="53.5" width="136" height="3" fill="#8fc3de" />
+      {/* La baie bleue à droite de la corniche, et au bout du boulevard */}
+      <rect x="140" y="50" width="100" height="38" fill="#1d6a9c" />
+      <rect x="140" y="50" width="100" height="3.2" fill="#8fc3de" />
+      <rect x="140" y="64" width="100" height="3" fill="#3d8db8" />
+      <rect x="52" y="56" width="88" height="11" fill="#1d6a9c" />
+      <rect x="52" y="63" width="88" height="4" fill="#3d8db8" />
+      <rect x="52" y="53.5" width="88" height="3" fill="#8fc3de" />
       {/* Ville blanche en cascade sur la colline, à gauche */}
       <rect x="0" y="34" width="30" height="54" fill="#f4f0e6" />
       <rect x="26" y="26" width="24" height="62" fill="#eae4d4" />
       <rect x="46" y="42" width="16" height="46" fill="#f1ecdf" />
       <rect x="58" y="36" width="12" height="52" fill="#e6dfcd" />
-      {/* Immeubles haussmanniens blancs, côté droit */}
-      <rect x="170" y="38" width="18" height="50" fill="#f1ecdf" />
-      <rect x="184" y="30" width="26" height="58" fill="#f4f0e6" />
-      <rect x="206" y="24" width="34" height="64" fill="#ece5d4" />
       {/* Toitures d'ardoise */}
-      <path d="M0 34 15 23 30 34M26 26 38 16 50 26M46 42 54 34 62 42M170 38 179 30 188 38M184 30 197 20 210 30M206 24 223 13 240 24" fill="#5a6570" />
+      <path d="M0 34 15 23 30 34M26 26 38 16 50 26M46 42 54 34 62 42" fill="#5a6570" />
       {/* Fenêtres, balcons et devantures */}
-      {[4, 12, 20, 30, 38, 46, 52, 64, 176, 188, 196, 212, 222, 232].map((x, i) => (
+      {[4, 12, 20, 30, 38, 46, 52, 64].map((x, i) => (
         <g key={`${map.id}-w-${x}`}>
           <rect x={x} y={i % 3 === 0 ? 42 : 46} width="5" height="8" fill="#2e3d46" />
           <rect x={x} y={i % 3 === 0 ? 56 : 60} width="5" height="8" fill="#2e3d46" />
@@ -183,7 +182,27 @@ function Landscape({ map }) {
         </g>
       ))}
       <rect x="6" y="76" width="20" height="12" fill="#1d3a2f" />
-      <rect x="188" y="76" width="18" height="12" fill="#1d3a2f" />
+      {/* Barque blanche à voile latine sur la baie */}
+      <path d="M204 54v-11l8.5 11z" fill="#f4ead0" />
+      <path d="M197 54h15l-2.6 3.6h-9.8z" fill="#f2efe4" />
+      {/* Balustrade blanche de la corniche, face à la mer */}
+      <rect x="140" y="72" width="100" height="2.2" fill="#eee8da" />
+      <rect x="140" y="79" width="100" height="2.2" fill="#eee8da" />
+      {[146, 166, 186, 206, 226].map(x => <rect key={`${map.id}-b-${x}`} x={x} y="70" width="5" height="18" fill="#d8d0be" />)}
+      {/* Palmiers de la corniche */}
+      {[158, 192, 228].map((x, i) => {
+        const cx = x + (i % 2 ? 5 : -5);
+        return (
+          <g key={`${map.id}-p-${x}`}>
+            <path d={`M${x} 87 Q ${x + (i % 2 ? 3 : -3)} 70 ${cx} 56`} stroke="#96754a" strokeWidth="3" fill="none" />
+            <path d={`M${cx} 56 q -8 -10 -20 -8`} stroke="#2f6b3d" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+            <path d={`M${cx} 56 q -2 -13 -12 -16`} stroke="#3f7d46" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+            <path d={`M${cx} 56 q 1 -14 -3 -18`} stroke="#2f6b3d" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+            <path d={`M${cx} 56 q 6 -12 13 -14`} stroke="#3f7d46" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+            <path d={`M${cx} 56 q 10 -8 19 -6`} stroke="#2f6b3d" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+          </g>
+        );
+      })}
       <path d="M0 88H240V110H0Z" fill={map.land} />
     </>}
     {map.id === 'japan' && <>
