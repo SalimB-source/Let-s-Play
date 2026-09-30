@@ -816,7 +816,7 @@ export default function MirageRushPage() {
                     {race.cup && cupRun && (
                       <div className="mirage-hud-cup">
                         <i className="mirage-chip is-cup" title={`${activeCup.name} : points déjà gagnés`}>
-                          <MirageTrophyIcon className="mirage-inline-trophy" /> COURSE {race.cup.index + 1}/{race.cup.total} · {cupPlayerPoints} PTS
+                          <MirageTrophyIcon cupId={race.cup.id} className="mirage-inline-trophy" /> COURSE {race.cup.index + 1}/{race.cup.total} · {cupPlayerPoints} PTS
                         </i>
                       </div>
                     )}

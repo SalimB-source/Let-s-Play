@@ -1,13 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { CUPS } from '../src/games/mirageCup.js';
 import {
   CONFETTI_COLORS,
   PODIUM_HEIGHT,
   TROPHY_HEIGHT,
+  TROPHY_DESIGNS,
+  TROPHY_MATERIAL_COLORS,
   TROPHY_MATERIALS,
   VOXEL,
+  getTrophyDesign,
   podiumBoxes,
   trophyBoxes,
+  trophyIconRects,
 } from '../src/games/mirageTrophy.js';
 
 const EPSILON = 1e-9;
@@ -41,13 +46,13 @@ test('the Grand Tour gets a distinct platinum-and-globe trophy design', () => {
   const grandTour = trophyBoxes('worldtour');
   assertWellFormed(grandTour);
   assert.notDeepEqual(grandTour, desert, 'the two cups do not share the same trophy geometry');
-  assert.ok(grandTour.some((box) => box.material === 'globe'));
-  assert.ok(grandTour.some((box) => box.material === 'globeLand'));
+  assert.ok(grandTour.some((box) => box.material === 'ocean'));
+  assert.ok(grandTour.some((box) => box.material === 'land'));
   assert.ok(grandTour.some((box) => box.part.startsWith('meridian-')));
   assert.ok(!grandTour.some((box) => box.part.startsWith('emblem-')), 'the globe replaces the Desert diamond');
   const globeCells = grandTour.filter((box) => box.part.startsWith('globe-'));
-  assert.ok(globeCells.some((box) => box.center[2] > 0), 'globe relief on the front');
-  assert.ok(globeCells.some((box) => box.center[2] < 0), 'globe relief on the back');
+  assert.ok(globeCells.some((box) => box.center[2] > 0), 'globe volume on the front');
+  assert.ok(globeCells.some((box) => box.center[2] < 0), 'globe volume on the back');
 });
 
 test('the trophy stands on the ground line and reaches its announced height', () => {
@@ -149,4 +154,112 @@ test('confetti use distinct colours, starting with the gold of the trophy', () =
   assert.equal(new Set(CONFETTI_COLORS).size, CONFETTI_COLORS.length);
   for (const color of CONFETTI_COLORS) assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff);
   assert.equal(CONFETTI_COLORS[0], 0xffd15c);
+});
+
+// Le catalogue des coupes doit rester couvert : un nouvel id ne peut pas
+// emprunter silencieusement le trophée d'une autre coupe.
+test('every cup has its own named, immutable trophy design', () => {
+  assert.equal(new Set(CUPS.map((cup) => getTrophyDesign(cup.id).name)).size, CUPS.length);
+  for (const cup of CUPS) {
+    assert.ok(Object.hasOwn(TROPHY_DESIGNS, cup.id), `${cup.id} needs its own trophy`);
+    const design = getTrophyDesign(cup.id);
+    assert.equal(design.id, cup.id);
+    assert.equal(getTrophyDesign(cup.trophyDesign).id, design.id);
+    assert.ok(design.name && design.description);
+    assert.ok(Object.isFrozen(design));
+    assert.ok(Number.isInteger(design.accent) && design.accent >= 0 && design.accent <= 0xffffff);
+  }
+  for (const material of TROPHY_MATERIALS) {
+    const color = TROPHY_MATERIAL_COLORS[material];
+    assert.ok(Number.isInteger(color) && color >= 0 && color <= 0xffffff, `${material} has a shared SVG / 3D colour`);
+  }
+});
+
+test('missing or unknown cup ids safely retain the Desert trophy', () => {
+  for (const id of [undefined, null, 'inconnue', 'toString', '__proto__']) {
+    assert.equal(getTrophyDesign(id), TROPHY_DESIGNS.desert);
+    assert.deepEqual(trophyBoxes(id), trophyBoxes('desert'));
+    assert.deepEqual(trophyIconRects(id), trophyIconRects('desert'));
+  }
+});
+
+for (const cup of CUPS) {
+  test(`${cup.id}: geometry is well formed, grounded and sized for its podium`, () => {
+    const boxes = trophyBoxes(cup.id);
+    assertWellFormed(boxes);
+    assertWellFormed(podiumBoxes(cup.id));
+    assert.ok(close(Math.min(...boxes.map(bottom)), 0));
+    assert.ok(close(Math.max(...boxes.map(top)), getTrophyDesign(cup.id).height));
+    assert.ok(getTrophyDesign(cup.id).height > 4 && getTrophyDesign(cup.id).height < 7);
+    assert.ok(close(top(podiumBoxes(cup.id).find((box) => box.part === 'podium-cap')), PODIUM_HEIGHT));
+  });
+
+  test(`${cup.id}: every part is connected to the foot, without floating ornaments`, () => {
+    const boxes = trophyBoxes(cup.id);
+    const connected = new Set([boxes.find((box) => box.part === 'foot')]);
+    const touching = (a, b) => a.center.every((value, axis) =>
+      Math.abs(value - b.center[axis]) <= (a.size[axis] + b.size[axis]) / 2 + EPSILON);
+    let previousSize;
+    do {
+      previousSize = connected.size;
+      for (const box of boxes) {
+        if (!connected.has(box) && [...connected].some((other) => touching(box, other))) connected.add(box);
+      }
+    } while (connected.size > previousSize);
+    assert.deepEqual(boxes.filter((box) => !connected.has(box)).map((box) => box.part), []);
+  });
+
+  test(`${cup.id}: SVG is a correctly layered projection of the same 3D design`, () => {
+    const boxes = trophyBoxes(cup.id);
+    const rects = trophyIconRects(cup.id);
+    assert.equal(rects.length, boxes.length);
+    let previousDepth = -Infinity;
+    for (const rect of rects) {
+      const box = boxes.find((candidate) => candidate.part === rect.part);
+      assert.equal(rect.material, box.material);
+      assert.ok(close(rect.width, box.size[0] / VOXEL));
+      assert.ok(close(rect.height, box.size[1] / VOXEL));
+      assert.ok(close(rect.x, 12 + (box.center[0] - box.size[0] / 2) / VOXEL));
+      assert.ok(close(rect.y, 23 - top(box) / VOXEL));
+      assert.ok(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= 24 && rect.y + rect.height <= 24, `${rect.part} fits in the icon`);
+      const depth = box.center[2] + box.size[2] / 2;
+      assert.ok(depth >= previousDepth - EPSILON, 'back layers precede front details');
+      previousDepth = depth;
+    }
+    // Chaque appel fournit des données neuves : animer une scène ne doit pas
+    // altérer les icônes ou la prochaine remise de coupe.
+    boxes[0].center[1] = 999;
+    assert.notEqual(trophyBoxes(cup.id)[0].center[1], 999);
+  });
+}
+
+test('cup trophies have different silhouettes, not just different colours', () => {
+  const geometry = (id) => trophyBoxes(id).map(({ size, center }) => [size, center]);
+  const iconGeometry = (id) => trophyIconRects(id).map(({ x, y, width, height }) => [x, y, width, height]);
+  for (let index = 0; index < CUPS.length; index++) {
+    for (let other = index + 1; other < CUPS.length; other++) {
+      assert.notDeepEqual(geometry(CUPS[index].id), geometry(CUPS[other].id));
+      assert.notDeepEqual(iconGeometry(CUPS[index].id), iconGeometry(CUPS[other].id));
+    }
+  }
+});
+
+test('Grand Tour has a globe, two framed rings and a silver stand instead of a handled bowl', () => {
+  const boxes = trophyBoxes('worldtour');
+  assert.ok(!boxes.some((box) => /^(bowl|handle)-/.test(box.part)));
+  for (const part of ['globe-', 'meridian-', 'equator-']) {
+    assert.ok(boxes.some((box) => box.part.startsWith(part)), `${part} is present`);
+  }
+  assert.equal(boxes.find((box) => box.part === 'stem').material, 'silver');
+  assert.equal(podiumBoxes('worldtour').find((box) => box.part === 'podium-cap').material, 'silverDark');
+  const globe = boxes.filter((box) => box.part.startsWith('globe-'));
+  const continents = boxes.filter((box) => box.part.startsWith('continent-'));
+  assert.ok(continents.some((box) => box.center[2] > 0) && continents.some((box) => box.center[2] < 0), 'rotation reveals continents on both faces');
+  for (const continent of continents) {
+    const side = Math.sign(continent.center[2]);
+    const wall = globe.find((box) => close(box.center[1], continent.center[1])
+      && Math.abs(continent.center[0]) + continent.size[0] / 2 <= box.size[0] / 2 + EPSILON
+      && close(side * continent.center[2] - continent.size[2] / 2, side * box.center[2] + box.size[2] / 2));
+    assert.ok(wall, `${continent.part} sits flush on the curved ocean surface`);
+  }
 });

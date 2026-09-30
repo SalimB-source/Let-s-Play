@@ -47,7 +47,7 @@ export default function MirageCupResults({ cup, run, award, onNext, onQuit }) {
         {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map((skin) => skin.name).join(' · ')}</em>}</p>}
         <div className="mirage-result-actions">
           <button type="button" className="mirage-start-button" onClick={onNext}>
-            {finished ? <>VOIR LE PODIUM <MirageTrophyIcon className="mirage-inline-trophy" /></> : <>COURSE SUIVANTE · {nextStage.toUpperCase()} <span aria-hidden="true">↗</span></>}
+            {finished ? <>VOIR LE PODIUM <MirageTrophyIcon cupId={cup.id} className="mirage-inline-trophy" /></> : <>COURSE SUIVANTE · {nextStage.toUpperCase()} <span aria-hidden="true">↗</span></>}
           </button>
           <button type="button" className="mirage-share-button" onClick={onQuit}>← ABANDONNER LA COUPE</button>
         </div>

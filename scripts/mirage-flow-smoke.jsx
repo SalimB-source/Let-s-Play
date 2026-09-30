@@ -150,6 +150,9 @@ function assertCupIntro(assert, node) {
     ['COURSE 1', 'COURSE 2', 'COURSE 3']);
   const worldtourCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe Grand Tour');
   assert.ok(worldtourCard, 'la Coupe Grand Tour (4 cartes) est proposée');
+  assert.equal(desertCard.querySelector('.mirage-cup-emblem svg').dataset.trophy, 'desert');
+  assert.equal(worldtourCard.querySelector('.mirage-cup-emblem svg').dataset.trophy, 'worldtour');
+  assert.notEqual(desertCard.querySelector('svg').innerHTML, worldtourCard.querySelector('svg').innerHTML, 'chaque coupe a son propre trophée');
   assert.deepEqual(
     [...worldtourCard.querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
     ['Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Thunder Airbase'],

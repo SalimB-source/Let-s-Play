@@ -3,18 +3,20 @@ import MirageCupStandings from './MirageCupStandings';
 import MirageCupTrophyEmblem from './MirageCupTrophyEmblem';
 import { cupStandings, placeLabel } from './mirageCup';
 import { makeTrophyScene } from './mirageTrophyScene';
+import { getTrophyDesign } from './mirageTrophy';
 
 function prefersReducedMotion() {
   try { return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches); } catch { return false; }
 }
 
 /**
- * Écran de remise de la coupe, à la Mario Kart : un trophée 3D doré qui tourne
- * sur son podium, des félicitations, le nom du vainqueur et le classement final.
+ * Écran de remise de la coupe, à la Mario Kart : son trophée 3D tourne sur
+ * le podium, avec des félicitations, le nom du vainqueur et le classement final.
  * La scène WebGL vit dans `mirageTrophyScene.js` ; sans WebGL, un trophée CSS
  * prend le relais — le texte, lui, est toujours du vrai HTML.
  */
 export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
+  const trophy = getTrophyDesign(cup.trophyDesign || cup.id);
   const standings = useMemo(() => cupStandings(run), [run]);
   const winner = standings[0];
   const me = standings.find((row) => row.isPlayer);
@@ -27,10 +29,11 @@ export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
     const mount = mountRef.current;
     if (!mount) return undefined;
     let scene;
+    setWebgl(true);
     try {
       scene = makeTrophyScene(mount, {
+        trophyDesign: trophy.id,
         riderColors: winner.colors,
-        trophyDesign: cup.trophyDesign,
         slot: slotRef.current,
         reducedMotion: prefersReducedMotion(),
       });
@@ -39,10 +42,10 @@ export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
       return undefined;
     }
     return () => scene.destroy();
-  }, [winner.colors, cup.trophyDesign]);
+  }, [trophy.id, winner.colors]);
 
   return (
-    <section className={`mirage-trophy-screen is-${cup.trophyDesign}${playerWon ? ' is-player-win' : ''}`} aria-labelledby="mirage-trophy-title">
+    <section className={`mirage-trophy-screen is-${trophy.id}${playerWon ? ' is-player-win' : ''}`} data-trophy={trophy.id} aria-labelledby="mirage-trophy-title">
       <div className="mirage-trophy-rays" aria-hidden="true" />
       <div className="mirage-trophy-canvas" ref={mountRef} aria-hidden="true" />
       <div className="mirage-trophy-layout">
@@ -54,13 +57,14 @@ export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
         <div className="mirage-trophy-slot" ref={slotRef}>
           {!webgl && (
             <div className="mirage-trophy-fallback" aria-hidden="true">
-              <MirageCupTrophyEmblem design={cup.trophyDesign} className="mirage-trophy-fallback-cup" />
+              <MirageCupTrophyEmblem design={trophy.id} className="mirage-trophy-fallback-cup" />
               <i /><i /><i /><i /><i /><i />
             </div>
           )}
         </div>
 
         <div className="mirage-trophy-panel">
+          <p className="mirage-trophy-design" title={trophy.description}>{trophy.name}</p>
           <p className="mirage-trophy-winner">
             <small>VAINQUEUR · {cup.name.toUpperCase()}</small>
             <strong className="mirage-trophy-name"><span className="mirage-trophy-crown" aria-hidden="true">♛</span> {winner.name}</strong>

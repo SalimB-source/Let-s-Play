@@ -2619,6 +2619,7 @@ img.mirage-powerup-icon {
 /* ── Sélecteur de coupe (overlay d'intro) ── */
 .mirage-cup-picker { display: grid; gap: 10px; }
 .mirage-cup-card {
+  --cup-trophy-accent: #f6cd72; --cup-trophy-glow: 243, 198, 91;
   position: relative; display: flex; flex-direction: column; gap: 12px; padding: 14px;
   border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2);
   background: linear-gradient(125deg, rgba(50, 35, 57, .9), rgba(33, 26, 42, .92));
@@ -2626,21 +2627,24 @@ img.mirage-powerup-icon {
   transition: border-color .18s, transform .18s, box-shadow .18s;
 }
 .mirage-cup-card[aria-pressed="true"] {
-  border-color: #f6cd72;
+  border-color: var(--cup-trophy-accent);
   background: linear-gradient(120deg, rgba(103, 67, 44, .6), rgba(48, 34, 50, .95));
-  box-shadow: inset 0 0 0 1px rgba(246, 205, 114, .15), 0 6px 22px rgba(0, 0, 0, .28), 0 0 24px rgba(243, 198, 91, .12);
+  box-shadow: inset 0 0 0 1px rgba(var(--cup-trophy-glow), .15), 0 6px 22px rgba(0, 0, 0, .28), 0 0 24px rgba(var(--cup-trophy-glow), .12);
 }
-.mirage-cup-card[aria-pressed="true"] .mirage-choice-dot { background: #f6cd72; border-color: #f6cd72; }
+.mirage-cup-card[aria-pressed="true"] .mirage-choice-dot { background: var(--cup-trophy-accent); border-color: var(--cup-trophy-accent); }
 .mirage-cup-card:focus-visible { outline: 2px solid #fff1c9; outline-offset: 3px; }
 .mirage-cup-card-head { display: flex; align-items: center; gap: 12px; padding-right: 22px; }
 .mirage-cup-emblem {
   display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px;
-  background: radial-gradient(circle at 50% 30%, rgba(255, 220, 133, .3), rgba(255, 220, 133, .06));
+  background: radial-gradient(circle at 50% 30%, rgba(var(--cup-trophy-glow), .3), rgba(var(--cup-trophy-glow), .06));
 }
-.mirage-cup-emblem svg { display: block; width: 28px; height: 28px; filter: drop-shadow(0 2px 6px rgba(255, 190, 70, .35)); }
+.mirage-cup-emblem svg { display: block; width: 32px; height: 32px; filter: drop-shadow(0 2px 6px rgba(var(--cup-trophy-glow), .35)); }
 .mirage-cup-card-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .mirage-cup-card-title strong { font: 900 17px var(--font-gaming); letter-spacing: .04em; }
 .mirage-cup-card-title span { font-size: 11px; color: #ead7c7; }
+.mirage-cup-card-title small { color: var(--cup-trophy-accent); font: 800 8px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.mirage-cup-card.is-worldtour { --cup-trophy-accent: #85efd0; --cup-trophy-glow: 133, 239, 208; }
+.mirage-cup-card.is-worldtour[aria-pressed="true"] { background: linear-gradient(120deg, rgba(26, 86, 91, .65), rgba(29, 39, 56, .95)); }
 .mirage-cup-route { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
 .mirage-cup-stop { position: relative; display: flex; flex-direction: column; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .09); background: #251c29; }
 .mirage-cup-stop .mirage-map-visual { height: 62px; border-radius: 9px 9px 0 0; }
@@ -2672,7 +2676,7 @@ img.mirage-powerup-icon {
 .mirage-cup-name-field input::placeholder { color: rgba(255, 242, 221, .38); }
 .mirage-cup-name-field input:focus-visible { outline: 2px solid #ffdb76; outline-offset: 2px; }
 @media (hover: hover) {
-  .mirage-cup-card:hover { transform: translateY(-2px); border-color: #f6cd72; }
+  .mirage-cup-card:hover { transform: translateY(-2px); border-color: var(--cup-trophy-accent); }
 }
 
 /* ── Classement (entre les courses et sur l'écran final) ── */
@@ -2734,34 +2738,20 @@ img.mirage-powerup-icon {
 
 /* ── Écran du trophée ── */
 .mirage-trophy-screen {
+  --trophy-accent: #ffd76b; --trophy-pale: #fff3c4; --trophy-sheen: #ffb347; --trophy-glow: 255, 200, 92;
   position: absolute; z-index: 5; inset: 0; overflow: hidden; color: #fff4df; text-align: center;
   container: trophy / size;
   background: radial-gradient(75% 70% at 50% 54%, #62358a 0%, #2d1748 56%, #150b27 100%);
   animation: mirageOverlayIn .4s ease-out;
 }
-.mirage-trophy-screen.is-worldtour {
-  background: radial-gradient(75% 70% at 50% 54%, #176083 0%, #123353 56%, #08172f 100%);
+.mirage-trophy-screen[data-trophy="worldtour"] {
+  --trophy-accent: #85efd0; --trophy-pale: #eeffff; --trophy-sheen: #a3cde2; --trophy-glow: 133, 239, 208;
+  background: radial-gradient(75% 70% at 50% 54%, #285f75 0%, #142b49 56%, #0a1429 100%);
 }
-.mirage-trophy-screen.is-worldtour .mirage-trophy-rays {
-  background: repeating-conic-gradient(from 0deg, rgba(104, 239, 239, .17) 0deg 6deg, rgba(104, 239, 239, 0) 6deg 18deg);
-}
-.mirage-trophy-screen.is-worldtour .mirage-trophy-title {
-  background-image: linear-gradient(110deg, #8af1e1 0%, #e6feff 32%, #77cde8 55%, #8af1e1 100%);
-}
-.mirage-trophy-screen.is-worldtour .mirage-trophy-panel {
-  border-color: rgba(114, 228, 235, .32);
-}
-.mirage-trophy-screen.is-worldtour .mirage-trophy-winner small { color: #8af1e1; }
-.mirage-trophy-screen.is-worldtour .mirage-trophy-crown,
-.mirage-trophy-screen.is-worldtour .mirage-trophy-lede b { color: #8af1e1; }
-.mirage-trophy-screen.is-worldtour.is-player-win .mirage-trophy-panel {
-  border-color: rgba(114, 228, 235, .62);
-  box-shadow: 0 14px 44px rgba(6, 2, 14, .5), 0 0 40px rgba(77, 219, 229, .2);
-}
-/* Rayons dorés qui tournent doucement derrière le trophée. */
+/* Rayons aux couleurs de la coupe qui tournent doucement derrière le trophée. */
 .mirage-trophy-rays {
   position: absolute; left: 50%; top: 54%; width: 230%; aspect-ratio: 1; transform: translate(-50%, -50%);
-  background: repeating-conic-gradient(from 0deg, rgba(255, 214, 120, .17) 0deg 6deg, rgba(255, 214, 120, 0) 6deg 18deg);
+  background: repeating-conic-gradient(from 0deg, rgba(var(--trophy-glow), .17) 0deg 6deg, rgba(var(--trophy-glow), 0) 6deg 18deg);
   -webkit-mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .55) 24%, transparent 56%);
   mask-image: radial-gradient(circle, #000 0%, rgba(0, 0, 0, .55) 24%, transparent 56%);
   animation: mirageRaysSpin 46s linear infinite;
@@ -2780,7 +2770,7 @@ img.mirage-powerup-icon {
 .mirage-trophy-slot { grid-area: slot; position: relative; min-height: 0; }
 .mirage-trophy-title {
   margin: 8px auto 0; font: 900 clamp(28px, 6vw, 54px)/1.05 var(--font-gaming); letter-spacing: -.02em;
-  background: linear-gradient(110deg, #ffd76b 0%, #fff3c4 32%, #ffb347 55%, #ffd76b 100%); background-size: 220% 100%;
+  background: linear-gradient(110deg, var(--trophy-accent) 0%, var(--trophy-pale) 32%, var(--trophy-sheen) 55%, var(--trophy-accent) 100%); background-size: 220% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 4px 18px rgba(10, 4, 20, .7));
   animation: mirageShimmer 3.2s linear infinite, mirageTitleIn .7s cubic-bezier(.2, .9, .3, 1.3) both;
@@ -2792,19 +2782,20 @@ img.mirage-powerup-icon {
   background: rgba(21, 11, 36, .62); backdrop-filter: blur(10px); box-shadow: 0 14px 44px rgba(6, 2, 14, .5);
   animation: miragePopIn .6s .35s cubic-bezier(.2, .9, .3, 1.25) both;
 }
+.mirage-trophy-design { margin: 0 0 8px; color: var(--trophy-accent); font: 800 9px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
 .mirage-trophy-winner { margin: 0 0 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.mirage-trophy-winner small { color: #e7c98a; font: 800 8px var(--mono); letter-spacing: .2em; }
+.mirage-trophy-winner small { color: var(--trophy-accent); font: 800 8px var(--mono); letter-spacing: .2em; }
 .mirage-trophy-name {
   max-width: 100%; color: #fff4df; font: 900 clamp(22px, 4.4vw, 38px)/1.1 var(--font-gaming); text-transform: uppercase; overflow-wrap: anywhere;
-  text-shadow: 0 0 26px rgba(255, 210, 98, .42), 0 3px 14px rgba(10, 4, 20, .85);
+  text-shadow: 0 0 26px rgba(var(--trophy-glow), .42), 0 3px 14px rgba(10, 4, 20, .85);
 }
-.mirage-trophy-crown { margin-right: 4px; color: #ffd76b; }
+.mirage-trophy-crown { margin-right: 4px; color: var(--trophy-accent); }
 .mirage-trophy-lede { margin: 8px 0 12px; color: rgba(255, 244, 226, .86); font-size: 12px; line-height: 1.55; }
-.mirage-trophy-lede b { color: #ffdc72; }
+.mirage-trophy-lede b { color: var(--trophy-accent); }
 .mirage-trophy-panel .mirage-cup-standings { width: 100%; margin-bottom: 14px; }
 .mirage-trophy-panel .mirage-cup-row { padding: 5px 10px 5px 6px; }
 .mirage-trophy-panel .mirage-overlay-hint { margin-top: 10px; }
-.mirage-trophy-screen.is-player-win .mirage-trophy-panel { border-color: rgba(255, 220, 114, .55); box-shadow: 0 14px 44px rgba(6, 2, 14, .5), 0 0 40px rgba(255, 200, 92, .18); }
+.mirage-trophy-screen.is-player-win .mirage-trophy-panel { border-color: rgba(var(--trophy-glow), .55); box-shadow: 0 14px 44px rgba(6, 2, 14, .5), 0 0 40px rgba(var(--trophy-glow), .18); }
 
 /* Deux colonnes dès que l'écran du trophée est assez large : la scène 3D à gauche
    (le « slot » est l'emplacement où elle se cadre), le palmarès à droite. */
@@ -2851,6 +2842,7 @@ img.mirage-powerup-icon {
   .mirage-trophy-lede, .mirage-trophy-panel .mirage-overlay-hint { display: none; }
   .mirage-cup-standings { --cup-portrait: 30px; --cup-row-pad: 2px; }
   .mirage-trophy-panel { padding: 8px 10px; }
+  .mirage-trophy-design { margin-bottom: 3px; font-size: 7px; }
   .mirage-trophy-winner { margin-bottom: 4px; }
   .mirage-trophy-winner small { font-size: 7px; }
   .mirage-trophy-name { font-size: clamp(18px, 4vw, 26px); }
@@ -2863,16 +2855,13 @@ img.mirage-powerup-icon {
 /* Repli sans WebGL : un trophée CSS qui tourne et quelques étincelles. */
 .mirage-trophy-fallback { position: absolute; inset: 0; display: grid; place-items: center; perspective: 700px; }
 .mirage-trophy-fallback-cup {
-  display: block; width: clamp(92px, 22vw, 190px); height: auto; aspect-ratio: 64 / 72; transform-style: preserve-3d;
-  filter: drop-shadow(0 12px 28px rgba(255, 190, 70, .5));
+  display: block; width: clamp(92px, 22vw, 190px); height: auto; aspect-ratio: 1; transform-style: preserve-3d;
+  filter: drop-shadow(0 12px 28px rgba(var(--trophy-glow), .5));
   animation: mirageTrophySpin 4.2s linear infinite;
-}
-.mirage-trophy-screen.is-worldtour .mirage-trophy-fallback-cup {
-  filter: drop-shadow(0 12px 28px rgba(77, 219, 229, .5));
 }
 @keyframes mirageTrophySpin { to { transform: rotateY(360deg); } }
 .mirage-trophy-fallback i {
-  position: absolute; width: 10px; height: 10px; background: #fff3c4;
+  position: absolute; width: 10px; height: 10px; background: var(--trophy-pale);
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
   animation: mirageTwinkle 1.8s ease-in-out infinite;
 }

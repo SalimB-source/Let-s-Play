@@ -29,7 +29,8 @@ export const DEFAULT_RIDER_NAME = 'Cavalier';
  * identifiants de terrain déjà connus de `MirageCoursePicker` (`desert`,
  * `western`, `prairie`, `sardinia`, `alger`, `japan`, `ramparts`,
  * `infinity`, `airbase`). Le sélecteur de coupe, l’enchaînement des courses
- * et l’écran du trophée suivent tout seuls.
+ * et l’écran du trophée suivent tout seuls. Ajouter aussi le design propre
+ * à son identifiant dans `mirageTrophy.js` (forme 3D et icône SVG partagées).
  */
 export const CUPS = Object.freeze([
   Object.freeze({

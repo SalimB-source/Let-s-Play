@@ -1,4 +1,4 @@
-// Scène 3D de l’écran du trophée (fin de Coupe) : le trophée voxel doré tourne
+// Scène 3D de l’écran du trophée (fin de Coupe) : le trophée voxel de la coupe tourne
 // sur son podium, les quatre diamants de Mirage Rush gravitent autour, le
 // cavalier vainqueur fait la fête à côté, des étincelles scintillent et des
 // confettis tombent en 3D.
@@ -13,7 +13,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { CRYSTALS } from './mirageRules';
-import { CONFETTI_COLORS, PODIUM_HEIGHT, TROPHY_HEIGHT, podiumBoxes, trophyBoxes } from './mirageTrophy';
+import { CONFETTI_COLORS, PODIUM_HEIGHT, TROPHY_MATERIAL_COLORS, getTrophyDesign, podiumBoxes, trophyBoxes } from './mirageTrophy';
 import { disposeExplorer, makeExplorer } from './mirageExplorer';
 
 // Le trophée et son podium sont décalés vers la gauche pour laisser la place
@@ -35,34 +35,28 @@ const easeOutBack = (t) => 1 + 2.70158 * (t - 1) ** 3 + 1.70158 * (t - 1) ** 2;
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
 const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
 
-function makeMaterials(trophyDesign = 'desert') {
-  const grandTour = trophyDesign === 'worldtour';
-  const palette = grandTour
-    ? {
-      gold: 0xe0f7fb, goldDark: 0x638ba7, goldLight: 0x8af1e1,
-      gem: 0xffd66b, gemEmissive: 0xc08426, globe: 0x1d5f9c, globeLand: 0x54dfc1,
-      stone: 0x1b4b70, stoneLight: 0x28799a, stoneDark: 0x102e4c,
-    }
-    : {
-      gold: 0xffc93c, goldDark: 0xc98a1b, goldLight: 0xffe48a,
-      gem: 0x45e4ff, gemEmissive: 0x16a8d8, globe: 0x1d5f9c, globeLand: 0x54dfc1,
-      stone: 0x5a3d78, stoneLight: 0x7a5a9a, stoneDark: 0x3c2752,
-    };
+function makeMaterials() {
+  const material = (name, options) => new THREE.MeshStandardMaterial({
+    color: TROPHY_MATERIAL_COLORS[name], flatShading: true, ...options,
+  });
   return {
-    gold: new THREE.MeshStandardMaterial({ color: palette.gold, metalness: 0.9, roughness: 0.3, emissive: grandTour ? 0x15303a : 0x2a1a00, flatShading: true }),
-    goldDark: new THREE.MeshStandardMaterial({ color: palette.goldDark, metalness: 0.85, roughness: 0.38, emissive: grandTour ? 0x0a1e2c : 0x1e1000, flatShading: true }),
-    goldLight: new THREE.MeshStandardMaterial({ color: palette.goldLight, metalness: 0.8, roughness: 0.25, emissive: grandTour ? 0x133c3b : 0x3a2a08, flatShading: true }),
-    gem: new THREE.MeshStandardMaterial({ color: palette.gem, emissive: palette.gemEmissive, emissiveIntensity: 1.1, roughness: 0.2, metalness: 0.1, flatShading: true }),
-    globe: new THREE.MeshStandardMaterial({ color: palette.globe, emissive: 0x092d53, emissiveIntensity: 0.3, roughness: 0.28, metalness: 0.2, flatShading: true }),
-    globeLand: new THREE.MeshStandardMaterial({ color: palette.globeLand, emissive: 0x0d6159, emissiveIntensity: 0.3, roughness: 0.35, metalness: 0.25, flatShading: true }),
-    stone: new THREE.MeshStandardMaterial({ color: palette.stone, roughness: 0.8, metalness: 0.05, flatShading: true }),
-    stoneLight: new THREE.MeshStandardMaterial({ color: palette.stoneLight, roughness: 0.8, metalness: 0.05, flatShading: true }),
-    stoneDark: new THREE.MeshStandardMaterial({ color: palette.stoneDark, roughness: 0.85, metalness: 0.05, flatShading: true }),
+    gold: material('gold', { metalness: 0.9, roughness: 0.3, emissive: 0x2a1a00 }),
+    goldDark: material('goldDark', { metalness: 0.85, roughness: 0.38, emissive: 0x1e1000 }),
+    goldLight: material('goldLight', { metalness: 0.8, roughness: 0.25, emissive: 0x3a2a08 }),
+    gem: material('gem', { emissive: 0x16a8d8, emissiveIntensity: 1.1, roughness: 0.2, metalness: 0.1 }),
+    silver: material('silver', { metalness: 0.95, roughness: 0.22 }),
+    silverDark: material('silverDark', { metalness: 0.85, roughness: 0.4 }),
+    silverLight: material('silverLight', { metalness: 0.9, roughness: 0.18 }),
+    ocean: material('ocean', { emissive: 0x05799a, emissiveIntensity: 0.35, roughness: 0.25, metalness: 0.3 }),
+    land: material('land', { roughness: 0.45, metalness: 0.15 }),
+    stone: material('stone', { roughness: 0.8, metalness: 0.05 }),
+    stoneLight: material('stoneLight', { roughness: 0.8, metalness: 0.05 }),
+    stoneDark: material('stoneDark', { roughness: 0.85, metalness: 0.05 }),
   };
 }
 
-// Regroupe les boîtes par matériau : une poignée de meshes plutôt qu’une
-// soixantaine. Les géométries fusionnées sont renvoyées pour être libérées.
+// Regroupe les boîtes par matériau : une poignée de meshes plutôt qu’un
+// mesh par boîte. Les géométries fusionnées sont renvoyées pour être libérées.
 function buildVoxelGroup(boxes, materials, disposables) {
   const group = new THREE.Group();
   const byMaterial = new Map();
@@ -210,8 +204,8 @@ function softDisc(size, disposables) {
  * Monte la scène dans `mount`.
  * @param {HTMLElement} mount  conteneur ; le canvas le remplit entièrement.
  * @param {object} options
+ * @param {string} [options.trophyDesign]  design de la coupe (Désert par défaut).
  * @param {number[]} [options.riderColors]  palette [robe, crinière, tissu, liseré, capuche] du vainqueur.
- * @param {'desert'|'worldtour'} [options.trophyDesign]  dessin et métal propres à la coupe.
  * @param {HTMLElement} [options.slot]  zone de la page où cadrer le trophée.
  * @param {boolean} [options.reducedMotion]  calme les mouvements (pas de confettis).
  * @returns {{ destroy: () => void }}
@@ -229,11 +223,13 @@ export function makeTrophyScene(mount, options = {}) {
   }
 }
 
-function buildTrophyScene(renderer, mount, { riderColors = null, trophyDesign = 'desert', slot = null, reducedMotion = false }) {
-  const design = trophyDesign === 'worldtour' ? 'worldtour' : 'desert';
-  const grandTour = design === 'worldtour';
+function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColors = null, slot = null, reducedMotion = false }) {
+  const design = getTrophyDesign(trophyDesign);
+  const grandTour = design.id === 'worldtour';
+  const sceneHeight = Math.max(SCENE_HEIGHT, PODIUM_HEIGHT + design.height + 0.75);
+  const focusY = FOCUS_Y + (sceneHeight - SCENE_HEIGHT) / 2;
   const disposables = [];
-  const materials = makeMaterials(design);
+  const materials = makeMaterials();
   Object.values(materials).forEach((material) => disposables.push(material));
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -244,11 +240,12 @@ function buildTrophyScene(renderer, mount, { riderColors = null, trophyDesign = 
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   const canvas = renderer.domElement;
   canvas.className = 'mirage-trophy-webgl';
+  canvas.dataset.trophy = design.id;
   canvas.setAttribute('aria-hidden', 'true');
   mount.appendChild(canvas);
 
   const scene = new THREE.Scene();
-  // Les reflets de l’or viennent d’un petit studio virtuel.
+  // Les reflets des métaux viennent d’un petit studio virtuel.
   const pmrem = new THREE.PMREMGenerator(renderer);
   const studio = new RoomEnvironment();
   const environment = pmrem.fromScene(studio, 0.04);
@@ -272,11 +269,11 @@ function buildTrophyScene(renderer, mount, { riderColors = null, trophyDesign = 
   const rim = new THREE.DirectionalLight(grandTour ? 0x66e9f2 : 0x8fd8ff, 1.3);
   rim.position.set(-7, 4, -6);
   scene.add(rim);
-  const glow = new THREE.PointLight(grandTour ? 0x62e6ef : 0xffc85a, 10, 14, 2);
+  const glow = new THREE.PointLight(design.accent, 10, 14, 2);
   glow.position.set(TROPHY_X, PODIUM_HEIGHT + 2.6, 3);
   scene.add(glow);
 
-  // Scène d’exposition : disque sombre cerclé d’or.
+  // Scène d’exposition : disque sombre cerclé de la couleur de la coupe.
   const floorGeometry = new THREE.CylinderGeometry(7, 7.3, 0.4, 72);
   const floor = new THREE.Mesh(floorGeometry, new THREE.MeshStandardMaterial({ color: grandTour ? 0x133455 : 0x2a1840, roughness: 0.55, metalness: 0.3 }));
   floor.position.y = -0.2;
@@ -285,7 +282,7 @@ function buildTrophyScene(renderer, mount, { riderColors = null, trophyDesign = 
   scene.add(floor);
   const ringGeometry = new THREE.RingGeometry(6.35, 6.65, 96);
   const ringMaterial = new THREE.MeshBasicMaterial({
-    color: grandTour ? 0x67e9ef : 0xffc85a, transparent: true, opacity: 0.85, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    color: design.accent, transparent: true, opacity: 0.85, toneMapped: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
   });
   const ring = new THREE.Mesh(ringGeometry, ringMaterial);
   ring.rotation.x = -Math.PI / 2;
@@ -294,7 +291,7 @@ function buildTrophyScene(renderer, mount, { riderColors = null, trophyDesign = 
   scene.add(ring);
 
   // Podium (immobile) et trophée (qui tourne dessus).
-  const podium = buildVoxelGroup(podiumBoxes(), materials, disposables);
+  const podium = buildVoxelGroup(podiumBoxes(design.id), materials, disposables);
   podium.position.x = TROPHY_X;
   scene.add(podium);
   const podiumShadow = softDisc(5.6, disposables);
@@ -303,7 +300,7 @@ function buildTrophyScene(renderer, mount, { riderColors = null, trophyDesign = 
 
   const trophyPivot = new THREE.Group();
   trophyPivot.position.set(TROPHY_X, PODIUM_HEIGHT, 0);
-  trophyPivot.add(buildVoxelGroup(trophyBoxes(design), materials, disposables));
+  trophyPivot.add(buildVoxelGroup(trophyBoxes(design.id), materials, disposables));
   scene.add(trophyPivot);
 
   // Les quatre diamants du jeu gravitent autour du trophée.
@@ -363,9 +360,9 @@ function buildTrophyScene(renderer, mount, { riderColors = null, trophyDesign = 
       }
     }
     const halfTan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const distance = (height * Math.max(SCENE_HEIGHT / slotHeight, SCENE_WIDTH / slotWidth)) / (2 * halfTan);
-    camera.position.set(0, FOCUS_Y + distance * Math.sin(elevation), distance * Math.cos(elevation));
-    camera.lookAt(0, FOCUS_Y, 0);
+    const distance = (height * Math.max(sceneHeight / slotHeight, SCENE_WIDTH / slotWidth)) / (2 * halfTan);
+    camera.position.set(0, focusY + distance * Math.sin(elevation), distance * Math.cos(elevation));
+    camera.lookAt(0, focusY, 0);
     camera.setViewOffset(width, height, width / 2 - centerX, height / 2 - centerY, width, height);
     camera.updateProjectionMatrix();
     sparkles.material.uniforms.uScale.value = renderer.getPixelRatio() * (height / 700);
@@ -431,7 +428,7 @@ function buildTrophyScene(renderer, mount, { riderColors = null, trophyDesign = 
 
     if (swayCamera) {
       camera.position.x = Math.sin(time * 0.35) * 0.7;
-      camera.lookAt(0, FOCUS_Y, 0);
+      camera.lookAt(0, focusY, 0);
     }
     renderer.render(scene, camera);
   }
