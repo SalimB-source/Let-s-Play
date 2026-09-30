@@ -1,16 +1,16 @@
 -- Mirage Rush multiplayer rooms. Apply in the Supabase SQL editor after schema.sql.
 -- Positions are polled; results are casual client-reported race results, not anti-cheat verified.
 --
--- If this table already exists from an earlier version (without 'sardinia'), run first:
---   alter table public.mirage_rooms drop constraint mirage_rooms_stage_check;
---   alter table public.mirage_rooms add constraint mirage_rooms_stage_check
---     check (stage in ('desert', 'western', 'prairie', 'sardinia'));
+-- Terrains acceptés : garder cette liste alignée sur MirageCoursePicker.jsx (MAPS),
+-- mirageRooms.js et duelChallenge.js. Rejouer ce script suffit à mettre à jour une
+-- installation existante : la contrainte `mirage_rooms_stage_check` est recréée
+-- juste après la table, et la fonction RPC est remplacée.
 create table if not exists public.mirage_rooms (
   code text primary key check (code ~ '^[A-F0-9]{8}$'),
   name text not null default 'Salon Mirage' check (char_length(trim(name)) between 1 and 60),
   password_hash text,
   host_id uuid not null references auth.users(id) on delete cascade,
-  stage text not null check (stage in ('desert', 'western', 'prairie', 'sardinia')),
+  stage text not null check (stage in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts')),
   status text not null default 'lobby' check (status in ('lobby', 'started')),
   seed bigint not null check (seed between 0 and 4294967295),
   started_at timestamptz,
@@ -20,6 +20,17 @@ create table if not exists public.mirage_rooms (
 alter table public.mirage_rooms
   add column if not exists name text not null default 'Salon Mirage' check (char_length(trim(name)) between 1 and 60),
   add column if not exists password_hash text;
+
+-- Upgrade older installations to the full list of maps (CREATE TABLE IF NOT EXISTS is not enough).
+alter table public.mirage_rooms
+  drop constraint if exists mirage_rooms_stage_check;
+-- Salons créés sur un terrain retiré ou renommé : repli sur le désert, sinon la contrainte ne s'applique pas.
+update public.mirage_rooms
+  set stage = 'desert'
+  where stage not in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts');
+alter table public.mirage_rooms
+  add constraint mirage_rooms_stage_check
+  check (stage in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts'));
 
 create table if not exists public.mirage_room_players (
   room_code text not null references public.mirage_rooms(code) on delete cascade,
@@ -126,7 +137,7 @@ begin
   end if;
 
   if p_action = 'create' then
-    if p_stage not in ('desert', 'western', 'prairie', 'sardinia') or p_stage is null then
+    if p_stage not in ('desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts') or p_stage is null then
       raise exception 'Carte inconnue' using errcode = '22023';
     end if;
     perform pg_advisory_xact_lock(hashtextextended(uid::text, 0));

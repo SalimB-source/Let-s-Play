@@ -1,6 +1,6 @@
 # Mirage Rush — miniatures des terrains
 
-Six illustrations originales générées par IA pour le sélecteur de terrain.
+Sept illustrations originales générées par IA pour le sélecteur de terrain.
 Elles reprennent les décors et la direction artistique low-poly du jeu ; ce
 sont des illustrations d’ambiance, pas des captures de parties.
 
@@ -12,10 +12,11 @@ sont des illustrations d’ambiance, pas des captures de parties.
 | `sardinia.webp` | Costa Omertà | Village pastel, terrasses et baie turquoise |
 | `alger.webp` | Alger la Blanche | Corniche, façades blanches, palmiers et baie bleue |
 | `japan.webp` | Plaines de Yōtei | Mont enneigé, torii et herbes d’argent au clair de lune |
+| `ramparts.webp` | Remparts d’Ocre | Remparts crénelés, portes du Mid grandes ouvertes, portes bleues et container |
 
 Chaque image est un panorama WebP **768 × 256**, sans texte intégré. Les noms
 restent du texte HTML, avec les états de sélection et de verrouillage habituels.
-Les six fichiers totalisent moins de 190 Ko. Pas de requête vers un hébergeur
+Les sept fichiers totalisent moins de 210 Ko. Pas de requête vers un hébergeur
 externe, pas de rendu WebGL supplémentaire pour les miniatures.
 
 Les imports dans `MirageCoursePicker.jsx` permettent à Vite de versionner les

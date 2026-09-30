@@ -5,6 +5,7 @@ export const PRAIRIE_BPM = 126;
 export const SARDINIA_BPM = 92;
 export const ALGER_BPM = 104;
 export const JAPAN_BPM = 108;
+export const RAMPARTS_BPM = 128;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
 
@@ -93,7 +94,7 @@ export class DesertGroove {
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : BPM) / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : this.stage === 'ramparts' ? RAMPARTS_BPM : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -451,7 +452,88 @@ export class DesertGroove {
     }
   }
 
+  playRamparts(step, time) {
+    // Original « tactical desert » groove for Remparts d’Ocre, the de_dust2 homage: E Phrygian
+    // dominant (E F G# A B C D) over a four-on-the-floor pulse, offbeat bass,
+    // syncopated synth stabs and a Phrygian descent (D, C, B, back to E). Each
+    // eight-bar phrase opens with a radio click; in the second half the bomb
+    // is "planted" and its beep quickens toward the end of the loop. No
+    // existing Counter-Strike music or melody is quoted.
+    const beat = 60 / RAMPARTS_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 16) % 16;
+    const planted = phrase >= 8;
+    const roots = [82.41, 82.41, 87.31, 82.41, 73.42, 73.42, 65.41, 61.74];
+    const pads = [
+      [329.63, 493.88], [329.63, 493.88], [349.23, 523.25], [329.63, 493.88],
+      [293.66, 440.0], [293.66, 440.0], [261.63, 329.63], [246.94, 415.3],
+    ];
+    const stabs = [
+      [659.25, 698.46, 659.25, 587.33, 523.25, 493.88],
+      [493.88, 523.25, 587.33, 523.25, 493.88, 415.3],
+      [698.46, 659.25, 698.46, 830.61, 698.46, 659.25],
+      [659.25, 0, 587.33, 0, 659.25, 0],
+      [587.33, 659.25, 698.46, 659.25, 587.33, 523.25],
+      [523.25, 587.33, 523.25, 493.88, 440.0, 493.88],
+      [523.25, 493.88, 440.0, 415.3, 440.0, 493.88],
+      [415.3, 0, 493.88, 0, 329.63, 0],
+    ];
+    const stabSteps = [0, 3, 6, 8, 11, 14]; // syncope 3-3-2
+    const root = roots[bar];
+
+    // Kick on every beat, double clap on 2 and 4.
+    if (step % 4 === 0) {
+      this.tone(120, time, 0.1, 'sine', 0.36);
+      this.tone(50, time + 0.012, 0.15, 'sine', 0.26);
+    }
+    if (step === 4 || step === 12) {
+      this.noise(time, 0.08, 0.09, 1800);
+      this.noise(time + 0.014, 0.06, 0.06, 1200);
+    }
+    // Hi-hats: ticking sixteenths, an open hat on each offbeat eighth.
+    if (step % 2 === 1) this.noise(time, 0.02, 0.026, 8200);
+    if (step % 4 === 2) this.noise(time, 0.08, 0.034, 6200);
+
+    // Offbeat bass, with an octave ghost note before the snare.
+    if (step % 4 === 2) {
+      this.tone(root, time, beat * 0.42, 'sawtooth', 0.16, 480);
+      this.tone(root / 2, time, beat * 0.42, 'sine', 0.12);
+    }
+    if (step === 3 || step === 11) this.tone(root * 2, time, beat * 0.2, 'sawtooth', 0.06, 700);
+
+    // Pad: a sustained dyad under each bar, a little brighter once planted.
+    if (step === 0) pads[bar].forEach(note => this.tone(note, time, beat * 3.8, 'sawtooth', planted ? 0.036 : 0.027, 850));
+
+    // Synth stabs: soft plucks first, then saw + octave once the bomb is down.
+    const slot = stabSteps.indexOf(step);
+    const stab = slot >= 0 ? stabs[bar][slot] : 0;
+    if (stab && (planted || bar % 2 === 0 || slot < 3)) {
+      if (planted) {
+        this.tone(stab, time, beat * 0.32, 'sawtooth', 0.09, 2400);
+        this.tone(stab * 2, time + 0.008, beat * 0.2, 'square', 0.018, 3200);
+      } else {
+        this.tone(stab / 2, time, beat * 0.3, 'triangle', 0.11);
+      }
+    }
+
+    // Radio click at the top of each eight-bar phrase — "go, go, go!" without words.
+    if (step === 0 && phrase % 8 === 0) {
+      this.noise(time, 0.12, 0.045, 2400);
+      this.tone(1318.51, time + 0.02, 0.045, 'square', 0.025, 3000);
+    }
+
+    // Bomb beep: every half bar after the plant, every beat in the last two bars.
+    if (planted && step % (phrase >= 14 ? 4 : 8) === 2) this.tone(2093, time, 0.06, 'sine', 0.035);
+
+    // Snare roll into the next phrase.
+    if (phrase % 8 === 7 && step >= 8 && step % 2 === 0) {
+      this.noise(time, 0.05, 0.04 + (step - 8) * 0.006, 1600);
+      this.tone(150 + (step - 8) * 20, time, 0.06, 'triangle', 0.05);
+    }
+  }
+
   playStep(step, time) {
+    if (this.stage === 'ramparts') { this.playRamparts(step, time); return; }
     if (this.stage === 'prairie') { this.playPrairie(step, time); return; }
     if (this.stage === 'western') { this.playWestern(step, time); return; }
     if (this.stage === 'sardinia') { this.playSardinia(step, time); return; }

@@ -7,7 +7,7 @@
  * retirée :
  *
  *   1. à l'arrivée, l'overlay d'intro propose le choix du mode (3 cartes,
- *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (6 cartes,
+ *      RUÉE sélectionnée par défaut) et le sélecteur de terrain (7 cartes,
  *      Dunes de l'Écho par défaut, dont Alger la Blanche) : pas de barre
  *      d'onglets dans l'en-tête, et le bouton « LANCER LA PARTIE » est
  *      présent d'emblée ;
@@ -74,15 +74,17 @@ export async function checkMirageFlow(assert) {
     assert.equal(page.node.querySelectorAll('.mirage-stage-picker').length, 1,
       'le sélecteur de terrain (02 / ton terrain) est proposé dans l’overlay');
     const maps = [...page.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(maps.length, 6, 'six horizons sont proposés');
+    assert.equal(maps.length, 7, 'sept horizons sont proposés');
     assert.deepEqual(
       maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
-      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei'],
-      'les six cartes de map sont dans l’ordre (dont Alger la Blanche et Plaines de Yōtei)');
+      ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre'],
+      'les sept cartes de map sont dans l’ordre (dont Alger la Blanche, Plaines de Yōtei et Remparts d’Ocre)');
+    assert.ok([...page.node.querySelectorAll('.mirage-picker-label')].some((label) => label.textContent.includes('7 HORIZONS À EXPLORER')),
+      'le compteur de terrains suit le nombre de cartes');
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true',
       'les Dunes de l’Écho sont sélectionnées par défaut');
 
-    const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan'];
+    const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts'];
     const thumbnails = maps.map((card, index) => {
       const image = card.querySelector('img.mirage-map-art');
       assert.ok(image, `${mapIds[index]} possède sa miniature illustrée`);
@@ -98,7 +100,7 @@ export async function checkMirageFlow(assert) {
       assert.equal(image.getAttribute('loading'), 'eager', 'les miniatures sont chargées dès l’intro');
       return image.getAttribute('src');
     });
-    assert.equal(new Set(thumbnails).size, 6, 'six illustrations distinctes');
+    assert.equal(new Set(thumbnails).size, 7, 'sept illustrations distinctes');
 
     for (const card of maps) {
       await act(async () => { card.click(); });
@@ -121,7 +123,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('RECORD À BATTRE'),
       'les consignes de la ruée sont révélées');
 
-    /* ---------------- 2. Le terrain se choisit (Alger & Yōtei) ----------- */
+    /* ------------- 2. Le terrain se choisit (Alger, Yōtei, Remparts) ------ */
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
       'le bandeau de zone démarre sur le terrain par défaut (ZONE 01)');
     const algerCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
@@ -134,6 +136,13 @@ export async function checkMirageFlow(assert) {
     await act(async () => { japanCard.click(); });
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('PLAINES DE YŌTEI'),
       'choisir Plaines de Yōtei met à jour le bandeau (ZONE 06 · PLAINES DE YŌTEI)');
+    const rampartsCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Remparts d’Ocre');
+    assert.ok(rampartsCard, 'la carte Remparts d’Ocre est proposée');
+    assert.ok(rampartsCard.classList.contains('is-ramparts'), 'la carte Remparts d’Ocre porte son identifiant de stage');
+    await act(async () => { rampartsCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ZONE 07 · REMPARTS D’OCRE'),
+      'choisir Remparts d’Ocre met à jour le bandeau (ZONE 07 · REMPARTS D’OCRE)');
+    assert.equal(rampartsCard.getAttribute('aria-pressed'), 'true', 'la carte Remparts d’Ocre est marquée sélectionnée');
     await act(async () => { maps[0].click(); });
 
     /* --------------- 3. Le clic sur DUEL bascule l'overlay -------------- */
@@ -177,12 +186,12 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelButton.textContent.includes('Défi de Salim'),
       'la carte DUEL annonce le défi du joueur');
     const lockedMaps = [...challenged.node.querySelectorAll('.mirage-map-card')];
-    assert.equal(lockedMaps.length, 6,
+    assert.equal(lockedMaps.length, 7,
       'le sélecteur de terrain reste lisible sur un lien de défi');
     assert.ok(lockedMaps.every((card) => card.disabled),
       'les cartes de terrain sont verrouillées : le stage est imposé par le défi');
-    assert.equal(lockedMaps.filter((card) => card.querySelector('img.mirage-map-art')).length, 6,
-      'les six miniatures restent visibles sur un défi verrouillé');
+    assert.equal(lockedMaps.filter((card) => card.querySelector('img.mirage-map-art')).length, 7,
+      'les sept miniatures restent visibles sur un défi verrouillé');
     await act(async () => { lockedMaps[0].click(); });
     assert.equal(lockedMaps.find((card) => card.getAttribute('aria-pressed') === 'true')
       ?.querySelector('.mirage-map-copy strong')?.textContent, 'Plaines d’Or',
