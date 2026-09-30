@@ -6,10 +6,15 @@ function toHex(color) {
   return `#${Number(color).toString(16).padStart(6, '0')}`;
 }
 
-/** Small, self-contained character illustration used by the online room UI. */
-export default function MirageCharacterPortrait({ character = 0, className = '', decorative = false }) {
+/**
+ * Small, self-contained character illustration used by the online room UI and
+ * the race scoreboard. `palette` (7 slots, see mirageExplorer.js) paints a skin
+ * that is not one of the four online characters, e.g. the rider the player has
+ * equipped.
+ */
+export default function MirageCharacterPortrait({ character = 0, palette = null, className = '', decorative = false }) {
   const index = ((Number(character) || 0) % CHARACTER_PALETTES.length + CHARACTER_PALETTES.length) % CHARACTER_PALETTES.length;
-  const [coat, mane, cloth, trim, hood, hat] = normalizePalette(CHARACTER_PALETTES[index]).map(toHex);
+  const [coat, mane, cloth, trim, hood, hat] = normalizePalette(palette || CHARACTER_PALETTES[index]).map(toHex);
   const title = CHARACTER_NAMES[index];
   const uniqueId = useId().replace(/:/g, '');
   const gradientId = `mirage-portrait-sky-${index}-${uniqueId}`;

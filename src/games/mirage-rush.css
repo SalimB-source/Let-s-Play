@@ -2400,6 +2400,176 @@ img.mirage-powerup-icon {
   .mirage-room-finished-banner { align-items: flex-start; flex-wrap: wrap; padding: 18px; gap: 14px; }
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   Tableau des positions — arrivée d'un duel et résultats d'une course en
+   ligne (MirageScoreboard.jsx, MirageRoomResults.jsx). Les lignes sont déjà
+   classées : ici on ne fait que les habiller.
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-scoreboard-frame { container-type: inline-size; width: min(100%, 540px); margin: 8px auto 10px; }
+.mirage-scoreboard {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 5px;
+  table-layout: fixed;
+  text-align: left;
+  color: #fff3df;
+}
+.mirage-scoreboard th {
+  padding: 0 10px 1px;
+  color: rgba(255, 238, 214, .5);
+  font: 800 8px var(--mono);
+  letter-spacing: .16em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.mirage-scoreboard th.mirage-sb-col-time,
+.mirage-scoreboard th.mirage-sb-col-pts { text-align: right; }
+.mirage-sb-col-pos { width: 52px; }
+.mirage-sb-col-time { width: 108px; }
+.mirage-sb-col-pts { width: 84px; }
+.mirage-scoreboard td {
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, .05);
+  border-block: 1px solid rgba(255, 224, 166, .1);
+  vertical-align: middle;
+}
+.mirage-scoreboard td:first-child { border-left: 1px solid rgba(255, 224, 166, .1); border-radius: 12px 0 0 12px; }
+.mirage-scoreboard td:last-child { border-right: 1px solid rgba(255, 224, 166, .1); border-radius: 0 12px 12px 0; }
+/* Vainqueur : or ; joueur : menthe (comme « TOI » dans TOP RUNNERS). Si c'est le même, l'or garde le fond. */
+.mirage-sb-row.is-pos-1 td { background: rgba(242, 198, 96, .13); border-color: rgba(242, 198, 96, .36); }
+.mirage-sb-row.is-you td { background: rgba(98, 227, 165, .1); border-color: rgba(124, 225, 166, .58); }
+.mirage-sb-row.is-you.is-pos-1 td { background: rgba(242, 198, 96, .15); }
+/* Cavalier plus en piste (hors ligne) : atténué. */
+.mirage-sb-row.is-offline td { opacity: .6; }
+.mirage-sb-pos { text-align: center; }
+.mirage-sb-medal {
+  display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid rgba(255, 238, 214, .22); background: rgba(255, 255, 255, .06);
+  color: rgba(255, 238, 214, .72); font: 900 12px var(--font-gaming);
+}
+.mirage-sb-row.is-pos-1 .mirage-sb-medal { border-color: #ffe29a; background: linear-gradient(145deg, #ffe38a, #e9a23a); color: #2a1a32; box-shadow: 0 0 16px rgba(255, 205, 98, .42); }
+.mirage-sb-row.is-pos-2 .mirage-sb-medal { border-color: #f4f7fb; background: linear-gradient(145deg, #f3f6fb, #a7b1c2); color: #25202f; }
+.mirage-sb-row.is-pos-3 .mirage-sb-medal { border-color: #f0b98a; background: linear-gradient(145deg, #f0b98a, #b06a36); color: #2c1710; }
+.mirage-sb-rider > div { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.mirage-sb-portrait { flex: none; width: 32px; height: 32px; }
+.mirage-sb-who { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 7px; min-width: 0; }
+.mirage-sb-name {
+  min-width: 0; max-width: 100%; overflow: hidden; color: #fff4e3;
+  font: 800 13px/1.2 var(--font-gaming); letter-spacing: -.01em; text-overflow: ellipsis; white-space: nowrap;
+}
+.mirage-sb-tag {
+  flex: none; padding: 2px 6px; border-radius: 999px;
+  border: 1px solid rgba(255, 240, 219, .18); background: rgba(255, 240, 219, .07);
+  color: rgba(255, 236, 214, .78); font: 800 7px var(--mono); font-style: normal; letter-spacing: .1em;
+}
+.mirage-sb-tag.is-you { border-color: rgba(124, 225, 166, .55); background: rgba(98, 227, 165, .14); color: #77e7ad; }
+.mirage-sb-time, .mirage-sb-pts { text-align: right; white-space: nowrap; }
+.mirage-sb-time strong, .mirage-sb-pts strong {
+  display: block; color: #ffdc72; font: 800 13px/1.15 var(--font-gaming); font-variant-numeric: tabular-nums;
+}
+.mirage-sb-time strong.is-remaining { color: rgba(255, 244, 229, .86); font-size: 11px; }
+.mirage-sb-time small, .mirage-sb-pts small {
+  display: block; margin-top: 2px; color: rgba(255, 238, 214, .56); font: 800 8px var(--mono); letter-spacing: .1em;
+}
+.mirage-sb-time small.is-live { color: var(--mirage-mint); }
+.mirage-sb-time small.is-live::before {
+  content: ""; display: inline-block; width: 5px; height: 5px; margin-right: 5px; vertical-align: 1px;
+  border-radius: 50%; background: var(--mirage-mint); box-shadow: 0 0 8px rgba(98, 227, 165, .7);
+  animation: miragePulseDot 1.6s ease-in-out infinite;
+}
+.mirage-sb-none { color: rgba(255, 238, 214, .36); font: 800 13px var(--mono); }
+/* Apparition des lignes, l'une après l'autre. La classe `is-entering` n'est posée que
+   pendant la première seconde : un classement qui se réordonne ensuite (course en
+   ligne) ne doit pas rejouer l'animation. */
+.mirage-scoreboard.is-entering .mirage-sb-row {
+  animation: mirageRowIn .44s cubic-bezier(.2, .8, .3, 1) both;
+  animation-delay: calc(var(--sb-index, 0) * 80ms + 120ms);
+}
+@keyframes mirageRowIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Duel : le tableau prend la place de l'ancien chrono ; si l'écran est trop court, l'overlay défile. */
+.mirage-result-overlay.has-scoreboard { justify-content: safe center; overflow-y: auto; overscroll-behavior: contain; padding-top: 32px; }
+.mirage-result-overlay.has-scoreboard h2 { margin-block: 10px 4px; }
+.mirage-result-overlay.has-scoreboard .mirage-result-stats { margin: 2px 0 12px; }
+.mirage-result-overlay.has-scoreboard .mirage-xp-award { margin-bottom: 12px; }
+
+/* En ligne : fenêtre de résultats posée par-dessus le salon dès que le joueur franchit la ligne. */
+.mirage-results-dialog {
+  width: min(620px, 100%);
+  max-height: 94vh;
+  max-height: 94dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 26px clamp(14px, 4vw, 32px) 22px;
+  text-align: center;
+  color: #fff4df;
+  border: 1px solid rgba(255, 218, 145, .58);
+  border-radius: 14px;
+  background: radial-gradient(120% 70% at 50% -12%, rgba(132, 72, 150, .3), transparent 62%), #100d1a;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, .65), 0 0 55px rgba(239, 155, 87, .12);
+  animation: mirage-popup-enter .24s ease-out both;
+}
+.mirage-results-dialog h2 {
+  max-width: 100%; margin: 11px 0 8px;
+  font: 900 clamp(22px, 4.4vw, 36px)/1.12 var(--font-gaming); letter-spacing: -.03em;
+  text-shadow: 0 3px 18px rgba(14, 8, 20, .7);
+}
+.mirage-results-dialog h2 em { color: #ffd76b; font-style: normal; }
+.mirage-results-dialog .mirage-scoreboard-frame { margin-top: 4px; }
+.mirage-results-status {
+  display: inline-flex; align-items: center; gap: 8px; margin: 0 0 6px; padding: 6px 13px;
+  border-radius: 999px; border: 1px solid rgba(255, 224, 166, .22); background: rgba(255, 255, 255, .04);
+  color: rgba(255, 241, 218, .8); font: 800 8px var(--mono); letter-spacing: .14em;
+}
+.mirage-results-status i {
+  width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--mirage-gold);
+  box-shadow: 0 0 10px rgba(243, 198, 91, .7); animation: miragePulseDot 1.6s ease-in-out infinite;
+}
+.mirage-results-status.is-final { border-color: rgba(98, 227, 165, .42); background: rgba(98, 227, 165, .07); color: #8ce9b4; }
+.mirage-results-status.is-final i { background: var(--mirage-mint); box-shadow: 0 0 10px rgba(98, 227, 165, .7); animation: none; }
+.mirage-results-dialog .mirage-result-stats { margin: 4px 0 12px; }
+.mirage-results-dialog .mirage-xp-award { margin: 0 0 14px; }
+.mirage-results-dialog .mirage-result-actions { margin-top: 2px; }
+.mirage-results-dialog .mirage-result-actions .mirage-start-button { min-width: 0; }
+.mirage-results-dialog .mirage-overlay-hint { margin-top: 14px; }
+/* Dans le salon : le tableau s'aligne sur le titre du panneau au lieu de flotter au centre. */
+.mirage-room-panel .mirage-scoreboard-frame { width: min(100%, 780px); margin: 14px 0 12px; }
+.mirage-room-panel .mirage-xp-award { justify-content: flex-start; margin: 12px 0 0; }
+
+/* Téléphone : colonnes resserrées, médaille et portrait plus petits. */
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .mirage-scoreboard { border-spacing: 0 4px; }
+  .mirage-scoreboard th { padding-inline: 6px; font-size: 7px; letter-spacing: .12em; }
+  .mirage-scoreboard td { padding: 6px; }
+  .mirage-sb-col-pos { width: 38px; }
+  .mirage-sb-col-time { width: 84px; }
+  .mirage-sb-col-pts { width: 62px; }
+  .mirage-sb-medal { width: 24px; height: 24px; font-size: 11px; }
+  .mirage-sb-rider > div { gap: 6px; }
+  .mirage-sb-portrait { width: 26px; height: 26px; }
+  .mirage-sb-name { font-size: 11px; }
+  .mirage-sb-tag { padding: 2px 5px; font-size: 6.5px; }
+  .mirage-sb-time strong, .mirage-sb-pts strong { font-size: 11px; }
+  .mirage-sb-time strong.is-remaining { font-size: 10px; }
+  .mirage-sb-time small, .mirage-sb-pts small { font-size: 7px; letter-spacing: .06em; }
+  .mirage-result-overlay.has-scoreboard { padding: 22px 10px 14px; }
+  .mirage-results-dialog { padding: 20px 10px 16px; }
+  .mirage-results-status { font-size: 7px; letter-spacing: .09em; padding: 5px 10px; text-align: left; }
+}
+/* Conteneur très étroit (téléphone de 320 px avec la colonne des points) : le nom passe avant
+   le portrait, les colonnes se resserrent. Sans container queries, le nom serait simplement tronqué. */
+@container (max-width: 300px) {
+  .mirage-sb-portrait { display: none; }
+  .mirage-sb-col-pos { width: 34px; }
+  .mirage-sb-col-time { width: 76px; }
+  .mirage-sb-col-pts { width: 54px; }
+  .mirage-scoreboard th { padding-inline: 5px; }
+  .mirage-scoreboard td { padding-inline: 5px; }
+}
+
 /* Respect des préférences de mouvement réduit : on calme toutes les
    animations décoratives (shake, zoom, shimmer, pulsations…). */
 @media (prefers-reduced-motion: reduce) {
@@ -2423,7 +2593,11 @@ img.mirage-powerup-icon {
   .mirage-turbo-lines::after,
   .mirage-turbo-lines > i,
   .mirage-board-footer button,
-  .mirage-game-popup-backdrop {
+  .mirage-game-popup-backdrop,
+  .mirage-results-dialog,
+  .mirage-results-status i,
+  .mirage-sb-time small.is-live::before,
+  .mirage-scoreboard.is-entering .mirage-sb-row {
     animation: none !important;
   }
   .mirage-viewport.is-hit::before,
