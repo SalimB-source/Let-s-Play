@@ -21,4 +21,4 @@ globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { checkMirageFlow } = await import('../node_modules/.cache/mirage-flow/mirage-flow-smoke.js');
 try { await checkMirageFlow(assert); } finally { dom.window.close(); }
-console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) et du terrain (8 horizons et leurs miniatures WebP, jusqu’au Château de l’Infini) dans l’overlay d’intro ; pas de barre d’onglets, terrain imposé par un défi verrouille les cartes.');
+console.log('check:mirage-flow ✓ — choix du mode (RUÉE / DUEL / EN LIGNE) et du terrain (8 horizons et leurs miniatures WebP, jusqu’au Château de l’Infini) dans l’overlay d’intro ; pas de barre d’onglets, terrain imposé par un défi verrouille les cartes ; piste de l’app à trois voies et deux rivaux (textes de l’overlay et des règles alignés).');

@@ -11,14 +11,14 @@ import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeR
 import { infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWing, makeInfinityHorizon, updateInfinityLanterns } from './infinityStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
-  LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
+  LANES, laneCount, lanePosition, trackWidth, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
   duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak,
   playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible,
   tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, powerUpsEnabled, PISTOL_STUN_DURATION,
   stunPose, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION,
   GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState,
   crystalPickupEffect, POWER_UP_CHARGE_COST, DIAMOND_CHARGE_VALUE, POWER_UP_MAX_CHARGES,
-  createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, DUEL_RIVALS,
+  createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, duelRivalsForTrack,
   chooseNpcPowerAction, splitChargedPowers, POWER_BOOST_DURATION, POWER_BOOST_BONUS,
   GEM_RESPAWN_DELAY, markGemTaken, isGemHidden, prairieSunsetState,
   MUD_SLOW_DURATION, MUD_SLOW_FACTOR, hitsMudPuddle, resolveMudSlow,
@@ -27,7 +27,10 @@ import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { block, makeExplorer, paintModel } from './mirageExplorer';
 
-const TRACK_WIDTH = LANE_COUNT * 2.1;
+// La largeur de la piste n'est plus une constante de module : elle dépend du
+// nombre de voies (3 dans l'app, 4 sur le site), choisi au démarrage — voir
+// `trackWidth()` et `mirageLanes.js`. Les lignes de départ et d'arrivée la
+// lisent au moment de construire la scène, plus bas.
 const TRACK_MIN_Z = -40;
 const RUN_SECONDS = 60;
 const NO_POWER_UPS = Object.freeze([]);
@@ -694,7 +697,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   floorMaterials.forEach((material, m) => {
     const parts = [];
     for (let zIndex = 0; zIndex < floorRows; zIndex += 1) {
-      for (let lane = 0; lane < LANE_COUNT; lane += 1) {
+      for (let lane = 0; lane < laneCount(); lane += 1) {
         if ((zIndex + lane) % floorMaterials.length !== m) continue;
         parts.push(floorGeometry.clone().translate(LANES[lane], -0.34, floorMinZ + zIndex * 2));
       }
@@ -717,7 +720,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const playerBoostStreaks = makeBoostStreaks();
   player.add(playerBoostStreaks);
 
-  const duelRivals = DUEL_RIVALS.map((spec) => {
+  const duelRivals = duelRivalsForTrack().map((spec) => {
     const mesh = makeExplorer(spec.paletteIndex, CHARACTER_PALETTES[spec.paletteIndex]);
     mesh.position.set(LANES[spec.startLane], 0, -5);
     mesh.visible = false;
@@ -775,8 +778,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
   const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xfdf0c8 });
   const finishMaterial = new THREE.MeshBasicMaterial({ color: 0x4ce9df });
-  const startLine = block(new THREE.BoxGeometry(TRACK_WIDTH, 0.05, 0.45), lineMaterial, scene, [0, 0.025, 1]);
-  const finishLine = block(new THREE.BoxGeometry(TRACK_WIDTH, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
+  // Largeur de la piste courante (6,3 m à trois voies, 8,4 m à quatre) : les
+  // deux lignes couvrent exactement les voies jouables.
+  const trackWidthM = trackWidth();
+  const startLine = block(new THREE.BoxGeometry(trackWidthM, 0.05, 0.45), lineMaterial, scene, [0, 0.025, 1]);
+  const finishLine = block(new THREE.BoxGeometry(trackWidthM, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
   startLine.visible = false;
   finishLine.visible = false;
   const playerShadow = new THREE.Mesh(
@@ -1201,7 +1207,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       const slot = peer?.slot ?? 0;
       const rider = onlineRiders[slot];
       if (rider) end = new THREE.Vector3(rider.position.x, 2.15 + rider.position.y, rider.position.z);
-      else end = new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 2.15, distance - (targetInfo.player.distance||0));
+      else end = new THREE.Vector3(lanePosition(targetInfo.player.lane), 2.15, distance - (targetInfo.player.distance||0));
     } else {
       end = new THREE.Vector3(player.position.x, 2.15 + player.position.y, -12);
     }
@@ -1270,7 +1276,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return false;
     }
     playerStun = PISTOL_STUN_DURATION;
-    playerStunSide = laneIndex >= LANE_COUNT / 2 ? -1 : 1;
+    playerStunSide = laneIndex >= laneCount() / 2 ? -1 : 1;
     boost = SPEED_BOOST_NONE;
     jumpLeft = 0;
     if (!fromNetwork) callbacks.pistolHit?.({ target: 'player' });
@@ -1286,7 +1292,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return false;
     }
     targetNpc.stunTimer = PISTOL_STUN_DURATION;
-    targetNpc.stunSide = targetNpc.lane >= LANE_COUNT / 2 ? -1 : 1;
+    targetNpc.stunSide = targetNpc.lane >= laneCount() / 2 ? -1 : 1;
     targetNpc.boost = SPEED_BOOST_NONE;
     targetNpc.jumpLeft = 0;
     return true;
@@ -1312,7 +1318,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       const rider = onlineRiders[peer?.slot ?? 0];
       const to = rider?.visible
         ? new THREE.Vector3(rider.position.x, rider.position.y + 1.9, rider.position.z)
-        : new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 1.9, Math.max(-70, Math.min(10, distance - (Number(targetInfo.player.distance) || 0))));
+        : new THREE.Vector3(lanePosition(targetInfo.player.lane), 1.9, Math.max(-70, Math.min(10, distance - (Number(targetInfo.player.distance) || 0))));
       spawnTracer(from, to);
       callbacks.pistol?.(targetInfo.player);
       callbacks.pistolHit?.({ target: 'online', player: targetInfo.player });
@@ -1482,7 +1488,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const updateSingleNpc = (npc, dt) => {
     if (isGhostRival(npc)) {
       npc.dist = ghostDistance(race.challenge.trace, elapsed, race.challenge.duration);
-      npc.lane = LANE_COUNT - 1;
+      npc.lane = laneCount() - 1;
       npc.x = LANES[npc.lane];
       npc.jumpLeft = 0;
       if (npc.dist >= DUEL_DISTANCE && npc.finishedAt === null) {
@@ -2257,13 +2263,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       if (!rider.visible) return;
       const z = mine ? 0 : distance - Number(peer.distance);
       rider.visible = z > -74 && z < 11;
-      rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, LANES[peer.lane], Math.min(1,dt*10));
+      rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, lanePosition(peer.lane), Math.min(1,dt*10));
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
       skinPaint(rider, CHARACTER_PALETTES[peer.character ?? peer.slot] || CHARACTER_PALETTES[0]);
       const peerStun = !mine && peer.stunned_until ? Math.max(0, (Date.parse(peer.stunned_until) - wallNow) / 1000) : 0;
       const stunLeft = mine ? playerStun : Math.min(PISTOL_STUN_DURATION, peerStun);
-      poseRider(rider, stunLeft, peer.lane >= LANE_COUNT / 2 ? -1 : 1);
+      poseRider(rider, stunLeft, peer.lane >= laneCount() / 2 ? -1 : 1);
       rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running && stunLeft <= 0 ? Math.sin(time*.018+i*2.2)*.65 : 0; });
       if (rider.userData.shieldBubble) {
         const now = Date.now();
@@ -2328,7 +2334,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           rivalMesh.position.y += Math.sin(time * 0.02 + idx) * 0.06;
         }
       } else {
-        rivalMesh.position.set(LANES[LANE_COUNT - 1], 0, rivalMesh.position.z);
+        rivalMesh.position.set(LANES[laneCount() - 1], 0, rivalMesh.position.z);
         rivalMesh.scale.setScalar(0.92);
       }
       rivalMesh.visible = race.mode === 'duel' && rivalMesh.position.z < 11 && rivalMesh.position.z > -74 && (r.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
