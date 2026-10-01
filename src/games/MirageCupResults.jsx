@@ -44,7 +44,7 @@ export default function MirageCupResults({ cup, run, award, onNext, onQuit }) {
           <span>{placeLabel(mine?.place ?? 4)} · {stageName(last.stage)} · {formatRaceLine(mine)}</span>
         </p>
         <MirageCupStandings standings={standings} run={run} mode="race" />
-        {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map((skin) => skin.name).join(' · ')}</em>}</p>}
+        {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.coinsGained > 0 && <b className="mirage-coin-gain">+{award.coinsGained} OR</b>}{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map((skin) => skin.name).join(' · ')}</em>}</p>}
         <div className="mirage-result-actions">
           <button type="button" className="mirage-start-button" onClick={onNext}>
             {finished ? <>VOIR LE PODIUM <MirageTrophyIcon cupId={cup.id} className="mirage-inline-trophy" /></> : <>COURSE SUIVANTE · {nextStage.toUpperCase()} <span aria-hidden="true">↗</span></>}

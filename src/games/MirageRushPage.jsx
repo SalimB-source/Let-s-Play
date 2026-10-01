@@ -22,7 +22,7 @@ import {
   getCup, isCupComplete, cupWinner, placeLabel, recordCupRace,
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
-import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
+import { SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, isShopSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import { isFullscreenShortcut, opensFullscreenOnLaunch } from './mirageFullscreen';
 import useMirageFullscreen from './useMirageFullscreen';
 import './mirage-rush.css';
@@ -66,6 +66,28 @@ function formatTime(seconds) {
 
 function playerName(entry) {
   return entry?.username || entry?.display_name || 'Joueur';
+}
+
+function MirageRunAward({ award }) {
+  if (!award) return null;
+  return (
+    <p className="mirage-xp-award" role="status">
+      <strong>+{award.xpGained} XP</strong>
+      {award.coinsGained > 0 && <b className="mirage-coin-gain">+{award.coinsGained} OR</b>}
+      {award.leveledUp && <span>NIVEAU {award.level} !</span>}
+      {award.unlocked?.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map((skin) => skin.name).join(' · ')}</em>}
+    </p>
+  );
+}
+
+function MirageWallet({ coins, className = '' }) {
+  const amount = Math.max(0, Number(coins) || 0);
+  return (
+    <span className={`mirage-wallet ${className}`.trim()} aria-label={`${amount} pièces d’or`}>
+      <i className="mirage-coin" aria-hidden="true" />
+      <b>{amount}</b> OR
+    </span>
+  );
 }
 
 /** « L’Ombre, Sauge et Améthyste » — la liste des rivaux dans les textes. */
@@ -151,6 +173,7 @@ export default function MirageRushPage() {
   const [justFinished, setJustFinished] = useState(null);
   const [progression, setProgression] = useState(() => loadProgress());
   const [award, setAward] = useState(null);
+  const [shopNotice, setShopNotice] = useState('');
   const [powerToast, setPowerToast] = useState(null);
   const [fx, setFx] = useState('');
   // Détection tactile : elle ne change plus les boutons (la barre d'objets du
@@ -542,6 +565,18 @@ export default function MirageRushPage() {
     progressRef.current = next;
     setProgression(next);
     saveProgress(next);
+  };
+
+  const purchaseSkin = (skinId) => {
+    const result = buySkin(progressRef.current, skinId);
+    if (!result.ok) {
+      setShopNotice(result.reason || 'broke');
+      return;
+    }
+    progressRef.current = result.progress;
+    setProgression(result.progress);
+    saveProgress(result.progress);
+    setShopNotice('bought');
   };
 
   const modeChoices = [
@@ -1113,7 +1148,7 @@ export default function MirageRushPage() {
                 <div className="mirage-result-stats">
                   <span>◆ {duelStandings.gems} cristaux · {duelStandings.score.toLocaleString('fr-FR')} pts</span>
                 </div>
-                {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
+                <MirageRunAward award={award} />
                 <div className="mirage-result-actions">
                   <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
                   <button type="button" className="mirage-share-button" onClick={shareDuel}>PARTAGER UN DÉFI ↗</button>
@@ -1131,7 +1166,7 @@ export default function MirageRushPage() {
                 <h2>{newRecord ? 'LE MIRAGE' : 'LE SABLE'} <em>{newRecord ? 'EST À TOI.' : 'T’A RATTRAPÉ.'}</em></h2>
                 <div className="mirage-final-score">{(justFinished?.score || 0).toLocaleString('fr-FR')} <small>PTS</small></div>
                 <div className="mirage-result-stats"><span>◆ {justFinished?.gems || 0} fragments</span><span>◷ {justFinished?.duration || 0} s</span><span>RECORD {best.toLocaleString('fr-FR')}</span></div>
-                {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map(skin => skin.name).join(' · ')}</em>}</p>}
+                <MirageRunAward award={award} />
                 <div className="mirage-result-actions">
                   <button type="button" className="mirage-start-button" onClick={startRun}>REJOUER <span>↗</span></button>
                   <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>← CHOISIR TON MODE</button>
@@ -1159,11 +1194,12 @@ export default function MirageRushPage() {
           <section className="mirage-settings panel-frame" aria-label="Paramètres Mirage Rush">
             <div className="mirage-panel-heading mirage-settings-heading">
               <div><span className="mirage-panel-kicker">PARAMÈTRES</span><h2>MENU <em>DU JEU</em></h2></div>
-              <span className="mirage-trophy" aria-hidden="true">⚙</span>
+              <MirageWallet coins={progression.coins} />
             </div>
             <div className="mirage-settings-tabs" role="tablist" aria-label="Onglets des paramètres">
               <button type="button" role="tab" id="mirage-tab-community" aria-controls="mirage-panel-community" aria-selected={settingsTab === 'community'} className={settingsTab === 'community' ? 'is-active' : ''} onClick={() => setSettingsTab('community')}>La communauté</button>
               <button type="button" role="tab" id="mirage-tab-rider" aria-controls="mirage-panel-rider" aria-selected={settingsTab === 'rider'} className={settingsTab === 'rider' ? 'is-active' : ''} onClick={() => setSettingsTab('rider')}>Ton cavalier</button>
+              <button type="button" role="tab" id="mirage-tab-shop" aria-controls="mirage-panel-shop" aria-selected={settingsTab === 'shop'} className={settingsTab === 'shop' ? 'is-active' : ''} onClick={() => { setSettingsTab('shop'); setShopNotice(''); }}>Boutique</button>
               <button type="button" role="tab" id="mirage-tab-info" aria-controls="mirage-panel-info" aria-selected={settingsTab === 'info'} className={settingsTab === 'info' ? 'is-active' : ''} onClick={() => setSettingsTab('info')}>Informations</button>
             </div>
 
@@ -1219,25 +1255,26 @@ export default function MirageRushPage() {
             <p className="mirage-board-subtitle">
               {levelInfo.next
                 ? <>
-                    Prochain skin au niveau {SKINS.find(skin => skin.level > levelInfo.level)?.level ?? levelInfo.next} —{' '}
-                    {SKINS.find(skin => skin.level > levelInfo.level)?.name ?? 'sagesse du désert'}.
+                    Prochain skin au niveau {(SKINS.find((skin) => !isShopSkin(skin) && skin.level > levelInfo.level)?.level) ?? levelInfo.next} —{' '}
+                    {SKINS.find((skin) => !isShopSkin(skin) && skin.level > levelInfo.level)?.name ?? 'sagesse du désert'}.
                   </>
-                : 'Tous les skins sont débloqués. Le désert te salue, cavalier.'}
+                : 'Tous les skins de niveau sont débloqués. Le désert te salue, cavalier.'}
               {progression.runs > 0 && <> · {progression.runs} course{progression.runs > 1 ? 's' : ''} jouée{progression.runs > 1 ? 's' : ''}.</>}
             </p>
             <div className="mirage-skin-picker" role="group" aria-label="Skins du cavalier">
               {SKINS.map(skin => {
-                const unlocked = isSkinUnlocked(skin, levelInfo.level);
+                const unlocked = isSkinUnlocked(skin, levelInfo.level, progression.ownedSkins);
                 const selected = skin.id === activeSkin.id;
+                const shopItem = isShopSkin(skin);
                 return (
                   <button
                     type="button"
                     key={skin.id}
                     className={`mirage-skin-chip${selected ? ' is-selected' : ''}${unlocked ? '' : ' is-locked'}`}
                     aria-pressed={selected}
-                    disabled={!unlocked}
-                    onClick={() => chooseSkin(skin.id)}
-                    title={unlocked ? skin.hint : `Débloqué au niveau ${skin.level}`}
+                    disabled={!unlocked && !shopItem}
+                    onClick={() => (unlocked ? chooseSkin(skin.id) : setSettingsTab('shop'))}
+                    title={unlocked ? skin.hint : shopItem ? `${skin.price} OR dans la boutique` : `Débloqué au niveau ${skin.level}`}
                   >
                     {/* Aperçu 3D du skin (cheval + cavalier du jeu) qui tourne en continu. */}
                     <span className="mirage-skin-stage">
@@ -1246,11 +1283,68 @@ export default function MirageRushPage() {
                     </span>
                     <span className="mirage-skin-name">{skin.name}</span>
                     <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}`}><i>♞ {skin.horse}</i><i>🤠 {skin.hat}</i></span>
-                    <small>{selected ? 'ÉQUIPÉ' : unlocked ? skin.hint : `NIV. ${skin.level}`}</small>
+                    <small>{selected ? 'ÉQUIPÉ' : unlocked ? skin.hint : shopItem ? `${skin.price} OR` : `NIV. ${skin.level}`}</small>
                   </button>
                 );
               })}
             </div>
+              </section>
+            </div>
+
+            <div
+              id="mirage-panel-shop"
+              className="mirage-settings-pane"
+              role="tabpanel"
+              aria-labelledby="mirage-tab-shop"
+              hidden={settingsTab !== 'shop'}
+            >
+              <section className="mirage-shop">
+                <div className="mirage-panel-heading">
+                  <div><span className="mirage-panel-kicker">BOUTIQUE</span><h2>SKINS <em>EN OR</em></h2></div>
+                  <MirageWallet coins={progression.coins} />
+                </div>
+                <p className="mirage-board-subtitle">
+                  Chaque victoire rapporte {WIN_COINS} OR. Gyro Zeppeli coûte 200 OR.
+                </p>
+                <div className="mirage-shop-list">
+                  {SHOP_SKINS.map((skin) => {
+                    const owned = (progression.ownedSkins || []).includes(skin.id);
+                    const selected = skin.id === activeSkin.id;
+                    const canAfford = progression.coins >= skin.price;
+                    return (
+                      <article key={skin.id} className={`mirage-shop-card${owned ? ' is-owned' : ''}${selected ? ' is-selected' : ''}`}>
+                        <span className="mirage-skin-stage">
+                          <MirageSkinPreview palette={skin.colors} className="mirage-skin-model" label={skin.name} />
+                          {!owned && <span className="mirage-skin-lock" aria-hidden="true">🔒</span>}
+                        </span>
+                        <div className="mirage-shop-copy">
+                          <span className="mirage-skin-name">{skin.name}</span>
+                          <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}`}>
+                            <i>♞ {skin.horse}</i>
+                            <i>🤠 {skin.hat}</i>
+                          </span>
+                          <p>{skin.hint}</p>
+                          {owned ? (
+                            <button type="button" className="mirage-shop-buy is-owned" onClick={() => chooseSkin(skin.id)} disabled={selected}>
+                              {selected ? 'ÉQUIPÉ' : 'ÉQUIPER'}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={`mirage-shop-buy${canAfford ? '' : ' is-broke'}`}
+                              onClick={() => purchaseSkin(skin.id)}
+                              title={canAfford ? `Acheter pour ${skin.price} OR` : `Il te faut ${skin.price} OR`}
+                            >
+                              ACHETER · {skin.price} OR
+                            </button>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+                {shopNotice === 'broke' && <p className="mirage-shop-notice" role="status">Pas assez d’or — une victoire rapporte {WIN_COINS} OR.</p>}
+                {shopNotice === 'bought' && <p className="mirage-shop-notice is-success" role="status">Skin acheté et équipé !</p>}
               </section>
             </div>
 
@@ -1310,6 +1404,7 @@ export default function MirageRushPage() {
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger, les lanternes de pierre, les Xbox des Remparts d’Ocre, les piliers Andon du Château de l’Infini ou les fûts de kérosène de Thunder Airbase : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">●</span><div><strong>Pièces d’or</strong><small>Chaque victoire (1ᵉʳ d’un duel, d’une course de coupe ou d’un salon) rapporte {WIN_COINS} OR. Dépense-les dans la boutique : le skin Gyro Zeppeli coûte 200 OR.</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine), les tonneaux (Costa Omertà), les balustrades blanches (Alger), les barrières de bambou (Yōtei), les murets du Mid (Remparts d’Ocre), les paravents shōji (Château de l’Infini) et les barrières de piste (Thunder Airbase) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies {trackLanes > 3 ? 'Si des obstacles ferment les deux autres voies' : 'Si un obstacle ferme la dernière voie'}, le saut est obligatoire.</div>
               </section>
 

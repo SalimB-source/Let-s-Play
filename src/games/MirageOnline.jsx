@@ -5,7 +5,7 @@ import MirageRoomResults from './MirageRoomResults';
 import MirageSkinPreview from './MirageSkinPreview';
 import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import MiragePowerIcon from './MiragePowerIcon';
-import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
+import { CHARACTER_NAMES, CHARACTER_PALETTES, LOBBY_CHARACTER_COUNT } from './mirageCharacters';
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
 import MirageFullscreenIcon from './MirageFullscreenIcon';
@@ -25,7 +25,7 @@ import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, PO
 import { DesertGroove } from './arcadeAudio';
 import { buildRoomStandings } from './mirageStandings';
 
-const characters = CHARACTER_NAMES;
+const characters = CHARACTER_NAMES.slice(0, LOBBY_CHARACTER_COUNT);
 
 const STAGE_LABELS = {
   desert: 'Dunes de l’Écho',
@@ -388,7 +388,7 @@ export default function MirageOnline({
   };
 
   const myPlayer = room?.players?.find((p) => p.user_id === effectivePlayer.id);
-  const characterIndex = Math.max(0, Math.min(CHARACTER_NAMES.length - 1, Number(myPlayer?.character ?? myPlayer?.slot) || 0));
+  const characterIndex = Math.max(0, Math.min(LOBBY_CHARACTER_COUNT - 1, Number(myPlayer?.character ?? myPlayer?.slot) || 0));
   const selectedSkin = CHARACTER_PALETTES[characterIndex];
   const isHost = Boolean(
     room && (room.host_id === effectivePlayer.id || String(room.host_id).startsWith('bot-')),
@@ -493,6 +493,7 @@ export default function MirageOnline({
         {finished && xp && (
           <p className="mirage-xp-award" role="status">
             <strong>+{xp.xpGained} XP</strong>
+            {xp.coinsGained > 0 && <b className="mirage-coin-gain">+{xp.coinsGained} OR</b>}
             {xp.leveledUp && <span>NIVEAU {xp.level} !</span>}
             {xp.unlocked?.length > 0 && (
               <em>SKIN DÉBLOQUÉ : {xp.unlocked.map((skinEntry) => skinEntry.name).join(' · ')}</em>
@@ -1191,7 +1192,9 @@ export default function MirageOnline({
                             gems: p.gems,
                           });
                           setResultsOpen(true);
-                          setXp(onRunFinish?.(p) ?? null);
+                          const peers = room?.players || [];
+                          const alreadyFinished = peers.some((peer) => peer.user_id !== effectivePlayer.id && peer.finished_at);
+                          setXp(onRunFinish?.({ ...p, won: !alreadyFinished }) ?? null);
                         }}
                         onMud={() => {
                           audio.current?.mudSplash?.();

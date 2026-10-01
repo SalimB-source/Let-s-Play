@@ -13,9 +13,9 @@
  *      « LANCER LA COUPE » ; un lien ?mode=cup y arrive directement ;
  *   4. un lien de défi ouvre directement l'écran des maps, verrouillé sur le
  *      terrain imposé ;
- *   5. le panneau latéral est regroupé dans PARAMÈTRES avec trois onglets :
- *      La communauté, Ton cavalier, Informations (les règles de la COUPE y
- *      figurent) ;
+ *   5. le panneau latéral est regroupé dans PARAMÈTRES avec quatre onglets :
+ *      La communauté, Ton cavalier, Boutique, Informations (les règles de la
+ *      COUPE y figurent ; la boutique vend Gyro Zeppeli pour 200 OR) ;
  *   6. le lobby EN LIGNE (?mode=online) garde sa barre de boutons de mode
  *      (RUÉE, DUEL, COUPE, EN LIGNE) : le bouton COUPE ramène à la coupe ;
  *   7. la piste du téléphone (trois voies, `setLaneCount(3)`) fait suivre
@@ -215,21 +215,26 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('ÉCRAN 01'),
       'l’écran annonce bien la première étape');
 
-    /* ------------------ 2. Paramètres : 3 onglets rangés ---------------- */
+    /* ------------------ 2. Paramètres : 4 onglets rangés ---------------- */
     const settings = page.node.querySelector('.mirage-settings');
     assert.ok(settings, 'un panneau PARAMÈTRES regroupe les informations latérales');
     assert.ok(settings.textContent.includes('PARAMÈTRES'), 'le panneau est titré Paramètres');
     const settingsTabs = [...settings.querySelectorAll('.mirage-settings-tabs button')];
-    assert.deepEqual(settingsTabs.map((tab) => tab.textContent), ['La communauté', 'Ton cavalier', 'Informations'],
-      'les trois onglets demandés sont présents');
+    assert.deepEqual(settingsTabs.map((tab) => tab.textContent), ['La communauté', 'Ton cavalier', 'Boutique', 'Informations'],
+      'les quatre onglets demandés sont présents');
     assert.equal(settingsTabs[0].getAttribute('aria-selected'), 'true', 'La communauté est ouverte par défaut');
     assert.ok(settings.querySelector('#mirage-panel-community .mirage-leaderboard'), 'le classement est rangé dans La communauté');
     assert.ok(settings.querySelector('#mirage-panel-rider .mirage-progression'), 'la progression est rangée dans Ton cavalier');
+    assert.ok(settings.querySelector('#mirage-panel-shop .mirage-shop'), 'la boutique est rangée dans Boutique');
     assert.ok(settings.querySelector('#mirage-panel-info .mirage-howto'), 'les règles sont rangées dans Informations');
     await act(async () => { settingsTabs[1].click(); });
     assert.equal(settingsTabs[1].getAttribute('aria-selected'), 'true', 'l’onglet Ton cavalier s’active au clic');
     await act(async () => { settingsTabs[2].click(); });
-    assert.equal(settingsTabs[2].getAttribute('aria-selected'), 'true', 'l’onglet Informations s’active au clic');
+    assert.equal(settingsTabs[2].getAttribute('aria-selected'), 'true', 'l’onglet Boutique s’active au clic');
+    assert.ok(settings.querySelector('#mirage-panel-shop').textContent.includes('Gyro Zeppeli'), 'Gyro Zeppeli est en vente');
+    assert.ok(settings.querySelector('#mirage-panel-shop').textContent.includes('200 OR'), 'Gyro Zeppeli coûte 200 OR');
+    await act(async () => { settingsTabs[3].click(); });
+    assert.equal(settingsTabs[3].getAttribute('aria-selected'), 'true', 'l’onglet Informations s’active au clic');
 
     /* ---------------- 3. Clic RUÉE : écran suivant avec maps ------------ */
     await act(async () => { settingsTabs[0].click(); });

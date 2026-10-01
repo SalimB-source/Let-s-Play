@@ -1,5 +1,8 @@
-// Online characters (also the duel rivals: 1 = L’Ombre, 2 = Sauge, 3 = Améthyste).
+// Online / duel characters occupy slots 0–3 (also the duel rivals:
+// 1 = L’Ombre, 2 = Sauge, 3 = Améthyste). Slot 4 is the Gyro Zeppeli shop skin.
 // Slots: [coat, mane, cloth, trim, head, hat, markings] — see mirageExplorer.js.
+export const LOBBY_CHARACTER_COUNT = 4;
+
 export const CHARACTER_PALETTES = [
   [0xb0642e, 0x3b2216, 0x285e79, 0xffce68, 0xffe3b3, 0x6b3f1f, 0xf3ece0], // alezan, chapeau cuir
   [0x23222a, 0xd5dde1, 0xad3756, 0x8ce7e0, 0x34293d, 0x131117, 0x23222a], // moreau, chapeau noir
