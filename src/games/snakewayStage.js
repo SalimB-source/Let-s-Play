@@ -3,11 +3,11 @@ import * as THREE from 'three';
 /*
  * ZONE 10 · CHEMIN DU SERPENT — hommage à Dragon Ball pour Mirage Rush.
  *
- * Comme dans Dragon Ball Z, la route dorée flotte au-dessus d'une mer de
- * nuages jaunes : des bancs de cumulus jaunes défilent sous les deux côtés
- * de la piste, segment par segment, et s'étendent jusqu'à l'horizon. Au
- * loin, la petite planète de Kaio — son halo, sa maisonnette et son arbre
- * bleu — devient la cible de la route. Décor original low-poly, Three.js.
+ * Comme dans Dragon Ball Z, la route file au-dessus d'une mer de nuages
+ * jaunes. Gris de pierre, elle est ourlée d'écailles de dragon sur ses
+ * deux bords — des rangs de dômes imbriqués, comme sur le flanc de
+ * Shenron. Au loin, la petite planète de Kaio — son halo, sa maisonnette
+ * et son arbre bleu — devient la cible de la route. Décor low-poly, Three.js.
  */
 
 export const SNAKEWAY_SEGMENT_LENGTH = 11;
@@ -425,8 +425,8 @@ export function makeSnakewayHorizon() {
     material(0xffc93f, { roughness: 1 }),
   ];
   const cloudGeometry = new THREE.SphereGeometry(1, 10, 7);
-  const road = material(0xf4ce58, { emissive: 0x9f6819, emissiveIntensity: 0.36, metalness: 0.12, roughness: 0.52, side: THREE.DoubleSide });
-  const roadEdge = new THREE.MeshBasicMaterial({ color: 0xffe9a8 });
+  const road = material(0x9a9aa5, { metalness: 0.12, roughness: 0.52, side: THREE.DoubleSide });
+  const roadEdge = new THREE.MeshBasicMaterial({ color: 0xd8d8e2 });
 
   // Broad puffs stay to either side, tucked under the winding road's level
   // as it dives toward the planet, leaving a clean sightline to it.
@@ -470,8 +470,24 @@ export function makeSnakewayHorizon() {
     group.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 170, 0.085, 5, false), roadEdge));
   });
 
-  // Tile joints make the gold route read clearly as a brick road at the bends.
-  const jointMat = material(0xffedac, { roughness: 0.76 });
+  // Dragon scales line the winding road's edges, echoing the track border.
+  const roadScaleGeometry = new THREE.SphereGeometry(1, 8, 5);
+  const roadScaleA = material(0x82828e, { roughness: 0.88 });
+  const roadScaleB = material(0x62626e, { roughness: 0.92 });
+  edgeCurves.forEach((edgeCurve, edgeIndex) => {
+    for (let i = 0; i < 60; i += 1) {
+      const point = edgeCurve.getPointAt(i / 59);
+      sphere(
+        group, roadScaleGeometry,
+        i % 2 === edgeIndex ? roadScaleA : roadScaleB,
+        point.x, point.y + 0.04, point.z,
+        0.4, 0.24, 0.46,
+      );
+    }
+  });
+
+  // Tile joints make the grey route read clearly as a stone road at the bends.
+  const jointMat = material(0x6a6a75, { roughness: 0.76 });
   for (const t of [0.035, 0.08, 0.13, 0.19, 0.255, 0.32, 0.39, 0.46, 0.53]) {
     const center = route.getPointAt(t);
     const tangent = route.getTangentAt(t);
@@ -485,23 +501,42 @@ export function makeSnakewayHorizon() {
   return group;
 }
 
-/** Narrow gold borders on the playable tiles; stays aligned as the floor loops. */
+/**
+ * Dragon-scale road border: a low charcoal strip with two staggered rows of
+ * overlapping grey dome scales caps each track edge — the way dragon scales
+ * overlap along Shenron's ridge, with a bronze scale sparking now and then.
+ * The 1.2 m scale step (5 per 6 m deck period) loops seamlessly with the
+ * floor, and the border follows the track edges on both layouts.
+ */
 export function snakewayTrackTrim(lanes, floorRows = 28, floorMinZ = -40) {
   const group = new THREE.Group();
-  const gold = material(0xffdc71, { emissive: 0x805219, emissiveIntensity: 0.18, metalness: 0.15, roughness: 0.42 });
-  const bright = new THREE.MeshBasicMaterial({ color: 0xfff1bc });
+  const baseMat = material(0x4c4c58, { roughness: 0.95 });
+  const scaleA = material(0x74747f, { roughness: 0.88 });
+  const scaleB = material(0x94949f, { roughness: 0.82 });
+  const bronze = material(0xa8763e, { emissive: 0x6e4218, emissiveIntensity: 0.4, roughness: 0.55, metalness: 0.25 });
+  const scaleGeometry = new THREE.SphereGeometry(1, 9, 6);
   const edge = Math.max(Math.abs(lanes[0]), Math.abs(lanes[lanes.length - 1])) + 1.05;
   const length = floorRows * 2.02;
   const centerZ = floorMinZ + length / 2;
   for (const side of [-1, 1]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, length), gold);
-    rail.position.set(side * edge, 0.005, centerZ);
-    group.add(rail);
-    for (let index = 0; index < Math.ceil(floorRows / 2); index += 1) {
-      const stud = new THREE.Mesh(new THREE.SphereGeometry(0.075, 6, 5), bright);
-      stud.scale.set(1.4, 0.35, 1);
-      stud.position.set(side * edge, 0.11, floorMinZ + index * 4.04 + 1.0);
-      group.add(stud);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.08, length), baseMat);
+    strip.position.set(side * (edge - 0.28), -0.02, centerZ);
+    group.add(strip);
+    // Two staggered rows of overlapping dome scales hug the edge. The colour
+    // pattern has a 5-scale cycle (one bronze per 6 m deck period) so the
+    // border stays seamless when the floor loops.
+    const rowPatterns = [
+      [scaleA, scaleB, scaleA, bronze, scaleB],
+      [scaleB, bronze, scaleB, scaleA, scaleA],
+    ];
+    const step = 1.2;
+    const count = Math.ceil((length + 0.8) / step);
+    for (let row = 0; row < 2; row += 1) {
+      for (let i = 0; i < count; i += 1) {
+        const z = floorMinZ - 0.4 + row * (step / 2) + i * step;
+        if (z > floorMinZ + length + 0.3) continue;
+        sphere(group, scaleGeometry, rowPatterns[row][i % 5], side * (edge - 0.05 - row * 0.57), 0.02, z, 0.55, 0.3, 0.6);
+      }
     }
   }
   return group;
