@@ -665,7 +665,7 @@ test('all four special items (shield, lasso, boost, pistol) have dedicated vecto
   }
 });
 
-test('Cloud has separate custom SVGs for the golden sword wave and the red crossed waves', async () => {
+test('Cloud has separate custom SVGs for the golden sword wave and the lightning bolt', async () => {
   const { POWER_UPS } = await import('../src/games/mirageRules.js');
   const { MIRAGE_CLOUD_POWER_ICONS, miragePowerIcon } = await import('../src/games/miragePowerIcons.js');
   const yellow = miragePowerIcon(POWER_UPS.LASSO, 'cloud');
@@ -676,9 +676,9 @@ test('Cloud has separate custom SVGs for the golden sword wave and the red cross
   assert.ok(yellow.src.endsWith('/icons/mirage-rush/cloud-yellow-wave.svg'));
   assert.ok(existsSync(new URL('../public/icons/mirage-rush/cloud-yellow-wave.svg', import.meta.url)));
   assert.equal(red.variant, 'cloud');
-  assert.equal(red.label, 'Deux ondes rouges croisées');
-  assert.ok(red.src.endsWith('/icons/mirage-rush/cloud-red-x-wave.svg'));
-  assert.ok(existsSync(new URL('../public/icons/mirage-rush/cloud-red-x-wave.svg', import.meta.url)));
+  assert.equal(red.label, 'Éclair foudroyant');
+  assert.ok(red.src.endsWith('/icons/mirage-rush/cloud-lightning.svg'));
+  assert.ok(existsSync(new URL('../public/icons/mirage-rush/cloud-lightning.svg', import.meta.url)));
   assert.notEqual(yellow.src, miragePowerIcon(POWER_UPS.LASSO).src, 'non-Cloud riders keep the original lasso icon');
   assert.notEqual(red.src, miragePowerIcon(POWER_UPS.PISTOL).src, 'non-Cloud riders keep the original pistol icon');
   assert.equal(MIRAGE_CLOUD_POWER_ICONS[POWER_UPS.LASSO], yellow);

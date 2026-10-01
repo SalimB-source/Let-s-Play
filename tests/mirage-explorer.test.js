@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as THREE from 'three';
 import { CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX } from '../src/games/mirageCharacters.js';
 import {
-  STEEL_BALL_GREEN, accessoriesForPalette, disposeExplorer, makeExplorer, paintModel,
+  BUSTER_SWORD_ROTATION_Z, STEEL_BALL_GREEN, accessoriesForPalette, disposeExplorer, makeExplorer, paintModel,
 } from '../src/games/mirageExplorer.js';
 import { CLOUD_CHOCOBO_ID, GYRO_ZEPPELI_ID, SKINS } from '../src/games/mirageProgression.js';
 
@@ -80,7 +81,15 @@ test('Cloud rides a proper golden chocobo with his spikes and Buster Sword', () 
     assert.ok(model.getObjectByName('cloud-spiky-hair'));
     assert.ok(model.getObjectByName('buster-sword'));
     assert.equal(model.userData.parts.busterSword, model.getObjectByName('buster-sword'), 'the sword group is exposed for Cloud attack animation');
-    assert.equal(model.userData.parts.busterSword.userData.baseRotationZ, 0.34);
+    assert.equal(model.userData.parts.busterSword.userData.baseRotationZ, BUSTER_SWORD_ROTATION_Z);
+    // L'épée broyeuse est portée à l'envers : la pointe de la lame (haut du
+    // groupe local) retombe sous la garde une fois le modèle en place.
+    model.updateMatrixWorld(true);
+    const swordMatrix = model.userData.parts.busterSword.matrixWorld;
+    const bladeTip = new THREE.Vector3(0, 1.48, 0).applyMatrix4(swordMatrix);
+    const swordGuard = new THREE.Vector3(0, -0.18, 0).applyMatrix4(swordMatrix);
+    assert.ok(bladeTip.y < swordGuard.y - 1, `the Buster Sword hangs upside down (tip ${bladeTip.y} vs guard ${swordGuard.y})`);
+    assert.ok(bladeTip.y > 0.25, 'the blade stops above the ground instead of sinking through the chocobo');
     assert.equal(collectCloudAccessories(model, 'chocobo-body').length, 1);
     assert.equal(collectCloudAccessories(model, 'cloud-hair').length, 1);
     assert.equal(collectCloudAccessories(model, 'buster-sword').length, 1);

@@ -46,11 +46,11 @@ export default function MirageCharacterPortrait({ character = 0, colors = null, 
       <path d="M9 91 Q34 83 54 91 T95 88 V98 H9Z" fill="#2b2137" opacity=".48" />
       {isCloudChocobo ? (
         <g aria-hidden="true">
-          {/* Buster Sword rises over Cloud's shoulder. */}
-          <path d="M35 57 L50 19 L59 23 L44 61Z" fill="#aebdce" stroke="#2d2334" strokeWidth="2.8" strokeLinejoin="round" />
-          <path d="M48 29 L54 25 L42 57" fill="none" stroke="#e8eef5" strokeWidth="2.2" />
-          <path d="M34 56 L45 60 M36 62 L44 55" stroke="#d9e1e9" strokeWidth="3.2" strokeLinecap="round" />
-          <path d="M37 61 L30 68" stroke="#70452b" strokeWidth="4.6" strokeLinecap="round" />
+          {/* Buster Sword worn upside down: grip up in the back, blade down. */}
+          <path d="M43 27 L58 65 L67 61 L52 23Z" fill="#aebdce" stroke="#2d2334" strokeWidth="2.8" strokeLinejoin="round" />
+          <path d="M56 55 L62 59 L50 27" fill="none" stroke="#e8eef5" strokeWidth="2.2" />
+          <path d="M42 28 L53 24 M44 22 L52 29" stroke="#d9e1e9" strokeWidth="3.2" strokeLinecap="round" />
+          <path d="M45 23 L38 16" stroke="#70452b" strokeWidth="4.6" strokeLinecap="round" />
           {/* Chocobo tail, legs and golden body. */}
           <path d="M17 62 Q9 55 12 47 Q20 50 24 58 M20 65 Q14 59 16 52" fill="#ffea72" stroke="#2d2334" strokeWidth="2.4" strokeLinejoin="round" />
           <path d="M40 76 L38 89 M57 76 L59 89" fill="none" stroke="#ef8728" strokeWidth="4.5" strokeLinecap="round" />

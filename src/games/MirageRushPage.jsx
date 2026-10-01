@@ -573,7 +573,7 @@ export default function MirageRushPage() {
   const isCloudRider = activeSkin.id === CLOUD_CHOCOBO_ID;
   const cloudPowerVariant = isCloudRider ? 'cloud' : 'standard';
   const yellowPowerLabel = isCloudRider ? 'Onde d’épée' : 'Lasso';
-  const redPowerLabel = isCloudRider ? 'Onde rouge en X' : 'Pistolet';
+  const redPowerLabel = isCloudRider ? 'Éclair' : 'Pistolet';
   // Tableau des positions de l'arrivée d'un duel : le joueur et ses rivaux, classés.
   const duelStandings = useMemo(
     () => (justFinished?.mode === 'duel'
@@ -755,7 +755,7 @@ export default function MirageRushPage() {
                   } else if (info.type === 'pistol') {
                     if (isCloudRider) audioRef.current?.lassoThrow?.();
                     else audioRef.current?.gunshot();
-                    showPowerToast(isCloudRider ? '❌ Deux ondes rouges croisées !' : '🔫 Tir de pistolet !');
+                    showPowerToast(isCloudRider ? '⚡ L’éclair frappe ta cible !' : '🔫 Tir de pistolet !');
                   } else if (info.type === 'boost') {
                     audioRef.current?.speedBoost?.();
                     audioRef.current?.cheer?.();
@@ -763,7 +763,7 @@ export default function MirageRushPage() {
                   }
                 } else if (info?.action === 'no_target') {
                   if (info.type === 'lasso') showPowerToast(isCloudRider ? '⚔ Aucun cavalier devant toi pour l’onde dorée !' : '🪢 Aucun cavalier devant toi !');
-                  else if (info.type === 'pistol') showPowerToast(isCloudRider ? '❌ Aucune cible devant toi pour les ondes croisées !' : '🔫 Aucun cavalier devant toi !');
+                  else if (info.type === 'pistol') showPowerToast(isCloudRider ? '⚡ Aucune cible devant toi pour l’éclair !' : '🔫 Aucun cavalier devant toi !');
                 } else if (info?.action === 'npc_used') {
                   if (info.type === 'shield') {
                     audioRef.current?.shieldGravity?.();
@@ -778,7 +778,7 @@ export default function MirageRushPage() {
                   if (info.type === 'lasso') {
                     showPowerToast(isCloudRider ? '⚡ ⚔ ONDE D’ÉPÉE PRÊTE ! Appuie sur W / Z ou clique !' : '⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
                   } else if (info.type === 'pistol') {
-                    showPowerToast(isCloudRider ? '⚡ ❌ ONDE CROISÉE PRÊTE ! Appuie sur R ou clique !' : '⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
+                    showPowerToast(isCloudRider ? '⚡ 🌩 ÉCLAIR PRÊT ! Appuie sur R ou clique !' : '⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
                   }
                 }
               }}
@@ -805,8 +805,8 @@ export default function MirageRushPage() {
                 if (info?.target === 'rival') {
                   const rivalLabel = info.name || 'L’ombre';
                   showPowerToast(info.blocked
-                    ? `🛡️ ${rivalLabel} a bloqué ${info.cloud ? 'tes ondes rouges' : 'ta balle'} avec son bouclier !`
-                    : info.cloud ? `❌ ${rivalLabel} tombe pendant ${PISTOL_STUN_DURATION}s !` : `🔫 PAN ! ${rivalLabel} tombe de son cheval !`);
+                    ? `🛡️ ${rivalLabel} a bloqué ${info.cloud ? 'ton éclair' : 'ta balle'} avec son bouclier !`
+                    : info.cloud ? `⚡ ${rivalLabel} est foudroyé(e) et tombe pendant ${PISTOL_STUN_DURATION}s !` : `🔫 PAN ! ${rivalLabel} tombe de son cheval !`);
                 } else if (info?.target === 'npc_vs_npc') {
                   audioRef.current?.gunshot();
                   showPowerToast(
@@ -1001,7 +1001,7 @@ export default function MirageRushPage() {
                     onClick={() => trigger('use_pistol')}
                     disabled={(hud.pistolCharges || 0) <= 0}
                     title={isCloudRider
-                      ? `Deux ondes rouges croisées (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges. Fait tomber la cible pendant ${PISTOL_STUN_DURATION}s.`
+                      ? `Éclair (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges. Lève l’épée : la foudre frappe ta cible et la fait tomber pendant ${PISTOL_STUN_DURATION}s.`
                       : `Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Fait tomber la cible devant toi pendant ${PISTOL_STUN_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
@@ -1416,7 +1416,7 @@ export default function MirageRushPage() {
               <MiragePowerIcon type={POWER_UPS.LASSO} variant={cloudPowerVariant} decorative={false} className="mirage-rule-image" />
               <div>
                 <strong>1 couleur de diamant = 1 pouvoir (Duel & En ligne)</strong>
-                <small>Le <b>Bouclier</b> se charge avec {POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants <b>bleus</b> et le <b>Turbo</b> avec {POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants <b>verts</b> ; ils partent seuls quand la barre est pleine (bouclier 5 s, turbo {POWER_BOOST_DURATION} s). Le <b>{yellowPowerLabel}</b> demande {POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants <b>jaunes</b> (W/Z : {isCloudRider ? `onde d’épée qui secoue et ralentit ${LASSO_SLOW_DURATION} s` : 'cible devant toi'}) et <b>{redPowerLabel}</b> {POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants <b>rouges</b> (R : {isCloudRider ? `deux ondes croisées qui font tomber ${PISTOL_STUN_DURATION} s` : `immobilise la cible devant toi pendant ${PISTOL_STUN_DURATION} s`}) ; ces deux pouvoirs se déclenchent à la main. Utiliser un objet ne décharge pas les autres !</small>
+                <small>Le <b>Bouclier</b> se charge avec {POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants <b>bleus</b> et le <b>Turbo</b> avec {POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants <b>verts</b> ; ils partent seuls quand la barre est pleine (bouclier 5 s, turbo {POWER_BOOST_DURATION} s). Le <b>{yellowPowerLabel}</b> demande {POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants <b>jaunes</b> (W/Z : {isCloudRider ? `onde d’épée qui secoue et ralentit ${LASSO_SLOW_DURATION} s` : 'cible devant toi'}) et <b>{redPowerLabel}</b> {POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants <b>rouges</b> (R : {isCloudRider ? `un éclair qui foudroie la cible et la fait tomber ${PISTOL_STUN_DURATION} s` : `immobilise la cible devant toi pendant ${PISTOL_STUN_DURATION} s`}) ; ces deux pouvoirs se déclenchent à la main. Utiliser un objet ne décharge pas les autres !</small>
                 <div className="mirage-rule-powers-grid" aria-label="Les 4 objets spéciaux">
                   <span className="mirage-rule-power-pill is-blue"><MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-rule-pill-icon" /><b>Bouclier</b><i>AUTO</i></span>
                   <span className="mirage-rule-power-pill is-yellow"><MiragePowerIcon type={POWER_UPS.LASSO} variant={cloudPowerVariant} className="mirage-rule-pill-icon" /><b>{yellowPowerLabel}</b><i>W/Z</i></span>
@@ -1430,7 +1430,7 @@ export default function MirageRushPage() {
               <section className="mirage-howto">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur charge son pouvoir dédié : Bleu = Bouclier ({POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]}), Jaune = {yellowPowerLabel} W/Z ({POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]}), Vert = Turbo ({POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]}), Rouge = {redPowerLabel} R ({POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]}). Bouclier et Turbo partent automatiquement ; {yellowPowerLabel} et {redPowerLabel} se déclenchent à la main.{isCloudRider ? ` L’onde dorée secoue et ralentit ${LASSO_SLOW_DURATION} s ; la croix rouge fait tomber ${PISTOL_STUN_DURATION} s.` : ''}</small></div></div>
+            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur charge son pouvoir dédié : Bleu = Bouclier ({POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]}), Jaune = {yellowPowerLabel} W/Z ({POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]}), Vert = Turbo ({POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]}), Rouge = {redPowerLabel} R ({POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]}). Bouclier et Turbo partent automatiquement ; {yellowPowerLabel} et {redPowerLabel} se déclenchent à la main.{isCloudRider ? ` L’onde dorée secoue et ralentit ${LASSO_SLOW_DURATION} s ; l’éclair foudroie la cible et la fait tomber ${PISTOL_STUN_DURATION} s.` : ''}</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger, les lanternes de pierre, les Xbox des Remparts d’Ocre, les piliers Andon du Château de l’Infini ou les fûts de kérosène de Thunder Airbase : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>

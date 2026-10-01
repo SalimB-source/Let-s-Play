@@ -20,6 +20,11 @@ import { CHARACTER_ACCESSORIES, CHARACTER_PALETTES } from './mirageCharacters.js
 export const PALETTE_SLOTS = 7;
 const LEATHER = 0x5c3318;
 export const STEEL_BALL_GREEN = 0x46e04c;
+// Inclinaison de l'épée broyeuse de Cloud : la lame est portée **à l'envers**,
+// pointe vers le bas et dans le dos, comme Cloud la porte dans Final Fantasy.
+// Le modèle est construit lame vers le haut, on ajoute donc un demi-tour.
+export const BUSTER_SWORD_TILT = 0.34;
+export const BUSTER_SWORD_ROTATION_Z = BUSTER_SWORD_TILT - Math.PI;
 
 export function block(geometry, material, parent, position, scale = null) {
   const mesh = new THREE.Mesh(geometry, material);
@@ -398,9 +403,13 @@ function attachCloudChocobo(model) {
   loose.push(pauldron);
   const sword = new THREE.Group();
   sword.name = 'buster-sword';
-  sword.position.set(0.43, 2.03, 0.49);
-  sword.rotation.z = 0.34;
+  // Épée à l'envers : la garde remonte dans le dos, la lame redescend derrière
+  // l'épaule droite en frôlant la croupe du chocobo (voir le commentaire de
+  // BUSTER_SWORD_TILT). La position recule l'ensemble pour dégager la selle.
+  sword.position.set(0.45, 2.16, 0.56);
+  sword.rotation.z = BUSTER_SWORD_ROTATION_Z;
   sword.userData.baseRotationZ = sword.rotation.z;
+  sword.userData.baseRotationX = sword.rotation.x;
   riderBody.add(sword);
   parts.busterSword = sword;
   loose.push(sword);

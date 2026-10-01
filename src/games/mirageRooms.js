@@ -881,7 +881,7 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
         name: uname,
         slot: existingPlayer.slot,
         body: existingPlayer.character === CLOUD_CHOCOBO_INDEX
-          ? `❌ ${uname} a fait tomber ${target.name} avec deux ondes rouges croisées !`
+          ? `⚡ ${uname} a foudroyé ${target.name} avec son éclair !`
           : `🔫 ${uname} a fait tomber ${target.name} de son cheval !`,
         created_at: nowIso,
       });
