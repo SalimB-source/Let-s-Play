@@ -38,7 +38,7 @@ test('the floating meteor fills one lane and is tall enough to dodge', () => {
   assert.ok(sizeOf(snakewayObstacle('mud')).y < 0.5, 'le vortex reste au ras du sol');
 });
 
-test('orange clouds are the only looping scenery outside both three- and four-lane roads', () => {
+test('yellow clouds are the only looping scenery outside both three- and four-lane roads', () => {
   assert.equal(SNAKEWAY_SEGMENT_LENGTH * SNAKEWAY_SEGMENT_COUNT, 110);
   assert.equal(SNAKEWAY_TRACK_EDGE, LANES[LANES.length - 1] + 1.05);
   assert.equal(SNAKEWAY_GATE_INDEX, 5);
@@ -46,20 +46,38 @@ test('orange clouds are the only looping scenery outside both three- and four-la
     for (const side of [-1, 1]) {
       const bank = snakewayCloudBank(index, side);
       const bounds = new THREE.Box3().setFromObject(bank);
+      const span = bounds.getSize(new THREE.Vector3());
       assert.equal(bank.position.z, 6 - index * SNAKEWAY_SEGMENT_LENGTH);
       assert.equal(bank.userData.speedFactor, 1);
-      assert.equal(bank.userData.callout, 'orange-cloudbank');
+      assert.equal(bank.userData.callout, 'yellow-cloudbank');
       assert.ok(side < 0 ? bounds.max.x < -4.2 : bounds.min.x > 4.2,
         `le nuage ${index} (côté ${side}) mord sur les voies`);
+      assert.ok(bounds.max.y < -0.3,
+        `le banc ${index} (côté ${side}) doit rester sous la route (max y ${bounds.max.y.toFixed(2)} m)`);
+      assert.ok(span.z >= SNAKEWAY_SEGMENT_LENGTH,
+        `le banc ${index} remplit tout son segment (z ${span.z.toFixed(1)} m)`);
+      assert.ok(side < 0 ? bounds.min.x < -12 : bounds.max.x > 12,
+        `le banc ${index} s'étire jusqu'à l'horizon`);
       let puffCount = 0;
+      const shades = new Set();
       bank.traverse((object) => {
         if (!object.isMesh) return;
         puffCount += 1;
         assert.equal(object.geometry.type, 'SphereGeometry', 'aucun rocher, pilier ou marqueur latéral');
         const { r, g, b } = object.material.color;
-        assert.ok(r > g && g > b, `couleur de nuage orange requise : ${object.material.color.getHexString()}`);
+        assert.ok(r > g && g > b, `couleur de nuage requise (rampe chaude) : ${object.material.color.getHexString()}`);
+        // Teinte en sRGB (espace affiché) : chaque boule doit être jaune,
+        // de l'or profond à la lumière pâle — plus aucune teinte orange.
+        const srgb = parseInt(object.material.color.getHexString(), 16);
+        const sr = (srgb >> 16) / 255;
+        const sg = ((srgb >> 8) & 255) / 255;
+        const sb = (srgb & 255) / 255;
+        assert.ok(sr > 0.99 && sg > 0.78 && sb < 0.7,
+          `boule non jaune détectée : ${object.material.color.getHexString()}`);
+        shades.add(object.material.color.getHexString());
       });
-      assert.ok(puffCount >= 5);
+      assert.ok(puffCount >= 60, `mur de cumulus dense attendu (${puffCount} boules)`);
+      assert.ok(shades.size >= 3, `plusieurs teintes jaunes pour la profondeur (${shades.size})`);
     }
   }
 });
@@ -82,34 +100,76 @@ test('the checkpoint halo sits high above the road without any side pillars', ()
   assert.equal(arch.userData.callout, 'floating-halo');
 });
 
-test('the horizon leads along a winding gold road to a detailed, readable Kaio planet', () => {
+test('the horizon leads along a winding grey, scale-lined road to a detailed, readable Kaio planet', () => {
   const horizon = makeSnakewayHorizon();
   const bounds = new THREE.Box3().setFromObject(horizon);
   assert.equal(bounds.isEmpty(), false);
   assert.ok(bounds.getSize(new THREE.Vector3()).x > 90, 'les nuages encadrent tout l’horizon');
   assert.ok(bounds.getSize(new THREE.Vector3()).z > 75, 'la route et les nuages s’étirent au loin');
   let meshes = 0;
+  let grayScales = 0;
   let planet;
   horizon.traverse((object) => {
     if (object.isMesh) meshes += 1;
     if (object.userData.callout === 'kaio-planet') planet = object;
+    if (object.isMesh && object.geometry.type === 'SphereGeometry') {
+      // Une écaille de route : sphère grise (teintes quasi neutres).
+      const hex = parseInt(object.material.color.getHexString(), 16);
+      const r = (hex >> 16) / 255;
+      const g = ((hex >> 8) & 255) / 255;
+      const b = (hex & 255) / 255;
+      if (Math.abs(r - g) < 0.05 && Math.abs(g - b) < 0.09 && r > 0.3 && r < 0.85) grayScales += 1;
+    }
   });
   assert.ok(planet, 'la planète de Kaio est une destination explicite du stage');
   assert.ok(planet.children.some((object) => object.isMesh && object.geometry.type === 'SphereGeometry'), 'la planète possède un globe');
   assert.ok(planet.children.some((object) => object.isGroup && object.children.length >= 8), 'la maisonnette et son arbre bleu sont détaillés');
+  assert.ok(grayScales >= 60, `les bords de la route sinueuse portent des écailles grises (${grayScales})`);
   assert.ok(meshes > 60, `décor céleste composé (${meshes} meshes)`);
 });
 
-test('the road trim follows the track edges on the phone and desktop layouts', () => {
+test('the grey dragon-scale border caps the outer track edges and scrolls with the floor', () => {
   for (const lanes of [[-1.05, 1.05], [-3.15, -1.05, 1.05, 3.15]]) {
     const trim = snakewayTrackTrim(lanes);
     trim.updateMatrixWorld(true);
     const expectedEdge = Math.max(Math.abs(lanes[0]), Math.abs(lanes.at(-1))) + 1.05;
-    const rails = [];
+    const strips = [];
+    const scales = [];
+    const scaleShades = new Set();
     trim.traverse((object) => {
-      if (object.isMesh && object.geometry.type === 'BoxGeometry') rails.push(object);
+      if (!object.isMesh) return;
+      if (object.geometry.type === 'BoxGeometry') {
+        strips.push(object);
+        return;
+      }
+      if (object.geometry.type === 'SphereGeometry') {
+        scales.push(object);
+        scaleShades.add(object.material.color.getHexString());
+      }
     });
-    assert.equal(rails.length, 2);
-    assert.deepEqual(rails.map((rail) => rail.position.x).sort((a, b) => a - b), [-expectedEdge, expectedEdge]);
+    assert.equal(strips.length, 2, 'une bande de base par bord de route');
+    assert.deepEqual(
+      strips.map((strip) => strip.position.x).sort((a, b) => a - b),
+      [-(expectedEdge + 0.88), expectedEdge + 0.88],
+      'les bandes flottent au-delà du bord extérieur du revêtement',
+    );
+    assert.ok(scales.length >= 150, `bordure d’écailles dense attendue (${scales.length})`);
+    for (const scale of scales) {
+      // Les écailles flottent entièrement au-dehors du revêtement, rien
+      // n'empiète sur la route.
+      assert.ok(
+        Math.abs(scale.position.x) >= expectedEdge + 0.5 && Math.abs(scale.position.x) <= expectedEdge + 1.25,
+        `écaille mal placée (x=${scale.position.x.toFixed(2)})`,
+      );
+      assert.ok(scale.position.y < 0.4, 'les écailles restent basses le long de la route');
+    }
+    assert.ok(scaleShades.size >= 2, `plusieurs teintes d’écailles pour la profondeur (${scaleShades.size})`);
+    for (const hex of scaleShades) {
+      const h = parseInt(hex, 16);
+      const rr = (h >> 16) / 255;
+      const gg = ((h >> 8) & 255) / 255;
+      const bb = (h & 255) / 255;
+      assert.ok(Math.abs(rr - gg) < 0.05 && Math.abs(gg - bb) < 0.09, `écaille non grise détectée : ${hex}`);
+    }
   }
 });
