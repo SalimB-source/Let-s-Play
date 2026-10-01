@@ -8,6 +8,9 @@ import MiragePowerIcon from './MiragePowerIcon';
 import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
+import MirageFullscreenIcon from './MirageFullscreenIcon';
+import { isFullscreenShortcut } from './mirageFullscreen';
+import useMirageFullscreen from './useMirageFullscreen';
 import {
   broadcastRoomEvent,
   getOrCreateGuestProfile,
@@ -399,6 +402,37 @@ export default function MirageOnline({
   // The server changes the room status only after the host starts the race.
   // Do not mount/render the 3D course while everyone is still in the lobby.
   const gameLaunched = room?.status === 'started';
+  const racePopupOpen = gameLaunched && !finished;
+
+  // Plein écran de la fenêtre de course : bouton de sa barre ou touche F. Jamais
+  // automatique ici — le départ vient du serveur, sans geste du joueur, et le
+  // navigateur refuse alors le plein écran. Pas de pause non plus à la sortie :
+  // une course en ligne ne s'arrête pas pour un joueur.
+  const racePopupRef = useRef(null);
+  const {
+    active: popupImmersive,
+    exit: exitPopupFullscreen,
+    toggle: togglePopupFullscreen,
+  } = useMirageFullscreen(racePopupRef);
+
+  // La fenêtre disparaît à l'arrivée (puis les résultats s'ouvrent dans la page)
+  // ou quand on quitte la room : le plein écran ne doit pas lui survivre.
+  useEffect(() => {
+    if (!racePopupOpen) exitPopupFullscreen();
+  }, [racePopupOpen, exitPopupFullscreen]);
+
+  useEffect(() => {
+    if (!racePopupOpen) return undefined;
+    const onKey = (event) => {
+      if (!isFullscreenShortcut(event)) return;
+      const target = event.target?.tagName;
+      if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
+      event.preventDefault();
+      togglePopupFullscreen();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [racePopupOpen, togglePopupFullscreen]);
 
   // Classement de la course (voir mirageStandings.js). Recalculé à chaque rendu : le salon est
   // relu plusieurs fois par seconde et ils ne sont que quatre. Dès que le joueur franchit la
@@ -1082,8 +1116,8 @@ export default function MirageOnline({
               </section>
             )}
 
-            {gameLaunched && !finished && (
-              <div className="mirage-game-popup-backdrop">
+            {racePopupOpen && (
+              <div ref={racePopupRef} className={`mirage-game-popup-backdrop${popupImmersive ? ' is-immersive' : ''}`}>
                 <div className="mirage-game-popup" role="dialog" aria-modal="true" aria-label="Course Mirage Rush">
                   <section className={`mirage-game-shell${active ? ' is-running' : ''}`}>
                     <div className="mirage-game-topbar">
@@ -1097,15 +1131,32 @@ export default function MirageOnline({
                         {hud.rank ? ` · #${hud.rank}` : ''}
                       </strong>
                       <span>{finished ? 'ARRIVÉE !' : active ? 'COURSE EN COURS' : 'PISTE PRÊTE'}</span>
-                      <button
-                        type="button"
-                        className="mirage-share-button is-danger mirage-popup-leave-button"
-                        disabled={busy}
-                        onClick={() => command('leave')}
-                        aria-label="Quitter la room et fermer la course"
-                      >
-                        ← QUITTER LA ROOM
-                      </button>
+                      <div className="mirage-popup-actions">
+                        <button
+                          type="button"
+                          className={`mirage-fullscreen-button${popupImmersive ? ' is-on' : ''}`}
+                          onClick={(event) => {
+                            togglePopupFullscreen();
+                            // Après un clic, le bouton rend le focus (sinon Espace — saut — le rebasculerait).
+                            if (event.detail > 0) event.currentTarget.blur();
+                          }}
+                          aria-pressed={popupImmersive}
+                          aria-label="Plein écran"
+                          title={popupImmersive ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+                        >
+                          <MirageFullscreenIcon exit={popupImmersive} />
+                          <span className="mirage-fullscreen-label">PLEIN ÉCRAN</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="mirage-share-button is-danger mirage-popup-leave-button"
+                          disabled={busy}
+                          onClick={() => command('leave')}
+                          aria-label="Quitter la room et fermer la course"
+                        >
+                          ← QUITTER LA ROOM
+                        </button>
+                      </div>
                     </div>
                     <div className={`mirage-online-world${active && hud.powerBoostActive ? ' is-turbo' : ''}`}>
                       <MirageWorld

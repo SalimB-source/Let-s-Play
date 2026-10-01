@@ -67,12 +67,15 @@
   box-shadow: 0 24px 70px rgba(8, 5, 15, .38), inset 0 1px rgba(255, 255, 255, .03);
 }
 .mirage-game-shell { min-width: 0; overflow: hidden; }
-/* ── Plein écran (téléphone & application) ────────────────────────────────
+/* ── Plein écran (tous appareils) ─────────────────────────────────────────
    Sur mobile et dans l'APK, « LANCER LA PARTIE » bascule cette coquille en
-   plein écran (classe `is-immersive`, posée par MirageRushPage au moment du
-   geste) : le plein écran natif quand la plateforme l'accepte, et cette
-   couche fixe comme repli universel (iOS Safari, WebViews sans Fullscreen
-   API — dans l'APK, l'event fullscreenchange repart de la même couche). */
+   plein écran ; sur ordinateur, le bouton « Plein écran » de la barre du jeu,
+   « LANCER EN PLEIN ÉCRAN » et la touche F font la même chose (classe
+   `is-immersive`, posée par useMirageFullscreen au moment du geste) : le plein
+   écran natif quand la plateforme l'accepte, et cette couche fixe comme repli
+   universel (iOS Safari, WebViews sans Fullscreen API, iframe sans autorisation —
+   dans l'APK, l'event fullscreenchange repart de la même couche). Elle règle
+   aussi la mise en page en plein écran natif. */
 body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-game-shell.is-immersive {
   position: fixed;
@@ -108,15 +111,20 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-live-pill i { width: 6px; height: 6px; animation: miragePulseDot 1.6s ease-in-out infinite; }
 .mirage-live-pill.is-paused { color: #ffca85; }
 .mirage-live-pill.is-paused i { background: #f3ad5b; box-shadow: 0 0 12px rgba(243, 173, 91, .7); animation: none; }
-.mirage-sound-button, .mirage-pause-button {
+.mirage-sound-button, .mirage-pause-button, .mirage-fullscreen-button {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px;
   border-radius: 8px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .04);
   color: rgba(255, 245, 228, .55); font: 800 8px var(--mono); letter-spacing: .11em; cursor: pointer;
   transition: border-color .16s, background .16s, color .16s, transform .16s;
 }
-.mirage-sound-button:hover, .mirage-pause-button:hover { transform: translateY(-1px); border-color: rgba(243, 198, 91, .5); color: #ffe2a1; }
+.mirage-sound-button:hover, .mirage-pause-button:hover, .mirage-fullscreen-button:hover { transform: translateY(-1px); border-color: rgba(243, 198, 91, .5); color: #ffe2a1; }
 .mirage-sound-button span { font-size: 14px; }
 .mirage-sound-button.is-on { color: #f5d276; border-color: rgba(245, 210, 118, .34); }
+/* Plein écran : l'icône change (coins qui s'écartent / se rapprochent) et le bouton
+   s'allume tant qu'on y est, comme SON. Le libellé reste « PLEIN ÉCRAN » dans les
+   deux états : c'est un interrupteur (aria-pressed), pas deux actions. */
+.mirage-fullscreen-icon { flex: none; width: 14px; height: 14px; }
+.mirage-fullscreen-button.is-on { color: #f5d276; border-color: rgba(245, 210, 118, .34); background: rgba(245, 210, 118, .08); }
 .mirage-pause-button { border-color: rgba(255, 224, 166, .3); color: #ffe1a8; }
 .mirage-pause-button.is-resume { border-color: rgba(98, 227, 165, .5); background: rgba(98, 227, 165, .1); color: #9df3c9; }
 .mirage-pause-button.is-resume:hover { border-color: rgba(98, 227, 165, .8); color: #c8ffe3; }
@@ -424,7 +432,21 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-start-button:active:not(:disabled) { transform: translateY(0); }
 .mirage-start-button:disabled { opacity: .68; cursor: wait; }
 .mirage-start-button span { font-size: 16px; }
+/* « LANCER EN PLEIN ÉCRAN » (ordinateur) : même gabarit que le lancement doré, en
+   verre sombre à liseré or — le lancement ordinaire reste le bouton principal. */
+.mirage-fullscreen-launch {
+  display: inline-flex; align-items: center; justify-content: center; gap: 11px;
+  padding: 14px 20px; border: 1px solid rgba(255, 226, 154, .5); border-radius: 10px;
+  background: rgba(24, 15, 36, .62); color: #ffe6ac;
+  font: 900 11px var(--mono); letter-spacing: .12em; cursor: pointer;
+  transition: transform .18s, background .18s, border-color .18s, color .18s;
+}
+.mirage-fullscreen-launch .mirage-fullscreen-icon { width: 17px; height: 17px; }
+.mirage-fullscreen-launch:hover:not(:disabled) { transform: translateY(-2px); border-color: #ffe29a; background: rgba(255, 215, 107, .14); color: #fff1cc; }
+.mirage-fullscreen-launch:active:not(:disabled) { transform: translateY(0); }
+.mirage-fullscreen-launch:disabled { opacity: .55; cursor: wait; }
 .mirage-start-button:focus-visible, .mirage-share-button:focus-visible, .mirage-sound-button:focus-visible,
+.mirage-fullscreen-button:focus-visible, .mirage-fullscreen-launch:focus-visible,
 .mirage-pause-button:focus-visible, .mirage-back-game-button:focus-visible, .mirage-board-footer button:focus-visible {
   outline: 2px solid #ffdb76; outline-offset: 3px;
 }
@@ -724,6 +746,10 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-game-brand { font-size: 7px; gap: 5px; letter-spacing: .08em; }
   .mirage-game-controls-top { gap: 5px; }
   .mirage-sound-button, .mirage-pause-button { padding: 6px 8px; font-size: 7px; letter-spacing: .06em; }
+  /* La barre est étroite : le bouton « Plein écran » n'y garde que son icône (le
+     libellé reste lu par les lecteurs d'écran via aria-label). */
+  .mirage-fullscreen-button { padding: 6px 7px; font-size: 7px; }
+  .mirage-fullscreen-label { display: none; }
   .mirage-live-pill { font-size: 7px; }
   /* Fenêtre proportionnelle à l'écran du téléphone. */
   .mirage-viewport { height: clamp(420px, 62vh, 560px); min-height: 420px; }
@@ -746,6 +772,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-overlay h2 { font-size: clamp(22px, 7.2vw, 34px); }
   .mirage-overlay > p { max-width: 350px; font-size: 11px; }
   .mirage-start-button { min-width: 190px; padding: 12px 15px; font-size: 9px; }
+  .mirage-fullscreen-launch { min-width: 190px; padding: 12px 15px; font-size: 9px; }
   .mirage-overlay-hint { font-size: 7px; }
   .mirage-keys-hint { gap: 6px 12px; font-size: 8px; }
   .mirage-keys-hint kbd { min-width: 19px; height: 18px; font-size: 8px; }
@@ -2371,6 +2398,10 @@ img.mirage-powerup-icon {
 }
 .mirage-game-popup .mirage-game-shell { border: 0; box-shadow: none; border-radius: 14px; }
 .mirage-game-popup .mirage-game-topbar { gap: 12px; }
+/* « PLEIN ÉCRAN » et « QUITTER LA ROOM » vont ensemble à droite : la barre garde
+   ses trois blocs (positions · statut · actions) au lieu de quatre éléments
+   répartis à égale distance. */
+.mirage-popup-actions { display: flex; align-items: center; flex: 0 0 auto; gap: 8px; }
 .mirage-popup-leave-button {
   flex: 0 0 auto;
   margin: 0;
@@ -2378,6 +2409,38 @@ img.mirage-powerup-icon {
   border-radius: 7px;
   font-size: 8px;
   white-space: nowrap;
+}
+/* Course en ligne en plein écran (bouton de la barre, touche F) : la fenêtre n'en
+   est plus une — elle prend tout l'écran et la piste tout ce que la barre laisse.
+   Même principe que `.mirage-game-shell.is-immersive`, avec l'arrière-plan plein
+   (plus de voile flouté : il n'y a plus rien à voir derrière). */
+.mirage-game-popup-backdrop.is-immersive {
+  padding: env(safe-area-inset-top, 0px) 0 0;
+  background: #0b0816;
+  backdrop-filter: none;
+}
+.mirage-game-popup-backdrop.is-immersive .mirage-game-popup {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.mirage-game-popup-backdrop.is-immersive .mirage-game-shell {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: 0;
+}
+.mirage-game-popup-backdrop.is-immersive .mirage-online-world {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
 }
 .mirage-room-finished-banner {
   display: flex;
@@ -2618,7 +2681,8 @@ img.mirage-powerup-icon {
   .mirage-viewport.is-power-ready::before { animation: none !important; opacity: 0; }
   .mirage-touch-layer .mirage-swipe-hint.is-on { animation: none; opacity: 1; }
   .mirage-mode-picker button, .mirage-map-card, .mirage-skin-chip, .mirage-share-button,
-  .mirage-back-game-button, .mirage-sound-button, .mirage-pause-button, .mirage-board-list li {
+  .mirage-back-game-button, .mirage-sound-button, .mirage-pause-button, .mirage-fullscreen-button,
+  .mirage-fullscreen-launch, .mirage-board-list li {
     transition: none;
   }
 }

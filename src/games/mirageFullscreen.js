@@ -1,0 +1,97 @@
+/**
+ * `mirageFullscreen` — le plein écran de Mirage Rush, côté navigateur (sans React).
+ *
+ * Deux couches, toujours posées ensemble :
+ *
+ *   - le **plein écran natif** (Fullscreen API, préfixe WebKit compris) quand la
+ *     plateforme l'accepte : Chrome, Edge, Firefox et Safari sur ordinateur,
+ *     Chrome Android, et la WebView de l'application (son `onShowCustomView`
+ *     pose alors le plein écran immersif du système, masque barres comprises) ;
+ *   - une **couche fixe** (classe `is-immersive`, voir `mirage-rush.css`) qui
+ *     couvre tout le viewport. C'est elle qui règle la mise en page du jeu en
+ *     plein écran natif, et c'est elle qui reste quand l'API manque ou refuse
+ *     (iPhone, iframe sans `allowfullscreen`, politique du navigateur).
+ *
+ * Qui ouvre le plein écran :
+ *
+ *   - **téléphone, tablette, application** : « LANCER » l'ouvre tout seul (un
+ *     doigt joue mieux sur tout l'écran) — voir `opensFullscreenOnLaunch()` ;
+ *   - **ordinateur** : jamais sans qu'on le demande. Bouton « Plein écran » de
+ *     la barre du jeu, bouton « LANCER EN PLEIN ÉCRAN », ou la touche F.
+ *
+ * Ce module ne contient que les gestes du navigateur et cette règle ; l'état
+ * React (classe, verrou de défilement, fermeture au retour de l'intro) vit dans
+ * `useMirageFullscreen.js`.
+ */
+import { runningInAndroidApp } from './mirageLanes.js';
+
+/** Classe posée sur `<body>` pendant le plein écran : la page derrière ne défile plus. */
+export const FULLSCREEN_LOCK_CLASS = 'mirage-immersive-lock';
+
+/** Document courant, ou `null` hors navigateur (tests purs, rendu serveur). */
+function currentDocument() {
+  return typeof document === 'undefined' ? null : document;
+}
+
+/** Élément actuellement en plein écran natif (API standard ou préfixe WebKit), sinon `null`. */
+export function nativeFullscreenElement(root = currentDocument()) {
+  return root?.fullscreenElement || root?.webkitFullscreenElement || null;
+}
+
+/**
+ * Demande le plein écran natif pour `element`. À appeler **de façon synchrone**
+ * dans le geste de l'utilisateur (clic, touche) : le navigateur refuse sinon.
+ * Résout `true` si la demande est partie, `false` si l'API manque ou refuse —
+ * l'appelant garde alors la couche fixe, qui suffit pour jouer.
+ */
+export async function requestNativeFullscreen(element) {
+  const request = element?.requestFullscreen || element?.webkitRequestFullscreen;
+  if (typeof request !== 'function') return false;
+  try {
+    await request.call(element);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Quitte le plein écran natif s'il y en a un ; ne lève jamais (déjà refermé, API absente). */
+export async function exitNativeFullscreen(root = currentDocument()) {
+  if (!root || !nativeFullscreenElement(root)) return;
+  const exit = root.exitFullscreen || root.webkitExitFullscreen;
+  try {
+    await exit?.call(root);
+  } catch {
+    /* le navigateur l'a déjà refermé */
+  }
+}
+
+/** Vrai pour un écran tactile au pointeur grossier (doigt) ; ne lève jamais. */
+function coarsePointer() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+  try {
+    return Boolean(window.matchMedia('(pointer: coarse)')?.matches);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Vrai quand « LANCER » ouvre le plein écran sans qu'on le demande : appareil
+ * tactile (téléphone, tablette) ou application Android. Sur ordinateur, c'est
+ * faux — il faut le bouton, la touche F ou « LANCER EN PLEIN ÉCRAN ».
+ */
+export function opensFullscreenOnLaunch() {
+  return runningInAndroidApp() || coarsePointer();
+}
+
+/**
+ * Vrai pour une touche qui bascule le plein écran : `F` seul. Ni Ctrl/Cmd+F (la
+ * recherche du navigateur), ni Alt+F (menus), ni une touche maintenue enfoncée
+ * (sinon la page clignoterait entre les deux états).
+ */
+export function isFullscreenShortcut(event) {
+  if (!event || event.repeat) return false;
+  if (event.ctrlKey || event.metaKey || event.altKey) return false;
+  return String(event.key || '').toLowerCase() === 'f';
+}
