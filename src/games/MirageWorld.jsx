@@ -701,7 +701,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(horizon);
   }
   if (snakeway) {
-    // Les nuages orange cadrent la piste suspendue et la planète de Kaio.
+    // Les nuages jaunes cadrent la piste grise suspendue et la planète de Kaio.
     const horizon = makeSnakewayHorizon();
     bakeStaticScenery(horizon);
     scene.add(horizon);
@@ -720,9 +720,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const floorMaterials = infinity ? [] : [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : airbase ? 0x767c88 : snakeway ? 0xf2ca53 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : airbase ? 0x7f8593 : snakeway ? 0xffdf7b : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : airbase ? 0x6e7482 : snakeway ? 0xd5a83c : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : airbase ? 0x767c88 : snakeway ? 0x8f8f9a : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : airbase ? 0x7f8593 : snakeway ? 0xa9a9b4 : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : airbase ? 0x6e7482 : snakeway ? 0x767680 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = infinity ? null : new THREE.BoxGeometry(2.02, 0.58, 2.02);
   const FLOOR_PERIOD = infinity ? INFINITY_DECK_PERIOD : snakeway ? SNAKEWAY_DECK_PERIOD : floorMaterials.length * 2;
@@ -1097,8 +1097,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(bridgeGate);
     scenery.push(bridgeGate);
   } else if (snakeway) {
-    // Les nuages orange déroulent une boucle de 110 m ; le halo céleste
-    // marque le milieu sans ajouter de structure latérale.
+    // Les nuages jaunes déroulent une mer de cumulus de 110 m sous la route,
+    // comme dans Dragon Ball Z ; le halo céleste marque le milieu sans
+    // ajouter de structure latérale.
     for (let i = 0; i < SNAKEWAY_SEGMENT_COUNT; i += 1) {
       const leftBank = snakewayCloudBank(i, -1);
       const rightBank = snakewayCloudBank(i, 1);

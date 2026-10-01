@@ -3,10 +3,11 @@ import * as THREE from 'three';
 /*
  * ZONE 10 · CHEMIN DU SERPENT — hommage à Dragon Ball pour Mirage Rush.
  *
- * Une piste dorée traverse des nuages orange et conduit vers la petite
- * planète de Kaio : son halo, sa maisonnette et son arbre bleu deviennent la
- * cible de l'horizon. Les côtés restent volontairement dégagés ; seuls des
- * bancs de nuages chauds y défilent. Décor original low-poly, construit en Three.js.
+ * Comme dans Dragon Ball Z, la route file au-dessus d'une mer de nuages
+ * jaunes. Gris de pierre, elle est ourlée d'écailles de dragon sur ses
+ * deux bords — des rangs de dômes imbriqués, comme sur le flanc de
+ * Shenron. Au loin, la petite planète de Kaio — son halo, sa maisonnette
+ * et son arbre bleu — devient la cible de la route. Décor low-poly, Three.js.
  */
 
 export const SNAKEWAY_SEGMENT_LENGTH = 11;
@@ -62,36 +63,92 @@ function seeded(seed) {
   };
 }
 
-/** Orange cloudbanks, and nothing else, drift past the outside of each lane. */
+/**
+ * A rolling sea of yellow cumulus, and nothing else, spreads beneath the
+ * outside of each lane: the golden road floats above the clouds, DBZ Snake
+ * Way. Each 11 m segment is packed with low-poly clouds — wide flat base,
+ * round domes, bumpy sunlit crown — in three overlapping bands whose crowns
+ * peek just under the road, plus two small clouds drifting low. Everything
+ * stays below road level, seamless over the 110 m loop.
+ */
 export function snakewayCloudBank(index, side) {
   const group = new THREE.Group();
   const rand = seeded((index + 1) * 79 + (side > 0 ? 401 : 809));
-  const cloudLights = [
-    material(0xffc17b, { roughness: 1 }),
-    material(0xffa363, { roughness: 1 }),
-    material(0xf28a59, { roughness: 1 }),
-    material(0xffd08c, { roughness: 1 }),
+  // DBZ sunset yellows: pale light on the crowns, deep gold in the shade.
+  // Every tone keeps r > g > b — a warm ramp from sunlit lemon to aged gold.
+  const pale = material(0xfff2a8, { roughness: 1 });
+  const light = material(0xffe98c, { roughness: 1 });
+  const bright = material(0xffe06b, { roughness: 1 });
+  const yellow = material(0xffd75c, { roughness: 1 });
+  const gold = material(0xffcf4d, { roughness: 1 });
+  const deep = material(0xffc93f, { roughness: 1 });
+  const tierPalettes = [
+    [deep, gold], // shaded base
+    [gold, yellow, bright], // lit body
+    [bright, light, pale], // sunlit crown
   ];
   const puffGeometry = new THREE.SphereGeometry(1, 10, 7);
 
-  group.position.set(side * (9.4 + (index % 2) * 0.18), -0.55 + (index % 3) * 0.08, 6 - index * SNAKEWAY_SEGMENT_LENGTH);
+  group.position.set(0, 0, 6 - index * SNAKEWAY_SEGMENT_LENGTH);
   group.userData.speedFactor = 1;
-  group.userData.callout = 'orange-cloudbank';
+  group.userData.callout = 'yellow-cloudbank';
   group.userData.side = side;
 
-  // Puffs fan outwards so their inner edges never intrude into the running lanes.
-  const puffSpecs = [
-    [0.05, -0.3, 0.0, 1.55, 0.72, 1.3],
-    [0.85, 0.12, -0.55, 1.24, 0.86, 1.08],
-    [1.7, -0.12, 0.62, 1.56, 0.78, 1.3],
-    [2.55, -0.42, -0.38, 1.32, 0.68, 1.04],
-    [0.62, -0.62, 0.78, 1.05, 0.54, 0.9],
-    [2.0, 0.4, -0.78, 1.1, 0.66, 0.96],
+  // Low-poly cumulus templates, puffs in [x, y, z, sx, sy, sz, tier] order:
+  // a wide flat base (tier 0, shaded underside), big round domes (tier 1) and
+  // a bumpy sunlit crown (tier 2). Two silhouettes are interleaved so the
+  // skyline stays irregular — the classic DBZ cloud-sea profile.
+  const CUMULUS_A = [
+    [0.0, -0.25, 0.0, 2.5, 1.05, 1.8, 0],
+    [-1.9, -0.05, 0.1, 1.35, 1.0, 1.3, 0],
+    [1.95, -0.05, -0.05, 1.3, 0.95, 1.25, 0],
+    [-0.5, 1.05, 0.05, 1.75, 1.5, 1.5, 1],
+    [1.5, 1.15, -0.1, 1.35, 1.15, 1.3, 1],
+    [-1.9, 1.0, 0.15, 1.15, 1.0, 1.15, 2],
+    [0.6, 2.15, -0.1, 1.2, 1.0, 1.15, 2],
   ];
-  puffSpecs.forEach(([px, py, pz, sx, sy, sz], puffIndex) => {
-    const drift = (rand() - 0.5) * 0.16;
-    sphere(group, puffGeometry, cloudLights[(puffIndex + index) % cloudLights.length], side * (px + drift), py, pz, sx, sy, sz);
-  });
+  const CUMULUS_B = [
+    [0.0, -0.25, 0.0, 2.8, 0.95, 1.9, 0],
+    [-2.3, 0.05, 0.1, 1.5, 1.15, 1.4, 0],
+    [2.3, 0.0, -0.1, 1.4, 1.05, 1.35, 0],
+    [-0.9, 1.0, 0.05, 1.5, 1.25, 1.35, 1],
+    [1.2, 1.15, -0.05, 1.6, 1.3, 1.4, 1],
+    [0.2, 2.0, 0.0, 1.1, 0.95, 1.1, 2],
+    [-2.4, 0.9, 0.3, 0.95, 0.8, 0.95, 2],
+  ];
+
+  const cluster = (cx, cy, cz, scale, colorShift, variant) => {
+    const template = variant % 2 === 0 ? CUMULUS_A : CUMULUS_B;
+    template.forEach(([px, py, pz, sx, sy, sz, tier], puffIndex) => {
+      // An occasional missing crown bump keeps the skyline irregular.
+      if (puffIndex === template.length - 1 && rand() < 0.35) return;
+      const s = scale * (0.9 + rand() * 0.25);
+      const x = cx + px * s + (rand() - 0.5) * 0.5;
+      const y = cy + py * s + (rand() - 0.5) * 0.4;
+      const z = cz + pz * s + (rand() - 0.5) * 0.6;
+      const safeX = x - sx * s < 4.3 ? 4.3 + sx * s : x; // never bite into the lanes
+      const palette = tierPalettes[tier];
+      sphere(
+        group, puffGeometry,
+        palette[(puffIndex + colorShift) % palette.length],
+        side * safeX, y, z,
+        sx * s, sy * s, sz * s,
+      );
+    });
+  };
+
+  // Three bands tile the whole segment (z 0 → -11), the clouds overlapping
+  // along the track so the wall never breaks. The highest crowns stay at
+  // least half a metre under the road even at maximum jitter, while the
+  // bases drop away toward the haze below.
+  let variant = index;
+  for (const z of [-1.8, -5.6, -9.4]) { cluster(7.4, -5.0, z, 1.0, index, variant); variant += 1; }
+  for (const z of [-3.6, -7.4, -11.2]) { cluster(11.0, -5.6, z, 1.2, index + 1, variant); variant += 1; }
+  for (const z of [-0.6, -5.6, -10.6]) { cluster(15.2, -6.3, z, 1.5, index + 2, variant); variant += 1; }
+
+  // Two small clouds drift just under the road edge, sweeping past the rider.
+  cluster(6.15, -3.2, -4.3, 0.55, index + 3, variant);
+  cluster(6.55, -4.1, -8.1, 0.5, index + 4, variant + 1);
   return group;
 }
 
@@ -357,26 +414,28 @@ function makeKaioPlanet() {
   return planet;
 }
 
-/** Orange cloud banks frame the winding road and Kaio's planet on the horizon. */
+/** Yellow cloud banks frame the winding road and Kaio's planet on the horizon. */
 export function makeSnakewayHorizon() {
   const group = new THREE.Group();
   const cloudColors = [
-    material(0xffa15f, { roughness: 1 }),
-    material(0xffbd78, { roughness: 1 }),
-    material(0xf18358, { roughness: 1 }),
-    material(0xffd093, { roughness: 1 }),
+    material(0xffcf4d, { roughness: 1 }),
+    material(0xffd75c, { roughness: 1 }),
+    material(0xffe06b, { roughness: 1 }),
+    material(0xffe98c, { roughness: 1 }),
+    material(0xffc93f, { roughness: 1 }),
   ];
   const cloudGeometry = new THREE.SphereGeometry(1, 10, 7);
-  const road = material(0xf4ce58, { emissive: 0x9f6819, emissiveIntensity: 0.36, metalness: 0.12, roughness: 0.52, side: THREE.DoubleSide });
-  const roadEdge = new THREE.MeshBasicMaterial({ color: 0xffe9a8 });
+  const road = material(0x9a9aa5, { metalness: 0.12, roughness: 0.52, side: THREE.DoubleSide });
+  const roadEdge = new THREE.MeshBasicMaterial({ color: 0xd8d8e2 });
 
-  // Broad puffs stay to either side, leaving a clean sightline to the planet.
+  // Broad puffs stay to either side, tucked under the winding road's level
+  // as it dives toward the planet, leaving a clean sightline to it.
   const cloudCenters = [
     [-42, -4.8, -43, 16, 3.4, 8], [-27, -5.6, -53, 17, 3.8, 9],
     [30, -5.2, -47, 16, 3.6, 9], [45, -3.8, -61, 18, 3.4, 9],
-    [-39, -0.8, -71, 15, 3.2, 8], [38, -0.4, -76, 17, 3.4, 9],
-    [-30, -4.2, -91, 16, 3.6, 8], [32, -3.8, -99, 19, 3.7, 10],
-    [-43, -5.2, -113, 18, 3.4, 9], [46, -4.5, -121, 18, 3.6, 10],
+    [-39, -3.3, -71, 15, 3.2, 8], [38, -4.6, -76, 17, 3.4, 9],
+    [-30, -7.0, -91, 16, 3.6, 8], [32, -8.2, -99, 19, 3.7, 10],
+    [-43, -6.2, -113, 18, 3.4, 9], [46, -5.5, -121, 18, 3.6, 10],
   ];
   cloudCenters.forEach(([x, y, z, sx, sy, sz], index) => {
     const base = sphere(group, cloudGeometry, cloudColors[index % cloudColors.length], x, y, z, sx, sy, sz);
@@ -411,8 +470,24 @@ export function makeSnakewayHorizon() {
     group.add(new THREE.Mesh(new THREE.TubeGeometry(edgeCurve, 170, 0.085, 5, false), roadEdge));
   });
 
-  // Tile joints make the gold route read clearly as a brick road at the bends.
-  const jointMat = material(0xffedac, { roughness: 0.76 });
+  // Dragon scales line the winding road's edges, echoing the track border.
+  const roadScaleGeometry = new THREE.SphereGeometry(1, 8, 5);
+  const roadScaleA = material(0x82828e, { roughness: 0.88 });
+  const roadScaleB = material(0x62626e, { roughness: 0.92 });
+  edgeCurves.forEach((edgeCurve, edgeIndex) => {
+    for (let i = 0; i < 60; i += 1) {
+      const point = edgeCurve.getPointAt(i / 59);
+      sphere(
+        group, roadScaleGeometry,
+        i % 2 === edgeIndex ? roadScaleA : roadScaleB,
+        point.x, point.y + 0.04, point.z,
+        0.4, 0.24, 0.46,
+      );
+    }
+  });
+
+  // Tile joints make the grey route read clearly as a stone road at the bends.
+  const jointMat = material(0x6a6a75, { roughness: 0.76 });
   for (const t of [0.035, 0.08, 0.13, 0.19, 0.255, 0.32, 0.39, 0.46, 0.53]) {
     const center = route.getPointAt(t);
     const tangent = route.getTangentAt(t);
@@ -426,23 +501,45 @@ export function makeSnakewayHorizon() {
   return group;
 }
 
-/** Narrow gold borders on the playable tiles; stays aligned as the floor loops. */
+/**
+ * Dragon-scale road border: a low charcoal strip with two staggered rows of
+ * overlapping grey dome scales caps the OUTER rim of the road, floating just
+ * beyond the pavement over the cloud sea — the way dragon scales overlap
+ * along Shenron's ridge. Everything is grey, and the 1.2 m scale step (a
+ * 5-scale colour cycle, one per 6 m deck period) loops seamlessly with the
+ * scrolling floor the border is added to.
+ */
 export function snakewayTrackTrim(lanes, floorRows = 28, floorMinZ = -40) {
   const group = new THREE.Group();
-  const gold = material(0xffdc71, { emissive: 0x805219, emissiveIntensity: 0.18, metalness: 0.15, roughness: 0.42 });
-  const bright = new THREE.MeshBasicMaterial({ color: 0xfff1bc });
+  const baseMat = material(0x4c4c58, { roughness: 0.95 });
+  const scaleA = material(0x74747f, { roughness: 0.88 });
+  const scaleB = material(0x94949f, { roughness: 0.82 });
+  const scaleGeometry = new THREE.SphereGeometry(1, 9, 6);
   const edge = Math.max(Math.abs(lanes[0]), Math.abs(lanes[lanes.length - 1])) + 1.05;
   const length = floorRows * 2.02;
   const centerZ = floorMinZ + length / 2;
   for (const side of [-1, 1]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, length), gold);
-    rail.position.set(side * edge, 0.005, centerZ);
-    group.add(rail);
-    for (let index = 0; index < Math.ceil(floorRows / 2); index += 1) {
-      const stud = new THREE.Mesh(new THREE.SphereGeometry(0.075, 6, 5), bright);
-      stud.scale.set(1.4, 0.35, 1);
-      stud.position.set(side * edge, 0.11, floorMinZ + index * 4.04 + 1.0);
-      group.add(stud);
+    // La bordure flotte au-delà du bord extérieur du revêtement, au-dessus
+    // de la mer de nuages ; elle est ajoutée au sol défilant et se déplace
+    // donc avec la route.
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, length), baseMat);
+    strip.position.set(side * (edge + 0.88), -0.02, centerZ);
+    group.add(strip);
+    // Two staggered rows of overlapping grey dome scales, all grey. The
+    // colour pattern is a 5-scale cycle (6 m = the deck period) so the
+    // border loops seamlessly with the scrolling floor.
+    const rowPatterns = [
+      [scaleA, scaleB, scaleA, scaleB, scaleB],
+      [scaleB, scaleA, scaleB, scaleA, scaleA],
+    ];
+    const step = 1.2;
+    const count = Math.ceil((length + 0.8) / step);
+    for (let row = 0; row < 2; row += 1) {
+      for (let i = 0; i < count; i += 1) {
+        const z = floorMinZ - 0.4 + row * (step / 2) + i * step;
+        if (z > floorMinZ + length + 0.3) continue;
+        sphere(group, scaleGeometry, rowPatterns[row][i % 5], side * (edge + 0.6 + row * 0.6), 0.02, z, 0.55, 0.3, 0.6);
+      }
     }
   }
   return group;
