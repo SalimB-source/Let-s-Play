@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
+import { youTubeThumbUrl } from '../lib/videoThumbnails';
 // Les actus du jour générées par le robot ouvrent la liste (les plus récentes
 // d'abord) ; les articles manuels de la rédaction suivent dans l'ordre.
 import { autoNewsListing } from '../lib/autoNews';
@@ -15,45 +16,49 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // ne répond plus — même mécanique que la page cinéma.
 const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
+// Copy is module-scoped so the article list remains referentially stable across
+// renders; recreating this object in the component retriggered its views effect
+// indefinitely after each state update.
+const FEATURED_COPY = {
+  en: {
+    cards: [
+      ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT GOES FPS.', 'Blizzard confirms an open-world shooter set at ground level in the StarCraft universe. It is not coming before 2030.'],
+      ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
+      ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
+      ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
+    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 29.09.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
+  },
+  fr: {
+    cards: [
+      ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT PASSE AU FPS.', 'Blizzard officialise un shooter en monde ouvert situé au ras du champ de bataille. Le projet ne sortira pas avant 2030.'],
+      ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
+      ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
+      ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
+    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 29.09.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
+  },
+  ar: {
+    cards: [
+      ['STARCRAFT · تصويب', '12.09.2026 · بليزارد', 'STARCRAFT تتحول إلى تصويب.', 'تعلن بليزارد عن لعبة تصويب في عالم مفتوح داخل عالم StarCraft، ولن تصدر قبل عام 2030.'],
+      ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
+      ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
+      ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
+    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 29.09.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
+  }
+};
+
 // La section calendrier + compte à rebours (01) a été déplacée sur la page
 // d'accueil, juste après le hero — la frise complète vit sur /calendrier.
 export default function News(){
   const { t, lang } = useLanguage();
-  const featuredCopy = {
-    en: {
-      cards: [
-        ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT GOES FPS.', 'Blizzard confirms an open-world shooter set at ground level in the StarCraft universe. It is not coming before 2030.'],
-        ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
-        ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
-        ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-      ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 29.09.2026', section: 'FEATURED NEWS', today: 'NEWS OF THE DAY'
-    },
-    fr: {
-      cards: [
-        ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT PASSE AU FPS.', 'Blizzard officialise un shooter en monde ouvert situé au ras du champ de bataille. Le projet ne sortira pas avant 2030.'],
-        ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
-        ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
-        ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-      ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 29.09.2026', section: 'ACTUS À LA UNE', today: 'NEWS DU JOUR'
-    },
-    ar: {
-      cards: [
-        ['STARCRAFT · تصويب', '12.09.2026 · بليزارد', 'STARCRAFT تتحول إلى تصويب.', 'تعلن بليزارد عن لعبة تصويب في عالم مفتوح داخل عالم StarCraft، ولن تصدر قبل عام 2030.'],
-        ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
-        ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
-        ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-      ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 29.09.2026', section: 'أبرز الأخبار', today: 'أخبار اليوم'
-    }
-  }[lang] || null;
-  const featured = featuredCopy || null;
+  const featured = FEATURED_COPY[lang] || FEATURED_COPY.fr;
   const million = t.news.million || t.news.featured;
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
   // Les actus du 28-29.09.2026 (rédigées à la main au gabarit du robot)
-  // ouvrent la liste : Physint × Xbox (aussi la une de l'accueil) et le
-  // Minecraft World Hotel en tête, suivis du Sift, de The Witcher 3 Remastered,
-  // de Nadella et de l'actu Halo × Activision ; les actus du jour du robot
+  // ouvrent la liste : Physint × Xbox (aussi la une de l'accueil), God of War
+  // Laufey et le Minecraft World Hotel, suivis du Sift, de The Witcher 3
+  // Remastered, de Nadella et de l'actu Halo × Activision ; les actus du robot
   // arrivent ensuite, puis les articles manuels de la rédaction dans l'ordre.
   const articles = useMemo(() => [
     { to: '/news/physint-budget-400-millions-xbox', image: 'kojima_mindplayer.png', alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', badge: 'PHYSINT · XBOX', kicker: '29.09.2026 · KOJIMA PRODUCTIONS', title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.', excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft a signé pour un montant « nettement inférieur ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },

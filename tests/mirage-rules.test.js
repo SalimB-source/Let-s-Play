@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCourse, jumpHeight, CRYSTALS, LANES, LANE_COUNT, seededRandom } from '../src/games/mirageRules.js';
+import { createCourse, jumpHeight, CRYSTALS, LANES, laneCount, seededRandom } from '../src/games/mirageRules.js';
 
 test('encounters remain varied and traversable over 1000 rows', () => {
   let seed = 42;
@@ -14,20 +14,20 @@ test('encounters remain varied and traversable over 1000 rows', () => {
     patterns.add(row.pattern);
     assert.ok(row.gap >= 18 && row.gap <= 25);
     const cacti = row.items.filter(item => item.kind === 'cactus');
-    assert.ok(cacti.length < LANE_COUNT);
+    assert.ok(cacti.length < laneCount());
     assert.ok(LANES.some((_, lane) => !cacti.some(item => item.lane === lane)));
     for (const item of row.items) {
-      assert.ok(item.lane >= 0 && item.lane < LANE_COUNT);
+      assert.ok(item.lane >= 0 && item.lane < laneCount());
       if (item.kind === 'barrier') {
         assert.equal(item.lanes.length, 2);
-        assert.ok(item.lanes.every(l => l >= 0 && l < LANE_COUNT));
+        assert.ok(item.lanes.every(l => l >= 0 && l < laneCount()));
         assert.equal(item.lanes[1] - item.lanes[0], 1);
         assert.ok(item.lanes.every(l => !cacti.some(c => c.lane === l)));
       }
       if (item.kind === 'crystal') assert.ok(CRYSTALS[item.tier]);
     }
     if (row.pattern === 'jump') {
-      assert.equal(cacti.length, LANE_COUNT - 2);
+      assert.equal(cacti.length, laneCount() - 2);
       assert.ok(row.items.some(item => item.kind === 'crystal' && item.raised && item.tier >= 2));
     }
   }
@@ -137,16 +137,43 @@ test('alger (Alger la Blanche) stage is retained in challenge links and online r
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'atlantis' })).stage, undefined);
 });
 
-test('cowboy cry fires only on each fifth consecutive pickup, and resets on a miss or crash', async () => {
+test('ramparts (Remparts d’Ocre) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Rush B', stage: 'ramparts' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'ramparts');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
+});
+
+test('infinity (Château de l’Infini) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Nakime', stage: 'infinity' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'infinity');
+});
+
+test('airbase (Thunder Airbase) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Guile', stage: 'airbase' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'airbase');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
+});
+
+test('snakeway (Chemin du Serpent) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Goku', stage: 'snakeway' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'snakeway');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'namek' })).stage, undefined);
+});
+
+test('cowboy streak marks each fifth consecutive pickup, and resets on a miss or crash', async () => {
   const { advanceCowboyStreak } = await import('../src/games/mirageRules.js');
   let streak = 0;
-  const cries = [];
+  const milestones = [];
   for (let n = 1; n <= 16; n++) {
     const result = advanceCowboyStreak(streak, true);
     streak = result.streak;
-    if (result.cheer) cries.push(n);
+    if (result.cheer) milestones.push(n);
   }
-  assert.deepEqual(cries, [5, 10, 15]);
+  assert.deepEqual(milestones, [5, 10, 15]);
   assert.deepEqual(advanceCowboyStreak(4, false), { streak: 0, cheer: false });
   assert.deepEqual(advanceCowboyStreak(4, true, true), { streak: 0, cheer: false });
   assert.deepEqual(advanceCowboyStreak(0, true), { streak: 1, cheer: false });
@@ -176,22 +203,52 @@ test('hit animation visibility blinks in rush and duel but online local duplicat
   assert.equal(isPlayerVisible('online', 0, 0), false);
 });
 
-test('airborne player cannot change lanes or drift, and can move on landing', async () => {
-  const { playerLaneAfterAction, playerLateralPosition } = await import('../src/games/mirageRules.js');
-  for (const remaining of [0.82, 0.41, 0.001]) {
-    assert.equal(playerLaneAfterAction(1, 'left', remaining), 1);
-    assert.equal(playerLaneAfterAction(1, 'right', remaining), 1);
-    assert.equal(playerLateralPosition(0.6, 2.1, 0.016, remaining), 0.6);
-  }
-  assert.equal(playerLaneAfterAction(1, 'left', 0), 0);
-  assert.equal(playerLaneAfterAction(1, 'right', 0), 2);
-  assert.equal(playerLaneAfterAction(0, 'left', 0), 0);
-  assert.equal(playerLaneAfterAction(2, 'right', 0), 3);
-  assert.equal(playerLaneAfterAction(3, 'right', 0), 3);
-  assert.equal(playerLaneAfterAction(3, 'left', 0), 2);
-  assert.equal(playerLaneAfterAction(3, 'left', 0.41), 3);
-  assert.equal(playerLaneAfterAction(1, 'jump', 0), 1);
-  assert.ok(playerLateralPosition(0.6, 2.1, 0.016, 0) > 0.6);
+test('the rider changes lane mid-air too: the jump never blocks a slide', async () => {
+  const { playerLaneAfterAction } = await import('../src/games/mirageRules.js');
+  // Le geste « sauter puis glisser » (ou l'inverse) doit passer : la voie
+  // change quel que soit le moment du saut, exactement comme au sol.
+  assert.equal(playerLaneAfterAction(1, 'left'), 0);
+  assert.equal(playerLaneAfterAction(1, 'right'), 2);
+  assert.equal(playerLaneAfterAction(0, 'left'), 0);
+  assert.equal(playerLaneAfterAction(2, 'right'), 3);
+  assert.equal(playerLaneAfterAction(3, 'right'), 3);
+  assert.equal(playerLaneAfterAction(3, 'left'), 2);
+  assert.equal(playerLaneAfterAction(1, 'jump'), 1);
+});
+
+test('the lateral slide is quick, and it keeps working while airborne', async () => {
+  const { playerLateralPosition, LATERAL_LANE_SPEED } = await import('../src/games/mirageRules.js');
+  // Vitesse de traversée : la glissade part vite (l'ancien `dt * 12` gelait en
+  // plus la position tant que le cheval était en l'air).
+  assert.ok(LATERAL_LANE_SPEED >= 20, 'la glissade doit être nerveuse');
+  assert.ok(playerLateralPosition(0.6, 2.1, 1 / 60) > 0.9, 'la voie doit se sentir au premier geste');
+  assert.equal(playerLateralPosition(0.6, 2.1, 0), 0.6, 'une frame nulle ne bouge pas');
+  // Après ~100 ms la glissade a rejoint la voie visée (à 10 % près).
+  let x = 0.6;
+  for (let frame = 0; frame < 6; frame++) x = playerLateralPosition(x, 2.1, 1 / 60);
+  assert.ok(Math.abs(2.1 - x) < 0.15, `glissade trop lente : x = ${x}`);
+  // Jamais de dépassement : la position converge vers la voie visée.
+  assert.ok(x <= 2.1);
+});
+
+test('a jump asked for in the air is kept and fired on landing', async () => {
+  const { advanceJump, JUMP_DURATION, JUMP_BUFFER } = await import('../src/games/mirageRules.js');
+  // Saut en cours : le temps descend, rien ne repart tant qu'on est en l'air.
+  let state = advanceJump(JUMP_DURATION, 0, 0.2);
+  assert.ok(state.jumpLeft > 0 && state.jumpLeft < JUMP_DURATION);
+  assert.equal(state.buffer, 0);
+  // Demande en l'air : elle est gardée puis rejouée dès que les sabots
+  // touchent le sol (le bouton « ne répond plus » quand on tape trop tôt).
+  state = advanceJump(0.03, JUMP_BUFFER, 0.05);
+  assert.equal(state.jumpLeft, JUMP_DURATION, 'le saut repart à l’atterrissage');
+  assert.equal(state.buffer, 0, 'la demande consommée ne rejoue pas deux fois');
+  // Demande trop vieille : oubliée, le cheval garde les sabots au sol.
+  state = advanceJump(0, 0.01, 0.05);
+  assert.equal(state.jumpLeft, 0);
+  assert.equal(state.buffer, 0);
+  // Un saut déjà en l'air n'est pas relancé par la décroissance.
+  state = advanceJump(JUMP_DURATION, 0, 0.01);
+  assert.ok(state.jumpLeft < JUMP_DURATION && state.jumpLeft > 0);
 });
 
 test('special items charge costs and definition are properly configured', async () => {
@@ -223,19 +280,19 @@ test('special items charge costs and definition are properly configured', async 
 });
 test('four lanes are centred, evenly spaced, and traversable in both directions', async () => {
   const { playerLaneAfterAction } = await import('../src/games/mirageRules.js');
-  assert.equal(LANE_COUNT, 4);
+  assert.equal(laneCount(), 4);
   assert.equal(LANES[0] + LANES[3], 0);
   assert.equal(LANES[1] + LANES[2], 0);
-  for (let lane = 1; lane < LANE_COUNT; lane++) {
+  for (let lane = 1; lane < laneCount(); lane++) {
     assert.ok(Math.abs(LANES[lane] - LANES[lane - 1] - 2.1) < 1e-10);
   }
   let lane = 0;
   for (const expected of [1, 2, 3, 3]) {
-    lane = playerLaneAfterAction(lane, 'right', 0);
+    lane = playerLaneAfterAction(lane, 'right');
     assert.equal(lane, expected);
   }
   for (const expected of [2, 1, 0, 0]) {
-    lane = playerLaneAfterAction(lane, 'left', 0);
+    lane = playerLaneAfterAction(lane, 'left');
     assert.equal(lane, expected);
   }
 });
@@ -633,7 +690,7 @@ test('mud puddles spawn occasionally, slow down the mount on the ground, can be 
     createCourse,
     seededRandom,
     LANES,
-    LANE_COUNT,
+    laneCount,
     MUD_SLOW_DURATION,
     MUD_SLOW_FACTOR,
     MUD_JUMP_CLEARANCE,
@@ -654,7 +711,7 @@ test('mud puddles spawn occasionally, slow down the mount on the ground, can be 
     if (muds.length > 0) {
       mudRows += 1;
       assert.equal(muds.length, 1, 'at most one mud puddle per row');
-      assert.ok(muds[0].lane >= 0 && muds[0].lane < LANE_COUNT);
+      assert.ok(muds[0].lane >= 0 && muds[0].lane < laneCount());
       // Every row with mud still leaves at least one clean non-cactus, non-mud lane
       assert.ok(
         LANES.some((_, lane) => !row.items.some((it) => (it.kind === 'cactus' || it.kind === 'mud') && it.lane === lane)),

@@ -208,3 +208,31 @@ test('a room can be created on the alger stage and rejects unknown maps', async 
   assert.equal(created.name, 'Baie d’Alger');
   assert.throws(() => localRoomAction('create', null, { p_stage: 'atlantis' }, host), /Carte inconnue/);
 });
+
+test('a room can be created on the ramparts stage', async () => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'ramparts', p_name: 'Rush B', p_password: '' }, host);
+  assert.equal(created.stage, 'ramparts');
+  assert.equal(created.name, 'Rush B');
+});
+
+test('a room can be created on the infinity stage', async () => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'infinity', p_name: 'Château Infini', p_password: '' }, host);
+  assert.equal(created.stage, 'infinity');
+  assert.equal(created.name, 'Château Infini');
+});
+
+test('a room can be created on the airbase stage', async () => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'airbase', p_name: 'Sonic Boom', p_password: '' }, host);
+  assert.equal(created.stage, 'airbase');
+  assert.equal(created.name, 'Sonic Boom');
+});
+
+test('a room can be created on the Snake Way stage', async () => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'snakeway', p_name: 'Chemin du Serpent', p_password: '' }, host);
+  assert.equal(created.stage, 'snakeway');
+  assert.equal(created.name, 'Chemin du Serpent');
+});

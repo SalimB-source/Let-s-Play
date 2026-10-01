@@ -8,10 +8,21 @@ Exécuter `supabase/mirage-rooms.sql` dans le SQL Editor du projet Supabase déj
 
 Réexécuter `supabase/mirage-rooms.sql` sur les installations existantes, avant de déployer le client à quatre voies. Le script remplace la contrainte de position et met à jour la validation RPC pour accepter les voies `0` à `3`, sans supprimer les salons ni les joueurs. Les clients d'une même course doivent utiliser la même version du jeu (le parcours généré a changé).
 
+## Piste à trois voies sur téléphone
+
+Le téléphone serre la piste de Mirage Rush à **trois voies** — navigateur comme
+application Android ; l'ordinateur et la tablette en gardent quatre : voir
+`src/games/mirageLanes.js` et `mirageRules.js`. Aucune migration n'est
+nécessaire — la validation RPC accepte les voies `0` à `3`, et un client à
+trois voies n'envoie que `0`, `1` ou `2`. Dans un salon mixte, un cavalier à la
+voie `3` vu depuis un téléphone est simplement ramené sur la dernière voie à
+l'affichage (`lanePosition()`), la course restant jugée sur la distance.
+
 ## Fonctionnalités des rooms
 
 1. **Liste des rooms disponibles (`list`)** : affiche les rooms en statut `lobby` (nom de la room, terrain, hôte, nombre de joueurs, nombre de joueurs prêts, indicateur de mot de passe).
-2. **Création de room (`create`)** : permet de donner un **nom** à la room, un **mot de passe optionnel** (peut rester vide pour une room ouverte) et de choisir le terrain (`desert`, `western`, `prairie`).
+2. **Création de room (`create`)** : permet de donner un **nom** à la room, un **mot de passe optionnel** (peut rester vide pour une room ouverte) et de choisir le terrain (`desert`, `western`, `prairie`, `sardinia`, `alger`, `japan`, `ramparts`, `infinity`, `airbase`, `snakeway`). Après l’ajout d’une map, rejouez `mirage-rooms.sql` dans l’éditeur SQL de Supabase : le script recrée la contrainte `mirage_rooms_stage_check` et remplace la fonction RPC.
 3. **Statut prêt (`ready`)** : chaque joueur apparaît comme « Joueur pas encore prêt » tant qu'il n'a pas activé son statut « Prêt ».
 4. **Chat de coordination (`chat`)** : messagerie intégrée au salon pour communiquer et se coordonner avant de lancer la partie.
 5. **Lancement (`start`)** : disponible lorsque les joueurs du salon sont prêts, déclenchant un compte à rebours synchronisé de 5 secondes avant le départ de la course de 600 m.
+6. **Tableau des positions (fin de course)** : dès qu'un joueur franchit la ligne, une fenêtre de résultats classe tous les cavaliers du salon (puis le même classement reste affiché en tête du salon). L'ordre d'arrivée est celui de `finished_at` — l'horloge du salon fait foi — et les temps affichés sont les écarts à `started_at` ; les cavaliers encore en piste sont rangés par distance restante, et le classement passe de « provisoire » à « final » tout seul, au fil des lectures du salon. Aucune migration SQL : tout est calculé côté client à partir de `players[].finished_at`, `distance` et `started_at` (voir `src/games/mirageStandings.js`, vérifié par `npm run check:mirage-scoreboard`). Le même tableau s'affiche à l'arrivée d'un **Duel** contre les PNJ.

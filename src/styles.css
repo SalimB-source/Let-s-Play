@@ -184,7 +184,18 @@ img{max-width:100%}
   -webkit-backdrop-filter:blur(18px) saturate(1.35);
 }
 .brand{display:inline-flex;align-items:center;flex:none}
-.brand-logo{height:38px;width:auto;display:block;transition:transform .22s cubic-bezier(.16,1,.3,1)}
+/* Lockup empilé « Let's / Play » : le fichier fait 1248 × 905 (ratio 1,379).
+   `aspect-ratio` + `object-fit:contain` verrouillent ce dessin — la barre peut
+   se resserrer ou changer de hauteur, l'image se contente de grandir ou de
+   réduire, elle ne peut plus être écrasée en largeur (y compris si un cache
+   ou un CDN servait un autre fichier du même nom). La hauteur suit celle de
+   l'île : 42 px dans une île de 64 px (58 px une fois la page défilée), ce
+   qui laisse 8 px d'air au-dessus et au-dessous du logo. */
+.brand-logo{
+  height:42px;width:auto;aspect-ratio:1248/905;object-fit:contain;
+  flex:none;display:block;
+  transition:transform .22s cubic-bezier(.16,1,.3,1)
+}
 .brand-logo:hover{transform:scale(1.04)}
 .nav-links{display:flex;align-items:center;flex:1;min-width:0;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
 .nav-primary{
@@ -232,7 +243,7 @@ img{max-width:100%}
 @media(min-width:801px) and (max-width:950px) and (hover:hover), (min-width:801px) and (max-width:950px) and (min-device-width:601px){
   .nav-search{min-width:140px}
   .nav-search-kbd{display:none}
-  .brand-logo{height:34px}
+  .brand-logo{height:38px}
   .nav-primary{gap:1px;padding:2px}
   .nav-primary a{padding:6px 7px;font-size:9.5px;letter-spacing:.08em}
   .nav-actions{gap:6px}
@@ -280,6 +291,12 @@ img{max-width:100%}
 .nav-logout:hover{background:rgba(255,92,124,.14);border-color:rgba(255,92,124,.32);color:#fff}
 .nav-logout:hover .nav-logout-icon{transform:translateX(2px)}
 .nav-logout:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+/* Sur PC (> 800 px), le bouton Déconnexion de la barre est masqué : il reste
+   disponible dans le menu qui s’ouvre au survol du profil. Le menu mobile
+   (≤ 800 px) n’a pas ce survol, il garde donc le bouton complet. */
+@media(min-width:801px){
+  .nav-actions-grid > .nav-logout{display:none}
+}
 /* Entre 801 px et 1240 px, la barre est déjà serrée (cinq entrées + recherche
    + langue + compte) : l’icône suffit, le libellé passe en info-bulle /
    aria-label. Le menu mobile (≤ 800 px) a la place pour le texte complet. */
@@ -335,6 +352,18 @@ img{max-width:100%}
   background:inherit; border-left:1px solid rgba(255,255,255,.08); border-top:1px solid rgba(255,255,255,.08);
   transform:rotate(45deg); backdrop-filter:blur(18px);
 }
+.nav-profile-dropdown::after{
+  content:""; position:absolute; top:-32px; left:-40px; right:-14px;
+  height:32px; background:transparent;
+}
+/* Pont invisible sous le bouton profil : le pointeur reste « dans » le wrapper
+   pendant le trajet bouton → menu, même si on bouge la souris très vite. */
+.nav-profile-wrap::after{
+  content:""; position:absolute; top:100%; left:-16px; right:-16px;
+  height:20px; background:transparent; pointer-events:none;
+}
+.nav-profile-wrap:hover::after,
+.nav-profile-wrap:focus-within::after{pointer-events:auto}
 .nav-profile-dropdown-head{
   display:flex; align-items:center; gap:12px;
   padding:4px 4px 12px;
@@ -528,6 +557,147 @@ img{max-width:100%}
 .nav-primary a:active{transform:scale(.97)}
 /* Les boutons de compte gardent leurs propres couleurs — on les exclut du pill */
 .nav-links a.nav-account{transition:all .22s}
+
+/* ============ NAV — ENTRÉE DE SECTION & SOUS-MENU ============ */
+/* « Jeux » est une entrée de section : elle garde sa route (`/jeu`) et un
+   chevron ouvre un panneau de deux pages — Jeux-vidéo (`/jeu`) et Quizz
+   (`/quizz`). Un seul jeu de styles pour deux usages :
+     - ordinateur : panneau de verre qui se déplie sous la pastille, au survol,
+       au clic sur le chevron ou dès que le focus entre dans l'entrée ;
+     - téléphone : plus de panneau du tout, les deux pages sont posées sous
+       « Jeux » dans le menu plein écran (voir la requête média en fin de
+       section) — rien à survoler sur un écran tactile.
+   L'enveloppe `.nav-item` porte la pastille (hover, état actif) et non le lien :
+   la pastille jaune qui glisse (`.nav-pill-indicator`) est mesurée sur elle,
+   donc elle recouvre le libellé ET le chevron. */
+.nav-item{display:flex;align-items:center;position:relative}
+.nav-item > a{padding-right:8px}
+.nav-item--menu{padding:0 4px 0 0;border-radius:999px;transition:background .22s}
+.nav-item--menu:hover:not(.active),
+.nav-item--menu.is-open:not(.active){background:rgba(255,255,255,.08)}
+/* Le lien ne peint jamais la pastille : elle est déjà peinte dessous. */
+.nav-primary .nav-item--menu > a:hover,
+.nav-primary .nav-item--menu > a.active,
+.nav-primary .nav-item--menu > a.active:hover{background:transparent;box-shadow:none}
+.nav-submenu-toggle{
+  flex:none;display:grid;place-items:center;
+  width:20px;height:100%;min-height:28px;padding:0;
+  background:transparent;border:0;cursor:pointer;
+  color:rgba(238,240,255,.58);
+  transition:color .2s, transform .26s cubic-bezier(.16,1,.3,1);
+}
+.nav-submenu-toggle:hover,
+.nav-item--menu:hover .nav-submenu-toggle,
+.nav-item--menu.is-open .nav-submenu-toggle{color:#fff}
+/* Le chevron suit l'ÉTAT du panneau, pas le survol : sans cela, le clic qui
+   referme pendant qu'on survole laissait la flèche retournée sur un panneau
+   fermé. (`:hover` ouvre par le JS — voir `openGamesMenu`.) */
+.nav-item--menu.is-open .nav-submenu-toggle{transform:rotate(180deg)}
+/* Sur la pastille jaune, le chevron garde l'encre sombre du libellé. */
+.nav-item--menu.active .nav-submenu-toggle{color:#0a0b1a}
+.nav-submenu{
+  position:absolute;top:calc(100% + 12px);left:50%;
+  width:252px;padding:10px;
+  display:flex;flex-direction:column;gap:6px;
+  background:rgba(16,14,38,.94);
+  backdrop-filter:blur(18px) saturate(1.3);
+  -webkit-backdrop-filter:blur(18px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;
+  box-shadow:0 24px 48px -18px rgba(0,0,0,.62), 0 8px 16px -8px rgba(0,0,0,.4);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transform:translate(-50%,10px) scale(.98);
+  transition:opacity .24s cubic-bezier(.16,1,.3,1), transform .32s cubic-bezier(.16,1,.3,1), visibility .32s;
+  z-index:1200;
+}
+/* Pont invisible : la souris peut descendre de la pastille jusqu'au panneau
+   sans traverser de vide (sinon le menu se refermait en route). */
+.nav-submenu::before{content:"";position:absolute;top:-13px;left:0;right:0;height:13px}
+/* L'ouverture au survol passe par le JS (`onMouseEnter` → `.is-open`) et non
+   par `:hover` : un panneau piloté par `:hover` se rouvrait aussitôt que le
+   clic sur le chevron venait de le refermer, la souris étant toujours là. */
+.nav-item--menu.is-open .nav-submenu{
+  opacity:1;visibility:visible;pointer-events:auto;transform:translate(-50%,0) scale(1);
+}
+/* Les deux pages : même famille visuelle que le menu du compte. */
+.nav-primary .nav-submenu a{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 12px;border-radius:12px;
+  font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(238,240,255,.86);
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.05);
+  transition:background .2s, border-color .2s, color .2s, transform .18s;
+}
+.nav-primary .nav-submenu a:hover{
+  background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.12);color:#fff;
+  transform:translateX(2px);
+}
+.nav-primary .nav-submenu a.is-current{
+  background:rgba(255,214,25,.10);border-color:rgba(255,214,25,.3);color:#fff;
+}
+.nav-submenu-mark{font-size:12px;line-height:1.2;color:var(--cyan);opacity:.85}
+.nav-submenu-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+.nav-submenu-label{font-family:var(--display);font-weight:800;font-size:12.5px;letter-spacing:.02em}
+.nav-submenu-desc{font:500 9px var(--mono);letter-spacing:.16em;color:var(--dim)}
+.nav-primary .nav-submenu a.is-current .nav-submenu-mark{color:var(--yellow)}
+.nav-primary .nav-submenu a.is-current .nav-submenu-desc{color:rgba(255,214,25,.72)}
+
+/* Téléphone : le panneau devient une liste de sous-entrées, toujours ouverte. */
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .nav-item{display:block;width:100%;position:static}
+  .nav-item--menu{background:transparent !important;padding:0;border-radius:0}
+  .nav-submenu-toggle{display:none !important}
+  .nav-submenu{
+    position:static;width:auto;padding:0 0 6px 30px;gap:0;
+    background:transparent;border:0;border-radius:0;box-shadow:none;
+    backdrop-filter:none;-webkit-backdrop-filter:none;
+    opacity:1;visibility:visible;transform:none;transition:none;
+    /* PAS de `pointer-events` ici. La règle de base en pose un `none`, et un
+       `auto` réactivait les deux sous-entrées À TRAVERS le menu plein écran
+       fermé : `.nav-links` couvre tout l'écran (inset:0, z-index:1000) et se
+       masque par `opacity:0` + `pointer-events:none`, mais la propriété
+       s'hérite — un enfant `auto` redevient cliquable dans un parent `none`.
+       « Jeux-vidéo » et « Quizz » étaient donc des liens invisibles posés au
+       milieu de la page : un appui sur « JOUER » ou « LANCER LA PARTIE »
+       tombait dessus et quittait le jeu pour la grille des quizz. Ici, le
+       sous-menu hérite du calque : transparent aux touches menu fermé,
+       cliquable menu ouvert (ci-dessous). */
+  }
+  /* Menu fermé, rien du panneau bureau ne compte : l'état « survol » de la
+     barre ordinateur (`is-open`, piloté par le JS de survol/focus) ne doit
+     pas rouvrir de zone cliquable invisible sur téléphone. */
+  .nav-item--menu.is-open .nav-submenu{pointer-events:none}
+  /* Menu ouvert : tout le calque redevient interactif, sous-menu compris —
+     cette règle vient APRÈS la précédente (même spécificité) pour l'emporter
+     quand l'entrée est aussi « survolée » au clavier. */
+  .nav-links.open .nav-submenu{pointer-events:auto}
+  .nav-submenu::before{display:none}
+  .nav-primary .nav-submenu a{
+    width:100%;min-height:40px;
+    padding:9px 4px 9px 0;border-radius:0;
+    background:transparent;border:0;border-bottom:1px solid rgba(148,130,255,.12);
+    color:rgba(238,240,255,.7);
+    /* L'animation d'entrée du menu mobile (`.nav-primary a`) n'est pas
+       réécrite ici : les sous-entrées montent avec le reste de la liste. */
+  }
+  .nav-primary .nav-submenu a:hover,
+  .nav-primary .nav-submenu a.is-current{
+    color:#fff;
+    background:linear-gradient(90deg, rgba(34,211,238,.08), transparent 70%);
+    border-color:rgba(34,211,238,.28);
+    transform:none;
+  }
+  .nav-submenu-mark{font-size:14px;line-height:1}
+  .nav-submenu-label{font-size:clamp(16px,4.6vw,19px)}
+  .nav-submenu-desc{font-size:8px}
+  /* Arabe : la liste des sous-entrées se décale de l'autre côté. */
+  [dir="rtl"] .nav-submenu{padding:0 30px 6px 0}
+  [dir="rtl"] .nav-primary .nav-submenu a:hover,
+  [dir="rtl"] .nav-primary .nav-submenu a.is-current{
+    background:linear-gradient(270deg, rgba(34,211,238,.08), transparent 70%);
+  }
+}
 .menu-button{display:none;background:transparent;border:1px solid var(--line);color:var(--ink);font:500 11px var(--mono);letter-spacing:.16em;padding:10px 14px;cursor:pointer;align-items:center;gap:10px}
 .menu-button .dash{color:var(--cyan)}
 .menu-button .dash.open{color:var(--yellow)}
@@ -1213,7 +1383,7 @@ img{max-width:100%}
 
 /* ============ FOOTER ============ */
 .footer{margin-top:110px;border-top:1px solid var(--line);padding:38px 0 calc(46px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:28px}
-.footer .brand-logo{height:40px}
+.footer .brand-logo{height:44px}
 .footer p{font-size:12.5px;color:var(--muted);margin:0}
 .footer-links{display:flex;justify-content:flex-end;gap:22px;font:500 10.5px var(--mono);letter-spacing:.16em;text-transform:uppercase}
 .footer-links a{color:var(--muted);transition:color .2s}
@@ -1282,7 +1452,8 @@ img{max-width:100%}
     border-bottom-color:rgba(34,211,238,.28);
   }
   .brand{position:relative;z-index:1002}
-  .brand-logo{height:36px}
+  /* Barre mobile : 68 px de haut, le logo peut monter à 40 px. */
+  .brand-logo{height:40px}
 
   /* Menu button — morphing burger */
   .menu-button{
@@ -1902,7 +2073,7 @@ img{max-width:100%}
 .search-result-card h2{font-family:var(--display);font-size:19px;line-height:1.2;margin:26px 0 12px;text-transform:uppercase}
 .search-result-card p{color:var(--muted);line-height:1.45;margin:0 0 20px}
 .search-result-card .read-link{margin-top:auto;color:var(--cyan);font:500 10px var(--mono);letter-spacing:.14em;text-transform:uppercase}
-@media(min-width:801px) and (max-width:1120px) and (hover:hover), (min-width:801px) and (max-width:1120px) and (min-device-width:601px){.nav-primary{gap:16px}} /* six entrées : on resserre avant le menu (800px) */
+@media(min-width:801px) and (max-width:1120px) and (hover:hover), (min-width:801px) and (max-width:1120px) and (min-device-width:601px){.nav-primary{gap:3px}} /* Sept sections : on resserre avant le menu (800px) */
 @media(max-width:1000px){.nav-links{gap:18px}.nav-search{min-width:128px}.search-results-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .nav-links .nav-search{width:100%;height:48px;order:0}

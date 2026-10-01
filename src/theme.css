@@ -699,6 +699,31 @@
 [data-theme='light'] .nav-profile-dropdown-links a:hover{
   background:rgba(86,70,190,.07); border-color:rgba(86,70,190,.10); color:var(--ink);
 }
+/* Sous-menu « Jeux » : même panneau clair que le menu du compte. La pastille
+   jaune qui glisse reste posée par l'indicateur (voir styles.css) — c'est
+   l'encre du chevron qui change, pas la pastille. */
+[data-theme='light'] .nav-submenu-mark{color:var(--cyan)}
+[data-theme='light'] .nav-submenu-desc{color:var(--muted)}
+@media (min-width:801px) and (hover:hover), (min-width:801px) and (min-device-width:601px){
+  [data-theme='light'] .nav-submenu{
+    background:rgba(255,255,255,.96);
+    border-color:rgba(86,70,190,.12);
+    box-shadow:0 24px 48px -18px rgba(28,24,72,.18), 0 8px 16px -8px rgba(28,24,72,.12);
+  }
+  [data-theme='light'] .nav-primary .nav-submenu a{
+    background:rgba(86,70,190,.04); border-color:rgba(86,70,190,.06); color:var(--muted);
+  }
+  [data-theme='light'] .nav-primary .nav-submenu a:hover{
+    background:rgba(86,70,190,.07); border-color:rgba(86,70,190,.10); color:var(--ink);
+  }
+  [data-theme='light'] .nav-primary .nav-submenu a.is-current{
+    background:rgba(255,214,25,.16); border-color:rgba(86,70,190,.16); color:var(--ink);
+  }
+  [data-theme='light'] .nav-primary .nav-submenu a.is-current .nav-submenu-desc{color:var(--yellow-ink)}
+  [data-theme='light'] .nav-item--menu:hover:not(.active),
+  [data-theme='light'] .nav-item--menu.is-open:not(.active){background:rgba(255,255,255,.16)}
+  [data-theme='light'] .nav-item--menu.active .nav-submenu-toggle{color:var(--violet)}
+}
 [data-theme='light'] .cmd-palette{
   background:rgba(255,255,255,.98);
   border-color:rgba(86,70,190,.12);
@@ -780,6 +805,13 @@
     background:transparent !important;
     box-shadow:none !important;
   }
+  /* Sous-entrées « Jeux-vidéo » / « Quizz » du menu mobile : de simples
+     lignes de liste, sans carte — elles héritent de la ligne claire du menu. */
+  [data-theme='light'] .nav-primary .nav-submenu a{
+    background:transparent; border:0; border-bottom:1px solid rgba(86,70,190,.10);
+    color:var(--muted);
+  }
+  [data-theme='light'] .nav-primary .nav-submenu a.is-current{color:var(--ink)}
   [data-theme='light'] .menu-button.open{color:var(--ink)}
   [data-theme='light'] .mobile-menu-footer-dot,
   [data-theme='light'] .mobile-menu-hud span:nth-child(2){border-color:var(--yellow-ink)}

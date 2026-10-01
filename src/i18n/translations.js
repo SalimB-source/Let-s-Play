@@ -11,6 +11,7 @@ export const translations = {
       news: 'News',
       reviews: 'Reviews',
       dossiers: 'Dossiers',
+      community: 'Community',
       partners: 'Partners',
       account: 'Account',
       menu: 'Menu',
@@ -23,6 +24,10 @@ export const translations = {
       quiz: 'Quizzes',
       game: 'Game',
       games: 'Games',
+      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
+      // la section se déplie en deux pages, les jeux de la maison et les quizz.
+      videoGames: 'Video games',
+      gamesMenuAria: 'Show the games menu',
       profile: 'Profile',
       levelShort: 'LVL',
       theme: { light: 'Light', dark: 'Dark', toLight: 'Switch to light theme', toDark: 'Switch to dark theme' },
@@ -218,7 +223,7 @@ export const translations = {
         label1: '04 / FORMATS', label2: 'OUR PLAYGROUNDS',
         gamingTitle: 'GAMING', gamingText: 'Latest games, reviews, previews, expert tips and guides.',
         moviesTitle: 'MOVIES & COMICS', moviesText: 'In-depth film and series reviews, plus hot news from the comic world.',
-        communityTitle: 'COMMUNITY', communityText: 'Join the Let’s Play community and dive into the fun together.',
+        communityTitle: 'COMMUNITY', communityText: 'Create a group, meet players who share your interests and start a conversation.',
         explore: 'Explore', joinUs: 'Join us',
       },
       partners: {
@@ -433,7 +438,7 @@ export const translations = {
   fr: {
     meta: { title: 'Let’s Play — Jouer le jeu' },
     nav: {
-      home: 'Accueil', news: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', partners: 'Partenaires',
+      home: 'Accueil', news: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', community: 'Communauté', partners: 'Partenaires',
       account: 'Compte',
       menu: 'Menu', menuAria: 'Ouvrir le menu', langAria: 'Changer de langue',
       search: { placeholder: 'Rechercher…', submit: 'Rechercher', noResults: 'Aucun résultat', viewAll: 'Voir tous les résultats' },
@@ -443,6 +448,10 @@ export const translations = {
       quiz: 'Quizz',
       game: 'Jeu',
       games: 'Jeux',
+      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
+      // la section se déplie en deux pages, les jeux de la maison et les quizz.
+      videoGames: 'Jeux-vidéo',
+      gamesMenuAria: 'Afficher le menu des jeux',
       profile: 'Profil',
       levelShort: 'NIV.',
       theme: { light: 'Clair', dark: 'Sombre', toLight: 'Passer au thème clair', toDark: 'Passer au thème sombre' },
@@ -632,7 +641,7 @@ export const translations = {
         label1: '04 / FORMATS', label2: 'NOS TERRAINS DE JEU',
         gamingTitle: 'GAMING', gamingText: 'Derniers jeux, tests, avant-premières, astuces d’experts et guides.',
         moviesTitle: 'FILMS & COMICS', moviesText: 'Tests approfondis de films et séries, plus les actus chaudes du monde des comics.',
-        communityTitle: 'COMMUNAUTÉ', communityText: 'Rejoignez la communauté Let’s Play et vivez le plaisir ensemble.',
+        communityTitle: 'COMMUNAUTÉ', communityText: 'Créez un groupe, retrouvez des joueurs qui partagent vos envies et lancez la discussion.',
         explore: 'Explorer', joinUs: 'Rejoignez-nous',
       },
       partners: {
@@ -845,7 +854,7 @@ export const translations = {
   ar: {
     meta: { title: 'Let’s Play — العب اللعبة' },
     nav: {
-      home: 'الرئيسية', news: 'الأخبار', reviews: 'المراجعات', dossiers: 'الملفات', partners: 'الشركاء',
+      home: 'الرئيسية', news: 'الأخبار', reviews: 'المراجعات', dossiers: 'الملفات', community: 'المجتمع', partners: 'الشركاء',
       account: 'الحساب',
       menu: 'القائمة', menuAria: 'افتح القائمة', langAria: 'تغيير اللغة',
       search: { placeholder: 'بحث…', submit: 'بحث', noResults: 'لا توجد نتائج', viewAll: 'عرض كل النتائج' },
@@ -855,6 +864,10 @@ export const translations = {
       quiz: 'اختبارات',
       game: 'اللعبة',
       games: 'ألعاب',
+      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
+      // la section se déplie en deux pages, les jeux de la maison et les quizz.
+      videoGames: 'ألعاب الفيديو',
+      gamesMenuAria: 'إظهار قائمة الألعاب',
       profile: 'الملف',
       levelShort: 'المستوى',
       theme: { light: 'فاتح', dark: 'داكن', toLight: 'التبديل إلى المظهر الفاتح', toDark: 'التبديل إلى المظهر الداكن' },
@@ -1043,7 +1056,7 @@ export const translations = {
         label1: '02 / الأقسام', label2: 'ملاعبنا',
         gamingTitle: 'ألعاب', gamingText: 'أحدث الألعاب، المراجعات، العروض الأولى، نصائح الخبراء والأدلة.',
         moviesTitle: 'أفلام وقصص مصورة', moviesText: 'مراجعات معمّقة للأفلام والمسلسلات، بالإضافة إلى آخر أخبار عالم القصص المصورة.',
-        communityTitle: 'المجتمع', communityText: 'انضم إلى مجتمع Let’s Play واستمتع معنا.',
+        communityTitle: 'المجتمع', communityText: 'أنشئ مجموعة، والتقِ بلاعبين يشاركونك اهتماماتك وابدأ النقاش.',
         explore: 'استكشف', joinUs: 'انضم إلينا',
       },
       partners: {

@@ -80,7 +80,7 @@ export default function CinemaNews() {
   // TODO : brancher un vrai flux cinéma (API TMDB / robots d'actus) comme pour
   // le gaming. Pour l'instant, quelques actus de rédaction qui ouvrent la page
   // en beauté.
-  // Actus cinéma du jour (29.09.2026) : les plus récentes ouvrent la page —
+  // Actus cinéma du 29.09.2026 : les plus récentes ouvrent la page —
   // box-office mondial d’Endgame, sortie numérique de Coyote vs. Acme et fin
   // de la trilogie Mononoke sur Netflix.
   const articles = useMemo(() => [

@@ -1,0 +1,422 @@
+/**
+ * Entrée SSR utilisée par scripts/mirage-cup-check.mjs — `npm run check:mirage-cup`.
+ *
+ * Joue la COUPE de Mirage Rush de bout en bout, dans jsdom, avec la vraie page
+ * (/jeu?mode=cup) : seul le moteur 3D est remplacé par une doublure
+ * (scripts/mirage-world-stub.jsx) qui termine chaque course avec le classement
+ * que le test lui donne.
+ *
+ *   1. Coupe du Désert, le joueur gagne : 3 courses dans l'ordre Dunes de
+ *      l'Écho → Dust Creek → Plaines d'Or, 4 cavaliers, barème 10 / 7 / 4 / 2 ;
+ *      après chaque arrivée, l'overlay montre ta place, les points gagnés et le
+ *      classement cumulé (une égalité est départagée) ; Entrée enchaîne mais
+ *      « R » (le pistolet) ne saute pas le classement ; après la 3ᵉ course, le
+ *      trophée : « FÉLICITATIONS », le vainqueur, le total, le moteur de course
+ *      démonté et — sans WebGL — le repli CSS.
+ *   2. Entrée sur le trophée relance une coupe neuve (0 point) ; cette fois un
+ *      rival gagne : le message le dit et rappelle ta place.
+ *   3. Abandon : « CHOISIR TON MODE », « ABANDONNER LA COUPE » et Échap pendant
+ *      le compte à rebours ramènent à l'intro, et la coupe suivante repart de 0.
+ *   4. Piste à trois voies du téléphone (`setLaneCount(3)`) : le moteur n'aligne
+ *      que deux rivaux, la coupe compte donc trois cavaliers (le joueur, L'Ombre et
+ *      Sauge), trois places au barème (10 / 7 / 4) et aucun cavalier fantôme.
+ *   5. Coupe Grand Tour : 4 courses, globe distinct du calice du Désert dans
+ *      le sélecteur, le HUD, le bouton du podium et le repli sans WebGL ;
+ *      rejouer garde le globe et revenir au Désert retrouve son calice.
+ */
+import React, { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
+import { AuthProvider } from '../src/auth/AuthContext';
+import { AchievementProvider } from '../src/achievements/AchievementContext';
+import { MIRAGE_CUP_TROPHIES_KEY } from '../src/achievements/engine.js';
+import { STORAGE_KEY } from '../src/achievements/storage.js';
+import MirageCupTrophyCollection from '../src/games/MirageCupTrophyCollection';
+import MirageRushPage from '../src/games/MirageRushPage';
+import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, setLaneCount } from '../src/games/mirageRules';
+import { worldProbe } from './mirage-world-stub.jsx';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const text = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : null);
+
+// Les délais du compte à rebours (≈ 3 s par course) sont raccourcis ; `state.max` peut
+// être relevé le temps d'un test qui doit attraper le compte à rebours en cours.
+function patchTimers() {
+  const original = window.setTimeout;
+  const state = { max: 10 };
+  window.setTimeout = (handler, delay, ...args) => original.call(window, handler, Math.min(Number(delay) || 0, state.max), ...args);
+  return { state, restore: () => { window.setTimeout = original; } };
+}
+
+async function mountPage(entry) {
+  const node = document.createElement('div');
+  document.body.append(node);
+  const root = createRoot(node);
+  await act(async () => root.render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={[entry]}>
+        <AchievementProvider>
+          <MirageCupTrophyCollection />
+          <MirageRushPage />
+        </AchievementProvider>
+      </MemoryRouter>
+    </AuthProvider>,
+  ));
+  await act(async () => { await sleep(30); });
+  return {
+    node,
+    unmount: async () => { await act(async () => root.unmount()); node.remove(); },
+  };
+}
+
+async function until(read, label, timeout = 5000) {
+  const start = Date.now();
+  for (;;) {
+    const value = read();
+    if (value) return value;
+    if (Date.now() - start > timeout) throw new Error(`Délai dépassé : ${label}`);
+    await act(async () => { await sleep(10); });
+  }
+}
+
+const click = (el) => act(async () => { el.click(); });
+const press = (key) => act(async () => {
+  window.dispatchEvent(new window.KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+});
+
+async function typeName(input, value) {
+  const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  await act(async () => {
+    setValue.call(input, value);
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+  });
+}
+
+// Résultat de course tel que le moteur l'émet à l'arrivée du joueur. `order` classe les
+// cavaliers de la piste du 1ᵉʳ au dernier ; ceux qui finissent derrière le joueur sont
+// encore en piste. Seuls les rivaux de la piste courante (trois, ou deux à trois voies)
+// figurent dans le résultat, comme pour le vrai moteur.
+function duelResult(stage, order) {
+  const at = order.indexOf('player');
+  const rivals = duelRivalsForTrack().map((rival, index) => {
+    const position = order.indexOf(rival.id);
+    const arrived = position < at;
+    return {
+      id: rival.id,
+      slot: index + 1,
+      name: rival.name,
+      duration: arrived ? 40 + position + 0.3 * index : null,
+      distance: arrived ? DUEL_DISTANCE : DUEL_DISTANCE - 10 * (position - at),
+    };
+  });
+  return { mode: 'duel', stage, duration: 40 + at + 0.5, rank: at + 1, totalRiders: order.length, rivals, won: at === 0, score: 1200, gems: 9 };
+}
+
+const finishRace = (order) => act(async () => {
+  const { props } = worldProbe;
+  await props.onFinish(duelResult(props.race.stage, order));
+});
+
+const standings = (scope) => [...scope.querySelectorAll('.mirage-cup-row')]
+  .map((row) => `${text(row.querySelector('.mirage-cup-name strong'))} ${text(row.querySelector('.mirage-cup-total b'))}`);
+const details = (scope) => [...scope.querySelectorAll('.mirage-cup-row .mirage-cup-name small')].map(text);
+
+const countdownKicker = (node) => text(node.querySelector('.mirage-countdown-overlay .mirage-overlay-kicker'));
+const nextButton = (node) => node.querySelector('.mirage-cup-results .mirage-start-button');
+
+async function startCupFromIntro(node) {
+  const start = await until(() => {
+    const button = node.querySelector('.mirage-intro-overlay .mirage-start-button');
+    return button && !button.disabled ? button : null;
+  }, 'le bouton LANCER LA COUPE est actif');
+  await click(start);
+}
+
+const waitForCountdown = (node) => until(() => node.querySelector('.mirage-countdown-overlay'), 'le compte à rebours');
+const waitForRace = (node) => until(() => node.querySelector('.mirage-hud'), 'le départ de la course');
+const waitForResults = (node) => until(() => node.querySelector('.mirage-cup-results'), 'l’overlay d’arrivée de la coupe');
+const waitForIntro = (node) => until(() => node.querySelector('.mirage-intro-overlay'), 'l’overlay d’intro');
+
+// Écran 01 (les boutons de mode), où l'on retombe en quittant une coupe : COUPE rouvre son écran.
+async function openCupFromModes(node, assert) {
+  const intro = await waitForIntro(node);
+  assert.ok(intro.classList.contains('is-mode-step'), 'quitter la coupe ramène à l’écran des modes');
+  const cup = [...intro.querySelectorAll('.mirage-mode-picker button')].find((button) => text(button.querySelector('strong')) === 'COUPE');
+  assert.ok(cup, 'le bouton COUPE est proposé');
+  await click(cup);
+  await until(() => node.querySelector('.mirage-cup-card'), 'le choix de la coupe');
+}
+
+export async function checkMirageCup(assert) {
+  const [ombre, sauge, amethyste] = DUEL_RIVALS.map((rival) => rival.name);
+  assert.deepEqual(DUEL_RIVALS.map((rival) => rival.id), ['ombre', 'sauge', 'amethyste'], 'les 3 rivaux de la coupe');
+
+  window.localStorage.clear();
+  const timers = patchTimers();
+  const { node, unmount } = await mountPage('/jeu?mode=cup');
+  try {
+    // La collection du profil est visible même vide, puis ajoute un seul
+    // trophée lorsqu'une coupe est remportée.
+    assert.match(text(node.querySelector('.mirage-profile-trophies')), /Aucun trophée remporté/);
+    assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 0);
+
+    // ── 1. Le joueur remporte la Coupe du Désert ───────────────────────────
+    assert.equal(node.querySelector('.mirage-cup-card.is-desert svg').dataset.trophy, 'desert');
+    assert.equal(node.querySelector('.mirage-cup-card.is-worldtour svg').dataset.trophy, 'worldtour');
+    assert.notEqual(node.querySelector('.mirage-cup-card.is-desert svg').innerHTML, node.querySelector('.mirage-cup-card.is-worldtour svg').innerHTML, 'chaque coupe annonce une silhouette différente');
+    await typeName(node.querySelector('.mirage-cup-name-field input'), 'Salim');
+    assert.equal(window.localStorage.getItem('letsplay_mirage_cup_name_v1'), 'Salim', 'le nom du trophée est mémorisé');
+    await startCupFromIntro(node);
+
+    // Course 1 — Dunes de l'Écho
+    await waitForCountdown(node);
+    assert.match(countdownKicker(node), /COURSE 1 \/ 3 · DUNES DE L’ÉCHO/);
+    await waitForRace(node);
+    assert.equal(worldProbe.props.stage, 'desert');
+    assert.equal(worldProbe.props.race.mode, 'duel', 'une course de coupe est un duel');
+    assert.deepEqual(worldProbe.props.race.cup, { id: 'desert', index: 0, total: 3 });
+    assert.equal(text(node.querySelector('.mirage-chip.is-cup')), 'COURSE 1/3 · 0 PTS');
+    assert.equal(node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'desert', 'le HUD porte le calice du Désert');
+    await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
+
+    let results = await waitForResults(node);
+    assert.match(text(results.querySelector('.mirage-overlay-kicker')), /COURSE 1 \/ 3/);
+    assert.match(text(results.querySelector('h2')), /VICTOIRE/);
+    assert.equal(text(results.querySelector('.mirage-cup-gained strong')), '+10 POINTS');
+    assert.deepEqual(standings(results), ['Salim 10', `${ombre} 7`, `${sauge} 4`, `${amethyste} 2`]);
+    assert.deepEqual(details(results), ['1ᵉʳ · 40,5 s', '2ᵉ · à 10 m', '3ᵉ · à 20 m', '4ᵉ · à 30 m']);
+    assert.match(text(nextButton(node)), /COURSE SUIVANTE · DUST CREEK/);
+    await press('r');
+    assert.ok(node.querySelector('.mirage-cup-results'), '« R » est le pistolet : il ne saute pas le classement');
+    await press('Enter');
+
+    // Course 2 — Dust Creek : l'Ombre gagne, le joueur est 2ᵉ → égalité à 17 points
+    await waitForCountdown(node);
+    assert.match(countdownKicker(node), /COURSE 2 \/ 3 · DUST CREEK/);
+    await waitForRace(node);
+    assert.equal(worldProbe.props.stage, 'western');
+    assert.equal(text(node.querySelector('.mirage-chip.is-cup')), 'COURSE 2/3 · 10 PTS');
+    await finishRace(['ombre', 'player', 'amethyste', 'sauge']);
+
+    results = await waitForResults(node);
+    assert.match(text(results.querySelector('h2')), /BELLE 2ᵉ PLACE/);
+    assert.equal(text(results.querySelector('.mirage-cup-gained strong')), '+7 POINTS');
+    // 17 – 17 : même nombre de victoires, donc la dernière course départage (l'Ombre y a gagné) ;
+    // même chose pour Améthyste (3ᵉ) devant Sauge (4ᵉ) à 6 – 6.
+    assert.deepEqual(standings(results), [`${ombre} 17`, 'Salim 17', `${amethyste} 6`, `${sauge} 6`]);
+    assert.match(text(nextButton(node)), /COURSE SUIVANTE · PLAINES D’OR/);
+    await click(nextButton(node));
+
+    // Course 3 — Plaines d'Or : le joueur gagne et passe devant → 27 points
+    await waitForCountdown(node);
+    assert.match(countdownKicker(node), /COURSE 3 \/ 3 · PLAINES D’OR/);
+    await waitForRace(node);
+    assert.equal(worldProbe.props.stage, 'prairie');
+    assert.equal(text(node.querySelector('.mirage-chip.is-cup')), 'COURSE 3/3 · 17 PTS');
+    await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
+    assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 1, 'la victoire ajoute un trophée au profil');
+    assert.equal(node.querySelector('.mirage-profile-trophy-card')?.getAttribute('data-cup-id'), 'desert');
+    assert.equal(node.querySelector('.mirage-profile-trophy-card')?.getAttribute('data-trophy-design'), 'desert');
+    const savedAchievements = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
+    assert.deepEqual(savedAchievements.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert'], 'le trophée est persisté une seule fois');
+
+    results = await waitForResults(node);
+    assert.deepEqual(standings(results), ['Salim 27', `${ombre} 24`, `${sauge} 10`, `${amethyste} 8`]);
+    assert.match(text(nextButton(node)), /VOIR LE PODIUM/, 'après la 3ᵉ course, on passe au podium');
+    await click(nextButton(node));
+
+    // Le trophée
+    let trophy = await until(() => node.querySelector('.mirage-trophy-screen'), 'l’écran du trophée');
+    assert.equal(text(trophy.querySelector('.mirage-trophy-title')), 'FÉLICITATIONS');
+    assert.ok(trophy.classList.contains('is-desert'), 'l’écran reprend le design propre à la coupe');
+    assert.equal(text(trophy.querySelector('.mirage-trophy-name')).replace(/^♛\s*/, ''), 'Salim');
+    assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe du Désert avec 27 points/);
+    assert.ok(trophy.classList.contains('is-player-win'));
+    assert.deepEqual(standings(trophy), ['Salim 27', `${ombre} 24`, `${sauge} 10`, `${amethyste} 8`]);
+    assert.deepEqual(details(trophy).slice(0, 2), ['1ᵉʳ · 2ᵉ · 1ᵉʳ', '2ᵉ · 1ᵉʳ · 2ᵉ'], 'le rappel des places par course');
+    assert.equal(worldProbe.mounted, 0, 'le moteur de course est démonté pendant la remise du trophée');
+    await until(() => trophy.querySelector('.mirage-trophy-fallback'), 'le repli CSS du trophée (jsdom n’a pas de WebGL)');
+    assert.equal(trophy.dataset.trophy, 'desert');
+    assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').dataset.trophy, 'desert');
+    assert.equal(text(trophy.querySelector('.mirage-trophy-design')), 'Calice des Dunes');
+    assert.ok(trophy.querySelector('.mirage-trophy-fallback-cup')?.classList.contains('is-desert'), 'le repli garde le dessin de la Coupe du Désert');
+
+    // ── 2. Entrée relance une coupe neuve ; cette fois l'Ombre gagne ───────
+    await press('Enter');
+    await waitForCountdown(node);
+    assert.match(countdownKicker(node), /COURSE 1 \/ 3 · DUNES DE L’ÉCHO/);
+    await waitForRace(node);
+    assert.equal(worldProbe.mounted, 1, 'le moteur de course revient pour la nouvelle coupe');
+    assert.equal(text(node.querySelector('.mirage-chip.is-cup')), 'COURSE 1/3 · 0 PTS', 'la nouvelle coupe repart de 0');
+    for (let race = 1; race <= 3; race += 1) {
+      if (race > 1) {
+        await click(nextButton(node));
+        await waitForCountdown(node);
+        await waitForRace(node);
+      }
+      await finishRace(['ombre', 'sauge', 'amethyste', 'player']);
+      results = await waitForResults(node);
+    }
+    assert.match(text(results.querySelector('h2')), /4ᵉ PLACE/);
+    assert.deepEqual(standings(results), [`${ombre} 30`, `${sauge} 21`, `${amethyste} 12`, 'Salim 6']);
+    await click(nextButton(node));
+    trophy = await until(() => node.querySelector('.mirage-trophy-screen'), 'le trophée de la 2ᵉ coupe');
+    assert.equal(text(trophy.querySelector('.mirage-trophy-name')).replace(/^♛\s*/, ''), ombre);
+    assert.ok(!trophy.classList.contains('is-player-win'));
+    assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 1, 'une victoire PNJ n’ajoute pas de trophée et le précédent reste unique');
+    assert.match(text(trophy.querySelector('.mirage-trophy-lede')), new RegExp(`${ombre} remporte la Coupe du Désert avec 30 points\\. Tu termines 4ᵉ avec 6 points`));
+
+    // ── 3. Abandons ─────────────────────────────────────────────────────────
+    // « CHOISIR TON MODE » : retour à l'écran des modes, d'où COUPE rouvre la coupe.
+    await click(trophy.querySelector('.mirage-share-button'));
+    await waitForIntro(node);
+    assert.ok(!node.querySelector('.mirage-trophy-screen'));
+    await openCupFromModes(node, assert);
+    assert.ok(node.querySelector('.mirage-cup-card'), 'retour au choix de la coupe');
+
+    // « ABANDONNER LA COUPE » entre deux courses.
+    await startCupFromIntro(node);
+    await waitForCountdown(node);
+    await waitForRace(node);
+    await finishRace(['sauge', 'ombre', 'player', 'amethyste']);
+    results = await waitForResults(node);
+    assert.deepEqual(standings(results).slice(0, 1), [`${sauge} 10`]);
+    await click(results.querySelector('.mirage-share-button'));
+    await waitForIntro(node);
+    assert.ok(!node.querySelector('.mirage-cup-results'));
+    await openCupFromModes(node, assert);
+
+    // Échap pendant le compte à rebours de la course suivante.
+    await startCupFromIntro(node);
+    await waitForCountdown(node);
+    await waitForRace(node);
+    assert.equal(text(node.querySelector('.mirage-chip.is-cup')), 'COURSE 1/3 · 0 PTS', 'l’abandon efface les points de la coupe');
+    await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
+    await waitForResults(node);
+    timers.state.max = 5000; // le compte à rebours reste en place le temps d'appuyer sur Échap
+    await press('Enter');
+    await waitForCountdown(node);
+    assert.match(countdownKicker(node), /COURSE 2 \/ 3/);
+    assert.match(text(node.querySelector('.mirage-countdown-overlay .mirage-overlay-hint')), /ABANDONNER LA COUPE/);
+    await press('Escape');
+    timers.state.max = 10;
+    await waitForIntro(node);
+    await startCupFromIntro(node);
+    await waitForCountdown(node);
+    assert.match(countdownKicker(node), /COURSE 1 \/ 3 · DUNES DE L’ÉCHO/, 'après un abandon, la coupe repart de la 1ʳᵉ course');
+    await waitForRace(node);
+    assert.equal(text(node.querySelector('.mirage-chip.is-cup')), 'COURSE 1/3 · 0 PTS');
+  } finally {
+    timers.restore();
+    await unmount();
+  }
+
+  // ── 4. Piste à trois voies : trois cavaliers, barème 10 / 7 / 4 ──────────
+  setLaneCount(3);
+  const appTimers = patchTimers();
+  const app = await mountPage('/jeu?mode=cup');
+  try {
+    assert.equal(duelRivalsForTrack().length, 2, 'la piste à trois voies n’aligne que deux rivaux');
+    await startCupFromIntro(app.node);
+    // Course 1 : le joueur gagne. Course 2 : L'Ombre gagne. Course 3 : le joueur gagne,
+    // devant Sauge, à 18 – 18 avec L'Ombre — qui a une victoire de plus.
+    const orders = [['player', 'sauge', 'ombre'], ['ombre', 'player', 'sauge'], ['player', 'sauge', 'ombre']];
+    let results;
+    let layoutChecked = false;
+    for (let race = 0; race < 3; race += 1) {
+      if (race > 0) await click(nextButton(app.node));
+      await waitForCountdown(app.node);
+      await waitForRace(app.node);
+      if (!layoutChecked) {
+        // Les boutons de la course : une seule barre d'objets, la disposition
+        // du PC, sur téléphone comme ailleurs — plus de croix directionnelle
+        // ni de losange de manette (on esquive au glissement).
+        const bars = app.node.querySelectorAll('.mirage-powerup-bar');
+        assert.equal(bars.length, 1, 'une seule barre d’objets pendant la course');
+        assert.ok(!bars[0].className.includes('is-gamepad'), 'la barre n’est plus ancrée en manette');
+        assert.ok(bars[0].querySelector('.mirage-powerup-buttons-row'), 'les objets forment la rangée horizontale du PC');
+        assert.equal(bars[0].querySelectorAll('.mirage-powerup-btn').length, 4, 'les quatre objets sont là');
+        for (const selector of ['.mirage-touch-dpad', '.mirage-dpad-btn', '.mirage-powerup-diamond',
+          '.mirage-powerup-btn.is-diamond']) {
+          assert.equal(app.node.querySelectorAll(selector).length, 0, `${selector} a bien disparu de la course`);
+        }
+        layoutChecked = true;
+      }
+      await finishRace(orders[race]);
+      results = await waitForResults(app.node);
+      assert.equal(results.querySelectorAll('.mirage-cup-row').length, 3, 'trois cavaliers au classement, pas de fantôme');
+      assert.ok(!results.textContent.includes(amethyste), 'Améthyste ne court pas à trois voies');
+    }
+    assert.deepEqual(standings(results), ['Salim 27', `${ombre} 18`, `${sauge} 18`]);
+    await click(nextButton(app.node));
+    const trophy = await until(() => app.node.querySelector('.mirage-trophy-screen'), 'le trophée à trois cavaliers');
+    assert.equal(text(trophy.querySelector('.mirage-trophy-title')), 'FÉLICITATIONS');
+    assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe du Désert avec 27 points/);
+    assert.deepEqual(standings(trophy), ['Salim 27', `${ombre} 18`, `${sauge} 18`]);
+  } finally {
+    appTimers.restore();
+    await app.unmount();
+    setLaneCount(4);
+  }
+
+  // ── 5. Grand Tour : son globe suit toute la coupe, puis le retour au Désert ──
+  const tourTimers = patchTimers();
+  const tour = await mountPage('/jeu?mode=cup');
+  try {
+    const desertIcon = tour.node.querySelector('.mirage-cup-card.is-desert svg').innerHTML;
+    const tourCard = tour.node.querySelector('.mirage-cup-card.is-worldtour');
+    const tourIcon = tourCard.querySelector('svg').innerHTML;
+    assert.match(text(tourCard.querySelector('.mirage-cup-card-title small')), /Globe des Horizons/);
+    await click(tourCard);
+    assert.equal(tourCard.getAttribute('aria-pressed'), 'true');
+    await startCupFromIntro(tour.node);
+    const stages = ['sardinia', 'alger', 'japan', 'airbase'];
+    let results;
+    for (let race = 0; race < stages.length; race++) {
+      if (race > 0) await click(nextButton(tour.node));
+      await waitForCountdown(tour.node);
+      await waitForRace(tour.node);
+      assert.equal(worldProbe.props.stage, stages[race], 'les quatre courses du Grand Tour restent dans l’ordre');
+      assert.deepEqual(worldProbe.props.race.cup, { id: 'worldtour', index: race, total: 4 });
+      assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'worldtour', 'le HUD montre le globe, pas la coupe dorée');
+      await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
+      results = await waitForResults(tour.node);
+    }
+    assert.deepEqual(standings(results), ['Salim 40', `${ombre} 28`, `${sauge} 16`, `${amethyste} 8`]);
+    assert.equal(tour.node.querySelectorAll('.mirage-profile-trophy-card').length, 2, 'la collection conserve un trophée par coupe remportée');
+    const collectedGlobe = tour.node.querySelector('.mirage-profile-trophy-card[data-cup-id="worldtour"] svg');
+    assert.equal(collectedGlobe.dataset.trophy, 'worldtour');
+    assert.equal(collectedGlobe.innerHTML, tourIcon, 'la collection partage le globe du sélecteur et du podium');
+    const savedCollection = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
+    assert.deepEqual(savedCollection.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert', 'worldtour']);
+    assert.equal(nextButton(tour.node).querySelector('svg').dataset.trophy, 'worldtour', 'le bouton du podium annonce le même globe');
+    await click(nextButton(tour.node));
+    const trophy = await until(() => tour.node.querySelector('.mirage-trophy-screen'), 'le podium du Grand Tour');
+    await until(() => trophy.querySelector('.mirage-trophy-fallback'), 'le globe sans WebGL');
+    assert.equal(trophy.dataset.trophy, 'worldtour');
+    assert.equal(text(trophy.querySelector('.mirage-trophy-design')), 'Globe des Horizons');
+    assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').dataset.trophy, 'worldtour');
+    assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').innerHTML, tourIcon, 'le podium conserve exactement le design du sélecteur');
+    assert.notEqual(trophy.querySelector('.mirage-trophy-fallback svg').innerHTML, desertIcon);
+    assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe Grand Tour avec 40 points/);
+    assert.equal(worldProbe.mounted, 0, 'le moteur de course est démonté sur le podium du globe');
+
+    await click(trophy.querySelector('.mirage-start-button'));
+    await waitForCountdown(tour.node);
+    await waitForRace(tour.node);
+    assert.equal(text(tour.node.querySelector('.mirage-chip.is-cup')), 'COURSE 1/4 · 0 PTS', 'rejouer le Grand Tour repart de zéro');
+    assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'worldtour', 'rejouer garde le design du Grand Tour');
+    await press('Escape');
+    await click(tour.node.querySelector('.mirage-pause-overlay .mirage-share-button'));
+    await openCupFromModes(tour.node, assert);
+    await click(tour.node.querySelector('.mirage-cup-card.is-desert'));
+    await startCupFromIntro(tour.node);
+    await waitForCountdown(tour.node);
+    await waitForRace(tour.node);
+    assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'desert', 'changer de coupe ne conserve pas le globe précédent');
+  } finally {
+    tourTimers.restore();
+    await tour.unmount();
+  }
+
+}

@@ -1,7 +1,80 @@
-// Four playable lanes, centred on the road. Keep rendering and game rules in sync.
-export const LANES = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
-export const LANE_COUNT = LANES.length;
-const LANE_INDICES = LANES.map((_, lane) => lane);
+// ── Les voies de la piste ───────────────────────────────────────────────
+// L'ordinateur et la tablette jouent sur quatre voies ; le téléphone —
+// navigateur comme application — sur trois (voir `mirageLanes.js`) : sur un
+// téléphone tenu à deux mains, quatre couloirs de 2,1 m sont trop fins à
+// viser. La piste compacte roule aussi un peu plus lentement (`PHONE_PACE`,
+// toujours dans `mirageLanes.js`) — le pouce a moins de marge qu'un clavier.
+//
+// Le rendu, les règles et le décor lisent donc une piste *vivante* :
+//
+//   - `LANES` reste le tableau exporté que tous les modules importent par
+//     référence : `setLaneCount()` remplace son contenu sur place, donc
+//     `LANES[2]`, `LANES.length`… suivent la nouvelle piste sans rien
+//     propager. C'est pour cette raison qu'il n'est PAS gelé ;
+//   - `laneCount()` remplace l'ancienne constante `LANE_COUNT` : le nombre de
+//     voies change au démarrage, un export figé ne pourrait pas le suivre.
+//     Les valeurs dépendant des voies se calculent donc à l'intérieur des
+//     fonctions (jamais au chargement d'un module, qui précède le choix de
+//     la piste) ;
+//   - `lanePosition(lane)` ramène une voie hors piste sur la dernière voie
+//     disponible — un cavalier à la voie 3 vu depuis un téléphone (3 voies)
+//     court sur la voie 2 au lieu de sortir de l'écran.
+//
+// La largeur d'une voie ne change pas (2,1 m) : seule la largeur de la piste
+// suit le nombre de voies — 6,3 m à trois voies, 8,4 m à quatre.
+export const LANE_SPACING = 2.1;
+const LANE_POSITIONS = Object.freeze({
+  3: Object.freeze([-LANE_SPACING, 0, LANE_SPACING]),
+  4: Object.freeze([-3.15, -1.05, 1.05, 3.15]),
+});
+/** Les pistes que l'on sait construire, de la plus étroite à la plus large. */
+export const LANE_COUNTS = Object.freeze([3, 4]);
+/** Voies de la piste courante — contenu remplacé par `setLaneCount()`. */
+export const LANES = [...LANE_POSITIONS[4]];
+let activeLaneCount = LANES.length;
+
+/** Nombre de voies de la piste courante (3 sur téléphone, 4 sur grand écran). */
+export function laneCount() {
+  return activeLaneCount;
+}
+
+/** Largeur totale de la piste (m) pour un nombre de voies donné. */
+export function trackWidth(count = activeLaneCount) {
+  return count * LANE_SPACING;
+}
+
+/** Indices des voies de la piste courante : [0, 1, 2] ou [0, 1, 2, 3]. */
+export function laneIndices() {
+  return LANES.map((_, lane) => lane);
+}
+
+/**
+ * Choisit la piste : `setLaneCount(3)` sur téléphone, `setLaneCount(4)` sur
+ * ordinateur et tablette (voir `applyLaneCountForDevice()` dans
+ * `mirageLanes.js`). À appeler au démarrage, avant la première course : les
+ * rangées d'obstacles, les lignes de départ et d'arrivée et le sol se
+ * construisent ensuite à partir de `LANES`.
+ */
+export function setLaneCount(count) {
+  const positions = LANE_POSITIONS[count];
+  if (!positions) throw new RangeError(`Nombre de voies inconnu : ${count}`);
+  LANES.length = 0;
+  LANES.push(...positions);
+  activeLaneCount = LANES.length;
+  return activeLaneCount;
+}
+
+/**
+ * Position x d'une voie, bornée à la piste courante : une voie inexistante
+ * (celle d'un joueur venu d'un client à quatre voies, ou d'un ancien message)
+ * retombe sur la dernière voie au lieu de sortir de la piste.
+ */
+export function lanePosition(lane, fallback = 1) {
+  const value = lane === null || lane === undefined || lane === '' ? NaN : Number(lane);
+  const index = Math.trunc(value);
+  const wanted = Number.isFinite(index) ? index : fallback;
+  return LANES[Math.min(Math.max(0, wanted), LANES.length - 1)];
+}
 
 // Four diamond tiers:
 // Cyan (tier 0): 100 pts
@@ -16,7 +89,28 @@ export const CRYSTALS = [
 ];
 export const CRYSTAL_COUNT = CRYSTALS.length;
 
-export const jumpHeight = (remaining) => remaining > 0 ? Math.sin((0.82 - remaining) / 0.82 * Math.PI) * 1.7 : 0;
+/** Durée d'un saut (s), du décollage à la retombée. */
+export const JUMP_DURATION = 0.82;
+/**
+ * Fenêtre (s) pendant laquelle un saut demandé **en l'air** est conservé puis
+ * rejoué à l'atterrissage (buffer d'entrée) : le joueur qui tape « sauter »
+ * juste avant de toucher le sol n'a pas à retaper.
+ */
+export const JUMP_BUFFER = 0.22;
+
+export const jumpHeight = (remaining) => remaining > 0 ? Math.sin((JUMP_DURATION - remaining) / JUMP_DURATION * Math.PI) * 1.7 : 0;
+
+/**
+ * Avance l'état du saut d'une frame : le saut en cours descend, la demande en
+ * attente vieillit, et dès que le cheval a les sabots au sol la demande
+ * repart. Renvoie `{ jumpLeft, buffer }` — jamais de saut négatif.
+ */
+export function advanceJump(jumpLeft, buffer, dt) {
+  const left = Math.max(0, jumpLeft - dt);
+  const pending = Math.max(0, buffer - dt);
+  if (left <= 0 && pending > 0) return { jumpLeft: JUMP_DURATION, buffer: 0 };
+  return { jumpLeft: left, buffer: pending };
+}
 
 // ── Mud puddles (flaques de boue) ──────────────────────────────────────
 // Appearing occasionally on open lanes, mud puddles slow down the mount
@@ -27,10 +121,15 @@ export const MUD_SLOW_FACTOR = 0.7; // speed multiplier while wading through mud
 export const MUD_JUMP_CLEARANCE = 0.45; // jump height above which the mount leaps over a mud puddle
 
 // Shuffle a bag of encounters: no adjacent repeats, always a traversable route.
+// Les voies sont relues à chaque rangée (`laneIndices()` / `laneCount()`), donc
+// une piste de trois voies reçoit ses propres motifs : à trois voies, un
+// obstacle double (barrière) ne laisse qu'une voie libre, contre deux à quatre.
 export function createCourse(random = Math.random) {
   let bag = [];
   let previous;
   return () => {
+    const indices = laneIndices();
+    const count = indices.length;
     if (!bag.length) {
       bag = ['slalom', 'gate', 'jump', 'trail', 'fork'];
       for (let i = bag.length - 1; i > 0; i--) {
@@ -41,7 +140,7 @@ export function createCourse(random = Math.random) {
     }
     const pattern = bag.pop();
     previous = pattern;
-    const lane = Math.floor(random() * LANE_COUNT);
+    const lane = Math.floor(random() * count);
     const gem = (l, raised = false) => {
       const roll = random();
       // Ground gems: 32% Bleu/Cyan (Shield), 24% Rouge (Pistol), 18% Vert (All slightly), 26% Jaune/Or (Lasso)
@@ -60,23 +159,23 @@ export function createCourse(random = Math.random) {
     };
     let items;
     if (pattern === 'jump') {
-      const start = Math.floor(random() * (LANE_COUNT - 1));
+      const start = Math.floor(random() * (count - 1));
       items = [
         { kind: 'barrier', lane: start, lanes: [start, start + 1] },
-        ...LANE_INDICES.filter(l => l !== start && l !== start + 1).map(l => ({ kind: 'cactus', lane: l })),
+        ...indices.filter(l => l !== start && l !== start + 1).map(l => ({ kind: 'cactus', lane: l })),
         gem(start, true), gem(start + 1, true),
       ];
     } else if (pattern === 'gate') {
-      items = LANE_INDICES.map(l => l === lane ? gem(l) : { kind: 'cactus', lane: l });
+      items = indices.map(l => l === lane ? gem(l) : { kind: 'cactus', lane: l });
     } else if (pattern === 'trail') {
-      items = LANE_INDICES.map(l => gem(l));
+      items = indices.map(l => gem(l));
       if (random() < MUD_SPAWN_CHANCE) {
-        const mudLane = Math.floor(random() * LANE_COUNT);
+        const mudLane = Math.floor(random() * count);
         items[mudLane] = { kind: 'mud', lane: mudLane };
       }
     } else if (pattern === 'fork') {
-      const start = Math.floor(random() * (LANE_COUNT - 1));
-      const groundLanes = LANE_INDICES.filter(l => l !== start && l !== start + 1);
+      const start = Math.floor(random() * (count - 1));
+      const groundLanes = indices.filter(l => l !== start && l !== start + 1);
       const mudLane = random() < MUD_SPAWN_CHANCE
         ? groundLanes[Math.floor(random() * groundLanes.length)]
         : -1;
@@ -86,11 +185,11 @@ export function createCourse(random = Math.random) {
         gem(start, true),
       ];
     } else {
-      const freeLanes = LANE_INDICES.filter(l => l !== lane);
+      const freeLanes = indices.filter(l => l !== lane);
       const mudLane = random() < MUD_SPAWN_CHANCE
         ? freeLanes[Math.floor(random() * freeLanes.length)]
         : -1;
-      items = LANE_INDICES.map(l => (
+      items = indices.map(l => (
         l === lane
           ? { kind: 'cactus', lane: l }
           : l === mudLane
@@ -193,13 +292,28 @@ export const POWER_UP_CHARGE_COST = {
   [POWER_UPS.BOOST]: 8,    // 4 green diamonds
 };
 
-// Three AI rivals in Duel mode (+ the player = 4 riders across the 4 lanes)
+// Roster des rivaux du Duel : un rival de moins que de voies, le joueur
+// occupant la sienne. À quatre voies, les trois PNJ ci-dessous courent aux
+// voies 0, 2 et 3 (le joueur part à la voie 1) ; à trois voies, seuls L'Ombre
+// (voie 0) et Sauge (voie 2) entrent en piste et le joueur part au centre.
 export const DUEL_RIVALS = Object.freeze([
-  Object.freeze({ id: 'ombre', name: 'L’OMBRE', paletteIndex: 1, startLane: 0, pace: 1.0, hesitateChance: 0.11 }),
-  Object.freeze({ id: 'sauge', name: 'SAUGE', paletteIndex: 2, startLane: 2, pace: 0.985, hesitateChance: 0.14 }),
-  Object.freeze({ id: 'amethyste', name: 'AMÉTHYSTE', paletteIndex: 3, startLane: 3, pace: 0.97, hesitateChance: 0.17 }),
+  Object.freeze({ id: 'ombre', name: 'L’OMBRE', label: 'L’Ombre', paletteIndex: 1, startLane: 0, pace: 1.0, hesitateChance: 0.11 }),
+  Object.freeze({ id: 'sauge', name: 'SAUGE', label: 'Sauge', paletteIndex: 2, startLane: 2, pace: 0.985, hesitateChance: 0.14 }),
+  Object.freeze({ id: 'amethyste', name: 'AMÉTHYSTE', label: 'Améthyste', paletteIndex: 3, startLane: 3, pace: 0.97, hesitateChance: 0.17 }),
 ]);
 export const DUEL_RIVAL_COUNT = DUEL_RIVALS.length;
+
+/**
+ * Rivaux alignés sur la piste courante (voir `DUEL_RIVALS`) : trois sur
+ * ordinateur et tablette, deux sur le téléphone à trois voies. Une voie de
+ * départ trop large pour la piste est ramenée sur la dernière voie.
+ */
+export function duelRivalsForTrack(count = laneCount()) {
+  const wanted = Math.max(1, Math.min(count, LANE_COUNTS[LANE_COUNTS.length - 1]) - 1);
+  return DUEL_RIVALS.slice(0, wanted).map((rival) => (
+    rival.startLane < count ? rival : Object.freeze({ ...rival, startLane: count - 1 })
+  ));
+}
 
 // Charge points gained per diamond tier:
 // Tier 0 (Bleu/Cyan)  -> charges ONLY Shield (+2)
@@ -675,7 +789,7 @@ export function seededRandom(seed) {
 
 export function planNpcLane(items, currentLane, occupiedLanes = []) {
   let best = { lane: currentLane, jump: false, value: -Infinity };
-  for (let lane = 0; lane < LANE_COUNT; lane++) {
+  for (let lane = 0; lane < laneCount(); lane++) {
     if (items.some(item => item.kind === 'cactus' && item.lane === lane)) continue;
     const barrier = items.some(item => item.kind === 'barrier' && item.lanes.includes(lane));
     const mud = items.some(item => item.kind === 'mud' && item.lane === lane);
@@ -716,15 +830,38 @@ export function advanceCowboyStreak(current, collected, crashed = false) {
   return { streak, cheer: streak > 0 && streak % 5 === 0 };
 }
 
-export function playerLaneAfterAction(lane, action, jumpRemaining) {
-  if (jumpRemaining > 0) return lane;
+/**
+ * Voie du joueur après une action (gauche / droite ; toute autre action laisse
+ * la voie en place).
+ *
+ * Le saut ne verrouille plus les voies : sur téléphone, le pouce enchaîne
+ * « sauter » puis « glisser sur le côté » — et l'inverse — sans qu'aucun des
+ * deux gestes ne soit avalé par celui qui vient de partir (l'ancien verrou
+ * `jumpRemaining > 0`, qui rendait le cheval sourd aux côtés pendant 0,82 s,
+ * est décrit par `tests/mirage-rules.test.js`). Seules les bornes de la piste
+ * arrêtent le cavalier ; `laneCount()` suit l'appareil (3 sur téléphone,
+ * 4 sur ordinateur et tablette).
+ */
+export function playerLaneAfterAction(lane, action) {
   if (action === 'left') return Math.max(0, lane - 1);
-  if (action === 'right') return Math.min(LANE_COUNT - 1, lane + 1);
+  if (action === 'right') return Math.min(laneCount() - 1, lane + 1);
   return lane;
 }
 
-export function playerLateralPosition(x, targetX, dt, jumpRemaining) {
-  return jumpRemaining > 0 ? x : x + (targetX - x) * Math.min(1, dt * 12);
+/**
+ * Vitesse de traversée latérale (par seconde) : `x` rejoint la voie visée en
+ * `1 / LATERAL_LANE_SPEED` s. Passée de 12 à 22, la glissade répond au doigt
+ * sur téléphone au lieu de s'étaler sur ~0,2 s.
+ */
+export const LATERAL_LANE_SPEED = 22;
+
+/**
+ * Position latérale du cavalier : il glisse vers la voie visée, doigt posé
+ * comme doigt relâché, et **en plein saut aussi** — la glissade n'attend plus
+ * l'atterrissage (elle était gelée tant que `jumpRemaining > 0`).
+ */
+export function playerLateralPosition(x, targetX, dt) {
+  return x + (targetX - x) * Math.min(1, dt * LATERAL_LANE_SPEED);
 }
 
 export function resolveCollision({ mode, lives, speed, boost }) {

@@ -1,5 +1,5 @@
 import {
-  LANE_COUNT, PISTOL_STUN_DURATION, DUEL_DISTANCE, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR,
+  laneCount, PISTOL_STUN_DURATION, DUEL_DISTANCE, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR,
 } from './mirageRules.js';
 import { supabase } from '../lib/supabase.js';
 
@@ -424,7 +424,7 @@ function advanceBotsInRace(room, nowMs) {
     const nextDistance = stunned
       ? Number(p.distance || 0)
       : Math.min(DUEL_DISTANCE, Math.max(Number(p.distance || 0), elapsedSec * speed + wave - Number(p.stun_lag || 0)));
-    const laneWave = Math.floor((elapsedSec + p.slot * 1.7) / 2.6) % LANE_COUNT;
+    const laneWave = Math.floor((elapsedSec + p.slot * 1.7) / 2.6) % laneCount();
     const jumpPhase = (elapsedSec + p.slot * 0.9) % 3.4;
     const jumpVal = jumpPhase < 0.55 ? Math.sin((jumpPhase / 0.55) * Math.PI) * 1.25 : 0;
     p.distance = Number(nextDistance.toFixed(2));
@@ -501,7 +501,7 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
 
   if (action === 'create') {
     const stage = extras.p_stage || 'desert';
-    if (!['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan'].includes(stage)) {
+    if (!['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase', 'snakeway'].includes(stage)) {
       throw new Error('Carte inconnue');
     }
     // Remove previous open lobby hosted by the same user
@@ -696,7 +696,7 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
       is_bot: true,
       speed: botTemplate.speed,
       distance: 0,
-      lane: freeSlot % LANE_COUNT,
+      lane: freeSlot % laneCount(),
       jump: 0,
       score: 0,
       finished_at: null,
@@ -765,7 +765,7 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
     const lane = Number(extras.p_lane ?? 1);
     const jump = Number(extras.p_jump ?? 0);
     const score = Number(extras.p_score ?? 0);
-    if (dist < 0 || dist > DUEL_DISTANCE || !Number.isInteger(lane) || lane < 0 || lane >= LANE_COUNT || jump < 0 || jump > 1.7 || score < 0 || score > 200000) {
+    if (dist < 0 || dist > DUEL_DISTANCE || !Number.isInteger(lane) || lane < 0 || lane >= laneCount() || jump < 0 || jump > 1.7 || score < 0 || score > 200000) {
       throw new Error('Position invalide');
     }
     if (action === 'finish' && dist < DUEL_DISTANCE) {

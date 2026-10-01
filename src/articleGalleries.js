@@ -17,6 +17,35 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  'ghost-yotei-complete-edition-1er-octobre': { label: 'GHOST OF YŌTEI', meta: 'PLAYSTATION · SUCKER PUNCH', items: [
+    { src: youTubeFrameUrl('2bQrrWCRkMY', 1), alt: 'Ghost of Yōtei Complete Edition — photogramme du trailer officiel', caption: '01 / Echoes of Sekigahara, nouvelle région' },
+    { src: youTubeFrameUrl('2bQrrWCRkMY', 2), alt: 'Ghost of Yōtei Complete Edition — combat dans le trailer officiel', caption: '02 / Le retour du combat au katana' },
+    { src: youTubeFrameUrl('2bQrrWCRkMY', 3), alt: 'Ghost of Yōtei Complete Edition — Atsu dans le trailer officiel', caption: '03 / Atsu reprend la route' },
+  ], credit: 'Photogrammes extraits de la bande-annonce officielle PlayStation (01.09.2026).', creditSources: [{ label: 'annonce PlayStation', href: 'https://blog.playstation.com/2026/08/12/ghost-of-yotei-complete-edition-comes-to-ps5-october-1/' }] },
+  // ---- Actus cinéma & séries ---------------------------------------------
+  'cinema/a-l-est-d-eden-netflix': { label: 'À L’EST D’ÉDEN', meta: 'NETFLIX · ZOE KAZAN', items: [
+    { src: youTubeFrameUrl('M9NWvGZViCg', 1), alt: 'À l’Est d’Éden — Florence Pugh dans la bande-annonce Netflix', caption: '01 / Florence Pugh en Cathy Ames' },
+    { src: youTubeFrameUrl('M9NWvGZViCg', 2), alt: 'À l’Est d’Éden — les frères Trask dans la bande-annonce Netflix', caption: '02 / Une famille prise dans ses héritages' },
+    { src: youTubeFrameUrl('M9NWvGZViCg', 3), alt: 'À l’Est d’Éden — paysage de la vallée de Salinas', caption: '03 / La vallée de Salinas' },
+  ], credit: 'Photogrammes extraits de la bande-annonce officielle Netflix.', creditSources: [{ label: 'Netflix Tudum', href: 'https://www.netflix.com/tudum/articles/east-of-eden-trailer' }] },
+  // ---- Actus tech ---------------------------------------------------------
+  'dynasty-warriors-3-remastered-sortie': { label: 'DYNASTY WARRIORS 3', meta: 'KOEI TECMO · REMASTER', items: [
+    { src: youTubeFrameUrl('O8hfaFyKMq0', 1), alt: 'Dynasty Warriors 3 Remastered — bataille du trailer officiel Koei Tecmo', caption: '01 / Une armée face à un seul officier' },
+    { src: youTubeFrameUrl('O8hfaFyKMq0', 2), alt: 'Dynasty Warriors 3 Remastered — combat rapproché du trailer officiel', caption: '02 / Les combos au cœur de la mêlée' },
+    { src: youTubeFrameUrl('O8hfaFyKMq0', 3), alt: 'Dynasty Warriors 3 Remastered — coopération à deux joueurs', caption: '03 / Le coop entre dans la bataille' },
+  ], credit: 'Photogrammes extraits de la vidéo officielle Koei Tecmo.', creditSources: [{ label: 'annonce Koei Tecmo America', href: 'https://www.koeitecmoamerica.com/news/dynasty-warriors-3-complete-edition-remastered-sharpens-blades-for-an-oct-1-2026-release/' }] },
+  // ---- Actus cinéma & séries ---------------------------------------------
+  'cinema/matthew-perry-documentaire-netflix': { label: 'MATTHEW PERRY', meta: 'NETFLIX · DOCUMENTAIRE', items: [
+    { src: youTubeFrameUrl('_iM1AOFxoDI', 1), alt: 'The One About Matthew Perry — photogramme du trailer Netflix', caption: '01 / Une carrière racontée de l’intérieur' },
+    { src: youTubeFrameUrl('_iM1AOFxoDI', 2), alt: 'The One About Matthew Perry — témoignage dans le trailer Netflix', caption: '02 / La parole des proches' },
+    { src: youTubeFrameUrl('_iM1AOFxoDI', 3), alt: 'The One About Matthew Perry — archive de l’acteur dans le trailer Netflix', caption: '03 / Au-delà de Chandler' },
+  ], credit: 'Photogrammes extraits de la bande-annonce officielle Netflix.', creditSources: [{ label: 'Netflix Tudum', href: 'https://www.netflix.com/tudum/articles/the-one-about-matthew-perry-release-date-news' }] },
+  // ---- Actus tech ---------------------------------------------------------
+  'tech/project-suncatcher-lancement-test': { label: 'SUNCATCHER · TEST 01', meta: 'GOOGLE RESEARCH · ORBITE', items: [
+    { src: youTubeFrameUrl('o1JK79jszqo', 1), alt: 'Project Suncatcher — prototype orbital dans la vidéo Google', caption: '01 / Le prototype quitte le concept' },
+    { src: youTubeFrameUrl('o1JK79jszqo', 2), alt: 'Project Suncatcher — panneaux solaires et calcul IA', caption: '02 / Mesurer l’énergie disponible' },
+    { src: youTubeFrameUrl('o1JK79jszqo', 3), alt: 'Project Suncatcher — réseau de satellites Google', caption: '03 / Le calcul entre deux orbites' },
+  ], credit: 'Photogrammes extraits de la vidéo officielle Google Research.', creditSources: [{ label: 'dossier officiel Project Suncatcher', href: 'https://blog.google/innovation-and-ai/models-and-research/google-research/google-project-suncatcher-facts/' }] },
   // ---- Actus gaming -------------------------------------------------------
   'physint-budget-400-millions-xbox': {
     label: 'PHYSINT × XBOX', meta: 'KOJIMA PRODUCTIONS · XBOX',

@@ -1,5 +1,5 @@
 // ⚙️ FICHIER GÉNÉRÉ par scripts/news-bot/fetch-news.mjs — ne pas éditer à la main.
-// Dernière génération : 2026-09-30T10:41:06.246Z — 21 article(s).
+// Dernière génération : 2026-10-01T11:07:49.452Z — 21 article(s).
 // Ce module alimente la page Actus et les routes /news/<slug> du site.
 export const autoStories = {
   "nintendo-avait-confie-le-developpement-d-un-jeu-zelda-a-ubis": {

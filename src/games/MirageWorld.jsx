@@ -7,25 +7,36 @@ import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } from './sardiniaStage';
 import { algerBuilding, algerObstacle, algerSeaside, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
+import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeRampartsSkyline, updateBombBlink } from './rampartsStage';
+import { INFINITY_CULL_Z, INFINITY_DECK_PERIOD, infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWing, makeInfinityDeck, makeInfinityHorizon, updateInfinityLanterns } from './infinityStage';
+import { INFINITY_ATMOSPHERE, makeInfinitySky } from './infinityAtmosphere';
+import { airbaseGate, airbaseObstacle, airbaseOps, airbaseStands, makeAirbaseSkyline, updateAirbaseBeacon } from './airbaseStage';
+import { SNAKEWAY_ATMOSPHERE, SNAKEWAY_CULL_Z, SNAKEWAY_DECK_PERIOD, SNAKEWAY_GATE_INDEX, SNAKEWAY_SEGMENT_COUNT, SNAKEWAY_SEGMENT_LENGTH, makeSnakewayHorizon, snakewayArch, snakewayCloudBank, snakewayObstacle, snakewayTrackTrim } from './snakewayStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
-  LANES, LANE_COUNT, CRYSTALS, createCourse, jumpHeight, DUEL_DISTANCE, DUEL_BASE_SPEED,
+  LANES, laneCount, lanePosition, trackWidth, CRYSTALS, createCourse, jumpHeight, JUMP_DURATION, DUEL_DISTANCE, DUEL_BASE_SPEED,
   duelSpeed, ghostDistance, seededRandom, planNpcLane, advanceCowboyStreak,
   playerLaneAfterAction, playerLateralPosition, resolveCollision, isPlayerVisible,
+  advanceJump, JUMP_BUFFER,
   tickSpeedBoost, SPEED_BOOST_NONE, POWER_UPS, powerUpsEnabled, PISTOL_STUN_DURATION,
   stunPose, SHIELD_DURATION, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR, LASSO_PROJECTILE_DURATION,
   GEM_BURST_DURATION, GEM_BURST_SHARDS, gemBurstShards, gemShardState, gemFlashState,
   crystalPickupEffect, POWER_UP_CHARGE_COST, DIAMOND_CHARGE_VALUE, POWER_UP_MAX_CHARGES,
-  createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, DUEL_RIVALS,
+  createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, duelRivalsForTrack,
   chooseNpcPowerAction, splitChargedPowers, POWER_BOOST_DURATION, POWER_BOOST_BONUS,
   GEM_RESPAWN_DELAY, markGemTaken, isGemHidden, prairieSunsetState,
   MUD_SLOW_DURATION, MUD_SLOW_FACTOR, hitsMudPuddle, resolveMudSlow,
 } from './mirageRules';
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
+// Rythme de la course : un peu plus lent sur la piste du téléphone (3 voies).
+import { paceForTrack } from './mirageLanes';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { block, makeExplorer, paintModel } from './mirageExplorer';
 
-const TRACK_WIDTH = LANE_COUNT * 2.1;
+// La largeur de la piste n'est plus une constante de module : elle dépend du
+// nombre de voies (3 sur téléphone, 4 sur ordinateur et tablette), choisi au
+// démarrage — voir `trackWidth()` et `mirageLanes.js`. Les lignes de départ et
+// d'arrivée la lisent au moment de construire la scène, plus bas.
 const TRACK_MIN_Z = -40;
 const RUN_SECONDS = 60;
 const NO_POWER_UPS = Object.freeze([]);
@@ -442,8 +453,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const sardinia = stage === 'sardinia';
   const alger = stage === 'alger';
   const japan = stage === 'japan';
+  const ramparts = stage === 'ramparts';
+  const infinity = stage === 'infinity';
+  const airbase = stage === 'airbase';
+  const snakeway = stage === 'snakeway';
   // Dunes de l’Écho : le stage par défaut (et le repli pour tout identifiant inconnu).
-  const desert = !western && !prairie && !sardinia && !alger && !japan;
+  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts && !infinity && !airbase && !snakeway;
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -482,21 +497,44 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                 sunBottom: [0.88, 0.93, 1.0], sunTop: [0.98, 0.99, 1.0], glow: [0.46, 0.62, 0.92],
                 hemiSky: 0x9bb8ff, hemiGround: 0x1d2738, sunLight: 0xd8e6ff, rimLight: 0xff6e54,
               }
-            : {
-                // Brume d'horizon = couleur du bas du ciel de desertStage.js : le sable
-                // se fond dans le ciel sans couture.
-                background: DESERT_PALETTE.horizon, fog: DESERT_PALETTE.horizon, exposure: 1.12,
-                skyBottom: [0.97, 0.66, 0.42], skyHorizon: [0.83, 0.42, 0.35], skyTop: [0.40, 0.29, 0.50],
-                sunBottom: [1.0, 0.31, 0.06], sunTop: [1.0, 0.57, 0.19], glow: [1.0, 0.62, 0.33],
-                hemiSky: 0xffd6b1, hemiGround: 0x49374a, sunLight: 0xffbd70, rimLight: 0xe1a0d4,
-              };
+            : ramparts
+              ? {
+                  // Remparts d’Ocre : grand ciel bleu au-dessus du Mid, soleil blanc
+                  // d'après-midi et brume de chaleur ocre sur les remparts.
+                  background: 0x8fbfe0, fog: 0xe6cfa6, exposure: 1.06,
+                  skyBottom: [0.94, 0.84, 0.66], skyHorizon: [0.62, 0.79, 0.93], skyTop: [0.22, 0.50, 0.84],
+                  sunBottom: [1.0, 0.90, 0.62], sunTop: [1.0, 0.98, 0.86], glow: [1.0, 0.93, 0.74],
+                  hemiSky: 0xfff0d8, hemiGround: 0xa47d52, sunLight: 0xfff0d0, rimLight: 0xb0d2f2,
+                }
+              : airbase
+              ? {
+                  // Thunder Airbase : plein jour éclatant sur le taxiway, soleil haut
+                  // et brume légère bleu pâle au-dessus de l'herbe, comme le stage
+                  // ensoleillé de Guile.
+                  background: 0x87b8e0, fog: 0xc3d8ea, exposure: 1.1,
+                  skyBottom: [0.78, 0.89, 0.97], skyHorizon: [0.45, 0.70, 0.92], skyTop: [0.15, 0.42, 0.80],
+                  sunBottom: [1.0, 0.90, 0.66], sunTop: [1.0, 0.99, 0.88], glow: [1.0, 0.95, 0.80],
+                  hemiSky: 0xe8f2ff, hemiGround: 0x8a8f7a, sunLight: 0xfff4dc, rimLight: 0xbfe0ff,
+                }
+              : infinity
+                ? INFINITY_ATMOSPHERE
+                : snakeway
+                  ? SNAKEWAY_ATMOSPHERE
+                  : {
+                  // Brume d'horizon = couleur du bas du ciel de desertStage.js : le sable
+                  // se fond dans le ciel sans couture.
+                  background: DESERT_PALETTE.horizon, fog: DESERT_PALETTE.horizon, exposure: 1.12,
+                  skyBottom: [0.97, 0.66, 0.42], skyHorizon: [0.83, 0.42, 0.35], skyTop: [0.40, 0.29, 0.50],
+                  sunBottom: [1.0, 0.31, 0.06], sunTop: [1.0, 0.57, 0.19], glow: [1.0, 0.62, 0.33],
+                  hemiSky: 0xffd6b1, hemiGround: 0x49374a, sunLight: 0xffbd70, rimLight: 0xe1a0d4,
+                };
   scene.background = new THREE.Color(atmosphere.background);
-  scene.fog = new THREE.Fog(atmosphere.fog, 27, 82);
+  scene.fog = new THREE.Fog(atmosphere.fog, infinity || snakeway ? 26 : 27, infinity ? 84 : snakeway ? 104 : 82);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({ antialias: infinity, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -505,18 +543,26 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   renderer.domElement.setAttribute('aria-label', 'Jeu 3D Mirage Rush — évite les obstacles et ramasse les fragments solaires');
   mount.appendChild(renderer.domElement);
 
-  const hemiLight = new THREE.HemisphereLight(atmosphere.hemiSky, atmosphere.hemiGround, prairie ? 1.65 : 1.9);
+  const hemiLight = new THREE.HemisphereLight(atmosphere.hemiSky, atmosphere.hemiGround, infinity ? 1.85 : prairie ? 1.65 : 1.9);
   scene.add(hemiLight);
-  const sunLight = new THREE.DirectionalLight(atmosphere.sunLight, prairie ? 1.8 : 2.1);
+  const sunLight = new THREE.DirectionalLight(atmosphere.sunLight, infinity ? 1.65 : prairie ? 1.8 : 2.1);
   sunLight.position.set(0, 5, -46);
   scene.add(sunLight);
-  const rimLight = new THREE.DirectionalLight(atmosphere.rimLight, prairie ? 0.45 : 0.8);
-  rimLight.position.set(7, 6, -10);
+  const rimLight = new THREE.DirectionalLight(atmosphere.rimLight, infinity ? 0.62 : prairie ? 0.45 : 0.8);
+  rimLight.position.set(7, 6, infinity ? 10 : -10);
   scene.add(rimLight);
+  if (infinity) {
+    // Rebonds croisés des shōji : éclairent les deux ailes et les façades de face.
+    const leftFill = new THREE.DirectionalLight(0xffc98a, 0.72);
+    leftFill.position.set(-11, 8, 12);
+    const rightFill = new THREE.DirectionalLight(0xffa46b, 0.62);
+    rightFill.position.set(11, 7, 10);
+    scene.add(leftFill, rightFill);
+  }
 
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const skyVector = (rgb) => new THREE.Vector3(...rgb);
-  const sunset = new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
+  const sunset = infinity ? makeInfinitySky(camera) : new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
     depthWrite: false,
     uniforms: {
       skyBottom: { value: skyVector(atmosphere.skyBottom) },
@@ -525,10 +571,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : sardinia ? 12.0 : alger ? 7.0 : 5.5 },
-      sunX: { value: sardinia || alger ? 18.0 : 0.0 },
-      sunRadius: { value: sardinia ? 5.5 : 8.0 },
-      isNight: { value: japan ? 1.0 : 0.0 },
+      sunElevation: { value: snakeway ? 28.0 : japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
+      sunX: { value: snakeway ? -27.0 : sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
+      sunRadius: { value: snakeway ? 4.8 : sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
+      isNight: { value: japan || snakeway ? 1.0 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
       void main() {
@@ -570,8 +616,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         gl_FragColor = vec4(mix(sky, sunColor, disc), 1.0);
       }`,
   }));
-  sunset.position.set(0, 59.91, -95);
-  sunset.renderOrder = -1;
+  if (!infinity) {
+    sunset.position.set(0, 59.91, -95);
+    sunset.renderOrder = -1;
+  }
   sunset.visible = !desert; // le désert a son propre ciel (desertStage.js)
   scene.add(sunset);
 
@@ -627,8 +675,40 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     sea.renderOrder = -1;
   }
 
+  if (ramparts) {
+    // Terre battue autour du Mid, et au loin les toits crénelés de la ville
+    // noyés dans la brume de chaleur.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0xc7a06c, roughness: 1 }), scene, [0, -0.64, -35], [90, 0.6, 160]);
+    const skyline = makeRampartsSkyline();
+    bakeStaticScenery(skyline);
+    scene.add(skyline);
+  }
+  if (airbase) {
+    // Herbe verte autour du taxiway, comme les abords du stage de Guile ;
+    // au loin, les hangars, la tour et un F-16 en vol dans la brume légère.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0x63a34e, roughness: 1 }), scene, [0, -0.64, -35], [90, 0.6, 160]);
+    const skyline = makeAirbaseSkyline();
+    bakeStaticScenery(skyline);
+    scene.add(skyline);
+  }
+
+  if (infinity) {
+    // Abîme sombre sous le grand pont de bois laqué, et à l'horizon les
+    // tours de shōji et les pagodes renversées du Château de l’Infini.
+    block(cube, new THREE.MeshStandardMaterial({ color: 0x160a10, roughness: 1 }), scene, [0, -6.5, -35], [180, 0.6, 180]);
+    const horizon = makeInfinityHorizon();
+    bakeStaticScenery(horizon);
+    scene.add(horizon);
+  }
+  if (snakeway) {
+    // Les nuages orange cadrent la piste suspendue et la planète de Kaio.
+    const horizon = makeSnakewayHorizon();
+    bakeStaticScenery(horizon);
+    scene.add(horizon);
+  }
+
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie || japan || desert ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
+  for (let i = 0; i < (prairie || japan || desert || ramparts || infinity || airbase || snakeway ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
@@ -639,22 +719,23 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(mountain);
   }
 
-  const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : 0xc9995f, flatShading: true, roughness: 1 }),
+  const floorMaterials = infinity ? [] : [
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : airbase ? 0x767c88 : snakeway ? 0xf2ca53 : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : airbase ? 0x7f8593 : snakeway ? 0xffdf7b : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : airbase ? 0x6e7482 : snakeway ? 0xd5a83c : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
-  const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
-  const FLOOR_PERIOD = floorMaterials.length * 2;
-  const floorGroup = new THREE.Group();
+  const floorGeometry = infinity ? null : new THREE.BoxGeometry(2.02, 0.58, 2.02);
+  const FLOOR_PERIOD = infinity ? INFINITY_DECK_PERIOD : snakeway ? SNAKEWAY_DECK_PERIOD : floorMaterials.length * 2;
+  const floorGroup = infinity ? makeInfinityDeck(LANES) : new THREE.Group();
   // Dans le désert la piste se prolonge jusqu'à la brume (44 rangées au lieu de 28) : elle file
   // droit vers le mirage au lieu de s'arrêter net devant le vide.
   const floorRows = desert ? 44 : 28;
   const floorMinZ = desert ? TRACK_MIN_Z - 32 : TRACK_MIN_Z;
+  if (snakeway) floorGroup.add(snakewayTrackTrim(LANES, floorRows, floorMinZ));
   floorMaterials.forEach((material, m) => {
     const parts = [];
     for (let zIndex = 0; zIndex < floorRows; zIndex += 1) {
-      for (let lane = 0; lane < LANE_COUNT; lane += 1) {
+      for (let lane = 0; lane < laneCount(); lane += 1) {
         if ((zIndex + lane) % floorMaterials.length !== m) continue;
         parts.push(floorGeometry.clone().translate(LANES[lane], -0.34, floorMinZ + zIndex * 2));
       }
@@ -662,6 +743,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     floorGroup.add(new THREE.Mesh(mergeGeometries(parts, false), material));
     parts.forEach(part => part.dispose());
   });
+  floorGeometry?.dispose();
+  if (snakeway) bakeStaticScenery(floorGroup);
   scene.add(floorGroup);
   let floorOffset = 0;
   const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
@@ -677,7 +760,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const playerBoostStreaks = makeBoostStreaks();
   player.add(playerBoostStreaks);
 
-  const duelRivals = DUEL_RIVALS.map((spec) => {
+  const duelRivals = duelRivalsForTrack().map((spec) => {
     const mesh = makeExplorer(spec.paletteIndex, CHARACTER_PALETTES[spec.paletteIndex]);
     mesh.position.set(LANES[spec.startLane], 0, -5);
     mesh.visible = false;
@@ -735,8 +818,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
   const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xfdf0c8 });
   const finishMaterial = new THREE.MeshBasicMaterial({ color: 0x4ce9df });
-  const startLine = block(new THREE.BoxGeometry(TRACK_WIDTH, 0.05, 0.45), lineMaterial, scene, [0, 0.025, 1]);
-  const finishLine = block(new THREE.BoxGeometry(TRACK_WIDTH, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
+  // Largeur de la piste courante (6,3 m à trois voies, 8,4 m à quatre) : les
+  // deux lignes couvrent exactement les voies jouables.
+  const trackWidthM = trackWidth();
+  const startLine = block(new THREE.BoxGeometry(trackWidthM, 0.05, 0.45), lineMaterial, scene, [0, 0.025, 1]);
+  const finishLine = block(new THREE.BoxGeometry(trackWidthM, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
   startLine.visible = false;
   finishLine.visible = false;
   const playerShadow = new THREE.Mesh(
@@ -769,9 +855,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     row.items = encounter.items.map((spec, itemIndex) => {
       const object = spec.kind === 'crystal'
         ? makeCrystal(spec.tier)
-        : spec.kind === 'mud'
-          ? makeMudPuddle()
-          : prairie
+        : spec.kind === 'mud' && snakeway
+          ? snakewayObstacle('mud')
+          : spec.kind === 'mud'
+            ? makeMudPuddle()
+            : prairie
             ? prairieObstacle(spec.kind)
             : western
               ? westernObstacle(spec.kind)
@@ -781,7 +869,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                   ? algerObstacle(spec.kind)
                   : japan
                     ? japanObstacle(spec.kind)
-                    : makeHazard(spec.kind);
+                    : ramparts
+                      ? rampartsObstacle(spec.kind)
+                      : airbase
+                      ? airbaseObstacle(spec.kind)
+                      : infinity
+                        ? infinityObstacle(spec.kind)
+                        : snakeway
+                          ? snakewayObstacle(spec.kind)
+                          : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
@@ -961,6 +1057,58 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       scene.add(item);
       scenery.push(item);
     }
+  } else if (ramparts) {
+    // Remparts d’Ocre, le Mid de de_dust2 remonté depuis le spawn T comme sur le radar : le
+    // site B défile à gauche, le site A à droite, et les portes du Mid
+    // enjambent la piste une fois par boucle de 110 m.
+    for (let i = 0; i < 10; i++) {
+      const siteB = rampartsSiteB(i);
+      const siteA = rampartsSiteA(i);
+      scene.add(siteB, siteA);
+      scenery.push(siteB, siteA);
+    }
+    const midDoors = rampartsMidDoors();
+    scene.add(midDoors);
+    scenery.push(midDoors);
+  } else if (airbase) {
+    // Thunder Airbase : les opérations (hangar, F-16, tour…) défilent à
+    // gauche, le public (drapeau géant, gradins, panneau SONIC BOOM) à
+    // droite, et le portique enjambe le taxiway une fois par boucle de 110 m.
+    for (let i = 0; i < 10; i++) {
+      const ops = airbaseOps(i);
+      const stands = airbaseStands(i);
+      scene.add(ops, stands);
+      scenery.push(ops, stands);
+    }
+    const gate = airbaseGate();
+    scene.add(gate);
+    scenery.push(gate);
+  } else if (infinity) {
+    // Château de l’Infini : les galeries de shōji, l'estrade du biwa de Nakime,
+    // les escaliers impossibles et les pagodes renversées défilent de part et
+    // d'autre du pont, franchi une fois par boucle par la Grande Arche.
+    for (let i = 0; i < 10; i++) {
+      const leftWing = infinityLeftWing(i);
+      const rightWing = infinityRightWing(i);
+      scene.add(leftWing, rightWing);
+      scenery.push(leftWing, rightWing);
+    }
+    const bridgeGate = infinityBridgeGate();
+    scene.add(bridgeGate);
+    scenery.push(bridgeGate);
+  } else if (snakeway) {
+    // Les nuages orange déroulent une boucle de 110 m ; le halo céleste
+    // marque le milieu sans ajouter de structure latérale.
+    for (let i = 0; i < SNAKEWAY_SEGMENT_COUNT; i += 1) {
+      const leftBank = snakewayCloudBank(i, -1);
+      const rightBank = snakewayCloudBank(i, 1);
+      scene.add(leftBank, rightBank);
+      scenery.push(leftBank, rightBank);
+    }
+    const arch = snakewayArch();
+    arch.position.z = 6 - SNAKEWAY_GATE_INDEX * SNAKEWAY_SEGMENT_LENGTH;
+    scene.add(arch);
+    scenery.push(arch);
   } else {
     // Dunes de l'Écho : dunes qui défilent avec la piste, accessoires, mirage, ciel… (desertStage.js)
     desertScenery = makeDesertScenery({ reduceMotion });
@@ -973,6 +1121,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let distance = 0;
   let rivalDistance = 0;
   let baseSpeed = DUEL_BASE_SPEED;
+  // Facteur de rythme de la course en cours (0,85 sur téléphone/application,
+  // 1 partout ailleurs) — repris à chaque `reset()`.
+  let pace = 1;
   let boost = SPEED_BOOST_NONE;
   let trace = [0];
   let seed = 0;
@@ -1131,7 +1282,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       const slot = peer?.slot ?? 0;
       const rider = onlineRiders[slot];
       if (rider) end = new THREE.Vector3(rider.position.x, 2.15 + rider.position.y, rider.position.z);
-      else end = new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 2.15, distance - (targetInfo.player.distance||0));
+      else end = new THREE.Vector3(lanePosition(targetInfo.player.lane), 2.15, distance - (targetInfo.player.distance||0));
     } else {
       end = new THREE.Vector3(player.position.x, 2.15 + player.position.y, -12);
     }
@@ -1200,7 +1351,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return false;
     }
     playerStun = PISTOL_STUN_DURATION;
-    playerStunSide = laneIndex >= LANE_COUNT / 2 ? -1 : 1;
+    playerStunSide = laneIndex >= laneCount() / 2 ? -1 : 1;
     boost = SPEED_BOOST_NONE;
     jumpLeft = 0;
     if (!fromNetwork) callbacks.pistolHit?.({ target: 'player' });
@@ -1216,7 +1367,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       return false;
     }
     targetNpc.stunTimer = PISTOL_STUN_DURATION;
-    targetNpc.stunSide = targetNpc.lane >= LANE_COUNT / 2 ? -1 : 1;
+    targetNpc.stunSide = targetNpc.lane >= laneCount() / 2 ? -1 : 1;
     targetNpc.boost = SPEED_BOOST_NONE;
     targetNpc.jumpLeft = 0;
     return true;
@@ -1242,7 +1393,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       const rider = onlineRiders[peer?.slot ?? 0];
       const to = rider?.visible
         ? new THREE.Vector3(rider.position.x, rider.position.y + 1.9, rider.position.z)
-        : new THREE.Vector3(LANES[targetInfo.player.lane ?? 1], 1.9, Math.max(-70, Math.min(10, distance - (Number(targetInfo.player.distance) || 0))));
+        : new THREE.Vector3(lanePosition(targetInfo.player.lane), 1.9, Math.max(-70, Math.min(10, distance - (Number(targetInfo.player.distance) || 0))));
       spawnTracer(from, to);
       callbacks.pistol?.(targetInfo.player);
       callbacks.pistolHit?.({ target: 'online', player: targetInfo.player });
@@ -1412,7 +1563,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const updateSingleNpc = (npc, dt) => {
     if (isGhostRival(npc)) {
       npc.dist = ghostDistance(race.challenge.trace, elapsed, race.challenge.duration);
-      npc.lane = LANE_COUNT - 1;
+      npc.lane = laneCount() - 1;
       npc.x = LANES[npc.lane];
       npc.jumpLeft = 0;
       if (npc.dist >= DUEL_DISTANCE && npc.finishedAt === null) {
@@ -1436,7 +1587,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     npc.boost = tickSpeedBoost(npc.boost, dt);
     const effectiveNpcMultiplier = Math.max(1, npc.boost.multiplier);
     const powerBoostBonus = npc.powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0;
-    const rawSpeed = duelSpeed(npc.base * effectiveNpcMultiplier + powerBoostBonus);
+    const rawSpeed = duelSpeed(npc.base * effectiveNpcMultiplier + powerBoostBonus) * pace;
     const speed = npc.stunTimer > 0 ? 0 : rawSpeed * slowFactor;
     const target = npcCourseState.course[npc.next];
     if (target) {
@@ -1458,7 +1609,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         npc.lane += Math.sign(npc.plan.lane - npc.lane);
         npc.cooldown = 0.15 + Math.random() * 0.08;
       }
-      if (npc.stunTimer <= 0 && npc.plan?.jump && !npc.hesitate && npc.jumpLeft <= 0 && speed > 0 && ahead / speed < 0.42 && ahead > 0) npc.jumpLeft = 0.82;
+      if (npc.stunTimer <= 0 && npc.plan?.jump && !npc.hesitate && npc.jumpLeft <= 0 && speed > 0 && ahead / speed < 0.42 && ahead > 0) npc.jumpLeft = JUMP_DURATION;
       if (npc.dist + speed * dt >= target.pos) {
         const height = jumpHeight(npc.jumpLeft);
         const near = (lane) => Math.abs(npc.x - LANES[lane]) < 0.95;
@@ -1533,6 +1684,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let lives = 3;
   let laneIndex = 1;
   let jumpLeft = 0;
+  // Saut demandé pendant qu'on est déjà en l'air (voir `action()`), rejoué à
+  // l'atterrissage si la fenêtre n'est pas écoulée.
+  let jumpBuffer = 0;
   let poseLeft = 0;
   let invulnerable = 0;
   let crashAnimation = 0;
@@ -1577,7 +1731,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       rivalDistance,
       speed: (race.mode === 'rush'
         ? (12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus
-        : duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus)) * hudSlowMul,
+        : duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus)) * hudSlowMul * pace,
       boostLeft: Math.max(boost.left, powerBoostTimer),
       powerBoostActive: powerBoostTimer > 0,
       powerBoostLeft: powerBoostTimer,
@@ -1616,6 +1770,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         id: r.id,
         slot: idx + 1,
         name: getRivalDisplayName(r),
+        // Fantôme d'un lien de défi : il court sous le nom de son auteur (tableau des positions).
+        ghost: isGhostRival(r),
         distance: Math.round(r.dist),
         duration: r.finishedAt === null ? null : Math.round(r.finishedAt * 10) / 10,
       }));
@@ -1642,6 +1798,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
   const reset = () => {
     race = getRace();
+    // Un téléphone et un ordinateur ne partagent pas le même rythme en ligne :
+    // la course garde alors sa vitesse, pour que le duel reste juste.
+    pace = race.mode === 'online' ? 1 : paceForTrack();
     seed = race.seed ?? race.challenge?.seed ?? (Math.random() * 0xffffffff) >>> 0;
     distance = 0;
     rivalDistance = 0;
@@ -1661,6 +1820,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     lives = 3;
     laneIndex = 1;
     jumpLeft = 0;
+    jumpBuffer = 0;
     poseLeft = 0;
     invulnerable = 0;
     crashAnimation = 0;
@@ -1703,11 +1863,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       r.mesh.position.set(LANES[r.startLane], 0, 0);
       r.mesh.visible = race.mode === 'duel';
     });
+    const cullZ = desert ? DESERT_CULL_Z : infinity ? INFINITY_CULL_Z : -Infinity;
     let z = -20;
     rows.forEach(row => {
       const gap = populateRow(row);
       row.group.position.z = z;
-      row.group.visible = !desert || z > DESERT_CULL_Z;
+      row.group.visible = z > cullZ;
       z -= gap;
     });
     resetPowerUps();
@@ -1723,8 +1884,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     else if (name === 'use_pistol' || name === 'pistol') usePistol();
     else if (name === 'use_boost' || name === 'boost') useBoost();
     else {
-      laneIndex = playerLaneAfterAction(laneIndex, name, jumpLeft);
-      if (name === 'jump' && jumpLeft <= 0) jumpLeft = 0.82;
+      // La voie change même en plein saut : le doigt n'est jamais ignoré.
+      laneIndex = playerLaneAfterAction(laneIndex, name);
+      if (name === 'jump') {
+        // Saut demandé en l'air : il part à l'atterrissage (fenêtre courte),
+        // au lieu d'être perdu — c'est ce qui donnait l'impression que le
+        // bouton « ne répond pas » quand on tapait juste avant de retomber.
+        if (jumpLeft <= 0) jumpLeft = JUMP_DURATION;
+        else jumpBuffer = JUMP_BUFFER;
+      }
     }
   };
 
@@ -1787,9 +1955,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const effectivePlayerMultiplier = Math.max(1, boost.multiplier);
     const powerBoostBonus = powerBoostTimer > 0 ? POWER_BOOST_BONUS : 0;
     const speed = running && playerStun <= 0
-      ? race.mode !== 'rush'
+      ? (race.mode !== 'rush'
         ? duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus) * slowMul
-        : ((12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus) * slowMul
+        : ((12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus) * slowMul) * pace
       : 0;
     if (running) {
       elapsed += dt;
@@ -1802,7 +1970,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       } else {
         distance += speed * dt;
       }
-      jumpLeft = Math.max(0, jumpLeft - dt);
+      // Tap sur « sauter » juste avant de toucher le sol : le saut repart à
+      // l'atterrissage, comme si le doigt avait été obéi sur-le-champ.
+      ({ jumpLeft, buffer: jumpBuffer } = advanceJump(jumpLeft, jumpBuffer, dt));
       poseLeft = Math.max(0, poseLeft - dt);
       crashAnimation = Math.max(0, crashAnimation - dt);
       invulnerable = Math.max(0, invulnerable - dt);
@@ -1889,7 +2059,24 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
             person.position.y = (person.userData.baseY || 0) + Math.abs(Math.sin(time * 0.0017 + bob)) * 0.012;
           }
         }
-        if (item.position.z > (western || prairie || sardinia || alger || japan ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan ? 110 : 86;
+        // Les C4 posées sur les sites A et B des Remparts d’Ocre clignotent à chaque bip.
+        updateBombBlink(item.userData.bombs, time * 0.001, reduceMotion);
+        // Les lanternes flottantes du Château de l’Infini pulsent au son du biwa.
+        updateInfinityLanterns(item.userData.lanterns, time * 0.001, reduceMotion, item.position.z);
+        // Thunder Airbase : gyrophares de la tour, de la jeep et du portique.
+        updateAirbaseBeacon(item.userData.airbaseBeacons, time * 0.001, reduceMotion);
+        const airbaseRadar = item.userData.radar;
+        if (airbaseRadar && !reduceMotion) airbaseRadar.rotation.y += dt * 1.4;
+        const airbaseFlag = item.userData.flag;
+        if (airbaseFlag && !reduceMotion) {
+          airbaseFlag.rotation.y = airbaseFlag.userData.baseRotation + Math.sin(time * 0.004 + (airbaseFlag.userData.bob || 0)) * 0.14;
+        }
+        const jetFlame = item.userData.jetFlame;
+        if (jetFlame && !reduceMotion) {
+          const flamePulse = 1 + Math.sin(time * 0.02) * 0.14;
+          jetFlame.scale.set(flamePulse, flamePulse, 1 + Math.sin(time * 0.026) * 0.22);
+        }
+        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts || infinity || airbase || snakeway ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts || infinity || airbase || snakeway ? 110 : 86;
       });
 
       rows.forEach((row) => {
@@ -1997,7 +2184,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           const streakResult = advanceCowboyStreak(cowboyStreak, Boolean(crystal), collided && !shieldActive);
           cowboyStreak = streakResult.streak;
           if (streakResult.cheer && active) {
-            callbacks.cheer?.();
             poseLeft = 0.62;
           }
           emitHud(true);
@@ -2009,8 +2195,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           row.group.position.z = z;
         }
         // Au-delà de ce point les obstacles sont déjà 100 % dans la brume : on les retire
-        // pour qu'ils ne se découpent pas en taches devant le mirage.
-        if (desert) row.group.visible = row.group.position.z > DESERT_CULL_Z;
+        // pour qu'ils ne se découpent pas en taches devant le mirage ou le soleil.
+        if (desert || infinity || snakeway) {
+          row.group.visible = row.group.position.z > (desert ? DESERT_CULL_Z : infinity ? INFINITY_CULL_Z : SNAKEWAY_CULL_Z);
+        }
       });
 
       // Lasso rope flies to its target, then stays attached for the full slow.
@@ -2140,7 +2328,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     updateTracers(dt);
 
     const targetX = LANES[laneIndex];
-    player.position.x = playerLateralPosition(player.position.x, targetX, dt, jumpLeft);
+    // Glissade latérale : plus jamais gelée pendant le saut, et plus nerveuse
+    // (LATERAL_LANE_SPEED) pour que le doigt voie la voie changer tout de suite.
+    player.position.x = playerLateralPosition(player.position.x, targetX, dt);
     const crashProgress = crashAnimation > 0 ? 1 - crashAnimation / 0.42 : 0;
     const crashBounce = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.18 : 0;
     const mudSlowed = running && playerSlowTimer > 0 && playerSlowKind === 'mud' && playerStun <= 0;
@@ -2183,13 +2373,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       if (!rider.visible) return;
       const z = mine ? 0 : distance - Number(peer.distance);
       rider.visible = z > -74 && z < 11;
-      rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, LANES[peer.lane], Math.min(1,dt*10));
+      rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, lanePosition(peer.lane), Math.min(1,dt*10));
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
       skinPaint(rider, CHARACTER_PALETTES[peer.character ?? peer.slot] || CHARACTER_PALETTES[0]);
       const peerStun = !mine && peer.stunned_until ? Math.max(0, (Date.parse(peer.stunned_until) - wallNow) / 1000) : 0;
       const stunLeft = mine ? playerStun : Math.min(PISTOL_STUN_DURATION, peerStun);
-      poseRider(rider, stunLeft, peer.lane >= LANE_COUNT / 2 ? -1 : 1);
+      poseRider(rider, stunLeft, peer.lane >= laneCount() / 2 ? -1 : 1);
       rider.userData.parts.legs.forEach((leg,i) => { leg.rotation.x = running && stunLeft <= 0 ? Math.sin(time*.018+i*2.2)*.65 : 0; });
       if (rider.userData.shieldBubble) {
         const now = Date.now();
@@ -2254,7 +2444,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           rivalMesh.position.y += Math.sin(time * 0.02 + idx) * 0.06;
         }
       } else {
-        rivalMesh.position.set(LANES[LANE_COUNT - 1], 0, rivalMesh.position.z);
+        rivalMesh.position.set(LANES[laneCount() - 1], 0, rivalMesh.position.z);
         rivalMesh.scale.setScalar(0.92);
       }
       rivalMesh.visible = race.mode === 'duel' && rivalMesh.position.z < 11 && rivalMesh.position.z > -74 && (r.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
@@ -2352,7 +2542,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -2362,7 +2552,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
   const raceRef = useRef(race);
   raceRef.current = race;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
+  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -2374,7 +2564,6 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
         crash: () => callbackRefs.current.onCrash?.(),
         mud: () => callbackRefs.current.onMud?.(),
         pickup: (tier, key) => callbackRefs.current.onPickup?.(tier, key),
-        cheer: () => callbackRefs.current.onCheer?.(),
         powerUp: (info) => callbackRefs.current.onPowerUp?.(info),
         powerUpPickup: (type) => callbackRefs.current.onPowerUpPickup?.(type),
         lasso: (target) => callbackRefs.current.onLasso?.(target),
@@ -2411,5 +2600,5 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
     if (prepareSignal > 0) worldRef.current?.prepare?.();
   }, [prepareSignal]);
 
-  return <div className="mirage-world" ref={mountRef} />;
+  return <div className="mirage-world" data-stage={stage} ref={mountRef} />;
 }

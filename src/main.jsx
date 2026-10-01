@@ -60,6 +60,7 @@ import Games from './pages/Games';
 import Auth from './pages/Auth';
 import Profile from './pages/Profile';
 import MessagesPage from './messages/MessagesPage';
+import CommunityPage from './community/CommunityPage';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
 import AchievementTracker from './achievements/AchievementTracker';
@@ -71,6 +72,7 @@ import CallOverlays from './messages/CallOverlays';
 import SocialDock from './social/SocialDock';
 import { initSinglePlayback } from './lib/videoPlayback';
 import { normalizePhoneViewport } from './lib/phoneLayout';
+import { applyLaneCountForDevice } from './games/mirageLanes';
 
 const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
 const SoulsPage = lazy(() => import('./games/SoulsPage'));
@@ -190,6 +192,8 @@ function App() {
             {/* Messagerie : une vraie page (surtout pour le mobile, où le
                 pop-up laisse place au plein écran) — liste et discussion par
                 URL, alias français `/messagerie`. */}
+            <Route path="/communaute" element={<CommunityPage />} />
+            <Route path="/community" element={<CommunityPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/messages/:peerId" element={<MessagesPage />} />
             <Route path="/messagerie" element={<MessagesPage />} />
@@ -222,6 +226,13 @@ initSinglePlayback();
 // s'appliquent. Appelée aussi juste après le montage : Safari applique
 // parfois son zoom mémorisé une fois la page déjà chargée.
 normalizePhoneViewport();
+
+// Mirage Rush se joue sur trois voies sur téléphone — navigateur comme
+// application — et sur quatre sur ordinateur et tablette (voir
+// src/games/mirageLanes.js). Le choix est fait ici, une seule fois, AVANT le
+// premier rendu : les courses, les rivaux du Duel et le décor lisent la piste
+// au moment de construire la partie.
+applyLaneCountForDevice();
 
 createRoot(document.getElementById('root')).render(<App />);
 

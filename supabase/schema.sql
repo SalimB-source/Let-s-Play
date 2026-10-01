@@ -1,6 +1,6 @@
 -- ============================================================================
---  Let's Play · schéma Supabase — profils, commentaires, succès, amis,
---  messagerie privée
+--  Let's Play · schéma Supabase — profils, commentaires, communauté,
+--  succès, amis, messagerie privée
 -- ============================================================================
 --  Où : Supabase Dashboard > SQL Editor, sur le projet pointé par
 --       VITE_SUPABASE_URL. Coller tout ce fichier puis « Run ».
@@ -387,6 +387,287 @@ create trigger on_comment_insert
 before insert on public.comments
 for each row execute procedure public.set_comment_author();
 
+
+-- ----------------------------------------------------------------------------
+-- 3c. Groupes communautaires et fils de discussion
+-- ----------------------------------------------------------------------------
+-- Les groupes et commentaires sont publics en lecture. La création et les
+-- messages partagés sont réservés aux comptes connectés ; les noms et avatars
+-- sont ajoutés côté serveur, puis la RLS garantit que chacun écrit en son nom.
+create table if not exists public.community_groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 3 and 56),
+  description text not null check (char_length(description) between 12 and 280),
+  category text not null default 'Autre' check (char_length(category) between 2 and 32),
+  tags text[] not null default '{}'::text[] check (cardinality(tags) <= 4),
+  created_by uuid references auth.users(id) on delete set null default auth.uid(),
+  created_by_name text not null default 'Joueur',
+  created_by_avatar text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists community_groups_created_idx
+  on public.community_groups (created_at desc);
+
+create table if not exists public.community_comments (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references public.community_groups(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  author_name text not null default '',
+  author_avatar text,
+  body text not null check (char_length(body) between 1 and 1000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists community_comments_group_created_idx
+  on public.community_comments (group_id, created_at asc);
+create index if not exists community_comments_user_idx
+  on public.community_comments (user_id);
+
+-- Groupe de démonstration toujours présent, y compris sur une nouvelle base.
+-- Le test EXISTS évite de déclencher le trigger auteur (et son exigence de
+-- session) sur une tentative d'INSERT déjà présente lors d'une relance du schéma.
+do $$
+begin
+  if not exists (select 1 from public.community_groups
+                 where id = 'e4d52bd0-0922-4be4-a880-000000000001') then
+    insert into public.community_groups
+      (id, name, description, category, tags, created_by, created_by_name, created_by_avatar)
+    values
+      ('e4d52bd0-0922-4be4-a880-000000000001',
+       'Les joueurs de soulslike',
+       'Boss impossibles, builds improbables et lore à décrypter : un espace pour parler des Souls, d’Elden Ring, de Sekiro et de tous les jeux qui nous font recommencer.',
+       'Soulslike', array['Elden Ring', 'Dark Souls', 'Sekiro'], null, 'La communauté', null);
+  end if;
+end $$;
+
+alter table public.community_groups enable row level security;
+alter table public.community_comments enable row level security;
+
+drop policy if exists "Community groups are publicly readable" on public.community_groups;
+create policy "Community groups are publicly readable"
+on public.community_groups for select using (true);
+
+drop policy if exists "Players create community groups as themselves" on public.community_groups;
+create policy "Players create community groups as themselves"
+on public.community_groups for insert to authenticated with check (auth.uid() = created_by);
+
+drop policy if exists "Community comments are publicly readable" on public.community_comments;
+create policy "Community comments are publicly readable"
+on public.community_comments for select using (true);
+
+drop policy if exists "Players post community comments as themselves" on public.community_comments;
+create policy "Players post community comments as themselves"
+on public.community_comments for insert to authenticated with check (auth.uid() = user_id);
+
+drop policy if exists "Players delete their own community comments" on public.community_comments;
+create policy "Players delete their own community comments"
+on public.community_comments for delete to authenticated using (auth.uid() = user_id);
+
+-- Le créateur du groupe peut supprimer son groupe
+drop policy if exists "Group creator can delete their group" on public.community_groups;
+create policy "Group creator can delete their group"
+on public.community_groups for delete to authenticated
+using (auth.uid() = created_by);
+
+-- Le créateur du groupe peut supprimer n'importe quel commentaire dans son groupe (modération)
+drop policy if exists "Group creator can moderate comments in their group" on public.community_comments;
+create policy "Group creator can moderate comments in their group"
+on public.community_comments for delete to authenticated
+using (
+  exists (
+    select 1 from public.community_groups g
+    where g.id = community_comments.group_id
+      and g.created_by = auth.uid()
+  )
+);
+
+create or replace function public.set_community_group_author()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  meta jsonb;
+  user_email text;
+  profile_username text;
+  profile_display_name text;
+  profile_avatar text;
+  recent integer;
+begin
+  new.created_by := coalesce(auth.uid(), new.created_by);
+  if new.created_by is null then
+    raise exception 'community_group_requires_auth' using errcode = '42501';
+  end if;
+
+  select raw_user_meta_data, email into meta, user_email
+  from auth.users where id = new.created_by;
+  begin
+    select username, display_name, avatar_url
+      into profile_username, profile_display_name, profile_avatar
+      from public.profiles where id = new.created_by;
+  exception when others then
+    null;
+  end;
+
+  new.name := trim(new.name);
+  new.description := trim(new.description);
+  new.category := trim(new.category);
+  new.created_by_name := coalesce(
+    nullif(trim(meta->>'gamertag'), ''),
+    nullif(trim(profile_username), ''),
+    nullif(trim(profile_display_name), ''),
+    nullif(trim(meta->>'full_name'), ''),
+    nullif(trim(meta->>'name'), ''),
+    nullif(split_part(coalesce(user_email, ''), '@', 1), ''),
+    'Player'
+  );
+  new.created_by_avatar := coalesce(
+    nullif(trim(meta->>'avatar'), ''), nullif(trim(meta->>'avatar_url'), ''),
+    nullif(trim(meta->>'picture'), ''), nullif(trim(profile_avatar), '')
+  );
+  new.created_at := now();
+
+  select count(*) into recent
+  from public.community_groups
+  where created_by = new.created_by and created_at > now() - interval '1 hour';
+  if recent >= 3 then
+    raise exception 'community_group_rate_limited' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_community_group_insert on public.community_groups;
+create trigger on_community_group_insert
+before insert on public.community_groups
+for each row execute procedure public.set_community_group_author();
+
+create or replace function public.set_community_comment_author()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  meta jsonb;
+  user_email text;
+  profile_username text;
+  profile_display_name text;
+  profile_avatar text;
+  recent integer;
+begin
+  new.user_id := coalesce(auth.uid(), new.user_id);
+  if new.user_id is null then
+    raise exception 'community_comment_requires_auth' using errcode = '42501';
+  end if;
+
+  select raw_user_meta_data, email into meta, user_email
+  from auth.users where id = new.user_id;
+  begin
+    select username, display_name, avatar_url
+      into profile_username, profile_display_name, profile_avatar
+      from public.profiles where id = new.user_id;
+  exception when others then
+    null;
+  end;
+
+  new.author_name := coalesce(
+    nullif(trim(meta->>'gamertag'), ''),
+    nullif(trim(profile_username), ''),
+    nullif(trim(profile_display_name), ''),
+    nullif(trim(meta->>'full_name'), ''),
+    nullif(trim(meta->>'name'), ''),
+    nullif(split_part(coalesce(user_email, ''), '@', 1), ''),
+    'Player'
+  );
+  new.author_avatar := coalesce(
+    nullif(trim(meta->>'avatar'), ''), nullif(trim(meta->>'avatar_url'), ''),
+    nullif(trim(meta->>'picture'), ''), nullif(trim(profile_avatar), '')
+  );
+  new.body := trim(new.body);
+  new.created_at := now();
+
+  select count(*) into recent
+  from public.community_comments
+  where user_id = new.user_id and created_at > now() - interval '1 minute';
+  if recent >= 5 then
+    raise exception 'community_comment_rate_limited' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_community_comment_insert on public.community_comments;
+create trigger on_community_comment_insert
+before insert on public.community_comments
+for each row execute procedure public.set_community_comment_author();
+
+
+-- ----------------------------------------------------------------------------
+-- 3c2. Community moderation RPC functions
+-- ----------------------------------------------------------------------------
+-- Allows group creator to delete their group (cascades to comments via FK)
+create or replace function public.delete_community_group(p_group_id uuid)
+returns void
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'community_group_delete_requires_auth' using errcode = '42501';
+  end if;
+  
+  -- Verify the caller is the group creator
+  if not exists (
+    select 1 from public.community_groups 
+    where id = p_group_id and created_by = auth.uid()
+  ) then
+    raise exception 'not_group_creator' using errcode = '42501';
+  end if;
+  
+  delete from public.community_groups where id = p_group_id;
+end;
+$$;
+
+revoke all on function public.delete_community_group(uuid) from public, anon;
+grant execute on function public.delete_community_group(uuid) to authenticated;
+
+-- Le créateur du groupe peut modérer (supprimer) n'importe quel commentaire dans son groupe
+create or replace function public.moderate_community_comment(p_comment_id uuid, p_group_id uuid)
+returns void
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'community_comment_moderate_requires_auth' using errcode = '42501';
+  end if;
+  
+  -- Verify the caller is the group creator
+  if not exists (
+    select 1 from public.community_groups 
+    where id = p_group_id and created_by = auth.uid()
+  ) then
+    raise exception 'not_group_creator' using errcode = '42501';
+  end if;
+  
+  -- Verify the comment belongs to the group
+  if not exists (
+    select 1 from public.community_comments 
+    where id = p_comment_id and group_id = p_group_id
+  ) then
+    raise exception 'comment_not_in_group' using errcode = 'P0001';
+  end if;
+  
+  delete from public.community_comments where id = p_comment_id;
+end;
+$$;
+
+revoke all on function public.delete_community_group(uuid) from public, anon;
+grant execute on function public.delete_community_group(uuid) to authenticated;
+
+revoke all on function public.moderate_community_comment(uuid, uuid) from public, anon;
+grant execute on function public.moderate_community_comment(uuid, uuid) to authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 3d. Amis : demandes, liste d'amis, présence en ligne
@@ -1073,6 +1354,11 @@ begin
   grant insert, update on public.profiles to authenticated;
   grant select on public.comments to anon, authenticated;
   grant insert, delete, update on public.comments to authenticated;
+  -- Groupes et fils communautaires : lecture publique, écriture réservée aux comptes (RLS).
+  grant select on public.community_groups to anon, authenticated;
+  grant insert on public.community_groups to authenticated;
+  grant select on public.community_comments to anon, authenticated;
+  grant insert, delete on public.community_comments to authenticated;
   -- Progression des succès : accès à sa propre ligne seulement (RLS).
   grant select, insert, update, delete on public.player_progress to authenticated;
   -- Amis : uniquement les relations dont on fait partie (RLS).
@@ -1617,5 +1903,34 @@ from (
                           and p.qual like '%message_conversation_clears%')
             and to_regprocedure('public.clear_direct_conversation(uuid)') is not null
            then 'OK' else 'MANQUANT' end)
+, (38, 'table public.community_groups',
+      case when to_regclass('public.community_groups') is null then 'MANQUANT' else 'OK' end)
+, (39, 'RLS activee et politiques groupes communautaires',
+      case when to_regclass('public.community_groups') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.community_groups'))
+            and (select count(*) from pg_policies p where p.schemaname = 'public'
+                 and p.tablename = 'community_groups'
+                 and p.policyname in ('Community groups are publicly readable',
+                                      'Players create community groups as themselves')) = 2
+           then 'OK' else 'MANQUANT' end)
+, (40, 'trigger auteur et anti-spam des groupes',
+      case when exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.community_groups')
+                          and t.tgname = 'on_community_group_insert') then 'OK' else 'MANQUANT' end)
+, (41, 'table public.community_comments',
+      case when to_regclass('public.community_comments') is null then 'MANQUANT' else 'OK' end)
+, (42, 'RLS activee et politiques commentaires communautaires',
+      case when to_regclass('public.community_comments') is not null
+            and (select c.relrowsecurity from pg_class c where c.oid = to_regclass('public.community_comments'))
+            and (select count(*) from pg_policies p where p.schemaname = 'public'
+                 and p.tablename = 'community_comments'
+                 and p.policyname in ('Community comments are publicly readable',
+                                      'Players post community comments as themselves',
+                                      'Players delete their own community comments')) = 3
+           then 'OK' else 'MANQUANT' end)
+, (43, 'trigger auteur et anti-spam des commentaires communautaires',
+      case when exists (select 1 from pg_trigger t
+                        where t.tgrelid = to_regclass('public.community_comments')
+                          and t.tgname = 'on_community_comment_insert') then 'OK' else 'MANQUANT' end)
 ) as controle(numero, objet, etat)
 order by controle.numero;

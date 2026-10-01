@@ -34,11 +34,90 @@ export default function Layout({ children }) {
   const navPrimaryRef = useRef(null);
   const profileWrapRef = useRef(null);
   const paletteInputRef = useRef(null);
+  const profileCloseTimerRef = useRef(null);
+  const gamesMenuWrapRef = useRef(null);
+  const gamesMenuCloseTimerRef = useRef(null);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState('');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [gamesMenuOpen, setGamesMenuOpen] = useState(false);
   const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
+
+  /* Sous-menu « Jeux » : le panneau s'ouvre au survol (ordinateur), au clic
+     sur le chevron, et au clavier dès que le focus entre dans l'entrée. Le
+     survol est temporisé à la sortie, sinon le panneau se refermait pendant
+     que la souris descendait de la pastille vers le panneau. */
+  const openGamesMenu = () => {
+    if (gamesMenuCloseTimerRef.current) {
+      clearTimeout(gamesMenuCloseTimerRef.current);
+      gamesMenuCloseTimerRef.current = null;
+    }
+    setGamesMenuOpen(true);
+  };
+
+  const scheduleGamesMenuClose = () => {
+    if (gamesMenuCloseTimerRef.current) clearTimeout(gamesMenuCloseTimerRef.current);
+    gamesMenuCloseTimerRef.current = setTimeout(() => setGamesMenuOpen(false), 200);
+  };
+
+  const closeGamesMenu = () => {
+    if (gamesMenuCloseTimerRef.current) {
+      clearTimeout(gamesMenuCloseTimerRef.current);
+      gamesMenuCloseTimerRef.current = null;
+    }
+    setGamesMenuOpen(false);
+  };
+
+  const handleGamesMenuBlur = (event) => {
+    if (!gamesMenuWrapRef.current?.contains(event.relatedTarget)) closeGamesMenu();
+  };
+
+  const handleProfileMouseEnter = () => {
+    if (profileCloseTimerRef.current) {
+      clearTimeout(profileCloseTimerRef.current);
+      profileCloseTimerRef.current = null;
+    }
+    setProfileMenuOpen(true);
+  };
+
+  const handleProfileMouseLeave = () => {
+    if (profileCloseTimerRef.current) {
+      clearTimeout(profileCloseTimerRef.current);
+    }
+    profileCloseTimerRef.current = setTimeout(() => {
+      setProfileMenuOpen(false);
+    }, 450);
+  };
+
+  const handleProfileBlur = (e) => {
+    if (!profileWrapRef.current?.contains(e.relatedTarget)) {
+      if (profileCloseTimerRef.current) {
+        clearTimeout(profileCloseTimerRef.current);
+        profileCloseTimerRef.current = null;
+      }
+      setProfileMenuOpen(false);
+    }
+  };
+
+  const closeProfileMenu = () => {
+    if (profileCloseTimerRef.current) {
+      clearTimeout(profileCloseTimerRef.current);
+      profileCloseTimerRef.current = null;
+    }
+    setProfileMenuOpen(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (profileCloseTimerRef.current) {
+        clearTimeout(profileCloseTimerRef.current);
+      }
+      if (gamesMenuCloseTimerRef.current) {
+        clearTimeout(gamesMenuCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   // scrolled shrink
   useEffect(() => {
@@ -64,7 +143,7 @@ export default function Layout({ children }) {
         // élargi la fenêtre de mise en page (zoom Safari, version ordinateur,
         // WebView) : leur barre est celle du menu mobile, elle ne se cache pas.
         const isDesktop = !isPhoneLayout();
-        const anyOverlay = menuOpen || paletteOpen || profileMenuOpen;
+        const anyOverlay = menuOpen || paletteOpen || profileMenuOpen || gamesMenuOpen;
         if (isDesktop && !anyOverlay && y > 120 && goingDown) {
           setNavHidden(true);
         } else if (goingUp || y < 80 || !isDesktop) {
@@ -76,7 +155,7 @@ export default function Layout({ children }) {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [menuOpen, paletteOpen, profileMenuOpen]);
+  }, [menuOpen, paletteOpen, profileMenuOpen, gamesMenuOpen]);
 
   // pill indicator qui glisse
   const updateIndicator = () => {
@@ -88,7 +167,10 @@ export default function Layout({ children }) {
       setIndicator((p) => ({ ...p, opacity: 0 }));
       return;
     }
-    const active = el.querySelector('a.active');
+    // L'entrée « Jeux » est une pastille composite (libellé + chevron du
+    // sous-menu) : c'est son enveloppe qui porte l'état actif, et c'est donc
+    // elle que la pastille jaune doit recouvrir.
+    const active = el.querySelector('.nav-item.active') || el.querySelector('a.active');
     if (!active) {
       setIndicator((p) => ({ ...p, opacity: 0 }));
       return;
@@ -114,7 +196,10 @@ export default function Layout({ children }) {
   useEffect(() => {
     setMenuOpen(false);
     setPaletteOpen(false);
+    if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
     setProfileMenuOpen(false);
+    if (gamesMenuCloseTimerRef.current) clearTimeout(gamesMenuCloseTimerRef.current);
+    setGamesMenuOpen(false);
     const target = location.hash ? document.getElementById(location.hash.slice(1)) : null;
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -151,7 +236,10 @@ export default function Layout({ children }) {
     const onKey = (e) => {
       if (e.key === 'Escape') {
         setPaletteOpen(false);
+        if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
         setProfileMenuOpen(false);
+        if (gamesMenuCloseTimerRef.current) clearTimeout(gamesMenuCloseTimerRef.current);
+        setGamesMenuOpen(false);
         setSearchOpen(false);
       }
     };
@@ -170,7 +258,13 @@ export default function Layout({ children }) {
     }
   }, [paletteOpen]);
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => location.pathname === path
+    || (path === '/communaute' && location.pathname === '/community');
+  // Une entrée de section reste active sur ses sous-pages (`/jeu/mirage-rush`,
+  // `/quizz/survival`) : c'est ce qui allume la pastille jaune sous « Jeux »
+  // aussi bien pour l'arcade que pour les quizz.
+  const isSection = (path) => isActive(path) || location.pathname.startsWith(`${path}/`);
+  const isRouteGroup = (item) => [item.to, ...(item.aliases || [])].some(isSection);
   const isHome = location.pathname === '/';
   const [searchValue, setSearchValue] = useState(() => new URLSearchParams(location.search).get('q') || '');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -186,7 +280,15 @@ export default function Layout({ children }) {
   useEffect(() => {
     const closeOnOutsideClick = (event) => {
       if (!searchRef.current?.contains(event.target)) setSearchOpen(false);
-      if (profileWrapRef.current && !profileWrapRef.current.contains(event.target)) setProfileMenuOpen(false);
+      if (profileWrapRef.current && !profileWrapRef.current.contains(event.target)) {
+        if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
+        setProfileMenuOpen(false);
+      }
+      // Le sous-menu « Jeux » se referme aussi quand on clique ailleurs.
+      if (gamesMenuWrapRef.current && !gamesMenuWrapRef.current.contains(event.target)) {
+        if (gamesMenuCloseTimerRef.current) clearTimeout(gamesMenuCloseTimerRef.current);
+        setGamesMenuOpen(false);
+      }
     };
     document.addEventListener('mousedown', closeOnOutsideClick);
     return () => document.removeEventListener('mousedown', closeOnOutsideClick);
@@ -237,13 +339,19 @@ export default function Layout({ children }) {
   const logoutLabel = t.nav.logout || 'Log out';
   const logoSrc = `${base}lets-play-logo.png`;
 
+  /* Les entrées de la barre. « Jeux-vidéo » et « Quizz » sont deux entrées
+     séparées : le sous-menu combiné causait des conflits tactiles sur mobile
+     (événements interceptés, swipe-back navigateur pendant l'intro de Mirage
+     Rush). Deux pastilles distinctes garantissent que chaque clic/tap atteint
+     la bonne cible. */
   const primaryLinks = [
     { to: '/', label: t.nav.home, num: '01', desc: 'HOME / INDEX' },
     { to: '/news', label: t.nav.news, num: '02', desc: 'NEWS / DROPS' },
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
-    { to: '/quizz', label: t.nav.quiz, num: '05', desc: 'QUIZZ / PLAY' },
-    { to: '/jeu', label: t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / PLAY' },
+    { to: '/communaute', label: t.nav.community || 'Communauté', num: '05', desc: 'COMMUNITY / TALK' },
+    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / MIRAGE RUSH', aliases: ['/jeux'] },
+    { to: '/quizz', label: t.nav.quiz, num: '07', desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
   ];
 
   const profileMeta = user?.user_metadata || {};
@@ -277,7 +385,10 @@ export default function Layout({ children }) {
       <NeonBackdrop />
       <nav className={navClass} aria-label="Navigation principale">
         <Link className="brand" to="/" aria-label="Let's Play, home">
-          <img className="brand-logo" src={logoSrc} alt="Let’s Play" />
+          {/* `width`/`height` portent le ratio natif du fichier (1248 × 905) :
+              la barre réserve la bonne place avant même que l'image soit
+              chargée, et le CSS ne peut plus l'écraser en largeur. */}
+          <img className="brand-logo" src={logoSrc} alt="Let’s Play" width="1248" height="905" decoding="async" />
         </Link>
         <button
           className={`menu-button${menuOpen ? ' open' : ''}`}
@@ -308,25 +419,95 @@ export default function Layout({ children }) {
                 aria-hidden="true"
                 style={{ left: indicator.left, width: indicator.width, opacity: indicator.opacity }}
               />
-              {primaryLinks.map((link, idx) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={isActive(link.to) ? 'active' : ''}
-                  aria-current={isActive(link.to) ? 'page' : undefined}
-                  onClick={() => setMenuOpen(false)}
-                  style={{ '--i': idx }}
-                >
-                  <span className="nav-link-main">
-                    <span className="nav-link-num">{link.num}</span>
-                    <span className="nav-link-text">
-                      <span className="nav-link-label">{link.label}</span>
-                      <span className="nav-link-desc">{link.desc}</span>
+              {primaryLinks.map((link, idx) => {
+                const active = link.submenu ? link.submenu.some(isRouteGroup) : (link.aliases ? isRouteGroup(link) : isActive(link.to));
+                const body = (
+                  <>
+                    <span className="nav-link-main">
+                      <span className="nav-link-num">{link.num}</span>
+                      <span className="nav-link-text">
+                        <span className="nav-link-label">{link.label}</span>
+                        <span className="nav-link-desc">{link.desc}</span>
+                      </span>
                     </span>
-                  </span>
-                  <span className="nav-link-arrow" aria-hidden="true">↗</span>
-                </Link>
-              ))}
+                    <span className="nav-link-arrow" aria-hidden="true">↗</span>
+                  </>
+                );
+
+                if (!link.submenu) {
+                  return (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      className={active ? 'active' : ''}
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => setMenuOpen(false)}
+                      style={{ '--i': idx }}
+                    >
+                      {body}
+                    </Link>
+                  );
+                }
+
+                // Entrée de section : le lien garde sa route (`/jeu`), le
+                // chevron ouvre le panneau — un bouton à part plutôt qu'un
+                // lien détourné, pour que le clic navigue toujours.
+                const submenuId = `nav-submenu-${link.to.replace(/\W+/g, '-')}`;
+                return (
+                  <div
+                    key={link.to}
+                    ref={gamesMenuWrapRef}
+                    className={`nav-item nav-item--menu${active ? ' active' : ''}${gamesMenuOpen ? ' is-open' : ''}`}
+                    onMouseEnter={openGamesMenu}
+                    onMouseLeave={scheduleGamesMenuClose}
+                    onFocus={openGamesMenu}
+                    onBlur={handleGamesMenuBlur}
+                  >
+                    <Link
+                      to={link.to}
+                      className={active ? 'active' : ''}
+                      aria-current={isActive(link.to) ? 'page' : undefined}
+                      onClick={() => setMenuOpen(false)}
+                      style={{ '--i': idx }}
+                    >
+                      {body}
+                    </Link>
+                    <button
+                      type="button"
+                      className="nav-submenu-toggle"
+                      aria-expanded={gamesMenuOpen}
+                      aria-controls={submenuId}
+                      aria-label={t.nav.gamesMenuAria || 'Afficher le menu'}
+                      onClick={() => (gamesMenuOpen ? closeGamesMenu() : openGamesMenu())}
+                    >
+                      <svg viewBox="0 0 12 8" width="11" height="8" aria-hidden="true" focusable="false">
+                        <path d="M1 1.6 6 6.4l5-4.8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <div className="nav-submenu" id={submenuId}>
+                      {link.submenu.map((item, subIdx) => {
+                        const itemActive = isRouteGroup(item);
+                        return (
+                          <Link
+                            key={item.to}
+                            to={item.to}
+                            className={`nav-submenu-link${itemActive ? ' is-current' : ''}`}
+                            aria-current={itemActive ? 'page' : undefined}
+                            onClick={() => { setMenuOpen(false); closeGamesMenu(); }}
+                            style={{ '--i': idx + (subIdx + 1) / 10 }}
+                          >
+                            <span className="nav-submenu-mark" aria-hidden="true">↳</span>
+                            <span className="nav-submenu-text">
+                              <span className="nav-submenu-label">{item.label}</span>
+                              <span className="nav-submenu-desc">{item.desc}</span>
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
               {/* Sur téléphone, un accès nommé reste disponible dans le menu,
                   même avant connexion (la page /messages affiche le portail). */}
               <Link
@@ -337,7 +518,9 @@ export default function Layout({ children }) {
                 style={{ '--i': primaryLinks.length }}
               >
                 <span className="nav-link-main">
-                  <span className="nav-link-num">07</span>
+                  {/* Numérotation HUD du menu mobile : 06 = Jeux-vidéo,
+                      07 = Quizz, 08 = messagerie, 09 = profil. */}
+                  <span className="nav-link-num">08</span>
                   <span className="nav-link-text">
                     {/* La messagerie a son propre logo : il remplace le libellé
                         texte, gardé pour les lecteurs d'écran. */}
@@ -358,7 +541,7 @@ export default function Layout({ children }) {
                 aria-label={profileAria}
               >
                 <span className="nav-link-main">
-                        <span className="nav-link-num">08</span>
+                  <span className="nav-link-num">09</span>
                   <span className="nav-profile-avatar" aria-hidden="true">
                     <span className="nav-profile-avatar-face">
                       {profileAvatar ? (
@@ -434,17 +617,23 @@ export default function Layout({ children }) {
                 <ThemeToggle />
                 {user ? (
                   <>
-                    <div className="nav-profile-wrap" ref={profileWrapRef} onMouseEnter={() => setProfileMenuOpen(true)} onMouseLeave={() => setProfileMenuOpen(false)}>
+                    <div
+                      className="nav-profile-wrap"
+                      ref={profileWrapRef}
+                      onMouseEnter={handleProfileMouseEnter}
+                      onMouseLeave={handleProfileMouseLeave}
+                      onFocus={handleProfileMouseEnter}
+                      onBlur={handleProfileBlur}
+                    >
                       <Link
                         to="/auth"
                         className="nav-account connected"
-                        onClick={() => setMenuOpen(false)}
+                        onClick={() => { setMenuOpen(false); closeProfileMenu(); }}
                         aria-label={profileAria}
                         title={profileAria}
                         aria-current={isActive('/auth') ? 'page' : undefined}
                         aria-expanded={profileMenuOpen}
                         aria-haspopup="menu"
-                        onFocus={() => setProfileMenuOpen(true)}
                       >
                         <span className="nav-account-inner">
                           <span className="nav-account-avatar" aria-hidden="true">
@@ -483,9 +672,9 @@ export default function Layout({ children }) {
                           <span style={{ width: `${Math.min(100, ((summary?.xpProgress ?? 0) * 100) || 34)}%` }} />
                         </div>
                         <nav className="nav-profile-dropdown-links">
-                          <Link to="/auth" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
-                          <Link to="/messages" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span className="nav-dropdown-mark"><LetsTalkMark /></span> Messages <em>↗</em></Link>
-                          <Link to="/auth#achievements" role="menuitem" onClick={() => setProfileMenuOpen(false)}><span>🏆</span> Succès <em>↗</em></Link>
+                          <Link to="/auth" role="menuitem" onClick={closeProfileMenu}><span>◉</span> {t.nav.profile} <em>↗</em></Link>
+                          <Link to="/messages" role="menuitem" onClick={closeProfileMenu}><span className="nav-dropdown-mark"><LetsTalkMark /></span> Messages <em>↗</em></Link>
+                          <Link to="/auth#achievements" role="menuitem" onClick={closeProfileMenu}><span>🏆</span> Succès <em>↗</em></Link>
                         </nav>
                         <button type="button" className="nav-profile-dropdown-logout" onClick={handleSignOut} role="menuitem">
                           <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 1.5l9 9M10.5 1.5l-9 9" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
@@ -603,7 +792,14 @@ export default function Layout({ children }) {
                 <div className="cmd-palette-recent">
                   <small>Accès rapide</small>
                   <div className="cmd-palette-quick">
-                    {primaryLinks.map((l) => (
+                    {/* Les deux pages d'une entrée de section gardent leur
+                        raccourci : « Jeux » se déplie ici en Jeux-vidéo et
+                        Quizz, sinon les quizz disparaîtraient de l'accès
+                        rapide de la palette (⌘K). */}
+                    {primaryLinks.flatMap((l) => (l.submenu
+                      ? l.submenu.map((item) => ({ to: item.to, label: item.label }))
+                      : [{ to: l.to, label: l.label }])
+                    ).map((l) => (
                       <Link key={l.to} to={l.to} onClick={() => setPaletteOpen(false)}>{l.label} <em>↗</em></Link>
                     ))}
                     <Link to="/search" onClick={() => setPaletteOpen(false)}>Recherche avancée <em>↗</em></Link>
@@ -626,7 +822,7 @@ export default function Layout({ children }) {
       <main>{children}</main>
       <footer className="footer wrap">
         <Link className="brand" to="/" aria-label="Let's Play, home">
-          <img className="brand-logo" src={logoSrc} alt="Let’s Play" />
+          <img className="brand-logo" src={logoSrc} alt="Let’s Play" width="1248" height="905" decoding="async" />
         </Link>
         <p>{t.footer.tagline}</p>
         <div className="footer-links">
@@ -634,6 +830,7 @@ export default function Layout({ children }) {
           <Link to="/news">{t.nav.news}</Link>
           <Link to="/reviews">{t.nav.reviews}</Link>
           <Link to="/dossiers">{t.nav.dossiers}</Link>
+          <Link to="/communaute">{t.nav.community || 'Communauté'}</Link>
           <Link to="/quizz">{t.nav.quiz}</Link>
           <Link to="/jeu">{t.nav.games || t.nav.game}</Link>
           <a href="https://www.instagram.com/letsplay.officiel/" target="_blank" rel="noreferrer">Instagram</a>

@@ -66,6 +66,8 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  'cinema/matthew-perry-documentaire-netflix': { label: 'MATTHEW PERRY', meta: 'NETFLIX · DOCUMENTAIRE', items: [{ id: '_iM1AOFxoDI', kind: 'trailer', title: 'The One About Matthew Perry | Official Trailer | Netflix', channel: 'Netflix', verified: '01.10.2026' }], credit: 'Vidéo officielle : Netflix, sur YouTube.' },
+  'cinema/a-l-est-d-eden-netflix': { label: 'À L’EST D’ÉDEN', meta: 'NETFLIX · ZOE KAZAN', items: [{ id: 'M9NWvGZViCg', kind: 'trailer', title: 'East of Eden | Official Trailer | Netflix', channel: 'Netflix', verified: '01.10.2026' }], credit: 'Vidéo officielle : Netflix, sur YouTube.' },
   // ---- Fournée du 29.09.2026 ------------------------------------------------
   'cinema/endgame-encore-record-avatar': {
     label: 'ENDGAME – ENCORE', meta: 'MARVEL STUDIOS',
