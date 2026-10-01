@@ -17,7 +17,8 @@ const EMPTY_HUD = {
   lockOn: false, targetHp: null, targetMaxHp: 130, targetAlive: false, targetName: null,
   action: 'none', hurt: false,
   souls: 0, flask: 3, maxFlask: 3, level: 0, prompt: null, toast: null,
-  hasKey: false, zone: 'LE CAMP',
+  hasKey: false, zone: 'LE CAMP', drinking: false, drinkProgress: 0,
+  dead: false, deathSouls: 0,
 };
 
 const KEYS = [
@@ -29,7 +30,7 @@ const KEYS = [
   { keys: ['ESPACE'], label: 'esquive (i-frames)' },
   { keys: ['TAB'], label: 'verrouiller la cible' },
   { keys: ['J', 'K'], label: 'attaques au clavier' },
-  { keys: ['F'], label: 'flasque (+PV)' },
+  { keys: ['F'], label: 'potion de vie (3 gorgées)' },
   { keys: ['E'], label: 'interagir : feu, coffre, portail' },
   { keys: ['U', 'I', 'O'], label: 'niveaux VIT / END / PUI' },
   { keys: ['P'], label: 'pause' },
@@ -37,11 +38,12 @@ const KEYS = [
 ];
 
 export default function SoulsPage() {
-  const [phase, setPhase] = useState('intro'); // intro | playing | paused
+  const [phase, setPhase] = useState('intro'); // intro | playing | paused | dead
   const [hud, setHud] = useState(EMPTY_HUD);
   const [locked, setLocked] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
+  const [death, setDeath] = useState(null); // { souls, x, z } | null
   const [epoch, setEpoch] = useState(0);
   const actionsRef = useRef(null);
   const phaseRef = useRef(phase);
@@ -65,7 +67,20 @@ export default function SoulsPage() {
   const restartGame = useCallback(() => {
     setEpoch((n) => n + 1);
     setHud(EMPTY_HUD);
+    setDeath(null);
     setPhase('playing');
+  }, []);
+
+  // Mort : le monde se fige, l'écran « VOUS ÊTES MORT » prend la main.
+  const handleDeath = useCallback((info) => {
+    setDeath(info || { souls: 0 });
+    setPhase('dead');
+  }, []);
+
+  const reviveGame = useCallback(() => {
+    setDeath(null);
+    setPhase('playing');
+    actionsRef.current?.('revive');
   }, []);
 
   // P : bascule pause/reprise (le monde est monté en permanence).
@@ -127,6 +142,8 @@ export default function SoulsPage() {
               onLockChange={setLocked}
               onPauseKey={handlePauseKey}
               onAutoPause={handleAutoPause}
+              onDeath={handleDeath}
+              onRevive={reviveGame}
               onError={setError}
               actionsRef={actionsRef}
             />
@@ -170,13 +187,22 @@ export default function SoulsPage() {
                         <i aria-hidden="true">⚿</i> CLÉ DU ROI
                       </span>
                     )}
-                    <span className="souls-flask" title={`Flasque ${hud.flask}/${hud.maxFlask}`}>
+                    <span
+                      className={`souls-flask${hud.drinking ? ' is-drinking' : ''}`}
+                      title={`Potion de vie ${hud.flask}/${hud.maxFlask}`}
+                    >
                       {Array.from({ length: hud.maxFlask }, (_, i) => (
                         <i key={i} className={i < hud.flask ? 'is-full' : ''} />
                       ))}
                     </span>
                   </div>
                 </div>
+                {hud.drinking && (
+                  <div className="souls-drink" role="status">
+                    <span className="souls-drink-label">GOULOT AUX LÈVRES…</span>
+                    <i style={{ '--drink': hud.drinkProgress || 0 }} aria-hidden="true" />
+                  </div>
+                )}
                 {hud.prompt && <div className="souls-prompt">{hud.prompt}</div>}
                 {hud.toast && <div className="souls-toast" key={hud.toast}>{hud.toast}</div>}
                 {hud.targetAlive && (
@@ -223,10 +249,13 @@ export default function SoulsPage() {
                     sur son trône — il se lèvera quand tu approcheras.
                   </p>
                   <p className="souls-overlay-lead">
-                    <strong>M2 ajoute la boucle des âmes</strong> : tuer rapporte,
-                    mourir lâche un <strong>bloodstain</strong> à récupérer, la{' '}
-                    <strong>flasque</strong> soigne et se recharge au{' '}
-                    <strong>feu de camp</strong> — qui sert aussi à monter de niveau.
+                    <strong>La boucle des âmes</strong> : tuer rapporte, mourir lâche un{' '}
+                    <strong>bloodstain</strong> à récupérer. Ta <strong>potion de vie</strong>{' '}
+                    porte <strong>3 gorgées</strong> (touche <kbd>F</kbd>) — le geste est long,
+                    tu ne peux ni frapper ni rouler pendant, et un coup encaissé le coupe net.
+                    Elle se recharge au <strong>feu de camp</strong>, qui sert aussi à monter
+                    de niveau. Tombé à zéro ? L’écran <strong>VOUS ÊTES MORT</strong> s’affiche :
+                    un bouton te ramène à la vie, au dernier feu allumé.
                   </p>
                   <ul className="souls-overlay-keys">
                     {KEYS.map((entry) => (
@@ -243,6 +272,30 @@ export default function SoulsPage() {
                   </button>
                   <div className="souls-overlay-hint">RECOMMANDE : ÉCHAP pour libérer la souris, P pour la pause</div>
                   <div className="souls-overlay-hint is-soft">PLAYTEST CLAVIER/SOURIS — LE TACTILE ARRIVE EN M4</div>
+                </div>
+              </div>
+            )}
+
+            {phase === 'dead' && (
+              <div className="souls-overlay souls-overlay-death" role="alertdialog" aria-labelledby="souls-death-title">
+                <div className="souls-death-blood" aria-hidden="true">
+                  <i /><i /><i /><i /><i /><i /><i /><i />
+                </div>
+                <div className="souls-death-panel">
+                  <h2 id="souls-death-title" className="souls-death-title">VOUS ÊTES MORT</h2>
+                  <p className="souls-death-lead">
+                    La braise s’est éteinte. Vos âmes gisent là où vous êtes tombé —
+                    revenez les chercher avant qu’un autre ne les prenne.
+                  </p>
+                  {death?.souls > 0 && (
+                    <p className="souls-death-souls">
+                      <i aria-hidden="true">◈</i> {death.souls.toLocaleString('fr-FR')} ÂMES PERDUES
+                    </p>
+                  )}
+                  <button type="button" className="souls-revive-button" onClick={reviveGame} autoFocus>
+                    REVENIR À LA VIE
+                  </button>
+                  <div className="souls-overlay-hint">Vous réapparaîtrez au dernier feu de camp allumé</div>
                 </div>
               </div>
             )}
@@ -270,7 +323,7 @@ export default function SoulsPage() {
           </div>
 
           <footer className="souls-game-foot">
-            <span>M2 · LES CENDRES — boucle d’âmes, flasque, feu · prochain cap : <b>M3, le contenu</b></span>
+            <span>LES CENDRES — boucle d’âmes, potion de vie, feu de camp · prochain cap : <b>M3, le contenu</b></span>
             <span>BUILD PLAYTEST · <Link to="/jeu">ARCADE LET’S PLAY</Link></span>
           </footer>
         </section>

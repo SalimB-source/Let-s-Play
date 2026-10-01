@@ -21,27 +21,74 @@ const mat = (color, opts = {}) =>
 /**
  * Pose assise du Roi sur son trône (radians / mètres locaux du rig) —
  * contrat partagé par SoulsWorld.jsx (animation) et les tests de rig.
+ *
+ * Calibration (échelle 1.85, estrade à y = 0.32, assise du trône à 1.09) :
+ *   drop  : le bassin descend jusqu'à ce que le haut des chausses porte
+ *           EXACTEMENT sur le coussin (plus de roi qui flotte).
+ *   thigh : cuisses à 72,6° de la verticale — genoux plus bas que les
+ *           hanches, pieds à plat sur l'estrade (jamais sous le sol).
+ *   knee  : `thigh − 0.07` → tibia strictement vertical.
+ * Ces trois valeurs sont vérifiées au millimètre par check:souls-level.
  */
 export const SEAT_POSE = Object.freeze({
-  thigh: 1.5, knee: 1.42, drop: -0.4, armR: 0.55, elbowR: 0.4, armL: 0.55, elbowL: 0.4,
+  thigh: 1.2677, knee: 1.1977, drop: -0.2946,
+  lean: 0.05,                       // léger appui contre le dossier
+  armR: 0.55, elbowR: 0.4, armL: 0.55, elbowL: 0.4,
+  /** Le Roi se lève en avançant : il dégage le trône avant la chasse. */
+  standOff: 1.75,
 });
 
+/** Longueurs du rig jambier (mètres locaux) : cuisse, tibia, pivot hanche. */
+export const LEG_RIG = Object.freeze({ thigh: 0.4, shin: 0.4, hip: 0.88 });
+
+/**
+ * Offset local du torse au-dessus du bassin — contrat de rig partagé.
+ * Le remettre à 0 enlève 0.9 × échelle au buste : c'est exactement le bug
+ * qui faisait s'enfoncer le Roi dans son trône et dans le plancher.
+ */
+export const TORSO_Y = 0.9;
+
+/**
+ * Enfoncement du bassin pour une assise partielle `s`
+ * (1 = assis sur le trône, 0 = debout).
+ *
+ * Un simple `SEAT_POSE.drop * s` fait descendre les bottes d'une douzaine
+ * de centimètres sous l'estrade pendant le lever : les cuisses se déplient
+ * plus vite que le bassin ne remonte. On compense donc par la longueur
+ * réelle cuisse + tibia projetée, ce qui garde la plante des pieds posée
+ * sur le sol pendant toute l'animation (`seatDrop(1) === SEAT_POSE.drop`,
+ * `seatDrop(0) ≈ 0`, vérifiés par check:souls-level).
+ */
+export function seatDrop(s) {
+  const leg = (u) => {
+    const th = SEAT_POSE.thigh * u;
+    const kn = 0.07 + SEAT_POSE.knee * u;
+    return -LEG_RIG.thigh * Math.cos(th) - LEG_RIG.shin * Math.cos(th - kn);
+  };
+  return SEAT_POSE.drop + (leg(1) - leg(s));
+}
+
 // Palettes dark fantasy : pierre froide, armure charbonne, braise.
+// Les teintes de DÉCOR restent au-dessus d'un albedo linéaire de ~0.04 :
+// sous l'hémisphère nocturne (0.95) toute surface plus sombre se rend
+// noire à l'écran — c'était le cas des colonnes, des toits et des
+// bannières, qui se lisaient comme des « murs noirs ».
+// (check:souls-level vérifie qu'aucun grand mesh ne repasse en dessous.)
 export const SOULS_PALETTE = Object.freeze({
   armor: 0x2b2e38,
   armorLight: 0x3d414e,
   trim: 0xd4af5a,
-  cloth: 0x71181d,
+  cloth: 0x9c2b30,      // était 0x71181d — bannières et tabards lisibles
   leather: 0x1a1410,
   ember: 0xff7b2f,
-  stone: 0x43414f,
-  stoneDark: 0x2a2934,
-  ash: 0x1b1922,
-  slate: 0x24242e,
+  stone: 0x6e6c7d,      // était 0x43414f — colonnes / arches / gravats
+  stoneDark: 0x54525f,  // était 0x2a2934 — couronnements, braseros
+  ash: 0x52505f,        // était 0x1b1922 — rochers, gravats
+  slate: 0x565768,      // était 0x24242e — toitures
   bone: 0xd9cfba,
-  fur: 0x241a13,
-  furLight: 0x3d2e1f,
-  cuirass: 0x33261c,
+  fur: 0x33251a,
+  furLight: 0x4a3826,
+  cuirass: 0x3f2f22,
 });
 
 // ── Textures procédurales (canvas, aucun fichier) ───────────────────
@@ -105,7 +152,7 @@ function canvasPair(size, draw, repeat = 1, normalStrength = 2.2) {
 /** Pavés sombres irréguliers, joints ombrés, usure en biseau. */
 export function flagstoneMaps(repeat = 12) {
   return canvasPair(512, (ctx, s) => {
-    ctx.fillStyle = '#131219';
+    ctx.fillStyle = '#3b3a45';
     ctx.fillRect(0, 0, s, s);
     const rows = 7;
     const cell = s / rows;
@@ -114,7 +161,7 @@ export function flagstoneMaps(repeat = 12) {
       for (let col = -1; col < rows; col++) {
         const x = col * cell + offset + 3;
         const y = row * cell + 3;
-        const tone = 32 + ((row * 7 + col * 13) % 5) * 4;
+        const tone = 138 + ((row * 7 + col * 13) % 5) * 10;
         // corps du pavé
         ctx.fillStyle = `rgb(${tone}, ${tone - 1}, ${tone + 7})`;
         ctx.beginPath();
@@ -166,8 +213,12 @@ export function flagstoneMaps(repeat = 12) {
 
 /** Mur de pierre : assises alternées, joints profonds, éclats. */
 export function masonryMaps(repeat = 8) {
+  // Pierre claire : l'ancienne version (tons 36-48 sur mortier #191821)
+  // donnait un albedo linéaire ≈ 0.02 — un mur VERTICAL sous une lune
+  // rasante se rendait noir à l'écran (c'est le « mur noir » du parvis).
+  // On monte les blocs vers le gris clair, joints plus présents.
   return canvasPair(512, (ctx, s) => {
-    ctx.fillStyle = '#191821';
+    ctx.fillStyle = '#4a4956';
     ctx.fillRect(0, 0, s, s);
     const rows = 8;
     const cell = s / rows;
@@ -177,8 +228,8 @@ export function masonryMaps(repeat = 8) {
         const w = cell * (1.35 + ((row + col) % 3) * 0.3);
         const x = col * cell * 1.45 + offset + 3;
         const y = row * cell + 3;
-        const tone = 36 + ((row * 5 + col * 11) % 4) * 4;
-        ctx.fillStyle = `rgb(${tone}, ${tone}, ${tone + 8})`;
+        const tone = 148 + ((row * 5 + col * 11) % 4) * 12;
+        ctx.fillStyle = `rgb(${tone}, ${tone}, ${tone + 10})`;
         ctx.beginPath();
         ctx.roundRect(x, y, w - 5, cell - 6, 4);
         ctx.fill();
@@ -201,6 +252,239 @@ export function masonryMaps(repeat = 8) {
       ctx.fillRect(Math.random() * s, Math.random() * s, 3 + Math.random() * 6, 2 + Math.random() * 4);
     }
   }, repeat);
+}
+
+// ── Textures « pixel » (esprit Minecraft) ────────────────────────────
+// Grille 16×16 dessinée au canvas, filtrage NEAREST (le pixel reste net
+// quel que soit le recul), et la même image sert de heightmap → carte de
+// normales. Les UV de chaque bloc sont mis à l'échelle du monde : la
+// maille se répète tous les `PIXEL_TILE` mètres, jamais étirée.
+
+/** Un carreau de texture = 1,6 m dans le monde (échelle « bloc »). */
+export const PIXEL_TILE = 1.6;
+
+/** Filtres « pixel art » : pas de lissage, pas de mipmaps floues. */
+function pixelate(texture, repeat = 1) {
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(repeat, repeat);
+  texture.anisotropy = 4;
+  return texture;
+}
+
+/** Dessine une grille 16×16 en pixels discrets (fonction px(x,y,couleur)). */
+function pixelCanvas(size, cells, drawCell) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  for (let y = 0; y < cells; y++) {
+    for (let x = 0; x < cells; x++) {
+      const px = (size / cells) * x;
+      const py = (size / cells) * y;
+      ctx.fillStyle = drawCell(x, y);
+      ctx.fillRect(px, py, size / cells, size / cells);
+    }
+  }
+  return canvas;
+}
+
+/**
+ * Fabrique { map, normalMap } en style pixel.
+ * @param {number} cells résolution de la grille (16 = Minecraft)
+ * @param {(x:number,y:number)=>string} drawCell couleur d'un pixel
+ */
+function pixelPair(cells, drawCell, { size = 256, normalStrength = 1.6 } = {}) {
+  const canvas = pixelCanvas(size, cells, drawCell);
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  const normalMap = heightToNormalTexture(canvas, normalStrength, 1);
+  pixelate(map);
+  pixelate(normalMap);
+  return { map, normalMap };
+}
+
+/** Bruit déterministe bon marché (mêmes pixels d'un build à l'autre). */
+const hash2 = (x, y, seed = 1) => {
+  const h = Math.sin(x * 127.1 + y * 311.7 + seed * 74.7) * 43758.5453;
+  return h - Math.floor(h);
+};
+
+const shade = (hex, k) => {
+  const r = Math.min(255, Math.max(0, Math.round(((hex >> 16) & 255) * k)));
+  const g = Math.min(255, Math.max(0, Math.round(((hex >> 8) & 255) * k)));
+  const b = Math.min(255, Math.max(0, Math.round((hex & 255) * k)));
+  return `rgb(${r},${g},${b})`;
+};
+
+/** Pavés disjoints (cobblestone) — routes, parvis, estrades. */
+export function cobblePixelMaps(base = 0x4a4854) {
+  return pixelPair(16, (x, y) => {
+    const cell = Math.floor(x / 4) + Math.floor(y / 4) * 4;
+    const bx = x % 4;
+    const by = y % 4;
+    const joint = bx === 0 || by === 0 || (bx === 3 && hash2(x, y, 3) > 0.55)
+      || (by === 3 && hash2(x, y, 7) > 0.55);
+    if (joint) return shade(0x15141b, 0.9 + hash2(x, y, 11) * 0.3);
+    const tone = 0.74 + hash2(cell, cell * 3, 5) * 0.4 + (hash2(x, y, 2) - 0.5) * 0.16;
+    return shade(base, tone);
+  });
+}
+
+/** Pierre taillée en assises (stone bricks) — murs, tours, nef. */
+export function brickPixelMaps(base = 0x4c4a58) {
+  return pixelPair(16, (x, y) => {
+    const row = Math.floor(y / 4);
+    const offset = (row % 2) * 4;
+    const bx = (x + offset) % 8;
+    const by = y % 4;
+    const joint = by === 3 || bx === 7;
+    if (joint) return shade(0x191821, 0.85 + hash2(x, y, 13) * 0.3);
+    const brick = Math.floor((x + offset) / 8) + row * 2;
+    const tone = 0.78 + hash2(brick, brick * 5, 17) * 0.34 + (hash2(x, y, 19) - 0.5) * 0.1;
+    return shade(base, tone);
+  });
+}
+
+/** Planches de bois — poutres, portes, bancs. */
+export function plankPixelMaps(base = 0x53381f) {
+  return pixelPair(16, (x, y) => {
+    const plank = Math.floor(x / 4);
+    if (x % 4 === 3) return shade(0x1b120a, 1);
+    const grain = Math.sin((y + plank * 5) * 0.9 + hash2(plank, 0, 23) * 6) * 0.5 + 0.5;
+    const tone = 0.78 + grain * 0.26 + (hash2(x, y, 29) - 0.5) * 0.12;
+    return shade(base, tone);
+  });
+}
+
+/** Terre cendreuse — extérieur, sous-bois. */
+export function dirtPixelMaps(base = 0x2a2b26) {
+  return pixelPair(16, (x, y) => {
+    const n = hash2(x, y, 31);
+    const patch = hash2(Math.floor(x / 4), Math.floor(y / 4), 37);
+    let tone = 0.7 + n * 0.5 + patch * 0.18;
+    let hex = base;
+    if (patch > 0.72) hex = 0x33402c;              // touffes de mousse
+    else if (n > 0.93) hex = 0x5b5a55;             // gravier clair
+    return shade(hex, tone);
+  });
+}
+
+/** Tapis pourpre à bordure d'or — la nef du trône. */
+export function carpetPixelMaps() {
+  return pixelPair(16, (x, y) => {
+    const border = x < 2 || x > 13;
+    if (border) return shade(0xb08a2e, 0.85 + hash2(x, y, 41) * 0.3);
+    const motif = (x + y) % 8 === 0 || (x - y + 16) % 8 === 0;
+    const tone = 0.8 + hash2(x, y, 43) * 0.32;
+    return shade(motif ? 0x7d2027 : 0x5c151b, tone);
+  });
+}
+
+/** Ardoise du toit — écailles sombres. */
+export function slatePixelMaps() {
+  return pixelPair(16, (x, y) => {
+    const row = Math.floor(y / 4);
+    const off = (row % 2) * 2;
+    const joint = y % 4 === 3 || (x + off) % 4 === 3;
+    if (joint) return shade(0x0d0d13, 1);
+    return shade(0x23232e, 0.72 + hash2(x, y, 47) * 0.5);
+  });
+}
+
+/**
+ * Textures pixel partagées : une seule paire (map + normales) par matière
+ * pour tout le niveau — les UV font le travail de répétition, pas la
+ * texture. `dispose()` du monde libère le cache.
+ */
+const PIXEL_MAKERS = {
+  cobble: cobblePixelMaps, brick: brickPixelMaps, plank: plankPixelMaps,
+  dirt: dirtPixelMaps, carpet: carpetPixelMaps, slate: slatePixelMaps,
+};
+const pixelCache = new Map();
+
+/** { map, normalMap } mémoïsés d'une matière pixel. */
+export function pixelMaps(kind) {
+  const maker = PIXEL_MAKERS[kind];
+  if (!maker) throw new Error(`matière pixel inconnue : ${kind}`);
+  let entry = pixelCache.get(kind);
+  if (!entry) {
+    entry = maker();
+    pixelCache.set(kind, entry);
+  }
+  return entry;
+}
+
+/** Libère les textures pixel partagées (appelé par world.destroy()). */
+export function disposePixelMaps() {
+  for (const { map, normalMap } of pixelCache.values()) {
+    map.dispose();
+    normalMap.dispose();
+  }
+  pixelCache.clear();
+}
+
+/**
+ * Matière pixel prête à l'emploi. `material.userData.tile` est lu par
+ * les helpers de blocs pour mettre les UV à l'échelle du monde.
+ */
+export function pixelMaterial(kind, { color = 0xffffff, tile = PIXEL_TILE, ...opts } = {}) {
+  const { map, normalMap } = pixelMaps(kind);
+  const material = new THREE.MeshStandardMaterial({
+    color, map, normalMap,
+    normalScale: new THREE.Vector2(1.05, 1.05),
+    roughness: 0.94, metalness: 0.02, ...opts,
+  });
+  material.userData.tile = tile;
+  return material;
+}
+
+/**
+ * Met les UV d'un BoxGeometry à l'échelle du monde : la maille de la
+ * texture couvre `tile` mètres sur chaque face (jamais d'étirement).
+ * Ordre des faces Three : +X, −X, +Y, −Y, +Z, −Z.
+ */
+const BOX_FACE_AXES = [['z', 'y'], ['z', 'y'], ['x', 'z'], ['x', 'z'], ['x', 'y'], ['x', 'y']];
+export function scaleBoxUV(geometry, size, tile = PIXEL_TILE) {
+  const uv = geometry.attributes.uv;
+  if (!uv) return geometry;
+  const dims = { x: size.x, y: size.y, z: size.z };
+  for (let face = 0; face < 6; face++) {
+    const [u, v] = BOX_FACE_AXES[face];
+    const su = Math.max(1e-3, dims[u] / tile);
+    const sv = Math.max(1e-3, dims[v] / tile);
+    for (let i = 0; i < 4; i++) {
+      const idx = face * 4 + i;
+      uv.setXY(idx, uv.getX(idx) * su, uv.getY(idx) * sv);
+    }
+  }
+  uv.needsUpdate = true;
+  return geometry;
+}
+
+/** Même mise à l'échelle pour un PlaneGeometry (largeur × hauteur). */
+export function scalePlaneUV(geometry, width, height, tile = PIXEL_TILE) {
+  const uv = geometry.attributes.uv;
+  if (!uv) return geometry;
+  const su = Math.max(1e-3, width / tile);
+  const sv = Math.max(1e-3, height / tile);
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+  uv.needsUpdate = true;
+  return geometry;
+}
+
+/**
+ * Multiplicateur d'UV libre — pour les solides extrudés/tournés dont les
+ * UV ne suivent pas le modèle « 6 faces » (façade gothique, vantaux,
+ * cylindres des tours). `su`/`sv` = nombre de carreaux par unité d'UV.
+ */
+export function multiplyUV(geometry, su = 1, sv = 1) {
+  const uv = geometry.attributes.uv;
+  if (!uv) return geometry;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * su, uv.getY(i) * sv);
+  uv.needsUpdate = true;
+  return geometry;
 }
 
 // ── Décor ───────────────────────────────────────────────────────────
@@ -226,7 +510,7 @@ export function makeFloor(size = 44) {
   const ringStone = new THREE.Mesh(
     new THREE.RingGeometry(2.35, 2.62, 64),
     new THREE.MeshStandardMaterial({
-      color: 0x35323f, roughness: 0.9,
+      color: 0x6a6779, roughness: 0.9,
       normalMap, normalScale: new THREE.Vector2(0.7, 0.7),
     }),
   );
@@ -421,8 +705,12 @@ export function makeWalls(half = 17, height = 3.4, thickness = 1) {
  */
 export function makePillar(x, z, broken = false) {
   const group = new THREE.Group();
-  const stoneMat = mat(SOULS_PALETTE.stone, { roughness: 0.85 });
-  const trimMat = mat(SOULS_PALETTE.stoneDark, { roughness: 0.88 });
+  // Pierre taillée texturée : la version unie (SOULS_PALETTE.stone, albedo
+  // 0.055) faisait des colonnes de la nef six fois plus sombres que les
+  // murs — huit « murs noirs » de 9 m le long de l'allée du trône.
+  const stoneMat = pixelMaterial('brick', { color: 0x9a97a8, tile: 1.6 });
+  const fluteMat = mat(0x8d8b9a, { roughness: 0.85 });
+  const trimMat = pixelMaterial('cobble', { color: 0x8f8d9c, tile: 1.1 });
 
   const shaftPoints = [];
   const shaftTop = broken ? 1.6 : 2.7;
@@ -452,7 +740,10 @@ export function makePillar(x, z, broken = false) {
       new THREE.Vector2(0.02, shaftTop + 0.34),
     );
   }
-  const column = new THREE.Mesh(new THREE.LatheGeometry(profile, 20), stoneMat);
+  const columnGeo = new THREE.LatheGeometry(profile, 20);
+  // UV monde : le parement couvre ~1,6 m par brique, quel que soit le fût.
+  multiplyUV(columnGeo, (Math.PI * 2 * 0.42) / 1.6, shaftTop / 1.6);
+  const column = new THREE.Mesh(columnGeo, stoneMat);
   if (broken) column.rotation.z = 0.05;
   column.userData.cameraBlocker = true;
   group.add(column);
@@ -466,14 +757,14 @@ export function makePillar(x, z, broken = false) {
     // fût cannelé : filets verticaux fins
     for (let i = 0; i < 8; i++) {
       const a = (i / 8) * Math.PI * 2;
-      const flute = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, (shaftTop - 0.4), 6), stoneMat);
+      const flute = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, (shaftTop - 0.4), 6), fluteMat);
       flute.position.set(Math.cos(a) * 0.36, 0.32 + (shaftTop - 0.4) / 2, Math.sin(a) * 0.36);
       group.add(flute);
     }
   } else {
     // cassure : éclats au sol
     for (let i = 0; i < 3; i++) {
-      const chunk = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14 + i * 0.05, 0), stoneMat);
+      const chunk = new THREE.Mesh(new THREE.IcosahedronGeometry(0.14 + i * 0.05, 0), fluteMat);
       chunk.position.set(0.3 + i * 0.3, 0.1, -0.2 + i * 0.25);
       chunk.rotation.set(i, i * 2, 0);
       group.add(chunk);
@@ -719,7 +1010,7 @@ export function makeBonfire(x = 0, z = 0) {
 /** Débris de pierre éparpillés (sans collision) — icosaèdres déformés. */
 export function makeRubble(x, z, seed = 0) {
   const group = new THREE.Group();
-  const rockMat = mat(0x33323e, { roughness: 1 });
+  const rockMat = mat(0x4d4b59, { roughness: 1 }); // était 0x33323e : rochers noirs sous la lune
   const count = 3 + (seed % 3);
   for (let i = 0; i < count; i++) {
     const size = 0.16 + ((seed + i) % 4) * 0.05;
@@ -1073,9 +1364,9 @@ export function makeKnight({ fallen = false } = {}) {
 
   // ══ TORSO — nu, muscles dessinés, sangle de cuir croisée ===========
   const torso = new THREE.Group();
-  torso.position.y = 0.9;
+  torso.position.y = TORSO_Y;
   body.add(torso);
-  const W = (y) => y - 0.9; // monde → local torso
+  const W = (y) => y - TORSO_Y; // monde → local torso
 
   // Tronc en lathe : bassin étroit, pectoraux, V dorsal, base du cou.
   const trunk = lathe([
@@ -1335,13 +1626,19 @@ export function makeKnight({ fallen = false } = {}) {
   legL.knee.rotation.x = -0.05;
   legR.knee.rotation.x = -0.05;
 
-  const shadow = new THREE.Mesh(
-    new THREE.CircleGeometry(0.46, 24),
-    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.4, depthWrite: false }),
-  );
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.position.y = 0.02;
-  knight.add(shadow);
+  // ─ potion de vie : fiole de verre au liquide rouge, dans la main
+  // gauche. Invisible tant qu'on ne boit pas (geste piloté par le monde).
+  const potion = makePotionProp();
+  // Tenue DANS le poing gauche (groupe coude) : le contact main/fiole est
+  // garanti par construction, quelle que soit la pose. Le monde ne pilote
+  // que la visibilité et le basculement du goulot vers les lèvres.
+  potion.position.set(0, -0.3, -0.06);
+  potion.visible = false;
+  armL.elbow.add(potion);
+
+  const shadow = null; // plus de « pastille noire » au sol : les ombres
+  // portées dynamiques (lune + GTAO) ancrent déjà les silhouettes, et un
+  // disque noir traversable se lisait comme un bug d'affichage.
 
   knight.userData.shadow = shadow;
   knight.userData.parts = {
@@ -1349,9 +1646,98 @@ export function makeKnight({ fallen = false } = {}) {
     armL: armL.arm, armR: armR.arm, elbowL: armL.elbow, elbowR: armR.elbow,
     legL: legL.leg, legR: legR.leg, kneeL: legL.knee, kneeR: legR.knee,
     footL: legL.foot, footR: legR.foot,
-    cape, visor, weapon, strands,
+    cape, visor, weapon, strands, potion,
   };
   return knight;
+}
+
+// ── Potion de vie (objet tenu en main) ──────────────────────────────
+
+/**
+ * Fiole de verre au liquide rouge : corps cubique (esprit Minecraft),
+ * goulot, bouchon de liège, lueur intérieure. `userData.liquid` permet
+ * au monde de vider la fiole au fil de la gorgée.
+ */
+export function makePotionProp() {
+  const group = new THREE.Group();
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0xbfd4dd, roughness: 0.12, metalness: 0.05,
+    transparent: true, opacity: 0.42, flatShading: true,
+  });
+  const liquid = new THREE.MeshStandardMaterial({
+    color: 0xb01d24, emissive: 0xff2f2a, emissiveIntensity: 1.5,
+    roughness: 0.35, flatShading: true,
+  });
+  const cork = mat(0x6b4a2a, { roughness: 1, flatShading: true });
+  const trim = mat(SOULS_PALETTE.trim, { metalness: 0.8, roughness: 0.3, flatShading: true });
+
+  const body = new THREE.Mesh(cube, glass);
+  body.scale.set(0.075, 0.1, 0.075);
+  body.position.y = -0.05;
+  const fill = new THREE.Mesh(cube, liquid);
+  fill.scale.set(0.062, 0.072, 0.062);
+  fill.position.y = -0.062;
+  const neck = new THREE.Mesh(cube, glass);
+  neck.scale.set(0.032, 0.05, 0.032);
+  neck.position.y = 0.022;
+  const collar = new THREE.Mesh(cube, trim);
+  collar.scale.set(0.042, 0.012, 0.042);
+  collar.position.y = 0.045;
+  const stopper = new THREE.Mesh(cube, cork);
+  stopper.scale.set(0.034, 0.026, 0.034);
+  stopper.position.y = 0.06;
+  group.add(body, fill, neck, collar, stopper);
+  group.userData.liquid = fill;
+  group.userData.liquidHeight = 0.072;
+  group.traverse((m) => { if (m.isMesh) { m.castShadow = true; m.userData.noCast = false; } });
+  return group;
+}
+
+/**
+ * Gerbe de soins : motes rouge/or qui montent le long du corps pendant
+ * la gorgée. `burst(x, y, z)` puis `update(dt)`.
+ */
+export function makeHealMotes(count = 30) {
+  const positions = new Float32Array(count * 3);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({
+    color: 0xff6a5a, size: 0.075, transparent: true, opacity: 0,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const points = new THREE.Points(geometry, material);
+  points.frustumCulled = false;
+  const seeds = new Float32Array(count * 3);
+  let life = 0;
+  return {
+    points,
+    burst(x, y, z) {
+      for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 0.14 + Math.random() * 0.3;
+        seeds[i * 3] = Math.cos(a) * r;
+        seeds[i * 3 + 1] = 0.35 + Math.random() * 1.2;
+        seeds[i * 3 + 2] = Math.sin(a) * r;
+        positions[i * 3] = x + seeds[i * 3];
+        positions[i * 3 + 1] = y + Math.random() * 0.4;
+        positions[i * 3 + 2] = z + seeds[i * 3 + 2];
+      }
+      life = 1;
+      material.opacity = 0.95;
+      geometry.attributes.position.needsUpdate = true;
+    },
+    update(dt) {
+      if (life <= 0) return;
+      life = Math.max(0, life - dt * 0.85);
+      material.opacity = life * 0.95;
+      for (let i = 0; i < count; i++) {
+        positions[i * 3 + 1] += dt * seeds[i * 3 + 1];
+        positions[i * 3] += Math.sin(life * 9 + i) * dt * 0.05;
+      }
+      geometry.attributes.position.needsUpdate = true;
+    },
+    dispose() { geometry.dispose(); material.dispose(); },
+  };
 }
 
 // ── Ambiance « remaster » : ciel, brumes, lumière, végétation ───────
@@ -1374,15 +1760,25 @@ function radialSpriteTexture(size, stops) {
  */
 // ── Chemin du Roi : dalles de route — blocs Mirage ───────────────────
 
-/** Dalles de chemin (aplats irréguliers le long d'une polyligne). */
+/** Dalles de chemin : pavés pixel + bordure de pierres (esprit Minecraft). */
 export function makeStonePath(points, { width = 2.4, step = 0.62 } = {}) {
   const group = new THREE.Group();
-  const stone = mat(SOULS_PALETTE.stone, { roughness: 0.95, flatShading: true });
-  const dark = mat(SOULS_PALETTE.stoneDark, { roughness: 0.95, flatShading: true });
+  const stone = pixelMaterial('cobble', { color: 0x8e8b9c, tile: 1.1 });
+  const dark = pixelMaterial('cobble', { color: 0x55535f, tile: 1.1 });
+  const edge = pixelMaterial('cobble', { color: 0x6b6878, tile: 0.8 });
   let seed = 7;
   const rnd = () => {
     seed = (seed * 1103515245 + 12345) & 0x7fffffff;
     return seed / 0x7fffffff;
+  };
+  const addSlab = (material, w, d, px, pz, yaw, y = 0.05) => {
+    const geo = scaleBoxUV(new THREE.BoxGeometry(w, 0.1, d), { x: w, y: 0.1, z: d }, material.userData.tile);
+    const slab = new THREE.Mesh(geo, material);
+    slab.position.set(px, y, pz);
+    slab.rotation.y = yaw;
+    slab.receiveShadow = true;
+    group.add(slab);
+    return slab;
   };
   for (let i = 0; i < points.length - 1; i++) {
     const [x0, z0] = points[i];
@@ -1392,17 +1788,25 @@ export function makeStonePath(points, { width = 2.4, step = 0.62 } = {}) {
     const len = Math.hypot(dx, dz);
     const n = Math.max(1, Math.round(len / step));
     const yaw = Math.atan2(-dx, -dz);
+    const nx = -dz / (len || 1);
+    const nz = dx / (len || 1);
     for (let j = 0; j < n; j++) {
       const u = (j + 0.5) / n;
-      const slab = new THREE.Mesh(
-        new THREE.BoxGeometry(width * (0.72 + rnd() * 0.4), 0.1, (len / n) * (0.7 + rnd() * 0.3)),
-        rnd() > 0.72 ? dark : stone,
-      );
       const px = x0 + dx * u + (rnd() - 0.5) * 0.24;
       const pz = z0 + dz * u + (rnd() - 0.5) * 0.16;
-      slab.position.set(px, 0.05, pz);
-      slab.rotation.y = yaw + (rnd() - 0.5) * 0.22;
-      group.add(slab);
+      addSlab(
+        rnd() > 0.72 ? dark : stone,
+        width * (0.72 + rnd() * 0.4), (len / n) * (0.7 + rnd() * 0.3),
+        px, pz, yaw + (rnd() - 0.5) * 0.22,
+      );
+      // Bordure : pierres plus petites de part et d'autre (chemin lisible).
+      if (j % 2 === 0) {
+        for (const side of [-1, 1]) {
+          addSlab(edge, 0.36, 0.4,
+            px + nx * side * (width * 0.56), pz + nz * side * (width * 0.56),
+            yaw + rnd() * 0.7, 0.035);
+        }
+      }
     }
   }
   return { group, blockers: [] };
@@ -1834,6 +2238,241 @@ export function makeBush(x, z, scale = 1) {
     blob.scale.y = 0.75;
     group.add(blob);
   });
+  group.position.set(x, 0, z);
+  group.scale.setScalar(scale);
+  return group;
+}
+
+// ── Petits décors « Chemin du Roi » (densité sans coût) ─────────────
+
+/** Fougère basse : lames souples en éventail (sans collision). */
+export function makeFern(x, z, scale = 1) {
+  const group = new THREE.Group();
+  const greens = [0x2b4a2a, 0x356033, 0x24401f];
+  const blades = 6;
+  for (let i = 0; i < blades; i++) {
+    const a = (i / blades) * Math.PI * 2 + (i % 2) * 0.3;
+    const blade = new THREE.Mesh(
+      cube, mat(greens[i % greens.length], { roughness: 1, flatShading: true }),
+    );
+    blade.scale.set(0.035, 0.3, 0.09);
+    blade.position.set(Math.cos(a) * 0.09, 0.14, Math.sin(a) * 0.09);
+    blade.rotation.z = -Math.cos(a) * 0.55;
+    blade.rotation.x = Math.sin(a) * 0.55;
+    group.add(blade);
+  }
+  group.position.set(x, 0, z);
+  group.scale.setScalar(scale);
+  return group;
+}
+
+/** Champignons lumineux : repères phosphorescents du sous-bois. */
+export function makeMushrooms(x, z, seed = 0) {
+  const group = new THREE.Group();
+  const stemMat = mat(0xcfc6ae, { roughness: 0.9, flatShading: true });
+  const capMat = new THREE.MeshStandardMaterial({
+    color: 0x2f6b62, emissive: 0x4fe3c0, emissiveIntensity: 0.85,
+    roughness: 0.6, flatShading: true,
+  });
+  const n = 3 + (seed % 3);
+  for (let i = 0; i < n; i++) {
+    const a = ((seed * 5 + i * 13) % 10) / 10 * Math.PI * 2;
+    const r = 0.1 + ((seed + i) % 3) * 0.07;
+    const stem = new THREE.Mesh(cube, stemMat);
+    stem.scale.set(0.035, 0.11 + i * 0.02, 0.035);
+    stem.position.set(Math.cos(a) * r, 0.06, Math.sin(a) * r);
+    const cap = new THREE.Mesh(cube, capMat);
+    cap.scale.set(0.09, 0.035, 0.09);
+    cap.position.set(Math.cos(a) * r, 0.125 + i * 0.02, Math.sin(a) * r);
+    group.add(stem, cap);
+  }
+  group.position.set(x, 0, z);
+  return group;
+}
+
+/** Rondin moussu couché (sans collision : décor de sous-bois). */
+export function makeFallenLog(x, z, yaw = 0, len = 1.8) {
+  const group = new THREE.Group();
+  const bark = mat(0x33251a, { roughness: 1, flatShading: true });
+  const moss = mat(0x2f4a26, { roughness: 1, flatShading: true });
+  const log = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, len, 8), bark);
+  log.rotation.z = Math.PI / 2;
+  log.position.y = 0.18;
+  log.userData.cameraBlocker = true;
+  group.add(log);
+  for (let i = 0; i < 4; i++) {
+    const patch = new THREE.Mesh(cube, moss);
+    patch.scale.set(0.24, 0.04, 0.2);
+    patch.position.set(-len / 2 + 0.3 + i * (len / 4), 0.32, (i % 2 ? 0.06 : -0.05));
+    patch.rotation.y = i;
+    group.add(patch);
+  }
+  group.position.set(x, 0, z);
+  group.rotation.y = yaw;
+  const blockers = [];
+  group.traverse((m) => { if (m.isMesh && m.userData.cameraBlocker) blockers.push(m); });
+  return { group, blockers, collider: { kind: 'circle', x, z, r: len * 0.42 } };
+}
+
+/**
+ * Torche murale : console de fer + flamme + lueur. La lumière est
+ * mutualisée par le monde (flickerable sans PointLight propre).
+ */
+export function makeSconce(x, y, z, rotY = 0) {
+  const group = new THREE.Group();
+  const iron = mat(0x1c1d23, { metalness: 0.7, roughness: 0.45, flatShading: true });
+  const arm = new THREE.Mesh(cube, iron);
+  arm.scale.set(0.09, 0.09, 0.42);
+  arm.position.set(0, 0, 0.21);
+  const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.07, 0.16, 8), iron);
+  cup.position.set(0, 0.1, 0.42);
+  group.add(arm, cup);
+  const flameMat = new THREE.MeshStandardMaterial({
+    color: 0xffb347, emissive: 0xff8a2e, emissiveIntensity: 2.6,
+    transparent: true, opacity: 0.95,
+  });
+  const flame = new THREE.Group();
+  const outer = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.42, 6), flameMat);
+  outer.position.y = 0.38;
+  const inner = new THREE.Mesh(
+    new THREE.ConeGeometry(0.055, 0.24, 6),
+    new THREE.MeshStandardMaterial({ color: 0xffe6a8, emissive: 0xffd170, emissiveIntensity: 3, transparent: true, opacity: 0.95 }),
+  );
+  inner.position.y = 0.32;
+  flame.add(outer, inner);
+  flame.position.set(0, 0.16, 0.42);
+  group.add(flame);
+  group.position.set(x, y, z);
+  group.rotation.y = rotY;
+  group.userData.flame = flame;
+  group.userData.light = null;
+  group.userData.lightBase = 0;
+  group.userData.flickerSeed = Math.random() * 10;
+  return { group, blockers: [cup], flickerable: group.userData };
+}
+
+/** Bannière pendue : étoffe pourpre + emblème doré pixelisé. */
+export function makeBanner(x, y, z, rotY = 0, height = 4.4) {
+  const group = new THREE.Group();
+  const cloth = new THREE.Mesh(
+    cube,
+    mat(SOULS_PALETTE.cloth, { roughness: 1, flatShading: true, side: THREE.DoubleSide }),
+  );
+  cloth.scale.set(1.5, height, 0.06);
+  cloth.position.y = -height / 2;
+  const rod = new THREE.Mesh(cube, mat(SOULS_PALETTE.trim, { metalness: 0.7, roughness: 0.35, flatShading: true }));
+  rod.scale.set(1.8, 0.09, 0.09);
+  group.add(cloth, rod);
+  // Emblème : losange + deux pointes (héraldique lisible de loin).
+  const gold = mat(SOULS_PALETTE.trim, { metalness: 0.75, roughness: 0.3, emissive: 0x4a3612, emissiveIntensity: 0.45, flatShading: true });
+  const diamond = new THREE.Mesh(cube, gold);
+  diamond.scale.set(0.5, 0.5, 0.08);
+  diamond.rotation.z = Math.PI / 4;
+  diamond.position.set(0, -height * 0.42, -0.05);
+  const spikeA = new THREE.Mesh(cube, gold);
+  spikeA.scale.set(0.12, 0.55, 0.08);
+  spikeA.position.set(0, -height * 0.72, -0.05);
+  group.add(diamond, spikeA);
+  // Queue en pointe
+  const tip = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.75, 3), cloth.material);
+  tip.rotation.z = Math.PI;
+  tip.position.y = -height - 0.36;
+  group.add(tip);
+  group.position.set(x, y, z);
+  group.rotation.y = rotY;
+  return { group, blockers: [] };
+}
+
+/** Disque runique gravé au sol (émissif doux, sans collision). */
+export function makeRuneDisc(x, z, radius = 2.2, color = 0xc9a24b) {
+  const group = new THREE.Group();
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(radius, radius + 0.09, 48),
+    new THREE.MeshStandardMaterial({
+      color: 0x6a5526, emissive: color, emissiveIntensity: 0.4,
+      roughness: 0.5, metalness: 0.5, side: THREE.DoubleSide,
+    }),
+  );
+  ring.rotation.x = -Math.PI / 2;
+  const inner = new THREE.Mesh(
+    new THREE.RingGeometry(radius * 0.62, radius * 0.66, 48),
+    new THREE.MeshStandardMaterial({
+      color: 0x4a3d20, emissive: color, emissiveIntensity: 0.22,
+      roughness: 0.6, metalness: 0.4, side: THREE.DoubleSide,
+    }),
+  );
+  inner.rotation.x = -Math.PI / 2;
+  inner.position.y = 0.004;
+  group.add(ring, inner);
+  // Glyphes : petits blocs répartis sur l'anneau.
+  const glyph = mat(0x6a5526, { emissive: color, emissiveIntensity: 0.5, metalness: 0.5, roughness: 0.5, flatShading: true });
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    const g = new THREE.Mesh(cube, glyph);
+    g.scale.set(0.1, 0.02, 0.24);
+    g.position.set(Math.cos(a) * radius * 0.84, 0.012, Math.sin(a) * radius * 0.84);
+    g.rotation.y = -a;
+    group.add(g);
+  }
+  group.position.set(x, 0, z);
+  return group;
+}
+
+/** Poussière en suspension : points pâles qui dérivent dans un volume. */
+export function makeDustMotes(center, size, count = 220) {
+  const positions = new Float32Array(count * 3);
+  const seeds = [];
+  for (let i = 0; i < count; i++) {
+    seeds.push({
+      x: (Math.random() - 0.5) * size.x,
+      y: Math.random() * size.y,
+      z: (Math.random() - 0.5) * size.z,
+      sp: 0.05 + Math.random() * 0.14,
+      ph: Math.random() * Math.PI * 2,
+    });
+    positions[i * 3] = center.x + seeds[i].x;
+    positions[i * 3 + 1] = center.y + seeds[i].y;
+    positions[i * 3 + 2] = center.z + seeds[i].z;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const points = new THREE.Points(geometry, new THREE.PointsMaterial({
+    color: 0xaeb9dd, size: 0.045, transparent: true, opacity: 0.42,
+    depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true,
+  }));
+  points.frustumCulled = false;
+  return {
+    points,
+    update(timeMs) {
+      const t = timeMs * 0.001;
+      for (let i = 0; i < count; i++) {
+        const s = seeds[i];
+        positions[i * 3] = center.x + s.x + Math.sin(t * 0.3 + s.ph) * 0.6;
+        positions[i * 3 + 1] = center.y + ((s.y + t * s.sp) % size.y);
+        positions[i * 3 + 2] = center.z + s.z + Math.cos(t * 0.24 + s.ph) * 0.6;
+      }
+      geometry.attributes.position.needsUpdate = true;
+    },
+  };
+}
+
+/** Tas de gravats pixellisés (bloc + éclats) — habille un pied de mur. */
+export function makeDebrisPile(x, z, seed = 0, scale = 1) {
+  const group = new THREE.Group();
+  const stone = mat(SOULS_PALETTE.stone, { roughness: 0.95, flatShading: true });
+  const dark = mat(SOULS_PALETTE.stoneDark, { roughness: 0.95, flatShading: true });
+  const n = 5 + (seed % 4);
+  for (let i = 0; i < n; i++) {
+    const a = ((seed * 11 + i * 17) % 10) / 10 * Math.PI * 2;
+    const r = ((seed + i * 3) % 5) / 5 * 0.55;
+    const s = 0.12 + ((seed + i) % 4) * 0.07;
+    const chunk = new THREE.Mesh(cube, i % 3 ? stone : dark);
+    chunk.scale.setScalar(s);
+    chunk.position.set(Math.cos(a) * r, s * 0.5, Math.sin(a) * r);
+    chunk.rotation.set(i, a, i * 0.6);
+    chunk.castShadow = true;
+    group.add(chunk);
+  }
   group.position.set(x, 0, z);
   group.scale.setScalar(scale);
   return group;

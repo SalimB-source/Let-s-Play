@@ -13,11 +13,13 @@ import {
   resolveCollisions, cameraPosition, cameraBasis, clampPitch,
 } from './soulsRules';
 import {
+  TORSO_Y,
+  seatDrop,
   makeKnight, makeBonfire, makeBrazier, makeWalls, makePillar,
   makeBarrel, makeRubble, makeFloor, makeMoon, makeAshField,
   makeSkyDome, makeStars, makeMoonGlow, makeMistPatches, makeLightShaft,
   makeGrassField, makeFlowerField, makeTree, makeBush,
-  makeHitSparks,
+  makeHitSparks, makeHealMotes, disposePixelMaps,
   buildNightEnvironment,
   makeStonePath, SEAT_POSE,
 } from './soulsModels';
@@ -29,7 +31,7 @@ import {
 } from './soulsStage';
 import {
   makeOuterGround, makeForecourt, makeChapel, makeChest, makeForest,
-  makeCastle, makeThroneHall,
+  makeCastle, makeThroneHall, makeForestFloor,
 } from './soulsCastle';
 import { createPost } from './soulsPost';
 import { preloadGameAssets, getGameAssets } from './soulsAssets';
@@ -37,11 +39,12 @@ import {
   createCombatState, stepCombat, tryLight, tryHeavy, tryDodge,
   attackPhase, playerStrikeReady, markSwingHit, damagePlayer,
   inArc, ATTACKS, DODGE, STAMINA, ENEMY, BOSS,
+  DRINK, tryDrink, drinkHealDue, isDrinking, moveSpeedMult,
   createEnemyState, stepEnemy, damageEnemy, resetEnemy,
   pickLockTarget, lockStillValid,
 } from './soulsCombat';
 import {
-  PROGRESS, STAT_LABELS, createProgress, gainSouls, die, stainNear,
+  PROGRESS, STAT_LABELS, POTION_LABEL, createProgress, gainSouls, die, stainNear,
   rest, drinkFlask, tryLevelUp, maxHp, staminaMax, strMult,
 } from './soulsProgress';
 import { playSouls } from './soulsAudio';
@@ -136,10 +139,11 @@ function makeWorld(mount, callbacks) {
   const chapel = makeChapel();
   const chest = makeChest();
   const forest = makeForest(trees);
+  const forestFloor = makeForestFloor(trees);
   const castle = makeCastle();
   const hall = makeThroneHall();
   levelGroup.add(makeOuterGround(), roadPath.group, spurPath.group, forecourt.group,
-    chapel.group, chest.group, forest.group, castle.group, hall.group);
+    chapel.group, chest.group, forest.group, forestFloor.group, castle.group, hall.group);
   scene.add(levelGroup);
   const portalBlock = portalCollider(); // se retire quand la clé a ouvert le portail
   colliders.push(...stageColliders(), ...treeColliders(trees), portalBlock);
@@ -416,14 +420,17 @@ function makeWorld(mount, callbacks) {
       F.col.z = F.spawn.z;
       F.phasePrev = null;
       F.from = null;
+      F.groundY = stageHeight(F.spawn.x, F.spawn.z);
       F.K.visible = true;
       F.K.rotation.x = 0;
       F.K.rotation.z = 0;
-      F.K.position.set(F.spawn.x, stageHeight(F.spawn.x, F.spawn.z), F.spawn.z);
+      F.K.position.set(F.spawn.x, F.groundY, F.spawn.z);
     }
   };
   const sparks = makeHitSparks();
   scene.add(sparks.points);
+  const healMotes = makeHealMotes();
+  scene.add(healMotes.points);
 
   // Repose d'épée : dos (initiale) → main de l'avant-bras droit.
   const weaponState = { drawn: false };
@@ -459,7 +466,7 @@ function makeWorld(mount, callbacks) {
   let lockTarget = null;
   const combat = createCombatState();
 
-  // ── Boucle souls (M2) : âmes, flasque, niveaux, bloodstain ─────────
+  // ── Boucle souls (M2) : âmes, potion de vie, niveaux, bloodstain ───
   const progress = createProgress();
   const quest = createQuest();           // clé, coffre, portail, feux allumés
   let respawnFire = BONFIRES[0];         // dernier feu de repos
@@ -479,6 +486,12 @@ function makeWorld(mount, callbacks) {
   let blinkT = 0;
   let nextBlink = 2.2;
   let blinkLeft = 0;
+  // ── Mort : le monde se fige, l'écran « VOUS ÊTES MORT » prend la main.
+  // Le respawn n'arrive QUE via la poignée `revive()` (bouton « revenir
+  // à la vie ») — plus de téléportation instantanée au feu.
+  let dead = false;
+  let deathT = 0;
+  let deathDrop = 0;
 
   const headVec = new THREE.Vector3();
   const desiredVec = new THREE.Vector3();
@@ -506,6 +519,9 @@ function makeWorld(mount, callbacks) {
   };
 
   const readInput = () => {
+    if (dead) {
+      return { x: 0, y: 0, run: false, cameraYaw: camYaw, speedScale: 0 };
+    }
     const forward = keys.has('KeyW') || keys.has('KeyZ') || keys.has('ArrowUp') ? 1 : 0;
     const back = keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0;
     const left = keys.has('KeyA') || keys.has('KeyQ') || keys.has('ArrowLeft') ? 1 : 0;
@@ -515,6 +531,7 @@ function makeWorld(mount, callbacks) {
       y: forward - back,
       run: keys.has('ShiftLeft') || keys.has('ShiftRight'),
       cameraYaw: camYaw,
+      speedScale: moveSpeedMult(combat),
     };
   };
 
@@ -673,6 +690,11 @@ function makeWorld(mount, callbacks) {
       souls: progress.souls,
       flask: progress.flask,
       maxFlask: PROGRESS.flaskMax,
+      drinking: isDrinking(combat),
+      drinkProgress: isDrinking(combat)
+        ? Math.min(1, combat.actionT / DRINK.duration) : 0,
+      dead,
+      deathSouls: deathDrop,
       level: progress.level,
       hasKey: quest.hasKey,
       zone: ZONE_LABELS[zoneAt(state.x, state.z)],
@@ -680,11 +702,76 @@ function makeWorld(mount, callbacks) {
         const ip = interactionPrompt(quest, state.x, state.z);
         if (ip) return ip.text;
         const f = nearestBonfire(state.x, state.z);
-        if (f && quest.lit[f.id]) return 'E · se reposer — F · flasque — U/I/O · niveau';
+        if (f && quest.lit[f.id]) return 'E · se reposer — F · potion de vie — U/I/O · niveau';
         return stain.visible ? 'Marchez sur vos âmes pour les reprendre' : null;
       })(),
       toast: toastT > 0 ? toastText : null,
     });
+  };
+
+  // ── Mort & résurrection ───────────────────────────────────────────
+  /** Le chevalier tombe : le monde se fige, l'écran de mort s'affiche. */
+  const onDeath = () => {
+    dead = true;
+    deathT = 0;
+    deathDrop = die(progress, state.x, state.z);
+    if (progress.bloodstain) {
+      stain.position.set(progress.bloodstain.x, stageHeight(progress.bloodstain.x, progress.bloodstain.z) + 0.14, progress.bloodstain.z);
+      stain.visible = true;
+    } else {
+      stain.visible = false;
+    }
+    combat.action = 'none';
+    combat.actionT = 0;
+    combat.drank = false;
+    combat.hitstop = 0;
+    combat.shake = 0;
+    lockTarget = null;
+    combat.lockOn = false;
+    parts.potion.visible = false;
+    setWeaponDrawn(false);
+    releaseLock();
+    playSouls('lost');
+    toast('');
+    emitHud(true);
+    callbacks.death?.({ souls: deathDrop, x: state.x, z: state.z });
+  };
+
+  /** Bouton « revenir à la vie » : respawn au dernier feu de repos. */
+  const revive = () => {
+    if (!dead) return false;
+    dead = false;
+    deathT = 0;
+    Object.assign(combat, createCombatState());
+    syncStats();
+    combat.hp = combat.maxHp;
+    combat.stamina = combat.staminaMax;
+    Object.assign(state, createRunState(respawnFire.respawn)); // au pied du dernier feu
+    groundY = stageHeight(state.x, state.z);
+    knight.position.set(state.x, groundY, state.z);
+    knight.rotation.set(0, state.yaw, 0);
+    parts.body.rotation.set(0, 0, 0);
+    parts.body.position.set(0, 0, 0);
+    parts.legL.rotation.x = 0;
+    parts.legR.rotation.x = 0;
+    parts.kneeL.rotation.x = -0.05;
+    parts.kneeR.rotation.x = -0.05;
+    resetSquad();
+    setWeaponDrawn(true);
+    // Récupération immédiate si le feu de respawn est sur le bloodstain.
+    const got = stainNear(progress, state.x, state.z);
+    if (got > 0) {
+      stain.visible = false;
+      playSouls('souls');
+      toast(`+${got} âmes retrouvées`);
+    } else {
+      toast(deathDrop > 0 ? `${deathDrop} âmes gisent là où vous êtes tombé` : 'La braise vous rappelle');
+    }
+    deathDrop = 0;
+    playSouls('rest');
+    emitHud(true);
+    callbacks.revive?.();
+    return true;
   };
 
   const animate = (time) => {
@@ -707,6 +794,11 @@ function makeWorld(mount, callbacks) {
     // ── Combat M1 : file d'actions, endurance, IA, dégâts ──────────
     const input = readInput();
     stepCombat(combat, dt);
+    // Mort : plus aucune entrée n'est traitée (le monde attend le bouton).
+    if (dead) {
+      queue.light = queue.heavy = queue.dodge = queue.lock = false;
+      queue.flask = queue.rest = queue.vit = queue.end = queue.str = false;
+    }
 
     if (queue.lock) {
       if (lockTarget) {
@@ -742,22 +834,32 @@ function makeWorld(mount, callbacks) {
     queue.lock = false;
     if (actionStarted) emitHud(true);
 
-    // ── Boucle souls : flasque (F), repos au feu (E), niveaux (U/I/O)
+    // ── Boucle souls : potion (F), repos au feu (E), niveaux (U/I/O)
     const fireHere = nearestBonfire(state.x, state.z);
     const nearFire = !!(fireHere && quest.lit[fireHere.id]);
     if (queue.flask) {
-      if (combat.action === 'none' && combat.hp < combat.maxHp) {
-        const heal = drinkFlask(progress);
-        if (heal > 0) {
-          combat.hp = Math.min(combat.maxHp, combat.hp + heal);
-          playSouls('flask');
-          toast(`Flasque +${heal} PV`);
-          emitHud(true);
-        } else if (progress.flask <= 0) {
-          toast('Flasque vide');
-        }
-      }
       queue.flask = false;
+      if (progress.flask <= 0) {
+        toast(`${POTION_LABEL} vide — rechargez-vous au feu`);
+        playSouls('whiff');
+      } else if (combat.hp >= combat.maxHp) {
+        toast('Vitalité pleine');
+        playSouls('whiff');
+      } else if (tryDrink(combat, progress.flask > 0)) {
+        // Le geste démarre : ni attaque ni roulade ne passent tant qu'il dure.
+        playSouls('flask');
+        emitHud(true);
+      }
+    }
+    // La gorgée soigne à mi-geste, une seule fois (un coup encaissé
+    // interrompt le geste et la potion n'est pas consommée).
+    if (isDrinking(combat) && drinkHealDue(combat)) {
+      const heal = drinkFlask(progress);
+      combat.hp = Math.min(combat.maxHp, combat.hp + heal);
+      healMotes.burst(state.x, groundY + 0.8, state.z);
+      playSouls('heal');
+      toast(`${POTION_LABEL} +${heal} PV`);
+      emitHud(true);
     }
     const restAt = (fire) => {
       respawnFire = fire;
@@ -768,7 +870,7 @@ function makeWorld(mount, callbacks) {
       lockTarget = null;
       combat.lockOn = false;
       playSouls('rest');
-      toast('Repos — flasque remplie, ennemis relevés');
+      toast('Repos — potion remplie, ennemis relevés');
       emitHud(true);
     };
     if (queue.rest) {
@@ -854,7 +956,7 @@ function makeWorld(mount, callbacks) {
     }
 
     // ── IA de l'ennemi + fenêtre de frappe adverse ──────────────────
-    for (const F of foes) {
+    for (const F of dead ? [] : foes) {
       const enemy = F.e;
       const enemyCollider = F.col;
       if (!enemy.dead) {
@@ -888,6 +990,13 @@ function makeWorld(mount, callbacks) {
       if (enemy.phase === 'chase' && !enemy.aggroAnnounced) {
         enemy.aggroAnnounced = true;
         playSouls('aggro');
+      }
+      if (enemy.leftThrone) {
+        // Debout, le Roi ne repasse plus à travers le trône.
+        for (const c of colliders) {
+          if (c === enemyCollider || !c.throneBlock) continue;
+          resolveCollisions(enemy, enemy.spec.radius, [c]);
+        }
       }
       enemyCollider.x = enemy.x;
       enemyCollider.z = enemy.z;
@@ -930,7 +1039,7 @@ function makeWorld(mount, callbacks) {
     }
 
     // ── Touche du joueur (fenêtre active, une seule fois) ───────────
-    if (playerStrikeReady(combat)) {
+    if (!dead && playerStrikeReady(combat)) {
       const spec = ATTACKS[combat.action];
       for (const F of foes) {
         const enemy = F.e;
@@ -959,38 +1068,12 @@ function makeWorld(mount, callbacks) {
 
     setWeaponDrawn(true); // M1 : l'épée ne quitte jamais la main
 
-    // ── Mort (M2) : les âmes tombent en bloodstain, on reprend au feu
-    if (combat.hp <= 0) {
-      const drop = die(progress, state.x, state.z);
-      if (progress.bloodstain) {
-        stain.position.set(progress.bloodstain.x, 0.14, progress.bloodstain.z);
-        stain.visible = true;
-      } else {
-        stain.visible = false;
-      }
-      Object.assign(combat, createCombatState());
-      syncStats();
-      combat.hp = combat.maxHp;
-      combat.stamina = combat.staminaMax;
-      Object.assign(state, createRunState(respawnFire.respawn)); // au pied du dernier feu
-      resetSquad();
-      lockTarget = null;
-      combat.lockOn = false;
-      setWeaponDrawn(false);
-      playSouls('lost');
-      toast(drop > 0 ? `Vous mourrez — ${drop} âmes perdues` : 'Vous mourrez');
-      emitHud(true);
-      // Récupération immédiate si on meurt SUR son bloodstain
-      const got = stainNear(progress, state.x, state.z);
-      if (got > 0) {
-        stain.visible = false;
-        playSouls('souls');
-        toast(`+${got} âmes retrouvées`);
-      }
-    }
+    // ── Mort (M2) : les âmes tombent en bloodstain, puis l'écran de
+    // mort prend la main — le respawn attend le bouton « revenir à la vie ».
+    if (combat.hp <= 0 && !dead) onDeath();
 
     // Récupération du bloodstain en marchant dessus
-    if (stain.visible) {
+    if (!dead && stain.visible) {
       const got = stainNear(progress, state.x, state.z);
       if (got > 0) {
         stain.visible = false;
@@ -1271,6 +1354,45 @@ function makeWorld(mount, callbacks) {
       parts.torso.rotation.x = -0.95 * tuck; // buste voûté → boule compacte
     }
 
+    // ── Potion de vie : le flacon monte aux lèvres, la tête part en
+    // arrière, le pas ralentit. Ni attaque ni roulade pendant le geste.
+    let drinkHold = 0;
+    if (combat.action === 'drink') {
+      const du = clamp01(combat.actionT / DRINK.duration);
+      const liftUp = smooth(clamp01(du / 0.3));
+      const putDown = smooth(clamp01((du - 0.8) / 0.2));
+      drinkHold = liftUp * (1 - putDown);
+      const sip = du > 0.42 && du < 0.86 ? Math.sin(Math.PI * ((du - 0.42) / 0.44)) : 0;
+      // Pose mesurée sur le rig (see check:souls-smoke) : le poing arrive à
+      // ~21 cm de la bouche, fiole en main, tête renversée.
+      tArmL = mix(tArmL, 1.15, drinkHold);         // bras gauche levé au visage
+      tArmLz = mix(tArmLz, 0, drinkHold);
+      tElbowL = mix(tElbowL, 2.6, drinkHold);      // avant-bras replié
+      tArmR = mix(tArmR, 0.16, drinkHold * 0.7);   // l'épée s'écarte, pointe basse
+      tElbowR = mix(tElbowR, 0.55, drinkHold * 0.7);
+      tHeadPitch = mix(tHeadPitch, 0.3 + 0.08 * sip, drinkHold); // tête en arrière
+      tHeadYaw = mix(tHeadYaw, 0.06, drinkHold);
+      tLean = mix(tLean, 0.07 * drinkHold, 1);
+      tTorsoYaw = mix(tTorsoYaw, 0.1 * drinkHold, 1);
+      tBob = mix(tBob, -0.025 * drinkHold, 1);
+      tLegL = mix(tLegL, 0.04, drinkHold * 0.6);   // appui stable
+      tLegR = mix(tLegR, -0.08, drinkHold * 0.6);
+      tKneeL = mix(tKneeL, -0.14, drinkHold * 0.6);
+      tKneeR = mix(tKneeR, -0.12, drinkHold * 0.6);
+    }
+    // Fiole : le goulot bascule vers les lèvres, le liquide descend.
+    if (parts.potion) {
+      const visible = combat.action === 'drink';
+      parts.potion.visible = visible;
+      if (visible) {
+        parts.potion.rotation.x = mix(0.1, 1.15, drinkHold);
+        const liq = parts.potion.userData.liquid;
+        const h = parts.potion.userData.liquidHeight * (1 - 0.85 * clamp01((combat.actionT - 0.35) / 0.6));
+        liq.scale.y = Math.max(0.004, h);
+        liq.position.y = -0.062 + (h - parts.potion.userData.liquidHeight) * 0.5;
+      }
+    }
+
     // Garde plantée : pas de jambes bâtons pendant les coups — appui en
     // échiquier, genoux souples, centre de gravité baissé.
     if (combat.action === 'light' || combat.action === 'heavy' || combat.action === 'hitstun') {
@@ -1333,6 +1455,30 @@ function makeWorld(mount, callbacks) {
     aim(parts.weapon.rotation, 'z', tWeaponZ, 9);
     aim(parts.weapon.rotation, 'x', tWeaponX, 9);
 
+    // ── Chute du chevalier : il s'effondre en arrière, puis l'écran de
+    // mort prend la main (le monde reste rendu derrière, figé).
+    if (dead) {
+      deathT += dt;
+      const fallU = clamp01(deathT / 1.15);
+      const k = fallU * fallU * (3 - 2 * fallU);
+      const settle = Math.sin(Math.PI * clamp01((deathT - 1.0) / 0.5)) * 0.05;
+      parts.body.rotation.x = 1.18 * k;
+      parts.body.position.y = -0.3 * k;
+      parts.legL.rotation.x = 0.5 * k;
+      parts.legR.rotation.x = 0.28 * k;
+      parts.kneeL.rotation.x = -(0.05 + 0.85 * k);
+      parts.kneeR.rotation.x = -(0.05 + 0.6 * k);
+      parts.armL.rotation.x = 0.72 * k + settle;
+      parts.armR.rotation.x = 0.55 * k - settle;
+      parts.armL.rotation.z = -0.42 * k;
+      parts.armR.rotation.z = 0.42 * k;
+      parts.elbowL.rotation.x = 0.35 * k;
+      parts.elbowR.rotation.x = 0.3 * k;
+      parts.head.rotation.x = -0.3 * k;
+      parts.cape.rotation.x = -0.5 * k;
+      currentSpeed = 0;
+    }
+
     // Cheveux : balan de foulée + traînée en course (secondarité).
     if (parts.strands) {
       for (let i = 0; i < parts.strands.length; i++) {
@@ -1350,7 +1496,14 @@ function makeWorld(mount, callbacks) {
       let enemyPhasePrev = F.phasePrev;
       let eFrom = F.from;
     const leapY = enemy.phase === 'leap' ? (enemy.leapY || 0) : 0;
-    const eY = stageHeight(enemy.x, enemy.z) + leapY;
+    // Le sol est suivi en douceur (comme le joueur) : descendre de
+    // l'estrade ne « clipse » plus le chevalier dans la marche.
+    const floorY = stageHeight(enemy.x, enemy.z);
+    F.groundY = F.groundY === undefined
+      ? floorY
+      : F.groundY + (floorY - F.groundY) * Math.min(1, 11 * dt);
+    if (Math.abs(F.groundY - floorY) < 0.004) F.groundY = floorY;
+    const eY = Math.max(F.groundY, floorY - 0.001) + leapY;
     enemyK.position.set(enemy.x, eY, enemy.z);
     if (enemyK.userData.shadow) enemyK.userData.shadow.position.y = 0.02 - leapY;
     enemyK.rotation.y = enemy.yaw;
@@ -1563,22 +1716,32 @@ function makeWorld(mount, callbacks) {
         enemyParts.kneeR.rotation.x = -(0.07 + SEAT.knee * seat);
         enemyParts.footL.rotation.x = 0;
         enemyParts.footR.rotation.x = 0;
-        enemyParts.body.position.y = SEAT.drop * seat;
-        enemyParts.body.rotation.x = -0.26 * push + 0.16 * raise;
+        enemyParts.body.position.y = seatDrop(seat); // pieds posés tout du long
+        // Le bassin ne pivote JAMAIS : toute inclinaison est portée par le
+        // torse. Un `body.rotation.x` non nul bascule les cuisses et enfonce
+        // les bottes de ~12 cm dans l'estrade pendant qu'il se dresse.
+        enemyParts.body.rotation.x = 0;
         enemyParts.hips.rotation.y = 0;
         enemyParts.torso.rotation.y = 0;
-        enemyParts.torso.rotation.x = -0.1 * push + 0.2 * raise + 0.04 * Math.sin(time * 1.2) * seat;
+        // Poussée sur les accoudoirs (buste qui part en avant) puis dressage.
+        const bow = -0.42 * push + 0.36 * raise;
+        enemyParts.torso.rotation.x = bow
+          + (SEAT.lean ?? 0) * seat + 0.03 * Math.sin(time * 1.2) * seat;
         enemyParts.head.rotation.x = -0.42 * (1 - smooth(clamp01(riseU / 0.3))) * seat
           + 0.36 * raise;
         enemyParts.head.rotation.y = 0;
-        enemyParts.armR.rotation.x = mix(mix(SEAT.armR, 0.06, pull), -2.3, raise);
+        // `- bow` : le bras compense l'inclinaison du buste, sinon la lame
+        // plantée suit le torse et ressort sous le dallage de la nef.
+        enemyParts.armR.rotation.x = mix(mix(SEAT.armR, 0.06, pull), -2.3, raise) - bow;
         enemyParts.armR.rotation.z = mix(0.07, 0.18, raise);
         enemyParts.elbowR.rotation.x = mix(mix(SEAT.elbowR, 0.3, pull), 0.5, raise);
         enemyParts.armL.rotation.x = mix(mix(SEAT.armL, 0.06, pull), -0.7, raise)
           - 0.45 * push * (1 - pull);
         enemyParts.elbowL.rotation.x = mix(mix(SEAT.elbowL, 0.3, pull), 0.6, raise);
-        // Respiration lente, buste qui vit même assis.
-        enemyParts.torso.position.y = 0;
+        // Respiration lente, buste qui vit même assis. L'offset du torse
+        // (TORSO_Y) est préservé : le remettre à 0 enfonçait tout le buste
+        // de 0.9 × échelle, soit le Roi sous son trône et sous le sol.
+        enemyParts.torso.position.y = TORSO_Y + 0.012 * Math.sin(time * 1.2);
       }
       enemyK.visible = true;   // le cadavre réapparaît au respawn
       enemyK.rotation.x = 0;   // annule la chute
@@ -1624,6 +1787,8 @@ function makeWorld(mount, callbacks) {
     ashField.update(time);
     levelAsh.update(time);
     sparks.update(dt);
+    healMotes.update(dt);
+    hall.dust?.update(time);
     // Coffre (couvercle, lueur, clé) et grand portail (vantaux + tremblement).
     chest.update(dt, time);
     if (portalAnim.running) {
@@ -1691,7 +1856,10 @@ function makeWorld(mount, callbacks) {
     let clear = fullDistance;
     if (hits.length) clear = Math.max(CAMERA.minClearance, hits[0].distance - 0.3);
     desiredVec.copy(headVec).addScaledVector(dirVec, clear);
-    desiredVec.y = Math.max(0.32, desiredVec.y);
+    // Garde-fou : la caméra reste AU-DESSUS du sol local (+ 22 cm) — plus
+    // jamais de vue « sous le plancher » pendant le duel du trône.
+    const camFloor = Math.max(stageHeight(state.x, state.z), stageHeight(desiredVec.x, desiredVec.z));
+    desiredVec.y = Math.max(camFloor + 0.22, desiredVec.y);
     camera.position.lerp(desiredVec, 1 - Math.exp(-CAMERA.followSmoothing * dt));
     lookVec.set(headVec.x, headVec.y + 0.06, headVec.z);
     camera.lookAt(lookVec);
@@ -1716,6 +1884,32 @@ function makeWorld(mount, callbacks) {
   };
 
   return {
+    // Poignée de debug (build dev uniquement) : téléportation + lecture
+    // d'état pour les vérifications visuelles automatisées.
+    debug: {
+      state,
+      combat,
+      progress,
+      quest,
+      foes,
+      colliders,
+      scene,
+      camera,
+      teleport(x, z) {
+        Object.assign(state, createRunState({ x, z }));
+        groundY = stageHeight(x, z);
+        knight.position.set(x, groundY, z);
+        const head = { x, y: CAMERA.headHeight + groundY, z };
+        const p = cameraPosition(head, camYaw, camPitch, CAMERA.distance);
+        camera.position.set(p.x, p.y, p.z);
+        camera.lookAt(head.x, head.y, head.z);
+        emitHud(true);
+      },
+      look(yaw, pitch = camPitch) {
+        camYaw = yaw;
+        camPitch = clampPitch(pitch);
+      },
+    },
     start() {
       active = true;
       keys.clear();
@@ -1739,8 +1933,12 @@ function makeWorld(mount, callbacks) {
         active = false;
         keys.clear();
         releaseLock();
+      } else if (name === 'revive') {
+        revive();
       }
     },
+    revive,
+    isDead: () => dead,
     isLocked: () => locked,
     destroy() {
       active = false;
@@ -1773,6 +1971,7 @@ function makeWorld(mount, callbacks) {
         }
       });
       scene.environment?.dispose?.();
+      disposePixelMaps();
       renderer.dispose();
       renderer.domElement.remove();
     },
@@ -1780,12 +1979,13 @@ function makeWorld(mount, callbacks) {
 }
 
 export default function SoulsWorld({
-  active, epoch = 0, onReady, onHud, onLockChange, onPauseKey, onAutoPause, onError, actionsRef,
+  active, epoch = 0, onReady, onHud, onLockChange, onPauseKey, onAutoPause,
+  onDeath, onRevive, onError, actionsRef,
 }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbackRef = useRef({});
-  callbackRef.current = { onReady, onHud, onLockChange, onPauseKey, onAutoPause, onError };
+  callbackRef.current = { onReady, onHud, onLockChange, onPauseKey, onAutoPause, onDeath, onRevive, onError };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -1808,6 +2008,8 @@ export default function SoulsWorld({
           lockChange: (value) => callbackRef.current.onLockChange?.(value),
           pauseKey: () => callbackRef.current.onPauseKey?.(),
           autoPause: () => callbackRef.current.onAutoPause?.(),
+          death: (info) => callbackRef.current.onDeath?.(info),
+          revive: () => callbackRef.current.onRevive?.(),
         });
       } catch (error) {
         callbackRef.current.onError?.(error instanceof Error ? error.message : String(error));
@@ -1815,9 +2017,12 @@ export default function SoulsWorld({
       }
       worldRef.current = world;
       if (actionsRef) actionsRef.current = (name) => world.action(name);
+      // Poignée de debug (dev uniquement) : captures d'écran et QA visuel.
+      if (import.meta.env.DEV) window.__laCendre = world;
     })();
     return () => {
       disposed = true;
+      if (window.__laCendre) delete window.__laCendre;
       if (world) {
         world.destroy();
         worldRef.current = null;

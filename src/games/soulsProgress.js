@@ -1,13 +1,13 @@
 // ════════════════════════════════════════════════════════════════════
 // LA CENDRE — boucle souls (M2) : logique PURE et testable.
-// Âmes → mort → bloodstain → récupération, flasque, repos au feu,
+// Âmes → mort → bloodstain → récupération, potion de vie, repos au feu,
 // niveaux de stats. Aucun rendu, aucun état globale.
 // ════════════════════════════════════════════════════════════════════
 
 export const PROGRESS = Object.freeze({
   enemySouls: 150,       // âmes par Chevalier déchu vaincu
-  flaskMax: 3,
-  flaskHeal: 42,         // PV rendus par gorgée
+  flaskMax: 3,           // 3 gorgées de potion de vie
+  flaskHeal: 34,         // PV rendus par gorgée (« un peu de vie »)
   restRadius: 2.6,       // zone d'action autour du feu (0,0)
   stainRadius: 1.7,      // rayon de récupération du bloodstain
   baseHp: 100,
@@ -17,6 +17,9 @@ export const PROGRESS = Object.freeze({
   strPer: 0.12,          // +12 % dégâts par Puissance
   stats: Object.freeze(['vit', 'end', 'str']),
 });
+
+/** Libellé joueur de la fiole (HUD, toasts, écrans). */
+export const POTION_LABEL = 'POTION DE VIE';
 
 export const STAT_LABELS = Object.freeze({
   vit: 'Vitalité',

@@ -336,6 +336,181 @@
 @keyframes soulsBreathe { 0%, 100% { opacity: 0.65; } 50% { opacity: 1; } }
 @keyframes soulsRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ── Potion de vie : jauge de gorgée ─────────────────────────────── */
+.souls-drink {
+  position: absolute;
+  left: 50%;
+  bottom: 118px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
+  animation: souls-fade-in 0.18s ease-out both;
+}
+.souls-drink-label {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  color: var(--souls-gold-2);
+  text-shadow: 0 0 12px rgba(244, 172, 102, 0.55), 0 2px 0 #0a0603;
+  white-space: nowrap;
+}
+.souls-drink i {
+  display: block;
+  width: 168px;
+  height: 5px;
+  border: 1px solid rgba(244, 172, 102, 0.45);
+  border-radius: 3px;
+  background: rgba(24, 14, 6, 0.7);
+  overflow: hidden;
+}
+.souls-drink i::after {
+  content: '';
+  display: block;
+  width: calc(var(--drink, 0) * 100%);
+  height: 100%;
+  background: linear-gradient(90deg, rgba(198, 96, 42, 0.65), var(--souls-gold-2));
+  box-shadow: 0 0 12px rgba(244, 172, 102, 0.6);
+}
+.souls-flask.is-drinking {
+  border-color: var(--souls-gold-2);
+  box-shadow: 0 0 0 1px rgba(244, 172, 102, 0.28), 0 0 22px rgba(244, 172, 102, 0.4);
+  animation: souls-pulse 1s ease-in-out infinite;
+}
+.souls-flask.is-drinking i.is-full {
+  background: var(--souls-gold-2);
+  box-shadow: 0 0 12px rgba(244, 172, 102, 0.8);
+}
+
+/* ── Mort : écran rouge sang + retour à la vie ───────────────────── */
+.souls-overlay-death {
+  z-index: 6;
+  background:
+    radial-gradient(120% 80% at 50% 42%, rgba(122, 4, 10, 0.5), rgba(46, 2, 6, 0.86) 58%, rgba(14, 1, 2, 0.95) 100%);
+  animation: souls-death-veil 0.7s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+.souls-death-blood {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* Coulées de sang qui descendent du haut de l'écran. */
+.souls-death-blood i {
+  position: absolute;
+  top: -14%;
+  width: 12%;
+  height: 0;
+  background: linear-gradient(180deg, rgba(150, 6, 12, 0.92), rgba(92, 2, 8, 0.55) 62%, rgba(92, 2, 8, 0));
+  filter: blur(1px);
+  border-radius: 0 0 60% 60% / 0 0 12px 12px;
+  animation: souls-blood-fall 2.6s cubic-bezier(0.25, 0.7, 0.4, 1) both;
+}
+.souls-death-blood i:nth-child(1) { left: 2%;  width: 9%;  animation-delay: 0.05s; }
+.souls-death-blood i:nth-child(2) { left: 15%; width: 15%; animation-delay: 0.22s; }
+.souls-death-blood i:nth-child(3) { left: 33%; width: 7%;  animation-delay: 0.38s; }
+.souls-death-blood i:nth-child(4) { left: 47%; width: 18%; animation-delay: 0.12s; }
+.souls-death-blood i:nth-child(5) { left: 66%; width: 10%; animation-delay: 0.3s; }
+.souls-death-blood i:nth-child(6) { left: 79%; width: 14%; animation-delay: 0.18s; }
+.souls-death-blood i:nth-child(7) { left: 91%; width: 8%;  animation-delay: 0.42s; }
+.souls-death-blood i:nth-child(8) { left: 26%; width: 5%;  animation-delay: 0.55s; }
+
+.souls-death-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  max-width: 720px;
+  padding: 34px 30px;
+  text-align: center;
+  animation: souls-death-rise 0.85s 0.18s cubic-bezier(0.18, 0.75, 0.2, 1) both;
+}
+.souls-death-title {
+  margin: 0;
+  font-size: clamp(46px, 8.4vw, 104px);
+  font-weight: 900;
+  line-height: 0.94;
+  letter-spacing: 0.02em;
+  color: #e3141c;
+  text-shadow:
+    0 0 18px rgba(255, 26, 34, 0.55),
+    0 0 54px rgba(178, 8, 14, 0.6),
+    0 4px 0 rgba(52, 2, 4, 0.9),
+    0 10px 34px rgba(0, 0, 0, 0.85);
+  animation: souls-death-throb 4.4s 1.1s ease-in-out infinite;
+}
+.souls-death-lead {
+  margin: 0;
+  max-width: 520px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(255, 224, 214, 0.82);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+.souls-death-souls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 9px 18px;
+  border: 1px solid rgba(244, 172, 102, 0.32);
+  border-radius: 999px;
+  background: rgba(30, 8, 6, 0.5);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--souls-gold-2);
+}
+.souls-death-souls i {
+  font-style: normal;
+  color: var(--souls-gold);
+  text-shadow: 0 0 12px rgba(255, 208, 150, 0.7);
+}
+.souls-revive-button {
+  position: relative;
+  margin-top: 6px;
+  padding: 15px 40px;
+  border: 1px solid rgba(255, 92, 96, 0.5);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(150, 12, 18, 0.92), rgba(78, 4, 8, 0.94));
+  color: #ffe9e2;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset, 0 12px 34px rgba(120, 4, 10, 0.5);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+.souls-revive-button:hover,
+.souls-revive-button:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(255, 138, 128, 0.85);
+  background: linear-gradient(180deg, rgba(186, 18, 24, 0.95), rgba(104, 6, 10, 0.95));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset, 0 16px 42px rgba(190, 10, 16, 0.55);
+  outline: none;
+}
+.souls-revive-button:active { transform: translateY(0); }
+.souls-overlay-death .souls-overlay-hint { color: rgba(255, 214, 204, 0.5); }
+
+@keyframes souls-death-veil {
+  from { opacity: 0; filter: saturate(0.4); }
+  to { opacity: 1; filter: saturate(1); }
+}
+@keyframes souls-death-rise {
+  from { opacity: 0; transform: translateY(26px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes souls-death-throb {
+  0%, 100% { text-shadow: 0 0 18px rgba(255, 26, 34, 0.5), 0 0 54px rgba(178, 8, 14, 0.55), 0 4px 0 rgba(52, 2, 4, 0.9), 0 10px 34px rgba(0, 0, 0, 0.85); }
+  50% { text-shadow: 0 0 26px rgba(255, 46, 54, 0.72), 0 0 74px rgba(214, 10, 16, 0.7), 0 4px 0 rgba(52, 2, 4, 0.9), 0 10px 34px rgba(0, 0, 0, 0.85); }
+}
+@keyframes souls-blood-fall {
+  0% { height: 0; opacity: 0; }
+  12% { opacity: 1; }
+  100% { height: 118%; opacity: 0.85; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .souls-overlay-panel, .souls-live-dot, .souls-live-pill i, .souls-lock-hint { animation: none; }
   .souls-start-button, .souls-ghost-button, .souls-pause-button { transition: none; }

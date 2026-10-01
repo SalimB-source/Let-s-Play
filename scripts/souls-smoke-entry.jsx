@@ -115,9 +115,17 @@ for (const [key, model] of Object.entries(assets)) {
 }
 
 const { makeWorld } = await import('../src/games/SoulsWorld.jsx');
+const { DRINK, BOSS, moveSpeedMult } = await import('../src/games/soulsCombat.js');
+const { PROGRESS } = await import('../src/games/soulsProgress.js');
+const { STAGE, stageHeight } = await import('../src/games/soulsStage.js');
+const { HALL_FLOOR_T } = await import('../src/games/soulsCastle.js');
+const fail = (msg, extra) => { console.error(msg, extra ?? ''); process.exit(3); };
 
 let readyFired = false;
 let readyErr = null;
+let deathInfo = null;
+let reviveFired = 0;
+let reviveHud = null;
 const hudSamples = [];
 const mount = {
   clientWidth: 1280, clientHeight: 720,
@@ -136,6 +144,8 @@ try {
     ready() { readyFired = true; },
     hud(h) { hudSamples.push(h); },
     error(e) { readyErr = e; console.error('CALLBACK ERROR:', e); },
+    death(info) { deathInfo = info; },
+    revive() { reviveFired++; },
     pause() {},
     resume() {},
   });
@@ -171,6 +181,7 @@ const fire = (type, code) => {
 };
 try {
   world.start();
+  const home = { x: world.debug.state.x, z: world.debug.state.z };
   fire('keydown', 'KeyJ');              // attaque légère
   for (let i = 0; i < 60; i++) stepFrame();
   fire('keydown', 'KeyK');              // attaque lourde
@@ -206,6 +217,195 @@ try {
   }
   console.log('HUD combat OK — stamina min', minStamina, '| actions', actions.join('/'),
     '| hp', last.hp, '| cible', last.targetHp);
+
+  // ── DUMP SCÈNE (SOULS_DUMP=1) : inventaire complet des meshes ──────
+  if (process.env.SOULS_DUMP) {
+    const scene = world.debug.scene;
+    scene.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    const out = [];
+    scene.traverse((o) => {
+      if (!o.isMesh && !o.isPoints && !o.isSprite) return;
+      const b = box.setFromObject(o);
+      const sz = b.getSize(new THREE.Vector3());
+      const m = o.material;
+      const lum = m?.color ? (0.2126 * m.color.r + 0.7152 * m.color.g + 0.0722 * m.color.b) : -1;
+      out.push({
+        name: o.name || '(sans nom)', geo: o.geometry?.type || o.type,
+        w: +sz.x.toFixed(2), h: +sz.y.toFixed(2), d: +sz.z.toFixed(2),
+        y: +b.min.y.toFixed(2), cy: +((b.min.y + b.max.y) / 2).toFixed(2),
+        x: +((b.min.x + b.max.x) / 2).toFixed(2), cz: +((b.min.z + b.max.z) / 2).toFixed(2),
+        color: m?.color ? '#' + m.color.getHexString() : '-', lum: +lum.toFixed(3),
+        map: m?.map ? 1 : 0, blend: m?.blending, op: m?.opacity, side: m?.side,
+        transp: m?.transparent ? 1 : 0, vis: o.visible ? 1 : 0,
+        type: m?.type || '-', depthWrite: m?.depthWrite,
+      });
+    });
+    const vol = (r) => Math.max(r.w, 0.05) * Math.max(r.h, 0.05) * Math.max(r.d, 0.05);
+    const big = out.filter((r) => r.lum >= 0 && r.lum < 0.13 && vol(r) > 1 && r.type !== 'PointsMaterial');
+    console.log(`\n### SCÈNE : ${out.length} objets, ${big.length} objets SOMBRES > 1 m³`);
+    const agg = {};
+    for (const r of big) {
+      const k = `${r.color}|${r.type.replace('Mesh', '')}|${r.geo}|${r.w}x${r.h}x${r.d}`;
+      (agg[k] ||= []).push(r);
+    }
+    for (const [k, v] of Object.entries(agg).sort((a, b) => b[1].length - a[1].length).slice(0, 16)) {
+      const z = [...new Set(v.map((r) => r.cz))].sort((a, b) => a - b);
+      console.log(`  ${String(v.length).padStart(4)}× lum=${v[0].lum.toFixed(3)} ${k}  z=[${z.slice(0, 3).join(',')}…${z.slice(-1)}]`);
+    }
+    console.log('--- colonnes de la nef vs murs ---');
+    for (const r of out.filter((o) => o.geo === 'LatheGeometry' && o.h > 8)) {
+      console.log(`  COLONNE lum=${r.lum.toFixed(3)} ${r.color} map=${r.map} ${r.w}×${r.h} @(${r.x},${r.cz})`);
+    }
+    for (const r of out.filter((o) => o.h > 9 && (o.d > 20 || o.w > 20))) {
+      console.log(`  MUR     lum=${r.lum.toFixed(3)} ${r.color} map=${r.map} ${r.w}×${r.h}×${r.d} @(${r.x},${r.cz})`);
+    }
+    console.log('---');
+    for (const r of big.sort((a, b) => a.lum - b.lum)) {
+      console.log(`  ${r.lum.toFixed(3)} ${r.color} ${r.type.replace('Mesh', '').padEnd(10)} ${String(r.w).padStart(7)}×${String(r.h).padStart(6)}×${String(r.d).padStart(7)} @(${r.x},${r.cy},${r.cz}) map=${r.map} blend=${r.blend} op=${r.op} side=${r.side} dw=${r.depthWrite} vis=${r.vis} ${r.geo} ${r.name}`);
+    }
+    const lights = [];
+    scene.traverse((o) => { if (o.isLight) lights.push(o); });
+    console.log(`\n### LUMIÈRES : ${lights.length}`);
+    for (const l of lights) {
+      console.log(`  ${l.type} ${'#' + l.color.getHexString()} i=${l.intensity} dist=${l.distance ?? '-'} decay=${l.decay ?? '-'} @(${l.position.x.toFixed(1)},${l.position.y.toFixed(1)},${l.position.z.toFixed(1)}) shadow=${!!l.shadow && l.castShadow}`);
+    }
+    process.exit(0);
+  }
+
+  // ── Le Roi : assis sur son trône, jamais sous le plancher ───────────
+  {
+    const foe = world.debug.foes.find((f) => f.e.spec.seated);
+    if (!foe) fail('BOSS INTROUVABLE dans la scène');
+    const estrade = stageHeight(foe.spawn.x, foe.spawn.z);
+    // Sol de la nef hors estrade, et dessous du dallage (épais de
+    // HALL_FLOOR_T) : sous cette ligne, la géométrie se voit depuis la salle.
+    const nefFloor = stageHeight(foe.spawn.x, STAGE.hall.maxZ - 1);
+    const slabBottom = nefFloor - HALL_FLOOR_T;
+    const box = new THREE.Box3();
+    let swordLowest = Infinity;
+    let bodyLowest = Infinity;
+
+    // 1. Tableau du trône : assis, RIEN (corps ni lame) ne traverse l'estrade.
+    for (let i = 0; i < 60; i++) {
+      stepFrame();
+      if (foe.e.phase !== 'seated') fail('LE ROI N’EST PAS ASSIS À L’OUVERTURE', foe.e.phase);
+      foe.K.updateMatrixWorld(true);
+      const all = box.setFromObject(foe.K);
+      swordLowest = Math.min(swordLowest, all.min.y);
+      if (all.min.y < estrade - 0.05) {
+        fail('ROI ENFONCÉ DANS SON TRÔNE', `min=${all.min.y.toFixed(3)} estrade=${estrade.toFixed(3)}`);
+      }
+    }
+
+    // 2. Lever + chasse : la racine reste sur le sol, la caméra jamais en
+    //    dessous, et le corps ne s'enfonce pas d'un mètre (bug TORSO_Y).
+    world.debug.teleport(foe.spawn.x, foe.spawn.z + BOSS.riseRange - 1);
+    const lowestButWeapon = () => {
+      const wpn = foe.K.userData.parts.weapon;
+      foe.K.updateMatrixWorld(true); // pose de la frame, pas celle du render
+      let m = Infinity;
+      foe.K.traverse((o) => {
+        if (!o.isMesh) return;
+        for (let n = o.parent; n && n !== foe.K; n = n.parent) if (n === wpn) return;
+        m = Math.min(m, box.setFromObject(o).min.y);
+      });
+      return m;
+    };
+    for (let i = 0; i < 700; i++) {
+      world.debug.combat.hp = world.debug.combat.maxHp; // le duel ne tue pas le test
+      stepFrame();
+      const floor = stageHeight(foe.e.x, foe.e.z);
+      if (foe.K.position.y < floor - 0.01) {
+        fail('ROI SOUS LE PLANCHER (racine)', `y=${foe.K.position.y.toFixed(3)} sol=${floor.toFixed(3)}`);
+      }
+      if (world.debug.camera.position.y < nefFloor + 0.05) {
+        fail('CAMÉRA SOUS LE PLANCHER', `y=${world.debug.camera.position.y.toFixed(3)} nef=${nefFloor.toFixed(3)}`);
+      }
+      if (i % 10 === 0) {
+        const body = lowestButWeapon();
+        bodyLowest = Math.min(bodyLowest, body - slabBottom);
+        if (body < slabBottom - 0.25) {
+          fail('ROI ENFONCÉ SOUS LE PLANCHER', `min=${body.toFixed(3)} sous-dalle=${slabBottom.toFixed(3)} phase=${foe.e.phase}`);
+        }
+      }
+    }
+    if (world.isDead()) fail('MORT PENDANT LE TEST DU TRÔNE');
+    if (foe.e.phase === 'seated') fail('LE ROI NE S’EST PAS LEVÉ À L’APPROCHE');
+    if (!foe.e.leftThrone) fail('LE ROI N’A PAS QUITTÉ SON TRÔNE');
+    if (!Number.isFinite(swordLowest)) fail('AUCUNE FRAME ASSISE CONTRÔLÉE');
+    console.log(`Trône OK — assis au-dessus de l'estrade (min ${swordLowest.toFixed(2)} ≥ ${estrade.toFixed(2)}), debout puis en chasse, corps au plus bas à ${bodyLowest.toFixed(2)} m du sous-dallage`);
+  }
+
+  // ── Potion de vie : geste long, verrouillé, soin à mi-gorgée ────────
+  {
+    const c = world.debug.combat;
+    const prog = world.debug.progress;
+    world.debug.teleport(home.x, home.z);   // loin du Roi : boire tranquille
+    c.action = 'none'; c.actionT = 0; c.hitstop = 0; c.drank = false;
+    c.staminaLock = 0;
+    c.stamina = c.staminaMax;
+    c.hp = 40;
+    const hpBefore = c.hp;
+    const flasksBefore = prog.flask;
+    fire('keydown', 'KeyF');
+    stepFrame();
+    if (c.action !== 'drink') fail('POTION : le geste ne démarre pas', c.action);
+    if (!hudSamples.some((h) => h.drinking)) fail('POTION : HUD « drinking » absent');
+    if (moveSpeedMult(c) >= 1) fail('POTION : le pas ne ralentit pas pendant la gorgée');
+    // Ni attaque ni roulade ne passent pendant le geste.
+    fire('keydown', 'KeyJ'); fire('keydown', 'KeyK'); fire('keydown', 'Space');
+    for (let i = 0; i < 6; i++) stepFrame();
+    if (c.action !== 'drink') fail('POTION : attaque/esquive pendant le geste', c.action);
+    if (c.hp !== hpBefore) fail('POTION : soin appliqué trop tôt', c.hp);
+    let healed = 0;
+    for (let i = 0; i < Math.ceil(DRINK.duration * 60) + 12; i++) {
+      const before = c.hp;
+      stepFrame();
+      if (c.hp > before) healed++;
+    }
+    if (healed !== 1) fail('POTION : gorgée appliquée ' + healed + ' fois (1 attendue)');
+    const sip = c.hp - hpBefore;
+    if (c.action !== 'none' || c.drank) fail('POTION : le geste ne se referme pas', c.action);
+    if (sip !== PROGRESS.flaskHeal) fail('POTION : soin inattendu', `${sip} PV (attendu ${PROGRESS.flaskHeal})`);
+    if (prog.flask !== flasksBefore - 1) fail('POTION : charges non débitées', `${flasksBefore} → ${prog.flask}`);
+    // Pleine vitalité : la gorgée est refusée, la charge est gardée.
+    c.hp = c.maxHp;
+    fire('keydown', 'KeyF');
+    stepFrame();
+    if (c.action !== 'none') fail('POTION : on boit à pleine vitalité', c.action);
+    if (prog.flask !== flasksBefore - 1) fail('POTION : charge gaspillée');
+    console.log(`Potion OK — ${DRINK.duration}s verrouillées (attaque + roulade), +${sip} PV, ${prog.flask}/${PROGRESS.flaskMax} gorgées`);
+  }
+
+  // ── Mort : écran rouge, monde figé, puis « revenir à la vie » ───────
+  {
+    const c = world.debug.combat;
+    const prog = world.debug.progress;
+    c.hp = 0;
+    stepFrame();
+    if (!deathInfo) fail('MORT : aucun callback « death »');
+    if (!world.isDead()) fail('MORT : world.isDead() reste faux');
+    const hudDead = hudSamples.at(-1);
+    if (hudDead.dead !== true) fail('MORT : HUD « dead » absent', JSON.stringify(hudDead));
+    if (hudDead.deathSouls !== deathInfo.souls) fail('MORT : HUD âmes perdues incohérent', hudDead.deathSouls);
+    // Le monde est figé : aucune entrée ne passe.
+    c.action = 'none';
+    fire('keydown', 'KeyJ'); fire('keydown', 'KeyK'); fire('keydown', 'Space'); fire('keydown', 'KeyF');
+    for (let i = 0; i < 24; i++) stepFrame();
+    if (c.action !== 'none') fail('MORT : le monde réagit encore aux entrées', c.action);
+    const stain = prog.bloodstain;
+    // « REVENIR À LA VIE » : plein de vie, au dernier feu de camp.
+    if (world.revive() !== true) fail('REVIVE : world.revive() refuse');
+    stepFrame();
+    reviveHud = hudSamples.at(-1);
+    if (world.isDead()) fail('REVIVE : toujours mort');
+    if (reviveFired !== 1) fail('REVIVE : callback « revive » appelé ' + reviveFired + ' fois');
+    if (c.hp !== c.maxHp || c.stamina !== c.staminaMax) fail('REVIVE : vitales non restaurées', `${c.hp}/${c.stamina}`);
+    if (!reviveHud || reviveHud.dead !== false) fail('REVIVE : HUD « dead » non refermé');
+    if (world.debug.state.hp !== undefined && Number.isNaN(world.debug.state.x)) fail('REVIVE : position invalide');
+    console.log(`Mort OK — ${deathInfo.souls} âmes gisent en ${stain ? `${stain.x.toFixed(1)},${stain.z.toFixed(1)}` : '—'}, résurrection au feu`);
+  }
 
   world.pause();
   for (let i = 0; i < 30; i++) stepFrame();
