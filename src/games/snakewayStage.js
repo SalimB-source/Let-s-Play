@@ -3,12 +3,11 @@ import * as THREE from 'three';
 /*
  * ZONE 10 · CHEMIN DU SERPENT — hommage à Dragon Ball pour Mirage Rush.
  *
- * Comme dans Dragon Ball Z, la route grise de pierre file au-dessus d'une
- * mer de nuages jaunes. Son bord extérieur est coiffé d'écailles de dragon
- * grises, immobiles pendant que la piste défile sous elles — des rangs de
- * dômes imbriqués, comme sur le flanc de Shenron. Au loin, la petite planète
- * de Kaio — son halo, sa maisonnette et son arbre bleu — devient la cible
- * de la route. Décor low-poly, Three.js.
+ * Comme dans Dragon Ball Z, la route file au-dessus d'une mer de nuages
+ * jaunes. Gris de pierre, elle est ourlée d'écailles de dragon sur ses
+ * deux bords — des rangs de dômes imbriqués, comme sur le flanc de
+ * Shenron. Au loin, la petite planète de Kaio — son halo, sa maisonnette
+ * et son arbre bleu — devient la cible de la route. Décor low-poly, Three.js.
  */
 
 export const SNAKEWAY_SEGMENT_LENGTH = 11;
@@ -503,41 +502,40 @@ export function makeSnakewayHorizon() {
 }
 
 /**
- * Static dragon-scale border capping the OUTER edge of the track: a low
- * charcoal strip topped by two staggered rows of overlapping grey dome
- * scales, all in grey tones. The border is added straight to the scene
- * (never to the scrolling floor group), so it stays perfectly still while
- * the road runs beneath it. The z range is fixed to cover the whole
- * visible run on both the phone and desktop layouts.
+ * Dragon-scale road border: a low charcoal strip with two staggered rows of
+ * overlapping grey dome scales caps each track edge — the way dragon scales
+ * overlap along Shenron's ridge, with a bronze scale sparking now and then.
+ * The 1.2 m scale step (5 per 6 m deck period) loops seamlessly with the
+ * floor, and the border follows the track edges on both layouts.
  */
 export function snakewayTrackTrim(lanes, floorRows = 28, floorMinZ = -40) {
   const group = new THREE.Group();
   const baseMat = material(0x4c4c58, { roughness: 0.95 });
   const scaleA = material(0x74747f, { roughness: 0.88 });
   const scaleB = material(0x94949f, { roughness: 0.82 });
+  const bronze = material(0xa8763e, { emissive: 0x6e4218, emissiveIntensity: 0.4, roughness: 0.55, metalness: 0.25 });
   const scaleGeometry = new THREE.SphereGeometry(1, 9, 6);
   const edge = Math.max(Math.abs(lanes[0]), Math.abs(lanes[lanes.length - 1])) + 1.05;
-  // Fixed world-z range (the border does not scroll with the floor).
-  const zNear = floorMinZ + floorRows * 2 + 3;
-  const zFar = floorMinZ - 8;
-  const length = zNear - zFar;
-  const centerZ = (zNear + zFar) / 2;
+  const length = floorRows * 2.02;
+  const centerZ = floorMinZ + length / 2;
   for (const side of [-1, 1]) {
-    // La bordure flotte entièrement au-dehors, au-dessus de la mer de
-    // nuages : rien n'empiète sur le revêtement, sinon l'œil utilise la
-    // route défilante comme référence et les écailles fixes semblent glisser.
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, length), baseMat);
-    strip.position.set(side * (edge + 0.88), -0.02, centerZ);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.08, length), baseMat);
+    strip.position.set(side * (edge - 0.28), -0.02, centerZ);
     group.add(strip);
-    // Two staggered rows of overlapping grey dome scales cap the outer rim:
-    // one row just beyond the edge line, one further out.
+    // Two staggered rows of overlapping dome scales hug the edge. The colour
+    // pattern has a 5-scale cycle (one bronze per 6 m deck period) so the
+    // border stays seamless when the floor loops.
+    const rowPatterns = [
+      [scaleA, scaleB, scaleA, bronze, scaleB],
+      [scaleB, bronze, scaleB, scaleA, scaleA],
+    ];
     const step = 1.2;
-    const count = Math.ceil(length / step) + 1;
+    const count = Math.ceil((length + 0.8) / step);
     for (let row = 0; row < 2; row += 1) {
       for (let i = 0; i < count; i += 1) {
-        const z = zNear - i * step + row * (step / 2);
-        if (z < zFar - 0.7) continue;
-        sphere(group, scaleGeometry, (i + row) % 2 === 0 ? scaleA : scaleB, side * (edge + 0.6 + row * 0.6), 0.02, z, 0.55, 0.3, 0.6);
+        const z = floorMinZ - 0.4 + row * (step / 2) + i * step;
+        if (z > floorMinZ + length + 0.3) continue;
+        sphere(group, scaleGeometry, rowPatterns[row][i % 5], side * (edge - 0.05 - row * 0.57), 0.02, z, 0.55, 0.3, 0.6);
       }
     }
   }
