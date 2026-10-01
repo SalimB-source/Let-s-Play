@@ -29,11 +29,6 @@ export const articleGalleries = {
     { src: youTubeFrameUrl('M9NWvGZViCg', 3), alt: 'À l’Est d’Éden — paysage de la vallée de Salinas', caption: '03 / La vallée de Salinas' },
   ], credit: 'Photogrammes extraits de la bande-annonce officielle Netflix.', creditSources: [{ label: 'Netflix Tudum', href: 'https://www.netflix.com/tudum/articles/east-of-eden-trailer' }] },
   // ---- Actus tech ---------------------------------------------------------
-  'tech/project-suncatcher-google-espace': { label: 'PROJECT SUNCATCHER', meta: 'GOOGLE RESEARCH · ORBITE', items: [
-    { src: youTubeFrameUrl('o1JK79jszqo', 1), alt: 'Project Suncatcher — concept de satellites de calcul Google', caption: '01 / Des TPU en orbite basse' },
-    { src: youTubeFrameUrl('o1JK79jszqo', 2), alt: 'Project Suncatcher — panneau solaire spatial dans la vidéo Google', caption: '02 / L’énergie solaire comme variable clé' },
-    { src: youTubeFrameUrl('o1JK79jszqo', 3), alt: 'Project Suncatcher — liaison entre satellites dans la vidéo Google', caption: '03 / Relier les satellites par laser' },
-  ], credit: 'Photogrammes extraits de la vidéo officielle de Google Research (25.09.2026).', creditSources: [{ label: 'dossier officiel Project Suncatcher', href: 'https://blog.google/innovation-and-ai/models-and-research/google-research/google-project-suncatcher-facts/' }] },
   'dynasty-warriors-3-remastered-sortie': { label: 'DYNASTY WARRIORS 3', meta: 'KOEI TECMO · REMASTER', items: [
     { src: youTubeFrameUrl('O8hfaFyKMq0', 1), alt: 'Dynasty Warriors 3 Remastered — bataille du trailer officiel Koei Tecmo', caption: '01 / Une armée face à un seul officier' },
     { src: youTubeFrameUrl('O8hfaFyKMq0', 2), alt: 'Dynasty Warriors 3 Remastered — combat rapproché du trailer officiel', caption: '02 / Les combos au cœur de la mêlée' },
