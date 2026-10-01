@@ -1097,8 +1097,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(bridgeGate);
     scenery.push(bridgeGate);
   } else if (snakeway) {
-    // Les nuages jaunes et oranges déroulent un océan de cumulus de 110 m le
-    // long des deux côtés de la route ; le halo céleste marque le milieu sans
+    // Les nuages jaunes déroulent une mer de cumulus de 110 m sous la route,
+    // comme dans Dragon Ball Z ; le halo céleste marque le milieu sans
     // ajouter de structure latérale.
     for (let i = 0; i < SNAKEWAY_SEGMENT_COUNT; i += 1) {
       const leftBank = snakewayCloudBank(i, -1);

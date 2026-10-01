@@ -38,7 +38,7 @@ test('the floating meteor fills one lane and is tall enough to dodge', () => {
   assert.ok(sizeOf(snakewayObstacle('mud')).y < 0.5, 'le vortex reste au ras du sol');
 });
 
-test('yellow and orange clouds are the only looping scenery outside both three- and four-lane roads', () => {
+test('yellow clouds are the only looping scenery outside both three- and four-lane roads', () => {
   assert.equal(SNAKEWAY_SEGMENT_LENGTH * SNAKEWAY_SEGMENT_COUNT, 110);
   assert.equal(SNAKEWAY_TRACK_EDGE, LANES[LANES.length - 1] + 1.05);
   assert.equal(SNAKEWAY_GATE_INDEX, 5);
@@ -49,33 +49,35 @@ test('yellow and orange clouds are the only looping scenery outside both three- 
       const span = bounds.getSize(new THREE.Vector3());
       assert.equal(bank.position.z, 6 - index * SNAKEWAY_SEGMENT_LENGTH);
       assert.equal(bank.userData.speedFactor, 1);
-      assert.equal(bank.userData.callout, 'orange-cloudbank');
+      assert.equal(bank.userData.callout, 'yellow-cloudbank');
       assert.ok(side < 0 ? bounds.max.x < -4.2 : bounds.min.x > 4.2,
         `le nuage ${index} (côté ${side}) mord sur les voies`);
+      assert.ok(bounds.max.y < -0.3,
+        `le banc ${index} (côté ${side}) doit rester sous la route (max y ${bounds.max.y.toFixed(2)} m)`);
       assert.ok(span.z >= SNAKEWAY_SEGMENT_LENGTH,
         `le banc ${index} remplit tout son segment (z ${span.z.toFixed(1)} m)`);
       assert.ok(side < 0 ? bounds.min.x < -12 : bounds.max.x > 12,
         `le banc ${index} s'étire jusqu'à l'horizon`);
       let puffCount = 0;
-      let hasYellow = false;
-      let hasDeepOrange = false;
+      const shades = new Set();
       bank.traverse((object) => {
         if (!object.isMesh) return;
         puffCount += 1;
         assert.equal(object.geometry.type, 'SphereGeometry', 'aucun rocher, pilier ou marqueur latéral');
         const { r, g, b } = object.material.color;
-        assert.ok(r > g && g > b, `couleur de nuage jaune/orange requise : ${object.material.color.getHexString()}`);
-        // Vérifie la teinte en sRGB (espace affiché) : jaune doré vs orange profond.
+        assert.ok(r > g && g > b, `couleur de nuage requise (rampe chaude) : ${object.material.color.getHexString()}`);
+        // Teinte en sRGB (espace affiché) : chaque boule doit être jaune,
+        // de l'or profond à la lumière pâle — plus aucune teinte orange.
         const srgb = parseInt(object.material.color.getHexString(), 16);
         const sr = (srgb >> 16) / 255;
         const sg = ((srgb >> 8) & 255) / 255;
         const sb = (srgb & 255) / 255;
-        if (sr > 0.99 && sg > 0.78 && sb < 0.6) hasYellow = true;
-        if (sg < 0.65) hasDeepOrange = true;
+        assert.ok(sr > 0.99 && sg > 0.78 && sb < 0.7,
+          `boule non jaune détectée : ${object.material.color.getHexString()}`);
+        shades.add(object.material.color.getHexString());
       });
-      assert.ok(puffCount >= 14, `mur de nuages dense attendu (${puffCount} souffles)`);
-      assert.ok(hasYellow, `le banc ${index} (côté ${side}) doit porter des reflets jaunes`);
-      assert.ok(hasDeepOrange, `le banc ${index} (côté ${side}) doit porter des zones orange profond`);
+      assert.ok(puffCount >= 60, `mur de cumulus dense attendu (${puffCount} boules)`);
+      assert.ok(shades.size >= 3, `plusieurs teintes jaunes pour la profondeur (${shades.size})`);
     }
   }
 });
