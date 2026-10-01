@@ -339,27 +339,19 @@ export default function Layout({ children }) {
   const logoutLabel = t.nav.logout || 'Log out';
   const logoSrc = `${base}lets-play-logo.png`;
 
-  /* Les entrées de la barre. « Jeux » est une entrée de section : elle porte
-     deux pages (`submenu`) — la vitrine arcade et les quizz — au lieu de
-     prendre deux pastilles dans une barre déjà chargée. Sur ordinateur le
-     survol déplie le panneau, sur téléphone les deux pages s'affichent sous
-     l'entrée dans le menu plein écran (voir `.nav-submenu` dans styles.css). */
+  /* Les entrées de la barre. « Jeux-vidéo » et « Quizz » sont deux entrées
+     séparées : le sous-menu combiné causait des conflits tactiles sur mobile
+     (événements interceptés, swipe-back navigateur pendant l'intro de Mirage
+     Rush). Deux pastilles distinctes garantissent que chaque clic/tap atteint
+     la bonne cible. */
   const primaryLinks = [
     { to: '/', label: t.nav.home, num: '01', desc: 'HOME / INDEX' },
     { to: '/news', label: t.nav.news, num: '02', desc: 'NEWS / DROPS' },
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
     { to: '/communaute', label: t.nav.community || 'Communauté', num: '05', desc: 'COMMUNITY / TALK' },
-    {
-      to: '/jeu',
-      label: t.nav.games || t.nav.game,
-      num: '06',
-      desc: 'ARCADE / PLAY',
-      submenu: [
-        { to: '/jeu', label: t.nav.videoGames || 'Jeux-vidéo', desc: 'ARCADE / MIRAGE RUSH', aliases: ['/jeux'] },
-        { to: '/quizz', label: t.nav.quiz, desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
-      ],
-    },
+    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / MIRAGE RUSH', aliases: ['/jeux'] },
+    { to: '/quizz', label: t.nav.quiz, num: '07', desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
   ];
 
   const profileMeta = user?.user_metadata || {};
@@ -428,7 +420,7 @@ export default function Layout({ children }) {
                 style={{ left: indicator.left, width: indicator.width, opacity: indicator.opacity }}
               />
               {primaryLinks.map((link, idx) => {
-                const active = link.submenu ? link.submenu.some(isRouteGroup) : isActive(link.to);
+                const active = link.submenu ? link.submenu.some(isRouteGroup) : (link.aliases ? isRouteGroup(link) : isActive(link.to));
                 const body = (
                   <>
                     <span className="nav-link-main">
@@ -448,7 +440,7 @@ export default function Layout({ children }) {
                       key={link.to}
                       to={link.to}
                       className={active ? 'active' : ''}
-                      aria-current={isActive(link.to) ? 'page' : undefined}
+                      aria-current={active ? 'page' : undefined}
                       onClick={() => setMenuOpen(false)}
                       style={{ '--i': idx }}
                     >
@@ -526,9 +518,9 @@ export default function Layout({ children }) {
                 style={{ '--i': primaryLinks.length }}
               >
                 <span className="nav-link-main">
-                  {/* Numérotation HUD du menu mobile : 06 = Jeux (et ses deux
-                      sous-entrées), 07 = messagerie, 08 = profil. */}
-                  <span className="nav-link-num">07</span>
+                  {/* Numérotation HUD du menu mobile : 06 = Jeux-vidéo,
+                      07 = Quizz, 08 = messagerie, 09 = profil. */}
+                  <span className="nav-link-num">08</span>
                   <span className="nav-link-text">
                     {/* La messagerie a son propre logo : il remplace le libellé
                         texte, gardé pour les lecteurs d'écran. */}
@@ -549,7 +541,7 @@ export default function Layout({ children }) {
                 aria-label={profileAria}
               >
                 <span className="nav-link-main">
-                  <span className="nav-link-num">08</span>
+                  <span className="nav-link-num">09</span>
                   <span className="nav-profile-avatar" aria-hidden="true">
                     <span className="nav-profile-avatar-face">
                       {profileAvatar ? (
