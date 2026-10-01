@@ -523,18 +523,21 @@ export function snakewayTrackTrim(lanes, floorRows = 28, floorMinZ = -40) {
   const length = zNear - zFar;
   const centerZ = (zNear + zFar) / 2;
   for (const side of [-1, 1]) {
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, length), baseMat);
-    strip.position.set(side * (edge + 0.3), -0.02, centerZ);
+    // La bordure flotte entièrement au-dehors, au-dessus de la mer de
+    // nuages : rien n'empiète sur le revêtement, sinon l'œil utilise la
+    // route défilante comme référence et les écailles fixes semblent glisser.
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, length), baseMat);
+    strip.position.set(side * (edge + 0.88), -0.02, centerZ);
     group.add(strip);
     // Two staggered rows of overlapping grey dome scales cap the outer rim:
-    // one row centred on the edge line, one just outside it.
+    // one row just beyond the edge line, one further out.
     const step = 1.2;
     const count = Math.ceil(length / step) + 1;
     for (let row = 0; row < 2; row += 1) {
       for (let i = 0; i < count; i += 1) {
         const z = zNear - i * step + row * (step / 2);
         if (z < zFar - 0.7) continue;
-        sphere(group, scaleGeometry, (i + row) % 2 === 0 ? scaleA : scaleB, side * (edge + row * 0.6), 0.02, z, 0.55, 0.3, 0.6);
+        sphere(group, scaleGeometry, (i + row) % 2 === 0 ? scaleA : scaleB, side * (edge + 0.6 + row * 0.6), 0.02, z, 0.55, 0.3, 0.6);
       }
     }
   }

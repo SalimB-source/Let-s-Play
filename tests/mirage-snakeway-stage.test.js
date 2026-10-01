@@ -150,15 +150,15 @@ test('the grey dragon-scale border caps the outer track edges on the phone and d
     assert.equal(strips.length, 2, 'une bande de base par bord de route');
     assert.deepEqual(
       strips.map((strip) => strip.position.x).sort((a, b) => a - b),
-      [-(expectedEdge + 0.3), expectedEdge + 0.3],
-      'les bandes s’alignent sur le bord extérieur',
+      [-(expectedEdge + 0.88), expectedEdge + 0.88],
+      'les bandes flottent au-dehors, au-dessus de la mer de nuages',
     );
     assert.ok(scales.length >= 150, `bordure d’écailles dense attendue (${scales.length})`);
     for (const scale of scales) {
-      // Les écailles coiffent le bord extérieur : centrées sur la ligne
-      // d’extrémité de la route ou juste au-dehors, jamais sur les voies.
+      // Les écailles flottent entièrement au-dehors de la route : rien
+      // n'empiète sur le revêtement, pour ne pas sembler glisser avec lui.
       assert.ok(
-        Math.abs(scale.position.x) >= expectedEdge - 0.05 && Math.abs(scale.position.x) <= expectedEdge + 0.65,
+        Math.abs(scale.position.x) >= expectedEdge + 0.5 && Math.abs(scale.position.x) <= expectedEdge + 1.25,
         `écaille mal placée (x=${scale.position.x.toFixed(2)})`,
       );
       assert.ok(scale.position.y < 0.4, 'les écailles restent basses le long de la route');
