@@ -8,7 +8,8 @@ import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } f
 import { algerBuilding, algerObstacle, algerSeaside, updatePoliceBeacon } from './algerStage';
 import { japanObstacle, japanPlains, makeMountFuji } from './japanStage';
 import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeRampartsSkyline, updateBombBlink } from './rampartsStage';
-import { infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWing, makeInfinityHorizon, updateInfinityLanterns } from './infinityStage';
+import { INFINITY_CULL_Z, INFINITY_DECK_PERIOD, infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWing, makeInfinityDeck, makeInfinityHorizon, updateInfinityLanterns } from './infinityStage';
+import { INFINITY_ATMOSPHERE, makeInfinitySky } from './infinityAtmosphere';
 import { airbaseGate, airbaseObstacle, airbaseOps, airbaseStands, makeAirbaseSkyline, updateAirbaseBeacon } from './airbaseStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
@@ -514,14 +515,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                   hemiSky: 0xe8f2ff, hemiGround: 0x8a8f7a, sunLight: 0xfff4dc, rimLight: 0xbfe0ff,
                 }
               : infinity
-                ? {
-                    // Château de l’Infini : gouffre dimensionnel écarlate et ambré,
-                    // baigné par la lueur dorée des milliers de cloisons shōji.
-                    background: 0x1a0b12, fog: 0x381720, exposure: 1.14,
-                    skyBottom: [0.68, 0.32, 0.16], skyHorizon: [0.34, 0.12, 0.15], skyTop: [0.08, 0.03, 0.07],
-                    sunBottom: [1.0, 0.45, 0.16], sunTop: [1.0, 0.82, 0.38], glow: [0.96, 0.48, 0.22],
-                    hemiSky: 0xffca7a, hemiGround: 0x261118, sunLight: 0xffba66, rimLight: 0xf25252,
-                  }
+                ? INFINITY_ATMOSPHERE
                 : {
                   // Brume d'horizon = couleur du bas du ciel de desertStage.js : le sable
                   // se fond dans le ciel sans couture.
@@ -531,12 +525,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                   hemiSky: 0xffd6b1, hemiGround: 0x49374a, sunLight: 0xffbd70, rimLight: 0xe1a0d4,
                 };
   scene.background = new THREE.Color(atmosphere.background);
-  scene.fog = new THREE.Fog(atmosphere.fog, 27, 82);
+  scene.fog = new THREE.Fog(atmosphere.fog, infinity ? 26 : 27, infinity ? 84 : 82);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({ antialias: infinity, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -545,18 +539,26 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   renderer.domElement.setAttribute('aria-label', 'Jeu 3D Mirage Rush — évite les obstacles et ramasse les fragments solaires');
   mount.appendChild(renderer.domElement);
 
-  const hemiLight = new THREE.HemisphereLight(atmosphere.hemiSky, atmosphere.hemiGround, prairie ? 1.65 : 1.9);
+  const hemiLight = new THREE.HemisphereLight(atmosphere.hemiSky, atmosphere.hemiGround, infinity ? 1.85 : prairie ? 1.65 : 1.9);
   scene.add(hemiLight);
-  const sunLight = new THREE.DirectionalLight(atmosphere.sunLight, prairie ? 1.8 : 2.1);
+  const sunLight = new THREE.DirectionalLight(atmosphere.sunLight, infinity ? 1.65 : prairie ? 1.8 : 2.1);
   sunLight.position.set(0, 5, -46);
   scene.add(sunLight);
-  const rimLight = new THREE.DirectionalLight(atmosphere.rimLight, prairie ? 0.45 : 0.8);
-  rimLight.position.set(7, 6, -10);
+  const rimLight = new THREE.DirectionalLight(atmosphere.rimLight, infinity ? 0.62 : prairie ? 0.45 : 0.8);
+  rimLight.position.set(7, 6, infinity ? 10 : -10);
   scene.add(rimLight);
+  if (infinity) {
+    // Rebonds croisés des shōji : éclairent les deux ailes et les façades de face.
+    const leftFill = new THREE.DirectionalLight(0xffc98a, 0.72);
+    leftFill.position.set(-11, 8, 12);
+    const rightFill = new THREE.DirectionalLight(0xffa46b, 0.62);
+    rightFill.position.set(11, 7, 10);
+    scene.add(leftFill, rightFill);
+  }
 
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const skyVector = (rgb) => new THREE.Vector3(...rgb);
-  const sunset = new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
+  const sunset = infinity ? makeInfinitySky(camera) : new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
     depthWrite: false,
     uniforms: {
       skyBottom: { value: skyVector(atmosphere.skyBottom) },
@@ -565,10 +567,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : infinity ? 8.5 : 5.5 },
+      sunElevation: { value: japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
       sunX: { value: sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
-      sunRadius: { value: sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : infinity ? 7.2 : 8.0 },
-      isNight: { value: japan ? 1.0 : infinity ? 0.65 : 0.0 },
+      sunRadius: { value: sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
+      isNight: { value: japan ? 1.0 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
       void main() {
@@ -610,8 +612,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         gl_FragColor = vec4(mix(sky, sunColor, disc), 1.0);
       }`,
   }));
-  sunset.position.set(0, 59.91, -95);
-  sunset.renderOrder = -1;
+  if (!infinity) {
+    sunset.position.set(0, 59.91, -95);
+    sunset.renderOrder = -1;
+  }
   sunset.visible = !desert; // le désert a son propre ciel (desertStage.js)
   scene.add(sunset);
 
@@ -705,14 +709,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scene.add(mountain);
   }
 
-  const floorMaterials = [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : infinity ? 0x3d2023 : airbase ? 0x767c88 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : infinity ? 0x4b282b : airbase ? 0x7f8593 : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : infinity ? 0x2f171a : airbase ? 0x6e7482 : 0xc9995f, flatShading: true, roughness: 1 }),
+  const floorMaterials = infinity ? [] : [
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : airbase ? 0x767c88 : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : airbase ? 0x7f8593 : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : airbase ? 0x6e7482 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
-  const floorGeometry = new THREE.BoxGeometry(2.02, 0.58, 2.02);
-  const FLOOR_PERIOD = floorMaterials.length * 2;
-  const floorGroup = new THREE.Group();
+  const floorGeometry = infinity ? null : new THREE.BoxGeometry(2.02, 0.58, 2.02);
+  const FLOOR_PERIOD = infinity ? INFINITY_DECK_PERIOD : floorMaterials.length * 2;
+  const floorGroup = infinity ? makeInfinityDeck(LANES) : new THREE.Group();
   // Dans le désert la piste se prolonge jusqu'à la brume (44 rangées au lieu de 28) : elle file
   // droit vers le mirage au lieu de s'arrêter net devant le vide.
   const floorRows = desert ? 44 : 28;
@@ -728,6 +732,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     floorGroup.add(new THREE.Mesh(mergeGeometries(parts, false), material));
     parts.forEach(part => part.dispose());
   });
+  floorGeometry?.dispose();
   scene.add(floorGroup);
   let floorOffset = 0;
   const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
@@ -1829,11 +1834,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       r.mesh.position.set(LANES[r.startLane], 0, 0);
       r.mesh.visible = race.mode === 'duel';
     });
+    const cullZ = desert ? DESERT_CULL_Z : infinity ? INFINITY_CULL_Z : -Infinity;
     let z = -20;
     rows.forEach(row => {
       const gap = populateRow(row);
       row.group.position.z = z;
-      row.group.visible = !desert || z > DESERT_CULL_Z;
+      row.group.visible = z > cullZ;
       z -= gap;
     });
     resetPowerUps();
@@ -2027,7 +2033,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         // Les C4 posées sur les sites A et B des Remparts d’Ocre clignotent à chaque bip.
         updateBombBlink(item.userData.bombs, time * 0.001, reduceMotion);
         // Les lanternes flottantes du Château de l’Infini pulsent au son du biwa.
-        updateInfinityLanterns(item.userData.lanterns, time * 0.001, reduceMotion);
+        updateInfinityLanterns(item.userData.lanterns, time * 0.001, reduceMotion, item.position.z);
         // Thunder Airbase : gyrophares de la tour, de la jeep et du portique.
         updateAirbaseBeacon(item.userData.airbaseBeacons, time * 0.001, reduceMotion);
         const airbaseRadar = item.userData.radar;
@@ -2160,8 +2166,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           row.group.position.z = z;
         }
         // Au-delà de ce point les obstacles sont déjà 100 % dans la brume : on les retire
-        // pour qu'ils ne se découpent pas en taches devant le mirage.
-        if (desert) row.group.visible = row.group.position.z > DESERT_CULL_Z;
+        // pour qu'ils ne se découpent pas en taches devant le mirage ou le soleil.
+        if (desert || infinity) {
+          row.group.visible = row.group.position.z > (desert ? DESERT_CULL_Z : INFINITY_CULL_Z);
+        }
       });
 
       // Lasso rope flies to its target, then stays attached for the full slow.
@@ -2563,5 +2571,5 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
     if (prepareSignal > 0) worldRef.current?.prepare?.();
   }, [prepareSignal]);
 
-  return <div className="mirage-world" ref={mountRef} />;
+  return <div className="mirage-world" data-stage={stage} ref={mountRef} />;
 }
