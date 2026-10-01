@@ -291,6 +291,12 @@ img{max-width:100%}
 .nav-logout:hover{background:rgba(255,92,124,.14);border-color:rgba(255,92,124,.32);color:#fff}
 .nav-logout:hover .nav-logout-icon{transform:translateX(2px)}
 .nav-logout:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
+/* Sur PC (> 800 px), le bouton Déconnexion de la barre est masqué : il reste
+   disponible dans le menu qui s’ouvre au survol du profil. Le menu mobile
+   (≤ 800 px) n’a pas ce survol, il garde donc le bouton complet. */
+@media(min-width:801px){
+  .nav-actions-grid > .nav-logout{display:none}
+}
 /* Entre 801 px et 1240 px, la barre est déjà serrée (cinq entrées + recherche
    + langue + compte) : l’icône suffit, le libellé passe en info-bulle /
    aria-label. Le menu mobile (≤ 800 px) a la place pour le texte complet. */
