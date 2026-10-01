@@ -3,26 +3,29 @@ import { POWER_UPS } from './mirageRules';
 import { miragePowerIcon } from './miragePowerIcons';
 
 /**
- * Icône vectorielle haute lisibilité des 4 objets spéciaux de Mirage Rush
- * (Bouclier, Lasso, Turbo, Pistolet), partagée par la barre de pouvoirs,
- * les puces d’état du HUD et le panneau des règles.
+ * Icônes vectorielles des objets spéciaux de Mirage Rush. Les pouvoirs jaune
+ * et rouge de Cloud remplacent le lasso et le pistolet par des SVG dédiés.
  */
-export default function MiragePowerIcon({ type, className = '', decorative = true }) {
-  const icon = miragePowerIcon(type);
+export default function MiragePowerIcon({ type, variant = 'standard', className = '', decorative = true }) {
+  const icon = miragePowerIcon(type, variant);
   const resolvedType = icon.id;
+  const isCloudIcon = icon.variant === 'cloud';
   const uid = useId().replace(/:/g, '');
 
   return (
     <svg
-      className={`mirage-power-image is-${resolvedType}${className ? ` ${className}` : ''}`}
+      className={`mirage-power-image is-${resolvedType}${isCloudIcon ? ` is-cloud is-cloud-${resolvedType}` : ''}${className ? ` ${className}` : ''}`}
       viewBox="0 0 64 64"
       fill="none"
       role={decorative ? undefined : 'img'}
       aria-label={decorative ? undefined : icon.alt}
       aria-hidden={decorative ? 'true' : undefined}
-      data-power-icon={resolvedType}
+      data-power-icon={isCloudIcon ? `cloud-${resolvedType}` : resolvedType}
       focusable="false"
     >
+      {isCloudIcon && (
+        <image href={icon.src} x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid meet" />
+      )}
       {resolvedType === POWER_UPS.SHIELD && (
         <>
           <defs>
@@ -70,7 +73,7 @@ export default function MiragePowerIcon({ type, className = '', decorative = tru
         </>
       )}
 
-      {resolvedType === POWER_UPS.LASSO && (
+      {resolvedType === POWER_UPS.LASSO && !isCloudIcon && (
         <>
           <defs>
             <radialGradient id={`lasso-bg-${uid}`} cx="50%" cy="35%" r="72%">
@@ -151,7 +154,7 @@ export default function MiragePowerIcon({ type, className = '', decorative = tru
         </>
       )}
 
-      {resolvedType === POWER_UPS.PISTOL && (
+      {resolvedType === POWER_UPS.PISTOL && !isCloudIcon && (
         <>
           <defs>
             <radialGradient id={`pistol-bg-${uid}`} cx="50%" cy="35%" r="72%">

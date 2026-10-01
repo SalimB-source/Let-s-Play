@@ -15,14 +15,14 @@ import MirageTrophyIcon from './MirageTrophyIcon';
 import MirageFullscreenIcon from './MirageFullscreenIcon';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
-import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
+import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, LASSO_SLOW_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import {
   CUPS, CUP_POINTS, DEFAULT_CUP_ID, cleanRiderName, createCupRun, cupCurrentStage, cupStandings,
   getCup, isCupComplete, cupWinner, placeLabel, recordCupRace,
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
-import { SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, isShopSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
+import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, isShopSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
 import { isFullscreenShortcut, opensFullscreenOnLaunch } from './mirageFullscreen';
 import useMirageFullscreen from './useMirageFullscreen';
 import './mirage-rush.css';
@@ -86,6 +86,23 @@ function MirageWallet({ coins, className = '' }) {
     <span className={`mirage-wallet ${className}`.trim()} aria-label={`${amount} pièces d’or`}>
       <i className="mirage-coin" aria-hidden="true" />
       <b>{amount}</b> OR
+    </span>
+  );
+}
+
+function MirageSkinTags({ skin }) {
+  const description = [
+    skin.mountLabel ? `${skin.mountLabel} ${skin.horse}` : `Cheval ${skin.horse}`,
+    skin.headLabel || `Chapeau ${skin.hat}`,
+    skin.accessory,
+  ].filter(Boolean).join(', ');
+  return (
+    <span className="mirage-skin-tags" aria-label={description}>
+      <i>{skin.mountIcon || '♞'} {skin.horse}</i>
+      {skin.headLabel
+        ? <i>✦ {skin.headLabel}</i>
+        : <i>🤠 {skin.hat}</i>}
+      {skin.accessory && <i>{skin.accessoryIcon || '✦'} {skin.accessory}</i>}
     </span>
   );
 }
@@ -553,6 +570,10 @@ export default function MirageRushPage() {
   }, [racing]);
   const activeSkin = skinFor(progression);
   const skinColors = activeSkin.colors;
+  const isCloudRider = activeSkin.id === CLOUD_CHOCOBO_ID;
+  const cloudPowerVariant = isCloudRider ? 'cloud' : 'standard';
+  const yellowPowerLabel = isCloudRider ? 'Onde d’épée' : 'Lasso';
+  const redPowerLabel = isCloudRider ? 'Onde rouge en X' : 'Pistolet';
   // Tableau des positions de l'arrivée d'un duel : le joueur et ses rivaux, classés.
   const duelStandings = useMemo(
     () => (justFinished?.mode === 'duel'
@@ -730,18 +751,19 @@ export default function MirageRushPage() {
                     showPowerToast('🛡️ Bouclier activé automatiquement !');
                   } else if (info.type === 'lasso') {
                     audioRef.current?.lassoThrow?.();
-                    showPowerToast('🪢 Lasso envoyé !');
+                    showPowerToast(isCloudRider ? '⚔ Onde de choc dorée lancée !' : '🪢 Lasso envoyé !');
                   } else if (info.type === 'pistol') {
-                    audioRef.current?.gunshot();
-                    showPowerToast('🔫 Tir de pistolet !');
+                    if (isCloudRider) audioRef.current?.lassoThrow?.();
+                    else audioRef.current?.gunshot();
+                    showPowerToast(isCloudRider ? '❌ Deux ondes rouges croisées !' : '🔫 Tir de pistolet !');
                   } else if (info.type === 'boost') {
                     audioRef.current?.speedBoost?.();
                     audioRef.current?.cheer?.();
                     showPowerToast(`⚡ Turbo activé automatiquement (${POWER_BOOST_DURATION}s) !`);
                   }
                 } else if (info?.action === 'no_target') {
-                  if (info.type === 'lasso') showPowerToast('🪢 Aucun cavalier devant toi !');
-                  else if (info.type === 'pistol') showPowerToast('🔫 Aucun cavalier devant toi !');
+                  if (info.type === 'lasso') showPowerToast(isCloudRider ? '⚔ Aucun cavalier devant toi pour l’onde dorée !' : '🪢 Aucun cavalier devant toi !');
+                  else if (info.type === 'pistol') showPowerToast(isCloudRider ? '❌ Aucune cible devant toi pour les ondes croisées !' : '🔫 Aucun cavalier devant toi !');
                 } else if (info?.action === 'npc_used') {
                   if (info.type === 'shield') {
                     audioRef.current?.shieldGravity?.();
@@ -754,16 +776,18 @@ export default function MirageRushPage() {
                   audioRef.current?.powerReady?.();
                   flashFx('is-power-ready');
                   if (info.type === 'lasso') {
-                    showPowerToast('⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
+                    showPowerToast(isCloudRider ? '⚡ ⚔ ONDE D’ÉPÉE PRÊTE ! Appuie sur W / Z ou clique !' : '⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
                   } else if (info.type === 'pistol') {
-                    showPowerToast('⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
+                    showPowerToast(isCloudRider ? '⚡ ❌ ONDE CROISÉE PRÊTE ! Appuie sur R ou clique !' : '⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
                   }
                 }
               }}
               onLassoHit={(info) => {
                 if (info?.target === 'rival') {
                   const rivalLabel = info.name || 'L’ombre';
-                  showPowerToast(info.blocked ? `🛡️ ${rivalLabel} a bloqué ton lasso !` : `🪢 ${rivalLabel} est ralenti(e) !`);
+                  showPowerToast(info.blocked
+                    ? `🛡️ ${rivalLabel} a bloqué ${info.cloud ? 'ton onde dorée' : 'ton lasso'} !`
+                    : info.cloud ? `⚔ ${rivalLabel} est secoué(e) et ralenti(e) pendant ${LASSO_SLOW_DURATION}s !` : `🪢 ${rivalLabel} est ralenti(e) !`);
                 } else if (info?.target === 'npc_vs_npc') {
                   audioRef.current?.lassoThrow?.();
                   showPowerToast(
@@ -780,7 +804,9 @@ export default function MirageRushPage() {
               onPistolHit={(info) => {
                 if (info?.target === 'rival') {
                   const rivalLabel = info.name || 'L’ombre';
-                  showPowerToast(info.blocked ? `🛡️ ${rivalLabel} a arrêté ta balle avec son bouclier !` : `🔫 PAN ! ${rivalLabel} tombe de son cheval !`);
+                  showPowerToast(info.blocked
+                    ? `🛡️ ${rivalLabel} a bloqué ${info.cloud ? 'tes ondes rouges' : 'ta balle'} avec son bouclier !`
+                    : info.cloud ? `❌ ${rivalLabel} tombe pendant ${PISTOL_STUN_DURATION}s !` : `🔫 PAN ! ${rivalLabel} tombe de son cheval !`);
                 } else if (info?.target === 'npc_vs_npc') {
                   audioRef.current?.gunshot();
                   showPowerToast(
@@ -826,10 +852,10 @@ export default function MirageRushPage() {
                     {race.mode !== 'rush' && hud.powerBoostActive && <i className="mirage-chip is-boost"><MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-chip-power-icon" /> TURBO {Math.ceil(hud.powerBoostLeft)}s</i>}
                     {hud.slowed && (
                       <i className={`mirage-chip is-slow${hud.slowKind === 'mud' ? ' is-mud' : ''}`}>
-                        {hud.slowKind === 'mud' ? '🟤 BOUE · RALENTI' : <><MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-chip-power-icon" /> RALENTI</>}
+                        {hud.slowKind === 'mud' ? '🟤 BOUE · RALENTI' : <><MiragePowerIcon type={POWER_UPS.LASSO} variant={cloudPowerVariant} className="mirage-chip-power-icon" /> RALENTI</>}
                       </i>
                     )}
-                    {race.mode !== 'rush' && hud.stunned && <i className="mirage-chip is-slow"><MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-chip-power-icon" /> À TERRE</i>}
+                    {race.mode !== 'rush' && hud.stunned && <i className="mirage-chip is-slow"><MiragePowerIcon type={POWER_UPS.PISTOL} variant={cloudPowerVariant} className="mirage-chip-power-icon" /> À TERRE</i>}
                   </span>
                 </div>
                 <div className="mirage-hud-center">
@@ -922,14 +948,16 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_lasso')}
                     disabled={(hud.lassoCharges || 0) <= 0}
-                    title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
+                    title={isCloudRider
+                      ? `Onde de choc à l’épée (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes. Secoue et ralentit la cible pendant ${LASSO_SLOW_DURATION}s.`
+                      : `Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
-                      <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
+                      <MiragePowerIcon type={POWER_UPS.LASSO} variant={cloudPowerVariant} className="mirage-powerup-icon" />
                       <span className="mirage-powerup-key">W / Z</span>
                     </div>
                     <div className="mirage-powerup-btn-name">
-                      <span>Lasso</span>
+                      <span>{yellowPowerLabel}</span>
                       {(hud.lassoCharges || 0) > 0
                         ? <b className="mirage-powerup-count is-charges">×{hud.lassoCharges}</b>
                         : <span className="mirage-powerup-count">{hud.lassoChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.LASSO]} ◆</span>}
@@ -972,14 +1000,16 @@ export default function MirageRushPage() {
                     className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
                     onClick={() => trigger('use_pistol')}
                     disabled={(hud.pistolCharges || 0) <= 0}
-                    title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Fait tomber la cible devant toi pendant ${PISTOL_STUN_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
+                    title={isCloudRider
+                      ? `Deux ondes rouges croisées (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges. Fait tomber la cible pendant ${PISTOL_STUN_DURATION}s.`
+                      : `Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Fait tomber la cible devant toi pendant ${PISTOL_STUN_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                   >
                     <div className="mirage-powerup-btn-top">
-                      <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
+                      <MiragePowerIcon type={POWER_UPS.PISTOL} variant={cloudPowerVariant} className="mirage-powerup-icon" />
                       <span className="mirage-powerup-key">R</span>
                     </div>
                     <div className="mirage-powerup-btn-name">
-                      <span>Pistolet</span>
+                      <span>{redPowerLabel}</span>
                       {(hud.pistolCharges || 0) > 0
                         ? <b className="mirage-powerup-count is-charges">×{hud.pistolCharges}</b>
                         : <span className="mirage-powerup-count">{hud.pistolChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]} ◆</span>}
@@ -1099,9 +1129,9 @@ export default function MirageRushPage() {
                       <span><kbd>↑</kbd> sauter</span>
                       {(selectedMode === 'duel' || isCup) && <>
                         <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-key-power-icon" /> Bouclier</span>
-                        <span><kbd>W/Z</kbd> <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-key-power-icon" /> Lasso</span>
+                        <span><kbd>W/Z</kbd> <MiragePowerIcon type={POWER_UPS.LASSO} variant={cloudPowerVariant} className="mirage-key-power-icon" /> {yellowPowerLabel}</span>
                         <span><kbd>AUTO</kbd> <MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-key-power-icon" /> Turbo</span>
-                        <span><kbd>R</kbd> <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-key-power-icon" /> Pistolet</span>
+                        <span><kbd>R</kbd> <MiragePowerIcon type={POWER_UPS.PISTOL} variant={cloudPowerVariant} className="mirage-key-power-icon" /> {redPowerLabel}</span>
                       </>}
                       <span><kbd>ÉCHAP</kbd> pause</span>
                       <span><kbd>F</kbd> plein écran</span>
@@ -1270,20 +1300,20 @@ export default function MirageRushPage() {
                   <button
                     type="button"
                     key={skin.id}
-                    className={`mirage-skin-chip${selected ? ' is-selected' : ''}${unlocked ? '' : ' is-locked'}`}
+                    className={`mirage-skin-chip${selected ? ' is-selected' : ''}${unlocked ? '' : ' is-locked'}${skin.id === CLOUD_CHOCOBO_ID ? ' is-cloud-showcase' : ''}`}
                     aria-pressed={selected}
                     disabled={!unlocked && !shopItem}
                     onClick={() => (unlocked ? chooseSkin(skin.id) : setSettingsTab('shop'))}
                     title={unlocked ? skin.hint : shopItem ? `${skin.price} OR dans la boutique` : `Débloqué au niveau ${skin.level}`}
                   >
-                    {/* Aperçu 3D du skin (cheval + cavalier du jeu) qui tourne en continu. */}
+                    {/* Aperçu 3D de la monture et du cavalier, en rotation. */}
                     <span className="mirage-skin-stage">
                       <MirageSkinPreview palette={skin.colors} className="mirage-skin-model" />
                       {!unlocked && <span className="mirage-skin-lock" aria-hidden="true">🔒</span>}
                     </span>
                     <span className="mirage-skin-name">{skin.name}</span>
-                    <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}${skin.accessory ? `, ${skin.accessory}` : ''}`}><i>♞ {skin.horse}</i><i>🤠 {skin.hat}</i>{skin.accessory && <i>✦ {skin.accessory}</i>}</span>
-                    <small>{selected ? 'ÉQUIPÉ' : unlocked ? skin.hint : shopItem ? `${skin.price} OR` : `NIV. ${skin.level}`}</small>
+                    <MirageSkinTags skin={skin} />
+                    <small>{selected ? 'ÉQUIPÉ' : skin.id === CLOUD_CHOCOBO_ID && CLOUD_CHOCOBO_TEMPORARILY_FREE ? `OFFERT À TOUS · ${skin.price} OR HABITUELS` : unlocked ? skin.hint : shopItem ? `${skin.price} OR` : `NIV. ${skin.level}`}</small>
                   </button>
                 );
               })}
@@ -1304,30 +1334,29 @@ export default function MirageRushPage() {
                   <MirageWallet coins={progression.coins} />
                 </div>
                 <p className="mirage-board-subtitle">
-                  Chaque victoire rapporte {WIN_COINS} OR. Les skins de la boutique ont des accessoires bien visibles — Gyro Zeppeli et ses steel balls vertes coûtent 200 OR.
+                  Chaque victoire rapporte {WIN_COINS} OR. Gyro Zeppeli coûte 200 OR ; Cloud et son chocobo doré sont offerts temporairement à tous les joueurs (prix habituel conservé : 280 OR).
                 </p>
                 <div className="mirage-shop-list">
                   {SHOP_SKINS.map((skin) => {
-                    const owned = (progression.ownedSkins || []).includes(skin.id);
+                    const actuallyOwned = (progression.ownedSkins || []).includes(skin.id);
+                    const owned = isSkinUnlocked(skin, levelInfo.level, progression.ownedSkins);
+                    const temporaryUnlock = skin.id === CLOUD_CHOCOBO_ID && CLOUD_CHOCOBO_TEMPORARILY_FREE && !actuallyOwned;
                     const selected = skin.id === activeSkin.id;
                     const canAfford = progression.coins >= skin.price;
                     return (
-                      <article key={skin.id} className={`mirage-shop-card${owned ? ' is-owned' : ''}${selected ? ' is-selected' : ''}`}>
+                      <article key={skin.id} className={`mirage-shop-card${owned ? ' is-owned' : ''}${selected ? ' is-selected' : ''}${skin.id === CLOUD_CHOCOBO_ID ? ' is-cloud-showcase' : ''}`}>
                         <span className="mirage-skin-stage">
                           <MirageSkinPreview palette={skin.colors} className="mirage-skin-model" label={skin.name} />
                           {!owned && <span className="mirage-skin-lock" aria-hidden="true">🔒</span>}
                         </span>
                         <div className="mirage-shop-copy">
                           <span className="mirage-skin-name">{skin.name}</span>
-                          <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}${skin.accessory ? `, ${skin.accessory}` : ''}`}>
-                            <i>♞ {skin.horse}</i>
-                            <i>🤠 {skin.hat}</i>
-                            {skin.accessory && <i>✦ {skin.accessory}</i>}
-                          </span>
+                          <MirageSkinTags skin={skin} />
                           <p>{skin.hint}</p>
+                          {temporaryUnlock && <small className="mirage-shop-temporary">OFFERT TEMPORAIREMENT · PRIX HABITUEL {skin.price} OR</small>}
                           {owned ? (
-                            <button type="button" className="mirage-shop-buy is-owned" onClick={() => chooseSkin(skin.id)} disabled={selected}>
-                              {selected ? 'ÉQUIPÉ' : 'ÉQUIPER'}
+                            <button type="button" className={`mirage-shop-buy is-owned${temporaryUnlock ? ' is-temporary' : ''}`} onClick={() => chooseSkin(skin.id)} disabled={selected}>
+                              {selected ? 'ÉQUIPÉ' : temporaryUnlock ? 'ÉQUIPER · OFFERT' : 'ÉQUIPER'}
                             </button>
                           ) : (
                             <button
@@ -1384,15 +1413,15 @@ export default function MirageRushPage() {
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">⚔</span><div><strong>{rivalCount > 2 ? 'Trois cavaliers rivaux' : `${rivalCount} cavaliers rivaux`}</strong><small>Défie {rivalNameList} : {rivalCount} PNJ qui changent de voie, sautent, ramassent les diamants et utilisent leurs propres pouvoirs contre toi et entre eux !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Boosts de vitesse & réapparition ({GEM_RESPAWN_DELAY} s)</strong><small>Chaque diamant accélère ta monture pendant {SPEED_BOOST_DURATION} s : bleu ×{DIAMOND_SPEED_MULTIPLIERS[0].toFixed(1)}, rouge ×{DIAMOND_SPEED_MULTIPLIERS[1].toFixed(1)}, vert ×{DIAMOND_SPEED_MULTIPLIERS[2].toFixed(1)}, jaune ×{DIAMOND_SPEED_MULTIPLIERS[3].toFixed(1)}. Un diamant pris disparaît {GEM_RESPAWN_DELAY} s puis réapparaît !</small></div></div>
             <div className="mirage-rule">
-              <MiragePowerIcon type={POWER_UPS.LASSO} decorative={false} className="mirage-rule-image" />
+              <MiragePowerIcon type={POWER_UPS.LASSO} variant={cloudPowerVariant} decorative={false} className="mirage-rule-image" />
               <div>
                 <strong>1 couleur de diamant = 1 pouvoir (Duel & En ligne)</strong>
-                <small>Le <b>Bouclier</b> se charge avec {POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants <b>bleus</b> et le <b>Turbo</b> avec {POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants <b>verts</b> ; ils partent seuls quand la barre est pleine (bouclier 5 s, turbo {POWER_BOOST_DURATION} s). Le <b>Lasso</b> demande {POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants <b>jaunes</b> (W/Z : cible devant toi) et le <b>Pistolet</b> {POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants <b>rouges</b> (R : immobilise la cible devant toi pendant {PISTOL_STUN_DURATION} s) ; ces deux pouvoirs se déclenchent à la main. Utiliser un objet ne décharge pas les autres !</small>
+                <small>Le <b>Bouclier</b> se charge avec {POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants <b>bleus</b> et le <b>Turbo</b> avec {POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants <b>verts</b> ; ils partent seuls quand la barre est pleine (bouclier 5 s, turbo {POWER_BOOST_DURATION} s). Le <b>{yellowPowerLabel}</b> demande {POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants <b>jaunes</b> (W/Z : {isCloudRider ? `onde d’épée qui secoue et ralentit ${LASSO_SLOW_DURATION} s` : 'cible devant toi'}) et <b>{redPowerLabel}</b> {POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants <b>rouges</b> (R : {isCloudRider ? `deux ondes croisées qui font tomber ${PISTOL_STUN_DURATION} s` : `immobilise la cible devant toi pendant ${PISTOL_STUN_DURATION} s`}) ; ces deux pouvoirs se déclenchent à la main. Utiliser un objet ne décharge pas les autres !</small>
                 <div className="mirage-rule-powers-grid" aria-label="Les 4 objets spéciaux">
                   <span className="mirage-rule-power-pill is-blue"><MiragePowerIcon type={POWER_UPS.SHIELD} className="mirage-rule-pill-icon" /><b>Bouclier</b><i>AUTO</i></span>
-                  <span className="mirage-rule-power-pill is-yellow"><MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-rule-pill-icon" /><b>Lasso</b><i>W/Z</i></span>
+                  <span className="mirage-rule-power-pill is-yellow"><MiragePowerIcon type={POWER_UPS.LASSO} variant={cloudPowerVariant} className="mirage-rule-pill-icon" /><b>{yellowPowerLabel}</b><i>W/Z</i></span>
                   <span className="mirage-rule-power-pill is-green"><MiragePowerIcon type={POWER_UPS.BOOST} className="mirage-rule-pill-icon" /><b>Turbo</b><i>AUTO</i></span>
-                  <span className="mirage-rule-power-pill is-red"><MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-rule-pill-icon" /><b>Pistolet</b><i>R</i></span>
+                  <span className="mirage-rule-power-pill is-red"><MiragePowerIcon type={POWER_UPS.PISTOL} variant={cloudPowerVariant} className="mirage-rule-pill-icon" /><b>{redPowerLabel}</b><i>R</i></span>
                 </div>
               </div>
             </div>
@@ -1401,11 +1430,11 @@ export default function MirageRushPage() {
               <section className="mirage-howto">
             <span className="mirage-panel-kicker">LES RÈGLES DU PARCOURS</span>
             <div className="mirage-rule"><span className="mirage-rule-icon is-red">◆</span><div><strong>Ramasse les fragments</strong><small>Cyan : 100 pts · Rouge : 150 pts · Vert : 200 pts · Or : 250 pts, avant multiplicateur.</small></div></div>
-            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur charge son pouvoir dédié : Bleu = Bouclier ({POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]}), Jaune = Lasso W/Z ({POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]}), Vert = Turbo ({POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]}), Rouge = Pistolet R ({POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]}). Bouclier et Turbo partent automatiquement ; Lasso et Pistolet se déclenchent à la main.</small></div></div>
+            <div className="mirage-rule"><MiragePowerIcon type={POWER_UPS.SHIELD} decorative={false} className="mirage-rule-image" /><div><strong>Pouvoirs en Duel & En ligne</strong><small>Chaque couleur charge son pouvoir dédié : Bleu = Bouclier ({POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]}), Jaune = {yellowPowerLabel} W/Z ({POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]}), Vert = Turbo ({POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]}), Rouge = {redPowerLabel} R ({POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]}). Bouclier et Turbo partent automatiquement ; {yellowPowerLabel} et {redPowerLabel} se déclenchent à la main.{isCloudRider ? ` L’onde dorée secoue et ralentit ${LASSO_SLOW_DURATION} s ; la croix rouge fait tomber ${PISTOL_STUN_DURATION} s.` : ''}</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger, les lanternes de pierre, les Xbox des Remparts d’Ocre, les piliers Andon du Château de l’Infini ou les fûts de kérosène de Thunder Airbase : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">●</span><div><strong>Pièces d’or</strong><small>Chaque victoire (1ᵉʳ d’un duel, d’une course de coupe ou d’un salon) rapporte {WIN_COINS} OR. Dépense-les dans la boutique : le skin Gyro Zeppeli coûte 200 OR.</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">●</span><div><strong>Pièces d’or</strong><small>Chaque victoire (1ᵉʳ d’un duel, d’une course de coupe ou d’un salon) rapporte {WIN_COINS} OR. Dépense-les dans la boutique : Gyro Zeppeli coûte 200 OR ; Cloud et son chocobo sont offerts temporairement (280 OR habituellement).</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine), les tonneaux (Costa Omertà), les balustrades blanches (Alger), les barrières de bambou (Yōtei), les murets du Mid (Remparts d’Ocre), les paravents shōji (Château de l’Infini) et les barrières de piste (Thunder Airbase) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies {trackLanes > 3 ? 'Si des obstacles ferment les deux autres voies' : 'Si un obstacle ferme la dernière voie'}, le saut est obligatoire.</div>
               </section>
 

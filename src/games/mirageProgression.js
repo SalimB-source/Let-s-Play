@@ -1,19 +1,21 @@
 // Progression & skins for Mirage Rush: XP per run, level curve, rider skins
 // unlocked along the way, gold coins on victories and a shop for paid skins.
 // Pure logic + localStorage, no React, so node --test can exercise it directly.
-import { CHARACTER_PALETTES, CHARACTER_PRICES } from './mirageCharacters.js';
+import { CHARACTER_PALETTES, CHARACTER_PRICES, CLOUD_CHOCOBO_INDEX, GYRO_ZEPPELI_INDEX } from './mirageCharacters.js';
 
 export const PROGRESSION_KEY = 'letsplay_mirage_progression_v1';
 export const MAX_LEVEL = 20;
 /** Gold awarded for finishing 1st (duel, cup race or online). */
 export const WIN_COINS = 5;
 export const GYRO_ZEPPELI_ID = 'gyro-zeppeli';
-const GYRO_ZEPPELI_INDEX = 4;
+export const CLOUD_CHOCOBO_ID = 'cloud-chocobo';
+/** Temporary all-player access; set false to restore the stored 280 OR shop gate. */
+export const CLOUD_CHOCOBO_TEMPORARILY_FREE = true;
 
 // colors = [coat, mane, cloth, trim, head, hat, markings], the palette slots
 // used by makeExplorer() in mirageExplorer.js. `markings` paints the blaze
 // (liste) and socks (balzanes); set it equal to the coat for a plain horse.
-// `horse` / `hat` are short labels shown in the « TON CAVALIER » cards.
+// `horse` / `hat` are short mount / headwear labels shown in the rider cards.
 // First skin is the default rider. Skins with `price` are bought in the shop,
 // not unlocked with XP.
 export const SKINS = [
@@ -38,6 +40,11 @@ export const SKINS = [
   { id: GYRO_ZEPPELI_ID, name: 'Gyro Zeppeli', level: 1, price: CHARACTER_PRICES[GYRO_ZEPPELI_INDEX] || 200,
     hint: 'Steel balls vertes & lunettes', horse: 'Palomino', hat: 'Fedora', accessory: 'Steel balls',
     colors: [...CHARACTER_PALETTES[GYRO_ZEPPELI_INDEX]] },
+  // Cloud en tenue bleue, monté sur un chocobo d’or, avec sa gigantesque épée.
+  { id: CLOUD_CHOCOBO_ID, name: 'Cloud & son Chocobo', level: 1, price: CHARACTER_PRICES[CLOUD_CHOCOBO_INDEX] || 280,
+    hint: 'Épée broyeuse & chocobo doré', horse: 'Chocobo', hat: 'Épis blonds', accessory: 'Épée broyeuse',
+    mountIcon: '🐤', headLabel: 'Cheveux hérissés', accessoryIcon: '⚔',
+    colors: [...CHARACTER_PALETTES[CLOUD_CHOCOBO_INDEX]] },
 ];
 
 export const SHOP_SKINS = SKINS.filter((skin) => Number(skin.price) > 0);
@@ -93,8 +100,9 @@ export function coinsForRun(result = {}) {
   return 0;
 }
 
-/** Level skins unlock with XP; shop skins unlock only once bought. */
+/** Level skins use XP; shop skins use ownership unless a temporary unlock is active. */
 export function isSkinUnlocked(skin, level, ownedSkins = []) {
+  if (skin?.id === CLOUD_CHOCOBO_ID && CLOUD_CHOCOBO_TEMPORARILY_FREE) return true;
   if (isShopSkin(skin)) return Array.isArray(ownedSkins) && ownedSkins.includes(skin.id);
   return Number(level || 1) >= Number(skin?.level || 1);
 }
@@ -163,6 +171,9 @@ export function buySkin(progress, skinId) {
   const current = sanitizeProgress(progress);
   const skin = SKINS.find((entry) => entry.id === skinId);
   if (!isShopSkin(skin)) return { progress: current, ok: false, reason: 'not-for-sale' };
+  if (skin.id === CLOUD_CHOCOBO_ID && CLOUD_CHOCOBO_TEMPORARILY_FREE) {
+    return { progress: current, ok: false, reason: 'temporarily-unlocked', skin };
+  }
   if (current.ownedSkins.includes(skin.id)) {
     return { progress: current, ok: false, reason: 'owned', skin };
   }

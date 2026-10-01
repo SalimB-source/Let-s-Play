@@ -419,6 +419,7 @@ function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColor
     const parts = rider.userData.parts;
     if (parts) {
       parts.tail.rotation.z = Math.sin(time * 5) * 0.28;
+      parts.wings?.forEach((wing, index) => { wing.rotation.z = Math.sin(time * 5 + index * Math.PI) * 0.12 * hop; });
       parts.cape.rotation.x = 0.12 + Math.sin(time * 6) * 0.1;
       parts.legs.forEach((leg, index) => { leg.rotation.x = Math.sin(time * 6 + index * 1.6) * 0.16 * hop; });
     }

@@ -1,6 +1,6 @@
 // Moteur partagé des aperçus 3D de skins (voir MirageSkinPreview.jsx).
 /*
- * Aperçu 3D d'un skin Mirage : le cheval + cavalier voxel du jeu, qui tourne
+ * Aperçu 3D d'un skin Mirage : monture + cavalier voxel du jeu, qui tourne
  * en continu sur lui-même (en galopant sur place).
  *
  * Toutes les vignettes partagent UN SEUL WebGLRenderer hors écran : chaque
@@ -115,9 +115,10 @@ function frame(now) {
     const model = p.model;
     model.rotation.y = p.phase + t * SPIN_SPEED;
     // Petit galop sur place : jambes, queue et léger rebond.
-    const { legs, tail } = model.userData.parts;
+    const { legs, tail, wings = [] } = model.userData.parts;
     legs.forEach((leg, i) => { leg.rotation.x = Math.sin(t * 7 + i * 2.2) * 0.45; });
     tail.rotation.x = -0.35 + Math.sin(t * 7) * 0.12;
+    wings.forEach((wing, index) => { wing.rotation.z = Math.sin(t * 7 + index * Math.PI) * 0.12; });
     model.position.y = Math.abs(Math.sin(t * 7)) * 0.06;
 
     s.camera.aspect = p.w / p.h;

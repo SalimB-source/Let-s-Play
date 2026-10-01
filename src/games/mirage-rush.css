@@ -672,9 +672,23 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-shop-card.is-selected { border-color: rgba(246, 205, 114, .75); background: rgba(246, 205, 114, .1); }
 .mirage-shop-card:not(.is-owned) .mirage-skin-model { filter: grayscale(1) brightness(.45) contrast(1.1); }
 .mirage-shop-card .mirage-skin-stage { height: 152px; }
+/* Cloud reste en couleurs dans sa vitrine, y compris pendant son accès temporaire gratuit. */
+.mirage-skin-chip.is-cloud-showcase.is-locked .mirage-skin-model,
+.mirage-shop-card.is-cloud-showcase:not(.is-owned) .mirage-skin-model { filter: none; }
+.mirage-shop-card.is-cloud-showcase .mirage-skin-stage {
+  background: radial-gradient(ellipse 70% 60% at 50% 92%, rgba(255, 211, 62, .4), transparent 70%),
+              linear-gradient(180deg, rgba(81, 68, 116, .48), rgba(196, 111, 78, .28) 66%, rgba(246, 198, 91, .25));
+}
+.mirage-shop-card.is-cloud-showcase .mirage-skin-name { color: #ffe07a; }
+.mirage-shop-card.is-cloud-showcase:not(.is-owned) .mirage-shop-buy {
+  border-color: rgba(255, 212, 80, .82);
+  background: linear-gradient(135deg, rgba(255, 212, 80, .31), rgba(242, 119, 169, .15));
+  box-shadow: 0 0 16px rgba(255, 211, 62, .08);
+}
 .mirage-shop-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
 .mirage-shop-copy .mirage-skin-name { white-space: normal; font-size: 12px; letter-spacing: .04em; }
 .mirage-shop-copy p { margin: 0; color: rgba(255, 240, 219, .62); font-size: 11px; line-height: 1.4; }
+.mirage-shop-temporary { color: #ffe08a; font: 800 7px/1.5 var(--mono); letter-spacing: .06em; }
 .mirage-shop-buy {
   margin-top: 4px; min-height: 34px; padding: 0 12px; border-radius: 9px;
   border: 1px solid rgba(246, 205, 114, .7);
@@ -685,6 +699,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-shop-buy:disabled { cursor: not-allowed; opacity: .45; }
 .mirage-shop-buy.is-broke { opacity: .72; }
 .mirage-shop-buy.is-owned { border-color: rgba(140, 233, 180, .55); color: #8ce9b4; background: rgba(140, 233, 180, .1); }
+.mirage-shop-buy.is-owned.is-temporary { border-color: rgba(255, 212, 80, .82); color: #ffe08a; background: linear-gradient(135deg, rgba(255, 212, 80, .24), rgba(242, 119, 169, .12)); }
 .mirage-shop-buy:focus-visible { outline: 2px solid #fff1c9; outline-offset: 2px; }
 .mirage-shop-notice { margin: 10px 0 0; color: #f0b27a; font: 800 9px var(--mono); letter-spacing: .08em; }
 .mirage-shop-notice.is-success { color: #8ce9b4; }

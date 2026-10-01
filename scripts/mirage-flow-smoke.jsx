@@ -15,7 +15,8 @@
  *      terrain imposé ;
  *   5. le panneau latéral est regroupé dans PARAMÈTRES avec quatre onglets :
  *      La communauté, Ton cavalier, Boutique, Informations (les règles de la
- *      COUPE y figurent ; la boutique vend Gyro Zeppeli pour 200 OR) ;
+ *      COUPE y figurent ; Gyro coûte 200 OR et Cloud est offert temporairement
+ *      à tous, avec son prix habituel de 280 OR conservé) ;
  *   6. le lobby EN LIGNE (?mode=online) garde sa barre de boutons de mode
  *      (RUÉE, DUEL, COUPE, EN LIGNE) : le bouton COUPE ramène à la coupe ;
  *   7. la piste du téléphone (trois voies, `setLaneCount(3)`) fait suivre
@@ -37,6 +38,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import MirageRushPage from '../src/games/MirageRushPage';
 import { encodeChallenge } from '../src/games/duelChallenge';
+import { CLOUD_CHOCOBO_ID, PROGRESSION_KEY } from '../src/games/mirageProgression';
 import { laneCount, setLaneCount } from '../src/games/mirageRules';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -231,8 +233,20 @@ export async function checkMirageFlow(assert) {
     assert.equal(settingsTabs[1].getAttribute('aria-selected'), 'true', 'l’onglet Ton cavalier s’active au clic');
     await act(async () => { settingsTabs[2].click(); });
     assert.equal(settingsTabs[2].getAttribute('aria-selected'), 'true', 'l’onglet Boutique s’active au clic');
-    assert.ok(settings.querySelector('#mirage-panel-shop').textContent.includes('Gyro Zeppeli'), 'Gyro Zeppeli est en vente');
-    assert.ok(settings.querySelector('#mirage-panel-shop').textContent.includes('200 OR'), 'Gyro Zeppeli coûte 200 OR');
+    const shopPanel = settings.querySelector('#mirage-panel-shop');
+    assert.ok(shopPanel.textContent.includes('Gyro Zeppeli'), 'Gyro Zeppeli est en vente');
+    assert.ok(shopPanel.textContent.includes('200 OR'), 'Gyro Zeppeli coûte 200 OR');
+    assert.ok(shopPanel.textContent.includes('Cloud & son Chocobo'), 'Cloud et son chocobo sont en vente');
+    assert.ok(shopPanel.textContent.includes('280 OR'), 'Cloud et son chocobo coûtent 280 OR');
+    const cloudCard = [...shopPanel.querySelectorAll('.mirage-shop-card')]
+      .find((card) => card.querySelector('.mirage-skin-name')?.textContent === 'Cloud & son Chocobo');
+    assert.ok(cloudCard, 'Cloud dispose de sa fiche de personnage');
+    assert.ok(cloudCard.classList.contains('is-cloud-showcase'), 'Cloud bénéficie d’une vitrine dorée dédiée');
+    assert.ok(cloudCard.querySelector('.mirage-skin-model'), 'la fiche possède un aperçu dédié de Cloud et son chocobo');
+    assert.ok(cloudCard.textContent.includes('Épée broyeuse'), 'la fiche montre son épée');
+    assert.ok(cloudCard.textContent.includes('OFFERT TEMPORAIREMENT'), 'Cloud est affiché comme offert temporairement à tous');
+    assert.ok(cloudCard.textContent.includes('280 OR'), 'le prix habituel de 280 OR reste indiqué');
+    assert.equal(cloudCard.querySelector('.mirage-shop-buy').textContent.trim(), 'ÉQUIPER · OFFERT', 'aucun achat ne bloque l’équipement temporaire');
     await act(async () => { settingsTabs[3].click(); });
     assert.equal(settingsTabs[3].getAttribute('aria-selected'), 'true', 'l’onglet Informations s’active au clic');
 
@@ -461,5 +475,35 @@ export async function checkMirageFlow(assert) {
     await phone.unmount();
     restoreMatchMedia();
     setLaneCount(4);
+  }
+
+  /* ------- 8. Cloud : accès temporaire universel, prix de 280 OR préservé --- */
+  const previousProgress = window.localStorage.getItem(PROGRESSION_KEY);
+  window.localStorage.setItem(PROGRESSION_KEY, JSON.stringify({
+    xp: 0, runs: 0, coins: 280, skinId: 'desert', ownedSkins: [],
+  }));
+  const buyer = await mountPage('/jeu');
+  try {
+    const shopTab = [...buyer.node.querySelectorAll('.mirage-settings-tabs button')]
+      .find((button) => button.textContent === 'Boutique');
+    await act(async () => { shopTab.click(); });
+    const cloudCard = [...buyer.node.querySelectorAll('.mirage-shop-card')]
+      .find((card) => card.querySelector('.mirage-skin-name')?.textContent === 'Cloud & son Chocobo');
+    const equipButton = cloudCard?.querySelector('.mirage-shop-buy');
+    assert.ok(equipButton, 'Cloud est accessible dans la boutique');
+    assert.equal(equipButton.textContent.trim(), 'ÉQUIPER · OFFERT', 'l’accès temporaire ne demande aucun achat');
+    assert.ok(cloudCard.textContent.includes('280 OR'), 'le prix futur de 280 OR reste visible');
+    await act(async () => { equipButton.click(); });
+    assert.ok(cloudCard.classList.contains('is-owned'), 'Cloud apparaît comme disponible');
+    assert.equal(cloudCard.querySelector('.mirage-shop-buy').textContent.trim(), 'ÉQUIPÉ', 'Cloud est équipé au clic');
+    assert.equal(buyer.node.querySelector('.mirage-settings-heading .mirage-wallet b')?.textContent, '280',
+      'l’accès universel ne débite pas le portefeuille');
+    const savedProgress = JSON.parse(window.localStorage.getItem(PROGRESSION_KEY));
+    assert.deepEqual(savedProgress.ownedSkins, [], 'Cloud n’est pas marqué comme acheté');
+    assert.equal(savedProgress.skinId, CLOUD_CHOCOBO_ID, 'le skin équipé est persisté sans achat');
+  } finally {
+    await buyer.unmount();
+    if (previousProgress === null) window.localStorage.removeItem(PROGRESSION_KEY);
+    else window.localStorage.setItem(PROGRESSION_KEY, previousProgress);
   }
 }

@@ -32,7 +32,7 @@ import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 import { paceForTrack } from './mirageLanes';
 import { MAX_PIXEL_RATIO, renderPixelRatio } from './miragePixelBudget';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
-import { block, makeExplorer, paintModel } from './mirageExplorer';
+import { accessoriesForPalette, block, makeExplorer, paintModel } from './mirageExplorer';
 
 // La largeur de la piste n'est plus une constante de module : elle dépend du
 // nombre de voies (3 sur téléphone, 4 sur ordinateur et tablette), choisi au
@@ -44,6 +44,9 @@ const NO_POWER_UPS = Object.freeze([]);
 // Champ de la caméra : base au repos, élargi pendant le turbo.
 const CAMERA_BASE_FOV = 50;
 const CAMERA_TURBO_FOV = 61;
+const CLOUD_SWORD_SWING_DURATION = 0.42;
+const CLOUD_WAVE_FLIGHT_DURATION = 0.38;
+const CLOUD_WAVE_IMPACT_DURATION = 0.24;
 
 /**
  * FOV vertical adapté au ratio de l'écran : quand la vue est plus étroite que
@@ -462,6 +465,91 @@ function makeLassoRope() {
   return group;
 }
 
+function makeCloudBladeGeometry() {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.11, -0.72);
+  shape.quadraticCurveTo(0.55, -0.26, 0.55, 0.52);
+  shape.quadraticCurveTo(0.36, 0.29, 0.18, 0.1);
+  shape.quadraticCurveTo(0.1, -0.26, -0.11, -0.72);
+  shape.closePath();
+  return new THREE.ShapeGeometry(shape, 18);
+}
+
+function makeCloudShockwave(kind) {
+  const group = new THREE.Group();
+  group.name = kind === 'yellow' ? 'cloud-golden-sword-wave' : 'cloud-red-cross-waves';
+  const bladeGeometry = makeCloudBladeGeometry();
+  const materials = [];
+  const makeMaterial = (color, opacity) => {
+    const material = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      toneMapped: false,
+      blending: THREE.AdditiveBlending,
+    });
+    materials.push(material);
+    return material;
+  };
+  const slash = (angle, scale, color, opacity, z) => {
+    const mesh = new THREE.Mesh(bladeGeometry, makeMaterial(color, opacity));
+    mesh.rotation.z = angle;
+    mesh.scale.setScalar(scale);
+    mesh.position.z = z;
+    mesh.renderOrder = 24;
+    mesh.frustumCulled = false;
+    group.add(mesh);
+    return mesh;
+  };
+
+  const haloColor = kind === 'yellow' ? 0xffd447 : 0xff4059;
+  if (kind === 'yellow') {
+    slash(0, 1, 0xffa91f, 0.62, 0);
+    slash(0, 0.66, 0xfff3a0, 0.98, 0.035);
+    slash(-0.06, 0.34, 0xffffff, 0.92, 0.065);
+  } else {
+    slash(Math.PI / 4, 0.9, 0xf02645, 0.72, 0);
+    slash(-Math.PI / 4, 0.9, 0xf02645, 0.72, 0.005);
+    slash(Math.PI / 4, 0.56, 0xffc1bd, 0.98, 0.04);
+    slash(-Math.PI / 4, 0.56, 0xffc1bd, 0.98, 0.045);
+  }
+  const halo = new THREE.Mesh(
+    new THREE.TorusGeometry(0.58, 0.026, 6, 28),
+    makeMaterial(haloColor, 0.72),
+  );
+  halo.renderOrder = 23;
+  group.add(halo);
+  const core = new THREE.Mesh(
+    new THREE.OctahedronGeometry(kind === 'yellow' ? 0.1 : 0.13),
+    makeMaterial(kind === 'yellow' ? 0xfff7bd : 0xfff0e9, 1),
+  );
+  core.renderOrder = 25;
+  core.position.z = 0.09;
+  group.add(core);
+  group.userData.materials = materials;
+  group.userData.kind = kind;
+  return group;
+}
+
+function setCloudShockwaveOpacity(group, opacity) {
+  group.userData.materials?.forEach((material) => {
+    material.opacity = Math.max(0, Math.min(1, opacity));
+  });
+}
+
+function disposeCloudShockwave(group) {
+  const geometries = new Set();
+  group.traverse((node) => {
+    if (node.geometry && !geometries.has(node.geometry)) {
+      geometries.add(node.geometry);
+      node.geometry.dispose();
+    }
+  });
+  group.userData.materials?.forEach((material) => material.dispose());
+}
+
 function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const western = stage === 'western';
   const prairie = stage === 'prairie';
@@ -807,6 +895,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       shieldTimer: 0,
       slowTimer: 0,
       slowFactor: LASSO_SLOW_FACTOR,
+      slowEffect: 'lasso',
       stunTimer: 0,
       stunSide: 1,
       powerState: createPowerUpState(),
@@ -830,6 +919,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     if (rider.userData.painting === want) return;
     paintModel(rider, want);
     rider.userData.painting = want;
+  };
+  let cloudSwordSwingElapsed = CLOUD_SWORD_SWING_DURATION;
+  let cloudSwordSwingKind = 'yellow';
+  const isCloudRider = () => accessoriesForPalette(skinColors) === 'cloud-chocobo';
+  const swingCloudSword = (kind) => {
+    const sword = player.userData.parts?.busterSword;
+    if (!isCloudRider() || !sword) return;
+    cloudSwordSwingKind = kind;
+    cloudSwordSwingElapsed = 0;
   };
   const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xfdf0c8 });
   const finishMaterial = new THREE.MeshBasicMaterial({ color: 0x4ce9df });
@@ -1017,6 +1115,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 
   const lassoProjectiles = [];
+  const cloudShockwaves = [];
   const lassoRopePool = [];
   const lassoPointStart = new THREE.Vector3();
   const lassoPointEnd = new THREE.Vector3();
@@ -1033,6 +1132,52 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     rope.visible = false;
     lassoRopePool.push(rope);
   }
+  const cloudSwordOrigin = () => {
+    const sword = player.userData.parts?.busterSword;
+    if (!sword) return new THREE.Vector3(player.position.x + 0.4, player.position.y + 2.7, -0.45);
+    player.updateMatrixWorld(true);
+    return sword.localToWorld(new THREE.Vector3(0.02, 1.12, 0.04));
+  };
+  const cloudTargetPosition = (targetInfo, out = new THREE.Vector3()) => {
+    if (targetInfo?.kind === 'rival') {
+      const targetMesh = (targetInfo.npc || duelRivals[0])?.mesh;
+      if (targetMesh) return out.set(targetMesh.position.x, targetMesh.position.y + 1.95, targetMesh.position.z);
+    } else if (targetInfo?.kind === 'online') {
+      const net = getNetwork?.();
+      const peer = net?.players?.find((p) => p.user_id === targetInfo.player?.user_id) || targetInfo.player;
+      const rider = onlineRiders[peer?.slot ?? 0];
+      if (rider) return out.set(rider.position.x, rider.position.y + 1.9, rider.position.z);
+      return out.set(
+        lanePosition(peer?.lane),
+        Number(peer?.jump || 0) + 1.9,
+        distance - (Number(peer?.distance) || 0),
+      );
+    }
+    return out.set(player.position.x, player.position.y + 2, -12);
+  };
+  const launchCloudShockwave = (kind, targetInfo) => {
+    const start = cloudSwordOrigin();
+    const end = cloudTargetPosition(targetInfo);
+    const visual = makeCloudShockwave(kind);
+    visual.position.copy(start);
+    scene.add(visual);
+    cloudShockwaves.push({
+      visual,
+      kind,
+      target: targetInfo,
+      start: start.clone(),
+      end: end.clone(),
+      age: 0,
+      phase: 'flight',
+    });
+  };
+  const clearCloudShockwaves = () => {
+    cloudShockwaves.forEach(({ visual }) => {
+      scene.remove(visual);
+      disposeCloudShockwave(visual);
+    });
+    cloudShockwaves.length = 0;
+  };
 
   const scenery = [];
   let desertScenery = null;
@@ -1178,9 +1323,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let playerSlowTimer = 0;
   let playerSlowFactor = LASSO_SLOW_FACTOR;
   let playerSlowKind = 'lasso';
+  let playerSlowEffect = 'lasso';
   let shieldFlash = 0;
   let playerStun = 0;
   let playerStunSide = 1;
+  let lastNetworkSlow = 0;
   let lastNetworkStun = 0;
 
   const isGhostRival = (r) => Boolean(race.challenge && r.id === 'ombre');
@@ -1261,13 +1408,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     playerSlowTimer = LASSO_SLOW_DURATION;
     playerSlowFactor = LASSO_SLOW_FACTOR;
     playerSlowKind = 'lasso';
+    playerSlowEffect = 'lasso';
     invulnerable = Math.max(invulnerable, 0.2);
     crashAnimation = 0.32;
     if (!fromNetwork) callbacks.lassoHit?.({ target: 'player' });
     return true;
   };
 
-  const applyNpcSlow = (targetNpc = duelRivals[0]) => {
+  const applyNpcSlow = (targetNpc = duelRivals[0], effect = 'lasso') => {
     if (!targetNpc) return false;
     if (targetNpc.shieldActive) {
       targetNpc.shieldActive = false;
@@ -1277,6 +1425,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     }
     targetNpc.slowTimer = LASSO_SLOW_DURATION;
     targetNpc.slowFactor = LASSO_SLOW_FACTOR;
+    targetNpc.slowEffect = effect;
     targetNpc.invulnerable = Math.max(targetNpc.invulnerable, 0.2);
     return true;
   };
@@ -1284,6 +1433,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const fireLasso = (targetInfo) => {
     if (!targetInfo) {
       callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: null });
+      return;
+    }
+    if (isCloudRider()) {
+      swingCloudSword('yellow');
+      launchCloudShockwave('yellow', targetInfo);
+      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo, cloud: true });
       return;
     }
     const rope = acquireRope();
@@ -1389,12 +1544,77 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     return true;
   };
 
+  const resolveCloudShockwaveHit = (projectile) => {
+    const { kind, target } = projectile;
+    if (target?.kind === 'rival') {
+      const targetNpc = target.npc || duelRivals[0];
+      const connected = kind === 'yellow'
+        ? applyNpcSlow(targetNpc, 'cloud-wave')
+        : stunNpc(targetNpc);
+      if (kind === 'yellow') {
+        callbacks.lassoHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !connected, cloud: true });
+      } else {
+        callbacks.pistolHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !connected, cloud: true });
+      }
+      return;
+    }
+    if (target?.kind === 'online') {
+      const action = kind === 'yellow' ? callbacks.lasso : callbacks.pistol;
+      const result = action?.(target.player);
+      result?.catch?.(() => {});
+    }
+  };
+
+  const updateCloudShockwaves = (dt) => {
+    for (let i = cloudShockwaves.length - 1; i >= 0; i -= 1) {
+      const projectile = cloudShockwaves[i];
+      const { visual, kind } = projectile;
+      const targetPoint = cloudTargetPosition(projectile.target);
+      projectile.age += dt;
+      if (projectile.phase === 'flight') {
+        const progress = Math.min(1, projectile.age / CLOUD_WAVE_FLIGHT_DURATION);
+        const travel = progress * (2 - progress);
+        visual.position.copy(projectile.start).lerp(targetPoint, travel);
+        visual.position.y += Math.sin(progress * Math.PI) * 0.22;
+        visual.lookAt(targetPoint);
+        visual.rotation.z += dt * (kind === 'yellow' ? 2.8 : -3.5);
+        visual.scale.setScalar(0.72 + Math.sin(progress * Math.PI) * 0.2);
+        setCloudShockwaveOpacity(visual, 0.58 + Math.sin(progress * Math.PI) * 0.42);
+        if (progress >= 1) {
+          projectile.phase = 'impact';
+          projectile.age = 0;
+          projectile.end.copy(targetPoint);
+          resolveCloudShockwaveHit(projectile);
+        }
+      } else {
+        const progress = Math.min(1, projectile.age / CLOUD_WAVE_IMPACT_DURATION);
+        visual.position.copy(targetPoint);
+        visual.position.y += 0.12;
+        visual.quaternion.copy(camera.quaternion);
+        visual.rotation.z += dt * (kind === 'yellow' ? 2.1 : -2.8);
+        visual.scale.setScalar(0.75 + progress * 1.1);
+        setCloudShockwaveOpacity(visual, 1 - progress);
+        if (progress >= 1) {
+          scene.remove(visual);
+          disposeCloudShockwave(visual);
+          cloudShockwaves.splice(i, 1);
+        }
+      }
+    }
+  };
+
   const firePistol = (targetInfo) => {
     const from = new THREE.Vector3(player.position.x + 0.35, player.position.y + 1.9, -0.5);
     if (!targetInfo) {
       spawnTracer(from, new THREE.Vector3(player.position.x, 3, -30));
       callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: null });
       callbacks.pistolHit?.({ target: null });
+      return;
+    }
+    if (isCloudRider()) {
+      swingCloudSword('red');
+      launchCloudShockwave('red', targetInfo);
+      callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: targetInfo, cloud: true });
       return;
     }
     if (targetInfo.kind === 'rival') {
@@ -1471,12 +1691,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const resetPowerUps = () => {
     for (const proj of lassoProjectiles) releaseRope(proj.rope);
     lassoProjectiles.length = 0;
+    clearCloudShockwaves();
+    cloudSwordSwingElapsed = CLOUD_SWORD_SWING_DURATION;
     shieldActive = false;
     shieldTimer = 0;
     powerBoostTimer = 0;
     playerSlowTimer = 0;
     playerSlowFactor = LASSO_SLOW_FACTOR;
+    playerSlowEffect = 'lasso';
     playerStun = 0;
+    lastNetworkSlow = 0;
     lastNetworkStun = 0;
     playerShieldBubble.visible = false;
     playerBoostStreaks.visible = false;
@@ -1486,6 +1710,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       r.shieldTimer = 0;
       r.powerBoostTimer = 0;
       r.slowTimer = 0;
+      r.slowEffect = 'lasso';
       r.stunTimer = 0;
       r.shieldBubble.visible = false;
       r.boostStreaks.visible = false;
@@ -2021,15 +2246,30 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           const stunnedUntil = me.stunned_until ? Date.parse(me.stunned_until) : 0;
           if (stunnedUntil > now && stunnedUntil !== lastNetworkStun) {
             lastNetworkStun = stunnedUntil;
-            if (playerStun <= 0) {
-              stunPlayer(true);
-              playerStun = Math.min(PISTOL_STUN_DURATION, (stunnedUntil - now) / 1000);
-              callbacks.pistolHit?.({ target: 'player', from: 'online' });
-            }
+            const connected = stunPlayer(true);
+            if (connected) playerStun = Math.min(PISTOL_STUN_DURATION, (stunnedUntil - now) / 1000);
+            callbacks.pistolHit?.({
+              target: 'player',
+              from: 'online',
+              cloud: me.stun_effect === 'cloud-cross',
+              blocked: !connected,
+            });
           }
-          if (slowedUntil > now && playerSlowTimer <= 0) {
-            applyPlayerSlow(true);
-            playerSlowTimer = (slowedUntil - now)/1000;
+          if (slowedUntil > now) {
+            const slowEffect = me.slow_effect || 'lasso';
+            const newSlow = slowedUntil !== lastNetworkSlow;
+            if (playerSlowTimer <= 0 || newSlow) {
+              lastNetworkSlow = slowedUntil;
+              const connected = applyPlayerSlow(true);
+              playerSlowTimer = connected ? (slowedUntil - now) / 1000 : 0;
+              if (slowEffect === 'cloud-wave') {
+                callbacks.lassoHit?.({ target: 'player', from: 'online', cloud: true, blocked: !connected });
+              }
+            }
+            playerSlowEffect = slowEffect;
+          } else if (playerSlowTimer <= 0) {
+            lastNetworkSlow = 0;
+            playerSlowEffect = 'lasso';
           }
         }
       }
@@ -2357,6 +2597,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const mudBob = mudSlowed && jumpLeft <= 0 ? -0.05 + Math.sin(time * 0.022) * 0.035 : 0;
     player.position.y = Math.max(0, jumpHeight(jumpLeft) + crashBounce + mudBob);
     const parts = player.userData.parts;
+    if (parts.busterSword) {
+      const swingProgress = Math.min(1, cloudSwordSwingElapsed / CLOUD_SWORD_SWING_DURATION);
+      const swingArc = Math.sin(swingProgress * Math.PI);
+      const baseRotationZ = parts.busterSword.userData.baseRotationZ ?? 0.34;
+      if (swingProgress < 1) {
+        parts.busterSword.rotation.z = baseRotationZ + swingArc * (cloudSwordSwingKind === 'yellow' ? 1.18 : -1.3);
+        parts.busterSword.rotation.x = swingArc * (cloudSwordSwingKind === 'yellow' ? 0.12 : -0.2);
+        if (running) cloudSwordSwingElapsed = Math.min(CLOUD_SWORD_SWING_DURATION, cloudSwordSwingElapsed + dt);
+      } else {
+        parts.busterSword.rotation.z = baseRotationZ;
+        parts.busterSword.rotation.x = 0;
+      }
+    }
     const turboActive = running && powerBoostTimer > 0 && playerStun <= 0;
     const gallopRate = turboActive ? 0.026 : mudSlowed ? 0.011 : 0.018;
     const runWave = Math.sin(time * (running ? gallopRate : 0.002));
@@ -2369,9 +2622,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       parts.rider.rotation.x -= 0.18;
     }
     parts.tail.rotation.z = runWave * (turboActive ? 0.28 : 0.18);
+    parts.wings?.forEach((wing, index) => {
+      wing.rotation.z = Math.sin(time * (running ? 0.018 : 0.006) + index * Math.PI) * (running ? 0.16 : 0.06);
+    });
     parts.cape.rotation.x = running ? (turboActive ? -0.46 + runWave * 0.12 : -0.12 + runWave * 0.06) : 0;
     const impactTilt = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.2 * crashDirection : 0;
-    player.rotation.z = (targetX - player.position.x) * -0.055 + impactTilt;
+    const cloudSlowShake = running && playerSlowTimer > 0 && playerSlowKind === 'lasso' && playerSlowEffect === 'cloud-wave'
+      ? Math.sin(time * 0.078) * 0.12
+      : 0;
+    player.rotation.z = (targetX - player.position.x) * -0.055 + impactTilt + cloudSlowShake;
     player.rotation.x = crashAnimation > 0 ? Math.sin(crashProgress * Math.PI) * 0.16 : turboActive ? -0.045 : 0;
     player.scale.setScalar((poseLeft > 0 ? 1.035 : 1) * (crashAnimation > 0 ? 1 - Math.sin(crashProgress * Math.PI) * 0.09 : 1));
     player.visible = isPlayerVisible(race.mode, invulnerable, time);
@@ -2407,6 +2666,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         const slowedUntil = peer?.slowed_until ? Date.parse(peer.slowed_until) : 0;
         const hasShield = shieldUntil > now;
         const isSlowed = slowedUntil > now;
+        const cloudWaveSlow = isSlowed && peer.slow_effect === 'cloud-wave';
+        rider.rotation.z = cloudWaveSlow ? Math.sin(time * 0.078 + slot * 1.7) * 0.12 : 0;
         rider.userData.shieldBubble.visible = hasShield;
         if (hasShield) rider.userData.shieldBubble.rotation.y += dt*1.5;
         rider.userData.slowEffect = isSlowed ? 1 : Math.max(0, rider.userData.slowEffect - dt*2);
@@ -2455,6 +2716,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         rivalParts.rider.rotation.x -= 0.18;
       }
       rivalParts.tail.rotation.z = runWave * -0.2;
+      const cloudWaveSlow = race.mode === 'duel' && r.slowTimer > 0 && r.slowEffect === 'cloud-wave';
+      rivalMesh.rotation.z = cloudWaveSlow ? Math.sin(time * 0.078 + idx * 1.7) * 0.12 : 0;
       if (race.mode === 'duel' && !isGhostRival(r)) {
         rivalMesh.position.x = r.x;
         rivalMesh.position.y = jumpHeight(r.jumpLeft);
@@ -2469,6 +2732,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       }
       rivalMesh.visible = race.mode === 'duel' && rivalMesh.position.z < 11 && rivalMesh.position.z > -74 && (r.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
     });
+    if (running) updateCloudShockwaves(dt);
     playerShadow.position.x = player.position.x;
     playerShadow.scale.set(1, 1.8, 1).multiplyScalar(Math.max(0.55, 1 - player.position.y * 0.12));
     const anyReady = powerState.shieldCharges > 0 || powerState.lassoCharges > 0 || powerState.pistolCharges > 0 || powerState.boostCharges > 0;
