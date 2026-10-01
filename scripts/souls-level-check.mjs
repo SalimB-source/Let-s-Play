@@ -86,10 +86,21 @@ try {
     assert.ok(feet <= dais + 0.25, `pieds en l'air (${feet.toFixed(3)})`);
     const tip = box(p.weapon).min.y;
     assert.ok(tip >= dais - 0.05, `la lame traverse l'estrade (${tip.toFixed(3)})`);
+    const seatTop = dais + 0.77; // dessus du coussin
+    // Le contact réel avec l'assise, c'est le dessous de la cuisse — pas
+    // l'articulation de la hanche, qui reste au-dessus du meuble.
+    let thighMin = Infinity;
+    p.legL.children.forEach((c) => { if (c.isMesh) thighMin = Math.min(thighMin, box(c).min.y); });
+    assert.ok(
+      Math.abs(thighMin - seatTop) < 0.12,
+      `cuisse ${thighMin.toFixed(2)} vs assise ${seatTop.toFixed(2)}`,
+    );
     const hip = new THREE.Vector3();
     p.legL.getWorldPosition(hip); // articulation de la hanche
-    const seatTop = dais + 0.77; // coussin
-    assert.ok(Math.abs(hip.y - seatTop) < 0.3, `bassin ${hip.y.toFixed(2)} vs assise ${seatTop.toFixed(2)}`);
+    assert.ok(
+      hip.y > seatTop && hip.y - seatTop < 0.42,
+      `bassin ${hip.y.toFixed(2)} au-dessus de l'assise ${seatTop.toFixed(2)}`,
+    );
     // genoux vers la salle (+Z), jamais dans le dossier
     const knee = new THREE.Vector3();
     p.kneeL.getWorldPosition(knee);
@@ -100,6 +111,57 @@ try {
     p.legL.rotation.x = 0; p.kneeL.rotation.x = -0.07; p.body.position.y = 0;
     K.updateMatrixWorld(true);
     assert.ok(Math.abs(box(p.footL).min.y - dais) < 0.2, 'debout : pieds au sol');
+
+    // Se lever ne doit jamais enfoncer les bottes : la plante du pied reste
+    // à la même hauteur pour toute assise partielle (seatDrop compense la
+    // cuisse qui se déplie). Sans ça le Roi traverse l'estrade en se levant.
+    const plantAt = (u) => {
+      p.legL.rotation.x = p.legR.rotation.x = S.thigh * u;
+      p.kneeL.rotation.x = p.kneeR.rotation.x = -(0.07 + S.knee * u);
+      p.body.position.y = models.seatDrop(u);
+      K.updateMatrixWorld(true);
+      return box(p.footL).min.y;
+    };
+    const seatedFoot = plantAt(1);
+    assert.ok(Math.abs(models.seatDrop(1) - S.drop) < 1e-9, 'seatDrop(1) === SEAT_POSE.drop');
+    assert.ok(Math.abs(models.seatDrop(0)) < 0.03, `seatDrop(0) ≈ 0 (${models.seatDrop(0).toFixed(4)})`);
+    const us = [0, 0.2, 0.4, 0.6, 0.8, 1];
+    // Même mesure avec l'ancien `drop * s` non compensé : le test doit bien
+    // détecter l'enfoncement, sinon il ne prouve rien.
+    const naiveDip = Math.min(...us.map((u) => {
+      p.legL.rotation.x = p.legR.rotation.x = S.thigh * u;
+      p.kneeL.rotation.x = p.kneeR.rotation.x = -(0.07 + S.knee * u);
+      p.body.position.y = S.drop * u;
+      K.updateMatrixWorld(true);
+      return box(p.footL).min.y;
+    })) - seatedFoot;
+    assert.ok(naiveDip < -0.04, `le contrôle voit l'enfoncement non compensé (${naiveDip.toFixed(3)} m)`);
+    const compDip = Math.min(...us.map((u) => plantAt(u))) - seatedFoot;
+    assert.ok(compDip > -0.04,
+      `seatDrop : le pied s'enfonce encore de ${compDip.toFixed(3)} m en se levant`);
+    console.log(`  lever du Roi : botte ${naiveDip.toFixed(3)} m (avant) → ${compDip.toFixed(3)} m (seatDrop)`);
+
+    // ── Geste de la potion : la fiole tenue en main arrive aux lèvres ──
+    {
+      const D = models.makeKnight({});
+      const dp = D.userData.parts;
+      assert.ok(dp.potion && dp.potion.parent === dp.elbowL,
+        'la fiole est tenue dans le poing gauche (groupe coude)');
+      dp.armL.rotation.set(1.15, 0, 0);   // pose de gorgée (SoulsWorld.jsx)
+      dp.elbowL.rotation.x = 2.6;
+      dp.head.rotation.x = 0.3;
+      dp.body.rotation.x = 0.07;
+      dp.potion.rotation.x = 1.15;
+      D.updateMatrixWorld(true);
+      const fb = box(dp.potion);
+      const hh = box(dp.head);
+      const flacon = fb.getCenter(new THREE.Vector3());
+      const bouche = new THREE.Vector3(0, hh.min.y + 0.36 * (hh.max.y - hh.min.y), hh.min.z + 0.04);
+      const d = flacon.distanceTo(bouche);
+      assert.ok(d < 0.26, `goulot à ${d.toFixed(2)} m de la bouche (fiole ${flacon.toArray().map((v) => v.toFixed(2))})`);
+      assert.ok(!dp.potion.visible, 'fiole invisible tant qu’on ne boit pas');
+      console.log(`  potion : goulot à ${d.toFixed(3)} m de la bouche`);
+    }
   }
 
   // ── 3. Décor : chaque pièce se construit, positions = logique pure ───
@@ -148,7 +210,11 @@ try {
   let lights = 0;
   for (const grp of [chapel.group, castle.group, hall.group]) grp.traverse((o) => { if (o.isLight) lights++; });
   assert.equal(lights, 0, 'lumières mutualisées par le monde');
-  assert.ok(castle.flickerables.length === 2 && hall.flickerables.length === 6 && chapel.flickerables.length === 2);
+  // 6 torchères + 10 appliques murales dans la nef (aucune n'embarque de
+  // PointLight : seule leur flamme vacille, les lumières restent mutualisées).
+  assert.ok(castle.flickerables.length === 2 && hall.flickerables.length === 16 && chapel.flickerables.length === 2,
+    `vacillements ${castle.flickerables.length}/${hall.flickerables.length}/${chapel.flickerables.length}`);
+  assert.equal(hall.flickerables.filter((f) => f.light).length, 0, 'les appliques n’ajoutent pas de lumière');
 
   // ── 4. Coffre : animation couvercle → clé → disparition ────────────────
   let t = 0;
@@ -181,6 +247,36 @@ try {
   assert.ok(tip.z < l.position.z, 'le vantail bat vers l’intérieur');
   castle.setOpen(0);
   assert.ok(leaves.every((x) => x.rotation.y === 0), 'refermable');
+
+  // ── 8. Aucune grande surface noire. L'hémisphère nocturne donne ~0.2
+  // d'irradiance ; sous ~0.07 d'albedo linéaire la surface tombe sous les
+  // 10 % de gris après ACES et se lit comme un trou noir. C'est exactement
+  // ce que faisaient les colonnes de la nef (SOULS_PALETTE.stone unie,
+  // 0.055 contre 0.333 pour les murs) : huit « murs noirs » de 9 m.
+  {
+    const pieces = [chapel.group, chest.group, forest.group, castle.group, hall.group,
+      forecourt.group, castleMod.makeOuterGround()];
+    const offenders = [];
+    const v = new THREE.Vector3();
+    for (const root of pieces) {
+      root.updateMatrixWorld(true);
+      root.traverse((o) => {
+        if (!o.isMesh || o.isInstancedMesh) return;
+        const m = o.material;
+        if (!m?.color) return;
+        if (m.emissive && m.emissive.getHex() > 0) return;   // flammes, runes
+        if (m.transparent || m.opacity < 1) return;          // brumes, faisceaux
+        const lum = 0.2126 * m.color.r + 0.7152 * m.color.g + 0.0722 * m.color.b;
+        if (lum >= 0.07) return;
+        const size = new THREE.Box3().setFromObject(o).getSize(v);
+        const volume = Math.max(size.x, 0.05) * Math.max(size.y, 0.05) * Math.max(size.z, 0.05);
+        if (volume < 1.5) return;
+        offenders.push(`${o.geometry.type} ${size.x.toFixed(1)}×${size.y.toFixed(1)}×${size.z.toFixed(1)} #${m.color.getHexString()} lum=${lum.toFixed(3)}`);
+      });
+    }
+    assert.deepEqual(offenders, [], `surfaces trop sombres (murs noirs) : ${offenders.slice(0, 4).join(' | ')}`);
+    console.log('  aucune grande surface sous l\'albedo 0.07 (pas de « mur noir »)');
+  }
 
   console.log(`SOULS-LEVEL OK — porte du camp, pose assise, ${Object.values(meshCounts).reduce((s2, n) => s2 + n, 0)} meshes, forêt instanciée, piliers = colliders, coffre, portail`);
 } catch (e) {

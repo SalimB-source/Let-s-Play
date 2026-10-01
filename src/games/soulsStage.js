@@ -154,9 +154,12 @@ export function castleColliders() {
   }
   for (const sx of [-1, 1]) list.push({ kind: 'circle', x: sx * 6.4, z: -86, r: 0.8 }); // braseros du portail
   for (const [bx, bz] of hall.braziers) list.push({ kind: 'circle', x: bx, z: bz, r: 0.9 });
-  // trône : bloque le joueur, jamais le boss (qui s'en lève)
-  // jusqu'au mur du fond : pas de recoin derrière le trône
-  list.push(box(throne.x - 1.8, throne.x + 1.8, hall.minZ - 0.5, throne.z + 0.9, { playerOnly: true }));
+  // Trône : bloque le joueur en permanence. `throneBlock` dit au monde de
+  // l'appliquer AUSSI au Roi dès qu'il a quitté son siège — sinon il se bat
+  // à travers le dossier et disparaît derrière le meuble.
+  // Jusqu'au mur du fond : pas de recoin derrière le trône.
+  list.push(box(throne.x - 1.8, throne.x + 1.8, hall.minZ - 0.5, throne.z + 0.9,
+    { playerOnly: true, throneBlock: true }));
   // bornes de la carte (invisibles)
   const b = bounds;
   list.push(

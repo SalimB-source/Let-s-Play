@@ -74,7 +74,13 @@ for (; frames < riseFrames + 5 && king.phase === 'rise'; frames++) {
 assert.deepEqual(events, ['risen'], 'un seul événement de fin');
 assert.ok(Math.abs(frames - riseFrames) <= 2, `durée du lever ≈ ${BOSS.riseDur} s`);
 assert.equal(king.phase, 'chase', 'puis il chasse');
-assert.equal(king.x, spawn.x, 'il se lève sur place');
+// En se dressant il quitte son meuble (sinon il se bat à travers le dossier).
+assert.ok(Math.abs(king.x - spawn.x) < 1e-9, 'il se lève dans l’axe du trône');
+assert.ok(
+  king.z - spawn.z > BOSS.riseAdvance - 0.25,
+  `il descend du trône en se levant (${(king.z - spawn.z).toFixed(2)} m)`,
+);
+assert.equal(king.leftThrone, true, 'le trône redevient un obstacle pour lui');
 assert.ok(king.jumpCd > 0, 'pas de bond immédiat');
 // Il regarde l'intrus (yaw a tourné vers le joueur)
 assert.ok(Math.cos(king.yaw - Math.PI) > 0.7, 'le regard reste tourné vers l’intrus');

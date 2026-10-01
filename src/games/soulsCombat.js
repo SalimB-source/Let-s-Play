@@ -34,6 +34,20 @@ export const DODGE = Object.freeze({
   cooldown: 0.18,
 });
 
+/**
+ * Potion de vie : geste long et VULNÉRABLE.
+ * Tant que `action === 'drink'` : aucune attaque, aucune roulade, marche
+ * ralentie. Le soin tombe à `healAt` (le goulot est aux lèvres), pas au
+ * début — boire se mérite. Un coup encaissé interrompt la gorgée.
+ */
+export const DRINK = Object.freeze({
+  duration: 1.35,      // s — lever le flacon, boire, le reposer
+  healAt: 0.58,        // fraction du geste où les PV tombent
+  speedMult: 0.32,     // marche au ralenti pendant la gorgée
+  staminaCost: 0,      // la potion ne coûte pas d'endurance…
+  recoverLock: 0.22,   // …mais laisse une courte inertie à la fin
+});
+
 export const PLAYER = Object.freeze({ maxHp: 100, hurtLock: 0.45 });
 
 /** État de combat du joueur. */
@@ -45,8 +59,9 @@ export function createCombatState() {
     staminaMax: STAMINA.max, // surcharge par la progression (Endurance)
     strMult: 1,              // surcharge par la progression (Puissance)
     staminaLock: 0,
-    action: 'none',        // none | light | heavy | dodge | hitstun
+    action: 'none',        // none | light | heavy | dodge | hitstun | drink
     actionT: 0,
+    drank: false,          // la gorgée a-t-elle déjà soigné ? (une fois/geste)
     hitstop: 0,
     invuln: 0,
     dodgeCd: 0,
@@ -62,9 +77,13 @@ export function createCombatState() {
 
 const isAttacking = (c) => c.action === 'light' || c.action === 'heavy';
 
+/** Le joueur est-il en train de boire sa potion ? */
+export const isDrinking = (c) => c.action === 'drink';
+
 /** La fenêtre d'action permet-elle de lancer une nouvelle action lourde ? */
 export function canStart(c) {
   if (c.action === 'hitstun' || c.action === 'dodge') return false;
+  if (isDrinking(c)) return false;   // on ne frappe pas le goulot aux lèvres
   if (isAttacking(c)) return false;
   return true;
 }
@@ -73,6 +92,7 @@ export function canStart(c) {
 export function canDodge(c) {
   if (c.dodgeCd > 0 || c.stamina < STAMINA.dodge) return false;
   if (c.action === 'dodge' || c.action === 'hitstun') return false;
+  if (isDrinking(c)) return false;   // aucune roulade pendant la gorgée
   if (isAttacking(c)) {
     const spec = ATTACKS[c.action];
     // Annule la fin de récupération seulement (fenêtre de skill).
@@ -115,6 +135,39 @@ export function tryDodge(c, dirX, dirZ) {
   c.invuln = Math.max(c.invuln, DODGE.iframes);
   c.dodgeCd = DODGE.cooldown;
   return true;
+}
+
+/**
+ * Le joueur porte le flacon à ses lèvres.
+ * @param {object} c état de combat
+ * @param {boolean} hasCharge une potion est-elle encore disponible ?
+ * @returns {boolean} true si le geste démarre (la charge est consommée
+ *   par l'appelant au moment du soin, pas au départ — une gorgée
+ *   interrompue par un coup ne gaspille pas la potion)
+ */
+export function tryDrink(c, hasCharge = true) {
+  if (!hasCharge) return false;
+  if (c.action !== 'none' || c.hitstop > 0) return false;
+  c.action = 'drink';
+  c.actionT = 0;
+  c.drank = false;
+  return true;
+}
+
+/**
+ * Le soin tombe-t-il maintenant ? (une seule fois par gorgée)
+ * Renvoie true à l'instant précis où les PV doivent être rendus.
+ */
+export function drinkHealDue(c) {
+  if (!isDrinking(c) || c.drank) return false;
+  if (c.actionT < DRINK.duration * DRINK.healAt) return false;
+  c.drank = true;
+  return true;
+}
+
+/** Multiplicateur de vitesse de déplacement (la gorgée ralentit le pas). */
+export function moveSpeedMult(c) {
+  return isDrinking(c) ? DRINK.speedMult : 1;
 }
 
 /** Frame courante d'une attaque (windup / actif / récupération). */
@@ -169,6 +222,7 @@ export function damagePlayer(c, amount) {
   c.hp = Math.max(0, c.hp - amount);
   c.action = 'hitstun';
   c.actionT = 0;
+  c.drank = false;             // gorgée interrompue : la potion n'est pas bue
   c.hitstop = Math.max(c.hitstop, 0.05);
   c.shake = Math.max(c.shake, 0.8);
   c.flash = 1;
@@ -198,6 +252,11 @@ export function stepCombat(c, dt) {
   if (c.action === 'dodge' && c.actionT >= DODGE.duration) {
     c.action = 'none';
     c.actionT = 0;
+  } else if (c.action === 'drink' && c.actionT >= DRINK.duration) {
+    c.action = 'none';
+    c.actionT = 0;
+    c.drank = false;
+    c.staminaLock = Math.max(c.staminaLock, DRINK.recoverLock);
   } else if (c.action === 'hitstun' && c.actionT >= PLAYER.hurtLock) {
     c.action = 'none';
     c.actionT = 0;
@@ -267,6 +326,7 @@ export const BOSS = Object.freeze({
   seated: true,     // attend sur son trône…
   riseRange: 8.5,   // …et se lève quand on approche à cette distance
   riseDur: 2.4,     // durée du lever (invulnérable, cri final)
+  riseAdvance: 1.75, // il descend de l'estrade en se dressant (dégage le trône)
 });
 
 /** État de l'unique ennemi du M1. */
@@ -281,13 +341,14 @@ export function createEnemyState(x, z) {
     cooldown: 0,
     jumpCd: 0,
     leapY: 0,
-    stagger: 0,
-    strikeDone: false,
-    dead: false,
-    deathT: 0,
-    aggroAnnounced: false,
-    vx: 0, vz: 0,
-  };
+  stagger: 0,
+  strikeDone: false,
+  dead: false,
+  deathT: 0,
+  aggroAnnounced: false,
+  leftThrone: false,   // le boss a quitté son trône (le meuble redevient solide)
+  vx: 0, vz: 0,
+};
 }
 
 /**
@@ -326,11 +387,22 @@ export function stepEnemy(e, player, dt, opts = {}) {
   if (e.phase === 'rise') {
     // Il se lève : regard qui se verrouille sur l'intrus, puis la chasse.
     e.yaw = stepEnemyYaw(e.yaw, toPlayer, S.turnRate * 0.5, dt);
+    // Il dégage le trône en se dressant : un pas vers la nef, sinon il
+    // reste assis dans son propre meuble et se bat à travers le dossier.
+    const adv = S.riseAdvance ?? 0;
+    if (adv) {
+      const u = e.t / (S.riseDur ?? 2.4);
+      const s = u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u);
+      const seat = e.seatYaw ?? e.yaw;
+      e.x = (e.spawnX ?? e.x) - Math.sin(seat) * adv * s;
+      e.z = (e.spawnZ ?? e.z) - Math.cos(seat) * adv * s;
+    }
     if (e.t >= (S.riseDur ?? 2.4)) {
       e.phase = 'chase';
       e.t = 0;
       e.cooldown = 0.35;
       e.jumpCd = 1.2; // pas de bond dans la première seconde
+      e.leftThrone = true; // debout : le trône redevient un obstacle pour lui
       return 'risen';
     }
     return null;
@@ -544,6 +616,7 @@ export function resetEnemy(e, x, z) {
   const home = e.spec || ENEMY;
   e.phase = home.seated ? 'seated' : 'idle'; // le Roi se rassoit sur son trône
   if (home.seated && e.seatYaw !== undefined) e.yaw = e.seatYaw;
+  e.leftThrone = false;             // il réoccupe son trône (collider coupé)
   e.t = 0;
   e.cooldown = 0;
   e.jumpCd = 0;

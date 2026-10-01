@@ -209,28 +209,58 @@ export function playSouls(name) {
         }
         break;
       }
-      case 'flask': { // gorgée : souffle doux + verre
+      case 'flask': { // bouchon tiré + premier souffle
         const src = noise(ac);
         const bp = ac.createBiquadFilter();
         bp.type = 'bandpass';
-        bp.frequency.value = 950;
-        bp.Q.value = 1.4;
+        bp.frequency.setValueAtTime(2400, ac.currentTime);
+        bp.frequency.exponentialRampToValueAtTime(700, ac.currentTime + 0.12);
+        bp.Q.value = 1.6;
         const g = ac.createGain();
-        env(ac, g, 0.16, 0.05, 0.5);
+        env(ac, g, 0.15, 0.01, 0.16);
         src.connect(bp).connect(g).connect(ac.destination);
         src.start();
-        src.stop(ac.currentTime + 0.6);
-        const osc = ac.createOscillator();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(420, ac.currentTime + 0.18);
-        osc.frequency.exponentialRampToValueAtTime(260, ac.currentTime + 0.5);
-        const og = ac.createGain();
-        og.gain.setValueAtTime(0.0001, ac.currentTime + 0.18);
-        og.gain.exponentialRampToValueAtTime(0.1, ac.currentTime + 0.24);
-        og.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.55);
-        osc.connect(og).connect(ac.destination);
-        osc.start(ac.currentTime + 0.18);
-        osc.stop(ac.currentTime + 0.6);
+        src.stop(ac.currentTime + 0.2);
+        break;
+      }
+      case 'heal': { // gorgée + remontée de vitalité (tierce majeure)
+        const src = noise(ac);
+        const bp = ac.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 620;
+        bp.Q.value = 1.2;
+        const ng = ac.createGain();
+        env(ac, ng, 0.13, 0.02, 0.3);
+        src.connect(bp).connect(ng).connect(ac.destination);
+        src.start();
+        src.stop(ac.currentTime + 0.36);
+        // Accord ascendant : la vie revient.
+        const notes = [392, 494, 659];
+        notes.forEach((f, i) => {
+          const t0 = ac.currentTime + 0.02 + i * 0.085;
+          const osc = ac.createOscillator();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t0);
+          const og = ac.createGain();
+          og.gain.setValueAtTime(0.0001, t0);
+          og.gain.exponentialRampToValueAtTime(0.11, t0 + 0.05);
+          og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+          osc.connect(og).connect(ac.destination);
+          osc.start(t0);
+          osc.stop(t0 + 0.66);
+        });
+        // Halo aigu : motes de soin qui s'élèvent.
+        const shimmer = ac.createOscillator();
+        shimmer.type = 'sine';
+        shimmer.frequency.setValueAtTime(1568, ac.currentTime + 0.12);
+        shimmer.frequency.exponentialRampToValueAtTime(2349, ac.currentTime + 0.5);
+        const sg = ac.createGain();
+        sg.gain.setValueAtTime(0.0001, ac.currentTime + 0.12);
+        sg.gain.exponentialRampToValueAtTime(0.045, ac.currentTime + 0.2);
+        sg.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.62);
+        shimmer.connect(sg).connect(ac.destination);
+        shimmer.start(ac.currentTime + 0.12);
+        shimmer.stop(ac.currentTime + 0.68);
         break;
       }
       case 'rest': { // repos au feu : nappe chaleureuse

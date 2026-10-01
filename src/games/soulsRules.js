@@ -68,7 +68,8 @@ export function cameraBasis(yaw) {
 /**
  * Un pas de déplacement pur.
  * @param {{x:number,z:number,vx:number,vz:number,yaw:number}} state
- * @param {{x:number,y:number,run?:boolean,cameraYaw:number}} input  x∈[−1,1] strafe, y∈[−1,1] avant
+ * @param {{x:number,y:number,run?:boolean,cameraYaw:number,speedScale?:number}} input
+ *        x∈[−1,1] strafe, y∈[−1,1] avant, speedScale∈[0,1] (potion : pas ralenti)
  * @param {number} dt secondes
  * @returns le même state muté (commodité : un seul objet à suivre)
  */
@@ -77,7 +78,7 @@ export function stepMovement(state, input, dt) {
   let dx = basis.right.x * input.x + basis.forward.x * input.y;
   let dz = basis.right.z * input.x + basis.forward.z * input.y;
   const mag = Math.hypot(dx, dz);
-  const speed = input.run ? RUN_SPEED : WALK_SPEED;
+  const speed = (input.run ? RUN_SPEED : WALK_SPEED) * (input.speedScale ?? 1);
   if (mag > 1e-4) {
     dx = (dx / mag) * speed;
     dz = (dz / mag) * speed;
