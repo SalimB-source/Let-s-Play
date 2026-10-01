@@ -1,0 +1,449 @@
+/* ════════════════════════════════════════════════════════════════════
+   LA CENDRE — UI dark fantasy (M0)
+   Tokens : cendre profonde, braise orange, or vieilli ; panneaux glass
+   sobres, keycaps et micro-animations. Même grammaire visuelle que la
+   coquille Mirage Rush (topbar / overlay / foot), teinte plus sombre.
+   ══════════════════════════════════════════════════════════════════ */
+.souls-page {
+  --souls-ink: #f2ece2;
+  --souls-dim: rgba(242, 236, 226, 0.6);
+  --souls-line: rgba(255, 158, 86, 0.16);
+  --souls-ember: #ff8a3c;
+  --souls-ember-soft: rgba(255, 138, 60, 0.32);
+  --souls-gold: #e9c987;
+  --souls-panel: #131019;
+  --souls-panel-2: #1a1522;
+  --souls-radius-lg: 16px;
+  --souls-radius: 12px;
+  --souls-radius-sm: 9px;
+  /* Navbar fixe : 80px + respiration, comme Mirage Rush. */
+  padding: 84px 0 44px;
+  color: var(--souls-ink);
+  background:
+    radial-gradient(780px 420px at 14% -2%, rgba(255, 122, 47, 0.1), transparent 68%),
+    radial-gradient(640px 480px at 96% 20%, rgba(84, 66, 128, 0.14), transparent 70%),
+    radial-gradient(520px 380px at 68% 96%, rgba(233, 201, 135, 0.05), transparent 72%),
+    #0b0910;
+  min-height: 100vh;
+}
+.souls-page .wrap { width: min(1320px, calc(100% - 44px)); margin-inline: auto; }
+
+.souls-heading { display: flex; align-items: flex-end; gap: 28px; padding: 0 0 6px; }
+.souls-heading-copy { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.souls-eyebrow {
+  display: flex; align-items: center; gap: 8px;
+  font: 800 9px var(--mono); letter-spacing: 0.18em; color: var(--souls-dim);
+}
+.souls-live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--souls-ember);
+  box-shadow: 0 0 10px var(--souls-ember);
+  animation: soulsPulse 1.8s ease-in-out infinite;
+}
+.souls-back-link {
+  font: 800 9px var(--mono); letter-spacing: 0.14em;
+  color: var(--souls-gold); text-decoration: none; width: fit-content;
+  border-bottom: 1px solid transparent; transition: border-color 0.15s, color 0.15s;
+}
+.souls-back-link:hover { border-color: var(--souls-gold); }
+
+.souls-layout { display: block; }
+
+/* ── Coquille de jeu ──────────────────────────────────────────────── */
+.souls-game-shell {
+  border: 1px solid var(--souls-line);
+  border-radius: var(--souls-radius-lg);
+  background: var(--souls-panel);
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+.souls-game-topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  height: 46px; padding-inline: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.souls-game-brand {
+  display: flex; align-items: center; gap: 8px;
+  font: 800 9px var(--mono); letter-spacing: 0.16em; color: var(--souls-dim);
+  min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.souls-brand-ember { color: var(--souls-ember); text-shadow: 0 0 12px var(--souls-ember); }
+.souls-game-controls-top { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.souls-live-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 9px; border-radius: 999px;
+  font: 800 8px var(--mono); letter-spacing: 0.12em;
+  color: #9ef0c4; background: rgba(83, 220, 150, 0.1);
+  border: 1px solid rgba(83, 220, 150, 0.28);
+}
+.souls-live-pill i {
+  width: 6px; height: 6px; border-radius: 50%; background: #53dc96;
+  animation: soulsPulse 1.4s ease-in-out infinite;
+}
+.souls-live-pill.is-paused { color: var(--souls-gold); background: rgba(233, 201, 135, 0.08); border-color: rgba(233, 201, 135, 0.3); }
+.souls-live-pill.is-paused i { background: var(--souls-gold); animation: none; }
+
+.souls-pause-button {
+  padding: 6px 10px; border-radius: var(--souls-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05); color: var(--souls-ink);
+  font: 800 8px var(--mono); letter-spacing: 0.1em; cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, transform 0.14s;
+}
+.souls-pause-button:hover { background: rgba(255, 138, 60, 0.14); border-color: var(--souls-ember-soft); transform: translateY(-1px); }
+.souls-pause-button.is-resume { color: #9ef0c4; border-color: rgba(83, 220, 150, 0.35); }
+
+/* ── Viewport ─────────────────────────────────────────────────────── */
+.souls-viewport {
+  position: relative;
+  height: min(clamp(460px, 50vw, 700px), 78vh);
+  min-height: 460px;
+  overflow: hidden; isolation: isolate;
+  background: #0d0b14;
+}
+.souls-world { position: absolute; inset: 0; z-index: 0; }
+/* Le canvas est la surface de jeu : sans touch-action:none, la souris/le
+   doigt font défiler la page pendant qu'on regarde autour de soi. */
+.souls-canvas {
+  display: block; width: 100%; height: 100%; outline: 0;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  -webkit-touch-callout: none; cursor: crosshair;
+}
+.souls-viewport.is-locked .souls-canvas { cursor: none; }
+
+/* Vignette cinématique */
+.souls-viewport::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 42%, transparent 58%, rgba(5, 3, 8, 0.5) 100%);
+}
+
+/* ── HUD en jeu ───────────────────────────────────────────────────── */
+.souls-hud { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.souls-hud-coords {
+  position: absolute; right: 12px; bottom: 12px;
+  padding: 5px 9px; border-radius: 8px;
+  font: 800 9px var(--mono); letter-spacing: 0.12em; color: var(--souls-dim);
+  background: rgba(13, 10, 18, 0.62); border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+}
+.souls-keys-hint {
+  position: absolute; left: 12px; bottom: 12px;
+  display: flex; flex-wrap: wrap; gap: 7px 12px; margin: 0; padding: 0; list-style: none;
+  max-width: calc(100% - 130px);
+}
+.souls-keys-hint li {
+  display: flex; align-items: center; gap: 6px;
+  font: 700 8.5px var(--mono); letter-spacing: 0.08em; color: var(--souls-dim);
+  background: rgba(13, 10, 18, 0.55); border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 999px; padding: 4px 9px 4px 6px;
+  backdrop-filter: blur(8px);
+}
+.souls-keys-group { display: inline-flex; gap: 3px; }
+.souls-keys-hint kbd, .souls-overlay-keys kbd {
+  display: inline-grid; place-items: center; min-width: 18px; height: 17px; padding: 0 4px;
+  border-radius: 5px; border: 1px solid rgba(255, 255, 255, 0.16);
+  border-bottom-width: 2px;
+  background: rgba(255, 255, 255, 0.08); color: var(--souls-ink);
+  font: 800 8.5px var(--mono); letter-spacing: 0.04em;
+}
+
+/* ── HUD combat (M1) ─────────────────────────────────────────────── */
+.souls-hud-vitals {
+  position: absolute; left: 12px; top: 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  width: min(250px, 44%);
+}
+.souls-bar {
+  position: relative; height: 11px; border-radius: 7px; overflow: hidden;
+  background: rgba(13, 10, 18, 0.72); border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+}
+.souls-bar i {
+  display: block; height: 100%; border-radius: 6px;
+  transition: width 0.16s ease-out;
+}
+.souls-bar span {
+  position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+  font: 800 8px var(--mono); color: rgba(255, 255, 255, 0.88); letter-spacing: 0.06em;
+}
+.souls-bar-hp i { background: linear-gradient(90deg, #a8231f, #e0483a); box-shadow: 0 0 8px rgba(224, 72, 58, 0.45); }
+.souls-bar-stamina { height: 7px; width: 88%; }
+.souls-bar-stamina i { background: linear-gradient(90deg, #7d8c3c, #c3d466); }
+.souls-hud.is-hurt::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 90px rgba(195, 36, 24, 0.55);
+}
+.souls-hud-target {
+  position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  width: min(310px, 62%);
+}
+.souls-hud-target-name {
+  font: 800 9px var(--mono); letter-spacing: 0.18em; color: var(--souls-dim);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+}
+.souls-bar-enemy { height: 8px; width: 100%; }
+.souls-bar-enemy i { background: linear-gradient(90deg, #6b1f2a, #b8414e); }
+
+.souls-dot {
+  position: absolute; left: 50%; top: 50%; z-index: 2;
+  width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%;
+  background: rgba(255, 236, 214, 0.85);
+  box-shadow: 0 0 8px rgba(255, 138, 60, 0.8);
+  pointer-events: none;
+}
+
+.souls-lock-hint {
+  position: absolute; left: 50%; bottom: 54px; z-index: 3;
+  transform: translateX(-50%);
+  padding: 8px 14px; border-radius: 999px;
+  font: 800 9px var(--mono); letter-spacing: 0.12em; color: var(--souls-gold);
+  background: rgba(13, 10, 18, 0.78); border: 1px solid var(--souls-ember-soft);
+  backdrop-filter: blur(8px); white-space: nowrap;
+  animation: soulsBreathe 2.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.souls-lock-hint span { color: var(--souls-dim); letter-spacing: 0.06em; }
+
+/* ── Overlays (intro / pause) ─────────────────────────────────────── */
+.souls-overlay {
+  position: absolute; inset: 0; z-index: 4;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(8, 6, 12, 0.72), rgba(8, 6, 12, 0.9));
+  backdrop-filter: blur(5px);
+  overflow: auto;
+}
+.souls-overlay-panel {
+  width: min(560px, 100%);
+  padding: 30px 30px 26px;
+  border-radius: var(--souls-radius-lg);
+  border: 1px solid var(--souls-line);
+  background: linear-gradient(165deg, rgba(26, 21, 34, 0.92), rgba(15, 12, 20, 0.94));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  text-align: center;
+  animation: soulsRise 0.34s ease-out;
+}
+.souls-overlay-panel.is-compact { width: min(460px, 100%); }
+.souls-overlay-kicker {
+  font: 800 9px var(--mono); letter-spacing: 0.22em; color: var(--souls-ember);
+  margin-bottom: 10px;
+}
+.souls-overlay-panel h1 {
+  margin: 0 0 12px;
+  font: 900 clamp(34px, 6vw, 54px) var(--font-gaming);
+  letter-spacing: 0.08em;
+  background: linear-gradient(180deg, #ffe9d2 20%, var(--souls-ember) 90%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 4px 22px rgba(255, 138, 60, 0.28));
+}
+.souls-overlay-panel h2 {
+  margin: 0 0 14px;
+  font: 900 clamp(26px, 5vw, 40px) var(--font-gaming);
+  letter-spacing: 0.12em; color: var(--souls-ink);
+}
+.souls-overlay-lead {
+  margin: 0 auto 16px; max-width: 460px;
+  font-size: 13px; line-height: 1.65; color: var(--souls-dim);
+}
+.souls-overlay-lead strong { color: var(--souls-gold); }
+
+.souls-overlay-keys {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 14px;
+  margin: 0 0 20px; padding: 0; list-style: none;
+}
+.souls-overlay-keys li {
+  display: flex; align-items: center; gap: 7px;
+  font: 700 9.5px var(--mono); letter-spacing: 0.06em; color: var(--souls-dim);
+}
+.souls-overlay-keys li .souls-keys-group kbd { min-width: 21px; height: 20px; font-size: 9px; }
+
+.souls-start-button {
+  min-width: 230px; padding: 14px 22px;
+  border: none; border-radius: var(--souls-radius);
+  background: linear-gradient(180deg, #ffb066, #f97c2b);
+  color: #1d0f06;
+  font: 900 12px var(--font-gaming); letter-spacing: 0.14em;
+  cursor: pointer;
+  box-shadow: 0 12px 34px rgba(249, 124, 43, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+.souls-start-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(249, 124, 43, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+.souls-start-button:active:not(:disabled) { transform: translateY(0); }
+.souls-start-button:disabled { filter: grayscale(0.7) brightness(0.7); cursor: wait; }
+
+.souls-ghost-button {
+  min-width: 160px; padding: 13px 18px;
+  border-radius: var(--souls-radius);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05); color: var(--souls-ink);
+  font: 900 11px var(--font-gaming); letter-spacing: 0.12em; cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, transform 0.14s;
+}
+.souls-ghost-button:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--souls-ember-soft); transform: translateY(-2px); }
+
+.souls-overlay-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 14px; }
+.souls-overlay-actions .souls-start-button { min-width: 180px; }
+
+.souls-overlay-hint {
+  margin-top: 14px;
+  font: 800 8.5px var(--mono); letter-spacing: 0.14em; color: rgba(242, 236, 226, 0.38);
+}
+.souls-overlay-hint.is-soft { margin-top: 7px; color: rgba(242, 236, 226, 0.26); }
+
+.souls-pause-stats {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+  margin-bottom: 18px;
+}
+.souls-pause-stats span {
+  padding: 7px 11px; border-radius: 999px;
+  font: 800 8px var(--mono); letter-spacing: 0.12em; color: var(--souls-dim);
+  background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.souls-pause-stats b { color: var(--souls-gold); font-weight: 800; margin-left: 5px; }
+
+/* ── Erreur WebGL ─────────────────────────────────────────────────── */
+.souls-world-error {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: 24px; text-align: center;
+  background: rgba(9, 7, 13, 0.94);
+}
+.souls-world-error strong { color: var(--souls-ember); font: 900 clamp(17px, 3vw, 25px) var(--font-gaming); }
+.souls-world-error span { max-width: 560px; color: var(--souls-dim); font-size: 13px; }
+.souls-world-error button {
+  padding: 10px 14px; border-radius: 8px;
+  border: 1px solid var(--souls-ember-soft); background: rgba(255, 138, 60, 0.12);
+  color: var(--souls-ember); font: 800 9px var(--mono); letter-spacing: 0.1em; cursor: pointer;
+}
+
+/* ── Foot ─────────────────────────────────────────────────────────── */
+.souls-game-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px;
+  font: 800 8.5px var(--mono); letter-spacing: 0.12em; color: rgba(242, 236, 226, 0.4);
+  background: rgba(255, 255, 255, 0.02);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.souls-game-foot b { color: var(--souls-gold); font-weight: 800; }
+.souls-game-foot a { color: var(--souls-ember); text-decoration: none; }
+.souls-game-foot a:hover { text-decoration: underline; }
+
+/* ── Animations ───────────────────────────────────────────────────── */
+@keyframes soulsPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes soulsBreathe { 0%, 100% { opacity: 0.65; } 50% { opacity: 1; } }
+@keyframes soulsRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .souls-overlay-panel, .souls-live-dot, .souls-live-pill i, .souls-lock-hint { animation: none; }
+  .souls-start-button, .souls-ghost-button, .souls-pause-button { transition: none; }
+}
+
+/* ── Boucle souls (M2) : âmes, flasque, prompts ────────────────────── */
+.souls-hud-meta {
+  position: absolute; left: 12px; top: 56px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  max-width: min(270px, 52%);
+}
+.souls-hud-souls {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 800 11px var(--mono); letter-spacing: 0.1em; color: var(--souls-gold);
+  background: rgba(13, 10, 18, 0.62); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px; padding: 4px 10px; backdrop-filter: blur(8px);
+}
+.souls-hud-souls i {
+  font-style: normal; color: #8fe0ff;
+  text-shadow: 0 0 8px rgba(143, 224, 255, 0.8);
+}
+.souls-hud-souls em {
+  font-style: normal; font-size: 8.5px; color: var(--souls-dim);
+  letter-spacing: 0.14em;
+}
+.souls-flask {
+  display: inline-flex; gap: 4px; padding: 5px 8px;
+  background: rgba(13, 10, 18, 0.62); border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px; backdrop-filter: blur(8px);
+}
+.souls-flask i {
+  width: 9px; height: 13px; border-radius: 3px 3px 5px 5px;
+  background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.souls-flask i.is-full {
+  background: linear-gradient(180deg, #ffd27a, #ff8a3c);
+  border-color: rgba(255, 210, 122, 0.7);
+  box-shadow: 0 0 7px rgba(255, 138, 60, 0.75);
+}
+.souls-key {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 800 10px var(--mono); letter-spacing: 0.14em; color: #1b1308;
+  background: linear-gradient(180deg, #ffe08a, #e0a93c); border-radius: 999px;
+  padding: 4px 10px; box-shadow: 0 0 12px rgba(255, 200, 90, 0.55);
+  animation: souls-prompt-blink 1.8s ease-in-out infinite;
+}
+.souls-key i { font-style: normal; font-size: 12px; }
+.souls-prompt {
+  position: absolute; left: 50%; bottom: 54px; transform: translateX(-50%);
+  font: 800 10px var(--mono); letter-spacing: 0.16em; color: var(--souls-gold);
+  background: rgba(13, 10, 18, 0.7); border: 1px solid var(--souls-line);
+  border-radius: 999px; padding: 6px 14px; backdrop-filter: blur(8px);
+  white-space: nowrap; animation: souls-prompt-blink 1.6s ease-in-out infinite;
+}
+.souls-toast {
+  position: absolute; left: 50%; top: 60px; transform: translateX(-50%);
+  font: 800 13px var(--mono); letter-spacing: 0.14em; color: var(--souls-ink);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+  background: rgba(19, 16, 25, 0.84); border: 1px solid var(--souls-line);
+  border-radius: 10px; padding: 8px 16px; backdrop-filter: blur(8px);
+  animation: souls-toast-in 2.6s ease-out forwards; pointer-events: none;
+}
+@keyframes souls-toast-in {
+  0% { opacity: 0; transform: translate(-50%, -8px); }
+  8% { opacity: 1; transform: translate(-50%, 0); }
+  78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes souls-prompt-blink {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
+/* ── Responsive ───────────────────────────────────────────────────── */
+@media (max-width: 1050px) {
+  .souls-viewport { height: min(600px, 82vh); }
+}
+@media (max-width: 820px) {
+  .souls-viewport { height: min(clamp(460px, 86vw, 600px), 80vh); }
+  .souls-keys-hint li:nth-child(n + 4) { display: none; }
+}
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .souls-page { padding-top: 72px; }
+  .souls-page .wrap { width: min(100% - 24px, 560px); }
+  .souls-game-topbar { height: 44px; padding-inline: 9px; }
+  .souls-game-brand { font-size: 7px; letter-spacing: 0.08em; }
+  .souls-live-pill, .souls-pause-button { font-size: 7px; padding: 5px 7px; }
+  .souls-viewport { height: clamp(420px, 62vh, 560px); min-height: 420px; }
+  .souls-overlay { padding: 14px; }
+  .souls-overlay-panel { padding: 22px 16px 18px; }
+  .souls-overlay-lead { font-size: 12px; }
+  .souls-start-button { min-width: 200px; padding: 12px 16px; font-size: 10px; }
+  .souls-keys-hint { max-width: calc(100% - 24px); }
+  .souls-keys-hint li { font-size: 7.5px; }
+  .souls-hud-coords { font-size: 8px; right: 8px; bottom: 8px; }
+  .souls-lock-hint { font-size: 7.5px; bottom: 46px; max-width: calc(100% - 24px); white-space: normal; text-align: center; }
+  .souls-hud-vitals { width: min(170px, 50%); gap: 4px; }
+  .souls-hud-meta { top: 50px; max-width: calc(100% - 24px); gap: 6px; }
+  .souls-hud-souls { font-size: 9.5px; padding: 3px 8px; }
+  .souls-prompt {
+    font-size: 8.5px; bottom: 62px; max-width: calc(100% - 24px);
+    white-space: normal; text-align: center;
+  }
+  .souls-toast {
+    font-size: 10.5px; top: 66px; max-width: calc(100% - 24px);
+    text-align: center;
+  }
+  .souls-hud-target { width: min(210px, 72%); top: 8px; }
+  .souls-hud-target-name { font-size: 7.5px; }
+  .souls-game-foot { flex-direction: column; gap: 5px; text-align: center; }
+}
