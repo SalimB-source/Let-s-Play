@@ -671,7 +671,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 }
 .mirage-shop-card.is-selected { border-color: rgba(246, 205, 114, .75); background: rgba(246, 205, 114, .1); }
 .mirage-shop-card:not(.is-owned) .mirage-skin-model { filter: grayscale(1) brightness(.45) contrast(1.1); }
-.mirage-shop-card .mirage-skin-stage { height: 132px; }
+.mirage-shop-card .mirage-skin-stage { height: 152px; }
 .mirage-shop-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
 .mirage-shop-copy .mirage-skin-name { white-space: normal; font-size: 12px; letter-spacing: .04em; }
 .mirage-shop-copy p { margin: 0; color: rgba(255, 240, 219, .62); font-size: 11px; line-height: 1.4; }

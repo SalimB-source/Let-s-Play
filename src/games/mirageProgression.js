@@ -36,7 +36,7 @@ export const SKINS = [
     colors: [0xc3a36f, 0x1b1511, 0xa8322d, 0xf0d7a1, 0x5a3a24, 0x4a2c17, 0x1b1511] },
   // Palette already created in mirageCharacters.js (Gyro Zeppeli).
   { id: GYRO_ZEPPELI_ID, name: 'Gyro Zeppeli', level: 1, price: CHARACTER_PRICES[GYRO_ZEPPELI_INDEX] || 200,
-    hint: 'Tenue de Steel Ball Run', horse: 'Or', hat: 'Fedora',
+    hint: 'Steel balls vertes & lunettes', horse: 'Palomino', hat: 'Fedora', accessory: 'Steel balls',
     colors: [...CHARACTER_PALETTES[GYRO_ZEPPELI_INDEX]] },
 ];
 

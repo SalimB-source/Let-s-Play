@@ -1282,7 +1282,7 @@ export default function MirageRushPage() {
                       {!unlocked && <span className="mirage-skin-lock" aria-hidden="true">🔒</span>}
                     </span>
                     <span className="mirage-skin-name">{skin.name}</span>
-                    <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}`}><i>♞ {skin.horse}</i><i>🤠 {skin.hat}</i></span>
+                    <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}${skin.accessory ? `, ${skin.accessory}` : ''}`}><i>♞ {skin.horse}</i><i>🤠 {skin.hat}</i>{skin.accessory && <i>✦ {skin.accessory}</i>}</span>
                     <small>{selected ? 'ÉQUIPÉ' : unlocked ? skin.hint : shopItem ? `${skin.price} OR` : `NIV. ${skin.level}`}</small>
                   </button>
                 );
@@ -1304,7 +1304,7 @@ export default function MirageRushPage() {
                   <MirageWallet coins={progression.coins} />
                 </div>
                 <p className="mirage-board-subtitle">
-                  Chaque victoire rapporte {WIN_COINS} OR. Gyro Zeppeli coûte 200 OR.
+                  Chaque victoire rapporte {WIN_COINS} OR. Les skins de la boutique ont des accessoires bien visibles — Gyro Zeppeli et ses steel balls vertes coûtent 200 OR.
                 </p>
                 <div className="mirage-shop-list">
                   {SHOP_SKINS.map((skin) => {
@@ -1319,9 +1319,10 @@ export default function MirageRushPage() {
                         </span>
                         <div className="mirage-shop-copy">
                           <span className="mirage-skin-name">{skin.name}</span>
-                          <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}`}>
+                          <span className="mirage-skin-tags" aria-label={`Cheval ${skin.horse}, chapeau ${skin.hat}${skin.accessory ? `, ${skin.accessory}` : ''}`}>
                             <i>♞ {skin.horse}</i>
                             <i>🤠 {skin.hat}</i>
+                            {skin.accessory && <i>✦ {skin.accessory}</i>}
                           </span>
                           <p>{skin.hint}</p>
                           {owned ? (
