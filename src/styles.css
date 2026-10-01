@@ -276,28 +276,6 @@ img{max-width:100%}
   border-color:var(--yellow);color:#0a0b1a;background:#ffe44a;
   transform:translateY(-1px);box-shadow:0 8px 22px -6px rgba(255,214,25,.55);
 }
-/* Déconnexion — pilule danger discrète, même hauteur que les autres */
-.nav-logout{
-  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  height:34px;padding:0 12px;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);color:rgba(238,240,255,.82);
-  font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;
-  cursor:pointer;white-space:nowrap;
-  border-radius:999px;
-  backdrop-filter:blur(8px);
-  transition:border-color .22s,color .22s,background .22s,transform .18s;
-}
-.nav-logout-icon{flex-shrink:0;transition:transform .25s}
-.nav-logout:hover{background:rgba(255,92,124,.14);border-color:rgba(255,92,124,.32);color:#fff}
-.nav-logout:hover .nav-logout-icon{transform:translateX(2px)}
-.nav-logout:focus-visible{outline:2px solid var(--cyan);outline-offset:3px}
-/* Entre 801 px et 1240 px, la barre est déjà serrée (cinq entrées + recherche
-   + langue + compte) : l’icône suffit, le libellé passe en info-bulle /
-   aria-label. Le menu mobile (≤ 800 px) a la place pour le texte complet. */
-@media(min-width:801px) and (max-width:1240px) and (hover:hover), (min-width:801px) and (max-width:1240px) and (min-device-width:601px){
-  .nav-logout{width:34px;height:34px;padding:0;gap:0}
-  .nav-logout-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-}
 /* Hide on scroll — l'île s'efface quand on descend */
 .nav.nav-hidden{
   transform:translateX(-50%) translateY(calc(-100% - 24px)) !important;
@@ -1793,11 +1771,9 @@ img{max-width:100%}
      ça : `justify-content:space-between`, libellé à droite) et les boutons de
      compte se placent par paires en dessous. */
   .nav-actions-grid .theme-toggle{grid-column:1 / -1}
-  .nav-actions-grid .nav-logout{grid-column:1 / -1}
   .nav-account.nav-login,
   .nav-account.nav-register,
-  .nav-account.connected,
-  .nav-logout{
+  .nav-account.connected{
     width:100%;
     justify-content:center;
     text-align:center;
@@ -1806,7 +1782,6 @@ img{max-width:100%}
     align-items:center;
   }
   .nav-account.nav-register{box-shadow:none}
-  .nav-logout{width:100%;padding:12px 14px}
   .nav-account.connected{grid-column:1 / -1}
 
   /* Footer inside menu */

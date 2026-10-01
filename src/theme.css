@@ -188,7 +188,6 @@
   [data-theme='light'] .nav-messages-link .lets-talk-label,
   [data-theme='light'] .social-panel-kicker,
   [data-theme='light'] .social-tab:hover,
-  [data-theme='light'] .nav-logout:hover,
   [data-theme='light'] .nav-profile-dropdown-avatar,
   [data-theme='light'] .nav-profile-dropdown-meta strong,
   [data-theme='light'] .nav-profile-dropdown-links a:hover,
@@ -221,7 +220,6 @@
   [data-theme='light'] .article-body,
   [data-theme='light'] .proscons li,
   [data-theme='light'] .horror-photo-inner,
-  [data-theme='light'] .nav-logout,
   [data-theme='light'] .nav-profile-dropdown-meta small,
   [data-theme='light'] .nav-profile-dropdown-links a,
   [data-theme='light'] .cmd-palette-icon,
@@ -645,16 +643,6 @@
 [data-theme='light'] .nav-account.nav-login:hover{background:rgba(86,70,190,.10)}
 [data-theme='light'] .nav-account.nav-register{
   background:var(--yellow);border-color:var(--yellow);color:var(--ink);
-}
-[data-theme='light'] .nav-logout{
-  background:rgba(86,70,190,.06);
-  border-color:rgba(86,70,190,.10);
-  color:var(--muted);
-}
-[data-theme='light'] .nav-logout:hover{
-  background:rgba(190,18,60,.08);
-  border-color:rgba(190,18,60,.22);
-  color:var(--danger);
 }
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   [data-theme='light'] .nav,
@@ -1516,18 +1504,8 @@
     background:rgba(255,255,255,.2);
     border-color:rgba(255,255,255,.44);
   }
-  [data-theme='light'] .nav .nav-account.connected .nav-account-name,
-  [data-theme='light'] .nav .nav-logout{color:#fff}
+  [data-theme='light'] .nav .nav-account.connected .nav-account-name{color:#fff}
   [data-theme='light'] .nav .nav-account.connected:hover .nav-account-name{color:var(--yellow)}
-  [data-theme='light'] .nav .nav-logout{
-    background:rgba(255,255,255,.12);
-    border-color:rgba(255,255,255,.28);
-  }
-  [data-theme='light'] .nav .nav-logout:hover{
-    background:rgba(190,18,60,.88);
-    border-color:rgba(255,255,255,.36);
-    color:#fff;
-  }
 }
 
 @media (max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){

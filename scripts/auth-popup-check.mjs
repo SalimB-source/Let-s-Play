@@ -12,8 +12,8 @@
  *      inconnues, paramètre absent) ;
  *   2. le rendu réel (SSR) de chaque URL : quel formulaire s'affiche ;
  *   3. les deux boutons de la navigation pointent bien sur `/auth?mode=…`, et
- *      le membre connecté voit à la place la pastille de compte suivie du
- *      bouton « Se déconnecter » ;
+ *      le membre connecté voit la pastille de compte et le bouton
+ *      « Se déconnecter » uniquement dans le menu du profil ;
  *   4. les garde-fous de source : le mode suit l'URL y compris quand le pop-up
  *      est déjà ouvert (effet sur `location.search`), et le fichier ne revient
  *      pas à un mode initial figé ;
@@ -129,26 +129,26 @@ ok('la connexion garde « Mot de passe oublié ? »', signinHtml.includes('Forgo
 
 /* --------------------------------------- 3. Les boutons de la navigation */
 
-console.log('\n[3/5] les boutons de la navbar : visiteur (mode) et membre connecté (Log out)\n');
+console.log('\n[3/5] les boutons de la navbar : visiteur (mode) et déconnexion dans le menu de profil\n');
 
 const navHtml = renderNav();
 ok('lien « Log in » → /auth?mode=signin', /href="\/auth\?mode=signin"/.test(navHtml));
 ok('lien « Register » → /auth?mode=signup', /href="\/auth\?mode=signup"/.test(navHtml));
 ok('visiteur : pas de bouton « Log out »', !/class="nav-logout"/.test(navHtml));
 
-// Membre connecté : la pastille de compte remplace les deux liens et le bouton
-// « Log out » ferme la rangée d'actions — donc tout à droite de la barre.
+// Membre connecté : le bouton « Log out » se trouve uniquement dans le menu
+// qui s'ouvre au survol (ou au focus) de la pastille de profil.
 const connectedHtml = renderNav({
   session: { user: { id: 'smoke-user', email: 'smoke@letsplay.dz', user_metadata: { gamertag: 'SmokeDZ' } } },
 });
 ok('connecté : la pastille mène au hub /auth', /<a(?=[^>]*href="\/auth")(?=[^>]*class="nav-account connected")[^>]*>/.test(connectedHtml));
 ok('connecté (desktop) : photo ou initiales dans la pastille', connectedHtml.includes('nav-account-avatar') && connectedHtml.includes('nav-account-initials'));
 ok('connecté (desktop) : niveau affiché dans la pastille', /class="nav-account-level"[\s\S]*?<strong>1<\/strong>/.test(connectedHtml));
-const logoutIndex = connectedHtml.search(/<button[^>]*class="nav-logout"/);
-ok('connecté : bouton « Log out » présent', logoutIndex !== -1);
-ok('connecté : le bouton porte le libellé « Log out »', /class="nav-logout"[^>]*aria-label="Log out"/.test(connectedHtml));
-ok('connecté : icône de déconnexion (SVG) dans le bouton', /class="nav-logout-icon"/.test(connectedHtml));
-ok('connecté : le bouton vient après la pastille de compte', logoutIndex > connectedHtml.indexOf('nav-account connected'));
+ok('connecté : aucun bouton de déconnexion dans la barre', !connectedHtml.includes('class="nav-logout"'));
+const logoutIndex = connectedHtml.search(/<button[^>]*class="nav-profile-dropdown-logout"/);
+ok('connecté : bouton « Log out » présent dans le menu du profil', logoutIndex !== -1);
+ok('connecté : le bouton est à l’intérieur du menu de profil', /<div class="nav-profile-dropdown"[\s\S]*?<button[^>]*class="nav-profile-dropdown-logout"/.test(connectedHtml));
+ok('connecté : le bouton conserve le libellé « Log out »', /class="nav-profile-dropdown-logout"[^>]*>[\s\S]*?Log out/.test(connectedHtml));
 ok('connecté : plus de lien « Log in » / « Register »', !/href="\/auth\?mode=(signin|signup)"/.test(connectedHtml));
 const quizIndex = connectedHtml.indexOf('href="/quizz"');
 const afterQuiz = connectedHtml.slice(quizIndex + 'href="/quizz"'.length);
@@ -177,7 +177,7 @@ ok('le mode vient de l’URL, pas d’un « signin » figé', !/useState\(initia
 ok('la prop par défaut laisse l’URL décider', /initialMode = ''/.test(authSource));
 ok('« Register » reste un lien vers ?mode=signup', /to="\/auth\?mode=signup"/.test(layoutSource));
 ok('« Log in » reste un lien vers ?mode=signin', /to="\/auth\?mode=signin"/.test(layoutSource));
-ok('le bouton de déconnexion appelle le gestionnaire partagé', /className="nav-logout"\s+onClick=\{handleSignOut\}/.test(layoutSource));
+ok('la déconnexion est uniquement dans le menu du profil', !/className="nav-logout"/.test(layoutSource) && /className="nav-profile-dropdown-logout" onClick=\{handleSignOut\}/.test(layoutSource));
 ok('la déconnexion ferme les menus, termine la session et revient à l’accueil', /const handleSignOut = \(\) => \{\s*setMenuOpen\(false\);\s*setProfileMenuOpen\(false\);\s*signOut\(\);\s*navigate\('\/'\);/.test(layoutSource));
 
 // Successful password sign-in and immediate sign-up both replace the auth URL.
