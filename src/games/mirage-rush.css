@@ -537,7 +537,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-settings-heading { padding-bottom: 2px; }
 .mirage-settings-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   padding: 5px;
   border-radius: 12px;
@@ -568,6 +568,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-settings-pane[hidden] { display: none !important; }
 .mirage-settings-pane .mirage-leaderboard,
 .mirage-settings-pane .mirage-progression,
+.mirage-settings-pane .mirage-shop,
 .mirage-settings-pane .mirage-howto { padding: 0; }
 .mirage-settings-info { display: flex; flex-direction: column; gap: 14px; }
 .mirage-settings-info .mirage-howto + .mirage-howto { padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, .08); }
@@ -650,6 +651,43 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-xp-award strong { color: #ffdc72; font-size: 13px; }
 .mirage-xp-award span { color: #8ce9b4; }
 .mirage-xp-award em { flex-basis: 100%; color: #e7a8d8; font-size: 9px; font-style: normal; }
+.mirage-coin-gain { color: #ffd36a; font-size: 13px; font-weight: 800; }
+.mirage-wallet {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border-radius: 999px;
+  border: 1px solid rgba(246, 205, 114, .42); background: rgba(246, 205, 114, .12);
+  color: rgba(255, 236, 196, .78); font: 800 8px var(--mono); letter-spacing: .12em; white-space: nowrap;
+}
+.mirage-wallet b { color: #ffe08a; font: 800 12px var(--font-gaming); letter-spacing: 0; }
+.mirage-coin {
+  width: 14px; height: 14px; border-radius: 50%; flex: 0 0 auto;
+  background: radial-gradient(circle at 32% 28%, #fff6d2, #f0c14b 46%, #9a6a12);
+  box-shadow: inset 0 0 0 1px rgba(90, 55, 0, .4), 0 0 8px rgba(240, 193, 75, .35);
+}
+.mirage-shop-list { display: flex; flex-direction: column; gap: 10px; }
+.mirage-shop-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 10px; align-items: center;
+  padding: 10px; border-radius: var(--mirage-radius-sm);
+  border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .03);
+}
+.mirage-shop-card.is-selected { border-color: rgba(246, 205, 114, .75); background: rgba(246, 205, 114, .1); }
+.mirage-shop-card:not(.is-owned) .mirage-skin-model { filter: grayscale(1) brightness(.45) contrast(1.1); }
+.mirage-shop-card .mirage-skin-stage { height: 152px; }
+.mirage-shop-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.mirage-shop-copy .mirage-skin-name { white-space: normal; font-size: 12px; letter-spacing: .04em; }
+.mirage-shop-copy p { margin: 0; color: rgba(255, 240, 219, .62); font-size: 11px; line-height: 1.4; }
+.mirage-shop-buy {
+  margin-top: 4px; min-height: 34px; padding: 0 12px; border-radius: 9px;
+  border: 1px solid rgba(246, 205, 114, .7);
+  background: linear-gradient(135deg, rgba(246, 205, 114, .28), rgba(242, 119, 169, .14));
+  color: #ffe08a; cursor: pointer; font: 800 8px var(--mono); letter-spacing: .1em;
+}
+.mirage-shop-buy:hover:not(:disabled) { transform: translateY(-1px); }
+.mirage-shop-buy:disabled { cursor: not-allowed; opacity: .45; }
+.mirage-shop-buy.is-broke { opacity: .72; }
+.mirage-shop-buy.is-owned { border-color: rgba(140, 233, 180, .55); color: #8ce9b4; background: rgba(140, 233, 180, .1); }
+.mirage-shop-buy:focus-visible { outline: 2px solid #fff1c9; outline-offset: 2px; }
+.mirage-shop-notice { margin: 10px 0 0; color: #f0b27a; font: 800 9px var(--mono); letter-spacing: .08em; }
+.mirage-shop-notice.is-success { color: #8ce9b4; }
 
 .mirage-howto { padding-bottom: 13px; }
 .mirage-howto > .mirage-panel-kicker { display: block; margin-bottom: 9px; }
@@ -800,6 +838,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-side-panel { grid-template-columns: 1fr; gap: 10px; }
   .mirage-settings-tabs { grid-template-columns: 1fr; }
   .mirage-settings-tabs button { min-height: 32px; }
+  .mirage-shop-card { grid-template-columns: 1fr; }
   .mirage-leaderboard { grid-row: auto; }
   .mirage-board-message { min-height: 96px; }
   .mirage-page-footer { flex-direction: column; font-size: 7px; }

@@ -1,6 +1,6 @@
 import React, { useId } from 'react';
 import { CHARACTER_NAMES, CHARACTER_PALETTES } from './mirageCharacters';
-import { normalizePalette } from './mirageExplorer';
+import { accessoriesForPalette, normalizePalette } from './mirageExplorer';
 
 function toHex(color) {
   return `#${Number(color).toString(16).padStart(6, '0')}`;
@@ -15,7 +15,9 @@ function toHex(color) {
 export default function MirageCharacterPortrait({ character = 0, colors = null, label = null, className = '', decorative = false }) {
   const index = ((Number(character) || 0) % CHARACTER_PALETTES.length + CHARACTER_PALETTES.length) % CHARACTER_PALETTES.length;
   const custom = Array.isArray(colors) && colors.length >= 5 && colors.slice(0, 5).every(Number.isFinite);
-  const [coat, mane, cloth, trim, hood, hat] = normalizePalette(custom ? colors : CHARACTER_PALETTES[index]).map(toHex);
+  const palette = custom ? colors : CHARACTER_PALETTES[index];
+  const [coat, mane, cloth, trim, hood, hat] = normalizePalette(palette).map(toHex);
+  const isGyro = accessoriesForPalette(palette) === 'gyro';
   const title = label || CHARACTER_NAMES[index];
   const uniqueId = useId().replace(/:/g, '');
   const gradientId = `mirage-portrait-sky-${index}-${uniqueId}`;
@@ -59,6 +61,18 @@ export default function MirageCharacterPortrait({ character = 0, colors = null, 
       <path d="M31 28 Q36 34 51 33 Q66 34 71 27 Q66 31 51 30 Q36 31 31 28Z" fill={hat} stroke="#2d2334" strokeWidth="2.6" strokeLinejoin="round" />
       <path d="M49 49 L50 61" stroke={trim} strokeWidth="3" strokeLinecap="round" />
       <path d="M54 61 Q62 63 67 60" fill="none" stroke="#2d2334" strokeWidth="2" strokeLinecap="round" />
+      {isGyro && (
+        <g aria-hidden="true">
+          <path d="M36 56 Q32 68 40 78 Q48 70 46 58Z" fill="#2f9a44" stroke="#2d2334" strokeWidth="2" strokeLinejoin="round" />
+          <ellipse cx="47" cy="36.5" rx="5.2" ry="3.4" fill="#8a9aa8" stroke="#c5cdd4" strokeWidth="1.7" />
+          <ellipse cx="58" cy="36.5" rx="5.2" ry="3.4" fill="#8a9aa8" stroke="#c5cdd4" strokeWidth="1.7" />
+          <path d="M52 36.5 H53.2" stroke="#c5cdd4" strokeWidth="1.6" strokeLinecap="round" />
+          <circle cx="36" cy="64" r="7.2" fill="#46e04c" stroke="#1d5a22" strokeWidth="2.2" />
+          <circle cx="33.6" cy="61.6" r="2.1" fill="#d6ff9c" />
+          <circle cx="70" cy="58" r="7.2" fill="#46e04c" stroke="#1d5a22" strokeWidth="2.2" />
+          <circle cx="67.6" cy="55.6" r="2.1" fill="#d6ff9c" />
+        </g>
+      )}
       <rect x="2" y="2" width="96" height="96" rx="22" fill="none" stroke="rgba(255,244,220,.42)" strokeWidth="2" />
     </svg>
   );

@@ -10,11 +10,16 @@
 //   - head      tête / foulard du cavalier
 //   - hat       chapeau (optionnel : sinon cuir dérivé de la robe, comme avant)
 //   - markings  liste en tête + balzanes (optionnel : sinon = robe, invisible)
+//
+// Shop skins carry extra accessories (Gyro : steel balls vertes, lunettes,
+// cape verte) that stay on their own materials so paintModel never recolours
+// them. They are attached / detached when the palette matches a shop character.
 import * as THREE from 'three';
-import { CHARACTER_PALETTES } from './mirageCharacters';
+import { CHARACTER_ACCESSORIES, CHARACTER_PALETTES } from './mirageCharacters.js';
 
 export const PALETTE_SLOTS = 7;
 const LEATHER = 0x5c3318;
+export const STEEL_BALL_GREEN = 0x46e04c;
 
 export function block(geometry, material, parent, position, scale = null) {
   const mesh = new THREE.Mesh(geometry, material);
@@ -35,7 +40,16 @@ export function normalizePalette(palette) {
   return [coat, mane, cloth, trim, head, hat, markings];
 }
 
-export function makeExplorer(rival = false, palette = null) {
+/** Shop accessory id for a palette, or null for the free riders. */
+export function accessoriesForPalette(palette) {
+  if (!Array.isArray(palette) || palette.length < 5) return null;
+  const index = CHARACTER_PALETTES.findIndex((entry) => (
+    Array.isArray(entry) && entry.length >= 5 && entry.slice(0, 5).every((color, slot) => Number(color) === Number(palette[slot]))
+  ));
+  return index >= 0 ? (CHARACTER_ACCESSORIES[index] || null) : null;
+}
+
+export function makeExplorer(rival = false, palette = null, accessories = undefined) {
   const player = new THREE.Group();
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const mat = color => new THREE.MeshStandardMaterial({ color, roughness: 0.8, flatShading: true });
@@ -91,17 +105,23 @@ export function makeExplorer(rival = false, palette = null) {
   block(cube, hatMat, riderBody, [-0.15, 2.91, 0.02], [0.21, 0.11, 0.52]);
   block(cube, hatMat, riderBody, [0.15, 2.91, 0.02], [0.21, 0.11, 0.52]);
 
+  const arms = [];
   for (const x of [-0.43, 0.43]) {
     block(cube, mane, riderBody, [x, 1.16, 0.05], [0.22, 0.57, 0.32]);
     const arm = block(cube, cloth, riderBody, [x * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
     arm.rotation.x = -0.8;
+    arms.push(arm);
     block(cube, mane, riderBody, [x * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
   }
-  player.userData.parts = { legs, tail, cape, rider };
+  player.userData.parts = { legs, tail, cape, rider, riderBody, arms };
   player.userData.materials = [coat, mane, cloth, trim, hood, hatMat, marks];
   player.userData.hatMaterial = hatMat;
   player.userData.basePalette = baseColors;
   player.userData.painting = baseColors;
+  player.userData.accessoryKind = null;
+  player.userData.accessoryGroup = null;
+  const kind = accessories !== undefined ? accessories : accessoriesForPalette(baseColors);
+  setExplorerAccessories(player, kind);
   return player;
 }
 
@@ -110,10 +130,131 @@ export function paintModel(model, colors) {
   const materials = model.userData.materials;
   if (!materials || !colors) return;
   normalizePalette(colors).forEach((color, index) => materials[index]?.color.set(color));
+  setExplorerAccessories(model, accessoriesForPalette(colors));
+}
+
+/**
+ * Attach or replace shop accessories. `kind` is currently `'gyro'` or null.
+ * Accessories use their own materials so they stay (steel balls stay green).
+ */
+export function setExplorerAccessories(model, kind) {
+  const next = kind || null;
+  if ((model.userData.accessoryKind || null) === next) return;
+  detachAccessories(model);
+  model.userData.accessoryKind = next;
+  if (next === 'gyro') attachGyroAccessories(model);
+}
+
+function detachAccessories(model) {
+  const group = model.userData.accessoryGroup;
+  if (!group) {
+    model.userData.accessoryKind = null;
+    return;
+  }
+  const loose = group.userData.loose || [];
+  for (const mesh of loose) {
+    mesh.parent?.remove(mesh);
+  }
+  group.parent?.remove(group);
+  const seen = new Set();
+  const drop = (resource) => {
+    if (!resource || seen.has(resource)) return;
+    seen.add(resource);
+    resource.dispose?.();
+  };
+  for (const mesh of loose) {
+    drop(mesh.geometry);
+    drop(mesh.material);
+    mesh.traverse?.((node) => {
+      drop(node.geometry);
+      drop(node.material);
+    });
+  }
+  group.traverse((node) => {
+    drop(node.geometry);
+    if (Array.isArray(node.material)) node.material.forEach(drop);
+    else drop(node.material);
+  });
+  model.userData.accessoryGroup = null;
+  model.userData.accessoryKind = null;
+}
+
+function attachGyroAccessories(model) {
+  const { riderBody, cape } = model.userData.parts || {};
+  if (!riderBody) return;
+  const group = new THREE.Group();
+  group.name = 'gyro-accessories';
+  const cube = new THREE.BoxGeometry(1, 1, 1);
+  const loose = [];
+
+  // Steel balls — Gyro's signature. Real spheres, oversized, emissive green so
+  // they read even on the tiny shop thumbnail and from behind in a race.
+  const ballMat = new THREE.MeshStandardMaterial({
+    color: STEEL_BALL_GREEN,
+    roughness: 0.16,
+    metalness: 0.78,
+    emissive: 0x0c5a18,
+    emissiveIntensity: 0.55,
+  });
+  const gleamMat = new THREE.MeshBasicMaterial({ color: 0xd6ff9c });
+  const sphere = new THREE.SphereGeometry(0.24, 16, 12);
+  const gleamGeo = new THREE.SphereGeometry(0.07, 8, 8);
+  const ballSpots = [
+    [-0.68, 1.72, -0.78],
+    [0.72, 1.58, -0.82],
+  ];
+  for (const pos of ballSpots) {
+    const ball = new THREE.Mesh(sphere, ballMat);
+    ball.position.set(...pos);
+    ball.userData.gyroAccessory = 'steel-ball';
+    const gleam = new THREE.Mesh(gleamGeo, gleamMat);
+    gleam.position.set(-0.08, 0.11, 0.12);
+    ball.add(gleam);
+    group.add(ball);
+  }
+
+  // Goggles on the fedora (silver rims, grey glass) — another Gyro tell.
+  const metal = new THREE.MeshStandardMaterial({ color: 0xc5cdd4, metalness: 0.85, roughness: 0.28, flatShading: true });
+  const glass = new THREE.MeshStandardMaterial({
+    color: 0x6d7c8c, metalness: 0.4, roughness: 0.22, emissive: 0x1a2430, emissiveIntensity: 0.28, flatShading: true,
+  });
+  block(cube, metal, group, [0, 2.74, 0.02], [0.64, 0.07, 0.66]);
+  for (const x of [-0.17, 0.17]) {
+    const rim = block(cube, metal, group, [x, 2.76, -0.30], [0.24, 0.18, 0.12]);
+    rim.userData.gyroAccessory = 'goggles';
+    const lens = block(cube, glass, group, [x, 2.76, -0.36], [0.18, 0.13, 0.06]);
+    lens.userData.gyroAccessory = 'goggles';
+  }
+  block(cube, metal, group, [0, 2.75, -0.32], [0.1, 0.06, 0.08]);
+
+  // Blonde hair spilling from under the hat, like the reference.
+  const hair = new THREE.MeshStandardMaterial({ color: 0xf0d48a, roughness: 0.72, flatShading: true });
+  block(cube, hair, group, [-0.34, 2.2, 0.14], [0.2, 0.62, 0.3]);
+  block(cube, hair, group, [0.34, 2.2, 0.14], [0.2, 0.62, 0.3]);
+  block(cube, hair, group, [0, 2.16, 0.3], [0.5, 0.3, 0.24]);
+
+  riderBody.add(group);
+
+  // Green cape overlay on the existing cape so it flaps with the gallop and
+  // reads from the race camera (which sits behind the rider).
+  if (cape) {
+    const capeMat = new THREE.MeshStandardMaterial({ color: 0x2f9a44, roughness: 0.62, flatShading: true });
+    const overlay = new THREE.Mesh(cube, capeMat);
+    overlay.scale.set(0.86, 1.05, 0.16);
+    overlay.position.set(0, 0, 0.09);
+    overlay.userData.gyroAccessory = 'cape';
+    cape.add(overlay);
+    loose.push(overlay);
+  }
+
+  group.userData.loose = loose;
+  model.userData.accessoryGroup = group;
+  model.userData.accessoryKind = 'gyro';
 }
 
 /** Free GPU resources of a model built by makeExplorer. */
 export function disposeExplorer(model) {
+  detachAccessories(model);
   const seen = new Set();
   model.traverse((node) => {
     if (!node.isMesh) return;

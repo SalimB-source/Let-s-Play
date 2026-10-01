@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  MAX_LEVEL, PROGRESSION_KEY, SKINS, applyRun, defaultProgress, equipSkin,
+  GYRO_ZEPPELI_ID, MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, WIN_COINS,
+  applyRun, buySkin, coinsForRun, defaultProgress, equipSkin, isShopSkin,
   isSkinUnlocked, levelCost, levelForXp, levelProgress, loadProgress,
   sanitizeProgress, saveProgress, skinFor, xpForRun, xpToReachLevel,
 } from '../src/games/mirageProgression.js';
@@ -66,7 +67,9 @@ test('applyRun accumulates XP and runs, and unlocks skins exactly at their level
   const unlockedIds = pumped.unlocked.map(skin => skin.id);
   assert.ok(unlockedIds.includes('oasis'));
   assert.ok(unlockedIds.includes('crepuscule'));
-  for (const skin of SKINS) assert.equal(isSkinUnlocked(skin, pumped.level), pumped.level >= skin.level);
+  for (const skin of SKINS.filter((entry) => !isShopSkin(entry))) {
+    assert.equal(isSkinUnlocked(skin, pumped.level), pumped.level >= skin.level);
+  }
 
   // A second huge run must not re-announce skins already owned.
   const again = applyRun(pumped.progress, { mode: 'duel', score: 1_000_000, gems: 100, won: true });
@@ -74,7 +77,7 @@ test('applyRun accumulates XP and runs, and unlocks skins exactly at their level
 });
 
 test('equipSkin enforces the level gate', () => {
-  const locked = SKINS[SKINS.length - 1];
+  const locked = SKINS.find((skin) => skin.id === 'mustang');
   const start = defaultProgress();
   assert.equal(equipSkin(start, locked.id).skinId, start.skinId, 'locked skin must be refused');
   const rich = { ...start, xp: xpToReachLevel(locked.level) };
@@ -110,4 +113,44 @@ test('progression round-trips through storage and survives corrupted JSON', () =
   assert.deepEqual(loadProgress(fake), saved);
   assert.deepEqual(loadProgress({ getItem: () => '{oops' }), defaultProgress());
   assert.deepEqual(loadProgress(null), defaultProgress());
+});
+
+test('a victory awards 5 gold and a rush awards none', () => {
+  assert.equal(WIN_COINS, 5);
+  assert.equal(coinsForRun({}), 0);
+  assert.equal(coinsForRun({ mode: 'rush', score: 99999 }), 0);
+  assert.equal(coinsForRun({ mode: 'duel', won: false, rank: 2 }), 0);
+  assert.equal(coinsForRun({ mode: 'duel', won: true }), WIN_COINS);
+  assert.equal(coinsForRun({ mode: 'online', rank: 1 }), WIN_COINS);
+  const win = applyRun(defaultProgress(), { mode: 'duel', score: 1000, gems: 4, won: true });
+  assert.equal(win.coinsGained, WIN_COINS);
+  assert.equal(win.progress.coins, WIN_COINS);
+  const loss = applyRun(win.progress, { mode: 'duel', score: 1000, gems: 4, won: false, rank: 3 });
+  assert.equal(loss.coinsGained, 0);
+  assert.equal(loss.progress.coins, WIN_COINS);
+});
+
+test('Gyro Zeppeli is a shop skin that costs 200 gold', () => {
+  const gyro = SKINS.find((skin) => skin.id === GYRO_ZEPPELI_ID);
+  assert.ok(gyro, 'Gyro Zeppeli is listed among the skins');
+  assert.equal(gyro.price, 200);
+  assert.equal(gyro.colors.length, 7);
+  assert.ok(SHOP_SKINS.some((skin) => skin.id === GYRO_ZEPPELI_ID));
+  const start = defaultProgress();
+  assert.equal(isSkinUnlocked(gyro, 20, start.ownedSkins), false, 'XP does not unlock Gyro');
+  assert.equal(equipSkin({ ...start, xp: xpToReachLevel(20) }, gyro.id).skinId, start.skinId);
+  const broke = buySkin(start, gyro.id);
+  assert.equal(broke.ok, false);
+  assert.equal(broke.reason, 'broke');
+  assert.equal(broke.progress.coins, 0);
+  const rich = buySkin({ ...start, coins: 200 }, gyro.id);
+  assert.equal(rich.ok, true);
+  assert.equal(rich.progress.coins, 0);
+  assert.deepEqual(rich.progress.ownedSkins, [GYRO_ZEPPELI_ID]);
+  assert.equal(rich.progress.skinId, GYRO_ZEPPELI_ID);
+  const again = buySkin(rich.progress, gyro.id);
+  assert.equal(again.ok, false);
+  assert.equal(again.reason, 'owned');
+  const cheated = sanitizeProgress({ xp: 0, coins: 999, skinId: GYRO_ZEPPELI_ID, ownedSkins: [] });
+  assert.equal(cheated.skinId, SKINS[0].id, 'unequipped when the shop skin is not owned');
 });
