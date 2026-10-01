@@ -646,8 +646,26 @@ img{max-width:100%}
     position:static;width:auto;padding:0 0 6px 30px;gap:0;
     background:transparent;border:0;border-radius:0;box-shadow:none;
     backdrop-filter:none;-webkit-backdrop-filter:none;
-    opacity:1;visibility:visible;pointer-events:auto;transform:none;transition:none;
+    opacity:1;visibility:visible;transform:none;transition:none;
+    /* PAS de `pointer-events` ici. La règle de base en pose un `none`, et un
+       `auto` réactivait les deux sous-entrées À TRAVERS le menu plein écran
+       fermé : `.nav-links` couvre tout l'écran (inset:0, z-index:1000) et se
+       masque par `opacity:0` + `pointer-events:none`, mais la propriété
+       s'hérite — un enfant `auto` redevient cliquable dans un parent `none`.
+       « Jeux-vidéo » et « Quizz » étaient donc des liens invisibles posés au
+       milieu de la page : un appui sur « JOUER » ou « LANCER LA PARTIE »
+       tombait dessus et quittait le jeu pour la grille des quizz. Ici, le
+       sous-menu hérite du calque : transparent aux touches menu fermé,
+       cliquable menu ouvert (ci-dessous). */
   }
+  /* Menu fermé, rien du panneau bureau ne compte : l'état « survol » de la
+     barre ordinateur (`is-open`, piloté par le JS de survol/focus) ne doit
+     pas rouvrir de zone cliquable invisible sur téléphone. */
+  .nav-item--menu.is-open .nav-submenu{pointer-events:none}
+  /* Menu ouvert : tout le calque redevient interactif, sous-menu compris —
+     cette règle vient APRÈS la précédente (même spécificité) pour l'emporter
+     quand l'entrée est aussi « survolée » au clavier. */
+  .nav-links.open .nav-submenu{pointer-events:auto}
   .nav-submenu::before{display:none}
   .nav-primary .nav-submenu a{
     width:100%;min-height:40px;
