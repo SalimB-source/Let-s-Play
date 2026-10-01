@@ -12,6 +12,7 @@ import { MirageCupPicker, MirageStagePicker, stageName } from './MirageCoursePic
 import MirageCupResults from './MirageCupResults';
 import MirageCupTrophy from './MirageCupTrophy';
 import MirageTrophyIcon from './MirageTrophyIcon';
+import MirageFullscreenIcon from './MirageFullscreenIcon';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
 import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
@@ -22,6 +23,8 @@ import {
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
 import { SKINS, applyRun, equipSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
+import { isFullscreenShortcut, opensFullscreenOnLaunch } from './mirageFullscreen';
+import useMirageFullscreen from './useMirageFullscreen';
 import './mirage-rush.css';
 
 const BEST_KEY = 'letsplay_mirage_rush_best_v1';
@@ -92,6 +95,9 @@ export default function MirageRushPage() {
   const [riderName, setRiderName] = useState(readRiderName);
   const [cupRun, setCupRun] = useState(null);
   const isCup = selectedMode === 'cup';
+  // Vrai quand « LANCER » ouvre déjà le plein écran (téléphone, application) : relu à
+  // chaque rendu, comme `trackLanes`.
+  const launchesFullscreen = opensFullscreenOnLaunch();
   const activeCup = getCup(cupId) || CUPS[0];
   // L'intro devient un vrai tunnel : d'abord un écran de boutons de mode,
   // puis seulement l'écran suivant avec les maps et le lancement.
@@ -145,8 +151,6 @@ export default function MirageRushPage() {
   const [justFinished, setJustFinished] = useState(null);
   const [progression, setProgression] = useState(() => loadProgress());
   const [award, setAward] = useState(null);
-  // Plein écran de la coquille de jeu (téléphone & app) — voir enterImmersive.
-  const [immersive, setImmersive] = useState(false);
   const [powerToast, setPowerToast] = useState(null);
   const [fx, setFx] = useState('');
   // Détection tactile : elle ne change plus les boutons (la barre d'objets du
@@ -158,7 +162,17 @@ export default function MirageRushPage() {
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
   const shellRef = useRef(null);
-  const immersiveRef = useRef(false);
+  // Plein écran de la coquille de jeu (voir la section « Plein écran » plus bas).
+  // La sortie « native » (Échap, geste retour) est branchée sur la pause plus loin,
+  // une fois `pauseGame` défini : d'où la référence.
+  const nativeExitRef = useRef(null);
+  const {
+    active: immersive,
+    enter: enterImmersive,
+    exit: exitImmersive,
+    toggle: toggleImmersive,
+    isPinned: immersivePinned,
+  } = useMirageFullscreen(shellRef, { onNativeExit: () => nativeExitRef.current?.() });
   const fxTimer = useRef(null);
   const toastTimer = useRef(null);
   const phaseRef = useRef(phase);
@@ -206,75 +220,31 @@ export default function MirageRushPage() {
     };
   }, [refreshLeaderboard]);
 
-  // ── Plein écran (téléphone & application) ──────────────────────────────
-  // Sur mobile et dans l'APK, « LANCER » plonge la coquille de jeu en plein
-  // écran : Fullscreen API quand la plateforme l'accepte (Chrome, mais aussi
-  // la WebView de l'app grâce à son onShowCustomView existant → plein écran
-  // système immersif), et en repli — iOS Safari, WebViews sans Fullscreen
-  // API — une couche fixe posée sur tout l'écran (classe `is-immersive`).
-  const enterImmersive = useCallback(() => {
-    if (immersiveRef.current || typeof document === 'undefined') return;
-    const shell = shellRef.current;
-    if (!shell) return;
-    const inApp = typeof window !== 'undefined' && Boolean(window.LetsPlayAndroid);
-    const touchScreen = typeof window !== 'undefined'
-      && Boolean(window.matchMedia?.('(pointer: coarse)').matches);
-    if (!inApp && !touchScreen) return;
-    immersiveRef.current = true;
-    setImmersive(true);
-    document.body.classList.add('mirage-immersive-lock');
-    try {
-      // Demande pendant le geste (clic « LANCER », Entrée pour rejouer) :
-      // c'est la seule fenêtre où le navigateur l'accepte.
-      const request = shell.requestFullscreen || shell.webkitRequestFullscreen;
-      const done = request?.call(shell);
-      done?.catch?.(() => {}); // refus → le repli CSS suffit
-    } catch { /* repli CSS déjà en place */ }
-  }, []);
-
-  const exitImmersive = useCallback(() => {
-    if (!immersiveRef.current || typeof document === 'undefined') return;
-    immersiveRef.current = false;
-    setImmersive(false);
-    document.body.classList.remove('mirage-immersive-lock');
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
-      try {
-        const done = (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
-        done?.catch?.(() => {});
-      } catch { /* rien à refermer */ }
-    }
-  }, []);
-
-  // Sorties du plein écran : retour au choix de course, démontage de la page,
-  // ou sortie « native » (bouton X / Échap du navigateur) — dans ce dernier
-  // cas l'événement arrive après notre propre sortie, sans effet de bord.
+  // ── Plein écran ────────────────────────────────────────────────────────
+  // Le mécanisme (Fullscreen API, couche fixe en repli, verrou de défilement)
+  // vit dans useMirageFullscreen / mirageFullscreen.js. Ici, les règles du jeu :
+  //   - téléphone, tablette, application : « LANCER » ouvre le plein écran tout
+  //     seul (le doigt joue mieux sur tout l'écran) et la page le referme dès
+  //     qu'elle revient à l'intro — c'est le comportement d'origine ;
+  //   - ordinateur : jamais sans demande. Bouton « Plein écran » de la barre du
+  //     jeu, « LANCER EN PLEIN ÉCRAN » ou touche F. Demandé ainsi, il reste ouvert
+  //     d'une course à l'autre (intro comprise) jusqu'à ce qu'on le quitte ;
+  //   - si le navigateur le referme (Échap, geste « retour »), la course en cours
+  //     est mise en pause plutôt que jouée à moitié dans la page.
   useEffect(() => {
-    const onFullscreenChange = () => {
-      if (immersiveRef.current && !document.fullscreenElement && !document.webkitFullscreenElement) {
-        exitImmersive();
-      }
-    };
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
-      exitImmersive();
-    };
-  }, [exitImmersive]);
-
-  // Dès que la page revient à l'intro (choix du mode, de la course, ou
-  // annulation du compte à rebours), le plein écran se referme.
-  useEffect(() => {
-    if (phase === 'intro') exitImmersive();
-  }, [phase, exitImmersive]);
+    if (phase === 'intro' && !immersivePinned()) exitImmersive();
+  }, [phase, exitImmersive, immersivePinned]);
 
   // Lance une course (compte à rebours, puis le moteur démarre) : commun à la
   // ruée, au duel et à chaque course d’une coupe.
-  const beginRace = useCallback((nextRace) => {
+  const beginRace = useCallback((nextRace, { fullscreen = false } = {}) => {
     // Clic « LANCER » / Entrée pour rejouer : on demande le plein écran
     // ici, synchronement dans le geste, sinon le navigateur le refuse.
-    enterImmersive();
+    // « LANCER EN PLEIN ÉCRAN » le demande à coup sûr ; sur téléphone et
+    // application, tout lancement l'ouvre ; sur ordinateur, un lancement
+    // ordinaire laisse la page comme elle est (en plein écran si on y est déjà).
+    if (fullscreen) enterImmersive({ pinned: true });
+    else if (opensFullscreenOnLaunch()) enterImmersive();
     audioRef.current?.setStage(nextRace.stage);
     setRace(nextRace);
     setRunToken((token) => token + 1);
@@ -307,7 +277,9 @@ export default function MirageRushPage() {
   }, []);
 
   // « LANCER LA COUPE » / « REJOUER LA COUPE » : une coupe neuve, 0 point.
-  const startCup = useCallback(() => {
+  // Branché tel quel sur des `onClick` : le premier argument peut être un
+  // évènement, seul `{ fullscreen: true }` compte (« LANCER EN PLEIN ÉCRAN »).
+  const startCup = useCallback((options) => {
     const run = createCupRun(activeCup.id, {
       playerName: effectiveRiderName,
       playerColors: skinFor(progressRef.current).colors,
@@ -318,7 +290,7 @@ export default function MirageRushPage() {
     if (!run) return;
     cupRunRef.current = run;
     setCupRun(run);
-    beginRace(cupRace(run));
+    beginRace(cupRace(run), { fullscreen: options?.fullscreen === true });
   }, [activeCup.id, effectiveRiderName, trackRivals, beginRace, cupRace]);
 
   const showCupTrophy = useCallback(() => {
@@ -339,12 +311,15 @@ export default function MirageRushPage() {
   const advanceCupRef = useRef(advanceCup);
   advanceCupRef.current = advanceCup;
 
-  const startRun = useCallback(() => {
+  // Idem : `startRun({ fullscreen: true })` lance la course en plein écran ; un
+  // évènement de clic en premier argument est ignoré.
+  const startRun = useCallback((options) => {
+    const fullscreen = options?.fullscreen === true;
     if (selectedMode === 'cup') {
-      startCup();
+      startCup({ fullscreen });
       return;
     }
-    beginRace({ mode: selectedMode, stage, challenge: selectedMode === 'duel' ? challenge : null });
+    beginRace({ mode: selectedMode, stage, challenge: selectedMode === 'duel' ? challenge : null }, { fullscreen });
   }, [stage, selectedMode, challenge, beginRace, startCup]);
   const startRunRef = useRef(startRun);
   startRunRef.current = startRun;
@@ -371,6 +346,11 @@ export default function MirageRushPage() {
     if (musicOnRef.current) audioRef.current?.start();
   }, []);
 
+  // Le navigateur vient de refermer le plein écran (Échap, geste « retour ») :
+  // en pleine course, on suspend plutôt que de laisser le cheval galoper pendant
+  // que la page se remet en forme. `pauseGame` ne fait rien hors course.
+  nativeExitRef.current = pauseGame;
+
   const cancelCountdown = useCallback(() => {
     setPhase('intro');
     setIntroStep('stage');
@@ -385,6 +365,11 @@ export default function MirageRushPage() {
       const target = event.target?.tagName;
       const typing = target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT';
       if (typing) return;
+      if (isFullscreenShortcut(event)) {
+        event.preventDefault();
+        toggleImmersive();
+        return;
+      }
       if (key === 'escape' || key === 'p') {
         if (phaseRef.current === 'playing') { event.preventDefault(); pauseGame(); }
         else if (phaseRef.current === 'paused') { event.preventDefault(); resumeGame(); }
@@ -407,7 +392,7 @@ export default function MirageRushPage() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [pauseGame, resumeGame, cancelCountdown]);
+  }, [pauseGame, resumeGame, cancelCountdown, toggleImmersive]);
 
   useEffect(() => {
     const onVisibility = () => { if (document.hidden) pauseGame(); };
@@ -432,10 +417,13 @@ export default function MirageRushPage() {
   }, [clearCup]);
 
   const openOnlineLobby = useCallback(() => {
+    // Le lobby prend la place de la coquille de jeu : un plein écran demandé à
+    // la main ne doit pas lui survivre (verrou de défilement compris).
+    exitImmersive();
     setPhase('intro');
     audioRef.current?.stop();
     setOnlineOpen(true);
-  }, []);
+  }, [exitImmersive]);
 
   const backToCoursePicker = () => {
     setPhase('intro');
@@ -654,6 +642,23 @@ export default function MirageRushPage() {
               </>}
               <button type="button" className={`mirage-sound-button${musicOn ? ' is-on' : ''}`} onClick={toggleMusic} aria-pressed={musicOn}>
                 <span aria-hidden="true">{musicOn ? '♫' : '♪'}</span> {musicOn ? 'SON ON' : 'SON COUPÉ'}
+              </button>
+              <button
+                type="button"
+                className={`mirage-fullscreen-button${immersive ? ' is-on' : ''}`}
+                onClick={(event) => {
+                  toggleImmersive();
+                  // Après un clic (souris ou doigt), le bouton rend le focus : un
+                  // bouton qui le garde recevrait aussi Espace (saut) et Entrée
+                  // (rejouer). Au clavier (detail 0), le focus reste où il est.
+                  if (event.detail > 0) event.currentTarget.blur();
+                }}
+                aria-pressed={immersive}
+                aria-label="Plein écran"
+                title={immersive ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+              >
+                <MirageFullscreenIcon exit={immersive} />
+                <span className="mirage-fullscreen-label">PLEIN ÉCRAN</span>
               </button>
             </div>
           </div>
@@ -1029,6 +1034,19 @@ export default function MirageRushPage() {
                         ? 'OUVRIR LES SALONS'
                         : ready ? isCup ? 'LANCER LA COUPE' : selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU PARCOURS…'} <span>↗</span>
                     </button>
+                    {/* Téléphone, tablette, application : le lancement ordinaire
+                        ouvre déjà le plein écran — pas de second bouton. Déjà en
+                        plein écran, il ne servirait à rien non plus. */}
+                    {selectedMode !== 'online' && !launchesFullscreen && !immersive && (
+                      <button
+                        type="button"
+                        className="mirage-fullscreen-launch"
+                        onClick={() => startRun({ fullscreen: true })}
+                        disabled={!ready}
+                      >
+                        <MirageFullscreenIcon /> LANCER EN PLEIN ÉCRAN
+                      </button>
+                    )}
                   </div>
                   {selectedMode !== 'online' && (isTouch ? (
                     /* Téléphone & application : plus de croix directionnelle à
@@ -1051,6 +1069,7 @@ export default function MirageRushPage() {
                         <span><kbd>R</kbd> <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-key-power-icon" /> Pistolet</span>
                       </>}
                       <span><kbd>ÉCHAP</kbd> pause</span>
+                      <span><kbd>F</kbd> plein écran</span>
                     </div>
                   ))}
                   <div className="mirage-overlay-hint">{stageHint}</div>
@@ -1133,7 +1152,7 @@ export default function MirageRushPage() {
             )}
           </div>
 
-          <div className="mirage-game-foot"><span className="mirage-foot-touch">TÉLÉPHONE &amp; APPLICATION : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER <b>·</b> OBJETS : BARRE EN BAS</span><span className="mirage-foot-keys">FLÈCHES <b>·</b> SAUT (ESPACE/↑){race.mode === 'duel' ? <> <b>·</b> POUVOIRS (QWER / AZER)</> : ''}</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE & CHARGE D’OBJETS' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
+          <div className="mirage-game-foot"><span className="mirage-foot-touch">TÉLÉPHONE &amp; APPLICATION : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER <b>·</b> OBJETS : BARRE EN BAS</span><span className="mirage-foot-keys">FLÈCHES <b>·</b> SAUT (ESPACE/↑){race.mode === 'duel' ? <> <b>·</b> POUVOIRS (QWER / AZER)</> : ''} <b>·</b> PLEIN ÉCRAN (F)</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE & CHARGE D’OBJETS' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
 
         <aside className="mirage-side-panel">

@@ -35,6 +35,7 @@
     "check:souls-level": "node scripts/souls-level-check.mjs",
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",
     "check:mirage-cup": "node scripts/mirage-cup-check.mjs",
+    "check:mirage-fullscreen": "node scripts/mirage-fullscreen-check.mjs",
     "check:quiz": "node scripts/quiz-check.mjs",
     "check:nav": "node scripts/nav-check.mjs",
     "check:nav-ghost": "node scripts/nav-ghost-check.mjs",

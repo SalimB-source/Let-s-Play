@@ -30,6 +30,7 @@ import {
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 // Rythme de la course : un peu plus lent sur la piste du téléphone (3 voies).
 import { paceForTrack } from './mirageLanes';
+import { MAX_PIXEL_RATIO, renderPixelRatio } from './miragePixelBudget';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { block, makeExplorer, paintModel } from './mirageExplorer';
 
@@ -535,7 +536,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   camera.lookAt(0, 0.6, -10);
 
   const renderer = new THREE.WebGLRenderer({ antialias: infinity, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = atmosphere.exposure;
@@ -1700,6 +1701,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const bounds = mount.getBoundingClientRect();
     const width = Math.max(1, Math.floor(bounds.width || mount.clientWidth || 1));
     const height = Math.max(1, Math.floor(bounds.height || mount.clientHeight || 1));
+    // Plein écran : la vue s'étale sur tout l'écran, le ratio baisse pour que
+    // l'image garde un nombre de pixels raisonnable (voir miragePixelBudget.js).
+    const pixelRatio = renderPixelRatio(width, height, window.devicePixelRatio);
+    if (pixelRatio !== renderer.getPixelRatio()) renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(50) / 2) / Math.min(1, camera.aspect)));

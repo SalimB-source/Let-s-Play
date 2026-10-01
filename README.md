@@ -152,6 +152,66 @@ Côté **APK Android**, la WebView reçoit `setUseWideViewPort(true)` et
 `setLoadWithOverviewMode(true)` (`android/app/src/main/java/dz/letsplay/officiel/MainActivity.java`) :
 sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
 
+## Mirage Rush : le plein écran
+
+Le jeu (`/jeu/mirage-rush`) peut occuper tout l'écran, sur ordinateur comme sur
+téléphone.
+
+| Geste | Effet |
+|---|---|
+| Bouton **PLEIN ÉCRAN** de la barre du jeu | ouvre ou ferme, à tout moment (choix du mode, course, pause) |
+| **LANCER EN PLEIN ÉCRAN** (écran du terrain) | lance la course directement en plein écran — ordinateur seulement, ailleurs « LANCER » le fait déjà |
+| Touche **F** | ouvre ou ferme (Ctrl/Cmd/Alt + F restent au navigateur ; un « f » tapé dans un champ de saisie ne fait rien) |
+| **Échap**, ou le geste « retour » d'Android | le navigateur referme le plein écran : la course se met **en pause** |
+
+- **Qui l'ouvre tout seul ?** Téléphone, tablette et application Android : « LANCER
+  LA PARTIE » ouvre le plein écran (un doigt joue mieux sur tout l'écran) et le
+  retour au choix du mode le referme. Ordinateur : jamais sans demande. Un plein
+  écran demandé (bouton, F, « LANCER EN PLEIN ÉCRAN ») reste ouvert d'une course à
+  l'autre ; le bouton, F ou, en plein écran natif, Échap le ferment (sur la seule
+  couche fixe, Échap met simplement la course en pause).
+- **Course en ligne** : la fenêtre de course a son propre bouton et la touche F.
+  Jamais d'ouverture automatique — le départ vient du serveur, sans geste du
+  joueur, et le navigateur refuserait. Pas de pause non plus : une course en
+  ligne ne s'arrête pas pour un joueur. La fenêtre se referme à l'arrivée pour
+  laisser voir les résultats.
+- **Deux couches.** Le plein écran natif (Fullscreen API, préfixe WebKit compris ;
+  dans l'APK, la WebView le prend en charge) et une couche fixe, la classe
+  `is-immersive`, qui règle la mise en page. Quand l'API manque ou refuse (iPhone,
+  `iframe` sans `allowfullscreen`), la couche fixe seule suffit pour jouer. À la
+  sortie, la couche reste jusqu'à la fin de l'animation du navigateur : la piste
+  ne rétrécit pas dans une fenêtre encore en plein écran.
+- **Fluidité.** Une scène de cubes n'a pas besoin de la définition d'un écran 4K :
+  `miragePixelBudget.js` plafonne l'image à environ 2,2 millions de pixels (un
+  peu plus que 1920 × 1080) et le navigateur étire le reste. Le 1080p plein écran
+  garde sa définition native ; la vue dans la page et le téléphone ne changent pas.
+
+### Où vit le code
+
+- `src/games/mirageFullscreen.js` — les gestes du navigateur (demande, sortie, qui
+  ouvre au lancement, touche F), sans React ;
+- `src/games/useMirageFullscreen.js` — l'état React : `is-immersive`, verrou de
+  défilement `mirage-immersive-lock`, sortie différée jusqu'à `fullscreenchange` ;
+- `src/games/MirageFullscreenIcon.jsx` — l'icône, dessinée en SVG (le glyphe ⛶
+  manque à beaucoup de polices) ;
+- `src/games/MirageRushPage.jsx` (pause, intro, touche F) et
+  `src/games/MirageOnline.jsx` (fenêtre de course) ; styles dans
+  `src/games/mirage-rush.css` (`.is-immersive`).
+
+### Vérifications
+
+```bash
+npm run check:mirage-fullscreen          # page et fenêtre en ligne dans jsdom, Fullscreen API simulée
+node --test tests/mirage-fullscreen.test.js   # touche F, API, budget de pixels
+```
+
+jsdom n'a ni WebGL ni Fullscreen API : la vérification remplace le moteur 3D par
+une doublure (`scripts/mirage-world-stub.jsx`) et la Fullscreen API par une
+doublure qui répond comme un navigateur (elle sait aussi refuser, attendre, ou
+fermer « de l'extérieur » comme Échap). Elle ne dit rien du rendu réel : pour
+cela, ouvrir le jeu dans un vrai navigateur (`npm run dev`) et le passer en plein
+écran sur un grand écran.
+
 ## Barre de navigation : le logo et le menu « Jeux »
 
 Deux choses à savoir avant de toucher à la barre (`src/components/Layout.jsx`,
