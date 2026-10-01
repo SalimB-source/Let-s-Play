@@ -16,3 +16,6 @@ android/build/
 android/app/build/
 android/local.properties
 android/.idea/
+
+# Harnais locaux jetables (rendus logiciels, vérifications headless)
+.cache/

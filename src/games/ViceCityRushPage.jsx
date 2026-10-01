@@ -5,6 +5,8 @@ import {
   CITY_RUSH_CARS,
   CITY_RUSH_CITIES,
   CITY_RUSH_DISTANCE,
+  CITY_RUSH_LAPS,
+  CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
   createCityRushInventory,
@@ -18,10 +20,17 @@ const CAR_STATS = [
   { key: 'acceleration', label: 'ACCÉLÉRATION' },
   { key: 'recovery', label: 'REPRISE APRÈS COUP' },
 ];
+const RACE_KM = `${(CITY_RUSH_DISTANCE / 1000).toFixed(1).replace('.', ',')} KM`;
+const LAP_SLOTS = Array.from({ length: CITY_RUSH_LAPS }, (_, index) => index + 1);
 const EMPTY_HUD = {
   distance: 0,
   totalDistance: CITY_RUSH_DISTANCE,
   progress: 0,
+  lap: 1,
+  laps: CITY_RUSH_LAPS,
+  lapLength: CITY_RUSH_LAP_LENGTH,
+  lapProgress: 0,
+  lapDistance: 0,
   elapsed: 0,
   speed: 0,
   rank: 4,
@@ -107,6 +116,7 @@ export default function ViceCityRushPage() {
   const [result, setResult] = useState(null);
   const [bests, setBests] = useState(readBests);
   const [toast, setToast] = useState(null);
+  const [lapBanner, setLapBanner] = useState(null);
   const [worldError, setWorldError] = useState('');
   const [immersive, setImmersive] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
@@ -115,6 +125,7 @@ export default function ViceCityRushPage() {
   const immersiveRef = useRef(false);
   const phaseRef = useRef(phase);
   const toastTimerRef = useRef(null);
+  const lapTimerRef = useRef(null);
   const startRaceRef = useRef(null);
   const isTouchRef = useRef(isTouch);
   phaseRef.current = phase;
@@ -215,7 +226,10 @@ export default function ViceCityRushPage() {
     // detection changes without changing the current phase.
   }, [phase]);
 
-  useEffect(() => () => window.clearTimeout(toastTimerRef.current), []);
+  useEffect(() => () => {
+    window.clearTimeout(toastTimerRef.current);
+    window.clearTimeout(lapTimerRef.current);
+  }, []);
 
   function showToast(message, tone = 'neutral') {
     window.clearTimeout(toastTimerRef.current);
@@ -223,10 +237,18 @@ export default function ViceCityRushPage() {
     toastTimerRef.current = window.setTimeout(() => setToast(null), 2300);
   }
 
+  function showLapBanner(info) {
+    window.clearTimeout(lapTimerRef.current);
+    setLapBanner({ ...info, nonce: Date.now() });
+    lapTimerRef.current = window.setTimeout(() => setLapBanner(null), info.final ? 2300 : 1800);
+  }
+
   function startRace() {
     setWorldError('');
     setResult(null);
     setHud(EMPTY_HUD);
+    setLapBanner(null);
+    window.clearTimeout(lapTimerRef.current);
     setCountdown(3);
     setRunId((value) => value + 1);
     enterImmersive();
@@ -261,7 +283,14 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'radio-busy') showToast(effect.message, 'radio');
     else if (effect.type === 'slow-zone') showToast('ZONE DE RALENTISSEMENT · Garde l’œil sur la route.', 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
+    else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
+    // 'lap' et 'final-lap' sont affichés par la bannière de tour (onLap).
   }
+
+  const onLap = (info) => {
+    if (!info || info.lap > info.laps) return;
+    showLapBanner(info);
+  };
 
   const onPowerPickup = (pickup) => {
     const rule = CITY_RUSH_POWER_RULES[pickup.type];
@@ -288,7 +317,7 @@ export default function ViceCityRushPage() {
         <div>
           <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <i>/</i> STREET RALLY 3D</p>
           <h1>VICE CITY <em>RUSH</em></h1>
-          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité.</p>
+          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité.</p>
         </div>
         <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
       </header>
@@ -310,7 +339,7 @@ export default function ViceCityRushPage() {
                 <span className="city-rush-live-pill is-paused"><i /> PAUSE</span>
                 <button type="button" className="city-rush-top-button is-resume" onClick={() => setPhase('playing')}>▶ <span>REPRENDRE</span></button>
               </>}
-              <span className="city-rush-top-flag"><i /> 4 VOIES · CONTACTS SANS DÉGÂTS</span>
+              <span className="city-rush-top-flag"><i /> {CITY_RUSH_LAPS} TOURS · 4 VOIES · SANS DÉGÂTS</span>
             </div>
           </div>
 
@@ -319,6 +348,8 @@ export default function ViceCityRushPage() {
               cityId={cityId}
               carId={selectedCar.id}
               active={phase === 'playing'}
+              phase={phase}
+              countdown={countdown}
               runId={runId}
               actionsRef={actionsRef}
               onReady={() => setWorldError('')}
@@ -327,6 +358,7 @@ export default function ViceCityRushPage() {
               onFinish={finishRace}
               onPickup={onPowerPickup}
               onEffect={effectMessage}
+              onLap={onLap}
             />
 
             <div className="city-rush-vignette" aria-hidden="true" />
@@ -338,10 +370,16 @@ export default function ViceCityRushPage() {
                   <strong>{ordinal(hud.rank)}<small> / 4</small></strong>
                   <div className="city-rush-mini-lights"><i className={hud.rank === 1 ? 'is-lit' : ''} /><i className={hud.rank === 2 ? 'is-lit' : ''} /><i className={hud.rank === 3 ? 'is-lit' : ''} /><i className={hud.rank === 4 ? 'is-lit' : ''} /></div>
                 </div>
-                <div className="city-rush-hud-card city-rush-distance-card">
-                  <span className="city-rush-hud-label">COURSE</span>
-                  <strong>{hud.distance}<small> / {CITY_RUSH_DISTANCE} m</small></strong>
-                  <div className="city-rush-progress-track"><i style={{ width: `${Math.max(0, Math.min(100, hud.progress * 100))}%` }} /></div>
+                <div className={`city-rush-hud-card city-rush-distance-card city-rush-lap-card${hud.lap >= hud.laps ? ' is-final' : ''}`}>
+                  <span className="city-rush-hud-label">{hud.lap >= hud.laps ? 'DERNIER TOUR' : 'TOUR'}</span>
+                  <strong>{Math.min(hud.lap || 1, hud.laps || CITY_RUSH_LAPS)}<small> / {hud.laps || CITY_RUSH_LAPS}</small><em>{hud.lapDistance} / {hud.lapLength || CITY_RUSH_LAP_LENGTH} m</em></strong>
+                  <div className="city-rush-lap-track" aria-label={`Tour ${hud.lap} sur ${hud.laps}`}>
+                    {LAP_SLOTS.map((slot) => (
+                      <span key={slot} className={slot < hud.lap ? 'is-done' : slot === hud.lap ? 'is-current' : ''}>
+                        <i style={{ width: slot < hud.lap ? '100%' : slot === hud.lap ? `${Math.max(0, Math.min(100, (hud.lapProgress || 0) * 100))}%` : '0%' }} />
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <div className="city-rush-hud-card city-rush-speed-card">
                   <span className="city-rush-hud-label">VITESSE</span>
@@ -352,9 +390,10 @@ export default function ViceCityRushPage() {
 
               <div className="city-rush-racer-strip" aria-label="Avancement de la course">
                 {standings.map((racer) => (
-                  <div className={`city-rush-racer-line${racer.id === 'player' ? ' is-player' : ''}`} key={racer.id} title={`${racer.name} · ${Math.round(racer.progress * 100)} %`}>
+                  <div className={`city-rush-racer-line${racer.id === 'player' ? ' is-player' : ''}`} key={racer.id} title={`${racer.name} · tour ${racer.lap || 1} / ${CITY_RUSH_LAPS} · ${Math.round(racer.progress * 100)} %`}>
                     <span>{racer.name === 'TOI' ? 'YOU' : racer.name}</span>
                     <div><i style={{ left: `${rankProgress(racer)}%` }} /></div>
+                    <em>T{Math.min(racer.lap || 1, CITY_RUSH_LAPS)}</em>
                   </div>
                 ))}
               </div>
@@ -366,6 +405,14 @@ export default function ViceCityRushPage() {
               )}
 
               {toast && <div className={`city-rush-toast is-${toast.tone}`} key={toast.nonce} role="status">{toast.message}</div>}
+
+              {lapBanner && (
+                <div className={`city-rush-lap-banner${lapBanner.final ? ' is-final' : ''}`} key={lapBanner.nonce} role="status" aria-live="polite">
+                  <span>{lapBanner.final ? 'LIGNE FRANCHIE · DERNIER TOUR' : `LIGNE FRANCHIE · TOUR ${lapBanner.lap} / ${lapBanner.laps}`}</span>
+                  <strong>{lapBanner.final ? 'FINAL LAP' : `LAP ${lapBanner.lap}`}</strong>
+                  <small>{lapBanner.final ? 'Plus que 600 m · tout donner.' : `${(lapBanner.laps - lapBanner.lap + 1)} tours restants · ${formatTime(lapBanner.elapsed)}`}</small>
+                </div>
+              )}
 
               <div className="city-rush-controls-bottom">
                 <div className="city-rush-steering" aria-label="Changer de voie">
@@ -408,7 +455,7 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-intro-copy">
                   <span className="city-rush-overlay-kicker"><i /> STREET RALLY · ARCADE 80’S</span>
                   <h2>LA NUIT<br /><em>PREND LA ROUTE.</em></h2>
-                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite.</p>
+                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne.</p>
                 </div>
                 <div className="city-rush-car-select-heading city-rush-city-select-heading"><span>01 / CHOIX DE LA VILLE</span></div>
                 <div className="city-rush-city-picker" role="group" aria-label="Choisir une ville">
@@ -474,7 +521,7 @@ export default function ViceCityRushPage() {
                   <button type="button" className="city-rush-start-button" onClick={startRace}>DÉMARRER LA COURSE <span>↗</span></button>
                   <div className="city-rush-best-note"><span>MEILLEUR CHRONO</span><b>{bestTime ? formatTime(bestTime) : '— : —'}</b></div>
                 </div>
-                <div className="city-rush-intro-foot"><span>← → / Q D <i>·</i> POUR CHANGER DE VOIE</span><span>A Z E R <i>·</i> POUR UTILISER LES POUVOIRS</span></div>
+                <div className="city-rush-intro-foot"><span>← → / Q D <i>·</i> POUR CHANGER DE VOIE</span><span>A Z E R <i>·</i> POUR UTILISER LES POUVOIRS</span><span>{CITY_RUSH_LAPS} TOURS <i>·</i> {RACE_KM} <i>·</i> LIGNE À CHAQUE TOUR</span></div>
               </div>
             )}
 
@@ -482,7 +529,7 @@ export default function ViceCityRushPage() {
               <div className="city-rush-overlay city-rush-countdown" aria-live="assertive">
                 <span>PRÊT·E, PILOTE ?</span>
                 <strong key={countdown}>{countdown > 0 ? countdown : 'GO!'}</strong>
-                <small>{city.district} · {CITY_RUSH_DISTANCE} M</small>
+                <small>{city.district} · {CITY_RUSH_LAPS} TOURS · {RACE_KM}</small>
               </div>
             )}
 
@@ -500,14 +547,15 @@ export default function ViceCityRushPage() {
 
             {phase === 'finished' && result && (
               <div className="city-rush-overlay city-rush-result-overlay">
-                <span className="city-rush-overlay-kicker">{result.rank === 1 ? 'VICTOIRE · COURSE TERMINÉE' : 'ARRIVÉE · COURSE TERMINÉE'}</span>
+                <span className="city-rush-overlay-kicker">{result.rank === 1 ? `VICTOIRE · ${CITY_RUSH_LAPS} TOURS BOUCLÉS` : `ARRIVÉE · ${CITY_RUSH_LAPS} TOURS BOUCLÉS`}</span>
                 <h2>{result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
                 <div className="city-rush-result-grid">
                   <div><small>PLACE</small><b>{ordinal(result.rank)}<i> / 4</i></b></div>
                   <div><small>CHRONO</small><b>{formatTime(result.duration)}</b></div>
+                  <div><small>TOUR MOYEN</small><b>{formatTime((result.duration || 0) / (result.laps || CITY_RUSH_LAPS))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
                 </div>
-                <p>{result.rank === 1 ? `Tu remportes le circuit de ${city.name}.` : `${result.winner} franchit la ligne en tête. La revanche t’attend.`} {result.pickups} objet{result.pickups > 1 ? 's' : ''} ramassé{result.pickups > 1 ? 's' : ''}.</p>
+                <p>{result.rank === 1 ? `Tu remportes les ${result.laps || CITY_RUSH_LAPS} tours du circuit de ${city.name}.` : `${result.winner} franchit la ligne en tête après ${result.laps || CITY_RUSH_LAPS} tours. La revanche t’attend.`} {result.pickups} objet{result.pickups > 1 ? 's' : ''} ramassé{result.pickups > 1 ? 's' : ''}.</p>
                 <div className="city-rush-overlay-buttons">
                   <button type="button" className="city-rush-start-button" onClick={startRace}>REJOUER <span>↻</span></button>
                   <button type="button" className="city-rush-text-button" onClick={() => { setResult(null); setPhase('intro'); }}>CHANGER DE VILLE</button>
@@ -517,7 +565,7 @@ export default function ViceCityRushPage() {
           </div>
 
           <div className="city-rush-shell-footer">
-            <span><i className="city-rush-footer-dot" /> CIRCUIT OUVERT <b>·</b> {city.name} <b>·</b> {CITY_RUSH_DISTANCE} M</span>
+            <span><i className="city-rush-footer-dot" /> CIRCUIT OUVERT <b>·</b> {city.name} <b>·</b> {CITY_RUSH_LAPS} TOURS × {CITY_RUSH_LAP_LENGTH} M</span>
             <span className="city-rush-desktop-hint">← → OU Q / D : VOIES <b>·</b> A / Z / E / R : POUVOIRS <b>·</b> P / ÉCHAP : PAUSE</span>
             <span className="city-rush-mobile-hint">GLISSE À GAUCHE OU À DROITE <b>·</b> OBJETS EN BAS</span>
           </div>
@@ -531,12 +579,12 @@ export default function ViceCityRushPage() {
               {standings.slice().sort((a, b) => a.rank - b.rank).map((racer) => (
                 <div className={`city-rush-racer-card${racer.id === 'player' ? ' is-player' : ''}`} key={racer.id}>
                   <span className="city-rush-racer-rank">{String(racer.rank).padStart(2, '0')}</span>
-                  <div className="city-rush-racer-info"><b>{racer.id === 'player' ? 'TOI' : racer.name}</b><small>{Math.round(racer.distance || 0)} M</small></div>
+                  <div className="city-rush-racer-info"><b>{racer.id === 'player' ? 'TOI' : racer.name}</b><small>TOUR {Math.min(racer.lap || 1, CITY_RUSH_LAPS)} <i>·</i> {Math.round(racer.distance || 0)} M</small></div>
                   <div className="city-rush-racer-meter"><i style={{ width: `${rankProgress(racer)}%` }} /></div>
                 </div>
               ))}
             </div>
-            <div className="city-rush-leader-foot"><span>OBJECTIF</span><b>{CITY_RUSH_DISTANCE} M</b></div>
+            <div className="city-rush-leader-foot"><span>OBJECTIF</span><b>{CITY_RUSH_LAPS} TOURS <i>·</i> {CITY_RUSH_DISTANCE} M</b></div>
           </section>
 
           <section className="city-rush-side-card city-rush-item-guide">
