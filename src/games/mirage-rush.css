@@ -184,6 +184,13 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background-image: radial-gradient(rgba(255, 255, 255, .24) .65px, transparent .8px); background-size: 5px 5px;
   mix-blend-mode: soft-light;
 }
+/* Le Château a ses propres dégradés fins : ni trame CRT globale, ni grille
+   de grain au-dessus du soleil. S'applique aussi à la course en ligne. */
+body:has(.mirage-world[data-stage='infinity'])::after { display: none; }
+.mirage-viewport:has(.mirage-world[data-stage='infinity'])::after { display: none; }
+.mirage-viewport:has(.mirage-world[data-stage='infinity']) .mirage-sun-glare {
+  background: linear-gradient(180deg, rgba(18, 12, 25, .10), transparent 36%, rgba(14, 10, 22, .22));
+}
 /* Live vignette: a faint frame while the run is on. Swipes steer the horse,
    so the canvas must never drag the page along during a run. */
 .mirage-viewport.is-live { touch-action: none; }

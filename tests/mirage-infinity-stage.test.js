@@ -13,10 +13,11 @@ globalThis.document = {
 };
 
 const {
-  infinityObstacle, infinityLeftWing, infinityRightWing, infinityBridgeGate, makeInfinityHorizon,
-  biwaPulseOn, updateInfinityLanterns, BIWA_PULSE_PERIOD, INFINITY_ARCH,
+  infinityObstacle, infinityLeftWing, infinityRightWing, infinityBridgeGate, makeInfinityDeck, makeInfinityHorizon,
+  biwaPulseOn, updateInfinityLanterns, BIWA_PULSE_PERIOD, INFINITY_ARCH, INFINITY_DECK_PERIOD,
   INFINITY_SEGMENT_COUNT, INFINITY_SEGMENT_LENGTH, INFINITY_GATE_INDEX, LEFT_WING_SIDE, RIGHT_WING_SIDE,
 } = await import('../src/games/infinityStage.js');
+const { INFINITY_ATMOSPHERE, INFINITY_SUN, makeInfinitySky } = await import('../src/games/infinityAtmosphere.js');
 const { LANES } = await import('../src/games/mirageRules.js');
 
 const TRACK_EDGE = LANES[LANES.length - 1] + 1.05;
@@ -153,4 +154,107 @@ test('segments tile one 110 m loop and the distant horizon stays beyond the fog'
   const box = new THREE.Box3().setFromObject(horizon);
   assert.ok(box.max.z < -40, 'horizon lointain');
   assert.ok(!box.isEmpty());
+});
+
+test('the castle sky fills the screen and tracks projection changes without rebuilding', () => {
+  const camera = new THREE.PerspectiveCamera(50, 1.6, 0.1, 120);
+  camera.position.set(0, 7.3, 9.4);
+  camera.lookAt(0, 0.6, -10);
+  camera.updateMatrixWorld();
+  const sky = makeInfinitySky(camera);
+  const uniforms = sky.material.uniforms;
+  assert.equal(sky.name, 'infinity-sky');
+  assert.equal(sky.frustumCulled, false, 'le quad ne peut pas sortir du frustum');
+  assert.equal(sky.material.depthWrite, false, 'le ciel ne masque pas les cavaliers');
+  assert.equal(sky.material.depthTest, false);
+  assert.equal(sky.material.fog, false);
+  assert.ok(sky.renderOrder < 0, 'fond rendu avant le décor');
+  assert.equal(sky.material.transparent, false, 'un seul passage opaque');
+  assert.equal(uniforms.uCameraPosition.value, camera.position);
+  assert.equal(uniforms.uCameraWorld.value, camera.matrixWorld);
+  assert.equal(uniforms.uInverseProjection.value, camera.projectionMatrixInverse);
+  assert.deepEqual(uniforms.uSunPosition.value.toArray(), [INFINITY_SUN.x, INFINITY_SUN.elevation, INFINITY_SUN.z]);
+  assert.equal(uniforms.uSunRadius.value, INFINITY_SUN.radius);
+  assert.equal(uniforms.uFog.value.getHex(), INFINITY_ATMOSPHERE.fog);
+  const initialProjection = uniforms.uInverseProjection.value.clone();
+  camera.aspect = 0.45; // téléphone portrait
+  camera.fov = 61; // turbo
+  camera.updateProjectionMatrix();
+  camera.position.set(0.4, 6.85, 10.05);
+  camera.updateMatrixWorld();
+  assert.equal(uniforms.uInverseProjection.value, camera.projectionMatrixInverse);
+  assert.ok(!uniforms.uInverseProjection.value.equals(initialProjection));
+  assert.equal(uniforms.uCameraPosition.value.x, 0.4);
+  assert.match(sky.material.fragmentShader, /fwidth\(r\)/, 'contour du soleil lissé selon les pixels');
+  assert.match(sky.material.fragmentShader, /#include <colorspace_fragment>/);
+  assert.match(sky.material.fragmentShader, /#include <tonemapping_fragment>/);
+  assert.ok(!Object.keys(uniforms).some((name) => /time/i.test(name)), 'ciel fixe, sans scintillement');
+  sky.geometry.dispose();
+  sky.material.dispose();
+});
+
+test('the distant architecture frames the entire sun instead of cutting its silhouette', () => {
+  const horizon = makeInfinityHorizon();
+  horizon.updateMatrixWorld(true);
+  const raycaster = new THREE.Raycaster();
+  for (const origin of [new THREE.Vector3(0, 7.3, 9.4), new THREE.Vector3(-0.42, 6.85, 10.05), new THREE.Vector3(0.42, 7.3, 9.4)]) {
+    for (const radius of [0, INFINITY_SUN.radius * 0.5, INFINITY_SUN.radius]) {
+      for (let i = 0; i < 24; i++) {
+        const angle = i * Math.PI * 2 / 24;
+        const point = new THREE.Vector3(
+          INFINITY_SUN.x + Math.cos(angle) * radius,
+          INFINITY_SUN.elevation + Math.sin(angle) * radius,
+          INFINITY_SUN.z,
+        );
+        raycaster.set(origin, point.sub(origin).normalize());
+        assert.equal(raycaster.intersectObject(horizon, true).length, 0,
+          `silhouette solaire bouchée : rayon ${radius}, angle ${i}`);
+      }
+    }
+  }
+  let panels = 0;
+  horizon.traverse((object) => { if (object.isMesh && object.material.map?.isCanvasTexture) panels++; });
+  assert.ok(panels > 50, 'citadelles à étages et vraies cloisons kumiko');
+});
+
+test('lantern halos have a shared radial alpha texture, never a solid glowing square', () => {
+  const [left] = infinityLeftWing(0).userData.lanterns;
+  const [right] = infinityRightWing(0).userData.lanterns;
+  assert.ok(left.halo.material.map?.isCanvasTexture);
+  assert.equal(left.halo.material.map, right.halo.material.map, 'une seule petite texture pour toutes les lanternes');
+  assert.equal(left.halo.material.map.image.width, 128);
+  assert.equal(left.halo.material.depthWrite, false);
+  assert.equal(left.halo.material.blending, THREE.AdditiveBlending);
+  updateInfinityLanterns([left], -left.offset);
+  const peakGreen = left.core.material.color.g;
+  const peakOpacity = left.halo.material.opacity;
+  updateInfinityLanterns([left], -left.offset + 0.12);
+  const fadingGreen = left.core.material.color.g;
+  assert.ok(left.halo.material.opacity < peakOpacity, 'résonance qui décroît, pas un flash carré');
+  updateInfinityLanterns([left], -left.offset + BIWA_PULSE_PERIOD / 2);
+  assert.ok(peakGreen < fadingGreen && fadingGreen < left.core.material.color.g, 'transition corail → ambre progressive');
+  const calm = left.core.material.color.clone();
+  updateInfinityLanterns([left], -left.offset, true);
+  assert.ok(left.core.material.color.equals(calm));
+  assert.equal(left.halo.material.opacity, 0.24);
+  assert.equal(left.holder.position.y, left.baseY);
+});
+
+test('the wooden bridge is seamless, extends into the fog and preserves three / four lanes', () => {
+  for (const lanes of [[-2.1, 0, 2.1], [...LANES]]) {
+    const deck = makeInfinityDeck(lanes);
+    deck.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(deck);
+    assert.ok(Math.abs(bounds.getSize(new THREE.Vector3()).x - lanes.length * 2.1) < 0.001);
+    assert.ok(bounds.min.z <= -100, 'le pont ne finit plus brutalement à -40 m');
+    assert.ok(bounds.max.z >= 15);
+    assert.ok(bounds.max.y < 0, 'les lames et filets de bronze ne deviennent pas des obstacles');
+    assert.equal(deck.userData.period, INFINITY_DECK_PERIOD);
+    const surface = deck.children.find((object) => object.material.map);
+    assert.ok(surface.material.map.isCanvasTexture);
+    assert.equal(surface.material.map.wrapT, THREE.RepeatWrapping);
+    assert.equal(surface.material.map.repeat.y, 120 / INFINITY_DECK_PERIOD, 'recyclage aligné sur le motif');
+    assert.ok(surface.material.roughness >= 0.8, 'pas de reflet blanc qui efface les voies');
+    assert.equal(deck.children.length, lanes.length + 1, 'pas de maillage de centaines de planches');
+  }
 });
