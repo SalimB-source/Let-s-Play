@@ -22,6 +22,9 @@ export const TROPHY_MATERIAL_COLORS = Object.freeze({
   stone: 0x5a3d78,
   stoneLight: 0x7a5a9a,
   stoneDark: 0x3c2752,
+  ruby: 0xd9354a,
+  rubyDark: 0x8f1d33,
+  rubyLight: 0xff7b8c,
 });
 export const TROPHY_MATERIALS = Object.freeze(Object.keys(TROPHY_MATERIAL_COLORS));
 
@@ -56,6 +59,11 @@ const GLOBE_RADIUS = 6;
 const GLOBE_CENTER_Y = 14.5;
 const GLOBE_HEIGHT = (GLOBE_CENTER_Y + 7.5) * VOXEL;
 
+// Blason : largeur (en voxels) de chaque assise de l’écu, de la pointe au sommet.
+const SHIELD_WIDTHS = Object.freeze([2, 4, 6, 8, 10, 12, 12, 12, 12, 12, 12, 12]);
+const SHIELD_BASE = 7; // première assise de l’écu, en voxels depuis le pied
+const LEGENDS_HEIGHT = (SHIELD_BASE + SHIELD_WIDTHS.length) * VOXEL;
+
 /** Un design par identifiant de coupe (`mirageCup.js`). */
 export const TROPHY_DESIGNS = Object.freeze({
   desert: Object.freeze({
@@ -71,6 +79,13 @@ export const TROPHY_DESIGNS = Object.freeze({
     description: 'Globe turquoise aux continents de jade, méridien doré et socle argenté.',
     height: GLOBE_HEIGHT,
     accent: 0x85efd0,
+  }),
+  legends: Object.freeze({
+    id: 'legends',
+    name: 'Blason des Légendes',
+    description: 'Écu d’or à double face, écartelé de rubis, frappé d’une étoile.',
+    height: LEGENDS_HEIGHT,
+    accent: 0xff7b8c,
   }),
 });
 
@@ -218,9 +233,60 @@ function worldTourTrophyBoxes() {
   return boxes;
 }
 
+// Étoile du blason : 8 × 7 voxels, posée sur les assises 4 à 10 de l’écu.
+// Chaque rangée mord sur l’écusson rubis (largeur − 2) de l’assise qu’elle couvre.
+const SHIELD_STAR = Object.freeze([
+  '...##...',
+  '...##...',
+  '########',
+  '.######.',
+  '..####..',
+  '.##..##.',
+  '.#....#.',
+]);
+
+// L’écu est une plaque de deux voxels d’épaisseur : cadre d’or, pointe en bas.
+// Sur chaque face, un écusson écartelé (rubis à gauche, rubis sombre à droite)
+// et une étoile dorée en relief. La plaque tourne : les deux faces se voient.
+function legendsTrophyBoxes() {
+  const boxes = [
+    slab('foot', 'goldDark', 0, 10, 2),
+    slab('foot-step', 'gold', 2, 8),
+    slab('stem', 'gold', 3, 2, 3),
+    slab('cradle', 'goldLight', 6, 4),
+  ];
+  const lastRow = SHIELD_WIDTHS.length - 1;
+  SHIELD_WIDTHS.forEach((width, row) => {
+    const material = row === lastRow ? 'goldLight' : row === 0 ? 'goldDark' : 'gold';
+    boxes.push(cell(`shield-${row}`, material, [0, SHIELD_BASE + row + 0.5, 0], [width, 1, 2]));
+    // Les assises du haut et de la pointe restent de l’or nu : c’est le cadre.
+    if (row === 0 || row === lastRow) return;
+    const half = (width - 2) / 2;
+    for (const side of [-1, 1]) {
+      boxes.push(cell(`field-${side}-${row}`, side < 0 ? 'ruby' : 'rubyDark', [side * half / 2, SHIELD_BASE + row + 0.5, 0], [half, 1, 2.5]));
+    }
+  });
+
+  // Étoile en relief sur la face avant ET la face arrière.
+  const starTop = lastRow - 1; // assise la plus haute encore ornée de rubis
+  SHIELD_STAR.forEach((line, index) => {
+    const row = starTop - index;
+    [...line].forEach((mark, column) => {
+      if (mark !== '#') return;
+      for (const side of [-1, 1]) {
+        boxes.push(cell(`star-${side}-${index}-${column}`, 'goldLight', [column - 3.5, SHIELD_BASE + row + 0.5, side * 1.5], [1, 1, 0.5]));
+      }
+    });
+  });
+  return boxes;
+}
+
 /** La forme (pas seulement la couleur) dépend de la coupe choisie. */
 export function trophyBoxes(cupId = 'desert') {
-  return getTrophyDesign(cupId).id === 'worldtour' ? worldTourTrophyBoxes() : desertTrophyBoxes();
+  const id = getTrophyDesign(cupId).id;
+  if (id === 'worldtour') return worldTourTrophyBoxes();
+  if (id === 'legends') return legendsTrophyBoxes();
+  return desertTrophyBoxes();
 }
 
 /**
@@ -254,16 +320,23 @@ const ONE_GLYPH = Object.freeze([
 ]);
 const ONE_PIXEL = 0.14;
 
+// Plateau puis « 1 » : le métal du trophée posé dessus.
+const PODIUM_METALS = Object.freeze({
+  desert: Object.freeze(['goldDark', 'goldLight']),
+  worldtour: Object.freeze(['silverDark', 'silverLight']),
+  legends: Object.freeze(['rubyDark', 'goldLight']),
+});
+
 /**
  * Le piédestal : deux marches de pierre, un plateau et un « 1 » en relief
  * assortis au métal de la coupe, sur la face avant (+z) de la marche du milieu.
  */
 export function podiumBoxes(cupId = 'desert') {
-  const isGlobe = getTrophyDesign(cupId).id === 'worldtour';
+  const [capMaterial, glyphMaterial] = PODIUM_METALS[getTrophyDesign(cupId).id] || PODIUM_METALS.desert;
   const boxes = [
     { part: 'podium-base', material: 'stoneDark', size: [4.2, 0.6, 4.2], center: [0, 0.3, 0] },
     { part: 'podium-middle', material: 'stone', size: [3.4, 0.9, 3.4], center: [0, 1.05, 0] },
-    { part: 'podium-cap', material: isGlobe ? 'silverDark' : 'goldDark', size: [3.0, 0.2, 3.0], center: [0, 1.6, 0] },
+    { part: 'podium-cap', material: capMaterial, size: [3.0, 0.2, 3.0], center: [0, 1.6, 0] },
   ];
   const front = 3.4 / 2 + 0.03;
   const left = -(ONE_GLYPH[0].length * ONE_PIXEL) / 2 + ONE_PIXEL / 2;
@@ -273,7 +346,7 @@ export function podiumBoxes(cupId = 'desert') {
       if (mark !== '#') return;
       boxes.push({
         part: `one-${row}-${column}`,
-        material: isGlobe ? 'silverLight' : 'goldLight',
+        material: glyphMaterial,
         size: [ONE_PIXEL, ONE_PIXEL, 0.06],
         center: [left + column * ONE_PIXEL, top - row * ONE_PIXEL, front],
       });

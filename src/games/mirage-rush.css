@@ -2652,6 +2652,8 @@ img.mirage-powerup-icon {
 .mirage-cup-card-title small { color: var(--cup-trophy-accent); font: 800 8px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .mirage-cup-card.is-worldtour { --cup-trophy-accent: #85efd0; --cup-trophy-glow: 133, 239, 208; }
 .mirage-cup-card.is-worldtour[aria-pressed="true"] { background: linear-gradient(120deg, rgba(26, 86, 91, .65), rgba(29, 39, 56, .95)); }
+.mirage-cup-card.is-legends { --cup-trophy-accent: #ff7b8c; --cup-trophy-glow: 255, 123, 140; }
+.mirage-cup-card.is-legends[aria-pressed="true"] { background: linear-gradient(120deg, rgba(110, 28, 52, .68), rgba(40, 27, 46, .95)); }
 .mirage-cup-route { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
 .mirage-cup-stop { position: relative; display: flex; flex-direction: column; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .09); background: #251c29; }
 .mirage-cup-stop .mirage-map-visual { height: 62px; border-radius: 9px 9px 0 0; }
@@ -2754,6 +2756,10 @@ img.mirage-powerup-icon {
 .mirage-trophy-screen[data-trophy="worldtour"] {
   --trophy-accent: #85efd0; --trophy-pale: #eeffff; --trophy-sheen: #a3cde2; --trophy-glow: 133, 239, 208;
   background: radial-gradient(75% 70% at 50% 54%, #285f75 0%, #142b49 56%, #0a1429 100%);
+}
+.mirage-trophy-screen[data-trophy="legends"] {
+  --trophy-accent: #ff7b8c; --trophy-pale: #fff0e2; --trophy-sheen: #ffc2a0; --trophy-glow: 255, 123, 140;
+  background: radial-gradient(75% 70% at 50% 54%, #7a2347 0%, #3b1432 56%, #1a0a1f 100%);
 }
 /* Rayons aux couleurs de la coupe qui tournent doucement derrière le trophée. */
 .mirage-trophy-rays {

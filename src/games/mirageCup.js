@@ -49,6 +49,15 @@ export const CUPS = Object.freeze([
     // Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase
     stages: Object.freeze(['sardinia', 'alger', 'japan', 'airbase']),
   }),
+  Object.freeze({
+    id: 'legends',
+    name: 'Coupe des Légendes',
+    trophyDesign: 'legends',
+    tagline: 'Cinq courses, un seul trophée',
+    // Remparts d’Ocre (Counter-Strike) → Château de l’Infini (Demon Slayer) → Thunder Airbase (Street Fighter)
+    // → Costa Omertà → Plaines de Yōtei (Ghost of Yōtei)
+    stages: Object.freeze(['ramparts', 'infinity', 'airbase', 'sardinia', 'japan']),
+  }),
 ]);
 export const DEFAULT_CUP_ID = CUPS[0].id;
 
