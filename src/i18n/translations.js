@@ -24,6 +24,10 @@ export const translations = {
       quiz: 'Quizzes',
       game: 'Game',
       games: 'Games',
+      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
+      // la section se déplie en deux pages, les jeux de la maison et les quizz.
+      videoGames: 'Video games',
+      gamesMenuAria: 'Show the games menu',
       profile: 'Profile',
       levelShort: 'LVL',
       theme: { light: 'Light', dark: 'Dark', toLight: 'Switch to light theme', toDark: 'Switch to dark theme' },
@@ -444,6 +448,10 @@ export const translations = {
       quiz: 'Quizz',
       game: 'Jeu',
       games: 'Jeux',
+      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
+      // la section se déplie en deux pages, les jeux de la maison et les quizz.
+      videoGames: 'Jeux-vidéo',
+      gamesMenuAria: 'Afficher le menu des jeux',
       profile: 'Profil',
       levelShort: 'NIV.',
       theme: { light: 'Clair', dark: 'Sombre', toLight: 'Passer au thème clair', toDark: 'Passer au thème sombre' },
@@ -856,6 +864,10 @@ export const translations = {
       quiz: 'اختبارات',
       game: 'اللعبة',
       games: 'ألعاب',
+      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
+      // la section se déplie en deux pages, les jeux de la maison et les quizz.
+      videoGames: 'ألعاب الفيديو',
+      gamesMenuAria: 'إظهار قائمة الألعاب',
       profile: 'الملف',
       levelShort: 'المستوى',
       theme: { light: 'فاتح', dark: 'داكن', toLight: 'التبديل إلى المظهر الفاتح', toDark: 'التبديل إلى المظهر الداكن' },
