@@ -33,6 +33,11 @@ import { paceForTrack } from './mirageLanes';
 import { MAX_PIXEL_RATIO, renderPixelRatio } from './miragePixelBudget';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { accessoriesForPalette, block, makeExplorer, paintModel } from './mirageExplorer';
+// Effets des deux pouvoirs de Cloud : onde d'épée dorée et éclair.
+import {
+  disposeCloudPower, makeCloudLightningBolt, makeCloudSwordWave,
+  updateCloudLightningVisual, updateCloudWaveVisual,
+} from './mirageCloudPowers';
 
 // La largeur de la piste n'est plus une constante de module : elle dépend du
 // nombre de voies (3 sur téléphone, 4 sur ordinateur et tablette), choisi au
@@ -45,8 +50,9 @@ const NO_POWER_UPS = Object.freeze([]);
 const CAMERA_BASE_FOV = 50;
 const CAMERA_TURBO_FOV = 61;
 const CLOUD_SWORD_SWING_DURATION = 0.42;
-const CLOUD_WAVE_FLIGHT_DURATION = 0.38;
-const CLOUD_WAVE_IMPACT_DURATION = 0.24;
+// Secousse de caméra (en unités monde) déclenchée par les pouvoirs de Cloud.
+const CLOUD_IMPACT_SHAKE = 0.75;
+const CLOUD_BOLT_SHAKE = 1.35;
 
 /**
  * FOV vertical adapté au ratio de l'écran : quand la vue est plus étroite que
@@ -465,91 +471,6 @@ function makeLassoRope() {
   return group;
 }
 
-function makeCloudBladeGeometry() {
-  const shape = new THREE.Shape();
-  shape.moveTo(-0.11, -0.72);
-  shape.quadraticCurveTo(0.55, -0.26, 0.55, 0.52);
-  shape.quadraticCurveTo(0.36, 0.29, 0.18, 0.1);
-  shape.quadraticCurveTo(0.1, -0.26, -0.11, -0.72);
-  shape.closePath();
-  return new THREE.ShapeGeometry(shape, 18);
-}
-
-function makeCloudShockwave(kind) {
-  const group = new THREE.Group();
-  group.name = kind === 'yellow' ? 'cloud-golden-sword-wave' : 'cloud-red-cross-waves';
-  const bladeGeometry = makeCloudBladeGeometry();
-  const materials = [];
-  const makeMaterial = (color, opacity) => {
-    const material = new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-      toneMapped: false,
-      blending: THREE.AdditiveBlending,
-    });
-    materials.push(material);
-    return material;
-  };
-  const slash = (angle, scale, color, opacity, z) => {
-    const mesh = new THREE.Mesh(bladeGeometry, makeMaterial(color, opacity));
-    mesh.rotation.z = angle;
-    mesh.scale.setScalar(scale);
-    mesh.position.z = z;
-    mesh.renderOrder = 24;
-    mesh.frustumCulled = false;
-    group.add(mesh);
-    return mesh;
-  };
-
-  const haloColor = kind === 'yellow' ? 0xffd447 : 0xff4059;
-  if (kind === 'yellow') {
-    slash(0, 1, 0xffa91f, 0.62, 0);
-    slash(0, 0.66, 0xfff3a0, 0.98, 0.035);
-    slash(-0.06, 0.34, 0xffffff, 0.92, 0.065);
-  } else {
-    slash(Math.PI / 4, 0.9, 0xf02645, 0.72, 0);
-    slash(-Math.PI / 4, 0.9, 0xf02645, 0.72, 0.005);
-    slash(Math.PI / 4, 0.56, 0xffc1bd, 0.98, 0.04);
-    slash(-Math.PI / 4, 0.56, 0xffc1bd, 0.98, 0.045);
-  }
-  const halo = new THREE.Mesh(
-    new THREE.TorusGeometry(0.58, 0.026, 6, 28),
-    makeMaterial(haloColor, 0.72),
-  );
-  halo.renderOrder = 23;
-  group.add(halo);
-  const core = new THREE.Mesh(
-    new THREE.OctahedronGeometry(kind === 'yellow' ? 0.1 : 0.13),
-    makeMaterial(kind === 'yellow' ? 0xfff7bd : 0xfff0e9, 1),
-  );
-  core.renderOrder = 25;
-  core.position.z = 0.09;
-  group.add(core);
-  group.userData.materials = materials;
-  group.userData.kind = kind;
-  return group;
-}
-
-function setCloudShockwaveOpacity(group, opacity) {
-  group.userData.materials?.forEach((material) => {
-    material.opacity = Math.max(0, Math.min(1, opacity));
-  });
-}
-
-function disposeCloudShockwave(group) {
-  const geometries = new Set();
-  group.traverse((node) => {
-    if (node.geometry && !geometries.has(node.geometry)) {
-      geometries.add(node.geometry);
-      node.geometry.dispose();
-    }
-  });
-  group.userData.materials?.forEach((material) => material.dispose());
-}
-
 function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const western = stage === 'western';
   const prairie = stage === 'prairie';
@@ -636,6 +557,51 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const camera = new THREE.PerspectiveCamera(CAMERA_BASE_FOV, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
+  // Flash plein écran des pouvoirs de Cloud : un quad collé à la caméra, rendu
+  // par-dessus la scène (utile aussi dans la course en ligne, qui n'a pas les
+  // effets CSS de la page principale).
+  const calmMotion = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+  const SCREEN_FLASH_DISTANCE = 1.4;
+  const screenFlash = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      toneMapped: false,
+      fog: false,
+    }),
+  );
+  screenFlash.position.z = -SCREEN_FLASH_DISTANCE;
+  screenFlash.renderOrder = 999;
+  screenFlash.frustumCulled = false;
+  screenFlash.visible = false;
+  camera.add(screenFlash);
+  scene.add(camera);
+  let screenFlashLeft = 0;
+  let screenFlashPeak = 0;
+  let screenFlashSpan = 0.3;
+  const triggerScreenFlash = (peak, span = 0.3, color = 0xffffff) => {
+    // Accessibilité : pas de flash plein écran en « mouvements réduits ».
+    if (calmMotion) return;
+    screenFlashPeak = Math.max(screenFlashPeak, peak);
+    screenFlashSpan = span;
+    screenFlashLeft = span;
+    screenFlash.material.color.setHex(color);
+  };
+  const updateScreenFlash = (dt) => {
+    if (screenFlashLeft <= 0) { screenFlash.visible = false; return; }
+    screenFlashLeft = Math.max(0, screenFlashLeft - dt);
+    const life = screenFlashLeft / screenFlashSpan;
+    const height = 2 * SCREEN_FLASH_DISTANCE * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 1.08;
+    screenFlash.scale.set(Math.max(height * camera.aspect, 0.001), Math.max(height, 0.001), 1);
+    screenFlash.material.opacity = screenFlashPeak * life * life;
+    screenFlash.visible = true;
+    if (screenFlashLeft <= 0) { screenFlash.visible = false; screenFlashPeak = 0; }
+  };
 
   const renderer = new THREE.WebGLRenderer({ antialias: infinity, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
@@ -922,6 +888,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
   let cloudSwordSwingElapsed = CLOUD_SWORD_SWING_DURATION;
   let cloudSwordSwingKind = 'yellow';
+  // Secousse de caméra résiduelle (pouvoirs de Cloud).
+  let strikeShake = 0;
   const isCloudRider = () => accessoriesForPalette(skinColors) === 'cloud-chocobo';
   const swingCloudSword = (kind) => {
     const sword = player.userData.parts?.busterSword;
@@ -1132,12 +1100,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     rope.visible = false;
     lassoRopePool.push(rope);
   }
-  const cloudSwordOrigin = () => {
-    const sword = player.userData.parts?.busterSword;
-    if (!sword) return new THREE.Vector3(player.position.x + 0.4, player.position.y + 2.7, -0.45);
-    player.updateMatrixWorld(true);
-    return sword.localToWorld(new THREE.Vector3(0.02, 1.12, 0.04));
-  };
   const cloudTargetPosition = (targetInfo, out = new THREE.Vector3()) => {
     if (targetInfo?.kind === 'rival') {
       const targetMesh = (targetInfo.npc || duelRivals[0])?.mesh;
@@ -1155,10 +1117,38 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     }
     return out.set(player.position.x, player.position.y + 2, -12);
   };
-  const launchCloudShockwave = (kind, targetInfo) => {
+  /** Point de départ de l'onde dorée : la garde de l'épée, projetée devant le cavalier. */
+  const cloudSwordOrigin = () => {
+    const sword = player.userData.parts?.busterSword;
+    if (!sword) return new THREE.Vector3(player.position.x + 0.4, player.position.y + 2.7, -0.45);
+    player.updateMatrixWorld(true);
+    const guard = sword.localToWorld(new THREE.Vector3(0, -0.2, 0));
+    return guard.set(guard.x, Math.max(player.position.y + 1.95, guard.y), guard.z - 1.05);
+  };
+  const lightningScratch = new THREE.Vector3();
+  const launchCloudPower = (kind, targetInfo) => {
+    // Pouvoir rouge : l'épée levée appelle la foudre, qui tombe du ciel sur la
+    // cible. Rien ne part du cavalier : c'est le ciel qui frappe.
+    if (kind === 'red') {
+      const visual = makeCloudLightningBolt();
+      const ground = cloudTargetPosition(targetInfo, lightningScratch);
+      visual.position.set(ground.x, Math.max(0, ground.y - 1.92), ground.z);
+      visual.userData.cloud.scale.setScalar(0.34);
+      scene.add(visual);
+      cloudShockwaves.push({
+        visual,
+        kind,
+        target: targetInfo,
+        start: visual.position.clone(),
+        end: ground.clone(),
+        age: 0,
+        phase: 'storm',
+      });
+      return;
+    }
     const start = cloudSwordOrigin();
     const end = cloudTargetPosition(targetInfo);
-    const visual = makeCloudShockwave(kind);
+    const visual = makeCloudSwordWave();
     visual.position.copy(start);
     scene.add(visual);
     cloudShockwaves.push({
@@ -1174,9 +1164,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const clearCloudShockwaves = () => {
     cloudShockwaves.forEach(({ visual }) => {
       scene.remove(visual);
-      disposeCloudShockwave(visual);
+      disposeCloudPower(visual);
     });
     cloudShockwaves.length = 0;
+    strikeShake = 0;
   };
 
   const scenery = [];
@@ -1437,7 +1428,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     }
     if (isCloudRider()) {
       swingCloudSword('yellow');
-      launchCloudShockwave('yellow', targetInfo);
+      launchCloudPower('yellow', targetInfo);
       callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo, cloud: true });
       return;
     }
@@ -1568,37 +1559,27 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const updateCloudShockwaves = (dt) => {
     for (let i = cloudShockwaves.length - 1; i >= 0; i -= 1) {
       const projectile = cloudShockwaves[i];
-      const { visual, kind } = projectile;
       const targetPoint = cloudTargetPosition(projectile.target);
-      projectile.age += dt;
-      if (projectile.phase === 'flight') {
-        const progress = Math.min(1, projectile.age / CLOUD_WAVE_FLIGHT_DURATION);
-        const travel = progress * (2 - progress);
-        visual.position.copy(projectile.start).lerp(targetPoint, travel);
-        visual.position.y += Math.sin(progress * Math.PI) * 0.22;
-        visual.lookAt(targetPoint);
-        visual.rotation.z += dt * (kind === 'yellow' ? 2.8 : -3.5);
-        visual.scale.setScalar(0.72 + Math.sin(progress * Math.PI) * 0.2);
-        setCloudShockwaveOpacity(visual, 0.58 + Math.sin(progress * Math.PI) * 0.42);
-        if (progress >= 1) {
-          projectile.phase = 'impact';
-          projectile.age = 0;
-          projectile.end.copy(targetPoint);
-          resolveCloudShockwaveHit(projectile);
-        }
-      } else {
-        const progress = Math.min(1, projectile.age / CLOUD_WAVE_IMPACT_DURATION);
-        visual.position.copy(targetPoint);
-        visual.position.y += 0.12;
-        visual.quaternion.copy(camera.quaternion);
-        visual.rotation.z += dt * (kind === 'yellow' ? 2.1 : -2.8);
-        visual.scale.setScalar(0.75 + progress * 1.1);
-        setCloudShockwaveOpacity(visual, 1 - progress);
-        if (progress >= 1) {
-          scene.remove(visual);
-          disposeCloudShockwave(visual);
-          cloudShockwaves.splice(i, 1);
-        }
+      const done = projectile.kind === 'red'
+        ? updateCloudLightningVisual(projectile.visual, projectile, dt, targetPoint, {
+          // La foudre claque : la cible tombe, l'écran flash et la caméra tremble.
+          onStrike: () => {
+            resolveCloudShockwaveHit(projectile);
+            strikeShake = CLOUD_BOLT_SHAKE;
+            triggerScreenFlash(0.8, 0.3, 0xffe4f0);
+          },
+        })
+        : updateCloudWaveVisual(projectile.visual, projectile, dt, targetPoint, camera, {
+          onImpact: () => {
+            resolveCloudShockwaveHit(projectile);
+            strikeShake = CLOUD_IMPACT_SHAKE;
+            triggerScreenFlash(0.34, 0.24, 0xffd98a);
+          },
+        });
+      if (done) {
+        scene.remove(projectile.visual);
+        disposeCloudPower(projectile.visual);
+        cloudShockwaves.splice(i, 1);
       }
     }
   };
@@ -1613,7 +1594,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     }
     if (isCloudRider()) {
       swingCloudSword('red');
-      launchCloudShockwave('red', targetInfo);
+      launchCloudPower('red', targetInfo);
       callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: targetInfo, cloud: true });
       return;
     }
@@ -2600,14 +2581,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     if (parts.busterSword) {
       const swingProgress = Math.min(1, cloudSwordSwingElapsed / CLOUD_SWORD_SWING_DURATION);
       const swingArc = Math.sin(swingProgress * Math.PI);
+      // L'épée est portée à l'envers (pointe vers le bas) : l'onde dorée part
+      // d'un grand revers latéral, l'éclair d'un lever d'épée vers le ciel.
       const baseRotationZ = parts.busterSword.userData.baseRotationZ ?? 0.34;
+      const baseRotationX = parts.busterSword.userData.baseRotationX ?? 0;
       if (swingProgress < 1) {
-        parts.busterSword.rotation.z = baseRotationZ + swingArc * (cloudSwordSwingKind === 'yellow' ? 1.18 : -1.3);
-        parts.busterSword.rotation.x = swingArc * (cloudSwordSwingKind === 'yellow' ? 0.12 : -0.2);
+        parts.busterSword.rotation.z = baseRotationZ + swingArc * (cloudSwordSwingKind === 'yellow' ? 1.25 : 2.2);
+        parts.busterSword.rotation.x = baseRotationX + swingArc * (cloudSwordSwingKind === 'yellow' ? 0.14 : -0.24);
         if (running) cloudSwordSwingElapsed = Math.min(CLOUD_SWORD_SWING_DURATION, cloudSwordSwingElapsed + dt);
       } else {
         parts.busterSword.rotation.z = baseRotationZ;
-        parts.busterSword.rotation.x = 0;
+        parts.busterSword.rotation.x = baseRotationX;
       }
     }
     const turboActive = running && powerBoostTimer > 0 && playerStun <= 0;
@@ -2763,6 +2747,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     camera.position.y += ((turboActive ? 6.85 : 7.3) - camera.position.y) * Math.min(1, dt * 6);
     camera.position.z += ((turboActive ? 10.05 : 9.4) - camera.position.z) * Math.min(1, dt * 6);
     camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
+    // Les pouvoirs de Cloud ébranlent la caméra : l'impact se ressent.
+    if (strikeShake > 0) {
+      strikeShake = Math.max(0, strikeShake - dt * 3.6);
+      if (!calmMotion) {
+        const amplitude = strikeShake * strikeShake * 0.17;
+        camera.position.x += Math.sin(time * 0.081) * amplitude;
+        camera.position.y += Math.sin(time * 0.123 + 1.7) * amplitude * 0.8;
+      }
+    }
+    updateScreenFlash(dt);
     desertScenery?.update({
       time,
       offset: floorOffset,

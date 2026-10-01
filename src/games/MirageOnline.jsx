@@ -394,7 +394,7 @@ export default function MirageOnline({
   const isCloudRider = characterIndex === CLOUD_CHOCOBO_INDEX;
   const cloudPowerVariant = isCloudRider ? 'cloud' : 'standard';
   const yellowPowerLabel = isCloudRider ? 'Onde d’épée' : 'Lasso';
-  const redPowerLabel = isCloudRider ? 'Onde rouge en X' : 'Pistolet';
+  const redPowerLabel = isCloudRider ? 'Éclair' : 'Pistolet';
   const isHost = Boolean(
     room && (room.host_id === effectivePlayer.id || String(room.host_id).startsWith('bot-')),
   );
@@ -1218,7 +1218,7 @@ export default function MirageOnline({
                             if (info.type === 'lasso') {
                               setPowerToast(isCloudRider ? '⚔ Aucun cavalier devant toi pour l’onde dorée !' : '🪢 Aucun cavalier devant toi !');
                             } else if (info.type === 'pistol') {
-                              setPowerToast(isCloudRider ? '❌ Aucune cible devant toi pour les ondes croisées !' : '🔫 Aucun cavalier devant toi !');
+                              setPowerToast(isCloudRider ? '⚡ Aucune cible devant toi pour l’éclair !' : '🔫 Aucun cavalier devant toi !');
                             }
                             setTimeout(() => setPowerToast(null), 1800);
                           } else if (info?.action === 'used') {
@@ -1231,7 +1231,7 @@ export default function MirageOnline({
                             } else if (info.type === 'pistol') {
                               if (isCloudRider) audio.current?.lassoThrow?.();
                               else audio.current?.gunshot();
-                              setPowerToast(isCloudRider ? '❌ Deux ondes rouges croisées !' : '🔫 Tir de pistolet !');
+                              setPowerToast(isCloudRider ? '⚡ L’éclair frappe ta cible !' : '🔫 Tir de pistolet !');
                             } else if (info.type === 'boost') {
                               audio.current?.speedBoost?.();
                               audio.current?.cheer?.();
@@ -1277,23 +1277,23 @@ export default function MirageOnline({
                             result = await roomAction('pistol', room.code, { p_target_id: targetPlayer.user_id }, effectivePlayer);
                           } catch {}
                           setPowerToast(isCloudRider
-                            ? `❌ Les ondes croisées frappent ${targetPlayer.name} !`
+                            ? `⚡ L’éclair foudroie ${targetPlayer.name} !`
                             : `🔫 PAN ! Tu tires sur ${targetPlayer.name} !`);
                           setTimeout(()=> setPowerToast(null), 2500);
                           return result;
                         }}
                         onPistolHit={(info) => {
                           if (info?.target === null) {
-                            setPowerToast(isCloudRider ? '❌ Personne à portée des ondes croisées…' : '🔫 PAN ! Personne à portée…');
+                            setPowerToast(isCloudRider ? '⚡ Personne à portée de l’éclair…' : '🔫 PAN ! Personne à portée…');
                             setTimeout(()=> setPowerToast(null), 2000);
                           } else if (info?.target === 'player') {
                             if (info.blocked) audio.current?.shieldGravity?.();
                             else if (info.cloud) audio.current?.lassoThrow?.();
                             else audio.current?.gunshot();
                             setPowerToast(info.blocked
-                              ? `🛡️ ${info.cloud ? 'Les ondes croisées sont bloquées' : 'Le tir est bloqué'} par ton bouclier !`
+                              ? `🛡️ ${info.cloud ? 'L’éclair est bloqué' : 'Le tir est bloqué'} par ton bouclier !`
                               : info.cloud
-                                ? `❌ Touché par les ondes croisées ! À terre ${PISTOL_STUN_DURATION}s…`
+                                ? `⚡ Foudroyé par l’éclair ! À terre ${PISTOL_STUN_DURATION}s…`
                                 : '🔫 Touché ! Tu tombes de cheval…');
                             setTimeout(()=> setPowerToast(null), 2000);
                           }
@@ -1415,7 +1415,7 @@ export default function MirageOnline({
                               onClick={() => actions.current?.('use_pistol')}
                               disabled={(hud.pistolCharges || 0) <= 0}
                               title={isCloudRider
-                                ? `Deux ondes rouges croisées (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges. Fait tomber la cible pendant ${PISTOL_STUN_DURATION}s.`
+                                ? `Éclair (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges. Lève l’épée : la foudre frappe la cible et la fait tomber pendant ${PISTOL_STUN_DURATION}s.`
                                 : `Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">

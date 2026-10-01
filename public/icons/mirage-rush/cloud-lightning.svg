@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="24%" r="82%">
+      <stop offset="0" stop-color="#6d1543"/>
+      <stop offset="1" stop-color="#160711"/>
+    </radialGradient>
+    <linearGradient id="bolt" x1="44" y1="10" x2="20" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fffdf2"/>
+      <stop offset=".4" stop-color="#ffd75e"/>
+      <stop offset="1" stop-color="#ff3b5c"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="10" y1="6" x2="54" y2="22" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6a5590"/>
+      <stop offset="1" stop-color="#2a1a3f"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)" stroke="#ff6572" stroke-width="2" stroke-opacity=".85"/>
+  <rect x="5" y="5" width="54" height="54" rx="11" stroke="#ffb3ae" stroke-opacity=".22"/>
+  <circle cx="32" cy="32" r="22" stroke="#ff7580" stroke-width="1.2" stroke-dasharray="3 4" stroke-opacity=".5"/>
+  <!-- Sol frappé : halo au sol et gerbe d'étincelles -->
+  <ellipse cx="26" cy="55" rx="14" ry="4.2" fill="#ff5264" opacity=".38"/>
+  <path d="M17 53 L12 57M24 57 L23 61M33 53 L38 57" stroke="#ffe6a8" stroke-width="2" stroke-linecap="round"/>
+  <!-- Éclair : ombre portée puis lame de foudre -->
+  <path d="M42 10 L26 33 H35 L21 55 L40 28 H31 L44 10Z" fill="#3d0b1d"/>
+  <path d="M41 12 L27 32 H35 L23 52 L39 29 H31 L43 12Z" fill="url(#bolt)" stroke="#2a0713" stroke-width="1.4" stroke-linejoin="round"/>
+  <!-- Nuée d'orage d'où part la foudre -->
+  <path d="M17 21 Q12 21 12 15 Q12 9 19 9 Q23 4 30 6 Q37 2 42 8 Q49 7 50 14 Q50 20 44 21Z" fill="url(#cloud)" stroke="#1c1024" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M21 15 Q26 11 32 14" stroke="#d9c8f5" stroke-width="1.8" stroke-linecap="round" stroke-opacity=".75"/>
+  <path d="M23 52 L26 48 L29 52 L26 56Z" fill="#fff6d8"/>
+</svg>

@@ -10,7 +10,7 @@ Mirage Rush (Let's Play Arcade):
 - boost.svg  — Turbo émeraude à fer ailé et éclair de vitesse (E)
 - pistol.svg — Revolver six-coups western et détonation écarlate (R)
 - cloud-yellow-wave.svg — Onde de choc dorée à l’épée de Cloud (W / Z)
-- cloud-red-x-wave.svg — Deux ondes rouges croisées en X pour Cloud (R)
+- cloud-lightning.svg — Éclair foudroyant qui frappe la cible pour Cloud (R)
 
 Legacy CC0 3Dicons files (`shield.webp`, `link.webp`, `target.webp` from
 https://3dicons.co/about) are superseded by the dedicated vector icons above.
