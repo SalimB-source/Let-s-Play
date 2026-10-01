@@ -128,7 +128,7 @@ test('the horizon leads along a winding grey, scale-lined road to a detailed, re
   assert.ok(meshes > 60, `décor céleste composé (${meshes} meshes)`);
 });
 
-test('the dragon-scale border hugs the track edges on the phone and desktop layouts', () => {
+test('the grey dragon-scale border caps the outer track edges and scrolls with the floor', () => {
   for (const lanes of [[-1.05, 1.05], [-3.15, -1.05, 1.05, 3.15]]) {
     const trim = snakewayTrackTrim(lanes);
     trim.updateMatrixWorld(true);
@@ -150,14 +150,26 @@ test('the dragon-scale border hugs the track edges on the phone and desktop layo
     assert.equal(strips.length, 2, 'une bande de base par bord de route');
     assert.deepEqual(
       strips.map((strip) => strip.position.x).sort((a, b) => a - b),
-      [-(expectedEdge - 0.28), expectedEdge - 0.28],
-      'les bandes s’alignent sur les bords de la route',
+      [-(expectedEdge + 0.88), expectedEdge + 0.88],
+      'les bandes flottent au-delà du bord extérieur du revêtement',
     );
     assert.ok(scales.length >= 150, `bordure d’écailles dense attendue (${scales.length})`);
     for (const scale of scales) {
-      assert.ok(Math.abs(scale.position.x) <= expectedEdge + 0.6, 'une écaille déborde du bord de la route');
+      // Les écailles flottent entièrement au-dehors du revêtement, rien
+      // n'empiète sur la route.
+      assert.ok(
+        Math.abs(scale.position.x) >= expectedEdge + 0.5 && Math.abs(scale.position.x) <= expectedEdge + 1.25,
+        `écaille mal placée (x=${scale.position.x.toFixed(2)})`,
+      );
       assert.ok(scale.position.y < 0.4, 'les écailles restent basses le long de la route');
     }
-    assert.ok(scaleShades.size >= 3, `plusieurs teintes d’écailles pour la profondeur (${scaleShades.size})`);
+    assert.ok(scaleShades.size >= 2, `plusieurs teintes d’écailles pour la profondeur (${scaleShades.size})`);
+    for (const hex of scaleShades) {
+      const h = parseInt(hex, 16);
+      const rr = (h >> 16) / 255;
+      const gg = ((h >> 8) & 255) / 255;
+      const bb = (h & 255) / 255;
+      assert.ok(Math.abs(rr - gg) < 0.05 && Math.abs(gg - bb) < 0.09, `écaille non grise détectée : ${hex}`);
+    }
   }
 });

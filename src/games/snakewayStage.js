@@ -503,31 +503,34 @@ export function makeSnakewayHorizon() {
 
 /**
  * Dragon-scale road border: a low charcoal strip with two staggered rows of
- * overlapping grey dome scales caps each track edge — the way dragon scales
- * overlap along Shenron's ridge, with a bronze scale sparking now and then.
- * The 1.2 m scale step (5 per 6 m deck period) loops seamlessly with the
- * floor, and the border follows the track edges on both layouts.
+ * overlapping grey dome scales caps the OUTER rim of the road, floating just
+ * beyond the pavement over the cloud sea — the way dragon scales overlap
+ * along Shenron's ridge. Everything is grey, and the 1.2 m scale step (a
+ * 5-scale colour cycle, one per 6 m deck period) loops seamlessly with the
+ * scrolling floor the border is added to.
  */
 export function snakewayTrackTrim(lanes, floorRows = 28, floorMinZ = -40) {
   const group = new THREE.Group();
   const baseMat = material(0x4c4c58, { roughness: 0.95 });
   const scaleA = material(0x74747f, { roughness: 0.88 });
   const scaleB = material(0x94949f, { roughness: 0.82 });
-  const bronze = material(0xa8763e, { emissive: 0x6e4218, emissiveIntensity: 0.4, roughness: 0.55, metalness: 0.25 });
   const scaleGeometry = new THREE.SphereGeometry(1, 9, 6);
   const edge = Math.max(Math.abs(lanes[0]), Math.abs(lanes[lanes.length - 1])) + 1.05;
   const length = floorRows * 2.02;
   const centerZ = floorMinZ + length / 2;
   for (const side of [-1, 1]) {
-    const strip = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.08, length), baseMat);
-    strip.position.set(side * (edge - 0.28), -0.02, centerZ);
+    // La bordure flotte au-delà du bord extérieur du revêtement, au-dessus
+    // de la mer de nuages ; elle est ajoutée au sol défilant et se déplace
+    // donc avec la route.
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, length), baseMat);
+    strip.position.set(side * (edge + 0.88), -0.02, centerZ);
     group.add(strip);
-    // Two staggered rows of overlapping dome scales hug the edge. The colour
-    // pattern has a 5-scale cycle (one bronze per 6 m deck period) so the
-    // border stays seamless when the floor loops.
+    // Two staggered rows of overlapping grey dome scales, all grey. The
+    // colour pattern is a 5-scale cycle (6 m = the deck period) so the
+    // border loops seamlessly with the scrolling floor.
     const rowPatterns = [
-      [scaleA, scaleB, scaleA, bronze, scaleB],
-      [scaleB, bronze, scaleB, scaleA, scaleA],
+      [scaleA, scaleB, scaleA, scaleB, scaleB],
+      [scaleB, scaleA, scaleB, scaleA, scaleA],
     ];
     const step = 1.2;
     const count = Math.ceil((length + 0.8) / step);
@@ -535,7 +538,7 @@ export function snakewayTrackTrim(lanes, floorRows = 28, floorMinZ = -40) {
       for (let i = 0; i < count; i += 1) {
         const z = floorMinZ - 0.4 + row * (step / 2) + i * step;
         if (z > floorMinZ + length + 0.3) continue;
-        sphere(group, scaleGeometry, rowPatterns[row][i % 5], side * (edge - 0.05 - row * 0.57), 0.02, z, 0.55, 0.3, 0.6);
+        sphere(group, scaleGeometry, rowPatterns[row][i % 5], side * (edge + 0.6 + row * 0.6), 0.02, z, 0.55, 0.3, 0.6);
       }
     }
   }
