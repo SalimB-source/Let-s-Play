@@ -195,6 +195,17 @@ Vérification : `npm run check:nav` (jsdom, pile réelle de l'application) —
 ratio du logo, les deux pages du panneau, ouverture au chevron, fermeture par
 Échap et par un clic à l'extérieur, état actif sur les sous-pages.
 
+Piège verrouillé par `npm run check:nav-ghost` : sur téléphone, le menu plein
+écran (`.nav-links`) se masque fermé par `opacity:0` + `pointer-events:none`,
+mais la propriété **s'hérite** — un descendant qui se redonne `auto` redevient
+cliquable *à travers* le calque. La requête média téléphone posait exactement
+ça sur `.nav-submenu` : « Jeux-vidéo » et « Quizz » étaient des liens
+invisibles pleine largeur au milieu de l'écran, et un appui sur « JOUER » ou
+« LANCER LA PARTIE » de Mirage Rush atterrissait sur la grille des quizz. Le
+sous-menu hérite désormais du calque (traversé menu fermé, cliquable menu
+ouvert via `.nav-links.open .nav-submenu`), et l'état de survol bureau
+(`is-open`) est neutralisé sur téléphone.
+
 ## Typographie : Orbitron pour les gros titres
 
 Deux familles, un partage net, et un seul fichier qui tranche —
