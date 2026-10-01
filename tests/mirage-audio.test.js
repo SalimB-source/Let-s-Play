@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, RAMPARTS_BPM, INFINITY_BPM, AIRBASE_BPM, cupFanfareScore } from '../src/games/arcadeAudio.js';
+import { DesertGroove, PRAIRIE_BPM, SARDINIA_BPM, ALGER_BPM, JAPAN_BPM, RAMPARTS_BPM, INFINITY_BPM, AIRBASE_BPM, SNAKEWAY_BPM, cupFanfareScore } from '../src/games/arcadeAudio.js';
 
 test('prairie selects its own soundtrack and resets the phrase', () => {
   const audio = new DesertGroove();
   audio.step = 83;
   audio.setStage('prairie');
   assert.equal(audio.step, 0);
-  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0, ramparts = 0, infinity = 0, airbase = 0;
+  let prairie = 0, western = 0, sardinia = 0, alger = 0, japan = 0, ramparts = 0, infinity = 0, airbase = 0, snakeway = 0;
   audio.playPrairie = () => prairie++;
   audio.playWestern = () => western++;
   audio.playSardinia = () => sardinia++;
@@ -16,6 +16,7 @@ test('prairie selects its own soundtrack and resets the phrase', () => {
   audio.playRamparts = () => ramparts++;
   audio.playInfinity = () => infinity++;
   audio.playAirbase = () => airbase++;
+  audio.playSnakeway = () => snakeway++;
   audio.playStep(0, 0);
   assert.equal(prairie, 1);
   assert.equal(western, 0);
@@ -43,6 +44,32 @@ test('prairie selects its own soundtrack and resets the phrase', () => {
   audio.playStep(0, 0);
   assert.equal(airbase, 1);
   assert.equal(ramparts, 1, 'Thunder Airbase ne rejoue pas la piste des Remparts d’Ocre');
+  audio.setStage('snakeway');
+  audio.playStep(0, 0);
+  assert.equal(snakeway, 1);
+  assert.equal(airbase, 1, 'le Chemin du Serpent a sa propre ambiance synthétique');
+});
+
+test('snakeway celestial synth score schedules finite notes at its own tempo', () => {
+  const audio = new DesertGroove();
+  audio.setStage('snakeway');
+  assert.ok(SNAKEWAY_BPM > 116 && SNAKEWAY_BPM < AIRBASE_BPM);
+  const frequencies = [];
+  audio.noise = () => {};
+  audio.tone = (frequency, time, duration, type, volume) => {
+    assert.ok(Number.isFinite(frequency) && frequency > 0);
+    assert.ok(Number.isFinite(time) && time >= 0);
+    assert.ok(duration > 0 && volume > 0);
+    frequencies.push(frequency);
+  };
+  for (let bar = 0; bar < 16; bar++) {
+    for (let step = 0; step < 16; step++) {
+      audio.step = bar * 16 + step;
+      audio.playStep(step, audio.step * (60 / SNAKEWAY_BPM / 4));
+    }
+  }
+  assert.ok(frequencies.length > 250, 'les cloches et nappes font vivre le trajet céleste');
+  assert.ok(frequencies.some((frequency) => frequency >= 1000), 'un carillon aigu scintille au-dessus des nuages');
 });
 
 test('infinity castle biwa & taiko score schedules finite notes and intensifies on the shift', () => {

@@ -186,10 +186,15 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 /* Le Château a ses propres dégradés fins : ni trame CRT globale, ni grille
    de grain au-dessus du soleil. S'applique aussi à la course en ligne. */
-body:has(.mirage-world[data-stage='infinity'])::after { display: none; }
-.mirage-viewport:has(.mirage-world[data-stage='infinity'])::after { display: none; }
+body:has(.mirage-world[data-stage='infinity'])::after,
+body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
+.mirage-viewport:has(.mirage-world[data-stage='infinity'])::after,
+.mirage-viewport:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-viewport:has(.mirage-world[data-stage='infinity']) .mirage-sun-glare {
   background: linear-gradient(180deg, rgba(18, 12, 25, .10), transparent 36%, rgba(14, 10, 22, .22));
+}
+.mirage-viewport:has(.mirage-world[data-stage='snakeway']) .mirage-sun-glare {
+  background: linear-gradient(180deg, rgba(25, 21, 75, .10), transparent 36%, rgba(34, 22, 80, .2));
 }
 /* Live vignette: a faint frame while the run is on. Swipes steer the horse,
    so the canvas must never drag the page along during a run. */
@@ -816,7 +821,7 @@ body:has(.mirage-world[data-stage='infinity'])::after { display: none; }
 .mirage-course-picker { width: min(100%, 640px); text-align: left; }
 /* Choix du mode remis dans l'overlay d'intro (l'ancienne barre d'onglets de
    l'en-tête reste retirée) : les cartes du sélecteur d'origine, suivies du
-   bloc terrain (neuf horizons, jusqu’à Thunder Airbase). */
+   bloc terrain (dix horizons, jusqu’au Chemin du Serpent). */
 .mirage-mode-section { width: min(100%, 640px); text-align: left; }
 .mirage-intro-overlay .mirage-mode-picker { margin-bottom: 6px; }
 .mirage-picker-label { display: flex; justify-content: space-between; gap: 12px; color: #d8b8b4; font: 700 8px var(--mono); letter-spacing: .13em; margin: 0 0 6px; }
@@ -873,9 +878,8 @@ body:has(.mirage-world[data-stage='infinity'])::after { display: none; }
 .mirage-mode-copy small { color: #bbaaaf; font: 9px var(--mono); }
 .mirage-choice-dot { position: absolute; right: 10px; top: 10px; width: 15px; height: 15px; border-radius: 50%; border: 1px solid rgba(155, 139, 152, .45); color: #211824; text-align: center; font-size: 11px; }
 .mirage-mode-picker button[aria-pressed="true"] .mirage-choice-dot { background: #f6cd72; border-color: #f6cd72; }
-/* Neuf horizons : 4 + 4 + 1 cartes sur trois rangées au bureau (3 + 3 + 3 sur
-   mobile), rangée incomplète centrée — l'intro garde la hauteur qu'elle avait
-   avec six cartes. */
+/* Dix horizons : 4 + 4 + 2 cartes sur trois rangées au bureau (3 + 3 + 3 + 1
+   sur mobile), avec les rangées incomplètes centrées. */
 .mirage-stage-picker { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .mirage-stage-picker > .mirage-map-card { flex: 0 0 calc((100% - 30px) / 4); min-width: 0; }
 .mirage-stage-locked { display: flex; align-items: center; gap: 12px; padding: 15px 16px; border-radius: var(--mirage-radius); border: 1px dashed rgba(182, 160, 195, .32); background: rgba(37, 28, 41, .55); }

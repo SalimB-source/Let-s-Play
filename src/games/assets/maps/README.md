@@ -1,6 +1,6 @@
 # Mirage Rush — miniatures des terrains
 
-Neuf illustrations originales générées par IA pour le sélecteur de terrain.
+Dix illustrations originales générées par IA pour le sélecteur de terrain.
 Elles reprennent les décors et la direction artistique low-poly du jeu ; ce
 sont des illustrations d’ambiance, pas des captures de parties.
 
@@ -15,10 +15,11 @@ sont des illustrations d’ambiance, pas des captures de parties.
 | `ramparts.webp` | Remparts d’Ocre | Remparts crénelés, portes du Mid grandes ouvertes, portes bleues et container |
 | `infinity.webp` | Château de l’Infini | Pont de bois laqué, cloisons shōji ambrées, pagodes renversées et lanternes flottantes |
 | `airbase.webp` | Thunder Airbase | Piste de base aérienne, F-16 garé, tour de contrôle, drapeau américain et gradins |
+| `snakeway.webp` | Chemin du Serpent | Route dorée en S, nuages orange et planète de Kaio à l’horizon |
 
 Chaque image est un panorama WebP **768 × 256**, sans texte intégré. Les noms
 restent du texte HTML, avec les états de sélection et de verrouillage habituels.
-Les neuf fichiers totalisent moins de 310 Ko. Pas de requête vers un hébergeur
+Les dix fichiers totalisent moins de 330 Ko. Pas de requête vers un hébergeur
 externe, pas de rendu WebGL supplémentaire pour les miniatures.
 
 Les imports dans `MirageCoursePicker.jsx` permettent à Vite de versionner les

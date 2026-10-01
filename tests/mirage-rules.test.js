@@ -157,6 +157,13 @@ test('airbase (Thunder Airbase) stage is retained in challenge links', async () 
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
 });
 
+test('snakeway (Chemin du Serpent) stage is retained in challenge links', async () => {
+  const { encodeChallenge, decodeChallenge } = await import('../src/games/duelChallenge.js');
+  const run = { seed: 42, duration: 40, trace: [0, 100, 800], name: 'Goku', stage: 'snakeway' };
+  assert.equal(decodeChallenge(encodeChallenge(run)).stage, 'snakeway');
+  assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'namek' })).stage, undefined);
+});
+
 test('cowboy streak marks each fifth consecutive pickup, and resets on a miss or crash', async () => {
   const { advanceCowboyStreak } = await import('../src/games/mirageRules.js');
   let streak = 0;
