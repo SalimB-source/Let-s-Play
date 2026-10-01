@@ -18,6 +18,8 @@ import '../games/games.css';
 // Miniature de Mirage Rush : key art façon western (JoJo's Steel Ball Run),
 // posée dans /public/mirage-rush-thumb.jpg.
 const MIRAGE_THUMB = `${import.meta.env.BASE_URL}mirage-rush-thumb.jpg`;
+// Miniature de La Cendre : key art dark fantasy générée pour le playtest M0.
+const CENDRE_THUMB = `${import.meta.env.BASE_URL}la-cendre-thumb.jpg`;
 
 const GAMES = [
   {
@@ -34,17 +36,17 @@ const GAMES = [
     tags: ['ARCADE', 'SOLO', 'DUEL', 'EN LIGNE'],
   },
   {
-    id: 'projet-02',
-    title: 'PROJET 02',
-    subtitle: 'EN DÉVELOPPEMENT',
-    description: 'Un nouveau jeu est en cours de construction dans les mêmes studios virtuels. Rien à montrer pour l’instant — la place est réservée.',
-    thumb: null,
-    alt: '',
-    route: null,
-    badge: 'WIP',
-    tone: 'soon',
+    id: 'la-cendre',
+    title: 'LA CENDRE',
+    subtitle: 'SOULSLIKE · DARK FANTASY',
+    description: 'Le feu de cendres s’est éteint. Un chevalier sans nom traverse la Cour du Seuil : caméra d’épaule, collisions, ambiance clair-obscur. Playtest M0 — le combat arrive en M1.',
+    thumb: CENDRE_THUMB,
+    alt: 'La Cendre — chevalier d’armure sombre devant un feu de cendres dans une cour de pierre, ambiance dark fantasy',
+    route: '/jeu/la-cendre',
+    badge: 'M0 · JOUABLE',
+    tone: 'ember',
     featured: false,
-    tags: ['MYSTÈRE'],
+    tags: ['SOULSLIKE', 'SOLO', '3D', 'WIP'],
   },
   {
     id: 'projet-03',

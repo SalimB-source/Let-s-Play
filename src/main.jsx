@@ -73,6 +73,7 @@ import { initSinglePlayback } from './lib/videoPlayback';
 import { normalizePhoneViewport } from './lib/phoneLayout';
 
 const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
+const SoulsPage = lazy(() => import('./games/SoulsPage'));
 
 function App() {
   return (
@@ -180,6 +181,7 @@ function App() {
             <Route path="/jeu" element={<Games />} />
             <Route path="/jeux" element={<Games />} />
             <Route path="/jeu/mirage-rush" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Mirage Rush…</div>}><MirageRushPage /></Suspense>} />
+            <Route path="/jeu/la-cendre" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de La Cendre…</div>}><SoulsPage /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />
