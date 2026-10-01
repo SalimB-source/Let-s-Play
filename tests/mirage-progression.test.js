@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  GYRO_ZEPPELI_ID, MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, WIN_COINS,
+  CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, GYRO_ZEPPELI_ID, MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, WIN_COINS,
   applyRun, buySkin, coinsForRun, defaultProgress, equipSkin, isShopSkin,
   isSkinUnlocked, levelCost, levelForXp, levelProgress, loadProgress,
   sanitizeProgress, saveProgress, skinFor, xpForRun, xpToReachLevel,
@@ -153,4 +153,26 @@ test('Gyro Zeppeli is a shop skin that costs 200 gold', () => {
   assert.equal(again.reason, 'owned');
   const cheated = sanitizeProgress({ xp: 0, coins: 999, skinId: GYRO_ZEPPELI_ID, ownedSkins: [] });
   assert.equal(cheated.skinId, SKINS[0].id, 'unequipped when the shop skin is not owned');
+});
+
+test('Cloud is temporarily unlocked for everyone while the 280 OR shop price stays configured', () => {
+  const cloud = SKINS.find((skin) => skin.id === CLOUD_CHOCOBO_ID);
+  assert.ok(cloud, 'Cloud and his Chocobo remain in the skin catalog');
+  assert.equal(cloud.price, 280, 'the normal price remains available for reactivation');
+  assert.equal(CLOUD_CHOCOBO_TEMPORARILY_FREE, true);
+  assert.equal(cloud.level, 1);
+  assert.equal(cloud.colors.length, 7);
+  assert.ok(SHOP_SKINS.some((skin) => skin.id === CLOUD_CHOCOBO_ID));
+
+  const start = defaultProgress();
+  assert.equal(isSkinUnlocked(cloud, 1, start.ownedSkins), true, 'a new player can use Cloud without paying');
+  assert.equal(equipSkin(start, CLOUD_CHOCOBO_ID).skinId, CLOUD_CHOCOBO_ID);
+  assert.equal(sanitizeProgress({ ...start, skinId: CLOUD_CHOCOBO_ID }).skinId, CLOUD_CHOCOBO_ID,
+    'a saved Cloud selection stays valid without an owned-skin entry');
+
+  const purchaseAttempt = buySkin({ ...start, coins: 500 }, CLOUD_CHOCOBO_ID);
+  assert.equal(purchaseAttempt.ok, false, 'temporary access cannot accidentally charge players');
+  assert.equal(purchaseAttempt.reason, 'temporarily-unlocked');
+  assert.equal(purchaseAttempt.progress.coins, 500);
+  assert.deepEqual(purchaseAttempt.progress.ownedSkins, []);
 });

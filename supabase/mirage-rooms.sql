@@ -76,8 +76,32 @@ drop function if exists public.mirage_room_action(text, text, text, numeric, int
 
 -- Upgrade the previous RPC signature without leaving an ambiguous overload.
 drop function if exists public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text);
+drop function if exists public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text, integer);
 alter table public.mirage_room_players
-  add column if not exists character integer check (character between 0 and 3);
+  add column if not exists character integer,
+  add column if not exists shield_until timestamptz,
+  add column if not exists slowed_until timestamptz,
+  add column if not exists slow_effect text,
+  add column if not exists stunned_until timestamptz,
+  add column if not exists stun_effect text;
+
+-- Slots 0–3 are the free riders, slot 5 is Cloud (temporarily universal),
+-- and slot 4 (Gyro) remains shop-only in the online lobby.
+alter table public.mirage_room_players
+  drop constraint if exists mirage_room_players_character_check;
+alter table public.mirage_room_players
+  add constraint mirage_room_players_character_check
+  check (character is null or character in (0, 1, 2, 3, 5));
+alter table public.mirage_room_players
+  drop constraint if exists mirage_room_players_slow_effect_check;
+alter table public.mirage_room_players
+  add constraint mirage_room_players_slow_effect_check
+  check (slow_effect is null or slow_effect in ('lasso', 'cloud-wave'));
+alter table public.mirage_room_players
+  drop constraint if exists mirage_room_players_stun_effect_check;
+alter table public.mirage_room_players
+  add constraint mirage_room_players_stun_effect_check
+  check (stun_effect is null or stun_effect in ('pistol', 'cloud-cross'));
 
 -- One transactional gate for list/create/join/ready/chat/poll/start/position/finish/leave.
 -- Locking the room row makes join capacity, ready checks, and host start decisions atomic.
@@ -93,7 +117,10 @@ create or replace function public.mirage_room_action(
   p_password text default null,
   p_ready boolean default null,
   p_message text default null,
-  p_character integer default null
+  p_character integer default null,
+  p_target_id uuid default null,
+  p_clear boolean default false,
+  p_gem_key text default null
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   r public.mirage_rooms%rowtype;
@@ -103,6 +130,10 @@ declare
   v_password text := trim(coalesce(p_password, ''));
   v_message text := left(trim(coalesce(p_message, '')), 280);
   slot_number integer;
+  actor_character integer;
+  actor_name text;
+  target_name text;
+  target_player public.mirage_room_players%rowtype;
   result jsonb;
 begin
   if p_action = 'list' then
@@ -132,7 +163,7 @@ begin
   end if;
 
   if uid is null then raise exception 'Connexion requise' using errcode = '42501'; end if;
-  if p_action not in ('create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave') then
+  if p_action not in ('create', 'join', 'character', 'ready', 'chat', 'get', 'start', 'tick', 'finish', 'leave', 'shield', 'lasso', 'pistol', 'gem_pickup') then
     raise exception 'Action inconnue' using errcode = '22023';
   end if;
 
@@ -194,7 +225,7 @@ begin
 
     if p_action = 'character' then
       if r.status <> 'lobby' then raise exception 'Personnage verrouillé : course déjà lancée' using errcode = '22023'; end if;
-      if p_character is null or p_character not between 0 and 3 then
+      if p_character is null or p_character not in (0, 1, 2, 3, 5) then
         raise exception 'Personnage inconnu' using errcode = '22023';
       end if;
       update public.mirage_room_players
@@ -239,6 +270,68 @@ begin
             finished_at = case when p_action = 'finish' and finished_at is null then now() else finished_at end,
             last_seen = now()
         where room_code = v_code and user_id = uid and finished_at is null;
+    elsif p_action = 'shield' then
+      if r.status <> 'started' then raise exception 'Course non lancée' using errcode = '22023'; end if;
+      if coalesce(p_clear, false) then
+        update public.mirage_room_players set shield_until = null, last_seen = now()
+          where room_code = v_code and user_id = uid;
+      else
+        update public.mirage_room_players set shield_until = now() + interval '5 seconds', last_seen = now()
+          where room_code = v_code and user_id = uid;
+      end if;
+    elsif p_action in ('lasso', 'pistol') then
+      if r.status <> 'started' then raise exception 'Course non lancée' using errcode = '22023'; end if;
+      if p_target_id is null then raise exception 'Cible manquante' using errcode = '22023'; end if;
+      select * into target_player
+        from public.mirage_room_players
+        where room_code = v_code and user_id = p_target_id
+        for update;
+      if not found then raise exception 'Cible introuvable' using errcode = '22023'; end if;
+      select coalesce(character, slot) into actor_character
+        from public.mirage_room_players where room_code = v_code and user_id = uid;
+      select left(coalesce(nullif(prof.display_name, ''), nullif(prof.username, ''), 'Cavalier'), 24)
+        into actor_name from public.profiles prof where prof.id = uid;
+      select left(coalesce(nullif(prof.display_name, ''), nullif(prof.username, ''), 'Cavalier'), 24)
+        into target_name from public.profiles prof where prof.id = p_target_id;
+      actor_name := coalesce(actor_name, 'Cavalier');
+      target_name := coalesce(target_name, 'Cavalier');
+
+      if target_player.shield_until > now() then
+        update public.mirage_room_players set shield_until = null, last_seen = now()
+          where room_code = v_code and user_id = p_target_id;
+        insert into public.mirage_room_messages(room_code, user_id, body)
+          values (v_code, uid, '🛡️ Le bouclier de ' || target_name || ' a bloqué le pouvoir !');
+      elsif p_action = 'lasso' then
+        update public.mirage_room_players
+          set slowed_until = now() + interval '1.5 seconds',
+              slow_effect = case when actor_character = 5 then 'cloud-wave' else 'lasso' end,
+              last_seen = now()
+          where room_code = v_code and user_id = p_target_id;
+        insert into public.mirage_room_messages(room_code, user_id, body)
+          values (
+            v_code,
+            uid,
+            case when actor_character = 5
+              then '⚔ ' || actor_name || ' a ralenti ' || target_name || ' avec une onde de choc dorée !'
+              else '🪢 ' || actor_name || ' a attrapé ' || target_name || ' au lasso !'
+            end
+          );
+      else
+        update public.mirage_room_players
+          set stunned_until = now() + interval '2.5 seconds',
+              stun_effect = case when actor_character = 5 then 'cloud-cross' else 'pistol' end,
+              last_seen = now()
+          where room_code = v_code and user_id = p_target_id;
+        insert into public.mirage_room_messages(room_code, user_id, body)
+          values (
+            v_code,
+            uid,
+            case when actor_character = 5
+              then '❌ ' || actor_name || ' a fait tomber ' || target_name || ' avec deux ondes rouges croisées !'
+              else '🔫 ' || actor_name || ' a fait tomber ' || target_name || ' de son cheval !'
+            end
+          );
+      end if;
     elsif p_action = 'leave' then
       if r.host_id = uid and r.status = 'lobby' then
         delete from public.mirage_rooms where mirage_rooms.code = v_code;
@@ -273,7 +366,12 @@ begin
         'jump', p.jump,
         'score', p.score,
         'finished_at', p.finished_at,
-        'last_seen', p.last_seen
+        'last_seen', p.last_seen,
+        'shield_until', p.shield_until,
+        'slowed_until', p.slowed_until,
+        'slow_effect', p.slow_effect,
+        'stunned_until', p.stunned_until,
+        'stun_effect', p.stun_effect
       ) order by p.slot)
       from public.mirage_room_players p
       left join public.profiles prof on prof.id = p.user_id
@@ -302,5 +400,5 @@ begin
 end;
 $$;
 
-revoke all on function public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text, integer) from public;
-grant execute on function public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text, integer) to anon, authenticated;
+revoke all on function public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text, integer, uuid, boolean, text) from public;
+grant execute on function public.mirage_room_action(text, text, text, numeric, integer, numeric, integer, text, text, boolean, text, integer, uuid, boolean, text) to anon, authenticated;

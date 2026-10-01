@@ -149,6 +149,8 @@ test('characters are shared in the lobby and locked as soon as the host starts',
   const room = await roomAction('create', null, { p_stage: 'desert' }, host);
   await roomAction('join', room.code, {}, guest);
   await roomAction('ready', room.code, { p_ready: true }, guest);
+  const cloudChoice = await roomAction('character', room.code, { p_character: 5 }, host);
+  assert.equal(cloudChoice.players[0].character, 5, 'Cloud is selectable in the online lobby');
   const chosen = await roomAction('character', room.code, { p_character: 3 }, guest);
   assert.equal(chosen.players[1].character, 3);
   assert.equal(chosen.players[1].ready, false);
@@ -161,6 +163,31 @@ test('characters are shared in the lobby and locked as soon as the host starts',
   await roomAction('start', room.code, {}, host);
   await assert.rejects(() => roomAction('character', room.code, { p_character: 0 }, guest), /verrouillé/);
   assert.equal((await roomAction('get', room.code, {}, host)).players[1].character, 3);
+});
+
+test('Cloud room powers carry their custom identity and exact 1.5 / 2.5 second durations', () => {
+  resetLocalRoomsForTests({ seed: false });
+  const created = localRoomAction('create', null, { p_stage: 'desert' }, host);
+  localRoomAction('join', created.code, {}, guest);
+  localRoomAction('character', created.code, { p_character: 5 }, host);
+  localRoomAction('ready', created.code, { p_ready: true }, host);
+  localRoomAction('ready', created.code, { p_ready: true }, guest);
+  localRoomAction('start', created.code, {}, host);
+
+  const yellow = localRoomAction('lasso', created.code, { p_target_id: guest.id }, host);
+  const slowed = yellow.players.find((player) => player.user_id === guest.id);
+  assert.equal(slowed.slow_effect, 'cloud-wave');
+  assert.equal(Date.parse(slowed.slowed_until) - Date.parse(yellow.server_now), 1500);
+
+  const red = localRoomAction('pistol', created.code, { p_target_id: guest.id }, host);
+  const fallen = red.players.find((player) => player.user_id === guest.id);
+  assert.equal(fallen.stun_effect, 'cloud-cross');
+  assert.equal(Date.parse(fallen.stunned_until) - Date.parse(red.server_now), 2500);
+
+  const standard = localRoomAction('pistol', created.code, { p_target_id: host.id }, guest);
+  const standardTarget = standard.players.find((player) => player.user_id === host.id);
+  assert.equal(standardTarget.stun_effect, 'pistol', 'other characters keep the standard pistol identity');
+  assert.equal(Date.parse(standardTarget.stunned_until) - Date.parse(standard.server_now), 2500);
 });
 
 test('rooms accept lane 3 for positions and finishes, but reject invalid lane indices', (t) => {

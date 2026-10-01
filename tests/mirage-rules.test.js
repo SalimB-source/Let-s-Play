@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { createCourse, jumpHeight, CRYSTALS, LANES, laneCount, seededRandom } from '../src/games/mirageRules.js';
 
 test('encounters remain varied and traversable over 1000 rows', () => {
@@ -662,6 +663,26 @@ test('all four special items (shield, lasso, boost, pistol) have dedicated vecto
     assert.ok(icon.alt && icon.alt.length > 10, `accessible alt description for ${type}`);
     assert.ok(icon.label && icon.accent && icon.gemColor, `label, accent, and gemColor defined for ${type}`);
   }
+});
+
+test('Cloud has separate custom SVGs for the golden sword wave and the red crossed waves', async () => {
+  const { POWER_UPS } = await import('../src/games/mirageRules.js');
+  const { MIRAGE_CLOUD_POWER_ICONS, miragePowerIcon } = await import('../src/games/miragePowerIcons.js');
+  const yellow = miragePowerIcon(POWER_UPS.LASSO, 'cloud');
+  const red = miragePowerIcon(POWER_UPS.PISTOL, 'cloud');
+
+  assert.equal(yellow.variant, 'cloud');
+  assert.equal(yellow.label, 'Onde d’épée dorée');
+  assert.ok(yellow.src.endsWith('/icons/mirage-rush/cloud-yellow-wave.svg'));
+  assert.ok(existsSync(new URL('../public/icons/mirage-rush/cloud-yellow-wave.svg', import.meta.url)));
+  assert.equal(red.variant, 'cloud');
+  assert.equal(red.label, 'Deux ondes rouges croisées');
+  assert.ok(red.src.endsWith('/icons/mirage-rush/cloud-red-x-wave.svg'));
+  assert.ok(existsSync(new URL('../public/icons/mirage-rush/cloud-red-x-wave.svg', import.meta.url)));
+  assert.notEqual(yellow.src, miragePowerIcon(POWER_UPS.LASSO).src, 'non-Cloud riders keep the original lasso icon');
+  assert.notEqual(red.src, miragePowerIcon(POWER_UPS.PISTOL).src, 'non-Cloud riders keep the original pistol icon');
+  assert.equal(MIRAGE_CLOUD_POWER_ICONS[POWER_UPS.LASSO], yellow);
+  assert.equal(MIRAGE_CLOUD_POWER_ICONS[POWER_UPS.PISTOL], red);
 });
 
 test('prairieSunsetState transitions progressively from golden hour to starry night and sinks the sun below the horizon', async () => {

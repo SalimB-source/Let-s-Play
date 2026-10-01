@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { disposeExplorer, makeExplorer, paintModel } from './mirageExplorer';
+import { accessoriesForPalette, disposeExplorer, makeExplorer, paintModel } from './mirageExplorer';
 import { ensureLoop, getShared, nextPreviewPhase, stopLoop } from './mirageSkinRenderer';
 
 /*
- * Aperçu 3D d'un skin Mirage : le cheval + cavalier voxel du jeu, qui tourne
+ * Aperçu 3D d'un skin Mirage : monture + cavalier voxel du jeu, qui tourne
  * en continu sur lui-même (en galopant sur place). Rendu via le renderer
  * partagé de mirageSkinRenderer.js.
  */
@@ -49,7 +49,7 @@ export default function MirageSkinPreview({ palette, className = '', label = '' 
     if (previewRef.current && palette) paintModel(previewRef.current.model, palette);
   }, [palette]);
 
-  if (failed) return <span className={`${className} mirage-skin-3d is-fallback`} aria-hidden="true">♞</span>;
+  if (failed) return <span className={`${className} mirage-skin-3d is-fallback`} aria-hidden="true">{accessoriesForPalette(palette) === 'cloud-chocobo' ? '🐤' : '♞'}</span>;
   return (
     <canvas
       ref={canvasRef}

@@ -5,7 +5,7 @@ import MirageRoomResults from './MirageRoomResults';
 import MirageSkinPreview from './MirageSkinPreview';
 import { setMirageSkinPreviewsPaused } from './mirageSkinRenderer';
 import MiragePowerIcon from './MiragePowerIcon';
-import { CHARACTER_NAMES, CHARACTER_PALETTES, LOBBY_CHARACTER_COUNT } from './mirageCharacters';
+import { CHARACTER_NAMES, CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX, LOBBY_CHARACTER_INDICES } from './mirageCharacters';
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
 import MirageFullscreenIcon from './MirageFullscreenIcon';
@@ -21,11 +21,11 @@ import {
   serverOffset,
   subscribeRoomUpdates,
 } from './mirageRooms';
-import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
+import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, LASSO_SLOW_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
 import { buildRoomStandings } from './mirageStandings';
 
-const characters = CHARACTER_NAMES.slice(0, LOBBY_CHARACTER_COUNT);
+const characters = LOBBY_CHARACTER_INDICES.map((index) => ({ index, name: CHARACTER_NAMES[index] }));
 
 const STAGE_LABELS = {
   desert: 'Dunes de l’Écho',
@@ -388,8 +388,13 @@ export default function MirageOnline({
   };
 
   const myPlayer = room?.players?.find((p) => p.user_id === effectivePlayer.id);
-  const characterIndex = Math.max(0, Math.min(LOBBY_CHARACTER_COUNT - 1, Number(myPlayer?.character ?? myPlayer?.slot) || 0));
+  const requestedCharacter = Number(myPlayer?.character ?? myPlayer?.slot) || 0;
+  const characterIndex = LOBBY_CHARACTER_INDICES.includes(requestedCharacter) ? requestedCharacter : 0;
   const selectedSkin = CHARACTER_PALETTES[characterIndex];
+  const isCloudRider = characterIndex === CLOUD_CHOCOBO_INDEX;
+  const cloudPowerVariant = isCloudRider ? 'cloud' : 'standard';
+  const yellowPowerLabel = isCloudRider ? 'Onde d’épée' : 'Lasso';
+  const redPowerLabel = isCloudRider ? 'Onde rouge en X' : 'Pistolet';
   const isHost = Boolean(
     room && (room.host_id === effectivePlayer.id || String(room.host_id).startsWith('bot-')),
   );
@@ -911,11 +916,11 @@ export default function MirageOnline({
                 </div>
 
                 <div className="mirage-skin-picker" role="group" aria-label="Choisir ton personnage">
-                  {characters.map((name, index) => (
+                  {characters.map(({ index, name }) => (
                     <button
                       type="button"
                       key={name}
-                      className={`mirage-skin-chip${characterIndex === index ? ' is-selected' : ''}`}
+                      className={`mirage-skin-chip${characterIndex === index ? ' is-selected' : ''}${index === CLOUD_CHOCOBO_INDEX ? ' is-cloud-showcase' : ''}`}
                       aria-pressed={characterIndex === index}
                       disabled={busy || room.status !== 'lobby'}
                       onClick={() => command('character', room.code, { p_character: index })}
@@ -925,7 +930,7 @@ export default function MirageOnline({
                         <MirageSkinPreview palette={CHARACTER_PALETTES[index]} className="mirage-skin-model" />
                       </span>
                       <span className="mirage-skin-name">{name.split(' · ')[0]}</span>
-                      <small>{characterIndex === index ? 'PERSONNAGE CHOISI' : 'CHOISIR'}</small>
+                      <small>{characterIndex === index ? 'PERSONNAGE CHOISI' : index === CLOUD_CHOCOBO_INDEX ? 'OFFERT TEMPORAIREMENT' : 'CHOISIR'}</small>
                     </button>
                   ))}
                 </div>
@@ -956,7 +961,7 @@ export default function MirageOnline({
                               {isMe ? ' (toi)' : ''}
                               {isRoomHost && <em className="mirage-host-tag">HÔTE</em>}
                             </strong>
-                            <span className="mirage-player-mount">{characters[p.character ?? p.slot] || characters[0]}</span>
+                            <span className="mirage-player-mount">{CHARACTER_NAMES[p.character ?? p.slot] || CHARACTER_NAMES[0]}</span>
                           </div>
                         </div>
 
@@ -1211,9 +1216,9 @@ export default function MirageOnline({
                         onPowerUp={(info) => {
                           if (info?.action === 'no_target') {
                             if (info.type === 'lasso') {
-                              setPowerToast('🪢 Aucun cavalier devant toi !');
+                              setPowerToast(isCloudRider ? '⚔ Aucun cavalier devant toi pour l’onde dorée !' : '🪢 Aucun cavalier devant toi !');
                             } else if (info.type === 'pistol') {
-                              setPowerToast('🔫 Aucun cavalier devant toi !');
+                              setPowerToast(isCloudRider ? '❌ Aucune cible devant toi pour les ondes croisées !' : '🔫 Aucun cavalier devant toi !');
                             }
                             setTimeout(() => setPowerToast(null), 1800);
                           } else if (info?.action === 'used') {
@@ -1222,10 +1227,11 @@ export default function MirageOnline({
                               setPowerToast('🛡️ Bouclier activé automatiquement !');
                             } else if (info.type === 'lasso') {
                               audio.current?.lassoThrow?.();
-                              setPowerToast('🪢 Lasso envoyé !');
+                              setPowerToast(isCloudRider ? '⚔ Onde de choc dorée lancée !' : '🪢 Lasso envoyé !');
                             } else if (info.type === 'pistol') {
-                              audio.current?.gunshot();
-                              setPowerToast('🔫 Tir de pistolet !');
+                              if (isCloudRider) audio.current?.lassoThrow?.();
+                              else audio.current?.gunshot();
+                              setPowerToast(isCloudRider ? '❌ Deux ondes rouges croisées !' : '🔫 Tir de pistolet !');
                             } else if (info.type === 'boost') {
                               audio.current?.speedBoost?.();
                               audio.current?.cheer?.();
@@ -1235,9 +1241,9 @@ export default function MirageOnline({
                           } else if (info?.action === 'charged') {
                             audio.current?.powerReady?.();
                             if (info.type === 'lasso') {
-                              setPowerToast('⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
+                              setPowerToast(isCloudRider ? '⚡ ⚔ ONDE D’ÉPÉE PRÊTE ! Appuie sur W / Z ou clique !' : '⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
                             } else if (info.type === 'pistol') {
-                              setPowerToast('⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
+                              setPowerToast(isCloudRider ? '⚡ ❌ ONDE CROISÉE PRÊTE ! Appuie sur R ou clique !' : '⚡ 🔫 PISTOLET PRÊT ! Appuie sur R ou clique !');
                             }
                             setTimeout(() => setPowerToast(null), 2200);
                           }
@@ -1246,9 +1252,11 @@ export default function MirageOnline({
                           if (!room?.code || !targetPlayer) return null;
                           let result = null;
                           try {
-                            result = await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                            result = await roomAction('lasso', room.code, { p_target_id: targetPlayer.user_id }, effectivePlayer);
                           } catch {}
-                          setPowerToast(`🪢 Lasso lancé sur ${targetPlayer.name} !`);
+                          setPowerToast(isCloudRider
+                            ? `⚔ Onde dorée envoyée sur ${targetPlayer.name} !`
+                            : `🪢 Lasso lancé sur ${targetPlayer.name} !`);
                           setTimeout(()=> setPowerToast(null), 2500);
                           return result;
                         }}
@@ -1258,32 +1266,44 @@ export default function MirageOnline({
                             if (isActive) {
                               await roomAction('shield', room.code, {}, effectivePlayer);
                             } else {
-                              await roomAction('shield', room.code, { p_clear: true, p_active: false }, effectivePlayer);
+                              await roomAction('shield', room.code, { p_clear: true }, effectivePlayer);
                             }
                           } catch {}
                         }}
                         onPistol={async (targetPlayer) => {
-                          if (!room?.code || !targetPlayer) return;
+                          if (!room?.code || !targetPlayer) return null;
+                          let result = null;
                           try {
-                            await roomAction('pistol', room.code, { p_target_id: targetPlayer.user_id, p_target: targetPlayer.user_id }, effectivePlayer);
+                            result = await roomAction('pistol', room.code, { p_target_id: targetPlayer.user_id }, effectivePlayer);
                           } catch {}
-                          setPowerToast(`🔫 PAN ! Tu tires sur ${targetPlayer.name} !`);
+                          setPowerToast(isCloudRider
+                            ? `❌ Les ondes croisées frappent ${targetPlayer.name} !`
+                            : `🔫 PAN ! Tu tires sur ${targetPlayer.name} !`);
                           setTimeout(()=> setPowerToast(null), 2500);
+                          return result;
                         }}
                         onPistolHit={(info) => {
                           if (info?.target === null) {
-                            setPowerToast('🔫 PAN ! Personne à portée…');
+                            setPowerToast(isCloudRider ? '❌ Personne à portée des ondes croisées…' : '🔫 PAN ! Personne à portée…');
                             setTimeout(()=> setPowerToast(null), 2000);
                           } else if (info?.target === 'player') {
-                            audio.current?.gunshot();
-                            setPowerToast('🔫 Touché ! Tu tombes de cheval…');
+                            if (info.blocked) audio.current?.shieldGravity?.();
+                            else if (info.cloud) audio.current?.lassoThrow?.();
+                            else audio.current?.gunshot();
+                            setPowerToast(info.blocked
+                              ? `🛡️ ${info.cloud ? 'Les ondes croisées sont bloquées' : 'Le tir est bloqué'} par ton bouclier !`
+                              : info.cloud
+                                ? `❌ Touché par les ondes croisées ! À terre ${PISTOL_STUN_DURATION}s…`
+                                : '🔫 Touché ! Tu tombes de cheval…');
                             setTimeout(()=> setPowerToast(null), 2000);
                           }
                         }}
                         onLassoHit={(info) => {
                           if (info?.target === 'player') {
                             audio.current?.lassoThrow?.();
-                            setPowerToast(info.blocked ? '🛡️ Lasso bloqué par ton bouclier !' : '🪢 Touché par un lasso ! Ralenti…');
+                            setPowerToast(info.blocked
+                              ? `🛡️ ${info.cloud ? 'Onde dorée bloquée' : 'Lasso bloqué'} par ton bouclier !`
+                              : info.cloud ? `⚔ Onde de Cloud ! Secoué et ralenti ${LASSO_SLOW_DURATION}s…` : '🪢 Touché par un lasso ! Ralenti…');
                             setTimeout(()=> setPowerToast(null), 2500);
                           }
                         }}
@@ -1342,14 +1362,16 @@ export default function MirageOnline({
                               className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_lasso')}
                               disabled={(hud.lassoCharges || 0) <= 0}
-                              title={`Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
+                              title={isCloudRider
+                                ? `Onde de choc à l’épée (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes. Secoue et ralentit la cible pendant ${LASSO_SLOW_DURATION}s.`
+                                : `Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
-                                <MiragePowerIcon type={POWER_UPS.LASSO} className="mirage-powerup-icon" />
+                                <MiragePowerIcon type={POWER_UPS.LASSO} variant={cloudPowerVariant} className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-key">W / Z</span>
                               </div>
                               <div className="mirage-powerup-btn-name">
-                                <span>Lasso</span>
+                                <span>{yellowPowerLabel}</span>
                                 {(hud.lassoCharges || 0) > 0
                                   ? <b className="mirage-powerup-count is-charges">×{hud.lassoCharges}</b>
                                   : <span className="mirage-powerup-count">{hud.lassoChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.LASSO]} ◆</span>}
@@ -1392,14 +1414,16 @@ export default function MirageOnline({
                               className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
                               onClick={() => actions.current?.('use_pistol')}
                               disabled={(hud.pistolCharges || 0) <= 0}
-                              title={`Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
+                              title={isCloudRider
+                                ? `Deux ondes rouges croisées (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges. Fait tomber la cible pendant ${PISTOL_STUN_DURATION}s.`
+                                : `Pistolet (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
-                                <MiragePowerIcon type={POWER_UPS.PISTOL} className="mirage-powerup-icon" />
+                                <MiragePowerIcon type={POWER_UPS.PISTOL} variant={cloudPowerVariant} className="mirage-powerup-icon" />
                                 <span className="mirage-powerup-key">R</span>
                               </div>
                               <div className="mirage-powerup-btn-name">
-                                <span>Pistolet</span>
+                                <span>{redPowerLabel}</span>
                                 {(hud.pistolCharges || 0) > 0
                                   ? <b className="mirage-powerup-count is-charges">×{hud.pistolCharges}</b>
                                   : <span className="mirage-powerup-count">{hud.pistolChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]} ◆</span>}

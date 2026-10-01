@@ -2,6 +2,7 @@ import {
   laneCount, PISTOL_STUN_DURATION, DUEL_DISTANCE, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR,
 } from './mirageRules.js';
 import { supabase } from '../lib/supabase.js';
+import { CLOUD_CHOCOBO_INDEX, LOBBY_CHARACTER_INDICES } from './mirageCharacters.js';
 
 const STORAGE_KEY = 'letsplay_mirage_online_rooms_v2';
 const GUEST_KEY = 'letsplay_mirage_guest_profile_v1';
@@ -350,7 +351,9 @@ function serializeRoom(room, nowIso = new Date().toISOString()) {
       last_seen: p.last_seen || nowIso,
       shield_until: p.shield_until || null,
       slowed_until: p.slowed_until || null,
+      slow_effect: p.slow_effect || null,
       stunned_until: p.stunned_until || null,
+      stun_effect: p.stun_effect || null,
     }));
   const messages = [...(room.messages || [])].slice(-50).map((m) => ({
     id: m.id,
@@ -620,7 +623,7 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
 
   if (action === 'character') {
     if (room.status !== 'lobby') throw new Error('Personnage verrouillé : course déjà lancée');
-    if (!Number.isInteger(extras.p_character) || extras.p_character < 0 || extras.p_character > 3) {
+    if (!Number.isInteger(extras.p_character) || !LOBBY_CHARACTER_INDICES.includes(extras.p_character)) {
       throw new Error('Personnage inconnu');
     }
     existingPlayer.character = extras.p_character;
@@ -827,12 +830,15 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
     } else {
       const slowedUntil = new Date(nowMs + Math.round(LASSO_SLOW_DURATION * 1000)).toISOString();
       target.slowed_until = slowedUntil;
+      target.slow_effect = existingPlayer.character === CLOUD_CHOCOBO_INDEX ? 'cloud-wave' : 'lasso';
       room.messages.push({
         id: `msg-${nowMs}-lasso`,
         user_id: uid,
         name: uname,
         slot: existingPlayer.slot,
-        body: `🪢 ${uname} a attrapé ${target.name} au lasso !`,
+        body: existingPlayer.character === CLOUD_CHOCOBO_INDEX
+          ? `⚔ ${uname} a ralenti ${target.name} avec une onde de choc dorée !`
+          : `🪢 ${uname} a attrapé ${target.name} au lasso !`,
         created_at: nowIso,
       });
       // Bots are slowed from `slowed_until` alone (see advanceBotsInRace): their
@@ -867,13 +873,16 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
       });
     } else {
       target.stunned_until = new Date(nowMs + PISTOL_STUN_DURATION * 1000).toISOString();
+      target.stun_effect = existingPlayer.character === CLOUD_CHOCOBO_INDEX ? 'cloud-cross' : 'pistol';
       if (target.is_bot) target.stun_lag = Number(target.stun_lag || 0) + (target.speed || 16.2) * PISTOL_STUN_DURATION;
       room.messages.push({
         id: `msg-${nowMs}-pistol`,
         user_id: uid,
         name: uname,
         slot: existingPlayer.slot,
-        body: `🔫 ${uname} a fait tomber ${target.name} de son cheval !`,
+        body: existingPlayer.character === CLOUD_CHOCOBO_INDEX
+          ? `❌ ${uname} a fait tomber ${target.name} avec deux ondes rouges croisées !`
+          : `🔫 ${uname} a fait tomber ${target.name} de son cheval !`,
         created_at: nowIso,
       });
     }
@@ -950,11 +959,14 @@ export async function roomAction(action, code = null, extras = {}, player = null
 
   if (supabase && actor.connected) {
     try {
-      const { data, error } = await supabase.rpc('mirage_room_action', {
-        p_action: action,
-        p_code: vCode,
-        ...extras,
-      });
+      const rpcParams = { p_action: action, p_code: vCode };
+      for (const key of [
+        'p_stage', 'p_distance', 'p_lane', 'p_jump', 'p_score', 'p_name', 'p_password',
+        'p_ready', 'p_message', 'p_character', 'p_target_id', 'p_clear', 'p_gem_key',
+      ]) {
+        if (Object.prototype.hasOwnProperty.call(extras, key)) rpcParams[key] = extras[key];
+      }
+      const { data, error } = await supabase.rpc('mirage_room_action', rpcParams);
       if (error) {
         if (isRpcSchemaOrFallbackError(error)) {
           return localRoomAction(action, vCode, extras, actor);
