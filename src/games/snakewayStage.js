@@ -64,25 +64,27 @@ function seeded(seed) {
 }
 
 /**
- * A rolling wall of yellow and orange clouds, and nothing else, frames the
- * outside of each lane. One bank fills a full 11 m segment — three stacked
- * bands (low shoulder, rolling mid band, tall gold crown) — so ten banks per
- * side tile a seamless 110 m cloudbank along the Snake Way, DBZ-style.
+ * A rolling sea of cumulus, and nothing else, frames the outside of each
+ * lane. Each 11 m segment is packed with low-poly clouds — wide flat base,
+ * domed middles, bumpy sunlit crown — stacked in three bands (low orange
+ * shoulder hugging the road, rolling yellow mid, tall gold skyline) plus two
+ * small clouds that sweep past the rider. DBZ Snake Way, seamless over the
+ * 110 m loop.
  */
 export function snakewayCloudBank(index, side) {
   const group = new THREE.Group();
   const rand = seeded((index + 1) * 79 + (side > 0 ? 401 : 809));
-  // DBZ sunset palette: bright yellows for the sunlit tops, deep oranges for
-  // the shaded undersides. Every tone keeps r > g > b, a warm gold-to-ember ramp.
+  // DBZ sunset palette: bright yellows for the sunlit crowns, deep oranges
+  // for the shaded undersides. Every tone keeps r > g > b.
   const gold = material(0xffe27a, { roughness: 1 });
   const sunlit = material(0xffd24f, { roughness: 1 });
   const amber = material(0xffb444, { roughness: 1 });
   const flame = material(0xff9840, { roughness: 1 });
   const ember = material(0xf57e3e, { roughness: 1 });
   const tierPalettes = [
-    [ember, flame, amber], // low shoulder: shaded, orange
-    [amber, sunlit, gold], // mid band: warm yellow
-    [gold, sunlit, gold], // tall crown: bright yellow
+    [ember, flame, amber], // shaded base
+    [amber, sunlit], // lit body
+    [gold, sunlit], // sunlit crown
   ];
   const puffGeometry = new THREE.SphereGeometry(1, 10, 7);
 
@@ -91,65 +93,60 @@ export function snakewayCloudBank(index, side) {
   group.userData.callout = 'orange-cloudbank';
   group.userData.side = side;
 
-  // Each band tiles the whole segment (z 0 → -11) with puffs stretched and
-  // overlapping along the track, so adjacent banks never open a gap. Inner
-  // edges are clamped clear of the running lanes.
-  const tierSpecs = [
-    // low shoulder — hugs the road edge
-    [6.9, -1.05, -1.1, 2.5, 1.35, 3.6],
-    [8.2, -0.9, -4.0, 2.7, 1.5, 3.8],
-    [7.1, -1.1, -6.8, 2.6, 1.3, 3.5],
-    [8.6, -0.85, -9.7, 2.7, 1.45, 3.7],
-    // rolling mid band
-    [7.4, 0.85, -2.5, 2.8, 1.7, 3.6],
-    [9.2, 1.2, -5.4, 3.1, 1.9, 3.9],
-    [7.9, 0.75, -8.3, 2.9, 1.6, 3.6],
-    [10.0, 1.4, -10.8, 3.0, 1.8, 3.8],
-    // tall gold crown — the skyline rises toward the horizon
-    [12.8, 3.0, -3.2, 3.5, 2.1, 4.2],
-    [14.2, 3.9, -7.0, 3.8, 2.4, 4.4],
-    [12.3, 2.6, -10.0, 3.4, 2.0, 4.0],
-    [15.8, 4.7, -5.4, 4.0, 2.6, 4.6],
+  // Low-poly cumulus templates, puffs in [x, y, z, sx, sy, sz, tier] order:
+  // a wide flat base (tier 0, shaded underside), big round domes (tier 1) and
+  // a bumpy sunlit crown (tier 2). Two silhouettes are interleaved so the
+  // skyline stays irregular — the classic DBZ cloud-sea profile.
+  const CUMULUS_A = [
+    [0.0, -0.25, 0.0, 2.5, 1.05, 1.8, 0],
+    [-1.9, -0.05, 0.1, 1.35, 1.0, 1.3, 0],
+    [1.95, -0.05, -0.05, 1.3, 0.95, 1.25, 0],
+    [-0.5, 1.05, 0.05, 1.75, 1.5, 1.5, 1],
+    [1.5, 1.15, -0.1, 1.35, 1.15, 1.3, 1],
+    [-1.9, 1.0, 0.15, 1.15, 1.0, 1.15, 2],
+    [0.6, 2.15, -0.1, 1.2, 1.0, 1.15, 2],
   ];
-  tierSpecs.forEach(([px, py, pz, sx, sy, sz], puffIndex) => {
-    const tier = puffIndex < 4 ? 0 : puffIndex < 8 ? 1 : 2;
-    const driftX = (rand() - 0.5) * 0.5;
-    const driftY = (rand() - 0.5) * 0.6;
-    const driftZ = (rand() - 0.5) * 1.4;
-    const scale = [
-      sx * (0.92 + rand() * 0.22),
-      sy * (0.9 + rand() * 0.22),
-      sz * (0.95 + rand() * 0.16),
-    ];
-    let x = px + driftX;
-    if (x - scale[0] < 4.3) x = 4.3 + scale[0]; // never bite into the lanes
-    const palette = tierPalettes[tier];
-    sphere(
-      group, puffGeometry,
-      palette[(puffIndex + index) % palette.length],
-      side * x, py + driftY, pz + driftZ,
-      scale[0], scale[1], scale[2],
-    );
-  });
+  const CUMULUS_B = [
+    [0.0, -0.25, 0.0, 2.8, 0.95, 1.9, 0],
+    [-2.3, 0.05, 0.1, 1.5, 1.15, 1.4, 0],
+    [2.3, 0.0, -0.1, 1.4, 1.05, 1.35, 0],
+    [-0.9, 1.0, 0.05, 1.5, 1.25, 1.35, 1],
+    [1.2, 1.15, -0.05, 1.6, 1.3, 1.4, 1],
+    [0.2, 2.0, 0.0, 1.1, 0.95, 1.1, 2],
+    [-2.4, 0.9, 0.3, 0.95, 0.8, 0.95, 2],
+  ];
 
-  // A couple of small sunlit puffs drift a little closer and higher, so clouds
-  // sweep past the rider's shoulder the way they do over the Snake Way.
-  const nearPuffs = [
-    [6.1, 2.3, -4.6, 1.6, 1.15, 2.3],
-    [6.6, 2.9, -8.4, 1.4, 1.0, 2.0],
-  ];
-  nearPuffs.forEach(([px, py, pz, sx, sy, sz]) => {
-    const x = px + (rand() - 0.5) * 0.5;
-    const scale = [sx, sy, sz];
-    sphere(
-      group, puffGeometry,
-      rand() > 0.5 ? gold : sunlit,
-      side * (x - scale[0] < 4.3 ? 4.3 + scale[0] : x),
-      py + (rand() - 0.5) * 0.5,
-      pz + (rand() - 0.5) * 1.2,
-      scale[0], scale[1], scale[2],
-    );
-  });
+  const cluster = (cx, cy, cz, scale, colorShift, variant) => {
+    const template = variant % 2 === 0 ? CUMULUS_A : CUMULUS_B;
+    template.forEach(([px, py, pz, sx, sy, sz, tier], puffIndex) => {
+      // An occasional missing crown bump keeps the skyline irregular.
+      if (puffIndex === template.length - 1 && rand() < 0.35) return;
+      const s = scale * (0.9 + rand() * 0.25);
+      const x = cx + px * s + (rand() - 0.5) * 0.5;
+      const y = cy + py * s + (rand() - 0.5) * 0.4;
+      const z = cz + pz * s + (rand() - 0.5) * 0.6;
+      const safeX = x - sx * s < 4.3 ? 4.3 + sx * s : x; // never bite into the lanes
+      const palette = tierPalettes[tier];
+      sphere(
+        group, puffGeometry,
+        palette[(puffIndex + colorShift) % palette.length],
+        side * safeX, y, z,
+        sx * s, sy * s, sz * s,
+      );
+    });
+  };
+
+  // Three bands tile the whole segment (z 0 → -11), the clouds overlapping
+  // along the track so the wall never breaks: low orange shoulder, rolling
+  // yellow mid band, tall gold crown rising toward the horizon.
+  let variant = index;
+  for (const z of [-1.8, -5.6, -9.4]) { cluster(7.4, -1.35, z, 1.0, index, variant); variant += 1; }
+  for (const z of [-3.6, -7.4, -11.2]) { cluster(11.0, -0.15, z, 1.2, index + 1, variant); variant += 1; }
+  for (const z of [-0.6, -5.6, -10.6]) { cluster(15.2, 2.35, z, 1.5, index + 2, variant); variant += 1; }
+
+  // Two small sunlit clouds drift close and high, sweeping past the rider.
+  cluster(6.15, 2.25, -4.3, 0.55, index + 3, variant);
+  cluster(6.55, 3.05, -8.1, 0.5, index + 4, variant + 1);
   return group;
 }
 
