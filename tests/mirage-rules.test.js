@@ -157,16 +157,16 @@ test('airbase (Thunder Airbase) stage is retained in challenge links', async () 
   assert.equal(decodeChallenge(encodeChallenge({ ...run, stage: 'de_nuke' })).stage, undefined);
 });
 
-test('cowboy cry fires only on each fifth consecutive pickup, and resets on a miss or crash', async () => {
+test('cowboy streak marks each fifth consecutive pickup, and resets on a miss or crash', async () => {
   const { advanceCowboyStreak } = await import('../src/games/mirageRules.js');
   let streak = 0;
-  const cries = [];
+  const milestones = [];
   for (let n = 1; n <= 16; n++) {
     const result = advanceCowboyStreak(streak, true);
     streak = result.streak;
-    if (result.cheer) cries.push(n);
+    if (result.cheer) milestones.push(n);
   }
-  assert.deepEqual(cries, [5, 10, 15]);
+  assert.deepEqual(milestones, [5, 10, 15]);
   assert.deepEqual(advanceCowboyStreak(4, false), { streak: 0, cheer: false });
   assert.deepEqual(advanceCowboyStreak(4, true, true), { streak: 0, cheer: false });
   assert.deepEqual(advanceCowboyStreak(0, true), { streak: 1, cheer: false });

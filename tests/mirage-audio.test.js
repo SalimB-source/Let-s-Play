@@ -306,6 +306,21 @@ test('game uses the unmodified user-uploaded MP3 rather than the generated voice
   assert.ok(!audioModule.includes('cowboy-hey-haa.wav'));
 });
 
+test('cowboy cry is wired to player boost activation, not the fifth-gem streak', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const [world, rushPage, onlinePage] = await Promise.all([
+    readFile(new URL('../src/games/MirageWorld.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/games/MirageRushPage.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/games/MirageOnline.jsx', import.meta.url), 'utf8'),
+  ]);
+
+  assert.doesNotMatch(world, /onCheer|callbacks\.cheer/);
+  assert.doesNotMatch(rushPage, /onCheer=/);
+  assert.doesNotMatch(onlinePage, /onCheer=/);
+  assert.match(rushPage, /else if \(info\.type === 'boost'\) \{\s*audioRef\.current\?\.speedBoost\?\.\(\);\s*audioRef\.current\?\.cheer\?\.\(\);/);
+  assert.match(onlinePage, /else if \(info\.type === 'boost'\) \{\s*audio\.current\?\.speedBoost\?\.\(\);\s*audio\.current\?\.cheer\?\.\(\);/);
+});
+
 test('power-up sound effects (lassoThrow, speedBoost, shieldGravity) schedule tones and sweeps when running', () => {
   const audio = new DesertGroove();
   let tones = 0;

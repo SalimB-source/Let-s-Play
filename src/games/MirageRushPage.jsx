@@ -681,7 +681,6 @@ export default function MirageRushPage() {
                 audioRef.current?.pickup(tier);
                 if (tier === 3) flashFx('is-glow');
               }}
-              onCheer={() => audioRef.current?.cheer()}
               actionsRef={actionsRef}
               onPowerUp={(info) => {
                 if (info?.action === 'used') {
@@ -696,6 +695,7 @@ export default function MirageRushPage() {
                     showPowerToast('🔫 Tir de pistolet !');
                   } else if (info.type === 'boost') {
                     audioRef.current?.speedBoost?.();
+                    audioRef.current?.cheer?.();
                     showPowerToast(`⚡ Turbo activé automatiquement (${POWER_BOOST_DURATION}s) !`);
                   }
                 } else if (info?.action === 'no_target') {

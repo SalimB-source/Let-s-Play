@@ -2149,7 +2149,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           const streakResult = advanceCowboyStreak(cowboyStreak, Boolean(crystal), collided && !shieldActive);
           cowboyStreak = streakResult.streak;
           if (streakResult.cheer && active) {
-            callbacks.cheer?.();
             poseLeft = 0.62;
           }
           emitHud(true);
@@ -2506,7 +2505,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onCheer, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -2516,7 +2515,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
   const raceRef = useRef(race);
   raceRef.current = race;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onCheer, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
+  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -2528,7 +2527,6 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
         crash: () => callbackRefs.current.onCrash?.(),
         mud: () => callbackRefs.current.onMud?.(),
         pickup: (tier, key) => callbackRefs.current.onPickup?.(tier, key),
-        cheer: () => callbackRefs.current.onCheer?.(),
         powerUp: (info) => callbackRefs.current.onPowerUp?.(info),
         powerUpPickup: (type) => callbackRefs.current.onPowerUpPickup?.(type),
         lasso: (target) => callbackRefs.current.onLasso?.(target),

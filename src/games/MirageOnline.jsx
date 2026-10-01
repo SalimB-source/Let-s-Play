@@ -1154,7 +1154,6 @@ export default function MirageOnline({
                             roomAction('gem_pickup', room.code, { p_gem_key: key }, effectivePlayer).catch(()=>{});
                           }
                         }}
-                        onCheer={() => audio.current?.cheer()}
                         onPowerUp={(info) => {
                           if (info?.action === 'no_target') {
                             if (info.type === 'lasso') {
@@ -1175,6 +1174,7 @@ export default function MirageOnline({
                               setPowerToast('🔫 Tir de pistolet !');
                             } else if (info.type === 'boost') {
                               audio.current?.speedBoost?.();
+                              audio.current?.cheer?.();
                               setPowerToast(`⚡ Turbo activé automatiquement (${POWER_BOOST_DURATION}s) !`);
                             }
                             setTimeout(() => setPowerToast(null), 2200);
