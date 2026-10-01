@@ -3,10 +3,11 @@ import * as THREE from 'three';
 /*
  * ZONE 10 · CHEMIN DU SERPENT — hommage à Dragon Ball pour Mirage Rush.
  *
- * Une piste dorée traverse des nuages orange et conduit vers la petite
- * planète de Kaio : son halo, sa maisonnette et son arbre bleu deviennent la
- * cible de l'horizon. Les côtés restent volontairement dégagés ; seuls des
- * bancs de nuages chauds y défilent. Décor original low-poly, construit en Three.js.
+ * Une piste dorée file au-dessus d'un océan de nuages jaunes et oranges,
+ * comme dans Dragon Ball Z : les deux côtés de la route sont comblés par un
+ * mur de cumulus dorés qui défilent segment par segment. Au loin, la petite
+ * planète de Kaio — son halo, sa maisonnette et son arbre bleu — devient la
+ * cible de l'horizon. Décor original low-poly, construit en Three.js.
  */
 
 export const SNAKEWAY_SEGMENT_LENGTH = 11;
@@ -62,35 +63,92 @@ function seeded(seed) {
   };
 }
 
-/** Orange cloudbanks, and nothing else, drift past the outside of each lane. */
+/**
+ * A rolling wall of yellow and orange clouds, and nothing else, frames the
+ * outside of each lane. One bank fills a full 11 m segment — three stacked
+ * bands (low shoulder, rolling mid band, tall gold crown) — so ten banks per
+ * side tile a seamless 110 m cloudbank along the Snake Way, DBZ-style.
+ */
 export function snakewayCloudBank(index, side) {
   const group = new THREE.Group();
   const rand = seeded((index + 1) * 79 + (side > 0 ? 401 : 809));
-  const cloudLights = [
-    material(0xffc17b, { roughness: 1 }),
-    material(0xffa363, { roughness: 1 }),
-    material(0xf28a59, { roughness: 1 }),
-    material(0xffd08c, { roughness: 1 }),
+  // DBZ sunset palette: bright yellows for the sunlit tops, deep oranges for
+  // the shaded undersides. Every tone keeps r > g > b, a warm gold-to-ember ramp.
+  const gold = material(0xffe27a, { roughness: 1 });
+  const sunlit = material(0xffd24f, { roughness: 1 });
+  const amber = material(0xffb444, { roughness: 1 });
+  const flame = material(0xff9840, { roughness: 1 });
+  const ember = material(0xf57e3e, { roughness: 1 });
+  const tierPalettes = [
+    [ember, flame, amber], // low shoulder: shaded, orange
+    [amber, sunlit, gold], // mid band: warm yellow
+    [gold, sunlit, gold], // tall crown: bright yellow
   ];
   const puffGeometry = new THREE.SphereGeometry(1, 10, 7);
 
-  group.position.set(side * (9.4 + (index % 2) * 0.18), -0.55 + (index % 3) * 0.08, 6 - index * SNAKEWAY_SEGMENT_LENGTH);
+  group.position.set(0, -0.55 + (index % 3) * 0.08, 6 - index * SNAKEWAY_SEGMENT_LENGTH);
   group.userData.speedFactor = 1;
   group.userData.callout = 'orange-cloudbank';
   group.userData.side = side;
 
-  // Puffs fan outwards so their inner edges never intrude into the running lanes.
-  const puffSpecs = [
-    [0.05, -0.3, 0.0, 1.55, 0.72, 1.3],
-    [0.85, 0.12, -0.55, 1.24, 0.86, 1.08],
-    [1.7, -0.12, 0.62, 1.56, 0.78, 1.3],
-    [2.55, -0.42, -0.38, 1.32, 0.68, 1.04],
-    [0.62, -0.62, 0.78, 1.05, 0.54, 0.9],
-    [2.0, 0.4, -0.78, 1.1, 0.66, 0.96],
+  // Each band tiles the whole segment (z 0 → -11) with puffs stretched and
+  // overlapping along the track, so adjacent banks never open a gap. Inner
+  // edges are clamped clear of the running lanes.
+  const tierSpecs = [
+    // low shoulder — hugs the road edge
+    [6.9, -1.05, -1.1, 2.5, 1.35, 3.6],
+    [8.2, -0.9, -4.0, 2.7, 1.5, 3.8],
+    [7.1, -1.1, -6.8, 2.6, 1.3, 3.5],
+    [8.6, -0.85, -9.7, 2.7, 1.45, 3.7],
+    // rolling mid band
+    [7.4, 0.85, -2.5, 2.8, 1.7, 3.6],
+    [9.2, 1.2, -5.4, 3.1, 1.9, 3.9],
+    [7.9, 0.75, -8.3, 2.9, 1.6, 3.6],
+    [10.0, 1.4, -10.8, 3.0, 1.8, 3.8],
+    // tall gold crown — the skyline rises toward the horizon
+    [12.8, 3.0, -3.2, 3.5, 2.1, 4.2],
+    [14.2, 3.9, -7.0, 3.8, 2.4, 4.4],
+    [12.3, 2.6, -10.0, 3.4, 2.0, 4.0],
+    [15.8, 4.7, -5.4, 4.0, 2.6, 4.6],
   ];
-  puffSpecs.forEach(([px, py, pz, sx, sy, sz], puffIndex) => {
-    const drift = (rand() - 0.5) * 0.16;
-    sphere(group, puffGeometry, cloudLights[(puffIndex + index) % cloudLights.length], side * (px + drift), py, pz, sx, sy, sz);
+  tierSpecs.forEach(([px, py, pz, sx, sy, sz], puffIndex) => {
+    const tier = puffIndex < 4 ? 0 : puffIndex < 8 ? 1 : 2;
+    const driftX = (rand() - 0.5) * 0.5;
+    const driftY = (rand() - 0.5) * 0.6;
+    const driftZ = (rand() - 0.5) * 1.4;
+    const scale = [
+      sx * (0.92 + rand() * 0.22),
+      sy * (0.9 + rand() * 0.22),
+      sz * (0.95 + rand() * 0.16),
+    ];
+    let x = px + driftX;
+    if (x - scale[0] < 4.3) x = 4.3 + scale[0]; // never bite into the lanes
+    const palette = tierPalettes[tier];
+    sphere(
+      group, puffGeometry,
+      palette[(puffIndex + index) % palette.length],
+      side * x, py + driftY, pz + driftZ,
+      scale[0], scale[1], scale[2],
+    );
+  });
+
+  // A couple of small sunlit puffs drift a little closer and higher, so clouds
+  // sweep past the rider's shoulder the way they do over the Snake Way.
+  const nearPuffs = [
+    [6.1, 2.3, -4.6, 1.6, 1.15, 2.3],
+    [6.6, 2.9, -8.4, 1.4, 1.0, 2.0],
+  ];
+  nearPuffs.forEach(([px, py, pz, sx, sy, sz]) => {
+    const x = px + (rand() - 0.5) * 0.5;
+    const scale = [sx, sy, sz];
+    sphere(
+      group, puffGeometry,
+      rand() > 0.5 ? gold : sunlit,
+      side * (x - scale[0] < 4.3 ? 4.3 + scale[0] : x),
+      py + (rand() - 0.5) * 0.5,
+      pz + (rand() - 0.5) * 1.2,
+      scale[0], scale[1], scale[2],
+    );
   });
   return group;
 }
@@ -362,9 +420,10 @@ export function makeSnakewayHorizon() {
   const group = new THREE.Group();
   const cloudColors = [
     material(0xffa15f, { roughness: 1 }),
-    material(0xffbd78, { roughness: 1 }),
+    material(0xffd75f, { roughness: 1 }),
     material(0xf18358, { roughness: 1 }),
-    material(0xffd093, { roughness: 1 }),
+    material(0xffe08c, { roughness: 1 }),
+    material(0xffbd78, { roughness: 1 }),
   ];
   const cloudGeometry = new THREE.SphereGeometry(1, 10, 7);
   const road = material(0xf4ce58, { emissive: 0x9f6819, emissiveIntensity: 0.36, metalness: 0.12, roughness: 0.52, side: THREE.DoubleSide });
