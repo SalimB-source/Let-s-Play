@@ -212,6 +212,74 @@ fermer « de l'extérieur » comme Échap). Elle ne dit rien du rendu réel : po
 cela, ouvrir le jeu dans un vrai navigateur (`npm run dev`) et le passer en plein
 écran sur un grand écran.
 
+## Vice City Rush : 3 tours, ligne de départ et décor
+
+Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
+villes (Vice City, New York, Tokyo, Paris, Londres). Une course fait **3 tours
+de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
+**sous le portique de départ à chaque tour**.
+
+- **La zone de départ.** Grille peinte au sol avec les quatre emplacements,
+  ligne à damier, vibreurs rouge et blanc, tribunes garnies de spectateurs qui
+  s'agitent, fanions, mâts d'éclairage, tour de direction de course, et un
+  **portique** qui porte le panneau *DÉPART · ARRIVÉE*, le tableau de tour
+  (« TOUR 1/3 », puis « DERNIER TOUR », puis « ARRIVÉE ») et les **cinq feux**
+  du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
+  passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
+- **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
+  · TOUR 2/3 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
+  rivaux annoncent leur dernier tour. Le dernier passage termine la course.
+- **Le décor.** Chaque ville a sa boucle : façades texturées (fenêtres allumées,
+  enseignes verticales, boutiques), porte monumentale à mi-tour (arche Art déco,
+  pont-viaduc, torii, arc de triomphe, Tower Bridge), monument, lampadaires,
+  guirlandes, feux tricolores, panneaux qui clignotent, ciel dégradé avec étoiles,
+  skyline au loin, pluie à Londres et bruine à New York.
+- **Les voitures.** Cabriolets et rivaux modélisés (pilote casqué, phares,
+  feux arrière, flammes de turbo, roues qui tournent et se braquent, roulis et
+  tangage selon la conduite, fumée au démarrage et dans les dérapages) ; le
+  trafic (police, ambulance, camion-poubelle, Lamborghini blanche) a ses
+  gyrophares et ses décalcomanies.
+- **La caméra.** Orbite autour de la grille pendant l'intro, travelling qui se
+  recule pendant le compte à rebours, poursuite pendant la course (le champ
+  s'élargit en turbo, l'image tremble sous un missile), tour d'honneur à
+  l'arrivée. La caméra passe à 6,6 m : tout élément qui enjambe la route doit
+  rester au-dessus de 7,1 m (voir `cityRushStage.js` et `cityRushStartLine.js`).
+- **Téléphone / APK.** Mode allégé automatique (pointeur grossier ou
+  `window.LetsPlayAndroid`) : pas d'ombres, moins de spectateurs et de pluie,
+  définition plafonnée. Le décor est fusionné par matériau (quelques dizaines
+  d'appels de rendu pour toute une ville).
+
+### Où vit le code
+
+- `src/games/cityRushRules.js` — règles pures : tours, longueur, classement,
+  objets, IA (`cityRushLapForDistance`, `cityRushLapCrossings`,
+  `cityRushTrackGap` pour replier la boucle devant la caméra) ;
+- `src/games/cityRushThemes.js` — palette, ciel, météo, enseignes de chaque ville ;
+- `src/games/cityRushBuilder.js` — fusion des géométries par matériau, textures
+  canvas, atlas d'enseignes ; `src/games/cityRushTextures.js` — façades, route,
+  trottoirs, panneaux, tableau de tour, plaques ;
+- `src/games/cityRushStage.js` — la boucle d'une ville (façades, portes,
+  monuments, accessoires animés, route qui défile, ciel, skyline, pluie) ;
+- `src/games/cityRushStartLine.js` — la zone de départ (statique) et ses parties
+  animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
+- `src/games/cityRushCars.js` — voitures des pilotes, trafic, fumée ;
+- `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,
+  passages de ligne) ; `src/games/ViceCityRushPage.jsx` et
+  `src/games/vice-city-rush.css` — la page, le HUD (carte TOUR, bannière de tour).
+
+### Vérifications
+
+```bash
+npm run check:city-rush          # règles pures : tours, repli de la boucle, classement, objets
+npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 3 tours sans exception
+```
+
+Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
+à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
+tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés et le
+rejeu après `reset()`. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
+navigateur (`npm run dev`) pour juger l'image.
+
 ## Barre de navigation : le logo et le menu « Jeux »
 
 Deux choses à savoir avant de toucher à la barre (`src/components/Layout.jsx`,

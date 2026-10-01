@@ -4,6 +4,9 @@ import {
   CITY_RUSH_CITIES,
   CITY_RUSH_CARS,
   CITY_RUSH_DISTANCE,
+  CITY_RUSH_LAPS,
+  CITY_RUSH_LAP_LENGTH,
+  CITY_RUSH_TRACK_BEHIND,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
@@ -16,6 +19,10 @@ import {
   chooseCityRushAiLane,
   cityRushHitDuration,
   cityRushHelicopterTarget,
+  cityRushLapForDistance,
+  cityRushLapProgress,
+  cityRushLapCrossings,
+  cityRushTrackGap,
   addCityRushCharge,
   cityRushLaneAfterAction,
   consumeCityRushCharge,
@@ -126,7 +133,7 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
 });
 
 test('the item effects, matching colors, and charge costs match the race rules', () => {
-  assert.equal(CITY_RUSH_DISTANCE, 1500);
+  assert.equal(CITY_RUSH_DISTANCE, 1800);
   assert.equal(CITY_RUSH_PLAYER_SPEED, 26);
   assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { oil: 4, pistol: 5, cash: 3, radio: 8 });
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
@@ -282,4 +289,68 @@ test('race standings identify the leader and player position, including ties', (
   assert.equal(board.leader.id, 'rival-a');
   assert.equal(board.rank, 2);
   assert.deepEqual(board.ordered.map((racer) => racer.id), ['rival-a', 'player', 'rival-c', 'rival-b']);
+});
+
+test('a race is three laps of the same 600 m loop', () => {
+  assert.equal(CITY_RUSH_LAPS, 3);
+  assert.equal(CITY_RUSH_LAP_LENGTH, 600);
+  assert.equal(CITY_RUSH_DISTANCE, CITY_RUSH_LAPS * CITY_RUSH_LAP_LENGTH);
+
+  assert.equal(cityRushLapForDistance(0), 1);
+  assert.equal(cityRushLapForDistance(599.9), 1);
+  assert.equal(cityRushLapForDistance(600), 2);
+  assert.equal(cityRushLapForDistance(1250), 3);
+  // Le compteur reste borné une fois l'arrivée franchie (ou avec une entrée invalide).
+  assert.equal(cityRushLapForDistance(1800), 3);
+  assert.equal(cityRushLapForDistance(4000), 3);
+  assert.equal(cityRushLapForDistance(-20), 1);
+  assert.equal(cityRushLapForDistance(Number.NaN), 1);
+
+  assert.equal(cityRushLapProgress(0), 0);
+  assert.equal(cityRushLapProgress(150), 0.25);
+  assert.equal(cityRushLapProgress(600), 0);
+  assert.equal(cityRushLapProgress(1500), 0.5);
+  assert.equal(cityRushLapProgress(1800), 1);
+  assert.equal(cityRushLapProgress(2400), 1);
+});
+
+test('crossing the start line is detected once per lap, the last crossing being the finish', () => {
+  assert.deepEqual(cityRushLapCrossings(0, 20), []);
+  assert.deepEqual(cityRushLapCrossings(590, 605), [1]);
+  assert.deepEqual(cityRushLapCrossings(600, 600), []);
+  assert.deepEqual(cityRushLapCrossings(599, 600), [1]);
+  assert.deepEqual(cityRushLapCrossings(1190, 1210), [2]);
+  assert.deepEqual(cityRushLapCrossings(1799, 1830), [3]);
+  // Un très grand pas de simulation ne saute aucune ligne, et rien au-delà de l'arrivée.
+  assert.deepEqual(cityRushLapCrossings(10, 1900), [1, 2, 3]);
+  assert.deepEqual(cityRushLapCrossings(1800, 2400), []);
+  // Reculer (ou rester immobile) ne compte jamais de passage.
+  assert.deepEqual(cityRushLapCrossings(620, 580), []);
+  // Une boucle personnalisée suit les mêmes règles.
+  assert.deepEqual(cityRushLapCrossings(95, 205, 100, 5), [1, 2]);
+});
+
+test('track elements fold onto the loop so the start line comes back ahead every lap', () => {
+  const behind = CITY_RUSH_TRACK_BEHIND;
+  assert.equal(cityRushTrackGap(0, 0), 0);
+  assert.equal(cityRushTrackGap(300, 0), 300);
+  assert.equal(cityRushTrackGap(0, 20), -20);
+  assert.equal(cityRushTrackGap(0, behind - 1), -(behind - 1));
+  // Au bout de la zone « derrière », l'élément réapparaît au loin devant.
+  assert.equal(cityRushTrackGap(0, behind), CITY_RUSH_LAP_LENGTH - behind);
+  assert.equal(cityRushTrackGap(0, behind + 1), CITY_RUSH_LAP_LENGTH - behind - 1);
+  assert.equal(cityRushTrackGap(0, 600), 0);
+  assert.equal(cityRushTrackGap(0, 1799), 1);
+  assert.equal(cityRushTrackGap(162, 1700), 262);
+  assert.equal(cityRushTrackGap(162, 1300), 62);
+  for (let distance = 0; distance <= 1800; distance += 7) {
+    for (const position of [0, 36, 162, 300, 564]) {
+      const gap = cityRushTrackGap(position, distance);
+      assert.ok(gap > -behind - 1e-9 && gap <= CITY_RUSH_LAP_LENGTH - behind + 1e-9, `gap ${gap} out of range`);
+    }
+  }
+  // Deux copies de la boucle espacées d'un tour couvrent toujours la vue avant.
+  const first = cityRushTrackGap(0, 450);
+  assert.equal(first, 150);
+  assert.equal(first - CITY_RUSH_LAP_LENGTH, -450);
 });

@@ -1,6 +1,17 @@
 // Règles pures de Vice City Rush : séparées du rendu Three.js pour garder
 // les durées, les voies et la génération de rue faciles à vérifier.
-export const CITY_RUSH_DISTANCE = 1500;
+//
+// La course se joue en circuit : trois tours d'une boucle de 600 m. Le décor
+// est généré une fois pour la boucle et se répète, si bien que l'on repasse
+// sous le portique de départ (tribunes, feux, ligne à damier) à chaque tour.
+export const CITY_RUSH_LAPS = 3;
+export const CITY_RUSH_LAP_LENGTH = 600;
+export const CITY_RUSH_DISTANCE = CITY_RUSH_LAPS * CITY_RUSH_LAP_LENGTH;
+// La ligne peinte est dessinée quelques mètres devant le centre de la voiture
+// pour que les capots s'alignent sur le damier au départ.
+export const CITY_RUSH_START_LINE_LEAD = 3;
+// Portée de décor conservée derrière le joueur quand on replie la boucle.
+export const CITY_RUSH_TRACK_BEHIND = 60;
 export const CITY_RUSH_PLAYER_SPEED = 26;
 export const CITY_RUSH_LANE_X = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
@@ -167,6 +178,48 @@ export const CITY_RUSH_CITIES = Object.freeze([
 export function clampCityRushLane(lane, laneCount = CITY_RUSH_LANE_X.length) {
   const parsed = Number.isFinite(Number(lane)) ? Math.trunc(Number(lane)) : 0;
   return Math.max(0, Math.min(laneCount - 1, parsed));
+}
+
+// Tour en cours (1 à CITY_RUSH_LAPS) pour une distance parcourue. La ligne
+// d'arrivée est franchie au début du « tour » LAPS + 1, que l'on plafonne.
+export function cityRushLapForDistance(distance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS) {
+  const safeDistance = Math.max(0, Number(distance) || 0);
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  return Math.max(1, Math.min(laps, Math.floor(safeDistance / safeLap) + 1));
+}
+
+// Progression (0 → 1) à l'intérieur du tour courant ; vaut 1 une fois la
+// course bouclée pour que la jauge reste pleine sur l'écran d'arrivée.
+export function cityRushLapProgress(distance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS) {
+  const safeDistance = Math.max(0, Number(distance) || 0);
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  if (safeDistance >= safeLap * laps) return 1;
+  return Math.max(0, Math.min(1, (safeDistance % safeLap) / safeLap));
+}
+
+// Numéros des lignes (1 … laps) franchies entre deux distances successives.
+// Franchir la ligne k < laps lance le tour k + 1 ; la ligne `laps` est l'arrivée.
+export function cityRushLapCrossings(previousDistance, nextDistance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS) {
+  const before = Math.max(0, Number(previousDistance) || 0);
+  const after = Math.max(0, Number(nextDistance) || 0);
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  if (after <= before) return [];
+  const crossings = [];
+  for (let line = Math.floor(before / safeLap) + 1; line <= laps && line * safeLap <= after; line += 1) {
+    crossings.push(line);
+  }
+  return crossings;
+}
+
+// Écart (en mètres, signé) entre un élément fixe du circuit et le joueur,
+// replié sur la boucle : un élément passé reste `behind` mètres derrière
+// avant d'être redessiné loin devant, au tour suivant.
+export function cityRushTrackGap(trackPosition, distance, lapLength = CITY_RUSH_LAP_LENGTH, behind = CITY_RUSH_TRACK_BEHIND) {
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  const raw = (Number(trackPosition) || 0) - (Number(distance) || 0);
+  let gap = ((raw % safeLap) + safeLap) % safeLap;
+  if (gap > safeLap - behind) gap -= safeLap;
+  return gap;
 }
 
 // `inventory` contient les points de jauge (0 jusqu'au coût), pas un stock
