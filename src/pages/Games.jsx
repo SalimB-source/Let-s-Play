@@ -8,8 +8,8 @@ import '../games/games.css';
  * Page « Jeu » — la vitrine arcade de Let's Play.
  *
  * Ce n'est PAS la page d'un jeu : c'est la liste des jeux disponibles.
- * Mirage Rush et Vice City Rush sont jouables ; les cartes « bientôt »
- * réservent la place des prochains jeux.
+ * Mirage Rush, La Cendre et Vice City Rush sont jouables ; les cartes
+ * « bientôt » réservent la place des prochains jeux.
  *
  * Pour ajouter un jeu : une entrée dans `GAMES` ci-dessous, et la route
  * correspondante dans src/main.jsx.
@@ -18,7 +18,9 @@ import '../games/games.css';
 // Miniature de Mirage Rush : key art façon western (JoJo's Steel Ball Run),
 // posée dans /public/mirage-rush-thumb.jpg.
 const MIRAGE_THUMB = `${import.meta.env.BASE_URL}mirage-rush-thumb.jpg`;
+// Miniatures des autres jeux jouables.
 const VICE_CITY_THUMB = `${import.meta.env.BASE_URL}vice-city-rush-thumb.svg`;
+const CENDRE_THUMB = `${import.meta.env.BASE_URL}la-cendre-thumb.jpg`;
 
 const GAMES = [
   {
@@ -33,6 +35,19 @@ const GAMES = [
     tone: 'desert',
     featured: true,
     tags: ['ARCADE', 'SOLO', 'DUEL', 'COUPE', 'EN LIGNE'],
+  },
+  {
+    id: 'la-cendre',
+    title: 'LA CENDRE',
+    subtitle: 'SOULSLIKE · DARK FANTASY',
+    description: 'Le feu de cendres s’est éteint. Un chevalier sans nom traverse la Cour du Seuil : caméra d’épaule, collisions, ambiance clair-obscur. Playtest M0 — le combat arrive en M1.',
+    thumb: CENDRE_THUMB,
+    alt: 'La Cendre — chevalier d’armure sombre devant un feu de cendres dans une cour de pierre, ambiance dark fantasy',
+    route: '/jeu/la-cendre',
+    badge: 'M0 · JOUABLE',
+    tone: 'ember',
+    featured: false,
+    tags: ['SOULSLIKE', 'SOLO', '3D', 'WIP'],
   },
   {
     id: 'vice-city-rush',
@@ -67,7 +82,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'LES JEUX',
     h2b: 'DE LA MAISON.',
-    intro: 'Deux arcades jouables directement dans la page : le western nerveux de Mirage Rush et les courses néon de Vice City Rush, de Miami à Tokyo.',
+    intro: 'Trois jeux jouables dans la page : le western nerveux de Mirage Rush, le soulslike La Cendre et les courses néon de Vice City Rush.',
     play: 'JOUER',
     soon: 'BIENTÔT',
   },
@@ -75,7 +90,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'THE GAMES',
     h2b: 'WE BUILD.',
-    intro: 'Two arcade games, playable right in the page: the wild western rush of Mirage Rush and the neon city races of Vice City Rush.',
+    intro: 'Three games playable right on the page: Mirage Rush, the dark-fantasy soulslike La Cendre, and Vice City Rush’s neon city races.',
     play: 'PLAY',
     soon: 'SOON',
   },
@@ -83,7 +98,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'ألعاب',
     h2b: 'المنصة.',
-    intro: 'لعبتان أركيد داخل الصفحة: سباق Mirage Rush في أجواء الغرب، وسباقات Vice City Rush الليلية بين المدن المضيئة.',
+    intro: 'ثلاث ألعاب داخل الصفحة: أجواء الغرب في Mirage Rush، وفانتازيا La Cendre المظلمة، وسباقات Vice City Rush الليلية بين المدن.',
     play: 'العب',
     soon: 'قريباً',
   },

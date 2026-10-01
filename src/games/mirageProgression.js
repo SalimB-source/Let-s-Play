@@ -135,3 +135,58 @@ export function saveProgress(progress, storage) {
   }
   return clean;
 }
+
+// ── Pièces (coins) ──────────────────────────────────────────────
+// Chaque course gagnée (1er) rapporte 5 pièces ; chaque coupe gagnée rapporte 40 pièces.
+export const COINS_KEY = 'letsplay_mirage_coins_v1';
+
+function getStoredCoins() {
+  try {
+    if (typeof window === 'undefined') return 0;
+    const raw = window.localStorage.getItem(COINS_KEY);
+    return raw !== null ? Number(raw) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveStoredCoins(amount) {
+  try {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(COINS_KEY, String(Math.max(0, amount)));
+  } catch {
+    /* private mode */
+  }
+}
+
+export function getCoins() {
+  return getStoredCoins();
+}
+
+export function addCoins(amount) {
+  const current = getStoredCoins();
+  const newAmount = current + amount;
+  saveStoredCoins(newAmount);
+  return newAmount;
+}
+
+/** Award coins for a finished run.
+ *  - 5 pieces for a race win (1er place).
+ *  - 40 pieces for a cup victory.
+ */
+export function awardCoinsForRun(result = {}) {
+  const mode = result.mode || '';
+  let gain = 0;
+  if (mode === 'cup' && result.winner) {
+    gain = 40;
+  } else if (mode === 'rush' && (result.position === 1 || (result.score !== undefined && result.score >= 100))) {
+    // Simple heuristic: treat a high score as first place.
+    gain = 5;
+  }
+  if (gain > 0) {
+    const newCoins = addCoins(gain);
+  }
+  return gain;
+}
+
+/** Record a finished run; returns the new progress plus what changed. */

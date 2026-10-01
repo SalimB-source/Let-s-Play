@@ -5,7 +5,7 @@
  *
  *   1. à l'arrivée, l'overlay affiche uniquement quatre vrais boutons de mode
  *      (RUÉE / DUEL / COUPE / EN LIGNE), sans maps ni bouton de lancement ;
- *   2. le clic sur RUÉE ou DUEL ouvre l'écran suivant, où les 9 maps et le
+ *   2. le clic sur RUÉE ou DUEL ouvre l'écran suivant, où les 10 maps et le
  *      bouton de lancement apparaissent ;
  *   3. le clic sur COUPE ouvre ce même écran, mais le choix de la map y est
  *      remplacé par celui de la coupe (Coupe du Désert : Dunes de l'Écho,
@@ -98,15 +98,15 @@ async function openMode(assert, node, label) {
   await act(async () => { await sleep(0); });
 }
 
-function assertNineMaps(assert, node) {
+function assertTenMaps(assert, node) {
   const maps = mapCards(node);
-  assert.equal(maps.length, 9, 'neuf horizons sont proposés sur l’écran des maps');
+  assert.equal(maps.length, 10, 'dix horizons sont proposés sur l’écran des maps');
   assert.deepEqual(
     maps.map((card) => card.querySelector('.mirage-map-copy strong')?.textContent),
-    ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre', 'Château de l’Infini', 'Thunder Airbase'],
-    'les neuf cartes de map sont dans l’ordre',
+    ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre', 'Château de l’Infini', 'Thunder Airbase', 'Chemin du Serpent'],
+    'les dix cartes de map sont dans l’ordre',
   );
-  const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase'];
+  const mapIds = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase', 'snakeway'];
   const thumbnails = maps.map((card, index) => {
     const image = card.querySelector('img.mirage-map-art');
     assert.ok(image, `${mapIds[index]} possède sa miniature illustrée`);
@@ -122,7 +122,7 @@ function assertNineMaps(assert, node) {
     assert.equal(image.getAttribute('loading'), 'eager', 'les miniatures sont chargées sur l’écran des maps');
     return image.getAttribute('src');
   });
-  assert.equal(new Set(thumbnails).size, 9, 'neuf illustrations distinctes');
+  assert.equal(new Set(thumbnails).size, 10, 'dix illustrations distinctes');
   return maps;
 }
 
@@ -240,7 +240,7 @@ export async function checkMirageFlow(assert) {
       'le mode choisi est rappelé sur l’écran des maps');
     assert.ok(stageIntro.querySelector('h2').textContent.includes('LE SABLE'),
       'le titre annonce la ruée');
-    let maps = assertNineMaps(assert, page.node);
+    let maps = assertTenMaps(assert, page.node);
     assert.equal(maps[0].getAttribute('aria-pressed'), 'true', 'les Dunes de l’Écho sont sélectionnées par défaut');
     assert.ok(page.node.querySelector('.mirage-start-button'), 'le bouton de lancement apparaît sur l’écran des maps');
     assert.ok(page.node.querySelector('.mirage-start-button').textContent.includes('LANCER LA PARTIE') || page.node.querySelector('.mirage-start-button').textContent.includes('CHARGEMENT'),
@@ -258,6 +258,13 @@ export async function checkMirageFlow(assert) {
     await act(async () => { algerCard.click(); });
     assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ALGER LA BLANCHE'),
       'choisir Alger la Blanche met à jour le bandeau (ZONE 05 · ALGER LA BLANCHE)');
+    const snakewayCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Chemin du Serpent');
+    assert.ok(snakewayCard, 'la Route du Serpent est sélectionnable');
+    await act(async () => { snakewayCard.click(); });
+    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('CHEMIN DU SERPENT'),
+      'choisir la nouvelle map met à jour le bandeau (ZONE 10 · CHEMIN DU SERPENT)');
+    assert.ok(page.node.querySelector('.mirage-intro-overlay p').textContent.includes('Dragon Ball Z'),
+      'la description de la map signale clairement son inspiration');
 
     /* ---------------- 4. Retour puis clic DUEL : maps + consignes ------- */
     const backToModes = page.node.querySelector('.mirage-secondary-button');
@@ -305,7 +312,7 @@ export async function checkMirageFlow(assert) {
       'le mode En ligne est rappelé sur l’écran des maps');
     assert.ok(onlineIntro.querySelector('h2').textContent.includes('CHOISIS'),
       'le titre invite à choisir la map du salon');
-    assertNineMaps(assert, page.node);
+    assertTenMaps(assert, page.node);
     assert.ok(page.node.querySelector('.mirage-start-button').textContent.includes('OUVRIR LES SALONS'),
       'le bouton En ligne ouvre le lobby après le choix de map');
   } finally {
@@ -346,7 +353,7 @@ export async function checkMirageFlow(assert) {
     assert.equal(modeButtons(challenged.node).length, 0, 'le défi ne repasse pas par l’écran des modes');
     assert.ok(intro.querySelector('.mirage-selected-mode-pill')?.textContent.includes('DUEL'),
       'le mode DUEL est rappelé sur le défi');
-    const lockedMaps = assertNineMaps(assert, challenged.node);
+    const lockedMaps = assertTenMaps(assert, challenged.node);
     assert.ok(lockedMaps.every((card) => card.disabled),
       'les cartes de terrain sont verrouillées : le stage est imposé par le défi');
     await act(async () => { lockedMaps[0].click(); });

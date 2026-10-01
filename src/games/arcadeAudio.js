@@ -8,6 +8,7 @@ export const JAPAN_BPM = 108;
 export const RAMPARTS_BPM = 128;
 export const INFINITY_BPM = 134;
 export const AIRBASE_BPM = 138;
+export const SNAKEWAY_BPM = 124;
 const NOTES = [55, 55, 82.4, 73.4, 55, 65.4, 82.4, 98, 55, 55, 82.4, 73.4, 65.4, 73.4, 98, 82.4];
 const HOOK = [659.3, 0, 784, 0, 987.8, 880, 0, 784, 659.3, 0, 587.3, 659.3, 0, 784, 880, 0];
 
@@ -133,7 +134,7 @@ export class DesertGroove {
 
   schedule() {
     if (!this.context || !this.running) return;
-    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : this.stage === 'ramparts' ? RAMPARTS_BPM : this.stage === 'infinity' ? INFINITY_BPM : this.stage === 'airbase' ? AIRBASE_BPM : BPM) / 4;
+    const stepLength = 60 / (this.stage === 'prairie' ? PRAIRIE_BPM : this.stage === 'western' ? 132 : this.stage === 'sardinia' ? SARDINIA_BPM : this.stage === 'alger' ? ALGER_BPM : this.stage === 'japan' ? JAPAN_BPM : this.stage === 'ramparts' ? RAMPARTS_BPM : this.stage === 'infinity' ? INFINITY_BPM : this.stage === 'airbase' ? AIRBASE_BPM : this.stage === 'snakeway' ? SNAKEWAY_BPM : BPM) / 4;
     while (this.nextTime < this.context.currentTime + 0.12) {
       this.playStep(this.step % 16, this.nextTime);
       this.step += 1;
@@ -731,10 +732,52 @@ export class DesertGroove {
     }
   }
 
+  playSnakeway(step, time) {
+    // « Cloud-run synth » original pour le Chemin du Serpent : nappes douces,
+    // carillon pentatonique, basse ronde et petits souffles de vent stellaire.
+    const beat = 60 / SNAKEWAY_BPM;
+    const bar = Math.floor(this.step / 16) % 8;
+    const phrase = Math.floor(this.step / 128);
+    const roots = [65.41, 73.42, 87.31, 98.0, 65.41, 87.31, 73.42, 98.0];
+    const bells = [
+      [523.25, 659.25, 783.99, 1046.5], [587.33, 698.46, 880.0, 1174.66],
+      [523.25, 698.46, 880.0, 1046.5], [493.88, 587.33, 783.99, 987.77],
+      [659.25, 783.99, 1046.5, 1318.51], [587.33, 698.46, 880.0, 1174.66],
+      [523.25, 659.25, 783.99, 1046.5], [493.88, 659.25, 783.99, 987.77],
+    ];
+    const root = roots[bar];
+
+    if (step === 0 || step === 8) {
+      this.tone(root, time, beat * 0.62, 'sine', 0.19);
+      this.tone(root / 2, time + 0.018, beat * 0.48, 'triangle', 0.11);
+    }
+    if (step === 4 || step === 12) {
+      this.tone(196, time, beat * 0.18, 'sine', 0.055);
+      this.noise(time, beat * 0.3, 0.022, 5200);
+    }
+    if (step % 2 === 0) {
+      const bell = bells[bar][(step / 2 + bar) % 4];
+      this.tone(bell, time, beat * 0.22, 'triangle', phrase > 0 ? 0.075 : 0.06, 4200);
+    }
+    if (step % 4 === 0) {
+      const melody = bells[bar][(step / 4 + 1) % 4];
+      this.tone(melody, time, beat * (phrase > 0 ? 0.82 : 0.65), 'sine', phrase > 0 ? 0.075 : 0.06);
+      if (phrase > 0) this.tone(melody * 2, time + 0.025, beat * 0.34, 'sine', 0.022);
+    }
+    if (step === 0 && bar % 2 === 0) {
+      [root * 2, root * 3, root * 4].forEach((frequency, index) => {
+        this.tone(frequency, time + index * 0.028, beat * 0.9, 'sine', 0.032);
+      });
+    }
+    if (bar === 7 && step >= 12 && step % 2 === 0) {
+      this.tone(880 + (step - 12) * 110, time, beat * 0.22, 'sine', 0.045);
+    }
+  }
 
   playStep(step, time) {
     if (this.stage === 'infinity') { this.playInfinity(step, time); return; }
     if (this.stage === 'airbase') { this.playAirbase(step, time); return; }
+    if (this.stage === 'snakeway') { this.playSnakeway(step, time); return; }
     if (this.stage === 'ramparts') { this.playRamparts(step, time); return; }
     if (this.stage === 'prairie') { this.playPrairie(step, time); return; }
     if (this.stage === 'western') { this.playWestern(step, time); return; }

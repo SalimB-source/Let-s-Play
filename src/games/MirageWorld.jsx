@@ -11,6 +11,7 @@ import { rampartsMidDoors, rampartsObstacle, rampartsSiteA, rampartsSiteB, makeR
 import { INFINITY_CULL_Z, INFINITY_DECK_PERIOD, infinityBridgeGate, infinityLeftWing, infinityObstacle, infinityRightWing, makeInfinityDeck, makeInfinityHorizon, updateInfinityLanterns } from './infinityStage';
 import { INFINITY_ATMOSPHERE, makeInfinitySky } from './infinityAtmosphere';
 import { airbaseGate, airbaseObstacle, airbaseOps, airbaseStands, makeAirbaseSkyline, updateAirbaseBeacon } from './airbaseStage';
+import { SNAKEWAY_ATMOSPHERE, SNAKEWAY_CULL_Z, SNAKEWAY_DECK_PERIOD, SNAKEWAY_GATE_INDEX, SNAKEWAY_SEGMENT_COUNT, SNAKEWAY_SEGMENT_LENGTH, makeSnakewayHorizon, snakewayArch, snakewayCloudBank, snakewayObstacle, snakewayTrackTrim } from './snakewayStage';
 import { DESERT_CULL_Z, DESERT_PALETTE, makeDesertScenery } from './desertStage';
 import {
   LANES, laneCount, lanePosition, trackWidth, CRYSTALS, createCourse, jumpHeight, JUMP_DURATION, DUEL_DISTANCE, DUEL_BASE_SPEED,
@@ -29,6 +30,7 @@ import {
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 // Rythme de la course : un peu plus lent sur la piste du téléphone (3 voies).
 import { paceForTrack } from './mirageLanes';
+import { MAX_PIXEL_RATIO, renderPixelRatio } from './miragePixelBudget';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { block, makeExplorer, paintModel } from './mirageExplorer';
 
@@ -455,8 +457,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   const ramparts = stage === 'ramparts';
   const infinity = stage === 'infinity';
   const airbase = stage === 'airbase';
+  const snakeway = stage === 'snakeway';
   // Dunes de l’Écho : le stage par défaut (et le repli pour tout identifiant inconnu).
-  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts && !infinity && !airbase;
+  const desert = !western && !prairie && !sardinia && !alger && !japan && !ramparts && !infinity && !airbase && !snakeway;
   const scene = new THREE.Scene();
   const atmosphere = prairie
     ? {
@@ -516,7 +519,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                 }
               : infinity
                 ? INFINITY_ATMOSPHERE
-                : {
+                : snakeway
+                  ? SNAKEWAY_ATMOSPHERE
+                  : {
                   // Brume d'horizon = couleur du bas du ciel de desertStage.js : le sable
                   // se fond dans le ciel sans couture.
                   background: DESERT_PALETTE.horizon, fog: DESERT_PALETTE.horizon, exposure: 1.12,
@@ -525,13 +530,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                   hemiSky: 0xffd6b1, hemiGround: 0x49374a, sunLight: 0xffbd70, rimLight: 0xe1a0d4,
                 };
   scene.background = new THREE.Color(atmosphere.background);
-  scene.fog = new THREE.Fog(atmosphere.fog, infinity ? 26 : 27, infinity ? 84 : 82);
+  scene.fog = new THREE.Fog(atmosphere.fog, infinity || snakeway ? 26 : 27, infinity ? 84 : snakeway ? 104 : 82);
   const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
 
   const renderer = new THREE.WebGLRenderer({ antialias: infinity, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = atmosphere.exposure;
@@ -567,10 +572,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
-      sunElevation: { value: japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
-      sunX: { value: sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
-      sunRadius: { value: sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
-      isNight: { value: japan ? 1.0 : 0.0 },
+      sunElevation: { value: snakeway ? 28.0 : japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
+      sunX: { value: snakeway ? -27.0 : sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
+      sunRadius: { value: snakeway ? 4.8 : sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
+      isNight: { value: japan || snakeway ? 1.0 : 0.0 },
     },
     vertexShader: `varying vec2 skyPoint;
       void main() {
@@ -696,9 +701,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     bakeStaticScenery(horizon);
     scene.add(horizon);
   }
+  if (snakeway) {
+    // Les nuages jaunes cadrent la piste grise suspendue et la planète de Kaio.
+    const horizon = makeSnakewayHorizon();
+    bakeStaticScenery(horizon);
+    scene.add(horizon);
+  }
 
   const mountainMaterial = new THREE.MeshStandardMaterial({ color: sardinia ? 0x8d7a5c : alger ? 0xe9e4d6 : 0x68466f, flatShading: true, roughness: 1 });
-  for (let i = 0; i < (prairie || japan || desert || ramparts || infinity || airbase ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
+  for (let i = 0; i < (prairie || japan || desert || ramparts || infinity || airbase || snakeway ? 0 : sardinia ? 9 : alger ? 10 : 13); i += 1) {
     const width = 5 + Math.random() * 7;
     const height = sardinia || alger ? 2.5 + Math.random() * 4.5 : 4 + Math.random() * 9;
     const mountain = new THREE.Mesh(cube, mountainMaterial);
@@ -710,17 +721,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   }
 
   const floorMaterials = infinity ? [] : [
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : airbase ? 0x767c88 : 0xcea56a, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : airbase ? 0x7f8593 : 0xd9b679, flatShading: true, roughness: 1 }),
-    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : airbase ? 0x6e7482 : 0xc9995f, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xb5ae60 : sardinia ? 0xc9895a : alger ? 0xd6d0c0 : japan ? 0x2b3648 : ramparts ? 0xd7b784 : airbase ? 0x767c88 : snakeway ? 0x8f8f9a : 0xcea56a, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xc0b96c : sardinia ? 0xd9a06d : alger ? 0xddd7c7 : japan ? 0x344156 : ramparts ? 0xe1c493 : airbase ? 0x7f8593 : snakeway ? 0xa9a9b4 : 0xd9b679, flatShading: true, roughness: 1 }),
+    new THREE.MeshStandardMaterial({ color: prairie ? 0xa8a354 : sardinia ? 0xb97846 : alger ? 0xc9c2b0 : japan ? 0x232d3d : ramparts ? 0xcaa673 : airbase ? 0x6e7482 : snakeway ? 0x767680 : 0xc9995f, flatShading: true, roughness: 1 }),
   ];
   const floorGeometry = infinity ? null : new THREE.BoxGeometry(2.02, 0.58, 2.02);
-  const FLOOR_PERIOD = infinity ? INFINITY_DECK_PERIOD : floorMaterials.length * 2;
+  const FLOOR_PERIOD = infinity ? INFINITY_DECK_PERIOD : snakeway ? SNAKEWAY_DECK_PERIOD : floorMaterials.length * 2;
   const floorGroup = infinity ? makeInfinityDeck(LANES) : new THREE.Group();
   // Dans le désert la piste se prolonge jusqu'à la brume (44 rangées au lieu de 28) : elle file
   // droit vers le mirage au lieu de s'arrêter net devant le vide.
   const floorRows = desert ? 44 : 28;
   const floorMinZ = desert ? TRACK_MIN_Z - 32 : TRACK_MIN_Z;
+  if (snakeway) floorGroup.add(snakewayTrackTrim(LANES, floorRows, floorMinZ));
   floorMaterials.forEach((material, m) => {
     const parts = [];
     for (let zIndex = 0; zIndex < floorRows; zIndex += 1) {
@@ -733,6 +745,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     parts.forEach(part => part.dispose());
   });
   floorGeometry?.dispose();
+  if (snakeway) bakeStaticScenery(floorGroup);
   scene.add(floorGroup);
   let floorOffset = 0;
   const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
@@ -843,9 +856,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     row.items = encounter.items.map((spec, itemIndex) => {
       const object = spec.kind === 'crystal'
         ? makeCrystal(spec.tier)
-        : spec.kind === 'mud'
-          ? makeMudPuddle()
-          : prairie
+        : spec.kind === 'mud' && snakeway
+          ? snakewayObstacle('mud')
+          : spec.kind === 'mud'
+            ? makeMudPuddle()
+            : prairie
             ? prairieObstacle(spec.kind)
             : western
               ? westernObstacle(spec.kind)
@@ -858,10 +873,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                     : ramparts
                       ? rampartsObstacle(spec.kind)
                       : airbase
-                        ? airbaseObstacle(spec.kind)
+                      ? airbaseObstacle(spec.kind)
                       : infinity
                         ? infinityObstacle(spec.kind)
-                        : makeHazard(spec.kind);
+                        : snakeway
+                          ? snakewayObstacle(spec.kind)
+                          : makeHazard(spec.kind);
       const x = spec.lanes ? (LANES[spec.lanes[0]] + LANES[spec.lanes[1]]) / 2 : LANES[spec.lane];
       object.position.set(x, spec.kind === 'crystal' ? (spec.raised ? 2.4 : 1.2) : 0, 0);
       const key = `${row.index}:${itemIndex}`;
@@ -1080,6 +1097,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const bridgeGate = infinityBridgeGate();
     scene.add(bridgeGate);
     scenery.push(bridgeGate);
+  } else if (snakeway) {
+    // Les nuages jaunes déroulent une mer de cumulus de 110 m sous la route,
+    // comme dans Dragon Ball Z ; le halo céleste marque le milieu sans
+    // ajouter de structure latérale.
+    for (let i = 0; i < SNAKEWAY_SEGMENT_COUNT; i += 1) {
+      const leftBank = snakewayCloudBank(i, -1);
+      const rightBank = snakewayCloudBank(i, 1);
+      scene.add(leftBank, rightBank);
+      scenery.push(leftBank, rightBank);
+    }
+    const arch = snakewayArch();
+    arch.position.z = 6 - SNAKEWAY_GATE_INDEX * SNAKEWAY_SEGMENT_LENGTH;
+    scene.add(arch);
+    scenery.push(arch);
   } else {
     // Dunes de l'Écho : dunes qui défilent avec la piste, accessoires, mirage, ciel… (desertStage.js)
     desertScenery = makeDesertScenery({ reduceMotion });
@@ -1670,6 +1701,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const bounds = mount.getBoundingClientRect();
     const width = Math.max(1, Math.floor(bounds.width || mount.clientWidth || 1));
     const height = Math.max(1, Math.floor(bounds.height || mount.clientHeight || 1));
+    // Plein écran : la vue s'étale sur tout l'écran, le ratio baisse pour que
+    // l'image garde un nombre de pixels raisonnable (voir miragePixelBudget.js).
+    const pixelRatio = renderPixelRatio(width, height, window.devicePixelRatio);
+    if (pixelRatio !== renderer.getPixelRatio()) renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(50) / 2) / Math.min(1, camera.aspect)));
@@ -2047,7 +2082,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           const flamePulse = 1 + Math.sin(time * 0.02) * 0.14;
           jetFlame.scale.set(flamePulse, flamePulse, 1 + Math.sin(time * 0.026) * 0.22);
         }
-        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts || infinity || airbase ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts || infinity || airbase ? 110 : 86;
+        if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts || infinity || airbase || snakeway ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts || infinity || airbase || snakeway ? 110 : 86;
       });
 
       rows.forEach((row) => {
@@ -2167,8 +2202,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
         }
         // Au-delà de ce point les obstacles sont déjà 100 % dans la brume : on les retire
         // pour qu'ils ne se découpent pas en taches devant le mirage ou le soleil.
-        if (desert || infinity) {
-          row.group.visible = row.group.position.z > (desert ? DESERT_CULL_Z : INFINITY_CULL_Z);
+        if (desert || infinity || snakeway) {
+          row.group.visible = row.group.position.z > (desert ? DESERT_CULL_Z : infinity ? INFINITY_CULL_Z : SNAKEWAY_CULL_Z);
         }
       });
 

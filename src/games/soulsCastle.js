@@ -1,0 +1,717 @@
+// ════════════════════════════════════════════════════════════════════
+// LA CENDRE — décor du « Chemin du Roi » : chapelle, coffre + clé, forêt,
+// château, grand portail, salle des piliers et trône.
+// Style Mirage maison : aplats, formes nettes, flatShading (cf. soulsModels).
+// Les positions viennent toutes de soulsStage.js (source unique).
+// ════════════════════════════════════════════════════════════════════
+import * as THREE from 'three';
+import {
+  SOULS_PALETTE, makePillar, makeBrazier, makeBarrel, makeRubble,
+} from './soulsModels';
+import { STAGE } from './soulsStage';
+
+const flat = (color, opts = {}) =>
+  new THREE.MeshStandardMaterial({ color, roughness: 0.92, flatShading: true, ...opts });
+
+const lcg = (seed) => {
+  let s = seed >>> 0;
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+};
+
+const smooth = (u) => u * u * (3 - 2 * u);
+const clamp01 = (u) => Math.max(0, Math.min(1, u));
+
+/** Boîte posée : centre (x, y, z), dimensions (w, h, d). */
+function block(group, blockers, material, w, h, d, x, y, z, { blocker = true, shadow = true } = {}) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  mesh.position.set(x, y, z);
+  mesh.castShadow = shadow;
+  mesh.userData.noCast = !shadow;
+  mesh.receiveShadow = true;
+  group.add(mesh);
+  if (blocker && blockers) blockers.push(mesh);
+  return mesh;
+}
+
+/** Brasero de zone : la flamme vit, la lumière est mutualisée par le monde. */
+function zoneBrazier(x, z, scale = 1) {
+  const b = makeBrazier(x, z);
+  b.group.userData.light.removeFromParent();
+  b.group.userData.light = null;
+  b.group.scale.setScalar(scale);
+  return b;
+}
+
+// ── Sol extérieur ─────────────────────────────────────────────────────
+
+/** Terre sombre qui entoure le camp : un seul aplat immense. */
+export function makeOuterGround() {
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(260, 260),
+    flat(0x1a1f21, { roughness: 1 }),
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.set(6, -0.03, -60);
+  ground.receiveShadow = true;
+  return ground;
+}
+
+/** Grande dalle du parvis, devant le portail. */
+export function makeForecourt() {
+  const group = new THREE.Group();
+  const stone = flat(SOULS_PALETTE.stoneDark);
+  const light = flat(SOULS_PALETTE.stone);
+  block(group, null, stone, 26, 0.1, 9.5, 0, 0.05, -83.7, { blocker: false, shadow: false });
+  // Trois marches basses vers le portail (décor — le sol reste plat).
+  block(group, null, light, 11, 0.1, 1.4, 0, 0.1, -87.2, { blocker: false, shadow: false });
+  block(group, null, light, 9, 0.1, 1.0, 0, 0.15, -88.0, { blocker: false, shadow: false });
+  return { group };
+}
+
+// ── Chapelle en ruine ─────────────────────────────────────────────────
+
+export function makeChapel() {
+  const { room, roomProps } = STAGE;
+  const group = new THREE.Group();
+  const blockers = [];
+  const flickerables = [];
+  const rnd = lcg(4242);
+  const stone = flat(SOULS_PALETTE.stone);
+  const dark = flat(SOULS_PALETTE.stoneDark);
+  const slab = flat(0x34323f);
+  const wood = flat(0x2b1d14);
+  const t = room.wallT;
+
+  // Dallage intérieur
+  block(group, null, slab, room.maxX - room.minX + 0.4, 0.1, room.maxZ - room.minZ + 0.4,
+    (room.minX + room.maxX) / 2, 0.02, (room.minZ + room.maxZ) / 2, { blocker: false, shadow: false });
+  // Dalles claires éparses
+  for (let i = 0; i < 16; i++) {
+    block(group, null, i % 3 ? dark : stone, 1.5, 0.02, 1.2,
+      room.minX + 1 + rnd() * (room.maxX - room.minX - 2), 0.075,
+      room.minZ + 1 + rnd() * (room.maxZ - room.minZ - 2), { blocker: false, shadow: false });
+  }
+
+  // Mur en tronçons : hauteurs irrégulières (ruine), chapeau sombre.
+  const run = (x0, z0, x1, z1, horizontal) => {
+    const len = Math.hypot(x1 - x0, z1 - z0);
+    const n = Math.max(1, Math.round(len / 1.8));
+    for (let i = 0; i < n; i++) {
+      const u0 = i / n;
+      const u1 = (i + 1) / n;
+      const cx = x0 + (x1 - x0) * (u0 + u1) / 2;
+      const cz = z0 + (z1 - z0) * (u0 + u1) / 2;
+      const seg = (len / n) + 0.02;
+      const ruin = rnd() < 0.3 ? 0.5 + rnd() * 1.1 : rnd() * 0.25;
+      const h = room.height - ruin;
+      const w = horizontal ? seg : t;
+      const d = horizontal ? t : seg;
+      block(group, blockers, i % 2 ? stone : dark, w, h, d, cx, h / 2, cz);
+      block(group, null, dark, w + 0.12, 0.18, d + 0.12, cx, h + 0.09, cz, { blocker: false });
+    }
+  };
+  const x0 = room.minX - t / 2;
+  const x1 = room.maxX + t / 2;
+  const z0 = room.minZ - t / 2;
+  const z1 = room.maxZ + t / 2;
+  run(x0, z0, x1, z0, true);                      // nord
+  run(x0, z1, x1, z1, true);                      // sud
+  run(x0, z0, x0, z1, false);                     // ouest (fond)
+  run(x1, z0, x1, room.doorZ - room.doorHalf - 0.45, false);  // est nord
+  run(x1, room.doorZ + room.doorHalf + 0.45, x1, z1, false);  // est sud
+  // Jambages + linteau de la porte
+  for (const side of [-1, 1]) {
+    block(group, blockers, stone, t + 0.3, 4.1, 0.9, x1, 2.05,
+      room.doorZ + side * (room.doorHalf + 0.45));
+  }
+  block(group, blockers, dark, t + 0.4, 0.7, 2 * room.doorHalf + 2.0, x1, 3.45, room.doorZ);
+
+  // Poutres du toit effondré (non bloquantes pour la caméra)
+  for (const z of [-27.2, -31, -34.8]) {
+    block(group, null, wood, room.maxX - room.minX + 0.6, 0.3, 0.34,
+      (room.minX + room.maxX) / 2, room.height - 0.1 + (z === -31 ? 0.25 : 0), z, { blocker: false });
+  }
+  // Estrade basse sous le coffre
+  block(group, null, dark, 2.6, 0.12, 3.2, STAGE.chest.x + 0.2, 0.1, STAGE.chest.z, { blocker: false, shadow: false });
+
+  // Décor solide (même liste que les colliders purs)
+  for (const p of roomProps) {
+    if (p.t === 'pillar') {
+      const o = makePillar(p.x, p.z, true);
+      group.add(o.group);
+      blockers.push(...o.blockers);
+    } else if (p.t === 'barrel') {
+      const o = makeBarrel(p.x, p.z, 0.95, false);
+      group.add(o.group);
+      blockers.push(...o.blockers);
+    } else if (p.t === 'brazier') {
+      const o = zoneBrazier(p.x, p.z);
+      group.add(o.group);
+      flickerables.push(o.flickerable);
+      blockers.push(...o.blockers);
+    }
+  }
+  group.add(makeRubble(-21, -26.3, 7), makeRubble(-22.4, -36, 8));
+
+  group.traverse((o) => {
+    if (o.isMesh && !o.material.transparent) { o.castShadow = true; o.receiveShadow = true; }
+  });
+  return { group, blockers, flickerables };
+}
+
+// ── Coffre & clé ──────────────────────────────────────────────────────
+
+/** Clé dorée (anneau + tige + dents). */
+export function makeKey() {
+  const group = new THREE.Group();
+  const gold = new THREE.MeshStandardMaterial({
+    color: 0xd9b24f, emissive: 0xa87a1c, emissiveIntensity: 0.9,
+    roughness: 0.35, metalness: 0.8, flatShading: true,
+  });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.045, 6, 12), gold);
+  ring.position.y = 0.42;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.62, 0.075), gold);
+  shaft.position.y = 0.0;
+  const bit1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.08, 0.07), gold);
+  bit1.position.set(0.1, -0.24, 0);
+  const bit2 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.07), gold);
+  bit2.position.set(0.07, -0.12, 0);
+  group.add(ring, shaft, bit1, bit2);
+  return group;
+}
+
+/**
+ * Coffre en bois cerclé de fer. Faces +X (vers la porte de la chapelle).
+ * `open()` lance l'animation : couvercle, lueur, clé qui s'élève puis
+ * « entre » dans l'inventaire. `update(dt, time)` à chaque frame.
+ */
+export function makeChest() {
+  const { chest } = STAGE;
+  const group = new THREE.Group();
+  const wood = flat(0x4a2f1c);
+  const woodDark = flat(0x35200f);
+  const iron = flat(0x1b1c22, { metalness: 0.5, roughness: 0.55 });
+  const trim = flat(SOULS_PALETTE.trim, { metalness: 0.6, roughness: 0.4 });
+  const blockers = [];
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.58, 1.5), wood);
+  body.position.y = 0.29;
+  const inside = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.04, 1.38),
+    new THREE.MeshStandardMaterial({ color: 0x120a06, roughness: 1 }));
+  inside.position.y = 0.57;
+  group.add(body, inside);
+  blockers.push(body);
+  for (const z of [-0.5, 0.5]) {
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.94, 0.6, 0.12), iron);
+    band.position.set(0, 0.3, z);
+    group.add(band);
+  }
+  const corner = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+  for (const [cx, cz] of [[0.45, 0.75], [0.45, -0.75], [-0.45, 0.75], [-0.45, -0.75]]) {
+    const c = new THREE.Mesh(corner, trim);
+    c.position.set(cx, 0.05, cz);
+    group.add(c);
+  }
+
+  // Couvercle : demi-cylindre extrudé, charnière au dos (x = −0.45).
+  const lidShape = new THREE.Shape();
+  lidShape.moveTo(-0.45, 0);
+  lidShape.absarc(0, 0, 0.45, Math.PI, 0, true);
+  lidShape.lineTo(-0.45, 0);
+  const lidGeo = new THREE.ExtrudeGeometry(lidShape, { depth: 1.5, bevelEnabled: false, curveSegments: 8 });
+  lidGeo.translate(0.45, 0, -0.75);
+  const hinge = new THREE.Group();
+  hinge.position.set(-0.45, 0.58, 0);
+  const lid = new THREE.Mesh(lidGeo, woodDark);
+  hinge.add(lid);
+  for (const z of [-0.5, 0.5]) {
+    const band = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.06, 0.12), iron);
+    band.position.set(0.45, 0.3, z);
+    // bande courbe approchée : trois facettes
+    const b2 = band.clone();
+    b2.scale.set(0.6, 0.6, 1);
+    b2.position.set(0.45, 0.46, z);
+    hinge.add(b2);
+  }
+  const lock = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 0.16), trim);
+  lock.position.set(0.9, -0.05, 0);
+  hinge.add(lock);
+  group.add(hinge);
+
+  // Lueur dorée à l'ouverture (additive) + clé flottante
+  const glow = new THREE.Mesh(
+    new THREE.CircleGeometry(0.6, 20),
+    new THREE.MeshBasicMaterial({
+      color: 0xffd36a, transparent: true, opacity: 0, depthWrite: false,
+      blending: THREE.AdditiveBlending, fog: false,
+    }),
+  );
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = 0.64;
+  group.add(glow);
+  const key = makeKey();
+  key.visible = false;
+  group.add(key);
+
+  group.position.set(chest.x, 0.1, chest.z);
+
+  const anim = { opening: false, t: 0 };
+  const api = {
+    group, blockers,
+    isOpening: () => anim.opening,
+    open() { anim.opening = true; anim.t = 0; },
+    /** Restaure l'état fermé (tests / réinitialisation). */
+    close() {
+      anim.opening = false; anim.t = 0;
+      hinge.rotation.z = 0; glow.material.opacity = 0; key.visible = false;
+    },
+    update(dt, time) {
+      if (!anim.opening) return;
+      anim.t += dt;
+      const lidU = smooth(clamp01(anim.t / 0.9));
+      hinge.rotation.z = lidU * 1.9;
+      const glowU = clamp01((anim.t - 0.35) / 0.5);
+      const fade = 1 - clamp01((anim.t - 2.6) / 1.2);
+      glow.material.opacity = 0.75 * glowU * fade * (0.85 + 0.15 * Math.sin(time * 0.012));
+      glow.scale.setScalar(0.8 + 0.5 * glowU);
+      const keyT = anim.t - 0.55;
+      if (keyT > 0 && keyT < 2.4) {
+        key.visible = true;
+        const rise = smooth(clamp01(keyT / 1.1));
+        key.position.set(0, 0.7 + rise * 1.15 + Math.sin(time * 0.006) * 0.03, 0);
+        key.rotation.y = time * 0.004;
+        const shrink = 1 - smooth(clamp01((keyT - 1.7) / 0.7));
+        key.scale.setScalar(Math.max(0.001, shrink));
+      } else {
+        key.visible = false;
+      }
+    },
+  };
+  return api;
+}
+
+// ── Forêt (instanciée : ~250 arbres pour une poignée d'appels) ────────
+
+/** Forêt sombre de pins et de chênes en aplats — un InstancedMesh par pièce. */
+export function makeForest(trees) {
+  const group = new THREE.Group();
+  const blockers = [];
+  const pines = trees.filter((t) => t.kind === 'pine');
+  const oaks = trees.filter((t) => t.kind === 'oak');
+  const white = (opts = {}) => flat(0xffffff, opts);
+
+  const part = (geometry, list, palette, { blocker = false } = {}) => {
+    if (!list.length) return null;
+    const mesh = new THREE.InstancedMesh(geometry, white(), list.length);
+    const m = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const color = new THREE.Color();
+    list.forEach((t, i) => {
+      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), t.yaw);
+      m.compose(new THREE.Vector3(t.x, 0, t.z), q, new THREE.Vector3(t.s, t.s * (0.92 + (i % 5) * 0.04), t.s));
+      mesh.setMatrixAt(i, m);
+      color.setHex(palette[i % palette.length]);
+      mesh.setColorAt(i, color);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    if (blocker) blockers.push(mesh);
+    return mesh;
+  };
+  const at = (geo, y) => geo.translate(0, y, 0);
+
+  const bark = [0x2d221a, 0x33271d, 0x281f18];
+  const fir = [0x1b3a30, 0x1f4535, 0x163027, 0x21402f];
+  const leaf = [0x2d3b22, 0x394a27, 0x273320, 0x33442a];
+
+  part(at(new THREE.CylinderGeometry(0.17, 0.27, 2.0, 6), 1.0), pines, bark, { blocker: true });
+  part(at(new THREE.ConeGeometry(1.55, 2.4, 7), 2.55), pines, fir);
+  part(at(new THREE.ConeGeometry(1.2, 2.2, 7), 3.85), pines, fir);
+  part(at(new THREE.ConeGeometry(0.82, 1.9, 7), 5.0), pines, fir);
+  part(at(new THREE.CylinderGeometry(0.21, 0.34, 2.7, 6), 1.35), oaks, bark, { blocker: true });
+  const crown = new THREE.IcosahedronGeometry(1.75, 1);
+  crown.scale(1, 0.84, 1);
+  part(at(crown, 3.7), oaks, leaf);
+  return { group, blockers };
+}
+
+// ── Château : façade, tours, grand portail ────────────────────────────
+
+/** Façade percée d'une arche gothique (un seul solide extrudé). */
+function facadeGeometry() {
+  const { castle } = STAGE;
+  const w = castle.halfWidth;
+  const ph = castle.portalHalf;
+  const shape = new THREE.Shape();
+  shape.moveTo(-w, 0);
+  shape.lineTo(w, 0);
+  shape.lineTo(w, castle.height);
+  shape.lineTo(-w, castle.height);
+  shape.lineTo(-w, 0);
+  const hole = new THREE.Path();
+  hole.moveTo(-ph, 0);
+  hole.lineTo(ph, 0);
+  hole.lineTo(ph, 5.2);
+  hole.quadraticCurveTo(ph, 7.0, 0, castle.portalHeight + 0.4);
+  hole.quadraticCurveTo(-ph, 7.0, -ph, 5.2);
+  hole.lineTo(-ph, 0);
+  shape.holes.push(hole);
+  const depth = castle.zFront - castle.zBack;
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 10 });
+  geo.translate(0, 0, castle.zBack);
+  return geo;
+}
+
+/** Demi-vantail du portail : forme gothique, charnière à x = 0. */
+function leafGeometry(dir) {
+  const { castle } = STAGE;
+  const w = castle.portalHalf - 0.04;
+  const s = new THREE.Shape();
+  s.moveTo(0, 0);
+  s.lineTo(dir * w, 0);
+  s.lineTo(dir * w, castle.portalHeight + 0.34);
+  s.quadraticCurveTo(dir * 0.1, 7.0, 0, 5.2);
+  s.lineTo(0, 0);
+  return new THREE.ExtrudeGeometry(s, { depth: 0.36, bevelEnabled: false, curveSegments: 8 });
+}
+
+export function makeCastle() {
+  const { castle } = STAGE;
+  const group = new THREE.Group();
+  const blockers = [];
+  const flickerables = [];
+  const stone = flat(0x403e4c);
+  const stoneDark = flat(SOULS_PALETTE.stoneDark);
+  const slate = flat(0x20202a);
+  const iron = flat(0x15161b, { metalness: 0.6, roughness: 0.5 });
+  const wood = flat(0x2a1c13);
+  const cloth = flat(SOULS_PALETTE.cloth, { side: THREE.DoubleSide });
+  const gold = flat(SOULS_PALETTE.trim, { metalness: 0.6, roughness: 0.4 });
+  const zMid = (castle.zFront + castle.zBack) / 2;
+
+  const facade = new THREE.Mesh(facadeGeometry(), stone);
+  facade.castShadow = true;
+  facade.receiveShadow = true;
+  group.add(facade);
+  blockers.push(facade);
+
+  // Soubassement, corniche, contreforts, créneaux
+  block(group, blockers, stoneDark, castle.halfWidth * 2 + 0.6, 0.9, 3.5, 0, 0.45, zMid);
+  block(group, blockers, stoneDark, castle.halfWidth * 2 + 0.5, 0.55, 3.7, 0, castle.height + 0.27, zMid);
+  for (const x of [-16, -10, 10, 16]) {
+    block(group, blockers, stoneDark, 1.3, castle.height, 0.9, x, castle.height / 2, castle.zFront + 0.4);
+  }
+  const merlon = new THREE.InstancedMesh(new THREE.BoxGeometry(1.1, 1.0, 1.0), stone, 26);
+  const mm = new THREE.Matrix4();
+  for (let i = 0; i < 26; i++) {
+    mm.makeTranslation(-castle.halfWidth + 0.9 + i * ((castle.halfWidth * 2 - 1.8) / 25), castle.height + 1.05, zMid + 1.2);
+    merlon.setMatrixAt(i, mm);
+  }
+  merlon.castShadow = true;
+  group.add(merlon);
+
+  // Tours de façade : fût, collerette, toit conique, meurtrières ambrées
+  const glowSlit = new THREE.MeshStandardMaterial({
+    color: 0xffb347, emissive: 0xff9a2e, emissiveIntensity: 2.2, roughness: 0.6,
+  });
+  for (const sx of [-1, 1]) {
+    const tx = sx * castle.halfWidth;
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(castle.towerR - 0.4, castle.towerR, 15, 12), stone);
+    tower.position.set(tx, 7.5, zMid);
+    tower.castShadow = true;
+    tower.receiveShadow = true;
+    group.add(tower);
+    blockers.push(tower);
+    const collar = new THREE.Mesh(new THREE.CylinderGeometry(castle.towerR + 0.3, castle.towerR + 0.3, 0.7, 12), stoneDark);
+    collar.position.set(tx, 15.2, zMid);
+    group.add(collar);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(castle.towerR + 0.9, 6, 12), slate);
+    roof.position.set(tx, 18.5, zMid);
+    roof.castShadow = true;
+    group.add(roof);
+    const finial = new THREE.Mesh(new THREE.ConeGeometry(0.18, 1.4, 6), gold);
+    finial.position.set(tx, 22.2, zMid);
+    group.add(finial);
+    for (let i = 0; i < 3; i++) {
+      const a = Math.PI / 2 + (i - 1) * 0.55; // face au sud (+Z)
+      const slit = new THREE.Mesh(new THREE.BoxGeometry(0.28, 1.5, 0.2), glowSlit);
+      slit.position.set(tx + Math.cos(a) * (castle.towerR - 0.15), 6 + i * 3.2, zMid + Math.sin(a) * (castle.towerR - 0.15));
+      slit.rotation.y = Math.PI / 2 - a;
+      group.add(slit);
+    }
+  }
+
+  // Bannières sur la façade
+  for (const sx of [-1, 1]) {
+    const banner = new THREE.Mesh(new THREE.BoxGeometry(1.9, 6.2, 0.06), cloth);
+    banner.position.set(sx * 7.6, 6.2, castle.zFront + 0.9);
+    group.add(banner);
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.28, 6.2, 0.08), gold);
+    stripe.position.set(sx * 7.6, 6.2, castle.zFront + 0.92);
+    group.add(stripe);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.95, 0.9, 3), cloth);
+    tip.rotation.z = Math.PI;
+    tip.position.set(sx * 7.6, 2.65, castle.zFront + 0.9);
+    group.add(tip);
+  }
+
+  // Encadrement doré de l'arche + écusson
+  const frame = new THREE.Mesh(new THREE.TorusGeometry(castle.portalHalf + 0.3, 0.16, 6, 22, Math.PI), gold);
+  frame.position.set(0, 5.2, castle.zFront + 0.12);
+  frame.scale.set(1, 0.72, 1);
+  group.add(frame);
+
+  // Grand portail : deux vantaux cerclés de fer, charnières aux jambages.
+  const leaves = [];
+  const seals = [];
+  for (const dir of [1, -1]) {
+    const hingeG = new THREE.Group();
+    hingeG.position.set(-dir * castle.portalHalf + dir * 0.02, 0, zMid - 0.18);
+    const leaf = new THREE.Mesh(leafGeometry(dir), wood);
+    leaf.castShadow = true;
+    hingeG.add(leaf);
+    for (const y of [1.0, 2.9, 4.8]) {
+      const band = new THREE.Mesh(new THREE.BoxGeometry(castle.portalHalf - 0.05, 0.3, 0.12), iron);
+      band.position.set(dir * (castle.portalHalf - 0.05) / 2, y, 0.3);
+      hingeG.add(band);
+    }
+    for (let i = 0; i < 6; i++) {
+      const stud = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.12, 0.1), gold);
+      stud.position.set(dir * (0.4 + i * 0.5), 1.0, 0.38);
+      hingeG.add(stud);
+    }
+    // Sceau de serrure : rouge tant que le portail est scellé.
+    const seal = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.5, 0.5, 0.12, 14),
+      new THREE.MeshStandardMaterial({ color: 0x6a1a14, emissive: 0xc02a1c, emissiveIntensity: 1.1, roughness: 0.5, flatShading: true }),
+    );
+    seal.rotation.x = Math.PI / 2;
+    seal.position.set(dir * (castle.portalHalf - 0.75), 3.2, 0.4);
+    hingeG.add(seal);
+    seals.push(seal);
+    group.add(hingeG);
+    leaves.push({ g: hingeG, dir });
+  }
+
+  // Braseros de part et d'autre du portail
+  const braziers = [];
+  for (const sx of [-1, 1]) {
+    const b = zoneBrazier(sx * 6.4, -86.0, 1.25);
+    group.add(b.group);
+    flickerables.push(b.flickerable);
+    braziers.push(b);
+  }
+
+  // Toit de la salle (visible depuis la forêt) + pignon avant
+  const roofMat = flat(0x1b1b25);
+  const hallLen = castle.zBack - STAGE.hall.minZ + 2.5;
+  for (const sx of [-1, 1]) {
+    const slab = new THREE.Mesh(new THREE.BoxGeometry(12, 0.5, hallLen), roofMat);
+    slab.position.set(sx * 5.5, castle.height + 1.9, castle.zBack - hallLen / 2 + 0.6);
+    slab.rotation.z = -sx * 0.37;
+    slab.receiveShadow = true;
+    slab.castShadow = true; // le toit étouffe la lune : la nef reste dans l'ombre
+    group.add(slab);
+  }
+  const gable = new THREE.Shape();
+  gable.moveTo(-11.4, 0);
+  gable.lineTo(11.4, 0);
+  gable.lineTo(0, 4.4);
+  gable.lineTo(-11.4, 0);
+  const gableMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(gable, { depth: 0.6, bevelEnabled: false }), stone);
+  gableMesh.position.set(0, castle.height, castle.zBack - 0.5);
+  gableMesh.castShadow = true;
+  group.add(gableMesh);
+
+  // Ouverture : u ∈ [0,1] — vantaux vers l'intérieur de la salle.
+  let openU = 0;
+  const applyOpen = () => {
+    const e = smooth(clamp01(openU));
+    for (const { g, dir } of leaves) g.rotation.y = dir * e * 1.62;
+    for (const s of seals) {
+      s.material.emissiveIntensity = 1.1 * (1 - e);
+      s.material.color.setHex(e > 0.5 ? 0x8a6a22 : 0x6a1a14);
+    }
+  };
+  applyOpen();
+
+  return {
+    group, blockers, flickerables, braziers,
+    openProgress: () => openU,
+    setOpen(u) { openU = clamp01(u); applyOpen(); },
+  };
+}
+
+// ── Salle du trône ────────────────────────────────────────────────────
+
+/** Trône de pierre : dossier à couronne, accoudoirs massifs, coussin pourpre. */
+export function makeThrone() {
+  const { throne } = STAGE;
+  const group = new THREE.Group();
+  const blockers = [];
+  const stone = flat(0x3b3a47);
+  const dark = flat(0x26252f);
+  const gold = flat(SOULS_PALETTE.trim, { metalness: 0.7, roughness: 0.35, emissive: 0x4a3612, emissiveIntensity: 0.5 });
+  const cushion = flat(0x5a1519);
+  const y0 = STAGE.dais.b.y;
+
+  block(group, blockers, stone, 2.5, 0.65, 1.8, 0, y0 + 0.325, 0.0);                 // assise
+  block(group, null, cushion, 1.7, 0.12, 1.3, 0, y0 + 0.71, 0.05, { blocker: false }); // coussin
+  for (const sx of [-1, 1]) {
+    block(group, blockers, stone, 0.5, 1.15, 1.9, sx * 1.5, y0 + 0.575, 0.0);        // accoudoir
+    const knob = new THREE.Mesh(new THREE.IcosahedronGeometry(0.27, 0), gold);
+    knob.position.set(sx * 1.5, y0 + 1.3, 0.8);
+    group.add(knob);
+    block(group, blockers, dark, 0.7, 5.3, 0.9, sx * 1.5, y0 + 2.65, -0.9);          // montant
+  }
+  block(group, blockers, stone, 2.8, 4.4, 0.55, 0, y0 + 2.2, -1.0);                  // dossier
+  block(group, null, cushion, 1.6, 2.6, 0.12, 0, y0 + 2.5, -0.68, { blocker: false });
+  block(group, null, gold, 1.9, 0.1, 0.14, 0, y0 + 3.85, -0.66, { blocker: false });
+  block(group, null, gold, 0.1, 2.9, 0.14, 0, y0 + 2.5, -0.66, { blocker: false });
+  // Couronne de pointes
+  const heights = [1.6, 2.4, 3.3, 2.4, 1.6];
+  heights.forEach((h, i) => {
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.34, h, 5), dark);
+    spike.position.set((i - 2) * 0.62, y0 + 4.4 + h / 2, -1.0);
+    spike.castShadow = true;
+    group.add(spike);
+    const tip = new THREE.Mesh(new THREE.OctahedronGeometry(0.12, 0), gold);
+    tip.position.set((i - 2) * 0.62, y0 + 4.45 + h, -1.0);
+    group.add(tip);
+  });
+  group.position.set(throne.x, 0, throne.z);
+  group.rotation.y = 0; // dossier au nord (−Z), assise tournée vers la salle
+  group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return { group, blockers };
+}
+
+/** Nef : sol, tapis, murs, vitraux, poutres, piliers, braseros, estrade, trône. */
+export function makeThroneHall() {
+  const { hall, castle, dais } = STAGE;
+  const group = new THREE.Group();
+  const blockers = [];
+  const flickerables = [];
+  const stone = flat(0x3f3d4c);
+  const stoneDark = flat(0x2a2933);
+  const floorMat = flat(0x2a2933);
+  const carpet = flat(0x5a1519);
+  const gold = flat(SOULS_PALETTE.trim, { metalness: 0.6, roughness: 0.4 });
+  const wood = flat(0x2a1c13);
+  const cloth = flat(SOULS_PALETTE.cloth, { side: THREE.DoubleSide });
+  const len = hall.maxZ - hall.minZ;                // 35 → on lit −(minZ..maxZ)
+  const zC = (hall.minZ + hall.maxZ) / 2;
+  const w = hall.maxX - hall.minX;
+  const H = hall.height;
+
+  block(group, null, floorMat, w + 0.2, 0.1, len, 0, 0.0, zC, { blocker: false, shadow: false });
+  // Dalles claires en damier discret
+  for (let i = 0; i < 9; i++) {
+    for (const sx of [-1, 1]) {
+      block(group, null, stone, 3.4, 0.02, 3.4, sx * 6.5, 0.055, hall.maxZ - 2.6 - i * 3.8, { blocker: false, shadow: false });
+    }
+  }
+  // Tapis : de la porte à l'estrade
+  const carpetLen = hall.maxZ - dais.a.zMax;
+  block(group, null, carpet, 3.4, 0.04, carpetLen, 0, 0.07, hall.maxZ - carpetLen / 2, { blocker: false, shadow: false });
+  for (const sx of [-1, 1]) {
+    block(group, null, gold, 0.14, 0.045, carpetLen, sx * 1.77, 0.075, hall.maxZ - carpetLen / 2, { blocker: false, shadow: false });
+  }
+
+  // Murs (flancs + fond) : bossages sombres, contreforts à chaque pilier
+  const wallH = H;
+  for (const sx of [-1, 1]) {
+    block(group, blockers, stone, hall.wallT, wallH, len + hall.wallT, sx * (hall.maxX + hall.wallT / 2), wallH / 2, zC - hall.wallT / 2);
+    for (const y of [2.6, 6.2]) {
+      block(group, null, stoneDark, 0.3, 0.32, len - 0.4, sx * (hall.maxX - 0.1), y, zC, { blocker: false });
+    }
+    for (const z of hall.pillarZ) {
+      block(group, blockers, stoneDark, 0.9, wallH, 1.2, sx * (hall.maxX - 0.4), wallH / 2, z);
+    }
+  }
+  block(group, blockers, stone, w + 2 * hall.wallT, wallH, hall.wallT, 0, wallH / 2, hall.minZ - hall.wallT / 2);
+
+  // Vitraux : arches bleutées entre les contreforts (émissifs, pas de lumière)
+  const winShape = new THREE.Shape();
+  winShape.moveTo(-0.7, 0);
+  winShape.lineTo(0.7, 0);
+  winShape.lineTo(0.7, 3.4);
+  winShape.absarc(0, 3.4, 0.7, 0, Math.PI, false);
+  winShape.lineTo(-0.7, 0);
+  const winGeo = new THREE.ShapeGeometry(winShape, 10);
+  const winMats = [0x3b4fb8, 0x6a3fa8, 0x2f6fb0].map((c) => new THREE.MeshBasicMaterial({ color: c, side: THREE.DoubleSide }));
+  const winZs = [];
+  for (let i = 0; i < hall.pillarZ.length - 1; i++) winZs.push((hall.pillarZ[i] + hall.pillarZ[i + 1]) / 2);
+  winZs.push(hall.pillarZ[hall.pillarZ.length - 1] - 3.3);
+  winZs.forEach((z, i) => {
+    for (const sx of [-1, 1]) {
+      const frame = new THREE.Mesh(new THREE.BoxGeometry(0.2, 5.6, 2.1), stoneDark);
+      frame.position.set(sx * (hall.maxX - 0.05), 3.6, z);
+      group.add(frame);
+      const glass = new THREE.Mesh(winGeo, winMats[(i + (sx > 0 ? 1 : 0)) % 3]);
+      glass.position.set(sx * (hall.maxX - 0.18), 1.3, z);
+      glass.rotation.y = -sx * Math.PI / 2;
+      group.add(glass);
+    }
+  });
+
+  // Bannières entre les fenêtres
+  for (const z of hall.pillarZ) {
+    for (const sx of [-1, 1]) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.06, 4.6, 1.0), cloth);
+      b.position.set(sx * (hall.maxX - 0.9), 6.2, z);
+      group.add(b);
+      const g = new THREE.Mesh(new THREE.BoxGeometry(0.08, 4.6, 0.16), gold);
+      g.position.set(sx * (hall.maxX - 0.92), 6.2, z);
+      group.add(g);
+    }
+  }
+
+  // Poutres : le plafond se devine, sans gêner la caméra
+  for (const z of hall.pillarZ) {
+    block(group, null, wood, w, 0.6, 0.8, 0, H - 0.5, z, { blocker: false, shadow: false });
+  }
+  for (const sx of [-1, 1]) {
+    block(group, null, wood, 0.8, 0.8, len, sx * hall.pillarX, H - 0.8, zC, { blocker: false, shadow: false });
+  }
+
+  // Piliers monumentaux (même source que les colliders)
+  for (const sx of [-1, 1]) {
+    for (const z of hall.pillarZ) {
+      const p = makePillar(sx * hall.pillarX, z, false);
+      p.group.scale.setScalar(hall.pillarScale);
+      group.add(p.group);
+      blockers.push(...p.blockers);
+    }
+  }
+
+  // Braseros des murs
+  for (const [bx, bz] of hall.braziers) {
+    const b = zoneBrazier(bx, bz, 1.5);
+    group.add(b.group);
+    flickerables.push(b.flickerable);
+    blockers.push(...b.blockers);
+  }
+
+  // Estrade à deux marches
+  block(group, blockers, stoneDark, dais.a.halfX * 2, dais.a.y, 6.5, 0, dais.a.y / 2, (dais.a.zMax + hall.minZ) / 2);
+  block(group, blockers, stone, dais.b.halfX * 2, dais.b.y - dais.a.y, 4.5, 0, (dais.a.y + dais.b.y) / 2, (dais.b.zMax + hall.minZ) / 2);
+  block(group, null, carpet, 3.4, 0.03, 2.0, 0, dais.a.y + 0.02, dais.a.zMax - 1.0, { blocker: false, shadow: false });
+  block(group, null, carpet, 3.4, 0.03, 4.4, 0, dais.b.y + 0.02, dais.b.zMax - 2.2, { blocker: false, shadow: false });
+
+  const throne = makeThrone();
+  group.add(throne.group);
+  blockers.push(...throne.blockers);
+
+  group.traverse((o) => {
+    if (o.isMesh && o.material && !o.material.transparent && o.castShadow !== false && !o.userData.noShadow) {
+      o.receiveShadow = true;
+    }
+  });
+  return { group, blockers, flickerables, throne };
+}
