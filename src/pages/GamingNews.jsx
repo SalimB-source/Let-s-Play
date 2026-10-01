@@ -16,51 +16,51 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // ne répond plus — même mécanique que la page cinéma.
 const imageUrl = (image) => (/^https?:\/\//i.test(image) ? image : `${base}${image}`);
 
+// Copy is module-scoped so the article list remains referentially stable across
+// renders; recreating this object in the component retriggered its views effect
+// indefinitely after each state update.
+const FEATURED_COPY = {
+  en: {
+    cards: [
+      ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT GOES FPS.', 'Blizzard confirms an open-world shooter set at ground level in the StarCraft universe. It is not coming before 2030.'],
+      ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
+      ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
+      ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
+    ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 29.09.2026', section: 'FEATURED NEWS', today: 'FEATURED NEWS'
+  },
+  fr: {
+    cards: [
+      ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT PASSE AU FPS.', 'Blizzard officialise un shooter en monde ouvert situé au ras du champ de bataille. Le projet ne sortira pas avant 2030.'],
+      ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
+      ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
+      ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
+    ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 29.09.2026', section: 'ACTUS À LA UNE', today: 'ACTUS À LA UNE'
+  },
+  ar: {
+    cards: [
+      ['STARCRAFT · تصويب', '12.09.2026 · بليزارد', 'STARCRAFT تتحول إلى تصويب.', 'تعلن بليزارد عن لعبة تصويب في عالم مفتوح داخل عالم StarCraft، ولن تصدر قبل عام 2030.'],
+      ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
+      ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
+      ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
+    ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 29.09.2026', section: 'أبرز الأخبار', today: 'أبرز الأخبار'
+  }
+};
+
 // La section calendrier + compte à rebours (01) a été déplacée sur la page
 // d'accueil, juste après le hero — la frise complète vit sur /calendrier.
 export default function News(){
   const { t, lang } = useLanguage();
-  const featuredCopy = {
-    en: {
-      cards: [
-        ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT GOES FPS.', 'Blizzard confirms an open-world shooter set at ground level in the StarCraft universe. It is not coming before 2030.'],
-        ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V IS COMING.', 'The next chapter arrives in spring 2029, in a Sanctuary left in ruins and without its heroes.'],
-        ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'SANCTUARY GOES PORTABLE.', 'The Age of Hatred Collection brings the base game and its two major expansions to Switch 2 on September 15, 2026.'],
-        ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO EXPANDS ITS WORLD.', 'An animated Diablo series is in development for Netflix, with more Blizzard adaptations under consideration.'],
-      ], read: 'READ THE STORY', label: 'FEATURED NEWS', updated: 'Updated 29.09.2026', section: 'FEATURED NEWS', today: 'NEWS OF THE DAY'
-    },
-    fr: {
-      cards: [
-        ['STARCRAFT · FPS', '12.09.2026 · BLIZZARD', 'STARCRAFT PASSE AU FPS.', 'Blizzard officialise un shooter en monde ouvert situé au ras du champ de bataille. Le projet ne sortira pas avant 2030.'],
-        ['DIABLO V · BLIZZCON', '12.09.2026 · BLIZZARD', 'DIABLO V SE PRÉPARE.', 'Le prochain épisode arrivera au printemps 2029 dans un Sanctuaire en ruines, privé de ses héros.'],
-        ['DIABLO IV · SWITCH 2', '12.09.2026 · BLIZZARD', 'LE SANCTUAIRE ARRIVE SUR SWITCH 2.', 'La collection Age of Hatred réunira le jeu de base et ses deux extensions majeures dès le 15 septembre 2026.'],
-        ['DIABLO · NETFLIX', '12.09.2026 · BLIZZARD', 'DIABLO ÉTEND SON UNIVERS.', 'Une série animée Diablo est en préparation pour Netflix. Blizzard étudie aussi d’autres adaptations.'],
-      ], read: 'LIRE L’ARTICLE', label: 'ACTUS À LA UNE', updated: 'Mis à jour le 29.09.2026', section: 'ACTUS À LA UNE', today: 'NEWS DU JOUR'
-    },
-    ar: {
-      cards: [
-        ['STARCRAFT · تصويب', '12.09.2026 · بليزارد', 'STARCRAFT تتحول إلى تصويب.', 'تعلن بليزارد عن لعبة تصويب في عالم مفتوح داخل عالم StarCraft، ولن تصدر قبل عام 2030.'],
-        ['DIABLO V · بليزكون', '12.09.2026 · بليزارد', 'DIABLO V قادمة.', 'سيصل الفصل التالي في ربيع 2029 داخل ملاذ مدمّر اختفى منه الأبطال.'],
-        ['DIABLO IV · SWITCH 2', '12.09.2026 · بليزارد', 'الملاذ يصل إلى Switch 2.', 'تضم مجموعة Age of Hatred اللعبة الأساسية وتوسعتين رئيسيتين ابتداءً من 15 سبتمبر 2026.'],
-        ['DIABLO · NETFLIX', '12.09.2026 · بليزارد', 'DIABLO توسّع عالمها.', 'يجري إعداد مسلسل رسوم متحركة عن Diablo لصالح Netflix، مع دراسة تحويل عوالم أخرى.'],
-      ], read: 'اقرأ المقال', label: 'أبرز الأخبار', updated: 'آخر تحديث 29.09.2026', section: 'أبرز الأخبار', today: 'أخبار اليوم'
-    }
-  }[lang] || null;
-  const featured = featuredCopy || null;
+  const featured = FEATURED_COPY[lang] || FEATURED_COPY.fr;
   const million = t.news.million || t.news.featured;
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
   // Les actus du 28-29.09.2026 (rédigées à la main au gabarit du robot)
-  // ouvrent la liste : Physint × Xbox (aussi la une de l'accueil) et le
-  // Minecraft World Hotel en tête, suivis du Sift, de The Witcher 3 Remastered,
-  // de Nadella et de l'actu Halo × Activision ; les actus du jour du robot
+  // ouvrent la liste : Physint × Xbox (aussi la une de l'accueil), God of War
+  // Laufey et le Minecraft World Hotel, suivis du Sift, de The Witcher 3
+  // Remastered, de Nadella et de l'actu Halo × Activision ; les actus du robot
   // arrivent ensuite, puis les articles manuels de la rédaction dans l'ordre.
   const articles = useMemo(() => [
-    { to: '/news/dynasty-warriors-3-remastered-sortie', image: youTubeThumbUrl('O8hfaFyKMq0'), fallbackImage: 'dynasty-warriors-3-remastered-news.svg', alt: 'Dynasty Warriors 3 Complete Edition Remastered — trailer officiel Koei Tecmo', badge: 'KOEI TECMO · REMASTER', kicker: '01.10.2026 · KOEI TECMO', title: 'DYNASTY WARRIORS 3 RESSORT SES LAMES.', excerpt: 'Le remaster de Dynasty Warriors 3 et Xtreme Legends arrive aujourd’hui avec scénarios supplémentaires et coop à deux.', read: featured.read, sentiment: 'positive' },
-
-    { to: '/news/ghost-yotei-complete-edition-1er-octobre', image: youTubeThumbUrl('2bQrrWCRkMY'), fallbackImage: 'ghost-yotei-complete-edition-news.svg', alt: 'Ghost of Yōtei Complete Edition — trailer officiel PlayStation', badge: 'PLAYSTATION · PS5', kicker: '01.10.2026 · PLAYSTATION', title: 'GHOST OF YŌTEI OUVRE SON NOUVEAU CHAPITRE.', excerpt: 'Echoes of Sekigahara, Most Wanted et la mise à jour 2.0 arrivent aujourd’hui sur PS5.', read: featured.read, sentiment: 'positive' },
-
     { to: '/news/physint-budget-400-millions-xbox', image: 'kojima_mindplayer.png', alt: 'Hideo Kojima pose les mains jointes sous le logo lumineux de Xbox — visuel éditorial Let’s Play', badge: 'PHYSINT · XBOX', kicker: '29.09.2026 · KOJIMA PRODUCTIONS', title: 'PHYSINT À 400 M$ ? XBOX A SIGNÉ POUR MOINS.', excerpt: 'Un chiffre vertigineux de 400 millions de dollars a circulé ce week-end autour du jeu d’action-espionnage de Hideo Kojima. Christopher Dring parle d’un simple bruit de couloir, et Jason Schreier assure que Microsoft a signé pour un montant « nettement inférieur ».', read: 'LIRE L’ARTICLE', sentiment: 'mixed' },
     { to: '/news/god-of-war-laufey-precommandes-arc-serpent', image: 'https://blog.fr.playstation.com/tachyon/sites/10/2026/09/5bd30eac480284e480a9ba68e9f06472584219f4.jpg?resize=1088%2C612&crop_strategy=smart', fallbackImage: 'god-of-war-laufey-arc-serpent-news.svg', alt: 'God of War Laufey — artwork officiel de Faye face à Begtse, le cube Phranque à ses côtés (Santa Monica Studio)', badge: 'GOD OF WAR LAUFEY · PRÉCOMMANDES', kicker: '29.09.2026 · SANTA MONICA STUDIO', title: 'FAYE DÉGAINE L’ARC-SERPENT.', excerpt: 'À l’ouverture des précommandes, Santa Monica Studio détaille la deuxième arme de Faye et la grille des éditions : 79,99 € en Standard, 89,99 € en numérique Deluxe, une mise à niveau à 10 € et aucun collector. Sortie le 16 février 2027 sur PS5.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
     { to: '/news/minecraft-world-hotel-chessington-2027', image: 'screenshots/minecraft-world-hotel/01.jpg', fallbackImage: 'minecraft-world-hotel-chessington-news.svg', alt: 'Minecraft World Hotel — la chambre familiale aux lits superposés, concept art officiel Merlin Entertainments / Mojang Studios', badge: 'MINECRAFT WORLD · CHESSINGTON', kicker: '29.09.2026 · MERLIN ENTERTAINMENTS', title: 'MINECRAFT DORT À CHESSINGTON EN 2027.', excerpt: 'Le Minecraft Live du 26 septembre a livré la deuxième annonce du parc : le premier hôtel officiel Minecraft au monde, près de 70 chambres sur quatre étages, ouvrira en 2027 au land Minecraft World — en même temps que le rollercoaster Escape the Nether.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
