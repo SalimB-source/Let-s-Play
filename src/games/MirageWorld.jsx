@@ -731,7 +731,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   // droit vers le mirage au lieu de s'arrêter net devant le vide.
   const floorRows = desert ? 44 : 28;
   const floorMinZ = desert ? TRACK_MIN_Z - 32 : TRACK_MIN_Z;
-  if (snakeway) floorGroup.add(snakewayTrackTrim(LANES, floorRows, floorMinZ));
+  if (snakeway) {
+    // Écailles grises sur le bord extérieur de la route : bordure statique,
+    // ajoutée à la scène (et non au sol) pour ne pas défiler avec la piste.
+    const scaleTrim = snakewayTrackTrim(LANES, floorRows, floorMinZ);
+    bakeStaticScenery(scaleTrim);
+    scene.add(scaleTrim);
+  }
   floorMaterials.forEach((material, m) => {
     const parts = [];
     for (let zIndex = 0; zIndex < floorRows; zIndex += 1) {
