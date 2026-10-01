@@ -263,3 +263,26 @@ test('Grand Tour has a globe, two framed rings and a silver stand instead of a h
     assert.ok(wall, `${continent.part} sits flush on the curved ocean surface`);
   }
 });
+
+test('Legends has a two-sided ruby-and-gold shield with a star, not a bowl or a globe', () => {
+  const boxes = trophyBoxes('legends');
+  assert.ok(!boxes.some((box) => /^(bowl|handle|globe|meridian|equator)-/.test(box.part)));
+  assert.equal(getTrophyDesign('legends').name, 'Blason des Légendes');
+  const shield = boxes.filter((box) => box.part.startsWith('shield-'));
+  assert.equal(shield.length, 12, 'twelve gold layers, from the point to the crest');
+  const widths = shield.map((box) => Math.round(box.size[0] / VOXEL));
+  assert.deepEqual(widths, [...widths].sort((a, b) => a - b), 'the shield never narrows going up: its point is at the bottom');
+  assert.ok(boxes.some((box) => box.material === 'ruby') && boxes.some((box) => box.material === 'rubyDark'), 'quartered field');
+  const stars = boxes.filter((box) => box.part.startsWith('star-'));
+  assert.ok(stars.some((box) => box.center[2] > 0) && stars.some((box) => box.center[2] < 0), 'a star on the front AND the back');
+  assert.equal(stars.filter((box) => box.center[2] > 0).length, stars.filter((box) => box.center[2] < 0).length);
+  const field = boxes.filter((box) => box.part.startsWith('field-'));
+  for (const star of stars) {
+    const row = field.find((box) => close(box.center[1], star.center[1])
+      && star.center[0] >= box.center[0] - box.size[0] / 2 - EPSILON
+      && star.center[0] <= box.center[0] + box.size[0] / 2 + EPSILON);
+    assert.ok(row, `${star.part} sits on the ruby field`);
+    assert.ok(close(Math.abs(star.center[2]) - star.size[2] / 2, row.size[2] / 2), `${star.part} is flush on the field`);
+  }
+  assert.deepEqual(podiumBoxes('legends').find((box) => box.part === 'podium-cap').material, 'rubyDark');
+});

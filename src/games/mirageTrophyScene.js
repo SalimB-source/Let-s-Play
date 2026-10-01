@@ -52,6 +52,9 @@ function makeMaterials() {
     stone: material('stone', { roughness: 0.8, metalness: 0.05 }),
     stoneLight: material('stoneLight', { roughness: 0.8, metalness: 0.05 }),
     stoneDark: material('stoneDark', { roughness: 0.85, metalness: 0.05 }),
+    ruby: material('ruby', { emissive: 0x4a0612, emissiveIntensity: 0.6, roughness: 0.3, metalness: 0.35 }),
+    rubyDark: material('rubyDark', { emissive: 0x2a0309, emissiveIntensity: 0.6, roughness: 0.35, metalness: 0.3 }),
+    rubyLight: material('rubyLight', { emissive: 0x5a1220, emissiveIntensity: 0.5, roughness: 0.25, metalness: 0.3 }),
   };
 }
 
@@ -223,9 +226,16 @@ export function makeTrophyScene(mount, options = {}) {
   }
 }
 
+// Éclairage et décor propres à chaque coupe : le désert reste la référence.
+const SCENE_THEMES = Object.freeze({
+  desert: { hemiSky: 0xffe7c2, hemiGround: 0x3a2350, key: 0xfff0d0, rim: 0x8fd8ff, floor: 0x2a1840 },
+  worldtour: { hemiSky: 0xd9fbff, hemiGround: 0x102744, key: 0xe6ffff, rim: 0x66e9f2, floor: 0x133455 },
+  legends: { hemiSky: 0xffdfe3, hemiGround: 0x3a1230, key: 0xfff0e2, rim: 0xff8fa0, floor: 0x3a1229 },
+});
+
 function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColors = null, slot = null, reducedMotion = false }) {
   const design = getTrophyDesign(trophyDesign);
-  const grandTour = design.id === 'worldtour';
+  const theme = SCENE_THEMES[design.id] || SCENE_THEMES.desert;
   const sceneHeight = Math.max(SCENE_HEIGHT, PODIUM_HEIGHT + design.height + 0.75);
   const focusY = FOCUS_Y + (sceneHeight - SCENE_HEIGHT) / 2;
   const disposables = [];
@@ -256,8 +266,8 @@ function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColor
 
   const camera = new THREE.PerspectiveCamera(32, 1, 0.5, 80);
 
-  scene.add(new THREE.HemisphereLight(grandTour ? 0xd9fbff : 0xffe7c2, grandTour ? 0x102744 : 0x3a2350, 0.55));
-  const key = new THREE.DirectionalLight(grandTour ? 0xe6ffff : 0xfff0d0, 2.4);
+  scene.add(new THREE.HemisphereLight(theme.hemiSky, theme.hemiGround, 0.55));
+  const key = new THREE.DirectionalLight(theme.key, 2.4);
   key.position.set(5, 10, 7);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
@@ -266,7 +276,7 @@ function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColor
   key.shadow.bias = -0.0005;
   key.shadow.normalBias = 0.03;
   scene.add(key);
-  const rim = new THREE.DirectionalLight(grandTour ? 0x66e9f2 : 0x8fd8ff, 1.3);
+  const rim = new THREE.DirectionalLight(theme.rim, 1.3);
   rim.position.set(-7, 4, -6);
   scene.add(rim);
   const glow = new THREE.PointLight(design.accent, 10, 14, 2);
@@ -275,7 +285,7 @@ function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColor
 
   // Scène d’exposition : disque sombre cerclé de la couleur de la coupe.
   const floorGeometry = new THREE.CylinderGeometry(7, 7.3, 0.4, 72);
-  const floor = new THREE.Mesh(floorGeometry, new THREE.MeshStandardMaterial({ color: grandTour ? 0x133455 : 0x2a1840, roughness: 0.55, metalness: 0.3 }));
+  const floor = new THREE.Mesh(floorGeometry, new THREE.MeshStandardMaterial({ color: theme.floor, roughness: 0.55, metalness: 0.3 }));
   floor.position.y = -0.2;
   floor.receiveShadow = true;
   disposables.push(floorGeometry, floor.material);

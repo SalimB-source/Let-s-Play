@@ -80,6 +80,16 @@ test('the points table rewards every place strictly more than the one below it',
   assert.equal(pointsForPlace('x'), 0);
 });
 
+test('the Coupe des Légendes chains five races: Remparts d’Ocre, Château de l’Infini, Thunder Airbase, Costa Omertà, Plaines de Yōtei', () => {
+  const cup = getCup('legends');
+  assert.equal(cup.name, 'Coupe des Légendes');
+  assert.equal(cup.trophyDesign, 'legends');
+  assert.deepEqual([...cup.stages], ['ramparts', 'infinity', 'airbase', 'sardinia', 'japan']);
+  const run = createCupRun('legends');
+  assert.deepEqual(run.stages, ['ramparts', 'infinity', 'airbase', 'sardinia', 'japan']);
+  assert.equal(cupCurrentStage(run), 'ramparts');
+});
+
 test('a cup trophy is kept once per cup and merges between a player’s devices', () => {
   const firstWin = reduce(createState(), {
     type: 'mirage_cup_won',

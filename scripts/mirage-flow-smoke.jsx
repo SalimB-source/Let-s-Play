@@ -160,6 +160,14 @@ function assertCupIntro(assert, node) {
   assert.deepEqual(
     [...worldtourCard.querySelectorAll('.mirage-cup-stop-number')].map((el) => el.textContent),
     ['COURSE 1', 'COURSE 2', 'COURSE 3', 'COURSE 4']);
+  const legendsCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe des Légendes');
+  assert.ok(legendsCard, 'la Coupe des Légendes (5 courses) est proposée');
+  assert.equal(legendsCard.querySelector('.mirage-cup-emblem svg').dataset.trophy, 'legends');
+  assert.notEqual(legendsCard.querySelector('svg').innerHTML, worldtourCard.querySelector('svg').innerHTML, 'le blason n’est pas le globe');
+  assert.deepEqual(
+    [...legendsCard.querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
+    ['Remparts d’Ocre', 'Château de l’Infini', 'Thunder Airbase', 'Costa Omertà', 'Plaines de Yōtei'],
+    'la Coupe des Légendes enchaîne cinq courses : Remparts d’Ocre, Château de l’Infini, Thunder Airbase, Costa Omertà puis Plaines de Yōtei');
   assert.ok(node.querySelector('.mirage-cup-name-field input'), 'le nom du trophée est modifiable');
   const start = node.querySelector('.mirage-start-button');
   assert.ok(start.textContent.includes('LANCER LA COUPE') || start.textContent.includes('CHARGEMENT'),
