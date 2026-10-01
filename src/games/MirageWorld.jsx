@@ -41,6 +41,20 @@ import { block, makeExplorer, paintModel } from './mirageExplorer';
 const TRACK_MIN_Z = -40;
 const RUN_SECONDS = 60;
 const NO_POWER_UPS = Object.freeze([]);
+// Champ de la caméra : base au repos, élargi pendant le turbo.
+const CAMERA_BASE_FOV = 50;
+const CAMERA_TURBO_FOV = 61;
+
+/**
+ * FOV vertical adapté au ratio de l'écran : quand la vue est plus étroite que
+ * haute (téléphone en portrait, plein écran de l'application), on ouvre le
+ * champ vertical pour **garder le même champ horizontal** que sur un écran
+ * large. Sans cela, la piste paraît rapprochée et rognée sur les côtés.
+ */
+function cameraFovForAspect(baseFov, aspect) {
+  const safeAspect = Number.isFinite(aspect) && aspect > 0 ? aspect : 1;
+  return THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(baseFov) / 2) / Math.min(1, safeAspect)));
+}
 
 const materialKey = (m) => [m.type, m.color?.getHex(), m.emissive?.getHex(), m.roughness, m.metalness, m.flatShading, m.side, m.transparent, m.opacity, m.depthWrite, m.map?.uuid].join('|');
 function bakeStaticScenery(group) {
@@ -531,7 +545,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
                 };
   scene.background = new THREE.Color(atmosphere.background);
   scene.fog = new THREE.Fog(atmosphere.fog, infinity || snakeway ? 26 : 27, infinity ? 84 : snakeway ? 104 : 82);
-  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
+  const camera = new THREE.PerspectiveCamera(CAMERA_BASE_FOV, 1, 0.1, 120);
   camera.position.set(0, 7.3, 9.4);
   camera.lookAt(0, 0.6, -10);
 
@@ -1707,7 +1721,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     if (pixelRatio !== renderer.getPixelRatio()) renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(50) / 2) / Math.min(1, camera.aspect)));
+    camera.fov = cameraFovForAspect(CAMERA_BASE_FOV, camera.aspect);
     camera.updateProjectionMatrix();
   };
   const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
@@ -2471,7 +2485,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       playerReadyAura.userData.innerMat.color.setHex(pistolReady ? 0xffdc6b : boostReady ? 0xa3f7b5 : 0x4ce9df);
       playerReadyAura.userData.outerMat.opacity = 0.65 + Math.sin(time * 0.015) * 0.22;
     }
-    const targetFov = turboActive ? 61 : 50;
+    // Le turbo élargit le champ de base ; la correction de ratio s'applique
+    // aussi au turbo, sinon l'animation écraserait le dézoom des écrans
+    // portrait (plein écran du téléphone et de l'application).
+    const targetFov = cameraFovForAspect(turboActive ? CAMERA_TURBO_FOV : CAMERA_BASE_FOV, camera.aspect);
     if (Math.abs(camera.fov - targetFov) > 0.02) {
       camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 8);
       camera.updateProjectionMatrix();
