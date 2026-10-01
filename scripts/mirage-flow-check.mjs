@@ -4,14 +4,14 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 
 let thumbnailBytes = 0;
-for (const id of ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase']) {
+for (const id of ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase', 'snakeway']) {
   const image = readFileSync(new URL(`../src/games/assets/maps/${id}.webp`, import.meta.url));
   assert.equal(image.toString('ascii', 0, 4), 'RIFF', `${id} est un fichier WebP`);
   assert.equal(image.toString('ascii', 8, 12), 'WEBP', `${id} est un fichier WebP`);
   assert.ok(image.length < 50 * 1024, `${id} reste sous 50 Kio`);
   thumbnailBytes += image.length;
 }
-assert.ok(thumbnailBytes < 330 * 1024, 'les neuf miniatures restent sous 330 Kio au total');
+assert.ok(thumbnailBytes < 330 * 1024, 'les dix miniatures restent sous 330 Kio au total');
 
 execFileSync('npx', ['vite', 'build', '--ssr', 'scripts/mirage-flow-smoke.jsx', '--outDir', 'node_modules/.cache/mirage-flow', '--emptyOutDir', '--logLevel', 'error'], { stdio: 'inherit' });
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/jeu' });
@@ -21,4 +21,4 @@ globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { checkMirageFlow } = await import('../node_modules/.cache/mirage-flow/mirage-flow-smoke.js');
 try { await checkMirageFlow(assert); } finally { dom.window.close(); }
-console.log('check:mirage-flow ✓ — Mirage Rush ouvre sur de vrais boutons RUÉE / DUEL / COUPE / EN LIGNE, puis affiche les 9 maps à l’écran suivant (la COUPE y propose la Coupe du Désert, ses 3 courses et son barème à la place des maps) ; Paramètres regroupe La communauté, Ton cavalier et Informations ; ?mode=cup ouvre la coupe ; le lobby EN LIGNE garde ses 4 boutons de mode (COUPE ramène à la coupe) ; un défi verrouille sa map ; piste du téléphone (navigateur comme application) à trois voies, deux rivaux et coupe à trois cavaliers alignés ; sur écran tactile, les consignes parlent glissement (aucune touche de clavier) et la croix directionnelle comme le losange de manette ont disparu, remplacés par la barre d’objets du PC.');
+console.log('check:mirage-flow ✓ — Mirage Rush ouvre sur de vrais boutons RUÉE / DUEL / COUPE / EN LIGNE, puis affiche les 10 maps à l’écran suivant (la COUPE y propose la Coupe du Désert, ses 3 courses et son barème à la place des maps) ; Paramètres regroupe La communauté, Ton cavalier et Informations ; ?mode=cup ouvre la coupe ; le lobby EN LIGNE garde ses 4 boutons de mode (COUPE ramène à la coupe) ; un défi verrouille sa map ; piste du téléphone (navigateur comme application) à trois voies, deux rivaux et coupe à trois cavaliers alignés ; sur écran tactile, les consignes parlent glissement (aucune touche de clavier) et la croix directionnelle comme le losange de manette ont disparu, remplacés par la barre d’objets du PC.');

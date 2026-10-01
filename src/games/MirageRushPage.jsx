@@ -575,6 +575,7 @@ export default function MirageRushPage() {
     ? `Enchaîne ${activeCup.stages.length} courses à ${riderCount} cavaliers (${activeCup.stages.map(stageName).join(' → ')}) contre ${rivalNameList}, avec les mêmes pouvoirs qu’en duel. Chaque arrivée rapporte des points — plus tu finis haut, plus tu en gagnes — et le meilleur total après la dernière course soulève le trophée !`
     : selectedMode === 'duel'
     ? `Affronte ${challenge ? `${challenge.name} (course fantôme) ainsi que ${chaseRivalNames}` : `${rivalCount} cavaliers rivaux IA (${rivalNameList})`} sur les ${trackLanes} voies. Les cristaux accélèrent ton cheval et chargent tes pouvoirs. Premier à ${DUEL_DISTANCE} m !`
+    : stage === 'snakeway' ? 'Galope sur le Chemin du Serpent, une route dorée qui traverse les nuages orange jusqu’à la planète de Kaio. Passe sous le halo céleste, évite les météores et ramasse les fragments d’étoile dans ce voyage inspiré de Dragon Ball Z !'
     : stage === 'airbase' ? 'Décolle sur le taxiway de Thunder Airbase, hommage au stage de Guile : F-16 garé à gauche, drapeau américain géant, soldats qui applaudissent dans les gradins et panneau SONIC BOOM. Saute les barrières de piste et contourne les fûts de kérosène !'
     : stage === 'infinity' ? 'Galope sur le pont suspendu du Château de l’Infini au son du biwa de Nakime : saute les paravents shōji d’engawa et contourne les piliers-lanternes Andon au cœur d’un labyrinthe sans gravité de tatamis, d’escaliers flottants et de pagodes renversées !'
     : stage === 'ramparts' ? 'Remonte le Mid des Remparts d’Ocre au galop : le site B à gauche (Rush B, tunnels, portes B), le site A à droite (Long, Goose, la C4 posée). Saute les murets criblés d’impacts et contourne les Xbox !'
@@ -640,7 +641,7 @@ export default function MirageRushPage() {
           aria-label="Partie de Mirage Rush"
         >
           <div className="mirage-game-topbar">
-            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'airbase' ? 'ZONE 09 · THUNDER AIRBASE' : stage === 'infinity' ? 'ZONE 08 · CHÂTEAU DE L’INFINI' : stage === 'ramparts' ? 'ZONE 07 · REMPARTS D’OCRE' : stage === 'japan' ? 'ZONE 06 · PLAINES DE YŌTEI' : stage === 'alger' ? 'ZONE 05 · ALGER LA BLANCHE' : stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
+            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'snakeway' ? 'ZONE 10 · CHEMIN DU SERPENT' : stage === 'airbase' ? 'ZONE 09 · THUNDER AIRBASE' : stage === 'infinity' ? 'ZONE 08 · CHÂTEAU DE L’INFINI' : stage === 'ramparts' ? 'ZONE 07 · REMPARTS D’OCRE' : stage === 'japan' ? 'ZONE 06 · PLAINES DE YŌTEI' : stage === 'alger' ? 'ZONE 05 · ALGER LA BLANCHE' : stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
             <div className="mirage-game-controls-top">
               {phase === 'playing' && <>
                 <span className="mirage-live-pill"><i /> EN PARTIE</span>

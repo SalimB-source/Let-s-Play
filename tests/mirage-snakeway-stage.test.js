@@ -1,0 +1,115 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import {
+  SNAKEWAY_ATMOSPHERE,
+  SNAKEWAY_CULL_Z,
+  SNAKEWAY_GATE_INDEX,
+  SNAKEWAY_SEGMENT_COUNT,
+  SNAKEWAY_SEGMENT_LENGTH,
+  SNAKEWAY_TRACK_EDGE,
+  makeSnakewayHorizon,
+  snakewayArch,
+  snakewayCloudBank,
+  snakewayObstacle,
+  snakewayTrackTrim,
+} from '../src/games/snakewayStage.js';
+import { LANES } from '../src/games/mirageRules.js';
+
+const sizeOf = (object) => new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
+
+test('the Snake Way atmosphere pairs a deep twilight sky with a vivid orange horizon', () => {
+  assert.equal(SNAKEWAY_ATMOSPHERE.skyTop[2] > SNAKEWAY_ATMOSPHERE.skyTop[0], true);
+  assert.ok(SNAKEWAY_ATMOSPHERE.skyHorizon[0] > SNAKEWAY_ATMOSPHERE.skyHorizon[2], 'l’horizon tire vers l’orange');
+  assert.ok(SNAKEWAY_ATMOSPHERE.sunLight > 0);
+  assert.equal(SNAKEWAY_CULL_Z, -62);
+});
+
+test('the cloudbank is jumpable and spans two lanes', () => {
+  const bounds = sizeOf(snakewayObstacle('barrier'));
+  assert.ok(bounds.x >= 3.8 && bounds.x <= 4.3, `largeur ${bounds.x.toFixed(2)} m`);
+  assert.ok(bounds.y <= 1.05, `hauteur ${bounds.y.toFixed(2)} m : le saut doit passer`);
+});
+
+test('the floating meteor fills one lane and is tall enough to dodge', () => {
+  const bounds = sizeOf(snakewayObstacle('cactus'));
+  assert.ok(bounds.x > 1.1 && bounds.x < 1.9, `largeur ${bounds.x.toFixed(2)} m`);
+  assert.ok(bounds.y > 1.6 && bounds.y < 2.3, `hauteur ${bounds.y.toFixed(2)} m`);
+  assert.ok(sizeOf(snakewayObstacle('mud')).y < 0.5, 'le vortex reste au ras du sol');
+});
+
+test('orange clouds are the only looping scenery outside both three- and four-lane roads', () => {
+  assert.equal(SNAKEWAY_SEGMENT_LENGTH * SNAKEWAY_SEGMENT_COUNT, 110);
+  assert.equal(SNAKEWAY_TRACK_EDGE, LANES[LANES.length - 1] + 1.05);
+  assert.equal(SNAKEWAY_GATE_INDEX, 5);
+  for (let index = 0; index < SNAKEWAY_SEGMENT_COUNT; index += 1) {
+    for (const side of [-1, 1]) {
+      const bank = snakewayCloudBank(index, side);
+      const bounds = new THREE.Box3().setFromObject(bank);
+      assert.equal(bank.position.z, 6 - index * SNAKEWAY_SEGMENT_LENGTH);
+      assert.equal(bank.userData.speedFactor, 1);
+      assert.equal(bank.userData.callout, 'orange-cloudbank');
+      assert.ok(side < 0 ? bounds.max.x < -4.2 : bounds.min.x > 4.2,
+        `le nuage ${index} (côté ${side}) mord sur les voies`);
+      let puffCount = 0;
+      bank.traverse((object) => {
+        if (!object.isMesh) return;
+        puffCount += 1;
+        assert.equal(object.geometry.type, 'SphereGeometry', 'aucun rocher, pilier ou marqueur latéral');
+        const { r, g, b } = object.material.color;
+        assert.ok(r > g && g > b, `couleur de nuage orange requise : ${object.material.color.getHexString()}`);
+      });
+      assert.ok(puffCount >= 5);
+    }
+  }
+});
+
+test('the checkpoint halo sits high above the road without any side pillars', () => {
+  const arch = snakewayArch();
+  arch.updateMatrixWorld(true);
+  const raycaster = new THREE.Raycaster();
+  const blocked = (x, y) => {
+    raycaster.set(new THREE.Vector3(x, y, 12), new THREE.Vector3(0, 0, -1));
+    return raycaster.intersectObject(arch, true).length > 0;
+  };
+  for (const x of [-4.1, -3.15, -2.1, -1.05, 0, 1.05, 2.1, 3.15, 4.1]) {
+    for (const y of [0.1, 1, 2.2, 3.5]) {
+      assert.equal(blocked(x, y), false, `passage bloqué en x=${x}, y=${y}`);
+    }
+  }
+  assert.equal(blocked(4.15, 8.6), true, 'le halo est bien au-dessus de la route');
+  assert.equal(blocked(0, 12.85), true, 'l’étoile surmonte le halo');
+  assert.equal(arch.userData.callout, 'floating-halo');
+});
+
+test('the horizon leads along a winding gold road to a detailed, readable Kaio planet', () => {
+  const horizon = makeSnakewayHorizon();
+  const bounds = new THREE.Box3().setFromObject(horizon);
+  assert.equal(bounds.isEmpty(), false);
+  assert.ok(bounds.getSize(new THREE.Vector3()).x > 90, 'les nuages encadrent tout l’horizon');
+  assert.ok(bounds.getSize(new THREE.Vector3()).z > 75, 'la route et les nuages s’étirent au loin');
+  let meshes = 0;
+  let planet;
+  horizon.traverse((object) => {
+    if (object.isMesh) meshes += 1;
+    if (object.userData.callout === 'kaio-planet') planet = object;
+  });
+  assert.ok(planet, 'la planète de Kaio est une destination explicite du stage');
+  assert.ok(planet.children.some((object) => object.isMesh && object.geometry.type === 'SphereGeometry'), 'la planète possède un globe');
+  assert.ok(planet.children.some((object) => object.isGroup && object.children.length >= 8), 'la maisonnette et son arbre bleu sont détaillés');
+  assert.ok(meshes > 60, `décor céleste composé (${meshes} meshes)`);
+});
+
+test('the road trim follows the track edges on the phone and desktop layouts', () => {
+  for (const lanes of [[-1.05, 1.05], [-3.15, -1.05, 1.05, 3.15]]) {
+    const trim = snakewayTrackTrim(lanes);
+    trim.updateMatrixWorld(true);
+    const expectedEdge = Math.max(Math.abs(lanes[0]), Math.abs(lanes.at(-1))) + 1.05;
+    const rails = [];
+    trim.traverse((object) => {
+      if (object.isMesh && object.geometry.type === 'BoxGeometry') rails.push(object);
+    });
+    assert.equal(rails.length, 2);
+    assert.deepEqual(rails.map((rail) => rail.position.x).sort((a, b) => a - b), [-expectedEdge, expectedEdge]);
+  }
+});
