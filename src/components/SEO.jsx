@@ -45,8 +45,8 @@ const pageMeta = {
     type: 'website',
   },
   '/jeu': {
-    title: 'Les jeux de Let’s Play — arcade, Mirage Rush et à venir',
-    description: 'La vitrine arcade de Let’s Play : Mirage Rush, runner 3D western dans le désert, et les prochains jeux en préparation. Tout se joue directement dans la page.',
+    title: 'Les jeux de Let’s Play — Mirage Rush et Vice City Rush',
+    description: 'Joue directement dans la page à Mirage Rush, runner 3D western, et Vice City Rush, course arcade néon en décapotable à travers cinq villes.',
     type: 'website',
   },
   '/communaute': {
@@ -63,6 +63,12 @@ const pageMeta = {
     title: 'Mirage Rush — Jeu arcade 3D — Let’s Play',
     description: 'Cours dans un désert surréaliste en blocs, évite les cactus et grimpe au classement communautaire de Let’s Play.',
     image: 'mirage-rush-thumb.jpg',
+    type: 'website',
+  },
+  '/jeu/vice-city-rush': {
+    title: 'Vice City Rush — Course arcade 3D — Let’s Play',
+    description: 'Monte dans un cabriolet et lance-toi dans une course arcade 3D à Vice City, New York, Tokyo, Paris ou Londres. Ramasse des objets, utilise tes pouvoirs et évite les zones de ralentissement.',
+    image: 'vice-city-rush-thumb.svg',
     type: 'website',
   },
   '/news/kingdom-hearts-4-coco': {

@@ -350,7 +350,7 @@ export default function Layout({ children }) {
     { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
     { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
     { to: '/communaute', label: t.nav.community || 'Communauté', num: '05', desc: 'COMMUNITY / TALK' },
-    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / MIRAGE RUSH', aliases: ['/jeux'] },
+    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '06', desc: 'ARCADE / MIRAGE RUSH · VICE CITY RUSH', aliases: ['/jeux'] },
     { to: '/quizz', label: t.nav.quiz, num: '07', desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
   ];
 

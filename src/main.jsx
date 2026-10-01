@@ -75,6 +75,7 @@ import { normalizePhoneViewport } from './lib/phoneLayout';
 import { applyLaneCountForDevice } from './games/mirageLanes';
 
 const MirageRushPage = lazy(() => import('./games/MirageRushPage'));
+const ViceCityRushPage = lazy(() => import('./games/ViceCityRushPage'));
 
 function App() {
   return (
@@ -182,6 +183,7 @@ function App() {
             <Route path="/jeu" element={<Games />} />
             <Route path="/jeux" element={<Games />} />
             <Route path="/jeu/mirage-rush" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Mirage Rush…</div>}><MirageRushPage /></Suspense>} />
+            <Route path="/jeu/vice-city-rush" element={<Suspense fallback={<div className="wrap" style={{ minHeight: '60vh', paddingTop: 80 }}>Chargement de Vice City Rush…</div>}><ViceCityRushPage /></Suspense>} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Auth initialMode="signup" />} />
             <Route path="/profile/:userId" element={<Profile />} />

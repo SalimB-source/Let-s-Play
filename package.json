@@ -27,6 +27,7 @@
     "news:fetch": "node scripts/news-bot/fetch-news.mjs",
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
+    "check:city-rush": "node --test tests/city-rush-rules.test.js",
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",
     "check:mirage-cup": "node scripts/mirage-cup-check.mjs",
     "check:quiz": "node scripts/quiz-check.mjs",

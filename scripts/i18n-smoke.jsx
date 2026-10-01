@@ -31,6 +31,7 @@ import Auth from '../src/pages/Auth';
 import Games from '../src/pages/Games';
 import CommunityPage from '../src/community/CommunityPage';
 import MirageRushPage from '../src/games/MirageRushPage';
+import ViceCityRushPage from '../src/games/ViceCityRushPage';
 import { AuthProvider } from '../src/auth/AuthContext';
 import { translations } from '../src/i18n/translations';
 import { gameTests } from '../src/reviewsData';
@@ -56,6 +57,7 @@ export const ROUTES = [
   ['/jeu', Games],
   ['/communaute', CommunityPage],
   ['/jeu/mirage-rush', MirageRushPage],
+  ['/jeu/vice-city-rush', ViceCityRushPage],
   ['/quizz', QuizzesPage],
   ['/quizz/culture-gaming', QuizPage, '/quizz/:slug'],
   ['/quizz/films-cultes', QuizPage, '/quizz/:slug'],

@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
+  <title id="title">Vice City Rush</title>
+  <desc id="desc">Cabriolet rose sur une avenue de nuit au coucher du soleil, entre palmiers et gratte-ciel rétro.</desc>
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#1c1745"/><stop offset=".48" stop-color="#77416f"/><stop offset=".77" stop-color="#f16d82"/><stop offset="1" stop-color="#ffb66f"/></linearGradient>
+    <linearGradient id="road" x2="0" y2="1"><stop stop-color="#453047"/><stop offset=".4" stop-color="#201a2d"/><stop offset="1" stop-color="#101321"/></linearGradient>
+    <linearGradient id="car" x2="0" y2="1"><stop stop-color="#ff9ec3"/><stop offset=".48" stop-color="#f45d9e"/><stop offset="1" stop-color="#ad316f"/></linearGradient>
+    <linearGradient id="sun" x2="0" y2="1"><stop stop-color="#ffe3a1"/><stop offset="1" stop-color="#ff9a91"/></linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <pattern id="sunLines" width="600" height="22" patternUnits="userSpaceOnUse"><rect width="600" height="9" fill="#201a3d" opacity=".48"/></pattern>
+  </defs>
+  <rect width="1200" height="675" fill="url(#sky)"/>
+  <circle cx="825" cy="245" r="139" fill="url(#sun)" opacity=".88" filter="url(#glow)"/>
+  <path d="M690 234h270M704 262h242M724 290h205M747 318h158" stroke="#583460" stroke-width="9" opacity=".45"/>
+  <!-- skyline -->
+  <g fill="#211d3c">
+    <path d="M0 301h76v-78h69v78h55v-127h58v127h39v-96h69v96h39v-167h79v167h49v-125h66v125h42v-83h81v83h58V175h73v126h38v-183h83v183h52v-123h74v123h50v-81h62v81h55v-148h69v148h47v-115h84v115h51v-88h53v88h48v-132h80v132h26v201H0z"/>
+    <path d="M0 338h1200v94H0z" fill="#302443" opacity=".7"/>
+  </g>
+  <g fill="#ffcf8a" opacity=".78">
+    <path d="M269 203h8v12h-8zm20 0h8v12h-8zm-20 22h8v12h-8zm20 0h8v12h-8zM427 151h9v14h-9zm23 0h9v14h-9zm-23 26h9v14h-9zm23 0h9v14h-9zM789 208h9v14h-9zm22 0h9v14h-9zm-22 25h9v14h-9zm22 0h9v14h-9zM1018 148h9v14h-9zm23 0h9v14h-9zm-23 25h9v14h-9zm23 0h9v14h-9z"/>
+  </g>
+  <!-- art deco facades and palms -->
+  <g opacity=".95">
+    <path d="M0 300h155v95H0z" fill="#e78b9c"/><path d="M0 311h155M17 330h122M17 351h122M17 372h122" stroke="#ffd49e" stroke-width="6" opacity=".72"/>
+    <path d="M1013 295h187v112h-187z" fill="#77c1bb"/><path d="M1013 311h187M1032 337h149M1032 362h149M1032 387h149" stroke="#fff0bc" stroke-width="6" opacity=".72"/>
+  </g>
+  <g fill="none" stroke="#1a1830" stroke-linecap="round" stroke-width="18">
+    <path d="M105 356q-30-105-67-178m68 180q-4-104 29-184m-28 184q34-94 95-137m-96 137q-53-89-108-112"/>
+    <path d="M1090 354q25-100 5-185m-5 185q-20-95-84-146m83 146q50-99 114-128m-114 128q-47-85-107-105"/>
+  </g>
+  <g fill="#24554e">
+    <path d="M10 184q12-38 47-38-16 30-47 38m17 26q-6-43 20-63 4 37-20 63m17 25q6-43 43-54-11 39-43 54m-5-1q-39-35-73-27 31 30 73 27m1077-69q-11-41-45-45 14 34 45 45m-11 32q3-41-26-67-9 37 26 67m-27 28q-10-41-47-49 14 38 47 49m7 0q35-38 70-33-28 34-70 33"/>
+  </g>
+  <!-- perspective road -->
+  <path d="M382 344h437l381 331H0z" fill="url(#road)"/>
+  <path d="M382 344 0 675M818 344l382 331" stroke="#38e3d2" stroke-width="6" opacity=".7" filter="url(#glow)"/>
+  <path d="M600 351v56m0 33v49m0 28v65m0 29v54" stroke="#ffe9a7" stroke-width="8" opacity=".85"/>
+  <path d="M492 351 329 675M708 351l163 324" stroke="#ff79b0" stroke-width="5" opacity=".48"/>
+  <!-- low, open-top convertible with driver -->
+  <g transform="translate(0 18)">
+    <ellipse cx="600" cy="565" rx="196" ry="35" fill="#090d1b" opacity=".65"/>
+    <path d="M418 500q18-37 87-55l63-58h79l49 58q61 13 87 53l-13 44H421z" fill="url(#car)" stroke="#ffc0d7" stroke-width="5"/>
+    <path d="M506 446q18-44 66-59h59q37 14 58 59l-33 4h-121z" fill="#4b456a" stroke="#8ef8eb" stroke-width="5"/>
+    <path d="M568 393q31-31 67 0l12 48h-87z" fill="#f1b895"/>
+    <circle cx="601" cy="383" r="25" fill="#f3c3a5"/>
+    <path d="M577 382q2-31 28-32 25 1 27 31l-12-11-42 12z" fill="#282238"/>
+    <path d="M435 493h69v20h-69zm221 0h72v20h-72z" fill="#ff496e" filter="url(#glow)"/>
+    <path d="M447 542h306l-21 28H467z" fill="#b73772"/>
+    <path d="M433 526h-38v57h60l17-29zm334 0h38v57h-60l-17-29z" fill="#11131f" stroke="#9ea9b9" stroke-width="6"/>
+    <circle cx="451" cy="564" r="27" fill="#080b14" stroke="#82909f" stroke-width="7"/><circle cx="749" cy="564" r="27" fill="#080b14" stroke="#82909f" stroke-width="7"/>
+    <path d="M558 485h83" stroke="#ffe4b3" stroke-width="5" opacity=".8"/>
+  </g>
+  <g filter="url(#glow)">
+    <path d="M69 82h402" stroke="#fb6fb6" stroke-width="4" opacity=".6"/>
+    <path d="M730 77h395" stroke="#42eed9" stroke-width="4" opacity=".55"/>
+  </g>
+  <text x="68" y="133" fill="#fff5df" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="8">LET’S PLAY ARCADE</text>
+  <text x="66" y="202" fill="#fff8ee" font-family="Arial, sans-serif" font-size="55" font-weight="900" letter-spacing="2">VICE CITY <tspan fill="#ff73b4">RUSH</tspan></text>
+  <text x="70" y="230" fill="#a9f7e8" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="5">NIGHT DRIVE · CITY CIRCUIT</text>
+  <rect width="1200" height="675" fill="url(#sunLines)" opacity=".15"/>
+  <path d="M0 1h1200v673H0z" fill="none" stroke="#fff1dc" stroke-opacity=".14" stroke-width="2"/>
+</svg>

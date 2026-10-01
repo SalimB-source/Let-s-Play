@@ -1,0 +1,285 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  CITY_RUSH_CITIES,
+  CITY_RUSH_CARS,
+  CITY_RUSH_DISTANCE,
+  CITY_RUSH_PLAYER_SPEED,
+  CITY_RUSH_CAR_GAP,
+  CITY_RUSH_LANE_X,
+  CITY_RUSH_POWER_CHARGE_COST,
+  CITY_RUSH_POWER_RULES,
+  CITY_RUSH_TRAFFIC_COUNT,
+  CITY_RUSH_TRAFFIC_LANES,
+  CITY_RUSH_TRAFFIC_TYPES,
+  approachCityRushSpeed,
+  chooseCityRushAiLane,
+  cityRushHitDuration,
+  cityRushHelicopterTarget,
+  addCityRushCharge,
+  cityRushLaneAfterAction,
+  consumeCityRushCharge,
+  createCityRushEncounter,
+  createCityRushInventory,
+  rankCityRushRacers,
+  resolveCityRushCarMovement,
+} from '../src/games/cityRushRules.js';
+
+test('the five city routes have a distinct identity and complete palettes', () => {
+  assert.deepEqual(CITY_RUSH_CITIES.map((city) => city.id), ['vice-city', 'new-york', 'tokyo', 'paris', 'london']);
+  for (const city of CITY_RUSH_CITIES) {
+    assert.ok(city.name);
+    assert.ok(city.district);
+    assert.ok(city.accent.startsWith('#'));
+    assert.ok(city.buildingColors.length >= 4);
+    assert.ok(city.signs.length >= 3);
+  }
+});
+
+test('the selectable cars have distinct handling trade-offs and physical silhouettes', () => {
+  assert.equal(CITY_RUSH_CARS.length, 4);
+  assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
+  for (const car of CITY_RUSH_CARS) {
+    assert.ok(car.name && car.className && car.accent.startsWith('#'));
+    for (const stat of ['power', 'acceleration', 'recovery']) assert.ok(car[stat] >= 0 && car[stat] <= 100);
+    assert.ok(car.powerMultiplier > 0);
+    assert.ok(car.accelerationRate > 0);
+    assert.ok(car.hitRecoveryMultiplier > 0);
+    assert.ok(car.widthScale > 0 && car.heightScale > 0 && car.lengthScale > 0);
+  }
+  assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.widthScale)).size > 1);
+  assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.powerMultiplier)).size > 1);
+  assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.hitRecoveryMultiplier)).size > 1);
+});
+
+test('twelve slow traffic cars span four distinct types and safely block racers', () => {
+  assert.equal(CITY_RUSH_TRAFFIC_COUNT, 12);
+  assert.equal(CITY_RUSH_TRAFFIC_COUNT % CITY_RUSH_TRAFFIC_TYPES.length, 0);
+  assert.equal(CITY_RUSH_TRAFFIC_LANES.length, CITY_RUSH_TRAFFIC_COUNT);
+  assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => lane >= 0 && lane < CITY_RUSH_LANE_X.length));
+  assert.deepEqual(CITY_RUSH_LANE_X.map((_, lane) => CITY_RUSH_TRAFFIC_LANES.filter((value) => value === lane).length), [3, 3, 3, 3]);
+  assert.deepEqual(CITY_RUSH_TRAFFIC_TYPES.map((vehicle) => vehicle.id), [
+    'police', 'ambulance', 'garbage-truck', 'white-lambo',
+  ]);
+  for (const vehicle of CITY_RUSH_TRAFFIC_TYPES) {
+    assert.ok(vehicle.speed > 0 && vehicle.speed <= 8, `${vehicle.name} roule lentement`);
+    assert.ok(vehicle.width > 0 && vehicle.length > 0);
+  }
+
+  const traffic = CITY_RUSH_TRAFFIC_TYPES[0];
+  const moved = resolveCityRushCarMovement([
+    { id: 'slow-traffic', lane: 1, width: traffic.width, previousDistance: 40, nextDistance: 40 + traffic.speed * 0.04 },
+    { id: 'player', lane: 1, width: 1.9, previousDistance: 35, nextDistance: 35 + 24 * 0.04 },
+  ]);
+  const byId = Object.fromEntries(moved.map((car) => [car.id, car.nextDistance]));
+  assert.ok(byId.player >= 35, 'le contact ne provoque pas de recul ni de pénalité');
+  assert.ok(byId['slow-traffic'] - byId.player >= CITY_RUSH_CAR_GAP - 1e-9);
+});
+
+test('rivals plan lane changes to collect bonuses and avoid traffic safely', () => {
+  const towardPickup = chooseCityRushAiLane({
+    currentLane: 1,
+    distance: 10,
+    speed: 24,
+    availableLanes: [0, 1, 2],
+    pickups: [{ lane: 2, distance: 40, type: 'cash' }],
+  });
+  assert.equal(towardPickup, 2);
+
+  const awayFromTraffic = chooseCityRushAiLane({
+    currentLane: 1,
+    distance: 10,
+    speed: 24,
+    availableLanes: [0, 1, 2],
+    traffic: [{ lane: 1, distance: 48, speed: 5 }],
+    slowZones: [{ lane: 1, distance: 60 }],
+  });
+  assert.ok(awayFromTraffic !== 1);
+  assert.equal(chooseCityRushAiLane({
+    currentLane: 1,
+    distance: 10,
+    availableLanes: [1],
+    pickups: [{ lane: 2, distance: 40, type: 'cash' }],
+  }), 1, 'le rival ne tente pas de changer vers une voie bloquée');
+});
+
+test('car profiles change top speed, acceleration, and recovery after a hit', () => {
+  const turbo = CITY_RUSH_CARS.find((car) => car.id === 'turbo-gt');
+  const muscle = CITY_RUSH_CARS.find((car) => car.id === 'muscle-86');
+  const comet = CITY_RUSH_CARS.find((car) => car.id === 'night-comet');
+  assert.ok(turbo.powerMultiplier > comet.powerMultiplier);
+  assert.ok(muscle.accelerationRate > turbo.accelerationRate);
+  assert.ok(approachCityRushSpeed(0, 24, muscle.accelerationRate, 1) > approachCityRushSpeed(0, 24, turbo.accelerationRate, 1));
+  assert.ok(cityRushHitDuration(2, comet) < cityRushHitDuration(2, turbo));
+  assert.equal(cityRushHitDuration(3, comet), 3 * comet.hitRecoveryMultiplier);
+
+  const speedMultipliers = CITY_RUSH_CARS.map((car) => car.powerMultiplier);
+  assert.ok(Math.min(...speedMultipliers) >= 0.98);
+  assert.ok(Math.max(...speedMultipliers) <= 1.04);
+  assert.ok(Math.max(...speedMultipliers) - Math.min(...speedMultipliers) <= 0.060001, 'les vitesses de pointe restent proches');
+  const orderedIds = (stat, direction = 1) => [...CITY_RUSH_CARS]
+    .sort((a, b) => (a[stat] - b[stat]) * direction)
+    .map((car) => car.id);
+  assert.deepEqual(orderedIds('power'), orderedIds('powerMultiplier'));
+  assert.deepEqual(orderedIds('acceleration'), orderedIds('accelerationRate'));
+  assert.deepEqual(orderedIds('recovery'), orderedIds('hitRecoveryMultiplier', -1));
+});
+
+test('the item effects, matching colors, and charge costs match the race rules', () => {
+  assert.equal(CITY_RUSH_DISTANCE, 1500);
+  assert.equal(CITY_RUSH_PLAYER_SPEED, 26);
+  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { oil: 4, pistol: 5, cash: 3, radio: 8 });
+  assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
+    oil: 'A', pistol: 'Z', cash: 'E', radio: 'R',
+  });
+  for (const [type, cost] of Object.entries(CITY_RUSH_POWER_CHARGE_COST)) {
+    assert.equal(CITY_RUSH_POWER_RULES[type].chargeCost, cost);
+  }
+  assert.equal(CITY_RUSH_POWER_RULES.oil.duration, 1.4);
+  assert.equal(CITY_RUSH_POWER_RULES.oil.color, '#48b9ff');
+  assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);
+  assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
+  assert.equal(CITY_RUSH_POWER_RULES.cash.duration, 1.5);
+  assert.equal(CITY_RUSH_POWER_RULES.cash.color, '#50e48a');
+  assert.equal(CITY_RUSH_POWER_RULES.radio.duration, 3);
+  assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
+});
+
+test('matching currencies charge independent bars, and only a full bar can be used', () => {
+  let inventory = createCityRushInventory();
+  inventory = addCityRushCharge(inventory, 'oil', 3);
+  inventory = addCityRushCharge(inventory, 'cash', 2);
+  assert.equal(inventory.oil, 3);
+  assert.equal(inventory.cash, 2);
+  assert.equal(inventory.pistol, 0);
+  assert.equal(consumeCityRushCharge(inventory, 'oil').consumed, false);
+
+  inventory = addCityRushCharge(inventory, 'oil');
+  inventory = addCityRushCharge(inventory, 'cash');
+  assert.equal(inventory.oil, CITY_RUSH_POWER_CHARGE_COST.oil);
+  assert.equal(inventory.cash, CITY_RUSH_POWER_CHARGE_COST.cash);
+  assert.equal(consumeCityRushCharge(inventory, 'oil').inventory.oil, 0);
+
+  const usedOil = consumeCityRushCharge(inventory, 'oil');
+  assert.equal(usedOil.consumed, true);
+  assert.equal(usedOil.inventory.oil, 0);
+  assert.equal(usedOil.inventory.cash, CITY_RUSH_POWER_CHARGE_COST.cash);
+  assert.equal(consumeCityRushCharge(usedOil.inventory, 'oil').consumed, false);
+  assert.equal(consumeCityRushCharge(inventory, 'unknown').consumed, false);
+
+  const overfilled = addCityRushCharge(createCityRushInventory(), 'radio', 99);
+  assert.equal(overfilled.radio, CITY_RUSH_POWER_CHARGE_COST.radio);
+});
+
+test('lane changes clamp at the road edges', () => {
+  assert.equal(CITY_RUSH_LANE_X.length, 4);
+  assert.equal(cityRushLaneAfterAction(1, 'left'), 0);
+  assert.equal(cityRushLaneAfterAction(2, 'right'), 3);
+  assert.equal(cityRushLaneAfterAction(0, 'left'), 0);
+  assert.equal(cityRushLaneAfterAction(3, 'right'), 3);
+});
+
+test('cars in the same lane cannot pass and keep a safe gap, while other lanes stay free', () => {
+  const moved = resolveCityRushCarMovement([
+    { id: 'leader', lane: 1, previousDistance: 15, nextDistance: 16 },
+    { id: 'player', lane: 1, previousDistance: 10, nextDistance: 20 },
+    { id: 'rival-behind', lane: 1, previousDistance: 4, nextDistance: 25 },
+    { id: 'other-lane', lane: 2, previousDistance: 0, nextDistance: 40 },
+  ]);
+  const byId = Object.fromEntries(moved.map((car) => [car.id, car.nextDistance]));
+  assert.ok(byId.leader - byId.player >= CITY_RUSH_CAR_GAP - 1e-9);
+  assert.ok(byId.player - byId['rival-behind'] >= CITY_RUSH_CAR_GAP - 1e-9);
+  assert.equal(byId.player >= 10, true);
+  assert.equal(byId['rival-behind'] >= 4, true);
+  assert.equal(byId['other-lane'], 40);
+});
+
+test('racing opponents do not collide, while slow traffic still blocks a racer', () => {
+  const opponents = resolveCityRushCarMovement([
+    { id: 'player', collisionGroup: 'racer', lane: 1, previousDistance: 0, nextDistance: 30 },
+    { id: 'rival', collisionGroup: 'racer', lane: 1, previousDistance: 12, nextDistance: 13 },
+  ]);
+  const racersById = Object.fromEntries(opponents.map((car) => [car.id, car.nextDistance]));
+  assert.equal(racersById.player, 30);
+  assert.equal(racersById.rival, 13);
+
+  const trafficEncounter = resolveCityRushCarMovement([
+    { id: 'traffic', collisionGroup: 'traffic', lane: 1, previousDistance: 35, nextDistance: 35.2 },
+    { id: 'player', collisionGroup: 'racer', lane: 1, previousDistance: 25, nextDistance: 32 },
+  ]);
+  const trafficById = Object.fromEntries(trafficEncounter.map((car) => [car.id, car.nextDistance]));
+  assert.ok(trafficById.traffic - trafficById.player >= CITY_RUSH_CAR_GAP - 1e-9);
+});
+
+test('cars changing lanes still block one another while their body widths overlap', () => {
+  const moved = resolveCityRushCarMovement([
+    { id: 'lane-changing-leader', lane: 2, x: 0.72, previousDistance: 12, nextDistance: 18 },
+    { id: 'lane-changing-follower', lane: 1, x: -0.74, previousDistance: 7, nextDistance: 20 },
+    { id: 'clear-lane', lane: 3, x: 3.15, previousDistance: 0, nextDistance: 30 },
+  ]);
+  const byId = Object.fromEntries(moved.map((car) => [car.id, car.nextDistance]));
+  assert.ok(byId['lane-changing-leader'] - byId['lane-changing-follower'] >= CITY_RUSH_CAR_GAP - 1e-9);
+  assert.equal(byId['clear-lane'], 30);
+});
+
+test('pickup encounters add more bonuses without placing them in slow zones', () => {
+  let seed = 112;
+  const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
+  let sawSlowZone = false;
+  let sawEmptyRow = false;
+  let sawTwoPickups = false;
+  let totalPickups = 0;
+  for (let index = 0; index < 1000; index += 1) {
+    const encounter = createCityRushEncounter(random);
+    assert.ok(encounter.pickups.length <= 2);
+    totalPickups += encounter.pickups.length;
+    if (encounter.pickups.length === 0) sawEmptyRow = true;
+    const pickupLanes = new Set();
+    for (const pickup of encounter.pickups) {
+      assert.ok(pickup.lane >= 0 && pickup.lane < CITY_RUSH_LANE_X.length);
+      assert.ok(['cash', 'oil', 'pistol', 'radio'].includes(pickup.type));
+      assert.ok(!pickupLanes.has(pickup.lane));
+      pickupLanes.add(pickup.lane);
+      assert.notEqual(pickup.lane, encounter.slowLane);
+    }
+    if (encounter.slowLane !== null) {
+      sawSlowZone = true;
+      assert.ok(encounter.slowLane >= 0 && encounter.slowLane < CITY_RUSH_LANE_X.length);
+    }
+    if (encounter.pickups.length === 2) sawTwoPickups = true;
+  }
+  assert.equal(sawSlowZone, true);
+  assert.equal(sawEmptyRow, true);
+  assert.equal(sawTwoPickups, true);
+  assert.ok(totalPickups > 900 && totalPickups < 1200, 'les bonus apparaissent plus souvent avec quelques rangées encore vides');
+});
+
+test('the helicopter always targets a rival, even when the player leads', () => {
+  const playerLeads = [
+    { id: 'player', distance: 120 },
+    { id: 'rival-a', distance: 104 },
+    { id: 'rival-b', distance: 88 },
+  ];
+  assert.equal(cityRushHelicopterTarget(playerLeads).id, 'rival-a');
+
+  const rivalLeads = [
+    { id: 'player', distance: 90 },
+    { id: 'rival-a', distance: 102 },
+    { id: 'rival-b', distance: 98 },
+  ];
+  assert.equal(cityRushHelicopterTarget(rivalLeads).id, 'rival-a');
+  assert.equal(cityRushHelicopterTarget([{ id: 'player', distance: 1 }]), null);
+});
+
+test('race standings identify the leader and player position, including ties', () => {
+  const race = [
+    { id: 'player', distance: 52 },
+    { id: 'rival-a', distance: 61 },
+    { id: 'rival-b', distance: 41 },
+    { id: 'rival-c', distance: 52 },
+  ];
+  const board = rankCityRushRacers(race);
+  assert.equal(board.leader.id, 'rival-a');
+  assert.equal(board.rank, 2);
+  assert.deepEqual(board.ordered.map((racer) => racer.id), ['rival-a', 'player', 'rival-c', 'rival-b']);
+});

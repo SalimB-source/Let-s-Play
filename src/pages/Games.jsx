@@ -8,8 +8,8 @@ import '../games/games.css';
  * Page « Jeu » — la vitrine arcade de Let's Play.
  *
  * Ce n'est PAS la page d'un jeu : c'est la liste des jeux disponibles.
- * Mirage Rush en est un (le premier, donc le plus mis en avant), les autres
- * arrivent au fur et à mesure — les cartes « bientôt » réservent leur place.
+ * Mirage Rush et Vice City Rush sont jouables ; les cartes « bientôt »
+ * réservent la place des prochains jeux.
  *
  * Pour ajouter un jeu : une entrée dans `GAMES` ci-dessous, et la route
  * correspondante dans src/main.jsx.
@@ -18,6 +18,7 @@ import '../games/games.css';
 // Miniature de Mirage Rush : key art façon western (JoJo's Steel Ball Run),
 // posée dans /public/mirage-rush-thumb.jpg.
 const MIRAGE_THUMB = `${import.meta.env.BASE_URL}mirage-rush-thumb.jpg`;
+const VICE_CITY_THUMB = `${import.meta.env.BASE_URL}vice-city-rush-thumb.svg`;
 
 const GAMES = [
   {
@@ -34,17 +35,17 @@ const GAMES = [
     tags: ['ARCADE', 'SOLO', 'DUEL', 'COUPE', 'EN LIGNE'],
   },
   {
-    id: 'projet-02',
-    title: 'PROJET 02',
-    subtitle: 'EN DÉVELOPPEMENT',
-    description: 'Un nouveau jeu est en cours de construction dans les mêmes studios virtuels. Rien à montrer pour l’instant — la place est réservée.',
-    thumb: null,
-    alt: '',
-    route: null,
-    badge: 'WIP',
-    tone: 'soon',
+    id: 'vice-city-rush',
+    title: 'VICE CITY RUSH',
+    subtitle: '3D ARCADE RALLY · 80’S NEON',
+    description: 'Une décapotable, un pilote et cinq circuits de nuit : Vice City, New York, Tokyo, Paris et Londres. Ramasse des objets, déclenche tes pouvoirs et vise la première place — sans collision.',
+    thumb: VICE_CITY_THUMB,
+    alt: 'Vice City Rush — cabriolet rose sur une avenue néon au coucher du soleil, entre palmiers et gratte-ciel',
+    route: '/jeu/vice-city-rush',
+    badge: 'JOUABLE',
+    tone: 'vice',
     featured: false,
-    tags: ['MYSTÈRE'],
+    tags: ['ARCADE', 'COURSE', '5 VILLES', 'SOLO'],
   },
   {
     id: 'projet-03',
@@ -66,7 +67,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'LES JEUX',
     h2b: 'DE LA MAISON.',
-    intro: 'Des formats courts, jouables directement dans la page. Un désert, une ruée, un duel : Mirage Rush ouvre la voie, d’autres suivent.',
+    intro: 'Deux arcades jouables directement dans la page : le western nerveux de Mirage Rush et les courses néon de Vice City Rush, de Miami à Tokyo.',
     play: 'JOUER',
     soon: 'BIENTÔT',
   },
@@ -74,7 +75,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'THE GAMES',
     h2b: 'WE BUILD.',
-    intro: 'Short formats, playable right inside the page. One desert, one rush, one duel: Mirage Rush leads the way, others will follow.',
+    intro: 'Two arcade games, playable right in the page: the wild western rush of Mirage Rush and the neon city races of Vice City Rush.',
     play: 'PLAY',
     soon: 'SOON',
   },
@@ -82,7 +83,7 @@ const HEAD = {
     eyebrow: 'LET’S PLAY ARCADE',
     h2a: 'ألعاب',
     h2b: 'المنصة.',
-    intro: 'أشكال قصيرة تُلعب مباشرة داخل الصفحة. صحراء واحدة، سباق واحد، مبارزة واحدة: Mirage Rush يفتح الطريق، وأخرى ستتبعه.',
+    intro: 'لعبتان أركيد داخل الصفحة: سباق Mirage Rush في أجواء الغرب، وسباقات Vice City Rush الليلية بين المدن المضيئة.',
     play: 'العب',
     soon: 'قريباً',
   },
