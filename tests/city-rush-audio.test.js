@@ -286,8 +286,8 @@ test('le monde déclenche les bruitages au bon endroit', async () => {
   ]);
   // Le moteur est piloté à l’image près par le monde.
   assert.match(world, /audioRef\?\.current\?\.engine\(\{/);
-  // Coup de feu au départ du tir, dérapage de la cible 0,3 s plus tard.
-  assert.match(world, /audioRef\?\.current\?\.gunshot\(\{ pan: vehiclePan\(attackerId\) \}\)/);
+  // Rafale de mitrailleuse au départ du tir, dérapage de la cible 0,3 s plus tard.
+  assert.match(world, /audioRef\?\.current\?\.machineGun\(\{ pan: vehiclePan\(attackerId\) \}\)/);
   assert.match(world, /audioRef\?\.current\?\.skid\(\{\s*pan: vehiclePan\(targetId\),\s*delay: 0\.3,/);
   // Hélicoptère : rotor à l’approche, missile au départ, explosion à l’impact.
   assert.match(world, /audioRef\?\.current\?\.helicopterStart\(\)/);

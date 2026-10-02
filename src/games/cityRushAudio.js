@@ -547,6 +547,23 @@ export class CityRushAudio {
   }
 
   /**
+   * Mitrailleuse : une rafale rapprochée de coups secs (ratatatata), panoramiquée
+   * sur la voie du tireur. Chaque coup réutilise la texture du `gunshot`.
+   */
+  machineGun({ pan = 0, delay = 0, shots = 7, spacing = 0.045 } = {}) {
+    if (!this.ready()) return;
+    const out = this.panned(pan);
+    const base = this.context.currentTime + 0.005 + Math.max(0, delay);
+    for (let i = 0; i < Math.max(1, shots); i += 1) {
+      const time = base + i * spacing;
+      this.noise(time, 0.08, 0.5, { type: 'highpass', frequency: 3000, destination: out });
+      this.noise(time, 0.26, 0.3, { type: 'lowpass', frequency: 1500, frequencyTo: 500, destination: out });
+      this.tone(180, time, 0.12, 'sine', 0.28, { destination: out });
+      this.noise(time + 0.15, 0.3, 0.08, { type: 'lowpass', frequency: 900, destination: out });
+    }
+  }
+
+  /**
    * Dérapage : pneus qui hurlent. `intensity` va de 0,6 (flaque d'huile) à
    * 1 (Voiture touchée par un tir). Le son est décalé de `delay` pour
    * tomber sur l'impact, pas sur le coup de feu.
