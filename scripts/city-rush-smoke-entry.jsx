@@ -119,6 +119,15 @@ const AUDIO_METHODS = [
   'policeSiren', 'policeSirenOff', 'tunnelRush', 'tunnelExit',
 ];
 
+// L'escouade du dernier tour doit coller au leader sur les cinq circuits. Seuils
+// calibrés sur 200 courses de ce même pilote (5 villes × 40, hasard non
+// fixé) : avec le dégagement du trafic, au pire 104 m de retard et 73 % du
+// tour dans les 60 m ; engluée derrière un camion, elle allait jusqu'à 314 m
+// de retard et ne passait que 17 % du tour dans les 60 m. Marges larges.
+const POLICE_ENGAGE_RANGE = 60; // m
+const POLICE_MIN_ENGAGED_SHARE = 0.5;
+const POLICE_MAX_LAG = 175; // m
+
 for (const [index, city] of cities.entries()) {
   const car = CITY_RUSH_CARS[index % CITY_RUSH_CARS.length];
   const callbacks = {
@@ -221,6 +230,10 @@ for (const [index, city] of cities.entries()) {
   let policeAheadFrames = 0;
   let policeClosestGap = Infinity;
   let policeBeacons = 0;
+  // L'escouade doit rester dans la course : images où la berline la plus proche
+  // est dans la zone du leader, et retard maximal de la mieux placée sur lui.
+  let policeEngagedFrames = 0;
+  let policeMaxLag = 0;
   // Tremis : le joueur ne doit jamais rouler dans une voie murée, et le HUD
   // doit annoncer chaque passage sous la voûte.
   let tunnelHudFrames = 0;
@@ -287,6 +300,9 @@ for (const [index, city] of cities.entries()) {
         policeClosestGap = Math.min(policeClosestGap, Math.abs((car.distance || 0) - hudLeader));
         if (car.mode) policeBeacons += 1;
       }
+      const squadGap = Math.min(...hud.police.map((car) => Math.abs((car.distance || 0) - hudLeader)));
+      if (squadGap <= POLICE_ENGAGE_RANGE) policeEngagedFrames += 1;
+      policeMaxLag = Math.max(policeMaxLag, hudLeader - Math.max(...hud.police.map((car) => car.distance || 0)));
     }
     if (scene && frames % 30 === 0) {
       const stats = countVisible(scene);
@@ -354,6 +370,14 @@ for (const [index, city] of cities.entries()) {
   }
   if (policeHudFrames < 30) fail('l’escouade ne tient pas la piste', policeHudFrames);
   if (!(policeClosestGap <= 30)) fail(`l’escouade reste à ${policeClosestGap} m du leader`, policeClosestGap);
+  // Sur chaque circuit, l'escouade reste dans le sillage du leader au lieu de
+  // s'enliser derrière le trafic lent : sinon elle décroche de 100 à 300 m, sort
+  // de l'écran et le dernier tour n'a plus de police que dans le HUD.
+  const policeEngagedShare = policeEngagedFrames / policeHudFrames;
+  if (policeEngagedShare < POLICE_MIN_ENGAGED_SHARE) {
+    fail(`l’escouade n’est dans les ${POLICE_ENGAGE_RANGE} m du leader que ${(policeEngagedShare * 100).toFixed(0)} % du dernier tour`, { policeEngagedFrames, policeHudFrames });
+  }
+  if (policeMaxLag > POLICE_MAX_LAG) fail(`l’escouade décroche de ${policeMaxLag.toFixed(0)} m derrière le leader`, { policeMaxLag, limit: POLICE_MAX_LAG });
   if ((firstPoliceHud.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le classement du HUD');
   if ((finish.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le tableau d’arrivée');
   if (lastHud.police?.length) fail('l’escouade reste en piste après l’arrivée', lastHud.police);
@@ -462,7 +486,7 @@ for (const [index, city] of cities.entries()) {
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
     (tunnels.length ? ` · tremis ${tunnelIds.size}/${tunnels.length} traversés (${tunnelHudFrames} f sous la voûte)` : ' · sans tremis') +
-    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m` : 'jamais entrée'}` +
+    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeHudFrames) * 100).toFixed(0)} % · retard max ${policeMaxLag.toFixed(0)} m` : 'jamais entrée'}` +
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
     ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris` +
     ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,

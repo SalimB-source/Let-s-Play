@@ -901,6 +901,8 @@ export function prairieSunsetState(progress = 0) {
     skyBottom: [0.90, 0.70, 0.45],
     skyHorizon: [0.84, 0.52, 0.32],
     skyTop: [0.46, 0.37, 0.44],
+    sunBottom: [0.98, 0.25, 0.045],
+    sunTop: [1.0, 0.49, 0.12],
     glow: [1.0, 0.58, 0.29],
     fog: [0.851, 0.604, 0.439],
     bg: [0.459, 0.376, 0.455],
@@ -912,6 +914,8 @@ export function prairieSunsetState(progress = 0) {
     skyBottom: [0.72, 0.28, 0.26],
     skyHorizon: [0.45, 0.20, 0.36],
     skyTop: [0.16, 0.13, 0.28],
+    sunBottom: [0.84, 0.20, 0.09],
+    sunTop: [0.98, 0.43, 0.22],
     glow: [0.95, 0.32, 0.18],
     fog: [0.38, 0.21, 0.31],
     bg: [0.18, 0.12, 0.23],
@@ -923,6 +927,8 @@ export function prairieSunsetState(progress = 0) {
     skyBottom: [0.11, 0.15, 0.28],
     skyHorizon: [0.06, 0.09, 0.20],
     skyTop: [0.02, 0.03, 0.09],
+    sunBottom: [0.48, 0.60, 0.86],
+    sunTop: [0.62, 0.73, 1.0],
     glow: [0.10, 0.14, 0.26],
     fog: [0.07, 0.10, 0.18],
     bg: [0.04, 0.06, 0.12],
@@ -940,9 +946,12 @@ export function prairieSunsetState(progress = 0) {
     sunElevation,
     sunVisible,
     starAlpha,
+    moonAlpha: p <= 0.58 ? 0 : Math.min(1, (p - 0.58) / 0.34),
     skyBottom: lerpVec3(from.skyBottom, to.skyBottom, localT),
     skyHorizon: lerpVec3(from.skyHorizon, to.skyHorizon, localT),
     skyTop: lerpVec3(from.skyTop, to.skyTop, localT),
+    sunBottom: lerpVec3(from.sunBottom, to.sunBottom, localT),
+    sunTop: lerpVec3(from.sunTop, to.sunTop, localT),
     glow: lerpVec3(from.glow, to.glow, localT),
     fog: lerpVec3(from.fog, to.fog, localT),
     bg: lerpVec3(from.bg, to.bg, localT),
@@ -953,5 +962,55 @@ export function prairieSunsetState(progress = 0) {
     sunIntensity: 1.8 - 1.12 * p,
     rimIntensity: 0.45 - 0.22 * p,
   };
+}
+
+/** Dust Creek's own amber-to-violet sunset; follows race distance just like Plaines d'Or. */
+export function westernSunsetState(progress = 0) {
+  const p = Math.min(1, Math.max(0, Number(progress) || 0));
+  const golden = {
+    skyBottom: [0.98, 0.70, 0.42], skyHorizon: [0.91, 0.43, 0.27], skyTop: [0.43, 0.31, 0.43],
+    sunBottom: [1.0, 0.25, 0.05], sunTop: [1.0, 0.57, 0.18], glow: [1.0, 0.48, 0.19],
+    fog: [0.73, 0.43, 0.30], bg: [0.43, 0.30, 0.35], hemiSky: [1.0, 0.77, 0.51],
+    hemiGround: [0.39, 0.27, 0.18], sunLight: [1.0, 0.64, 0.34],
+  };
+  const dusk = {
+    skyBottom: [0.66, 0.25, 0.24], skyHorizon: [0.42, 0.15, 0.29], skyTop: [0.15, 0.12, 0.30],
+    sunBottom: [0.82, 0.18, 0.09], sunTop: [0.96, 0.39, 0.21], glow: [0.92, 0.27, 0.15],
+    fog: [0.31, 0.17, 0.25], bg: [0.15, 0.10, 0.20], hemiSky: [0.68, 0.39, 0.46],
+    hemiGround: [0.20, 0.14, 0.17], sunLight: [0.91, 0.37, 0.26],
+  };
+  const night = {
+    skyBottom: [0.09, 0.13, 0.24], skyHorizon: [0.045, 0.065, 0.15], skyTop: [0.012, 0.018, 0.065],
+    sunBottom: [0.38, 0.50, 0.78], sunTop: [0.62, 0.72, 1.0], glow: [0.07, 0.11, 0.22],
+    fog: [0.055, 0.075, 0.14], bg: [0.025, 0.035, 0.085], hemiSky: [0.34, 0.45, 0.72],
+    hemiGround: [0.075, 0.09, 0.15], sunLight: [0.38, 0.51, 0.82],
+  };
+  const from = p < 0.55 ? golden : dusk;
+  const to = p < 0.55 ? dusk : night;
+  const localT = p < 0.55 ? p / 0.55 : (p - 0.55) / 0.45;
+  const colors = {};
+  for (const key of Object.keys(golden)) colors[key] = lerpVec3(from[key], to[key], localT);
+  const sunElevation = 5.5 - 17.5 * p;
+  return {
+    progress: p,
+    sunElevation,
+    sunVisible: sunElevation + 8 > 0,
+    starAlpha: p <= 0.5 ? 0 : Math.min(1, (p - 0.5) / 0.45),
+    moonAlpha: p <= 0.58 ? 0 : Math.min(1, (p - 0.58) / 0.34),
+    ...colors,
+    hemiIntensity: 1.58 - 0.82 * p,
+    sunIntensity: 1.92 - 1.38 * p,
+    rimIntensity: 0.7 - 0.38 * p,
+  };
+}
+
+/** Deterministic intensity for Dust Creek's practical lights during nightfall. */
+export function westernNightLightIntensity(kind, progress = 0, time = 0, reducedMotion = false) {
+  const p = Math.min(1, Math.max(0, Number(progress) || 0));
+  const nightfall = Math.min(1, Math.max(0, (p - 0.27) / 0.63));
+  const flicker = reducedMotion ? 0 : Math.sin(time * 0.009) * 0.035 + Math.sin(time * 0.017) * 0.018;
+  return kind === 'lantern'
+    ? 0.015 + nightfall * (1.85 + flicker)
+    : 0.01 + nightfall * 0.82;
 }
 

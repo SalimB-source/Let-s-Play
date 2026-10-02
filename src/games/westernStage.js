@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { westernNightLightIntensity } from './mirageRules';
 
 // ───────────────────────────────────────────────────────────────────
 // FAR WEST / DUST CREEK STAGE
@@ -37,7 +38,6 @@ const STONE_BRICK = material(0x945d47, 0.95);
 const IRON_BLACK = material(0x27272b, 0.65);
 const BRASS_GOLD = material(0xdfa538, 0.45);
 const GLASS_WINDOW = material(0x253b47, 0.3);
-const GLASS_LANTERN = material(0xf7c452, 0.3);
 const WATER_BLUE = material(0x387a94, 0.35);
 const HAY_GOLD = material(0xdfb445, 1.0);
 const HAY_ROPE = material(0x8f6a27, 1.0);
@@ -402,7 +402,7 @@ function makeWaterTrough(side = 1, z = 0) {
   return group;
 }
 
-function makeWhiskeyBarrels(side = 1, x = 6.6, z = 0) {
+function makeWhiskeyBarrels(side = 1, x = 6.7, z = 0) {
   const group = new THREE.Group();
   const bx = side * x;
   // Barrel 1
@@ -420,7 +420,7 @@ function makeWhiskeyBarrels(side = 1, x = 6.6, z = 0) {
   return group;
 }
 
-function makeHayBales(side = 1, x = 6.5, z = 0, count = 3) {
+function makeHayBales(side = 1, x = 6.6, z = 0, count = 3) {
   const group = new THREE.Group();
   const bx = side * x;
   const offsets = [
@@ -438,7 +438,7 @@ function makeHayBales(side = 1, x = 6.5, z = 0, count = 3) {
   return group;
 }
 
-function makeWagonWheel(side = 1, x = 7.3, y = 0.6, z = 0) {
+function makeWagonWheel(side = 1, x = 7.35, y = 0.6, z = 0) {
   const group = new THREE.Group();
   const wx = side * x;
   // Rim
@@ -455,7 +455,7 @@ function makeWagonWheel(side = 1, x = 7.3, y = 0.6, z = 0) {
   return group;
 }
 
-function makeBatwingDoors(side = 1, x = 7.36, y = 1.1, z = 0) {
+function makeBatwingDoors(side = 1, x = 7.38, y = 1.1, z = 0) {
   const group = new THREE.Group();
   const dx = side * x;
   // Left swinging shutter (angled slightly outward)
@@ -472,7 +472,7 @@ function makeBatwingDoors(side = 1, x = 7.36, y = 1.1, z = 0) {
   return group;
 }
 
-function makeWindmill(side = 1, x = 9.8, z = 0) {
+function makeWindmill(side = 1, x = 10.2, z = 0) {
   const group = new THREE.Group();
   const wx = side * x;
   // 4 wooden trellis tower legs tapering up
@@ -505,7 +505,7 @@ function makeWindmill(side = 1, x = 9.8, z = 0) {
   return group;
 }
 
-function makeWaterTower(side = 1, x = 10.2, z = 0) {
+function makeWaterTower(side = 1, x = 10.5, z = 0) {
   const group = new THREE.Group();
   const tx = side * x;
   // 4 heavy timber legs
@@ -534,7 +534,7 @@ function makeWaterTower(side = 1, x = 10.2, z = 0) {
   return group;
 }
 
-function makeCactus(side = 1, x = 12.0, z = 0) {
+function makeCactus(side = 1, x = 13.5, z = 0) {
   const group = new THREE.Group();
   const cx = side * x;
   // Main trunk
@@ -557,6 +557,7 @@ export function westernBuilding(index, side) {
   const people = [];
   const animals = [];
   const windmills = [];
+  const nightLights = [];
 
   // Continuous boardwalk along the entire block
   const boardwalk = makeBoardwalk(side, 11.2);
@@ -566,6 +567,27 @@ export function westernBuilding(index, side) {
   const cactus = makeCactus(side, 13.5, (index % 3 - 1) * 3.5);
   group.add(cactus);
 
+  // Helper for night lights: window & lantern
+  const makeWindowMat = () => {
+    const m = new THREE.MeshStandardMaterial({
+      color: 0x273f49, emissive: 0xffa443, emissiveIntensity: 0.02,
+      roughness: 0.42, metalness: 0.08,
+    });
+    nightLights.push({ material: m, kind: 'window' });
+    return m;
+  };
+  const makeLantern = (lx, ly, lz) => {
+    const lm = new THREE.MeshStandardMaterial({
+      color: 0xffc66e, emissive: 0xff8d28, emissiveIntensity: 0.015,
+      roughness: 0.32, metalness: 0.08,
+    });
+    const lantern = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), lm);
+    lantern.position.set(lx, ly, lz);
+    lantern.userData.glow = true;
+    group.add(lantern);
+    nightLights.push({ material: lm, kind: 'lantern' });
+  };
+
   // 10 Distinct Segment Designs:
   const slot = index % 10;
 
@@ -573,7 +595,6 @@ export function westernBuilding(index, side) {
     // ═════════════════════════════════════════════════════════════════
     // SEGMENT 0 (LEFT): GRAND "GOLDEN NUGGET SALOON"
     // ═════════════════════════════════════════════════════════════════
-    // Main 2-story building body
     const h = 5.6;
     box(group, WOOD_CEDAR, side * 9.8, h / 2, 0, 4.8, h, 9.8);
     // Western false-front stepped pediment
@@ -592,19 +613,21 @@ export function westernBuilding(index, side) {
     }
     box(group, WOOD_LIGHT, side * 5.3, 3.8, 0, 0.08, 0.85, 8.6); // outer railing
 
-    // Windows with glass & trim
+    // Windows with glowing glass & trim
     for (const z of [-2.6, 2.6]) {
-      // 1st floor windows
       box(group, WOOD_BARN_TRIM, side * 7.41, 1.8, z, 0.08, 1.6, 1.4);
-      box(group, GLASS_WINDOW, side * 7.39, 1.8, z, 0.06, 1.4, 1.2);
-      // 2nd floor windows
+      box(group, makeWindowMat(), side * 7.39, 1.8, z, 0.06, 1.4, 1.2);
       box(group, WOOD_BARN_TRIM, side * 7.41, 4.4, z, 0.08, 1.6, 1.4);
-      box(group, GLASS_WINDOW, side * 7.39, 4.4, z, 0.06, 1.4, 1.2);
+      box(group, makeWindowMat(), side * 7.39, 4.4, z, 0.06, 1.4, 1.2);
     }
 
     // Swinging Batwing Doors
     const doors = makeBatwingDoors(side, 7.38, 1.1, 0);
     group.add(doors);
+
+    // Hanging lanterns
+    makeLantern(side * 5.3, 2.9, -1.4);
+    makeLantern(side * 5.3, 2.9, 1.4);
 
     // Large Saloon Sign
     const sign = makeSignBoard('GOLDEN NUGGET', '★ SALOON ★', 4.6, 1.1);
@@ -642,7 +665,6 @@ export function westernBuilding(index, side) {
     // ═════════════════════════════════════════════════════════════════
     // SEGMENT 0 (RIGHT): "DUST CREEK LIVERY & STABLES" (Grand Barn)
     // ═════════════════════════════════════════════════════════════════
-    // Red barn with gambrel roof
     const h = 5.2;
     box(group, WOOD_BARN_RED, side * 9.8, h / 2, 0, 4.8, h, 9.8);
     // Barn white trim lines (X braces)
@@ -658,6 +680,9 @@ export function westernBuilding(index, side) {
     box(group, WOOD_DARK, side * 7.41, 1.0, 2.5, 0.08, 1.9, 3.2);
     box(group, WOOD_RUSTIC, side * 7.36, 0.55, 2.5, 0.12, 1.0, 3.1); // half stall door
     box(group, HAY_GOLD, side * 7.6, 0.22, 2.5, 1.2, 0.3, 2.8);
+
+    // Lantern by the stable door
+    makeLantern(side * 7.35, 2.6, -1.0);
 
     // Stable Sign
     const sign = makeSignBoard('DUST CREEK', '★ LIVERY & STABLES ★', 4.4, 1.0);
@@ -711,7 +736,7 @@ export function westernBuilding(index, side) {
 
     // Barred Jail Cell Window
     box(group, WOOD_DARK, side * 7.41, 1.7, 2.6, 0.08, 1.4, 1.5);
-    box(group, GLASS_WINDOW, side * 7.39, 1.7, 2.6, 0.05, 1.2, 1.3);
+    box(group, makeWindowMat(), side * 7.39, 1.7, 2.6, 0.05, 1.2, 1.3);
     for (const dz of [-0.4, 0, 0.4]) {
       box(group, IRON_BLACK, side * 7.37, 1.7, 2.6 + dz, 0.04, 1.25, 0.04); // iron bars
     }
@@ -719,6 +744,7 @@ export function westernBuilding(index, side) {
     // Heavy office door
     box(group, WOOD_DARK, side * 7.41, 1.1, -1.2, 0.08, 2.1, 1.1);
     box(group, BRASS_GOLD, side * 7.36, 1.1, -0.8, 0.05, 0.08, 0.08); // brass knob
+    makeLantern(side * 7.35, 2.4, -0.4);
 
     // Sheriff Sign
     const sign = makeSignBoard('SHERIFF & JAIL', '★ DUST CREEK ★', 4.4, 1.0);
@@ -762,10 +788,11 @@ export function westernBuilding(index, side) {
     // Two display windows
     for (const z of [-2.4, 2.4]) {
       box(group, WOOD_LIGHT, side * 7.41, 1.7, z, 0.08, 1.5, 1.8);
-      box(group, GLASS_WINDOW, side * 7.39, 1.7, z, 0.05, 1.3, 1.6);
+      box(group, makeWindowMat(), side * 7.39, 1.7, z, 0.05, 1.3, 1.6);
     }
-    // Entrance door
+    // Entrance door & lantern
     box(group, WOOD_DARK, side * 7.41, 1.1, 0, 0.08, 2.2, 1.2);
+    makeLantern(side * 7.35, 2.5, 0.8);
 
     // General Store Sign
     const sign = makeSignBoard('GENERAL STORE', 'PROVISIONS & TOOLS', 4.5, 1.0);
@@ -813,6 +840,7 @@ export function westernBuilding(index, side) {
     // Batwing doors
     const doors = makeBatwingDoors(side, 7.38, 1.1, 0);
     group.add(doors);
+    makeLantern(side * 5.3, 2.7, 0);
 
     // Saloon Sign
     const sign = makeSignBoard('LAST CHANCE', '★ SALOON ★', 4.4, 1.0);
@@ -909,9 +937,11 @@ export function westernBuilding(index, side) {
     box(group, WOOD_CEDAR, side * 6.35, 3.1, 0, 2.2, 0.20, 9.8);
     box(group, WOOD_LIGHT, side * 5.3, 3.6, 0, 0.08, 0.80, 8.6); // railing
 
-    // Swinging doors
+    // Swinging doors & lanterns
     const doors = makeBatwingDoors(side, 7.38, 1.1, 0);
     group.add(doors);
+    makeLantern(side * 5.3, 2.8, -1.2);
+    makeLantern(side * 5.3, 2.8, 1.2);
 
     // Saloon Sign
     const sign = makeSignBoard('THE SILVER SPUR', 'FINE ALES & LIQUOR', 4.5, 1.0);
@@ -957,7 +987,7 @@ export function westernBuilding(index, side) {
     // Heavy iron-barred windows
     for (const z of [-2.7, 2.7]) {
       box(group, IRON_BLACK, side * 7.39, 1.8, z, 0.08, 1.4, 1.2);
-      box(group, GLASS_WINDOW, side * 7.37, 1.8, z, 0.05, 1.2, 1.0);
+      box(group, makeWindowMat(), side * 7.37, 1.8, z, 0.05, 1.2, 1.0);
       for (const dz of [-0.3, 0, 0.3]) {
         box(group, IRON_BLACK, side * 7.35, 1.8, z + dz, 0.04, 1.25, 0.04);
       }
@@ -1112,8 +1142,19 @@ export function westernBuilding(index, side) {
   if (people.length) group.userData.people = people;
   if (animals.length) group.userData.animals = animals;
   if (windmills.length) group.userData.windmills = windmills;
+  if (nightLights.length) group.userData.westernLights = nightLights;
 
   return group;
+}
+
+/** Turns the town's windows and porch lamps on gradually as dusk reaches Dust Creek. */
+export function updateWesternLights(lights = [], progress = 0, time = 0, reducedMotion = false) {
+  if (!lights) return;
+  for (const light of lights) {
+    if (light?.material) {
+      light.material.emissiveIntensity = westernNightLightIntensity(light.kind, progress, time, reducedMotion);
+    }
+  }
 }
 
 // ───────────────────────────────────────────────────────────────────
