@@ -23,6 +23,8 @@
  *   5. Coupe Grand Tour : 4 courses, globe distinct du calice du Désert dans
  *      le sélecteur, le HUD, le bouton du podium et le repli sans WebGL ;
  *      rejouer garde le globe et revenir au Désert retrouve son calice.
+ *   6. Coupe des Vents : 3 cartes différentes, 3 victoires à +10 OR, soit
+ *      +30 OR au total ; la Rose des Vents accompagne le HUD et le podium.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -161,8 +163,18 @@ export async function checkMirageCup(assert) {
     assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 0);
 
     // ── 1. Le joueur remporte la Coupe du Désert ───────────────────────────
+    assert.equal(node.querySelectorAll('.mirage-cup-card').length, 4, 'chaque coupe est présentée comme une option distincte');
+    assert.ok([...node.querySelectorAll('.mirage-cup-card')].every((button) => button.tagName === 'BUTTON' && button.type === 'button'),
+      'les coupes sont de vrais boutons HTML');
+    assert.equal(text(node.querySelector('.mirage-cup-card.is-desert .mirage-cup-reward-copy > strong')), '+30 OR', 'la Coupe du Désert met en avant son gain maximal');
+    assert.equal(text(node.querySelector('.mirage-cup-card.is-winds .mirage-cup-reward-copy > strong')), '+30 OR', 'la Coupe des Vents annonce son gain maximal');
+    assert.equal(text(node.querySelector('.mirage-cup-card.is-worldtour .mirage-cup-reward-copy > strong')), '+40 OR', 'le Grand Tour annonce son gain maximal');
+    assert.equal(text(node.querySelector('.mirage-cup-card.is-legends .mirage-cup-reward-copy > strong')), '+50 OR', 'la Coupe des Légendes annonce son gain maximal');
+    assert.equal(node.querySelector('.mirage-cup-card.is-desert .mirage-cup-route'), null, 'les terrains restent cachés dans l’aperçu');
     assert.equal(node.querySelector('.mirage-cup-card.is-desert svg').dataset.trophy, 'desert');
+    assert.equal(node.querySelector('.mirage-cup-card.is-winds svg').dataset.trophy, 'winds');
     assert.equal(node.querySelector('.mirage-cup-card.is-worldtour svg').dataset.trophy, 'worldtour');
+    assert.notEqual(node.querySelector('.mirage-cup-card.is-desert svg').innerHTML, node.querySelector('.mirage-cup-card.is-winds svg').innerHTML, 'la Rose des Vents a sa silhouette propre');
     assert.notEqual(node.querySelector('.mirage-cup-card.is-desert svg').innerHTML, node.querySelector('.mirage-cup-card.is-worldtour svg').innerHTML, 'chaque coupe annonce une silhouette différente');
     await typeName(node.querySelector('.mirage-cup-name-field input'), 'Salim');
     assert.equal(window.localStorage.getItem('letsplay_mirage_cup_name_v1'), 'Salim', 'le nom du trophée est mémorisé');
@@ -182,6 +194,7 @@ export async function checkMirageCup(assert) {
     let results = await waitForResults(node);
     assert.match(text(results.querySelector('.mirage-overlay-kicker')), /COURSE 1 \/ 3/);
     assert.match(text(results.querySelector('h2')), /VICTOIRE/);
+    assert.equal(text(results.querySelector('.mirage-coin-gain')), '+10 OR', 'la victoire crédite bien les 10 OR annoncés sur l’aperçu');
     assert.equal(text(results.querySelector('.mirage-cup-gained strong')), '+10 POINTS');
     assert.deepEqual(standings(results), ['Salim 10', `${ombre} 7`, `${sauge} 4`, `${amethyste} 2`]);
     assert.deepEqual(details(results), ['1ᵉʳ · 40,5 s', '2ᵉ · à 10 m', '3ᵉ · à 20 m', '4ᵉ · à 30 m']);
@@ -200,6 +213,7 @@ export async function checkMirageCup(assert) {
 
     results = await waitForResults(node);
     assert.match(text(results.querySelector('h2')), /BELLE 2ᵉ PLACE/);
+    assert.equal(results.querySelector('.mirage-coin-gain'), null, 'l’or du mode coupe est gagné à la première place');
     assert.equal(text(results.querySelector('.mirage-cup-gained strong')), '+7 POINTS');
     // 17 – 17 : même nombre de victoires, donc la dernière course départage (l'Ombre y a gagné) ;
     // même chose pour Améthyste (3ᵉ) devant Sauge (4ᵉ) à 6 – 6.
@@ -414,6 +428,51 @@ export async function checkMirageCup(assert) {
     await waitForCountdown(tour.node);
     await waitForRace(tour.node);
     assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'desert', 'changer de coupe ne conserve pas le globe précédent');
+
+    // ── 6. Coupe des Vents : trois cartes, trois victoires, 30 OR ──────────
+    await press('Escape');
+    await click(tour.node.querySelector('.mirage-pause-overlay .mirage-share-button'));
+    await openCupFromModes(tour.node, assert);
+    const windsCard = tour.node.querySelector('.mirage-cup-card.is-winds');
+    assert.ok(windsCard, 'la Coupe des Vents est sélectionnable');
+    assert.equal(text(windsCard.querySelector('.mirage-cup-reward-copy > strong')), '+30 OR');
+    const windsIcon = windsCard.querySelector('svg').innerHTML;
+    await click(windsCard);
+    assert.equal(windsCard.getAttribute('aria-pressed'), 'true');
+    await startCupFromIntro(tour.node);
+
+    const windStages = ['sardinia', 'alger', 'snakeway'];
+    let windsResults;
+    let windsGold = 0;
+    for (let race = 0; race < windStages.length; race++) {
+      if (race > 0) await click(nextButton(tour.node));
+      await waitForCountdown(tour.node);
+      await waitForRace(tour.node);
+      assert.equal(worldProbe.props.stage, windStages[race], 'les trois courses de la Coupe des Vents sont sur des maps différentes');
+      assert.deepEqual(worldProbe.props.race.cup, { id: 'winds', index: race, total: 3 });
+      assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'winds', 'le HUD affiche la Rose des Vents');
+      await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
+      windsResults = await waitForResults(tour.node);
+      const earned = text(windsResults.querySelector('.mirage-coin-gain'));
+      assert.equal(earned, '+10 OR', 'chaque victoire crédite les 10 OR annoncés');
+      windsGold += Number.parseInt(earned, 10);
+    }
+    assert.equal(windsGold, 30, 'trois victoires rapportent exactement 30 OR');
+    assert.deepEqual(standings(windsResults), ['Salim 30', `${ombre} 21`, `${sauge} 12`, `${amethyste} 6`]);
+    assert.equal(tour.node.querySelectorAll('.mirage-profile-trophy-card').length, 3, 'la victoire ajoute la Rose des Vents sans perdre les trophées précédents');
+    const collectedWinds = tour.node.querySelector('.mirage-profile-trophy-card[data-cup-id="winds"] svg');
+    assert.equal(collectedWinds.dataset.trophy, 'winds');
+    assert.equal(collectedWinds.innerHTML, windsIcon, 'la collection partage la Rose des Vents du sélecteur');
+    const savedWindsCollection = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
+    assert.deepEqual(savedWindsCollection.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert', 'winds', 'worldtour']);
+    await click(nextButton(tour.node));
+    const windsTrophy = await until(() => tour.node.querySelector('.mirage-trophy-screen'), 'le podium de la Coupe des Vents');
+    await until(() => windsTrophy.querySelector('.mirage-trophy-fallback'), 'la Rose des Vents sans WebGL');
+    assert.equal(windsTrophy.dataset.trophy, 'winds');
+    assert.equal(text(windsTrophy.querySelector('.mirage-trophy-design')), 'Rose des Vents');
+    assert.equal(windsTrophy.querySelector('.mirage-trophy-fallback svg').innerHTML, windsIcon, 'le podium garde le dessin du sélecteur');
+    assert.notEqual(windsTrophy.querySelector('.mirage-trophy-fallback svg').innerHTML, desertIcon);
+    assert.match(text(windsTrophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe des Vents avec 30 points/);
   } finally {
     tourTimers.restore();
     await tour.unmount();

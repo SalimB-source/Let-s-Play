@@ -567,7 +567,7 @@ export default function MirageRushPage() {
     () => (cupRun ? cupStandings(cupRun).find((row) => row.isPlayer)?.points ?? 0 : 0),
     [cupRun],
   );
-  const cupPointsLine = CUP_POINTS.slice(0, riderCount).map((points, index) => `${placeLabel(index + 1)} ${points} PTS`).join(' · ');
+  const cupGoldReward = activeCup.stages.length * WIN_COINS;
   // Les skins 3D de « TON CAVALIER » se figent pendant une course : le GPU reste au jeu.
   const racing = phase === 'playing' || phase === 'countdown';
   useEffect(() => {
@@ -622,7 +622,7 @@ export default function MirageRushPage() {
     : isCup ? ['VISE LE', 'TROPHÉE.']
     : selectedMode === 'duel' ? ['À TOI DE', 'GALOPER.'] : ['LE SABLE', 'SE RÉVEILLE.'];
   const stageDescription = isCup
-    ? `Enchaîne ${activeCup.stages.length} courses à ${riderCount} cavaliers (${activeCup.stages.map(stageName).join(' → ')}) contre ${rivalNameList}, avec les mêmes pouvoirs qu’en duel. Chaque arrivée rapporte des points — plus tu finis haut, plus tu en gagnes — et le meilleur total après la dernière course soulève le trophée !`
+    ? `Enchaîne ${activeCup.stages.length} duels contre ${rivalNameList}, avec les mêmes pouvoirs qu’en duel. Chaque victoire rapporte +${WIN_COINS} OR — jusqu’à +${cupGoldReward} OR si tu gagnes toutes les courses. Les points s’additionnent : le meilleur total soulève le trophée !`
     : selectedMode === 'duel'
     ? `Affronte ${challenge ? `${challenge.name} (course fantôme) ainsi que ${chaseRivalNames}` : `${rivalCount} cavaliers rivaux IA (${rivalNameList})`} sur les ${trackLanes} voies. Les cristaux accélèrent ton cheval et chargent tes pouvoirs. Premier à ${DUEL_DISTANCE} m !`
     : stage === 'snakeway' ? 'Galope sur le Chemin du Serpent, une route dorée qui traverse les nuages orange jusqu’à la planète de Kaio. Passe sous le halo céleste, évite les météores et ramasse les fragments d’étoile dans ce voyage inspiré de Dragon Ball Z !'
@@ -641,10 +641,22 @@ export default function MirageRushPage() {
   const stageHint = selectedMode === 'online'
     ? 'ÉCRAN 02 · MAP DU SALON · 2 À 4 CAVALIERS EN LIGNE'
     : isCup
-      ? `${activeCup.stages.length} COURSES · ${cupPointsLine}`
+      ? `${activeCup.stages.length} COURSES · +${WIN_COINS} OR / VICTOIRE · JUSQU’À +${cupGoldReward} OR`
       : selectedMode === 'duel'
         ? `${riderCount} CAVALIERS · DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE`
         : '60 SECONDES · 3 VIES · MULTIPLICATEUR DE COMBO · RECORD À BATTRE';
+  const gameBrandLabel = phase === 'intro' && introStep === 'stage' && isCup
+    ? 'COUPE · PARCOURS IMPOSÉS'
+    : stage === 'snakeway' ? 'ZONE 10 · CHEMIN DU SERPENT'
+    : stage === 'airbase' ? 'ZONE 09 · THUNDER AIRBASE'
+    : stage === 'infinity' ? 'ZONE 08 · CHÂTEAU DE L’INFINI'
+    : stage === 'ramparts' ? 'ZONE 07 · REMPARTS D’OCRE'
+    : stage === 'japan' ? 'ZONE 06 · PLAINES DE YŌTEI'
+    : stage === 'alger' ? 'ZONE 05 · ALGER LA BLANCHE'
+    : stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ'
+    : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR'
+    : stage === 'western' ? 'ZONE 02 · DUST CREEK'
+    : 'ZONE 01 · DUNES DE L’ÉCHO';
 
   if (selectedMode === 'online' && onlineOpen) {
     return (
@@ -691,7 +703,7 @@ export default function MirageRushPage() {
           aria-label="Partie de Mirage Rush"
         >
           <div className="mirage-game-topbar">
-            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{stage === 'snakeway' ? 'ZONE 10 · CHEMIN DU SERPENT' : stage === 'airbase' ? 'ZONE 09 · THUNDER AIRBASE' : stage === 'infinity' ? 'ZONE 08 · CHÂTEAU DE L’INFINI' : stage === 'ramparts' ? 'ZONE 07 · REMPARTS D’OCRE' : stage === 'japan' ? 'ZONE 06 · PLAINES DE YŌTEI' : stage === 'alger' ? 'ZONE 05 · ALGER LA BLANCHE' : stage === 'sardinia' ? 'ZONE 04 · COSTA OMERTÀ' : stage === 'prairie' ? 'ZONE 03 · PLAINES D’OR' : stage === 'western' ? 'ZONE 02 · DUST CREEK' : 'ZONE 01 · DUNES DE L’ÉCHO'}</span></div>
+            <div className="mirage-game-brand"><span className="mirage-brand-gem">◆</span><span>{gameBrandLabel}</span></div>
             <div className="mirage-game-controls-top">
               {phase === 'playing' && <>
                 <span className="mirage-live-pill"><i /> EN PARTIE</span>
@@ -1092,7 +1104,6 @@ export default function MirageRushPage() {
                         riderName={riderName}
                         setRiderName={(value) => { setRiderName(value); writeRiderName(value); }}
                         defaultRiderName={defaultRiderName}
-                        riderCount={riderCount}
                       />
                     ) : (
                       <MirageStagePicker

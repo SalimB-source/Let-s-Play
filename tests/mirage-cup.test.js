@@ -22,7 +22,7 @@ import {
 } from '../src/games/mirageCup.js';
 import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, laneCount, setLaneCount } from '../src/games/mirageRules.js';
 import { CHARACTER_PALETTES } from '../src/games/mirageCharacters.js';
-import { SKINS } from '../src/games/mirageProgression.js';
+import { SKINS, WIN_COINS } from '../src/games/mirageProgression.js';
 import { MIRAGE_CUP_TROPHIES_KEY, createState, mergeStates, normalizeState, reduce } from '../src/achievements/engine.js';
 
 // Résultat tel que MirageWorld.finish() l’émet en duel : les rivaux déjà
@@ -133,6 +133,25 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
     assert.ok(entry.stages.length >= 2, `${entry.id} chains several races`);
     assert.ok(Object.isFrozen(entry) && Object.isFrozen(entry.stages), 'the catalogue is immutable');
   }
+});
+
+test('Coupe des Vents has three distinct maps and can pay 30 OR for three wins', () => {
+  const cup = getCup('winds');
+  assert.equal(cup.name, 'Coupe des Vents');
+  assert.equal(cup.trophyDesign, 'winds');
+  assert.deepEqual([...cup.stages], ['sardinia', 'alger', 'snakeway']);
+  assert.equal(new Set(cup.stages).size, 3, 'each of its three races uses a different map');
+  assert.ok(cup.stages.every((stage) => !getCup('desert').stages.includes(stage)), 'none of the maps are from the Coupe du Désert');
+  assert.equal(cup.stages.length * WIN_COINS, 30, '10 OR per win × three races = 30 OR maximum');
+
+  let run = createCupRun(cup.id);
+  for (const stage of cup.stages) {
+    assert.equal(cupCurrentStage(run), stage);
+    run = recordCupRace(run, resultFromOrder(stage, ['player', 'ombre', 'sauge', 'amethyste']));
+  }
+  assert.equal(isCupComplete(run), true);
+  assert.equal(cupWinner(run).id, PLAYER_RIDER_ID, 'the winner of all three races lifts the trophy');
+  assert.equal(cupWinner(run).points, 30);
 });
 
 test('a fresh cup has four riders — the player first, then the three NPC rivals — and no race yet', () => {

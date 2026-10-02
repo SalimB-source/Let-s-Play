@@ -1,6 +1,7 @@
 import React from 'react';
 import { DUEL_DISTANCE, duelRivalsForTrack, laneCount } from './mirageRules';
-import { CUPS, CUP_POINTS, MAX_RIDER_NAME, placeLabel } from './mirageCup';
+import { CUPS, MAX_RIDER_NAME } from './mirageCup';
+import { WIN_COINS } from './mirageProgression';
 import MirageTrophyIcon from './MirageTrophyIcon';
 import { getTrophyDesign } from './mirageTrophy';
 import desertThumbnail from './assets/maps/desert.webp';
@@ -73,35 +74,40 @@ export function MirageStagePicker({ stage, setSelectedStage, locked = false, mod
 }
 
 /**
- * Mode COUPE : à la place du choix de terrain, on choisit une coupe — une suite
- * de courses sur des terrains imposés, avec le barème des points — et le nom
- * qui s’affichera sur le trophée. Une carte par entrée de `CUPS` : en ajouter
- * une dans le catalogue, avec son design dans `mirageTrophy.js`, suffit.
+ * Mode COUPE : les cartes résument la récompense et le trophée sans dévoiler
+ * le détail des terrains ; chaque coupe reste un véritable bouton de sélection.
+ * Une carte par entrée de `CUPS` : ajouter une coupe au catalogue suffit.
  */
-export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defaultRiderName, riderCount = CUP_POINTS.length }) {
+export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defaultRiderName }) {
   return <>
     <div className="mirage-picker-label"><span>02 / TA COUPE</span><span>{CUPS.length} COUPE{CUPS.length > 1 ? 'S' : ''} DISPONIBLE{CUPS.length > 1 ? 'S' : ''}</span></div>
     <div className="mirage-cup-picker" role="group" aria-label="Choisir la coupe">
-      {CUPS.map(cup => <button type="button" key={cup.id} className={`mirage-cup-card is-${cup.id}`} aria-pressed={cupId === cup.id} onClick={() => setCupId(cup.id)}>
-        <span className="mirage-cup-card-head">
-          <span className="mirage-cup-emblem" aria-hidden="true"><MirageTrophyIcon cupId={cup.id} /></span>
-          <span className="mirage-cup-card-title"><strong>{cup.name}</strong><span>{cup.tagline}</span><small>TROPHÉE · {getTrophyDesign(cup.id).name}</small></span>
-          <span className="mirage-choice-dot" aria-hidden="true">{cupId === cup.id ? '✓' : ''}</span>
-        </span>
-        <span className="mirage-cup-route" role="list" aria-label="Les courses, dans l’ordre">
-          {cup.stages.map((stageId, index) => {
-            const map = MAPS.find(entry => entry.id === stageId);
-            return <span className="mirage-cup-stop" role="listitem" key={`${stageId}-${index}`}>
-              <MapThumbnail map={map} />
-              <span className="mirage-cup-stop-number">COURSE {index + 1}</span>
-              <strong>{map.name}</strong>
-            </span>;
-          })}
-        </span>
-        <span className="mirage-cup-points" role="list" aria-label="Points par place">
-          {CUP_POINTS.slice(0, riderCount).map((points, index) => <span role="listitem" key={index}><b>{placeLabel(index + 1)}</b> {points} pts</span>)}
-        </span>
-      </button>)}
+      {CUPS.map(cup => {
+        const selected = cupId === cup.id;
+        const maxGold = cup.stages.length * WIN_COINS;
+        return <button
+          type="button"
+          key={cup.id}
+          className={`mirage-cup-card is-${cup.id}`}
+          aria-pressed={selected}
+          onClick={() => setCupId(cup.id)}
+        >
+          <span className="mirage-cup-card-head">
+            <span className="mirage-cup-emblem" aria-hidden="true"><MirageTrophyIcon cupId={cup.id} /></span>
+            <span className="mirage-cup-card-title"><strong>{cup.name}</strong><span>{cup.tagline}</span><small>TROPHÉE · {getTrophyDesign(cup.id).name}</small></span>
+            <span className="mirage-choice-dot" aria-hidden="true">{selected ? '✓' : ''}</span>
+          </span>
+          <span className="mirage-cup-reward">
+            <i className="mirage-coin" aria-hidden="true" />
+            <span className="mirage-cup-reward-copy">
+              <small>OR À GAGNER · MAXIMUM</small>
+              <strong>+{maxGold} <i>OR</i></strong>
+              <em>+{WIN_COINS} OR PAR VICTOIRE</em>
+            </span>
+          </span>
+          <span className="mirage-cup-card-action">{selected ? 'COUPE SÉLECTIONNÉE' : 'CHOISIR CETTE COUPE'} <b aria-hidden="true">{selected ? '✓' : '↗'}</b></span>
+        </button>;
+      })}
     </div>
     <label className="mirage-cup-name-field">
       <span>NOM SUR LE TROPHÉE</span>

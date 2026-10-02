@@ -42,6 +42,14 @@ export const CUPS = Object.freeze([
     stages: Object.freeze(['desert', 'western', 'prairie']),
   }),
   Object.freeze({
+    id: 'winds',
+    name: 'Coupe des Vents',
+    trophyDesign: 'winds',
+    tagline: 'De la baie aux nuages',
+    // Costa Omertà → Alger la Blanche → Chemin du Serpent
+    stages: Object.freeze(['sardinia', 'alger', 'snakeway']),
+  }),
+  Object.freeze({
     id: 'worldtour',
     name: 'Coupe Grand Tour',
     trophyDesign: 'worldtour',

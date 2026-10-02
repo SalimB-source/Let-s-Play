@@ -115,8 +115,8 @@ test('progression round-trips through storage and survives corrupted JSON', () =
   assert.deepEqual(loadProgress(null), defaultProgress());
 });
 
-test('a victory awards 5 gold and a rush awards none', () => {
-  assert.equal(WIN_COINS, 5);
+test('a victory awards 10 gold and a rush awards none', () => {
+  assert.equal(WIN_COINS, 10);
   assert.equal(coinsForRun({}), 0);
   assert.equal(coinsForRun({ mode: 'rush', score: 99999 }), 0);
   assert.equal(coinsForRun({ mode: 'duel', won: false, rank: 2 }), 0);
