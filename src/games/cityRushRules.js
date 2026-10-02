@@ -132,7 +132,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ffd44f',
     key: 'R',
     automatic: false,
-    description: 'L’hélicoptère immobilise le rival le mieux placé (jamais son pilote) et les adversaires proches ; la reprise de chaque cible règle la durée (2 s de base).',
+    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un poursuivant) et les adversaires proches de l’impact devant ton capot ; la reprise de chaque cible règle la durée (2 s de base).',
     duration: 2,
   }),
 });
@@ -340,11 +340,32 @@ export function rankCityRushRacers(racers, playerId = 'player') {
   };
 }
 
-// Le talkie vise toujours un rival : même si le joueur mène, l’hélico cible
-// le rival le mieux placé et ne peut jamais retourner le missile contre lui.
+// Les pouvoirs de tir (mitrailleuse, talkie-walkie) ne visent qu'un adversaire
+// situé DEVANT leur pilote : on ne peut jamais viser, ni toucher, quelqu'un qui
+// est derrière soi. La tolérance d'un mètre évite de perdre une cible collée au
+// pare-chocs au moment d'un dépassement (les deux voitures comptent alors
+// comme à la même hauteur).
+export const CITY_RUSH_FORWARD_TOLERANCE = 1;
+
+export function cityRushIsAhead(distance, referenceDistance, tolerance = CITY_RUSH_FORWARD_TOLERANCE) {
+  const target = Number(distance);
+  const reference = Number(referenceDistance);
+  const slack = Number(tolerance);
+  if (!Number.isFinite(target) || !Number.isFinite(reference)) return false;
+  return target >= reference - Math.max(0, Number.isFinite(slack) ? slack : CITY_RUSH_FORWARD_TOLERANCE);
+}
+
+// Le talkie ne verrouille que les rivaux devant son pilote : parmi eux, c'est
+// toujours le mieux placé qui est visé. Un pilote en tête n'a donc aucune cible
+// (l'hélico ne se retourne jamais contre lui) et garde sa jauge chargée. Si
+// l'appelant est absent de la liste (appel défensif), on retombe sur l'ancien
+// comportement : le mieux placé des rivaux.
 export function cityRushHelicopterTarget(racers = [], playerId = 'player') {
+  const caller = racers.find((racer) => racer?.id === playerId) || null;
+  const reference = Number(caller?.distance);
   return [...racers]
     .filter((racer) => racer?.id !== playerId)
+    .filter((racer) => !Number.isFinite(reference) || cityRushIsAhead(racer?.distance, reference))
     .sort((a, b) => (Number(b.distance) || 0) - (Number(a.distance) || 0))[0] || null;
 }
 
