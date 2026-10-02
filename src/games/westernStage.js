@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { westernNightLightIntensity } from './mirageRules';
+import { westernNightLightIntensity } from './mirageRules.js';
 
 // ───────────────────────────────────────────────────────────────────
 // FAR WEST / DUST CREEK STAGE
