@@ -56,6 +56,15 @@ export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'white-lambo', name: 'Lamborghini blanche', speed: 7.2, width: 1.92, length: 3.8 }),
 ]);
 
+// Un choc avec le trafic ne retire pas de vie : il crée un court moment de
+// contact lisible, puis le véhicule lent se rabat pour libérer la voie. La
+// durée est volontairement indépendante du modèle de cabriolet choisi : le
+// joueur humain et les IA encaissent exactement la même seconde.
+export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 1;
+export const CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN = 1.2;
+export const CITY_RUSH_TRAFFIC_IMPACT_GAP = CITY_RUSH_CAR_GAP;
+export const CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION = 0.72;
+
 export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRate, deltaTime) {
   const current = Math.max(0, Number(currentSpeed) || 0);
   const target = Math.max(0, Number(targetSpeed) || 0);
@@ -452,6 +461,87 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
     }
   }
   return resolved;
+}
+
+const finiteNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+
+/**
+ * Repère le moment où une voiture de course va réellement toucher le trafic
+ * lent. Le moteur de mouvement garde une marge de sécurité pour empêcher les
+ * voitures de se superposer ; on observe donc les distances demandées avant
+ * ce rabotage, sinon l'impact ne pourrait jamais être déclenché.
+ *
+ * Les rivaux de course ne se percutent toujours pas entre eux : seuls les
+ * couples `racer` → `traffic` sont retournés. `x` permet aussi de détecter un
+ * changement de voie en cours, quand les deux voitures n'ont pas encore le
+ * même numéro de voie mais que leurs carrosseries se recouvrent.
+ */
+export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_TRAFFIC_IMPACT_GAP) {
+  const safeGap = Math.max(0, finiteNumber(minimumGap, CITY_RUSH_TRAFFIC_IMPACT_GAP));
+  const racers = (Array.isArray(cars) ? cars : []).filter((car) => car?.collisionGroup === 'racer');
+  const traffic = (Array.isArray(cars) ? cars : []).filter((car) => car?.collisionGroup === 'traffic');
+  const impacts = [];
+
+  for (const racer of racers) {
+    const racerPrevious = finiteNumber(racer.previousDistance);
+    const racerNext = Math.max(racerPrevious, finiteNumber(racer.nextDistance, racerPrevious));
+    const racerWidth = Math.max(0, finiteNumber(racer.width, 1.9));
+    for (const vehicle of traffic) {
+      const trafficPrevious = finiteNumber(vehicle.previousDistance);
+      const trafficNext = Math.max(trafficPrevious, finiteNumber(vehicle.nextDistance, trafficPrevious));
+      const trafficWidth = Math.max(0, finiteNumber(vehicle.width, 1.9));
+      const sameLane = racer.lane === vehicle.lane;
+      const lateralOverlap = Number.isFinite(Number(racer.x))
+        && Number.isFinite(Number(vehicle.x))
+        && Math.abs(Number(racer.x) - Number(vehicle.x)) < (racerWidth + trafficWidth) / 2;
+      if (!sameLane && !lateralOverlap) continue;
+
+      const previousGap = trafficPrevious - racerPrevious;
+      const requestedGap = trafficNext - racerNext;
+      // Ne pas transformer deux voitures déjà espacées de moins de `safeGap`
+      // en une suite infinie d'impacts : il faut entrer dans la marge depuis
+      // l'arrière, ce qui laisse le temps au véhicule de se rabattre.
+      const wasOutsideContact = previousGap > safeGap + 1e-7;
+      const touches = requestedGap <= safeGap + 1e-7
+        || racerNext >= trafficPrevious - safeGap - 1e-7;
+      if (!wasOutsideContact || !touches) continue;
+      impacts.push({
+        racerId: racer.id,
+        trafficId: vehicle.id,
+        previousGap,
+        requestedGap,
+        lane: vehicle.lane,
+      });
+    }
+  }
+  return impacts.sort((a, b) => a.requestedGap - b.requestedGap);
+}
+
+/**
+ * Choisit une voie de dégagement pour un véhicule lent touché. On tente une
+ * voie voisine, puis n'importe quelle voie ouverte si un tunnel ferme le
+ * bord immédiat. Les voies signalées comme occupées restent un dernier
+ * recours seulement : même dans un peloton serré, le trafic doit quitter la
+ * trajectoire pour que la voiture touchée ne rebloque pas le joueur.
+ */
+export function chooseCityRushTrafficEscapeLane({
+  currentLane = 0,
+  laneCount = CITY_RUSH_LANE_X.length,
+  blockedLanes = [],
+  openLanes = null,
+} = {}) {
+  const count = Math.max(1, Math.floor(finiteNumber(laneCount, CITY_RUSH_LANE_X.length)));
+  const current = Math.max(0, Math.min(count - 1, Math.floor(finiteNumber(currentLane))));
+  const open = Array.isArray(openLanes) && openLanes.length
+    ? new Set(openLanes.filter((lane) => lane >= 0 && lane < count))
+    : null;
+  const blocked = new Set((Array.isArray(blockedLanes) ? blockedLanes : [])
+    .filter((lane) => lane >= 0 && lane < count));
+  const candidates = Array.from({ length: count }, (_, lane) => lane)
+    .filter((lane) => lane !== current && (!open || open.has(lane)))
+    .sort((a, b) => Math.abs(a - current) - Math.abs(b - current) || a - b);
+  const clear = candidates.find((lane) => !blocked.has(lane));
+  return clear ?? candidates[0] ?? current;
 }
 
 /**
