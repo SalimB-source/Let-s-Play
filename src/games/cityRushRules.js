@@ -841,6 +841,11 @@ export function selectCityRushRacers({
 // Leur seule mission est de nuire au leader — elles raflent **en priorité les
 // bonus rouges (mitrailleuse) et jaunes (hélicoptère)** pour l'empêcher de
 // s'armer, puis ouvrent le feu sur lui dès qu'une jauge rouge est pleine.
+//
+// Contrairement aux autres voitures de course, une berline est **solide** :
+// elle ne se traverse pas. Elle peut donc se rabattre devant le leader puis
+// lever le pied pour le retenir — un barrage roulant, exactement l'effet
+// d'une voiture lente percutée — avant de repartir et de revenir à la charge.
 export const CITY_RUSH_POLICE_COUNT = 2;
 // Voies extérieures : l'escouade encadre le leader au lieu de lui barrer la route.
 export const CITY_RUSH_POLICE_LANES = Object.freeze([0, 3]);
@@ -858,6 +863,55 @@ export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafa
 export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
 
+// ── Barrage roulant : la berline coupe la route au leader ───────────────────
+// Une berline qui se retrouve devant le leader, dans sa voie, lève le pied au
+// lieu de tenir sa hauteur. Le leader la percute comme une voiture lente : il
+// est retenu à sa hauteur tant qu'il ne change pas de voie. Le barrage dure
+// quelques secondes, puis la berline repart pour revenir à la charge.
+export const CITY_RUSH_POLICE_BLOCKADE_RANGE = 34; // m : hauteur maximale d'un barrage devant le leader
+export const CITY_RUSH_POLICE_BLOCKADE_SPEED_FACTOR = 0.62; // de sa vitesse d'ancrage
+export const CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED = 12; // m/s : un barrage roule, il ne s'arrête jamais
+export const CITY_RUSH_POLICE_BLOCKADE_HOLD = 3.2; // s : durée d'un barrage avant de repartir
+export const CITY_RUSH_POLICE_INTERCEPT_RANGE = 80; // m : devant le leader, portée où la berline vise sa voie
+export const CITY_RUSH_POLICE_INTERCEPT_WEIGHT = 3; // un barrage vaut trois bonus ordinaires
+export const CITY_RUSH_POLICE_HUNT_RANGE = 60; // m : sous cette distance, un rouge/jaune passe avant le barrage
+// Engluée (vitesse effondrée derrière une voiture qu'elle ne peut plus
+// traverser), la berline cherche d'abord à s'extraire de la voie : rester
+// collée derrière un pilote l'empêcherait de venir le bloquer.
+export const CITY_RUSH_POLICE_ESCAPE_WEIGHT = 14;
+
+// ── La police du trafic sort de sa ronde ────────────────────────────────────
+// Percuter une berline de police « pnj » la sort de sa patrouille : elle prend
+// en chasse le pilote qui l'a touchée, avec exactement les mêmes armes que
+// l'escouade du dernier tour — barrage roulant, vols de bonus rouges/jaunes et
+// rafales de mitrailleuse. Elle n'est pas classée non plus, et rentre dans le
+// rang au drapeau à damier.
+export const CITY_RUSH_POLICE_RALLY_TOLERANCE = 0.3; // m : marge de contact au-delà de la distance de sécurité
+export const CITY_RUSH_POLICE_RALLY_BASE_SPEED = CITY_RUSH_POLICE_BASE_SPEED;
+
+// Le contact se juge comme la résolution de mouvement : recouvrement latéral
+// **et** pare-chocs dans la fenêtre de sécurité des voitures (`distance`, par
+// défaut `CITY_RUSH_CAR_GAP`). Deux voitures calées à cette distance sont en
+// train de se percuter — l'une pousse, l'autre bloque.
+export function cityRushPoliceContact({
+  gap = 0,
+  x,
+  targetX,
+  width = 1.94,
+  targetWidth = 1.9,
+  distance = CITY_RUSH_CAR_GAP,
+  tolerance = CITY_RUSH_POLICE_RALLY_TOLERANCE,
+} = {}) {
+  const safeGap = Number(gap);
+  const reach = Math.max(0, Number(distance) || 0) + Math.max(0, Number(tolerance) || 0);
+  if (!Number.isFinite(safeGap) || Math.abs(safeGap) > reach) return false;
+  const lateral = Number(x);
+  const otherLateral = Number(targetX);
+  if (!Number.isFinite(lateral) || !Number.isFinite(otherLateral)) return false;
+  const halfWidths = (Math.max(0, Number(width) || 0) + Math.max(0, Number(targetWidth) || 0)) / 2;
+  return Math.abs(lateral - otherLateral) < Math.max(1.2, halfWidths);
+}
+
 // L'escouade ne prend en chasse que le premier du classement. `entries` ne
 // contient que les pilotes classés (notre joueur et les trois rivaux) : à
 // égalité, le premier de la liste — notre joueur — est déclaré leader, comme
@@ -872,11 +926,57 @@ export function cityRushPackLeader(entries = []) {
   return leader;
 }
 
+// Une berline est « en barrage » quand elle roule devant le leader, à sa
+// hauteur (même voie, ou recouvrement latéral suffisant pour le toucher) et à
+// portée de son pare-chocs. C'est dans cette position qu'elle lève le pied
+// pour le retenir derrière elle.
+export function cityRushPoliceBlocksLeader({
+  gap = 0,
+  lane = 0,
+  leaderLane = 0,
+  x,
+  leaderX,
+  policeWidth = 1.94,
+  leaderWidth = 1.9,
+  range = CITY_RUSH_POLICE_BLOCKADE_RANGE,
+} = {}) {
+  const ahead = Number(gap);
+  const reach = Math.max(1, Number(range) || CITY_RUSH_POLICE_BLOCKADE_RANGE);
+  if (!Number.isFinite(ahead) || ahead <= 0 || ahead > reach) return false;
+  const policeLateral = Number(x);
+  const leaderLateral = Number(leaderX);
+  if (Number.isFinite(policeLateral) && Number.isFinite(leaderLateral)) {
+    const widths = (Math.max(0, Number(policeWidth) || 0) + Math.max(0, Number(leaderWidth) || 0)) / 2;
+    return Math.abs(policeLateral - leaderLateral) < Math.max(1.2, widths);
+  }
+  return clampCityRushLane(lane) === clampCityRushLane(leaderLane);
+}
+
+// Vitesse d'un barrage roulant : la berline se cale nettement sous la vitesse
+// du leader pour le retenir. Elle ne s'arrête jamais en travers de la piste —
+// un mur immobile bloquerait la course pour de bon — d'où le plancher, et
+// l'ancrage sur la vitesse de croisière de l'escouade pour ne pas s'engluer
+// quand le leader est lui-même ralenti par le barrage.
+export function cityRushPoliceBlockadePace({
+  leaderSpeed = CITY_RUSH_PLAYER_SPEED,
+  baseSpeed = CITY_RUSH_POLICE_BASE_SPEED,
+  factor = CITY_RUSH_POLICE_BLOCKADE_SPEED_FACTOR,
+  floor = CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED,
+} = {}) {
+  const safeLeader = Math.max(0, Number(leaderSpeed) || 0);
+  const safeBase = Math.max(0, Number(baseSpeed) || 0);
+  const anchor = Math.max(safeLeader, safeBase * 0.82);
+  const ratio = Math.min(1, Math.max(0.2, Number(factor) || CITY_RUSH_POLICE_BLOCKADE_SPEED_FACTOR));
+  const minimum = Math.max(0, Number(floor) || 0);
+  return Math.max(minimum, Math.min(anchor, anchor * ratio));
+}
+
 // Vitesse visée par une berline pour rester collée au leader : elle sprinte
 // quand elle est distancée, lève le pied quand elle est trop en avant, et se
 // cale sur la vitesse du leader dans la zone de croisière. Une fois la jauge
 // rouge pleine, `lead` devient négatif (voir `CITY_RUSH_POLICE_ATTACK_LEAD`)
-// et la berline se replie derrière le leader pour ouvrir le feu.
+// et la berline se replie derrière le leader pour ouvrir le feu. En barrage
+// (`blocking`), elle roule devant lui et freine pour le retenir.
 export function cityRushPolicePace({
   gap = 0,
   baseSpeed = CITY_RUSH_POLICE_BASE_SPEED,
@@ -885,6 +985,7 @@ export function cityRushPolicePace({
   tolerance = CITY_RUSH_POLICE_LEAD_SLACK,
   sprint = 1.34,
   ease = 0.9,
+  blocking = false,
 } = {}) {
   const safeBase = Math.max(0, Number(baseSpeed) || 0);
   const safeLeader = Math.max(0, Number(leaderSpeed) || 0);
@@ -893,6 +994,9 @@ export function cityRushPolicePace({
   const slack = Math.max(0, Number(tolerance) || 0);
   const sprintFactor = Math.max(1, Number(sprint) || 1.34);
   const easeFactor = Math.min(1, Math.max(0.2, Number(ease) || 0.9));
+  // Barrage : devant le leader, la berline lève le pied au lieu de tenir sa
+  // hauteur. C'est ce qui force le poursuivi à la percuter ou à la contourner.
+  if (blocking && safeGap > 0) return cityRushPoliceBlockadePace({ leaderSpeed: safeLeader, baseSpeed: safeBase });
   if (safeGap < safeLead - slack) return safeBase * sprintFactor;
   if (safeGap > safeLead + slack) {
     // Trop en avant : elle lève le pied d'autant plus qu'elle est loin. Une
@@ -936,6 +1040,10 @@ export function isCityRushPoliceLaneJammed({
 // plus jamais à l'écran. Une voie bouchée est donc écartée d'office tant
 // qu'une voie libre est ouverte ; si tout est bouché, le choix d'origine
 // reste valable (la berline touche alors le véhicule, voir le monde 3D).
+//
+// Deux ajouts du barrage : `racers` (les voitures de course sont solides, une
+// berline ne reste pas engluée derrière elles) et `interceptLane` (devant le
+// leader, la berline se rabat dans sa voie pour lui couper la route).
 export function chooseCityRushPoliceLane({
   currentLane = 0,
   laneCount = CITY_RUSH_LANE_X.length,
@@ -945,8 +1053,13 @@ export function chooseCityRushPoliceLane({
   pickups = [],
   slowZones = [],
   traffic = [],
+  racers = [],
   targetLane = null,
   homeLane = null,
+  interceptLane = null,
+  interceptGap = 0,
+  interceptRange = CITY_RUSH_POLICE_INTERCEPT_RANGE,
+  stuck = false,
   lookAheadDistance = CITY_RUSH_POLICE_LOOKAHEAD,
 } = {}) {
   const lane = clampCityRushLane(currentLane, laneCount);
@@ -958,8 +1071,33 @@ export function chooseCityRushPoliceLane({
   const lookAhead = Math.max(1, Number(lookAheadDistance) || CITY_RUSH_POLICE_LOOKAHEAD);
   const racerSpeed = Math.max(0, Number(speed) || 0);
   const huntedLane = targetLane === null || targetLane === undefined ? null : clampCityRushLane(targetLane, laneCount);
+  // Le barrage n'a de sens que devant le leader : la berline vise sa voie dès
+  // qu'elle le dépasse, et lâche prise si elle est encore derrière lui.
+  const interceptLead = Number(interceptGap);
+  const interceptLimit = Math.max(1, Number(interceptRange) || CITY_RUSH_POLICE_INTERCEPT_RANGE);
+  const intercepting = interceptLane !== null && interceptLane !== undefined
+    && Number.isFinite(interceptLead) && interceptLead >= 0 && interceptLead <= interceptLimit;
+  const interceptTarget = intercepting ? clampCityRushLane(interceptLane, laneCount) : null;
+  // Une voie bouchée par un véhicule lent est écartée d'office tant qu'une voie
+  // libre est ouverte : la convoitise (×100) écrasait la prudence, et l'escouade
+  // restait collée à un camion, à 5 m/s, pendant que le leader s'envolait.
   const clearLanes = candidates.filter((candidate) => !isCityRushPoliceLaneJammed({ lane: candidate, distance, speed: racerSpeed, traffic }));
   const options = clearLanes.length ? clearLanes : candidates;
+  // Couper la route au leader est un choix de mission, pas de convoitise : une
+  // berline qui lui est passée devant se rabat dans sa voie, une voie à la
+  // fois, sans se disperser sur les bonus ordinaires — sauf sur une voie
+  // bouchée, qu'elle contourne. Un bonus rouge ou jaune à portée de capot reste
+  // prioritaire : c'est ce qui prive le leader de ses armes, la mission
+  // première de l'escouade.
+  if (interceptTarget !== null) {
+    const huntedWithinReach = pickups.some((pickup) => {
+      if (!CITY_RUSH_POLICE_HUNT_TYPES.includes(pickup.type)) return false;
+      const gap = Number(pickup.distance) - Number(distance);
+      return Number.isFinite(gap) && gap > -3 && gap <= CITY_RUSH_POLICE_HUNT_RANGE;
+    });
+    const toward = interceptTarget > lane ? lane + 1 : interceptTarget < lane ? lane - 1 : lane;
+    if (!huntedWithinReach && options.includes(toward)) return toward;
+  }
   let bestLane = options.includes(lane) ? lane : options[0];
   let bestScore = -Infinity;
 
@@ -991,7 +1129,27 @@ export function chooseCityRushPoliceLane({
       safetyScore -= timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5;
       // Embouteillage : une berline engluée derrière un véhicule lent cherche
       // activement à s'en extraire — elle ne se contente pas de le suivre.
-      if (gap < CITY_RUSH_POLICE_BLOCK_RANGE) safetyScore -= 26;
+      if (gap < CITY_RUSH_POLICE_BLOCK_RANGE) {
+        safetyScore -= 26;
+        if (stuck) greed -= CITY_RUSH_POLICE_ESCAPE_WEIGHT * (22 + (1 - gap / lookAhead) * 10);
+      }
+    }
+    // Une voiture de course est solide : devant la berline, elle bouche la voie
+    // comme un véhicule lent. Elle « compte à l'envers » dans la convoitise —
+    // la berline aime mieux changer de voie que rester engluée derrière un
+    // pilote qu'elle ne peut plus traverser, sauf si un bonus rouge ou jaune
+    // traîne justement là. Derrière, un pilote ne gêne pas : c'est le barrage.
+    for (const racer of racers) {
+      const gap = Number(racer.distance) - Number(distance);
+      if (racer.lane !== candidate || !Number.isFinite(gap) || gap <= 0 || gap > lookAhead) continue;
+      greed -= (stuck ? CITY_RUSH_POLICE_ESCAPE_WEIGHT : 1.6) * (22 + (1 - gap / lookAhead) * 10);
+    }
+    // Couper la route au leader vaut trois bonus ordinaires : la berline se
+    // rabat dans sa voie pour lui barrer la route. Un rouge ou un jaune reste
+    // prioritaire (il vaut cinq bonus), et un barrage déjà en place se défend.
+    if (interceptTarget !== null && candidate === interceptTarget) {
+      const urgency = 1 - Math.max(0, interceptLead) / interceptLimit;
+      greed += CITY_RUSH_POLICE_INTERCEPT_WEIGHT * (22 + urgency * 10);
     }
     // À défaut de bonus, une berline se rabat volontiers dans la voie du
     // leader ou dans sa voie d'entrée : les deux berlines encadrent la piste
@@ -1007,35 +1165,48 @@ export function chooseCityRushPoliceLane({
   return bestLane;
 }
 
-// Les berlines de police ne bloquent personne (elles traversent le peloton
-// comme les rivaux se traversent entre eux) mais **ne traversent pas le
-// trafic** : leur distance est rabotée derrière le véhicule lent de leur voie.
-// `blockedBy` désigne le véhicule qui a freiné la berline cette image (son
-// `id`), ou `null` : le monde 3D s'en sert pour le heurter — le détecteur de
-// chocs ne voit que l'entrée dans la marge depuis l'arrière, et une berline
-// restée plaquée contre un véhicule dont le choc a été refusé le suivrait sans
-// fin à son allure.
-export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], minimumGap = CITY_RUSH_CAR_GAP) {
+// Les berlines de police sont des obstacles solides : elles ne traversent ni le
+// trafic lent, ni les voitures de course (`racers`), ni leur coéquipière — et
+// elles **bloquent** donc la voie comme n'importe quelle voiture, sans dégâts ni
+// pénalité pour qui les percute.
+//
+// `blockedBy` désigne le véhicule de **trafic** qui a freiné la berline cette
+// image (son `id`), ou `null` : le monde 3D s'en sert pour le heurter — sinon
+// l'escouade resterait engluée derrière lui tandis que le leader s'envole (voir
+// `applyTrafficImpact`). Une berline retenue par un pilote, elle, ne le heurte
+// pas : c'est le barrage qui travaille.
+export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], minimumGap = CITY_RUSH_CAR_GAP, racers = []) {
   const safeGap = Math.max(0, Number(minimumGap) || 0);
-  return policeCars.map((car) => {
+  const list = Array.isArray(policeCars) ? policeCars : [];
+  const trafficList = Array.isArray(traffic) ? traffic : [];
+  const racerList = Array.isArray(racers) ? racers : [];
+  const lateralX = (car) => (Number.isFinite(Number(car?.x)) ? Number(car.x) : Number(car?.currentX));
+  const lateralWidth = (car) => (Number.isFinite(Number(car?.width)) ? Number(car.width) : 1.94);
+  return list.map((car) => {
     const previousDistance = Number.isFinite(Number(car.distance)) ? Number(car.distance) : 0;
     const requestedDistance = Number.isFinite(Number(car.nextDistance)) ? Number(car.nextDistance) : previousDistance;
     let nextDistance = Math.max(previousDistance, requestedDistance);
     let blockedBy = null;
-    for (const other of traffic) {
-      const otherDistance = Number(other.distance);
+    const carX = lateralX(car);
+    const carWidth = lateralWidth(car);
+    const blockers = [...trafficList, ...racerList, ...list.filter((other) => other !== car)];
+    for (const other of blockers) {
+      // Le trafic et les pilotes sont déjà à leur position du jour ; entre
+      // berlines, on vise la position demandée pour que la seconde ne colle
+      // pas deux fois la distance de sécurité.
+      const otherDistance = Number.isFinite(Number(other.nextDistance)) ? Number(other.nextDistance) : Number(other.distance);
       if (!Number.isFinite(otherDistance) || otherDistance <= previousDistance) continue;
       const sameLane = other.lane === car.lane;
-      const policeWidth = Number.isFinite(Number(car.width)) ? Number(car.width) : 1.94;
-      const otherWidth = Number.isFinite(Number(other.width)) ? Number(other.width) : 1.94;
-      const lateralOverlap = Number.isFinite(Number(other.x))
-        && Number.isFinite(Number(car.x))
-        && Math.abs(Number(other.x) - Number(car.x)) < (policeWidth + otherWidth) / 2;
+      const otherX = lateralX(other);
+      const lateralOverlap = Number.isFinite(otherX) && Number.isFinite(carX)
+        && Math.abs(otherX - carX) < (carWidth + lateralWidth(other)) / 2;
       if (!sameLane && !lateralOverlap) continue;
       const limit = Math.max(previousDistance, otherDistance - safeGap);
       if (limit < nextDistance) {
         nextDistance = limit;
-        blockedBy = other.id ?? null;
+        // Seul le trafic lent est heurté pour se dégager : un pilote ou une
+        // coéquipière ne se pousse pas.
+        if (trafficList.includes(other)) blockedBy = other.id ?? null;
       }
     }
     return { ...car, previousDistance, nextDistance, blockedBy };
@@ -1219,6 +1390,12 @@ export function buildCityRushMinimapState(
       return {
         id: police.id || `police-${index}`,
         name: police.name || 'POLICE',
+        // `blocking` permet à la mini-carte de signaler un barrage roulant,
+        // `rallied` de distinguer la police du trafic rappelée par un contact
+        // des berlines d'interception du dernier tour.
+        mode: police.mode || null,
+        blocking: Boolean(police.blocking) || police.mode === 'blockade',
+        rallied: Boolean(police.rallied),
         distance: Math.round(distance),
         lane,
         x: point.x,

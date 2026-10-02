@@ -43,6 +43,8 @@ export default function CityRushMinimap({
   );
   const { focus, markers, startLine, midGate } = minimap;
   const police = minimap.pursuers || [];
+  const blockers = police.filter((car) => car.blocking).length;
+  const rallied = police.filter((car) => car.rallied).length;
   // Tremis du circuit : la voûte et, quand la chaussée se resserre, la bande
   // des voies murées. Le resserrement se voit venir sur la carte.
   const tunnelBands = useMemo(() => cityRushTunnelMinimapBands(cityId), [cityId]);
@@ -58,8 +60,8 @@ export default function CityRushMinimap({
         </span>
         <span className="city-rush-minimap-badges">
           {police.length > 0 && (
-            <span className="city-rush-minimap-police" title="L’escouade de police du dernier tour — hors classement">
-              🚨 POLICE ×{police.length}
+            <span className="city-rush-minimap-police" title={`Poursuivants hors classement, solides : ils se rabattent devant leur pilote pour le bloquer.${rallied > 0 ? ' La police routière a été percutée : elle chasse celui qui l’a touchée.' : ''}`}>
+              🚨 POLICE ×{police.length}{rallied > 0 ? ` · ${rallied} ROUTIÈRE${rallied > 1 ? 'S' : ''}` : ''}{blockers > 0 ? ` · ${blockers} EN BARRAGE` : ''}
             </span>
           )}
           <span className="city-rush-minimap-lap">
@@ -173,9 +175,10 @@ export default function CityRushMinimap({
           {police.map((car) => (
             <g
               key={car.id}
-              className="city-rush-minimap-pursuer"
+              className={`city-rush-minimap-pursuer${car.blocking ? ' is-blockade' : ''}${car.rallied ? ' is-rallied' : ''}`}
               transform={`translate(${car.x.toFixed(2)}, ${car.y.toFixed(2)}) rotate(${car.deg.toFixed(1)})`}
             >
+              <title>{car.blocking ? `${car.name} en barrage roulant : elle freine devant le leader` : car.rallied ? `${car.name} rappelée par un contact : elle chasse le pilote qui l’a percutée` : `${car.name} en chasse`}</title>
               <circle className="city-rush-minimap-pursuer-halo" r="7.6" />
               <rect className="city-rush-minimap-pursuer-body" x="-3.8" y="-2.5" width="7.6" height="5" rx="1.5" />
               <rect className="city-rush-minimap-pursuer-light" x="-2.9" y="-1.5" width="2.4" height="3" rx="0.7" />
