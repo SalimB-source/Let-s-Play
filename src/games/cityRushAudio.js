@@ -108,6 +108,10 @@ export class CityRushAudio {
     this.engineState = null;
     this.heliNodes = null;
     this.heliStopTimer = null;
+    this.sirenBus = null;
+    this.sirenNodes = null;
+    this.sirenState = null;
+    this.sirenStopTimer = null;
   }
 
   // ── Cycle de vie ────────────────────────────────────────────────────
@@ -160,6 +164,11 @@ export class CityRushAudio {
       this.heliBus = context.createGain();
       this.heliBus.gain.value = 0;
       this.heliBus.connect(this.master);
+      // Sirène de police : muette tant que l'escouade du dernier tour n'est
+      // pas en piste (voir `policeSiren`).
+      this.sirenBus = context.createGain();
+      this.sirenBus.gain.value = 0;
+      this.sirenBus.connect(this.master);
     }
     this.running = true;
     this.paused = false;
@@ -177,6 +186,7 @@ export class CityRushAudio {
     this.clearTimer();
     this.disposeEngine();
     this.disposeHelicopter();
+    this.disposeSiren();
     if (this.context && this.master) {
       this.master.gain.cancelScheduledValues(this.context.currentTime);
       this.master.gain.setTargetAtTime(0.0001, this.context.currentTime, 0.06);
@@ -191,12 +201,17 @@ export class CityRushAudio {
     this.engine({ speed: 0, throttle: 0, idle: true });
     if (!this.context) return;
     this.heliBus?.gain.setTargetAtTime(0.0001, this.context.currentTime, 0.08);
+    this.sirenBus?.gain.setTargetAtTime(0.0001, this.context.currentTime, 0.08);
     if (this.master) this.master.gain.setTargetAtTime(0.0001, this.context.currentTime, 0.06);
   }
 
   resume() {
     if (!this.running || !this.paused || !this.context) return;
     this.paused = false;
+    // Le monde reprogramme la sirène à l'image suivante : on oublie le
+    // dernier niveau pour que la reprise soit ré-automatisée même si la
+    // distance n'a pas bougé.
+    this.sirenState = null;
     this.master.gain.setTargetAtTime(MASTER_VOLUME, this.context.currentTime, 0.08);
     this.nextTime = this.context.currentTime + 0.05;
     this.clearTimer();
@@ -215,6 +230,9 @@ export class CityRushAudio {
     this.sfxBus = null;
     this.engineBus = null;
     this.heliBus = null;
+    this.sirenBus = null;
+    this.sirenNodes = null;
+    this.sirenState = null;
     if (context && typeof context.close === 'function') {
       try { context.close(); } catch { /* Contexte déjà fermé. */ }
     }
@@ -812,6 +830,117 @@ export class CityRushAudio {
     }
     const stopAt = this.context.currentTime + 0.1;
     for (const node of [nodes.blades, nodes.chop, nodes.turbine, nodes.turbineHarmonic, nodes.vibrato]) {
+      try { node.stop(stopAt); } catch { /* Déjà arrêté. */ }
+    }
+  }
+
+  /**
+   * Sirène de l'escouade de police : deux tons qui alternent (l'aller-retour
+   * « hi-lo » des berlines américaines) tenus par un LFO carré, plus une voix
+   * légèrement désaccordée qui fait battre la sirène. Le niveau est piloté par
+   * `sirenBus` ; le monde n'envoie que la proximité de l'escouade.
+   */
+  ensureSiren() {
+    if (this.sirenNodes || !this.context) return this.sirenNodes;
+    const ctx = this.context;
+    // Le niveau est piloté par `sirenBus` : ce gain reste à 1 (comme le rotor).
+    const out = ctx.createGain();
+    out.gain.value = 1;
+    out.connect(this.sirenBus);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 1100;
+    filter.Q.value = 0.85;
+    filter.connect(out);
+
+    const body = ctx.createGain();
+    body.gain.value = 0.5;
+    body.connect(filter);
+
+    const wail = ctx.createOscillator();
+    const wailGain = ctx.createGain();
+    wail.type = 'sawtooth';
+    wail.frequency.value = 690;
+    wailGain.gain.value = 0.55;
+    wail.connect(wailGain);
+    wailGain.connect(body);
+    wail.start();
+
+    // Deuxième voix désaccordée : la sirène « bat » au lieu de siffler droit.
+    const echo = ctx.createOscillator();
+    const echoGain = ctx.createGain();
+    echo.type = 'square';
+    echo.frequency.value = 706;
+    echoGain.gain.value = 0.16;
+    echo.connect(echoGain);
+    echoGain.connect(body);
+    echo.start();
+
+    // LFO carré : l'alternance des deux hauteurs, la signature de la poursuite.
+    const lfo = ctx.createOscillator();
+    const depth = ctx.createGain();
+    lfo.type = 'square';
+    lfo.frequency.value = 1.55;
+    depth.gain.value = 215;
+    lfo.connect(depth);
+    depth.connect(wail.frequency);
+    depth.connect(echo.frequency);
+    lfo.start();
+
+    this.sirenNodes = { out, filter, body, wail, wailGain, echo, echoGain, lfo, depth };
+    return this.sirenNodes;
+  }
+
+  /**
+   * Proximité de l'escouade : appelée à chaque image par le monde 3D avec un
+   * niveau 0 → 1. Les valeurs sont quantifiées (16 crans) pour ne pas empiler
+   * d'automations inutiles, comme le régime moteur.
+   */
+  policeSiren({ level = 1, mute = false } = {}) {
+    if (!this.running || !this.context) return;
+    const nodes = this.ensureSiren();
+    if (!nodes) return;
+    const step = Math.round(clamp(Number(level) || 0, 0, 1) * 16) / 16;
+    const state = this.sirenState || (this.sirenState = {});
+    if (state.step === step && state.mute === mute) return;
+    Object.assign(state, { step, mute });
+    const volume = mute || step <= 0 ? 0.0001 : 0.03 + step * 0.13;
+    this.sirenBus.gain.setTargetAtTime(volume, this.context.currentTime, 0.12);
+  }
+
+  /** Fin de la poursuite : la sirène s'éloigne puis les nœuds sont libérés. */
+  policeSirenOff() {
+    if (!this.context || !this.sirenNodes) return;
+    const now = this.context.currentTime;
+    this.sirenBus.gain.cancelScheduledValues(now);
+    this.sirenBus.gain.setValueAtTime(Math.max(0.0001, this.sirenBus.gain.value), now);
+    this.sirenBus.gain.linearRampToValueAtTime(0.0001, now + 0.6);
+    this.sirenState = null;
+    if (this.sirenStopTimer !== null) window.clearTimeout(this.sirenStopTimer);
+    this.sirenStopTimer = window.setTimeout(() => {
+      this.sirenStopTimer = null;
+      this.disposeSiren();
+    }, 700);
+  }
+
+  disposeSiren() {
+    if (this.sirenStopTimer !== null) {
+      window.clearTimeout(this.sirenStopTimer);
+      this.sirenStopTimer = null;
+    }
+    this.sirenState = null;
+    if (!this.sirenNodes) return;
+    const nodes = this.sirenNodes;
+    this.sirenNodes = null;
+    if (this.sirenBus) {
+      try {
+        this.sirenBus.gain.cancelScheduledValues(this.context.currentTime);
+        this.sirenBus.gain.setValueAtTime(0.0001, this.context.currentTime);
+      } catch { /* Contexte disparu. */ }
+    }
+    const stopAt = this.context.currentTime + 0.1;
+    for (const node of [nodes.wail, nodes.echo, nodes.lfo]) {
       try { node.stop(stopAt); } catch { /* Déjà arrêté. */ }
     }
   }

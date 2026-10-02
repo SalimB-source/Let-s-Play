@@ -51,6 +51,7 @@ const EMPTY_HUD = {
   slowLeft: 0,
   boostLeft: 0,
   stunLeft: 0,
+  police: [],
 };
 
 function readBests() {
@@ -385,6 +386,9 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'slow-zone') showToast('ZONE DE RALENTISSEMENT · Garde l’œil sur la route.', 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
+    else if (effect.type === 'police-arrival') showToast(effect.target === 'player' ? '🚨 POLICE · DEUX BERLINES SE JOIGNENT À LA COURSE JUSTE DERRIÈRE TOI · ELLES VISENT TES BONUS ROUGES ET JAUNES.' : `🚨 POLICE · L’ESCOUADE PREND ${effect.target} EN CHASSE.`, 'pistol');
+    else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ ${effect.item === 'radio' ? 'L’HÉLICO (JAUNE)' : 'LA MITRAILLEUSE (ROUGE)'}${effect.ready ? ' · ELLE EST ARMÉE' : ''}.`, effect.item === 'radio' ? 'radio' : 'pistol');
+    else if (effect.type === 'police-fire') showToast(`TATATATA ! ${effect.police} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     // 'lap' et 'final-lap' sont affichés par la bannière de tour (onLap).
   }
 
@@ -415,7 +419,7 @@ export default function ViceCityRushPage() {
         <div>
           <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <i>/</i> STREET RALLY 3D</p>
           <h1>VICE CITY <em>RUSH</em></h1>
-          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité.</p>
+          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité. Au dernier tour, deux berlines de police entrent en piste derrière le leader pour lui nuire : elles raflent les bonus rouges et jaunes, et tirent sur le premier.</p>
         </div>
         <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
       </header>
@@ -500,6 +504,7 @@ export default function ViceCityRushPage() {
 
               <CityRushMinimap
                 racers={standings}
+                pursuers={hud.police}
                 cityId={cityId}
                 carId={selectedCar.id}
                 runId={runId}
@@ -566,7 +571,7 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-intro-copy">
                   <span className="city-rush-overlay-kicker"><i /> STREET RALLY · ARCADE 80’S</span>
                   <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>PREND LA ROUTE.</em></h2>
-                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne.</p>
+                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne — et, au dernier tour, une escouade de police qui ne court pas pour gagner, mais pour t’empêcher de ramasser les bonus rouges et jaunes.</p>
                 </div>
                 <div className="city-rush-car-select-heading city-rush-city-select-heading"><span>01 / CHOIX DE LA VILLE</span></div>
                 <div className="city-rush-city-picker" role="group" aria-label="Choisir une ville">
@@ -759,6 +764,11 @@ export default function ViceCityRushPage() {
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
             <div><b>ADVERSAIRES SANS COLLISION</b><p>Les adversaires ne se percutent pas. Le trafic lent — police, ambulance, camion-poubelle ou Lamborghini blanche — bloque la voie : contourne-le. Aucun dégât ni pénalité au contact ; évite aussi les zones de ralentissement.</p></div>
+          </section>
+
+          <section className="city-rush-no-collision-note is-police">
+            <span className="city-rush-no-collision-icon">🚨</span>
+            <div><b>ESCOUADE DE POLICE · DERNIER TOUR</b><p>Au troisième tour, <b>deux berlines d’interception entrent en piste juste derrière le premier</b> et roulent pour lui nuire : elles raflent en priorité les bonus <em className="is-red">rouges</em> (mitrailleuse) et <em className="is-yellow">jaunes</em> (hélico) avant lui, puis ouvrent le feu dès qu’une jauge rouge est pleine. Elles ne sont pas classées : l’arrivée ne retient que les quatre pilotes, et la mini-carte les montre à part. Comme les rivaux, elles ne te percutent pas — ce sont leurs vols de bonus et leurs rafales qui pèsent. Riposte : une flaque d’huile ou une rafale les ralentit comme n’importe qui.</p></div>
           </section>
         </aside>
       </main>

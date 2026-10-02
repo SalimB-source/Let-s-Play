@@ -24,32 +24,43 @@ function formatRelativeGap(racer) {
  * Mini-carte en direct de Vice City Rush :
  * - affiche le circuit en boucle de 600 m et l'emplacement temps réel des 4 joueurs ;
  * - centre l'attention (caméra + cône de visée + halo radar + écarts relatifs) sur notre joueur ;
- * - associe à chacun des 4 pilotes son avatar distinct et son pays.
+ * - associe à chacun des 4 pilotes son avatar distinct et son pays ;
+ * - montre à part l'escouade de police du dernier tour (`pursuers`), qui
+ *   n'est jamais classée.
  */
 export default function CityRushMinimap({
   racers = [],
+  pursuers = [],
   cityId = 'vice-city',
   carId,
   runId = 0,
   playerDriverId = null,
 }) {
   const minimap = useMemo(
-    () => buildCityRushMinimapState(racers, { cityId, carId, runId, playerDriverId }),
-    [racers, cityId, carId, runId, playerDriverId],
+    () => buildCityRushMinimapState(racers, { cityId, carId, runId, playerDriverId, pursuers }),
+    [racers, cityId, carId, runId, playerDriverId, pursuers],
   );
   const { focus, markers, startLine, midGate } = minimap;
+  const police = minimap.pursuers || [];
 
   return (
     <aside
       className="city-rush-minimap"
-      aria-label={`Mini-carte de la course : focus sur ${focus.displayName} (${focus.country}), ${ordinal(focus.rank)} sur 4`}
+      aria-label={`Mini-carte de la course : focus sur ${focus.displayName} (${focus.country}), ${ordinal(focus.rank)} sur 4${police.length ? `, ${police.length} berlines de police en piste` : ''}`}
     >
       <div className="city-rush-minimap-head">
         <span className="city-rush-minimap-title">
           <i aria-hidden="true" /> MINI-CARTE · FOCUS JOUEUR
         </span>
-        <span className="city-rush-minimap-lap">
-          T{Math.min(focus.lap || 1, CITY_RUSH_LAPS)}/{CITY_RUSH_LAPS}
+        <span className="city-rush-minimap-badges">
+          {police.length > 0 && (
+            <span className="city-rush-minimap-police" title="L’escouade de police du dernier tour — hors classement">
+              🚨 POLICE ×{police.length}
+            </span>
+          )}
+          <span className="city-rush-minimap-lap">
+            T{Math.min(focus.lap || 1, CITY_RUSH_LAPS)}/{CITY_RUSH_LAPS}
+          </span>
         </span>
       </div>
 
@@ -123,6 +134,21 @@ export default function CityRushMinimap({
               <path d="M 0 0 L 16 -6.5 A 17 17 0 0 1 16 6.5 Z" />
             </g>
           </g>
+
+          {/* Escouade de police du dernier tour : hors classement, mais visible
+              pour qu'on sache d'où viennent les sirènes et les vols de bonus. */}
+          {police.map((car) => (
+            <g
+              key={car.id}
+              className="city-rush-minimap-pursuer"
+              transform={`translate(${car.x.toFixed(2)}, ${car.y.toFixed(2)}) rotate(${car.deg.toFixed(1)})`}
+            >
+              <circle className="city-rush-minimap-pursuer-halo" r="7.6" />
+              <rect className="city-rush-minimap-pursuer-body" x="-3.8" y="-2.5" width="7.6" height="5" rx="1.5" />
+              <rect className="city-rush-minimap-pursuer-light" x="-2.9" y="-1.5" width="2.4" height="3" rx="0.7" />
+              <rect className="city-rush-minimap-pursuer-light is-blue" x="0.5" y="-1.5" width="2.4" height="3" rx="0.7" />
+            </g>
+          ))}
 
           {/* Emplacement des 4 joueurs sur le circuit (notre joueur dessiné au-dessus) */}
           {markers.map((marker) => (

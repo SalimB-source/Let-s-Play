@@ -664,6 +664,174 @@ export function selectCityRushRacers({
   });
 }
 
+// ── L'escouade de police du dernier tour ────────────────────────────────────
+// Au passage du dernier tour, deux berlines d'interception entrent en piste
+// juste derrière le premier du classement. Elles ne sont **pas classées** :
+// `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
+// Leur seule mission est de nuire au leader — elles raflent **en priorité les
+// bonus rouges (mitrailleuse) et jaunes (hélicoptère)** pour l'empêcher de
+// s'armer, puis ouvrent le feu sur lui dès qu'une jauge rouge est pleine.
+export const CITY_RUSH_POLICE_COUNT = 2;
+// Voies extérieures : l'escouade encadre le leader au lieu de lui barrer la route.
+export const CITY_RUSH_POLICE_LANES = Object.freeze([0, 3]);
+// Les deux bonus de tir, ceux que la police convoite avant tous les autres.
+export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]);
+export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge/jaune vaut cinq bonus ordinaires
+export const CITY_RUSH_POLICE_BASE_SPEED = CITY_RUSH_PLAYER_SPEED * 1.06;
+export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant le leader
+export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle du leader
+export const CITY_RUSH_POLICE_ATTACK_LEAD = -5; // m : repli derrière le leader pour ouvrir le feu
+export const CITY_RUSH_POLICE_SPAWN_BEHIND = 30; // m : distance d'entrée en piste, derrière le leader
+export const CITY_RUSH_POLICE_LOOKAHEAD = 200; // m : portée de convoitise des bonus
+export const CITY_RUSH_POLICE_STEAL_NOTICE = 150; // m : au-delà, la page ne commente plus un vol de bonus
+export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafales de la même berline
+export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
+export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
+
+// L'escouade ne prend en chasse que le premier du classement. `entries` ne
+// contient que les pilotes classés (notre joueur et les trois rivaux) : à
+// égalité, le premier de la liste — notre joueur — est déclaré leader, comme
+// dans `rankCityRushRacers`.
+export function cityRushPackLeader(entries = []) {
+  let leader = null;
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const distance = Number(entry?.distance);
+    if (!Number.isFinite(distance)) continue;
+    if (!leader || distance > leader.distance) leader = { ...entry, distance };
+  }
+  return leader;
+}
+
+// Vitesse visée par une berline pour rester collée au leader : elle sprinte
+// quand elle est distancée, lève le pied quand elle est trop en avant, et se
+// cale sur la vitesse du leader dans la zone de croisière. Une fois la jauge
+// rouge pleine, `lead` devient négatif (voir `CITY_RUSH_POLICE_ATTACK_LEAD`)
+// et la berline se replie derrière le leader pour ouvrir le feu.
+export function cityRushPolicePace({
+  gap = 0,
+  baseSpeed = CITY_RUSH_POLICE_BASE_SPEED,
+  leaderSpeed = CITY_RUSH_PLAYER_SPEED,
+  lead = CITY_RUSH_POLICE_LEAD,
+  tolerance = CITY_RUSH_POLICE_LEAD_SLACK,
+  sprint = 1.34,
+  ease = 0.9,
+} = {}) {
+  const safeBase = Math.max(0, Number(baseSpeed) || 0);
+  const safeLeader = Math.max(0, Number(leaderSpeed) || 0);
+  const safeGap = Number(gap) || 0;
+  const safeLead = Number(lead) || 0;
+  const slack = Math.max(0, Number(tolerance) || 0);
+  const sprintFactor = Math.max(1, Number(sprint) || 1.34);
+  const easeFactor = Math.min(1, Math.max(0.2, Number(ease) || 0.9));
+  if (safeGap < safeLead - slack) return safeBase * sprintFactor;
+  if (safeGap > safeLead + slack) {
+    // Trop en avant : elle lève le pied d'autant plus qu'elle est loin. Une
+    // berline ne part pas gagner la course — elle attend le leader.
+    const ahead = safeGap - (safeLead + slack);
+    const brake = Math.max(0.45, 1 - ahead / 120);
+    return Math.max(6, safeLeader * easeFactor * brake);
+  }
+  // Croisière : la berline tient sa position, mais ne s'arrête jamais net.
+  return Math.max(safeLeader, safeBase * 0.82);
+}
+
+// Choix de voie de l'escouade : même prudence que les rivaux devant le trafic
+// et les zones lentes, mais une convoitise multipliée pour les bonus rouges et
+// jaunes — c'est là qu'elle prive le leader de ses armes.
+export function chooseCityRushPoliceLane({
+  currentLane = 0,
+  laneCount = CITY_RUSH_LANE_X.length,
+  distance = 0,
+  speed = CITY_RUSH_PLAYER_SPEED,
+  availableLanes,
+  pickups = [],
+  slowZones = [],
+  traffic = [],
+  targetLane = null,
+  homeLane = null,
+  lookAheadDistance = CITY_RUSH_POLICE_LOOKAHEAD,
+} = {}) {
+  const lane = clampCityRushLane(currentLane, laneCount);
+  const allowed = new Set((availableLanes || Array.from({ length: laneCount }, (_, index) => index))
+    .map((nextLane) => clampCityRushLane(nextLane, laneCount)));
+  allowed.add(lane);
+  const candidates = [lane, lane - 1, lane + 1]
+    .filter((nextLane) => nextLane >= 0 && nextLane < laneCount && allowed.has(nextLane));
+  const lookAhead = Math.max(1, Number(lookAheadDistance) || CITY_RUSH_POLICE_LOOKAHEAD);
+  const racerSpeed = Math.max(0, Number(speed) || 0);
+  const huntedLane = targetLane === null || targetLane === undefined ? null : clampCityRushLane(targetLane, laneCount);
+  let bestLane = lane;
+  let bestScore = -Infinity;
+
+  for (const candidate of candidates) {
+    let safetyScore = -Math.abs(candidate - lane) * 1.1;
+    let greed = 0;
+    for (const pickup of pickups) {
+      const gap = Number(pickup.distance) - Number(distance);
+      if (!Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
+      const pickupLane = clampCityRushLane(pickup.lane, laneCount);
+      const laneAffinity = Math.max(0, 1 - Math.abs(pickupLane - candidate) * 0.4);
+      if (laneAffinity === 0) continue;
+      const urgency = 1 - gap / lookAhead;
+      const hunted = CITY_RUSH_POLICE_HUNT_TYPES.includes(pickup.type);
+      // Un bonus de tir vaut cinq bonus ordinaires : l'escouade traverse la
+      // route pour le rafler avant le leader.
+      greed += (hunted ? CITY_RUSH_POLICE_HUNT_WEIGHT : 1) * (24 + urgency * 10) * laneAffinity;
+    }
+    for (const zone of slowZones) {
+      const gap = Number(zone.distance) - Number(distance);
+      if (zone.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
+      safetyScore -= 5 + (1 - gap / lookAhead) * 11;
+    }
+    for (const vehicle of traffic) {
+      const gap = Number(vehicle.distance) - Number(distance);
+      if (vehicle.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
+      const closingSpeed = Math.max(1, racerSpeed - Math.max(0, Number(vehicle.speed) || 0));
+      const timeToReach = gap / closingSpeed;
+      safetyScore -= timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5;
+      // Embouteillage : une berline engluée derrière un véhicule lent cherche
+      // activement à s'en extraire — elle ne se contente pas de le suivre.
+      if (gap < CITY_RUSH_POLICE_BLOCK_RANGE) safetyScore -= 26;
+    }
+    // À défaut de bonus, une berline se rabat volontiers dans la voie du
+    // leader ou dans sa voie d'entrée : les deux berlines encadrent la piste
+    // au lieu de rouler en file indienne.
+    const targetBonus = huntedLane !== null && candidate === huntedLane ? 3 : 0;
+    const homeBonus = homeLane !== null && homeLane !== undefined && candidate === clampCityRushLane(homeLane, laneCount) ? 2.5 : 0;
+    const score = greed * 100 + safetyScore + targetBonus + homeBonus;
+    if (score > bestScore) {
+      bestScore = score;
+      bestLane = candidate;
+    }
+  }
+  return bestLane;
+}
+
+// Les berlines de police ne bloquent personne (elles traversent le peloton
+// comme les rivaux se traversent entre eux) mais **ne traversent pas le
+// trafic** : leur distance est rabotée derrière le véhicule lent de leur voie.
+export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], minimumGap = CITY_RUSH_CAR_GAP) {
+  const safeGap = Math.max(0, Number(minimumGap) || 0);
+  return policeCars.map((car) => {
+    const previousDistance = Number.isFinite(Number(car.distance)) ? Number(car.distance) : 0;
+    const requestedDistance = Number.isFinite(Number(car.nextDistance)) ? Number(car.nextDistance) : previousDistance;
+    let nextDistance = Math.max(previousDistance, requestedDistance);
+    for (const other of traffic) {
+      const otherDistance = Number(other.distance);
+      if (!Number.isFinite(otherDistance) || otherDistance <= previousDistance) continue;
+      const sameLane = other.lane === car.lane;
+      const policeWidth = Number.isFinite(Number(car.width)) ? Number(car.width) : 1.94;
+      const otherWidth = Number.isFinite(Number(other.width)) ? Number(other.width) : 1.94;
+      const lateralOverlap = Number.isFinite(Number(other.x))
+        && Number.isFinite(Number(car.x))
+        && Math.abs(Number(other.x) - Number(car.x)) < (policeWidth + otherWidth) / 2;
+      if (!sameLane && !lateralOverlap) continue;
+      nextDistance = Math.min(nextDistance, Math.max(previousDistance, otherDistance - safeGap));
+    }
+    return { ...car, previousDistance, nextDistance };
+  });
+}
+
 // ── Mini-carte du circuit & focus joueur ────────────────────────────────────
 // Projette une distance (en mètres sur la boucle de 600 m) et une voie (0..3)
 // sur le tracé 2D de la mini-carte (repère 100 × 100 centré en 50, 50).
@@ -743,6 +911,7 @@ export function buildCityRushMinimapState(
     lapLength = CITY_RUSH_LAP_LENGTH,
     laps = CITY_RUSH_LAPS,
     totalDistance = CITY_RUSH_DISTANCE,
+    pursuers = [],
   } = {},
 ) {
   const defaultRoster = selectCityRushRacers({ cityId, carId, runId, playerDriverId });
@@ -829,6 +998,31 @@ export function buildCityRushMinimapState(
     ...enriched.filter((racer) => racer.isPlayer),
   ];
 
+  // L'escouade de police n'est pas classée : elle est projetée à part, pour
+  // que la mini-carte puisse la montrer sans la mêler aux quatre pilotes.
+  const pursued = (Array.isArray(pursuers) ? pursuers : [])
+    .filter((police) => police && police.active !== false)
+    .map((police, index) => {
+      const distance = Math.max(0, Math.min(totalDistance, Number(police.distance) || 0));
+      const lane = clampCityRushLane(police.lane);
+      const point = cityRushMinimapPoint(distance, lane, { lapLength });
+      return {
+        id: police.id || `police-${index}`,
+        name: police.name || 'POLICE',
+        distance: Math.round(distance),
+        lane,
+        x: point.x,
+        y: point.y,
+        centerX: point.centerX,
+        centerY: point.centerY,
+        angle: point.angle,
+        deg: point.deg,
+        loopProgress: point.loopProgress,
+        relativeDistance: Math.round(distance - playerEntry.rawDistance),
+        loopGap: Math.round(cityRushTrackGap(distance, playerEntry.rawDistance, lapLength)),
+      };
+    });
+
   return {
     viewBox,
     focus: {
@@ -862,6 +1056,7 @@ export function buildCityRushMinimapState(
     },
     racers: enriched,
     markers,
+    pursuers: pursued,
     startLine: cityRushMinimapPoint(0, 1.5, { lapLength, laneSpacing: 0 }),
     midGate: cityRushMinimapPoint(lapLength / 2, 1.5, { lapLength, laneSpacing: 0 }),
   };

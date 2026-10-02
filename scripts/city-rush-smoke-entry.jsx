@@ -112,6 +112,7 @@ const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'oilDrop', 'lap', 'finish', 'countdownBeep', 'passby',
+  'policeSiren', 'policeSirenOff',
 ];
 
 for (const [index, city] of cities.entries()) {
@@ -209,6 +210,13 @@ for (const [index, city] of cities.entries()) {
   const maxFrames = 30 * 240; // 4 minutes virtuelles, large.
   let steer = 'left';
   let slowFrames = 0;
+  // Escouade de police : première image où elle apparaît dans le HUD, temps
+  // passé en piste et temps passé devant notre joueur.
+  let firstPoliceHud = null;
+  let policeHudFrames = 0;
+  let policeAheadFrames = 0;
+  let policeClosestGap = Infinity;
+  let policeBeacons = 0;
   while (!callbacks.finish && frames < maxFrames) {
     const hud = callbacks.huds[callbacks.huds.length - 1];
     // Pilote naïf : si on traîne derrière le trafic, on tente de changer de voie ;
@@ -253,6 +261,17 @@ for (const [index, city] of cities.entries()) {
       }
     }
     if (hud?.lap) lapSeen.add(hud.lap);
+    if (hud?.police?.length) {
+      if (!firstPoliceHud) firstPoliceHud = hud;
+      policeHudFrames += 1;
+      const hudLeader = Math.max(hud.distance || 0, ...(hud.racers || []).map((racer) => racer.distance || 0));
+      for (const car of hud.police) {
+        const gap = (car.distance || 0) - (hud.distance || 0);
+        if (gap > 0 && gap < 80) policeAheadFrames += 1;
+        policeClosestGap = Math.min(policeClosestGap, Math.abs((car.distance || 0) - hudLeader));
+        if (car.mode) policeBeacons += 1;
+      }
+    }
     if (scene && frames % 30 === 0) {
       const stats = countVisible(scene);
       maxVisible = Math.max(maxVisible, stats.meshes);
@@ -306,6 +325,24 @@ for (const [index, city] of cities.entries()) {
   if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
   if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);
   if (callbacks.pickups.length && !respawnedPickups) fail('aucun bonus ramassé n’a réapparu après 0,1 s', callbacks.pickups.length);
+  // Escouade de police du dernier tour : deux berlines, entrées derrière le
+  // leader, jamais classées, sirène allumée puis éteinte.
+  const policeArrivals = callbacks.effects.filter((effect) => effect.type === 'police-arrival');
+  if (policeArrivals.length !== 1) fail('l’escouade de police n’entre pas exactement une fois en piste', policeArrivals);
+  if (!firstPoliceHud) fail('aucune berline de police dans le HUD pendant la course');
+  if (firstPoliceHud.police.length > 2) fail('plus de deux berlines en piste', firstPoliceHud.police);
+  const leaderDistance = Math.max(firstPoliceHud.distance || 0, ...(firstPoliceHud.racers || []).map((racer) => racer.distance || 0));
+  for (const car of firstPoliceHud.police) {
+    if (car.distance > leaderDistance + 2) fail('une berline entre en piste devant le leader', { leaderDistance, car });
+    if (car.distance < leaderDistance - 140) fail('une berline entre trop loin derrière le leader', { leaderDistance, car });
+  }
+  if (policeHudFrames < 30) fail('l’escouade ne tient pas la piste', policeHudFrames);
+  if (!(policeClosestGap <= 30)) fail(`l’escouade reste à ${policeClosestGap} m du leader`, policeClosestGap);
+  if ((firstPoliceHud.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le classement du HUD');
+  if ((finish.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le tableau d’arrivée');
+  if (lastHud.police?.length) fail('l’escouade reste en piste après l’arrivée', lastHud.police);
+  if (!audioCalls.policeSiren) fail('la sirène de police n’a jamais sonné', audioCalls);
+
   const automaticCash = callbacks.pickups.filter((pickup) => pickup.type === 'cash' && pickup.autoActivated).length;
   const automaticOil = callbacks.pickups.filter((pickup) => pickup.type === 'oil' && pickup.autoActivated).length;
   if (callbacks.pickups.some((pickup) => pickup.autoActivated && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
@@ -333,6 +370,7 @@ for (const [index, city] of cities.entries()) {
     `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames` +
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
+    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m` : 'jamais entrée'}` +
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
     ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris` +
     ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,
