@@ -135,7 +135,7 @@ export function makeRacerCar(profile, options = {}) {
   };
   const id = profile.id;
   const isGt = id === 'turbo-gt';
-  const isMuscle = id === 'muscle-86';
+  const isMuscle = id === 'muscle-86' || id === 'vega-gt-67';
   const isComet = id === 'night-comet';
   const isRoadster = id === 'vice-roadster';
   const b = createBatch();
@@ -281,12 +281,34 @@ export function makeRacerCar(profile, options = {}) {
   const headPivot = new THREE.Group();
   headPivot.position.set(driverX, 1.44, driverZ);
   body.add(headPivot);
-  const head = createBatch();
-  head.cylinder(m.skin, [0, 0.06, 0], 0.09, 0.09, 0.08, 8);
-  head.sphere(m.helmet, [0, 0.22, 0], 0.2, 14);
-  head.box(m.visor, [0, 0.22, -0.13], [0.26, 0.11, 0.12]);
-  head.box(m.trim, [0, 0.36, 0.02], [0.08, 0.04, 0.3]);
-  headPivot.add(head.build('helmet'));
+  if (player) {
+    // Nico Vega, héros du mode histoire : visage visible dans le cabriolet,
+    // cheveux noirs et blouson bordeaux. Le modèle est volontairement simple
+    // et lisible à l'échelle de la course (pas un casque générique).
+    const face = new THREE.Mesh(new THREE.SphereGeometry(0.155, 16, 12), m.skin);
+    face.position.set(0, 0.17, -0.015);
+    headPivot.add(face);
+    const hairMaterial = standard(0x17131c, { roughness: 0.72 });
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), hairMaterial);
+    hair.position.set(0, 0.22, 0.015);
+    headPivot.add(hair);
+    const eyeMaterial = new THREE.MeshBasicMaterial({ color: 0x17131c });
+    for (const side of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.016, 8, 6), eyeMaterial);
+      eye.position.set(side * 0.052, 0.18, -0.158);
+      headPivot.add(eye);
+    }
+    const collar = new THREE.Mesh(new THREE.BoxGeometry(0.29, 0.12, 0.24), standard(0x8c2946, { roughness: 0.8 }));
+    collar.position.set(0, -0.02, 0.015);
+    headPivot.add(collar);
+  } else {
+    const head = createBatch();
+    head.cylinder(m.skin, [0, 0.06, 0], 0.09, 0.09, 0.08, 8);
+    head.sphere(m.helmet, [0, 0.22, 0], 0.2, 14);
+    head.box(m.visor, [0, 0.22, -0.13], [0.26, 0.11, 0.12]);
+    head.box(m.trim, [0, 0.36, 0.02], [0.08, 0.04, 0.3]);
+    headPivot.add(head.build('helmet'));
+  }
 
   const steeringWheel = new THREE.Mesh(STEERING, m.black);
   steeringWheel.position.set(driverX, 1.02, -0.46);

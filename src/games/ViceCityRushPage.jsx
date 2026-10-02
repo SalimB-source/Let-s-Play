@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
+import CityRushStoryScene from './CityRushStoryScene';
+import CityRushFootMission from './CityRushFootMission';
 import CityRushMinimap from './CityRushMinimap';
 import { CityRushAudio } from './cityRushAudio';
 import {
@@ -32,6 +34,26 @@ const CAR_STATS = [
 ];
 const RACE_KM = `${(CITY_RUSH_DISTANCE / 1000).toFixed(1).replace('.', ',')} KM`;
 const LAP_SLOTS = Array.from({ length: CITY_RUSH_LAPS }, (_, index) => index + 1);
+const STORY_KEY = 'letsplay_vice_city_rush_story_v1';
+const STORY_ENDING_KEY = 'letsplay_vice_city_rush_ending_v1';
+const STORY_ENDINGS = {
+  revenge: { title: 'La revanche', text: 'Nico remet Dante aux autorités et restaure son nom. Sa vengeance s’arrête là — mais le promoteur qui a commandité le sabotage reste à retrouver.' },
+  truth: { title: 'La vérité', text: 'Nico rend publiques toutes les preuves. Dante devra répondre de sa trahison, et le réseau du promoteur est exposé au grand jour.' },
+};
+function readStoryEnding() {
+  try { return window.localStorage.getItem(STORY_ENDING_KEY) || ''; } catch { return ''; }
+}
+const STORY_CHAPTERS = [
+  { city: 'vice-city', title: 'Le retour', speaker: 'Nico', race: { name: 'Ocean Drive — Sunset Run', type: 'Course côtière', route: 'Ocean Drive · South Beach · Collins Avenue' }, text: 'Trois ans après le sabotage, Nico Vega revient à Ocean Drive. Dante Cross a laissé une invitation au départ : gagne cette course et le prochain nom tombera.' },
+  { city: 'new-york', title: 'La piste froide', speaker: 'Nico', kind: 'action', race: { name: 'Midtown — Heat Run', type: 'Échappée urbaine', route: 'Times Square · Broadway · Midtown Tunnel' }, text: 'L’escorte de Dante repère Nico dans Midtown. Sirènes derrière eux, Luna lâche un dernier indice à la radio : le prochain contact se cache à Tokyo.' },
+  { city: 'tokyo', title: 'Le hangar de Shibuya', speaker: 'Nico', kind: 'hangar', race: { name: 'Shibuya — Freight Run', type: 'Sprint nocturne', route: 'Shibuya Crossing · Docklands · Bayshore Route' }, text: 'Le mécanicien de Dante a les preuves. L’échange tourne mal dans un hangar du port : Nico doit se mettre à couvert et sortir de là avec le dossier.' },
+  { city: 'paris', title: 'Marché de dupes', speaker: 'Nico', kind: 'action', race: { name: 'Rive Gauche — Redline', type: 'Drift urbain', route: 'Saint-Germain · Quai de Conti · Boulevard Saint-Michel' }, text: 'Le promoteur tente de s’enfuir avec les preuves. Nico le prend en chasse dans les rues de Paris ; la vérité est dans la voiture rouge.' },
+  { city: 'london', title: 'La soirée des ombres', speaker: 'Nico', kind: 'infiltration', race: { name: 'Soho — After Hours', type: 'Course-poursuite', route: 'Piccadilly Circus · Soho · Tower Bridge' }, text: 'En costume, Nico s’infiltre dans la réception privée du promoteur. Il surprend Dante qui ordonne à ses hommes de brûler les preuves — et apprend que tout a commencé à Vice City.' },
+  { city: 'vice-city', title: 'Le dernier tour', speaker: 'Nico', kind: 'action', race: { name: 'Vice City — Last Lap', type: 'Finale du circuit', route: 'Ocean Drive · Starfish Island · Vice City Docks' }, text: 'Dante pousse sa voiture rouge à fond sur Ocean Drive. Nico colle à son pare-chocs : une dernière course décidera de leur sort.' },
+];
+function readStoryChapter() {
+  try { return Math.max(0, Math.min(STORY_CHAPTERS.length, Number(window.localStorage.getItem(STORY_KEY)) || 0)); } catch { return 0; }
+}
 const EMPTY_HUD = {
   distance: 0,
   totalDistance: CITY_RUSH_DISTANCE,
@@ -129,7 +151,11 @@ function rankProgress(racer) {
 
 export default function ViceCityRushPage() {
   const [cityId, setCityId] = useState('vice-city');
-  const [carId, setCarId] = useState(CITY_RUSH_CARS[0].id);
+  const [carId, setCarId] = useState('vice-roadster');
+  const [storyMode, setStoryMode] = useState(false);
+  const [storyChapter, setStoryChapter] = useState(readStoryChapter);
+  const [storyRaceChapter, setStoryRaceChapter] = useState(readStoryChapter);
+  const [storyEnding, setStoryEnding] = useState(readStoryEnding);
   const [playerDriverId, setPlayerDriverId] = useState(CITY_RUSH_DRIVERS[0].id);
   const [phase, setPhase] = useState('intro');
   const [countdown, setCountdown] = useState(3);
@@ -158,20 +184,24 @@ export default function ViceCityRushPage() {
   soundOnRef.current = soundOn;
 
   const city = useMemo(() => CITY_RUSH_CITIES.find((item) => item.id === cityId) || CITY_RUSH_CITIES[0], [cityId]);
+  const currentStoryRace = storyMode ? STORY_CHAPTERS[storyRaceChapter] : null;
   // Vice City se joue en plein jour : l'accroche de l'écran d'accueil suit
   // l'ambiance du circuit choisi (soleil ou néons).
   const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
   const selectedCar = useMemo(() => CITY_RUSH_CARS.find((item) => item.id === carId) || CITY_RUSH_CARS[0], [carId]);
-  const roster = useMemo(
-    () => selectCityRushRacers({ cityId, carId: selectedCar.id, runId, playerDriverId }),
-    [cityId, selectedCar.id, runId, playerDriverId],
-  );
+  const roster = useMemo(() => {
+    const racers = selectCityRushRacers({ cityId, carId: selectedCar.id, runId, playerDriverId });
+    return storyMode
+      ? racers.map((racer) => racer.isPlayer ? { ...racer, name: 'NICO', displayName: 'Nico Vega', country: 'Vice City', countryCode: 'US', flag: '🇺🇸' } : racer)
+      : racers;
+  }, [cityId, selectedCar.id, runId, playerDriverId, storyMode]);
   const minimapState = useMemo(
     () => buildCityRushMinimapState(hud.racers, { cityId, carId: selectedCar.id, runId, playerDriverId }),
     [hud.racers, cityId, selectedCar.id, runId, playerDriverId],
   );
   const standings = minimapState.racers;
   const bestTime = bests[cityId] || null;
+  const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && storyChapter >= STORY_CHAPTERS.length);
 
   const cyclePlayerDriver = () => {
     const currentIndex = CITY_RUSH_DRIVERS.findIndex((driver) => driver.id === playerDriverId);
@@ -357,8 +387,50 @@ export default function ViceCityRushPage() {
   }
   startRaceRef.current = startRace;
 
+  function beginStory() {
+    if (storyChapter >= STORY_CHAPTERS.length) {
+      setStoryChapter(0);
+      setStoryEnding('');
+      try { window.localStorage.setItem(STORY_KEY, '0'); window.localStorage.removeItem(STORY_ENDING_KEY); } catch {}
+    }
+    const chapterIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
+    setStoryMode(true);
+    setStoryRaceChapter(chapterIndex);
+    setCarId('vega-gt-67');
+    setCityId(STORY_CHAPTERS[chapterIndex].city);
+    setResult(null);
+    setPhase('cinematic');
+  }
+
+  function launchStoryChapter() {
+    const chapter = STORY_CHAPTERS[storyRaceChapter];
+    if (chapter?.kind === 'hangar' || chapter?.kind === 'infiltration') setPhase('foot-mission');
+    else startRace();
+  }
+
+  function chooseStoryEnding(ending) {
+    if (!STORY_ENDINGS[ending]) return;
+    setStoryEnding(ending);
+    try { window.localStorage.setItem(STORY_ENDING_KEY, ending); } catch {}
+  }
+
+  function restartStory() {
+    setStoryMode(false);
+    setStoryChapter(0);
+    setStoryRaceChapter(0);
+    setStoryEnding('');
+    setResult(null);
+    try { window.localStorage.setItem(STORY_KEY, '0'); window.localStorage.removeItem(STORY_ENDING_KEY); } catch {}
+    setPhase('intro');
+  }
+
   function finishRace(nextResult) {
     setResult(nextResult);
+    if (storyMode && nextResult.rank === 1) {
+      const nextChapter = Math.min(STORY_CHAPTERS.length, storyChapter + 1);
+      setStoryChapter(nextChapter);
+      try { window.localStorage.setItem(STORY_KEY, String(nextChapter)); } catch {}
+    }
     setPhase('finished');
     if (nextResult.rank === 1) {
       const previous = bests[nextResult.city];
@@ -438,7 +510,7 @@ export default function ViceCityRushPage() {
           <div className="city-rush-topbar">
             <div className="city-rush-location">
               <span className="city-rush-location-mark" aria-hidden="true">⌖</span>
-              <span><b>{city.district}</b><small>{city.label} <i>·</i> 1986 / NOW</small></span>
+              <span><b>{currentStoryRace?.race?.name || city.district}</b><small>{currentStoryRace?.race?.type || city.label} <i>·</i> {city.district} · {CITY_RUSH_LAPS} TOURS</small></span>
             </div>
             <div className="city-rush-top-actions">
               <button
@@ -582,6 +654,10 @@ export default function ViceCityRushPage() {
                   <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>PREND LA ROUTE.</em></h2>
                   <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne — et, au dernier tour, une escouade de police qui ne court pas pour gagner, mais pour t’empêcher de ramasser les bonus rouges et jaunes.</p>
                 </div>
+                <div className="city-rush-intro-actions" style={{ justifyContent: 'flex-start', margin: '14px 0' }}>
+                  <button type="button" className="city-rush-start-button" onClick={beginStory}>MODE HISTOIRE · NICO VEGA <span>▶</span></button>
+                  <small style={{ color: '#b8bac8', alignSelf: 'center' }}>6 courses · cinématiques · progression sauvegardée</small>
+                </div>
                 <div className="city-rush-car-select-heading city-rush-city-select-heading"><span>01 / CHOIX DE LA VILLE</span></div>
                 <div className="city-rush-city-picker" role="group" aria-label="Choisir une ville">
                   {CITY_RUSH_CITIES.map((option, index) => (
@@ -681,11 +757,51 @@ export default function ViceCityRushPage() {
               </div>
             )}
 
+            {phase === 'cinematic' && storyMode && STORY_CHAPTERS[storyChapter] && (
+              <div className="city-rush-overlay city-rush-intro city-rush-story-cinematic" role="dialog" aria-modal="true" aria-labelledby="city-rush-story-title">
+                <div className="city-rush-intro-copy">
+                  <span className="city-rush-overlay-kicker"><i /> MODE HISTOIRE · CHAPITRE {String(storyChapter + 1).padStart(2, '0')} / {STORY_CHAPTERS.length}</span>
+                  <h2 id="city-rush-story-title">{STORY_CHAPTERS[storyChapter].title}<br /><em>{city.name}</em></h2>
+                  <CityRushStoryScene city={city} speaker={STORY_CHAPTERS[storyChapter].speaker} chapter={storyChapter + 1} kind={STORY_CHAPTERS[storyChapter].kind || 'dialogue'} />
+                  <div className={`city-rush-story-caption${STORY_CHAPTERS[storyChapter].kind && STORY_CHAPTERS[storyChapter].kind !== 'dialogue' ? ' is-action' : ''}`} style={{ maxWidth: 660, margin: '12px auto', padding: 18, background: 'rgba(7,10,24,.82)', border: '1px solid rgba(255,255,255,.16)', borderRadius: 12 }}>
+                    <b style={{ color: '#ff7498', letterSpacing: '.12em' }}>{STORY_CHAPTERS[storyChapter].kind === 'hangar' ? 'OPÉRATION AU HANGAR' : STORY_CHAPTERS[storyChapter].kind === 'infiltration' ? 'INFILTRATION · SOIRÉE PRIVÉE' : STORY_CHAPTERS[storyChapter].kind === 'action' ? 'SÉQUENCE EN ACTION · COURSE-POURSUITE' : STORY_CHAPTERS[storyChapter].speaker.toUpperCase()}</b>
+                    <p style={{ color: '#f0eff7', fontSize: 17, lineHeight: 1.65, margin: '10px 0 0' }}>{STORY_CHAPTERS[storyChapter].text}</p>
+                  </div>
+                  <div className="city-rush-story-race-card">
+                    <div><small>COURSE {String(storyChapter + 1).padStart(2, '0')} / {STORY_CHAPTERS.length}</small><span>{STORY_CHAPTERS[storyChapter].race.type}</span></div>
+                    <b>{STORY_CHAPTERS[storyChapter].race.name}</b>
+                    <p>{STORY_CHAPTERS[storyChapter].race.route}</p>
+                  </div>
+                  <p>NICO VEGA · VEGA GT ’67 — muscle car noire à bandes rouges</p>
+                </div>
+                <div className="city-rush-intro-actions" style={{ justifyContent: 'center' }}>
+                  <button type="button" className="city-rush-start-button" onClick={launchStoryChapter}>{STORY_CHAPTERS[storyChapter].kind === 'hangar' ? 'ENTRER DANS LE HANGAR' : STORY_CHAPTERS[storyChapter].kind === 'infiltration' ? 'S’INFILTRER DANS LA SOIRÉE' : `LANCER ${STORY_CHAPTERS[storyChapter].race.name.toUpperCase()}`} <span>↗</span></button>
+                </div>
+              </div>
+            )}
+
+            {phase === 'foot-mission' && currentStoryRace && (
+              <CityRushFootMission
+                kind={currentStoryRace.kind}
+                onComplete={() => setPhase('foot-complete')}
+                onCancel={() => setPhase('cinematic')}
+              />
+            )}
+
+            {phase === 'foot-complete' && currentStoryRace && (
+              <div className="city-rush-overlay city-rush-result-overlay cr-foot-success">
+                <span className="city-rush-overlay-kicker">OPÉRATION TERMINÉE · {currentStoryRace.city.toUpperCase()}</span>
+                <h2>LES PREUVES<br /><em>SONT À TOI.</em></h2>
+                <p>Tu as réussi la mission à pied. La prochaine étape : <strong>{currentStoryRace.race.name}</strong>.</p>
+                <button type="button" className="city-rush-start-button" onClick={startRace}>PRENDRE LE VOLANT <span>↗</span></button>
+              </div>
+            )}
+
             {phase === 'countdown' && (
               <div className="city-rush-overlay city-rush-countdown" aria-live="assertive">
                 <span>PRÊT·E, PILOTE ?</span>
                 <strong key={countdown}>{countdown > 0 ? countdown : 'GO!'}</strong>
-                <small>{city.district} · {CITY_RUSH_LAPS} TOURS · {RACE_KM}</small>
+                <small>{currentStoryRace?.race?.name || city.district} · {CITY_RUSH_LAPS} TOURS · {RACE_KM}</small>
               </div>
             )}
 
@@ -704,17 +820,27 @@ export default function ViceCityRushPage() {
             {phase === 'finished' && result && (
               <div className="city-rush-overlay city-rush-result-overlay">
                 <span className="city-rush-overlay-kicker">{result.rank === 1 ? `VICTOIRE · ${CITY_RUSH_LAPS} TOURS BOUCLÉS` : `ARRIVÉE · ${CITY_RUSH_LAPS} TOURS BOUCLÉS`}</span>
-                <h2>{result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
+                <h2>{finalStoryVictory ? storyEnding ? <>{STORY_ENDINGS[storyEnding].title}<br /><em>FIN.</em></> : <>LE DERNIER<br /><em>CHOIX.</em></> : result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
                 <div className="city-rush-result-grid">
                   <div><small>PLACE</small><b>{ordinal(result.rank)}<i> / 4</i></b></div>
                   <div><small>CHRONO</small><b>{formatTime(result.duration)}</b></div>
                   <div><small>TOUR MOYEN</small><b>{formatTime((result.duration || 0) / (result.laps || CITY_RUSH_LAPS))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
                 </div>
-                <p>{result.rank === 1 ? `Tu remportes les ${result.laps || CITY_RUSH_LAPS} tours du circuit de ${city.name}.` : `${result.winner} franchit la ligne en tête après ${result.laps || CITY_RUSH_LAPS} tours. La revanche t’attend.`} {result.pickups} objet{result.pickups > 1 ? 's' : ''} ramassé{result.pickups > 1 ? 's' : ''}.</p>
+                <p>{finalStoryVictory && storyEnding ? STORY_ENDINGS[storyEnding].text : finalStoryVictory ? 'Dante est vaincu. Nico tient enfin les preuves : à lui de choisir ce qu’il fera de sa revanche.' : result.rank === 1 ? `Tu remportes les ${result.laps || CITY_RUSH_LAPS} tours du circuit de ${city.name}.` : `${result.winner} franchit la ligne en tête après ${result.laps || CITY_RUSH_LAPS} tours. La revanche t’attend.`} {!finalStoryVictory && `${result.pickups} objet${result.pickups > 1 ? 's' : ''} ramassé${result.pickups > 1 ? 's' : ''}.`}</p>
+                {finalStoryVictory && !storyEnding && <div className="city-rush-ending-choices" role="group" aria-label="Choisir la fin de l’histoire">
+                  <button type="button" onClick={() => chooseStoryEnding('revenge')}><b>LA REVANCHE</b><span>Dante paiera pour sa trahison.</span></button>
+                  <button type="button" onClick={() => chooseStoryEnding('truth')}><b>LA VÉRITÉ</b><span>Expose le complot jusqu’au bout.</span></button>
+                </div>}
                 <div className="city-rush-overlay-buttons">
-                  <button type="button" className="city-rush-start-button" onClick={startRace}>REJOUER <span>↻</span></button>
-                  <button type="button" className="city-rush-text-button" onClick={() => { setResult(null); setPhase('intro'); }}>CHANGER DE VILLE</button>
+                  {storyMode && result.rank === 1 && storyChapter < STORY_CHAPTERS.length ? (
+                    <button type="button" className="city-rush-start-button" onClick={beginStory}>CHAPITRE SUIVANT <span>↗</span></button>
+                  ) : finalStoryVictory && storyEnding ? (
+                    <button type="button" className="city-rush-start-button" onClick={restartStory}>REJOUER L’HISTOIRE <span>↻</span></button>
+                  ) : finalStoryVictory ? null : (
+                    <button type="button" className="city-rush-start-button" onClick={startRace}>REJOUER <span>↻</span></button>
+                  )}
+                  <button type="button" className="city-rush-text-button" onClick={() => { setResult(null); setStoryMode(false); setPhase('intro'); }}>MODE LIBRE / VILLE</button>
                 </div>
               </div>
             )}
