@@ -212,6 +212,37 @@ fermer « de l'extérieur » comme Échap). Elle ne dit rien du rendu réel : po
 cela, ouvrir le jeu dans un vrai navigateur (`npm run dev`) et le passer en plein
 écran sur un grand écran.
 
+## Mirage Rush : les bruitages des techniques de Cloud
+
+Le chocobo doré ne se bat pas comme les autres cavaliers : ses deux pouvoirs —
+l'**onde d'épée** jaune (W/Z) et l'**éclair** rouge (R) — ont leur propre
+matière sonore, synthétisée en Web Audio dans `src/games/arcadeAudio.js` (comme
+toute la bande-son du jeu, sans aucun fichier).
+
+| Technique | Instant | Son |
+|---|---|---|
+| **Onde d'épée** (jaune) | lancer | `cloudSwordWave()` — rafale de vent qui s'ouvre, sifflement de lame, accord doré |
+| **Onde d'épée** (jaune) | impact | `cloudWaveExplosion()` — déflagration grave, boule de feu qui s'assombrit, éclats dorés en cascade, écho du désert |
+| **Éclair** (rouge) | évocation | `cloudStormCharge()` — vent d'orage qui se lève, grondement lointain dans le grave |
+| **Éclair** (rouge) | frappe | `cloudThunderStrike()` — claquement sec, détonation qui tombe à 26 Hz, tonnerre qui roule et s'éteint |
+
+- **Au bon instant.** Le monde three.js ne joue aucun son : quand la foudre
+  claque et quand l'onde percute, il prévient la page
+  (`callbacks.cloudStrike`, prop `onCloudStrike`), qui déclenche le bruitage.
+- **En ligne aussi.** `MirageRushPage` et `MirageOnline` branchent les quatre
+  sons ; le cavalier standard garde le lasso et le pistolet. Touché par un rival
+  de Cloud, on entend le tonnerre ou l'explosion de l'onde
+  (`cloudThunderStrike()` / `cloudWaveExplosion()`), pas le coup de pistolet ni
+  le lasso.
+- **Coupé, rien ne part.** Comme les autres bruitages, les quatre méthodes
+  sortent immédiatement si la musique est arrêtée (bouton SON).
+
+### Vérifications
+
+```bash
+node --test tests/mirage-audio.test.js   # vent doré, explosion, orage, tonnerre + câblage du monde et des deux pages
+```
+
 ## Mirage Rush : graphismes baissés et glissement tactile
 
 ### Graphismes baissés (moins de lag)

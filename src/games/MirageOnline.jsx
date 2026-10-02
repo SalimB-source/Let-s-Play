@@ -1232,10 +1232,13 @@ export default function MirageOnline({
                               audio.current?.shieldGravity?.();
                               setPowerToast('🛡️ Bouclier activé automatiquement !');
                             } else if (info.type === 'lasso') {
-                              audio.current?.lassoThrow?.();
+                              // Cloud lance son onde d'épée : la rafale de vent, pas le lasso.
+                              if (isCloudRider) audio.current?.cloudSwordWave?.();
+                              else audio.current?.lassoThrow?.();
                               setPowerToast(isCloudRider ? '⚔ Onde de choc dorée lancée !' : '🪢 Lasso envoyé !');
                             } else if (info.type === 'pistol') {
-                              if (isCloudRider) audio.current?.lassoThrow?.();
+                              // Cloud appelle la foudre : l'orage gronde avant la frappe.
+                              if (isCloudRider) audio.current?.cloudStormCharge?.();
                               else audio.current?.gunshot();
                               setPowerToast(isCloudRider ? '⚡ L’éclair frappe ta cible !' : '🔫 Tir de pistolet !');
                             } else if (info.type === 'boost') {
@@ -1294,7 +1297,9 @@ export default function MirageOnline({
                             setTimeout(()=> setPowerToast(null), 2000);
                           } else if (info?.target === 'player') {
                             if (info.blocked) audio.current?.shieldGravity?.();
-                            else if (info.cloud) audio.current?.lassoThrow?.();
+                            // Foudroyé par l'éclair de Cloud : c'est le tonnerre
+                            // qui tombe, pas le coup de pistolet.
+                            else if (info.cloud) audio.current?.cloudThunderStrike?.();
                             else audio.current?.gunshot();
                             setPowerToast(info.blocked
                               ? `🛡️ ${info.cloud ? 'L’éclair est bloqué' : 'Le tir est bloqué'} par ton bouclier !`
@@ -1306,12 +1311,22 @@ export default function MirageOnline({
                         }}
                         onLassoHit={(info) => {
                           if (info?.target === 'player') {
-                            audio.current?.lassoThrow?.();
+                            // Touché par l'onde dorée de Cloud : elle explose
+                            // sur le cavalier au lieu de siffler comme un lasso.
+                            if (info.cloud) audio.current?.cloudWaveExplosion?.();
+                            else audio.current?.lassoThrow?.();
                             setPowerToast(info.blocked
                               ? `🛡️ ${info.cloud ? 'Onde dorée bloquée' : 'Lasso bloqué'} par ton bouclier !`
                               : info.cloud ? `⚔ Onde de Cloud ! Secoué et ralenti ${LASSO_SLOW_DURATION}s…` : '🪢 Touché par un lasso ! Ralenti…');
                             setTimeout(()=> setPowerToast(null), 2500);
                           }
+                        }}
+                        onCloudStrike={(info) => {
+                          // Les techniques de Cloud touchent leur cible : le
+                          // tonnerre claque pour l'éclair rouge, l'onde dorée
+                          // explose pour la jaune.
+                          if (info?.kind === 'red') audio.current?.cloudThunderStrike?.();
+                          else audio.current?.cloudWaveExplosion?.();
                         }}
                       />
                       {worldError && (

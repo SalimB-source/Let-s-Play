@@ -757,10 +757,13 @@ export default function MirageRushPage() {
                     audioRef.current?.shieldGravity?.();
                     showPowerToast('🛡️ Bouclier activé automatiquement !');
                   } else if (info.type === 'lasso') {
-                    audioRef.current?.lassoThrow?.();
+                    // Cloud lance son onde d'épée : la rafale de vent, pas le lasso.
+                    if (isCloudRider) audioRef.current?.cloudSwordWave?.();
+                    else audioRef.current?.lassoThrow?.();
                     showPowerToast(isCloudRider ? '⚔ Onde de choc dorée lancée !' : '🪢 Lasso envoyé !');
                   } else if (info.type === 'pistol') {
-                    if (isCloudRider) audioRef.current?.lassoThrow?.();
+                    // Cloud appelle la foudre : l'orage gronde avant la frappe.
+                    if (isCloudRider) audioRef.current?.cloudStormCharge?.();
                     else audioRef.current?.gunshot();
                     showPowerToast(isCloudRider ? '⚡ L’éclair frappe ta cible !' : '🔫 Tir de pistolet !');
                   } else if (info.type === 'boost') {
@@ -829,6 +832,12 @@ export default function MirageRushPage() {
                   const attacker = info.attackerName || 'un rival';
                   showPowerToast(info.blocked ? `🛡️ Balle de ${attacker} arrêtée par ton bouclier !` : `🔫 Touché par ${attacker} ! Tu tombes de cheval…`);
                 }
+              }}
+              onCloudStrike={(info) => {
+                // Les techniques de Cloud touchent leur cible : le tonnerre
+                // claque pour l'éclair rouge, l'onde dorée explose pour la jaune.
+                if (info?.kind === 'red') audioRef.current?.cloudThunderStrike?.();
+                else audioRef.current?.cloudWaveExplosion?.();
               }}
               onShield={() => {}}
             />}

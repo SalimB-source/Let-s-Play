@@ -500,3 +500,142 @@ test('a fanfare still waiting for the audio context is cancelled by stop, and no
     assert.equal(mute.fanfareBus, null);
   } finally { globalThis.window = originalWindow; }
 });
+
+test('les techniques de Cloud ont leurs bruitages : vent doré, explosion, orage, tonnerre', () => {
+  const audio = new DesertGroove();
+  const tones = [];
+  const noises = [];
+  const oscillators = [];
+  const filters = [];
+  let noiseSources = 0;
+  const sweepParam = (values) => ({
+    values,
+    setValueAtTime: (value, time) => values.push({ value, time }),
+    exponentialRampToValueAtTime: (value, time) => values.push({ value, time }),
+  });
+  audio.tone = (frequency, time, duration, type, volume) => {
+    assert.ok(frequency > 0 && duration > 0 && volume > 0);
+    tones.push({ frequency, time, duration, type, volume });
+  };
+  audio.noise = (time, duration, volume, highpass) => {
+    assert.ok(duration > 0 && volume > 0);
+    noises.push({ time, duration, volume, highpass });
+  };
+  audio.context = {
+    currentTime: 5,
+    sampleRate: 44100,
+    createBuffer: (channels, length) => ({ length, sampleRate: 44100, getChannelData: () => new Float32Array(length) }),
+    createBufferSource: () => {
+      noiseSources += 1;
+      return { buffer: null, connect() {}, start() {}, stop() {} };
+    },
+    createBiquadFilter: () => {
+      const frequency = sweepParam([]);
+      const filter = { type: 'lowpass', Q: { setValueAtTime() {} }, frequency, connect() {} };
+      filters.push(filter);
+      return filter;
+    },
+    createGain: () => ({ gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} }, connect() {} }),
+    createOscillator: () => {
+      const frequency = sweepParam([]);
+      const oscillator = { type: 'sine', frequency, connect() {}, start() {}, stop() {} };
+      oscillators.push(oscillator);
+      return oscillator;
+    },
+  };
+  audio.master = {};
+  const nodes = () => tones.length + noises.length + oscillators.length + noiseSources;
+
+  // Son coupé / musique arrêtée : rien n'est programmé.
+  audio.cloudSwordWave();
+  audio.cloudWaveExplosion();
+  audio.cloudStormCharge();
+  audio.cloudThunderStrike();
+  assert.equal(nodes(), 0, 'aucun bruitage ne part quand le son est coupé');
+
+  audio.running = true;
+
+  // Onde d'épée (jaune) : la rafale de vent qui monte et l'or qui chante.
+  audio.cloudSwordWave();
+  assert.ok(noiseSources >= 2 && noises.length >= 1, 'la rafale et la poussière dorée soufflent');
+  assert.ok(tones.length >= 3, 'la lame fend l’air sur un accord clair');
+  assert.ok(
+    oscillators.some((oscillator) => oscillator.type === 'sawtooth'
+      && oscillator.frequency.values.some((event) => event.value === 150)
+      && oscillator.frequency.values.some((event) => event.value === 720)),
+    'le sifflement de la lame balaie de 150 à 720 Hz',
+  );
+  assert.ok(
+    filters.some((filter) => filter.type === 'lowpass' && filter.frequency.values.some((event) => event.value === 2600)),
+    'le souffle s’ouvre vers l’aigu',
+  );
+
+  // Impact de l'onde : l'explosion dorée, du grave qui tombe aux éclats.
+  const tonesBefore = tones.length;
+  const oscillatorsBefore = oscillators.length;
+  audio.cloudWaveExplosion();
+  assert.ok(tones.length >= tonesBefore + 5, 'les éclats dorés retombent en cascade');
+  assert.ok(
+    oscillators.slice(oscillatorsBefore).some((oscillator) => oscillator.frequency.values.some((event) => event.value === 34)),
+    'la déflagration descend à 34 Hz',
+  );
+  assert.ok(
+    filters.some((filter) => filter.type === 'lowpass' && filter.frequency.values.some((event) => event.value === 220)),
+    'la boule de feu s’assombrit',
+  );
+
+  // Éclair (rouge) : l'orage se forme, le vent forcit.
+  audio.cloudStormCharge();
+  assert.ok(
+    filters.some((filter) => filter.frequency.values.some((event) => event.value === 1500)),
+    'le vent d’orage monte',
+  );
+  assert.ok(
+    oscillators.some((oscillator) => oscillator.frequency.values.every((event) => event.value <= 104)),
+    'le grondement reste dans le grave',
+  );
+
+  // La foudre tombe : claquement sec, détonation sous 30 Hz, tonnerre qui roule.
+  audio.cloudThunderStrike();
+  assert.ok(noises.some((burst) => burst.highpass >= 5000), 'le claquement sec ouvre le tonnerre');
+  assert.ok(
+    oscillators.some((oscillator) => oscillator.frequency.values.some((event) => event.value === 26)),
+    'la détonation tombe à 26 Hz',
+  );
+  assert.ok(
+    filters.some((filter) => filter.type === 'lowpass'
+      && filter.frequency.values.some((event) => event.value === 120)),
+    'le tonnerre roule et s’éteint dans le lointain',
+  );
+  assert.ok(noiseSources >= 10, 'rafales, orage et tonnerre ont leur propre matière');
+});
+
+test('les bruitages de Cloud sont branchés sur le monde et les deux pages', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const [world, rushPage, onlinePage, audioModule] = await Promise.all([
+    readFile(new URL('../src/games/MirageWorld.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/games/MirageRushPage.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/games/MirageOnline.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/games/arcadeAudio.js', import.meta.url), 'utf8'),
+  ]);
+
+  for (const method of ['cloudSwordWave', 'cloudWaveExplosion', 'cloudStormCharge', 'cloudThunderStrike']) {
+    assert.ok(audioModule.includes(`${method}()`), `${method}() existe dans arcadeAudio.js`);
+  }
+  // Le monde signale la frappe au moment exact où la foudre claque ou où l'onde explose.
+  assert.match(world, /callbacks\.cloudStrike\?\.\(\{ kind: 'red' \}\);/);
+  assert.match(world, /callbacks\.cloudStrike\?\.\(\{ kind: 'yellow' \}\);/);
+  assert.match(world, /cloudStrike: \(info\) => callbackRefs\.current\.onCloudStrike\?\.\(info\)/);
+  // Sur les deux pages, le chocobo doré remplace le lasso et le pistolet par ses techniques…
+  assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudSwordWave\?\.\(\);\s*else audioRef\.current\?\.lassoThrow\?\.\(\);/);
+  assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudStormCharge\?\.\(\);\s*else audioRef\.current\?\.gunshot\(\);/);
+  assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudSwordWave\?\.\(\);\s*else audio\.current\?\.lassoThrow\?\.\(\);/);
+  assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudStormCharge\?\.\(\);\s*else audio\.current\?\.gunshot\(\);/);
+  // …puis le tonnerre et l'explosion dorée sonnent quand la cible est touchée.
+  for (const [name, page] of [['MirageRushPage', rushPage], ['MirageOnline', onlinePage]]) {
+    const audio = name === 'MirageRushPage' ? 'audioRef.current' : 'audio.current';
+    assert.match(page, /onCloudStrike=\{\(info\) => \{[\s\S]*?cloudThunderStrike[\s\S]*?cloudWaveExplosion[\s\S]*?\}\}/);
+    assert.ok(page.includes(`if (info?.kind === 'red') ${audio}?.cloudThunderStrike?.();`), `${name} joue le tonnerre`);
+    assert.ok(page.includes(`else ${audio}?.cloudWaveExplosion?.();`), `${name} joue l’explosion dorée`);
+  }
+});
