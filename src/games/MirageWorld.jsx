@@ -1582,6 +1582,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
             resolveCloudShockwaveHit(projectile);
             strikeShake = CLOUD_BOLT_SHAKE;
             triggerScreenFlash(0.8, 0.3, 0xffe4f0);
+            // Le tonnerre : les pages savent jouer le bruitage au bon instant.
+            callbacks.cloudStrike?.({ kind: 'red' });
           },
         })
         : updateCloudWaveVisual(projectile.visual, projectile, dt, targetPoint, camera, {
@@ -1589,6 +1591,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
             resolveCloudShockwaveHit(projectile);
             strikeShake = CLOUD_IMPACT_SHAKE;
             triggerScreenFlash(0.34, 0.24, 0xffd98a);
+            // L'explosion dorée de l'onde d'épée.
+            callbacks.cloudStrike?.({ kind: 'yellow' });
           },
         });
       if (done) {
@@ -2864,7 +2868,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, prepareSignal = 0 }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, onCloudStrike, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -2878,7 +2882,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
   const graphicsRef = useRef(graphicsQuality);
   graphicsRef.current = graphicsQuality;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
+  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, onCloudStrike };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -2897,6 +2901,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
         lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
         pistol: (target) => callbackRefs.current.onPistol?.(target),
         pistolHit: (info) => callbackRefs.current.onPistolHit?.(info),
+        cloudStrike: (info) => callbackRefs.current.onCloudStrike?.(info),
       }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current, graphicsRef.current);
     } catch (error) {
       callbackRefs.current.onError?.(error instanceof Error ? error.message : String(error));

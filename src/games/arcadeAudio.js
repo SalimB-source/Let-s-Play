@@ -213,6 +213,56 @@ export class DesertGroove {
     source.start(time, Math.random() * Math.max(0, 1 - duration), duration);
   }
 
+  /**
+   * Bruit filtré avec balayage de fréquence : le souffle d'un vent qui se
+   * lève, d'un orage qui roule ou d'une explosion qui s'assombrit. `noise()`
+   * ne fait qu'un passe-haut fixe ; les techniques de Cloud ont besoin de
+   * matière — un grave qui descend, un aigu qui s'envole.
+   */
+  sweepNoise(time, duration, volume, { type = 'lowpass', from = 1200, to = null, q = 0.9, attack = 0.02 } = {}, destination = this.master) {
+    const source = this.context.createBufferSource();
+    const filter = this.context.createBiquadFilter();
+    const gain = this.context.createGain();
+    source.buffer = this.noiseBuffer();
+    filter.type = type;
+    filter.frequency.setValueAtTime(Math.max(24, from), time);
+    if (to) filter.frequency.exponentialRampToValueAtTime(Math.max(24, to), time + duration);
+    if (q && filter.Q) filter.Q.setValueAtTime(q, time);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), time + Math.min(attack, duration * 0.5));
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(destination);
+    source.start(time, Math.random() * Math.max(0, 1 - duration), duration);
+  }
+
+  /**
+   * Oscillateur balayé avec enveloppe : le grave d'une détonation qui tombe,
+   * le sifflement d'une rafale qui monte. Même contrat que `tone()`, avec une
+   * fréquence d'arrivée au lieu d'une fréquence fixe.
+   */
+  sweepTone(from, to, time, duration, type, volume, filterFrequency = null, destination = this.master) {
+    const oscillator = this.context.createOscillator();
+    const gain = this.context.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(Math.max(20, from), time);
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, to), time + duration);
+    if (filterFrequency) {
+      const filter = this.context.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(filterFrequency, time);
+      oscillator.connect(filter);
+      filter.connect(gain);
+    } else oscillator.connect(gain);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), time + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    gain.connect(destination);
+    oscillator.start(time);
+    oscillator.stop(time + duration + 0.03);
+  }
+
   playWestern(step, time) {
     // Original E-minor cowboy motif: whistle, plucked strings, galloping percussion.
     const melody = [659.25, 0, 783.99, 739.99, 659.25, 0, 493.88, 0, 587.33, 659.25, 0, 783.99, 880, 783.99, 739.99, 0];
@@ -993,6 +1043,84 @@ export class DesertGroove {
       this.tone(freq, time + idx * 0.055, 0.36, 'sine', 0.14);
       this.tone(freq * 1.01, time + idx * 0.055 + 0.015, 0.32, 'triangle', 0.09, 900);
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Les deux techniques de Cloud (chocobo doré) ont leur propre matière sonore :
+  // la rafale de vent qui précède l'onde d'épée jaune, l'explosion dorée de son
+  // impact, l'orage qui se forme pour l'éclair rouge, puis le tonnerre qui
+  // claque. Elles ne réutilisent pas le lasso ni le pistolet.
+  // ---------------------------------------------------------------------------
+
+  /** Onde d'épée (jaune) : la rafale de vent qui précède la lame dorée. */
+  cloudSwordWave() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // Le vent se lève : un souffle grave qui s'ouvre, un sifflement qui monte.
+    // Les deux rafales tiennent dans le vol de l'onde (0,38 s) pour laisser
+    // l'explosion claquer seule à l'impact.
+    this.sweepNoise(time, 0.32, 0.34, { type: 'lowpass', from: 240, to: 2600, attack: 0.06 });
+    this.sweepNoise(time + 0.02, 0.34, 0.22, { type: 'bandpass', from: 620, to: 2800, q: 1.1, attack: 0.07 });
+    // La lame fend l'air.
+    this.sweepTone(150, 720, time, 0.28, 'sawtooth', 0.16, 2600);
+    this.tone(196, time + 0.01, 0.24, 'triangle', 0.2, 900);
+    // L'or qui chante : un accord clair par-dessus la rafale.
+    [1568, 1975.5, 2637].forEach((frequency, index) =>
+      this.tone(frequency, time + 0.02 + index * 0.03, 0.2, 'triangle', 0.09 - index * 0.02));
+    // La poussière dorée arrachée à la piste.
+    this.noise(time + 0.05, 0.24, 0.12, 4200);
+  }
+
+  /** Impact de l'onde dorée : le coup au sol explose en lumière. */
+  cloudWaveExplosion() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // La déflagration grave, puis la boule de feu qui s'assombrit.
+    this.sweepTone(210, 34, time, 0.55, 'sine', 0.85);
+    this.sweepTone(120, 52, time + 0.015, 0.4, 'triangle', 0.35, 700);
+    this.noise(time, 0.11, 0.5, 3600);
+    this.sweepNoise(time, 0.62, 0.42, { type: 'lowpass', from: 3200, to: 220, attack: 0.015 });
+    // Les éclats dorés retombent en cascade, la poussière d'or scintille.
+    [1568, 1318.5, 1046.5, 830.6, 659.3].forEach((frequency, index) =>
+      this.tone(frequency, time + 0.04 + index * 0.035, 0.24, 'triangle', 0.13 - index * 0.018));
+    this.sweepNoise(time + 0.12, 0.66, 0.1, { type: 'highpass', from: 4200, to: 9000, attack: 0.05 });
+    // L'écho du désert, déjà amorti.
+    this.sweepNoise(time + 0.3, 0.5, 0.12, { type: 'lowpass', from: 900, to: 180, attack: 0.08 });
+  }
+
+  /** Éclair (rouge) : l'orage se forme au-dessus de la cible, le vent forcit. */
+  cloudStormCharge() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // Le vent d'orage qui se lève et fait rouler les nuages. L'orage ne dure
+    // que la formation de la nuée (0,30 s) : le tonnerre claque ensuite.
+    this.sweepNoise(time, 0.3, 0.3, { type: 'lowpass', from: 180, to: 1500, attack: 0.07 });
+    this.sweepNoise(time + 0.04, 0.26, 0.18, { type: 'bandpass', from: 420, to: 1800, q: 0.8, attack: 0.06 });
+    // Le grondement lointain, encore sourd : la foudre cherche sa cible.
+    this.sweepTone(42, 58, time, 0.34, 'sine', 0.5);
+    this.sweepTone(78, 104, time + 0.03, 0.28, 'triangle', 0.22, 500);
+    this.sweepNoise(time + 0.03, 0.36, 0.16, { type: 'lowpass', from: 620, to: 120, attack: 0.03 });
+  }
+
+  /** La foudre tombe : claquement sec, détonation, tonnerre qui roule. */
+  cloudThunderStrike() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // Le claquement sec, au premier plan.
+    this.noise(time, 0.055, 0.6, 5200);
+    this.noise(time + 0.02, 0.14, 0.42, 2400);
+    // La détonation : le grave qui tombe sous le claquement.
+    this.sweepTone(240, 26, time, 0.5, 'sine', 0.9);
+    this.sweepTone(120, 44, time + 0.02, 0.36, 'sawtooth', 0.4, 600);
+    // Le tonnerre qui roule sur le désert, puis son écho.
+    this.sweepNoise(time + 0.02, 1.5, 0.34, { type: 'lowpass', from: 1100, to: 120, attack: 0.02 });
+    this.sweepNoise(time + 0.35, 1.4, 0.16, { type: 'lowpass', from: 700, to: 90, attack: 0.12 });
+    // Les braises de l'impact qui grésillent encore.
+    this.sweepNoise(time + 0.4, 0.55, 0.08, { type: 'highpass', from: 5200, to: 9000, attack: 0.1 });
   }
 
   async loadCry() {
