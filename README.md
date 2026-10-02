@@ -330,18 +330,64 @@ et alterner les deux niveaux en pleine course. Le gain se mesure en images par s
 sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
 sur les terrains chargés, du nombre d'objets dessinés.
 
-## Vice City Rush : 3 tours, ligne de départ et décor
+## Mirage Rush : la coupe et sa bourse d'or
+
+Trois coupes (`/jeu/mirage-rush`, bouton **COUPE**) enchaînent des duels sur des
+terrains imposés, à quatre cavaliers (trois sur une piste de téléphone à trois
+voies). Les points s'additionnent d'une course à l'autre, et le meilleur total
+après la dernière course soulève le trophée.
+
+| Coupe | Courses | Bourse du vainqueur |
+|---|---|---|
+| Coupe du Désert | Dunes de l'Écho → Dust Creek → Plaines d'Or (3) | **30 OR** |
+| Coupe Grand Tour | Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase (4) | **40 OR** |
+| Coupe des Légendes | Remparts d'Ocre → Château de l'Infini → Thunder Airbase → Costa Omertà → Plaines de Yōtei (5) | **50 OR** |
+
+L'or se cumule : chaque course gagnée rapporte les 5 OR habituels (`WIN_COINS`),
+et la bourse de la coupe s'y ajoute — versée **une seule fois**, au vainqueur du
+classement général, jamais à une simple victoire de course. Une coupe perdue ne
+verse donc rien au joueur : l'écran du trophée rappelle alors qui empoche la
+bourse.
+
+L'écran du trophée affiche le montant crédité (`+30 OR`), le sélecteur de coupe
+annonce la bourse de chaque coupe, la consigne de lancement la rappelle et les
+règles du jeu la détaillent. Le crédit passe par `awardCoins()`, qui ne peut que
+créditer : un montant absent, négatif ou illisible ne retire jamais d'or.
+
+### Où vit le code
+
+- `src/games/mirageCup.js` — `CUPS` (dont `coins`) et `cupWinnerCoins()` ;
+- `src/games/mirageProgression.js` — `WIN_COINS`, `coinsForRun()`, `awardCoins()` ;
+- `src/games/MirageRushPage.jsx` — le versement dans `onFinish` : la bourse part
+  quand la coupe devient complète et que le joueur est champion (`cupWinner()`) ;
+- `src/games/MirageCupTrophy.jsx` (ligne « BOURSE DU VAINQUEUR ») et
+  `src/games/MirageCoursePicker.jsx` (bourse sur chaque carte de coupe) ;
+- `src/games/mirage-rush.css` — `.mirage-cup-purse`, `.mirage-trophy-purse`.
+
+Ajouter une coupe : une entrée dans `CUPS` avec ses terrains, sa bourse et son
+design (`mirageTrophy.js`) ; le sélecteur, l'enchaînement des courses et l'écran
+du trophée suivent tout seuls.
+
+### Vérifications
+
+```bash
+node --test tests/mirage-cup.test.js tests/mirage-progression.test.js
+npm run check:mirage-cup     # la coupe jouée de bout en bout : bourse affichée, créditée une seule fois
+npm run check:mirage-flow    # bourse annoncée par le sélecteur et les règles
+```
+
+## Vice City Rush : 5 tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
-villes (Vice City, New York, Tokyo, Paris, Londres). Une course fait **3 tours
-de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
+villes (Vice City, New York, Tokyo, Paris, Londres). Une course fait **5 tours
+de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 **sous le portique de départ à chaque tour**.
 
 - **La zone de départ.** Grille peinte au sol avec les quatre emplacements,
   ligne à damier, vibreurs rouge et blanc, tribunes garnies de spectateurs qui
   s'agitent, fanions, mâts d'éclairage, tour de direction de course, et un
   **portique** qui porte le panneau *DÉPART · ARRIVÉE*, le tableau de tour
-  (« TOUR 1/3 », puis « DERNIER TOUR », puis « ARRIVÉE ») et les **cinq feux**
+  (« TOUR 1/5 », puis « DERNIER TOUR », puis « ARRIVÉE ») et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
@@ -359,7 +405,23 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   à part (`hud.police`, marqueurs rouge et bleu de la mini-carte) et l'écran
   d'arrivée les ignore. Le joueur peut riposter : ses balles et ses flaques
   d'huile les ralentissent comme n'importe quelle voiture
-  (`CITY_RUSH_POLICE_*` dans `cityRushRules.js`).
+  (`CITY_RUSH_POLICE_*` dans `cityRushRules.js`). **L'escouade est la même sur
+  les cinq circuits** (Vice City, New York, Tokyo, Paris, Londres) : aucune de
+  ses règles ne dépend de la ville — ni la mise en place, ni la chasse, ni la
+  sirène. Seul le tracé joue : sous un tremis (Vice City, New York, Tokyo), les
+  berlines se rabattent dans le couloir resté ouvert, comme tout le monde.
+  **Elle ne s'enlise pas dans le trafic.** Une voie où un véhicule lent précède
+  la berline à moins de 40 m est « bouchée » (`isCityRushPoliceLaneJammed`) et
+  écartée d'office du choix de voie tant qu'une voie libre est ouverte — même
+  avec un bonus rouge dedans : la convoitise des bonus de tir ne la garde plus
+  collée derrière un camion à 5 m/s pendant que le leader s'envole. Et quand un
+  véhicule lent la freine malgré tout (toutes les voies bouchées, ou trop tard
+  pour dévier), la berline **le heurte comme un rival** : une seconde de
+  ralentissement, un dérapage, et le véhicule se rabat sur une voie voisine
+  (`resolveCityRushPoliceMovement` désigne le véhicule — `blockedBy` —, puis
+  `applyTrafficImpact` ; sans bandeau « choc » à l'écran). Son changement de voie
+  est jugé à **sa propre position** — pas à celle du joueur — pour le trafic
+  comme pour les murs de tremis.
 - **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
   **bleu 2** (clé à molette / huile), **rouge 3** (mitrailleuse / dérapage),
   **vert 2** (billets / boost), **jaune 4** (talkie-walkie / hélicoptère) —
@@ -503,21 +565,24 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ### Vérifications
 
 ```bash
-npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
-npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 3 tours sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours sans exception, éclatements visibles
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
 à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
-tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés, la
+tour), l’arrivée après 5 tours, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
 aussi l'**escouade de police** : une seule entrée en piste, deux berlines
 arrivées derrière le leader (jamais devant, jamais à plus de 140 m), qui
-rejoignent le leader à moins de 30 m, ne figurent ni dans le classement du HUD
-ni dans le tableau d'arrivée, disparaissent à la ligne et font sonner puis
-éteindre leur sirène. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
-navigateur (`npm run dev`) pour juger l'image.
+rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
+circuit (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
+plus de 175 m de retard — seuils calibrés sur 200 courses, avec une large marge),
+ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
+disparaissent à la ligne et font sonner puis éteindre leur sirène. Il ne dit rien
+du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
+l'image.
 
 Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
 appels : une course complète doit piloter le moteur à chaque image, sonner les

@@ -49,6 +49,7 @@ const EMPTY_HUD = {
   score: 0,
   pickups: 0,
   slowLeft: 0,
+  trafficImpactLeft: 0,
   boostLeft: 0,
   stunLeft: 0,
   police: [],
@@ -391,6 +392,12 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-block') showToast(effect.target === 'player' ? `🚧 BARRAGE POLICE · ${effect.police} SE RABAT DEVANT TOI ET LÈVE LE PIED · CONTOURNE-LA, OU PERDS TON ÉLAN DERRIÈRE ELLE.` : `🚧 BARRAGE POLICE · ${effect.police} COUPE LA ROUTE À ${effect.target}.`, 'slow');
     else if (effect.type === 'police-rally') showToast(effect.target === 'player' ? `🚨 ${effect.police} · TU VIENS DE PERCUTER UNE BERLINE DE POLICE : ELLE TE PREND EN CHASSE, SE RABATTRA DEVANT TOI ET VISERA TES BONUS ROUGES ET JAUNES.` : `🚨 ${effect.police} · ELLE PREND ${effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'police-fire') showToast(`TATATATA ! ${effect.police} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    else if (effect.type === 'traffic-impact') showToast(
+      effect.isPlayer
+        ? `CHOC · ${effect.traffic} SE RABAT · RALENTI ${formatSeconds(effect.duration, 1)}.`
+        : `${effect.target} TOUCHE ${effect.traffic} · LA VOIE SE LIBÈRE EN ${formatSeconds(effect.duration, 1)}.`,
+      'impact',
+    );
     // Tremis : on n'annonce que les tunnels où la chaussée se resserre, en
     // disant de quel côté le couloir est bordé (parfois des deux).
     else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
@@ -430,7 +437,7 @@ export default function ViceCityRushPage() {
         <div>
           <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <i>/</i> STREET RALLY 3D</p>
           <h1>VICE CITY <em>RUSH</em></h1>
-          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité. Percuter une berline de police en ronde la rappelle à l’ordre : elle te prend en chasse sur-le-champ, se rabat devant toi pour freiner et te bloque. Au dernier tour, deux berlines d’interception entrent en plus en piste derrière le leader : elles raflent les bonus rouges et jaunes et tirent sur le premier.</p>
+          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Percuter une voiture lente la fait se rabattre pour te laisser passer, au prix d’un court ralentissement ; le trafic bloque la voie sans dégâts ni pénalité. Percuter une berline de police en ronde la rappelle à l’ordre : elle te prend en chasse sur-le-champ et se rabat devant toi pour freiner et te bloquer. Au dernier tour, deux berlines d’interception entrent en plus en piste derrière le leader : elles raflent les bonus rouges et jaunes, tirent sur le premier — et tes pouvoirs rouge et jaune peuvent leur être retournés.</p>
         </div>
         <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
       </header>
@@ -466,7 +473,7 @@ export default function ViceCityRushPage() {
             </div>
           </div>
 
-          <div className={`city-rush-viewport${phase === 'playing' ? ' is-live' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}`}>
+          <div className={`city-rush-viewport${phase === 'playing' ? ' is-live' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}`}>
             <ViceCityWorld
               cityId={cityId}
               carId={selectedCar.id}
@@ -522,9 +529,15 @@ export default function ViceCityRushPage() {
                 playerDriverId={playerDriverId}
               />
 
-              {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.stunLeft > 0) && (
-                <div className={`city-rush-status-pill${hud.stunLeft > 0 ? ' is-stunned' : hud.boostLeft > 0 ? ' is-boost' : ' is-slow'}`}>
-                  {hud.stunLeft > 0 ? `MISSILE · ${hud.stunLeft.toFixed(1)} s` : hud.boostLeft > 0 ? `TURBO · ${hud.boostLeft.toFixed(1)} s` : `RALENTI · ${hud.slowLeft.toFixed(1)} s`}
+              {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0) && (
+                <div className={`city-rush-status-pill${hud.stunLeft > 0 ? ' is-stunned' : hud.trafficImpactLeft > 0 ? ' is-impact' : hud.boostLeft > 0 ? ' is-boost' : ' is-slow'}`}>
+                  {hud.stunLeft > 0
+                    ? `MISSILE · ${hud.stunLeft.toFixed(1)} s`
+                    : hud.trafficImpactLeft > 0
+                      ? `CHOC · ${hud.trafficImpactLeft.toFixed(1)} s`
+                      : hud.boostLeft > 0
+                        ? `TURBO · ${hud.boostLeft.toFixed(1)} s`
+                        : `RALENTI · ${hud.slowLeft.toFixed(1)} s`}
                 </div>
               )}
 
@@ -582,7 +595,7 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-intro-copy">
                   <span className="city-rush-overlay-kicker"><i /> STREET RALLY · ARCADE 80’S</span>
                   <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>PREND LA ROUTE.</em></h2>
-                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne — et, au dernier tour, une escouade de police qui ne court pas pour gagner, mais pour t’empêcher de ramasser les bonus rouges et jaunes : des berlines solides, qui n’hésitent pas à se rabattre devant toi pour freiner et t’obliger à les contourner.</p>
+                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne. Toi comme les IA pouvez toucher le trafic lent : impact bref, pilote ralenti, voiture touchée qui change de voie pour libérer la route. Percuter une berline de police en ronde la rappelle à l’ordre, elle aussi. Et au dernier tour, une escouade de police entre en piste pour t’empêcher de ramasser les bonus rouges et jaunes — des berlines solides, qui se rabattent devant toi pour freiner et t’obliger à les contourner. Bonne nouvelle : tes pouvoirs rouge et jaune peuvent les viser en retour.</p>
                 </div>
                 <div className="city-rush-car-select-heading city-rush-city-select-heading"><span>01 / CHOIX DE LA VILLE</span></div>
                 <div className="city-rush-city-picker" role="group" aria-label="Choisir une ville">
@@ -784,7 +797,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE · DERNIER TOUR</b><p>Au troisième tour, <b>deux berlines d’interception entrent en piste juste derrière le premier</b> et roulent pour lui nuire : elles raflent en priorité les bonus <em className="is-red">rouges</em> (mitrailleuse) et <em className="is-yellow">jaunes</em> (hélico) avant lui, puis ouvrent le feu dès qu’une jauge rouge est pleine. Surtout, <b>elles ne se traversent pas</b> : une berline se rabat devant le leader, lève le pied et le retient comme une voiture lente — même effet de collision que le trafic, sans dégât ni pénalité — avant de repartir et de revenir à la charge. Elles ne sont pas classées : l’arrivée ne retient que les quatre pilotes, et la mini-carte les montre à part, marquées d’un halo jaune pendant leur barrage. Riposte : une flaque d’huile ou une rafale les ralentit comme n’importe qui.</p></div>
+            <div><b>ESCOUADE DE POLICE · DERNIER TOUR</b><p>Au troisième tour, <b>deux berlines d’interception entrent en piste juste derrière le premier</b> et roulent pour lui nuire : elles raflent en priorité les bonus <em className="is-red">rouges</em> (mitrailleuse) et <em className="is-yellow">jaunes</em> (hélico) avant lui, puis ouvrent le feu dès qu’une jauge rouge est pleine. Surtout, <b>elles ne se traversent pas</b> : une berline se rabat devant le leader, lève le pied et le retient comme une voiture lente — même effet de collision que le trafic, sans dégât ni pénalité — avant de repartir et de revenir à la charge. Percuter une berline de police en ronde la rappelle à l’ordre : elle te prend en chasse à son tour. Elles ne sont pas classées : l’arrivée ne retient que les quatre pilotes, et la mini-carte les montre à part, marquées d’un halo jaune pendant leur barrage. Riposte : une flaque d’huile ou une rafale les ralentit comme n’importe qui — et quand tu mènes et que plus personne n’est devant toi, tes pouvoirs de tir peuvent se retourner contre la berline la plus proche, même collée à ton pare-chocs arrière.</p></div>
           </section>
         </aside>
       </main>

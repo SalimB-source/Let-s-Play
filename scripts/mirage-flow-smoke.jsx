@@ -8,6 +8,8 @@
  *   2. le clic sur RUÉE ou DUEL ouvre l'écran suivant, où les 10 maps et le
  *      bouton de lancement apparaissent ;
  *   3. le clic sur COUPE ouvre ce même écran, mais le choix de la map y est
+ *      remplacé par les trois coupes, leurs bourses (30 / 40 / 50 OR au
+ *      vainqueur) et le nom du trophée ;
  *      remplacé par celui de la coupe (Coupe du Désert : Dunes de l'Écho,
  *      Dust Creek, Plaines d'Or, dans cet ordre, et le barème des points) et
  *      « LANCER LA COUPE » ; un lien ?mode=cup y arrive directement ;
@@ -170,6 +172,11 @@ function assertCupIntro(assert, node) {
     [...legendsCard.querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
     ['Remparts d’Ocre', 'Château de l’Infini', 'Thunder Airbase', 'Costa Omertà', 'Plaines de Yōtei'],
     'la Coupe des Légendes enchaîne cinq courses : Remparts d’Ocre, Château de l’Infini, Thunder Airbase, Costa Omertà puis Plaines de Yōtei');
+  assert.deepEqual(
+    cards.map((card) => card.querySelector('.mirage-cup-purse')?.textContent.replace(/\s+/g, ' ').trim()),
+    ['BOURSE DU VAINQUEUR 30 OR', 'BOURSE DU VAINQUEUR 40 OR', 'BOURSE DU VAINQUEUR 50 OR'],
+    'chaque coupe annonce la bourse versée à son vainqueur',
+  );
   assert.ok(node.querySelector('.mirage-cup-name-field input'), 'le nom du trophée est modifiable');
   const start = node.querySelector('.mirage-start-button');
   assert.ok(start.textContent.includes('LANCER LA COUPE') || start.textContent.includes('CHARGEMENT'),
@@ -177,7 +184,8 @@ function assertCupIntro(assert, node) {
   assert.ok(node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
     'le bandeau de zone annonce la première course de la coupe');
   const hint = node.querySelector('.mirage-overlay-hint').textContent;
-  assert.ok(hint.includes('3 COURSES') && hint.includes('1ᵉʳ 10 PTS'), 'la consigne rappelle les 3 courses et le barème');
+  assert.ok(hint.includes('3 COURSES') && hint.includes('1ᵉʳ 10 PTS') && hint.includes('BOURSE 30 OR'),
+    'la consigne rappelle les 3 courses, le barème et la bourse du vainqueur');
   const keyPowerIcons = [...node.querySelectorAll('.mirage-keys-hint [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
   assert.deepEqual(keyPowerIcons, ['shield', 'lasso', 'boost', 'pistol'], 'les pouvoirs du duel sont rappelés : ils servent aussi en coupe');
   return cards[0];
@@ -321,6 +329,13 @@ export async function checkMirageFlow(assert) {
     const cupRules = page.node.querySelector('#mirage-panel-info .mirage-cup-rules');
     assert.ok(cupRules, 'les règles de la coupe sont rangées dans Informations');
     assert.ok(cupRules.textContent.includes('MODE COUPE · 4 CAVALIERS'), 'le panneau des règles annonce quatre cavaliers en coupe');
+    const rulesPanel = page.node.querySelector('#mirage-panel-info');
+    assert.ok(
+      rulesPanel.textContent.includes('30 OR pour la Coupe du Désert')
+      && rulesPanel.textContent.includes('40 OR pour la Coupe Grand Tour')
+      && rulesPanel.textContent.includes('50 OR pour la Coupe des Légendes'),
+      'les règles rappellent la bourse du vainqueur de chaque coupe',
+    );
 
     /* ---------------- 5. Clic EN LIGNE : maps avant lobby -------------- */
     await act(async () => { page.node.querySelector('.mirage-secondary-button').click(); });

@@ -1,6 +1,6 @@
 // Smoke « Vice City Rush » : exécute createCityRushWorld (vrai code) avec un
 // faux WebGLRenderer, pompe la boucle animate à 30 Hz et joue une course
-// complète (3 tours × 600 m) pour chaque ville demandée.
+// complète (5 tours × 600 m) pour chaque ville demandée.
 const ctx2d = () => {
   const g = { addColorStop() {} };
   return {
@@ -119,6 +119,15 @@ const AUDIO_METHODS = [
   'policeSiren', 'policeSirenOff', 'tunnelRush', 'tunnelExit',
 ];
 
+// L'escouade du dernier tour doit coller au leader sur les cinq circuits. Seuils
+// calibrés sur 200 courses de ce même pilote (5 villes × 40, hasard non
+// fixé) : avec le dégagement du trafic, au pire 104 m de retard et 73 % du
+// tour dans les 60 m ; engluée derrière un camion, elle allait jusqu'à 314 m
+// de retard et ne passait que 17 % du tour dans les 60 m. Marges larges.
+const POLICE_ENGAGE_RANGE = 60; // m
+const POLICE_MIN_ENGAGED_SHARE = 0.5;
+const POLICE_MAX_LAG = 175; // m
+
 for (const [index, city] of cities.entries()) {
   const car = CITY_RUSH_CARS[index % CITY_RUSH_CARS.length];
   const callbacks = {
@@ -225,17 +234,34 @@ for (const [index, city] of cities.entries()) {
   let policeAheadFrames = 0;
   let policeClosestGap = Infinity;
   let policeBeacons = 0;
+  // L'escouade doit rester dans la course : images où la berline la plus proche
+  // est dans la zone du leader, et retard maximal de la mieux placée sur lui.
+  let policeEngagedFrames = 0;
+  let policeMaxLag = 0;
+  let policeWorstLag = null;
+  // Images où l'escouade du dernier tour est réellement en piste : le partage
+  // d'engagement se juge sur elle, pas sur la police du trafic rappelée.
+  let policeSquadFrames = 0;
+  // Quelques images où l'escouade lâche le leader, pour diagnostiquer l'échec.
+  const policeLooseSamples = [];
   // Barrage : frames où une berline freine devant le leader, et pire écart
   // mesuré entre une berline et un pilote qui se chevauchent latéralement
   // (les berlines sont solides : elles ne doivent jamais être traversées).
   let policeBlockadeFrames = 0;
   let policeWorstOverlap = Infinity;
+  // Écart minimal entre une berline et un rival : information seule, la porte
+  // de solidité ne concerne que la voiture du pilote.
+  let policeAiOverlap = Infinity;
+  // Images où la berline et le pilote se chevauchent latéralement : sans cela
+  // la porte de solidité ne serait jamais exercée (et passerait à vide).
+  let policePlayerOverlapFrames = 0;
   // Police du trafic rappelée par un contact : frames en chasse et frames
   // passées devant le joueur qu'elle poursuit.
   let ralliedHudFrames = 0;
   let ralliedAheadFrames = 0;
   let ralliedBlockadeFrames = 0;
   let worstPair = null;
+
   // Tremis : le joueur ne doit jamais rouler dans une voie murée, et le HUD
   // doit annoncer chaque passage sous la voûte.
   let tunnelHudFrames = 0;
@@ -312,8 +338,12 @@ for (const [index, city] of cities.entries()) {
     }
     if (hud?.lap) lapSeen.add(hud.lap);
     if (hud?.police?.length) {
-      if (!firstPoliceHud) firstPoliceHud = hud;
+      // L'escouade du dernier tour, distincte de la police du trafic rappelée
+      // par un contact (`rallied`) : le suivi d'engagement ne juge qu'elle.
+      const squadCars = hud.police.filter((car) => !car.rallied);
+      if (!firstPoliceHud && squadCars.length) firstPoliceHud = hud;
       policeHudFrames += 1;
+      if (squadCars.length) policeSquadFrames += 1;
       const hudLeader = Math.max(hud.distance || 0, ...(hud.racers || []).map((racer) => racer.distance || 0));
       for (const car of hud.police) {
         const gap = (car.distance || 0) - (hud.distance || 0);
@@ -327,30 +357,61 @@ for (const [index, city] of cities.entries()) {
           const playerGap = (Number.isFinite(Number(car.rawDistance)) ? Number(car.rawDistance) : Number(car.distance)) - (hud.distance || 0);
           if (playerGap > 0 && playerGap < 60) ralliedAheadFrames += 1;
         }
-        // Collision : une berline solide ne partage jamais sa case avec un
-        // pilote. On ne compare que les voitures latéralement confondues
-        // (1,6 m : au-delà, elles sont dans deux voies voisines).
+        // Collision : la solidité des berlines se juge sur la voiture du
+        // pilote — c'est elle qui ne doit jamais en traverser une. Deux
+        // rivaux peuvent se croiser au mètre près pendant un rabattement
+        // d'IA (à 300 m derrière, hors champ) : l'écart est relevé à part,
+        // en information, et ne bloque pas la ville.
         const carX = Number(car.x);
         const carDistance = Number.isFinite(Number(car.rawDistance)) ? Number(car.rawDistance) : Number(car.distance);
         for (const racer of hud.racers || []) {
           const racerX = Number(racer.x);
-          if (!Number.isFinite(carX) || !Number.isFinite(racerX) || Math.abs(carX - racerX) > 1.6) continue;
+          if (!Number.isFinite(carX) || !Number.isFinite(racerX)) continue;
+          if (Math.abs(carX - racerX) > 1.6) continue;
           const racerDistance = Number.isFinite(Number(racer.rawDistance)) ? Number(racer.rawDistance) : Number(racer.distance);
           if (!Number.isFinite(carDistance) || !Number.isFinite(racerDistance)) continue;
           // La police du trafic rappelée percute volontairement le pilote
           // qu'elle chasse : ce rattrapage est le seul contact toléré.
           const contactCatchUp = car.rallied && (carDistance - racerDistance) < CITY_RUSH_CAR_GAP;
           const overlapNow = contactCatchUp ? Infinity : Math.abs(carDistance - racerDistance);
+          if (!racer.isPlayer) {
+            if (overlapNow < policeAiOverlap) policeAiOverlap = overlapNow;
+            continue;
+          }
+          policePlayerOverlapFrames += 1;
           if (overlapNow < policeWorstOverlap) {
             policeWorstOverlap = overlapNow;
             worstPair = {
               frame: frames, city: city.id, car: car.id, rallied: Boolean(car.rallied), mode: car.mode,
               carDist: carDistance, carX, carLane: car.lane, blocking: Boolean(car.blocking),
               racer: racer.id, racerDist: racerDistance, racerX, racerLane: racer.lane,
-              delta: carDistance - racerDistance, racerSpeed: racer.speed, carSpeed: car.speed,
+              delta: carDistance - racerDistance,
             };
           }
         }
+      }
+      const squadGap = squadCars.length
+        ? Math.min(...squadCars.map((car) => Math.abs((car.distance || 0) - hudLeader)))
+        : Infinity;
+      if (squadGap <= POLICE_ENGAGE_RANGE) policeEngagedFrames += 1;
+      else if (policeLooseSamples.length < 6) {
+        policeLooseSamples.push({
+          frame: frames,
+          gap: Math.round(squadGap),
+          leader: Math.round(hudLeader),
+          player: Math.round(hud.distance || 0),
+          squad: squadCars.map((car) => `${car.id}@${car.distance}/${car.mode || '?'}`).join(' '),
+        });
+      }
+      const lag = squadCars.length ? hudLeader - Math.max(...squadCars.map((car) => car.distance || 0)) : 0;
+      if (lag > policeMaxLag) {
+        policeMaxLag = lag;
+        policeWorstLag = {
+          frame: frames,
+          hudLeader,
+          player: hud.distance,
+          police: squadCars.map((car) => `${car.id}@${car.distance}${car.mode ? '/' + car.mode : ''}`).join(' '),
+        };
       }
     }
     if (scene && frames % 30 === 0) {
@@ -375,12 +436,14 @@ for (const [index, city] of cities.entries()) {
   const playerLaps = callbacks.laps.map((l) => l.lap);
   const winnerIsPlayer = finish.racers?.find((r) => r.player)?.rank === 1 || finish.rank === 1;
   if (winnerIsPlayer) {
-    if (playerLaps.join(',') !== '2,3' && playerLaps.join(',') !== '2,3,4') {
-      fail('passages de ligne du joueur inattendus (attendu tour 2 puis tour 3)', callbacks.laps);
+    const expectedLaps = Array.from({ length: CITY_RUSH_LAPS - 1 }, (_, i) => i + 2);
+    const joined = playerLaps.join(',');
+    if (joined !== expectedLaps.join(',') && joined !== [...expectedLaps, CITY_RUSH_LAPS + 1].join(',')) {
+      fail(`passages de ligne du joueur inattendus (attendu tours ${expectedLaps.join(', ')})`, callbacks.laps);
     }
     const finalLapEffect = callbacks.effects.find((e) => e.type === 'final-lap');
     if (!finalLapEffect) fail('effet final-lap jamais émis', callbacks.effects.map((e) => e.type));
-    if (![...lapSeen].includes(3)) fail('le HUD n’a jamais affiché le tour 3', [...lapSeen]);
+    if (![...lapSeen].includes(CITY_RUSH_LAPS)) fail('le HUD n’a jamais affiché le dernier tour', [...lapSeen]);
   } else if (!callbacks.laps.length && !callbacks.effects.some((e) => e.type === 'rival-final-lap')) {
     fail('aucun passage de ligne détecté (ni joueur ni rival)', callbacks.effects.map((e) => e.type));
   }
@@ -405,7 +468,7 @@ for (const [index, city] of cities.entries()) {
   if (!audioCalls.pickup) fail('aucun bip de ramassage alors que des bonus ont été pris', audioCalls);
 
   const maxDistance = Math.max(...finish.racers.map((r) => r.distance ?? 0));
-  if (maxDistance < CITY_RUSH_DISTANCE - 1) fail('le vainqueur n’a pas parcouru 1800 m', finish.racers);
+  if (maxDistance < CITY_RUSH_DISTANCE - 1) fail('le vainqueur n’a pas parcouru toute la distance', finish.racers);
   if (maxVisible > 600) fail(`trop de meshes visibles : ${maxVisible}`);
   if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
   if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);
@@ -449,16 +512,26 @@ for (const [index, city] of cities.entries()) {
   }
   if (policeHudFrames < 30) fail('l’escouade ne tient pas la piste', policeHudFrames);
   if (!(policeClosestGap <= 30)) fail(`l’escouade reste à ${policeClosestGap} m du leader`, policeClosestGap);
+  // Sur chaque circuit, l'escouade reste dans le sillage du leader au lieu de
+  // s'enliser derrière le trafic lent : sinon elle décroche de 100 à 300 m, sort
+  // de l'écran et le dernier tour n'a plus de police que dans le HUD.
+  const policeEngagedShare = policeEngagedFrames / Math.max(1, policeSquadFrames);
+  if (policeEngagedShare < POLICE_MIN_ENGAGED_SHARE) {
+    fail(`l’escouade n’est dans les ${POLICE_ENGAGE_RANGE} m du leader que ${(policeEngagedShare * 100).toFixed(0)} % du dernier tour`, { policeEngagedFrames, policeSquadFrames, samples: policeLooseSamples });
+  }
+  if (policeMaxLag > POLICE_MAX_LAG) fail(`l’escouade décroche de ${policeMaxLag.toFixed(0)} m derrière le leader`, { policeMaxLag, limit: POLICE_MAX_LAG, worst: policeWorstLag });
   // Barrage roulant : au moins une berline freine devant le leader, et la page
   // le raconte. Les berlines sont solides : jamais dans un pilote.
   if (!policeBlockadeFrames) fail('aucune berline ne s’est mise en barrage devant le leader');
   if (!callbacks.effects.some((effect) => effect.type === 'police-block')) {
     fail('le barrage police n’a jamais été annoncé à la page', callbacks.effects.map((e) => e.type));
   }
+  if (!policePlayerOverlapFrames) fail('aucune berline n’est jamais passée à hauteur du pilote : la solidité n’a pas été éprouvée');
   if (!(policeWorstOverlap >= CITY_RUSH_CAR_GAP - 1.5)) {
-    fail(`une berline solide est traversée : écart ${policeWorstOverlap.toFixed(2)} m < ${CITY_RUSH_CAR_GAP} m`, worstPair);
+    fail(`le pilote traverse une berline solide : écart ${policeWorstOverlap.toFixed(2)} m < ${CITY_RUSH_CAR_GAP} m`, worstPair);
   }
   if (!rallies.length) fail('aucune berline de police du trafic n’a été rappelée par un contact');
+
   if ((firstPoliceHud.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le classement du HUD');
   if ((finish.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le tableau d’arrivée');
   if (lastHud.police?.length) fail('l’escouade reste en piste après l’arrivée', lastHud.police);
@@ -567,9 +640,11 @@ for (const [index, city] of cities.entries()) {
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
     (tunnels.length ? ` · tremis ${tunnelIds.size}/${tunnels.length} traversés (${tunnelHudFrames} f sous la voûte)` : ' · sans tremis') +
-    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · ${policeBlockadeFrames} f en barrage` : 'jamais entrée'}` +
+    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeSquadFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeSquadFrames) * 100).toFixed(0)} % · retard max ${policeMaxLag.toFixed(0)} m · ${policeBlockadeFrames} f en barrage` : 'jamais entrée'}` +
     ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
     ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +
+    ` (${policePlayerOverlapFrames} f de recouvrement · rival ${Number.isFinite(policeAiOverlap) ? policeAiOverlap.toFixed(1) : '—'} m)` +
+
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
     ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris` +
     ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,

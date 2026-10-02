@@ -177,11 +177,14 @@
 .city-rush-tunnel-veil { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: #04060c; opacity: 0; }
 .city-rush-vignette { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(5, 8, 19, .48), transparent 23%, transparent 62%, rgba(5, 8, 16, .5)), radial-gradient(ellipse at center, transparent 38%, rgba(6, 8, 18, .28) 100%); }
 .city-rush-viewport.is-boosting::after,
-.city-rush-viewport.is-stunned::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; }
+.city-rush-viewport.is-stunned::after,
+.city-rush-viewport.is-impacting::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; }
 .city-rush-viewport.is-boosting::after { background: linear-gradient(100deg, transparent 22%, rgba(97, 255, 183, .12), transparent 72%); animation: crBoostFlash .7s ease-in-out infinite alternate; }
 .city-rush-viewport.is-stunned::after { background: rgba(255, 68, 104, .16); animation: crHitFlash .22s linear infinite alternate; }
+.city-rush-viewport.is-impacting::after { background: radial-gradient(circle at 50% 45%, rgba(255, 216, 125, .34), transparent 30%), rgba(255, 154, 67, .08); animation: crImpactFlash .16s ease-in-out infinite alternate; }
 @keyframes crBoostFlash { to { opacity: .36; } }
 @keyframes crHitFlash { to { opacity: .45; } }
+@keyframes crImpactFlash { to { opacity: .72; } }
 
 .city-rush-overlay {
   position: absolute;
@@ -356,13 +359,16 @@
 .city-rush-status-pill { position: absolute; z-index: 4; top: 98px; left: 50%; padding: 7px 11px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 99px; color: #fff; background: rgba(8, 13, 26, .83); font: 900 8px var(--mono, monospace); letter-spacing: .12em; transform: translateX(-50%); backdrop-filter: blur(8px); }
 .city-rush-status-pill.is-boost { border-color: rgba(97, 238, 155, .48); color: #9cf6bb; box-shadow: 0 0 20px rgba(64, 235, 135, .15); }
 .city-rush-status-pill.is-slow { border-color: rgba(255, 187, 105, .42); color: #ffd09a; }
+.city-rush-status-pill.is-impact { border-color: rgba(255, 176, 86, .72); color: #ffe0a2; box-shadow: 0 0 22px rgba(255, 159, 66, .28); animation: crImpactPill .18s ease-in-out infinite alternate; }
 .city-rush-status-pill.is-stunned { border-color: rgba(255, 85, 107, .55); color: #ffadb6; box-shadow: 0 0 20px rgba(255, 60, 100, .18); }
+@keyframes crImpactPill { to { transform: translateX(-50%) scale(1.04); } }
 .city-rush-toast { position: absolute; z-index: 5; top: 140px; left: 50%; max-width: min(560px, calc(100% - 30px)); padding: 9px 14px; border: 1px solid rgba(235, 237, 252, .16); border-radius: 8px; color: #fff; background: rgba(8, 12, 25, .86); font: 850 9px var(--mono, monospace); letter-spacing: .08em; text-align: center; transform: translateX(-50%); animation: crToast .2s ease-out both; backdrop-filter: blur(9px); }
 .city-rush-toast.is-cash { border-color: rgba(80, 228, 138, .48); color: #a9ffc2; }
 .city-rush-toast.is-oil { border-color: rgba(72, 185, 255, .48); color: #a5deff; }
 .city-rush-toast.is-pistol { border-color: rgba(255, 82, 110, .48); color: #ffb5c0; }
 .city-rush-toast.is-radio { border-color: rgba(255, 212, 79, .5); color: #ffe899; }
 .city-rush-toast.is-slow { border-color: rgba(255, 189, 105, .42); color: #ffdaa5; }
+.city-rush-toast.is-impact { border-color: rgba(255, 176, 86, .58); color: #ffe0a2; box-shadow: 0 0 22px rgba(255, 159, 66, .18); }
 @keyframes crToast { from { opacity: 0; transform: translate(-50%, -6px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .city-rush-toast.is-neutral { border-color: rgba(235, 237, 252, .22); }
 .city-rush-lap-card > strong { display: flex; align-items: baseline; gap: 5px; }
@@ -1133,6 +1139,8 @@
   .city-rush-lap-banner,
   .city-rush-power-button.is-ready,
   .city-rush-viewport.is-boosting::after,
-  .city-rush-viewport.is-stunned::after { animation: none !important; }
+  .city-rush-viewport.is-stunned::after,
+  .city-rush-viewport.is-impacting::after,
+  .city-rush-status-pill.is-impact { animation: none !important; }
   .city-rush-page *, .city-rush-page *::before, .city-rush-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
