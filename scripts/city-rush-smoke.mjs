@@ -6,6 +6,8 @@
 // sont pas détectés ou si l'arrivée n'est jamais atteinte.
 //   node scripts/city-rush-smoke.mjs            (ville par défaut : vice-city)
 //   node scripts/city-rush-smoke.mjs --all      (les cinq villes)
+//   node scripts/city-rush-smoke.mjs --all --difficulty=hard   (même niveau partout ;
+//                                                sans l'option, un niveau par ville)
 // ════════════════════════════════════════════════════════════════════
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

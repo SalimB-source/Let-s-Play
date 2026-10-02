@@ -16,6 +16,10 @@ export const CITY_RUSH_PLAYER_SPEED = 26;
 export const CITY_RUSH_LANE_X = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
 export const CITY_RUSH_CAR_GAP = 4.8;
+// Effets de course communs au joueur ET aux rivaux : plus aucun avantage caché
+// (les rivaux étaient ralentis à 56 % et ne gagnaient que +38 % au turbo).
+export const CITY_RUSH_SLOW_MULTIPLIER = 0.63; // ralenti (tir, huile, zone) : 63 % de la vitesse
+export const CITY_RUSH_BOOST_MULTIPLIER = 1.46; // turbo vert : +46 %
 
 // Les voitures ont des silhouettes et des compromis de conduite réellement
 // différents. Les barres sont aussi reliées aux multiplicateurs ci-dessous.
@@ -56,6 +60,15 @@ export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'white-lambo', name: 'Lamborghini blanche', speed: 7.2, width: 1.92, length: 3.8 }),
 ]);
 
+// Un choc avec le trafic ne retire pas de vie : il crée un court moment de
+// contact lisible, puis le véhicule lent se rabat pour libérer la voie. La
+// durée est volontairement indépendante du modèle de cabriolet choisi : le
+// joueur humain et les IA encaissent exactement la même seconde.
+export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 1;
+export const CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN = 1.2;
+export const CITY_RUSH_TRAFFIC_IMPACT_GAP = CITY_RUSH_CAR_GAP;
+export const CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION = 0.72;
+
 export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRate, deltaTime) {
   const current = Math.max(0, Number(currentSpeed) || 0);
   const target = Math.max(0, Number(targetSpeed) || 0);
@@ -71,6 +84,25 @@ export function cityRushHitDuration(baseDuration, carProfile) {
   const duration = Math.max(0, Number(baseDuration) || 0);
   const multiplier = Number(carProfile?.hitRecoveryMultiplier);
   return duration * (Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1);
+}
+
+// ── Toupie de la frappe héliportée (pouvoir jaune) ──────────────────────────
+// Pendant l'immobilisation, la voiture touchée tourne sur elle-même et ne peut
+// plus changer de voie. `cityRushStunSpin` renvoie le lacet (radians) à
+// appliquer à la carrosserie : départ brutal après l'impact, puis l'élan
+// retombe en douceur sur un nombre entier de tours — la voiture se fige donc
+// face à la route, sans à-coup, exactement quand le stun expire.
+export const CITY_RUSH_STUN_SPIN_TURNS = 2; // tours complets pendant l'immobilisation
+
+export function cityRushStunSpin(stunLeft, stunTotal, turns = CITY_RUSH_STUN_SPIN_TURNS) {
+  const left = Math.max(0, Number(stunLeft) || 0);
+  const total = Math.max(0, Number(stunTotal) || 0);
+  const safeTurns = Math.max(0, Number(turns) || 0);
+  if (left <= 0 || total <= 0 || safeTurns <= 0) return 0;
+  const progress = Math.max(0, Math.min(1, 1 - left / total));
+  // Ease-out quadratique : la vitesse de rotation fond linéairement jusqu'à 0.
+  const eased = 1 - (1 - progress) ** 2;
+  return eased * safeTurns * Math.PI * 2;
 }
 
 export const CITY_RUSH_POWERS = Object.freeze({
@@ -110,7 +142,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base).',
+    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.CASH]: Object.freeze({
@@ -132,17 +164,18 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ffd44f',
     key: 'R',
     automatic: false,
-    description: 'L’hélicoptère immobilise le rival le mieux placé (jamais son pilote) et les adversaires proches ; la reprise de chaque cible règle la durée (2 s de base).',
+    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un rival poursuivant) et les adversaires proches de l’impact devant ton capot ; en tête au dernier tour, il peut aussi bombarder la berline de police qui te traque. Les voitures touchées partent en toupie sur place, incapables de changer de voie ; la reprise de chaque cible règle la durée (2 s de base).',
     duration: 2,
   }),
 });
 
-// ── Éclatement des bonus ────────────────────────────────────────────────────
+// ── Éclatement et réapparition des bonus ────────────────────────────────────
 // Un bonus ramassé ne disparaît plus d'un coup : il éclate en éclats de sa
 // couleur (flash, anneau qui s'ouvre, débris projetés puis repris par la
-// gravité) et le bonus suivant réapparaît 0,2 s plus tard en gonflant depuis
-// son socle. Tous les calculs sont purs, donc testables hors de three.js.
-export const CITY_RUSH_PICKUP_RESPAWN_DELAY = 0.2; // s : pop-in d'un bonus qui réapparaît
+// gravité) et réapparaît 0,1 s plus tard en gonflant depuis son socle pour
+// rester prenable par les voitures suivantes. Tous les calculs sont purs,
+// donc testables hors de three.js.
+export const CITY_RUSH_PICKUP_RESPAWN_DELAY = 0.1; // s : délai avant qu'un bonus ramassé ne réapparaisse
 export const CITY_RUSH_PICKUP_BURST_DURATION = 0.44; // s : l'éclatement reste à l'écran
 export const CITY_RUSH_PICKUP_BURST_SHARDS = 12; // éclats projetés par bonus
 export const CITY_RUSH_PICKUP_BURST_GRAVITY = 11; // m/s² : les éclats retombent
@@ -150,6 +183,23 @@ export const CITY_RUSH_PICKUP_BURST_LIFT = 0.42; // m de saut vers le haut
 export const CITY_RUSH_PICKUP_BURST_SPEED = 4.4; // m/s d'éjection
 
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
+
+export function markCityRushPickupTaken(cooldowns, key, now, delay = CITY_RUSH_PICKUP_RESPAWN_DELAY) {
+  if (!cooldowns || key === undefined || key === null) return;
+  const safeNow = Number.isFinite(Number(now)) ? Number(now) : 0;
+  const safeDelay = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : CITY_RUSH_PICKUP_RESPAWN_DELAY;
+  cooldowns.set(key, safeNow + safeDelay);
+}
+
+export function isCityRushPickupHidden(cooldowns, key, now) {
+  if (!cooldowns || key === undefined || key === null) return false;
+  const respawnAt = cooldowns.get(key);
+  if (respawnAt === undefined) return false;
+  const safeNow = Number.isFinite(Number(now)) ? Number(now) : 0;
+  if (safeNow < respawnAt - 1e-9) return true;
+  cooldowns.delete(key);
+  return false;
+}
 
 // Répartition quasi uniforme sur une sphère (angle d'or) : l'éclatement part
 // dans toutes les directions tout en restant lisible depuis la caméra.
@@ -340,12 +390,50 @@ export function rankCityRushRacers(racers, playerId = 'player') {
   };
 }
 
-// Le talkie vise toujours un rival : même si le joueur mène, l’hélico cible
-// le rival le mieux placé et ne peut jamais retourner le missile contre lui.
+// Les pouvoirs de tir (mitrailleuse, talkie-walkie) ne visent qu'un adversaire
+// situé DEVANT leur pilote : on ne peut jamais viser, ni toucher, quelqu'un qui
+// est derrière soi. La tolérance d'un mètre évite de perdre une cible collée au
+// pare-chocs au moment d'un dépassement (les deux voitures comptent alors
+// comme à la même hauteur).
+export const CITY_RUSH_FORWARD_TOLERANCE = 1;
+
+export function cityRushIsAhead(distance, referenceDistance, tolerance = CITY_RUSH_FORWARD_TOLERANCE) {
+  const target = Number(distance);
+  const reference = Number(referenceDistance);
+  const slack = Number(tolerance);
+  if (!Number.isFinite(target) || !Number.isFinite(reference)) return false;
+  return target >= reference - Math.max(0, Number.isFinite(slack) ? slack : CITY_RUSH_FORWARD_TOLERANCE);
+}
+
+// Le talkie ne verrouille que les rivaux devant son pilote : parmi eux, c'est
+// toujours le mieux placé qui est visé. Un pilote en tête n'a donc aucune cible
+// (l'hélico ne se retourne jamais contre lui) et garde sa jauge chargée. Si
+// l'appelant est absent de la liste (appel défensif), on retombe sur l'ancien
+// comportement : le mieux placé des rivaux.
 export function cityRushHelicopterTarget(racers = [], playerId = 'player') {
+  const caller = racers.find((racer) => racer?.id === playerId) || null;
+  const reference = Number(caller?.distance);
   return [...racers]
     .filter((racer) => racer?.id !== playerId)
+    .filter((racer) => !Number.isFinite(reference) || cityRushIsAhead(racer?.distance, reference))
     .sort((a, b) => (Number(b.distance) || 0) - (Number(a.distance) || 0))[0] || null;
+}
+
+// Exception du dernier tour pour les pouvoirs rouge (mitrailleuse) et jaune
+// (hélico) : quand l'appelant n'a plus personne devant lui — il mène la
+// course et l'escouade s'est repliée sur son pare-chocs pour ouvrir le feu —,
+// la riposte peut se retourner contre la berline « active » la plus proche,
+// qu'elle soit devant, roue contre roue ou déjà dépassée. Un hélicoptère
+// frappe où il veut et une rafale de riposte part vers l'arrière ; l'exception
+// ne vaut que pour ces poursuivants non classés, jamais pour un rival classé.
+// `excludeId` permet au tireur de ne jamais se viser lui-même.
+export function cityRushPoliceTarget(pursuers = [], referenceDistance = 0, excludeId = null) {
+  const reference = Number(referenceDistance);
+  if (!Number.isFinite(reference)) return null;
+  return (Array.isArray(pursuers) ? pursuers : [])
+    .filter((police) => police && police.id !== excludeId && police.active !== false)
+    .filter((police) => Number.isFinite(Number(police.distance)))
+    .sort((a, b) => Math.abs(Number(a.distance) - reference) - Math.abs(Number(b.distance) - reference))[0] || null;
 }
 
 // Le trafic conserve une distance de sécurité; les voitures de course ne
@@ -377,6 +465,87 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
     }
   }
   return resolved;
+}
+
+const finiteNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+
+/**
+ * Repère le moment où une voiture de course va réellement toucher le trafic
+ * lent. Le moteur de mouvement garde une marge de sécurité pour empêcher les
+ * voitures de se superposer ; on observe donc les distances demandées avant
+ * ce rabotage, sinon l'impact ne pourrait jamais être déclenché.
+ *
+ * Les rivaux de course ne se percutent toujours pas entre eux : seuls les
+ * couples `racer` → `traffic` sont retournés. `x` permet aussi de détecter un
+ * changement de voie en cours, quand les deux voitures n'ont pas encore le
+ * même numéro de voie mais que leurs carrosseries se recouvrent.
+ */
+export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_TRAFFIC_IMPACT_GAP) {
+  const safeGap = Math.max(0, finiteNumber(minimumGap, CITY_RUSH_TRAFFIC_IMPACT_GAP));
+  const racers = (Array.isArray(cars) ? cars : []).filter((car) => car?.collisionGroup === 'racer');
+  const traffic = (Array.isArray(cars) ? cars : []).filter((car) => car?.collisionGroup === 'traffic');
+  const impacts = [];
+
+  for (const racer of racers) {
+    const racerPrevious = finiteNumber(racer.previousDistance);
+    const racerNext = Math.max(racerPrevious, finiteNumber(racer.nextDistance, racerPrevious));
+    const racerWidth = Math.max(0, finiteNumber(racer.width, 1.9));
+    for (const vehicle of traffic) {
+      const trafficPrevious = finiteNumber(vehicle.previousDistance);
+      const trafficNext = Math.max(trafficPrevious, finiteNumber(vehicle.nextDistance, trafficPrevious));
+      const trafficWidth = Math.max(0, finiteNumber(vehicle.width, 1.9));
+      const sameLane = racer.lane === vehicle.lane;
+      const lateralOverlap = Number.isFinite(Number(racer.x))
+        && Number.isFinite(Number(vehicle.x))
+        && Math.abs(Number(racer.x) - Number(vehicle.x)) < (racerWidth + trafficWidth) / 2;
+      if (!sameLane && !lateralOverlap) continue;
+
+      const previousGap = trafficPrevious - racerPrevious;
+      const requestedGap = trafficNext - racerNext;
+      // Ne pas transformer deux voitures déjà espacées de moins de `safeGap`
+      // en une suite infinie d'impacts : il faut entrer dans la marge depuis
+      // l'arrière, ce qui laisse le temps au véhicule de se rabattre.
+      const wasOutsideContact = previousGap > safeGap + 1e-7;
+      const touches = requestedGap <= safeGap + 1e-7
+        || racerNext >= trafficPrevious - safeGap - 1e-7;
+      if (!wasOutsideContact || !touches) continue;
+      impacts.push({
+        racerId: racer.id,
+        trafficId: vehicle.id,
+        previousGap,
+        requestedGap,
+        lane: vehicle.lane,
+      });
+    }
+  }
+  return impacts.sort((a, b) => a.requestedGap - b.requestedGap);
+}
+
+/**
+ * Choisit une voie de dégagement pour un véhicule lent touché. On tente une
+ * voie voisine, puis n'importe quelle voie ouverte si un tunnel ferme le
+ * bord immédiat. Les voies signalées comme occupées restent un dernier
+ * recours seulement : même dans un peloton serré, le trafic doit quitter la
+ * trajectoire pour que la voiture touchée ne rebloque pas le joueur.
+ */
+export function chooseCityRushTrafficEscapeLane({
+  currentLane = 0,
+  laneCount = CITY_RUSH_LANE_X.length,
+  blockedLanes = [],
+  openLanes = null,
+} = {}) {
+  const count = Math.max(1, Math.floor(finiteNumber(laneCount, CITY_RUSH_LANE_X.length)));
+  const current = Math.max(0, Math.min(count - 1, Math.floor(finiteNumber(currentLane))));
+  const open = Array.isArray(openLanes) && openLanes.length
+    ? new Set(openLanes.filter((lane) => lane >= 0 && lane < count))
+    : null;
+  const blocked = new Set((Array.isArray(blockedLanes) ? blockedLanes : [])
+    .filter((lane) => lane >= 0 && lane < count));
+  const candidates = Array.from({ length: count }, (_, lane) => lane)
+    .filter((lane) => lane !== current && (!open || open.has(lane)))
+    .sort((a, b) => Math.abs(a - current) - Math.abs(b - current) || a - b);
+  const clear = candidates.find((lane) => !blocked.has(lane));
+  return clear ?? candidates[0] ?? current;
 }
 
 /**
@@ -413,8 +582,320 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
   return clampCityRushLane(lane, laneCount);
 }
 
-// Choisit une prochaine voie en équilibrant les monnaies à portée et les
-// menaces lentes, parmi les changements de voie effectivement disponibles.
+// ── Les rivaux : niveau de jeu ───────────────────────────────────────────────
+// Tous les réglages de l'IA adverse sont regroupés ici pour pouvoir durcir ou
+// adoucir la course en un seul endroit (le monde 3D ne contient plus de
+// chiffre d'équilibrage pour les rivaux). Cet objet est le niveau NORMAL, la
+// référence : Facile et Difficile (CITY_RUSH_DIFFICULTIES, plus bas) n'en
+// redéfinissent que quelques valeurs.
+//
+// Avant ce réglage, les rivaux se laissaient bloquer ~30 % de la course derrière
+// le trafic lent (ils fonçaient sur un bonus caché derrière un camion), subissaient
+// des ralentissements plus lourds et profitaient de turbos plus faibles que le
+// joueur, mitraillaient le premier venu et lâchaient leur huile dans le vide : le
+// joueur finissait ~500 m devant et ne voyait jamais personne.
+export const CITY_RUSH_RIVAL_AI = Object.freeze({
+  // Allure : la voiture du joueur sert de référence (sinon choisir le cabriolet ou
+  // la compacte condamnerait la course dès que les rivaux roulent proprement) ;
+  // chaque rival garde une part du caractère de sa propre voiture et rattrape le
+  // joueur quand il est distancé.
+  //
+  // `paceFactor` est LE bouton de difficulté : 1 = les rivaux roulent à l'allure
+  // exacte de votre voiture, plus bas = plus facile, plus haut = plus difficile.
+  // La course se joue à quelques mètres, donc il est sensible : avec le pilote
+  // « moyen » du banc (`npm run bench:city-rush`), 0,995 → le joueur finit à
+  // égalité avec le rival moyen (~22 % de victoires), 0,99 → ~+20 m (~37 %),
+  // 0,985 → ~+29 m (~44 %). Le faire varier par pas de 0,002 à 0,005.
+  paceFactor: 0.989, // × l'allure de référence
+  carCharacter: 0.1, // part de la puissance propre de sa voiture (0 = tous à l'allure du joueur, 1 = chacun la sienne)
+  catchUpBoost: 0.05, // + jusqu'à 5 % quand ils sont loin derrière le joueur
+  catchUpRange: 110, // m : écart à partir duquel le rattrapage est maximal
+  // Laisse : à l'inverse, un rival qui s'est échappé loin devant le joueur est
+  // un peu freiné, pour qu'un joueur distancé puisse revenir et que la course
+  // reste serrée de bout en bout.
+  leashSlow: 0.03, // − jusqu'à 3 % quand ils sont loin devant le joueur
+  leashStart: 20, // m d'avance tolérés avant tout freinage
+  leashRange: 90, // m d'avance à partir de laquelle le freinage est maximal
+  // Réflexes : ils réévaluent leur voie plus souvent et glissent aussi vite que le joueur.
+  reactionMin: 0.24, // s entre deux décisions de voie
+  reactionMax: 0.42,
+  lookAhead: 150, // m de route lus à l'avance
+  laneAgility: 10, // vitesse de glissement latéral (le joueur : 12)
+  // Inattention : comme un humain, un rival lâche parfois la route des yeux et
+  // ne change plus de voie pendant un instant (il peut alors se faire piéger
+  // derrière un camion). C'est ce qui rend les rivaux battables.
+  mistakeChance: 0.012, // par décision de voie
+  mistakeMin: 0.7, // s sans regarder la route
+  mistakeMax: 1.4,
+  // Appétit : un bonus visible vaut `pickupValue` points face à un changement de
+  // voie ; les armes (mitrailleuse, huile, hélico) sont `weaponBias` fois plus
+  // convoitées que les billets verts, ce qui fait des rivaux de vrais agresseurs.
+  pickupValue: 14,
+  weaponBias: 1.4,
+  contestedValue: 0.4, // × la valeur d'un bonus que quelqu'un d'autre prendra avant (voiture de course devant, dans sa voie)
+  personalSpace: 6, // m : on évite la voie d'une autre voiture qui roule à moins de 6 m (elles se traversent à l'écran)
+  // Armes : ils attendent le bon moment au lieu de tirer à vide.
+  pistolRange: 85, // m : le joueur n'est visé que s'il est à portée de vue
+  focusPlayer: true, // la mitrailleuse vise le joueur d'abord ; sinon (false), la voiture la plus proche devant
+  oilBehindMin: 7, // m : l'huile se pose quand une voiture est entre 7 et 40 m derrière,
+  oilBehindMax: 40, // dans la même voie
+  oilChaseRange: 65, // m : un rival armé d'huile se glisse devant la voiture qui le suit
+  attackSpacing: 1.4, // s de répit laissés au joueur après un coup (en plus de l'effet subi)
+  // Recharge des armes hostiles (mitrailleuse, huile, hélico) : un rival qui vient d'en
+  // utiliser une attend ce délai avant la suivante (le boost n'est pas concerné).
+  // Depuis que les bonus réapparaissent aussitôt ramassés, une jauge se recharge en
+  // quelques secondes : sans ce délai les rivaux tiraient dès qu'une cible passait à
+  // portée, trois fois plus souvent qu'à l'époque des bonus rares.
+  weaponCooldown: 50, // s
+});
+
+// ── Les trois niveaux de difficulté ──────────────────────────────────────────
+// `CITY_RUSH_RIVAL_AI` ci-dessus EST le niveau Normal. Facile et Difficile ne
+// listent que ce qui les distingue du Normal : l'allure (`paceFactor`, le bouton
+// principal), le rattrapage et la laisse, les réflexes, les erreurs, l'appétit
+// pour les armes et la distance de tir. Tout le reste suit le Normal.
+//
+// Chaque niveau a été mesuré avec le banc (`npm run bench:city-rush -- --difficulty=…`) ;
+// les chiffres sont dans le README. Un niveau se règle comme le Normal : `paceFactor`
+// d'abord, par pas de 0,002 à 0,005.
+export const CITY_RUSH_DEFAULT_DIFFICULTY = 'normal';
+export const CITY_RUSH_DIFFICULTIES = Object.freeze([
+  Object.freeze({
+    id: 'easy',
+    name: 'Facile',
+    tagline: 'Les rivaux lèvent le pied : ils se trompent plus, te visent moins et te laissent souffler.',
+    ai: Object.freeze({
+      paceFactor: 0.985,
+      catchUpBoost: 0.02,
+      leashSlow: 0.04,
+      reactionMin: 0.34,
+      reactionMax: 0.6,
+      lookAhead: 120,
+      laneAgility: 8,
+      mistakeChance: 0.035,
+      mistakeMin: 0.8,
+      mistakeMax: 1.6,
+      pickupValue: 11,
+      weaponBias: 0.8,
+      focusPlayer: false,
+      pistolRange: 60,
+      oilChaseRange: 50,
+      attackSpacing: 2.8,
+      weaponCooldown: 45,
+    }),
+  }),
+  Object.freeze({
+    id: 'normal',
+    name: 'Normal',
+    tagline: 'Des rivaux à ton rythme : ils se disputent les bonus et te tirent dessus dès que tu passes devant.',
+    ai: Object.freeze({}),
+  }),
+  Object.freeze({
+    id: 'hard',
+    name: 'Difficile',
+    tagline: 'Les rivaux ne lâchent rien : plus rapides, presque sans erreur, ils tirent de plus loin et te laissent à peine souffler.',
+    ai: Object.freeze({
+      paceFactor: 0.997,
+      catchUpBoost: 0.06,
+      leashSlow: 0.02,
+      reactionMin: 0.2,
+      reactionMax: 0.34,
+      lookAhead: 165,
+      laneAgility: 12,
+      mistakeChance: 0.004,
+      mistakeMin: 0.5,
+      mistakeMax: 1,
+      pickupValue: 16,
+      weaponBias: 1.7,
+      pistolRange: 100,
+      oilChaseRange: 75,
+      attackSpacing: 1,
+      weaponCooldown: 42,
+    }),
+  }),
+]);
+
+// Identifiant de niveau valide, quoi qu'on reçoive (stockage local ancien ou
+// altéré, prop manquante) : à défaut, le Normal.
+export function normalizeCityRushDifficulty(value) {
+  return CITY_RUSH_DIFFICULTIES.some((mode) => mode.id === value) ? value : CITY_RUSH_DEFAULT_DIFFICULTY;
+}
+
+// Réglage complet des rivaux pour un niveau : le Normal est `CITY_RUSH_RIVAL_AI`
+// lui-même, les autres niveaux sont ce réglage + leurs écarts. Les objets sont
+// construits une fois et partagés (ils sont figés).
+const rivalAiByDifficulty = new Map();
+export function cityRushRivalAI(difficulty = CITY_RUSH_DEFAULT_DIFFICULTY) {
+  const mode = CITY_RUSH_DIFFICULTIES.find((item) => item.id === normalizeCityRushDifficulty(difficulty));
+  if (!Object.keys(mode.ai).length) return CITY_RUSH_RIVAL_AI;
+  if (!rivalAiByDifficulty.has(mode.id)) rivalAiByDifficulty.set(mode.id, Object.freeze({ ...CITY_RUSH_RIVAL_AI, ...mode.ai }));
+  return rivalAiByDifficulty.get(mode.id);
+}
+
+// Clé du meilleur chrono. Chaque niveau a ses records (un chrono en Facile ne se
+// compare pas à un chrono en Difficile) ; les records d'avant les niveaux — une
+// simple clé par ville — restent ceux du Normal.
+export function cityRushBestKey(cityId, difficulty = CITY_RUSH_DEFAULT_DIFFICULTY) {
+  const id = normalizeCityRushDifficulty(difficulty);
+  return id === CITY_RUSH_DEFAULT_DIFFICULTY ? String(cityId) : `${cityId}:${id}`;
+}
+
+// Réglages de conduite d'un rival, mesurés à ceux de la voiture du joueur : la
+// référence est la voiture du joueur, décalée de `carCharacter` × l'écart avec
+// la voiture du rival. Les profils de CITY_RUSH_CARS ne changent pas ; seule
+// leur influence sur le rythme de la course est ramenée à celle du joueur.
+//
+// Pourquoi : dès que les rivaux roulent proprement, quelques décimètres au
+// départ décident de la course (le premier arrivé ramasse les bonus, donc les
+// turbos et les armes, et prend le large). Mesuré : la même voiture gagne 20 %
+// des courses avec 8,6 m/s² d'accélération et 70 % avec 9,8. Sans cet
+// alignement, le choix de la voiture déciderait de la course avant le départ.
+function blendTowardPlayer(rivalValue, playerValue, ai) {
+  const reference = Number(playerValue);
+  const own = Number(rivalValue);
+  if (!Number.isFinite(reference) || reference <= 0) return Number.isFinite(own) ? own : 0;
+  if (!Number.isFinite(own)) return reference;
+  return reference + (own - reference) * clamp01(Number(ai.carCharacter) || 0);
+}
+
+// Vitesse de croisière (m/s) d'un rival.
+export function cityRushRivalBaseSpeed(rivalProfile, playerProfile, ai = CITY_RUSH_RIVAL_AI) {
+  const multiplier = blendTowardPlayer(rivalProfile?.powerMultiplier, playerProfile?.powerMultiplier, ai);
+  return CITY_RUSH_PLAYER_SPEED * (multiplier || 1) * (Number(ai.paceFactor) || 1);
+}
+
+// Accélération (m/s²) d'un rival : même alignement que la vitesse.
+export function cityRushRivalAcceleration(rivalProfile, playerProfile, ai = CITY_RUSH_RIVAL_AI) {
+  return blendTowardPlayer(rivalProfile?.accelerationRate, playerProfile?.accelerationRate, ai);
+}
+
+// Facteur d'allure d'un rival selon son retard sur le joueur (m, positif quand
+// le rival est DERRIÈRE). Distancé, il pousse (rattrapage) ; très en avance, il
+// est freiné (laisse) ; entre les deux, allure normale. Les deux courbes
+// partent doucement puis se resserrent (« ease-out »).
+export function cityRushRivalPace(gapBehindPlayer, ai = CITY_RUSH_RIVAL_AI) {
+  const gap = Number(gapBehindPlayer);
+  if (!Number.isFinite(gap)) return 1;
+  if (gap > 0) {
+    const progress = clamp01(gap / Math.max(1, Number(ai.catchUpRange) || 1));
+    return 1 + (Number(ai.catchUpBoost) || 0) * progress * (2 - progress);
+  }
+  const start = Math.max(0, Number(ai.leashStart) || 0);
+  const span = Math.max(1, (Number(ai.leashRange) || 1) - start);
+  const progress = clamp01((-gap - start) / span);
+  return 1 - (Number(ai.leashSlow) || 0) * progress * (2 - progress);
+}
+
+// Temps (s) avant qu'une voiture qui roule à `speed` soit bloquée par un
+// véhicule `gap` mètres devant, roulant à `vehicleSpeed` : on est « bloqué »
+// dès que l'on entre dans la distance de sécurité. 0 si l'on y est déjà,
+// Infinity si le véhicule roule aussi vite que nous (on ne le rattrape jamais).
+export function cityRushTimeToBlock(gap, speed, vehicleSpeed, safeGap = CITY_RUSH_CAR_GAP) {
+  const room = Number(gap) - safeGap;
+  if (!Number.isFinite(room)) return Infinity;
+  if (room <= 0) return 0;
+  const closing = Math.max(0, Number(speed) || 0) - Math.max(0, Number(vehicleSpeed) || 0);
+  if (closing <= 0.25) return Infinity;
+  return room / closing;
+}
+
+// Mitrailleuse d'un rival. Le joueur passe en priorité quand il est devant et à
+// portée de vue ; sinon le rival tire sur la voiture la plus proche devant lui.
+// Si la plus proche est le joueur mais qu'il est trop loin, la rafale est
+// gardée (null) au lieu d'être gaspillée hors de l'écran.
+export function cityRushRivalPistolTarget(attackerId, racers = [], ai = CITY_RUSH_RIVAL_AI, playerId = 'player') {
+  const attacker = racers.find((racer) => racer?.id === attackerId);
+  if (!attacker) return null;
+  const origin = Number(attacker.distance) || 0;
+  const ahead = racers
+    .filter((racer) => racer && racer.id !== attackerId && (Number(racer.distance) || 0) >= origin - 1)
+    .sort((a, b) => (Number(a.distance) || 0) - (Number(b.distance) || 0));
+  const inRange = (racer) => (Number(racer.distance) || 0) - origin <= ai.pistolRange;
+  const player = ahead.find((racer) => racer.id === playerId);
+  // Le joueur d'abord, s'il est à portée ; sinon (ou si ce rival ne s'acharne pas
+  // sur lui) la voiture la plus proche devant, le joueur compris tant qu'il est à portée.
+  const focus = ai.focusPlayer === undefined || Boolean(ai.focusPlayer);
+  if (focus && player && inRange(player)) return player;
+  const nearest = ahead[0] || null;
+  if (!nearest) return null;
+  return nearest.id !== playerId || inRange(nearest) ? nearest : null;
+}
+
+// Voitures qui suivent un rival, de la plus proche à la plus lointaine, dans la
+// fenêtre [min, max] mètres derrière lui (même voie ou non selon `sameLane`).
+function racersBehind(attackerId, racers, min, max, sameLane) {
+  const attacker = racers.find((racer) => racer?.id === attackerId);
+  if (!attacker) return [];
+  const origin = Number(attacker.distance) || 0;
+  return racers
+    .filter((racer) => {
+      if (!racer || racer.id === attackerId) return false;
+      const behind = origin - (Number(racer.distance) || 0);
+      return behind >= min && behind <= max && (!sameLane || racer.lane === attacker.lane);
+    })
+    .sort((a, b) => (Number(b.distance) || 0) - (Number(a.distance) || 0));
+}
+
+// Huile d'un rival : elle ne se pose que sur une voiture qui le suit dans la
+// même voie, entre `oilBehindMin` et `oilBehindMax` mètres (assez près pour
+// ne pas être évitée à coup sûr, assez loin pour qu'un bon joueur puisse
+// l'esquiver). Le joueur est la victime préférée.
+export function cityRushRivalOilVictim(attackerId, racers = [], ai = CITY_RUSH_RIVAL_AI, playerId = 'player') {
+  const victims = racersBehind(attackerId, racers, ai.oilBehindMin, ai.oilBehindMax, true);
+  return victims.find((racer) => racer.id === playerId) || victims[0] || null;
+}
+
+// Voie dans laquelle un rival armé d'huile veut se glisser : celle de la voiture
+// qui le suit de près (le joueur d'abord). null s'il n'y a personne à piéger.
+export function cityRushRivalOilChaseLane(attackerId, racers = [], ai = CITY_RUSH_RIVAL_AI, playerId = 'player') {
+  const chasers = racersBehind(attackerId, racers, ai.oilBehindMin, ai.oilChaseRange, false);
+  const chaser = chasers.find((racer) => racer.id === playerId) || chasers[0];
+  return chaser ? chaser.lane : null;
+}
+
+// ── Choix de voie des rivaux ─────────────────────────────────────────────────
+// Valeurs (en « points ») qui rendent comparables un bonus, un danger et un
+// changement de voie. Un bonus vaut ~15 points ; un véhicule qui va bloquer la
+// voie dans la seconde coûte jusqu'à 60 points.
+const AI_PICKUP_URGENCY = 6;
+const AI_BLOCK_COST = 60;
+const AI_BLOCK_MARGIN = 0.4; // s : un bonus doit être atteint avec cette marge avant le blocage
+const AI_LANE_CHANGE_COST = 1.25;
+const AI_INTERCEPT_VALUE = 16;
+const AI_PERSONAL_SPACE_COST = 4;
+const AI_HORIZON_MARGIN = 8; // m : le temps de quitter une voie une fois son bonus pris
+const AI_CENTER_TIEBREAK = 0.1; // départage seulement : une voie centrale garde plus d'issues
+
+// Un bonus presse davantage quand il complète une jauge ; si la jauge est déjà
+// pleine il vaut moins, mais il reste visé (le rival ne le laisse pas filer).
+function aiPickupWeight(type, inventory, ai) {
+  const base = type === 'cash' ? 1 : Number(ai.weaponBias) || 1;
+  const cost = CITY_RUSH_POWER_CHARGE_COST[type];
+  if (!cost || !inventory) return base;
+  const held = Math.max(0, Math.min(cost, Number(inventory[type]) || 0));
+  return held >= cost ? base * 0.7 : base * (1 + (held / cost) * 0.5);
+}
+
+// Coût d'un blocage selon le temps qu'il reste : fort si imminent, faible s'il
+// est lointain (0 s → 60, 1,6 s → 30, 2,5 s → 16, 4 s → 7, 7 s → 2).
+function aiBlockCost(timeToBlock) {
+  if (!Number.isFinite(timeToBlock)) return 0;
+  return AI_BLOCK_COST / (1 + (timeToBlock / 1.6) ** 2.2);
+}
+
+// Choisit la prochaine voie d'un rival parmi les changements réellement
+// disponibles. Le raisonnement est prédictif :
+//  · un véhicule lent est un blocage daté (cityRushTimeToBlock), pas une
+//    simple pénalité : on quitte la voie à temps, même si un bonus se trouve
+//    plus loin — un bonus caché derrière un camion n'est de toute façon pas
+//    atteignable sans rester coincé derrière lui ;
+//  · un bonus atteignable AVANT le premier blocage de sa voie reste, lui,
+//    prioritaire : les dangers situés APRÈS lui ne comptent pas (le rival se
+//    redécide toutes les ~0,3 s, il quittera la voie une fois le bonus pris) ;
+//  · `racers` (joueur et autres rivaux) ne bloquent pas — les voitures de course
+//    se traversent — ils ne servent qu'à ne pas rouler « dans » l'une d'elles
+//    et à ne pas viser un bonus qu'une autre voiture prendra avant ;
+//  · `interceptLane` pousse un rival armé d'huile devant la voiture qui le suit.
 export function chooseCityRushAiLane({
   currentLane = 0,
   laneCount = CITY_RUSH_LANE_X.length,
@@ -424,7 +905,11 @@ export function chooseCityRushAiLane({
   pickups = [],
   slowZones = [],
   traffic = [],
+  racers = [],
+  inventory = null,
+  interceptLane = null,
   lookAheadDistance = 145,
+  ai = CITY_RUSH_RIVAL_AI,
 } = {}) {
   const lane = clampCityRushLane(currentLane, laneCount);
   const allowed = new Set((availableLanes || Array.from({ length: laneCount }, (_, index) => index))
@@ -434,25 +919,384 @@ export function chooseCityRushAiLane({
     .filter((nextLane) => nextLane >= 0 && nextLane < laneCount && allowed.has(nextLane));
   const lookAhead = Math.max(1, Number(lookAheadDistance) || 145);
   const racerSpeed = Math.max(0, Number(speed) || 0);
+  const here = Number(distance) || 0;
+  const personalSpace = Math.max(0, Number(ai.personalSpace) || 0);
+  const contestedValue = Number.isFinite(Number(ai.contestedValue)) ? Number(ai.contestedValue) : 0.4;
+  const pickupValue = Number(ai.pickupValue) || 14;
+  const center = (laneCount - 1) / 2;
+  // Une voiture voisine d'un bonus en garde un peu de la valeur (c'est ce qui
+  // l'oriente quand le bonus est à deux voies), mais bien moins que s'il est sous ses roues.
+  const affinityOf = (target, candidate) => [1, 0.45, 0.15][Math.abs(clampCityRushLane(target, laneCount) - candidate)] ?? 0;
+  const inRange = (gap) => Number.isFinite(gap) && gap >= -3 && gap <= lookAhead;
+
+  // Trafic lent, voie par voiture : distance et échéance de chaque blocage.
+  const blockers = Array.from({ length: laneCount }, () => []);
+  for (const vehicle of traffic) {
+    const gap = Number(vehicle.distance) - here;
+    const vehicleLane = Number(vehicle.lane);
+    if (!inRange(gap) || !Number.isInteger(vehicleLane) || vehicleLane < 0 || vehicleLane >= laneCount) continue;
+    const time = cityRushTimeToBlock(gap, racerSpeed, vehicle.speed);
+    if (Number.isFinite(time)) blockers[vehicleLane].push({ gap, time });
+  }
+  blockers.forEach((list) => list.sort((a, b) => a.time - b.time));
+  const firstBlockOf = (laneIndex) => blockers[laneIndex]?.[0]?.time ?? Infinity;
+
+  // Bonus atteignables avant le premier blocage de leur voie.
+  const reachable = [];
+  for (const pickup of pickups) {
+    const gap = Number(pickup.distance) - here;
+    if (!inRange(gap)) continue;
+    const pickupLane = clampCityRushLane(pickup.lane, laneCount);
+    if (Math.max(0, gap) / Math.max(1, racerSpeed) >= firstBlockOf(pickupLane) - AI_BLOCK_MARGIN) continue;
+    reachable.push({ ...pickup, lane: pickupLane, gap });
+  }
+  // Sur une voie portant un bonus atteignable, seul compte ce qui se trouve
+  // avant lui : une fois le bonus pris, le rival sera libre de partir.
+  const horizonOf = (laneIndex) => {
+    const gaps = reachable.filter((pickup) => pickup.lane === laneIndex).map((pickup) => Math.max(0, pickup.gap));
+    return gaps.length ? Math.min(...gaps) + AI_HORIZON_MARGIN : Infinity;
+  };
+
   let bestLane = lane;
   let bestScore = -Infinity;
-
   for (const candidate of candidates) {
-    let safetyScore = -Math.abs(candidate - lane) * 1.25;
-    let pickupPriority = 0;
+    const horizon = horizonOf(candidate);
+    let score = -Math.abs(candidate - lane) * AI_LANE_CHANGE_COST
+      + AI_CENTER_TIEBREAK * (1 - Math.abs(candidate - center) / Math.max(1, center));
+
+    // Le premier blocage fixe l'échéance ; les suivants pèsent un peu (un
+    // convoi est pire qu'un camion seul).
+    blockers[candidate]
+      .filter((blocker) => blocker.gap <= horizon)
+      .forEach((blocker, index) => { score -= aiBlockCost(blocker.time) * (index === 0 ? 1 : 0.25); });
+
+    for (const zone of slowZones) {
+      const gap = Number(zone.distance) - here;
+      if (zone.lane !== candidate || !inRange(gap) || gap > horizon) continue;
+      score -= 4 + (1 - gap / lookAhead) * 7;
+    }
+
+    // Les autres voitures de course ne bloquent pas (elles se traversent), mais
+    // personne ne veut rouler « dans » l'une d'elles : on garde ses distances.
+    for (const other of racers) {
+      const gap = Number(other.distance) - here;
+      if (other.lane === candidate && Math.abs(gap) < personalSpace) score -= AI_PERSONAL_SPACE_COST;
+    }
+
+    for (const pickup of reachable) {
+      const affinity = affinityOf(pickup.lane, candidate);
+      if (affinity === 0) continue;
+      // Un bonus qu'une autre voiture de course prendra avant nous (dans sa voie,
+      // devant ou à notre hauteur, pas encore passée) vaut moins : on en vise un autre.
+      const contested = racers.some((other) => other.lane === pickup.lane
+        && Number(other.distance) >= here - 1.5
+        && Number(other.distance) <= Number(pickup.distance));
+      const urgency = 1 - pickup.gap / lookAhead;
+      score += (pickupValue + urgency * AI_PICKUP_URGENCY) * affinity
+        * aiPickupWeight(pickup.type, inventory, ai) * (contested ? contestedValue : 1);
+    }
+
+    if (interceptLane !== null && interceptLane !== undefined) score += AI_INTERCEPT_VALUE * affinityOf(interceptLane, candidate);
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestLane = candidate;
+    }
+  }
+  return bestLane;
+}
+
+// ── Pilotes internationaux & avatars distincts ──────────────────────────────
+// Chaque course réunit 4 pilotes (notre joueur + 3 rivaux) dotés chacun d'un
+// avatar unique et d'un prénom issu d'un pays différent autour du monde.
+export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno', 'ace']);
+
+export const CITY_RUSH_DRIVERS = Object.freeze([
+  Object.freeze({
+    id: 'kenji', avatarId: 'avatar-kenji', name: 'KENJI', displayName: 'Kenji', country: 'Japon', countryCode: 'JP', flag: '🇯🇵', accent: '#42e6ff',
+    avatar: Object.freeze({
+      id: 'avatar-kenji', skin: '#f3c8a6', hair: '#181c2e', hairStyle: 'spiky',
+      accessory: 'cyber-visor', accessoryColor: '#42e6ff', outfit: '#ff5b9a', trim: '#ffffff', bgStart: '#18244b', bgEnd: '#4d1b49',
+    }),
+  }),
+  Object.freeze({
+    id: 'camila', avatarId: 'avatar-camila', name: 'CAMILA', displayName: 'Camila', country: 'Brésil', countryCode: 'BR', flag: '🇧🇷', accent: '#50e48a',
+    avatar: Object.freeze({
+      id: 'avatar-camila', skin: '#c8875b', hair: '#2a1a17', hairStyle: 'curly',
+      accessory: 'aviator-gold', accessoryColor: '#ffd44f', outfit: '#28b463', trim: '#ffe066', bgStart: '#0f3828', bgEnd: '#1b4f5c',
+    }),
+  }),
+  Object.freeze({
+    id: 'amine', avatarId: 'avatar-amine', name: 'AMINE', displayName: 'Amine', country: 'Maroc', countryCode: 'MA', flag: '🇲🇦', accent: '#ff8a48',
+    avatar: Object.freeze({
+      id: 'avatar-amine', skin: '#d89b72', hair: '#1d181b', hairStyle: 'short-fade',
+      accessory: 'retro-amber', accessoryColor: '#ff9f43', outfit: '#c0392b', trim: '#f6d365', bgStart: '#3d1624', bgEnd: '#6e3219',
+    }),
+  }),
+  Object.freeze({
+    id: 'giulia', avatarId: 'avatar-giulia', name: 'GIULIA', displayName: 'Giulia', country: 'Italie', countryCode: 'IT', flag: '🇮🇹', accent: '#ff526e',
+    avatar: Object.freeze({
+      id: 'avatar-giulia', skin: '#f1c2a0', hair: '#5a2d1e', hairStyle: 'wavy-long',
+      accessory: 'cat-eye', accessoryColor: '#ff526e', outfit: '#d63031', trim: '#55efc4', bgStart: '#3a1528', bgEnd: '#1b3b36',
+    }),
+  }),
+  Object.freeze({
+    id: 'mateo', avatarId: 'avatar-mateo', name: 'MATEO', displayName: 'Mateo', country: 'Mexique', countryCode: 'MX', flag: '🇲🇽', accent: '#43ead5',
+    avatar: Object.freeze({
+      id: 'avatar-mateo', skin: '#cf8e64', hair: '#1c191f', hairStyle: 'headband',
+      accessory: 'mirror-shades', accessoryColor: '#43ead5', outfit: '#00b894', trim: '#ff7675', bgStart: '#11343b', bgEnd: '#472133',
+    }),
+  }),
+  Object.freeze({
+    id: 'chloe', avatarId: 'avatar-chloe', name: 'CHLOÉ', displayName: 'Chloé', country: 'France', countryCode: 'FR', flag: '🇫🇷', accent: '#ff5db8',
+    avatar: Object.freeze({
+      id: 'avatar-chloe', skin: '#f6cfb2', hair: '#e4b869', hairStyle: 'bob',
+      accessory: 'french-beret', accessoryColor: '#ff5db8', outfit: '#2e3c7e', trim: '#ff7eb3', bgStart: '#1c2247', bgEnd: '#4c1e40',
+    }),
+  }),
+  Object.freeze({
+    id: 'kwame', avatarId: 'avatar-kwame', name: 'KWAME', displayName: 'Kwame', country: 'Nigeria', countryCode: 'NG', flag: '🇳🇬', accent: '#ffd44f',
+    avatar: Object.freeze({
+      id: 'avatar-kwame', skin: '#7a482b', hair: '#151218', hairStyle: 'locs',
+      accessory: 'gold-shield', accessoryColor: '#ffd44f', outfit: '#10ac84', trim: '#fff2a6', bgStart: '#102e2a', bgEnd: '#3b3214',
+    }),
+  }),
+  Object.freeze({
+    id: 'seoyeon', avatarId: 'avatar-seoyeon', name: 'SEO-YEON', displayName: 'Seo-yeon', country: 'Corée du Sud', countryCode: 'KR', flag: '🇰🇷', accent: '#a78bff',
+    avatar: Object.freeze({
+      id: 'avatar-seoyeon', skin: '#f5d2b8', hair: '#3b245e', hairStyle: 'neon-bangs',
+      accessory: 'neon-headset', accessoryColor: '#a78bff', outfit: '#6c5ce7', trim: '#62e7dc', bgStart: '#231942', bgEnd: '#153447',
+    }),
+  }),
+  Object.freeze({
+    id: 'astrid', avatarId: 'avatar-astrid', name: 'ASTRID', displayName: 'Astrid', country: 'Suède', countryCode: 'SE', flag: '🇸🇪', accent: '#48b9ff',
+    avatar: Object.freeze({
+      id: 'avatar-astrid', skin: '#f8d9c2', hair: '#f6dc8b', hairStyle: 'swept',
+      accessory: 'glacier-glass', accessoryColor: '#48b9ff', outfit: '#0984e3', trim: '#ffeaa7', bgStart: '#122a47', bgEnd: '#2e3d52',
+    }),
+  }),
+  Object.freeze({
+    id: 'layla', avatarId: 'avatar-layla', name: 'LAYLA', displayName: 'Layla', country: 'Égypte', countryCode: 'EG', flag: '🇪🇬', accent: '#f0ce65',
+    avatar: Object.freeze({
+      id: 'avatar-layla', skin: '#c9885e', hair: '#19151d', hairStyle: 'braids',
+      accessory: 'octagon-gold', accessoryColor: '#f0ce65', outfit: '#e17055', trim: '#43ead5', bgStart: '#3d231c', bgEnd: '#16363c',
+    }),
+  }),
+  Object.freeze({
+    id: 'diego', avatarId: 'avatar-diego', name: 'DIEGO', displayName: 'Diego', country: 'Argentine', countryCode: 'AR', flag: '🇦🇷', accent: '#74b9ff',
+    avatar: Object.freeze({
+      id: 'avatar-diego', skin: '#dfa67e', hair: '#2d201c', hairStyle: 'cap-back',
+      accessory: 'sport-visor', accessoryColor: '#74b9ff', outfit: '#0984e3', trim: '#ffffff', bgStart: '#132b47', bgEnd: '#1d3c45',
+    }),
+  }),
+  Object.freeze({
+    id: 'maya', avatarId: 'avatar-maya', name: 'MAYA', displayName: 'Maya', country: 'États-Unis', countryCode: 'US', flag: '🇺🇸', accent: '#ff7eb3',
+    avatar: Object.freeze({
+      id: 'avatar-maya', skin: '#9e6240', hair: '#4a2018', hairStyle: 'afro-curls',
+      accessory: 'palm-shades', accessoryColor: '#ff5db8', outfit: '#fd79a8', trim: '#43ead5', bgStart: '#3c1836', bgEnd: '#143840',
+    }),
+  }),
+]);
+
+// Sélectionne 4 pilotes distincts (un pour notre joueur et un par rival) avec
+// des avatars et des pays tous différents.
+export function selectCityRushRacers({
+  cityId = 'vice-city',
+  carId = CITY_RUSH_CARS[0].id,
+  runId = 0,
+  playerDriverId = null,
+} = {}) {
+  const total = CITY_RUSH_DRIVERS.length;
+  const cityIndex = Math.max(0, CITY_RUSH_CITIES.findIndex((item) => item.id === cityId));
+  const carIndex = Math.max(0, CITY_RUSH_CARS.findIndex((item) => item.id === carId));
+  const safeRun = Math.max(0, Math.trunc(Number(runId) || 0));
+  const explicitPlayerIndex = playerDriverId
+    ? CITY_RUSH_DRIVERS.findIndex((driver) => driver.id === playerDriverId)
+    : -1;
+  const playerIndex = explicitPlayerIndex >= 0
+    ? explicitPlayerIndex
+    : (cityIndex * 3 + carIndex * 2 + safeRun) % total;
+
+  const chosen = [CITY_RUSH_DRIVERS[playerIndex]];
+  const usedIds = new Set([CITY_RUSH_DRIVERS[playerIndex].id]);
+  const usedCountries = new Set([CITY_RUSH_DRIVERS[playerIndex].countryCode]);
+  const stride = 5; // premier avec 12 : parcourt tout le catalogue sans répétition
+  let cursor = (playerIndex + cityIndex + carIndex + safeRun * 3 + 1) % total;
+
+  while (chosen.length < CITY_RUSH_RACER_SLOTS.length) {
+    const candidate = CITY_RUSH_DRIVERS[cursor];
+    if (!usedIds.has(candidate.id) && !usedCountries.has(candidate.countryCode)) {
+      chosen.push(candidate);
+      usedIds.add(candidate.id);
+      usedCountries.add(candidate.countryCode);
+    }
+    cursor = (cursor + stride) % total;
+  }
+
+  const defaultLanes = [1, 3, 0, 2];
+  return CITY_RUSH_RACER_SLOTS.map((slotId, index) => {
+    const driver = chosen[index];
+    return {
+      id: slotId,
+      slot: index,
+      isPlayer: slotId === 'player',
+      driverId: driver.id,
+      avatarId: driver.avatarId,
+      name: driver.name,
+      displayName: driver.displayName,
+      country: driver.country,
+      countryCode: driver.countryCode,
+      flag: driver.flag,
+      accent: driver.accent,
+      avatar: driver.avatar,
+      lane: defaultLanes[index],
+    };
+  });
+}
+
+// ── L'escouade de police du dernier tour ────────────────────────────────────
+// Au passage du dernier tour, deux berlines d'interception entrent en piste
+// juste derrière le premier du classement. Elles ne sont **pas classées** :
+// `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
+// Leur seule mission est de nuire au leader — elles raflent **en priorité les
+// bonus rouges (mitrailleuse) et jaunes (hélicoptère)** pour l'empêcher de
+// s'armer, puis ouvrent le feu sur lui dès qu'une jauge rouge est pleine.
+export const CITY_RUSH_POLICE_COUNT = 2;
+// Voies extérieures : l'escouade encadre le leader au lieu de lui barrer la route.
+export const CITY_RUSH_POLICE_LANES = Object.freeze([0, 3]);
+// Les deux bonus de tir, ceux que la police convoite avant tous les autres.
+export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]);
+export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge/jaune vaut cinq bonus ordinaires
+export const CITY_RUSH_POLICE_BASE_SPEED = CITY_RUSH_PLAYER_SPEED * 1.06;
+export const CITY_RUSH_POLICE_LEAD = 15; // m : hauteur de croisière devant le leader
+export const CITY_RUSH_POLICE_LEAD_SLACK = 6; // m : zone où la vitesse se cale sur celle du leader
+export const CITY_RUSH_POLICE_ATTACK_LEAD = -5; // m : repli derrière le leader pour ouvrir le feu
+export const CITY_RUSH_POLICE_SPAWN_BEHIND = 30; // m : distance d'entrée en piste, derrière le leader
+export const CITY_RUSH_POLICE_LOOKAHEAD = 200; // m : portée de convoitise des bonus
+export const CITY_RUSH_POLICE_STEAL_NOTICE = 150; // m : au-delà, la page ne commente plus un vol de bonus
+export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafales de la même berline
+export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
+export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
+
+// L'escouade ne prend en chasse que le premier du classement. `entries` ne
+// contient que les pilotes classés (notre joueur et les trois rivaux) : à
+// égalité, le premier de la liste — notre joueur — est déclaré leader, comme
+// dans `rankCityRushRacers`.
+export function cityRushPackLeader(entries = []) {
+  let leader = null;
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const distance = Number(entry?.distance);
+    if (!Number.isFinite(distance)) continue;
+    if (!leader || distance > leader.distance) leader = { ...entry, distance };
+  }
+  return leader;
+}
+
+// Vitesse visée par une berline pour rester collée au leader : elle sprinte
+// quand elle est distancée, lève le pied quand elle est trop en avant, et se
+// cale sur la vitesse du leader dans la zone de croisière. Une fois la jauge
+// rouge pleine, `lead` devient négatif (voir `CITY_RUSH_POLICE_ATTACK_LEAD`)
+// et la berline se replie derrière le leader pour ouvrir le feu.
+export function cityRushPolicePace({
+  gap = 0,
+  baseSpeed = CITY_RUSH_POLICE_BASE_SPEED,
+  leaderSpeed = CITY_RUSH_PLAYER_SPEED,
+  lead = CITY_RUSH_POLICE_LEAD,
+  tolerance = CITY_RUSH_POLICE_LEAD_SLACK,
+  sprint = 1.34,
+  ease = 0.9,
+} = {}) {
+  const safeBase = Math.max(0, Number(baseSpeed) || 0);
+  const safeLeader = Math.max(0, Number(leaderSpeed) || 0);
+  const safeGap = Number(gap) || 0;
+  const safeLead = Number(lead) || 0;
+  const slack = Math.max(0, Number(tolerance) || 0);
+  const sprintFactor = Math.max(1, Number(sprint) || 1.34);
+  const easeFactor = Math.min(1, Math.max(0.2, Number(ease) || 0.9));
+  if (safeGap < safeLead - slack) return safeBase * sprintFactor;
+  if (safeGap > safeLead + slack) {
+    // Trop en avant : elle lève le pied d'autant plus qu'elle est loin. Une
+    // berline ne part pas gagner la course — elle attend le leader.
+    const ahead = safeGap - (safeLead + slack);
+    const brake = Math.max(0.45, 1 - ahead / 120);
+    return Math.max(6, safeLeader * easeFactor * brake);
+  }
+  // Croisière : la berline tient sa position, mais ne s'arrête jamais net.
+  return Math.max(safeLeader, safeBase * 0.82);
+}
+
+// Une voie est « bouchée » pour une berline quand un véhicule lent la précède à
+// portée de freinage (`CITY_RUSH_POLICE_BLOCK_RANGE`). La vitesse du trafic
+// n'est pas toujours connue : sans elle, le véhicule est supposé à l'arrêt.
+// Une berline déjà engluée roule à la vitesse du trafic, d'où le plancher.
+export function isCityRushPoliceLaneJammed({
+  lane = 0,
+  distance = 0,
+  speed = CITY_RUSH_PLAYER_SPEED,
+  traffic = [],
+  range = CITY_RUSH_POLICE_BLOCK_RANGE,
+} = {}) {
+  const ownSpeed = Math.max(0, Number(speed) || 0);
+  const slowThreshold = Math.max(12, ownSpeed * 0.6);
+  return (Array.isArray(traffic) ? traffic : []).some((vehicle) => {
+    if (!vehicle || vehicle.lane !== lane) return false;
+    const gap = Number(vehicle.distance) - Number(distance);
+    if (!Number.isFinite(gap) || gap < -3 || gap > range) return false;
+    return Math.max(0, Number(vehicle.speed) || 0) < slowThreshold;
+  });
+}
+
+// Choix de voie de l'escouade : même prudence que les rivaux devant le trafic
+// et les zones lentes, mais une convoitise multipliée pour les bonus rouges et
+// jaunes — c'est là qu'elle prive le leader de ses armes.
+//
+// La convoitise (×100) écrase toute pénalité de circulation : un bonus rouge
+// devant un camion suffisait à garder la berline collée à son pare-chocs, à
+// 5 m/s, pendant que le leader s'envolait — l'escouade décrochait et n'était
+// plus jamais à l'écran. Une voie bouchée est donc écartée d'office tant
+// qu'une voie libre est ouverte ; si tout est bouché, le choix d'origine
+// reste valable (la berline touche alors le véhicule, voir le monde 3D).
+export function chooseCityRushPoliceLane({
+  currentLane = 0,
+  laneCount = CITY_RUSH_LANE_X.length,
+  distance = 0,
+  speed = CITY_RUSH_PLAYER_SPEED,
+  availableLanes,
+  pickups = [],
+  slowZones = [],
+  traffic = [],
+  targetLane = null,
+  homeLane = null,
+  lookAheadDistance = CITY_RUSH_POLICE_LOOKAHEAD,
+} = {}) {
+  const lane = clampCityRushLane(currentLane, laneCount);
+  const allowed = new Set((availableLanes || Array.from({ length: laneCount }, (_, index) => index))
+    .map((nextLane) => clampCityRushLane(nextLane, laneCount)));
+  allowed.add(lane);
+  const candidates = [lane, lane - 1, lane + 1]
+    .filter((nextLane) => nextLane >= 0 && nextLane < laneCount && allowed.has(nextLane));
+  const lookAhead = Math.max(1, Number(lookAheadDistance) || CITY_RUSH_POLICE_LOOKAHEAD);
+  const racerSpeed = Math.max(0, Number(speed) || 0);
+  const huntedLane = targetLane === null || targetLane === undefined ? null : clampCityRushLane(targetLane, laneCount);
+  const clearLanes = candidates.filter((candidate) => !isCityRushPoliceLaneJammed({ lane: candidate, distance, speed: racerSpeed, traffic }));
+  const options = clearLanes.length ? clearLanes : candidates;
+  let bestLane = options.includes(lane) ? lane : options[0];
+  let bestScore = -Infinity;
+
+  for (const candidate of options) {
+    let safetyScore = -Math.abs(candidate - lane) * 1.1;
+    let greed = 0;
     for (const pickup of pickups) {
       const gap = Number(pickup.distance) - Number(distance);
       if (!Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
       const pickupLane = clampCityRushLane(pickup.lane, laneCount);
-      const laneAffinity = Math.max(0, 1 - Math.abs(pickupLane - candidate) * 0.34);
+      const laneAffinity = Math.max(0, 1 - Math.abs(pickupLane - candidate) * 0.4);
       if (laneAffinity === 0) continue;
       const urgency = 1 - gap / lookAhead;
-      // Ramasser passe avant le confort de conduite : à voie disponible, le
-      // rival vise le bonus même si une zone ou un autre pilote le gêne. La
-      // disponibilité des voies garde toutefois la sécurité du trafic lent.
-      // Même avec une jauge pleine, le rival continue de viser les bonus au
-      // lieu de les ignorer dès que son pouvoir est chargé.
-      pickupPriority += (22 + urgency * 8) * laneAffinity;
+      const hunted = CITY_RUSH_POLICE_HUNT_TYPES.includes(pickup.type);
+      // Un bonus de tir vaut cinq bonus ordinaires : l'escouade traverse la
+      // route pour le rafler avant le leader.
+      greed += (hunted ? CITY_RUSH_POLICE_HUNT_WEIGHT : 1) * (24 + urgency * 10) * laneAffinity;
     }
     for (const zone of slowZones) {
       const gap = Number(zone.distance) - Number(distance);
@@ -465,10 +1309,16 @@ export function chooseCityRushAiLane({
       const closingSpeed = Math.max(1, racerSpeed - Math.max(0, Number(vehicle.speed) || 0));
       const timeToReach = gap / closingSpeed;
       safetyScore -= timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5;
+      // Embouteillage : une berline engluée derrière un véhicule lent cherche
+      // activement à s'en extraire — elle ne se contente pas de le suivre.
+      if (gap < CITY_RUSH_POLICE_BLOCK_RANGE) safetyScore -= 26;
     }
-    // Sépare explicitement les objectifs des risques : aucune pénalité de
-    // circulation ne doit rendre un bonus moins intéressant qu'une voie vide.
-    const score = pickupPriority * 100 + safetyScore;
+    // À défaut de bonus, une berline se rabat volontiers dans la voie du
+    // leader ou dans sa voie d'entrée : les deux berlines encadrent la piste
+    // au lieu de rouler en file indienne.
+    const targetBonus = huntedLane !== null && candidate === huntedLane ? 3 : 0;
+    const homeBonus = homeLane !== null && homeLane !== undefined && candidate === clampCityRushLane(homeLane, laneCount) ? 2.5 : 0;
+    const score = greed * 100 + safetyScore + targetBonus + homeBonus;
     if (score > bestScore) {
       bestScore = score;
       bestLane = candidate;
@@ -476,3 +1326,269 @@ export function chooseCityRushAiLane({
   }
   return bestLane;
 }
+
+// Les berlines de police ne bloquent personne (elles traversent le peloton
+// comme les rivaux se traversent entre eux) mais **ne traversent pas le
+// trafic** : leur distance est rabotée derrière le véhicule lent de leur voie.
+// `blockedBy` désigne le véhicule qui a freiné la berline cette image (son
+// `id`), ou `null` : le monde 3D s'en sert pour le heurter — le détecteur de
+// chocs ne voit que l'entrée dans la marge depuis l'arrière, et une berline
+// restée plaquée contre un véhicule dont le choc a été refusé le suivrait sans
+// fin à son allure.
+export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], minimumGap = CITY_RUSH_CAR_GAP) {
+  const safeGap = Math.max(0, Number(minimumGap) || 0);
+  return policeCars.map((car) => {
+    const previousDistance = Number.isFinite(Number(car.distance)) ? Number(car.distance) : 0;
+    const requestedDistance = Number.isFinite(Number(car.nextDistance)) ? Number(car.nextDistance) : previousDistance;
+    let nextDistance = Math.max(previousDistance, requestedDistance);
+    let blockedBy = null;
+    for (const other of traffic) {
+      const otherDistance = Number(other.distance);
+      if (!Number.isFinite(otherDistance) || otherDistance <= previousDistance) continue;
+      const sameLane = other.lane === car.lane;
+      const policeWidth = Number.isFinite(Number(car.width)) ? Number(car.width) : 1.94;
+      const otherWidth = Number.isFinite(Number(other.width)) ? Number(other.width) : 1.94;
+      const lateralOverlap = Number.isFinite(Number(other.x))
+        && Number.isFinite(Number(car.x))
+        && Math.abs(Number(other.x) - Number(car.x)) < (policeWidth + otherWidth) / 2;
+      if (!sameLane && !lateralOverlap) continue;
+      const limit = Math.max(previousDistance, otherDistance - safeGap);
+      if (limit < nextDistance) {
+        nextDistance = limit;
+        blockedBy = other.id ?? null;
+      }
+    }
+    return { ...car, previousDistance, nextDistance, blockedBy };
+  });
+}
+
+// ── Mini-carte du circuit & focus joueur ────────────────────────────────────
+// Projette une distance (en mètres sur la boucle de 600 m) et une voie (0..3)
+// sur le tracé 2D de la mini-carte (repère 100 × 100 centré en 50, 50).
+export function cityRushMinimapPoint(
+  distance = 0,
+  lane = 1,
+  {
+    lapLength = CITY_RUSH_LAP_LENGTH,
+    laneCount = CITY_RUSH_LANE_X.length,
+    laneSpacing = 1.45,
+  } = {},
+) {
+  const safeDistance = Math.max(0, Number(distance) || 0);
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  const loopProgress = (((safeDistance % safeLap) + safeLap) % safeLap) / safeLap;
+  const theta = Math.PI + loopProgress * Math.PI * 2;
+
+  const rx = 32;
+  const ry = 20;
+  const centerX = 50 + rx * Math.cos(theta) - 1.8 * Math.cos(3 * theta);
+  const centerY = 50 + ry * Math.sin(theta) + 1.4 * Math.sin(2 * theta);
+
+  const dxdt = -rx * Math.sin(theta) + 5.4 * Math.sin(3 * theta);
+  const dydt = ry * Math.cos(theta) + 2.8 * Math.cos(2 * theta);
+  const norm = Math.hypot(dxdt, dydt) || 1;
+  const tangentX = dxdt / norm;
+  const tangentY = dydt / norm;
+  const normalX = -tangentY;
+  const normalY = tangentX;
+
+  const clampedLane = clampCityRushLane(lane, laneCount);
+  const laneOffset = (clampedLane - (laneCount - 1) / 2) * laneSpacing;
+  const x = centerX + normalX * laneOffset;
+  const y = centerY + normalY * laneOffset;
+  const angle = Math.atan2(tangentY, tangentX);
+  const deg = (angle * 180) / Math.PI;
+
+  return {
+    x,
+    y,
+    centerX,
+    centerY,
+    tangentX,
+    tangentY,
+    normalX,
+    normalY,
+    angle,
+    deg,
+    loopProgress,
+    lane: clampedLane,
+    laneOffset,
+  };
+}
+
+export function cityRushMinimapTrackPath(steps = 72, { lapLength = CITY_RUSH_LAP_LENGTH } = {}) {
+  const count = Math.max(12, Math.trunc(Number(steps) || 72));
+  const commands = [];
+  for (let index = 0; index < count; index += 1) {
+    const distance = (index / count) * lapLength;
+    const point = cityRushMinimapPoint(distance, 1.5, { lapLength, laneSpacing: 0 });
+    commands.push(`${index === 0 ? 'M' : 'L'} ${point.centerX.toFixed(2)} ${point.centerY.toFixed(2)}`);
+  }
+  commands.push('Z');
+  return commands.join(' ');
+}
+
+// Construit l'état complet de la mini-carte : position des 4 pilotes sur le
+// circuit, avatars/pays distincts et focus caméra + télémétrie sur notre joueur.
+export function buildCityRushMinimapState(
+  racers = [],
+  {
+    playerId = 'player',
+    cityId = 'vice-city',
+    carId = CITY_RUSH_CARS[0].id,
+    runId = 0,
+    playerDriverId = null,
+    lapLength = CITY_RUSH_LAP_LENGTH,
+    laps = CITY_RUSH_LAPS,
+    totalDistance = CITY_RUSH_DISTANCE,
+    pursuers = [],
+  } = {},
+) {
+  const defaultRoster = selectCityRushRacers({ cityId, carId, runId, playerDriverId });
+  const incomingById = new Map((Array.isArray(racers) ? racers : []).map((racer) => [racer?.id, racer]));
+
+  const merged = defaultRoster.map((slotProfile) => {
+    const raw = incomingById.get(slotProfile.id) || {};
+    const rawDistance = Number.isFinite(Number(raw.rawDistance))
+      ? Math.max(0, Number(raw.rawDistance))
+      : Math.max(0, Number(raw.distance) || 0);
+    const distance = Math.max(0, Math.min(totalDistance, Math.round(rawDistance)));
+    const lane = raw.lane !== undefined ? clampCityRushLane(raw.lane) : slotProfile.lane;
+    const lap = raw.lap ? Math.max(1, Math.min(laps, Number(raw.lap))) : cityRushLapForDistance(rawDistance, lapLength, laps);
+    const lapProgress = cityRushLapProgress(rawDistance, lapLength, laps);
+    const progress = clamp01(rawDistance / Math.max(1, totalDistance));
+    return {
+      ...slotProfile,
+      ...raw,
+      id: slotProfile.id,
+      isPlayer: slotProfile.id === playerId,
+      driverId: raw.driverId || slotProfile.driverId,
+      name: raw.name && raw.name !== 'TOI' ? raw.name : slotProfile.name,
+      displayName: raw.displayName || slotProfile.displayName,
+      country: raw.country || slotProfile.country,
+      countryCode: raw.countryCode || slotProfile.countryCode,
+      flag: raw.flag || slotProfile.flag,
+      accent: raw.accent || slotProfile.accent,
+      avatar: raw.avatar || slotProfile.avatar,
+      rawDistance,
+      distance,
+      lane,
+      lap,
+      lapProgress,
+      progress,
+    };
+  });
+
+  const ranked = rankCityRushRacers(
+    merged.map((racer) => ({ ...racer, distance: racer.rawDistance })),
+    playerId,
+  );
+
+  const playerEntry = ranked.ordered.find((racer) => racer.id === playerId) || ranked.ordered[0];
+  const playerPoint = cityRushMinimapPoint(playerEntry.rawDistance, playerEntry.lane, { lapLength });
+
+  const enriched = ranked.ordered.map((racer, index) => {
+    const point = cityRushMinimapPoint(racer.rawDistance, racer.lane, { lapLength });
+    const isPlayer = racer.id === playerId;
+    const relativeDistance = Math.round(racer.rawDistance - playerEntry.rawDistance);
+    const loopGap = Math.round(cityRushTrackGap(racer.rawDistance, playerEntry.rawDistance, lapLength));
+    return {
+      ...racer,
+      rank: index + 1,
+      isPlayer,
+      isFocused: isPlayer,
+      x: point.x,
+      y: point.y,
+      centerX: point.centerX,
+      centerY: point.centerY,
+      angle: point.angle,
+      deg: point.deg,
+      loopProgress: point.loopProgress,
+      focusX: point.x - playerPoint.x,
+      focusY: point.y - playerPoint.y,
+      relativeDistance,
+      loopGap,
+    };
+  });
+
+  const focusedPlayer = enriched.find((racer) => racer.isPlayer) || enriched[0];
+  // La caméra de la mini-carte suit notre joueur (focus) tout en gardant
+  // l'intégralité de la boucle et les 3 rivaux dans le cadre.
+  const cameraX = 50 + (focusedPlayer.x - 50) * 0.32;
+  const cameraY = 50 + (focusedPlayer.y - 50) * 0.32;
+  const viewWidth = 96;
+  const viewHeight = 72;
+  const viewMinX = cameraX - viewWidth / 2;
+  const viewMinY = cameraY - viewHeight / 2;
+  const viewBox = `${viewMinX.toFixed(2)} ${viewMinY.toFixed(2)} ${viewWidth} ${viewHeight}`;
+
+  // Les marqueurs placent notre joueur en dernier pour qu'il reste au premier plan.
+  const markers = [
+    ...enriched.filter((racer) => !racer.isPlayer),
+    ...enriched.filter((racer) => racer.isPlayer),
+  ];
+
+  // L'escouade de police n'est pas classée : elle est projetée à part, pour
+  // que la mini-carte puisse la montrer sans la mêler aux quatre pilotes.
+  const pursued = (Array.isArray(pursuers) ? pursuers : [])
+    .filter((police) => police && police.active !== false)
+    .map((police, index) => {
+      const distance = Math.max(0, Math.min(totalDistance, Number(police.distance) || 0));
+      const lane = clampCityRushLane(police.lane);
+      const point = cityRushMinimapPoint(distance, lane, { lapLength });
+      return {
+        id: police.id || `police-${index}`,
+        name: police.name || 'POLICE',
+        distance: Math.round(distance),
+        lane,
+        x: point.x,
+        y: point.y,
+        centerX: point.centerX,
+        centerY: point.centerY,
+        angle: point.angle,
+        deg: point.deg,
+        loopProgress: point.loopProgress,
+        relativeDistance: Math.round(distance - playerEntry.rawDistance),
+        loopGap: Math.round(cityRushTrackGap(distance, playerEntry.rawDistance, lapLength)),
+      };
+    });
+
+  return {
+    viewBox,
+    focus: {
+      id: focusedPlayer.id,
+      isPlayer: true,
+      isFocused: true,
+      driverId: focusedPlayer.driverId,
+      avatarId: focusedPlayer.avatar?.id || focusedPlayer.avatarId,
+      name: focusedPlayer.name,
+      displayName: focusedPlayer.displayName,
+      country: focusedPlayer.country,
+      countryCode: focusedPlayer.countryCode,
+      flag: focusedPlayer.flag,
+      avatar: focusedPlayer.avatar,
+      accent: focusedPlayer.accent,
+      x: focusedPlayer.x,
+      y: focusedPlayer.y,
+      point: { x: focusedPlayer.x, y: focusedPlayer.y },
+      angle: focusedPlayer.angle,
+      deg: focusedPlayer.deg,
+      distance: focusedPlayer.distance,
+      rawDistance: focusedPlayer.rawDistance,
+      relativeDistance: 0,
+      lap: focusedPlayer.lap,
+      lapProgress: focusedPlayer.lapProgress,
+      lane: focusedPlayer.lane,
+      rank: focusedPlayer.rank,
+      cameraX,
+      cameraY,
+      viewBox,
+    },
+    racers: enriched,
+    markers,
+    pursuers: pursued,
+    startLine: cityRushMinimapPoint(0, 1.5, { lapLength, laneSpacing: 0 }),
+    midGate: cityRushMinimapPoint(lapLength / 2, 1.5, { lapLength, laneSpacing: 0 }),
+  };
+}
+

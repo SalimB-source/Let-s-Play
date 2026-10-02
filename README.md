@@ -347,21 +347,75 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
   · TOUR 2/3 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
   rivaux annoncent leur dernier tour. Le dernier passage termine la course.
+- **L'escouade de police du dernier tour.** Dès que le **premier du classement**
+  attaque son troisième tour, **deux berlines d'interception entrent en piste
+  juste derrière lui** (30 m et 38 m, sirène allumée) et roulent pour lui nuire :
+  elles se replacent devant sa roue, changent de voie pour **rafler en priorité
+  les bonus rouges (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir
+  vaut cinq bonus ordinaires dans leur choix de voie, `CITY_RUSH_POLICE_HUNT_TYPES`
+  et `chooseCityRushPoliceLane` — puis **ouvrent le feu sur le leader** dès
+  qu'une jauge rouge est pleine. Elles **ne sont pas classées** : `rankCityRushRacers`
+  ne les voit jamais, la grille reste à quatre, le HUD les affiche dans une liste
+  à part (`hud.police`, marqueurs rouge et bleu de la mini-carte) et l'écran
+  d'arrivée les ignore. Le joueur peut riposter : ses balles et ses flaques
+  d'huile les ralentissent comme n'importe quelle voiture
+  (`CITY_RUSH_POLICE_*` dans `cityRushRules.js`). **L'escouade est la même sur
+  les cinq circuits** (Vice City, New York, Tokyo, Paris, Londres) : aucune de
+  ses règles ne dépend de la ville — ni la mise en place, ni la chasse, ni la
+  sirène. Seul le tracé joue : sous un tremis (Vice City, New York, Tokyo), les
+  berlines se rabattent dans le couloir resté ouvert, comme tout le monde.
+  **Elle ne s'enlise pas dans le trafic.** Une voie où un véhicule lent précède
+  la berline à moins de 40 m est « bouchée » (`isCityRushPoliceLaneJammed`) et
+  écartée d'office du choix de voie tant qu'une voie libre est ouverte — même
+  avec un bonus rouge dedans : la convoitise des bonus de tir ne la garde plus
+  collée derrière un camion à 5 m/s pendant que le leader s'envole. Et quand un
+  véhicule lent la freine malgré tout (toutes les voies bouchées, ou trop tard
+  pour dévier), la berline **le heurte comme un rival** : une seconde de
+  ralentissement, un dérapage, et le véhicule se rabat sur une voie voisine
+  (`resolveCityRushPoliceMovement` désigne le véhicule — `blockedBy` —, puis
+  `applyTrafficImpact` ; sans bandeau « choc » à l'écran). Son changement de voie
+  est jugé à **sa propre position** — pas à celle du joueur — pour le trafic
+  comme pour les murs de tremis.
 - **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
   **bleu 2** (clé à molette / huile), **rouge 3** (mitrailleuse / dérapage),
   **vert 2** (billets / boost), **jaune 4** (talkie-walkie / hélicoptère) —
-  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Un bonus ramassé
+  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. **Les deux pouvoirs de
+  tir ne visent que devant** : la mitrailleuse prend le rival le plus proche du
+  pare-chocs, l'hélicoptère le mieux placé, mais seulement parmi les rivaux
+  situés devant le tireur (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`,
+  un mètre de tolérance pour une voiture roue contre roue). Un pilote en tête
+  n'a donc **aucune cible jaune** : l'hélico ne part jamais vers un poursuivant,
+  l'onde de choc épargne elle aussi les adversaires restés derrière l'appelant,
+  et le HUD affiche « AUCUN RIVAL DEVANT TOI · LA JAUGE RESTE CHARGÉE » sans
+  consommer la jauge. Un bonus ramassé
   **éclate** : flash, anneau qui s'ouvre et éclats de sa couleur repris par la
   gravité (`cityRushPickupBurstShards` / `cityRushPickupShardState` /
   `cityRushPickupFlashState`, rendus par un pool de six objets dans
-  `ViceCityWorld.jsx`, sans éclats si `prefers-reduced-motion`). Le bonus suivant
-  **réapparaît 0,2 s** plus tard en gonflant depuis son socle
-  (`CITY_RUSH_PICKUP_RESPAWN_DELAY` + `cityRushPickupPopScale`).
+  `ViceCityWorld.jsx`, sans éclats si `prefers-reduced-motion`), puis
+  **réapparaît 0,1 s** plus tard sur sa voie en gonflant depuis son socle
+  (`CITY_RUSH_PICKUP_RESPAWN_DELAY`, `markCityRushPickupTaken` /
+  `isCityRushPickupHidden`, `cityRushPickupPopScale`), afin que les voitures
+  suivantes puissent le ramasser à leur tour.
 - **Le décor.** Chaque ville a sa boucle : façades texturées (fenêtres allumées,
   enseignes verticales, boutiques), porte monumentale à mi-tour (arche Art déco,
   pont-viaduc, torii, arc de triomphe, Tower Bridge), monument, lampadaires,
   guirlandes, feux tricolores, panneaux qui clignotent, ciel dégradé avec étoiles,
   skyline au loin, pluie à Londres et bruine à New York.
+- **Les tremis.** Sur **certains circuits** seulement (Vice City, New York,
+  Tokyo ; Paris et Londres restent à ciel ouvert), la boucle passe sous un
+  **tunnel court** : 42 m de voûte de pierre, deux bouches en portique (piédroits
+  crème, bandeau néon, enseigne), plafonniers, appliques murales et aérations de
+  toit. Sous la voûte, la chaussée **se resserre** : trois voies restent
+  ouvertes, **parfois deux seulement**, le reste est muré par une paroi pleine
+  hauteur signalée par un damier de chevrons et des cônes. Les règles sont pures
+  (`src/games/cityRushTunnels.js` — `CITY_RUSH_TUNNEL_PLANS`, `cityRushTunnelAt`,
+  `cityRushTunnelLaneFor`, `cityRushTunnelShade`) : le joueur est **retenu au
+  volant** 26 m avant la paroi (`CITY_RUSH_TUNNEL_PLAYER_LEAD`, et un raclement
+  le repousse dans le couloir s'il s'y engage quand même), tandis que les rivaux,
+  la police et le trafic se rabattent 70 m avant (`MERGE_LEAD`). Un **voile de
+  pénombre** assombrit l'écran tant que la caméra est sous la voûte, le fond du
+  tunnel reste noir, les bonus ne tombent jamais dans une voie murée, et la
+  mini-carte dessine la voûte et la bande des voies murées.
 - **Vice City en plein jour.** Le stage de Vice City se joue **de jour, ambiance
   plage** : ciel bleu de Floride, soleil haut (ni étoiles ni lune), brume marine
   claire, sable au sol, trottoirs crème, façades Art déco pastel et vitres qui
@@ -397,10 +451,207 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   définition plafonnée. Le décor est fusionné par matériau (quelques dizaines
   d'appels de rendu pour toute une ville).
 
+### Les rivaux : de vrais adversaires
+
+NOVA, JUNO et ACE ne dérangeaient jamais le joueur. Mesuré avec le banc (voir
+« Mesurer » plus bas), le pilote « moyen » gagnait **99 %** des courses et
+finissait **~500 m** devant eux : ils perdaient **~22 s** par course coincés
+derrière le trafic lent (ils fonçaient sur un bonus caché derrière un camion),
+n'étaient à moins de 30 m du joueur que **26 %** du temps, et leurs armes
+partaient dans le vide. Voici ce qui a changé — c'est le niveau **Normal**,
+celui par défaut ; Facile et Difficile (« Trois niveaux », plus bas) n'en
+changent que quelques réglages. La logique pure vit dans `cityRushRules.js`, la
+boucle de course dans `ViceCityWorld.jsx`.
+
+- **Ils lisent la route.** Un véhicule lent est un blocage *daté*
+  (`cityRushTimeToBlock`) : le rival quitte sa voie à temps, et ne vise plus un
+  bonus qu'il ne pourrait pas atteindre avant d'être coincé. Les dangers situés
+  *après* un bonus atteignable ne comptent pas (il se redécide toutes les
+  ~0,3 s). Les voitures de course ne se bloquent pas — elles se traversent —
+  mais un rival évite de rouler « dans » l'une d'elles et ne vise pas un bonus
+  qu'une autre prendra avant lui (`chooseCityRushAiLane`). Bonus ramassés par
+  rival : ~7 → ~12 par course.
+- **Mêmes règles que le joueur.** Le ralentissement
+  (`CITY_RUSH_SLOW_MULTIPLIER`, 0,63) et le turbo
+  (`CITY_RUSH_BOOST_MULTIPLIER`, 1,46) sont partagés : les rivaux subissaient
+  0,56 et ne profitaient que de 1,38. Ils glissent d'une voie à l'autre à 10
+  (le joueur : 12, eux : 5,3 avant) et réévaluent leur voie toutes les
+  0,24–0,42 s (0,36–0,62 s avant).
+- **À ton allure, quelle que soit ta voiture.** Le rythme d'un rival est celui
+  de *ta* voiture (`cityRushRivalBaseSpeed`, `cityRushRivalAcceleration`),
+  décalé de 10 % de l'écart avec la sienne (`carCharacter`). Sans cela, le
+  choix de la voiture déciderait de la course : le premier arrivé ramasse les
+  bonus, donc les turbos et les armes, et prend le large — mesuré, la même
+  voiture gagnait 20 % des courses avec 8,6 m/s² d'accélération et 70 % avec 9,8.
+- **Ils reviennent.** Distancé, un rival pousse jusqu'à +5 % (rattrapage,
+  `catchUpBoost`) ; très en avance, il est freiné jusqu'à −3 % (laisse,
+  `leashSlow`) : `cityRushRivalPace`. Un rival est à moins de 30 m de toi
+  ~78 % du temps, et ta place change ~6 fois par course (3 avant).
+- **Des armes qui visent.** La mitrailleuse attend une cible à portée de vue
+  (85 m) : toi d'abord si tu es devant, sinon la voiture la plus proche devant
+  (`cityRushRivalPistolTarget`). L'huile n'est posée que sur une voiture qui
+  suit dans la même voie, entre 7 et 40 m derrière (`cityRushRivalOilVictim`),
+  et un rival armé d'huile se glisse devant la voiture qui le suit
+  (`cityRushRivalOilChaseLane`). Les armes sont ~1,4 fois plus convoitées que les
+  billets verts (`weaponBias`). Toi aussi tu as enfin des cibles : tes tirs
+  passent de 0,02 à ~0,5 par course.
+- **Un coup à la fois.** Après un coup sur toi (tir, flaque, hélico), les rivaux
+  te laissent repartir : durée de l'effet + 1,4 s (`attackSpacing`,
+  `rivalAttackLock` dans le monde). Jamais de tir + huile + hélico enchaînés.
+- **Pas des robots.** Un rival lâche parfois la route des yeux (1,2 % des
+  décisions de voie, 0,7 à 1,4 s sans changer de voie).
+
+Résultat, pilote « moyen » du banc, 200 courses sur les cinq villes et les quatre
+voitures (avant : graine 7 ; après : graines 7 et 8) :
+
+| | Avant | Après |
+| --- | --- | --- |
+| Victoires du joueur | 99 % | 41 % / 32 % |
+| Avance finale sur le rival moyen | +511 m | +27 m / +17 m |
+| Rival à moins de 30 m | 26 % du temps | 77 % / 78 % |
+| Changements de place par course | 3,0 | 5,6 / 5,9 |
+| Temps perdu par un rival dans le trafic | ~22 s | ~1,2 s |
+| Bonus ramassés par rival | ~7 | ~12 |
+| Coups encaissés par course (temps perdu) | 0,92 (1,8 s) | 1,7 / 1,8 (3,3 s) |
+| Courses sans aucun coup | 37 % | 14 % / 12 % |
+
+Le pilote « expert » gagne 21 % et le « occasionnel » 31 % : le niveau tient quel
+que soit le style de conduite.
+
+#### Trois niveaux : Facile, Normal, Difficile
+
+Après la ville et le cabriolet, l'écran d'accueil propose l'étape **03 /
+DIFFICULTÉ DES RIVAUX** : **Facile**, **Normal** (par défaut) ou **Difficile**.
+
+- **Le choix est retenu** d'une visite à l'autre (`localStorage`, clé
+  `letsplay_vice_city_rush_difficulty_v1`). Une valeur absente, altérée ou un
+  stockage refusé par le navigateur (navigation privée) retombent sur Normal.
+- **Il s'applique à chaud** : le monde 3D n'est pas reconstruit (`setDifficulty`) ;
+  seuls la ville et la voiture le reconstruisent.
+- **Un record par ville *et* par niveau** (`cityRushBestKey`) : un chrono en
+  Facile ne se compare pas à un chrono en Difficile. Les records d'avant les
+  niveaux (une clé par ville dans `letsplay_vice_city_rush_bests_v1`) restent
+  ceux du Normal ; les autres s'écrivent `ville:easy` et `ville:hard`.
+- **Le niveau se lit** à côté du meilleur chrono, au compte à rebours, sur
+  l'écran de résultat et sous « Positions ».
+- **Sur petit écran, le bouton de départ reste visible** : la hauteur de la scène suit
+  la largeur de la fenêtre (53 vw, plafonnée à 670 px) ; sous ~1170 px de large,
+  l'accueil (ville, cabriolet, niveau) est plus haut que la scène et défile, et la
+  rangée « Démarrer la course » reste collée en bas pendant le défilement. Au-delà,
+  tout tient sans défiler et rien ne change.
+
+Mesuré avec le pilote « moyen » du banc, 160 courses par colonne sur les cinq
+villes et les quatre voitures (graines 7 / 8 ; Normal : deux échantillons du même
+niveau que le tableau précédent, qui comptait 200 courses) :
+
+| | Facile | Normal | Difficile |
+| --- | --- | --- | --- |
+| Victoires du joueur | 74 % / 64 % | 36 % / 30 % | 18 % / 19 % |
+| Avance finale sur le rival moyen | +100 m / +82 m | +20 m / +14 m | −8 m / −10 m |
+| Rival à moins de 30 m | 52 % / 56 % du temps | 76 % / 81 % | 86 % / 87 % |
+| Changements de place par course | 3,7 / 4,4 | 5,6 / 6,4 | 9,7 / 9,4 |
+| Courses sans aucun coup | 38 % / 34 % | 11 % / 13 % | 4 % / 6 % |
+| Coups encaissés par course (temps perdu) | 1,0 / 1,2 (2,0 / 2,4 s) | 1,8 / 1,9 (3,4 s) | 1,9 / 1,8 (3,6 / 3,2 s) |
+
+Avec les pilotes « expert » et « occasionnel » (120 courses ; Normal : 200
+courses, voir plus haut), l'ordre des niveaux tient : Facile 65 % / 70 % de
+victoires, Normal 21 % / 31 %, Difficile 10 % / 19 %.
+
+Ce que chaque niveau change :
+
+- **Facile** : les rivaux roulent 2,5 % sous l'allure de ta voiture et se laissent
+  distancer (rattrapage ×0,4) ; ils se trompent près de trois fois plus souvent,
+  réagissent plus lentement, visent la voiture la plus proche devant eux plutôt que toi
+  (`focusPlayer`), tirent de moins loin et te laissent 2,8 s de répit après un coup.
+  Tu peux creuser l'écart et le garder.
+- **Normal** : le réglage de base, décrit plus haut.
+- **Difficile** : ils roulent à l'allure exacte de ta voiture (1 % de plus que
+  Normal), reviennent plus fort quand tu t'échappes, presque sans erreur, passent d'une
+  voie à l'autre aussi vite que toi, tirent de plus loin et ne te laissent qu'une
+  seconde de répit. On ne te tire dessus que si tu es devant : en Difficile tu
+  l'es à peine (en tête de plus de 40 m 3 à 4 % du temps contre 11 à 13 % en Normal), donc
+  le nombre moyen de coups ne bouge guère ; ce que tu subis, c'est d'être battu au
+  corps à corps (9 à 10 changements de place par course, 26 % du temps à plus de
+  40 m derrière) et d'être touché dès que tu prends la tête.
+
+| Réglage | Facile | Normal | Difficile |
+| --- | --- | --- | --- |
+| `paceFactor` | 0,975 | 0,99 | 1,0 |
+| `catchUpBoost` / `leashSlow` | 0,02 / 0,04 | 0,05 / 0,03 | 0,06 / 0,02 |
+| `reactionMin` – `reactionMax` | 0,34 – 0,6 s | 0,24 – 0,42 s | 0,2 – 0,34 s |
+| `laneAgility` / `lookAhead` | 8 / 120 m | 10 / 150 m | 12 / 165 m |
+| `mistakeChance` | 0,035 | 0,012 | 0,004 |
+| `pickupValue` / `weaponBias` | 11 / 0,8 | 14 / 1,4 | 16 / 1,7 |
+| `focusPlayer` | non | oui | oui |
+| `pistolRange` / `oilChaseRange` | 60 / 50 m | 85 / 65 m | 100 / 75 m |
+| `attackSpacing` | 2,8 s | 1,4 s | 1,0 s |
+
+(Facile et Difficile ne listent dans `CITY_RUSH_DIFFICULTIES` que ces écarts ; tout
+le reste suit le Normal. Les tests ne figent pas ces valeurs, seulement leur ordre
+et leurs bornes : la source fait foi.)
+
+#### Régler la difficulté
+
+Tout est dans **`CITY_RUSH_RIVAL_AI`** (`cityRushRules.js`, c'est le niveau
+Normal) et dans les écarts de **`CITY_RUSH_DIFFICULTIES`** (Facile, Difficile) :
+le monde 3D ne contient aucun chiffre d'équilibrage des rivaux
+(`cityRushRivalAI(niveau)` donne le réglage complet d'un niveau). Commencer par
+un seul bouton, le même pour les trois niveaux :
+
+- **`paceFactor`** (0,99 en Normal) : 1 = les rivaux roulent à l'allure exacte de
+  ta voiture, plus bas = plus facile, plus haut = plus difficile. La course se joue
+  à quelques mètres, donc il est sensible : en Normal avec le pilote moyen, 0,995 →
+  ~22 % de victoires (à égalité avec le rival moyen), 0,99 → ~37 %, 0,985 → ~44 %.
+  Varier par pas de 0,002 à 0,005 ; les autres réglages d'un niveau (rattrapage,
+  armes, erreurs) bougent peu le taux de victoires mais changent *comment* la
+  course se passe.
+
+Les autres réglages, dans l'ordre où ils se sentent le plus :
+
+| Réglage | Défaut | Effet |
+| --- | --- | --- |
+| `catchUpBoost` / `catchUpRange` | 0,05 / 110 m | Allure en plus quand le rival est loin derrière toi |
+| `leashSlow` / `leashStart` / `leashRange` | 0,03 / 20 m / 90 m | Allure en moins quand il s'est échappé devant toi |
+| `weaponBias` | 1,4 | Goût des armes face aux billets verts (plus haut = plus de coups) |
+| `pistolRange` | 85 m | Distance à laquelle un rival tire sur toi |
+| `attackSpacing` | 1,4 s | Répit laissé après un coup (plus haut = moins de harcèlement) |
+| `mistakeChance` | 0,012 | Probabilité d'un instant d'inattention par décision de voie |
+| `carCharacter` | 0,1 | Part de la voiture propre du rival dans son rythme |
+| `reactionMin` / `reactionMax` / `laneAgility` / `lookAhead` | 0,24 s / 0,42 s / 10 / 150 m | Réflexes et vision |
+
+Des garde-fous (`tests/city-rush-rules.test.js`, « guard rails ») empêchent de
+pousser un réglage, dans chacun des trois niveaux, à un point où la course devient
+injouable ou injouée ; d'autres tests vérifient que chaque niveau est au moins
+aussi dur que le précédent sur l'allure, les réflexes, les erreurs et les armes, et
+que Facile et Difficile ne citent que des réglages qui existent (une faute de
+frappe ne passe pas).
+
+#### Mesurer
+
+`scripts/city-rush-bench.mjs` joue des courses *complètes* avec le vrai monde
+(`WebGLRenderer` factice, comme le smoke) et un pilote automatique, puis résume ce
+que le joueur subit. Ce n'est pas un test : c'est l'instrument pour régler
+`CITY_RUSH_RIVAL_AI` sans deviner.
+
+```bash
+npm run bench:city-rush -- --bot=average --races=160 --city=all
+npm run bench:city-rush -- --bot=average --races=160 --city=all --difficulty=hard         # un niveau : easy, normal (défaut) ou hard
+npm run bench:city-rush -- --bot=average --races=160 --city=all --difficulty=hard --ai=paceFactor=0.995   # essai sans toucher au code
+npm run bench:city-rush -- --races=1 --city=vice-city --trace=14                          # trace des 14 premières secondes
+```
+
+Une course dure ~0,7 s. Compter 160 à 200 courses : le taux de victoires a alors
+une marge de ± 4 points ; la ligne « avance finale / rivaux » (mesure continue)
+est bien moins bruitée. Les options (`--bot`, `--city`, `--car`, `--seed`,
+`--difficulty`, `--ai`, `--car-patch`, `--trace`, `--json`) sont décrites en tête du
+script ; `--ai` se superpose au réglage du niveau choisi.
+
 ### Où vit le code
 
 - `src/games/cityRushRules.js` — règles pures : tours, longueur, classement,
-  objets, IA (`cityRushLapForDistance`, `cityRushLapCrossings`,
+  objets, IA des rivaux (`CITY_RUSH_RIVAL_AI`, les niveaux `CITY_RUSH_DIFFICULTIES` /
+  `cityRushRivalAI`, les clés de records `cityRushBestKey`, `chooseCityRushAiLane`),
+  (`cityRushLapForDistance`, `cityRushLapCrossings`,
   `cityRushTrackGap` pour replier la boucle devant la caméra) ;
 - `src/games/cityRushThemes.js` — palette, ciel, météo, enseignes de chaque
   ville, plus l'éclairage (`theme.light` résolu par `cityRushLightRig`, repli
@@ -409,8 +660,10 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - `src/games/cityRushBuilder.js` — fusion des géométries par matériau, textures
   canvas, atlas d'enseignes ; `src/games/cityRushTextures.js` — façades, route,
   trottoirs, panneaux, tableau de tour, plaques ;
+- `src/games/cityRushTunnels.js` — les tremis : plans des tunnels courts de
+  certains circuits, voies murées, rabattements d'IA et pénombre sous la voûte ;
 - `src/games/cityRushStage.js` — la boucle d'une ville (façades, portes,
-  monuments, accessoires animés, route qui défile, ciel, skyline, pluie) ;
+  monuments, tremis, accessoires animés, route qui défile, ciel, skyline, pluie) ;
 - `src/games/cityRushStartLine.js` — la zone de départ (statique) et ses parties
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
 - `src/games/cityRushCars.js` — voitures des pilotes, trafic, fumée ;
@@ -447,8 +700,12 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
   de ralentissement, **hélicoptère** (pales hachées par un LFO + turbine qui
   monte en régime, démarrage sur l'approche, extinction après l'explosion),
   missile qui part, **explosion** (descente dans le grave, souffle, débris,
-  écho), plus les bips de ramassage, les feux de départ, les passages de ligne
-  et la fanfare d'arrivée. Chaque bruitage est **panoramiqué** selon la voie de
+  écho), **sirène de l'escouade de police** (deux tons qui alternent, tenus par
+  un LFO carré — l'aller-retour « hi-lo » des berlines américaines — et une
+  deuxième voix désaccordée qui fait battre la sirène ; le niveau suit la
+  proximité de la berline la plus proche, `policeSiren({ level })`, et
+  `policeSirenOff()` éteint les nœuds), plus les bips de ramassage, les feux de
+  départ, les passages de ligne et la fanfare d'arrivée. Chaque bruitage est **panoramiqué** selon la voie de
   la voiture concernée (`vehiclePan`).
 - **Le bouton SON** de la barre du jeu (touche **M**) : un interrupteur
   `aria-pressed`, mémorisé dans `localStorage`
@@ -459,16 +716,34 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ### Vérifications
 
 ```bash
-npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, IA des rivaux et garde-fous de réglage, voies de l'escouade) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
-npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 3 tours sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les cinq villes (un niveau de difficulté par ville) : construction du monde, course complète de 3 tours sans exception, éclatements visibles
+npm run check:city-rush-ui       # la vraie page dans jsdom (moteur 3D remplacé) : choix du niveau, mémorisation, records par niveau, touche Entrée
+npm run bench:city-rush          # (pas un test) mesure de la difficulté des rivaux : voir « Mesurer »
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
 à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
 tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés, la
-visibilité des éclatements de bonus et le rejeu après `reset()`. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
-navigateur (`npm run dev`) pour juger l'image.
+visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
+aussi l'**escouade de police** : une seule entrée en piste, deux berlines
+arrivées derrière le leader (jamais devant, jamais à plus de 140 m), qui
+rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
+circuit (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
+plus de 175 m de retard — seuils calibrés sur 200 courses, avec une large marge),
+ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
+disparaissent à la ligne et font sonner puis éteindre leur sirène. Chaque ville se joue
+à un niveau différent (Facile, Normal, Difficile en rotation ; `--difficulty=hard`
+les impose tous) et le smoke vérifie que le niveau est pris à la création, change à
+chaud (`setDifficulty`) et ressort dans le résultat de la course. Il ne dit rien du
+rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger l'image.
+
+`check:city-rush-ui` ne dit rien non plus de l'aspect : il monte la vraie page
+(`scripts/city-rush-ui-smoke.jsx`) avec le moteur 3D remplacé par une doublure
+(`scripts/city-rush-world-stub.jsx`) et contrôle la logique du sélecteur — pas la
+mise en page ni les couleurs. Il vérifie aussi, dans la source, que changer de
+niveau ne reconstruit pas la ville.
 
 Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
 appels : une course complète doit piloter le moteur à chaque image, sonner les

@@ -173,13 +173,18 @@
 }
 .city-rush-world { position: absolute; z-index: 0; inset: 0; }
 .city-rush-canvas { display: block; width: 100%; height: 100%; outline: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+/* Pénombre des tremis : un voile sous le HUD, piloté par le monde (opacité 0 → 0,56). */
+.city-rush-tunnel-veil { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: #04060c; opacity: 0; }
 .city-rush-vignette { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(5, 8, 19, .48), transparent 23%, transparent 62%, rgba(5, 8, 16, .5)), radial-gradient(ellipse at center, transparent 38%, rgba(6, 8, 18, .28) 100%); }
 .city-rush-viewport.is-boosting::after,
-.city-rush-viewport.is-stunned::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; }
+.city-rush-viewport.is-stunned::after,
+.city-rush-viewport.is-impacting::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; }
 .city-rush-viewport.is-boosting::after { background: linear-gradient(100deg, transparent 22%, rgba(97, 255, 183, .12), transparent 72%); animation: crBoostFlash .7s ease-in-out infinite alternate; }
 .city-rush-viewport.is-stunned::after { background: rgba(255, 68, 104, .16); animation: crHitFlash .22s linear infinite alternate; }
+.city-rush-viewport.is-impacting::after { background: radial-gradient(circle at 50% 45%, rgba(255, 216, 125, .34), transparent 30%), rgba(255, 154, 67, .08); animation: crImpactFlash .16s ease-in-out infinite alternate; }
 @keyframes crBoostFlash { to { opacity: .36; } }
 @keyframes crHitFlash { to { opacity: .45; } }
+@keyframes crImpactFlash { to { opacity: .72; } }
 
 .city-rush-overlay {
   position: absolute;
@@ -196,7 +201,12 @@
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
 }
-.city-rush-intro { justify-content: center; padding: 25px clamp(15px, 3vw, 40px) 19px; }
+/* Centré quand tout tient ; sinon il défile depuis le haut. Avec `justify-content: center`,
+   le haut d'un contenu plus haut que la scène devenait inaccessible (le défilement ne
+   remonte pas au-delà) : les marges automatiques gardent le centrage sans ce piège. */
+.city-rush-intro { --intro-pad-x: clamp(15px, 3vw, 40px); justify-content: flex-start; padding: 25px var(--intro-pad-x) 19px; }
+.city-rush-intro > :first-child { margin-top: auto; }
+.city-rush-intro > :last-child { margin-bottom: auto; }
 .city-rush-intro-copy { width: 100%; max-width: 780px; }
 .city-rush-overlay-kicker { display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: #b9c0d8; }
 .city-rush-overlay-kicker i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--city-secondary); box-shadow: 0 0 10px var(--city-secondary); }
@@ -283,6 +293,38 @@
 .city-rush-car-stat-track { display: block; height: 4px; overflow: hidden; border-radius: 9px; background: rgba(231, 236, 255, .11); }
 .city-rush-car-stat-track > i { display: block; height: 100%; border-radius: inherit; background: var(--car-accent); box-shadow: 0 0 6px color-mix(in srgb, var(--car-accent) 42%, transparent); }
 .city-rush-car-stat > b { color: #f7f4ff; font: 800 6px var(--mono, monospace); text-align: right; }
+/* Difficulté des rivaux : trois boutons dans le style des cartes de ville, un accent par
+   niveau (vert, or, rose). La description du niveau choisi est dans l'en-tête. */
+.city-rush-difficulty-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.city-rush-difficulty-card {
+  --mode-accent: #58e6b1;
+  display: flex;
+  min-width: 0;
+  min-height: 40px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 11px;
+  padding: 8px 13px;
+  border: 1px solid rgba(216, 224, 255, .13);
+  border-radius: 8px;
+  color: rgba(247, 247, 255, .82);
+  background: linear-gradient(145deg, rgba(29, 34, 59, .85), rgba(14, 18, 34, .85));
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.city-rush-difficulty-card.is-normal { --mode-accent: #ffd36b; }
+.city-rush-difficulty-card.is-hard { --mode-accent: #ff5d86; }
+.city-rush-difficulty-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--mode-accent) 70%, transparent); }
+.city-rush-difficulty-card:focus-visible { outline: 2px solid var(--mode-accent); outline-offset: 2px; }
+.city-rush-difficulty-card.is-selected { border-color: var(--mode-accent); color: #fff; background: linear-gradient(145deg, color-mix(in srgb, var(--mode-accent) 18%, #171b30), rgba(13, 16, 30, .94)); box-shadow: 0 0 20px color-mix(in srgb, var(--mode-accent) 16%, transparent), inset 0 0 17px color-mix(in srgb, var(--mode-accent) 7%, transparent); }
+.city-rush-difficulty-card b { overflow: hidden; color: var(--mode-accent); font: 900 10px var(--mono, monospace); letter-spacing: .1em; text-overflow: ellipsis; white-space: nowrap; }
+.city-rush-difficulty-pips { display: inline-flex; flex: none; align-items: flex-end; gap: 3px; height: 14px; }
+.city-rush-difficulty-pips i { width: 4px; border-radius: 2px; background: rgba(231, 236, 255, .18); }
+.city-rush-difficulty-pips i:nth-child(1) { height: 6px; }
+.city-rush-difficulty-pips i:nth-child(2) { height: 10px; }
+.city-rush-difficulty-pips i:nth-child(3) { height: 14px; }
+.city-rush-difficulty-pips i.is-on { background: var(--mode-accent); box-shadow: 0 0 6px color-mix(in srgb, var(--mode-accent) 55%, transparent); }
 .city-rush-error { max-width: 600px; margin: 10px 0 0; color: #ffabb7; font-size: 11px; }
 .city-rush-intro-actions { display: flex; align-items: center; justify-content: center; gap: 19px; margin: 15px 0 12px; }
 .city-rush-start-button {
@@ -309,6 +351,33 @@
 .city-rush-best-note b { color: #fff1ce; font: 850 13px var(--mono, monospace); letter-spacing: .03em; }
 .city-rush-intro-foot { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 16px; color: rgba(226, 230, 245, .43); font-size: 7px; }
 .city-rush-intro-foot i { color: var(--city-accent); font-style: normal; }
+/* La scène a une hauteur fixe qui suit la largeur de la fenêtre (53 vw) : sous ~1170 px,
+   ainsi que sur tablette et téléphone, l'accueil (ville, cabriolet, niveau) est plus
+   haut qu'elle et défile. Le bouton de départ reste alors visible en bas pendant qu'on
+   fait défiler les choix. Un élément collant ne peut pas entrer dans le remplissage de
+   son conteneur : celui du bas passe donc dans la rangée de touches, et les marges de la
+   rangée deviennent un remplissage (fond dégradé compris), pour une hauteur inchangée
+   quand tout tient. Le fond déborde sur toute la largeur de la scène et se prolonge sous
+   la rangée de touches : arrivé en bas, il forme une bande continue, sans arête. */
+@media (max-width: 1168px) {
+  .city-rush-intro { padding-bottom: 0; }
+  .city-rush-intro-actions,
+  .city-rush-intro-foot {
+    align-self: stretch;
+    margin: 0 calc(-1 * var(--intro-pad-x));
+    padding-left: var(--intro-pad-x);
+    padding-right: var(--intro-pad-x);
+  }
+  .city-rush-intro-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding-top: 15px;
+    padding-bottom: 12px;
+    background: linear-gradient(to top, rgba(8, 11, 24, .96) 72%, rgba(8, 11, 24, 0));
+  }
+  .city-rush-intro-foot { padding-bottom: 19px; background: rgba(8, 11, 24, .96); }
+}
 
 .city-rush-countdown { gap: 8px; background: radial-gradient(ellipse at center, rgba(13, 15, 30, .54), rgba(10, 12, 24, .42)); }
 .city-rush-countdown > span { color: rgba(244, 242, 250, .72); font: 850 10px var(--mono, monospace); letter-spacing: .2em; }
@@ -354,13 +423,16 @@
 .city-rush-status-pill { position: absolute; z-index: 4; top: 98px; left: 50%; padding: 7px 11px; border: 1px solid rgba(255, 255, 255, .18); border-radius: 99px; color: #fff; background: rgba(8, 13, 26, .83); font: 900 8px var(--mono, monospace); letter-spacing: .12em; transform: translateX(-50%); backdrop-filter: blur(8px); }
 .city-rush-status-pill.is-boost { border-color: rgba(97, 238, 155, .48); color: #9cf6bb; box-shadow: 0 0 20px rgba(64, 235, 135, .15); }
 .city-rush-status-pill.is-slow { border-color: rgba(255, 187, 105, .42); color: #ffd09a; }
+.city-rush-status-pill.is-impact { border-color: rgba(255, 176, 86, .72); color: #ffe0a2; box-shadow: 0 0 22px rgba(255, 159, 66, .28); animation: crImpactPill .18s ease-in-out infinite alternate; }
 .city-rush-status-pill.is-stunned { border-color: rgba(255, 85, 107, .55); color: #ffadb6; box-shadow: 0 0 20px rgba(255, 60, 100, .18); }
+@keyframes crImpactPill { to { transform: translateX(-50%) scale(1.04); } }
 .city-rush-toast { position: absolute; z-index: 5; top: 140px; left: 50%; max-width: min(560px, calc(100% - 30px)); padding: 9px 14px; border: 1px solid rgba(235, 237, 252, .16); border-radius: 8px; color: #fff; background: rgba(8, 12, 25, .86); font: 850 9px var(--mono, monospace); letter-spacing: .08em; text-align: center; transform: translateX(-50%); animation: crToast .2s ease-out both; backdrop-filter: blur(9px); }
 .city-rush-toast.is-cash { border-color: rgba(80, 228, 138, .48); color: #a9ffc2; }
 .city-rush-toast.is-oil { border-color: rgba(72, 185, 255, .48); color: #a5deff; }
 .city-rush-toast.is-pistol { border-color: rgba(255, 82, 110, .48); color: #ffb5c0; }
 .city-rush-toast.is-radio { border-color: rgba(255, 212, 79, .5); color: #ffe899; }
 .city-rush-toast.is-slow { border-color: rgba(255, 189, 105, .42); color: #ffdaa5; }
+.city-rush-toast.is-impact { border-color: rgba(255, 176, 86, .58); color: #ffe0a2; box-shadow: 0 0 22px rgba(255, 159, 66, .18); }
 @keyframes crToast { from { opacity: 0; transform: translate(-50%, -6px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .city-rush-toast.is-neutral { border-color: rgba(235, 237, 252, .22); }
 .city-rush-lap-card > strong { display: flex; align-items: baseline; gap: 5px; }
@@ -486,18 +558,436 @@
 .city-rush-side-card h3 { margin: 12px 0 14px; color: #fff5eb; font: 900 22px/.94 var(--display, system-ui, sans-serif); letter-spacing: -.035em; }
 .city-rush-side-card h3 em { color: var(--city-accent); font-style: normal; }
 .city-rush-racer-list { display: grid; gap: 9px; }
-.city-rush-racer-card { display: grid; grid-template-columns: 24px minmax(0, 1fr) 34px; align-items: center; gap: 8px; }
+.city-rush-racer-card { display: grid; grid-template-columns: 22px 30px minmax(0, 1fr); align-items: center; gap: 8px; }
 .city-rush-racer-rank { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid rgba(223, 228, 248, .12); border-radius: 6px; color: rgba(231, 235, 248, .55); background: rgba(255, 255, 255, .035); font: 850 8px var(--mono, monospace); }
+.city-rush-racer-avatar { display: block; width: 30px; height: 30px; border-radius: 8px; overflow: hidden; box-shadow: 0 3px 10px rgba(0, 0, 0, .28); }
+.city-rush-driver-avatar { display: block; width: 100%; height: 100%; }
 .city-rush-racer-info { display: flex; align-items: center; justify-content: space-between; gap: 5px; min-width: 0; }
-.city-rush-racer-info b { overflow: hidden; color: #eef0f8; font: 850 9px var(--mono, monospace); letter-spacing: .08em; text-overflow: ellipsis; }
+.city-rush-racer-name-row { display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; }
+.city-rush-racer-info b { overflow: hidden; color: #eef0f8; font: 850 9px var(--mono, monospace); letter-spacing: .08em; text-overflow: ellipsis; white-space: nowrap; }
+.city-rush-racer-country { overflow: hidden; color: rgba(226, 230, 245, .64); font: 750 7.5px var(--mono, monospace); letter-spacing: .04em; text-overflow: ellipsis; white-space: nowrap; }
+.city-rush-you-badge {
+  display: inline-grid;
+  place-items: center;
+  padding: 1.5px 4.5px;
+  border: 1px solid rgba(67, 234, 213, .55);
+  border-radius: 4px;
+  color: #07191d;
+  background: linear-gradient(120deg, #43ead5, #9af6e6);
+  font: 900 6.5px/1 var(--mono, monospace);
+  font-style: normal;
+  letter-spacing: .1em;
+}
 .city-rush-racer-info small { color: rgba(226, 230, 245, .45); font-size: 7px; letter-spacing: .04em; white-space: nowrap; }
-.city-rush-racer-meter { grid-column: 2 / 4; height: 3px; overflow: hidden; margin-top: -4px; border-radius: 99px; background: rgba(225, 232, 250, .12); }
+.city-rush-racer-meter { grid-column: 3 / 4; height: 3px; overflow: hidden; margin-top: -4px; border-radius: 99px; background: rgba(225, 232, 250, .12); }
 .city-rush-racer-meter i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--city-secondary), var(--city-accent)); }
 .city-rush-racer-card.is-player .city-rush-racer-rank { border-color: color-mix(in srgb, var(--city-secondary) 42%, transparent); color: var(--city-secondary); }
 .city-rush-racer-card.is-player .city-rush-racer-info b { color: var(--city-secondary); }
 .city-rush-racer-card.is-player .city-rush-racer-meter i { background: linear-gradient(90deg, var(--city-secondary), #9af2d0); }
+
+/* ── Grille internationale des 4 pilotes (écran d'accueil) ──────────── */
+.city-rush-driver-select { display: grid; width: min(780px, 100%); gap: 6px; margin-top: 9px; }
+.city-rush-driver-cycle {
+  padding: 3px 8px;
+  border: 1px solid rgba(67, 234, 213, .38);
+  border-radius: 6px;
+  color: #8cf6e8;
+  background: rgba(67, 234, 213, .1);
+  font: 850 7px var(--mono, monospace);
+  letter-spacing: .08em;
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, color .16s ease;
+}
+.city-rush-driver-cycle:hover { color: #fff; border-color: #43ead5; background: rgba(67, 234, 213, .22); }
+.city-rush-driver-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.city-rush-driver-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(216, 224, 255, .13);
+  border-radius: 8px;
+  background: rgba(15, 20, 37, .88);
+  text-align: left;
+}
+.city-rush-driver-pill.is-player {
+  border-color: rgba(67, 234, 213, .56);
+  background: linear-gradient(135deg, rgba(20, 48, 58, .92), rgba(14, 20, 37, .95));
+  box-shadow: 0 0 16px rgba(67, 234, 213, .16);
+  cursor: pointer;
+}
+.city-rush-driver-pill-avatar { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 7px; overflow: hidden; }
+.city-rush-driver-pill-copy { display: grid; gap: 2px; min-width: 0; }
+.city-rush-driver-pill-copy b {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: #f7f4ff;
+  font: 900 8px var(--mono, monospace);
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+.city-rush-driver-pill.is-player .city-rush-driver-pill-copy b { color: #43ead5; }
+.city-rush-driver-pill-copy small {
+  overflow: hidden;
+  color: rgba(226, 230, 245, .62);
+  font: 750 7px var(--mono, monospace);
+  letter-spacing: .04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Mini-carte de la course & focus sur notre joueur ───────────────── */
+.city-rush-minimap {
+  position: absolute;
+  z-index: 3;
+  top: 86px;
+  left: 17px;
+  display: grid;
+  width: min(228px, 30%);
+  gap: 6px;
+  padding: 8px 9px 9px;
+  border: 1px solid rgba(130, 236, 230, .26);
+  border-radius: 11px;
+  background: linear-gradient(165deg, rgba(8, 13, 27, .88), rgba(11, 17, 34, .82));
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .34), 0 0 22px rgba(67, 234, 213, .1), inset 0 1px rgba(255, 255, 255, .06);
+  pointer-events: none;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.city-rush-minimap-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.city-rush-minimap-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #98f5e8;
+  font: 900 7px var(--mono, monospace);
+  letter-spacing: .12em;
+}
+.city-rush-minimap-title i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #43ead5;
+  box-shadow: 0 0 8px #43ead5;
+  animation: crPulse 1.5s infinite;
+}
+.city-rush-minimap-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.city-rush-minimap-police {
+  padding: 1.5px 5px;
+  border: 1px solid rgba(255, 82, 110, .5);
+  border-radius: 4px;
+  color: #ffd2da;
+  background: linear-gradient(120deg, rgba(255, 43, 69, .22), rgba(43, 107, 255, .22));
+  font: 850 6.5px var(--mono, monospace);
+  letter-spacing: .08em;
+  animation: crPulse 1.1s infinite;
+}
+.city-rush-minimap-lap {
+  padding: 1.5px 5px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 4px;
+  color: #ffe39f;
+  background: rgba(255, 255, 255, .05);
+  font: 850 6.5px var(--mono, monospace);
+  letter-spacing: .08em;
+}
+.city-rush-minimap-focus {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  border: 1px solid rgba(67, 234, 213, .36);
+  border-radius: 8px;
+  background: linear-gradient(120deg, rgba(67, 234, 213, .14), rgba(255, 93, 184, .08));
+}
+.city-rush-minimap-focus-avatar {
+  position: relative;
+  width: 28px;
+  height: 28px;
+}
+.city-rush-minimap-focus-flag {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  font-size: 10px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8));
+}
+.city-rush-minimap-focus-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.city-rush-minimap-focus-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.city-rush-minimap-focus-name b {
+  overflow: hidden;
+  color: #ffffff;
+  font: 900 8px var(--mono, monospace);
+  letter-spacing: .06em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.city-rush-minimap-focus-copy small {
+  overflow: hidden;
+  color: rgba(226, 235, 248, .66);
+  font: 750 6.5px var(--mono, monospace);
+  letter-spacing: .05em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.city-rush-minimap-focus-copy small i {
+  color: var(--city-accent);
+  font-style: normal;
+}
+.city-rush-minimap-focus-rank {
+  color: #43ead5;
+  font: 900 12px/1 var(--mono, monospace);
+}
+.city-rush-minimap-focus-rank small {
+  color: rgba(235, 240, 255, .52);
+  font-size: 7px;
+}
+.city-rush-minimap-stage {
+  position: relative;
+  height: 104px;
+  overflow: hidden;
+  border: 1px solid rgba(210, 225, 255, .12);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(67, 234, 213, .12), rgba(7, 11, 22, .94) 76%);
+}
+.city-rush-minimap-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.city-rush-minimap-grid line {
+  stroke: rgba(67, 234, 213, .14);
+  stroke-width: 0.45;
+  stroke-dasharray: 1.8 1.8;
+}
+.city-rush-minimap-road-edge {
+  fill: none;
+  stroke: rgba(255, 93, 184, .38);
+  stroke-width: 9.2;
+  stroke-linejoin: round;
+}
+.city-rush-minimap-road-asphalt {
+  fill: none;
+  stroke: #171f36;
+  stroke-width: 7.4;
+  stroke-linejoin: round;
+}
+.city-rush-minimap-road-lanes {
+  fill: none;
+  stroke: rgba(230, 238, 255, .28);
+  stroke-width: 0.65;
+  stroke-dasharray: 2.6 2.4;
+}
+/* Tremis : la voûte, et la bande des voies murées sous laquelle il faudra se
+   rabattre — le resserrement se voit venir sur la carte. */
+.city-rush-minimap-tunnel-vault {
+  fill: rgba(9, 12, 22, .84);
+  stroke: color-mix(in srgb, var(--city-accent, #ffd24f) 55%, transparent);
+  stroke-width: 0.5;
+}
+.city-rush-minimap-tunnel-wall {
+  fill: color-mix(in srgb, var(--city-accent, #ffd24f) 88%, #14161f);
+  stroke: rgba(12, 15, 26, .85);
+  stroke-width: 0.3;
+}
+.city-rush-minimap-gate line {
+  stroke: rgba(255, 212, 79, .75);
+  stroke-width: 1.1;
+}
+.city-rush-minimap-start rect {
+  fill: #ffffff;
+  stroke: #ff5db8;
+  stroke-width: 0.6;
+}
+.city-rush-minimap-start line {
+  stroke: #0c1020;
+  stroke-width: 0.9;
+  stroke-dasharray: 1.3 1.3;
+}
+.city-rush-minimap-focus-ring {
+  fill: none;
+  stroke: #43ead5;
+  stroke-width: 0.85;
+  stroke-dasharray: 2.4 1.8;
+  opacity: 0.85;
+}
+.city-rush-minimap-focus-cone path {
+  fill: rgba(67, 234, 213, .22);
+  stroke: rgba(67, 234, 213, .45);
+  stroke-width: 0.45;
+}
+/* Escouade de police : un marqueur rouge et bleu, à part des quatre pilotes. */
+.city-rush-minimap-pursuer-halo {
+  fill: rgba(255, 43, 69, .16);
+  stroke: rgba(43, 107, 255, .5);
+  stroke-width: 0.5;
+  animation: crPoliceHalo 1.1s ease-in-out infinite;
+}
+.city-rush-minimap-pursuer-body {
+  fill: #0d1424;
+  stroke: #ffffff;
+  stroke-width: 0.7;
+}
+.city-rush-minimap-pursuer-light {
+  fill: #ff2b45;
+  animation: crPoliceLights 1.1s steps(2, end) infinite;
+}
+.city-rush-minimap-pursuer-light.is-blue {
+  fill: #2b6bff;
+  animation-delay: .55s;
+}
+@keyframes crPoliceHalo {
+  0%, 100% { opacity: .45; }
+  50% { opacity: 1; }
+}
+@keyframes crPoliceLights {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: .25; }
+}
+.city-rush-minimap-marker {
+  transition: transform .1s linear;
+}
+.city-rush-minimap-Pointer {
+  fill: var(--marker-color, #43ead5);
+}
+.city-rush-minimap-dot {
+  fill: #0b1122;
+  stroke: var(--marker-color, #43ead5);
+  stroke-width: 1.6;
+}
+.city-rush-minimap-marker.is-player .city-rush-minimap-dot {
+  fill: #07262c;
+  stroke: #43ead5;
+  stroke-width: 2.1;
+  filter: drop-shadow(0 0 4px #43ead5);
+}
+.city-rush-minimap-pin-code {
+  fill: #ffffff;
+  font: 900 3.2px var(--mono, monospace);
+  letter-spacing: .02em;
+}
+.city-rush-minimap-marker.is-player .city-rush-minimap-pin-code {
+  fill: #9ffcf0;
+  font-size: 3.4px;
+}
+.city-rush-minimap-roster {
+  display: grid;
+  gap: 4px;
+}
+.city-rush-minimap-racer {
+  display: grid;
+  grid-template-columns: 13px 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 4px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .025);
+}
+.city-rush-minimap-racer.is-player {
+  border: 1px solid rgba(67, 234, 213, .38);
+  background: rgba(67, 234, 213, .1);
+}
+.city-rush-minimap-racer-rank {
+  color: rgba(230, 235, 248, .58);
+  font: 900 7px var(--mono, monospace);
+  text-align: center;
+}
+.city-rush-minimap-racer.is-player .city-rush-minimap-racer-rank {
+  color: #43ead5;
+}
+.city-rush-minimap-racer-avatar {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+.city-rush-minimap-racer-body {
+  display: grid;
+  gap: 2.5px;
+  min-width: 0;
+}
+.city-rush-minimap-racer-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+}
+.city-rush-minimap-racer-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  min-width: 0;
+  overflow: hidden;
+}
+.city-rush-minimap-flag {
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1;
+}
+.city-rush-minimap-racer-name b {
+  overflow: hidden;
+  color: #f3f5ff;
+  font: 850 7px var(--mono, monospace);
+  letter-spacing: .05em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.city-rush-minimap-racer.is-player .city-rush-minimap-racer-name b {
+  color: #43ead5;
+}
+.city-rush-minimap-racer-gap {
+  color: rgba(228, 233, 248, .58);
+  font: 800 6.2px var(--mono, monospace);
+  white-space: nowrap;
+}
+.city-rush-minimap-racer.is-player .city-rush-minimap-racer-gap {
+  color: #9ffcf0;
+}
+.city-rush-minimap-racer-bar {
+  position: relative;
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(240, 241, 251, .13);
+}
+.city-rush-minimap-racer-bar i {
+  position: absolute;
+  top: -1.5px;
+  width: 6px;
+  height: 6px;
+  border: 1px solid rgba(255, 255, 255, .75);
+  border-radius: 50%;
+  background: var(--racer-accent, #a9b9ce);
+  transform: translateX(-50%);
+}
 .city-rush-leader-foot { display: flex; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(225, 230, 247, .1); color: rgba(229, 233, 248, .43); font-size: 7px; }
 .city-rush-leader-foot b { color: #ffda8c; font-size: 8px; }
+.city-rush-leader-foot.is-mode { margin-top: 6px; padding-top: 0; border-top: 0; }
 .city-rush-leader-foot b i, .city-rush-racer-info small i { color: var(--city-accent); font-style: normal; }
 
 .city-rush-item-guide { padding-bottom: 10px; }
@@ -518,6 +1008,12 @@
 .city-rush-no-collision-note { display: flex; align-items: flex-start; gap: 10px; padding: 13px; border: 1px solid rgba(72, 185, 255, .2); border-radius: 10px; background: linear-gradient(120deg, rgba(26, 73, 99, .24), rgba(17, 30, 47, .56)); }
 .city-rush-no-collision-icon { width: 27px; height: 27px; color: #67d0ff; background: rgba(72, 185, 255, .11); font-size: 17px; }
 .city-rush-no-collision-note b { display: block; margin: 1px 0 5px; color: #8bdcff; font-size: 8px; }
+.city-rush-no-collision-note.is-police { border-color: rgba(255, 82, 110, .28); background: linear-gradient(120deg, rgba(120, 26, 46, .26), rgba(24, 38, 74, .58)); }
+.city-rush-no-collision-note.is-police .city-rush-no-collision-icon { color: #ffb5c0; background: rgba(255, 82, 110, .14); font-size: 14px; }
+.city-rush-no-collision-note.is-police b { color: #ffb5c0; }
+.city-rush-no-collision-note.is-police em { font-style: normal; }
+.city-rush-no-collision-note.is-police em.is-red { color: #ffb5c0; }
+.city-rush-no-collision-note.is-police em.is-yellow { color: #ffe899; }
 .city-rush-no-collision-note p { margin: 0; color: rgba(223, 232, 245, .57); font-size: 9px; line-height: 1.45; }
 .city-rush-page-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 15px !important; }
 .city-rush-page-footer a { padding: 8px 10px; font-size: 8px; }
@@ -563,7 +1059,9 @@
   .city-rush-top-flag { display: none; }
   .city-rush-viewport { height: min(78vh, 650px); min-height: 520px; }
   .city-rush-overlay { padding: 14px 12px; }
-  .city-rush-intro { justify-content: flex-start; padding: 14px 10px 12px; }
+  .city-rush-intro { --intro-pad-x: 10px; justify-content: flex-start; padding: 14px var(--intro-pad-x) 0; }
+  .city-rush-intro > :first-child { margin-top: 0; }
+  .city-rush-intro > :last-child { margin-bottom: 0; }
   .city-rush-overlay-kicker { font-size: 7px; }
   .city-rush-intro h2,
   .city-rush-pause-overlay h2,
@@ -575,6 +1073,9 @@
   .city-rush-car-select-heading > span { font-size: 7px; }
   .city-rush-car-select-heading > small { font-size: 6px; }
   .city-rush-car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .city-rush-difficulty-picker { gap: 6px; }
+  .city-rush-difficulty-card { min-height: 46px; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; padding: 7px 8px; }
+  .city-rush-difficulty-card b { max-width: 100%; font-size: 8px; }
   .city-rush-car-card { min-height: 108px; padding: 5px 7px 6px; }
   .city-rush-car-card-top { height: 21px; }
   .city-rush-car-silhouette, .city-rush-car-silhouette svg { width: 47px; height: 22px; }
@@ -585,11 +1086,11 @@
   .city-rush-city-card b { font-size: 8px; }
   .city-rush-city-card small { font-size: 6px; }
   .city-rush-city-number { top: 7px; right: 7px; font-size: 6px; }
-  .city-rush-intro-actions { gap: 10px; margin: 10px 0 9px; }
+  .city-rush-intro-actions { gap: 10px; padding-top: 10px; padding-bottom: 9px; }
   .city-rush-start-button { min-height: 40px; gap: 10px; padding: 0 12px; font-size: 8px; }
   .city-rush-best-note > span { font-size: 6px; }
   .city-rush-best-note b { font-size: 11px; }
-  .city-rush-intro-foot { gap: 7px; font-size: 6px; }
+  .city-rush-intro-foot { gap: 7px; padding-bottom: 12px; font-size: 6px; }
   .city-rush-hud-top { top: 9px; left: 8px; right: 8px; grid-template-columns: 76px minmax(80px, 1fr) 76px; gap: 5px; }
   .city-rush-hud-card { min-height: 53px; padding: 7px 7px; border-radius: 7px; }
   .city-rush-hud-label { font-size: 6px; }
@@ -604,6 +1105,24 @@
   .city-rush-racer-line { grid-template-columns: 26px 1fr 14px; gap: 5px; }
   .city-rush-racer-line > span { font-size: 6px; }
   .city-rush-racer-line > em { font-size: 6px; }
+  .city-rush-minimap { top: 68px; left: 8px; width: 154px; gap: 4px; padding: 6px; border-radius: 9px; }
+  .city-rush-minimap-title { font-size: 6px; letter-spacing: .08em; }
+  .city-rush-minimap-lap { font-size: 5.8px; }
+  .city-rush-minimap-focus { grid-template-columns: 22px minmax(0, 1fr) auto; gap: 5px; padding: 4px 5px; }
+  .city-rush-minimap-focus-avatar { width: 22px; height: 22px; }
+  .city-rush-minimap-focus-name b { font-size: 7px; }
+  .city-rush-minimap-focus-copy small { font-size: 5.6px; }
+  .city-rush-minimap-focus-rank { font-size: 10px; }
+  .city-rush-minimap-stage { height: 74px; }
+  .city-rush-minimap-racer { grid-template-columns: 11px 16px minmax(0, 1fr); gap: 4px; padding: 2px 3px; }
+  .city-rush-minimap-racer-avatar { width: 16px; height: 16px; }
+  .city-rush-minimap-racer-name b { font-size: 6px; }
+  .city-rush-minimap-racer-gap { font-size: 5.5px; }
+  .city-rush-driver-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  .city-rush-driver-pill { padding: 5px 6px; gap: 5px; }
+  .city-rush-driver-pill-avatar { width: 24px; height: 24px; }
+  .city-rush-driver-pill-copy b { font-size: 7px; }
+  .city-rush-driver-pill-copy small { font-size: 6px; }
   .city-rush-lap-card > strong em { display: none; }
   .city-rush-lap-track { gap: 3px; margin-top: 7px; }
   .city-rush-lap-banner { padding: 9px 16px 10px; border-radius: 9px; }
@@ -633,9 +1152,10 @@
   .city-rush-side-card { padding: 12px; }
   .city-rush-side-card h3 { margin: 9px 0 11px; font-size: 19px; }
   .city-rush-racer-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; }
-  .city-rush-racer-card { grid-template-columns: 22px minmax(0, 1fr); }
-  .city-rush-racer-info { grid-column: 2; }
-  .city-rush-racer-meter { grid-column: 2; }
+  .city-rush-racer-card { grid-template-columns: 22px 26px minmax(0, 1fr); gap: 6px; }
+  .city-rush-racer-avatar { width: 26px; height: 26px; }
+  .city-rush-racer-info { grid-column: 3; }
+  .city-rush-racer-meter { grid-column: 3; }
   .city-rush-item-guide { padding-bottom: 8px; }
   .city-rush-guide-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; }
   .city-rush-guide-item { grid-template-columns: 31px minmax(0, 1fr) 21px; gap: 6px; }
@@ -665,6 +1185,8 @@
   .city-rush-lap-banner,
   .city-rush-power-button.is-ready,
   .city-rush-viewport.is-boosting::after,
-  .city-rush-viewport.is-stunned::after { animation: none !important; }
+  .city-rush-viewport.is-stunned::after,
+  .city-rush-viewport.is-impacting::after,
+  .city-rush-status-pill.is-impact { animation: none !important; }
   .city-rush-page *, .city-rush-page *::before, .city-rush-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
