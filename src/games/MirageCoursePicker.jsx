@@ -1,6 +1,6 @@
 import React from 'react';
 import { DUEL_DISTANCE, duelRivalsForTrack, laneCount } from './mirageRules';
-import { CUPS, MAX_RIDER_NAME } from './mirageCup';
+import { CUPS, MAX_RIDER_NAME, cupGoldMaximum } from './mirageCup';
 import { WIN_COINS } from './mirageProgression';
 import MirageTrophyIcon from './MirageTrophyIcon';
 import { getTrophyDesign } from './mirageTrophy';
@@ -84,7 +84,7 @@ export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defa
     <div className="mirage-cup-picker" role="group" aria-label="Choisir la coupe">
       {CUPS.map(cup => {
         const selected = cupId === cup.id;
-        const maxGold = cup.stages.length * WIN_COINS;
+        const maxGold = cupGoldMaximum(cup);
         return <button
           type="button"
           key={cup.id}

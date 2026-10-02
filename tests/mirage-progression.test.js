@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, GYRO_ZEPPELI_ID, MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, WIN_COINS,
-  applyRun, buySkin, coinsForRun, defaultProgress, equipSkin, isShopSkin,
+  applyRun, awardCoins, buySkin, coinsForRun, defaultProgress, equipSkin, isShopSkin,
   isSkinUnlocked, levelCost, levelForXp, levelProgress, loadProgress,
   sanitizeProgress, saveProgress, skinFor, xpForRun, xpToReachLevel,
 } from '../src/games/mirageProgression.js';
@@ -128,6 +128,20 @@ test('a victory awards 10 gold and a rush awards none', () => {
   const loss = applyRun(win.progress, { mode: 'duel', score: 1000, gems: 4, won: false, rank: 3 });
   assert.equal(loss.coinsGained, 0);
   assert.equal(loss.progress.coins, WIN_COINS);
+});
+
+test('awardCoins safely adds an external adjustment without draining the wallet', () => {
+  const start = { ...defaultProgress(), coins: 12 };
+  const adjustment = awardCoins(start, 30);
+  assert.equal(adjustment.coinsGained, 30);
+  assert.equal(adjustment.progress.coins, 42, 'the separate amount is added to the existing balance');
+  assert.equal(start.coins, 12, 'the original progress is not mutated');
+  assert.equal(awardCoins(adjustment.progress, 0).coinsGained, 0);
+  assert.equal(awardCoins(adjustment.progress, 0).progress.coins, 42);
+  assert.equal(awardCoins(adjustment.progress, -40).coinsGained, 0, 'a negative amount adds nothing');
+  assert.equal(awardCoins(adjustment.progress, -40).progress.coins, 42);
+  assert.equal(awardCoins(adjustment.progress, 'oops').coinsGained, 0);
+  assert.equal(awardCoins(undefined, 50).progress.coins, 50, 'missing progress starts from zero');
 });
 
 test('Gyro Zeppeli is a shop skin that costs 200 gold', () => {

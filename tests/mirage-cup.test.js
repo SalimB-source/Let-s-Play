@@ -14,6 +14,7 @@ import {
   cupRaceIndex,
   cupStandings,
   cupWinner,
+  cupGoldMaximum,
   getCup,
   isCupComplete,
   placeLabel,
@@ -135,6 +136,17 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
   }
 });
 
+test('cup gold maxima match 10 OR per win across all races — including two 30 OR cups', () => {
+  assert.deepEqual(CUPS.map(cupGoldMaximum), [30, 30, 40, 50]);
+  for (const cup of CUPS) {
+    assert.equal(cupGoldMaximum(cup), cup.stages.length * WIN_COINS, `${cup.id}: every race victory contributes 10 OR`);
+  }
+  assert.equal(cupGoldMaximum('inconnue'), 0, 'an unknown cup has no gold maximum');
+  assert.equal(cupGoldMaximum(null), 0);
+  assert.equal(cupGoldMaximum({ maxCoins: -10 }), 0, 'a negative value is clamped to zero');
+  assert.equal(cupGoldMaximum({ maxCoins: '40' }), 40);
+});
+
 test('Coupe des Vents has three distinct maps and can pay 30 OR for three wins', () => {
   const cup = getCup('winds');
   assert.equal(cup.name, 'Coupe des Vents');
@@ -143,6 +155,7 @@ test('Coupe des Vents has three distinct maps and can pay 30 OR for three wins',
   assert.equal(new Set(cup.stages).size, 3, 'each of its three races uses a different map');
   assert.ok(cup.stages.every((stage) => !getCup('desert').stages.includes(stage)), 'none of the maps are from the Coupe du Désert');
   assert.equal(cup.stages.length * WIN_COINS, 30, '10 OR per win × three races = 30 OR maximum');
+  assert.equal(cupGoldMaximum(cup), 30);
 
   let run = createCupRun(cup.id);
   for (const stage of cup.stages) {

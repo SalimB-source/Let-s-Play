@@ -21,7 +21,7 @@ import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_U
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import {
   CUPS, CUP_POINTS, DEFAULT_CUP_ID, cleanRiderName, createCupRun, cupCurrentStage, cupStandings,
-  getCup, isCupComplete, cupWinner, placeLabel, recordCupRace,
+  cupGoldMaximum, getCup, isCupComplete, cupWinner, placeLabel, recordCupRace,
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
 import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, isShopSkin, isSkinUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
@@ -123,9 +123,15 @@ export default function MirageRushPage() {
   const challengeCode = searchParams.get('duel');
   const initialModeParam = searchParams.get('mode');
   const challenge = useMemo(() => decodeChallenge(challengeCode), [challengeCode]);
+  const initialStageParam = searchParams.get('stage');
+  const validStages = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase', 'snakeway'];
   // Le terrain se choisit dans l’overlay d’intro (« 02 / ton terrain ») ;
   // un défi imposé verrouille le parcours sur la carte du défi.
-  const [selectedStage, setSelectedStage] = useState(challenge?.stage || 'desert');
+  const [selectedStage, setSelectedStage] = useState(
+    (initialStageParam && validStages.includes(initialStageParam))
+      ? initialStageParam
+      : (challenge?.stage || 'desert')
+  );
   const [selectedMode, setSelectedMode] = useState(
     initialModeParam === 'online' ? 'online' : initialModeParam === 'cup' ? 'cup' : challenge ? 'duel' : 'rush',
   );
@@ -135,6 +141,10 @@ export default function MirageRushPage() {
   const [cupId, setCupId] = useState(DEFAULT_CUP_ID);
   const [riderName, setRiderName] = useState(readRiderName);
   const [cupRun, setCupRun] = useState(null);
+  // Total d’OR déjà crédité pour les victoires de course de la coupe en cours.
+  // Chaque arrivée gagnée verse directement WIN_COINS ; aucun bonus de coupe
+  // ne s’ajoute au maximum annoncé.
+  const [cupRaceCoins, setCupRaceCoins] = useState(0);
   const isCup = selectedMode === 'cup';
   // Vrai quand « LANCER » ouvre déjà le plein écran (téléphone, application) : relu à
   // chaque rendu, comme `trackLanes`.
@@ -142,7 +152,7 @@ export default function MirageRushPage() {
   const activeCup = getCup(cupId) || CUPS[0];
   // L'intro devient un vrai tunnel : d'abord un écran de boutons de mode,
   // puis seulement l'écran suivant avec les maps et le lancement.
-  const [introStep, setIntroStep] = useState(() => (challenge || initialModeParam === 'online' || initialModeParam === 'cup' ? 'stage' : 'mode'));
+  const [introStep, setIntroStep] = useState(() => (challenge || initialModeParam === 'online' || initialModeParam === 'cup' || initialStageParam ? 'stage' : 'mode'));
   const [onlineOpen, setOnlineOpen] = useState(initialModeParam === 'online');
   const [settingsTab, setSettingsTab] = useState('community');
   const currentUserName = useMemo(
@@ -320,6 +330,7 @@ export default function MirageRushPage() {
   const clearCup = useCallback(() => {
     cupRunRef.current = null;
     setCupRun(null);
+    setCupRaceCoins(0);
   }, []);
 
   // « LANCER LA COUPE » / « REJOUER LA COUPE » : une coupe neuve, 0 point.
@@ -336,6 +347,7 @@ export default function MirageRushPage() {
     if (!run) return;
     cupRunRef.current = run;
     setCupRun(run);
+    setCupRaceCoins(0);
     beginRace(cupRace(run), { fullscreen: options?.fullscreen === true });
   }, [activeCup.id, effectiveRiderName, trackRivals, beginRace, cupRace]);
 
@@ -496,12 +508,14 @@ export default function MirageRushPage() {
     setJustFinished(result);
     setPhase('finished');
     audioRef.current?.stop();
-    setAward(recordProgress(result));
+    const runAward = recordProgress(result);
+    setAward(runAward);
     if (cupRunRef.current && result.mode === 'duel') {
       const currentRun = cupRunRef.current;
       const next = recordCupRace(currentRun, result);
       cupRunRef.current = next;
       setCupRun(next);
+      if (next !== currentRun) setCupRaceCoins((total) => total + runAward.coinsGained);
       // Seul le vainqueur du classement général remporte le trophée — gagner
       // une course isolée ne suffit pas. L'ensemble de succès déduplique par
       // identifiant de coupe et le synchronise aussi avec le compte connecté.
@@ -1194,7 +1208,7 @@ export default function MirageRushPage() {
             )}
 
             {phase === 'trophy' && cupRun && (
-              <MirageCupTrophy cup={activeCup} run={cupRun} onReplay={startCup} onQuit={backToCoursePicker} />
+              <MirageCupTrophy cup={activeCup} run={cupRun} raceCoins={cupRaceCoins} onReplay={startCup} onQuit={backToCoursePicker} />
             )}
 
             {/* Arrivée d'un duel ordinaire : le tableau des positions. Une course de
@@ -1402,7 +1416,7 @@ export default function MirageRushPage() {
                     );
                   })}
                 </div>
-                {shopNotice === 'broke' && <p className="mirage-shop-notice" role="status">Pas assez d’or — une victoire rapporte {WIN_COINS} OR.</p>}
+                {shopNotice === 'broke' && <p className="mirage-shop-notice" role="status">Pas assez d’or — chaque victoire rapporte {WIN_COINS} OR.</p>}
                 {shopNotice === 'bought' && <p className="mirage-shop-notice is-success" role="status">Skin acheté et équipé !</p>}
               </section>
             </div>
@@ -1463,7 +1477,7 @@ export default function MirageRushPage() {
             <div className="mirage-rule"><span className="mirage-rule-icon is-green">▥</span><div><strong>Évite les obstacles hauts</strong><small>Contourne les cactus, les piles de caisses, les hautes bottes de paille, les cyprès en pot, les voitures de police d’Alger, les lanternes de pierre, les Xbox des Remparts d’Ocre, les piliers Andon du Château de l’Infini ou les fûts de kérosène de Thunder Airbase : ils ne se sautent pas. Trois chocs et la ruée s’arrête.</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">🟤</span><div><strong>Flaques de boue</strong><small>Des flaques de boue apparaissent par moments sur la piste : contourne-les ou saute par-dessus, sinon ta monture s’y embourbe et ralentit !</small></div></div>
             <div className="mirage-rule"><span className="mirage-rule-icon is-gold">✦</span><div><strong>Déclenche l’Écho</strong><small>Le multiplicateur grimpe tous les 5 cristaux. Cinq prises consécutives sans choc déclenchent un « Hey-haa ! » aigu (son activé).</small></div></div>
-            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">●</span><div><strong>Pièces d’or</strong><small>Chaque victoire (1ᵉʳ d’un duel, d’une course de coupe ou d’un salon) rapporte {WIN_COINS} OR. Dépense-les dans la boutique : Gyro Zeppeli coûte 200 OR ; Cloud et son chocobo sont offerts temporairement (280 OR habituellement).</small></div></div>
+            <div className="mirage-rule"><span className="mirage-rule-icon is-gold">●</span><div><strong>Pièces d’or</strong><small>Chaque victoire (1ᵉʳ d’un duel, d’une course de coupe ou d’un salon) rapporte {WIN_COINS} OR. En coupe, le maximum — si tu remportes toutes les courses — est : {CUPS.map((cup) => `${cupGoldMaximum(cup)} OR pour la ${cup.name}`).join(' · ')}. Dépense-les dans la boutique : Gyro Zeppeli coûte 200 OR ; Cloud et son chocobo sont offerts temporairement (280 OR habituellement).</small></div></div>
             <div className="mirage-score-tip"><span>ASTUCE</span> Les blocs violets (désert), les clôtures (western), les bottes basses (plaine), les tonneaux (Costa Omertà), les balustrades blanches (Alger), les barrières de bambou (Yōtei), les murets du Mid (Remparts d’Ocre), les paravents shōji (Château de l’Infini) et les barrières de piste (Thunder Airbase) occupent deux voies. Saute pour les franchir et attraper l’or au-dessus ! Si des obstacles ferment les deux autres voies {trackLanes > 3 ? 'Si des obstacles ferment les deux autres voies' : 'Si un obstacle ferme la dernière voie'}, le saut est obligatoire.</div>
               </section>
 

@@ -11,10 +11,12 @@
  *      après chaque arrivée, l'overlay montre ta place, les points gagnés et le
  *      classement cumulé (une égalité est départagée) ; Entrée enchaîne mais
  *      « R » (le pistolet) ne saute pas le classement ; après la 3ᵉ course, le
- *      trophée : « FÉLICITATIONS », le vainqueur, le total, le moteur de course
- *      démonté et — sans WebGL — le repli CSS.
+ *      trophée : « FÉLICITATIONS », le vainqueur, le total, les OR réellement
+ *      gagnés sur les courses (10 par victoire), le moteur démonté et — sans
+ *      WebGL — le repli CSS ; le maximum dépend du nombre de courses gagnées.
  *   2. Entrée sur le trophée relance une coupe neuve (0 point) ; cette fois un
- *      rival gagne : le message le dit et rappelle ta place.
+ *      rival gagne : le message le dit, rappelle ta place et ne crédite pas
+ *      d’OR au joueur.
  *   3. Abandon : « CHOISIR TON MODE », « ABANDONNER LA COUPE » et Échap pendant
  *      le compte à rebours ramènent à l'intro, et la coupe suivante repart de 0.
  *   4. Piste à trois voies du téléphone (`setLaneCount(3)`) : le moteur n'aligne
@@ -35,6 +37,7 @@ import { MIRAGE_CUP_TROPHIES_KEY } from '../src/achievements/engine.js';
 import { STORAGE_KEY } from '../src/achievements/storage.js';
 import MirageCupTrophyCollection from '../src/games/MirageCupTrophyCollection';
 import MirageRushPage from '../src/games/MirageRushPage';
+import { PROGRESSION_KEY } from '../src/games/mirageProgression';
 import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, setLaneCount } from '../src/games/mirageRules';
 import { worldProbe } from './mirage-world-stub.jsx';
 
@@ -176,6 +179,11 @@ export async function checkMirageCup(assert) {
     assert.equal(node.querySelector('.mirage-cup-card.is-worldtour svg').dataset.trophy, 'worldtour');
     assert.notEqual(node.querySelector('.mirage-cup-card.is-desert svg').innerHTML, node.querySelector('.mirage-cup-card.is-winds svg').innerHTML, 'la Rose des Vents a sa silhouette propre');
     assert.notEqual(node.querySelector('.mirage-cup-card.is-desert svg').innerHTML, node.querySelector('.mirage-cup-card.is-worldtour svg').innerHTML, 'chaque coupe annonce une silhouette différente');
+    assert.ok([...node.querySelectorAll('.mirage-cup-card')].every((card) =>
+      card.querySelector('.mirage-cup-reward-copy > em')?.textContent.includes('+10 OR PAR VICTOIRE')),
+    'chaque coupe affiche les 10 OR gagnés par victoire');
+    assert.ok([...node.querySelectorAll('.mirage-cup-card')].every((card) => !card.querySelector('.mirage-cup-route')),
+      'aucune coupe ne détaille son parcours dans l’aperçu');
     await typeName(node.querySelector('.mirage-cup-name-field input'), 'Salim');
     assert.equal(window.localStorage.getItem('letsplay_mirage_cup_name_v1'), 'Salim', 'le nom du trophée est mémorisé');
     await startCupFromIntro(node);
@@ -254,6 +262,11 @@ export async function checkMirageCup(assert) {
     assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').dataset.trophy, 'desert');
     assert.equal(text(trophy.querySelector('.mirage-trophy-design')), 'Calice des Dunes');
     assert.ok(trophy.querySelector('.mirage-trophy-fallback-cup')?.classList.contains('is-desert'), 'le repli garde le dessin de la Coupe du Désert');
+    // Le total du podium correspond aux OR réellement gagnés sur les courses.
+    const purseLine = trophy.querySelector('.mirage-trophy-purse');
+    assert.equal(text(purseLine), '● OR GAGNÉS EN COURSE · +20 OR MAX. 30 OR SI TOUTES LES COURSES SONT GAGNÉES');
+    assert.ok(purseLine.classList.contains('is-won'), 'les OR gagnés sont mis en avant');
+    assert.equal(JSON.parse(window.localStorage.getItem(PROGRESSION_KEY)).coins, 20, 'deux victoires créditent 20 OR, sans prime de coupe');
 
     // ── 2. Entrée relance une coupe neuve ; cette fois l'Ombre gagne ───────
     await press('Enter');
@@ -262,6 +275,7 @@ export async function checkMirageCup(assert) {
     await waitForRace(node);
     assert.equal(worldProbe.mounted, 1, 'le moteur de course revient pour la nouvelle coupe');
     assert.equal(text(node.querySelector('.mirage-chip.is-cup')), 'COURSE 1/3 · 0 PTS', 'la nouvelle coupe repart de 0');
+    assert.equal(JSON.parse(window.localStorage.getItem(PROGRESSION_KEY)).coins, 20, 'le replay ne verse pas de prime supplémentaire');
     for (let race = 1; race <= 3; race += 1) {
       if (race > 1) {
         await click(nextButton(node));
@@ -279,6 +293,10 @@ export async function checkMirageCup(assert) {
     assert.ok(!trophy.classList.contains('is-player-win'));
     assert.equal(node.querySelectorAll('.mirage-profile-trophy-card').length, 1, 'une victoire PNJ n’ajoute pas de trophée et le précédent reste unique');
     assert.match(text(trophy.querySelector('.mirage-trophy-lede')), new RegExp(`${ombre} remporte la Coupe du Désert avec 30 points\\. Tu termines 4ᵉ avec 6 points`));
+    const lostPurse = trophy.querySelector('.mirage-trophy-purse');
+    assert.equal(text(lostPurse), '● OR GAGNÉS EN COURSE · +0 OR MAX. 30 OR SI TOUTES LES COURSES SONT GAGNÉES', 'le podium distingue les OR gagnés du maximum de la coupe');
+    assert.ok(!lostPurse.classList.contains('is-won'));
+    assert.equal(JSON.parse(window.localStorage.getItem(PROGRESSION_KEY)).coins, 20, 'une coupe perdue ne verse pas de prime supplémentaire');
 
     // ── 3. Abandons ─────────────────────────────────────────────────────────
     // « CHOISIR TON MODE » : retour à l'écran des modes, d'où COUPE rouvre la coupe.
@@ -367,6 +385,7 @@ export async function checkMirageCup(assert) {
     assert.equal(text(trophy.querySelector('.mirage-trophy-title')), 'FÉLICITATIONS');
     assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe du Désert avec 27 points/);
     assert.deepEqual(standings(trophy), ['Salim 27', `${ombre} 18`, `${sauge} 18`]);
+    assert.equal(text(trophy.querySelector('.mirage-trophy-purse')), '● OR GAGNÉS EN COURSE · +20 OR MAX. 30 OR SI TOUTES LES COURSES SONT GAGNÉES', 'le total d’OR suit les deux victoires, même à trois voies');
   } finally {
     appTimers.restore();
     await app.unmount();
@@ -413,6 +432,8 @@ export async function checkMirageCup(assert) {
     assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').innerHTML, tourIcon, 'le podium conserve exactement le design du sélecteur');
     assert.notEqual(trophy.querySelector('.mirage-trophy-fallback svg').innerHTML, desertIcon);
     assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe Grand Tour avec 40 points/);
+    assert.equal(text(trophy.querySelector('.mirage-trophy-purse')), '● OR GAGNÉS EN COURSE · +40 OR MAX. 40 OR SI TOUTES LES COURSES SONT GAGNÉES', 'les quatre victoires du Grand Tour créditent 40 OR');
+    assert.ok(trophy.querySelector('.mirage-trophy-purse').classList.contains('is-won'));
     assert.equal(worldProbe.mounted, 0, 'le moteur de course est démonté sur le podium du globe');
 
     await click(trophy.querySelector('.mirage-start-button'));
@@ -473,6 +494,7 @@ export async function checkMirageCup(assert) {
     assert.equal(windsTrophy.querySelector('.mirage-trophy-fallback svg').innerHTML, windsIcon, 'le podium garde le dessin du sélecteur');
     assert.notEqual(windsTrophy.querySelector('.mirage-trophy-fallback svg').innerHTML, desertIcon);
     assert.match(text(windsTrophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe des Vents avec 30 points/);
+    assert.equal(text(windsTrophy.querySelector('.mirage-trophy-purse')), '● OR GAGNÉS EN COURSE · +30 OR MAX. 30 OR SI TOUTES LES COURSES SONT GAGNÉES');
   } finally {
     tourTimers.restore();
     await tour.unmount();

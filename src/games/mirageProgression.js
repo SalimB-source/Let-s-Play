@@ -100,6 +100,21 @@ export function coinsForRun(result = {}) {
   return 0;
 }
 
+/**
+ * Credit a separate gold adjustment if a future reward needs one. Returns the
+ * updated progress and the gold actually added (0 for a null, negative or
+ * unreadable amount, so a bad call can never drain the wallet).
+ */
+export function awardCoins(progress, amount) {
+  const current = sanitizeProgress(progress);
+  const coinsGained = Math.max(0, Math.floor(Number(amount) || 0));
+  if (coinsGained === 0) return { progress: current, coinsGained: 0 };
+  return {
+    progress: sanitizeProgress({ ...current, coins: current.coins + coinsGained }),
+    coinsGained,
+  };
+}
+
 /** Level skins use XP; shop skins use ownership unless a temporary unlock is active. */
 export function isSkinUnlocked(skin, level, ownedSkins = []) {
   if (skin?.id === CLOUD_CHOCOBO_ID && CLOUD_CHOCOBO_TEMPORARILY_FREE) return true;

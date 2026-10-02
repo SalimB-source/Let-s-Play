@@ -2850,6 +2850,7 @@ img.mirage-powerup-icon {
   box-shadow: 0 3px 0 #8a521f;
 }
 .mirage-cup-card[aria-pressed="true"] .mirage-cup-card-action { color: var(--cup-trophy-accent); }
+.mirage-cup-points b { margin-right: 5px; color: #ffdc72; }
 .mirage-cup-name-field {
   display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 9px 12px;
   border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2); background: rgba(37, 28, 41, .6);
@@ -2990,6 +2991,15 @@ img.mirage-powerup-icon {
 .mirage-trophy-crown { margin-right: 4px; color: var(--trophy-accent); }
 .mirage-trophy-lede { margin: 8px 0 12px; color: rgba(255, 244, 226, .86); font-size: 12px; line-height: 1.55; }
 .mirage-trophy-lede b { color: var(--trophy-accent); }
+/* OR réellement gagnés sur les courses, avec le maximum théorique rappelé. */
+.mirage-trophy-purse {
+  margin: 0 0 12px; padding: 6px 10px; border-radius: 999px; border: 1px dashed rgba(255, 211, 106, .34);
+  background: rgba(255, 197, 74, .06); color: rgba(255, 241, 218, .8); font: 800 9px/1.5 var(--mono); letter-spacing: .1em;
+}
+.mirage-trophy-purse > span { margin-right: 5px; color: #ffd36a; }
+.mirage-trophy-purse b { color: #ffd36a; }
+.mirage-trophy-purse small { display: block; margin-top: 2px; color: rgba(255, 241, 218, .7); font: 700 7px/1.4 var(--mono); letter-spacing: .06em; }
+.mirage-trophy-purse.is-won { border-style: solid; border-color: rgba(255, 211, 106, .5); background: rgba(255, 197, 74, .12); color: #ffe6ad; }
 .mirage-trophy-panel .mirage-cup-standings { width: 100%; margin-bottom: 14px; }
 .mirage-trophy-panel .mirage-cup-row { padding: 5px 10px 5px 6px; }
 .mirage-trophy-panel .mirage-overlay-hint { margin-top: 10px; }
