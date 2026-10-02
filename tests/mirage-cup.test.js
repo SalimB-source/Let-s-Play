@@ -14,7 +14,7 @@ import {
   cupRaceIndex,
   cupStandings,
   cupWinner,
-  cupWinnerCoins,
+  cupGoldMaximum,
   getCup,
   isCupComplete,
   placeLabel,
@@ -23,7 +23,7 @@ import {
 } from '../src/games/mirageCup.js';
 import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, laneCount, setLaneCount } from '../src/games/mirageRules.js';
 import { CHARACTER_PALETTES } from '../src/games/mirageCharacters.js';
-import { SKINS } from '../src/games/mirageProgression.js';
+import { SKINS, WIN_COINS } from '../src/games/mirageProgression.js';
 import { MIRAGE_CUP_TROPHIES_KEY, createState, mergeStates, normalizeState, reduce } from '../src/achievements/engine.js';
 
 // Résultat tel que MirageWorld.finish() l’émet en duel : les rivaux déjà
@@ -126,7 +126,6 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
   assert.equal(DEFAULT_CUP_ID, 'desert');
   const cup = getCup('desert');
   assert.equal(cup.name, 'Coupe du Désert');
-  assert.equal(cup.coins, 30, 'la Coupe du Désert verse 30 OR à son champion');
   assert.deepEqual([...cup.stages], ['desert', 'western', 'prairie']);
   assert.equal(getCup('inconnue'), null);
   assert.equal(new Set(CUPS.map((entry) => entry.id)).size, CUPS.length, 'cup ids are unique');
@@ -137,16 +136,35 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
   }
 });
 
-test('every cup pays a purse to its champion: 30 OR for the Désert, 40 for the Grand Tour, 50 for the Légendes', () => {
-  assert.deepEqual(CUPS.map((cup) => cupWinnerCoins(cup)), [30, 40, 50]);
-  assert.equal(cupWinnerCoins('desert'), 30);
-  assert.equal(cupWinnerCoins('worldtour'), 40);
-  assert.equal(cupWinnerCoins('legends'), 50);
-  assert.equal(cupWinnerCoins(getCup('legends')), 50);
-  assert.equal(cupWinnerCoins('inconnue'), 0, 'une coupe inconnue ne rapporte rien');
-  assert.equal(cupWinnerCoins(null), 0);
-  assert.equal(cupWinnerCoins({ coins: -10 }), 0, 'une bourse négative est ramenée à zéro');
-  assert.equal(cupWinnerCoins({ coins: '40' }), 40);
+test('cup gold maxima match 10 OR per win across all races — including two 30 OR cups', () => {
+  assert.deepEqual(CUPS.map(cupGoldMaximum), [30, 30, 40, 50]);
+  for (const cup of CUPS) {
+    assert.equal(cupGoldMaximum(cup), cup.stages.length * WIN_COINS, `${cup.id}: every race victory contributes 10 OR`);
+  }
+  assert.equal(cupGoldMaximum('inconnue'), 0, 'an unknown cup has no gold maximum');
+  assert.equal(cupGoldMaximum(null), 0);
+  assert.equal(cupGoldMaximum({ maxCoins: -10 }), 0, 'a negative value is clamped to zero');
+  assert.equal(cupGoldMaximum({ maxCoins: '40' }), 40);
+});
+
+test('Coupe des Vents has three distinct maps and can pay 30 OR for three wins', () => {
+  const cup = getCup('winds');
+  assert.equal(cup.name, 'Coupe des Vents');
+  assert.equal(cup.trophyDesign, 'winds');
+  assert.deepEqual([...cup.stages], ['sardinia', 'alger', 'snakeway']);
+  assert.equal(new Set(cup.stages).size, 3, 'each of its three races uses a different map');
+  assert.ok(cup.stages.every((stage) => !getCup('desert').stages.includes(stage)), 'none of the maps are from the Coupe du Désert');
+  assert.equal(cup.stages.length * WIN_COINS, 30, '10 OR per win × three races = 30 OR maximum');
+  assert.equal(cupGoldMaximum(cup), 30);
+
+  let run = createCupRun(cup.id);
+  for (const stage of cup.stages) {
+    assert.equal(cupCurrentStage(run), stage);
+    run = recordCupRace(run, resultFromOrder(stage, ['player', 'ombre', 'sauge', 'amethyste']));
+  }
+  assert.equal(isCupComplete(run), true);
+  assert.equal(cupWinner(run).id, PLAYER_RIDER_ID, 'the winner of all three races lifts the trophy');
+  assert.equal(cupWinner(run).points, 30);
 });
 
 test('a fresh cup has four riders — the player first, then the three NPC rivals — and no race yet', () => {

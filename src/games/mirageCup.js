@@ -8,9 +8,9 @@
 // coupe suit le duel et n’aligne alors que L’Ombre et Sauge.
 // Chaque arrivée rapporte des points selon la place — plus on finit haut, plus
 // on en gagne —, les points s’additionnent d’une course à l’autre, et le
-// meilleur total soulève le trophée après la dernière course. Le champion
-// empoche en plus la bourse de la coupe (`coins`, 30 / 40 / 50 OR), versée une
-// seule fois par la page — voir `cupWinnerCoins()`.
+// meilleur total soulève le trophée après la dernière course. Chaque victoire
+// de course rapporte 10 OR ; le maximum de chaque coupe correspond donc à
+// toutes ses courses remportées (voir `cupGoldMaximum()`).
 //
 // Le moteur 3D ne connaît pas la coupe : chaque course est un duel ordinaire
 // (mêmes pouvoirs, mêmes rivaux) et la page n’a qu’à nourrir `recordCupRace`
@@ -30,10 +30,10 @@ export const DEFAULT_RIDER_NAME = 'Cavalier';
  * Catalogue des coupes. Pour en ajouter une : un nouvel objet ici, avec des
  * identifiants de terrain déjà connus de `MirageCoursePicker` (`desert`,
  * `western`, `prairie`, `sardinia`, `alger`, `japan`, `ramparts`,
- * `infinity`, `airbase`, `snakeway`) et sa bourse (`coins`). Le sélecteur de
- * coupe, l’enchaînement des courses et l’écran du trophée suivent tout seuls.
- * Ajouter aussi le design propre à son identifiant dans `mirageTrophy.js`
- * (forme 3D et icône SVG partagées).
+ * `infinity`, `airbase`, `snakeway`) et son maximum d’or (`maxCoins`). Le
+ * sélecteur de coupe, l’enchaînement des courses et l’écran du trophée suivent
+ * tout seuls. Ajouter aussi le design propre à son identifiant dans
+ * `mirageTrophy.js` (forme 3D et icône SVG partagées).
  */
 export const CUPS = Object.freeze([
   Object.freeze({
@@ -41,17 +41,26 @@ export const CUPS = Object.freeze([
     name: 'Coupe du Désert',
     trophyDesign: 'desert',
     tagline: 'Trois courses, un seul trophée',
-    // Bourse versée au champion du classement général, en or.
-    coins: 30,
+    // Maximum de pièces en remportant les trois courses.
+    maxCoins: 30,
     // Dunes de l’Écho → Dust Creek → Plaines d’Or
     stages: Object.freeze(['desert', 'western', 'prairie']),
+  }),
+  Object.freeze({
+    id: 'winds',
+    name: 'Coupe des Vents',
+    trophyDesign: 'winds',
+    tagline: 'De la baie aux nuages',
+    maxCoins: 30,
+    // Costa Omertà → Alger la Blanche → Chemin du Serpent
+    stages: Object.freeze(['sardinia', 'alger', 'snakeway']),
   }),
   Object.freeze({
     id: 'worldtour',
     name: 'Coupe Grand Tour',
     trophyDesign: 'worldtour',
     tagline: 'Quatre cartes, un seul trophée',
-    coins: 40,
+    maxCoins: 40,
     // Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase
     stages: Object.freeze(['sardinia', 'alger', 'japan', 'airbase']),
   }),
@@ -60,7 +69,7 @@ export const CUPS = Object.freeze([
     name: 'Coupe des Légendes',
     trophyDesign: 'legends',
     tagline: 'Cinq courses, un seul trophée',
-    coins: 50,
+    maxCoins: 50,
     // Remparts d’Ocre (Counter-Strike) → Château de l’Infini (Demon Slayer) → Thunder Airbase (Street Fighter)
     // → Costa Omertà → Plaines de Yōtei (Ghost of Yōtei)
     stages: Object.freeze(['ramparts', 'infinity', 'airbase', 'sardinia', 'japan']),
@@ -74,13 +83,13 @@ export function getCup(cupId) {
 }
 
 /**
- * Bourse du vainqueur d’une coupe (identifiant ou entrée de `CUPS`), en or :
- * elle s’ajoute aux gains de chaque course et n’est versée qu’au champion du
- * classement général. Zéro pour une coupe inconnue.
+ * Maximum d’or disponible sur l’ensemble d’une coupe (identifiant ou entrée
+ * de `CUPS`). Il est gagné au fil des victoires de course : 10 OR par victoire,
+ * sans prime supplémentaire au podium. Zéro pour une coupe inconnue.
  */
-export function cupWinnerCoins(cup) {
+export function cupGoldMaximum(cup) {
   const entry = typeof cup === 'string' ? getCup(cup) : cup;
-  return Math.max(0, Math.floor(Number(entry?.coins) || 0));
+  return Math.max(0, Math.floor(Number(entry?.maxCoins) || 0));
 }
 
 /** Points d’une place (1 = vainqueur de la course). Hors barème : 0. */

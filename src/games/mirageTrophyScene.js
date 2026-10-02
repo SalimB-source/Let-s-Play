@@ -229,6 +229,7 @@ export function makeTrophyScene(mount, options = {}) {
 // Éclairage et décor propres à chaque coupe : le désert reste la référence.
 const SCENE_THEMES = Object.freeze({
   desert: { hemiSky: 0xffe7c2, hemiGround: 0x3a2350, key: 0xfff0d0, rim: 0x8fd8ff, floor: 0x2a1840 },
+  winds: { hemiSky: 0xd9fbff, hemiGround: 0x13384b, key: 0xe6ffff, rim: 0x45e4ff, floor: 0x102d49 },
   worldtour: { hemiSky: 0xd9fbff, hemiGround: 0x102744, key: 0xe6ffff, rim: 0x66e9f2, floor: 0x133455 },
   legends: { hemiSky: 0xffdfe3, hemiGround: 0x3a1230, key: 0xfff0e2, rim: 0xff8fa0, floor: 0x3a1229 },
 });

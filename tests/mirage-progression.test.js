@@ -115,8 +115,8 @@ test('progression round-trips through storage and survives corrupted JSON', () =
   assert.deepEqual(loadProgress(null), defaultProgress());
 });
 
-test('a victory awards 5 gold and a rush awards none', () => {
-  assert.equal(WIN_COINS, 5);
+test('a victory awards 10 gold and a rush awards none', () => {
+  assert.equal(WIN_COINS, 10);
   assert.equal(coinsForRun({}), 0);
   assert.equal(coinsForRun({ mode: 'rush', score: 99999 }), 0);
   assert.equal(coinsForRun({ mode: 'duel', won: false, rank: 2 }), 0);
@@ -130,18 +130,18 @@ test('a victory awards 5 gold and a rush awards none', () => {
   assert.equal(loss.progress.coins, WIN_COINS);
 });
 
-test('awardCoins banks a cup purse on top of the race wins, and never subtracts gold', () => {
+test('awardCoins safely adds an external adjustment without draining the wallet', () => {
   const start = { ...defaultProgress(), coins: 12 };
-  const cup = awardCoins(start, 30);
-  assert.equal(cup.coinsGained, 30);
-  assert.equal(cup.progress.coins, 42, 'la bourse s’ajoute aux 5 OR des victoires de course');
-  assert.equal(start.coins, 12, 'la progression d’origine n’est pas modifiée');
-  assert.equal(awardCoins(cup.progress, 0).coinsGained, 0);
-  assert.equal(awardCoins(cup.progress, 0).progress.coins, 42);
-  assert.equal(awardCoins(cup.progress, -40).coinsGained, 0, 'un montant négatif ne retire rien');
-  assert.equal(awardCoins(cup.progress, -40).progress.coins, 42);
-  assert.equal(awardCoins(cup.progress, 'oops').coinsGained, 0);
-  assert.equal(awardCoins(undefined, 50).progress.coins, 50, 'une progression absente repart de zéro');
+  const adjustment = awardCoins(start, 30);
+  assert.equal(adjustment.coinsGained, 30);
+  assert.equal(adjustment.progress.coins, 42, 'the separate amount is added to the existing balance');
+  assert.equal(start.coins, 12, 'the original progress is not mutated');
+  assert.equal(awardCoins(adjustment.progress, 0).coinsGained, 0);
+  assert.equal(awardCoins(adjustment.progress, 0).progress.coins, 42);
+  assert.equal(awardCoins(adjustment.progress, -40).coinsGained, 0, 'a negative amount adds nothing');
+  assert.equal(awardCoins(adjustment.progress, -40).progress.coins, 42);
+  assert.equal(awardCoins(adjustment.progress, 'oops').coinsGained, 0);
+  assert.equal(awardCoins(undefined, 50).progress.coins, 50, 'missing progress starts from zero');
 });
 
 test('Gyro Zeppeli is a shop skin that costs 200 gold', () => {

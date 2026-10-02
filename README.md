@@ -330,50 +330,47 @@ et alterner les deux niveaux en pleine course. Le gain se mesure en images par s
 sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
 sur les terrains chargés, du nombre d'objets dessinés.
 
-## Mirage Rush : la coupe et sa bourse d'or
+## Mirage Rush : les coupes et les gains d'or
 
-Trois coupes (`/jeu/mirage-rush`, bouton **COUPE**) enchaînent des duels sur des
-terrains imposés, à quatre cavaliers (trois sur une piste de téléphone à trois
-voies). Les points s'additionnent d'une course à l'autre, et le meilleur total
-après la dernière course soulève le trophée.
+Quatre coupes (`/jeu/mirage-rush`, bouton **COUPE**) enchaînent des duels sur
+des terrains imposés, à quatre cavaliers (trois sur une piste de téléphone à
+trois voies). Chaque victoire crédite **10 OR**, sans prime distincte de coupe.
+Le maximum théorique dépend du nombre de courses gagnées :
 
-| Coupe | Courses | Bourse du vainqueur |
-|---|---|---|
-| Coupe du Désert | Dunes de l'Écho → Dust Creek → Plaines d'Or (3) | **30 OR** |
-| Coupe Grand Tour | Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase (4) | **40 OR** |
-| Coupe des Légendes | Remparts d'Ocre → Château de l'Infini → Thunder Airbase → Costa Omertà → Plaines de Yōtei (5) | **50 OR** |
+| Coupe | Courses | OR maximum |
+|---|---:|---:|
+| Coupe du Désert | 3 | **30 OR** |
+| Coupe des Vents | 3 parcours différents | **30 OR** |
+| Coupe Grand Tour | 4 | **40 OR** |
+| Coupe des Légendes | 5 | **50 OR** |
 
-L'or se cumule : chaque course gagnée rapporte les 5 OR habituels (`WIN_COINS`),
-et la bourse de la coupe s'y ajoute — versée **une seule fois**, au vainqueur du
-classement général, jamais à une simple victoire de course. Une coupe perdue ne
-verse donc rien au joueur : l'écran du trophée rappelle alors qui empoche la
-bourse.
-
-L'écran du trophée affiche le montant crédité (`+30 OR`), le sélecteur de coupe
-annonce la bourse de chaque coupe, la consigne de lancement la rappelle et les
-règles du jeu la détaillent. Le crédit passe par `awardCoins()`, qui ne peut que
-créditer : un montant absent, négatif ou illisible ne retire jamais d'or.
+Le meilleur total de points après la dernière course soulève le trophée. Dans
+l'aperçu, chaque coupe est un vrai bouton cliquable au relief 3D : son parcours
+n'est pas déroulé et le maximum d'OR est mis en évidence. Le podium distingue
+les OR réellement gagnés pendant les courses du maximum théorique de la coupe.
 
 ### Où vit le code
 
-- `src/games/mirageCup.js` — `CUPS` (dont `coins`) et `cupWinnerCoins()` ;
-- `src/games/mirageProgression.js` — `WIN_COINS`, `coinsForRun()`, `awardCoins()` ;
-- `src/games/MirageRushPage.jsx` — le versement dans `onFinish` : la bourse part
-  quand la coupe devient complète et que le joueur est champion (`cupWinner()`) ;
-- `src/games/MirageCupTrophy.jsx` (ligne « BOURSE DU VAINQUEUR ») et
-  `src/games/MirageCoursePicker.jsx` (bourse sur chaque carte de coupe) ;
-- `src/games/mirage-rush.css` — `.mirage-cup-purse`, `.mirage-trophy-purse`.
+- `src/games/mirageCup.js` — catalogue `CUPS`, les maximums `maxCoins` et
+  `cupGoldMaximum()` ;
+- `src/games/mirageProgression.js` — `WIN_COINS` (10 OR par victoire) et
+  `coinsForRun()` ;
+- `src/games/MirageRushPage.jsx` — cumul des OR gagnés course par course et
+  transmission du total au podium ;
+- `src/games/MirageCupTrophy.jsx` — OR réellement gagnés et maximum théorique ;
+- `src/games/MirageCoursePicker.jsx` et `src/games/mirage-rush.css` — boutons
+  3D des coupes et mise en valeur des gains.
 
-Ajouter une coupe : une entrée dans `CUPS` avec ses terrains, sa bourse et son
-design (`mirageTrophy.js`) ; le sélecteur, l'enchaînement des courses et l'écran
-du trophée suivent tout seuls.
+Ajouter une coupe : une entrée dans `CUPS` avec ses terrains, son maximum
+(`nombre de courses × 10 OR`) et son design (`mirageTrophy.js`) ; le sélecteur,
+l'enchaînement des courses et l'écran du trophée suivent tout seuls.
 
 ### Vérifications
 
 ```bash
 node --test tests/mirage-cup.test.js tests/mirage-progression.test.js
-npm run check:mirage-cup     # la coupe jouée de bout en bout : bourse affichée, créditée une seule fois
-npm run check:mirage-flow    # bourse annoncée par le sélecteur et les règles
+npm run check:mirage-cup     # les courses jouées de bout en bout, récompenses et podium
+npm run check:mirage-flow    # boutons de coupe, aperçu épuré et maxima annoncés
 ```
 
 ## Vice City Rush : 5 tours, ligne de départ et décor

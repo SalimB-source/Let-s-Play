@@ -6,7 +6,7 @@ import { CHARACTER_PALETTES, CHARACTER_PRICES, CLOUD_CHOCOBO_INDEX, GYRO_ZEPPELI
 export const PROGRESSION_KEY = 'letsplay_mirage_progression_v1';
 export const MAX_LEVEL = 20;
 /** Gold awarded for finishing 1st (duel, cup race or online). */
-export const WIN_COINS = 5;
+export const WIN_COINS = 10;
 export const GYRO_ZEPPELI_ID = 'gyro-zeppeli';
 export const CLOUD_CHOCOBO_ID = 'cloud-chocobo';
 /** Temporary all-player access; set false to restore the stored 280 OR shop gate. */
@@ -93,7 +93,7 @@ export function xpForRun(result = {}) {
   return Math.floor(xp / 10);
 }
 
-/** Gold awarded for a finished run: 5 OR on a victory (1st place). */
+/** Gold awarded for a finished run: 10 OR on a victory (1st place). */
 export function coinsForRun(result = {}) {
   if (result?.won === true) return WIN_COINS;
   if (result?.mode && result.mode !== 'rush' && Number(result.rank) === 1) return WIN_COINS;
@@ -101,8 +101,7 @@ export function coinsForRun(result = {}) {
 }
 
 /**
- * Credit gold earned outside a race — today the purse of a cup won
- * (`cupWinnerCoins`), which comes on top of the per-race victories. Returns the
+ * Credit a separate gold adjustment if a future reward needs one. Returns the
  * updated progress and the gold actually added (0 for a null, negative or
  * unreadable amount, so a bad call can never drain the wallet).
  */
