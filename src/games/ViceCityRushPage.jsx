@@ -24,7 +24,7 @@ const BEST_KEY = 'letsplay_vice_city_rush_bests_v1';
 // Le son est un choix du joueur : on le retrouve d'une visite à l'autre,
 // comme le thème clair du site. Défaut « allumé » (le jeu est une fête foraine).
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
-const POWER_ORDER = [CITY_RUSH_POWERS.OIL, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.CASH, CITY_RUSH_POWERS.RADIO];
+const POWER_ORDER = [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.CASH, CITY_RUSH_POWERS.RADIO];
 const CAR_STATS = [
   { key: 'power', label: 'PUISSANCE' },
   { key: 'acceleration', label: 'ACCÉLÉRATION' },
@@ -98,15 +98,13 @@ function PowerIcon({ type, className = '' }) {
   return (
     <svg className={className} viewBox="0 0 32 32" aria-hidden="true" {...common}>
       {type === 'cash' && <>
-        <rect x="4.5" y="8" width="23" height="16" rx="2.5" />
-        <circle cx="16" cy="16" r="4.2" />
-        <path d="M8 12h.01M24 20h.01" />
-        <path d="M16 13.2v5.6m1.9-4.5c-.4-.7-1-.9-1.9-.9-1.1 0-1.8.6-1.8 1.4 0 2 3.9.8 3.9 2.8 0 .9-.8 1.5-2 1.5-.9 0-1.7-.3-2.2-1" />
+        <path d="M11 4h10l1 4 2 3v14a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3V11l2-3z" />
+        <path d="M11 8h10M12 23h8" />
+        <path d="m18 11-5 6h4l-2 5 6-7h-4z" />
       </>}
-      {type === 'oil' && <>
-        <path d="M8 24 20.5 11.5" />
-        <path d="M18.4 7.6a6.1 6.1 0 0 1 7.7 7.7l-3.8-3.8-3.7 3.7 3.8 3.8a6.1 6.1 0 0 1-7.7-7.7" />
-        <circle cx="7.5" cy="24.5" r="2.2" />
+      {type === CITY_RUSH_POWERS.BLUE_SHOT && <>
+        <path d="M4 10h12a4 4 0 0 1 4 4v2h7v3h-9l-2 2h-2l-2.5 7H7l2.3-7H5L4 17z" fill="currentColor" strokeWidth="1.4" />
+        <path d="M16.5 18.5v2h-2.7" stroke="rgba(255,255,255,.95)" strokeWidth="1.2" />
       </>}
       {type === 'pistol' && <>
         <path d="M3 12h19" />
@@ -374,12 +372,13 @@ export default function ViceCityRushPage() {
   function effectMessage(effect) {
     if (!effect) return;
     if (effect.type === 'cash') showToast(effect.automatic ? 'BOOST AUTO-ACTIVÉ · 1,5 seconde de turbo.' : 'BOOST ACTIVÉ · 1,5 seconde de turbo.', 'cash');
-    else if (effect.type === 'oil') showToast(effect.automatic ? 'HUILE AUTO-DÉVERSÉE · Un rival peut déraper derrière toi.' : 'HUILE DÉVERSÉE · Un rival peut déraper derrière toi.', 'oil');
-    else if (effect.type === 'oil-hit') showToast(effect.target === 'TOI' ? `DÉRAPAGE · FLAQUE DE ${effect.owner || 'RIVAL'} · RALENTI.` : `DÉRAPAGE · ${effect.target} a traversé une flaque.`, 'oil');
+    else if (effect.type === 'blue-shot-hit') showToast(`TIR DROIT · ${effect.target} TOUCHÉ · DÉRAPAGE LÉGER ${formatSeconds(effect.duration, 0.3)}.`, 'blue-shot');
+    else if (effect.type === 'blue-shot-hit-player') showToast(`TIR DROIT · ${effect.attacker} TE TOUCHE · DÉRAPAGE ${formatSeconds(effect.duration, 0.3)}.`, 'blue-shot');
+    else if (effect.type === 'blue-shot-miss') showToast('TIR DROIT · AUCUN ADVERSAIRE VISIBLE DANS TA VOIE.', 'blue-shot');
+    else if (effect.type === 'rival-blue-shot') showToast(`${effect.rival} TIRE TOUT DROIT DEVANT LUI.`, 'blue-shot');
     else if (effect.type === 'pistol') showToast(`TATATATA ! ${effect.target} mitraillé · ralenti ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'pistol-hit-player') showToast(`TATATATA ! ${effect.attacker} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} ACTIVE UN BOOST.`, 'cash');
-    else if (effect.type === 'rival-oil') showToast(`${effect.rival} RÉPAND UNE FLAQUE D’HUILE.`, 'oil');
     else if (effect.type === 'radio') showToast(`HÉLICO EN APPROCHE · CIBLE : ${effect.target}.`, 'radio');
     else if (effect.type === 'missile-hit') showToast(`IMPACT · ${effect.target} immobilisé ${formatSeconds(effect.duration, 2)}.`, 'radio');
     else if (effect.type === 'radio-busy') showToast(effect.message, 'radio');
@@ -422,7 +421,7 @@ export default function ViceCityRushPage() {
     const message = pickup.autoActivated
       ? (pickup.type === CITY_RUSH_POWERS.CASH
         ? 'BOOST AUTO-ACTIVÉ · 1,5 s DE TURBO.'
-        : 'HUILE AUTO-DÉVERSÉE · UNE FLAQUE EST DERRIÈRE TOI.')
+        : `${rule.name.toUpperCase()} ACTIVÉ.`)
       : pickup.newlyReady
         ? `${rule.shortName.toUpperCase()} PRÊT À UTILISER · TOUCHE ${rule.key}`
         : pickup.ready
@@ -437,7 +436,7 @@ export default function ViceCityRushPage() {
         <div>
           <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <i>/</i> STREET RALLY 3D</p>
           <h1>VICE CITY <em>RUSH</em></h1>
-          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Percuter une voiture lente la fait se rabattre pour te laisser passer, au prix d’un court ralentissement ; le trafic bloque la voie sans dégâts ni pénalité. Percuter une berline de police en ronde la rappelle à l’ordre : elle te prend en chasse sur-le-champ et se rabat devant toi pour freiner et te bloquer. Au dernier tour, deux berlines d’interception entrent en plus en piste derrière le leader : elles raflent les bonus rouges et jaunes, tirent sur le premier — et tes pouvoirs rouge et jaune peuvent leur être retournés.</p>
+          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. En cas de choc avec une voiture lente, le pilote est ralenti pendant 0,6 seconde et le véhicule se rabat pour libérer la voie ; les adversaires ne se percutent pas. Le tir bleu file droit dans ta voie, sans viser, et ne touche qu’un adversaire visible. Percuter une berline de police en ronde la rappelle à l’ordre : elle te prend en chasse sur-le-champ et se rabat devant toi pour freiner et te bloquer. Au dernier tour, deux berlines de police entrent en piste derrière le leader : elles raflent les bonus rouges et jaunes et tirent sur le premier — mais les tirs rouge et jaune peuvent se retourner contre elles.</p>
         </div>
         <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
       </header>
@@ -552,11 +551,6 @@ export default function ViceCityRushPage() {
               )}
 
               <div className="city-rush-controls-bottom">
-                <div className="city-rush-steering" aria-label="Changer de voie">
-                  <button type="button" onClick={() => actionsRef.current?.('left')} aria-label="Aller à gauche">←</button>
-                  <span>CHANGER DE VOIE</span>
-                  <button type="button" onClick={() => actionsRef.current?.('right')} aria-label="Aller à droite">→</button>
-                </div>
                 <div className="city-rush-power-bar" aria-label="Objets spéciaux">
                   {POWER_ORDER.map((type) => {
                     const rule = CITY_RUSH_POWER_RULES[type];
@@ -692,7 +686,7 @@ export default function ViceCityRushPage() {
                   <button type="button" className="city-rush-start-button" onClick={startRace}>DÉMARRER LA COURSE <span>↗</span></button>
                   <div className="city-rush-best-note"><span>MEILLEUR CHRONO</span><b>{bestTime ? formatTime(bestTime) : '— : —'}</b></div>
                 </div>
-                <div className="city-rush-intro-foot"><span>← → / Q D <i>·</i> POUR CHANGER DE VOIE</span><span>A Z E R <i>·</i> POUR UTILISER LES POUVOIRS</span><span>{CITY_RUSH_LAPS} TOURS <i>·</i> {RACE_KM} <i>·</i> LIGNE À CHAQUE TOUR</span></div>
+                <div className="city-rush-intro-foot"><span>← → / Q D <i>·</i> POUR CHANGER DE VOIE</span><span>A Z R <i>·</i> POUR TIRER / APPELER L’HÉLICO <i>·</i> BOISSON VERTE AUTO</span><span>{CITY_RUSH_LAPS} TOURS <i>·</i> {RACE_KM} <i>·</i> LIGNE À CHAQUE TOUR</span></div>
               </div>
             )}
 
@@ -797,7 +791,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE · DERNIER TOUR</b><p>Au troisième tour, <b>deux berlines d’interception entrent en piste juste derrière le premier</b> et roulent pour lui nuire : elles raflent en priorité les bonus <em className="is-red">rouges</em> (mitrailleuse) et <em className="is-yellow">jaunes</em> (hélico) avant lui, puis ouvrent le feu dès qu’une jauge rouge est pleine. Surtout, <b>elles ne se traversent pas</b> : une berline se rabat devant le leader, lève le pied et le retient comme une voiture lente — même effet de collision que le trafic, sans dégât ni pénalité — avant de repartir et de revenir à la charge. Percuter une berline de police en ronde la rappelle à l’ordre : elle te prend en chasse à son tour. Elles ne sont pas classées : l’arrivée ne retient que les quatre pilotes, et la mini-carte les montre à part, marquées d’un halo jaune pendant leur barrage. Riposte : une flaque d’huile ou une rafale les ralentit comme n’importe qui — et quand tu mènes et que plus personne n’est devant toi, tes pouvoirs de tir peuvent se retourner contre la berline la plus proche, même collée à ton pare-chocs arrière.</p></div>
+            <div><b>ESCOUADE DE POLICE · DERNIER TOUR</b><p>Au dernier tour, <b>deux berlines d’interception entrent en piste juste derrière le premier</b> : elles raflent en priorité les bonus <em className="is-red">rouges</em> (mitrailleuse) et <em className="is-yellow">jaunes</em> (hélico), puis ouvrent le feu dès qu’une jauge rouge est pleine. Surtout, <b>elles ne se traversent pas</b> : une berline se rabat devant le leader, lève le pied et le retient comme une voiture lente — même effet de collision que le trafic, sans dégât ni pénalité — avant de repartir et de revenir à la charge. Percuter une berline de police en ronde la rappelle à l’ordre : elle te prend en chasse à son tour. Elles ne sont pas classées : l’arrivée ne retient que les quatre pilotes, et la mini-carte les montre à part, marquées d’un halo pendant leur barrage. La police poursuit le leader sur les cinq circuits, évite le trafic lent et peut heurter un véhicule lent si une voie est bouchée ; celui-ci se rabat alors pour libérer la route. Riposte : un tir bleu droit dans leur voie si elles sont visibles devant toi, une rafale <em className="is-red">rouge</em> ou un missile d’hélico <em className="is-yellow">jaune</em>. Quand tu mènes et qu’aucun rival n’est devant, les pouvoirs rouge et jaune peuvent viser la berline de police la plus proche, même derrière ton pare-chocs.</p></div>
           </section>
         </aside>
       </main>

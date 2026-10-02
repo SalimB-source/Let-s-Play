@@ -115,7 +115,7 @@ const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (
 // d'accueil).
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
-  'helicopterStop', 'pickup', 'boost', 'oilDrop', 'lap', 'finish', 'countdownBeep', 'passby',
+  'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
   'policeSiren', 'policeSirenOff', 'tunnelRush', 'tunnelExit',
 ];
 
@@ -304,7 +304,7 @@ for (const [index, city] of cities.entries()) {
       if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
     }
     if (hud && frames % 15 === 0) {
-      for (const type of ['cash', 'oil', 'pistol', 'radio']) {
+      for (const type of ['cash', 'blue-shot', 'pistol', 'radio']) {
         if ((hud.inventory?.[type] || 0) >= (CITY_RUSH_POWER_RULES[type]?.chargeCost ?? 99)) world.action(type);
       }
     }
@@ -538,12 +538,14 @@ for (const [index, city] of cities.entries()) {
   if (!audioCalls.policeSiren) fail('la sirène de police n’a jamais sonné', audioCalls);
 
   const automaticCash = callbacks.pickups.filter((pickup) => pickup.type === 'cash' && pickup.autoActivated).length;
-  const automaticOil = callbacks.pickups.filter((pickup) => pickup.type === 'oil' && pickup.autoActivated).length;
   if (callbacks.pickups.some((pickup) => pickup.autoActivated && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
     fail('un bonus manuel a été signalé comme activation automatique', callbacks.pickups.filter((pickup) => pickup.autoActivated));
   }
   if ((audioCalls.boost || 0) < automaticCash) fail('un boost vert chargé ne s’est pas activé automatiquement', { automaticCash, audioCalls });
-  if ((audioCalls.oilDrop || 0) < automaticOil) fail('une jauge huile pleine n’a pas déposé sa flaque automatiquement', { automaticOil, audioCalls });
+  const blueShotEffects = new Set(['blue-shot-hit', 'blue-shot-hit-player', 'blue-shot-miss', 'rival-blue-shot']);
+  const blueShotsUsed = callbacks.effects.filter((effect) => blueShotEffects.has(effect.type)).length;
+  if (!blueShotsUsed) fail('aucun tir droit bleu n’a été testé', callbacks.effects);
+  if (!audioCalls.gunshot) fail('un tir droit bleu a été utilisé sans bruit de coup de feu', { blueShotsUsed, audioCalls });
 
   // Tremis, côté pierre : une voûte au-dessus de la route, et rien de minéral
   // dans le couloir resté ouvert. La matière des tremis est la seule mate à

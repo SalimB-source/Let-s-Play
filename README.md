@@ -391,49 +391,42 @@ de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
-  · TOUR 2/3 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
+  · TOUR 2/5 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
   rivaux annoncent leur dernier tour. Le dernier passage termine la course.
 - **L'escouade de police du dernier tour.** Dès que le **premier du classement**
-  attaque son troisième tour, **deux berlines d'interception entrent en piste
-  juste derrière lui** (30 m et 38 m, sirène allumée) et roulent pour lui nuire :
-  elles se replacent devant sa roue, changent de voie pour **rafler en priorité
-  les bonus rouges (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir
-  vaut cinq bonus ordinaires dans leur choix de voie, `CITY_RUSH_POLICE_HUNT_TYPES`
-  et `chooseCityRushPoliceLane` — puis **ouvrent le feu sur le leader** dès
-  qu'une jauge rouge est pleine. Elles **ne sont pas classées** : `rankCityRushRacers`
-  ne les voit jamais, la grille reste à quatre, le HUD les affiche dans une liste
-  à part (`hud.police`, marqueurs rouge et bleu de la mini-carte) et l'écran
-  d'arrivée les ignore. Le joueur peut riposter : ses balles et ses flaques
-  d'huile les ralentissent comme n'importe quelle voiture
-  (`CITY_RUSH_POLICE_*` dans `cityRushRules.js`). **L'escouade est la même sur
-  les cinq circuits** (Vice City, New York, Tokyo, Paris, Londres) : aucune de
-  ses règles ne dépend de la ville — ni la mise en place, ni la chasse, ni la
-  sirène. Seul le tracé joue : sous un tremis (Vice City, New York, Tokyo), les
-  berlines se rabattent dans le couloir resté ouvert, comme tout le monde.
-  **Elle ne s'enlise pas dans le trafic.** Une voie où un véhicule lent précède
-  la berline à moins de 40 m est « bouchée » (`isCityRushPoliceLaneJammed`) et
-  écartée d'office du choix de voie tant qu'une voie libre est ouverte — même
-  avec un bonus rouge dedans : la convoitise des bonus de tir ne la garde plus
-  collée derrière un camion à 5 m/s pendant que le leader s'envole. Et quand un
-  véhicule lent la freine malgré tout (toutes les voies bouchées, ou trop tard
-  pour dévier), la berline **le heurte comme un rival** : une seconde de
-  ralentissement, un dérapage, et le véhicule se rabat sur une voie voisine
-  (`resolveCityRushPoliceMovement` désigne le véhicule — `blockedBy` —, puis
-  `applyTrafficImpact` ; sans bandeau « choc » à l'écran). Son changement de voie
-  est jugé à **sa propre position** — pas à celle du joueur — pour le trafic
-  comme pour les murs de tremis.
-- **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
-  **bleu 2** (clé à molette / huile), **rouge 3** (mitrailleuse / dérapage),
-  **vert 2** (billets / boost), **jaune 4** (talkie-walkie / hélicoptère) —
-  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. **Les deux pouvoirs de
-  tir ne visent que devant** : la mitrailleuse prend le rival le plus proche du
-  pare-chocs, l'hélicoptère le mieux placé, mais seulement parmi les rivaux
-  situés devant le tireur (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`,
-  un mètre de tolérance pour une voiture roue contre roue). Un pilote en tête
-  n'a donc **aucune cible jaune** : l'hélico ne part jamais vers un poursuivant,
-  l'onde de choc épargne elle aussi les adversaires restés derrière l'appelant,
-  et le HUD affiche « AUCUN RIVAL DEVANT TOI · LA JAUGE RESTE CHARGÉE » sans
-  consommer la jauge. Un bonus ramassé
+  attaque le cinquième et dernier tour, **deux berlines d'interception entrent
+  en piste juste derrière lui** (30 m et 38 m, sirène allumée) et roulent pour
+  lui nuire : elles changent de voie pour **rafler en priorité les bonus rouges
+  (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir vaut cinq bonus
+  ordinaires dans leur choix (`CITY_RUSH_POLICE_HUNT_TYPES`,
+  `chooseCityRushPoliceLane`) — puis **ouvrent le feu sur le leader** dès qu'une
+  jauge rouge est pleine. Elles **ne sont pas classées** : `rankCityRushRacers`
+  ne les voit jamais, la grille reste à quatre, et le HUD les affiche à part
+  (`hud.police`, marqueurs rouge et bleu de la mini-carte). La même escouade
+  opère sur les cinq circuits. Elle choisit les voies ouvertes sous les tremis
+  et évite le trafic lent (`isCityRushPoliceLaneJammed`) ; si elle est malgré
+  tout bloquée, elle heurte le véhicule lent comme un rival : **0,6 s de
+  ralentissement et un dérapage**, puis le trafic se rabat (`blockedBy`,
+  `resolveCityRushPoliceMovement`, `applyTrafficImpact`), sans bandeau « choc ».
+  Le changement de voie est calculé à la position de la berline, pas à celle du
+  joueur. En dernier tour, une rafale rouge ou un missile jaune peut riposter
+  contre la berline la plus proche quand aucun rival n'est devant ; le tir bleu
+  reste un projectile droit, limité à un adversaire visible dans la voie du
+  tireur (`CITY_RUSH_POLICE_*`, `cityRushRules.js`).
+- **Les bonus.** Quatre types de ramassages colorés remplissent quatre jauges :
+  **bleu 2** (pistolet à tir droit), **rouge 3** (mitrailleuse), **vert 2**
+  (boisson énergisante / boost), **jaune 4** (talkie-walkie / hélicoptère) —
+  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Le jaune est rare : il
+  ne représente que **10 % des bonus** (vert 36 %, bleu 28 %, rouge 26 %).
+  Le tir bleu ne vise pas : il suit la voie du tireur, peut toucher au plus un
+  adversaire déjà visible, puis fait déraper sa voiture et la ralentit à 85 %
+  pendant **0,3 s**. La mitrailleuse rouge prend le rival le plus proche devant
+  le pare-chocs ; l'hélicoptère verrouille le rival le mieux placé devant son
+  pilote (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`, un mètre de
+  tolérance pour une voiture roue contre roue). En dernier tour, si aucun rival
+  n'est devant, les jauges rouge et jaune peuvent viser la berline de police la
+  plus proche, y compris derrière le pilote. Sans rival ni police-cible, la
+  jauge jaune reste chargée et le HUD l'indique. Un bonus ramassé
   **éclate** : flash, anneau qui s'ouvre et éclats de sa couleur repris par la
   gravité (`cityRushPickupBurstShards` / `cityRushPickupShardState` /
   `cityRushPickupFlashState`, rendus par un pool de six objets dans
@@ -544,10 +537,10 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
   d'automations à chaque frame.
 - **Les bruitages.** Coup de feu (claquement, corps, écho entre les façades),
   **dérapage** quand une voiture encaisse un tir — pneus dans un filtre très
-  sélectif et sifflement qui tremble, joué 0,3 s après le coup de feu pour
-  tomber sur l'impact —, dérapage plus doux sur une flaque d'huile ou une zone
-  de ralentissement, **hélicoptère** (pales hachées par un LFO + turbine qui
-  monte en régime, démarrage sur l'approche, extinction après l'explosion),
+  sélectif et sifflement qui tremble, joué à l'impact —, son de dérapage plus
+  doux pour le tir bleu et les zones de ralentissement, **hélicoptère** (pales
+  hachées par un LFO + turbine qui monte en régime, démarrage sur l'approche,
+  extinction après l'explosion),
   missile qui part, **explosion** (descente dans le grave, souffle, débris,
   écho), **sirène de l'escouade de police** (deux tons qui alternent, tenus par
   un LFO carré — l'aller-retour « hi-lo » des berlines américaines — et une
