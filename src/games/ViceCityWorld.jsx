@@ -942,6 +942,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         lane: police.lane,
         x: police.currentX,
         mode: police.mode,
+        // Sonnée par un tir ou ralentie par un choc : la berline est hors jeu
+        // quelques secondes — la page peut le montrer, les vérifications ne la
+        // comptent pas comme décrochée.
+        stunLeft: police.stunLeft,
+        slowLeft: Math.max(police.slowLeft, police.trafficImpactLeft),
         // Barrage en cours : la page et la mini-carte peuvent le signaler.
         blocking: police.mode === 'blockade' && police.blockLeft > 0,
       })),
