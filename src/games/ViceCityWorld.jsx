@@ -37,6 +37,8 @@ import {
   CITY_RUSH_POWERS,
   addCityRushCharge,
   approachCityRushSpeed,
+  cityRushTrafficRecoveryRate,
+  CITY_RUSH_TRAFFIC_RECOVERY_DURATION,
   cityRushHitDuration,
   chooseCityRushAiLane,
   chooseCityRushPoliceLane,
@@ -843,6 +845,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerLane = 1;
   let playerX = CITY_RUSH_LANE_X[playerLane];
   let playerSlowLeft = 0;
+  let playerTrafficRecoverLeft = 0;
   let playerTrafficImpactLeft = 0;
   let playerBoostLeft = 0;
   let playerStunLeft = 0;
@@ -1073,6 +1076,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerLane = 1;
     playerX = CITY_RUSH_LANE_X[playerLane];
     playerSlowLeft = 0;
+    playerTrafficRecoverLeft = 0;
     playerTrafficImpactLeft = 0;
     playerBoostLeft = 0;
     playerStunLeft = 0;
@@ -1111,6 +1115,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.currentX = CITY_RUSH_LANE_X[racer.lane];
       racer.changeIn = 0.22 + index * 0.08;
       racer.slowLeft = 0;
+      racer.trafficRecoverLeft = 0;
       racer.trafficImpactLeft = 0;
       racer.boostLeft = 0;
       racer.stunLeft = 0;
@@ -2530,6 +2535,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const priorDistance = distance;
       const priorRacerDistances = new Map(racers.map((racer) => [racer.id, racer.distance]));
       playerSlowLeft = Math.max(0, playerSlowLeft - dt);
+      playerTrafficRecoverLeft = Math.max(0, playerTrafficRecoverLeft - dt);
       playerTrafficImpactLeft = Math.max(0, playerTrafficImpactLeft - dt);
       playerBoostLeft = Math.max(0, playerBoostLeft - dt);
       playerStunLeft = Math.max(0, playerStunLeft - dt);
@@ -2537,7 +2543,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const speedScale = playerSlowLeft > 0 || playerTrafficImpactLeft > 0 ? 0.63 : 1;
       const boostScale = playerBoostLeft > 0 ? 1.46 : 1;
       const targetPlayerSpeed = playerStunLeft > 0 ? 0 : PLAYER_SPEED * playerProfile.powerMultiplier * speedScale * boostScale;
-      const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, playerProfile.accelerationRate, dt);
+      const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt);
       const priorPlayerX = playerX;
       playerX = lerp(playerX, CITY_RUSH_LANE_X[playerLane], Math.min(1, dt * 12));
       const playerSkid = playerSkidLeft > 0 ? Math.sin((0.85 - playerSkidLeft) * 17) * 0.24 * playerSkidSide : 0;
@@ -2574,6 +2580,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           racer.changeIn = randomRange(0.36, 0.62);
         }
         racer.slowLeft = Math.max(0, racer.slowLeft - dt);
+        racer.trafficRecoverLeft = Math.max(0, (racer.trafficRecoverLeft || 0) - dt);
         racer.trafficImpactLeft = Math.max(0, racer.trafficImpactLeft - dt);
         racer.boostLeft = Math.max(0, racer.boostLeft - dt);
         racer.stunLeft = Math.max(0, racer.stunLeft - dt);
@@ -2581,7 +2588,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         racer.powerCooldown = Math.max(0, racer.powerCooldown - dt);
         const racerSlowed = racer.slowLeft > 0 || racer.trafficImpactLeft > 0;
         const speedTarget = racer.stunLeft > 0 ? 0 : racer.baseSpeed * (racerSlowed ? 0.56 : 1) * (racer.boostLeft > 0 ? 1.38 : 1) + Math.sin(elapsed * 0.82 + racer.phase) * 0.38;
-        const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), racer.profile.accelerationRate, dt);
+        const requestedSpeed = approachCityRushSpeed(racer.currentSpeed, Math.max(0, speedTarget), cityRushTrafficRecoveryRate(racer.profile.accelerationRate, racer.trafficRecoverLeft), dt);
         requestedRacerSpeeds.set(racer.id, requestedSpeed);
         priorRacerXs.set(racer.id, racer.currentX);
         racer.currentX = lerp(racer.currentX, CITY_RUSH_LANE_X[racer.lane], Math.min(1, dt * 5.3));
@@ -2626,6 +2633,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const resolvedCars = resolveCityRushCarMovement(movementRequests);
       const movementById = new Map(resolvedCars.map((car) => [car.id, car.nextDistance]));
       distance = movementById.get('player') ?? priorDistance;
+      // Coincé derrière le trafic : la reprise de vitesse sera accélérée.
+      if (dt > 0 && distance - priorDistance < requestedPlayerSpeed * dt - 1e-6) playerTrafficRecoverLeft = CITY_RUSH_TRAFFIC_RECOVERY_DURATION;
       const priorSpeed = currentSpeed;
       currentSpeed = dt > 0 ? Math.max(0, (distance - priorDistance) / dt) : requestedPlayerSpeed;
       playerCurrentSpeed = currentSpeed;
@@ -2662,6 +2671,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       for (const racer of racers) {
         const priorRacerDistance = priorRacerDistances.get(racer.id);
         racer.distance = movementById.get(racer.id) ?? priorRacerDistance;
+        if (dt > 0 && racer.distance - priorRacerDistance < requestedRacerSpeeds.get(racer.id) * dt - 1e-6) racer.trafficRecoverLeft = CITY_RUSH_TRAFFIC_RECOVERY_DURATION;
         const priorRacerSpeed = racer.currentSpeed;
         racer.currentSpeed = dt > 0 ? Math.max(0, (racer.distance - priorRacerDistance) / dt) : requestedRacerSpeeds.get(racer.id);
         const gap = racer.distance - distance;
