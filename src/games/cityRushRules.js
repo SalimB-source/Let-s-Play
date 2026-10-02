@@ -44,6 +44,12 @@ export const CITY_RUSH_CARS = Object.freeze([
     power: 78, powerMultiplier: 0.98, acceleration: 87, accelerationRate: 9.5, recovery: 94, hitRecoveryMultiplier: 0.88,
     widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
   }),
+  Object.freeze({
+    id: 'vega-gt-67', name: 'VEGA GT ’67', className: 'MUSCLE CAR NOIRE · ÉDITION NICO',
+    bodyColor: 0x11131a, trimColor: 0xc83a4b, driverColor: 0xc98c68, accent: '#e04455',
+    power: 92, powerMultiplier: 1.03, acceleration: 86, accelerationRate: 9.4, recovery: 76, hitRecoveryMultiplier: 1.0,
+    widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
+  }),
 ]);
 
 // Le trafic d'obstacle roule nettement moins vite que les voitures de course.
