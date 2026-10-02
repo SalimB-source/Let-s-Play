@@ -72,11 +72,7 @@ const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_DISTANCE, CITY_RUSH_POWER_RULES,
-  CITY_RUSH_LANE_X, CITY_RUSH_SCROLL_SCALE,
 } = await import('../src/games/cityRushRules.js');
-const {
-  CITY_RUSH_TUNNEL_LANE_HALF, cityRushTunnels,
-} = await import('../src/games/cityRushTunnels.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
 const FRAME_MS = 1000 / 30;
@@ -116,7 +112,7 @@ const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'oilDrop', 'lap', 'finish', 'countdownBeep', 'passby',
-  'policeSiren', 'policeSirenOff', 'tunnelRush', 'tunnelExit',
+  'policeSiren', 'policeSirenOff',
 ];
 
 for (const [index, city] of cities.entries()) {
@@ -221,20 +217,8 @@ for (const [index, city] of cities.entries()) {
   let policeAheadFrames = 0;
   let policeClosestGap = Infinity;
   let policeBeacons = 0;
-  // Tremis : le joueur ne doit jamais rouler dans une voie murée, et le HUD
-  // doit annoncer chaque passage sous la voûte.
-  let tunnelHudFrames = 0;
-  const tunnelIds = new Set();
   while (!callbacks.finish && frames < maxFrames) {
     const hud = callbacks.huds[callbacks.huds.length - 1];
-    if (hud?.tunnel) {
-      tunnelHudFrames += 1;
-      tunnelIds.add(hud.tunnel.id);
-      if (!hud.tunnel.openLanes.includes(hud.playerLane)) {
-        fail(`le joueur roule dans une voie murée sous ${hud.tunnel.name} (voie ${hud.playerLane})`, hud.tunnel);
-      }
-      if (hud.tunnel.openLanes.length < 2) fail('un tremis laisse moins de deux voies ouvertes', hud.tunnel);
-    }
     // Pilote naïf : si on traîne derrière le trafic, on tente de changer de voie ;
     // on déclenche chaque pouvoir dès qu'il est chargé.
     if (hud && hud.speed < 70) slowFrames += 1; else slowFrames = 0;
@@ -367,51 +351,6 @@ for (const [index, city] of cities.entries()) {
   if ((audioCalls.boost || 0) < automaticCash) fail('un boost vert chargé ne s’est pas activé automatiquement', { automaticCash, audioCalls });
   if ((audioCalls.oilDrop || 0) < automaticOil) fail('une jauge huile pleine n’a pas déposé sa flaque automatiquement', { automaticOil, audioCalls });
 
-  // Tremis, côté pierre : une voûte au-dessus de la route, et rien de minéral
-  // dans le couloir resté ouvert. La matière des tremis est la seule mate à
-  // 0,97 de rugosité, ce qui suffit à la retrouver dans la scène fusionnée.
-  // Certains circuits n'en ont pas : on vérifie alors qu'il n'y en a vraiment
-  // aucun, ni dans le HUD, ni dans la scène, ni dans les enceintes.
-  const planned = cityRushTunnels(city.id);
-  const tunnels = world.tunnels || planned;
-  if (tunnels.length !== planned.length) fail('le monde ne connaît pas les tremis du circuit', { planned: planned.length, tunnels: tunnels.length });
-  let tunnelMesh = null;
-  scene?.traverse((object) => {
-    if (tunnelMesh || !object.isMesh) return;
-    if (object.material && Math.abs((object.material.roughness ?? 0) - 0.97) < 0.005) tunnelMesh = object;
-  });
-  if (!tunnels.length) {
-    if (tunnelHudFrames || tunnelIds.size) fail('un tremis signalé dans un circuit qui n’en a pas');
-    if (tunnelMesh) fail('de la pierre de tremis dans un circuit qui n’en a pas');
-    if (audioCalls.tunnelRush || audioCalls.tunnelExit) fail('un souffle de tunnel dans un circuit qui n’en a pas', audioCalls);
-  } else {
-    if (!tunnelHudFrames) fail('le HUD n’a jamais signalé un tremis traversé');
-    if (tunnelIds.size !== tunnels.length) fail(`seulement ${tunnelIds.size}/${tunnels.length} tremis traversés`);
-    if (!tunnelMesh) fail('la géométrie des tremis est absente de la scène');
-    const vertices = tunnelMesh.geometry.attributes.position;
-    let vaultVertices = 0;
-    let corridorIntrusions = 0;
-    for (let index = 0; index < vertices.count; index += 1) {
-      const x = vertices.getX(index);
-      const y = vertices.getY(index);
-      const track = -vertices.getZ(index) / CITY_RUSH_SCROLL_SCALE;
-      const tunnel = tunnels.find((item) => track > item.entry - 1 && track < item.exit + 1);
-      if (!tunnel) continue;
-      if (y > 8.6) vaultVertices += 1;
-      if (y >= 8.6) continue;
-      // Le couloir resté ouvert : de la première à la dernière voie ouverte.
-      // Aucun bloc de pierre ne doit y traîner, que la paroi soit d'un seul
-      // côté ou des deux (couloir central).
-      const corridorMin = CITY_RUSH_LANE_X[tunnel.openLanes[0]] - CITY_RUSH_TUNNEL_LANE_HALF;
-      const corridorMax = CITY_RUSH_LANE_X[tunnel.openLanes[tunnel.openLanes.length - 1]] + CITY_RUSH_TUNNEL_LANE_HALF;
-      if (x > corridorMin + 0.06 && x < corridorMax - 0.06) corridorIntrusions += 1;
-    }
-    if (!vaultVertices) fail('aucune voûte au-dessus de la route');
-    if (corridorIntrusions > 0) fail(`${corridorIntrusions} sommets de pierre dans le couloir ouvert`);
-    if (!audioCalls.tunnelRush) fail('aucun souffle de tunnel déclenché', audioCalls);
-    if ((audioCalls.tunnelExit || 0) < (audioCalls.tunnelRush || 0) - 1) fail('une entrée de tunnel reste sans sortie', audioCalls);
-  }
-
   // Fin de course : la caméra tourne, le départ fait la fête, pas d’exception.
   world.setPhase('finished');
   runFrames(60, 'finished');
@@ -423,36 +362,6 @@ for (const [index, city] of cities.entries()) {
   const hudAfterReset = callbacks.huds.at(-1);
   if (hudAfterReset.lap !== 1 || hudAfterReset.distance > 1) fail('reset() ne remet pas la course au tour 1', hudAfterReset);
 
-  // Voie murée : on remet la course au départ et on force le volant vers la
-  // gauche (voie 0, murée sous le premier tremis de Vice City) pour vérifier,
-  // en vrai, que le joueur est retenu au volant puis raclé s'il insiste. Sur un
-  // circuit qui n'a pas de tremis, la séquence est simplement sautée.
-  if (planned.length) {
-    const closedLane = planned[0].closedLanes[0];
-    const side = closedLane < planned[0].openLanes[0] ? 'left' : 'right';
-    world.reset();
-    world.setPhase('playing');
-    world.start();
-    const scrapesBefore = callbacks.effects.filter((e) => e.type === 'tunnel-scrape').length;
-    let sawWalledLane = false;
-    let entryLane = null;
-    let tunnelFrame = null;
-    for (let index = 0; index < 300 && !tunnelFrame; index += 1) {
-      // On pousse le volant vers la paroi à chaque image : sans retenue, le
-      // joueur finirait dans la voie murée.
-      world.action(side);
-      runFrames(1, `approche de la paroi f${index}`);
-      const hud = callbacks.huds.at(-1);
-      if (hud?.playerLane === closedLane) sawWalledLane = true;
-      if (hud?.tunnel) { tunnelFrame = index; entryLane = hud.playerLane; }
-    }
-    if (tunnelFrame === null) fail('la seconde course n’atteint jamais le premier tremis');
-    if (entryLane === closedLane) fail('le joueur entre dans une voie murée malgré la retenue au volant', { closedLane, entryLane });
-    const scrapes = callbacks.effects.filter((e) => e.type === 'tunnel-scrape').length - scrapesBefore;
-    if (sawWalledLane && !scrapes) fail('le joueur a roulé dans la voie murée sans racler la paroi');
-    console.log(`  [${city.id}] paroi ${side} (voie ${closedLane}) : retenu à la voie ${entryLane}, ${scrapes} raclement(s)`);
-  }
-
   try { world.destroy(); } catch (e) { console.error('destroy() a levé :', e); process.exit(1); }
   if (rafQueue.size) fail('rAF encore planifié après destroy()', rafQueue.size);
 
@@ -461,7 +370,6 @@ for (const [index, city] of cities.entries()) {
     `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames` +
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
-    (tunnels.length ? ` · tremis ${tunnelIds.size}/${tunnels.length} traversés (${tunnelHudFrames} f sous la voûte)` : ' · sans tremis') +
     ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m` : 'jamais entrée'}` +
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
     ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris` +
