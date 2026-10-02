@@ -401,6 +401,8 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-arrival') showToast(effect.target === 'player' ? '🚨 POLICE · DEUX BERLINES SE JOIGNENT À LA COURSE JUSTE DERRIÈRE TOI · ELLES VISENT TES BONUS ROUGES ET JAUNES.' : `🚨 POLICE · L’ESCOUADE PREND ${effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ ${effect.item === 'radio' ? 'L’HÉLICO (JAUNE)' : 'LA MITRAILLEUSE (ROUGE)'}${effect.ready ? ' · ELLE EST ARMÉE' : ''}.`, effect.item === 'radio' ? 'radio' : 'pistol');
     else if (effect.type === 'police-fire') showToast(`TATATATA ! ${effect.police} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    else if (effect.type === 'police-rally') showToast(effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`, 'pistol');
+    else if (effect.type === 'police-destroyed') showToast(effect.byPlayer ? `💥 ${effect.police} DÉTRUITE · +200 PTS · ELLE QUITTE LA COURSE.` : `💥 ${effect.police} DÉTRUITE · ELLE QUITTE LA COURSE.`, 'radio');
     else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
       const wall = effect.walls > 1 ? 'PAROIS DES DEUX CÔTÉS' : `PAROI À ${effect.side === 'left' ? 'GAUCHE' : 'DROITE'}`;
       showToast(`${effect.name} · ${effect.open} VOIES OUVERTES SUR 4 · ${wall}.`, 'neutral');
@@ -814,7 +816,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{mode.policeFromStart ? 'Active dès le départ en POURSUITE : deux berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, deux berlines entrent derrière le leader pour l’empêcher de s’armer.'} Hors classement, visibles sur mini-carte.</p></div>
+            <div><b>ESCOUADE DE POLICE</b><p>{mode.policeFromStart ? 'Active dès le départ en POURSUITE : deux berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, deux berlines entrent derrière le leader pour l’empêcher de s’armer.'} Hors classement, visibles sur mini-carte. Chaque berline a une barre de vie : 2 tirs droits bleus, 1 rafale rouge ou 1 tir d’hélico la détruisent — explosion, retrait de la course et +200 pts.</p></div>
           </section>
         </aside>
       </main>

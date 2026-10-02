@@ -409,7 +409,17 @@ de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   joueur. En dernier tour, une rafale rouge ou un missile jaune peut riposter
   contre la berline la plus proche quand aucun rival n'est devant ; le tir bleu
   reste un projectile droit, limité à un adversaire visible dans la voie du
-  tireur (`CITY_RUSH_POLICE_*`, `cityRushRules.js`).
+  tireur (`CITY_RUSH_POLICE_*`, `cityRushRules.js`). **Les berlines sont
+  destructibles.** Chacune porte une barre de vie au-dessus du toit (reprise
+  sur les pastilles de la mini-carte) : **deux tirs droits bleus, OU une rafale
+  rouge, OU un tir d'hélicoptère** la détruisent
+  (`CITY_RUSH_POLICE_HEALTH = 2`, barème pur `cityRushPoliceDamage`). À la
+  destruction : explosion complète, retrait immédiat de la course et de la
+  mini-carte, **+200 pts** pour le pilote qui l'abat
+  (`CITY_RUSH_POLICE_DESTROY_SCORE`), et la sirène s'éteint quand la dernière
+  berline explose. La berline du trafic rappelée par un contact est
+  destructible comme l'escouade ; à la course suivante, le trafic repart au
+  complet.
 - **Les bonus.** Quatre types de ramassages colorés remplissent quatre jauges :
   **bleu 2** (pistolet à tir droit), **rouge 3** (mitrailleuse), **vert 2**
   (boisson énergisante / boost), **jaune 4** (talkie-walkie / hélicoptère) —

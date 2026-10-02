@@ -445,9 +445,13 @@ for (const [index, city] of cities.entries()) {
   if (audioCalls.finish !== 1) fail('la fanfare d’arrivée n’a pas sonné une fois', audioCalls);
   if ((audioCalls.lap || 0) !== callbacks.laps.length) fail('un passage de ligne sur deux est muet', audioCalls);
   // Un missile encore en vol au moment du drapeau à damier est coupé net par
-  // l’arrivée : au plus une frappe peut rester sans explosion (jamais l’inverse).
-  if (audioCalls.explosion > audioCalls.missileLaunch || (audioCalls.missileLaunch || 0) - (audioCalls.explosion || 0) > 1) {
-    fail('un missile sans explosion (ou l’inverse)', audioCalls);
+  // l'arrivée : au plus une frappe peut rester sans explosion (jamais
+  // l'inverse). Une berline de police détruite explose elle aussi : le compte
+  // attendu des explosions couvre missiles et berlines abattues.
+  const destroyedPolice = callbacks.effects.filter((effect) => effect.type === 'police-destroyed').length;
+  const expectedExplosions = (audioCalls.missileLaunch || 0) + destroyedPolice;
+  if ((audioCalls.explosion || 0) > expectedExplosions || expectedExplosions - (audioCalls.explosion || 0) > 1) {
+    fail('un missile ou une berline sans explosion (ou l’inverse)', audioCalls);
   }
   // Un missile suppose un hélicoptère ; une frappe avortée par l'arrivée ou
   // par `reset()` compte un démarrage de plus que de missiles, jamais
@@ -467,6 +471,25 @@ for (const [index, city] of cities.entries()) {
   const policeArrivals = callbacks.effects.filter((effect) => effect.type === 'police-arrival');
   if (policeArrivals.length !== 1) fail('l’escouade de police n’entre pas exactement une fois en piste', policeArrivals);
   if (!firstPoliceHud) fail('aucune berline de police dans le HUD pendant la course');
+  // Barre de vie : chaque berline expose ses points de vie au HUD (pleins à
+  // l'entrée en piste), et une berline détruite les a bien eus avant l'explosion.
+  for (const hud of callbacks.huds) {
+    for (const car of hud.police || []) {
+      if (!Number.isFinite(car.health) || !Number.isFinite(car.maxHealth)) {
+        fail('une berline de police du HUD n’a pas de barre de vie', car);
+      }
+    }
+  }
+  const destroyedPoliceEffects = callbacks.effects.filter((effect) => effect.type === 'police-destroyed');
+  for (const effect of destroyedPoliceEffects) {
+    const seen = callbacks.huds
+      .map((hud) => (hud.police || []).find((car) => car.name === effect.police))
+      .filter(Boolean);
+    if (!seen.length) fail('une berline détruite n’est jamais apparue dans le HUD', effect);
+    if (!(seen[0].health >= 1 && seen[0].health <= seen[0].maxHealth)) {
+      fail('une berline détruite n’avait pas de vie cohérente dans le HUD', seen[0]);
+    }
+  }
   // Escouade du dernier tour (`police-*`) et police du trafic rappelée par un
   // contact (`rally-traffic-*`) partagent la même liste ; l'escouade reste
   // limitée à deux berlines et n'entre jamais devant le leader.

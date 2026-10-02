@@ -824,6 +824,20 @@
   fill: #2b6bff;
 }
 
+.city-rush-minimap-pursuer-health-bg {
+  fill: rgba(6, 10, 20, 0.9);
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 0.35;
+}
+
+.city-rush-minimap-pursuer-health-fill {
+  fill: #2be06a;
+}
+
+.city-rush-minimap-pursuer-health-fill.is-low {
+  fill: #ffa53d;
+}
+
 .city-rush-minimap-marker { transition: transform 0.1s linear; }
 .city-rush-minimap-Pointer { fill: var(--marker-color, #43ead5); }
 .city-rush-minimap-dot { fill: #0b1122; stroke: var(--marker-color, #43ead5); stroke-width: 1.6; }

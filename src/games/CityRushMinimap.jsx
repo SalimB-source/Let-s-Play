@@ -150,6 +150,20 @@ export default function CityRushMinimap({
               <rect className="city-rush-minimap-pursuer-body" x="-3.8" y="-2.5" width="7.6" height="5" rx="1.5" />
               <rect className="city-rush-minimap-pursuer-light" x="-2.9" y="-1.5" width="2.4" height="3" rx="0.7" />
               <rect className="city-rush-minimap-pursuer-light is-blue" x="0.5" y="-1.5" width="2.4" height="3" rx="0.7" />
+              {car.health !== null && car.maxHealth > 0 && (
+                <g className="city-rush-minimap-pursuer-health" transform={`rotate(${(-car.deg).toFixed(1)})`}>
+                  <title>{`${car.name} · ${car.health}/${car.maxHealth} points de vie`}</title>
+                  <rect className="city-rush-minimap-pursuer-health-bg" x="-4.4" y="3.6" width="8.8" height="1.7" rx="0.85" />
+                  <rect
+                    className={`city-rush-minimap-pursuer-health-fill${car.health <= 1 ? ' is-low' : ''}`}
+                    x="-4.4"
+                    y="3.6"
+                    width={Math.max(0, 8.8 * Math.min(1, Math.max(0, car.health / car.maxHealth)))}
+                    height="1.7"
+                    rx="0.85"
+                  />
+                </g>
+              )}
             </g>
           ))}
 

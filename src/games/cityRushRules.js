@@ -142,7 +142,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#48b9ff',
     key: 'A',
     automatic: false,
-    description: `Tire droit devant toi sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s.`,
+    description: `Tire droit devant toi sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s. Deux tirs bleus détruisent une berline de police.`,
     duration: CITY_RUSH_BLUE_SHOT_DURATION,
     speedFactor: CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   }),
@@ -154,7 +154,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche.',
+    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche — une seule rafale la détruit.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.CASH]: Object.freeze({
@@ -176,7 +176,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ffd44f',
     key: 'R',
     automatic: false,
-    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un rival poursuivant) et les adversaires proches de l’impact devant ton capot ; en tête au dernier tour, il peut aussi bombarder la berline de police qui te traque. Les voitures touchées partent en toupie sur place, incapables de changer de voie ; la reprise de chaque cible règle la durée (2 s de base).',
+    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un rival poursuivant) et les adversaires proches de l’impact devant ton capot ; en tête au dernier tour, il peut aussi bombarder la berline de police qui te traque — un seul missile la détruit. Les voitures touchées partent en toupie sur place, incapables de changer de voie ; la reprise de chaque cible règle la durée (2 s de base).',
     duration: 2,
   }),
 });
@@ -859,6 +859,26 @@ export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafa
 export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
 
+// Les berlines de l'escouade ont une petite barre de vie : deux tirs droits
+// bleus, OU une seule rafale rouge, OU un seul missile d'hélicoptère les
+// détruisent. Le barème des dégâts est pur, donc testable hors de three.js.
+export const CITY_RUSH_POLICE_HEALTH = 2;
+export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // deux tirs droits bleus
+  [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_POLICE_HEALTH, // une rafale rouge suffit
+  [CITY_RUSH_POWERS.RADIO]: CITY_RUSH_POLICE_HEALTH, // un tir d'hélicoptère suffit
+});
+
+export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
+  const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));
+  const damage = Number(CITY_RUSH_POLICE_DAMAGE[source]);
+  if (!Number.isFinite(damage) || damage <= 0) return safeHealth;
+  return Math.max(0, safeHealth - damage);
+}
+
+// Prime de destruction : le pilote qui fait exploser une berline la touche.
+export const CITY_RUSH_POLICE_DESTROY_SCORE = 200;
+
 // ── Barrage roulant : la berline coupe la route au leader ───────────────────
 // Une berline qui se retrouve devant le leader, dans sa voie, lève le pied au
 // lieu de tenir sa hauteur. Le leader la percute comme une voiture lente : il
@@ -1392,6 +1412,9 @@ export function buildCityRushMinimapState(
         mode: police.mode || null,
         blocking: Boolean(police.blocking) || police.mode === 'blockade',
         rallied: Boolean(police.rallied),
+        // Barre de vie : la mini-carte la dessine sous la pastille.
+        health: Number.isFinite(Number(police.health)) ? Number(police.health) : null,
+        maxHealth: Number.isFinite(Number(police.maxHealth)) ? Number(police.maxHealth) : null,
         distance: Math.round(distance),
         lane,
         x: point.x,
