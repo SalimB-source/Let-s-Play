@@ -10,6 +10,10 @@ import {
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
+  CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN,
+  CITY_RUSH_TRAFFIC_IMPACT_DURATION,
+  CITY_RUSH_TRAFFIC_IMPACT_GAP,
+  CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION,
   CITY_RUSH_PICKUP_BURST_DURATION,
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
@@ -31,6 +35,7 @@ import {
   buildCityRushMinimapState,
   approachCityRushSpeed,
   chooseCityRushAiLane,
+  chooseCityRushTrafficEscapeLane,
   cityRushHitDuration,
   cityRushHelicopterTarget,
   cityRushIsAhead,
@@ -52,6 +57,7 @@ import {
   consumeCityRushCharge,
   createCityRushEncounter,
   createCityRushInventory,
+  detectCityRushTrafficImpacts,
   isCityRushPickupHidden,
   markCityRushPickupTaken,
   rankCityRushRacers,
@@ -107,6 +113,34 @@ test('twelve slow traffic cars span four distinct types and safely block racers'
   const byId = Object.fromEntries(moved.map((car) => [car.id, car.nextDistance]));
   assert.ok(byId.player >= 35, 'le contact ne provoque pas de recul ni de pénalité');
   assert.ok(byId['slow-traffic'] - byId.player >= CITY_RUSH_CAR_GAP - 1e-9);
+});
+
+test('un joueur humain ou une IA touche le trafic, ralentit une seconde et libère une voie', () => {
+  assert.equal(CITY_RUSH_TRAFFIC_IMPACT_DURATION, 1);
+  assert.equal(CITY_RUSH_TRAFFIC_IMPACT_GAP, CITY_RUSH_CAR_GAP);
+  assert.ok(CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN > CITY_RUSH_TRAFFIC_IMPACT_DURATION);
+  assert.ok(CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION > 0 && CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION < CITY_RUSH_TRAFFIC_IMPACT_DURATION);
+
+  const requests = [
+    { id: 'player', collisionGroup: 'racer', lane: 1, x: -1.05, width: 1.9, previousDistance: 20, nextDistance: 22.2 },
+    { id: 'nova', collisionGroup: 'racer', lane: 2, x: 1.05, width: 1.75, previousDistance: 8, nextDistance: 8.4 },
+    { id: 'traffic-1', collisionGroup: 'traffic', lane: 1, x: -1.05, width: 1.94, previousDistance: 25.2, nextDistance: 25.45 },
+  ];
+  const impacts = detectCityRushTrafficImpacts(requests);
+  assert.equal(impacts.length, 1);
+  assert.equal(impacts[0].racerId, 'player');
+  assert.equal(impacts[0].trafficId, 'traffic-1');
+  assert.equal(impacts[0].lane, 1);
+  assert.ok(Math.abs(impacts[0].previousGap - 5.2) < 1e-9);
+  assert.ok(Math.abs(impacts[0].requestedGap - 3.25) < 1e-9);
+  assert.deepEqual(detectCityRushTrafficImpacts([
+    { id: 'rival', collisionGroup: 'racer', lane: 0, x: -3.15, previousDistance: 20, nextDistance: 21 },
+    { id: 'traffic', collisionGroup: 'traffic', lane: 1, x: -1.05, previousDistance: 30, nextDistance: 30.1 },
+  ]), [], 'deux voies distinctes ne provoquent pas un choc');
+
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 0 }), 1, 'le bord gauche se rabat vers la voie 1');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 1, blockedLanes: [0], openLanes: [0, 1, 2, 3] }), 2, 'une voie occupée est évitée');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2], openLanes: [1, 2, 3] }), 1, 'le tunnel garde une voie ouverte quand la voie voisine est occupée');
 });
 
 test('rivals plan lane changes to collect bonuses and avoid traffic safely', () => {
