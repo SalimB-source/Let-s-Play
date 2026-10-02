@@ -55,6 +55,8 @@ const POWER_TYPES = ['oil', 'pistol', 'cash', 'radio'];
 // Caméra de poursuite plus basse que l'ancienne vue plongeante (8,8 m) :
 // on voit l'horizon, la skyline, les portes et le portique de départ. Tout
 // élément qui enjambe la route doit rester au-dessus de 7,1 m.
+// Distance (en mètres) sous laquelle le passage d'un rival s'entend.
+const PASS_BY_RANGE = 11;
 const CHASE_POSITION = new THREE.Vector3(0, 6.6, PLAYER_Z + 13.2);
 const CHASE_LOOK = new THREE.Vector3(0, 1.3, PLAYER_Z - 15);
 
@@ -282,7 +284,16 @@ function disposeScene(scene, renderer) {
   renderer.domElement.remove();
 }
 
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id) {
+/**
+ * `audioRef` (facultatif) pointe sur l'instance `CityRushAudio` de la page.
+ * Deux usages, et deux seulement :
+ *   - le **moteur**, un nœud permanent dont on ne fait suivre que le régime,
+ *     une fois par image (le HUD de la page est trop espacé pour ça) ;
+ *   - les **bruitages liés à une position** (tir, dérapage, missile,
+ *     explosion), déclenchés ici parce que le monde connaît la voie de la
+ *     voiture touchée — donc son placement stéréo — au moment exact.
+ */
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null) {
   const theme = cityRushTheme(city.id);
   const lightRig = cityRushLightRig(theme, city);
   const lite = detectLiteQuality();
@@ -654,6 +665,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     helicopter.visible = false;
     missile.visible = false;
     impact.visible = false;
+    // Un reset en pleine frappe ne laisse pas le rotor tourner dans le vide.
+    audioRef?.current?.helicopterStop();
     oilTraps.forEach((trap) => scene.remove(trap.mesh));
     oilTraps.length = 0;
     smoke.clear();
@@ -672,6 +685,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.boostLeft = 0;
       racer.stunLeft = 0;
       racer.skidLeft = 0;
+      racer.lastPassGap = undefined;
       racer.inventory = createCityRushInventory();
       racer.powerCooldown = 0;
       racer.smokeTimer = 0;
@@ -737,6 +751,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function getVehicleMesh(vehicleId) {
     if (vehicleId === 'player') return playerCar;
     return racers.find((racer) => racer.id === vehicleId)?.mesh || null;
+  }
+
+  // Placement stéréo d'un bruitage : la voie de la voiture, ramenée à un
+  // panoramique discret (−0,5 à 0,5). La caméra est derrière le joueur, donc
+  // « devant » suffit à situer un tir ou un dérapage.
+  function vehiclePan(vehicleId) {
+    const mesh = getVehicleMesh(vehicleId);
+    if (!mesh) return 0;
+    return clamp(mesh.position.x / 6.3, -1, 1) * 0.5;
   }
 
   function removeTransient(mesh) {
@@ -875,6 +898,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const mesh = makePistolBolt();
     scene.add(mesh);
     pistolShots.push({ mesh, attackerId, targetId, age: 0, phase: 'flight', hitPoint: new THREE.Vector3() });
+    // Le coup part maintenant ; le dérapage de la cible tombe 0,3 s plus
+    // tard, quand l'éclair touche la carrosserie (voir `updateVisualEffects`).
+    audioRef?.current?.gunshot({ pan: vehiclePan(attackerId) });
+    audioRef?.current?.skid({
+      pan: vehiclePan(targetId),
+      delay: 0.3,
+      intensity: targetId === 'player' ? 1.15 : 0.8,
+    });
   }
 
   function updateVisualEffects(dt) {
@@ -950,6 +981,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     helicopter.position.copy(strike.start);
     missile.visible = false;
     impact.visible = false;
+    // Le rotor démarre avec l'approche : il monte en régime pendant 0,85 s.
+    audioRef?.current?.helicopterStart();
     getCallbacks().effect?.({ type: 'radio', target: target.name, targetId: target.id });
     return true;
   }
@@ -970,9 +1003,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
     if (type === 'cash') {
       playerBoostLeft = Math.max(playerBoostLeft, CITY_RUSH_POWER_RULES.cash.duration);
+      audioRef?.current?.boost();
       getCallbacks().effect?.({ type: 'cash', duration: CITY_RUSH_POWER_RULES.cash.duration });
     } else if (type === 'oil') {
       spawnOilTrap(playerLane);
+      audioRef?.current?.oilDrop();
       getCallbacks().effect?.({ type: 'oil', lane: playerLane });
     } else if (type === 'pistol') {
       const target = findPistolTarget();
@@ -1071,6 +1106,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const ready = progress >= chargeCost;
     score += type === 'radio' ? 180 : type === 'pistol' ? 150 : type === 'oil' ? 125 : 100;
     pickedUp += 1;
+    // Bip de ramassage (aigu quand la jauge vient de se remplir) : seul le
+    // joueur en bénéficie, les rivaux remplissent leur inventaire en silence.
+    audioRef?.current?.pickup(type, { ready: before < chargeCost && ready });
     getCallbacks().pickup?.({ type, progress, chargeCost, ready, newlyReady: before < chargeCost && ready, lane });
     emitHud(true);
   }
@@ -1085,8 +1123,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (isPlayer) {
       playerSlowLeft = Math.max(playerSlowLeft, adjustedDuration);
       getCallbacks().effect?.({ type: 'slow-zone' });
+      // Zone de ralentissement : un dérapage plus doux qu'un tir encaissé.
+      audioRef?.current?.skid({ pan: vehiclePan('player'), intensity: 0.6, duration: 0.5 });
     } else {
       racer.slowLeft = Math.max(racer.slowLeft, adjustedDuration);
+      audioRef?.current?.skid({ pan: vehiclePan(racer.id), intensity: 0.4, duration: 0.45 });
     }
   }
 
@@ -1125,6 +1166,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         else target.racer.slowLeft = Math.max(target.racer.slowLeft, duration);
         trap.active = false;
         trap.mesh.visible = false;
+        // Flaque d'huile : les pneus accrochent puis décrochent d'un coup.
+        audioRef?.current?.skid({
+          pan: vehiclePan(target.id),
+          intensity: target.id === 'player' ? 1 : 0.7,
+          duration: 0.62,
+        });
         getCallbacks().effect?.({ type: 'oil-hit', target: target.name, owner: trap.sourceName });
         break;
       }
@@ -1224,6 +1271,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         missile.position.copy(helicopter.position).add(new THREE.Vector3(-0.55, -0.42, 0.18));
         strike.missileStart = missile.position.clone();
         missile.visible = true;
+        audioRef?.current?.missileLaunch({ pan: vehiclePan(strike.targetId) });
       }
     } else if (strike.phase === 'fire') {
       const flight = clamp(strike.elapsed / 0.56, 0, 1);
@@ -1247,6 +1295,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         strike.phase = 'impact';
         strike.elapsed = 0;
         missile.visible = false;
+        audioRef?.current?.explosion({ pan: vehiclePan(strike.targetId) });
         for (let puff = 0; puff < 6; puff += 1) {
           smoke.emit(target, { color: 0x4a4a55, opacity: 0.55, scale: 0.6, grow: 2.4, life: 1.1, velocity: [(Math.random() - 0.5) * 3, 1.2 + Math.random(), (Math.random() - 0.5) * 3] });
         }
@@ -1263,6 +1312,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         impact.visible = false;
         helicopter.visible = false;
         strike = null;
+        // Le rotor s'éloigne et s'éteint après l'explosion.
+        audioRef?.current?.helicopterStop();
       }
     }
   }
@@ -1293,11 +1344,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     coastSpeed = currentSpeed;
     clearVisualEffects();
     strike = null;
+    audioRef?.current?.helicopterStop();
     helicopter.visible = false;
     missile.visible = false;
     impact.visible = false;
     startLine.celebrate();
     const standings = rankCityRushRacers(makeRacerRows());
+    // Fanfare d'arrivée : accord majeur pour la victoire, plus sobre sinon.
+    audioRef?.current?.finish(standings.rank);
     emitHud(true);
     getCallbacks().finish?.({
       city: city.id,
@@ -1342,6 +1396,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       startLine.setBoard(`TOUR ${lap}/${CITY_RUSH_LAPS}`, lapBoardSubtitle(lap), finalLap ? '#ffffff' : undefined);
       if (finalLap) startLine.setFinalLap(true);
       cameraKick = Math.max(cameraKick, 0.45);
+      audioRef?.current?.lap(finalLap);
       getCallbacks().lap?.({ lap, laps: CITY_RUSH_LAPS, final: finalLap, elapsed });
       getCallbacks().effect?.({ type: finalLap ? 'final-lap' : 'lap', lap, laps: CITY_RUSH_LAPS });
     }
@@ -1525,6 +1580,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         braking: currentSpeed < priorSpeed - 2 * dt && currentSpeed > 1,
       }, dt, clockTime);
 
+      // Bande-son : le régime moteur suit la vitesse et l'effort demandé
+      // (`requestedPlayerSpeed` dépasse `currentSpeed` tant qu'on accélère).
+      // Le monde seul connaît ces deux valeurs à la frame près — le HUD de la
+      // page est émis au mieux toutes les 120 ms.
+      audioRef?.current?.engine({
+        speed: clamp(currentSpeed / (PLAYER_SPEED * playerProfile.powerMultiplier * 1.46), 0, 1),
+        throttle: clamp((requestedPlayerSpeed - currentSpeed) / 8, 0, 1),
+        boost: playerBoostLeft > 0,
+      });
+
       for (const racer of racers) {
         const priorRacerDistance = priorRacerDistances.get(racer.id);
         racer.distance = movementById.get(racer.id) ?? priorRacerDistance;
@@ -1535,6 +1600,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const renderZ = PLAYER_Z - gap * SCALE;
         const skid = racer.skidLeft > 0 ? Math.sin((0.85 - racer.skidLeft) * 17) * 0.24 * racer.skidSide : 0;
         racer.mesh.visible = visible;
+        // Frôlement : un rival qui entre dans la zone proche en roulant à une
+        // autre vitesse passe en sifflant (une fois par passage, pas à chaque
+        // image). La zone est franchie dans un sens comme dans l'autre.
+        const previousGap = racer.lastPassGap;
+        racer.lastPassGap = gap;
+        if (visible && previousGap !== undefined && Math.abs(gap) < PASS_BY_RANGE && Math.abs(previousGap) >= PASS_BY_RANGE) {
+          const relative = Math.abs(racer.currentSpeed - currentSpeed);
+          if (relative > 2.5) audioRef?.current?.passby({ pan: vehiclePan(racer.id), speed: clamp(relative / 14, 0, 1) });
+        }
         // Keep even off-screen rivals' world positions current: the helicopter
         // may lock onto the leader before their car enters the camera view.
         racer.mesh.position.set(racer.currentX + skid, racer.stunLeft > 0 ? 0.045 : 0, renderZ);
@@ -1636,6 +1710,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         for (const row of rows) row.group.position.z = PLAYER_Z - (row.trackDistance - distance) * SCALE;
         for (const trap of oilTraps) trap.mesh.position.z = PLAYER_Z - (trap.trackDistance - distance) * SCALE;
       }
+      // Bande-son hors course : ralenti sur la grille et en pause, roue libre
+      // pendant le tour d'honneur (la vitesse de `coastSpeed` reste audible).
+      audioRef?.current?.engine({
+        speed: phase === 'finished' ? clamp(coastSpeed / (PLAYER_SPEED * playerProfile.powerMultiplier * 1.46), 0, 1) : 0,
+        throttle: 0,
+        idle: true,
+      });
+
       const idleState = (car, maxSpeed) => animateRacerCar(car, { speed: currentSpeed, maxSpeed, idle: phase !== 'finished', steer: 0, lateral: 0 }, dt, clockTime);
       playerCar.position.x = lerp(playerCar.position.x, CITY_RUSH_LANE_X[playerLane], Math.min(1, dt * 4));
       idleState(playerCar, PLAYER_SPEED * playerProfile.powerMultiplier);
@@ -1733,6 +1815,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function setCountdown(step) {
     if (phase !== 'countdown') return;
+    // Feux de départ : un bip par feu, un accord sur le vert.
+    audioRef?.current?.countdownBeep(step);
     if (step === 3) startLine.setLights(2);
     else if (step === 2) startLine.setLights(4);
     else if (step === 1) startLine.setLights(5);
@@ -1750,7 +1834,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   return {
     start() { if (!finished) { active = true; lastFrame = performance.now(); } },
-    pause() { active = false; currentSpeed = 0; },
+    pause() {
+      active = false;
+      currentSpeed = 0;
+      audioRef?.current?.engine({ speed: 0, throttle: 0, idle: true });
+    },
     reset,
     action,
     setPhase,
@@ -1761,6 +1849,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     get distance() { return distance; },
     destroy() {
       clearVisualEffects();
+      // Plus de frame : le moteur doit se taire avec la scène.
+      audioRef?.current?.engine({ speed: 0, throttle: 0, mute: true });
       cancelAnimationFrame(raf);
       cancelAnimationFrame(resizeFrame);
       observer?.disconnect();
@@ -1776,7 +1866,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
@@ -1793,7 +1883,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         pickup: (data) => callbacksRef.current.onPickup?.(data),
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
-      }), carId);
+      }), carId, audioRef);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -1806,7 +1896,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
       worldRef.current = null;
       if (actionsRef) actionsRef.current = null;
     };
-  }, [cityId, carId, actionsRef]);
+  }, [cityId, carId, actionsRef, audioRef]);
 
   useEffect(() => {
     if (active) worldRef.current?.start();

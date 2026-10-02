@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
+import { CityRushAudio } from './cityRushAudio';
 import {
   CITY_RUSH_CARS,
   CITY_RUSH_CITIES,
@@ -15,6 +16,9 @@ import { cityRushTheme } from './cityRushThemes';
 import './vice-city-rush.css';
 
 const BEST_KEY = 'letsplay_vice_city_rush_bests_v1';
+// Le son est un choix du joueur : on le retrouve d'une visite à l'autre,
+// comme le thème clair du site. Défaut « allumé » (le jeu est une fête foraine).
+const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const POWER_ORDER = [CITY_RUSH_POWERS.OIL, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.CASH, CITY_RUSH_POWERS.RADIO];
 const CAR_STATS = [
   { key: 'power', label: 'PUISSANCE' },
@@ -55,6 +59,14 @@ function readBests() {
 
 function writeBests(value) {
   try { window.localStorage.setItem(BEST_KEY, JSON.stringify(value)); } catch {}
+}
+
+function readSoundPref() {
+  try { return window.localStorage.getItem(SOUND_KEY) !== 'off'; } catch { return true; }
+}
+
+function writeSoundPref(value) {
+  try { window.localStorage.setItem(SOUND_KEY, value ? 'on' : 'off'); } catch {}
 }
 
 function formatTime(seconds = 0) {
@@ -121,6 +133,9 @@ export default function ViceCityRushPage() {
   const [worldError, setWorldError] = useState('');
   const [immersive, setImmersive] = useState(false);
   const [isTouch, setIsTouch] = useState(false);
+  const [soundOn, setSoundOn] = useState(readSoundPref);
+  const audioRef = useRef(null);
+  const soundOnRef = useRef(soundOn);
   const actionsRef = useRef(null);
   const shellRef = useRef(null);
   const immersiveRef = useRef(false);
@@ -131,6 +146,7 @@ export default function ViceCityRushPage() {
   const isTouchRef = useRef(isTouch);
   phaseRef.current = phase;
   isTouchRef.current = isTouch;
+  soundOnRef.current = soundOn;
 
   const city = useMemo(() => CITY_RUSH_CITIES.find((item) => item.id === cityId) || CITY_RUSH_CITIES[0], [cityId]);
   // Vice City se joue en plein jour : l'accroche de l'écran d'accueil suit
@@ -195,6 +211,59 @@ export default function ViceCityRushPage() {
     if (phase === 'intro' || phase === 'finished') exitImmersive();
   }, [phase]);
 
+  // ── Bande-son ──────────────────────────────────────────────────────────
+  // La page porte l'instance (`CityRushAudio`) et le transport — démarrage,
+  // pause, coupure — parce que c'est elle qui connaît la phase du jeu. Le
+  // monde 3D ne reçoit que la ref, pour le régime moteur (une valeur par
+  // image) et les bruitages liés à une position. `start()` doit être appelé
+  // dans un geste utilisateur (clic ou Entrée sur « DÉMARRER ») : c'est la
+  // règle des navigateurs pour ouvrir un AudioContext.
+  useEffect(() => {
+    audioRef.current = new CityRushAudio();
+    return () => {
+      audioRef.current?.destroy();
+      audioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => { audioRef.current?.setCity(cityId); }, [cityId]);
+
+  useEffect(() => { writeSoundPref(soundOn); }, [soundOn]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (phase === 'paused') audio.pause();
+    else if (phase === 'intro') audio.stop();
+    else audio.resume();
+  }, [phase, runId]);
+
+  // Onglet caché : on coupe la musique plutôt que d'arroser le bureau.
+  useEffect(() => {
+    const onVisibility = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      if (document.hidden) audio.pause();
+      else if (phaseRef.current === 'playing' || phaseRef.current === 'countdown') audio.resume();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
+  const toggleSoundRef = useRef(null);
+  const toggleSound = () => {
+    const next = !soundOn;
+    setSoundOn(next);
+    if (!next) { audioRef.current?.stop(); return; }
+    // Rallumer en course relance musique et moteur sans attendre le départ
+    // suivant ; sur l'écran d'accueil, on attend le prochain « DÉMARRER ».
+    if (phaseRef.current !== 'intro') audioRef.current?.start();
+  };
+  // Le raccourci clavier (touche M) passe par un ref : l'écouteur est
+  // réinstallé à chaque changement de phase, il doit voir la dernière
+  // fermeture, pas celle du tour précédent.
+  toggleSoundRef.current = toggleSound;
+
   useEffect(() => {
     if (phase !== 'countdown') return undefined;
     if (countdown > 0) {
@@ -222,6 +291,9 @@ export default function ViceCityRushPage() {
       } else if (key === 'enter' && (phaseRef.current === 'intro' || phaseRef.current === 'finished') && target !== 'BUTTON') {
         event.preventDefault();
         startRaceRef.current?.();
+      } else if (key === 'm') {
+        event.preventDefault();
+        toggleSoundRef.current?.();
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -256,6 +328,7 @@ export default function ViceCityRushPage() {
     setCountdown(3);
     setRunId((value) => value + 1);
     enterImmersive();
+    if (soundOnRef.current) audioRef.current?.start();
     setPhase('countdown');
   }
   startRaceRef.current = startRace;
@@ -334,6 +407,16 @@ export default function ViceCityRushPage() {
               <span><b>{city.district}</b><small>{city.label} <i>·</i> 1986 / NOW</small></span>
             </div>
             <div className="city-rush-top-actions">
+              <button
+                type="button"
+                className={`city-rush-top-button city-rush-sound-button${soundOn ? ' is-on' : ''}`}
+                onClick={toggleSound}
+                aria-pressed={soundOn}
+                title={soundOn ? 'Couper musique et bruitages (touche M)' : 'Allumer musique et bruitages (touche M)'}
+                aria-label={soundOn ? 'Couper le son' : 'Allumer le son'}
+              >
+                <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> {soundOn ? 'SON' : 'MUET'}
+              </button>
               {phase === 'playing' && <>
                 <span className="city-rush-live-pill"><i /> EN COURSE</span>
                 <button type="button" className="city-rush-top-button" onClick={() => setPhase('paused')} aria-label="Mettre en pause">Ⅱ <span>PAUSE</span></button>
@@ -363,6 +446,7 @@ export default function ViceCityRushPage() {
               onPickup={onPowerPickup}
               onEffect={effectMessage}
               onLap={onLap}
+              audioRef={audioRef}
             />
 
             <div className="city-rush-vignette" aria-hidden="true" />
@@ -570,7 +654,7 @@ export default function ViceCityRushPage() {
 
           <div className="city-rush-shell-footer">
             <span><i className="city-rush-footer-dot" /> CIRCUIT OUVERT <b>·</b> {city.name} <b>·</b> {CITY_RUSH_LAPS} TOURS × {CITY_RUSH_LAP_LENGTH} M</span>
-            <span className="city-rush-desktop-hint">← → OU Q / D : VOIES <b>·</b> A / Z / E / R : POUVOIRS <b>·</b> P / ÉCHAP : PAUSE</span>
+            <span className="city-rush-desktop-hint">← → OU Q / D : VOIES <b>·</b> A / Z / E / R : POUVOIRS <b>·</b> P / ÉCHAP : PAUSE <b>·</b> M : SON</span>
             <span className="city-rush-mobile-hint">GLISSE À GAUCHE OU À DROITE <b>·</b> OBJETS EN BAS</span>
           </div>
         </section>

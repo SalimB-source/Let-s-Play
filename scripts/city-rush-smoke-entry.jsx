@@ -104,11 +104,27 @@ const cityArg = process.argv.find((a) => a.startsWith('--city='))?.slice(7);
 const all = process.argv.includes('--all') || process.env.CITY_RUSH_SMOKE_ALL === '1';
 const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (cityArg || 'vice-city')) || CITY_RUSH_CITIES[0]];
 
+// Bande-son : le monde ne connaît qu'une ref. On y glisse un compteur — pas
+// de Web Audio ici, mais la certitude qu'une course complète déclenche bien
+// moteur, feux, tours, tirs et arrivée, et que l'hélicoptère est toujours
+// éteint (un rotor qui tourne dans le vide s'entendrait jusqu'à la page
+// d'accueil).
+const AUDIO_METHODS = [
+  'engine', 'gunshot', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
+  'helicopterStop', 'pickup', 'boost', 'oilDrop', 'lap', 'finish', 'countdownBeep', 'passby',
+];
+
 for (const [index, city] of cities.entries()) {
   const car = CITY_RUSH_CARS[index % CITY_RUSH_CARS.length];
   const callbacks = {
     ready: 0, errors: [], huds: [], laps: [], effects: [], pickups: [], finish: null,
   };
+  const audioCalls = {};
+  const audioStub = {};
+  for (const name of AUDIO_METHODS) {
+    audioStub[name] = () => { audioCalls[name] = (audioCalls[name] || 0) + 1; };
+  }
+  const audioRef = { current: audioStub };
   const mount = {
     clientWidth: 1280, clientHeight: 720,
     getBoundingClientRect: () => ({ width: 1280, height: 720, top: 0, left: 0 }),
@@ -131,7 +147,7 @@ for (const [index, city] of cities.entries()) {
       pickup: (p) => { callbacks.pickups.push(p); },
       effect: (e) => { callbacks.effects.push(e); },
       lap: (l) => { callbacks.laps.push(l); },
-    }), car.id);
+    }), car.id, audioRef);
   } catch (e) {
     console.error(`[${city.id}] createCityRushWorld A LEVÉ :`);
     console.error(e);
@@ -234,6 +250,22 @@ for (const [index, city] of cities.entries()) {
   } else if (!callbacks.laps.length && !callbacks.effects.some((e) => e.type === 'rival-final-lap')) {
     fail('aucun passage de ligne détecté (ni joueur ni rival)', callbacks.effects.map((e) => e.type));
   }
+  // Bande-son : le moteur suit la course image par image, les feux sonnent
+  // quatre fois (3 · 2 · 1 · GO), le joueur passe deux lignes et l'arrivée ne
+  // sonne qu'une fois.
+  if ((audioCalls.engine || 0) < frames) fail('le moteur n’est pas piloté à chaque image', audioCalls);
+  // Quatre au premier départ (3 · 2 · 1 · GO) ; le rejeu en remet un.
+  if ((audioCalls.countdownBeep || 0) < 4) fail('les feux de départ n’ont pas sonné 3 · 2 · 1 · GO', audioCalls);
+  if (audioCalls.finish !== 1) fail('la fanfare d’arrivée n’a pas sonné une fois', audioCalls);
+  if ((audioCalls.lap || 0) !== callbacks.laps.length) fail('un passage de ligne sur deux est muet', audioCalls);
+  if (audioCalls.explosion !== audioCalls.missileLaunch) fail('un missile sans explosion (ou l’inverse)', audioCalls);
+  // Un missile suppose un hélicoptère ; une frappe avortée par l'arrivée ou
+  // par `reset()` compte un démarrage de plus que de missiles, jamais
+  // l'inverse. Et chaque rotor démarré finit éteint.
+  if ((audioCalls.helicopterStart || 0) < (audioCalls.missileLaunch || 0)) fail('un missile sans hélicoptère', audioCalls);
+  if ((audioCalls.helicopterStop || 0) < (audioCalls.helicopterStart || 0)) fail('un rotor n’a pas été éteint', audioCalls);
+  if (!audioCalls.pickup) fail('aucun bip de ramassage alors que des bonus ont été pris', audioCalls);
+
   const maxDistance = Math.max(...finish.racers.map((r) => r.distance ?? 0));
   if (maxDistance < CITY_RUSH_DISTANCE - 1) fail('le vainqueur n’a pas parcouru 1800 m', finish.racers);
   if (maxVisible > 600) fail(`trop de meshes visibles : ${maxVisible}`);
@@ -260,7 +292,8 @@ for (const [index, city] of cities.entries()) {
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
-    ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris`,
+    ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris` +
+    ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,
   );
 }
 console.log(`SMOKE OK — ${cities.length} ville(s), ${CITY_RUSH_LAPS} tours × ${CITY_RUSH_LAP_LENGTH} m`);
