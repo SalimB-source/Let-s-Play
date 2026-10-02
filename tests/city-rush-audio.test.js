@@ -115,6 +115,8 @@ test('start() ouvre le contexte et branche musique, bruitages, moteur et hélico
     assert.ok(audio.context, 'un contexte audio existe');
     assert.ok(audio.ready(), 'le son est prêt à jouer');
     assert.ok(audio.musicBus && audio.sfxBus && audio.engineBus && audio.heliBus, 'les quatre bus sont créés');
+    assert.ok(audio.sirenBus, 'la sirène de police a son bus');
+    assert.equal(audio.sirenBus.gain.value, 0, 'la sirène démarre silencieuse');
     assert.ok(audio.limiter, 'un limiteur protège la sortie des explosions par-dessus la musique');
     assert.equal(audio.heliBus.gain.value, 0, "l'hélicoptère démarre silencieux");
     assert.ok(audio.timer !== null, 'le séquenceur tourne');
@@ -248,6 +250,29 @@ test('l’hélicoptère démarre avec la frappe, s’éteint après l’explosio
   } finally { shutdown(audio); }
 });
 
+test('la sirène de l’escouade suit la proximité, puis s’éteint', async () => {
+  const audio = await boot();
+  try {
+    audio.policeSiren({ level: 1 });
+    const nodes = audio.sirenNodes;
+    assert.ok(nodes, 'les deux tons tournent');
+    // Comme le rotor : le niveau est piloté par le bus, jamais par le gain
+    // interne (un gain à 0,0001 rendrait la sirène muette).
+    assert.equal(nodes.out.gain.value, 1);
+    assert.equal(nodes.wail.frequency.first ?? nodes.wail.frequency.value, 690);
+    assert.ok(audio.sirenBus.gain.value > 0.1, 'la sirène s’entend quand la berline est proche');
+    const loud = audio.sirenBus.gain.value;
+    audio.policeSiren({ level: 0.15 });
+    assert.ok(audio.sirenBus.gain.value < loud, 'elle faiblit quand la berline s’éloigne');
+    audio.policeSirenOff();
+    assert.equal(audio.sirenState, null);
+    assert.ok(audio.sirenStopTimer !== null, 'l’extinction est différée');
+    audio.disposeSiren();
+    assert.equal(audio.sirenNodes, null, 'les nœuds de la sirène sont libérés');
+    assert.equal(audio.sirenStopTimer, null);
+  } finally { shutdown(audio); }
+});
+
 test('pause et reprise gardent la musique là où elle en était', async () => {
   const audio = await boot();
   try {
@@ -275,6 +300,7 @@ test('destroy() coupe tout et ferme le contexte', async () => {
     assert.equal(audio.running, false);
     assert.equal(audio.engineNodes, null);
     assert.equal(audio.heliNodes, null);
+    assert.equal(audio.sirenNodes, null);
     assert.equal(audio.timer, null);
   } finally { delete globalThis.window; }
 });
@@ -298,6 +324,9 @@ test('le monde déclenche les bruitages au bon endroit', async () => {
   assert.match(world, /audioRef\?\.current\?\.oilDrop\(\)/);
   assert.match(world, /audioRef\?\.current\?\.pickup\(type, \{ ready/);
   assert.match(world, /audioRef\?\.current\?\.countdownBeep\(step\)/);
+  // Escouade de police : sirène pilotée par la proximité, extinction à la fin.
+  assert.match(world, /audioRef\?\.current\?\.policeSiren\?\.\(\{/);
+  assert.match(world, /audioRef\?\.current\?\.policeSirenOff\?\.\(\)/);
   assert.match(world, /audioRef\?\.current\?\.lap\(finalLap\)/);
   assert.match(world, /audioRef\?\.current\?\.finish\(standings\.rank\)/);
   // La page crée l’instance, la transmet au monde et garde un bouton SON.
@@ -317,6 +346,9 @@ test('les bruitages ne sont jamais créés hors d’un contexte vivant', () => {
   audio.explosion();
   audio.helicopterStart();
   audio.helicopterStop();
+  audio.policeSiren({ level: 1 });
+  audio.policeSirenOff();
+  audio.disposeSiren();
   audio.pickup('radio');
   audio.lap();
   audio.finish();

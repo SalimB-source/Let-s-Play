@@ -347,6 +347,19 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
   · TOUR 2/3 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
   rivaux annoncent leur dernier tour. Le dernier passage termine la course.
+- **L'escouade de police du dernier tour.** Dès que le **premier du classement**
+  attaque son troisième tour, **deux berlines d'interception entrent en piste
+  juste derrière lui** (30 m et 38 m, sirène allumée) et roulent pour lui nuire :
+  elles se replacent devant sa roue, changent de voie pour **rafler en priorité
+  les bonus rouges (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir
+  vaut cinq bonus ordinaires dans leur choix de voie, `CITY_RUSH_POLICE_HUNT_TYPES`
+  et `chooseCityRushPoliceLane` — puis **ouvrent le feu sur le leader** dès
+  qu'une jauge rouge est pleine. Elles **ne sont pas classées** : `rankCityRushRacers`
+  ne les voit jamais, la grille reste à quatre, le HUD les affiche dans une liste
+  à part (`hud.police`, marqueurs rouge et bleu de la mini-carte) et l'écran
+  d'arrivée les ignore. Le joueur peut riposter : ses balles et ses flaques
+  d'huile les ralentissent comme n'importe quelle voiture
+  (`CITY_RUSH_POLICE_*` dans `cityRushRules.js`).
 - **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
   **bleu 2** (clé à molette / huile), **rouge 3** (mitrailleuse / dérapage),
   **vert 2** (billets / boost), **jaune 4** (talkie-walkie / hélicoptère) —
@@ -457,8 +470,12 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
   de ralentissement, **hélicoptère** (pales hachées par un LFO + turbine qui
   monte en régime, démarrage sur l'approche, extinction après l'explosion),
   missile qui part, **explosion** (descente dans le grave, souffle, débris,
-  écho), plus les bips de ramassage, les feux de départ, les passages de ligne
-  et la fanfare d'arrivée. Chaque bruitage est **panoramiqué** selon la voie de
+  écho), **sirène de l'escouade de police** (deux tons qui alternent, tenus par
+  un LFO carré — l'aller-retour « hi-lo » des berlines américaines — et une
+  deuxième voix désaccordée qui fait battre la sirène ; le niveau suit la
+  proximité de la berline la plus proche, `policeSiren({ level })`, et
+  `policeSirenOff()` éteint les nœuds), plus les bips de ramassage, les feux de
+  départ, les passages de ligne et la fanfare d'arrivée. Chaque bruitage est **panoramiqué** selon la voie de
   la voiture concernée (`vehiclePan`).
 - **Le bouton SON** de la barre du jeu (touche **M**) : un interrupteur
   `aria-pressed`, mémorisé dans `localStorage`
@@ -477,7 +494,12 @@ npm run check:city-rush-smoke    # les cinq villes : construction du monde, cour
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
 à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
 tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés, la
-visibilité des éclatements de bonus et le rejeu après `reset()`. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
+visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
+aussi l'**escouade de police** : une seule entrée en piste, deux berlines
+arrivées derrière le leader (jamais devant, jamais à plus de 140 m), qui
+rejoignent le leader à moins de 30 m, ne figurent ni dans le classement du HUD
+ni dans le tableau d'arrivée, disparaissent à la ligne et font sonner puis
+éteindre leur sirène. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
 navigateur (`npm run dev`) pour juger l'image.
 
 Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les

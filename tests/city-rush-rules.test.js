@@ -16,6 +16,11 @@ import {
   CITY_RUSH_FORWARD_TOLERANCE,
   CITY_RUSH_POWER_CHARGE_COST,
   CITY_RUSH_POWER_RULES,
+  CITY_RUSH_POLICE_ATTACK_LEAD,
+  CITY_RUSH_POLICE_COUNT,
+  CITY_RUSH_POLICE_HUNT_TYPES,
+  CITY_RUSH_POLICE_LEAD,
+  CITY_RUSH_RACER_SLOTS,
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_LANES,
   CITY_RUSH_TRAFFIC_TYPES,
@@ -35,8 +40,12 @@ import {
   cityRushPickupBurstShards,
   cityRushPickupFlashState,
   cityRushPickupPopScale,
+  cityRushPackLeader,
   cityRushPickupShardState,
+  cityRushPolicePace,
   cityRushTrackGap,
+  chooseCityRushPoliceLane,
+  resolveCityRushPoliceMovement,
   addCityRushCharge,
   cityRushLaneAfterAction,
   consumeCityRushCharge,
@@ -295,6 +304,84 @@ test('a collected item bursts into shards, then reappears 0.1 s later', () => {
   const samples = [0.2, 0.4, 0.6, 0.8].map((progress) => cityRushPickupPopScale(progress));
   assert.ok(samples.every((scale) => scale > 0));
   assert.ok(Math.max(...samples) > 1, 'léger rebond avant de se stabiliser');
+});
+
+test('au dernier tour, deux berlines de police chassent le premier — hors classement', () => {
+  assert.equal(CITY_RUSH_POLICE_COUNT, 2);
+  // Rouge (mitrailleuse) et jaune (hélicoptère) : exactement les deux pouvoirs
+  // de tir, ceux qui privent le leader de ses armes.
+  assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], ['pistol', 'radio']);
+  assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
+  assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
+  // Aucune berline ne porte un identifiant de pilote classé : la grille reste
+  // à quatre, et l'arrivée ne peut pas les compter.
+  assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno', 'ace']);
+});
+
+test('l’escouade ne prend en chasse que le premier du classement', () => {
+  assert.equal(cityRushPackLeader([
+    { id: 'player', distance: 1204 },
+    { id: 'nova', distance: 1230 },
+    { id: 'juno', distance: 1100 },
+  ]).id, 'nova');
+  // À égalité, le premier de la liste — notre joueur — est le leader.
+  assert.equal(cityRushPackLeader([
+    { id: 'player', distance: 1200 },
+    { id: 'nova', distance: 1200 },
+  ]).id, 'player');
+  assert.equal(cityRushPackLeader([]), null);
+  assert.equal(cityRushPackLeader(undefined), null);
+});
+
+test('une berline sprinte quand elle est distancée et lève le pied quand elle est trop devant', () => {
+  const base = 26;
+  assert.ok(cityRushPolicePace({ gap: -40, baseSpeed: base, leaderSpeed: base }) > base, 'distancée : elle rattrape');
+  assert.ok(cityRushPolicePace({ gap: 60, baseSpeed: base, leaderSpeed: base }) < base, 'trop devant : elle attend');
+  const cruise = cityRushPolicePace({ gap: CITY_RUSH_POLICE_LEAD, baseSpeed: base, leaderSpeed: base });
+  assert.ok(cruise >= base * 0.9 && cruise < base * 1.2, 'en croisière : elle tient la hauteur du leader');
+  // Repli pour tirer : la hauteur visée passe derrière le leader.
+  assert.ok(CITY_RUSH_POLICE_ATTACK_LEAD < 0);
+  const attack = cityRushPolicePace({ gap: CITY_RUSH_POLICE_ATTACK_LEAD, baseSpeed: base, leaderSpeed: base, lead: CITY_RUSH_POLICE_ATTACK_LEAD });
+  assert.ok(attack > 0 && Number.isFinite(attack));
+});
+
+test('l’escouade traverse la route pour rafler un bonus rouge ou jaune', () => {
+  const common = {
+    currentLane: 1,
+    distance: 1000,
+    speed: 26,
+    availableLanes: [0, 1, 2, 3],
+    lookAheadDistance: 200,
+  };
+  // Un jaune plus loin l'emporte sur des billets tout proches : la berline
+  // s'écarte de sa voie et se rabat vers le talkie-walkie (voie 3).
+  const pickups = [
+    { lane: 0, type: 'cash', distance: 1040 },
+    { lane: 3, type: 'radio', distance: 1180 },
+  ];
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups }), 2);
+  // Une IA ordinaire, elle, prend les billets les plus proches.
+  assert.equal(chooseCityRushAiLane({ ...common, pickups }), 0);
+  // Le trafic reste évité : un camion pile dans la voie voisine.
+  const trafficLane = chooseCityRushPoliceLane({
+    ...common,
+    pickups: [],
+    traffic: [{ lane: 2, distance: 1004, speed: 4.4 }],
+  });
+  assert.notEqual(trafficLane, 2);
+});
+
+test('les berlines ne traversent pas le trafic et ne bloquent personne', () => {
+  const traffic = [{ lane: 1, distance: 1040, x: CITY_RUSH_LANE_X[1], width: 1.98 }];
+  const resolved = resolveCityRushPoliceMovement([
+    { id: 'police-1', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1000, nextDistance: 1038, width: 1.94 },
+    { id: 'police-2', lane: 3, x: CITY_RUSH_LANE_X[3], distance: 1000, nextDistance: 1038, width: 1.94 },
+  ], traffic, CITY_RUSH_CAR_GAP);
+  const byId = Object.fromEntries(resolved.map((car) => [car.id, car.nextDistance]));
+  assert.equal(byId['police-1'], 1040 - CITY_RUSH_CAR_GAP, 'la berline freine derrière le véhicule lent');
+  assert.equal(byId['police-2'], 1038, 'la voie libre reste libre');
+  // Elle ne rabote la distance de personne : personne ne la suit dans la liste.
+  assert.deepEqual(resolved.map((car) => car.id), ['police-1', 'police-2']);
 });
 
 test('lane changes clamp at the road edges', () => {
@@ -566,5 +653,29 @@ test('the race mini-map locates all 4 players on the circuit loop and focuses on
   const focusCenterY = vy + vh / 2;
   assert.ok(Math.abs(focusCenterX - minimap.focus.point.x) <= 25);
   assert.ok(Math.abs(focusCenterY - minimap.focus.point.y) <= 25);
+});
+
+test('la mini-carte dessine l’escouade de police à part des quatre pilotes', () => {
+  const minimap = buildCityRushMinimapState([], {
+    cityId: 'vice-city',
+    pursuers: [
+      { id: 'police-1', name: 'POLICE 1', distance: 1250, lane: 3 },
+      { id: 'police-2', name: 'POLICE 2', distance: 1240, lane: 0 },
+    ],
+  });
+  // Les quatre pilotes restent seuls dans le classement : l'escouade a sa
+  // propre liste, hors positions et hors arrivée.
+  assert.equal(minimap.racers.length, 4);
+  assert.equal(minimap.pursuers.length, 2);
+  assert.equal(minimap.pursuers[0].name, 'POLICE 1');
+  for (const car of minimap.pursuers) {
+    assert.ok(Number.isFinite(car.x) && Number.isFinite(car.y));
+    assert.ok(car.lane === 0 || car.lane === 3);
+    assert.equal(minimap.racers.some((racer) => racer.id === car.id), false);
+  }
+  // Une escouade inactive (avant le dernier tour, ou après l'arrivée) ne
+  // laisse aucun marqueur.
+  assert.equal(buildCityRushMinimapState([], { pursuers: [{ id: 'police-1', distance: 1250, active: false }] }).pursuers.length, 0);
+  assert.equal(buildCityRushMinimapState([]).pursuers.length, 0);
 });
 

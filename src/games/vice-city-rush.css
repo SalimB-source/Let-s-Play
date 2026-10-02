@@ -607,6 +607,21 @@
   box-shadow: 0 0 8px #43ead5;
   animation: crPulse 1.5s infinite;
 }
+.city-rush-minimap-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.city-rush-minimap-police {
+  padding: 1.5px 5px;
+  border: 1px solid rgba(255, 82, 110, .5);
+  border-radius: 4px;
+  color: #ffd2da;
+  background: linear-gradient(120deg, rgba(255, 43, 69, .22), rgba(43, 107, 255, .22));
+  font: 850 6.5px var(--mono, monospace);
+  letter-spacing: .08em;
+  animation: crPulse 1.1s infinite;
+}
 .city-rush-minimap-lap {
   padding: 1.5px 5px;
   border: 1px solid rgba(255, 255, 255, .14);
@@ -740,6 +755,34 @@
   fill: rgba(67, 234, 213, .22);
   stroke: rgba(67, 234, 213, .45);
   stroke-width: 0.45;
+}
+/* Escouade de police : un marqueur rouge et bleu, à part des quatre pilotes. */
+.city-rush-minimap-pursuer-halo {
+  fill: rgba(255, 43, 69, .16);
+  stroke: rgba(43, 107, 255, .5);
+  stroke-width: 0.5;
+  animation: crPoliceHalo 1.1s ease-in-out infinite;
+}
+.city-rush-minimap-pursuer-body {
+  fill: #0d1424;
+  stroke: #ffffff;
+  stroke-width: 0.7;
+}
+.city-rush-minimap-pursuer-light {
+  fill: #ff2b45;
+  animation: crPoliceLights 1.1s steps(2, end) infinite;
+}
+.city-rush-minimap-pursuer-light.is-blue {
+  fill: #2b6bff;
+  animation-delay: .55s;
+}
+@keyframes crPoliceHalo {
+  0%, 100% { opacity: .45; }
+  50% { opacity: 1; }
+}
+@keyframes crPoliceLights {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: .25; }
 }
 .city-rush-minimap-marker {
   transition: transform .1s linear;
@@ -880,6 +923,12 @@
 .city-rush-no-collision-note { display: flex; align-items: flex-start; gap: 10px; padding: 13px; border: 1px solid rgba(72, 185, 255, .2); border-radius: 10px; background: linear-gradient(120deg, rgba(26, 73, 99, .24), rgba(17, 30, 47, .56)); }
 .city-rush-no-collision-icon { width: 27px; height: 27px; color: #67d0ff; background: rgba(72, 185, 255, .11); font-size: 17px; }
 .city-rush-no-collision-note b { display: block; margin: 1px 0 5px; color: #8bdcff; font-size: 8px; }
+.city-rush-no-collision-note.is-police { border-color: rgba(255, 82, 110, .28); background: linear-gradient(120deg, rgba(120, 26, 46, .26), rgba(24, 38, 74, .58)); }
+.city-rush-no-collision-note.is-police .city-rush-no-collision-icon { color: #ffb5c0; background: rgba(255, 82, 110, .14); font-size: 14px; }
+.city-rush-no-collision-note.is-police b { color: #ffb5c0; }
+.city-rush-no-collision-note.is-police em { font-style: normal; }
+.city-rush-no-collision-note.is-police em.is-red { color: #ffb5c0; }
+.city-rush-no-collision-note.is-police em.is-yellow { color: #ffe899; }
 .city-rush-no-collision-note p { margin: 0; color: rgba(223, 232, 245, .57); font-size: 9px; line-height: 1.45; }
 .city-rush-page-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 15px !important; }
 .city-rush-page-footer a { padding: 8px 10px; font-size: 8px; }
