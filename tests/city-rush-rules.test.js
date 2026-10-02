@@ -39,6 +39,8 @@ import {
   cityRushHitDuration,
   cityRushHelicopterTarget,
   cityRushIsAhead,
+  cityRushStunSpin,
+  CITY_RUSH_STUN_SPIN_TURNS,
   cityRushLapForDistance,
   cityRushLapProgress,
   cityRushLapCrossings,
@@ -741,3 +743,42 @@ test('la mini-carte dessine l’escouade de police à part des quatre pilotes', 
   assert.equal(buildCityRushMinimapState([]).pursuers.length, 0);
 });
 
+
+test('la toupie du stun héliporté boucle des tours entiers face à la route', () => {
+  const total = CITY_RUSH_POWER_RULES.radio.duration;
+  const fullSpin = CITY_RUSH_STUN_SPIN_TURNS * Math.PI * 2;
+  // Départ de la frappe : pas encore de rotation.
+  assert.equal(cityRushStunSpin(total, total), 0);
+  // La rotation grandit au fil du stun, sans jamais repartir en arrière…
+  // (jusqu'à l'avant-dernière frame : à 0 s restantes, le stun est fini et le
+  // lacet revient à 0 — soit un tour complet, pile face à la route).
+  let previous = 0;
+  for (let step = 1; step <= 19; step += 1) {
+    const left = total - (total * step) / 20;
+    const yaw = cityRushStunSpin(left, total);
+    assert.ok(yaw > previous, `le lacet doit progresser (${yaw} <= ${previous})`);
+    previous = yaw;
+  }
+  // …mais ralentit : le premier dixième couvre plus d'angle que le dernier.
+  const firstSlice = cityRushStunSpin(total * 0.9, total);
+  const lastSlice = cityRushStunSpin(0, total) || fullSpin - cityRushStunSpin(total * 0.1, total);
+  assert.ok(firstSlice > lastSlice, 'ease-out : la toupie ralentit avant la reprise');
+  // Mi-stun : ease-out quadratique à 75 % du parcours.
+  assert.ok(Math.abs(cityRushStunSpin(total / 2, total) - 0.75 * fullSpin) < 1e-9);
+  // Stun terminé (ou sur le point de l'être) : la voiture est face à la
+  // route — un nombre entier de tours, donc aucun à-coup visuel au retour.
+  assert.equal(cityRushStunSpin(0, total) % (Math.PI * 2), 0);
+  assert.ok(Math.abs(cityRushStunSpin(0.0001, total) - fullSpin) < 0.01);
+  // La durée récupérée par profil (reprise rapide/lente) ne change pas le
+  // nombre de tours : seule la vitesse de rotation s'adapte.
+  const comet = { hitRecoveryMultiplier: 0.88 };
+  const cometTotal = cityRushHitDuration(total, comet);
+  assert.equal(cityRushStunSpin(cometTotal, cometTotal), 0);
+  assert.ok(Math.abs(cityRushStunSpin(cometTotal / 2, cometTotal) - 0.75 * fullSpin) < 1e-9);
+  // Entrées invalides : aucune rotation.
+  assert.equal(cityRushStunSpin(0, 0), 0);
+  assert.equal(cityRushStunSpin(-1, total), 0);
+  assert.equal(cityRushStunSpin(Number.NaN, total), 0);
+  assert.equal(cityRushStunSpin(total, Number.NaN), 0);
+  assert.equal(cityRushStunSpin(total, total, 0), 0);
+});

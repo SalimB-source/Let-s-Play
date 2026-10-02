@@ -58,6 +58,7 @@ import {
   chooseCityRushTrafficEscapeLane,
   cityRushHelicopterTarget,
   cityRushIsAhead,
+  cityRushStunSpin,
   detectCityRushTrafficImpacts,
   isCityRushPickupHidden,
   markCityRushPickupTaken,
@@ -718,6 +719,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       trafficImpactLeft: 0,
       boostLeft: 0,
       stunLeft: 0,
+      stunTotal: 0,
       skidLeft: 0,
       inventory: createCityRushInventory(),
       powerCooldown: 0,
@@ -793,6 +795,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       changeIn: 0.25 + index * 0.4,
       slowLeft: 0,
       stunLeft: 0,
+      stunTotal: 0,
       skidLeft: 0,
       powerCooldown: 0,
       inventory: createCityRushInventory(),
@@ -842,6 +845,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerTrafficImpactLeft = 0;
   let playerBoostLeft = 0;
   let playerStunLeft = 0;
+  let playerStunTotal = 0;
   let playerSkidLeft = 0;
   let playerSkidSide = 1;
   let score = 0;
@@ -1071,6 +1075,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     playerTrafficImpactLeft = 0;
     playerBoostLeft = 0;
     playerStunLeft = 0;
+    playerStunTotal = 0;
     playerSkidLeft = 0;
     playerSkidSide = 1;
     score = 0;
@@ -1108,6 +1113,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.trafficImpactLeft = 0;
       racer.boostLeft = 0;
       racer.stunLeft = 0;
+      racer.stunTotal = 0;
       racer.skidLeft = 0;
       racer.lastPassGap = undefined;
       racer.inventory = createCityRushInventory();
@@ -1145,6 +1151,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.currentSpeed = 0;
       police.slowLeft = 0;
       police.stunLeft = 0;
+      police.stunTotal = 0;
       police.skidLeft = 0;
       police.powerCooldown = 0;
       police.mode = 'block';
@@ -1686,6 +1693,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.inventory = createCityRushInventory();
       police.slowLeft = 0;
       police.stunLeft = 0;
+      police.stunTotal = 0;
       police.skidLeft = 0;
       police.powerCooldown = 0;
       police.changeIn = 0.3 + index * 0.35;
@@ -1774,8 +1782,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mode = charged && police.powerCooldown <= 0 ? 'attack' : 'block';
       const gap = police.distance - leader.distance;
 
-      police.changeIn -= dt;
-      if (police.changeIn <= 0) {
+      // Bombardée, la berline ne choisit plus sa trajectoire : la décision
+      // (et son minuteur) attendent la fin de la toupie, comme les rivaux.
+      if (police.stunLeft <= 0) police.changeIn -= dt;
+      if (police.stunLeft <= 0 && police.changeIn <= 0) {
         // Sous un tremis, la berline vise le couloir ouvert avant tout.
         const corridorLane = cityRushTunnelLaneFor(police.distance, police.lane, tunnels, CITY_RUSH_TUNNEL_MERGE_LEAD);
         if (corridorLane !== police.lane) police.lane = corridorLane;
@@ -1840,7 +1850,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const skid = police.skidLeft > 0 ? Math.sin((0.85 - police.skidLeft) * 17) * 0.24 * (police.skidSide || 1) : 0;
       police.mesh.visible = visible;
       police.mesh.position.set(police.currentX + skid, police.stunLeft > 0 ? 0.05 : 0, PLAYER_Z - gap * SCALE);
-      police.mesh.rotation.y = clamp((police.currentX - priorX) * -3.2 + skid * 0.22, -0.22, 0.22);
+      // Toupie du stun héliporté pour la berline bombardée, comme les rivaux.
+      police.mesh.rotation.y = cityRushStunSpin(police.stunLeft, police.stunTotal) + clamp((police.currentX - priorX) * -3.2 + skid * 0.22, -0.22, 0.22);
       // Halo rouge/bleu sous le châssis et gyrophares : la poursuite se voit
       // de loin, contrairement à la berline du trafic lent.
       const pursuit = police.mesh.userData.pursuit;
@@ -1951,6 +1962,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function action(name) {
     if (!active || finished) return;
     if (name === 'left' || name === 'right') {
+      // Sonné par la frappe de l'hélico : la voiture part en toupie et le
+      // volant ne répond plus jusqu'à la reprise.
+      if (playerStunLeft > 0) return;
       const nextLane = cityRushLaneAfterAction(playerLane, name);
       if (nextLane !== playerLane && canEnterLane('player', nextLane)) playerLane = nextLane;
       return;
@@ -2206,15 +2220,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const durationFor = (profile) => cityRushHitDuration(CITY_RUSH_POWER_RULES.radio.duration, profile);
         const stun = (id, profile, isPlayer) => {
           const duration = durationFor(profile);
-          if (isPlayer) { playerStunLeft = duration; cameraKick = 1; }
+          // `stunTotal` garde la durée pleine : la toupie de la carrosserie
+          // s'en sert pour boucler un nombre entier de tours avant la reprise.
+          if (isPlayer) { playerStunLeft = duration; playerStunTotal = duration; cameraKick = 1; }
           else {
             const racer = racers.find((item) => item.id === id);
-            if (racer) racer.stunLeft = duration;
+            if (racer) { racer.stunLeft = duration; racer.stunTotal = duration; }
             else {
-              // Une berline de l'escouade bombardée s'arrête net, exactement
-              // comme un rival touché de plein fouet.
+              // Une berline de l'escouade bombardée s'arrête net en toupie,
+              // exactement comme un rival touché de plein fouet.
               const police = policeCars.find((item) => item.id === id && item.active);
-              if (police) police.stunLeft = duration;
+              if (police) { police.stunLeft = duration; police.stunTotal = duration; }
             }
           }
           return duration;
@@ -2501,8 +2517,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const aiSlowZones = visibleSlowZones();
       const aiTraffic = trafficCars.map((traffic) => ({ lane: traffic.lane, distance: traffic.distance, speed: traffic.currentSpeed }));
       for (const racer of racers) {
-        racer.changeIn -= dt;
-        if (racer.changeIn <= 0) {
+        // Immobilisé par l'hélico, un rival ne choisit pas de nouvelle voie :
+        // la décision (et son minuteur) attendent la fin de la toupie.
+        if (racer.stunLeft <= 0) racer.changeIn -= dt;
+        if (racer.stunLeft <= 0 && racer.changeIn <= 0) {
           const availableLanes = [racer.lane];
           for (const lane of [racer.lane - 1, racer.lane + 1]) {
             if (lane >= 0 && lane < CITY_RUSH_LANE_X.length && canEnterLane(racer.id, lane, CITY_RUSH_TUNNEL_MERGE_LEAD)) availableLanes.push(lane);
@@ -2582,7 +2600,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerCurrentSpeed = currentSpeed;
       const playerLateral = dt > 0 ? (playerX - priorPlayerX) / dt : 0;
       playerCar.position.set(playerX + playerSkid, playerStunLeft > 0 ? 0.03 : 0, PLAYER_Z);
-      playerCar.rotation.y = clamp((CITY_RUSH_LANE_X[playerLane] - playerX) * -0.06, -0.12, 0.12) + (playerSkidLeft > 0 ? Math.sin((0.85 - playerSkidLeft) * 14) * 0.1 : 0);
+      // Toupie du stun héliporté : la caisse vire sur elle-même et se remet
+      // droit tout seul à la reprise (voir `cityRushStunSpin`).
+      const playerSpin = cityRushStunSpin(playerStunLeft, playerStunTotal);
+      playerCar.rotation.y = playerSpin + clamp((CITY_RUSH_LANE_X[playerLane] - playerX) * -0.06, -0.12, 0.12) + (playerSkidLeft > 0 ? Math.sin((0.85 - playerSkidLeft) * 14) * 0.1 : 0);
       const playerSteer = clamp((CITY_RUSH_LANE_X[playerLane] - playerX) * 0.28, -0.34, 0.34);
       animateRacerCar(playerCar, {
         speed: currentSpeed,
@@ -2630,7 +2651,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         // may lock onto the leader before their car enters the camera view.
         racer.mesh.position.set(racer.currentX + skid, racer.stunLeft > 0 ? 0.045 : 0, renderZ);
         const racerLateralMotion = racer.currentX - priorRacerXs.get(racer.id);
-        racer.mesh.rotation.y = clamp(racerLateralMotion * -0.16 + skid * 0.22, -0.22, 0.22);
+        // Toupie du stun héliporté, ajoutée au léger lacet de conduite.
+        racer.mesh.rotation.y = cityRushStunSpin(racer.stunLeft, racer.stunTotal) + clamp(racerLateralMotion * -0.16 + skid * 0.22, -0.22, 0.22);
         const racerSteer = clamp(-racerLateralMotion * 1.45, -0.3, 0.3);
         if (visible) {
           animateRacerCar(racer.mesh, {
