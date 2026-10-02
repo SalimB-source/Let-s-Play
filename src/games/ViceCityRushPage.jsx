@@ -419,7 +419,7 @@ export default function ViceCityRushPage() {
         <div>
           <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <i>/</i> STREET RALLY 3D</p>
           <h1>VICE CITY <em>RUSH</em></h1>
-          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité. Au dernier tour, deux berlines de police entrent en piste derrière le leader pour lui nuire : elles raflent les bonus rouges et jaunes, et tirent sur le premier.</p>
+          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité. Au dernier tour, deux berlines de police entrent en piste derrière le leader pour lui nuire : elles raflent les bonus rouges et jaunes, et tirent sur le premier — mais les pouvoirs rouge et jaune peuvent désormais leur être retournés.</p>
         </div>
         <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
       </header>
@@ -571,7 +571,7 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-intro-copy">
                   <span className="city-rush-overlay-kicker"><i /> STREET RALLY · ARCADE 80’S</span>
                   <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>PREND LA ROUTE.</em></h2>
-                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne — et, au dernier tour, une escouade de police qui ne court pas pour gagner, mais pour t’empêcher de ramasser les bonus rouges et jaunes.</p>
+                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne — et, au dernier tour, une escouade de police qui ne court pas pour gagner, mais pour t’empêcher de ramasser les bonus rouges et jaunes. Bonne nouvelle : tes pouvoirs rouge et jaune peuvent les viser en retour.</p>
                 </div>
                 <div className="city-rush-car-select-heading city-rush-city-select-heading"><span>01 / CHOIX DE LA VILLE</span></div>
                 <div className="city-rush-city-picker" role="group" aria-label="Choisir une ville">
@@ -768,7 +768,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE · DERNIER TOUR</b><p>Au troisième tour, <b>deux berlines d’interception entrent en piste juste derrière le premier</b> et roulent pour lui nuire : elles raflent en priorité les bonus <em className="is-red">rouges</em> (mitrailleuse) et <em className="is-yellow">jaunes</em> (hélico) avant lui, puis ouvrent le feu dès qu’une jauge rouge est pleine. Elles ne sont pas classées : l’arrivée ne retient que les quatre pilotes, et la mini-carte les montre à part. Comme les rivaux, elles ne te percutent pas — ce sont leurs vols de bonus et leurs rafales qui pèsent. Riposte : une flaque d’huile ou une rafale les ralentit comme n’importe qui.</p></div>
+            <div><b>ESCOUADE DE POLICE · DERNIER TOUR</b><p>Au troisième tour, <b>deux berlines d’interception entrent en piste juste derrière le premier</b> et roulent pour lui nuire : elles raflent en priorité les bonus <em className="is-red">rouges</em> (mitrailleuse) et <em className="is-yellow">jaunes</em> (hélico) avant lui, puis ouvrent le feu dès qu’une jauge rouge est pleine. Elles ne sont pas classées : l’arrivée ne retient que les quatre pilotes, et la mini-carte les montre à part. Comme les rivaux, elles ne te percutent pas — ce sont leurs vols de bonus et leurs rafales qui pèsent. Riposte : une flaque d’huile, une rafale <em className="is-red">rouge</em> ou un missile d’hélico <em className="is-yellow">jaune</em> les ralentit ou les immobilise comme n’importe qui — quand tu mènes et que plus personne n’est devant, tes pouvoirs de tir peuvent se retourner contre la berline la plus proche, même collée à ton pare-chocs arrière.</p></div>
           </section>
         </aside>
       </main>

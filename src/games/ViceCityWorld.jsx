@@ -46,6 +46,7 @@ import {
   cityRushPickupPopScale,
   cityRushPickupShardState,
   cityRushPolicePace,
+  cityRushPoliceTarget,
   cityRushTrackGap,
   consumeCityRushCharge,
   createCityRushEncounter,
@@ -969,14 +970,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const ahead = others
       .filter((other) => cityRushIsAhead(other.distance, attackerDistance))
       .sort((a, b) => a.distance - b.distance);
-    return ahead[0] || null;
+    if (ahead[0]) return ahead[0];
+    // Personne devant — le tireur mène et l'escouade s'est repliée sur son
+    // pare-chocs pour ouvrir le feu : la rafale de riposte peut se retourner
+    // contre la berline la plus proche, même déjà légèrement dépassée.
+    const squad = cityRushPoliceTarget(policeCars, attackerDistance, attackerId);
+    return squad ? { id: squad.id, name: squad.name, distance: squad.distance, racer: squad } : null;
   }
 
   function getTargetForRadio(callerId = 'player') {
-    // Le talkie vise le rival le mieux placé, jamais l'appelant — et seulement
-    // s'il est DEVANT lui : un pilote en tête n'a plus de cible valide, l'hélico
-    // ne part donc jamais vers un poursuivant (la jauge reste chargée).
-    return cityRushHelicopterTarget(makeRacerRows(), callerId);
+    // Le talkie vise d'abord le rival le mieux placé, jamais l'appelant — et
+    // seulement s'il est DEVANT lui : l'hélico ne part jamais vers un rival
+    // poursuivant.
+    const rival = cityRushHelicopterTarget(makeRacerRows(), callerId);
+    if (rival) return rival;
+    // Exception du dernier tour : en tête, sans rival devant, l'appelant peut
+    // renvoyer l'hélico contre l'escouade qui le traque — la berline la plus
+    // proche prend le missile, même collée à son pare-chocs arrière, au lieu
+    // de laisser la jauge jaune inutilisable.
+    const callerDistance = callerId === 'player'
+      ? distance
+      : racers.find((racer) => racer.id === callerId)?.distance ?? distance;
+    const squad = cityRushPoliceTarget(policeCars, callerDistance, callerId);
+    return squad ? { id: squad.id, name: squad.name, distance: squad.distance, racer: squad } : null;
   }
 
   function getVehicleMesh(vehicleId) {
@@ -1188,7 +1204,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const progress = clamp(shot.age / 0.3, 0, 1);
         const source = getVehicleMesh(shot.attackerId);
         const target = targetPosition(shot.targetId, new THREE.Vector3());
-        const start = source ? source.position.clone().add(new THREE.Vector3(0, 0.78, -1.12)) : target;
+        // Riposte sur une berline déjà dépassée : les balles partent du
+        // pare-chocs arrière au lieu de traverser la carrosserie.
+        const muzzle = source && target.z > source.position.z ? 1.12 : -1.12;
+        const start = source ? source.position.clone().add(new THREE.Vector3(0, 0.78, muzzle)) : target;
         shot.mesh.position.lerpVectors(start, target, progress);
         shot.mesh.lookAt(target);
         shot.mesh.rotateZ(Math.sin(shot.age * 42) * 0.12);
@@ -1826,7 +1845,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const stun = (id, profile, isPlayer) => {
           const duration = durationFor(profile);
           if (isPlayer) { playerStunLeft = duration; cameraKick = 1; }
-          else { const racer = racers.find((item) => item.id === id); if (racer) racer.stunLeft = duration; }
+          else {
+            const racer = racers.find((item) => item.id === id);
+            if (racer) racer.stunLeft = duration;
+            else {
+              // Une berline de l'escouade bombardée s'arrête net, exactement
+              // comme un rival touché de plein fouet.
+              const police = policeCars.find((item) => item.id === id && item.active);
+              if (police) police.stunLeft = duration;
+            }
+          }
           return duration;
         };
         let primaryDuration = 0;
@@ -1834,6 +1862,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         else {
           const racer = racers.find((item) => item.id === strike.targetId);
           if (racer) primaryDuration = stun(racer.id, racer.profile, false);
+          else {
+            // Cible principale de l'escouade : durée de base, sans profil de reprise.
+            const police = policeCars.find((item) => item.id === strike.targetId && item.active);
+            if (police) primaryDuration = stun(police.id, null, false);
+          }
         }
 
         // La cible verrouillée au lancement est toujours touchée (le missile est
@@ -1847,6 +1880,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         const participants = [
           { id: 'player', profile: playerProfile, isPlayer: true, distance },
           ...racers.map((racer) => ({ id: racer.id, profile: racer.profile, isPlayer: false, distance: racer.distance })),
+          // L'onde de choc attrape aussi les berlines proches de l'impact —
+          // toujours devant l'appelant, comme pour les pilotes classés.
+          ...policeCars.filter((police) => police.active).map((police) => ({ id: police.id, profile: null, isPlayer: false, distance: police.distance })),
         ];
         for (const participant of participants) {
           if (hitIds.has(participant.id)) continue;
