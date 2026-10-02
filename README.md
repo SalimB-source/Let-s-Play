@@ -212,6 +212,93 @@ fermer « de l'extérieur » comme Échap). Elle ne dit rien du rendu réel : po
 cela, ouvrir le jeu dans un vrai navigateur (`npm run dev`) et le passer en plein
 écran sur un grand écran.
 
+## Mirage Rush : graphismes baissés et glissement tactile
+
+### Graphismes baissés (moins de lag)
+
+Une option du jeu (`/jeu/mirage-rush`) allège l'image sur les appareils qui
+rament. C'est un **choix du joueur**, jamais imposé : par défaut le jeu est dessiné
+comme avant.
+
+| Où | Quoi |
+|---|---|
+| Bouton **GRAPHISMES : NORMAUX / BAISSÉS** de la barre du jeu (entre SON et PLEIN ÉCRAN) | interrupteur, à tout moment ; réduit à son icône (trois barres) sur la barre étroite d'un téléphone |
+| Choix **NORMAUX / BAISSÉS** sur l'écran du choix du mode et sur l'écran de pause | le même réglage en toutes lettres |
+| Fenêtre de course **En ligne** | le même bouton, en tête de sa barre |
+
+Le choix est mémorisé sur l'appareil (`letsplay_mirage_graphics_v1`), partagé par
+tous les onglets et **se change en direct**, même en pleine course : le monde 3D relit
+le réglage sans être reconstruit, la course ne s'interrompt pas.
+
+| | Normaux | Baissés |
+|---|---|---|
+| Résolution | jusqu'à 1,55 pixel par pixel CSS, 2,2 M pixels | 1 pixel par pixel CSS, 0,92 M pixels (1280 × 720) — sur un téléphone de densité 3, **2,4 fois moins de pixels** à remplir |
+| Lissage des arêtes (Château de l'Infini) | oui | non (fixé à la création de la course) |
+| Décor du désert | nuages animés, rides du sable, voile d'eau, poussière | ciel et sable simplifiés (un uniforme de shader, aucun recalcul), sans voile ni poussière ; le mirage reste |
+| Décor des autres terrains | tout dessiné | blocs de décor au-delà de 85 % de la portée du brouillard non dessinés (déjà fondus à près de 90 %) — jusqu'à 27 % d'appels de dessin en moins sur les plaines |
+| Éclats d'un cristal ramassé | 10 | 5 (jamais moins de 3) |
+| HUD (score, chrono) | toutes les 125 ms | toutes les 200 ms |
+| Menu, compte à rebours, pause | une image par rafraîchissement | environ 15 images par seconde (la piste est alors immobile) |
+| Habillage de la page | flous, grain, lignes de balayage, fond néon | opaque, sans flou (les flous sur un canevas animé coûtent cher aux GPU de téléphone) |
+
+Seul l'habillage change : voies, distances de visibilité des obstacles et des
+cristaux, brouillard, collisions, vitesse et chronos restent identiques — un score en
+graphismes baissés est un score comme les autres.
+
+Sur un écran de densité 1 dont la vue tient déjà dans 0,92 M pixels (la fenêtre de la page
+sur ordinateur), la résolution ne bouge pas : seuls les autres leviers jouent ; le gain de
+résolution apparaît en plein écran et sur les écrans denses (téléphones, portables Retina).
+
+### Un glissement = une seule voie
+
+Sur téléphone et dans l'application Android, **un geste ne change qu'une voie** : qu'on
+glisse lentement, qu'on claque le doigt d'un bord à l'autre de l'écran ou qu'on traverse
+toute la piste, le cheval se décale d'une voie (ce qui compte sur les trois voies d'un
+téléphone : un balayage depuis le bord ne le jette plus de l'autre côté).
+
+- La voie part **dès que le doigt a parcouru 22 px**, sans attendre qu'il se lève : aucun
+  délai ajouté. Pas de temps mort entre deux gestes — on enchaîne deux glissements à 30 ms
+  d'écart, chacun fait sa voie.
+- Une diagonale vers le haut donne une voie **et** un saut, jamais deux voies. Revenir en
+  arrière dans le même geste ne fait rien de plus : pour repartir, on relève le doigt.
+- Un seul doigt pilote le cheval : un second posé par accident (paume, autre main) est
+  ignoré jusqu'au relâchement du premier. Un geste interrompu (appel entrant, geste
+  système) ne bloque pas les suivants.
+- Le clavier n'est pas concerné (la touche maintenue est déjà ignorée).
+
+### Où vit le code
+
+- `src/games/mirageGraphics.js` — les profils (ce que change chaque niveau), la
+  mémorisation et l'état partagé, sans DOM ni React ;
+- `src/games/useMirageGraphics.js` — le hook React (suit aussi l'évènement `storage`) ;
+- `src/games/MirageGraphicsToggle.jsx` — le bouton de la barre et le choix en toutes
+  lettres ;
+- `src/games/miragePixelBudget.js` — `renderPixelRatio(largeur, hauteur, densité, profil)` ;
+- `src/games/MirageWorld.jsx` (application du profil à la volée : `setGraphics`),
+  `desertStage.js` / `desertTerrain.js` (`setLite`) ;
+- `src/games/mirage-rush.css` — la section « GRAPHISMES BAISSÉS » (classe
+  `is-low-graphics` sur la coque de la page et de la fenêtre de course) ;
+- `src/games/mirageTouch.js` — le suivi des glissements (`createSwipeTracker`,
+  `attachSwipeControls`).
+
+Ajouter un réglage : un champ de plus dans `GRAPHICS_PROFILES`, relu par le moteur.
+`tests/mirage-graphics.test.js` fige la liste des champs : un réglage de **jeu** (vitesse,
+voies, collisions) n'a rien à y faire.
+
+### Vérifications
+
+```bash
+node --test tests/mirage-graphics.test.js tests/mirage-touch.test.js tests/mirage-desert-stage.test.js
+npm run check:mirage-graphics            # page et fenêtre en ligne dans jsdom : bouton, classes, mémorisation, bascule en course
+```
+
+jsdom n'a pas de WebGL : la vérification de la page remplace le moteur 3D par une
+doublure (`scripts/mirage-world-stub.jsx`) et ne dit rien du rendu. Pour la fluidité réelle,
+ouvrir le jeu sur le téléphone (ou dans les outils de développement, mode appareil mobile)
+et alterner les deux niveaux en pleine course. Le gain se mesure en images par seconde :
+sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
+sur les terrains chargés, du nombre d'objets dessinés.
+
 ## Vice City Rush : 3 tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq

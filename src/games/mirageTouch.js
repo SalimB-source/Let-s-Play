@@ -8,9 +8,14 @@
  *   - glisser vers la droite  → voie de droite ;
  *   - glisser vers le haut    → saut ;
  *   - taper (appui bref sans bouger) → saut ;
- *   - garder le doigt posé et continuer à glisser enchaîne les changements de
- *     voie (le doigt pilote le cheval comme un petit joystick) : le geste est
- *     lu pendant le mouvement, pas seulement au relâchement ;
+ *   - **un geste change d'UNE seule voie** : le changement part dès que le
+ *     doigt a parcouru `SWIPE_MIN_DISTANCE` (pendant le mouvement, sans
+ *     attendre le relâchement : aucune latence), puis la suite du glissement —
+ *     même très longue, même en revenant en arrière — ne change plus rien.
+ *     Pour passer une autre voie, on relève le doigt et on glisse de nouveau :
+ *     aucun délai à attendre, le geste suivant est lu tout de suite. Sur la
+ *     piste à trois voies du téléphone, un seul coup de doigt ne peut donc
+ *     plus traverser d'un bord à l'autre ;
  *   - une diagonale haut + côté fait les deux (le changement de voie part
  *     avant le saut, pour que le cheval soit déjà sur la bonne voie en
  *     retombant).
@@ -30,32 +35,19 @@
  */
 
 /**
- * Distance horizontale (px) qui déclenche le premier changement de voie.
- * Mesurée au pouce : 22 px ≈ 4 mm sur un téléphone de 390 pt, soit un petit
- * coup de doigt. L'ancien seuil de 34 px demandait moitié plus de geste — la
- * glissade semblait ne pas répondre.
+ * Distance horizontale (px) qui déclenche le changement de voie. Mesurée au
+ * pouce : 22 px ≈ 4 mm sur un téléphone de 390 pt, soit un petit coup de doigt
+ * — la glissade répond sans qu'on ait à « tirer » sur l'écran. C'est aussi la
+ * seule distance horizontale qui compte : un geste ne change qu'une voie, le
+ * reste du trajet n'a plus d'effet.
  */
 export const SWIPE_MIN_DISTANCE = 22;
-/**
- * Distance horizontale (px) entre deux changements de voie d'un même
- * glissement. Plus longue que la première : un geste diagonal ne doit pas
- * traverser trois voies d'un coup, alors qu'un petit coup de doigt doit se
- * sentir immédiatement. 36 px laissent enchaîner deux voies d'un seul
- * glissement continu (l'ancien 60 px obligeait à lever le doigt).
- */
-export const SWIPE_REPEAT_DISTANCE = 36;
 /** Distance verticale (px) vers le haut qui déclenche le saut. */
 export const SWIPE_JUMP_DISTANCE = 20;
 /** Au-delà de cette amplitude, un appui n'est plus une tape mais un glissement. */
 export const TAP_MAX_DISTANCE = 14;
 /** Durée maximale (ms) d'une tape qui saute (320 : une tape de pouce ordinaire). */
 export const TAP_MAX_DURATION = 320;
-/**
- * Garde-fou : un navigateur peut livrer des `pointermove` groupés après un
- * geste très rapide. On borne le nombre d'actions produites par échantillon
- * pour qu'un seul mouvement ne vide pas toute la piste.
- */
-const MAX_ACTIONS_PER_SAMPLE = 4;
 
 /** Horloge du geste : `at` s'il est exploitable, sinon l'horloge système. */
 function clockAt(at) {
@@ -67,10 +59,16 @@ function clockAt(at) {
  * `begin()` ouvre le geste, `sample()` est appelé à chaque mouvement, `end()`
  * au relâchement (le dernier échantillon compte : un geste très bref peut ne
  * livrer qu'un seul `move`, voire aucun).
+ *
+ * Un geste produit au plus **une** action de voie (`left` ou `right`) et au
+ * plus un `jump`, quel que soit le nombre d'échantillons reçus ou la distance
+ * parcourue : c'est ce qui empêche un coup de doigt de traverser deux voies
+ * d'un coup. La voie part dès le premier échantillon qui franchit le seuil
+ * (aucune attente du relâchement, aucun délai de recharge) ; la suivante part
+ * avec le geste suivant, lu immédiatement lui aussi.
  */
 export function createSwipeTracker(options = {}) {
   const minDistance = options.minDistance ?? SWIPE_MIN_DISTANCE;
-  const repeatDistance = options.repeatDistance ?? SWIPE_REPEAT_DISTANCE;
   const jumpDistance = options.jumpDistance ?? SWIPE_JUMP_DISTANCE;
   const tapToJump = options.tapToJump ?? true;
   const tapMaxDistance = options.tapMaxDistance ?? TAP_MAX_DISTANCE;
@@ -80,8 +78,7 @@ export function createSwipeTracker(options = {}) {
   let startX = 0;
   let startY = 0;
   let startedAt = 0;
-  let anchorX = 0;
-  let laneChanges = 0;
+  let laneFired = false;
   let jumpFired = false;
   let firedAny = false;
 
@@ -90,8 +87,7 @@ export function createSwipeTracker(options = {}) {
     startX = x;
     startY = y;
     startedAt = clockAt(at);
-    anchorX = x;
-    laneChanges = 0;
+    laneFired = false;
     jumpFired = false;
     firedAny = false;
     return [];
@@ -100,16 +96,16 @@ export function createSwipeTracker(options = {}) {
   const sample = (x, y) => {
     if (!tracking || !Number.isFinite(x) || !Number.isFinite(y)) return [];
     const actions = [];
-    // Un doigt qui tremble ne doit pas faire zigzaguer le cheval : l'ancre
-    // n'avance qu'au moment où une voie est vraiment changée.
-    let travelled = x - anchorX;
-    while (actions.length < MAX_ACTIONS_PER_SAMPLE) {
-      const threshold = laneChanges === 0 ? minDistance : repeatDistance;
-      if (Math.abs(travelled) < threshold) break;
-      actions.push(travelled > 0 ? 'right' : 'left');
-      anchorX += travelled > 0 ? threshold : -threshold;
-      travelled = x - anchorX;
-      laneChanges += 1;
+    // Une seule voie par geste : le premier franchissement du seuil la change,
+    // ensuite le doigt peut aller aussi loin qu'il veut (ou revenir en arrière,
+    // le rebond du relâchement compris) sans rien changer de plus. Le seuil se
+    // mesure depuis le point de départ du geste.
+    if (!laneFired) {
+      const travelled = x - startX;
+      if (Math.abs(travelled) >= minDistance) {
+        actions.push(travelled > 0 ? 'right' : 'left');
+        laneFired = true;
+      }
     }
     // Le saut ne part qu'une fois par geste ; à l'atterrissage, le moteur
     // garde la fenêtre courte de `jumpBuffer` (MirageWorld) pour ne pas perdre
@@ -147,16 +143,33 @@ export function createSwipeTracker(options = {}) {
   };
 }
 
-/** Coordonnées d'un événement Pointer ou Touch, ou `null` si inexploitable. */
-function pointFrom(event) {
+/** Le doigt `id` dans une liste Touch (TouchList ou tableau), ou `undefined`. */
+function findTouch(list, id) {
+  if (!list) return undefined;
+  for (let index = 0; index < list.length; index += 1) {
+    if (list[index].identifier === id) return list[index];
+  }
+  return undefined;
+}
+
+/**
+ * Coordonnées d'un événement Pointer ou Touch, ou `null` si inexploitable.
+ * Avec des événements Touch, plusieurs doigts peuvent être posés : on lit celui
+ * qu'on suit (`id`) — jamais `touches[0]`, qui peut être un autre doigt, surtout
+ * au relâchement du premier — sinon la position d'un voisin ferait partir un
+ * changement de voie qu'aucun geste n'a demandé.
+ */
+function pointFrom(event, id) {
   if (typeof event.clientX === 'number' && typeof event.clientY === 'number') {
     return { x: event.clientX, y: event.clientY };
   }
-  const touch = event.touches?.[0] || event.changedTouches?.[0];
+  const touch = (id == null ? undefined : findTouch(event.changedTouches, id) || findTouch(event.touches, id))
+    || event.changedTouches?.[0]
+    || event.touches?.[0];
   return touch ? { x: touch.clientX, y: touch.clientY } : null;
 }
 
-/** Identifiant du doigt suivi (les événements Touch n'ont pas de pointerId). */
+/** Identifiant du doigt qui vient de se poser (les événements Touch n'ont pas de pointerId). */
 function idFrom(event) {
   if (event.pointerId != null) return event.pointerId;
   return event.changedTouches?.[0]?.identifier ?? event.touches?.[0]?.identifier ?? 0;
@@ -196,13 +209,24 @@ export function attachSwipeControls(element, onAction, options = {}) {
     } catch { /* le navigateur a déjà lâché la capture */ }
   };
 
+  // L'événement concerne-t-il le doigt suivi ? Un `touchmove` peut annoncer
+  // plusieurs doigts à la fois : le nôtre n'est pas forcément le premier.
+  const concernsTracked = (event) => {
+    if (trackedId === null) return false;
+    if (event.pointerId != null) return event.pointerId === trackedId;
+    if (event.changedTouches?.length) return Boolean(findTouch(event.changedTouches, trackedId));
+    return idFrom(event) === trackedId;
+  };
+
   const start = (event) => {
     // Un seul doigt pilote le cheval : un second posé par accident (la paume,
-    // un autre joueur) est ignoré jusqu'au relâchement du premier.
+    // un autre joueur) est ignoré jusqu'au relâchement du premier. C'est aussi
+    // ce qui garantit qu'à deux doigts, une seule voie change à la fois.
     if (trackedId !== null) return;
-    const point = pointFrom(event);
+    const id = idFrom(event);
+    const point = pointFrom(event, id);
     if (!point) return;
-    trackedId = idFrom(event);
+    trackedId = id;
     tracker.begin(point.x, point.y, event.timeStamp);
     if (supportsPointer && event.pointerId != null) {
       // La capture garde le suivi même si le doigt sort du canvas en glissant.
@@ -211,16 +235,16 @@ export function attachSwipeControls(element, onAction, options = {}) {
   };
 
   const move = (event) => {
-    if (trackedId === null || idFrom(event) !== trackedId) return;
-    const point = pointFrom(event);
+    if (!concernsTracked(event)) return;
+    const point = pointFrom(event, trackedId);
     if (!point) return;
     if (event.cancelable) event.preventDefault();
     emit(tracker.sample(point.x, point.y));
   };
 
   const finish = (event) => {
-    if (trackedId === null || idFrom(event) !== trackedId) return;
-    const point = pointFrom(event);
+    if (!concernsTracked(event)) return;
+    const point = pointFrom(event, trackedId);
     release();
     trackedId = null;
     // La tape qui saute reste un geste du pouce : un clic de souris sur la
@@ -229,7 +253,7 @@ export function attachSwipeControls(element, onAction, options = {}) {
   };
 
   const abort = (event) => {
-    if (trackedId === null || (event && idFrom(event) !== trackedId)) return;
+    if (trackedId === null || (event && !concernsTracked(event))) return;
     release();
     trackedId = null;
     tracker.cancel();

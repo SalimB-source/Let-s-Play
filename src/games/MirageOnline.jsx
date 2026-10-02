@@ -9,8 +9,10 @@ import { CHARACTER_NAMES, CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX, LOBBY_CHARACT
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
 import MirageFullscreenIcon from './MirageFullscreenIcon';
+import MirageGraphicsButton from './MirageGraphicsToggle';
 import { isFullscreenShortcut } from './mirageFullscreen';
 import useMirageFullscreen from './useMirageFullscreen';
+import useMirageGraphics from './useMirageGraphics';
 import {
   broadcastRoomEvent,
   getOrCreateGuestProfile,
@@ -419,6 +421,9 @@ export default function MirageOnline({
     exit: exitPopupFullscreen,
     toggle: togglePopupFullscreen,
   } = useMirageFullscreen(racePopupRef);
+  // « Graphismes baissés » : le même choix que la page solo (mémorisé sur
+  // l'appareil), appliqué à la piste de la course en ligne et à son habillage.
+  const { low: lowGraphics } = useMirageGraphics();
 
   // La fenêtre disparaît à l'arrivée (puis les résultats s'ouvrent dans la page)
   // ou quand on quitte la room : le plein écran ne doit pas lui survivre.
@@ -1123,9 +1128,9 @@ export default function MirageOnline({
             )}
 
             {racePopupOpen && (
-              <div ref={racePopupRef} className={`mirage-game-popup-backdrop${popupImmersive ? ' is-immersive' : ''}`}>
+              <div ref={racePopupRef} className={`mirage-game-popup-backdrop${popupImmersive ? ' is-immersive' : ''}${lowGraphics ? ' is-low-graphics' : ''}`}>
                 <div className="mirage-game-popup" role="dialog" aria-modal="true" aria-label="Course Mirage Rush">
-                  <section className={`mirage-game-shell${active ? ' is-running' : ''}`}>
+                  <section className={`mirage-game-shell${active ? ' is-running' : ''}${lowGraphics ? ' is-low-graphics' : ''}`}>
                     <div className="mirage-game-topbar">
                       <strong>
                         {Math.floor(hud.distance || 0)} / {DUEL_DISTANCE} M · {hud.score || 0} PTS
@@ -1138,6 +1143,7 @@ export default function MirageOnline({
                       </strong>
                       <span>{finished ? 'ARRIVÉE !' : active ? 'COURSE EN COURS' : 'PISTE PRÊTE'}</span>
                       <div className="mirage-popup-actions">
+                        <MirageGraphicsButton />
                         <button
                           type="button"
                           className={`mirage-fullscreen-button${popupImmersive ? ' is-on' : ''}`}

@@ -158,3 +158,87 @@ test('desert: obstacle rows are culled inside the haze, and the palette cannot b
   assert.equal(typeof DESERT_PALETTE.horizon, 'number');
   assert.ok(Object.isFrozen(DESERT_PALETTE));
 });
+
+// ── Graphismes baissés : la version allégée du décor ───────────────────────
+
+const byOrder = (scenery, order) => scenery.group.children.find((child) => child.renderOrder === order);
+const parts = (scenery) => ({
+  sky: byOrder(scenery, -1),
+  mirage: byOrder(scenery, 1),
+  sheen: byOrder(scenery, 2),
+  dust: byOrder(scenery, 3),
+  terrain: chunksOf(scenery)[0].children.find((mesh) => mesh.material.isShaderMaterial),
+});
+
+test('desert: the normal scenery is untouched (every lite switch is off by default)', () => {
+  const scenery = makeDesertScenery();
+  const { sky, mirage, sheen, dust, terrain } = parts(scenery);
+  assert.equal(scenery.lite, false);
+  assert.equal(sky.material.uniforms.uLite.value, 0, 'ciel complet : nuages et vacillement');
+  assert.equal(terrain.material.uniforms.uLite.value, 0, 'sable complet : rides');
+  for (const mesh of [sky, mirage, sheen, dust]) assert.equal(mesh.visible, true);
+  scenery.dispose();
+});
+
+test('desert: lite drops the costly decoration but keeps the track, the dunes and the mirage', () => {
+  const scenery = makeDesertScenery({ lite: true });
+  const { sky, mirage, sheen, dust, terrain } = parts(scenery);
+  assert.equal(scenery.lite, true);
+  assert.equal(sky.material.uniforms.uLite.value, 1);
+  assert.equal(terrain.material.uniforms.uLite.value, 1);
+  assert.equal(sheen.visible, false, 'le voile d’eau sur les dalles lointaines n’est plus dessiné');
+  assert.equal(dust.visible, false, 'la poussière non plus');
+  assert.equal(sky.visible, true, 'le ciel reste (un simple dégradé)');
+  assert.equal(mirage.visible, true, 'le mirage est l’identité du terrain : il reste');
+  assert.equal(chunksOf(scenery).length, 3, 'le relief et ses accessoires sont intacts');
+  assert.ok(propMeshes(scenery).length > 0);
+  scenery.dispose();
+});
+
+test('desert: setLite() flips both ways in place, without rebuilding anything', () => {
+  const scenery = makeDesertScenery();
+  const before = { group: scenery.group, chunks: chunksOf(scenery), children: scenery.group.children.slice() };
+  const { sky, sheen, dust, terrain } = parts(scenery);
+  scenery.setLite(true);
+  assert.deepEqual([scenery.lite, sky.material.uniforms.uLite.value, terrain.material.uniforms.uLite.value, sheen.visible, dust.visible], [true, 1, 1, false, false]);
+  scenery.setLite(false);
+  assert.deepEqual([scenery.lite, sky.material.uniforms.uLite.value, terrain.material.uniforms.uLite.value, sheen.visible, dust.visible], [false, 0, 0, true, true]);
+  assert.equal(scenery.group, before.group);
+  assert.deepEqual(chunksOf(scenery), before.chunks);
+  assert.deepEqual(scenery.group.children, before.children, 'aucun objet ajouté ni retiré : pas de reconstruction ni de recompilation');
+  scenery.dispose();
+});
+
+test('desert: setLite() treats any input as a switch, and reduced motion keeps the dust off for good', () => {
+  const calm = makeDesertScenery({ reduceMotion: true });
+  const { dust } = parts(calm);
+  assert.equal(dust.visible, false);
+  calm.setLite(true);
+  calm.setLite(false);
+  assert.equal(dust.visible, false, 'sortir du mode allégé ne rallume pas la poussière si le mouvement est réduit');
+  calm.dispose();
+
+  const scenery = makeDesertScenery();
+  scenery.setLite(1);
+  assert.equal(scenery.lite, true);
+  scenery.setLite(undefined);
+  assert.equal(scenery.lite, false);
+  scenery.setLite('low');
+  assert.equal(scenery.lite, true);
+  scenery.setLite(0);
+  assert.equal(scenery.lite, false);
+  scenery.dispose();
+});
+
+test('desert: the lite scenery still scrolls and updates exactly like the normal one', () => {
+  const lite = makeDesertScenery({ lite: true });
+  const full = makeDesertScenery();
+  for (const [time, offset, progress] of [[0, 0, 0], [16.7, 3.3, 0.2], [9e4, 1e4 + 0.3, 1]]) {
+    assert.doesNotThrow(() => lite.update({ time, offset, progress, camera, renderer }));
+    full.update({ time, offset, progress, camera, renderer });
+    assert.deepEqual(chunksOf(lite).map((chunk) => chunk.position.z), chunksOf(full).map((chunk) => chunk.position.z), 'les dunes défilent avec la piste dans les deux versions');
+    assert.equal(parts(lite).mirage.scale.x, parts(full).mirage.scale.x, 'le mirage se rapproche pareil');
+  }
+  lite.dispose();
+  full.dispose();
+});

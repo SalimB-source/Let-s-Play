@@ -17,6 +17,9 @@
  *
  * Le budget laisse passer le 1080p plein écran à sa définition native et ne
  * touche ni la vue de la page, ni le téléphone.
+ *
+ * Les graphismes baissés (`mirageGraphics.js`) resserrent les deux plafonds : ils
+ * passent leurs propres limites à `renderPixelRatio()` (4ᵉ argument).
  */
 
 /** Plafond de la densité de pixels (écrans Retina et téléphones). */
@@ -24,16 +27,27 @@ export const MAX_PIXEL_RATIO = 1.55;
 /** Pixels rendus au maximum par image : un peu plus qu'un écran 1920 × 1080 (2 073 600). */
 export const MAX_RENDER_PIXELS = 2_200_000;
 
+/** Plafond fini et strictement positif, sinon `fallback`. */
+function limit(value, fallback) {
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 /**
  * Ratio de rendu pour une vue de `width` × `height` pixels CSS sur un écran de
  * densité `devicePixelRatio`. Ne dépasse jamais `MAX_PIXEL_RATIO`, ni le ratio
  * qui garde l'image sous `MAX_RENDER_PIXELS`. Vue nulle ou valeurs absurdes :
  * on retombe sur le plafond de densité (jamais `NaN`, jamais 0).
+ *
+ * `limits` (facultatif) remplace ces deux plafonds : `{ maxPixelRatio,
+ * maxRenderPixels }`, comme un profil de `mirageGraphics.js`. Une valeur
+ * absente ou absurde garde le plafond par défaut.
  */
-export function renderPixelRatio(width, height, devicePixelRatio = 1) {
+export function renderPixelRatio(width, height, devicePixelRatio = 1, limits = null) {
+  const maxRatio = limit(limits?.maxPixelRatio, MAX_PIXEL_RATIO);
+  const maxPixels = limit(limits?.maxRenderPixels, MAX_RENDER_PIXELS);
   const density = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0 ? devicePixelRatio : 1;
-  const ratio = Math.min(density, MAX_PIXEL_RATIO);
+  const ratio = Math.min(density, maxRatio);
   const area = Number(width) * Number(height);
   if (!Number.isFinite(area) || area <= 0) return ratio;
-  return Math.min(ratio, Math.sqrt(MAX_RENDER_PIXELS / area));
+  return Math.min(ratio, Math.sqrt(maxPixels / area));
 }

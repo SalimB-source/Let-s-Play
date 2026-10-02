@@ -117,6 +117,7 @@ const TERRAIN_FRAGMENT = /* glsl */ `
   uniform vec3 uRim;
   uniform vec3 uTintB;
   uniform float uTime;
+  uniform float uLite;
   varying vec3 vNormalW;
   varying vec3 vLocal;
   varying vec3 vWorld;
@@ -133,15 +134,20 @@ const TERRAIN_FRAGMENT = /* glsl */ `
     // Rides de vent : des bandes en travers de la piste (le vent souffle dans l'axe). Elles
     // accrochent le soleil bas, et défilent vers la caméra avec le sol : on « sent » la vitesse.
     // Fréquences en z multiples de 2π/96 (2,8798 = 44 périodes) pour se raccorder à chaque boucle.
-    vec2 q = vLocal.xz;
-    float phase = q.y * 2.8798 + q.x * 0.42
-      + 1.6 * sin(q.y * 0.1309 + q.x * 0.09)
-      + 0.9 * sin(q.x * 0.23 - q.y * 0.2618);
-    // Les rides se concentrent par plaques (fréquences multiples de 2π/96 en z, là aussi).
-    float zone = 0.45 + 0.55 * smoothstep(-0.4, 0.8, sin(q.x * 0.13 + q.y * 0.0654 + 1.3) + 0.5 * sin(q.x * 0.051 - q.y * 0.1309));
-    float ripple = sin(phase) * zone;
-    vec2 rdir = normalize(vec2(0.42, 2.8798));
-    N = normalize(N + vec3(rdir.x, 0.0, rdir.y) * ripple * 0.105 * fade * (0.35 + 0.65 * N.y));
+    // Graphismes baissés (uLite = 1) : on saute les rides — une seule branche sur un
+    // uniforme, donc aucun recalcul du shader quand le joueur bascule l'option.
+    float ripple = 0.0;
+    if (uLite < 0.5) {
+      vec2 q = vLocal.xz;
+      float phase = q.y * 2.8798 + q.x * 0.42
+        + 1.6 * sin(q.y * 0.1309 + q.x * 0.09)
+        + 0.9 * sin(q.x * 0.23 - q.y * 0.2618);
+      // Les rides se concentrent par plaques (fréquences multiples de 2π/96 en z, là aussi).
+      float zone = 0.45 + 0.55 * smoothstep(-0.4, 0.8, sin(q.x * 0.13 + q.y * 0.0654 + 1.3) + 0.5 * sin(q.x * 0.051 - q.y * 0.1309));
+      ripple = sin(phase) * zone;
+      vec2 rdir = normalize(vec2(0.42, 2.8798));
+      N = normalize(N + vec3(rdir.x, 0.0, rdir.y) * ripple * 0.105 * fade * (0.35 + 0.65 * N.y));
+    }
 
     float ndl = dot(N, uSunDir);
     float t = ndl * 0.5 + 0.5;
@@ -170,6 +176,7 @@ export function makeTerrainMaterial() {
     uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
       uSunDir: { value: new THREE.Vector3(0, 0.16, -0.987).normalize() },
       uTime: { value: 0 },
+      uLite: { value: 0 },
       uDeep: { value: srgbVector(DESERT_PALETTE.sandDeep) },
       uShade: { value: srgbVector(DESERT_PALETTE.sandShade) },
       uMid: { value: srgbVector(DESERT_PALETTE.sandMid) },
@@ -198,6 +205,7 @@ const SKY_VERTEX = /* glsl */ `
 const SKY_FRAGMENT = /* glsl */ `
   uniform float uTime;
   uniform float uMotion;
+  uniform float uLite;
   uniform float uSunH;
   uniform float uSunR;
   uniform vec3 uHorizon;
@@ -238,8 +246,12 @@ const SKY_FRAGMENT = /* glsl */ `
     float t = uTime * uMotion;
 
     // L’air chaud fait trembler tout ce qui touche l’horizon (le bas du soleil, les nuages).
-    float haze = exp(-abs(hh - 7.6) * 0.32);
-    p.x += (sin(hh * 2.4 + t * 1.6) * 0.30 + sin(hh * 5.3 - t * 2.4) * 0.12) * haze;
+    // (Graphismes baissés, uLite = 1 : ni vacillement ni nuages — le ciel reste un simple
+    // dégradé avec son soleil, une branche sur un uniforme, sans recalcul du shader.)
+    if (uLite < 0.5) {
+      float haze = exp(-abs(hh - 7.6) * 0.32);
+      p.x += (sin(hh * 2.4 + t * 1.6) * 0.30 + sin(hh * 5.3 - t * 2.4) * 0.12) * haze;
+    }
 
     // Dégradé : brume dorée plate à l’horizon (= couleur du brouillard), puis corail, violet, nuit.
     vec3 col = uHorizon;
@@ -248,10 +260,12 @@ const SKY_FRAGMENT = /* glsl */ `
     col = mix(col, uDeep, smoothstep(30.0, 64.0, hh));
 
     // Nuages filés, éclairés par en dessous.
-    vec2 cp = vec2(p.x * 0.045 + t * 0.012, hh * 0.20);
-    float cloud = smoothstep(0.50, 0.80, fbm(cp)) * smoothstep(10.0, 17.0, hh) * (1.0 - smoothstep(38.0, 62.0, hh));
-    vec3 cloudCol = mix(uViolet * 1.08, uGlow, exp(-(hh - 9.0) * 0.07));
-    col = mix(col, cloudCol, cloud * 0.72);
+    if (uLite < 0.5) {
+      vec2 cp = vec2(p.x * 0.045 + t * 0.012, hh * 0.20);
+      float cloud = smoothstep(0.50, 0.80, fbm(cp)) * smoothstep(10.0, 17.0, hh) * (1.0 - smoothstep(38.0, 62.0, hh));
+      vec3 cloudCol = mix(uViolet * 1.08, uGlow, exp(-(hh - 9.0) * 0.07));
+      col = mix(col, cloudCol, cloud * 0.72);
+    }
 
     // Soleil : halo, disque, et fondu dans la brume du bas.
     vec2 sc = vec2(0.0, uSunH);
@@ -274,6 +288,7 @@ export function makeDesertSky(reduceMotion = false) {
     uniforms: {
       uTime: { value: 0 },
       uMotion: { value: reduceMotion ? 0.2 : 1 },
+      uLite: { value: 0 },
       uSunH: { value: 13.2 },
       uSunR: { value: 6.4 },
       uHorizon: { value: srgb(DESERT_PALETTE.horizon) },
