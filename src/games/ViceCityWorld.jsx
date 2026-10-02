@@ -794,6 +794,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       phase: index * 1.7,
       changeIn: 0.25 + index * 0.4,
       slowLeft: 0,
+      trafficImpactLeft: 0,
       stunLeft: 0,
       stunTotal: 0,
       skidLeft: 0,
@@ -1150,6 +1151,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.distance = 0;
       police.currentSpeed = 0;
       police.slowLeft = 0;
+      police.trafficImpactLeft = 0;
       police.stunLeft = 0;
       police.stunTotal = 0;
       police.skidLeft = 0;
@@ -1351,7 +1353,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function spawnTrafficImpact(racerId, trafficId) {
-    const racer = racerId === 'player' ? playerCar : racers.find((item) => item.id === racerId)?.mesh;
+    const racer = getVehicleMesh(racerId);
     const traffic = trafficCars.find((item) => item.id === trafficId)?.mesh;
     if (!racer || !traffic || !trafficImpacts.length) return;
     const effect = trafficImpacts.find((candidate) => !candidate.userData.active)
@@ -1380,7 +1382,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!data.active) return;
     data.age += dt;
     const progress = clamp(data.age / CITY_RUSH_TRAFFIC_IMPACT_DURATION, 0, 1);
-    const racer = data.racerId === 'player' ? playerCar : racers.find((item) => item.id === data.racerId)?.mesh;
+    const racer = getVehicleMesh(data.racerId);
     const traffic = trafficCars.find((item) => item.id === data.trafficId)?.mesh;
     if (racer && traffic) effect.position.lerpVectors(racer.position, traffic.position, 0.5);
     effect.position.y = 0;
@@ -1692,6 +1694,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.active = true;
       police.inventory = createCityRushInventory();
       police.slowLeft = 0;
+      police.trafficImpactLeft = 0;
       police.stunLeft = 0;
       police.stunTotal = 0;
       police.skidLeft = 0;
@@ -1764,7 +1767,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function updatePolice(dt, leader) {
     policeStealNoticeCooldown = Math.max(0, policeStealNoticeCooldown - dt);
     if (!policeDeployed) return;
-    const traffic = trafficCars.map((car) => ({ lane: car.lane, distance: car.distance, x: car.currentX, width: car.width }));
+    const traffic = trafficCars.map((car) => ({ id: car.id, lane: car.lane, distance: car.distance, x: car.currentX, width: car.width, speed: car.currentSpeed }));
     const pickups = visiblePickups();
     const slowZones = visibleSlowZones();
     const priorDistances = new Map(policeCars.map((police) => [police.id, police.distance]));
@@ -1773,6 +1776,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
     for (const police of policeCars) {
       police.slowLeft = Math.max(0, police.slowLeft - dt);
+      police.trafficImpactLeft = Math.max(0, police.trafficImpactLeft - dt);
       police.stunLeft = Math.max(0, police.stunLeft - dt);
       police.skidLeft = Math.max(0, police.skidLeft - dt);
       police.powerCooldown = Math.max(0, police.powerCooldown - dt);
@@ -1819,7 +1823,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         tolerance: CITY_RUSH_POLICE_LEAD_SLACK,
       });
       if (police.stunLeft > 0) targetSpeed = 0;
-      else if (police.slowLeft > 0) targetSpeed *= 0.6;
+      else if (police.slowLeft > 0 || police.trafficImpactLeft > 0) targetSpeed *= 0.6;
       // Engluée derrière un véhicule lent : elle relance tout de suite son
       // choix de voie au lieu d'attendre la fin de son délai.
       if (police.currentSpeed < targetSpeed * 0.55) police.changeIn = Math.min(police.changeIn, 0.1);
@@ -1838,6 +1842,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
     const resolved = resolveCityRushPoliceMovement(requests, traffic, CITY_RUSH_CAR_GAP);
     const resolvedById = new Map(resolved.map((car) => [car.id, car.nextDistance]));
+    // Comme le joueur et les rivaux (voir `applyTrafficImpact`), une berline
+    // freinée par un véhicule lent le heurte : une seconde de ralenti, un
+    // dérapage, et le véhicule se rabat sur une voie voisine. Sans cela
+    // l'escouade restait engluée derrière lui tandis que le leader s'envolait —
+    // elle n'était plus jamais à l'écran. Un choc refusé (véhicule déjà en
+    // train de se rabattre, ou en délai de grâce) est rejoué à l'image suivante.
+    for (const car of resolved) {
+      const blocker = car.blockedBy ? trafficCars.find((item) => item.id === car.blockedBy) : null;
+      if (blocker) applyTrafficImpact(car.id, blocker);
+    }
     let nearest = Infinity;
     for (const police of policeCars) {
       const before = priorDistances.get(police.id);
@@ -1891,9 +1905,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function canEnterLane(actorId, targetLane, tunnelLead = CITY_RUSH_TUNNEL_PLAYER_LEAD) {
     const targetX = CITY_RUSH_LANE_X[targetLane];
-    const actor = racers.find((racer) => racer.id === actorId);
+    // Une berline de police est jugée à sa propre position : sans cela elle
+    // héritait de la distance du joueur — voie murée ou trafic mal évalués.
+    const actor = racers.find((racer) => racer.id === actorId) || policeCars.find((police) => police.id === actorId);
     const actorDistance = actorId === 'player' ? distance : actor?.distance ?? distance;
-    const actorWidth = 1.9 * (actorId === 'player' ? 1 : 0.92) * (actorId === 'player' ? playerProfile.widthScale : actor?.profile.widthScale || 1);
+    const actorWidth = actorId === 'player'
+      ? 1.9 * playerProfile.widthScale
+      : actor?.profile ? 1.9 * 0.92 * (actor.profile.widthScale || 1) : Number(actor?.width) || 1.9 * 0.92;
     // Sous un tremis, une voie murée n'est pas une voie : on se rabat avant.
     if (cityRushTunnelLaneFor(actorDistance, targetLane, tunnels, tunnelLead) !== targetLane) return false;
     // Les adversaires se traversent sans collision; seul le trafic lent bloque.
@@ -1908,6 +1926,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const nearby = [
       ...racers.map((racer) => ({ lane: racer.lane, distance: racer.distance, x: racer.currentX, width: 1.9 * 0.92 * racer.profile.widthScale })),
       { lane: playerLane, distance, x: playerX, width: 1.9 * playerProfile.widthScale },
+      // L'escouade compte comme les rivaux : le véhicule touché ne se rabat pas
+      // devant la seconde berline, qui s'y engluerait à son tour.
+      ...policeCars.filter((police) => police.active).map((police) => ({ lane: police.lane, distance: police.distance, x: police.currentX, width: police.width })),
       ...trafficCars.filter((other) => other.id !== traffic.id).map((other) => ({
         lane: other.lane, distance: other.distance, x: other.currentX, width: other.width,
       })),
@@ -1926,6 +1947,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function applyTrafficImpact(racerId, traffic) {
     if (!traffic || traffic.impactCooldownLeft > 0 || traffic.impactChanging) return false;
     const racer = racerId === 'player' ? null : racers.find((item) => item.id === racerId);
+    const squadCar = racerId === 'player' || racer ? null : policeCars.find((item) => item.id === racerId);
     const escapeLane = trafficImpactEscapeLane(traffic);
     if (escapeLane === traffic.lane) return false;
 
@@ -1944,9 +1966,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     } else if (racer) {
       racer.trafficImpactLeft = Math.max(racer.trafficImpactLeft, CITY_RUSH_TRAFFIC_IMPACT_DURATION);
       racer.skidLeft = Math.max(racer.skidLeft, 0.85);
+    } else if (squadCar) {
+      squadCar.trafficImpactLeft = Math.max(squadCar.trafficImpactLeft, CITY_RUSH_TRAFFIC_IMPACT_DURATION);
+      squadCar.skidLeft = Math.max(squadCar.skidLeft, 0.85);
+      squadCar.skidSide = Math.random() < 0.5 ? -1 : 1;
     }
-    spawnTrafficImpact(racerId, traffic.id);
-    audioRef?.current?.skid({ pan: vehiclePan(racerId), intensity: 1.05, duration: 0.82 });
+    // L'escouade n'ajoute ni message à l'écran ni effet hors champ : le choc
+    // d'une berline ne compte que s'il se voit ou s'entend.
+    if (!squadCar || squadCar.mesh.visible) {
+      spawnTrafficImpact(racerId, traffic.id);
+      audioRef?.current?.skid({ pan: vehiclePan(racerId), intensity: 1.05, duration: 0.82 });
+    }
+    if (squadCar) return true;
     getCallbacks().effect?.({
       type: 'traffic-impact',
       target: label,
