@@ -13,6 +13,7 @@ import {
   CITY_RUSH_PICKUP_BURST_DURATION,
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
+  CITY_RUSH_FORWARD_TOLERANCE,
   CITY_RUSH_POWER_CHARGE_COST,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_TRAFFIC_COUNT,
@@ -22,6 +23,7 @@ import {
   chooseCityRushAiLane,
   cityRushHitDuration,
   cityRushHelicopterTarget,
+  cityRushIsAhead,
   cityRushLapForDistance,
   cityRushLapProgress,
   cityRushLapCrossings,
@@ -356,23 +358,45 @@ test('pickup encounters add more bonuses without placing them in slow zones', ()
   assert.ok(totalPickups > 900 && totalPickups < 1200, 'les bonus apparaissent plus souvent avec quelques rangées encore vides');
 });
 
-test('the helicopter always targets a rival, even when the player leads', () => {
+test('the helicopter only locks onto rivals ahead of its pilot', () => {
   const playerLeads = [
     { id: 'player', distance: 120 },
     { id: 'rival-a', distance: 104 },
     { id: 'rival-b', distance: 88 },
   ];
-  assert.equal(cityRushHelicopterTarget(playerLeads, 'player').id, 'rival-a');
-  assert.equal(cityRushHelicopterTarget([...playerLeads].reverse(), 'player').id, 'rival-a', 'la cible est le meilleur rival, pas le premier élément de la liste');
+  assert.equal(cityRushHelicopterTarget(playerLeads, 'player'), null, 'un pilote en tête ne peut pas viser un poursuivant');
+  assert.equal(cityRushHelicopterTarget([...playerLeads].reverse(), 'player'), null, 'l’ordre de la liste ne change rien : personne n’est devant');
   assert.equal(cityRushHelicopterTarget(playerLeads, 'rival-a').id, 'player', 'un rival peut toujours viser le leader joueur');
+  assert.equal(cityRushHelicopterTarget(playerLeads, 'rival-b').id, 'player', 'le dernier ne voit que ceux qui le précèdent, jamais les autres poursuivants');
 
-  const rivalLeads = [
+  const playerChases = [
     { id: 'player', distance: 90 },
     { id: 'rival-a', distance: 102 },
     { id: 'rival-b', distance: 98 },
+    { id: 'rival-c', distance: 71 },
   ];
-  assert.equal(cityRushHelicopterTarget(rivalLeads).id, 'rival-a');
+  assert.equal(cityRushHelicopterTarget(playerChases).id, 'rival-a', 'parmi les rivaux devant, le mieux placé');
+  assert.equal(cityRushHelicopterTarget([...playerChases].reverse()).id, 'rival-a', 'la cible est le meilleur rival devant, pas le premier élément de la liste');
+  assert.equal(cityRushHelicopterTarget(playerChases, 'rival-b').id, 'rival-a', 'un rival ne se vise pas lui-même et ignore ceux qui le suivent');
   assert.equal(cityRushHelicopterTarget([{ id: 'player', distance: 1 }]), null);
+});
+
+test('forward-only powers tolerate a rival glued to the bumper', () => {
+  assert.equal(CITY_RUSH_FORWARD_TOLERANCE, 1);
+  assert.equal(cityRushIsAhead(100.5, 100), true, 'le rival est devant');
+  assert.equal(cityRushIsAhead(99.4, 100), true, 'roue contre roue, compté comme devant');
+  assert.equal(cityRushIsAhead(98.9, 100), false, 'un mètre derrière : plus une cible');
+  assert.equal(cityRushIsAhead(100, 100), true);
+  assert.equal(cityRushIsAhead(Number.NaN, 100), false);
+  assert.equal(cityRushIsAhead(100, Number.NaN), false);
+  assert.equal(cityRushIsAhead(96, 100, 5), true, 'tolérance élargie au besoin');
+
+  const wheelToWheel = [
+    { id: 'player', distance: 100 },
+    { id: 'rival-a', distance: 99.5 },
+    { id: 'rival-b', distance: 95 },
+  ];
+  assert.equal(cityRushHelicopterTarget(wheelToWheel).id, 'rival-a');
 });
 
 test('race standings identify the leader and player position, including ties', () => {

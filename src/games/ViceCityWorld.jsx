@@ -35,6 +35,7 @@ import {
   createCityRushEncounter,
   createCityRushInventory,
   cityRushHelicopterTarget,
+  cityRushIsAhead,
   rankCityRushRacers,
   resolveCityRushCarMovement,
 } from './cityRushRules';
@@ -759,8 +760,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   // La mitrailleuse ne vise qu'un adversaire situé devant le tireur : on ne
-  // garde que les cibles dont la distance est strictement en avant (avec une
-  // petite tolérance pour les rivaux à peu près à la même hauteur).
+  // garde que les cibles dont la distance est en avant (avec la tolérance
+  // commune aux pouvoirs directionnels pour les rivaux à la même hauteur).
   function findPistolTarget(attackerId = 'player') {
     const attackerDistance = attackerId === 'player' ? distance : racers.find((racer) => racer.id === attackerId)?.distance ?? distance;
     const others = [
@@ -773,14 +774,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       })),
     ];
     const ahead = others
-      .filter((other) => other.distance >= attackerDistance - 1)
+      .filter((other) => cityRushIsAhead(other.distance, attackerDistance))
       .sort((a, b) => a.distance - b.distance);
     return ahead[0] || null;
   }
 
   function getTargetForRadio(callerId = 'player') {
-    // Le tir vise le rival le mieux placé, jamais l'appelant. Si le joueur est
-    // lui-même en tête, le premier rival devient donc une cible valide.
+    // Le talkie vise le rival le mieux placé, jamais l'appelant — et seulement
+    // s'il est DEVANT lui : un pilote en tête n'a plus de cible valide, l'hélico
+    // ne part donc jamais vers un poursuivant (la jauge reste chargée).
     return cityRushHelicopterTarget(makeRacerRows(), callerId);
   }
 
@@ -1029,13 +1031,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     clearPickupBursts();
   }
 
-  function startStrike(target) {
+  function startStrike(target, callerId = 'player') {
     if (strike) {
       getCallbacks().effect?.({ type: 'radio-busy', message: 'L’hélicoptère est déjà en route.' });
       return false;
     }
     if (!target) return false;
-    strike = { targetId: target.id, targetName: target.name, phase: 'approach', elapsed: 0, start: new THREE.Vector3(14, 12, -18) };
+    // `callerId` sert à l'impact : l'onde de choc ne touche jamais un
+    // adversaire resté derrière le pilote qui a appelé l'hélico.
+    strike = { targetId: target.id, targetName: target.name, callerId, phase: 'approach', elapsed: 0, start: new THREE.Vector3(14, 12, -18) };
     helicopter.visible = true;
     helicopter.position.copy(strike.start);
     missile.visible = false;
@@ -1089,7 +1093,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         getCallbacks().effect?.({ type: 'pistol', target: target.name, targetId: target.id, duration });
       }
     } else if (type === 'radio') {
-      startStrike(radioTarget);
+      startStrike(radioTarget, 'player');
     }
     emitHud(true);
   }
@@ -1130,7 +1134,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           target.racer.skidSide = Math.random() < 0.5 ? -1 : 1;
         }
       } else if (type === 'radio') {
-        startStrike(target);
+        startStrike(target, racer.id);
       }
       return true;
     }
@@ -1379,14 +1383,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           if (racer) primaryDuration = stun(racer.id, racer.profile, false);
         }
 
+        // La cible verrouillée au lancement est toujours touchée (le missile est
+        // déjà en vol), mais l'onde de choc épargne les poursuivants : on ne
+        // touche que les adversaires qui se trouvent devant le pilote appelant.
         const hitIds = new Set([strike.targetId]);
         const scratchPos = new THREE.Vector3();
+        const callerDistance = strike.callerId === 'player'
+          ? distance
+          : racers.find((item) => item.id === strike.callerId)?.distance ?? distance;
         const participants = [
-          { id: 'player', profile: playerProfile, isPlayer: true },
-          ...racers.map((racer) => ({ id: racer.id, profile: racer.profile, isPlayer: false })),
+          { id: 'player', profile: playerProfile, isPlayer: true, distance },
+          ...racers.map((racer) => ({ id: racer.id, profile: racer.profile, isPlayer: false, distance: racer.distance })),
         ];
         for (const participant of participants) {
           if (hitIds.has(participant.id)) continue;
+          if (!cityRushIsAhead(participant.distance, callerDistance)) continue;
           targetPosition(participant.id, scratchPos);
           const gap = Math.hypot(scratchPos.x - impactWorld.x, scratchPos.z - impactWorld.z);
           if (gap <= EXPLOSION_RADIUS) {

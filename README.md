@@ -350,7 +350,15 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
   **bleu 2** (clé à molette / huile), **rouge 3** (mitrailleuse / dérapage),
   **vert 2** (billets / boost), **jaune 4** (talkie-walkie / hélicoptère) —
-  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Un bonus ramassé
+  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. **Les deux pouvoirs de
+  tir ne visent que devant** : la mitrailleuse prend le rival le plus proche du
+  pare-chocs, l'hélicoptère le mieux placé, mais seulement parmi les rivaux
+  situés devant le tireur (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`,
+  un mètre de tolérance pour une voiture roue contre roue). Un pilote en tête
+  n'a donc **aucune cible jaune** : l'hélico ne part jamais vers un poursuivant,
+  l'onde de choc épargne elle aussi les adversaires restés derrière l'appelant,
+  et le HUD affiche « AUCUN RIVAL DEVANT TOI · LA JAUGE RESTE CHARGÉE » sans
+  consommer la jauge. Un bonus ramassé
   **éclate** : flash, anneau qui s'ouvre et éclats de sa couleur repris par la
   gravité (`cityRushPickupBurstShards` / `cityRushPickupShardState` /
   `cityRushPickupFlashState`, rendus par un pool de six objets dans
