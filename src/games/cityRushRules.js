@@ -861,9 +861,37 @@ export function cityRushPolicePace({
   return Math.max(safeLeader, safeBase * 0.82);
 }
 
+// Une voie est « bouchée » pour une berline quand un véhicule lent la précède à
+// portée de freinage (`CITY_RUSH_POLICE_BLOCK_RANGE`). La vitesse du trafic
+// n'est pas toujours connue : sans elle, le véhicule est supposé à l'arrêt.
+// Une berline déjà engluée roule à la vitesse du trafic, d'où le plancher.
+export function isCityRushPoliceLaneJammed({
+  lane = 0,
+  distance = 0,
+  speed = CITY_RUSH_PLAYER_SPEED,
+  traffic = [],
+  range = CITY_RUSH_POLICE_BLOCK_RANGE,
+} = {}) {
+  const ownSpeed = Math.max(0, Number(speed) || 0);
+  const slowThreshold = Math.max(12, ownSpeed * 0.6);
+  return (Array.isArray(traffic) ? traffic : []).some((vehicle) => {
+    if (!vehicle || vehicle.lane !== lane) return false;
+    const gap = Number(vehicle.distance) - Number(distance);
+    if (!Number.isFinite(gap) || gap < -3 || gap > range) return false;
+    return Math.max(0, Number(vehicle.speed) || 0) < slowThreshold;
+  });
+}
+
 // Choix de voie de l'escouade : même prudence que les rivaux devant le trafic
 // et les zones lentes, mais une convoitise multipliée pour les bonus rouges et
 // jaunes — c'est là qu'elle prive le leader de ses armes.
+//
+// La convoitise (×100) écrase toute pénalité de circulation : un bonus rouge
+// devant un camion suffisait à garder la berline collée à son pare-chocs, à
+// 5 m/s, pendant que le leader s'envolait — l'escouade décrochait et n'était
+// plus jamais à l'écran. Une voie bouchée est donc écartée d'office tant
+// qu'une voie libre est ouverte ; si tout est bouché, le choix d'origine
+// reste valable (la berline touche alors le véhicule, voir le monde 3D).
 export function chooseCityRushPoliceLane({
   currentLane = 0,
   laneCount = CITY_RUSH_LANE_X.length,
@@ -886,10 +914,12 @@ export function chooseCityRushPoliceLane({
   const lookAhead = Math.max(1, Number(lookAheadDistance) || CITY_RUSH_POLICE_LOOKAHEAD);
   const racerSpeed = Math.max(0, Number(speed) || 0);
   const huntedLane = targetLane === null || targetLane === undefined ? null : clampCityRushLane(targetLane, laneCount);
-  let bestLane = lane;
+  const clearLanes = candidates.filter((candidate) => !isCityRushPoliceLaneJammed({ lane: candidate, distance, speed: racerSpeed, traffic }));
+  const options = clearLanes.length ? clearLanes : candidates;
+  let bestLane = options.includes(lane) ? lane : options[0];
   let bestScore = -Infinity;
 
-  for (const candidate of candidates) {
+  for (const candidate of options) {
     let safetyScore = -Math.abs(candidate - lane) * 1.1;
     let greed = 0;
     for (const pickup of pickups) {
@@ -936,12 +966,18 @@ export function chooseCityRushPoliceLane({
 // Les berlines de police ne bloquent personne (elles traversent le peloton
 // comme les rivaux se traversent entre eux) mais **ne traversent pas le
 // trafic** : leur distance est rabotée derrière le véhicule lent de leur voie.
+// `blockedBy` désigne le véhicule qui a freiné la berline cette image (son
+// `id`), ou `null` : le monde 3D s'en sert pour le heurter — le détecteur de
+// chocs ne voit que l'entrée dans la marge depuis l'arrière, et une berline
+// restée plaquée contre un véhicule dont le choc a été refusé le suivrait sans
+// fin à son allure.
 export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], minimumGap = CITY_RUSH_CAR_GAP) {
   const safeGap = Math.max(0, Number(minimumGap) || 0);
   return policeCars.map((car) => {
     const previousDistance = Number.isFinite(Number(car.distance)) ? Number(car.distance) : 0;
     const requestedDistance = Number.isFinite(Number(car.nextDistance)) ? Number(car.nextDistance) : previousDistance;
     let nextDistance = Math.max(previousDistance, requestedDistance);
+    let blockedBy = null;
     for (const other of traffic) {
       const otherDistance = Number(other.distance);
       if (!Number.isFinite(otherDistance) || otherDistance <= previousDistance) continue;
@@ -952,9 +988,13 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
         && Number.isFinite(Number(car.x))
         && Math.abs(Number(other.x) - Number(car.x)) < (policeWidth + otherWidth) / 2;
       if (!sameLane && !lateralOverlap) continue;
-      nextDistance = Math.min(nextDistance, Math.max(previousDistance, otherDistance - safeGap));
+      const limit = Math.max(previousDistance, otherDistance - safeGap);
+      if (limit < nextDistance) {
+        nextDistance = limit;
+        blockedBy = other.id ?? null;
+      }
     }
-    return { ...car, previousDistance, nextDistance };
+    return { ...car, previousDistance, nextDistance, blockedBy };
   });
 }
 
