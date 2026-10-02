@@ -350,8 +350,8 @@ export default function ViceCityRushPage() {
 
   function effectMessage(effect) {
     if (!effect) return;
-    if (effect.type === 'cash') showToast('BOOST ACTIVÉ · 1,5 seconde de turbo.', 'cash');
-    else if (effect.type === 'oil') showToast('HUILE DÉVERSÉE · Un rival peut déraper derrière toi.', 'oil');
+    if (effect.type === 'cash') showToast(effect.automatic ? 'BOOST AUTO-ACTIVÉ · 1,5 seconde de turbo.' : 'BOOST ACTIVÉ · 1,5 seconde de turbo.', 'cash');
+    else if (effect.type === 'oil') showToast(effect.automatic ? 'HUILE AUTO-DÉVERSÉE · Un rival peut déraper derrière toi.' : 'HUILE DÉVERSÉE · Un rival peut déraper derrière toi.', 'oil');
     else if (effect.type === 'oil-hit') showToast(effect.target === 'TOI' ? `DÉRAPAGE · FLAQUE DE ${effect.owner || 'RIVAL'} · RALENTI.` : `DÉRAPAGE · ${effect.target} a traversé une flaque.`, 'oil');
     else if (effect.type === 'pistol') showToast(`TATATATA ! ${effect.target} mitraillé · ralenti ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'pistol-hit-player') showToast(`TATATATA ! ${effect.attacker} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
@@ -360,6 +360,7 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'radio') showToast(`HÉLICO EN APPROCHE · CIBLE : ${effect.target}.`, 'radio');
     else if (effect.type === 'missile-hit') showToast(`IMPACT · ${effect.target} immobilisé ${formatSeconds(effect.duration, 2)}.`, 'radio');
     else if (effect.type === 'radio-busy') showToast(effect.message, 'radio');
+    else if (effect.type === 'radio-no-target') showToast('AUCUN RIVAL À CIBLER · TON OBJET RESTE DISPONIBLE.', 'radio');
     else if (effect.type === 'slow-zone') showToast('ZONE DE RALENTISSEMENT · Garde l’œil sur la route.', 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
@@ -375,11 +376,15 @@ export default function ViceCityRushPage() {
     const rule = CITY_RUSH_POWER_RULES[pickup.type];
     if (!rule) return;
     const progress = Math.min(rule.chargeCost, pickup.progress || 0);
-    const message = pickup.newlyReady
-      ? `${rule.shortName.toUpperCase()} PRÊT À UTILISER · TOUCHE ${rule.key}`
-      : pickup.ready
-        ? `${rule.shortName.toUpperCase()} · JAUGE PLEINE (${progress}/${rule.chargeCost})`
-        : `${rule.shortName.toUpperCase()} · CHARGEMENT ${progress}/${rule.chargeCost}`;
+    const message = pickup.autoActivated
+      ? (pickup.type === CITY_RUSH_POWERS.CASH
+        ? 'BOOST AUTO-ACTIVÉ · 1,5 s DE TURBO.'
+        : 'HUILE AUTO-DÉVERSÉE · UNE FLAQUE EST DERRIÈRE TOI.')
+      : pickup.newlyReady
+        ? `${rule.shortName.toUpperCase()} PRÊT À UTILISER · TOUCHE ${rule.key}`
+        : pickup.ready
+          ? `${rule.shortName.toUpperCase()} · JAUGE PLEINE (${progress}/${rule.chargeCost})`
+          : `${rule.shortName.toUpperCase()} · CHARGEMENT ${progress}/${rule.chargeCost}`;
     showToast(message, pickup.type);
   };
 
@@ -515,21 +520,24 @@ export default function ViceCityRushPage() {
                     const rule = CITY_RUSH_POWER_RULES[type];
                     const progress = Math.min(rule.chargeCost, Math.max(0, Number(hud.inventory?.[type]) || 0));
                     const ready = progress >= rule.chargeCost;
+                    const automatic = Boolean(rule.automatic);
                     const progressPercent = Math.round((progress / rule.chargeCost) * 100);
                     return (
                       <button
                         type="button"
                         key={type}
-                        className={`city-rush-power-button is-${type}${ready ? ' is-ready' : ''}`}
+                        className={`city-rush-power-button is-${type}${automatic ? ' is-automatic' : ''}${ready ? ' is-ready' : ''}`}
                         onClick={() => actionsRef.current?.(type)}
-                        disabled={!ready}
-                        title={`${rule.name} — ${rule.chargeCost} objets identiques pour charger. ${rule.description} Progression : ${progress}/${rule.chargeCost}. Touche ${rule.key} (AZERTY).`}
-                        aria-label={`${rule.name} : ${progress} sur ${rule.chargeCost}${ready ? ', prêt à utiliser' : ''}`}
+                        disabled={automatic || !ready}
+                        title={`${rule.name} — ${rule.chargeCost} objets identiques pour charger. ${rule.description} Progression : ${progress}/${rule.chargeCost}.${automatic ? '' : ` Touche ${rule.key} (AZERTY).`}`}
+                        aria-label={automatic
+                          ? `${rule.name} : ${progress} sur ${rule.chargeCost}, activation automatique quand chargé`
+                          : `${rule.name} : ${progress} sur ${rule.chargeCost}${ready ? ', prêt à utiliser' : ''}`}
                       >
                         <span className="city-rush-power-icon"><PowerIcon type={type} /></span>
                         <span className="city-rush-power-copy">
                           <b>{rule.shortName}</b>
-                          <small><span>{rule.key}</span> <i>·</i> {ready ? 'PRÊT' : `${progress}/${rule.chargeCost}`}</small>
+                          <small><span>{automatic ? 'AUTO' : rule.key}</span> <i>·</i> {ready ? 'PRÊT' : `${progress}/${rule.chargeCost}`}</small>
                           <span className="city-rush-power-progress" aria-hidden="true"><i style={{ width: `${progressPercent}%` }} /></span>
                         </span>
                         {ready && <i className="city-rush-power-pip" aria-hidden="true" />}
@@ -656,7 +664,7 @@ export default function ViceCityRushPage() {
 
           <div className="city-rush-shell-footer">
             <span><i className="city-rush-footer-dot" /> CIRCUIT OUVERT <b>·</b> {city.name} <b>·</b> {CITY_RUSH_LAPS} TOURS × {CITY_RUSH_LAP_LENGTH} M</span>
-            <span className="city-rush-desktop-hint">← → OU Q / D : VOIES <b>·</b> A / Z / E / R : POUVOIRS <b>·</b> P / ÉCHAP : PAUSE <b>·</b> M : SON</span>
+            <span className="city-rush-desktop-hint">← → OU Q / D : VOIES <b>·</b> Z / R : TIRS <b>·</b> A / E : AUTO <b>·</b> P / ÉCHAP : PAUSE <b>·</b> M : SON</span>
             <span className="city-rush-mobile-hint">GLISSE À GAUCHE OU À DROITE <b>·</b> OBJETS EN BAS</span>
           </div>
         </section>
@@ -684,10 +692,10 @@ export default function ViceCityRushPage() {
               {POWER_ORDER.map((type) => {
                 const rule = CITY_RUSH_POWER_RULES[type];
                 return (
-                  <div className={`city-rush-guide-item is-${type}`} key={type}>
+                  <div className={`city-rush-guide-item is-${type}${rule.automatic ? ' is-automatic' : ''}`} key={type}>
                     <span><PowerIcon type={type} /></span>
                     <div><b>{rule.name} · {rule.chargeCost} POUR CHARGER</b><small>{rule.description}</small></div>
-                    <kbd>{rule.key}</kbd>
+                    <kbd>{rule.automatic ? 'AUTO' : rule.key}</kbd>
                   </div>
                 );
               })}

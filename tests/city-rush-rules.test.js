@@ -117,6 +117,33 @@ test('rivals plan lane changes to collect bonuses and avoid traffic safely', () 
   }), 1, 'le rival ne tente pas de changer vers une voie bloquée');
 });
 
+test('rivals pursue visible bonus pickups above hazards, even when a matching bar is full', () => {
+  const route = (currentLane) => chooseCityRushAiLane({
+    currentLane,
+    distance: 10,
+    speed: 24,
+    availableLanes: [0, 1, 2, 3],
+    pickups: [{ lane: 3, distance: 50, type: 'cash' }],
+  });
+  assert.deepEqual([route(0), route(1), route(2)], [1, 2, 3], 'le rival prend la voie du bonus par étapes');
+
+  const contestedBonusLane = chooseCityRushAiLane({
+    currentLane: 1,
+    distance: 10,
+    speed: 24,
+    availableLanes: [0, 1, 2],
+    pickups: [{ lane: 2, distance: 40, type: 'cash' }],
+    slowZones: [{ lane: 2, distance: 44 }],
+    traffic: [
+      { lane: 2, distance: 40, speed: 6 },
+      { lane: 2, distance: 42, speed: 6 },
+      { lane: 2, distance: 45, speed: 6 },
+    ],
+    inventory: { cash: CITY_RUSH_POWER_CHARGE_COST.cash },
+  });
+  assert.equal(contestedBonusLane, 2, 'le bonus reste prioritaire sur les risques et une jauge déjà pleine');
+});
+
 test('car profiles change top speed, acceleration, and recovery after a hit', () => {
   const turbo = CITY_RUSH_CARS.find((car) => car.id === 'turbo-gt');
   const muscle = CITY_RUSH_CARS.find((car) => car.id === 'muscle-86');
@@ -152,12 +179,16 @@ test('the item effects, matching colors, and charge costs match the race rules',
   }
   assert.equal(CITY_RUSH_POWER_RULES.oil.duration, 1.4);
   assert.equal(CITY_RUSH_POWER_RULES.oil.color, '#48b9ff');
+  assert.equal(CITY_RUSH_POWER_RULES.oil.automatic, true);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
+  assert.equal(CITY_RUSH_POWER_RULES.pistol.automatic, false);
   assert.equal(CITY_RUSH_POWER_RULES.cash.duration, 1.5);
   assert.equal(CITY_RUSH_POWER_RULES.cash.color, '#50e48a');
+  assert.equal(CITY_RUSH_POWER_RULES.cash.automatic, true);
   assert.equal(CITY_RUSH_POWER_RULES.radio.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
+  assert.equal(CITY_RUSH_POWER_RULES.radio.automatic, false);
 });
 
 test('matching currencies charge independent bars, and only a full bar can be used', () => {
@@ -331,7 +362,9 @@ test('the helicopter always targets a rival, even when the player leads', () => 
     { id: 'rival-a', distance: 104 },
     { id: 'rival-b', distance: 88 },
   ];
-  assert.equal(cityRushHelicopterTarget(playerLeads).id, 'rival-a');
+  assert.equal(cityRushHelicopterTarget(playerLeads, 'player').id, 'rival-a');
+  assert.equal(cityRushHelicopterTarget([...playerLeads].reverse(), 'player').id, 'rival-a', 'la cible est le meilleur rival, pas le premier élément de la liste');
+  assert.equal(cityRushHelicopterTarget(playerLeads, 'rival-a').id, 'player', 'un rival peut toujours viser le leader joueur');
 
   const rivalLeads = [
     { id: 'player', distance: 90 },

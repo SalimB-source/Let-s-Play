@@ -294,7 +294,7 @@ img{max-width:100%}
 /* Sur PC (> 800 px), le bouton Déconnexion de la barre est masqué : il reste
    disponible dans le menu qui s’ouvre au survol du profil. Le menu mobile
    (≤ 800 px) n’a pas ce survol, il garde donc le bouton complet. */
-@media(min-width:801px){
+@media(min-width:801px) and (hover:hover), (min-width:801px) and (min-device-width:601px){
   .nav-actions-grid > .nav-logout{display:none}
 }
 /* Entre 801 px et 1240 px, la barre est déjà serrée (cinq entrées + recherche
