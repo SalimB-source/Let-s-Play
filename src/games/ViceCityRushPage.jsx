@@ -397,15 +397,6 @@ export default function ViceCityRushPage() {
         : `${effect.target} TOUCHE ${effect.traffic} · LA VOIE SE LIBÈRE EN ${formatSeconds(effect.duration, 1)}.`,
       'impact',
     );
-    // Tremis : on n'annonce que les tunnels où la chaussée se resserre, en
-    // disant de quel côté le couloir est bordé (parfois des deux).
-    else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
-      const wall = effect.walls > 1
-        ? 'PAROIS DES DEUX CÔTÉS'
-        : `PAROI À ${effect.side === 'left' ? 'GAUCHE' : 'DROITE'}`;
-      showToast(`${effect.name} · ${effect.open} VOIES OUVERTES SUR 4 · ${wall}.`, 'neutral');
-    }
-    else if (effect.type === 'tunnel-scrape') showToast('PAROI RACLÉE · LA VOIE EST MURÉE SOUS LE TUNNEL · RALENTI.', 'slow');
     // 'lap' et 'final-lap' sont affichés par la bannière de tour (onLap).
   }
 

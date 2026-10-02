@@ -561,26 +561,22 @@ export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_T
 
 /**
  * Choisit une voie de dégagement pour un véhicule lent touché. On tente une
- * voie voisine, puis n'importe quelle voie ouverte si un tunnel ferme le
- * bord immédiat. Les voies signalées comme occupées restent un dernier
- * recours seulement : même dans un peloton serré, le trafic doit quitter la
- * trajectoire pour que la voiture touchée ne rebloque pas le joueur.
+ * voie voisine, puis les autres voies si le bord immédiat est bouché. Les
+ * voies signalées comme occupées restent un dernier recours seulement : même
+ * dans un peloton serré, le trafic doit quitter la trajectoire pour que la
+ * voiture touchée ne rebloque pas le joueur.
  */
 export function chooseCityRushTrafficEscapeLane({
   currentLane = 0,
   laneCount = CITY_RUSH_LANE_X.length,
   blockedLanes = [],
-  openLanes = null,
 } = {}) {
   const count = Math.max(1, Math.floor(finiteNumber(laneCount, CITY_RUSH_LANE_X.length)));
   const current = Math.max(0, Math.min(count - 1, Math.floor(finiteNumber(currentLane))));
-  const open = Array.isArray(openLanes) && openLanes.length
-    ? new Set(openLanes.filter((lane) => lane >= 0 && lane < count))
-    : null;
   const blocked = new Set((Array.isArray(blockedLanes) ? blockedLanes : [])
     .filter((lane) => lane >= 0 && lane < count));
   const candidates = Array.from({ length: count }, (_, lane) => lane)
-    .filter((lane) => lane !== current && (!open || open.has(lane)))
+    .filter((lane) => lane !== current)
     .sort((a, b) => Math.abs(a - current) - Math.abs(b - current) || a - b);
   const clear = candidates.find((lane) => !blocked.has(lane));
   return clear ?? candidates[0] ?? current;

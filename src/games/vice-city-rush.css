@@ -173,8 +173,6 @@
 }
 .city-rush-world { position: absolute; z-index: 0; inset: 0; }
 .city-rush-canvas { display: block; width: 100%; height: 100%; outline: 0; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-/* Pénombre des tremis : un voile sous le HUD, piloté par le monde (opacité 0 → 0,56). */
-.city-rush-tunnel-veil { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: #04060c; opacity: 0; }
 .city-rush-vignette { position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(5, 8, 19, .48), transparent 23%, transparent 62%, rgba(5, 8, 16, .5)), radial-gradient(ellipse at center, transparent 38%, rgba(6, 8, 18, .28) 100%); }
 .city-rush-viewport.is-boosting::after,
 .city-rush-viewport.is-stunned::after,
@@ -737,18 +735,6 @@
   stroke: rgba(230, 238, 255, .28);
   stroke-width: 0.65;
   stroke-dasharray: 2.6 2.4;
-}
-/* Tremis : la voûte, et la bande des voies murées sous laquelle il faudra se
-   rabattre — le resserrement se voit venir sur la carte. */
-.city-rush-minimap-tunnel-vault {
-  fill: rgba(9, 12, 22, .84);
-  stroke: color-mix(in srgb, var(--city-accent, #ffd24f) 55%, transparent);
-  stroke-width: 0.5;
-}
-.city-rush-minimap-tunnel-wall {
-  fill: color-mix(in srgb, var(--city-accent, #ffd24f) 88%, #14161f);
-  stroke: rgba(12, 15, 26, .85);
-  stroke-width: 0.3;
 }
 .city-rush-minimap-gate line {
   stroke: rgba(255, 212, 79, .75);

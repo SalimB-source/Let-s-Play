@@ -5,7 +5,6 @@ import {
   buildCityRushMinimapState,
   cityRushMinimapTrackPath,
 } from './cityRushRules';
-import { cityRushTunnelMinimapBands } from './cityRushTunnels';
 
 const TRACK_PATH = cityRushMinimapTrackPath(72);
 
@@ -45,9 +44,6 @@ export default function CityRushMinimap({
   const police = minimap.pursuers || [];
   const blockers = police.filter((car) => car.blocking).length;
   const rallied = police.filter((car) => car.rallied).length;
-  // Tremis du circuit : la voûte et, quand la chaussée se resserre, la bande
-  // des voies murées. Le resserrement se voit venir sur la carte.
-  const tunnelBands = useMemo(() => cityRushTunnelMinimapBands(cityId), [cityId]);
 
   return (
     <aside
@@ -110,35 +106,6 @@ export default function CityRushMinimap({
           <path className="city-rush-minimap-road-edge" d={TRACK_PATH} />
           <path className="city-rush-minimap-road-asphalt" d={TRACK_PATH} />
           <path className="city-rush-minimap-road-lanes" d={TRACK_PATH} />
-
-          {/* Tremis : voûte courte et voies murées, dessinées sous les repères */}
-          {tunnelBands.map((band) => (
-            <g
-              key={band.id}
-              className="city-rush-minimap-tunnel"
-              transform={`translate(${band.x.toFixed(2)}, ${band.y.toFixed(2)}) rotate(${band.deg.toFixed(1)})`}
-            >
-              <rect
-                className="city-rush-minimap-tunnel-vault"
-                x={(-band.length / 2 - 0.4).toFixed(2)}
-                y={(-band.roadHalf - 0.4).toFixed(2)}
-                width={(band.length + 0.8).toFixed(2)}
-                height={(band.roadHalf * 2 + 0.8).toFixed(2)}
-                rx="1"
-              />
-              {band.walls.map((wall) => (
-                <rect
-                  key={wall.side}
-                  className="city-rush-minimap-tunnel-wall"
-                  x={(-band.length / 2 + 0.5).toFixed(2)}
-                  y={wall.from.toFixed(2)}
-                  width={(band.length - 1).toFixed(2)}
-                  height={(wall.to - wall.from).toFixed(2)}
-                  rx="0.5"
-                />
-              ))}
-            </g>
-          ))}
 
           {/* Arche de mi-parcours (300 m) & ligne de départ/arrivée */}
           <g
