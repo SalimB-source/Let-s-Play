@@ -137,12 +137,13 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
   }),
 });
 
-// ── Éclatement des bonus ────────────────────────────────────────────────────
+// ── Éclatement et réapparition des bonus ────────────────────────────────────
 // Un bonus ramassé ne disparaît plus d'un coup : il éclate en éclats de sa
 // couleur (flash, anneau qui s'ouvre, débris projetés puis repris par la
-// gravité) et le bonus suivant réapparaît 0,2 s plus tard en gonflant depuis
-// son socle. Tous les calculs sont purs, donc testables hors de three.js.
-export const CITY_RUSH_PICKUP_RESPAWN_DELAY = 0.2; // s : pop-in d'un bonus qui réapparaît
+// gravité) et réapparaît 0,1 s plus tard en gonflant depuis son socle pour
+// rester prenable par les voitures suivantes. Tous les calculs sont purs,
+// donc testables hors de three.js.
+export const CITY_RUSH_PICKUP_RESPAWN_DELAY = 0.1; // s : délai avant qu'un bonus ramassé ne réapparaisse
 export const CITY_RUSH_PICKUP_BURST_DURATION = 0.44; // s : l'éclatement reste à l'écran
 export const CITY_RUSH_PICKUP_BURST_SHARDS = 12; // éclats projetés par bonus
 export const CITY_RUSH_PICKUP_BURST_GRAVITY = 11; // m/s² : les éclats retombent
@@ -150,6 +151,23 @@ export const CITY_RUSH_PICKUP_BURST_LIFT = 0.42; // m de saut vers le haut
 export const CITY_RUSH_PICKUP_BURST_SPEED = 4.4; // m/s d'éjection
 
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
+
+export function markCityRushPickupTaken(cooldowns, key, now, delay = CITY_RUSH_PICKUP_RESPAWN_DELAY) {
+  if (!cooldowns || key === undefined || key === null) return;
+  const safeNow = Number.isFinite(Number(now)) ? Number(now) : 0;
+  const safeDelay = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : CITY_RUSH_PICKUP_RESPAWN_DELAY;
+  cooldowns.set(key, safeNow + safeDelay);
+}
+
+export function isCityRushPickupHidden(cooldowns, key, now) {
+  if (!cooldowns || key === undefined || key === null) return false;
+  const respawnAt = cooldowns.get(key);
+  if (respawnAt === undefined) return false;
+  const safeNow = Number.isFinite(Number(now)) ? Number(now) : 0;
+  if (safeNow < respawnAt - 1e-9) return true;
+  cooldowns.delete(key);
+  return false;
+}
 
 // Répartition quasi uniforme sur une sphère (angle d'or) : l'éclatement part
 // dans toutes les directions tout en restant lisible depuis la caméra.

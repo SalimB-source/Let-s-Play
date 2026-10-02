@@ -160,11 +160,20 @@ for (const [index, city] of cities.entries()) {
   }
 
   const scene = world.scene || null;
-  // Éclatement des bonus : le pool d'effets vit dans la scène, on surveille sa
-  // visibilité pendant la course (chaque bonus ramassé doit éclater).
+  // Éclatement et réapparition des bonus : le pool d'effets vit dans la scène,
+  // et chaque bonus ramassé doit éclater puis réapparaître 0,1 s (3 frames à
+  // 30 Hz) plus tard sur sa rangée.
   const burstNodes = [];
-  scene?.traverse((object) => { if (object.name === 'pickup-burst') burstNodes.push(object); });
+  const pickupSlots = [];
+  scene?.traverse((object) => {
+    if (object.name === 'pickup-burst') burstNodes.push(object);
+    if (object.userData?.icon && object.userData?.ring && object.userData?.beam && object.userData?.halo) {
+      pickupSlots.push(object);
+    }
+  });
   let burstFrames = 0;
+  let respawnedPickups = 0;
+  const slotWatch = new Map();
   const runFrames = (n, label) => {
     for (let i = 0; i < n; i++) {
       try { stepFrame(); } catch (e) {
@@ -218,6 +227,31 @@ for (const [index, city] of cities.entries()) {
     runFrames(1, `course f${frames}`);
     frames += 1;
     if (burstNodes.some((node) => node.visible)) burstFrames += 1;
+    for (const slot of pickupSlots) {
+      const parentZ = slot.parent?.position.z ?? 0;
+      const prev = slotWatch.get(slot);
+      if (prev) {
+        const recycled = parentZ < prev.parentZ - 5;
+        if (recycled) {
+          slotWatch.set(slot, { visible: slot.visible, parentZ, hiddenAt: null });
+        } else if (prev.visible && !slot.visible) {
+          slotWatch.set(slot, { visible: false, parentZ, hiddenAt: frames });
+        } else if (!prev.visible && slot.visible && prev.hiddenAt !== null) {
+          const delayFrames = frames - prev.hiddenAt;
+          // 3 frames = 0,1 s à 30 Hz (ou un multiple de 3 si une voiture
+          // suivante reprend le bonus sur la frame exacte de sa réapparition).
+          if (delayFrames < 3 || delayFrames % 3 !== 0) {
+            fail(`un bonus a réapparu après ${delayFrames} frames au lieu d’un multiple de 3 (0,1 s à 30 Hz)`);
+          }
+          respawnedPickups += 1;
+          slotWatch.set(slot, { visible: true, parentZ, hiddenAt: null });
+        } else {
+          slotWatch.set(slot, { visible: slot.visible, parentZ, hiddenAt: prev.hiddenAt });
+        }
+      } else {
+        slotWatch.set(slot, { visible: slot.visible, parentZ, hiddenAt: null });
+      }
+    }
     if (hud?.lap) lapSeen.add(hud.lap);
     if (scene && frames % 30 === 0) {
       const stats = countVisible(scene);
@@ -271,6 +305,7 @@ for (const [index, city] of cities.entries()) {
   if (maxVisible > 600) fail(`trop de meshes visibles : ${maxVisible}`);
   if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
   if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);
+  if (callbacks.pickups.length && !respawnedPickups) fail('aucun bonus ramassé n’a réapparu après 0,1 s', callbacks.pickups.length);
   const automaticCash = callbacks.pickups.filter((pickup) => pickup.type === 'cash' && pickup.autoActivated).length;
   const automaticOil = callbacks.pickups.filter((pickup) => pickup.type === 'oil' && pickup.autoActivated).length;
   if (callbacks.pickups.some((pickup) => pickup.autoActivated && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {

@@ -36,6 +36,8 @@ import {
   createCityRushInventory,
   cityRushHelicopterTarget,
   cityRushIsAhead,
+  isCityRushPickupHidden,
+  markCityRushPickupTaken,
   rankCityRushRacers,
   resolveCityRushCarMovement,
 } from './cityRushRules';
@@ -515,7 +517,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const slowZone = makeSlowZone(shared, false);
     group.add(slowZone);
     scene.add(group);
-    rows.push({ group, slots, slowZone, trackDistance: 0, pickups: [], slowLane: null, checked: false, zoneHits: new Set(), pickupClaims: new Set(), crossedRacers: new Set() });
+    rows.push({ group, slots, slowZone, trackDistance: 0, pickups: [], slowLane: null, checked: false, zoneHits: new Set(), pickupClaims: new Map(), crossedRacers: new Set() });
   }
 
   const oilTraps = [];
@@ -899,7 +901,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
-  // Un bonus réapparaît 0,2 s après avoir été ramassé : il gonfle depuis son
+  // Un bonus réapparaît 0,1 s après avoir été ramassé : il gonfle depuis son
   // socle avec un léger rebond, hors course comme en course.
   function updatePickupPop(dt) {
     for (const row of rows) {
@@ -1268,8 +1270,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       }
       const z = PLAYER_Z - (row.trackDistance - distance) * SCALE;
       row.group.position.set(0, 0, z);
-      row.slots.forEach((slot) => {
-        if (!slot.visible) return;
+      row.slots.forEach((slot, index) => {
+        const pickup = row.pickups[index];
+        if (!pickup) {
+          slot.visible = false;
+          return;
+        }
+        if (isCityRushPickupHidden(row.pickupClaims, index, elapsed)) {
+          slot.visible = false;
+          return;
+        }
+        if (!slot.visible) {
+          slot.visible = true;
+          slot.userData.pop = 0;
+          slot.scale.setScalar(0.001);
+        }
         const bob = Math.sin(elapsed * 4.1 + slot.userData.phase) * 0.12;
         slot.position.y = 1.3 + bob;
         slot.rotation.y = Math.sin(elapsed * 2.5 + slot.userData.phase) * 0.12;
@@ -1277,31 +1292,27 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         slot.userData.halo.scale.setScalar(1 + Math.sin(elapsed * 3.2 + slot.userData.phase) * 0.12);
       });
 
-      // Une monnaie est ramassée par la première voiture qui la traverse;
-      // chaque rival charge ensuite sa propre jauge avec la couleur obtenue.
+      // Un bonus ramassé disparaît 0,1 s puis réapparaît sur sa voie : la
+      // voiture suivante peut le prendre à son tour.
       for (const participant of participants) {
         if (row.crossedRacers.has(participant.id)) continue;
         const crossingWindow = Math.max(1.15, participant.speed * dt * 0.65);
         if (Math.abs(participant.distance - row.trackDistance) > crossingWindow) continue;
+        const pickupIndex = row.pickups.findIndex((item, index) => item.lane === participant.lane && !isCityRushPickupHidden(row.pickupClaims, index, elapsed));
+        if (pickupIndex < 0) continue;
         row.crossedRacers.add(participant.id);
         if (participant.id === 'player') row.checked = true;
-        const pickupIndex = row.pickups.findIndex((item, index) => item.lane === participant.lane && !row.pickupClaims.has(index));
-        if (pickupIndex < 0) continue;
-        row.pickupClaims.add(pickupIndex);
+        markCityRushPickupTaken(row.pickupClaims, pickupIndex, elapsed, CITY_RUSH_PICKUP_RESPAWN_DELAY);
         const pickup = row.pickups[pickupIndex];
         const object = row.slots[pickupIndex];
         if (object) {
           // L'objet éclate à l'endroit exact où la voiture l'a touché.
           spawnPickupBurst(object.position.x, object.position.y, row.trackDistance, pickup.type);
           object.visible = false;
+          object.userData.pop = 0;
         }
         if (participant.id === 'player') collectPickup(pickup.type, participant.lane);
         else collectRacerPickup(participant.racer, pickup.type);
-      }
-
-      if (row.trackDistance < oldestRaceDistance - 2.4) {
-        row.slowZone.visible = false;
-        row.slots.forEach((slot) => { slot.visible = false; });
       }
     }
     for (let index = oilTraps.length - 1; index >= 0; index -= 1) {
@@ -1625,7 +1636,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const requestedRacerSpeeds = new Map();
       const priorRacerXs = new Map();
       const aiPickups = rows.flatMap((row) => row.pickups
-        .map((pickup, index) => ({ ...pickup, distance: row.trackDistance, claimed: row.pickupClaims.has(index), visible: row.slots[index]?.visible }))
+        .map((pickup, index) => ({
+          ...pickup,
+          distance: row.trackDistance,
+          claimed: isCityRushPickupHidden(row.pickupClaims, index, elapsed),
+          visible: row.slots[index]?.visible,
+        }))
         .filter((pickup) => !pickup.claimed && pickup.visible));
       const aiSlowZones = rows
         .filter((row) => row.slowLane !== null && row.slowZone.visible)
