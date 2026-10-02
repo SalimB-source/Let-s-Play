@@ -389,6 +389,15 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-arrival') showToast(effect.target === 'player' ? '🚨 POLICE · DEUX BERLINES SE JOIGNENT À LA COURSE JUSTE DERRIÈRE TOI · ELLES VISENT TES BONUS ROUGES ET JAUNES.' : `🚨 POLICE · L’ESCOUADE PREND ${effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ ${effect.item === 'radio' ? 'L’HÉLICO (JAUNE)' : 'LA MITRAILLEUSE (ROUGE)'}${effect.ready ? ' · ELLE EST ARMÉE' : ''}.`, effect.item === 'radio' ? 'radio' : 'pistol');
     else if (effect.type === 'police-fire') showToast(`TATATATA ! ${effect.police} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    // Tremis : on n'annonce que les tunnels où la chaussée se resserre, en
+    // disant de quel côté le couloir est bordé (parfois des deux).
+    else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
+      const wall = effect.walls > 1
+        ? 'PAROIS DES DEUX CÔTÉS'
+        : `PAROI À ${effect.side === 'left' ? 'GAUCHE' : 'DROITE'}`;
+      showToast(`${effect.name} · ${effect.open} VOIES OUVERTES SUR 4 · ${wall}.`, 'neutral');
+    }
+    else if (effect.type === 'tunnel-scrape') showToast('PAROI RACLÉE · LA VOIE EST MURÉE SOUS LE TUNNEL · RALENTI.', 'slow');
     // 'lap' et 'final-lap' sont affichés par la bannière de tour (onLap).
   }
 

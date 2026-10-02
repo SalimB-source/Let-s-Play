@@ -60,6 +60,22 @@ import {
   selectCityRushRacers,
 } from './cityRushRules';
 import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
+import {
+  CITY_RUSH_TUNNEL_HALF_WIDTH,
+  CITY_RUSH_TUNNEL_HEIGHT,
+  CITY_RUSH_TUNNEL_MERGE_LEAD,
+  CITY_RUSH_TUNNEL_PLAYER_LEAD,
+  CITY_RUSH_TUNNEL_VEIL,
+  CITY_RUSH_TUNNEL_WALL_LEAD,
+  cityRushTunnelAt,
+  cityRushTunnelCurtain,
+  cityRushTunnelLaneFor,
+  cityRushTunnelLaneOpen,
+  cityRushTunnelNearestOpenLane,
+  cityRushTunnelShade,
+  cityRushTunnelWallAt,
+  cityRushTunnels,
+} from './cityRushTunnels';
 import { createBatch, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
@@ -85,6 +101,9 @@ const MACHINE_GUN_SPACING = 0.045;
 // Distance (en mètres) sous laquelle le passage d'un rival s'entend.
 const PASS_BY_RANGE = 11;
 const CHASE_POSITION = new THREE.Vector3(0, 6.6, PLAYER_Z + 13.2);
+// Distance de piste entre la voiture et la caméra de poursuite : la pénombre
+// des tremis suit la caméra, pas la voiture.
+const CAMERA_TRACK_LEAD = (CHASE_POSITION.z - PLAYER_Z) / SCALE;
 const CHASE_LOOK = new THREE.Vector3(0, 1.3, PLAYER_Z - 15);
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -456,6 +475,125 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const smoke = createSmokePool(lite ? 28 : 56);
   scene.add(smoke.group);
 
+  // ── Tremis : tunnels courts, pénombre et voile de fond ────────────────
+  // La pierre est taillée dans la boucle (cityRushStage) ; ici on gère ce qui
+  // bouge : le voile noir qui ferme le fond du tunnel tant que la caméra est
+  // sous la voûte, les feux de bouche, et la pénombre plein écran.
+  const tunnels = cityRushTunnels(city.id);
+  const tunnelLabel = theme.tunnelText || `${theme.gantryText} TUNNEL`;
+  const tunnelProps = tunnels.map((tunnel) => {
+    const curtainGroup = new THREE.Group();
+    curtainGroup.name = `tunnel-curtain-${tunnel.id}`;
+    curtainGroup.visible = false;
+    const curtainMaterial = new THREE.MeshBasicMaterial({
+      color: 0x04060c, transparent: true, opacity: 0, depthWrite: false, toneMapped: false, fog: false,
+    });
+    const curtain = new THREE.Mesh(
+      new THREE.PlaneGeometry(CITY_RUSH_TUNNEL_HALF_WIDTH * 2 + 0.24, CITY_RUSH_TUNNEL_HEIGHT + 0.5),
+      curtainMaterial,
+    );
+    curtain.position.y = (CITY_RUSH_TUNNEL_HEIGHT + 0.5) / 2 - 0.1;
+    curtain.renderOrder = 1;
+    curtainGroup.add(curtain);
+    scene.add(curtainGroup);
+
+    // Feux de bouche : deux lanternes qui clignotent en alternance au-dessus
+    // de l'enseigne, pour annoncer le trou noir de loin.
+    const beaconGroup = new THREE.Group();
+    beaconGroup.name = `tunnel-beacons-${tunnel.id}`;
+    const beacons = [-1, 1].map((side) => {
+      const material = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.2, toneMapped: false, fog: false });
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 6), material);
+      bulb.position.set(side * 4.4, CITY_RUSH_TUNNEL_HEIGHT + 0.78, 0);
+      beaconGroup.add(bulb);
+      return { bulb, material };
+    });
+    scene.add(beaconGroup);
+    return { tunnel, curtainGroup, curtainMaterial, beaconGroup, beacons };
+  });
+
+  // Pénombre : un voile plein écran sous le HUD, qui suit la caméra (jamais la
+  // voiture) pour que la voûte s'assombrisse au bon moment.
+  const tunnelVeil = typeof document !== 'undefined' && document.createElement ? document.createElement('div') : null;
+  if (tunnelVeil) {
+    tunnelVeil.className = 'city-rush-tunnel-veil';
+    tunnelVeil.setAttribute('aria-hidden', 'true');
+    mount.appendChild(tunnelVeil);
+  }
+  let tunnelVeilOpacity = -1;
+  let tunnelInside = null;
+
+  function setTunnelVeil(value) {
+    if (!tunnelVeil) return;
+    const opacity = Math.round(Math.max(0, Math.min(1, value)) * 100) / 100;
+    if (opacity === tunnelVeilOpacity) return;
+    tunnelVeilOpacity = opacity;
+    tunnelVeil.style.opacity = String(opacity);
+  }
+
+  function updateTunnels() {
+    setTunnelVeil(cityRushTunnelShade(distance, tunnels, CAMERA_TRACK_LEAD) * CITY_RUSH_TUNNEL_VEIL);
+    for (const prop of tunnelProps) {
+      const { tunnel } = prop;
+      const curtainGap = cityRushTrackGap(tunnel.exit - 0.15, distance) + CITY_RUSH_START_LINE_LEAD;
+      prop.curtainGroup.position.z = PLAYER_Z - curtainGap * SCALE;
+      const opacity = cityRushTunnelCurtain(distance, tunnel);
+      prop.curtainMaterial.opacity = opacity;
+      prop.curtainGroup.visible = opacity > 0.01;
+      const beaconGap = cityRushTrackGap(tunnel.entry, distance) + CITY_RUSH_START_LINE_LEAD;
+      prop.beaconGroup.visible = beaconGap > -40 && beaconGap * SCALE < theme.fogFar + 20;
+      if (!prop.beaconGroup.visible) continue;
+      prop.beaconGroup.position.z = PLAYER_Z - beaconGap * SCALE;
+      prop.beacons.forEach((beacon, index) => {
+        const lit = Math.floor(clockTime * 3.4 + index + tunnel.entry * 0.05) % 2 === 0;
+        beacon.material.opacity = lit ? 0.95 : 0.16;
+      });
+    }
+  }
+
+  // Entrée et sortie de tremis : le souffle sous la voûte, le claquement de
+  // sortie, et l'annonce quand la chaussée se resserre.
+  function updateTunnelPresence() {
+    const tunnel = cityRushTunnelAt(distance, tunnels);
+    if (tunnel === tunnelInside) return;
+    if (tunnelInside) audioRef?.current?.tunnelExit?.({ pan: 0 });
+    tunnelInside = tunnel;
+    if (!tunnel) return;
+    audioRef?.current?.tunnelRush?.({ pan: 0 });
+    getCallbacks().effect?.({
+      type: 'tunnel-enter',
+      id: tunnel.id,
+      name: tunnelLabel,
+      open: tunnel.openLanes.length,
+      closed: tunnel.closedLanes.length,
+      walls: tunnel.walls.length,
+      side: tunnel.walls[0]?.side ?? null,
+    });
+  }
+
+  // Une voiture engagée dans une voie murée racle la paroi : elle est
+  // repoussée dans le couloir avec un ralentissement, comme après un choc. La
+  // fenêtre commence à `WALL_LEAD` mètres de la bouche — là où les cônes
+  // balisent la paroi — pour couvrir aussi l'image du franchissement.
+  function resolveTunnelWalls() {
+    const playerTunnel = cityRushTunnelWallAt(distance, tunnels, CITY_RUSH_TUNNEL_WALL_LEAD);
+    if (playerTunnel && !cityRushTunnelLaneOpen(playerTunnel, playerLane)) {
+      playerLane = cityRushTunnelNearestOpenLane(playerTunnel, playerLane);
+      playerSlowLeft = Math.max(playerSlowLeft, cityRushHitDuration(0.95, playerProfile));
+      playerSkidLeft = Math.max(playerSkidLeft, 0.6);
+      playerSkidSide = Math.random() < 0.5 ? -1 : 1;
+      cameraKick = Math.max(cameraKick, 0.38);
+      audioRef?.current?.skid?.({ pan: vehiclePan('player'), intensity: 0.9, duration: 0.55 });
+      getCallbacks().effect?.({ type: 'tunnel-scrape', name: tunnelLabel });
+    }
+    for (const racer of racers) {
+      const tunnel = cityRushTunnelWallAt(racer.distance, tunnels, CITY_RUSH_TUNNEL_WALL_LEAD);
+      if (!tunnel || cityRushTunnelLaneOpen(tunnel, racer.lane)) continue;
+      racer.lane = cityRushTunnelNearestOpenLane(tunnel, racer.lane);
+      racer.slowLeft = Math.max(racer.slowLeft, 0.5);
+    }
+  }
+
   // Éclatements de bonus : un petit pool réutilisé, chaque éclatement restant
   // ancré à sa position sur la piste pour suivre le défilement du décor.
   const pickupBursts = [];
@@ -715,8 +853,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function setupEncounter(row) {
     const encounter = createCityRushEncounter(randomSeed);
-    row.pickups = encounter.pickups;
-    row.slowLane = encounter.slowLane;
+    // Sous un tremis resserré, une voie murée ne reçoit rien : le bonus se
+    // décale dans le couloir ouvert, et la flaque disparaît si elle est murée.
+    const tunnel = cityRushTunnelAt(row.trackDistance, tunnels);
+    const openLanes = tunnel ? tunnel.openLanes : null;
+    const taken = new Set();
+    row.pickups = encounter.pickups
+      .map((pickup) => ({
+        ...pickup,
+        lane: openLanes && !openLanes.includes(pickup.lane) ? cityRushTunnelNearestOpenLane(tunnel, pickup.lane) : pickup.lane,
+      }))
+      .filter((pickup) => {
+        if (taken.has(pickup.lane)) return false;
+        taken.add(pickup.lane);
+        return true;
+      });
+    row.slowLane = openLanes && encounter.slowLane !== null && !openLanes.includes(encounter.slowLane)
+      ? null
+      : encounter.slowLane;
     row.checked = false;
     row.zoneHits.clear();
     row.pickupClaims.clear();
@@ -736,8 +890,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function setRowsToStart() {
     let next = 48;
     for (const row of rows) {
-      setupEncounter(row);
       row.trackDistance = next;
+      setupEncounter(row);
       row.group.position.set(0, 0, PLAYER_Z - (row.trackDistance - distance) * SCALE);
       next += randomRange(24, 32);
     }
@@ -782,6 +936,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         x: racer.x,
       })),
       inventory: { ...inventory },
+      // Le tremis traversé : la page peut annoncer les voies ouvertes, et les
+      // vérifications s'assurent que le joueur n'est jamais dans une voie murée.
+      tunnel: tunnelInside ? {
+        id: tunnelInside.id,
+        name: tunnelLabel,
+        openLanes: [...tunnelInside.openLanes],
+        closedLanes: [...tunnelInside.closedLanes],
+        walls: tunnelInside.walls.length,
+        side: tunnelInside.walls[0]?.side ?? null,
+      } : null,
       playerLane,
       slowLeft: playerSlowLeft,
       boostLeft: playerBoostLeft,
@@ -926,6 +1090,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       police.mesh.position.set(police.currentX, 0, PLAYER_Z);
     });
     audioRef?.current?.policeSirenOff?.();
+    // Plus personne sous la voûte : on rend la lumière et on oublie le tremis.
+    tunnelInside = null;
+    setTunnelVeil(0);
     setRowsToStart();
     startLine.setLights(0);
     startLine.setFinalLap(false);
@@ -1456,9 +1623,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
       police.changeIn -= dt;
       if (police.changeIn <= 0) {
+        // Sous un tremis, la berline vise le couloir ouvert avant tout.
+        const corridorLane = cityRushTunnelLaneFor(police.distance, police.lane, tunnels, CITY_RUSH_TUNNEL_MERGE_LEAD);
+        if (corridorLane !== police.lane) police.lane = corridorLane;
         const availableLanes = [police.lane];
         for (const lane of [police.lane - 1, police.lane + 1]) {
-          if (lane >= 0 && lane < CITY_RUSH_LANE_X.length && canEnterLane(police.id, lane)) availableLanes.push(lane);
+          if (lane >= 0 && lane < CITY_RUSH_LANE_X.length && canEnterLane(police.id, lane, CITY_RUSH_TUNNEL_MERGE_LEAD)) availableLanes.push(lane);
         }
         const nextLane = chooseCityRushPoliceLane({
           currentLane: police.lane,
@@ -1555,11 +1725,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
-  function canEnterLane(actorId, targetLane) {
+  function canEnterLane(actorId, targetLane, tunnelLead = CITY_RUSH_TUNNEL_PLAYER_LEAD) {
     const targetX = CITY_RUSH_LANE_X[targetLane];
     const actor = racers.find((racer) => racer.id === actorId);
     const actorDistance = actorId === 'player' ? distance : actor?.distance ?? distance;
     const actorWidth = 1.9 * (actorId === 'player' ? 1 : 0.92) * (actorId === 'player' ? playerProfile.widthScale : actor?.profile.widthScale || 1);
+    // Sous un tremis, une voie murée n'est pas une voie : on se rabat avant.
+    if (cityRushTunnelLaneFor(actorDistance, targetLane, tunnels, tunnelLead) !== targetLane) return false;
     // Les adversaires se traversent sans collision; seul le trafic lent bloque.
     return trafficCars.every((traffic) => {
       const approachingLane = traffic.lane === targetLane || Math.abs(traffic.currentX - targetX) < (actorWidth + traffic.width) / 2;
@@ -2103,7 +2275,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (racer.changeIn <= 0) {
           const availableLanes = [racer.lane];
           for (const lane of [racer.lane - 1, racer.lane + 1]) {
-            if (lane >= 0 && lane < CITY_RUSH_LANE_X.length && canEnterLane(racer.id, lane)) availableLanes.push(lane);
+            if (lane >= 0 && lane < CITY_RUSH_LANE_X.length && canEnterLane(racer.id, lane, CITY_RUSH_TUNNEL_MERGE_LEAD)) availableLanes.push(lane);
           }
           const otherRacers = [
             { lane: playerLane, distance, speed: currentSpeed },
@@ -2133,6 +2305,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         priorRacerXs.set(racer.id, racer.currentX);
         racer.currentX = lerp(racer.currentX, CITY_RUSH_LANE_X[racer.lane], Math.min(1, dt * 5.3));
       }
+      // Une voie murée sous un tremis se racle : on repousse dans le couloir.
+      resolveTunnelWalls();
+
       const priorTrafficDistances = new Map(trafficCars.map((traffic) => [traffic.id, traffic.distance]));
       const requestedTrafficSpeeds = new Map(trafficCars.map((traffic) => [
         traffic.id,
@@ -2244,6 +2419,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const slowestRaceDistance = Math.min(distance, ...racers.map((racer) => racer.distance));
       for (const [index, traffic] of trafficCars.entries()) {
         const priorTrafficDistance = priorTrafficDistances.get(traffic.id);
+        // Le trafic se rabat avant la paroi, comme sur une vraie voie fermée.
+        const corridorLane = cityRushTunnelLaneFor(traffic.distance, traffic.lane, tunnels, CITY_RUSH_TUNNEL_MERGE_LEAD);
+        if (corridorLane !== traffic.lane) traffic.lane = corridorLane;
+        traffic.currentX = lerp(traffic.currentX, CITY_RUSH_LANE_X[traffic.lane], Math.min(1, dt * 3.4));
         traffic.distance = movementById.get(traffic.id) ?? priorTrafficDistance;
         const clearedByEveryone = traffic.distance < slowestRaceDistance - 34;
         const roomForAnotherEncounter = trafficLeadDistance < CITY_RUSH_DISTANCE - 230;
@@ -2253,6 +2432,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           const nextAhead = trafficLeadDistance + randomRange(132, 160);
           traffic.distance = Math.max(nextSlot, nextAhead);
           traffic.lane = CITY_RUSH_TRAFFIC_LANES[(index + traffic.spawnCount * 5) % CITY_RUSH_TRAFFIC_LANES.length];
+          // Un véhicule qui repart dans l'emprise d'un tremis vise déjà le couloir.
+          traffic.lane = cityRushTunnelLaneFor(traffic.distance, traffic.lane, tunnels, 0);
           traffic.currentX = CITY_RUSH_LANE_X[traffic.lane];
           traffic.currentSpeed = traffic.baseSpeed;
           lastTrafficDistanceSlot = traffic.distance;
@@ -2299,6 +2480,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       checkZoneCrossings(dt);
       updateStrike(dt);
       updateVisualEffects(dt);
+      updateTunnelPresence();
 
       const allRacers = makeRacerRows();
       if (allRacers.some((racer) => racer.distance >= CITY_RUSH_DISTANCE)) finishRace();
@@ -2354,6 +2536,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
     // Décor : boucle repliée, portique animé, route, pluie, ciel, fumée.
     const lineGap = placeTrack();
+    updateTunnels();
     road.scroll(worldTravel);
     for (const prop of loop.dynamicProps) {
       if (prop.group.visible) prop.update(dt, clockTime);
@@ -2455,6 +2638,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     },
     get lite() { return lite; },
     get scene() { return scene; },
+    // Les tremis du circuit (voûtes courtes et voies murées) : la page peut
+    // les annoncer, les vérifications les inspectent.
+    get tunnels() { return tunnels; },
     get camera() { return camera; },
     get distance() { return distance; },
     destroy() {
@@ -2471,6 +2657,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       renderer.domElement.removeEventListener('pointercancel', onPointerCancel);
       startLine.dispose();
       smoke.dispose();
+      tunnelVeil?.remove?.();
       disposeScene(scene, renderer);
     },
   };
