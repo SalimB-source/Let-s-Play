@@ -43,6 +43,7 @@ import {
   cityRushPackLeader,
   cityRushPickupShardState,
   cityRushPolicePace,
+  cityRushPoliceTarget,
   cityRushTrackGap,
   chooseCityRushPoliceLane,
   resolveCityRushPoliceMovement,
@@ -382,6 +383,33 @@ test('les berlines ne traversent pas le trafic et ne bloquent personne', () => {
   assert.equal(byId['police-2'], 1038, 'la voie libre reste libre');
   // Elle ne rabote la distance de personne : personne ne la suit dans la liste.
   assert.deepEqual(resolved.map((car) => car.id), ['police-1', 'police-2']);
+});
+
+test('au dernier tour, la riposte rouge et jaune peut viser la berline la plus proche', () => {
+  // Sans escouade déployée, pas de cible : la jauge reste chargée.
+  assert.equal(cityRushPoliceTarget([], 1200), null);
+  assert.equal(cityRushPoliceTarget(undefined, 1200), null);
+  assert.equal(cityRushPoliceTarget([{ id: 'police-1', distance: 1201, active: true }], Number.NaN), null);
+  // Une berline inactive (avant le déploiement ou après l'arrivée) est ignorée.
+  assert.equal(cityRushPoliceTarget([{ id: 'police-1', distance: 1201, active: false }], 1200), null);
+  // La riposte n'est plus limitée aux cibles en avant : une berline repliée
+  // derrière le leader pour tirer est visée si elle est la plus proche.
+  const squad = [
+    { id: 'police-1', distance: 1195, active: true }, // 5 m derrière (repli pour tirer)
+    { id: 'police-2', distance: 1221, active: true }, // 21 m devant (mode blocage)
+  ];
+  assert.equal(cityRushPoliceTarget(squad, 1200).id, 'police-1');
+  assert.equal(cityRushPoliceTarget([...squad].reverse(), 1200).id, 'police-1', 'l’ordre de la liste ne change rien');
+  assert.equal(cityRushPoliceTarget(squad, 1200, 'police-1').id, 'police-2', 'jamais soi-même');
+  assert.equal(cityRushPoliceTarget([
+    { id: 'police-1', distance: 1215, active: true },
+    { id: 'police-2', distance: 1202, active: true },
+  ], 1200).id, 'police-2', 'la plus proche devant l’emporte quand l’autre est loin');
+  // Entrées invalides ignorées sans casser le tri.
+  assert.equal(cityRushPoliceTarget([
+    { id: 'police-1', distance: 'loin', active: true },
+    { id: 'police-2', distance: 1202, active: true },
+  ], 1200).id, 'police-2');
 });
 
 test('lane changes clamp at the road edges', () => {

@@ -110,7 +110,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base).',
+    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.CASH]: Object.freeze({
@@ -132,7 +132,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ffd44f',
     key: 'R',
     automatic: false,
-    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un poursuivant) et les adversaires proches de l’impact devant ton capot ; la reprise de chaque cible règle la durée (2 s de base).',
+    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un rival poursuivant) et les adversaires proches de l’impact devant ton capot ; en tête au dernier tour, il peut aussi bombarder la berline de police qui te traque. La reprise de chaque cible règle la durée (2 s de base).',
     duration: 2,
   }),
 });
@@ -385,6 +385,23 @@ export function cityRushHelicopterTarget(racers = [], playerId = 'player') {
     .filter((racer) => racer?.id !== playerId)
     .filter((racer) => !Number.isFinite(reference) || cityRushIsAhead(racer?.distance, reference))
     .sort((a, b) => (Number(b.distance) || 0) - (Number(a.distance) || 0))[0] || null;
+}
+
+// Exception du dernier tour pour les pouvoirs rouge (mitrailleuse) et jaune
+// (hélico) : quand l'appelant n'a plus personne devant lui — il mène la
+// course et l'escouade s'est repliée sur son pare-chocs pour ouvrir le feu —,
+// la riposte peut se retourner contre la berline « active » la plus proche,
+// qu'elle soit devant, roue contre roue ou déjà dépassée. Un hélicoptère
+// frappe où il veut et une rafale de riposte part vers l'arrière ; l'exception
+// ne vaut que pour ces poursuivants non classés, jamais pour un rival classé.
+// `excludeId` permet au tireur de ne jamais se viser lui-même.
+export function cityRushPoliceTarget(pursuers = [], referenceDistance = 0, excludeId = null) {
+  const reference = Number(referenceDistance);
+  if (!Number.isFinite(reference)) return null;
+  return (Array.isArray(pursuers) ? pursuers : [])
+    .filter((police) => police && police.id !== excludeId && police.active !== false)
+    .filter((police) => Number.isFinite(Number(police.distance)))
+    .sort((a, b) => Math.abs(Number(a.distance) - reference) - Math.abs(Number(b.distance) - reference))[0] || null;
 }
 
 // Le trafic conserve une distance de sécurité; les voitures de course ne
