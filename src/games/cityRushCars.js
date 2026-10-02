@@ -366,6 +366,7 @@ export function animateRacerCar(car, state, dt, elapsed) {
     lateral = 0,
     boosting = false,
     slowed = false,
+    impacting = false,
     stunned = false,
     skidding = false,
     idle = false,
@@ -387,13 +388,17 @@ export function animateRacerCar(car, state, dt, elapsed) {
   anim.roll = lerp(anim.roll, targetRoll, Math.min(1, dt * 9));
   anim.pitch = lerp(anim.pitch, targetPitch, Math.min(1, dt * 7));
   const vibration = idle ? Math.sin(elapsed * 38) * 0.003 : Math.sin(elapsed * 46) * 0.0022 * Math.min(1, speed / 8);
-  data.body.rotation.z = anim.roll + (stunned ? Math.sin(elapsed * 19) * 0.03 : 0);
-  data.body.rotation.x = anim.pitch;
-  data.body.position.y = vibration + (slowed ? Math.sin(elapsed * 27) * 0.02 : 0) + (idle ? Math.sin(elapsed * 2.2) * 0.006 : 0);
+  const impactRoll = impacting ? Math.sin(elapsed * 31) * 0.075 : 0;
+  const impactPitch = impacting ? Math.sin(elapsed * 24) * 0.035 : 0;
+  data.body.rotation.z = anim.roll + impactRoll + (stunned ? Math.sin(elapsed * 19) * 0.03 : 0);
+  data.body.rotation.x = anim.pitch + impactPitch;
+  data.body.position.y = vibration + (slowed ? Math.sin(elapsed * 27) * 0.02 : 0) + (impacting ? Math.abs(Math.sin(elapsed * 22)) * 0.035 : 0) + (idle ? Math.sin(elapsed * 2.2) * 0.006 : 0);
 
   // Pilote : regarde dans la direction du virage, tremble si sonné.
   data.headPivot.rotation.y = lerp(data.headPivot.rotation.y, steer * 1.3, Math.min(1, dt * 6));
-  data.headPivot.rotation.z = stunned ? Math.sin(elapsed * 17) * 0.35 : lerp(data.headPivot.rotation.z, lateral * 0.05, Math.min(1, dt * 6));
+  data.headPivot.rotation.z = impacting
+    ? Math.sin(elapsed * 29) * 0.22
+    : stunned ? Math.sin(elapsed * 17) * 0.35 : lerp(data.headPivot.rotation.z, lateral * 0.05, Math.min(1, dt * 6));
 
   // Feux stop et lueurs.
   const brake = braking || slowed || stunned;

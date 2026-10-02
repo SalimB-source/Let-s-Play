@@ -624,36 +624,73 @@ export function makePickupMaterial(type, color) {
     ctx.lineJoin = 'round';
 
     if (type === 'cash') {
+      // Canette d'énergie verte : silhouette métallique, languette et éclair.
+      ctx.fillStyle = '#dfffee';
+      ctx.beginPath();
+      ctx.roundRect(82, 42, 92, 174, 18);
+      ctx.fill();
       ctx.fillStyle = color;
-      ctx.fillRect(31, 44, 194, 104);
-      ctx.strokeStyle = '#f3fff7';
+      ctx.beginPath();
+      ctx.roundRect(88, 55, 80, 148, 13);
+      ctx.fill();
+      ctx.fillStyle = '#effff6';
+      ctx.beginPath();
+      ctx.ellipse(128, 45, 44, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#263a33';
       ctx.lineWidth = 5;
-      ctx.strokeRect(42, 55, 172, 82);
       ctx.beginPath();
-      ctx.arc(128, 96, 27, 0, Math.PI * 2);
+      ctx.ellipse(128, 45, 23, 5, 0, 0.1, Math.PI * 1.6);
       ctx.stroke();
-      ctx.fillStyle = '#f3fff7';
-      ctx.font = '900 53px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('$', 128, 97);
-    } else if (type === 'blue-shot') {
-      // Projectile du tir droit : douille, corps et ogive qui file vers la
-      // droite, avec deux traits de vitesse derrière.
-      ctx.fillRect(40, 104, 20, 48);
-      ctx.fillRect(68, 96, 82, 64);
+      ctx.fillStyle = '#effff6';
       ctx.beginPath();
-      ctx.moveTo(158, 96);
-      ctx.lineTo(210, 128);
-      ctx.lineTo(158, 160);
+      ctx.roundRect(101, 76, 54, 91, 8);
+      ctx.fill();
+      ctx.fillStyle = '#138750';
+      ctx.beginPath();
+      ctx.moveTo(132, 83);
+      ctx.lineTo(111, 120);
+      ctx.lineTo(127, 120);
+      ctx.lineTo(119, 153);
+      ctx.lineTo(147, 112);
+      ctx.lineTo(131, 112);
       ctx.closePath();
       ctx.fill();
-      ctx.clearRect(150, 92, 6, 72);
+      ctx.fillStyle = '#f3fff7';
+      ctx.font = '900 17px Arial, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('ENERGY', 128, 181);
+    } else if (type === 'blue-shot') {
+      // Pistolet compact et lisible, sans flèche ni forme de mitrailleuse.
+      ctx.beginPath();
+      ctx.moveTo(42, 80);
+      ctx.lineTo(126, 80);
+      ctx.quadraticCurveTo(154, 80, 154, 108);
+      ctx.lineTo(154, 121);
+      ctx.lineTo(200, 121);
+      ctx.lineTo(200, 144);
+      ctx.lineTo(143, 144);
+      ctx.lineTo(129, 158);
+      ctx.lineTo(112, 158);
+      ctx.lineTo(96, 218);
+      ctx.lineTo(69, 218);
+      ctx.lineTo(85, 158);
+      ctx.lineTo(51, 158);
+      ctx.lineTo(42, 139);
+      ctx.closePath();
+      ctx.fill();
       ctx.fillStyle = color;
-      ctx.fillRect(112, 96, 12, 64);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(26, 112, 10, 8);
-      ctx.fillRect(22, 136, 14, 8);
+      ctx.fillRect(52, 88, 65, 7);
+      ctx.fillRect(163, 128, 29, 5);
+      ctx.strokeStyle = color;
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(136, 144);
+      ctx.lineTo(136, 154);
+      ctx.lineTo(121, 154);
+      ctx.stroke();
     } else if (type === 'pistol') {
       ctx.beginPath();
       ctx.moveTo(49, 70);

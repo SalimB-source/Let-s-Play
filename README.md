@@ -330,60 +330,110 @@ et alterner les deux niveaux en pleine course. Le gain se mesure en images par s
 sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
 sur les terrains chargés, du nombre d'objets dessinés.
 
-## Vice City Rush : 3 tours, ligne de départ et décor
+## Mirage Rush : les coupes et les gains d'or
+
+Quatre coupes (`/jeu/mirage-rush`, bouton **COUPE**) enchaînent des duels sur
+des terrains imposés, à quatre cavaliers (trois sur une piste de téléphone à
+trois voies). Chaque victoire crédite **10 OR**, sans prime distincte de coupe.
+Le maximum théorique dépend du nombre de courses gagnées :
+
+| Coupe | Courses | OR maximum |
+|---|---:|---:|
+| Coupe du Désert | 3 | **30 OR** |
+| Coupe des Vents | 3 parcours différents | **30 OR** |
+| Coupe Grand Tour | 4 | **40 OR** |
+| Coupe des Légendes | 5 | **50 OR** |
+
+Le meilleur total de points après la dernière course soulève le trophée. Dans
+l'aperçu, chaque coupe est un vrai bouton cliquable au relief 3D : son parcours
+n'est pas déroulé et le maximum d'OR est mis en évidence. Le podium distingue
+les OR réellement gagnés pendant les courses du maximum théorique de la coupe.
+
+### Où vit le code
+
+- `src/games/mirageCup.js` — catalogue `CUPS`, les maximums `maxCoins` et
+  `cupGoldMaximum()` ;
+- `src/games/mirageProgression.js` — `WIN_COINS` (10 OR par victoire) et
+  `coinsForRun()` ;
+- `src/games/MirageRushPage.jsx` — cumul des OR gagnés course par course et
+  transmission du total au podium ;
+- `src/games/MirageCupTrophy.jsx` — OR réellement gagnés et maximum théorique ;
+- `src/games/MirageCoursePicker.jsx` et `src/games/mirage-rush.css` — boutons
+  3D des coupes et mise en valeur des gains.
+
+Ajouter une coupe : une entrée dans `CUPS` avec ses terrains, son maximum
+(`nombre de courses × 10 OR`) et son design (`mirageTrophy.js`) ; le sélecteur,
+l'enchaînement des courses et l'écran du trophée suivent tout seuls.
+
+### Vérifications
+
+```bash
+node --test tests/mirage-cup.test.js tests/mirage-progression.test.js
+npm run check:mirage-cup     # les courses jouées de bout en bout, récompenses et podium
+npm run check:mirage-flow    # boutons de coupe, aperçu épuré et maxima annoncés
+```
+
+## Vice City Rush : 5 tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
-villes (Vice City, New York, Tokyo, Paris, Londres). Une course fait **3 tours
-de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
+villes (Vice City, New York, Tokyo, Paris, Londres). Une course fait **5 tours
+de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 **sous le portique de départ à chaque tour**.
 
 - **La zone de départ.** Grille peinte au sol avec les quatre emplacements,
   ligne à damier, vibreurs rouge et blanc, tribunes garnies de spectateurs qui
   s'agitent, fanions, mâts d'éclairage, tour de direction de course, et un
   **portique** qui porte le panneau *DÉPART · ARRIVÉE*, le tableau de tour
-  (« TOUR 1/3 », puis « DERNIER TOUR », puis « ARRIVÉE ») et les **cinq feux**
+  (« TOUR 1/5 », puis « DERNIER TOUR », puis « ARRIVÉE ») et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
-  · TOUR 2/3 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
+  · TOUR 2/5 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
   rivaux annoncent leur dernier tour. Le dernier passage termine la course.
 - **L'escouade de police du dernier tour.** Dès que le **premier du classement**
-  attaque son troisième tour, **deux berlines d'interception entrent en piste
-  juste derrière lui** (30 m et 38 m, sirène allumée) et roulent pour lui nuire :
-  elles se replacent devant sa roue, changent de voie pour **rafler en priorité
-  les bonus rouges (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir
-  vaut cinq bonus ordinaires dans leur choix de voie, `CITY_RUSH_POLICE_HUNT_TYPES`
-  et `chooseCityRushPoliceLane` — puis **ouvrent le feu sur le leader** dès
-  qu'une jauge rouge est pleine. Elles **ne sont pas classées** : `rankCityRushRacers`
-  ne les voit jamais, la grille reste à quatre, le HUD les affiche dans une liste
-  à part (`hud.police`, marqueurs rouge et bleu de la mini-carte) et l'écran
-  d'arrivée les ignore. Le joueur peut riposter — et désormais **détruire** les
-  berlines : chacune porte une **petite barre de vie** au-dessus du toit
-  (`CITY_RUSH_POLICE_HEALTH = 2`, rendue par `makePolicePursuitCar` et pilotée
-  dans `updatePolice`). Le barème des dégâts est pur
-  (`cityRushPoliceDamage` dans `cityRushRules.js`) : **deux tirs droits bleus**
-  (1 point chacun), **une seule rafale rouge** ou **un seul missile
-  d'hélicoptère** (onde de choc comprise) la font exploser — la destruction
-  passe par `damagePolice` / `destroyPolice` dans `ViceCityWorld.jsx`
-  (explosion `poseExplosion`, +200 pts pour le joueur, effet
-  `police-destroyed`, sirène coupée quand la dernière berline saute).
-- **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
-  **bleu 2** (tir droit — un projectile bleu qui file tout droit dans la voie,
-  sans guidage, `cityRushStraightShotTarget` ; il fait légèrement déraper la
-  cible et entame la barre de vie des berlines de police), **rouge 3**
-  (mitrailleuse / dérapage), **vert 2** (billets / boost), **jaune 4**
-  (talkie-walkie / hélicoptère) — `CITY_RUSH_POWER_CHARGE_COST` dans
-  `cityRushRules.js`. **Les pouvoirs de tir ne visent que devant** : le tir
-  droit bleu file dans la voie du tireur jusqu'à la première voiture sur son
-  axe (`cityRushStraightShotTarget`, portée `CITY_RUSH_BLUE_SHOT_MAX_RANGE`,
-  sans guidage), la mitrailleuse prend le rival le plus proche du pare-chocs,
-  l'hélicoptère le mieux placé, mais seulement parmi les rivaux situés devant
-  le tireur (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`, un mètre de
-  tolérance pour une voiture roue contre roue). Un pilote en tête n'a donc
-  **aucune cible jaune** : l'hélico ne part jamais vers un poursuivant, l'onde
-  de choc épargne elle aussi les adversaires restés derrière l'appelant, et le
-  HUD affiche « AUCUN RIVAL DEVANT TOI · LA JAUGE RESTE CHARGÉE » sans
-  consommer la jauge. Un bonus ramassé
+  attaque le cinquième et dernier tour, **deux berlines d'interception entrent
+  en piste juste derrière lui** (30 m et 38 m, sirène allumée) et roulent pour
+  lui nuire : elles changent de voie pour **rafler en priorité les bonus rouges
+  (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir vaut cinq bonus
+  ordinaires dans leur choix (`CITY_RUSH_POLICE_HUNT_TYPES`,
+  `chooseCityRushPoliceLane`) — puis **ouvrent le feu sur le leader** dès qu'une
+  jauge rouge est pleine. Elles **ne sont pas classées** : `rankCityRushRacers`
+  ne les voit jamais, la grille reste à quatre, et le HUD les affiche à part
+  (`hud.police`, marqueurs rouge et bleu de la mini-carte). La même escouade
+  opère sur les cinq circuits. Elle choisit les voies dégagées
+  et évite le trafic lent (`isCityRushPoliceLaneJammed`) ; si elle est malgré
+  tout bloquée, elle heurte le véhicule lent comme un rival : **0,6 s de
+  ralentissement et un dérapage**, puis le trafic se rabat (`blockedBy`,
+  `resolveCityRushPoliceMovement`, `applyTrafficImpact`), sans bandeau « choc ».
+  Le changement de voie est calculé à la position de la berline, pas à celle du
+  joueur. En dernier tour, une rafale rouge ou un missile jaune peut riposter
+  contre la berline la plus proche quand aucun rival n'est devant ; le tir bleu
+  reste un projectile droit, limité à un adversaire visible dans la voie du
+  tireur (`CITY_RUSH_POLICE_*`, `cityRushRules.js`). **Les berlines sont
+  destructibles.** Chacune porte une barre de vie au-dessus du toit (reprise
+  sur les pastilles de la mini-carte) : **deux tirs droits bleus, OU une rafale
+  rouge, OU un tir d'hélicoptère** la détruisent
+  (`CITY_RUSH_POLICE_HEALTH = 2`, barème pur `cityRushPoliceDamage`). À la
+  destruction : explosion complète, retrait immédiat de la course et de la
+  mini-carte, **+200 pts** pour le pilote qui l'abat
+  (`CITY_RUSH_POLICE_DESTROY_SCORE`), et la sirène s'éteint quand la dernière
+  berline explose. La berline du trafic rappelée par un contact est
+  destructible comme l'escouade ; à la course suivante, le trafic repart au
+  complet.
+- **Les bonus.** Quatre types de ramassages colorés remplissent quatre jauges :
+  **bleu 2** (pistolet à tir droit), **rouge 3** (mitrailleuse), **vert 2**
+  (boisson énergisante / boost), **jaune 4** (talkie-walkie / hélicoptère) —
+  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Le jaune est rare : il
+  ne représente que **10 % des bonus** (vert 36 %, bleu 28 %, rouge 26 %).
+  Le tir bleu ne vise pas : il suit la voie du tireur, peut toucher au plus un
+  adversaire déjà visible, puis fait déraper sa voiture et la ralentit à 85 %
+  pendant **0,3 s**. La mitrailleuse rouge prend le rival le plus proche devant
+  le pare-chocs ; l'hélicoptère verrouille le rival le mieux placé devant son
+  pilote (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`, un mètre de
+  tolérance pour une voiture roue contre roue). En dernier tour, si aucun rival
+  n'est devant, les jauges rouge et jaune peuvent viser la berline de police la
+  plus proche, y compris derrière le pilote. Sans rival ni police-cible, la
+  jauge jaune reste chargée et le HUD l'indique. Un bonus ramassé
   **éclate** : flash, anneau qui s'ouvre et éclats de sa couleur repris par la
   gravité (`cityRushPickupBurstShards` / `cityRushPickupShardState` /
   `cityRushPickupFlashState`, rendus par un pool de six objets dans
@@ -397,21 +447,6 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   pont-viaduc, torii, arc de triomphe, Tower Bridge), monument, lampadaires,
   guirlandes, feux tricolores, panneaux qui clignotent, ciel dégradé avec étoiles,
   skyline au loin, pluie à Londres et bruine à New York.
-- **Les tremis.** Sur **certains circuits** seulement (Vice City, New York,
-  Tokyo ; Paris et Londres restent à ciel ouvert), la boucle passe sous un
-  **tunnel court** : 42 m de voûte de pierre, deux bouches en portique (piédroits
-  crème, bandeau néon, enseigne), plafonniers, appliques murales et aérations de
-  toit. Sous la voûte, la chaussée **se resserre** : trois voies restent
-  ouvertes, **parfois deux seulement**, le reste est muré par une paroi pleine
-  hauteur signalée par un damier de chevrons et des cônes. Les règles sont pures
-  (`src/games/cityRushTunnels.js` — `CITY_RUSH_TUNNEL_PLANS`, `cityRushTunnelAt`,
-  `cityRushTunnelLaneFor`, `cityRushTunnelShade`) : le joueur est **retenu au
-  volant** 26 m avant la paroi (`CITY_RUSH_TUNNEL_PLAYER_LEAD`, et un raclement
-  le repousse dans le couloir s'il s'y engage quand même), tandis que les rivaux,
-  la police et le trafic se rabattent 70 m avant (`MERGE_LEAD`). Un **voile de
-  pénombre** assombrit l'écran tant que la caméra est sous la voûte, le fond du
-  tunnel reste noir, les bonus ne tombent jamais dans une voie murée, et la
-  mini-carte dessine la voûte et la bande des voies murées.
 - **Vice City en plein jour.** Le stage de Vice City se joue **de jour, ambiance
   plage** : ciel bleu de Floride, soleil haut (ni étoiles ni lune), brume marine
   claire, sable au sol, trottoirs crème, façades Art déco pastel et vitres qui
@@ -459,10 +494,8 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - `src/games/cityRushBuilder.js` — fusion des géométries par matériau, textures
   canvas, atlas d'enseignes ; `src/games/cityRushTextures.js` — façades, route,
   trottoirs, panneaux, tableau de tour, plaques ;
-- `src/games/cityRushTunnels.js` — les tremis : plans des tunnels courts de
-  certains circuits, voies murées, rabattements d'IA et pénombre sous la voûte ;
 - `src/games/cityRushStage.js` — la boucle d'une ville (façades, portes,
-  monuments, tremis, accessoires animés, route qui défile, ciel, skyline, pluie) ;
+  monuments, accessoires animés, route qui défile, ciel, skyline, pluie) ;
 - `src/games/cityRushStartLine.js` — la zone de départ (statique) et ses parties
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
 - `src/games/cityRushCars.js` — voitures des pilotes, trafic, fumée ;
@@ -492,17 +525,14 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
   (`speed`, `throttle`, `boost`) — le HUD, émis toutes les 120 ms, serait trop
   saccadé. Les valeurs sont quantifiées (128 crans) pour ne pas empiler
   d'automations à chaque frame.
-- **Les bruitages.** Coup de feu (claquement, corps, écho entre les façades —
-  un tir droit bleu isolé, la rafale rouge en rafale),
+- **Les bruitages.** Coup de feu (claquement, corps, écho entre les façades),
   **dérapage** quand une voiture encaisse un tir — pneus dans un filtre très
-  sélectif et sifflement qui tremble, joué 0,3 s après le coup de feu pour
-  tomber sur l'impact —, dérapage plus doux sur une zone de ralentissement,
-  **hélicoptère** (pales hachées par un LFO + turbine qui monte en régime,
-  démarrage sur l'approche, extinction après l'explosion), missile qui part,
-  **explosion** (descente dans le grave, souffle, débris, écho — la même
-  chorégraphie visuelle `poseExplosion` sert au missile et à la destruction
-  d'une berline de police), **sirène de l'escouade de police** (deux tons qui
-  alternent, tenus par
+  sélectif et sifflement qui tremble, joué à l'impact —, son de dérapage plus
+  doux pour le tir bleu et les zones de ralentissement, **hélicoptère** (pales
+  hachées par un LFO + turbine qui monte en régime, démarrage sur l'approche,
+  extinction après l'explosion),
+  missile qui part, **explosion** (descente dans le grave, souffle, débris,
+  écho), **sirène de l'escouade de police** (deux tons qui alternent, tenus par
   un LFO carré — l'aller-retour « hi-lo » des berlines américaines — et une
   deuxième voix désaccordée qui fait battre la sirène ; le niveau suit la
   proximité de la berline la plus proche, `policeSiren({ level })`, et
@@ -518,21 +548,24 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ### Vérifications
 
 ```bash
-npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
-npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 3 tours sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours sans exception, éclatements visibles
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
 à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
-tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés, la
+tour), l’arrivée après 5 tours, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
 aussi l'**escouade de police** : une seule entrée en piste, deux berlines
 arrivées derrière le leader (jamais devant, jamais à plus de 140 m), qui
-rejoignent le leader à moins de 30 m, ne figurent ni dans le classement du HUD
-ni dans le tableau d'arrivée, disparaissent à la ligne et font sonner puis
-éteindre leur sirène. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
-navigateur (`npm run dev`) pour juger l'image.
+rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
+circuit (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
+plus de 175 m de retard — seuils calibrés sur 200 courses, avec une large marge),
+ne figurent ni dans le classement du HUD ni dans le tableau d'arrivée,
+disparaissent à la ligne et font sonner puis éteindre leur sirène. Il ne dit rien
+du rendu réel : ouvrir le jeu dans un vrai navigateur (`npm run dev`) pour juger
+l'image.
 
 Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
 appels : une course complète doit piloter le moteur à chaque image, sonner les

@@ -8,8 +8,8 @@
  *   2. le clic sur RUÉE ou DUEL ouvre l'écran suivant, où les 10 maps et le
  *      bouton de lancement apparaissent ;
  *   3. le clic sur COUPE ouvre ce même écran, mais le choix de la map y est
- *      remplacé par celui de la coupe (Coupe du Désert : Dunes de l'Écho,
- *      Dust Creek, Plaines d'Or, dans cet ordre, et le barème des points) et
+ *      remplacé par de vrais boutons 3D pour chaque coupe, sans révéler les
+ *      terrains du parcours ; l'or maximum à gagner y est mis en avant, puis
  *      « LANCER LA COUPE » ; un lien ?mode=cup y arrive directement ;
  *   4. un lien de défi ouvre directement l'écran des maps, verrouillé sur le
  *      terrain imposé ;
@@ -20,8 +20,8 @@
  *   6. le lobby EN LIGNE (?mode=online) garde sa barre de boutons de mode
  *      (RUÉE, DUEL, COUPE, EN LIGNE) : le bouton COUPE ramène à la coupe ;
  *   7. la piste du téléphone (trois voies, `setLaneCount(3)`) fait suivre
- *      les textes : deux rivaux, « 3 CAVALIERS » et « sur les 3 voies » — et
- *      la coupe passe elle aussi à trois cavaliers (barème 10 / 7 / 4) ;
+ *      les textes : deux rivaux, « 3 CAVALIERS » et « sur les 3 voies » — la
+ *      récompense en or de la coupe reste clairement annoncée ;
  *   8. sur un écran tactile (faux `matchMedia` « pointer: coarse »), l'écran
  *      des maps explique les gestes — GLISSE ← →, TAPE — sans annoncer une
  *      seule touche de clavier, et plus aucune trace de la manette tactile
@@ -128,7 +128,7 @@ function assertTenMaps(assert, node) {
   return maps;
 }
 
-// Écran 02 du mode COUPE : la coupe remplace le choix de la map.
+// Écran 02 du mode COUPE : les boutons de coupe remplacent le choix de la map.
 function assertCupIntro(assert, node) {
   const intro = node.querySelector('.mirage-intro-overlay');
   assert.ok(intro, 'l’overlay d’intro est affiché en mode coupe');
@@ -138,53 +138,60 @@ function assertCupIntro(assert, node) {
   assert.ok(intro.querySelector('h2').textContent.includes('TROPHÉE'), 'le titre annonce le trophée');
   assert.equal(node.querySelectorAll('.mirage-stage-picker').length, 0,
     'le terrain est imposé par la coupe : plus de sélecteur de terrain');
+
   const cards = [...node.querySelectorAll('.mirage-cup-card')];
-  assert.ok(cards.length >= 2, 'plusieurs coupes sont proposées (Désert + Grand Tour)');
+  assert.equal(cards.length, 4, 'les quatre coupes ont chacune leur bouton de sélection');
+  assert.ok(cards.every((card) => card.tagName === 'BUTTON' && card.type === 'button'),
+    'chaque coupe est un vrai bouton HTML cliquable');
+  assert.ok(cards.every((card) => !card.querySelector('.mirage-cup-route, .mirage-cup-stop, .mirage-cup-points')),
+    'l’aperçu ne détaille ni les courses ni le barème à l’intérieur des coupes');
+
   const desertCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe du Désert');
-  assert.ok(desertCard, 'la Coupe du Désert est présente');
+  const windsCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe des Vents');
+  const worldtourCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe Grand Tour');
+  const legendsCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe des Légendes');
+  assert.ok(desertCard && windsCard && worldtourCard && legendsCard, 'Désert, Vents, Grand Tour et Légendes sont proposés');
   assert.equal(cards[0].getAttribute('aria-pressed'), 'true', 'la première coupe est sélectionnée par défaut');
   assert.deepEqual(
-    [...desertCard.querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
-    ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or'],
-    'la Coupe du Désert enchaîne Dunes de l’Écho, Dust Creek puis Plaines d’Or, dans cet ordre');
-  assert.deepEqual(
-    [...desertCard.querySelectorAll('.mirage-cup-stop-number')].map((el) => el.textContent),
-    ['COURSE 1', 'COURSE 2', 'COURSE 3']);
-  const worldtourCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe Grand Tour');
-  assert.ok(worldtourCard, 'la Coupe Grand Tour (4 cartes) est proposée');
-  assert.equal(desertCard.querySelector('.mirage-cup-emblem svg').dataset.trophy, 'desert');
-  assert.equal(worldtourCard.querySelector('.mirage-cup-emblem svg').dataset.trophy, 'worldtour');
-  assert.notEqual(desertCard.querySelector('svg').innerHTML, worldtourCard.querySelector('svg').innerHTML, 'chaque coupe a son propre trophée');
-  assert.deepEqual(
-    [...worldtourCard.querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
-    ['Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Thunder Airbase'],
-    'la Coupe Grand Tour enchaîne Costa Omertà, Alger la Blanche, Plaines de Yōtei puis Thunder Airbase');
-  assert.deepEqual(
-    [...worldtourCard.querySelectorAll('.mirage-cup-stop-number')].map((el) => el.textContent),
-    ['COURSE 1', 'COURSE 2', 'COURSE 3', 'COURSE 4']);
-  const legendsCard = cards.find((card) => card.querySelector('.mirage-cup-card-title strong')?.textContent === 'Coupe des Légendes');
-  assert.ok(legendsCard, 'la Coupe des Légendes (5 courses) est proposée');
-  assert.equal(legendsCard.querySelector('.mirage-cup-emblem svg').dataset.trophy, 'legends');
-  assert.notEqual(legendsCard.querySelector('svg').innerHTML, worldtourCard.querySelector('svg').innerHTML, 'le blason n’est pas le globe');
-  assert.deepEqual(
-    [...legendsCard.querySelectorAll('.mirage-cup-stop strong')].map((el) => el.textContent),
-    ['Remparts d’Ocre', 'Château de l’Infini', 'Thunder Airbase', 'Costa Omertà', 'Plaines de Yōtei'],
-    'la Coupe des Légendes enchaîne cinq courses : Remparts d’Ocre, Château de l’Infini, Thunder Airbase, Costa Omertà puis Plaines de Yōtei');
+    [desertCard, windsCard, worldtourCard, legendsCard].map((card) => card.querySelector('.mirage-cup-reward-copy > strong')?.textContent.replace(/\s+/g, ' ').trim()),
+    ['+30 OR', '+30 OR', '+40 OR', '+50 OR'],
+    'chaque bouton met en avant le maximum d’or correspondant à la coupe');
+  assert.ok([desertCard, windsCard, worldtourCard, legendsCard].every((card) =>
+    card.querySelector('.mirage-cup-reward-copy > small')?.textContent.includes('OR À GAGNER')),
+  'le gain en or est explicitement signalé dans chaque coupe');
+  assert.ok(desertCard.querySelector('.mirage-cup-reward-copy > em')?.textContent.includes('+10 OR PAR VICTOIRE'),
+    'le maximum est expliqué par les 10 OR obtenus à chaque victoire');
+
+  const raceNames = ['Dunes de l’Écho', 'Dust Creek', 'Plaines d’Or', 'Costa Omertà', 'Alger la Blanche', 'Plaines de Yōtei', 'Remparts d’Ocre', 'Château de l’Infini', 'Thunder Airbase', 'Chemin du Serpent'];
+  assert.ok(cards.every((card) => raceNames.every((name) => !card.textContent.includes(name))),
+    'aucun nom de course ne surcharge les boutons de coupe');
+  const desertIcon = desertCard.querySelector('.mirage-cup-emblem svg');
+  const windsIcon = windsCard.querySelector('.mirage-cup-emblem svg');
+  const worldtourIcon = worldtourCard.querySelector('.mirage-cup-emblem svg');
+  const legendsIcon = legendsCard.querySelector('.mirage-cup-emblem svg');
+  assert.equal(desertIcon.dataset.trophy, 'desert');
+  assert.equal(windsIcon.dataset.trophy, 'winds');
+  assert.equal(worldtourIcon.dataset.trophy, 'worldtour');
+  assert.equal(legendsIcon.dataset.trophy, 'legends');
+  assert.notEqual(desertIcon.innerHTML, windsIcon.innerHTML, 'la Rose des Vents a sa propre silhouette');
+  assert.notEqual(desertIcon.innerHTML, worldtourIcon.innerHTML, 'chaque coupe garde son propre trophée');
+  assert.notEqual(legendsIcon.innerHTML, worldtourIcon.innerHTML, 'le blason des Légendes est distinct du globe');
+
+  const introCopy = intro.querySelector(':scope > p');
+  assert.ok(introCopy?.textContent.includes('jusqu’à +30 OR'), 'le texte de présentation rappelle le gain en or');
+  assert.ok(raceNames.every((name) => !intro.textContent.includes(name)),
+    'l’aperçu de coupe ne déroule pas les noms des courses');
   assert.ok(node.querySelector('.mirage-cup-name-field input'), 'le nom du trophée est modifiable');
   const start = node.querySelector('.mirage-start-button');
   assert.ok(start.textContent.includes('LANCER LA COUPE') || start.textContent.includes('CHARGEMENT'),
     'le bouton propose « LANCER LA COUPE » (ou l’attente du rendu 3D)');
-  assert.ok(node.querySelector('.mirage-game-brand').textContent.includes('DUNES DE L’ÉCHO'),
-    'le bandeau de zone annonce la première course de la coupe');
+  assert.ok(node.querySelector('.mirage-game-brand').textContent.includes('COUPE · PARCOURS IMPOSÉS'),
+    'le bandeau de zone reste générique dans l’aperçu de coupe');
   const hint = node.querySelector('.mirage-overlay-hint').textContent;
-  assert.ok(hint.includes('3 COURSES') && hint.includes('1ᵉʳ 10 PTS'), 'la consigne rappelle les 3 courses et le barème');
+  assert.ok(hint.includes('3 COURSES') && hint.includes('JUSQU’À +30 OR'), 'la consigne rappelle les courses et le gain maximal');
   const keyPowerIcons = [...node.querySelectorAll('.mirage-keys-hint [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
   assert.deepEqual(keyPowerIcons, ['shield', 'lasso', 'boost', 'pistol'], 'les pouvoirs du duel sont rappelés : ils servent aussi en coupe');
-  return cards[0];
-}
-
-function cupPoints(card) {
-  return [...card.querySelectorAll('.mirage-cup-points > span')].map((el) => el.textContent.replace(/\s+/g, ' ').trim());
+  return desertCard;
 }
 
 export async function checkMirageFlow(assert) {
@@ -311,13 +318,15 @@ export async function checkMirageFlow(assert) {
     await act(async () => { page.node.querySelector('.mirage-secondary-button').click(); });
     await openMode(assert, page.node, 'COUPE');
     const cupCard = assertCupIntro(assert, page.node);
-    assert.deepEqual(cupPoints(cupCard), ['1ᵉʳ 10 pts', '2ᵉ 7 pts', '3ᵉ 4 pts', '4ᵉ 2 pts'],
-      'le barème des points est affiché, décroissant de la 1ʳᵉ à la 4ᵉ place');
+    assert.equal(cupCard.querySelector('.mirage-cup-reward-copy > strong')?.textContent.replace(/\s+/g, ' ').trim(), '+30 OR',
+      'la Coupe du Désert annonce jusqu’à 30 OR à gagner');
     const cupIntro = page.node.querySelector('.mirage-intro-overlay');
     assert.ok(cupIntro.querySelector('.mirage-overlay-kicker').textContent.includes('COUPE · 3 COURSES · 4 CAVALIERS'),
       'la coupe se court à quatre cavaliers sur la piste à quatre voies');
     assert.ok(cupIntro.textContent.includes('contre L’Ombre, Sauge et Améthyste'),
       'les trois rivaux de la piste à quatre voies sont nommés');
+    assert.ok(cupIntro.textContent.includes('Chaque victoire rapporte +10 OR') && cupIntro.textContent.includes('jusqu’à +30 OR'),
+      'la présentation distingue l’or gagné par victoire du maximum de la coupe');
     const cupRules = page.node.querySelector('#mirage-panel-info .mirage-cup-rules');
     assert.ok(cupRules, 'les règles de la coupe sont rangées dans Informations');
     assert.ok(cupRules.textContent.includes('MODE COUPE · 4 CAVALIERS'), 'le panneau des règles annonce quatre cavaliers en coupe');
@@ -421,7 +430,7 @@ export async function checkMirageFlow(assert) {
     assert.ok(duelRules.textContent.includes('2 cavaliers rivaux'),
       'le panneau des règles annonce deux rivaux');
 
-    // La coupe suit le duel : trois cavaliers, donc trois places au barème.
+    // La coupe suit le duel à trois voies ; son gain d’or dépend des victoires, pas du nombre de rivaux.
     await act(async () => { app.node.querySelector('.mirage-secondary-button').click(); });
     await openMode(assert, app.node, 'COUPE');
     const threeCupCard = assertCupIntro(assert, app.node);
@@ -431,8 +440,8 @@ export async function checkMirageFlow(assert) {
     assert.ok(threeCupIntro.textContent.includes('contre L’Ombre et Sauge'),
       'seuls L’Ombre et Sauge entrent en piste, comme en duel');
     assert.ok(!threeCupIntro.textContent.includes('Améthyste'), 'Améthyste reste au vestiaire');
-    assert.deepEqual(cupPoints(threeCupCard), ['1ᵉʳ 10 pts', '2ᵉ 7 pts', '3ᵉ 4 pts'],
-      'le barème s’arrête à la 3ᵉ place : il n’y a que trois cavaliers');
+    assert.equal(threeCupCard.querySelector('.mirage-cup-reward-copy > strong')?.textContent.replace(/\s+/g, ' ').trim(), '+30 OR',
+      'le gain maximal reste 30 OR sur une piste à trois cavaliers');
     const threeCupRules = app.node.querySelector('.mirage-cup-rules');
     assert.ok(threeCupRules.textContent.includes('MODE COUPE · 3 CAVALIERS'), 'le panneau des règles annonce trois cavaliers en coupe');
     assert.equal(threeCupRules.querySelectorAll('.mirage-cup-points-pill').length, 3, 'trois places au barème du panneau des règles');

@@ -63,6 +63,7 @@ const GLOBE_HEIGHT = (GLOBE_CENTER_Y + 7.5) * VOXEL;
 const SHIELD_WIDTHS = Object.freeze([2, 4, 6, 8, 10, 12, 12, 12, 12, 12, 12, 12]);
 const SHIELD_BASE = 7; // première assise de l’écu, en voxels depuis le pied
 const LEGENDS_HEIGHT = (SHIELD_BASE + SHIELD_WIDTHS.length) * VOXEL;
+const WINDS_HEIGHT = 23 * VOXEL;
 
 /** Un design par identifiant de coupe (`mirageCup.js`). */
 export const TROPHY_DESIGNS = Object.freeze({
@@ -72,6 +73,13 @@ export const TROPHY_DESIGNS = Object.freeze({
     description: 'Coupe dorée à deux anses, pied étagé et diamant cyan.',
     height: TROPHY_HEIGHT,
     accent: 0xffd76b,
+  }),
+  winds: Object.freeze({
+    id: 'winds',
+    name: 'Rose des Vents',
+    description: 'Rose des vents argentée, pointes turquoise et socle marin.',
+    height: WINDS_HEIGHT,
+    accent: 0x45e4ff,
   }),
   worldtour: Object.freeze({
     id: 'worldtour',
@@ -281,11 +289,36 @@ function legendsTrophyBoxes() {
   return boxes;
 }
 
+// Rose des vents en quatre pointes cardinales, montée sur un pied argenté.
+// Le relief central est doublé : la boussole reste lisible pendant sa rotation.
+function windsTrophyBoxes() {
+  const boxes = [
+    slab('foot', 'silverDark', 0, 12, 2),
+    slab('foot-step', 'silver', 2, 9),
+    slab('stem-base', 'silverLight', 3, 5, 2),
+    slab('stem', 'silver', 5, 3, 4),
+    cell('cradle', 'goldLight', [0, 10.5, 0], [8, 3, 6]),
+    cell('rose-hub', 'gold', [0, 14.5, 0], [5, 5, 3]),
+    cell('north-ray', 'land', [0, 18.5, 0], [3, 3, 2]),
+    cell('north-point', 'silverLight', [0, 21.5, 0], [5, 3, 2]),
+    cell('south-ray', 'ocean', [0, 10.5, 0], [3, 3, 2]),
+    cell('south-point', 'silverLight', [0, 7.5, 0], [5, 3, 2]),
+  ];
+
+  for (const side of [-1, 1]) {
+    boxes.push(cell(`east-west-ray-${side}`, side > 0 ? 'gem' : 'ocean', [side * 5, 14.5, 0], [5, 3, 2]));
+    boxes.push(cell(`east-west-point-${side}`, 'silverLight', [side * 9, 14.5, 0], [3, 5, 2]));
+    boxes.push(cell(`rose-center-${side}`, 'gem', [0, 14.5, side * 2], [3, 3, 1]));
+  }
+  return boxes;
+}
+
 /** La forme (pas seulement la couleur) dépend de la coupe choisie. */
 export function trophyBoxes(cupId = 'desert') {
   const id = getTrophyDesign(cupId).id;
   if (id === 'worldtour') return worldTourTrophyBoxes();
   if (id === 'legends') return legendsTrophyBoxes();
+  if (id === 'winds') return windsTrophyBoxes();
   return desertTrophyBoxes();
 }
 
@@ -325,6 +358,7 @@ const PODIUM_METALS = Object.freeze({
   desert: Object.freeze(['goldDark', 'goldLight']),
   worldtour: Object.freeze(['silverDark', 'silverLight']),
   legends: Object.freeze(['rubyDark', 'goldLight']),
+  winds: Object.freeze(['silverDark', 'gem']),
 });
 
 /**

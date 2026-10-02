@@ -2773,55 +2773,83 @@ img.mirage-powerup-icon {
 .mirage-inline-trophy { display: inline-block; flex-shrink: 0; width: 1.3em; height: 1.3em; vertical-align: -.25em; }
 .mirage-start-button .mirage-inline-trophy { width: 18px; height: 18px; }
 
-/* ── Sélecteur de coupe (overlay d'intro) ── */
-.mirage-cup-picker { display: grid; gap: 10px; }
+/* ── Sélecteur de coupe : de vrais boutons 3D avec l'or en vedette ── */
+.mirage-cup-picker {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px;
+  perspective: 1100px;
+}
 .mirage-cup-card {
   --cup-trophy-accent: #f6cd72; --cup-trophy-glow: 243, 198, 91;
-  position: relative; display: flex; flex-direction: column; gap: 12px; padding: 14px;
-  border-radius: var(--mirage-radius); border: 1px solid rgba(182, 160, 195, .2);
-  background: linear-gradient(125deg, rgba(50, 35, 57, .9), rgba(33, 26, 42, .92));
-  color: #fff2dd; text-align: left; cursor: pointer;
-  transition: border-color .18s, transform .18s, box-shadow .18s;
+  position: relative; box-sizing: border-box; min-width: 0; min-height: 188px;
+  display: flex; flex-direction: column; justify-content: space-between; gap: 12px; padding: 14px 13px 11px;
+  appearance: none; border: 1px solid rgba(var(--cup-trophy-glow), .42);
+  border-bottom: 5px solid rgba(var(--cup-trophy-glow), .64); border-radius: 15px;
+  background:
+    radial-gradient(120% 75% at 50% -12%, rgba(var(--cup-trophy-glow), .2), transparent 68%),
+    linear-gradient(145deg, rgba(58, 39, 63, .98), rgba(24, 18, 34, .98));
+  box-shadow: 0 7px 0 rgba(9, 5, 16, .78), 0 14px 24px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .18);
+  color: #fff2dd; font: inherit; text-align: left; cursor: pointer; touch-action: manipulation;
+  transform: translateY(0) rotateX(0deg); transform-style: preserve-3d;
+  transition: transform .16s cubic-bezier(.2, .8, .2, 1), border-color .16s, box-shadow .16s, filter .16s;
+  -webkit-tap-highlight-color: transparent;
 }
+.mirage-cup-card::before {
+  content: ""; position: absolute; z-index: 0; inset: 1px; border-radius: 13px; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .1), transparent 34%, transparent 76%, rgba(255, 255, 255, .035));
+}
+.mirage-cup-card > * { position: relative; z-index: 1; }
 .mirage-cup-card[aria-pressed="true"] {
-  border-color: var(--cup-trophy-accent);
-  background: linear-gradient(120deg, rgba(103, 67, 44, .6), rgba(48, 34, 50, .95));
-  box-shadow: inset 0 0 0 1px rgba(var(--cup-trophy-glow), .15), 0 6px 22px rgba(0, 0, 0, .28), 0 0 24px rgba(var(--cup-trophy-glow), .12);
+  border-color: var(--cup-trophy-accent); border-bottom-color: rgba(var(--cup-trophy-glow), .95);
+  box-shadow: 0 7px 0 rgba(9, 5, 16, .78), 0 14px 28px rgba(0, 0, 0, .34),
+    0 0 26px rgba(var(--cup-trophy-glow), .2), inset 0 1px 0 rgba(255, 255, 255, .22);
+  filter: saturate(1.12);
 }
 .mirage-cup-card[aria-pressed="true"] .mirage-choice-dot { background: var(--cup-trophy-accent); border-color: var(--cup-trophy-accent); }
-.mirage-cup-card:focus-visible { outline: 2px solid #fff1c9; outline-offset: 3px; }
-.mirage-cup-card-head { display: flex; align-items: center; gap: 12px; padding-right: 22px; }
+.mirage-cup-card:focus-visible { outline: 3px solid #fff1c9; outline-offset: 4px; }
+.mirage-cup-card:active { transform: translateY(4px) scale(.99); border-bottom-width: 1px; box-shadow: 0 2px 0 rgba(9, 5, 16, .78), 0 5px 10px rgba(0, 0, 0, .28); }
+.mirage-cup-card-head { display: flex; align-items: center; gap: 9px; min-height: 54px; padding-right: 21px; }
 .mirage-cup-emblem {
-  display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px;
-  background: radial-gradient(circle at 50% 30%, rgba(var(--cup-trophy-glow), .3), rgba(var(--cup-trophy-glow), .06));
+  display: grid; place-items: center; width: 43px; height: 43px; flex-shrink: 0; border-radius: 13px;
+  border: 1px solid rgba(var(--cup-trophy-glow), .34);
+  background: radial-gradient(circle at 50% 30%, rgba(var(--cup-trophy-glow), .34), rgba(var(--cup-trophy-glow), .07));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 4px 0 rgba(7, 4, 13, .34);
 }
-.mirage-cup-emblem svg { display: block; width: 32px; height: 32px; filter: drop-shadow(0 2px 6px rgba(var(--cup-trophy-glow), .35)); }
+.mirage-cup-emblem svg { display: block; width: 31px; height: 31px; filter: drop-shadow(0 2px 6px rgba(var(--cup-trophy-glow), .42)); }
 .mirage-cup-card-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.mirage-cup-card-title strong { font: 900 17px var(--font-gaming); letter-spacing: .04em; }
-.mirage-cup-card-title span { font-size: 11px; color: #ead7c7; }
-.mirage-cup-card-title small { color: var(--cup-trophy-accent); font: 800 8px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.mirage-cup-card-title strong { font: 900 13px/1.2 var(--font-gaming); letter-spacing: .025em; }
+.mirage-cup-card-title span { color: #ead7c7; font-size: 9px; line-height: 1.25; }
+.mirage-cup-card-title small { color: var(--cup-trophy-accent); font: 800 7px/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.mirage-cup-card.is-winds { --cup-trophy-accent: #45e4ff; --cup-trophy-glow: 69, 228, 255; }
 .mirage-cup-card.is-worldtour { --cup-trophy-accent: #85efd0; --cup-trophy-glow: 133, 239, 208; }
-.mirage-cup-card.is-worldtour[aria-pressed="true"] { background: linear-gradient(120deg, rgba(26, 86, 91, .65), rgba(29, 39, 56, .95)); }
 .mirage-cup-card.is-legends { --cup-trophy-accent: #ff7b8c; --cup-trophy-glow: 255, 123, 140; }
-.mirage-cup-card.is-legends[aria-pressed="true"] { background: linear-gradient(120deg, rgba(110, 28, 52, .68), rgba(40, 27, 46, .95)); }
-.mirage-cup-route { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 16px; }
-.mirage-cup-stop { position: relative; display: flex; flex-direction: column; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .09); background: #251c29; }
-.mirage-cup-stop .mirage-map-visual { height: 62px; border-radius: 9px 9px 0 0; }
-.mirage-cup-stop-number {
-  position: absolute; top: 6px; left: 6px; padding: 3px 6px; border-radius: 5px;
-  background: rgba(33, 24, 38, .74); backdrop-filter: blur(4px); color: #ffdb87; font: 800 8px var(--mono); letter-spacing: .1em;
+.mirage-cup-reward {
+  display: flex; align-items: center; gap: 8px; box-sizing: border-box; width: 100%; padding: 8px 9px;
+  border: 1px solid rgba(255, 220, 114, .68); border-radius: 11px;
+  background: linear-gradient(125deg, rgba(255, 215, 107, .22), rgba(187, 111, 34, .12));
+  box-shadow: inset 0 1px 0 rgba(255, 246, 203, .17), 0 0 18px rgba(255, 194, 66, .12);
+  animation: mirageCupRewardGlow 2.4s ease-in-out infinite;
 }
-.mirage-cup-stop strong { padding: 7px 9px 8px; font: 800 10px var(--font-gaming); line-height: 1.35; }
-/* Petite flèche entre deux courses consécutives. */
-.mirage-cup-stop + .mirage-cup-stop::before {
-  content: '›'; position: absolute; top: 18px; left: -16px; width: 16px; text-align: center;
-  color: #f6cd72; font: 900 20px/1 var(--font-gaming);
+.mirage-cup-reward > .mirage-coin { width: 22px; height: 22px; }
+.mirage-cup-reward-copy { display: flex; flex-direction: column; min-width: 0; }
+.mirage-cup-reward-copy > small { color: #ffe9a0; font: 900 7px/1.2 var(--mono); letter-spacing: .12em; }
+.mirage-cup-reward-copy > strong { color: #fff2ba; font: 900 22px/.98 var(--font-gaming); letter-spacing: -.02em; text-shadow: 0 2px 12px rgba(255, 190, 54, .48); }
+.mirage-cup-reward-copy > strong i { color: #ffdc72; font-size: 11px; font-style: normal; letter-spacing: .08em; }
+.mirage-cup-reward-copy > em { margin-top: 3px; color: rgba(255, 239, 192, .82); font: 800 6.5px/1.2 var(--mono); font-style: normal; letter-spacing: .055em; }
+@keyframes mirageCupRewardGlow {
+  0%, 100% { box-shadow: inset 0 1px 0 rgba(255, 246, 203, .17), 0 0 12px rgba(255, 194, 66, .08); }
+  50% { box-shadow: inset 0 1px 0 rgba(255, 246, 203, .22), 0 0 23px rgba(255, 194, 66, .2); }
 }
-.mirage-cup-points { display: flex; flex-wrap: wrap; gap: 6px 8px; }
-.mirage-cup-points > span {
-  padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255, 224, 166, .2); background: rgba(255, 255, 255, .045);
-  color: rgba(255, 241, 218, .85); font: 800 9px var(--mono); letter-spacing: .08em;
+.mirage-cup-card-action {
+  display: flex; align-items: center; justify-content: space-between; gap: 5px;
+  padding-top: 7px; border-top: 1px solid rgba(255, 239, 218, .12);
+  color: rgba(255, 241, 218, .72); font: 900 7px/1.2 var(--mono); letter-spacing: .075em;
 }
+.mirage-cup-card-action b {
+  display: grid; place-items: center; width: 19px; height: 19px; flex: 0 0 auto; border-radius: 6px;
+  background: linear-gradient(145deg, #ffe994, #eaa33e); color: #291b24; font-size: 11px;
+  box-shadow: 0 3px 0 #8a521f;
+}
+.mirage-cup-card[aria-pressed="true"] .mirage-cup-card-action { color: var(--cup-trophy-accent); }
 .mirage-cup-points b { margin-right: 5px; color: #ffdc72; }
 .mirage-cup-name-field {
   display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 9px 12px;
@@ -2835,7 +2863,11 @@ img.mirage-powerup-icon {
 .mirage-cup-name-field input::placeholder { color: rgba(255, 242, 221, .38); }
 .mirage-cup-name-field input:focus-visible { outline: 2px solid #ffdb76; outline-offset: 2px; }
 @media (hover: hover) {
-  .mirage-cup-card:hover { transform: translateY(-2px); border-color: var(--cup-trophy-accent); }
+  .mirage-cup-card:hover {
+    transform: translateY(-4px) rotateX(2deg); border-color: var(--cup-trophy-accent);
+    box-shadow: 0 10px 0 rgba(9, 5, 16, .78), 0 20px 30px rgba(0, 0, 0, .4),
+      0 0 26px rgba(var(--cup-trophy-glow), .18), inset 0 1px 0 rgba(255, 255, 255, .22);
+  }
 }
 
 /* ── Classement (entre les courses et sur l'écran final) ── */
@@ -2903,6 +2935,10 @@ img.mirage-powerup-icon {
   background: radial-gradient(75% 70% at 50% 54%, #62358a 0%, #2d1748 56%, #150b27 100%);
   animation: mirageOverlayIn .4s ease-out;
 }
+.mirage-trophy-screen[data-trophy="winds"] {
+  --trophy-accent: #45e4ff; --trophy-pale: #e8ffff; --trophy-sheen: #a1f2e0; --trophy-glow: 69, 228, 255;
+  background: radial-gradient(75% 70% at 50% 54%, #2b7381 0%, #153b55 56%, #0a1a30 100%);
+}
 .mirage-trophy-screen[data-trophy="worldtour"] {
   --trophy-accent: #85efd0; --trophy-pale: #eeffff; --trophy-sheen: #a3cde2; --trophy-glow: 133, 239, 208;
   background: radial-gradient(75% 70% at 50% 54%, #285f75 0%, #142b49 56%, #0a1429 100%);
@@ -2955,6 +2991,15 @@ img.mirage-powerup-icon {
 .mirage-trophy-crown { margin-right: 4px; color: var(--trophy-accent); }
 .mirage-trophy-lede { margin: 8px 0 12px; color: rgba(255, 244, 226, .86); font-size: 12px; line-height: 1.55; }
 .mirage-trophy-lede b { color: var(--trophy-accent); }
+/* OR réellement gagnés sur les courses, avec le maximum théorique rappelé. */
+.mirage-trophy-purse {
+  margin: 0 0 12px; padding: 6px 10px; border-radius: 999px; border: 1px dashed rgba(255, 211, 106, .34);
+  background: rgba(255, 197, 74, .06); color: rgba(255, 241, 218, .8); font: 800 9px/1.5 var(--mono); letter-spacing: .1em;
+}
+.mirage-trophy-purse > span { margin-right: 5px; color: #ffd36a; }
+.mirage-trophy-purse b { color: #ffd36a; }
+.mirage-trophy-purse small { display: block; margin-top: 2px; color: rgba(255, 241, 218, .7); font: 700 7px/1.4 var(--mono); letter-spacing: .06em; }
+.mirage-trophy-purse.is-won { border-style: solid; border-color: rgba(255, 211, 106, .5); background: rgba(255, 197, 74, .12); color: #ffe6ad; }
 .mirage-trophy-panel .mirage-cup-standings { width: 100%; margin-bottom: 14px; }
 .mirage-trophy-panel .mirage-cup-row { padding: 5px 10px 5px 6px; }
 .mirage-trophy-panel .mirage-overlay-hint { margin-top: 10px; }
@@ -3047,12 +3092,18 @@ img.mirage-powerup-icon {
 .mirage-cup-points-pill.is-place-1 { background: rgba(255, 215, 107, .2); }
 
 @media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
-  .mirage-cup-card { padding: 11px; gap: 10px; }
-  .mirage-cup-route { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-  .mirage-cup-stop .mirage-map-visual { height: 48px; }
-  .mirage-cup-stop strong { padding: 6px 6px 7px; font-size: 8px; }
-  .mirage-cup-stop-number { font-size: 6px; padding: 2px 4px; }
-  .mirage-cup-stop + .mirage-cup-stop::before { left: -12px; width: 12px; top: 12px; font-size: 16px; }
+  .mirage-cup-picker { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+  .mirage-cup-card { min-height: 0; padding: 11px 13px 9px; gap: 9px; }
+  .mirage-cup-card-head { min-height: 48px; gap: 10px; padding-right: 22px; }
+  .mirage-cup-emblem { width: 40px; height: 40px; }
+  .mirage-cup-card-title strong { font-size: 14px; }
+  .mirage-cup-card-title span { font-size: 10px; }
+  .mirage-cup-card-title small { font-size: 7px; }
+  .mirage-cup-reward { padding: 7px 10px; gap: 9px; }
+  .mirage-cup-reward > .mirage-coin { width: 21px; height: 21px; }
+  .mirage-cup-reward-copy > strong { font-size: 22px; }
+  .mirage-cup-reward-copy > em { font-size: 7px; }
+  .mirage-cup-card-action { padding-top: 6px; font-size: 7px; }
   .mirage-cup-name-field { flex-direction: column; align-items: stretch; gap: 6px; }
   .mirage-cup-results { padding: 14px 10px; }
   .mirage-cup-row { gap: 8px; padding: 4px 9px 4px 5px; grid-template-columns: 24px 32px minmax(0, 1fr) auto auto; }
@@ -3061,7 +3112,8 @@ img.mirage-powerup-icon {
 }
 @media (prefers-reduced-motion: reduce) {
   .mirage-cup-card { transition: none; }
-  .mirage-cup-card:hover { transform: none; }
+  .mirage-cup-card:hover, .mirage-cup-card:active { transform: none; }
+  .mirage-cup-reward { animation: none !important; }
   .mirage-cup-row, .mirage-cup-gained strong, .mirage-trophy-screen, .mirage-trophy-rays,
   .mirage-trophy-title, .mirage-trophy-panel, .mirage-trophy-fallback-cup, .mirage-trophy-fallback i { animation: none !important; }
   .mirage-trophy-fallback i { opacity: .8; }
@@ -3112,11 +3164,11 @@ img.mirage-powerup-icon {
 .mirage-game-shell.is-low-graphics .mirage-touch-layer .mirage-swipe-hint.is-on,
 .mirage-game-shell.is-low-graphics .mirage-map-number,
 .mirage-game-shell.is-low-graphics .mirage-map-check,
-.mirage-game-shell.is-low-graphics .mirage-cup-stop-number,
 .mirage-game-shell.is-low-graphics .mirage-power-toast,
 .mirage-game-shell.is-low-graphics .mirage-trophy-panel,
 .mirage-game-shell.is-low-graphics .mirage-overlay,
 .mirage-game-popup-backdrop.is-low-graphics { backdrop-filter: none; }
+.mirage-game-shell.is-low-graphics .mirage-cup-reward { animation: none; }
 .mirage-game-shell.is-low-graphics .mirage-overlay {
   background: linear-gradient(180deg, rgba(24, 13, 37, .34), rgba(21, 13, 33, .74) 60%, rgba(18, 12, 28, .84));
 }

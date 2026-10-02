@@ -582,8 +582,8 @@ export class CityRushAudio {
   }
 
   /**
-   * Dérapage : pneus qui hurlent. `intensity` va de 0,5 (zone lente) à
-   * 1 (voiture touchée par un tir). Le son est décalé de `delay` pour
+   * Dérapage : pneus qui hurlent. `intensity` va de 0,48 (tir bleu léger) à
+   * 1 (Voiture touchée par une rafale). Le son est décalé de `delay` pour
    * tomber sur l'impact, pas sur le coup de feu.
    */
   skid({ pan = 0, delay = 0, intensity = 1, duration = 0.72 } = {}) {
@@ -715,31 +715,6 @@ export class CityRushAudio {
     gain.connect(out);
     oscillator.start(time);
     oscillator.stop(time + 0.58);
-  }
-
-  /**
-   * Tremis : on s'engouffre sous la voûte. Le souffle grave monte, la pièce
-   * se referme — le bruit est celui d'un tunnel court, pas d'une caverne.
-   */
-  tunnelRush({ pan = 0, duration = 1.4, volume = 0.2 } = {}) {
-    if (!this.ready()) return;
-    const time = this.context.currentTime + 0.005;
-    const out = this.panned(pan);
-    const length = clamp(Number(duration) || 1.4, 0.3, 3);
-    const level = clamp(Number(volume) || 0.2, 0.02, 0.6);
-    this.noise(time, length, level, { type: 'lowpass', frequency: 240, frequencyTo: 1500, q: 0.7, attack: 0.14, destination: out });
-    this.tone(58, time, length * 0.9, 'sine', level * 0.5, { filter: 180, filterTo: 420, destination: out });
-  }
-
-  /** Sortie de tunnel : un claquement d'air, puis l'écho qui retombe. */
-  tunnelExit({ pan = 0, duration = 0.55, volume = 0.16 } = {}) {
-    if (!this.ready()) return;
-    const time = this.context.currentTime + 0.005;
-    const out = this.panned(pan);
-    const length = clamp(Number(duration) || 0.55, 0.2, 1.6);
-    const level = clamp(Number(volume) || 0.16, 0.02, 0.5);
-    this.noise(time, length, level, { type: 'bandpass', frequency: 2600, frequencyTo: 420, q: 0.9, destination: out });
-    this.tone(148, time + 0.02, length * 0.8, 'triangle', level * 0.45, { filter: 900, filterTo: 300, destination: out });
   }
 
   /** Hélicoptère : pales qui hachent et turbine qui monte en régime. */
