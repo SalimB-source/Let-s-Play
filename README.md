@@ -385,6 +385,21 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   pont-viaduc, torii, arc de triomphe, Tower Bridge), monument, lampadaires,
   guirlandes, feux tricolores, panneaux qui clignotent, ciel dégradé avec étoiles,
   skyline au loin, pluie à Londres et bruine à New York.
+- **Les tremis.** Sur **certains circuits** seulement (Vice City, New York,
+  Tokyo ; Paris et Londres restent à ciel ouvert), la boucle passe sous un
+  **tunnel court** : 42 m de voûte de pierre, deux bouches en portique (piédroits
+  crème, bandeau néon, enseigne), plafonniers, appliques murales et aérations de
+  toit. Sous la voûte, la chaussée **se resserre** : trois voies restent
+  ouvertes, **parfois deux seulement**, le reste est muré par une paroi pleine
+  hauteur signalée par un damier de chevrons et des cônes. Les règles sont pures
+  (`src/games/cityRushTunnels.js` — `CITY_RUSH_TUNNEL_PLANS`, `cityRushTunnelAt`,
+  `cityRushTunnelLaneFor`, `cityRushTunnelShade`) : le joueur est **retenu au
+  volant** 26 m avant la paroi (`CITY_RUSH_TUNNEL_PLAYER_LEAD`, et un raclement
+  le repousse dans le couloir s'il s'y engage quand même), tandis que les rivaux,
+  la police et le trafic se rabattent 70 m avant (`MERGE_LEAD`). Un **voile de
+  pénombre** assombrit l'écran tant que la caméra est sous la voûte, le fond du
+  tunnel reste noir, les bonus ne tombent jamais dans une voie murée, et la
+  mini-carte dessine la voûte et la bande des voies murées.
 - **Vice City en plein jour.** Le stage de Vice City se joue **de jour, ambiance
   plage** : ciel bleu de Floride, soleil haut (ni étoiles ni lune), brume marine
   claire, sable au sol, trottoirs crème, façades Art déco pastel et vitres qui
@@ -432,8 +447,10 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - `src/games/cityRushBuilder.js` — fusion des géométries par matériau, textures
   canvas, atlas d'enseignes ; `src/games/cityRushTextures.js` — façades, route,
   trottoirs, panneaux, tableau de tour, plaques ;
+- `src/games/cityRushTunnels.js` — les tremis : plans des tunnels courts de
+  certains circuits, voies murées, rabattements d'IA et pénombre sous la voûte ;
 - `src/games/cityRushStage.js` — la boucle d'une ville (façades, portes,
-  monuments, accessoires animés, route qui défile, ciel, skyline, pluie) ;
+  monuments, tremis, accessoires animés, route qui défile, ciel, skyline, pluie) ;
 - `src/games/cityRushStartLine.js` — la zone de départ (statique) et ses parties
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
 - `src/games/cityRushCars.js` — voitures des pilotes, trafic, fumée ;

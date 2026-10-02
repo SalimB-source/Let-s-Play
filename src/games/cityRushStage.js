@@ -10,6 +10,14 @@ import {
 } from './cityRushRules.js';
 import { createBatch, cloneBatchGroup, seededRandom, hexToRgb, SignAtlas, drawNeonSignCell } from './cityRushBuilder.js';
 import {
+  CITY_RUSH_TUNNEL_HALF_WIDTH,
+  CITY_RUSH_TUNNEL_HEIGHT,
+  CITY_RUSH_TUNNEL_LENGTH,
+  CITY_RUSH_TUNNEL_OUTER_HALF,
+  CITY_RUSH_TUNNEL_TOP,
+  cityRushTunnels,
+} from './cityRushTunnels.js';
+import {
   FACADE_TILE,
   makeFacadeTextures,
   makeShopAtlas,
@@ -90,6 +98,8 @@ export function createStageMaterials(city, theme, random) {
     foliage: standard(tints.foliage ?? (city.style === 'vice' ? 0x2e9b7c : 0x2f7a4c), { roughness: 0.9 }),
     foliageLight: standard(tints.foliageLight ?? (city.style === 'tokyo' ? 0xf4a3c7 : 0x4f9d63), { roughness: 0.9 }),
     glassDark: standard(tints.glassDark ?? 0x18243a, { roughness: 0.3, metalness: 0.25 }),
+    // Intérieur des tremis : pierre sombre et mate, sans reflet.
+    tunnel: standard(tints.tunnel ?? (city.style === 'vice' ? 0x39414f : 0x232838), { roughness: 0.97, metalness: 0.04 }),
     // Sable du front de mer : présent seulement quand le thème le demande.
     sand: tints.sand ? standard(tints.sand, { roughness: 1 }) : null,
     lantern: standard(0xff6a4a, { emissive: 0xff6a4a, emissiveIntensity: 0.9 * glow, roughness: 0.6 }),
@@ -871,6 +881,14 @@ function buildSignAtlases(city, theme) {
   const signIndexes = signTexts.map((text, index) => signAtlas.add({ text, color: index % 2 ? city.secondary : city.accent, draw: drawNeonSignCell }));
   const gateIndex = signAtlas.add({ text: theme.gate.text, color: city.accent, textColor: '#fff6e8', draw: drawNeonSignCell });
   const posterIndex = signAtlas.add({ text: 'BAL 1986', color: city.secondary, background: '#2a1f33', draw: drawNeonSignCell });
+  // Enseigne des tremis et chevrons des voies murées, dans le même atlas.
+  const tunnelIndex = signAtlas.add({
+    text: theme.tunnelText || `${theme.gantryText} TUNNEL`,
+    color: city.accent,
+    textColor: '#fff6e8',
+    draw: drawNeonSignCell,
+  });
+  const chevronIndex = signAtlas.add({ color: theme.edgeColor || '#ffd24a', draw: drawChevronCell });
   const verticalAtlas = new SignAtlas({ cellWidth: 96, cellHeight: 384, columns: 6 });
   const verticalIndexes = theme.verticalSigns.map((text, index) => verticalAtlas.add({
     text,
@@ -889,7 +907,29 @@ function buildSignAtlases(city, theme) {
     verticalCount: verticalIndexes.length,
     gateUv: signAtlas.uvFor(gateIndex),
     posterUv: signAtlas.uvFor(posterIndex),
+    tunnelUv: signAtlas.uvFor(tunnelIndex),
+    chevronUv: signAtlas.uvFor(chevronIndex),
   };
+}
+
+// Damier de chevrons des voies murées : lisibles à vitesse, dans l'esprit des
+// panneaux de chantier (bandes obliques sur fond sombre).
+function drawChevronCell(ctx, width, height, entry) {
+  const accent = entry.color || '#ffd24a';
+  ctx.fillStyle = '#14161f';
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = Math.max(9, height * 0.17);
+  const step = Math.max(22, height * 0.32);
+  for (let x = -height; x < width + height; x += step) {
+    ctx.beginPath();
+    ctx.moveTo(x, height);
+    ctx.lineTo(x + height, 0);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = 'rgba(0, 0, 0, .5)';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, width - 6, height - 6);
 }
 
 // ─── Accessoires animés (un exemplaire chacun, replacés chaque frame) ──────
@@ -1074,11 +1114,89 @@ export function makeRain(theme, cameraZ, lite = false) {
   };
 }
 
-// ─── Assemblage de la boucle ───────────────────────────────────────────────
+// ─── Tremis : tunnels courts et voies murées ───────────────────────────────
+// Chaque tremis est une masse de pierre posée sur la boucle : deux parois, un
+// plafond, deux bouches en portique, et — quand la chaussée se resserre — des
+// parois pleines hauteur qui murent les voies fermées, balisées de chevrons et
+// de cônes. L'intérieur est meublé de plafonniers et d'appliques ; la pénombre
+// et le voile du fond de tunnel sont gérés par le monde (ViceCityWorld.jsx).
+function buildTunnel(batch, m, atlas, tunnel) {
+  const entryZ = toZ(tunnel.entry);
+  const exitZ = toZ(tunnel.exit);
+  const centerZ = (entryZ + exitZ) / 2;
+  const depth = entryZ - exitZ;
+  const half = CITY_RUSH_TUNNEL_HALF_WIDTH;
+  const outer = CITY_RUSH_TUNNEL_OUTER_HALF;
+  const height = CITY_RUSH_TUNNEL_HEIGHT;
+  const top = CITY_RUSH_TUNNEL_TOP;
+  const thickness = outer - half;
+  const sideX = half + thickness / 2;
+
+  // Parois, plafond, couronnement et aérations de toit.
+  for (const side of [-1, 1]) {
+    batch.box(m.tunnel, [side * sideX, height / 2, centerZ], [thickness, height, depth]);
+    batch.box(m.cream, [side * (outer - 0.3), top + 0.35, centerZ], [0.6, 0.7, depth]);
+  }
+  batch.box(m.tunnel, [0, (height + top) / 2, centerZ], [outer * 2, top - height, depth]);
+  for (const z of [entryZ - 0.25, exitZ + 0.25]) batch.box(m.cream, [0, top + 0.35, z], [outer * 2, 0.7, 0.5]);
+  for (const offset of [-0.26, 0.26]) {
+    const z = centerZ + offset * depth;
+    batch.box(m.darkMetal, [0, top + 0.5, z], [3.4, 1.0, 2.4]);
+    for (const x of [-1.2, 1.2]) batch.cylinder(m.metal, [x, top + 1.4, z], 0.16, 0.2, 1.8, 6);
+  }
+
+  // Bouches : piédroits, linteau, bandeau néon, et l'enseigne côté arrivée.
+  for (const [z, dir] of [[entryZ, 1], [exitZ, -1]]) {
+    for (const side of [-1, 1]) {
+      batch.box(m.cream, [side * (half + 0.55), 4.7, z + dir * 0.35], [1.5, 9.4, 0.7]);
+      batch.box(m.accentStandard, [side * (half - 0.02), 1.4, z + dir * 0.42], [0.18, 2.8, 0.1]);
+    }
+    batch.box(m.cream, [0, height + 0.75, z + dir * 0.35], [half * 2 + 1.8, 1.5, 0.7]);
+    batch.box(m.neon, [0, height + 0.16, z + dir * 0.72], [half * 2, 0.26, 0.06]);
+  }
+  batch.plane(m.signs, [0, height + 0.78, entryZ + 0.74], Math.min(12.4, half * 2 - 0.6), 1.25, null, { uv: atlas.tunnelUv });
+
+  // Plafonniers et appliques : la voûte n'est pas un trou noir.
+  for (let offset = 3.5; offset <= CITY_RUSH_TUNNEL_LENGTH - 3; offset += 6.5) {
+    const z = toZ(tunnel.entry + offset);
+    batch.box(m.darkMetal, [0, height - 0.06, z], [1.5, 0.12, 0.56]);
+    batch.box(m.lampGlow, [0, height - 0.15, z], [1.15, 0.1, 0.42]);
+  }
+  for (let offset = 5; offset <= CITY_RUSH_TUNNEL_LENGTH - 4; offset += 9) {
+    const z = toZ(tunnel.entry + offset);
+    for (const side of [-1, 1]) {
+      batch.box(m.darkMetal, [side * (half - 0.06), 4.62, z], [0.14, 0.5, 1.0]);
+      batch.box(m.lampGlow, [side * (half - 0.16), 4.62, z], [0.06, 0.34, 0.82]);
+    }
+  }
+
+  // Voies murées : une masse pleine hauteur par paquet de voies fermées
+  // voisines, du bord de la chaussée jusqu'au bord du couloir resté ouvert.
+  for (const wall of tunnel.walls) {
+    const { centerX, width, outerX, corridor } = wall;
+    batch.box(m.tunnel, [centerX, height / 2, centerZ], [width, height, depth]);
+    // Ligne de guidage lumineuse le long du couloir.
+    for (const y of [1.05, 4.9]) batch.box(m.neon, [outerX + corridor * 0.07, y, centerZ], [0.1, 0.14, depth - 0.5]);
+    // Chevrons sur la face avant, face aux voitures qui arrivent.
+    const boardWidth = Math.min(3.4, Math.max(1.6, width * 0.72));
+    batch.plane(m.signs, [centerX, 3.9, entryZ + 0.06], boardWidth, 1.7, null, { uv: atlas.chevronUv });
+    if (width > 4.4) batch.plane(m.signs, [centerX, 6.5, entryZ + 0.06], boardWidth, 1.7, null, { uv: atlas.chevronUv });
+    // Cônes plantés devant la paroi : la voie murée est balisée.
+    const coneX = outerX + corridor * 0.5;
+    for (let index = 0; index < 4; index += 1) {
+      batch.cone(m.accentStandard, [coneX, 0.34, toZ(tunnel.entry - 7 + index * 2.1)], 0.24, 0.68, 7);
+    }
+  }
+}
+
+function buildCityTunnels(batch, city, theme, m, atlas) {
+  cityRushTunnels(city.id).forEach((tunnel) => buildTunnel(batch, m, atlas, tunnel));
+}
+
 /**
- * Construit la boucle complète (hors zone de départ, construite par
- * cityRushStartLine dans le même batch) et renvoie les deux copies du décor
- * ainsi que les accessoires animés à replacer chaque frame.
+ * Construit le décor d'une boucle de 600 m et le renvoie avec les accessoires
+ * animés. Les deux copies du groupe (tour courant et tour suivant) sont créées
+ * après, par `finishLoopGeometry`.
  */
 export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lite = false }) {
   const random = seededRandom(9001 + cityIndex * 7919);
@@ -1087,6 +1205,13 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
   m.verticalSigns = atlas.verticalMaterial;
   const dynamicProps = [];
   const landmarkSide = city.style === 'paris' || city.style === 'london' ? 1 : -1;
+  // Les tremis avalent le trottoir : ni lampadaire, ni arbre, ni guirlande
+  // dans leur emprise (la voûte les cacherait à moitié, et les cônes des
+  // lampadaires brilleraient sous la pierre).
+  const tunnels = cityRushTunnels(city.id);
+  const nearTunnel = (trackMeters, margin = 4) => tunnels.some(
+    (tunnel) => trackMeters > tunnel.entry - margin && trackMeters < tunnel.exit + margin,
+  );
 
   for (const side of [-1, 1]) {
     let cursor = START_ZONE_HALF + 2;
@@ -1115,30 +1240,34 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
     }
     // Lampadaires et arbres à intervalle régulier le long du trottoir.
     for (let position = START_ZONE_HALF + 8; position < LAP - START_ZONE_HALF - 4; position += 24) {
-      addLamp(batch, m, theme, side * 7.15, toZ(position + (side > 0 ? 12 : 0)), side);
-      if (city.style !== 'new-york' || random() < 0.6) addTree(batch, m, theme, side * 8.8, toZ(position + (side > 0 ? 0 : 12)), random);
+      const lampAt = position + (side > 0 ? 12 : 0);
+      const treeAt = position + (side > 0 ? 0 : 12);
+      if (!nearTunnel(lampAt, 14)) addLamp(batch, m, theme, side * 7.15, toZ(lampAt), side);
+      if (!nearTunnel(treeAt, 14) && (city.style !== 'new-york' || random() < 0.6)) addTree(batch, m, theme, side * 8.8, toZ(treeAt), random);
     }
   }
 
   addGate(batch, m, city, theme, atlas, GATE_TRACK_POSITION);
   addLandmark(batch, m, city, LANDMARK_TRACK_POSITION, landmarkSide);
+  buildCityTunnels(batch, city, theme, m, atlas);
 
-  // Accessoires animés propres à chaque ville.
+  // Accessoires animés propres à chaque ville, jamais sous un tremis.
+  const pushProp = (prop) => { if (!nearTunnel(prop.trackPos, 6)) dynamicProps.push(prop); };
   const flickerPositions = [LAP * 0.18, LAP * 0.41, LAP * 0.63, LAP * 0.86];
   flickerPositions.forEach((position, index) => {
-    dynamicProps.push(makeFlickerSign(position, index % 2 ? 1 : -1, atlas.signUv(index), atlas.signsMaterial, random));
+    pushProp(makeFlickerSign(position, index % 2 ? 1 : -1, atlas.signUv(index), atlas.signsMaterial, random));
   });
   if (city.style === 'new-york') {
-    dynamicProps.push(makeSteamVent(LAP * 0.22, -3.15), makeSteamVent(LAP * 0.57, 1.05), makeSteamVent(LAP * 0.81, 3.15));
-    dynamicProps.push(makeTrafficLight(LAP * 0.36, m), makeTrafficLight(LAP * 0.72, m));
+    [makeSteamVent(LAP * 0.22, -3.15), makeSteamVent(LAP * 0.57, 1.05), makeSteamVent(LAP * 0.81, 3.15)].forEach(pushProp);
+    [makeTrafficLight(LAP * 0.36, m), makeTrafficLight(LAP * 0.72, m)].forEach(pushProp);
   } else if (city.style === 'tokyo') {
-    [0.14, 0.31, 0.62, 0.78].forEach((fraction) => dynamicProps.push(makeLanternString(LAP * fraction, m)));
+    [0.14, 0.31, 0.62, 0.78].forEach((fraction) => pushProp(makeLanternString(LAP * fraction, m)));
   } else if (city.style === 'paris') {
-    [0.17, 0.38, 0.6, 0.83].forEach((fraction, index) => dynamicProps.push(makeStringLights(LAP * fraction, index % 2 ? 0xffd27a : 0xfff0c8, index % 2 ? 0xff9f7a : 0xffd27a)));
+    [0.17, 0.38, 0.6, 0.83].forEach((fraction, index) => pushProp(makeStringLights(LAP * fraction, index % 2 ? 0xffd27a : 0xfff0c8, index % 2 ? 0xff9f7a : 0xffd27a)));
   } else if (city.style === 'vice') {
-    [0.2, 0.68].forEach((fraction) => dynamicProps.push(makeStringLights(LAP * fraction, m.accent, m.secondary)));
+    [0.2, 0.68].forEach((fraction) => pushProp(makeStringLights(LAP * fraction, m.accent, m.secondary)));
   } else if (city.style === 'london') {
-    dynamicProps.push(makeTrafficLight(LAP * 0.4, m));
+    pushProp(makeTrafficLight(LAP * 0.4, m));
   }
 
   return { dynamicProps, atlas, random };
