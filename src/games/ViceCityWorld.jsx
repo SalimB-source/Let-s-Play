@@ -52,6 +52,12 @@ const LAP_UNITS = CITY_RUSH_LAP_LENGTH * SCALE;
 const CAMERA_BASE_FOV = 44;
 const MAX_FRAME = 0.04;
 const POWER_TYPES = ['oil', 'pistol', 'cash', 'radio'];
+// Rayon (en unités monde) de la zone d'effet de l'explosion de l'hélicoptère :
+// à peu près une case (une voie) de chaque côté, touchant les adversaires proches.
+const EXPLOSION_RADIUS = 3.4;
+// Rafale de la mitrailleuse : nombre de balles et cadence (secondes entre deux).
+const MACHINE_GUN_SHOTS = 7;
+const MACHINE_GUN_SPACING = 0.045;
 // Caméra de poursuite plus basse que l'ancienne vue plongeante (8,8 m) :
 // on voit l'horizon, la skyline, les portes et le portique de départ. Tout
 // élément qui enjambe la route doit rester au-dessus de 7,1 m.
@@ -247,11 +253,40 @@ function makeMissile(shared) {
 
 function makeImpact(shared) {
   const group = new THREE.Group();
-  const core = new THREE.Mesh(new THREE.BoxGeometry(1.15, 1.15, 1.15), shared.impactCore);
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.1, 4, 10), shared.impactRing);
+  // Éclair initial : une sphère additive très brillante qui jaillit à l'impact.
+  const flash = new THREE.Mesh(
+    new THREE.SphereGeometry(0.7, 14, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+  );
+  flash.position.y = 0.95;
+  // Boule de feu : cœur orangé qui se dilate puis se dissipe.
+  const fireball = new THREE.Mesh(
+    new THREE.SphereGeometry(0.6, 18, 14),
+    new THREE.MeshBasicMaterial({ color: 0xff6a1f, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
+  );
+  fireball.position.y = 0.95;
+  // Noyau chaud jaune vif à l'intérieur de la boule de feu.
+  const inner = new THREE.Mesh(
+    new THREE.SphereGeometry(0.34, 14, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffd34a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }),
+  );
+  inner.position.y = 0.95;
+  // Onde de choc au sol : un anneau qui se propage jusqu'au rayon de la zone.
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.6, 0.14, 8, 28),
+    new THREE.MeshBasicMaterial({ color: 0xffb154, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
+  );
   ring.rotation.x = Math.PI / 2;
-  group.add(core, ring);
-  group.userData = { core, ring, age: 0, visibleUntil: 0 };
+  ring.position.y = 0.06;
+  // Trace noire laissée sur la route (décalage goudronné) qui s'estompe lentement.
+  const scorch = new THREE.Mesh(
+    new THREE.CircleGeometry(1.5, 22),
+    new THREE.MeshBasicMaterial({ color: 0x140d0a, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
+  );
+  scorch.rotation.x = -Math.PI / 2;
+  scorch.position.y = 0.02;
+  group.add(flash, fireball, inner, ring, scorch);
+  group.userData = { flash, fireball, inner, ring, scorch, age: 0 };
   group.visible = false;
   return group;
 }
@@ -406,8 +441,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     missileBody: standard(0xffd260, { metalness: 0.56, roughness: 0.25, emissive: 0x9a310f, emissiveIntensity: 0.4 }),
     missileNose: standard(0xff5b76, { emissive: 0xaa2149, emissiveIntensity: 0.4 }),
     missileTrail: new THREE.MeshBasicMaterial({ color: 0xffa454, transparent: true, opacity: 0.8, toneMapped: false }),
-    impactCore: new THREE.MeshBasicMaterial({ color: 0xffe39a, transparent: true, opacity: 0.94, toneMapped: false }),
-    impactRing: new THREE.MeshBasicMaterial({ color: city.accent, transparent: true, opacity: 0.85, toneMapped: false }),
   };
 
   // ── Voitures ─────────────────────────────────────────────────────────
@@ -711,6 +744,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     oilTraps.push({ mesh, lane, sourceId, sourceName, trackDistance: Math.max(-3, sourceDistance - 4), hitIds: new Set([sourceId]), active: true, age: 0 });
   }
 
+  // La mitrailleuse ne vise qu'un adversaire situé devant le tireur : on ne
+  // garde que les cibles dont la distance est strictement en avant (avec une
+  // petite tolérance pour les rivaux à peu près à la même hauteur).
   function findPistolTarget(attackerId = 'player') {
     const attackerDistance = attackerId === 'player' ? distance : racers.find((racer) => racer.id === attackerId)?.distance ?? distance;
     const others = [
@@ -722,12 +758,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         racer,
       })),
     ];
-    return others.sort((a, b) => {
-      const aAhead = a.distance >= attackerDistance - 4 ? 0 : 1;
-      const bAhead = b.distance >= attackerDistance - 4 ? 0 : 1;
-      if (aAhead !== bAhead) return aAhead - bAhead;
-      return Math.abs(a.distance - attackerDistance) - Math.abs(b.distance - attackerDistance);
-    })[0] || null;
+    const ahead = others
+      .filter((other) => other.distance >= attackerDistance - 1)
+      .sort((a, b) => a.distance - b.distance);
+    return ahead[0] || null;
   }
 
   function getTargetForRadio(callerId = 'player') {
@@ -850,19 +884,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     }
   }
 
-  function makePistolBolt() {
+  // Une balle traçante de mitrailleuse : noyau jaune vif, traînée orangée et
+  // petite étincelle à l'impact. Les clés userData (core/trail/burst) sont
+  // conservées pour réutiliser la boucle d'animation des tirs.
+  function makeBulletTracer() {
     const group = new THREE.Group();
-    const coreMaterial = new THREE.MeshBasicMaterial({ color: 0xff526e, transparent: true, opacity: 1, depthWrite: false, toneMapped: false });
-    const trailMaterial = new THREE.MeshBasicMaterial({ color: 0xffe3a0, transparent: true, opacity: 0.94, depthWrite: false, toneMapped: false });
-    const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xffbd5c, transparent: true, opacity: 1, depthWrite: false, toneMapped: false });
-    const core = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.55), coreMaterial);
-    const trail = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.095, 0.72), trailMaterial);
-    trail.position.z = -0.52;
+    const coreMaterial = new THREE.MeshBasicMaterial({ color: 0xfff0a6, transparent: true, opacity: 1, depthWrite: false, toneMapped: false });
+    const trailMaterial = new THREE.MeshBasicMaterial({ color: 0xff9a3c, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false });
+    const burstMaterial = new THREE.MeshBasicMaterial({ color: 0xffd24a, transparent: true, opacity: 1, depthWrite: false, toneMapped: false });
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.62, 6), coreMaterial);
+    core.rotation.x = Math.PI / 2;
+    const trail = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.7, 6), trailMaterial);
+    trail.rotation.x = Math.PI / 2;
+    trail.position.z = -0.5;
     const burst = new THREE.Group();
     [
-      new THREE.BoxGeometry(0.56, 0.09, 0.09),
-      new THREE.BoxGeometry(0.09, 0.56, 0.09),
-      new THREE.BoxGeometry(0.09, 0.09, 0.56),
+      new THREE.BoxGeometry(0.5, 0.08, 0.08),
+      new THREE.BoxGeometry(0.08, 0.5, 0.08),
+      new THREE.BoxGeometry(0.08, 0.08, 0.5),
     ].forEach((geometry) => burst.add(new THREE.Mesh(geometry, burstMaterial)));
     burst.visible = false;
     group.add(core, trail, burst);
@@ -870,11 +909,23 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return group;
   }
 
-  function firePistolShot(attackerId, targetId) {
+  // Rafale de mitrailleuse : plusieurs balles traçantes espacées de quelques
+  // centièmes de seconde, toutes dirigées vers la même cible.
+  function fireMachineGun(attackerId, targetId) {
     if (!getVehicleMesh(attackerId) || !getVehicleMesh(targetId)) return;
-    const mesh = makePistolBolt();
-    scene.add(mesh);
-    pistolShots.push({ mesh, attackerId, targetId, age: 0, phase: 'flight', hitPoint: new THREE.Vector3() });
+    for (let index = 0; index < MACHINE_GUN_SHOTS; index += 1) {
+      const mesh = makeBulletTracer();
+      scene.add(mesh);
+      pistolShots.push({
+        mesh,
+        attackerId,
+        targetId,
+        age: 0,
+        phase: 'flight',
+        delay: index * MACHINE_GUN_SPACING,
+        hitPoint: new THREE.Vector3(),
+      });
+    }
   }
 
   function updateVisualEffects(dt) {
@@ -896,6 +947,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
     for (let index = pistolShots.length - 1; index >= 0; index -= 1) {
       const shot = pistolShots[index];
+      // Les balles d'une même rafale partent en quinconce : on attend leur
+      // délai avant de lancer le vol vers la cible.
+      if (shot.delay > 0) {
+        shot.delay -= dt;
+        continue;
+      }
       if (shot.phase === 'flight') {
         shot.age += dt;
         const progress = clamp(shot.age / 0.3, 0, 1);
@@ -976,7 +1033,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       getCallbacks().effect?.({ type: 'oil', lane: playerLane });
     } else if (type === 'pistol') {
       const target = findPistolTarget();
-      if (target) firePistolShot('player', target.id);
+      if (target) {
+        fireMachineGun('player', target.id);
+        getCallbacks().effect?.({ type: 'machine-gun', attacker: 'player', targetId: target.id });
+      }
       if (target?.racer) {
         const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, target.racer.profile);
         target.racer.slowLeft = Math.max(target.racer.slowLeft, duration);
@@ -1013,7 +1073,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         spawnOilTrap(racer.lane, racer.id, racer.distance);
         getCallbacks().effect?.({ type: 'rival-oil', rival: racer.name });
       } else if (type === 'pistol') {
-        firePistolShot(racer.id, target.id);
+        fireMachineGun(racer.id, target.id);
+        getCallbacks().effect?.({ type: 'machine-gun', attacker: racer.id, targetId: target.id });
         if (target.id === 'player') {
           const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, playerProfile);
           playerSlowLeft = Math.max(playerSlowLeft, duration);
@@ -1234,32 +1295,85 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         smoke.emit(missile.position, { color: 0xffc27a, opacity: 0.4, scale: 0.25, grow: 2.2, life: 0.5, velocity: [0, 0.3, 0.4] });
       }
       if (strike.elapsed >= 0.56) {
-        const racer = racers.find((item) => item.id === strike.targetId);
-        const hitProfile = strike.targetId === 'player' ? playerProfile : racer?.profile;
-        const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.radio.duration, hitProfile);
-        if (strike.targetId === 'player') {
-          playerStunLeft = duration;
-          cameraKick = 1;
-        } else if (racer) racer.stunLeft = duration;
-        impact.position.copy(target);
+        // Point d'impact au sol, sous la cible visée.
+        const impactWorld = new THREE.Vector3(target.x, 0, target.z);
+        impact.position.copy(impactWorld);
         impact.userData.age = 0;
         impact.visible = true;
         strike.phase = 'impact';
         strike.elapsed = 0;
         missile.visible = false;
-        for (let puff = 0; puff < 6; puff += 1) {
-          smoke.emit(target, { color: 0x4a4a55, opacity: 0.55, scale: 0.6, grow: 2.4, life: 1.1, velocity: [(Math.random() - 0.5) * 3, 1.2 + Math.random(), (Math.random() - 0.5) * 3] });
+
+        // Immobilisation : la cible principale d'abord, puis tout adversaire
+        // qui se trouve dans la zone (environ une case) autour de l'explosion.
+        const durationFor = (profile) => cityRushHitDuration(CITY_RUSH_POWER_RULES.radio.duration, profile);
+        const stun = (id, profile, isPlayer) => {
+          const duration = durationFor(profile);
+          if (isPlayer) { playerStunLeft = duration; cameraKick = 1; }
+          else { const racer = racers.find((item) => item.id === id); if (racer) racer.stunLeft = duration; }
+          return duration;
+        };
+        let primaryDuration = 0;
+        if (strike.targetId === 'player') primaryDuration = stun('player', playerProfile, true);
+        else {
+          const racer = racers.find((item) => item.id === strike.targetId);
+          if (racer) primaryDuration = stun(racer.id, racer.profile, false);
         }
-        getCallbacks().effect?.({ type: 'missile-hit', target: strike.targetName, targetId: strike.targetId, duration });
+
+        const hitIds = new Set([strike.targetId]);
+        const scratchPos = new THREE.Vector3();
+        const participants = [
+          { id: 'player', profile: playerProfile, isPlayer: true },
+          ...racers.map((racer) => ({ id: racer.id, profile: racer.profile, isPlayer: false })),
+        ];
+        for (const participant of participants) {
+          if (hitIds.has(participant.id)) continue;
+          targetPosition(participant.id, scratchPos);
+          const gap = Math.hypot(scratchPos.x - impactWorld.x, scratchPos.z - impactWorld.z);
+          if (gap <= EXPLOSION_RADIUS) {
+            hitIds.add(participant.id);
+            stun(participant.id, participant.profile, participant.isPlayer);
+          }
+        }
+
+        // Fumée noire en colonne, braise chaude et étincelles projetées.
+        for (let puff = 0; puff < 5; puff += 1) {
+          smoke.emit(impactWorld, { color: 0x35353f, opacity: 0.6, scale: 0.7 + Math.random() * 0.4, grow: 2.6, life: 1.3, velocity: [(Math.random() - 0.5) * 1.4, 2.0 + Math.random() * 1.2, (Math.random() - 0.5) * 1.4] });
+        }
+        for (let spark = 0; spark < 8; spark += 1) {
+          smoke.emit(impactWorld, { color: 0xff7a2a, opacity: 0.85, scale: 0.42, grow: 2.0, life: 0.6, velocity: [(Math.random() - 0.5) * 5, 2.6 + Math.random() * 3, (Math.random() - 0.5) * 5] });
+        }
+        for (let debris = 0; debris < 10; debris += 1) {
+          const angle = Math.random() * Math.PI * 2;
+          const reach = 4 + Math.random() * 4;
+          smoke.emit(impactWorld, { color: 0xffe07a, opacity: 0.95, scale: 0.16, grow: 1.2, life: 0.4, velocity: [Math.cos(angle) * reach, 1.6 + Math.random() * 2.6, Math.sin(angle) * reach] });
+        }
+
+        getCallbacks().effect?.({ type: 'missile-hit', target: strike.targetName, targetId: strike.targetId, duration: primaryDuration, hitCount: hitIds.size });
       }
     } else if (strike.phase === 'impact') {
       impact.userData.age += dt;
-      const life = clamp(impact.userData.age / 0.48, 0, 1);
-      impact.userData.core.scale.setScalar(0.3 + life * 1.3);
-      impact.userData.core.material.opacity = 1 - life;
-      impact.userData.ring.scale.setScalar(0.3 + life * 2.2);
-      impact.userData.ring.material.opacity = 1 - life;
-      if (strike.elapsed > 0.5) {
+      strike.elapsed += dt;
+      const t = impact.userData.age;
+      // Éclair initial très bref.
+      const flashLife = clamp(t / 0.12, 0, 1);
+      impact.userData.flash.scale.setScalar(1.4 + flashLife * 1.2);
+      impact.userData.flash.material.opacity = (1 - flashLife) * 0.95;
+      // Boule de feu qui se dilate puis se dissipe.
+      const fireLife = clamp(t / 0.5, 0, 1);
+      impact.userData.fireball.scale.setScalar(0.4 + fireLife * 2.1);
+      impact.userData.fireball.material.opacity = (1 - fireLife) * 0.95;
+      const innerLife = clamp(t / 0.32, 0, 1);
+      impact.userData.inner.scale.setScalar(0.3 + innerLife * 1.2);
+      impact.userData.inner.material.opacity = (1 - innerLife);
+      // Onde de choc au sol, qui se propage jusqu'au rayon de la zone d'effet.
+      const ringLife = clamp(t / 0.55, 0, 1);
+      impact.userData.ring.scale.setScalar(0.4 + ringLife * (EXPLOSION_RADIUS / 0.6 - 0.4));
+      impact.userData.ring.material.opacity = (1 - ringLife) * 0.9;
+      // Trace noire laissée sur la route : apparaît vite, puis s'estompe.
+      const scorchLife = clamp(t / 0.6, 0, 1);
+      impact.userData.scorch.material.opacity = Math.sin(Math.min(1, scorchLife * 1.6) * Math.PI) * 0.7;
+      if (strike.elapsed > 0.62) {
         impact.visible = false;
         helicopter.visible = false;
         strike = null;

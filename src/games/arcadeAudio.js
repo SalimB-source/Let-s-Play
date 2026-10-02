@@ -66,12 +66,10 @@ export class DesertGroove {
     this.fanfareSession = 0;
   }
 
-  /** Pistol shot: a sharp crack, a low boom and a desert echo. */
-  gunshot() {
-    if (!this.running || !this.context || !this.master) return;
+  /** One sharp gun crack: a bright transient, a low boom and a desert echo. */
+  playCrack(at, destination, volumeScale = 1) {
     const ctx = this.context;
-    const time = ctx.currentTime + 0.005;
-    const makeBurst = (at, duration, volume, type, freq) => {
+    const makeBurst = (at2, duration, volume, type, freq) => {
       const length = Math.ceil(ctx.sampleRate * duration);
       const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -81,28 +79,55 @@ export class DesertGroove {
       const gain = ctx.createGain();
       src.buffer = buffer;
       filter.type = type;
-      filter.frequency.setValueAtTime(freq, at);
-      gain.gain.value = volume;
+      filter.frequency.setValueAtTime(freq, at2);
+      gain.gain.value = volume * volumeScale;
       src.connect(filter);
       filter.connect(gain);
-      gain.connect(ctx.destination);
-      src.start(at);
+      gain.connect(destination);
+      src.start(at2);
     };
-    makeBurst(time, 0.35, 0.9, 'lowpass', 3200);
-    makeBurst(time, 0.08, 0.5, 'highpass', 2500);
-    makeBurst(time + 0.16, 0.4, 0.16, 'lowpass', 1400);
-    makeBurst(time + 0.34, 0.45, 0.07, 'lowpass', 900);
+    makeBurst(at, 0.35, 0.9, 'lowpass', 3200);
+    makeBurst(at, 0.08, 0.5, 'highpass', 2500);
+    makeBurst(at + 0.16, 0.4, 0.16, 'lowpass', 1400);
+    makeBurst(at + 0.34, 0.45, 0.07, 'lowpass', 900);
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(140, time);
-    osc.frequency.exponentialRampToValueAtTime(38, time + 0.2);
-    gain.gain.setValueAtTime(0.7, time);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.25);
+    osc.frequency.setValueAtTime(140, at);
+    osc.frequency.exponentialRampToValueAtTime(38, at + 0.2);
+    gain.gain.setValueAtTime(0.7 * volumeScale, at);
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.25);
     osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(time);
-    osc.stop(time + 0.26);
+    gain.connect(destination);
+    osc.start(at);
+    osc.stop(at + 0.26);
+  }
+
+  /** Pistol shot: a sharp crack, a low boom and a desert echo. */
+  gunshot() {
+    if (!this.running || !this.context || !this.master) return;
+    this.playCrack(this.context.currentTime + 0.005, this.context.destination);
+  }
+
+  /** Machine-gun burst: a rapid rat-tat-tat of cracks. Self-initialises a
+   *  lightweight AudioContext so it can fire without the looping stage music. */
+  machineGun(shots = 6, spacing = 0.055) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    try {
+      this.context ||= new AudioContext();
+      const ctx = this.context;
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      const bus = ctx.createGain();
+      bus.gain.value = 0.5;
+      bus.connect(ctx.destination);
+      const base = ctx.currentTime + 0.005;
+      for (let i = 0; i < Math.max(1, shots); i += 1) {
+        this.playCrack(base + i * spacing, bus, 0.55);
+      }
+    } catch {
+      // Audio indisponible (politique autoplay, contexte refusé) : on ignore.
+    }
   }
 
   setStage(stage) {

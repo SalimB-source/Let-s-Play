@@ -103,12 +103,12 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
   }),
   [CITY_RUSH_POWERS.PISTOL]: Object.freeze({
     id: CITY_RUSH_POWERS.PISTOL,
-    name: 'Pistolet',
-    shortName: 'Dérapage',
+    name: 'Mitrailleuse',
+    shortName: 'Mitrailleuse',
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.PISTOL],
     color: '#ff526e',
     key: 'Z',
-    description: 'Fait déraper un rival ; la durée dépend de sa reprise (2 s de base).',
+    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base).',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.CASH]: Object.freeze({
@@ -128,8 +128,8 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.RADIO],
     color: '#ffd44f',
     key: 'R',
-    description: 'L’hélicoptère immobilise le rival en tête (jamais son pilote) ; sa reprise règle la durée (3 s de base).',
-    duration: 3,
+    description: 'L’hélicoptère lâche une explosion qui immobilise le rival en tête (jamais son pilote) et les adversaires proches ; sa reprise règle la durée (2 s de base).',
+    duration: 2,
   }),
 });
 

@@ -156,7 +156,7 @@ test('the item effects, matching colors, and charge costs match the race rules',
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
   assert.equal(CITY_RUSH_POWER_RULES.cash.duration, 1.5);
   assert.equal(CITY_RUSH_POWER_RULES.cash.color, '#50e48a');
-  assert.equal(CITY_RUSH_POWER_RULES.radio.duration, 3);
+  assert.equal(CITY_RUSH_POWER_RULES.radio.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
 });
 

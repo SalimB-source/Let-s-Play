@@ -317,7 +317,7 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   · TOUR 2/3 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
   rivaux annoncent leur dernier tour. Le dernier passage termine la course.
 - **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
-  **bleu 2** (clé à molette / huile), **rouge 3** (pistolet / dérapage),
+  **bleu 2** (clé à molette / huile), **rouge 3** (mitrailleuse / dérapage),
   **vert 2** (billets / boost), **jaune 4** (talkie-walkie / hélicoptère) —
   `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Un bonus ramassé
   **éclate** : flash, anneau qui s'ouvre et éclats de sa couleur repris par la

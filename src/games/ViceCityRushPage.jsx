@@ -12,6 +12,7 @@ import {
   createCityRushInventory,
 } from './cityRushRules';
 import { cityRushTheme } from './cityRushThemes';
+import { DesertGroove } from './arcadeAudio';
 import './vice-city-rush.css';
 
 const BEST_KEY = 'letsplay_vice_city_rush_bests_v1';
@@ -90,8 +91,10 @@ function PowerIcon({ type, className = '' }) {
         <circle cx="7.5" cy="24.5" r="2.2" />
       </>}
       {type === 'pistol' && <>
-        <path d="M4.5 11h17l5 3.5-4 3H16l-1.2 7h-4l.3-7H5z" />
-        <path d="M21 12.2h5.5M8 14.4h10" />
+        <path d="M3 12h19" />
+        <path d="M22 12v4a3 3 0 0 1-3 3h-3" />
+        <path d="M16 19v-6" />
+        <path d="M13 12l-3 7" />
       </>}
       {type === 'radio' && <>
         <path d="m12 7 5-4M11 7l-2-3" />
@@ -129,6 +132,7 @@ export default function ViceCityRushPage() {
   const lapTimerRef = useRef(null);
   const startRaceRef = useRef(null);
   const isTouchRef = useRef(isTouch);
+  const audioRef = useRef(null);
   phaseRef.current = phase;
   isTouchRef.current = isTouch;
 
@@ -146,6 +150,16 @@ export default function ViceCityRushPage() {
     const onChange = (event) => setIsTouch(event.matches);
     media.addEventListener?.('change', onChange);
     return () => media.removeEventListener?.('change', onChange);
+  }, []);
+
+  // Moteur audio léger (sert surtout aux effets comme la mitrailleuse) ; la
+  // musique de fond n'est pas lancée pour Vice City Rush.
+  useEffect(() => {
+    audioRef.current = new DesertGroove();
+    return () => {
+      audioRef.current?.destroy?.();
+      audioRef.current = null;
+    };
   }, []);
 
   const enterImmersive = () => {
@@ -275,15 +289,19 @@ export default function ViceCityRushPage() {
 
   function effectMessage(effect) {
     if (!effect) return;
+    if (effect.type === 'machine-gun') {
+      audioRef.current?.machineGun();
+      return;
+    }
     if (effect.type === 'cash') showToast('BOOST ACTIVÉ · 1,5 seconde de turbo.', 'cash');
     else if (effect.type === 'oil') showToast('HUILE DÉVERSÉE · Un rival peut déraper derrière toi.', 'oil');
     else if (effect.type === 'oil-hit') showToast(effect.target === 'TOI' ? `DÉRAPAGE · FLAQUE DE ${effect.owner || 'RIVAL'} · RALENTI.` : `DÉRAPAGE · ${effect.target} a traversé une flaque.`, 'oil');
-    else if (effect.type === 'pistol') showToast(`PAN ! ${effect.target} dérape · ralenti ${formatSeconds(effect.duration, 2)}.`, 'pistol');
-    else if (effect.type === 'pistol-hit-player') showToast(`PAN ! ${effect.attacker} TE FAIT DÉRAPER · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    else if (effect.type === 'pistol') showToast(`TATATATA ! ${effect.target} mitraillé · ralenti ${formatSeconds(effect.duration, 2)}.`, 'pistol');
+    else if (effect.type === 'pistol-hit-player') showToast(`TATATATA ! ${effect.attacker} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} ACTIVE UN BOOST.`, 'cash');
     else if (effect.type === 'rival-oil') showToast(`${effect.rival} RÉPAND UNE FLAQUE D’HUILE.`, 'oil');
     else if (effect.type === 'radio') showToast(`HÉLICO EN APPROCHE · CIBLE : ${effect.target}.`, 'radio');
-    else if (effect.type === 'missile-hit') showToast(`IMPACT · ${effect.target} immobilisé ${formatSeconds(effect.duration, 3)}.`, 'radio');
+    else if (effect.type === 'missile-hit') showToast(`IMPACT · ${effect.target} immobilisé ${formatSeconds(effect.duration, 2)}.`, 'radio');
     else if (effect.type === 'radio-busy') showToast(effect.message, 'radio');
     else if (effect.type === 'slow-zone') showToast('ZONE DE RALENTISSEMENT · Garde l’œil sur la route.', 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
