@@ -710,6 +710,38 @@ export const CITY_RUSH_POLICE_HUNT_RANGE = 60; // m : sous cette distance, un ro
 // collée derrière un pilote l'empêcherait de venir le bloquer.
 export const CITY_RUSH_POLICE_ESCAPE_WEIGHT = 14;
 
+// ── La police du trafic sort de sa ronde ────────────────────────────────────
+// Percuter une berline de police « pnj » la sort de sa patrouille : elle prend
+// en chasse le pilote qui l'a touchée, avec exactement les mêmes armes que
+// l'escouade du dernier tour — barrage roulant, vols de bonus rouges/jaunes et
+// rafales de mitrailleuse. Elle n'est pas classée non plus, et rentre dans le
+// rang au drapeau à damier.
+export const CITY_RUSH_POLICE_RALLY_TOLERANCE = 0.3; // m : marge de contact au-delà de la distance de sécurité
+export const CITY_RUSH_POLICE_RALLY_BASE_SPEED = CITY_RUSH_POLICE_BASE_SPEED;
+
+// Le contact se juge comme la résolution de mouvement : recouvrement latéral
+// **et** pare-chocs dans la fenêtre de sécurité des voitures (`distance`, par
+// défaut `CITY_RUSH_CAR_GAP`). Deux voitures calées à cette distance sont en
+// train de se percuter — l'une pousse, l'autre bloque.
+export function cityRushPoliceContact({
+  gap = 0,
+  x,
+  targetX,
+  width = 1.94,
+  targetWidth = 1.9,
+  distance = CITY_RUSH_CAR_GAP,
+  tolerance = CITY_RUSH_POLICE_RALLY_TOLERANCE,
+} = {}) {
+  const safeGap = Number(gap);
+  const reach = Math.max(0, Number(distance) || 0) + Math.max(0, Number(tolerance) || 0);
+  if (!Number.isFinite(safeGap) || Math.abs(safeGap) > reach) return false;
+  const lateral = Number(x);
+  const otherLateral = Number(targetX);
+  if (!Number.isFinite(lateral) || !Number.isFinite(otherLateral)) return false;
+  const halfWidths = (Math.max(0, Number(width) || 0) + Math.max(0, Number(targetWidth) || 0)) / 2;
+  return Math.abs(lateral - otherLateral) < Math.max(1.2, halfWidths);
+}
+
 // L'escouade ne prend en chasse que le premier du classement. `entries` ne
 // contient que les pilotes classés (notre joueur et les trois rivaux) : à
 // égalité, le premier de la liste — notre joueur — est déclaré leader, comme
@@ -1142,9 +1174,12 @@ export function buildCityRushMinimapState(
       return {
         id: police.id || `police-${index}`,
         name: police.name || 'POLICE',
-        // `blocking` permet à la mini-carte de signaler un barrage roulant.
+        // `blocking` permet à la mini-carte de signaler un barrage roulant,
+        // `rallied` de distinguer la police du trafic rappelée par un contact
+        // des berlines d'interception du dernier tour.
         mode: police.mode || null,
         blocking: Boolean(police.blocking) || police.mode === 'blockade',
+        rallied: Boolean(police.rallied),
         distance: Math.round(distance),
         lane,
         x: point.x,

@@ -22,6 +22,7 @@ import {
   CITY_RUSH_POLICE_BLOCKADE_RANGE,
   CITY_RUSH_POLICE_COUNT,
   CITY_RUSH_POLICE_HUNT_RANGE,
+  CITY_RUSH_POLICE_RALLY_TOLERANCE,
   CITY_RUSH_POLICE_HUNT_TYPES,
   CITY_RUSH_POLICE_LEAD,
   CITY_RUSH_POLICE_LANES,
@@ -49,6 +50,7 @@ import {
   cityRushPickupShardState,
   cityRushPolicePace,
   cityRushPoliceBlocksLeader,
+  cityRushPoliceContact,
   cityRushTrackGap,
   chooseCityRushPoliceLane,
   resolveCityRushPoliceMovement,
@@ -456,6 +458,33 @@ test('une berline se met en barrage devant le leader puis lève le pied', () => 
     gap: CITY_RUSH_POLICE_LEAD, baseSpeed: CITY_RUSH_PLAYER_SPEED, leaderSpeed: CITY_RUSH_PLAYER_SPEED,
   }) >= CITY_RUSH_PLAYER_SPEED * 0.9);
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
+});
+
+test('percuter une berline de police du trafic la rappelle : le contact se juge comme la collision', () => {
+  const lane1 = CITY_RUSH_LANE_X[1];
+  // Pare-chocs contre pare-chocs dans la même voie : c'est un contact.
+  assert.equal(cityRushPoliceContact({ gap: CITY_RUSH_CAR_GAP, x: lane1, targetX: lane1 }), true);
+  assert.equal(cityRushPoliceContact({ gap: -CITY_RUSH_CAR_GAP, x: lane1, targetX: lane1 }), true);
+  assert.equal(cityRushPoliceContact({ gap: 0, x: lane1, targetX: lane1 }), true);
+  // Un peu plus loin que la distance de sécurité : la résolution de mouvement
+  // a lâché prise, il n'y a plus de contact.
+  assert.equal(cityRushPoliceContact({
+    gap: CITY_RUSH_CAR_GAP + CITY_RUSH_POLICE_RALLY_TOLERANCE + 0.5, x: lane1, targetX: lane1,
+  }), false);
+  assert.equal(cityRushPoliceContact({
+    gap: -CITY_RUSH_CAR_GAP - CITY_RUSH_POLICE_RALLY_TOLERANCE - 0.5, x: lane1, targetX: lane1,
+  }), false);
+  // Voie voisine (2,1 m d'écart) : on frôle, on ne percute pas.
+  assert.equal(cityRushPoliceContact({ gap: 1, x: CITY_RUSH_LANE_X[0], targetX: CITY_RUSH_LANE_X[1] }), false);
+  // Recouvrement latéral partiel (changement de voie en cours) : contact.
+  assert.equal(cityRushPoliceContact({ gap: 2, x: CITY_RUSH_LANE_X[1] - 1.5, targetX: CITY_RUSH_LANE_X[1] }), true);
+  // Sans position latérale, impossible de conclure : pas de contact.
+  assert.equal(cityRushPoliceContact({ gap: 0 }), false);
+  assert.equal(cityRushPoliceContact(), false);
+  // La tolérance reste petite : deux voitures qui se suivent à 6 m ne se
+  // percutent pas.
+  assert.ok(CITY_RUSH_POLICE_RALLY_TOLERANCE < 1);
+  assert.equal(cityRushPoliceContact({ gap: 6, x: lane1, targetX: lane1 }), false);
 });
 
 test('devant le leader, la berline se rabat dans sa voie pour lui couper la route', () => {

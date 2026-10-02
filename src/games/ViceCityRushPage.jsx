@@ -389,6 +389,7 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-arrival') showToast(effect.target === 'player' ? '🚨 POLICE · DEUX BERLINES SE JOIGNENT À LA COURSE JUSTE DERRIÈRE TOI · ELLES VISENT TES BONUS ROUGES ET JAUNES — ET SONT SOLIDES : ELLES PEUVENT SE RABATTRE DEVANT TOI.' : `🚨 POLICE · L’ESCOUADE PREND ${effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ ${effect.item === 'radio' ? 'L’HÉLICO (JAUNE)' : 'LA MITRAILLEUSE (ROUGE)'}${effect.ready ? ' · ELLE EST ARMÉE' : ''}.`, effect.item === 'radio' ? 'radio' : 'pistol');
     else if (effect.type === 'police-block') showToast(effect.target === 'player' ? `🚧 BARRAGE POLICE · ${effect.police} SE RABAT DEVANT TOI ET LÈVE LE PIED · CONTOURNE-LA, OU PERDS TON ÉLAN DERRIÈRE ELLE.` : `🚧 BARRAGE POLICE · ${effect.police} COUPE LA ROUTE À ${effect.target}.`, 'slow');
+    else if (effect.type === 'police-rally') showToast(effect.target === 'player' ? `🚨 ${effect.police} · TU VIENS DE PERCUTER UNE BERLINE DE POLICE : ELLE TE PREND EN CHASSE, SE RABATTRA DEVANT TOI ET VISERA TES BONUS ROUGES ET JAUNES.` : `🚨 ${effect.police} · ELLE PREND ${effect.target} EN CHASSE.`, 'pistol');
     else if (effect.type === 'police-fire') showToast(`TATATATA ! ${effect.police} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     // Tremis : on n'annonce que les tunnels où la chaussée se resserre, en
     // disant de quel côté le couloir est bordé (parfois des deux).
@@ -429,7 +430,7 @@ export default function ViceCityRushPage() {
         <div>
           <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <i>/</i> STREET RALLY 3D</p>
           <h1>VICE CITY <em>RUSH</em></h1>
-          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité. Au dernier tour, deux berlines de police entrent en piste derrière le leader pour lui nuire : elles raflent les bonus rouges et jaunes, tirent sur le premier et, solides, se rabattent devant lui pour freiner et le bloquer.</p>
+          <p className="city-rush-lede">Choisis ta ville et ton cabriolet, boucle {CITY_RUSH_LAPS} tours de circuit en repassant sous l’arche de départ, évite le trafic lent et ramasse les bonus colorés. Les adversaires ne se percutent pas; le trafic bloque la voie sans dégâts ni pénalité. Percuter une berline de police en ronde la rappelle à l’ordre : elle te prend en chasse sur-le-champ, se rabat devant toi pour freiner et te bloque. Au dernier tour, deux berlines d’interception entrent en plus en piste derrière le leader : elles raflent les bonus rouges et jaunes et tirent sur le premier.</p>
         </div>
         <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
       </header>
@@ -774,6 +775,11 @@ export default function ViceCityRushPage() {
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
             <div><b>ADVERSAIRES SANS COLLISION</b><p>Les adversaires ne se percutent pas. Le trafic lent — police, ambulance, camion-poubelle ou Lamborghini blanche — bloque la voie, et les berlines d’interception du dernier tour sont solides elles aussi : contourne-les. Aucun dégât ni pénalité au contact ; évite aussi les zones de ralentissement.</p></div>
+          </section>
+
+          <section className="city-rush-no-collision-note is-rally">
+            <span className="city-rush-no-collision-icon">🚧</span>
+            <div><b>POLICE DU TRAFIC · NE LA PERCUTE PAS</b><p>Les berlines de police qui circulent en ronde sont solides : les percuter les rappelle à l’ordre — <b>tu viens de renverser un agent, elles te prennent en chasse</b>, même au premier tour. Elles se rabattent alors devant toi et lèvent le pied pour te bloquer (même effet de collision que le trafic, sans dégât ni pénalité), raflent tes bonus <em className="is-red">rouges</em> et <em className="is-yellow">jaunes</em> et ouvrent le feu dès qu’une jauge rouge est pleine. Comme l’escouade du dernier tour, elles ne sont pas classées et rentrent dans le rang au drapeau à damier. Riposte : une flaque d’huile ou une rafale les ralentit comme n’importe qui.</p></div>
           </section>
 
           <section className="city-rush-no-collision-note is-police">

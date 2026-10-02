@@ -170,8 +170,12 @@ for (const [index, city] of cities.entries()) {
   // 30 Hz) plus tard sur sa rangée.
   const burstNodes = [];
   const pickupSlots = [];
+  // Berlines de police du trafic : le pilote d'essai les vise pour provoquer le
+  // scénario « on percute un agent » (voir la boucle de course).
+  const policeTrafficNodes = [];
   scene?.traverse((object) => {
     if (object.name === 'pickup-burst') burstNodes.push(object);
+    if (object.name === 'traffic-police') policeTrafficNodes.push(object);
     if (object.userData?.icon && object.userData?.ring && object.userData?.beam && object.userData?.halo) {
       pickupSlots.push(object);
     }
@@ -226,6 +230,12 @@ for (const [index, city] of cities.entries()) {
   // (les berlines sont solides : elles ne doivent jamais être traversées).
   let policeBlockadeFrames = 0;
   let policeWorstOverlap = Infinity;
+  // Police du trafic rappelée par un contact : frames en chasse et frames
+  // passées devant le joueur qu'elle poursuit.
+  let ralliedHudFrames = 0;
+  let ralliedAheadFrames = 0;
+  let ralliedBlockadeFrames = 0;
+  let worstPair = null;
   // Tremis : le joueur ne doit jamais rouler dans une voie murée, et le HUD
   // doit annoncer chaque passage sous la voûte.
   let tunnelHudFrames = 0;
@@ -241,12 +251,31 @@ for (const [index, city] of cities.entries()) {
       if (hud.tunnel.openLanes.length < 2) fail('un tremis laisse moins de deux voies ouvertes', hud.tunnel);
     }
     // Pilote naïf : si on traîne derrière le trafic, on tente de changer de voie ;
-    // on déclenche chaque pouvoir dès qu'il est chargé.
+    // on déclenche chaque pouvoir dès qu'il est chargé. Tant qu'aucun contact
+    // n'a eu lieu, il vise délibérément une berline de police du trafic : c'est
+    // le seul moyen d'éprouver la riposte policière de façon déterministe.
+    const rallyContactSeen = callbacks.effects.some((effect) => effect.type === 'police-rally');
+    let rallyTarget = null;
+    if (!rallyContactSeen && frames > 150) {
+      for (const node of policeTrafficNodes) {
+        if (!node.visible || node.position.z > 3.1 - 6) continue;
+        if (!rallyTarget || node.position.z > rallyTarget.position.z) rallyTarget = node;
+      }
+    }
     if (hud && hud.speed < 70) slowFrames += 1; else slowFrames = 0;
-    if (slowFrames > 12) {
+    if (slowFrames > 12 && !rallyTarget) {
       world.action(steer);
       steer = steer === 'left' ? 'right' : 'left';
       slowFrames = 0;
+    }
+    if (rallyTarget && hud && frames % 4 === 0) {
+      let targetLane = hud.playerLane;
+      let closest = Infinity;
+      CITY_RUSH_LANE_X.forEach((x, index) => {
+        const delta = Math.abs(x - rallyTarget.position.x);
+        if (delta < closest) { closest = delta; targetLane = index; }
+      });
+      if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
     }
     if (hud && frames % 15 === 0) {
       for (const type of ['cash', 'oil', 'pistol', 'radio']) {
@@ -292,6 +321,12 @@ for (const [index, city] of cities.entries()) {
         policeClosestGap = Math.min(policeClosestGap, Math.abs((car.distance || 0) - hudLeader));
         if (car.mode) policeBeacons += 1;
         if (car.blocking || car.mode === 'blockade') policeBlockadeFrames += 1;
+        if (car.rallied) {
+          ralliedHudFrames += 1;
+          if (car.blocking || car.mode === 'blockade') ralliedBlockadeFrames += 1;
+          const playerGap = (Number.isFinite(Number(car.rawDistance)) ? Number(car.rawDistance) : Number(car.distance)) - (hud.distance || 0);
+          if (playerGap > 0 && playerGap < 60) ralliedAheadFrames += 1;
+        }
         // Collision : une berline solide ne partage jamais sa case avec un
         // pilote. On ne compare que les voitures latéralement confondues
         // (1,6 m : au-delà, elles sont dans deux voies voisines).
@@ -302,7 +337,19 @@ for (const [index, city] of cities.entries()) {
           if (!Number.isFinite(carX) || !Number.isFinite(racerX) || Math.abs(carX - racerX) > 1.6) continue;
           const racerDistance = Number.isFinite(Number(racer.rawDistance)) ? Number(racer.rawDistance) : Number(racer.distance);
           if (!Number.isFinite(carDistance) || !Number.isFinite(racerDistance)) continue;
-          policeWorstOverlap = Math.min(policeWorstOverlap, Math.abs(carDistance - racerDistance));
+          // La police du trafic rappelée percute volontairement le pilote
+          // qu'elle chasse : ce rattrapage est le seul contact toléré.
+          const contactCatchUp = car.rallied && (carDistance - racerDistance) < CITY_RUSH_CAR_GAP;
+          const overlapNow = contactCatchUp ? Infinity : Math.abs(carDistance - racerDistance);
+          if (overlapNow < policeWorstOverlap) {
+            policeWorstOverlap = overlapNow;
+            worstPair = {
+              frame: frames, city: city.id, car: car.id, rallied: Boolean(car.rallied), mode: car.mode,
+              carDist: carDistance, carX, carLane: car.lane, blocking: Boolean(car.blocking),
+              racer: racer.id, racerDist: racerDistance, racerX, racerLane: racer.lane,
+              delta: carDistance - racerDistance, racerSpeed: racer.speed, carSpeed: car.speed,
+            };
+          }
         }
       }
     }
@@ -368,11 +415,37 @@ for (const [index, city] of cities.entries()) {
   const policeArrivals = callbacks.effects.filter((effect) => effect.type === 'police-arrival');
   if (policeArrivals.length !== 1) fail('l’escouade de police n’entre pas exactement une fois en piste', policeArrivals);
   if (!firstPoliceHud) fail('aucune berline de police dans le HUD pendant la course');
-  if (firstPoliceHud.police.length > 2) fail('plus de deux berlines en piste', firstPoliceHud.police);
+  // Escouade du dernier tour (`police-*`) et police du trafic rappelée par un
+  // contact (`rally-traffic-*`) partagent la même liste ; l'escouade reste
+  // limitée à deux berlines et n'entre jamais devant le leader.
+  const squadCars = firstPoliceHud.police.filter((car) => String(car.id).startsWith('police-'));
+  if (squadCars.length > 2) fail('plus de deux berlines d’escouade en piste', firstPoliceHud.police);
+  if (firstPoliceHud.police.length > 5) fail('plus de cinq poursuivants en piste', firstPoliceHud.police);
   const leaderDistance = Math.max(firstPoliceHud.distance || 0, ...(firstPoliceHud.racers || []).map((racer) => racer.distance || 0));
-  for (const car of firstPoliceHud.police) {
+  for (const car of squadCars) {
     if (car.distance > leaderDistance + 2) fail('une berline entre en piste devant le leader', { leaderDistance, car });
     if (car.distance < leaderDistance - 140) fail('une berline entre trop loin derrière le leader', { leaderDistance, car });
+  }
+  // La police du trafic : un contact l'a rappelée, elle chasse son pilote, et
+  // elle rentre dans le rang au drapeau à damier.
+  const rallies = callbacks.effects.filter((effect) => effect.type === 'police-rally');
+  const ralliedInHud = new Set();
+  for (const hud of callbacks.huds) {
+    for (const car of hud.police || []) if (car.rallied) ralliedInHud.add(car.id);
+  }
+  if (!ralliedInHud.size && rallies.length) fail('une berline rappelée n’apparaît jamais dans le HUD', rallies);
+  if (ralliedInHud.size !== rallies.length) {
+    fail(`${rallies.length} contact(s) pour ${ralliedInHud.size} berline(s) rappelée(s) en piste`, [...ralliedInHud]);
+  }
+  for (const car of rallies) {
+    if (car.police !== 'POLICE ROUTIÈRE') fail('une berline rappelée n’est pas identifiée comme police routière', car);
+  }
+  const ralliedIds = [...ralliedInHud];
+  if (ralliedHudFrames < 60) fail('la police routière rappelée ne tient pas la chasse', ralliedHudFrames);
+  if (ralliedAheadFrames < 60) fail('la police routière rappelée ne se porte jamais devant le pilote qu’elle chasse', ralliedAheadFrames);
+  if (!ralliedBlockadeFrames) fail('la police routière rappelée ne s’est jamais mise en barrage devant le pilote');
+  if ((lastHud.police || []).some((car) => ralliedIds.includes(car.id))) {
+    fail('une berline rappelée reste en piste après l’arrivée', lastHud.police);
   }
   if (policeHudFrames < 30) fail('l’escouade ne tient pas la piste', policeHudFrames);
   if (!(policeClosestGap <= 30)) fail(`l’escouade reste à ${policeClosestGap} m du leader`, policeClosestGap);
@@ -383,8 +456,9 @@ for (const [index, city] of cities.entries()) {
     fail('le barrage police n’a jamais été annoncé à la page', callbacks.effects.map((e) => e.type));
   }
   if (!(policeWorstOverlap >= CITY_RUSH_CAR_GAP - 1.5)) {
-    fail(`une berline solide est traversée : écart ${policeWorstOverlap.toFixed(2)} m < ${CITY_RUSH_CAR_GAP} m`, policeWorstOverlap);
+    fail(`une berline solide est traversée : écart ${policeWorstOverlap.toFixed(2)} m < ${CITY_RUSH_CAR_GAP} m`, worstPair);
   }
+  if (!rallies.length) fail('aucune berline de police du trafic n’a été rappelée par un contact');
   if ((firstPoliceHud.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le classement du HUD');
   if ((finish.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le tableau d’arrivée');
   if (lastHud.police?.length) fail('l’escouade reste en piste après l’arrivée', lastHud.police);
@@ -493,7 +567,9 @@ for (const [index, city] of cities.entries()) {
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
     (tunnels.length ? ` · tremis ${tunnelIds.size}/${tunnels.length} traversés (${tunnelHudFrames} f sous la voûte)` : ' · sans tremis') +
-    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · ${policeBlockadeFrames} f en barrage · écart mini aux pilotes ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` : 'jamais entrée'}` +
+    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · ${policeBlockadeFrames} f en barrage` : 'jamais entrée'}` +
+    ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
+    ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
     ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris` +
     ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,
