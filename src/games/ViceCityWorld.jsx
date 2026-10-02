@@ -779,6 +779,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function getTargetForRadio(callerId = 'player') {
+    // Le tir vise le rival le mieux placé, jamais l'appelant. Si le joueur est
+    // lui-même en tête, le premier rival devient donc une cible valide.
     return cityRushHelicopterTarget(makeRacerRows(), callerId);
   }
 
@@ -1044,10 +1046,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     return true;
   }
 
-  function usePower(type) {
+  function usePower(type, { automatic = false } = {}) {
     if (!active || finished) return;
     if (type === 'radio' && strike) {
       getCallbacks().effect?.({ type: 'radio-busy', message: 'L’hélicoptère est déjà en route.' });
+      return;
+    }
+    // Choisir une cible avant de consommer la jauge évite de perdre le tir si
+    // aucun rival n'est disponible. Le joueur est toujours exclu de sa propre
+    // cible, même lorsqu'il occupe la première place.
+    const radioTarget = type === 'radio' ? getTargetForRadio('player') : null;
+    if (type === 'radio' && (!radioTarget || radioTarget.id === 'player')) {
+      getCallbacks().effect?.({ type: 'radio-no-target' });
       return;
     }
     const consumed = consumeCityRushCharge(inventory, type);
@@ -1061,11 +1071,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (type === 'cash') {
       playerBoostLeft = Math.max(playerBoostLeft, CITY_RUSH_POWER_RULES.cash.duration);
       audioRef?.current?.boost();
-      getCallbacks().effect?.({ type: 'cash', duration: CITY_RUSH_POWER_RULES.cash.duration });
+      getCallbacks().effect?.({ type: 'cash', duration: CITY_RUSH_POWER_RULES.cash.duration, automatic });
     } else if (type === 'oil') {
       spawnOilTrap(playerLane);
       audioRef?.current?.oilDrop();
-      getCallbacks().effect?.({ type: 'oil', lane: playerLane });
+      getCallbacks().effect?.({ type: 'oil', lane: playerLane, automatic });
     } else if (type === 'pistol') {
       const target = findPistolTarget();
       if (target) {
@@ -1079,8 +1089,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         getCallbacks().effect?.({ type: 'pistol', target: target.name, targetId: target.id, duration });
       }
     } else if (type === 'radio') {
-      const target = getTargetForRadio();
-      startStrike(target);
+      startStrike(radioTarget);
     }
     emitHud(true);
   }
@@ -1154,7 +1163,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       use_radio: 'radio', radio: 'radio', helicopter: 'radio',
     };
     const type = aliases[name];
-    if (type) usePower(type);
+    if (type && !CITY_RUSH_POWER_RULES[type]?.automatic) usePower(type);
   }
 
   function collectPickup(type, lane) {
@@ -1163,13 +1172,16 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const chargeCost = CITY_RUSH_POWER_RULES[type].chargeCost;
     const progress = inventory[type];
     const ready = progress >= chargeCost;
+    const newlyReady = before < chargeCost && ready;
+    const autoActivated = ready && CITY_RUSH_POWER_RULES[type].automatic;
     score += type === 'radio' ? 180 : type === 'pistol' ? 150 : type === 'oil' ? 125 : 100;
     pickedUp += 1;
     // Bip de ramassage (aigu quand la jauge vient de se remplir) : seul le
     // joueur en bénéficie, les rivaux remplissent leur inventaire en silence.
-    audioRef?.current?.pickup(type, { ready: before < chargeCost && ready });
-    getCallbacks().pickup?.({ type, progress, chargeCost, ready, newlyReady: before < chargeCost && ready, lane });
-    emitHud(true);
+    audioRef?.current?.pickup(type, { ready: newlyReady });
+    getCallbacks().pickup?.({ type, progress, chargeCost, ready, newlyReady, autoActivated, lane });
+    if (autoActivated) usePower(type, { automatic: true });
+    else emitHud(true);
   }
 
   function collectRacerPickup(racer, type) {
@@ -1627,7 +1639,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
             pickups: aiPickups,
             slowZones: aiSlowZones,
             traffic: [...aiTraffic, ...otherRacers],
-            inventory: racer.inventory,
             lookAheadDistance: 145,
           });
           if (nextLane !== racer.lane) racer.lane = nextLane;

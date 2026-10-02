@@ -110,7 +110,7 @@ const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (
 // éteint (un rotor qui tourne dans le vide s'entendrait jusqu'à la page
 // d'accueil).
 const AUDIO_METHODS = [
-  'engine', 'gunshot', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
+  'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
   'helicopterStop', 'pickup', 'boost', 'oilDrop', 'lap', 'finish', 'countdownBeep', 'passby',
 ];
 
@@ -271,6 +271,13 @@ for (const [index, city] of cities.entries()) {
   if (maxVisible > 600) fail(`trop de meshes visibles : ${maxVisible}`);
   if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
   if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);
+  const automaticCash = callbacks.pickups.filter((pickup) => pickup.type === 'cash' && pickup.autoActivated).length;
+  const automaticOil = callbacks.pickups.filter((pickup) => pickup.type === 'oil' && pickup.autoActivated).length;
+  if (callbacks.pickups.some((pickup) => pickup.autoActivated && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
+    fail('un bonus manuel a été signalé comme activation automatique', callbacks.pickups.filter((pickup) => pickup.autoActivated));
+  }
+  if ((audioCalls.boost || 0) < automaticCash) fail('un boost vert chargé ne s’est pas activé automatiquement', { automaticCash, audioCalls });
+  if ((audioCalls.oilDrop || 0) < automaticOil) fail('une jauge huile pleine n’a pas déposé sa flaque automatiquement', { automaticOil, audioCalls });
 
   // Fin de course : la caméra tourne, le départ fait la fête, pas d’exception.
   world.setPhase('finished');

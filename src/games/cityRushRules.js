@@ -98,7 +98,8 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.OIL],
     color: '#48b9ff',
     key: 'A',
-    description: 'Dépose une flaque d’huile derrière toi. Les voitures qui la traversent ralentissent.',
+    automatic: true,
+    description: 'Dépose automatiquement une flaque d’huile derrière toi dès que la jauge est pleine. Les voitures qui la traversent ralentissent.',
     duration: 1.4,
   }),
   [CITY_RUSH_POWERS.PISTOL]: Object.freeze({
@@ -108,6 +109,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.PISTOL],
     color: '#ff526e',
     key: 'Z',
+    automatic: false,
     description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base).',
     duration: 2,
   }),
@@ -118,7 +120,8 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.CASH],
     color: '#50e48a',
     key: 'E',
-    description: 'Déclenche un boost de vitesse pendant 1,5 seconde.',
+    automatic: true,
+    description: 'Déclenche automatiquement un boost de vitesse pendant 1,5 seconde dès que la jauge est pleine.',
     duration: 1.5,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
@@ -128,7 +131,8 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.RADIO],
     color: '#ffd44f',
     key: 'R',
-    description: 'L’hélicoptère lâche une explosion qui immobilise le rival en tête (jamais son pilote) et les adversaires proches ; sa reprise règle la durée (2 s de base).',
+    automatic: false,
+    description: 'L’hélicoptère immobilise le rival le mieux placé (jamais son pilote) et les adversaires proches ; la reprise de chaque cible règle la durée (2 s de base).',
     duration: 2,
   }),
 });
@@ -420,7 +424,6 @@ export function chooseCityRushAiLane({
   pickups = [],
   slowZones = [],
   traffic = [],
-  inventory = {},
   lookAheadDistance = 145,
 } = {}) {
   const lane = clampCityRushLane(currentLane, laneCount);
@@ -435,7 +438,8 @@ export function chooseCityRushAiLane({
   let bestScore = -Infinity;
 
   for (const candidate of candidates) {
-    let score = -Math.abs(candidate - lane) * 1.25;
+    let safetyScore = -Math.abs(candidate - lane) * 1.25;
+    let pickupPriority = 0;
     for (const pickup of pickups) {
       const gap = Number(pickup.distance) - Number(distance);
       if (!Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
@@ -443,24 +447,28 @@ export function chooseCityRushAiLane({
       const laneAffinity = Math.max(0, 1 - Math.abs(pickupLane - candidate) * 0.34);
       if (laneAffinity === 0) continue;
       const urgency = 1 - gap / lookAhead;
-      const rule = CITY_RUSH_POWER_RULES[pickup.type];
-      const chargeCost = rule?.chargeCost || 1;
-      const charge = Math.max(0, Number(inventory?.[pickup.type]) || 0);
-      const chargeValue = charge >= chargeCost ? 0.12 : 1 + Math.min(1, charge / chargeCost) * 0.45;
-      score += (2.8 + urgency * 2.2) * laneAffinity * chargeValue;
+      // Ramasser passe avant le confort de conduite : à voie disponible, le
+      // rival vise le bonus même si une zone ou un autre pilote le gêne. La
+      // disponibilité des voies garde toutefois la sécurité du trafic lent.
+      // Même avec une jauge pleine, le rival continue de viser les bonus au
+      // lieu de les ignorer dès que son pouvoir est chargé.
+      pickupPriority += (22 + urgency * 8) * laneAffinity;
     }
     for (const zone of slowZones) {
       const gap = Number(zone.distance) - Number(distance);
       if (zone.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
-      score -= 5 + (1 - gap / lookAhead) * 11;
+      safetyScore -= 5 + (1 - gap / lookAhead) * 11;
     }
     for (const vehicle of traffic) {
       const gap = Number(vehicle.distance) - Number(distance);
       if (vehicle.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
       const closingSpeed = Math.max(1, racerSpeed - Math.max(0, Number(vehicle.speed) || 0));
       const timeToReach = gap / closingSpeed;
-      score -= timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5;
+      safetyScore -= timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5;
     }
+    // Sépare explicitement les objectifs des risques : aucune pénalité de
+    // circulation ne doit rendre un bonus moins intéressant qu'une voie vide.
+    const score = pickupPriority * 100 + safetyScore;
     if (score > bestScore) {
       bestScore = score;
       bestLane = candidate;
