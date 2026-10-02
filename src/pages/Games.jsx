@@ -52,10 +52,10 @@ const GAMES = [
   {
     id: 'vice-city-rush',
     title: 'VICE CITY RUSH',
-    subtitle: '3D ARCADE RALLY · 80’S NEON',
-    description: 'Une décapotable, un pilote et cinq circuits de nuit : Vice City, New York, Tokyo, Paris et Londres. Ramasse des objets, déclenche tes pouvoirs et vise la première place — sans collision.',
+    subtitle: '3D ARCADE RALLY · SUN & NEON',
+    description: 'Une décapotable, un pilote et cinq circuits : Vice City en plein soleil sur le front de mer, puis New York, Tokyo, Paris et Londres de nuit. Ramasse des objets, déclenche tes pouvoirs et vise la première place — sans collision.',
     thumb: VICE_CITY_THUMB,
-    alt: 'Vice City Rush — cabriolet rose sur une avenue néon au coucher du soleil, entre palmiers et gratte-ciel',
+    alt: 'Vice City Rush — cabriolet rose sur Ocean Drive en plein jour, entre plage, mer turquoise, palmiers et façades Art déco pastel',
     route: '/jeu/vice-city-rush',
     badge: 'JOUABLE',
     tone: 'vice',

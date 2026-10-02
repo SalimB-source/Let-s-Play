@@ -144,6 +144,11 @@ for (const [index, city] of cities.entries()) {
   }
 
   const scene = world.scene || null;
+  // Éclatement des bonus : le pool d'effets vit dans la scène, on surveille sa
+  // visibilité pendant la course (chaque bonus ramassé doit éclater).
+  const burstNodes = [];
+  scene?.traverse((object) => { if (object.name === 'pickup-burst') burstNodes.push(object); });
+  let burstFrames = 0;
   const runFrames = (n, label) => {
     for (let i = 0; i < n; i++) {
       try { stepFrame(); } catch (e) {
@@ -196,6 +201,7 @@ for (const [index, city] of cities.entries()) {
     }
     runFrames(1, `course f${frames}`);
     frames += 1;
+    if (burstNodes.some((node) => node.visible)) burstFrames += 1;
     if (hud?.lap) lapSeen.add(hud.lap);
     if (scene && frames % 30 === 0) {
       const stats = countVisible(scene);
@@ -231,6 +237,8 @@ for (const [index, city] of cities.entries()) {
   const maxDistance = Math.max(...finish.racers.map((r) => r.distance ?? 0));
   if (maxDistance < CITY_RUSH_DISTANCE - 1) fail('le vainqueur n’a pas parcouru 1800 m', finish.racers);
   if (maxVisible > 600) fail(`trop de meshes visibles : ${maxVisible}`);
+  if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
+  if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);
 
   // Fin de course : la caméra tourne, le départ fait la fête, pas d’exception.
   world.setPhase('finished');
@@ -250,7 +258,7 @@ for (const [index, city] of cities.entries()) {
   console.log(
     `[${city.id}] OK — build ${buildMs} ms · course ${raceSeconds.toFixed(1)} s virtuelles / ${frames} frames` +
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
-    ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} · effets ${effectTypes.join('/')}` +
+    ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
     ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris`,
   );

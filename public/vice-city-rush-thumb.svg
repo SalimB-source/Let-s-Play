@@ -1,63 +1,114 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-labelledby="title desc">
   <title id="title">Vice City Rush</title>
-  <desc id="desc">Cabriolet rose sur une avenue de nuit au coucher du soleil, entre palmiers et gratte-ciel rétro.</desc>
+  <desc id="desc">Cabriolet rose sur Ocean Drive en plein jour : ciel bleu de Floride, mer turquoise, sable chaud, parasols de plage, palmiers et façades Art déco pastel.</desc>
   <defs>
-    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#1c1745"/><stop offset=".48" stop-color="#77416f"/><stop offset=".77" stop-color="#f16d82"/><stop offset="1" stop-color="#ffb66f"/></linearGradient>
-    <linearGradient id="road" x2="0" y2="1"><stop stop-color="#453047"/><stop offset=".4" stop-color="#201a2d"/><stop offset="1" stop-color="#101321"/></linearGradient>
-    <linearGradient id="car" x2="0" y2="1"><stop stop-color="#ff9ec3"/><stop offset=".48" stop-color="#f45d9e"/><stop offset="1" stop-color="#ad316f"/></linearGradient>
-    <linearGradient id="sun" x2="0" y2="1"><stop stop-color="#ffe3a1"/><stop offset="1" stop-color="#ff9a91"/></linearGradient>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#1f6fd0"/><stop offset=".42" stop-color="#63b6ef"/><stop offset=".78" stop-color="#c3e7f7"/><stop offset="1" stop-color="#fdf2d6"/></linearGradient>
+    <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#1899c4"/><stop offset=".45" stop-color="#37bfd8"/><stop offset="1" stop-color="#9ce9e2"/></linearGradient>
+    <linearGradient id="sand" x2="0" y2="1"><stop stop-color="#fbeecd"/><stop offset=".55" stop-color="#f4ddb0"/><stop offset="1" stop-color="#e6cd99"/></linearGradient>
+    <linearGradient id="road" x2="0" y2="1"><stop stop-color="#a7acb4"/><stop offset=".4" stop-color="#8b9198"/><stop offset="1" stop-color="#6e737b"/></linearGradient>
+    <linearGradient id="car" x2="0" y2="1"><stop stop-color="#ff9ec3"/><stop offset=".48" stop-color="#f45d9e"/><stop offset="1" stop-color="#b93c76"/></linearGradient>
+    <radialGradient id="sunGlow"><stop stop-color="#fffbe8" stop-opacity=".95"/><stop offset=".38" stop-color="#ffe9a6" stop-opacity=".5"/><stop offset="1" stop-color="#ffe9a6" stop-opacity="0"/></radialGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="9"/></filter>
     <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-    <pattern id="sunLines" width="600" height="22" patternUnits="userSpaceOnUse"><rect width="600" height="9" fill="#201a3d" opacity=".48"/></pattern>
   </defs>
+
+  <!-- ciel de plein jour, soleil haut -->
   <rect width="1200" height="675" fill="url(#sky)"/>
-  <circle cx="825" cy="245" r="139" fill="url(#sun)" opacity=".88" filter="url(#glow)"/>
-  <path d="M690 234h270M704 262h242M724 290h205M747 318h158" stroke="#583460" stroke-width="9" opacity=".45"/>
-  <!-- skyline -->
-  <g fill="#211d3c">
-    <path d="M0 301h76v-78h69v78h55v-127h58v127h39v-96h69v96h39v-167h79v167h49v-125h66v125h42v-83h81v83h58V175h73v126h38v-183h83v183h52v-123h74v123h50v-81h62v81h55v-148h69v148h47v-115h84v115h51v-88h53v88h48v-132h80v132h26v201H0z"/>
-    <path d="M0 338h1200v94H0z" fill="#302443" opacity=".7"/>
+  <circle cx="902" cy="104" r="168" fill="url(#sunGlow)"/>
+  <circle cx="902" cy="104" r="46" fill="#fffdf2" opacity=".96"/>
+  <g fill="#ffffff" opacity=".55" filter="url(#soft)">
+    <ellipse cx="235" cy="96" rx="118" ry="26"/><ellipse cx="322" cy="80" rx="76" ry="22"/>
+    <ellipse cx="640" cy="152" rx="96" ry="18"/><ellipse cx="1068" cy="196" rx="126" ry="22"/>
   </g>
-  <g fill="#ffcf8a" opacity=".78">
-    <path d="M269 203h8v12h-8zm20 0h8v12h-8zm-20 22h8v12h-8zm20 0h8v12h-8zM427 151h9v14h-9zm23 0h9v14h-9zm-23 26h9v14h-9zm23 0h9v14h-9zM789 208h9v14h-9zm22 0h9v14h-9zm-22 25h9v14h-9zm22 0h9v14h-9zM1018 148h9v14h-9zm23 0h9v14h-9zm-23 25h9v14h-9zm23 0h9v14h-9z"/>
+
+  <!-- skyline pastel d'Ocean Drive, posé sur la mer -->
+  <g>
+    <path d="M96 272V168h52v-22h26v22h46v104z" fill="#ffd3e2"/><path d="M96 190h124M96 214h124M96 238h124" stroke="#ffffff" stroke-width="5" opacity=".7"/>
+    <path d="M238 272V132h40v-18h34v18h40v140z" fill="#fff0c9"/><path d="M238 158h114M238 186h114M238 214h114M238 242h114" stroke="#ffffff" stroke-width="5" opacity=".7"/>
+    <path d="M372 272V186h30v-16h58v16h30v86z" fill="#bfeee6"/><path d="M372 208h118M372 232h118" stroke="#ffffff" stroke-width="5" opacity=".68"/>
+    <path d="M700 272V150h36v-20h30v20h36v122z" fill="#cfe4ff"/><path d="M700 176h102M700 204h102M700 232h102" stroke="#ffffff" stroke-width="5" opacity=".7"/>
+    <path d="M824 272V196h28v-14h56v14h28v76z" fill="#ffd9b0"/><path d="M824 216h112M824 240h112" stroke="#ffffff" stroke-width="5" opacity=".66"/>
+    <path d="M960 272V120h34v-24h28v24h34v152z" fill="#ffd3e2"/><path d="M960 150h96M960 180h96M960 210h96M960 240h96" stroke="#ffffff" stroke-width="5" opacity=".7"/>
+    <path d="M1078 272V178h30v-16h44v16h30v94z" fill="#bfeee6"/><path d="M1078 202h104M1078 228h104" stroke="#ffffff" stroke-width="5" opacity=".66"/>
+    <!-- enseignes Art déco sur les toits -->
+    <g opacity=".92">
+      <rect x="146" y="128" width="8" height="40" fill="#ff5db8"/><rect x="290" y="92" width="8" height="40" fill="#12b7c9"/>
+      <rect x="988" y="76" width="8" height="44" fill="#ff5db8"/><rect x="742" y="110" width="7" height="40" fill="#f2a93b"/>
+    </g>
   </g>
-  <!-- art deco facades and palms -->
-  <g opacity=".95">
-    <path d="M0 300h155v95H0z" fill="#e78b9c"/><path d="M0 311h155M17 330h122M17 351h122M17 372h122" stroke="#ffd49e" stroke-width="6" opacity=".72"/>
-    <path d="M1013 295h187v112h-187z" fill="#77c1bb"/><path d="M1013 311h187M1032 337h149M1032 362h149M1032 387h149" stroke="#fff0bc" stroke-width="6" opacity=".72"/>
+
+  <!-- mer turquoise puis plage -->
+  <rect y="270" width="1200" height="34" fill="url(#sea)"/>
+  <g stroke="#ffffff" stroke-width="3" opacity=".75" stroke-linecap="round">
+    <path d="M40 292h70M180 298h96M330 290h64M470 297h110M640 291h78M760 298h104M920 292h72M1050 297h110"/>
   </g>
-  <g fill="none" stroke="#1a1830" stroke-linecap="round" stroke-width="18">
-    <path d="M105 356q-30-105-67-178m68 180q-4-104 29-184m-28 184q34-94 95-137m-96 137q-53-89-108-112"/>
-    <path d="M1090 354q25-100 5-185m-5 185q-20-95-84-146m83 146q50-99 114-128m-114 128q-47-85-107-105"/>
+  <path d="M0 302h1200v373H0z" fill="url(#sand)"/>
+  <path d="M0 302h1200" stroke="#ffffff" stroke-width="4" opacity=".55"/>
+
+  <!-- mobilier de plage : parasols, ballon, poste de maître-nageur -->
+  <g>
+    <path d="M300 348v-40" stroke="#f7f2e6" stroke-width="6"/><path d="M262 310q38-30 76 0z" fill="#ff5db8"/><path d="M262 310q38-30 76 0" fill="none" stroke="#ffffff" stroke-width="4"/>
+    <ellipse cx="330" cy="352" rx="30" ry="7" fill="#43ead5" opacity=".85"/>
+    <path d="M238 366v-32" stroke="#f7f2e6" stroke-width="5"/><path d="M208 336q30-24 60 0z" fill="#43ead5"/><path d="M208 336q30-24 60 0" fill="none" stroke="#ffffff" stroke-width="4"/>
+    <ellipse cx="286" cy="370" rx="26" ry="6" fill="#ff5db8" opacity=".8"/>
+    <circle cx="344" cy="336" r="13" fill="#ffffff"/><path d="M334 328q10 8 20 0M334 344q10-8 20 0" stroke="#ff5db8" stroke-width="4" fill="none"/>
+    <g transform="translate(880 292)">
+      <path d="M6 56V22M54 56V22" stroke="#c79a63" stroke-width="6"/><rect x="0" y="18" width="60" height="34" rx="3" fill="#fff8ee"/>
+      <path d="M-8 18h76l-14-16H6z" fill="#e8503f"/><rect x="14" y="28" width="32" height="14" fill="#7fb6d4"/>
+    </g>
+    <path d="M1030 352q22-46 8-92" stroke="#9a7148" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <g stroke="#2f9b74" stroke-width="9" stroke-linecap="round" fill="none">
+      <path d="M1038 262q-38-16-62-4M1038 262q-16-34 6-52M1038 262q30-26 58-18M1038 262q34 6 48 26M1038 262q-34 12-46 34"/>
+    </g>
   </g>
-  <g fill="#24554e">
-    <path d="M10 184q12-38 47-38-16 30-47 38m17 26q-6-43 20-63 4 37-20 63m17 25q6-43 43-54-11 39-43 54m-5-1q-39-35-73-27 31 30 73 27m1077-69q-11-41-45-45 14 34 45 45m-11 32q3-41-26-67-9 37 26 67m-27 28q-10-41-47-49 14 38 47 49m7 0q35-38 70-33-28 34-70 33"/>
+
+  <!-- façades Art déco au premier plan -->
+  <g>
+    <path d="M0 196h150v152H0z" fill="#ffc7da"/><path d="M0 216h150M0 244h150M0 272h150M0 300h150" stroke="#fff6fa" stroke-width="7" opacity=".85"/>
+    <path d="M22 196h34v152H22zM92 196h34v152H92z" fill="#7fb6d4" opacity=".55"/>
+    <path d="M0 176h150v20H0z" fill="#ff5db8" opacity=".85"/>
+    <path d="M1046 188h154v160h-154z" fill="#bff0e6"/><path d="M1046 210h154M1046 240h154M1046 270h154M1046 300h154" stroke="#f4fffc" stroke-width="7" opacity=".85"/>
+    <path d="M1070 188h36v160h-36zM1146 188h36v160h-36z" fill="#7fb6d4" opacity=".5"/>
+    <path d="M1046 168h154v20h-154z" fill="#12b7c9" opacity=".85"/>
   </g>
-  <!-- perspective road -->
-  <path d="M382 344h437l381 331H0z" fill="url(#road)"/>
-  <path d="M382 344 0 675M818 344l382 331" stroke="#38e3d2" stroke-width="6" opacity=".7" filter="url(#glow)"/>
-  <path d="M600 351v56m0 33v49m0 28v65m0 29v54" stroke="#ffe9a7" stroke-width="8" opacity=".85"/>
-  <path d="M492 351 329 675M708 351l163 324" stroke="#ff79b0" stroke-width="5" opacity=".48"/>
-  <!-- low, open-top convertible with driver -->
+  <g fill="none" stroke="#8a6a45" stroke-width="12" stroke-linecap="round">
+    <path d="M168 348q-16-72-38-108"/><path d="M1012 348q14-70 34-104"/>
+  </g>
+  <g stroke="#2f9b74" stroke-width="11" stroke-linecap="round" fill="none">
+    <path d="M130 240q-34-14-56-2M130 240q-14-32 8-48M130 240q28-24 54-16M130 240q30 6 44 26M130 240q-30 12-42 32"/>
+    <path d="M1046 244q-32-14-54-2M1046 244q-12-32 8-48M1046 244q28-24 54-16M1046 244q30 8 44 28M1046 244q-30 12-42 32"/>
+  </g>
+
+  <!-- avenue en perspective -->
+  <path d="M392 348h416l392 327H0z" fill="url(#road)"/>
+  <path d="M392 348 0 675M808 348l392 327" stroke="#ffffff" stroke-width="6" opacity=".8"/>
+  <path d="M398 352 22 675M802 352 1178 675" stroke="#ff5db8" stroke-width="4" opacity=".55"/>
+  <path d="M600 356v52m0 30v46m0 26v60m0 28v52m0 26v58" stroke="#fdf6e4" stroke-width="8" opacity=".9"/>
+  <path d="M494 356 336 675M706 356l158 319" stroke="#ffffff" stroke-width="4" opacity=".35"/>
+
+  <!-- cabriolet bas et ouvert, pilote casqué -->
   <g transform="translate(0 18)">
-    <ellipse cx="600" cy="565" rx="196" ry="35" fill="#090d1b" opacity=".65"/>
-    <path d="M418 500q18-37 87-55l63-58h79l49 58q61 13 87 53l-13 44H421z" fill="url(#car)" stroke="#ffc0d7" stroke-width="5"/>
-    <path d="M506 446q18-44 66-59h59q37 14 58 59l-33 4h-121z" fill="#4b456a" stroke="#8ef8eb" stroke-width="5"/>
+    <ellipse cx="600" cy="566" rx="198" ry="34" fill="#8a6a45" opacity=".38"/>
+    <path d="M418 500q18-37 87-55l63-58h79l49 58q61 13 87 53l-13 44H421z" fill="url(#car)" stroke="#ffd0e1" stroke-width="5"/>
+    <path d="M506 446q18-44 66-59h59q37 14 58 59l-33 4h-121z" fill="#6d8fa6" stroke="#8ef8eb" stroke-width="5"/>
     <path d="M568 393q31-31 67 0l12 48h-87z" fill="#f1b895"/>
     <circle cx="601" cy="383" r="25" fill="#f3c3a5"/>
-    <path d="M577 382q2-31 28-32 25 1 27 31l-12-11-42 12z" fill="#282238"/>
-    <path d="M435 493h69v20h-69zm221 0h72v20h-72z" fill="#ff496e" filter="url(#glow)"/>
-    <path d="M447 542h306l-21 28H467z" fill="#b73772"/>
-    <path d="M433 526h-38v57h60l17-29zm334 0h38v57h-60l-17-29z" fill="#11131f" stroke="#9ea9b9" stroke-width="6"/>
-    <circle cx="451" cy="564" r="27" fill="#080b14" stroke="#82909f" stroke-width="7"/><circle cx="749" cy="564" r="27" fill="#080b14" stroke="#82909f" stroke-width="7"/>
-    <path d="M558 485h83" stroke="#ffe4b3" stroke-width="5" opacity=".8"/>
+    <path d="M577 382q2-31 28-32 25 1 27 31l-12-11-42 12z" fill="#2f3d55"/>
+    <path d="M435 493h69v20h-69zm221 0h72v20h-72z" fill="#ff496e" opacity=".9"/>
+    <path d="M447 542h306l-21 28H467z" fill="#c34279"/>
+    <path d="M433 526h-38v57h60l17-29zm334 0h38v57h-60l-17-29z" fill="#22262f" stroke="#c3ccd6" stroke-width="6"/>
+    <circle cx="451" cy="564" r="27" fill="#191c24" stroke="#a9b3bd" stroke-width="7"/><circle cx="749" cy="564" r="27" fill="#191c24" stroke="#a9b3bd" stroke-width="7"/>
+    <path d="M558 485h83" stroke="#ffe4b3" stroke-width="5" opacity=".9"/>
   </g>
-  <g filter="url(#glow)">
-    <path d="M69 82h402" stroke="#fb6fb6" stroke-width="4" opacity=".6"/>
-    <path d="M730 77h395" stroke="#42eed9" stroke-width="4" opacity=".55"/>
+
+  <!-- titre -->
+  <g>
+    <path d="M69 84h402" stroke="#ff5db8" stroke-width="4" opacity=".85"/>
+    <path d="M730 79h395" stroke="#12b7c9" stroke-width="4" opacity=".8"/>
+    <text x="68" y="135" fill="#0f4a78" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="8">LET’S PLAY ARCADE</text>
+    <text x="70" y="206" fill="#12406b" opacity=".3" font-family="Arial, sans-serif" font-size="55" font-weight="900" letter-spacing="2">VICE CITY RUSH</text>
+    <text x="66" y="202" fill="#ffffff" font-family="Arial, sans-serif" font-size="55" font-weight="900" letter-spacing="2">VICE CITY <tspan fill="#ff2f9d">RUSH</tspan></text>
+    <text x="70" y="232" fill="#0d6d7c" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="5">SUNNY DRIVE · OCEAN CIRCUIT</text>
   </g>
-  <text x="68" y="133" fill="#fff5df" font-family="Arial, sans-serif" font-size="17" font-weight="700" letter-spacing="8">LET’S PLAY ARCADE</text>
-  <text x="66" y="202" fill="#fff8ee" font-family="Arial, sans-serif" font-size="55" font-weight="900" letter-spacing="2">VICE CITY <tspan fill="#ff73b4">RUSH</tspan></text>
-  <text x="70" y="230" fill="#a9f7e8" font-family="Arial, sans-serif" font-size="14" font-weight="700" letter-spacing="5">NIGHT DRIVE · CITY CIRCUIT</text>
-  <rect width="1200" height="675" fill="url(#sunLines)" opacity=".15"/>
-  <path d="M0 1h1200v673H0z" fill="none" stroke="#fff1dc" stroke-opacity=".14" stroke-width="2"/>
+  <path d="M0 1h1200v673H0z" fill="none" stroke="#ffffff" stroke-opacity=".35" stroke-width="2"/>
 </svg>

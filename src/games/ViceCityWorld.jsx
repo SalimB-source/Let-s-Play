@@ -15,6 +15,9 @@ import {
   CITY_RUSH_SCROLL_SCALE,
   CITY_RUSH_CARS,
   CITY_RUSH_CITIES,
+  CITY_RUSH_PICKUP_BURST_DURATION,
+  CITY_RUSH_PICKUP_BURST_SHARDS,
+  CITY_RUSH_PICKUP_RESPAWN_DELAY,
   addCityRushCharge,
   approachCityRushSpeed,
   cityRushHitDuration,
@@ -23,6 +26,10 @@ import {
   cityRushLapCrossings,
   cityRushLapForDistance,
   cityRushLapProgress,
+  cityRushPickupBurstShards,
+  cityRushPickupFlashState,
+  cityRushPickupPopScale,
+  cityRushPickupShardState,
   cityRushTrackGap,
   consumeCityRushCharge,
   createCityRushEncounter,
@@ -31,7 +38,7 @@ import {
   rankCityRushRacers,
   resolveCityRushCarMovement,
 } from './cityRushRules';
-import { cityRushTheme } from './cityRushThemes';
+import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
 import { createBatch, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildStartComplex, createStartLineDynamics, createStartLineMaterials } from './cityRushStartLine';
@@ -68,6 +75,17 @@ function detectLiteQuality() {
   }
 }
 
+// L'éclatement d'un bonus garde son flash et son anneau mais renonce aux éclats
+// projetés quand l'utilisateur demande moins de mouvement.
+function detectReducedMotion() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
+  } catch {
+    return false;
+  }
+}
+
 function standard(color, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.82, metalness: 0.04, ...extra });
 }
@@ -99,7 +117,47 @@ function setPickupKind(pickup, type, lane, shared) {
   pickup.userData.beam.material = shared.pickupBeamMaterials[type];
   pickup.userData.halo.material = shared.pickupBeamMaterials[type];
   pickup.position.set(CITY_RUSH_LANE_X[lane], 1.3, 0);
+  // Le bonus (ré)apparaît en gonflant : voir `updatePickupPop`.
+  pickup.userData.pop = 0;
+  pickup.scale.setScalar(0.001);
   pickup.visible = true;
+}
+
+const PICKUP_BURST_POOL = 6;
+const BURST_WHITE = new THREE.Color(0xffffff);
+
+// Éclatement d'un bonus ramassé : un flash, un anneau qui s'ouvre et des éclats
+// de la couleur du pouvoir repris par la gravité. Les objets vivent dans un
+// petit pool, les ramassages s'enchaînant vite en course.
+function makePickupBurst() {
+  const group = new THREE.Group();
+  group.name = 'pickup-burst';
+  const shardGeometry = new THREE.OctahedronGeometry(0.16);
+  const shardMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 1, depthWrite: false, toneMapped: false });
+  const shards = [];
+  for (let index = 0; index < CITY_RUSH_PICKUP_BURST_SHARDS; index += 1) {
+    const shard = new THREE.Mesh(shardGeometry, shardMaterial);
+    shard.scale.set(1, 1.6, 1);
+    shard.renderOrder = 3;
+    group.add(shard);
+    shards.push(shard);
+  }
+  const ringMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.07, 6, 24), ringMaterial);
+  ring.rotation.x = Math.PI / 2;
+  ring.renderOrder = 3;
+  group.add(ring);
+  const coreMaterial = new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  });
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.46, 12, 10), coreMaterial);
+  core.renderOrder = 4;
+  group.add(core);
+  group.visible = false;
+  group.userData = { shards, shardMaterial, ringMaterial, coreMaterial, ring, core, specs: [], age: 0, active: false, trackDistance: 0 };
+  return group;
 }
 
 function makeSlowZone(shared, accent = false) {
@@ -226,7 +284,10 @@ function disposeScene(scene, renderer) {
 
 export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id) {
   const theme = cityRushTheme(city.id);
+  const lightRig = cityRushLightRig(theme, city);
   const lite = detectLiteQuality();
+  const reduceMotion = detectReducedMotion();
+  const daylight = Boolean(theme.daylight);
   const cityIndex = Math.max(0, CITY_RUSH_CITIES.findIndex((item) => item.id === city.id));
   const sceneryRandom = seededRandom(cityIndex * 131 + 7);
 
@@ -243,7 +304,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lite ? 1.25 : 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = lightRig.exposure;
   renderer.shadowMap.enabled = !lite;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.className = 'city-rush-canvas';
@@ -251,10 +312,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   mount.appendChild(renderer.domElement);
 
   // ── Lumières ─────────────────────────────────────────────────────────
-  const hemi = new THREE.HemisphereLight(theme.sky.mid, 0x1c1522, 1.75);
+  // Le thème décide de l'ambiance : plein jour (Vice City) ou nuit néon.
+  const hemi = new THREE.HemisphereLight(lightRig.hemi.sky, lightRig.hemi.ground, lightRig.hemi.intensity);
   scene.add(hemi);
-  const keyLight = new THREE.DirectionalLight(0xe4ecff, 2.0);
-  keyLight.position.set(-12, 24, PLAYER_Z + 14);
+  const keyLight = new THREE.DirectionalLight(lightRig.key.color, lightRig.key.intensity);
+  keyLight.position.set(...lightRig.key.position);
   keyLight.target.position.set(0, 0, PLAYER_Z - 10);
   scene.add(keyLight, keyLight.target);
   if (!lite) {
@@ -269,16 +331,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     keyLight.shadow.bias = -0.0006;
     keyLight.shadow.normalBias = 0.03;
   }
-  const cityRim = new THREE.DirectionalLight(new THREE.Color(city.secondary), 1.05);
-  cityRim.position.set(8, 8, -24);
+  const cityRim = new THREE.DirectionalLight(new THREE.Color(lightRig.rim.color), lightRig.rim.intensity);
+  cityRim.position.set(...lightRig.rim.position);
   scene.add(cityRim);
-  const accentFill = new THREE.PointLight(new THREE.Color(city.accent), 20, 54, 2);
-  accentFill.position.set(0, 7, -27);
+  const accentFill = new THREE.PointLight(new THREE.Color(lightRig.fill.color), lightRig.fill.intensity, lightRig.fill.distance, lightRig.fill.decay ?? 2);
+  accentFill.position.set(...lightRig.fill.position);
   scene.add(accentFill);
-  const headlamp = new THREE.SpotLight(0xfff0d0, lite ? 0 : 60, 46, 0.6, 0.75, 1.3);
+  // En plein jour les phares ne servent à rien : le spot reste éteint.
+  const headlamp = new THREE.SpotLight(0xfff0d0, lite ? 0 : lightRig.headlamp, 46, 0.6, 0.75, 1.3);
   headlamp.position.set(0, 0.8, PLAYER_Z - 1.6);
   headlamp.target.position.set(0, 0, PLAYER_Z - 16);
-  headlamp.visible = !lite;
+  headlamp.visible = !lite && lightRig.headlamp > 0;
   scene.add(headlamp, headlamp.target);
 
   // ── Décor : ciel, skyline, route, boucle de 600 m + zone de départ ───
@@ -306,6 +369,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   loop.dynamicProps.forEach((prop) => scene.add(prop.group));
   const smoke = createSmokePool(lite ? 28 : 56);
   scene.add(smoke.group);
+
+  // Éclatements de bonus : un petit pool réutilisé, chaque éclatement restant
+  // ancré à sa position sur la piste pour suivre le défilement du décor.
+  const pickupBursts = [];
+  for (let index = 0; index < PICKUP_BURST_POOL; index += 1) {
+    const burst = makePickupBurst();
+    scene.add(burst);
+    pickupBursts.push(burst);
+  }
+  let pickupBurstCursor = 0;
+  const pickupBurstColor = new THREE.Color();
 
   const shared = {
     pickupGeometry: new THREE.PlaneGeometry(1.5, 1.5),
@@ -339,7 +413,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // ── Voitures ─────────────────────────────────────────────────────────
   const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
   const rivalProfiles = CITY_RUSH_CARS.filter((car) => car.id !== playerProfile.id);
-  const playerCar = makeRacerCar(playerProfile, { player: true, number: CITY_RUSH_CARS.indexOf(playerProfile) + 1 });
+  const playerCar = makeRacerCar(playerProfile, { player: true, number: CITY_RUSH_CARS.indexOf(playerProfile) + 1, daylight });
   playerCar.position.set(CITY_RUSH_LANE_X[1], 0, PLAYER_Z);
   scene.add(playerCar);
 
@@ -357,7 +431,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       lap: 1,
       baseSpeed: PLAYER_SPEED * profile.powerMultiplier,
       currentSpeed: 0,
-      mesh: makeRacerCar(profile, { player: false, number: CITY_RUSH_CARS.indexOf(profile) + 1 }),
+      mesh: makeRacerCar(profile, { player: false, number: CITY_RUSH_CARS.indexOf(profile) + 1, daylight }),
       currentX: CITY_RUSH_LANE_X[spec.lane],
       slowLeft: 0,
       boostLeft: 0,
@@ -705,6 +779,77 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     actionPulses.push({ mesh, sourceId, age: 0, duration: 0.56 });
   }
 
+  // ── Éclatement des bonus ramassés ────────────────────────────────────
+  function spawnPickupBurst(x, y, trackDistance, type) {
+    const burst = pickupBursts.find((candidate) => !candidate.userData.active)
+      || pickupBursts[(pickupBurstCursor += 1) % pickupBursts.length];
+    const data = burst.userData;
+    data.active = true;
+    data.age = 0;
+    data.trackDistance = trackDistance;
+    data.specs = reduceMotion ? [] : cityRushPickupBurstShards(CITY_RUSH_PICKUP_BURST_SHARDS, Math.random);
+    pickupBurstColor.set(CITY_RUSH_POWER_RULES[type]?.color || '#ffffff');
+    data.shardMaterial.color.copy(pickupBurstColor);
+    data.shardMaterial.opacity = 1;
+    data.ringMaterial.color.copy(pickupBurstColor);
+    data.coreMaterial.color.copy(pickupBurstColor).lerp(BURST_WHITE, 0.65);
+    burst.position.set(x, y, PLAYER_Z - (trackDistance - distance) * SCALE);
+    burst.visible = true;
+    updatePickupBurst(burst, 0);
+  }
+
+  function updatePickupBurst(burst, dt) {
+    const data = burst.userData;
+    data.age += dt;
+    const flash = cityRushPickupFlashState(data.age);
+    data.ringMaterial.opacity = flash.opacity;
+    data.ring.scale.setScalar(flash.scale);
+    data.coreMaterial.opacity = flash.core;
+    data.core.scale.setScalar(Math.max(0.001, flash.core * 1.4));
+    data.shards.forEach((shard, index) => {
+      const spec = data.specs[index];
+      if (!spec) { shard.visible = false; return; }
+      const state = cityRushPickupShardState(spec, data.age);
+      shard.visible = true;
+      shard.position.set(...state.position);
+      shard.rotation.set(...state.rotation);
+      shard.scale.set(state.scale, state.scale * 1.6, state.scale);
+      data.shardMaterial.opacity = state.opacity;
+    });
+    if (flash.done) {
+      data.active = false;
+      burst.visible = false;
+    }
+  }
+
+  function updatePickupBursts(dt) {
+    for (const burst of pickupBursts) {
+      if (!burst.userData.active) continue;
+      burst.position.z = PLAYER_Z - (burst.userData.trackDistance - distance) * SCALE;
+      updatePickupBurst(burst, dt);
+    }
+  }
+
+  function clearPickupBursts() {
+    for (const burst of pickupBursts) {
+      burst.userData.active = false;
+      burst.userData.age = CITY_RUSH_PICKUP_BURST_DURATION;
+      burst.visible = false;
+    }
+  }
+
+  // Un bonus réapparaît 0,2 s après avoir été ramassé : il gonfle depuis son
+  // socle avec un léger rebond, hors course comme en course.
+  function updatePickupPop(dt) {
+    for (const row of rows) {
+      for (const slot of row.slots) {
+        if (!slot.visible || slot.userData.pop >= 1) continue;
+        slot.userData.pop = Math.min(1, slot.userData.pop + dt / CITY_RUSH_PICKUP_RESPAWN_DELAY);
+        slot.scale.setScalar(Math.max(0.001, cityRushPickupPopScale(slot.userData.pop)));
+      }
+    }
+  }
+
   function makePistolBolt() {
     const group = new THREE.Group();
     const coreMaterial = new THREE.MeshBasicMaterial({ color: 0xff526e, transparent: true, opacity: 1, depthWrite: false, toneMapped: false });
@@ -791,6 +936,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     pistolShots.forEach((shot) => removeTransient(shot.mesh));
     actionPulses.length = 0;
     pistolShots.length = 0;
+    clearPickupBursts();
   }
 
   function startStrike(target) {
@@ -1022,7 +1168,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         row.pickupClaims.add(pickupIndex);
         const pickup = row.pickups[pickupIndex];
         const object = row.slots[pickupIndex];
-        if (object) object.visible = false;
+        if (object) {
+          // L'objet éclate à l'endroit exact où la voiture l'a touché.
+          spawnPickupBurst(object.position.x, object.position.y, row.trackDistance, pickup.type);
+          object.visible = false;
+        }
         if (participant.id === 'player') collectPickup(pickup.type, participant.lane);
         else collectRacerPickup(participant.racer, pickup.type);
       }
@@ -1523,9 +1673,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     startLine.update(dt, clockTime, lineGap);
     rain?.update(dt, worldTravel);
     smoke.update(dt, worldTravel);
+    updatePickupPop(dt);
+    updatePickupBursts(dt);
     sky.material.uniforms.time.value = clockTime;
-    headlamp.position.set(playerCar.position.x, 0.8, PLAYER_Z - 1.6);
-    headlamp.target.position.set(playerCar.position.x, 0, PLAYER_Z - 16);
+    if (headlamp.visible) {
+      headlamp.position.set(playerCar.position.x, 0.8, PLAYER_Z - 1.6);
+      headlamp.target.position.set(playerCar.position.x, 0, PLAYER_Z - 16);
+    }
     updateCamera(dt);
     renderer.render(scene, camera);
   }

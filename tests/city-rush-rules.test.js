@@ -10,6 +10,9 @@ import {
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
+  CITY_RUSH_PICKUP_BURST_DURATION,
+  CITY_RUSH_PICKUP_BURST_SHARDS,
+  CITY_RUSH_PICKUP_RESPAWN_DELAY,
   CITY_RUSH_POWER_CHARGE_COST,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_TRAFFIC_COUNT,
@@ -22,6 +25,10 @@ import {
   cityRushLapForDistance,
   cityRushLapProgress,
   cityRushLapCrossings,
+  cityRushPickupBurstShards,
+  cityRushPickupFlashState,
+  cityRushPickupPopScale,
+  cityRushPickupShardState,
   cityRushTrackGap,
   addCityRushCharge,
   cityRushLaneAfterAction,
@@ -135,7 +142,8 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
 test('the item effects, matching colors, and charge costs match the race rules', () => {
   assert.equal(CITY_RUSH_DISTANCE, 1800);
   assert.equal(CITY_RUSH_PLAYER_SPEED, 26);
-  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { oil: 4, pistol: 5, cash: 3, radio: 8 });
+  // Seuils de chargement : bleu 2, rouge 3, vert 2, jaune 4.
+  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { oil: 2, pistol: 3, cash: 2, radio: 4 });
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
     oil: 'A', pistol: 'Z', cash: 'E', radio: 'R',
   });
@@ -154,28 +162,84 @@ test('the item effects, matching colors, and charge costs match the race rules',
 
 test('matching currencies charge independent bars, and only a full bar can be used', () => {
   let inventory = createCityRushInventory();
-  inventory = addCityRushCharge(inventory, 'oil', 3);
-  inventory = addCityRushCharge(inventory, 'cash', 2);
-  assert.equal(inventory.oil, 3);
-  assert.equal(inventory.cash, 2);
-  assert.equal(inventory.pistol, 0);
+  inventory = addCityRushCharge(inventory, 'oil', 1);
+  inventory = addCityRushCharge(inventory, 'pistol', 2);
+  assert.equal(inventory.oil, 1);
+  assert.equal(inventory.pistol, 2);
+  assert.equal(inventory.cash, 0);
+  // Une jauge incomplète ne se consomme pas.
   assert.equal(consumeCityRushCharge(inventory, 'oil').consumed, false);
+  assert.equal(consumeCityRushCharge(inventory, 'pistol').consumed, false);
 
-  inventory = addCityRushCharge(inventory, 'oil');
-  inventory = addCityRushCharge(inventory, 'cash');
+  // Les seuils abaissés sont atteints : bleu 2 et rouge 3 restent indépendants.
+  inventory = addCityRushCharge(inventory, 'oil', 1);
+  inventory = addCityRushCharge(inventory, 'pistol', 1);
   assert.equal(inventory.oil, CITY_RUSH_POWER_CHARGE_COST.oil);
-  assert.equal(inventory.cash, CITY_RUSH_POWER_CHARGE_COST.cash);
+  assert.equal(inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
+  assert.equal(inventory.cash, 0);
   assert.equal(consumeCityRushCharge(inventory, 'oil').inventory.oil, 0);
 
   const usedOil = consumeCityRushCharge(inventory, 'oil');
   assert.equal(usedOil.consumed, true);
   assert.equal(usedOil.inventory.oil, 0);
-  assert.equal(usedOil.inventory.cash, CITY_RUSH_POWER_CHARGE_COST.cash);
+  assert.equal(usedOil.inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
   assert.equal(consumeCityRushCharge(usedOil.inventory, 'oil').consumed, false);
   assert.equal(consumeCityRushCharge(inventory, 'unknown').consumed, false);
 
   const overfilled = addCityRushCharge(createCityRushInventory(), 'radio', 99);
   assert.equal(overfilled.radio, CITY_RUSH_POWER_CHARGE_COST.radio);
+});
+
+test('a collected item bursts into shards, then the next one pops back in 0.2 s', () => {
+  assert.equal(CITY_RUSH_PICKUP_RESPAWN_DELAY, 0.2);
+  assert.ok(CITY_RUSH_PICKUP_BURST_DURATION > CITY_RUSH_PICKUP_RESPAWN_DELAY);
+
+  // Éclats : répartition déterministe, directions normalisées, tailles positives.
+  let seed = 0.42;
+  const random = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const shards = cityRushPickupBurstShards(CITY_RUSH_PICKUP_BURST_SHARDS, random);
+  assert.equal(shards.length, CITY_RUSH_PICKUP_BURST_SHARDS);
+  assert.deepEqual(cityRushPickupBurstShards(6, random).length, 6);
+  for (const shard of shards) {
+    const length = Math.hypot(...shard.dir);
+    assert.ok(Math.abs(length - 1) < 0.35, `direction presque unitaire (${length})`);
+    assert.ok(shard.speed > 0 && shard.size > 0);
+    assert.equal(shard.spin.length, 3);
+  }
+
+  // L'éclatement démarre au centre, s'ouvre, puis retombe et s'efface.
+  const first = cityRushPickupShardState(shards[0], 0);
+  assert.equal(first.life, 0);
+  assert.equal(first.done, false);
+  assert.deepEqual(first.position, [0, 0, 0]);
+  assert.equal(first.opacity, 1);
+  const mid = cityRushPickupShardState(shards[0], CITY_RUSH_PICKUP_BURST_DURATION * 0.5);
+  assert.ok(Math.hypot(...mid.position) > 0.4, 'les éclats partent vers l’extérieur');
+  assert.ok(mid.opacity < 1 && mid.opacity > 0);
+  const end = cityRushPickupShardState(shards[0], CITY_RUSH_PICKUP_BURST_DURATION);
+  assert.equal(end.done, true);
+  assert.equal(end.opacity, 0);
+  assert.ok(end.position[1] < mid.position[1], 'la gravité reprend les éclats');
+
+  // Flash : anneau qui s'ouvre et se dissipe, noyau limité au premier tiers.
+  const flashStart = cityRushPickupFlashState(0);
+  assert.equal(flashStart.done, false);
+  assert.equal(flashStart.core, 1);
+  const flashMid = cityRushPickupFlashState(CITY_RUSH_PICKUP_BURST_DURATION * 0.5);
+  assert.ok(flashMid.scale > flashStart.scale);
+  assert.equal(flashMid.core, 0);
+  const flashEnd = cityRushPickupFlashState(CITY_RUSH_PICKUP_BURST_DURATION * 1.2);
+  assert.equal(flashEnd.done, true);
+  assert.equal(flashEnd.opacity, 0);
+
+  // Pop-in du bonus qui réapparaît : 0 → rebond → 1, jamais négatif.
+  assert.equal(cityRushPickupPopScale(0), 0);
+  assert.equal(cityRushPickupPopScale(1), 1);
+  assert.equal(cityRushPickupPopScale(2), 1);
+  assert.equal(cityRushPickupPopScale(-1), 0);
+  const samples = [0.2, 0.4, 0.6, 0.8].map((progress) => cityRushPickupPopScale(progress));
+  assert.ok(samples.every((scale) => scale > 0));
+  assert.ok(Math.max(...samples) > 1, 'léger rebond avant de se stabiliser');
 });
 
 test('lane changes clamp at the road edges', () => {

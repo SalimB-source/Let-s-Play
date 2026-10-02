@@ -40,13 +40,18 @@ function unlit(color, extra = {}) {
 export function createStageMaterials(city, theme, random) {
   const accent = Number.parseInt(city.accent.slice(1), 16);
   const secondary = Number.parseInt(city.secondary.slice(1), 16);
+  // Un thème en plein jour (Vice City) baisse l'émissivité des enseignes et des
+  // fenêtres, éteint presque les halos de lampadaires et éclaircit les matières
+  // via `theme.materials` ; les villes de nuit gardent les valeurs d'origine.
+  const glow = theme.glow ?? 1;
+  const tints = theme.materials || {};
   const facades = [0, 1, 2].map((variant) => {
     const { map, emissiveMap } = makeFacadeTextures(theme.facade, random, variant);
     return new THREE.MeshStandardMaterial({
       map,
       emissiveMap,
       emissive: 0xffffff,
-      emissiveIntensity: 0.95,
+      emissiveIntensity: 0.95 * glow,
       vertexColors: true,
       roughness: 0.9,
       metalness: 0.02,
@@ -58,7 +63,7 @@ export function createStageMaterials(city, theme, random) {
     map: shopAtlas.texture,
     emissiveMap: shopAtlas.texture,
     emissive: 0xffffff,
-    emissiveIntensity: 0.62,
+    emissiveIntensity: 0.62 * glow,
     roughness: 0.92,
     flatShading: true,
   });
@@ -66,35 +71,37 @@ export function createStageMaterials(city, theme, random) {
     facades,
     shop,
     shopCount: shopAtlas.count,
-    roof: standard(city.style === 'paris' ? 0x3a3542 : city.style === 'vice' ? 0x6d4a66 : 0x2c303c, { roughness: 0.9 }),
-    stone: standard(city.style === 'paris' ? 0xcbb59a : city.style === 'london' ? 0xb9ab97 : 0x7d8696, { roughness: 0.86 }),
-    concrete: standard(0x5c6270, { roughness: 0.92 }),
-    asphaltDark: standard(0x1b1d27, { roughness: 0.95 }),
-    metal: standard(0x3b4352, { metalness: 0.62, roughness: 0.38 }),
-    darkMetal: standard(0x1c2029, { metalness: 0.5, roughness: 0.45 }),
-    chrome: standard(0xb9c6d0, { metalness: 0.78, roughness: 0.26 }),
-    brick: standard(0x8d4b3c, { roughness: 0.94 }),
-    white: standard(0xf1ece2, { roughness: 0.8 }),
-    cream: standard(0xe6d7bd, { roughness: 0.86 }),
-    red: standard(0xc8372f, { roughness: 0.7 }),
-    green: standard(0x2f6b4a, { roughness: 0.8 }),
-    yellow: standard(0xf4c431, { roughness: 0.6 }),
-    blue: standard(0x2d4f9e, { roughness: 0.7 }),
-    wood: standard(0x7a5236, { roughness: 0.9 }),
-    trunk: standard(0x6f4a33, { roughness: 0.95 }),
-    foliage: standard(city.style === 'vice' ? 0x2e9b7c : 0x2f7a4c, { roughness: 0.9 }),
-    foliageLight: standard(city.style === 'tokyo' ? 0xf4a3c7 : 0x4f9d63, { roughness: 0.9 }),
-    glassDark: standard(0x18243a, { roughness: 0.3, metalness: 0.25 }),
-    lantern: standard(0xff6a4a, { emissive: 0xff6a4a, emissiveIntensity: 0.9, roughness: 0.6 }),
+    roof: standard(tints.roof ?? (city.style === 'paris' ? 0x3a3542 : city.style === 'vice' ? 0x6d4a66 : 0x2c303c), { roughness: 0.9 }),
+    stone: standard(tints.stone ?? (city.style === 'paris' ? 0xcbb59a : city.style === 'london' ? 0xb9ab97 : 0x7d8696), { roughness: 0.86 }),
+    concrete: standard(tints.concrete ?? 0x5c6270, { roughness: 0.92 }),
+    asphaltDark: standard(tints.asphaltDark ?? 0x1b1d27, { roughness: 0.95 }),
+    metal: standard(tints.metal ?? 0x3b4352, { metalness: 0.62, roughness: 0.38 }),
+    darkMetal: standard(tints.darkMetal ?? 0x1c2029, { metalness: 0.5, roughness: 0.45 }),
+    chrome: standard(tints.chrome ?? 0xb9c6d0, { metalness: 0.78, roughness: 0.26 }),
+    brick: standard(tints.brick ?? 0x8d4b3c, { roughness: 0.94 }),
+    white: standard(tints.white ?? 0xf1ece2, { roughness: 0.8 }),
+    cream: standard(tints.cream ?? 0xe6d7bd, { roughness: 0.86 }),
+    red: standard(tints.red ?? 0xc8372f, { roughness: 0.7 }),
+    green: standard(tints.green ?? 0x2f6b4a, { roughness: 0.8 }),
+    yellow: standard(tints.yellow ?? 0xf4c431, { roughness: 0.6 }),
+    blue: standard(tints.blue ?? 0x2d4f9e, { roughness: 0.7 }),
+    wood: standard(tints.wood ?? 0x7a5236, { roughness: 0.9 }),
+    trunk: standard(tints.trunk ?? 0x6f4a33, { roughness: 0.95 }),
+    foliage: standard(tints.foliage ?? (city.style === 'vice' ? 0x2e9b7c : 0x2f7a4c), { roughness: 0.9 }),
+    foliageLight: standard(tints.foliageLight ?? (city.style === 'tokyo' ? 0xf4a3c7 : 0x4f9d63), { roughness: 0.9 }),
+    glassDark: standard(tints.glassDark ?? 0x18243a, { roughness: 0.3, metalness: 0.25 }),
+    // Sable du front de mer : présent seulement quand le thème le demande.
+    sand: tints.sand ? standard(tints.sand, { roughness: 1 }) : null,
+    lantern: standard(0xff6a4a, { emissive: 0xff6a4a, emissiveIntensity: 0.9 * glow, roughness: 0.6 }),
     neon: unlit(accent),
     neonSecondary: unlit(secondary),
     neonWarm: unlit(0xffe0a8),
     neonWhite: unlit(0xf8fbff),
     lampGlow: unlit(0xfff0c8),
-    lampCone: new THREE.MeshBasicMaterial({ color: 0xffe2b0, transparent: true, opacity: 0.075, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, side: THREE.DoubleSide, fog: false }),
-    accentCone: new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: 0.12, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, side: THREE.DoubleSide, fog: false }),
-    accentStandard: standard(accent, { emissive: accent, emissiveIntensity: 0.28, metalness: 0.25 }),
-    secondaryStandard: standard(secondary, { emissive: secondary, emissiveIntensity: 0.22, metalness: 0.25 }),
+    lampCone: new THREE.MeshBasicMaterial({ color: 0xffe2b0, transparent: true, opacity: theme.lampCone ?? 0.075, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, side: THREE.DoubleSide, fog: false }),
+    accentCone: new THREE.MeshBasicMaterial({ color: accent, transparent: true, opacity: theme.accentCone ?? 0.12, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, side: THREE.DoubleSide, fog: false }),
+    accentStandard: standard(accent, { emissive: accent, emissiveIntensity: 0.28 * glow, metalness: 0.25 }),
+    secondaryStandard: standard(secondary, { emissive: secondary, emissiveIntensity: 0.22 * glow, metalness: 0.25 }),
     accent,
     secondary,
   };
@@ -207,9 +214,10 @@ export function makeRoad(scene, theme, random, playerZ) {
   const sidewalkTexture = makeSidewalkTexture(theme, random);
   sidewalkTexture.repeat.set(1, 320 / 8);
   const sidewalkMaterial = new THREE.MeshStandardMaterial({ map: sidewalkTexture, roughness: 0.94, flatShading: true });
-  const curbMaterial = standard(0x7a7684, { roughness: 0.88 });
+  const curbMaterial = standard(theme.curb ?? 0x7a7684, { roughness: 0.88 });
   const edgeMaterial = new THREE.MeshBasicMaterial({ color: theme.edgeColor, transparent: true, opacity: 0.85, toneMapped: false });
-  const groundMaterial = standard(0x0d0f18, { roughness: 1 });
+  // Au-delà des trottoirs : bitume sombre la nuit, sable chaud à Vice City.
+  const groundMaterial = standard(theme.ground ?? 0x0d0f18, { roughness: 1 });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(420, 420), groundMaterial);
   ground.rotation.x = -Math.PI / 2;
   ground.position.set(0, -0.12, playerZ - 120);
@@ -316,6 +324,42 @@ function addCityProp(batch, m, theme, city, x, z, side, random, atlas) {
   const style = city.style;
   if (style === 'vice') {
     const roll = random();
+    if (theme.beach) {
+      // Front de mer en plein jour : parasol et serviette, planche de surf,
+      // poste de maître-nageur, douche de plage.
+      const sand = m.sand || m.cream;
+      if (roll < 0.34) {
+        batch.cylinder(m.white, [x, 0.95, z], 0.045, 0.05, 1.9, 6);
+        batch.cone(m.accentStandard, [x, 2.06, z], 1.15, 0.62, 12);
+        batch.torus(m.white, [x, 1.76, z], 1.13, 0.045, 4, 16, [Math.PI / 2, 0, 0]);
+        batch.sphere(m.white, [x, 2.4, z], 0.07, 6);
+        batch.box(sand, [x + inward * 0.62, 0.03, z + 0.55], [1.2, 0.06, 1.8], [0, 0.32, 0]);
+        batch.box(m.secondaryStandard, [x + inward * 0.62, 0.07, z + 0.55], [0.95, 0.04, 1.5], [0, 0.32, 0]);
+      } else if (roll < 0.6) {
+        // Planche de surf plantée dans le sable.
+        batch.box(sand, [x, 0.04, z], [1.0, 0.08, 1.0]);
+        batch.box(m.yellow, [x, 0.98, z], [0.12, 1.95, 0.44], [0, 0.42, 0.2]);
+        batch.box(m.white, [x + 0.03, 0.98, z], [0.14, 1.5, 0.15], [0, 0.42, 0.2]);
+        batch.box(m.accentStandard, [x, 1.86, z + 0.02], [0.13, 0.22, 0.42], [0, 0.42, 0.2]);
+      } else if (roll < 0.82) {
+        // Poste de maître-nageur sur pilotis, toit rouge.
+        for (const [px, pz] of [[-0.75, -0.75], [0.75, -0.75], [-0.75, 0.75], [0.75, 0.75]]) {
+          batch.box(m.wood, [x + px, 0.7, z + pz], [0.13, 1.4, 0.13]);
+        }
+        batch.box(m.wood, [x, 1.44, z], [1.95, 0.12, 1.95]);
+        batch.box(m.white, [x, 2.06, z], [1.75, 1.12, 1.75]);
+        batch.box(m.glassDark, [x + inward * 0.89, 2.06, z], [0.04, 0.62, 1.05]);
+        batch.cone(m.red, [x, 2.94, z], 1.4, 0.72, 4, [0, Math.PI / 4, 0]);
+        batch.box(m.sand || m.cream, [x, 0.04, z], [2.4, 0.08, 2.4]);
+      } else {
+        // Douche de plage et poubelle pastel.
+        batch.cylinder(m.chrome, [x, 1.05, z], 0.05, 0.06, 2.1, 6);
+        batch.box(m.chrome, [x + inward * 0.2, 2.06, z], [0.44, 0.07, 0.07]);
+        batch.cylinder(m.secondaryStandard, [x + inward * 0.78, 0.4, z + 0.35], 0.26, 0.3, 0.8, 8);
+        batch.box(sand, [x, 0.03, z], [1.3, 0.06, 1.3]);
+      }
+      return;
+    }
     if (roll < 0.4) {
       // Borne incendie pastel.
       batch.cylinder(m.secondaryStandard, [x, 0.45, z], 0.14, 0.17, 0.9, 7);

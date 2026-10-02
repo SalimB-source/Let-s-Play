@@ -29,6 +29,13 @@ export function makeFacadeTextures(facade, random, variant = 0) {
   const columnPx = width / columns;
   const litRatio = facade.litRatio;
   const litColors = facade.litColors;
+  // Plein jour (Vice City) : enduit clair, vitres qui renvoient le ciel au lieu
+  // du verre nocturne presque noir. Les autres villes gardent leurs valeurs.
+  const wall = facade.wall || '#e9e6e2';
+  const glass = facade.glass || '#141a2c';
+  const sheen = facade.sheen || 'rgba(120, 150, 200, .16)';
+  const frame = facade.frame
+    || (style === 'georgian' || style === 'haussmann' ? '#f7f3ea' : style === 'deco' ? '#f8f0f4' : '#2b2c38');
   const cells = [];
   for (let row = 0; row < floors; row += 1) {
     for (let column = 0; column < columns; column += 1) {
@@ -50,7 +57,7 @@ export function makeFacadeTextures(facade, random, variant = 0) {
   };
 
   const map = makeCanvasTexture((ctx) => {
-    ctx.fillStyle = '#e9e6e2';
+    ctx.fillStyle = wall;
     ctx.fillRect(0, 0, width, height);
     // Texture de mur : briques, pierre de taille ou enduit lisse selon le style.
     if (style === 'brick' || style === 'georgian') {
@@ -89,7 +96,7 @@ export function makeFacadeTextures(facade, random, variant = 0) {
     for (const cell of cells) {
       const [x, y, w, h] = windowRect(cell.row, cell.column);
       // Encadrement.
-      ctx.fillStyle = style === 'georgian' || style === 'haussmann' ? '#f7f3ea' : style === 'deco' ? '#f8f0f4' : '#2b2c38';
+      ctx.fillStyle = frame;
       ctx.fillRect(x - 5, y - 5, w + 10, h + 10);
       // Vitre.
       if (cell.lit) {
@@ -98,9 +105,9 @@ export function makeFacadeTextures(facade, random, variant = 0) {
         ctx.fillStyle = `rgba(0,0,0,${0.22 - cell.dim * 0.14})`;
         ctx.fillRect(x, y, w, h);
       } else {
-        ctx.fillStyle = '#141a2c';
+        ctx.fillStyle = glass;
         ctx.fillRect(x, y, w, h);
-        ctx.fillStyle = 'rgba(120, 150, 200, .16)';
+        ctx.fillStyle = sheen;
         ctx.fillRect(x, y, w * 0.4, h);
       }
       if (cell.blind) {
@@ -161,13 +168,17 @@ export function makeShopAtlas(theme) {
   const cell = 256;
   const height = 128;
   const shops = theme.shops;
+  // Devantures sombres la nuit, murs de stuc clair en plein jour (Vice City).
+  const wallColor = theme.shopWall || '#2a2a3a';
+  const trimColor = theme.shopTrim || '#1b1c28';
+  const doorColor = theme.shopDoor || '#121420';
   const texture = makeCanvasTexture((ctx) => {
     shops.forEach((shop, index) => {
       const x0 = index * cell;
       // Mur et plinthe.
-      ctx.fillStyle = '#2a2a3a';
+      ctx.fillStyle = wallColor;
       ctx.fillRect(x0, 0, cell, height);
-      ctx.fillStyle = '#1b1c28';
+      ctx.fillStyle = trimColor;
       ctx.fillRect(x0, height - 10, cell, 10);
       // Vitrine éclairée.
       ctx.fillStyle = hexToRgba(shop.color, 0.22);
@@ -180,7 +191,7 @@ export function makeShopAtlas(theme) {
       ctx.fillStyle = 'rgba(15, 18, 32, .75)';
       for (let item = 0; item < 4; item += 1) ctx.fillRect(x0 + 30 + item * 32, 82 + (item % 2) * 8, 18, 22 - (item % 2) * 8);
       // Porte.
-      ctx.fillStyle = '#121420';
+      ctx.fillStyle = doorColor;
       ctx.fillRect(x0 + 180, 50, 56, 68);
       ctx.fillStyle = hexToRgba(shop.color, 0.5);
       ctx.fillRect(x0 + 186, 56, 44, 40);
@@ -284,10 +295,16 @@ export function makeSkylineTexture(city, theme, random) {
   const width = 2048;
   const height = 512;
   const style = city.style;
+  // Silhouette presque noire et fenêtres allumées la nuit ; en plein jour
+  // (Vice City) les tours lointaines virent au pastel bleuté de la brume marine.
+  const skyline = theme.skyline || {};
+  const base = skyline.base || [12, 14, 34];
+  const dayWindow = skyline.window;
+  const clamp255 = (value) => Math.max(0, Math.min(255, Math.round(value)));
   return makeCanvasTexture((ctx) => {
     ctx.clearRect(0, 0, width, height);
     const horizon = height - 40;
-    const silhouette = (shade) => `rgba(${12 + shade}, ${14 + shade}, ${34 + shade}, 1)`;
+    const silhouette = (shade) => `rgba(${clamp255(base[0] + shade)}, ${clamp255(base[1] + shade)}, ${clamp255(base[2] + shade)}, 1)`;
     const windows = (x, y, w, h, density, color) => {
       ctx.fillStyle = color;
       for (let wy = y + 8; wy < y + h - 6; wy += 11) {
@@ -314,13 +331,13 @@ export function makeSkylineTexture(city, theme, random) {
         ctx.fillRect(x + 2, horizon - h - 4, w - 4, 4);
         ctx.shadowBlur = 0;
       }
-      windows(x, horizon - h, w, h, options.density ?? 0.3, options.windowColor || 'rgba(255, 220, 160, .55)');
+      windows(x, horizon - h, w, h, options.density ?? 0.3, options.windowColor || dayWindow || 'rgba(255, 220, 160, .55)');
     };
 
     // Rangée de fond, plus basse et plus sombre.
     for (let x = -20; x < width; x += 30 + random() * 40) {
       const h = (style === 'new-york' ? 150 : style === 'tokyo' ? 120 : style === 'paris' ? 55 : 80) + random() * (style === 'paris' || style === 'london' ? 45 : 140);
-      tower(x, 24 + random() * 48, h, 4, { density: 0.16, windowColor: 'rgba(255, 215, 160, .3)' });
+      tower(x, 24 + random() * 48, h, 4, { density: dayWindow ? 0.1 : 0.16, windowColor: dayWindow || 'rgba(255, 215, 160, .3)' });
     }
     // Rangée avant avec les monuments.
     const accent = city.accent;
@@ -329,15 +346,15 @@ export function makeSkylineTexture(city, theme, random) {
       const h = (style === 'new-york' ? 190 : style === 'tokyo' ? 150 : style === 'paris' ? 70 : style === 'london' ? 90 : 120) + random() * (style === 'paris' ? 40 : style === 'london' ? 70 : 170);
       const w = 30 + random() * 60;
       const topGlow = random() < 0.35 ? (random() < 0.5 ? accent : secondary) : null;
-      tower(x, w, h, 12, { density: 0.32, crown: topGlow, spire: style === 'new-york' && random() < 0.3 ? 40 + random() * 50 : 0 });
+      tower(x, w, h, 12, { density: dayWindow ? 0.18 : 0.32, crown: topGlow, spire: style === 'new-york' && random() < 0.3 ? 40 + random() * 50 : 0 });
     }
 
     ctx.fillStyle = silhouette(18);
     if (style === 'vice') {
       // Tours art déco à sommet néon et palmiers.
       for (const x of [420, 1180, 1660]) {
-        tower(x, 70, 300, 18, { density: 0.3, crown: accent });
-        tower(x + 18, 34, 360, 22, { density: 0.3, crown: secondary });
+        tower(x, 70, 300, 18, { density: dayWindow ? 0.16 : 0.3, crown: accent });
+        tower(x + 18, 34, 360, 22, { density: dayWindow ? 0.16 : 0.3, crown: secondary });
         ctx.fillStyle = silhouette(22);
         ctx.fillRect(x + 31, horizon - 420, 8, 60);
       }

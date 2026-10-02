@@ -11,6 +11,7 @@ import {
   CITY_RUSH_POWERS,
   createCityRushInventory,
 } from './cityRushRules';
+import { cityRushTheme } from './cityRushThemes';
 import './vice-city-rush.css';
 
 const BEST_KEY = 'letsplay_vice_city_rush_bests_v1';
@@ -132,6 +133,9 @@ export default function ViceCityRushPage() {
   isTouchRef.current = isTouch;
 
   const city = useMemo(() => CITY_RUSH_CITIES.find((item) => item.id === cityId) || CITY_RUSH_CITIES[0], [cityId]);
+  // Vice City se joue en plein jour : l'accroche de l'écran d'accueil suit
+  // l'ambiance du circuit choisi (soleil ou néons).
+  const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
   const selectedCar = useMemo(() => CITY_RUSH_CARS.find((item) => item.id === carId) || CITY_RUSH_CARS[0], [carId]);
   const bestTime = bests[cityId] || null;
 
@@ -454,7 +458,7 @@ export default function ViceCityRushPage() {
               <div className="city-rush-overlay city-rush-intro">
                 <div className="city-rush-intro-copy">
                   <span className="city-rush-overlay-kicker"><i /> STREET RALLY · ARCADE 80’S</span>
-                  <h2>LA NUIT<br /><em>PREND LA ROUTE.</em></h2>
+                  <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>PREND LA ROUTE.</em></h2>
                   <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne.</p>
                 </div>
                 <div className="city-rush-car-select-heading city-rush-city-select-heading"><span>01 / CHOIX DE LA VILLE</span></div>

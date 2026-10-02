@@ -95,9 +95,11 @@ function makeWheel({ radius, width, side, material, accent = 0xffffff, racing = 
 /**
  * Cabriolet de course. `profile` vient de CITY_RUSH_CARS ; `options.player`
  * ajoute les phares volumétriques et une finition plus lumineuse.
+ * `options.daylight` (Vice City en plein jour) coupe les faisceaux de phares et
+ * descend les halos additifs, invisibles sous le soleil.
  */
 export function makeRacerCar(profile, options = {}) {
-  const { player = false, number = 1 } = options;
+  const { player = false, number = 1, daylight = false } = options;
   const group = new THREE.Group();
   group.name = `racer-${profile.id}`;
   const body = new THREE.Group();
@@ -121,10 +123,10 @@ export function makeRacerCar(profile, options = {}) {
     lightWhite: new THREE.MeshBasicMaterial({ color: 0xfff6dc, toneMapped: false }),
     lightAmber: new THREE.MeshBasicMaterial({ color: 0xffb347, toneMapped: false }),
     tailLight: new THREE.MeshBasicMaterial({ color: 0xff3450, toneMapped: false }),
-    tailGlow: new THREE.MeshBasicMaterial({ color: 0xff2a44, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
-    headGlow: new THREE.MeshBasicMaterial({ color: 0xfff1cc, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
-    headCone: new THREE.MeshBasicMaterial({ color: 0xfff0c8, transparent: true, opacity: player ? 0.07 : 0.035, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, fog: false }),
-    underglow: new THREE.MeshBasicMaterial({ color: profile.accent, transparent: true, opacity: player ? 0.32 : 0.14, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
+    tailGlow: new THREE.MeshBasicMaterial({ color: 0xff2a44, transparent: true, opacity: daylight ? 0.16 : 0.35, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
+    headGlow: new THREE.MeshBasicMaterial({ color: 0xfff1cc, transparent: true, opacity: daylight ? 0.2 : 0.55, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
+    headCone: new THREE.MeshBasicMaterial({ color: 0xfff0c8, transparent: true, opacity: daylight ? 0 : player ? 0.07 : 0.035, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, fog: false }),
+    underglow: new THREE.MeshBasicMaterial({ color: profile.accent, transparent: true, opacity: daylight ? (player ? 0.12 : 0.06) : player ? 0.32 : 0.14, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
     flameOuter: new THREE.MeshBasicMaterial({ color: profile.accent, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
     flameInner: new THREE.MeshBasicMaterial({ color: 0xfff2ad, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
     wheel: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.45 }),
@@ -206,7 +208,7 @@ export function makeRacerCar(profile, options = {}) {
     const cone = new THREE.Mesh(HEADLIGHT_CONE, m.headCone);
     cone.position.set(side * 0.62, 0.62, -1.7);
     cone.rotation.x = -0.05;
-    cone.visible = player;
+    cone.visible = player && !daylight;
     body.add(cone);
     headlightCones.push(cone);
   }
