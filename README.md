@@ -357,16 +357,19 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   qu'une jauge rouge est pleine. Elles **ne sont pas classées** : `rankCityRushRacers`
   ne les voit jamais, la grille reste à quatre, le HUD les affiche dans une liste
   à part (`hud.police`, marqueurs rouge et bleu de la mini-carte) et l'écran
-  d'arrivée les ignore. Le joueur peut riposter : ses balles et ses flaques
-  d'huile les ralentissent comme n'importe quelle voiture
+  d'arrivée les ignore. Le joueur peut riposter : un tir bleu droit dans leur
+  voie ou sa mitrailleuse rouge les ralentit comme n'importe quelle voiture
   (`CITY_RUSH_POLICE_*` dans `cityRushRules.js`).
-- **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
-  **bleu 2** (clé à molette / huile), **rouge 3** (mitrailleuse / dérapage),
-  **vert 2** (billets / boost), **jaune 4** (talkie-walkie / hélicoptère) —
-  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. **Les deux pouvoirs de
-  tir ne visent que devant** : la mitrailleuse prend le rival le plus proche du
-  pare-chocs, l'hélicoptère le mieux placé, mais seulement parmi les rivaux
-  situés devant le tireur (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`,
+- **Les bonus.** Quatre types de ramassages colorés remplissent quatre jauges :
+  **bleu 2** (pistolet qui tire droit), **rouge 3** (mitrailleuse), **vert 2**
+  (boisson énergisante / boost), **jaune 4** (talkie-walkie / hélicoptère) —
+  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Le jaune est rare : il
+  ne représente que **10 % des bonus** (vert 36 %, bleu 28 %, rouge 26 %).
+  Le tir bleu ne vise pas : il suit la voie du joueur, peut toucher au plus un
+  adversaire déjà dans son champ de vision, puis fait déraper sa voiture et la
+  ralentit à 85 % pendant **0,3 s**. La mitrailleuse rouge prend le rival le
+  plus proche devant le pare-chocs ; l'hélicoptère verrouille le rival le mieux
+  placé devant son pilote (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`,
   un mètre de tolérance pour une voiture roue contre roue). Un pilote en tête
   n'a donc **aucune cible jaune** : l'hélico ne part jamais vers un poursuivant,
   l'onde de choc épargne elle aussi les adversaires restés derrière l'appelant,
@@ -482,10 +485,10 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
   d'automations à chaque frame.
 - **Les bruitages.** Coup de feu (claquement, corps, écho entre les façades),
   **dérapage** quand une voiture encaisse un tir — pneus dans un filtre très
-  sélectif et sifflement qui tremble, joué 0,3 s après le coup de feu pour
-  tomber sur l'impact —, dérapage plus doux sur une flaque d'huile ou une zone
-  de ralentissement, **hélicoptère** (pales hachées par un LFO + turbine qui
-  monte en régime, démarrage sur l'approche, extinction après l'explosion),
+  sélectif et sifflement qui tremble, joué à l'impact —, son de dérapage plus
+  doux pour le tir bleu et les zones de ralentissement, **hélicoptère** (pales
+  hachées par un LFO + turbine qui monte en régime, démarrage sur l'approche,
+  extinction après l'explosion),
   missile qui part, **explosion** (descente dans le grave, souffle, débris,
   écho), **sirène de l'escouade de police** (deux tons qui alternent, tenus par
   un LFO carré — l'aller-retour « hi-lo » des berlines américaines — et une

@@ -16,6 +16,12 @@ export const CITY_RUSH_PLAYER_SPEED = 26;
 export const CITY_RUSH_LANE_X = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
 export const CITY_RUSH_CAR_GAP = 4.8;
+export const CITY_RUSH_RACER_VIEW_DISTANCE = 120; // m : portée avant où un rival est rendu à l'écran
+export const CITY_RUSH_BLUE_SHOT_DURATION = 0.3; // s : dérapage léger du tir bleu
+export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.85; // le tir ralentit légèrement la voiture
+export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = CITY_RUSH_RACER_VIEW_DISTANCE;
+export const CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED = 300; // m/s : projectile droit, sans guidage
+export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la place de tirer devant le capot
 
 // Les voitures ont des silhouettes et des compromis de conduite réellement
 // différents. Les barres sont aussi reliées aux multiplicateurs ci-dessous.
@@ -74,33 +80,32 @@ export function cityRushHitDuration(baseDuration, carProfile) {
 }
 
 export const CITY_RUSH_POWERS = Object.freeze({
-  OIL: 'oil',
+  BLUE_SHOT: 'blue-shot',
   PISTOL: 'pistol',
   CASH: 'cash',
   RADIO: 'radio',
 });
 
-// Collecte de la monnaie de chaque couleur pour remplir sa jauge dédiée.
-// Seuils de chargement abaissés pour que les pouvoirs tombent plus souvent en
-// course : bleu 2, rouge 3, vert 2, jaune 4.
+// Chaque bonus charge une jauge dédiée : bleu 2, rouge 3, vert 2, jaune 4.
 export const CITY_RUSH_POWER_CHARGE_COST = Object.freeze({
-  [CITY_RUSH_POWERS.OIL]: 2, // bleu · clé à molette
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // bleu · tir droit
   [CITY_RUSH_POWERS.PISTOL]: 3, // rouge · pistolet
-  [CITY_RUSH_POWERS.CASH]: 2, // vert · billets
+  [CITY_RUSH_POWERS.CASH]: 2, // vert · boisson énergisante
   [CITY_RUSH_POWERS.RADIO]: 4, // jaune · talkie-walkie
 });
 
 export const CITY_RUSH_POWER_RULES = Object.freeze({
-  [CITY_RUSH_POWERS.OIL]: Object.freeze({
-    id: CITY_RUSH_POWERS.OIL,
-    name: 'Clé à molette',
-    shortName: 'Huile',
-    chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.OIL],
+  [CITY_RUSH_POWERS.BLUE_SHOT]: Object.freeze({
+    id: CITY_RUSH_POWERS.BLUE_SHOT,
+    name: 'Pistolet · tir droit',
+    shortName: 'Tir droit',
+    chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT],
     color: '#48b9ff',
     key: 'A',
-    automatic: true,
-    description: 'Dépose automatiquement une flaque d’huile derrière toi dès que la jauge est pleine. Les voitures qui la traversent ralentissent.',
-    duration: 1.4,
+    automatic: false,
+    description: `Tire droit devant toi sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s.`,
+    duration: CITY_RUSH_BLUE_SHOT_DURATION,
+    speedFactor: CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   }),
   [CITY_RUSH_POWERS.PISTOL]: Object.freeze({
     id: CITY_RUSH_POWERS.PISTOL,
@@ -115,8 +120,8 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
   }),
   [CITY_RUSH_POWERS.CASH]: Object.freeze({
     id: CITY_RUSH_POWERS.CASH,
-    name: 'Billets verts',
-    shortName: 'Boost',
+    name: 'Boisson énergisante',
+    shortName: 'Énergie',
     chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.CASH],
     color: '#50e48a',
     key: 'E',
@@ -373,6 +378,32 @@ export function cityRushIsAhead(distance, referenceDistance, tolerance = CITY_RU
   return target >= reference - Math.max(0, Number.isFinite(slack) ? slack : CITY_RUSH_FORWARD_TOLERANCE);
 }
 
+// Le tir bleu suit un axe fixe : une seule voiture peut être prise pour cible,
+// la plus proche devant le tireur, uniquement si elle occupe sa voie et est
+// déjà visible dans la portée de rendu. Contrairement à la mitrailleuse rouge,
+// cette sélection ne corrige jamais la trajectoire du projectile.
+export function cityRushStraightShotTarget({
+  attackerDistance = 0,
+  attackerLane = 0,
+  targets = [],
+  maxDistance = CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+  minGap = CITY_RUSH_BLUE_SHOT_MIN_GAP,
+} = {}) {
+  const origin = Number(attackerDistance);
+  const lane = Number(attackerLane);
+  const range = Math.max(0, Number(maxDistance) || CITY_RUSH_BLUE_SHOT_MAX_RANGE);
+  const minimum = Math.max(0, Number(minGap) || 0);
+  if (!Number.isFinite(origin) || !Number.isFinite(lane)) return null;
+  return (Array.isArray(targets) ? targets : [])
+    .filter((target) => target && target.visible !== false)
+    .filter((target) => Number(target.lane) === lane)
+    .filter((target) => {
+      const gap = Number(target.distance) - origin;
+      return Number.isFinite(gap) && gap > minimum && gap <= range;
+    })
+    .sort((a, b) => Number(a.distance) - Number(b.distance))[0] || null;
+}
+
 // Le talkie ne verrouille que les rivaux devant son pilote : parmi eux, c'est
 // toujours le mieux placé qui est visé. Un pilote en tête n'a donc aucune cible
 // (l'hélico ne se retourne jamais contre lui) et garde sa jauge chargée. Si
@@ -419,7 +450,7 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
 }
 
 /**
- * Génère une rangée de monnaies et sa zone de ralentissement au sol.
+ * Génère une rangée de bonus et sa zone de ralentissement au sol.
  * Les véhicules lents du trafic sont gérés séparément par le monde 3D.
  */
 export function createCityRushEncounter(random = Math.random) {
@@ -427,7 +458,7 @@ export function createCityRushEncounter(random = Math.random) {
   const allLanes = Array.from({ length: laneCount }, (_, lane) => lane);
   const slowLane = random() < 0.24 ? Math.floor(random() * laneCount) : null;
   const available = allLanes.filter((lane) => lane !== slowLane);
-  // Les monnaies sont fréquentes et les rangées vides sont rares; les duos
+  // Les bonus sont fréquents et les rangées vides sont rares; les duos
   // restent limités pour garder les voies lisibles.
   const pickupCount = random() < 0.1 ? 0 : Math.min(available.length, random() < 0.85 ? 1 : 2);
   const pickups = [];
@@ -436,9 +467,11 @@ export function createCityRushEncounter(random = Math.random) {
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    const type = roll < 0.31 ? 'cash'
-      : roll < 0.55 ? 'oil'
-        : roll < 0.78 ? 'pistol'
+    // L'hélico jaune est volontairement rare (10 % des bonus posés) ; les
+    // trois autres couleurs se partagent le reste de façon équilibrée.
+    const type = roll < 0.36 ? 'cash'
+      : roll < 0.64 ? CITY_RUSH_POWERS.BLUE_SHOT
+        : roll < 0.90 ? 'pistol'
           : 'radio';
     pickups.push({ lane, type });
   }
@@ -452,7 +485,7 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
   return clampCityRushLane(lane, laneCount);
 }
 
-// Choisit une prochaine voie en équilibrant les monnaies à portée et les
+// Choisit une prochaine voie en équilibrant les bonus à portée et les
 // menaces lentes, parmi les changements de voie effectivement disponibles.
 export function chooseCityRushAiLane({
   currentLane = 0,

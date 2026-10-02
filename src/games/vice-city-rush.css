@@ -359,7 +359,7 @@
 .city-rush-status-pill.is-stunned { border-color: rgba(255, 85, 107, .55); color: #ffadb6; box-shadow: 0 0 20px rgba(255, 60, 100, .18); }
 .city-rush-toast { position: absolute; z-index: 5; top: 140px; left: 50%; max-width: min(560px, calc(100% - 30px)); padding: 9px 14px; border: 1px solid rgba(235, 237, 252, .16); border-radius: 8px; color: #fff; background: rgba(8, 12, 25, .86); font: 850 9px var(--mono, monospace); letter-spacing: .08em; text-align: center; transform: translateX(-50%); animation: crToast .2s ease-out both; backdrop-filter: blur(9px); }
 .city-rush-toast.is-cash { border-color: rgba(80, 228, 138, .48); color: #a9ffc2; }
-.city-rush-toast.is-oil { border-color: rgba(72, 185, 255, .48); color: #a5deff; }
+.city-rush-toast.is-blue-shot { border-color: rgba(72, 185, 255, .48); color: #a5deff; }
 .city-rush-toast.is-pistol { border-color: rgba(255, 82, 110, .48); color: #ffb5c0; }
 .city-rush-toast.is-radio { border-color: rgba(255, 212, 79, .5); color: #ffe899; }
 .city-rush-toast.is-slow { border-color: rgba(255, 189, 105, .42); color: #ffdaa5; }
@@ -392,14 +392,9 @@
   78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -56%) scale(.94); }
 }
-.city-rush-controls-bottom { position: absolute; z-index: 5; right: 16px; bottom: 14px; left: 16px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; pointer-events: none; }
+.city-rush-controls-bottom { position: absolute; z-index: 5; right: 0; bottom: 14px; left: 0; display: flex; align-items: flex-end; justify-content: center; pointer-events: none; }
 .city-rush-controls-bottom > * { pointer-events: auto; }
-.city-rush-steering { display: flex; align-items: center; gap: 7px; }
-.city-rush-steering button { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid rgba(240, 241, 254, .22); border-radius: 9px; color: #fff; background: rgba(10, 15, 30, .7); box-shadow: 0 5px 18px rgba(0, 0, 0, .18); font: 900 22px/1 var(--display, sans-serif); cursor: pointer; backdrop-filter: blur(7px); transition: transform .12s ease, border-color .12s ease, background .12s ease; }
-.city-rush-steering button:hover { transform: translateY(-2px); border-color: var(--city-secondary); background: rgba(19, 39, 52, .88); }
-.city-rush-steering button:active { transform: scale(.94); }
-.city-rush-steering > span { max-width: 55px; color: rgba(240, 239, 250, .55); font: 850 7px/1.45 var(--mono, monospace); letter-spacing: .1em; text-align: center; }
-.city-rush-power-bar { display: flex; align-items: stretch; justify-content: flex-end; gap: 8px; transform: translateY(-8px); }
+.city-rush-power-bar { display: flex; align-items: stretch; justify-content: center; gap: 8px; transform: translateY(-8px); }
 .city-rush-power-button {
   position: relative;
   display: flex;
@@ -409,41 +404,45 @@
   gap: 8px;
   padding: 7px 9px;
   appearance: none;
-  border: 1px solid rgba(225, 231, 248, .2);
-  border-bottom-width: 3px;
-  border-bottom-color: rgba(0, 0, 0, .62);
+  border: 1px solid color-mix(in srgb, var(--power-color) 42%, rgba(225, 231, 248, .2));
+  border-bottom: 6px solid color-mix(in srgb, var(--power-color) 34%, #03050b);
   border-radius: 10px;
-  color: rgba(232, 235, 248, .66);
-  background: linear-gradient(180deg, rgba(39, 47, 68, .98), rgba(11, 15, 29, .98));
-  box-shadow: 0 3px 0 rgba(0, 0, 0, .68), 0 8px 16px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .17), inset 0 -2px 0 rgba(0, 0, 0, .3);
+  color: rgba(232, 235, 248, .74);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--power-color) 18%, #303a53), color-mix(in srgb, var(--power-color) 8%, #11182a) 58%, #090d19);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--power-color) 30%, #03050b), 0 11px 17px rgba(0, 0, 0, .38), inset 0 2px 0 rgba(255, 255, 255, .25), inset 0 -4px 0 rgba(0, 0, 0, .36);
   font: inherit;
   text-align: left;
-  opacity: .9;
+  opacity: .94;
   cursor: default;
   isolation: isolate;
+  transform: perspective(900px) rotateX(5deg);
+  transform-style: preserve-3d;
   -webkit-tap-highlight-color: transparent;
-  transition: transform .14s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease, opacity .16s ease;
+  transition: transform .18s cubic-bezier(.2, .8, .2, 1), border-color .16s ease, box-shadow .18s ease, background .16s ease, opacity .16s ease;
   backdrop-filter: blur(8px);
 }
-.city-rush-power-button::before { position: absolute; z-index: 0; inset: 1px 1px auto; height: 48%; border-radius: 8px 8px 45% 45%; background: linear-gradient(180deg, rgba(255, 255, 255, .12), rgba(255, 255, 255, 0)); content: ''; pointer-events: none; }
+.city-rush-power-button::before { position: absolute; z-index: 0; inset: 1px 1px auto; height: 48%; border-radius: 8px 8px 45% 45%; background: linear-gradient(180deg, rgba(255, 255, 255, .2), rgba(255, 255, 255, 0)); content: ''; pointer-events: none; }
+.city-rush-power-button::after { position: absolute; z-index: -1; right: 6px; bottom: -10px; left: 6px; height: 11px; border-radius: 0 0 8px 8px; background: linear-gradient(180deg, color-mix(in srgb, var(--power-color) 42%, #111827), color-mix(in srgb, var(--power-color) 25%, #03050b)); box-shadow: 0 5px 7px rgba(0, 0, 0, .32); content: ''; pointer-events: none; transition: transform .14s ease, box-shadow .14s ease; }
 .city-rush-power-button > * { position: relative; z-index: 1; }
 .city-rush-power-button:disabled { cursor: default; }
 .city-rush-power-button.is-ready {
-  border-color: color-mix(in srgb, var(--power-color) 82%, #fff);
-  border-bottom-color: color-mix(in srgb, var(--power-color) 48%, #07101b);
-  outline: 2px solid var(--power-color);
+  border-color: color-mix(in srgb, var(--power-color) 90%, #fff);
+  border-bottom-color: color-mix(in srgb, var(--power-color) 56%, #07101b);
+  outline: 2px solid color-mix(in srgb, var(--power-color) 88%, #fff);
   outline-offset: 2px;
   color: #fff;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--power-color) 28%, #20283a), color-mix(in srgb, var(--power-color) 9%, #090d19));
-  box-shadow: 0 4px 0 color-mix(in srgb, var(--power-color) 38%, #050711), 0 9px 19px color-mix(in srgb, var(--power-color) 24%, transparent), inset 0 1px 0 rgba(255, 255, 255, .3), inset 0 -2px 0 rgba(0, 0, 0, .32);
+  background: linear-gradient(155deg, color-mix(in srgb, var(--power-color) 62%, #283449), color-mix(in srgb, var(--power-color) 32%, #151a2c) 52%, color-mix(in srgb, var(--power-color) 13%, #090d19));
+  box-shadow: 0 7px 0 color-mix(in srgb, var(--power-color) 48%, #050711), 0 14px 23px color-mix(in srgb, var(--power-color) 30%, rgba(0, 0, 0, .4)), inset 0 2px 0 rgba(255, 255, 255, .48), inset 0 -4px 0 rgba(0, 0, 0, .35);
   opacity: 1;
   cursor: pointer;
+  transform: perspective(900px) rotateX(4deg) translateY(-1px);
   animation: crPowerReadyPulse 1s ease-in-out infinite alternate;
 }
-.city-rush-power-button.is-ready:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--power-color) 42%, #050711), 0 13px 23px color-mix(in srgb, var(--power-color) 31%, transparent), inset 0 1px 0 rgba(255, 255, 255, .32), inset 0 -2px 0 rgba(0, 0, 0, .32); }
-.city-rush-power-button.is-ready:active { transform: translateY(3px) scale(.99); box-shadow: 0 1px 0 color-mix(in srgb, var(--power-color) 38%, #050711), 0 3px 7px color-mix(in srgb, var(--power-color) 20%, transparent), inset 0 2px 5px rgba(0, 0, 0, .28); }
+.city-rush-power-button.is-ready:not(:disabled):hover { transform: perspective(900px) rotateX(1deg) translateY(-4px); box-shadow: 0 10px 0 color-mix(in srgb, var(--power-color) 54%, #050711), 0 18px 27px color-mix(in srgb, var(--power-color) 38%, rgba(0, 0, 0, .4)), inset 0 2px 0 rgba(255, 255, 255, .55), inset 0 -3px 0 rgba(0, 0, 0, .32); }
+.city-rush-power-button.is-ready:not(:disabled):active { border-bottom-width: 2px; transform: perspective(900px) rotateX(0) translateY(4px) scale(.99); box-shadow: 0 1px 0 color-mix(in srgb, var(--power-color) 38%, #050711), 0 3px 7px rgba(0, 0, 0, .34), inset 0 3px 6px rgba(0, 0, 0, .34); }
+.city-rush-power-button.is-ready:not(:disabled):active::after { transform: translateY(-3px) scaleY(.7); box-shadow: 0 2px 4px rgba(0, 0, 0, .28); }
 .city-rush-power-button:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-.city-rush-power-button.is-oil { --power-color: #48b9ff; }
+.city-rush-power-button.is-blue-shot { --power-color: #48b9ff; }
 .city-rush-power-button.is-pistol { --power-color: #ff526e; }
 .city-rush-power-button.is-cash { --power-color: #50e48a; }
 .city-rush-power-button.is-radio { --power-color: #ffd44f; }
@@ -930,7 +929,7 @@
 .city-rush-guide-item > div small { color: rgba(224, 228, 242, .48); font-size: 9px; line-height: 1.35; }
 .city-rush-guide-item kbd { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid rgba(228, 234, 250, .16); border-radius: 5px; color: rgba(242, 243, 250, .66); background: rgba(255, 255, 255, .045); font: 850 8px var(--mono, monospace); }
 .city-rush-guide-item.is-automatic kbd { font-size: 6px; letter-spacing: 0; }
-.city-rush-guide-item.is-oil { --power-color: #48b9ff; }
+.city-rush-guide-item.is-blue-shot { --power-color: #48b9ff; }
 .city-rush-guide-item.is-pistol { --power-color: #ff526e; }
 .city-rush-guide-item.is-cash { --power-color: #50e48a; }
 .city-rush-guide-item.is-radio { --power-color: #ffd44f; }
@@ -1054,11 +1053,8 @@
   .city-rush-result-grid { grid-template-columns: repeat(2, minmax(84px, 1fr)); }
   .city-rush-status-pill { top: 77px; max-width: 45%; overflow: hidden; padding: 6px 7px; font-size: 6px; text-overflow: ellipsis; white-space: nowrap; }
   .city-rush-toast { top: 114px; padding: 8px 9px; font-size: 7px; }
-  .city-rush-controls-bottom { right: 7px; bottom: 7px; left: 7px; display: grid; gap: 13px; }
-  .city-rush-steering { justify-content: center; gap: 9px; }
-  .city-rush-steering button { width: 36px; height: 34px; border-radius: 8px; font-size: 19px; background: rgba(8, 13, 28, .84); }
-  .city-rush-steering > span { max-width: none; font-size: 6px; }
-  .city-rush-power-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; transform: translateY(-8px); }
+  .city-rush-controls-bottom { right: 7px; bottom: 7px; left: 7px; display: flex; justify-content: center; }
+  .city-rush-power-bar { display: grid; width: min(100%, 420px); grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-inline: auto; transform: translateY(-8px); }
   .city-rush-power-button { min-width: 0; height: 54px; justify-content: center; gap: 5px; padding: 4px 5px; border-radius: 8px; }
   .city-rush-power-button.is-ready { outline-offset: 1px; }
   .city-rush-power-icon { width: 30px; height: 30px; border-radius: 8px; }
