@@ -40,6 +40,7 @@ import {
   markCityRushPickupTaken,
   rankCityRushRacers,
   resolveCityRushCarMovement,
+  selectCityRushRacers,
 } from './cityRushRules';
 import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
 import { createBatch, seededRandom } from './cityRushBuilder';
@@ -331,7 +332,7 @@ function disposeScene(scene, renderer) {
  *     explosion), déclenchés ici parce que le monde connaît la voie de la
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null) {
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null) {
   const theme = cityRushTheme(city.id);
   const lightRig = cityRushLightRig(theme, city);
   const lite = detectLiteQuality();
@@ -464,15 +465,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   playerCar.position.set(CITY_RUSH_LANE_X[1], 0, PLAYER_Z);
   scene.add(playerCar);
 
+  let currentRoster = Array.isArray(initialRoster) && initialRoster.length === 4
+    ? initialRoster
+    : selectCityRushRacers({ cityId: city.id, carId: selectedCarId });
+  let playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
+
   const racerSpecs = [
-    { id: 'nova', name: 'NOVA', lane: 3, phase: 0.6, changeIn: 1.4, skidSide: 1 },
-    { id: 'juno', name: 'JUNO', lane: 0, phase: 2.4, changeIn: 2.1, skidSide: -1 },
-    { id: 'ace', name: 'ACE', lane: 2, phase: 4.5, changeIn: 3.2, skidSide: 1 },
+    { id: 'nova', lane: 3, phase: 0.6, changeIn: 1.4, skidSide: 1 },
+    { id: 'juno', lane: 0, phase: 2.4, changeIn: 2.1, skidSide: -1 },
+    { id: 'ace', lane: 2, phase: 4.5, changeIn: 3.2, skidSide: 1 },
   ];
   const racers = racerSpecs.map((spec, index) => {
     const profile = rivalProfiles[index];
+    const driver = currentRoster.find((item) => item.id === spec.id) || currentRoster[index + 1];
     return {
       ...spec,
+      driverId: driver.driverId,
+      name: driver.name,
+      displayName: driver.displayName,
+      country: driver.country,
+      countryCode: driver.countryCode,
+      flag: driver.flag,
+      avatar: driver.avatar,
+      accent: driver.accent,
       profile,
       distance: 0,
       lap: 1,
@@ -491,6 +506,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     };
   });
   racers.forEach((racer) => scene.add(racer.mesh));
+
+  function applyRoster(nextRoster) {
+    if (!Array.isArray(nextRoster) || nextRoster.length < 4) return;
+    currentRoster = nextRoster;
+    playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
+    racers.forEach((racer, index) => {
+      const driver = currentRoster.find((item) => item.id === racer.id) || currentRoster[index + 1];
+      if (!driver) return;
+      racer.driverId = driver.driverId;
+      racer.name = driver.name;
+      racer.displayName = driver.displayName;
+      racer.country = driver.country;
+      racer.countryCode = driver.countryCode;
+      racer.flag = driver.flag;
+      racer.avatar = driver.avatar;
+      racer.accent = driver.accent;
+    });
+  }
 
   const trafficCars = Array.from({ length: CITY_RUSH_TRAFFIC_COUNT }, (_, index) => {
     const spec = CITY_RUSH_TRAFFIC_TYPES[index % CITY_RUSH_TRAFFIC_TYPES.length];
@@ -568,8 +601,42 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const scratch = new THREE.Vector3();
 
   const makeRacerRows = () => [
-    { id: 'player', name: 'TOI', distance, lane: playerLane, mesh: playerCar, lap },
-    ...racers.map((racer) => ({ id: racer.id, name: racer.name, distance: racer.distance, lane: racer.lane, mesh: racer.mesh, lap: racer.lap })),
+    {
+      id: 'player',
+      isPlayer: true,
+      driverId: playerDriver.driverId,
+      name: playerDriver.name,
+      displayName: playerDriver.displayName,
+      country: playerDriver.country,
+      countryCode: playerDriver.countryCode,
+      flag: playerDriver.flag,
+      avatar: playerDriver.avatar,
+      accent: playerDriver.accent,
+      distance,
+      rawDistance: distance,
+      lane: playerLane,
+      x: playerX,
+      mesh: playerCar,
+      lap,
+    },
+    ...racers.map((racer) => ({
+      id: racer.id,
+      isPlayer: false,
+      driverId: racer.driverId,
+      name: racer.name,
+      displayName: racer.displayName,
+      country: racer.country,
+      countryCode: racer.countryCode,
+      flag: racer.flag,
+      avatar: racer.avatar,
+      accent: racer.accent,
+      distance: racer.distance,
+      rawDistance: racer.distance,
+      lane: racer.lane,
+      x: racer.currentX,
+      mesh: racer.mesh,
+      lap: racer.lap,
+    })),
   ];
 
   function setupEncounter(row) {
@@ -605,7 +672,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
   function emitHud(force = false) {
     const now = performance.now();
-    if (!force && now - lastHudAt < 120) return;
+    if (!force && now - lastHudAt < 100) return;
     lastHudAt = now;
     const standings = rankCityRushRacers(makeRacerRows());
     getCallbacks().hud?.({
@@ -622,12 +689,23 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       rank: standings.rank,
       racers: standings.ordered.map((racer, index) => ({
         id: racer.id,
+        isPlayer: racer.id === 'player',
+        driverId: racer.driverId,
         name: racer.name,
+        displayName: racer.displayName,
+        country: racer.country,
+        countryCode: racer.countryCode,
+        flag: racer.flag,
+        avatar: racer.avatar,
+        accent: racer.accent,
+        rawDistance: Math.max(0, Math.min(CITY_RUSH_DISTANCE, racer.distance)),
         distance: Math.max(0, Math.min(CITY_RUSH_DISTANCE, Math.round(racer.distance))),
         progress: clamp(racer.distance / CITY_RUSH_DISTANCE, 0, 1),
         lap: racer.lap || cityRushLapForDistance(racer.distance),
+        lapProgress: cityRushLapProgress(racer.distance),
         rank: index + 1,
         lane: racer.lane,
+        x: racer.x,
       })),
       inventory: { ...inventory },
       playerLane,
@@ -1509,7 +1587,21 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       winnerId: standings.leader?.id || null,
       score,
       pickups: pickedUp,
-      racers: standings.ordered.map((racer, index) => ({ id: racer.id, name: racer.name, distance: Math.round(racer.distance), lap: racer.lap, rank: index + 1 })),
+      racers: standings.ordered.map((racer, index) => ({
+        id: racer.id,
+        isPlayer: racer.id === 'player',
+        driverId: racer.driverId,
+        name: racer.name,
+        displayName: racer.displayName,
+        country: racer.country,
+        countryCode: racer.countryCode,
+        flag: racer.flag,
+        avatar: racer.avatar,
+        accent: racer.accent,
+        distance: Math.round(racer.distance),
+        lap: racer.lap,
+        rank: index + 1,
+      })),
     });
   }
 
@@ -1993,6 +2085,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     action,
     setPhase,
     setCountdown,
+    setRoster(nextRoster) {
+      applyRoster(nextRoster);
+      emitHud(true);
+    },
     get lite() { return lite; },
     get scene() { return scene; },
     get camera() { return camera; },
@@ -2016,7 +2112,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
@@ -2033,7 +2129,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         pickup: (data) => callbacksRef.current.onPickup?.(data),
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
-      }), carId, audioRef);
+      }), carId, audioRef, roster);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -2047,6 +2143,10 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
       if (actionsRef) actionsRef.current = null;
     };
   }, [cityId, carId, actionsRef, audioRef]);
+
+  useEffect(() => {
+    if (roster) worldRef.current?.setRoster?.(roster);
+  }, [roster]);
 
   useEffect(() => {
     if (active) worldRef.current?.start();

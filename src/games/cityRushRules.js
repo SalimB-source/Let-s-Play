@@ -515,3 +515,355 @@ export function chooseCityRushAiLane({
   }
   return bestLane;
 }
+
+// ── Pilotes internationaux & avatars distincts ──────────────────────────────
+// Chaque course réunit 4 pilotes (notre joueur + 3 rivaux) dotés chacun d'un
+// avatar unique et d'un prénom issu d'un pays différent autour du monde.
+export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno', 'ace']);
+
+export const CITY_RUSH_DRIVERS = Object.freeze([
+  Object.freeze({
+    id: 'kenji', avatarId: 'avatar-kenji', name: 'KENJI', displayName: 'Kenji', country: 'Japon', countryCode: 'JP', flag: '🇯🇵', accent: '#42e6ff',
+    avatar: Object.freeze({
+      id: 'avatar-kenji', skin: '#f3c8a6', hair: '#181c2e', hairStyle: 'spiky',
+      accessory: 'cyber-visor', accessoryColor: '#42e6ff', outfit: '#ff5b9a', trim: '#ffffff', bgStart: '#18244b', bgEnd: '#4d1b49',
+    }),
+  }),
+  Object.freeze({
+    id: 'camila', avatarId: 'avatar-camila', name: 'CAMILA', displayName: 'Camila', country: 'Brésil', countryCode: 'BR', flag: '🇧🇷', accent: '#50e48a',
+    avatar: Object.freeze({
+      id: 'avatar-camila', skin: '#c8875b', hair: '#2a1a17', hairStyle: 'curly',
+      accessory: 'aviator-gold', accessoryColor: '#ffd44f', outfit: '#28b463', trim: '#ffe066', bgStart: '#0f3828', bgEnd: '#1b4f5c',
+    }),
+  }),
+  Object.freeze({
+    id: 'amine', avatarId: 'avatar-amine', name: 'AMINE', displayName: 'Amine', country: 'Maroc', countryCode: 'MA', flag: '🇲🇦', accent: '#ff8a48',
+    avatar: Object.freeze({
+      id: 'avatar-amine', skin: '#d89b72', hair: '#1d181b', hairStyle: 'short-fade',
+      accessory: 'retro-amber', accessoryColor: '#ff9f43', outfit: '#c0392b', trim: '#f6d365', bgStart: '#3d1624', bgEnd: '#6e3219',
+    }),
+  }),
+  Object.freeze({
+    id: 'giulia', avatarId: 'avatar-giulia', name: 'GIULIA', displayName: 'Giulia', country: 'Italie', countryCode: 'IT', flag: '🇮🇹', accent: '#ff526e',
+    avatar: Object.freeze({
+      id: 'avatar-giulia', skin: '#f1c2a0', hair: '#5a2d1e', hairStyle: 'wavy-long',
+      accessory: 'cat-eye', accessoryColor: '#ff526e', outfit: '#d63031', trim: '#55efc4', bgStart: '#3a1528', bgEnd: '#1b3b36',
+    }),
+  }),
+  Object.freeze({
+    id: 'mateo', avatarId: 'avatar-mateo', name: 'MATEO', displayName: 'Mateo', country: 'Mexique', countryCode: 'MX', flag: '🇲🇽', accent: '#43ead5',
+    avatar: Object.freeze({
+      id: 'avatar-mateo', skin: '#cf8e64', hair: '#1c191f', hairStyle: 'headband',
+      accessory: 'mirror-shades', accessoryColor: '#43ead5', outfit: '#00b894', trim: '#ff7675', bgStart: '#11343b', bgEnd: '#472133',
+    }),
+  }),
+  Object.freeze({
+    id: 'chloe', avatarId: 'avatar-chloe', name: 'CHLOÉ', displayName: 'Chloé', country: 'France', countryCode: 'FR', flag: '🇫🇷', accent: '#ff5db8',
+    avatar: Object.freeze({
+      id: 'avatar-chloe', skin: '#f6cfb2', hair: '#e4b869', hairStyle: 'bob',
+      accessory: 'french-beret', accessoryColor: '#ff5db8', outfit: '#2e3c7e', trim: '#ff7eb3', bgStart: '#1c2247', bgEnd: '#4c1e40',
+    }),
+  }),
+  Object.freeze({
+    id: 'kwame', avatarId: 'avatar-kwame', name: 'KWAME', displayName: 'Kwame', country: 'Nigeria', countryCode: 'NG', flag: '🇳🇬', accent: '#ffd44f',
+    avatar: Object.freeze({
+      id: 'avatar-kwame', skin: '#7a482b', hair: '#151218', hairStyle: 'locs',
+      accessory: 'gold-shield', accessoryColor: '#ffd44f', outfit: '#10ac84', trim: '#fff2a6', bgStart: '#102e2a', bgEnd: '#3b3214',
+    }),
+  }),
+  Object.freeze({
+    id: 'seoyeon', avatarId: 'avatar-seoyeon', name: 'SEO-YEON', displayName: 'Seo-yeon', country: 'Corée du Sud', countryCode: 'KR', flag: '🇰🇷', accent: '#a78bff',
+    avatar: Object.freeze({
+      id: 'avatar-seoyeon', skin: '#f5d2b8', hair: '#3b245e', hairStyle: 'neon-bangs',
+      accessory: 'neon-headset', accessoryColor: '#a78bff', outfit: '#6c5ce7', trim: '#62e7dc', bgStart: '#231942', bgEnd: '#153447',
+    }),
+  }),
+  Object.freeze({
+    id: 'astrid', avatarId: 'avatar-astrid', name: 'ASTRID', displayName: 'Astrid', country: 'Suède', countryCode: 'SE', flag: '🇸🇪', accent: '#48b9ff',
+    avatar: Object.freeze({
+      id: 'avatar-astrid', skin: '#f8d9c2', hair: '#f6dc8b', hairStyle: 'swept',
+      accessory: 'glacier-glass', accessoryColor: '#48b9ff', outfit: '#0984e3', trim: '#ffeaa7', bgStart: '#122a47', bgEnd: '#2e3d52',
+    }),
+  }),
+  Object.freeze({
+    id: 'layla', avatarId: 'avatar-layla', name: 'LAYLA', displayName: 'Layla', country: 'Égypte', countryCode: 'EG', flag: '🇪🇬', accent: '#f0ce65',
+    avatar: Object.freeze({
+      id: 'avatar-layla', skin: '#c9885e', hair: '#19151d', hairStyle: 'braids',
+      accessory: 'octagon-gold', accessoryColor: '#f0ce65', outfit: '#e17055', trim: '#43ead5', bgStart: '#3d231c', bgEnd: '#16363c',
+    }),
+  }),
+  Object.freeze({
+    id: 'diego', avatarId: 'avatar-diego', name: 'DIEGO', displayName: 'Diego', country: 'Argentine', countryCode: 'AR', flag: '🇦🇷', accent: '#74b9ff',
+    avatar: Object.freeze({
+      id: 'avatar-diego', skin: '#dfa67e', hair: '#2d201c', hairStyle: 'cap-back',
+      accessory: 'sport-visor', accessoryColor: '#74b9ff', outfit: '#0984e3', trim: '#ffffff', bgStart: '#132b47', bgEnd: '#1d3c45',
+    }),
+  }),
+  Object.freeze({
+    id: 'maya', avatarId: 'avatar-maya', name: 'MAYA', displayName: 'Maya', country: 'États-Unis', countryCode: 'US', flag: '🇺🇸', accent: '#ff7eb3',
+    avatar: Object.freeze({
+      id: 'avatar-maya', skin: '#9e6240', hair: '#4a2018', hairStyle: 'afro-curls',
+      accessory: 'palm-shades', accessoryColor: '#ff5db8', outfit: '#fd79a8', trim: '#43ead5', bgStart: '#3c1836', bgEnd: '#143840',
+    }),
+  }),
+]);
+
+// Sélectionne 4 pilotes distincts (un pour notre joueur et un par rival) avec
+// des avatars et des pays tous différents.
+export function selectCityRushRacers({
+  cityId = 'vice-city',
+  carId = CITY_RUSH_CARS[0].id,
+  runId = 0,
+  playerDriverId = null,
+} = {}) {
+  const total = CITY_RUSH_DRIVERS.length;
+  const cityIndex = Math.max(0, CITY_RUSH_CITIES.findIndex((item) => item.id === cityId));
+  const carIndex = Math.max(0, CITY_RUSH_CARS.findIndex((item) => item.id === carId));
+  const safeRun = Math.max(0, Math.trunc(Number(runId) || 0));
+  const explicitPlayerIndex = playerDriverId
+    ? CITY_RUSH_DRIVERS.findIndex((driver) => driver.id === playerDriverId)
+    : -1;
+  const playerIndex = explicitPlayerIndex >= 0
+    ? explicitPlayerIndex
+    : (cityIndex * 3 + carIndex * 2 + safeRun) % total;
+
+  const chosen = [CITY_RUSH_DRIVERS[playerIndex]];
+  const usedIds = new Set([CITY_RUSH_DRIVERS[playerIndex].id]);
+  const usedCountries = new Set([CITY_RUSH_DRIVERS[playerIndex].countryCode]);
+  const stride = 5; // premier avec 12 : parcourt tout le catalogue sans répétition
+  let cursor = (playerIndex + cityIndex + carIndex + safeRun * 3 + 1) % total;
+
+  while (chosen.length < CITY_RUSH_RACER_SLOTS.length) {
+    const candidate = CITY_RUSH_DRIVERS[cursor];
+    if (!usedIds.has(candidate.id) && !usedCountries.has(candidate.countryCode)) {
+      chosen.push(candidate);
+      usedIds.add(candidate.id);
+      usedCountries.add(candidate.countryCode);
+    }
+    cursor = (cursor + stride) % total;
+  }
+
+  const defaultLanes = [1, 3, 0, 2];
+  return CITY_RUSH_RACER_SLOTS.map((slotId, index) => {
+    const driver = chosen[index];
+    return {
+      id: slotId,
+      slot: index,
+      isPlayer: slotId === 'player',
+      driverId: driver.id,
+      avatarId: driver.avatarId,
+      name: driver.name,
+      displayName: driver.displayName,
+      country: driver.country,
+      countryCode: driver.countryCode,
+      flag: driver.flag,
+      accent: driver.accent,
+      avatar: driver.avatar,
+      lane: defaultLanes[index],
+    };
+  });
+}
+
+// ── Mini-carte du circuit & focus joueur ────────────────────────────────────
+// Projette une distance (en mètres sur la boucle de 600 m) et une voie (0..3)
+// sur le tracé 2D de la mini-carte (repère 100 × 100 centré en 50, 50).
+export function cityRushMinimapPoint(
+  distance = 0,
+  lane = 1,
+  {
+    lapLength = CITY_RUSH_LAP_LENGTH,
+    laneCount = CITY_RUSH_LANE_X.length,
+    laneSpacing = 1.45,
+  } = {},
+) {
+  const safeDistance = Math.max(0, Number(distance) || 0);
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  const loopProgress = (((safeDistance % safeLap) + safeLap) % safeLap) / safeLap;
+  const theta = Math.PI + loopProgress * Math.PI * 2;
+
+  const rx = 32;
+  const ry = 20;
+  const centerX = 50 + rx * Math.cos(theta) - 1.8 * Math.cos(3 * theta);
+  const centerY = 50 + ry * Math.sin(theta) + 1.4 * Math.sin(2 * theta);
+
+  const dxdt = -rx * Math.sin(theta) + 5.4 * Math.sin(3 * theta);
+  const dydt = ry * Math.cos(theta) + 2.8 * Math.cos(2 * theta);
+  const norm = Math.hypot(dxdt, dydt) || 1;
+  const tangentX = dxdt / norm;
+  const tangentY = dydt / norm;
+  const normalX = -tangentY;
+  const normalY = tangentX;
+
+  const clampedLane = clampCityRushLane(lane, laneCount);
+  const laneOffset = (clampedLane - (laneCount - 1) / 2) * laneSpacing;
+  const x = centerX + normalX * laneOffset;
+  const y = centerY + normalY * laneOffset;
+  const angle = Math.atan2(tangentY, tangentX);
+  const deg = (angle * 180) / Math.PI;
+
+  return {
+    x,
+    y,
+    centerX,
+    centerY,
+    tangentX,
+    tangentY,
+    normalX,
+    normalY,
+    angle,
+    deg,
+    loopProgress,
+    lane: clampedLane,
+    laneOffset,
+  };
+}
+
+export function cityRushMinimapTrackPath(steps = 72, { lapLength = CITY_RUSH_LAP_LENGTH } = {}) {
+  const count = Math.max(12, Math.trunc(Number(steps) || 72));
+  const commands = [];
+  for (let index = 0; index < count; index += 1) {
+    const distance = (index / count) * lapLength;
+    const point = cityRushMinimapPoint(distance, 1.5, { lapLength, laneSpacing: 0 });
+    commands.push(`${index === 0 ? 'M' : 'L'} ${point.centerX.toFixed(2)} ${point.centerY.toFixed(2)}`);
+  }
+  commands.push('Z');
+  return commands.join(' ');
+}
+
+// Construit l'état complet de la mini-carte : position des 4 pilotes sur le
+// circuit, avatars/pays distincts et focus caméra + télémétrie sur notre joueur.
+export function buildCityRushMinimapState(
+  racers = [],
+  {
+    playerId = 'player',
+    cityId = 'vice-city',
+    carId = CITY_RUSH_CARS[0].id,
+    runId = 0,
+    playerDriverId = null,
+    lapLength = CITY_RUSH_LAP_LENGTH,
+    laps = CITY_RUSH_LAPS,
+    totalDistance = CITY_RUSH_DISTANCE,
+  } = {},
+) {
+  const defaultRoster = selectCityRushRacers({ cityId, carId, runId, playerDriverId });
+  const incomingById = new Map((Array.isArray(racers) ? racers : []).map((racer) => [racer?.id, racer]));
+
+  const merged = defaultRoster.map((slotProfile) => {
+    const raw = incomingById.get(slotProfile.id) || {};
+    const rawDistance = Number.isFinite(Number(raw.rawDistance))
+      ? Math.max(0, Number(raw.rawDistance))
+      : Math.max(0, Number(raw.distance) || 0);
+    const distance = Math.max(0, Math.min(totalDistance, Math.round(rawDistance)));
+    const lane = raw.lane !== undefined ? clampCityRushLane(raw.lane) : slotProfile.lane;
+    const lap = raw.lap ? Math.max(1, Math.min(laps, Number(raw.lap))) : cityRushLapForDistance(rawDistance, lapLength, laps);
+    const lapProgress = cityRushLapProgress(rawDistance, lapLength, laps);
+    const progress = clamp01(rawDistance / Math.max(1, totalDistance));
+    return {
+      ...slotProfile,
+      ...raw,
+      id: slotProfile.id,
+      isPlayer: slotProfile.id === playerId,
+      driverId: raw.driverId || slotProfile.driverId,
+      name: raw.name && raw.name !== 'TOI' ? raw.name : slotProfile.name,
+      displayName: raw.displayName || slotProfile.displayName,
+      country: raw.country || slotProfile.country,
+      countryCode: raw.countryCode || slotProfile.countryCode,
+      flag: raw.flag || slotProfile.flag,
+      accent: raw.accent || slotProfile.accent,
+      avatar: raw.avatar || slotProfile.avatar,
+      rawDistance,
+      distance,
+      lane,
+      lap,
+      lapProgress,
+      progress,
+    };
+  });
+
+  const ranked = rankCityRushRacers(
+    merged.map((racer) => ({ ...racer, distance: racer.rawDistance })),
+    playerId,
+  );
+
+  const playerEntry = ranked.ordered.find((racer) => racer.id === playerId) || ranked.ordered[0];
+  const playerPoint = cityRushMinimapPoint(playerEntry.rawDistance, playerEntry.lane, { lapLength });
+
+  const enriched = ranked.ordered.map((racer, index) => {
+    const point = cityRushMinimapPoint(racer.rawDistance, racer.lane, { lapLength });
+    const isPlayer = racer.id === playerId;
+    const relativeDistance = Math.round(racer.rawDistance - playerEntry.rawDistance);
+    const loopGap = Math.round(cityRushTrackGap(racer.rawDistance, playerEntry.rawDistance, lapLength));
+    return {
+      ...racer,
+      rank: index + 1,
+      isPlayer,
+      isFocused: isPlayer,
+      x: point.x,
+      y: point.y,
+      centerX: point.centerX,
+      centerY: point.centerY,
+      angle: point.angle,
+      deg: point.deg,
+      loopProgress: point.loopProgress,
+      focusX: point.x - playerPoint.x,
+      focusY: point.y - playerPoint.y,
+      relativeDistance,
+      loopGap,
+    };
+  });
+
+  const focusedPlayer = enriched.find((racer) => racer.isPlayer) || enriched[0];
+  // La caméra de la mini-carte suit notre joueur (focus) tout en gardant
+  // l'intégralité de la boucle et les 3 rivaux dans le cadre.
+  const cameraX = 50 + (focusedPlayer.x - 50) * 0.32;
+  const cameraY = 50 + (focusedPlayer.y - 50) * 0.32;
+  const viewWidth = 96;
+  const viewHeight = 72;
+  const viewMinX = cameraX - viewWidth / 2;
+  const viewMinY = cameraY - viewHeight / 2;
+  const viewBox = `${viewMinX.toFixed(2)} ${viewMinY.toFixed(2)} ${viewWidth} ${viewHeight}`;
+
+  // Les marqueurs placent notre joueur en dernier pour qu'il reste au premier plan.
+  const markers = [
+    ...enriched.filter((racer) => !racer.isPlayer),
+    ...enriched.filter((racer) => racer.isPlayer),
+  ];
+
+  return {
+    viewBox,
+    focus: {
+      id: focusedPlayer.id,
+      isPlayer: true,
+      isFocused: true,
+      driverId: focusedPlayer.driverId,
+      avatarId: focusedPlayer.avatar?.id || focusedPlayer.avatarId,
+      name: focusedPlayer.name,
+      displayName: focusedPlayer.displayName,
+      country: focusedPlayer.country,
+      countryCode: focusedPlayer.countryCode,
+      flag: focusedPlayer.flag,
+      avatar: focusedPlayer.avatar,
+      accent: focusedPlayer.accent,
+      x: focusedPlayer.x,
+      y: focusedPlayer.y,
+      point: { x: focusedPlayer.x, y: focusedPlayer.y },
+      angle: focusedPlayer.angle,
+      deg: focusedPlayer.deg,
+      distance: focusedPlayer.distance,
+      rawDistance: focusedPlayer.rawDistance,
+      relativeDistance: 0,
+      lap: focusedPlayer.lap,
+      lapProgress: focusedPlayer.lapProgress,
+      lane: focusedPlayer.lane,
+      rank: focusedPlayer.rank,
+      cameraX,
+      cameraY,
+      viewBox,
+    },
+    racers: enriched,
+    markers,
+    startLine: cityRushMinimapPoint(0, 1.5, { lapLength, laneSpacing: 0 }),
+    midGate: cityRushMinimapPoint(lapLength / 2, 1.5, { lapLength, laneSpacing: 0 }),
+  };
+}
+

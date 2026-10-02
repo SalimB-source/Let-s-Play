@@ -1,16 +1,21 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
+import CityRushDriverAvatar from './CityRushDriverAvatar';
+import CityRushMinimap from './CityRushMinimap';
 import { CityRushAudio } from './cityRushAudio';
 import {
   CITY_RUSH_CARS,
   CITY_RUSH_CITIES,
   CITY_RUSH_DISTANCE,
+  CITY_RUSH_DRIVERS,
   CITY_RUSH_LAPS,
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
+  buildCityRushMinimapState,
   createCityRushInventory,
+  selectCityRushRacers,
 } from './cityRushRules';
 import { cityRushTheme } from './cityRushThemes';
 import './vice-city-rush.css';
@@ -124,6 +129,7 @@ function rankProgress(racer) {
 export default function ViceCityRushPage() {
   const [cityId, setCityId] = useState('vice-city');
   const [carId, setCarId] = useState(CITY_RUSH_CARS[0].id);
+  const [playerDriverId, setPlayerDriverId] = useState(CITY_RUSH_DRIVERS[0].id);
   const [phase, setPhase] = useState('intro');
   const [countdown, setCountdown] = useState(3);
   const [runId, setRunId] = useState(0);
@@ -155,7 +161,22 @@ export default function ViceCityRushPage() {
   // l'ambiance du circuit choisi (soleil ou néons).
   const daylight = useMemo(() => Boolean(cityRushTheme(city.id).daylight), [city.id]);
   const selectedCar = useMemo(() => CITY_RUSH_CARS.find((item) => item.id === carId) || CITY_RUSH_CARS[0], [carId]);
+  const roster = useMemo(
+    () => selectCityRushRacers({ cityId, carId: selectedCar.id, runId, playerDriverId }),
+    [cityId, selectedCar.id, runId, playerDriverId],
+  );
+  const minimapState = useMemo(
+    () => buildCityRushMinimapState(hud.racers, { cityId, carId: selectedCar.id, runId, playerDriverId }),
+    [hud.racers, cityId, selectedCar.id, runId, playerDriverId],
+  );
+  const standings = minimapState.racers;
   const bestTime = bests[cityId] || null;
+
+  const cyclePlayerDriver = () => {
+    const currentIndex = CITY_RUSH_DRIVERS.findIndex((driver) => driver.id === playerDriverId);
+    const nextDriver = CITY_RUSH_DRIVERS[(currentIndex + 1) % CITY_RUSH_DRIVERS.length];
+    setPlayerDriverId(nextDriver.id);
+  };
 
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return undefined;
@@ -388,13 +409,6 @@ export default function ViceCityRushPage() {
     showToast(message, pickup.type);
   };
 
-  const standings = hud.racers.length ? hud.racers : [
-    { id: 'player', name: 'TOI', progress: 0, distance: 0, rank: 4 },
-    { id: 'nova', name: 'NOVA', progress: 0, distance: 0, rank: 1 },
-    { id: 'juno', name: 'JUNO', progress: 0, distance: 0, rank: 2 },
-    { id: 'ace', name: 'ACE', progress: 0, distance: 0, rank: 3 },
-  ].sort((a, b) => a.rank - b.rank);
-
   return (
     <div className={`city-rush-page${immersive ? ' is-immersive' : ''}`} style={{ '--city-accent': city.accent, '--city-secondary': city.secondary }}>
       <header className="city-rush-heading wrap">
@@ -445,6 +459,7 @@ export default function ViceCityRushPage() {
               phase={phase}
               countdown={countdown}
               runId={runId}
+              roster={roster}
               actionsRef={actionsRef}
               onReady={() => setWorldError('')}
               onError={(message) => setWorldError(message)}
@@ -483,15 +498,13 @@ export default function ViceCityRushPage() {
                 </div>
               </div>
 
-              <div className="city-rush-racer-strip" aria-label="Avancement de la course">
-                {standings.map((racer) => (
-                  <div className={`city-rush-racer-line${racer.id === 'player' ? ' is-player' : ''}`} key={racer.id} title={`${racer.name} · tour ${racer.lap || 1} / ${CITY_RUSH_LAPS} · ${Math.round(racer.progress * 100)} %`}>
-                    <span>{racer.name === 'TOI' ? 'YOU' : racer.name}</span>
-                    <div><i style={{ left: `${rankProgress(racer)}%` }} /></div>
-                    <em>T{Math.min(racer.lap || 1, CITY_RUSH_LAPS)}</em>
-                  </div>
-                ))}
-              </div>
+              <CityRushMinimap
+                racers={standings}
+                cityId={cityId}
+                carId={selectedCar.id}
+                runId={runId}
+                playerDriverId={playerDriverId}
+              />
 
               {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.stunLeft > 0) && (
                 <div className={`city-rush-status-pill${hud.stunLeft > 0 ? ' is-stunned' : hud.boostLeft > 0 ? ' is-boost' : ' is-slow'}`}>
@@ -614,6 +627,37 @@ export default function ViceCityRushPage() {
                     ))}
                   </div>
                 </section>
+                <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
+                  <div className="city-rush-car-select-heading">
+                    <span id="city-rush-driver-title">03 / GRILLE INTERNATIONALE · 4 PILOTES</span>
+                    <button type="button" className="city-rush-driver-cycle" onClick={cyclePlayerDriver}>
+                      CHANGER MON PILOTE ({roster[0].flag} {roster[0].displayName}) ↻
+                    </button>
+                  </div>
+                  <div className="city-rush-driver-grid" role="list" aria-label="Les 4 pilotes de la course">
+                    {roster.map((driver) => (
+                      <div
+                        role="listitem"
+                        key={driver.id}
+                        className={`city-rush-driver-pill${driver.isPlayer ? ' is-player' : ''}`}
+                        style={{ '--driver-accent': driver.isPlayer ? '#43ead5' : driver.accent }}
+                        onClick={driver.isPlayer ? cyclePlayerDriver : undefined}
+                        title={driver.isPlayer ? `Ton pilote : ${driver.displayName} (${driver.country}) — clique pour changer` : `${driver.displayName} (${driver.country})`}
+                      >
+                        <span className="city-rush-driver-pill-avatar">
+                          <CityRushDriverAvatar driver={driver} />
+                        </span>
+                        <span className="city-rush-driver-pill-copy">
+                          <b>
+                            {driver.name}
+                            {driver.isPlayer && <em className="city-rush-you-badge">TOI</em>}
+                          </b>
+                          <small>{driver.flag} {driver.country}</small>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
                 {worldError && <p className="city-rush-error" role="alert">Le moteur 3D n’a pas pu démarrer : {worldError}</p>}
                 <div className="city-rush-intro-actions">
                   <button type="button" className="city-rush-start-button" onClick={startRace}>DÉMARRER LA COURSE <span>↗</span></button>
@@ -677,7 +721,17 @@ export default function ViceCityRushPage() {
               {standings.slice().sort((a, b) => a.rank - b.rank).map((racer) => (
                 <div className={`city-rush-racer-card${racer.id === 'player' ? ' is-player' : ''}`} key={racer.id}>
                   <span className="city-rush-racer-rank">{String(racer.rank).padStart(2, '0')}</span>
-                  <div className="city-rush-racer-info"><b>{racer.id === 'player' ? 'TOI' : racer.name}</b><small>TOUR {Math.min(racer.lap || 1, CITY_RUSH_LAPS)} <i>·</i> {Math.round(racer.distance || 0)} M</small></div>
+                  <span className="city-rush-racer-avatar">
+                    <CityRushDriverAvatar driver={racer} />
+                  </span>
+                  <div className="city-rush-racer-info">
+                    <span className="city-rush-racer-name-row">
+                      <b>{racer.name}</b>
+                      {racer.id === 'player' && <em className="city-rush-you-badge">TOI</em>}
+                      <span className="city-rush-racer-country">{racer.flag} {racer.country}</span>
+                    </span>
+                    <small>TOUR {Math.min(racer.lap || 1, CITY_RUSH_LAPS)} <i>·</i> {Math.round(racer.distance || 0)} M</small>
+                  </div>
                   <div className="city-rush-racer-meter"><i style={{ width: `${rankProgress(racer)}%` }} /></div>
                 </div>
               ))}
