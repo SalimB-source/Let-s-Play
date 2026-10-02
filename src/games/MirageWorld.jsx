@@ -2,7 +2,7 @@ import { CHARACTER_PALETTES } from './mirageCharacters';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { westernBuilding, westernObstacle } from './westernStage';
+import { westernBuilding, westernObstacle, updateWesternLights } from './westernStage';
 import { prairieField, prairieObstacle } from './prairieStage';
 import { sardiniaObstacle, sardiniaSeaside, sardiniaTerrace, sardiniaVillage } from './sardiniaStage';
 import { algerBuilding, algerObstacle, algerSeaside, updatePoliceBeacon } from './algerStage';
@@ -24,7 +24,7 @@ import {
   crystalPickupEffect, POWER_UP_CHARGE_COST, DIAMOND_CHARGE_VALUE, POWER_UP_MAX_CHARGES,
   createPowerUpState, chargePowerUps, consumePowerUp, powerUpHudState, duelRivalsForTrack,
   chooseNpcPowerAction, splitChargedPowers, POWER_BOOST_DURATION, POWER_BOOST_BONUS,
-  GEM_RESPAWN_DELAY, markGemTaken, isGemHidden, prairieSunsetState,
+  GEM_RESPAWN_DELAY, markGemTaken, isGemHidden, prairieSunsetState, westernSunsetState,
   MUD_SLOW_DURATION, MUD_SLOW_FACTOR, hitsMudPuddle, resolveMudSlow,
 } from './mirageRules';
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
@@ -646,6 +646,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       sunBottom: { value: skyVector(atmosphere.sunBottom) },
       sunTop: { value: skyVector(atmosphere.sunTop) },
       glow: { value: skyVector(atmosphere.glow) },
+      moonColor: { value: new THREE.Vector3(0.66, 0.78, 1.0) },
+      moonAlpha: { value: 0.0 },
+      moonX: { value: 34.0 },
+      moonElevation: { value: 36.0 },
+      moonRadius: { value: 3.0 },
       sunElevation: { value: snakeway ? 28.0 : japan ? 25.0 : airbase ? 22.0 : sardinia ? 12.0 : alger ? 7.0 : ramparts ? 11.0 : 5.5 },
       sunX: { value: snakeway ? -27.0 : sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
       sunRadius: { value: snakeway ? 4.8 : sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
@@ -659,6 +664,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     fragmentShader: `uniform vec3 skyBottom;
       uniform vec3 skyHorizon;
       uniform vec3 skyTop;
+      uniform vec3 moonColor;
+      uniform float moonAlpha;
+      uniform float moonX;
+      uniform float moonElevation;
+      uniform float moonRadius;
       uniform vec3 sunBottom;
       uniform vec3 sunTop;
       uniform vec3 glow;
@@ -687,6 +697,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
             sky += vec3(0.85, 0.92, 1.0) * star * isNight;
           }
         }
+        float moonDistance = length(skyPoint - vec2(moonX, moonElevation));
+        float moonDisc = 1.0 - smoothstep(moonRadius - 0.16, moonRadius, moonDistance);
+        float shadowDistance = length(skyPoint - vec2(moonX - 1.15, moonElevation + 0.42));
+        float shadowDisc = 1.0 - smoothstep(moonRadius - 0.48, moonRadius - 0.22, shadowDistance);
+        moonDisc *= 1.0 - shadowDisc;
+        float moonHalo = exp(-moonDistance * moonDistance / 40.0) * moonAlpha * 0.22;
+        sky += moonColor * moonHalo;
+        sky = mix(sky, moonColor, moonDisc * moonAlpha);
         vec3 sunColor = mix(sunBottom, sunTop, clamp((height - (sunElevation - 8.0)) / 16.0, 0.0, 1.0));
         gl_FragColor = vec4(mix(sky, sunColor, disc), 1.0);
       }`,
@@ -698,15 +716,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   sunset.visible = !desert; // le désert a son propre ciel (desertStage.js)
   scene.add(sunset);
 
-  const applyPrairieSunset = (progress) => {
-    if (!prairie) return;
-    const state = prairieSunsetState(progress);
+  const applyDynamicSunset = (progress) => {
+    if (!prairie && !western) return;
+    const state = western ? westernSunsetState(progress) : prairieSunsetState(progress);
     const u = sunset.material.uniforms;
     u.sunElevation.value = state.sunElevation;
     u.isNight.value = state.starAlpha;
+    u.moonAlpha.value = state.moonAlpha;
     u.skyBottom.value.set(...state.skyBottom);
     u.skyHorizon.value.set(...state.skyHorizon);
     u.skyTop.value.set(...state.skyTop);
+    u.sunBottom.value.set(...state.sunBottom);
+    u.sunTop.value.set(...state.sunTop);
     u.glow.value.set(...state.glow);
     scene.fog.color.setRGB(...state.fog);
     scene.background.setRGB(...state.bg);
@@ -716,6 +737,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     sunLight.color.setRGB(...state.sunLight);
     sunLight.intensity = state.sunIntensity;
     rimLight.intensity = state.rimIntensity;
+    if (western) renderer.toneMappingExposure = 1.08 - state.progress * 0.12;
   };
   if (prairie) block(cube, new THREE.MeshStandardMaterial({ color: 0xa5a34e, roughness: 1 }), scene, [0, -0.39, -35], [180, 0.6, 180]);
   if (western) block(cube, new THREE.MeshStandardMaterial({ color: 0xb58b5d, roughness: 1 }), scene, [0, -0.64, -35], [80, 0.6, 160]);
@@ -2125,7 +2147,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     });
     resetPowerUps();
     clearGemBursts();
-    applyPrairieSunset(0);
+    applyDynamicSunset(0);
     emitHud(true);
   };
 
@@ -2283,8 +2305,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
 
       floorOffset += speed * dt;
       placeFloor();
+      const sunsetProgress = race.mode !== 'rush' ? distance / DUEL_DISTANCE : elapsed / RUN_SECONDS;
       scenery.forEach((item) => {
         item.position.z += speed * item.userData.speedFactor * dt;
+        if (western) updateWesternLights(item.userData.westernLights, sunsetProgress, time, reduceMotion);
         const boat = item.userData.boat;
         if (boat) {
           boat.position.y = -1.05 + Math.sin(time * 0.0017 + boat.userData.bob) * 0.07;
@@ -2768,8 +2792,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 8);
       camera.updateProjectionMatrix();
     }
-    if (prairie) {
-      applyPrairieSunset(race.mode !== 'rush' ? distance / DUEL_DISTANCE : elapsed / RUN_SECONDS);
+    if (prairie || western) {
+      applyDynamicSunset(race.mode !== 'rush' ? distance / DUEL_DISTANCE : elapsed / RUN_SECONDS);
     }
     camera.position.y += ((turboActive ? 6.85 : 7.3) - camera.position.y) * Math.min(1, dt * 6);
     camera.position.z += ((turboActive ? 10.05 : 9.4) - camera.position.z) * Math.min(1, dt * 6);

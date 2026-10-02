@@ -56,6 +56,15 @@ export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'white-lambo', name: 'Lamborghini blanche', speed: 7.2, width: 1.92, length: 3.8 }),
 ]);
 
+// Un choc avec le trafic ne retire pas de vie : il crée un court moment de
+// contact lisible, puis le véhicule lent se rabat pour libérer la voie. La
+// durée est volontairement indépendante du modèle de cabriolet choisi : le
+// joueur humain et les IA encaissent exactement la même durée (0,6 s).
+export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 0.6;
+export const CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN = 1.2;
+export const CITY_RUSH_TRAFFIC_IMPACT_GAP = CITY_RUSH_CAR_GAP;
+export const CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION = 0.5;
+
 export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRate, deltaTime) {
   const current = Math.max(0, Number(currentSpeed) || 0);
   const target = Math.max(0, Number(targetSpeed) || 0);
@@ -82,6 +91,25 @@ export function cityRushHitDuration(baseDuration, carProfile) {
   const duration = Math.max(0, Number(baseDuration) || 0);
   const multiplier = Number(carProfile?.hitRecoveryMultiplier);
   return duration * (Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1);
+}
+
+// ── Toupie de la frappe héliportée (pouvoir jaune) ──────────────────────────
+// Pendant l'immobilisation, la voiture touchée tourne sur elle-même et ne peut
+// plus changer de voie. `cityRushStunSpin` renvoie le lacet (radians) à
+// appliquer à la carrosserie : départ brutal après l'impact, puis l'élan
+// retombe en douceur sur un nombre entier de tours — la voiture se fige donc
+// face à la route, sans à-coup, exactement quand le stun expire.
+export const CITY_RUSH_STUN_SPIN_TURNS = 2; // tours complets pendant l'immobilisation
+
+export function cityRushStunSpin(stunLeft, stunTotal, turns = CITY_RUSH_STUN_SPIN_TURNS) {
+  const left = Math.max(0, Number(stunLeft) || 0);
+  const total = Math.max(0, Number(stunTotal) || 0);
+  const safeTurns = Math.max(0, Number(turns) || 0);
+  if (left <= 0 || total <= 0 || safeTurns <= 0) return 0;
+  const progress = Math.max(0, Math.min(1, 1 - left / total));
+  // Ease-out quadratique : la vitesse de rotation fond linéairement jusqu'à 0.
+  const eased = 1 - (1 - progress) ** 2;
+  return eased * safeTurns * Math.PI * 2;
 }
 
 export const CITY_RUSH_POWERS = Object.freeze({
@@ -121,7 +149,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base).',
+    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.CASH]: Object.freeze({
@@ -143,7 +171,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ffd44f',
     key: 'R',
     automatic: false,
-    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un poursuivant) et les adversaires proches de l’impact devant ton capot ; la reprise de chaque cible règle la durée (2 s de base).',
+    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un rival poursuivant) et les adversaires proches de l’impact devant ton capot ; en tête au dernier tour, il peut aussi bombarder la berline de police qui te traque. Les voitures touchées partent en toupie sur place, incapables de changer de voie ; la reprise de chaque cible règle la durée (2 s de base).',
     duration: 2,
   }),
 });
@@ -398,6 +426,23 @@ export function cityRushHelicopterTarget(racers = [], playerId = 'player') {
     .sort((a, b) => (Number(b.distance) || 0) - (Number(a.distance) || 0))[0] || null;
 }
 
+// Exception du dernier tour pour les pouvoirs rouge (mitrailleuse) et jaune
+// (hélico) : quand l'appelant n'a plus personne devant lui — il mène la
+// course et l'escouade s'est repliée sur son pare-chocs pour ouvrir le feu —,
+// la riposte peut se retourner contre la berline « active » la plus proche,
+// qu'elle soit devant, roue contre roue ou déjà dépassée. Un hélicoptère
+// frappe où il veut et une rafale de riposte part vers l'arrière ; l'exception
+// ne vaut que pour ces poursuivants non classés, jamais pour un rival classé.
+// `excludeId` permet au tireur de ne jamais se viser lui-même.
+export function cityRushPoliceTarget(pursuers = [], referenceDistance = 0, excludeId = null) {
+  const reference = Number(referenceDistance);
+  if (!Number.isFinite(reference)) return null;
+  return (Array.isArray(pursuers) ? pursuers : [])
+    .filter((police) => police && police.id !== excludeId && police.active !== false)
+    .filter((police) => Number.isFinite(Number(police.distance)))
+    .sort((a, b) => Math.abs(Number(a.distance) - reference) - Math.abs(Number(b.distance) - reference))[0] || null;
+}
+
 // Le trafic conserve une distance de sécurité; les voitures de course ne
 // se bloquent plus entre elles lorsqu'elles sont marquées `collisionGroup`.
 export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR_GAP) {
@@ -427,6 +472,87 @@ export function resolveCityRushCarMovement(cars = [], minimumGap = CITY_RUSH_CAR
     }
   }
   return resolved;
+}
+
+const finiteNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+
+/**
+ * Repère le moment où une voiture de course va réellement toucher le trafic
+ * lent. Le moteur de mouvement garde une marge de sécurité pour empêcher les
+ * voitures de se superposer ; on observe donc les distances demandées avant
+ * ce rabotage, sinon l'impact ne pourrait jamais être déclenché.
+ *
+ * Les rivaux de course ne se percutent toujours pas entre eux : seuls les
+ * couples `racer` → `traffic` sont retournés. `x` permet aussi de détecter un
+ * changement de voie en cours, quand les deux voitures n'ont pas encore le
+ * même numéro de voie mais que leurs carrosseries se recouvrent.
+ */
+export function detectCityRushTrafficImpacts(cars = [], minimumGap = CITY_RUSH_TRAFFIC_IMPACT_GAP) {
+  const safeGap = Math.max(0, finiteNumber(minimumGap, CITY_RUSH_TRAFFIC_IMPACT_GAP));
+  const racers = (Array.isArray(cars) ? cars : []).filter((car) => car?.collisionGroup === 'racer');
+  const traffic = (Array.isArray(cars) ? cars : []).filter((car) => car?.collisionGroup === 'traffic');
+  const impacts = [];
+
+  for (const racer of racers) {
+    const racerPrevious = finiteNumber(racer.previousDistance);
+    const racerNext = Math.max(racerPrevious, finiteNumber(racer.nextDistance, racerPrevious));
+    const racerWidth = Math.max(0, finiteNumber(racer.width, 1.9));
+    for (const vehicle of traffic) {
+      const trafficPrevious = finiteNumber(vehicle.previousDistance);
+      const trafficNext = Math.max(trafficPrevious, finiteNumber(vehicle.nextDistance, trafficPrevious));
+      const trafficWidth = Math.max(0, finiteNumber(vehicle.width, 1.9));
+      const sameLane = racer.lane === vehicle.lane;
+      const lateralOverlap = Number.isFinite(Number(racer.x))
+        && Number.isFinite(Number(vehicle.x))
+        && Math.abs(Number(racer.x) - Number(vehicle.x)) < (racerWidth + trafficWidth) / 2;
+      if (!sameLane && !lateralOverlap) continue;
+
+      const previousGap = trafficPrevious - racerPrevious;
+      const requestedGap = trafficNext - racerNext;
+      // Ne pas transformer deux voitures déjà espacées de moins de `safeGap`
+      // en une suite infinie d'impacts : il faut entrer dans la marge depuis
+      // l'arrière, ce qui laisse le temps au véhicule de se rabattre.
+      const wasOutsideContact = previousGap > safeGap + 1e-7;
+      const touches = requestedGap <= safeGap + 1e-7
+        || racerNext >= trafficPrevious - safeGap - 1e-7;
+      if (!wasOutsideContact || !touches) continue;
+      impacts.push({
+        racerId: racer.id,
+        trafficId: vehicle.id,
+        previousGap,
+        requestedGap,
+        lane: vehicle.lane,
+      });
+    }
+  }
+  return impacts.sort((a, b) => a.requestedGap - b.requestedGap);
+}
+
+/**
+ * Choisit une voie de dégagement pour un véhicule lent touché. On tente une
+ * voie voisine, puis n'importe quelle voie ouverte si un tunnel ferme le
+ * bord immédiat. Les voies signalées comme occupées restent un dernier
+ * recours seulement : même dans un peloton serré, le trafic doit quitter la
+ * trajectoire pour que la voiture touchée ne rebloque pas le joueur.
+ */
+export function chooseCityRushTrafficEscapeLane({
+  currentLane = 0,
+  laneCount = CITY_RUSH_LANE_X.length,
+  blockedLanes = [],
+  openLanes = null,
+} = {}) {
+  const count = Math.max(1, Math.floor(finiteNumber(laneCount, CITY_RUSH_LANE_X.length)));
+  const current = Math.max(0, Math.min(count - 1, Math.floor(finiteNumber(currentLane))));
+  const open = Array.isArray(openLanes) && openLanes.length
+    ? new Set(openLanes.filter((lane) => lane >= 0 && lane < count))
+    : null;
+  const blocked = new Set((Array.isArray(blockedLanes) ? blockedLanes : [])
+    .filter((lane) => lane >= 0 && lane < count));
+  const candidates = Array.from({ length: count }, (_, lane) => lane)
+    .filter((lane) => lane !== current && (!open || open.has(lane)))
+    .sort((a, b) => Math.abs(a - current) - Math.abs(b - current) || a - b);
+  const clear = candidates.find((lane) => !blocked.has(lane));
+  return clear ?? candidates[0] ?? current;
 }
 
 /**
@@ -746,9 +872,37 @@ export function cityRushPolicePace({
   return Math.max(safeLeader, safeBase * 0.82);
 }
 
+// Une voie est « bouchée » pour une berline quand un véhicule lent la précède à
+// portée de freinage (`CITY_RUSH_POLICE_BLOCK_RANGE`). La vitesse du trafic
+// n'est pas toujours connue : sans elle, le véhicule est supposé à l'arrêt.
+// Une berline déjà engluée roule à la vitesse du trafic, d'où le plancher.
+export function isCityRushPoliceLaneJammed({
+  lane = 0,
+  distance = 0,
+  speed = CITY_RUSH_PLAYER_SPEED,
+  traffic = [],
+  range = CITY_RUSH_POLICE_BLOCK_RANGE,
+} = {}) {
+  const ownSpeed = Math.max(0, Number(speed) || 0);
+  const slowThreshold = Math.max(12, ownSpeed * 0.6);
+  return (Array.isArray(traffic) ? traffic : []).some((vehicle) => {
+    if (!vehicle || vehicle.lane !== lane) return false;
+    const gap = Number(vehicle.distance) - Number(distance);
+    if (!Number.isFinite(gap) || gap < -3 || gap > range) return false;
+    return Math.max(0, Number(vehicle.speed) || 0) < slowThreshold;
+  });
+}
+
 // Choix de voie de l'escouade : même prudence que les rivaux devant le trafic
 // et les zones lentes, mais une convoitise multipliée pour les bonus rouges et
 // jaunes — c'est là qu'elle prive le leader de ses armes.
+//
+// La convoitise (×100) écrase toute pénalité de circulation : un bonus rouge
+// devant un camion suffisait à garder la berline collée à son pare-chocs, à
+// 5 m/s, pendant que le leader s'envolait — l'escouade décrochait et n'était
+// plus jamais à l'écran. Une voie bouchée est donc écartée d'office tant
+// qu'une voie libre est ouverte ; si tout est bouché, le choix d'origine
+// reste valable (la berline touche alors le véhicule, voir le monde 3D).
 export function chooseCityRushPoliceLane({
   currentLane = 0,
   laneCount = CITY_RUSH_LANE_X.length,
@@ -771,10 +925,12 @@ export function chooseCityRushPoliceLane({
   const lookAhead = Math.max(1, Number(lookAheadDistance) || CITY_RUSH_POLICE_LOOKAHEAD);
   const racerSpeed = Math.max(0, Number(speed) || 0);
   const huntedLane = targetLane === null || targetLane === undefined ? null : clampCityRushLane(targetLane, laneCount);
-  let bestLane = lane;
+  const clearLanes = candidates.filter((candidate) => !isCityRushPoliceLaneJammed({ lane: candidate, distance, speed: racerSpeed, traffic }));
+  const options = clearLanes.length ? clearLanes : candidates;
+  let bestLane = options.includes(lane) ? lane : options[0];
   let bestScore = -Infinity;
 
-  for (const candidate of candidates) {
+  for (const candidate of options) {
     let safetyScore = -Math.abs(candidate - lane) * 1.1;
     let greed = 0;
     for (const pickup of pickups) {
@@ -821,12 +977,18 @@ export function chooseCityRushPoliceLane({
 // Les berlines de police ne bloquent personne (elles traversent le peloton
 // comme les rivaux se traversent entre eux) mais **ne traversent pas le
 // trafic** : leur distance est rabotée derrière le véhicule lent de leur voie.
+// `blockedBy` désigne le véhicule qui a freiné la berline cette image (son
+// `id`), ou `null` : le monde 3D s'en sert pour le heurter — le détecteur de
+// chocs ne voit que l'entrée dans la marge depuis l'arrière, et une berline
+// restée plaquée contre un véhicule dont le choc a été refusé le suivrait sans
+// fin à son allure.
 export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], minimumGap = CITY_RUSH_CAR_GAP) {
   const safeGap = Math.max(0, Number(minimumGap) || 0);
   return policeCars.map((car) => {
     const previousDistance = Number.isFinite(Number(car.distance)) ? Number(car.distance) : 0;
     const requestedDistance = Number.isFinite(Number(car.nextDistance)) ? Number(car.nextDistance) : previousDistance;
     let nextDistance = Math.max(previousDistance, requestedDistance);
+    let blockedBy = null;
     for (const other of traffic) {
       const otherDistance = Number(other.distance);
       if (!Number.isFinite(otherDistance) || otherDistance <= previousDistance) continue;
@@ -837,9 +999,13 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
         && Number.isFinite(Number(car.x))
         && Math.abs(Number(other.x) - Number(car.x)) < (policeWidth + otherWidth) / 2;
       if (!sameLane && !lateralOverlap) continue;
-      nextDistance = Math.min(nextDistance, Math.max(previousDistance, otherDistance - safeGap));
+      const limit = Math.max(previousDistance, otherDistance - safeGap);
+      if (limit < nextDistance) {
+        nextDistance = limit;
+        blockedBy = other.id ?? null;
+      }
     }
-    return { ...car, previousDistance, nextDistance };
+    return { ...car, previousDistance, nextDistance, blockedBy };
   });
 }
 
