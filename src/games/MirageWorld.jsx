@@ -2147,7 +2147,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     });
     resetPowerUps();
     clearGemBursts();
-    applyPrairieSunset(0);
+    applyDynamicSunset(0);
     emitHud(true);
   };
 
