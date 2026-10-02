@@ -152,6 +152,14 @@
 .city-rush-top-button:hover { color: #fff; border-color: var(--city-accent); background: rgba(255, 255, 255, .08); }
 .city-rush-top-button.is-quiet { color: rgba(234, 236, 248, .63); }
 .city-rush-top-button.is-resume { border-color: rgba(91, 231, 180, .36); color: #9af3cd; }
+/* Son : même gabarit que PAUSE / MAP, mais il reste affiché en permanence —
+   c'est un interrupteur (aria-pressed), pas une action de course. Allumé, il
+   prend l'or de la ville ; coupé, il s'efface comme le bouton discret. */
+.city-rush-sound-button { border-color: rgba(255, 224, 166, .22); }
+.city-rush-sound-button:first-child { margin-right: 2px; }
+.city-rush-sound-button > span { font-size: 12px; line-height: 1; }
+.city-rush-sound-button.is-on { border-color: rgba(245, 210, 118, .45); color: #ffe1a2; background: rgba(245, 210, 118, .1); }
+.city-rush-sound-button:not(.is-on) { color: rgba(234, 236, 248, .5); }
 .city-rush-top-flag { display: inline-flex; align-items: center; gap: 6px; padding-left: 8px; color: rgba(225, 229, 244, .45); font: 800 8px var(--mono, monospace); letter-spacing: .1em; }
 .city-rush-top-flag i { width: 5px; height: 5px; border-radius: 50%; background: var(--city-secondary); box-shadow: 0 0 8px var(--city-secondary); }
 

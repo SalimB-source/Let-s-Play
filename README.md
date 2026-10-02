@@ -356,6 +356,11 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   s'élargit en turbo, l'image tremble sous un missile), tour d'honneur à
   l'arrivée. La caméra passe à 6,6 m : tout élément qui enjambe la route doit
   rester au-dessus de 7,1 m (voir `cityRushStage.js` et `cityRushStartLine.js`).
+- **Le son.** Musique **disco** de synthé (une boucle de huit mesures, un tempo
+  par ville) et bruitages écrits en Web Audio, sans aucun fichier : moteur à
+  cinq rapports qui suit la vitesse, coup de feu, dérapage des pneus quand une
+  voiture encaisse un tir, rotor d'hélicoptère, missile et explosion. Bouton
+  SON (touche M) pour tout couper ; voir « La bande-son » plus bas.
 - **Téléphone / APK.** Mode allégé automatique (pointeur grossier ou
   `window.LetsPlayAndroid`) : pas d'ombres, moins de spectateurs et de pluie,
   définition plafonnée. Le décor est fusionné par matériau (quelques dizaines
@@ -378,14 +383,53 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - `src/games/cityRushStartLine.js` — la zone de départ (statique) et ses parties
   animées (feux, tableau, drapeaux, foule, flashs, confettis, commissaire) ;
 - `src/games/cityRushCars.js` — voitures des pilotes, trafic, fumée ;
+- `src/games/cityRushAudio.js` — la bande-son (musique disco, moteurs, tirs,
+  dérapages, hélicoptère, explosions) ;
 - `src/games/ViceCityWorld.jsx` — le monde three.js (phases, caméra, course,
   passages de ligne) ; `src/games/ViceCityRushPage.jsx` et
   `src/games/vice-city-rush.css` — la page, le HUD (carte TOUR, bannière de tour).
+
+### La bande-son
+
+Tout est **synthétisé en Web Audio** (`src/games/cityRushAudio.js`) : aucun
+fichier à charger, donc rien à attendre au premier tour de roue et pas un octet
+de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
+`arcadeAudio.js` (Mirage Rush).
+
+- **La musique.** Un disco de synthé joué par un séquenceur : grosse caisse à
+  quatre temps, charleston en croches avec ouverture sur le dernier temps,
+  claquement sur les temps 2 et 4, basse qui saute d'octave, stabs de cuivres
+  sur les contretemps, nappe de cordes tenue une mesure, et une mélodie qui
+  n'entre qu'aux mesures 5 à 8 de la boucle. Progression Dm7 · G7 · Cmaj7 · Am7,
+  huit mesures, un tempo par ville (Vice City 122, Paris 118, Tokyo 132).
+- **Les moteurs.** Un nœud permanent (trois oscillateurs + bruit de
+  roulement + trémolo) dont on ne fait bouger que la fréquence et le volume :
+  **cinq rapports**, le régime remonte dans chacun puis retombe au passage de
+  vitesse, le turbo le monte de 14 %. Le monde l'appelle à chaque image
+  (`speed`, `throttle`, `boost`) — le HUD, émis toutes les 120 ms, serait trop
+  saccadé. Les valeurs sont quantifiées (128 crans) pour ne pas empiler
+  d'automations à chaque frame.
+- **Les bruitages.** Coup de feu (claquement, corps, écho entre les façades),
+  **dérapage** quand une voiture encaisse un tir — pneus dans un filtre très
+  sélectif et sifflement qui tremble, joué 0,3 s après le coup de feu pour
+  tomber sur l'impact —, dérapage plus doux sur une flaque d'huile ou une zone
+  de ralentissement, **hélicoptère** (pales hachées par un LFO + turbine qui
+  monte en régime, démarrage sur l'approche, extinction après l'explosion),
+  missile qui part, **explosion** (descente dans le grave, souffle, débris,
+  écho), plus les bips de ramassage, les feux de départ, les passages de ligne
+  et la fanfare d'arrivée. Chaque bruitage est **panoramiqué** selon la voie de
+  la voiture concernée (`vehiclePan`).
+- **Le bouton SON** de la barre du jeu (touche **M**) : un interrupteur
+  `aria-pressed`, mémorisé dans `localStorage`
+  (`letsplay_vice_city_rush_sound_v1`), comme le bouton de Mirage Rush. Coupé,
+  plus aucun nœud n'est programmé. La musique se met aussi en sourdine quand
+  l'onglet passe en arrière-plan et s'arrête au retour à l'écran d'accueil.
 
 ### Vérifications
 
 ```bash
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 3 tours sans exception, éclatements visibles
 ```
 
@@ -394,6 +438,12 @@ Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animatio
 tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
 navigateur (`npm run dev`) pour juger l'image.
+
+Le monde reçoit aussi une **fausse bande-son** qui ne fait que compter les
+appels : une course complète doit piloter le moteur à chaque image, sonner les
+quatre feux, les deux passages de ligne et la fanfare, et **éteindre chaque
+hélicoptère démarré** (un rotor oublié s'entendrait jusqu'à la page d'accueil).
+Les compteurs sont imprimés à la fin de chaque ville.
 
 ## Barre de navigation : le logo et le menu « Jeux »
 
