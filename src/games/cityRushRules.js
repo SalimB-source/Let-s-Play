@@ -81,11 +81,13 @@ export const CITY_RUSH_POWERS = Object.freeze({
 });
 
 // Collecte de la monnaie de chaque couleur pour remplir sa jauge dédiée.
+// Seuils de chargement abaissés pour que les pouvoirs tombent plus souvent en
+// course : bleu 2, rouge 3, vert 2, jaune 4.
 export const CITY_RUSH_POWER_CHARGE_COST = Object.freeze({
-  [CITY_RUSH_POWERS.OIL]: 4,
-  [CITY_RUSH_POWERS.PISTOL]: 5,
-  [CITY_RUSH_POWERS.CASH]: 3,
-  [CITY_RUSH_POWERS.RADIO]: 8,
+  [CITY_RUSH_POWERS.OIL]: 2, // bleu · clé à molette
+  [CITY_RUSH_POWERS.PISTOL]: 3, // rouge · pistolet
+  [CITY_RUSH_POWERS.CASH]: 2, // vert · billets
+  [CITY_RUSH_POWERS.RADIO]: 4, // jaune · talkie-walkie
 });
 
 export const CITY_RUSH_POWER_RULES = Object.freeze({
@@ -131,15 +133,95 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
   }),
 });
 
+// ── Éclatement des bonus ────────────────────────────────────────────────────
+// Un bonus ramassé ne disparaît plus d'un coup : il éclate en éclats de sa
+// couleur (flash, anneau qui s'ouvre, débris projetés puis repris par la
+// gravité) et le bonus suivant réapparaît 0,2 s plus tard en gonflant depuis
+// son socle. Tous les calculs sont purs, donc testables hors de three.js.
+export const CITY_RUSH_PICKUP_RESPAWN_DELAY = 0.2; // s : pop-in d'un bonus qui réapparaît
+export const CITY_RUSH_PICKUP_BURST_DURATION = 0.44; // s : l'éclatement reste à l'écran
+export const CITY_RUSH_PICKUP_BURST_SHARDS = 12; // éclats projetés par bonus
+export const CITY_RUSH_PICKUP_BURST_GRAVITY = 11; // m/s² : les éclats retombent
+export const CITY_RUSH_PICKUP_BURST_LIFT = 0.42; // m de saut vers le haut
+export const CITY_RUSH_PICKUP_BURST_SPEED = 4.4; // m/s d'éjection
+
+const clamp01 = (value) => Math.max(0, Math.min(1, value));
+
+// Répartition quasi uniforme sur une sphère (angle d'or) : l'éclatement part
+// dans toutes les directions tout en restant lisible depuis la caméra.
+export function cityRushPickupBurstShards(count = CITY_RUSH_PICKUP_BURST_SHARDS, random = Math.random) {
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const twist = random() * Math.PI * 2;
+  const shards = [];
+  for (let index = 0; index < count; index += 1) {
+    const y = 1 - ((index + 0.5) / Math.max(1, count)) * 1.5;
+    const radius = Math.sqrt(Math.max(0, 1 - y * y));
+    const angle = twist + index * golden;
+    shards.push({
+      dir: [Math.cos(angle) * radius, y, Math.sin(angle) * radius],
+      speed: 0.7 + random() * 0.6,
+      size: 0.6 + random() * 0.6,
+      spin: [(random() - 0.5) * 24, (random() - 0.5) * 24, (random() - 0.5) * 24],
+    });
+  }
+  return shards;
+}
+
+export function cityRushPickupShardState(shard, age) {
+  const life = clamp01(age / CITY_RUSH_PICKUP_BURST_DURATION);
+  const ease = 1 - (1 - life) ** 2;
+  const reach = CITY_RUSH_PICKUP_BURST_SPEED * CITY_RUSH_PICKUP_BURST_DURATION * shard.speed * ease;
+  const fall = 0.5 * CITY_RUSH_PICKUP_BURST_GRAVITY * (life * CITY_RUSH_PICKUP_BURST_DURATION) ** 2;
+  return {
+    life,
+    done: life >= 1,
+    position: [
+      shard.dir[0] * reach,
+      shard.dir[1] * reach + CITY_RUSH_PICKUP_BURST_LIFT * ease - fall,
+      shard.dir[2] * reach,
+    ],
+    rotation: [shard.spin[0] * age, shard.spin[1] * age, shard.spin[2] * age],
+    scale: shard.size * (1 - life * life * 0.92),
+    opacity: 1 - life * life,
+  };
+}
+
+// Le flash et l'anneau qui s'ouvre : le cœur blanc du ramassage, lisible même
+// à 26 m/s. `core` ne dure que le premier tiers de l'animation.
+export function cityRushPickupFlashState(age) {
+  const life = clamp01(age / CITY_RUSH_PICKUP_BURST_DURATION);
+  const ease = 1 - (1 - life) ** 3;
+  return {
+    life,
+    done: life >= 1,
+    scale: 0.5 + ease * 2.1,
+    opacity: (1 - life) ** 1.5 * 0.9,
+    core: Math.max(0, 1 - life * 2.6),
+  };
+}
+
+// Le bonus qui réapparaît gonfle avec un léger rebond (easeOutBack) pendant
+// CITY_RUSH_PICKUP_RESPAWN_DELAY : 0 → ~1,1 → 1.
+export function cityRushPickupPopScale(progress) {
+  const t = clamp01(progress);
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  const overshoot = 1.70158;
+  const p = t - 1;
+  return 1 + (overshoot + 1) * p ** 3 + overshoot * p ** 2;
+}
+
 // Chaque ville reçoit une palette propre au décor Three.js et à ses cartes UI.
 export const CITY_RUSH_CITIES = Object.freeze([
   Object.freeze({
+    // Vice City se joue en plein jour : ciel bleu de Floride, sable chaud,
+    // mer turquoise et façades Art déco pastel de front de mer.
     id: 'vice-city', name: 'VICE CITY', label: 'MIAMI · FLORIDE', district: 'OCEAN DRIVE',
-    tagline: 'La nuit est jeune. La ville aussi.', accent: '#ff5db8', secondary: '#43ead5',
-    background: 0x111635, fog: 0x303453, asphalt: 0x15182a, sidewalk: 0x483248,
-    buildingColors: Object.freeze([0xe889a0, 0xf5c77c, 0x63c6c3, 0xc68ac9, 0xf2a5b9]),
-    windowColor: 0xffdc9a, skyTop: 0x15193b, skyGlow: 0xff6a9f, style: 'vice',
-    signs: Object.freeze(['OCEAN DR', 'NEON BAY', 'VICE HOTEL', 'SUNSET CLUB']),
+    tagline: 'Plein soleil sur Ocean Drive.', accent: '#ff5db8', secondary: '#43ead5',
+    background: 0x7ec8f0, fog: 0xcfe9f2, asphalt: 0x767b86, sidewalk: 0xf0dcb2,
+    buildingColors: Object.freeze([0xffd3e2, 0xfff0c9, 0xbfeee6, 0xcfe4ff, 0xffd9b0]),
+    windowColor: 0x8fd0e8, skyTop: 0x2b7fd4, skyGlow: 0xfff2c4, style: 'vice',
+    signs: Object.freeze(['OCEAN DR', 'BEACH CLUB', 'VICE HOTEL', 'SUNSET SURF']),
   }),
   Object.freeze({
     id: 'new-york', name: 'NEW YORK', label: 'NEW YORK · USA', district: 'MIDTOWN',

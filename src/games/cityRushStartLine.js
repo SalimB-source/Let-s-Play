@@ -57,7 +57,8 @@ export function createStartLineMaterials(city, theme) {
     bannerUvs,
     seatA: new THREE.MeshStandardMaterial({ color: new THREE.Color(city.accent).multiplyScalar(0.8), roughness: 0.75 }),
     seatB: new THREE.MeshStandardMaterial({ color: new THREE.Color(city.secondary).multiplyScalar(0.75), roughness: 0.75 }),
-    canopy: new THREE.MeshStandardMaterial({ color: 0x1b2030, roughness: 0.55, metalness: 0.35 }),
+    // Auvent des tribunes : sombre la nuit, toile claire en plein jour.
+    canopy: new THREE.MeshStandardMaterial({ color: theme.materials?.canopy ?? 0x1b2030, roughness: 0.55, metalness: 0.35 }),
     gridPaint: basic({ color: 0xf4f4ef, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
     rumbleRed: new THREE.MeshStandardMaterial({ color: 0xd8323c, roughness: 0.7, emissive: 0x3a0a0e }),
     rumbleWhite: new THREE.MeshStandardMaterial({ color: 0xf1f1ec, roughness: 0.7, emissive: 0x2a2a2a }),
@@ -339,8 +340,11 @@ export function createStartLineDynamics({ city, theme, materials: m, startMateri
   beamGeometry.rotateX(Math.PI);
   beamGeometry.translate(0, 9, 0);
   disposables.push(beamGeometry);
+  // Les faisceaux tournants ne se lisent que dans le noir : quasi éteints en
+  // plein jour (Vice City).
+  const beamOpacity = theme.daylight ? 0.03 : 0.13;
   const beamMaterials = [accent, secondary].map((color) => {
-    const material = basic({ color, transparent: true, opacity: 0.13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+    const material = basic({ color, transparent: true, opacity: beamOpacity, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
     disposables.push(material);
     return material;
   });

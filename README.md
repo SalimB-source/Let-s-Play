@@ -316,11 +316,36 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
   · TOUR 2/3 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
   rivaux annoncent leur dernier tour. Le dernier passage termine la course.
+- **Les bonus.** Quatre monnaies colorées remplissent quatre jauges dédiées :
+  **bleu 2** (clé à molette / huile), **rouge 3** (pistolet / dérapage),
+  **vert 2** (billets / boost), **jaune 4** (talkie-walkie / hélicoptère) —
+  `CITY_RUSH_POWER_CHARGE_COST` dans `cityRushRules.js`. Un bonus ramassé
+  **éclate** : flash, anneau qui s'ouvre et éclats de sa couleur repris par la
+  gravité (`cityRushPickupBurstShards` / `cityRushPickupShardState` /
+  `cityRushPickupFlashState`, rendus par un pool de six objets dans
+  `ViceCityWorld.jsx`, sans éclats si `prefers-reduced-motion`). Le bonus suivant
+  **réapparaît 0,2 s** plus tard en gonflant depuis son socle
+  (`CITY_RUSH_PICKUP_RESPAWN_DELAY` + `cityRushPickupPopScale`).
 - **Le décor.** Chaque ville a sa boucle : façades texturées (fenêtres allumées,
   enseignes verticales, boutiques), porte monumentale à mi-tour (arche Art déco,
   pont-viaduc, torii, arc de triomphe, Tower Bridge), monument, lampadaires,
   guirlandes, feux tricolores, panneaux qui clignotent, ciel dégradé avec étoiles,
   skyline au loin, pluie à Londres et bruine à New York.
+- **Vice City en plein jour.** Le stage de Vice City se joue **de jour, ambiance
+  plage** : ciel bleu de Floride, soleil haut (ni étoiles ni lune), brume marine
+  claire, sable au sol, trottoirs crème, façades Art déco pastel et vitres qui
+  renvoient le ciel, palmiers, parasols, planches de surf, poste de
+  maître-nageur et douche de plage. Tout passe par `theme.daylight` +
+  `theme.beach` (`cityRushThemes.js`) : les enseignes deviennent presque mates
+  (`glow`), les halos de lampadaires et les faisceaux du portique s'éteignent,
+  les phares volumétriques des voitures sont coupés (`makeRacerCar({ daylight })`)
+  et l'éclairage est résolu par `cityRushLightRig` (soleil 3,2, hémisphère
+  ciel/sable, exposition 1,02, phares 0). **Les quatre autres villes gardent
+  leur ambiance nocturne inchangée** : sans bloc `light`/`materials`, les valeurs
+  d'origine s'appliquent. L'accroche de l'écran d'accueil suit l'ambiance du
+  circuit choisi (« LE SOLEIL PREND LA ROUTE. » à Vice City, « LA NUIT… »
+  ailleurs), et la vignette `public/vice-city-rush-thumb.svg` comme la carte de
+  la page Jeux montrent désormais la plage en plein jour.
 - **Les voitures.** Cabriolets et rivaux modélisés (pilote casqué, phares,
   feux arrière, flammes de turbo, roues qui tournent et se braquent, roulis et
   tangage selon la conduite, fumée au démarrage et dans les dérapages) ; le
@@ -341,7 +366,10 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 - `src/games/cityRushRules.js` — règles pures : tours, longueur, classement,
   objets, IA (`cityRushLapForDistance`, `cityRushLapCrossings`,
   `cityRushTrackGap` pour replier la boucle devant la caméra) ;
-- `src/games/cityRushThemes.js` — palette, ciel, météo, enseignes de chaque ville ;
+- `src/games/cityRushThemes.js` — palette, ciel, météo, enseignes de chaque
+  ville, plus l'éclairage (`theme.light` résolu par `cityRushLightRig`, repli
+  nocturne `CITY_RUSH_NIGHT_LIGHT`) et les matières en plein jour
+  (`theme.materials`, `theme.glow`, `theme.ground`, `theme.skyline`) ;
 - `src/games/cityRushBuilder.js` — fusion des géométries par matériau, textures
   canvas, atlas d'enseignes ; `src/games/cityRushTextures.js` — façades, route,
   trottoirs, panneaux, tableau de tour, plaques ;
@@ -357,14 +385,14 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 ### Vérifications
 
 ```bash
-npm run check:city-rush          # règles pures : tours, repli de la boucle, classement, objets
-npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 3 tours sans exception
+npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 3 tours sans exception, éclatements visibles
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
 à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
-tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés et le
-rejeu après `reset()`. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
+tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés, la
+visibilité des éclatements de bonus et le rejeu après `reset()`. Il ne dit rien du rendu réel : ouvrir le jeu dans un vrai
 navigateur (`npm run dev`) pour juger l'image.
 
 ## Barre de navigation : le logo et le menu « Jeux »

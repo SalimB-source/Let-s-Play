@@ -1,29 +1,61 @@
-// Habillage visuel de chaque ville de Vice City Rush : ciel, météo, enseignes,
-// boutiques, sponsors des tribunes et porte de mi-parcours. Les règles de jeu
-// restent dans cityRushRules.js ; ici il n'y a que de la direction artistique.
+// Habillage visuel de chaque ville de Vice City Rush : ciel, météo, éclairage,
+// enseignes, boutiques, sponsors des tribunes et porte de mi-parcours. Les
+// règles de jeu restent dans cityRushRules.js ; ici il n'y a que de la
+// direction artistique.
 export const CITY_RUSH_THEMES = Object.freeze({
+  // Vice City : plein jour sur le front de mer. Ciel bleu de Floride, soleil
+  // haut, sable chaud au sol, mer turquoise au loin et façades Art déco
+  // pastel. `daylight` coupe les réflexes nocturnes (fenêtres allumées, halos
+  // de lampadaires, phares) et `beach` remplace le mobilier urbain par du
+  // mobilier de plage (parasols, planches de surf, poste de maître-nageur).
   'vice-city': Object.freeze({
+    daylight: true,
+    beach: true,
     sky: Object.freeze({
-      top: 0x120f3a, mid: 0x5a2a7a, horizon: 0xff7a6b, haze: 0xffb08a,
-      sun: Object.freeze({ color: 0xffe08a, glow: 0xff5fa2, elevation: 0.11, radius: 0.19, stripes: 1 }),
-      stars: 0.35, moon: 0,
+      top: 0x1f6fd0, mid: 0x63b6ef, horizon: 0xd9edf7, haze: 0xfff2d4,
+      sun: Object.freeze({ color: 0xfffdf2, glow: 0xffe9a6, elevation: 0.78, radius: 0.055, stripes: 0 }),
+      stars: 0, moon: 0,
     }),
     weather: 'clear',
-    fogNear: 70, fogFar: 250,
-    facade: Object.freeze({ style: 'deco', floor: 1.55, litRatio: 0.52, litColors: ['#ffd27a', '#ff8ac9', '#7cf0ea'] }),
+    fogNear: 95, fogFar: 330,
+    facade: Object.freeze({
+      style: 'deco', floor: 1.55, litRatio: 0.06, litColors: ['#fff6dd', '#ffe9f2', '#dff6ff'],
+      wall: '#fff8f0', glass: '#7fb6d4', sheen: 'rgba(255, 255, 255, .34)', frame: '#ffffff',
+    }),
     shops: Object.freeze([
-      { text: 'CAFÉ CUBANO', color: '#43ead5', awning: '#ff5db8' },
+      { text: 'SURF & SUN', color: '#12b7c9', awning: '#ff7ac3' },
       { text: 'NEON BAY SURF', color: '#ff5db8', awning: '#43ead5' },
-      { text: 'VICE RECORDS', color: '#ffd36b', awning: '#8d6bff' },
-      { text: 'HOTEL PALMA', color: '#c89bff', awning: '#ffd36b' },
+      { text: 'VICE RECORDS', color: '#f2a93b', awning: '#2fb6a8' },
+      { text: 'HOTEL PALMA', color: '#8d6bff', awning: '#ffd36b' },
     ]),
-    verticalSigns: Object.freeze(['HOTEL', 'OCEAN', 'CLUB', 'VICE']),
-    sponsors: Object.freeze(['LET’S PLAY', 'RADIO VICE 98.6', 'NEON BAY HOTEL', 'PALMA TYRES', 'SUNSET CLUB']),
+    shopWall: '#f8ede0', shopTrim: '#e2cfb9', shopDoor: '#4f7385',
+    verticalSigns: Object.freeze(['HOTEL', 'BEACH', 'CLUB', 'VICE']),
+    sponsors: Object.freeze(['LET’S PLAY', 'RADIO VICE 98.6', 'OCEAN BEACH CLUB', 'PALMA TYRES', 'SUNSET SURF']),
     gate: Object.freeze({ style: 'deco-arch', text: 'WELCOME TO VICE CITY' }),
     gantryText: 'OCEAN DRIVE',
-    crowdColors: Object.freeze([0xff5db8, 0x43ead5, 0xffd36b, 0xf6f1e4, 0xc89bff, 0xff8d5a]),
-    roadTint: 0x1a1830, laneColor: '#d7e9ef', edgeColor: '#ff5db8', sidewalkTint: 0x4d3752,
+    crowdColors: Object.freeze([0xff5db8, 0x43ead5, 0xffd36b, 0xf6f1e4, 0xff8d5a, 0x7ad0ff]),
+    roadTint: 0x7b808c, laneColor: '#ffffff', edgeColor: '#ff8ac9', sidewalkTint: 0xf0dcb2,
     lamp: 'deco', tree: 'palm',
+    // Sable au-delà des trottoirs, halos et enseignes presque éteints.
+    ground: 0xf2ddb0,
+    glow: 0.16,
+    lampCone: 0.012,
+    accentCone: 0.04,
+    skyline: Object.freeze({ base: [163, 197, 216], window: 'rgba(255, 255, 255, .5)' }),
+    materials: Object.freeze({
+      roof: 0xf7ede3, stone: 0xeadfc9, concrete: 0xd9d3c7, asphaltDark: 0x9aa0a8,
+      metal: 0xa9b7c0, darkMetal: 0x74828c, white: 0xffffff, cream: 0xfdf3e2,
+      trunk: 0x9a7148, wood: 0xb07a45, foliage: 0x3fae7c, foliageLight: 0x7fd08a,
+      glassDark: 0x63a8c4, sand: 0xf6e3ba, canopy: 0xf6ece0,
+    }),
+    light: Object.freeze({
+      key: Object.freeze({ color: 0xfff4d8, intensity: 3.2, position: [-18, 34, 6] }),
+      hemi: Object.freeze({ sky: 0xcfeaff, ground: 0xf2dcb0, intensity: 1.6 }),
+      rim: Object.freeze({ color: 0x9fe4f2, intensity: 0.6, position: [10, 12, -26] }),
+      fill: Object.freeze({ color: 0xff9ad2, intensity: 6, distance: 60, position: [0, 8, -30] }),
+      headlamp: 0,
+      exposure: 1.02,
+    }),
   }),
   'new-york': Object.freeze({
     sky: Object.freeze({
@@ -121,4 +153,38 @@ export const CITY_RUSH_THEMES = Object.freeze({
 
 export function cityRushTheme(cityId) {
   return CITY_RUSH_THEMES[cityId] || CITY_RUSH_THEMES['vice-city'];
+}
+
+// ── Éclairage ──────────────────────────────────────────────────────────────
+// Réglages nocturnes d'origine (néons, phares, halo aux couleurs de la ville) :
+// toute ville sans bloc `light` les conserve tels quels. Les couleurs `null`
+// sont résolues par `cityRushLightRig` depuis la palette de la ville.
+export const CITY_RUSH_NIGHT_LIGHT = Object.freeze({
+  key: Object.freeze({ color: 0xe4ecff, intensity: 2, position: Object.freeze([-12, 24, 17.1]) }),
+  hemi: Object.freeze({ sky: null, ground: 0x1c1522, intensity: 1.75 }),
+  rim: Object.freeze({ color: null, intensity: 1.05, position: Object.freeze([8, 8, -24]) }),
+  fill: Object.freeze({ color: null, intensity: 20, distance: 54, decay: 2, position: Object.freeze([0, 7, -27]) }),
+  headlamp: 60,
+  exposure: 1.1,
+});
+
+/**
+ * Résout l'éclairage d'une ville : un thème en plein jour (`theme.light`)
+ * remplace soleil, hémisphère, contre-jour, remplissage, phares et exposition,
+ * les autres villes gardent l'ambiance nocturne.
+ */
+export function cityRushLightRig(theme, city) {
+  const override = theme.light || {};
+  const accent = Number.parseInt(city.accent.slice(1), 16);
+  const secondary = Number.parseInt(city.secondary.slice(1), 16);
+  const base = CITY_RUSH_NIGHT_LIGHT;
+  const merge = (section, fallback) => ({ ...fallback, ...(override[section] || {}) });
+  return {
+    key: merge('key', base.key),
+    hemi: merge('hemi', { ...base.hemi, sky: theme.sky.mid }),
+    rim: merge('rim', { ...base.rim, color: secondary }),
+    fill: merge('fill', { ...base.fill, color: accent }),
+    headlamp: override.headlamp ?? base.headlamp,
+    exposure: override.exposure ?? base.exposure,
+  };
 }
