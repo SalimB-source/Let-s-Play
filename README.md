@@ -362,9 +362,11 @@ de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   **éclate** : flash, anneau qui s'ouvre et éclats de sa couleur repris par la
   gravité (`cityRushPickupBurstShards` / `cityRushPickupShardState` /
   `cityRushPickupFlashState`, rendus par un pool de six objets dans
-  `ViceCityWorld.jsx`, sans éclats si `prefers-reduced-motion`). Le bonus suivant
-  **réapparaît 0,2 s** plus tard en gonflant depuis son socle
-  (`CITY_RUSH_PICKUP_RESPAWN_DELAY` + `cityRushPickupPopScale`).
+  `ViceCityWorld.jsx`, sans éclats si `prefers-reduced-motion`), puis
+  **réapparaît 0,1 s** plus tard sur sa voie en gonflant depuis son socle
+  (`CITY_RUSH_PICKUP_RESPAWN_DELAY`, `markCityRushPickupTaken` /
+  `isCityRushPickupHidden`, `cityRushPickupPopScale`), afin que les voitures
+  suivantes puissent le ramasser à leur tour.
 - **Le décor.** Chaque ville a sa boucle : façades texturées (fenêtres allumées,
   enseignes verticales, boutiques), porte monumentale à mi-tour (arche Art déco,
   pont-viaduc, torii, arc de triomphe, Tower Bridge), monument, lampadaires,

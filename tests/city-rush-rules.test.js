@@ -37,6 +37,8 @@ import {
   consumeCityRushCharge,
   createCityRushEncounter,
   createCityRushInventory,
+  isCityRushPickupHidden,
+  markCityRushPickupTaken,
   rankCityRushRacers,
   resolveCityRushCarMovement,
 } from '../src/games/cityRushRules.js';
@@ -223,9 +225,24 @@ test('matching currencies charge independent bars, and only a full bar can be us
   assert.equal(overfilled.radio, CITY_RUSH_POWER_CHARGE_COST.radio);
 });
 
-test('a collected item bursts into shards, then the next one pops back in 0.2 s', () => {
-  assert.equal(CITY_RUSH_PICKUP_RESPAWN_DELAY, 0.2);
+test('a collected item bursts into shards, then reappears 0.1 s later', () => {
+  assert.equal(CITY_RUSH_PICKUP_RESPAWN_DELAY, 0.1);
   assert.ok(CITY_RUSH_PICKUP_BURST_DURATION > CITY_RUSH_PICKUP_RESPAWN_DELAY);
+
+  // Un bonus ramassé (même à l'indice 0) disparaît 0,1 s puis redevient prenable.
+  const cooldowns = new Map();
+  assert.equal(isCityRushPickupHidden(cooldowns, 0, 5.0), false);
+  markCityRushPickupTaken(cooldowns, 0, 5.0);
+  assert.equal(isCityRushPickupHidden(cooldowns, 0, 5.0), true);
+  assert.equal(isCityRushPickupHidden(cooldowns, 0, 5.09), true);
+  assert.equal(isCityRushPickupHidden(cooldowns, 1, 5.05), false, 'les autres emplacements de la rangée restent visibles');
+  assert.equal(isCityRushPickupHidden(cooldowns, 0, 5.1), false, 'le bonus réapparaît au bout de 0,1 s');
+  assert.equal(cooldowns.has(0), false, 'le délai expiré est nettoyé');
+
+  // Un bonus réapparu peut être repris par une voiture suivante.
+  markCityRushPickupTaken(cooldowns, 0, 5.25);
+  assert.equal(isCityRushPickupHidden(cooldowns, 0, 5.34), true);
+  assert.equal(isCityRushPickupHidden(cooldowns, 0, 5.35), false);
 
   // Éclats : répartition déterministe, directions normalisées, tailles positives.
   let seed = 0.42;
