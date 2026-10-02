@@ -195,7 +195,7 @@ test('the item effects, matching colors, and charge costs match the race rules',
   for (const [type, cost] of Object.entries(CITY_RUSH_POWER_CHARGE_COST)) {
     assert.equal(CITY_RUSH_POWER_RULES[type].chargeCost, cost);
   }
-  assert.equal(CITY_RUSH_POWER_RULES.oil.duration, 1.4);
+  assert.equal(CITY_RUSH_POWER_RULES.oil.duration, 0.5);
   assert.equal(CITY_RUSH_POWER_RULES.oil.color, '#48b9ff');
   assert.equal(CITY_RUSH_POWER_RULES.oil.automatic, true);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);

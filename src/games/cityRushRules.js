@@ -100,7 +100,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     key: 'A',
     automatic: true,
     description: 'Dépose automatiquement une flaque d’huile derrière toi dès que la jauge est pleine. Les voitures qui la traversent ralentissent.',
-    duration: 1.4,
+    duration: 0.5,
   }),
   [CITY_RUSH_POWERS.PISTOL]: Object.freeze({
     id: CITY_RUSH_POWERS.PISTOL,
