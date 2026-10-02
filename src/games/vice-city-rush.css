@@ -359,7 +359,7 @@
 .city-rush-status-pill.is-stunned { border-color: rgba(255, 85, 107, .55); color: #ffadb6; box-shadow: 0 0 20px rgba(255, 60, 100, .18); }
 .city-rush-toast { position: absolute; z-index: 5; top: 140px; left: 50%; max-width: min(560px, calc(100% - 30px)); padding: 9px 14px; border: 1px solid rgba(235, 237, 252, .16); border-radius: 8px; color: #fff; background: rgba(8, 12, 25, .86); font: 850 9px var(--mono, monospace); letter-spacing: .08em; text-align: center; transform: translateX(-50%); animation: crToast .2s ease-out both; backdrop-filter: blur(9px); }
 .city-rush-toast.is-cash { border-color: rgba(80, 228, 138, .48); color: #a9ffc2; }
-.city-rush-toast.is-oil { border-color: rgba(72, 185, 255, .48); color: #a5deff; }
+.city-rush-toast.is-blue-shot { border-color: rgba(72, 185, 255, .48); color: #a5deff; }
 .city-rush-toast.is-pistol { border-color: rgba(255, 82, 110, .48); color: #ffb5c0; }
 .city-rush-toast.is-radio { border-color: rgba(255, 212, 79, .5); color: #ffe899; }
 .city-rush-toast.is-slow { border-color: rgba(255, 189, 105, .42); color: #ffdaa5; }
@@ -443,7 +443,7 @@
 .city-rush-power-button.is-ready:hover { transform: translateY(-2px); box-shadow: 0 6px 0 color-mix(in srgb, var(--power-color) 42%, #050711), 0 13px 23px color-mix(in srgb, var(--power-color) 31%, transparent), inset 0 1px 0 rgba(255, 255, 255, .32), inset 0 -2px 0 rgba(0, 0, 0, .32); }
 .city-rush-power-button.is-ready:active { transform: translateY(3px) scale(.99); box-shadow: 0 1px 0 color-mix(in srgb, var(--power-color) 38%, #050711), 0 3px 7px color-mix(in srgb, var(--power-color) 20%, transparent), inset 0 2px 5px rgba(0, 0, 0, .28); }
 .city-rush-power-button:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
-.city-rush-power-button.is-oil { --power-color: #48b9ff; }
+.city-rush-power-button.is-blue-shot { --power-color: #48b9ff; }
 .city-rush-power-button.is-pistol { --power-color: #ff526e; }
 .city-rush-power-button.is-cash { --power-color: #50e48a; }
 .city-rush-power-button.is-radio { --power-color: #ffd44f; }
@@ -930,7 +930,7 @@
 .city-rush-guide-item > div small { color: rgba(224, 228, 242, .48); font-size: 9px; line-height: 1.35; }
 .city-rush-guide-item kbd { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid rgba(228, 234, 250, .16); border-radius: 5px; color: rgba(242, 243, 250, .66); background: rgba(255, 255, 255, .045); font: 850 8px var(--mono, monospace); }
 .city-rush-guide-item.is-automatic kbd { font-size: 6px; letter-spacing: 0; }
-.city-rush-guide-item.is-oil { --power-color: #48b9ff; }
+.city-rush-guide-item.is-blue-shot { --power-color: #48b9ff; }
 .city-rush-guide-item.is-pistol { --power-color: #ff526e; }
 .city-rush-guide-item.is-cash { --power-color: #50e48a; }
 .city-rush-guide-item.is-radio { --power-color: #ffd44f; }

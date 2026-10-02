@@ -320,8 +320,8 @@ test('le monde déclenche les bruitages au bon endroit', async () => {
   assert.match(world, /audioRef\?\.current\?\.missileLaunch\(/);
   assert.match(world, /audioRef\?\.current\?\.explosion\(/);
   assert.match(world, /audioRef\?\.current\?\.helicopterStop\(\)/);
-  // Flaques, zones lentes, ramassages, tours et arrivée.
-  assert.match(world, /audioRef\?\.current\?\.oilDrop\(\)/);
+  // Tir droit bleu, zones lentes, ramassages, tours et arrivée.
+  assert.match(world, /audioRef\?\.current\?\.gunshot\(\{ pan: vehiclePan\(attackerId\) \}\)/);
   assert.match(world, /audioRef\?\.current\?\.pickup\(type, \{ ready/);
   assert.match(world, /audioRef\?\.current\?\.countdownBeep\(step\)/);
   // Escouade de police : sirène pilotée par la proximité, extinction à la fin.

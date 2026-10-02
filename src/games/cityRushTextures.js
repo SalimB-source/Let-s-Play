@@ -637,29 +637,23 @@ export function makePickupMaterial(type, color) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('$', 128, 97);
-    } else if (type === 'oil') {
+    } else if (type === 'blue-shot') {
+      // Projectile du tir droit : douille, corps et ogive qui file vers la
+      // droite, avec deux traits de vitesse derrière.
+      ctx.fillRect(40, 104, 20, 48);
+      ctx.fillRect(68, 96, 82, 64);
       ctx.beginPath();
-      ctx.moveTo(75, 149);
-      ctx.lineTo(151, 72);
-      ctx.lineTo(171, 91);
-      ctx.lineTo(95, 169);
+      ctx.moveTo(158, 96);
+      ctx.lineTo(210, 128);
+      ctx.lineTo(158, 160);
       ctx.closePath();
       ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(144, 55);
-      ctx.arc(177, 49, 31, Math.PI * 0.78, Math.PI * 1.85, true);
-      ctx.lineTo(185, 64);
-      ctx.lineTo(165, 83);
-      ctx.closePath();
-      ctx.fill();
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(177, 49, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.beginPath();
-      ctx.arc(83, 158, 17, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.clearRect(150, 92, 6, 72);
+      ctx.fillStyle = color;
+      ctx.fillRect(112, 96, 12, 64);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(26, 112, 10, 8);
+      ctx.fillRect(22, 136, 14, 8);
     } else if (type === 'pistol') {
       ctx.beginPath();
       ctx.moveTo(49, 70);

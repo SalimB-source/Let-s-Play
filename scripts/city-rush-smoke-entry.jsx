@@ -115,7 +115,7 @@ const cities = all ? CITY_RUSH_CITIES : [CITY_RUSH_CITIES.find((c) => c.id === (
 // d'accueil).
 const AUDIO_METHODS = [
   'engine', 'gunshot', 'machineGun', 'skid', 'missileLaunch', 'explosion', 'helicopterStart',
-  'helicopterStop', 'pickup', 'boost', 'oilDrop', 'lap', 'finish', 'countdownBeep', 'passby',
+  'helicopterStop', 'pickup', 'boost', 'lap', 'finish', 'countdownBeep', 'passby',
   'policeSiren', 'policeSirenOff', 'tunnelRush', 'tunnelExit',
 ];
 
@@ -244,7 +244,7 @@ for (const [index, city] of cities.entries()) {
       slowFrames = 0;
     }
     if (hud && frames % 15 === 0) {
-      for (const type of ['cash', 'oil', 'pistol', 'radio']) {
+      for (const type of ['cash', 'blue-shot', 'pistol', 'radio']) {
         if ((hud.inventory?.[type] || 0) >= (CITY_RUSH_POWER_RULES[type]?.chargeCost ?? 99)) world.action(type);
       }
     }
@@ -327,7 +327,11 @@ for (const [index, city] of cities.entries()) {
   if ((audioCalls.countdownBeep || 0) < 4) fail('les feux de départ n’ont pas sonné 3 · 2 · 1 · GO', audioCalls);
   if (audioCalls.finish !== 1) fail('la fanfare d’arrivée n’a pas sonné une fois', audioCalls);
   if ((audioCalls.lap || 0) !== callbacks.laps.length) fail('un passage de ligne sur deux est muet', audioCalls);
-  if (audioCalls.explosion !== audioCalls.missileLaunch) fail('un missile sans explosion (ou l’inverse)', audioCalls);
+  // Chaque missile explose, et chaque berline de police détruite explose
+  // aussi : le compte des explosions couvre les deux sources, sans trou.
+  const destroyedPolice = callbacks.effects.filter((effect) => effect.type === 'police-destroyed').length;
+  const expectedExplosions = (audioCalls.missileLaunch || 0) + destroyedPolice;
+  if ((audioCalls.explosion || 0) !== expectedExplosions) fail('une explosion sans missile ni berline détruite (ou l’inverse)', audioCalls);
   // Un missile suppose un hélicoptère ; une frappe avortée par l'arrivée ou
   // par `reset()` compte un démarrage de plus que de missiles, jamais
   // l'inverse. Et chaque rotor démarré finit éteint.
@@ -360,12 +364,10 @@ for (const [index, city] of cities.entries()) {
   if (!audioCalls.policeSiren) fail('la sirène de police n’a jamais sonné', audioCalls);
 
   const automaticCash = callbacks.pickups.filter((pickup) => pickup.type === 'cash' && pickup.autoActivated).length;
-  const automaticOil = callbacks.pickups.filter((pickup) => pickup.type === 'oil' && pickup.autoActivated).length;
   if (callbacks.pickups.some((pickup) => pickup.autoActivated && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
     fail('un bonus manuel a été signalé comme activation automatique', callbacks.pickups.filter((pickup) => pickup.autoActivated));
   }
   if ((audioCalls.boost || 0) < automaticCash) fail('un boost vert chargé ne s’est pas activé automatiquement', { automaticCash, audioCalls });
-  if ((audioCalls.oilDrop || 0) < automaticOil) fail('une jauge huile pleine n’a pas déposé sa flaque automatiquement', { automaticOil, audioCalls });
 
   // Tremis, côté pierre : une voûte au-dessus de la route, et rien de minéral
   // dans le couloir resté ouvert. La matière des tremis est la seule mate à

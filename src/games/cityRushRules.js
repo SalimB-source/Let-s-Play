@@ -16,6 +16,14 @@ export const CITY_RUSH_PLAYER_SPEED = 26;
 export const CITY_RUSH_LANE_X = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
 export const CITY_RUSH_CAR_GAP = 4.8;
+// Le tir droit bleu (bonus bleu) : un projectile qui file tout droit dans la
+// voie du tireur, sans guidage. Il ne touche que la première voiture sur son
+// axe, dans la portée de rendu avant (120 m).
+export const CITY_RUSH_BLUE_SHOT_DURATION = 0.3; // s : dérapage léger du tir bleu
+export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.85; // le tir ralentit légèrement la voiture
+export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = 120; // m : portée du projectile droit
+export const CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED = 300; // m/s : projectile droit, sans guidage
+export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la place de tirer devant le capot
 
 // Les voitures ont des silhouettes et des compromis de conduite réellement
 // différents. Les barres sont aussi reliées aux multiplicateurs ci-dessous.
@@ -74,7 +82,7 @@ export function cityRushHitDuration(baseDuration, carProfile) {
 }
 
 export const CITY_RUSH_POWERS = Object.freeze({
-  OIL: 'oil',
+  BLUE_SHOT: 'blue-shot',
   PISTOL: 'pistol',
   CASH: 'cash',
   RADIO: 'radio',
@@ -84,23 +92,24 @@ export const CITY_RUSH_POWERS = Object.freeze({
 // Seuils de chargement abaissés pour que les pouvoirs tombent plus souvent en
 // course : bleu 2, rouge 3, vert 2, jaune 4.
 export const CITY_RUSH_POWER_CHARGE_COST = Object.freeze({
-  [CITY_RUSH_POWERS.OIL]: 2, // bleu · clé à molette
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // bleu · tir droit
   [CITY_RUSH_POWERS.PISTOL]: 3, // rouge · pistolet
   [CITY_RUSH_POWERS.CASH]: 2, // vert · billets
   [CITY_RUSH_POWERS.RADIO]: 4, // jaune · talkie-walkie
 });
 
 export const CITY_RUSH_POWER_RULES = Object.freeze({
-  [CITY_RUSH_POWERS.OIL]: Object.freeze({
-    id: CITY_RUSH_POWERS.OIL,
-    name: 'Clé à molette',
-    shortName: 'Huile',
-    chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.OIL],
+  [CITY_RUSH_POWERS.BLUE_SHOT]: Object.freeze({
+    id: CITY_RUSH_POWERS.BLUE_SHOT,
+    name: 'Pistolet · tir droit',
+    shortName: 'Tir droit',
+    chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT],
     color: '#48b9ff',
     key: 'A',
-    automatic: true,
-    description: 'Dépose automatiquement une flaque d’huile derrière toi dès que la jauge est pleine. Les voitures qui la traversent ralentissent.',
-    duration: 1.4,
+    automatic: false,
+    description: `Tire droit devant toi sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s. Deux tirs bleus détruisent une berline de police.`,
+    duration: CITY_RUSH_BLUE_SHOT_DURATION,
+    speedFactor: CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   }),
   [CITY_RUSH_POWERS.PISTOL]: Object.freeze({
     id: CITY_RUSH_POWERS.PISTOL,
@@ -110,7 +119,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base).',
+    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Une seule rafale détruit une berline de police.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.CASH]: Object.freeze({
@@ -132,7 +141,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ffd44f',
     key: 'R',
     automatic: false,
-    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un poursuivant) et les adversaires proches de l’impact devant ton capot ; la reprise de chaque cible règle la durée (2 s de base).',
+    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un poursuivant) et les adversaires proches de l’impact devant ton capot ; la reprise de chaque cible règle la durée (2 s de base). Un seul missile détruit une berline de police — et si personne n’est devant toi, il peut viser l’escouade qui te colle.',
     duration: 2,
   }),
 });
@@ -373,6 +382,32 @@ export function cityRushIsAhead(distance, referenceDistance, tolerance = CITY_RU
   return target >= reference - Math.max(0, Number.isFinite(slack) ? slack : CITY_RUSH_FORWARD_TOLERANCE);
 }
 
+// Le tir bleu suit un axe fixe : une seule voiture peut être prise pour cible,
+// la plus proche devant le tireur, uniquement si elle occupe sa voie et est
+// déjà visible dans la portée de rendu. Contrairement à la mitrailleuse rouge,
+// cette sélection ne corrige jamais la trajectoire du projectile.
+export function cityRushStraightShotTarget({
+  attackerDistance = 0,
+  attackerLane = 0,
+  targets = [],
+  maxDistance = CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+  minGap = CITY_RUSH_BLUE_SHOT_MIN_GAP,
+} = {}) {
+  const origin = Number(attackerDistance);
+  const lane = Number(attackerLane);
+  const range = Math.max(0, Number(maxDistance) || CITY_RUSH_BLUE_SHOT_MAX_RANGE);
+  const minimum = Math.max(0, Number(minGap) || 0);
+  if (!Number.isFinite(origin) || !Number.isFinite(lane)) return null;
+  return (Array.isArray(targets) ? targets : [])
+    .filter((target) => target && target.visible !== false)
+    .filter((target) => Number(target.lane) === lane)
+    .filter((target) => {
+      const gap = Number(target.distance) - origin;
+      return Number.isFinite(gap) && gap > minimum && gap <= range;
+    })
+    .sort((a, b) => Number(a.distance) - Number(b.distance))[0] || null;
+}
+
 // Le talkie ne verrouille que les rivaux devant son pilote : parmi eux, c'est
 // toujours le mieux placé qui est visé. Un pilote en tête n'a donc aucune cible
 // (l'hélico ne se retourne jamais contre lui) et garde sa jauge chargée. Si
@@ -437,7 +472,7 @@ export function createCityRushEncounter(random = Math.random) {
     const [lane] = available.splice(slot, 1);
     const roll = random();
     const type = roll < 0.31 ? 'cash'
-      : roll < 0.55 ? 'oil'
+      : roll < 0.55 ? CITY_RUSH_POWERS.BLUE_SHOT
         : roll < 0.78 ? 'pistol'
           : 'radio';
     pickups.push({ lane, type });
@@ -687,6 +722,23 @@ export const CITY_RUSH_POLICE_STEAL_NOTICE = 150; // m : au-delà, la page ne co
 export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafales de la même berline
 export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
+
+// Les berlines de l'escouade ont une petite barre de vie : deux tirs droits
+// bleus, OU une seule rafale rouge, OU un seul missile d'hélicoptère les
+// détruisent. Le barème des dégâts est pur, donc testable hors de three.js.
+export const CITY_RUSH_POLICE_HEALTH = 2;
+export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // deux tirs droits bleus
+  [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_POLICE_HEALTH, // une rafale rouge suffit
+  [CITY_RUSH_POWERS.RADIO]: CITY_RUSH_POLICE_HEALTH, // un tir d'hélicoptère suffit
+});
+
+export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
+  const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));
+  const damage = Number(CITY_RUSH_POLICE_DAMAGE[source]);
+  if (!Number.isFinite(damage) || damage <= 0) return safeHealth;
+  return Math.max(0, safeHealth - damage);
+}
 
 // L'escouade ne prend en chasse que le premier du classement. `entries` ne
 // contient que les pilotes classés (notre joueur et les trois rivaux) : à
