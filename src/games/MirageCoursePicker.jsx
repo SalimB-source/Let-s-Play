@@ -1,6 +1,6 @@
 import React from 'react';
 import { DUEL_DISTANCE, duelRivalsForTrack, laneCount } from './mirageRules';
-import { CUPS, CUP_POINTS, MAX_RIDER_NAME, placeLabel } from './mirageCup';
+import { CUPS, CUP_POINTS, MAX_RIDER_NAME, cupWinnerCoins, placeLabel } from './mirageCup';
 import MirageTrophyIcon from './MirageTrophyIcon';
 import { getTrophyDesign } from './mirageTrophy';
 import desertThumbnail from './assets/maps/desert.webp';
@@ -101,6 +101,7 @@ export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defa
         <span className="mirage-cup-points" role="list" aria-label="Points par place">
           {CUP_POINTS.slice(0, riderCount).map((points, index) => <span role="listitem" key={index}><b>{placeLabel(index + 1)}</b> {points} pts</span>)}
         </span>
+        <span className="mirage-cup-purse">BOURSE DU VAINQUEUR <b>{cupWinnerCoins(cup)} OR</b></span>
       </button>)}
     </div>
     <label className="mirage-cup-name-field">

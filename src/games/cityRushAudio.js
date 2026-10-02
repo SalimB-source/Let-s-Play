@@ -582,8 +582,8 @@ export class CityRushAudio {
   }
 
   /**
-   * Dérapage : pneus qui hurlent. `intensity` va de 0,6 (flaque d'huile) à
-   * 1 (Voiture touchée par un tir). Le son est décalé de `delay` pour
+   * Dérapage : pneus qui hurlent. `intensity` va de 0,48 (tir bleu léger) à
+   * 1 (Voiture touchée par une rafale). Le son est décalé de `delay` pour
    * tomber sur l'impact, pas sur le coup de feu.
    */
   skid({ pan = 0, delay = 0, intensity = 1, duration = 0.72 } = {}) {
@@ -715,6 +715,31 @@ export class CityRushAudio {
     gain.connect(out);
     oscillator.start(time);
     oscillator.stop(time + 0.58);
+  }
+
+  /**
+   * Tremis : on s'engouffre sous la voûte. Le souffle grave monte, la pièce
+   * se referme — le bruit est celui d'un tunnel court, pas d'une caverne.
+   */
+  tunnelRush({ pan = 0, duration = 1.4, volume = 0.2 } = {}) {
+    if (!this.ready()) return;
+    const time = this.context.currentTime + 0.005;
+    const out = this.panned(pan);
+    const length = clamp(Number(duration) || 1.4, 0.3, 3);
+    const level = clamp(Number(volume) || 0.2, 0.02, 0.6);
+    this.noise(time, length, level, { type: 'lowpass', frequency: 240, frequencyTo: 1500, q: 0.7, attack: 0.14, destination: out });
+    this.tone(58, time, length * 0.9, 'sine', level * 0.5, { filter: 180, filterTo: 420, destination: out });
+  }
+
+  /** Sortie de tunnel : un claquement d'air, puis l'écho qui retombe. */
+  tunnelExit({ pan = 0, duration = 0.55, volume = 0.16 } = {}) {
+    if (!this.ready()) return;
+    const time = this.context.currentTime + 0.005;
+    const out = this.panned(pan);
+    const length = clamp(Number(duration) || 0.55, 0.2, 1.6);
+    const level = clamp(Number(volume) || 0.16, 0.02, 0.5);
+    this.noise(time, length, level, { type: 'bandpass', frequency: 2600, frequencyTo: 420, q: 0.9, destination: out });
+    this.tone(148, time + 0.02, length * 0.8, 'triangle', level * 0.45, { filter: 900, filterTo: 300, destination: out });
   }
 
   /** Hélicoptère : pales qui hachent et turbine qui monte en régime. */
@@ -949,7 +974,7 @@ export class CityRushAudio {
   /** Bonus ramassé : un bip par couleur, un accord quand la jauge est pleine. */
   pickup(type = 'cash', { ready = false } = {}) {
     if (!this.ready()) return;
-    const root = { oil: 60, pistol: 64, cash: 69, radio: 74 }[type] ?? 69;
+    const root = { 'blue-shot': 60, pistol: 64, cash: 69, radio: 74 }[type] ?? 69;
     const time = this.context.currentTime + 0.005;
     const out = this.sfxBus;
     this.tone(midiToFrequency(root + 12), time, 0.1, 'triangle', 0.14, { destination: out });
@@ -966,14 +991,6 @@ export class CityRushAudio {
     const time = this.context.currentTime + 0.005;
     this.noise(time, 0.45, 0.22, { type: 'bandpass', frequency: 700, frequencyTo: 3200, q: 0.9 });
     this.tone(180, time, 0.4, 'sawtooth', 0.09, { filter: 1400, filterTo: 3600 });
-  }
-
-  /** Huile versée : un glouglou court et mat. */
-  oilDrop() {
-    if (!this.ready()) return;
-    const time = this.context.currentTime + 0.005;
-    this.tone(320, time, 0.22, 'sine', 0.13, { filter: 900 });
-    this.noise(time, 0.26, 0.1, { type: 'lowpass', frequency: 700, frequencyTo: 260 });
   }
 
   /** Feux de départ : un bip par seconde, un accord sur le GO. */
