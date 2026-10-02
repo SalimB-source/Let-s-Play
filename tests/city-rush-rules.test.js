@@ -18,6 +18,11 @@ import {
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_LANES,
   CITY_RUSH_TRAFFIC_TYPES,
+  CITY_RUSH_DRIVERS,
+  selectCityRushRacers,
+  cityRushMinimapPoint,
+  cityRushMinimapTrackPath,
+  buildCityRushMinimapState,
   approachCityRushSpeed,
   chooseCityRushAiLane,
   cityRushHitDuration,
@@ -451,3 +456,74 @@ test('track elements fold onto the loop so the start line comes back ahead every
   assert.equal(first, 150);
   assert.equal(first - CITY_RUSH_LAP_LENGTH, -450);
 });
+
+test('the 4 racers have distinct avatars and international names from around the world', () => {
+  assert.ok(CITY_RUSH_DRIVERS.length >= 12);
+  const avatarIds = new Set(CITY_RUSH_DRIVERS.map((driver) => driver.avatarId));
+  const countryCodes = new Set(CITY_RUSH_DRIVERS.map((driver) => driver.countryCode));
+  assert.equal(avatarIds.size, CITY_RUSH_DRIVERS.length);
+  assert.equal(countryCodes.size, CITY_RUSH_DRIVERS.length);
+
+  for (const city of CITY_RUSH_CITIES) {
+    const roster = selectCityRushRacers({ cityId: city.id });
+    assert.equal(roster.length, 4);
+    assert.deepEqual(roster.map((racer) => racer.id), ['player', 'nova', 'juno', 'ace']);
+    assert.equal(roster[0].isPlayer, true);
+    assert.equal(roster[1].isPlayer, false);
+    assert.equal(new Set(roster.map((racer) => racer.driverId)).size, 4);
+    assert.equal(new Set(roster.map((racer) => racer.avatarId)).size, 4);
+    assert.equal(new Set(roster.map((racer) => racer.name)).size, 4);
+    assert.equal(new Set(roster.map((racer) => racer.countryCode)).size, 4);
+    for (const racer of roster) {
+      assert.ok(racer.name && racer.displayName && racer.country && racer.flag && racer.avatar);
+    }
+  }
+
+  const customRoster = selectCityRushRacers({ cityId: 'tokyo', playerDriverId: 'kwame' });
+  assert.equal(customRoster[0].driverId, 'kwame');
+  assert.equal(customRoster[0].name, 'KWAME');
+  assert.equal(customRoster[0].country, 'Nigeria');
+  assert.equal(new Set(customRoster.map((racer) => racer.avatarId)).size, 4);
+});
+
+test('the race mini-map locates all 4 players on the circuit loop and focuses on our player', () => {
+  const path = cityRushMinimapTrackPath(32);
+  assert.ok(path.startsWith('M ') && path.endsWith(' Z'));
+
+  const startLeft = cityRushMinimapPoint(0, 0);
+  const startRight = cityRushMinimapPoint(0, 3);
+  assert.ok(Math.hypot(startLeft.x - startRight.x) + Math.hypot(startLeft.y - startRight.y) > 1);
+  // Après un tour complet (600 m), le point revient exactement sur la ligne de départ.
+  const fullLap = cityRushMinimapPoint(CITY_RUSH_LAP_LENGTH, 0);
+  assert.ok(Math.abs(fullLap.x - startLeft.x) < 1e-6);
+  assert.ok(Math.abs(fullLap.y - startLeft.y) < 1e-6);
+
+  const roster = selectCityRushRacers({ cityId: 'vice-city', playerDriverId: 'chloe' });
+  const standings = rankCityRushRacers([
+    { ...roster[0], distance: 420, lane: 1 },
+    { ...roster[1], distance: 465, lane: 0 },
+    { ...roster[2], distance: 390, lane: 2 },
+    { ...roster[3], distance: 310, lane: 3 },
+  ]).ordered;
+
+  const minimap = buildCityRushMinimapState(standings, { cityId: 'vice-city', playerDriverId: 'chloe' });
+  assert.equal(minimap.markers.length, 4);
+  assert.equal(minimap.focus.id, 'player');
+  assert.equal(minimap.focus.isPlayer, true);
+  assert.equal(minimap.focus.name, 'CHLOÉ');
+  assert.equal(minimap.focus.country, 'France');
+  assert.equal(minimap.focus.relativeDistance, 0);
+
+  const rivalLeader = minimap.markers.find((marker) => marker.id === 'nova');
+  const rivalBehind = minimap.markers.find((marker) => marker.id === 'juno');
+  assert.equal(rivalLeader.relativeDistance, 45);
+  assert.equal(rivalBehind.relativeDistance, -30);
+
+  // Le viewBox du focus est centré autour de notre joueur.
+  const [vx, vy, vw, vh] = minimap.viewBox.split(' ').map(Number);
+  const focusCenterX = vx + vw / 2;
+  const focusCenterY = vy + vh / 2;
+  assert.ok(Math.abs(focusCenterX - minimap.focus.point.x) <= 25);
+  assert.ok(Math.abs(focusCenterY - minimap.focus.point.y) <= 25);
+});
+
