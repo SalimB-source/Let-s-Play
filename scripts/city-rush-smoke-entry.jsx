@@ -242,6 +242,7 @@ for (const [index, city] of cities.entries()) {
   // Images où l'escouade du dernier tour est réellement en piste : le partage
   // d'engagement se juge sur elle, pas sur la police du trafic rappelée.
   let policeSquadFrames = 0;
+  let policeStunFrames = 0;
   // Quelques images où l'escouade lâche le leader, pour diagnostiquer l'échec.
   const policeLooseSamples = [];
   // Barrage : frames où une berline freine devant le leader, et pire écart
@@ -343,7 +344,10 @@ for (const [index, city] of cities.entries()) {
       const squadCars = hud.police.filter((car) => !car.rallied);
       if (!firstPoliceHud && squadCars.length) firstPoliceHud = hud;
       policeHudFrames += 1;
-      if (squadCars.length) policeSquadFrames += 1;
+      // Une berline sonnée par un tir du joueur est hors course quelques
+      // secondes : la juger « décrochée » fausserait la mesure du harnais.
+      if (squadCars.length && squadCars.some((car) => !(car.stunLeft > 0))) policeSquadFrames += 1;
+      if (squadCars.length && squadCars.every((car) => car.stunLeft > 0)) policeStunFrames += 1;
       const hudLeader = Math.max(hud.distance || 0, ...(hud.racers || []).map((racer) => racer.distance || 0));
       for (const car of hud.police) {
         const gap = (car.distance || 0) - (hud.distance || 0);
@@ -394,13 +398,13 @@ for (const [index, city] of cities.entries()) {
         ? Math.min(...squadCars.map((car) => Math.abs((car.distance || 0) - hudLeader)))
         : Infinity;
       if (squadGap <= POLICE_ENGAGE_RANGE) policeEngagedFrames += 1;
-      else if (policeLooseSamples.length < 6) {
+      else if (squadCars.length && policeLooseSamples.length < 8) {
         policeLooseSamples.push({
           frame: frames,
           gap: Math.round(squadGap),
           leader: Math.round(hudLeader),
           player: Math.round(hud.distance || 0),
-          squad: squadCars.map((car) => `${car.id}@${car.distance}/${car.mode || '?'}`).join(' '),
+          squad: squadCars.map((car) => `${car.id}@${car.distance}/${car.mode || '?'}${car.stunLeft > 0 ? '/SONNÉE' : car.slowLeft > 0 ? '/ralentie' : ''}`).join(' '),
         });
       }
       const lag = squadCars.length ? hudLeader - Math.max(...squadCars.map((car) => car.distance || 0)) : 0;
@@ -642,7 +646,7 @@ for (const [index, city] of cities.entries()) {
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
     (tunnels.length ? ` · tremis ${tunnelIds.size}/${tunnels.length} traversés (${tunnelHudFrames} f sous la voûte)` : ' · sans tremis') +
-    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeSquadFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeSquadFrames) * 100).toFixed(0)} % · retard max ${policeMaxLag.toFixed(0)} m · ${policeBlockadeFrames} f en barrage` : 'jamais entrée'}` +
+    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeSquadFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · à ≤ ${POLICE_ENGAGE_RANGE} m ${(policeEngagedFrames / Math.max(1, policeSquadFrames) * 100).toFixed(0)} % · retard max ${policeMaxLag.toFixed(0)} m · ${policeBlockadeFrames} f en barrage${policeStunFrames ? ` · ${policeStunFrames} f sonnée` : ''}` : 'jamais entrée'}` +
     ` · police routière ${rallies.length} contact(s) · ${ralliedHudFrames} f en chasse · ${ralliedAheadFrames} f devant le joueur · ${ralliedBlockadeFrames} f en barrage` +
     ` · écart mini berline/pilote ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` +
     ` (${policePlayerOverlapFrames} f de recouvrement · rival ${Number.isFinite(policeAiOverlap) ? policeAiOverlap.toFixed(1) : '—'} m)` +
