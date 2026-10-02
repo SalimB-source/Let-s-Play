@@ -27,7 +27,7 @@
     "news:fetch": "node scripts/news-bot/fetch-news.mjs",
     "check:top-games": "node scripts/top-games-check.mjs",
     "check:mirage-flow": "node scripts/mirage-flow-check.mjs",
-    "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-themes.test.js tests/city-rush-tunnels.test.js",
+    "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-themes.test.js",
     "check:city-rush-audio": "node --test tests/city-rush-audio.test.js",
     "check:city-rush-smoke": "node scripts/city-rush-smoke.mjs --all",
     "check:souls-smoke": "node scripts/souls-smoke.mjs",

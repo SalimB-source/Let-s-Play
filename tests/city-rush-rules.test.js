@@ -157,8 +157,8 @@ test('un joueur humain ou une IA touche le trafic, ralentit brièvement (0,6 s) 
   ]), [], 'deux voies distinctes ne provoquent pas un choc');
 
   assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 0 }), 1, 'le bord gauche se rabat vers la voie 1');
-  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 1, blockedLanes: [0], openLanes: [0, 1, 2, 3] }), 2, 'une voie occupée est évitée');
-  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2], openLanes: [1, 2, 3] }), 1, 'le tunnel garde une voie ouverte quand la voie voisine est occupée');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 1, blockedLanes: [0] }), 2, 'une voie occupée est évitée');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2] }), 1, 'la voie voisine occupée fait glisser le dégagement');
 });
 
 test('rivals plan lane changes to collect bonuses and avoid traffic safely', () => {
@@ -536,7 +536,7 @@ test('une voie voisine bouchée n’attire pas la berline, et tout bouché ne ca
   const walled = chooseCityRushPoliceLane({ ...common, pickups: [{ lane: 1, type: 'pistol', distance: 1060 }], traffic: wall });
   assert.equal(walled, 1);
   assert.equal(chooseCityRushPoliceLane({ ...common, availableLanes: [1], traffic: [slow(1)] }), 1, 'une seule voie ouverte : elle y reste');
-  // Une voie interdite (mur de tremis) n'est jamais choisie, même libre.
+  // Une voie interdite (barrage, obstacle) n'est jamais choisie, même libre.
   assert.equal(chooseCityRushPoliceLane({ ...common, availableLanes: [1, 2], pickups: [], traffic: [slow(1), slow(2)] }), 1);
   // Une berline qui touche le trafic le traite comme un rival : même détecteur.
   const impacts = detectCityRushTrafficImpacts([
