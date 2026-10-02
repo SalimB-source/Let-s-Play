@@ -73,6 +73,25 @@ export function cityRushHitDuration(baseDuration, carProfile) {
   return duration * (Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1);
 }
 
+// ── Toupie de la frappe héliportée (pouvoir jaune) ──────────────────────────
+// Pendant l'immobilisation, la voiture touchée tourne sur elle-même et ne peut
+// plus changer de voie. `cityRushStunSpin` renvoie le lacet (radians) à
+// appliquer à la carrosserie : départ brutal après l'impact, puis l'élan
+// retombe en douceur sur un nombre entier de tours — la voiture se fige donc
+// face à la route, sans à-coup, exactement quand le stun expire.
+export const CITY_RUSH_STUN_SPIN_TURNS = 2; // tours complets pendant l'immobilisation
+
+export function cityRushStunSpin(stunLeft, stunTotal, turns = CITY_RUSH_STUN_SPIN_TURNS) {
+  const left = Math.max(0, Number(stunLeft) || 0);
+  const total = Math.max(0, Number(stunTotal) || 0);
+  const safeTurns = Math.max(0, Number(turns) || 0);
+  if (left <= 0 || total <= 0 || safeTurns <= 0) return 0;
+  const progress = Math.max(0, Math.min(1, 1 - left / total));
+  // Ease-out quadratique : la vitesse de rotation fond linéairement jusqu'à 0.
+  const eased = 1 - (1 - progress) ** 2;
+  return eased * safeTurns * Math.PI * 2;
+}
+
 export const CITY_RUSH_POWERS = Object.freeze({
   OIL: 'oil',
   PISTOL: 'pistol',
@@ -132,7 +151,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ffd44f',
     key: 'R',
     automatic: false,
-    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un rival poursuivant) et les adversaires proches de l’impact devant ton capot ; en tête au dernier tour, il peut aussi bombarder la berline de police qui te traque. La reprise de chaque cible règle la durée (2 s de base).',
+    description: 'L’hélicoptère immobilise le rival le mieux placé devant toi (jamais toi, jamais un rival poursuivant) et les adversaires proches de l’impact devant ton capot ; en tête au dernier tour, il peut aussi bombarder la berline de police qui te traque. Les voitures touchées partent en toupie sur place, incapables de changer de voie ; la reprise de chaque cible règle la durée (2 s de base).',
     duration: 2,
   }),
 });
