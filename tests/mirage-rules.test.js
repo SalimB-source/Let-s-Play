@@ -685,6 +685,41 @@ test('Cloud has separate custom SVGs for the golden sword wave and the lightning
   assert.equal(MIRAGE_CLOUD_POWER_ICONS[POWER_UPS.PISTOL], red);
 });
 
+test('westernSunsetState turns Dust Creek from amber sunset into a moonlit starry night', async () => {
+  const { westernSunsetState } = await import('../src/games/mirageRules.js');
+  const start = westernSunsetState(0);
+  const dusk = westernSunsetState(0.58);
+  const end = westernSunsetState(1);
+
+  assert.equal(start.sunVisible, true);
+  assert.equal(start.starAlpha, 0);
+  assert.equal(start.moonAlpha, 0);
+  assert.ok(dusk.sunElevation < start.sunElevation, 'sun drops throughout the race');
+  assert.ok(dusk.skyHorizon[0] < start.skyHorizon[0], 'orange horizon cools into violet dusk');
+  assert.ok(end.sunElevation < -8, 'sun disappears below the town horizon');
+  assert.equal(end.sunVisible, false);
+  assert.equal(end.starAlpha, 1);
+  assert.equal(end.moonAlpha, 1);
+  assert.ok(end.skyTop[2] < start.skyTop[2], 'sky darkens to midnight blue');
+  assert.ok(end.sunIntensity < start.sunIntensity);
+  assert.ok(end.hemiIntensity < start.hemiIntensity);
+});
+
+test('western town lamps fade on as Dust Creek enters twilight', async () => {
+  const { westernNightLightIntensity } = await import('../src/games/mirageRules.js');
+  const lanternAtNoon = westernNightLightIntensity('lantern', 0, 1000);
+  const windowAtNoon = westernNightLightIntensity('window', 0, 1000);
+  const lanternAtNight = westernNightLightIntensity('lantern', 1, 1000, true);
+  const windowAtNight = westernNightLightIntensity('window', 1, 1000, true);
+
+  assert.ok(lanternAtNight > lanternAtNoon, 'porch lanterns warm up after sunset');
+  assert.ok(windowAtNight > windowAtNoon, 'saloon windows glow at night');
+  assert.equal(
+    westernNightLightIntensity('lantern', 1, 2000, true), lanternAtNight,
+    'reduced motion disables lamp flicker',
+  );
+});
+
 test('prairieSunsetState transitions progressively from golden hour to starry night and sinks the sun below the horizon', async () => {
   const { prairieSunsetState } = await import('../src/games/mirageRules.js');
   const start = prairieSunsetState(0);
