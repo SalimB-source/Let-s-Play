@@ -330,6 +330,52 @@ et alterner les deux niveaux en pleine course. Le gain se mesure en images par s
 sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
 sur les terrains chargés, du nombre d'objets dessinés.
 
+## Mirage Rush : la coupe et sa bourse d'or
+
+Trois coupes (`/jeu/mirage-rush`, bouton **COUPE**) enchaînent des duels sur des
+terrains imposés, à quatre cavaliers (trois sur une piste de téléphone à trois
+voies). Les points s'additionnent d'une course à l'autre, et le meilleur total
+après la dernière course soulève le trophée.
+
+| Coupe | Courses | Bourse du vainqueur |
+|---|---|---|
+| Coupe du Désert | Dunes de l'Écho → Dust Creek → Plaines d'Or (3) | **30 OR** |
+| Coupe Grand Tour | Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase (4) | **40 OR** |
+| Coupe des Légendes | Remparts d'Ocre → Château de l'Infini → Thunder Airbase → Costa Omertà → Plaines de Yōtei (5) | **50 OR** |
+
+L'or se cumule : chaque course gagnée rapporte les 5 OR habituels (`WIN_COINS`),
+et la bourse de la coupe s'y ajoute — versée **une seule fois**, au vainqueur du
+classement général, jamais à une simple victoire de course. Une coupe perdue ne
+verse donc rien au joueur : l'écran du trophée rappelle alors qui empoche la
+bourse.
+
+L'écran du trophée affiche le montant crédité (`+30 OR`), le sélecteur de coupe
+annonce la bourse de chaque coupe, la consigne de lancement la rappelle et les
+règles du jeu la détaillent. Le crédit passe par `awardCoins()`, qui ne peut que
+créditer : un montant absent, négatif ou illisible ne retire jamais d'or.
+
+### Où vit le code
+
+- `src/games/mirageCup.js` — `CUPS` (dont `coins`) et `cupWinnerCoins()` ;
+- `src/games/mirageProgression.js` — `WIN_COINS`, `coinsForRun()`, `awardCoins()` ;
+- `src/games/MirageRushPage.jsx` — le versement dans `onFinish` : la bourse part
+  quand la coupe devient complète et que le joueur est champion (`cupWinner()`) ;
+- `src/games/MirageCupTrophy.jsx` (ligne « BOURSE DU VAINQUEUR ») et
+  `src/games/MirageCoursePicker.jsx` (bourse sur chaque carte de coupe) ;
+- `src/games/mirage-rush.css` — `.mirage-cup-purse`, `.mirage-trophy-purse`.
+
+Ajouter une coupe : une entrée dans `CUPS` avec ses terrains, sa bourse et son
+design (`mirageTrophy.js`) ; le sélecteur, l'enchaînement des courses et l'écran
+du trophée suivent tout seuls.
+
+### Vérifications
+
+```bash
+node --test tests/mirage-cup.test.js tests/mirage-progression.test.js
+npm run check:mirage-cup     # la coupe jouée de bout en bout : bourse affichée, créditée une seule fois
+npm run check:mirage-flow    # bourse annoncée par le sélecteur et les règles
+```
+
 ## Vice City Rush : 3 tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
