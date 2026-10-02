@@ -451,7 +451,10 @@ function disposeScene(scene, renderer) {
  *     explosion), déclenchés ici parce que le monde connaît la voie de la
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null) {
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false) {
+  const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
+  const effectiveDistance = effectiveLaps * CITY_RUSH_LAP_LENGTH;
+  const effectivePoliceFromStart = Boolean(policeFromStart);
   const theme = cityRushTheme(city.id);
   const lightRig = cityRushLightRig(theme, city);
   const lite = detectLiteQuality();
@@ -477,7 +480,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   renderer.shadowMap.enabled = !lite;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.className = 'city-rush-canvas';
-  renderer.domElement.setAttribute('aria-label', `Course de cabriolets 3D dans ${city.name} : ${CITY_RUSH_LAPS} tours de circuit, change de voie, ramasse des objets, percute le trafic lent et évite les zones de ralentissement.`);
+  renderer.domElement.setAttribute('aria-label', `Course de cabriolets 3D dans ${city.name} : ${effectiveLaps} tours de circuit, change de voie, ramasse des objets, percute le trafic lent et évite les zones de ralentissement.`);
   mount.appendChild(renderer.domElement);
 
   // ── Lumières ─────────────────────────────────────────────────────────
@@ -888,13 +891,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const standings = rankCityRushRacers(makeRacerRows());
     getCallbacks().hud?.({
       distance: Math.max(0, Math.round(distance)),
-      totalDistance: CITY_RUSH_DISTANCE,
-      progress: clamp(distance / CITY_RUSH_DISTANCE, 0, 1),
+      totalDistance: effectiveDistance,
+      progress: clamp(distance / effectiveDistance, 0, 1),
       lap,
-      laps: CITY_RUSH_LAPS,
+      laps: effectiveLaps,
       lapLength: CITY_RUSH_LAP_LENGTH,
       lapProgress: cityRushLapProgress(distance),
-      lapDistance: Math.max(0, Math.round(Math.min(distance, CITY_RUSH_DISTANCE) % CITY_RUSH_LAP_LENGTH)),
+      lapDistance: Math.max(0, Math.round(Math.min(distance, effectiveDistance) % CITY_RUSH_LAP_LENGTH)),
       elapsed,
       speed: Math.max(0, Math.round(currentSpeed * 3.6)),
       rank: standings.rank,
@@ -909,9 +912,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         flag: racer.flag,
         avatar: racer.avatar,
         accent: racer.accent,
-        rawDistance: Math.max(0, Math.min(CITY_RUSH_DISTANCE, racer.distance)),
-        distance: Math.max(0, Math.min(CITY_RUSH_DISTANCE, Math.round(racer.distance))),
-        progress: clamp(racer.distance / CITY_RUSH_DISTANCE, 0, 1),
+        rawDistance: Math.max(0, Math.min(effectiveDistance, racer.distance)),
+        distance: Math.max(0, Math.min(effectiveDistance, Math.round(racer.distance))),
+        progress: clamp(racer.distance / effectiveDistance, 0, 1),
         lap: racer.lap || cityRushLapForDistance(racer.distance),
         lapProgress: cityRushLapProgress(racer.distance),
         rank: index + 1,
@@ -954,7 +957,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function lapBoardSubtitle(nextLap) {
-    if (nextLap >= CITY_RUSH_LAPS) return 'DERNIER TOUR';
+    if (nextLap >= effectiveLaps) return 'DERNIER TOUR';
     return `${city.name.toUpperCase()} · ${theme.gantryText}`;
   }
 
@@ -1107,7 +1110,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     setRowsToStart();
     startLine.setLights(0);
     startLine.setFinalLap(false);
-    startLine.setBoard(`TOUR 1/${CITY_RUSH_LAPS}`, lapBoardSubtitle(1));
+    startLine.setBoard(`TOUR 1/${effectiveLaps}`, lapBoardSubtitle(1));
     placeTrack();
     emitHud(true);
   }
@@ -2665,7 +2668,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       city: city.id,
       duration: elapsed,
       distance: Math.round(distance),
-      laps: CITY_RUSH_LAPS,
+      laps: effectiveLaps,
       rank: standings.rank,
       winner: standings.leader?.name || '—',
       winnerId: standings.leader?.id || null,
@@ -2708,27 +2711,27 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function handleLapCrossings(priorDistance) {
     const crossings = cityRushLapCrossings(priorDistance, distance);
     for (const line of crossings) {
-      if (line >= CITY_RUSH_LAPS) {
+      if (line >= effectiveLaps) {
         startLine.onCross({ final: true });
         continue;
       }
       lap = line + 1;
-      const finalLap = lap === CITY_RUSH_LAPS;
+      const finalLap = lap === effectiveLaps;
       startLine.onCross({ final: false });
-      startLine.setBoard(`TOUR ${lap}/${CITY_RUSH_LAPS}`, lapBoardSubtitle(lap), finalLap ? '#ffffff' : undefined);
+      startLine.setBoard(`TOUR ${lap}/${effectiveLaps}`, lapBoardSubtitle(lap), finalLap ? '#ffffff' : undefined);
       if (finalLap) startLine.setFinalLap(true);
       cameraKick = Math.max(cameraKick, 0.45);
       audioRef?.current?.lap(finalLap);
-      getCallbacks().lap?.({ lap, laps: CITY_RUSH_LAPS, final: finalLap, elapsed });
-      getCallbacks().effect?.({ type: finalLap ? 'final-lap' : 'lap', lap, laps: CITY_RUSH_LAPS });
+      getCallbacks().lap?.({ lap, laps: effectiveLaps, final: finalLap, elapsed });
+      getCallbacks().effect?.({ type: finalLap ? 'final-lap' : 'lap', lap, laps: effectiveLaps });
     }
     for (const racer of racers) {
       const racerLap = cityRushLapForDistance(racer.distance);
       if (racerLap !== racer.lap) {
         racer.lap = racerLap;
-        if (racerLap === CITY_RUSH_LAPS && !racer.finalLapAnnounced) {
+        if (racerLap === effectiveLaps && !racer.finalLapAnnounced) {
           racer.finalLapAnnounced = true;
-          if (lap < CITY_RUSH_LAPS) getCallbacks().effect?.({ type: 'rival-final-lap', rival: racer.name });
+          if (lap < effectiveLaps) getCallbacks().effect?.({ type: 'rival-final-lap', rival: racer.name });
         }
       }
     }
@@ -3029,7 +3032,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
         traffic.distance = movementById.get(traffic.id) ?? priorTrafficDistance;
         const clearedByEveryone = traffic.distance < slowestRaceDistance - 34;
-        const roomForAnotherEncounter = trafficLeadDistance < CITY_RUSH_DISTANCE - 230;
+        const roomForAnotherEncounter = trafficLeadDistance < effectiveDistance - 230;
         if (clearedByEveryone && roomForAnotherEncounter) {
           traffic.spawnCount += 1;
           const nextSlot = lastTrafficDistanceSlot + randomRange(58, 78);
@@ -3083,7 +3086,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // L'escouade entre en piste dès que le premier du classement attaque son
       // dernier tour, puis chasse devant lui à hauteur de ses bonus.
       const leader = refreshPackLeader();
-      if (!policeDeployed && cityRushLapForDistance(leader.distance) >= CITY_RUSH_LAPS) deployPolice(leader);
+      if (!policeDeployed) {
+      if (effectivePoliceFromStart && leader.distance > 8) deployPolice(leader);
+      else if (cityRushLapForDistance(leader.distance) >= effectiveLaps) deployPolice(leader);
+      }
       updatePolice(dt, leader);
       handleLapCrossings(priorDistance);
       updateRows(dt);
@@ -3094,7 +3100,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       updateTrafficImpacts(dt);
 
       const allRacers = makeRacerRows();
-      if (allRacers.some((racer) => racer.distance >= CITY_RUSH_DISTANCE)) finishRace();
+      if (allRacers.some((racer) => racer.distance >= effectiveDistance)) finishRace();
       emitHud();
     } else {
       currentSpeed = 0;
@@ -3269,7 +3275,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
@@ -3286,7 +3292,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         pickup: (data) => callbacksRef.current.onPickup?.(data),
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
-      }), carId, audioRef, roster);
+      }), carId, audioRef, roster, raceLaps, racePoliceFromStart);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -3299,7 +3305,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
       worldRef.current = null;
       if (actionsRef) actionsRef.current = null;
     };
-  }, [cityId, carId, actionsRef, audioRef]);
+  }, [cityId, carId, raceLaps, racePoliceFromStart, actionsRef, audioRef]);
 
   useEffect(() => {
     if (roster) worldRef.current?.setRoster?.(roster);
