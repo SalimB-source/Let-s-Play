@@ -1153,8 +1153,21 @@ function buildTunnel(batch, m, atlas, tunnel) {
     }
     batch.box(m.cream, [0, height + 0.75, z + dir * 0.35], [half * 2 + 1.8, 1.5, 0.7]);
     batch.box(m.neon, [0, height + 0.16, z + dir * 0.72], [half * 2, 0.26, 0.06]);
+    if (dir < 0) {
+      for (const x of [-5.9, 5.9]) {
+        batch.box(m.darkMetal, [x, height + 0.9, z + dir * 0.58], [0.72, 0.5, 0.42]);
+        batch.box(m.lampGlow, [x, height + 0.9, z + dir * 0.83], [0.44, 0.32, 0.08]);
+      }
+    }
   }
-  batch.plane(m.signs, [0, height + 0.78, entryZ + 0.74], Math.min(12.4, half * 2 - 0.6), 1.25, null, { uv: atlas.tunnelUv });
+  // Enseigne de la ville posée sur le linteau (jamais devant la baie, sinon
+  // elle pendrait dans l'ouverture) et deux lanternes à ses extrémités, qui
+  // annoncent la voûte de loin.
+  batch.plane(m.signs, [0, height + 0.9, entryZ + 0.74], Math.min(12.4, half * 2 - 1), 1.0, null, { uv: atlas.tunnelUv });
+  for (const x of [-5.9, 5.9]) {
+    batch.box(m.darkMetal, [x, height + 0.9, entryZ + 0.58], [0.72, 0.5, 0.42]);
+    batch.box(m.lampGlow, [x, height + 0.9, entryZ + 0.83], [0.44, 0.32, 0.08]);
+  }
 
   // Plafonniers et appliques : la voûte n'est pas un trou noir.
   for (let offset = 3.5; offset <= CITY_RUSH_TUNNEL_LENGTH - 3; offset += 6.5) {
