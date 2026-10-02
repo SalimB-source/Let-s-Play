@@ -1175,11 +1175,16 @@ function buildTunnel(batch, m, atlas, tunnel) {
     batch.box(m.darkMetal, [0, height - 0.06, z], [1.5, 0.12, 0.56]);
     batch.box(m.lampGlow, [0, height - 0.15, z], [1.15, 0.1, 0.42]);
   }
+  // Appliques : sur la paroi intérieure, ou sur la face du couloir quand cette
+  // voie-là est murée (sinon le luminaire serait noyé dans la pierre).
   for (let offset = 5; offset <= CITY_RUSH_TUNNEL_LENGTH - 4; offset += 9) {
     const z = toZ(tunnel.entry + offset);
     for (const side of [-1, 1]) {
-      batch.box(m.darkMetal, [side * (half - 0.06), 4.62, z], [0.14, 0.5, 1.0]);
-      batch.box(m.lampGlow, [side * (half - 0.16), 4.62, z], [0.06, 0.34, 0.82]);
+      const wall = tunnel.walls.find((item) => item.side === (side < 0 ? 'left' : 'right'));
+      const housingX = wall ? wall.outerX - wall.corridor * 0.01 : side * (half - 0.06);
+      const glowX = wall ? wall.outerX + wall.corridor * 0.06 : side * (half - 0.16);
+      batch.box(m.darkMetal, [housingX, 4.62, z], [0.14, 0.5, 1.0]);
+      batch.box(m.lampGlow, [glowX, 4.62, z], [0.06, 0.34, 0.82]);
     }
   }
 

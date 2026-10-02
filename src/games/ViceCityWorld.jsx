@@ -566,6 +566,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       name: tunnelLabel,
       open: tunnel.openLanes.length,
       closed: tunnel.closedLanes.length,
+      walls: tunnel.walls.length,
       side: tunnel.walls[0]?.side ?? null,
     });
   }
@@ -942,6 +943,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         name: tunnelLabel,
         openLanes: [...tunnelInside.openLanes],
         closedLanes: [...tunnelInside.closedLanes],
+        walls: tunnelInside.walls.length,
         side: tunnelInside.walls[0]?.side ?? null,
       } : null,
       playerLane,

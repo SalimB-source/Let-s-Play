@@ -423,6 +423,36 @@ for (const [index, city] of cities.entries()) {
   const hudAfterReset = callbacks.huds.at(-1);
   if (hudAfterReset.lap !== 1 || hudAfterReset.distance > 1) fail('reset() ne remet pas la course au tour 1', hudAfterReset);
 
+  // Voie murée : on remet la course au départ et on force le volant vers la
+  // gauche (voie 0, murée sous le premier tremis de Vice City) pour vérifier,
+  // en vrai, que le joueur est retenu au volant puis raclé s'il insiste. Sur un
+  // circuit qui n'a pas de tremis, la séquence est simplement sautée.
+  if (planned.length) {
+    const closedLane = planned[0].closedLanes[0];
+    const side = closedLane < planned[0].openLanes[0] ? 'left' : 'right';
+    world.reset();
+    world.setPhase('playing');
+    world.start();
+    const scrapesBefore = callbacks.effects.filter((e) => e.type === 'tunnel-scrape').length;
+    let sawWalledLane = false;
+    let entryLane = null;
+    let tunnelFrame = null;
+    for (let index = 0; index < 300 && !tunnelFrame; index += 1) {
+      // On pousse le volant vers la paroi à chaque image : sans retenue, le
+      // joueur finirait dans la voie murée.
+      world.action(side);
+      runFrames(1, `approche de la paroi f${index}`);
+      const hud = callbacks.huds.at(-1);
+      if (hud?.playerLane === closedLane) sawWalledLane = true;
+      if (hud?.tunnel) { tunnelFrame = index; entryLane = hud.playerLane; }
+    }
+    if (tunnelFrame === null) fail('la seconde course n’atteint jamais le premier tremis');
+    if (entryLane === closedLane) fail('le joueur entre dans une voie murée malgré la retenue au volant', { closedLane, entryLane });
+    const scrapes = callbacks.effects.filter((e) => e.type === 'tunnel-scrape').length - scrapesBefore;
+    if (sawWalledLane && !scrapes) fail('le joueur a roulé dans la voie murée sans racler la paroi');
+    console.log(`  [${city.id}] paroi ${side} (voie ${closedLane}) : retenu à la voie ${entryLane}, ${scrapes} raclement(s)`);
+  }
+
   try { world.destroy(); } catch (e) { console.error('destroy() a levé :', e); process.exit(1); }
   if (rafQueue.size) fail('rAF encore planifié après destroy()', rafQueue.size);
 

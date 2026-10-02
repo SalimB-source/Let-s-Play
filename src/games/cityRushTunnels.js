@@ -177,11 +177,6 @@ export function cityRushTunnels(cityId) {
 }
 
 // ─── Interrogations ────────────────────────────────────────────────────────
-/** Bornes du tremis : [bouche d'entrée, bouche de sortie]. */
-export function cityRushTunnelSpan(tunnel) {
-  return [Number(tunnel?.entry) || 0, Number(tunnel?.exit) || 0];
-}
-
 /** Le tremis traversé à cette distance de piste, ou null. */
 export function cityRushTunnelAt(distance, tunnels) {
   const value = Number(distance);
