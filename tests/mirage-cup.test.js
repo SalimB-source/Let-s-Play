@@ -14,6 +14,7 @@ import {
   cupRaceIndex,
   cupStandings,
   cupWinner,
+  cupWinnerCoins,
   getCup,
   isCupComplete,
   placeLabel,
@@ -125,6 +126,7 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
   assert.equal(DEFAULT_CUP_ID, 'desert');
   const cup = getCup('desert');
   assert.equal(cup.name, 'Coupe du Désert');
+  assert.equal(cup.coins, 30, 'la Coupe du Désert verse 30 OR à son champion');
   assert.deepEqual([...cup.stages], ['desert', 'western', 'prairie']);
   assert.equal(getCup('inconnue'), null);
   assert.equal(new Set(CUPS.map((entry) => entry.id)).size, CUPS.length, 'cup ids are unique');
@@ -133,6 +135,18 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
     assert.ok(entry.stages.length >= 2, `${entry.id} chains several races`);
     assert.ok(Object.isFrozen(entry) && Object.isFrozen(entry.stages), 'the catalogue is immutable');
   }
+});
+
+test('every cup pays a purse to its champion: 30 OR for the Désert, 40 for the Grand Tour, 50 for the Légendes', () => {
+  assert.deepEqual(CUPS.map((cup) => cupWinnerCoins(cup)), [30, 40, 50]);
+  assert.equal(cupWinnerCoins('desert'), 30);
+  assert.equal(cupWinnerCoins('worldtour'), 40);
+  assert.equal(cupWinnerCoins('legends'), 50);
+  assert.equal(cupWinnerCoins(getCup('legends')), 50);
+  assert.equal(cupWinnerCoins('inconnue'), 0, 'une coupe inconnue ne rapporte rien');
+  assert.equal(cupWinnerCoins(null), 0);
+  assert.equal(cupWinnerCoins({ coins: -10 }), 0, 'une bourse négative est ramenée à zéro');
+  assert.equal(cupWinnerCoins({ coins: '40' }), 40);
 });
 
 test('a fresh cup has four riders — the player first, then the three NPC rivals — and no race yet', () => {

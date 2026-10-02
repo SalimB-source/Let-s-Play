@@ -14,6 +14,10 @@ import {
   CITY_RUSH_RACER_VIEW_DISTANCE,
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
+  CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN,
+  CITY_RUSH_TRAFFIC_IMPACT_DURATION,
+  CITY_RUSH_TRAFFIC_IMPACT_GAP,
+  CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION,
   CITY_RUSH_PICKUP_BURST_DURATION,
   CITY_RUSH_PICKUP_BURST_SHARDS,
   CITY_RUSH_PICKUP_RESPAWN_DELAY,
@@ -22,6 +26,7 @@ import {
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
   CITY_RUSH_POLICE_ATTACK_LEAD,
+  CITY_RUSH_POLICE_BLOCK_RANGE,
   CITY_RUSH_POLICE_COUNT,
   CITY_RUSH_POLICE_HUNT_TYPES,
   CITY_RUSH_POLICE_LEAD,
@@ -35,11 +40,16 @@ import {
   cityRushMinimapTrackPath,
   buildCityRushMinimapState,
   approachCityRushSpeed,
+  cityRushTrafficRecoveryRate,
+  CITY_RUSH_TRAFFIC_RECOVERY_BOOST,
   chooseCityRushAiLane,
+  chooseCityRushTrafficEscapeLane,
   cityRushHitDuration,
   cityRushHelicopterTarget,
   cityRushIsAhead,
   cityRushStraightShotTarget,
+  cityRushStunSpin,
+  CITY_RUSH_STUN_SPIN_TURNS,
   cityRushLapForDistance,
   cityRushLapProgress,
   cityRushLapCrossings,
@@ -49,14 +59,17 @@ import {
   cityRushPackLeader,
   cityRushPickupShardState,
   cityRushPolicePace,
+  cityRushPoliceTarget,
   cityRushTrackGap,
   chooseCityRushPoliceLane,
+  isCityRushPoliceLaneJammed,
   resolveCityRushPoliceMovement,
   addCityRushCharge,
   cityRushLaneAfterAction,
   consumeCityRushCharge,
   createCityRushEncounter,
   createCityRushInventory,
+  detectCityRushTrafficImpacts,
   isCityRushPickupHidden,
   markCityRushPickupTaken,
   rankCityRushRacers,
@@ -112,6 +125,34 @@ test('twelve slow traffic cars span four distinct types and safely block racers'
   const byId = Object.fromEntries(moved.map((car) => [car.id, car.nextDistance]));
   assert.ok(byId.player >= 35, 'le contact ne provoque pas de recul ni de pénalité');
   assert.ok(byId['slow-traffic'] - byId.player >= CITY_RUSH_CAR_GAP - 1e-9);
+});
+
+test('un joueur humain ou une IA touche le trafic, ralentit brièvement (0,6 s) et libère une voie', () => {
+  assert.equal(CITY_RUSH_TRAFFIC_IMPACT_DURATION, 0.6);
+  assert.equal(CITY_RUSH_TRAFFIC_IMPACT_GAP, CITY_RUSH_CAR_GAP);
+  assert.ok(CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN > CITY_RUSH_TRAFFIC_IMPACT_DURATION);
+  assert.ok(CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION > 0 && CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION < CITY_RUSH_TRAFFIC_IMPACT_DURATION);
+
+  const requests = [
+    { id: 'player', collisionGroup: 'racer', lane: 1, x: -1.05, width: 1.9, previousDistance: 20, nextDistance: 22.2 },
+    { id: 'nova', collisionGroup: 'racer', lane: 2, x: 1.05, width: 1.75, previousDistance: 8, nextDistance: 8.4 },
+    { id: 'traffic-1', collisionGroup: 'traffic', lane: 1, x: -1.05, width: 1.94, previousDistance: 25.2, nextDistance: 25.45 },
+  ];
+  const impacts = detectCityRushTrafficImpacts(requests);
+  assert.equal(impacts.length, 1);
+  assert.equal(impacts[0].racerId, 'player');
+  assert.equal(impacts[0].trafficId, 'traffic-1');
+  assert.equal(impacts[0].lane, 1);
+  assert.ok(Math.abs(impacts[0].previousGap - 5.2) < 1e-9);
+  assert.ok(Math.abs(impacts[0].requestedGap - 3.25) < 1e-9);
+  assert.deepEqual(detectCityRushTrafficImpacts([
+    { id: 'rival', collisionGroup: 'racer', lane: 0, x: -3.15, previousDistance: 20, nextDistance: 21 },
+    { id: 'traffic', collisionGroup: 'traffic', lane: 1, x: -1.05, previousDistance: 30, nextDistance: 30.1 },
+  ]), [], 'deux voies distinctes ne provoquent pas un choc');
+
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 0 }), 1, 'le bord gauche se rabat vers la voie 1');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 1, blockedLanes: [0], openLanes: [0, 1, 2, 3] }), 2, 'une voie occupée est évitée');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2], openLanes: [1, 2, 3] }), 1, 'le tunnel garde une voie ouverte quand la voie voisine est occupée');
 });
 
 test('rivals plan lane changes to collect bonuses and avoid traffic safely', () => {
@@ -191,8 +232,8 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
 });
 
 test('the item effects, matching colors, and charge costs match the race rules', () => {
-  assert.equal(CITY_RUSH_DISTANCE, 1800);
-  assert.equal(CITY_RUSH_PLAYER_SPEED, 26);
+  assert.equal(CITY_RUSH_DISTANCE, 3000);
+  assert.equal(CITY_RUSH_PLAYER_SPEED, 29);
   // Seuils de chargement : bleu 2, rouge 3, vert 2, jaune 4.
   assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 2, pistol: 3, cash: 2, radio: 4 });
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
@@ -414,8 +455,90 @@ test('l’escouade traverse la route pour rafler un bonus rouge ou jaune', () =>
   assert.notEqual(trafficLane, 2);
 });
 
+test('une voie est bouchée par un véhicule lent qui précède la berline à portée de freinage', () => {
+  const base = { lane: 1, distance: 1000, speed: 26 };
+  const slow = { lane: 1, distance: 1020, speed: 4.4 };
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: [slow] }), true);
+  // Une autre voie, un véhicule déjà dépassé ou trop lointain : la voie est libre.
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: [{ ...slow, lane: 2 }] }), false);
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: [{ ...slow, distance: 985 }] }), false);
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: [{ ...slow, distance: 1000 + CITY_RUSH_POLICE_BLOCK_RANGE }] }), true);
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: [{ ...slow, distance: 1000 + CITY_RUSH_POLICE_BLOCK_RANGE + 1 }] }), false);
+  // Un véhicule qui roule presque aussi vite que la berline ne la bouche pas ;
+  // sans vitesse connue, il est supposé à l'arrêt.
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: [{ ...slow, speed: 24 }] }), false);
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: [{ lane: 1, distance: 1020 }] }), true);
+  // Engluée à 5 m/s derrière un camion, la berline le voit encore comme un obstacle.
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, speed: 5, traffic: [slow] }), true);
+  // Entrées invalides : jamais d'exception, la voie reste libre.
+  assert.equal(isCityRushPoliceLaneJammed({ ...base }), false);
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: null }), false);
+  assert.equal(isCityRushPoliceLaneJammed({ ...base, traffic: [null, { lane: 1, distance: 'loin' }] }), false);
+});
+
+test('une berline engluée derrière un véhicule lent change de voie, même pour un bonus rouge', () => {
+  const common = {
+    currentLane: 1,
+    distance: 1000,
+    speed: 26,
+    availableLanes: [0, 1, 2, 3],
+    lookAheadDistance: 200,
+  };
+  // La convoitise (×100) écrasait toute pénalité de trafic : un bonus rouge
+  // derrière un camion gardait la berline collée à son pare-chocs, à 4,4 m/s,
+  // pendant que le leader s'envolait. L'escouade décrochait de la piste.
+  const pickups = [{ lane: 1, type: 'pistol', distance: 1060 }];
+  const truck = { lane: 1, distance: 1030, speed: 4.4 };
+  assert.notEqual(chooseCityRushPoliceLane({ ...common, pickups, traffic: [truck] }), 1);
+  assert.notEqual(chooseCityRushPoliceLane({ ...common, pickups: [{ ...pickups[0], type: 'radio' }], traffic: [truck] }), 1, 'le jaune non plus');
+  // Même collée au camion, déjà engluée à 5 m/s : elle s'en extrait.
+  assert.notEqual(chooseCityRushPoliceLane({ ...common, speed: 5, pickups, traffic: [{ ...truck, distance: 1006 }] }), 1);
+  // Sans camion, ou avec un camion déjà dépassé ou encore hors de portée, le
+  // bonus rouge garde sa voie : la chasse aux bonus n'est pas affaiblie.
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups, traffic: [] }), 1);
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups, traffic: [{ ...truck, distance: 990 }] }), 1);
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups, traffic: [{ ...truck, distance: 1000 + CITY_RUSH_POLICE_BLOCK_RANGE + 5 }] }), 1);
+  // Elle se rabat vers la voie où se trouve le leader quand elle doit choisir.
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups, traffic: [truck], targetLane: 2 }), 2);
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups, traffic: [truck], targetLane: 0 }), 0);
+});
+
+test('une voie voisine bouchée n’attire pas la berline, et tout bouché ne casse rien', () => {
+  const common = {
+    currentLane: 1,
+    distance: 1000,
+    speed: 26,
+    availableLanes: [0, 1, 2, 3],
+    lookAheadDistance: 200,
+  };
+  const slow = (lane, distance = 1030) => ({ lane, distance, speed: 4.4 });
+  // Le talkie-walkie jaune est dans la voie 2, mais un camion le garde : elle
+  // reste dans sa voie libre plutôt que de s'engluer.
+  const radio = [{ lane: 2, type: 'radio', distance: 1060 }];
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: radio, traffic: [] }), 2, 'voie libre : elle fonce le chercher');
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: radio, traffic: [slow(2)] }), 1);
+  // Bouchée et sa voisine aussi : elle prend la seule voie dégagée, même loin du bonus.
+  assert.equal(chooseCityRushPoliceLane({ ...common, pickups: radio, traffic: [slow(1), slow(2)] }), 0);
+  // Toutes les voies accessibles bouchées : le choix d'origine tient (elle
+  // touchera le véhicule et le monde le fera se rabattre) — sans exception.
+  const wall = [0, 1, 2, 3].map((lane) => slow(lane, 1020));
+  const walled = chooseCityRushPoliceLane({ ...common, pickups: [{ lane: 1, type: 'pistol', distance: 1060 }], traffic: wall });
+  assert.equal(walled, 1);
+  assert.equal(chooseCityRushPoliceLane({ ...common, availableLanes: [1], traffic: [slow(1)] }), 1, 'une seule voie ouverte : elle y reste');
+  // Une voie interdite (mur de tremis) n'est jamais choisie, même libre.
+  assert.equal(chooseCityRushPoliceLane({ ...common, availableLanes: [1, 2], pickups: [], traffic: [slow(1), slow(2)] }), 1);
+  // Une berline qui touche le trafic le traite comme un rival : même détecteur.
+  const impacts = detectCityRushTrafficImpacts([
+    { id: 'police-1', collisionGroup: 'racer', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, previousDistance: 1000, nextDistance: 1001.6 },
+    { id: 'traffic-1', collisionGroup: 'traffic', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, previousDistance: 1006, nextDistance: 1006.1 },
+  ]);
+  assert.equal(impacts.length, 1);
+  assert.equal(impacts[0].racerId, 'police-1');
+  assert.equal(impacts[0].trafficId, 'traffic-1');
+});
+
 test('les berlines ne traversent pas le trafic et ne bloquent personne', () => {
-  const traffic = [{ lane: 1, distance: 1040, x: CITY_RUSH_LANE_X[1], width: 1.98 }];
+  const traffic = [{ id: 'truck-1', lane: 1, distance: 1040, x: CITY_RUSH_LANE_X[1], width: 1.98 }];
   const resolved = resolveCityRushPoliceMovement([
     { id: 'police-1', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1000, nextDistance: 1038, width: 1.94 },
     { id: 'police-2', lane: 3, x: CITY_RUSH_LANE_X[3], distance: 1000, nextDistance: 1038, width: 1.94 },
@@ -425,6 +548,55 @@ test('les berlines ne traversent pas le trafic et ne bloquent personne', () => {
   assert.equal(byId['police-2'], 1038, 'la voie libre reste libre');
   // Elle ne rabote la distance de personne : personne ne la suit dans la liste.
   assert.deepEqual(resolved.map((car) => car.id), ['police-1', 'police-2']);
+  // Le véhicule qui a freiné la berline est désigné, pour que le monde le
+  // heurte : sinon la berline le suivrait sans fin à son allure.
+  const blockedBy = Object.fromEntries(resolved.map((car) => [car.id, car.blockedBy]));
+  assert.equal(blockedBy['police-1'], 'truck-1');
+  assert.equal(blockedBy['police-2'], null);
+  // Déjà plaquée contre la marge, elle reste bloquée image après image...
+  const stuck = resolveCityRushPoliceMovement([
+    { id: 'police-1', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1040 - CITY_RUSH_CAR_GAP, nextDistance: 1040 - CITY_RUSH_CAR_GAP + 0.2, width: 1.94 },
+  ], traffic, CITY_RUSH_CAR_GAP)[0];
+  assert.equal(stuck.blockedBy, 'truck-1');
+  assert.equal(stuck.nextDistance, 1040 - CITY_RUSH_CAR_GAP);
+  // ... mais une berline à l'arrêt (sonnée) n'est freinée par personne, et un
+  // véhicule en train de se rabattre la freine tant que les carrosseries se
+  // recouvrent, puis plus du tout.
+  assert.equal(resolveCityRushPoliceMovement([
+    { id: 'police-1', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1040 - CITY_RUSH_CAR_GAP, nextDistance: 1040 - CITY_RUSH_CAR_GAP, width: 1.94 },
+  ], traffic, CITY_RUSH_CAR_GAP)[0].blockedBy, null);
+  const swerving = (x) => resolveCityRushPoliceMovement([
+    { id: 'police-1', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1000, nextDistance: 1016, width: 1.94 },
+  ], [{ id: 'truck-1', lane: 0, distance: 1020, x, width: 1.98 }], CITY_RUSH_CAR_GAP)[0];
+  assert.equal(swerving(CITY_RUSH_LANE_X[1] - 1).blockedBy, 'truck-1', 'encore à cheval sur la voie de la berline');
+  assert.equal(swerving(CITY_RUSH_LANE_X[0]).blockedBy, null, 'rabattu : la voie est libre');
+});
+
+test('au dernier tour, la riposte rouge et jaune peut viser la berline la plus proche', () => {
+  // Sans escouade déployée, pas de cible : la jauge reste chargée.
+  assert.equal(cityRushPoliceTarget([], 1200), null);
+  assert.equal(cityRushPoliceTarget(undefined, 1200), null);
+  assert.equal(cityRushPoliceTarget([{ id: 'police-1', distance: 1201, active: true }], Number.NaN), null);
+  // Une berline inactive (avant le déploiement ou après l'arrivée) est ignorée.
+  assert.equal(cityRushPoliceTarget([{ id: 'police-1', distance: 1201, active: false }], 1200), null);
+  // La riposte n'est plus limitée aux cibles en avant : une berline repliée
+  // derrière le leader pour tirer est visée si elle est la plus proche.
+  const squad = [
+    { id: 'police-1', distance: 1195, active: true }, // 5 m derrière (repli pour tirer)
+    { id: 'police-2', distance: 1221, active: true }, // 21 m devant (mode blocage)
+  ];
+  assert.equal(cityRushPoliceTarget(squad, 1200).id, 'police-1');
+  assert.equal(cityRushPoliceTarget([...squad].reverse(), 1200).id, 'police-1', 'l’ordre de la liste ne change rien');
+  assert.equal(cityRushPoliceTarget(squad, 1200, 'police-1').id, 'police-2', 'jamais soi-même');
+  assert.equal(cityRushPoliceTarget([
+    { id: 'police-1', distance: 1215, active: true },
+    { id: 'police-2', distance: 1202, active: true },
+  ], 1200).id, 'police-2', 'la plus proche devant l’emporte quand l’autre est loin');
+  // Entrées invalides ignorées sans casser le tri.
+  assert.equal(cityRushPoliceTarget([
+    { id: 'police-1', distance: 'loin', active: true },
+    { id: 'police-2', distance: 1202, active: true },
+  ], 1200).id, 'police-2');
 });
 
 test('lane changes clamp at the road edges', () => {
@@ -569,8 +741,8 @@ test('race standings identify the leader and player position, including ties', (
   assert.deepEqual(board.ordered.map((racer) => racer.id), ['rival-a', 'player', 'rival-c', 'rival-b']);
 });
 
-test('a race is three laps of the same 600 m loop', () => {
-  assert.equal(CITY_RUSH_LAPS, 3);
+test('a race is five laps of the same 600 m loop', () => {
+  assert.equal(CITY_RUSH_LAPS, 5);
   assert.equal(CITY_RUSH_LAP_LENGTH, 600);
   assert.equal(CITY_RUSH_DISTANCE, CITY_RUSH_LAPS * CITY_RUSH_LAP_LENGTH);
 
@@ -579,8 +751,9 @@ test('a race is three laps of the same 600 m loop', () => {
   assert.equal(cityRushLapForDistance(600), 2);
   assert.equal(cityRushLapForDistance(1250), 3);
   // Le compteur reste borné une fois l'arrivée franchie (ou avec une entrée invalide).
-  assert.equal(cityRushLapForDistance(1800), 3);
-  assert.equal(cityRushLapForDistance(4000), 3);
+  assert.equal(cityRushLapForDistance(1800), 4);
+  assert.equal(cityRushLapForDistance(3000), 5);
+  assert.equal(cityRushLapForDistance(4000), 5);
   assert.equal(cityRushLapForDistance(-20), 1);
   assert.equal(cityRushLapForDistance(Number.NaN), 1);
 
@@ -588,8 +761,9 @@ test('a race is three laps of the same 600 m loop', () => {
   assert.equal(cityRushLapProgress(150), 0.25);
   assert.equal(cityRushLapProgress(600), 0);
   assert.equal(cityRushLapProgress(1500), 0.5);
-  assert.equal(cityRushLapProgress(1800), 1);
-  assert.equal(cityRushLapProgress(2400), 1);
+  assert.equal(cityRushLapProgress(1800), 0);
+  assert.equal(cityRushLapProgress(3000), 1);
+  assert.equal(cityRushLapProgress(3600), 1);
 });
 
 test('crossing the start line is detected once per lap, the last crossing being the finish', () => {
@@ -599,9 +773,10 @@ test('crossing the start line is detected once per lap, the last crossing being 
   assert.deepEqual(cityRushLapCrossings(599, 600), [1]);
   assert.deepEqual(cityRushLapCrossings(1190, 1210), [2]);
   assert.deepEqual(cityRushLapCrossings(1799, 1830), [3]);
+  assert.deepEqual(cityRushLapCrossings(2990, 3010), [5]);
   // Un très grand pas de simulation ne saute aucune ligne, et rien au-delà de l'arrivée.
-  assert.deepEqual(cityRushLapCrossings(10, 1900), [1, 2, 3]);
-  assert.deepEqual(cityRushLapCrossings(1800, 2400), []);
+  assert.deepEqual(cityRushLapCrossings(10, 3100), [1, 2, 3, 4, 5]);
+  assert.deepEqual(cityRushLapCrossings(3000, 3600), []);
   // Reculer (ou rester immobile) ne compte jamais de passage.
   assert.deepEqual(cityRushLapCrossings(620, 580), []);
   // Une boucle personnalisée suit les mêmes règles.
@@ -621,7 +796,7 @@ test('track elements fold onto the loop so the start line comes back ahead every
   assert.equal(cityRushTrackGap(0, 1799), 1);
   assert.equal(cityRushTrackGap(162, 1700), 262);
   assert.equal(cityRushTrackGap(162, 1300), 62);
-  for (let distance = 0; distance <= 1800; distance += 7) {
+  for (let distance = 0; distance <= 3000; distance += 7) {
     for (const position of [0, 36, 162, 300, 564]) {
       const gap = cityRushTrackGap(position, distance);
       assert.ok(gap > -behind - 1e-9 && gap <= CITY_RUSH_LAP_LENGTH - behind + 1e-9, `gap ${gap} out of range`);
@@ -727,3 +902,51 @@ test('la mini-carte dessine l’escouade de police à part des quatre pilotes', 
   assert.equal(buildCityRushMinimapState([]).pursuers.length, 0);
 });
 
+
+test('a car recovers its speed faster after being held behind traffic', () => {
+  assert.ok(CITY_RUSH_TRAFFIC_RECOVERY_BOOST > 1);
+  assert.equal(cityRushTrafficRecoveryRate(9, 0), 9);
+  assert.equal(cityRushTrafficRecoveryRate(9, 1), 9 * CITY_RUSH_TRAFFIC_RECOVERY_BOOST);
+  const normal = approachCityRushSpeed(5, 29, cityRushTrafficRecoveryRate(9, 0), 1);
+  const recovering = approachCityRushSpeed(5, 29, cityRushTrafficRecoveryRate(9, 1), 1);
+  assert.ok(recovering > normal + 10);
+});
+
+test('la toupie du stun héliporté boucle des tours entiers face à la route', () => {
+  const total = CITY_RUSH_POWER_RULES.radio.duration;
+  const fullSpin = CITY_RUSH_STUN_SPIN_TURNS * Math.PI * 2;
+  // Départ de la frappe : pas encore de rotation.
+  assert.equal(cityRushStunSpin(total, total), 0);
+  // La rotation grandit au fil du stun, sans jamais repartir en arrière…
+  // (jusqu'à l'avant-dernière frame : à 0 s restantes, le stun est fini et le
+  // lacet revient à 0 — soit un tour complet, pile face à la route).
+  let previous = 0;
+  for (let step = 1; step <= 19; step += 1) {
+    const left = total - (total * step) / 20;
+    const yaw = cityRushStunSpin(left, total);
+    assert.ok(yaw > previous, `le lacet doit progresser (${yaw} <= ${previous})`);
+    previous = yaw;
+  }
+  // …mais ralentit : le premier dixième couvre plus d'angle que le dernier.
+  const firstSlice = cityRushStunSpin(total * 0.9, total);
+  const lastSlice = cityRushStunSpin(0, total) || fullSpin - cityRushStunSpin(total * 0.1, total);
+  assert.ok(firstSlice > lastSlice, 'ease-out : la toupie ralentit avant la reprise');
+  // Mi-stun : ease-out quadratique à 75 % du parcours.
+  assert.ok(Math.abs(cityRushStunSpin(total / 2, total) - 0.75 * fullSpin) < 1e-9);
+  // Stun terminé (ou sur le point de l'être) : la voiture est face à la
+  // route — un nombre entier de tours, donc aucun à-coup visuel au retour.
+  assert.equal(cityRushStunSpin(0, total) % (Math.PI * 2), 0);
+  assert.ok(Math.abs(cityRushStunSpin(0.0001, total) - fullSpin) < 0.01);
+  // La durée récupérée par profil (reprise rapide/lente) ne change pas le
+  // nombre de tours : seule la vitesse de rotation s'adapte.
+  const comet = { hitRecoveryMultiplier: 0.88 };
+  const cometTotal = cityRushHitDuration(total, comet);
+  assert.equal(cityRushStunSpin(cometTotal, cometTotal), 0);
+  assert.ok(Math.abs(cityRushStunSpin(cometTotal / 2, cometTotal) - 0.75 * fullSpin) < 1e-9);
+  // Entrées invalides : aucune rotation.
+  assert.equal(cityRushStunSpin(0, 0), 0);
+  assert.equal(cityRushStunSpin(-1, total), 0);
+  assert.equal(cityRushStunSpin(Number.NaN, total), 0);
+  assert.equal(cityRushStunSpin(total, Number.NaN), 0);
+  assert.equal(cityRushStunSpin(total, total, 0), 0);
+});
