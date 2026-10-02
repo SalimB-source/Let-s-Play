@@ -123,9 +123,15 @@ export default function MirageRushPage() {
   const challengeCode = searchParams.get('duel');
   const initialModeParam = searchParams.get('mode');
   const challenge = useMemo(() => decodeChallenge(challengeCode), [challengeCode]);
+  const initialStageParam = searchParams.get('stage');
+  const validStages = ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase', 'snakeway'];
   // Le terrain se choisit dans l’overlay d’intro (« 02 / ton terrain ») ;
   // un défi imposé verrouille le parcours sur la carte du défi.
-  const [selectedStage, setSelectedStage] = useState(challenge?.stage || 'desert');
+  const [selectedStage, setSelectedStage] = useState(
+    (initialStageParam && validStages.includes(initialStageParam))
+      ? initialStageParam
+      : (challenge?.stage || 'desert')
+  );
   const [selectedMode, setSelectedMode] = useState(
     initialModeParam === 'online' ? 'online' : initialModeParam === 'cup' ? 'cup' : challenge ? 'duel' : 'rush',
   );
@@ -142,7 +148,7 @@ export default function MirageRushPage() {
   const activeCup = getCup(cupId) || CUPS[0];
   // L'intro devient un vrai tunnel : d'abord un écran de boutons de mode,
   // puis seulement l'écran suivant avec les maps et le lancement.
-  const [introStep, setIntroStep] = useState(() => (challenge || initialModeParam === 'online' || initialModeParam === 'cup' ? 'stage' : 'mode'));
+  const [introStep, setIntroStep] = useState(() => (challenge || initialModeParam === 'online' || initialModeParam === 'cup' || initialStageParam ? 'stage' : 'mode'));
   const [onlineOpen, setOnlineOpen] = useState(initialModeParam === 'online');
   const [settingsTab, setSettingsTab] = useState('community');
   const currentUserName = useMemo(

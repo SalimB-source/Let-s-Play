@@ -2337,17 +2337,34 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
             } else if (type === 'pig') {
               animal.position.y = Math.sin(time * 0.0012 + bob) * 0.03;
               animal.rotation.y += Math.sin(time * 0.0004 + bob) * 0.0008;
+            } else if (type === 'horse') {
+              if (animal.userData.head) {
+                animal.userData.head.rotation.x = (animal.userData.baseHeadRot || 0) + Math.sin(time * 0.002 + bob) * 0.07;
+              }
+              if (animal.userData.tail) {
+                animal.userData.tail.rotation.z = Math.sin(time * 0.0035 + bob) * 0.18;
+              }
+              animal.position.y = (animal.userData.baseY || 0) + Math.abs(Math.sin(time * 0.0015 + bob)) * 0.012;
             }
           }
         }
         const crowd = item.userData.people;
         if (crowd?.length) {
-          // Les passants d'Alger la Blanche : balancement discret, un
+          // Les passants d'Alger la Blanche & cowboys de Dust Creek : balancement discret,
           // mouvement de tête suggéré — la foule respire sans coûter cher.
           for (const person of crowd) {
             const bob = person.userData.bob || 0;
             person.rotation.y = (person.userData.baseRotation || 0) + Math.sin(time * 0.001 + bob) * 0.12;
             person.position.y = (person.userData.baseY || 0) + Math.abs(Math.sin(time * 0.0017 + bob)) * 0.012;
+            if (person.userData.wavingArm && !reduceMotion) {
+              person.userData.wavingArm.rotation.z = (person.userData.baseArmRot || 0) + Math.sin(time * 0.004 + bob) * 0.28;
+            }
+          }
+        }
+        const windmills = item.userData.windmills;
+        if (windmills?.length && !reduceMotion) {
+          for (const mill of windmills) {
+            mill.rotation.z += dt * 0.9;
           }
         }
         // Les C4 posées sur les sites A et B des Remparts d’Ocre clignotent à chaque bip.

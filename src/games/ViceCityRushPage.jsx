@@ -623,7 +623,7 @@ export default function ViceCityRushPage() {
                 <div className="city-rush-intro-copy">
                   <span className="city-rush-overlay-kicker"><i /> STREET RALLY · ARCADE 80’S</span>
                   <h2>{daylight ? 'LE SOLEIL' : 'LA NUIT'}<br /><em>PREND LA ROUTE.</em></h2>
-                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne. Toi comme les IA pouvez toucher le trafic lent : impact d’une seconde, pilote ralenti, voiture touchée qui change de voie pour libérer la route. Au dernier tour, une escouade de police entre en piste pour t’empêcher de ramasser les bonus rouges et jaunes. Bonne nouvelle : tes pouvoirs rouge et jaune peuvent les viser en retour.</p>
+                  <p>{city.tagline} Choisis ta ville et ton cabriolet : chaque modèle a sa propre conduite. {CITY_RUSH_LAPS} tours de {CITY_RUSH_LAP_LENGTH} m, feux de départ, arche et tribunes à chaque passage de ligne. Toi comme les IA pouvez toucher le trafic lent : impact bref (0,6 s), pilote ralenti, voiture touchée qui change de voie pour libérer la route. Au dernier tour, une escouade de police entre en piste pour t’empêcher de ramasser les bonus rouges et jaunes. Bonne nouvelle : tes pouvoirs rouge et jaune peuvent les viser en retour.</p>
                 </div>
                 <div className="city-rush-car-select-heading city-rush-city-select-heading"><span>01 / CHOIX DE LA VILLE</span></div>
                 <div className="city-rush-city-picker" role="group" aria-label="Choisir une ville">

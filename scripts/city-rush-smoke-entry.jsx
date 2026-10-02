@@ -1,6 +1,6 @@
 // Smoke « Vice City Rush » : exécute createCityRushWorld (vrai code) avec un
 // faux WebGLRenderer, pompe la boucle animate à 30 Hz et joue une course
-// complète (3 tours × 600 m) pour chaque ville demandée. Chaque ville se joue à un
+// complète (5 tours × 600 m) pour chaque ville demandée. Chaque ville se joue à un
 // niveau de difficulté différent (Facile, Normal, Difficile en rotation : `--all`
 // les exerce tous) ; `--difficulty=easy|normal|hard` impose le même à toutes.
 const ctx2d = () => {
@@ -347,12 +347,14 @@ for (const [index, city] of cities.entries()) {
   const playerLaps = callbacks.laps.map((l) => l.lap);
   const winnerIsPlayer = finish.racers?.find((r) => r.player)?.rank === 1 || finish.rank === 1;
   if (winnerIsPlayer) {
-    if (playerLaps.join(',') !== '2,3' && playerLaps.join(',') !== '2,3,4') {
-      fail('passages de ligne du joueur inattendus (attendu tour 2 puis tour 3)', callbacks.laps);
+    const expectedLaps = Array.from({ length: CITY_RUSH_LAPS - 1 }, (_, i) => i + 2);
+    const joined = playerLaps.join(',');
+    if (joined !== expectedLaps.join(',') && joined !== [...expectedLaps, CITY_RUSH_LAPS + 1].join(',')) {
+      fail(`passages de ligne du joueur inattendus (attendu tours ${expectedLaps.join(', ')})`, callbacks.laps);
     }
     const finalLapEffect = callbacks.effects.find((e) => e.type === 'final-lap');
     if (!finalLapEffect) fail('effet final-lap jamais émis', callbacks.effects.map((e) => e.type));
-    if (![...lapSeen].includes(3)) fail('le HUD n’a jamais affiché le tour 3', [...lapSeen]);
+    if (![...lapSeen].includes(CITY_RUSH_LAPS)) fail('le HUD n’a jamais affiché le dernier tour', [...lapSeen]);
   } else if (!callbacks.laps.length && !callbacks.effects.some((e) => e.type === 'rival-final-lap')) {
     fail('aucun passage de ligne détecté (ni joueur ni rival)', callbacks.effects.map((e) => e.type));
   }
@@ -388,7 +390,7 @@ for (const [index, city] of cities.entries()) {
   totalPickups += callbacks.pickups.length;
 
   const maxDistance = Math.max(...finish.racers.map((r) => r.distance ?? 0));
-  if (maxDistance < CITY_RUSH_DISTANCE - 1) fail('le vainqueur n’a pas parcouru 1800 m', finish.racers);
+  if (maxDistance < CITY_RUSH_DISTANCE - 1) fail('le vainqueur n’a pas parcouru toute la distance', finish.racers);
   if (maxVisible > 600) fail(`trop de meshes visibles : ${maxVisible}`);
   if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
   if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);

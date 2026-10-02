@@ -1,10 +1,10 @@
 // Règles pures de Vice City Rush : séparées du rendu Three.js pour garder
 // les durées, les voies et la génération de rue faciles à vérifier.
 //
-// La course se joue en circuit : trois tours d'une boucle de 600 m. Le décor
+// La course se joue en circuit : cinq tours d'une boucle de 600 m. Le décor
 // est généré une fois pour la boucle et se répète, si bien que l'on repasse
 // sous le portique de départ (tribunes, feux, ligne à damier) à chaque tour.
-export const CITY_RUSH_LAPS = 3;
+export const CITY_RUSH_LAPS = 5;
 export const CITY_RUSH_LAP_LENGTH = 600;
 export const CITY_RUSH_DISTANCE = CITY_RUSH_LAPS * CITY_RUSH_LAP_LENGTH;
 // La ligne peinte est dessinée quelques mètres devant le centre de la voiture
@@ -12,7 +12,7 @@ export const CITY_RUSH_DISTANCE = CITY_RUSH_LAPS * CITY_RUSH_LAP_LENGTH;
 export const CITY_RUSH_START_LINE_LEAD = 3;
 // Portée de décor conservée derrière le joueur quand on replie la boucle.
 export const CITY_RUSH_TRACK_BEHIND = 60;
-export const CITY_RUSH_PLAYER_SPEED = 26;
+export const CITY_RUSH_PLAYER_SPEED = 29;
 export const CITY_RUSH_LANE_X = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
 export const CITY_RUSH_CAR_GAP = 4.8;
@@ -63,11 +63,11 @@ export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
 // Un choc avec le trafic ne retire pas de vie : il crée un court moment de
 // contact lisible, puis le véhicule lent se rabat pour libérer la voie. La
 // durée est volontairement indépendante du modèle de cabriolet choisi : le
-// joueur humain et les IA encaissent exactement la même seconde.
-export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 1;
+// joueur humain et les IA encaissent exactement la même durée (0,6 s).
+export const CITY_RUSH_TRAFFIC_IMPACT_DURATION = 0.6;
 export const CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN = 1.2;
 export const CITY_RUSH_TRAFFIC_IMPACT_GAP = CITY_RUSH_CAR_GAP;
-export const CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION = 0.72;
+export const CITY_RUSH_TRAFFIC_LANE_CHANGE_DURATION = 0.5;
 
 export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRate, deltaTime) {
   const current = Math.max(0, Number(currentSpeed) || 0);
@@ -78,6 +78,17 @@ export function approachCityRushSpeed(currentSpeed, targetSpeed, accelerationRat
   if (target >= current) return Math.min(target, current + acceleration * elapsed);
   const braking = Math.max(18, acceleration * 1.8);
   return Math.max(target, current - braking * elapsed);
+}
+
+// Après avoir été coincée derrière un véhicule du trafic, une voiture reprend
+// sa vitesse bien plus vite : l'accélération est multipliée pendant quelques
+// instants dès que la voie se dégage.
+export const CITY_RUSH_TRAFFIC_RECOVERY_DURATION = 1.6; // s
+export const CITY_RUSH_TRAFFIC_RECOVERY_BOOST = 2.6; // × l'accélération du modèle
+
+export function cityRushTrafficRecoveryRate(accelerationRate, recoveryLeft) {
+  const rate = Math.max(0, Number(accelerationRate) || 0);
+  return Number(recoveryLeft) > 0 ? rate * CITY_RUSH_TRAFFIC_RECOVERY_BOOST : rate;
 }
 
 export function cityRushHitDuration(baseDuration, carProfile) {
