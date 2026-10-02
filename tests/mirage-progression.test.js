@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, GYRO_ZEPPELI_ID, MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, WIN_COINS,
-  applyRun, buySkin, coinsForRun, defaultProgress, equipSkin, isShopSkin,
+  applyRun, awardCoins, buySkin, coinsForRun, defaultProgress, equipSkin, isShopSkin,
   isSkinUnlocked, levelCost, levelForXp, levelProgress, loadProgress,
   sanitizeProgress, saveProgress, skinFor, xpForRun, xpToReachLevel,
 } from '../src/games/mirageProgression.js';
@@ -128,6 +128,20 @@ test('a victory awards 5 gold and a rush awards none', () => {
   const loss = applyRun(win.progress, { mode: 'duel', score: 1000, gems: 4, won: false, rank: 3 });
   assert.equal(loss.coinsGained, 0);
   assert.equal(loss.progress.coins, WIN_COINS);
+});
+
+test('awardCoins banks a cup purse on top of the race wins, and never subtracts gold', () => {
+  const start = { ...defaultProgress(), coins: 12 };
+  const cup = awardCoins(start, 30);
+  assert.equal(cup.coinsGained, 30);
+  assert.equal(cup.progress.coins, 42, 'la bourse s’ajoute aux 5 OR des victoires de course');
+  assert.equal(start.coins, 12, 'la progression d’origine n’est pas modifiée');
+  assert.equal(awardCoins(cup.progress, 0).coinsGained, 0);
+  assert.equal(awardCoins(cup.progress, 0).progress.coins, 42);
+  assert.equal(awardCoins(cup.progress, -40).coinsGained, 0, 'un montant négatif ne retire rien');
+  assert.equal(awardCoins(cup.progress, -40).progress.coins, 42);
+  assert.equal(awardCoins(cup.progress, 'oops').coinsGained, 0);
+  assert.equal(awardCoins(undefined, 50).progress.coins, 50, 'une progression absente repart de zéro');
 });
 
 test('Gyro Zeppeli is a shop skin that costs 200 gold', () => {
