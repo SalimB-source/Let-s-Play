@@ -13,6 +13,8 @@ import MirageCupResults from './MirageCupResults';
 import MirageCupTrophy from './MirageCupTrophy';
 import MirageTrophyIcon from './MirageTrophyIcon';
 import MirageFullscreenIcon from './MirageFullscreenIcon';
+import MirageGraphicsButton, { MirageGraphicsSwitch } from './MirageGraphicsToggle';
+import useMirageGraphics from './useMirageGraphics';
 import { DesertGroove } from './arcadeAudio';
 import { fetchMirageLeaderboard, mirageApiEnabled, submitMirageScore } from './mirageApi';
 import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, LASSO_SLOW_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
@@ -213,6 +215,10 @@ export default function MirageRushPage() {
     toggle: toggleImmersive,
     isPinned: immersivePinned,
   } = useMirageFullscreen(shellRef, { onNativeExit: () => nativeExitRef.current?.() });
+  // Option « Graphismes baissés » : la coque en porte la classe, qui retire les
+  // flous et autres effets de l'habillage (voir mirage-rush.css, section Graphismes
+  // baissés). Le moteur 3D lit le même choix de son côté.
+  const { low: lowGraphics } = useMirageGraphics();
   const fxTimer = useRef(null);
   const toastTimer = useRef(null);
   const phaseRef = useRef(phase);
@@ -681,7 +687,7 @@ export default function MirageRushPage() {
       <div className="mirage-layout wrap">
         <section
           ref={shellRef}
-          className={`mirage-game-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`}
+          className={`mirage-game-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}${lowGraphics ? ' is-low-graphics' : ''}`}
           aria-label="Partie de Mirage Rush"
         >
           <div className="mirage-game-topbar">
@@ -699,6 +705,7 @@ export default function MirageRushPage() {
               <button type="button" className={`mirage-sound-button${musicOn ? ' is-on' : ''}`} onClick={toggleMusic} aria-pressed={musicOn}>
                 <span aria-hidden="true">{musicOn ? '♫' : '♪'}</span> {musicOn ? 'SON ON' : 'SON COUPÉ'}
               </button>
+              <MirageGraphicsButton />
               <button
                 type="button"
                 className={`mirage-fullscreen-button${immersive ? ' is-on' : ''}`}
@@ -1056,6 +1063,7 @@ export default function MirageRushPage() {
                       </button>)}
                     </div>
                   </div>
+                  <MirageGraphicsSwitch />
                   {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même choisir un mode et défier les {rivalCount} PNJ.</p>}
                   <div className="mirage-overlay-hint">ÉCRAN 01 · CHOISIS RUÉE, DUEL, COUPE OU EN LIGNE</div>
                 </> : <>
@@ -1152,6 +1160,7 @@ export default function MirageRushPage() {
                     ? <span>DISTANCE <b>{Math.round(hud.distance || 0)} m</b></span>
                     : <span>TEMPS RESTANT <b>{formatTime(hud.remaining)}</b></span>}
                 </div>
+                <MirageGraphicsSwitch />
                 <div className="mirage-result-actions">
                   <button type="button" className="mirage-start-button" onClick={resumeGame}>REPRENDRE <span>▶</span></button>
                   <button type="button" className="mirage-share-button" onClick={backToCoursePicker}>{race.cup ? '← ABANDONNER LA COUPE' : '← QUITTER LA COURSE'}</button>

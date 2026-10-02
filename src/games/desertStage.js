@@ -44,8 +44,13 @@ const CHUNKS = 3;
  * Construit tout le décor du désert. `update({ time, offset, progress, camera, renderer })` est
  * appelé à chaque image : `time` en ms, `offset` = distance parcourue par le sol de la piste (les
  * dunes défilent avec lui), `progress` ∈ [0, 1] = avancement de la course (le mirage se rapproche).
+ *
+ * `lite` / `setLite(vrai)` : la version allégée des graphismes baissés. Le décor garde sa piste, ses
+ * dunes, son soleil et son mirage, mais perd ce qui coûte le plus par pixel sans rien porter du
+ * jeu : nuages et vacillement du ciel, rides du sable (deux branches sur un uniforme dans les
+ * shaders — aucun recalcul à la bascule), voile d’eau sur les dalles lointaines et poussière.
  */
-export function makeDesertScenery({ reduceMotion = false } = {}) {
+export function makeDesertScenery({ reduceMotion = false, lite = false } = {}) {
   const group = new THREE.Group();
   group.name = 'desert-scenery';
 
@@ -85,6 +90,17 @@ export function makeDesertScenery({ reduceMotion = false } = {}) {
   dust.points.visible = !reduceMotion;
   group.add(dust.points);
 
+  let isLite = false;
+  const setLite = (value) => {
+    isLite = Boolean(value);
+    const flag = isLite ? 1 : 0;
+    sky.material.uniforms.uLite.value = flag;
+    terrainMaterial.uniforms.uLite.value = flag;
+    sheen.mesh.visible = !isLite;
+    dust.points.visible = !isLite && !reduceMotion;
+  };
+  setLite(lite);
+
   const scroll = (offset) => {
     const s = ((offset % P) + P) % P;
     chunks.forEach((chunk, k) => { chunk.position.z = s + P - P * k; });
@@ -94,6 +110,8 @@ export function makeDesertScenery({ reduceMotion = false } = {}) {
   return {
     group,
     scroll,
+    setLite,
+    get lite() { return isLite; },
     update({ time = 0, offset = 0, progress = 0, camera, renderer } = {}) {
       const t = time * 0.001;
       const p = clamp01(progress);

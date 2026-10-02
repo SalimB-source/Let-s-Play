@@ -30,7 +30,10 @@ import {
 import { attachSwipeControls, createSwipeFeedback } from './mirageTouch';
 // Rythme de la course : un peu plus lent sur la piste du téléphone (3 voies).
 import { paceForTrack } from './mirageLanes';
-import { MAX_PIXEL_RATIO, renderPixelRatio } from './miragePixelBudget';
+import { renderPixelRatio } from './miragePixelBudget';
+// Option « Graphismes baissés » : le profil (résolution, effets) que le moteur applique en direct.
+import { gemBurstShardCount, graphicsProfile, shouldSkipRender } from './mirageGraphics';
+import useMirageGraphics from './useMirageGraphics';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { accessoriesForPalette, block, makeExplorer, paintModel } from './mirageExplorer';
 // Effets des deux pouvoirs de Cloud : onde d'épée dorée et éclair.
@@ -471,7 +474,10 @@ function makeLassoRope() {
   return group;
 }
 
-function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
+function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initialGraphics = 'normal') {
+  // Profil de graphismes en vigueur (voir mirageGraphics.js). `setGraphics()` le change en
+  // cours de partie ; l'anticrénelage, lui, se décide à la création du contexte WebGL.
+  let graphics = graphicsProfile(initialGraphics);
   const western = stage === 'western';
   const prairie = stage === 'prairie';
   const sardinia = stage === 'sardinia';
@@ -603,8 +609,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     if (screenFlashLeft <= 0) { screenFlash.visible = false; screenFlashPeak = 0; }
   };
 
-  const renderer = new THREE.WebGLRenderer({ antialias: infinity, alpha: false, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
+  const renderer = new THREE.WebGLRenderer({ antialias: infinity && graphics.antialias, alpha: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, graphics.maxPixelRatio));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = atmosphere.exposure;
@@ -997,7 +1003,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     data.active = true;
     data.age = 0;
     data.tier = tier;
-    data.specs = reduceMotion ? [] : gemBurstShards(GEM_BURST_SHARDS, Math.random);
+    // Graphismes baissés : moins d'éclats (les meshes en trop restent cachés, voir updateGemBurst).
+    data.specs = reduceMotion ? [] : gemBurstShards(gemBurstShardCount(GEM_BURST_SHARDS, graphics), Math.random);
     burstColor.set(customColor ?? CRYSTALS[tier]?.color ?? CRYSTALS[0].color);
     data.shardMaterial.color.copy(burstColor);
     data.shardMaterial.emissive.copy(burstColor);
@@ -1263,10 +1270,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     scenery.push(arch);
   } else {
     // Dunes de l'Écho : dunes qui défilent avec la piste, accessoires, mirage, ciel… (desertStage.js)
-    desertScenery = makeDesertScenery({ reduceMotion });
+    desertScenery = makeDesertScenery({ reduceMotion, lite: !graphics.sceneryEffects });
     scene.add(desertScenery.group);
   }
   scenery.forEach(bakeStaticScenery);
+  // Graphismes baissés : les blocs de décor trop lointains ne sont pas dessinés (`Infinity` =
+  // tous). La portée suit celle du brouillard du terrain, qui les noie déjà à cette distance.
+  let sceneryRange = Infinity;
+  const applySceneryRange = () => {
+    sceneryRange = graphics.sceneryRangeRatio * scene.fog.far;
+    for (const item of scenery) item.visible = item.position.z > -sceneryRange;
+  };
+  applySceneryRange();
 
   let active = false;
   let race = { mode: 'rush' };
@@ -1916,6 +1931,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
   let lastHud = 0;
   let lastFrame = performance.now();
   let raf = 0;
+  // Dernière image dessinée, et image à dessiner coûte que coûte (voir `animate`).
+  let lastRenderAt = 0;
+  let renderPending = true;
 
   const resize = () => {
     const bounds = mount.getBoundingClientRect();
@@ -1923,12 +1941,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     const height = Math.max(1, Math.floor(bounds.height || mount.clientHeight || 1));
     // Plein écran : la vue s'étale sur tout l'écran, le ratio baisse pour que
     // l'image garde un nombre de pixels raisonnable (voir miragePixelBudget.js).
-    const pixelRatio = renderPixelRatio(width, height, window.devicePixelRatio);
+    // Graphismes baissés : moins de pixels (plafonds plus bas du profil).
+    const pixelRatio = renderPixelRatio(width, height, window.devicePixelRatio, graphics);
     if (pixelRatio !== renderer.getPixelRatio()) renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.fov = cameraFovForAspect(CAMERA_BASE_FOV, camera.aspect);
     camera.updateProjectionMatrix();
+    // Changer la taille du canvas l'efface : l'image suivante est dessinée sans attendre,
+    // même quand la piste est à l'arrêt et que le rythme d'images est ralenti.
+    renderPending = true;
   };
   const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
   observer?.observe(mount);
@@ -1938,7 +1960,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
 
   const emitHud = (force = false) => {
     const now = performance.now();
-    if (!force && now - lastHud < 125) return;
+    if (!force && now - lastHud < graphics.hudInterval) return;
     lastHud = now;
     const leadingRival = getLeadingRival();
     const effectivePlayerMultiplier = Math.max(1, boost.multiplier);
@@ -2318,6 +2340,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
           jetFlame.scale.set(flamePulse, flamePulse, 1 + Math.sin(time * 0.026) * 0.22);
         }
         if (item.position.z > (western || prairie || sardinia || alger || japan || ramparts || infinity || airbase || snakeway ? 15 : 9)) item.position.z -= western || prairie || sardinia || alger || japan || ramparts || infinity || airbase || snakeway ? 110 : 86;
+        item.visible = item.position.z > -sceneryRange;
       });
 
       rows.forEach((row) => {
@@ -2757,6 +2780,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
       }
     }
     updateScreenFlash(dt);
+    // Piste à l'arrêt (menu, compte à rebours, pause) en graphismes baissés : on ne la redessine
+    // que quelques fois par seconde — rien n'y bouge assez pour que cela se voie, et le GPU
+    // souffle. Dès que la course tourne, chaque image est dessinée ; un changement de taille ou
+    // de réglage force l'image suivante.
+    if (shouldSkipRender({
+      running, pending: renderPending, interval: graphics.idleFrameInterval, now: time, last: lastRenderAt,
+    })) return;
+    renderPending = false;
+    lastRenderAt = time;
     desertScenery?.update({
       time,
       offset: floorOffset,
@@ -2792,6 +2824,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin) {
     setSkin(colors) {
       skinColors = colors ?? null;
       skinPaint(player, skinColors);
+    },
+    // Change le niveau de graphismes en direct (jamais de reconstruction : la course continue).
+    setGraphics(quality) {
+      const next = graphicsProfile(quality);
+      if (next === graphics) return;
+      graphics = next;
+      desertScenery?.setLite(!graphics.sceneryEffects);
+      applySceneryRange();
+      resize();
     },
     usePowerUp(type) {
       if (type === 'shield' || type === POWER_UPS.SHIELD) useShield();
@@ -2832,6 +2873,10 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
   const worldRef = useRef(null);
   const raceRef = useRef(race);
   raceRef.current = race;
+  // Option « Graphismes baissés » : lue à la création du monde, puis changée en direct.
+  const { quality: graphicsQuality } = useMirageGraphics();
+  const graphicsRef = useRef(graphicsQuality);
+  graphicsRef.current = graphicsQuality;
   const callbackRefs = useRef({});
   callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit };
 
@@ -2852,7 +2897,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
         lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
         pistol: (target) => callbackRefs.current.onPistol?.(target),
         pistolHit: (info) => callbackRefs.current.onPistolHit?.(info),
-      }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current);
+      }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current, graphicsRef.current);
     } catch (error) {
       callbackRefs.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -2878,8 +2923,12 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
   }, [skin]);
 
   useEffect(() => {
+    worldRef.current?.setGraphics?.(graphicsQuality);
+  }, [graphicsQuality]);
+
+  useEffect(() => {
     if (prepareSignal > 0) worldRef.current?.prepare?.();
   }, [prepareSignal]);
 
-  return <div className="mirage-world" data-stage={stage} ref={mountRef} />;
+  return <div className="mirage-world" data-stage={stage} data-graphics={graphicsQuality} ref={mountRef} />;
 }

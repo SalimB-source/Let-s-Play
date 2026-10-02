@@ -111,13 +111,24 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-live-pill i { width: 6px; height: 6px; animation: miragePulseDot 1.6s ease-in-out infinite; }
 .mirage-live-pill.is-paused { color: #ffca85; }
 .mirage-live-pill.is-paused i { background: #f3ad5b; box-shadow: 0 0 12px rgba(243, 173, 91, .7); animation: none; }
-.mirage-sound-button, .mirage-pause-button, .mirage-fullscreen-button {
+/* La barre du jeu ne casse jamais ses boutons sur deux lignes (le bouton Graphismes l'a
+   alourdie). Quand la place manque, à toute largeur d'écran, cèdent d'abord le nom de la
+   zone, à gauche (points de suspension ; absent en course), puis le texte du voyant
+   « EN PARTIE / EN PAUSE » : les boutons gardent leur largeur. */
+.mirage-game-brand { flex: 1 1 0; min-width: 0; overflow: hidden; }
+.mirage-brand-gem { flex: none; }
+.mirage-game-brand > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mirage-game-controls-top { flex: 0 1 auto; min-width: 0; }
+.mirage-game-controls-top > * { flex: none; white-space: nowrap; }
+.mirage-game-controls-top > .mirage-live-pill { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.mirage-live-pill i { flex: none; }
+.mirage-sound-button, .mirage-pause-button, .mirage-fullscreen-button, .mirage-graphics-button {
   display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px;
   border-radius: 8px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .04);
   color: rgba(255, 245, 228, .55); font: 800 8px var(--mono); letter-spacing: .11em; cursor: pointer;
   transition: border-color .16s, background .16s, color .16s, transform .16s;
 }
-.mirage-sound-button:hover, .mirage-pause-button:hover, .mirage-fullscreen-button:hover { transform: translateY(-1px); border-color: rgba(243, 198, 91, .5); color: #ffe2a1; }
+.mirage-sound-button:hover, .mirage-pause-button:hover, .mirage-fullscreen-button:hover, .mirage-graphics-button:hover { transform: translateY(-1px); border-color: rgba(243, 198, 91, .5); color: #ffe2a1; }
 .mirage-sound-button span { font-size: 14px; }
 .mirage-sound-button.is-on { color: #f5d276; border-color: rgba(245, 210, 118, .34); }
 /* Plein écran : l'icône change (coins qui s'écartent / se rapprochent) et le bouton
@@ -125,6 +136,12 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    deux états : c'est un interrupteur (aria-pressed), pas deux actions. */
 .mirage-fullscreen-icon { flex: none; width: 14px; height: 14px; }
 .mirage-fullscreen-button.is-on { color: #f5d276; border-color: rgba(245, 210, 118, .34); background: rgba(245, 210, 118, .08); }
+/* Graphismes baissés : un interrupteur (aria-pressed) comme Plein écran. L'icône
+   (trois barres de signal) ne garde que la première allumée quand ils sont
+   baissés ; le bouton s'allume tant que l'option est active. */
+.mirage-graphics-icon { flex: none; width: 14px; height: 14px; }
+.mirage-graphics-icon .is-dim { opacity: .28; }
+.mirage-graphics-button.is-on { color: #f5d276; border-color: rgba(245, 210, 118, .34); background: rgba(245, 210, 118, .08); }
 .mirage-pause-button { border-color: rgba(255, 224, 166, .3); color: #ffe1a8; }
 .mirage-pause-button.is-resume { border-color: rgba(98, 227, 165, .5); background: rgba(98, 227, 165, .1); color: #9df3c9; }
 .mirage-pause-button.is-resume:hover { border-color: rgba(98, 227, 165, .8); color: #c8ffe3; }
@@ -446,7 +463,8 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-fullscreen-launch:active:not(:disabled) { transform: translateY(0); }
 .mirage-fullscreen-launch:disabled { opacity: .55; cursor: wait; }
 .mirage-start-button:focus-visible, .mirage-share-button:focus-visible, .mirage-sound-button:focus-visible,
-.mirage-fullscreen-button:focus-visible, .mirage-fullscreen-launch:focus-visible,
+.mirage-fullscreen-button:focus-visible, .mirage-fullscreen-launch:focus-visible, .mirage-graphics-button:focus-visible,
+.mirage-graphics-choice:focus-visible,
 .mirage-pause-button:focus-visible, .mirage-back-game-button:focus-visible, .mirage-board-footer button:focus-visible {
   outline: 2px solid #ffdb76; outline-offset: 3px;
 }
@@ -803,6 +821,8 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
      libellé reste lu par les lecteurs d'écran via aria-label). */
   .mirage-fullscreen-button { padding: 6px 7px; font-size: 7px; }
   .mirage-fullscreen-label { display: none; }
+  .mirage-graphics-button { padding: 6px 7px; font-size: 7px; }
+  .mirage-graphics-label { display: none; }
   .mirage-live-pill { font-size: 7px; }
   /* Fenêtre proportionnelle à l'écran du téléphone. */
   .mirage-viewport { height: clamp(420px, 62vh, 560px); min-height: 420px; }
@@ -2736,6 +2756,7 @@ img.mirage-powerup-icon {
   .mirage-touch-layer .mirage-swipe-hint.is-on { animation: none; opacity: 1; }
   .mirage-mode-picker button, .mirage-map-card, .mirage-skin-chip, .mirage-share-button,
   .mirage-back-game-button, .mirage-sound-button, .mirage-pause-button, .mirage-fullscreen-button,
+  .mirage-graphics-button, .mirage-graphics-choice,
   .mirage-fullscreen-launch, .mirage-board-list li {
     transition: none;
   }
@@ -3045,3 +3066,75 @@ img.mirage-powerup-icon {
   .mirage-trophy-title, .mirage-trophy-panel, .mirage-trophy-fallback-cup, .mirage-trophy-fallback i { animation: none !important; }
   .mirage-trophy-fallback i { opacity: .8; }
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   GRAPHISMES BAISSÉS — option du joueur (mirageGraphics.js)
+   Le moteur 3D baisse lui-même sa résolution et ses effets ; ici, on retire de
+   l'habillage de la page ce qui coûte le plus au GPU pendant que la piste
+   tourne en dessous.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Le réglage en toutes lettres (écran de choix du mode, pause) : deux choix
+   explicites plutôt qu'un interrupteur, et la raison d'être de l'option. */
+.mirage-graphics-switch {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 12px;
+  max-width: 100%; margin: 14px auto 8px;
+  color: rgba(255, 242, 219, .82); font: 800 9px var(--mono); letter-spacing: .12em;
+}
+.mirage-graphics-switch-title { display: inline-flex; align-items: center; gap: 7px; }
+.mirage-graphics-switch-title .mirage-graphics-icon { width: 15px; height: 15px; color: #ffe29a; }
+.mirage-graphics-choices {
+  display: inline-flex; overflow: hidden;
+  border: 1px solid rgba(255, 224, 166, .3); border-radius: 8px;
+}
+.mirage-graphics-choice {
+  min-height: 36px; padding: 9px 13px; border: 0; background: rgba(24, 15, 36, .62);
+  color: rgba(255, 242, 219, .72); font: 900 9px var(--mono); letter-spacing: .12em; cursor: pointer;
+  transition: background .18s, color .18s;
+}
+.mirage-graphics-choice + .mirage-graphics-choice { border-left: 1px solid rgba(255, 224, 166, .22); }
+.mirage-graphics-choice:hover { background: rgba(255, 215, 107, .12); color: #fff1cc; }
+.mirage-graphics-choice.is-active { background: rgba(245, 210, 118, .24); color: #ffe29a; }
+.mirage-graphics-note {
+  flex-basis: 100%; text-align: center;
+  color: rgba(255, 242, 219, .52); font: 700 8px var(--mono); letter-spacing: .08em;
+}
+/* Téléphone en paysage : peu de hauteur, la ligne d'explication passe après. */
+@media (max-height: 460px) {
+  .mirage-graphics-switch { margin: 8px auto 4px; }
+  .mirage-graphics-note { display: none; }
+}
+
+/* Flous d'arrière-plan : chacun oblige le navigateur à refaire, à chaque image, le
+   flou de tout ce qui passe dessous — ici la piste 3D en mouvement. Sans eux, les
+   voiles gardent leur lisibilité grâce à une teinte plus pleine. */
+.mirage-game-shell.is-low-graphics .mirage-hud-card,
+.mirage-game-shell.is-low-graphics .mirage-touch-layer .mirage-swipe-hint.is-on,
+.mirage-game-shell.is-low-graphics .mirage-map-number,
+.mirage-game-shell.is-low-graphics .mirage-map-check,
+.mirage-game-shell.is-low-graphics .mirage-cup-stop-number,
+.mirage-game-shell.is-low-graphics .mirage-power-toast,
+.mirage-game-shell.is-low-graphics .mirage-trophy-panel,
+.mirage-game-shell.is-low-graphics .mirage-overlay,
+.mirage-game-popup-backdrop.is-low-graphics { backdrop-filter: none; }
+.mirage-game-shell.is-low-graphics .mirage-overlay {
+  background: linear-gradient(180deg, rgba(24, 13, 37, .34), rgba(21, 13, 33, .74) 60%, rgba(18, 12, 28, .84));
+}
+.mirage-game-shell.is-low-graphics .mirage-countdown-overlay {
+  background: radial-gradient(60% 60% at 50% 46%, rgba(20, 12, 33, .36), rgba(16, 10, 27, .8));
+}
+.mirage-game-shell.is-low-graphics .mirage-result-overlay { background: rgba(18, 12, 29, .9); }
+.mirage-game-shell.is-low-graphics .mirage-pause-overlay { background: rgba(16, 10, 27, .9); }
+.mirage-game-shell.is-low-graphics .mirage-intro-overlay {
+  background: linear-gradient(180deg, rgba(20, 13, 32, .92), rgba(17, 11, 27, .97));
+}
+.mirage-game-popup-backdrop.is-low-graphics:not(.is-immersive) { background: rgba(9, 7, 16, .94); }
+
+/* Habillage décoratif : trame de points en mélange « soft-light » sur toute la piste,
+   éclairs coniques du turbo (deux couches plein écran animées ; les traits de vitesse
+   restent), trame CRT du site et fond d'icônes néon animées. */
+.mirage-game-shell.is-low-graphics .mirage-viewport::after,
+.mirage-game-shell.is-low-graphics .mirage-turbo-lines::before,
+.mirage-game-shell.is-low-graphics .mirage-turbo-lines::after { display: none; }
+body:has(.mirage-game-shell.is-low-graphics)::after,
+body:has(.mirage-game-shell.is-low-graphics) .neon-backdrop { display: none; }

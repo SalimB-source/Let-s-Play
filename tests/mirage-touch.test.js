@@ -2,10 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import {
-  SWIPE_JUMP_DISTANCE, SWIPE_MIN_DISTANCE, SWIPE_REPEAT_DISTANCE,
+  SWIPE_JUMP_DISTANCE, SWIPE_MIN_DISTANCE,
   TAP_MAX_DISTANCE, TAP_MAX_DURATION,
   attachSwipeControls, createSwipeFeedback, createSwipeTracker,
 } from '../src/games/mirageTouch.js';
+import { playerLaneAfterAction, setLaneCount } from '../src/games/mirageRules.js';
+import { DESKTOP_LANE_COUNT, PHONE_LANE_COUNT } from '../src/games/mirageLanes.js';
 
 /** Écran de téléphone fictif : le doigt part du centre de la piste. */
 const ORIGIN = { x: 200, y: 320 };
@@ -55,25 +57,51 @@ test('one gesture jumps once, however far the finger keeps climbing', () => {
   assert.deepEqual(up.end(ORIGIN.x, ORIGIN.y - 400), []);
 });
 
-test('keeping the finger down and dragging on chains lane changes, with a wider gap after the first', () => {
+test('the lane changes the very moment the threshold is crossed, without waiting for the release', () => {
   const drag = tracker();
   drag.begin(ORIGIN.x, ORIGIN.y);
-  // Juste sous le premier seuil : rien. Un pixel de plus : une voie.
+  // Juste sous le seuil : rien. Au seuil exact : la voie part, doigt toujours posé.
   assert.deepEqual(drag.sample(ORIGIN.x + SWIPE_MIN_DISTANCE - 1, ORIGIN.y), []);
   assert.deepEqual(drag.sample(ORIGIN.x + SWIPE_MIN_DISTANCE, ORIGIN.y), ['right']);
-  // Le seuil suivant est plus large : le doigt doit vraiment continuer.
-  assert.deepEqual(drag.sample(ORIGIN.x + SWIPE_MIN_DISTANCE + SWIPE_REPEAT_DISTANCE - 1, ORIGIN.y), []);
-  assert.deepEqual(drag.sample(ORIGIN.x + SWIPE_MIN_DISTANCE + SWIPE_REPEAT_DISTANCE, ORIGIN.y), ['right']);
-  assert.deepEqual(drag.end(ORIGIN.x + SWIPE_MIN_DISTANCE + SWIPE_REPEAT_DISTANCE * 2, ORIGIN.y), ['right']);
+  assert.equal(drag.isTracking(), true, 'le geste continue : seul le relâchement le ferme');
+
+  const left = tracker();
+  left.begin(ORIGIN.x, ORIGIN.y);
+  assert.deepEqual(left.sample(ORIGIN.x - SWIPE_MIN_DISTANCE + 1, ORIGIN.y), []);
+  assert.deepEqual(left.sample(ORIGIN.x - SWIPE_MIN_DISTANCE, ORIGIN.y), ['left']);
 });
 
-test('a single very fast flick is split into several lanes but never more than the track is wide', () => {
-  const flick = tracker();
-  flick.begin(ORIGIN.x, ORIGIN.y);
-  // Un navigateur peut livrer un seul mouvement pour un geste très rapide.
-  const actions = flick.end(ORIGIN.x + 900, ORIGIN.y);
-  assert.ok(actions.length >= 3 && actions.length <= 4, `unexpected lane changes: ${actions}`);
-  assert.ok(actions.every((name) => name === 'right'));
+test('keeping the finger down and dragging on never changes a second lane', () => {
+  for (const sign of [1, -1]) {
+    const name = sign > 0 ? 'right' : 'left';
+    const drag = tracker();
+    drag.begin(ORIGIN.x, ORIGIN.y);
+    assert.deepEqual(drag.sample(ORIGIN.x + sign * SWIPE_MIN_DISTANCE, ORIGIN.y), [name]);
+    // Un long glissement continu : des dizaines de mouvements, 900 px de course.
+    for (let travelled = SWIPE_MIN_DISTANCE + 1; travelled <= 900; travelled += 7) {
+      assert.deepEqual(drag.sample(ORIGIN.x + sign * travelled, ORIGIN.y), [], `plus aucune voie à ${travelled} px`);
+    }
+    assert.deepEqual(drag.end(ORIGIN.x + sign * 1200, ORIGIN.y), []);
+  }
+});
+
+test('a single very fast flick changes exactly one lane, however far it goes', () => {
+  // Un navigateur peut livrer un seul mouvement pour un geste très rapide : il
+  // ne doit donner ni deux voies, ni trois, ni quatre.
+  const flicks = [
+    [SWIPE_MIN_DISTANCE + 1, 'right'], [SWIPE_MIN_DISTANCE * 3, 'right'], [140, 'right'], [900, 'right'],
+    [-(SWIPE_MIN_DISTANCE + 1), 'left'], [-(SWIPE_MIN_DISTANCE * 3), 'left'], [-140, 'left'], [-900, 'left'],
+  ];
+  for (const [dx, name] of flicks) {
+    const onRelease = tracker();
+    onRelease.begin(ORIGIN.x, ORIGIN.y);
+    assert.deepEqual(onRelease.end(ORIGIN.x + dx, ORIGIN.y), [name], `relâché à ${dx} px`);
+
+    const onMove = tracker();
+    onMove.begin(ORIGIN.x, ORIGIN.y);
+    assert.deepEqual(onMove.sample(ORIGIN.x + dx, ORIGIN.y), [name], `un seul mouvement de ${dx} px`);
+    assert.deepEqual(onMove.end(ORIGIN.x + dx, ORIGIN.y), []);
+  }
 });
 
 test('a diagonal up-and-side swipe steers first, then jumps', () => {
@@ -88,16 +116,64 @@ test('a diagonal up-and-side swipe steers first, then jumps', () => {
   assert.deepEqual(otherDiagonal.end(ORIGIN.x - SWIPE_MIN_DISTANCE - 4, ORIGIN.y - SWIPE_JUMP_DISTANCE - 40), ['left', 'jump']);
 });
 
-test('coming back inside the repeat distance does not zigzag the rider', () => {
+test('once a lane has changed, going back or on in the same gesture never steers again', () => {
   const wiggle = tracker();
   wiggle.begin(ORIGIN.x, ORIGIN.y);
   assert.deepEqual(wiggle.sample(ORIGIN.x + SWIPE_MIN_DISTANCE + 2, ORIGIN.y), ['right']);
-  // L'ancre reste là où la voie a changé : revenir en arrière ne rejoue rien.
-  const anchor = ORIGIN.x + SWIPE_MIN_DISTANCE;
-  assert.deepEqual(wiggle.sample(anchor - SWIPE_REPEAT_DISTANCE + 1, ORIGIN.y), []);
-  assert.deepEqual(wiggle.sample(ORIGIN.x, ORIGIN.y), []);
-  // Au-delà du seuil de répétition, le geste redevient un vrai changement de voie.
-  assert.deepEqual(wiggle.end(anchor - SWIPE_REPEAT_DISTANCE, ORIGIN.y), ['left']);
+  // Le rebond du relâchement, ou un doigt qui revient franchement sur ses pas :
+  // le cheval ne repart pas dans l'autre sens.
+  assert.deepEqual(wiggle.sample(ORIGIN.x + 6, ORIGIN.y), []);
+  assert.deepEqual(wiggle.sample(ORIGIN.x - SWIPE_MIN_DISTANCE - 2, ORIGIN.y), []);
+  assert.deepEqual(wiggle.sample(ORIGIN.x - 160, ORIGIN.y), []);
+  assert.deepEqual(wiggle.end(ORIGIN.x - 300, ORIGIN.y), []);
+});
+
+test('the jump of a diagonal still follows a steering that already left', () => {
+  const diagonal = tracker();
+  diagonal.begin(ORIGIN.x, ORIGIN.y);
+  assert.deepEqual(diagonal.sample(ORIGIN.x + SWIPE_MIN_DISTANCE + 3, ORIGIN.y - 4), ['right']);
+  // Le doigt continue vers le haut puis vers le côté : le saut part, pas de seconde voie.
+  assert.deepEqual(diagonal.sample(ORIGIN.x + 90, ORIGIN.y - SWIPE_JUMP_DISTANCE - 2), ['jump']);
+  assert.deepEqual(diagonal.sample(ORIGIN.x + 180, ORIGIN.y - 150), []);
+  assert.deepEqual(diagonal.end(ORIGIN.x + 260, ORIGIN.y - 220), []);
+});
+
+test('the next swipe is read at once: no cooldown, nothing swallowed between two gestures', () => {
+  const run = tracker();
+  const lanes = [];
+  let now = 1000;
+  // Des glissements quasi collés (1 ms entre le relâchement et la pose suivante).
+  for (const sign of [1, 1, -1, -1, 1, -1]) {
+    run.begin(ORIGIN.x, ORIGIN.y, now);
+    lanes.push(...run.end(ORIGIN.x + sign * (SWIPE_MIN_DISTANCE + 4), ORIGIN.y, now + 1));
+    now += 2;
+  }
+  assert.deepEqual(lanes, ['right', 'right', 'left', 'left', 'right', 'left']);
+});
+
+test('on the three-lane phone track one swipe never carries the rider from one edge to the other', (t) => {
+  t.after(() => setLaneCount(DESKTOP_LANE_COUNT));
+  setLaneCount(PHONE_LANE_COUNT);
+  // [voie de départ, déplacements du doigt (px), voie attendue à la fin du geste]
+  const swipes = [
+    [0, [8, 30, 90, 200, 420], 1],
+    [2, [-8, -30, -90, -200, -420], 1],
+    [1, [30, 400], 2],
+    [1, [-30, -400], 0],
+    [0, [-30, -400], 0],
+    [2, [30, 400], 2],
+  ];
+  for (const [from, moves, expected] of swipes) {
+    const swipe = tracker();
+    swipe.begin(ORIGIN.x, ORIGIN.y);
+    let lane = from;
+    for (const dx of moves) {
+      for (const action of swipe.sample(ORIGIN.x + dx, ORIGIN.y)) lane = playerLaneAfterAction(lane, action);
+    }
+    const last = moves[moves.length - 1];
+    for (const action of swipe.end(ORIGIN.x + last, ORIGIN.y)) lane = playerLaneAfterAction(lane, action);
+    assert.equal(lane, expected, `voie ${from} puis ${moves.join(', ')} px → voie ${expected}`);
+  }
 });
 
 test('the release is enough to read a flick that no move event reported', () => {
@@ -215,11 +291,13 @@ test('the canvas binding turns a real swipe into a game action, one finger at a 
   element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x + 90, ORIGIN.y, 2));
   assert.deepEqual(actions, []);
 
-  // Le premier doigt garde la main jusqu'au relâchement.
-  element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x - 44 - SWIPE_REPEAT_DISTANCE, ORIGIN.y, 1));
-  assert.deepEqual(actions, ['seen:left', 'left']);
-  element.dispatch('pointerup', pointerEvent('pointerup', ORIGIN.x - 44 - SWIPE_REPEAT_DISTANCE, ORIGIN.y - 70, 1));
-  assert.deepEqual(actions.slice(2), ['seen:jump', 'jump']);
+  // Le premier doigt garde la main jusqu'au relâchement, mais sa voie est déjà
+  // partie : continuer à glisser ne change plus rien, seul le saut peut suivre.
+  element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x - 44 - 36, ORIGIN.y, 1));
+  element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x - 300, ORIGIN.y, 1));
+  assert.deepEqual(actions, [], 'une seule voie par geste');
+  element.dispatch('pointerup', pointerEvent('pointerup', ORIGIN.x - 300, ORIGIN.y - 70, 1));
+  assert.deepEqual(actions, ['seen:jump', 'jump']);
   assert.deepEqual(element.captured, ['capture:1', 'release:1']);
 
   // Une fois détaché, plus aucun geste n'atteint le jeu.
@@ -253,6 +331,102 @@ test('without PointerEvent support the binding falls back to touch events', () =
 
   detach();
   assert.equal(element.count(), 0);
+}));
+
+test('a long drag made of many move events changes exactly one lane', () => withPointerEventSupport(() => {
+  const element = fakeElement();
+  const actions = [];
+  const detach = attachSwipeControls(element, (name) => actions.push(name));
+
+  element.dispatch('pointerdown', pointerEvent('pointerdown', ORIGIN.x, ORIGIN.y, 1));
+  // 60 mouvements de 9 px : le doigt traverse tout l'écran sans jamais lâcher.
+  for (let step = 1; step <= 60; step += 1) {
+    element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x + step * 9, ORIGIN.y, 1));
+  }
+  element.dispatch('pointerup', pointerEvent('pointerup', ORIGIN.x + 540, ORIGIN.y, 1));
+  assert.deepEqual(actions, ['right']);
+  detach();
+}));
+
+test('swipes that follow each other closely are all read: one lane per swipe, no cooldown', () => withPointerEventSupport(() => {
+  const element = fakeElement();
+  const actions = [];
+  const detach = attachSwipeControls(element, (name) => actions.push(name));
+  let id = 10;
+  // Le pouce relève et repose aussitôt (aucune pause entre les gestes).
+  for (const sign of [1, 1, -1, 1, -1, -1]) {
+    id += 1;
+    element.dispatch('pointerdown', pointerEvent('pointerdown', ORIGIN.x, ORIGIN.y, id));
+    element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x + sign * 30, ORIGIN.y, id));
+    element.dispatch('pointermove', pointerEvent('pointermove', ORIGIN.x + sign * 140, ORIGIN.y, id));
+    element.dispatch('pointerup', pointerEvent('pointerup', ORIGIN.x + sign * 140, ORIGIN.y, id));
+  }
+  assert.deepEqual(actions, ['right', 'right', 'left', 'right', 'left', 'left']);
+  detach();
+}));
+
+test('two fingers swiping together still move a single lane', () => withPointerEventSupport(() => {
+  const element = fakeElement();
+  const actions = [];
+  const detach = attachSwipeControls(element, (name) => actions.push(name));
+
+  element.dispatch('pointerdown', pointerEvent('pointerdown', 120, 400, 1));
+  element.dispatch('pointerdown', pointerEvent('pointerdown', 280, 400, 2));
+  // Les deux doigts glissent vers la droite en même temps, par à-coups entremêlés.
+  for (let step = 1; step <= 8; step += 1) {
+    element.dispatch('pointermove', pointerEvent('pointermove', 120 + step * 20, 400, 1));
+    element.dispatch('pointermove', pointerEvent('pointermove', 280 + step * 20, 400, 2));
+  }
+  element.dispatch('pointerup', pointerEvent('pointerup', 280, 400, 1));
+  element.dispatch('pointerup', pointerEvent('pointerup', 440, 400, 2));
+  assert.deepEqual(actions, ['right']);
+
+  // Les deux doigts relevés, le geste suivant repart normalement.
+  actions.length = 0;
+  element.dispatch('pointerdown', pointerEvent('pointerdown', 200, 400, 3));
+  element.dispatch('pointermove', pointerEvent('pointermove', 160, 400, 3));
+  assert.deepEqual(actions, ['left']);
+  detach();
+}));
+
+test('with touch events, the finger being followed is the one that counts, not the first of the list', () => withoutPointerEventSupport(() => {
+  const element = fakeElement();
+  const actions = [];
+  const detach = attachSwipeControls(element, (name) => actions.push(name));
+  const finger = (identifier, x, y) => ({ identifier, clientX: x, clientY: y });
+  const event = (type, touches, changedTouches) => ({
+    type, touches, changedTouches, cancelable: true, preventDefault() {},
+  });
+
+  // Le doigt 0 pilote ; le doigt 1, posé ailleurs, est ignoré.
+  element.dispatch('touchstart', event('touchstart', [finger(0, 200, 320)], [finger(0, 200, 320)]));
+  element.dispatch('touchstart', event('touchstart', [finger(0, 200, 320), finger(1, 40, 700)], [finger(1, 40, 700)]));
+  assert.deepEqual(actions, []);
+
+  // Les deux doigts bougent dans le même événement, et c'est le doigt 1 qui est
+  // annoncé en premier : le mouvement du doigt 0 est lu quand même.
+  element.dispatch('touchmove', event(
+    'touchmove',
+    [finger(0, 232, 320), finger(1, 60, 700)],
+    [finger(1, 60, 700), finger(0, 232, 320)],
+  ));
+  assert.deepEqual(actions, ['right']);
+
+  // Le doigt 0 se relève pendant que le doigt 1 reste posé loin de là : sa
+  // position de relâchement vient de `changedTouches`, pas de `touches[0]` (le
+  // doigt 1) — sinon une voie ou un saut partirait sans aucun geste.
+  actions.length = 0;
+  element.dispatch('touchend', event('touchend', [finger(1, 60, 700)], [finger(0, 234, 322)]));
+  assert.deepEqual(actions, []);
+
+  // Le doigt 1, resté posé, ne pilote rien non plus : un geste neuf est nécessaire.
+  element.dispatch('touchmove', event('touchmove', [finger(1, 400, 700)], [finger(1, 400, 700)]));
+  assert.deepEqual(actions, []);
+  element.dispatch('touchend', event('touchend', [], [finger(1, 400, 700)]));
+  element.dispatch('touchstart', event('touchstart', [finger(2, 200, 320)], [finger(2, 200, 320)]));
+  element.dispatch('touchmove', event('touchmove', [finger(2, 160, 320)], [finger(2, 160, 320)]));
+  assert.deepEqual(actions, ['left']);
+  detach();
 }));
 
 test('binding tolerates a missing element or callback', () => {
@@ -306,6 +480,26 @@ test('swiping on the real canvas steers and jumps, and stops once detached', () 
   send('pointermove', 60, 200);
   send('pointerup', 60, 200);
   assert.deepEqual(actions, []);
+}));
+
+test('dragging a long way across the real canvas changes one lane, the next swipe changes another', () => withDom('<div id="mount"><canvas id="track"></canvas></div>', (dom) => {
+  const canvas = dom.window.document.getElementById('track');
+  const actions = [];
+  const detach = attachSwipeControls(canvas, (name) => actions.push(name));
+  const send = (type, x, y, pointerId) => canvas.dispatchEvent(
+    new dom.window.PointerEvent(type, { clientX: x, clientY: y, pointerId, bubbles: true, cancelable: true }),
+  );
+
+  send('pointerdown', 40, 400, 5);
+  for (let x = 50; x <= 360; x += 10) send('pointermove', x, 400, 5);
+  send('pointerup', 360, 400, 5);
+  assert.deepEqual(actions, ['right'], 'un seul geste, une seule voie');
+
+  send('pointerdown', 300, 400, 6);
+  for (let x = 290; x >= 40; x -= 10) send('pointermove', x, 400, 6);
+  send('pointerup', 40, 400, 6);
+  assert.deepEqual(actions, ['right', 'left'], 'le geste suivant compte tout de suite');
+  detach();
 }));
 
 test('the feedback layer announces each gesture and leaves with the world', () => withDom('<div id="mount"></div>', (dom) => {
