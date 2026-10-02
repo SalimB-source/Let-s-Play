@@ -790,6 +790,15 @@
   fill: #2b6bff;
   animation-delay: .55s;
 }
+/* Barrage roulant : la berline freine devant le leader, la carte le dit. */
+.city-rush-minimap-pursuer.is-blockade .city-rush-minimap-pursuer-halo {
+  fill: rgba(255, 212, 79, .3);
+  stroke: rgba(255, 212, 79, .85);
+  animation-duration: .6s;
+}
+.city-rush-minimap-pursuer.is-blockade .city-rush-minimap-pursuer-body {
+  stroke: #ffd44f;
+}
 @keyframes crPoliceHalo {
   0%, 100% { opacity: .45; }
   50% { opacity: 1; }

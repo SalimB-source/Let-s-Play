@@ -72,7 +72,7 @@ const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_DISTANCE, CITY_RUSH_POWER_RULES,
-  CITY_RUSH_LANE_X, CITY_RUSH_SCROLL_SCALE,
+  CITY_RUSH_LANE_X, CITY_RUSH_SCROLL_SCALE, CITY_RUSH_CAR_GAP,
 } = await import('../src/games/cityRushRules.js');
 const {
   CITY_RUSH_TUNNEL_LANE_HALF, cityRushTunnels,
@@ -221,6 +221,11 @@ for (const [index, city] of cities.entries()) {
   let policeAheadFrames = 0;
   let policeClosestGap = Infinity;
   let policeBeacons = 0;
+  // Barrage : frames où une berline freine devant le leader, et pire écart
+  // mesuré entre une berline et un pilote qui se chevauchent latéralement
+  // (les berlines sont solides : elles ne doivent jamais être traversées).
+  let policeBlockadeFrames = 0;
+  let policeWorstOverlap = Infinity;
   // Tremis : le joueur ne doit jamais rouler dans une voie murée, et le HUD
   // doit annoncer chaque passage sous la voûte.
   let tunnelHudFrames = 0;
@@ -286,6 +291,19 @@ for (const [index, city] of cities.entries()) {
         if (gap > 0 && gap < 80) policeAheadFrames += 1;
         policeClosestGap = Math.min(policeClosestGap, Math.abs((car.distance || 0) - hudLeader));
         if (car.mode) policeBeacons += 1;
+        if (car.blocking || car.mode === 'blockade') policeBlockadeFrames += 1;
+        // Collision : une berline solide ne partage jamais sa case avec un
+        // pilote. On ne compare que les voitures latéralement confondues
+        // (1,6 m : au-delà, elles sont dans deux voies voisines).
+        const carX = Number(car.x);
+        const carDistance = Number.isFinite(Number(car.rawDistance)) ? Number(car.rawDistance) : Number(car.distance);
+        for (const racer of hud.racers || []) {
+          const racerX = Number(racer.x);
+          if (!Number.isFinite(carX) || !Number.isFinite(racerX) || Math.abs(carX - racerX) > 1.6) continue;
+          const racerDistance = Number.isFinite(Number(racer.rawDistance)) ? Number(racer.rawDistance) : Number(racer.distance);
+          if (!Number.isFinite(carDistance) || !Number.isFinite(racerDistance)) continue;
+          policeWorstOverlap = Math.min(policeWorstOverlap, Math.abs(carDistance - racerDistance));
+        }
       }
     }
     if (scene && frames % 30 === 0) {
@@ -327,7 +345,11 @@ for (const [index, city] of cities.entries()) {
   if ((audioCalls.countdownBeep || 0) < 4) fail('les feux de départ n’ont pas sonné 3 · 2 · 1 · GO', audioCalls);
   if (audioCalls.finish !== 1) fail('la fanfare d’arrivée n’a pas sonné une fois', audioCalls);
   if ((audioCalls.lap || 0) !== callbacks.laps.length) fail('un passage de ligne sur deux est muet', audioCalls);
-  if (audioCalls.explosion !== audioCalls.missileLaunch) fail('un missile sans explosion (ou l’inverse)', audioCalls);
+  // Un missile encore en vol au moment du drapeau à damier est coupé net par
+  // l’arrivée : au plus une frappe peut rester sans explosion (jamais l’inverse).
+  if (audioCalls.explosion > audioCalls.missileLaunch || (audioCalls.missileLaunch || 0) - (audioCalls.explosion || 0) > 1) {
+    fail('un missile sans explosion (ou l’inverse)', audioCalls);
+  }
   // Un missile suppose un hélicoptère ; une frappe avortée par l'arrivée ou
   // par `reset()` compte un démarrage de plus que de missiles, jamais
   // l'inverse. Et chaque rotor démarré finit éteint.
@@ -354,6 +376,15 @@ for (const [index, city] of cities.entries()) {
   }
   if (policeHudFrames < 30) fail('l’escouade ne tient pas la piste', policeHudFrames);
   if (!(policeClosestGap <= 30)) fail(`l’escouade reste à ${policeClosestGap} m du leader`, policeClosestGap);
+  // Barrage roulant : au moins une berline freine devant le leader, et la page
+  // le raconte. Les berlines sont solides : jamais dans un pilote.
+  if (!policeBlockadeFrames) fail('aucune berline ne s’est mise en barrage devant le leader');
+  if (!callbacks.effects.some((effect) => effect.type === 'police-block')) {
+    fail('le barrage police n’a jamais été annoncé à la page', callbacks.effects.map((e) => e.type));
+  }
+  if (!(policeWorstOverlap >= CITY_RUSH_CAR_GAP - 1.5)) {
+    fail(`une berline solide est traversée : écart ${policeWorstOverlap.toFixed(2)} m < ${CITY_RUSH_CAR_GAP} m`, policeWorstOverlap);
+  }
   if ((firstPoliceHud.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le classement du HUD');
   if ((finish.racers || []).some((racer) => String(racer.id).startsWith('police'))) fail('une berline figure dans le tableau d’arrivée');
   if (lastHud.police?.length) fail('l’escouade reste en piste après l’arrivée', lastHud.police);
@@ -462,7 +493,7 @@ for (const [index, city] of cities.entries()) {
     ` · tours joueur ${playerLaps.join('→') || '—'} · rang ${finish.rank}` +
     ` · HUD ${callbacks.huds.length} · bonus ${callbacks.pickups.length} (éclatés ${burstFrames} f) · effets ${effectTypes.join('/')}` +
     (tunnels.length ? ` · tremis ${tunnelIds.size}/${tunnels.length} traversés (${tunnelHudFrames} f sous la voûte)` : ' · sans tremis') +
-    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m` : 'jamais entrée'}` +
+    ` · police ${firstPoliceHud ? `entrée à ${firstPoliceHud.police.map((car) => car.distance).join('/')} m (leader ${Math.round(leaderDistance)}) · ${policeHudFrames} f en piste · ${policeAheadFrames} f devant · plus près ${policeClosestGap.toFixed(1)} m · ${policeBlockadeFrames} f en barrage · écart mini aux pilotes ${Number.isFinite(policeWorstOverlap) ? policeWorstOverlap.toFixed(1) : '—'} m` : 'jamais entrée'}` +
     (introStats ? ` · intro ${introStats.meshes} meshes / ${introStats.triangles} tris` : '') +
     ` · max visibles ${maxVisible} meshes / ${maxTriangles} tris` +
     ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,
