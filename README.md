@@ -330,18 +330,18 @@ et alterner les deux niveaux en pleine course. Le gain se mesure en images par s
 sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
 sur les terrains chargés, du nombre d'objets dessinés.
 
-## Vice City Rush : 3 tours, ligne de départ et décor
+## Vice City Rush : 5 tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
-villes (Vice City, New York, Tokyo, Paris, Londres). Une course fait **3 tours
-de 600 m** (1 800 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
+villes (Vice City, New York, Tokyo, Paris, Londres). Une course fait **5 tours
+de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
 **sous le portique de départ à chaque tour**.
 
 - **La zone de départ.** Grille peinte au sol avec les quatre emplacements,
   ligne à damier, vibreurs rouge et blanc, tribunes garnies de spectateurs qui
   s'agitent, fanions, mâts d'éclairage, tour de direction de course, et un
   **portique** qui porte le panneau *DÉPART · ARRIVÉE*, le tableau de tour
-  (« TOUR 1/3 », puis « DERNIER TOUR », puis « ARRIVÉE ») et les **cinq feux**
+  (« TOUR 1/5 », puis « DERNIER TOUR », puis « ARRIVÉE ») et les **cinq feux**
   du compte à rebours (3 → 2 → 1 → vert). Un commissaire agite le drapeau au
   passage, les flashs des tribunes crépitent, les confettis tombent à l'arrivée.
 - **Les tours.** Chaque passage de ligne déclenche la bannière « LIGNE FRANCHIE
@@ -505,12 +505,12 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 ```bash
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
-npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 3 tours sans exception, éclatements visibles
+npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours sans exception, éclatements visibles
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
 à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
-tour), l'arrivée après 3 tours, le HUD, le nombre de meshes affichés, la
+tour), l’arrivée après 5 tours, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
 aussi l'**escouade de police** : une seule entrée en piste, deux berlines
 arrivées derrière le leader (jamais devant, jamais à plus de 140 m), qui

@@ -30,6 +30,8 @@ import {
   cityRushMinimapTrackPath,
   buildCityRushMinimapState,
   approachCityRushSpeed,
+  cityRushTrafficRecoveryRate,
+  CITY_RUSH_TRAFFIC_RECOVERY_BOOST,
   chooseCityRushAiLane,
   cityRushHitDuration,
   cityRushHelicopterTarget,
@@ -185,8 +187,8 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
 });
 
 test('the item effects, matching colors, and charge costs match the race rules', () => {
-  assert.equal(CITY_RUSH_DISTANCE, 1800);
-  assert.equal(CITY_RUSH_PLAYER_SPEED, 26);
+  assert.equal(CITY_RUSH_DISTANCE, 3000);
+  assert.equal(CITY_RUSH_PLAYER_SPEED, 29);
   // Seuils de chargement : bleu 2, rouge 3, vert 2, jaune 4.
   assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { oil: 2, pistol: 3, cash: 2, radio: 4 });
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
@@ -521,8 +523,8 @@ test('race standings identify the leader and player position, including ties', (
   assert.deepEqual(board.ordered.map((racer) => racer.id), ['rival-a', 'player', 'rival-c', 'rival-b']);
 });
 
-test('a race is three laps of the same 600 m loop', () => {
-  assert.equal(CITY_RUSH_LAPS, 3);
+test('a race is five laps of the same 600 m loop', () => {
+  assert.equal(CITY_RUSH_LAPS, 5);
   assert.equal(CITY_RUSH_LAP_LENGTH, 600);
   assert.equal(CITY_RUSH_DISTANCE, CITY_RUSH_LAPS * CITY_RUSH_LAP_LENGTH);
 
@@ -531,8 +533,9 @@ test('a race is three laps of the same 600 m loop', () => {
   assert.equal(cityRushLapForDistance(600), 2);
   assert.equal(cityRushLapForDistance(1250), 3);
   // Le compteur reste borné une fois l'arrivée franchie (ou avec une entrée invalide).
-  assert.equal(cityRushLapForDistance(1800), 3);
-  assert.equal(cityRushLapForDistance(4000), 3);
+  assert.equal(cityRushLapForDistance(1800), 4);
+  assert.equal(cityRushLapForDistance(3000), 5);
+  assert.equal(cityRushLapForDistance(4000), 5);
   assert.equal(cityRushLapForDistance(-20), 1);
   assert.equal(cityRushLapForDistance(Number.NaN), 1);
 
@@ -540,8 +543,9 @@ test('a race is three laps of the same 600 m loop', () => {
   assert.equal(cityRushLapProgress(150), 0.25);
   assert.equal(cityRushLapProgress(600), 0);
   assert.equal(cityRushLapProgress(1500), 0.5);
-  assert.equal(cityRushLapProgress(1800), 1);
-  assert.equal(cityRushLapProgress(2400), 1);
+  assert.equal(cityRushLapProgress(1800), 0);
+  assert.equal(cityRushLapProgress(3000), 1);
+  assert.equal(cityRushLapProgress(3600), 1);
 });
 
 test('crossing the start line is detected once per lap, the last crossing being the finish', () => {
@@ -551,9 +555,10 @@ test('crossing the start line is detected once per lap, the last crossing being 
   assert.deepEqual(cityRushLapCrossings(599, 600), [1]);
   assert.deepEqual(cityRushLapCrossings(1190, 1210), [2]);
   assert.deepEqual(cityRushLapCrossings(1799, 1830), [3]);
+  assert.deepEqual(cityRushLapCrossings(2990, 3010), [5]);
   // Un très grand pas de simulation ne saute aucune ligne, et rien au-delà de l'arrivée.
-  assert.deepEqual(cityRushLapCrossings(10, 1900), [1, 2, 3]);
-  assert.deepEqual(cityRushLapCrossings(1800, 2400), []);
+  assert.deepEqual(cityRushLapCrossings(10, 3100), [1, 2, 3, 4, 5]);
+  assert.deepEqual(cityRushLapCrossings(3000, 3600), []);
   // Reculer (ou rester immobile) ne compte jamais de passage.
   assert.deepEqual(cityRushLapCrossings(620, 580), []);
   // Une boucle personnalisée suit les mêmes règles.
@@ -573,7 +578,7 @@ test('track elements fold onto the loop so the start line comes back ahead every
   assert.equal(cityRushTrackGap(0, 1799), 1);
   assert.equal(cityRushTrackGap(162, 1700), 262);
   assert.equal(cityRushTrackGap(162, 1300), 62);
-  for (let distance = 0; distance <= 1800; distance += 7) {
+  for (let distance = 0; distance <= 3000; distance += 7) {
     for (const position of [0, 36, 162, 300, 564]) {
       const gap = cityRushTrackGap(position, distance);
       assert.ok(gap > -behind - 1e-9 && gap <= CITY_RUSH_LAP_LENGTH - behind + 1e-9, `gap ${gap} out of range`);
@@ -679,3 +684,12 @@ test('la mini-carte dessine l’escouade de police à part des quatre pilotes', 
   assert.equal(buildCityRushMinimapState([]).pursuers.length, 0);
 });
 
+
+test('a car recovers its speed faster after being held behind traffic', () => {
+  assert.ok(CITY_RUSH_TRAFFIC_RECOVERY_BOOST > 1);
+  assert.equal(cityRushTrafficRecoveryRate(9, 0), 9);
+  assert.equal(cityRushTrafficRecoveryRate(9, 1), 9 * CITY_RUSH_TRAFFIC_RECOVERY_BOOST);
+  const normal = approachCityRushSpeed(5, 29, cityRushTrafficRecoveryRate(9, 0), 1);
+  const recovering = approachCityRushSpeed(5, 29, cityRushTrafficRecoveryRate(9, 1), 1);
+  assert.ok(recovering > normal + 10);
+});
