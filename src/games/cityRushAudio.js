@@ -582,8 +582,8 @@ export class CityRushAudio {
   }
 
   /**
-   * Dérapage : pneus qui hurlent. `intensity` va de 0,6 (flaque d'huile) à
-   * 1 (Voiture touchée par un tir). Le son est décalé de `delay` pour
+   * Dérapage : pneus qui hurlent. `intensity` va de 0,48 (tir bleu léger) à
+   * 1 (Voiture touchée par une rafale). Le son est décalé de `delay` pour
    * tomber sur l'impact, pas sur le coup de feu.
    */
   skid({ pan = 0, delay = 0, intensity = 1, duration = 0.72 } = {}) {
@@ -974,7 +974,7 @@ export class CityRushAudio {
   /** Bonus ramassé : un bip par couleur, un accord quand la jauge est pleine. */
   pickup(type = 'cash', { ready = false } = {}) {
     if (!this.ready()) return;
-    const root = { oil: 60, pistol: 64, cash: 69, radio: 74 }[type] ?? 69;
+    const root = { 'blue-shot': 60, pistol: 64, cash: 69, radio: 74 }[type] ?? 69;
     const time = this.context.currentTime + 0.005;
     const out = this.sfxBus;
     this.tone(midiToFrequency(root + 12), time, 0.1, 'triangle', 0.14, { destination: out });
@@ -991,14 +991,6 @@ export class CityRushAudio {
     const time = this.context.currentTime + 0.005;
     this.noise(time, 0.45, 0.22, { type: 'bandpass', frequency: 700, frequencyTo: 3200, q: 0.9 });
     this.tone(180, time, 0.4, 'sawtooth', 0.09, { filter: 1400, filterTo: 3600 });
-  }
-
-  /** Huile versée : un glouglou court et mat. */
-  oilDrop() {
-    if (!this.ready()) return;
-    const time = this.context.currentTime + 0.005;
-    this.tone(320, time, 0.22, 'sine', 0.13, { filter: 900 });
-    this.noise(time, 0.26, 0.1, { type: 'lowpass', frequency: 700, frequencyTo: 260 });
   }
 
   /** Feux de départ : un bip par seconde, un accord sur le GO. */
