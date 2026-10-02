@@ -2613,6 +2613,48 @@
   .city-rush-stepper-item b { font-size: 8px; }
 }
 
+
+/* ── BLUE_SHOT & IMPACT — repris du main, adaptés au design moderne ── */
+.city-rush-viewport.is-impacting::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 45%, rgba(255, 216, 125, 0.34), transparent 30%), rgba(255, 154, 67, 0.08);
+  animation: crImpactFlash 0.16s ease-in-out infinite alternate;
+}
+@keyframes crImpactFlash { to { opacity: 0.6; } }
+
+.city-rush-status-pill.is-impact {
+  border-color: rgba(255, 176, 86, 0.72);
+  color: #ffe0a2;
+  background: rgba(255, 176, 86, 0.12);
+  box-shadow: 0 0 22px rgba(255, 159, 66, 0.28);
+  animation: crImpactPill 0.18s ease-in-out infinite alternate;
+}
+@keyframes crImpactPill { to { transform: translate(-50%, -1px); } }
+
+.city-rush-toast.is-blue-shot {
+  border-color: rgba(72, 185, 255, 0.48);
+  background: rgba(72, 185, 255, 0.12);
+  color: #a5deff;
+}
+.city-rush-toast.is-impact {
+  border-color: rgba(255, 176, 86, 0.58);
+  background: rgba(255, 176, 86, 0.12);
+  color: #ffe0a2;
+}
+
+.city-rush-power-button.is-blue-shot { --power-color: #48b9ff; }
+.city-rush-guide-item.is-blue-shot { --power-color: #48b9ff; }
+
+/* Alias: OIL kept for compat if old rules still reference it */
+.city-rush-power-button.is-oil { --power-color: #48b9ff; }
+.city-rush-guide-item.is-oil { --power-color: #48b9ff; }
+.city-rush-toast.is-oil { border-color: rgba(72, 185, 255, 0.36); background: rgba(72, 185, 255, 0.12); color: #8ad4ff; }
+
+
 /* Light theme adaptation — keeps dark game but light chrome if site is light */
 :root[data-theme='light'] .city-rush-page {
   --cr-bg: #f6f7fb;

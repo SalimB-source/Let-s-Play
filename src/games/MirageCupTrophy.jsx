@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import MirageCupStandings from './MirageCupStandings';
 import MirageCupTrophyEmblem from './MirageCupTrophyEmblem';
-import { cupStandings, placeLabel } from './mirageCup';
+import { cupGoldMaximum, cupStandings, placeLabel } from './mirageCup';
 import { makeTrophyScene } from './mirageTrophyScene';
 import { getTrophyDesign } from './mirageTrophy';
 
@@ -15,12 +15,15 @@ function prefersReducedMotion() {
  * La scène WebGL vit dans `mirageTrophyScene.js` ; sans WebGL, un trophée CSS
  * prend le relais — le texte, lui, est toujours du vrai HTML.
  */
-export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
+export default function MirageCupTrophy({ cup, run, raceCoins = 0, onReplay, onQuit }) {
   const trophy = getTrophyDesign(cup.trophyDesign || cup.id);
   const standings = useMemo(() => cupStandings(run), [run]);
   const winner = standings[0];
   const me = standings.find((row) => row.isPlayer);
   const playerWon = Boolean(winner.isPlayer);
+  // Or réellement crédité pour les victoires de course, et maximum annoncé
+  // dans le sélecteur si le joueur remportait toutes les courses.
+  const goldMaximum = cupGoldMaximum(cup);
   const mountRef = useRef(null);
   const slotRef = useRef(null);
   const [webgl, setWebgl] = useState(true);
@@ -73,6 +76,11 @@ export default function MirageCupTrophy({ cup, run, onReplay, onQuit }) {
             {playerWon
               ? <>Tu remportes la {cup.name} avec <b>{winner.points} points</b>. Bravo, cavalier !</>
               : <>{winner.name} remporte la {cup.name} avec <b>{winner.points} points</b>. Tu termines {placeLabel(me.rank)} avec {me.points} points : la revanche t’attend !</>}
+          </p>
+          <p className={`mirage-trophy-purse${raceCoins > 0 ? ' is-won' : ''}`}>
+            <span aria-hidden="true">●</span> OR GAGNÉS EN COURSE ·{' '}
+            <b className={raceCoins > 0 ? 'mirage-coin-gain' : undefined}>+{raceCoins} OR</b>{' '}
+            <small>MAX. {goldMaximum} OR SI TOUTES LES COURSES SONT GAGNÉES</small>
           </p>
           <MirageCupStandings standings={standings} run={run} mode="final" />
           <div className="mirage-result-actions">

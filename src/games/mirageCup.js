@@ -8,7 +8,9 @@
 // coupe suit le duel et n’aligne alors que L’Ombre et Sauge.
 // Chaque arrivée rapporte des points selon la place — plus on finit haut, plus
 // on en gagne —, les points s’additionnent d’une course à l’autre, et le
-// meilleur total soulève le trophée après la dernière course.
+// meilleur total soulève le trophée après la dernière course. Chaque victoire
+// de course rapporte 10 OR ; le maximum de chaque coupe correspond donc à
+// toutes ses courses remportées (voir `cupGoldMaximum()`).
 //
 // Le moteur 3D ne connaît pas la coupe : chaque course est un duel ordinaire
 // (mêmes pouvoirs, mêmes rivaux) et la page n’a qu’à nourrir `recordCupRace`
@@ -28,9 +30,10 @@ export const DEFAULT_RIDER_NAME = 'Cavalier';
  * Catalogue des coupes. Pour en ajouter une : un nouvel objet ici, avec des
  * identifiants de terrain déjà connus de `MirageCoursePicker` (`desert`,
  * `western`, `prairie`, `sardinia`, `alger`, `japan`, `ramparts`,
- * `infinity`, `airbase`, `snakeway`). Le sélecteur de coupe, l’enchaînement des courses
- * et l’écran du trophée suivent tout seuls. Ajouter aussi le design propre
- * à son identifiant dans `mirageTrophy.js` (forme 3D et icône SVG partagées).
+ * `infinity`, `airbase`, `snakeway`) et son maximum d’or (`maxCoins`). Le
+ * sélecteur de coupe, l’enchaînement des courses et l’écran du trophée suivent
+ * tout seuls. Ajouter aussi le design propre à son identifiant dans
+ * `mirageTrophy.js` (forme 3D et icône SVG partagées).
  */
 export const CUPS = Object.freeze([
   Object.freeze({
@@ -38,14 +41,26 @@ export const CUPS = Object.freeze([
     name: 'Coupe du Désert',
     trophyDesign: 'desert',
     tagline: 'Trois courses, un seul trophée',
+    // Maximum de pièces en remportant les trois courses.
+    maxCoins: 30,
     // Dunes de l’Écho → Dust Creek → Plaines d’Or
     stages: Object.freeze(['desert', 'western', 'prairie']),
+  }),
+  Object.freeze({
+    id: 'winds',
+    name: 'Coupe des Vents',
+    trophyDesign: 'winds',
+    tagline: 'De la baie aux nuages',
+    maxCoins: 30,
+    // Costa Omertà → Alger la Blanche → Chemin du Serpent
+    stages: Object.freeze(['sardinia', 'alger', 'snakeway']),
   }),
   Object.freeze({
     id: 'worldtour',
     name: 'Coupe Grand Tour',
     trophyDesign: 'worldtour',
     tagline: 'Quatre cartes, un seul trophée',
+    maxCoins: 40,
     // Costa Omertà → Alger la Blanche → Plaines de Yōtei → Thunder Airbase
     stages: Object.freeze(['sardinia', 'alger', 'japan', 'airbase']),
   }),
@@ -54,6 +69,7 @@ export const CUPS = Object.freeze([
     name: 'Coupe des Légendes',
     trophyDesign: 'legends',
     tagline: 'Cinq courses, un seul trophée',
+    maxCoins: 50,
     // Remparts d’Ocre (Counter-Strike) → Château de l’Infini (Demon Slayer) → Thunder Airbase (Street Fighter)
     // → Costa Omertà → Plaines de Yōtei (Ghost of Yōtei)
     stages: Object.freeze(['ramparts', 'infinity', 'airbase', 'sardinia', 'japan']),
@@ -64,6 +80,16 @@ export const DEFAULT_CUP_ID = CUPS[0].id;
 /** La coupe demandée, ou `null` si l’identifiant est inconnu. */
 export function getCup(cupId) {
   return CUPS.find((cup) => cup.id === cupId) || null;
+}
+
+/**
+ * Maximum d’or disponible sur l’ensemble d’une coupe (identifiant ou entrée
+ * de `CUPS`). Il est gagné au fil des victoires de course : 10 OR par victoire,
+ * sans prime supplémentaire au podium. Zéro pour une coupe inconnue.
+ */
+export function cupGoldMaximum(cup) {
+  const entry = typeof cup === 'string' ? getCup(cup) : cup;
+  return Math.max(0, Math.floor(Number(entry?.maxCoins) || 0));
 }
 
 /** Points d’une place (1 = vainqueur de la course). Hors barème : 0. */

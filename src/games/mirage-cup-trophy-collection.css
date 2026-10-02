@@ -29,6 +29,13 @@
   --trophy-border: rgba(255, 180, 68, .42);
 }
 
+.mirage-profile-trophy-card.is-winds {
+  --trophy-accent: #45e4ff;
+  --trophy-accent-soft: rgba(69, 228, 255, .14);
+  --trophy-border: rgba(69, 228, 255, .42);
+  background: linear-gradient(125deg, rgba(25, 159, 201, .18), rgba(255, 255, 255, .025) 54%, rgba(133, 239, 208, .1));
+}
+
 .mirage-profile-trophy-card.is-worldtour {
   --trophy-accent: #83eced;
   --trophy-accent-soft: rgba(54, 193, 219, .16);

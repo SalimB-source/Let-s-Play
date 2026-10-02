@@ -10,7 +10,7 @@
 // drapeaux et confettis.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { CITY_RUSH_LANE_X, CITY_RUSH_SCROLL_SCALE } from './cityRushRules.js';
+import { CITY_RUSH_LANE_X, CITY_RUSH_LAPS, CITY_RUSH_SCROLL_SCALE } from './cityRushRules.js';
 import { SignAtlas, drawBannerCell, seededRandom } from './cityRushBuilder.js';
 import { makeCheckerTexture, makeGantrySignTexture, makeStartGroundTexture, makeLapBoard } from './cityRushTextures.js';
 import { START_ZONE_HALF } from './cityRushStage.js';
@@ -332,7 +332,7 @@ export function createStartLineDynamics({ city, theme, materials: m, startMateri
   boardFrame.position.set(0, beamY + 2.9, 0.38);
   disposables.push(boardFrame.geometry);
   group.add(boardFrame);
-  board.draw('TOUR 1/3', `${city.name.toUpperCase()} · ${theme.gantryText}`);
+  board.draw(`TOUR 1/${CITY_RUSH_LAPS}`, `${city.name.toUpperCase()} · ${theme.gantryText}`);
 
   // ── Faisceaux tournants sur les pylônes ───────────────────────────────
   const beams = [];
