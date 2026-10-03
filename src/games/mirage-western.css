@@ -1,12 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   MIRAGE RUSH — habillage « PLAYSTATION 5 / NEXT-GEN GAME HUB »
+   MIRAGE RUSH — habillage « DUNES DORÉES & FRAGMENTS DE DIAMANT »
 
    Le moteur 3D, la piste et les règles de course restent intacts.
-   Seule l'INTERFACE adopte l'esthétique moderne d'un jeu PlayStation 5 :
-   fond cosmique bleu nuit profond, panneaux en verre dépoli sombre façon
-   Control Center & Cartes d'Activités PS5, liserés lumineux DualSense
-   (bleu PlayStation #0070d1, cyan glacier #38bdf8, blanc spéculaire),
-   accents Or Trophée PlayStation et typographie géométrique next-gen.
+   L'interface mêle obsidienne chaude, or sableux, poussière lumineuse et
+   éclats de cristal turquoise. Les halos restent subtils pour garder les
+   textes et les commandes très lisibles.
 
    Importé APRÈS `mirage-rush.css` dans `MirageRushPage.jsx`.
    ═══════════════════════════════════════════════════════════════════════ */
@@ -14,106 +12,159 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Rajdhani:wght@600;700&display=swap');
 
 .mirage-page {
-  /* Surcharge des jetons de base de `mirage-rush.css` vers l'univers PS5 */
-  --mirage-ink:       #f4f8ff;
-  --mirage-dim:       rgba(203, 213, 225, .76);
-  --mirage-line:      rgba(125, 211, 252, .22);
-  --mirage-gold:      #38bdf8;
-  --mirage-gold-soft: rgba(0, 112, 209, .38);
-  --mirage-pink:      #60a5fa;
-  --mirage-mint:      #2dd4bf;
-  --mirage-panel:     #070e24;
+  --mirage-ink: #fff4df;
+  --mirage-dim: rgba(255, 239, 213, .72);
+  --mirage-line: rgba(237, 201, 140, .2);
+  --mirage-gold: #e4b65a;
+  --mirage-gold-soft: rgba(228, 182, 90, .28);
+  --mirage-pink: #dc8b7c;
+  --mirage-mint: #75d7aa;
+  --mirage-panel: #17110a;
+  --mirage-crystal: #43cfc3;
+  --mirage-crystal-light: #c9fff5;
+  --mirage-sand: #d7ad68;
   --mirage-radius-lg: 20px;
-  --mirage-radius:    14px;
+  --mirage-radius: 14px;
   --mirage-radius-sm: 10px;
 
-  /* Palette PlayStation 5 — Cosmic Obsidian & DualSense Blue */
-  --ps5-void:        #030612;
-  --ps5-bg:          #060c20;
-  --ps5-bg-deep:     #09122e;
-  --ps5-surface:     rgba(10, 18, 42, .82);
-  --ps5-surface-hi:  rgba(16, 28, 64, .88);
-  --ps5-card:        linear-gradient(155deg, rgba(20, 34, 74, .84) 0%, rgba(10, 18, 42, .92) 58%, rgba(5, 10, 26, .96) 100%);
-  --ps5-card-hover:  linear-gradient(155deg, rgba(0, 112, 209, .36) 0%, rgba(16, 32, 74, .92) 55%, rgba(8, 15, 36, .98) 100%);
-  --ps5-card-active: linear-gradient(155deg, rgba(0, 112, 209, .5) 0%, rgba(18, 40, 92, .94) 55%, rgba(9, 18, 44, .98) 100%);
+  /* Surfaces d'obsidienne chaude, sable doré et reflets de diamant. */
+  --sand-void: #100c05;
+  --sand-bg: #1d1609;
+  --sand-bg-deep: #271d0c;
+  --sand-surface: rgba(34, 26, 15, .84);
+  --sand-surface-hi: rgba(52, 40, 21, .9);
+  --sand-card: linear-gradient(155deg, rgba(62, 46, 22, .88) 0%, rgba(34, 26, 15, .94) 58%, rgba(19, 14, 8, .97) 100%);
+  --sand-card-hover: linear-gradient(155deg, rgba(184, 126, 25, .3) 0%, rgba(54, 41, 20, .94) 55%, rgba(25, 18, 9, .98) 100%);
+  --sand-card-active: linear-gradient(155deg, rgba(184, 126, 25, .42) 0%, rgba(69, 52, 25, .96) 55%, rgba(29, 21, 10, .98) 100%);
 
-  /* Bleus officiels PlayStation & barre lumineuse DualSense */
-  --ps5-blue:        #0070d1;
-  --ps5-blue-bright: #1a8cff;
-  --ps5-blue-royal:  #00439c;
-  --ps5-cyan:        #38bdf8;
-  --ps5-cyan-soft:   #7dd3fc;
-  --ps5-ice:         #e0f2fe;
+  /* Accents de dune et petites lueurs cristallines. */
+  --sand-amber: #bc8127;
+  --sand-amber-bright: #e4a435;
+  --sand-amber-deep: #895e13;
+  --sand-gold-light: #f2ca72;
+  --sand-sand-light: #f3dfb7;
+  --sand-cream: #fff7e6;
+  --sand-crystal: #43cfc3;
+  --sand-crystal-light: #c9fff5;
+  --sand-crystal-deep: #1b8178;
 
-  /* Métaux des Trophées PlayStation & statuts */
-  --ps5-gold:        #f5b942;
-  --ps5-gold-bright: #ffd86b;
-  --ps5-gold-deep:   #b45309;
-  --ps5-platinum:    #e2e8f0;
-  --ps5-emerald:     #10b981;
-  --ps5-emerald-hi:  #34d399;
-  --ps5-danger:      #f43f5e;
-  --ps5-danger-hi:   #fb7185;
-  --ps5-violet:      #a855f7;
+  /* Métaux, statuts et alertes. */
+  --sand-gold: #e6ad45;
+  --sand-gold-bright: #ffdf82;
+  --sand-gold-deep: #98601b;
+  --sand-platinum: #eeeae4;
+  --sand-emerald: #10b981;
+  --sand-emerald-hi: #34d399;
+  --sand-danger: #f43f5e;
+  --sand-danger-hi: #fb7185;
+  --sand-violet: #e4b668;
 
-  /* Encres next-gen (via variables pour rester immuables dans les deux thèmes) */
-  --ps5-ink:         #f4f8ff;
-  --ps5-ink-bright:  #f8fbff;
-  --ps5-ink-soft:    #cbd5e1;
-  --ps5-ink-muted:   #94a3b8;
-  --ps5-ink-dim:     #64748b;
-  --ps5-ink-dark:    #04091a;
+  /* Encres chaudes et textes lisibles sur les panneaux sombres. */
+  --sand-ink: #fff4df;
+  --sand-ink-bright: #fffaf0;
+  --sand-ink-soft: #e7d8bd;
+  --sand-ink-muted: #b7a58a;
+  --sand-ink-dim: #80715c;
+  --sand-ink-dark: #21160b;
 
-  /* Bordures spéculaires et anneaux de focus PS5 */
-  --ps5-border:        rgba(148, 197, 255, .16);
-  --ps5-border-mid:    rgba(125, 211, 252, .28);
-  --ps5-border-strong: rgba(96, 165, 250, .48);
-  --ps5-border-focus:  #f4f8ff;
-  --ps5-lightbar:      linear-gradient(90deg, transparent 0%, #00439c 16%, #0070d1 36%, #38bdf8 48%, #f4f8ff 50%, #38bdf8 52%, #0070d1 64%, #00439c 84%, transparent 100%);
-  --ps5-glow-sm:       0 8px 24px -6px rgba(0, 112, 209, .45);
-  --ps5-glow-md:       0 14px 36px -8px rgba(0, 112, 209, .58), 0 0 24px rgba(56, 189, 248, .24);
-  --ps5-glow-focus:    0 0 0 2px #f4f8ff, 0 0 0 5px rgba(0, 112, 209, .55), 0 18px 42px -10px rgba(0, 112, 209, .68);
+  /* Liserés de verre et focus accessibles, dorés plutôt que bleus. */
+  --sand-border: rgba(237, 201, 140, .17);
+  --sand-border-mid: rgba(237, 201, 140, .3);
+  --sand-border-strong: rgba(228, 182, 90, .5);
+  --sand-border-focus: #fff0ca;
+  --sand-lightbar: linear-gradient(90deg, transparent 0%, #895e13 16%, #bc8127 36%, #f2ca72 48%, #eafffa 50%, #f2ca72 52%, #bc8127 64%, #895e13 84%, transparent 100%);
+  --sand-glow-sm: 0 8px 24px -6px rgba(184, 126, 25, .38);
+  --sand-glow-md: 0 14px 36px -8px rgba(184, 126, 25, .48), 0 0 24px rgba(225, 171, 79, .2);
+  --sand-glow-focus: 0 0 0 2px #fff0ca, 0 0 0 5px rgba(184, 126, 25, .42), 0 18px 42px -10px rgba(184, 126, 25, .56);
 
-  /* Polices PS5 : géométrique moderne, télémétrie HUD et titrage sci-fi */
-  --ps5-font-sans:     'Plus Jakarta Sans', 'Google Sans', system-ui, -apple-system, sans-serif;
-  --ps5-font-hud:      'Rajdhani', 'Orbitron', 'Google Sans', sans-serif;
-  --ps5-font-display:  'Orbitron', 'Rajdhani', 'Google Sans', sans-serif;
-  --ps5-font-mono:     'Rajdhani', 'Google Sans', monospace;
+  --sand-font-sans: 'Plus Jakarta Sans', 'Google Sans', system-ui, -apple-system, sans-serif;
+  --sand-font-hud: 'Rajdhani', 'Orbitron', 'Google Sans', sans-serif;
+  --sand-font-display: 'Orbitron', 'Rajdhani', 'Google Sans', sans-serif;
+  --sand-font-mono: 'Rajdhani', 'Google Sans', monospace;
 
   position: relative;
   isolation: isolate;
-  color: var(--ps5-ink);
-  font-family: var(--ps5-font-sans);
-  background:
-    radial-gradient(1200px 640px at 14% -6%, rgba(0, 112, 209, .34), transparent 62%),
-    radial-gradient(1000px 580px at 88% 4%, rgba(56, 189, 248, .18), transparent 58%),
-    radial-gradient(900px 620px at 50% 42%, rgba(0, 67, 156, .22), transparent 68%),
-    radial-gradient(900px 480px at 50% 108%, rgba(0, 112, 209, .2), transparent 64%),
-    linear-gradient(180deg, #030612 0%, #060c20 42%, #08112b 74%, #040714 100%);
+  color: var(--sand-ink);
+  font-family: var(--sand-font-sans);
+  background: transparent;
 }
 
-/* Halo d'ambiance PlayStation 5 + micro-grille de télémétrie */
-.mirage-page::before {
-  content: "";
+/* Fond de désert profond, poussière scintillante et éclats facettés.
+   Cette couche reste sous l'interface et ne couvre jamais le canvas 3D. */
+.mirage-desert-atmosphere {
   position: fixed;
-  inset: 0;
   z-index: -1;
+  inset: 0;
+  overflow: hidden;
   pointer-events: none;
+}
+
+.mirage-desert-atmosphere::before,
+.mirage-desert-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.mirage-desert-atmosphere::before {
   background:
-    radial-gradient(760px 320px at 50% 0%, rgba(0, 112, 209, .26), transparent 70%),
-    radial-gradient(circle at 20% 25%, rgba(56, 189, 248, .08) 0, transparent 45%),
-    radial-gradient(circle at 82% 72%, rgba(0, 112, 209, .12) 0, transparent 50%),
-    radial-gradient(rgba(148, 197, 255, .07) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px;
+    radial-gradient(ellipse 72% 48% at 8% 2%, rgba(184, 126, 25, .2), transparent 72%),
+    radial-gradient(ellipse 55% 44% at 96% 26%, rgba(137, 94, 19, .2), transparent 72%),
+    radial-gradient(ellipse 68% 42% at 58% 102%, rgba(225, 171, 79, .12), transparent 72%),
+    linear-gradient(180deg, #100c05 0%, #1d1609 48%, #100c05 100%);
+}
+
+.mirage-desert-atmosphere::after {
+  opacity: .25;
+  background-image:
+    radial-gradient(circle, rgba(255, 228, 175, .58) .65px, transparent 1px),
+    radial-gradient(circle, rgba(225, 171, 79, .48) .55px, transparent .95px),
+    radial-gradient(circle, rgba(255, 252, 243, .42) .9px, transparent 1.5px);
+  background-size: 57px 61px, 93px 87px, 151px 139px;
+  background-position: 3px 9px, 27px 38px, 71px 17px;
+}
+
+.mirage-debris-shard {
+  position: absolute;
+  display: block;
+  opacity: .26;
+  animation: mirageFragmentDrift 17s ease-in-out infinite;
+}
+
+.mirage-debris-shard.is-sand {
+  clip-path: polygon(13% 3%, 82% 0, 100% 48%, 70% 100%, 8% 82%, 0 35%);
+  background: linear-gradient(145deg, #ffe2a2 0%, #d7a348 42%, #80511c 43%, #c3832d 100%);
+  filter: drop-shadow(0 0 10px rgba(215, 163, 72, .38));
+}
+
+.mirage-debris-shard.is-diamond {
+  clip-path: polygon(50% 0, 100% 26%, 83% 82%, 50% 100%, 17% 82%, 0 26%);
+  background:
+    linear-gradient(145deg, transparent 47%, rgba(255, 255, 255, .82) 49%, transparent 52%),
+    linear-gradient(32deg, transparent 48%, rgba(15, 102, 95, .55) 50%, transparent 52%),
+    linear-gradient(135deg, #f4fffb 0%, #77e7d8 30%, #248e84 54%, #cafff5 100%);
+  filter: drop-shadow(0 0 12px rgba(67, 207, 195, .52));
+}
+
+.mirage-debris-shard.sand-1 { top: 28%; left: 5%; width: 32px; height: 24px; --fragment-turn: 14deg; }
+.mirage-debris-shard.diamond-1 { top: 17%; right: 8%; width: 20px; height: 28px; --fragment-turn: 18deg; animation-delay: -3s; }
+.mirage-debris-shard.sand-2 { top: 62%; right: 4%; width: 44px; height: 31px; --fragment-turn: -19deg; animation-delay: -7s; }
+.mirage-debris-shard.diamond-2 { bottom: 16%; left: 7%; width: 24px; height: 33px; --fragment-turn: -13deg; animation-delay: -5s; }
+.mirage-debris-shard.sand-3 { bottom: 8%; left: 19%; width: 25px; height: 19px; --fragment-turn: 31deg; animation-delay: -10s; }
+.mirage-debris-shard.diamond-3 { right: 17%; bottom: 10%; width: 31px; height: 40px; --fragment-turn: 9deg; animation-delay: -12s; }
+
+@keyframes mirageFragmentDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(var(--fragment-turn, 0deg)); }
+  50% { transform: translate3d(0, -9px, 0) rotate(calc(var(--fragment-turn, 0deg) + 7deg)); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   0. TYPOGRAPHIE NEXT-GEN (priorité sur `src/typography.css`)
+   0. TYPOGRAPHIE ARCADE (priorité sur `src/typography.css`)
    ═══════════════════════════════════════════════════════════════════════ */
 
 html body .mirage-page,
 html body .mirage-page * {
-  font-family: var(--ps5-font-sans) !important;
+  font-family: var(--sand-font-sans) !important;
 }
 
 /* Grands titres, logos et écrans majeurs en Orbitron */
@@ -135,7 +186,7 @@ html body .mirage-page :is(
   .mirage-trophy-name,
   .mirage-room-code-big
 ) * {
-  font-family: var(--ps5-font-display) !important;
+  font-family: var(--sand-font-display) !important;
   font-weight: 800 !important;
 }
 
@@ -162,11 +213,11 @@ html body .mirage-page :is(
   .mirage-xp-award-delta,
   .mirage-pause-stats b
 ) {
-  font-family: var(--ps5-font-hud) !important;
+  font-family: var(--sand-font-hud) !important;
   font-weight: 700 !important;
 }
 
-/* Poids soutenus pour les boutons, onglets, badges et intitulés PS5 */
+/* Poids soutenus pour les boutons, onglets et badges */
 html body .mirage-page :is(
   strong, b, th, kbd,
   .mirage-eyebrow,
@@ -211,7 +262,7 @@ html body .mirage-page :is(
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   1. EN-TÊTE — Bandeau PlayStation 5 Game Hub
+   1. EN-TÊTE — Identité désertique Mirage Rush
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-heading {
@@ -225,20 +276,20 @@ html body .mirage-page :is(
   padding: 12px 18px;
   border-radius: 22px;
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(0, 112, 209, .28), transparent 58%),
-    radial-gradient(90% 120% at 100% 100%, rgba(56, 189, 248, .14), transparent 60%),
-    linear-gradient(165deg, rgba(12, 22, 50, .86) 0%, rgba(7, 13, 32, .92) 100%);
-  border: 1px solid var(--ps5-border-mid);
+    radial-gradient(120% 140% at 0% 0%, rgba(184, 126, 25, .28), transparent 58%),
+    radial-gradient(90% 120% at 100% 100%, rgba(225, 171, 79, .14), transparent 60%),
+    linear-gradient(165deg, rgba(45, 35, 17, .86) 0%, rgba(29, 22, 10, .92) 100%);
+  border: 1px solid var(--sand-border-mid);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 20px 48px -20px rgba(2, 6, 23, .9),
-    0 0 32px rgba(0, 112, 209, .18);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 20px 48px -20px rgba(20, 15, 5, .9),
+    0 0 32px rgba(184, 126, 25, .18);
   backdrop-filter: blur(20px) saturate(155%);
   -webkit-backdrop-filter: blur(20px) saturate(155%);
   overflow: hidden;
 }
 
-/* Barre lumineuse DualSense sur la tranche supérieure de l'en-tête */
+/* Barre lumineuse liseré lumineux sur la tranche supérieure de l'en-tête */
 .mirage-heading::before {
   content: "";
   position: absolute;
@@ -246,8 +297,8 @@ html body .mirage-page :is(
   left: 6%;
   right: 6%;
   height: 2px;
-  background: var(--ps5-lightbar);
-  box-shadow: 0 0 16px rgba(56, 189, 248, .75);
+  background: var(--sand-lightbar);
+  box-shadow: 0 0 16px rgba(225, 171, 79, .75);
   pointer-events: none;
 }
 
@@ -265,13 +316,13 @@ html body .mirage-page :is(
   gap: 9px;
   padding: 6px 13px;
   border-radius: 999px;
-  background: rgba(0, 112, 209, .18);
-  border: 1px solid rgba(56, 189, 248, .34);
-  color: var(--ps5-ice);
+  background: rgba(184, 126, 25, .18);
+  border: 1px solid rgba(225, 171, 79, .34);
+  color: var(--sand-cream);
   font-size: 10.5px;
   letter-spacing: .16em;
   text-transform: uppercase;
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .16);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .16);
 }
 
 .mirage-live-dot,
@@ -280,12 +331,12 @@ html body .mirage-page :is(
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--ps5-cyan);
-  box-shadow: 0 0 10px var(--ps5-cyan), 0 0 20px var(--ps5-blue-bright);
+  background: var(--sand-gold-light);
+  box-shadow: 0 0 10px var(--sand-gold-light), 0 0 20px var(--sand-amber-bright);
 }
 
 .mirage-eyebrow-divider {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
   opacity: .75;
 }
 
@@ -295,48 +346,71 @@ html body .mirage-page :is(
   gap: 8px;
   padding: 7px 15px;
   border-radius: 999px;
-  background: rgba(15, 26, 58, .78);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-ink);
+  background: rgba(53, 41, 20, .78);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-ink);
   font-size: 10.5px;
   letter-spacing: .12em;
   text-transform: uppercase;
   text-decoration: none;
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .14);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .14);
   transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 
 .mirage-back-link:hover {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, rgba(0, 112, 209, .45), rgba(15, 30, 68, .92));
-  border-color: var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
+  background: linear-gradient(135deg, rgba(184, 126, 25, .45), rgba(62, 47, 21, .92));
+  border-color: var(--sand-border-focus);
+  color: var(--sand-ink-bright);
   text-decoration: none;
-  box-shadow: var(--ps5-glow-sm);
+  box-shadow: var(--sand-glow-sm);
 }
 
-/* Capsule centrale PS5 Game Hub (remplace l'affiche western) */
+/* Cartouche Mirage Rush, décoré de reflets de sable et de cristal */
 .mirage-poster {
   position: relative;
   display: inline-flex;
   align-items: center;
   gap: 12px 16px;
   flex-wrap: wrap;
-  padding: 8px 16px;
+  padding: 8px 34px 8px 16px;
   border-radius: 16px;
   background:
-    radial-gradient(100% 160% at 50% 0%, rgba(0, 112, 209, .32), transparent 68%),
-    linear-gradient(135deg, rgba(14, 26, 60, .92) 0%, rgba(7, 14, 34, .96) 100%);
-  border: 1px solid rgba(96, 165, 250, .38);
+    radial-gradient(100% 160% at 50% 0%, rgba(184, 126, 25, .32), transparent 68%),
+    linear-gradient(135deg, rgba(54, 42, 20, .92) 0%, rgba(31, 23, 10, .96) 100%);
+  border: 1px solid rgba(232, 189, 114, .38);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .22),
-    0 10px 28px -12px rgba(0, 112, 209, .5);
+    inset 0 1px 0 rgba(250, 242, 228, .22),
+    0 10px 28px -12px rgba(184, 126, 25, .5);
   transform: none;
 }
 
 .mirage-poster::before,
 .mirage-poster::after {
-  display: none;
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.mirage-poster::before {
+  top: -4px;
+  right: 12px;
+  width: 18px;
+  height: 24px;
+  opacity: .8;
+  clip-path: polygon(50% 0, 100% 28%, 82% 100%, 18% 100%, 0 28%);
+  background: linear-gradient(135deg, #effffb 0%, #76e2d2 32%, #36aa9d 54%, #c9fff5 100%);
+  filter: drop-shadow(0 0 8px rgba(67, 207, 195, .58));
+  transform: rotate(18deg);
+}
+
+.mirage-poster::after {
+  left: 10px;
+  bottom: 6px;
+  width: 22px;
+  height: 8px;
+  opacity: .75;
+  background: radial-gradient(ellipse, rgba(255, 222, 156, .95), rgba(212, 151, 61, .28) 56%, transparent 72%);
 }
 
 .mirage-poster-word {
@@ -345,24 +419,24 @@ html body .mirage-page :is(
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-royal) 100%);
-  border: 1px solid rgba(186, 230, 253, .45);
-  color: var(--ps5-ink-bright);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-deep) 100%);
+  border: 1px solid rgba(245, 226, 194, .45);
+  color: var(--sand-ink-bright);
   font-size: 9px;
   letter-spacing: .16em;
   text-transform: uppercase;
-  box-shadow: 0 0 14px rgba(0, 112, 209, .55);
+  box-shadow: 0 0 14px rgba(184, 126, 25, .55);
 }
 
 .mirage-poster-title {
   font-size: clamp(18px, 2.1vw, 26px);
   letter-spacing: .1em;
   text-transform: uppercase;
-  background: linear-gradient(180deg, #f8fbff 0%, #bae6fd 58%, #38bdf8 100%);
+  background: linear-gradient(180deg, #fefcf9 0%, #f5e2c2 58%, #e1ab4f 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 2px 12px rgba(56, 189, 248, .35));
+  filter: drop-shadow(0 2px 12px rgba(225, 171, 79, .35));
   line-height: 1.05;
 }
 
@@ -372,18 +446,18 @@ html body .mirage-page :is(
   gap: 6px;
   padding: 4px 11px;
   border-radius: 999px;
-  background: rgba(8, 15, 36, .75);
-  border: 1px solid rgba(125, 211, 252, .24);
-  color: var(--ps5-ink-soft);
+  background: rgba(33, 25, 11, .75);
+  border: 1px solid rgba(237, 201, 140, .24);
+  color: var(--sand-ink-soft);
   font-size: 9.5px;
   letter-spacing: .12em;
   text-transform: uppercase;
 }
 
 .mirage-poster-reward b {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
   letter-spacing: .18em;
-  text-shadow: 0 0 10px rgba(56, 189, 248, .55);
+  text-shadow: 0 0 10px rgba(225, 171, 79, .55);
 }
 
 /* Onglets de mode (utilisés dans l'en-tête de MirageOnline) */
@@ -393,9 +467,9 @@ html body .mirage-page :is(
   gap: 6px;
   padding: 5px;
   border-radius: 999px;
-  background: rgba(6, 12, 30, .86);
-  border: 1px solid var(--ps5-border-mid);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .1);
+  background: rgba(27, 20, 9, .86);
+  border: 1px solid var(--sand-border-mid);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .1);
 }
 
 .mirage-mode-tab {
@@ -406,7 +480,7 @@ html body .mirage-page :is(
   border-radius: 999px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
   font-size: 11px;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -415,19 +489,19 @@ html body .mirage-page :is(
 }
 
 .mirage-mode-tab:hover {
-  color: var(--ps5-ink-bright);
-  background: rgba(0, 112, 209, .22);
+  color: var(--sand-ink-bright);
+  background: rgba(184, 126, 25, .22);
 }
 
 .mirage-mode-tab.is-active {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-bright) 100%);
-  border-color: var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 0 18px rgba(0, 112, 209, .6);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-bright) 100%);
+  border-color: var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 0 18px rgba(184, 126, 25, .6);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   2. COQUE DU JEU & BARRE DE CONTRÔLE SUPÉRIEURE (PS5 Control Center)
+   2. COQUE DU JEU & BARRE DE CONTRÔLE SUPÉRIEURE
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-game-shell {
@@ -435,17 +509,17 @@ html body .mirage-page :is(
   border-radius: 24px;
   padding: 12px;
   background:
-    radial-gradient(120% 90% at 50% 0%, rgba(0, 112, 209, .26), transparent 62%),
-    linear-gradient(175deg, rgba(13, 23, 52, .92) 0%, rgba(6, 11, 28, .97) 100%);
-  border: 1px solid rgba(125, 211, 252, .28);
+    radial-gradient(120% 90% at 50% 0%, rgba(184, 126, 25, .26), transparent 62%),
+    linear-gradient(175deg, rgba(47, 36, 18, .92) 0%, rgba(25, 19, 9, .97) 100%);
+  border: 1px solid rgba(237, 201, 140, .28);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .22),
-    0 28px 68px -22px rgba(2, 6, 23, .92),
-    0 0 42px -10px rgba(0, 112, 209, .28);
+    inset 0 1px 0 rgba(250, 242, 228, .22),
+    0 28px 68px -22px rgba(20, 15, 5, .92),
+    0 0 42px -10px rgba(184, 126, 25, .28);
   overflow: hidden;
 }
 
-/* Liseré lumineux DualSense en haut de la coque */
+/* Liseré lumineux en haut de la coque */
 .mirage-game-shell::before {
   content: "";
   position: absolute;
@@ -454,8 +528,8 @@ html body .mirage-page :is(
   right: 8%;
   height: 2px;
   z-index: 6;
-  background: var(--ps5-lightbar);
-  box-shadow: 0 0 18px rgba(56, 189, 248, .85);
+  background: var(--sand-lightbar);
+  box-shadow: 0 0 18px rgba(225, 171, 79, .85);
   pointer-events: none;
 }
 
@@ -472,16 +546,16 @@ html body .mirage-page :is(
   padding: 8px 14px;
   margin-bottom: 10px;
   border-radius: 16px;
-  background: rgba(7, 13, 32, .84);
-  border: 1px solid var(--ps5-border);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .1);
+  background: rgba(29, 22, 10, .84);
+  border: 1px solid var(--sand-border);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .1);
 }
 
 .mirage-game-brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  color: var(--ps5-ink);
+  color: var(--sand-ink);
   font-size: 10.5px;
   letter-spacing: .14em;
   text-transform: uppercase;
@@ -493,22 +567,22 @@ html body .mirage-page :is(
   width: 22px;
   height: 22px;
   border-radius: 7px;
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  color: var(--ps5-ink-bright);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  color: var(--sand-ink-bright);
   font-size: 11px;
   text-shadow: none;
-  box-shadow: 0 0 14px rgba(56, 189, 248, .6);
+  box-shadow: 0 0 14px rgba(225, 171, 79, .6);
 }
 
 .mirage-live-pill {
   border-radius: 999px;
-  background: rgba(11, 22, 50, .85);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-cyan-soft);
+  background: rgba(45, 34, 16, .85);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-sand-light);
 }
 
 .mirage-live-pill.is-paused {
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
   border-color: rgba(245, 185, 66, .45);
 }
 
@@ -530,14 +604,14 @@ html body .mirage-page :is(
   gap: 7px;
   padding: 6px 13px;
   border-radius: 999px;
-  background: rgba(12, 22, 50, .86);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-ink);
+  background: rgba(45, 35, 17, .86);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-ink);
   font-size: 10px;
   letter-spacing: .12em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .14);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .14);
   transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease, color .16s ease;
 }
 
@@ -547,59 +621,59 @@ html body .mirage-page :is(
 .mirage-fullscreen-button:hover,
 .mirage-back-game-button:hover {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, rgba(0, 112, 209, .48), rgba(16, 30, 68, .94));
-  border-color: var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: var(--ps5-glow-sm);
+  background: linear-gradient(135deg, rgba(184, 126, 25, .48), rgba(62, 47, 22, .94));
+  border-color: var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: var(--sand-glow-sm);
 }
 
 .mirage-sound-button.is-on,
 .mirage-graphics-button[aria-pressed="false"] {
-  border-color: rgba(56, 189, 248, .48);
-  background: linear-gradient(135deg, rgba(0, 112, 209, .32), rgba(11, 22, 52, .9));
+  border-color: rgba(225, 171, 79, .48);
+  background: linear-gradient(135deg, rgba(184, 126, 25, .32), rgba(47, 36, 16, .9));
 }
 
-/* Bascule de graphismes PS5 (Mode Performance 60 FPS / Mode Fidélité MAX) */
+/* Bascule de graphismes (Mode Performance 60 FPS / Mode Fidélité MAX) */
 .mirage-graphics-switch {
   border-radius: 14px;
-  background: rgba(9, 17, 40, .84);
-  border: 1px solid var(--ps5-border-mid);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .12);
+  background: rgba(36, 28, 13, .84);
+  border: 1px solid var(--sand-border-mid);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .12);
 }
 
 .mirage-graphics-switch-title {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-graphics-switch-title .mirage-graphics-icon {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
 }
 
 .mirage-graphics-choices {
   border-radius: 999px;
-  border: 1px solid var(--ps5-border-mid);
-  background: rgba(4, 9, 24, .9);
+  border: 1px solid var(--sand-border-mid);
+  background: rgba(22, 16, 6, .9);
   overflow: hidden;
 }
 
 .mirage-graphics-choice {
   background: transparent;
-  color: var(--ps5-ink-muted);
+  color: var(--sand-ink-muted);
 }
 
 .mirage-graphics-choice + .mirage-graphics-choice {
-  border-left: 1px solid var(--ps5-border);
+  border-left: 1px solid var(--sand-border);
 }
 
 .mirage-graphics-choice:hover {
-  background: rgba(0, 112, 209, .22);
-  color: var(--ps5-ink-bright);
+  background: rgba(184, 126, 25, .22);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-graphics-choice.is-active {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-bright) 100%);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 0 14px rgba(0, 112, 209, .55);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-bright) 100%);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 0 14px rgba(184, 126, 25, .55);
 }
 
 /* Cadre de l'écran 3D */
@@ -607,32 +681,32 @@ html body .mirage-page :is(
 .mirage-canvas-wrap {
   position: relative;
   border-radius: 18px;
-  border: 1px solid rgba(125, 211, 252, .24);
-  background: #040816;
+  border: 1px solid rgba(237, 201, 140, .24);
+  background: #140f06;
   box-shadow:
-    inset 0 0 0 1px rgba(224, 242, 254, .08),
-    0 16px 38px -18px rgba(2, 6, 23, .9);
+    inset 0 0 0 1px rgba(250, 242, 228, .08),
+    0 16px 38px -18px rgba(20, 15, 5, .9);
   overflow: hidden;
 }
 
 .mirage-viewport.is-glow::before {
-  background: radial-gradient(110% 90% at 50% 62%, rgba(56, 189, 248, .28), transparent 58%);
+  background: radial-gradient(110% 90% at 50% 62%, rgba(225, 171, 79, .28), transparent 58%);
 }
 
 .mirage-viewport.is-power-ready::before {
-  background: radial-gradient(115% 95% at 50% 72%, rgba(0, 112, 209, .38), rgba(56, 189, 248, .22) 45%, transparent 68%);
-  box-shadow: inset 0 0 54px rgba(56, 189, 248, .42);
+  background: radial-gradient(115% 95% at 50% 72%, rgba(184, 126, 25, .38), rgba(225, 171, 79, .22) 45%, transparent 68%);
+  box-shadow: inset 0 0 54px rgba(225, 171, 79, .42);
 }
 
-/* Halo atmosphérique PS5 en haut de la scène 3D */
+/* Halo solaire discret en haut de la scène 3D */
 .mirage-sun-glare {
   background:
-    radial-gradient(60% 45% at 50% 0%, rgba(56, 189, 248, .16), transparent 70%),
-    radial-gradient(40% 35% at 85% 12%, rgba(0, 112, 209, .14), transparent 65%);
+    radial-gradient(60% 45% at 50% 0%, rgba(225, 171, 79, .16), transparent 70%),
+    radial-gradient(40% 35% at 85% 12%, rgba(184, 126, 25, .14), transparent 65%);
   mix-blend-mode: screen;
 }
 
-/* Badge télémétrie DualSense PS5 (remplace l'ancien tampon Wanted rouge) */
+/* Insigne du trésor des dunes, masqué quand la course est lancée. */
 .mirage-wanted-stamp {
   position: absolute;
   right: 16px;
@@ -645,14 +719,14 @@ html body .mirage-page :is(
   padding: 9px 14px;
   border-radius: 14px;
   background:
-    radial-gradient(110% 120% at 0% 0%, rgba(0, 112, 209, .36), transparent 65%),
-    rgba(7, 13, 32, .84);
-  border: 1px solid rgba(125, 211, 252, .34);
-  color: var(--ps5-ink);
+    radial-gradient(110% 120% at 0% 0%, rgba(184, 126, 25, .36), transparent 65%),
+    rgba(29, 22, 10, .84);
+  border: 1px solid rgba(237, 201, 140, .34);
+  color: var(--sand-ink);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 12px 28px -10px rgba(2, 6, 23, .85),
-    0 0 22px rgba(0, 112, 209, .28);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 12px 28px -10px rgba(20, 15, 5, .85),
+    0 0 22px rgba(184, 126, 25, .28);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   transform: none;
@@ -667,22 +741,22 @@ html body .mirage-page :is(
 .mirage-wanted-stamp span {
   font-size: 8.5px;
   letter-spacing: .2em;
-  color: var(--ps5-cyan-soft);
+  color: var(--sand-sand-light);
   text-transform: uppercase;
 }
 
 .mirage-wanted-stamp strong {
   font-size: 16px;
   letter-spacing: .22em;
-  color: var(--ps5-ink-bright);
-  text-shadow: 0 0 12px rgba(56, 189, 248, .65);
+  color: var(--sand-ink-bright);
+  text-shadow: 0 0 12px rgba(225, 171, 79, .65);
 }
 
 .mirage-wanted-stamp i {
   font-size: 8.5px;
   letter-spacing: .1em;
   font-style: normal;
-  color: var(--ps5-ink-muted);
+  color: var(--sand-ink-muted);
 }
 
 .mirage-game-shell.is-running .mirage-wanted-stamp {
@@ -691,12 +765,12 @@ html body .mirage-page :is(
 }
 
 .mirage-game-foot {
-  color: var(--ps5-ink-muted);
-  border-top: 1px solid var(--ps5-border);
+  color: var(--sand-ink-muted);
+  border-top: 1px solid var(--sand-border);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   3. HUD DE COURSE — Télémétrie Gran Turismo 7 / PS5
+   3. HUD DE COURSE — Télémétrie arcade désertique
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-hud {
@@ -717,12 +791,12 @@ html body .mirage-page :is(
   padding: 10px 16px 10px 18px;
   border-radius: 16px;
   background:
-    linear-gradient(145deg, rgba(12, 22, 50, .84) 0%, rgba(6, 11, 28, .92) 100%);
-  border: 1px solid rgba(125, 211, 252, .32);
+    linear-gradient(145deg, rgba(45, 35, 17, .84) 0%, rgba(25, 19, 9, .92) 100%);
+  border: 1px solid rgba(237, 201, 140, .32);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 14px 32px -12px rgba(2, 6, 23, .85),
-    0 0 20px rgba(0, 112, 209, .24);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 14px 32px -12px rgba(20, 15, 5, .85),
+    0 0 20px rgba(184, 126, 25, .24);
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   overflow: hidden;
@@ -737,55 +811,55 @@ html body .mirage-page :is(
   bottom: 16%;
   width: 3px;
   border-radius: 0 4px 4px 0;
-  background: linear-gradient(180deg, var(--ps5-cyan) 0%, var(--ps5-blue) 100%);
-  box-shadow: 0 0 12px var(--ps5-cyan);
+  background: linear-gradient(180deg, var(--sand-gold-light) 0%, var(--sand-amber) 100%);
+  box-shadow: 0 0 12px var(--sand-gold-light);
 }
 
 .mirage-hud-card span {
   display: block;
   font-size: 9.5px;
   letter-spacing: .18em;
-  color: var(--ps5-cyan-soft);
+  color: var(--sand-sand-light);
   text-transform: uppercase;
 }
 
 .mirage-hud-card strong {
-  color: var(--ps5-ink-bright);
-  text-shadow: 0 0 16px rgba(56, 189, 248, .45);
+  color: var(--sand-ink-bright);
+  text-shadow: 0 0 16px rgba(225, 171, 79, .45);
   font-variant-numeric: tabular-nums;
 }
 
 .mirage-hud-streak > span {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
 }
 
 .mirage-clock {
-  color: var(--ps5-ink-bright);
-  text-shadow: 0 0 16px rgba(0, 112, 209, .65);
+  color: var(--sand-ink-bright);
+  text-shadow: 0 0 16px rgba(184, 126, 25, .65);
 }
 
 .mirage-clock.is-warning {
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
 }
 
 .mirage-clock.is-danger {
-  color: var(--ps5-danger-hi);
+  color: var(--sand-danger-hi);
 }
 
 .mirage-rank-badge {
-  background: rgba(0, 112, 209, .28);
-  border: 1px solid rgba(125, 211, 252, .52);
-  color: var(--ps5-ice);
+  background: rgba(184, 126, 25, .28);
+  border: 1px solid rgba(237, 201, 140, .52);
+  color: var(--sand-cream);
 }
 
 .mirage-time-track i {
-  background: linear-gradient(90deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  box-shadow: 0 0 10px var(--ps5-cyan);
+  background: linear-gradient(90deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  box-shadow: 0 0 10px var(--sand-gold-light);
 }
 
 .mirage-race-dot.is-you {
-  background: var(--ps5-cyan);
-  box-shadow: 0 0 12px var(--ps5-cyan);
+  background: var(--sand-gold-light);
+  box-shadow: 0 0 12px var(--sand-gold-light);
 }
 
 .mirage-chip {
@@ -794,57 +868,57 @@ html body .mirage-page :is(
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(8, 16, 38, .84);
-  border: 1px solid rgba(125, 211, 252, .3);
-  color: var(--ps5-ink);
+  background: rgba(34, 26, 12, .84);
+  border: 1px solid rgba(237, 201, 140, .3);
+  color: var(--sand-ink);
   font-size: 11.5px;
   letter-spacing: .08em;
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .14),
-    0 8px 20px -8px rgba(2, 6, 23, .8);
+    inset 0 1px 0 rgba(250, 242, 228, .14),
+    0 8px 20px -8px rgba(20, 15, 5, .8);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
 
 .mirage-chip.is-gem {
-  background: rgba(0, 112, 209, .24);
-  border-color: rgba(56, 189, 248, .48);
-  color: var(--ps5-ice);
+  background: rgba(184, 126, 25, .24);
+  border-color: rgba(225, 171, 79, .48);
+  color: var(--sand-cream);
 }
 
 .mirage-chip.is-power-ready {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  border: 1px solid var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 0 16px rgba(56, 189, 248, .7);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  border: 1px solid var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 0 16px rgba(225, 171, 79, .7);
 }
 
 .mirage-chip.is-Leading {
-  background: linear-gradient(135deg, rgba(245, 185, 66, .28), rgba(14, 26, 58, .88));
+  background: linear-gradient(135deg, rgba(245, 185, 66, .28), rgba(53, 40, 19, .88));
   border-color: rgba(255, 216, 107, .65);
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
   box-shadow: 0 0 18px rgba(245, 185, 66, .35);
 }
 
 .mirage-chip.is-cup {
-  background: linear-gradient(135deg, rgba(0, 112, 209, .36), rgba(10, 20, 48, .92));
-  border-color: rgba(125, 211, 252, .55);
-  color: var(--ps5-ink-bright);
+  background: linear-gradient(135deg, rgba(184, 126, 25, .36), rgba(43, 33, 15, .92));
+  border-color: rgba(237, 201, 140, .55);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-chip.is-ready {
-  background: linear-gradient(135deg, rgba(16, 185, 129, .3), rgba(8, 26, 38, .9));
+  background: linear-gradient(135deg, rgba(16, 185, 129, .3), rgba(34, 26, 12, .9));
   border-color: rgba(52, 211, 153, .6);
-  color: var(--ps5-emerald-hi);
+  color: var(--sand-emerald-hi);
 }
 
 .mirage-chip.is-shield {
-  background: linear-gradient(135deg, rgba(56, 189, 248, .34), rgba(8, 22, 48, .92));
-  border-color: rgba(125, 211, 252, .72);
-  color: var(--ps5-ice);
-  box-shadow: 0 0 20px rgba(56, 189, 248, .45);
+  background: linear-gradient(135deg, rgba(225, 171, 79, .34), rgba(43, 32, 13, .92));
+  border-color: rgba(237, 201, 140, .72);
+  color: var(--sand-cream);
+  box-shadow: 0 0 20px rgba(225, 171, 79, .45);
 }
 
 .mirage-chip.is-lasso-warn,
@@ -860,39 +934,39 @@ html body .mirage-page :is(
   padding: 8px 18px;
   border-radius: 999px;
   background:
-    linear-gradient(135deg, rgba(0, 112, 209, .9) 0%, rgba(10, 20, 48, .95) 100%);
-  border: 1.5px solid var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
+    linear-gradient(135deg, rgba(184, 126, 25, .9) 0%, rgba(43, 33, 15, .95) 100%);
+  border: 1.5px solid var(--sand-border-focus);
+  color: var(--sand-ink-bright);
   font-size: 12px;
   letter-spacing: .14em;
   text-transform: uppercase;
-  box-shadow: var(--ps5-glow-md);
+  box-shadow: var(--sand-glow-md);
   backdrop-filter: blur(14px);
 }
 
 .mirage-boost-pill {
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  border: 1px solid var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: var(--ps5-glow-md);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  border: 1px solid var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: var(--sand-glow-md);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   4. BARRE D'OBJETS — Dock d'actions DualSense PS5
+   4. BARRE D'OBJETS — Dock d'actions liseré lumineux Mirage Rush
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-powerup-bar {
   padding: 8px 10px;
   border-radius: 20px;
   background:
-    radial-gradient(100% 140% at 50% 100%, rgba(0, 112, 209, .34), transparent 70%),
-    rgba(6, 12, 30, .84);
-  border: 1px solid rgba(125, 211, 252, .32);
+    radial-gradient(100% 140% at 50% 100%, rgba(184, 126, 25, .34), transparent 70%),
+    rgba(27, 20, 9, .84);
+  border: 1px solid rgba(237, 201, 140, .32);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 18px 38px -12px rgba(2, 6, 23, .9),
-    0 0 26px rgba(0, 112, 209, .26);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 18px 38px -12px rgba(20, 15, 5, .9),
+    0 0 26px rgba(184, 126, 25, .26);
   backdrop-filter: blur(18px) saturate(160%);
   -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
@@ -901,95 +975,95 @@ html body .mirage-page :is(
 .mirage-powerup-btn {
   border-radius: 14px;
   background:
-    linear-gradient(160deg, rgba(16, 28, 62, .82) 0%, rgba(8, 15, 34, .92) 100%);
-  border: 1px solid rgba(148, 197, 255, .22);
-  color: var(--ps5-ink);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .12);
+    linear-gradient(160deg, rgba(56, 44, 22, .82) 0%, rgba(31, 24, 11, .92) 100%);
+  border: 1px solid rgba(242, 212, 161, .22);
+  color: var(--sand-ink);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .12);
   transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
 }
 
 .mirage-powerup-btn.is-lasso-btn {
-  --mirage-power: #38bdf8;
-  --mirage-power-deep: #00439c;
+  --mirage-power: #e1ab4f;
+  --mirage-power-deep: #895e13;
 }
 
 .mirage-powerup-slot.is-ready,
 .mirage-powerup-btn.is-ready {
   background:
-    radial-gradient(circle at 50% 25%, rgba(0, 112, 209, .4), transparent 68%),
-    linear-gradient(160deg, rgba(18, 34, 76, .92) 0%, rgba(9, 18, 42, .96) 100%);
-  border-color: rgba(56, 189, 248, .65);
-  color: var(--ps5-ink-bright);
+    radial-gradient(circle at 50% 25%, rgba(184, 126, 25, .4), transparent 68%),
+    linear-gradient(160deg, rgba(69, 53, 25, .92) 0%, rgba(38, 29, 13, .96) 100%);
+  border-color: rgba(225, 171, 79, .65);
+  color: var(--sand-ink-bright);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .25),
-    0 0 18px rgba(0, 112, 209, .48);
+    inset 0 1px 0 rgba(250, 242, 228, .25),
+    0 0 18px rgba(184, 126, 25, .48);
 }
 
 .mirage-powerup-slot.is-ready:hover,
 .mirage-powerup-btn.is-ready:hover:not(:disabled) {
   transform: translateY(-2px);
-  border-color: var(--ps5-border-focus);
-  box-shadow: var(--ps5-glow-sm);
+  border-color: var(--sand-border-focus);
+  box-shadow: var(--sand-glow-sm);
 }
 
 .mirage-powerup-slot.is-active,
 .mirage-powerup-btn.is-active {
   background:
-    radial-gradient(circle at 50% 30%, rgba(56, 189, 248, .5), transparent 70%),
-    linear-gradient(160deg, rgba(0, 112, 209, .78) 0%, rgba(12, 26, 62, .96) 100%);
-  border-color: var(--ps5-border-focus);
+    radial-gradient(circle at 50% 30%, rgba(225, 171, 79, .5), transparent 70%),
+    linear-gradient(160deg, rgba(184, 126, 25, .78) 0%, rgba(56, 42, 18, .96) 100%);
+  border-color: var(--sand-border-focus);
   box-shadow:
-    0 0 0 2px var(--ps5-border-focus),
-    0 0 24px rgba(56, 189, 248, .68);
+    0 0 0 2px var(--sand-border-focus),
+    0 0 24px rgba(225, 171, 79, .68);
 }
 
 .mirage-powerup-key {
   border-radius: 999px;
-  background: linear-gradient(145deg, #162856 0%, #09132e 100%);
-  border: 1px solid rgba(125, 211, 252, .48);
-  color: var(--ps5-cyan-soft);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .2);
+  background: linear-gradient(145deg, #4e3c1e 0%, #2a1f0d 100%);
+  border: 1px solid rgba(237, 201, 140, .48);
+  color: var(--sand-sand-light);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .2);
 }
 
 .mirage-powerup-count {
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  border: 1px solid var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 0 10px rgba(56, 189, 248, .55);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  border: 1px solid var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 0 10px rgba(225, 171, 79, .55);
 }
 
 .mirage-powerup-name,
 .mirage-powerup-btn-name {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
   letter-spacing: .08em;
 }
 
 .mirage-powerup-progress-fill.is-lasso {
-  background: linear-gradient(90deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
+  background: linear-gradient(90deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
 }
 
-/* Contrôles tactiles DualSense */
+/* Contrôles tactiles liseré lumineux */
 .mirage-touch-btn,
 .mirage-mobile-controls button {
   border-radius: 16px;
-  background: rgba(10, 20, 48, .76);
-  border: 1px solid rgba(125, 211, 252, .38);
-  color: var(--ps5-ink-bright);
+  background: rgba(43, 33, 15, .76);
+  border: 1px solid rgba(237, 201, 140, .38);
+  color: var(--sand-ink-bright);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 10px 24px rgba(2, 6, 23, .65);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 10px 24px rgba(20, 15, 5, .65);
   backdrop-filter: blur(12px);
 }
 
 .mirage-touch-btn:active,
 .mirage-mobile-controls button:active {
-  background: linear-gradient(135deg, rgba(0, 112, 209, .68), rgba(56, 189, 248, .48));
-  border-color: var(--ps5-border-focus);
+  background: linear-gradient(135deg, rgba(184, 126, 25, .68), rgba(225, 171, 79, .48));
+  border-color: var(--sand-border-focus);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   5. OVERLAYS PS5 — Accueil, Modes, Pistes, Coupes, Pause, Compte à rebours
+   5. OVERLAYS Mirage Rush — Accueil, Modes, Pistes, Coupes, Pause, Compte à rebours
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-overlay,
@@ -997,12 +1071,12 @@ html body .mirage-page :is(
 .mirage-game-shell.is-low-graphics .mirage-overlay,
 .mirage-game-shell.is-low-graphics .mirage-intro-overlay {
   background:
-    radial-gradient(90% 75% at 50% 0%, rgba(0, 112, 209, .34), transparent 66%),
-    radial-gradient(75% 65% at 50% 100%, rgba(56, 189, 248, .15), transparent 68%),
-    linear-gradient(180deg, rgba(4, 9, 24, .84) 0%, rgba(5, 11, 28, .92) 100%);
+    radial-gradient(90% 75% at 50% 0%, rgba(184, 126, 25, .34), transparent 66%),
+    radial-gradient(75% 65% at 50% 100%, rgba(225, 171, 79, .15), transparent 68%),
+    linear-gradient(180deg, rgba(22, 16, 6, .84) 0%, rgba(25, 19, 8, .92) 100%);
   backdrop-filter: blur(22px) saturate(155%);
   -webkit-backdrop-filter: blur(22px) saturate(155%);
-  color: var(--ps5-ink);
+  color: var(--sand-ink);
 }
 
 .mirage-overlay-kicker {
@@ -1011,64 +1085,64 @@ html body .mirage-page :is(
   gap: 8px;
   padding: 5px 14px;
   border-radius: 999px;
-  background: rgba(0, 112, 209, .24);
-  border: 1px solid rgba(56, 189, 248, .42);
-  color: var(--ps5-cyan-soft);
+  background: rgba(184, 126, 25, .24);
+  border: 1px solid rgba(225, 171, 79, .42);
+  color: var(--sand-sand-light);
   font-size: 10.5px;
   letter-spacing: .18em;
   text-transform: uppercase;
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .18);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .18);
 }
 
 .mirage-overlay h2 {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
   letter-spacing: .06em;
   text-transform: uppercase;
-  text-shadow: 0 4px 24px rgba(0, 112, 209, .45);
+  text-shadow: 0 4px 24px rgba(184, 126, 25, .45);
 }
 
 .mirage-overlay h2 em {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
   font-style: normal;
 }
 
 .mirage-overlay p {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-selected-mode-pill {
   border-radius: 999px;
-  background: rgba(0, 112, 209, .22);
-  border: 1px solid rgba(125, 211, 252, .38);
-  color: var(--ps5-ice);
+  background: rgba(184, 126, 25, .22);
+  border: 1px solid rgba(237, 201, 140, .38);
+  color: var(--sand-cream);
 }
 
 .mirage-selected-mode-pill i {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
 }
 
 .mirage-stage-loading {
   border-radius: 999px;
-  background: rgba(9, 18, 42, .82);
-  border: 1px solid rgba(125, 211, 252, .32);
-  color: var(--ps5-ink-soft);
+  background: rgba(38, 29, 13, .82);
+  border: 1px solid rgba(237, 201, 140, .32);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-stage-loading::before {
-  background: var(--ps5-cyan);
-  box-shadow: 0 0 10px var(--ps5-cyan);
+  background: var(--sand-gold-light);
+  box-shadow: 0 0 10px var(--sand-gold-light);
 }
 
-/* ── 5.1 Cartes de mode (Cartes d'Activités PS5) ─────────────────────── */
+/* ── 5.1 Cartes de mode (Cartes d'Activités Mirage Rush) ─────────────────────── */
 .mirage-mode-picker button {
   position: relative;
   border-radius: 20px;
-  background: var(--ps5-card);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-ink);
+  background: var(--sand-card);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-ink);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 18px 38px -16px rgba(2, 6, 23, .88);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 18px 38px -16px rgba(20, 15, 5, .88);
   transition: transform .2s cubic-bezier(.22, 1, .36, 1), border-color .2s ease, box-shadow .2s ease, background .2s ease;
   overflow: hidden;
 }
@@ -1081,16 +1155,16 @@ html body .mirage-page :is(
   left: 12%;
   right: 12%;
   height: 2px;
-  background: var(--ps5-lightbar);
+  background: var(--sand-lightbar);
   opacity: .55;
   transition: opacity .2s ease;
 }
 
 .mirage-mode-picker button:hover {
   transform: translateY(-4px) scale(1.01);
-  background: var(--ps5-card-hover);
-  border-color: var(--ps5-border-focus);
-  box-shadow: var(--ps5-glow-focus);
+  background: var(--sand-card-hover);
+  border-color: var(--sand-border-focus);
+  box-shadow: var(--sand-glow-focus);
 }
 
 .mirage-mode-picker button:hover::before,
@@ -1101,308 +1175,308 @@ html body .mirage-page :is(
 
 .mirage-mode-picker button.is-active,
 .mirage-mode-picker button[aria-pressed="true"] {
-  background: var(--ps5-card-active);
-  border-color: var(--ps5-border-focus);
-  box-shadow: var(--ps5-glow-focus);
+  background: var(--sand-card-active);
+  border-color: var(--sand-border-focus);
+  box-shadow: var(--sand-glow-focus);
 }
 
 .mirage-mode-picker button strong {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
   letter-spacing: .08em;
 }
 
 .mirage-mode-picker button small {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-mode-icon,
 .mirage-mode-picker button .mirage-mode-symbol {
   border-radius: 14px;
   background:
-    radial-gradient(circle at 30% 25%, rgba(56, 189, 248, .35), rgba(0, 112, 209, .2) 60%, rgba(8, 16, 38, .9) 100%);
-  border: 1px solid rgba(125, 211, 252, .38);
-  color: var(--ps5-cyan-soft);
+    radial-gradient(circle at 30% 25%, rgba(225, 171, 79, .35), rgba(184, 126, 25, .2) 60%, rgba(34, 26, 12, .9) 100%);
+  border: 1px solid rgba(237, 201, 140, .38);
+  color: var(--sand-sand-light);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .22),
-    0 8px 20px -8px rgba(0, 112, 209, .5);
+    inset 0 1px 0 rgba(250, 242, 228, .22),
+    0 8px 20px -8px rgba(184, 126, 25, .5);
 }
 
 .mirage-mode-picker button[aria-pressed="true"] .mirage-mode-symbol {
-  color: var(--ps5-ink-bright);
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  border-color: var(--ps5-border-focus);
+  color: var(--sand-ink-bright);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  border-color: var(--sand-border-focus);
 }
 
 .mirage-mode-action,
 .mirage-mode-picker.is-actions .mirage-mode-action .mirage-mode-cta {
   border-radius: 999px;
-  background: rgba(0, 112, 209, .28);
-  border: 1px solid rgba(125, 211, 252, .45);
-  color: var(--ps5-ink-bright);
+  background: rgba(184, 126, 25, .28);
+  border: 1px solid rgba(237, 201, 140, .45);
+  color: var(--sand-ink-bright);
   transition: background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease;
 }
 
 .mirage-mode-picker button:hover .mirage-mode-action,
 .mirage-mode-picker button.is-active .mirage-mode-action,
 .mirage-mode-picker.is-actions .mirage-mode-action:hover .mirage-mode-cta {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  border-color: var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 0 16px rgba(56, 189, 248, .55);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  border-color: var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 0 16px rgba(225, 171, 79, .55);
 }
 
-/* ── 5.2 Sélecteur de piste & de coupe (Course Picker PS5) ───────────── */
+/* ── 5.2 Sélecteur de piste & de coupe (Course Picker Mirage Rush) ───────────── */
 .mirage-course-picker {
   border-radius: 20px;
-  background: rgba(7, 14, 34, .78);
-  border: 1px solid var(--ps5-border-mid);
+  background: rgba(31, 23, 10, .78);
+  border: 1px solid var(--sand-border-mid);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .14),
-    0 20px 44px -18px rgba(2, 6, 23, .88);
+    inset 0 1px 0 rgba(250, 242, 228, .14),
+    0 20px 44px -18px rgba(20, 15, 5, .88);
 }
 
 .mirage-course-picker-head > span {
-  color: var(--ps5-cyan-soft);
+  color: var(--sand-sand-light);
   letter-spacing: .16em;
 }
 
 .mirage-course-picker-head > small {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
-/* Cartes de piste (Track Cards PS5) */
+/* Cartes de piste (Track Cards Mirage Rush) */
 .mirage-map-card {
   border-radius: 16px;
   background:
-    linear-gradient(160deg, rgba(16, 28, 62, .9) 0%, rgba(8, 14, 34, .96) 100%);
-  border: 1px solid rgba(148, 197, 255, .24);
-  color: var(--ps5-ink);
+    linear-gradient(160deg, rgba(56, 44, 22, .9) 0%, rgba(31, 24, 11, .96) 100%);
+  border: 1px solid rgba(242, 212, 161, .24);
+  color: var(--sand-ink);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .14),
-    0 12px 26px -12px rgba(2, 6, 23, .85);
+    inset 0 1px 0 rgba(250, 242, 228, .14),
+    0 12px 26px -12px rgba(20, 15, 5, .85);
   transition: transform .18s cubic-bezier(.22, 1, .36, 1), border-color .18s ease, box-shadow .18s ease;
 }
 
 .mirage-map-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(125, 211, 252, .65);
+  border-color: rgba(237, 201, 140, .65);
   box-shadow:
-    0 0 0 1px rgba(224, 242, 254, .5),
-    0 16px 32px -12px rgba(0, 112, 209, .55);
+    0 0 0 1px rgba(250, 242, 228, .5),
+    0 16px 32px -12px rgba(184, 126, 25, .55);
 }
 
 .mirage-map-card.is-selected,
 .mirage-map-card[aria-pressed="true"] {
-  border-color: var(--ps5-border-focus);
+  border-color: var(--sand-border-focus);
   background:
-    linear-gradient(160deg, rgba(0, 112, 209, .4) 0%, rgba(12, 24, 56, .96) 100%);
-  box-shadow: var(--ps5-glow-focus);
+    linear-gradient(160deg, rgba(184, 126, 25, .4) 0%, rgba(51, 38, 17, .96) 100%);
+  box-shadow: var(--sand-glow-focus);
 }
 
 .mirage-map-visual::after {
-  background: linear-gradient(180deg, rgba(4, 9, 24, .18), transparent 45%, rgba(6, 12, 30, .42));
-  box-shadow: inset 0 -1px rgba(125, 211, 252, .18);
+  background: linear-gradient(180deg, rgba(22, 16, 6, .18), transparent 45%, rgba(27, 20, 9, .42));
+  box-shadow: inset 0 -1px rgba(237, 201, 140, .18);
 }
 
 .mirage-map-number {
-  background: rgba(6, 12, 30, .78);
-  border: 1px solid rgba(125, 211, 252, .3);
-  color: var(--ps5-ice);
+  background: rgba(27, 20, 9, .78);
+  border: 1px solid rgba(237, 201, 140, .3);
+  color: var(--sand-cream);
 }
 
 .mirage-map-name {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-map-sub {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-map-check,
 .mirage-map-card[aria-pressed="true"] .mirage-map-check {
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  border: 1px solid var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 0 14px rgba(56, 189, 248, .7);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  border: 1px solid var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 0 14px rgba(225, 171, 79, .7);
 }
 
 .mirage-map-card[aria-pressed="true"] .mirage-map-selected,
 .mirage-map-card.is-imposed .mirage-map-selected {
-  background: rgba(0, 112, 209, .24);
-  color: var(--ps5-cyan-soft);
+  background: rgba(184, 126, 25, .24);
+  color: var(--sand-sand-light);
 }
 
 /* Sélecteur du nombre de cavaliers et champ de pseudo en Coupe */
 .mirage-lane-picker {
   border-radius: 14px;
-  background: rgba(9, 17, 40, .82);
-  border: 1px solid var(--ps5-border);
+  background: rgba(36, 28, 13, .82);
+  border: 1px solid var(--sand-border);
 }
 
 .mirage-lane-picker > span,
 .mirage-cup-name-field > span {
-  color: var(--ps5-cyan-soft);
+  color: var(--sand-sand-light);
   letter-spacing: .14em;
 }
 
 .mirage-lane-buttons button {
   border-radius: 999px;
-  background: rgba(14, 26, 58, .85);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-ink-soft);
+  background: rgba(53, 40, 19, .85);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-lane-buttons button.is-active {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-bright) 100%);
-  border-color: var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 0 14px rgba(0, 112, 209, .55);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-bright) 100%);
+  border-color: var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 0 14px rgba(184, 126, 25, .55);
 }
 
 .mirage-cup-name-field {
   border-radius: 14px;
-  background: rgba(9, 17, 40, .84);
-  border: 1px solid var(--ps5-border-mid);
+  background: rgba(36, 28, 13, .84);
+  border: 1px solid var(--sand-border-mid);
 }
 
 .mirage-cup-name-field input {
   border-radius: 10px;
-  background: rgba(4, 9, 24, .9);
-  border: 1px solid rgba(125, 211, 252, .32);
-  color: var(--ps5-ink-bright);
+  background: rgba(22, 16, 6, .9);
+  border: 1px solid rgba(237, 201, 140, .32);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-cup-name-field input::placeholder {
-  color: var(--ps5-ink-muted);
+  color: var(--sand-ink-muted);
 }
 
 .mirage-cup-name-field input:focus,
 .mirage-cup-name-field input:focus-visible {
   outline: none;
-  border-color: var(--ps5-border-focus);
-  box-shadow: 0 0 0 2px rgba(0, 112, 209, .55);
+  border-color: var(--sand-border-focus);
+  box-shadow: 0 0 0 2px rgba(184, 126, 25, .55);
 }
 
-/* ── 5.3 Cartes de Coupe (PS5 Tournament Cards) ──────────────────────── */
+/* ── 5.3 Cartes de Coupe (Mirage Rush cartes de coupe) ──────────────────────── */
 .mirage-cup-card {
   position: relative;
   border-radius: 18px;
   background:
-    radial-gradient(120% 90% at 50% 0%, rgba(0, 112, 209, .28), transparent 62%),
-    linear-gradient(165deg, rgba(16, 28, 64, .92) 0%, rgba(8, 14, 34, .97) 100%);
-  border: 1px solid rgba(125, 211, 252, .32);
-  color: var(--ps5-ink);
+    radial-gradient(120% 90% at 50% 0%, rgba(184, 126, 25, .28), transparent 62%),
+    linear-gradient(165deg, rgba(58, 45, 22, .92) 0%, rgba(31, 24, 11, .97) 100%);
+  border: 1px solid rgba(237, 201, 140, .32);
+  color: var(--sand-ink);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 16px 36px -16px rgba(2, 6, 23, .9);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 16px 36px -16px rgba(20, 15, 5, .9);
   transition: transform .2s cubic-bezier(.22, 1, .36, 1), border-color .2s ease, box-shadow .2s ease;
 }
 
 .mirage-cup-card:hover:not(:disabled) {
   transform: translateY(-4px);
-  border-color: var(--ps5-border-focus);
-  box-shadow: var(--ps5-glow-focus);
+  border-color: var(--sand-border-focus);
+  box-shadow: var(--sand-glow-focus);
 }
 
 .mirage-cup-card.is-selected,
 .mirage-cup-card[aria-pressed="true"] {
-  border-color: var(--ps5-border-focus);
-  box-shadow: var(--ps5-glow-focus);
+  border-color: var(--sand-border-focus);
+  box-shadow: var(--sand-glow-focus);
 }
 
 /* Variantes chromatiques par Coupe (Or Désert, Émeraude Vents, Saphir Grand Tour, Rubis Légendes) */
 .mirage-cup-card.is-desert {
   background:
     radial-gradient(120% 90% at 50% 0%, rgba(245, 185, 66, .24), transparent 62%),
-    linear-gradient(165deg, rgba(22, 28, 60, .92) 0%, rgba(8, 14, 34, .97) 100%);
+    linear-gradient(165deg, rgba(55, 45, 27, .92) 0%, rgba(31, 24, 11, .97) 100%);
   border-color: rgba(245, 185, 66, .42);
 }
 
 .mirage-cup-card.is-winds {
   background:
     radial-gradient(120% 90% at 50% 0%, rgba(45, 212, 191, .24), transparent 62%),
-    linear-gradient(165deg, rgba(12, 34, 54, .92) 0%, rgba(7, 16, 32, .97) 100%);
+    linear-gradient(165deg, rgba(49, 37, 17, .92) 0%, rgba(29, 22, 10, .97) 100%);
   border-color: rgba(45, 212, 191, .42);
 }
 
 .mirage-cup-card.is-worldtour {
   background:
-    radial-gradient(120% 90% at 50% 0%, rgba(56, 189, 248, .28), transparent 62%),
-    linear-gradient(165deg, rgba(14, 30, 68, .92) 0%, rgba(7, 15, 36, .97) 100%);
-  border-color: rgba(96, 165, 250, .48);
+    radial-gradient(120% 90% at 50% 0%, rgba(225, 171, 79, .28), transparent 62%),
+    linear-gradient(165deg, rgba(62, 46, 20, .92) 0%, rgba(33, 24, 10, .97) 100%);
+  border-color: rgba(232, 189, 114, .48);
 }
 
 .mirage-cup-card.is-legends {
   background:
     radial-gradient(120% 90% at 50% 0%, rgba(244, 63, 94, .26), transparent 62%),
-    linear-gradient(165deg, rgba(38, 16, 46, .92) 0%, rgba(12, 10, 28, .97) 100%);
+    linear-gradient(165deg, rgba(42, 34, 20, .92) 0%, rgba(26, 21, 12, .97) 100%);
   border-color: rgba(251, 113, 133, .45);
 }
 
 .mirage-cup-card.is-locked {
-  background: linear-gradient(165deg, rgba(14, 22, 46, .88), rgba(7, 12, 28, .94));
-  border-color: rgba(148, 163, 184, .22);
+  background: linear-gradient(165deg, rgba(42, 33, 18, .88), rgba(25, 20, 10, .94));
+  border-color: rgba(180, 170, 152, .22);
 }
 
 .mirage-cup-emblem {
   border-radius: 16px;
   background:
-    radial-gradient(circle at 50% 35%, rgba(56, 189, 248, .24), rgba(6, 12, 30, .88) 72%);
-  border: 1px solid rgba(148, 197, 255, .28);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .18);
+    radial-gradient(circle at 50% 35%, rgba(225, 171, 79, .24), rgba(27, 20, 9, .88) 72%);
+  border: 1px solid rgba(242, 212, 161, .28);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .18);
 }
 
 .mirage-cup-card-kicker {
-  color: var(--ps5-cyan-soft);
+  color: var(--sand-sand-light);
   letter-spacing: .14em;
 }
 
 .mirage-cup-card-title {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-cup-card-sub {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-cup-reward {
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(245, 185, 66, .16), rgba(8, 15, 36, .84));
+  background: linear-gradient(135deg, rgba(245, 185, 66, .16), rgba(33, 25, 11, .84));
   border: 1px solid rgba(245, 185, 66, .45);
   box-shadow: inset 0 1px 0 rgba(255, 236, 179, .16);
 }
 
 .mirage-cup-reward-copy > small {
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
 }
 
 .mirage-cup-reward-copy > strong {
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
   text-shadow: 0 2px 12px rgba(245, 185, 66, .42);
 }
 
 .mirage-cup-reward-copy > em {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
   font-style: normal;
 }
 
 .mirage-cup-card-action {
-  border-top: 1px solid rgba(148, 197, 255, .16);
-  color: var(--ps5-ink-bright);
+  border-top: 1px solid rgba(242, 212, 161, .16);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-cup-card-action b {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 4px 14px rgba(0, 112, 209, .55);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 4px 14px rgba(184, 126, 25, .55);
 }
 
 .mirage-cup-card.is-locked .mirage-cup-card-action {
-  color: var(--ps5-ink-muted);
+  color: var(--sand-ink-muted);
 }
 
-/* ── 5.4 Boutons d'action principaux & secondaires PS5 ───────────────── */
+/* ── 5.4 Boutons d'action principaux & secondaires Mirage Rush ───────────────── */
 .mirage-start-button {
   display: inline-flex;
   align-items: center;
@@ -1410,24 +1484,24 @@ html body .mirage-page :is(
   gap: 10px;
   padding: 13px 28px;
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-bright) 52%, var(--ps5-cyan) 100%);
-  border: 1px solid var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-bright) 52%, var(--sand-gold-light) 100%);
+  border: 1px solid var(--sand-border-focus);
+  color: var(--sand-ink-bright);
   font-size: 13px;
   letter-spacing: .16em;
   text-transform: uppercase;
   cursor: pointer;
   box-shadow:
-    inset 0 1px 0 rgba(248, 251, 255, .45),
-    0 14px 34px -8px rgba(0, 112, 209, .72),
-    0 0 24px rgba(56, 189, 248, .35);
+    inset 0 1px 0 rgba(254, 252, 249, .45),
+    0 14px 34px -8px rgba(184, 126, 25, .72),
+    0 0 24px rgba(225, 171, 79, .35);
   transition: transform .18s cubic-bezier(.22, 1, .36, 1), box-shadow .18s ease, filter .18s ease;
 }
 
 .mirage-start-button:hover:not(:disabled) {
   transform: translateY(-2px) scale(1.015);
   filter: brightness(1.08);
-  box-shadow: var(--ps5-glow-focus);
+  box-shadow: var(--sand-glow-focus);
 }
 
 .mirage-ghost-button,
@@ -1440,14 +1514,14 @@ html body .mirage-page :is(
   gap: 8px;
   padding: 11px 22px;
   border-radius: 999px;
-  background: rgba(12, 22, 50, .84);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-ink);
+  background: rgba(45, 35, 17, .84);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-ink);
   font-size: 11.5px;
   letter-spacing: .13em;
   text-transform: uppercase;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .16);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .16);
   transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 
@@ -1456,47 +1530,47 @@ html body .mirage-page :is(
 .mirage-share-button:hover:not(:disabled),
 .mirage-fullscreen-launch:hover:not(:disabled) {
   transform: translateY(-2px);
-  background: linear-gradient(135deg, rgba(0, 112, 209, .4), rgba(14, 28, 64, .94));
-  border-color: var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: var(--ps5-glow-sm);
+  background: linear-gradient(135deg, rgba(184, 126, 25, .4), rgba(58, 44, 20, .94));
+  border-color: var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: var(--sand-glow-sm);
 }
 
 .mirage-keys-hint kbd {
   border-radius: 7px;
-  background: linear-gradient(145deg, #162856 0%, #09132e 100%);
-  border: 1px solid rgba(125, 211, 252, .42);
-  color: var(--ps5-cyan-soft);
+  background: linear-gradient(145deg, #4e3c1e 0%, #2a1f0d 100%);
+  border: 1px solid rgba(237, 201, 140, .42);
+  color: var(--sand-sand-light);
 }
 
 .mirage-pause-stats span {
   border-radius: 999px;
-  background: rgba(10, 20, 46, .82);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-ink-soft);
+  background: rgba(42, 32, 14, .82);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-pause-stats b {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
 }
 
-/* Compte à rebours holographique PS5 */
+/* Compte à rebours holographique Mirage Rush */
 .mirage-countdown-overlay,
 .mirage-game-shell.is-low-graphics .mirage-countdown-overlay {
-  background: radial-gradient(60% 60% at 50% 46%, rgba(0, 112, 209, .28), rgba(4, 9, 24, .82));
+  background: radial-gradient(60% 60% at 50% 46%, rgba(184, 126, 25, .28), rgba(22, 16, 6, .82));
   backdrop-filter: blur(8px);
 }
 
 .mirage-countdown-number {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
   text-shadow:
-    0 0 24px var(--ps5-cyan),
-    0 0 56px var(--ps5-blue),
-    0 10px 30px rgba(2, 6, 23, .9);
+    0 0 24px var(--sand-gold-light),
+    0 0 56px var(--sand-amber),
+    0 10px 30px rgba(20, 15, 5, .9);
 }
 
 .mirage-countdown-go {
-  background: linear-gradient(120deg, #f8fbff, #38bdf8, #0070d1, #f8fbff);
+  background: linear-gradient(120deg, #fefcf9, #e1ab4f, #b87e19, #fefcf9);
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -1508,27 +1582,27 @@ html body .mirage-page :is(
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-final-score {
-  background: linear-gradient(180deg, #f8fbff 0%, #bae6fd 55%, #38bdf8 100%);
+  background: linear-gradient(180deg, #fefcf9 0%, #f5e2c2 55%, #e1ab4f 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 6px 24px rgba(0, 112, 209, .55));
+  filter: drop-shadow(0 6px 24px rgba(184, 126, 25, .55));
 }
 
 .mirage-record-badge {
-  background: linear-gradient(120deg, var(--ps5-blue), var(--ps5-cyan), var(--ps5-blue));
+  background: linear-gradient(120deg, var(--sand-amber), var(--sand-gold-light), var(--sand-amber));
   background-size: 200% 100%;
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-result-stats {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-result-stats span {
-  background: rgba(10, 20, 46, .78);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-ink);
+  background: rgba(42, 32, 14, .78);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-ink);
 }
 
 .mirage-coin-gain {
@@ -1539,53 +1613,53 @@ html body .mirage-page :is(
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(245, 185, 66, .28), rgba(180, 83, 9, .32));
   border: 1px solid rgba(255, 216, 107, .65);
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
   box-shadow: 0 0 18px rgba(245, 185, 66, .35);
 }
 
-/* Carte de progression XP style Trophée PS5 */
+/* Carte de progression XP style Trophée Mirage Rush */
 .mirage-xp-award {
   border-radius: 16px;
   background:
-    radial-gradient(120% 100% at 0% 0%, rgba(0, 112, 209, .32), transparent 65%),
-    rgba(9, 17, 40, .88);
-  border: 1px solid var(--ps5-border-mid);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .16);
+    radial-gradient(120% 100% at 0% 0%, rgba(184, 126, 25, .32), transparent 65%),
+    rgba(36, 28, 13, .88);
+  border: 1px solid var(--sand-border-mid);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .16);
 }
 
 .mirage-xp-award strong,
 .mirage-xp-award-level {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-xp-award-delta {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
 }
 
 .mirage-xp-award-bar,
 .mirage-xp-track {
-  background: rgba(4, 9, 24, .88);
-  border: 1px solid rgba(125, 211, 252, .24);
+  background: rgba(22, 16, 6, .88);
+  border: 1px solid rgba(237, 201, 140, .24);
 }
 
 .mirage-xp-award-fill {
-  background: linear-gradient(90deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  box-shadow: 0 0 12px var(--ps5-cyan);
+  background: linear-gradient(90deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  box-shadow: 0 0 12px var(--sand-gold-light);
 }
 
 /* Tableau de classement Duel / En ligne (MirageScoreboard) */
 .mirage-scoreboard-wrap {
   border-radius: 18px;
-  background: rgba(7, 14, 34, .88);
-  border: 1px solid var(--ps5-border-mid);
+  background: rgba(31, 23, 10, .88);
+  border: 1px solid var(--sand-border-mid);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .14),
-    0 18px 40px -16px rgba(2, 6, 23, .9);
+    inset 0 1px 0 rgba(250, 242, 228, .14),
+    0 18px 40px -16px rgba(20, 15, 5, .9);
 }
 
 .mirage-scoreboard thead th {
-  color: var(--ps5-cyan-soft);
-  border-bottom: 1px solid var(--ps5-border);
+  color: var(--sand-sand-light);
+  border-bottom: 1px solid var(--sand-border);
   font-size: 10px;
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -1593,37 +1667,37 @@ html body .mirage-page :is(
 
 .mirage-scoreboard tbody tr,
 .mirage-sb-row {
-  background: rgba(12, 22, 50, .66);
-  border-bottom: 1px solid rgba(148, 197, 255, .12);
+  background: rgba(45, 35, 17, .66);
+  border-bottom: 1px solid rgba(242, 212, 161, .12);
   transition: background .15s ease;
 }
 
 .mirage-scoreboard tbody tr.is-pos-1,
 .mirage-sb-row.is-pos-1 {
-  background: linear-gradient(90deg, rgba(245, 185, 66, .24) 0%, rgba(14, 26, 58, .8) 65%);
+  background: linear-gradient(90deg, rgba(245, 185, 66, .24) 0%, rgba(53, 40, 19, .8) 65%);
 }
 
 .mirage-scoreboard tbody tr.is-you,
 .mirage-sb-row.is-you {
-  background: linear-gradient(90deg, rgba(0, 112, 209, .4) 0%, rgba(14, 28, 66, .9) 100%);
-  box-shadow: inset 3px 0 0 var(--ps5-cyan);
+  background: linear-gradient(90deg, rgba(184, 126, 25, .4) 0%, rgba(60, 45, 20, .9) 100%);
+  box-shadow: inset 3px 0 0 var(--sand-gold-light);
 }
 
 .mirage-sb-medal {
-  border-color: rgba(148, 197, 255, .28);
-  background: rgba(15, 27, 60, .85);
-  color: var(--ps5-ink);
+  border-color: rgba(242, 212, 161, .28);
+  background: rgba(55, 42, 20, .85);
+  color: var(--sand-ink);
 }
 
 .mirage-sb-row.is-pos-1 .mirage-sb-medal {
-  border-color: var(--ps5-gold-bright);
-  background: linear-gradient(145deg, var(--ps5-gold-bright), var(--ps5-gold));
-  color: var(--ps5-ink-dark);
+  border-color: var(--sand-gold-bright);
+  background: linear-gradient(145deg, var(--sand-gold-bright), var(--sand-gold));
+  color: var(--sand-ink-dark);
   box-shadow: 0 0 16px rgba(245, 185, 66, .48);
 }
 
 .mirage-sb-name {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-sb-tag {
@@ -1631,135 +1705,135 @@ html body .mirage-page :is(
   padding: 2px 8px;
   font-size: 9.5px;
   letter-spacing: .1em;
-  background: rgba(0, 112, 209, .28);
-  border: 1px solid rgba(125, 211, 252, .42);
-  color: var(--ps5-ice);
+  background: rgba(184, 126, 25, .28);
+  border: 1px solid rgba(237, 201, 140, .42);
+  color: var(--sand-cream);
 }
 
 .mirage-sb-tag.is-you {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  border-color: var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  border-color: var(--sand-border-focus);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-sb-tag.is-lead {
   background: rgba(245, 185, 66, .24);
   border-color: rgba(255, 216, 107, .6);
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
 }
 
 .mirage-sb-time strong,
 .mirage-sb-pts strong,
 .mirage-sb-pts {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-sb-time small,
 .mirage-sb-pts small {
-  color: var(--ps5-ink-muted);
+  color: var(--sand-ink-muted);
 }
 
 /* Classement de la Coupe (MirageCupResults) */
 .mirage-cup-results {
   border-radius: 20px;
   background:
-    radial-gradient(110% 90% at 50% 0%, rgba(0, 112, 209, .28), transparent 65%),
-    rgba(7, 14, 34, .92);
-  border: 1px solid var(--ps5-border-mid);
+    radial-gradient(110% 90% at 50% 0%, rgba(184, 126, 25, .28), transparent 65%),
+    rgba(31, 23, 10, .92);
+  border: 1px solid var(--sand-border-mid);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 22px 48px -18px rgba(2, 6, 23, .92);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 22px 48px -18px rgba(20, 15, 5, .92);
 }
 
 .mirage-cup-row {
   border-radius: 14px;
-  background: rgba(13, 24, 54, .78);
-  border: 1px solid rgba(148, 197, 255, .18);
+  background: rgba(49, 38, 18, .78);
+  border: 1px solid rgba(242, 212, 161, .18);
 }
 
 .mirage-cup-row.is-leader {
   border-color: rgba(245, 185, 66, .55);
-  background: linear-gradient(90deg, rgba(245, 185, 66, .2) 0%, rgba(14, 26, 58, .85) 100%);
+  background: linear-gradient(90deg, rgba(245, 185, 66, .2) 0%, rgba(53, 40, 19, .85) 100%);
 }
 
 .mirage-cup-row.is-player,
 .mirage-cup-row.is-me {
-  border-color: var(--ps5-border-focus);
-  background: linear-gradient(90deg, rgba(0, 112, 209, .38) 0%, rgba(14, 28, 64, .92) 100%);
-  box-shadow: 0 0 18px rgba(0, 112, 209, .38);
+  border-color: var(--sand-border-focus);
+  background: linear-gradient(90deg, rgba(184, 126, 25, .38) 0%, rgba(58, 44, 20, .92) 100%);
+  box-shadow: 0 0 18px rgba(184, 126, 25, .38);
 }
 
 .mirage-cup-rank {
-  border-color: rgba(148, 197, 255, .28);
-  background: rgba(10, 20, 46, .85);
-  color: var(--ps5-ink);
+  border-color: rgba(242, 212, 161, .28);
+  background: rgba(42, 32, 14, .85);
+  color: var(--sand-ink);
 }
 
 .mirage-cup-rank.is-place-1 {
-  border-color: var(--ps5-gold-bright);
-  background: linear-gradient(140deg, var(--ps5-gold-bright), var(--ps5-gold));
-  color: var(--ps5-ink-dark);
+  border-color: var(--sand-gold-bright);
+  background: linear-gradient(140deg, var(--sand-gold-bright), var(--sand-gold));
+  color: var(--sand-ink-dark);
 }
 
 .mirage-cup-name strong {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-cup-name small {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-cup-name i {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-cyan) 100%);
-  color: var(--ps5-ink-bright);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-gold-light) 100%);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-cup-total b,
 .mirage-cup-gained strong {
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
   text-shadow: 0 0 18px rgba(245, 185, 66, .38);
 }
 
 .mirage-cup-progress li {
-  border-color: rgba(148, 197, 255, .2);
-  background: rgba(10, 20, 46, .72);
+  border-color: rgba(242, 212, 161, .2);
+  background: rgba(42, 32, 14, .72);
 }
 
 .mirage-cup-progress li.is-next {
-  border-color: var(--ps5-cyan);
-  color: var(--ps5-cyan-soft);
+  border-color: var(--sand-gold-light);
+  color: var(--sand-sand-light);
 }
 
 .mirage-cup-points-pill {
-  border-color: rgba(125, 211, 252, .32);
-  background: rgba(0, 112, 209, .18);
+  border-color: rgba(237, 201, 140, .32);
+  background: rgba(184, 126, 25, .18);
 }
 
 .mirage-cup-points-pill b {
-  color: var(--ps5-cyan-soft);
+  color: var(--sand-sand-light);
 }
 
-/* Écran du Trophée 3D (Cérémonie Trophée Platine / Or PS5) */
+/* Écran du Trophée 3D (Cérémonie Trophée Platine / Or Mirage Rush) */
 .mirage-trophy-screen {
   background:
     radial-gradient(65% 55% at 50% 36%, rgba(245, 185, 66, .22), transparent 65%),
-    radial-gradient(90% 75% at 50% 0%, rgba(0, 112, 209, .38), transparent 68%),
-    linear-gradient(180deg, rgba(4, 9, 24, .92) 0%, rgba(6, 12, 30, .96) 100%);
-  color: var(--ps5-ink);
+    radial-gradient(90% 75% at 50% 0%, rgba(184, 126, 25, .38), transparent 68%),
+    linear-gradient(180deg, rgba(22, 16, 6, .92) 0%, rgba(27, 20, 9, .96) 100%);
+  color: var(--sand-ink);
 }
 
 .mirage-trophy-panel {
   border-radius: 22px;
-  border: 1px solid var(--ps5-border-mid);
-  background: rgba(8, 16, 38, .82);
+  border: 1px solid var(--sand-border-mid);
+  background: rgba(34, 26, 12, .82);
   backdrop-filter: blur(18px);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 24px 56px rgba(2, 6, 23, .88);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 24px 56px rgba(20, 15, 5, .88);
 }
 
 .mirage-trophy-title {
-  background: linear-gradient(180deg, #f8fbff 0%, #fde68a 52%, #f5b942 100%);
+  background: linear-gradient(180deg, #fefcf9 0%, #fde68a 52%, #f5b942 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1767,50 +1841,50 @@ html body .mirage-page :is(
 }
 
 .mirage-trophy-name {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-trophy-lede {
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-trophy-stage {
   border-radius: 20px;
   background:
-    radial-gradient(circle at 50% 42%, rgba(0, 112, 209, .28), rgba(5, 10, 26, .9) 72%);
-  border: 1px solid rgba(125, 211, 252, .32);
+    radial-gradient(circle at 50% 42%, rgba(184, 126, 25, .28), rgba(23, 18, 8, .9) 72%);
+  border: 1px solid rgba(237, 201, 140, .32);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 20px 44px -18px rgba(2, 6, 23, .9);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 20px 44px -18px rgba(20, 15, 5, .9);
 }
 
 .mirage-trophy-purse {
   border-color: rgba(245, 185, 66, .45);
   background: rgba(245, 185, 66, .12);
-  color: var(--ps5-ink-soft);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-trophy-purse > span,
 .mirage-trophy-purse b {
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   7. PANNEAU LATÉRAL — PS5 Control Center, Cavalier & PlayStation Store
+   7. PANNEAU LATÉRAL — Mirage Rush Control Center, Cavalier & boutique du jeu
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-settings.panel-frame {
   position: relative;
   border-radius: 24px;
   background:
-    radial-gradient(120% 80% at 100% 0%, rgba(0, 112, 209, .24), transparent 60%),
-    linear-gradient(175deg, rgba(12, 22, 50, .9) 0%, rgba(6, 12, 28, .96) 100%);
-  border: 1px solid var(--ps5-border-mid);
+    radial-gradient(120% 80% at 100% 0%, rgba(184, 126, 25, .24), transparent 60%),
+    linear-gradient(175deg, rgba(45, 35, 17, .9) 0%, rgba(25, 19, 9, .96) 100%);
+  border: 1px solid var(--sand-border-mid);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .18),
-    0 26px 60px -20px rgba(2, 6, 23, .92),
-    0 0 36px -12px rgba(0, 112, 209, .24);
-  color: var(--ps5-ink);
+    inset 0 1px 0 rgba(250, 242, 228, .18),
+    0 26px 60px -20px rgba(20, 15, 5, .92),
+    0 0 36px -12px rgba(184, 126, 25, .24);
+  color: var(--sand-ink);
   backdrop-filter: blur(20px) saturate(155%);
   -webkit-backdrop-filter: blur(20px) saturate(155%);
   overflow: hidden;
@@ -1823,8 +1897,8 @@ html body .mirage-page :is(
   left: 10%;
   right: 10%;
   height: 2px;
-  background: var(--ps5-lightbar);
-  box-shadow: 0 0 14px rgba(56, 189, 248, .75);
+  background: var(--sand-lightbar);
+  box-shadow: 0 0 14px rgba(225, 171, 79, .75);
   pointer-events: none;
 }
 
@@ -1832,16 +1906,16 @@ html body .mirage-page :is(
 .mirage-settings-tabs {
   padding: 5px;
   border-radius: 16px;
-  background: rgba(5, 10, 26, .88);
-  border: 1px solid var(--ps5-border);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .08);
+  background: rgba(23, 18, 8, .88);
+  border: 1px solid var(--sand-border);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .08);
 }
 
 .mirage-settings-tabs button {
   border-radius: 12px;
   background: transparent;
   border: 1px solid transparent;
-  color: var(--ps5-ink-muted);
+  color: var(--sand-ink-muted);
   font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
@@ -1849,25 +1923,25 @@ html body .mirage-page :is(
 }
 
 .mirage-settings-tabs button:hover {
-  color: var(--ps5-ink-bright);
-  background: rgba(0, 112, 209, .18);
+  color: var(--sand-ink-bright);
+  background: rgba(184, 126, 25, .18);
 }
 
 .mirage-settings-tabs button.is-active {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-bright) 100%);
-  border-color: rgba(224, 242, 254, .65);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 6px 18px -4px rgba(0, 112, 209, .65);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-bright) 100%);
+  border-color: rgba(250, 242, 228, .65);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 6px 18px -4px rgba(184, 126, 25, .65);
 }
 
 .mirage-panel-kicker {
-  color: var(--ps5-cyan-soft);
+  color: var(--sand-sand-light);
   letter-spacing: .16em;
   text-transform: uppercase;
 }
 
 .mirage-panel-heading h2 {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 /* Cartes internes du panneau latéral */
@@ -1882,25 +1956,25 @@ html body .mirage-page :is(
 .mirage-board-message {
   border-radius: 18px;
   background:
-    linear-gradient(160deg, rgba(15, 27, 60, .78) 0%, rgba(8, 15, 36, .9) 100%);
-  border: 1px solid var(--ps5-border);
-  color: var(--ps5-ink);
+    linear-gradient(160deg, rgba(55, 42, 20, .78) 0%, rgba(33, 25, 11, .9) 100%);
+  border: 1px solid var(--sand-border);
+  color: var(--sand-ink);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .12),
-    0 12px 28px -14px rgba(2, 6, 23, .8);
+    inset 0 1px 0 rgba(250, 242, 228, .12),
+    0 12px 28px -14px rgba(20, 15, 5, .8);
 }
 
 .mirage-board-rank {
-  color: var(--ps5-ink-muted);
+  color: var(--sand-ink-muted);
 }
 
 .is-rank-1 .mirage-board-rank {
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
 }
 
 .mirage-board-footer {
-  color: var(--ps5-ink-muted);
-  border-top: 1px solid var(--ps5-border);
+  color: var(--sand-ink-muted);
+  border-top: 1px solid var(--sand-border);
 }
 
 /* Studio d'aperçu 3D du cavalier & cartes de tenues */
@@ -1908,121 +1982,121 @@ html body .mirage-page :is(
 .mirage-skin-stage {
   border-radius: 16px;
   background:
-    radial-gradient(circle at 50% 30%, rgba(0, 112, 209, .34), rgba(5, 10, 24, .95) 75%);
-  border: 1px solid rgba(125, 211, 252, .28);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .16);
+    radial-gradient(circle at 50% 30%, rgba(184, 126, 25, .34), rgba(22, 16, 7, .95) 75%);
+  border: 1px solid rgba(237, 201, 140, .28);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .16);
 }
 
 .mirage-skin-chip {
   border-radius: 14px;
-  background: rgba(12, 22, 50, .78);
-  border: 1px solid var(--ps5-border);
-  color: var(--ps5-ink);
+  background: rgba(45, 35, 17, .78);
+  border: 1px solid var(--sand-border);
+  color: var(--sand-ink);
 }
 
 .mirage-skin-tags i {
-  background: rgba(0, 112, 209, .22);
-  border: 1px solid rgba(125, 211, 252, .32);
-  color: var(--ps5-ice);
+  background: rgba(184, 126, 25, .22);
+  border: 1px solid rgba(237, 201, 140, .32);
+  color: var(--sand-cream);
 }
 
 .mirage-skin-name {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-preset-btn {
   border-radius: 999px;
-  background: rgba(12, 22, 50, .85);
-  border: 1px solid var(--ps5-border-mid);
-  color: var(--ps5-ink-soft);
+  background: rgba(45, 35, 17, .85);
+  border: 1px solid var(--sand-border-mid);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-preset-btn:hover,
 .mirage-preset-btn.is-active {
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-bright) 100%);
-  border-color: var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: 0 0 14px rgba(0, 112, 209, .55);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-bright) 100%);
+  border-color: var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: 0 0 14px rgba(184, 126, 25, .55);
 }
 
-/* Portefeuille Or & Boutique PlayStation Store */
+/* Portefeuille Or & Boutique boutique du jeu */
 .mirage-wallet,
 .mirage-wallet-chip {
   border-radius: 999px;
   background: linear-gradient(135deg, rgba(245, 185, 66, .24), rgba(180, 83, 9, .28));
   border: 1px solid rgba(255, 216, 107, .55);
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
 }
 
 .mirage-wallet b {
-  color: var(--ps5-gold-bright);
+  color: var(--sand-gold-bright);
 }
 
 .mirage-shop-card {
   border-radius: 16px;
   background:
-    linear-gradient(160deg, rgba(16, 28, 62, .84) 0%, rgba(8, 15, 36, .94) 100%);
-  border: 1px solid rgba(148, 197, 255, .2);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .12);
+    linear-gradient(160deg, rgba(56, 44, 22, .84) 0%, rgba(33, 25, 11, .94) 100%);
+  border: 1px solid rgba(242, 212, 161, .2);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .12);
   transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
 
 .mirage-shop-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(125, 211, 252, .55);
-  box-shadow: var(--ps5-glow-sm);
+  border-color: rgba(237, 201, 140, .55);
+  box-shadow: var(--sand-glow-sm);
 }
 
 .mirage-shop-card.is-equipped {
-  border-color: var(--ps5-border-focus);
+  border-color: var(--sand-border-focus);
   background:
-    linear-gradient(160deg, rgba(0, 112, 209, .34) 0%, rgba(11, 22, 52, .94) 100%);
+    linear-gradient(160deg, rgba(184, 126, 25, .34) 0%, rgba(47, 36, 16, .94) 100%);
   box-shadow:
-    0 0 0 1px var(--ps5-border-focus),
-    0 12px 26px -10px rgba(0, 112, 209, .55);
+    0 0 0 1px var(--sand-border-focus),
+    0 12px 26px -10px rgba(184, 126, 25, .55);
 }
 
 .mirage-shop-buy {
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-bright) 100%);
-  border: 1px solid rgba(224, 242, 254, .5);
-  color: var(--ps5-ink-bright);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-bright) 100%);
+  border: 1px solid rgba(250, 242, 228, .5);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-shop-card.is-equipped .mirage-shop-buy {
-  background: linear-gradient(135deg, var(--ps5-emerald) 0%, #059669 100%);
+  background: linear-gradient(135deg, var(--sand-emerald) 0%, #059669 100%);
   border-color: rgba(167, 243, 208, .65);
 }
 
-/* Règles et touches clavier (kbd) style touches DualSense */
+/* Règles et touches clavier (kbd) style touches liseré lumineux */
 .mirage-rule strong,
 .mirage-rule-power-pill,
 .mirage-rule-power-pill b {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-rule-power-pill i {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
 }
 
 .mirage-score-tip {
-  border-left: 3px solid var(--ps5-cyan);
-  background: rgba(0, 112, 209, .14);
-  color: var(--ps5-ink-soft);
+  border-left: 3px solid var(--sand-gold-light);
+  background: rgba(184, 126, 25, .14);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-controls kbd {
   border-radius: 8px;
-  background: linear-gradient(145deg, #162856 0%, #09132e 100%);
-  border: 1px solid rgba(125, 211, 252, .42);
-  color: var(--ps5-cyan-soft);
+  background: linear-gradient(145deg, #4e3c1e 0%, #2a1f0d 100%);
+  border: 1px solid rgba(237, 201, 140, .42);
+  color: var(--sand-sand-light);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .22),
-    0 3px 8px rgba(2, 6, 23, .6);
+    inset 0 1px 0 rgba(250, 242, 228, .22),
+    0 3px 8px rgba(20, 15, 5, .6);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   8. SALON MULTIJOUEUR EN LIGNE (MirageOnline — PS5 Game Base)
+   8. SALON MULTIJOUEUR EN LIGNE (MirageOnline — Mirage Rush salons en ligne)
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-lobby-panel,
@@ -2034,42 +2108,42 @@ html body .mirage-page :is(
 .mirage-room-finished-banner {
   border-radius: 22px;
   background:
-    radial-gradient(120% 90% at 0% 0%, rgba(0, 112, 209, .24), transparent 62%),
-    linear-gradient(170deg, rgba(12, 22, 50, .9) 0%, rgba(6, 12, 28, .96) 100%);
-  border: 1px solid var(--ps5-border-mid);
+    radial-gradient(120% 90% at 0% 0%, rgba(184, 126, 25, .24), transparent 62%),
+    linear-gradient(170deg, rgba(45, 35, 17, .9) 0%, rgba(25, 19, 9, .96) 100%);
+  border: 1px solid var(--sand-border-mid);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .16),
-    0 22px 50px -18px rgba(2, 6, 23, .9);
-  color: var(--ps5-ink);
+    inset 0 1px 0 rgba(250, 242, 228, .16),
+    0 22px 50px -18px rgba(20, 15, 5, .9);
+  color: var(--sand-ink);
 }
 
 .mirage-room-card,
 .mirage-room-seat-card {
   border-radius: 18px;
   background:
-    linear-gradient(160deg, rgba(16, 28, 62, .86) 0%, rgba(8, 15, 36, .94) 100%);
-  border: 1px solid rgba(148, 197, 255, .24);
-  color: var(--ps5-ink);
-  box-shadow: inset 0 1px 0 rgba(224, 242, 254, .14);
+    linear-gradient(160deg, rgba(56, 44, 22, .86) 0%, rgba(33, 25, 11, .94) 100%);
+  border: 1px solid rgba(242, 212, 161, .24);
+  color: var(--sand-ink);
+  box-shadow: inset 0 1px 0 rgba(250, 242, 228, .14);
 }
 
 .mirage-room-seat-card.is-me {
-  border-color: var(--ps5-border-focus);
-  box-shadow: var(--ps5-glow-sm);
+  border-color: var(--sand-border-focus);
+  box-shadow: var(--sand-glow-sm);
 }
 
 .mirage-room-card-title,
 .mirage-room-title-block h2,
 .mirage-browser-header h2,
 .mirage-player-identity strong {
-  color: var(--ps5-ink-bright);
+  color: var(--sand-ink-bright);
 }
 
 .mirage-room-code,
 .mirage-copy-code-btn,
 .mirage-join-room-btn,
 .mirage-host-tag {
-  color: var(--ps5-cyan-soft);
+  color: var(--sand-sand-light);
 }
 
 .mirage-launch-party-btn,
@@ -2077,14 +2151,14 @@ html body .mirage-page :is(
 .mirage-create-room-btn,
 .mirage-quick-match-btn {
   border-radius: 999px;
-  background: linear-gradient(135deg, var(--ps5-blue) 0%, var(--ps5-blue-bright) 55%, var(--ps5-cyan) 100%);
-  border: 1px solid var(--ps5-border-focus);
-  color: var(--ps5-ink-bright);
-  box-shadow: var(--ps5-glow-sm);
+  background: linear-gradient(135deg, var(--sand-amber) 0%, var(--sand-amber-bright) 55%, var(--sand-gold-light) 100%);
+  border: 1px solid var(--sand-border-focus);
+  color: var(--sand-ink-bright);
+  box-shadow: var(--sand-glow-sm);
 }
 
 .mirage-launch-party-btn.is-ready-to-launch:hover:not(:disabled) {
-  box-shadow: var(--ps5-glow-focus);
+  box-shadow: var(--sand-glow-focus);
 }
 
 /* Fenêtre modale de course en direct & fenêtre de résultats */
@@ -2092,30 +2166,30 @@ html body .mirage-page :is(
 .mirage-results-dialog {
   border-radius: 24px;
   background:
-    radial-gradient(110% 80% at 50% 0%, rgba(0, 112, 209, .32), transparent 65%),
-    linear-gradient(175deg, rgba(10, 19, 44, .95) 0%, rgba(5, 10, 24, .98) 100%);
-  border: 1px solid var(--ps5-border-strong);
+    radial-gradient(110% 80% at 50% 0%, rgba(184, 126, 25, .32), transparent 65%),
+    linear-gradient(175deg, rgba(40, 30, 14, .95) 0%, rgba(22, 16, 7, .98) 100%);
+  border: 1px solid var(--sand-border-strong);
   box-shadow:
-    inset 0 1px 0 rgba(224, 242, 254, .22),
-    0 32px 80px -16px rgba(2, 6, 23, .95),
-    0 0 48px rgba(0, 112, 209, .35);
-  color: var(--ps5-ink);
+    inset 0 1px 0 rgba(250, 242, 228, .22),
+    0 32px 80px -16px rgba(20, 15, 5, .95),
+    0 0 48px rgba(184, 126, 25, .35);
+  color: var(--sand-ink);
 }
 
 .mirage-results-dialog h2 em {
-  color: var(--ps5-cyan);
+  color: var(--sand-gold-light);
 }
 
 .mirage-results-status {
-  border-color: var(--ps5-border-mid);
-  background: rgba(10, 20, 46, .82);
-  color: var(--ps5-ink-soft);
+  border-color: var(--sand-border-mid);
+  background: rgba(42, 32, 14, .82);
+  color: var(--sand-ink-soft);
 }
 
 .mirage-results-status.is-final {
-  border-color: rgba(56, 189, 248, .55);
-  background: rgba(0, 112, 209, .24);
-  color: var(--ps5-ink-bright);
+  border-color: rgba(225, 171, 79, .55);
+  background: rgba(184, 126, 25, .24);
+  color: var(--sand-ink-bright);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -2130,7 +2204,7 @@ html body .mirage-page :is(
   .mirage-poster {
     flex: 1 1 100%;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: 8px 30px 8px 12px;
     gap: 8px 12px;
   }
   .mirage-poster-title {
@@ -2239,4 +2313,29 @@ html body .mirage-page :is(
   .mirage-ghost-button {
     transition: none;
   }
+}
+
+/* Le cristal reste turquoise : il distingue les fragments de diamant de l'or du sable. */
+.mirage-brand-gem { color: var(--sand-crystal-light); text-shadow: 0 0 12px var(--sand-crystal); }
+.mirage-chip.is-gem {
+  background: rgba(67, 207, 195, .16);
+  border-color: rgba(67, 207, 195, .48);
+  color: #c9fff5;
+}
+.mirage-poster-reward b { color: var(--sand-crystal-light); text-shadow: 0 0 10px rgba(67, 207, 195, .62); }
+
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .mirage-debris-shard { opacity: .16; }
+  .mirage-debris-shard.sand-2,
+  .mirage-debris-shard.diamond-3 { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mirage-debris-shard { animation: none; }
+}
+
+
+/* L'arrière-plan de la coquille en plein écran reste dans la palette d'obsidienne chaude. */
+.mirage-page .mirage-game-shell.is-immersive {
+  background: #100c05;
 }
