@@ -120,17 +120,17 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.hitRecoveryMultiplier)).size > 1);
 });
 
-test('twelve slow traffic cars span four distinct types and safely block racers', () => {
-  assert.equal(CITY_RUSH_TRAFFIC_COUNT, 12);
+test('eight slow traffic cars span four distinct types and safely block racers (trafic allégé)', () => {
+  assert.equal(CITY_RUSH_TRAFFIC_COUNT, 8);
   assert.equal(CITY_RUSH_TRAFFIC_COUNT % CITY_RUSH_TRAFFIC_TYPES.length, 0);
   assert.equal(CITY_RUSH_TRAFFIC_LANES.length, CITY_RUSH_TRAFFIC_COUNT);
   assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => lane >= 0 && lane < CITY_RUSH_LANE_X.length));
   // La route est à double sens : le trafic lent roule dans le sens de la
   // course sur les deux voies de droite, les deux voies de gauche étant
-  // réservées au trafic venant en face.
-  assert.deepEqual(CITY_RUSH_LANE_X.map((_, lane) => CITY_RUSH_TRAFFIC_LANES.filter((value) => value === lane).length), [0, 0, 6, 6]);
+  // réservées au trafic venant en face. Trafic allégé : 8 voitures au lieu de 12.
+  assert.deepEqual(CITY_RUSH_LANE_X.map((_, lane) => CITY_RUSH_TRAFFIC_LANES.filter((value) => value === lane).length), [0, 0, 4, 4]);
   assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => lane >= 2), 'le trafic lent reste sur les voies de droite');
-  assert.equal(CITY_RUSH_ONCOMING_COUNT, 6);
+  assert.equal(CITY_RUSH_ONCOMING_COUNT, 4);
   assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1]);
   assert.deepEqual(CITY_RUSH_TRAFFIC_TYPES.map((vehicle) => vehicle.id), [
     'police', 'ambulance', 'garbage-truck', 'white-lambo',
