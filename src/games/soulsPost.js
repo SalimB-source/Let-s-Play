@@ -16,7 +16,7 @@ import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 
-/** Étalonnage « remaster » : split-tone, saturation, vignette, grain. */
+/** Étalonnage « nuit de cendre » : tons froids, noirs denses, silhouettes lisibles. */
 export const GradeShader = {
   uniforms: {
     tDiffuse: { value: null },
@@ -37,18 +37,20 @@ export const GradeShader = {
       vec4 tex = texture2D(tDiffuse, vUv);
       vec3 col = tex.rgb;
       float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
-      // Split-tone anime : roses lumineux côté lumière, cyan indigo côté ombre.
-      vec3 warm = col * vec3(1.16, 0.91, 1.13);
-      vec3 cool = col * vec3(0.84, 1.01, 1.20);
-      col = mix(cool, warm, smoothstep(0.06, 0.55, l));
-      // Saturation et micro-courbe en S.
+      // Étalonnage nocturne : indigo froid dans l'ombre, braise sourde dans
+      // les hautes lumières. La saturation reste retenue pour ne pas éclaircir
+      // artificiellement les pierres ni masquer les ennemis carmin.
+      vec3 warm = col * vec3(1.05, 0.82, 0.97);
+      vec3 cool = col * vec3(0.72, 0.86, 1.10);
+      col = mix(cool, warm, smoothstep(0.10, 0.68, l));
       float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
-      col = mix(vec3(lum), col, 1.24);
+      col = mix(vec3(lum), col, 1.12);
       vec3 sCurve = col * col * (3.0 - 2.0 * clamp(col, 0.0, 1.0));
-      col = mix(col, sCurve, 0.16);
-      // Vignettage cinématique.
+      col = mix(col, sCurve, 0.10);
+      col = max(col * 0.91 - vec3(0.008), vec3(0.0));
+      // Vignettage dense, mais doux au centre pour conserver la lisibilité.
       float d = distance(vUv, vec2(0.5, 0.48));
-      col *= 1.0 - smoothstep(0.62, 0.95, d) * 0.32;
+      col *= 1.0 - smoothstep(0.58, 0.95, d) * 0.43;
       // Grain fin animé.
       col += (hash(vUv * 720.0 + fract(uTime) * 37.0) - 0.5) * 0.03;
       gl_FragColor = vec4(clamp(col, 0.0, 1.0), tex.a);
@@ -70,10 +72,10 @@ export function createPost(renderer, scene, camera) {
   // GTAO : occlusion ambiante globale — les objets se « posent » au sol.
   const gtao = new GTAOPass(scene, camera, Math.max(1, size.x), Math.max(1, size.y));
   gtao.output = GTAOPass.OUTPUT.Default;
-  gtao.blendIntensity = 0.7;
+  gtao.blendIntensity = 0.86;
   composer.addPass(gtao);
 
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.72, 0.62, 0.68);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.64, 0.72, 0.7);
   composer.addPass(bloom);
 
   // Profondeur de champ : le Gardien Chitine au foyer, la cour se défocle.
@@ -105,7 +107,7 @@ export function createPost(renderer, scene, camera) {
       composer.setSize(width, height);
       fxaa.material.uniforms.resolution.value.set(1 / (width * dpr), 1 / (height * dpr));
     },
-    /** Point de netteté (distance caméra → chevalier), lissé. */
+    /** Point de netteté (distance caméra → Gardien Chitine), lissé. */
     setFocus(distance) {
       focusTarget = distance;
     },

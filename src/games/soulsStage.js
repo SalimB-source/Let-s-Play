@@ -4,7 +4,7 @@
  *   camp (feu) → porte nord → route ─┬─ chapelle : 2 gardes + COFFRE (clé)
  *                                    └─ forêt → château → GRAND PORTAIL
  *                                       (ouvert par la clé) → salle des
- *                                       piliers → ROI DE CENDRE sur son trône
+ *                                       piliers → ROI CHITINE DE CENDRE sur son trône
  *
  * Repère : le joueur marche vers −Z (nord). Le camp reste centré en (0,0).
  * Ce module ne dépend d'aucun moteur : positions, colliders, zones,
@@ -188,7 +188,7 @@ export const SPAWNS = Object.freeze([
   Object.freeze({ x: -19.5, z: -33.4, yaw: -Math.PI / 2, tag: 'room' }), // chapelle — garde sud
   Object.freeze({ x: 6.1, z: -45 }),                                    // route — premier guetteur
   Object.freeze({ x: 10.4, z: -61.5 }),                                 // route — second guetteur
-  Object.freeze({ x: 0, z: -123.4, yaw: Math.PI, name: 'ROI DE CENDRE', boss: true }),
+  Object.freeze({ x: 0, z: -123.4, yaw: Math.PI, name: 'ROI CHITINE DE CENDRE', boss: true }),
 ]);
 
 /** Paramètres communs des gardiens. */
@@ -242,7 +242,7 @@ export function interact(q, x, z) {
   if (atChest(q, x, z)) {
     q.chestOpen = true;
     q.hasKey = true;
-    return { kind: 'chest', ok: true, message: 'Coffre ouvert — CLÉ DU ROI DE CENDRE' };
+    return { kind: 'chest', ok: true, message: 'Coffre ouvert — CLÉ DU ROI CHITINE DE CENDRE' };
   }
   if (atPortal(q, x, z)) {
     if (!q.hasKey) return { kind: 'portal', ok: false, message: 'Le portail est scellé — il faut une clé' };

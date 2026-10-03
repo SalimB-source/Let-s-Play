@@ -288,6 +288,8 @@ const ANIME_SURFACES = {
   cloth: { base: '#6c2856', shade: '#2a173b', light: '#dc7ba9', accent: '#f3bd6e' },
   slate: { base: '#3f496d', shade: '#202842', light: '#8f9dd2', accent: '#5d78a1' },
   chitin: { base: '#1b5265', shade: '#10263e', light: '#4cc7d2', accent: '#cf9d4e' },
+  corruptChitin: { base: '#572037', shade: '#160914', light: '#d75674', accent: '#8e2c59' },
+  royalChitin: { base: '#45245f', shade: '#10091f', light: '#dd70dc', accent: '#9f4b9b' },
 };
 
 /** Texture peinte à la main (canvas lisse) pour une famille de matériaux anime. */
@@ -1574,15 +1576,39 @@ export function makeKnight({ fallen = false } = {}) {
   return knight;
 }
 
-// ── Le Gardien Chitine : protagoniste anime ──────────────────────────
-// Le contrôleur de combat utilise le même contrat de rig que les gardes.
-// Cela permet de remplacer seulement le héros sans toucher aux règles,
-// aux collisions, aux attaques, à la potion ou au verrouillage de cible.
-export function makeInsectWarrior() {
+// ── Guerriers insectes : héros, gardes corrompus et Roi Chitine ─────
+// Le contrôleur de combat utilise le même contrat de rig pour tous les
+// guerriers : seules la palette et la stature changent entre le héros, les
+// sentinelles déchues et le boss. Les ennemis ne sont donc plus humanoïdes.
+export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
+  const variant = boss ? 'royal' : corrupted ? 'corrupt' : 'guardian';
+  const palette = boss
+    ? {
+      surface: 'royalChitin', chitinTint: 0xffffff, dark: 0x170b29, light: 0xdf76dc, lightEmissive: 0x55145c,
+      gold: 0xe4aa63, cloth: 0x7c264d, eye: 0xff72c1, eyeEmissive: 0xff1b75,
+      blade: 0xe2b8ff, bladeEmissive: 0x852bb2, edge: 0xffe7ff, edgeEmissive: 0xd675e8,
+      wing: 0xc268bd, wingEmissive: 0x45104f, vein: 0xffb1e3, wingOpacity: 0.36,
+      identity: 'ROI CHITINE DE CENDRE',
+    }
+    : corrupted
+      ? {
+        surface: 'corruptChitin', chitinTint: 0xffffff, dark: 0x170a17, light: 0xd95272, lightEmissive: 0x571021,
+        gold: 0xa96575, cloth: 0x612338, eye: 0xff576b, eyeEmissive: 0xdb1028,
+        blade: 0xc46f91, bladeEmissive: 0x621431, edge: 0xffbfd1, edgeEmissive: 0x9a294f,
+        wing: 0x87405f, wingEmissive: 0x300a1a, vein: 0xff849f, wingOpacity: 0.29,
+        identity: 'GUERRIER INSECTE DÉCHU',
+      }
+      : {
+        surface: 'chitin', chitinTint: 0x377f91, dark: 0x17344f, light: 0x69d7d5, lightEmissive: 0x155b70,
+        gold: 0xe0aa59, cloth: 0xb14c82, eye: 0xffc45e, eyeEmissive: 0xff9a24,
+        blade: 0x93f3f0, bladeEmissive: 0x1d8aab, edge: 0xe8fbff, edgeEmissive: 0x62d6ed,
+        wing: 0x8fe7f2, wingEmissive: 0x3557a5, vein: 0xb5eefd, wingOpacity: 0.44,
+        identity: 'GUERRIER INSECTE · GARDIEN CHITINE',
+      };
   const warrior = new THREE.Group();
-  warrior.name = 'gardien-chitine';
+  warrior.name = boss ? 'roi-chitine' : corrupted ? 'guerrier-insecte-dechu' : 'gardien-chitine';
   const body = new THREE.Group();
-  body.name = 'gardien-chitine-body';
+  body.name = `${warrior.name}-body`;
   warrior.add(body);
 
   const toon = (color, opts = {}) => new THREE.MeshToonMaterial({
@@ -1590,31 +1616,31 @@ export function makeInsectWarrior() {
     gradientMap: animeGradient(),
     ...opts,
   });
-  const chitin = animeMaterial('chitin', { color: 0x377f91, tile: 0.9 });
-  const chitinDark = toon(0x17344f, { emissive: 0x07121f, emissiveIntensity: 0.35 });
-  const chitinLight = toon(0x69d7d5, { emissive: 0x155b70, emissiveIntensity: 0.52 });
-  const gold = toon(0xe0aa59, { emissive: 0x4d2b0d, emissiveIntensity: 0.5 });
-  const cloth = animeMaterial('cloth', { color: 0xb14c82, tile: 0.95, side: THREE.DoubleSide });
+  const chitin = animeMaterial(palette.surface, { color: palette.chitinTint, tile: 0.9 });
+  const chitinDark = toon(palette.dark, { emissive: palette.dark, emissiveIntensity: corrupted || boss ? 0.46 : 0.35 });
+  const chitinLight = toon(palette.light, { emissive: palette.lightEmissive, emissiveIntensity: corrupted || boss ? 0.76 : 0.52 });
+  const gold = toon(palette.gold, { emissive: boss ? 0x5e2c13 : 0x4d2b0d, emissiveIntensity: 0.5 });
+  const cloth = animeMaterial('cloth', { color: palette.cloth, tile: 0.95, side: THREE.DoubleSide });
   const eyeGlow = new THREE.MeshStandardMaterial({
-    color: 0xffc45e, emissive: 0xff9a24, emissiveIntensity: 3.25,
+    color: palette.eye, emissive: palette.eyeEmissive, emissiveIntensity: boss ? 4.1 : 3.25,
     roughness: 0.22, metalness: 0.25,
   });
   const bladeMat = new THREE.MeshStandardMaterial({
-    color: 0x93f3f0, emissive: 0x1d8aab, emissiveIntensity: 0.86,
+    color: palette.blade, emissive: palette.bladeEmissive, emissiveIntensity: boss ? 1.15 : 0.86,
     metalness: 0.68, roughness: 0.17,
   });
   const edgeMat = new THREE.MeshStandardMaterial({
-    color: 0xe8fbff, emissive: 0x62d6ed, emissiveIntensity: 0.62,
+    color: palette.edge, emissive: palette.edgeEmissive, emissiveIntensity: 0.62,
     metalness: 0.8, roughness: 0.1,
   });
   const wingMat = new THREE.MeshPhysicalMaterial({
-    color: 0x8fe7f2, emissive: 0x3557a5, emissiveIntensity: 0.42,
+    color: palette.wing, emissive: palette.wingEmissive, emissiveIntensity: boss ? 0.68 : 0.42,
     roughness: 0.16, metalness: 0.05, transmission: 0.08,
-    transparent: true, opacity: 0.44, side: THREE.DoubleSide,
+    transparent: true, opacity: palette.wingOpacity, side: THREE.DoubleSide,
     depthWrite: false,
   });
   const veinMat = new THREE.MeshBasicMaterial({
-    color: 0xb5eefd, transparent: true, opacity: 0.74,
+    color: palette.vein, transparent: true, opacity: corrupted || boss ? 0.82 : 0.74,
     blending: THREE.AdditiveBlending, depthWrite: false,
   });
 
@@ -1785,7 +1811,7 @@ export function makeInsectWarrior() {
     eyePivot.position.set(side * 0.071, 0.15, -0.154);
     eyePivot.rotation.y = side * 0.35;
     const eye = ellipsoid(0.062, eyeGlow, 0.72, 1.16, 0.28, 16);
-    const highlight = ellipsoid(0.017, new THREE.MeshBasicMaterial({ color: 0xfff2be }), 1, 1, 0.2, 10);
+    const highlight = ellipsoid(0.017, new THREE.MeshBasicMaterial({ color: corrupted || boss ? 0xffc0e2 : 0xfff2be }), 1, 1, 0.2, 10);
     highlight.position.set(side * 0.011, 0.025, -0.018);
     eyePivot.add(eye, highlight);
     visor.add(eyePivot);
@@ -1892,7 +1918,8 @@ export function makeInsectWarrior() {
   potion.visible = false;
   armL.elbow.add(potion);
 
-  warrior.userData.identity = 'GUERRIER INSECTE · GARDIEN CHITINE';
+  warrior.userData.identity = palette.identity;
+  warrior.userData.variant = variant;
   warrior.userData.parts = {
     body, hips, torso, head,
     armL: armL.arm, armR: armR.arm, elbowL: armL.elbow, elbowR: armR.elbow,
@@ -2124,10 +2151,10 @@ export function buildNightEnvironment(renderer) {
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   const grad = ctx.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#110d2f');
-  grad.addColorStop(0.5, '#28204f');
-  grad.addColorStop(0.76, '#584078');
-  grad.addColorStop(1, '#b16f91');
+  grad.addColorStop(0, '#040615');
+  grad.addColorStop(0.5, '#10152e');
+  grad.addColorStop(0.76, '#282746');
+  grad.addColorStop(1, '#472540');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 512, 256);
   const skyTex = new THREE.CanvasTexture(canvas);
@@ -2149,15 +2176,15 @@ export function buildNightEnvironment(renderer) {
     envScene.add(mesh);
     return mesh;
   };
-  glow([3.35, 2.75, 5.4], 3.4, -24, 26, -34);       // lune lavande
-  glow([5.0, 1.35, 2.7], 1.15, 0, 1.5, 0);         // feu du camp
+  glow([1.25, 1.35, 3.15], 2.65, -24, 26, -34);    // lune froide, discrète
+  glow([3.8, 0.75, 1.55], 0.9, 0, 1.5, 0);          // feu du camp
   for (const [x, z] of [[-5.4, -3.8], [5.4, -3.8], [-5.4, 4.2], [5.4, 4.2]]) {
-    glow([4.1, 1.45, 2.45], 0.7, x, 1.6, z);        // braseros rose-or
+    glow([2.8, 0.48, 1.2], 0.58, x, 1.6, z);        // braseros rouge cendre
   }
 
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(40, 24),
-    new THREE.MeshBasicMaterial({ color: 0x17142f }),
+    new THREE.MeshBasicMaterial({ color: 0x060713 }),
   );
   ground.rotation.x = -Math.PI / 2;
   envScene.add(ground);
@@ -2179,10 +2206,10 @@ export function makeSkyDome(radius = 140) {
     depthWrite: false,
     fog: false,
     uniforms: {
-      topColor: { value: new THREE.Color(0x100d32) },
-      midColor: { value: new THREE.Color(0x312257) },
-      horizonColor: { value: new THREE.Color(0x76568f) },
-      warmColor: { value: new THREE.Color(0xca6fa7) },
+      topColor: { value: new THREE.Color(0x030514) },
+      midColor: { value: new THREE.Color(0x0c1129) },
+      horizonColor: { value: new THREE.Color(0x272640) },
+      warmColor: { value: new THREE.Color(0x552149) },
       glowDir: { value: new THREE.Vector3(-0.45, 0.35, -0.72).normalize() },
     },
     vertexShader: /* glsl */`
@@ -2234,7 +2261,7 @@ export function makeStars(count = 460, radius = 132) {
       size: 0.9,
       sizeAttenuation: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.68,
       depthWrite: false,
       fog: false,
     }),
@@ -2246,9 +2273,9 @@ export function makeStars(count = 460, radius = 132) {
 /** Halo lunaire en sprite additif (bloom le fait vibrer). */
 export function makeMoonGlow(x, y, z, scale = 34) {
   const texture = radialSpriteTexture(128, [
-    [0, 'rgba(255, 232, 255, 0.94)'],
-    [0.25, 'rgba(185, 190, 255, 0.42)'],
-    [1, 'rgba(120, 164, 255, 0)'],
+    [0, 'rgba(220, 221, 255, 0.78)'],
+    [0.25, 'rgba(111, 124, 212, 0.24)'],
+    [1, 'rgba(82, 96, 175, 0)'],
   ]);
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
     map: texture,
@@ -2268,9 +2295,9 @@ export function makeMoonGlow(x, y, z, scale = 34) {
  */
 export function makeMistPatches(list) {
   const texture = radialSpriteTexture(160, [
-    [0, 'rgba(227, 192, 255, 0.52)'],
-    [0.55, 'rgba(142, 191, 244, 0.22)'],
-    [1, 'rgba(124, 155, 232, 0)'],
+    [0, 'rgba(111, 91, 157, 0.30)'],
+    [0.55, 'rgba(68, 85, 144, 0.13)'],
+    [1, 'rgba(54, 62, 122, 0)'],
   ]);
   const group = new THREE.Group();
   for (const [x, z, sx, sy, opacity] of list) {
@@ -2279,7 +2306,7 @@ export function makeMistPatches(list) {
       transparent: true,
       opacity,
       depthWrite: false,
-      color: 0xd2c8ff,
+      color: 0x847aa8,
     });
     const sprite = new THREE.Sprite(material);
     sprite.position.set(x, 1.1, z);

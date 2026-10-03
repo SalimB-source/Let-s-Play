@@ -165,7 +165,7 @@ export function makeChapel() {
   const t = room.wallT;
   const floorTop = 0.02;
 
-  // Dallage intérieur (sommet à +0.02 : le chevalier marche à y = 0,
+  // Dallage intérieur (sommet à +0.02 : le Gardien Chitine marche à y = 0,
   // aucune face n'est coplanaire avec la terre extérieure à −0.09).
   block(group, null, slab, room.maxX - room.minX + 0.4, 0.1, room.maxZ - room.minZ + 0.4,
     (room.minX + room.maxX) / 2, floorTop - 0.05, (room.minZ + room.maxZ) / 2, { blocker: false, shadow: false });

@@ -15,7 +15,7 @@ import {
 import {
   TORSO_Y,
   seatDrop,
-  makeInsectWarrior, makeKnight, makeBonfire, makeBrazier, makeWalls, makePillar,
+  makeInsectWarrior, makeBonfire, makeBrazier, makeWalls, makePillar,
   makeBarrel, makeRubble, makeFloor, makeMoon, makeAshField,
   makeSkyDome, makeStars, makeMoonGlow, makeMistPatches, makeLightShaft,
   makeGrassField, makeFlowerField, makeTree, makeBush,
@@ -68,10 +68,10 @@ function makeWorld(mount, callbacks) {
   const touchDevice = isTouchPointer();
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x17142f);
-  // Brume violette lumineuse : profondeur de film d'animation, sans la boue
-  // grisâtre typique d'un décor de voxels nocturne.
-  scene.fog = new THREE.Fog(0x2d2955, 20, 78);
+  scene.background = new THREE.Color(0x050610);
+  // Nuit plus dense : les feux, les yeux composés et les runes découpent les
+  // silhouettes au lieu d'éclairer toute la cour comme un crépuscule.
+  scene.fog = new THREE.Fog(0x0d1023, 14, 56);
 
   const camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.1, 400);
 
@@ -79,7 +79,7 @@ function makeWorld(mount, callbacks) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.28;
+  renderer.toneMappingExposure = 0.96;
   // Ombres dynamiques douces (lune) — le remaster tient à ça.
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -96,12 +96,12 @@ function makeWorld(mount, callbacks) {
   // lueurs ambrées des braseros → les reflets sur l'acier, la peau et
   // la pierre racontent la scène (pas une pièce générique).
   scene.environment = buildNightEnvironment(renderer);
-  scene.environmentIntensity = 0.55;
+  scene.environmentIntensity = 0.32;
 
   // ── Lumière : lune clé (ombres) + contre-jour froid + sources chaudes
-  const hemi = new THREE.HemisphereLight(0x8495df, 0x32244f, 1.18);
+  const hemi = new THREE.HemisphereLight(0x303967, 0x0a0818, 0.62);
   scene.add(hemi);
-  const moonLight = new THREE.DirectionalLight(0xd1d8ff, 1.62);
+  const moonLight = new THREE.DirectionalLight(0x8a93ca, 0.92);
   moonLight.position.set(-16, 24, -13);
   moonLight.castShadow = true;
   moonLight.shadow.mapSize.set(2048, 2048);
@@ -115,11 +115,11 @@ function makeWorld(mount, callbacks) {
   moonLight.shadow.normalBias = 0.028;
   scene.add(moonLight);
   scene.add(moonLight.target); // la lune suit le joueur (carte longue de 130 m)
-  const fill = new THREE.DirectionalLight(0xff8dbb, 0.31);
+  const fill = new THREE.DirectionalLight(0x8d2a60, 0.13);
   fill.position.set(6, 8, 10);
   scene.add(fill);
   // Contour bleuté derrière l'épaule — silhouettage « remaster ».
-  const rim = new THREE.DirectionalLight(0x62e7ef, 0.74);
+  const rim = new THREE.DirectionalLight(0x3ea8b5, 0.42);
   rim.position.set(10, 6, -14);
   scene.add(rim);
 
@@ -172,10 +172,10 @@ function makeWorld(mount, callbacks) {
   // Lumières de zone (les flammes de décor n'en portent pas : 5 sources
   // mutualisées au lieu d'une par brasero).
   const zoneLights = [
-    [0xff8c3a, 34, 17, [-20.5, 3.0, -31]],      // chapelle
-    [0xff8c3a, 42, 21, [0, 3.6, -85.4]],         // parvis du portail
-    [0xff7a3a, 72, 36, [0, 7.0, -103]],          // nef
-    [0xff6a38, 62, 28, [0, 4.6, -118]],          // estrade du trône
+    [0xc44976, 20, 14, [-20.5, 3.0, -31]],      // chapelle — braise rouge
+    [0xbc3b6d, 27, 18, [0, 3.6, -85.4]],         // parvis du portail
+    [0x9f356d, 43, 29, [0, 7.0, -103]],          // nef
+    [0x7f295b, 36, 23, [0, 4.6, -118]],          // estrade du Roi Chitine
   ];
   zoneLights.forEach(([color, intensity, distance, pos], i) => {
     const light = new THREE.PointLight(color, intensity, distance, 2);
@@ -390,12 +390,12 @@ function makeWorld(mount, callbacks) {
   scene.add(warrior);
   flagShadow(warrior, true);
 
-  // ── Escouade : gardes du camp, de la chapelle, de la route + le Roi sur son trône
+  // ── Essaim hostile : sentinelles insectes + Roi Chitine sur son trône
   const makeFoe = (spawn, opts = {}) => {
     const e = createEnemyState(spawn.x, spawn.z);
     e.spec = { ...ENEMY, ...(opts.spec || {}) };
     e.hp = e.spec.maxHp; // PV pleins dès le premier combat (le boss n'a pas ceux d'un garde)
-    e.name = spawn.name || 'CHEVALIER DÉCHU';
+    e.name = spawn.name || (opts.boss ? 'ROI CHITINE DE CENDRE' : 'GUERRIER INSECTE DÉCHU');
     if (spawn.yaw !== undefined) e.yaw = spawn.yaw;
     if (opts.boss) {
       e.isBoss = true;
@@ -405,7 +405,9 @@ function makeWorld(mount, callbacks) {
         e.seatYaw = spawn.yaw ?? 0;
       }
     }
-    const K = makeKnight({ fallen: true });
+    // Même silhouette insecte que le héros, mais chitiné de rouge cendre et
+    // yeux carmin : les ennemis sont une caste corrompue, pas des humains.
+    const K = makeInsectWarrior({ corrupted: true, boss: Boolean(opts.boss) });
     K.scale.setScalar(opts.scale ?? 1.05);
     K.position.set(spawn.x, stageHeight(spawn.x, spawn.z), spawn.z);
     K.rotation.y = e.yaw;
@@ -754,7 +756,7 @@ function makeWorld(mount, callbacks) {
   };
 
   // ── Mort & résurrection ───────────────────────────────────────────
-  /** Le chevalier tombe : le monde se fige, l'écran de mort s'affiche. */
+  /** Le Gardien Chitine tombe : le monde se fige, l'écran de mort s'affiche. */
   const onDeath = () => {
     dead = true;
     deathT = 0;
@@ -1550,7 +1552,7 @@ function makeWorld(mount, callbacks) {
       let eFrom = F.from;
     const leapY = enemy.phase === 'leap' ? (enemy.leapY || 0) : 0;
     // Le sol est suivi en douceur (comme le joueur) : descendre de
-    // l'estrade ne « clipse » plus le chevalier dans la marche.
+    // l'estrade ne « clipse » plus le guerrier insecte dans la marche.
     const floorY = stageHeight(enemy.x, enemy.z);
     F.groundY = F.groundY === undefined
       ? floorY
@@ -1748,9 +1750,21 @@ function makeWorld(mount, callbacks) {
         enemyParts.kneeL.rotation.x += (kneeT - enemyParts.kneeL.rotation.x) * kE;
         enemyParts.kneeR.rotation.x += (kneeT - enemyParts.kneeR.rotation.x) * kE;
       }
-      // Regard qui balaye au repos — le chevalier n'est pas une statue.
+      // Regard qui balaye au repos — le guerrier insecte n'est pas une statue.
       eLerp(enemyParts.head.rotation, 'y',
         enemy.phase === 'idle' ? 0.12 * Math.sin(time * 0.55) : 0);
+      // Le petit essaim vit même à l'arrêt : antennes et ailes signalent
+      // immédiatement la nature insecte des ennemis dans l'obscurité.
+      if (enemyParts.strands) {
+        enemyParts.strands.forEach((antenna, index) => {
+          eLerp(antenna.rotation, 'x', 0.08 + Math.sin(time * 0.002 + index) * 0.04, 7);
+        });
+      }
+      if (enemyParts.wings) {
+        const flutter = (chase ? 0.13 : 0.035) * Math.sin(time * (chase ? 0.017 : 0.003) + (enemy.gaitPhase || 0));
+        eLerp(enemyParts.wings[0].rotation, 'z', -0.08 - flutter, 7);
+        eLerp(enemyParts.wings[1].rotation, 'z', 0.08 + flutter, 7);
+      }
       if (enemy.phase === 'seated' || enemy.phase === 'rise') {
         // TRÔNE — assis : cuisses à l'horizontale, genoux pliés, buste droit,
         // tête penchée, épée plantée devant lui. Debout : il pousse sur les
@@ -1800,7 +1814,7 @@ function makeWorld(mount, callbacks) {
       enemyK.rotation.x = 0;   // annule la chute
       enemyK.rotation.z = 0;
     } else if (enemyK.visible) {
-      // Chute : le chevalier bascule sur le dos (pivot aux pieds),
+      // Chute : le guerrier insecte bascule sur le dos (pivot aux pieds),
       // reste allongé au sol — le respawn le relèvera.
       const dT = enemy.deathT;
       const u = Math.min(1, dT / 0.75);
@@ -1988,7 +2002,7 @@ function makeWorld(mount, callbacks) {
      *     (`TOUCH_QUEUE` → `queue`), la suite est l'affaire de la boucle ;
      *   - `('level', 'vit' | 'end' | 'str')` : montée de niveau depuis l'écran
      *     de pause (le feu de camp seul l'autorise, la boucle le dit au joueur) ;
-     *   - `('touchReset')` : stick relâché (le chevalier s'arrête).
+     *   - `('touchReset')` : stick relâché (le Gardien Chitine s'arrête).
      */
     action(name, payload) {
       if (name === 'launch') {

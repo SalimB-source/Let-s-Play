@@ -102,7 +102,7 @@
   height: min(clamp(460px, 50vw, 700px), 78vh);
   min-height: 460px;
   overflow: hidden; isolation: isolate;
-  background: #11102c;
+  background: #050610;
 }
 .souls-world { position: absolute; inset: 0; z-index: 0; }
 /* Le canvas est la surface de jeu : sans touch-action:none, la souris/le
@@ -117,7 +117,7 @@
 /* Vignette cinématique */
 .souls-viewport::after {
   content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: radial-gradient(120% 90% at 50% 42%, transparent 58%, rgba(5, 3, 8, 0.5) 100%);
+  background: radial-gradient(120% 90% at 50% 42%, transparent 54%, rgba(2, 2, 8, 0.66) 100%);
 }
 
 /* ── HUD en jeu ───────────────────────────────────────────────────── */

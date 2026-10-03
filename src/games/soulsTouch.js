@@ -3,7 +3,7 @@
  *
  * Layout d'une manette de console, transposé au pouce :
  *
- *   - **à gauche, un stick** : déplacer le chevalier dans la direction du
+ *   - **à gauche, un stick** : déplacer le Gardien Chitine dans la direction du
  *     doigt, par rapport à la caméra (comme ZQSD) ; poussé à fond, il fait
  *     **courir** (l'équivalent de MAJ). Une poussée partielle ralentit le pas
  *     (`stepMovement` normalise la direction, c'est `speedScale` qui porte la
@@ -27,7 +27,7 @@
 export const STICK_RADIUS = 58;
 /** En deçà de cette fraction, le doigt posé ne déplace personne (zone morte). */
 export const STICK_DEAD_ZONE = 0.16;
-/** À partir de cette fraction, le chevalier court (équivalent de MAJ). */
+/** À partir de cette fraction, le Gardien Chitine court (équivalent de MAJ). */
 export const STICK_RUN_AT = 0.82;
 /** Vitesse minimale d'une poussée à peine sortie de la zone morte. */
 export const STICK_SLOW_WALK = 0.45;
@@ -92,7 +92,7 @@ export function stickVector(dx, dy, radius = STICK_RADIUS) {
   const y = Number(dy);
   const length = Math.hypot(x, y);
   // Coordonnées illisibles (évènement tronqué) ou doigt au centre : personne
-  // ne bouge — une valeur douteuse ne doit pas déplacer le chevalier.
+  // ne bouge — une valeur douteuse ne doit pas déplacer le Gardien Chitine.
   if (!Number.isFinite(length) || length < 1e-6) {
     return { x: 0, y: 0, magnitude: 0, run: false };
   }
@@ -110,7 +110,7 @@ export function stickVector(dx, dy, radius = STICK_RADIUS) {
  * Entrée de déplacement à partir du vecteur du stick : applique la zone morte
  * et ré-échelonne la poussée au-delà (la marche part du bord de la zone morte,
  * pas du centre). Sous la zone morte, personne ne bouge — le doigt posé pour
- * regarder l'écran ne fait pas dériver le chevalier.
+ * regarder l'écran ne fait pas dériver le Gardien Chitine.
  *
  * `x` / `y` restent la **direction unitaire** : c'est `magnitude` qui porte la
  * nuance de vitesse (`stickSpeedScale`), et `run` la course.
@@ -130,7 +130,7 @@ export function moveFromStick(vector, options = {}) {
 
 /**
  * Nuance de vitesse d'une poussée partielle : à peine sortie de la zone morte
- * le chevalier avance doucement (`STICK_SLOW_WALK`), stick à fond il va à sa
+ * le Gardien Chitine avance doucement (`STICK_SLOW_WALK`), stick à fond il va à sa
  * vitesse pleine. C'est ce facteur que `stepMovement` multiplie à la vitesse.
  */
 export function stickSpeedScale(magnitude, options = {}) {
@@ -186,7 +186,7 @@ function pointerBinding(element, handlers) {
  *
  * `handlers.move(vector)` reçoit chaque position du doigt (`stickVector`),
  * `handlers.end()` est appelé au relâchement (le stick revient au centre :
- * le chevalier s'arrête). `options.knob` est le pommeau déplacé visuellement
+ * le Gardien Chitine s'arrête). `options.knob` est le pommeau déplacé visuellement
  * — il suit la poussée sans re-rendu React.
  *
  * Un seul doigt pilote le stick : un second posé par accident (la paume) est

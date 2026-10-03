@@ -300,7 +300,7 @@ export default function SoulsPage() {
                       <em>NIV {hud.level}</em>
                     </span>
                     {hud.hasKey && (
-                      <span className="souls-key" title="Clé du Roi de Cendre — ouvre le grand portail du château">
+                      <span className="souls-key" title="Clé du Roi Chitine de Cendre — ouvre le grand portail du château">
                         <i aria-hidden="true">⚿</i> CLÉ DU ROI
                       </span>
                     )}
@@ -324,7 +324,7 @@ export default function SoulsPage() {
                 {hud.toast && <div className="souls-toast" key={hud.toast}>{hud.toast}</div>}
                 {hud.targetAlive && (
                   <div className="souls-hud-target">
-                    <span className="souls-hud-target-name">{hud.targetName || 'CHEVALIER DÉCHU'}</span>
+                    <span className="souls-hud-target-name">{hud.targetName || 'GUERRIER INSECTE DÉCHU'}</span>
                     <div className="souls-bar souls-bar-enemy">
                       <i style={{ width: `${(hud.targetHp / hud.targetMaxHp) * 100}%` }} />
                     </div>
@@ -378,13 +378,13 @@ export default function SoulsPage() {
                     guerrier insecte aux ailes irisées, se réveille dans la Cour du Seuil.
                     Traverse un monde <strong>anime peint à la main</strong> : attaques légère
                     et lourde, esquive à i-frames, endurance, hitstop, lock-on — et un
-                    chevalier déchu qui télégraphie chacun de ses coups. <strong>Riposte</strong>
+                    guerrier insecte déchu qui télégraphie chacun de ses coups. <strong>Riposte</strong>
                     pendant sa récupération.
                   </p>
                   <p className="souls-overlay-lead">
                     <strong>Le Chemin du Roi</strong> : quitte le camp par la porte nord.
                     Une <strong>chapelle en ruine</strong> garde un <strong>coffre</strong> (touche E) où dort
-                    la <strong>clé du Roi de Cendre</strong>. Reprends la route à travers la
+                    la <strong>clé du Roi Chitine de Cendre</strong>. Reprends la route à travers la
                     <strong> forêt</strong> jusqu’au <strong>château</strong> : seul cette clé ouvre
                     son <strong>grand portail</strong>. Dans la salle des piliers, le Roi attend
                     sur son trône — il se lèvera quand tu approcheras.
