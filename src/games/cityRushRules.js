@@ -40,6 +40,10 @@ export const CITY_RUSH_SCROLL_SCALE = 0.72;
 // chaque changement de voie en dérapage. Le déport reste proche d'une voie et
 // le raccord départ/arrivée est parfaitement plat.
 export const CITY_RUSH_TURN_AMPLITUDE = 2.35;
+// Relief volontairement modéré : suffisamment ample pour lire une montée ou
+// une descente à l'horizon, sans masquer le trafic ni gêner les changements de
+// voie. Comme les virages, il se raccorde à plat au portique.
+export const CITY_RUSH_HILL_AMPLITUDE = 2.1;
 export const CITY_RUSH_CAR_GAP = 4.8;
 export const CITY_RUSH_RACER_VIEW_DISTANCE = 120; // m : portée avant où un rival est rendu à l'écran
 export const CITY_RUSH_BLUE_SHOT_DURATION = 1.8; // s : ralentissement bien visible après un tir bleu
@@ -470,6 +474,28 @@ export function cityRushTrackTangent(distance, lapLength = CITY_RUSH_LAP_LENGTH,
 export function cityRushTrackYaw(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_TURN_AMPLITUDE, scrollScale = CITY_RUSH_SCROLL_SCALE) {
   const scale = Math.max(0.001, Number(scrollScale) || CITY_RUSH_SCROLL_SCALE);
   return -Math.atan2(cityRushTrackTangent(distance, lapLength, amplitude), scale);
+}
+
+/** Hauteur de la chaussée, en unités monde, au point de piste demandé. */
+export function cityRushTrackElevation(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_HILL_AMPLITUDE) {
+  const { phase } = cityRushTrackPhase(distance, lapLength);
+  const safeAmplitude = Math.max(0, Number(amplitude) || 0);
+  // Le même profil lisse que la courbe latérale : une montée longue, un sommet,
+  // une descente, puis son miroir. Valeur et pente sont nulles à la ligne.
+  return safeAmplitude * (Math.sin(phase) - 0.5 * Math.sin(phase * 2));
+}
+
+/** Pente verticale locale (unités Y par mètre de course). */
+export function cityRushTrackGrade(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_HILL_AMPLITUDE) {
+  const { safeLap, phase } = cityRushTrackPhase(distance, lapLength);
+  const safeAmplitude = Math.max(0, Number(amplitude) || 0);
+  return (safeAmplitude * Math.PI * 2 / safeLap) * (Math.cos(phase) - Math.cos(phase * 2));
+}
+
+/** Tangage visuel appliqué aux véhicules et accessoires ancrés à la piste. */
+export function cityRushTrackPitch(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_HILL_AMPLITUDE, scrollScale = CITY_RUSH_SCROLL_SCALE) {
+  const scale = Math.max(0.001, Number(scrollScale) || CITY_RUSH_SCROLL_SCALE);
+  return Math.atan2(cityRushTrackGrade(distance, lapLength, amplitude), scale);
 }
 
 // `inventory` contient les points de jauge (0 jusqu'au coût), pas un stock

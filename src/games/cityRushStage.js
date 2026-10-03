@@ -8,6 +8,7 @@ import {
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_ROAD_HALF_WIDTH,
   CITY_RUSH_SCROLL_SCALE,
+  cityRushTrackElevation,
   cityRushTrackOffset,
 } from './cityRushRules.js';
 import { createBatch, cloneBatchGroup, seededRandom, hexToRgb, SignAtlas, drawNeonSignCell } from './cityRushBuilder.js';
@@ -231,27 +232,35 @@ function makeCurvedStripGeometry(innerX, outerX, y = 0, segments = ROAD_CURVE_SE
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
   geometry.setIndex(indices);
+  geometry.userData.trackBaseY = y;
   geometry.computeVertexNormals();
   return geometry;
 }
 
 // Actualise une bande de bitume à partir de la distance réelle du joueur.
-// La courbe est appliquée à chaque rangée de sommets : marquages, trottoirs,
-// bordures et lignes néon suivent tous exactement le même virage.
+// La courbe et le léger relief sont appliqués à chaque rangée de sommets :
+// marquages, trottoirs, bordures et lignes néon suivent la même chaussée.
 function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ) {
   const positions = mesh.geometry.attributes.position;
   const segments = positions.count / 2 - 1;
   const playerCurve = cityRushTrackOffset(playerDistance);
+  const playerElevation = cityRushTrackElevation(playerDistance);
+  const baseY = mesh.geometry.userData.trackBaseY || 0;
   for (let index = 0; index <= segments; index += 1) {
     const progress = index / segments;
     const gap = ROAD_VIEW_BEHIND + (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * progress;
-    const centerX = cityRushTrackOffset(playerDistance + gap) - playerCurve;
+    const trackDistance = playerDistance + gap;
+    const centerX = cityRushTrackOffset(trackDistance) - playerCurve;
+    const y = baseY + cityRushTrackElevation(trackDistance) - playerElevation;
     const z = playerZ - gap * SCALE;
     const first = index * 2;
-    positions.setXYZ(first, centerX + innerX, positions.getY(first), z);
-    positions.setXYZ(first + 1, centerX + outerX, positions.getY(first + 1), z);
+    positions.setXYZ(first, centerX + innerX, y, z);
+    positions.setXYZ(first + 1, centerX + outerX, y, z);
   }
   positions.needsUpdate = true;
+  // Les variations sont douces, mais mettre les normales à jour permet aux
+  // montées et descentes d'attraper correctement la lumière du soleil / néon.
+  mesh.geometry.computeVertexNormals();
 }
 
 export function makeRoad(scene, theme, random, playerZ) {
@@ -278,9 +287,12 @@ export function makeRoad(scene, theme, random, playerZ) {
   const edgeMaterial = new THREE.MeshBasicMaterial({ color: theme.edgeColor, transparent: true, opacity: 0.85, toneMapped: false });
   // Au-delà des trottoirs : bitume sombre la nuit, sable chaud à Vice City.
   const groundMaterial = standard(theme.ground ?? 0x0d0f18, { roughness: 1 });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(420, 420), groundMaterial);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, -0.12, playerZ - 120);
+  // Le sol entourant la chaussée reprend lui aussi les montées : un plan plat
+  // traverserait le bitume au creux d'une descente et créerait des bandes
+  // claires sur les bas-côtés.
+  const ground = new THREE.Mesh(makeCurvedStripGeometry(-210, 210, -0.12), groundMaterial);
+  ground.receiveShadow = true;
+  ground.frustumCulled = false;
   scene.add(ground);
 
   const strips = [
@@ -300,6 +312,7 @@ export function makeRoad(scene, theme, random, playerZ) {
   });
 
   const updateCurve = (distance = 0) => {
+    updateCurvedStrip(ground, -210, 210, distance, playerZ);
     updateCurvedStrip(road, -ROAD_HALF, ROAD_HALF, distance, playerZ);
     strips.forEach(({ mesh, inner, outer }) => updateCurvedStrip(mesh, inner, outer, distance, playerZ));
   };
@@ -1216,9 +1229,9 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
 }
 
 // Le décor statique est fusionné par matériau. On déforme ensuite ses sommets
-// une seule fois selon la ligne centrale du circuit : les façades, lampadaires
-// et le portique suivent ainsi les mêmes courbes que la chaussée, sans coût à
-// chaque image. La copie suivante partage cette géométrie déjà incurvée.
+// une seule fois selon la ligne centrale et le relief du circuit : façades,
+// lampadaires et portique suivent ainsi les mêmes courbes et montées que la
+// chaussée, sans coût à chaque image. La copie suivante partage cette géométrie.
 function bendLoopGeometry(group) {
   group.traverse((object) => {
     if (!object.isMesh || !object.geometry?.attributes?.position) return;
@@ -1227,6 +1240,7 @@ function bendLoopGeometry(group) {
       const z = positions.getZ(index);
       const trackMeters = -z / SCALE;
       positions.setX(index, positions.getX(index) + cityRushTrackOffset(trackMeters));
+      positions.setY(index, positions.getY(index) + cityRushTrackElevation(trackMeters));
     }
     positions.needsUpdate = true;
     // Les façades et le sol reçoivent toujours la lumière de la bonne
