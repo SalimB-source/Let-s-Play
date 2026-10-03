@@ -536,12 +536,17 @@ export default function ViceCityRushPage() {
             Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur cinq circuits.
           </p>
           <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES</span><span>3 MODES DE COURSE</span></div>
+          <div className="city-rush-hero-actions">
+            <a className="city-rush-hero-cta" href="#vice-city-rush-console">
+              CHOISIR UNE COURSE <span aria-hidden="true">↓</span>
+            </a>
+          </div>
         </div>
         <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
       </header>
 
       <main className="city-rush-layout wrap">
-        <section className={`city-rush-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`} ref={shellRef} aria-label="Partie de Vice City Rush">
+        <section id="vice-city-rush-console" className={`city-rush-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`} ref={shellRef} aria-label="Partie de Vice City Rush">
           <div className="city-rush-topbar">
             <div className="city-rush-location">
               <span className="city-rush-location-mark" aria-hidden="true">{storyMode ? '★' : introStep === 'mode' ? mode.icon : '⌖'}</span>
