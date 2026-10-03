@@ -9,7 +9,7 @@
  * instant plus tard, puis `fullscreenchange` part), qu'on peut aussi faire
  * refuser, faire attendre (`hold`) ou fermer « de l'extérieur » (Échap).
  *
- *   1. Ordinateur : « LANCER LA PARTIE » ne touche pas à l'écran.
+ *   1. Ordinateur : le clic sur une carte de map ne touche pas à l'écran.
  *   2. « LANCER EN PLEIN ÉCRAN » (Rapide, puis Coupe) : plein écran natif sur la
  *      coque du jeu, couche fixe, verrou de défilement, bouton de la barre
  *      allumé. Le navigateur le referme (Échap) : la course passe en pause, la
@@ -19,8 +19,8 @@
  *      sont ignorés.
  *   4. Un plein écran demandé à la main reste en revenant à l'intro et en
  *      relançant ; le bouton de la barre le ferme.
- *   5. « OUVRIR LES SALONS » depuis le plein écran le referme (la page devient le
- *      lobby) ; F ne fait rien dans le lobby.
+ *   5. Toucher une map En ligne depuis le plein écran le referme (la page
+ *      devient le lobby) ; F ne fait rien dans le lobby.
  *   6. Sans Fullscreen API (iPhone, iframe) : la couche fixe seule suffit, F la
  *      referme sans appeler `exitFullscreen`.
  *   7. Double bascule avant la réponse du navigateur : rien ne reste en plein
@@ -29,9 +29,9 @@
  *      n'a pas fini (la piste ne rétrécit pas dans une fenêtre encore plein
  *      écran), une nouvelle bascule est ignorée, et un navigateur muet est
  *      rattrapé par le délai de sécurité.
- *   9. Téléphone (pointeur grossier) et application Android : « LANCER » ouvre
- *      le plein écran tout seul, sans second bouton ; le retour à l'intro le
- *      referme — sauf si le joueur l'avait demandé.
+ *   9. Téléphone (pointeur grossier) et application Android : le clic sur une
+ *      carte ouvre le plein écran tout seul, sans second bouton ; le retour à
+ *      l'intro le referme — sauf si le joueur l'avait demandé.
  *  10. Course en ligne : bouton et touche F sur la fenêtre de course, plein
  *      écran refermé quand la fenêtre disparaît (arrivée).
  */
@@ -141,6 +141,8 @@ const locked = () => document.body.classList.contains('mirage-immersive-lock');
 const shellOf = (node) => node.querySelector('.mirage-game-shell');
 const toggleOf = (node) => node.querySelector('.mirage-game-controls-top .mirage-fullscreen-button');
 const launchFullscreenOf = (node) => node.querySelector('.mirage-stage-actions .mirage-fullscreen-launch');
+// Le lancement se fait au clic sur la carte d'une map (plus de bouton « LANCER »).
+const mapCardOf = (node) => node.querySelector('.mirage-stage-picker .mirage-map-card:not(:disabled)');
 const startOf = (node) => node.querySelector('.mirage-stage-actions .mirage-start-button');
 const backOf = (node) => node.querySelector('.mirage-back-game-button');
 
@@ -174,12 +176,12 @@ const waitForCountdown = (node) => until(() => node.querySelector('.mirage-count
 const waitForRace = (node) => until(() => node.querySelector('.mirage-hud'), 'le départ de la course');
 const waitForPause = (node) => until(() => node.querySelector('.mirage-pause-overlay'), 'la pause');
 
-/** Écran 01 → écran 02 du mode `index` (0 Rapide, 1 Duel, 2 Coupe, 3 En ligne), puis attend le moteur. */
+/** Écran 01 → écran 02 du mode `index` (0 Rapide, 1 Duel, 2 Coupe, 3 En ligne) : les cartes à toucher. */
 async function openStage(node, index) {
   const intro = await waitForIntroStep(node, 'mode');
   await click(intro.querySelectorAll('.mirage-mode-action')[index]);
   await waitForIntroStep(node, 'stage');
-  await until(() => { const button = startOf(node); return button && !button.disabled; }, 'le moteur est prêt (bouton de lancement actif)');
+  await until(() => mapCardOf(node), 'les cartes de map de l’écran 02');
 }
 
 export async function checkMirageFullscreen(assert) {
@@ -198,19 +200,20 @@ export async function checkMirageFullscreen(assert) {
       assert.ok(toggle.querySelector('svg.mirage-fullscreen-icon'), 'icône dessinée en SVG (pas de glyphe absent des polices)');
       assert.match(toggle.title, /\(F\)/, 'l’infobulle annonce la touche F');
 
-      // 1. « LANCER LA PARTIE » ne touche pas à l'écran, sur ordinateur.
+      // 1. Toucher une carte ne touche pas à l'écran, sur ordinateur.
       await openStage(node, 0);
-      const primary = startOf(node);
       const secondary = launchFullscreenOf(node);
-      assert.match(squash(primary.textContent), /^LANCER LA PARTIE/);
+      assert.equal(startOf(node), null, 'plus de bouton « LANCER LA PARTIE » : la carte est le bouton');
+      assert.ok(mapCardOf(node), 'les cartes de map sont affichées');
+      assert.ok(node.querySelector('.mirage-picker-hint'), 'la consigne annonce que le clic lance la partie');
       assert.ok(secondary, 'ordinateur : un second bouton lance directement en plein écran');
       assert.match(squash(secondary.textContent), /^LANCER EN PLEIN ÉCRAN$/);
       assert.equal(secondary.disabled, false, 'actif dès que le moteur est prêt');
-      assert.ok(!secondary.classList.contains('mirage-start-button'), 'bouton à part : les parcours existants gardent « LANCER LA PARTIE »');
+      assert.ok(!secondary.classList.contains('mirage-start-button'), 'bouton à part : le lancement direct en plein écran reste une option');
       assert.ok(node.querySelector('.mirage-intro-overlay kbd') && /F\s*plein écran/i.test(squash(node.querySelector('.mirage-intro-overlay').textContent)), 'le rappel « F plein écran » figure dans les commandes');
-      await click(primary);
+      await click(mapCardOf(node));
       await waitForRace(node);
-      assert.deepEqual(shellState(node, api), CLOSED, '« LANCER LA PARTIE » : la course part dans la page');
+      assert.deepEqual(shellState(node, api), CLOSED, 'le clic sur une carte : la course part dans la page');
       assert.equal(api.requests, 0, 'aucune demande de plein écran sans qu’on l’ait faite');
       await click(backOf(node));
       await waitForIntroStep(node, 'mode');
@@ -277,7 +280,7 @@ export async function checkMirageFullscreen(assert) {
       assert.deepEqual(shellState(node, api), OPEN, 'RETOUR au choix du mode : le plein écran demandé reste');
       await openStage(node, 0);
       assert.ok(!launchFullscreenOf(node), 'déjà en plein écran : pas de second bouton');
-      await click(startOf(node));
+      await click(mapCardOf(node));
       await waitForRace(node);
       assert.deepEqual(shellState(node, api), OPEN, 'relancer garde le plein écran');
       assert.deepEqual(since(api, before), { requests: 0, exits: 0 }, 'sans nouvelle demande au navigateur');
@@ -293,7 +296,7 @@ export async function checkMirageFullscreen(assert) {
       assert.deepEqual(shellState(node, api), OPEN);
       await openStage(node, 3);
       before = mark(api);
-      await click(startOf(node));
+      await click(mapCardOf(node));
       await until(() => !shellOf(node), 'le lobby remplace la page de jeu');
       await settle();
       assert.equal(nothingNative(api), true, 'ouvrir les salons referme le plein écran');
@@ -308,7 +311,7 @@ export async function checkMirageFullscreen(assert) {
     // 2 bis. Coupe : « LANCER EN PLEIN ÉCRAN » lance la coupe en plein écran.
     {
       const { node, unmount } = await mountPage('/jeu?mode=cup');
-      await until(() => { const button = startOf(node); return button && !button.disabled; }, 'le bouton de la coupe est actif');
+      await until(() => launchFullscreenOf(node), 'le bouton de plein écran de la coupe');
       await click(launchFullscreenOf(node));
       assert.deepEqual(shellState(node, api), OPEN, 'Coupe : plein écran');
       await waitForCountdown(node);
@@ -393,10 +396,10 @@ export async function checkMirageFullscreen(assert) {
       try {
         const { node, unmount } = await mountPage('/jeu');
         await openStage(node, 0);
-        assert.ok(!launchFullscreenOf(node), `${label} : pas de second bouton, « LANCER » ouvre déjà le plein écran`);
+        assert.ok(!launchFullscreenOf(node), `${label} : pas de second bouton, toucher une carte ouvre déjà le plein écran`);
         const before = mark(api);
-        await click(startOf(node));
-        assert.deepEqual(shellState(node, api), OPEN, `${label} : « LANCER LA PARTIE » ouvre le plein écran tout seul`);
+        await click(mapCardOf(node));
+        assert.deepEqual(shellState(node, api), OPEN, `${label} : toucher une carte ouvre le plein écran tout seul`);
         assert.equal(since(api, before).requests, 1);
         await waitForRace(node);
         await click(backOf(node));
@@ -409,7 +412,7 @@ export async function checkMirageFullscreen(assert) {
         await click(toggleOf(node));
         assert.deepEqual(shellState(node, api), OPEN);
         await openStage(node, 0);
-        await click(startOf(node));
+        await click(mapCardOf(node));
         await waitForRace(node);
         await click(backOf(node));
         await waitForIntroStep(node, 'mode');

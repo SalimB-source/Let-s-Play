@@ -157,15 +157,16 @@ export default function MirageRushPage() {
   // ne s’ajoute au maximum annoncé.
   const [cupRaceCoins, setCupRaceCoins] = useState(0);
   const isCup = selectedMode === 'cup';
-  // Vrai quand « LANCER » ouvre déjà le plein écran (téléphone, application) : relu à
-  // chaque rendu, comme `trackLanes`.
+  // Vrai quand un lancement (clic sur une carte) ouvre déjà le plein écran
+  // (téléphone, application) : relu à chaque rendu, comme `trackLanes`.
   const launchesFullscreen = opensFullscreenOnLaunch();
   const requestedCup = getCup(cupId);
   const activeCup = (requestedCup && isCupUnlocked(requestedCup.id, completedCups))
     ? requestedCup
     : CUPS[0];
   // L'intro devient un vrai tunnel : d'abord un écran de boutons de mode,
-  // puis seulement l'écran suivant avec les maps et le lancement.
+  // puis seulement l'écran suivant avec les maps — chaque carte lance sa
+  // partie d'un clic, sans bouton de lancement.
   const [introStep, setIntroStep] = useState(() => (challenge || initialModeParam === 'online' || initialModeParam === 'cup' || initialStageParam ? 'stage' : 'mode'));
   const [onlineOpen, setOnlineOpen] = useState(initialModeParam === 'online');
   const [settingsTab, setSettingsTab] = useState('community');
@@ -293,9 +294,10 @@ export default function MirageRushPage() {
   // ── Plein écran ────────────────────────────────────────────────────────
   // Le mécanisme (Fullscreen API, couche fixe en repli, verrou de défilement)
   // vit dans useMirageFullscreen / mirageFullscreen.js. Ici, les règles du jeu :
-  //   - téléphone, tablette, application : « LANCER » ouvre le plein écran tout
-  //     seul (le doigt joue mieux sur tout l'écran) et la page le referme dès
-  //     qu'elle revient à l'intro — c'est le comportement d'origine ;
+  //   - téléphone, tablette, application : le clic sur une carte de map (ou de
+  //     coupe) ouvre le plein écran tout seul (le doigt joue mieux sur tout
+  //     l'écran) et la page le referme dès qu'elle revient à l'intro — c'est le
+  //     comportement d'origine ;
   //   - ordinateur : jamais sans demande. Bouton « Plein écran » de la barre du
   //     jeu, « LANCER EN PLEIN ÉCRAN » ou touche F. Demandé ainsi, il reste ouvert
   //     d'une course à l'autre (intro comprise) jusqu'à ce qu'on le quitte ;
@@ -308,8 +310,8 @@ export default function MirageRushPage() {
   // Lance une course (compte à rebours, puis le moteur démarre) : commun à la
   // ruée, au duel et à chaque course d’une coupe.
   const beginRace = useCallback((nextRace, { fullscreen = false } = {}) => {
-    // Clic « LANCER » / Entrée pour rejouer : on demande le plein écran
-    // ici, synchronement dans le geste, sinon le navigateur le refuse.
+    // Clic sur une carte, sur « REJOUER » ou Entrée : on demande le plein
+    // écran ici, synchronement dans le geste, sinon le navigateur le refuse.
     // « LANCER EN PLEIN ÉCRAN » le demande à coup sûr ; sur téléphone et
     // application, tout lancement l'ouvre ; sur ordinateur, un lancement
     // ordinaire laisse la page comme elle est (en plein écran si on y est déjà).
@@ -347,11 +349,15 @@ export default function MirageRushPage() {
     setCupRaceCoins(0);
   }, []);
 
-  // « LANCER LA COUPE » / « REJOUER LA COUPE » : une coupe neuve, 0 point.
-  // Branché tel quel sur des `onClick` : le premier argument peut être un
-  // évènement, seul `{ fullscreen: true }` compte (« LANCER EN PLEIN ÉCRAN »).
-  const startCup = useCallback((options) => {
-    const run = createCupRun(activeCup.id, {
+  // Une coupe neuve, 0 point, pour la coupe demandée. `startCupWithId` sert au
+  // clic sur une carte de coupe (elle démarre aussitôt) ; `startCup`, branché
+  // tel quel sur des `onClick` de rejeu, utilise la coupe déjà choisie — le
+  // premier argument peut y être un évènement, seul `{ fullscreen: true }`
+  // compte (« LANCER EN PLEIN ÉCRAN »).
+  const startCupWithId = useCallback((nextCupId, options) => {
+    const cup = getCup(nextCupId);
+    if (!cup || !isCupUnlocked(cup.id, progressRef.current.completedCups)) return;
+    const run = createCupRun(cup.id, {
       playerName: effectiveRiderName,
       playerColors: skinFor(progressRef.current).colors,
       // Les rivaux de la piste courante : trois sur ordinateur et tablette,
@@ -359,11 +365,16 @@ export default function MirageRushPage() {
       rivals: trackRivals,
     });
     if (!run) return;
+    setCupId(cup.id);
     cupRunRef.current = run;
     setCupRun(run);
     setCupRaceCoins(0);
     beginRace(cupRace(run), { fullscreen: options?.fullscreen === true });
-  }, [activeCup.id, effectiveRiderName, trackRivals, beginRace, cupRace]);
+  }, [effectiveRiderName, trackRivals, beginRace, cupRace]);
+
+  const startCup = useCallback((options) => {
+    startCupWithId(activeCup.id, options);
+  }, [activeCup.id, startCupWithId]);
 
   const showCupTrophy = useCallback(() => {
     setPhase('trophy');
@@ -384,7 +395,8 @@ export default function MirageRushPage() {
   advanceCupRef.current = advanceCup;
 
   // Idem : `startRun({ fullscreen: true })` lance la course en plein écran ; un
-  // évènement de clic en premier argument est ignoré.
+  // évènement de clic en premier argument est ignoré. Il sert au rejeu (écrans
+  // d’arrivée, touche Entrée) et à « LANCER EN PLEIN ÉCRAN ».
   const startRun = useCallback((options) => {
     const fullscreen = options?.fullscreen === true;
     if (selectedMode === 'cup') {
@@ -520,6 +532,29 @@ export default function MirageRushPage() {
       setSelectedStage(nextStageId);
     }
   }, []);
+
+  // ── Un clic sur une carte lance la partie ───────────────────────────────
+  // Plus de bouton « LANCER » : la carte de map (ou celle du défi) démarre la
+  // course avec **son** terrain, sans attendre un rendu intermédiaire.
+  const startStageCard = useCallback((nextStageId) => {
+    if (selectedMode === 'online') {
+      // En ligne, la carte choisit la map par défaut du salon puis l’ouvre.
+      chooseStage(nextStageId);
+      openOnlineLobby();
+      return;
+    }
+    const isChallenge = selectedMode === 'duel' && Boolean(challenge);
+    // Un défi impose son terrain — même s’il n’est pas encore débloqué en solo.
+    const nextStage = isChallenge ? (challenge.stage || 'desert') : nextStageId;
+    if (!isChallenge && !isStageUnlocked(nextStage, progressRef.current.wonStages)) return;
+    setSelectedStage(nextStage);
+    beginRace({ mode: selectedMode, stage: nextStage, challenge: isChallenge ? challenge : null });
+  }, [selectedMode, challenge, beginRace, chooseStage, openOnlineLobby]);
+
+  // Idem pour les cartes de coupe : elles lancent la coupe choisie.
+  const startCupCard = useCallback((nextCupId) => {
+    startCupWithId(nextCupId);
+  }, [startCupWithId]);
 
   const recordProgress = useCallback((result) => {
     const outcome = applyRun(progressRef.current, result);
@@ -684,15 +719,20 @@ export default function MirageRushPage() {
     : stage === 'western' ? 'Contourne les caisses empilées, saute les clôtures et fonce dans la rue de Dust Creek !'
     : 'Esquive les cactus, saute les blocs et attrape les fragments solaires. Chaque cristal nourrit ton combo et ton score.';
   const stageIntroText = selectedMode === 'online'
-    ? `Choisis la map par défaut de ton prochain salon, puis ouvre le lobby multijoueur. ${stageDescription}`
+    ? `Choisis la map par défaut de ton prochain salon : touche-la et le lobby multijoueur s’ouvre aussitôt. ${stageDescription}`
     : stageDescription;
   const stageHint = selectedMode === 'online'
-    ? 'ÉCRAN 02 · MAP DU SALON · 2 À 4 CAVALIERS EN LIGNE'
+    ? 'ÉCRAN 02 · TOUCHE UNE MAP POUR OUVRIR LE SALON · 2 À 4 CAVALIERS EN LIGNE'
     : isCup
       ? `${activeCup.stages.length} COURSES · +${WIN_COINS} OR / VICTOIRE · JUSQU’À +${cupGoldReward} OR`
       : selectedMode === 'duel'
         ? `${riderCount} CAVALIERS · DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE`
         : '60 SECONDES · 3 VIES · MULTIPLICATEUR DE COMBO · RECORD À BATTRE';
+  // Sous les cartes de l'écran 02, il ne reste que deux options : l'attente du
+  // moteur 3D et, sur ordinateur, le lancement direct en plein écran (chaque
+  // carte démarre sa partie d'un clic).
+  const showStageLoading = !ready && selectedMode !== 'online';
+  const showFullscreenLaunch = selectedMode !== 'online' && !launchesFullscreen && !immersive;
   const gameBrandLabel = phase === 'intro' && introStep === 'stage' && isCup
     ? 'COUPE · PARCOURS IMPOSÉS'
     : stage === 'snakeway' ? 'ZONE 10 · CHEMIN DU SERPENT'
@@ -1133,7 +1173,7 @@ export default function MirageRushPage() {
                 {introStep === 'mode' ? <>
                   <div className="mirage-overlay-kicker"><span>✦</span> CHOISIS TON MODE <span>✦</span></div>
                   <h2>MIRAGE <em>RUSH.</em></h2>
-                  <p className="mirage-intro-lead">Sélectionne un vrai bouton de mode : les maps s’ouvrent à l’écran suivant, puis tu lances la Ruée, le Duel, la Coupe ou le lobby En ligne.</p>
+                  <p className="mirage-intro-lead">Sélectionne un vrai bouton de mode : les maps — ou les coupes — s’ouvrent à l’écran suivant, et un simple clic sur la carte lance la partie. Aucun bouton de lancement à chercher.</p>
                   <div className="mirage-mode-section">
                     <div className="mirage-picker-label"><span>01 / TON MODE</span><span>BOUTONS DE DÉPART</span></div>
                     <div className="mirage-mode-picker is-actions" role="group" aria-label="Choisir un mode Mirage">
@@ -1166,6 +1206,7 @@ export default function MirageRushPage() {
                       <MirageCupPicker
                         cupId={activeCup.id}
                         setCupId={chooseCup}
+                        onStart={startCupCard}
                         riderName={riderName}
                         setRiderName={(value) => { setRiderName(value); writeRiderName(value); }}
                         defaultRiderName={defaultRiderName}
@@ -1175,39 +1216,44 @@ export default function MirageRushPage() {
                       <MirageStagePicker
                         stage={stage}
                         setSelectedStage={chooseStage}
+                        onStart={startStageCard}
                         locked={selectedMode === 'duel' && Boolean(challenge)}
                         wonStages={wonStages}
+                        startLabel={selectedMode === 'online' ? 'OUVRIR LE SALON' : 'JOUER'}
+                        hint={selectedMode === 'online'
+                          ? 'TOUCHE UNE MAP : LE SALON S’OUVRE AUSSITÔT.'
+                          : selectedMode === 'duel'
+                            ? 'TOUCHE UNE MAP : LE DUEL DÉMARRE AUSSITÔT.'
+                            : 'TOUCHE UNE MAP : LA RUÉE DÉMARRE AUSSITÔT.'}
                       />
                     )}
                   </div>
                   {selectedMode === 'duel' && challenge && <small>Stage imposé par le défi pour garder le même parcours.</small>}
                   {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier les {rivalCount} PNJ.</p>}
-                  <p>{stageIntroText}</p>
-                  <div className="mirage-stage-actions">
-                    <button
-                      type="button"
-                      className="mirage-start-button"
-                      onClick={selectedMode === 'online' ? openOnlineLobby : startRun}
-                      disabled={selectedMode !== 'online' && !ready}
-                    >
-                      {selectedMode === 'online'
-                        ? 'OUVRIR LES SALONS'
-                        : ready ? isCup ? 'LANCER LA COUPE' : selectedMode === 'duel' ? 'LANCER LE DUEL' : 'LANCER LA PARTIE' : 'CHARGEMENT DU PARCOURS…'} <span>↗</span>
-                    </button>
-                    {/* Téléphone, tablette, application : le lancement ordinaire
-                        ouvre déjà le plein écran — pas de second bouton. Déjà en
-                        plein écran, il ne servirait à rien non plus. */}
-                    {selectedMode !== 'online' && !launchesFullscreen && !immersive && (
-                      <button
-                        type="button"
-                        className="mirage-fullscreen-launch"
-                        onClick={() => startRun({ fullscreen: true })}
-                        disabled={!ready}
-                      >
-                        <MirageFullscreenIcon /> LANCER EN PLEIN ÉCRAN
-                      </button>
-                    )}
-                  </div>
+                  <p className="mirage-stage-description">{stageIntroText}</p>
+                  {/* Plus de bouton « LANCER » : chaque carte démarre sa partie.
+                      Il ne reste ici que l’attente du moteur 3D et, sur
+                      ordinateur, le lancement direct en plein écran. */}
+                  {(showStageLoading || showFullscreenLaunch) && (
+                    <div className="mirage-stage-actions">
+                      {showStageLoading && (
+                        <span className="mirage-stage-loading" role="status">CHARGEMENT DU PARCOURS…</span>
+                      )}
+                      {/* Téléphone, tablette, application : le clic sur une carte
+                          ouvre déjà le plein écran — pas de second bouton. Déjà
+                          en plein écran, il ne servirait à rien non plus. */}
+                      {showFullscreenLaunch && (
+                        <button
+                          type="button"
+                          className="mirage-fullscreen-launch"
+                          onClick={() => startRun({ fullscreen: true })}
+                          disabled={!ready}
+                        >
+                          <MirageFullscreenIcon /> LANCER EN PLEIN ÉCRAN
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {selectedMode !== 'online' && (isTouch ? (
                     /* Téléphone & application : plus de croix directionnelle à
                        l'écran, on esquive au glissement — la consigne dit le

@@ -14,8 +14,9 @@
  *
  * Qui ouvre le plein écran :
  *
- *   - **téléphone, tablette, application** : « LANCER » l'ouvre tout seul (un
- *     doigt joue mieux sur tout l'écran) — voir `opensFullscreenOnLaunch()` ;
+ *   - **téléphone, tablette, application** : le clic sur une carte de map (ou de
+ *     coupe) l'ouvre tout seul — un doigt joue mieux sur tout l'écran — voir
+ *     `opensFullscreenOnLaunch()` ;
  *   - **ordinateur** : jamais sans qu'on le demande. Bouton « Plein écran » de
  *     la barre du jeu, bouton « LANCER EN PLEIN ÉCRAN », ou la touche F.
  *
@@ -77,9 +78,10 @@ function coarsePointer() {
 }
 
 /**
- * Vrai quand « LANCER » ouvre le plein écran sans qu'on le demande : appareil
- * tactile (téléphone, tablette) ou application Android. Sur ordinateur, c'est
- * faux — il faut le bouton, la touche F ou « LANCER EN PLEIN ÉCRAN ».
+ * Vrai quand un lancement (clic sur une carte de map ou de coupe) ouvre le
+ * plein écran sans qu'on le demande : appareil tactile (téléphone, tablette) ou
+ * application Android. Sur ordinateur, c'est faux — il faut le bouton, la
+ * touche F ou « LANCER EN PLEIN ÉCRAN ».
  */
 export function opensFullscreenOnLaunch() {
   return runningInAndroidApp() || coarsePointer();
