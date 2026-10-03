@@ -29,7 +29,7 @@ export default function MiragePowerIcon({ type, variant = 'standard', className 
       {isSkinIcon && (
         <image href={icon.src} x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid meet" />
       )}
-      {resolvedType === POWER_UPS.SHIELD && (
+      {resolvedType === POWER_UPS.SHIELD && !isSkinIcon && (
         <>
           <defs>
             <radialGradient id={`shield-bg-${uid}`} cx="50%" cy="32%" r="72%">
@@ -76,7 +76,7 @@ export default function MiragePowerIcon({ type, variant = 'standard', className 
         </>
       )}
 
-      {resolvedType === POWER_UPS.LASSO && !isCloudIcon && (
+      {resolvedType === POWER_UPS.LASSO && !isSkinIcon && (
         <>
           <defs>
             <radialGradient id={`lasso-bg-${uid}`} cx="50%" cy="35%" r="72%">
@@ -157,7 +157,7 @@ export default function MiragePowerIcon({ type, variant = 'standard', className 
         </>
       )}
 
-      {resolvedType === POWER_UPS.PISTOL && !isCloudIcon && (
+      {resolvedType === POWER_UPS.PISTOL && !isSkinIcon && (
         <>
           <defs>
             <radialGradient id={`pistol-bg-${uid}`} cx="50%" cy="35%" r="72%">
