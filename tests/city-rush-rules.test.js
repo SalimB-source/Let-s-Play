@@ -99,7 +99,8 @@ test('the five city routes have a distinct identity and complete palettes', () =
 });
 
 test('the selectable cars have distinct handling trade-offs and physical silhouettes', () => {
-  assert.equal(CITY_RUSH_CARS.length, 4);
+  assert.equal(CITY_RUSH_CARS.length, 5);
+  assert.equal(CITY_RUSH_CARS.find((car) => car.id === 'vega-gt-67')?.bodyColor, 0x11131a);
   assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
   for (const car of CITY_RUSH_CARS) {
     assert.ok(car.name && car.className && car.accent.startsWith('#'));
