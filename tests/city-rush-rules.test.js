@@ -11,6 +11,13 @@ import {
   CITY_RUSH_BLUE_SHOT_DURATION,
   CITY_RUSH_BLUE_SHOT_MAX_RANGE,
   CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
+  CITY_RUSH_TRACK_BOOST_DURATION,
+  CITY_RUSH_TRACK_BOOST_SPEED_FACTOR,
+  CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR,
+  CITY_RUSH_TRACK_BOOST_COLOR,
+  CITY_RUSH_ONCOMING_SHOULDER_X,
+  CITY_RUSH_ONCOMING_EJECT_DURATION,
+  cityRushOncomingImpactX,
   CITY_RUSH_RACER_VIEW_DISTANCE,
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
@@ -25,6 +32,7 @@ import {
   CITY_RUSH_POWER_CHARGE_COST,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
+  CITY_RUSH_PICKUPS,
   CITY_RUSH_POLICE_ATTACK_LEAD,
   CITY_RUSH_POLICE_BLOCKADE_HOLD,
   CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED,
@@ -178,13 +186,24 @@ test('un joueur humain ou une IA touche le trafic, ralentit brièvement (0,6 s) 
   assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2] }), 1, 'la voie voisine occupée fait glisser le dégagement');
 });
 
+test('an oncoming collision pushes the hit car to the left shoulder', () => {
+  assert.equal(CITY_RUSH_ONCOMING_SHOULDER_X, -5.55);
+  assert.equal(CITY_RUSH_ONCOMING_EJECT_DURATION, 0.72);
+  const start = CITY_RUSH_LANE_X[1];
+  const samples = [0, 0.18, 0.36, 0.54, 0.72].map((elapsed) => cityRushOncomingImpactX(start, elapsed));
+  assert.equal(samples[0], start);
+  assert.ok(samples[0] > samples[1] && samples[1] > samples[2] && samples[2] > samples[3]);
+  assert.equal(samples[4], CITY_RUSH_ONCOMING_SHOULDER_X);
+  assert.equal(cityRushOncomingImpactX(start, 2), CITY_RUSH_ONCOMING_SHOULDER_X);
+});
+
 test('rivals plan lane changes to collect bonuses and avoid traffic safely', () => {
   const towardPickup = chooseCityRushAiLane({
     currentLane: 1,
     distance: 10,
     speed: 24,
     availableLanes: [0, 1, 2],
-    pickups: [{ lane: 2, distance: 40, type: 'cash' }],
+    pickups: [{ lane: 2, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }],
   });
   assert.equal(towardPickup, 2);
 
@@ -194,14 +213,13 @@ test('rivals plan lane changes to collect bonuses and avoid traffic safely', () 
     speed: 24,
     availableLanes: [0, 1, 2],
     traffic: [{ lane: 1, distance: 48, speed: 5 }],
-    slowZones: [{ lane: 1, distance: 60 }],
   });
   assert.ok(awayFromTraffic !== 1);
   assert.equal(chooseCityRushAiLane({
     currentLane: 1,
     distance: 10,
     availableLanes: [1],
-    pickups: [{ lane: 2, distance: 40, type: 'cash' }],
+    pickups: [{ lane: 2, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }],
   }), 1, 'le rival ne tente pas de changer vers une voie bloquée');
 });
 
@@ -212,7 +230,7 @@ test('oncoming traffic on the left lanes is dodged like a wall, never rammed', (
     currentLane: 2,
     distance: 0,
     speed: 28,
-    pickups: [{ lane: 1, distance: 40, type: 'cash' }],
+    pickups: [{ lane: 1, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }],
     traffic: [{ lane: 1, distance: 45, speed: -6, oncoming: true }],
   }), 2, 'le bonus passe derrière un véhicule venant en face');
 
@@ -221,7 +239,7 @@ test('oncoming traffic on the left lanes is dodged like a wall, never rammed', (
     currentLane: 2,
     distance: 0,
     speed: 28,
-    pickups: [{ lane: 1, distance: 40, type: 'cash' }],
+    pickups: [{ lane: 1, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }],
     traffic: [{ lane: 1, distance: -10, speed: -6, oncoming: true }],
   }), 1, 'une voie dégagée reste une voie de dépassement');
 
@@ -250,7 +268,7 @@ test('rivals pursue visible bonus pickups above hazards, even when a matching ba
     distance: 10,
     speed: 24,
     availableLanes: [0, 1, 2, 3],
-    pickups: [{ lane: 3, distance: 50, type: 'cash' }],
+    pickups: [{ lane: 3, distance: 50, type: CITY_RUSH_PICKUPS.BOOST }],
   });
   assert.deepEqual([route(0), route(1), route(2)], [1, 2, 3], 'le rival prend la voie du bonus par étapes');
 
@@ -259,14 +277,13 @@ test('rivals pursue visible bonus pickups above hazards, even when a matching ba
     distance: 10,
     speed: 24,
     availableLanes: [0, 1, 2],
-    pickups: [{ lane: 2, distance: 40, type: 'cash' }],
-    slowZones: [{ lane: 2, distance: 44 }],
+    pickups: [{ lane: 2, distance: 40, type: CITY_RUSH_PICKUPS.BOOST }],
     traffic: [
       { lane: 2, distance: 40, speed: 6 },
       { lane: 2, distance: 42, speed: 6 },
       { lane: 2, distance: 45, speed: 6 },
     ],
-    inventory: { cash: CITY_RUSH_POWER_CHARGE_COST.cash },
+    inventory: { [CITY_RUSH_POWERS.BLUE_SHOT]: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT] },
   });
   assert.equal(contestedBonusLane, 2, 'le bonus reste prioritaire sur les risques et une jauge déjà pleine');
 });
@@ -293,31 +310,34 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
   assert.deepEqual(orderedIds('recovery'), orderedIds('hitRecoveryMultiplier', -1));
 });
 
-test('the item effects, matching colors, and charge costs match the race rules', () => {
+test('three stored powers, a one-pickup blue shot, and ground boosts match the race rules', () => {
   assert.equal(CITY_RUSH_DISTANCE, 3000);
   assert.equal(CITY_RUSH_PLAYER_SPEED, 29);
-  // Seuils de chargement : bleu 2, rouge 3, vert 2, jaune 4.
-  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 2, pistol: 3, cash: 2, radio: 4 });
+  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 3, radio: 4 });
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
-    'blue-shot': 'A', pistol: 'Z', cash: 'E', radio: 'R',
+    'blue-shot': 'A', pistol: 'Z', radio: 'R',
   });
+  assert.deepEqual(Object.keys(CITY_RUSH_POWER_RULES), ['blue-shot', 'pistol', 'radio']);
   for (const [type, cost] of Object.entries(CITY_RUSH_POWER_CHARGE_COST)) {
     assert.equal(CITY_RUSH_POWER_RULES[type].chargeCost, cost);
   }
-  assert.equal(CITY_RUSH_BLUE_SHOT_DURATION, 0.3);
-  assert.equal(CITY_RUSH_BLUE_SHOT_SPEED_FACTOR, 0.85);
+  assert.equal(CITY_RUSH_BLUE_SHOT_DURATION, 1.8);
+  assert.equal(CITY_RUSH_BLUE_SHOT_SPEED_FACTOR, 0.55);
   assert.equal(CITY_RUSH_BLUE_SHOT_MAX_RANGE, CITY_RUSH_RACER_VIEW_DISTANCE);
-  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].duration, 0.3);
+  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].chargeCost, 1);
+  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].duration, CITY_RUSH_BLUE_SHOT_DURATION);
+  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].speedFactor, CITY_RUSH_BLUE_SHOT_SPEED_FACTOR);
   assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].color, '#48b9ff');
   assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].automatic, false);
-  assert.match(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].description, /sans viser/i);
-  assert.match(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.CASH].name, /boisson énergisante/i);
+  assert.match(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].description, /one pickup|un seul bonus/i);
+  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_PICKUPS.BOOST], undefined, 'le turbo au sol n’est pas un pouvoir stocké');
+  assert.equal(CITY_RUSH_TRACK_BOOST_DURATION, 3);
+  assert.equal(CITY_RUSH_TRACK_BOOST_SPEED_FACTOR, 1.46);
+  assert.equal(CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR, 1.38);
+  assert.equal(CITY_RUSH_TRACK_BOOST_COLOR, '#50e48a');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.automatic, false);
-  assert.equal(CITY_RUSH_POWER_RULES.cash.duration, 1.5);
-  assert.equal(CITY_RUSH_POWER_RULES.cash.color, '#50e48a');
-  assert.equal(CITY_RUSH_POWER_RULES.cash.automatic, true);
   assert.equal(CITY_RUSH_POWER_RULES.radio.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
   assert.equal(CITY_RUSH_POWER_RULES.radio.automatic, false);
@@ -453,30 +473,24 @@ test('le tir droit bleu riposte sur la berline la plus proche de sa voie, même 
   }).id, 'police-3');
 });
 
-test('matching pickups charge independent bars, and only a full bar can be used', () => {
+test('one blue pickup charges the blue shot, while the three stored powers keep independent bars', () => {
   let inventory = createCityRushInventory();
+  assert.deepEqual(Object.keys(inventory), ['blue-shot', 'pistol', 'radio']);
   inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
   inventory = addCityRushCharge(inventory, 'pistol', 2);
   assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], 1);
   assert.equal(inventory.pistol, 2);
-  assert.equal(inventory.cash, 0);
-  // Une jauge incomplète ne se consomme pas.
-  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).consumed, false);
-  assert.equal(consumeCityRushCharge(inventory, 'pistol').consumed, false);
-
-  // Les seuils abaissés sont atteints : bleu 2 et rouge 3 restent indépendants.
-  inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
-  inventory = addCityRushCharge(inventory, 'pistol', 1);
-  assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT]);
-  assert.equal(inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
-  assert.equal(inventory.cash, 0);
-  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0);
-
+  // Un seul bonus bleu suffit ; la mitrailleuse reste incomplète.
   const usedShot = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT);
   assert.equal(usedShot.consumed, true);
   assert.equal(usedShot.inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0);
-  assert.equal(usedShot.inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
-  assert.equal(consumeCityRushCharge(usedShot.inventory, CITY_RUSH_POWERS.BLUE_SHOT).consumed, false);
+  assert.equal(consumeCityRushCharge(usedShot.inventory, 'pistol').consumed, false);
+
+  inventory = addCityRushCharge(usedShot.inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
+  inventory = addCityRushCharge(inventory, 'pistol', 1);
+  assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT]);
+  assert.equal(inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0);
   assert.equal(consumeCityRushCharge(inventory, 'unknown').consumed, false);
 
   const overfilled = addCityRushCharge(createCityRushInventory(), 'radio', 99);
@@ -557,9 +571,9 @@ test('au dernier tour, trois berlines de police chassent le premier — hors cla
   assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], ['pistol', 'radio']);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
   assert.equal(CITY_RUSH_POWER_RULES.radio.color, '#ffd44f');
-  // Aucune berline ne porte un identifiant de pilote classé : la grille reste
-  // à quatre, et l'arrivée ne peut pas les compter.
-  assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno', 'ace']);
+  // Aucune berline ne porte un identifiant de pilote classé : la grille garde
+  // trois pilotes, et l'arrivée ne peut pas compter les voitures de police.
+  assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno']);
   // L'escouade encadre la piste par les voies extérieures, la troisième berline
   // se cale sur une voie intérieure, et son barrage est encadré dans le temps :
   // elle se rabat, freine, puis repart.
@@ -607,7 +621,7 @@ test('l’escouade traverse la route pour rafler un bonus rouge ou jaune', () =>
   // Un jaune plus loin l'emporte sur une boisson toute proche : la berline
   // s'écarte de sa voie et se rabat vers le talkie-walkie (voie 3).
   const pickups = [
-    { lane: 0, type: 'cash', distance: 1040 },
+    { lane: 0, type: CITY_RUSH_PICKUPS.BOOST, distance: 1040 },
     { lane: 3, type: 'radio', distance: 1180 },
   ];
   assert.equal(chooseCityRushPoliceLane({ ...common, pickups }), 2);
@@ -797,7 +811,7 @@ test('barre de vie des berlines : trois tirs bleus, OU deux rafales rouges, OU u
   assert.equal(cityRushPoliceDamage(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'une épave ne prend plus de dégâts');
   assert.equal(cityRushPoliceDamage(1, CITY_RUSH_POWERS.PISTOL), 0);
   // Source inconnue ou invalide : aucun dégât.
-  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'cash'), CITY_RUSH_POLICE_HEALTH);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_PICKUPS.BOOST), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, null), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
 });
@@ -811,7 +825,7 @@ test('le bandeau « berline touchée » compte les tirs restants, pas les points
   assert.equal(cityRushPoliceShotsLeft(3, CITY_RUSH_POWERS.PISTOL), 1, 'une rafale rouge après la première');
   assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 1, 'un seul missile');
   // Arme non létale ou inconnue : aucun tir ne compte.
-  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, 'cash'), 0);
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_PICKUPS.BOOST), 0);
   assert.equal(cityRushPoliceShotsLeft(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
 });
 
@@ -822,7 +836,7 @@ test('les berlines entrent en piste armées : bleu et rouge chargés, jaune vide
   assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT], 'jauge bleue pleine');
   assert.equal(inventory[CITY_RUSH_POWERS.PISTOL], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.PISTOL], 'jauge rouge pleine');
   assert.equal(inventory[CITY_RUSH_POWERS.RADIO], 0, 'jaune vide');
-  assert.equal(inventory[CITY_RUSH_POWERS.CASH], 0, 'vert vide');
+  assert.equal(Object.hasOwn(inventory, CITY_RUSH_PICKUPS.BOOST), false, 'le pad turbo ne se stocke pas');
   // Les deux armes de départ sont immédiatement utilisables : la consommation
   // passe sans attendre un bonus.
   assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL).consumed, true);
@@ -924,7 +938,7 @@ test('devant le leader, la berline se rabat dans sa voie pour lui couper la rout
   };
   // Berline en voie 2, leader en voie 3 : le rabattement vers sa voie (3) vaut
   // mieux qu'un bonus ordinaire (voie 1), même proche.
-  const pickups = [{ lane: 1, type: 'cash', distance: 1030 }];
+  const pickups = [{ lane: 1, type: CITY_RUSH_PICKUPS.BOOST, distance: 1030 }];
   const cutIn = chooseCityRushPoliceLane({
     ...common, currentLane: 2, pickups, interceptLane: 3, interceptGap: 14,
   });
@@ -956,7 +970,7 @@ test('devant le leader, la berline se rabat dans sa voie pour lui couper la rout
   // Engluée derrière un pilote (« stuck »), la berline s'extrait de la voie
   // même si un bonus ordinaire l'y appelait.
   assert.equal(chooseCityRushPoliceLane({
-    ...common, currentLane: 2, pickups: [{ lane: 2, type: 'cash', distance: 1020 }],
+    ...common, currentLane: 2, pickups: [{ lane: 2, type: CITY_RUSH_PICKUPS.BOOST, distance: 1020 }],
     racers: [{ lane: 2, distance: 1008, speed: 24 }], stuck: true,
   }), 1, 'elle préfère changer de voie plutôt que rester collée');});
 
@@ -1011,16 +1025,16 @@ test('cars changing lanes still block one another while their body widths overla
   assert.equal(byId['clear-lane'], 30);
 });
 
-test('pickup encounters add more bonuses without placing them in slow zones', () => {
+test('pickup encounters use ground boosts and stored powers without oil slicks', () => {
   let seed = 112;
   const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
-  let sawSlowZone = false;
   let sawEmptyRow = false;
   let sawTwoPickups = false;
   let totalPickups = 0;
-  const pickupCounts = { cash: 0, 'blue-shot': 0, pistol: 0, radio: 0 };
+  const pickupCounts = { [CITY_RUSH_PICKUPS.BOOST]: 0, 'blue-shot': 0, pistol: 0, radio: 0 };
   for (let index = 0; index < 10000; index += 1) {
     const encounter = createCityRushEncounter(random);
+    assert.equal(Object.hasOwn(encounter, 'slowLane'), false);
     assert.ok(encounter.pickups.length <= 2);
     totalPickups += encounter.pickups.length;
     for (const pickup of encounter.pickups) pickupCounts[pickup.type] += 1;
@@ -1028,21 +1042,17 @@ test('pickup encounters add more bonuses without placing them in slow zones', ()
     const pickupLanes = new Set();
     for (const pickup of encounter.pickups) {
       assert.ok(pickup.lane >= 0 && pickup.lane < CITY_RUSH_LANE_X.length);
-      assert.ok(['cash', CITY_RUSH_POWERS.BLUE_SHOT, 'pistol', 'radio'].includes(pickup.type));
+      assert.ok([CITY_RUSH_PICKUPS.BOOST, CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO].includes(pickup.type));
       assert.ok(!pickupLanes.has(pickup.lane));
       pickupLanes.add(pickup.lane);
-      assert.notEqual(pickup.lane, encounter.slowLane);
-    }
-    if (encounter.slowLane !== null) {
-      sawSlowZone = true;
-      assert.ok(encounter.slowLane >= 0 && encounter.slowLane < CITY_RUSH_LANE_X.length);
     }
     if (encounter.pickups.length === 2) sawTwoPickups = true;
   }
-  assert.equal(sawSlowZone, true);
   const yellowRate = pickupCounts.radio / totalPickups;
   assert.ok(yellowRate >= 0.08 && yellowRate <= 0.12, `le bonus jaune reste rare (${(yellowRate * 100).toFixed(1)} %)`);
-  assert.ok(pickupCounts.radio < pickupCounts.cash && pickupCounts.radio < pickupCounts['blue-shot'] && pickupCounts.radio < pickupCounts.pistol);
+  assert.ok(pickupCounts.radio < pickupCounts[CITY_RUSH_PICKUPS.BOOST]
+    && pickupCounts.radio < pickupCounts[CITY_RUSH_POWERS.BLUE_SHOT]
+    && pickupCounts.radio < pickupCounts[CITY_RUSH_POWERS.PISTOL]);
   assert.equal(sawEmptyRow, true);
   assert.equal(sawTwoPickups, true);
   assert.ok(totalPickups > 10000 && totalPickups < 11000, 'les rangées contiennent souvent un bonus et parfois un duo');
@@ -1169,7 +1179,7 @@ test('track elements fold onto the loop so the start line comes back ahead every
   assert.equal(first - CITY_RUSH_LAP_LENGTH, -450);
 });
 
-test('the 4 racers have distinct avatars and international names from around the world', () => {
+test('the three racers have distinct avatars and international names from around the world', () => {
   assert.ok(CITY_RUSH_DRIVERS.length >= 12);
   const avatarIds = new Set(CITY_RUSH_DRIVERS.map((driver) => driver.avatarId));
   const countryCodes = new Set(CITY_RUSH_DRIVERS.map((driver) => driver.countryCode));
@@ -1178,14 +1188,14 @@ test('the 4 racers have distinct avatars and international names from around the
 
   for (const city of CITY_RUSH_CITIES) {
     const roster = selectCityRushRacers({ cityId: city.id });
-    assert.equal(roster.length, 4);
-    assert.deepEqual(roster.map((racer) => racer.id), ['player', 'nova', 'juno', 'ace']);
+    assert.equal(roster.length, 3);
+    assert.deepEqual(roster.map((racer) => racer.id), ['player', 'nova', 'juno']);
     assert.equal(roster[0].isPlayer, true);
-    assert.equal(roster[1].isPlayer, false);
-    assert.equal(new Set(roster.map((racer) => racer.driverId)).size, 4);
-    assert.equal(new Set(roster.map((racer) => racer.avatarId)).size, 4);
-    assert.equal(new Set(roster.map((racer) => racer.name)).size, 4);
-    assert.equal(new Set(roster.map((racer) => racer.countryCode)).size, 4);
+    assert.ok(roster.slice(1).every((racer) => racer.isPlayer === false));
+    assert.equal(new Set(roster.map((racer) => racer.driverId)).size, 3);
+    assert.equal(new Set(roster.map((racer) => racer.avatarId)).size, 3);
+    assert.equal(new Set(roster.map((racer) => racer.name)).size, 3);
+    assert.equal(new Set(roster.map((racer) => racer.countryCode)).size, 3);
     for (const racer of roster) {
       assert.ok(racer.name && racer.displayName && racer.country && racer.flag && racer.avatar);
     }
@@ -1195,10 +1205,10 @@ test('the 4 racers have distinct avatars and international names from around the
   assert.equal(customRoster[0].driverId, 'kwame');
   assert.equal(customRoster[0].name, 'KWAME');
   assert.equal(customRoster[0].country, 'Nigeria');
-  assert.equal(new Set(customRoster.map((racer) => racer.avatarId)).size, 4);
+  assert.equal(new Set(customRoster.map((racer) => racer.avatarId)).size, 3);
 });
 
-test('the race mini-map locates all 4 players on the circuit loop and focuses on our player', () => {
+test('the race mini-map locates all three racers on the circuit loop and focuses on our player', () => {
   const path = cityRushMinimapTrackPath(32);
   assert.ok(path.startsWith('M ') && path.endsWith(' Z'));
 
@@ -1215,11 +1225,10 @@ test('the race mini-map locates all 4 players on the circuit loop and focuses on
     { ...roster[0], distance: 420, lane: 1 },
     { ...roster[1], distance: 465, lane: 0 },
     { ...roster[2], distance: 390, lane: 2 },
-    { ...roster[3], distance: 310, lane: 3 },
   ]).ordered;
 
   const minimap = buildCityRushMinimapState(standings, { cityId: 'vice-city', playerDriverId: 'chloe' });
-  assert.equal(minimap.markers.length, 4);
+  assert.equal(minimap.markers.length, 3);
   assert.equal(minimap.focus.id, 'player');
   assert.equal(minimap.focus.isPlayer, true);
   assert.equal(minimap.focus.name, 'CHLOÉ');
@@ -1239,7 +1248,7 @@ test('the race mini-map locates all 4 players on the circuit loop and focuses on
   assert.ok(Math.abs(focusCenterY - minimap.focus.point.y) <= 25);
 });
 
-test('la mini-carte dessine l’escouade de police à part des quatre pilotes', () => {
+test('la mini-carte dessine l’escouade de police à part des trois pilotes', () => {
   const minimap = buildCityRushMinimapState([], {
     cityId: 'vice-city',
     pursuers: [
@@ -1247,9 +1256,9 @@ test('la mini-carte dessine l’escouade de police à part des quatre pilotes', 
       { id: 'police-2', name: 'POLICE 2', distance: 1240, lane: 0 },
     ],
   });
-  // Les quatre pilotes restent seuls dans le classement : l'escouade a sa
+  // Les trois pilotes restent seuls dans le classement : l'escouade a sa
   // propre liste, hors positions et hors arrivée.
-  assert.equal(minimap.racers.length, 4);
+  assert.equal(minimap.racers.length, 3);
   assert.equal(minimap.pursuers.length, 2);
   assert.equal(minimap.pursuers[0].name, 'POLICE 1');
   for (const car of minimap.pursuers) {

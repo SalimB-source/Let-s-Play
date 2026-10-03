@@ -639,74 +639,18 @@ export function makePickupMaterial(type, color) {
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    if (type === 'cash') {
-      // Canette d'énergie verte : silhouette métallique, languette et éclair.
-      ctx.fillStyle = '#dfffee';
+    if (type === 'blue-shot') {
+      // Bonus bleu « + » : une seule icône recharge immédiatement un tir droit.
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 18;
       ctx.beginPath();
-      ctx.roundRect(82, 42, 92, 174, 18);
+      ctx.roundRect(108, 40, 40, 176, 13);
       ctx.fill();
-      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.roundRect(88, 55, 80, 148, 13);
+      ctx.roundRect(40, 108, 176, 40, 13);
       ctx.fill();
-      ctx.fillStyle = '#effff6';
-      ctx.beginPath();
-      ctx.ellipse(128, 45, 44, 10, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#263a33';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.ellipse(128, 45, 23, 5, 0, 0.1, Math.PI * 1.6);
-      ctx.stroke();
-      ctx.fillStyle = '#effff6';
-      ctx.beginPath();
-      ctx.roundRect(101, 76, 54, 91, 8);
-      ctx.fill();
-      ctx.fillStyle = '#138750';
-      ctx.beginPath();
-      ctx.moveTo(132, 83);
-      ctx.lineTo(111, 120);
-      ctx.lineTo(127, 120);
-      ctx.lineTo(119, 153);
-      ctx.lineTo(147, 112);
-      ctx.lineTo(131, 112);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = '#f3fff7';
-      ctx.font = '900 17px Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('ENERGY', 128, 181);
-    } else if (type === 'blue-shot') {
-      // Pistolet compact et lisible, sans flèche ni forme de mitrailleuse.
-      ctx.beginPath();
-      ctx.moveTo(42, 80);
-      ctx.lineTo(126, 80);
-      ctx.quadraticCurveTo(154, 80, 154, 108);
-      ctx.lineTo(154, 121);
-      ctx.lineTo(200, 121);
-      ctx.lineTo(200, 144);
-      ctx.lineTo(143, 144);
-      ctx.lineTo(129, 158);
-      ctx.lineTo(112, 158);
-      ctx.lineTo(96, 218);
-      ctx.lineTo(69, 218);
-      ctx.lineTo(85, 158);
-      ctx.lineTo(51, 158);
-      ctx.lineTo(42, 139);
-      ctx.closePath();
-      ctx.fill();
-      ctx.fillStyle = color;
-      ctx.fillRect(52, 88, 65, 7);
-      ctx.fillRect(163, 128, 29, 5);
-      ctx.strokeStyle = color;
-      ctx.lineCap = 'round';
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(136, 144);
-      ctx.lineTo(136, 154);
-      ctx.lineTo(121, 154);
-      ctx.stroke();
+      ctx.shadowBlur = 0;
     } else if (type === 'pistol') {
       ctx.beginPath();
       ctx.moveTo(49, 70);

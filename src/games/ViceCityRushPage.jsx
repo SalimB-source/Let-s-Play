@@ -17,6 +17,8 @@ import {
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
+  CITY_RUSH_PICKUPS,
+  CITY_RUSH_TRACK_BOOST_DURATION,
   buildCityRushMinimapState,
   createCityRushInventory,
   selectCityRushRacers,
@@ -29,7 +31,7 @@ const BEST_KEY = 'letsplay_vice_city_rush_bests_v1';
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const STORY_KEY = 'letsplay_vice_city_rush_story_v1';
 const STORY_ENDING_KEY = 'letsplay_vice_city_rush_ending_v1';
-const POWER_ORDER = [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.CASH, CITY_RUSH_POWERS.RADIO];
+const POWER_ORDER = [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO];
 const CAR_STATS = [
   { key: 'power', label: 'PUISSANCE' },
   { key: 'acceleration', label: 'ACCÉLÉRATION' },
@@ -106,7 +108,7 @@ const EMPTY_HUD = {
   lapDistance: 0,
   elapsed: 0,
   speed: 0,
-  rank: 4,
+  rank: 3,
   racers: [],
   inventory: createCityRushInventory(),
   score: 0,
@@ -153,10 +155,10 @@ function PowerIcon({ type, className = '' }) {
   const common = { fill: 'none', stroke: 'currentColor', strokeWidth: 2.4, strokeLinecap: 'round', strokeLinejoin: 'round' };
   return (
     <svg className={className} viewBox="0 0 32 32" aria-hidden="true" {...common}>
-      {type === 'cash' && <>
-        <path d="M11 4h10l1 4 2 3v14a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3V11l2-3z" />
-        <path d="M11 8h10M12 23h8" />
-        <path d="m18 11-5 6h4l-2 5 6-7h-4z" />
+      {type === CITY_RUSH_PICKUPS.BOOST && <>
+        <rect x="3" y="4" width="26" height="24" rx="3" />
+        <path d="M11 21v-8l5 4v-5l5 4v-5" />
+        <path d="m17 7 4 4 4-4" />
       </>}
       {type === CITY_RUSH_POWERS.BLUE_SHOT && <>
         <path d="M4 10h12a4 4 0 0 1 4 4v2h7v3h-9l-2 2h-2l-2.5 7H7l2.3-7H5L4 17z" fill="currentColor" strokeWidth="1.4" />
@@ -259,7 +261,7 @@ export default function ViceCityRushPage() {
   const standings = minimapState.racers;
   const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
   const tourBarPct = Math.round(Math.max(0, Math.min(1, hud.lapProgress || 0)) * 100);
-  const turboBarPct = Math.round(Math.max(0, Math.min(1, (hud.boostLeft || 0) / 1.5)) * 100);
+  const turboBarPct = Math.round(Math.max(0, Math.min(1, (hud.boostLeft || 0) / CITY_RUSH_TRACK_BOOST_DURATION)) * 100);
   const bestTime = bests[cityId] || null;
   const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && storyChapter >= STORY_CHAPTERS.length);
   const nextStoryIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
@@ -499,23 +501,17 @@ export default function ViceCityRushPage() {
 
   function effectMessage(effect) {
     if (!effect) return;
-    if (effect.type === 'cash') showToast(effect.automatic ? 'BOOST AUTO-ACTIVÉ · 1,5 seconde de turbo.' : 'BOOST ACTIVÉ · 1,5 seconde de turbo.', 'cash');
-    else if (effect.type === 'blue-shot-hit') showToast(`TIR DROIT · ${effect.target} TOUCHÉ · DÉRAPAGE LÉGER ${formatSeconds(effect.duration, 0.3)}.`, 'blue-shot');
-    else if (effect.type === 'blue-shot-hit-player') showToast(`TIR DROIT · ${effect.attacker} TE TOUCHE · DÉRAPAGE LÉGER ${formatSeconds(effect.duration, 0.3)}.`, 'blue-shot');
-    else if (effect.type === 'oil') showToast(effect.automatic ? 'HUILE AUTO-DÉVERSÉE · Un rival peut déraper derrière toi.' : 'HUILE DÉVERSÉE · Un rival peut déraper derrière toi.', 'oil');
-    else if (effect.type === 'oil-hit') showToast(effect.target === 'TOI' ? `DÉRAPAGE · FLAQUE DE ${effect.owner || 'RIVAL'} · RALENTI.` : `DÉRAPAGE · ${effect.target} a traversé une flaque.`, 'oil');
+    if (effect.type === 'blue-shot-hit') showToast(`TIR DROIT · ${effect.target} TOUCHÉ · RALENTI NET ${formatSeconds(effect.duration, 1.8)}.`, 'blue-shot');
+    else if (effect.type === 'blue-shot-hit-player') showToast(`TIR DROIT · ${effect.attacker} TE TOUCHE · RALENTI NET ${formatSeconds(effect.duration, 1.8)}.`, 'blue-shot');
     else if (effect.type === 'pistol') showToast(`TATATATA ! ${effect.target} mitraillé · ralenti ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'pistol-hit-player') showToast(`TATATATA ! ${effect.attacker} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
-    else if (effect.type === 'rival-boost') showToast(`${effect.rival} ACTIVE UN BOOST.`, 'cash');
-    else if (effect.type === 'rival-oil') showToast(`${effect.rival} RÉPAND UNE FLAQUE D’HUILE.`, 'oil');
+    else if (effect.type === 'rival-boost') showToast(`${effect.rival} PASSE SUR UN PAD TURBO.`, 'boost');
     else if (effect.type === 'rival-blue-shot') showToast(`${effect.rival} TIRE DROIT ${effect.backward ? 'DERRIÈRE LUI' : 'DEVANT LUI'}.`, 'blue-shot');
     else if (effect.type === 'radio') showToast(`HÉLICO EN APPROCHE · CIBLE : ${effect.target}.`, 'radio');
     else if (effect.type === 'missile-hit') showToast(`IMPACT · ${effect.target} immobilisé ${formatSeconds(effect.duration, 2)}.`, 'radio');
     else if (effect.type === 'radio-busy') showToast(effect.message, 'radio');
     else if (effect.type === 'radio-no-target') showToast('AUCUN RIVAL DEVANT TOI · LA JAUGE RESTE CHARGÉE.', 'radio');
-    else if (effect.type === 'slow-zone') showToast('ZONE DE RALENTISSEMENT · Garde l’œil sur la route.', 'slow');
-    else if (effect.type === 'traffic-hit') showToast('CHOC · TRAFIC · RALENTI.', 'slow');
-    else if (effect.type === 'traffic-hit-player') showToast(`CHOC · ${effect.attacker || 'TRAFIC'} TE PERCUTE · RALENTI.`, 'slow');
+    else if (effect.type === 'traffic-impact') showToast(effect.oncoming ? 'CHOC FRONTAL · LA VOITURE EN FACE EST POUSSÉE À GAUCHE.' : `CHOC · ${effect.traffic || 'TRAFIC'} · RALENTI.`, 'slow');
     else if (effect.type === 'empty') showToast('AUCUN OBJET · Ramasse la bonne icône sur la route.', 'neutral');
     else if (effect.type === 'rival-final-lap') showToast(`${effect.rival} ENTAME LE DERNIER TOUR.`, 'neutral');
     else if (effect.type === 'police-arrival') showToast(effect.target === 'player' ? `🚨 POLICE · ${effect.count || 3} BERLINES SE JOIGNENT À LA COURSE JUSTE DERRIÈRE TOI · ELLES SONT ARMÉES (BLEU ET ROUGE) ET VISENT TES BONUS ROUGES ET JAUNES.` : `🚨 POLICE · L’ESCOUADE PREND ${effect.target} EN CHASSE.`, 'pistol');
@@ -540,16 +536,18 @@ export default function ViceCityRushPage() {
     showLapBanner(info);
   };
   const onPowerPickup = (pickup) => {
+    if (pickup.type === CITY_RUSH_PICKUPS.BOOST) {
+      showToast(`PAD TURBO · ACCÉLÉRATION PENDANT ${formatSeconds(CITY_RUSH_TRACK_BOOST_DURATION)}.`, 'boost');
+      return;
+    }
     const rule = CITY_RUSH_POWER_RULES[pickup.type];
     if (!rule) return;
     const progress = Math.min(rule.chargeCost, pickup.progress || 0);
-    const message = pickup.autoActivated
-      ? (pickup.type === CITY_RUSH_POWERS.CASH ? 'BOOST AUTO-ACTIVÉ · 1,5 s DE TURBO.' : 'HUILE AUTO-DÉVERSÉE · UNE FLAQUE EST DERRIÈRE TOI.')
-      : pickup.newlyReady
-        ? `${rule.shortName.toUpperCase()} PRÊT À UTILISER · TOUCHE ${rule.key}`
-        : pickup.ready
-          ? `${rule.shortName.toUpperCase()} · JAUGE PLEINE (${progress}/${rule.chargeCost})`
-          : `${rule.shortName.toUpperCase()} · CHARGEMENT ${progress}/${rule.chargeCost}`;
+    const message = pickup.newlyReady
+      ? `${rule.shortName.toUpperCase()} CHARGÉ · TOUCHE ${rule.key}`
+      : pickup.ready
+        ? `${rule.shortName.toUpperCase()} · JAUGE PLEINE (${progress}/${rule.chargeCost})`
+        : `${rule.shortName.toUpperCase()} · CHARGEMENT ${progress}/${rule.chargeCost}`;
     showToast(message, pickup.type);
   };
 
@@ -652,8 +650,8 @@ export default function ViceCityRushPage() {
               <div className="city-rush-hud-top">
                 <div className="city-rush-hud-card city-rush-position-card">
                   <span className="city-rush-hud-label">POSITION</span>
-                  <strong>{ordinal(hud.rank)}<small> / 4</small></strong>
-                  <div className="city-rush-mini-lights"><i className={hud.rank === 1 ? 'is-lit' : ''} /><i className={hud.rank === 2 ? 'is-lit' : ''} /><i className={hud.rank === 3 ? 'is-lit' : ''} /><i className={hud.rank === 4 ? 'is-lit' : ''} /></div>
+                  <strong>{ordinal(hud.rank)}<small> / 3</small></strong>
+                  <div className="city-rush-mini-lights"><i className={hud.rank === 1 ? 'is-lit' : ''} /><i className={hud.rank === 2 ? 'is-lit' : ''} /><i className={hud.rank === 3 ? 'is-lit' : ''} /></div>
                 </div>
                 <div className={`city-rush-hud-card city-rush-distance-card city-rush-lap-card${hud.lap >= hud.laps ? ' is-final' : ''}`}>
                   <span className="city-rush-hud-label">{hud.lap >= hud.laps ? 'DERNIER TOUR' : 'TOUR'} · {activeModeName}</span>
@@ -908,10 +906,10 @@ export default function ViceCityRushPage() {
 
                     <section className="city-rush-driver-select" aria-labelledby="city-rush-driver-title">
                       <div className="city-rush-car-select-heading">
-                        <span id="city-rush-driver-title">GRILLE · 4 PILOTES · {mode.name}</span>
+                        <span id="city-rush-driver-title">GRILLE · 3 PILOTES · {mode.name}</span>
                         <button type="button" className="city-rush-driver-cycle" onClick={cyclePlayerDriver}>CHANGER PILOTE ({roster[0].flag} {roster[0].displayName}) ↻</button>
                       </div>
-                      <div className="city-rush-driver-grid" role="list" aria-label="Les 4 pilotes">
+                      <div className="city-rush-driver-grid" role="list" aria-label="Les 3 pilotes">
                         {roster.map((driver) => (
                           <div role="listitem" key={driver.id} className={`city-rush-driver-pill${driver.isPlayer ? ' is-player' : ''}`} style={{ '--driver-accent': driver.isPlayer ? '#43ead5' : driver.accent }} onClick={driver.isPlayer ? cyclePlayerDriver : undefined}>
                             <span className="city-rush-driver-pill-avatar"><CityRushDriverAvatar driver={driver} /></span>
@@ -936,7 +934,7 @@ export default function ViceCityRushPage() {
 
                 <div className="city-rush-intro-foot">
                   <span>← → / Q D · VOIES</span>
-                  <span>A Z E R · POUVOIRS</span>
+                  <span>A / Z / R · POUVOIRS · PAD VERT : TURBO</span>
                   <span>{currentLaps} TOURS · {currentDistance} M</span>
                   <span>M · SON</span>
                   <span>F · PLEIN ÉCRAN</span>
@@ -993,7 +991,7 @@ export default function ViceCityRushPage() {
                 <span className="city-rush-overlay-kicker">{result.rank === 1 ? `VICTOIRE · ${activeModeName}` : `ARRIVÉE · ${activeModeName}`} · {result.laps || currentLaps} TOURS</span>
                 <h2>{finalStoryVictory ? storyEnding ? <>{STORY_ENDINGS[storyEnding].title}<br /><em>FIN.</em></> : <>LE DERNIER<br /><em>CHOIX.</em></> : result.rank === 1 ? <>TU MÈNES<br /><em>LA DANSE.</em></> : <>LA VILLE<br /><em>EST À TOI.</em></>}</h2>
                 <div className="city-rush-result-grid">
-                  <div><small>PLACE</small><b>{ordinal(result.rank)}<i> / 4</i></b></div>
+                  <div><small>PLACE</small><b>{ordinal(result.rank)}<i> / 3</i></b></div>
                   <div><small>CHRONO</small><b>{formatTime(result.duration)}</b></div>
                   <div><small>TOUR MOYEN</small><b>{formatTime((result.duration || 0) / (result.laps || currentLaps || CITY_RUSH_LAPS))}</b></div>
                   <div><small>BUTIN</small><b>{result.score}<i> PTS</i></b></div>
@@ -1032,7 +1030,7 @@ export default function ViceCityRushPage() {
 
           <div className="city-rush-shell-footer">
             <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {currentLaps} × {CITY_RUSH_LAP_LENGTH} M</span>
-            <span className="city-rush-desktop-hint">← → / Q D : VOIES <b>·</b> Z / R : TIRS <b>·</b> A / E : AUTO <b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
+            <span className="city-rush-desktop-hint">← → / Q D : VOIES <b>·</b> A : TIR BLEU <b>·</b> Z : RAFALE <b>·</b> R : HÉLICO <b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
             <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE · OBJETS EN BAS</span>
           </div>
         </section>
@@ -1059,7 +1057,7 @@ export default function ViceCityRushPage() {
           </section>
 
           <section className="city-rush-side-card city-rush-item-guide">
-            <div className="city-rush-side-heading"><span>OBJETS</span><i>4 COULEURS</i></div>
+            <div className="city-rush-side-heading"><span>OBJETS</span><i>3 ARMES + TURBO</i></div>
             <h3>Ramasse.<br /><em>Déclenche.</em></h3>
             <div className="city-rush-guide-list">
               {POWER_ORDER.map((type) => {
@@ -1072,6 +1070,11 @@ export default function ViceCityRushPage() {
                   </div>
                 );
               })}
+              <div className="city-rush-guide-item is-boost">
+                <span><PowerIcon type={CITY_RUSH_PICKUPS.BOOST} /></span>
+                <div><b>TURBO AU SOL · AUTOMATIQUE</b><small>Traverse un pad lumineux pour accélérer pendant {CITY_RUSH_TRACK_BOOST_DURATION} secondes. Les bonus bleus chargent le tir droit, un objet par tir.</small></div>
+                <kbd>{CITY_RUSH_TRACK_BOOST_DURATION} s</kbd>
+              </div>
             </div>
           </section>
 
