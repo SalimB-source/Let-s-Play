@@ -242,6 +242,9 @@ export default function ViceCityRushPage() {
     [hud.racers, roster, cityId, selectedCar.id, runId, playerDriverId, currentLaps, currentDistance],
   );
   const standings = minimapState.racers;
+  const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
+  const tourBarPct = Math.round(Math.max(0, Math.min(1, hud.lapProgress || 0)) * 100);
+  const turboBarPct = Math.round(Math.max(0, Math.min(1, (hud.boostLeft || 0) / 1.5)) * 100);
   const bestTime = bests[cityId] || null;
   const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && storyChapter >= STORY_CHAPTERS.length);
   const nextStoryIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
@@ -607,7 +610,23 @@ export default function ViceCityRushPage() {
                 </div>
               </div>
 
-              <CityRushMinimap racers={standings} pursuers={hud.police} cityId={cityId} carId={selectedCar.id} runId={runId} playerDriverId={playerDriverId} />
+              <div className="city-rush-gta-cash" aria-label={`Butin : ${hud.score || 0} points`}>
+                <b>{(hud.score || 0).toLocaleString('fr-FR')} PTS</b>
+                <small>{formatTime(hud.elapsed)}</small>
+                {wantedStars > 0 && (
+                  <span className="city-rush-gta-wanted" role="status" aria-label={`Police en chasse · niveau ${wantedStars} sur 5`}>
+                    {[1, 2, 3, 4, 5].map((star) => <i key={star} className={star <= wantedStars ? 'is-on' : ''} aria-hidden="true">★</i>)}
+                  </span>
+                )}
+              </div>
+
+              <div className="city-rush-radar">
+                <CityRushMinimap racers={standings} pursuers={hud.police} cityId={cityId} carId={selectedCar.id} runId={runId} playerDriverId={playerDriverId} />
+                <div className="city-rush-gta-bars" aria-hidden="true">
+                  <span className="city-rush-gta-bar is-tour"><i style={{ width: `${tourBarPct}%` }} /></span>
+                  <span className="city-rush-gta-bar is-turbo"><i style={{ width: `${turboBarPct}%` }} /></span>
+                </div>
+              </div>
 
               {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0) && (
                 <div className={`city-rush-status-pill${hud.stunLeft > 0 ? ' is-stunned' : hud.trafficImpactLeft > 0 ? ' is-impact' : hud.boostLeft > 0 ? ' is-boost' : ' is-slow'}`}>
@@ -624,9 +643,19 @@ export default function ViceCityRushPage() {
               )}
               <div className="city-rush-controls-bottom">
                 <div className="city-rush-steering" aria-label="Changer de voie">
-                  <button type="button" onClick={() => actionsRef.current?.('left')} aria-label="Aller à gauche">←</button>
+                  <button
+                    type="button"
+                    onPointerDown={(event) => { event.preventDefault(); actionsRef.current?.('left'); }}
+                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); actionsRef.current?.('left'); } }}
+                    aria-label="Aller à gauche"
+                  >←</button>
                   <span>VOIES</span>
-                  <button type="button" onClick={() => actionsRef.current?.('right')} aria-label="Aller à droite">→</button>
+                  <button
+                    type="button"
+                    onPointerDown={(event) => { event.preventDefault(); actionsRef.current?.('right'); }}
+                    onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); actionsRef.current?.('right'); } }}
+                    aria-label="Aller à droite"
+                  >→</button>
                 </div>
                 <div className="city-rush-power-bar" aria-label="Objets spéciaux">
                   {POWER_ORDER.map((type) => {
