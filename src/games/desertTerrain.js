@@ -267,10 +267,34 @@ const SKY_FRAGMENT = /* glsl */ `
       col = mix(col, cloudCol, cloud * 0.72);
     }
 
-    // Soleil : halo, disque, et fondu dans la brume du bas.
+    // Soleil : rayons, traînée, halo, disque, puis fondu dans la brume du bas.
     vec2 sc = vec2(0.0, uSunH);
     float r = length(p - sc);
     float aboveHaze = smoothstep(7.0, 10.5, hh);
+
+    // Autour du soleil (graphismes baissés, uLite = 1 : le ciel garde son halo et
+    // son disque, sans les faisceaux) :
+    //   · les rayons — de larges faisceaux qui s'ouvrent depuis le disque, battent
+    //     lentement dans l'air chaud et s'éteignent en s'éloignant ;
+    //   · la traînée — le soleil bas s'étale en travers du ciel, comme à travers un
+    //     objectif ; c'est elle qui blanchit la brume au-dessus du mirage ;
+    //   · le coup de chaleur au ras de l'horizon, là où le mirage se pose. Son pic
+    //     est un peu AU-DESSUS de la ligne (hh ≈ 9,4) : la couture entre le sable
+    //     et le ciel garde exactement la même couleur des deux côtés.
+    if (uLite < 0.5) {
+      float rayAngle = atan(p.y - uSunH, p.x * 1.35);
+      float spokes = 0.5 + 0.5 * sin(rayAngle * 6.0 + sin(rayAngle * 2.3 - t * 0.19) * 1.7 + t * 0.11);
+      // La borne à zéro : une base négative d'un cheveu donnerait un pow() indéfini.
+      float rays = pow(max(spokes, 0.0), 2.8) * exp(-r * r / 2400.0) * aboveHaze;
+      col = mix(col, uGlow, clamp(rays * 0.34, 0.0, 1.0));
+
+      float streak = exp(-abs(hh - uSunH) * 0.42) * exp(-abs(p.x) * 0.0075);
+      col = mix(col, uGlow, clamp(streak * 0.26, 0.0, 1.0));
+
+      float heat = exp(-abs(hh - 9.4) * 0.45);
+      col = mix(col, uGlow, clamp(heat * 0.16, 0.0, 1.0));
+    }
+
     float halo = (exp(-r * r / 520.0) * 0.50 + exp(-r * r / 70.0) * 0.30) * aboveHaze;
     col = mix(col, uGlow, clamp(halo, 0.0, 1.0));
     float disc = (1.0 - smoothstep(uSunR - 0.3, uSunR, r)) * smoothstep(6.4, 10.2, hh);

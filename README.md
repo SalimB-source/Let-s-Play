@@ -384,7 +384,8 @@ le réglage sans être reconstruit, la course ne s'interrompt pas.
 |---|---|---|
 | Résolution | jusqu'à 1,55 pixel par pixel CSS, 2,2 M pixels | 1 pixel par pixel CSS, 0,92 M pixels (1280 × 720) — sur un téléphone de densité 3, **2,4 fois moins de pixels** à remplir |
 | Lissage des arêtes (Château de l'Infini) | oui | non (fixé à la création de la course) |
-| Décor du désert | nuages animés, rides du sable, voile d'eau, poussière | ciel et sable simplifiés (un uniforme de shader, aucun recalcul), sans voile ni poussière ; le mirage reste |
+| Décor du désert | nuages animés, rides du sable, voile d'eau, poussière, rayons du soleil, coup de chaleur à l'horizon | ciel et sable simplifiés (un uniforme de shader, aucun recalcul), sans voile, poussière ni faisceaux ; le mirage reste |
+| Halos de lumière des cristaux | oui (un sprite additif par gemme) | non — la gemme reste, elle brille simplement moins |
 | Décor des autres terrains | tout dessiné | blocs de décor au-delà de 85 % de la portée du brouillard non dessinés (déjà fondus à près de 90 %) — jusqu'à 27 % d'appels de dessin en moins sur les plaines |
 | Éclats d'un cristal ramassé | 10 | 5 (jamais moins de 3) |
 | HUD (score, chrono) | toutes les 125 ms | toutes les 200 ms |
@@ -424,6 +425,8 @@ téléphone : un balayage depuis le bord ne le jette plus de l'autre côté).
 - `src/games/MirageGraphicsToggle.jsx` — le bouton de la barre et le choix en toutes
   lettres ;
 - `src/games/miragePixelBudget.js` — `renderPixelRatio(largeur, hauteur, densité, profil)` ;
+- `src/games/mirageGlow.js` — les deux dégradés peints (halo, ombre) et les objets qui
+  les portent : c'est `glowHalos` qui allume ou éteint les halos des cristaux ;
 - `src/games/MirageWorld.jsx` (application du profil à la volée : `setGraphics`),
   `desertStage.js` / `desertTerrain.js` (`setLite`) ;
 - `src/games/mirage-rush.css` — la section « GRAPHISMES BAISSÉS » (classe
@@ -448,6 +451,68 @@ ouvrir le jeu sur le téléphone (ou dans les outils de développement, mode app
 et alterner les deux niveaux en pleine course. Le gain se mesure en images par seconde :
 sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
 sur les terrains chargés, du nombre d'objets dessinés.
+
+## Mirage Rush : le soleil du désert, les halos et les ombres
+
+« Dunes de l'Écho » — le terrain d'origine — gagne sa lumière : des faisceaux qui
+s'ouvrent depuis le soleil bas, une traînée horizontale dans la brume au-dessus du
+mirage, un coup de chaleur au ras de l'horizon ; les cristaux de la piste brillent
+dans un halo ; les cavaliers projettent une ombre douce au sol.
+
+| Où | Quoi |
+|---|---|
+| Ciel du désert (`desertTerrain.js`) | **rayons** du soleil (six faisceaux qui battent lentement), **traînée** horizontale à la hauteur du disque, **coup de chaleur** juste au-dessus de la ligne d'horizon |
+| Cristaux (`MirageWorld.jsx`, `mirageGlow.js`) | un halo additif devant chaque gemme, qui respire à sa propre phase ; couleur du palier (rose, bleu, vert, or) |
+| Cavaliers (`MirageWorld.jsx`) | une ombre douce au sol sous le joueur, sous les rivaux du duel et sous les cavaliers de la course en ligne ; elle pâlit quand ils sautent et suit le clignotement d'invulnérabilité |
+
+**Pas de post-traitement, et c'est un choix.** Le ciel et le sable du désert
+écrivent leurs couleurs sRGB telles quelles (`desertTerrain.js` : « pas de
+tone-mapping ici »), alors que la piste, les cristaux et les cavaliers passent par
+le tone-mapping ACES du moteur. Un *bloom* ou un étalonnage en fin de chaîne
+obligerait à reprendre une à une toutes ces couleurs — c'est-à-dire à refaire le
+désert. La lumière est donc **peinte**, comme au temps des sprites : un dégradé
+radial (128 px) reçoit la couleur du cristal et s'ajoute à la scène
+(`blending: AdditiveBlending`), sans écrire de profondeur — un halo ne cache
+jamais la piste et ne change ni la difficulté ni la lisibilité.
+
+Ce qui ne bouge pas : la palette, la brume, la géométrie du relief, la position des
+obstacles, les voies, la vitesse et les chronos. Seul l'habillage lumineux change —
+et il s'éteint avec les **graphismes baissés** (le ciel du désert garde alors son
+halo et son disque, sans faisceaux ; les gemmes perdent leur halo, pas leur
+couleur).
+
+Deux détails d'implémentation qui comptent :
+
+- les deux textures (halo, ombre) sont créées **une fois par monde 3D** et
+  partagées : un halo qui fabriquerait sa texture à chaque apparition en laisserait
+  une derrière lui à chaque recyclage de rangée, en pleine course ;
+- les sprites partagent **une seule géométrie** (`THREE.Sprite`) : ni le recyclage
+  des rangées ni `destroy()` ne doivent la libérer (`populateRow`), sans quoi les
+  halos du reste du jeu seraient coupés.
+
+### Où vit le code
+
+- `src/games/mirageGlow.js` — les dégradés (`makeGlowTexture`, `makeShadowTexture`),
+  le halo (`makeHalo`) et l'ombre au sol (`makeGroundShadow`) ;
+- `src/games/desertTerrain.js` — `SKY_FRAGMENT` : rayons, traînée et coup de chaleur,
+  sous `uLite < 0.5` (graphismes normaux) ;
+- `src/games/MirageWorld.jsx` — `makeCrystal` (halo), les ombres des cavaliers, la
+  respiration des cristaux dans la boucle, `setGraphics` (`glowHalos`) ;
+- `src/games/mirageGraphics.js` — le champ `glowHalos` des deux profils.
+
+### Vérifications
+
+```bash
+node --test tests/mirage-glow.test.js tests/mirage-desert-stage.test.js tests/mirage-graphics.test.js
+npm run check:mirage-graphics            # page et fenêtre en ligne : le réglage se bascule en direct
+npm run build
+```
+
+jsdom n'a pas de WebGL : ces vérifications disent ce que les dégradés contiennent,
+que les halos s'ajoutent sans masquer, que l'ombre est couchée au sol, que le champ
+`glowHalos` existe dans les deux profils et que le décor du désert est intact — pas
+à quoi la lumière ressemble. Le rendu se juge à l'œil, en jeu, en basculant
+« GRAPHISMES : NORMAUX / BAISSÉS » pour comparer.
 
 ## Mirage Rush : les coupes et les gains d'or
 

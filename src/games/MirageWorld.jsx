@@ -33,6 +33,8 @@ import { paceForTrack } from './mirageLanes';
 import { renderPixelRatio } from './miragePixelBudget';
 // Option « Graphismes baissés » : le profil (résolution, effets) que le moteur applique en direct.
 import { gemBurstShardCount, graphicsProfile, shouldSkipRender } from './mirageGraphics';
+// La lumière peinte à la main : halos additifs des cristaux et ombres au sol des cavaliers.
+import { makeGlowTexture, makeGroundShadow, makeHalo, makeShadowTexture } from './mirageGlow';
 import useMirageGraphics from './useMirageGraphics';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { accessoriesForPalette, block, makeExplorer, paintModel } from './mirageExplorer';
@@ -129,7 +131,20 @@ function makeCactus() {
   return group;
 }
 
-function makeCrystal(tier) {
+// Taille et intensité du halo des cristaux : un tiers du sprite est lumineux, le
+// reste n'est que la queue du dégradé — d'où une taille bien plus large que la
+// gemme elle-même (0,7 × 1,4 unité).
+const CRYSTAL_HALO_SIZE = 1.9;
+const CRYSTAL_HALO_OPACITY = 0.34;
+
+/**
+ * Un fragment solaire : l'octaèdre taillé, sa bague dorée au dernier palier, et
+ * — lumière peinte (voir mirageGlow.js) — le halo additif qui le fait briller
+ * dans la brume. Le halo est un simple sprite : il ne coûte presque rien, ne
+ * cache jamais la piste (aucune écriture de profondeur) et s'éteint avec les
+ * graphismes baissés (voir `glowHalos` dans mirageGraphics.js).
+ */
+function makeCrystal(tier, glowTexture) {
   const group = new THREE.Group();
   const crystalDef = CRYSTALS[tier] || CRYSTALS[0];
   const color = crystalDef.color;
@@ -141,6 +156,11 @@ function makeCrystal(tier) {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.48, 0.025, 4, 12), material);
     ring.rotation.x = Math.PI / 2;
     group.add(ring);
+  }
+  if (glowTexture) {
+    const halo = makeHalo(glowTexture, { color, size: CRYSTAL_HALO_SIZE, opacity: CRYSTAL_HALO_OPACITY });
+    group.add(halo);
+    group.userData.halo = halo;
   }
   return group;
 }
@@ -856,6 +876,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
   placeFloor();
 
+  // Lumière peinte : deux dégradés radiaux partagés par tout le monde 3D — le halo
+  // des cristaux et l'ombre des cavaliers (voir mirageGlow.js). Créés ici, une fois
+  // par monde, et libérés par `destroy()`.
+  const glowTexture = makeGlowTexture();
+  const shadowTexture = makeShadowTexture();
+  // Les halos suivent l'option « Graphismes baissés » et se changent en direct.
+  let glowHalos = graphics.glowHalos !== false;
+
   let skinColors = getSkin?.() ?? null;
   const player = makeExplorer(false, skinColors);
   player.position.x = LANES[1];
@@ -876,11 +904,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     mesh.add(shieldBubble);
     const boostStreaks = makeBoostStreaks();
     mesh.add(boostStreaks);
+    // L'ombre au sol reste dans la scène (elle ne saute pas avec le cavalier).
+    const shadow = makeGroundShadow(shadowTexture, { opacity: 0.4 });
+    scene.add(shadow);
     return {
       ...spec,
       mesh,
       shieldBubble,
       boostStreaks,
+      shadow,
       dist: 0,
       lane: spec.startLane,
       x: LANES[spec.startLane],
@@ -915,6 +947,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     rider.add(sb);
     rider.userData.shieldBubble = sb;
     rider.userData.slowEffect = 0;
+    const shadow = makeGroundShadow(shadowTexture, { opacity: 0.3 });
+    scene.add(shadow);
+    rider.userData.groundShadow = shadow;
     return rider;
   });
   const skinPaint = (rider, colors) => {
@@ -946,12 +981,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const finishLine = block(new THREE.BoxGeometry(trackWidthM, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
   startLine.visible = false;
   finishLine.visible = false;
-  const playerShadow = new THREE.Mesh(
-    new THREE.CircleGeometry(0.58, 10),
-    new THREE.MeshBasicMaterial({ color: 0x32263e, transparent: true, opacity: 0.45, depthWrite: false }),
-  );
-  playerShadow.rotation.x = -Math.PI / 2;
+  const playerShadow = makeGroundShadow(shadowTexture);
   playerShadow.position.y = 0.012;
+  playerShadow.visible = true;
   scene.add(playerShadow);
   const playerReadyAura = makeReadyAura();
   scene.add(playerReadyAura);
@@ -966,7 +998,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const rows = [];
   function populateRow(row) {
     row.group.traverse(object => {
-      object.geometry?.dispose();
+      // Tous les sprites du jeu partagent LA géométrie de `THREE.Sprite` : la
+      // libérer ici couperait aussi les halos des autres (et les ferait re-téléverser
+      // au dessin suivant). Seules leur matière — et les géométries propres aux
+      // accessoires — nous appartiennent.
+      if (!object.isSprite) object.geometry?.dispose();
       object.material?.dispose();
     });
     row.group.clear();
@@ -975,7 +1011,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     row.gap = encounter.gap;
     row.items = encounter.items.map((spec, itemIndex) => {
       const object = spec.kind === 'crystal'
-        ? makeCrystal(spec.tier)
+        ? makeCrystal(spec.tier, glowTexture)
         : spec.kind === 'mud' && snakeway
           ? snakewayObstacle('mud')
           : spec.kind === 'mud'
@@ -1004,8 +1040,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const key = `${row.index}:${itemIndex}`;
       const taken = spec.kind === 'crystal' && isGemHidden(sharedGems, key, elapsed);
       object.visible = !taken;
+      // Le halo existe toujours : c'est l'option « Graphismes baissés » qui l'allume
+      // ou l'éteint, et elle se change en pleine course (voir `setGraphics`).
+      if (object.userData.halo) object.userData.halo.visible = glowHalos;
       row.group.add(object);
-      return { ...spec, key, object, collected: false, burst: false };
+      // Phase du halo (respiration du cristal) : propre à chaque emplacement.
+      const haloPhase = (row.index * 1.7 + itemIndex * 2.3) % (Math.PI * 2);
+      return { ...spec, key, object, haloPhase, collected: false, burst: false };
     });
     row.checked = false;
     return encounter.gap;
@@ -2731,6 +2772,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
           if (item.object.visible) {
             item.object.rotation.y += dt * 1.8;
             item.object.rotation.x = Math.sin(time * 0.002 + row.group.position.z) * 0.1;
+            // Le halo respire à peine, avec sa propre phase (deux gemmes voisines ne
+            // clignotent pas ensemble). Mouvements réduits : la lumière reste fixe.
+            const halo = item.object.userData.halo;
+            if (halo) {
+              halo.visible = glowHalos;
+              if (glowHalos && !calmMotion) {
+                const breath = 0.5 + 0.5 * Math.sin(time * 0.0032 + item.haloPhase);
+                halo.scale.setScalar(CRYSTAL_HALO_SIZE * (0.92 + 0.16 * breath));
+                halo.material.opacity = CRYSTAL_HALO_OPACITY * (0.72 + 0.55 * breath);
+              }
+            }
           }
         });
 
@@ -3040,12 +3092,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const peer = network?.players?.find(p => p.slot === slot);
       const mine = peer?.user_id === network?.userId;
       rider.visible = race.mode === 'online' && Boolean(peer);
-      if (!rider.visible) return;
+      const riderShadow = rider.userData.groundShadow;
+      if (!rider.visible) { if (riderShadow) riderShadow.visible = false; return; }
       const z = mine ? 0 : distance - Number(peer.distance);
       rider.visible = z > -74 && z < 11;
       rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, lanePosition(peer.lane), Math.min(1,dt*10));
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
+      if (riderShadow) {
+        riderShadow.visible = rider.visible;
+        if (riderShadow.visible) {
+          riderShadow.position.set(rider.position.x, 0.012, rider.position.z);
+          riderShadow.scale.set(1, 1.8, 1).multiplyScalar(Math.max(0.55, 1 - rider.position.y * 0.12));
+        }
+      }
       skinPaint(rider, CHARACTER_PALETTES[peer.character ?? peer.slot] || CHARACTER_PALETTES[0]);
       const peerStun = !mine && peer.stunned_until ? Math.max(0, (Date.parse(peer.stunned_until) - wallNow) / 1000) : 0;
       const stunLeft = mine ? playerStun : Math.min(PISTOL_STUN_DURATION, peerStun);
@@ -3126,6 +3186,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         rivalMesh.scale.setScalar(0.92);
       }
       rivalMesh.visible = race.mode === 'duel' && rivalMesh.position.z < 11 && rivalMesh.position.z > -74 && (r.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
+      // L'ombre suit le cavalier au sol : elle s'écarte et pâlit quand il saute,
+      // et disparaît avec lui (même clignotement d'invulnérabilité).
+      r.shadow.visible = rivalMesh.visible;
+      if (r.shadow.visible) {
+        r.shadow.position.set(rivalMesh.position.x, 0.012, rivalMesh.position.z);
+        r.shadow.scale.set(1, 1.8, 1).multiplyScalar(Math.max(0.55, 1 - rivalMesh.position.y * 0.12));
+      }
     });
     if (running) {
       updateCloudShockwaves(dt);
@@ -3221,6 +3288,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const next = graphicsProfile(quality);
       if (next === graphics) return;
       graphics = next;
+      glowHalos = graphics.glowHalos !== false;
       desertScenery?.setLite(!graphics.sceneryEffects);
       applySceneryRange();
       resize();
@@ -3242,13 +3310,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       detachSwipe();
       touchFeedback.destroy();
       scene.traverse((object) => {
-        if (object.geometry) object.geometry.dispose();
+        // La géométrie des sprites est commune à tout le jeu (voir `populateRow`).
+        if (object.geometry && !object.isSprite) object.geometry.dispose();
         if (object.material) {
           if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
           else { object.material.map?.dispose(); object.material.dispose(); }
         }
       });
       desertScenery?.dispose();
+      // Les deux dégradés partagés (halos, ombres) : les matières qui les portent
+      // sont libérées ci-dessus, mais ils sont communs à tout le monde 3D.
+      glowTexture.dispose();
+      shadowTexture.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     },

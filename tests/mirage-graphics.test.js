@@ -46,6 +46,7 @@ test('graphics: « normal » is the game as it has always been drawn', () => {
   assert.equal(normal.maxRenderPixels, MAX_RENDER_PIXELS);
   assert.equal(normal.antialias, true);
   assert.equal(normal.sceneryEffects, true);
+  assert.equal(normal.glowHalos, true, 'les cristaux brillent');
   assert.equal(normal.sceneryRangeRatio, Infinity, 'tout le décor est dessiné');
   assert.equal(normal.gemBurstRatio, 1);
   assert.equal(normal.hudInterval, 125);
@@ -57,12 +58,13 @@ test('graphics: « low » is lighter on every axis — and only dresses the pict
   assert.ok(low.maxRenderPixels < normal.maxRenderPixels);
   assert.equal(low.antialias, false);
   assert.equal(low.sceneryEffects, false);
+  assert.equal(low.glowHalos, false, 'les halos s’éteignent, la gemme reste');
   assert.ok(low.sceneryRangeRatio < normal.sceneryRangeRatio);
   assert.ok(low.gemBurstRatio < normal.gemBurstRatio);
   assert.ok(low.hudInterval > normal.hudInterval);
   assert.ok(low.idleFrameInterval > normal.idleFrameInterval);
   // La liste est fermée : tout nouveau réglage doit passer ici, donc être relu — jamais de réglage de jeu.
-  const dressing = ['quality', 'maxPixelRatio', 'maxRenderPixels', 'antialias', 'sceneryEffects', 'sceneryRangeRatio', 'gemBurstRatio', 'hudInterval', 'idleFrameInterval'];
+  const dressing = ['quality', 'maxPixelRatio', 'maxRenderPixels', 'antialias', 'sceneryEffects', 'glowHalos', 'sceneryRangeRatio', 'gemBurstRatio', 'hudInterval', 'idleFrameInterval'];
   assert.deepEqual(Object.keys(normal).sort(), [...dressing].sort());
   assert.deepEqual(Object.keys(low).sort(), [...dressing].sort());
 });
