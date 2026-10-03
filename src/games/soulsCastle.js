@@ -130,16 +130,25 @@ export function makeForestFloor(trees, { detailCount = 46 } = {}) {
   return { group, blockers: [] };
 }
 
-/** Grande dalle du parvis, devant le portail (pavés + marches). */
+/** Parvis affleurant devant le portail : sol lisible, sans marche fantôme. */
 export function makeForecourt() {
   const group = new THREE.Group();
-  const stone = MAT.cobbleDark();
+  group.name = 'flush-forecourt';
+  const stone = animeMaterial('stone', {
+    color: 0xb3c0dd,
+    emissive: 0x10172a,
+    emissiveIntensity: 0.24,
+    tile: 1.7,
+  });
   const light = MAT.cobble();
-  block(group, null, stone, 26, 0.12, 9.5, 0, 0.06, -83.7, { blocker: false, shadow: false });
-  // Trois marches basses vers le portail (décor — le sol reste plat).
-  block(group, null, light, 11, 0.1, 1.4, 0, 0.11, -87.2, { blocker: false, shadow: false });
-  block(group, null, light, 9, 0.1, 1.0, 0, 0.16, -88.0, { blocker: false, shadow: false });
-  // Bornes de pierre + chaînes : la voie vers le portail se lit de loin.
+  // Le niveau logique est plat ici. La dalle est donc affleurante (sommet à
+  // y = 0), au lieu d'être une boîte sombre de 12 cm sans collider.
+  const paving = block(group, null, stone, 26, 0.016, 9.5, 0, -0.008, -83.7,
+    { blocker: false, shadow: false });
+  paving.name = 'forecourt-paving';
+  paving.userData.walkableSurface = true;
+  // Bornes de pierre : elles restent de vrais volumes de repère, hors de
+  // l'allée centrale ; le joueur ne les confond pas avec un sol surélevé.
   for (const sx of [-1, 1]) {
     for (const z of [-80.4, -84.6]) {
       block(group, null, light, 0.7, 1.0, 0.7, sx * 5.4, 0.5, z, { blocker: false });

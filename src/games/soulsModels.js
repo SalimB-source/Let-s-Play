@@ -2238,56 +2238,62 @@ function radialSpriteTexture(size, stops) {
  */
 // ── Chemin du Roi : dalles peintes à la main ─────────────────────────
 
-/** Dalles irrégulières, rehaussées de lavis indigo et de bordures claires. */
-export function makeStonePath(points, { width = 2.4, step = 0.95 } = {}) {
+/** Ruban de pierre peint : lisible, affleurant et continu sur toute la route. */
+export function makeStonePath(points, { width = 2.4 } = {}) {
   const group = new THREE.Group();
-  const stone = animeMaterial('stone', { color: 0xb3b7e0, tile: 1.45 });
-  const dark = animeMaterial('slate', { color: 0x8589b1, tile: 1.45 });
-  const edge = animeMaterial('stone', { color: 0xc8d3ed, tile: 1.05 });
-  let seed = 7;
-  const rnd = () => {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    return seed / 0x7fffffff;
+  if (!Array.isArray(points) || points.length < 2) return { group, blockers: [] };
+
+  // Le chemin reste un sol traversable, pas une suite de pavés épais. Les
+  // anciennes boîtes sombres dépassaient du terrain sans collider et se
+  // lisaient comme des plaques noires que le Gardien traversait.
+  const roadMat = animeMaterial('stone', {
+    color: 0xb9c5e1,
+    emissive: 0x10172a,
+    emissiveIntensity: 0.26,
+    tile: 1.6,
+    side: THREE.DoubleSide,
+  });
+  const half = width / 2;
+  const toPoint = ([x, z]) => new THREE.Vector2(x, z);
+  const path = points.map(toPoint);
+  const normalOf = (a, b) => {
+    const dx = b.x - a.x;
+    const dz = b.y - a.y;
+    const inv = 1 / Math.max(1e-6, Math.hypot(dx, dz));
+    return new THREE.Vector2(-dz * inv, dx * inv);
   };
-  const addSlab = (material, w, d, px, pz, yaw, { y = 0.052, height = 0.1 } = {}) => {
-    const geo = scaleBoxUV(new THREE.BoxGeometry(w, height, d), { x: w, y: height, z: d }, material.userData.tile);
-    const slab = new THREE.Mesh(geo, material);
-    slab.position.set(px, y, pz);
-    slab.rotation.y = yaw;
-    slab.receiveShadow = true;
-    group.add(slab);
-    return slab;
-  };
-  for (let i = 0; i < points.length - 1; i++) {
-    const [x0, z0] = points[i];
-    const [x1, z1] = points[i + 1];
-    const dx = x1 - x0;
-    const dz = z1 - z0;
-    const len = Math.hypot(dx, dz);
-    const n = Math.max(1, Math.round(len / step));
-    const yaw = Math.atan2(-dx, -dz);
-    const nx = -dz / (len || 1);
-    const nz = dx / (len || 1);
-    for (let j = 0; j < n; j++) {
-      const u = (j + 0.5) / n;
-      const px = x0 + dx * u + (rnd() - 0.5) * 0.24;
-      const pz = z0 + dz * u + (rnd() - 0.5) * 0.16;
-      addSlab(
-        rnd() > 0.72 ? dark : stone,
-        width * (0.76 + rnd() * 0.18), (len / n) * (0.64 + rnd() * 0.18),
-        px, pz, yaw + (rnd() - 0.5) * 0.22,
-      );
-      // Bordure légèrement au-dessus des dalles : aucune face ne les traverse,
-      // donc pas de scintillement de profondeur quand la caméra se déplace.
-      if (j % 2 === 0) {
-        for (const side of [-1, 1]) {
-          addSlab(edge, 0.36, 0.4,
-            px + nx * side * (width * 0.56), pz + nz * side * (width * 0.56),
-            yaw + rnd() * 0.7, { y: 0.116, height: 0.022 });
-        }
-      }
-    }
+  const left = [];
+  const right = [];
+  for (let i = 0; i < path.length; i++) {
+    const prev = normalOf(path[Math.max(0, i - 1)], path[i]);
+    const next = normalOf(path[i], path[Math.min(path.length - 1, i + 1)]);
+    let normal = i === 0 ? next : i === path.length - 1 ? prev : prev.clone().add(next);
+    if (normal.lengthSq() < 1e-6) normal = next;
+    normal.normalize();
+    // Un léger miter garde la largeur visuelle dans les virages sans faire
+    // surgir de longues pointes aux jonctions du ruban.
+    const reference = i === 0 ? next : i === path.length - 1 ? prev : next;
+    const offset = Math.min(half * 1.35, half / Math.max(0.74, Math.abs(normal.dot(reference))));
+    left.push(path[i].clone().addScaledVector(normal, offset));
+    right.push(path[i].clone().addScaledVector(normal, -offset));
   }
+
+  const outline = new THREE.Shape();
+  outline.moveTo(left[0].x, left[0].y);
+  for (let i = 1; i < left.length; i++) outline.lineTo(left[i].x, left[i].y);
+  for (let i = right.length - 1; i >= 0; i--) outline.lineTo(right[i].x, right[i].y);
+  outline.closePath();
+
+  const geo = new THREE.ShapeGeometry(outline);
+  geo.rotateX(Math.PI / 2);
+  const ribbon = new THREE.Mesh(geo, roadMat);
+  ribbon.name = 'flush-stone-road';
+  // Quelques millimètres au-dessus du terrain : aucune épaisseur solide que
+  // le joueur pourrait traverser visuellement, et aucun z-fighting.
+  ribbon.position.y = 0.003;
+  ribbon.receiveShadow = true;
+  ribbon.userData.walkableSurface = true;
+  group.add(ribbon);
   return { group, blockers: [] };
 }
 

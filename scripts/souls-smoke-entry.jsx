@@ -210,23 +210,25 @@ try {
     || levelEmbers?.geometry?.attributes?.position?.count !== 54) {
     fail('BRAISES DE CARTE TROP DENSES');
   }
-  if (!road) fail('CHEMIN PRINCIPAL ABSENT');
-  const slabs = road.children.filter((o) => o.isMesh);
-  const base = slabs.filter((o) => Math.abs(o.position.y - 0.052) < 1e-5);
-  const rims = slabs.filter((o) => Math.abs(o.position.y - 0.116) < 1e-5);
-  const bounds = (mesh) => {
-    mesh.geometry.computeBoundingBox();
-    return {
-      bottom: mesh.position.y + mesh.geometry.boundingBox.min.y,
-      top: mesh.position.y + mesh.geometry.boundingBox.max.y,
-    };
-  };
-  if (!base.length || !rims.length || Math.min(...rims.map(bounds).map((b) => b.bottom)) <= Math.max(...base.map(bounds).map((b) => b.top))) {
-    fail('BORDURES DE CHEMIN COPLANAIRES');
+  const forecourt = scene.getObjectByName('flush-forecourt');
+  const paving = scene.getObjectByName('forecourt-paving');
+  const luminance = (color) => color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
+  const roadRibbon = road?.getObjectByName('flush-stone-road');
+  if (!road || !roadRibbon || road.children.length !== 1
+    || roadRibbon.geometry.type !== 'ShapeGeometry'
+    || roadRibbon.position.y > 0.006
+    || luminance(roadRibbon.material.color) < 0.45) {
+    fail('CHEMIN EN PLAQUES', road?.children.length);
   }
-  console.log(`Décor allégé OK — ${mist.children.length} brumes, ${grass.count} herbes, ${flowers.count} fleurs, ${forestFloor.children.length} sous-bois.`);
+  if (!forecourt || !paving) fail('PARVIS ABSENT');
+  paving.geometry.computeBoundingBox();
+  const pavingTop = paving.position.y + paving.geometry.boundingBox.max.y;
+  if (pavingTop > 0.002 || luminance(paving.material.color) < 0.45) {
+    fail('PARVIS SURÉLEVÉ OU NOIR', pavingTop.toFixed(3));
+  }
+  console.log(`Décor allégé OK — ${mist.children.length} brumes, ${grass.count} herbes, ${flowers.count} fleurs, ${forestFloor.children.length} sous-bois ; chemin affleurant.`);
 } catch (e) {
-  if (/BRUME DE CARTE|VÉGÉTATION DE CARTE|FLEURS SOUS LE SOL|FLEUR FLOTTANTE|SOUS-BOIS TROP DENSE|BRAISES DE CARTE|CHEMIN PRINCIPAL|BORDURES DE CHEMIN/.test(e?.message || '')) throw e;
+  if (/BRUME DE CARTE|VÉGÉTATION DE CARTE|FLEURS SOUS LE SOL|FLEUR FLOTTANTE|SOUS-BOIS TROP DENSE|BRAISES DE CARTE|CHEMIN EN PLAQUES|PARVIS ABSENT|PARVIS SURÉLEVÉ OU NOIR/.test(e?.message || '')) throw e;
   console.error('DÉCOR ALLÉGÉ FAILED:', e);
   process.exit(3);
 }

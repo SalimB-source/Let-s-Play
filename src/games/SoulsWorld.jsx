@@ -151,9 +151,9 @@ function makeWorld(mount, callbacks) {
   // ── Le Chemin du Roi : route, chapelle + coffre, forêt, château, nef ──
   const trees = forestTrees();
   const levelGroup = new THREE.Group();
-  const roadPath = makeStonePath(STAGE.road, { width: 3.4, step: 1.25 });
+  const roadPath = makeStonePath(STAGE.road, { width: 3.4 });
   roadPath.group.name = 'main-road-path';
-  const spurPath = makeStonePath(STAGE.spur, { width: 2.6, step: 1.15 });
+  const spurPath = makeStonePath(STAGE.spur, { width: 2.6 });
   spurPath.group.name = 'chapel-spur-path';
   const forecourt = makeForecourt();
   const chapel = makeChapel();
