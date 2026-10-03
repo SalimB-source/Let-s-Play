@@ -533,6 +533,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         skyBottom: [0.90, 0.70, 0.45], skyHorizon: [0.84, 0.52, 0.32], skyTop: [0.46, 0.37, 0.44],
         sunBottom: [0.98, 0.25, 0.045], sunTop: [1.0, 0.49, 0.12], glow: [1.0, 0.58, 0.29],
         hemiSky: 0xffdfa0, hemiGround: 0x65523c, sunLight: 0xffb654, rimLight: 0xf1bf77,
+        // Force des faisceaux du soleil dans le ciel (voir README).
+        rays: 1.0,
       }
     : western
       ? {
@@ -540,6 +542,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
           skyBottom: [0.98, 0.72, 0.49], skyHorizon: [0.88, 0.48, 0.36], skyTop: [0.48, 0.36, 0.49],
           sunBottom: [1.0, 0.32, 0.075], sunTop: [1.0, 0.59, 0.2], glow: [1.0, 0.67, 0.37],
           hemiSky: 0xffd4a2, hemiGround: 0x594238, sunLight: 0xffb660, rimLight: 0xff9877,
+          // Force des faisceaux du soleil dans le ciel (voir README).
+          rays: 1.0,
         }
       : sardinia
         ? {
@@ -547,6 +551,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
             skyBottom: [0.66, 0.87, 0.94], skyHorizon: [0.39, 0.72, 0.92], skyTop: [0.12, 0.45, 0.78],
             sunBottom: [1.0, 0.84, 0.46], sunTop: [1.0, 0.97, 0.78], glow: [1.0, 0.90, 0.63],
             hemiSky: 0xe5f3f6, hemiGround: 0x9e8262, sunLight: 0xffe5b0, rimLight: 0x9edfe8,
+            // Force des faisceaux du soleil dans le ciel (voir README).
+            rays: 0.5,
           }
         : alger
           ? {
@@ -556,6 +562,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
               skyBottom: [0.96, 0.80, 0.58], skyHorizon: [0.66, 0.72, 0.86], skyTop: [0.24, 0.45, 0.74],
               sunBottom: [1.0, 0.42, 0.12], sunTop: [1.0, 0.72, 0.32], glow: [1.0, 0.80, 0.52],
               hemiSky: 0xd4e6f6, hemiGround: 0x9a9484, sunLight: 0xffd9a4, rimLight: 0x9cc6ea,
+              // Force des faisceaux du soleil dans le ciel (voir README).
+              rays: 0.75,
             }
           : japan
             ? {
@@ -563,6 +571,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
                 skyBottom: [0.16, 0.23, 0.38], skyHorizon: [0.09, 0.14, 0.27], skyTop: [0.03, 0.05, 0.12],
                 sunBottom: [0.88, 0.93, 1.0], sunTop: [0.98, 0.99, 1.0], glow: [0.46, 0.62, 0.92],
                 hemiSky: 0x9bb8ff, hemiGround: 0x1d2738, sunLight: 0xd8e6ff, rimLight: 0xff6e54,
+                // Force des faisceaux du soleil dans le ciel (voir README).
+                rays: 0.25,
               }
             : ramparts
               ? {
@@ -572,6 +582,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
                   skyBottom: [0.94, 0.84, 0.66], skyHorizon: [0.62, 0.79, 0.93], skyTop: [0.22, 0.50, 0.84],
                   sunBottom: [1.0, 0.90, 0.62], sunTop: [1.0, 0.98, 0.86], glow: [1.0, 0.93, 0.74],
                   hemiSky: 0xfff0d8, hemiGround: 0xa47d52, sunLight: 0xfff0d0, rimLight: 0xb0d2f2,
+                  // Force des faisceaux du soleil dans le ciel (voir README).
+                  rays: 0.45,
                 }
               : airbase
               ? {
@@ -582,6 +594,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
                   skyBottom: [0.78, 0.89, 0.97], skyHorizon: [0.45, 0.70, 0.92], skyTop: [0.15, 0.42, 0.80],
                   sunBottom: [1.0, 0.90, 0.66], sunTop: [1.0, 0.99, 0.88], glow: [1.0, 0.95, 0.80],
                   hemiSky: 0xe8f2ff, hemiGround: 0x8a8f7a, sunLight: 0xfff4dc, rimLight: 0xbfe0ff,
+                  // Force des faisceaux du soleil dans le ciel (voir README).
+                  rays: 0.5,
                 }
               : infinity
                 ? INFINITY_ATMOSPHERE
@@ -674,7 +688,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
 
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const skyVector = (rgb) => new THREE.Vector3(...rgb);
-  const sunset = infinity ? makeInfinitySky(camera) : new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
+  const sunset = infinity ? makeInfinitySky(camera, atmosphere.rays ?? 0) : new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
     depthWrite: false,
     uniforms: {
       skyBottom: { value: skyVector(atmosphere.skyBottom) },
@@ -692,6 +706,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       sunX: { value: snakeway ? -27.0 : sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
       sunRadius: { value: snakeway ? 4.8 : sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
       isNight: { value: japan || snakeway ? 1.0 : 0.0 },
+      // Faisceaux du soleil : la force du terrain (0 en graphismes baissés, ou là
+      // où le ciel a déjà sa propre couronne) et l'horloge qui les fait battre.
+      uRays: { value: 0 },
+      uTime: { value: 0 },
     },
     vertexShader: `varying vec2 skyPoint;
       void main() {
@@ -713,6 +731,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       uniform float sunX;
       uniform float sunRadius;
       uniform float isNight;
+      uniform float uRays;
+      uniform float uTime;
       varying vec2 skyPoint;
       void main() {
         float height = skyPoint.y;
@@ -720,6 +740,22 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         sky = mix(sky, skyTop, smoothstep(18.0, 75.0, height));
         float radius = length(skyPoint - vec2(sunX, sunElevation));
         float haloVisibility = clamp((sunElevation + 12.0) / 17.5, 0.0, 1.0);
+
+        // Faisceaux du soleil et traînée sur l'horizon (voir README « le soleil des
+        // dix terrains »). uRays porte la force du terrain : 0 quand les graphismes
+        // sont baissés, ou quand ce ciel a déjà sa propre couronne. Comme le halo,
+        // ils s'effacent quand le soleil descend sous l'horizon (haloVisibility), et
+        // ils s'arrêtent sous la ligne (smoothstep 0 → 6) : la brume garde sa
+        // couleur, sans couture avec le sol.
+        if (uRays > 0.001) {
+          float angle = atan(skyPoint.y - sunElevation, (skyPoint.x - sunX) * 1.35);
+          float spokes = 0.5 + 0.5 * sin(angle * 7.0 + sin(angle * 2.6 + uTime * 0.21) * 1.6 + uTime * 0.13);
+          float fall = exp(-radius * radius / 2200.0) * smoothstep(0.0, 6.0, height) * haloVisibility;
+          sky = mix(sky, glow, clamp(pow(max(spokes, 0.0), 2.8) * fall * 0.30 * uRays, 0.0, 1.0));
+          float streak = exp(-abs(height - sunElevation) * 0.40) * exp(-abs(skyPoint.x - sunX) * 0.0075);
+          sky = mix(sky, glow, clamp(streak * haloVisibility * 0.20 * uRays, 0.0, 1.0));
+        }
+
         float halo = exp(-radius * radius / 500.0) * 0.38 * haloVisibility;
         sky = mix(sky, glow, halo);
         float aboveHorizon = step(0.0, height);
@@ -752,6 +788,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   }
   sunset.visible = !desert; // le désert a son propre ciel (desertStage.js)
   scene.add(sunset);
+
+  // Faisceaux du soleil : la force du terrain, éteinte avec les graphismes baissés
+  // (le désert, lui, a son propre ciel et suit `sceneryEffects` par `setLite`).
+  const applySkyRays = () => {
+    const strength = graphics.sceneryEffects ? (atmosphere.rays ?? 0) : 0;
+    const rays = sunset.material.uniforms.uRays;
+    if (rays) rays.value = strength;
+  };
+  applySkyRays();
 
   const applyDynamicSunset = (progress) => {
     if (!prairie && !western) return;
@@ -3237,6 +3282,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     if (prairie || western) {
       applyDynamicSunset(race.mode !== 'rush' ? distance / DUEL_DISTANCE : elapsed / RUN_SECONDS);
     }
+    // Le ciel partagé n'a qu'une horloge : celle de ses faisceaux (le ciel du
+    // Château est figé — « pas de scintillement » — et le désert a la sienne).
+    if (!infinity) sunset.material.uniforms.uTime.value = time * 0.001;
     camera.position.y += ((turboActive ? 6.85 : 7.3) - camera.position.y) * Math.min(1, dt * 6);
     camera.position.z += ((turboActive ? 10.05 : 9.4) - camera.position.z) * Math.min(1, dt * 6);
     camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
@@ -3302,6 +3350,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       graphics = next;
       glowHalos = graphics.glowHalos !== false;
       desertScenery?.setLite(!graphics.sceneryEffects);
+      applySkyRays();
       applySceneryRange();
       resize();
     },

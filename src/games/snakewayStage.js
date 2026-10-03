@@ -31,6 +31,9 @@ export const SNAKEWAY_ATMOSPHERE = Object.freeze({
   hemiGround: 0x875244,
   sunLight: 0xffc47d,
   rimLight: 0xff9a73,
+  // Force des faisceaux du soleil dans le ciel (voir README) : la mer de cumulus
+  // dorés en porte déjà beaucoup, le halo reste discret derrière.
+  rays: 0.35,
 });
 
 const material = (color, options = {}) => new THREE.MeshStandardMaterial({

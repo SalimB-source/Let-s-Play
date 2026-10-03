@@ -452,19 +452,29 @@ et alterner les deux niveaux en pleine course. Le gain se mesure en images par s
 sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
 sur les terrains chargés, du nombre d'objets dessinés.
 
-## Mirage Rush : le soleil du désert, les halos et les ombres
+## Mirage Rush : le soleil, les halos et les ombres
 
-« Dunes de l'Écho » — le terrain d'origine — gagne sa lumière : des faisceaux qui
-s'ouvrent depuis le soleil bas, une traînée horizontale dans la brume au-dessus du
-mirage, un coup de chaleur au ras de l'horizon ; les cristaux de la piste brillent
-dans un halo ; les cavaliers projettent une ombre douce au sol.
+Les **dix terrains** gagnent leur lumière : des faisceaux s'ouvrent depuis leur
+soleil (ou leur lune), les cristaux de la piste brillent dans un halo, et les
+cavaliers projettent une ombre douce au sol. « Dunes de l'Écho » — le terrain
+d'origine — a en plus sa traînée dans la brume et son coup de chaleur à l'horizon.
 
 | Où | Quoi |
 |---|---|
 | Ciel du désert (`desertTerrain.js`) | **rayons** du soleil (six faisceaux qui battent lentement), **traînée** horizontale à la hauteur du disque, **coup de chaleur** juste au-dessus de la ligne d'horizon |
+| Ciel partagé — prairie, western, Sardaigne, Alger, Japon, Remparts, Airbase, Serpent (`MirageWorld.jsx`) | **faisceaux** qui battent lentement depuis le soleil du terrain, et **traînée** à sa hauteur ; ils s'effacent quand le soleil descend sous l'horizon (les nuits de la Prairie et du Far West ne les allument pas) |
+| Ciel du Château de l'Infini (`infinityAtmosphere.js`) | **faisceaux figés** autour du soleil de la Grande Arche, appuyés sur l'enveloppe de sa couronne : ils ne débordent ni derrière le bout du pont ni sur les flancs |
 | Cristaux (`MirageWorld.jsx`, `mirageGlow.js`) | un halo additif devant chaque gemme, qui respire à sa propre phase ; couleur du palier (rose, bleu, vert, or) |
 | Ramassage (`MirageWorld.jsx`) | l'éclair d'un cristal ramassé — ou la gerbe d'une flaque de boue — s'entoure d'un halo qui prend sa couleur et vit ses 0,52 s |
 | Cavaliers (`MirageWorld.jsx`) | une ombre douce au sol sous le joueur, sous les rivaux du duel et sous les cavaliers de la course en ligne ; elle pâlit quand ils sautent et suit le clignotement d'invulnérabilité |
+
+La force des faisceaux est un réglage **du terrain**, dans son objet d'ambiance
+(`rays`), pour que chaque ciel garde son caractère : plein soleil du couchant sur
+la Prairie et le Far West (1), soleil doré d'Alger (0,75), Château de l'Infini
+(0,6), plein jour de Sardaigne et d'Airbase (0,5), soleil blanc des Remparts
+(0,45), soleil couchant du Serpent (0,35), lune froide du Japon (0,25). Entre 0,04
+et 0,11 d'écart par canal à leur maximum : visibles, jamais au point de manger la
+palette du terrain.
 
 **Pas de post-traitement, et c'est un choix.** Le ciel et le sable du désert
 écrivent leurs couleurs sRGB telles quelles (`desertTerrain.js` : « pas de
@@ -478,9 +488,8 @@ jamais la piste et ne change ni la difficulté ni la lisibilité.
 
 Ce qui ne bouge pas : la palette, la brume, la géométrie du relief, la position des
 obstacles, les voies, la vitesse et les chronos. Seul l'habillage lumineux change —
-et il s'éteint avec les **graphismes baissés** (le ciel du désert garde alors son
-halo et son disque, sans faisceaux ; les gemmes perdent leur halo, pas leur
-couleur).
+et il s'éteint avec les **graphismes baissés** : les ciels gardent alors leur halo
+et leur disque, sans faisceaux, et les gemmes perdent leur halo, pas leur couleur.
 
 Deux détails d'implémentation qui comptent :
 
@@ -496,10 +505,15 @@ Deux détails d'implémentation qui comptent :
 - `src/games/mirageGlow.js` — les dégradés (`makeGlowTexture`, `makeShadowTexture`),
   le halo (`makeHalo`) et l'ombre au sol (`makeGroundShadow`) ;
 - `src/games/desertTerrain.js` — `SKY_FRAGMENT` : rayons, traînée et coup de chaleur,
-  sous `uLite < 0.5` (graphismes normaux) ;
-- `src/games/MirageWorld.jsx` — `makeCrystal` (halo), les ombres des cavaliers, la
-  respiration des cristaux dans la boucle, `setGraphics` (`glowHalos`) ;
-- `src/games/mirageGraphics.js` — le champ `glowHalos` des deux profils.
+  sous `uLite < 0.5` (graphismes normaux), et l'horloge du ciel du désert ;
+- `src/games/MirageWorld.jsx` — le ciel partagé (`uRays` par terrain, `uTime`), son
+  `applySkyRays()`, `makeCrystal` (halo), les ombres des cavaliers, la respiration
+  des cristaux dans la boucle, `setGraphics` (`glowHalos`, faisceaux) ;
+- `src/games/infinityAtmosphere.js` — les faisceaux figés de la Grande Arche
+  (`uRays` posé à la création) ;
+- `src/games/snakewayStage.js` — `rays` de l'ambiance du Serpent ;
+- `src/games/mirageGraphics.js` — le champ `glowHalos` des deux profils, et
+  `sceneryEffects`, qui commande les faisceaux des ciels.
 
 ### Vérifications
 
@@ -510,10 +524,14 @@ npm run build
 ```
 
 jsdom n'a pas de WebGL : ces vérifications disent ce que les dégradés contiennent,
-que les halos s'ajoutent sans masquer, que l'ombre est couchée au sol, que le champ
-`glowHalos` existe dans les deux profils et que le décor du désert est intact — pas
-à quoi la lumière ressemble. Le rendu se juge à l'œil, en jeu, en basculant
+que les halos s'ajoutent sans masquer, que l'ombre est couchée au sol, que les
+champs `glowHalos` et `rays` existent, et que le décor du désert est intact — pas à
+quoi la lumière ressemble. Le rendu se juge à l'œil, en jeu, en basculant
 « GRAPHISMES : NORMAUX / BAISSÉS » pour comparer.
+
+Le ciel du Château reste **figé** (son shader ne dépend pas du temps :
+`tests/mirage-infinity-stage.test.js` le fige aussi), là où le ciel partagé et
+celui du désert reçoivent une horloge — c'est elle qui fait battre leurs faisceaux.
 
 ## Mirage Rush : les coupes et les gains d'or
 
