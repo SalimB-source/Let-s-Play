@@ -482,7 +482,7 @@ function makeWorld(mount, callbacks) {
     const elbow = new THREE.Vector3();
     const upperDirection = new THREE.Vector3();
     const lowerDirection = new THREE.Vector3();
-    const forward = new THREE.Vector3();
+    const supportSide = new THREE.Vector3();
     const scale = new THREE.Vector3();
     const parentQuaternion = new THREE.Quaternion();
     const worldQuaternion = new THREE.Quaternion();
@@ -524,15 +524,17 @@ function makeWorld(mount, callbacks) {
       const along = (upperLength * upperLength - lowerLength * lowerLength + reach * reach) / (2 * reach);
       const height = Math.sqrt(Math.max(0, upperLength * upperLength - along * along));
 
-      // Le coude plie vers l'avant du thorax, pas à travers les ailes ni le
-      // dos. On retire la composante parallèle à la cible pour former le plan
-      // stable du coude ; le repli évite les cas rares où il regarde pile face.
+      // La caméra suit le Gardien depuis le dos. Le coude d'appui s'ouvre donc
+      // sur la gauche et légèrement vers l'arrière : les deux bras restent
+      // lisibles en silhouette, au lieu de cacher la seconde main derrière le
+      // thorax. On retire la composante parallèle à la cible pour former le
+      // plan stable du coude.
       torso.getWorldQuaternion(torsoQuaternion);
-      forward.set(0, 0, -1).applyQuaternion(torsoQuaternion);
-      bend.copy(forward).addScaledVector(axis, -forward.dot(axis));
+      supportSide.set(-0.88, 0, 0.48).normalize().applyQuaternion(torsoQuaternion);
+      bend.copy(supportSide).addScaledVector(axis, -supportSide.dot(axis));
       if (bend.lengthSq() < 1e-5) {
-        bend.set(1, 0, 0).applyQuaternion(torsoQuaternion);
-        bend.addScaledVector(axis, -bend.dot(axis));
+        supportSide.set(0, 0, 1).applyQuaternion(torsoQuaternion);
+        bend.copy(supportSide).addScaledVector(axis, -supportSide.dot(axis));
       }
       bend.normalize();
       elbowTarget.copy(shoulder).addScaledVector(axis, along).addScaledVector(bend, height);

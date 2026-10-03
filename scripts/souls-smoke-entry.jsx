@@ -173,8 +173,8 @@ try {
 }
 console.log('240 frames OK — ready =', readyFired, '| hud samples =', hudSamples.length);
 
-// Prise du glaive : la vraie paume gauche atteint le repère de la hampe.
-// Cela protège la pose deux mains sans figer les attaques de la main droite.
+// Prise du glaive : la vraie paume gauche atteint le repère de contreprise.
+// La vérification protège la pose deux mains et son ouverture en silhouette.
 try {
   const p = world.debug.warrior.userData.parts;
   if (!p.offhandGrip) fail('PRISE À DEUX MAINS ABSENTE — repère de main gauche manquant');
@@ -184,8 +184,14 @@ try {
   p.elbowL.localToWorld(palm);
   p.offhandGrip.getWorldPosition(grip);
   const gripGap = palm.distanceTo(grip);
-  if (gripGap > 0.025) fail('PRISE À DEUX MAINS DÉCALÉE', `paume → hampe = ${gripGap.toFixed(3)} m`);
-  console.log('Prise à deux mains OK — paume gauche à', `${gripGap.toFixed(3)} m`, 'de la hampe');
+  if (gripGap > 0.025) fail('PRISE À DEUX MAINS DÉCALÉE', `paume → contreprise = ${gripGap.toFixed(3)} m`);
+  const elbow = new THREE.Vector3();
+  p.elbowL.getWorldPosition(elbow);
+  const elbowInTorso = p.torso.worldToLocal(elbow.clone());
+  if (elbowInTorso.x > -0.06 || elbowInTorso.z < 0.08) {
+    fail('PRISE À DEUX MAINS MASQUÉE', `coude local = ${elbowInTorso.toArray().map((v) => v.toFixed(3)).join(', ')}`);
+  }
+  console.log('Prise à deux mains OK — paume gauche à', `${gripGap.toFixed(3)} m`, 'de la contreprise, coude lisible.');
 } catch (e) {
   if (e?.message?.startsWith?.('PRISE À DEUX MAINS')) throw e;
   console.error('PRISE À DEUX MAINS FAILED:', e);
