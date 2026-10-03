@@ -12,8 +12,9 @@
 //   - markings  liste en tête + balzanes (optionnel : sinon = robe, invisible)
 //
 // Shop skins carry their own details: Gyro's green steel balls and goggles,
-// or Cloud's chocobo, spiky hair and sword. Their materials stay independent
-// from paintModel; the chocobo replaces the base horse mount entirely.
+// Cloud's chocobo, spiky hair and sword, or Link's Epona, green cap, Master
+// Sword and Hylian shield. Their materials stay independent from paintModel;
+// the chocobo and Epona replace the base horse mount entirely.
 import * as THREE from 'three';
 import { CHARACTER_ACCESSORIES, CHARACTER_PALETTES } from './mirageCharacters.js';
 
@@ -168,9 +169,13 @@ export function setExplorerAccessories(model, kind) {
   parts.wings = [];
   parts.chocobo = null;
   parts.busterSword = null;
+  parts.epona = null;
+  parts.masterSword = null;
+  parts.hylianShield = null;
   model.userData.accessoryKind = next;
   if (next === 'gyro') attachGyroAccessories(model);
   if (next === 'cloud-chocobo') attachCloudChocobo(model);
+  if (next === 'link-epona') attachLinkEpona(model);
 }
 
 function detachAccessories(model) {
@@ -435,6 +440,186 @@ function attachCloudChocobo(model) {
   parts.chocobo = group;
   model.userData.accessoryGroup = group;
   model.userData.accessoryKind = 'cloud-chocobo';
+}
+
+/**
+ * Link & Épona : la jument baie remplace le cheval de base (robe alezane,
+ * crins blonds, liste et balzanes crème), et le cavalier troque le Stetson
+ * pour la casquette verte, l’épée de légende à la main droite et le bouclier
+ * hylien sanglé dans le dos.
+ */
+function attachLinkEpona(model) {
+  const parts = model.userData.parts || {};
+  const { riderBody } = parts;
+  if (!riderBody || !parts.horseMount) return;
+
+  const group = new THREE.Group();
+  group.name = 'epona-mount';
+  const cube = new THREE.BoxGeometry(1, 1, 1);
+  const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.78, flatShading: true, ...extra });
+
+  // Épona : robe baie brûlée, crins blonds, chanfrein plus sombre.
+  const coat = mat(0x8a4a23);
+  const coatDark = mat(0x6d3719);
+  const maneBlond = mat(0xf0d9a0);
+  const maneLight = mat(0xfbe9c4);
+  const sock = mat(0xfaf3e4);
+  const hoof = mat(0x2e1d16);
+  const eyeDark = mat(0x241a14, { roughness: 0.4 });
+  const bridle = mat(0x4a2b17);
+  const saddleCloth = mat(0x2f7a33);
+  const saddleLeather = mat(0x6b4324);
+  const saddleTrim = mat(0xd9a84e);
+
+  block(cube, coat, group, [0, 0.95, 0], [0.82, 0.83, 1.65]);
+  const neck = block(cube, coat, group, [0, 1.48, -0.64], [0.46, 1.02, 0.52]);
+  neck.rotation.x = -0.25;
+  block(cube, coat, group, [0, 1.95, -0.92], [0.46, 0.46, 0.82]);
+  block(cube, coatDark, group, [0, 1.86, -1.29], [0.4, 0.3, 0.18]);
+  // Liste blanche sur le chanfrein + large bande entre les deux yeux.
+  block(cube, sock, group, [0, 1.97, -1.336], [0.16, 0.34, 0.02]);
+  block(cube, sock, group, [0, 2.12, -1.13], [0.13, 0.03, 0.42]);
+  for (const side of [-1, 1]) {
+    block(cube, eyeDark, group, [side * 0.236, 2.04, -1.02], [0.03, 0.09, 0.12]);
+    block(cube, bridle, group, [side * 0.236, 1.95, -0.88], [0.05, 0.05, 0.48]);
+  }
+  block(cube, bridle, group, [0, 1.79, -1.16], [0.42, 0.08, 0.16]);
+  // Crinière blonde, plus fournie que celle du cheval de base.
+  block(cube, maneBlond, group, [0, 1.63, -0.36], [0.2, 0.94, 0.2]);
+  block(cube, maneLight, group, [0, 2.0, -0.63], [0.22, 0.36, 0.22]);
+  for (const x of [-0.17, 0.17]) block(cube, coat, group, [x, 2.26, -0.78], [0.12, 0.32, 0.18]);
+
+  const eponaLegs = [];
+  for (const z of [-0.56, 0.56]) for (const x of [-0.29, 0.29]) {
+    const leg = new THREE.Group();
+    leg.name = `${x < 0 ? 'epona-left' : 'epona-right'}-${z < 0 ? 'front' : 'back'}-leg`;
+    leg.position.set(x, 0.85, z);
+    group.add(leg);
+    block(cube, coat, leg, [0, -0.34, 0], [0.2, 0.68, 0.23]);
+    block(cube, sock, leg, [0, -0.52, 0], [0.215, 0.28, 0.245]);
+    block(cube, hoof, leg, [0, -0.73, -0.03], [0.23, 0.17, 0.3]);
+    eponaLegs.push(leg);
+  }
+
+  // Queue blonde — même groupe animé que la queue du cheval de base.
+  const eponaTail = new THREE.Group();
+  eponaTail.name = 'epona-tail';
+  eponaTail.position.set(0, 0.82, 0.86);
+  eponaTail.rotation.x = -0.32;
+  group.add(eponaTail);
+  const tailTop = block(cube, maneBlond, eponaTail, [0, -0.06, 0.26], [0.19, 0.6, 0.3]);
+  tailTop.rotation.x = -0.12;
+  const tailTip = block(cube, maneLight, eponaTail, [0, -0.34, 0.42], [0.15, 0.34, 0.24]);
+  tailTip.rotation.x = -0.22;
+
+  // Tapis de selle vert (aux couleurs de la tunique) et cuir sanglé.
+  block(cube, saddleCloth, group, [0, 1.34, 0.05], [0.9, 0.1, 0.92]);
+  block(cube, saddleLeather, group, [0, 1.44, 0.12], [0.66, 0.16, 0.62]);
+  block(cube, saddleTrim, group, [0, 1.53, 0.12], [0.5, 0.035, 0.48]);
+
+  // ---- Link -------------------------------------------------------------
+  const loose = [];
+  const eyeBlue = mat(0x2b4bb0, { roughness: 0.4 });
+  const hair = mat(0xf2d477);
+  const hairLight = mat(0xffe9a6);
+  const beltLeather = mat(0x5a3418);
+  const gold = mat(0xe8c65f, { metalness: 0.62, roughness: 0.3 });
+  const capGreen = mat(0x2f8f3a);
+  const capDark = mat(0x22722b);
+  const capTrim = mat(0xd9c07a);
+  const bladeMat = mat(0xdfe9f5, { metalness: 0.72, roughness: 0.2 });
+  const bladeEdge = mat(0xf7fbff, { metalness: 0.6, roughness: 0.15 });
+  const guardMat = mat(0x6f5bd6, { metalness: 0.5, roughness: 0.34 });
+  const gripMat = mat(0x35508c);
+  const shieldBlue = mat(0x2b56b8);
+  const shieldRim = mat(0xc9d4e2, { metalness: 0.6, roughness: 0.3 });
+  const shieldRed = mat(0xd23b3b);
+  const shieldDark = mat(0x18356e);
+
+  // Ceinture et boucle dorée : la tunique verte vient de la palette du skin.
+  const belt = block(cube, beltLeather, riderBody, [0, 1.66, 0.05], [0.63, 0.11, 0.46]);
+  const buckle = block(cube, gold, riderBody, [0, 1.66, -0.176], [0.14, 0.1, 0.035]);
+  loose.push(belt, buckle);
+
+  // Cheveux blonds : frange, pattes et nuque, sous la casquette.
+  const hairGroup = new THREE.Group();
+  hairGroup.name = 'link-hair';
+  riderBody.add(hairGroup);
+  loose.push(hairGroup);
+  block(cube, hair, hairGroup, [0, 2.37, -0.16], [0.5, 0.22, 0.2]);
+  block(cube, hairLight, hairGroup, [0, 2.44, -0.21], [0.44, 0.09, 0.12]);
+  for (const side of [-1, 1]) block(cube, hair, hairGroup, [side * 0.27, 2.2, 0.02], [0.13, 0.5, 0.4]);
+  block(cube, hair, hairGroup, [0, 2.18, 0.27], [0.48, 0.42, 0.2]);
+  // Yeux bleus sur le visage (la tête vient du modèle de base, tons chair).
+  for (const side of [-1, 1]) block(cube, eyeBlue, hairGroup, [side * 0.115, 2.4, -0.25], [0.07, 0.05, 0.03]);
+
+  // Casquette verte pointue, visière à l’avant et bout qui retombe.
+  const cap = new THREE.Group();
+  cap.name = 'link-cap';
+  riderBody.add(cap);
+  loose.push(cap);
+  block(cube, capGreen, cap, [0, 2.63, 0.02], [0.6, 0.16, 0.6]);
+  block(cube, capTrim, cap, [0, 2.63, 0.02], [0.63, 0.06, 0.63]);
+  block(cube, capGreen, cap, [0, 2.75, 0.01], [0.52, 0.16, 0.54]);
+  block(cube, capGreen, cap, [0, 2.86, 0], [0.38, 0.14, 0.4]);
+  block(cube, capGreen, cap, [0, 2.96, -0.02], [0.22, 0.12, 0.26]);
+  const capTip = block(cube, capDark, cap, [0, 3.05, -0.07], [0.13, 0.13, 0.16]);
+  capTip.rotation.x = -0.55;
+  const visor = block(cube, capGreen, cap, [0, 2.61, -0.35], [0.5, 0.06, 0.32]);
+  visor.rotation.x = 0.2;
+
+  // Bouclier hylien dans le dos : plaque bleue, bordure argentée, croix et
+  // triangles. Posé à l’arrière du torse (le cavalier regarde vers -z).
+  const shield = new THREE.Group();
+  shield.name = 'hylian-shield';
+  shield.position.set(0, 1.86, 0.34);
+  shield.rotation.set(0.1, 0, 0.05);
+  riderBody.add(shield);
+  parts.hylianShield = shield;
+  loose.push(shield);
+  block(cube, shieldBlue, shield, [0, 0, 0], [0.52, 0.64, 0.1]);
+  block(cube, shieldDark, shield, [0, -0.02, -0.055], [0.44, 0.5, 0.02]);
+  block(cube, shieldRim, shield, [0, 0.3, 0.005], [0.56, 0.06, 0.11]);
+  block(cube, shieldRim, shield, [0, -0.3, 0.005], [0.56, 0.06, 0.11]);
+  for (const x of [-0.24, 0.24]) block(cube, shieldRim, shield, [x, 0, 0.005], [0.06, 0.52, 0.11]);
+  block(cube, shieldRim, shield, [0, 0.06, 0.055], [0.09, 0.36, 0.02]);
+  block(cube, shieldRim, shield, [0, -0.04, 0.055], [0.3, 0.09, 0.02]);
+  block(cube, gold, shield, [0, 0.21, 0.055], [0.15, 0.15, 0.02]);
+  for (const x of [-0.15, 0.15]) block(cube, shieldRed, shield, [x, -0.2, 0.055], [0.1, 0.1, 0.02]);
+  block(cube, shieldRim, shield, [0, 0, 0.062], [0.09, 0.09, 0.02]);
+
+  // Épée de légende tenue dans la main droite : lame vers le ciel, garde
+  // violette ailée et pommeau doré, juste à côté des rênes.
+  const sword = new THREE.Group();
+  sword.name = 'master-sword';
+  sword.position.set(0.36, 2.06, -0.42);
+  sword.rotation.set(-0.2, 0, 0.16);
+  sword.userData.baseRotationX = sword.rotation.x;
+  sword.userData.baseRotationZ = sword.rotation.z;
+  riderBody.add(sword);
+  parts.masterSword = sword;
+  loose.push(sword);
+  const blade = block(cube, bladeMat, sword, [0, 0.5, 0], [0.12, 0.96, 0.07]);
+  blade.userData.linkAccessory = 'master-sword';
+  block(cube, bladeEdge, sword, [0.045, 0.5, 0.038], [0.035, 0.84, 0.012]);
+  const swordTip = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.2, 4), bladeMat);
+  swordTip.position.set(0, 1.07, 0);
+  sword.add(swordTip);
+  block(cube, guardMat, sword, [0, 0.05, 0], [0.42, 0.07, 0.13]);
+  block(cube, guardMat, sword, [0, -0.01, 0], [0.2, 0.06, 0.11]);
+  block(cube, gripMat, sword, [0, -0.14, 0], [0.09, 0.24, 0.09]);
+  block(cube, gold, sword, [0, -0.28, 0], [0.13, 0.06, 0.13]);
+
+  group.userData.loose = loose;
+  model.add(group);
+  parts.horseMount.visible = false;
+  parts.hat.visible = false;
+  if (parts.cape) parts.cape.visible = false;
+  parts.legs = eponaLegs;
+  parts.tail = eponaTail;
+  parts.epona = group;
+  model.userData.accessoryGroup = group;
+  model.userData.accessoryKind = 'link-epona';
 }
 
 /** Free GPU resources of a model built by makeExplorer. */

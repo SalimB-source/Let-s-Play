@@ -704,6 +704,21 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   background: linear-gradient(135deg, rgba(255, 212, 80, .31), rgba(242, 119, 169, .15));
   box-shadow: 0 0 16px rgba(255, 211, 62, .08);
 }
+/* Link & Épona : vitrine vert forêt et or, le temps de l'essai gratuit de 3 jours. */
+.mirage-skin-chip.is-link-showcase.is-locked .mirage-skin-model,
+.mirage-shop-card.is-link-showcase:not(.is-owned) .mirage-skin-model { filter: none; }
+.mirage-shop-card.is-link-showcase .mirage-skin-stage {
+  background: radial-gradient(ellipse 70% 60% at 50% 92%, rgba(120, 220, 130, .34), transparent 70%),
+              linear-gradient(180deg, rgba(28, 74, 46, .5), rgba(96, 132, 74, .28) 66%, rgba(246, 205, 114, .24));
+}
+.mirage-shop-card.is-link-showcase .mirage-skin-name { color: #a8e6a0; }
+.mirage-skin-chip.is-link-showcase { border-color: rgba(126, 214, 126, .42); }
+.mirage-skin-chip.is-link-showcase.is-selected { border-color: rgba(168, 230, 160, .8); }
+.mirage-shop-card.is-link-showcase:not(.is-owned) .mirage-shop-buy {
+  border-color: rgba(140, 226, 140, .82);
+  background: linear-gradient(135deg, rgba(96, 190, 96, .32), rgba(246, 205, 114, .18));
+  box-shadow: 0 0 16px rgba(120, 220, 130, .1);
+}
 .mirage-shop-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
 .mirage-shop-copy .mirage-skin-name { white-space: normal; font-size: 12px; letter-spacing: .04em; }
 .mirage-shop-copy p { margin: 0; color: rgba(255, 240, 219, .62); font-size: 11px; line-height: 1.4; }

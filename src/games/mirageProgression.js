@@ -1,7 +1,7 @@
 // Progression & skins for Mirage Rush: XP per run, level curve, rider skins
 // unlocked along the way, gold coins on victories and a shop for paid skins.
 // Pure logic + localStorage, no React, so node --test can exercise it directly.
-import { CHARACTER_PALETTES, CHARACTER_PRICES, CLOUD_CHOCOBO_INDEX, GYRO_ZEPPELI_INDEX } from './mirageCharacters.js';
+import { CHARACTER_PALETTES, CHARACTER_PRICES, CLOUD_CHOCOBO_INDEX, GYRO_ZEPPELI_INDEX, LINK_EPONA_INDEX } from './mirageCharacters.js';
 import { CUPS, isCupUnlocked } from './mirageCup.js';
 
 export const PROGRESSION_KEY = 'letsplay_mirage_progression_v1';
@@ -12,6 +12,48 @@ export const GYRO_ZEPPELI_ID = 'gyro-zeppeli';
 export const CLOUD_CHOCOBO_ID = 'cloud-chocobo';
 /** Temporary all-player access; set false to restore the stored 280 OR shop gate. */
 export const CLOUD_CHOCOBO_TEMPORARILY_FREE = true;
+export const LINK_EPONA_ID = 'link-epona';
+/**
+ * Essai gratuit de Link & Épona : offert à tous les joueurs pendant 3 jours
+ * (72 h), du samedi 3 octobre 2026 à 16 h au mardi 6 octobre 2026 à 16 h
+ * (heure d’Alger, UTC+1). Passée la fin de la fenêtre, le skin repasse tout
+ * seul derrière son prix boutique (320 OR) : rien à reconfigurer.
+ */
+export const LINK_EPONA_FREE_FROM = Date.parse('2026-10-03T16:00:00+01:00');
+export const LINK_EPONA_FREE_DAYS = 3;
+export const LINK_EPONA_FREE_UNTIL = LINK_EPONA_FREE_FROM + LINK_EPONA_FREE_DAYS * 86400000;
+
+/** Vrai tant que la fenêtre d’essai gratuit de Link & Épona est ouverte. */
+export function isLinkEponaFree(now = Date.now()) {
+  return now >= LINK_EPONA_FREE_FROM && now < LINK_EPONA_FREE_UNTIL;
+}
+
+/**
+ * Fin de l’accès temporaire d’un skin (horodatage ms), ou 0 s’il n’en a pas.
+ * Cloud reste branché sur son interrupteur manuel, Link sur sa fenêtre de
+ * 3 jours.
+ */
+export function temporaryFreeUntil(skin, now = Date.now()) {
+  if (skin?.id === CLOUD_CHOCOBO_ID && CLOUD_CHOCOBO_TEMPORARILY_FREE) return Number.POSITIVE_INFINITY;
+  if (skin?.id === LINK_EPONA_ID && isLinkEponaFree(now)) return LINK_EPONA_FREE_UNTIL;
+  return 0;
+}
+
+/** Un skin est-il offert à tous les joueurs en ce moment (sans achat) ? */
+export function isSkinTemporarilyFree(skin, now = Date.now()) {
+  return temporaryFreeUntil(skin, now) > now;
+}
+
+/** « 2 j 05 h » / « 18 h 04 min » — reste à courir avant la fin de l’essai. */
+export function formatFreeWindow(ms) {
+  const left = Math.max(0, Math.floor((Number(ms) || 0) / 1000));
+  const days = Math.floor(left / 86400);
+  const hours = Math.floor((left % 86400) / 3600);
+  const minutes = Math.floor((left % 3600) / 60);
+  if (days > 0) return `${days} j ${String(hours).padStart(2, '0')} h`;
+  if (hours > 0) return `${hours} h ${String(minutes).padStart(2, '0')} min`;
+  return `${Math.max(1, minutes)} min`;
+}
 
 /**
  * Ordre canonique des 10 cartes de Mirage Rush.
@@ -110,6 +152,12 @@ export const SKINS = [
     hint: 'Épée broyeuse & chocobo doré', horse: 'Chocobo', hat: 'Épis blonds', accessory: 'Épée broyeuse',
     mountIcon: '🐤', headLabel: 'Cheveux hérissés', accessoryIcon: '⚔',
     colors: [...CHARACTER_PALETTES[CLOUD_CHOCOBO_INDEX]] },
+  // Link : tunique et casquette vertes, épée de légende en main, bouclier
+  // hylien dans le dos, monté sur Épona. Offert 3 jours, puis 320 OR.
+  { id: LINK_EPONA_ID, name: 'Link & Épona', level: 1, price: CHARACTER_PRICES[LINK_EPONA_INDEX] || 320,
+    hint: 'Épée de légende & bouclier hylien', horse: 'Épona', hat: 'Vert', accessory: 'Épée + bouclier',
+    mountIcon: '🐎', headLabel: 'Casquette verte', accessoryIcon: '🛡',
+    colors: [...CHARACTER_PALETTES[LINK_EPONA_INDEX]] },
 ];
 
 export const SHOP_SKINS = SKINS.filter((skin) => Number(skin.price) > 0);
@@ -180,9 +228,12 @@ export function awardCoins(progress, amount) {
   };
 }
 
-/** Level skins use XP; shop skins use ownership unless a temporary unlock is active. */
-export function isSkinUnlocked(skin, level, ownedSkins = []) {
-  if (skin?.id === CLOUD_CHOCOBO_ID && CLOUD_CHOCOBO_TEMPORARILY_FREE) return true;
+/**
+ * Level skins use XP; shop skins use ownership unless a temporary unlock is
+ * active. `now` (horodatage ms) permet de tester la fin de l’essai gratuit.
+ */
+export function isSkinUnlocked(skin, level, ownedSkins = [], now = Date.now()) {
+  if (isSkinTemporarilyFree(skin, now)) return true;
   if (isShopSkin(skin)) return Array.isArray(ownedSkins) && ownedSkins.includes(skin.id);
   return Number(level || 1) >= Number(skin?.level || 1);
 }
@@ -320,19 +371,19 @@ export function applyRun(progress, result) {
 }
 
 /** Equip a skin only when its level / shop requirement is met. */
-export function equipSkin(progress, skinId) {
+export function equipSkin(progress, skinId, now = Date.now()) {
   const current = sanitizeProgress(progress);
   const skin = SKINS.find(entry => entry.id === skinId);
-  if (!skin || !isSkinUnlocked(skin, levelForXp(current.xp), current.ownedSkins)) return current;
+  if (!skin || !isSkinUnlocked(skin, levelForXp(current.xp), current.ownedSkins, now)) return current;
   return { ...current, skinId: skin.id };
 }
 
 /** Buy a shop skin with gold. Auto-equips on success. */
-export function buySkin(progress, skinId) {
+export function buySkin(progress, skinId, now = Date.now()) {
   const current = sanitizeProgress(progress);
   const skin = SKINS.find((entry) => entry.id === skinId);
   if (!isShopSkin(skin)) return { progress: current, ok: false, reason: 'not-for-sale' };
-  if (skin.id === CLOUD_CHOCOBO_ID && CLOUD_CHOCOBO_TEMPORARILY_FREE) {
+  if (isSkinTemporarilyFree(skin, now)) {
     return { progress: current, ok: false, reason: 'temporarily-unlocked', skin };
   }
   if (current.ownedSkins.includes(skin.id)) {

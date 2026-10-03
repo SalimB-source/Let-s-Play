@@ -4,26 +4,29 @@ import { miragePowerIcon } from './miragePowerIcons';
 
 /**
  * Icônes vectorielles des objets spéciaux de Mirage Rush. Les pouvoirs jaune
- * et rouge de Cloud remplacent le lasso et le pistolet par des SVG dédiés.
+ * et rouge de Cloud remplacent le lasso et le pistolet par des SVG dédiés ;
+ * Link remplace aussi le bouclier bleu par sa bombe à mèche.
  */
 export default function MiragePowerIcon({ type, variant = 'standard', className = '', decorative = true }) {
   const icon = miragePowerIcon(type, variant);
   const resolvedType = icon.id;
   const isCloudIcon = icon.variant === 'cloud';
+  const isLinkIcon = icon.variant === 'link';
+  const isSkinIcon = isCloudIcon || isLinkIcon;
   const uid = useId().replace(/:/g, '');
 
   return (
     <svg
-      className={`mirage-power-image is-${resolvedType}${isCloudIcon ? ` is-cloud is-cloud-${resolvedType}` : ''}${className ? ` ${className}` : ''}`}
+      className={`mirage-power-image is-${resolvedType}${isCloudIcon ? ` is-cloud is-cloud-${resolvedType}` : ''}${isLinkIcon ? ` is-link is-link-${resolvedType}` : ''}${className ? ` ${className}` : ''}`}
       viewBox="0 0 64 64"
       fill="none"
       role={decorative ? undefined : 'img'}
       aria-label={decorative ? undefined : icon.alt}
       aria-hidden={decorative ? 'true' : undefined}
-      data-power-icon={isCloudIcon ? `cloud-${resolvedType}` : resolvedType}
+      data-power-icon={isSkinIcon ? `${icon.variant}-${resolvedType}` : resolvedType}
       focusable="false"
     >
-      {isCloudIcon && (
+      {isSkinIcon && (
         <image href={icon.src} x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid meet" />
       )}
       {resolvedType === POWER_UPS.SHIELD && (

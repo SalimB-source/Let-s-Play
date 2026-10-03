@@ -18,8 +18,9 @@
  *   5. un bouton PARAMÈTRES sur l’écran de choix du mode ouvre le menu du jeu
  *      (plus de panneau latéral) avec quatre onglets : La communauté, Ton
  *      cavalier, Boutique, Informations (les règles de la COUPE y figurent ;
- *      Gyro coûte 200 OR et Cloud est offert temporairement à tous, avec son
- *      prix habituel de 280 OR conservé) ;
+ *      Gyro coûte 200 OR, Cloud est offert temporairement à tous avec son prix
+ *      habituel de 280 OR conservé, et Link & Épona sont offerts pendant 3
+ *      jours avec leur prix habituel de 320 OR conservé) ;
  *   6. le lobby EN LIGNE (?mode=online) garde sa barre de boutons de mode
  *      (RUÉE, DUEL, COUPE, EN LIGNE) : le bouton COUPE ramène à la coupe ;
  *   7. la piste du téléphone (trois voies, `setLaneCount(3)`) fait suivre
@@ -44,7 +45,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { AuthProvider } from '../src/auth/AuthContext';
 import MirageRushPage from '../src/games/MirageRushPage';
 import { encodeChallenge } from '../src/games/duelChallenge';
-import { CLOUD_CHOCOBO_ID, PROGRESSION_KEY } from '../src/games/mirageProgression';
+import { CLOUD_CHOCOBO_ID, LINK_EPONA_ID, PROGRESSION_KEY } from '../src/games/mirageProgression';
 import { laneCount, setLaneCount } from '../src/games/mirageRules';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -134,6 +135,11 @@ async function openSettingsFromIntro(node) {
 async function closeSettingsMenu(node) {
   const close = node.querySelector('.mirage-settings-close');
   if (close) await act(async () => { close.click(); });
+}
+
+async function openSettings(node) {
+  // Depuis l'écran de choix du mode, le menu du jeu s'ouvre via un bouton.
+  await act(async () => { node.querySelector('.mirage-settings-launch').click(); });
 }
 
 async function selectSettingsTab(node, label) {
@@ -323,6 +329,18 @@ export async function checkMirageFlow(assert) {
     assert.ok(cloudCard.textContent.includes('OFFERT TEMPORAIREMENT'), 'Cloud est affiché comme offert temporairement à tous');
     assert.ok(cloudCard.textContent.includes('280 OR'), 'le prix habituel de 280 OR reste indiqué');
     assert.equal(cloudCard.querySelector('.mirage-shop-buy').textContent.trim(), 'ÉQUIPER · OFFERT', 'aucun achat ne bloque l’équipement temporaire');
+    const linkCard = [...shopPanel.querySelectorAll('.mirage-shop-card')]
+      .find((card) => card.querySelector('.mirage-skin-name')?.textContent === 'Link & Épona');
+    assert.ok(linkCard, 'Link & Épona disposent de leur fiche de personnage');
+    assert.ok(linkCard.classList.contains('is-link-showcase'), 'Link bénéficie d’une vitrine verte dédiée');
+    assert.ok(linkCard.querySelector('.mirage-skin-model'), 'la fiche possède un aperçu dédié de Link & Épona');
+    assert.ok(linkCard.textContent.includes('Épée de légende'), 'la fiche annonce l’épée de légende');
+    assert.ok(linkCard.textContent.includes('bouclier hylien'), 'la fiche annonce le bouclier hylien');
+    assert.ok(linkCard.textContent.includes('Épona'), 'la fiche annonce la jument Épona');
+    assert.ok(linkCard.textContent.includes('OFFERT TEMPORAIREMENT'), 'Link est affiché comme offert à tous');
+    assert.ok(linkCard.textContent.includes('320 OR'), 'le prix habituel de 320 OR reste indiqué');
+    assert.ok(/3 jours|3 JOURS/.test(shopPanel.textContent), 'l’essai gratuit de 3 jours est annoncé dans la boutique');
+    assert.equal(linkCard.querySelector('.mirage-shop-buy').textContent.trim(), 'ÉQUIPER · OFFERT', 'aucun achat ne bloque l’équipement temporaire');
     await act(async () => { settingsTabs[3].click(); });
     assert.equal(settingsTabs[3].getAttribute('aria-selected'), 'true', 'l’onglet Informations s’active au clic');
 
@@ -614,6 +632,46 @@ export async function checkMirageFlow(assert) {
     await buyer.unmount();
     if (previousProgress === null) window.localStorage.removeItem(PROGRESSION_KEY);
     else window.localStorage.setItem(PROGRESSION_KEY, previousProgress);
+  }
+
+  /* --- 8 bis. Link & Épona : essai gratuit de 3 jours, prix de 320 OR préservé --- */
+  const savedBeforeLink = window.localStorage.getItem(PROGRESSION_KEY);
+  window.localStorage.setItem(PROGRESSION_KEY, JSON.stringify({
+    xp: 0, runs: 0, coins: 120, skinId: 'desert', ownedSkins: [],
+  }));
+  const linkBuyer = await mountPage('/jeu');
+  try {
+    await openSettings(linkBuyer.node);
+    const shopTab = [...linkBuyer.node.querySelectorAll('.mirage-settings-tabs button')]
+      .find((button) => button.textContent === 'Boutique');
+    await act(async () => { shopTab.click(); });
+    const linkCard = [...linkBuyer.node.querySelectorAll('.mirage-shop-card')]
+      .find((card) => card.querySelector('.mirage-skin-name')?.textContent === 'Link & Épona');
+    const equipButton = linkCard?.querySelector('.mirage-shop-buy');
+    assert.ok(equipButton, 'Link & Épona sont accessibles dans la boutique');
+    assert.equal(equipButton.textContent.trim(), 'ÉQUIPER · OFFERT', 'l’essai gratuit ne demande aucun achat');
+    assert.ok(linkCard.textContent.includes('320 OR'), 'le prix futur de 320 OR reste visible');
+    await act(async () => { equipButton.click(); });
+    assert.ok(linkCard.classList.contains('is-owned'), 'Link apparaît comme disponible');
+    assert.equal(linkCard.querySelector('.mirage-shop-buy').textContent.trim(), 'ÉQUIPÉ', 'Link est équipé au clic');
+    assert.equal(linkBuyer.node.querySelector('.mirage-settings-heading .mirage-wallet b')?.textContent, '120',
+      'l’essai gratuit ne débite pas le portefeuille (120 OR conservés alors que le skin coûte 320 OR)');
+    const savedProgress = JSON.parse(window.localStorage.getItem(PROGRESSION_KEY));
+    assert.deepEqual(savedProgress.ownedSkins, [], 'Link n’est pas marqué comme acheté');
+    assert.equal(savedProgress.skinId, LINK_EPONA_ID, 'le skin équipé est persisté sans achat');
+    // Avec Link en selle, les trois techniques remplacent l'attirail western.
+    const infoTab = [...linkBuyer.node.querySelectorAll('.mirage-settings-tabs button')]
+      .find((button) => button.textContent === 'Informations');
+    await act(async () => { infoTab.click(); });
+    const infoPanel = linkBuyer.node.querySelector('#mirage-panel-info');
+    assert.ok(infoPanel.textContent.includes('Bombe'), 'le pouvoir bleu devient la bombe');
+    assert.ok(infoPanel.textContent.includes('Grappin'), 'le pouvoir jaune devient le grappin');
+    assert.ok(infoPanel.textContent.includes('Triforce'), 'le pouvoir rouge devient la Triforce');
+    assert.ok(/2 cases/.test(infoPanel.textContent), 'la portée de 2 cases de l’explosion est annoncée');
+  } finally {
+    await linkBuyer.unmount();
+    if (savedBeforeLink === null) window.localStorage.removeItem(PROGRESSION_KEY);
+    else window.localStorage.setItem(PROGRESSION_KEY, savedBeforeLink);
   }
 
   /* ------- 9. Déblocage progressif des cartes (1ᵉʳ sur les 3 premières -> 4ᵉ, etc.) --- */

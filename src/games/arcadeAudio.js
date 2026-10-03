@@ -1123,6 +1123,80 @@ export class DesertGroove {
     this.sweepNoise(time + 0.4, 0.55, 0.08, { type: 'highpass', from: 5200, to: 9000, attack: 0.1 });
   }
 
+  /** Link pose sa bombe : le pas sourd de la sphère, puis la mèche qui s'allume. */
+  linkBombDrop() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // La bombe touche le sol : un bruit mat, sans éclat.
+    this.sweepTone(150, 62, time, 0.16, 'sine', 0.32);
+    this.noise(time, 0.07, 0.14, 900);
+    // L'allumage : un petit claquement sec, puis la mèche qui grésille.
+    this.noise(time + 0.03, 0.05, 0.16, 6200);
+    this.sweepNoise(time + 0.05, 0.42, 0.09, { type: 'highpass', from: 3800, to: 8600, attack: 0.04 });
+    this.tone(1760, time + 0.04, 0.1, 'triangle', 0.07, 5200);
+  }
+
+  /** La déflagration : le souffle, les débris, l'écho sur la piste. */
+  linkBombExplosion() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // Le souffle : une détonation grave et sèche.
+    this.sweepTone(190, 30, time, 0.62, 'sine', 0.95);
+    this.sweepTone(96, 40, time + 0.02, 0.42, 'triangle', 0.42, 620);
+    this.noise(time, 0.13, 0.58, 3200);
+    this.sweepNoise(time, 0.7, 0.46, { type: 'lowpass', from: 3600, to: 200, attack: 0.012 });
+    // Les débris qui retombent et la fumée qui siffle.
+    this.sweepNoise(time + 0.1, 0.6, 0.12, { type: 'highpass', from: 4600, to: 9200, attack: 0.05 });
+    // L'écho du désert, plus sec que celui de l'onde dorée.
+    this.sweepNoise(time + 0.26, 0.46, 0.14, { type: 'lowpass', from: 1000, to: 160, attack: 0.08 });
+  }
+
+  /** Le grappin : la chaîne qui cliquette, le crochet qui siffle. */
+  linkHookThrow() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // Les maillons : cinq cliquetis métalliques de plus en plus rapprochés.
+    [0, 0.035, 0.066, 0.093, 0.116].forEach((offset, index) => {
+      this.tone(1480 + index * 190, time + offset, 0.05, 'square', 0.05, 4200);
+      this.noise(time + offset, 0.03, 0.06, 7200);
+    });
+    // Le crochet fend l'air.
+    this.sweepNoise(time + 0.02, 0.26, 0.2, { type: 'bandpass', from: 700, to: 3000, q: 1.2, attack: 0.03 });
+    this.sweepTone(320, 620, time + 0.02, 0.22, 'sawtooth', 0.1, 2400);
+  }
+
+  /** La Triforce s'élève : l'accord d'or, clair et vibrant. */
+  linkTriforce() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // L'arpège qui monte : l'or qui chante.
+    [784, 987.8, 1174.7, 1568].forEach((frequency, index) =>
+      this.tone(frequency, time + index * 0.045, 0.3, 'triangle', 0.13 - index * 0.012));
+    [392, 587.3].forEach((frequency, index) =>
+      this.tone(frequency, time + index * 0.02, 0.36, 'sine', 0.16));
+    // Le sillage lumineux.
+    this.sweepNoise(time, 0.34, 0.12, { type: 'highpass', from: 2600, to: 9000, attack: 0.06 });
+    this.sweepTone(520, 1180, time, 0.3, 'sine', 0.1, 3200);
+  }
+
+  /** La Triforce percute l'adversaire : l'éclat d'or, puis le choc. */
+  linkTriforceImpact() {
+    if (!this.running || !this.context || !this.master) return;
+    const ctx = this.context;
+    const time = ctx.currentTime + 0.005;
+    // Le choc, sec et métallique.
+    this.noise(time, 0.08, 0.42, 4200);
+    this.sweepTone(320, 74, time, 0.36, 'triangle', 0.5, 1400);
+    // L'éclat : les harmoniques d'or éclatent puis retombent.
+    [1568, 1318.5, 1046.5, 784].forEach((frequency, index) =>
+      this.tone(frequency, time + 0.03 + index * 0.04, 0.26, 'triangle', 0.12 - index * 0.02));
+    this.sweepNoise(time + 0.04, 0.5, 0.14, { type: 'lowpass', from: 2400, to: 260, attack: 0.02 });
+  }
+
   async loadCry() {
     if (this.cryBuffer || this.cryLoading || !this.context) return;
     const context = this.context;

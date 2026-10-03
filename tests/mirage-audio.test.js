@@ -610,7 +610,7 @@ test('les techniques de Cloud ont leurs bruitages : vent doré, explosion, orage
   assert.ok(noiseSources >= 10, 'rafales, orage et tonnerre ont leur propre matière');
 });
 
-test('les bruitages de Cloud sont branchés sur le monde et les deux pages', async () => {
+test('les bruitages de Cloud et de Link sont branchés sur le monde et les deux pages', async () => {
   const { readFile } = await import('node:fs/promises');
   const [world, rushPage, onlinePage, audioModule] = await Promise.all([
     readFile(new URL('../src/games/MirageWorld.jsx', import.meta.url), 'utf8'),
@@ -626,11 +626,26 @@ test('les bruitages de Cloud sont branchés sur le monde et les deux pages', asy
   assert.match(world, /callbacks\.cloudStrike\?\.\(\{ kind: 'red' \}\);/);
   assert.match(world, /callbacks\.cloudStrike\?\.\(\{ kind: 'yellow' \}\);/);
   assert.match(world, /cloudStrike: \(info\) => callbackRefs\.current\.onCloudStrike\?\.\(info\)/);
-  // Sur les deux pages, le chocobo doré remplace le lasso et le pistolet par ses techniques…
-  assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudSwordWave\?\.\(\);\s*else audioRef\.current\?\.lassoThrow\?\.\(\);/);
-  assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudStormCharge\?\.\(\);\s*else audioRef\.current\?\.gunshot\(\);/);
-  assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudSwordWave\?\.\(\);\s*else audio\.current\?\.lassoThrow\?\.\(\);/);
-  assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudStormCharge\?\.\(\);\s*else audio\.current\?\.gunshot\(\);/);
+  // Sur les deux pages, le chocobo doré remplace le lasso et le pistolet par ses
+  // techniques ; Link intercale (ou précède) les siennes dans la même chaîne.
+  assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudSwordWave\?\.\(\);(\s*else if \(isLinkRider\) audioRef\.current\?\.linkHookThrow\?\.\(\);)?\s*else audioRef\.current\?\.lassoThrow\?\.\(\);/);
+  assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudStormCharge\?\.\(\);(\s*else if \(isLinkRider\) audioRef\.current\?\.linkTriforce\?\.\(\);)?\s*else audioRef\.current\?\.gunshot[?.]*\(\);/);
+  assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudSwordWave\?\.\(\);(\s*else if \(isLinkRider\) audio\.current\?\.linkHookThrow\?\.\(\);)?\s*else audio\.current\?\.lassoThrow\?\.\(\);/);
+  assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudStormCharge\?\.\(\);(\s*else if \(isLinkRider\) audio\.current\?\.linkTriforce\?\.\(\);)?\s*else audio\.current\?\.gunshot[?.]*\(\);/);
+  // …et Link pose sa bombe, lance son grappin, puis sa Triforce.
+  for (const [name, page, audio] of [['MirageRushPage', rushPage, 'audioRef.current'], ['MirageOnline', onlinePage, 'audio.current']]) {
+    for (const method of ['linkBombDrop', 'linkHookThrow', 'linkTriforce']) {
+      assert.ok(page.includes(`${audio}?.${method}?.();`), `${name} joue ${method}()`);
+    }
+    assert.ok(page.includes('isLinkRider'), `${name} distingue le cavalier Link`);
+  }
+  for (const method of ['linkBombDrop', 'linkBombExplosion', 'linkHookThrow', 'linkTriforce', 'linkTriforceImpact']) {
+    assert.ok(audioModule.includes(`${method}()`), `${method}() existe dans arcadeAudio.js`);
+  }
+  assert.match(world, /callbacks\.linkStrike\?\.\(\{ kind: 'bomb' \}\);/);
+  assert.match(world, /callbacks\.linkStrike\?\.\(\{ kind: 'triforce' \}\);/);
+  assert.match(rushPage, /onLinkStrike=\{\(info\) => \{[\s\S]*?linkBombExplosion[\s\S]*?linkTriforceImpact[\s\S]*?\}\}/);
+  assert.match(onlinePage, /onLinkStrike=\{\(info\) => \{[\s\S]*?linkBombExplosion[\s\S]*?linkTriforceImpact[\s\S]*?\}\}/);
   // …puis le tonnerre et l'explosion dorée sonnent quand la cible est touchée.
   for (const [name, page] of [['MirageRushPage', rushPage], ['MirageOnline', onlinePage]]) {
     const audio = name === 'MirageRushPage' ? 'audioRef.current' : 'audio.current';

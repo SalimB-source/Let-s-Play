@@ -41,6 +41,12 @@ import {
   disposeCloudPower, makeCloudLightningBolt, makeCloudSwordWave,
   updateCloudLightningVisual, updateCloudWaveVisual,
 } from './mirageCloudPowers';
+// Effets des trois techniques de Link : bombe, grappin et Triforce.
+import {
+  disposeLinkPower, makeLinkBomb, makeLinkHook, makeLinkTriforce,
+  updateLinkBombVisual, updateLinkHookVisual, updateLinkTriforceVisual,
+  LINK_BOMB_AOE_RADIUS,
+} from './mirageLinkPowers';
 
 // La largeur de la piste n'est plus une constante de module : elle dépend du
 // nombre de voies (3 sur téléphone, 4 sur ordinateur et tablette), choisi au
@@ -56,6 +62,9 @@ const CLOUD_SWORD_SWING_DURATION = 0.42;
 // Secousse de caméra (en unités monde) déclenchée par les pouvoirs de Cloud.
 const CLOUD_IMPACT_SHAKE = 0.75;
 const CLOUD_BOLT_SHAKE = 1.35;
+// Idem pour Link : la bombe ébranle la piste, la Triforce claque au contact.
+const LINK_BOMB_SHAKE = 1.15;
+const LINK_TRIFORCE_SHAKE = 0.8;
 
 /**
  * FOV vertical adapté au ratio de l'écran : quand la vue est plus étroite que
@@ -919,9 +928,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   // Secousse de caméra résiduelle (pouvoirs de Cloud).
   let strikeShake = 0;
   const isCloudRider = () => accessoriesForPalette(skinColors) === 'cloud-chocobo';
-  const swingCloudSword = (kind) => {
-    const sword = player.userData.parts?.busterSword;
-    if (!isCloudRider() || !sword) return;
+  const isLinkRider = () => accessoriesForPalette(skinColors) === 'link-epona';
+  // L'épée brandie au moment d'une technique : celle de Cloud ou celle de Link.
+  const riderSword = () => player.userData.parts?.busterSword || player.userData.parts?.masterSword;
+  const swingRiderSword = (kind) => {
+    const sword = riderSword();
+    if (!sword) return;
     cloudSwordSwingKind = kind;
     cloudSwordSwingElapsed = 0;
   };
@@ -1113,6 +1125,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
 
   const lassoProjectiles = [];
   const cloudShockwaves = [];
+  // Techniques de Link : bombes posées, grappins lancés, Triforces en vol.
+  const linkPowers = [];
+  // Avance de la piste sur la frame (la bombe reste posée : elle recule avec le décor).
+  let frameAdvance = 0;
   const lassoRopePool = [];
   const lassoPointStart = new THREE.Vector3();
   const lassoPointEnd = new THREE.Vector3();
@@ -1190,6 +1206,192 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       phase: 'flight',
     });
   };
+  /** Main du cavalier : le grappin en part, la chaîne y reste accrochée. */
+  const linkHandOrigin = () => new THREE.Vector3(player.position.x + 0.36, player.position.y + 2.16, -0.5);
+  /** La Triforce jaillit devant la poitrine, puis fonce sur l'adversaire. */
+  const linkTriforceOrigin = () => new THREE.Vector3(player.position.x, player.position.y + 2.05, -0.9);
+  /** La bombe est posée au sol, juste derrière la monture. */
+  const linkBombOrigin = () => new THREE.Vector3(player.position.x, player.position.y + 0.42, player.position.z + 1.4);
+  const linkTargetScratch = new THREE.Vector3();
+
+  /**
+   * La cible de la Triforce : l'adversaire **juste devant** le joueur. À
+   * égalité, on préfère celui qui partage la voie du cavalier.
+   */
+  const findTriforceTarget = () => {
+    if (race.mode === 'online') {
+      const net = getNetwork?.();
+      const others = (net?.players || []).filter((p) => p.user_id !== net.userId && !p.finished_at);
+      if (others.length === 0) return null;
+      const ahead = others
+        .map((peer) => ({ peer, gap: (Number(peer.distance) || 0) - distance }))
+        .filter((entry) => entry.gap > -1)
+        .sort((a, b) => a.gap - b.gap);
+      if (ahead.length > 0) return { kind: 'online', player: ahead[0].peer };
+      return { kind: 'online', player: others[0] };
+    }
+    if (race.mode === 'duel') {
+      const targetable = duelRivals.filter((r) => !isGhostRival(r) && r.finishedAt === null);
+      const ahead = targetable
+        .map((rival) => ({ rival, gap: rival.dist - distance }))
+        .filter((entry) => entry.gap > -1)
+        .sort((a, b) => (
+          Math.abs(a.rival.lane - laneIndex) - Math.abs(b.rival.lane - laneIndex)
+          || a.gap - b.gap
+        ));
+      if (ahead.length > 0) return { kind: 'rival', npc: ahead[0].rival };
+      return null;
+    }
+    return null;
+  };
+
+  /** Ennemis pris dans le rayon de l'explosion (2 cases autour de la bombe). */
+  const linkBombVictims = (origin) => {
+    const victims = [];
+    if (race.mode === 'duel') {
+      for (const rival of duelRivals) {
+        if (!rival?.mesh || isGhostRival(rival) || rival.finishedAt !== null) continue;
+        const dx = rival.mesh.position.x - origin.x;
+        const dz = rival.mesh.position.z - origin.z;
+        if (Math.hypot(dx, dz) <= LINK_BOMB_AOE_RADIUS) victims.push({ kind: 'rival', npc: rival });
+      }
+      return victims;
+    }
+    if (race.mode === 'online') {
+      const net = getNetwork?.();
+      for (const peer of net?.players || []) {
+        if (!peer || peer.user_id === net.userId || peer.finished_at) continue;
+        const point = cloudTargetPosition({ kind: 'online', player: peer }, linkTargetScratch);
+        if (Math.hypot(point.x - origin.x, point.z - origin.z) <= LINK_BOMB_AOE_RADIUS) {
+          victims.push({ kind: 'online', player: peer });
+        }
+      }
+    }
+    return victims;
+  };
+
+  /** La déflagration : tout ennemi à portée tombe de cheval. */
+  const resolveLinkBombBlast = (projectile) => {
+    const victims = linkBombVictims(projectile.origin);
+    let hits = 0;
+    for (const victim of victims) {
+      if (victim.kind === 'rival') {
+        const connected = stunNpc(victim.npc);
+        if (connected) hits += 1;
+        callbacks.pistolHit?.({ target: 'rival', name: getRivalDisplayName(victim.npc), blocked: !connected, link: 'bomb' });
+      } else {
+        callbacks.pistol?.(victim.player, { cause: 'link-bomb' });
+        callbacks.pistolHit?.({ target: 'online', player: victim.player, link: 'bomb' });
+        hits += 1;
+      }
+    }
+    if (hits === 0) callbacks.pistolHit?.({ target: null, link: 'bomb' });
+  };
+
+  /** Le crochet se plante dans le dos : la cible est ralentie. */
+  const resolveLinkHookHit = (projectile) => {
+    const target = projectile.target;
+    if (target?.kind === 'rival') {
+      const targetNpc = target.npc || duelRivals[0];
+      const connected = applyNpcSlow(targetNpc, 'link-hook');
+      callbacks.lassoHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !connected, link: true });
+      return;
+    }
+    if (target?.kind === 'online') {
+      callbacks.lasso?.(target.player);
+      callbacks.lassoHit?.({ target: 'online', player: target.player, link: true });
+    }
+  };
+
+  /** La Triforce percute l'adversaire : il tombe. */
+  const resolveLinkTriforceHit = (projectile) => {
+    const target = projectile.target;
+    if (target?.kind === 'rival') {
+      const targetNpc = target.npc || duelRivals[0];
+      const connected = stunNpc(targetNpc);
+      callbacks.pistolHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !connected, link: true });
+      return;
+    }
+    if (target?.kind === 'online') {
+      callbacks.pistol?.(target.player, { cause: 'link-triforce' });
+      callbacks.pistolHit?.({ target: 'online', player: target.player, link: true });
+    }
+  };
+
+  const dropLinkBomb = () => {
+    const origin = linkBombOrigin();
+    const visual = makeLinkBomb();
+    visual.position.copy(origin);
+    scene.add(visual);
+    linkPowers.push({ visual, kind: 'bomb', phase: 'fuse', age: 0, origin: origin.clone() });
+  };
+
+  const launchLinkPower = (kind, targetInfo) => {
+    const start = kind === 'red' ? linkTriforceOrigin() : linkHandOrigin();
+    const visual = kind === 'yellow' ? makeLinkHook() : makeLinkTriforce();
+    visual.position.copy(start);
+    scene.add(visual);
+    linkPowers.push({ visual, kind, target: targetInfo, start, phase: 'flight', age: 0, spin: 0 });
+  };
+
+  const updateLinkPowers = (dt) => {
+    for (let i = linkPowers.length - 1; i >= 0; i -= 1) {
+      const projectile = linkPowers[i];
+      let done = false;
+      if (projectile.kind === 'bomb') {
+        // La bombe est posée : elle recule avec le décor, comme les obstacles.
+        projectile.visual.position.z += frameAdvance;
+        projectile.origin.z = projectile.visual.position.z;
+        done = updateLinkBombVisual(projectile.visual, projectile, dt, {
+          onExplode: () => {
+            resolveLinkBombBlast(projectile);
+            strikeShake = LINK_BOMB_SHAKE;
+            triggerScreenFlash(0.62, 0.32, 0xffd27a);
+            callbacks.linkStrike?.({ kind: 'bomb' });
+          },
+        });
+      } else if (projectile.kind === 'yellow') {
+        // La main bouge avec le galop : la chaîne suit le cavalier.
+        projectile.start.copy(linkHandOrigin());
+        done = updateLinkHookVisual(
+          projectile.visual,
+          projectile,
+          dt,
+          projectile.start,
+          cloudTargetPosition(projectile.target, linkTargetScratch),
+          { onAttach: () => resolveLinkHookHit(projectile) },
+        );
+      } else {
+        done = updateLinkTriforceVisual(
+          projectile.visual,
+          projectile,
+          dt,
+          cloudTargetPosition(projectile.target, linkTargetScratch),
+          camera,
+          { onImpact: () => {
+            resolveLinkTriforceHit(projectile);
+            strikeShake = LINK_TRIFORCE_SHAKE;
+            triggerScreenFlash(0.5, 0.28, 0xffe9a8);
+            callbacks.linkStrike?.({ kind: 'triforce' });
+          } },
+        );
+      }
+      if (done) {
+        scene.remove(projectile.visual);
+        disposeLinkPower(projectile.visual);
+        linkPowers.splice(i, 1);
+      }
+    }
+  };
+
+  const clearLinkPowers = () => {
+    linkPowers.forEach(({ visual }) => {
+      scene.remove(visual);
+      disposeLinkPower(visual);
+    });
+    linkPowers.length = 0;
+  };
+
   const clearCloudShockwaves = () => {
     cloudShockwaves.forEach(({ visual }) => {
       scene.remove(visual);
@@ -1477,9 +1679,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       return;
     }
     if (isCloudRider()) {
-      swingCloudSword('yellow');
+      swingRiderSword('yellow');
       launchCloudPower('yellow', targetInfo);
       callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo, cloud: true });
+      return;
+    }
+    // Link : le grappin part de sa main et s'accroche dans le dos de la cible.
+    if (isLinkRider()) {
+      swingRiderSword('yellow');
+      launchLinkPower('yellow', targetInfo);
+      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo, link: true });
       return;
     }
     const rope = acquireRope();
@@ -1651,9 +1860,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       return;
     }
     if (isCloudRider()) {
-      swingCloudSword('red');
+      swingRiderSword('red');
       launchCloudPower('red', targetInfo);
       callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: targetInfo, cloud: true });
+      return;
+    }
+    // Link : la Triforce jaillit et fonce sur l'adversaire juste devant lui.
+    if (isLinkRider()) {
+      swingRiderSword('red');
+      launchLinkPower('red', targetInfo);
+      callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'fired', target: targetInfo, link: true });
       return;
     }
     if (targetInfo.kind === 'rival') {
@@ -1682,6 +1898,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     const res = consumePowerUp(powerState, POWER_UPS.SHIELD);
     if (!res.used) return;
     powerState = res.state;
+    // Link ne lève pas de bouclier : il pose une bombe derrière sa monture.
+    // La mèche brûle 1,5 s, puis la déflagration balaie 2 cases autour d'elle.
+    if (isLinkRider()) {
+      dropLinkBomb();
+      swingRiderSword('bomb');
+      callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'used', chargesLeft: 0, resetAll: false, link: true });
+      emitHud(true);
+      return;
+    }
     activateShield();
     callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'used', chargesLeft: 0, resetAll: false });
     emitHud(true);
@@ -1704,7 +1929,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
 
   const usePistol = () => {
     if (!powerUpsEnabled(race.mode) || (powerState.pistolCharges || 0) <= 0) return;
-    const target = findPistolTarget();
+    // La Triforce de Link vise l'adversaire juste devant, pas le premier du classement.
+    const target = isLinkRider() ? findTriforceTarget() : findPistolTarget();
     if (!target) {
       callbacks.powerUp?.({ type: POWER_UPS.PISTOL, action: 'no_target' });
       return;
@@ -1731,6 +1957,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     for (const proj of lassoProjectiles) releaseRope(proj.rope);
     lassoProjectiles.length = 0;
     clearCloudShockwaves();
+    clearLinkPowers();
     cloudSwordSwingElapsed = CLOUD_SWORD_SWING_DURATION;
     shieldActive = false;
     shieldTimer = 0;
@@ -2251,6 +2478,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         ? duelSpeed(baseSpeed * effectivePlayerMultiplier + powerBoostBonus) * slowMul
         : ((12 + Math.min(7, elapsed * 0.12)) * effectivePlayerMultiplier + powerBoostBonus) * slowMul) * pace
       : 0;
+    frameAdvance = 0;
     if (running) {
       elapsed += dt;
       if (race.mode !== 'rush') {
@@ -2262,6 +2490,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       } else {
         distance += speed * dt;
       }
+      // Les bombes de Link sont posées au sol : elles reculent avec le décor.
+      frameAdvance = speed * dt;
       // Tap sur « sauter » juste avant de toucher le sol : le saut repart à
       // l'atterrissage, comme si le doigt avait été obéi sur-le-champ.
       ({ jumpLeft, buffer: jumpBuffer } = advanceJump(jumpLeft, jumpBuffer, dt));
@@ -2299,6 +2529,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
               target: 'player',
               from: 'online',
               cloud: me.stun_effect === 'cloud-cross',
+              // La Triforce et la bombe de Link passent par le même canal réseau.
+              link: me.stun_effect === 'link-triforce' ? true : me.stun_effect === 'link-bomb' ? 'bomb' : false,
               blocked: !connected,
             });
           }
@@ -2311,6 +2543,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
               playerSlowTimer = connected ? (slowedUntil - now) / 1000 : 0;
               if (slowEffect === 'cloud-wave') {
                 callbacks.lassoHit?.({ target: 'player', from: 'online', cloud: true, blocked: !connected });
+              } else if (slowEffect === 'link-hook') {
+                callbacks.lassoHit?.({ target: 'player', from: 'online', link: true, blocked: !connected });
               }
             }
             playerSlowEffect = slowEffect;
@@ -2664,20 +2898,25 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     const mudBob = mudSlowed && jumpLeft <= 0 ? -0.05 + Math.sin(time * 0.022) * 0.035 : 0;
     player.position.y = Math.max(0, jumpHeight(jumpLeft) + crashBounce + mudBob);
     const parts = player.userData.parts;
-    if (parts.busterSword) {
+    const sword = riderSword();
+    if (sword) {
       const swingProgress = Math.min(1, cloudSwordSwingElapsed / CLOUD_SWORD_SWING_DURATION);
       const swingArc = Math.sin(swingProgress * Math.PI);
-      // L'épée est portée à l'envers (pointe vers le bas) : l'onde dorée part
-      // d'un grand revers latéral, l'éclair d'un lever d'épée vers le ciel.
-      const baseRotationZ = parts.busterSword.userData.baseRotationZ ?? 0.34;
-      const baseRotationX = parts.busterSword.userData.baseRotationX ?? 0;
+      // L'épée broyeuse est portée à l'envers (pointe vers le bas) : l'onde
+      // dorée part d'un grand revers latéral, l'éclair d'un lever d'épée vers
+      // le ciel. L'épée de légende, elle, est déjà en main : le geste reste
+      // court, une simple entaille.
+      const yellowArc = isLinkRider() ? 0.5 : 1.25;
+      const redArc = isLinkRider() ? 0.72 : 2.2;
+      const baseRotationZ = sword.userData.baseRotationZ ?? 0.34;
+      const baseRotationX = sword.userData.baseRotationX ?? 0;
       if (swingProgress < 1) {
-        parts.busterSword.rotation.z = baseRotationZ + swingArc * (cloudSwordSwingKind === 'yellow' ? 1.25 : 2.2);
-        parts.busterSword.rotation.x = baseRotationX + swingArc * (cloudSwordSwingKind === 'yellow' ? 0.14 : -0.24);
+        sword.rotation.z = baseRotationZ + swingArc * (cloudSwordSwingKind === 'yellow' ? yellowArc : redArc);
+        sword.rotation.x = baseRotationX + swingArc * (cloudSwordSwingKind === 'yellow' ? 0.14 : -0.24);
         if (running) cloudSwordSwingElapsed = Math.min(CLOUD_SWORD_SWING_DURATION, cloudSwordSwingElapsed + dt);
       } else {
-        parts.busterSword.rotation.z = baseRotationZ;
-        parts.busterSword.rotation.x = baseRotationX;
+        sword.rotation.z = baseRotationZ;
+        sword.rotation.x = baseRotationX;
       }
     }
     const turboActive = running && powerBoostTimer > 0 && playerStun <= 0;
@@ -2737,7 +2976,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         const hasShield = shieldUntil > now;
         const isSlowed = slowedUntil > now;
         const cloudWaveSlow = isSlowed && peer.slow_effect === 'cloud-wave';
-        rider.rotation.z = cloudWaveSlow ? Math.sin(time * 0.078 + slot * 1.7) * 0.12 : 0;
+        // Un cavalier agrippé au grappin tire sur la chaîne : il tangue plus sec.
+        const hookedSlow = isSlowed && peer.slow_effect === 'link-hook';
+        rider.rotation.z = cloudWaveSlow
+          ? Math.sin(time * 0.078 + slot * 1.7) * 0.12
+          : hookedSlow ? Math.sin(time * 0.16 + slot * 2.4) * 0.07 : 0;
         rider.userData.shieldBubble.visible = hasShield;
         if (hasShield) rider.userData.shieldBubble.rotation.y += dt*1.5;
         rider.userData.slowEffect = isSlowed ? 1 : Math.max(0, rider.userData.slowEffect - dt*2);
@@ -2802,7 +3045,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       }
       rivalMesh.visible = race.mode === 'duel' && rivalMesh.position.z < 11 && rivalMesh.position.z > -74 && (r.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
     });
-    if (running) updateCloudShockwaves(dt);
+    if (running) {
+      updateCloudShockwaves(dt);
+      updateLinkPowers(dt);
+    }
     playerShadow.position.x = player.position.x;
     playerShadow.scale.set(1, 1.8, 1).multiplyScalar(Math.max(0.55, 1 - player.position.y * 0.12));
     const anyReady = powerState.shieldCharges > 0 || powerState.lassoCharges > 0 || powerState.pistolCharges > 0 || powerState.boostCharges > 0;
@@ -2927,7 +3173,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   };
 }
 
-export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, onCloudStrike, prepareSignal = 0 }) {
+export default function MirageWorld({ active, race, stage, skin, onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, actionsRef, network, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, onCloudStrike, onLinkStrike, prepareSignal = 0 }) {
   const networkRef = useRef(network);
   networkRef.current = network;
   const skinRef = useRef(skin);
@@ -2941,7 +3187,7 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
   const graphicsRef = useRef(graphicsQuality);
   graphicsRef.current = graphicsQuality;
   const callbackRefs = useRef({});
-  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, onCloudStrike };
+  callbackRefs.current = { onReady, onError, onHud, onFinish, onCrash, onMud, onPickup, onPowerUp, onPowerUpPickup, onLasso, onShield, onLassoHit, onGemTrap, onPistol, onPistolHit, onCloudStrike, onLinkStrike };
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -2958,9 +3204,10 @@ export default function MirageWorld({ active, race, stage, skin, onReady, onErro
         lasso: (target) => callbackRefs.current.onLasso?.(target),
         shield: (active) => callbackRefs.current.onShield?.(active),
         lassoHit: (info) => callbackRefs.current.onLassoHit?.(info),
-        pistol: (target) => callbackRefs.current.onPistol?.(target),
+        pistol: (target, options) => callbackRefs.current.onPistol?.(target, options),
         pistolHit: (info) => callbackRefs.current.onPistolHit?.(info),
         cloudStrike: (info) => callbackRefs.current.onCloudStrike?.(info),
+        linkStrike: (info) => callbackRefs.current.onLinkStrike?.(info),
       }, () => raceRef.current, stage, () => networkRef.current, () => skinRef.current, graphicsRef.current);
     } catch (error) {
       callbackRefs.current.onError?.(error instanceof Error ? error.message : String(error));

@@ -287,6 +287,76 @@ toute la bande-son du jeu, sans aucun fichier).
 node --test tests/mirage-audio.test.js   # vent doré, explosion, orage, tonnerre + câblage du monde et des deux pages
 ```
 
+## Mirage Rush : Link & Épona, offerts 3 jours
+
+Un crossover de plus dans la boutique de `/jeu/mirage-rush` : **Link & Épona**
+(320 OR). Le cavalier porte la tunique et la casquette vertes, l'épée de légende
+à la main droite et le bouclier hylien sanglé dans le dos ; le cheval de base
+est remplacé par **Épona**, jument baie à crins blonds, liste et balzanes crème,
+selle verte et cuir.
+
+Le duo est **offert à tous les joueurs pendant 3 jours** (72 h), comme Cloud et
+son chocobo le sont sans limite de date. Passé la fenêtre, il repasse
+automatiquement derrière son prix de 320 OR : rien à reconfigurer, le
+verrouillage est calculé sur l'horodatage courant.
+
+| Skin | Accès | Prix habituel |
+|---|---|---|
+| Gyro Zeppeli | boutique | 200 OR |
+| Cloud & son Chocobo | offert (accès temporaire permanent) | 280 OR |
+| Link & Épona | offert 3 jours | 320 OR |
+
+### Ses trois techniques
+
+Quand Link est en selle, les objets spéciaux changent de nature (les
+diamants chargent les mêmes barres, aux mêmes touches) :
+
+| Couleur | Touche | Standard | Link |
+|---|---|---|---|
+| Bleu | AUTO | Bouclier | **Bombe** : sphère noire posée derrière Épona, mèche allumée de 1,5 s, puis explosion de zone qui fait tomber tout ennemi à **2 cases** |
+| Jaune | W / Z | Lasso | **Grappin** : le crochet s'envole, s'accroche dans le dos de la cible et la ralentit |
+| Rouge | R | Pistolet | **Triforce** : le triangle d'or fonce sur l'adversaire **juste devant** et le fait tomber |
+| Vert | AUTO | Turbo | Turbo (inchangé) |
+
+En ligne, la victime reçoit l'effet qui correspond à la technique subie
+(`link-hook`, `link-triforce`, `link-bomb`) : le message du salon et le
+tangage du cavalier touché s'adaptent. La bombe emprunte le canal réseau du
+tir avec une cause `link-bomb` pour rester reconnaissable.
+
+### Où vit le code
+
+- `src/games/mirageLinkPowers.js` — les trois effets 3D (pur three.js,
+  testable) : `makeLinkBomb()` / `updateLinkBombVisual()` (mèche
+  `LINK_BOMB_FUSE_DURATION`, portée `LINK_BOMB_AOE_TILES`), `makeLinkHook()` /
+  `updateLinkHookVisual()`, `makeLinkTriforce()` / `updateLinkTriforceVisual()` ;
+- `src/games/MirageWorld.jsx` — `isLinkRider()`, `dropLinkBomb()`,
+  `launchLinkPower()`, `findTriforceTarget()` (l'adversaire juste devant) et
+  `linkBombVictims()` (rayon de 2 cases) ; la bombe recule avec le décor ;
+- `src/games/mirageRooms.js` — `slowEffectFor()` / `stunEffectFor()` /
+  `slowHitMessage()` / `stunHitMessage()` : effets et messages côté salon ;
+- `src/games/arcadeAudio.js` — `linkBombDrop()`, `linkBombExplosion()`,
+  `linkHookThrow()`, `linkTriforce()` et `linkTriforceImpact()` ;
+- `src/games/miragePowerIcons.js` + `public/icons/mirage-rush/link-*.svg` et
+  `src/games/MiragePowerIcon.jsx` — icônes « Bombe / Grappin / Triforce » ;
+- `src/games/mirageCharacters.js` — palette, nom, accessoire `link-epona` et
+  prix (index `LINK_EPONA_INDEX`) ; le personnage est aussi ajouté au lobby en
+  ligne (`LOBBY_CHARACTER_INDICES`) ;
+- `src/games/mirageExplorer.js` — `attachLinkEpona()` : la monture Épona, la
+  casquette, l'épée (`parts.masterSword`) et le bouclier (`parts.hylianShield`) ;
+- `src/games/mirageProgression.js` — `LINK_EPONA_FREE_FROM` /
+  `LINK_EPONA_FREE_UNTIL` (fenêtre de 3 jours), `isSkinTemporarilyFree()`,
+  `temporaryFreeUntil()` et `formatFreeWindow()` (compte à rebours affiché) ;
+- `src/games/MirageRushPage.jsx`, `src/games/MirageOnline.jsx` et
+  `src/games/mirage-rush.css` — vitrine verte dans « Ton cavalier » et la
+  boutique, étiquette « OFFERT 3 JOURS » et compte à rebours.
+
+### Vérifications
+
+```bash
+npm run check:mirage-link    # personnage, fenêtre de 3 jours, retour au prix de 320 OR, bombe / grappin / Triforce
+npm run check:mirage-flow    # la boutique affiche les trois skins, leurs prix et les techniques de Link dans les règles
+```
+
 ## Mirage Rush : graphismes baissés et glissement tactile
 
 ### Graphismes baissés (moins de lag)
