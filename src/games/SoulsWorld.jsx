@@ -1711,6 +1711,15 @@ function makeWorld(mount, callbacks) {
       aim(parts.wings[0].rotation, 'z', -0.08 - flutter, 7);
       aim(parts.wings[1].rotation, 'z', 0.08 + flutter, 7);
     }
+    // Les gravures de la cuirasse et de l'épée respirent au repos, puis
+    // s'embrasent brièvement pendant la frappe : un signal anime lisible sans
+    // halo en surimpression ni géométrie factice.
+    if (parts.runeGlow) {
+      const base = parts.runeGlow.userData.baseEmissiveIntensity ?? parts.runeGlow.emissiveIntensity;
+      const idlePulse = 0.84 + 0.16 * Math.sin(time * 0.0042);
+      const strikeFlash = atkPose ? 0.42 + 0.18 * Math.sin(combat.actionT * 34) : 0;
+      parts.runeGlow.emissiveIntensity = base * (dead ? 0.38 : idlePulse + strikeFlash);
+    }
     // Boire et rouler demandent de lâcher les deux poignées ; dans tous les
     // autres états, les deux vraies paumes serrent la poignée frontale.
     const holdingSwordWithBothHands = !dead && combat.action !== 'drink' && combat.action !== 'dodge'

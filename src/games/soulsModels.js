@@ -1633,6 +1633,15 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     color: palette.edge, emissive: palette.edgeEmissive, emissiveIntensity: 0.62,
     metalness: 0.8, roughness: 0.1,
   });
+  // Même lueur que les yeux et les ailes, appliquée aux gravures de l'armure
+  // et de l'épée : un accent anime lumineux sans aplatir le volume des pièces.
+  const runeGlowBase = boss ? 2.15 : corrupted ? 1.72 : 1.46;
+  const runeGlow = new THREE.MeshStandardMaterial({
+    color: palette.edge, emissive: palette.edgeEmissive,
+    emissiveIntensity: runeGlowBase,
+    metalness: 0.46, roughness: 0.16, side: THREE.DoubleSide,
+  });
+  runeGlow.userData.baseEmissiveIntensity = runeGlowBase;
   const wingMat = new THREE.MeshPhysicalMaterial({
     color: palette.wing, emissive: palette.wingEmissive, emissiveIntensity: boss ? 0.68 : 0.42,
     roughness: 0.16, metalness: 0.05, transmission: 0.08,
@@ -1656,6 +1665,17 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     mesh.rotation.x = Math.PI / 2;
     return mesh;
   };
+  const armorPlate = (points, material, depth = 0.028) => {
+    const shape = new THREE.Shape();
+    shape.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) shape.lineTo(points[i][0], points[i][1]);
+    shape.closePath();
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.006, bevelThickness: 0.006,
+    });
+    geometry.translate(0, 0, -depth * 0.5);
+    return new THREE.Mesh(geometry, material);
+  };
 
   // ══ Bassin + pattes articulées =====================================
   const hips = new THREE.Group();
@@ -1674,6 +1694,25 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     band.scale.z = 0.82;
     hips.add(band);
   }
+  // Trois faulds superposés donnent au bassin une silhouette de chevalier
+  // insecte plutôt qu'une simple boule abdominale. Ils suivent le torse via
+  // le groupe du bassin, sans gêner les articulations de jambe.
+  const faulds = new THREE.Group();
+  faulds.name = 'layered-chitin-faulds';
+  for (const [index, x] of [-0.11, 0, 0.11].entries()) {
+    const fauld = armorPlate([
+      [-0.072, 0.075], [-0.103, -0.095], [0, -0.19], [0.103, -0.095], [0.072, 0.075], [0, 0.122],
+    ], index === 1 ? chitinLight : chitinDark, 0.032);
+    fauld.position.set(x, 0.93 - (index === 1 ? 0.008 : 0), -0.145);
+    fauld.rotation.z = index === 0 ? -0.10 : index === 2 ? 0.10 : 0;
+    faulds.add(fauld);
+  }
+  const fauldSeal = new THREE.Mesh(new THREE.OctahedronGeometry(0.033, 0), runeGlow);
+  fauldSeal.name = 'fauld-rune-seal';
+  fauldSeal.scale.z = 0.42;
+  fauldSeal.position.set(0, 0.895, -0.171);
+  faulds.add(fauldSeal);
+  hips.add(faulds);
 
   const makeLeg = (side) => {
     const leg = new THREE.Group();
@@ -1738,13 +1777,69 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     plate.rotation.x = -0.08 + i * 0.045;
     torso.add(plate);
   }
+  // Cuirasse anime en couches : une coque sombre, un plastron turquoise
+  // enchâssé et un sceau lumineux. Elle donne un vrai point focal au torse
+  // sans masquer la poignée centrale de l'épée.
+  const cuirass = armorPlate([
+    [-0.16, 0.22], [-0.225, 0.10], [-0.188, -0.17], [-0.085, -0.28],
+    [0, -0.33], [0.085, -0.28], [0.188, -0.17], [0.225, 0.10], [0.16, 0.22], [0, 0.275],
+  ], chitinDark, 0.042);
+  cuirass.name = 'guardian-cuirass';
+  cuirass.position.set(0, W(1.25), -0.194);
+  const cuirassInlay = armorPlate([
+    [-0.105, 0.165], [-0.145, 0.075], [-0.108, -0.105], [0, -0.205],
+    [0.108, -0.105], [0.145, 0.075], [0.105, 0.165], [0, 0.215],
+  ], chitinLight, 0.024);
+  cuirassInlay.name = 'guardian-cuirass-inlay';
+  cuirassInlay.position.set(0, W(1.255), -0.223);
+  const chestSeal = new THREE.Mesh(new THREE.OctahedronGeometry(0.047, 0), runeGlow);
+  chestSeal.name = 'guardian-chest-rune';
+  chestSeal.scale.set(0.78, 1.25, 0.38);
+  chestSeal.position.set(0, W(1.25), -0.242);
+  const chestRim = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.009, 6, 16), gold);
+  chestRim.scale.set(1.06, 1.32, 1);
+  chestRim.position.set(0, W(1.25), -0.232);
+  torso.add(cuirass, cuirassInlay, chestSeal, chestRim);
+
+  // Carapace dorsale en écailles : depuis la caméra de poursuite, ce dos
+  // articulé et sa ligne de runes lisent immédiatement comme une armure.
+  const dorsalCarapace = new THREE.Group();
+  dorsalCarapace.name = 'dorsal-chitin-carapace';
+  for (let i = 0; i < 4; i++) {
+    const dorsalScale = ellipsoid(0.105 - i * 0.007, i % 2 ? chitinLight : chitinDark, 1.05, 0.62, 0.48, 16);
+    dorsalScale.position.set(0, W(1.06 + i * 0.105), 0.195 + i * 0.006);
+    dorsalScale.rotation.x = 0.08 - i * 0.025;
+    const dorsalRune = new THREE.Mesh(new THREE.OctahedronGeometry(0.019 + i * 0.002, 0), runeGlow);
+    dorsalRune.scale.z = 0.48;
+    dorsalRune.position.set(0, W(1.06 + i * 0.105), 0.254 + i * 0.006);
+    dorsalCarapace.add(dorsalScale, dorsalRune);
+  }
+  const dorsalFin = new THREE.Mesh(new THREE.ConeGeometry(0.052, 0.17, 6), gold);
+  dorsalFin.rotation.x = Math.PI / 2;
+  dorsalFin.position.set(0, W(1.29), 0.285);
+  dorsalCarapace.add(dorsalFin);
+  torso.add(dorsalCarapace);
+
   const crest = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.2, 8), gold);
   crest.position.set(0, W(1.42), -0.04);
   torso.add(crest);
   for (const side of [-1, 1]) {
     const shoulderShell = ellipsoid(0.125, chitinLight, 1.32, 0.58, 1.0);
     shoulderShell.position.set(side * 0.205, W(1.39), 0.005);
-    torso.add(shoulderShell);
+    const pauldron = ellipsoid(0.13, chitinDark, 1.48, 0.68, 1.1);
+    pauldron.name = side < 0 ? 'left-layered-pauldron' : 'right-layered-pauldron';
+    pauldron.position.set(side * 0.245, W(1.405), -0.004);
+    pauldron.rotation.z = -side * 0.13;
+    const pauldronRidge = ellipsoid(0.084, chitinLight, 1.32, 0.42, 0.58, 14);
+    pauldronRidge.position.set(side * 0.255, W(1.415), -0.105);
+    pauldronRidge.rotation.z = -side * 0.16;
+    const pauldronSpike = new THREE.Mesh(new THREE.ConeGeometry(0.046, 0.17, 6), gold);
+    pauldronSpike.rotation.z = -side * Math.PI / 2;
+    pauldronSpike.position.set(side * 0.355, W(1.405), -0.005);
+    const pauldronRune = new THREE.Mesh(new THREE.OctahedronGeometry(0.025, 0), runeGlow);
+    pauldronRune.scale.z = 0.42;
+    pauldronRune.position.set(side * 0.257, W(1.415), -0.157);
+    torso.add(shoulderShell, pauldron, pauldronRidge, pauldronSpike, pauldronRune);
   }
 
   // ══ Bras segmentés, griffes et bracelets d'or ======================
@@ -1758,7 +1853,12 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     shoulder.position.y = 0.008;
     const upperBand = ring(0.067, 0.011, gold);
     upperBand.position.y = -0.26;
-    arm.add(upper, shoulder, upperBand);
+    const upperGuard = ellipsoid(0.075, chitinDark, 0.94, 1.55, 0.52, 14);
+    upperGuard.position.set(0, -0.145, -0.068);
+    const upperGlyph = new THREE.Mesh(new THREE.OctahedronGeometry(0.021, 0), runeGlow);
+    upperGlyph.scale.z = 0.35;
+    upperGlyph.position.set(0, -0.13, -0.122);
+    arm.add(upper, shoulder, upperBand, upperGuard, upperGlyph);
     const elbow = new THREE.Group();
     elbow.position.y = -0.31;
     const joint = ellipsoid(0.065, chitinDark, 1, 1, 1.04);
@@ -1768,9 +1868,16 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     forePlate.position.set(0, -0.14, -0.047);
     const wristBand = ring(0.053, 0.009, gold);
     wristBand.position.y = -0.255;
+    const bracer = ellipsoid(0.068, chitinDark, 0.92, 1.62, 0.58, 14);
+    bracer.position.set(0, -0.142, -0.064);
+    const bracerRidge = ellipsoid(0.037, chitinLight, 0.68, 1.72, 0.38, 12);
+    bracerRidge.position.set(0, -0.142, -0.115);
+    const elbowFin = new THREE.Mesh(new THREE.ConeGeometry(0.032, 0.11, 6), gold);
+    elbowFin.rotation.x = -Math.PI / 2;
+    elbowFin.position.set(0, 0.005, -0.108);
     const palm = ellipsoid(0.052, chitinDark, 0.94, 1.12, 0.82);
     palm.position.y = -0.3;
-    elbow.add(joint, forearm, forePlate, wristBand, palm);
+    elbow.add(joint, forearm, forePlate, wristBand, bracer, bracerRidge, elbowFin, palm);
     for (let i = 0; i < 3; i++) {
       const claw = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.068, 5), gold);
       claw.rotation.x = -Math.PI / 2;
@@ -1799,7 +1906,18 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   mandible.position.set(0, 0.055, -0.17);
   const crown = new THREE.Mesh(new THREE.ConeGeometry(0.072, 0.19, 7), chitinLight);
   crown.position.set(0, 0.31, -0.005);
-  head.add(neck, helmet, facePlate, mandible, crown);
+  const brow = ellipsoid(0.105, chitinDark, 1.18, 0.34, 0.32, 16);
+  brow.position.set(0, 0.235, -0.148);
+  const browGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.028, 0), runeGlow);
+  browGem.scale.z = 0.35;
+  browGem.position.set(0, 0.228, -0.177);
+  head.add(neck, helmet, facePlate, mandible, crown, brow, browGem);
+  for (const side of [-1, 1]) {
+    const cheekPlate = ellipsoid(0.07, chitinLight, 0.62, 1.2, 0.4, 14);
+    cheekPlate.position.set(side * 0.11, 0.072, -0.155);
+    cheekPlate.rotation.z = -side * 0.27;
+    head.add(cheekPlate);
+  }
 
   // `visor` reste la collection d'yeux attendue par l'animation de clignement.
   const visor = new THREE.Group();
@@ -1906,10 +2024,28 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   fullerShape.lineTo(0.04, -1.19);
   fullerShape.lineTo(0.026, -0.36);
   fullerShape.closePath();
-  const fuller = new THREE.Mesh(new THREE.ShapeGeometry(fullerShape), edgeMat);
+  const fuller = new THREE.Mesh(new THREE.ShapeGeometry(fullerShape), runeGlow);
+  fuller.name = 'sword-rune-channel';
   fuller.position.z = -0.037;
+  // Une incrustation sur chaque face : la lame reste lisible depuis la caméra
+  // arrière comme depuis la face du personnage, sans triche de profondeur.
+  const fullerRear = fuller.clone();
+  fullerRear.name = 'sword-rune-channel-rear';
+  fullerRear.position.z = 0.037;
   const bladeRidge = capsule(0.011, 0.94, edgeMat);
   bladeRidge.position.set(0, -0.86, -0.047);
+  const bladeRidgeRear = bladeRidge.clone();
+  bladeRidgeRear.position.z = 0.047;
+  const swordRunes = new THREE.Group();
+  swordRunes.name = 'sword-rune-nodes';
+  for (const [index, y] of [-0.53, -0.80, -1.07].entries()) {
+    for (const z of [-0.062, 0.062]) {
+      const rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.027 + index * 0.003, 0), runeGlow);
+      rune.position.set(0, y, z);
+      rune.scale.z = 0.38;
+      swordRunes.add(rune);
+    }
+  }
 
   const guard = capsule(0.046, 0.48, gold);
   guard.name = 'two-handed-sword-crossguard';
@@ -1921,22 +2057,36 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   guardTipL.position.set(-0.31, -0.27, 0);
   const guardTipR = guardTipL.clone();
   guardTipR.position.x = 0.31;
+  const guardFiligreeCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.34, -0.275, 0), new THREE.Vector3(-0.19, -0.205, -0.014),
+    new THREE.Vector3(0, -0.24, -0.028), new THREE.Vector3(0.19, -0.205, -0.014),
+    new THREE.Vector3(0.34, -0.275, 0),
+  ]);
+  const guardFiligree = new THREE.Mesh(
+    new THREE.TubeGeometry(guardFiligreeCurve, 18, 0.016, 6, false), chitinLight,
+  );
+  guardFiligree.name = 'sword-guard-filigree';
+  const guardGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.039, 0), runeGlow);
+  guardGem.scale.z = 0.46;
+  guardGem.position.set(0, -0.272, -0.07);
   const collar = ring(0.073, 0.011, gold);
   collar.position.y = -0.16;
 
-  // Poignée longue, cerclée trois fois : les deux repères de main restent
+  // Poignée longue, cerclée cinq fois : les deux repères de main restent
   // exactement au centre de cette même poignée, jamais sur un décor latéral.
   const hilt = capsule(0.048, 0.72, cloth);
   hilt.name = 'two-handed-sword-long-hilt';
   hilt.position.y = 0.19;
-  const gripBands = [-0.02, 0.20, 0.43].map((y) => {
-    const band = ring(0.057, 0.009, gold);
+  const gripBands = [-0.10, 0.06, 0.22, 0.38, 0.54].map((y, index) => {
+    const band = ring(0.057 + (index === 2 ? 0.006 : 0), 0.009, gold);
     band.position.y = y;
     return band;
   });
   const pommel = ellipsoid(0.082, gold, 0.92, 1.18, 0.82);
   pommel.position.y = 0.65;
-  const pommelGem = ellipsoid(0.034, chitinLight, 0.82, 1, 0.42, 10);
+  const pommelCrown = ellipsoid(0.054, chitinDark, 1.12, 0.55, 0.9, 12);
+  pommelCrown.position.y = 0.69;
+  const pommelGem = ellipsoid(0.034, runeGlow, 0.82, 1, 0.42, 10);
   pommelGem.position.set(0, 0.65, -0.068);
 
   // Repères invisibles pour les centres des deux vraies paumes. La rotation
@@ -1948,8 +2098,9 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   const offhandGrip = new THREE.Object3D();
   offhandGrip.name = 'sword-left-hand-grip';
   offhandGrip.position.set(0.042, -0.06, 0.012);
-  weapon.add(swordBlade, fuller, bladeRidge, guard, guardCore, guardTipL, guardTipR,
-    collar, hilt, ...gripBands, pommel, pommelGem, rightGrip, offhandGrip);
+  weapon.add(swordBlade, fuller, fullerRear, bladeRidge, bladeRidgeRear, swordRunes,
+    guard, guardCore, guardTipL, guardTipR, guardFiligree, guardGem,
+    collar, hilt, ...gripBands, pommel, pommelCrown, pommelGem, rightGrip, offhandGrip);
   weapon.scale.setScalar(0.85);
   // π : la lame dessinée vers −Y devient une épée pointe vers le ciel.
   weapon.rotation.set(0.06, 0, Math.PI + 0.04);
@@ -1975,7 +2126,8 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     armL: armL.arm, armR: armR.arm, elbowL: armL.elbow, elbowR: armR.elbow,
     legL: legL.leg, legR: legR.leg, kneeL: legL.knee, kneeR: legR.knee,
     footL: legL.foot, footR: legR.foot,
-    cape, wings: [wingL, wingR], visor, weapon, weaponMount, rightGrip, offhandGrip, strands, potion,
+    cape, wings: [wingL, wingR], visor, weapon, weaponMount, rightGrip, offhandGrip,
+    runeGlow, strands, potion,
   };
   return warrior;
 }

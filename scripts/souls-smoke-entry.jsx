@@ -186,6 +186,13 @@ try {
     || !p.weapon.getObjectByName('two-handed-sword-long-hilt')) {
     fail('ÉPÉE À DEUX MAINS ABSENTE — lame droite ou poignée longue manquante');
   }
+  if (!p.weapon.getObjectByName('sword-rune-channel')
+    || !p.weapon.getObjectByName('sword-guard-filigree')
+    || !p.torso.getObjectByName('guardian-cuirass')
+    || !p.torso.getObjectByName('dorsal-chitin-carapace')
+    || !p.runeGlow?.userData?.baseEmissiveIntensity) {
+    fail('HABILLAGE ANIME INCOMPLET — rune, garde ou cuirasse manquante');
+  }
   if (p.weapon.parent !== p.weaponMount) {
     fail('ÉPÉE HORS DU PIVOT CENTRAL — l’arme ne doit pas être attachée à un coude');
   }
@@ -229,7 +236,7 @@ try {
   console.log('Garde à deux mains OK — paumes', `${rightGap.toFixed(3)} / ${leftGap.toFixed(3)} m`,
     '| coudes frontaux', `${elbowL.z.toFixed(3)} / ${elbowR.z.toFixed(3)}`, '| lame levée.');
 } catch (e) {
-  if (/GARDE À DEUX MAINS|ÉPÉE|PRISE À DEUX MAINS|COUDES|BRAS CROISÉS|LAME NON LEVÉE/.test(e?.message || '')) throw e;
+  if (/GARDE À DEUX MAINS|ÉPÉE|HABILLAGE|PRISE À DEUX MAINS|COUDES|BRAS CROISÉS|LAME NON LEVÉE/.test(e?.message || '')) throw e;
   console.error('GARDE À DEUX MAINS FAILED:', e);
   process.exit(3);
 }
