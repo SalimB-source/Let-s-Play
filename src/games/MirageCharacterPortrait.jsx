@@ -80,13 +80,26 @@ export default function MirageCharacterPortrait({ character = 0, colors = null, 
           <path d="M72 44 Q74 37 80 37 L83 46Z" fill={mane} stroke="#2d2334" strokeWidth="2.5" strokeLinejoin="round" />
           <path d="M67 58 Q72 53 78 56" fill="none" stroke={mane} strokeWidth="5" strokeLinecap="round" />
           <circle cx="78" cy="51" r="1.6" fill="#fff4d7" />
+          <circle cx="78.4" cy="51" r="0.85" fill="#21182a" />
+          <ellipse cx="82.4" cy="49.6" rx="1.4" ry="1.1" fill="#2d2334" opacity=".7" />
           <path d="M31 75 L30 88 M42 75 L42 90 M62 74 L63 87 M71 73 L73 85" fill="none" stroke={mane} strokeWidth="5" strokeLinecap="round" />
+          {/* Sabots : un capuchon sombre au bout de chaque jambe. */}
+          <path d="M30 86.6 L30 89 M42 88.4 L42 90.6 M63 85.4 L63 87.6 M73 83.4 L73 85.6" fill="none" stroke="#2d2334" strokeWidth="5" strokeLinecap="round" opacity=".92" />
+          {/* Mors, montant et rêne tenue par le cavalier. */}
+          <path d="M79 46 Q83 48 82.4 52.4" fill="none" stroke={trim} strokeWidth="2" strokeLinecap="round" />
+          <path d="M80.6 51 Q72 55 64.6 53.4" fill="none" stroke={trim} strokeWidth="1.8" strokeLinecap="round" />
           <path d="M20 63 Q12 65 14 74" fill="none" stroke={mane} strokeWidth="4" strokeLinecap="round" />
+          <path d="M21 66 Q11 71 15 80" fill="none" stroke={mane} strokeWidth="2.8" strokeLinecap="round" opacity=".9" />
           {/* Saddle and rider */}
           <path d="M31 57 Q43 52 54 58 L51 66 L34 66Z" fill={trim} stroke="#2d2334" strokeWidth="2.5" />
           <path d="M39 55 L41 43 Q45 36 54 39 L62 49 L56 62 L48 65Z" fill={cloth} stroke="#2d2334" strokeWidth="3" strokeLinejoin="round" />
           <path d="M52 43 Q56 38 61 43 L66 51 L61 54 L55 49Z" fill={mane} stroke="#2d2334" strokeWidth="2.5" strokeLinejoin="round" />
           <path d="M42 42 Q40 35 46 31 L57 31 Q63 35 60 44 L54 49 L46 47Z" fill={hood} stroke="#2d2334" strokeWidth="3" strokeLinejoin="round" />
+          {/* Le bandana remonté sur le nez, noué dans la nuque, et les yeux
+              au-dessus : le portrait suit le modèle 3D (voir mirageExplorer). */}
+          <path d="M44.6 41.6 Q51.6 44.6 59.8 41.2 L58.6 46.4 Q51.8 48.8 45.6 46.2Z" fill={trim} stroke="#2d2334" strokeWidth="2.2" strokeLinejoin="round" />
+          <path d="M43.6 42.4 L39.6 40.6 L39.4 45.8 L43.2 44.8Z" fill={trim} stroke="#2d2334" strokeWidth="1.8" strokeLinejoin="round" />
+          <path d="M47.4 38.2 L50.2 38.2 M55 38.2 L57.8 38.2" fill="none" stroke="#2d2334" strokeWidth="2.3" strokeLinecap="round" />
           {/* Cowboy Hat (pinched crown + trim hatband + wide curved brim) */}
           <path d="M41 31 L43 20 Q47 17 51 22 Q55 17 59 20 L61 31Z" fill={hat} stroke="#2d2334" strokeWidth="2.6" strokeLinejoin="round" />
           <path d="M41 28 L61 28 L61 31 L41 31Z" fill={trim} stroke="#2d2334" strokeWidth="2" strokeLinejoin="round" />

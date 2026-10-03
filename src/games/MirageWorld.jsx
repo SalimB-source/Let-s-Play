@@ -3122,6 +3122,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       if (parts.hylianShield) parts.hylianShield.rotation.y = runWave * 0.06;
     }
     parts.tail.rotation.z = runWave * (turboActive ? 0.28 : 0.18);
+    // La tête du cheval hoche, les bras tirent sur les rênes, la cape bat : le
+    // galop se lit même quand la caméra est collée à la croupe. (Cloud et Link
+    // roulent sans cheval : leur tête est masquée, on ne l'anime pas.)
+    if (parts.horseHead?.visible) {
+      parts.horseHead.rotation.x = galloping ? Math.sin(time * gallopRate + 0.9) * (turboActive ? 0.12 : 0.08) : 0;
+    }
+    if (parts.armGroup) {
+      parts.armGroup.rotation.x = galloping ? (turboActive ? -0.12 : 0) + Math.sin(time * gallopRate + 1.5) * 0.05 : 0;
+    }
+    if (parts.capeFlap) {
+      const flap = running ? (turboActive ? 0.34 : 0.16) + runWave * (turboActive ? 0.14 : 0.08) : 0;
+      parts.capeFlap.rotation.x = -0.2 - flap;
+    }
     parts.wings?.forEach((wing, index) => {
       wing.rotation.z = Math.sin(time * (running ? 0.018 : 0.006) + index * Math.PI) * (running ? 0.16 : 0.06);
     });
@@ -3228,6 +3241,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         rivalParts.rider.rotation.x -= 0.18;
       }
       rivalParts.tail.rotation.z = runWave * -0.2;
+      // Même vie que le joueur : hochement de tête, rênes et pan de cape.
+      const rivalGalloping = running && rivalStun <= 0;
+      if (rivalParts.horseHead?.visible) {
+        rivalParts.horseHead.rotation.x = rivalGalloping ? Math.sin(time * rivalGallopRate + 0.9 + phaseOffset) * (rivalTurbo ? 0.12 : 0.08) : 0;
+      }
+      if (rivalParts.armGroup) {
+        rivalParts.armGroup.rotation.x = rivalGalloping ? (rivalTurbo ? -0.12 : 0) + Math.sin(time * rivalGallopRate + 1.5 + phaseOffset) * 0.05 : 0;
+      }
+      if (rivalParts.capeFlap) {
+        const rivalFlap = rivalGalloping ? (rivalTurbo ? 0.34 : 0.16) + Math.sin(time * rivalGallopRate + phaseOffset) * (rivalTurbo ? 0.14 : 0.08) : 0;
+        rivalParts.capeFlap.rotation.x = -0.2 - rivalFlap;
+      }
       const cloudWaveSlow = race.mode === 'duel' && r.slowTimer > 0 && r.slowEffect === 'cloud-wave';
       rivalMesh.rotation.z = cloudWaveSlow ? Math.sin(time * 0.078 + idx * 1.7) * 0.12 : 0;
       if (race.mode === 'duel' && !isGhostRival(r)) {

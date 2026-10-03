@@ -422,6 +422,11 @@ function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColor
       parts.tail.rotation.z = Math.sin(time * 5) * 0.28;
       parts.wings?.forEach((wing, index) => { wing.rotation.z = Math.sin(time * 5 + index * Math.PI) * 0.12 * hop; });
       parts.cape.rotation.x = 0.12 + Math.sin(time * 6) * 0.1;
+      // Le vainqueur salue : la tête de sa monture hoche, ses bras tirent sur
+      // les rênes et le pan de sa cape bat au rythme des sabots.
+      if (parts.horseHead?.visible) parts.horseHead.rotation.x = Math.sin(time * 5) * 0.07;
+      if (parts.capeFlap) parts.capeFlap.rotation.x = -0.28 + Math.sin(time * 6) * 0.12;
+      if (parts.armGroup) parts.armGroup.rotation.x = Math.sin(time * 6 + 1.2) * 0.05;
       parts.legs.forEach((leg, index) => { leg.rotation.x = Math.sin(time * 6 + index * 1.6) * 0.16 * hop; });
     }
 

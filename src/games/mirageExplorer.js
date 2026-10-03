@@ -16,6 +16,7 @@
 // Sword and Hylian shield. Their materials stay independent from paintModel;
 // the chocobo and Epona replace the base horse mount entirely.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { CHARACTER_ACCESSORIES, CHARACTER_PALETTES } from './mirageCharacters.js';
 
 export const PALETTE_SLOTS = 7;
@@ -55,6 +56,55 @@ export function accessoriesForPalette(palette) {
   return index >= 0 ? (CHARACTER_ACCESSORIES[index] || null) : null;
 }
 
+/**
+ * Un ton dérivé d'une couleur de la palette : la même teinte, éclaircie ou
+ * assombrie. C'est ce qui donne du relief au voxel (poitrail plus clair,
+ * arrière-main plus sombre, chanfrein, sabots) **sans ajouter une seule couleur
+ * aux palettes ni aux skins** — `paintModel` les recalcule.
+ */
+function shadeMaterial(material, factor) {
+  return new THREE.MeshStandardMaterial({
+    color: material.color.clone().multiplyScalar(factor),
+    roughness: material.roughness,
+    flatShading: true,
+  });
+}
+
+/**
+ * Fusionne les blocs **fixes** d'un groupe (ses meshes directs, matière par
+ * matière) en un seul mesh. Un personnage porte maintenant beaucoup de détail :
+ * sans cela, chaque brique serait un appel de dessin, et il y a jusqu'à huit
+ * cavaliers à l'écran. Les sous-groupes (tête, jambes, queue, cape, bras,
+ * chapeau…) ne sont pas touchés : ce sont eux qui bougent.
+ *
+ * Même technique que `bakeStaticScenery` (MirageWorld.jsx) pour le décor. La
+ * géométrie du cube unité est partagée par tout le modèle et n'est donc jamais
+ * libérée ici (voir `disposeExplorer`).
+ */
+function mergeStaticBlocks(group, keep = null) {
+  const buckets = new Map();
+  for (const child of [...group.children]) {
+    if (!child.isMesh || child.children.length) continue;
+    if (keep && keep.has(child)) continue; // animé ailleurs : il garde sa place
+    const list = buckets.get(child.material) || [];
+    list.push(child);
+    buckets.set(child.material, list);
+  }
+  for (const [material, meshes] of buckets) {
+    if (meshes.length < 2) continue;
+    const parts = meshes.map((mesh) => {
+      mesh.updateMatrix();
+      const geometry = mesh.geometry.index ? mesh.geometry.toNonIndexed() : mesh.geometry.clone();
+      return geometry.applyMatrix4(mesh.matrix);
+    });
+    const merged = mergeGeometries(parts, false);
+    parts.forEach((part) => part.dispose());
+    if (!merged) continue;
+    meshes.forEach((mesh) => group.remove(mesh));
+    group.add(new THREE.Mesh(merged, material));
+  }
+}
+
 export function makeExplorer(rival = false, palette = null, accessories = undefined) {
   const player = new THREE.Group();
   const cube = new THREE.BoxGeometry(1, 1, 1);
@@ -62,21 +112,70 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   const baseColors = palette || CHARACTER_PALETTES[Number(rival) || 0];
   const full = normalizePalette(baseColors);
   const [coat, mane, cloth, trim, hood, hatMat, marks] = full.map(mat);
+  // Nuances dérivées de la robe et des crins (voir `shadeMaterial`).
+  const coatLight = shadeMaterial(coat, 1.16);
+  const coatShade = shadeMaterial(coat, 0.84);
+  const maneShade = shadeMaterial(mane, 0.84);
+  // Les yeux sont les mêmes sur toutes les robes : un blanc cassé et une pupille
+  // presque noire, jamais pris dans la palette (une robe claire donnerait des
+  // yeux clairs, et le cheval n'aurait plus de regard).
+  const eyeWhite = new THREE.MeshStandardMaterial({ color: 0xfdf6e6, roughness: 0.42, flatShading: true });
+  const eyeDark = new THREE.MeshStandardMaterial({ color: 0x1b1417, roughness: 0.35, flatShading: true });
 
   // Keep the original horse in its own group so a shop skin can swap the
   // mount for a chocobo without changing the common rider / race animations.
   const horseMount = new THREE.Group();
   horseMount.name = 'horse-mount';
   player.add(horseMount);
-  block(cube, coat, horseMount, [0, 0.95, 0], [0.82, 0.83, 1.65]);
-  const neck = block(cube, coat, horseMount, [0, 1.48, -0.64], [0.46, 1.02, 0.52]);
+
+  // ── Le fût, la selle et le harnachement (fixes, fusionnés à la fin) ──────
+  const horseBody = new THREE.Group();
+  horseBody.name = 'horse-body';
+  horseMount.add(horseBody);
+  block(cube, coat, horseBody, [0, 0.95, 0], [0.82, 0.83, 1.65]);
+  // Poitrail un ton au-dessus, arrière-main un ton en dessous : deux plans qui
+  // donnent du volume sans toucher aux couleurs de la palette.
+  block(cube, coatLight, horseBody, [0, 1.06, -0.66], [0.86, 0.62, 0.5]);
+  block(cube, coatShade, horseBody, [0, 0.94, 0.62], [0.85, 0.76, 0.46]);
+  // Tapis de selle, selle, pommeau : un vrai harnachement western.
+  block(cube, cloth, horseBody, [0, 1.33, 0.05], [0.96, 0.14, 0.95]);
+  block(cube, trim, horseBody, [0, 1.43, 0.15], [0.66, 0.16, 0.6]);
+  block(cube, trim, horseBody, [0, 1.63, -0.24], [0.15, 0.28, 0.15]);
+  for (const side of [-1, 1]) {
+    // Étrivière et étrier, juste en dehors des bottes du cavalier.
+    block(cube, maneShade, horseBody, [side * 0.56, 1.16, 0.12], [0.07, 0.46, 0.1]);
+    block(cube, trim, horseBody, [side * 0.56, 0.9, 0.12], [0.17, 0.13, 0.21]);
+    // Sacoches de voyage sur la croupe, avec leur rabat.
+    block(cube, trim, horseBody, [side * 0.5, 1.12, 0.62], [0.22, 0.44, 0.44]);
+    block(cube, maneShade, horseBody, [side * 0.5, 1.36, 0.62], [0.24, 0.09, 0.46]);
+  }
+  mergeStaticBlocks(horseBody);
+
+  // ── La tête : encolure, chanfrein, naseaux, œil et crinière (elle hoche) ──
+  const horseHead = new THREE.Group();
+  horseHead.name = 'horse-head';
+  horseHead.position.set(0, 1.35, -0.5);
+  horseMount.add(horseHead);
+  const neck = block(cube, coat, horseHead, [0, 0.13, -0.14], [0.46, 1.02, 0.52]);
   neck.rotation.x = -0.25;
-  block(cube, coat, horseMount, [0, 1.95, -0.92], [0.46, 0.46, 0.82]);
+  block(cube, coat, horseHead, [0, 0.6, -0.42], [0.46, 0.46, 0.82]);
+  block(cube, coatLight, horseHead, [0, 0.53, -0.94], [0.42, 0.34, 0.24]); // museau
+  for (const side of [-1, 1]) {
+    block(cube, eyeDark, horseHead, [side * 0.13, 0.49, -1.03], [0.08, 0.06, 0.03]); // naseau
+    block(cube, eyeWhite, horseHead, [side * 0.235, 0.64, -0.65], [0.02, 0.18, 0.22]);
+    block(cube, eyeDark, horseHead, [side * 0.246, 0.64, -0.69], [0.02, 0.12, 0.13]);
+    block(cube, coat, horseHead, [side * 0.17, 0.91, -0.28], [0.13, 0.34, 0.16]); // oreille
+  }
   // Liste (bande claire sur le chanfrein) — même couleur que la robe par défaut.
-  block(cube, marks, horseMount, [0, 1.97, -1.336], [0.15, 0.36, 0.02]);
-  block(cube, marks, horseMount, [0, 2.1, -1.1], [0.15, 0.02, 0.46]);
-  block(cube, mane, horseMount, [0, 1.61, -0.38], [0.18, 0.96, 0.18]);
-  for (const x of [-0.17, 0.17]) block(cube, coat, horseMount, [x, 2.26, -0.78], [0.12, 0.32, 0.18]);
+  block(cube, marks, horseHead, [0, 0.62, -0.836], [0.15, 0.36, 0.02]);
+  block(cube, marks, horseHead, [0, 0.75, -0.6], [0.15, 0.02, 0.46]);
+  // Crinière en trois mèches le long de la crête de l'encolure : elle se lit de
+  // profil et de derrière, et suit le hochement de tête.
+  block(cube, mane, horseHead, [0, 0.72, 0.04], [0.26, 0.3, 0.34]);
+  block(cube, mane, horseHead, [0, 0.25, -0.04], [0.26, 0.36, 0.3]);
+  block(cube, mane, horseHead, [0, -0.12, -0.2], [0.28, 0.34, 0.32]);
+  mergeStaticBlocks(horseHead);
+
   const horseLegs = [];
   for (const z of [-0.56, 0.56]) for (const x of [-0.29, 0.29]) {
     const leg = new THREE.Group();
@@ -88,10 +187,17 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
     block(cube, mane, leg, [0, -0.73, -0.03], [0.23, 0.17, 0.3]);
     horseLegs.push(leg);
   }
-  const horseTail = block(cube, mane, horseMount, [0, 0.77, 0.91], [0.23, 0.8, 0.22]);
+
+  // Queue en trois mèches : une seule brique ne donnait qu'un bâton.
+  const horseTail = new THREE.Group();
+  horseTail.name = 'horse-tail';
+  horseTail.position.set(0, 1.12, 0.8);
   horseTail.rotation.x = -0.35;
-  block(cube, cloth, horseMount, [0, 1.33, 0.05], [0.96, 0.14, 0.95]);
-  block(cube, trim, horseMount, [0, 1.43, 0.15], [0.66, 0.16, 0.6]);
+  horseMount.add(horseTail);
+  block(cube, mane, horseTail, [0, -0.18, 0.04], [0.24, 0.42, 0.26]);
+  block(cube, maneShade, horseTail, [0, -0.52, 0.12], [0.21, 0.36, 0.23]);
+  block(cube, maneShade, horseTail, [0, -0.82, 0.18], [0.16, 0.3, 0.19]);
+  mergeStaticBlocks(horseTail);
 
   const rider = new THREE.Group();
   rider.position.y = 1.4;
@@ -101,8 +207,37 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   rider.add(riderBody);
   block(cube, cloth, riderBody, [0, 1.85, 0.05], [0.6, 0.75, 0.43]);
   const cape = block(cube, cloth, riderBody, [0, 1.7, 0.34], [0.72, 0.87, 0.13]);
+  cape.name = 'rider-cape';
   block(cube, trim, riderBody, [0, 1.72, 0.42], [0.12, 0.57, 0.03]);
   block(cube, hood, riderBody, [0, 2.38, 0.02], [0.52, 0.46, 0.52]);
+
+  // Le pan de la cape bat la croupe au galop (voir `parts.capeFlap`).
+  const capeFlap = new THREE.Group();
+  capeFlap.name = 'cape-flap';
+  capeFlap.position.set(0, 1.62, 0.6);
+  capeFlap.rotation.x = -0.2;
+  riderBody.add(capeFlap);
+  for (const side of [-1, 1]) {
+    block(cube, cloth, capeFlap, [side * 0.16, -0.1, 0], [0.3, 0.42, 0.12]);
+    block(cube, trim, capeFlap, [side * 0.16, -0.3, 0], [0.32, 0.05, 0.13]);
+  }
+  mergeStaticBlocks(capeFlap);
+
+  // Le visage du cow-boy : yeux, bandana remonté sur le nez et son nœud dans la
+  // nuque (c'est ce que voit le joueur, la caméra est derrière le cavalier).
+  // C'est un groupe à part : Cloud et Link ont leur propre tête (voir
+  // `setExplorerAccessories`).
+  const face = new THREE.Group();
+  face.name = 'rider-face';
+  riderBody.add(face);
+  for (const side of [-1, 1]) {
+    block(cube, eyeWhite, face, [side * 0.115, 2.42, -0.25], [0.14, 0.12, 0.02]);
+    block(cube, eyeDark, face, [side * 0.115, 2.42, -0.27], [0.06, 0.08, 0.02]);
+  }
+  block(cube, trim, face, [0, 2.25, 0.02], [0.56, 0.2, 0.56]);
+  block(cube, trim, face, [0, 2.32, 0.32], [0.16, 0.18, 0.14]);
+  block(cube, trim, face, [0, 2.14, 0.35], [0.1, 0.26, 0.09]);
+  mergeStaticBlocks(face);
 
   // Cowboy hat (Stetson: wide curled brim + trim hatband + pinched cattleman crown).
   // It's a separate group so Cloud can lose the hat and get his signature spikes.
@@ -119,21 +254,45 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   block(cube, hatMat, hat, [0, 2.77, 0.02], [0.56, 0.22, 0.58]);
   block(cube, hatMat, hat, [-0.15, 2.91, 0.02], [0.21, 0.11, 0.52]);
   block(cube, hatMat, hat, [0.15, 2.91, 0.02], [0.21, 0.11, 0.52]);
+  // Le cordon de jugulaire : deux fils sous les bords, comme sur un vrai Stetson.
+  for (const side of [-1, 1]) block(cube, trim, hat, [side * 0.27, 2.44, -0.16], [0.03, 0.34, 0.03]);
+  mergeStaticBlocks(hat);
 
+  // Les bras sont à part : ils tirent sur les rênes au galop (voir MirageWorld).
+  const armGroup = new THREE.Group();
+  armGroup.name = 'rider-arms';
+  riderBody.add(armGroup);
   const arms = [];
   for (const x of [-0.43, 0.43]) {
+    // Bottes du cavalier, avec le quartier de pantalon par-dessus et l'éperon au
+    // talon — c'est le talon que la caméra voit.
     block(cube, mane, riderBody, [x, 1.16, 0.05], [0.22, 0.57, 0.32]);
-    const arm = block(cube, cloth, riderBody, [x * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
+    block(cube, cloth, riderBody, [x, 1.34, 0.05], [0.26, 0.2, 0.36]);
+    block(cube, trim, riderBody, [x, 1.02, 0.24], [0.12, 0.07, 0.09]);
+    const arm = block(cube, cloth, armGroup, [x * 0.8, 1.9, -0.25], [0.2, 0.5, 0.22]);
     arm.rotation.x = -0.8;
     arms.push(arm);
     block(cube, mane, riderBody, [x * 0.65, 1.72, -0.64], [0.035, 0.035, 0.7]);
   }
+  // `cape` et `hat` restent des nœuds à part : l'un bat au galop, l'autre tombe
+  // pour Cloud. (Les groupes `cape-flap`, `rider-face` et `rider-arms` ont leur
+  // propre collecte de blocs et ne sont donc pas touchés ici.)
+  mergeStaticBlocks(riderBody, new Set([cape]));
   player.userData.parts = {
-    horseMount, horseLegs, horseTail,
+    horseMount, horseBody, horseHead, horseLegs, horseTail, capeFlap, face, armGroup,
     legs: horseLegs, tail: horseTail,
     cape, rider, riderBody, arms, hat,
   };
   player.userData.materials = [coat, mane, cloth, trim, hood, hatMat, marks];
+  // Les nuances dérivées suivent leur couleur source (voir `paintModel`).
+  player.userData.derived = [
+    { material: coatLight, source: 0, factor: 1.16 },
+    { material: coatShade, source: 0, factor: 0.84 },
+    { material: maneShade, source: 1, factor: 0.84 },
+  ];
+  // Le cube unité de tout le modèle : la fusion des blocs le laisse sans
+  // propriétaire, c'est donc au modèle de le libérer (voir `disposeExplorer`).
+  player.userData.unitCube = cube;
   player.userData.hatMaterial = hatMat;
   player.userData.basePalette = baseColors;
   player.userData.painting = baseColors;
@@ -149,6 +308,11 @@ export function paintModel(model, colors) {
   const materials = model.userData.materials;
   if (!materials || !colors) return;
   normalizePalette(colors).forEach((color, index) => materials[index]?.color.set(color));
+  // Les nuances dérivées (poitrail, arrière-main, sabots) se recalculent : une
+  // robe claire garde son relief, une robe sombre aussi.
+  for (const { material, source, factor } of model.userData.derived || []) {
+    material.color.copy(materials[source].color).multiplyScalar(factor);
+  }
   setExplorerAccessories(model, accessoriesForPalette(colors));
 }
 
@@ -164,6 +328,8 @@ export function setExplorerAccessories(model, kind) {
   if (parts.horseMount) parts.horseMount.visible = true;
   if (parts.hat) parts.hat.visible = true;
   if (parts.cape) parts.cape.visible = true;
+  // Le visage du cow-boy revient ; Cloud et Link le remplacent par le leur.
+  if (parts.face) parts.face.visible = true;
   if (parts.horseLegs) parts.legs = parts.horseLegs;
   if (parts.horseTail) parts.tail = parts.horseTail;
   parts.wings = [];
@@ -434,6 +600,7 @@ function attachCloudChocobo(model) {
   parts.horseMount.visible = false;
   parts.hat.visible = false;
   if (parts.cape) parts.cape.visible = false;
+  if (parts.face) parts.face.visible = false; // Cloud a son propre visage
   parts.legs = chocoboLegs;
   parts.tail = chocoboTail;
   parts.wings = wings;
@@ -701,6 +868,7 @@ function attachLinkEpona(model) {
   parts.horseMount.visible = false;
   parts.hat.visible = false;
   if (parts.cape) parts.cape.visible = false;
+  if (parts.face) parts.face.visible = false; // le visage de Link est dans ses cheveux
   parts.legs = eponaLegs;
   parts.tail = eponaTail;
   parts.epona = group;
@@ -708,7 +876,12 @@ function attachLinkEpona(model) {
   model.userData.accessoryKind = 'link-epona';
 }
 
-/** Free GPU resources of a model built by makeExplorer. */
+/**
+ * Free GPU resources of a model built by makeExplorer. Le cube unité est partagé
+ * par tous les blocs : la fusion (`mergeStaticBlocks`) a recopié son contenu dans
+ * les géométries fusionnées, il n'est donc plus porté par aucun mesh — c'est ici
+ * qu'on le libère, et une seule fois.
+ */
 export function disposeExplorer(model) {
   detachAccessories(model);
   const seen = new Set();
@@ -717,4 +890,6 @@ export function disposeExplorer(model) {
     if (node.geometry && !seen.has(node.geometry)) { seen.add(node.geometry); node.geometry.dispose(); }
     if (node.material && !seen.has(node.material)) { seen.add(node.material); node.material.dispose(); }
   });
+  const cube = model.userData.unitCube;
+  if (cube && !seen.has(cube)) { seen.add(cube); cube.dispose(); }
 }

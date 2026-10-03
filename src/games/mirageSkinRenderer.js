@@ -115,12 +115,16 @@ function frame(now) {
     const model = p.model;
     model.rotation.y = p.phase + t * SPIN_SPEED;
     // Petit galop sur place : jambes, queue et léger rebond.
-    const { legs, tail, wings = [], rider, masterSword, hylianShield } = model.userData.parts;
+    const { legs, tail, wings = [], capeFlap, horseHead, armGroup, rider, masterSword, hylianShield } = model.userData.parts;
     const isLink = model.userData.accessoryKind === 'link-epona';
     const gallop = isLink ? 7.4 : 7;
     legs.forEach((leg, i) => { leg.rotation.x = Math.sin(t * gallop + i * 2.2) * (isLink ? 0.5 : 0.45); });
     tail.rotation.x = -0.35 + Math.sin(t * gallop) * (isLink ? 0.16 : 0.12);
     wings.forEach((wing, index) => { wing.rotation.z = Math.sin(t * 7 + index * Math.PI) * 0.12; });
+    // La silhouette bouge aussi : pan de cape, hochement de tête, rênes.
+    if (capeFlap) capeFlap.rotation.x = -0.28 + Math.sin(t * gallop) * 0.1;
+    if (horseHead?.visible) horseHead.rotation.x = Math.sin(t * gallop + 0.9) * 0.07;
+    if (armGroup) armGroup.rotation.x = Math.sin(t * gallop + 1.5) * 0.04;
     model.position.y = Math.abs(Math.sin(t * gallop)) * (isLink ? 0.075 : 0.06);
     // Link garde une vraie posture de cavalier : son épée et son bouclier
     // répondent au galop au lieu de rester figés comme des accessoires.

@@ -533,6 +533,74 @@ Le ciel du Château reste **figé** (son shader ne dépend pas du temps :
 `tests/mirage-infinity-stage.test.js` le fige aussi), là où le ciel partagé et
 celui du désert reçoivent une horloge — c'est elle qui fait battre leurs faisceaux.
 
+## Mirage Rush : les cavaliers et leurs montures
+
+Le cheval d'origine n'avait ni regard, ni naseau, ni queue : un bloc, une selle et
+quatre jambes. Les **douze personnages** (les huit robes de base et les quatre
+skins de la boutique) ont maintenant un vrai corps — et tout ce qui pouvait bouger
+bouge.
+
+| Où | Quoi |
+|---|---|
+| Cheval (`mirageExplorer.js`) | yeux (blanc + pupille) et naseaux, museau plus clair, liste sur le chanfrein, oreilles, **crinière en trois mèches** ; poitrail éclairci et arrière-main assombri ; selle complète (tapis, selle, pommeau, **étriers suspendus**, **sacoches** à rabats) ; sabots sombres et balzanes |
+| Cavalier | **yeux, bandana remonté sur le nez et nœud dans la nuque** — c'est ce que voit la caméra de course —, quartier de pantalon, éperon au talon, cordon au chapeau |
+| Queue | trois mèches dégradées au lieu d'un bâton |
+| Mouvement | la **tête hoche**, les **bras tirent sur les rênes**, le **pan de cape bat** la croupe, la queue balance — joueur **et** rivaux, chacun à sa phase |
+| Boutique | les vignettes 3D animent la tête, les rênes et le pan de cape ; les portraits 2D (`MirageCharacterPortrait`) reçoivent les yeux du cavalier, son bandana, le mors, la rêne et les sabots |
+
+**Aucune couleur n'est ajoutée aux palettes.** Le relief vient de tons *dérivés* de
+la robe et des crins (`shadeMaterial` : la même teinte, éclaircie ou assombrie), et
+`paintModel` les recalcule quand on change de skin — une robe claire garde son
+relief comme une robe sombre. Seuls les yeux sont fixes (un blanc cassé, une
+pupille presque noire) : pris dans la palette, ils donneraient des yeux clairs sur
+les robes claires, et le cheval perdrait son regard.
+
+**Le détail ne coûte rien en appels de dessin.** Les blocs *fixes* d'un groupe sont
+soudés par matière (`mergeStaticBlocks`, la même idée que `bakeStaticScenery` pour
+le décor), et seules les pièces animées restent des nœuds à part : la tête, les
+quatre jambes, la queue, la cape, le pan, les bras et le chapeau — celui-ci tombe
+quand Cloud ou Link prend la selle. Un seul mesh par matière, donc :
+
+| Skin | Meshes (avant → après) | Triangles (avant → après) |
+|---|---|---|
+| Alezan (base) | 41 → **40** | 492 → **960** |
+| Gyro | 55 → **54** | 1540 → **2008** |
+| Cloud | 95 → **94** | 1136 → **1604** |
+| Link | 142 → **141** | 1662 → **2130** |
+
+Le double de triangles pour un mesh de moins : c'est le prix du regard et de la
+sellerie. Le module 3D reste **partagé** par les huit cavaliers d'une course — les
+vignettes de la boutique réutilisent un unique moteur de rendu hors écran
+(`mirageSkinRenderer.js`) pour tous les skins à la fois.
+
+Cloud et Link gardent leur propre tête : le visage du cow-boy (yeux + bandana) est
+un groupe à part que leur skin **masque** au lieu de le leur faire porter sous le
+leur — et qui revient dès qu'on reprend une robe de base.
+
+### Où vit le code
+
+- `src/games/mirageExplorer.js` — `makeExplorer` (le corps, la tête, la queue, le
+  visage, le pan de cape, le chapeau, les bras), `shadeMaterial`, `mergeStaticBlocks`,
+  `paintModel` (palette + tons dérivés), `setExplorerAccessories` (`parts.face`) ;
+- `src/games/MirageWorld.jsx` — l'animation en course (tête, rênes, pan de cape)
+  pour le joueur **et** pour chaque rival ;
+- `src/games/mirageSkinRenderer.js` — les mêmes pièces dans les vignettes de skin ;
+- `src/games/MirageCharacterPortrait.jsx` — le portrait 2D assorti (boutique,
+  salon en ligne, coupes).
+
+### Vérifications
+
+```bash
+node --test tests/mirage-explorer.test.js tests/mirage-explorer-details.test.js
+npm run check:mirage-scoreboard           # les portraits 2D se rendent toujours
+npm run build
+```
+
+Les tests disent que les yeux, les naseaux, le bandana et les sabots sont là, que
+Cloud et Link masquent le visage du cow-boy, que les tons dérivés suivent la
+palette, que les pièces animées ne sont **jamais** soudées — et que le coût du
+modèle reste sous son plafond. La silhouette, elle, se juge à l'œil, en jeu.
+
 ## Mirage Rush : les coupes et les gains d'or
 
 Quatre coupes (`/jeu/mirage-rush`, bouton **COUPE**) enchaînent des duels sur
