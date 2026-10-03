@@ -584,6 +584,171 @@
   50% { opacity: 1; }
 }
 
+/* ── Plein écran (téléphone, application, bouton de la barre) ─────── */
+/* La coquille couvre tout le viewport : c'est la couche fixe du plein écran
+   commun aux jeux d'arcade (useGameFullscreen). Sur téléphone et dans
+   l'application, elle est posée **dès l'ouverture** — Chrome Android n'honore
+   le verrou paysage qu'en plein écran — et le plein écran natif part au premier
+   geste du joueur. Sur ordinateur, c'est le bouton de la barre qui la pose. */
+.souls-game-shell.is-immersive {
+  position: fixed; inset: 0; z-index: 1500; /* au-dessus de la nav fixe (1000) */
+  display: flex; flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+  border: 0; border-radius: 0;
+  background: #0b0910;
+  box-shadow: none;
+}
+.souls-game-shell.is-immersive .souls-viewport {
+  flex: 1 1 auto; height: auto; min-height: 0;
+}
+.souls-game-shell.is-immersive .souls-game-foot { display: none; }
+
+.souls-fullscreen-button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px; border-radius: var(--souls-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05); color: var(--souls-ink);
+  font: 800 8px var(--mono); letter-spacing: 0.1em; cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, transform 0.14s;
+}
+.souls-fullscreen-button:hover { background: rgba(255, 138, 60, 0.14); border-color: var(--souls-ember-soft); transform: translateY(-1px); }
+.souls-fullscreen-button.is-on { color: var(--souls-gold); background: rgba(233, 201, 135, 0.1); border-color: rgba(233, 201, 135, 0.38); }
+.souls-fullscreen-button .game-fullscreen-icon { flex: none; width: 12px; height: 12px; }
+
+/* ── Commandes tactiles : la manette ──────────────────────────────────
+   Stick à gauche (déplacement, course à fond), boutons à droite (FRAPPE,
+   LOURDE, ROULADE, VERROU, POTION, AGIR). La couche laisse passer les
+   doigts : seuls le stick et les boutons les captent, le reste de l'écran
+   fait tourner la caméra (attachLookPad sur le canvas). */
+.souls-touch {
+  position: absolute; inset: 0; z-index: 3;
+  pointer-events: none;
+  animation: souls-fade-in 0.2s ease-out both;
+}
+.souls-touch-tip {
+  position: absolute;
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  bottom: calc(152px + env(safe-area-inset-bottom, 0px));
+  margin: 0; max-width: min(320px, 62%);
+  padding: 6px 11px; border-radius: 999px;
+  font: 800 8px var(--mono); letter-spacing: 0.1em; line-height: 1.5;
+  color: var(--souls-gold);
+  background: rgba(13, 10, 18, 0.66); border: 1px solid var(--souls-line);
+  backdrop-filter: blur(6px);
+  animation: souls-touch-tip 9s ease-out both;
+}
+@keyframes souls-touch-tip {
+  0% { opacity: 0; }
+  6% { opacity: 1; }
+  76% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.souls-touch-stick {
+  position: absolute;
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: 128px; height: 128px; border-radius: 50%;
+  pointer-events: auto; touch-action: none;
+  background: radial-gradient(circle at 50% 42%, rgba(38, 30, 50, 0.62), rgba(9, 7, 13, 0.72));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-tap-highlight-color: transparent;
+}
+.souls-touch-stick-ring {
+  position: absolute; inset: 24px; border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.09);
+}
+.souls-touch-stick-knob {
+  position: absolute; left: 50%; top: 50%;
+  width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 32%, #ffc084, #b3541c 76%);
+  border: 1px solid rgba(255, 214, 160, 0.5);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  will-change: transform;
+  transition: transform 0.06s linear;
+}
+.souls-touch-stick-label {
+  position: absolute; left: 0; right: 0; bottom: 12px;
+  text-align: center;
+  font: 800 7px var(--mono); letter-spacing: 0.18em; color: rgba(242, 236, 226, 0.42);
+}
+
+.souls-touch-pad {
+  position: absolute;
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: grid; grid-template-columns: repeat(2, auto); gap: 9px;
+  justify-items: end; align-items: end;
+  pointer-events: none;
+}
+.souls-touch-button {
+  pointer-events: auto; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  width: 62px; height: 62px; padding: 0; border-radius: 50%;
+  color: var(--souls-ink);
+  background: radial-gradient(circle at 50% 30%, rgba(46, 36, 58, 0.72), rgba(11, 8, 16, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.08s ease, border-color 0.08s ease, background 0.08s ease;
+}
+.souls-touch-button i {
+  font-style: normal; font-size: 17px; line-height: 1;
+  text-shadow: 0 0 10px rgba(255, 138, 60, 0.45);
+}
+.souls-touch-button span {
+  font: 800 6.5px var(--mono); letter-spacing: 0.08em; color: var(--souls-dim);
+}
+.souls-touch-button:active {
+  transform: scale(0.92);
+  border-color: var(--souls-ember-soft);
+  background: radial-gradient(circle at 50% 30%, rgba(255, 138, 60, 0.32), rgba(32, 15, 8, 0.88));
+}
+.souls-touch-button.is-big { width: 74px; height: 74px; border-color: rgba(255, 158, 86, 0.34); }
+.souls-touch-button.is-big i { font-size: 21px; }
+
+/* ── « Tournez votre appareil » (paysage impossible) ──────────────── */
+.souls-rotate {
+  position: absolute; inset: 0; z-index: 6;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  padding: 24px; text-align: center;
+  background: radial-gradient(circle at 50% 40%, rgba(30, 20, 14, 0.94), rgba(6, 4, 9, 0.97));
+  backdrop-filter: blur(6px);
+}
+.souls-rotate-phone {
+  position: relative; width: 54px; height: 90px; border-radius: 11px;
+  border: 2px solid var(--souls-gold);
+  box-shadow: 0 0 22px rgba(233, 201, 135, 0.35);
+  animation: souls-rotate-tilt 2.6s ease-in-out infinite;
+}
+.souls-rotate-phone i {
+  position: absolute; left: 50%; bottom: 6px; width: 16px; height: 2px; margin-left: -8px;
+  border-radius: 2px; background: var(--souls-gold);
+}
+@keyframes souls-rotate-tilt {
+  0%, 20% { transform: rotate(0deg); }
+  62%, 100% { transform: rotate(-90deg); }
+}
+.souls-rotate strong {
+  font: 900 clamp(15px, 4.6vw, 21px) var(--font-gaming);
+  letter-spacing: 0.12em; color: var(--souls-ink);
+}
+.souls-rotate > span { max-width: 340px; font-size: 12px; line-height: 1.55; color: var(--souls-dim); }
+
+/* ── Pause : monter de niveau au doigt (U / I / O) ────────────────── */
+.souls-level-up {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  margin: 0 0 16px;
+}
+.souls-level-up-label {
+  font: 800 8px var(--mono); letter-spacing: 0.14em; color: rgba(242, 236, 226, 0.42);
+}
+.souls-level-up-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.souls-level-up-row .souls-ghost-button { min-width: 84px; padding: 10px 14px; font-size: 10px; }
+
 /* ── Responsive ───────────────────────────────────────────────────── */
 @media (max-width: 1050px) {
   .souls-viewport { height: min(600px, 82vh); }
@@ -621,4 +786,57 @@
   .souls-hud-target { width: min(210px, 72%); top: 8px; }
   .souls-hud-target-name { font-size: 7.5px; }
   .souls-game-foot { flex-direction: column; gap: 5px; text-align: center; }
+}
+
+/* ── Tactile & paysage : raffinements ─────────────────────────────── */
+/* HUD allégé quand la manette occupe les coins : la position passe en haut à
+   droite (les boutons sont en bas à droite), la pastille d'aide souris est
+   déjà retirée par la page, et les messages se glissent au-dessus des pouces. */
+.souls-viewport.is-touch .souls-hud-coords { top: 10px; right: 10px; bottom: auto; }
+.souls-viewport.is-touch .souls-prompt {
+  bottom: calc(152px + env(safe-area-inset-bottom, 0px));
+  max-width: calc(100% - 28px); white-space: normal; text-align: center;
+}
+.souls-viewport.is-touch .souls-drink { bottom: calc(196px + env(safe-area-inset-bottom, 0px)); }
+
+/* Téléphone couché : l'écran est bas (≈ 390 px), tout doit tenir sans manger
+   la scène 3D — barre plus fine, HUD compact, manette réduite. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .souls-game-shell.is-immersive .souls-game-topbar { height: 38px; padding-inline: 10px; }
+  .souls-game-shell.is-immersive .souls-game-brand { font-size: 7px; letter-spacing: 0.1em; }
+  .souls-viewport.is-touch .souls-hud-vitals { width: min(190px, 32%); gap: 4px; }
+  .souls-viewport.is-touch .souls-hud-meta { top: 44px; max-width: 44%; }
+  .souls-viewport.is-touch .souls-hud-target { top: 8px; width: min(250px, 40%); }
+  .souls-viewport.is-touch .souls-toast { top: 42px; font-size: 10px; }
+  .souls-viewport.is-touch .souls-prompt {
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    max-width: min(400px, calc(100% - 350px)); font-size: 8.5px;
+  }
+  .souls-viewport.is-touch .souls-drink { bottom: 36px; }
+  .souls-touch-stick { width: 116px; height: 116px; }
+  .souls-touch-stick-knob { width: 52px; height: 52px; margin: -26px 0 0 -26px; }
+  .souls-touch-stick-ring { inset: 22px; }
+  .souls-touch-stick-label { bottom: 10px; font-size: 6.5px; }
+  .souls-touch-tip { bottom: calc(136px + env(safe-area-inset-bottom, 0px)); font-size: 7px; }
+  .souls-touch-pad { gap: 7px; }
+  .souls-touch-button { width: 54px; height: 54px; }
+  .souls-touch-button.is-big { width: 66px; height: 66px; }
+  .souls-touch-button i { font-size: 15px; }
+  .souls-touch-button span { font-size: 6px; }
+}
+
+/* Écrans très bas : l'écran de rotation doit rester lisible et cliquable. */
+@media (max-height: 420px) {
+  .souls-rotate { gap: 10px; padding: 14px; }
+  .souls-rotate-phone { width: 42px; height: 70px; }
+  .souls-rotate > span { max-width: 460px; font-size: 11px; }
+  .souls-rotate .souls-ghost-button { min-width: 140px; padding: 9px 12px; font-size: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .souls-touch { animation: none; }
+  /* Sans animation, le conseil ne s'efface pas : on ne l'affiche pas. */
+  .souls-touch-tip { display: none; }
+  .souls-rotate-phone { animation: none; transform: rotate(-90deg); }
+  .souls-touch-button, .souls-touch-stick-knob { transition: none; }
 }

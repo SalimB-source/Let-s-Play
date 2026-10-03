@@ -48,14 +48,25 @@ import {
   rest, drinkFlask, tryLevelUp, maxHp, staminaMax, strMult,
 } from './soulsProgress';
 import { playSouls } from './soulsAudio';
+import {
+  TOUCH_LOOK_SENSITIVITY, TOUCH_QUEUE,
+  attachLookPad, isTouchPointer, stickSpeedScale,
+} from './soulsTouch';
 
 const BASE_FOV = 55;
 const SEAT = SEAT_POSE; // pose assise du Roi (soulsModels : contrat de rig)
 const GAME_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab']);
+/** Stick au repos — le chevalier s'arrête. */
+const TOUCH_IDLE = Object.freeze({ x: 0, y: 0, magnitude: 0, run: false });
 
 // Specs du boss (bond inclus) : BOSS, module pur soulsCombat.js.
 
 function makeWorld(mount, callbacks) {
+  // Un doigt plutôt qu'une souris ? Décidé une fois pour toutes à la
+  // construction : les invites, l'aria-label et le verrou de souris en
+  // dépendent, et le périphérique ne change pas en cours de partie.
+  const touchDevice = isTouchPointer();
+
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a16);
   scene.fog = new THREE.Fog(0x131228, 17, 62);
@@ -71,7 +82,12 @@ function makeWorld(mount, callbacks) {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.className = 'souls-canvas';
-  renderer.domElement.setAttribute('aria-label', 'Jeu 3D La Cendre — parcours la Cour du Seuil à la souris et au clavier');
+  renderer.domElement.setAttribute(
+    'aria-label',
+    touchDevice
+      ? 'Jeu 3D La Cendre — parcours la Cour du Seuil au stick et aux boutons de la manette tactile'
+      : 'Jeu 3D La Cendre — parcours la Cour du Seuil à la souris et au clavier',
+  );
   mount.appendChild(renderer.domElement);
 
   // Environnement PBR nocturne sur-mesure : dôme dégradé, lune HDR,
@@ -459,6 +475,11 @@ function makeWorld(mount, callbacks) {
   let dragDistance = 0;
   const lastMouse = { x: 0, y: 0 };
   const keys = new Set();
+  // ── Entrées tactiles (téléphone, application) : le stick de la page remplit
+  // `touch`, exactement comme le clavier remplit `keys`. Deux périphériques,
+  // une seule lecture dans `readInput`.
+  const touch = { x: 0, y: 0, magnitude: 0, run: false };
+  const clearTouch = () => { Object.assign(touch, TOUCH_IDLE); };
   let gaitPhase = 0;
   let prevCombatAction = 'none';
   let rollSign = 1; // −1 = rouleau avant, +1 = rouleau arrière
@@ -505,7 +526,9 @@ function makeWorld(mount, callbacks) {
   };
 
   const requestLock = () => {
-    if (locked || lockPending) return;
+    // Sur écran tactile, il n'y a pas de souris à capturer : la caméra se
+    // pilote au doigt (`attachLookPad`) et le stick gère le déplacement.
+    if (touchDevice || locked || lockPending) return;
     lockPending = true;
     const done = () => { lockPending = false; };
     try {
@@ -526,12 +549,18 @@ function makeWorld(mount, callbacks) {
     const back = keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0;
     const left = keys.has('KeyA') || keys.has('KeyQ') || keys.has('ArrowLeft') ? 1 : 0;
     const right = keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0;
+    // Le clavier prime quand une touche est enfoncée (clavier physique sur
+    // téléphone) ; sinon c'est le stick. La poussée partielle du stick ralentit
+    // le pas (`stickSpeedScale`), la poussée à fond fait courir.
+    const keyX = right - left;
+    const keyY = forward - back;
+    const usingStick = keyX === 0 && keyY === 0 && touch.magnitude > 0;
     return {
-      x: right - left,
-      y: forward - back,
-      run: keys.has('ShiftLeft') || keys.has('ShiftRight'),
+      x: usingStick ? touch.x : keyX,
+      y: usingStick ? touch.y : keyY,
+      run: keys.has('ShiftLeft') || keys.has('ShiftRight') || (usingStick && touch.run),
       cameraYaw: camYaw,
-      speedScale: moveSpeedMult(combat),
+      speedScale: moveSpeedMult(combat) * (usingStick ? stickSpeedScale(touch.magnitude) : 1),
     };
   };
 
@@ -604,6 +633,13 @@ function makeWorld(mount, callbacks) {
   const onVisibility = () => {
     if (document.hidden && active) callbacks.autoPause?.();
   };
+
+  // Caméra au doigt : glisser sur le canvas (hors stick et boutons, qui sont
+  // au-dessus dans le DOM) fait tourner la caméra, comme la souris capturée.
+  const detachLookPad = attachLookPad(renderer.domElement, (dx, dy) => {
+    if (!active || dead) return;
+    applyLook(dx * TOUCH_LOOK_SENSITIVITY, dy * TOUCH_LOOK_SENSITIVITY);
+  });
 
   window.addEventListener('keydown', onKeyDown);
   window.addEventListener('keyup', onKeyUp);
@@ -698,11 +734,17 @@ function makeWorld(mount, callbacks) {
       level: progress.level,
       hasKey: quest.hasKey,
       zone: ZONE_LABELS[zoneAt(state.x, state.z)],
+      // Les invites parlent au périphérique : lettres du clavier, ou noms des
+      // boutons de la manette tactile (✦ AGIR, ⚗ POTION, ❚❚ PAUSE).
       prompt: (() => {
         const ip = interactionPrompt(quest, state.x, state.z);
-        if (ip) return ip.text;
+        if (ip) return touchDevice ? ip.text.replace(/^E · /, '✦ AGIR · ') : ip.text;
         const f = nearestBonfire(state.x, state.z);
-        if (f && quest.lit[f.id]) return 'E · se reposer — F · potion de vie — U/I/O · niveau';
+        if (f && quest.lit[f.id]) {
+          return touchDevice
+            ? '✦ AGIR · se reposer — ⚗ POTION · boire — ❚❚ PAUSE · niveaux'
+            : 'E · se reposer — F · potion de vie — U/I/O · niveau';
+        }
         return stain.visible ? 'Marchez sur vos âmes pour les reprendre' : null;
       })(),
       toast: toastT > 0 ? toastText : null,
@@ -798,6 +840,7 @@ function makeWorld(mount, callbacks) {
     if (dead) {
       queue.light = queue.heavy = queue.dodge = queue.lock = false;
       queue.flask = queue.rest = queue.vit = queue.end = queue.str = false;
+      clearTouch();
     }
 
     if (queue.lock) {
@@ -1884,6 +1927,8 @@ function makeWorld(mount, callbacks) {
   };
 
   return {
+    /** Le monde écoute-t-il un doigt plutôt qu'une souris ? (page : commandes) */
+    isTouch: () => touchDevice,
     // Poignée de debug (build dev uniquement) : téléportation + lecture
     // d'état pour les vérifications visuelles automatisées.
     debug: {
@@ -1913,18 +1958,33 @@ function makeWorld(mount, callbacks) {
     start() {
       active = true;
       keys.clear();
+      clearTouch();
       lastFrame = performance.now();
       requestLock();
     },
     pause() {
       active = false;
       keys.clear();
+      clearTouch();
       releaseLock();
     },
-    action(name) {
+    /**
+     * Actions de la page et de la manette tactile.
+     *
+     *   - `'launch' | 'lock' | 'pause' | 'revive'` : cycle de vie (comme Mirage) ;
+     *   - `('touchMove', { x, y, magnitude, run })` : poussée du stick ;
+     *   - `('touchAction', 'light' | 'heavy' | 'dodge' | 'lock' | 'flask' | 'rest')` :
+     *     un bouton du pavé droit — il remplit la **même file** que le clavier
+     *     (`TOUCH_QUEUE` → `queue`), la suite est l'affaire de la boucle ;
+     *   - `('level', 'vit' | 'end' | 'str')` : montée de niveau depuis l'écran
+     *     de pause (le feu de camp seul l'autorise, la boucle le dit au joueur) ;
+     *   - `('touchReset')` : stick relâché (le chevalier s'arrête).
+     */
+    action(name, payload) {
       if (name === 'launch') {
         active = true;
         keys.clear();
+        clearTouch();
         lastFrame = performance.now();
         requestLock();
       } else if (name === 'lock') {
@@ -1932,9 +1992,24 @@ function makeWorld(mount, callbacks) {
       } else if (name === 'pause') {
         active = false;
         keys.clear();
+        clearTouch();
         releaseLock();
       } else if (name === 'revive') {
         revive();
+      } else if (name === 'touchMove') {
+        touch.x = Number(payload?.x) || 0;
+        touch.y = Number(payload?.y) || 0;
+        touch.magnitude = Math.min(1, Math.max(0, Number(payload?.magnitude) || 0));
+        touch.run = Boolean(payload?.run);
+      } else if (name === 'touchAction') {
+        const flag = TOUCH_QUEUE[payload];
+        if (active && !dead && flag) queue[flag] = true;
+      } else if (name === 'level') {
+        // La pause ne coupe pas la boucle (le monde vit derrière l'écran) :
+        // une montée demandée depuis l'écran de pause doit passer aussi.
+        if (!dead && Object.prototype.hasOwnProperty.call(queue, payload)) queue[payload] = true;
+      } else if (name === 'touchReset') {
+        clearTouch();
       }
     },
     revive,
@@ -1950,6 +2025,7 @@ function makeWorld(mount, callbacks) {
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      detachLookPad();
       renderer.domElement.removeEventListener('mousedown', onMouseDown);
       renderer.domElement.removeEventListener('click', onCanvasClick);
       renderer.domElement.removeEventListener('contextmenu', onContextMenu);
@@ -2016,7 +2092,7 @@ export default function SoulsWorld({
         return;
       }
       worldRef.current = world;
-      if (actionsRef) actionsRef.current = (name) => world.action(name);
+      if (actionsRef) actionsRef.current = (name, payload) => world.action(name, payload);
       // Poignée de debug (dev uniquement) : captures d'écran et QA visuel.
       if (import.meta.env.DEV) window.__laCendre = world;
     })();

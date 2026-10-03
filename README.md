@@ -541,6 +541,74 @@ l'extérieur » comme Échap). Elle ne dit rien du rendu réel : pour cela, ouvr
 jeu dans un vrai navigateur (`npm run dev`) et le passer en plein écran sur un
 grand écran.
 
+## La Cendre : paysage et manette tactile
+
+Le jeu (`/jeu/la-cendre`) **se lance en paysage sur téléphone et dans
+l'application**, et se joue au doigt : **stick à gauche, boutons à droite**.
+Sur ordinateur, rien ne change — clavier et souris gardent la main.
+
+| Geste | Effet |
+|---|---|
+| Ouverture de la page (téléphone, application) | l'écran se couche : l'activité Android est couchée par le pont (`setGameOrientation('landscape')`), puis le navigateur demande le verrou de paysage dès le montage, et le rejoue à l'entrée en plein écran (Chrome Android n'honore `screen.orientation.lock()` qu'en plein écran ou dans une application) |
+| Téléphone tenu debout | l'écran **« TOURNEZ VOTRE APPAREIL »** se montre par-dessus le jeu, qui se met en pause ; **JOUER QUAND MÊME** le tait pour la session (le jeu reste jouable, en portrait) |
+| **ENTRER DANS LA BRAISE** | demande le paysage dans le geste, ouvre le plein écran natif, et pose la manette |
+| **STICK** (bas gauche) | déplacement ; pousser à fond fait courir le chevalier (deux vitesses : marche lente, course) |
+| **⚔ FRAPPE / ⚒ LOURDE / ⟳ ROULADE** | attaque légère, attaque lourde, roulade (le gros bouton, sous le pouce droit) |
+| **◎ VERROU / ✦ AGIR / ⚗ POTION** | verrouillage de cible, action (coffre, portail, feu de camp), potion de vie |
+| **❚❚ PAUSE** (barre du jeu) | met en pause ; la pause propose les **montées de niveau** au doigt (VIT / END / PUI) |
+| Glisser le doigt sur la scène | tourne la caméra (hors manette), sans voler le geste du stick |
+| Quitter la page | rend son orientation au téléphone (pont `auto`, verrou relâché) |
+
+- **La manette ne recouvre rien.** Le stick et les boutons se posent dans les
+  coins bas, sous la barre de vie et la barre du jeu ; les invites écrites
+  s'adaptent au doigt (`✦ AGIR · ouvrir le coffre` au lieu de `E · ouvrir le
+  coffre`), et aucune pastille « cliquez pour capturer la souris » ne s'affiche
+  sur un écran tactile.
+- **Rien n'est deviné.** L'écran est reconnu tactile par `matchMedia('(pointer:
+  coarse)')` ; le jeu d'ordinateur n'affiche ni manette, ni écran de rotation, ni
+  verrou d'orientation, et garde le plein écran au bouton de la barre.
+
+### Où vit le code
+
+- `src/games/gameLandscape.js` — le module d'orientation (pur, sans React) :
+  lecture du paysage, verrou navigateur (`screen.orientation.lock` et ses
+  préfixes, sans jamais lever), pont Android, ordre « pont puis verrou » ;
+- `src/games/useGameLandscape.js` — le crochet React (`isTouch`,
+  `landscapeDevice`, `portrait`, `showRotationPrompt`, `request` / `release` /
+  `dismissRotation`, rejeu du verrou sur `fullscreenchange`) ;
+- `src/games/soulsTouch.js` — la géométrie du stick (zone morte, course à
+  partir de 82 %, deux allures) et les liaisons DOM (`attachStick`,
+  `attachLookPad`) ;
+- `src/games/SoulsTouchControls.jsx` — la manette à l'écran (stick à gauche,
+  six boutons à droite), qui parle au moteur par `onMove` / `onAction` ;
+- `src/games/SoulsWorld.jsx` — le moteur reçoit `touchMove`, `touchAction`,
+  `touchReset` et mêle le stick au clavier (une touche tenue l'emporte) ;
+- `src/games/SoulsPage.jsx` — le lancement, l'écran de rotation, la pause et
+  les montées de niveau au doigt ;
+- `src/games/souls.css` — la couche plein écran, la manette, l'écran de
+  rotation et les boutons de niveau ;
+- `android/app/src/main/java/dz/letsplay/officiel/MainActivity.java` — le pont
+  `setGameOrientation('landscape' | 'auto')` (l'activité passe en
+  `SCREEN_ORIENTATION_SENSOR_LANDSCAPE`, puis reprend l'orientation du
+  téléphone en quittant la page ; le manifeste n'est volontairement pas épinglé,
+  pour que le reste du site suive le téléphone).
+
+### Vérifications
+
+```bash
+node --test tests/souls-touch.test.js tests/souls-landscape.test.js   # la géométrie et l'orientation (pur)
+npm run check:souls-mobile    # la page dans jsdom (moteur 3D doublé), téléphone simulé
+```
+
+Le calcul du stick et le module d'orientation se testent sans navigateur
+(`tests/souls-touch.test.js`, `tests/souls-landscape.test.js`). La vérification
+de la page remplace le moteur 3D par une doublure (`scripts/souls-world-stub.jsx`)
+et simule un téléphone (écran étroit, `(pointer: coarse)`, verrou d'orientation,
+pont Android, plein écran) : elle déroule le lancement, la manette, les envois au
+moteur, la pause et la sortie de page, puis vérifie qu'un ordinateur ne voit
+rien de tout ça. Elle ne dit rien du rendu réel : pour cela, ouvrir le jeu dans
+un vrai navigateur (`npm run dev`), ou l'APK sur un téléphone, et le coucher.
+
 ## Vice City Rush : 5 tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
