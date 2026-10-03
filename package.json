@@ -37,6 +37,8 @@
     "check:souls-stage": "node scripts/souls-stage-check.mjs",
     "check:souls-throne": "node scripts/souls-throne-check.mjs",
     "check:souls-level": "node scripts/souls-level-check.mjs",
+    "check:souls-touch": "node --test tests/souls-touch.test.js tests/souls-landscape.test.js",
+    "check:souls-mobile": "node scripts/souls-mobile-check.mjs",
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",
     "check:mirage-cup": "node scripts/mirage-cup-check.mjs",
     "check:mirage-fullscreen": "node scripts/mirage-fullscreen-check.mjs",

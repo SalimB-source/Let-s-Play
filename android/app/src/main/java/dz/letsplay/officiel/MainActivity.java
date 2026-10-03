@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Insets;
@@ -283,7 +284,7 @@ public class MainActivity extends Activity {
         callAudioRouted = false;
     }
 
-    /** Pont appelé par le site : `LetsPlayAndroid.setCallAudio(true|false)`. */
+    /** Ponts appelés par le site : `LetsPlayAndroid.setCallAudio` et `setGameOrientation`. */
     private final class CallAudioBridge {
         @JavascriptInterface
         public void setCallAudio(boolean active) {
@@ -292,6 +293,34 @@ public class MainActivity extends Activity {
                     routeCallToSpeaker();
                 } else {
                     restoreAudioRoute();
+                }
+            });
+        }
+
+        /**
+         * Couche l'activité le temps d'un jeu (La Cendre : `/jeu/la-cendre`),
+         * ou lui rend l'orientation du téléphone.
+         *
+         * `SCREEN_ORIENTATION_SENSOR_LANDSCAPE` suit le capteur : le joueur
+         * peut tenir le téléphone dans un sens ou dans l'autre, l'écran reste
+         * couché. Le manifeste n'est **pas** verrouillé, exprès : le reste du
+         * site (actus, vidéos, messagerie) doit continuer de suivre le
+         * téléphone, et l'application se contente de ce pont — la WebView n'a
+         * pas toujours la Screen Orientation API, et l'activité est de toute
+         * façon la seule à pouvoir tourner l'écran de force.
+         *
+         * Le site appelle `setGameOrientation("auto")` en quittant la page de
+         * jeu : l'orientation redevient celle du téléphone (celle du capteur,
+         * ou celle bloquée par le joueur si la rotation automatique est
+         * désactivée).
+         */
+        @JavascriptInterface
+        public void setGameOrientation(String mode) {
+            runOnUiThread(() -> {
+                if ("landscape".equals(mode)) {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+                } else {
+                    setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
                 }
             });
         }

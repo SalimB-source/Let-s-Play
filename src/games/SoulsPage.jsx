@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import SoulsWorld from './SoulsWorld';
+import SoulsTouchControls from './SoulsTouchControls';
+import FullscreenIcon from './FullscreenIcon';
+import { nativeFullscreenElement } from './gameFullscreen';
+import useGameFullscreen from './useGameFullscreen';
+import useGameLandscape from './useGameLandscape';
 import './souls.css';
 
 /**
@@ -9,6 +14,13 @@ import './souls.css';
  * Le monde 3D est monté en permanence derrière les overlays, comme sur
  * Mirage Rush ; le pointer lock de la souris est demandé dans les gestes
  * utilisateur (clic) avec repli « glisser pour regarder ».
+ *
+ * Téléphone et application : le jeu **se lance en paysage** — la manette
+ * (stick à gauche, boutons à droite) ne tient pas dans une main verticale.
+ * `useGameLandscape` demande l'écran couché (verrou navigateur, pont Android)
+ * et prévient le joueur quand l'appareil ne peut pas obéir (iPhone, Firefox) ;
+ * `useGameFullscreen` ouvre le plein écran de base, dont Chrome Android a
+ * besoin pour honorer le verrou d'orientation.
  */
 
 const EMPTY_HUD = {
@@ -37,6 +49,25 @@ const KEYS = [
   { keys: ['ÉCHAP'], label: 'libérer la souris' },
 ];
 
+/** La même légende, pour les doigts — affichée sur écran tactile. */
+const TOUCH_HINTS = [
+  { keys: ['STICK'], label: 'se déplacer — à fond, courir' },
+  { keys: ['GLISSE'], label: 'regarder autour' },
+  { keys: ['⚔', '⚒'], label: 'attaque légère / lourde' },
+  { keys: ['⟳'], label: 'esquive (i-frames)' },
+  { keys: ['◎'], label: 'verrouiller la cible' },
+  { keys: ['⚗'], label: 'potion de vie (3 gorgées)' },
+  { keys: ['✦'], label: 'interagir : feu, coffre, portail' },
+  { keys: ['❚❚'], label: 'pause — les niveaux s’y montent' },
+];
+
+/** Statistiques de la pause tactile (mêmes commandes que U / I / O). */
+const LEVEL_STATS = [
+  { stat: 'vit', label: 'VIT', title: 'Vitalité — plus de PV' },
+  { stat: 'end', label: 'END', title: 'Endurance — plus de souffle' },
+  { stat: 'str', label: 'PUI', title: 'Puissance — plus de dégâts' },
+];
+
 export default function SoulsPage() {
   const [phase, setPhase] = useState('intro'); // intro | playing | paused | dead
   const [hud, setHud] = useState(EMPTY_HUD);
@@ -48,11 +79,34 @@ export default function SoulsPage() {
   const actionsRef = useRef(null);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
+  const shellRef = useRef(null);
+  // La sortie « native » du plein écran (Échap, geste retour) est branchée sur
+  // la pause plus bas, une fois `pauseGame` défini : d'où la référence.
+  const nativeExitRef = useRef(null);
+
+  const {
+    active: immersive,
+    enter: enterImmersive,
+    toggle: toggleImmersive,
+  } = useGameFullscreen(shellRef, { onNativeExit: () => nativeExitRef.current?.() });
+
+  // Paysage : téléphone / application. `isTouch` commande la manette à
+  // l'écran, `showRotationPrompt` l'écran « tournez votre appareil ».
+  const {
+    isTouch,
+    landscapeDevice,
+    showRotationPrompt,
+    request: requestLandscape,
+    dismissRotation,
+  } = useGameLandscape();
 
   const launch = useCallback(() => {
+    // Dans le geste : l'écran se couche (le plein écran natif est demandé au
+    // premier geste, voir l'effet plus bas) puis la partie démarre.
+    requestLandscape();
     setPhase('playing');
     actionsRef.current?.('launch');
-  }, []);
+  }, [requestLandscape]);
 
   const pauseGame = useCallback(() => {
     setPhase((current) => (current === 'playing' ? 'paused' : current));
@@ -93,6 +147,18 @@ export default function SoulsPage() {
   const handleAutoPause = useCallback(() => {
     if (phaseRef.current === 'playing') pauseGame();
   }, [pauseGame]);
+  nativeExitRef.current = handleAutoPause;
+
+  // ── Manette tactile : la page transmet les gestes au monde ─────────
+  const handleTouchMove = useCallback((vector) => {
+    actionsRef.current?.('touchMove', vector);
+  }, []);
+  const handleTouchAction = useCallback((action) => {
+    actionsRef.current?.('touchAction', action);
+  }, []);
+  const levelUp = useCallback((stat) => {
+    actionsRef.current?.('level', stat);
+  }, []);
 
   useEffect(() => {
     const onPopState = () => { if (document.pointerLockElement) document.exitPointerLock?.(); };
@@ -100,7 +166,43 @@ export default function SoulsPage() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
+  // ── Plein écran & paysage ──────────────────────────────────────────
+  // Téléphone et application : le jeu s'ouvre plein écran (couche fixe, posée
+  // sans geste) et l'écran demande à se coucher. Sur ordinateur, la page garde
+  // son cadre : le bouton de la barre ouvre le plein écran si on le veut.
+  useEffect(() => {
+    if (!landscapeDevice) return;
+    enterImmersive({ pinned: true, native: false });
+  }, [landscapeDevice, enterImmersive]);
+
+  // Le navigateur n'ouvre le vrai plein écran que dans un geste. Le premier
+  // clic ou la première touche le demande — et c'est aussi le geste qui peut
+  // verrouiller l'orientation en paysage (Chrome Android l'exige).
+  useEffect(() => {
+    if (!immersive) return undefined;
+    const upgrade = (event) => {
+      requestLandscape();
+      if (nativeFullscreenElement()) return;
+      const tag = event.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      enterImmersive({ pinned: true });
+    };
+    window.addEventListener('pointerdown', upgrade, true);
+    window.addEventListener('keydown', upgrade, true);
+    return () => {
+      window.removeEventListener('pointerdown', upgrade, true);
+      window.removeEventListener('keydown', upgrade, true);
+    };
+  }, [immersive, enterImmersive, requestLandscape]);
+
+  // « Tournez votre appareil » : l'écran bloque la vue, la partie passe en
+  // pause plutôt que d'être jouée à l'aveugle.
+  useEffect(() => {
+    if (showRotationPrompt && phaseRef.current === 'playing') pauseGame();
+  }, [showRotationPrompt, pauseGame]);
+
   const coordsLabel = `${hud.x.toFixed(1)} / ${hud.z.toFixed(1)}`;
+  const keys = isTouch ? TOUCH_HINTS : KEYS;
 
   return (
     <div className="souls-page">
@@ -114,10 +216,25 @@ export default function SoulsPage() {
       </header>
 
       <div className="souls-layout wrap">
-        <section className={`souls-game-shell${phase === 'playing' ? ' is-running' : ''}`} aria-label="Partie de La Cendre">
+        <section
+          ref={shellRef}
+          className={`souls-game-shell${phase === 'playing' ? ' is-running' : ''}${immersive ? ' is-immersive' : ''}`}
+          aria-label="Partie de La Cendre"
+        >
           <div className="souls-game-topbar">
             <div className="souls-game-brand"><span className="souls-brand-ember">✦</span><span>LE CHEMIN DU ROI · LA CENDRE</span></div>
             <div className="souls-game-controls-top">
+              <button
+                type="button"
+                className={`souls-fullscreen-button${immersive ? ' is-on' : ''}`}
+                onClick={toggleImmersive}
+                aria-pressed={immersive}
+                aria-label={immersive ? 'Quitter le plein écran' : 'Passer en plein écran'}
+                title={immersive ? 'Quitter le plein écran' : 'Plein écran'}
+              >
+                <FullscreenIcon exit={immersive} />
+                <span className="souls-fullscreen-label">PLEIN ÉCRAN</span>
+              </button>
               {phase === 'playing' && (
                 <>
                   <span className="souls-live-pill"><i /> EN PARTIE</span>
@@ -133,7 +250,7 @@ export default function SoulsPage() {
             </div>
           </div>
 
-          <div className={`souls-viewport${phase === 'playing' ? ' is-live' : ''}${locked ? ' is-locked' : ''}`}>
+          <div className={`souls-viewport${phase === 'playing' ? ' is-live' : ''}${locked ? ' is-locked' : ''}${isTouch ? ' is-touch' : ''}`}>
             <SoulsWorld
               active={phase === 'playing'}
               epoch={epoch}
@@ -160,7 +277,7 @@ export default function SoulsPage() {
             {phase === 'playing' && locked && <div className="souls-dot" aria-hidden="true" />}
 
             {/* Pastille de status souris — visible tant que la souris n'est pas capturée. */}
-            {phase === 'playing' && !locked && !error && (
+            {phase === 'playing' && !locked && !error && !isTouch && (
               <div className="souls-lock-hint" role="status">
                 CLIQUE POUR CAPTURER LA SOURIS <span>· ou glisse pour regarder</span>
               </div>
@@ -214,16 +331,40 @@ export default function SoulsPage() {
                   </div>
                 )}
                 <div className="souls-hud-coords" title="Zone et position">{hud.zone} · {coordsLabel}</div>
-                <ul className="souls-keys-hint">
-                  {KEYS.map((entry) => (
-                    <li key={entry.label}>
-                      <span className="souls-keys-group">
-                        {entry.keys.map((k) => <kbd key={k}>{k}</kbd>)}
-                      </span>
-                      <span className="souls-keys-label">{entry.label}</span>
-                    </li>
-                  ))}
-                </ul>
+                {!isTouch && (
+                  <ul className="souls-keys-hint">
+                    {KEYS.map((entry) => (
+                      <li key={entry.label}>
+                        <span className="souls-keys-group">
+                          {entry.keys.map((k) => <kbd key={k}>{k}</kbd>)}
+                        </span>
+                        <span className="souls-keys-label">{entry.label}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+
+            {/* La manette : stick à gauche, boutons à droite. */}
+            {isTouch && phase === 'playing' && !error && (
+              <SoulsTouchControls onMove={handleTouchMove} onAction={handleTouchAction} />
+            )}
+
+            {/* Le paysage est demandé à l'ouverture ; quand l'appareil ne peut
+                pas obéir (iPhone, Firefox Android), on le dit et on propose de
+                continuer quand même. */}
+            {showRotationPrompt && (
+              <div className="souls-rotate" role="alertdialog" aria-labelledby="souls-rotate-title">
+                <div className="souls-rotate-phone" aria-hidden="true"><i /></div>
+                <strong id="souls-rotate-title">TOURNEZ VOTRE APPAREIL</strong>
+                <span>
+                  La Cendre se joue en paysage, comme une manette : le stick
+                  tombe sous le pouce gauche, les boutons sous le droit.
+                </span>
+                <button type="button" className="souls-ghost-button" onClick={dismissRotation}>
+                  JOUER QUAND MÊME
+                </button>
               </div>
             )}
 
@@ -251,14 +392,14 @@ export default function SoulsPage() {
                   <p className="souls-overlay-lead">
                     <strong>La boucle des âmes</strong> : tuer rapporte, mourir lâche un{' '}
                     <strong>bloodstain</strong> à récupérer. Ta <strong>potion de vie</strong>{' '}
-                    porte <strong>3 gorgées</strong> (touche <kbd>F</kbd>) — le geste est long,
+                    porte <strong>3 gorgées</strong> — le geste est long,
                     tu ne peux ni frapper ni rouler pendant, et un coup encaissé le coupe net.
                     Elle se recharge au <strong>feu de camp</strong>, qui sert aussi à monter
                     de niveau. Tombé à zéro ? L’écran <strong>VOUS ÊTES MORT</strong> s’affiche :
                     un bouton te ramène à la vie, au dernier feu allumé.
                   </p>
                   <ul className="souls-overlay-keys">
-                    {KEYS.map((entry) => (
+                    {keys.map((entry) => (
                       <li key={entry.label}>
                         <span className="souls-keys-group">
                           {entry.keys.map((k) => <kbd key={k}>{k}</kbd>)}
@@ -270,8 +411,14 @@ export default function SoulsPage() {
                   <button type="button" className="souls-start-button" onClick={launch} disabled={!ready}>
                     {ready ? 'ENTRER DANS LA BRAISE' : 'ALLUMAGE DE LA FLAMME…'}
                   </button>
-                  <div className="souls-overlay-hint">RECOMMANDE : ÉCHAP pour libérer la souris, P pour la pause</div>
-                  <div className="souls-overlay-hint is-soft">PLAYTEST CLAVIER/SOURIS — LE TACTILE ARRIVE EN M4</div>
+                  <div className="souls-overlay-hint">
+                    {isTouch ? 'RECOMMANDÉ : JOUE EN PAYSAGE, LA MANETTE EST À L’ÉCRAN' : 'RECOMMANDÉ : ÉCHAP pour libérer la souris, P pour la pause'}
+                  </div>
+                  <div className="souls-overlay-hint is-soft">
+                    {isTouch
+                      ? 'STICK À GAUCHE · BOUTONS À DROITE · GLISSE L’ÉCRAN POUR REGARDER'
+                      : 'CLAVIER/SOURIS ICI · MANETTE TACTILE SUR TÉLÉPHONE'}
+                  </div>
                 </div>
               </div>
             )}
@@ -307,16 +454,38 @@ export default function SoulsPage() {
                   <h2>PAUSE</h2>
                   <div className="souls-pause-stats">
                     <span>POSITION <b>{coordsLabel}</b></span>
-                    <span>SOURIS <b>{locked ? 'CAPTURÉE' : 'LIBRE'}</b></span>
+                    <span>CONTRÔLES <b>{isTouch ? 'MANETTE' : (locked ? 'SOURIS CAPTURÉE' : 'SOURIS LIBRE')}</b></span>
                     <span>STATUT <b>{hud.moving ? (hud.run ? 'COURSE' : 'MARCHE') : 'IMMOBILE'}</b></span>
                     <span>ÂMES <b>{hud.souls.toLocaleString('fr-FR')}</b></span>
                     <span>NIVEAU <b>{hud.level}</b></span>
                   </div>
+                  {isTouch && (
+                    <div className="souls-level-up">
+                      <span className="souls-level-up-label">MONTER DE NIVEAU — AU FEU DE CAMP</span>
+                      <div className="souls-level-up-row">
+                        {LEVEL_STATS.map((entry) => (
+                          <button
+                            key={entry.stat}
+                            type="button"
+                            className="souls-ghost-button"
+                            title={entry.title}
+                            onClick={() => levelUp(entry.stat)}
+                          >
+                            {entry.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="souls-overlay-actions">
                     <button type="button" className="souls-start-button" onClick={resumeGame}>▶ REPRENDRE</button>
                     <button type="button" className="souls-ghost-button" onClick={restartGame}>↻ RECOMMENCER</button>
                   </div>
-                  <div className="souls-overlay-hint">P pour reprendre · ÉCHAP puis clic pour reprendre la souris</div>
+                  <div className="souls-overlay-hint">
+                    {isTouch
+                      ? '❚❚ pour reprendre · les niveaux se montent au feu de camp'
+                      : 'P pour reprendre · ÉCHAP puis clic pour reprendre la souris'}
+                  </div>
                 </div>
               </div>
             )}
