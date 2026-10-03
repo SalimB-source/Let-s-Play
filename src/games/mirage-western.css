@@ -34,19 +34,38 @@
   --w-paper: #f4e3c0;
   --w-paper-2: #e7cfa4;
   --w-paper-3: #d5b98a;
-  --w-ink: #3b2414;
-  --w-ink-soft: rgba(59, 36, 20, .74);
-  --w-ink-dim: rgba(59, 36, 20, .52);
+  /* Encres de lecture sur papier. Trois niveaux seulement, tous lisibles sur
+     le papier le plus foncé de la feuille (≈ #e2cb9f) : le gros du texte,
+     les petits libellés, puis le décor (filets, puces) qui n'a rien à dire. */
+  --w-ink: #33200f;
+  --w-ink-soft: rgba(48, 28, 14, .88);
+  --w-ink-dim: rgba(48, 28, 14, .82);
+  --w-ink-faint: rgba(48, 28, 14, .55);
   --w-leather: #2c1a11;
   --w-leather-2: #190e07;
   --w-wood: #55341e;
   --w-wood-2: #38200f;
   --w-brass: #c9a227;
   --w-brass-2: #8b6914;
+  /* Bas des plaques de laiton : assez clair pour porter des lettres brunes
+     (le laiton sombre d'origine tombait à 3,4:1 sous « LANCER LA PARTIE »). */
+  --w-brass-deep: #a8801c;
+  --w-brass-ink: #4a3508;                /* laiton lisible sur papier */
   --w-brass-soft: rgba(201, 162, 39, .34);
-  --w-rust: #a8342a;
+  --w-rust: #a8342a;                     /* aplats, bordures, tampons */
   --w-rust-deep: #79221a;
+  --w-rust-ink: #8a2a20;                 /* rouge lisible sur papier */
+  --w-rust-bright: #e39a86;              /* rouge lisible sur cuir */
   --w-sage: #76854f;
+  --w-sage-bright: #a9bb7a;              /* vert lisible sur cuir */
+  /* Encres claires du cuir : même hiérarchie que le papier. */
+  --w-cream: #f6e6c4;
+  --w-cream-soft: rgba(246, 230, 198, .86);
+  --w-cream-dim: rgba(246, 230, 198, .74);
+  /* Texte d'invite des champs. Le navigateur ne le colore pas tout seul de
+     façon fiable : sans règle explicite, un « Ton pseudo… » gris par défaut
+     disparaîtrait sur le cuir sombre du salon. */
+  --w-cream-placeholder: rgba(246, 230, 198, .78);
   --w-rope: #c2a06a;
   --w-font-poster: 'Rye', 'Orbitron', Georgia, 'Times New Roman', serif;
   --w-font-type: 'Special Elite', 'Courier New', monospace;
@@ -65,14 +84,17 @@
   --mirage-radius-sm: 4px;
 
   /* ── La feuille : papier jauni, fibre, taches, soleil ─────────────── */
+  /* Le bas de la feuille reste le coin le plus foncé : les taches et le
+     gradient s'arrêtent sur un papier encore clair, pour que l'encre brune
+     du pied de page tienne au moins 4,5:1 partout. */
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(255, 250, 232, .55), transparent 62%),
-    radial-gradient(38% 30% at 12% 22%, rgba(139, 105, 46, .16), transparent 70%),
-    radial-gradient(30% 26% at 88% 64%, rgba(120, 84, 40, .14), transparent 72%),
-    radial-gradient(26% 22% at 34% 92%, rgba(146, 110, 52, .12), transparent 74%),
+    radial-gradient(38% 30% at 12% 22%, rgba(139, 105, 46, .13), transparent 70%),
+    radial-gradient(30% 26% at 88% 64%, rgba(120, 84, 40, .11), transparent 72%),
+    radial-gradient(26% 22% at 34% 92%, rgba(146, 110, 52, .1), transparent 74%),
     repeating-linear-gradient(92deg, rgba(122, 88, 44, .055) 0 1px, transparent 1px 4px),
     repeating-linear-gradient(2deg, rgba(122, 88, 44, .045) 0 1px, transparent 1px 5px),
-    linear-gradient(178deg, #f7ead0 0%, #ecd8b1 46%, #dcc298 100%);
+    linear-gradient(178deg, #f8ecd4 0%, #eeddb8 46%, #e2cb9f 100%);
   color: var(--w-ink);
 }
 
@@ -81,7 +103,7 @@
    ════════════════════════════════════════════════════════════════════ */
 .mirage-heading { align-items: center; gap: 20px; padding: 0 0 14px; }
 .mirage-eyebrow {
-  color: var(--w-rust);
+  color: var(--w-rust-ink);
   font-family: var(--w-font-type);
   letter-spacing: .22em;
 }
@@ -130,7 +152,7 @@
 .mirage-poster::before { left: 8px; }
 .mirage-poster::after { right: 8px; }
 .mirage-poster-word {
-  color: var(--w-rust);
+  color: var(--w-rust-ink);
   font: 700 10px var(--w-font-type);
   letter-spacing: .34em;
   text-transform: uppercase;
@@ -148,7 +170,7 @@
   letter-spacing: .2em;
   text-transform: uppercase;
 }
-.mirage-poster-reward b { color: var(--w-rust); font-weight: 700; }
+.mirage-poster-reward b { color: var(--w-rust-ink); font-weight: 700; }
 
 /* ════════════════════════════════════════════════════════════════════
    2. LA COQUE — cadre de bois, barre de cuir
@@ -283,13 +305,14 @@
   align-items: center;
   gap: 2px;
   padding: 10px 16px;
-  border: 3px solid rgba(168, 52, 42, .82);
+  border: 3px solid rgba(168, 52, 42, .85);
   border-radius: 4px;
-  color: rgba(168, 52, 42, .92);
+  background: rgba(244, 227, 192, .92);
+  color: var(--w-rust-ink);
   text-align: center;
+  box-shadow: 0 6px 18px rgba(20, 10, 3, .35);
   transform: rotate(-7deg);
-  mix-blend-mode: multiply;
-  opacity: .88;
+  opacity: .95;
   pointer-events: none;
   transition: opacity .3s;
 }
@@ -321,28 +344,28 @@
     inset 0 1px rgba(255, 253, 244, .8);
 }
 .mirage-hud-card small {
-  color: rgba(59, 36, 20, .6);
+  color: var(--w-ink-dim);
   font-family: var(--w-font-type);
   letter-spacing: .2em;
 }
-.mirage-hud-card strong { color: var(--w-rust); font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-hud-card strong { color: var(--w-rust-ink); font-family: var(--w-font-poster); font-weight: 400; }
 .mirage-hud-card > span { color: var(--w-ink-soft); font-family: var(--w-font-type); }
 .mirage-hud-streak strong { color: var(--w-ink); }
-.mirage-hud-streak > span { color: var(--w-rust); }
+.mirage-hud-streak > span { color: var(--w-rust-ink); }
 .mirage-hud-streak > span i { color: rgba(59, 36, 20, .22); }
 .mirage-chip {
   border-radius: 3px;
   font-family: var(--w-font-type);
   letter-spacing: .1em;
 }
-.mirage-chip.is-gem { background: rgba(59, 36, 20, .08); border-color: rgba(59, 36, 20, .3); color: #7a4a12; }
+.mirage-chip.is-gem { background: rgba(59, 36, 20, .08); border-color: rgba(59, 36, 20, .3); color: var(--w-brass-ink); }
 .mirage-chip.is-power-ready {
   background: linear-gradient(135deg, #f6dfa0, var(--w-brass));
   border-color: #fff4d0;
   color: #2c1a0c;
   box-shadow: 0 0 12px rgba(201, 162, 39, .55);
 }
-.mirage-chip.is-slow.is-mud { background: rgba(120, 78, 40, .22); border-color: rgba(120, 78, 40, .5); color: #6b441f; }
+.mirage-chip.is-slow.is-mud { background: rgba(120, 78, 40, .22); border-color: rgba(120, 78, 40, .5); color: var(--w-ink); }
 .mirage-clock { font-family: var(--w-font-poster); font-weight: 400; color: #fff3d6; text-shadow: 0 2px 10px rgba(25, 12, 4, .9); }
 .mirage-clock small { font-family: var(--w-font-type); color: rgba(255, 240, 210, .8); }
 .mirage-rank-badge {
@@ -386,7 +409,8 @@
   font-family: var(--w-font-type);
   letter-spacing: .26em;
 }
-.mirage-overlay-kicker span { color: var(--w-pink, var(--w-rust)); }
+.mirage-overlay-kicker span { color: var(--w-rust-ink); }
+.mirage-countdown-overlay .mirage-overlay-kicker span { color: #ffd98a; }
 
 /* L'intro est une AFFICHE : papier plein cadre, encre brune, tampon rouge. */
 .mirage-intro-overlay {
@@ -397,7 +421,7 @@
   color: var(--w-ink);
   box-shadow: inset 0 0 0 6px rgba(46, 27, 13, .92), inset 0 0 0 7px rgba(201, 162, 39, .3);
 }
-.mirage-intro-overlay .mirage-overlay-kicker { color: var(--w-rust); }
+.mirage-intro-overlay .mirage-overlay-kicker { color: var(--w-rust-ink); }
 .mirage-intro-overlay h2 {
   color: var(--w-ink);
   font-family: var(--w-font-poster);
@@ -405,20 +429,20 @@
   letter-spacing: .03em;
   text-shadow: 0 1px 0 rgba(255, 252, 240, .8);
 }
-.mirage-intro-overlay h2 em { color: var(--w-rust); }
+.mirage-intro-overlay h2 em { color: var(--w-rust-ink); }
 .mirage-intro-overlay > p { color: var(--w-ink-soft); }
 .mirage-intro-lead { color: var(--w-ink-soft); }
 .mirage-overlay-hint { color: var(--w-ink-dim); font-family: var(--w-font-type); letter-spacing: .2em; }
-.mirage-intro-overlay .mirage-overlay-hint { color: rgba(59, 36, 20, .5); }
+.mirage-intro-overlay .mirage-overlay-hint { color: var(--w-ink-dim); }
 .mirage-intro-overlay .mirage-overlay-hint span { color: var(--w-rust); }
 .mirage-selected-mode-pill {
   border-radius: 3px;
   border-color: rgba(59, 36, 20, .45);
   background: rgba(59, 36, 20, .07);
-  color: #6b4412;
+  color: var(--w-brass-ink);
   font-family: var(--w-font-type);
 }
-.mirage-selected-mode-pill i { color: var(--w-rust); }
+.mirage-selected-mode-pill i { color: var(--w-rust-ink); }
 .mirage-secondary-button {
   border-radius: 4px;
   border-color: rgba(59, 36, 20, .45);
@@ -432,7 +456,7 @@
   background: rgba(255, 252, 240, .9);
   color: var(--w-rust);
 }
-.mirage-duel-warning { color: var(--w-rust) !important; }
+.mirage-duel-warning { color: var(--w-rust-ink) !important; }
 .mirage-intro-overlay small { color: var(--w-ink-dim); }
 
 /* Les cartes de mode : quatre petits avis de recherche cloués en grille. */
@@ -456,23 +480,23 @@
 .mirage-mode-copy strong { color: var(--w-ink); font-family: var(--w-font-poster); font-weight: 400; letter-spacing: .02em; }
 .mirage-mode-copy > span { color: var(--w-ink-soft); }
 .mirage-mode-copy small { color: var(--w-ink-dim); font-family: var(--w-font-type); }
-.mirage-mode-symbol { color: var(--w-rust); background: rgba(59, 36, 20, .06); border-radius: 3px; }
-.mirage-mode-picker button[aria-pressed="true"] .mirage-mode-symbol { color: var(--w-rust); background: rgba(168, 52, 42, .1); }
+.mirage-mode-symbol { color: var(--w-rust-ink); background: rgba(59, 36, 20, .06); border-radius: 3px; }
+.mirage-mode-picker button[aria-pressed="true"] .mirage-mode-symbol { color: var(--w-rust-ink); background: rgba(168, 52, 42, .1); }
 .mirage-mode-cta {
   border-radius: 3px;
-  background: linear-gradient(135deg, var(--w-brass), var(--w-brass-2));
-  color: #221405;
+  background: linear-gradient(135deg, #f0d271, var(--w-brass) 46%, var(--w-brass-deep));
+  color: #1c1103;
   font-family: var(--w-font-type);
   letter-spacing: .16em;
   box-shadow: 0 6px 16px rgba(139, 105, 20, .3);
 }
 .mirage-mode-picker.is-actions .mirage-mode-action:hover .mirage-mode-cta {
-  background: linear-gradient(135deg, #f0d271, var(--w-brass));
+  background: linear-gradient(135deg, #f7e0a0, #d8ae3c);
 }
 .mirage-choice-dot { border-radius: 2px; border-color: rgba(59, 36, 20, .5); }
 .mirage-mode-picker button[aria-pressed="true"] .mirage-choice-dot { background: var(--w-rust); border-color: var(--w-rust); color: #fff3df; }
 .mirage-picker-label { color: var(--w-ink-dim); font-family: var(--w-font-type); letter-spacing: .2em; }
-.mirage-picker-label > span:last-child { color: rgba(59, 36, 20, .38); }
+.mirage-picker-label > span:last-child { color: var(--w-ink-dim); }
 
 /* Les cartes de map : plaques photographiques, cadre de carton. */
 .mirage-map-visual { background: #6b4a2a; }
@@ -494,7 +518,7 @@
 .mirage-map-copy > span { color: var(--w-ink-soft); }
 .mirage-map-copy small { color: var(--w-ink-dim); font-family: var(--w-font-type); }
 .mirage-map-selected { border-top-color: rgba(59, 36, 20, .12); color: var(--w-ink-dim); font-family: var(--w-font-type); }
-.mirage-map-card[aria-pressed="true"] .mirage-map-selected { background: rgba(168, 52, 42, .1); color: var(--w-rust); }
+.mirage-map-card[aria-pressed="true"] .mirage-map-selected { background: rgba(168, 52, 42, .1); color: var(--w-rust-ink); }
 .mirage-stage-locked {
   border-radius: 3px;
   border-color: rgba(59, 36, 20, .4);
@@ -530,8 +554,8 @@
 .mirage-start-button {
   border-radius: 4px;
   border: 1px solid #f0dca0;
-  background: linear-gradient(180deg, #edcd7c, var(--w-brass) 42%, var(--w-brass-2) 100%);
-  color: #241605;
+  background: linear-gradient(180deg, #f0d68d, var(--w-brass) 42%, var(--w-brass-deep) 100%);
+  color: #1c1103;
   font-family: var(--w-font-type);
   letter-spacing: .16em;
   box-shadow: 0 5px 0 rgba(90, 66, 12, .85), 0 12px 26px rgba(139, 105, 20, .35), inset 0 1px rgba(255, 250, 226, .7);
@@ -558,7 +582,7 @@
 .mirage-share-status { color: #ffe6ac; }
 
 /* Raccourcis clavier : touches de machine à écrire. */
-.mirage-keys-hint { color: rgba(59, 36, 20, .62); font-family: var(--w-font-type); }
+.mirage-keys-hint { color: var(--w-ink-dim); font-family: var(--w-font-type); }
 .mirage-keys-hint kbd {
   border-radius: 3px;
   border: 1px solid rgba(59, 36, 20, .45);
@@ -608,11 +632,11 @@
   text-shadow: 0 1px 0 rgba(255, 252, 240, .8);
 }
 .mirage-pause-overlay h2 em,
-.mirage-result-overlay h2 em { color: var(--w-rust); }
+.mirage-result-overlay h2 em { color: var(--w-rust-ink); }
 .mirage-pause-overlay .mirage-overlay-kicker,
-.mirage-result-overlay .mirage-overlay-kicker { color: var(--w-rust); }
+.mirage-result-overlay .mirage-overlay-kicker { color: var(--w-rust-ink); }
 .mirage-pause-overlay .mirage-overlay-hint,
-.mirage-result-overlay .mirage-overlay-hint { color: rgba(59, 36, 20, .5); }
+.mirage-result-overlay .mirage-overlay-hint { color: var(--w-ink-dim); }
 .mirage-result-overlay > p { color: var(--w-ink-soft); }
 .mirage-pause-stats span {
   border-radius: 3px;
@@ -621,7 +645,7 @@
   color: var(--w-ink-dim);
   font-family: var(--w-font-type);
 }
-.mirage-pause-stats b { color: var(--w-rust); font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-pause-stats b { color: var(--w-rust-ink); font-family: var(--w-font-poster); font-weight: 400; }
 .mirage-result-stats span {
   border-radius: 3px;
   border-color: rgba(59, 36, 20, .35);
@@ -630,7 +654,7 @@
   font-family: var(--w-font-type);
 }
 .mirage-final-score {
-  color: var(--w-rust);
+  color: var(--w-rust-ink);
   font-family: var(--w-font-poster);
   font-weight: 400;
   text-shadow: 0 2px 0 rgba(255, 250, 232, .75);
@@ -648,10 +672,10 @@
 .mirage-save-note.is-success { color: #4f6430; }
 .mirage-save-note a { color: var(--w-rust); }
 .mirage-xp-award { color: var(--w-ink-soft); font-family: var(--w-font-type); }
-.mirage-xp-award strong { color: var(--w-rust); }
+.mirage-xp-award strong { color: var(--w-rust-ink); }
 .mirage-xp-award span { color: #4f6430; }
-.mirage-xp-award em { color: var(--w-rust); }
-.mirage-coin-gain { color: #8b6914; }
+.mirage-xp-award em { color: var(--w-rust-ink); }
+.mirage-coin-gain { color: var(--w-brass-ink); }
 .mirage-results-dialog {
   border-radius: 6px;
   background: linear-gradient(178deg, rgba(246, 233, 205, .98), rgba(226, 205, 167, .98));
@@ -660,7 +684,7 @@
 }
 .mirage-results-dialog .mirage-overlay-kicker { color: var(--w-rust); }
 .mirage-results-dialog h2 { color: var(--w-ink); font-family: var(--w-font-poster); font-weight: 400; }
-.mirage-results-dialog .mirage-overlay-hint { color: rgba(59, 36, 20, .5); }
+.mirage-results-dialog .mirage-overlay-hint { color: var(--w-ink-dim); }
 .mirage-game-popup-backdrop { background: rgba(26, 14, 6, .7); }
 .mirage-room-waiting-panel { color: var(--w-ink); }
 .mirage-room-waiting-panel h2 em { color: var(--w-rust); }
@@ -675,7 +699,7 @@
 .mirage-panel-heading h2 { color: #f6e6c4; font-family: var(--w-font-poster); font-weight: 400; letter-spacing: .02em; }
 .mirage-panel-heading h2 em { color: var(--w-brass); }
 .mirage-trophy { color: var(--w-brass); text-shadow: 0 0 14px rgba(201, 162, 39, .35); }
-.mirage-board-subtitle { color: rgba(240, 222, 186, .6); }
+.mirage-board-subtitle { color: var(--w-cream-dim); }
 .mirage-wallet {
   border-radius: 3px;
   border-color: rgba(201, 162, 39, .5);
@@ -714,12 +738,12 @@
   border-color: rgba(201, 162, 39, .28);
   color: #f6e6c4;
 }
-.mirage-board-message small { color: rgba(240, 222, 186, .6); }
+.mirage-board-message small { color: var(--w-cream-dim); }
 .mirage-offline-mark { color: var(--w-brass); }
 .mirage-board-list li { border-radius: 3px; background: rgba(255, 240, 210, .05); }
 .mirage-board-list li.is-rank-1 { background: rgba(201, 162, 39, .14); border-color: rgba(201, 162, 39, .34); }
 .mirage-board-list li.is-mine { border-color: rgba(118, 133, 79, .6); background: rgba(118, 133, 79, .12); }
-.mirage-board-rank { color: rgba(240, 222, 186, .5); font-family: var(--w-font-type); }
+.mirage-board-rank { color: var(--w-cream-dim); font-family: var(--w-font-type); }
 .mirage-board-avatar {
   border-radius: 3px;
   background: linear-gradient(140deg, var(--w-wood), var(--w-rust));
@@ -727,9 +751,9 @@
   font-weight: 400;
 }
 .mirage-board-name { color: rgba(246, 232, 206, .88); }
-.mirage-board-name i { color: var(--w-sage); font-family: var(--w-font-type); }
+.mirage-board-name i { color: var(--w-sage-bright); font-family: var(--w-font-type); }
 .mirage-board-list li > strong { color: #f0cf82; font-family: var(--w-font-type); }
-.mirage-board-footer { border-top-color: rgba(201, 162, 39, .18); color: rgba(240, 222, 186, .45); font-family: var(--w-font-type); }
+.mirage-board-footer { border-top-color: rgba(201, 162, 39, .18); color: var(--w-cream-dim); font-family: var(--w-font-type); }
 .mirage-board-footer i { background: var(--w-brass); box-shadow: none; }
 .mirage-board-footer .is-online i { background: var(--w-sage); box-shadow: 0 0 8px rgba(118, 133, 79, .7); }
 .mirage-board-footer button { color: var(--w-brass); }
@@ -749,7 +773,7 @@
 }
 .mirage-skin-chip:hover:not(:disabled) { border-color: rgba(201, 162, 39, .6); }
 .mirage-skin-chip.is-selected { border-color: var(--w-brass); background: rgba(201, 162, 39, .14); }
-.mirage-skin-chip.is-selected small { color: var(--w-sage); }
+.mirage-skin-chip.is-selected small { color: var(--w-sage-bright); }
 .mirage-skin-stage {
   border-radius: 3px;
   background:
@@ -764,10 +788,10 @@
 .mirage-shop-card.is-cloud-showcase .mirage-skin-name { color: #ffe07a; }
 
 .mirage-rule strong { color: #f8ebcd; }
-.mirage-rule small { color: rgba(240, 222, 186, .58); }
+.mirage-rule small { color: var(--w-cream-dim); }
 .mirage-rule-icon.is-gold { color: var(--w-brass); }
-.mirage-rule-icon.is-red { color: var(--w-rust); }
-.mirage-rule-icon.is-green { color: var(--w-sage); }
+.mirage-rule-icon.is-red { color: var(--w-rust-bright); }
+.mirage-rule-icon.is-green { color: var(--w-sage-bright); }
 .mirage-rule-icon.is-pink { color: #c07a52; }
 .mirage-rule-powers-grid span,
 .mirage-rule-power-pill { border-radius: 3px; }
@@ -779,16 +803,16 @@
   color: rgba(240, 222, 186, .7);
 }
 .mirage-score-tip > span { color: var(--w-brass); font-family: var(--w-font-type); }
-.mirage-community-note { color: rgba(240, 222, 186, .6); }
+.mirage-community-note { color: var(--w-cream-dim); }
 .mirage-community-note > span { color: var(--w-brass); }
 .mirage-community-note strong { color: rgba(246, 232, 206, .86); }
 .mirage-graphics-switch-title { color: #f6e6c4; font-family: var(--w-font-type); letter-spacing: .16em; }
-.mirage-graphics-note { color: rgba(240, 222, 186, .6); }
+.mirage-graphics-note { color: var(--w-cream-dim); }
 .mirage-graphics-choice {
   border-radius: 3px;
   border-color: rgba(201, 162, 39, .28);
   background: rgba(255, 240, 210, .04);
-  color: rgba(246, 232, 206, .78);
+  color: var(--w-cream-soft);
   font-family: var(--w-font-type);
 }
 .mirage-graphics-choice[aria-pressed="true"] { border-color: var(--w-brass); background: rgba(201, 162, 39, .16); color: #ffe1a2; }
@@ -815,7 +839,7 @@
   font-family: var(--w-font-type);
 }
 .mirage-powerup-btn-name { color: #f8ebcd; font-family: var(--w-font-type); }
-.mirage-powerup-count { color: rgba(230, 211, 176, .8); font-family: var(--w-font-type); }
+.mirage-powerup-count { color: var(--w-cream-soft); font-family: var(--w-font-type); }
 .mirage-powerup-progress-bg { background: rgba(15, 8, 3, .7); }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -840,7 +864,7 @@
 .mirage-room-panel .mirage-scoreboard { border-collapse: separate; }
 .mirage-trophy-title { color: var(--w-brass); }
 .mirage-trophy-name { color: #f8ebcd; font-family: var(--w-font-poster); font-weight: 400; }
-.mirage-trophy-lede { color: rgba(240, 222, 186, .68); }
+.mirage-trophy-lede { color: var(--w-cream-dim); }
 .mirage-trophy-panel { border-radius: 4px; }
 .mirage-trophy-fallback-cup { color: var(--w-brass); }
 
@@ -874,8 +898,8 @@
 .mirage-create-room-btn {
   border-radius: 4px;
   border-color: #f0dca0;
-  background: linear-gradient(180deg, #edcd7c, var(--w-brass) 44%, var(--w-brass-2));
-  color: #241605;
+  background: linear-gradient(180deg, #f0d68d, var(--w-brass) 44%, var(--w-brass-deep));
+  color: #1c1103;
   font-family: var(--w-font-type);
   letter-spacing: .14em;
   box-shadow: 0 4px 0 rgba(90, 66, 12, .85), 0 10px 22px rgba(139, 105, 20, .3);
@@ -899,7 +923,7 @@
 }
 .mirage-room-card:hover { border-color: var(--w-brass); transform: translateY(-2px); }
 .mirage-room-card-title { color: #f8ebcd; font-family: var(--w-font-poster); font-weight: 400; }
-.mirage-room-card-meta { color: rgba(240, 222, 186, .66); font-family: var(--w-font-type); }
+.mirage-room-card-meta { color: var(--w-cream-dim); font-family: var(--w-font-type); }
 .mirage-room-card-meta b { color: #ffe1a2; }
 .mirage-join-room-btn {
   border-radius: 3px;
@@ -910,7 +934,7 @@
 }
 .mirage-join-room-btn:hover:not(:disabled) { border-color: var(--w-brass); color: #fff4d6; }
 .mirage-rooms-empty,
-.mirage-room-error { color: rgba(240, 222, 186, .68); }
+.mirage-room-error { color: var(--w-cream-dim); }
 .mirage-browser-header h2 { color: #f6e6c4; font-family: var(--w-font-poster); font-weight: 400; }
 .mirage-browser-header h2 em { color: var(--w-brass); }
 .mirage-form-field select,
@@ -924,9 +948,14 @@
   color: #f8ebcd;
   font-family: var(--w-font-type);
 }
+.mirage-form-field input::placeholder,
+.mirage-room-chat-form input::placeholder,
+.mirage-direct-code-inputs input::placeholder,
+.mirage-room-password-prompt input::placeholder,
+.mirage-pseudo-label input::placeholder { color: var(--w-cream-placeholder); opacity: 1; }
 .mirage-field-label,
 .mirage-form-field small,
-.mirage-direct-code-label { color: rgba(240, 222, 186, .66); font-family: var(--w-font-type); }
+.mirage-direct-code-label { color: var(--w-cream-dim); font-family: var(--w-font-type); }
 .mirage-player-slot-card {
   border-radius: 3px;
   border-color: rgba(201, 162, 39, .3);
@@ -937,7 +966,7 @@
 .mirage-player-slot-card[data-slot="2"] { border-left-color: var(--w-sage); }
 .mirage-player-slot-card[data-slot="3"] { border-left-color: #6b8391; }
 .mirage-player-identity strong { color: #f8ebcd; }
-.mirage-player-mount { color: rgba(240, 222, 186, .62); font-family: var(--w-font-type); }
+.mirage-player-mount { color: var(--w-cream-dim); font-family: var(--w-font-type); }
 .mirage-ready-toggle-btn {
   border-radius: 3px;
   border-color: rgba(201, 162, 39, .4);
@@ -955,12 +984,12 @@
 }
 .mirage-launch-party-btn.is-ready-to-launch {
   border-color: #f0dca0;
-  background: linear-gradient(180deg, #edcd7c, var(--w-brass) 44%, var(--w-brass-2));
-  color: #241605;
+  background: linear-gradient(180deg, #f0d68d, var(--w-brass) 44%, var(--w-brass-deep));
+  color: #1c1103;
   box-shadow: 0 4px 0 rgba(90, 66, 12, .85), 0 12px 26px rgba(139, 105, 20, .34);
 }
 .mirage-launch-party-copy strong { font-family: var(--w-font-poster); font-weight: 400; }
-.mirage-launch-party-copy small { color: rgba(240, 222, 186, .66); }
+.mirage-launch-party-copy small { color: var(--w-cream-soft); }
 .mirage-room-countdown-banner {
   border-radius: 3px;
   border-color: rgba(201, 162, 39, .4);
@@ -980,7 +1009,7 @@
 .mirage-chat-bubble[data-slot="3"] { border-left-color: #6b8391; }
 .mirage-chat-bubble.is-mine { background: rgba(201, 162, 39, .14); }
 .mirage-chat-meta strong { color: #f8ebcd; }
-.mirage-chat-meta time { color: rgba(240, 222, 186, .5); font-family: var(--w-font-type); }
+.mirage-chat-meta time { color: var(--w-cream-dim); font-family: var(--w-font-type); }
 .mirage-chat-quick-chip {
   border-radius: 3px;
   border-color: rgba(201, 162, 39, .28);
@@ -992,8 +1021,8 @@
 .mirage-chat-send-btn {
   border-radius: 3px;
   border-color: rgba(201, 162, 39, .5);
-  background: linear-gradient(180deg, #edcd7c, var(--w-brass-2));
-  color: #241605;
+  background: linear-gradient(180deg, #f0d68d, var(--w-brass) 44%, var(--w-brass-deep));
+  color: #1c1103;
 }
 .mirage-room-code { color: #ffe1a2; }
 .mirage-copy-code-btn { border-radius: 3px; }
@@ -1001,6 +1030,14 @@
 .mirage-add-bot-btn:hover:not(:disabled) { border-color: var(--w-brass); color: #fff0cd; }
 .mirage-share-button.is-danger { border-color: rgba(168, 52, 42, .6); color: #ffbdb2; }
 .mirage-share-button.is-danger:hover { border-color: var(--w-rust); color: #ffd9d1; }
+.mirage-heading .mirage-mode-tabs {
+  border-radius: 3px;
+  border-color: rgba(59, 36, 20, .3);
+  background: rgba(255, 251, 240, .5);
+}
+.mirage-heading .mirage-mode-tab { color: var(--w-ink-soft); }
+.mirage-heading .mirage-mode-tab:hover { color: var(--w-ink); background: rgba(201, 162, 39, .16); }
+.mirage-heading .mirage-mode-tab.is-active { color: #1c1103; }
 .mirage-mode-tabs {
   border-radius: 3px;
   border-color: rgba(201, 162, 39, .28);
@@ -1014,9 +1051,9 @@
 }
 .mirage-mode-tab:hover { color: #fff0cd; background: rgba(201, 162, 39, .12); }
 .mirage-mode-tab.is-active {
-  background: linear-gradient(180deg, #edcd7c, var(--w-brass-2));
+  background: linear-gradient(180deg, #f0d68d, var(--w-brass) 46%, var(--w-brass-deep));
   border-color: #f0dca0;
-  color: #241605;
+  color: #1c1103;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -1031,9 +1068,395 @@
 }
 .mirage-game-foot b { color: var(--w-brass); }
 .mirage-foot-touch { color: var(--w-brass); }
-.mirage-page-footer { color: rgba(59, 36, 20, .5); font-family: var(--w-font-type); }
-.mirage-page-footer a { color: var(--w-rust); }
+.mirage-page-footer { color: var(--w-ink-dim); font-family: var(--w-font-type); }
+.mirage-page-footer a { color: var(--w-rust-ink); }
 .mirage-page-footer i { color: var(--w-ink-dim); }
+
+/* ════════════════════════════════════════════════════════════════════
+   10 bis. COMPLÉMENTS — ce que la refonte avait laissé en chemin
+
+   Deux familles de rattrapage, toutes deux sans effet sur le jeu :
+
+     1. les composants écrits APRÈS l'habillage — interrupteur Graphismes,
+        cartes de coupe, tableau des positions, fenêtre de résultats en
+        ligne, écran du trophée — gardaient les encres du thème sombre :
+        crème sur le papier, ou brune sur le cuir, donc illisibles ;
+     2. les surfaces qui portent une encre pour tout ce qu'elles
+        contiennent la déclarent maintenant explicitement (cuir → encre
+        claire, papier → encre brune), pour que rien n'hérite du mauvais
+        monde : c'était la cause des « #3b2414 sur #392313 ».
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── 10 bis.1 L'encre par défaut de chaque monde ───────────────────────
+   Le cuir porte de la crème, le papier de l'encre brune. Tout ce qui suit
+   hérite de la bonne, au lieu d'hériter de l'encre de la page. */
+.mirage-game-shell,
+.panel-frame,
+.mirage-game-popup,
+.mirage-room-panel { color: var(--w-cream); }
+.mirage-game-topbar > strong,
+.mirage-game-topbar > span { color: var(--w-cream); font-family: var(--w-font-type); letter-spacing: .08em; }
+.mirage-game-topbar > span { color: var(--w-cream-dim); }
+/* Le panneau latéral est un registre : ses titres d'article se lisent en
+   laiton, comme les autres en-têtes du cuir. */
+.panel-frame h2 em { color: var(--w-brass); font-style: normal; }
+.panel-frame .mirage-xp-award { color: var(--w-cream-dim); }
+.panel-frame .mirage-xp-award strong { color: var(--w-brass); }
+.panel-frame .mirage-xp-award span { color: var(--w-sage-bright); }
+.panel-frame .mirage-xp-award em { color: var(--w-rust-bright); }
+.panel-frame .mirage-xp-award .mirage-coin-gain,
+.panel-frame .mirage-xp-award b { color: var(--w-brass); }
+.mirage-room-waiting-panel { color: var(--w-cream); }
+.mirage-room-waiting-panel h2 em { color: var(--w-brass); }
+.mirage-room-waiting-panel p,
+.mirage-room-finished-banner p { color: var(--w-cream-dim); }
+.mirage-room-finished-banner h2 em { color: var(--w-sage-bright); }
+.mirage-room-finished-banner .mirage-waiting-sun {
+  border-color: rgba(118, 133, 79, .6);
+  background: #cfe0a6;
+  color: #2f4a1e;
+  text-shadow: none;
+  box-shadow: 0 0 26px rgba(118, 133, 79, .25), inset 0 0 0 6px rgba(255, 251, 240, .4);
+}
+.mirage-standings-list li { color: var(--w-cream-dim); }
+.mirage-standings-list li > strong { color: var(--w-cream); }
+.mirage-online-status-pill { color: var(--w-cream-soft); }
+.mirage-room-code { color: #ffe1a2; }
+
+/* ── 10 bis.2 L'interrupteur « Graphismes » (ajouté après la refonte) ──
+   Il vit sur les écrans de papier (choix du mode, pause) : encre brune. */
+.mirage-graphics-switch {
+  color: var(--w-cream-soft); font-family: var(--w-font-type);
+}
+.mirage-graphics-switch-title { color: var(--w-cream); }
+.mirage-graphics-switch-title .mirage-graphics-icon { color: var(--w-brass); }
+.mirage-graphics-choices { border-color: rgba(201, 162, 39, .35); background: rgba(20, 11, 5, .5); }
+.mirage-graphics-choice { background: rgba(20, 11, 5, .5); color: var(--w-cream-dim); }
+.mirage-graphics-choice:hover { background: rgba(201, 162, 39, .16); color: #fff0cd; }
+.mirage-graphics-choice.is-active { background: rgba(201, 162, 39, .26); color: #ffe1a2; }
+.mirage-intro-overlay .mirage-graphics-switch,
+.mirage-pause-overlay .mirage-graphics-switch,
+.mirage-result-overlay .mirage-graphics-switch,
+.mirage-results-dialog .mirage-graphics-switch { color: var(--w-ink-soft); }
+.mirage-intro-overlay .mirage-graphics-switch-title,
+.mirage-pause-overlay .mirage-graphics-switch-title,
+.mirage-result-overlay .mirage-graphics-switch-title,
+.mirage-results-dialog .mirage-graphics-switch-title { color: var(--w-ink); }
+.mirage-intro-overlay .mirage-graphics-switch-title .mirage-graphics-icon,
+.mirage-pause-overlay .mirage-graphics-switch-title .mirage-graphics-icon,
+.mirage-result-overlay .mirage-graphics-switch-title .mirage-graphics-icon,
+.mirage-results-dialog .mirage-graphics-switch-title .mirage-graphics-icon { color: var(--w-brass-ink); }
+.mirage-intro-overlay .mirage-graphics-choices,
+.mirage-pause-overlay .mirage-graphics-choices,
+.mirage-result-overlay .mirage-graphics-choices,
+.mirage-results-dialog .mirage-graphics-choices { border-color: rgba(59, 36, 20, .35); background: rgba(255, 251, 240, .5); }
+.mirage-intro-overlay .mirage-graphics-choice,
+.mirage-pause-overlay .mirage-graphics-choice,
+.mirage-result-overlay .mirage-graphics-choice,
+.mirage-results-dialog .mirage-graphics-choice { background: rgba(255, 251, 240, .5); color: var(--w-ink-soft); }
+.mirage-intro-overlay .mirage-graphics-choice + .mirage-graphics-choice,
+.mirage-pause-overlay .mirage-graphics-choice + .mirage-graphics-choice,
+.mirage-result-overlay .mirage-graphics-choice + .mirage-graphics-choice,
+.mirage-results-dialog .mirage-graphics-choice + .mirage-graphics-choice { border-left-color: rgba(59, 36, 20, .28); }
+.mirage-intro-overlay .mirage-graphics-choice:hover,
+.mirage-pause-overlay .mirage-graphics-choice:hover,
+.mirage-result-overlay .mirage-graphics-choice:hover,
+.mirage-results-dialog .mirage-graphics-choice:hover { background: rgba(168, 52, 42, .12); color: var(--w-rust-ink); }
+.mirage-intro-overlay .mirage-graphics-choice.is-active,
+.mirage-pause-overlay .mirage-graphics-choice.is-active,
+.mirage-result-overlay .mirage-graphics-choice.is-active,
+.mirage-results-dialog .mirage-graphics-choice.is-active { background: rgba(201, 162, 39, .26); color: var(--w-ink); }
+.mirage-intro-overlay .mirage-graphics-note,
+.mirage-pause-overlay .mirage-graphics-note,
+.mirage-result-overlay .mirage-graphics-note,
+.mirage-results-dialog .mirage-graphics-note { color: var(--w-ink-dim); }
+
+/* ── 10 bis.3 Cartes de coupe — des avis de recherche, comme les pistes ─
+   Elles étaient restées en verre violet du thème sombre : sur le papier de
+   l'écran de choix, elles juraient. */
+.mirage-cup-card {
+  --cup-trophy-accent: var(--w-brass-ink);
+  border-color: rgba(59, 36, 20, .38);
+  border-bottom: 4px solid var(--w-brass-2);
+  background: linear-gradient(180deg, rgba(252, 245, 228, .97), rgba(233, 214, 178, .97));
+  color: var(--w-ink);
+  box-shadow: 0 6px 16px rgba(59, 36, 20, .18), inset 0 0 0 3px rgba(255, 251, 240, .55);
+}
+.mirage-cup-card::before { background: none; }
+.mirage-cup-card:hover:not(:disabled) { border-color: var(--w-brass-2); box-shadow: 0 8px 0 rgba(59, 36, 20, .2), 0 14px 26px rgba(59, 36, 20, .26); }
+.mirage-cup-card[aria-pressed="true"] {
+  border-color: var(--w-rust);
+  border-bottom-color: var(--w-rust);
+  box-shadow: inset 0 0 0 3px rgba(255, 251, 240, .7), 0 0 0 2px rgba(168, 52, 42, .26), 0 8px 22px rgba(59, 36, 20, .24);
+  filter: none;
+}
+.mirage-cup-card.is-winds { --cup-trophy-accent: #17545e; }
+.mirage-cup-card.is-worldtour { --cup-trophy-accent: #2f5636; }
+.mirage-cup-card.is-legends { --cup-trophy-accent: var(--w-rust-ink); }
+.mirage-cup-card.is-locked {
+  opacity: 1;
+  border-color: rgba(59, 36, 20, .26);
+  border-bottom-color: rgba(59, 36, 20, .3);
+  background: linear-gradient(180deg, rgba(240, 231, 212, .96), rgba(215, 200, 172, .96));
+  filter: saturate(.75);
+}
+.mirage-cup-emblem {
+  border-color: rgba(95, 70, 12, .38);
+  background: radial-gradient(circle at 50% 30%, rgba(201, 162, 39, .34), rgba(201, 162, 39, .08));
+  box-shadow: inset 0 1px 0 rgba(255, 251, 240, .7), 0 3px 0 rgba(59, 36, 20, .16);
+}
+.mirage-cup-emblem svg { filter: drop-shadow(0 2px 4px rgba(59, 36, 20, .3)); }
+.mirage-cup-card.is-locked .mirage-cup-emblem svg { opacity: .45; filter: grayscale(.7); }
+.mirage-cup-lock { color: var(--w-ink); filter: none; }
+.mirage-cup-card.is-locked .mirage-choice-dot { border-color: rgba(59, 36, 20, .4); background: rgba(59, 36, 20, .08); color: var(--w-ink); }
+.mirage-cup-card.is-locked .mirage-cup-reward { border-color: rgba(59, 36, 20, .28); }
+.mirage-cup-card-title strong { color: var(--w-ink); font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-cup-card-title span { color: var(--w-ink-soft); }
+.mirage-cup-card-title small { color: var(--cup-trophy-accent); font-family: var(--w-font-type); }
+.mirage-cup-reward {
+  border-color: rgba(139, 105, 20, .5);
+  background: linear-gradient(125deg, rgba(201, 162, 39, .2), rgba(255, 251, 240, .4));
+  box-shadow: inset 0 1px 0 rgba(255, 251, 240, .7);
+  animation: none;
+}
+.mirage-cup-reward-copy > small { color: var(--w-brass-ink); font-family: var(--w-font-type); }
+.mirage-cup-reward-copy > strong { color: var(--w-rust-ink); text-shadow: none; font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-cup-reward-copy > strong i { color: var(--w-brass-ink); }
+.mirage-cup-reward-copy > em { color: var(--w-ink-dim); font-family: var(--w-font-type); }
+.mirage-cup-card-action { border-top-color: rgba(59, 36, 20, .16); color: var(--w-ink-soft); font-family: var(--w-font-type); }
+.mirage-cup-card-action b {
+  background: linear-gradient(145deg, #f0d271, var(--w-brass-deep));
+  color: #1c1103;
+  box-shadow: 0 3px 0 rgba(90, 66, 12, .7);
+}
+.mirage-cup-card[aria-pressed="true"] .mirage-cup-card-action { color: var(--w-rust-ink); }
+/* La pastille cochée est un sceau de laiton : lettres brunes sur laiton clair. */
+.mirage-cup-card[aria-pressed="true"] .mirage-choice-dot {
+  background: var(--w-brass);
+  border-color: var(--w-brass-2);
+  color: #1c1103;
+}
+.mirage-cup-card.is-locked .mirage-cup-card-action { color: var(--w-ink-soft); }
+.mirage-cup-card.is-locked .mirage-cup-card-action b { background: rgba(59, 36, 20, .1); color: var(--w-ink); box-shadow: none; }
+
+/* ── 10 bis.4 Classement de la coupe (écran d'arrivée de la coupe) ───── */
+.mirage-cup-row { border-color: rgba(59, 36, 20, .22); background: rgba(255, 251, 240, .6); }
+.mirage-cup-row.is-me { border-color: var(--w-rust); background: linear-gradient(100deg, rgba(168, 52, 42, .16), rgba(255, 251, 240, .5)); }
+.mirage-cup-row.is-leader .mirage-cup-total b { color: var(--w-rust-ink); text-shadow: none; }
+.mirage-cup-rank { border-color: rgba(59, 36, 20, .28); background: rgba(255, 251, 240, .6); color: var(--w-ink-soft); }
+.mirage-cup-name strong { color: var(--w-ink); }
+.mirage-cup-name small { color: var(--w-ink-dim); }
+.mirage-cup-total b { color: var(--w-ink); }
+.mirage-cup-total small { color: var(--w-ink-dim); }
+.mirage-cup-gain { color: #2f4a1e; }
+/* Le calice de la coupe s'affiche sur la piste 3D : étiquette de cuir, pas de papier. */
+.mirage-hud .mirage-hud-cup .mirage-chip {
+  background: rgba(20, 11, 5, .62);
+  border-color: rgba(201, 162, 39, .55);
+  color: #ffe1a2;
+}
+.mirage-cup-gained strong { color: var(--w-rust-ink); text-shadow: none; font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-cup-gained span { color: var(--w-ink-soft); }
+.mirage-cup-progress li { border-color: rgba(59, 36, 20, .22); background: rgba(255, 251, 240, .55); color: var(--w-ink-dim); }
+.mirage-cup-progress li b { background: rgba(59, 36, 20, .1); color: var(--w-ink); }
+.mirage-cup-progress li.is-done { border-color: rgba(118, 133, 79, .6); color: #3f5a2a; }
+.mirage-cup-progress li.is-done b { background: var(--w-sage); color: #f6f7e6; }
+.mirage-cup-progress li.is-next { border-color: var(--w-rust); color: var(--w-rust-ink); }
+.mirage-cup-name-field { border-color: rgba(59, 36, 20, .3); background: rgba(255, 251, 240, .55); }
+.mirage-cup-name-field > span { color: var(--w-ink-dim); }
+.mirage-cup-name-field input { border-color: rgba(59, 36, 20, .35); background: rgba(255, 252, 243, .8); color: var(--w-ink); }
+.mirage-cup-name-field input::placeholder { color: var(--w-ink-dim); opacity: 1; }
+.mirage-cup-name-field input:focus-visible { outline-color: var(--w-rust); }
+
+/* ── 10 bis.5 Tableau des positions — sur le papier, et sur le cuir ─── */
+.mirage-scoreboard th { color: var(--w-ink-dim); font-family: var(--w-font-type); }
+.panel-frame .mirage-scoreboard th { color: var(--w-cream-dim); }
+.panel-frame .mirage-scoreboard td,
+.panel-frame .mirage-sb-row td { background: rgba(255, 251, 240, .92); }
+.panel-frame .mirage-sb-row.is-pos-1 td { background: rgba(246, 227, 176, .94); border-color: rgba(139, 105, 20, .4); }
+.panel-frame .mirage-sb-row.is-you td { background: rgba(224, 232, 200, .94); border-color: rgba(95, 116, 60, .5); }
+.panel-frame .mirage-sb-row.is-you.is-pos-1 td { background: rgba(240, 219, 164, .95); }
+.mirage-sb-tag {
+  border-color: rgba(59, 36, 20, .28); background: rgba(59, 36, 20, .08); color: var(--w-ink-soft);
+  font-family: var(--w-font-type);
+}
+.mirage-sb-tag.is-you { border-color: rgba(95, 116, 60, .55); background: rgba(118, 133, 79, .22); color: #2f4a1e; }
+.mirage-scoreboard small { color: var(--w-ink-dim); font-family: var(--w-font-type); }
+.mirage-sb-time strong, .mirage-sb-pts strong { color: var(--w-ink); font-family: var(--w-font-type); }
+.mirage-sb-time strong.is-remaining { color: var(--w-ink-soft); }
+.mirage-sb-name { color: var(--w-ink); }
+.mirage-sb-time small.is-live { color: #3f5a2a; }
+.mirage-sb-time small.is-live::before { background: var(--w-sage); }
+
+/* ── 10 bis.6 Fenêtre de résultats (salon et duel en ligne) ─────────── */
+.mirage-results-dialog .mirage-overlay-kicker { color: var(--w-rust-ink); }
+.mirage-results-dialog .mirage-overlay-kicker span { color: var(--w-brass-ink); }
+.mirage-results-dialog h2 em { color: var(--w-rust-ink); }
+.mirage-results-dialog .mirage-xp-award { color: var(--w-ink-soft); }
+.mirage-results-dialog .mirage-xp-award strong { color: var(--w-rust-ink); }
+.mirage-results-dialog .mirage-xp-award span { color: #3f5a2a; }
+.mirage-results-dialog .mirage-coin-gain { color: var(--w-brass-ink); }
+.mirage-results-status {
+  border-color: rgba(59, 36, 20, .3); background: rgba(255, 251, 240, .6); color: var(--w-ink-soft);
+  font-family: var(--w-font-type);
+}
+.mirage-results-status i { background: var(--w-brass); box-shadow: none; }
+.mirage-results-status.is-final { border-color: rgba(118, 133, 79, .55); background: rgba(118, 133, 79, .14); color: #3f5a2a; }
+.mirage-results-status.is-final i { background: var(--w-sage); }
+
+/* ── 10 bis.7 Pistes verrouillées : du papier gris, pas du noir ─────── */
+.mirage-map-card.is-locked {
+  background: linear-gradient(180deg, rgba(240, 231, 212, .97), rgba(214, 199, 171, .97));
+  border-color: rgba(59, 36, 20, .26);
+  opacity: 1;
+}
+.mirage-map-card.is-locked .mirage-map-number,
+.mirage-map-card.is-locked .mirage-map-check { background: rgba(59, 36, 20, .12); color: var(--w-ink); }
+.mirage-map-card.is-locked .mirage-map-copy strong { color: var(--w-ink); }
+.mirage-map-card.is-locked .mirage-map-selected { color: var(--w-ink-dim); }
+/* La plaque de la piste est une photo sépia sombre : le cadenas s'y lit en clair. */
+.mirage-map-card .mirage-map-lock { color: #fff3d6; opacity: 1; text-shadow: 0 2px 6px rgba(20, 10, 3, .95); }
+
+/* ── 10 bis.8 Graphismes baissés : le papier reste du papier ──────────
+   L'option du joueur remplace les fonds des overlays par un aplat sombre
+   (pensé pour le thème d'origine) : sous l'habillage western, cela faisait
+   disparaître l'encre brune. On garde un aplat, mais clair. */
+.mirage-game-shell.is-low-graphics .mirage-overlay:not(.mirage-countdown-overlay) {
+  background: linear-gradient(180deg, #f8ecd4, #e6d0a8);
+}
+.mirage-game-shell.is-low-graphics .mirage-intro-overlay,
+.mirage-game-shell.is-low-graphics .mirage-pause-overlay,
+.mirage-game-shell.is-low-graphics .mirage-result-overlay {
+  background: linear-gradient(180deg, #f8ecd4, #e6d0a8);
+}
+.mirage-game-shell.is-low-graphics .mirage-hud-card { background: linear-gradient(180deg, #f7ebd1, #e2cd9f); }
+.mirage-game-popup-backdrop.is-low-graphics { background: rgba(26, 14, 6, .86); }
+
+/* ── 10 bis.9 Salons : pastilles, badges et avatars du cuir ─────────── */
+.mirage-rooms-count-pill { background: rgba(201, 162, 39, .14); border-color: rgba(201, 162, 39, .4); color: #f0d190; }
+.mirage-room-lock-badge.is-locked { background: rgba(168, 52, 42, .18); border-color: rgba(201, 84, 74, .5); color: #f0b3aa; }
+.mirage-room-lock-badge.is-unlocked { background: rgba(118, 133, 79, .2); border-color: rgba(169, 187, 122, .5); color: #dfe9c4; }
+.mirage-room-stage-badge { background: rgba(201, 162, 39, .12); border-color: rgba(201, 162, 39, .3); color: #f0d190; }
+.mirage-host-tag { background: rgba(201, 162, 39, .22); color: #ffe1a2; }
+.mirage-ready-status-badge.is-ready { background: rgba(118, 133, 79, .2); border-color: rgba(169, 187, 122, .55); color: #dfe9c4; }
+.mirage-ready-status-badge.is-not-ready { background: rgba(168, 52, 42, .16); border-color: rgba(201, 84, 74, .42); color: #f0b3aa; }
+.mirage-chat-badge { background: rgba(118, 133, 79, .18); border-color: rgba(169, 187, 122, .5); color: #dfe9c4; }
+.mirage-pseudo-avatar {
+  background: linear-gradient(140deg, var(--w-wood), var(--w-brass-2));
+  border: 1px solid rgba(201, 162, 39, .4);
+  color: #fff2cf;
+  font-family: var(--w-font-poster);
+  font-weight: 400;
+}
+.mirage-pseudo-label { color: var(--w-cream-dim); }
+.mirage-add-bot-btn,
+.mirage-chat-quick-chip { color: var(--w-cream-soft); }
+.mirage-refresh-rooms-btn { color: var(--w-brass); }
+.mirage-share-button.is-danger { border-color: rgba(201, 84, 74, .6); color: #ffc9bf; }
+
+/* ── 10 bis.10 Écran du trophée : cuir, laiton et papier ──────────────
+   Il restait violet (thème d'origine) alors que toute la page est passée
+   au saloon : on garde une scène sombre — le trophée s'y détache — mais en
+   cuir et bois, avec le palmarès sur papier comme les autres écrans. */
+.mirage-trophy-screen {
+  color: var(--w-cream);
+  background: radial-gradient(75% 70% at 50% 54%, #4a2b15 0%, #291509 56%, #140a04 100%);
+}
+.mirage-trophy-screen[data-trophy="winds"] { background: radial-gradient(75% 70% at 50% 54%, #3d4a48 0%, #212c2e 56%, #0f1618 100%); }
+.mirage-trophy-screen[data-trophy="worldtour"] { background: radial-gradient(75% 70% at 50% 54%, #454a2b 0%, #262b16 56%, #12150a 100%); }
+.mirage-trophy-screen[data-trophy="legends"] { background: radial-gradient(75% 70% at 50% 54%, #4a2b25 0%, #2b1512 56%, #150a08 100%); }
+.mirage-trophy-rays { opacity: .3; filter: sepia(.6) saturate(.8); }
+/* Lettres de laiton massif : le dégradé du thème d'origine se lit mal sur le
+   cuir, et `background-clip: text` rendait la mesure de contraste trompeuse. */
+.mirage-trophy-title {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: 0 4px 18px rgba(10, 4, 2, .8);
+}
+.mirage-trophy-panel {
+  border-color: rgba(201, 162, 39, .42);
+  background: linear-gradient(178deg, rgba(246, 233, 205, .97), rgba(224, 203, 166, .97));
+  color: var(--w-ink);
+  box-shadow: 0 18px 44px rgba(10, 5, 2, .55), inset 0 0 0 4px rgba(46, 27, 13, .85), inset 0 0 0 5px rgba(201, 162, 39, .3);
+  backdrop-filter: none;
+}
+.mirage-trophy-screen.is-player-win .mirage-trophy-panel { border-color: var(--w-rust); box-shadow: 0 18px 44px rgba(10, 5, 2, .55), inset 0 0 0 4px rgba(46, 27, 13, .85), inset 0 0 0 5px rgba(201, 162, 39, .34); }
+.mirage-trophy-design { color: var(--w-brass-ink); font-family: var(--w-font-type); }
+.mirage-trophy-winner small { color: var(--w-rust-ink); font-family: var(--w-font-type); }
+.mirage-trophy-name { color: var(--w-ink); }
+.mirage-trophy-crown { color: var(--w-rust-ink); }
+.mirage-trophy-lede { color: var(--w-ink-soft); }
+.mirage-trophy-lede b { color: var(--w-rust-ink); }
+.mirage-trophy-purse { border-color: rgba(139, 105, 20, .5); color: var(--w-ink-soft); }
+.mirage-trophy-purse > span, .mirage-trophy-purse b { color: var(--w-brass-ink); }
+.mirage-trophy-purse small { color: var(--w-ink-dim); }
+.mirage-trophy-purse.is-won { border-style: solid; border-color: var(--w-brass-2); background: rgba(201, 162, 39, .18); color: var(--w-ink); }
+.mirage-trophy-fallback-cup { color: var(--w-brass); }
+.mirage-trophy-screen .mirage-overlay-hint { color: var(--w-cream-dim); }
+.mirage-trophy-screen .mirage-overlay-kicker { color: var(--w-brass); }
+/* Le palmarès du trophée est sur papier : son classement suit l'encre brune. */
+.mirage-trophy-panel .mirage-cup-row { border-color: rgba(59, 36, 20, .22); background: rgba(255, 251, 240, .6); }
+.mirage-trophy-panel .mirage-cup-row.is-me { border-color: var(--w-rust); background: linear-gradient(100deg, rgba(168, 52, 42, .16), rgba(255, 251, 240, .5)); }
+.mirage-trophy-panel .mirage-cup-rank { border-color: rgba(59, 36, 20, .28); background: rgba(255, 251, 240, .6); color: var(--w-ink-soft); }
+.mirage-trophy-panel .mirage-cup-name strong { color: var(--w-ink); }
+.mirage-trophy-panel .mirage-cup-name small { color: var(--w-ink-dim); }
+.mirage-trophy-panel .mirage-cup-total b { color: var(--w-ink); }
+.mirage-trophy-panel .mirage-cup-total small { color: var(--w-ink-dim); }
+
+/* ── 10 bis.11 Détails du HUD et du panneau ────────────────────────── */
+.mirage-hud-card small b { color: var(--w-brass-ink); }
+.mirage-chip.is-cup { color: var(--w-brass-ink); }
+.mirage-chip.is-boost { color: #3f5a2a; }
+.mirage-chip.is-shield { color: #1d6b78; }
+.mirage-race-flag { background: rgba(244, 227, 192, .85); border-radius: 2px; filter: none; }
+.mirage-skin-stage .mirage-skin-model { color: rgba(246, 230, 198, .9); }
+.mirage-skin-chip small { color: var(--w-cream-dim); }
+.mirage-skin-stage .mirage-skin-lock {
+  color: #fff8e6;
+  background: radial-gradient(circle at 50% 50%, rgba(20, 10, 3, .62) 0 42%, transparent 62%);
+  text-shadow: 0 2px 6px rgba(10, 5, 2, .9);
+}
+.mirage-waiting-sun {
+  border-color: rgba(201, 162, 39, .6);
+  background: #f0d271;
+  color: #33200f;
+  text-shadow: none;
+  box-shadow: 0 0 26px rgba(201, 162, 39, .24), inset 0 0 0 6px rgba(255, 251, 240, .4);
+}
+.mirage-powerup-btn-name { color: var(--w-cream); }
+.mirage-powerup-key { color: #ffd98a; }
+
+/* ── 10 bis.12 Type lisible — les plus petites tailles remontent ──────
+   La machine à écrire (Special Elite) est plus large et plus fine que la
+   chasse fixe d'origine : à 7 px, les libellés devenaient des taches. On
+   remonte d'un cran les tailles de la feuille western, sans toucher aux
+   titres ni aux chiffres. */
+.mirage-hud-card small { font-size: 9px; letter-spacing: .12em; }
+.mirage-overlay-hint { font-size: 9px; letter-spacing: .13em; }
+.mirage-intro-overlay .mirage-overlay-hint { margin-top: 12px; }
+.mirage-picker-label { font-size: 9px; letter-spacing: .11em; }
+.mirage-mode-copy small { font-size: 10px; }
+.mirage-map-copy small { font-size: 9px; }
+.mirage-map-selected { font-size: 9px; }
+.mirage-keys-hint { font-size: 10px; }
+.mirage-cup-card-title span { font-size: 10px; }
+.mirage-cup-card-title small { font-size: 8px; }
+.mirage-cup-card-action { font-size: 8px; }
+.mirage-cup-reward-copy > em { font-size: 8px; }
+.mirage-cup-reward-copy > small { font-size: 8px; }
+.mirage-scoreboard th { font-size: 8px; }
+.mirage-scoreboard small { font-size: 9px; }
+.mirage-cup-rank { font-size: 13px; }
+.mirage-cup-total small { font-size: 8px; }
+.mirage-cup-progress li { font-size: 9px; }
+.mirage-game-foot { font-size: 9px; }
+.mirage-page-footer { font-size: 9px; }
+.mirage-eyebrow { font-size: 10px; }
+.mirage-graphics-switch { font-size: 10px; }
+.mirage-graphics-note { font-size: 9px; }
+.mirage-panel-kicker { font-size: 10px; }
+.mirage-board-subtitle { font-size: 10px; }
+.mirage-rule small { font-size: 10px; }
 
 /* ════════════════════════════════════════════════════════════════════
    11. TÉLÉPHONE — l'affiche se resserre
