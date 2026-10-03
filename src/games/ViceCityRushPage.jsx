@@ -388,7 +388,7 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'pistol-hit-player') showToast(`TATATATA ! ${effect.attacker} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'rival-boost') showToast(`${effect.rival} ACTIVE UN BOOST.`, 'cash');
     else if (effect.type === 'rival-oil') showToast(`${effect.rival} RÉPAND UNE FLAQUE D’HUILE.`, 'oil');
-    else if (effect.type === 'rival-blue-shot') showToast(`${effect.rival} TIRE DROIT DEVANT LUI.`, 'blue-shot');
+    else if (effect.type === 'rival-blue-shot') showToast(`${effect.rival} TIRE DROIT ${effect.backward ? 'DERRIÈRE LUI' : 'DEVANT LUI'}.`, 'blue-shot');
     else if (effect.type === 'radio') showToast(`HÉLICO EN APPROCHE · CIBLE : ${effect.target}.`, 'radio');
     else if (effect.type === 'missile-hit') showToast(`IMPACT · ${effect.target} immobilisé ${formatSeconds(effect.duration, 2)}.`, 'radio');
     else if (effect.type === 'radio-busy') showToast(effect.message, 'radio');
@@ -402,6 +402,7 @@ export default function ViceCityRushPage() {
     else if (effect.type === 'police-steal') showToast(`VOL DE BONUS · ${effect.police} A RAFLÉ ${effect.item === 'radio' ? 'L’HÉLICO (JAUNE)' : 'LA MITRAILLEUSE (ROUGE)'}${effect.ready ? ' · ELLE EST ARMÉE' : ''}.`, effect.item === 'radio' ? 'radio' : 'pistol');
     else if (effect.type === 'police-fire') showToast(`TATATATA ! ${effect.police} TE MITRAILLE · RALENTI ${formatSeconds(effect.duration, 2)}.`, 'pistol');
     else if (effect.type === 'police-rally') showToast(effect.targetId === 'player' ? `🚨 ${effect.police} TE PREND EN CHASSE · ELLE REJOINT L’ESCOUADE.` : `🚨 ${effect.police} PREND ${effect.target === 'player' ? 'TOI' : effect.target} EN CHASSE.`, 'pistol');
+    else if (effect.type === 'police-hit') showToast(`TIR DROIT · ${effect.police} TOUCHÉE · BARRE DE VIE ${effect.health}/${effect.maxHealth} · ENCORE UN TIR BLEU.`, 'blue-shot');
     else if (effect.type === 'police-destroyed') showToast(effect.byPlayer ? `💥 ${effect.police} DÉTRUITE · +200 PTS · ELLE QUITTE LA COURSE.` : `💥 ${effect.police} DÉTRUITE · ELLE QUITTE LA COURSE.`, 'radio');
     else if (effect.type === 'tunnel-enter' && effect.closed > 0) {
       const wall = effect.walls > 1 ? 'PAROIS DES DEUX CÔTÉS' : `PAROI À ${effect.side === 'left' ? 'GAUCHE' : 'DROITE'}`;

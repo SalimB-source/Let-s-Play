@@ -54,6 +54,8 @@ import {
   cityRushHitDuration,
   cityRushHelicopterTarget,
   cityRushIsAhead,
+  cityRushStraightShotRetaliation,
+  cityRushStraightShotSweptHit,
   cityRushStraightShotTarget,
   cityRushStunSpin,
   CITY_RUSH_STUN_SPIN_TURNS,
@@ -300,6 +302,104 @@ test('the blue shot picks at most one visible opponent directly ahead in the sam
     attackerLane: 2,
     targets: [{ id: 'occluded', distance: 108, lane: 2, visible: false }],
   }), null, 'un rival masqué par la caméra ne peut pas être touché');
+});
+
+test('le tir droit bleu balaie sa voie : une berline de police sur sa trajectoire encaisse le tir', () => {
+  // Le projectile parcourt 300 m/s : entre deux images à 30 Hz, il balaie
+  // 10 m de voie. Toute berline de cette portion est touchée, qu'elle ait été
+  // verrouillée au départ du tir ou non.
+  const swept = cityRushStraightShotSweptHit({
+    lane: 2,
+    fromDistance: 100,
+    toDistance: 110,
+    targets: [
+      { id: 'police-1', lane: 2, distance: 106 },
+      { id: 'police-2', lane: 2, distance: 104 },
+      { id: 'police-lane', lane: 1, distance: 106 },
+      { id: 'police-devant', lane: 2, distance: 118 },
+      { id: 'police-derriere', lane: 2, distance: 98 },
+    ],
+  });
+  assert.equal(swept.id, 'police-2', 'la berline la plus proche du canon prend le tir');
+
+  // Une berline qui se rabat dans la voie pendant le vol est touchée : elle
+  // n'était pas la cible du tir, mais elle occupe le segment balayé.
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2,
+    fromDistance: 100,
+    toDistance: 110,
+    targets: [{ id: 'police-rabattue', lane: 2, distance: 109.4 }],
+  }).id, 'police-rabattue');
+
+  // Les bornes du segment : la bouche du canon ne touche pas une berline
+  // laissée derrière elle, et la fin du segment compte comme un impact.
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 100, toDistance: 110,
+    targets: [{ id: 'police-canon', lane: 2, distance: 100 }],
+  }), null, 'une berline à hauteur du canon n’est pas touchée');
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 100, toDistance: 110,
+    targets: [{ id: 'police-borne', lane: 2, distance: 110 }],
+  }).id, 'police-borne', 'la fin du segment balayé compte comme un impact');
+
+  // Voies voisines, segment vide ou inversé : aucun impact.
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 100, toDistance: 110,
+    targets: [{ id: 'police-voisine', lane: 3, distance: 106 }],
+  }), null, 'le tir droit ne dévie jamais de sa voie');
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 110, toDistance: 110,
+    targets: [{ id: 'police-image', lane: 2, distance: 110 }],
+  }), null, 'un segment vide ne touche personne');
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 110, toDistance: 100,
+    targets: [{ id: 'police-inversé', lane: 2, distance: 106 }],
+  }), null, 'un segment inversé ne touche personne');
+
+  // Entrées invalides : la règle ne lève jamais, elle renvoie null.
+  assert.equal(cityRushStraightShotSweptHit({ lane: Number.NaN, fromDistance: 100, toDistance: 110, targets: [{ id: 'p', lane: 2, distance: 106 }] }), null);
+  assert.equal(cityRushStraightShotSweptHit({ lane: 2, fromDistance: 'loin', toDistance: 110, targets: [{ id: 'p', lane: 2, distance: 106 }] }), null);
+  assert.equal(cityRushStraightShotSweptHit({ lane: 2, fromDistance: 100, toDistance: 110, targets: [{ id: 'p', lane: 2, distance: Number.NaN }] }), null);
+  assert.equal(cityRushStraightShotSweptHit({ lane: 2, fromDistance: 100, toDistance: 110, targets: [null, undefined] }), null);
+  assert.equal(cityRushStraightShotSweptHit(), null);
+});
+
+test('le tir droit bleu riposte sur la berline la plus proche de sa voie, même derrière', () => {
+  // L'escouade attaque dans le pare-chocs du pilote : sans riposte vers
+  // l'arrière, le projectile ne la croise jamais.
+  const squad = [
+    { id: 'police-1', distance: 1195, lane: 2, active: true }, // 5 m derrière, dans la voie
+    { id: 'police-2', distance: 1221, lane: 2, active: true }, // 21 m devant, dans la voie
+    { id: 'police-3', distance: 1198, lane: 1, active: true }, // collée, mais voie voisine
+  ];
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: squad, attackerDistance: 1200, attackerLane: 2,
+  }).id, 'police-1', 'la plus proche l’emporte, derrière comme devant');
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: squad, attackerDistance: 1200, attackerLane: 2, excludeId: 'police-1',
+  }).id, 'police-2', 'jamais soi-même');
+  // Un tir droit reste droit : la berline d'une autre voie n'est pas visée.
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: [{ id: 'police-3', distance: 1198, lane: 1, active: true }],
+    attackerDistance: 1200, attackerLane: 2,
+  }), null, 'une berline hors de la voie du tireur ne peut pas être touchée');
+  // Hors de portée, désactivée ou détruite : aucune riposte.
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: [{ id: 'police-loin', distance: 1200 - CITY_RUSH_BLUE_SHOT_MAX_RANGE - 1, lane: 2, active: true }],
+    attackerDistance: 1200, attackerLane: 2,
+  }), null, 'au-delà de la portée du projectile, la riposte ne part pas');
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: [{ id: 'police-inactive', distance: 1195, lane: 2, active: false }],
+    attackerDistance: 1200, attackerLane: 2,
+  }), null, 'une berline hors course n’est plus une cible');
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: squad, attackerDistance: Number.NaN, attackerLane: 2,
+  }), null);
+  assert.equal(cityRushStraightShotRetaliation(), null);
+  // Sans voie imposée (rivaux IA), la berline la plus proche est retenue.
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: squad, attackerDistance: 1200,
+  }).id, 'police-3');
 });
 
 test('matching pickups charge independent bars, and only a full bar can be used', () => {

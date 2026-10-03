@@ -30,6 +30,7 @@
     "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-themes.test.js",
     "check:city-rush-audio": "node --test tests/city-rush-audio.test.js",
     "check:city-rush-smoke": "node scripts/city-rush-smoke.mjs --all",
+    "check:city-rush-blue-shot": "node scripts/city-rush-blue-shot-police-check.mjs --all",
     "check:souls-smoke": "node scripts/souls-smoke.mjs",
     "check:souls-prog": "node scripts/souls-progress-check.mjs",
     "check:souls-jump": "node scripts/souls-jump-check.mjs",

@@ -408,8 +408,11 @@ de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   Le changement de voie est calculé à la position de la berline, pas à celle du
   joueur. En dernier tour, une rafale rouge ou un missile jaune peut riposter
   contre la berline la plus proche quand aucun rival n'est devant ; le tir bleu
-  reste un projectile droit, limité à un adversaire visible dans la voie du
-  tireur (`CITY_RUSH_POLICE_*`, `cityRushRules.js`). **Les berlines sont
+  fait pareil : voie libre devant, il part vers l'arrière contre la berline la
+  plus proche de sa voie (`cityRushStraightShotRetaliation`), et en vol il
+  balaie le segment de voie parcouru, donc une berline qui se rabat devant la
+  balle l'encaisse même sans verrou (`cityRushStraightShotSweptHit`,
+  `CITY_RUSH_POLICE_*`, `cityRushRules.js`). **Les berlines sont
   destructibles.** Chacune porte une barre de vie au-dessus du toit (reprise
   sur les pastilles de la mini-carte) : **deux tirs droits bleus, OU une rafale
   rouge, OU un tir d'hélicoptère** la détruisent
@@ -427,7 +430,11 @@ de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   ne représente que **10 % des bonus** (vert 36 %, bleu 28 %, rouge 26 %).
   Le tir bleu ne vise pas : il suit la voie du tireur, peut toucher au plus un
   adversaire déjà visible, puis fait déraper sa voiture et la ralentit à 85 %
-  pendant **0,3 s**. La mitrailleuse rouge prend le rival le plus proche devant
+  pendant **0,3 s**. Il atteint les berlines de police de trois façons :
+  verrouillé sur celle qui roule devant dans sa voie, **en riposte vers
+  l'arrière** sur la plus proche déjà dépassée quand la voie est libre devant,
+  et **par balayage** sur toute berline qui se rabat devant le projectile en
+  vol. La mitrailleuse rouge prend le rival le plus proche devant
   le pare-chocs ; l'hélicoptère verrouille le rival le mieux placé devant son
   pilote (`cityRushIsAhead` + `CITY_RUSH_FORWARD_TOLERANCE`, un mètre de
   tolérance pour une voiture roue contre roue). En dernier tour, si aucun rival
@@ -551,6 +558,7 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours sans exception, éclatements visibles
+npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation

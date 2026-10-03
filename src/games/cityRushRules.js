@@ -142,7 +142,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#48b9ff',
     key: 'A',
     automatic: false,
-    description: `Tire droit devant toi sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s. Deux tirs bleus détruisent une berline de police.`,
+    description: `Tire droit sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. Voie libre devant ? Le tir part vers l'arrière contre la berline de police la plus proche. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s. Deux tirs bleus détruisent une berline de police.`,
     duration: CITY_RUSH_BLUE_SHOT_DURATION,
     speedFactor: CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   }),
@@ -441,6 +441,73 @@ export function cityRushStraightShotTarget({
       return Number.isFinite(gap) && gap > minimum && gap <= range;
     })
     .sort((a, b) => Number(a.distance) - Number(b.distance))[0] || null;
+}
+
+// Balayage du projectile en vol : le tir bleu n'est pas guidé, il parcourt un
+// segment de voie bien précis entre l'image précédente et l'image courante
+// (`fromDistance` → `toDistance`, dans la voie `lane`). Toute voiture de ce
+// segment l'encaisse — qu'elle ait été verrouillée au départ du tir ou qu'elle
+// se soit rabattue devant le projectile pendant son vol. C'est ce qui permet au
+// tir bleu de toucher les berlines de police, qui changent de voie en
+// permanence pour rafler les bonus : sans balayage, une berline qui se rabat
+// devant la balle ne la voyait jamais passer.
+// Le segment est donné dans l'ordre (`fromDistance < toDistance`), quel que
+// soit le sens de marche du projectile : en riposte vers l'arrière, l'appelant
+// passe `min → max`. Une voiture laissée derrière le canon n'est jamais
+// touchée. Quand plusieurs voitures sont balayées sur la même image, c'est la
+// plus proche du canon qui prend — le projectile s'arrête sur le premier
+// obstacle.
+export function cityRushStraightShotSweptHit({
+  lane,
+  fromDistance = 0,
+  toDistance = 0,
+  targets = [],
+} = {}) {
+  const shotLane = Number(lane);
+  const from = Number(fromDistance);
+  const to = Number(toDistance);
+  if (!Number.isFinite(shotLane) || !Number.isFinite(from) || !Number.isFinite(to)) return null;
+  // Segment vide ou inversé (image figée, projectile en fin de portée) : rien.
+  if (to <= from) return null;
+  return (Array.isArray(targets) ? targets : [])
+    .filter((target) => target && Number(target.lane) === shotLane)
+    .filter((target) => {
+      const at = Number(target.distance);
+      return Number.isFinite(at) && at > from && at <= to;
+    })
+    .sort((a, b) => Number(a.distance) - Number(b.distance))[0] || null;
+}
+
+// Riposte du tir droit bleu : quand aucune voiture n'occupe la voie du tireur
+// devant lui, le projectile peut partir vers l'arrière contre la berline de
+// police la plus proche de cette voie — exactement comme la rafale rouge et
+// l'hélicoptère le font déjà en dernier tour (`cityRushPoliceTarget`). Sans
+// cette riposte, le tir bleu ne pouvait jamais atteindre l'escouade : les
+// berlines attaquent dans le pare-chocs du pilote (`CITY_RUSH_POLICE_ATTACK_LEAD`
+// est négatif) et un projectile qui ne part que vers l'avant ne les croise
+// jamais. La riposte reste un tir droit : elle exige la même voie et reste
+// bornée par la portée du projectile.
+export function cityRushStraightShotRetaliation({
+  pursuers = [],
+  attackerDistance = 0,
+  attackerLane = null,
+  excludeId = null,
+  maxDistance = CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+} = {}) {
+  const reference = Number(attackerDistance);
+  // `attackerLane` absent : aucune voie imposée (les rivaux IA ripostent sur
+  // la berline la plus proche, quelle que soit sa voie).
+  const lane = attackerLane === null || attackerLane === undefined ? Number.NaN : Number(attackerLane);
+  const range = Math.max(0, Number(maxDistance) || CITY_RUSH_BLUE_SHOT_MAX_RANGE);
+  if (!Number.isFinite(reference)) return null;
+  const inLane = (Array.isArray(pursuers) ? pursuers : [])
+    .filter((police) => police && police.id !== excludeId && police.active !== false)
+    .filter((police) => !Number.isFinite(lane) || Number(police.lane) === lane)
+    .filter((police) => {
+      const gap = Number(police.distance);
+      return Number.isFinite(gap) && Math.abs(gap - reference) <= range;
+    });
+  return cityRushPoliceTarget(inLane, reference, excludeId);
 }
 
 // Le talkie ne verrouille que les rivaux devant son pilote : parmi eux, c'est
