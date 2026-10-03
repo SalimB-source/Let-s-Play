@@ -1870,7 +1870,8 @@ html body .mirage-page :is(
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   7. PANNEAU LATÉRAL — Mirage Rush Control Center, Cavalier & boutique du jeu
+   7. PARAMÈTRES — menu du jeu (communauté, cavalier, boutique, infos)
+      ouvert depuis le bouton de l’écran de choix du mode.
    ═══════════════════════════════════════════════════════════════════════ */
 
 .mirage-settings.panel-frame {
@@ -2272,7 +2273,8 @@ html body .mirage-page :is(
 .mirage-ghost-button:active:not(:disabled),
 .mirage-secondary-button:active:not(:disabled),
 .mirage-share-button:active:not(:disabled),
-.mirage-fullscreen-launch:active:not(:disabled) {
+.mirage-fullscreen-launch:active:not(:disabled),
+.mirage-settings-launch:active:not(:disabled) {
   transform: translateY(0) scale(.99);
   border-bottom-width: 1.5px;
 }
@@ -2290,6 +2292,7 @@ html body .mirage-page :is(
   .mirage-secondary-button:hover:not(:disabled),
   .mirage-share-button:hover:not(:disabled),
   .mirage-fullscreen-launch:hover:not(:disabled),
+  .mirage-settings-launch:hover:not(:disabled),
   .mirage-powerup-slot.is-ready:hover,
   .mirage-powerup-btn.is-ready:hover:not(:disabled),
   .mirage-graphics-button:hover,

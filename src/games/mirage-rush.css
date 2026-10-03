@@ -59,7 +59,7 @@
    `.mirage-record-flare` ont été supprimés. Le record personnel reste affiché
    dans l’écran de fin de partie. */
 
-.mirage-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 20px; }
+.mirage-layout { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 20px; }
 .mirage-game-shell, .panel-frame {
   background: linear-gradient(148deg, rgba(38, 27, 51, .97), rgba(15, 13, 26, .985));
   border: 1px solid rgba(242, 198, 132, .18);
@@ -69,7 +69,7 @@
 .mirage-game-shell { min-width: 0; overflow: hidden; }
 /* ── Plein écran (tous appareils) ─────────────────────────────────────────
    L'interface se lance en plein écran de base : cette couche fixe (classe
-   `is-immersive`, posée par useMirageFullscreen dès le montage de la page)
+   `is-immersive`, posée par useGameFullscreen dès le montage de la page)
    couvre tout le viewport sans attendre de geste, et le plein écran natif part
    au premier geste du joueur. Le bouton « Plein écran » de la barre du jeu,
    « LANCER EN PLEIN ÉCRAN » et la touche F font pareil : le plein écran natif
@@ -77,7 +77,7 @@
    (iOS Safari, WebViews sans Fullscreen API, iframe sans autorisation — dans
    l'APK, l'event fullscreenchange repart de la même couche). Elle règle aussi
    la mise en page en plein écran natif. */
-body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
+body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-game-shell.is-immersive {
   position: fixed;
   inset: 0;
@@ -135,7 +135,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Plein écran : l'icône change (coins qui s'écartent / se rapprochent) et le bouton
    s'allume tant qu'on y est, comme SON. Le libellé reste « PLEIN ÉCRAN » dans les
    deux états : c'est un interrupteur (aria-pressed), pas deux actions. */
-.mirage-fullscreen-icon { flex: none; width: 14px; height: 14px; }
+.game-fullscreen-icon { flex: none; width: 14px; height: 14px; }
 .mirage-fullscreen-button.is-on { color: #f5d276; border-color: rgba(245, 210, 118, .34); background: rgba(245, 210, 118, .08); }
 /* Graphismes baissés : un interrupteur (aria-pressed) comme Plein écran. L'icône
    (trois barres de signal) ne garde que la première allumée quand ils sont
@@ -459,7 +459,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   font: 900 11px var(--mono); letter-spacing: .12em; cursor: pointer;
   transition: transform .18s, background .18s, border-color .18s, color .18s;
 }
-.mirage-fullscreen-launch .mirage-fullscreen-icon { width: 17px; height: 17px; }
+.mirage-fullscreen-launch .game-fullscreen-icon { width: 17px; height: 17px; }
 .mirage-fullscreen-launch:hover:not(:disabled) { transform: translateY(-2px); border-color: #ffe29a; background: rgba(255, 215, 107, .14); color: #fff1cc; }
 .mirage-fullscreen-launch:active:not(:disabled) { transform: translateY(0); }
 .mirage-fullscreen-launch:disabled { opacity: .55; cursor: wait; }
@@ -811,13 +811,9 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-page-footer i { color: #e889a9; font-style: normal; }
 
 @media (max-width: 1050px) {
-  .mirage-layout { grid-template-columns: minmax(0, 1fr) 285px; gap: 14px; }
-  .mirage-side-panel .panel-frame { padding-inline: 13px; }
   .mirage-viewport { height: min(600px, 82vh); }
 }
 @media (max-width: 820px) {
-  .mirage-layout { grid-template-columns: minmax(0, 1fr); }
-  .mirage-side-panel { display: grid; grid-template-columns: 1fr; align-items: start; }
   .mirage-leaderboard { grid-row: auto; }
   .mirage-viewport { height: min(clamp(460px, 86vw, 600px), 80vh); }
 }
@@ -886,8 +882,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-mobile-controls button:active { background: rgba(243, 198, 91, .25); transform: scale(.96); }
   .mirage-mobile-controls .mirage-jump-control { width: 124px; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(229, 99, 160, .16); border-color: rgba(242, 119, 169, .4); color: #f5b7d7; font: 800 10px var(--mono); letter-spacing: .12em; }
   .mirage-mobile-controls .mirage-jump-control span { font-size: 17px; }
-  .mirage-side-panel { grid-template-columns: 1fr; gap: 10px; }
-  .mirage-settings-tabs { grid-template-columns: 1fr; }
+  .mirage-settings-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mirage-settings-tabs button { min-height: 32px; }
   .mirage-shop-card { grid-template-columns: 1fr; }
   .mirage-leaderboard { grid-row: auto; }
@@ -919,8 +914,63 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-intro-overlay .mirage-overlay-hint { margin-top: 10px; }
 .mirage-intro-overlay.is-mode-step { justify-content: center; }
 .mirage-intro-overlay.is-stage-step { justify-content: safe center; }
+.mirage-intro-overlay.is-settings-step { justify-content: safe flex-start; align-items: center; }
 .mirage-intro-lead { max-width: 560px; color: rgba(255, 240, 219, .68); line-height: 1.6; }
-.mirage-intro-toolbar { width: min(100%, 640px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.mirage-intro-toolbar { width: min(100%, 720px); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
+.mirage-intro-toolbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mirage-settings-launch {
+  width: min(100%, 640px);
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin: 2px 0 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(246, 205, 114, .38);
+  background: linear-gradient(125deg, rgba(50, 35, 57, .92), rgba(33, 26, 42, .94));
+  color: #fff2dd;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s, transform .18s, box-shadow .18s, background .18s;
+}
+.mirage-settings-launch:hover {
+  transform: translateY(-1px);
+  border-color: #f6cd72;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .28), 0 0 22px rgba(243, 198, 91, .12);
+}
+.mirage-settings-launch:focus-visible { outline: 2px solid #fff1c9; outline-offset: 3px; }
+.mirage-settings-launch-icon {
+  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px;
+  background: rgba(246, 205, 114, .12); color: #ffdc85; font-size: 22px;
+}
+.mirage-settings-launch-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mirage-settings-launch-copy strong { font: 900 13px var(--font-gaming); letter-spacing: .08em; color: #ffe4a4; }
+.mirage-settings-launch-copy small { color: #d8c3b6; font: 700 8px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.mirage-settings-launch-cta {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px 10px; border-radius: 8px;
+  background: linear-gradient(135deg, #f3c65b, #e99744); color: #211526;
+  font: 900 8px var(--mono); letter-spacing: .12em;
+}
+.mirage-intro-overlay .mirage-settings {
+  width: min(100%, 720px);
+  text-align: left;
+  margin: 8px 0 4px;
+}
+.mirage-intro-overlay .mirage-panel-heading h2 {
+  max-width: none;
+  margin: 6px 0 0;
+  font: 900 20px/1.12 var(--font-gaming);
+  letter-spacing: -.02em;
+  text-shadow: none;
+}
+.mirage-intro-overlay .mirage-settings-tabs {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.mirage-intro-overlay .mirage-skin-picker {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
 .mirage-selected-mode-pill {
   display: inline-flex; align-items: center; gap: 7px; padding: 7px 10px; border-radius: 999px;
   border: 1px solid rgba(246, 205, 114, .28); background: rgba(246, 205, 114, .08);
@@ -1065,7 +1115,16 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-mode-picker.is-actions .mirage-mode-copy strong { font-size: 13px; }
   .mirage-mode-cta { margin-top: 7px; padding: 8px 4px; font-size: 7px; letter-spacing: .06em; }
   .mirage-intro-toolbar { align-items: stretch; }
+  .mirage-intro-toolbar-actions { flex: 1 1 auto; }
+  .mirage-intro-toolbar-actions .mirage-secondary-button { flex: 1 1 auto; }
   .mirage-secondary-button, .mirage-selected-mode-pill { flex: 1 1 auto; }
+  .mirage-settings-launch { grid-template-columns: 32px minmax(0, 1fr) auto; padding: 10px; margin: 0 0 10px; gap: 8px; }
+  .mirage-settings-launch-icon { width: 32px; height: 32px; font-size: 18px; }
+  .mirage-settings-launch-copy strong { font-size: 12px; }
+  .mirage-settings-launch-copy small { font-size: 7px; letter-spacing: .05em; }
+  .mirage-settings-launch-cta { padding: 7px 8px; font-size: 7px; }
+  .mirage-intro-overlay .mirage-settings-tabs,
+  .mirage-intro-overlay .mirage-skin-picker { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mirage-mode-symbol { width: 24px; font-size: 22px; }
   .mirage-mode-copy strong { font-size: 13px; }
   .mirage-mode-copy > span { font-size: 10px; }
@@ -1084,9 +1143,10 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   .mirage-intro-overlay > p { font-size: 11px; margin: 8px 0 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mirage-mode-picker button, .mirage-map-card, .mirage-map-art { transition: none; }
+  .mirage-mode-picker button, .mirage-map-card, .mirage-map-art, .mirage-settings-launch { transition: none; }
   .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled),
-  .mirage-map-card:hover:not(:disabled) .mirage-map-art { transform: none; }
+  .mirage-map-card:hover:not(:disabled) .mirage-map-art,
+  .mirage-settings-launch:hover { transform: none; }
   .mirage-stage-loading::before { animation: none; opacity: .8; }
 }
 

@@ -155,7 +155,9 @@ sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
 ## Mirage Rush : le plein écran
 
 Le jeu (`/jeu/mirage-rush`) **se lance en plein écran de base**, sur ordinateur
-comme sur téléphone.
+comme sur téléphone. Le mécanisme est **commun aux jeux d'arcade**
+(`gameFullscreen.js` / `useGameFullscreen.js`) : Vice City Rush s'en sert aussi
+(voir « Vice City Rush : le plein écran »).
 
 | Geste | Effet |
 |---|---|
@@ -190,12 +192,12 @@ comme sur téléphone.
 
 ### Où vit le code
 
-- `src/games/mirageFullscreen.js` — les gestes du navigateur (demande, sortie, qui
-  ouvre au lancement, touche F), sans React ;
-- `src/games/useMirageFullscreen.js` — l'état React : `is-immersive`, verrou de
-  défilement `mirage-immersive-lock`, sortie différée jusqu'à `fullscreenchange` ;
-- `src/games/MirageFullscreenIcon.jsx` — l'icône, dessinée en SVG (le glyphe ⛶
-  manque à beaucoup de polices) ;
+- `src/games/gameFullscreen.js` — les gestes du navigateur (demande, sortie, qui
+  ouvre au lancement, touche F), sans React ; **partagé avec Vice City Rush** ;
+- `src/games/useGameFullscreen.js` — l'état React : `is-immersive`, verrou de
+  défilement `game-immersive-lock`, sortie différée jusqu'à `fullscreenchange` ;
+- `src/games/FullscreenIcon.jsx` — l'icône, dessinée en SVG (le glyphe ⛶
+  manque à beaucoup de polices) ; **partagée elle aussi** ;
 - `src/games/MirageRushPage.jsx` (pause, intro, touche F) et
   `src/games/MirageOnline.jsx` (fenêtre de course) ; styles dans
   `src/games/mirage-rush.css` (`.is-immersive`).
@@ -204,7 +206,7 @@ comme sur téléphone.
 
 ```bash
 npm run check:mirage-fullscreen          # page et fenêtre en ligne dans jsdom, Fullscreen API simulée
-node --test tests/mirage-fullscreen.test.js   # touche F, API, budget de pixels
+node --test tests/game-fullscreen.test.js   # touche F, API, budget de pixels (moteur partagé)
 ```
 
 jsdom n'a ni WebGL ni Fullscreen API : la vérification remplace le moteur 3D par
@@ -487,6 +489,58 @@ npm run check:mirage-cup     # les courses jouées de bout en bout, récompenses
 npm run check:mirage-flow    # boutons de coupe, aperçu épuré et maxima annoncés
 ```
 
+## Vice City Rush : le plein écran
+
+Le jeu (`/jeu/vice-city-rush`) **se lance en plein écran**, avec le même moteur
+que Mirage Rush (`gameFullscreen.js` / `useGameFullscreen.js`) : la coque du jeu
+occupe tout l'écran dès l'ouverture, et toutes ses étapes — choix du mode, choix
+de la ville, garage, cinématiques de l'histoire, compte à rebours, course,
+pause, arrivée — s'y tiennent.
+
+| Geste | Effet |
+|---|---|
+| Ouverture de la page | la coque occupe tout de suite tout l'écran (couche fixe `is-immersive`, sans geste) ; le plein écran natif, que le navigateur exige dans un geste, part au **premier clic ou à la première touche** du joueur |
+| Bouton **PLEIN ÉCRAN** de la barre du jeu | ouvre ou ferme, à tout moment (intro, cinématique, course, pause, arrivée) |
+| Touche **F** | ouvre ou ferme (Ctrl/Cmd/Alt + F restent au navigateur ; un « f » tapé dans un champ de saisie ne fait rien) |
+| **Échap**, ou le geste « retour » d'Android | le navigateur referme le plein écran : la course se met **en pause** ; **REPRENDRE** rend l'écran quitté — la course, ou le compte à rebours |
+| Lancement d'une course (téléphone, application) | le plein écran natif est demandé dans le geste (`opensFullscreenOnLaunch()`) ; cette ouverture automatique se referme à l'arrivée, la page reprend sa forme |
+
+- **Plein écran de base.** La couche fixe (qui couvre tout le viewport) est posée
+  au montage de la page, et le choix est « épinglé » : le jeu ne le referme pas
+  de lui-même — il reste en changeant d'écran, en passant d'une ville à l'autre,
+  pendant la course et à l'arrivée, jusqu'à ce que le joueur le quitte (bouton de
+  la barre, touche F, Échap ou geste « retour » du navigateur).
+- **Deux couches, comme Mirage.** Le plein écran natif (Fullscreen API, préfixe
+  WebKit compris ; dans l'APK, la WebView le prend en charge) et la couche fixe,
+  la classe `is-immersive`, qui règle la mise en page. Quand l'API manque ou
+  refuse (iPhone, `iframe` sans `allowfullscreen`), la couche fixe seule suffit
+  pour jouer. Le verrou de défilement est le même que celui de Mirage
+  (`game-immersive-lock`).
+
+### Où vit le code
+
+- `src/games/gameFullscreen.js` et `src/games/useGameFullscreen.js` — le moteur
+  partagé (voir « Mirage Rush : le plein écran ») ;
+- `src/games/ViceCityRushPage.jsx` — le plein écran au montage, la demande au
+  premier geste, la touche F, la pause sur une sortie du navigateur
+  (`pauseRace` / `resumeRace`, qui rendent le compte à rebours ou la course) et
+  le bouton de la barre ;
+- `src/games/vice-city-rush.css` — `.city-rush-shell.is-immersive`,
+  `body.game-immersive-lock` et le bouton `.city-rush-fullscreen-button`.
+
+### Vérifications
+
+```bash
+npm run check:vice-city-fullscreen   # la page dans jsdom (moteur 3D doublé), Fullscreen API simulée
+```
+
+La vérification remplace le moteur 3D par une doublure
+(`scripts/vice-city-world-stub.jsx`) et la Fullscreen API par une doublure qui
+répond comme un navigateur (elle sait aussi refuser, attendre, ou fermer « de
+l'extérieur » comme Échap). Elle ne dit rien du rendu réel : pour cela, ouvrir le
+jeu dans un vrai navigateur (`npm run dev`) et le passer en plein écran sur un
+grand écran.
+
 ## Vice City Rush : 5 tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq
@@ -673,6 +727,7 @@ npm run check:city-rush          # règles pures (tours, repli, classement, obje
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-smoke    # les cinq villes : construction du monde, course complète de 5 tours sans exception, éclatements visibles
 npm run check:city-rush-blue-shot # tir bleu × berlines : le pilote d'essai ne tire qu'au tir droit et doit abîmer des voitures de police devant lui, en riposte vers l'arrière, et par balayage
+npm run check:vice-city-fullscreen # la page dans jsdom : plein écran de base, natif au premier geste, bouton / F, pause sur sortie du navigateur
 ```
 
 Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animation
