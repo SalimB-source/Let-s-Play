@@ -43,7 +43,7 @@ import {
 } from './mirageCloudPowers';
 // Effets des trois techniques de Link : bombe, boomerang et Triforce.
 import {
-  disposeLinkPower, makeLinkBomb, makeLinkBoomerang, makeLinkTriforce,
+  detonateLinkBomb, linkBombTouched, disposeLinkPower, makeLinkBomb, makeLinkBoomerang, makeLinkTriforce,
   updateLinkBombVisual, updateLinkBoomerangVisual, updateLinkTriforceVisual,
   LINK_BOMB_AOE_RADIUS, LINK_BOOMERANG_HIT_RADIUS, LINK_BOOMERANG_SLOW_DURATION, LINK_BOOMERANG_THROWS,
 } from './mirageLinkPowers';
@@ -1288,6 +1288,36 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     if (hits === 0) callbacks.pistolHit?.({ target: null, link: 'bomb' });
   };
 
+  /** La bombe détonne : déflagration, secousse de la caméra et éclair d'écran. */
+  const explodeLinkBomb = (projectile) => {
+    resolveLinkBombBlast(projectile);
+    strikeShake = LINK_BOMB_SHAKE;
+    triggerScreenFlash(0.62, 0.32, 0xffd27a);
+    callbacks.linkStrike?.({ kind: 'bomb' });
+  };
+
+  /**
+   * Positions au sol des adversaires encore en course : le contact avec la
+   * bombe se juge sur ces points, comme la portée de l'explosion.
+   */
+  const linkBombRiderPoints = () => {
+    const points = [];
+    if (race.mode === 'duel') {
+      for (const rival of duelRivals) {
+        if (!rival?.mesh || isGhostRival(rival) || rival.finishedAt !== null) continue;
+        points.push({ x: rival.mesh.position.x, z: rival.mesh.position.z });
+      }
+    } else if (race.mode === 'online') {
+      const net = getNetwork?.();
+      for (const peer of net?.players || []) {
+        if (!peer || peer.user_id === net.userId || peer.finished_at) continue;
+        const point = cloudTargetPosition({ kind: 'online', player: peer }, linkTargetScratch);
+        points.push({ x: point.x, z: point.z });
+      }
+    }
+    return points;
+  };
+
   /** Le boomerang blesse au passage : chaque adversaire n'est ralenti qu'une fois. */
   const resolveLinkBoomerangSweep = (projectile) => {
     if (!projectile.hitIds) projectile.hitIds = new Set();
@@ -1377,13 +1407,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         // La bombe est posée : elle recule avec le décor, comme les obstacles.
         projectile.visual.position.z += frameAdvance;
         projectile.origin.z = projectile.visual.position.z;
+        // Un adversaire qui la touche la fait sauter avant la fin de la mèche :
+        // la déflagration part sur-le-champ, à l'endroit où il l'a frôlée.
+        if (projectile.phase === 'fuse' && linkBombTouched(projectile.origin, linkBombRiderPoints())) {
+          detonateLinkBomb(projectile.visual, projectile, {
+            onExplode: () => explodeLinkBomb(projectile),
+          });
+        }
         done = updateLinkBombVisual(projectile.visual, projectile, dt, {
-          onExplode: () => {
-            resolveLinkBombBlast(projectile);
-            strikeShake = LINK_BOMB_SHAKE;
-            triggerScreenFlash(0.62, 0.32, 0xffd27a);
-            callbacks.linkStrike?.({ kind: 'bomb' });
-          },
+          onExplode: () => explodeLinkBomb(projectile),
         });
       } else if (projectile.kind === 'yellow') {
         // Tout droit, puis retour à la main qui galope.
