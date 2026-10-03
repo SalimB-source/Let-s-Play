@@ -17,24 +17,18 @@ export default function CityRushStoryScene({ city, speaker = 'Nico', chapter = 1
     paris: 'vice-city-action-paris.webp',
     'vice-city': 'vice-city-action-finale.webp',
   };
-  const setPieceImages = {
-    hangar: 'vice-city-action-hangar.webp',
-    infiltration: 'vice-city-action-party.webp',
-  };
   const kindLabels = {
     action: ['CAMÉRA EMBARQUÉE', 'PURSUIT · HIGH SPEED'],
-    hangar: ['OPÉRATION · HANGAR', 'TIR CROISÉ · SHIBUYA'],
-    infiltration: ['INFILTRATION · GALA', 'COVER · COMPROMIS'],
   };
   const isSetPiece = kind !== 'dialogue';
-  const photo = setPieceImages[kind] || (kind === 'action' ? actionImages[city?.id] : null) || cityImages[city?.id] || cityImages['vice-city'];
+  const photo = (kind === 'action' ? actionImages[city?.id] : null) || cityImages[city?.id] || cityImages['vice-city'];
   const imageBase = import.meta.env.BASE_URL || '/';
   const spokenLabel = kindLabels[kind];
-  const wantedLevel = kind === 'hangar' ? 4 : kind === 'action' ? (chapter >= 6 ? 5 : 3) : kind === 'infiltration' ? 1 : (speaker === 'Dante' ? 2 : 0);
+  const wantedLevel = kind === 'action' ? (chapter >= 6 ? 5 : 3) : (speaker === 'Dante' ? 2 : 0);
   const stars = Array.from({ length: 5 }, (_, index) => index < wantedLevel ? '★' : '☆').join(' ');
   return (
     <div className={`cr-story-scene has-photo${isSetPiece ? ' is-action' : ''} kind-${kind} city-${city?.id || 'vice-city'}`} aria-label={`${isSetPiece ? 'Scène d’action' : 'Cinématique dialoguée'} photoréaliste à ${city?.name || 'Vice City'}`}>
-      <img className="cr-story-photo" src={`${imageBase}${photo}`} alt={kind === 'hangar' ? 'Nico se met à couvert dans un hangar pendant un échange de tirs' : kind === 'infiltration' ? 'Nico infiltré en costume dans une réception londonienne' : kind === 'action' ? `${city?.name || 'Vice City'} : poursuite automobile photoréaliste` : `${city?.name || 'Vice City'} : Nico et un autre personnage près de leurs voitures`} />
+      <img className="cr-story-photo" src={`${imageBase}${photo}`} alt={kind === 'action' ? `${city?.name || 'Vice City'} : poursuite automobile photoréaliste` : `${city?.name || 'Vice City'} : Nico et un autre personnage près de leurs voitures`} />
       <div className="cr-story-photo-shade" aria-hidden="true" />
       <div className="cr-story-hud-top"><b>VCR <i>·</i> STORIES</b><span>{city?.district || 'OCEAN DRIVE'} <i>·</i> {city?.name || 'VICE CITY'}</span><small>19:86</small></div>
       {isSetPiece ? <span className="cr-story-speaker-tag is-action"><i /> {spokenLabel[0]} <b>· NICO</b></span> : <span className="cr-story-speaker-tag"><i /> {active} <b>· PARLE</b></span>}

@@ -28,16 +28,7 @@
 .city-rush-ending-choices button>b{font:900 12px/1 var(--display,system-ui,sans-serif);letter-spacing:.08em}.city-rush-ending-choices button>span{color:rgba(239,237,247,.7);font:600 11px/1.35 system-ui,sans-serif}
 @media(max-width:520px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){.city-rush-ending-choices{grid-template-columns:1fr}.city-rush-ending-choices button{min-height:58px}}
 @keyframes crStoryActionCam{0%{transform:scale(1.04) translateX(-.5%);object-position:47% 55%}100%{transform:scale(1.13) translateX(.8%);object-position:53% 50%}}
-.cr-story-scene.kind-infiltration .cr-story-photo{animation:crStoryStealthCam 12s ease-in-out infinite alternate;filter:saturate(.86) contrast(1.08)}
-.cr-story-scene.kind-infiltration::before{animation:none;opacity:.16;background:linear-gradient(90deg,rgba(255,197,108,.18),transparent 30% 70%,rgba(35,78,142,.22))}
-.cr-story-scene.kind-hangar::before{animation:crHangarFlash 2.8s ease-in-out infinite alternate;background:linear-gradient(95deg,rgba(213,38,49,.22),transparent 32% 68%,rgba(48,89,180,.2))}
-.cr-story-scene.kind-hangar .cr-story-photo{animation:crHangarCam 2.1s steps(2,end) infinite;filter:saturate(1.13) contrast(1.08)}
 .cr-story-scene.kind-action .cr-story-photo{animation:crStoryActionCam 2.7s cubic-bezier(.45,0,.55,1) infinite alternate}
-.cr-story-scene.kind-infiltration .cr-story-action-stamp{background:rgba(147,102,28,.8);border-color:rgba(255,211,126,.5);animation:crInfiltrationPulse 2.5s ease-in-out infinite alternate}
-@keyframes crHangarCam{0%,100%{transform:scale(1.08) translate(0,0)}25%{transform:scale(1.09) translate(-2px,1px)}75%{transform:scale(1.1) translate(2px,-1px)}}
-@keyframes crInfiltrationPulse{to{filter:brightness(1.25);box-shadow:0 0 18px rgba(255,197,108,.24)}}
-@keyframes crStoryStealthCam{from{transform:scale(1.015) translateX(.4%);object-position:49% 53%}to{transform:scale(1.075) translateX(-.5%);object-position:53% 49%}}
-@keyframes crHangarFlash{0%,70%{opacity:.12}82%{opacity:.7}100%{opacity:.2}}
 @keyframes crActionStreak{from{background-position:0 0}to{background-position:180px 0}}@keyframes crActionStamp{to{filter:brightness(1.35);transform:skew(-8deg) scale(1.025)}}
 .cr-story-skyline{position:absolute;inset:13% 0 25%;display:flex;align-items:flex-end;justify-content:space-around;opacity:.8;filter:drop-shadow(0 0 9px rgba(255,108,153,.16))}
 .cr-story-skyline i{position:relative;display:block;width:10%;height:54%;background:linear-gradient(90deg,#171c32,#252039);border-top:2px solid rgba(255,197,168,.36);clip-path:polygon(8% 0,100% 6%,95% 100%,0 100%)}

@@ -575,6 +575,16 @@
   font: 600 10px var(--mono, monospace);
 }
 
+/* ── HUD façon console de jeu : radar + compteurs (mobile) ── */
+/* Desktop : le wrapper radar est transparent et les compteurs dédiés au mobile restent cachés */
+.city-rush-radar { display: contents; }
+.city-rush-gta-bars { display: none; }
+.city-rush-gta-cash { display: none; }
+
+@keyframes crWantedPulse {
+  50% { opacity: 0.72; }
+}
+
 /* ── Minimap — modern glass card ── */
 .city-rush-minimap {
   position: absolute;
@@ -2314,51 +2324,79 @@
   .city-rush-intro-foot { gap: 6px; }
   .city-rush-intro-foot span { font-size: 7px; padding: 4px 8px; }
 
-  .city-rush-hud-top { top: 10px; left: 10px; right: 10px; grid-template-columns: 84px minmax(0, 1fr) 84px; gap: 8px; }
-  .city-rush-hud-card { padding: 10px; border-radius: 12px; }
-  .city-rush-hud-card > strong { font-size: 18px; }
-  .city-rush-hud-label { font-size: 7px; }
+  /* HUD haut : compact, ancré à gauche (la vitesse passe dans le radar) */
+  .city-rush-hud-top { top: calc(8px + env(safe-area-inset-top, 0px)); left: 10px; right: auto; display: flex; align-items: stretch; gap: 8px; }
+  .city-rush-hud-card { padding: 8px 10px; border-radius: 10px; background: rgba(5, 8, 16, 0.62); border: 1px solid rgba(255, 255, 255, 0.16); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); backdrop-filter: blur(8px); }
+  .city-rush-hud-label { font-size: 7px; margin-bottom: 3px; }
+  .city-rush-hud-card > strong { font-size: 20px; }
+  .city-rush-hud-card > strong small { font-size: 9px; }
+  .city-rush-hud-card > strong em { margin-top: 2px; font-size: 8px; }
+  .city-rush-position-card { min-width: 76px; }
+  .city-rush-lap-card { min-width: 126px; }
+  .city-rush-speed-card { display: none; }
 
-  .city-rush-minimap { top: 72px; left: 10px; width: 168px; border-radius: 12px; }
-  .city-rush-minimap-stage { height: 84px; }
-  .city-rush-minimap-focus { padding: 8px; gap: 8px; grid-template-columns: 28px minmax(0,1fr) auto; }
-  .city-rush-minimap-focus-avatar { width: 28px; height: 28px; }
-  .city-rush-minimap-roster { max-height: 110px; }
+  /* Compteur de butin + étoiles de recherche, en haut à droite */
+  .city-rush-gta-cash { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; position: absolute; z-index: 4; top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; pointer-events: none; text-align: right; }
+  .city-rush-gta-cash b { font: 900 16px/1.1 var(--mono, monospace); letter-spacing: 0.05em; color: #8ce99a; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 14px rgba(104, 222, 124, 0.4); }
+  .city-rush-gta-cash small { font: 700 9px var(--mono, monospace); letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.78); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85); }
+  .city-rush-gta-wanted { display: inline-flex; gap: 3px; margin-top: 3px; }
+  .city-rush-gta-wanted i { font-style: normal; font-size: 14px; line-height: 1; color: rgba(255, 255, 255, 0.26); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+  .city-rush-gta-wanted i.is-on { color: #fff; text-shadow: 0 0 8px rgba(255, 255, 255, 0.9), 0 0 18px rgba(255, 196, 84, 0.55); animation: crWantedPulse 1.5s ease-in-out infinite; }
 
-  .city-rush-status-pill { top: 86px; font-size: 8px; padding: 6px 10px; max-width: 60%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .city-rush-toast { top: 120px; font-size: 9px; padding: 8px 12px; }
+  /* Radar façon console : mini-carte carrée en bas à gauche + jauges sous la carte */
+  .city-rush-radar { display: flex; flex-direction: column; position: absolute; z-index: 5; left: calc(10px + env(safe-area-inset-left, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: 138px; border-radius: 12px; background: rgba(4, 7, 14, 0.72); border: 2px solid rgba(238, 240, 244, 0.78); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); overflow: hidden; pointer-events: none; backdrop-filter: blur(6px); }
+  .city-rush-radar .city-rush-minimap { position: static; width: auto; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
+  .city-rush-radar .city-rush-minimap-head,
+  .city-rush-radar .city-rush-minimap-focus,
+  .city-rush-radar .city-rush-minimap-roster { display: none; }
+  .city-rush-radar .city-rush-minimap-stage { height: 116px; border-bottom: 1px solid rgba(255, 255, 255, 0.16); background: radial-gradient(circle at 50% 50%, rgba(67, 234, 213, 0.1), rgba(4, 7, 14, 0.96) 78%); }
+  .city-rush-gta-bars { display: flex; flex-direction: column; gap: 4px; padding: 7px 8px 8px; }
+  .city-rush-gta-bar { position: relative; display: block; height: 7px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+  .city-rush-gta-bar i { position: absolute; top: 0; bottom: 0; left: 0; width: 0; transition: width 0.25s ease; }
+  .city-rush-gta-bar.is-tour i { background: linear-gradient(90deg, #4fae63, #8ce99a); }
+  .city-rush-gta-bar.is-turbo i { background: linear-gradient(90deg, #2fb7c9, #43ead5); }
+
+  .city-rush-status-pill { top: 78px; font-size: 8px; padding: 6px 10px; max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .city-rush-toast { top: 110px; font-size: 9px; padding: 8px 12px; }
 
   .city-rush-lap-banner { padding: 12px 18px; border-radius: 12px; }
   .city-rush-lap-banner > strong { font-size: clamp(22px, 7vw, 32px); }
 
   .city-rush-result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 
+  /* Contrôles ancrés à droite : objets au-dessus des flèches de direction */
   .city-rush-controls-bottom {
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    left: auto;
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 8px;
   }
 
-  .city-rush-steering { justify-content: center; border-radius: 12px; }
-  .city-rush-steering button { width: 40px; height: 40px; }
+  .city-rush-steering { gap: 8px; padding: 6px; border-radius: 14px; background: rgba(4, 7, 14, 0.62); border: 1px solid rgba(255, 255, 255, 0.18); backdrop-filter: blur(8px); }
+  .city-rush-steering > span { display: none; }
+  .city-rush-steering button { width: 58px; height: 58px; border-radius: 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.24); font-size: 22px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; transition: transform 0.1s ease, background 0.1s ease; }
+  .city-rush-steering button:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.22); border-color: var(--city-secondary); }
   .city-rush-power-bar {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
     padding: 6px;
     border-radius: 12px;
+    width: 132px;
+    background: rgba(4, 7, 14, 0.62);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(8px);
   }
-  .city-rush-power-button { min-width: 0; height: 56px; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 4px; }
-  .city-rush-power-icon { width: 28px; height: 28px; border-radius: 8px; }
-  .city-rush-power-icon svg { width: 16px; height: 16px; }
-  .city-rush-power-copy { align-items: center; text-align: center; gap: 2px; }
-  .city-rush-power-copy b { font-size: 7px; text-align: center; }
-  .city-rush-power-copy small { justify-content: center; font-size: 7px; }
+  .city-rush-power-button { min-width: 0; height: 50px; flex-direction: column; justify-content: center; gap: 3px; padding: 5px 4px; border-radius: 9px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .city-rush-power-icon { width: 24px; height: 24px; border-radius: 7px; }
+  .city-rush-power-icon svg { width: 14px; height: 14px; }
+  .city-rush-power-copy { align-items: center; text-align: center; gap: 1px; }
+  .city-rush-power-copy b { font-size: 6.5px; text-align: center; }
+  .city-rush-power-copy small { justify-content: center; font-size: 6.5px; }
   .city-rush-power-progress { height: 2px; }
-  .city-rush-power-pip { top: 4px; right: 4px; width: 5px; height: 5px; }
+  .city-rush-power-pip { top: 3px; right: 3px; width: 5px; height: 5px; }
 
   .city-rush-shell-footer { height: auto; min-height: 40px; padding: 10px 12px; flex-wrap: wrap; gap: 8px; font-size: 8px; }
   .city-rush-desktop-hint { display: none; }
@@ -2387,6 +2425,7 @@
   .city-rush-toast,
   .city-rush-lap-banner,
   .city-rush-power-pip,
+  .city-rush-gta-wanted i.is-on,
   .city-rush-viewport.is-boosting::after,
   .city-rush-viewport.is-stunned::after {
     animation: none !important;
