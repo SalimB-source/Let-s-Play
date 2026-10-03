@@ -444,9 +444,13 @@ function attachCloudChocobo(model) {
 
 /**
  * Link & Épona : la jument baie remplace le cheval de base (robe alezane,
- * crins blonds, liste et balzanes crème), et le cavalier troque le Stetson
- * pour la casquette verte, l’épée de légende à la main droite et le bouclier
- * hylien sanglé dans le dos.
+ * crins blonds, liste et balzanes crème) et gagne un harnachement complet
+ * (frontale, muserole, poitrail à anneau doré, sangle, étriers, sacoches).
+ * Le cavalier troque le Stetson pour la casquette verte et reçoit ses
+ * marques de héros : oreilles pointues d’Hyléen, sourcils et yeux bleus,
+ * col de chemise, baudrier en diagonale, pan de tunique sur la selle,
+ * l’épée de légende à la main droite (garde ailée violette, gorge de lame
+ * et Triforce gravée) et le bouclier hylien sanglé dans le dos.
  */
 function attachLinkEpona(model) {
   const parts = model.userData.parts || {};
@@ -470,6 +474,7 @@ function attachLinkEpona(model) {
   const saddleCloth = mat(0x2f7a33);
   const saddleLeather = mat(0x6b4324);
   const saddleTrim = mat(0xd9a84e);
+  const gold = mat(0xe8c65f, { metalness: 0.62, roughness: 0.3 });
 
   block(cube, coat, group, [0, 0.95, 0], [0.82, 0.83, 1.65]);
   const neck = block(cube, coat, group, [0, 1.48, -0.64], [0.46, 1.02, 0.52]);
@@ -484,6 +489,13 @@ function attachLinkEpona(model) {
     block(cube, bridle, group, [side * 0.236, 1.95, -0.88], [0.05, 0.05, 0.48]);
   }
   block(cube, bridle, group, [0, 1.79, -1.16], [0.42, 0.08, 0.16]);
+  // Bride complète : frontale au-dessus des yeux et muserole sur le nez.
+  block(cube, bridle, group, [0, 2.12, -1.3], [0.46, 0.05, 0.06]);
+  block(cube, bridle, group, [0, 1.78, -1.36], [0.4, 0.07, 0.06]);
+  // Toupet blond qui retombe entre les deux oreilles.
+  block(cube, maneLight, group, [0, 2.22, -1.12], [0.16, 0.2, 0.24]);
+  // Naseaux sombres sur le bout du nez.
+  for (const side of [-1, 1]) block(cube, eyeDark, group, [side * 0.1, 1.83, -1.39], [0.05, 0.06, 0.02]);
   // Crinière blonde, plus fournie que celle du cheval de base.
   block(cube, maneBlond, group, [0, 1.63, -0.36], [0.2, 0.94, 0.2]);
   block(cube, maneLight, group, [0, 2.0, -0.63], [0.22, 0.36, 0.22]);
@@ -516,6 +528,21 @@ function attachLinkEpona(model) {
   block(cube, saddleCloth, group, [0, 1.34, 0.05], [0.9, 0.1, 0.92]);
   block(cube, saddleLeather, group, [0, 1.44, 0.12], [0.66, 0.16, 0.62]);
   block(cube, saddleTrim, group, [0, 1.53, 0.12], [0.5, 0.035, 0.48]);
+  // Poitrail sanglé autour de l'encolure, avec son anneau doré.
+  block(cube, bridle, group, [0, 1.3, -0.79], [0.88, 0.09, 0.05]);
+  block(cube, gold, group, [0, 1.3, -0.83], [0.1, 0.1, 0.04]);
+  // Sangle sous le ventre pour tenir la selle en place pendant le galop.
+  block(cube, bridle, group, [0, 0.56, 0.12], [0.88, 0.08, 0.12]);
+  for (const side of [-1, 1]) {
+    // Étrivière et étrier doré, juste devant la botte de Link.
+    block(cube, saddleLeather, group, [side * 0.47, 1.18, -0.18], [0.05, 0.4, 0.08]);
+    const stirrup = block(cube, gold, group, [side * 0.48, 0.95, -0.18], [0.08, 0.12, 0.16]);
+    stirrup.userData.linkAccessory = 'stirrup';
+    // Sacoches de voyage posées sur la croupe, derrière la selle.
+    const bag = block(cube, saddleLeather, group, [side * 0.46, 1.14, 0.46], [0.12, 0.3, 0.3]);
+    bag.userData.linkAccessory = 'saddlebag';
+    block(cube, saddleTrim, group, [side * 0.525, 1.2, 0.46], [0.02, 0.08, 0.1]);
+  }
 
   // ---- Link -------------------------------------------------------------
   const loose = [];
@@ -523,12 +550,16 @@ function attachLinkEpona(model) {
   const hair = mat(0xf2d477);
   const hairLight = mat(0xffe9a6);
   const beltLeather = mat(0x5a3418);
-  const gold = mat(0xe8c65f, { metalness: 0.62, roughness: 0.3 });
+  // Peau et tunique suivent la palette du skin (slots tête et tissu) sans
+  // réutiliser ses matériaux : le détachement ne doit pas les dissiper.
+  const skin = mat(model.userData.materials?.[4]?.color.getHex() ?? 0xf6d2a8);
+  const tunic = mat(model.userData.materials?.[2]?.color.getHex() ?? 0x3d8f3f);
   const capGreen = mat(0x2f8f3a);
   const capDark = mat(0x22722b);
   const capTrim = mat(0xd9c07a);
   const bladeMat = mat(0xdfe9f5, { metalness: 0.72, roughness: 0.2 });
   const bladeEdge = mat(0xf7fbff, { metalness: 0.6, roughness: 0.15 });
+  const fuller = mat(0xa9bdd4, { metalness: 0.66, roughness: 0.26 });
   const guardMat = mat(0x6f5bd6, { metalness: 0.5, roughness: 0.34 });
   const gripMat = mat(0x35508c);
   const shieldBlue = mat(0x2b56b8);
@@ -540,6 +571,19 @@ function attachLinkEpona(model) {
   const belt = block(cube, beltLeather, riderBody, [0, 1.66, 0.05], [0.63, 0.11, 0.46]);
   const buckle = block(cube, gold, riderBody, [0, 1.66, -0.176], [0.14, 0.1, 0.035]);
   loose.push(belt, buckle);
+  // Baudrier de cuir en diagonale sur la tunique, anneau doré à la hanche.
+  const strap = block(cube, beltLeather, riderBody, [0.02, 1.9, -0.19], [0.14, 0.9, 0.04]);
+  strap.rotation.z = 0.55;
+  strap.userData.linkAccessory = 'chest-strap';
+  const strapRing = block(cube, gold, riderBody, [0.2, 1.66, -0.195], [0.1, 0.1, 0.045]);
+  loose.push(strap, strapRing);
+  // Col de la chemise brune qui dépasse au niveau du cou.
+  const collar = block(cube, beltLeather, riderBody, [0, 2.2, -0.02], [0.42, 0.1, 0.4]);
+  loose.push(collar);
+  // Le pan évasé de la tunique retombe sur la selle, comme celle du héros.
+  const skirt = block(cube, tunic, riderBody, [0, 1.42, 0.05], [0.74, 0.16, 0.6]);
+  skirt.userData.linkAccessory = 'tunic-skirt';
+  loose.push(skirt);
 
   // Cheveux blonds : frange, pattes et nuque, sous la casquette.
   const hairGroup = new THREE.Group();
@@ -552,6 +596,19 @@ function attachLinkEpona(model) {
   block(cube, hair, hairGroup, [0, 2.18, 0.27], [0.48, 0.42, 0.2]);
   // Yeux bleus sur le visage (la tête vient du modèle de base, tons chair).
   for (const side of [-1, 1]) block(cube, eyeBlue, hairGroup, [side * 0.115, 2.4, -0.25], [0.07, 0.05, 0.03]);
+  // Sourcils blonds au-dessus des yeux.
+  for (const side of [-1, 1]) block(cube, hair, hairGroup, [side * 0.115, 2.465, -0.252], [0.09, 0.035, 0.02]);
+  // Oreilles pointues d'Hyléen, la signature de Link : elles percent les
+  // pattes de cheveux, dressées vers l'extérieur et légèrement vers l'arrière.
+  const earGeometry = new THREE.ConeGeometry(0.075, 0.26, 4);
+  for (const side of [-1, 1]) {
+    const ear = new THREE.Mesh(earGeometry, skin);
+    ear.position.set(side * 0.33, 2.34, 0.05);
+    ear.rotation.z = -side * 1.15;
+    ear.rotation.x = 0.18;
+    ear.userData.linkAccessory = 'hylian-ear';
+    hairGroup.add(ear);
+  }
 
   // Casquette verte pointue, visière à l’avant et bout qui retombe.
   const cap = new THREE.Group();
@@ -610,11 +667,32 @@ function attachLinkEpona(model) {
   const blade = block(cube, bladeMat, sword, [0, 0.5, 0], [0.12, 0.96, 0.07]);
   blade.userData.linkAccessory = 'master-sword';
   block(cube, bladeEdge, sword, [0.045, 0.5, 0.038], [0.035, 0.84, 0.012]);
+  // Gorge centrale sombre sur les deux faces de la lame.
+  block(cube, fuller, sword, [0, 0.55, -0.038], [0.03, 0.7, 0.008]);
+  block(cube, fuller, sword, [0, 0.55, 0.038], [0.03, 0.7, 0.008]);
   const swordTip = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.2, 4), bladeMat);
   swordTip.position.set(0, 1.07, 0);
   sword.add(swordTip);
   block(cube, guardMat, sword, [0, 0.05, 0], [0.42, 0.07, 0.13]);
   block(cube, guardMat, sword, [0, -0.01, 0], [0.2, 0.06, 0.11]);
+  // Les ailes recourbées de la garde violette, signature de l'épée de légende.
+  for (const side of [-1, 1]) {
+    const wing = block(cube, guardMat, sword, [side * 0.24, 0.13, 0], [0.1, 0.3, 0.11]);
+    wing.rotation.z = -side * 0.5;
+    wing.userData.linkAccessory = 'master-sword-wing';
+    const wingTip = block(cube, guardMat, sword, [side * 0.31, 0.31, 0], [0.08, 0.16, 0.09]);
+    wingTip.rotation.z = -side * 0.9;
+    wingTip.userData.linkAccessory = 'master-sword-wing';
+  }
+  // Emblème de la Triforce gravé à la base de la lame, visible des deux côtés.
+  const swordCrestGeometry = new THREE.ConeGeometry(0.055, 0.03, 3);
+  for (const face of [-1, 1]) {
+    const crest = new THREE.Mesh(swordCrestGeometry, gold);
+    crest.position.set(0, 0.27, face * 0.04);
+    crest.rotation.x = face * Math.PI / 2;
+    crest.userData.linkAccessory = 'triforce-crest';
+    sword.add(crest);
+  }
   block(cube, gripMat, sword, [0, -0.14, 0], [0.09, 0.24, 0.09]);
   block(cube, gold, sword, [0, -0.28, 0], [0.13, 0.06, 0.13]);
 
