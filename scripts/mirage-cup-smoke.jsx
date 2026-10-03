@@ -218,6 +218,30 @@ export async function checkMirageCup(assert) {
     await waitForCountdown(node);
     assert.match(countdownKicker(node), /COURSE 1 \/ 3 · DUNES DE L’ÉCHO/);
     await waitForRace(node);
+    const powerBar = await until(() => node.querySelector('.mirage-powerup-bar'), 'la barre d’objets');
+    assert.equal(/\d+\s*\/\s*(8|10|12)/.test(text(powerBar)), false,
+      'les boutons de pouvoirs n’affichent plus 0/8, 0/10 ou 0/12');
+    const triggeredActions = [];
+    worldProbe.props.actionsRef.current = (actionName) => triggeredActions.push(actionName);
+    await act(async () => {
+      worldProbe.props.onHud({
+        score: 0, gems: 5, combo: 5, multiplier: '1.3', lives: 3, remaining: 55,
+        shieldCharges: 0, lassoCharges: 1, pistolCharges: 0, boostCharges: 0,
+        shieldChargePoints: 4, lassoChargePoints: 10, pistolChargePoints: 6, boostChargePoints: 2,
+        shieldProgress: 0.5, lassoProgress: 1, pistolProgress: 0.5, boostProgress: 0.25,
+        anyPowerReady: true,
+      });
+    });
+    assert.equal(/\d+\s*\/\s*(8|10|12)/.test(text(powerBar)), false,
+      'même en charge partielle, aucun compteur /8, /10 ou /12 n’est affiché sur les pouvoirs');
+    const lassoBtn = powerBar.querySelector('.mirage-powerup-btn.is-lasso-btn');
+    assert.equal(lassoBtn.disabled, false, 'le bouton Lasso prêt est actif');
+    await act(async () => {
+      lassoBtn.dispatchEvent(new window.MouseEvent('pointerdown', { bubbles: true, cancelable: true, button: 0 }));
+      lassoBtn.click();
+    });
+    assert.deepEqual(triggeredActions, ['use_lasso'],
+      'le bouton de pouvoir réagit dès le premier appui (pointerdown) sans doublon au click');
     assert.equal(worldProbe.props.stage, 'desert');
     assert.equal(worldProbe.props.race.mode, 'duel', 'une course de coupe est un duel');
     assert.deepEqual(worldProbe.props.race.cup, { id: 'desert', index: 0, total: 3 });

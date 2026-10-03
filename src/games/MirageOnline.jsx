@@ -532,8 +532,86 @@ export default function MirageOnline({
     </>
   ) : null;
 
+  const lastPowerPointerAtRef = useRef(0);
+  const tapRecordRef = useRef(null);
+
+  const triggerPowerPointerDown = (name) => (event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    event.stopPropagation();
+    lastPowerPointerAtRef.current = performance.now();
+    actions.current?.(name);
+  };
+
+  const triggerPowerClick = (name) => (event) => {
+    if (performance.now() - lastPowerPointerAtRef.current < 450) {
+      lastPowerPointerAtRef.current = 0;
+      return;
+    }
+    if (event?.detail > 0) event.currentTarget?.blur?.();
+    actions.current?.(name);
+  };
+
+  const onPagePointerDownCapture = useCallback((event) => {
+    if (event.button !== undefined && event.button !== 0) return;
+    const btn = event.target?.closest?.('button:not(:disabled)');
+    if (!btn || btn.classList.contains('mirage-powerup-btn')) {
+      tapRecordRef.current = null;
+      return;
+    }
+    tapRecordRef.current = {
+      btn,
+      pointerId: event.pointerId,
+      x: event.clientX || 0,
+      y: event.clientY || 0,
+      time: performance.now(),
+      clicked: false,
+      rescuedAt: 0,
+    };
+  }, []);
+
+  const onPagePointerUpCapture = useCallback((event) => {
+    const rec = tapRecordRef.current;
+    if (!rec || rec.clicked || (rec.pointerId !== undefined && event.pointerId !== undefined && rec.pointerId !== event.pointerId)) return;
+    const dx = (event.clientX || 0) - rec.x;
+    const dy = (event.clientY || 0) - rec.y;
+    const elapsed = performance.now() - rec.time;
+    if (Math.hypot(dx, dy) > 24 || elapsed > 650) return;
+    const rect = rec.btn.getBoundingClientRect?.();
+    if (rect && rect.width > 0 && rect.height > 0) {
+      const margin = 18;
+      const cx = event.clientX || 0;
+      const cy = event.clientY || 0;
+      if (cx < rect.left - margin || cx > rect.right + margin || cy < rect.top - margin || cy > rect.bottom + margin) return;
+    }
+    window.setTimeout(() => {
+      if (rec.clicked || !rec.btn.isConnected || rec.btn.disabled) return;
+      rec.clicked = true;
+      rec.rescuedAt = performance.now();
+      rec.btn.click();
+    }, 24);
+  }, []);
+
+  const onPageClickCapture = useCallback((event) => {
+    const rec = tapRecordRef.current;
+    if (!rec) return;
+    const btn = event.target?.closest?.('button');
+    if (btn !== rec.btn) return;
+    if (rec.rescuedAt > 0 && performance.now() - rec.rescuedAt < 350 && event.isTrusted) {
+      event.stopPropagation();
+      event.preventDefault();
+      rec.rescuedAt = 0;
+      return;
+    }
+    rec.clicked = true;
+  }, []);
+
   return (
-    <div className="mirage-page">
+    <div
+      className="mirage-page"
+      onPointerDownCapture={onPagePointerDownCapture}
+      onPointerUpCapture={onPagePointerUpCapture}
+      onClickCapture={onPageClickCapture}
+    >
       <header className="mirage-heading wrap has-mode-tabs">
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow">
@@ -1392,7 +1470,8 @@ export default function MirageOnline({
                             <button
                               type="button"
                               className={`mirage-powerup-btn is-shield-btn${(hud.shieldCharges || 0) > 0 ? ' is-ready' : ''}`}
-                              onClick={() => actions.current?.('use_shield')}
+                              onPointerDown={triggerPowerPointerDown('use_shield')}
+                              onClick={triggerPowerClick('use_shield')}
                               disabled={(hud.shieldCharges || 0) <= 0}
                               title={`Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
                             >
@@ -1402,9 +1481,7 @@ export default function MirageOnline({
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>Bouclier</span>
-                                {(hud.shieldCharges || 0) > 0
-                                  ? <b className="mirage-powerup-count is-charges">×{hud.shieldCharges}</b>
-                                  : <span className="mirage-powerup-count">{hud.shieldChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.SHIELD]} ◆</span>}
+                                {(hud.shieldCharges || 0) > 0 && <b className="mirage-powerup-count is-charges">×{hud.shieldCharges}</b>}
                               </div>
                               <div className="mirage-powerup-progress-bg">
                                 <div
@@ -1417,7 +1494,8 @@ export default function MirageOnline({
                             <button
                               type="button"
                               className={`mirage-powerup-btn is-lasso-btn${(hud.lassoCharges || 0) > 0 ? ' is-ready' : ''}`}
-                              onClick={() => actions.current?.('use_lasso')}
+                              onPointerDown={triggerPowerPointerDown('use_lasso')}
+                              onClick={triggerPowerClick('use_lasso')}
                               disabled={(hud.lassoCharges || 0) <= 0}
                               title={isCloudRider
                                 ? `Onde de choc à l’épée (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes. Secoue et ralentit la cible pendant ${LASSO_SLOW_DURATION}s.`
@@ -1429,9 +1507,7 @@ export default function MirageOnline({
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>{yellowPowerLabel}</span>
-                                {(hud.lassoCharges || 0) > 0
-                                  ? <b className="mirage-powerup-count is-charges">×{hud.lassoCharges}</b>
-                                  : <span className="mirage-powerup-count">{hud.lassoChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.LASSO]} ◆</span>}
+                                {(hud.lassoCharges || 0) > 0 && <b className="mirage-powerup-count is-charges">×{hud.lassoCharges}</b>}
                               </div>
                               <div className="mirage-powerup-progress-bg">
                                 <div
@@ -1444,7 +1520,8 @@ export default function MirageOnline({
                             <button
                               type="button"
                               className={`mirage-powerup-btn is-boost-btn${(hud.boostCharges || 0) > 0 ? ' is-ready' : ''}`}
-                              onClick={() => actions.current?.('use_boost')}
+                              onPointerDown={triggerPowerPointerDown('use_boost')}
+                              onClick={triggerPowerClick('use_boost')}
                               disabled={(hud.boostCharges || 0) <= 0}
                               title={`Turbo — ${POWER_UP_DIAMOND_COST[POWER_UPS.BOOST]} diamants verts pour remplir la barre. Il s’active tout seul : boost de vitesse pendant ${POWER_BOOST_DURATION}s. Utiliser cet objet ne décharge pas les autres.`}
                             >
@@ -1454,9 +1531,7 @@ export default function MirageOnline({
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>Turbo</span>
-                                {(hud.boostCharges || 0) > 0
-                                  ? <b className="mirage-powerup-count is-charges">×{hud.boostCharges}</b>
-                                  : <span className="mirage-powerup-count">{hud.boostChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.BOOST]} ◆</span>}
+                                {(hud.boostCharges || 0) > 0 && <b className="mirage-powerup-count is-charges">×{hud.boostCharges}</b>}
                               </div>
                               <div className="mirage-powerup-progress-bg">
                                 <div
@@ -1469,7 +1544,8 @@ export default function MirageOnline({
                             <button
                               type="button"
                               className={`mirage-powerup-btn is-pistol-btn${(hud.pistolCharges || 0) > 0 ? ' is-ready' : ''}`}
-                              onClick={() => actions.current?.('use_pistol')}
+                              onPointerDown={triggerPowerPointerDown('use_pistol')}
+                              onClick={triggerPowerClick('use_pistol')}
                               disabled={(hud.pistolCharges || 0) <= 0}
                               title={isCloudRider
                                 ? `Éclair (R) — ${POWER_UP_DIAMOND_COST[POWER_UPS.PISTOL]} diamants rouges. Lève l’épée : la foudre frappe la cible et la fait tomber pendant ${PISTOL_STUN_DURATION}s.`
@@ -1481,9 +1557,7 @@ export default function MirageOnline({
                               </div>
                               <div className="mirage-powerup-btn-name">
                                 <span>{redPowerLabel}</span>
-                                {(hud.pistolCharges || 0) > 0
-                                  ? <b className="mirage-powerup-count is-charges">×{hud.pistolCharges}</b>
-                                  : <span className="mirage-powerup-count">{hud.pistolChargePoints || 0}/{POWER_UP_CHARGE_COST[POWER_UPS.PISTOL]} ◆</span>}
+                                {(hud.pistolCharges || 0) > 0 && <b className="mirage-powerup-count is-charges">×{hud.pistolCharges}</b>}
                               </div>
                               <div className="mirage-powerup-progress-bg">
                                 <div

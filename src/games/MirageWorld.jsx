@@ -1387,21 +1387,34 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const net = getNetwork?.();
       if (!net?.players?.length) return null;
       const myDist = distance;
-      const ahead = net.players
-        .filter(p=> p.user_id!==net.userId && !p.finished_at && (Number(p.distance)||0) > myDist + 1)
-        .sort((a,b)=> (Number(a.distance)||0)-(Number(b.distance)||0));
-      if (ahead.length>0) {
+      const opponents = net.players.filter((p) => p.user_id !== net.userId && !p.finished_at);
+      const ahead = opponents
+        .filter((p) => (Number(p.distance) || 0) > myDist)
+        .sort((a, b) => (Number(a.distance) || 0) - (Number(b.distance) || 0));
+      if (ahead.length > 0) {
         return { kind: 'online', player: ahead[0], distance: ahead[0].distance };
+      }
+      const closest = opponents
+        .slice()
+        .sort((a, b) => Math.abs((Number(a.distance) || 0) - myDist) - Math.abs((Number(b.distance) || 0) - myDist));
+      if (closest.length > 0) {
+        return { kind: 'online', player: closest[0], distance: closest[0].distance };
       }
       return null;
     }
     if (race.mode === 'duel') {
       const targetable = duelRivals.filter((r) => !isGhostRival(r) && r.finishedAt === null);
       const ahead = targetable
-        .filter((r) => r.dist > distance + 1.2)
+        .filter((r) => r.dist > distance)
         .sort((a, b) => a.dist - b.dist);
       if (ahead.length > 0) {
         return { kind: 'rival', npc: ahead[0] };
+      }
+      const closest = targetable
+        .slice()
+        .sort((a, b) => Math.abs(a.dist - distance) - Math.abs(b.dist - distance));
+      if (closest.length > 0) {
+        return { kind: 'rival', npc: closest[0] };
       }
       return null;
     }
@@ -1530,9 +1543,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     if (race.mode === 'online') {
       const net = getNetwork?.();
       const leader = (net?.players || [])
-        .filter(p => p.user_id !== net.userId && !p.finished_at)
+        .filter((p) => p.user_id !== net.userId && !p.finished_at)
         .reduce((best, p) => (!best || (Number(p.distance) || 0) > (Number(best.distance) || 0) ? p : best), null);
-      return leader && (Number(leader.distance) || 0) > distance ? { kind: 'online', player: leader } : null;
+      return leader ? { kind: 'online', player: leader } : null;
     }
     if (race.mode === 'duel') {
       const targetable = duelRivals.filter((r) => !isGhostRival(r) && r.finishedAt === null);
@@ -1540,6 +1553,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         .filter((r) => r.dist > distance)
         .sort((a, b) => b.dist - a.dist);
       if (ahead.length > 0) return { kind: 'rival', npc: ahead[0] };
+      const closest = targetable
+        .slice()
+        .sort((a, b) => b.dist - a.dist);
+      if (closest.length > 0) return { kind: 'rival', npc: closest[0] };
     }
     return null;
   };
@@ -2152,12 +2169,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   };
 
   const action = (name) => {
-    if (!active || playerStun > 0) return;
+    if (!active) return;
     if (name === 'use_shield' || name === 'shield') useShield();
     else if (name === 'use_lasso' || name === 'lasso') useLasso();
     else if (name === 'use_pistol' || name === 'pistol') usePistol();
     else if (name === 'use_boost' || name === 'boost') useBoost();
     else {
+      if (playerStun > 0) return;
       // La voie change même en plein saut : le doigt n'est jamais ignoré.
       laneIndex = playerLaneAfterAction(laneIndex, name);
       if (name === 'jump') {
