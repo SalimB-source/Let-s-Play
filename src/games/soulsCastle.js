@@ -1,34 +1,35 @@
 // ════════════════════════════════════════════════════════════════════
 // LA CENDRE — décor du « Chemin du Roi » : chapelle, coffre + clé, forêt,
 // château, grand portail, salle des piliers et trône.
-// Style Mirage maison : aplats, formes nettes, flatShading (cf. soulsModels).
+// Direction anime : matières peintes, volumes adoucis et couleurs de crépuscule.
 // Les positions viennent toutes de soulsStage.js (source unique).
 // ════════════════════════════════════════════════════════════════════
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {
   SOULS_PALETTE, makePillar, makeBrazier, makeBarrel, makeRubble,
-  pixelMaterial, scaleBoxUV, scalePlaneUV, multiplyUV,
+  animeMaterial, scaleBoxUV, scalePlaneUV, multiplyUV,
   makeFern, makeMushrooms, makeFallenLog, makeSconce, makeBanner,
   makeRuneDisc, makeDustMotes, makeDebrisPile,
 } from './soulsModels';
 import { STAGE } from './soulsStage';
 
 const flat = (color, opts = {}) =>
-  new THREE.MeshStandardMaterial({ color, roughness: 0.92, flatShading: true, ...opts });
+  new THREE.MeshStandardMaterial({ color, roughness: 0.82, flatShading: false, ...opts });
 
 /**
- * Matières pixelisées du niveau (partagées : une seule paire de textures
- * par matière, les UV de chaque bloc sont mis à l'échelle du monde).
+ * Matières anime peintes, partagées sur tout le niveau. Elles remplacent les
+ * textures à carreaux et laissent la lumière violette/rose modeler les murs.
  */
 const MAT = {
-  cobble: () => pixelMaterial('cobble', { color: 0x9a97a8, tile: 1.4 }),
-  cobbleDark: () => pixelMaterial('cobble', { color: 0x5f5d6b, tile: 1.4 }),
-  brick: () => pixelMaterial('brick', { color: 0x9d9aad, tile: 1.8 }),
-  brickDark: () => pixelMaterial('brick', { color: 0x6b6879, tile: 1.8 }),
-  plank: () => pixelMaterial('plank', { color: 0xb08a5e, tile: 1.2 }),
-  dirt: () => pixelMaterial('dirt', { color: 0x8f8d84, tile: 2.2 }),
-  carpet: () => pixelMaterial('carpet', { color: 0xffffff, tile: 1.6 }),
-  slate: () => pixelMaterial('slate', { color: 0x8b8b9c, tile: 1.5 }),
+  cobble: () => animeMaterial('stone', { color: 0xc0c7f0, tile: 1.65 }),
+  cobbleDark: () => animeMaterial('slate', { color: 0x949bc4, tile: 1.65 }),
+  brick: () => animeMaterial('stone', { color: 0xd0d4fb, tile: 2.05 }),
+  brickDark: () => animeMaterial('slate', { color: 0x8991bc, tile: 2.05 }),
+  plank: () => animeMaterial('wood', { color: 0xd08a8a, tile: 1.45 }),
+  dirt: () => animeMaterial('earth', { color: 0x8d90bd, tile: 2.5 }),
+  carpet: () => animeMaterial('cloth', { color: 0xffffff, tile: 1.75 }),
+  slate: () => animeMaterial('slate', { color: 0xa6afd9, tile: 1.7 }),
 };
 
 const lcg = (seed) => {
@@ -43,14 +44,18 @@ const smooth = (u) => u * u * (3 - 2 * u);
 const clamp01 = (u) => Math.max(0, Math.min(1, u));
 
 /**
- * Boîte posée : centre (x, y, z), dimensions (w, h, d).
- * Si la matière porte `userData.tile` (texture pixel), les UV sont mis à
- * l'échelle du monde : la maille garde sa taille quelle que soit la boîte.
+ * Volume architectural : les masses importantes reçoivent un chanfrein doux,
+ * ce qui casse la lecture en blocs tout en gardant exactement les
+ * dimensions exploitées par les colliders du niveau.
  */
 function block(group, blockers, material, w, h, d, x, y, z, { blocker = true, shadow = true } = {}) {
-  const geo = new THREE.BoxGeometry(w, h, d);
+  const smallest = Math.min(w, h, d);
+  const rounded = smallest >= 0.18;
+  const geo = rounded
+    ? new RoundedBoxGeometry(w, h, d, Math.min(0.11, smallest * 0.22), 3)
+    : new THREE.BoxGeometry(w, h, d);
   const tile = material?.userData?.tile;
-  if (tile) scaleBoxUV(geo, { x: w, y: h, z: d }, tile);
+  if (tile && !rounded) scaleBoxUV(geo, { x: w, y: h, z: d }, tile);
   const mesh = new THREE.Mesh(geo, material);
   mesh.position.set(x, y, z);
   mesh.castShadow = shadow;
@@ -73,8 +78,8 @@ function zoneBrazier(x, z, scale = 1) {
 // ── Sol extérieur ─────────────────────────────────────────────────────
 
 /**
- * Terre cendreuse qui entoure le camp : un seul aplat immense, texturé
- * en pixel. Posé à y = −0.09 : aucune face n'est coplanaire avec les
+ * Terre cendreuse qui entoure le camp : un seul aplat immense, peint de
+ * lavis froids. Posé à y = −0.09 : aucune face n'est coplanaire avec les
  * dalles intérieures (le z-fighting de la chapelle venait de là).
  */
 export const GROUND_Y = -0.09;

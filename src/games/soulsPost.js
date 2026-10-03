@@ -37,18 +37,18 @@ export const GradeShader = {
       vec4 tex = texture2D(tDiffuse, vUv);
       vec3 col = tex.rgb;
       float l = dot(col, vec3(0.2126, 0.7152, 0.0722));
-      // Split-tone façon remaster : ambre côté lumière, indigo côté ombre.
-      vec3 warm = col * vec3(1.10, 1.02, 0.87);
-      vec3 cool = col * vec3(0.87, 0.93, 1.17);
+      // Split-tone anime : roses lumineux côté lumière, cyan indigo côté ombre.
+      vec3 warm = col * vec3(1.16, 0.91, 1.13);
+      vec3 cool = col * vec3(0.84, 1.01, 1.20);
       col = mix(cool, warm, smoothstep(0.06, 0.55, l));
       // Saturation et micro-courbe en S.
       float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
-      col = mix(vec3(lum), col, 1.16);
+      col = mix(vec3(lum), col, 1.24);
       vec3 sCurve = col * col * (3.0 - 2.0 * clamp(col, 0.0, 1.0));
       col = mix(col, sCurve, 0.16);
       // Vignettage cinématique.
       float d = distance(vUv, vec2(0.5, 0.48));
-      col *= 1.0 - smoothstep(0.58, 0.95, d) * 0.4;
+      col *= 1.0 - smoothstep(0.62, 0.95, d) * 0.32;
       // Grain fin animé.
       col += (hash(vUv * 720.0 + fract(uTime) * 37.0) - 0.5) * 0.03;
       gl_FragColor = vec4(clamp(col, 0.0, 1.0), tex.a);
@@ -70,13 +70,13 @@ export function createPost(renderer, scene, camera) {
   // GTAO : occlusion ambiante globale — les objets se « posent » au sol.
   const gtao = new GTAOPass(scene, camera, Math.max(1, size.x), Math.max(1, size.y));
   gtao.output = GTAOPass.OUTPUT.Default;
-  gtao.blendIntensity = 0.92;
+  gtao.blendIntensity = 0.7;
   composer.addPass(gtao);
 
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.5, 0.7, 0.78);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.72, 0.62, 0.68);
   composer.addPass(bloom);
 
-  // Profondeur de champ : le chevalier au foyer, la cour se défocle.
+  // Profondeur de champ : le Gardien Chitine au foyer, la cour se défocle.
   const bokeh = new BokehPass(scene, camera, {
     focus: 4.3,
     aperture: 0.00025,

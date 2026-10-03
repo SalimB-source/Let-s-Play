@@ -15,11 +15,11 @@ import {
 import {
   TORSO_Y,
   seatDrop,
-  makeKnight, makeBonfire, makeBrazier, makeWalls, makePillar,
+  makeInsectWarrior, makeKnight, makeBonfire, makeBrazier, makeWalls, makePillar,
   makeBarrel, makeRubble, makeFloor, makeMoon, makeAshField,
   makeSkyDome, makeStars, makeMoonGlow, makeMistPatches, makeLightShaft,
   makeGrassField, makeFlowerField, makeTree, makeBush,
-  makeHitSparks, makeHealMotes, disposePixelMaps,
+  makeHitSparks, makeHealMotes, disposeAnimeMaps,
   buildNightEnvironment,
   makeStonePath, SEAT_POSE,
 } from './soulsModels';
@@ -56,7 +56,7 @@ import {
 const BASE_FOV = 55;
 const SEAT = SEAT_POSE; // pose assise du Roi (soulsModels : contrat de rig)
 const GAME_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab']);
-/** Stick au repos — le chevalier s'arrête. */
+/** Stick au repos — le Gardien Chitine s'arrête. */
 const TOUCH_IDLE = Object.freeze({ x: 0, y: 0, magnitude: 0, run: false });
 
 // Specs du boss (bond inclus) : BOSS, module pur soulsCombat.js.
@@ -68,8 +68,10 @@ function makeWorld(mount, callbacks) {
   const touchDevice = isTouchPointer();
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0a16);
-  scene.fog = new THREE.Fog(0x131228, 17, 62);
+  scene.background = new THREE.Color(0x17142f);
+  // Brume violette lumineuse : profondeur de film d'animation, sans la boue
+  // grisâtre typique d'un décor de voxels nocturne.
+  scene.fog = new THREE.Fog(0x2d2955, 20, 78);
 
   const camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.1, 400);
 
@@ -77,7 +79,7 @@ function makeWorld(mount, callbacks) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.55));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.16;
+  renderer.toneMappingExposure = 1.28;
   // Ombres dynamiques douces (lune) — le remaster tient à ça.
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -97,9 +99,9 @@ function makeWorld(mount, callbacks) {
   scene.environmentIntensity = 0.55;
 
   // ── Lumière : lune clé (ombres) + contre-jour froid + sources chaudes
-  const hemi = new THREE.HemisphereLight(0x515a86, 0x181522, 0.95);
+  const hemi = new THREE.HemisphereLight(0x8495df, 0x32244f, 1.18);
   scene.add(hemi);
-  const moonLight = new THREE.DirectionalLight(0xbcc8ff, 1.35);
+  const moonLight = new THREE.DirectionalLight(0xd1d8ff, 1.62);
   moonLight.position.set(-16, 24, -13);
   moonLight.castShadow = true;
   moonLight.shadow.mapSize.set(2048, 2048);
@@ -113,11 +115,11 @@ function makeWorld(mount, callbacks) {
   moonLight.shadow.normalBias = 0.028;
   scene.add(moonLight);
   scene.add(moonLight.target); // la lune suit le joueur (carte longue de 130 m)
-  const fill = new THREE.DirectionalLight(0xff9a5c, 0.16);
+  const fill = new THREE.DirectionalLight(0xff8dbb, 0.31);
   fill.position.set(6, 8, 10);
   scene.add(fill);
   // Contour bleuté derrière l'épaule — silhouettage « remaster ».
-  const rim = new THREE.DirectionalLight(0x8fa4ff, 0.5);
+  const rim = new THREE.DirectionalLight(0x62e7ef, 0.74);
   rim.position.set(10, 6, -14);
   scene.add(rim);
 
@@ -380,13 +382,13 @@ function makeWorld(mount, callbacks) {
   const flowers = makeFlowerField(colliders, 40);
   scene.add(flowers);
 
-  // ── Joueur ────────────────────────────────────────────────────────
-  const knight = makeKnight();
-  const parts = knight.userData.parts;
+  // ── Joueur : le Gardien Chitine, guerrier insecte anime ───────────
+  const warrior = makeInsectWarrior();
+  const parts = warrior.userData.parts;
   const state = createRunState({ x: 0, z: 6.5 });
-  knight.position.set(state.x, 0, state.z);
-  scene.add(knight);
-  flagShadow(knight, true);
+  warrior.position.set(state.x, 0, state.z);
+  scene.add(warrior);
+  flagShadow(warrior, true);
 
   // ── Escouade : gardes du camp, de la chapelle, de la route + le Roi sur son trône
   const makeFoe = (spawn, opts = {}) => {
@@ -466,7 +468,7 @@ function makeWorld(mount, callbacks) {
 
   // ── État caméra / entrées ─────────────────────────────────────────
   let camYaw = 0;
-  let groundY = 0; // hauteur lissée du sol sous le chevalier
+  let groundY = 0; // hauteur lissée du sol sous le Gardien Chitine
   let camPitch = -0.05;
   let active = false;
   let locked = false;
@@ -790,8 +792,8 @@ function makeWorld(mount, callbacks) {
     combat.stamina = combat.staminaMax;
     Object.assign(state, createRunState(respawnFire.respawn)); // au pied du dernier feu
     groundY = stageHeight(state.x, state.z);
-    knight.position.set(state.x, groundY, state.z);
-    knight.rotation.set(0, state.yaw, 0);
+    warrior.position.set(state.x, groundY, state.z);
+    warrior.rotation.set(0, state.yaw, 0);
     parts.body.rotation.set(0, 0, 0);
     parts.body.position.set(0, 0, 0);
     parts.legL.rotation.x = 0;
@@ -1138,7 +1140,7 @@ function makeWorld(mount, callbacks) {
     const walkIn = Math.min(1, currentSpeed / 1.3);
     const moving = currentSpeed > 0.15;
     groundY += (stageHeight(state.x, state.z) - groundY) * Math.min(1, 11 * dt);
-    knight.position.set(state.x, groundY, state.z);
+    warrior.position.set(state.x, groundY, state.z);
     // ── Gros coup : vrille complète du personnage (smooth ease-in-out),
     // se pose face à la cible pile à l'instant de l'impact (55 %).
     let spinTheta = 0;
@@ -1148,7 +1150,7 @@ function makeWorld(mount, callbacks) {
       const su = Math.min(1, Math.max(0, combat.actionT / Math.max(0.01, s1)));
       spinTheta = (su * su * (3 - 2 * su)) * Math.PI * 2;
     }
-    knight.rotation.y = state.yaw + spinTheta;
+    warrior.rotation.y = state.yaw + spinTheta;
     if (moving) gaitPhase += dt * Math.PI * 2 * (0.85 + 0.22 * currentSpeed);
 
     const sL = Math.sin(gaitPhase);   // +1 : jambe gauche en avant
@@ -1498,7 +1500,7 @@ function makeWorld(mount, callbacks) {
     aim(parts.weapon.rotation, 'z', tWeaponZ, 9);
     aim(parts.weapon.rotation, 'x', tWeaponX, 9);
 
-    // ── Chute du chevalier : il s'effondre en arrière, puis l'écran de
+    // ── Chute du Gardien Chitine : il s'effondre en arrière, puis l'écran de
     // mort prend la main (le monde reste rendu derrière, figé).
     if (dead) {
       deathT += dt;
@@ -1531,6 +1533,14 @@ function makeWorld(mount, callbacks) {
         aim(parts.strands[i].rotation, 'x', 0.12 - runFactor * 0.18 + sway, 8);
       }
     }
+    // Ailes irisées : petite respiration au repos, battement plus franc à la course.
+    if (parts.wings) {
+      const beat = moving ? 0.09 + runFactor * 0.13 : 0.026;
+      const flutter = Math.sin(time * (moving ? 0.015 : 0.0032)) * beat;
+      aim(parts.wings[0].rotation, 'z', -0.08 - flutter, 7);
+      aim(parts.wings[1].rotation, 'z', 0.08 + flutter, 7);
+    }
+
     // ── Ennemi : bipède + télégraphes (windup lisible) ──────────────
     for (const F of foes) {
       const enemy = F.e;
@@ -1907,7 +1917,7 @@ function makeWorld(mount, callbacks) {
     lookVec.set(headVec.x, headVec.y + 0.06, headVec.z);
     camera.lookAt(lookVec);
 
-    // Focal DOF : netteté sur le chevalier, flou sur le décor lointain.
+    // Focal DOF : netteté sur le Gardien Chitine, flou sur le décor lointain.
     post.setFocus(camera.position.distanceTo(lookVec));
     post.render(dt);
     emitHud();
@@ -1943,7 +1953,7 @@ function makeWorld(mount, callbacks) {
       teleport(x, z) {
         Object.assign(state, createRunState({ x, z }));
         groundY = stageHeight(x, z);
-        knight.position.set(x, groundY, z);
+        warrior.position.set(x, groundY, z);
         const head = { x, y: CAMERA.headHeight + groundY, z };
         const p = cameraPosition(head, camYaw, camPitch, CAMERA.distance);
         camera.position.set(p.x, p.y, p.z);
@@ -2047,7 +2057,7 @@ function makeWorld(mount, callbacks) {
         }
       });
       scene.environment?.dispose?.();
-      disposePixelMaps();
+      disposeAnimeMaps();
       renderer.dispose();
       renderer.domElement.remove();
     },
