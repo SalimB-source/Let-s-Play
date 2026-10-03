@@ -75,7 +75,45 @@ export const MIRAGE_CLOUD_POWER_ICONS = Object.freeze({
   }),
 });
 
+/** Icônes personnelles de Link : bombe à mèche, grappin et Triforce. */
+export const MIRAGE_LINK_POWER_ICONS = Object.freeze({
+  [POWER_UPS.SHIELD]: Object.freeze({
+    id: POWER_UPS.SHIELD,
+    variant: 'link',
+    label: 'Bombe à mèche',
+    gemColor: 'blue',
+    accent: '#7fe4ff',
+    src: asset('link-bomb'),
+    alt: 'Bombe ronde noire à mèche allumée posée derrière le cavalier',
+    source: 'Let’s Play Arcade — icône Link Mirage Rush',
+    license: 'CC0',
+  }),
+  [POWER_UPS.LASSO]: Object.freeze({
+    id: POWER_UPS.LASSO,
+    variant: 'link',
+    label: 'Grappin',
+    gemColor: 'yellow',
+    accent: '#ffd15c',
+    src: asset('link-hook'),
+    alt: 'Grappin à trois dents dont la chaîne accroche un cavalier',
+    source: 'Let’s Play Arcade — icône Link Mirage Rush',
+    license: 'CC0',
+  }),
+  [POWER_UPS.PISTOL]: Object.freeze({
+    id: POWER_UPS.PISTOL,
+    variant: 'link',
+    label: 'Triforce',
+    gemColor: 'red',
+    accent: '#ff8a80',
+    src: asset('link-triforce'),
+    alt: 'Triforce d’or qui fonce sur l’adversaire devant le cavalier',
+    source: 'Let’s Play Arcade — icône Link Mirage Rush',
+    license: 'CC0',
+  }),
+});
+
 export function miragePowerIcon(type, variant = 'standard') {
   if (variant === 'cloud' && MIRAGE_CLOUD_POWER_ICONS[type]) return MIRAGE_CLOUD_POWER_ICONS[type];
+  if (variant === 'link' && MIRAGE_LINK_POWER_ICONS[type]) return MIRAGE_LINK_POWER_ICONS[type];
   return MIRAGE_POWER_ICONS[type] || MIRAGE_POWER_ICONS[POWER_UPS.SHIELD];
 }

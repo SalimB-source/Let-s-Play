@@ -49,7 +49,14 @@ export default function MirageSkinPreview({ palette, className = '', label = '' 
     if (previewRef.current && palette) paintModel(previewRef.current.model, palette);
   }, [palette]);
 
-  if (failed) return <span className={`${className} mirage-skin-3d is-fallback`} aria-hidden="true">{accessoriesForPalette(palette) === 'cloud-chocobo' ? '🐤' : '♞'}</span>;
+  if (failed) {
+    const kind = accessoriesForPalette(palette);
+    return (
+      <span className={`${className} mirage-skin-3d is-fallback`} aria-hidden="true">
+        {kind === 'cloud-chocobo' ? '🐤' : kind === 'link-epona' ? '🐎' : '♞'}
+      </span>
+    );
+  }
   return (
     <canvas
       ref={canvasRef}

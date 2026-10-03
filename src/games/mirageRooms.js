@@ -2,7 +2,7 @@ import {
   laneCount, PISTOL_STUN_DURATION, DUEL_DISTANCE, LASSO_SLOW_DURATION, LASSO_SLOW_FACTOR,
 } from './mirageRules.js';
 import { supabase } from '../lib/supabase.js';
-import { CLOUD_CHOCOBO_INDEX, LOBBY_CHARACTER_INDICES } from './mirageCharacters.js';
+import { CLOUD_CHOCOBO_INDEX, LINK_EPONA_INDEX, LOBBY_CHARACTER_INDICES } from './mirageCharacters.js';
 
 const STORAGE_KEY = 'letsplay_mirage_online_rooms_v2';
 const GUEST_KEY = 'letsplay_mirage_guest_profile_v1';
@@ -25,6 +25,37 @@ const listeners = new Set();
 const roomEventListeners = new Set();
 
 export const roomsAvailable = () => true;
+
+/**
+ * Effets reçus par la victime selon le personnage de l'attaquant : Cloud
+ * secoue d'une onde dorée ou foudroie, Link agrippe au grappin, fait tomber à
+ * la Triforce — ou pose une bombe (`p_effect: 'link-bomb'`).
+ */
+export function slowEffectFor(characterIndex) {
+  if (characterIndex === CLOUD_CHOCOBO_INDEX) return 'cloud-wave';
+  if (characterIndex === LINK_EPONA_INDEX) return 'link-hook';
+  return 'lasso';
+}
+
+export function stunEffectFor(characterIndex, override = '') {
+  if (override === 'link-bomb') return 'link-bomb';
+  if (characterIndex === CLOUD_CHOCOBO_INDEX) return 'cloud-cross';
+  if (characterIndex === LINK_EPONA_INDEX) return 'link-triforce';
+  return 'pistol';
+}
+
+export function slowHitMessage(characterIndex, attackerName, targetName) {
+  if (characterIndex === CLOUD_CHOCOBO_INDEX) return `⚔ ${attackerName} a ralenti ${targetName} avec une onde de choc dorée !`;
+  if (characterIndex === LINK_EPONA_INDEX) return `🪝 ${attackerName} a agrippé ${targetName} au grappin !`;
+  return `🪢 ${attackerName} a attrapé ${targetName} au lasso !`;
+}
+
+export function stunHitMessage(characterIndex, attackerName, targetName, override = '') {
+  if (override === 'link-bomb') return `💥 La bombe de ${attackerName} a soufflé ${targetName} !`;
+  if (characterIndex === CLOUD_CHOCOBO_INDEX) return `⚡ ${attackerName} a foudroyé ${targetName} avec son éclair !`;
+  if (characterIndex === LINK_EPONA_INDEX) return `🔺 La Triforce de ${attackerName} a fait tomber ${targetName} !`;
+  return `🔫 ${attackerName} a fait tomber ${targetName} de son cheval !`;
+}
 
 export function roomCode(value) {
   return String(value || '').trim().toUpperCase().replace(/[^A-F0-9]/g, '').slice(0, 8);
@@ -830,15 +861,13 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
     } else {
       const slowedUntil = new Date(nowMs + Math.round(LASSO_SLOW_DURATION * 1000)).toISOString();
       target.slowed_until = slowedUntil;
-      target.slow_effect = existingPlayer.character === CLOUD_CHOCOBO_INDEX ? 'cloud-wave' : 'lasso';
+      target.slow_effect = slowEffectFor(existingPlayer.character);
       room.messages.push({
         id: `msg-${nowMs}-lasso`,
         user_id: uid,
         name: uname,
         slot: existingPlayer.slot,
-        body: existingPlayer.character === CLOUD_CHOCOBO_INDEX
-          ? `⚔ ${uname} a ralenti ${target.name} avec une onde de choc dorée !`
-          : `🪢 ${uname} a attrapé ${target.name} au lasso !`,
+        body: slowHitMessage(existingPlayer.character, uname, target.name),
         created_at: nowIso,
       });
       // Bots are slowed from `slowed_until` alone (see advanceBotsInRace): their
@@ -873,16 +902,16 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
       });
     } else {
       target.stunned_until = new Date(nowMs + PISTOL_STUN_DURATION * 1000).toISOString();
-      target.stun_effect = existingPlayer.character === CLOUD_CHOCOBO_INDEX ? 'cloud-cross' : 'pistol';
+      // La bombe de Link emprunte le canal du tir : `p_effect` distingue l'explosion.
+      const effectOverride = String(extras.p_effect || '').trim();
+      target.stun_effect = stunEffectFor(existingPlayer.character, effectOverride);
       if (target.is_bot) target.stun_lag = Number(target.stun_lag || 0) + (target.speed || 16.2) * PISTOL_STUN_DURATION;
       room.messages.push({
         id: `msg-${nowMs}-pistol`,
         user_id: uid,
         name: uname,
         slot: existingPlayer.slot,
-        body: existingPlayer.character === CLOUD_CHOCOBO_INDEX
-          ? `⚡ ${uname} a foudroyé ${target.name} avec son éclair !`
-          : `🔫 ${uname} a fait tomber ${target.name} de son cheval !`,
+        body: stunHitMessage(existingPlayer.character, uname, target.name, effectOverride),
         created_at: nowIso,
       });
     }

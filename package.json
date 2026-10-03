@@ -39,6 +39,7 @@
     "check:souls-level": "node scripts/souls-level-check.mjs",
     "check:mirage-scoreboard": "node scripts/mirage-scoreboard-check.mjs",
     "check:mirage-cup": "node scripts/mirage-cup-check.mjs",
+    "check:mirage-link": "node --test tests/mirage-link-epona.test.js tests/mirage-link-powers.test.js",
     "check:mirage-fullscreen": "node scripts/mirage-fullscreen-check.mjs",
     "check:mirage-graphics": "node scripts/mirage-graphics-check.mjs",
     "check:quiz": "node scripts/quiz-check.mjs",
