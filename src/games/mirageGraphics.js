@@ -43,6 +43,10 @@ export const GRAPHICS_STORAGE_KEY = 'letsplay_mirage_graphics_v1';
  *   - `sceneryEffects` : effets décoratifs du décor (nuages et mirage animés,
  *     rides du sable, voile d'eau, poussière). Ils ne portent aucun élément de
  *     jeu : les retirer ne change ni la lisibilité de la piste ni la difficulté.
+ *   - `glowHalos` : les halos de lumière **peints** devant les cristaux (voir
+ *     mirageGlow.js). C'est la seule dépense réellement liée au nombre de pixels
+ *     transparents : sur un appareil juste, ce sont eux qu'on éteint d'abord.
+ *     La gemme, elle, ne change pas d'un pixel — elle brille simplement moins.
  *   - `sceneryRangeRatio` : part de la portée du brouillard (sa distance « far »)
  *     au-delà de laquelle les blocs de décor (champs, façades, tribunes…) ne sont plus
  *     dessinés. À 0,85 le brouillard les a déjà fondus à près de 90 %, et sur les
@@ -65,6 +69,7 @@ export const GRAPHICS_PROFILES = Object.freeze({
     maxRenderPixels: MAX_RENDER_PIXELS,
     antialias: true,
     sceneryEffects: true,
+    glowHalos: true,
     sceneryRangeRatio: Infinity,
     gemBurstRatio: 1,
     hudInterval: 125,
@@ -76,6 +81,7 @@ export const GRAPHICS_PROFILES = Object.freeze({
     maxRenderPixels: 921_600,
     antialias: false,
     sceneryEffects: false,
+    glowHalos: false,
     sceneryRangeRatio: 0.85,
     gemBurstRatio: 0.5,
     hudInterval: 200,

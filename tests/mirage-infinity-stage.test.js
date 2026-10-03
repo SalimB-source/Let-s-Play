@@ -189,6 +189,23 @@ test('the castle sky fills the screen and tracks projection changes without rebu
   assert.match(sky.material.fragmentShader, /#include <colorspace_fragment>/);
   assert.match(sky.material.fragmentShader, /#include <tonemapping_fragment>/);
   assert.ok(!Object.keys(uniforms).some((name) => /time/i.test(name)), 'ciel fixe, sans scintillement');
+  assert.equal(uniforms.uRays.value, 0, 'sans réglage du terrain, aucun faisceau');
+  sky.geometry.dispose();
+  sky.material.dispose();
+});
+
+test('les faisceaux de l’Arche sont figés, portés par l’enveloppe de la couronne, et réglables', () => {
+  const camera = new THREE.PerspectiveCamera(50, 1.6, 0.1, 120);
+  const sky = makeInfinitySky(camera, INFINITY_ATMOSPHERE.rays);
+  const uniforms = sky.material.uniforms;
+  assert.equal(uniforms.uRays.value, INFINITY_ATMOSPHERE.rays, 'la force vient de l’ambiance du terrain');
+  assert.ok(INFINITY_ATMOSPHERE.rays > 0 && INFINITY_ATMOSPHERE.rays <= 1);
+  // Le ciel reste figé : la force se règle, elle ne s’anime pas.
+  assert.ok(!Object.keys(uniforms).some((name) => /time/i.test(name)));
+  const shader = sky.material.fragmentShader;
+  assert.match(shader, /uRays > 0\.001/, 'les faisceaux se sautent quand la force est nulle');
+  assert.match(shader, /coronaEnvelope \* 0\.14 \* uRays/, 'ils s’appuient sur l’enveloppe de la couronne — jamais derrière le pont ni sur les flancs');
+  assert.match(shader, /atan\(dot\(offset, sunUp\), dot\(offset, sunRight\)\)/, 'l’angle se mesure autour de l’axe du soleil');
   sky.geometry.dispose();
   sky.material.dispose();
 });

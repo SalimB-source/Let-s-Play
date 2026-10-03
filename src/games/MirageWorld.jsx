@@ -33,6 +33,8 @@ import { paceForTrack } from './mirageLanes';
 import { renderPixelRatio } from './miragePixelBudget';
 // Option « Graphismes baissés » : le profil (résolution, effets) que le moteur applique en direct.
 import { gemBurstShardCount, graphicsProfile, shouldSkipRender } from './mirageGraphics';
+// La lumière peinte à la main : halos additifs des cristaux et ombres au sol des cavaliers.
+import { makeGlowTexture, makeGroundShadow, makeHalo, makeShadowTexture } from './mirageGlow';
 import useMirageGraphics from './useMirageGraphics';
 // Modèle cheval + cavalier partagé avec les aperçus 3D des skins.
 import { accessoriesForPalette, block, makeExplorer, paintModel } from './mirageExplorer';
@@ -129,7 +131,20 @@ function makeCactus() {
   return group;
 }
 
-function makeCrystal(tier) {
+// Taille et intensité du halo des cristaux : un tiers du sprite est lumineux, le
+// reste n'est que la queue du dégradé — d'où une taille bien plus large que la
+// gemme elle-même (0,7 × 1,4 unité).
+const CRYSTAL_HALO_SIZE = 1.9;
+const CRYSTAL_HALO_OPACITY = 0.34;
+
+/**
+ * Un fragment solaire : l'octaèdre taillé, sa bague dorée au dernier palier, et
+ * — lumière peinte (voir mirageGlow.js) — le halo additif qui le fait briller
+ * dans la brume. Le halo est un simple sprite : il ne coûte presque rien, ne
+ * cache jamais la piste (aucune écriture de profondeur) et s'éteint avec les
+ * graphismes baissés (voir `glowHalos` dans mirageGraphics.js).
+ */
+function makeCrystal(tier, glowTexture) {
   const group = new THREE.Group();
   const crystalDef = CRYSTALS[tier] || CRYSTALS[0];
   const color = crystalDef.color;
@@ -142,12 +157,20 @@ function makeCrystal(tier) {
     ring.rotation.x = Math.PI / 2;
     group.add(ring);
   }
+  if (glowTexture) {
+    const halo = makeHalo(glowTexture, { color, size: CRYSTAL_HALO_SIZE, opacity: CRYSTAL_HALO_OPACITY });
+    group.add(halo);
+    group.userData.halo = halo;
+  }
   return group;
 }
 
 const GEM_BURST_POOL = 7;
+// Le halo d'un ramassage : large, mais il ne vit que le temps de l'éclair (0,52 s).
+const GEM_BURST_HALO_SIZE = 3.2;
+const GEM_BURST_HALO_OPACITY = 0.5;
 
-function makeGemBurst() {
+function makeGemBurst(glowTexture) {
   const group = new THREE.Group();
   const shardGeometry = new THREE.OctahedronGeometry(0.17);
   const shardMaterial = new THREE.MeshStandardMaterial({
@@ -176,8 +199,13 @@ function makeGemBurst() {
   const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.33), flashMaterial);
   core.renderOrder = 3;
   group.add(core);
+  // L'éclat lui-même : un halo qui prend la couleur du ramassage et suit la vie de
+  // l'éclair — c'est ce qui fait « pop » le cristal (et la flaque de boue).
+  const halo = makeHalo(glowTexture, { color: 0xffffff, size: GEM_BURST_HALO_SIZE, opacity: 0 });
+  halo.visible = false;
+  group.add(halo);
   group.visible = false;
-  group.userData = { shards, shardMaterial, flashMaterial, ring, core, specs: [], age: 0, active: false, tier: 0 };
+  group.userData = { shards, shardMaterial, flashMaterial, ring, core, halo, specs: [], age: 0, active: false, tier: 0 };
   return group;
 }
 
@@ -505,6 +533,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         skyBottom: [0.90, 0.70, 0.45], skyHorizon: [0.84, 0.52, 0.32], skyTop: [0.46, 0.37, 0.44],
         sunBottom: [0.98, 0.25, 0.045], sunTop: [1.0, 0.49, 0.12], glow: [1.0, 0.58, 0.29],
         hemiSky: 0xffdfa0, hemiGround: 0x65523c, sunLight: 0xffb654, rimLight: 0xf1bf77,
+        // Force des faisceaux du soleil dans le ciel (voir README).
+        rays: 1.0,
       }
     : western
       ? {
@@ -512,6 +542,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
           skyBottom: [0.98, 0.72, 0.49], skyHorizon: [0.88, 0.48, 0.36], skyTop: [0.48, 0.36, 0.49],
           sunBottom: [1.0, 0.32, 0.075], sunTop: [1.0, 0.59, 0.2], glow: [1.0, 0.67, 0.37],
           hemiSky: 0xffd4a2, hemiGround: 0x594238, sunLight: 0xffb660, rimLight: 0xff9877,
+          // Force des faisceaux du soleil dans le ciel (voir README).
+          rays: 1.0,
         }
       : sardinia
         ? {
@@ -519,6 +551,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
             skyBottom: [0.66, 0.87, 0.94], skyHorizon: [0.39, 0.72, 0.92], skyTop: [0.12, 0.45, 0.78],
             sunBottom: [1.0, 0.84, 0.46], sunTop: [1.0, 0.97, 0.78], glow: [1.0, 0.90, 0.63],
             hemiSky: 0xe5f3f6, hemiGround: 0x9e8262, sunLight: 0xffe5b0, rimLight: 0x9edfe8,
+            // Force des faisceaux du soleil dans le ciel (voir README).
+            rays: 0.5,
           }
         : alger
           ? {
@@ -528,6 +562,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
               skyBottom: [0.96, 0.80, 0.58], skyHorizon: [0.66, 0.72, 0.86], skyTop: [0.24, 0.45, 0.74],
               sunBottom: [1.0, 0.42, 0.12], sunTop: [1.0, 0.72, 0.32], glow: [1.0, 0.80, 0.52],
               hemiSky: 0xd4e6f6, hemiGround: 0x9a9484, sunLight: 0xffd9a4, rimLight: 0x9cc6ea,
+              // Force des faisceaux du soleil dans le ciel (voir README).
+              rays: 0.75,
             }
           : japan
             ? {
@@ -535,6 +571,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
                 skyBottom: [0.16, 0.23, 0.38], skyHorizon: [0.09, 0.14, 0.27], skyTop: [0.03, 0.05, 0.12],
                 sunBottom: [0.88, 0.93, 1.0], sunTop: [0.98, 0.99, 1.0], glow: [0.46, 0.62, 0.92],
                 hemiSky: 0x9bb8ff, hemiGround: 0x1d2738, sunLight: 0xd8e6ff, rimLight: 0xff6e54,
+                // Force des faisceaux du soleil dans le ciel (voir README).
+                rays: 0.25,
               }
             : ramparts
               ? {
@@ -544,6 +582,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
                   skyBottom: [0.94, 0.84, 0.66], skyHorizon: [0.62, 0.79, 0.93], skyTop: [0.22, 0.50, 0.84],
                   sunBottom: [1.0, 0.90, 0.62], sunTop: [1.0, 0.98, 0.86], glow: [1.0, 0.93, 0.74],
                   hemiSky: 0xfff0d8, hemiGround: 0xa47d52, sunLight: 0xfff0d0, rimLight: 0xb0d2f2,
+                  // Force des faisceaux du soleil dans le ciel (voir README).
+                  rays: 0.45,
                 }
               : airbase
               ? {
@@ -554,6 +594,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
                   skyBottom: [0.78, 0.89, 0.97], skyHorizon: [0.45, 0.70, 0.92], skyTop: [0.15, 0.42, 0.80],
                   sunBottom: [1.0, 0.90, 0.66], sunTop: [1.0, 0.99, 0.88], glow: [1.0, 0.95, 0.80],
                   hemiSky: 0xe8f2ff, hemiGround: 0x8a8f7a, sunLight: 0xfff4dc, rimLight: 0xbfe0ff,
+                  // Force des faisceaux du soleil dans le ciel (voir README).
+                  rays: 0.5,
                 }
               : infinity
                 ? INFINITY_ATMOSPHERE
@@ -646,7 +688,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
 
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const skyVector = (rgb) => new THREE.Vector3(...rgb);
-  const sunset = infinity ? makeInfinitySky(camera) : new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
+  const sunset = infinity ? makeInfinitySky(camera, atmosphere.rays ?? 0) : new THREE.Mesh(new THREE.PlaneGeometry(240, 120), new THREE.ShaderMaterial({
     depthWrite: false,
     uniforms: {
       skyBottom: { value: skyVector(atmosphere.skyBottom) },
@@ -664,6 +706,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       sunX: { value: snakeway ? -27.0 : sardinia || alger ? 18.0 : airbase ? 14.0 : ramparts ? -24.0 : 0.0 },
       sunRadius: { value: snakeway ? 4.8 : sardinia ? 5.5 : airbase ? 5.0 : ramparts ? 4.6 : 8.0 },
       isNight: { value: japan || snakeway ? 1.0 : 0.0 },
+      // Faisceaux du soleil : la force du terrain (0 en graphismes baissés, ou là
+      // où le ciel a déjà sa propre couronne) et l'horloge qui les fait battre.
+      uRays: { value: 0 },
+      uTime: { value: 0 },
     },
     vertexShader: `varying vec2 skyPoint;
       void main() {
@@ -685,6 +731,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       uniform float sunX;
       uniform float sunRadius;
       uniform float isNight;
+      uniform float uRays;
+      uniform float uTime;
       varying vec2 skyPoint;
       void main() {
         float height = skyPoint.y;
@@ -692,6 +740,22 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         sky = mix(sky, skyTop, smoothstep(18.0, 75.0, height));
         float radius = length(skyPoint - vec2(sunX, sunElevation));
         float haloVisibility = clamp((sunElevation + 12.0) / 17.5, 0.0, 1.0);
+
+        // Faisceaux du soleil et traînée sur l'horizon (voir README « le soleil des
+        // dix terrains »). uRays porte la force du terrain : 0 quand les graphismes
+        // sont baissés, ou quand ce ciel a déjà sa propre couronne. Comme le halo,
+        // ils s'effacent quand le soleil descend sous l'horizon (haloVisibility), et
+        // ils s'arrêtent sous la ligne (smoothstep 0 → 6) : la brume garde sa
+        // couleur, sans couture avec le sol.
+        if (uRays > 0.001) {
+          float angle = atan(skyPoint.y - sunElevation, (skyPoint.x - sunX) * 1.35);
+          float spokes = 0.5 + 0.5 * sin(angle * 7.0 + sin(angle * 2.6 + uTime * 0.21) * 1.6 + uTime * 0.13);
+          float fall = exp(-radius * radius / 2200.0) * smoothstep(0.0, 6.0, height) * haloVisibility;
+          sky = mix(sky, glow, clamp(pow(max(spokes, 0.0), 2.8) * fall * 0.30 * uRays, 0.0, 1.0));
+          float streak = exp(-abs(height - sunElevation) * 0.40) * exp(-abs(skyPoint.x - sunX) * 0.0075);
+          sky = mix(sky, glow, clamp(streak * haloVisibility * 0.20 * uRays, 0.0, 1.0));
+        }
+
         float halo = exp(-radius * radius / 500.0) * 0.38 * haloVisibility;
         sky = mix(sky, glow, halo);
         float aboveHorizon = step(0.0, height);
@@ -724,6 +788,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   }
   sunset.visible = !desert; // le désert a son propre ciel (desertStage.js)
   scene.add(sunset);
+
+  // Faisceaux du soleil : la force du terrain, éteinte avec les graphismes baissés
+  // (le désert, lui, a son propre ciel et suit `sceneryEffects` par `setLite`).
+  const applySkyRays = () => {
+    const strength = graphics.sceneryEffects ? (atmosphere.rays ?? 0) : 0;
+    const rays = sunset.material.uniforms.uRays;
+    if (rays) rays.value = strength;
+  };
+  applySkyRays();
 
   const applyDynamicSunset = (progress) => {
     if (!prairie && !western) return;
@@ -856,6 +929,14 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const placeFloor = () => { floorGroup.position.z = (floorOffset % FLOOR_PERIOD) - FLOOR_PERIOD; };
   placeFloor();
 
+  // Lumière peinte : deux dégradés radiaux partagés par tout le monde 3D — le halo
+  // des cristaux et l'ombre des cavaliers (voir mirageGlow.js). Créés ici, une fois
+  // par monde, et libérés par `destroy()`.
+  const glowTexture = makeGlowTexture();
+  const shadowTexture = makeShadowTexture();
+  // Les halos suivent l'option « Graphismes baissés » et se changent en direct.
+  let glowHalos = graphics.glowHalos !== false;
+
   let skinColors = getSkin?.() ?? null;
   const player = makeExplorer(false, skinColors);
   player.position.x = LANES[1];
@@ -876,11 +957,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     mesh.add(shieldBubble);
     const boostStreaks = makeBoostStreaks();
     mesh.add(boostStreaks);
+    // L'ombre au sol reste dans la scène (elle ne saute pas avec le cavalier).
+    const shadow = makeGroundShadow(shadowTexture, { opacity: 0.4 });
+    scene.add(shadow);
     return {
       ...spec,
       mesh,
       shieldBubble,
       boostStreaks,
+      shadow,
       dist: 0,
       lane: spec.startLane,
       x: LANES[spec.startLane],
@@ -915,6 +1000,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     rider.add(sb);
     rider.userData.shieldBubble = sb;
     rider.userData.slowEffect = 0;
+    const shadow = makeGroundShadow(shadowTexture, { opacity: 0.3 });
+    scene.add(shadow);
+    rider.userData.groundShadow = shadow;
     return rider;
   });
   const skinPaint = (rider, colors) => {
@@ -946,12 +1034,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const finishLine = block(new THREE.BoxGeometry(trackWidthM, 0.05, 0.75), finishMaterial, scene, [0, 0.03, -DUEL_DISTANCE]);
   startLine.visible = false;
   finishLine.visible = false;
-  const playerShadow = new THREE.Mesh(
-    new THREE.CircleGeometry(0.58, 10),
-    new THREE.MeshBasicMaterial({ color: 0x32263e, transparent: true, opacity: 0.45, depthWrite: false }),
-  );
-  playerShadow.rotation.x = -Math.PI / 2;
+  const playerShadow = makeGroundShadow(shadowTexture);
   playerShadow.position.y = 0.012;
+  playerShadow.visible = true;
   scene.add(playerShadow);
   const playerReadyAura = makeReadyAura();
   scene.add(playerReadyAura);
@@ -966,7 +1051,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const rows = [];
   function populateRow(row) {
     row.group.traverse(object => {
-      object.geometry?.dispose();
+      // Tous les sprites du jeu partagent LA géométrie de `THREE.Sprite` : la
+      // libérer ici couperait aussi les halos des autres (et les ferait re-téléverser
+      // au dessin suivant). Seules leur matière — et les géométries propres aux
+      // accessoires — nous appartiennent.
+      if (!object.isSprite) object.geometry?.dispose();
       object.material?.dispose();
     });
     row.group.clear();
@@ -975,7 +1064,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     row.gap = encounter.gap;
     row.items = encounter.items.map((spec, itemIndex) => {
       const object = spec.kind === 'crystal'
-        ? makeCrystal(spec.tier)
+        ? makeCrystal(spec.tier, glowTexture)
         : spec.kind === 'mud' && snakeway
           ? snakewayObstacle('mud')
           : spec.kind === 'mud'
@@ -1004,8 +1093,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const key = `${row.index}:${itemIndex}`;
       const taken = spec.kind === 'crystal' && isGemHidden(sharedGems, key, elapsed);
       object.visible = !taken;
+      // Le halo existe toujours : c'est l'option « Graphismes baissés » qui l'allume
+      // ou l'éteint, et elle se change en pleine course (voir `setGraphics`).
+      if (object.userData.halo) object.userData.halo.visible = glowHalos;
       row.group.add(object);
-      return { ...spec, key, object, collected: false, burst: false };
+      // Phase du halo (respiration du cristal) : propre à chaque emplacement.
+      const haloPhase = (row.index * 1.7 + itemIndex * 2.3) % (Math.PI * 2);
+      return { ...spec, key, object, haloPhase, collected: false, burst: false };
     });
     row.checked = false;
     return encounter.gap;
@@ -1023,7 +1117,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const reduceMotion = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
   const gemBursts = [];
   for (let i = 0; i < GEM_BURST_POOL; i += 1) {
-    const burst = makeGemBurst();
+    const burst = makeGemBurst(glowTexture);
     scene.add(burst);
     gemBursts.push(burst);
   }
@@ -1054,6 +1148,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     data.age += dt;
     const flash = gemFlashState(data.age, data.tier);
     data.flashMaterial.opacity = flash.opacity;
+    // Le halo vit et meurt avec l'éclair (graphismes baissés : il n'y en a pas).
+    data.halo.material.color.copy(data.flashMaterial.color);
+    data.halo.material.opacity = flash.opacity * GEM_BURST_HALO_OPACITY;
+    data.halo.visible = glowHalos && flash.opacity > 0.02;
     data.ring.scale.setScalar(flash.scale);
     data.core.scale.setScalar(Math.max(0.001, (1 - flash.life) * 0.9));
     data.shards.forEach((shard, index) => {
@@ -2731,6 +2829,17 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
           if (item.object.visible) {
             item.object.rotation.y += dt * 1.8;
             item.object.rotation.x = Math.sin(time * 0.002 + row.group.position.z) * 0.1;
+            // Le halo respire à peine, avec sa propre phase (deux gemmes voisines ne
+            // clignotent pas ensemble). Mouvements réduits : la lumière reste fixe.
+            const halo = item.object.userData.halo;
+            if (halo) {
+              halo.visible = glowHalos;
+              if (glowHalos && !calmMotion) {
+                const breath = 0.5 + 0.5 * Math.sin(time * 0.0032 + item.haloPhase);
+                halo.scale.setScalar(CRYSTAL_HALO_SIZE * (0.92 + 0.16 * breath));
+                halo.material.opacity = CRYSTAL_HALO_OPACITY * (0.72 + 0.55 * breath);
+              }
+            }
           }
         });
 
@@ -2998,8 +3107,22 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     const gallopRate = turboActive ? 0.026 : mudSlowed ? 0.011 : 0.018;
     const runWave = Math.sin(time * (running ? gallopRate : 0.002));
     const galloping = running && playerStun <= 0;
+    // Deux segments par jambe : la cuisse balance, le genou se plie quand la
+    // jambe repart vers l'avant (et se replie sous le corps au saut).
     parts.legs.forEach((leg, index) => {
-      leg.rotation.x = jumpLeft > 0 ? (index < 2 ? -0.7 : 0.65) : galloping ? Math.sin(time * gallopRate + index * 2.2) * (turboActive ? 0.82 : mudSlowed ? 0.45 : 0.65) : 0;
+      const knee = leg.userData.knee;
+      if (jumpLeft > 0) {
+        leg.rotation.x = index < 2 ? -0.7 : 0.65;
+        if (knee) knee.rotation.x = index < 2 ? 0 : -0.6; // antérieurs tendus, postérieurs repliés
+      } else if (galloping) {
+        leg.rotation.x = Math.sin(time * gallopRate + index * 2.2) * (turboActive ? 0.82 : mudSlowed ? 0.45 : 0.65);
+        // Le sabot se replie **sous** la jambe : le genou se plie en début de
+        // retour vers l'avant, puis se détend pour aller poser le pied.
+        if (knee) knee.rotation.x = -Math.max(0, Math.sin(time * gallopRate + index * 2.2 + 2.1)) * (turboActive ? 0.7 : mudSlowed ? 0.32 : 0.5);
+      } else {
+        leg.rotation.x = 0;
+        if (knee) knee.rotation.x = 0;
+      }
     });
     poseRider(player, playerStun, playerStunSide);
     if (turboActive) {
@@ -3013,6 +3136,19 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       if (parts.hylianShield) parts.hylianShield.rotation.y = runWave * 0.06;
     }
     parts.tail.rotation.z = runWave * (turboActive ? 0.28 : 0.18);
+    // La tête du cheval hoche, les bras tirent sur les rênes, la cape bat : le
+    // galop se lit même quand la caméra est collée à la croupe. (Cloud et Link
+    // roulent sans cheval : leur tête est masquée, on ne l'anime pas.)
+    if (parts.horseHead?.visible) {
+      parts.horseHead.rotation.x = galloping ? Math.sin(time * gallopRate + 0.9) * (turboActive ? 0.12 : 0.08) : 0;
+    }
+    if (parts.armGroup) {
+      parts.armGroup.rotation.x = galloping ? (turboActive ? -0.12 : 0) + Math.sin(time * gallopRate + 1.5) * 0.05 : 0;
+    }
+    if (parts.capeFlap) {
+      const flap = running ? (turboActive ? 0.34 : 0.16) + runWave * (turboActive ? 0.14 : 0.08) : 0;
+      parts.capeFlap.rotation.x = -0.2 - flap;
+    }
     parts.wings?.forEach((wing, index) => {
       wing.rotation.z = Math.sin(time * (running ? 0.018 : 0.006) + index * Math.PI) * (running ? 0.16 : 0.06);
     });
@@ -3040,12 +3176,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const peer = network?.players?.find(p => p.slot === slot);
       const mine = peer?.user_id === network?.userId;
       rider.visible = race.mode === 'online' && Boolean(peer);
-      if (!rider.visible) return;
+      const riderShadow = rider.userData.groundShadow;
+      if (!rider.visible) { if (riderShadow) riderShadow.visible = false; return; }
       const z = mine ? 0 : distance - Number(peer.distance);
       rider.visible = z > -74 && z < 11;
       rider.position.x = mine ? player.position.x : THREE.MathUtils.lerp(rider.position.x, lanePosition(peer.lane), Math.min(1,dt*10));
       rider.position.z = mine ? 0 : THREE.MathUtils.lerp(rider.position.z,z,Math.min(1,dt*10));
       rider.position.y = mine ? player.position.y : Number(peer.jump);
+      if (riderShadow) {
+        riderShadow.visible = rider.visible;
+        if (riderShadow.visible) {
+          riderShadow.position.set(rider.position.x, 0.012, rider.position.z);
+          riderShadow.scale.set(1, 1.8, 1).multiplyScalar(Math.max(0.55, 1 - rider.position.y * 0.12));
+        }
+      }
       skinPaint(rider, CHARACTER_PALETTES[peer.character ?? peer.slot] || CHARACTER_PALETTES[0]);
       const peerStun = !mine && peer.stunned_until ? Math.max(0, (Date.parse(peer.stunned_until) - wallNow) / 1000) : 0;
       const stunLeft = mine ? playerStun : Math.min(PISTOL_STUN_DURATION, peerStun);
@@ -3104,20 +3248,39 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const phaseOffset = 1.3 + idx * 0.9;
       const rivalGallopRate = rivalTurbo ? 0.026 : 0.018;
       rivalParts.legs.forEach((leg, index) => {
+        const knee = leg.userData.knee;
         leg.rotation.x = running && rivalStun <= 0 ? Math.sin(time * rivalGallopRate + index * 2.2 + phaseOffset) * (rivalTurbo ? 0.82 : 0.65) : 0;
+        if (knee) knee.rotation.x = running && rivalStun <= 0
+          ? -Math.max(0, Math.sin(time * rivalGallopRate + index * 2.2 + phaseOffset + 2.1)) * (rivalTurbo ? 0.7 : 0.5)
+          : 0;
       });
       poseRider(rivalMesh, rivalStun, r.stunSide || 1);
       if (rivalTurbo) {
         rivalParts.rider.rotation.x -= 0.18;
       }
       rivalParts.tail.rotation.z = runWave * -0.2;
+      // Même vie que le joueur : hochement de tête, rênes et pan de cape.
+      const rivalGalloping = running && rivalStun <= 0;
+      if (rivalParts.horseHead?.visible) {
+        rivalParts.horseHead.rotation.x = rivalGalloping ? Math.sin(time * rivalGallopRate + 0.9 + phaseOffset) * (rivalTurbo ? 0.12 : 0.08) : 0;
+      }
+      if (rivalParts.armGroup) {
+        rivalParts.armGroup.rotation.x = rivalGalloping ? (rivalTurbo ? -0.12 : 0) + Math.sin(time * rivalGallopRate + 1.5 + phaseOffset) * 0.05 : 0;
+      }
+      if (rivalParts.capeFlap) {
+        const rivalFlap = rivalGalloping ? (rivalTurbo ? 0.34 : 0.16) + Math.sin(time * rivalGallopRate + phaseOffset) * (rivalTurbo ? 0.14 : 0.08) : 0;
+        rivalParts.capeFlap.rotation.x = -0.2 - rivalFlap;
+      }
       const cloudWaveSlow = race.mode === 'duel' && r.slowTimer > 0 && r.slowEffect === 'cloud-wave';
       rivalMesh.rotation.z = cloudWaveSlow ? Math.sin(time * 0.078 + idx * 1.7) * 0.12 : 0;
       if (race.mode === 'duel' && !isGhostRival(r)) {
         rivalMesh.position.x = r.x;
         rivalMesh.position.y = jumpHeight(r.jumpLeft);
         rivalMesh.scale.setScalar(1);
-        if (r.jumpLeft > 0) rivalParts.legs.forEach((leg, index) => { leg.rotation.x = index < 2 ? -0.7 : 0.65; });
+        if (r.jumpLeft > 0) rivalParts.legs.forEach((leg, index) => {
+          leg.rotation.x = index < 2 ? -0.7 : 0.65;
+          if (leg.userData.knee) leg.userData.knee.rotation.x = index < 2 ? 0 : -0.6;
+        });
         if (r.slowTimer > 0) {
           rivalMesh.position.y += Math.sin(time * 0.02 + idx) * 0.06;
         }
@@ -3126,6 +3289,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         rivalMesh.scale.setScalar(0.92);
       }
       rivalMesh.visible = race.mode === 'duel' && rivalMesh.position.z < 11 && rivalMesh.position.z > -74 && (r.invulnerable <= 0 || Math.floor(time / 90) % 2 === 0);
+      // L'ombre suit le cavalier au sol : elle s'écarte et pâlit quand il saute,
+      // et disparaît avec lui (même clignotement d'invulnérabilité).
+      r.shadow.visible = rivalMesh.visible;
+      if (r.shadow.visible) {
+        r.shadow.position.set(rivalMesh.position.x, 0.012, rivalMesh.position.z);
+        r.shadow.scale.set(1, 1.8, 1).multiplyScalar(Math.max(0.55, 1 - rivalMesh.position.y * 0.12));
+      }
     });
     if (running) {
       updateCloudShockwaves(dt);
@@ -3158,6 +3328,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     if (prairie || western) {
       applyDynamicSunset(race.mode !== 'rush' ? distance / DUEL_DISTANCE : elapsed / RUN_SECONDS);
     }
+    // Le ciel partagé n'a qu'une horloge : celle de ses faisceaux (le ciel du
+    // Château est figé — « pas de scintillement » — et le désert a la sienne).
+    if (!infinity) sunset.material.uniforms.uTime.value = time * 0.001;
     camera.position.y += ((turboActive ? 6.85 : 7.3) - camera.position.y) * Math.min(1, dt * 6);
     camera.position.z += ((turboActive ? 10.05 : 9.4) - camera.position.z) * Math.min(1, dt * 6);
     camera.position.x += (player.position.x * 0.13 - camera.position.x) * dt * 2;
@@ -3221,7 +3394,9 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const next = graphicsProfile(quality);
       if (next === graphics) return;
       graphics = next;
+      glowHalos = graphics.glowHalos !== false;
       desertScenery?.setLite(!graphics.sceneryEffects);
+      applySkyRays();
       applySceneryRange();
       resize();
     },
@@ -3242,13 +3417,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       detachSwipe();
       touchFeedback.destroy();
       scene.traverse((object) => {
-        if (object.geometry) object.geometry.dispose();
+        // La géométrie des sprites est commune à tout le jeu (voir `populateRow`).
+        if (object.geometry && !object.isSprite) object.geometry.dispose();
         if (object.material) {
           if (Array.isArray(object.material)) object.material.forEach((material) => material.dispose());
           else { object.material.map?.dispose(); object.material.dispose(); }
         }
       });
       desertScenery?.dispose();
+      // Les deux dégradés partagés (halos, ombres) : les matières qui les portent
+      // sont libérées ci-dessus, mais ils sont communs à tout le monde 3D.
+      glowTexture.dispose();
+      shadowTexture.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     },

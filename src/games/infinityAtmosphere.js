@@ -9,6 +9,9 @@ export const INFINITY_ATMOSPHERE = Object.freeze({
   hemiGround: 0x582936,
   sunLight: 0xffc982,
   rimLight: 0xff8c66,
+  // Force des faisceaux du soleil de la Grande Arche (voir README). Ils sont
+  // figés : ce ciel ne dépend pas du temps (voir `makeInfinitySky`).
+  rays: 0.6,
 });
 
 /** Disque solaire cadré au cœur de la Grande Arche, bien dégagé au-dessus du pont. */
@@ -38,6 +41,7 @@ const SKY_FRAGMENT = /* glsl */ `
   uniform vec3 uGlow;
   uniform vec3 uSunLower;
   uniform vec3 uSunUpper;
+  uniform float uRays;
   varying vec3 vViewRay;
 
   float hash21(vec2 p) {
@@ -109,6 +113,19 @@ const SKY_FRAGMENT = /* glsl */ `
     float edge = max(fwidth(r) * 1.15, 0.00008);
     float disc = (1.0 - smoothstep(sunR - edge, sunR + edge, r)) * smoothstep(1.1, 2.1, height);
     vec3 sunUp = normalize(vec3(0.0, 1.0, 0.0) - sunDirection * sunDirection.y);
+
+    // Faisceaux de l'Arche (voir README). Ils sont FIGÉS : ce shader ne dépend pas
+    // du temps, c'est ce qui permet de n'y toucher jamais après sa création. Ils
+    // s'appuient sur l'enveloppe de la couronne, donc ils ne débordent ni derrière
+    // le bout du pont ni sur les flancs. uRays = 0 en graphismes baissés.
+    if (uRays > 0.001) {
+      vec3 sunRight = normalize(cross(sunDirection, sunUp));
+      vec3 offset = ray - sunDirection;
+      float angle = atan(dot(offset, sunUp), dot(offset, sunRight));
+      float spokes = 0.5 + 0.5 * sin(angle * 7.0 + sin(angle * 2.6) * 1.6);
+      sky += uGlow * (pow(max(spokes, 0.0), 2.8) * coronaEnvelope * 0.14 * uRays);
+    }
+
     float vertical = dot(ray - sunDirection, sunUp) / sunR;
     float solarHeight = smoothstep(-1.0, 1.0, vertical);
     vec3 sunMid = mix(uSunLower, uSunUpper, 0.52) * 2.15;
@@ -134,8 +151,11 @@ const SKY_FRAGMENT = /* glsl */ `
  * Ciel du Château, en un draw call et sans texture externe. Les matrices sont
  * référencées, pas copiées : le cadrage suit les resize et le turbo sans update
  * ni allocation par image. Le shader ne dépend pas du temps.
+ *
+ * `rays` est la force des faisceaux du soleil (voir README) : elle vient de
+ * l'ambiance du terrain et se change à chaud (graphismes baissés).
  */
-export function makeInfinitySky(camera) {
+export function makeInfinitySky(camera, rays = 0) {
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
     depthWrite: false,
     depthTest: false,
@@ -153,6 +173,7 @@ export function makeInfinitySky(camera) {
       uGlow: { value: new THREE.Color(0xff9436) },
       uSunLower: { value: new THREE.Color(0xff4a1c) },
       uSunUpper: { value: new THREE.Color(0xffe89e) },
+      uRays: { value: rays },
     },
     vertexShader: SKY_VERTEX,
     fragmentShader: SKY_FRAGMENT,

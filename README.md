@@ -384,7 +384,8 @@ le réglage sans être reconstruit, la course ne s'interrompt pas.
 |---|---|---|
 | Résolution | jusqu'à 1,55 pixel par pixel CSS, 2,2 M pixels | 1 pixel par pixel CSS, 0,92 M pixels (1280 × 720) — sur un téléphone de densité 3, **2,4 fois moins de pixels** à remplir |
 | Lissage des arêtes (Château de l'Infini) | oui | non (fixé à la création de la course) |
-| Décor du désert | nuages animés, rides du sable, voile d'eau, poussière | ciel et sable simplifiés (un uniforme de shader, aucun recalcul), sans voile ni poussière ; le mirage reste |
+| Décor du désert | nuages animés, rides du sable, voile d'eau, poussière, rayons du soleil, coup de chaleur à l'horizon | ciel et sable simplifiés (un uniforme de shader, aucun recalcul), sans voile, poussière ni faisceaux ; le mirage reste |
+| Halos de lumière des cristaux | oui (un sprite additif par gemme) | non — la gemme reste, elle brille simplement moins |
 | Décor des autres terrains | tout dessiné | blocs de décor au-delà de 85 % de la portée du brouillard non dessinés (déjà fondus à près de 90 %) — jusqu'à 27 % d'appels de dessin en moins sur les plaines |
 | Éclats d'un cristal ramassé | 10 | 5 (jamais moins de 3) |
 | HUD (score, chrono) | toutes les 125 ms | toutes les 200 ms |
@@ -424,6 +425,8 @@ téléphone : un balayage depuis le bord ne le jette plus de l'autre côté).
 - `src/games/MirageGraphicsToggle.jsx` — le bouton de la barre et le choix en toutes
   lettres ;
 - `src/games/miragePixelBudget.js` — `renderPixelRatio(largeur, hauteur, densité, profil)` ;
+- `src/games/mirageGlow.js` — les deux dégradés peints (halo, ombre) et les objets qui
+  les portent : c'est `glowHalos` qui allume ou éteint les halos des cristaux ;
 - `src/games/MirageWorld.jsx` (application du profil à la volée : `setGraphics`),
   `desertStage.js` / `desertTerrain.js` (`setLite`) ;
 - `src/games/mirage-rush.css` — la section « GRAPHISMES BAISSÉS » (classe
@@ -448,6 +451,161 @@ ouvrir le jeu sur le téléphone (ou dans les outils de développement, mode app
 et alterner les deux niveaux en pleine course. Le gain se mesure en images par seconde :
 sur un téléphone comme sur un ordinateur, il vient d'abord des pixels (résolution), puis,
 sur les terrains chargés, du nombre d'objets dessinés.
+
+## Mirage Rush : le soleil, les halos et les ombres
+
+Les **dix terrains** gagnent leur lumière : des faisceaux s'ouvrent depuis leur
+soleil (ou leur lune), les cristaux de la piste brillent dans un halo, et les
+cavaliers projettent une ombre douce au sol. « Dunes de l'Écho » — le terrain
+d'origine — a en plus sa traînée dans la brume et son coup de chaleur à l'horizon.
+
+| Où | Quoi |
+|---|---|
+| Ciel du désert (`desertTerrain.js`) | **rayons** du soleil (six faisceaux qui battent lentement), **traînée** horizontale à la hauteur du disque, **coup de chaleur** juste au-dessus de la ligne d'horizon |
+| Ciel partagé — prairie, western, Sardaigne, Alger, Japon, Remparts, Airbase, Serpent (`MirageWorld.jsx`) | **faisceaux** qui battent lentement depuis le soleil du terrain, et **traînée** à sa hauteur ; ils s'effacent quand le soleil descend sous l'horizon (les nuits de la Prairie et du Far West ne les allument pas) |
+| Ciel du Château de l'Infini (`infinityAtmosphere.js`) | **faisceaux figés** autour du soleil de la Grande Arche, appuyés sur l'enveloppe de sa couronne : ils ne débordent ni derrière le bout du pont ni sur les flancs |
+| Cristaux (`MirageWorld.jsx`, `mirageGlow.js`) | un halo additif devant chaque gemme, qui respire à sa propre phase ; couleur du palier (rose, bleu, vert, or) |
+| Ramassage (`MirageWorld.jsx`) | l'éclair d'un cristal ramassé — ou la gerbe d'une flaque de boue — s'entoure d'un halo qui prend sa couleur et vit ses 0,52 s |
+| Cavaliers (`MirageWorld.jsx`) | une ombre douce au sol sous le joueur, sous les rivaux du duel et sous les cavaliers de la course en ligne ; elle pâlit quand ils sautent et suit le clignotement d'invulnérabilité |
+
+La force des faisceaux est un réglage **du terrain**, dans son objet d'ambiance
+(`rays`), pour que chaque ciel garde son caractère : plein soleil du couchant sur
+la Prairie et le Far West (1), soleil doré d'Alger (0,75), Château de l'Infini
+(0,6), plein jour de Sardaigne et d'Airbase (0,5), soleil blanc des Remparts
+(0,45), soleil couchant du Serpent (0,35), lune froide du Japon (0,25). Entre 0,04
+et 0,11 d'écart par canal à leur maximum : visibles, jamais au point de manger la
+palette du terrain.
+
+**Pas de post-traitement, et c'est un choix.** Le ciel et le sable du désert
+écrivent leurs couleurs sRGB telles quelles (`desertTerrain.js` : « pas de
+tone-mapping ici »), alors que la piste, les cristaux et les cavaliers passent par
+le tone-mapping ACES du moteur. Un *bloom* ou un étalonnage en fin de chaîne
+obligerait à reprendre une à une toutes ces couleurs — c'est-à-dire à refaire le
+désert. La lumière est donc **peinte**, comme au temps des sprites : un dégradé
+radial (128 px) reçoit la couleur du cristal et s'ajoute à la scène
+(`blending: AdditiveBlending`), sans écrire de profondeur — un halo ne cache
+jamais la piste et ne change ni la difficulté ni la lisibilité.
+
+Ce qui ne bouge pas : la palette, la brume, la géométrie du relief, la position des
+obstacles, les voies, la vitesse et les chronos. Seul l'habillage lumineux change —
+et il s'éteint avec les **graphismes baissés** : les ciels gardent alors leur halo
+et leur disque, sans faisceaux, et les gemmes perdent leur halo, pas leur couleur.
+
+Deux détails d'implémentation qui comptent :
+
+- les deux textures (halo, ombre) sont créées **une fois par monde 3D** et
+  partagées : un halo qui fabriquerait sa texture à chaque apparition en laisserait
+  une derrière lui à chaque recyclage de rangée, en pleine course ;
+- les sprites partagent **une seule géométrie** (`THREE.Sprite`) : ni le recyclage
+  des rangées ni `destroy()` ne doivent la libérer (`populateRow`), sans quoi les
+  halos du reste du jeu seraient coupés.
+
+### Où vit le code
+
+- `src/games/mirageGlow.js` — les dégradés (`makeGlowTexture`, `makeShadowTexture`),
+  le halo (`makeHalo`) et l'ombre au sol (`makeGroundShadow`) ;
+- `src/games/desertTerrain.js` — `SKY_FRAGMENT` : rayons, traînée et coup de chaleur,
+  sous `uLite < 0.5` (graphismes normaux), et l'horloge du ciel du désert ;
+- `src/games/MirageWorld.jsx` — le ciel partagé (`uRays` par terrain, `uTime`), son
+  `applySkyRays()`, `makeCrystal` (halo), les ombres des cavaliers, la respiration
+  des cristaux dans la boucle, `setGraphics` (`glowHalos`, faisceaux) ;
+- `src/games/infinityAtmosphere.js` — les faisceaux figés de la Grande Arche
+  (`uRays` posé à la création) ;
+- `src/games/snakewayStage.js` — `rays` de l'ambiance du Serpent ;
+- `src/games/mirageGraphics.js` — le champ `glowHalos` des deux profils, et
+  `sceneryEffects`, qui commande les faisceaux des ciels.
+
+### Vérifications
+
+```bash
+node --test tests/mirage-glow.test.js tests/mirage-desert-stage.test.js tests/mirage-graphics.test.js
+npm run check:mirage-graphics            # page et fenêtre en ligne : le réglage se bascule en direct
+npm run build
+```
+
+jsdom n'a pas de WebGL : ces vérifications disent ce que les dégradés contiennent,
+que les halos s'ajoutent sans masquer, que l'ombre est couchée au sol, que les
+champs `glowHalos` et `rays` existent, et que le décor du désert est intact — pas à
+quoi la lumière ressemble. Le rendu se juge à l'œil, en jeu, en basculant
+« GRAPHISMES : NORMAUX / BAISSÉS » pour comparer.
+
+Le ciel du Château reste **figé** (son shader ne dépend pas du temps :
+`tests/mirage-infinity-stage.test.js` le fige aussi), là où le ciel partagé et
+celui du désert reçoivent une horloge — c'est elle qui fait battre leurs faisceaux.
+
+## Mirage Rush : les cavaliers et leurs montures
+
+Le cheval d'origine n'avait ni regard, ni naseau, ni queue : un bloc, une selle et
+quatre jambes. Les **douze personnages** (les huit robes de base et les quatre
+skins de la boutique) ont maintenant un vrai corps — et tout ce qui pouvait bouger
+bouge.
+
+| Où | Quoi |
+|---|---|
+| Cheval (`mirageExplorer.js`) | yeux (blanc + pupille) et naseaux, museau plus clair, liste sur le chanfrein, oreilles, **crinière en trois mèches** ; poitrail éclairci et arrière-main assombri ; selle complète (tapis, selle, pommeau, **étriers suspendus**, **sacoches** à rabats) ; sabots sombres et balzanes |
+| Cavalier | **yeux, bandana remonté sur le nez et nœud dans la nuque** — c'est ce que voit la caméra de course —, quartier de pantalon, éperon au talon, cordon au chapeau |
+| Queue | trois mèches dégradées au lieu d'un bâton |
+| Jambes | deux segments sur **toutes** les montures (cheval, Épona, chocobo) : la cuisse part de la hanche, le genou se plie et le sabot se replie à chaque foulée — au saut, les antérieurs s'étendent et les postérieurs se replient sous le corps |
+| Mouvement | la **tête hoche**, les **bras tirent sur les rênes**, le **pan de cape bat** la croupe, la queue balance et les genoux se plient — joueur **et** rivaux, chacun à sa phase |
+| Boutique | les vignettes 3D animent la tête, les rênes, les genoux et le pan de cape ; les portraits 2D (`MirageCharacterPortrait`) reçoivent les yeux du cavalier, son bandana, le mors, la rêne et les sabots |
+
+**Aucune couleur n'est ajoutée aux palettes.** Le relief vient de tons *dérivés* de
+la robe et des crins (`shadeMaterial` : la même teinte, éclaircie ou assombrie), et
+`paintModel` les recalcule quand on change de skin — une robe claire garde son
+relief comme une robe sombre. Seuls les yeux sont fixes (un blanc cassé, une
+pupille presque noire) : pris dans la palette, ils donneraient des yeux clairs sur
+les robes claires, et le cheval perdrait son regard.
+
+**Le détail ne coûte presque rien en appels de dessin.** Les blocs *fixes* d'un
+groupe sont soudés par matière (`mergeStaticBlocks`, la même idée que
+`bakeStaticScenery` pour le décor), et seules les pièces animées restent des nœuds
+à part : la tête, les quatre jambes (cuisse **et** genou), la queue, la cape, le
+pan, les bras et le chapeau — celui-ci tombe quand Cloud ou Link prend la selle.
+Un seul mesh par matière, donc :
+
+| Skin | Meshes (avant → après) | Triangles (avant → après) |
+|---|---|---|
+| Alezan (base) | 41 → **44** | 492 → **1008** |
+| Gyro | 55 → **58** | 1540 → **2056** |
+| Cloud | 95 → **100** | 1136 → **1676** |
+| Link | 142 → **149** | 1662 → **2226** |
+
+Le double de triangles pour quelques appels de dessin de plus : c'est le prix du
+regard, de la sellerie et d'un vrai galop. Épona et le chocobo ont le même genou
+— un jarret pour l'oiseau coureur, qui replie ses doigts sous lui. Le module 3D reste
+**partagé** par les huit cavaliers d'une course — les vignettes de la boutique
+réutilisent un unique moteur de rendu hors écran (`mirageSkinRenderer.js`) pour
+tous les skins à la fois.
+
+Cloud et Link gardent leur propre tête : le visage du cow-boy (yeux + bandana) est
+un groupe à part que leur skin **masque** au lieu de le leur faire porter sous le
+leur — et qui revient dès qu'on reprend une robe de base.
+
+### Où vit le code
+
+- `src/games/mirageExplorer.js` — `makeExplorer` (le corps, la tête, la queue, le
+  visage, le pan de cape, le chapeau, les bras), `shadeMaterial`, `mergeStaticBlocks`,
+  `paintModel` (palette + tons dérivés), `setExplorerAccessories` (`parts.face`) ;
+- `src/games/MirageWorld.jsx` — l'animation en course (tête, rênes, genoux, pan de
+  cape) pour le joueur **et** pour chaque rival ;
+- `src/games/mirageSkinRenderer.js` — les mêmes pièces dans les vignettes de skin ;
+- `src/games/mirageTrophyScene.js` — le vainqueur qui salue sur le podium ;
+- `src/games/MirageCharacterPortrait.jsx` — le portrait 2D assorti (boutique,
+  salon en ligne, coupes).
+
+### Vérifications
+
+```bash
+node --test tests/mirage-explorer.test.js tests/mirage-explorer-details.test.js
+npm run check:mirage-scoreboard           # les portraits 2D se rendent toujours
+npm run build
+```
+
+Les tests disent que les yeux, les naseaux, le bandana, les sabots et les genoux
+sont là, que Cloud et Link masquent le visage du cow-boy, que les tons dérivés
+suivent la palette, que les pièces animées ne sont **jamais** soudées, qu'un genou
+plié lève le sabot sans le planter dans la piste — et que le coût du modèle reste
+sous son plafond. La silhouette, elle, se juge à l'œil, en jeu.
 
 ## Mirage Rush : les coupes et les gains d'or
 
