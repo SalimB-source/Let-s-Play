@@ -120,7 +120,7 @@ function frame(now) {
     const gallop = isLink ? 7.4 : 7;
     legs.forEach((leg, i) => {
       leg.rotation.x = Math.sin(t * gallop + i * 2.2) * (isLink ? 0.5 : 0.45);
-      if (leg.userData.knee) leg.userData.knee.rotation.x = Math.max(0, Math.sin(t * gallop + i * 2.2 + 1.5)) * 0.5;
+      if (leg.userData.knee) leg.userData.knee.rotation.x = -Math.max(0, Math.sin(t * gallop + i * 2.2 + 2.1)) * 0.45;
     });
     tail.rotation.x = -0.35 + Math.sin(t * gallop) * (isLink ? 0.16 : 0.12);
     wings.forEach((wing, index) => { wing.rotation.z = Math.sin(t * 7 + index * Math.PI) * 0.12; });

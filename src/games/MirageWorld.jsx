@@ -3113,10 +3113,12 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const knee = leg.userData.knee;
       if (jumpLeft > 0) {
         leg.rotation.x = index < 2 ? -0.7 : 0.65;
-        if (knee) knee.rotation.x = index < 2 ? 0.35 : 0.9;
+        if (knee) knee.rotation.x = index < 2 ? 0 : -0.6; // antérieurs tendus, postérieurs repliés
       } else if (galloping) {
         leg.rotation.x = Math.sin(time * gallopRate + index * 2.2) * (turboActive ? 0.82 : mudSlowed ? 0.45 : 0.65);
-        if (knee) knee.rotation.x = Math.max(0, Math.sin(time * gallopRate + index * 2.2 + 1.5)) * (turboActive ? 0.75 : mudSlowed ? 0.35 : 0.55);
+        // Le sabot se replie **sous** la jambe : le genou se plie en début de
+        // retour vers l'avant, puis se détend pour aller poser le pied.
+        if (knee) knee.rotation.x = -Math.max(0, Math.sin(time * gallopRate + index * 2.2 + 2.1)) * (turboActive ? 0.7 : mudSlowed ? 0.32 : 0.5);
       } else {
         leg.rotation.x = 0;
         if (knee) knee.rotation.x = 0;
@@ -3249,7 +3251,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         const knee = leg.userData.knee;
         leg.rotation.x = running && rivalStun <= 0 ? Math.sin(time * rivalGallopRate + index * 2.2 + phaseOffset) * (rivalTurbo ? 0.82 : 0.65) : 0;
         if (knee) knee.rotation.x = running && rivalStun <= 0
-          ? Math.max(0, Math.sin(time * rivalGallopRate + index * 2.2 + phaseOffset + 1.5)) * (rivalTurbo ? 0.75 : 0.55)
+          ? -Math.max(0, Math.sin(time * rivalGallopRate + index * 2.2 + phaseOffset + 2.1)) * (rivalTurbo ? 0.7 : 0.5)
           : 0;
       });
       poseRider(rivalMesh, rivalStun, r.stunSide || 1);
@@ -3277,7 +3279,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         rivalMesh.scale.setScalar(1);
         if (r.jumpLeft > 0) rivalParts.legs.forEach((leg, index) => {
           leg.rotation.x = index < 2 ? -0.7 : 0.65;
-          if (leg.userData.knee) leg.userData.knee.rotation.x = index < 2 ? 0.35 : 0.9;
+          if (leg.userData.knee) leg.userData.knee.rotation.x = index < 2 ? 0 : -0.6;
         });
         if (r.slowTimer > 0) {
           rivalMesh.position.y += Math.sin(time * 0.02 + idx) * 0.06;

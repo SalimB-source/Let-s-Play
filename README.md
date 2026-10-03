@@ -545,7 +545,7 @@ bouge.
 | Cheval (`mirageExplorer.js`) | yeux (blanc + pupille) et naseaux, museau plus clair, liste sur le chanfrein, oreilles, **crinière en trois mèches** ; poitrail éclairci et arrière-main assombri ; selle complète (tapis, selle, pommeau, **étriers suspendus**, **sacoches** à rabats) ; sabots sombres et balzanes |
 | Cavalier | **yeux, bandana remonté sur le nez et nœud dans la nuque** — c'est ce que voit la caméra de course —, quartier de pantalon, éperon au talon, cordon au chapeau |
 | Queue | trois mèches dégradées au lieu d'un bâton |
-| Jambes | deux segments : la cuisse part de la hanche, le **genou se plie** et le sabot se replie à chaque foulée (et sous le corps au saut) |
+| Jambes | deux segments sur **toutes** les montures (cheval, Épona, chocobo) : la cuisse part de la hanche, le genou se plie et le sabot se replie à chaque foulée — au saut, les antérieurs s'étendent et les postérieurs se replient sous le corps |
 | Mouvement | la **tête hoche**, les **bras tirent sur les rênes**, le **pan de cape bat** la croupe, la queue balance et les genoux se plient — joueur **et** rivaux, chacun à sa phase |
 | Boutique | les vignettes 3D animent la tête, les rênes, les genoux et le pan de cape ; les portraits 2D (`MirageCharacterPortrait`) reçoivent les yeux du cavalier, son bandana, le mors, la rêne et les sabots |
 
@@ -567,11 +567,12 @@ Un seul mesh par matière, donc :
 |---|---|---|
 | Alezan (base) | 41 → **44** | 492 → **1008** |
 | Gyro | 55 → **58** | 1540 → **2056** |
-| Cloud | 95 → **98** | 1136 → **1652** |
-| Link | 142 → **145** | 1662 → **2178** |
+| Cloud | 95 → **100** | 1136 → **1676** |
+| Link | 142 → **149** | 1662 → **2226** |
 
-Le double de triangles pour trois appels de dessin de plus (les quatre genoux) :
-c'est le prix du regard, de la sellerie et d'un vrai galop. Le module 3D reste
+Le double de triangles pour quelques appels de dessin de plus : c'est le prix du
+regard, de la sellerie et d'un vrai galop. Épona et le chocobo ont le même genou
+— un jarret pour l'oiseau coureur, qui replie ses doigts sous lui. Le module 3D reste
 **partagé** par les huit cavaliers d'une course — les vignettes de la boutique
 réutilisent un unique moteur de rendu hors écran (`mirageSkinRenderer.js`) pour
 tous les skins à la fois.

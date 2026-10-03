@@ -135,12 +135,31 @@ test('chaque jambe a un genou : le sabot se replie au galop sans passer sous le 
     model.traverse((node) => { if (node.isMesh) box.expandByObject(node); });
     assert.ok(box.min.y > 0.02 && box.min.y < 0.05, 'les sabots reposent au sol, comme avant le genou');
     const knee = legs[0].userData.knee;
-    knee.rotation.x = 0.6;
+    knee.rotation.x = -0.5; // le sabot se replie sous la jambe, comme au galop
     model.updateMatrixWorld(true);
     const hoof = new THREE.Box3().setFromObject(knee);
     assert.ok(hoof.min.y > 0, 'un genou plié lève le sabot, il ne le plante pas dans la piste');
   } finally {
     disposeExplorer(model);
+  }
+});
+
+test('les montures de la boutique ont le même genou : Épona et le chocobo', () => {
+  for (const [index, legs] of [[CLOUD_CHOCOBO_INDEX, 2], [LINK_EPONA_INDEX, 4]]) {
+    const model = makeExplorer(false, CHARACTER_PALETTES[index]);
+    try {
+      const parts = model.userData.parts;
+      assert.equal(parts.legs.length, legs);
+      for (const leg of parts.legs) {
+        assert.ok(leg.userData.knee, `${CHARACTER_NAMES[index]} : chaque jambe a son jarret`);
+      }
+      const box = new THREE.Box3();
+      model.updateMatrixWorld(true);
+      model.traverse((node) => { if (node.isMesh) box.expandByObject(node); });
+      assert.ok(box.min.y > 0.02 && box.min.y < 0.05, 'et ses pieds reposent au sol');
+    } finally {
+      disposeExplorer(model);
+    }
   }
 });
 
@@ -162,7 +181,7 @@ test('les pièces animées ne sont jamais soudées : queue, pan de cape, bras et
 });
 
 test('les skins de la boutique restent sous le plafond de coût (jusqu’à huit cavaliers à l’écran)', () => {
-  const ceilings = [[0, 46], [4, 62], [5, 102], [6, 150]];
+  const ceilings = [[0, 46], [4, 62], [5, 104], [6, 152]];
   for (const [index, ceiling] of ceilings) {
     const model = makeExplorer(false, CHARACTER_PALETTES[index]);
     try {
@@ -177,6 +196,7 @@ test('câblage : le monde anime la tête, les rênes et le pan de cape, joueur c
   assert.match(world, /if \(parts\.horseHead\?\.visible\)/, 'la tête ne hoche pas sous Cloud ou Link');
   assert.match(world, /parts\.armGroup\.rotation\.x/, 'les bras tirent sur les rênes');
   assert.match(world, /const knee = leg\.userData\.knee/, 'le genou se plie à chaque foulée');
+  assert.match(world, /knee\.rotation\.x = index < 2 \? 0 : -0\.6/, 'au saut, les postérieurs se replient');
   assert.match(world, /parts\.capeFlap\.rotation\.x/, 'le pan de cape bat au rythme du galop');
   assert.match(world, /if \(rivalParts\.horseHead\?\.visible\)/, 'et les rivaux ont la même vie');
   assert.match(world, /rivalParts\.capeFlap\.rotation\.x/);

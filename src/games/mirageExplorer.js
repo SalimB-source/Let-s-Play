@@ -525,17 +525,24 @@ function attachCloudChocobo(model) {
     wings.push(wing);
   }
 
-  // Two springy orange legs with broad, three-toed feet.
+  // Two springy orange legs with broad, three-toed feet — cuisse et tarse
+  // séparés par un jarret, comme un oiseau coureur (voir `userData.knee`).
   const chocoboLegs = [];
   for (const side of [-1, 1]) {
     const leg = new THREE.Group();
     leg.name = side < 0 ? 'chocobo-left-leg' : 'chocobo-right-leg';
     leg.position.set(side * 0.29, 0.74, 0.34);
     group.add(leg);
-    block(cube, orange, leg, [0, -0.27, 0], [0.15, 0.56, 0.16]);
-    block(cube, beak, leg, [0, -0.54, -0.1], [0.31, 0.14, 0.38]);
+    block(cube, orange, leg, [0, -0.14, 0], [0.15, 0.28, 0.16]);
+    const tarsus = new THREE.Group();
+    tarsus.name = 'chocobo-tarsus';
+    tarsus.position.set(0, -0.28, 0);
+    leg.add(tarsus);
+    leg.userData.knee = tarsus;
+    block(cube, orange, tarsus, [0, -0.13, 0], [0.14, 0.28, 0.15]);
+    block(cube, beak, tarsus, [0, -0.26, -0.1], [0.31, 0.14, 0.38]);
     for (const toe of [-1, 0, 1]) {
-      block(cube, beak, leg, [toe * 0.105, -0.55, -0.25], [0.095, 0.1, 0.22]);
+      block(cube, beak, tarsus, [toe * 0.105, -0.27, -0.25], [0.095, 0.1, 0.22]);
     }
     chocoboLegs.push(leg);
   }
@@ -684,9 +691,15 @@ function attachLinkEpona(model) {
     leg.name = `${x < 0 ? 'epona-left' : 'epona-right'}-${z < 0 ? 'front' : 'back'}-leg`;
     leg.position.set(x, 0.85, z);
     group.add(leg);
-    block(cube, coat, leg, [0, -0.34, 0], [0.2, 0.68, 0.23]);
-    block(cube, sock, leg, [0, -0.52, 0], [0.215, 0.28, 0.245]);
-    block(cube, hoof, leg, [0, -0.73, -0.03], [0.23, 0.17, 0.3]);
+    block(cube, coat, leg, [0, -0.17, 0], [0.21, 0.35, 0.25]);
+    const knee = new THREE.Group();
+    knee.name = 'epona-knee';
+    knee.position.set(0, -0.34, 0);
+    leg.add(knee);
+    leg.userData.knee = knee;
+    block(cube, coat, knee, [0, -0.18, 0], [0.19, 0.36, 0.22]);
+    block(cube, sock, knee, [0, -0.25, 0], [0.205, 0.22, 0.235]);
+    block(cube, hoof, knee, [0, -0.37, -0.03], [0.22, 0.17, 0.29]);
     eponaLegs.push(leg);
   }
 

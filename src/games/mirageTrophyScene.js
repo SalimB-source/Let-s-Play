@@ -429,7 +429,7 @@ function buildTrophyScene(renderer, mount, { trophyDesign = 'desert', riderColor
       if (parts.armGroup) parts.armGroup.rotation.x = Math.sin(time * 6 + 1.2) * 0.05;
       parts.legs.forEach((leg, index) => {
         leg.rotation.x = Math.sin(time * 6 + index * 1.6) * 0.16 * hop;
-        if (leg.userData.knee) leg.userData.knee.rotation.x = Math.max(0, Math.sin(time * 6 + index * 1.6 + 1.5)) * 0.3 * hop;
+        if (leg.userData.knee) leg.userData.knee.rotation.x = -Math.max(0, Math.sin(time * 6 + index * 1.6 + 2.1)) * 0.28 * hop;
       });
     }
 
