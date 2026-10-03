@@ -4,7 +4,7 @@
 // Joue des courses COMPLÈTES avec le vrai monde du jeu (WebGLRenderer
 // factice, comme le smoke) et un pilote automatique de niveau choisi, puis
 // résume ce que le joueur subit : victoires, avance finale sur les rivaux,
-// coups encaissés (mitrailleuse / huile / hélico), temps passé avec un rival
+// coups encaissés (mitrailleuse / tir bleu / hélico), temps passé avec un rival
 // à portée, bonus ramassés par chacun, temps perdu dans le trafic…
 //
 // Ce n'est PAS un test (rien ne l'échoue) : c'est l'instrument pour régler
@@ -25,6 +25,7 @@
 //   --city=ID|all                 vice-city, new-york, tokyo, paris, london (défaut vice-city)
 //   --car=ID|all                  vice-roadster, turbo-gt, muscle-86, night-comet (défaut all)
 //   --seed=N                      graine : mêmes courses d'un essai à l'autre (1)
+//   --laps=N                      nombre de tours (3 : le mode CIRCUIT, le mode classique du jeu)
 //   --difficulty=easy|normal|hard niveau des rivaux (défaut normal : `CITY_RUSH_RIVAL_AI`)
 //   --ai=clé=val,clé=val          surcharge le réglage du niveau choisi à la volée, ex. paceFactor=0.985
 //   --car-patch='id:clé=val;…'    modifie un profil de voiture en mémoire (équilibrage)
@@ -77,6 +78,7 @@ globalThis.__BENCH_OPTIONS = {
   city: arg('city', 'vice-city'),
   car: arg('car', 'all'),
   seed: Number(arg('seed', 1)),
+  laps: Number(arg('laps', 3)),
   json: process.argv.includes('--json'),
   trace: Number(arg('trace', 0)),
 };
@@ -135,7 +137,7 @@ globalThis.__FakeWebGLRenderer = FakeWebGLRenderer;
 const DEBUG_HOOK = `get distance() { return distance; },
     get __debug() {
       return {
-        racers, trafficCars, rows, oilTraps,
+        racers, trafficCars, rows,
         get playerLane() { return playerLane; },
         get inventory() { return inventory; },
         get currentSpeed() { return currentSpeed; },

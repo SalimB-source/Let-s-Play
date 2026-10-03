@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, GYRO_ZEPPELI_ID, MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, WIN_COINS,
-  applyRun, buySkin, coinsForRun, defaultProgress, equipSkin, isShopSkin,
-  isSkinUnlocked, levelCost, levelForXp, levelProgress, loadProgress,
-  sanitizeProgress, saveProgress, skinFor, xpForRun, xpToReachLevel,
+  CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, GYRO_ZEPPELI_ID, INITIAL_UNLOCKED_STAGES,
+  MAX_LEVEL, PROGRESSION_KEY, SHOP_SKINS, SKINS, STAGE_IDS, WIN_COINS,
+  applyRun, awardCoins, buySkin, coinsForRun, completeCup, defaultProgress, equipSkin,
+  isFirstPlaceRun, isShopSkin, isSkinUnlocked, isStageUnlocked, levelCost, levelForXp,
+  levelProgress, loadProgress, sanitizeProgress, saveProgress, skinFor, stageRequirement,
+  unlockedStages, xpForRun, xpToReachLevel,
 } from '../src/games/mirageProgression.js';
+import { isCupUnlocked, unlockedCups } from '../src/games/mirageCup.js';
 
 test('level curve is strictly increasing and levelForXp flips exactly on thresholds', () => {
   assert.equal(xpToReachLevel(1), 0);
@@ -115,8 +118,8 @@ test('progression round-trips through storage and survives corrupted JSON', () =
   assert.deepEqual(loadProgress(null), defaultProgress());
 });
 
-test('a victory awards 5 gold and a rush awards none', () => {
-  assert.equal(WIN_COINS, 5);
+test('a victory awards 10 gold and a rush awards none', () => {
+  assert.equal(WIN_COINS, 10);
   assert.equal(coinsForRun({}), 0);
   assert.equal(coinsForRun({ mode: 'rush', score: 99999 }), 0);
   assert.equal(coinsForRun({ mode: 'duel', won: false, rank: 2 }), 0);
@@ -128,6 +131,20 @@ test('a victory awards 5 gold and a rush awards none', () => {
   const loss = applyRun(win.progress, { mode: 'duel', score: 1000, gems: 4, won: false, rank: 3 });
   assert.equal(loss.coinsGained, 0);
   assert.equal(loss.progress.coins, WIN_COINS);
+});
+
+test('awardCoins safely adds an external adjustment without draining the wallet', () => {
+  const start = { ...defaultProgress(), coins: 12 };
+  const adjustment = awardCoins(start, 30);
+  assert.equal(adjustment.coinsGained, 30);
+  assert.equal(adjustment.progress.coins, 42, 'the separate amount is added to the existing balance');
+  assert.equal(start.coins, 12, 'the original progress is not mutated');
+  assert.equal(awardCoins(adjustment.progress, 0).coinsGained, 0);
+  assert.equal(awardCoins(adjustment.progress, 0).progress.coins, 42);
+  assert.equal(awardCoins(adjustment.progress, -40).coinsGained, 0, 'a negative amount adds nothing');
+  assert.equal(awardCoins(adjustment.progress, -40).progress.coins, 42);
+  assert.equal(awardCoins(adjustment.progress, 'oops').coinsGained, 0);
+  assert.equal(awardCoins(undefined, 50).progress.coins, 50, 'missing progress starts from zero');
 });
 
 test('Gyro Zeppeli is a shop skin that costs 200 gold', () => {
@@ -176,3 +193,100 @@ test('Cloud is temporarily unlocked for everyone while the 280 OR shop price sta
   assert.equal(purchaseAttempt.progress.coins, 500);
   assert.deepEqual(purchaseAttempt.progress.ownedSkins, []);
 });
+
+test('maps unlock sequentially: only the first 3 are open initially, then finishing 1st on all unlocked maps unlocks the next one', () => {
+  assert.equal(INITIAL_UNLOCKED_STAGES, 3);
+  assert.deepEqual(STAGE_IDS, [
+    'desert', 'western', 'prairie', 'sardinia', 'alger',
+    'japan', 'ramparts', 'infinity', 'airbase', 'snakeway',
+  ]);
+  assert.deepEqual(stageRequirement('desert'), []);
+  assert.deepEqual(stageRequirement('western'), []);
+  assert.deepEqual(stageRequirement('prairie'), []);
+  assert.deepEqual(stageRequirement('sardinia'), ['desert', 'western', 'prairie']);
+  assert.deepEqual(stageRequirement('alger'), ['desert', 'western', 'prairie', 'sardinia']);
+  assert.equal(stageRequirement('unknown'), undefined);
+
+  let progress = defaultProgress();
+  assert.deepEqual(progress.wonStages, []);
+  assert.deepEqual(unlockedStages(progress.wonStages), ['desert', 'western', 'prairie']);
+  assert.equal(isStageUnlocked('sardinia', progress.wonStages), false);
+
+  // Une défaite (2ᵉ place) sur la 1ʳᵉ carte n’enregistre pas de victoire.
+  const secondPlace = applyRun(progress, { mode: 'duel', stage: 'desert', won: false, rank: 2, score: 500, gems: 3 });
+  assert.deepEqual(secondPlace.progress.wonStages, []);
+  assert.deepEqual(secondPlace.newlyUnlockedStages, []);
+  assert.equal(isStageUnlocked('sardinia', secondPlace.progress.wonStages), false);
+
+  // Finir 1ᵉʳ sur les 2 premières cartes ne suffit pas encore pour la 4ᵉ.
+  let step = applyRun(progress, { mode: 'duel', stage: 'desert', won: true, rank: 1, score: 1200, gems: 6 });
+  assert.deepEqual(step.progress.wonStages, ['desert']);
+  assert.deepEqual(step.newlyUnlockedStages, []);
+  step = applyRun(step.progress, { mode: 'duel', stage: 'western', won: true, rank: 1, score: 1200, gems: 6 });
+  assert.deepEqual(step.progress.wonStages, ['desert', 'western']);
+  assert.deepEqual(step.newlyUnlockedStages, []);
+  assert.equal(isStageUnlocked('sardinia', step.progress.wonStages), false);
+
+  // Finir 1ᵉʳ sur la 3ᵉ carte (`prairie`) complète les 3 premières et débloque la 4ᵉ (`sardinia`).
+  step = applyRun(step.progress, { mode: 'duel', stage: 'prairie', won: true, rank: 1, score: 1200, gems: 6 });
+  assert.deepEqual(step.progress.wonStages, ['desert', 'western', 'prairie']);
+  assert.deepEqual(step.newlyUnlockedStages, ['sardinia']);
+  assert.equal(isStageUnlocked('sardinia', step.progress.wonStages), true);
+  assert.equal(isStageUnlocked('alger', step.progress.wonStages), false);
+
+  // Finir 1ᵉʳ sur la 4ᵉ débloque la 5ᵉ (`alger`), et ainsi de suite jusqu’à la 10ᵉ (`snakeway`).
+  for (let i = 3; i < STAGE_IDS.length; i += 1) {
+    const currentStage = STAGE_IDS[i];
+    const nextStage = STAGE_IDS[i + 1] ?? null;
+    assert.equal(isStageUnlocked(currentStage, step.progress.wonStages), true);
+    if (nextStage) assert.equal(isStageUnlocked(nextStage, step.progress.wonStages), false);
+
+    step = applyRun(step.progress, { mode: 'duel', stage: currentStage, won: true, rank: 1, score: 1500, gems: 8 });
+    assert.deepEqual(step.newlyUnlockedStages, nextStage ? [nextStage] : []);
+    if (nextStage) assert.equal(isStageUnlocked(nextStage, step.progress.wonStages), true);
+  }
+  assert.deepEqual(unlockedStages(step.progress.wonStages), STAGE_IDS);
+});
+
+test('applyRun and completeCup unlock cups one by one and ignore locked cups', () => {
+  let progress = defaultProgress();
+  assert.deepEqual(progress.completedCups, []);
+  assert.deepEqual(unlockedCups(progress.completedCups).map((c) => c.id), ['desert']);
+
+  // Tenter de valider une coupe encore verrouillée est refusé.
+  const blocked = completeCup(progress, 'winds');
+  assert.equal(blocked.ok, false);
+  assert.deepEqual(blocked.progress.completedCups, []);
+
+  // Finir la 1ʳᵉ coupe (`desert`) via applyRun débloque la 2ᵉ (`winds`).
+  const afterDesert = applyRun(progress, {
+    mode: 'duel',
+    stage: 'prairie',
+    won: true,
+    rank: 1,
+    completedCupId: 'desert',
+  });
+  assert.deepEqual(afterDesert.progress.completedCups, ['desert']);
+  assert.deepEqual(afterDesert.newlyUnlockedCups, ['winds']);
+  assert.equal(isCupUnlocked('winds', afterDesert.progress.completedCups), true);
+  assert.equal(isCupUnlocked('worldtour', afterDesert.progress.completedCups), false);
+
+  // Finir la 2ᵉ coupe (`winds`) débloque la 3ᵉ (`worldtour`).
+  const afterWinds = completeCup(afterDesert.progress, 'winds');
+  assert.equal(afterWinds.ok, true);
+  assert.deepEqual(afterWinds.newlyUnlockedCups, ['worldtour']);
+  assert.equal(isCupUnlocked('worldtour', afterWinds.progress.completedCups), true);
+  assert.equal(isCupUnlocked('legends', afterWinds.progress.completedCups), false);
+
+  // Finir la 3ᵉ coupe (`worldtour`) débloque la 4ᵉ (`legends`).
+  const afterWorldTour = completeCup(afterWinds.progress, 'worldtour');
+  assert.equal(afterWorldTour.ok, true);
+  assert.deepEqual(afterWorldTour.newlyUnlockedCups, ['legends']);
+  assert.equal(isCupUnlocked('legends', afterWorldTour.progress.completedCups), true);
+
+  assert.equal(isFirstPlaceRun({ won: true, rank: 2 }), true);
+  assert.equal(isFirstPlaceRun({ won: false, rank: 1 }), false);
+  assert.equal(isFirstPlaceRun({ rank: 1 }), true);
+  assert.equal(isFirstPlaceRun({ rank: 3 }), false);
+});
+

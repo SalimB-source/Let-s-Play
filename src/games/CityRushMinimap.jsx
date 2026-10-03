@@ -5,7 +5,6 @@ import {
   buildCityRushMinimapState,
   cityRushMinimapTrackPath,
 } from './cityRushRules';
-import { cityRushTunnelMinimapBands } from './cityRushTunnels';
 
 const TRACK_PATH = cityRushMinimapTrackPath(72);
 
@@ -43,9 +42,8 @@ export default function CityRushMinimap({
   );
   const { focus, markers, startLine, midGate } = minimap;
   const police = minimap.pursuers || [];
-  // Tremis du circuit : la voûte et, quand la chaussée se resserre, la bande
-  // des voies murées. Le resserrement se voit venir sur la carte.
-  const tunnelBands = useMemo(() => cityRushTunnelMinimapBands(cityId), [cityId]);
+  const blockers = police.filter((car) => car.blocking).length;
+  const rallied = police.filter((car) => car.rallied).length;
 
   return (
     <aside
@@ -58,8 +56,8 @@ export default function CityRushMinimap({
         </span>
         <span className="city-rush-minimap-badges">
           {police.length > 0 && (
-            <span className="city-rush-minimap-police" title="L’escouade de police du dernier tour — hors classement">
-              🚨 POLICE ×{police.length}
+            <span className="city-rush-minimap-police" title={`Poursuivants hors classement, solides : ils se rabattent devant leur pilote pour le bloquer.${rallied > 0 ? ' La police routière a été percutée : elle chasse celui qui l’a touchée.' : ''}`}>
+              🚨 POLICE ×{police.length}{rallied > 0 ? ` · ${rallied} ROUTIÈRE${rallied > 1 ? 'S' : ''}` : ''}{blockers > 0 ? ` · ${blockers} EN BARRAGE` : ''}
             </span>
           )}
           <span className="city-rush-minimap-lap">
@@ -109,35 +107,6 @@ export default function CityRushMinimap({
           <path className="city-rush-minimap-road-asphalt" d={TRACK_PATH} />
           <path className="city-rush-minimap-road-lanes" d={TRACK_PATH} />
 
-          {/* Tremis : voûte courte et voies murées, dessinées sous les repères */}
-          {tunnelBands.map((band) => (
-            <g
-              key={band.id}
-              className="city-rush-minimap-tunnel"
-              transform={`translate(${band.x.toFixed(2)}, ${band.y.toFixed(2)}) rotate(${band.deg.toFixed(1)})`}
-            >
-              <rect
-                className="city-rush-minimap-tunnel-vault"
-                x={(-band.length / 2 - 0.4).toFixed(2)}
-                y={(-band.roadHalf - 0.4).toFixed(2)}
-                width={(band.length + 0.8).toFixed(2)}
-                height={(band.roadHalf * 2 + 0.8).toFixed(2)}
-                rx="1"
-              />
-              {band.walls.map((wall) => (
-                <rect
-                  key={wall.side}
-                  className="city-rush-minimap-tunnel-wall"
-                  x={(-band.length / 2 + 0.5).toFixed(2)}
-                  y={wall.from.toFixed(2)}
-                  width={(band.length - 1).toFixed(2)}
-                  height={(wall.to - wall.from).toFixed(2)}
-                  rx="0.5"
-                />
-              ))}
-            </g>
-          ))}
-
           {/* Arche de mi-parcours (300 m) & ligne de départ/arrivée */}
           <g
             className="city-rush-minimap-gate"
@@ -173,13 +142,28 @@ export default function CityRushMinimap({
           {police.map((car) => (
             <g
               key={car.id}
-              className="city-rush-minimap-pursuer"
+              className={`city-rush-minimap-pursuer${car.blocking ? ' is-blockade' : ''}${car.rallied ? ' is-rallied' : ''}`}
               transform={`translate(${car.x.toFixed(2)}, ${car.y.toFixed(2)}) rotate(${car.deg.toFixed(1)})`}
             >
+              <title>{car.blocking ? `${car.name} en barrage roulant : elle freine devant le leader` : car.rallied ? `${car.name} rappelée par un contact : elle chasse le pilote qui l’a percutée` : `${car.name} en chasse`}</title>
               <circle className="city-rush-minimap-pursuer-halo" r="7.6" />
               <rect className="city-rush-minimap-pursuer-body" x="-3.8" y="-2.5" width="7.6" height="5" rx="1.5" />
               <rect className="city-rush-minimap-pursuer-light" x="-2.9" y="-1.5" width="2.4" height="3" rx="0.7" />
               <rect className="city-rush-minimap-pursuer-light is-blue" x="0.5" y="-1.5" width="2.4" height="3" rx="0.7" />
+              {car.health !== null && car.maxHealth > 0 && (
+                <g className="city-rush-minimap-pursuer-health" transform={`rotate(${(-car.deg).toFixed(1)})`}>
+                  <title>{`${car.name} · ${car.health}/${car.maxHealth} points de vie`}</title>
+                  <rect className="city-rush-minimap-pursuer-health-bg" x="-4.4" y="3.6" width="8.8" height="1.7" rx="0.85" />
+                  <rect
+                    className={`city-rush-minimap-pursuer-health-fill${car.health <= 1 ? ' is-low' : ''}`}
+                    x="-4.4"
+                    y="3.6"
+                    width={Math.max(0, 8.8 * Math.min(1, Math.max(0, car.health / car.maxHealth)))}
+                    height="1.7"
+                    rx="0.85"
+                  />
+                </g>
+              )}
             </g>
           ))}
 

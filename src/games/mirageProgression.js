@@ -2,15 +2,80 @@
 // unlocked along the way, gold coins on victories and a shop for paid skins.
 // Pure logic + localStorage, no React, so node --test can exercise it directly.
 import { CHARACTER_PALETTES, CHARACTER_PRICES, CLOUD_CHOCOBO_INDEX, GYRO_ZEPPELI_INDEX } from './mirageCharacters.js';
+import { CUPS, isCupUnlocked } from './mirageCup.js';
 
 export const PROGRESSION_KEY = 'letsplay_mirage_progression_v1';
 export const MAX_LEVEL = 20;
 /** Gold awarded for finishing 1st (duel, cup race or online). */
-export const WIN_COINS = 5;
+export const WIN_COINS = 10;
 export const GYRO_ZEPPELI_ID = 'gyro-zeppeli';
 export const CLOUD_CHOCOBO_ID = 'cloud-chocobo';
 /** Temporary all-player access; set false to restore the stored 280 OR shop gate. */
 export const CLOUD_CHOCOBO_TEMPORARILY_FREE = true;
+
+/**
+ * Ordre canonique des 10 cartes de Mirage Rush.
+ * Les 3 premières (`desert`, `western`, `prairie`) sont ouvertes d’office ;
+ * il faut finir les 3 premières en arrivant 1ᵉʳ pour débloquer la 4ᵉ, puis
+ * finir la 4ᵉ en arrivant 1ᵉʳ pour débloquer la 5ᵉ, et ainsi de suite jusqu’à
+ * la 10ᵉ carte (`snakeway`).
+ */
+export const STAGE_IDS = [
+  'desert',
+  'western',
+  'prairie',
+  'sardinia',
+  'alger',
+  'japan',
+  'ramparts',
+  'infinity',
+  'airbase',
+  'snakeway',
+];
+
+export const INITIAL_UNLOCKED_STAGES = 3;
+
+const CUP_IDS = CUPS.map((cup) => cup.id);
+
+/**
+ * Cartes à remporter en 1ʳᵉ place pour débloquer `stageId` :
+ * - `[]` pour les 3 premières cartes (ouvertes dès le départ) ;
+ * - toutes les cartes précédentes `[0 .. index - 1]` à partir de la 4ᵉ ;
+ * - `undefined` si l’identifiant est inconnu.
+ */
+export function stageRequirement(stageId) {
+  const index = STAGE_IDS.indexOf(stageId);
+  if (index < 0) return undefined;
+  if (index < INITIAL_UNLOCKED_STAGES) return [];
+  return STAGE_IDS.slice(0, index);
+}
+
+/**
+ * La carte `stageId` est-elle débloquée ?
+ * Seules les 3 premières cartes sont accessibles d’office. Pour débloquer la
+ * 4ᵉ (`sardinia`), il faut avoir fini chacune des 3 premières en 1ʳᵉ place ;
+ * pour la 5ᵉ (`alger`), avoir aussi fini la 4ᵉ en 1ʳᵉ place, et ainsi de suite.
+ */
+export function isStageUnlocked(stageId, wonStages = []) {
+  const index = STAGE_IDS.indexOf(stageId);
+  if (index < 0) return false;
+  if (index < INITIAL_UNLOCKED_STAGES) return true;
+  const won = new Set(Array.isArray(wonStages) ? wonStages : []);
+  return STAGE_IDS.slice(0, index).every((id) => won.has(id));
+}
+
+/** Liste des identifiants de cartes actuellement débloquées, dans l’ordre. */
+export function unlockedStages(wonStages = []) {
+  return STAGE_IDS.filter((id) => isStageUnlocked(id, wonStages));
+}
+
+/** Un résultat de course correspond-il à une 1ʳᵉ place ? */
+export function isFirstPlaceRun(result) {
+  if (!result || typeof result !== 'object') return false;
+  if (result.won === true) return true;
+  if (result.won === false) return false;
+  return Number(result.rank) === 1;
+}
 
 // colors = [coat, mane, cloth, trim, head, hat, markings], the palette slots
 // used by makeExplorer() in mirageExplorer.js. `markings` paints the blaze
@@ -93,11 +158,26 @@ export function xpForRun(result = {}) {
   return Math.floor(xp / 10);
 }
 
-/** Gold awarded for a finished run: 5 OR on a victory (1st place). */
+/** Gold awarded for a finished run: 10 OR on a victory (1st place). */
 export function coinsForRun(result = {}) {
   if (result?.won === true) return WIN_COINS;
   if (result?.mode && result.mode !== 'rush' && Number(result.rank) === 1) return WIN_COINS;
   return 0;
+}
+
+/**
+ * Credit a separate gold adjustment if a future reward needs one. Returns the
+ * updated progress and the gold actually added (0 for a null, negative or
+ * unreadable amount, so a bad call can never drain the wallet).
+ */
+export function awardCoins(progress, amount) {
+  const current = sanitizeProgress(progress);
+  const coinsGained = Math.max(0, Math.floor(Number(amount) || 0));
+  if (coinsGained === 0) return { progress: current, coinsGained: 0 };
+  return {
+    progress: sanitizeProgress({ ...current, coins: current.coins + coinsGained }),
+    coinsGained,
+  };
 }
 
 /** Level skins use XP; shop skins use ownership unless a temporary unlock is active. */
@@ -113,13 +193,33 @@ export function skinFor(progress) {
 }
 
 export function defaultProgress() {
-  return { xp: 0, runs: 0, skinId: SKINS[0].id, coins: 0, ownedSkins: [] };
+  return {
+    xp: 0,
+    runs: 0,
+    skinId: SKINS[0].id,
+    coins: 0,
+    ownedSkins: [],
+    wonStages: [],
+    completedCups: [],
+  };
 }
 
 function ownedShopIds(raw) {
   const list = Array.isArray(raw) ? raw : [];
   const valid = new Set(SHOP_SKINS.map((skin) => skin.id));
   return [...new Set(list.filter((id) => typeof id === 'string' && valid.has(id)))];
+}
+
+function sanitizeStageIds(raw) {
+  const list = Array.isArray(raw) ? raw : [];
+  const valid = new Set(list.filter((id) => typeof id === 'string'));
+  return STAGE_IDS.filter((id) => valid.has(id));
+}
+
+function sanitizeCupIds(raw) {
+  const list = Array.isArray(raw) ? raw : [];
+  const valid = new Set(list.filter((id) => typeof id === 'string'));
+  return CUP_IDS.filter((id) => valid.has(id));
 }
 
 /** Clamp stored/loaded data and re-lock skins the XP / shop no longer supports. */
@@ -130,11 +230,36 @@ export function sanitizeProgress(raw) {
     runs: Math.max(0, Math.floor(Number(source.runs) || 0)),
     coins: Math.max(0, Math.floor(Number(source.coins) || 0)),
     ownedSkins: ownedShopIds(source.ownedSkins),
+    wonStages: sanitizeStageIds(source.wonStages),
+    completedCups: sanitizeCupIds(source.completedCups),
     skinId: typeof source.skinId === 'string' ? source.skinId : SKINS[0].id,
   };
   const skin = SKINS.find(entry => entry.id === progress.skinId);
   if (!skin || !isSkinUnlocked(skin, levelForXp(progress.xp), progress.ownedSkins)) progress.skinId = SKINS[0].id;
   return progress;
+}
+
+/**
+ * Marque la coupe `cupId` comme terminée si elle était déjà débloquée, ce qui
+ * débloque séquentiellement la coupe suivante.
+ */
+export function completeCup(progress, cupId) {
+  const current = sanitizeProgress(progress);
+  if (typeof cupId !== 'string' || !isCupUnlocked(cupId, current.completedCups)) {
+    return { progress: current, ok: false, reason: 'locked', newlyUnlockedCups: [] };
+  }
+  if (current.completedCups.includes(cupId)) {
+    return { progress: current, ok: true, alreadyCompleted: true, newlyUnlockedCups: [] };
+  }
+  const nextCompletedCups = sanitizeCupIds([...current.completedCups, cupId]);
+  const newlyUnlockedCups = CUP_IDS.filter(
+    (id) => !isCupUnlocked(id, current.completedCups) && isCupUnlocked(id, nextCompletedCups),
+  );
+  const next = sanitizeProgress({
+    ...current,
+    completedCups: nextCompletedCups,
+  });
+  return { progress: next, ok: true, newlyUnlockedCups };
 }
 
 /** Record a finished run; returns the new progress plus what changed. */
@@ -143,11 +268,38 @@ export function applyRun(progress, result) {
   const previousLevel = levelForXp(current.xp);
   const xpGained = xpForRun(result);
   const coinsGained = coinsForRun(result);
+
+  let nextWonStages = current.wonStages;
+  if (
+    isFirstPlaceRun(result)
+    && typeof result?.stage === 'string'
+    && STAGE_IDS.includes(result.stage)
+    && isStageUnlocked(result.stage, current.wonStages)
+  ) {
+    nextWonStages = sanitizeStageIds([...current.wonStages, result.stage]);
+  }
+  const newlyUnlockedStages = STAGE_IDS.filter(
+    (id) => !isStageUnlocked(id, current.wonStages) && isStageUnlocked(id, nextWonStages),
+  );
+
+  let nextCompletedCups = current.completedCups;
+  if (
+    typeof result?.completedCupId === 'string'
+    && isCupUnlocked(result.completedCupId, current.completedCups)
+  ) {
+    nextCompletedCups = sanitizeCupIds([...current.completedCups, result.completedCupId]);
+  }
+  const newlyUnlockedCups = CUP_IDS.filter(
+    (id) => !isCupUnlocked(id, current.completedCups) && isCupUnlocked(id, nextCompletedCups),
+  );
+
   const next = sanitizeProgress({
     ...current,
     xp: current.xp + xpGained,
     runs: current.runs + 1,
     coins: current.coins + coinsGained,
+    wonStages: nextWonStages,
+    completedCups: nextCompletedCups,
   });
   const level = levelForXp(next.xp);
   const unlocked = SKINS.filter((skin) => (
@@ -155,7 +307,16 @@ export function applyRun(progress, result) {
     && isSkinUnlocked(skin, level, next.ownedSkins)
     && !isSkinUnlocked(skin, previousLevel, current.ownedSkins)
   ));
-  return { progress: next, xpGained, coinsGained, level, leveledUp: level > previousLevel, unlocked };
+  return {
+    progress: next,
+    xpGained,
+    coinsGained,
+    level,
+    leveledUp: level > previousLevel,
+    unlocked,
+    newlyUnlockedStages,
+    newlyUnlockedCups,
+  };
 }
 
 /** Equip a skin only when its level / shop requirement is met. */

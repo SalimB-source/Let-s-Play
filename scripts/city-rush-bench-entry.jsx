@@ -119,7 +119,7 @@ const BOTS = {
   // Un joueur distrait.
   casual: { reaction: 0.45, lookAhead: 70, pickupRange: 40, hunt: 0.25, miss: 0.15 },
 };
-const PICKUP_VALUE = { cash: 3, radio: 3.2, pistol: 2.4, oil: 1.4 };
+const PICKUP_VALUE = { cash: 3, radio: 3.2, pistol: 2.4, 'blue-shot': 1.4 };
 
 function laneScore(candidate, view, cfg) {
   let score = candidate === view.lane ? 0 : -0.35 * Math.abs(candidate - view.lane);
@@ -141,12 +141,6 @@ function laneScore(candidate, view, cfg) {
     const gap = zone.distance - view.distance;
     if (gap < -1 || gap > cfg.lookAhead) continue;
     danger -= gap < 35 ? 9 : 3;
-  }
-  for (const trap of view.oils) {
-    if (trap.lane !== candidate) continue;
-    const gap = trap.distance - view.distance;
-    if (gap < -1 || gap > 70) continue;
-    danger -= 7;
   }
   score += danger;
   for (const pickup of view.pickups) {
@@ -172,7 +166,6 @@ function botView(d) {
     speed: Math.max(d.currentSpeed, 14),
     traffic: d.trafficCars.map((vehicle) => ({ lane: vehicle.lane, distance: vehicle.distance, speed: vehicle.currentSpeed })),
     zones: d.rows.filter((row) => row.slowLane !== null && row.slowZone.visible).map((row) => ({ lane: row.slowLane, distance: row.trackDistance })),
-    oils: d.oilTraps.filter((trap) => trap.active).map((trap) => ({ lane: trap.lane, distance: trap.trackDistance })),
     pickups,
   };
 }
@@ -198,6 +191,11 @@ function botDrive(world, cfg, memo) {
     const ahead = d.racers.some((racer) => racer.distance - d.distance > 3 && racer.distance - d.distance < 90);
     if (ahead) world.action('pistol');
   }
+  // Tir bleu : droit devant, donc seulement si une voiture est dans la voie du pilote.
+  if (d.inventory['blue-shot'] >= CITY_RUSH_POWER_RULES['blue-shot'].chargeCost) {
+    const inLane = d.racers.some((racer) => racer.lane === d.playerLane && racer.distance - d.distance > 3 && racer.distance - d.distance < 100);
+    if (inLane) world.action('blue-shot');
+  }
   if (d.inventory.radio >= CITY_RUSH_POWER_RULES.radio.chargeCost && !d.strike) world.action('radio');
 }
 
@@ -218,11 +216,11 @@ function playRace({ world, state, city, car, seed, botName }) {
     frames: 0, rankChanges: 0, near30: 0, near60: 0, blocked: { player: 0 },
     maxLead: 0, leadFrames: 0, behindFrames: 0,
     shotsOnPlayer: 0, shotsRivalVsRival: 0, shotsByPlayer: 0,
-    loaded: { pistol: 0, oil: 0, radio: 0 },
+    loaded: { pistol: 0, 'blue-shot': 0, radio: 0 },
   };
   stats.rivalPickups = {};
   globalThis.__benchPickup = (racerId, type) => {
-    stats.rivalPickups[racerId] = stats.rivalPickups[racerId] || { cash: 0, oil: 0, pistol: 0, radio: 0 };
+    stats.rivalPickups[racerId] = stats.rivalPickups[racerId] || { cash: 0, 'blue-shot': 0, pistol: 0, radio: 0 };
     stats.rivalPickups[racerId][type] += 1;
   };
   globalThis.__benchFire = (attackerId, targetId) => {
@@ -253,7 +251,7 @@ function playRace({ world, state, city, car, seed, botName }) {
     if (lead > 40) stats.leadFrames += 1;
     if (lead < -40) stats.behindFrames += 1;
     for (const racer of d.racers) {
-      for (const [type, cost] of [['pistol', 3], ['oil', 2], ['radio', 4]]) {
+      for (const [type, cost] of [['pistol', 3], ['blue-shot', 2], ['radio', 4]]) {
         if ((racer.inventory?.[type] || 0) >= cost) stats.loaded[type] += 1;
       }
     }
@@ -269,20 +267,20 @@ function playRace({ world, state, city, car, seed, botName }) {
   }
   if (!state.finish) throw new Error(`course sans arrivée (graine ${seed})`);
 
-  const hits = { pistol: 0, oil: 0, missile: 0 };
+  const hits = { pistol: 0, blue: 0, missile: 0 };
   let hitSeconds = 0;
   // Tirs de l'escouade de police du dernier tour sur le joueur : comptés à part, ils ne sont pas
   // l'œuvre des rivaux (les réglages de difficulté ne les touchent pas).
   let policeHits = 0;
   let policeSeconds = 0;
-  const rival = { boost: 0, oil: 0, heli: 0 };
+  const rival = { boost: 0, blue: 0, heli: 0 };
   for (const event of state.events) {
     if (event.type === 'pistol-hit-player') { hits.pistol += 1; hitSeconds += event.duration || 0; }
-    else if (event.type === 'oil-hit' && event.target === 'TOI' && event.owner !== 'TOI') { hits.oil += 1; hitSeconds += 1.4; }
+    else if (event.type === 'blue-shot-hit-player') { hits.blue += 1; hitSeconds += event.duration || 0; }
     else if (event.type === 'missile-hit' && event.targetId === 'player') { hits.missile += 1; hitSeconds += event.duration || 0; }
     else if (event.type === 'police-fire') { policeHits += 1; policeSeconds += event.duration || 0; }
     else if (event.type === 'rival-boost') rival.boost += 1;
-    else if (event.type === 'rival-oil') rival.oil += 1;
+    else if (event.type === 'rival-blue-shot') rival.blue += 1;
     else if (event.type === 'radio' && event.targetId === 'player') rival.heli += 1;
   }
   const finish = state.finish;
@@ -296,7 +294,7 @@ function playRace({ world, state, city, car, seed, botName }) {
     gapToWinner: Math.max(0, (winner?.distance ?? CITY_RUSH_DISTANCE) - (me?.distance ?? 0)),
     // avance finale du joueur sur la moyenne des rivaux (m) : mesure continue, bien moins bruitée qu'une victoire
     relDist: (me?.distance ?? 0) - mean(finish.racers.filter((racer) => racer.id !== 'player').map((racer) => racer.distance)),
-    hits, hitTotal: hits.pistol + hits.oil + hits.missile, hitSeconds, policeHits, policeSeconds,
+    hits, hitTotal: hits.pistol + hits.blue + hits.missile, hitSeconds, policeHits, policeSeconds,
     rival,
     pickups: finish.pickups,
     rankChanges: stats.rankChanges,
@@ -335,7 +333,7 @@ for (const { city, car } of combos) {
     hud() {}, pickup() {}, lap() {},
     finish: (result) => { state.finish = result; },
     effect: (effect) => { state.events.push(effect); },
-  }), car.id, audioRef, null, options.difficulty);
+  }), car.id, audioRef, null, options.laps, false, options.difficulty);
   for (let index = 0; index < perCombo; index += 1) {
     const seed = options.seed * 100 + index * 7 + CITY_RUSH_CARS.indexOf(car) * 3 + CITY_RUSH_CITIES.indexOf(city);
     const result = playRace({ world, state, city, car, seed, botName: options.bot });
@@ -354,7 +352,7 @@ if (!options.json) {
   console.log(`place moyenne         ${fixed(mean(results.map((r) => r.rank)), 2)}`);
   console.log(`durée de course       ${fixed(mean(results.map((r) => r.duration)))} s`);
   console.log(`écart au vainqueur    ${fixed(mean(results.map((r) => r.gapToWinner)))} m   (hors victoires : ${fixed(mean(results.filter((r) => r.rank > 1).map((r) => r.gapToWinner)))} m)`);
-  console.log(`coups encaissés/course ${fixed(mean(results.map((r) => r.hitTotal)), 2)}   (mitrailleuse ${fixed(mean(results.map((r) => r.hits.pistol)), 2)} · huile ${fixed(mean(results.map((r) => r.hits.oil)), 2)} · hélico ${fixed(mean(results.map((r) => r.hits.missile)), 2)})`);
+  console.log(`coups encaissés/course ${fixed(mean(results.map((r) => r.hitTotal)), 2)}   (mitrailleuse ${fixed(mean(results.map((r) => r.hits.pistol)), 2)} · tir bleu ${fixed(mean(results.map((r) => r.hits.blue)), 2)} · hélico ${fixed(mean(results.map((r) => r.hits.missile)), 2)})`);
   console.log(`temps perdu en coups  ${fixed(mean(results.map((r) => r.hitSeconds)))} s/course`);
   console.log(`+ escouade de police  ${fixed(mean(results.map((r) => r.policeHits)), 2)} tirs sur toi/course (${fixed(mean(results.map((r) => r.policeSeconds)))} s perdues, non comptées ci-dessus)`);
   console.log(`courses sans aucun coup ${pct(results.filter((r) => r.hitTotal === 0).length / results.length)}`);
@@ -371,15 +369,15 @@ if (!options.json) {
     return own.length ? `${car.id} ${pct(own.filter((r) => r.rank === 1).length / own.length)} (${fixed(mean(own.map((r) => r.relDist)), 0)} m)` : null;
   }).filter(Boolean);
   console.log(`par voiture           ${byCar.join(' · ')}`);
-  const pickupTotals = (id) => ['cash', 'oil', 'pistol', 'radio'].map((type) => mean(results.map((r) => r.rivalPickups?.[id]?.[type] || 0)));
+  const pickupTotals = (id) => ['cash', 'blue-shot', 'pistol', 'radio'].map((type) => mean(results.map((r) => r.rivalPickups?.[id]?.[type] || 0)));
   const rivalPickupSummary = rivalIds.map((id) => {
-    const [cash, oil, pistol, radio] = pickupTotals(id);
-    return `${id} ${fixed(cash + oil + pistol + radio)} (billets ${fixed(cash)} · huile ${fixed(oil)} · mitr. ${fixed(pistol)} · hélico ${fixed(radio)})`;
+    const [cash, blue, pistol, radio] = pickupTotals(id);
+    return `${id} ${fixed(cash + blue + pistol + radio)} (billets ${fixed(cash)} · tir bleu ${fixed(blue)} · mitr. ${fixed(pistol)} · hélico ${fixed(radio)})`;
   });
   console.log(`bonus ramassés rivaux ${rivalPickupSummary.join(' · ')}`);
   console.log(`tirs de rivaux       sur toi ${fixed(mean(results.map((r) => r.shots.onPlayer)), 2)} · entre rivaux ${fixed(mean(results.map((r) => r.shots.rivalVsRival)), 2)} · tes tirs ${fixed(mean(results.map((r) => r.shots.byPlayer)), 2)} / course`);
-  console.log(`armes rivales chargées en attente (somme des 3 rivaux)  mitrailleuse ${fixed(mean(results.map((r) => r.loaded.pistol)))} s · huile ${fixed(mean(results.map((r) => r.loaded.oil)))} s · hélico ${fixed(mean(results.map((r) => r.loaded.radio)))} s`);
-  console.log(`usage pouvoirs rivaux boost ${fixed(mean(results.map((r) => r.rival.boost)))} · huile ${fixed(mean(results.map((r) => r.rival.oil)))} · hélico sur toi ${fixed(mean(results.map((r) => r.rival.heli)), 2)}`);
+  console.log(`armes rivales chargées en attente (somme des 3 rivaux)  mitrailleuse ${fixed(mean(results.map((r) => r.loaded.pistol)))} s · tir bleu ${fixed(mean(results.map((r) => r.loaded['blue-shot'])))} s · hélico ${fixed(mean(results.map((r) => r.loaded.radio)))} s`);
+  console.log(`usage pouvoirs rivaux boost ${fixed(mean(results.map((r) => r.rival.boost)))} · tir bleu ${fixed(mean(results.map((r) => r.rival.blue)))} · hélico sur toi ${fixed(mean(results.map((r) => r.rival.heli)), 2)}`);
   console.log(`bonus ramassés (joueur) ${fixed(mean(results.map((r) => r.pickups)))}`);
   console.log(`bloqué par le trafic  joueur ${fixed(mean(results.map((r) => r.blocked.player)))} s · ${rivalIds.map((id) => `${id} ${fixed(mean(results.map((r) => r.blocked[id])))} s`).join(' · ')}`);
   const winners = {};

@@ -26,6 +26,7 @@ import {
 import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, LASSO_SLOW_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
 import { buildRoomStandings } from './mirageStandings';
+import { isStageUnlocked } from './mirageProgression';
 
 const characters = LOBBY_CHARACTER_INDICES.map((index) => ({ index, name: CHARACTER_NAMES[index] }));
 
@@ -39,7 +40,21 @@ const STAGE_LABELS = {
   ramparts: 'Remparts d’Ocre',
   infinity: 'Château de l’Infini',
   airbase: 'Thunder Airbase',
+  snakeway: 'Chemin du Serpent',
 };
+
+const ONLINE_STAGE_OPTIONS = [
+  { id: 'desert', label: '01 · Dunes de l’Écho (Désert)' },
+  { id: 'western', label: '02 · Dust Creek (Western)' },
+  { id: 'prairie', label: '03 · Plaines d’Or (Prairie)' },
+  { id: 'sardinia', label: '04 · Costa Omertà (Sardaigne)' },
+  { id: 'alger', label: '05 · Alger la Blanche (Alger)' },
+  { id: 'japan', label: '06 · Plaines de Yōtei (Mont Fuji · Nuit)' },
+  { id: 'ramparts', label: '07 · Remparts d’Ocre (hommage Counter-Strike)' },
+  { id: 'infinity', label: '08 · Château de l’Infini (hommage Demon Slayer)' },
+  { id: 'airbase', label: '09 · Thunder Airbase (hommage Street Fighter · Guile)' },
+  { id: 'snakeway', label: '10 · Chemin du Serpent (hommage Dragon Ball Z)' },
+];
 
 const QUICK_MESSAGES = [
   'Salut tout le monde ! 👋',
@@ -71,6 +86,7 @@ export default function MirageOnline({
   userId,
   userName,
   initialStage = 'desert',
+  wonStages = [],
   onBack,
   onRunFinish,
   onSelectMode,
@@ -90,7 +106,9 @@ export default function MirageOnline({
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [roomName, setRoomName] = useState('');
   const [roomPassword, setRoomPassword] = useState('');
-  const [stage, setStage] = useState(initialStage || 'desert');
+  const [stage, setStage] = useState(() => (
+    isStageUnlocked(initialStage, wonStages) ? initialStage : 'desert'
+  ));
   const [code, setCode] = useState('');
   const [joinCodePassword, setJoinCodePassword] = useState('');
   const [passwordPromptRoom, setPasswordPromptRoom] = useState(null);
@@ -529,6 +547,14 @@ export default function MirageOnline({
           <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
 
+        {/* Même affiche d'avis de recherche que la page du jeu : le lobby en
+            ligne appartient au même univers graphique. */}
+        <div className="mirage-poster">
+          <span className="mirage-poster-word">Avis de recherche</span>
+          <strong className="mirage-poster-title">Mirage En Ligne</strong>
+          <span className="mirage-poster-reward">Récompense · <b>10 000 $</b> — mort ou vif</span>
+        </div>
+
         <div className="mirage-mode-tabs" aria-label="Boutons de mode Mirage">
           <button
             type="button"
@@ -664,16 +690,22 @@ export default function MirageOnline({
 
                     <label className="mirage-form-field">
                       <span className="mirage-field-label">TERRAIN DE LA COURSE</span>
-                      <select value={stage} onChange={(e) => setStage(e.target.value)}>
-                        <option value="desert">01 · Dunes de l’Écho (Désert)</option>
-                        <option value="western">02 · Dust Creek (Western)</option>
-                        <option value="prairie">03 · Plaines d’Or (Prairie)</option>
-                        <option value="sardinia">04 · Costa Omertà (Sardaigne)</option>
-                        <option value="alger">05 · Alger la Blanche (Alger)</option>
-                        <option value="japan">06 · Plaines de Yōtei (Mont Fuji · Nuit)</option>
-                        <option value="ramparts">07 · Remparts d’Ocre (hommage Counter-Strike)</option>
-                        <option value="infinity">08 · Château de l’Infini (hommage Demon Slayer)</option>
-                        <option value="airbase">09 · Thunder Airbase (hommage Street Fighter · Guile)</option>
+                      <select
+                        value={stage}
+                        onChange={(e) => {
+                          if (isStageUnlocked(e.target.value, wonStages)) {
+                            setStage(e.target.value);
+                          }
+                        }}
+                      >
+                        {ONLINE_STAGE_OPTIONS.map((opt) => {
+                          const unlocked = isStageUnlocked(opt.id, wonStages);
+                          return (
+                            <option key={opt.id} value={opt.id} disabled={!unlocked}>
+                              {unlocked ? opt.label : `🔒 ${opt.label}`}
+                            </option>
+                          );
+                        })}
                       </select>
                       <small>{DUEL_DISTANCE} mètres · parcours synchronisé pour tous les cavaliers.</small>
                     </label>
@@ -1205,7 +1237,11 @@ export default function MirageOnline({
                           setResultsOpen(true);
                           const peers = room?.players || [];
                           const alreadyFinished = peers.some((peer) => peer.user_id !== effectivePlayer.id && peer.finished_at);
-                          setXp(onRunFinish?.({ ...p, won: !alreadyFinished }) ?? null);
+                          setXp(onRunFinish?.({
+                            ...p,
+                            stage: p.stage || room?.stage || stage,
+                            won: !alreadyFinished,
+                          }) ?? null);
                         }}
                         onMud={() => {
                           audio.current?.mudSplash?.();

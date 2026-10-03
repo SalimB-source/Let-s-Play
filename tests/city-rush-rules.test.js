@@ -11,6 +11,10 @@ import {
   CITY_RUSH_TRACK_BEHIND,
   CITY_RUSH_PLAYER_SPEED,
   CITY_RUSH_BOOST_MULTIPLIER,
+  CITY_RUSH_BLUE_SHOT_DURATION,
+  CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+  CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
+  CITY_RUSH_RACER_VIEW_DISTANCE,
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
   CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN,
@@ -25,11 +29,19 @@ import {
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_RIVAL_AI,
   CITY_RUSH_SLOW_MULTIPLIER,
+  CITY_RUSH_POWERS,
   CITY_RUSH_POLICE_ATTACK_LEAD,
-  CITY_RUSH_POLICE_BLOCK_RANGE,
-  CITY_RUSH_POLICE_COUNT,
+  CITY_RUSH_POLICE_BLOCKADE_HOLD,
+  CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED,
+  CITY_RUSH_POLICE_BLOCKADE_RANGE,
+  CITY_RUSH_POLICE_BLOCK_RANGE,  CITY_RUSH_POLICE_COUNT,
+  CITY_RUSH_POLICE_DAMAGE,
+  CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_POLICE_HUNT_RANGE,
+  CITY_RUSH_POLICE_RALLY_TOLERANCE,
   CITY_RUSH_POLICE_HUNT_TYPES,
   CITY_RUSH_POLICE_LEAD,
+  CITY_RUSH_POLICE_LANES,
   CITY_RUSH_RACER_SLOTS,
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_LANES,
@@ -48,6 +60,9 @@ import {
   cityRushHitDuration,
   cityRushHelicopterTarget,
   cityRushIsAhead,
+  cityRushStraightShotRetaliation,
+  cityRushStraightShotSweptHit,
+  cityRushStraightShotTarget,
   cityRushStunSpin,
   CITY_RUSH_STUN_SPIN_TURNS,
   cityRushLapForDistance,
@@ -61,14 +76,14 @@ import {
   cityRushRivalAI,
   cityRushRivalAcceleration,
   cityRushRivalBaseSpeed,
-  cityRushRivalOilChaseLane,
-  cityRushRivalOilVictim,
   cityRushRivalPace,
   cityRushRivalPistolTarget,
   cityRushTimeToBlock,
   cityRushPolicePace,
-  cityRushPoliceTarget,
-  cityRushTrackGap,
+  cityRushPoliceBlocksLeader,
+  cityRushPoliceContact,
+  cityRushPoliceDamage,
+  cityRushPoliceTarget,  cityRushTrackGap,
   chooseCityRushPoliceLane,
   isCityRushPoliceLaneJammed,
   resolveCityRushPoliceMovement,
@@ -160,8 +175,8 @@ test('un joueur humain ou une IA touche le trafic, ralentit brièvement (0,6 s) 
   ]), [], 'deux voies distinctes ne provoquent pas un choc');
 
   assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 0 }), 1, 'le bord gauche se rabat vers la voie 1');
-  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 1, blockedLanes: [0], openLanes: [0, 1, 2, 3] }), 2, 'une voie occupée est évitée');
-  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2], openLanes: [1, 2, 3] }), 1, 'le tunnel garde une voie ouverte quand la voie voisine est occupée');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 1, blockedLanes: [0] }), 2, 'une voie occupée est évitée');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2] }), 1, 'la voie voisine occupée fait glisser le dégagement');
 });
 
 test('rivals plan lane changes to collect bonuses and avoid traffic safely', () => {
@@ -319,7 +334,7 @@ test('rivals keep clear of other race cars and let a rival take a bonus it will 
   assert.equal(alreadyBehind, plain, 'une voiture déjà derrière ne lui prendra rien');
 });
 
-test('rivals prefer the weapon bonuses and slide in front of a chaser when holding oil', () => {
+test('rivals prefer the weapon bonuses according to their taste for weapons', () => {
   const lanes = [0, 1, 2, 3];
   const pick = (types, ai) => chooseCityRushAiLane({
     currentLane: 1,
@@ -332,18 +347,6 @@ test('rivals prefer the weapon bonuses and slide in front of a chaser when holdi
   assert.equal(pick(['cash', 'pistol'], { ...CITY_RUSH_RIVAL_AI, weaponBias: 2 }), 2, 'avec un goût prononcé pour les armes');
   assert.equal(pick(['pistol', 'cash'], { ...CITY_RUSH_RIVAL_AI, weaponBias: 2 }), 0);
   assert.equal(pick(['cash', 'pistol'], { ...CITY_RUSH_RIVAL_AI, weaponBias: 0.5 }), 0, 'et l\'inverse avec un faible goût');
-
-  // Une jauge d'huile pleine : le rival se glisse dans la voie de la voiture qui le suit.
-  const withOil = chooseCityRushAiLane({
-    currentLane: 1,
-    distance: 100,
-    speed: 24,
-    availableLanes: lanes,
-    interceptLane: 2,
-  });
-  assert.equal(withOil, 2);
-  const noIntercept = chooseCityRushAiLane({ currentLane: 1, distance: 100, speed: 24, availableLanes: lanes });
-  assert.equal(noIntercept, 1);
 });
 
 test('time to block counts the closing speed and ignores vehicles that cannot be caught', () => {
@@ -382,16 +385,21 @@ test('the item effects, matching colors, and charge costs match the race rules',
   assert.equal(CITY_RUSH_DISTANCE, 3000);
   assert.equal(CITY_RUSH_PLAYER_SPEED, 29);
   // Seuils de chargement : bleu 2, rouge 3, vert 2, jaune 4.
-  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { oil: 2, pistol: 3, cash: 2, radio: 4 });
+  assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 2, pistol: 3, cash: 2, radio: 4 });
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
-    oil: 'A', pistol: 'Z', cash: 'E', radio: 'R',
+    'blue-shot': 'A', pistol: 'Z', cash: 'E', radio: 'R',
   });
   for (const [type, cost] of Object.entries(CITY_RUSH_POWER_CHARGE_COST)) {
     assert.equal(CITY_RUSH_POWER_RULES[type].chargeCost, cost);
   }
-  assert.equal(CITY_RUSH_POWER_RULES.oil.duration, 1.4);
-  assert.equal(CITY_RUSH_POWER_RULES.oil.color, '#48b9ff');
-  assert.equal(CITY_RUSH_POWER_RULES.oil.automatic, true);
+  assert.equal(CITY_RUSH_BLUE_SHOT_DURATION, 0.3);
+  assert.equal(CITY_RUSH_BLUE_SHOT_SPEED_FACTOR, 0.85);
+  assert.equal(CITY_RUSH_BLUE_SHOT_MAX_RANGE, CITY_RUSH_RACER_VIEW_DISTANCE);
+  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].duration, 0.3);
+  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].color, '#48b9ff');
+  assert.equal(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].automatic, false);
+  assert.match(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.BLUE_SHOT].description, /sans viser/i);
+  assert.match(CITY_RUSH_POWER_RULES[CITY_RUSH_POWERS.CASH].name, /boisson énergisante/i);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.duration, 2);
   assert.equal(CITY_RUSH_POWER_RULES.pistol.color, '#ff526e');
   assert.equal(CITY_RUSH_POWER_RULES.pistol.automatic, false);
@@ -403,30 +411,160 @@ test('the item effects, matching colors, and charge costs match the race rules',
   assert.equal(CITY_RUSH_POWER_RULES.radio.automatic, false);
 });
 
-test('matching currencies charge independent bars, and only a full bar can be used', () => {
+test('the blue shot picks at most one visible opponent directly ahead in the same lane', () => {
+  const selected = cityRushStraightShotTarget({
+    attackerDistance: 100,
+    attackerLane: 2,
+    targets: [
+      { id: 'farther', distance: 150, lane: 2 },
+      { id: 'wrong-lane', distance: 110, lane: 1 },
+      { id: 'behind', distance: 99, lane: 2 },
+      { id: 'outside-view', distance: 105, lane: 2, visible: false },
+      { id: 'nearest-visible', distance: 108, lane: 2 },
+      { id: 'too-close', distance: 101, lane: 2 },
+      { id: 'past-view', distance: 100 + CITY_RUSH_BLUE_SHOT_MAX_RANGE + 1, lane: 2 },
+    ],
+  });
+  assert.equal(selected.id, 'nearest-visible');
+  assert.equal(cityRushStraightShotTarget({
+    attackerDistance: 100,
+    attackerLane: 2,
+    targets: [{ id: 'other-lane', distance: 110, lane: 3 }],
+  }), null);
+  assert.equal(cityRushStraightShotTarget({
+    attackerDistance: 100,
+    attackerLane: 2,
+    targets: [{ id: 'far-away', distance: 230, lane: 2 }],
+  }), null, 'un rival hors du champ de vision ne peut pas être touché');
+  assert.equal(cityRushStraightShotTarget({
+    attackerDistance: 100,
+    attackerLane: 2,
+    targets: [{ id: 'occluded', distance: 108, lane: 2, visible: false }],
+  }), null, 'un rival masqué par la caméra ne peut pas être touché');
+});
+
+test('le tir droit bleu balaie sa voie : une berline de police sur sa trajectoire encaisse le tir', () => {
+  // Le projectile parcourt 300 m/s : entre deux images à 30 Hz, il balaie
+  // 10 m de voie. Toute berline de cette portion est touchée, qu'elle ait été
+  // verrouillée au départ du tir ou non.
+  const swept = cityRushStraightShotSweptHit({
+    lane: 2,
+    fromDistance: 100,
+    toDistance: 110,
+    targets: [
+      { id: 'police-1', lane: 2, distance: 106 },
+      { id: 'police-2', lane: 2, distance: 104 },
+      { id: 'police-lane', lane: 1, distance: 106 },
+      { id: 'police-devant', lane: 2, distance: 118 },
+      { id: 'police-derriere', lane: 2, distance: 98 },
+    ],
+  });
+  assert.equal(swept.id, 'police-2', 'la berline la plus proche du canon prend le tir');
+
+  // Une berline qui se rabat dans la voie pendant le vol est touchée : elle
+  // n'était pas la cible du tir, mais elle occupe le segment balayé.
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2,
+    fromDistance: 100,
+    toDistance: 110,
+    targets: [{ id: 'police-rabattue', lane: 2, distance: 109.4 }],
+  }).id, 'police-rabattue');
+
+  // Les bornes du segment : la bouche du canon ne touche pas une berline
+  // laissée derrière elle, et la fin du segment compte comme un impact.
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 100, toDistance: 110,
+    targets: [{ id: 'police-canon', lane: 2, distance: 100 }],
+  }), null, 'une berline à hauteur du canon n’est pas touchée');
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 100, toDistance: 110,
+    targets: [{ id: 'police-borne', lane: 2, distance: 110 }],
+  }).id, 'police-borne', 'la fin du segment balayé compte comme un impact');
+
+  // Voies voisines, segment vide ou inversé : aucun impact.
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 100, toDistance: 110,
+    targets: [{ id: 'police-voisine', lane: 3, distance: 106 }],
+  }), null, 'le tir droit ne dévie jamais de sa voie');
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 110, toDistance: 110,
+    targets: [{ id: 'police-image', lane: 2, distance: 110 }],
+  }), null, 'un segment vide ne touche personne');
+  assert.equal(cityRushStraightShotSweptHit({
+    lane: 2, fromDistance: 110, toDistance: 100,
+    targets: [{ id: 'police-inversé', lane: 2, distance: 106 }],
+  }), null, 'un segment inversé ne touche personne');
+
+  // Entrées invalides : la règle ne lève jamais, elle renvoie null.
+  assert.equal(cityRushStraightShotSweptHit({ lane: Number.NaN, fromDistance: 100, toDistance: 110, targets: [{ id: 'p', lane: 2, distance: 106 }] }), null);
+  assert.equal(cityRushStraightShotSweptHit({ lane: 2, fromDistance: 'loin', toDistance: 110, targets: [{ id: 'p', lane: 2, distance: 106 }] }), null);
+  assert.equal(cityRushStraightShotSweptHit({ lane: 2, fromDistance: 100, toDistance: 110, targets: [{ id: 'p', lane: 2, distance: Number.NaN }] }), null);
+  assert.equal(cityRushStraightShotSweptHit({ lane: 2, fromDistance: 100, toDistance: 110, targets: [null, undefined] }), null);
+  assert.equal(cityRushStraightShotSweptHit(), null);
+});
+
+test('le tir droit bleu riposte sur la berline la plus proche de sa voie, même derrière', () => {
+  // L'escouade attaque dans le pare-chocs du pilote : sans riposte vers
+  // l'arrière, le projectile ne la croise jamais.
+  const squad = [
+    { id: 'police-1', distance: 1195, lane: 2, active: true }, // 5 m derrière, dans la voie
+    { id: 'police-2', distance: 1221, lane: 2, active: true }, // 21 m devant, dans la voie
+    { id: 'police-3', distance: 1198, lane: 1, active: true }, // collée, mais voie voisine
+  ];
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: squad, attackerDistance: 1200, attackerLane: 2,
+  }).id, 'police-1', 'la plus proche l’emporte, derrière comme devant');
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: squad, attackerDistance: 1200, attackerLane: 2, excludeId: 'police-1',
+  }).id, 'police-2', 'jamais soi-même');
+  // Un tir droit reste droit : la berline d'une autre voie n'est pas visée.
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: [{ id: 'police-3', distance: 1198, lane: 1, active: true }],
+    attackerDistance: 1200, attackerLane: 2,
+  }), null, 'une berline hors de la voie du tireur ne peut pas être touchée');
+  // Hors de portée, désactivée ou détruite : aucune riposte.
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: [{ id: 'police-loin', distance: 1200 - CITY_RUSH_BLUE_SHOT_MAX_RANGE - 1, lane: 2, active: true }],
+    attackerDistance: 1200, attackerLane: 2,
+  }), null, 'au-delà de la portée du projectile, la riposte ne part pas');
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: [{ id: 'police-inactive', distance: 1195, lane: 2, active: false }],
+    attackerDistance: 1200, attackerLane: 2,
+  }), null, 'une berline hors course n’est plus une cible');
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: squad, attackerDistance: Number.NaN, attackerLane: 2,
+  }), null);
+  assert.equal(cityRushStraightShotRetaliation(), null);
+  // Sans voie imposée (rivaux IA), la berline la plus proche est retenue.
+  assert.equal(cityRushStraightShotRetaliation({
+    pursuers: squad, attackerDistance: 1200,
+  }).id, 'police-3');
+});
+
+test('matching pickups charge independent bars, and only a full bar can be used', () => {
   let inventory = createCityRushInventory();
-  inventory = addCityRushCharge(inventory, 'oil', 1);
+  inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
   inventory = addCityRushCharge(inventory, 'pistol', 2);
-  assert.equal(inventory.oil, 1);
+  assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], 1);
   assert.equal(inventory.pistol, 2);
   assert.equal(inventory.cash, 0);
   // Une jauge incomplète ne se consomme pas.
-  assert.equal(consumeCityRushCharge(inventory, 'oil').consumed, false);
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).consumed, false);
   assert.equal(consumeCityRushCharge(inventory, 'pistol').consumed, false);
 
   // Les seuils abaissés sont atteints : bleu 2 et rouge 3 restent indépendants.
-  inventory = addCityRushCharge(inventory, 'oil', 1);
+  inventory = addCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT, 1);
   inventory = addCityRushCharge(inventory, 'pistol', 1);
-  assert.equal(inventory.oil, CITY_RUSH_POWER_CHARGE_COST.oil);
+  assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT]);
   assert.equal(inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
   assert.equal(inventory.cash, 0);
-  assert.equal(consumeCityRushCharge(inventory, 'oil').inventory.oil, 0);
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0);
 
-  const usedOil = consumeCityRushCharge(inventory, 'oil');
-  assert.equal(usedOil.consumed, true);
-  assert.equal(usedOil.inventory.oil, 0);
-  assert.equal(usedOil.inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
-  assert.equal(consumeCityRushCharge(usedOil.inventory, 'oil').consumed, false);
+  const usedShot = consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT);
+  assert.equal(usedShot.consumed, true);
+  assert.equal(usedShot.inventory[CITY_RUSH_POWERS.BLUE_SHOT], 0);
+  assert.equal(usedShot.inventory.pistol, CITY_RUSH_POWER_CHARGE_COST.pistol);
+  assert.equal(consumeCityRushCharge(usedShot.inventory, CITY_RUSH_POWERS.BLUE_SHOT).consumed, false);
   assert.equal(consumeCityRushCharge(inventory, 'unknown').consumed, false);
 
   const overfilled = addCityRushCharge(createCityRushInventory(), 'radio', 99);
@@ -510,6 +648,11 @@ test('au dernier tour, deux berlines de police chassent le premier — hors clas
   // Aucune berline ne porte un identifiant de pilote classé : la grille reste
   // à quatre, et l'arrivée ne peut pas les compter.
   assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno', 'ace']);
+  // L'escouade encadre la piste par les voies extérieures, et son barrage est
+  // encadré dans le temps : elle se rabat, freine, puis repart.
+  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [0, 3]);
+  assert.ok(CITY_RUSH_POLICE_BLOCKADE_RANGE > CITY_RUSH_CAR_GAP);
+  assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
 });
 
 test('l’escouade ne prend en chasse que le premier du classement', () => {
@@ -547,14 +690,14 @@ test('l’escouade traverse la route pour rafler un bonus rouge ou jaune', () =>
     availableLanes: [0, 1, 2, 3],
     lookAheadDistance: 200,
   };
-  // Un jaune plus loin l'emporte sur des billets tout proches : la berline
+  // Un jaune plus loin l'emporte sur une boisson toute proche : la berline
   // s'écarte de sa voie et se rabat vers le talkie-walkie (voie 3).
   const pickups = [
     { lane: 0, type: 'cash', distance: 1040 },
     { lane: 3, type: 'radio', distance: 1180 },
   ];
   assert.equal(chooseCityRushPoliceLane({ ...common, pickups }), 2);
-  // Une IA ordinaire, elle, prend les billets les plus proches.
+  // Une IA ordinaire, elle, prend les bonus les plus proches.
   assert.equal(chooseCityRushAiLane({ ...common, pickups }), 0);
   // Le trafic reste évité : un camion pile dans la voie voisine.
   const trafficLane = chooseCityRushPoliceLane({
@@ -635,7 +778,7 @@ test('une voie voisine bouchée n’attire pas la berline, et tout bouché ne ca
   const walled = chooseCityRushPoliceLane({ ...common, pickups: [{ lane: 1, type: 'pistol', distance: 1060 }], traffic: wall });
   assert.equal(walled, 1);
   assert.equal(chooseCityRushPoliceLane({ ...common, availableLanes: [1], traffic: [slow(1)] }), 1, 'une seule voie ouverte : elle y reste');
-  // Une voie interdite (mur de tremis) n'est jamais choisie, même libre.
+  // Une voie interdite (barrage, obstacle) n'est jamais choisie, même libre.
   assert.equal(chooseCityRushPoliceLane({ ...common, availableLanes: [1, 2], pickups: [], traffic: [slow(1), slow(2)] }), 1);
   // Une berline qui touche le trafic le traite comme un rival : même détecteur.
   const impacts = detectCityRushTrafficImpacts([
@@ -647,17 +790,25 @@ test('une voie voisine bouchée n’attire pas la berline, et tout bouché ne ca
   assert.equal(impacts[0].trafficId, 'traffic-1');
 });
 
-test('les berlines ne traversent pas le trafic et ne bloquent personne', () => {
+test('les berlines sont solides : ni le trafic, ni les pilotes ne les traversent', () => {
   const traffic = [{ id: 'truck-1', lane: 1, distance: 1040, x: CITY_RUSH_LANE_X[1], width: 1.98 }];
+  const raceCars = [{ id: 'player', lane: 3, distance: 1042, x: CITY_RUSH_LANE_X[3], width: 1.9 }];
   const resolved = resolveCityRushPoliceMovement([
     { id: 'police-1', lane: 1, x: CITY_RUSH_LANE_X[1], distance: 1000, nextDistance: 1038, width: 1.94 },
     { id: 'police-2', lane: 3, x: CITY_RUSH_LANE_X[3], distance: 1000, nextDistance: 1038, width: 1.94 },
-  ], traffic, CITY_RUSH_CAR_GAP);
+  ], traffic, CITY_RUSH_CAR_GAP, raceCars);
   const byId = Object.fromEntries(resolved.map((car) => [car.id, car.nextDistance]));
   assert.equal(byId['police-1'], 1040 - CITY_RUSH_CAR_GAP, 'la berline freine derrière le véhicule lent');
-  assert.equal(byId['police-2'], 1038, 'la voie libre reste libre');
-  // Elle ne rabote la distance de personne : personne ne la suit dans la liste.
+  assert.equal(byId['police-2'], 1042 - CITY_RUSH_CAR_GAP, 'et derrière une voiture de course, qu’elle ne traverse plus');
   assert.deepEqual(resolved.map((car) => car.id), ['police-1', 'police-2']);
+
+  // Deux berlines ne se traversent pas non plus : la seconde se retient.
+  const siblings = resolveCityRushPoliceMovement([
+    { id: 'police-1', lane: 2, x: CITY_RUSH_LANE_X[2], distance: 1200, nextDistance: 1240, width: 1.94 },
+    { id: 'police-2', lane: 2, x: CITY_RUSH_LANE_X[2], distance: 1180, nextDistance: 1245, width: 1.94 },
+  ], [], CITY_RUSH_CAR_GAP);
+  const siblingById = Object.fromEntries(siblings.map((car) => [car.id, car.nextDistance]));
+  assert.equal(siblingById['police-2'], 1240 - CITY_RUSH_CAR_GAP);
   // Le véhicule qui a freiné la berline est désigné, pour que le monde le
   // heurte : sinon la berline le suivrait sans fin à son allure.
   const blockedBy = Object.fromEntries(resolved.map((car) => [car.id, car.blockedBy]));
@@ -681,7 +832,6 @@ test('les berlines ne traversent pas le trafic et ne bloquent personne', () => {
   assert.equal(swerving(CITY_RUSH_LANE_X[1] - 1).blockedBy, 'truck-1', 'encore à cheval sur la voie de la berline');
   assert.equal(swerving(CITY_RUSH_LANE_X[0]).blockedBy, null, 'rabattu : la voie est libre');
 });
-
 test('au dernier tour, la riposte rouge et jaune peut viser la berline la plus proche', () => {
   // Sans escouade déployée, pas de cible : la jauge reste chargée.
   assert.equal(cityRushPoliceTarget([], 1200), null);
@@ -708,6 +858,156 @@ test('au dernier tour, la riposte rouge et jaune peut viser la berline la plus p
     { id: 'police-2', distance: 1202, active: true },
   ], 1200).id, 'police-2');
 });
+
+test('barre de vie des berlines : deux tirs bleus, OU une rafale rouge, OU un hélico', () => {
+  // Le barème de dégât est pur : la berline encaisse 2 points de vie.
+  assert.equal(CITY_RUSH_POLICE_HEALTH, 2, 'une berline part avec deux points de vie');
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 1, 'un tir droit bleu retire un point');
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], CITY_RUSH_POLICE_HEALTH, 'la rafale rouge détruit d’un coup');
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.RADIO], CITY_RUSH_POLICE_HEALTH, 'le tir d’hélico détruit d’un coup');
+  // Deux tirs bleus successifs abattent la berline ; le premier la laisse à 1.
+  const afterFirstBlue = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.BLUE_SHOT);
+  assert.equal(afterFirstBlue, 1, 'le premier tir bleu laisse la berline debout');
+  assert.equal(cityRushPoliceDamage(afterFirstBlue, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'le second tir bleu la détruit');
+  // Une rafale rouge ou un hélico détruisent dès le premier coup.
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 0);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 0);
+  // La vie ne descend jamais sous zéro, même sous le feu nourri.
+  assert.equal(cityRushPoliceDamage(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'une épave ne prend plus de dégâts');
+  assert.equal(cityRushPoliceDamage(1, CITY_RUSH_POWERS.PISTOL), 0);
+  // Source inconnue ou invalide : aucun dégât.
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'cash'), CITY_RUSH_POLICE_HEALTH);
+  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, null), CITY_RUSH_POLICE_HEALTH);
+  assert.equal(cityRushPoliceDamage(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
+});
+
+test('un pilote ne traverse plus une berline de police du dernier tour', () => {
+  // L'escouade est engagée dans le peloton : sa berline solide bloque la voie
+  // exactement comme le trafic lent, sans dégât ni pénalité.
+  const behind = resolveCityRushCarMovement([
+    { id: 'player', collisionGroup: 'racer', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.9, previousDistance: 1000, nextDistance: 1030 },
+    { id: 'police-1', collisionGroup: 'police', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, previousDistance: 1008, nextDistance: 1012 },
+  ]);
+  const behindById = Object.fromEntries(behind.map((car) => [car.id, car.nextDistance]));
+  assert.equal(behindById.player, 1012 - CITY_RUSH_CAR_GAP, 'le joueur est retenu derrière la berline');
+  // Une autre voie reste libre : le barrage se contourne.
+  const aside = resolveCityRushCarMovement([
+    { id: 'player', collisionGroup: 'racer', lane: 2, x: CITY_RUSH_LANE_X[2], width: 1.9, previousDistance: 1000, nextDistance: 1030 },
+    { id: 'police-1', collisionGroup: 'police', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, previousDistance: 1008, nextDistance: 1012 },
+  ]);
+  assert.equal(Object.fromEntries(aside.map((car) => [car.id, car.nextDistance])).player, 1030);
+  // Et la berline ne conduit pas à travers le joueur quand elle est derrière.
+  const chaser = resolveCityRushCarMovement([
+    { id: 'player', collisionGroup: 'racer', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.9, previousDistance: 1000, nextDistance: 1006 },
+    { id: 'police-1', collisionGroup: 'police', lane: 1, x: CITY_RUSH_LANE_X[1], width: 1.94, previousDistance: 990, nextDistance: 1030 },
+  ]);
+  assert.equal(Object.fromEntries(chaser.map((car) => [car.id, car.nextDistance]))['police-1'], 1006 - CITY_RUSH_CAR_GAP);
+});
+
+test('une berline se met en barrage devant le leader puis lève le pied', () => {
+  // Position de barrage : devant le leader, dans sa voie (ou à sa hauteur).
+  assert.equal(cityRushPoliceBlocksLeader({
+    gap: 12, lane: 1, leaderLane: 1, x: CITY_RUSH_LANE_X[1], leaderX: CITY_RUSH_LANE_X[1],
+  }), true);
+  assert.equal(cityRushPoliceBlocksLeader({
+    gap: -12, lane: 1, leaderLane: 1, x: CITY_RUSH_LANE_X[1], leaderX: CITY_RUSH_LANE_X[1],
+  }), false, 'une berline derrière le leader ne le bloque pas');
+  assert.equal(cityRushPoliceBlocksLeader({
+    gap: 12, lane: 0, leaderLane: 1, x: CITY_RUSH_LANE_X[0], leaderX: CITY_RUSH_LANE_X[1],
+  }), false, 'une berline dans une autre voie ne bloque pas');
+  assert.equal(cityRushPoliceBlocksLeader({
+    gap: CITY_RUSH_POLICE_BLOCKADE_RANGE + 6, lane: 1, leaderLane: 1, x: CITY_RUSH_LANE_X[1], leaderX: CITY_RUSH_LANE_X[1],
+  }), false, 'trop loin devant, elle ne bloque plus');
+  assert.equal(cityRushPoliceBlocksLeader({
+    gap: 12, lane: 1, leaderLane: 1, x: CITY_RUSH_LANE_X[1], leaderX: CITY_RUSH_LANE_X[0],
+  }), false, 'le recouvrement latéral décide, pas seulement la voie');
+
+  // Barrage : nettement plus lente que le leader, jamais arrêtée.
+  const blocking = cityRushPolicePace({ gap: 12, baseSpeed: CITY_RUSH_PLAYER_SPEED, leaderSpeed: CITY_RUSH_PLAYER_SPEED, blocking: true });
+  assert.ok(blocking < CITY_RUSH_PLAYER_SPEED * 0.8, 'elle freine devant le leader');
+  assert.ok(blocking >= CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED - 1e-9, 'elle continue de rouler');
+  const slowLeader = cityRushPolicePace({ gap: 5, baseSpeed: CITY_RUSH_PLAYER_SPEED, leaderSpeed: 6, blocking: true });
+  assert.ok(slowLeader > 6, 'un leader ralenti ne l’immobilise pas en travers de la piste');
+  assert.ok(slowLeader >= CITY_RUSH_POLICE_BLOCKADE_MIN_SPEED - 1e-9);
+  // Hors barrage, la berline tient toujours la hauteur du leader.
+  assert.ok(cityRushPolicePace({
+    gap: CITY_RUSH_POLICE_LEAD, baseSpeed: CITY_RUSH_PLAYER_SPEED, leaderSpeed: CITY_RUSH_PLAYER_SPEED,
+  }) >= CITY_RUSH_PLAYER_SPEED * 0.9);
+  assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
+});
+
+test('percuter une berline de police du trafic la rappelle : le contact se juge comme la collision', () => {
+  const lane1 = CITY_RUSH_LANE_X[1];
+  // Pare-chocs contre pare-chocs dans la même voie : c'est un contact.
+  assert.equal(cityRushPoliceContact({ gap: CITY_RUSH_CAR_GAP, x: lane1, targetX: lane1 }), true);
+  assert.equal(cityRushPoliceContact({ gap: -CITY_RUSH_CAR_GAP, x: lane1, targetX: lane1 }), true);
+  assert.equal(cityRushPoliceContact({ gap: 0, x: lane1, targetX: lane1 }), true);
+  // Un peu plus loin que la distance de sécurité : la résolution de mouvement
+  // a lâché prise, il n'y a plus de contact.
+  assert.equal(cityRushPoliceContact({
+    gap: CITY_RUSH_CAR_GAP + CITY_RUSH_POLICE_RALLY_TOLERANCE + 0.5, x: lane1, targetX: lane1,
+  }), false);
+  assert.equal(cityRushPoliceContact({
+    gap: -CITY_RUSH_CAR_GAP - CITY_RUSH_POLICE_RALLY_TOLERANCE - 0.5, x: lane1, targetX: lane1,
+  }), false);
+  // Voie voisine (2,1 m d'écart) : on frôle, on ne percute pas.
+  assert.equal(cityRushPoliceContact({ gap: 1, x: CITY_RUSH_LANE_X[0], targetX: CITY_RUSH_LANE_X[1] }), false);
+  // Recouvrement latéral partiel (changement de voie en cours) : contact.
+  assert.equal(cityRushPoliceContact({ gap: 2, x: CITY_RUSH_LANE_X[1] - 1.5, targetX: CITY_RUSH_LANE_X[1] }), true);
+  // Sans position latérale, impossible de conclure : pas de contact.
+  assert.equal(cityRushPoliceContact({ gap: 0 }), false);
+  assert.equal(cityRushPoliceContact(), false);
+  // La tolérance reste petite : deux voitures qui se suivent à 6 m ne se
+  // percutent pas.
+  assert.ok(CITY_RUSH_POLICE_RALLY_TOLERANCE < 1);
+  assert.equal(cityRushPoliceContact({ gap: 6, x: lane1, targetX: lane1 }), false);
+});
+
+test('devant le leader, la berline se rabat dans sa voie pour lui couper la route', () => {
+  const common = {
+    laneCount: CITY_RUSH_LANE_X.length,
+    distance: 1000,
+    speed: 26,
+    availableLanes: [0, 1, 2, 3],
+    lookAheadDistance: 200,
+  };
+  // Berline en voie 2, leader en voie 3 : le rabattement vers sa voie (3) vaut
+  // mieux qu'un bonus ordinaire (voie 1), même proche.
+  const pickups = [{ lane: 1, type: 'cash', distance: 1030 }];
+  const cutIn = chooseCityRushPoliceLane({
+    ...common, currentLane: 2, pickups, interceptLane: 3, interceptGap: 14,
+  });
+  assert.equal(cutIn, 3, 'elle coupe la route au leader');
+  // Un rouge ou un jaune reste prioritaire sur le barrage.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, currentLane: 2, pickups: [{ lane: 1, type: 'radio', distance: 1030 }], interceptLane: 3, interceptGap: 14,
+  }), 1, 'un jaune vaut plus qu’un barrage');
+  // Derrière le leader (interceptGap négatif), la berline ne coupe pas : elle
+  // prend le bonus ordinaire.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, currentLane: 2, pickups, interceptLane: 3, interceptGap: -14,
+  }), 1, 'derrière le leader, pas de rabattement');
+  // Une voie bouchée par un pilote est évitée tant qu'aucun bonus ne l'appelle.
+  assert.notEqual(chooseCityRushPoliceLane({
+    ...common, currentLane: 2, pickups: [], racers: [{ lane: 3, distance: 1012, speed: 24 }],
+  }), 3, 'elle ne reste pas engluée derrière un pilote qu’elle ne peut plus traverser');
+  // Le rabattement se fait une voie à la fois : de la voie 0 vers la voie 3 du
+  // leader, la berline vise d'abord la voie 1.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, currentLane: 0, pickups: [], interceptLane: 3, interceptGap: 20,
+  }), 1, 'elle met le cap sur la voie du leader, une voie à la fois');
+  // Un rouge/jaune lointain ne détourne pas le barrage : seule une prise à
+  // portée de capot (CITY_RUSH_POLICE_HUNT_RANGE) passe avant.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, currentLane: 2, pickups: [{ lane: 1, type: 'radio', distance: 1000 + CITY_RUSH_POLICE_HUNT_RANGE + 90 }],
+    interceptLane: 3, interceptGap: 14,
+  }), 3, 'un jaune hors de portée ne détourne pas le barrage');
+  // Engluée derrière un pilote (« stuck »), la berline s'extrait de la voie
+  // même si un bonus ordinaire l'y appelait.
+  assert.equal(chooseCityRushPoliceLane({
+    ...common, currentLane: 2, pickups: [{ lane: 2, type: 'cash', distance: 1020 }],
+    racers: [{ lane: 2, distance: 1008, speed: 24 }], stuck: true,
+  }), 1, 'elle préfère changer de voie plutôt que rester collée');});
 
 test('lane changes clamp at the road edges', () => {
   assert.equal(CITY_RUSH_LANE_X.length, 4);
@@ -767,15 +1067,17 @@ test('pickup encounters add more bonuses without placing them in slow zones', ()
   let sawEmptyRow = false;
   let sawTwoPickups = false;
   let totalPickups = 0;
-  for (let index = 0; index < 1000; index += 1) {
+  const pickupCounts = { cash: 0, 'blue-shot': 0, pistol: 0, radio: 0 };
+  for (let index = 0; index < 10000; index += 1) {
     const encounter = createCityRushEncounter(random);
     assert.ok(encounter.pickups.length <= 2);
     totalPickups += encounter.pickups.length;
+    for (const pickup of encounter.pickups) pickupCounts[pickup.type] += 1;
     if (encounter.pickups.length === 0) sawEmptyRow = true;
     const pickupLanes = new Set();
     for (const pickup of encounter.pickups) {
       assert.ok(pickup.lane >= 0 && pickup.lane < CITY_RUSH_LANE_X.length);
-      assert.ok(['cash', 'oil', 'pistol', 'radio'].includes(pickup.type));
+      assert.ok(['cash', CITY_RUSH_POWERS.BLUE_SHOT, 'pistol', 'radio'].includes(pickup.type));
       assert.ok(!pickupLanes.has(pickup.lane));
       pickupLanes.add(pickup.lane);
       assert.notEqual(pickup.lane, encounter.slowLane);
@@ -787,9 +1089,12 @@ test('pickup encounters add more bonuses without placing them in slow zones', ()
     if (encounter.pickups.length === 2) sawTwoPickups = true;
   }
   assert.equal(sawSlowZone, true);
+  const yellowRate = pickupCounts.radio / totalPickups;
+  assert.ok(yellowRate >= 0.08 && yellowRate <= 0.12, `le bonus jaune reste rare (${(yellowRate * 100).toFixed(1)} %)`);
+  assert.ok(pickupCounts.radio < pickupCounts.cash && pickupCounts.radio < pickupCounts['blue-shot'] && pickupCounts.radio < pickupCounts.pistol);
   assert.equal(sawEmptyRow, true);
   assert.equal(sawTwoPickups, true);
-  assert.ok(totalPickups > 900 && totalPickups < 1200, 'les bonus apparaissent plus souvent avec quelques rangées encore vides');
+  assert.ok(totalPickups > 10000 && totalPickups < 11000, 'les rangées contiennent souvent un bonus et parfois un duo');
 });
 
 test('the helicopter only locks onto rivals ahead of its pilot', () => {
@@ -1019,31 +1324,6 @@ test('a rival that does not focus on the player shoots the nearest car ahead, pl
   assert.equal(cityRushRivalPistolTarget('nova', grid(140, 100, 112, 90), legacy)?.id, 'player');
 });
 
-test('rival oil is dropped on a chaser in the same lane, and a rival slides in front of one', () => {
-  const ai = CITY_RUSH_RIVAL_AI;
-  const grid = (playerGap, playerLane, otherGap = 25, otherLane = 2) => [
-    { id: 'nova', distance: 200, lane: 2 },
-    { id: 'player', distance: 200 - playerGap, lane: playerLane },
-    { id: 'juno', distance: 200 - otherGap, lane: otherLane },
-    { id: 'ace', distance: 500, lane: 2 },
-  ];
-  const victim = (rows) => cityRushRivalOilVictim('nova', rows, ai)?.id;
-  assert.equal(victim(grid(20, 2)), 'player', 'une voiture dans la voie, 20 m derrière');
-  assert.equal(victim(grid(20, 1, 25, 2)), 'juno', 'à défaut du joueur, un autre rival qui suit fait l\'affaire');
-  assert.equal(victim(grid(20, 2, 15, 2)), 'player', 'le joueur est la victime préférée');
-  assert.equal(victim(grid(20, 1, 25, 3)), undefined, 'personne dans la voie : l\'huile est gardée');
-  assert.equal(victim(grid(ai.oilBehindMin - 2, 2, 25, 3)), undefined, 'trop près : impossible à poser avant qu\'il arrive dessus');
-  assert.equal(victim(grid(ai.oilBehindMax + 5, 2, 25, 3)), undefined, 'trop loin : il aurait le temps de s\'écarter');
-  assert.equal(victim(grid(-30, 2, 25, 3)), undefined, 'une voiture devant ne peut pas rouler dans l\'huile');
-  // Se glisser devant la voiture qui suit, dans une fenêtre plus large que celle de la pose.
-  const chase = (rows) => cityRushRivalOilChaseLane('nova', rows, ai);
-  assert.equal(chase(grid(45, 0, 25, 3)), 0, 'le joueur (voie 0) est suivi à 45 m');
-  assert.equal(chase(grid(45, 0, 20, 3)), 0, 'le joueur passe avant le rival plus proche');
-  assert.equal(chase(grid(ai.oilChaseRange + 10, 0, 90, 3)), null, 'plus personne à portée');
-  assert.equal(chase(grid(3, 0, 25, 3)), 3, 'à défaut du joueur, la voie du rival qui suit');
-  assert.equal(chase([{ id: 'nova', distance: 200, lane: 2 }]), null);
-});
-
 test('the three difficulty modes are Facile, Normal and Difficile, Normal being the default', () => {
   assert.deepEqual(CITY_RUSH_DIFFICULTIES.map((mode) => mode.id), ['easy', 'normal', 'hard']);
   assert.deepEqual(CITY_RUSH_DIFFICULTIES.map((mode) => mode.name), ['Facile', 'Normal', 'Difficile']);
@@ -1086,7 +1366,7 @@ test('Normal is the base rival tuning, the other modes only list what differs fr
 test('each step up in difficulty is stricter on pace, reflexes, mistakes and weapons', () => {
   const [easy, normal, hard] = CITY_RUSH_DIFFICULTIES.map((mode) => cityRushRivalAI(mode.id));
   // Plus la valeur est haute, plus le rival est dur…
-  for (const key of ['paceFactor', 'catchUpBoost', 'lookAhead', 'laneAgility', 'pickupValue', 'weaponBias', 'pistolRange', 'oilChaseRange', 'focusPlayer']) {
+  for (const key of ['paceFactor', 'catchUpBoost', 'lookAhead', 'laneAgility', 'pickupValue', 'weaponBias', 'pistolRange', 'focusPlayer']) {
     assert.ok(Number(easy[key]) <= Number(normal[key]) && Number(normal[key]) <= Number(hard[key]), `${key} : ${easy[key]} ≤ ${normal[key]} ≤ ${hard[key]}`);
   }
   // … et ici, plus elle est basse (réaction, erreurs, répit laissé au joueur, recharge des armes, laisse).
@@ -1113,6 +1393,12 @@ test('best times are kept per city and per difficulty, and older records stay th
   assert.equal(cityRushBestKey('tokyo', 'nope'), 'tokyo', 'niveau inconnu : Normal');
   const keys = CITY_RUSH_CITIES.flatMap((city) => CITY_RUSH_DIFFICULTIES.map((mode) => cityRushBestKey(city.id, mode.id)));
   assert.equal(new Set(keys).size, CITY_RUSH_CITIES.length * CITY_RUSH_DIFFICULTIES.length, 'jamais deux records sur la même clé');
+  // Le mode compte aussi : un sprint d'un tour n'écrase pas le record d'une course de trois tours.
+  assert.equal(cityRushBestKey('tokyo', 'normal', 'circuit'), 'tokyo', 'le mode d\'origine garde la clé historique');
+  assert.equal(cityRushBestKey('tokyo', 'normal', 'sprint'), 'tokyo:sprint');
+  assert.equal(cityRushBestKey('tokyo', 'hard', 'pursuit'), 'tokyo:hard:pursuit');
+  const modeKeys = ['circuit', 'sprint', 'pursuit'].flatMap((modeId) => CITY_RUSH_DIFFICULTIES.map((mode) => cityRushBestKey('paris', mode.id, modeId)));
+  assert.equal(new Set(modeKeys).size, 9, 'trois modes × trois niveaux : neuf records distincts par ville');
 });
 
 test('every difficulty keeps the rival tuning inside guard rails that keep the race fair and winnable', () => {
@@ -1139,7 +1425,6 @@ test('every difficulty keeps the rival tuning inside guard rails that keep the r
     assert.ok(ai.weaponBias >= 0.5 && ai.weaponBias <= 2, where('weaponBias'));
     // Armes : à portée de vue, avec un répit après chaque coup (au moins une seconde, même en Difficile).
     assert.ok(ai.pistolRange > 0 && ai.pistolRange <= 120, where('pistolRange'));
-    assert.ok(ai.oilBehindMin > 0 && ai.oilBehindMax > ai.oilBehindMin && ai.oilChaseRange >= ai.oilBehindMax, where('huile'));
     assert.ok(ai.attackSpacing >= 1, where('le joueur doit pouvoir souffler entre deux coups'));
     // Recharge : depuis que les bonus réapparaissent aussitôt pris, un rival rechargerait en quelques
     // secondes ; sous 20 s il retire à chaque cible qui passe (4 coups par course et plus, mesuré).
@@ -1228,7 +1513,7 @@ test('la mini-carte dessine l’escouade de police à part des quatre pilotes', 
   const minimap = buildCityRushMinimapState([], {
     cityId: 'vice-city',
     pursuers: [
-      { id: 'police-1', name: 'POLICE 1', distance: 1250, lane: 3 },
+      { id: 'police-1', name: 'POLICE 1', distance: 1250, lane: 3, mode: 'blockade', blocking: true },
       { id: 'police-2', name: 'POLICE 2', distance: 1240, lane: 0 },
     ],
   });
@@ -1242,6 +1527,10 @@ test('la mini-carte dessine l’escouade de police à part des quatre pilotes', 
     assert.ok(car.lane === 0 || car.lane === 3);
     assert.equal(minimap.racers.some((racer) => racer.id === car.id), false);
   }
+  // Le barrage roulant est signalé à la mini-carte, qui peut le peindre à part.
+  assert.equal(minimap.pursuers[0].blocking, true);
+  assert.equal(minimap.pursuers[0].mode, 'blockade');
+  assert.equal(minimap.pursuers[1].blocking, false);
   // Une escouade inactive (avant le dernier tour, ou après l'arrivée) ne
   // laisse aucun marqueur.
   assert.equal(buildCityRushMinimapState([], { pursuers: [{ id: 'police-1', distance: 1250, active: false }] }).pursuers.length, 0);

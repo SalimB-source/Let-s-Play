@@ -14,15 +14,19 @@ import {
   cupRaceIndex,
   cupStandings,
   cupWinner,
+  cupGoldMaximum,
+  cupRequirement,
   getCup,
   isCupComplete,
+  isCupUnlocked,
   placeLabel,
   pointsForPlace,
   recordCupRace,
+  unlockedCups,
 } from '../src/games/mirageCup.js';
 import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, laneCount, setLaneCount } from '../src/games/mirageRules.js';
 import { CHARACTER_PALETTES } from '../src/games/mirageCharacters.js';
-import { SKINS } from '../src/games/mirageProgression.js';
+import { SKINS, WIN_COINS } from '../src/games/mirageProgression.js';
 import { MIRAGE_CUP_TROPHIES_KEY, createState, mergeStates, normalizeState, reduce } from '../src/achievements/engine.js';
 
 // Résultat tel que MirageWorld.finish() l’émet en duel : les rivaux déjà
@@ -133,6 +137,37 @@ test('the catalogue starts with the Coupe du Désert: Dunes de l’Écho, Dust C
     assert.ok(entry.stages.length >= 2, `${entry.id} chains several races`);
     assert.ok(Object.isFrozen(entry) && Object.isFrozen(entry.stages), 'the catalogue is immutable');
   }
+});
+
+test('cup gold maxima match 10 OR per win across all races — including two 30 OR cups', () => {
+  assert.deepEqual(CUPS.map(cupGoldMaximum), [30, 30, 40, 50]);
+  for (const cup of CUPS) {
+    assert.equal(cupGoldMaximum(cup), cup.stages.length * WIN_COINS, `${cup.id}: every race victory contributes 10 OR`);
+  }
+  assert.equal(cupGoldMaximum('inconnue'), 0, 'an unknown cup has no gold maximum');
+  assert.equal(cupGoldMaximum(null), 0);
+  assert.equal(cupGoldMaximum({ maxCoins: -10 }), 0, 'a negative value is clamped to zero');
+  assert.equal(cupGoldMaximum({ maxCoins: '40' }), 40);
+});
+
+test('Coupe des Vents has three distinct maps and can pay 30 OR for three wins', () => {
+  const cup = getCup('winds');
+  assert.equal(cup.name, 'Coupe des Vents');
+  assert.equal(cup.trophyDesign, 'winds');
+  assert.deepEqual([...cup.stages], ['sardinia', 'alger', 'snakeway']);
+  assert.equal(new Set(cup.stages).size, 3, 'each of its three races uses a different map');
+  assert.ok(cup.stages.every((stage) => !getCup('desert').stages.includes(stage)), 'none of the maps are from the Coupe du Désert');
+  assert.equal(cup.stages.length * WIN_COINS, 30, '10 OR per win × three races = 30 OR maximum');
+  assert.equal(cupGoldMaximum(cup), 30);
+
+  let run = createCupRun(cup.id);
+  for (const stage of cup.stages) {
+    assert.equal(cupCurrentStage(run), stage);
+    run = recordCupRace(run, resultFromOrder(stage, ['player', 'ombre', 'sauge', 'amethyste']));
+  }
+  assert.equal(isCupComplete(run), true);
+  assert.equal(cupWinner(run).id, PLAYER_RIDER_ID, 'the winner of all three races lifts the trophy');
+  assert.equal(cupWinner(run).points, 30);
 });
 
 test('a fresh cup has four riders — the player first, then the three NPC rivals — and no race yet', () => {
@@ -431,3 +466,39 @@ test('riders keep the hat and markings of a seven-slot palette for the trophy ho
   assert.deepEqual(createCupRun('desert', { playerColors: [1, 2, 3, 4, 5, 6] }).riders[0].colors, [1, 2, 3, 4, 5, 6]);
   assert.deepEqual(createCupRun('desert', { playerColors: [1, 2, 3, 4, 5, 6, 'x'] }).riders[0].colors, [1, 2, 3, 4, 5]);
 });
+
+test('cups unlock sequentially: only the 1st cup is open initially, and each finished cup unlocks the next', () => {
+  assert.equal(cupRequirement('desert'), null);
+  assert.equal(cupRequirement('winds')?.id, 'desert');
+  assert.equal(cupRequirement('worldtour')?.id, 'winds');
+  assert.equal(cupRequirement('legends')?.id, 'worldtour');
+  assert.equal(cupRequirement('unknown'), undefined);
+
+  // Au départ, seule la 1ʳᵉ coupe (`desert`) est débloquée.
+  assert.equal(isCupUnlocked('desert', []), true);
+  assert.equal(isCupUnlocked('winds', []), false);
+  assert.equal(isCupUnlocked('worldtour', []), false);
+  assert.equal(isCupUnlocked('legends', []), false);
+  assert.equal(isCupUnlocked('unknown', []), false);
+  assert.deepEqual(unlockedCups([]).map((c) => c.id), ['desert']);
+
+  // Finir la 1ʳᵉ coupe débloque la 2ᵉ (`winds`), pas la 3ᵉ ni la 4ᵉ.
+  assert.equal(isCupUnlocked('winds', ['desert']), true);
+  assert.equal(isCupUnlocked('worldtour', ['desert']), false);
+  assert.equal(isCupUnlocked('legends', ['desert']), false);
+  assert.deepEqual(unlockedCups(['desert']).map((c) => c.id), ['desert', 'winds']);
+
+  // Finir la 2ᵉ coupe débloque la 3ᵉ (`worldtour`), mais pas si la 1ʳᵉ manque.
+  assert.equal(isCupUnlocked('worldtour', ['winds']), false);
+  assert.equal(isCupUnlocked('worldtour', ['desert', 'winds']), true);
+  assert.equal(isCupUnlocked('legends', ['desert', 'winds']), false);
+  assert.deepEqual(unlockedCups(['desert', 'winds']).map((c) => c.id), ['desert', 'winds', 'worldtour']);
+
+  // Finir la 3ᵉ coupe débloque la 4ᵉ (`legends`).
+  assert.equal(isCupUnlocked('legends', ['desert', 'winds', 'worldtour']), true);
+  assert.deepEqual(
+    unlockedCups(['desert', 'winds', 'worldtour']).map((c) => c.id),
+    ['desert', 'winds', 'worldtour', 'legends'],
+  );
+});
+

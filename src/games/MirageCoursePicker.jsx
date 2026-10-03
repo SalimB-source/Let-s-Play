@@ -1,6 +1,7 @@
 import React from 'react';
 import { DUEL_DISTANCE, duelRivalsForTrack, laneCount } from './mirageRules';
-import { CUPS, CUP_POINTS, MAX_RIDER_NAME, placeLabel } from './mirageCup';
+import { CUPS, MAX_RIDER_NAME, cupGoldMaximum, cupRequirement, isCupUnlocked } from './mirageCup';
+import { INITIAL_UNLOCKED_STAGES, WIN_COINS, isStageUnlocked } from './mirageProgression';
 import MirageTrophyIcon from './MirageTrophyIcon';
 import { getTrophyDesign } from './mirageTrophy';
 import desertThumbnail from './assets/maps/desert.webp';
@@ -14,7 +15,7 @@ import infinityThumbnail from './assets/maps/infinity.webp';
 import airbaseThumbnail from './assets/maps/airbase.webp';
 import snakewayThumbnail from './assets/maps/snakeway.webp';
 
-const MAPS = [
+export const MAPS = [
   { id: 'desert', number: '01', name: 'Dunes de l’Écho', mood: 'Mystique & solaire', detail: 'Désert · funk', thumbnail: desertThumbnail },
   { id: 'western', number: '02', name: 'Dust Creek', mood: 'Au cœur du Far West', detail: 'Ville · cowboy', thumbnail: westernThumbnail },
   { id: 'prairie', number: '03', name: 'Plaines d’Or', mood: 'La grande échappée', detail: 'Golden hour · épique', thumbnail: prairieThumbnail },
@@ -32,7 +33,7 @@ export function stageName(stageId) {
   return MAPS.find((map) => map.id === stageId)?.name ?? stageId;
 }
 
-function MapThumbnail({ map }) {
+function MapThumbnail({ map, locked = false }) {
   // Decorative: the card's visible name already labels its button.
   // Local imports let Vite fingerprint the art and honor subpath deployments.
   return <span className="mirage-map-visual" aria-hidden="true">
@@ -46,13 +47,18 @@ function MapThumbnail({ map }) {
       decoding="async"
       draggable={false}
     />
+    {locked && <span className="mirage-map-lock" aria-hidden="true">🔒</span>}
   </span>;
 }
 
 /** Sélecteur de terrain : les cartes illustrées de Mirage Rush. */
-export function MirageStagePicker({ stage, setSelectedStage, locked = false, modeChosen = true }) {
+export function MirageStagePicker({ stage, setSelectedStage, locked = false, modeChosen = true, wonStages = [] }) {
+  const unlockedStageCount = MAPS.filter((map) => isStageUnlocked(map.id, wonStages)).length;
   return <>
-    <div className="mirage-picker-label"><span>02 / TON TERRAIN</span><span>{!modeChosen ? 'DÉBLOQUÉ APRÈS LE MODE' : locked ? 'VERROUILLÉ PAR LE DÉFI' : `${MAPS.length} HORIZONS À EXPLORER`}</span></div>
+    <div className="mirage-picker-label">
+      <span>02 / TON TERRAIN</span>
+      <span>{!modeChosen ? 'DÉBLOQUÉ APRÈS LE MODE' : locked ? 'VERROUILLÉ PAR LE DÉFI' : `${unlockedStageCount} / ${MAPS.length} HORIZONS DÉBLOQUÉS`}</span>
+    </div>
     {!modeChosen ? (
       <div className="mirage-stage-locked" role="note">
         <span className="mirage-stage-locked-icon" aria-hidden="true">🔒</span>
@@ -60,48 +66,101 @@ export function MirageStagePicker({ stage, setSelectedStage, locked = false, mod
       </div>
     ) : (
       <div className="mirage-stage-picker" role="group" aria-label="Choisir le stage">
-        {MAPS.map(map => <button type="button" key={map.id} className={`mirage-map-card is-${map.id}`} aria-pressed={stage === map.id} disabled={locked} onClick={() => setSelectedStage(map.id)}>
-          <MapThumbnail map={map} />
-          <span className="mirage-map-number" aria-hidden="true">{map.number}</span>
-          <span className="mirage-map-check" aria-hidden="true">{stage === map.id ? '✓' : '↗'}</span>
-          <span className="mirage-map-copy"><strong>{map.name}</strong><span>{map.mood}</span><small>{map.detail}</small></span>
-          <span className="mirage-map-selected">{stage === map.id ? 'SÉLECTIONNÉ' : 'EXPLORER'}</span>
-        </button>)}
+        {MAPS.map((map, index) => {
+          const stageUnlocked = isStageUnlocked(map.id, wonStages);
+          const stageWon = Array.isArray(wonStages) && wonStages.includes(map.id);
+          const isCardDisabled = locked || !stageUnlocked;
+          const selected = stageUnlocked && stage === map.id;
+          const lockReason = !stageUnlocked
+            ? (index === INITIAL_UNLOCKED_STAGES
+              ? 'Verrouillée — finis les 3 premières cartes en arrivant 1ᵉʳ pour débloquer cette carte'
+              : `Verrouillée — finis ${MAPS[index - 1].name} en arrivant 1ᵉʳ pour débloquer cette carte`)
+            : undefined;
+          return (
+            <button
+              type="button"
+              key={map.id}
+              className={`mirage-map-card is-${map.id}${stageUnlocked ? '' : ' is-locked'}${stageWon ? ' is-won' : ''}`}
+              aria-pressed={selected}
+              disabled={isCardDisabled}
+              title={lockReason}
+              onClick={() => {
+                if (!isCardDisabled) setSelectedStage(map.id);
+              }}
+            >
+              <MapThumbnail map={map} locked={!stageUnlocked} />
+              <span className="mirage-map-number" aria-hidden="true">{map.number}</span>
+              <span className="mirage-map-check" aria-hidden="true">{!stageUnlocked ? '🔒' : selected ? '✓' : '↗'}</span>
+              <span className="mirage-map-copy"><strong>{map.name}</strong><span>{map.mood}</span><small>{map.detail}</small></span>
+              <span className="mirage-map-selected">
+                {!stageUnlocked
+                  ? (index === INITIAL_UNLOCKED_STAGES ? '🔒 1ᴱᴿ SUR LES 3 PREMIÈRES' : `🔒 1ᴱᴿ SUR ${MAPS[index - 1].name.toUpperCase()}`)
+                  : selected
+                    ? 'SÉLECTIONNÉ'
+                    : stageWon
+                      ? '✓ 1ᴱᴿ · EXPLORER'
+                      : 'EXPLORER'}
+              </span>
+            </button>
+          );
+        })}
       </div>
     )}
   </>;
 }
 
 /**
- * Mode COUPE : à la place du choix de terrain, on choisit une coupe — une suite
- * de courses sur des terrains imposés, avec le barème des points — et le nom
- * qui s’affichera sur le trophée. Une carte par entrée de `CUPS` : en ajouter
- * une dans le catalogue, avec son design dans `mirageTrophy.js`, suffit.
+ * Mode COUPE : les cartes résument la récompense et le trophée sans dévoiler
+ * le détail des terrains ; chaque coupe reste un véritable bouton de sélection.
+ * Une carte par entrée de `CUPS` : ajouter une coupe au catalogue suffit.
+ * Seule la 1ʳᵉ coupe est ouverte dès le départ ; chaque coupe terminée débloque
+ * séquentiellement la suivante.
  */
-export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defaultRiderName, riderCount = CUP_POINTS.length }) {
+export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defaultRiderName, completedCups = [] }) {
+  const unlockedCupCount = CUPS.filter((cup) => isCupUnlocked(cup.id, completedCups)).length;
   return <>
-    <div className="mirage-picker-label"><span>02 / TA COUPE</span><span>{CUPS.length} COUPE{CUPS.length > 1 ? 'S' : ''} DISPONIBLE{CUPS.length > 1 ? 'S' : ''}</span></div>
+    <div className="mirage-picker-label"><span>02 / TA COUPE</span><span>{unlockedCupCount} / {CUPS.length} COUPE{CUPS.length > 1 ? 'S' : ''} DÉBLOQUÉE{unlockedCupCount > 1 ? 'S' : ''}</span></div>
     <div className="mirage-cup-picker" role="group" aria-label="Choisir la coupe">
-      {CUPS.map(cup => <button type="button" key={cup.id} className={`mirage-cup-card is-${cup.id}`} aria-pressed={cupId === cup.id} onClick={() => setCupId(cup.id)}>
-        <span className="mirage-cup-card-head">
-          <span className="mirage-cup-emblem" aria-hidden="true"><MirageTrophyIcon cupId={cup.id} /></span>
-          <span className="mirage-cup-card-title"><strong>{cup.name}</strong><span>{cup.tagline}</span><small>TROPHÉE · {getTrophyDesign(cup.id).name}</small></span>
-          <span className="mirage-choice-dot" aria-hidden="true">{cupId === cup.id ? '✓' : ''}</span>
-        </span>
-        <span className="mirage-cup-route" role="list" aria-label="Les courses, dans l’ordre">
-          {cup.stages.map((stageId, index) => {
-            const map = MAPS.find(entry => entry.id === stageId);
-            return <span className="mirage-cup-stop" role="listitem" key={`${stageId}-${index}`}>
-              <MapThumbnail map={map} />
-              <span className="mirage-cup-stop-number">COURSE {index + 1}</span>
-              <strong>{map.name}</strong>
-            </span>;
-          })}
-        </span>
-        <span className="mirage-cup-points" role="list" aria-label="Points par place">
-          {CUP_POINTS.slice(0, riderCount).map((points, index) => <span role="listitem" key={index}><b>{placeLabel(index + 1)}</b> {points} pts</span>)}
-        </span>
-      </button>)}
+      {CUPS.map(cup => {
+        const unlocked = isCupUnlocked(cup.id, completedCups);
+        const completed = Array.isArray(completedCups) && completedCups.includes(cup.id);
+        const requiredCup = cupRequirement(cup.id);
+        const selected = unlocked && cupId === cup.id;
+        const maxGold = cupGoldMaximum(cup);
+        return <button
+          type="button"
+          key={cup.id}
+          className={`mirage-cup-card is-${cup.id}${unlocked ? '' : ' is-locked'}${completed ? ' is-completed' : ''}`}
+          aria-pressed={selected}
+          disabled={!unlocked}
+          title={!unlocked && requiredCup ? `Verrouillée — finis d’abord la ${requiredCup.name}` : undefined}
+          onClick={() => {
+            if (unlocked) setCupId(cup.id);
+          }}
+        >
+          <span className="mirage-cup-card-head">
+            <span className="mirage-cup-emblem" aria-hidden="true">
+              <MirageTrophyIcon cupId={cup.id} />
+              {!unlocked && <span className="mirage-cup-lock" aria-hidden="true">🔒</span>}
+            </span>
+            <span className="mirage-cup-card-title"><strong>{cup.name}</strong><span>{cup.tagline}</span><small>TROPHÉE · {getTrophyDesign(cup.id).name}</small></span>
+            <span className="mirage-choice-dot" aria-hidden="true">{!unlocked ? '🔒' : selected ? '✓' : ''}</span>
+          </span>
+          <span className="mirage-cup-reward">
+            <i className="mirage-coin" aria-hidden="true" />
+            <span className="mirage-cup-reward-copy">
+              <small>OR À GAGNER · MAXIMUM</small>
+              <strong>+{maxGold} <i>OR</i></strong>
+              <em>+{WIN_COINS} OR PAR VICTOIRE</em>
+            </span>
+          </span>
+          <span className="mirage-cup-card-action">
+            {!unlocked
+              ? <>🔒 FINIR {requiredCup ? requiredCup.name.toUpperCase() : 'LA COUPE PRÉCÉDENTE'} <b aria-hidden="true">🔒</b></>
+              : <>{selected ? 'COUPE SÉLECTIONNÉE' : 'CHOISIR CETTE COUPE'} <b aria-hidden="true">{selected ? '✓' : '↗'}</b></>}
+          </span>
+        </button>;
+      })}
     </div>
     <label className="mirage-cup-name-field">
       <span>NOM SUR LE TROPHÉE</span>
@@ -118,7 +177,7 @@ export function MirageCupPicker({ cupId, setCupId, riderName, setRiderName, defa
   </>;
 }
 
-export default function MirageCoursePicker({ selectedMode, setSelectedMode, stage, setSelectedStage, challenge, modeChosen = true }) {
+export default function MirageCoursePicker({ selectedMode, setSelectedMode, stage, setSelectedStage, challenge, modeChosen = true, wonStages = [] }) {
   const locked = selectedMode === 'duel' && Boolean(challenge);
   // Trois voies et deux rivaux sur téléphone (navigateur comme application),
   // quatre voies et trois rivaux sur ordinateur et tablette (voir
@@ -137,6 +196,6 @@ export default function MirageCoursePicker({ selectedMode, setSelectedMode, stag
         <span className="mirage-choice-dot" aria-hidden="true">{modeChosen && selectedMode === mode.id ? '✓' : ''}</span>
       </button>)}
     </div>
-    <MirageStagePicker stage={stage} setSelectedStage={setSelectedStage} locked={locked} modeChosen={modeChosen} />
+    <MirageStagePicker stage={stage} setSelectedStage={setSelectedStage} locked={locked} modeChosen={modeChosen} wonStages={wonStages} />
   </div>;
 }
