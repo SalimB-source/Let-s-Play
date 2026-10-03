@@ -28,7 +28,7 @@ import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, SKINS, SHOP_SKINS, WI
 import { isFullscreenShortcut, opensFullscreenOnLaunch } from './mirageFullscreen';
 import useMirageFullscreen from './useMirageFullscreen';
 import './mirage-rush.css';
-// Habillage « avis de recherche » (western) : importé après la feuille
+// Habillage PlayStation 5 (next-gen) : importé après la feuille
 // d'origine, il n'en change que la peau — voir mirage-western.css.
 import './mirage-western.css';
 
@@ -777,13 +777,12 @@ export default function MirageRushPage() {
               L’eyebrow et le lien de retour suffisent. */}
           <Link className="mirage-back-link" to="/jeu">← RETOUR AUX JEUX</Link>
         </div>
-        {/* L'affiche de l'avis de recherche : le titre du jeu revient sous
-            forme de papier imprimé (le nouveau thème western), sans reprendre
-            le h1 et le chapô retirés de l'en-tête. */}
+        {/* Bandeau PS5 Game Hub : identité next-gen du jeu avec symboles
+            DualSense et télémétrie PlayStation 5, sans reprendre le h1 retiré. */}
         <div className="mirage-poster">
-          <span className="mirage-poster-word">Avis de recherche</span>
+          <span className="mirage-poster-word">PS5™ GAME HUB · ÉDITION NEXT-GEN</span>
           <strong className="mirage-poster-title">Mirage Rush</strong>
-          <span className="mirage-poster-reward">Récompense · <b>10 000 $</b> — mort ou vif</span>
+          <span className="mirage-poster-reward">DualSense™ · <b>△ ○ × □</b> — 4K HDR · 120 Hz</span>
         </div>
         {/* La barre d’onglets (RUÉE / DUEL / EN LIGNE) de l’en-tête est
             retirée : le choix du mode vit maintenant dans l’overlay d’intro,
@@ -951,13 +950,13 @@ export default function MirageRushPage() {
               onShield={() => {}}
             />}
             <div className="mirage-sun-glare" aria-hidden="true" />
-            {/* Le tampon de récompense de l'avis de recherche : visible sur
-                l'affiche (intro, pause, arrivée), effacé pendant la course
+            {/* Badge télémétrie DualSense PS5 : visible sur les écrans d'accueil,
+                de pause et d'arrivée, effacé pendant la course
                 (`.mirage-game-shell.is-running`). */}
             <div className="mirage-wanted-stamp" aria-hidden="true">
-              <span>Récompense</span>
-              <strong>10 000 $</strong>
-              <i>Wanted · dead or alive</i>
+              <span>PLAYSTATION®5 · ULTRA HD</span>
+              <strong>△ ○ × □</strong>
+              <i>DualSense™ Wireless Controller</i>
             </div>
             {phase === 'playing' && hud.powerBoostActive && (
               <div className="mirage-turbo-lines" aria-hidden="true">
