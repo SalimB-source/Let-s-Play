@@ -1448,7 +1448,7 @@
 
 .city-rush-car-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -2693,6 +2693,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-stepper-item b { font-size: 8px; }
 }
 
+
+/* Garage sport auto : silhouettes basses, grille plus aérée, finition satinée. */
+.city-rush-car-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.city-rush-car-card {
+  min-height: 194px;
+  padding: 15px 14px 13px;
+  background: linear-gradient(155deg, rgba(255,255,255,.065), rgba(255,255,255,.018) 60%), rgba(9,12,24,.7);
+  border-color: rgba(218,229,244,.11);
+}
+.city-rush-car-card-top { min-height: 43px; }
+.city-rush-car-silhouette { width: 88px; height: 38px; filter: drop-shadow(0 5px 8px rgba(0,0,0,.35)); }
+.city-rush-car-silhouette svg path:first-child { fill: var(--car-accent); }
+.city-rush-car-silhouette svg path:nth-child(2) { fill: rgba(194,224,242,.72); }
+.city-rush-car-silhouette svg circle { fill: #10151e; stroke: rgba(230,238,247,.76); stroke-width: 1.3; }
+.city-rush-car-name { font-size: 12px; letter-spacing: .035em; }
+.city-rush-car-class { white-space: normal; min-height: 22px; line-height: 1.35; }
+.city-rush-car-card.is-selected { box-shadow: 0 12px 32px color-mix(in srgb, var(--car-accent) 18%, transparent), inset 0 1px rgba(255,255,255,.12); }
+@media (max-width: 900px) {
+  .city-rush-car-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .city-rush-car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .city-rush-car-card { min-height: 180px; }
+  .city-rush-car-silhouette { width: 72px; height: 32px; }
+}
 
 /* ── BLUE_SHOT & IMPACT — repris du main, adaptés au design moderne ── */
 .city-rush-viewport.is-impacting::after {
