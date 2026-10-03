@@ -32,6 +32,7 @@ import {
   CITY_RUSH_POLICE_BLOCK_RANGE,  CITY_RUSH_POLICE_COUNT,
   CITY_RUSH_POLICE_DAMAGE,
   CITY_RUSH_POLICE_HEALTH,
+  CITY_RUSH_POLICE_START_CHARGES,
   CITY_RUSH_POLICE_HUNT_RANGE,
   CITY_RUSH_POLICE_RALLY_TOLERANCE,
   CITY_RUSH_POLICE_HUNT_TYPES,
@@ -73,6 +74,7 @@ import {
   cityRushPoliceBlocksLeader,
   cityRushPoliceContact,
   cityRushPoliceDamage,
+  cityRushPoliceShotsLeft,
   cityRushPoliceTarget,  cityRushTrackGap,
   chooseCityRushPoliceLane,
   isCityRushPoliceLaneJammed,
@@ -82,6 +84,7 @@ import {
   consumeCityRushCharge,
   createCityRushEncounter,
   createCityRushInventory,
+  createCityRushPoliceInventory,
   detectCityRushTrafficImpacts,
   isCityRushPickupHidden,
   markCityRushPickupTaken,
@@ -547,8 +550,8 @@ test('a collected item bursts into shards, then reappears 0.1 s later', () => {
   assert.ok(Math.max(...samples) > 1, 'léger rebond avant de se stabiliser');
 });
 
-test('au dernier tour, deux berlines de police chassent le premier — hors classement', () => {
-  assert.equal(CITY_RUSH_POLICE_COUNT, 2);
+test('au dernier tour, trois berlines de police chassent le premier — hors classement', () => {
+  assert.equal(CITY_RUSH_POLICE_COUNT, 3);
   // Rouge (mitrailleuse) et jaune (hélicoptère) : exactement les deux pouvoirs
   // de tir, ceux qui privent le leader de ses armes.
   assert.deepEqual([...CITY_RUSH_POLICE_HUNT_TYPES], ['pistol', 'radio']);
@@ -557,9 +560,11 @@ test('au dernier tour, deux berlines de police chassent le premier — hors clas
   // Aucune berline ne porte un identifiant de pilote classé : la grille reste
   // à quatre, et l'arrivée ne peut pas les compter.
   assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno', 'ace']);
-  // L'escouade encadre la piste par les voies extérieures, et son barrage est
-  // encadré dans le temps : elle se rabat, freine, puis repart.
-  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [0, 3]);
+  // L'escouade encadre la piste par les voies extérieures, la troisième berline
+  // se cale sur une voie intérieure, et son barrage est encadré dans le temps :
+  // elle se rabat, freine, puis repart.
+  assert.equal(CITY_RUSH_POLICE_LANES.length, CITY_RUSH_POLICE_COUNT, 'une voie de départ par berline');
+  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [0, 3, 2]);
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_RANGE > CITY_RUSH_CAR_GAP);
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
 });
@@ -768,18 +773,25 @@ test('au dernier tour, la riposte rouge et jaune peut viser la berline la plus p
   ], 1200).id, 'police-2');
 });
 
-test('barre de vie des berlines : deux tirs bleus, OU une rafale rouge, OU un hélico', () => {
-  // Le barème de dégât est pur : la berline encaisse 2 points de vie.
-  assert.equal(CITY_RUSH_POLICE_HEALTH, 2, 'une berline part avec deux points de vie');
-  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 1, 'un tir droit bleu retire un point');
-  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], CITY_RUSH_POLICE_HEALTH, 'la rafale rouge détruit d’un coup');
+test('barre de vie des berlines : trois tirs bleus, OU deux rafales rouges, OU un hélico', () => {
+  // Le barème de dégât est pur : la berline encaisse 6 points de vie, un tir
+  // bleu en retire 2 et une rafale rouge 3.
+  assert.equal(CITY_RUSH_POLICE_HEALTH, 6, 'une berline part avec six points de vie');
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.BLUE_SHOT], 2, 'un tir droit bleu retire deux points');
+  assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.PISTOL], 3, 'une rafale rouge retire trois points');
   assert.equal(CITY_RUSH_POLICE_DAMAGE[CITY_RUSH_POWERS.RADIO], CITY_RUSH_POLICE_HEALTH, 'le tir d’hélico détruit d’un coup');
-  // Deux tirs bleus successifs abattent la berline ; le premier la laisse à 1.
+  // Trois tirs bleus successifs abattent la berline ; les deux premiers la
+  // laissent debout.
   const afterFirstBlue = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.BLUE_SHOT);
-  assert.equal(afterFirstBlue, 1, 'le premier tir bleu laisse la berline debout');
-  assert.equal(cityRushPoliceDamage(afterFirstBlue, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'le second tir bleu la détruit');
-  // Une rafale rouge ou un hélico détruisent dès le premier coup.
-  assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 0);
+  const afterSecondBlue = cityRushPoliceDamage(afterFirstBlue, CITY_RUSH_POWERS.BLUE_SHOT);
+  assert.equal(afterFirstBlue, 4, 'le premier tir bleu laisse la berline debout');
+  assert.equal(afterSecondBlue, 2, 'le deuxième tir bleu aussi');
+  assert.equal(cityRushPoliceDamage(afterSecondBlue, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'le troisième tir bleu la détruit');
+  // Deux rafales rouges : la première entame la barre, la seconde détruit.
+  const afterFirstBurst = cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL);
+  assert.equal(afterFirstBurst, 3, 'la première rafale rouge laisse la berline debout');
+  assert.equal(cityRushPoliceDamage(afterFirstBurst, CITY_RUSH_POWERS.PISTOL), 0, 'la seconde rafale rouge la détruit');
+  // Un hélico détruit dès le premier coup.
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 0);
   // La vie ne descend jamais sous zéro, même sous le feu nourri.
   assert.equal(cityRushPoliceDamage(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'une épave ne prend plus de dégâts');
@@ -788,6 +800,36 @@ test('barre de vie des berlines : deux tirs bleus, OU une rafale rouge, OU un h�
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, 'cash'), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(CITY_RUSH_POLICE_HEALTH, null), CITY_RUSH_POLICE_HEALTH);
   assert.equal(cityRushPoliceDamage(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
+});
+
+test('le bandeau « berline touchée » compte les tirs restants, pas les points de vie', () => {
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.BLUE_SHOT), 3, 'trois tirs bleus au départ');
+  assert.equal(cityRushPoliceShotsLeft(4, CITY_RUSH_POWERS.BLUE_SHOT), 2, 'deux tirs bleus après le premier');
+  assert.equal(cityRushPoliceShotsLeft(2, CITY_RUSH_POWERS.BLUE_SHOT), 1, 'un tir bleu après le deuxième');
+  assert.equal(cityRushPoliceShotsLeft(0, CITY_RUSH_POWERS.BLUE_SHOT), 0, 'épave : plus rien à tirer');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.PISTOL), 2, 'deux rafales rouges au départ');
+  assert.equal(cityRushPoliceShotsLeft(3, CITY_RUSH_POWERS.PISTOL), 1, 'une rafale rouge après la première');
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, CITY_RUSH_POWERS.RADIO), 1, 'un seul missile');
+  // Arme non létale ou inconnue : aucun tir ne compte.
+  assert.equal(cityRushPoliceShotsLeft(CITY_RUSH_POLICE_HEALTH, 'cash'), 0);
+  assert.equal(cityRushPoliceShotsLeft(Number.NaN, CITY_RUSH_POWERS.BLUE_SHOT), 0);
+});
+
+test('les berlines entrent en piste armées : bleu et rouge chargés, jaune vide', () => {
+  assert.deepEqual([...CITY_RUSH_POLICE_START_CHARGES], [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL]);
+  assert.ok(!CITY_RUSH_POLICE_START_CHARGES.includes(CITY_RUSH_POWERS.RADIO), 'l’hélico reste à voler');
+  const inventory = createCityRushPoliceInventory();
+  assert.equal(inventory[CITY_RUSH_POWERS.BLUE_SHOT], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.BLUE_SHOT], 'jauge bleue pleine');
+  assert.equal(inventory[CITY_RUSH_POWERS.PISTOL], CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.PISTOL], 'jauge rouge pleine');
+  assert.equal(inventory[CITY_RUSH_POWERS.RADIO], 0, 'jaune vide');
+  assert.equal(inventory[CITY_RUSH_POWERS.CASH], 0, 'vert vide');
+  // Les deux armes de départ sont immédiatement utilisables : la consommation
+  // passe sans attendre un bonus.
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.PISTOL).consumed, true);
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.BLUE_SHOT).consumed, true);
+  assert.equal(consumeCityRushCharge(inventory, CITY_RUSH_POWERS.RADIO).consumed, false);
+  // Une course vierge, elle, démarre bien les mains vides.
+  assert.equal(createCityRushInventory()[CITY_RUSH_POWERS.PISTOL], 0);
 });
 
 test('un pilote ne traverse plus une berline de police du dernier tour', () => {
