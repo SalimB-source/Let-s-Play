@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushStoryScene from './CityRushStoryScene';
-import CityRushMinimap from './CityRushMinimap';
+import CityRushRaceList from './CityRushRaceList';
 import FullscreenIcon from './FullscreenIcon';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
@@ -262,8 +262,6 @@ export default function ViceCityRushPage() {
   );
   const standings = minimapState.racers;
   const wantedStars = Math.min(5, Array.isArray(hud.police) ? hud.police.length : 0);
-  const tourBarPct = Math.round(Math.max(0, Math.min(1, hud.lapProgress || 0)) * 100);
-  const turboBarPct = Math.round(Math.max(0, Math.min(1, (hud.boostLeft || 0) / CITY_RUSH_TRACK_BOOST_DURATION)) * 100);
   const bestTime = bests[cityId] || null;
   const finalStoryVictory = Boolean(storyMode && result?.rank === 1 && storyChapter >= STORY_CHAPTERS.length);
   const nextStoryIndex = storyChapter >= STORY_CHAPTERS.length ? 0 : storyChapter;
@@ -684,11 +682,7 @@ export default function ViceCityRushPage() {
               </div>
 
               <div className="city-rush-radar">
-                <CityRushMinimap racers={standings} pursuers={hud.police} cityId={cityId} carId={selectedCar.id} runId={runId} playerDriverId={playerDriverId} />
-                <div className="city-rush-gta-bars" aria-hidden="true">
-                  <span className="city-rush-gta-bar is-tour"><i style={{ width: `${tourBarPct}%` }} /></span>
-                  <span className="city-rush-gta-bar is-turbo"><i style={{ width: `${turboBarPct}%` }} /></span>
-                </div>
+                <CityRushRaceList racers={standings} pursuers={hud.police} laps={currentLaps} />
               </div>
 
               {(hud.boostLeft > 0 || hud.slowLeft > 0 || hud.trafficImpactLeft > 0 || hud.stunLeft > 0) && (
@@ -1091,7 +1085,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note is-police">
             <span className="city-rush-no-collision-icon">🚨</span>
-            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : trois berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, trois berlines entrent derrière le leader pour l’empêcher de s’armer.'} Elles arrivent armées : tir bleu et rafale rouge chargés (jamais l’hélico, qu’il faut voler). Hors classement, visibles sur mini-carte. Chaque berline a une barre de vie : 3 tirs droits bleus, 2 rafales rouges ou 1 tir d’hélico la détruisent — explosion, retrait de la course et +200 pts.</p></div>
+            <div><b>ESCOUADE DE POLICE</b><p>{!storyMode && mode.policeFromStart ? 'Active dès le départ en POURSUITE : trois berlines raflent les bonus rouges/jaunes et tirent.' : 'Au dernier tour en CIRCUIT/SPRINT, trois berlines entrent derrière le leader pour l’empêcher de s’armer.'} Elles arrivent armées : tir bleu et rafale rouge chargés (jamais l’hélico, qu’il faut voler). Hors classement, signalées dans la liste des positions. Chaque berline a une barre de vie : 3 tirs droits bleus, 2 rafales rouges ou 1 tir d’hélico la détruisent — explosion, retrait de la course et +200 pts.</p></div>
           </section>
         </aside>
       </main>

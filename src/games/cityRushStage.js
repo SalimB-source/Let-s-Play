@@ -8,6 +8,8 @@ import {
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_ROAD_HALF_WIDTH,
   CITY_RUSH_SCROLL_SCALE,
+  cityRushTrackElevation,
+  cityRushTrackOffset,
 } from './cityRushRules.js';
 import { createBatch, cloneBatchGroup, seededRandom, hexToRgb, SignAtlas, drawNeonSignCell } from './cityRushBuilder.js';
 import {
@@ -197,51 +199,132 @@ export function makeSkyline(city, theme, random) {
 }
 
 // ─── Route ─────────────────────────────────────────────────────────────────
+// Fenêtre de route rendue autour du joueur. Les écarts de piste sont signés :
+// une valeur négative couvre bien l'arrière de la caméra. Elle dépasse ensuite
+// largement la portée de la brume vers l'avant, sans ouverture dans un S.
+const ROAD_VIEW_BEHIND = -72;
+const ROAD_VIEW_AHEAD = 390;
+const ROAD_CURVE_SEGMENTS = 112;
+
+function makeCurvedStripGeometry(innerX, outerX, y = 0, segments = ROAD_CURVE_SEGMENTS) {
+  const rows = segments + 1;
+  const positions = new Float32Array(rows * 2 * 3);
+  const uvs = new Float32Array(rows * 2 * 2);
+  const indices = [];
+  for (let index = 0; index < rows; index += 1) {
+    const progress = index / segments;
+    for (let side = 0; side < 2; side += 1) {
+      const vertex = index * 2 + side;
+      positions[vertex * 3] = side ? outerX : innerX;
+      positions[vertex * 3 + 1] = y;
+      positions[vertex * 3 + 2] = -progress;
+      uvs[vertex * 2] = side;
+      uvs[vertex * 2 + 1] = progress;
+    }
+    if (index < segments) {
+      const first = index * 2;
+      // Sens anti-horaire vu du dessus : la face avant et sa normale pointent
+      // vers le ciel, comme le plan de route qu'elle remplace.
+      indices.push(first, first + 1, first + 2, first + 1, first + 3, first + 2);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.userData.trackBaseY = y;
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+// Actualise une bande de bitume à partir de la distance réelle du joueur.
+// La courbe et le léger relief sont appliqués à chaque rangée de sommets :
+// marquages, trottoirs, bordures et lignes néon suivent la même chaussée.
+function updateCurvedStrip(mesh, innerX, outerX, playerDistance, playerZ) {
+  const positions = mesh.geometry.attributes.position;
+  const segments = positions.count / 2 - 1;
+  const playerCurve = cityRushTrackOffset(playerDistance);
+  const playerElevation = cityRushTrackElevation(playerDistance);
+  const baseY = mesh.geometry.userData.trackBaseY || 0;
+  for (let index = 0; index <= segments; index += 1) {
+    const progress = index / segments;
+    const gap = ROAD_VIEW_BEHIND + (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * progress;
+    const trackDistance = playerDistance + gap;
+    const centerX = cityRushTrackOffset(trackDistance) - playerCurve;
+    const y = baseY + cityRushTrackElevation(trackDistance) - playerElevation;
+    const z = playerZ - gap * SCALE;
+    const first = index * 2;
+    positions.setXYZ(first, centerX + innerX, y, z);
+    positions.setXYZ(first + 1, centerX + outerX, y, z);
+  }
+  positions.needsUpdate = true;
+  // Les variations sont douces, mais mettre les normales à jour permet aux
+  // montées et descentes d'attraper correctement la lumière du soleil / néon.
+  mesh.geometry.computeVertexNormals();
+}
+
 export function makeRoad(scene, theme, random, playerZ) {
   const roadTexture = makeRoadTexture(theme, random);
-  roadTexture.repeat.set(1, 320 / ROAD_TILE_LENGTH);
+  roadTexture.repeat.set(1, (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * SCALE / ROAD_TILE_LENGTH);
   const roadMaterial = new THREE.MeshStandardMaterial({
     map: roadTexture,
     roughness: theme.weather === 'rain' ? 0.46 : 0.86,
     metalness: theme.weather === 'rain' ? 0.32 : 0.04,
     flatShading: true,
   });
-  const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, 320), roadMaterial);
-  road.rotation.x = -Math.PI / 2;
-  road.position.set(0, -0.055, playerZ - 120);
+  const road = new THREE.Mesh(makeCurvedStripGeometry(-ROAD_HALF, ROAD_HALF, -0.055), roadMaterial);
   road.receiveShadow = true;
+  // Les sommets sont mis à jour autour du joueur à chaque image : un volume
+  // englobant fixe risquerait de masquer une portion de virage hors de son
+  // ancienne sphère. Ces sept rubans sont très légers, on les rend toujours.
+  road.frustumCulled = false;
   scene.add(road);
 
   const sidewalkTexture = makeSidewalkTexture(theme, random);
-  sidewalkTexture.repeat.set(1, 320 / 8);
+  sidewalkTexture.repeat.set(1, (ROAD_VIEW_AHEAD - ROAD_VIEW_BEHIND) * SCALE / 8);
   const sidewalkMaterial = new THREE.MeshStandardMaterial({ map: sidewalkTexture, roughness: 0.94, flatShading: true });
   const curbMaterial = standard(theme.curb ?? 0x7a7684, { roughness: 0.88 });
   const edgeMaterial = new THREE.MeshBasicMaterial({ color: theme.edgeColor, transparent: true, opacity: 0.85, toneMapped: false });
   // Au-delà des trottoirs : bitume sombre la nuit, sable chaud à Vice City.
   const groundMaterial = standard(theme.ground ?? 0x0d0f18, { roughness: 1 });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(420, 420), groundMaterial);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.set(0, -0.12, playerZ - 120);
+  // Le sol entourant la chaussée reprend lui aussi les montées : un plan plat
+  // traverserait le bitume au creux d'une descente et créerait des bandes
+  // claires sur les bas-côtés.
+  const ground = new THREE.Mesh(makeCurvedStripGeometry(-210, 210, -0.12), groundMaterial);
+  ground.receiveShadow = true;
+  ground.frustumCulled = false;
   scene.add(ground);
-  for (const side of [-1, 1]) {
-    const sidewalk = new THREE.Mesh(new THREE.PlaneGeometry(SIDEWALK_OUTER - ROAD_HALF, 320), sidewalkMaterial);
-    sidewalk.rotation.x = -Math.PI / 2;
-    sidewalk.position.set(side * (ROAD_HALF + (SIDEWALK_OUTER - ROAD_HALF) / 2), 0.02, playerZ - 120);
-    sidewalk.receiveShadow = true;
-    scene.add(sidewalk);
-    const curb = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 320), curbMaterial);
-    curb.position.set(side * (ROAD_HALF + 0.02), 0.0, playerZ - 120);
-    scene.add(curb);
-    const neonLine = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.03, 320), edgeMaterial);
-    neonLine.position.set(side * (ROAD_HALF - 0.15), -0.03, playerZ - 120);
-    scene.add(neonLine);
-  }
+
+  const strips = [
+    { mesh: new THREE.Mesh(makeCurvedStripGeometry(-SIDEWALK_OUTER, -ROAD_HALF, 0.02), sidewalkMaterial), inner: -SIDEWALK_OUTER, outer: -ROAD_HALF },
+    { mesh: new THREE.Mesh(makeCurvedStripGeometry(ROAD_HALF, SIDEWALK_OUTER, 0.02), sidewalkMaterial), inner: ROAD_HALF, outer: SIDEWALK_OUTER },
+    // Les anciennes boîtes droites sont remplacées par de minces rubans : ils
+    // épousent la courbe sans multiplier la géométrie ni les draw calls.
+    { mesh: new THREE.Mesh(makeCurvedStripGeometry(-ROAD_HALF - 0.1, -ROAD_HALF + 0.1, 0.005), curbMaterial), inner: -ROAD_HALF - 0.1, outer: -ROAD_HALF + 0.1 },
+    { mesh: new THREE.Mesh(makeCurvedStripGeometry(ROAD_HALF - 0.1, ROAD_HALF + 0.1, 0.005), curbMaterial), inner: ROAD_HALF - 0.1, outer: ROAD_HALF + 0.1 },
+    { mesh: new THREE.Mesh(makeCurvedStripGeometry(-ROAD_HALF + 0.115, -ROAD_HALF + 0.185, -0.03), edgeMaterial), inner: -ROAD_HALF + 0.115, outer: -ROAD_HALF + 0.185 },
+    { mesh: new THREE.Mesh(makeCurvedStripGeometry(ROAD_HALF - 0.185, ROAD_HALF - 0.115, -0.03), edgeMaterial), inner: ROAD_HALF - 0.185, outer: ROAD_HALF - 0.115 },
+  ];
+  strips.forEach(({ mesh }, index) => {
+    mesh.receiveShadow = index < 2;
+    mesh.frustumCulled = false;
+    scene.add(mesh);
+  });
+
+  const updateCurve = (distance = 0) => {
+    updateCurvedStrip(ground, -210, 210, distance, playerZ);
+    updateCurvedStrip(road, -ROAD_HALF, ROAD_HALF, distance, playerZ);
+    strips.forEach(({ mesh, inner, outer }) => updateCurvedStrip(mesh, inner, outer, distance, playerZ));
+  };
+  updateCurve(0);
+
   return {
-    scroll(worldTravel) {
+    scroll(worldTravel, distance = 0) {
       roadTexture.offset.y += worldTravel / ROAD_TILE_LENGTH;
       sidewalkTexture.offset.y += worldTravel / 8;
       if (roadTexture.offset.y > 1000) roadTexture.offset.y -= 1000;
       if (sidewalkTexture.offset.y > 1000) sidewalkTexture.offset.y -= 1000;
+      updateCurve(distance);
     },
   };
 }
@@ -1145,8 +1228,31 @@ export function buildCityLoop({ city, theme, materials: m, batch, cityIndex, lit
   return { dynamicProps, atlas, random };
 }
 
+// Le décor statique est fusionné par matériau. On déforme ensuite ses sommets
+// une seule fois selon la ligne centrale et le relief du circuit : façades,
+// lampadaires et portique suivent ainsi les mêmes courbes et montées que la
+// chaussée, sans coût à chaque image. La copie suivante partage cette géométrie.
+function bendLoopGeometry(group) {
+  group.traverse((object) => {
+    if (!object.isMesh || !object.geometry?.attributes?.position) return;
+    const positions = object.geometry.attributes.position;
+    for (let index = 0; index < positions.count; index += 1) {
+      const z = positions.getZ(index);
+      const trackMeters = -z / SCALE;
+      positions.setX(index, positions.getX(index) + cityRushTrackOffset(trackMeters));
+      positions.setY(index, positions.getY(index) + cityRushTrackElevation(trackMeters));
+    }
+    positions.needsUpdate = true;
+    // Les façades et le sol reçoivent toujours la lumière de la bonne
+    // direction après le très léger déport latéral.
+    object.geometry.computeVertexNormals();
+    object.geometry.computeBoundingSphere();
+  });
+}
+
 export function finishLoopGeometry(batch, scene) {
   const copyA = batch.build('city-loop');
+  bendLoopGeometry(copyA);
   const copyB = cloneBatchGroup(copyA);
   scene.add(copyA, copyB);
   return [copyA, copyB];
