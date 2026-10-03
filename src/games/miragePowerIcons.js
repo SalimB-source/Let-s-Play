@@ -75,7 +75,7 @@ export const MIRAGE_CLOUD_POWER_ICONS = Object.freeze({
   }),
 });
 
-/** Icônes personnelles de Link : bombe à mèche, grappin et Triforce. */
+/** Icônes personnelles de Link : bombe à mèche, boomerang blanc et Triforce. */
 export const MIRAGE_LINK_POWER_ICONS = Object.freeze({
   [POWER_UPS.SHIELD]: Object.freeze({
     id: POWER_UPS.SHIELD,
@@ -91,11 +91,11 @@ export const MIRAGE_LINK_POWER_ICONS = Object.freeze({
   [POWER_UPS.LASSO]: Object.freeze({
     id: POWER_UPS.LASSO,
     variant: 'link',
-    label: 'Grappin',
+    label: 'Boomerang',
     gemColor: 'yellow',
     accent: '#ffd15c',
-    src: asset('link-hook'),
-    alt: 'Grappin à trois dents dont la chaîne accroche un cavalier',
+    src: asset('link-boomerang'),
+    alt: 'Boomerang blanc lancé tout droit qui revient à la main',
     source: 'Let’s Play Arcade — icône Link Mirage Rush',
     license: 'CC0',
   }),
@@ -106,7 +106,7 @@ export const MIRAGE_LINK_POWER_ICONS = Object.freeze({
     gemColor: 'red',
     accent: '#ff8a80',
     src: asset('link-triforce'),
-    alt: 'Triforce d’or qui fonce sur l’adversaire devant le cavalier',
+    alt: 'Triforce d’or à trois triangles qui fonce sur l’adversaire devant le cavalier',
     source: 'Let’s Play Arcade — icône Link Mirage Rush',
     license: 'CC0',
   }),

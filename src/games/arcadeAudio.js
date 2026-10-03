@@ -1153,19 +1153,22 @@ export class DesertGroove {
     this.sweepNoise(time + 0.26, 0.46, 0.14, { type: 'lowpass', from: 1000, to: 160, attack: 0.08 });
   }
 
-  /** Le grappin : la chaîne qui cliquette, le crochet qui siffle. */
-  linkHookThrow() {
+  /** Le boomerang blanc : un sifflement qui tourne, puis l'air fendu. */
+  linkBoomerangThrow() {
     if (!this.running || !this.context || !this.master) return;
     const ctx = this.context;
     const time = ctx.currentTime + 0.005;
-    // Les maillons : cinq cliquetis métalliques de plus en plus rapprochés.
-    [0, 0.035, 0.066, 0.093, 0.116].forEach((offset, index) => {
-      this.tone(1480 + index * 190, time + offset, 0.05, 'square', 0.05, 4200);
-      this.noise(time + offset, 0.03, 0.06, 7200);
+    this.sweepTone(420, 980, time, 0.22, 'triangle', 0.14, 2800);
+    this.sweepTone(980, 540, time + 0.18, 0.28, 'sine', 0.1, 2200);
+    this.sweepNoise(time, 0.32, 0.16, { type: 'bandpass', from: 900, to: 3400, q: 1.1, attack: 0.04 });
+    [0, 0.07, 0.14, 0.21].forEach((offset, index) => {
+      this.tone(880 + index * 110, time + offset, 0.06, 'triangle', 0.05, 3600);
     });
-    // Le crochet fend l'air.
-    this.sweepNoise(time + 0.02, 0.26, 0.2, { type: 'bandpass', from: 700, to: 3000, q: 1.2, attack: 0.03 });
-    this.sweepTone(320, 620, time + 0.02, 0.22, 'sawtooth', 0.1, 2400);
+  }
+
+  /** @deprecated le grappin a cédé la place au boomerang. */
+  linkHookThrow() {
+    this.linkBoomerangThrow();
   }
 
   /** La Triforce s'élève : l'accord d'or, clair et vibrant. */

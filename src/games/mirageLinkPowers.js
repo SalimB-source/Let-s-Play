@@ -8,10 +8,11 @@
  * - Bombe (bleu) : sphère noire posée derrière le cavalier, mèche allumée qui
  *   brûle 1,5 s, puis déflagration de zone — tout ennemi à portée (2 cases)
  *   tombe de cheval.
- * - Grappin (jaune) : le crochet part de la main, s'accroche dans le dos de la
- *   cible et la ralentit le temps de la traction.
- * - Triforce (rouge) : le triangle d'or fonce sur l'adversaire juste devant et
- *   le fait tomber.
+ * - Boomerang (jaune) : disque blanc lancé tout droit sur quelques mètres,
+ *   puis il revient à la main. Deux lancers par charge. Un adversaire touché
+ *   est ralenti.
+ * - Triforce (rouge) : l'emblème d'or (trois triangles vers le haut) fonce sur
+ *   l'adversaire juste devant et le fait tomber.
  */
 import * as THREE from 'three';
 // Une « case » = l'écart entre deux voies de la piste (voir mirageRules.js).
@@ -25,12 +26,19 @@ export const LINK_BOMB_BLAST_DURATION = 0.62;
 export const LINK_BOMB_AOE_TILES = 2;
 /** Portée de l'explosion en unités monde : 2 × l'écart entre deux voies. */
 export const LINK_BOMB_AOE_RADIUS = LINK_BOMB_AOE_TILES * LANE_SPACING;
-/** Vol du crochet, puis traction qui ralentit la cible. */
-export const LINK_HOOK_FLIGHT_DURATION = 0.26;
-export const LINK_HOOK_TETHER_DURATION = 0.46;
+/** Le boomerang part tout droit, puis revient à la main. */
+export const LINK_BOOMERANG_RANGE = 4 * LANE_SPACING;
+export const LINK_BOOMERANG_OUT_DURATION = 0.36;
+export const LINK_BOOMERANG_RETURN_DURATION = 0.42;
+export const LINK_BOOMERANG_HIT_RADIUS = 1.35;
+/** Deux lancers par barre jaune pleine. */
+export const LINK_BOOMERANG_THROWS = 2;
+/** Anciens noms : le grappin a cédé la place au boomerang. */
+export const LINK_HOOK_FLIGHT_DURATION = LINK_BOOMERANG_OUT_DURATION;
+export const LINK_HOOK_TETHER_DURATION = LINK_BOOMERANG_RETURN_DURATION;
 /** Vol de la Triforce, puis éclat sur l'adversaire. */
-export const LINK_TRIFORCE_FLIGHT_DURATION = 0.34;
-export const LINK_TRIFORCE_IMPACT_DURATION = 0.36;
+export const LINK_TRIFORCE_FLIGHT_DURATION = 0.42;
+export const LINK_TRIFORCE_IMPACT_DURATION = 0.4;
 
 function makeMaterials(list) {
   const basic = (color, opacity, tag, extra = {}) => {
@@ -237,173 +245,240 @@ export function updateLinkBombVisual(visual, projectile, dt, hooks = {}) {
   return progress >= 1;
 }
 
-/** Crochet et chaîne du grappin : maillons tendus entre la main et la cible. */
-export function makeLinkHook() {
+/**
+ * Boomerang blanc : deux ailes en V, lancées tout droit puis rappelées.
+ * Le groupe entier se déplace ; l'aile tourne sur elle-même.
+ */
+export function makeLinkBoomerang() {
   const group = new THREE.Group();
-  group.name = 'link-hook';
+  group.name = 'link-boomerang';
   const materials = [];
   const { basic, solid } = makeMaterials(materials);
 
-  const claw = new THREE.Group();
-  group.add(claw);
-  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8), solid(0x8a8f99, { metalness: 0.7 }));
-  shaft.rotation.x = Math.PI / 2;
-  claw.add(shaft);
-  // Crochet : une courbe ouverte, comme un grappin à trois dents.
-  const hook = new THREE.Mesh(
-    new THREE.TorusGeometry(0.16, 0.045, 8, 18, Math.PI * 1.45),
-    solid(0xc3cad6, { metalness: 0.75, roughness: 0.3 }),
-  );
-  hook.position.z = 0.2;
-  hook.rotation.y = Math.PI / 2;
-  claw.add(hook);
-  for (const side of [-1, 1]) {
-    const prong = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.16, 6), solid(0xdfe6f0, { metalness: 0.8, roughness: 0.26 }));
-    prong.position.set(side * 0.13, 0.06, 0.28);
-    prong.rotation.set(Math.PI / 2, 0, -side * 0.5);
-    claw.add(prong);
-  }
-  const clawGlow = new THREE.Mesh(
-    new THREE.SphereGeometry(0.14, 10, 8),
-    basic(0xffe08a, 0.55, 'glow', { blending: THREE.AdditiveBlending }),
-  );
-  claw.add(clawGlow);
+  const body = new THREE.Group();
+  group.add(body);
 
-  const links = [];
-  const linkGeometry = new THREE.BoxGeometry(0.09, 0.09, 0.26);
-  const linkMaterial = solid(0x9aa3ae, { metalness: 0.72, roughness: 0.36 });
-  for (let i = 0; i < 12; i += 1) {
-    const link = new THREE.Mesh(linkGeometry, linkMaterial);
-    group.add(link);
-    links.push(link);
-  }
+  const ivory = solid(0xf4f7ff, { metalness: 0.55, roughness: 0.22, transparent: true });
+  const rim = solid(0xd7deea, { metalness: 0.7, roughness: 0.18, transparent: true });
+  const core = solid(0xffffff, { metalness: 0.35, roughness: 0.28, transparent: true });
+
+  const makeWing = (sign) => {
+    const wing = new THREE.Group();
+    const blade = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.58, 6, 10), ivory);
+    blade.rotation.z = Math.PI / 2;
+    blade.position.x = 0.32;
+    wing.add(blade);
+    const edge = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.5, 4, 8), rim);
+    edge.rotation.z = Math.PI / 2;
+    edge.position.set(0.34, 0.05, 0);
+    wing.add(edge);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), ivory);
+    tip.position.x = 0.64;
+    wing.add(tip);
+    wing.rotation.z = sign * 0.62;
+    return wing;
+  };
+  body.add(makeWing(-1), makeWing(1));
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.1, 12), core);
+  hub.rotation.x = Math.PI / 2;
+  body.add(hub);
+  const glow = new THREE.Mesh(
+    new THREE.SphereGeometry(0.28, 12, 10),
+    basic(0xe8f2ff, 0.45, 'glow', { blending: THREE.AdditiveBlending }),
+  );
+  body.add(glow);
+  const trail = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.18, 1.15),
+    basic(0xf5fbff, 0.35, 'trail', { blending: THREE.AdditiveBlending, side: THREE.DoubleSide }),
+  );
+  trail.rotation.x = Math.PI / 2;
+  trail.position.z = 0.45;
+  group.add(trail);
 
   group.userData.materials = materials;
-  group.userData.kind = 'hook';
-  group.userData.claw = claw;
-  group.userData.clawGlow = clawGlow;
-  group.userData.links = links;
+  group.userData.kind = 'boomerang';
+  group.userData.body = body;
+  group.userData.glow = glow;
+  group.userData.trail = trail;
   return group;
 }
 
-function layoutChain(links, from, to, slack) {
-  const count = links.length;
-  for (let i = 0; i < count; i += 1) {
-    const t = (i + 1) / (count + 1);
-    const link = links[i];
-    link.position.lerpVectors(from, to, t);
-    link.position.y += Math.sin(t * Math.PI) * slack;
-    link.lookAt(to);
-    link.scale.set(1, 1, Math.max(0.35, from.distanceTo(to) / (count + 1) / 0.26));
-  }
+/** @deprecated le grappin a été remplacé par le boomerang. */
+export function makeLinkHook() {
+  return makeLinkBoomerang();
 }
 
 /**
- * Avance le grappin : le crochet vole vers la cible, s'y accroche, puis la
- * chaîne reste tendue le temps du ralentissement.
+ * Avance le boomerang : il file tout droit sur `LINK_BOOMERANG_RANGE` mètres,
+ * puis revient à la main. Le crochet `onTurn` marque le demi-tour.
  *
- * @param {THREE.Group} visual groupe renvoyé par `makeLinkHook()`
- * @param {{age:number, phase:string, start:THREE.Vector3}} projectile état mutable
+ * @param {THREE.Group} visual groupe renvoyé par `makeLinkBoomerang()`
+ * @param {{age:number, phase:string, start:THREE.Vector3, apex?:THREE.Vector3, spin?:number, forward?:THREE.Vector3}} projectile
  * @param {number} dt secondes depuis la frame précédente
- * @param {THREE.Vector3} fromPoint main du cavalier (suit la course)
- * @param {THREE.Vector3} targetPoint dos de la cible
- * @param {{onAttach?: () => void}} hooks appelé quand le crochet se plante
+ * @param {THREE.Vector3} handPoint main du cavalier (pour le retour)
+ * @param {{onTurn?: () => void}} hooks
  * @returns {boolean} true quand l'effet peut être retiré de la scène
  */
-export function updateLinkHookVisual(visual, projectile, dt, fromPoint, targetPoint, hooks = {}) {
+export function updateLinkBoomerangVisual(visual, projectile, dt, handPoint, hooks = {}) {
   const parts = visual.userData;
   projectile.age += dt;
-  if (projectile.phase === 'flight') {
-    const progress = Math.min(1, projectile.age / LINK_HOOK_FLIGHT_DURATION);
-    parts.claw.position.copy(projectile.start).lerp(targetPoint, progress);
-    parts.claw.position.y += Math.sin(progress * Math.PI) * 0.26;
-    parts.claw.rotation.z += dt * 15;
-    parts.clawGlow.scale.setScalar(1 + Math.sin(progress * Math.PI) * 0.5);
-    layoutChain(parts.links, fromPoint, parts.claw.position, 0.55 * (1 - progress * 0.6));
+  const forward = projectile.forward || new THREE.Vector3(0, 0, -1);
+  projectile.spin = (projectile.spin || 0) + dt * 22;
+  parts.body.rotation.y = projectile.spin;
+  parts.glow.scale.setScalar(1 + Math.sin((projectile.age + projectile.spin) * 18) * 0.18);
+
+  if (projectile.phase === 'flight' || projectile.phase === 'out') {
+    projectile.phase = 'out';
+    const progress = Math.min(1, projectile.age / LINK_BOOMERANG_OUT_DURATION);
+    const eased = 1 - (1 - progress) ** 2;
+    visual.position.copy(projectile.start).addScaledVector(forward, LINK_BOOMERANG_RANGE * eased);
+    visual.position.y += Math.sin(progress * Math.PI) * 0.2;
+    parts.trail.scale.set(1, 0.4 + progress * 1.4, 1);
+    parts.trail.position.z = 0.2 + progress * 0.55;
+    fadeLinkMaterials(parts.materials, 'trail', 0.35 + progress * 0.45);
     if (progress >= 1) {
-      projectile.phase = 'tether';
+      projectile.phase = 'return';
       projectile.age = 0;
-      hooks.onAttach?.();
+      projectile.apex = visual.position.clone();
+      hooks.onTurn?.();
     }
     return false;
   }
-  const progress = Math.min(1, projectile.age / LINK_HOOK_TETHER_DURATION);
-  // Accroché dans le dos de la cible : le crochet la suit, la chaîne vibre.
-  parts.claw.position.copy(targetPoint);
-  parts.claw.position.z += 0.32;
-  parts.claw.rotation.z += dt * 4;
-  parts.clawGlow.scale.setScalar(1 + Math.sin(projectile.age * 22) * 0.22);
-  layoutChain(parts.links, fromPoint, parts.claw.position, 0.16 + Math.sin(progress * Math.PI) * 0.1);
-  fadeLinkMaterials(parts.materials, 'body', progress > 0.7 ? (1 - progress) / 0.3 : 1);
-  fadeLinkMaterials(parts.materials, 'glow', progress > 0.7 ? (1 - progress) / 0.3 : 1);
+
+  const progress = Math.min(1, projectile.age / LINK_BOOMERANG_RETURN_DURATION);
+  const eased = progress ** 1.15;
+  const from = projectile.apex || visual.position;
+  visual.position.copy(from).lerp(handPoint, eased);
+  parts.trail.scale.set(1, Math.max(0.2, 1.6 - progress * 1.3), 1);
+  fadeLinkMaterials(parts.materials, 'glow', progress > 0.75 ? (1 - progress) / 0.25 : 1);
+  fadeLinkMaterials(parts.materials, 'trail', progress > 0.7 ? (1 - progress) / 0.3 : 0.55);
+  fadeLinkMaterials(parts.materials, 'body', progress > 0.88 ? (1 - progress) / 0.12 : 1);
   return progress >= 1;
 }
 
-function makeTriforceGeometry() {
-  const shape = new THREE.Shape();
-  shape.moveTo(0, 0.46);
-  shape.lineTo(0.42, -0.26);
-  shape.lineTo(-0.42, -0.26);
-  shape.closePath();
-  return new THREE.ShapeGeometry(shape);
+/** @deprecated */
+export function updateLinkHookVisual(visual, projectile, dt, fromPoint, _targetPoint, hooks = {}) {
+  return updateLinkBoomerangVisual(visual, projectile, dt, fromPoint, hooks);
 }
 
-/** La Triforce : trois triangles d'or, cernés et auréolés de lumière. */
+function makeEquilateralTriangleShape(size) {
+  const height = size * Math.sqrt(3) / 2;
+  const shape = new THREE.Shape();
+  shape.moveTo(0, height * 2 / 3);
+  shape.lineTo(size / 2, -height / 3);
+  shape.lineTo(-size / 2, -height / 3);
+  shape.closePath();
+  return { shape, size, height };
+}
+
+function triforceAssetUrl() {
+  const base = typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
+    ? import.meta.env.BASE_URL
+    : '/';
+  return `${base}icons/mirage-rush/link-triforce.png`;
+}
+
+/** La Triforce : trois triangles d'or vers le haut, plus l'image sacrée. */
 export function makeLinkTriforce() {
   const group = new THREE.Group();
   group.name = 'link-triforce';
   const materials = [];
-  const { basic } = makeMaterials(materials);
+  const { basic, solid } = makeMaterials(materials);
 
-  const geometry = makeTriforceGeometry();
-  const gold = basic(0xffd75e, 1, 'triforce');
-  const outline = basic(0x6b4a12, 0.9, 'outline');
-  const glow = basic(0xfff0a8, 0.55, 'glow', { blending: THREE.AdditiveBlending });
-  // Triangle du haut à gauche, du haut à droite, puis celui du bas (inversé).
+  const emblem = new THREE.Group();
+  group.add(emblem);
+
+  const { shape, size, height } = makeEquilateralTriangleShape(0.58);
+  const extrude = new THREE.ExtrudeGeometry(shape, {
+    depth: 0.07,
+    bevelEnabled: true,
+    bevelThickness: 0.018,
+    bevelSize: 0.016,
+    bevelSegments: 2,
+  });
+  extrude.translate(0, 0, -0.035);
+  const gold = solid(0xffd056, {
+    metalness: 0.72,
+    roughness: 0.22,
+    emissive: 0x6a4708,
+    emissiveIntensity: 0.45,
+    transparent: true,
+  });
   const placements = [
-    [-0.23, 0.2, 0],
-    [0.23, 0.2, 0],
-    [0, -0.28, Math.PI],
+    [0, height / 2, 0],
+    [-size / 2, -height / 2, 0],
+    [size / 2, -height / 2, 0],
   ];
-  for (const [x, y, rotation] of placements) {
-    const backing = new THREE.Mesh(geometry, outline);
-    backing.position.set(x, y, -0.03);
-    backing.scale.setScalar(1.12);
-    backing.rotation.z = rotation;
-    group.add(backing);
-    const triangle = new THREE.Mesh(geometry, gold);
+  const triangles = [];
+  for (const [x, y] of placements) {
+    const triangle = new THREE.Mesh(extrude, gold);
     triangle.position.set(x, y, 0);
-    triangle.rotation.z = rotation;
-    group.add(triangle);
+    emblem.add(triangle);
+    triangles.push(triangle);
   }
-  const aura = new THREE.Mesh(new THREE.CircleGeometry(0.86, 28), glow);
-  aura.position.z = -0.06;
-  group.add(aura);
-  const halo = new THREE.Mesh(new THREE.RingGeometry(0.8, 0.9, 28), basic(0xfff3c4, 0.8, 'glow', { blending: THREE.AdditiveBlending }));
-  halo.position.z = -0.05;
-  group.add(halo);
+
+  const aura = new THREE.Mesh(
+    new THREE.CircleGeometry(0.95, 28),
+    basic(0xffe7a0, 0.42, 'glow', { blending: THREE.AdditiveBlending }),
+  );
+  aura.position.z = -0.08;
+  emblem.add(aura);
+  const halo = new THREE.Mesh(
+    new THREE.RingGeometry(0.78, 0.98, 32),
+    basic(0xfff3c4, 0.85, 'glow', { blending: THREE.AdditiveBlending }),
+  );
+  halo.position.z = -0.06;
+  emblem.add(halo);
+
+  const spriteMat = basic(0xffffff, 0, 'sprite', { blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  const sprite = new THREE.Mesh(new THREE.PlaneGeometry(1.72, 1.72), spriteMat);
+  sprite.position.z = 0.05;
+  emblem.add(sprite);
+  if (typeof THREE.TextureLoader === 'function') {
+    try {
+      const loader = new THREE.TextureLoader();
+      loader.load(triforceAssetUrl(), (texture) => {
+        texture.colorSpace = THREE.SRGBColorSpace;
+        spriteMat.map = texture;
+        spriteMat.opacity = 1;
+        spriteMat.userData.baseOpacity = 1;
+        spriteMat.needsUpdate = true;
+      });
+    } catch {
+      // Les tests Node n'ont pas de chargeur d'image : les triangles 3D suffisent.
+    }
+  }
+
   const shards = [];
   const shardSpecs = [];
-  for (let i = 0; i < 9; i += 1) {
-    const angle = (i / 9) * Math.PI * 2;
-    const shard = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.09, 0.26), basic(0xfff0a8, 0.9, 'glow', { blending: THREE.AdditiveBlending }));
+  for (let i = 0; i < 12; i += 1) {
+    const angle = (i / 12) * Math.PI * 2;
+    const shard = new THREE.Mesh(
+      new THREE.ConeGeometry(0.07, 0.28, 4),
+      basic(0xfff0a8, 0.95, 'glow', { blending: THREE.AdditiveBlending }),
+    );
+    shard.visible = false;
     group.add(shard);
     shards.push(shard);
-    shardSpecs.push({ angle, speed: 2.1 + Math.random() * 1.6, scale: 0.7 + Math.random() * 0.6 });
-    shard.visible = false;
+    shardSpecs.push({ angle, speed: 2.4 + Math.random() * 1.8, scale: 0.7 + Math.random() * 0.7 });
   }
 
   group.userData.materials = materials;
   group.userData.kind = 'triforce';
+  group.userData.emblem = emblem;
+  group.userData.triangles = triangles;
   group.userData.aura = aura;
   group.userData.halo = halo;
+  group.userData.sprite = sprite;
   group.userData.shards = shards;
   group.userData.shardSpecs = shardSpecs;
+  group.userData.triangleHome = placements;
   return group;
 }
 
 /**
- * Avance la Triforce : elle fonce sur l'adversaire, puis éclate sur lui.
+ * Avance la Triforce : les trois triangles se rassemblent, l'emblème fonce
+ * sur l'adversaire (toujours face caméra), puis éclate.
  *
  * @param {THREE.Group} visual groupe renvoyé par `makeLinkTriforce()`
  * @param {{age:number, phase:string, start:THREE.Vector3, spin:number}} projectile
@@ -416,14 +491,29 @@ export function makeLinkTriforce() {
 export function updateLinkTriforceVisual(visual, projectile, dt, targetPoint, camera, hooks = {}) {
   const parts = visual.userData;
   projectile.age += dt;
+  if (camera) visual.quaternion.copy(camera.quaternion);
+
   if (projectile.phase === 'flight') {
     const progress = Math.min(1, projectile.age / LINK_TRIFORCE_FLIGHT_DURATION);
-    visual.position.copy(projectile.start).lerp(targetPoint, progress);
-    visual.position.y += Math.sin(progress * Math.PI) * 0.22;
-    projectile.spin = (projectile.spin || 0) + dt * 7.5;
-    if (camera) visual.quaternion.copy(camera.quaternion);
-    visual.rotateZ(projectile.spin);
-    visual.scale.setScalar(0.9 + Math.sin(progress * Math.PI) * 0.45);
+    const assemble = Math.min(1, progress / 0.28);
+    visual.position.copy(projectile.start).lerp(targetPoint, progress ** 0.85);
+    visual.position.y += Math.sin(progress * Math.PI) * 0.28;
+    projectile.spin = (projectile.spin || 0) + dt * 2.4;
+    parts.emblem.rotation.z = Math.sin(projectile.spin) * 0.12;
+    const pulse = 0.82 + assemble * 0.28 + Math.sin(progress * Math.PI) * 0.22;
+    visual.scale.setScalar(pulse);
+    parts.aura.scale.setScalar(0.7 + assemble * 0.5 + Math.sin(progress * 10) * 0.08);
+    parts.halo.scale.setScalar(0.75 + assemble * 0.4);
+    fadeLinkMaterials(parts.materials, 'sprite', 0.35 + assemble * 0.65);
+    fadeLinkMaterials(parts.materials, 'glow', 0.45 + assemble * 0.55);
+    const homes = parts.triangleHome || [];
+    for (let i = 0; i < (parts.triangles || []).length; i += 1) {
+      const triangle = parts.triangles[i];
+      const [hx, hy] = homes[i] || [0, 0];
+      const spread = 1 - assemble;
+      triangle.position.set(hx * (1 + spread * 1.6), hy * (1 + spread * 1.6), 0);
+      triangle.rotation.z = (1 - assemble) * (i === 0 ? 0 : i === 1 ? -0.5 : 0.5);
+    }
     if (progress >= 1) {
       projectile.phase = 'impact';
       projectile.age = 0;
@@ -434,15 +524,15 @@ export function updateLinkTriforceVisual(visual, projectile, dt, targetPoint, ca
   }
   const progress = Math.min(1, projectile.age / LINK_TRIFORCE_IMPACT_DURATION);
   visual.position.copy(targetPoint);
-  if (camera) visual.quaternion.copy(camera.quaternion);
-  visual.rotateZ((projectile.spin || 0) + progress * 3);
-  // L'éclat : la Triforce s'ouvre en étoile, l'anneau part en cercles.
-  visual.scale.setScalar(1.3 + progress * 1.9);
-  parts.aura.scale.setScalar(1 + progress * 2.2);
-  parts.halo.scale.setScalar(1 + progress * 3.4);
-  fadeLinkMaterials(parts.materials, 'triforce', (1 - progress) ** 1.2);
-  fadeLinkMaterials(parts.materials, 'outline', (1 - progress) ** 1.2);
-  fadeLinkMaterials(parts.materials, 'glow', (1 - progress) ** 0.8);
+  parts.emblem.rotation.z = (projectile.spin || 0) + progress * 1.4;
+  visual.scale.setScalar(1.15 + progress * 1.7);
+  parts.aura.scale.setScalar(1 + progress * 2.6);
+  parts.halo.scale.setScalar(1 + progress * 3.8);
+  fadeLinkMaterials(parts.materials, 'triforce', (1 - progress) ** 1.15);
+  fadeLinkMaterials(parts.materials, 'outline', (1 - progress) ** 1.15);
+  fadeLinkMaterials(parts.materials, 'body', (1 - progress) ** 1.15);
+  fadeLinkMaterials(parts.materials, 'sprite', (1 - progress) ** 0.9);
+  fadeLinkMaterials(parts.materials, 'glow', (1 - progress) ** 0.75);
   for (let i = 0; i < parts.shards.length; i += 1) {
     const shard = parts.shards[i];
     const spec = parts.shardSpecs[i];
@@ -450,7 +540,7 @@ export function updateLinkTriforceVisual(visual, projectile, dt, targetPoint, ca
     const travel = spec.speed * t;
     shard.position.set(Math.cos(spec.angle) * travel, Math.sin(spec.angle) * travel, 0.05);
     shard.scale.setScalar(Math.max(0.001, spec.scale * (1 - t * 0.75)));
-    shard.rotation.z = spec.angle + t * 3;
+    shard.rotation.z = spec.angle + t * 4;
   }
   return progress >= 1;
 }

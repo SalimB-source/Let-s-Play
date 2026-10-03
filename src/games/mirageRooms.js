@@ -28,12 +28,12 @@ export const roomsAvailable = () => true;
 
 /**
  * Effets reçus par la victime selon le personnage de l'attaquant : Cloud
- * secoue d'une onde dorée ou foudroie, Link agrippe au grappin, fait tomber à
+ * secoue d'une onde dorée ou foudroie, Link frappe au boomerang, fait tomber à
  * la Triforce — ou pose une bombe (`p_effect: 'link-bomb'`).
  */
 export function slowEffectFor(characterIndex) {
   if (characterIndex === CLOUD_CHOCOBO_INDEX) return 'cloud-wave';
-  if (characterIndex === LINK_EPONA_INDEX) return 'link-hook';
+  if (characterIndex === LINK_EPONA_INDEX) return 'link-boomerang';
   return 'lasso';
 }
 
@@ -46,7 +46,7 @@ export function stunEffectFor(characterIndex, override = '') {
 
 export function slowHitMessage(characterIndex, attackerName, targetName) {
   if (characterIndex === CLOUD_CHOCOBO_INDEX) return `⚔ ${attackerName} a ralenti ${targetName} avec une onde de choc dorée !`;
-  if (characterIndex === LINK_EPONA_INDEX) return `🪝 ${attackerName} a agrippé ${targetName} au grappin !`;
+  if (characterIndex === LINK_EPONA_INDEX) return `🪃 ${attackerName} a ralenti ${targetName} avec son boomerang !`;
   return `🪢 ${attackerName} a attrapé ${targetName} au lasso !`;
 }
 

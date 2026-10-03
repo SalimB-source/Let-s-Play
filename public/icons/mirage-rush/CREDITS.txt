@@ -12,8 +12,10 @@ custom original SVG illustrations created for Mirage Rush (Let's Play Arcade):
 - cloud-yellow-wave.svg — Onde de choc dorée à l’épée de Cloud (W / Z)
 - cloud-lightning.svg — Éclair foudroyant qui frappe la cible pour Cloud (R)
 - link-bomb.svg — Bombe noire ronde à mèche allumée posée par Link (Q / A)
-- link-hook.svg — Grappin à croc qui attrape le dos de l’adversaire (W / Z)
-- link-triforce.svg — Triforce dorée qui fonce devant le cavalier (R)
+- link-boomerang.svg — Boomerang blanc lancé tout droit qui revient (W / Z)
+- link-hook.svg — Ancien nom, désormais le même boomerang blanc
+- link-triforce.svg — Triforce d’or à trois triangles vers le haut (R)
+- link-triforce.png — Emblème d’or utilisé par l’attaque rouge en 3D
 
 Legacy CC0 3Dicons files (`shield.webp`, `link.webp`, `target.webp` from
 https://3dicons.co/about) are superseded by the dedicated vector icons above.
