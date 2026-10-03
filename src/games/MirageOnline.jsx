@@ -9,6 +9,7 @@ import { CHARACTER_NAMES, CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX, LOBBY_CHARACT
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
 import MirageFullscreenIcon from './MirageFullscreenIcon';
+import MirageDesertAtmosphere from './MirageDesertAtmosphere';
 import MirageGraphicsButton from './MirageGraphicsToggle';
 import { isFullscreenShortcut } from './mirageFullscreen';
 import useMirageFullscreen from './useMirageFullscreen';
@@ -612,6 +613,7 @@ export default function MirageOnline({
       onPointerUpCapture={onPagePointerUpCapture}
       onClickCapture={onPageClickCapture}
     >
+      <MirageDesertAtmosphere />
       <header className="mirage-heading wrap has-mode-tabs">
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow">
@@ -625,12 +627,11 @@ export default function MirageOnline({
           <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
 
-        {/* Même bandeau PS5 Game Hub que la page du jeu : le lobby en
-            ligne appartient au même univers graphique PlayStation 5. */}
+        {/* Le lobby partage la palette sable doré et les éclats cristallins. */}
         <div className="mirage-poster">
-          <span className="mirage-poster-word">PS5™ NETWORK · SALON MULTIJOUEUR</span>
+          <span className="mirage-poster-word">MIRAGE RUSH · MULTIJOUEUR</span>
           <strong className="mirage-poster-title">Mirage En Ligne</strong>
-          <span className="mirage-poster-reward">Cross-Play · <b>△ ○ × □</b> — Temps réel · 120 Hz</span>
+          <span className="mirage-poster-reward">FRAGMENTS SOLAIRES · <b>◆ ◇ ◆</b> · TEMPS RÉEL</span>
         </div>
 
         <div className="mirage-mode-tabs" aria-label="Boutons de mode Mirage">

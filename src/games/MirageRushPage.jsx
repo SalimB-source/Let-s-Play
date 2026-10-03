@@ -13,6 +13,7 @@ import MirageCupResults from './MirageCupResults';
 import MirageCupTrophy from './MirageCupTrophy';
 import MirageTrophyIcon from './MirageTrophyIcon';
 import MirageFullscreenIcon from './MirageFullscreenIcon';
+import MirageDesertAtmosphere from './MirageDesertAtmosphere';
 import MirageGraphicsButton, { MirageGraphicsSwitch } from './MirageGraphicsToggle';
 import useMirageGraphics from './useMirageGraphics';
 import { DesertGroove } from './arcadeAudio';
@@ -28,8 +29,7 @@ import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, SKINS, SHOP_SKINS, WI
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './mirageFullscreen';
 import useMirageFullscreen from './useMirageFullscreen';
 import './mirage-rush.css';
-// Habillage PlayStation 5 (next-gen) : importé après la feuille
-// d'origine, il n'en change que la peau — voir mirage-western.css.
+// Habillage sable doré et fragments cristallins du jeu.
 import './mirage-western.css';
 
 const BEST_KEY = 'letsplay_mirage_rush_best_v1';
@@ -875,6 +875,7 @@ export default function MirageRushPage() {
       onPointerUpCapture={onPagePointerUpCapture}
       onClickCapture={onPageClickCapture}
     >
+      <MirageDesertAtmosphere />
       <header className="mirage-heading wrap">
         <div className="mirage-heading-copy">
           <div className="mirage-eyebrow"><span className="mirage-live-dot" /> LET’S PLAY ARCADE <span className="mirage-eyebrow-divider">/</span> 3D VOXEL RUNNER</div>
@@ -885,12 +886,11 @@ export default function MirageRushPage() {
               L’eyebrow et le lien de retour suffisent. */}
           <Link className="mirage-back-link" to="/jeu">← RETOUR AUX JEUX</Link>
         </div>
-        {/* Bandeau PS5 Game Hub : identité next-gen du jeu avec symboles
-            DualSense et télémétrie PlayStation 5, sans reprendre le h1 retiré. */}
+        {/* Cartouche de l'univers désertique, or sableux et éclats de diamant. */}
         <div className="mirage-poster">
-          <span className="mirage-poster-word">PS5™ GAME HUB · ÉDITION NEXT-GEN</span>
+          <span className="mirage-poster-word">ÉDITION DÉSERT · RUNNER 3D</span>
           <strong className="mirage-poster-title">Mirage Rush</strong>
-          <span className="mirage-poster-reward">DualSense™ · <b>△ ○ × □</b> — 4K HDR · 120 Hz</span>
+          <span className="mirage-poster-reward">SABLE DORÉ · <b>◆ ◇ ◆</b> · OR &amp; DIAMANTS</span>
         </div>
         {/* La barre d’onglets (RUÉE / DUEL / EN LIGNE) de l’en-tête est
             retirée : le choix du mode vit maintenant dans l’overlay d’intro,
@@ -1058,13 +1058,11 @@ export default function MirageRushPage() {
               onShield={() => {}}
             />}
             <div className="mirage-sun-glare" aria-hidden="true" />
-            {/* Badge télémétrie DualSense PS5 : visible sur les écrans d'accueil,
-                de pause et d'arrivée, effacé pendant la course
-                (`.mirage-game-shell.is-running`). */}
+            {/* Insigne du trésor désertique, masqué pendant la course. */}
             <div className="mirage-wanted-stamp" aria-hidden="true">
-              <span>PLAYSTATION®5 · ULTRA HD</span>
-              <strong>△ ○ × □</strong>
-              <i>DualSense™ Wireless Controller</i>
+              <span>TRÉSOR DES DUNES</span>
+              <strong>◇ ◆ ◇</strong>
+              <i>SABLE DORÉ · DIAMANTS</i>
             </div>
             {phase === 'playing' && hud.powerBoostActive && (
               <div className="mirage-turbo-lines" aria-hidden="true">
