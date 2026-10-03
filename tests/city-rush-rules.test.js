@@ -27,6 +27,7 @@ import {
   CITY_RUSH_LANES_PER_DIRECTION,
   CITY_RUSH_ROAD_WIDTH,
   CITY_RUSH_ROAD_HALF_WIDTH,
+  CITY_RUSH_TURN_AMPLITUDE,
   CITY_RUSH_FORWARD_LANES,
   CITY_RUSH_DEFAULT_LANES,
   CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN,
@@ -62,6 +63,9 @@ import {
   CITY_RUSH_ONCOMING_LANES,
   CITY_RUSH_DRIVERS,
   selectCityRushRacers,
+  cityRushTrackOffset,
+  cityRushTrackTangent,
+  cityRushTrackYaw,
   cityRushMinimapPoint,
   cityRushMinimapTrackPath,
   buildCityRushMinimapState,
@@ -162,6 +166,20 @@ test('Vice City Rush has six playable lanes with three lanes in each direction',
   assert.ok(Math.max(...CITY_RUSH_LANE_X.map(Math.abs)) + 1.9 / 2 < CITY_RUSH_ROAD_HALF_WIDTH,
     'les voitures tiennent sur la chaussée, même dans les voies extérieures');
   assert.deepEqual(selectCityRushRacers({ cityId: 'vice-city' }).map((racer) => racer.lane), [4, 5, 3]);
+});
+
+test('the rendered circuit has gentle, seamless turns while race lanes stay logical', () => {
+  const samples = Array.from({ length: 24 }, (_, index) => cityRushTrackOffset(index * CITY_RUSH_LAP_LENGTH / 24));
+  assert.equal(CITY_RUSH_TURN_AMPLITUDE, 2.35);
+  assert.ok(samples.some((offset) => offset > 1.5), 'une moitié du circuit se décale vers la droite');
+  assert.ok(samples.some((offset) => offset < -1.5), 'l’autre moitié revient vers la gauche');
+  assert.ok(Math.abs(cityRushTrackOffset(0)) < 1e-12, 'la ligne de départ reste centrée');
+  assert.ok(Math.abs(cityRushTrackOffset(CITY_RUSH_LAP_LENGTH)) < 1e-12, 'la boucle se referme sans saut');
+  assert.ok(Math.abs(cityRushTrackTangent(0)) < 1e-12, 'le raccord départ/arrivée est sans angle');
+  assert.ok(Math.abs(cityRushTrackOffset(137) - cityRushTrackOffset(137 + CITY_RUSH_LAP_LENGTH)) < 1e-12,
+    'le même virage se répète à chaque tour');
+  assert.ok(Math.abs(cityRushTrackYaw(CITY_RUSH_LAP_LENGTH * 0.18)) < 0.08,
+    'le lacet reste léger, même au cœur du virage');
 });
 
 test('eight slow traffic cars span three forward lanes and safely block racers (trafic allégé)', () => {

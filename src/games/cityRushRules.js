@@ -34,6 +34,12 @@ export const CITY_RUSH_DEFAULT_LANES = Object.freeze([
   CITY_RUSH_LANES_PER_DIRECTION,
 ]);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
+// La simulation reste volontairement sur une ligne (les voies, collisions et
+// bonus sont ainsi déterministes), mais le rendu suit cette ligne centrale :
+// deux grands S très doux donnent de vrais virages visuels sans transformer
+// chaque changement de voie en dérapage. Le déport reste proche d'une voie et
+// le raccord départ/arrivée est parfaitement plat.
+export const CITY_RUSH_TURN_AMPLITUDE = 2.35;
 export const CITY_RUSH_CAR_GAP = 4.8;
 export const CITY_RUSH_RACER_VIEW_DISTANCE = 120; // m : portée avant où un rival est rendu à l'écran
 export const CITY_RUSH_BLUE_SHOT_DURATION = 1.8; // s : ralentissement bien visible après un tir bleu
@@ -430,6 +436,40 @@ export function cityRushTrackGap(trackPosition, distance, lapLength = CITY_RUSH_
   let gap = ((raw % safeLap) + safeLap) % safeLap;
   if (gap > safeLap - behind) gap -= safeLap;
   return gap;
+}
+
+// ── Ligne centrale du circuit (rendu) ──────────────────────────────────────
+// Les règles de course conservent une progression longitudinale très simple,
+// tandis que Three.js projette cette ligne en deux courbes souples. La somme
+// sinusoïdale a une valeur *et une pente* nulles au portique : le tour suivant
+// se raccorde donc sans cassure et le départ reste bien lisible.
+function cityRushTrackPhase(distance, lapLength) {
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  const safeDistance = Number(distance) || 0;
+  const progress = ((safeDistance % safeLap) + safeLap) % safeLap / safeLap;
+  return { safeLap, phase: progress * Math.PI * 2 };
+}
+
+/** Déport horizontal de la ligne centrale, en unités monde. */
+export function cityRushTrackOffset(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_TURN_AMPLITUDE) {
+  const { phase } = cityRushTrackPhase(distance, lapLength);
+  const safeAmplitude = Math.max(0, Number(amplitude) || 0);
+  // Deux demi-S : une courbe s'ouvre progressivement, se referme, puis son
+  // miroir termine le tour. Le second harmonique annule la pente aux raccords.
+  return safeAmplitude * (Math.sin(phase) - 0.5 * Math.sin(phase * 2));
+}
+
+/** Pente locale de la ligne centrale (unités X par mètre de course). */
+export function cityRushTrackTangent(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_TURN_AMPLITUDE) {
+  const { safeLap, phase } = cityRushTrackPhase(distance, lapLength);
+  const safeAmplitude = Math.max(0, Number(amplitude) || 0);
+  return (safeAmplitude * Math.PI * 2 / safeLap) * (Math.cos(phase) - Math.cos(phase * 2));
+}
+
+/** Lacet de rendu qui aligne véhicules et accessoires sur le virage courant. */
+export function cityRushTrackYaw(distance, lapLength = CITY_RUSH_LAP_LENGTH, amplitude = CITY_RUSH_TURN_AMPLITUDE, scrollScale = CITY_RUSH_SCROLL_SCALE) {
+  const scale = Math.max(0.001, Number(scrollScale) || CITY_RUSH_SCROLL_SCALE);
+  return -Math.atan2(cityRushTrackTangent(distance, lapLength, amplitude), scale);
 }
 
 // `inventory` contient les points de jauge (0 jusqu'au coût), pas un stock
