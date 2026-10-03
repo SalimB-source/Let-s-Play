@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX } from '../src/games/mirageCharacters.js';
+import { CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX, LINK_EPONA_INDEX } from '../src/games/mirageCharacters.js';
 import {
   BUSTER_SWORD_ROTATION_Z, STEEL_BALL_GREEN, accessoriesForPalette, disposeExplorer, makeExplorer, paintModel,
 } from '../src/games/mirageExplorer.js';
@@ -19,6 +19,14 @@ function collectCloudAccessories(model, kind) {
   const found = [];
   model.traverse((node) => {
     if (node.userData?.cloudAccessory === kind) found.push(node);
+  });
+  return found;
+}
+
+function collectLinkAccessories(model, kind) {
+  const found = [];
+  model.traverse((node) => {
+    if (node.userData?.linkAccessory === kind) found.push(node);
   });
   return found;
 }
@@ -111,6 +119,54 @@ test('switching Cloud away restores the horse and removes his custom mount and g
     assert.equal(model.getObjectByName('cloud-chocobo-mount'), undefined);
     assert.equal(model.getObjectByName('cloud-spiky-hair'), undefined);
     assert.equal(model.getObjectByName('buster-sword'), undefined);
+  } finally {
+    disposeExplorer(model);
+  }
+});
+
+test('Link rides Épona with his Hylian ears, winged Master Sword and shield', () => {
+  const model = makeExplorer(false, CHARACTER_PALETTES[LINK_EPONA_INDEX]);
+  try {
+    assert.equal(model.userData.accessoryKind, 'link-epona');
+    assert.equal(model.userData.parts.horseMount.visible, false, 'Épona remplace le cheval de base');
+    assert.equal(model.userData.parts.hat.visible, false, 'la casquette remplace le Stetson');
+    assert.equal(model.userData.parts.legs.length, 4, 'les quatre jambes d’Épona restent animées');
+    assert.ok(model.getObjectByName('epona-mount'));
+    // Le cavalier : oreilles pointues d’Hyléen, baudrier et pan de tunique.
+    assert.equal(collectLinkAccessories(model, 'hylian-ear').length, 2, 'les oreilles pointues de Link');
+    assert.equal(collectLinkAccessories(model, 'chest-strap').length, 1, 'le baudrier en diagonale');
+    assert.equal(collectLinkAccessories(model, 'tunic-skirt').length, 1, 'le pan évasé de la tunique');
+    // L’épée de légende : garde ailée et Triforce gravée sur la lame.
+    const sword = model.getObjectByName('master-sword');
+    assert.equal(model.userData.parts.masterSword, sword, 'le groupe est exposé pour l’animation d’attaque');
+    assert.ok(typeof sword.userData.baseRotationZ === 'number');
+    assert.ok(typeof sword.userData.baseRotationX === 'number');
+    assert.equal(collectLinkAccessories(model, 'master-sword-wing').length, 4, 'deux ailes à deux segments');
+    assert.equal(collectLinkAccessories(model, 'triforce-crest').length, 2, 'la Triforce est visible des deux côtés');
+    // Le bouclier hylien est sanglé dans le dos.
+    assert.equal(model.userData.parts.hylianShield, model.getObjectByName('hylian-shield'));
+    // Le harnachement complet d’Épona : étriers et sacoches de voyage.
+    assert.equal(collectLinkAccessories(model, 'stirrup').length, 2);
+    assert.equal(collectLinkAccessories(model, 'saddlebag').length, 2);
+  } finally {
+    disposeExplorer(model);
+  }
+});
+
+test('switching Link away removes every piece of his hero gear', () => {
+  const model = makeExplorer(false, CHARACTER_PALETTES[LINK_EPONA_INDEX]);
+  try {
+    paintModel(model, CHARACTER_PALETTES[0]);
+    assert.equal(model.userData.accessoryKind, null);
+    assert.equal(model.userData.parts.horseMount.visible, true);
+    assert.equal(model.userData.parts.hat.visible, true);
+    assert.equal(model.userData.parts.legs.length, 4);
+    assert.equal(model.userData.parts.masterSword, null);
+    assert.equal(model.userData.parts.hylianShield, null);
+    assert.equal(model.getObjectByName('epona-mount'), undefined);
+    assert.equal(model.getObjectByName('link-cap'), undefined);
+    assert.equal(model.getObjectByName('master-sword'), undefined);
+    assert.equal(collectLinkAccessories(model, 'hylian-ear').length, 0);
   } finally {
     disposeExplorer(model);
   }
