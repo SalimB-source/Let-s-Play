@@ -5,7 +5,7 @@
 // ════════════════════════════════════════════════════════════════════
 
 export const PROGRESS = Object.freeze({
-  enemySouls: 150,       // âmes par Chevalier déchu vaincu
+  enemySouls: 150,       // âmes par guerrier insecte déchu vaincu
   flaskMax: 3,           // 3 gorgées de potion de vie
   flaskHeal: 34,         // PV rendus par gorgée (« un peu de vie »)
   restRadius: 2.6,       // zone d'action autour du feu (0,0)

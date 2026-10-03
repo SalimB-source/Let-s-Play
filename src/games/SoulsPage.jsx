@@ -222,7 +222,7 @@ export default function SoulsPage() {
           aria-label="Partie de La Cendre"
         >
           <div className="souls-game-topbar">
-            <div className="souls-game-brand"><span className="souls-brand-ember">✦</span><span>LE CHEMIN DU ROI · LA CENDRE</span></div>
+            <div className="souls-game-brand"><span className="souls-brand-ember">✦</span><span>LE GARDIEN CHITINE · LA CENDRE</span></div>
             <div className="souls-game-controls-top">
               <button
                 type="button"
@@ -300,7 +300,7 @@ export default function SoulsPage() {
                       <em>NIV {hud.level}</em>
                     </span>
                     {hud.hasKey && (
-                      <span className="souls-key" title="Clé du Roi de Cendre — ouvre le grand portail du château">
+                      <span className="souls-key" title="Clé du Roi Chitine de Cendre — ouvre le grand portail du château">
                         <i aria-hidden="true">⚿</i> CLÉ DU ROI
                       </span>
                     )}
@@ -324,7 +324,7 @@ export default function SoulsPage() {
                 {hud.toast && <div className="souls-toast" key={hud.toast}>{hud.toast}</div>}
                 {hud.targetAlive && (
                   <div className="souls-hud-target">
-                    <span className="souls-hud-target-name">{hud.targetName || 'CHEVALIER DÉCHU'}</span>
+                    <span className="souls-hud-target-name">{hud.targetName || 'GUERRIER INSECTE DÉCHU'}</span>
                     <div className="souls-bar souls-bar-enemy">
                       <i style={{ width: `${(hud.targetHp / hud.targetMaxHp) * 100}%` }} />
                     </div>
@@ -371,20 +371,20 @@ export default function SoulsPage() {
             {phase === 'intro' && (
               <div className="souls-overlay souls-overlay-intro">
                 <div className="souls-overlay-panel">
-                  <div className="souls-overlay-kicker">SOULSLIKE · PLAYTEST M2 — LES CENDRES</div>
+                  <div className="souls-overlay-kicker">SOULSLIKE · ANIME DARK FANTASY</div>
                   <h1>LA CENDRE</h1>
                   <p className="souls-overlay-lead">
-                    Le feu de cendres s’est éteint. Un chevalier sans nom se réveille
-                    dans la Cour du Seuil. Le socle est en place ; M1 livre le{' '}
-                    <strong>cœur du jeu</strong> : attaques légère et lourde, esquive à
-                    i-frames, endurance, hitstop, lock-on — et un chevalier déchu qui
-                    télégraphie chacun de ses coups. <strong>Riposte</strong> pendant sa
-                    récupération.
+                    Le feu de cendres s’est éteint. Le <strong>Gardien Chitine</strong>,
+                    guerrier insecte aux ailes irisées, se réveille dans la Cour du Seuil.
+                    Traverse un monde <strong>anime peint à la main</strong> : attaques légère
+                    et lourde, esquive à i-frames, endurance, hitstop, lock-on — et un
+                    guerrier insecte déchu qui télégraphie chacun de ses coups. <strong>Riposte</strong>
+                    pendant sa récupération.
                   </p>
                   <p className="souls-overlay-lead">
                     <strong>Le Chemin du Roi</strong> : quitte le camp par la porte nord.
                     Une <strong>chapelle en ruine</strong> garde un <strong>coffre</strong> (touche E) où dort
-                    la <strong>clé du Roi de Cendre</strong>. Reprends la route à travers la
+                    la <strong>clé du Roi Chitine de Cendre</strong>. Reprends la route à travers la
                     <strong> forêt</strong> jusqu’au <strong>château</strong> : seul cette clé ouvre
                     son <strong>grand portail</strong>. Dans la salle des piliers, le Roi attend
                     sur son trône — il se lèvera quand tu approcheras.
@@ -409,7 +409,7 @@ export default function SoulsPage() {
                     ))}
                   </ul>
                   <button type="button" className="souls-start-button" onClick={launch} disabled={!ready}>
-                    {ready ? 'ENTRER DANS LA BRAISE' : 'ALLUMAGE DE LA FLAMME…'}
+                    {ready ? 'ÉVEILLER LE GARDIEN' : 'LUMIÈRE DES AILES…'}
                   </button>
                   <div className="souls-overlay-hint">
                     {isTouch ? 'RECOMMANDÉ : JOUE EN PAYSAGE, LA MANETTE EST À L’ÉCRAN' : 'RECOMMANDÉ : ÉCHAP pour libérer la souris, P pour la pause'}
@@ -450,7 +450,7 @@ export default function SoulsPage() {
             {phase === 'paused' && (
               <div className="souls-overlay souls-overlay-pause">
                 <div className="souls-overlay-panel is-compact">
-                  <div className="souls-overlay-kicker">LE CHEMIN DU ROI</div>
+                  <div className="souls-overlay-kicker">LE CHEMIN DU GARDIEN</div>
                   <h2>PAUSE</h2>
                   <div className="souls-pause-stats">
                     <span>POSITION <b>{coordsLabel}</b></span>
@@ -492,7 +492,7 @@ export default function SoulsPage() {
           </div>
 
           <footer className="souls-game-foot">
-            <span>LES CENDRES — boucle d’âmes, potion de vie, feu de camp · prochain cap : <b>M3, le contenu</b></span>
+            <span>LES CENDRES — gardien insecte, monde anime peint, boucle d’âmes et feu de camp</span>
             <span>BUILD PLAYTEST · <Link to="/jeu">ARCADE LET’S PLAY</Link></span>
           </footer>
         </section>

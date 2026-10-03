@@ -1,14 +1,13 @@
 // ════════════════════════════════════════════════════════════════════
-// LA CENDRE — modèles procéduraux (M0 v4 : silhouette humaine réaliste)
-// Zéro asset externe : sphères, capsules, lathes et tore pour des
-// volumes anatomiques (profils musculaires), materials lisses (PBR +
-// env map gérée par le monde).
+// LA CENDRE — modèles procéduraux (direction anime : Gardien Chitine)
+// Zéro asset externe pour les personnages : sphères, capsules, lathes et
+// volumes lisses, avec carapace irisée, yeux composés et ailes translucides.
 // Le personnage fait face à −Z (yaw 0 = regard vers −Z), même convention
 // que lookDirection()/yawToward() de soulsRules.js.
 // Contrat d'articulation avec SoulsWorld.jsx — ne pas renommer :
 //   body > hips > legL/legR > kneeL/kneeR > footL/footR
 //   body > torso > armL/armR > elbowL/elbowR, head, cape, visor, weapon
-//   parts.strands = mèches de cheveux (secondarité d'animation)
+//   parts.strands = antennes (secondarité d'animation)
 // ════════════════════════════════════════════════════════════════════
 import * as THREE from 'three';
 import { STAGE } from './soulsStage';
@@ -254,190 +253,124 @@ export function masonryMaps(repeat = 8) {
   }, repeat);
 }
 
-// ── Textures « pixel » (esprit Minecraft) ────────────────────────────
-// Grille 16×16 dessinée au canvas, filtrage NEAREST (le pixel reste net
-// quel que soit le recul), et la même image sert de heightmap → carte de
-// normales. Les UV de chaque bloc sont mis à l'échelle du monde : la
-// maille se répète tous les `PIXEL_TILE` mètres, jamais étirée.
+// ── Échelle de répétition des surfaces peintes ────────────────────────
+// Une unité de texture couvre environ 1,6 m dans le monde. Les helpers UV
+// l'emploient pour que les lavis et les détails restent fins, quelle que soit
+// la taille de l'architecture.
+export const SURFACE_TILE = 1.6;
 
-/** Un carreau de texture = 1,6 m dans le monde (échelle « bloc »). */
-export const PIXEL_TILE = 1.6;
+// ── Matières anime peintes ────────────────────────────────────────────
+// Le niveau n'utilise plus les carreaux 16×16 volontairement abrupts. Ces
+// surfaces sont dessinées comme des aplats peints : lavis larges, veines fines
+// et micro-lumières. Avec une rampe toon, elles gardent des ombres lisibles de
+// loin sans retomber dans le rendu cubique/pixelisé.
+const animeCache = new Map();
+let animeGradientMap = null;
 
-/** Filtres « pixel art » : pas de lissage, pas de mipmaps floues. */
-function pixelate(texture, repeat = 1) {
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestMipmapLinearFilter;
-  texture.generateMipmaps = true;
-  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(repeat, repeat);
-  texture.anisotropy = 4;
-  return texture;
+function animeGradient() {
+  if (animeGradientMap) return animeGradientMap;
+  // Quatre marches douces : ombre indigo → demi-teinte → lumière claire.
+  // RedFormat est le format attendu par MeshToonMaterial pour la rampe.
+  animeGradientMap = new THREE.DataTexture(
+    new Uint8Array([34, 96, 178, 255]), 4, 1, THREE.RedFormat,
+  );
+  animeGradientMap.needsUpdate = true;
+  animeGradientMap.minFilter = THREE.NearestFilter;
+  animeGradientMap.magFilter = THREE.NearestFilter;
+  animeGradientMap.generateMipmaps = false;
+  return animeGradientMap;
 }
 
-/** Dessine une grille 16×16 en pixels discrets (fonction px(x,y,couleur)). */
-function pixelCanvas(size, cells, drawCell) {
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  for (let y = 0; y < cells; y++) {
-    for (let x = 0; x < cells; x++) {
-      const px = (size / cells) * x;
-      const py = (size / cells) * y;
-      ctx.fillStyle = drawCell(x, y);
-      ctx.fillRect(px, py, size / cells, size / cells);
+const ANIME_SURFACES = {
+  stone: { base: '#777899', shade: '#353754', light: '#c7d4ee', accent: '#7771ad' },
+  wood: { base: '#704b52', shade: '#342337', light: '#c48975', accent: '#bd5d72' },
+  earth: { base: '#45435f', shade: '#24243d', light: '#8785a4', accent: '#607078' },
+  cloth: { base: '#6c2856', shade: '#2a173b', light: '#dc7ba9', accent: '#f3bd6e' },
+  slate: { base: '#3f496d', shade: '#202842', light: '#8f9dd2', accent: '#5d78a1' },
+  chitin: { base: '#1b5265', shade: '#10263e', light: '#4cc7d2', accent: '#cf9d4e' },
+  corruptChitin: { base: '#572037', shade: '#160914', light: '#d75674', accent: '#8e2c59' },
+  royalChitin: { base: '#45245f', shade: '#10091f', light: '#dd70dc', accent: '#9f4b9b' },
+};
+
+/** Texture peinte à la main (canvas lisse) pour une famille de matériaux anime. */
+function paintAnimeSurface(kind) {
+  const palette = ANIME_SURFACES[kind] || ANIME_SURFACES.stone;
+  return canvasPair(384, (ctx, s) => {
+    ctx.fillStyle = palette.base;
+    ctx.fillRect(0, 0, s, s);
+
+    // Lavis colorés : grandes masses transparentes, pas une grille répétée.
+    for (let i = 0; i < 26; i++) {
+      const x = Math.random() * s;
+      const y = Math.random() * s;
+      const r = 32 + Math.random() * 118;
+      const wash = ctx.createRadialGradient(x, y, 0, x, y, r);
+      wash.addColorStop(0, i % 3 === 0 ? `${palette.light}38` : `${palette.accent}2d`);
+      wash.addColorStop(0.6, `${palette.base}0d`);
+      wash.addColorStop(1, `${palette.base}00`);
+      ctx.fillStyle = wash;
+      ctx.fillRect(x - r, y - r, r * 2, r * 2);
     }
-  }
-  return canvas;
+
+    // Traces de pinceau directionnelles, différentes selon la matière.
+    const strokes = kind === 'wood' ? 58 : kind === 'cloth' ? 42 : 76;
+    for (let i = 0; i < strokes; i++) {
+      const x = Math.random() * s;
+      const y = Math.random() * s;
+      const length = (kind === 'wood' ? 58 : 18) + Math.random() * 90;
+      const bend = (Math.random() - 0.5) * (kind === 'cloth' ? 80 : 30);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + length * 0.45, y + bend, x + length, y + bend * 0.2);
+      ctx.lineWidth = 0.7 + Math.random() * 2.1;
+      ctx.strokeStyle = Math.random() > 0.52 ? `${palette.light}28` : `${palette.shade}34`;
+      ctx.stroke();
+    }
+
+    // Rehauts ponctuels : l'aspect illustré accroche la lumière sans bruit pixel.
+    for (let i = 0; i < 95; i++) {
+      ctx.fillStyle = Math.random() > 0.52 ? `${palette.light}20` : `${palette.shade}28`;
+      ctx.beginPath();
+      ctx.arc(Math.random() * s, Math.random() * s, 0.6 + Math.random() * 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }, 1, 1.35);
 }
 
-/**
- * Fabrique { map, normalMap } en style pixel.
- * @param {number} cells résolution de la grille (16 = Minecraft)
- * @param {(x:number,y:number)=>string} drawCell couleur d'un pixel
- */
-function pixelPair(cells, drawCell, { size = 256, normalStrength = 1.6 } = {}) {
-  const canvas = pixelCanvas(size, cells, drawCell);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  const normalMap = heightToNormalTexture(canvas, normalStrength, 1);
-  pixelate(map);
-  pixelate(normalMap);
-  return { map, normalMap };
-}
-
-/** Bruit déterministe bon marché (mêmes pixels d'un build à l'autre). */
-const hash2 = (x, y, seed = 1) => {
-  const h = Math.sin(x * 127.1 + y * 311.7 + seed * 74.7) * 43758.5453;
-  return h - Math.floor(h);
-};
-
-const shade = (hex, k) => {
-  const r = Math.min(255, Math.max(0, Math.round(((hex >> 16) & 255) * k)));
-  const g = Math.min(255, Math.max(0, Math.round(((hex >> 8) & 255) * k)));
-  const b = Math.min(255, Math.max(0, Math.round((hex & 255) * k)));
-  return `rgb(${r},${g},${b})`;
-};
-
-/** Pavés disjoints (cobblestone) — routes, parvis, estrades. */
-export function cobblePixelMaps(base = 0x4a4854) {
-  return pixelPair(16, (x, y) => {
-    const cell = Math.floor(x / 4) + Math.floor(y / 4) * 4;
-    const bx = x % 4;
-    const by = y % 4;
-    const joint = bx === 0 || by === 0 || (bx === 3 && hash2(x, y, 3) > 0.55)
-      || (by === 3 && hash2(x, y, 7) > 0.55);
-    if (joint) return shade(0x15141b, 0.9 + hash2(x, y, 11) * 0.3);
-    const tone = 0.74 + hash2(cell, cell * 3, 5) * 0.4 + (hash2(x, y, 2) - 0.5) * 0.16;
-    return shade(base, tone);
-  });
-}
-
-/** Pierre taillée en assises (stone bricks) — murs, tours, nef. */
-export function brickPixelMaps(base = 0x4c4a58) {
-  return pixelPair(16, (x, y) => {
-    const row = Math.floor(y / 4);
-    const offset = (row % 2) * 4;
-    const bx = (x + offset) % 8;
-    const by = y % 4;
-    const joint = by === 3 || bx === 7;
-    if (joint) return shade(0x191821, 0.85 + hash2(x, y, 13) * 0.3);
-    const brick = Math.floor((x + offset) / 8) + row * 2;
-    const tone = 0.78 + hash2(brick, brick * 5, 17) * 0.34 + (hash2(x, y, 19) - 0.5) * 0.1;
-    return shade(base, tone);
-  });
-}
-
-/** Planches de bois — poutres, portes, bancs. */
-export function plankPixelMaps(base = 0x53381f) {
-  return pixelPair(16, (x, y) => {
-    const plank = Math.floor(x / 4);
-    if (x % 4 === 3) return shade(0x1b120a, 1);
-    const grain = Math.sin((y + plank * 5) * 0.9 + hash2(plank, 0, 23) * 6) * 0.5 + 0.5;
-    const tone = 0.78 + grain * 0.26 + (hash2(x, y, 29) - 0.5) * 0.12;
-    return shade(base, tone);
-  });
-}
-
-/** Terre cendreuse — extérieur, sous-bois. */
-export function dirtPixelMaps(base = 0x2a2b26) {
-  return pixelPair(16, (x, y) => {
-    const n = hash2(x, y, 31);
-    const patch = hash2(Math.floor(x / 4), Math.floor(y / 4), 37);
-    let tone = 0.7 + n * 0.5 + patch * 0.18;
-    let hex = base;
-    if (patch > 0.72) hex = 0x33402c;              // touffes de mousse
-    else if (n > 0.93) hex = 0x5b5a55;             // gravier clair
-    return shade(hex, tone);
-  });
-}
-
-/** Tapis pourpre à bordure d'or — la nef du trône. */
-export function carpetPixelMaps() {
-  return pixelPair(16, (x, y) => {
-    const border = x < 2 || x > 13;
-    if (border) return shade(0xb08a2e, 0.85 + hash2(x, y, 41) * 0.3);
-    const motif = (x + y) % 8 === 0 || (x - y + 16) % 8 === 0;
-    const tone = 0.8 + hash2(x, y, 43) * 0.32;
-    return shade(motif ? 0x7d2027 : 0x5c151b, tone);
-  });
-}
-
-/** Ardoise du toit — écailles sombres. */
-export function slatePixelMaps() {
-  return pixelPair(16, (x, y) => {
-    const row = Math.floor(y / 4);
-    const off = (row % 2) * 2;
-    const joint = y % 4 === 3 || (x + off) % 4 === 3;
-    if (joint) return shade(0x0d0d13, 1);
-    return shade(0x23232e, 0.72 + hash2(x, y, 47) * 0.5);
-  });
-}
-
-/**
- * Textures pixel partagées : une seule paire (map + normales) par matière
- * pour tout le niveau — les UV font le travail de répétition, pas la
- * texture. `dispose()` du monde libère le cache.
- */
-const PIXEL_MAKERS = {
-  cobble: cobblePixelMaps, brick: brickPixelMaps, plank: plankPixelMaps,
-  dirt: dirtPixelMaps, carpet: carpetPixelMaps, slate: slatePixelMaps,
-};
-const pixelCache = new Map();
-
-/** { map, normalMap } mémoïsés d'une matière pixel. */
-export function pixelMaps(kind) {
-  const maker = PIXEL_MAKERS[kind];
-  if (!maker) throw new Error(`matière pixel inconnue : ${kind}`);
-  let entry = pixelCache.get(kind);
+/** Maps anime mises en cache : une paire par surface pour le niveau entier. */
+export function animeMaps(kind) {
+  let entry = animeCache.get(kind);
   if (!entry) {
-    entry = maker();
-    pixelCache.set(kind, entry);
+    entry = paintAnimeSurface(kind);
+    animeCache.set(kind, entry);
   }
   return entry;
 }
 
-/** Libère les textures pixel partagées (appelé par world.destroy()). */
-export function disposePixelMaps() {
-  for (const { map, normalMap } of pixelCache.values()) {
-    map.dispose();
-    normalMap.dispose();
-  }
-  pixelCache.clear();
-}
-
-/**
- * Matière pixel prête à l'emploi. `material.userData.tile` est lu par
- * les helpers de blocs pour mettre les UV à l'échelle du monde.
- */
-export function pixelMaterial(kind, { color = 0xffffff, tile = PIXEL_TILE, ...opts } = {}) {
-  const { map, normalMap } = pixelMaps(kind);
-  const material = new THREE.MeshStandardMaterial({
+/** Matière toon peinte, avec UV monde identiques à l'ancienne API de blocs. */
+export function animeMaterial(kind, { color = 0xffffff, tile = SURFACE_TILE, ...opts } = {}) {
+  const { map, normalMap } = animeMaps(kind);
+  const material = new THREE.MeshToonMaterial({
     color, map, normalMap,
-    normalScale: new THREE.Vector2(1.05, 1.05),
-    roughness: 0.94, metalness: 0.02, ...opts,
+    normalScale: new THREE.Vector2(0.72, 0.72),
+    gradientMap: animeGradient(),
+    ...opts,
   });
   material.userData.tile = tile;
+  material.userData.animeSurface = kind;
   return material;
+}
+
+/** Libère les textures peintes et la rampe toon au démontage du monde. */
+export function disposeAnimeMaps() {
+  for (const { map, bumpMap, normalMap } of animeCache.values()) {
+    map?.dispose?.();
+    bumpMap?.dispose?.();
+    normalMap?.dispose?.();
+  }
+  animeCache.clear();
+  animeGradientMap?.dispose?.();
+  animeGradientMap = null;
 }
 
 /**
@@ -446,7 +379,7 @@ export function pixelMaterial(kind, { color = 0xffffff, tile = PIXEL_TILE, ...op
  * Ordre des faces Three : +X, −X, +Y, −Y, +Z, −Z.
  */
 const BOX_FACE_AXES = [['z', 'y'], ['z', 'y'], ['x', 'z'], ['x', 'z'], ['x', 'y'], ['x', 'y']];
-export function scaleBoxUV(geometry, size, tile = PIXEL_TILE) {
+export function scaleBoxUV(geometry, size, tile = SURFACE_TILE) {
   const uv = geometry.attributes.uv;
   if (!uv) return geometry;
   const dims = { x: size.x, y: size.y, z: size.z };
@@ -464,7 +397,7 @@ export function scaleBoxUV(geometry, size, tile = PIXEL_TILE) {
 }
 
 /** Même mise à l'échelle pour un PlaneGeometry (largeur × hauteur). */
-export function scalePlaneUV(geometry, width, height, tile = PIXEL_TILE) {
+export function scalePlaneUV(geometry, width, height, tile = SURFACE_TILE) {
   const uv = geometry.attributes.uv;
   if (!uv) return geometry;
   const su = Math.max(1e-3, width / tile);
@@ -541,6 +474,7 @@ export function makeFloor(size = 44) {
  */
 export function makeWalls(half = 17, height = 3.4, thickness = 1) {
   const group = new THREE.Group();
+  group.name = 'camp-wall-ring';
   const blockers = [];
   const colliders = [];
   const { map, normalMap } = masonryMaps(6);
@@ -644,26 +578,24 @@ export function makeWalls(half = 17, height = 3.4, thickness = 1) {
   addWall(-half, 0, t, half * 2 - t, 'z', +1);   // ouest
   addWall(half, 0, t, half * 2 - t, 'z', -1);    // est
 
-  // ── Porte nord : arc de pierre + herses ferrées (visual only)
-  const archBig = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.26, 10, 26, Math.PI), stoneMat);
+  // ── Porte nord : arcade OUVERTE. La herse et le linteau cubique ont été
+  // retirés : ils ne faisaient pas partie des colliders du passage et se
+  // lisaient comme une plaque noire traversable au portail de la cour.
+  const gateMat = animeMaterial('stone', {
+    color: 0xb9c5e4,
+    emissive: 0x10182a,
+    emissiveIntensity: 0.24,
+    tile: 1.8,
+  });
+  const archBig = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.22, 10, 26, Math.PI), gateMat);
+  archBig.name = 'camp-gate-open-arch';
   archBig.position.set(0, 2.1, -half + 0.55);
   track(archBig);
   for (const side of [-1, 1]) {
-    const jamb = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 2.1, 12), stoneMat);
-    jamb.position.set(side * 2.05, 1.05, -half + 0.55);
+    const jamb = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 2.1, 12), gateMat);
+    jamb.name = side < 0 ? 'camp-gate-left-jamb' : 'camp-gate-right-jamb';
+    jamb.position.set(side * 2.12, 1.05, -half + 0.55);
     track(jamb);
-  }
-  // Linteau : masse de pierre au-dessus de l'ouverture (la voie est libre).
-  const lintel = new THREE.Mesh(cube, trimMat);
-  lintel.scale.set(gh * 2 + 0.7, 0.7, t + 0.3);
-  lintel.position.set(0, height - 0.35, -half);
-  track(lintel);
-  // Herse relevée : barres pendantes au ras du linteau.
-  for (let i = 0; i < 7; i++) {
-    const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.5, 6), mat(0x0e0f13, { metalness: 0.8, roughness: 0.4 }));
-    tooth.rotation.x = Math.PI;
-    tooth.position.set(-1.44 + i * 0.48, height - 0.95, -half + 0.06);
-    group.add(tooth);
   }
 
   // ── Tours d'angle : cylindres ronds + toits en cône + machicolations
@@ -708,9 +640,9 @@ export function makePillar(x, z, broken = false) {
   // Pierre taillée texturée : la version unie (SOULS_PALETTE.stone, albedo
   // 0.055) faisait des colonnes de la nef six fois plus sombres que les
   // murs — huit « murs noirs » de 9 m le long de l'allée du trône.
-  const stoneMat = pixelMaterial('brick', { color: 0x9a97a8, tile: 1.6 });
-  const fluteMat = mat(0x8d8b9a, { roughness: 0.85 });
-  const trimMat = pixelMaterial('cobble', { color: 0x8f8d9c, tile: 1.1 });
+  const stoneMat = animeMaterial('stone', { color: 0xb5b8df, tile: 1.9 });
+  const fluteMat = new THREE.MeshToonMaterial({ color: 0x9da6d4, gradientMap: animeGradient() });
+  const trimMat = animeMaterial('slate', { color: 0xa7abd6, tile: 1.4 });
 
   const shaftPoints = [];
   const shaftTop = broken ? 1.6 : 2.7;
@@ -1055,8 +987,7 @@ export function makeMoon() {
  * autour des sources (feu, braseros). `update(timeMs)` à appeler chaque
  * frame depuis soulsWorld.
  */
-export function makeAshField(sources) {
-  const count = 110;
+export function makeAshField(sources, count = 56) {
   const positions = new Float32Array(count * 3);
   const seeds = [];
   for (let i = 0; i < count; i++) {
@@ -1110,19 +1041,13 @@ export function makeAshField(sources) {
 // (contrat SoulsWorld.jsx) : body > { hips > jambes/genoux ; torso >
 // bras/coudes, tête, cape, arme }.
 
-/** Lathe helper : points [rayon, y] + aplatissement avant/arrière. */
+/** Lathe helper : profil réellement tourné + aplatissement avant/arrière. */
 function lathe(points, material, zScale = 1) {
-  // Style Mirage : boîte englobant le profil — mêmes extents que le
-  // tour, hiérarchie et pivots du rig strictement identiques.
-  let maxR = 0, minY = Infinity, maxY = -Infinity;
-  for (const [r, y] of points) {
-    maxR = Math.max(maxR, r);
-    minY = Math.min(minY, y);
-    maxY = Math.max(maxY, y);
-  }
-  const mesh = new THREE.Mesh(cube, material);
-  mesh.scale.set(maxR * 2, maxY - minY, maxR * 2 * zScale);
-  mesh.position.y = (minY + maxY) / 2;
+  // Le rig garde ses pivots, mais les muscles et armures ont enfin une
+  // silhouette organique au lieu d'une boîte englobante.
+  const profile = points.map(([r, y]) => new THREE.Vector2(r, y));
+  const mesh = new THREE.Mesh(new THREE.LatheGeometry(profile, 18), material);
+  mesh.scale.z = zScale;
   return mesh;
 }
 
@@ -1261,39 +1186,37 @@ export function makeKnight({ fallen = false } = {}) {
   const body = new THREE.Group();
   knight.add(body);
 
-  // ── Style Mirage : aplats MeshStandard, couleurs solides, aucune
-  // carte procédurale — tout le corps est bâti en blocs. ─────────────
-  const skin = mat(fallen ? 0x97908a : 0xb58a6c, { roughness: 0.88, flatShading: true });
-  const skinDark = mat(0x99714f, { roughness: 0.8, flatShading: true });
-  const hairMat = mat(fallen ? 0x8f897d : 0x2b1f18, { roughness: 0.92, flatShading: true });
+  // ── Gardes ennemis : formes douces et silhouettes low-poly, cohérentes
+  // avec la direction anime du monde. ───────────────────────────────
+  const skin = mat(fallen ? 0x97908a : 0xb58a6c, { roughness: 0.88, flatShading: false });
+  const skinDark = mat(0x99714f, { roughness: 0.8, flatShading: false });
+  const hairMat = mat(fallen ? 0x8f897d : 0x2b1f18, { roughness: 0.92, flatShading: false });
   const eyeMat = fallen
     ? new THREE.MeshStandardMaterial({
       color: 0x2a0d04, emissive: 0xff5a1e, emissiveIntensity: 2.4, roughness: 0.4,
     })
-    : mat(0x17130f, { roughness: 0.35, flatShading: true });
-  const lipMat = mat(0x96635a, { roughness: 0.72, flatShading: true });
-  const trousers = mat(0x3a352f, { roughness: 1, flatShading: true });
-  const leatherMat = mat(SOULS_PALETTE.leather, { roughness: 1, flatShading: true });
-  const furMat = mat(SOULS_PALETTE.fur, { roughness: 1, flatShading: true });
-  const furTip = mat(SOULS_PALETTE.furLight, { roughness: 1, flatShading: true });
-  const boneMat = mat(SOULS_PALETTE.bone, { roughness: 0.55, flatShading: true });
-  const trimMat = mat(fallen ? 0x6f6a5c : SOULS_PALETTE.trim, { metalness: 0.85, roughness: fallen ? 0.45 : 0.26, flatShading: true });
+    : mat(0x17130f, { roughness: 0.35, flatShading: false });
+  const lipMat = mat(0x96635a, { roughness: 0.72, flatShading: false });
+  const trousers = mat(0x3a352f, { roughness: 1, flatShading: false });
+  const leatherMat = mat(SOULS_PALETTE.leather, { roughness: 1, flatShading: false });
+  const furMat = mat(SOULS_PALETTE.fur, { roughness: 1, flatShading: false });
+  const furTip = mat(SOULS_PALETTE.furLight, { roughness: 1, flatShading: false });
+  const boneMat = mat(SOULS_PALETTE.bone, { roughness: 0.55, flatShading: false });
+  const trimMat = mat(fallen ? 0x6f6a5c : SOULS_PALETTE.trim, { metalness: 0.85, roughness: fallen ? 0.45 : 0.26, flatShading: false });
   const clothMat = mat(fallen ? 0x3f1d20 : SOULS_PALETTE.cloth, {
-    roughness: 1, flatShading: true, side: THREE.DoubleSide,
+    roughness: 1, flatShading: false, side: THREE.DoubleSide,
   });
 
-  // Blobs cubiques : demi-étendues identiques aux sphères/capsules
-  // d'origine (positions et Box3 inchangés).
+  // Volumes lissés, assez d'arêtes pour une lecture anime nette : les
+  // gardes conservent le même rig mais quittent eux aussi les blocs empilés.
   const sphere = (r, material, sx = 1, sy = 1, sz = 1) => {
-    const mesh = new THREE.Mesh(cube, material);
-    mesh.scale.set(r * 2 * sx, r * 2 * sy, r * 2 * sz);
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), material);
+    mesh.scale.set(sx, sy, sz);
     return mesh;
   };
-  const capsule = (r, len, material) => {
-    const mesh = new THREE.Mesh(cube, material);
-    mesh.scale.set(r * 2, len + r * 2, r * 2);
-    return mesh;
-  };
+  const capsule = (r, len, material) => (
+    new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 6, 12), material)
+  );
 
   // ══ HIPS — bassin, ceinture, pattes de pagnes ======================
   const hips = new THREE.Group();
@@ -1579,7 +1502,7 @@ export function makeKnight({ fallen = false } = {}) {
 
   // ─ grande épée au dos (parts.weapon — remise en main dès M1)
   const weapon = new THREE.Group();
-  const steelMat = mat(0x9aa2b8, { metalness: 0.85, roughness: 0.38, flatShading: true });
+  const steelMat = mat(0x9aa2b8, { metalness: 0.85, roughness: 0.38, flatShading: false });
   const edgeMat = mat(0xd3dae8, { metalness: 0.95, roughness: 0.14 });
   const blade = new THREE.Mesh(cube, steelMat);
   blade.scale.set(0.12, 1.28, 0.038);
@@ -1651,41 +1574,595 @@ export function makeKnight({ fallen = false } = {}) {
   return knight;
 }
 
+// ── Guerriers insectes : héros, gardes corrompus et Roi Chitine ─────
+// Le contrôleur de combat utilise le même contrat de rig pour tous les
+// guerriers : seules la palette et la stature changent entre le héros, les
+// sentinelles déchues et le boss. Les ennemis ne sont donc plus humanoïdes.
+export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
+  const variant = boss ? 'royal' : corrupted ? 'corrupt' : 'guardian';
+  const palette = boss
+    ? {
+      surface: 'royalChitin', chitinTint: 0xffffff, dark: 0x170b29, light: 0xdf76dc, lightEmissive: 0x55145c,
+      gold: 0xe4aa63, cloth: 0x7c264d, eye: 0xff72c1, eyeEmissive: 0xff1b75,
+      blade: 0xe2b8ff, bladeEmissive: 0x852bb2, edge: 0xffe7ff, edgeEmissive: 0xd675e8,
+      wing: 0xc268bd, wingEmissive: 0x45104f, vein: 0xffb1e3, wingOpacity: 0.36,
+      identity: 'ROI CHITINE DE CENDRE',
+    }
+    : corrupted
+      ? {
+        surface: 'corruptChitin', chitinTint: 0xffffff, dark: 0x170a17, light: 0xd95272, lightEmissive: 0x571021,
+        gold: 0xa96575, cloth: 0x612338, eye: 0xff576b, eyeEmissive: 0xdb1028,
+        blade: 0xc46f91, bladeEmissive: 0x621431, edge: 0xffbfd1, edgeEmissive: 0x9a294f,
+        wing: 0x87405f, wingEmissive: 0x300a1a, vein: 0xff849f, wingOpacity: 0.29,
+        identity: 'GUERRIER INSECTE DÉCHU',
+      }
+      : {
+        surface: 'chitin', chitinTint: 0x377f91, dark: 0x17344f, light: 0x69d7d5, lightEmissive: 0x155b70,
+        gold: 0xe0aa59, cloth: 0xb14c82, eye: 0xffc45e, eyeEmissive: 0xff9a24,
+        blade: 0x93f3f0, bladeEmissive: 0x1d8aab, edge: 0xe8fbff, edgeEmissive: 0x62d6ed,
+        wing: 0x8fe7f2, wingEmissive: 0x3557a5, vein: 0xb5eefd, wingOpacity: 0.44,
+        identity: 'GUERRIER INSECTE · GARDIEN CHITINE',
+      };
+  const warrior = new THREE.Group();
+  warrior.name = boss ? 'roi-chitine' : corrupted ? 'guerrier-insecte-dechu' : 'gardien-chitine';
+  const body = new THREE.Group();
+  body.name = `${warrior.name}-body`;
+  warrior.add(body);
+
+  const toon = (color, opts = {}) => new THREE.MeshToonMaterial({
+    color,
+    gradientMap: animeGradient(),
+    ...opts,
+  });
+  const chitin = animeMaterial(palette.surface, { color: palette.chitinTint, tile: 0.9 });
+  const chitinDark = toon(palette.dark, { emissive: palette.dark, emissiveIntensity: corrupted || boss ? 0.46 : 0.35 });
+  const chitinLight = toon(palette.light, { emissive: palette.lightEmissive, emissiveIntensity: corrupted || boss ? 0.76 : 0.52 });
+  const gold = toon(palette.gold, { emissive: boss ? 0x5e2c13 : 0x4d2b0d, emissiveIntensity: 0.5 });
+  const cloth = animeMaterial('cloth', { color: palette.cloth, tile: 0.95, side: THREE.DoubleSide });
+  const eyeGlow = new THREE.MeshStandardMaterial({
+    color: palette.eye, emissive: palette.eyeEmissive, emissiveIntensity: boss ? 4.1 : 3.25,
+    roughness: 0.22, metalness: 0.25,
+  });
+  const bladeMat = new THREE.MeshStandardMaterial({
+    color: palette.blade, emissive: palette.bladeEmissive, emissiveIntensity: boss ? 1.15 : 0.86,
+    metalness: 0.68, roughness: 0.17,
+  });
+  const edgeMat = new THREE.MeshStandardMaterial({
+    color: palette.edge, emissive: palette.edgeEmissive, emissiveIntensity: 0.62,
+    metalness: 0.8, roughness: 0.1,
+  });
+  // Même lueur que les yeux et les ailes, appliquée aux gravures de l'armure
+  // et de l'épée : un accent anime lumineux sans aplatir le volume des pièces.
+  const runeGlowBase = boss ? 2.15 : corrupted ? 1.72 : 1.46;
+  const runeGlow = new THREE.MeshStandardMaterial({
+    color: palette.edge, emissive: palette.edgeEmissive,
+    emissiveIntensity: runeGlowBase,
+    metalness: 0.46, roughness: 0.16, side: THREE.DoubleSide,
+  });
+  runeGlow.userData.baseEmissiveIntensity = runeGlowBase;
+  const wingMat = new THREE.MeshPhysicalMaterial({
+    color: palette.wing, emissive: palette.wingEmissive, emissiveIntensity: boss ? 0.68 : 0.42,
+    roughness: 0.16, metalness: 0.05, transmission: 0.08,
+    transparent: true, opacity: palette.wingOpacity, side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const veinMat = new THREE.MeshBasicMaterial({
+    color: palette.vein, transparent: true, opacity: corrupted || boss ? 0.82 : 0.74,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+  });
+  const ellipsoid = (r, material, sx = 1, sy = 1, sz = 1, segments = 18) => {
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, segments, Math.max(10, Math.round(segments * 0.72))), material);
+    mesh.scale.set(sx, sy, sz);
+    return mesh;
+  };
+  const capsule = (r, length, material) => (
+    new THREE.Mesh(new THREE.CapsuleGeometry(r, length, 6, 14), material)
+  );
+  const ring = (r, tube, material) => {
+    const mesh = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 8, 20), material);
+    mesh.rotation.x = Math.PI / 2;
+    return mesh;
+  };
+  const armorPlate = (points, material, depth = 0.028) => {
+    const shape = new THREE.Shape();
+    shape.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) shape.lineTo(points[i][0], points[i][1]);
+    shape.closePath();
+    const geometry = new THREE.ExtrudeGeometry(shape, {
+      depth, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.006, bevelThickness: 0.006,
+    });
+    geometry.translate(0, 0, -depth * 0.5);
+    return new THREE.Mesh(geometry, material);
+  };
+
+  // ══ Bassin + pattes articulées =====================================
+  const hips = new THREE.Group();
+  hips.name = 'insect-hips';
+  body.add(hips);
+  const pelvis = ellipsoid(0.17, chitinDark, 1.2, 0.72, 0.9);
+  pelvis.position.y = 0.89;
+  const waistRing = ring(0.18, 0.022, gold);
+  waistRing.position.y = 0.94;
+  const abdomen = ellipsoid(0.16, chitin, 0.94, 1.1, 0.82);
+  abdomen.position.set(0, 0.75, 0.105);
+  hips.add(pelvis, waistRing, abdomen);
+  for (let i = 0; i < 3; i++) {
+    const band = ring(0.155 - i * 0.011, 0.012, i === 1 ? chitinLight : gold);
+    band.position.set(0, 0.84 - i * 0.105, 0.11 + i * 0.012);
+    band.scale.z = 0.82;
+    hips.add(band);
+  }
+  // Trois faulds superposés donnent au bassin une silhouette de chevalier
+  // insecte plutôt qu'une simple boule abdominale. Ils suivent le torse via
+  // le groupe du bassin, sans gêner les articulations de jambe.
+  const faulds = new THREE.Group();
+  faulds.name = 'layered-chitin-faulds';
+  for (const [index, x] of [-0.11, 0, 0.11].entries()) {
+    const fauld = armorPlate([
+      [-0.072, 0.075], [-0.103, -0.095], [0, -0.19], [0.103, -0.095], [0.072, 0.075], [0, 0.122],
+    ], index === 1 ? chitinLight : chitinDark, 0.032);
+    fauld.position.set(x, 0.93 - (index === 1 ? 0.008 : 0), -0.145);
+    fauld.rotation.z = index === 0 ? -0.10 : index === 2 ? 0.10 : 0;
+    faulds.add(fauld);
+  }
+  const fauldSeal = new THREE.Mesh(new THREE.OctahedronGeometry(0.033, 0), runeGlow);
+  fauldSeal.name = 'fauld-rune-seal';
+  fauldSeal.scale.z = 0.42;
+  fauldSeal.position.set(0, 0.895, -0.171);
+  faulds.add(fauldSeal);
+  hips.add(faulds);
+
+  const makeLeg = (side) => {
+    const leg = new THREE.Group();
+    leg.name = side < 0 ? 'insect-leg-left' : 'insect-leg-right';
+    leg.position.set(side * 0.118, 0.88, 0);
+    const upper = capsule(0.077, 0.23, chitin);
+    upper.position.y = -0.16;
+    const upperPlate = ellipsoid(0.092, chitinLight, 0.9, 1.15, 0.54);
+    upperPlate.position.set(0, -0.13, -0.065);
+    const upperBand = ring(0.078, 0.012, gold);
+    upperBand.position.y = -0.31;
+    leg.add(upper, upperPlate, upperBand);
+
+    const knee = new THREE.Group();
+    knee.position.y = -0.4;
+    const joint = ellipsoid(0.082, chitinDark, 1, 0.92, 1.05);
+    const kneeBlade = new THREE.Mesh(new THREE.ConeGeometry(0.056, 0.17, 8), chitinLight);
+    kneeBlade.rotation.x = Math.PI / 2;
+    kneeBlade.position.set(0, 0.012, -0.102);
+    const shin = capsule(0.061, 0.25, chitin);
+    shin.position.y = -0.18;
+    const shinPlate = ellipsoid(0.071, chitinLight, 0.78, 1.45, 0.44);
+    shinPlate.position.set(0, -0.19, -0.052);
+    const ankleBand = ring(0.063, 0.01, gold);
+    ankleBand.position.y = -0.335;
+
+    const foot = new THREE.Group();
+    foot.position.y = -0.4;
+    const heel = ellipsoid(0.062, chitinDark, 0.95, 0.72, 1.12);
+    heel.position.set(0, -0.012, 0.018);
+    const toeCore = ellipsoid(0.058, chitin, 0.82, 0.58, 1.6);
+    toeCore.position.set(0, -0.038, -0.09);
+    foot.add(heel, toeCore);
+    for (const offset of [-0.033, 0.033]) {
+      const claw = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.13, 6), gold);
+      claw.rotation.x = -Math.PI / 2;
+      claw.position.set(offset, -0.049, -0.185);
+      foot.add(claw);
+    }
+    knee.add(joint, kneeBlade, shin, shinPlate, ankleBand, foot);
+    leg.add(knee);
+    return { leg, knee, foot };
+  };
+  const legL = makeLeg(-1);
+  const legR = makeLeg(1);
+  hips.add(legL.leg, legR.leg);
+
+  // ══ Thorax caréné + plaques de scarabée ============================
+  const torso = new THREE.Group();
+  torso.name = 'insect-thorax';
+  torso.position.y = TORSO_Y;
+  body.add(torso);
+  const W = (y) => y - TORSO_Y;
+  const thorax = ellipsoid(0.235, chitin, 1.0, 1.34, 0.78, 22);
+  thorax.position.set(0, W(1.22), 0.005);
+  const backShell = ellipsoid(0.215, chitinDark, 1.03, 1.1, 0.47, 20);
+  backShell.position.set(0, W(1.24), 0.115);
+  torso.add(thorax, backShell);
+  for (let i = 0; i < 4; i++) {
+    const plate = ellipsoid(0.155 - i * 0.008, i % 2 ? chitinLight : chitinDark, 1.0, 0.48, 0.3);
+    plate.position.set(0, W(1.06 + i * 0.097), -0.166 - i * 0.003);
+    plate.rotation.x = -0.08 + i * 0.045;
+    torso.add(plate);
+  }
+  // Cuirasse anime en couches : une coque sombre, un plastron turquoise
+  // enchâssé et un sceau lumineux. Elle donne un vrai point focal au torse
+  // sans masquer la poignée centrale de l'épée.
+  const cuirass = armorPlate([
+    [-0.16, 0.22], [-0.225, 0.10], [-0.188, -0.17], [-0.085, -0.28],
+    [0, -0.33], [0.085, -0.28], [0.188, -0.17], [0.225, 0.10], [0.16, 0.22], [0, 0.275],
+  ], chitinDark, 0.042);
+  cuirass.name = 'guardian-cuirass';
+  cuirass.position.set(0, W(1.25), -0.194);
+  const cuirassInlay = armorPlate([
+    [-0.105, 0.165], [-0.145, 0.075], [-0.108, -0.105], [0, -0.205],
+    [0.108, -0.105], [0.145, 0.075], [0.105, 0.165], [0, 0.215],
+  ], chitinLight, 0.024);
+  cuirassInlay.name = 'guardian-cuirass-inlay';
+  cuirassInlay.position.set(0, W(1.255), -0.223);
+  const chestSeal = new THREE.Mesh(new THREE.OctahedronGeometry(0.047, 0), runeGlow);
+  chestSeal.name = 'guardian-chest-rune';
+  chestSeal.scale.set(0.78, 1.25, 0.38);
+  chestSeal.position.set(0, W(1.25), -0.242);
+  const chestRim = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.009, 6, 16), gold);
+  chestRim.scale.set(1.06, 1.32, 1);
+  chestRim.position.set(0, W(1.25), -0.232);
+  torso.add(cuirass, cuirassInlay, chestSeal, chestRim);
+
+  // Carapace dorsale en écailles : depuis la caméra de poursuite, ce dos
+  // articulé et sa ligne de runes lisent immédiatement comme une armure.
+  const dorsalCarapace = new THREE.Group();
+  dorsalCarapace.name = 'dorsal-chitin-carapace';
+  for (let i = 0; i < 4; i++) {
+    const dorsalScale = ellipsoid(0.105 - i * 0.007, i % 2 ? chitinLight : chitinDark, 1.05, 0.62, 0.48, 16);
+    dorsalScale.position.set(0, W(1.06 + i * 0.105), 0.195 + i * 0.006);
+    dorsalScale.rotation.x = 0.08 - i * 0.025;
+    const dorsalRune = new THREE.Mesh(new THREE.OctahedronGeometry(0.019 + i * 0.002, 0), runeGlow);
+    dorsalRune.scale.z = 0.48;
+    dorsalRune.position.set(0, W(1.06 + i * 0.105), 0.254 + i * 0.006);
+    dorsalCarapace.add(dorsalScale, dorsalRune);
+  }
+  const dorsalFin = new THREE.Mesh(new THREE.ConeGeometry(0.052, 0.17, 6), gold);
+  dorsalFin.rotation.x = Math.PI / 2;
+  dorsalFin.position.set(0, W(1.29), 0.285);
+  dorsalCarapace.add(dorsalFin);
+  torso.add(dorsalCarapace);
+
+  const crest = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.2, 8), gold);
+  crest.position.set(0, W(1.42), -0.04);
+  torso.add(crest);
+  for (const side of [-1, 1]) {
+    const shoulderShell = ellipsoid(0.125, chitinLight, 1.32, 0.58, 1.0);
+    shoulderShell.position.set(side * 0.205, W(1.39), 0.005);
+    const pauldron = ellipsoid(0.13, chitinDark, 1.48, 0.68, 1.1);
+    pauldron.name = side < 0 ? 'left-layered-pauldron' : 'right-layered-pauldron';
+    pauldron.position.set(side * 0.245, W(1.405), -0.004);
+    pauldron.rotation.z = -side * 0.13;
+    const pauldronRidge = ellipsoid(0.084, chitinLight, 1.32, 0.42, 0.58, 14);
+    pauldronRidge.position.set(side * 0.255, W(1.415), -0.105);
+    pauldronRidge.rotation.z = -side * 0.16;
+    const pauldronSpike = new THREE.Mesh(new THREE.ConeGeometry(0.046, 0.17, 6), gold);
+    pauldronSpike.rotation.z = -side * Math.PI / 2;
+    pauldronSpike.position.set(side * 0.355, W(1.405), -0.005);
+    const pauldronRune = new THREE.Mesh(new THREE.OctahedronGeometry(0.025, 0), runeGlow);
+    pauldronRune.scale.z = 0.42;
+    pauldronRune.position.set(side * 0.257, W(1.415), -0.157);
+    torso.add(shoulderShell, pauldron, pauldronRidge, pauldronSpike, pauldronRune);
+  }
+
+  // ══ Bras segmentés, griffes et bracelets d'or ======================
+  const makeArm = (side) => {
+    const arm = new THREE.Group();
+    arm.name = side < 0 ? 'insect-arm-left' : 'insect-arm-right';
+    arm.position.set(side * 0.225, W(1.4), 0);
+    const upper = capsule(0.064, 0.2, chitin);
+    upper.position.y = -0.145;
+    const shoulder = ellipsoid(0.095, chitinLight, 1.08, 0.84, 0.92);
+    shoulder.position.y = 0.008;
+    const upperBand = ring(0.067, 0.011, gold);
+    upperBand.position.y = -0.26;
+    const upperGuard = ellipsoid(0.075, chitinDark, 0.94, 1.55, 0.52, 14);
+    upperGuard.position.set(0, -0.145, -0.068);
+    const upperGlyph = new THREE.Mesh(new THREE.OctahedronGeometry(0.021, 0), runeGlow);
+    upperGlyph.scale.z = 0.35;
+    upperGlyph.position.set(0, -0.13, -0.122);
+    arm.add(upper, shoulder, upperBand, upperGuard, upperGlyph);
+    const elbow = new THREE.Group();
+    elbow.position.y = -0.31;
+    const joint = ellipsoid(0.065, chitinDark, 1, 1, 1.04);
+    const forearm = capsule(0.052, 0.18, chitin);
+    forearm.position.y = -0.14;
+    const forePlate = ellipsoid(0.064, chitinLight, 0.8, 1.25, 0.52);
+    forePlate.position.set(0, -0.14, -0.047);
+    const wristBand = ring(0.053, 0.009, gold);
+    wristBand.position.y = -0.255;
+    const bracer = ellipsoid(0.068, chitinDark, 0.92, 1.62, 0.58, 14);
+    bracer.position.set(0, -0.142, -0.064);
+    const bracerRidge = ellipsoid(0.037, chitinLight, 0.68, 1.72, 0.38, 12);
+    bracerRidge.position.set(0, -0.142, -0.115);
+    const elbowFin = new THREE.Mesh(new THREE.ConeGeometry(0.032, 0.11, 6), gold);
+    elbowFin.rotation.x = -Math.PI / 2;
+    elbowFin.position.set(0, 0.005, -0.108);
+    const palm = ellipsoid(0.052, chitinDark, 0.94, 1.12, 0.82);
+    palm.position.y = -0.3;
+    elbow.add(joint, forearm, forePlate, wristBand, bracer, bracerRidge, elbowFin, palm);
+    for (let i = 0; i < 3; i++) {
+      const claw = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.068, 5), gold);
+      claw.rotation.x = -Math.PI / 2;
+      claw.position.set((i - 1) * 0.022, -0.315, -0.056);
+      elbow.add(claw);
+    }
+    arm.add(elbow);
+    return { arm, elbow };
+  };
+  const armL = makeArm(-1);
+  const armR = makeArm(1);
+  torso.add(armL.arm, armR.arm);
+
+  // ══ Masque d'insecte, yeux composés et antennes ====================
+  const head = new THREE.Group();
+  head.name = 'insect-mask';
+  head.position.y = W(1.46);
+  const neck = capsule(0.075, 0.075, chitinDark);
+  neck.position.y = 0.025;
+  const helmet = ellipsoid(0.17, chitin, 0.91, 1.08, 0.94, 22);
+  helmet.position.set(0, 0.145, 0.006);
+  const facePlate = ellipsoid(0.125, chitinDark, 0.94, 1.04, 0.3);
+  facePlate.position.set(0, 0.115, -0.132);
+  const mandible = new THREE.Mesh(new THREE.ConeGeometry(0.058, 0.15, 6), gold);
+  mandible.rotation.x = Math.PI / 2;
+  mandible.position.set(0, 0.055, -0.17);
+  const crown = new THREE.Mesh(new THREE.ConeGeometry(0.072, 0.19, 7), chitinLight);
+  crown.position.set(0, 0.31, -0.005);
+  const brow = ellipsoid(0.105, chitinDark, 1.18, 0.34, 0.32, 16);
+  brow.position.set(0, 0.235, -0.148);
+  const browGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.028, 0), runeGlow);
+  browGem.scale.z = 0.35;
+  browGem.position.set(0, 0.228, -0.177);
+  head.add(neck, helmet, facePlate, mandible, crown, brow, browGem);
+  for (const side of [-1, 1]) {
+    const cheekPlate = ellipsoid(0.07, chitinLight, 0.62, 1.2, 0.4, 14);
+    cheekPlate.position.set(side * 0.11, 0.072, -0.155);
+    cheekPlate.rotation.z = -side * 0.27;
+    head.add(cheekPlate);
+  }
+
+  // `visor` reste la collection d'yeux attendue par l'animation de clignement.
+  const visor = new THREE.Group();
+  visor.name = 'compound-eyes';
+  for (const side of [-1, 1]) {
+    const eyePivot = new THREE.Group();
+    eyePivot.position.set(side * 0.071, 0.15, -0.154);
+    eyePivot.rotation.y = side * 0.35;
+    const eye = ellipsoid(0.062, eyeGlow, 0.72, 1.16, 0.28, 16);
+    const highlight = ellipsoid(0.017, new THREE.MeshBasicMaterial({ color: corrupted || boss ? 0xffc0e2 : 0xfff2be }), 1, 1, 0.2, 10);
+    highlight.position.set(side * 0.011, 0.025, -0.018);
+    eyePivot.add(eye, highlight);
+    visor.add(eyePivot);
+  }
+  head.add(visor);
+
+  const strands = [];
+  for (const side of [-1, 1]) {
+    const antenna = new THREE.Group();
+    antenna.name = side < 0 ? 'antenna-left' : 'antenna-right';
+    antenna.position.set(side * 0.075, 0.27, -0.065);
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(side * 0.045, 0.10, -0.055),
+      new THREE.Vector3(side * 0.12, 0.22, -0.13),
+      new THREE.Vector3(side * 0.18, 0.32, -0.08),
+    ]);
+    const stalk = new THREE.Mesh(new THREE.TubeGeometry(curve, 18, 0.011, 6, false), gold);
+    const tip = ellipsoid(0.024, eyeGlow, 0.8, 1.25, 0.8, 10);
+    tip.position.set(side * 0.18, 0.32, -0.08);
+    antenna.add(stalk, tip);
+    head.add(antenna);
+    strands.push(antenna);
+  }
+  torso.add(head);
+
+  // ══ Ailes irisées — elles sont pilotées par le même mouvement secondaire
+  // que l'ancienne cape : course et roulade les font vibrer légèrement. ══
+  const cape = new THREE.Group();
+  cape.name = 'iridescent-wings';
+  cape.position.set(0, W(1.39), 0.125);
+  const makeWing = (side) => {
+    const wing = new THREE.Group();
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0);
+    shape.quadraticCurveTo(side * 0.26, 0.04, side * 0.6, 0.42);
+    shape.quadraticCurveTo(side * 0.85, 0.74, side * 0.69, 1.08);
+    shape.quadraticCurveTo(side * 0.34, 0.93, side * 0.08, 0.28);
+    shape.quadraticCurveTo(side * 0.02, 0.12, 0, 0);
+    const membrane = new THREE.Mesh(new THREE.ShapeGeometry(shape, 14), wingMat);
+    membrane.renderOrder = 2;
+    wing.add(membrane);
+    const veins = [
+      [new THREE.Vector3(0, 0.02, 0.008), new THREE.Vector3(side * 0.29, 0.33, 0.011), new THREE.Vector3(side * 0.64, 0.88, 0.007)],
+      [new THREE.Vector3(side * 0.12, 0.17, 0.012), new THREE.Vector3(side * 0.42, 0.28, 0.012), new THREE.Vector3(side * 0.68, 0.58, 0.009)],
+    ];
+    for (const points of veins) {
+      wing.add(new THREE.Mesh(
+        new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 12, 0.009, 4, false), veinMat,
+      ));
+    }
+    return wing;
+  };
+  const wingL = makeWing(-1);
+  const wingR = makeWing(1);
+  cape.add(wingL, wingR);
+  torso.add(cape);
+
+  // ══ Épée longue à deux mains — garde levée au centre du thorax ======
+  // Une vraie lame droite remplace l'arme d'hast : long pommeau, poignée assez
+  // grande pour les deux paumes et garde ailée de chitine. La géométrie de la
+  // lame est construite vers −Y puis retournée pour que la pointe reste levée.
+  const weaponMount = new THREE.Group();
+  weaponMount.name = 'raised-two-hand-sword-mount';
+  weaponMount.position.set(0, W(1.28), -0.29);
+  weaponMount.rotation.set(0.03, 0, 0.08);
+  torso.add(weaponMount);
+
+  const weapon = new THREE.Group();
+  weapon.name = 'two-handed-chitin-sword';
+  const swordBladeShape = new THREE.Shape();
+  swordBladeShape.moveTo(-0.105, -0.27);
+  swordBladeShape.lineTo(-0.145, -1.25);
+  swordBladeShape.lineTo(0, -1.54);
+  swordBladeShape.lineTo(0.145, -1.25);
+  swordBladeShape.lineTo(0.105, -0.27);
+  swordBladeShape.lineTo(0, -0.19);
+  swordBladeShape.closePath();
+  const swordBlade = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(swordBladeShape, {
+      depth: 0.052, bevelEnabled: true, bevelSegments: 2, bevelSize: 0.008, bevelThickness: 0.008,
+    }),
+    bladeMat,
+  );
+  swordBlade.name = 'two-handed-sword-blade';
+  swordBlade.position.z = -0.026;
+
+  // Un fuller lumineux encastré et une arête centrale donnent une lecture
+  // anime nette à la lame, même dans les zones sombres de La Cendre.
+  const fullerShape = new THREE.Shape();
+  fullerShape.moveTo(-0.026, -0.36);
+  fullerShape.lineTo(-0.04, -1.19);
+  fullerShape.lineTo(0, -1.39);
+  fullerShape.lineTo(0.04, -1.19);
+  fullerShape.lineTo(0.026, -0.36);
+  fullerShape.closePath();
+  const fuller = new THREE.Mesh(new THREE.ShapeGeometry(fullerShape), runeGlow);
+  fuller.name = 'sword-rune-channel';
+  fuller.position.z = -0.037;
+  // Une incrustation sur chaque face : la lame reste lisible depuis la caméra
+  // arrière comme depuis la face du personnage, sans triche de profondeur.
+  const fullerRear = fuller.clone();
+  fullerRear.name = 'sword-rune-channel-rear';
+  fullerRear.position.z = 0.037;
+  const bladeRidge = capsule(0.011, 0.94, edgeMat);
+  bladeRidge.position.set(0, -0.86, -0.047);
+  const bladeRidgeRear = bladeRidge.clone();
+  bladeRidgeRear.position.z = 0.047;
+  const swordRunes = new THREE.Group();
+  swordRunes.name = 'sword-rune-nodes';
+  for (const [index, y] of [-0.53, -0.80, -1.07].entries()) {
+    for (const z of [-0.062, 0.062]) {
+      const rune = new THREE.Mesh(new THREE.OctahedronGeometry(0.027 + index * 0.003, 0), runeGlow);
+      rune.position.set(0, y, z);
+      rune.scale.z = 0.38;
+      swordRunes.add(rune);
+    }
+  }
+
+  const guard = capsule(0.046, 0.48, gold);
+  guard.name = 'two-handed-sword-crossguard';
+  guard.rotation.z = Math.PI / 2;
+  guard.position.y = -0.27;
+  const guardCore = ellipsoid(0.074, chitinLight, 1.25, 0.54, 0.72, 14);
+  guardCore.position.y = -0.27;
+  const guardTipL = ellipsoid(0.058, gold, 1.25, 0.58, 0.8, 12);
+  guardTipL.position.set(-0.31, -0.27, 0);
+  const guardTipR = guardTipL.clone();
+  guardTipR.position.x = 0.31;
+  const guardFiligreeCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.34, -0.275, 0), new THREE.Vector3(-0.19, -0.205, -0.014),
+    new THREE.Vector3(0, -0.24, -0.028), new THREE.Vector3(0.19, -0.205, -0.014),
+    new THREE.Vector3(0.34, -0.275, 0),
+  ]);
+  const guardFiligree = new THREE.Mesh(
+    new THREE.TubeGeometry(guardFiligreeCurve, 18, 0.016, 6, false), chitinLight,
+  );
+  guardFiligree.name = 'sword-guard-filigree';
+  const guardGem = new THREE.Mesh(new THREE.OctahedronGeometry(0.039, 0), runeGlow);
+  guardGem.scale.z = 0.46;
+  guardGem.position.set(0, -0.272, -0.07);
+  const collar = ring(0.073, 0.011, gold);
+  collar.position.y = -0.16;
+
+  // Poignée longue, cerclée cinq fois : les deux repères de main restent
+  // exactement au centre de cette même poignée, jamais sur un décor latéral.
+  const hilt = capsule(0.048, 0.72, cloth);
+  hilt.name = 'two-handed-sword-long-hilt';
+  hilt.position.y = 0.19;
+  const gripBands = [-0.10, 0.06, 0.22, 0.38, 0.54].map((y, index) => {
+    const band = ring(0.057 + (index === 2 ? 0.006 : 0), 0.009, gold);
+    band.position.y = y;
+    return band;
+  });
+  const pommel = ellipsoid(0.082, gold, 0.92, 1.18, 0.82);
+  pommel.position.y = 0.65;
+  const pommelCrown = ellipsoid(0.054, chitinDark, 1.12, 0.55, 0.9, 12);
+  pommelCrown.position.y = 0.69;
+  const pommelGem = ellipsoid(0.034, runeGlow, 0.82, 1, 0.42, 10);
+  pommelGem.position.set(0, 0.65, -0.068);
+
+  // Repères invisibles pour les centres des deux vraies paumes. La rotation
+  // de π lève la pointe ; X est donc inversé pour conserver chaque main de
+  // son côté du corps dans la garde de repos.
+  const rightGrip = new THREE.Object3D();
+  rightGrip.name = 'sword-right-hand-grip';
+  rightGrip.position.set(-0.042, 0.30, 0.012);
+  const offhandGrip = new THREE.Object3D();
+  offhandGrip.name = 'sword-left-hand-grip';
+  offhandGrip.position.set(0.042, -0.06, 0.012);
+  weapon.add(swordBlade, fuller, fullerRear, bladeRidge, bladeRidgeRear, swordRunes,
+    guard, guardCore, guardTipL, guardTipR, guardFiligree, guardGem,
+    collar, hilt, ...gripBands, pommel, pommelCrown, pommelGem, rightGrip, offhandGrip);
+  weapon.scale.setScalar(0.85);
+  // π : la lame dessinée vers −Y devient une épée pointe vers le ciel.
+  weapon.rotation.set(0.06, 0, Math.PI + 0.04);
+  weapon.traverse((mesh) => { if (mesh.isMesh) mesh.userData.cameraBlocker = true; });
+  weaponMount.add(weapon);
+
+
+  // Pose neutre : conserve les valeurs attendues par SoulsWorld.
+  armL.elbow.rotation.x = 0.22;
+  armR.elbow.rotation.x = 0.22;
+  legL.knee.rotation.x = -0.05;
+  legR.knee.rotation.x = -0.05;
+
+  const potion = makePotionProp();
+  potion.position.set(0, -0.3, -0.06);
+  potion.visible = false;
+  armL.elbow.add(potion);
+
+  warrior.userData.identity = palette.identity;
+  warrior.userData.variant = variant;
+  warrior.userData.parts = {
+    body, hips, torso, head,
+    armL: armL.arm, armR: armR.arm, elbowL: armL.elbow, elbowR: armR.elbow,
+    legL: legL.leg, legR: legR.leg, kneeL: legL.knee, kneeR: legR.knee,
+    footL: legL.foot, footR: legR.foot,
+    cape, wings: [wingL, wingR], visor, weapon, weaponMount, rightGrip, offhandGrip,
+    runeGlow, strands, potion,
+  };
+  return warrior;
+}
+
 // ── Potion de vie (objet tenu en main) ──────────────────────────────
 
 /**
- * Fiole de verre au liquide rouge : corps cubique (esprit Minecraft),
- * goulot, bouchon de liège, lueur intérieure. `userData.liquid` permet
- * au monde de vider la fiole au fil de la gorgée.
+ * Fiole de nectar : verre rond, liquide incandescent et col cerclé d'or.
+ * `userData.liquid` garde le contrat utilisé par la gorgée dans SoulsWorld.
  */
 export function makePotionProp() {
   const group = new THREE.Group();
-  const glass = new THREE.MeshStandardMaterial({
-    color: 0xbfd4dd, roughness: 0.12, metalness: 0.05,
-    transparent: true, opacity: 0.42, flatShading: true,
+  const glass = new THREE.MeshPhysicalMaterial({
+    color: 0xbfe8ef, roughness: 0.08, metalness: 0.04,
+    transparent: true, opacity: 0.5, transmission: 0.06,
   });
   const liquid = new THREE.MeshStandardMaterial({
-    color: 0xb01d24, emissive: 0xff2f2a, emissiveIntensity: 1.5,
-    roughness: 0.35, flatShading: true,
+    color: 0xc9477d, emissive: 0xff4d9c, emissiveIntensity: 1.75,
+    roughness: 0.22, metalness: 0.05,
   });
-  const cork = mat(0x6b4a2a, { roughness: 1, flatShading: true });
-  const trim = mat(SOULS_PALETTE.trim, { metalness: 0.8, roughness: 0.3, flatShading: true });
+  const cork = new THREE.MeshToonMaterial({ color: 0x70495b, gradientMap: animeGradient() });
+  const trim = new THREE.MeshToonMaterial({ color: 0xe0aa59, gradientMap: animeGradient(), emissive: 0x5a3511, emissiveIntensity: 0.45 });
 
-  const body = new THREE.Mesh(cube, glass);
-  body.scale.set(0.075, 0.1, 0.075);
-  body.position.y = -0.05;
-  const fill = new THREE.Mesh(cube, liquid);
-  fill.scale.set(0.062, 0.072, 0.062);
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.078, 14, 10), glass);
+  body.scale.set(0.92, 1.22, 0.92);
+  body.position.y = -0.052;
+  // Le monde pilote `scale.y` directement avec une hauteur en mètres.
+  const fill = new THREE.Mesh(new THREE.CylinderGeometry(0.057, 0.057, 1, 12), liquid);
+  fill.scale.y = 0.072;
   fill.position.y = -0.062;
-  const neck = new THREE.Mesh(cube, glass);
-  neck.scale.set(0.032, 0.05, 0.032);
-  neck.position.y = 0.022;
-  const collar = new THREE.Mesh(cube, trim);
-  collar.scale.set(0.042, 0.012, 0.042);
-  collar.position.y = 0.045;
-  const stopper = new THREE.Mesh(cube, cork);
-  stopper.scale.set(0.034, 0.026, 0.034);
-  stopper.position.y = 0.06;
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.027, 0.034, 0.066, 12), glass);
+  neck.position.y = 0.025;
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.008, 6, 14), trim);
+  collar.rotation.x = Math.PI / 2;
+  collar.position.y = 0.051;
+  const stopper = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.029, 0.03, 10), cork);
+  stopper.position.y = 0.071;
   group.add(body, fill, neck, collar, stopper);
   group.userData.liquid = fill;
   group.userData.liquidHeight = 0.072;
@@ -1758,57 +2235,64 @@ function radialSpriteTexture(size, stops) {
 /**
  * Gerbe d'étincelles d'impact (additif, sans textures) — feedback de touche.
  */
-// ── Chemin du Roi : dalles de route — blocs Mirage ───────────────────
+// ── Chemin du Roi : dalles peintes à la main ─────────────────────────
 
-/** Dalles de chemin : pavés pixel + bordure de pierres (esprit Minecraft). */
-export function makeStonePath(points, { width = 2.4, step = 0.62 } = {}) {
+/** Ruban de pierre peint : lisible, affleurant et continu sur toute la route. */
+export function makeStonePath(points, { width = 2.4 } = {}) {
   const group = new THREE.Group();
-  const stone = pixelMaterial('cobble', { color: 0x8e8b9c, tile: 1.1 });
-  const dark = pixelMaterial('cobble', { color: 0x55535f, tile: 1.1 });
-  const edge = pixelMaterial('cobble', { color: 0x6b6878, tile: 0.8 });
-  let seed = 7;
-  const rnd = () => {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    return seed / 0x7fffffff;
+  if (!Array.isArray(points) || points.length < 2) return { group, blockers: [] };
+
+  // Le chemin reste un sol traversable, pas une suite de pavés épais. Les
+  // anciennes boîtes sombres dépassaient du terrain sans collider et se
+  // lisaient comme des plaques noires que le Gardien traversait.
+  const roadMat = animeMaterial('stone', {
+    color: 0xb9c5e1,
+    emissive: 0x10172a,
+    emissiveIntensity: 0.26,
+    tile: 1.6,
+    side: THREE.DoubleSide,
+  });
+  const half = width / 2;
+  const toPoint = ([x, z]) => new THREE.Vector2(x, z);
+  const path = points.map(toPoint);
+  const normalOf = (a, b) => {
+    const dx = b.x - a.x;
+    const dz = b.y - a.y;
+    const inv = 1 / Math.max(1e-6, Math.hypot(dx, dz));
+    return new THREE.Vector2(-dz * inv, dx * inv);
   };
-  const addSlab = (material, w, d, px, pz, yaw, y = 0.05) => {
-    const geo = scaleBoxUV(new THREE.BoxGeometry(w, 0.1, d), { x: w, y: 0.1, z: d }, material.userData.tile);
-    const slab = new THREE.Mesh(geo, material);
-    slab.position.set(px, y, pz);
-    slab.rotation.y = yaw;
-    slab.receiveShadow = true;
-    group.add(slab);
-    return slab;
-  };
-  for (let i = 0; i < points.length - 1; i++) {
-    const [x0, z0] = points[i];
-    const [x1, z1] = points[i + 1];
-    const dx = x1 - x0;
-    const dz = z1 - z0;
-    const len = Math.hypot(dx, dz);
-    const n = Math.max(1, Math.round(len / step));
-    const yaw = Math.atan2(-dx, -dz);
-    const nx = -dz / (len || 1);
-    const nz = dx / (len || 1);
-    for (let j = 0; j < n; j++) {
-      const u = (j + 0.5) / n;
-      const px = x0 + dx * u + (rnd() - 0.5) * 0.24;
-      const pz = z0 + dz * u + (rnd() - 0.5) * 0.16;
-      addSlab(
-        rnd() > 0.72 ? dark : stone,
-        width * (0.72 + rnd() * 0.4), (len / n) * (0.7 + rnd() * 0.3),
-        px, pz, yaw + (rnd() - 0.5) * 0.22,
-      );
-      // Bordure : pierres plus petites de part et d'autre (chemin lisible).
-      if (j % 2 === 0) {
-        for (const side of [-1, 1]) {
-          addSlab(edge, 0.36, 0.4,
-            px + nx * side * (width * 0.56), pz + nz * side * (width * 0.56),
-            yaw + rnd() * 0.7, 0.035);
-        }
-      }
-    }
+  const left = [];
+  const right = [];
+  for (let i = 0; i < path.length; i++) {
+    const prev = normalOf(path[Math.max(0, i - 1)], path[i]);
+    const next = normalOf(path[i], path[Math.min(path.length - 1, i + 1)]);
+    let normal = i === 0 ? next : i === path.length - 1 ? prev : prev.clone().add(next);
+    if (normal.lengthSq() < 1e-6) normal = next;
+    normal.normalize();
+    // Un léger miter garde la largeur visuelle dans les virages sans faire
+    // surgir de longues pointes aux jonctions du ruban.
+    const reference = i === 0 ? next : i === path.length - 1 ? prev : next;
+    const offset = Math.min(half * 1.35, half / Math.max(0.74, Math.abs(normal.dot(reference))));
+    left.push(path[i].clone().addScaledVector(normal, offset));
+    right.push(path[i].clone().addScaledVector(normal, -offset));
   }
+
+  const outline = new THREE.Shape();
+  outline.moveTo(left[0].x, left[0].y);
+  for (let i = 1; i < left.length; i++) outline.lineTo(left[i].x, left[i].y);
+  for (let i = right.length - 1; i >= 0; i--) outline.lineTo(right[i].x, right[i].y);
+  outline.closePath();
+
+  const geo = new THREE.ShapeGeometry(outline);
+  geo.rotateX(Math.PI / 2);
+  const ribbon = new THREE.Mesh(geo, roadMat);
+  ribbon.name = 'flush-stone-road';
+  // Quelques millimètres au-dessus du terrain : aucune épaisseur solide que
+  // le joueur pourrait traverser visuellement, et aucun z-fighting.
+  ribbon.position.y = 0.003;
+  ribbon.receiveShadow = true;
+  ribbon.userData.walkableSurface = true;
+  group.add(ribbon);
   return { group, blockers: [] };
 }
 
@@ -1874,10 +2358,10 @@ export function buildNightEnvironment(renderer) {
   canvas.height = 256;
   const ctx = canvas.getContext('2d');
   const grad = ctx.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#060810');
-  grad.addColorStop(0.5, '#111529');
-  grad.addColorStop(0.76, '#2a2c48');
-  grad.addColorStop(1, '#3b3140');
+  grad.addColorStop(0, '#040615');
+  grad.addColorStop(0.5, '#10152e');
+  grad.addColorStop(0.76, '#282746');
+  grad.addColorStop(1, '#472540');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 512, 256);
   const skyTex = new THREE.CanvasTexture(canvas);
@@ -1899,15 +2383,15 @@ export function buildNightEnvironment(renderer) {
     envScene.add(mesh);
     return mesh;
   };
-  glow([2.6, 2.9, 3.6], 3.2, -24, 26, -34);        // lune
-  glow([4.6, 2.0, 0.75], 1.15, 0, 1.5, 0);         // feu du camp
+  glow([1.25, 1.35, 3.15], 2.65, -24, 26, -34);    // lune froide, discrète
+  glow([3.8, 0.75, 1.55], 0.9, 0, 1.5, 0);          // feu du camp
   for (const [x, z] of [[-5.4, -3.8], [5.4, -3.8], [-5.4, 4.2], [5.4, 4.2]]) {
-    glow([3.4, 1.5, 0.6], 0.7, x, 1.6, z);         // braseros
+    glow([2.8, 0.48, 1.2], 0.58, x, 1.6, z);        // braseros rouge cendre
   }
 
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(40, 24),
-    new THREE.MeshBasicMaterial({ color: 0x0b0b12 }),
+    new THREE.MeshBasicMaterial({ color: 0x060713 }),
   );
   ground.rotation.x = -Math.PI / 2;
   envScene.add(ground);
@@ -1929,10 +2413,10 @@ export function makeSkyDome(radius = 140) {
     depthWrite: false,
     fog: false,
     uniforms: {
-      topColor: { value: new THREE.Color(0x07071a) },
-      midColor: { value: new THREE.Color(0x141a38) },
-      horizonColor: { value: new THREE.Color(0x2a2a4a) },
-      warmColor: { value: new THREE.Color(0x54303a) },
+      topColor: { value: new THREE.Color(0x030514) },
+      midColor: { value: new THREE.Color(0x0c1129) },
+      horizonColor: { value: new THREE.Color(0x272640) },
+      warmColor: { value: new THREE.Color(0x552149) },
       glowDir: { value: new THREE.Vector3(-0.45, 0.35, -0.72).normalize() },
     },
     vertexShader: /* glsl */`
@@ -1980,11 +2464,11 @@ export function makeStars(count = 460, radius = 132) {
   const points = new THREE.Points(
     geometry,
     new THREE.PointsMaterial({
-      color: 0xcfd8ff,
+      color: 0xf2e8ff,
       size: 0.9,
       sizeAttenuation: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.68,
       depthWrite: false,
       fog: false,
     }),
@@ -1996,9 +2480,9 @@ export function makeStars(count = 460, radius = 132) {
 /** Halo lunaire en sprite additif (bloom le fait vibrer). */
 export function makeMoonGlow(x, y, z, scale = 34) {
   const texture = radialSpriteTexture(128, [
-    [0, 'rgba(226, 234, 255, 0.9)'],
-    [0.25, 'rgba(180, 196, 255, 0.34)'],
-    [1, 'rgba(140, 160, 255, 0)'],
+    [0, 'rgba(220, 221, 255, 0.78)'],
+    [0.25, 'rgba(111, 124, 212, 0.24)'],
+    [1, 'rgba(82, 96, 175, 0)'],
   ]);
   const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
     map: texture,
@@ -2018,21 +2502,25 @@ export function makeMoonGlow(x, y, z, scale = 34) {
  */
 export function makeMistPatches(list) {
   const texture = radialSpriteTexture(160, [
-    [0, 'rgba(170, 186, 226, 0.55)'],
-    [0.55, 'rgba(150, 166, 210, 0.22)'],
-    [1, 'rgba(140, 156, 200, 0)'],
+    [0, 'rgba(111, 91, 157, 0.30)'],
+    [0.55, 'rgba(68, 85, 144, 0.13)'],
+    [1, 'rgba(54, 62, 122, 0)'],
   ]);
   const group = new THREE.Group();
+  group.name = 'ground-mist-patches';
   for (const [x, z, sx, sy, opacity] of list) {
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
       opacity,
       depthWrite: false,
-      color: 0xb9c4e8,
+      depthTest: true,
+      color: 0x847aa8,
     });
     const sprite = new THREE.Sprite(material);
-    sprite.position.set(x, 1.1, z);
+    // Centre bas : la brume ne flotte plus à hauteur de buste.
+    sprite.name = 'ground-mist-patch';
+    sprite.position.set(x, 0.28, z);
     sprite.scale.set(sx, sy, 1);
     sprite.userData.baseX = x;
     sprite.userData.baseZ = z;
@@ -2047,7 +2535,7 @@ export function makeMistPatches(list) {
  * Faisceau de lumière volumétrique au-dessus d'une source chaude.
  * Alpha en double dégradé (fondu aux deux extrémités), additif.
  */
-export function makeLightShaft(x, y, z, { color = 0xff9a4a, height = 4.2, rBottom = 0.28, rTop = 0.7, opacity = 0.14 } = {}) {
+export function makeLightShaft(x, y, z, { color = 0xff8ac5, height = 4.2, rBottom = 0.28, rTop = 0.7, opacity = 0.14 } = {}) {
   const canvas = document.createElement('canvas');
   canvas.width = 8;
   canvas.height = 128;
@@ -2081,13 +2569,14 @@ export function makeLightShaft(x, y, z, { color = 0xff9a4a, height = 4.2, rBotto
  * végétales, jamais sur le cercle du feu ni sur les colliders.
  * @param {Array} colliders obstacles à éviter (resolveCollisions compat)
  */
-export function makeGrassField(colliders, count = 900) {
+export function makeGrassField(colliders, count = 320) {
   const geometry = new THREE.ConeGeometry(0.032, 0.24, 4);
   geometry.translate(0, 0.12, 0);
   const material = new THREE.MeshStandardMaterial({
     color: 0xffffff, flatShading: true, roughness: 1,
   });
   const mesh = new THREE.InstancedMesh(geometry, material, count);
+  mesh.name = 'camp-grass-clumps';
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   const blocked = (x, z) => {
@@ -2110,7 +2599,7 @@ export function makeGrassField(colliders, count = 900) {
     const nearEdge = Math.min(17 - Math.abs(x), 17 - Math.abs(z)) < 4.2;
     if (!nearEdge && Math.random() > 0.3) continue; // touffes éparses ailleurs
     if (blocked(x, z)) continue;
-    dummy.position.set(x, 0, z);
+    dummy.position.set(x, 0.006, z);
     dummy.rotation.y = Math.random() * Math.PI * 2;
     dummy.rotation.x = (Math.random() - 0.5) * 0.25;
     const scale = 0.65 + Math.random() * 0.9;
@@ -2129,8 +2618,10 @@ export function makeGrassField(colliders, count = 900) {
 }
 
 /** Petites fleurs nocturnes phosphorescentes (bloom les fait scintiller). */
-export function makeFlowerField(colliders, count = 40) {
+export function makeFlowerField(colliders, count = 16) {
   const geometry = new THREE.SphereGeometry(0.035, 6, 5);
+  // Le bas de la corolle devient l'origine : l'échelle ne la fera plus flotter.
+  geometry.translate(0, 0.035, 0);
   const material = new THREE.MeshStandardMaterial({
     color: 0x1c3a2a,
     emissive: 0x7dffb8,
@@ -2138,6 +2629,7 @@ export function makeFlowerField(colliders, count = 40) {
     roughness: 0.6,
   });
   const mesh = new THREE.InstancedMesh(geometry, material, count);
+  mesh.name = 'grounded-night-flowers';
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   let placed = 0;
@@ -2154,7 +2646,7 @@ export function makeFlowerField(colliders, count = 40) {
       if (c.kind !== 'circle' && x > c.minX - 0.15 && x < c.maxX + 0.15 && z > c.minZ - 0.15 && z < c.maxZ + 0.15) { blocked = true; break; }
     }
     if (blocked) continue;
-    dummy.position.set(x, 0.1 + Math.random() * 0.1, z);
+    dummy.position.set(x, 0.008, z);
     const scale = 0.7 + Math.random() * 0.8;
     dummy.scale.setScalar(scale);
     dummy.updateMatrix();

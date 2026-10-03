@@ -20,7 +20,7 @@ import '../games/games.css';
 const MIRAGE_THUMB = `${import.meta.env.BASE_URL}mirage-rush-thumb.jpg`;
 // Miniatures des autres jeux jouables.
 const VICE_CITY_THUMB = `${import.meta.env.BASE_URL}vice-city-rush-keyart.jpg`;
-const CENDRE_THUMB = `${import.meta.env.BASE_URL}la-cendre-thumb.jpg`;
+const CENDRE_THUMB = `${import.meta.env.BASE_URL}la-cendre-anime-thumb.jpg`;
 
 const GAMES = [
   {
@@ -39,15 +39,15 @@ const GAMES = [
   {
     id: 'la-cendre',
     title: 'LA CENDRE',
-    subtitle: 'SOULSLIKE · DARK FANTASY',
-    description: 'Le feu de cendres s’est éteint. Un chevalier sans nom traverse la Cour du Seuil : caméra d’épaule, collisions, ambiance clair-obscur. Playtest M0 — le combat arrive en M1.',
+    subtitle: 'SOULSLIKE · ANIME DARK FANTASY',
+    description: 'Le feu de cendres s’est éteint. Incarne le Gardien Chitine, un guerrier insecte aux ailes irisées, dans une Cour du Seuil peinte façon anime : caméra d’épaule, combats exigeants, épée longue à deux mains et lumière violette.',
     thumb: CENDRE_THUMB,
-    alt: 'La Cendre — chevalier d’armure sombre devant un feu de cendres dans une cour de pierre, ambiance dark fantasy',
+    alt: 'La Cendre — guerrier insecte aux yeux dorés, ailes irisées et épée longue à deux mains dans une cour de château, illustration anime dark fantasy',
     route: '/jeu/la-cendre',
-    badge: 'M0 · JOUABLE',
+    badge: 'JOUABLE',
     tone: 'ember',
     featured: false,
-    tags: ['SOULSLIKE', 'SOLO', '3D', 'WIP'],
+    tags: ['SOULSLIKE', 'ANIME', 'GUERRIER INSECTE', '3D'],
   },
   {
     id: 'vice-city-rush',

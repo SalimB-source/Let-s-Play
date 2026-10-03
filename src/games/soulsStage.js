@@ -4,7 +4,7 @@
  *   camp (feu) → porte nord → route ─┬─ chapelle : 2 gardes + COFFRE (clé)
  *                                    └─ forêt → château → GRAND PORTAIL
  *                                       (ouvert par la clé) → salle des
- *                                       piliers → ROI DE CENDRE sur son trône
+ *                                       piliers → ROI CHITINE DE CENDRE sur son trône
  *
  * Repère : le joueur marche vers −Z (nord). Le camp reste centré en (0,0).
  * Ce module ne dépend d'aucun moteur : positions, colliders, zones,
@@ -188,7 +188,7 @@ export const SPAWNS = Object.freeze([
   Object.freeze({ x: -19.5, z: -33.4, yaw: -Math.PI / 2, tag: 'room' }), // chapelle — garde sud
   Object.freeze({ x: 6.1, z: -45 }),                                    // route — premier guetteur
   Object.freeze({ x: 10.4, z: -61.5 }),                                 // route — second guetteur
-  Object.freeze({ x: 0, z: -123.4, yaw: Math.PI, name: 'ROI DE CENDRE', boss: true }),
+  Object.freeze({ x: 0, z: -123.4, yaw: Math.PI, name: 'ROI CHITINE DE CENDRE', boss: true }),
 ]);
 
 /** Paramètres communs des gardiens. */
@@ -242,7 +242,7 @@ export function interact(q, x, z) {
   if (atChest(q, x, z)) {
     q.chestOpen = true;
     q.hasKey = true;
-    return { kind: 'chest', ok: true, message: 'Coffre ouvert — CLÉ DU ROI DE CENDRE' };
+    return { kind: 'chest', ok: true, message: 'Coffre ouvert — CLÉ DU ROI CHITINE DE CENDRE' };
   }
   if (atPortal(q, x, z)) {
     if (!q.hasKey) return { kind: 'portal', ok: false, message: 'Le portail est scellé — il faut une clé' };
@@ -307,7 +307,8 @@ export function forestTrees() {
   const { bounds } = STAGE;
   const rnd = lcg(20261001);
   const trees = [];
-  const cell = 4.2;
+  // Une lisière aérée garde la route lisible sans créer un mur de troncs.
+  const cell = 5.6;
   for (let x = bounds.minX + 2; x < bounds.maxX - 1; x += cell) {
     for (let z = bounds.northZ + 2; z < bounds.southZ - 3; z += cell) {
       const tx = x + (rnd() - 0.5) * 3.4;
@@ -322,7 +323,7 @@ export function forestTrees() {
   // Lisière : épaisse et haute, pour fermer le monde.
   const ring = (x0, z0, x1, z1) => {
     const len = Math.hypot(x1 - x0, z1 - z0);
-    const n = Math.max(1, Math.round(len / 2.3));
+    const n = Math.max(1, Math.round(len / 3.2));
     for (let i = 0; i < n; i++) {
       const u = (i + rnd() * 0.6) / n;
       const tx = x0 + (x1 - x0) * u + (rnd() - 0.5) * 1.2;

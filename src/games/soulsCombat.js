@@ -277,7 +277,7 @@ export function updateDraw(c, inCombat, dt) {
   return c.drawn || c.drawT < 4;
 }
 
-// ── Ennemi : « chevalier déchu » télégraphé ───────────────────────────
+// ── Ennemi : « guerrier insecte déchu » télégraphié ────────────────────
 export const ENEMY = Object.freeze({
   maxHp: 130,
   souls: 150,        // âmes au vainqueur

@@ -1,18 +1,19 @@
 /* ════════════════════════════════════════════════════════════════════
-   LA CENDRE — UI dark fantasy (M0)
-   Tokens : cendre profonde, braise orange, or vieilli ; panneaux glass
-   sobres, keycaps et micro-animations. Même grammaire visuelle que la
-   coquille Mirage Rush (topbar / overlay / foot), teinte plus sombre.
+   LA CENDRE — UI anime dark fantasy
+   Tokens : nuit violette, cyan irisé et rose braise ; panneaux lumineux,
+   keycaps et micro-animations. Même grammaire visuelle que la coquille
+   Mirage Rush, avec une direction illustrée plus éclatante.
    ══════════════════════════════════════════════════════════════════ */
 .souls-page {
-  --souls-ink: #f2ece2;
-  --souls-dim: rgba(242, 236, 226, 0.6);
-  --souls-line: rgba(255, 158, 86, 0.16);
-  --souls-ember: #ff8a3c;
-  --souls-ember-soft: rgba(255, 138, 60, 0.32);
-  --souls-gold: #e9c987;
-  --souls-panel: #131019;
-  --souls-panel-2: #1a1522;
+  --souls-ink: #f7f2ff;
+  --souls-dim: rgba(236, 229, 255, 0.68);
+  --souls-line: rgba(126, 231, 239, 0.24);
+  --souls-ember: #ff79bf;
+  --souls-ember-soft: rgba(255, 121, 191, 0.38);
+  --souls-gold: #91eaf0;
+  --souls-gold-2: #ffc2e8;
+  --souls-panel: #171432;
+  --souls-panel-2: #251944;
   --souls-radius-lg: 16px;
   --souls-radius: 12px;
   --souls-radius-sm: 9px;
@@ -20,10 +21,10 @@
   padding: 84px 0 44px;
   color: var(--souls-ink);
   background:
-    radial-gradient(780px 420px at 14% -2%, rgba(255, 122, 47, 0.1), transparent 68%),
-    radial-gradient(640px 480px at 96% 20%, rgba(84, 66, 128, 0.14), transparent 70%),
-    radial-gradient(520px 380px at 68% 96%, rgba(233, 201, 135, 0.05), transparent 72%),
-    #0b0910;
+    radial-gradient(780px 420px at 14% -2%, rgba(255, 104, 190, 0.18), transparent 68%),
+    radial-gradient(640px 480px at 96% 20%, rgba(92, 215, 243, 0.16), transparent 70%),
+    radial-gradient(520px 380px at 68% 96%, rgba(136, 107, 255, 0.14), transparent 72%),
+    #0d0b23;
   min-height: 100vh;
 }
 .souls-page .wrap { width: min(1320px, calc(100% - 44px)); margin-inline: auto; }
@@ -92,7 +93,7 @@
   font: 800 8px var(--mono); letter-spacing: 0.1em; cursor: pointer;
   transition: background 0.14s, border-color 0.14s, transform 0.14s;
 }
-.souls-pause-button:hover { background: rgba(255, 138, 60, 0.14); border-color: var(--souls-ember-soft); transform: translateY(-1px); }
+.souls-pause-button:hover { background: rgba(255, 121, 191, 0.15); border-color: var(--souls-ember-soft); transform: translateY(-1px); }
 .souls-pause-button.is-resume { color: #9ef0c4; border-color: rgba(83, 220, 150, 0.35); }
 
 /* ── Viewport ─────────────────────────────────────────────────────── */
@@ -101,7 +102,7 @@
   height: min(clamp(460px, 50vw, 700px), 78vh);
   min-height: 460px;
   overflow: hidden; isolation: isolate;
-  background: #0d0b14;
+  background: #050610;
 }
 .souls-world { position: absolute; inset: 0; z-index: 0; }
 /* Le canvas est la surface de jeu : sans touch-action:none, la souris/le
@@ -116,7 +117,7 @@
 /* Vignette cinématique */
 .souls-viewport::after {
   content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-  background: radial-gradient(120% 90% at 50% 42%, transparent 58%, rgba(5, 3, 8, 0.5) 100%);
+  background: radial-gradient(120% 90% at 50% 42%, transparent 54%, rgba(2, 2, 8, 0.66) 100%);
 }
 
 /* ── HUD en jeu ───────────────────────────────────────────────────── */
@@ -191,7 +192,7 @@
   position: absolute; left: 50%; top: 50%; z-index: 2;
   width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%;
   background: rgba(255, 236, 214, 0.85);
-  box-shadow: 0 0 8px rgba(255, 138, 60, 0.8);
+  box-shadow: 0 0 8px rgba(255, 121, 191, 0.8);
   pointer-events: none;
 }
 
@@ -235,9 +236,9 @@
   margin: 0 0 12px;
   font: 900 clamp(34px, 6vw, 54px) var(--font-gaming);
   letter-spacing: 0.08em;
-  background: linear-gradient(180deg, #ffe9d2 20%, var(--souls-ember) 90%);
+  background: linear-gradient(180deg, #f8efff 18%, #8eeaf1 47%, var(--souls-ember) 94%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 4px 22px rgba(255, 138, 60, 0.28));
+  filter: drop-shadow(0 4px 22px rgba(255, 121, 191, 0.36));
 }
 .souls-overlay-panel h2 {
   margin: 0 0 14px;
@@ -263,14 +264,14 @@
 .souls-start-button {
   min-width: 230px; padding: 14px 22px;
   border: none; border-radius: var(--souls-radius);
-  background: linear-gradient(180deg, #ffb066, #f97c2b);
-  color: #1d0f06;
+  background: linear-gradient(135deg, #ff8fcf, #b77dff 55%, #7ee9ef);
+  color: #24102d;
   font: 900 12px var(--font-gaming); letter-spacing: 0.14em;
   cursor: pointer;
-  box-shadow: 0 12px 34px rgba(249, 124, 43, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: 0 12px 34px rgba(190, 107, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
 }
-.souls-start-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(249, 124, 43, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+.souls-start-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 18px 40px rgba(190, 107, 255, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
 .souls-start-button:active:not(:disabled) { transform: translateY(0); }
 .souls-start-button:disabled { filter: grayscale(0.7) brightness(0.7); cursor: wait; }
 
@@ -315,7 +316,7 @@
 .souls-world-error span { max-width: 560px; color: var(--souls-dim); font-size: 13px; }
 .souls-world-error button {
   padding: 10px 14px; border-radius: 8px;
-  border: 1px solid var(--souls-ember-soft); background: rgba(255, 138, 60, 0.12);
+  border: 1px solid var(--souls-ember-soft); background: rgba(255, 121, 191, 0.12);
   color: var(--souls-ember); font: 800 9px var(--mono); letter-spacing: 0.1em; cursor: pointer;
 }
 
@@ -546,9 +547,9 @@
   background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.18);
 }
 .souls-flask i.is-full {
-  background: linear-gradient(180deg, #ffd27a, #ff8a3c);
-  border-color: rgba(255, 210, 122, 0.7);
-  box-shadow: 0 0 7px rgba(255, 138, 60, 0.75);
+  background: linear-gradient(180deg, #9ff6f4, #ff78bc);
+  border-color: rgba(159, 246, 244, 0.72);
+  box-shadow: 0 0 9px rgba(255, 121, 191, 0.75);
 }
 .souls-key {
   display: inline-flex; align-items: center; gap: 6px;
@@ -611,7 +612,7 @@
   font: 800 8px var(--mono); letter-spacing: 0.1em; cursor: pointer;
   transition: background 0.14s, border-color 0.14s, transform 0.14s;
 }
-.souls-fullscreen-button:hover { background: rgba(255, 138, 60, 0.14); border-color: var(--souls-ember-soft); transform: translateY(-1px); }
+.souls-fullscreen-button:hover { background: rgba(255, 121, 191, 0.15); border-color: var(--souls-ember-soft); transform: translateY(-1px); }
 .souls-fullscreen-button.is-on { color: var(--souls-gold); background: rgba(233, 201, 135, 0.1); border-color: rgba(233, 201, 135, 0.38); }
 .souls-fullscreen-button .game-fullscreen-icon { flex: none; width: 12px; height: 12px; }
 
@@ -697,7 +698,7 @@
 }
 .souls-touch-button i {
   font-style: normal; font-size: 17px; line-height: 1;
-  text-shadow: 0 0 10px rgba(255, 138, 60, 0.45);
+  text-shadow: 0 0 10px rgba(255, 121, 191, 0.45);
 }
 .souls-touch-button span {
   font: 800 6.5px var(--mono); letter-spacing: 0.08em; color: var(--souls-dim);
@@ -705,9 +706,9 @@
 .souls-touch-button:active {
   transform: scale(0.92);
   border-color: var(--souls-ember-soft);
-  background: radial-gradient(circle at 50% 30%, rgba(255, 138, 60, 0.32), rgba(32, 15, 8, 0.88));
+  background: radial-gradient(circle at 50% 30%, rgba(255, 121, 191, 0.32), rgba(32, 15, 8, 0.88));
 }
-.souls-touch-button.is-big { width: 74px; height: 74px; border-color: rgba(255, 158, 86, 0.34); }
+.souls-touch-button.is-big { width: 74px; height: 74px; border-color: rgba(126, 231, 239, 0.34); }
 .souls-touch-button.is-big i { font-size: 21px; }
 
 /* ── « Tournez votre appareil » (paysage impossible) ──────────────── */

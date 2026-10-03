@@ -1,34 +1,35 @@
 // ════════════════════════════════════════════════════════════════════
 // LA CENDRE — décor du « Chemin du Roi » : chapelle, coffre + clé, forêt,
 // château, grand portail, salle des piliers et trône.
-// Style Mirage maison : aplats, formes nettes, flatShading (cf. soulsModels).
+// Direction anime : matières peintes, volumes adoucis et couleurs de crépuscule.
 // Les positions viennent toutes de soulsStage.js (source unique).
 // ════════════════════════════════════════════════════════════════════
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import {
   SOULS_PALETTE, makePillar, makeBrazier, makeBarrel, makeRubble,
-  pixelMaterial, scaleBoxUV, scalePlaneUV, multiplyUV,
+  animeMaterial, scaleBoxUV, scalePlaneUV, multiplyUV,
   makeFern, makeMushrooms, makeFallenLog, makeSconce, makeBanner,
   makeRuneDisc, makeDustMotes, makeDebrisPile,
 } from './soulsModels';
 import { STAGE } from './soulsStage';
 
 const flat = (color, opts = {}) =>
-  new THREE.MeshStandardMaterial({ color, roughness: 0.92, flatShading: true, ...opts });
+  new THREE.MeshStandardMaterial({ color, roughness: 0.82, flatShading: false, ...opts });
 
 /**
- * Matières pixelisées du niveau (partagées : une seule paire de textures
- * par matière, les UV de chaque bloc sont mis à l'échelle du monde).
+ * Matières anime peintes, partagées sur tout le niveau. Elles remplacent les
+ * textures à carreaux et laissent la lumière violette/rose modeler les murs.
  */
 const MAT = {
-  cobble: () => pixelMaterial('cobble', { color: 0x9a97a8, tile: 1.4 }),
-  cobbleDark: () => pixelMaterial('cobble', { color: 0x5f5d6b, tile: 1.4 }),
-  brick: () => pixelMaterial('brick', { color: 0x9d9aad, tile: 1.8 }),
-  brickDark: () => pixelMaterial('brick', { color: 0x6b6879, tile: 1.8 }),
-  plank: () => pixelMaterial('plank', { color: 0xb08a5e, tile: 1.2 }),
-  dirt: () => pixelMaterial('dirt', { color: 0x8f8d84, tile: 2.2 }),
-  carpet: () => pixelMaterial('carpet', { color: 0xffffff, tile: 1.6 }),
-  slate: () => pixelMaterial('slate', { color: 0x8b8b9c, tile: 1.5 }),
+  cobble: () => animeMaterial('stone', { color: 0xc0c7f0, tile: 1.65 }),
+  cobbleDark: () => animeMaterial('slate', { color: 0x949bc4, tile: 1.65 }),
+  brick: () => animeMaterial('stone', { color: 0xd0d4fb, tile: 2.05 }),
+  brickDark: () => animeMaterial('slate', { color: 0x8991bc, tile: 2.05 }),
+  plank: () => animeMaterial('wood', { color: 0xd08a8a, tile: 1.45 }),
+  dirt: () => animeMaterial('earth', { color: 0x8d90bd, tile: 2.5 }),
+  carpet: () => animeMaterial('cloth', { color: 0xffffff, tile: 1.75 }),
+  slate: () => animeMaterial('slate', { color: 0xa6afd9, tile: 1.7 }),
 };
 
 const lcg = (seed) => {
@@ -43,14 +44,18 @@ const smooth = (u) => u * u * (3 - 2 * u);
 const clamp01 = (u) => Math.max(0, Math.min(1, u));
 
 /**
- * Boîte posée : centre (x, y, z), dimensions (w, h, d).
- * Si la matière porte `userData.tile` (texture pixel), les UV sont mis à
- * l'échelle du monde : la maille garde sa taille quelle que soit la boîte.
+ * Volume architectural : les masses importantes reçoivent un chanfrein doux,
+ * ce qui casse la lecture en blocs tout en gardant exactement les
+ * dimensions exploitées par les colliders du niveau.
  */
 function block(group, blockers, material, w, h, d, x, y, z, { blocker = true, shadow = true } = {}) {
-  const geo = new THREE.BoxGeometry(w, h, d);
+  const smallest = Math.min(w, h, d);
+  const rounded = smallest >= 0.18;
+  const geo = rounded
+    ? new RoundedBoxGeometry(w, h, d, Math.min(0.11, smallest * 0.22), 3)
+    : new THREE.BoxGeometry(w, h, d);
   const tile = material?.userData?.tile;
-  if (tile) scaleBoxUV(geo, { x: w, y: h, z: d }, tile);
+  if (tile && !rounded) scaleBoxUV(geo, { x: w, y: h, z: d }, tile);
   const mesh = new THREE.Mesh(geo, material);
   mesh.position.set(x, y, z);
   mesh.castShadow = shadow;
@@ -73,8 +78,8 @@ function zoneBrazier(x, z, scale = 1) {
 // ── Sol extérieur ─────────────────────────────────────────────────────
 
 /**
- * Terre cendreuse qui entoure le camp : un seul aplat immense, texturé
- * en pixel. Posé à y = −0.09 : aucune face n'est coplanaire avec les
+ * Terre cendreuse qui entoure le camp : un seul aplat immense, peint de
+ * lavis froids. Posé à y = −0.09 : aucune face n'est coplanaire avec les
  * dalles intérieures (le z-fighting de la chapelle venait de là).
  */
 export const GROUND_Y = -0.09;
@@ -100,14 +105,15 @@ export function makeOuterGround() {
  * Sous-bois : fougères, champignons lumineux, rondins et gravats le long
  * de la route. Décor pur (aucun collider) — la forêt garde ses arbres.
  */
-export function makeForestFloor(trees) {
+export function makeForestFloor(trees, { detailCount = 46 } = {}) {
   const group = new THREE.Group();
+  group.name = 'sparse-forest-floor';
   const rnd = lcg(90210);
   const taken = (x, z) => {
     for (const t of trees) if (Math.hypot(t.x - x, t.z - z) < 1.1) return true;
     return false;
   };
-  for (let i = 0; i < 130; i++) {
+  for (let i = 0; i < detailCount; i++) {
     const x = STAGE.bounds.minX + 3 + rnd() * (STAGE.bounds.maxX - STAGE.bounds.minX - 6);
     const z = STAGE.bounds.northZ + 4 + rnd() * (STAGE.bounds.southZ - STAGE.bounds.northZ - 8);
     if (taken(x, z)) continue;
@@ -116,24 +122,33 @@ export function makeForestFloor(trees) {
     else if (roll < 0.72) group.add(makeMushrooms(x, z, i));
     else group.add(makeDebrisPile(x, z, i, 0.7 + rnd() * 0.7));
   }
-  // Trois rondins moussus en bord de route (repères visuels).
-  for (const [x, z, yaw, len] of [[-4.6, -37, 0.4, 2.2], [8.2, -58.5, 1.2, 2.6], [-7.4, -71, 2.4, 2.0]]) {
+  // Deux rondins suffisent comme repères sans tapisser les bords de route.
+  for (const [x, z, yaw, len] of [[-4.6, -37, 0.4, 2.2], [8.2, -58.5, 1.2, 2.6]]) {
     group.add(makeFallenLog(x, z, yaw, len).group);
   }
   group.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   return { group, blockers: [] };
 }
 
-/** Grande dalle du parvis, devant le portail (pavés + marches). */
+/** Parvis affleurant devant le portail : sol lisible, sans marche fantôme. */
 export function makeForecourt() {
   const group = new THREE.Group();
-  const stone = MAT.cobbleDark();
+  group.name = 'flush-forecourt';
+  const stone = animeMaterial('stone', {
+    color: 0xb3c0dd,
+    emissive: 0x10172a,
+    emissiveIntensity: 0.24,
+    tile: 1.7,
+  });
   const light = MAT.cobble();
-  block(group, null, stone, 26, 0.12, 9.5, 0, 0.06, -83.7, { blocker: false, shadow: false });
-  // Trois marches basses vers le portail (décor — le sol reste plat).
-  block(group, null, light, 11, 0.1, 1.4, 0, 0.11, -87.2, { blocker: false, shadow: false });
-  block(group, null, light, 9, 0.1, 1.0, 0, 0.16, -88.0, { blocker: false, shadow: false });
-  // Bornes de pierre + chaînes : la voie vers le portail se lit de loin.
+  // Le niveau logique est plat ici. La dalle est donc affleurante (sommet à
+  // y = 0), au lieu d'être une boîte sombre de 12 cm sans collider.
+  const paving = block(group, null, stone, 26, 0.016, 9.5, 0, -0.008, -83.7,
+    { blocker: false, shadow: false });
+  paving.name = 'forecourt-paving';
+  paving.userData.walkableSurface = true;
+  // Bornes de pierre : elles restent de vrais volumes de repère, hors de
+  // l'allée centrale ; le joueur ne les confond pas avec un sol surélevé.
   for (const sx of [-1, 1]) {
     for (const z of [-80.4, -84.6]) {
       block(group, null, light, 0.7, 1.0, 0.7, sx * 5.4, 0.5, z, { blocker: false });
@@ -160,12 +175,12 @@ export function makeChapel() {
   const t = room.wallT;
   const floorTop = 0.02;
 
-  // Dallage intérieur (sommet à +0.02 : le chevalier marche à y = 0,
+  // Dallage intérieur (sommet à +0.02 : le Gardien Chitine marche à y = 0,
   // aucune face n'est coplanaire avec la terre extérieure à −0.09).
   block(group, null, slab, room.maxX - room.minX + 0.4, 0.1, room.maxZ - room.minZ + 0.4,
     (room.minX + room.maxX) / 2, floorTop - 0.05, (room.minZ + room.maxZ) / 2, { blocker: false, shadow: false });
   // Dalles claires éparses
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 6; i++) {
     block(group, null, i % 3 ? dark : stone, 1.5, 0.02, 1.2,
       room.minX + 1 + rnd() * (room.maxX - room.minX - 2), floorTop + 0.015,
       room.minZ + 1 + rnd() * (room.maxZ - room.minZ - 2), { blocker: false, shadow: false });
@@ -206,9 +221,9 @@ export function makeChapel() {
   block(group, blockers, dark, t + 0.4, 0.7, 2 * room.doorHalf + 2.0, x1, 3.45, room.doorZ);
 
   // Poutres du toit effondré (non bloquantes pour la caméra)
-  for (const z of [-27.2, -31, -34.8]) {
+  for (const z of [-27.2, -34.8]) {
     block(group, null, wood, room.maxX - room.minX + 0.6, 0.3, 0.34,
-      (room.minX + room.maxX) / 2, room.height - 0.1 + (z === -31 ? 0.25 : 0), z, { blocker: false });
+      (room.minX + room.maxX) / 2, room.height - 0.1, z, { blocker: false });
   }
   // Estrade basse sous le coffre
   block(group, null, MAT.cobble(), 2.6, 0.12, 3.2, STAGE.chest.x + 0.2, 0.08, STAGE.chest.z, { blocker: false, shadow: false });
@@ -239,16 +254,16 @@ export function makeChapel() {
       blockers.push(...o.blockers);
     }
   }
-  group.add(makeRubble(-21, -26.3, 7), makeRubble(-22.4, -36, 8));
-  group.add(makeDebrisPile(-15.6, -27.4, 11, 1.2), makeDebrisPile(-25.2, -35.2, 14, 1.0));
+  group.add(makeRubble(-21, -26.3, 7));
+  group.add(makeDebrisPile(-15.6, -27.4, 11, 1.2));
   // Bannière déchirée + vitrail crevé au fond : la ruine raconte quelque chose.
   const banner = makeBanner(-20, 3.0, room.minZ + 0.7, 0, 2.6);
   group.add(banner.group);
   // Bancs renversés (planches) + fougères entrées par les brèches.
-  for (const [bx, bz, yaw] of [[-16.4, -30.2, 0.4], [-18.6, -32.4, 1.9], [-21.4, -29.0, 2.7]]) {
+  for (const [bx, bz, yaw] of [[-16.4, -30.2, 0.4]]) {
     block(group, null, wood, 1.9, 0.12, 0.42, bx, 0.2, bz, { blocker: false }).rotation.y = yaw;
   }
-  for (const [fx, fz] of [[-14.2, -35.9], [-26.4, -26.0], [-13.6, -26.2]]) {
+  for (const [fx, fz] of [[-14.2, -35.9]]) {
     group.add(makeFern(fx, fz, 1.1));
   }
 
@@ -487,8 +502,8 @@ export function makeCastle() {
   const slate = MAT.slate();
   const iron = flat(0x15161b, { metalness: 0.6, roughness: 0.5 });
   const wood = MAT.plank();
-  const cloth = flat(SOULS_PALETTE.cloth, { side: THREE.DoubleSide });
   const gold = flat(SOULS_PALETTE.trim, { metalness: 0.6, roughness: 0.4 });
+  const cloth = flat(SOULS_PALETTE.cloth, { side: THREE.DoubleSide });
   const zMid = (castle.zFront + castle.zBack) / 2;
 
   const facadeGeo = facadeGeometry();
@@ -708,7 +723,6 @@ export function makeThroneHall() {
   const carpet = MAT.carpet();
   const gold = flat(SOULS_PALETTE.trim, { metalness: 0.6, roughness: 0.4 });
   const wood = MAT.plank();
-  const cloth = flat(SOULS_PALETTE.cloth, { side: THREE.DoubleSide });
   const len = hall.maxZ - hall.minZ;                // 35 → on lit −(minZ..maxZ)
   const zC = (hall.minZ + hall.maxZ) / 2;
   const w = hall.maxX - hall.minX;
@@ -718,8 +732,8 @@ export function makeThroneHall() {
   // 30 cm d'épaisseur pour que rien ne dépasse jamais par en dessous.
   block(group, null, floorMat, w + 0.2, HALL_FLOOR_T, len, 0, -HALL_FLOOR_T / 2, zC,
     { blocker: false, shadow: false });
-  // Dalles claires en damier discret (2 mm au-dessus du sol, jamais coplanaires)
-  for (let i = 0; i < 9; i++) {
+  // Quelques dalles claires suffisent à rythmer la nef (2 mm au-dessus du sol).
+  for (let i = 0; i < 4; i++) {
     for (const sx of [-1, 1]) {
       block(group, null, stone, 3.4, 0.02, 3.4, sx * 6.5, 0.012, hall.maxZ - 2.6 - i * 3.8, { blocker: false, shadow: false });
     }
@@ -770,22 +784,14 @@ export function makeThroneHall() {
     }
   });
 
-  // Bannières entre les fenêtres (étoffe + liseré d'or)
-  for (const z of hall.pillarZ) {
-    for (const sx of [-1, 1]) {
-      block(group, null, cloth, 0.06, 4.6, 1.0, sx * (hall.maxX - 0.9), 6.2, z, { blocker: false });
-      block(group, null, gold, 0.08, 4.6, 0.16, sx * (hall.maxX - 0.92), 6.2, z, { blocker: false });
-      block(group, null, gold, 0.08, 0.14, 1.04, sx * (hall.maxX - 0.92), 8.5, z, { blocker: false });
-    }
-  }
-  // Grandes bannières pendues entre les piliers (silhouettes verticales).
-  for (const z of hall.pillarZ) {
+  // Bannières espacées : des repères de profondeur sans doubler les étoffes.
+  for (const z of [hall.pillarZ[0], hall.pillarZ[2]]) {
     for (const sx of [-1, 1]) {
       group.add(makeBanner(sx * (hall.pillarX + 1.1), 8.2, z, sx > 0 ? -Math.PI / 2 : Math.PI / 2, 4.2).group);
     }
   }
-  // Torches murales : lumière chaude mutualisée + flammes animées.
-  for (const z of [-95.2, -101.5, -108, -114.5, -120.5]) {
+  // Torches murales : quelques sources lisibles plutôt qu'une guirlande.
+  for (const z of [-96, -108, -120]) {
     for (const sx of [-1, 1]) {
       const s2 = makeSconce(sx * (hall.maxX - 0.55), 3.1, z, sx > 0 ? -Math.PI / 2 : Math.PI / 2);
       group.add(s2.group);
@@ -836,16 +842,15 @@ export function makeThroneHall() {
   group.add(throne.group);
   blockers.push(...throne.blockers);
 
-  // Gravats au pied des murs + poussière en suspension dans la nef.
-  group.add(makeDebrisPile(-8.6, -93.5, 21, 1.4), makeDebrisPile(8.4, -119.0, 24, 1.2),
-    makeDebrisPile(-7.9, -124.6, 27, 1.1), makeDebrisPile(7.6, -99.5, 30, 1.3));
+  // Deux gravats cadrent l'espace sans encombrer l'arène du Roi.
+  group.add(makeDebrisPile(-8.6, -93.5, 21, 1.4), makeDebrisPile(8.4, -119.0, 24, 1.2));
 
   group.traverse((o) => {
     if (o.isMesh && o.material && !o.material.transparent && o.castShadow !== false && !o.userData.noShadow) {
       o.receiveShadow = true;
     }
   });
-  const dust = makeDustMotes({ x: 0, y: 0.4, z: zC }, { x: w, y: 7.5, z: len }, 260);
+  const dust = makeDustMotes({ x: 0, y: 0.4, z: zC }, { x: w, y: 7.5, z: len }, 110);
   group.add(dust.points);
   return { group, blockers, flickerables, throne, dust };
 }
