@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
 import {
   CITY_RUSH_LAPS,
+  CITY_RUSH_LANE_X,
   buildCityRushMinimapState,
   cityRushMinimapTrackPath,
 } from './cityRushRules';
@@ -80,7 +81,7 @@ export default function CityRushMinimap({
             <b>{focus.name}</b>
             <em className="city-rush-you-badge">TOI</em>
           </div>
-          <small>{focus.flag} {focus.country.toUpperCase()} <i>·</i> VOIE {(focus.lane ?? 1) + 1}/4</small>
+          <small>{focus.flag} {focus.country.toUpperCase()} <i>·</i> VOIE {(focus.lane ?? 1) + 1}/{CITY_RUSH_LANE_X.length}</small>
         </div>
         <strong className="city-rush-minimap-focus-rank">{ordinal(focus.rank)}<small>/{racerCount}</small></strong>
       </div>
@@ -106,7 +107,7 @@ export default function CityRushMinimap({
             <line x1={focus.x} y1="2" x2={focus.x} y2="98" />
           </g>
 
-          {/* Tracé de la boucle de 600 m (bordure, bitume, 4 voies) */}
+          {/* Tracé de la boucle de 600 m, bordure et bitume */}
           <path className="city-rush-minimap-road-edge" d={TRACK_PATH} />
           <path className="city-rush-minimap-road-asphalt" d={TRACK_PATH} />
           <path className="city-rush-minimap-road-lanes" d={TRACK_PATH} />

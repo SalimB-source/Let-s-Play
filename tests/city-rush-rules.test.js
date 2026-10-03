@@ -15,12 +15,20 @@ import {
   CITY_RUSH_TRACK_BOOST_SPEED_FACTOR,
   CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR,
   CITY_RUSH_TRACK_BOOST_COLOR,
-  CITY_RUSH_ONCOMING_SHOULDER_X,
+  CITY_RUSH_ONCOMING_MAX_WIDTH,
+  CITY_RUSH_ONCOMING_EDGE_MARGIN,
+  CITY_RUSH_ONCOMING_SAFE_OUTER_X,
   CITY_RUSH_ONCOMING_EJECT_DURATION,
   cityRushOncomingImpactX,
   CITY_RUSH_RACER_VIEW_DISTANCE,
   CITY_RUSH_CAR_GAP,
   CITY_RUSH_LANE_X,
+  CITY_RUSH_LANE_WIDTH,
+  CITY_RUSH_LANES_PER_DIRECTION,
+  CITY_RUSH_ROAD_WIDTH,
+  CITY_RUSH_ROAD_HALF_WIDTH,
+  CITY_RUSH_FORWARD_LANES,
+  CITY_RUSH_DEFAULT_LANES,
   CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN,
   CITY_RUSH_TRAFFIC_IMPACT_DURATION,
   CITY_RUSH_TRAFFIC_IMPACT_GAP,
@@ -128,18 +136,39 @@ test('the selectable cars have distinct handling trade-offs and physical silhoue
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.hitRecoveryMultiplier)).size > 1);
 });
 
-test('eight slow traffic cars span four distinct types and safely block racers (trafic allégé)', () => {
+test('Vice City Rush has six playable lanes with three lanes in each direction', () => {
+  assert.equal(CITY_RUSH_LANE_X.length, 6);
+  assert.equal(CITY_RUSH_LANE_X.length, CITY_RUSH_LANES_PER_DIRECTION * 2);
+  assert.equal(CITY_RUSH_LANES_PER_DIRECTION, 3);
+  assert.equal(CITY_RUSH_LANE_WIDTH, 2.1);
+  assert.equal(CITY_RUSH_ROAD_WIDTH, 13.4);
+  assert.equal(CITY_RUSH_ROAD_HALF_WIDTH, 6.7);
+  assert.deepEqual([...CITY_RUSH_LANE_X], [-5.25, -3.15, -1.05, 1.05, 3.15, 5.25]);
+  assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1, 2]);
+  assert.deepEqual([...CITY_RUSH_FORWARD_LANES], [3, 4, 5]);
+  assert.deepEqual([...CITY_RUSH_DEFAULT_LANES], [4, 5, 3]);
+  assert.ok(CITY_RUSH_LANE_X.every((laneX, index) => index === 0
+    || Math.abs(laneX - CITY_RUSH_LANE_X[index - 1] - CITY_RUSH_LANE_WIDTH) < 1e-9));
+  assert.ok(Math.max(...CITY_RUSH_LANE_X.map(Math.abs)) + 1.9 / 2 < CITY_RUSH_ROAD_HALF_WIDTH,
+    'les voitures tiennent sur la chaussée, même dans les voies extérieures');
+  assert.deepEqual(selectCityRushRacers({ cityId: 'vice-city' }).map((racer) => racer.lane), [4, 5, 3]);
+});
+
+test('eight slow traffic cars span three forward lanes and safely block racers (trafic allégé)', () => {
   assert.equal(CITY_RUSH_TRAFFIC_COUNT, 8);
   assert.equal(CITY_RUSH_TRAFFIC_COUNT % CITY_RUSH_TRAFFIC_TYPES.length, 0);
   assert.equal(CITY_RUSH_TRAFFIC_LANES.length, CITY_RUSH_TRAFFIC_COUNT);
   assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => lane >= 0 && lane < CITY_RUSH_LANE_X.length));
-  // La route est à double sens : le trafic lent roule dans le sens de la
-  // course sur les deux voies de droite, les deux voies de gauche étant
-  // réservées au trafic venant en face. Trafic allégé : 8 voitures au lieu de 12.
-  assert.deepEqual(CITY_RUSH_LANE_X.map((_, lane) => CITY_RUSH_TRAFFIC_LANES.filter((value) => value === lane).length), [0, 0, 4, 4]);
-  assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => lane >= 2), 'le trafic lent reste sur les voies de droite');
-  assert.equal(CITY_RUSH_ONCOMING_COUNT, 4);
-  assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1]);
+  // La route est à double sens : le trafic lent occupe les trois voies de
+  // droite, les trois voies de gauche étant réservées au trafic venant en face.
+  // Trafic allégé : 8 voitures au lieu de 12.
+  assert.deepEqual([...CITY_RUSH_TRAFFIC_LANES], [3, 4, 5, 3, 4, 5, 3, 4]);
+  assert.deepEqual(CITY_RUSH_LANE_X.map((_, lane) => CITY_RUSH_TRAFFIC_LANES.filter((value) => value === lane).length), [0, 0, 0, 3, 3, 2]);
+  assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => CITY_RUSH_FORWARD_LANES.includes(lane)), 'le trafic lent reste sur les voies dans le sens de la course');
+  assert.equal(CITY_RUSH_ONCOMING_COUNT, 3);
+  assert.equal(CITY_RUSH_ONCOMING_COUNT, CITY_RUSH_ONCOMING_LANES.length,
+    'une seule voiture venant en face par voie de gauche');
+  assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1, 2]);
   assert.deepEqual(CITY_RUSH_TRAFFIC_TYPES.map((vehicle) => vehicle.id), [
     'police', 'ambulance', 'garbage-truck', 'white-lambo',
   ]);
@@ -183,18 +212,33 @@ test('un joueur humain ou une IA touche le trafic, ralentit brièvement (0,6 s) 
 
   assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 0 }), 1, 'le bord gauche se rabat vers la voie 1');
   assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 1, blockedLanes: [0] }), 2, 'une voie occupée est évitée');
-  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2] }), 1, 'la voie voisine occupée fait glisser le dégagement');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2] }), 4, 'la nouvelle voie extérieure reste disponible');
+  assert.equal(chooseCityRushTrafficEscapeLane({ currentLane: 3, blockedLanes: [2, 4] }), 1, 'les deux voisines occupées font glisser le dégagement');
 });
 
-test('an oncoming collision pushes the hit car to the left shoulder', () => {
-  assert.equal(CITY_RUSH_ONCOMING_SHOULDER_X, -5.55);
+test('an oncoming collision nudges the hit car one lane without leaving the road', () => {
+  assert.equal(CITY_RUSH_ONCOMING_MAX_WIDTH, 2.12);
+  assert.equal(CITY_RUSH_ONCOMING_EDGE_MARGIN, 0.3);
+  assert.ok(Math.abs(CITY_RUSH_ONCOMING_SAFE_OUTER_X + 5.34) < 1e-9);
+  assert.ok(CITY_RUSH_ONCOMING_SAFE_OUTER_X - CITY_RUSH_ONCOMING_MAX_WIDTH / 2
+    >= -CITY_RUSH_ROAD_HALF_WIDTH + CITY_RUSH_ONCOMING_EDGE_MARGIN - 1e-9,
+  'le véhicule le plus large conserve une marge sur le bitume');
   assert.equal(CITY_RUSH_ONCOMING_EJECT_DURATION, 0.72);
   const start = CITY_RUSH_LANE_X[1];
   const samples = [0, 0.18, 0.36, 0.54, 0.72].map((elapsed) => cityRushOncomingImpactX(start, elapsed));
   assert.equal(samples[0], start);
   assert.ok(samples[0] > samples[1] && samples[1] > samples[2] && samples[2] > samples[3]);
-  assert.equal(samples[4], CITY_RUSH_ONCOMING_SHOULDER_X);
-  assert.equal(cityRushOncomingImpactX(start, 2), CITY_RUSH_ONCOMING_SHOULDER_X);
+  assert.equal(samples[4], CITY_RUSH_LANE_X[0]);
+  assert.equal(cityRushOncomingImpactX(start, 2), CITY_RUSH_LANE_X[0]);
+  for (const lane of CITY_RUSH_ONCOMING_LANES) {
+    const laneStartX = CITY_RUSH_LANE_X[lane];
+    const targetX = cityRushOncomingImpactX(laneStartX, CITY_RUSH_ONCOMING_EJECT_DURATION);
+    assert.ok(laneStartX - targetX >= 0 && laneStartX - targetX <= CITY_RUSH_LANE_WIDTH + 1e-9,
+      `la voiture venant de la voie ${lane + 1} dévie d'au plus une voie`);
+    assert.ok(targetX - CITY_RUSH_ONCOMING_MAX_WIDTH / 2
+      >= -CITY_RUSH_ROAD_HALF_WIDTH + CITY_RUSH_ONCOMING_EDGE_MARGIN - 1e-9,
+    'la voiture reste sur la chaussée avec une marge');
+  }
 });
 
 test('rivals plan lane changes to collect bonuses and avoid traffic safely', () => {
@@ -243,14 +287,14 @@ test('oncoming traffic on the left lanes is dodged like a wall, never rammed', (
     traffic: [{ lane: 1, distance: -10, speed: -6, oncoming: true }],
   }), 1, 'une voie dégagée reste une voie de dépassement');
 
-  // Déjà engagé sur une voie en sens inverse quand un véhicule approche :
-  // le rabat se fait vers les voies de droite, pas vers l'autre voie inverse.
+  // Dans la voie inverse la plus proche du centre, une voie vers la droite
+  // suffit pour rejoindre le sens de la course sans sauter de voie.
   assert.equal(chooseCityRushAiLane({
-    currentLane: 1,
+    currentLane: 2,
     distance: 0,
     speed: 28,
-    traffic: [{ lane: 1, distance: 90, speed: -6, oncoming: true }],
-  }), 2, 'le rabat fuit vers le sens de la course');
+    traffic: [{ lane: 2, distance: 90, speed: -6, oncoming: true }],
+  }), 3, 'le rabat rejoint le sens de la course');
 
   // Les voies en sens inverse gardent un léger malus : à égalité, un pilote
   // reste du côté de la course.
@@ -259,7 +303,7 @@ test('oncoming traffic on the left lanes is dodged like a wall, never rammed', (
     distance: 0,
     speed: 28,
     oncomingLanes: CITY_RUSH_ONCOMING_LANES,
-  }), 2, 'sans raison d’aller à gauche, on reste à droite');
+  }), 3, 'sans bonus vers la gauche, on quitte le sens inverse');
 });
 
 test('rivals pursue visible bonus pickups above hazards, even when a matching bar is full', () => {
@@ -574,11 +618,11 @@ test('au dernier tour, trois berlines de police chassent le premier — hors cla
   // Aucune berline ne porte un identifiant de pilote classé : la grille garde
   // trois pilotes, et l'arrivée ne peut pas compter les voitures de police.
   assert.deepEqual([...CITY_RUSH_RACER_SLOTS], ['player', 'nova', 'juno']);
-  // L'escouade encadre la piste par les voies extérieures, la troisième berline
-  // se cale sur une voie intérieure, et son barrage est encadré dans le temps :
-  // elle se rabat, freine, puis repart.
+  // L'escouade occupe les trois voies dans le sens de la course ; son barrage
+  // est encadré dans le temps : elle se rabat, freine, puis repart.
   assert.equal(CITY_RUSH_POLICE_LANES.length, CITY_RUSH_POLICE_COUNT, 'une voie de départ par berline');
-  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [0, 3, 2]);
+  assert.deepEqual([...CITY_RUSH_POLICE_LANES], [3, 5, 4]);
+  assert.ok(CITY_RUSH_POLICE_LANES.every((lane) => CITY_RUSH_FORWARD_LANES.includes(lane)));
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_RANGE > CITY_RUSH_CAR_GAP);
   assert.ok(CITY_RUSH_POLICE_BLOCKADE_HOLD > 0);
 });
@@ -974,12 +1018,12 @@ test('devant le leader, la berline se rabat dans sa voie pour lui couper la rout
     racers: [{ lane: 2, distance: 1008, speed: 24 }], stuck: true,
   }), 1, 'elle préfère changer de voie plutôt que rester collée');});
 
-test('lane changes clamp at the road edges', () => {
-  assert.equal(CITY_RUSH_LANE_X.length, 4);
+test('lane changes clamp at both edges of the six-lane road', () => {
+  assert.equal(CITY_RUSH_LANE_X.length, 6);
   assert.equal(cityRushLaneAfterAction(1, 'left'), 0);
   assert.equal(cityRushLaneAfterAction(2, 'right'), 3);
   assert.equal(cityRushLaneAfterAction(0, 'left'), 0);
-  assert.equal(cityRushLaneAfterAction(3, 'right'), 3);
+  assert.equal(cityRushLaneAfterAction(5, 'right'), 5);
 });
 
 test('cars in the same lane cannot pass and keep a safe gap, while other lanes stay free', () => {
@@ -1213,7 +1257,7 @@ test('the race mini-map locates all three racers on the circuit loop and focuses
   assert.ok(path.startsWith('M ') && path.endsWith(' Z'));
 
   const startLeft = cityRushMinimapPoint(0, 0);
-  const startRight = cityRushMinimapPoint(0, 3);
+  const startRight = cityRushMinimapPoint(0, CITY_RUSH_LANE_X.length - 1);
   assert.ok(Math.hypot(startLeft.x - startRight.x) + Math.hypot(startLeft.y - startRight.y) > 1);
   // Après un tour complet (600 m), le point revient exactement sur la ligne de départ.
   const fullLap = cityRushMinimapPoint(CITY_RUSH_LAP_LENGTH, 0);
@@ -1253,7 +1297,7 @@ test('la mini-carte dessine l’escouade de police à part des trois pilotes', (
     cityId: 'vice-city',
     pursuers: [
       { id: 'police-1', name: 'POLICE 1', distance: 1250, lane: 3, mode: 'blockade', blocking: true },
-      { id: 'police-2', name: 'POLICE 2', distance: 1240, lane: 0 },
+      { id: 'police-2', name: 'POLICE 2', distance: 1240, lane: 5 },
     ],
   });
   // Les trois pilotes restent seuls dans le classement : l'escouade a sa
@@ -1263,7 +1307,7 @@ test('la mini-carte dessine l’escouade de police à part des trois pilotes', (
   assert.equal(minimap.pursuers[0].name, 'POLICE 1');
   for (const car of minimap.pursuers) {
     assert.ok(Number.isFinite(car.x) && Number.isFinite(car.y));
-    assert.ok(car.lane === 0 || car.lane === 3);
+    assert.ok(CITY_RUSH_POLICE_LANES.includes(car.lane));
     assert.equal(minimap.racers.some((racer) => racer.id === car.id), false);
   }
   // Le barrage roulant est signalé à la mini-carte, qui peut le peindre à part.

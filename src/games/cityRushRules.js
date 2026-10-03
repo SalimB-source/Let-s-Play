@@ -13,7 +13,26 @@ export const CITY_RUSH_START_LINE_LEAD = 3;
 // Portée de décor conservée derrière le joueur quand on replie la boucle.
 export const CITY_RUSH_TRACK_BEHIND = 60;
 export const CITY_RUSH_PLAYER_SPEED = 29;
-export const CITY_RUSH_LANE_X = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
+export const CITY_RUSH_LANE_WIDTH = 2.1;
+export const CITY_RUSH_ROAD_WIDTH = 13.4;
+export const CITY_RUSH_ROAD_HALF_WIDTH = CITY_RUSH_ROAD_WIDTH / 2;
+// Six voies au total : trois en sens inverse à gauche, trois dans le sens de
+// la course à droite. Les voies ajoutées restent au même espacement de 2,1 m.
+export const CITY_RUSH_LANE_X = Object.freeze([-5.25, -3.15, -1.05, 1.05, 3.15, 5.25]);
+export const CITY_RUSH_LANES_PER_DIRECTION = 3;
+export const CITY_RUSH_ONCOMING_LANES = Object.freeze(
+  Array.from({ length: CITY_RUSH_LANES_PER_DIRECTION }, (_, lane) => lane),
+);
+export const CITY_RUSH_FORWARD_LANES = Object.freeze(
+  Array.from({ length: CITY_RUSH_LANES_PER_DIRECTION }, (_, lane) => lane + CITY_RUSH_LANES_PER_DIRECTION),
+);
+// Le joueur part au milieu des voies de course, avec ses deux rivaux de part
+// et d'autre pour que la nouvelle chaussée soit visible dès le départ.
+export const CITY_RUSH_DEFAULT_LANES = Object.freeze([
+  CITY_RUSH_LANES_PER_DIRECTION + 1,
+  CITY_RUSH_LANE_X.length - 1,
+  CITY_RUSH_LANES_PER_DIRECTION,
+]);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
 export const CITY_RUSH_CAR_GAP = 4.8;
 export const CITY_RUSH_RACER_VIEW_DISTANCE = 120; // m : portée avant où un rival est rendu à l'écran
@@ -23,15 +42,31 @@ export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du turbo ramassé
 export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un pad turbo
 export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un pad turbo
 export const CITY_RUSH_TRACK_BOOST_COLOR = '#50e48a';
-export const CITY_RUSH_ONCOMING_SHOULDER_X = -5.55; // accotement gauche, hors des voies de course
-export const CITY_RUSH_ONCOMING_EJECT_DURATION = 0.72; // s : la voiture heurtée s'écarte vers l'accotement
+export const CITY_RUSH_ONCOMING_MAX_WIDTH = 2.12;
+export const CITY_RUSH_ONCOMING_EDGE_MARGIN = 0.3;
+export const CITY_RUSH_ONCOMING_SAFE_OUTER_X = -(
+  CITY_RUSH_ROAD_HALF_WIDTH
+  - CITY_RUSH_ONCOMING_MAX_WIDTH / 2
+  - CITY_RUSH_ONCOMING_EDGE_MARGIN
+);
+export const CITY_RUSH_ONCOMING_EJECT_DURATION = 0.72; // s : la voiture heurtée dérape sans quitter la chaussée
 
-export function cityRushOncomingImpactX(startX, elapsed) {
+export function cityRushOncomingImpactX(startX, elapsed, vehicleWidth = CITY_RUSH_ONCOMING_MAX_WIDTH) {
   const start = Number.isFinite(Number(startX)) ? Number(startX) : CITY_RUSH_LANE_X[0];
+  const width = Number.isFinite(Number(vehicleWidth)) && Number(vehicleWidth) > 0
+    ? Number(vehicleWidth)
+    : CITY_RUSH_ONCOMING_MAX_WIDTH;
   const age = Math.max(0, Number(elapsed) || 0);
   const progress = Math.max(0, Math.min(1, age / CITY_RUSH_ONCOMING_EJECT_DURATION));
   const eased = 1 - (1 - progress) ** 3;
-  return start + (CITY_RUSH_ONCOMING_SHOULDER_X - start) * eased;
+  const safeOuterX = Math.max(
+    CITY_RUSH_ONCOMING_SAFE_OUTER_X,
+    -(CITY_RUSH_ROAD_HALF_WIDTH - width / 2 - CITY_RUSH_ONCOMING_EDGE_MARGIN),
+  );
+  // Le choc la décale d'une voie au maximum et la retient avant le bord,
+  // en tenant compte de la largeur réelle du véhicule.
+  const targetX = Math.max(safeOuterX, start - CITY_RUSH_LANE_WIDTH);
+  return start + (targetX - start) * eased;
 }
 
 export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = CITY_RUSH_RACER_VIEW_DISTANCE;
@@ -74,22 +109,22 @@ export const CITY_RUSH_CARS = Object.freeze([
 ]);
 
 // Le trafic d'obstacle roule nettement moins vite que les voitures de course.
-// La route est à double sens : le trafic lent roule dans le sens de la course
-// sur les deux voies de droite ; les deux voies de gauche sont réservées au
-// trafic venant en face (voir CITY_RUSH_ONCOMING_*).
+// La route est à double sens : les trois voies de droite vont dans le sens de
+// la course, les trois voies de gauche accueillent le trafic venant en face.
 // Trafic allégé pour laisser respirer la course (demande : moins de trafic).
 export const CITY_RUSH_TRAFFIC_COUNT = 8;
-export const CITY_RUSH_TRAFFIC_LANES = Object.freeze([3, 2, 3, 2, 3, 2, 3, 2]);
+export const CITY_RUSH_TRAFFIC_LANES = Object.freeze(
+  Array.from({ length: CITY_RUSH_TRAFFIC_COUNT }, (_, index) => CITY_RUSH_FORWARD_LANES[index % CITY_RUSH_FORWARD_LANES.length]),
+);
 
-// Trafic venant en face : les véhicules des deux voies de gauche roulent vers
+// Trafic venant en face : les véhicules des trois voies de gauche roulent vers
 // le joueur, croisent la course, puis reparaissent au loin une fois passés.
 // Réduit aussi pour éviter l'effet embouteillage, mais avec collision solide.
-export const CITY_RUSH_ONCOMING_COUNT = 4;
-export const CITY_RUSH_ONCOMING_LANES = Object.freeze([0, 1]);
+export const CITY_RUSH_ONCOMING_COUNT = 3;
 export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'police', name: 'Voiture de police', speed: 6.4, width: 1.94, length: 3.8 }),
   Object.freeze({ id: 'ambulance', name: 'Ambulance', speed: 5.3, width: 1.98, length: 4.0 }),
-  Object.freeze({ id: 'garbage-truck', name: 'Camion-poubelle', speed: 4.4, width: 2.12, length: 4.6 }),
+  Object.freeze({ id: 'garbage-truck', name: 'Camion-poubelle', speed: 4.4, width: CITY_RUSH_ONCOMING_MAX_WIDTH, length: 4.6 }),
   Object.freeze({ id: 'white-lambo', name: 'Lamborghini blanche', speed: 7.2, width: 1.92, length: 3.8 }),
 ]);
 
@@ -900,7 +935,7 @@ export function selectCityRushRacers({
     cursor = (cursor + stride) % total;
   }
 
-  const defaultLanes = [1, 3, 0];
+  const defaultLanes = CITY_RUSH_DEFAULT_LANES;
   return CITY_RUSH_RACER_SLOTS.map((slotId, index) => {
     const driver = chosen[index];
     return {
@@ -937,9 +972,13 @@ export function selectCityRushRacers({
 // lever le pied pour le retenir — un barrage roulant, exactement l'effet
 // d'une voiture lente percutée — avant de repartir et de revenir à la charge.
 export const CITY_RUSH_POLICE_COUNT = 3;
-// Les deux voies extérieures d'abord : l'escouade encadre le leader au lieu de
-// lui barrer la route ; la troisième berline se cale sur une voie intérieure.
-export const CITY_RUSH_POLICE_LANES = Object.freeze([0, 3, 2]);
+// Une berline dans chacune des trois voies de course : les poursuivantes
+// encadrent le leader sans démarrer au milieu du trafic venant en face.
+export const CITY_RUSH_POLICE_LANES = Object.freeze([
+  CITY_RUSH_FORWARD_LANES[0],
+  CITY_RUSH_FORWARD_LANES[CITY_RUSH_FORWARD_LANES.length - 1],
+  CITY_RUSH_FORWARD_LANES[Math.floor(CITY_RUSH_FORWARD_LANES.length / 2)],
+]);
 // Les deux bonus de tir, ceux que la police convoite avant tous les autres.
 export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]);
 export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge/jaune vaut cinq bonus ordinaires
@@ -1349,8 +1388,8 @@ export function resolveCityRushPoliceMovement(policeCars = [], traffic = [], min
 }
 
 // ── Mini-carte du circuit & focus joueur ────────────────────────────────────
-// Projette une distance (en mètres sur la boucle de 600 m) et une voie (0..3)
-// sur le tracé 2D de la mini-carte (repère 100 × 100 centré en 50, 50).
+// Projette une distance (en mètres sur la boucle de 600 m) et une voie
+// (0..CITY_RUSH_LANE_X.length - 1) sur la mini-carte 2D (repère 100 × 100).
 export function cityRushMinimapPoint(
   distance = 0,
   lane = 1,

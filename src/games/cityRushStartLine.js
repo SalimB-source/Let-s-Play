@@ -10,7 +10,7 @@
 // drapeaux et confettis.
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { CITY_RUSH_LANE_X, CITY_RUSH_LAPS, CITY_RUSH_SCROLL_SCALE } from './cityRushRules.js';
+import { CITY_RUSH_LANE_X, CITY_RUSH_LAPS, CITY_RUSH_ROAD_HALF_WIDTH, CITY_RUSH_ROAD_WIDTH, CITY_RUSH_SCROLL_SCALE } from './cityRushRules.js';
 import { SignAtlas, drawBannerCell, seededRandom } from './cityRushBuilder.js';
 import { makeCheckerTexture, makeGantrySignTexture, makeStartGroundTexture, makeLapBoard } from './cityRushTextures.js';
 import { START_ZONE_HALF } from './cityRushStage.js';
@@ -79,12 +79,13 @@ export function buildStartComplex({ city, theme, materials: m, startMaterials: s
   }
 
   // ── Ligne à damier + bandes vibreurs ─────────────────────────────────
-  batch.plane(s.checker, [0, 0.025, lineZ], 13.4, 1.6, [-Math.PI / 2, 0, 0]);
-  batch.plane(s.checker, [0, 0.03, lineZ + 1.2], 13.4, 0.14, [-Math.PI / 2, 0, 0], { uv: [0, 0.2, 1, 0.21] });
+  batch.plane(s.checker, [0, 0.025, lineZ], CITY_RUSH_ROAD_WIDTH, 1.6, [-Math.PI / 2, 0, 0]);
+  batch.plane(s.checker, [0, 0.03, lineZ + 1.2], CITY_RUSH_ROAD_WIDTH, 0.14, [-Math.PI / 2, 0, 0], { uv: [0, 0.2, 1, 0.21] });
+  const rumbleX = CITY_RUSH_ROAD_HALF_WIDTH - 0.25;
   for (const side of [-1, 1]) {
     for (let index = 0; index < 16; index += 1) {
       const z = -STAND_HALF + 1 + index * 2;
-      batch.box(index % 2 ? s.rumbleRed : s.rumbleWhite, [side * 6.4, 0.035, z], [0.5, 0.07, 2]);
+      batch.box(index % 2 ? s.rumbleRed : s.rumbleWhite, [side * rumbleX, 0.035, z], [0.3, 0.07, 2]);
     }
   }
 
