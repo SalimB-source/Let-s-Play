@@ -867,9 +867,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   scene.add(helicopter, missile, impact);
   let trafficImpactCursor = 0;
   let strike = null;
-  // Après un coup d'un rival sur le joueur, les autres rivaux le laissent
-  // souffler : un coup à la fois, jamais d'enchaînement injuste (tir + huile
-  // + hélico en quelques secondes). Décompté par `update`.
+  // Après un coup de l'IA sur le joueur (un rival, ou l'escouade de police du
+  // dernier tour), les autres le laissent souffler : un coup à la fois, jamais
+  // d'enchaînement injuste (tir + huile + hélico en quelques secondes).
+  // Décompté par `update`.
   let rivalAttackLock = 0;
   let lastDistanceSlot = 0;
   let lastTrafficDistanceSlot = 0;
@@ -1806,6 +1807,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       playerSkidLeft = 0.85;
       playerSkidSide = Math.random() < 0.5 ? -1 : 1;
       cameraKick = Math.max(cameraKick, 0.35);
+      rivalAttackLock = Math.max(rivalAttackLock, duration + rivalAI.attackSpacing);
       getCallbacks().effect?.({ type: 'police-fire', duration, police: police.name });
     } else if (target.racer) {
       const duration = cityRushHitDuration(CITY_RUSH_POWER_RULES.pistol.duration, target.racer.profile);
@@ -1970,6 +1972,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (police.powerCooldown > 0 || police.stunLeft > 0) continue;
       if ((police.inventory?.[CITY_RUSH_POWERS.PISTOL] || 0) < CITY_RUSH_POWER_RULES.pistol.chargeCost) continue;
       if (!cityRushIsAhead(leader.distance, police.distance)) continue;
+      // Un coup à la fois : l'escouade laisse, elle aussi, le joueur repartir.
+      if (leader.id === 'player' && rivalAttackLock > 0) continue;
       fireAsPolice(police, leader);
     }
   }

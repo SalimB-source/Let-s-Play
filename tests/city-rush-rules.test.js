@@ -1089,13 +1089,14 @@ test('each step up in difficulty is stricter on pace, reflexes, mistakes and wea
   for (const key of ['paceFactor', 'catchUpBoost', 'lookAhead', 'laneAgility', 'pickupValue', 'weaponBias', 'pistolRange', 'oilChaseRange', 'focusPlayer']) {
     assert.ok(Number(easy[key]) <= Number(normal[key]) && Number(normal[key]) <= Number(hard[key]), `${key} : ${easy[key]} ≤ ${normal[key]} ≤ ${hard[key]}`);
   }
-  // … et ici, plus elle est basse (réaction, erreurs, répit laissé au joueur, laisse).
-  for (const key of ['reactionMin', 'reactionMax', 'mistakeChance', 'mistakeMax', 'attackSpacing', 'leashSlow']) {
+  // … et ici, plus elle est basse (réaction, erreurs, répit laissé au joueur, recharge des armes, laisse).
+  for (const key of ['reactionMin', 'reactionMax', 'mistakeChance', 'mistakeMax', 'attackSpacing', 'weaponCooldown', 'leashSlow']) {
     assert.ok(Number(easy[key]) >= Number(normal[key]) && Number(normal[key]) >= Number(hard[key]), `${key} : ${easy[key]} ≥ ${normal[key]} ≥ ${hard[key]}`);
   }
   // Le bouton principal bouge réellement d'un niveau à l'autre.
   assert.ok(easy.paceFactor < normal.paceFactor && normal.paceFactor < hard.paceFactor);
   assert.ok(easy.attackSpacing > normal.attackSpacing && normal.attackSpacing > hard.attackSpacing);
+  assert.ok(easy.weaponCooldown > normal.weaponCooldown && normal.weaponCooldown > hard.weaponCooldown);
   // À voitures égales, un rival roule donc plus vite à chaque niveau.
   const player = CITY_RUSH_CARS[0];
   for (const rival of CITY_RUSH_CARS.slice(1)) {
@@ -1140,6 +1141,9 @@ test('every difficulty keeps the rival tuning inside guard rails that keep the r
     assert.ok(ai.pistolRange > 0 && ai.pistolRange <= 120, where('pistolRange'));
     assert.ok(ai.oilBehindMin > 0 && ai.oilBehindMax > ai.oilBehindMin && ai.oilChaseRange >= ai.oilBehindMax, where('huile'));
     assert.ok(ai.attackSpacing >= 1, where('le joueur doit pouvoir souffler entre deux coups'));
+    // Recharge : depuis que les bonus réapparaissent aussitôt pris, un rival rechargerait en quelques
+    // secondes ; sous 20 s il retire à chaque cible qui passe (4 coups par course et plus, mesuré).
+    assert.ok(ai.weaponCooldown >= 20 && ai.weaponCooldown <= 120, where('weaponCooldown'));
     // Le choix de voiture ne décide pas de la course, quel que soit le niveau.
     for (const player of CITY_RUSH_CARS) {
       for (const rival of CITY_RUSH_CARS.filter((car) => car.id !== player.id)) {

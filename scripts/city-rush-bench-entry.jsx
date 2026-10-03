@@ -271,11 +271,16 @@ function playRace({ world, state, city, car, seed, botName }) {
 
   const hits = { pistol: 0, oil: 0, missile: 0 };
   let hitSeconds = 0;
+  // Tirs de l'escouade de police du dernier tour sur le joueur : comptés à part, ils ne sont pas
+  // l'œuvre des rivaux (les réglages de difficulté ne les touchent pas).
+  let policeHits = 0;
+  let policeSeconds = 0;
   const rival = { boost: 0, oil: 0, heli: 0 };
   for (const event of state.events) {
     if (event.type === 'pistol-hit-player') { hits.pistol += 1; hitSeconds += event.duration || 0; }
     else if (event.type === 'oil-hit' && event.target === 'TOI' && event.owner !== 'TOI') { hits.oil += 1; hitSeconds += 1.4; }
     else if (event.type === 'missile-hit' && event.targetId === 'player') { hits.missile += 1; hitSeconds += event.duration || 0; }
+    else if (event.type === 'police-fire') { policeHits += 1; policeSeconds += event.duration || 0; }
     else if (event.type === 'rival-boost') rival.boost += 1;
     else if (event.type === 'rival-oil') rival.oil += 1;
     else if (event.type === 'radio' && event.targetId === 'player') rival.heli += 1;
@@ -291,7 +296,7 @@ function playRace({ world, state, city, car, seed, botName }) {
     gapToWinner: Math.max(0, (winner?.distance ?? CITY_RUSH_DISTANCE) - (me?.distance ?? 0)),
     // avance finale du joueur sur la moyenne des rivaux (m) : mesure continue, bien moins bruitée qu'une victoire
     relDist: (me?.distance ?? 0) - mean(finish.racers.filter((racer) => racer.id !== 'player').map((racer) => racer.distance)),
-    hits, hitTotal: hits.pistol + hits.oil + hits.missile, hitSeconds,
+    hits, hitTotal: hits.pistol + hits.oil + hits.missile, hitSeconds, policeHits, policeSeconds,
     rival,
     pickups: finish.pickups,
     rankChanges: stats.rankChanges,
@@ -351,6 +356,7 @@ if (!options.json) {
   console.log(`écart au vainqueur    ${fixed(mean(results.map((r) => r.gapToWinner)))} m   (hors victoires : ${fixed(mean(results.filter((r) => r.rank > 1).map((r) => r.gapToWinner)))} m)`);
   console.log(`coups encaissés/course ${fixed(mean(results.map((r) => r.hitTotal)), 2)}   (mitrailleuse ${fixed(mean(results.map((r) => r.hits.pistol)), 2)} · huile ${fixed(mean(results.map((r) => r.hits.oil)), 2)} · hélico ${fixed(mean(results.map((r) => r.hits.missile)), 2)})`);
   console.log(`temps perdu en coups  ${fixed(mean(results.map((r) => r.hitSeconds)))} s/course`);
+  console.log(`+ escouade de police  ${fixed(mean(results.map((r) => r.policeHits)), 2)} tirs sur toi/course (${fixed(mean(results.map((r) => r.policeSeconds)))} s perdues, non comptées ci-dessus)`);
   console.log(`courses sans aucun coup ${pct(results.filter((r) => r.hitTotal === 0).length / results.length)}`);
   console.log(`rival à < 30 m / 60 m  ${pct(mean(results.map((r) => r.near30)))} / ${pct(mean(results.map((r) => r.near60)))} du temps`);
   console.log(`changements de place  ${fixed(mean(results.map((r) => r.rankChanges)))} / course`);

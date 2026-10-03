@@ -617,7 +617,7 @@ export const CITY_RUSH_RIVAL_AI = Object.freeze({
   // « moyen » du banc (`npm run bench:city-rush`), 0,995 → le joueur finit à
   // égalité avec le rival moyen (~22 % de victoires), 0,99 → ~+20 m (~37 %),
   // 0,985 → ~+29 m (~44 %). Le faire varier par pas de 0,002 à 0,005.
-  paceFactor: 0.989, // × l'allure de référence
+  paceFactor: 0.99, // × l'allure de référence
   carCharacter: 0.1, // part de la puissance propre de sa voiture (0 = tous à l'allure du joueur, 1 = chacun la sienne)
   catchUpBoost: 0.05, // + jusqu'à 5 % quand ils sont loin derrière le joueur
   catchUpRange: 110, // m : écart à partir duquel le rattrapage est maximal
@@ -657,7 +657,7 @@ export const CITY_RUSH_RIVAL_AI = Object.freeze({
   // Depuis que les bonus réapparaissent aussitôt ramassés, une jauge se recharge en
   // quelques secondes : sans ce délai les rivaux tiraient dès qu'une cible passait à
   // portée, trois fois plus souvent qu'à l'époque des bonus rares.
-  weaponCooldown: 50, // s
+  weaponCooldown: 75, // s
 });
 
 // ── Les trois niveaux de difficulté ──────────────────────────────────────────
@@ -676,7 +676,7 @@ export const CITY_RUSH_DIFFICULTIES = Object.freeze([
     name: 'Facile',
     tagline: 'Les rivaux lèvent le pied : ils se trompent plus, te visent moins et te laissent souffler.',
     ai: Object.freeze({
-      paceFactor: 0.985,
+      paceFactor: 0.988,
       catchUpBoost: 0.02,
       leashSlow: 0.04,
       reactionMin: 0.34,
@@ -692,7 +692,7 @@ export const CITY_RUSH_DIFFICULTIES = Object.freeze([
       pistolRange: 60,
       oilChaseRange: 50,
       attackSpacing: 2.8,
-      weaponCooldown: 45,
+      weaponCooldown: 80,
     }),
   }),
   Object.freeze({
@@ -706,7 +706,7 @@ export const CITY_RUSH_DIFFICULTIES = Object.freeze([
     name: 'Difficile',
     tagline: 'Les rivaux ne lâchent rien : plus rapides, presque sans erreur, ils tirent de plus loin et te laissent à peine souffler.',
     ai: Object.freeze({
-      paceFactor: 0.997,
+      paceFactor: 1.005,
       catchUpBoost: 0.06,
       leashSlow: 0.02,
       reactionMin: 0.2,
@@ -721,7 +721,7 @@ export const CITY_RUSH_DIFFICULTIES = Object.freeze([
       pistolRange: 100,
       oilChaseRange: 75,
       attackSpacing: 1,
-      weaponCooldown: 42,
+      weaponCooldown: 60,
     }),
   }),
 ]);
