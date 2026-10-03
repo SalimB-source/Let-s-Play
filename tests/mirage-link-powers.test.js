@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 
 import { LANE_SPACING } from '../src/games/mirageRules.js';
@@ -129,10 +130,18 @@ test('la Triforce assemble trois triangles vers le haut puis éclate au contact'
 });
 
 test('les trois techniques de Link ont leurs icônes dédiées', () => {
-  assert.equal(miragePowerIcon(POWER_UPS.SHIELD, 'link').label, 'Bombe à mèche');
-  assert.equal(miragePowerIcon(POWER_UPS.LASSO, 'link').label, 'Boomerang');
-  assert.equal(miragePowerIcon(POWER_UPS.PISTOL, 'link').label, 'Triforce');
-  assert.match(miragePowerIcon(POWER_UPS.LASSO, 'link').src, /link-boomerang/);
+  const bomb = miragePowerIcon(POWER_UPS.SHIELD, 'link');
+  const boomerang = miragePowerIcon(POWER_UPS.LASSO, 'link');
+  const triforce = miragePowerIcon(POWER_UPS.PISTOL, 'link');
+  assert.equal(bomb.label, 'Bombe à mèche');
+  assert.equal(boomerang.label, 'Boomerang');
+  assert.equal(triforce.label, 'Triforce');
+  assert.match(boomerang.src, /\/icons\/mirage-rush\/link-boomerang\.svg\?v=2$/);
+  assert.match(triforce.src, /\/icons\/mirage-rush\/link-triforce\.svg\?v=2$/);
+  for (const filename of ['link-boomerang.svg', 'link-triforce.svg']) {
+    const svg = readFileSync(new URL(`../public/icons/mirage-rush/${filename}`, import.meta.url), 'utf8');
+    assert.match(svg, /^<svg\s/, `${filename} existe dans public et contient un SVG`);
+  }
   // Le Turbo reste celui de tout le monde, et le cavalier standard garde le sien.
   assert.equal(miragePowerIcon(POWER_UPS.BOOST, 'link').variant, undefined);
   assert.equal(miragePowerIcon(POWER_UPS.LASSO, 'standard').label, 'Lasso');

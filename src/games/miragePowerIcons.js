@@ -3,7 +3,7 @@ import { POWER_UPS } from './mirageRules.js';
 const baseUrl = typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL
   ? import.meta.env.BASE_URL
   : '/';
-const asset = (name) => `${baseUrl}icons/mirage-rush/${name}.svg`;
+const asset = (name, version) => `${baseUrl}icons/mirage-rush/${name}.svg${version ? `?v=${version}` : ''}`;
 
 /** Icônes vectorielles des quatre objets spéciaux de Mirage Rush. */
 export const MIRAGE_POWER_ICONS = Object.freeze({
@@ -94,7 +94,7 @@ export const MIRAGE_LINK_POWER_ICONS = Object.freeze({
     label: 'Boomerang',
     gemColor: 'yellow',
     accent: '#ffd15c',
-    src: asset('link-boomerang'),
+    src: asset('link-boomerang', 2),
     alt: 'Boomerang blanc lancé tout droit qui revient à la main',
     source: 'Let’s Play Arcade — icône Link Mirage Rush',
     license: 'CC0',
@@ -105,7 +105,7 @@ export const MIRAGE_LINK_POWER_ICONS = Object.freeze({
     label: 'Triforce',
     gemColor: 'red',
     accent: '#ff8a80',
-    src: asset('link-triforce'),
+    src: asset('link-triforce', 2),
     alt: 'Triforce d’or à trois triangles qui fonce sur l’adversaire devant le cavalier',
     source: 'Let’s Play Arcade — icône Link Mirage Rush',
     license: 'CC0',
