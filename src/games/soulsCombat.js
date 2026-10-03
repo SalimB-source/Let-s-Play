@@ -279,21 +279,21 @@ export function updateDraw(c, inCombat, dt) {
 
 // ── Ennemi : « guerrier insecte déchu » télégraphié ────────────────────
 export const ENEMY = Object.freeze({
-  maxHp: 130,
-  souls: 150,        // âmes au vainqueur
-  walkSpeed: 2.35,
+  maxHp: 160,
+  souls: 175,        // récompense relevée avec la difficulté
+  walkSpeed: 2.65,
   aggroRange: 10.5,
   deaggroRange: 15,
-  attackRange: 2.3,
-  strikeArcCos: 0.45,
-  windup: 0.62,        // télégraphe : large, lisible, dodgable
-  active: 0.2,
-  recover: 0.85,       // fenêtre de riposte
-  damage: 17,
-  cooldown: 0.55,
-  turnRate: 5.2,
-  staggerTime: 0.38,
-  riposte: 1.5,        // dégâts × pendant la récupération
+  attackRange: 2.45,
+  strikeArcCos: 0.35,
+  windup: 0.5,         // télégraphe raccourci, mais encore lisible et esquivable
+  active: 0.24,
+  recover: 0.65,       // fenêtre de riposte plus courte
+  damage: 21,
+  cooldown: 0.38,
+  turnRate: 6,
+  staggerTime: 0.28,
+  riposte: 1.35,       // la garde résiste mieux aux ripostes
   radius: 0.46,
 });
 
@@ -311,21 +311,21 @@ export const ENEMY_PHASES = Object.freeze([
  * derrière ou hors du rayon d'impact).
  */
 export const BOSS = Object.freeze({
-  maxHp: 420, walkSpeed: 2.7, aggroRange: 9.5, deaggroRange: 16,
-  attackRange: 2.75, strikeArcCos: 0.42, windup: 0.7, active: 0.24,
-  recover: 0.95, damage: 26, cooldown: 0.5, turnRate: 4.2,
-  staggerTime: 0.3, radius: 0.66, souls: 900,
-  windup2: 0.55,    // accroupissement télégraphé
-  leapDur: 0.55,    // vol en parabole
-  active2: 0.3,     // enfoncement de la lame
-  leapMax: 6.5,     // portée horizontale du bond
-  leapHeight: 1.9,  // hauteur du saut
-  jumpReach: 3.2,   // rayon de l'onde à l'impact
-  jumpArcCos: -0.35, // arc ~220° : esquive par rayon ou passage derrière
-  jumpCdMax: 5,     // repos entre deux bonds
-  seated: true,     // attend sur son trône…
-  riseRange: 8.5,   // …et se lève quand on approche à cette distance
-  riseDur: 2.4,     // durée du lever (invulnérable, cri final)
+  maxHp: 560, walkSpeed: 3.45, aggroRange: 9.5, deaggroRange: 16,
+  attackRange: 3.05, strikeArcCos: 0.3, windup: 0.55, active: 0.28,
+  recover: 0.75, damage: 32, cooldown: 0.3, turnRate: 5.6,
+  staggerTime: 0.22, riposte: 1.3, radius: 0.66, souls: 1200,
+  windup2: 0.45,   // accroupissement télégraphié plus bref
+  leapDur: 0.42,   // bond plus vif, trajectoire toujours lisible
+  active2: 0.32,   // impact plus difficile à traverser
+  leapMax: 7.4,    // portée horizontale du bond
+  leapHeight: 2.05, // hauteur du saut
+  jumpReach: 3.6,  // rayon de l'onde à l'impact
+  jumpArcCos: -0.45, // large arc : esquive par distance ou en passant derrière
+  jumpCdMax: 3.8,  // repos raccourci entre deux bonds
+  seated: true,    // attend sur son trône…
+  riseRange: 8.5,  // …et se lève quand on approche à cette distance
+  riseDur: 2.1,    // se lève plus vite, invulnérable pendant le cri final
   riseAdvance: 1.75, // il descend de l'estrade en se dressant (dégage le trône)
 });
 
@@ -585,14 +585,15 @@ export function damageEnemy(e, amount) {
     e.spec = {
       ...e.baseSpec,
       walkSpeed: e.baseSpec.walkSpeed * 1.3,
-      windup: e.baseSpec.windup * 0.72,
+      windup: e.baseSpec.windup * 0.68,
       active: e.baseSpec.active * 0.9,
-      recover: e.baseSpec.recover * 0.68,
+      recover: e.baseSpec.recover * 0.56,
+      cooldown: e.baseSpec.cooldown * 0.72,
       turnRate: e.baseSpec.turnRate * 1.3,
-      damage: Math.round(e.baseSpec.damage * 1.15),
-      windup2: e.baseSpec.windup2 * 0.75,  // bond plus rapide
-      leapDur: e.baseSpec.leapDur * 0.8,
-      jumpCdMax: 3,
+      damage: Math.round(e.baseSpec.damage * 1.2),
+      windup2: e.baseSpec.windup2 * 0.68,  // bond plus rapide
+      leapDur: e.baseSpec.leapDur * 0.75,
+      jumpCdMax: 2,
     };
   }
   if (armored) return 'armor';
