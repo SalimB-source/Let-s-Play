@@ -1757,8 +1757,10 @@ function makeWorld(mount, callbacks) {
     if (!enemy.dead) {
       const homing = enemy.phase === 'idle' && Math.hypot(enemy.vx, enemy.vz) > 0.4;
       const chase = enemy.phase === 'chase' || homing;
-      if (chase) enemy.gaitPhase = (enemy.gaitPhase || 0) + dt * Math.PI * 2 * 1.35;
-      else enemy.gaitPhase = 0;
+      if (chase) {
+        const gaitRate = 1.35 * (enemy.spec.walkSpeed / ENEMY.walkSpeed);
+        enemy.gaitPhase = (enemy.gaitPhase || 0) + dt * Math.PI * 2 * gaitRate;
+      } else enemy.gaitPhase = 0;
       const sE = Math.sin(enemy.gaitPhase || 0);
       const kE = 1 - Math.exp(-14 * dt);
       const eLerp = (joint, prop, target) => {

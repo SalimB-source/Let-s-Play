@@ -115,7 +115,7 @@ for (const [key, model] of Object.entries(assets)) {
 }
 
 const { makeWorld } = await import('../src/games/SoulsWorld.jsx');
-const { DRINK, BOSS, moveSpeedMult } = await import('../src/games/soulsCombat.js');
+const { DRINK, BOSS, ENEMY, moveSpeedMult } = await import('../src/games/soulsCombat.js');
 const { PROGRESS } = await import('../src/games/soulsProgress.js');
 const { STAGE, stageHeight } = await import('../src/games/soulsStage.js');
 const { HALL_FLOOR_T } = await import('../src/games/soulsCastle.js');
@@ -413,7 +413,7 @@ try {
     process.exit(3);
   }
   const last = withVitals[withVitals.length - 1];
-  if (last.maxHp !== 100 || last.maxStamina !== 100 || last.targetMaxHp !== 130) {
+  if (last.maxHp !== 100 || last.maxStamina !== 100 || last.targetMaxHp !== ENEMY.maxHp) {
     console.error('HUD VALEURS INATTENDUES —', last);
     process.exit(3);
   }

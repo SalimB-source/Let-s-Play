@@ -189,6 +189,18 @@ export async function checkSoulsMobile(assert) {
     assert.equal(Boolean(pad.querySelector('.souls-touch-stick')), true, 'le stick est là');
     assert.ok(buttonOf(node, 'dodge').classList.contains('is-big'), 'la roulade est le gros bouton, sous le pouce droit');
 
+    const potionHud = await until(() => node.querySelector('.souls-potion-hud'), 'la potion dorée dans le HUD');
+    assert.ok(potionHud.querySelector('img')?.getAttribute('src').endsWith('/assets/la-cendre/potion-doree.svg'), 'l’icône dorée de la flasque est chargée');
+    assert.equal(potionHud.querySelector('.souls-potion-readout strong').textContent, '3/3', 'les fioles restantes sont visibles');
+    assert.equal(potionHud.getAttribute('aria-label'), 'Potion de vie : 3 fioles restantes sur 3', 'le nombre de fioles est annoncé aux technologies d’assistance');
+
+    await act(async () => worldProbe.props.onHud({
+      x: 0, z: 6.5, hp: 100, maxHp: 100, stamina: 100, maxStamina: 100,
+      souls: 0, flask: 2, maxFlask: 3, level: 0, zone: 'LE CAMP',
+      moving: false, run: false, prompt: null, toast: null, drinking: false,
+    }));
+    assert.equal(potionHud.querySelector('.souls-potion-readout strong').textContent, '2/3', 'le compteur suit les gorgées consommées');
+
     // 3. Les gestes arrivent au moteur.
     await tap(buttonOf(node, 'light'));
     assert.deepEqual(lastAction(), ['touchAction', 'light']);

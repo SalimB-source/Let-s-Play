@@ -33,6 +33,8 @@ const EMPTY_HUD = {
   dead: false, deathSouls: 0,
 };
 
+const GOLDEN_POTION_IMAGE = `${import.meta.env.BASE_URL || '/'}assets/la-cendre/potion-doree.svg`;
+
 const KEYS = [
   { keys: ['Z', 'Q', 'S', 'D'], label: 'ou WASD — se déplacer' },
   { keys: ['MAJ'], label: 'courir' },
@@ -202,6 +204,7 @@ export default function SoulsPage() {
   }, [showRotationPrompt, pauseGame]);
 
   const coordsLabel = `${hud.x.toFixed(1)} / ${hud.z.toFixed(1)}`;
+  const potionCountLabel = `${hud.flask} ${hud.flask === 1 ? 'fiole restante' : 'fioles restantes'} sur ${hud.maxFlask}`;
   const keys = isTouch ? TOUCH_HINTS : KEYS;
 
   return (
@@ -304,15 +307,19 @@ export default function SoulsPage() {
                         <i aria-hidden="true">⚿</i> CLÉ DU ROI
                       </span>
                     )}
-                    <span
-                      className={`souls-flask${hud.drinking ? ' is-drinking' : ''}`}
-                      title={`Potion de vie ${hud.flask}/${hud.maxFlask}`}
-                    >
-                      {Array.from({ length: hud.maxFlask }, (_, i) => (
-                        <i key={i} className={i < hud.flask ? 'is-full' : ''} />
-                      ))}
-                    </span>
                   </div>
+                </div>
+                <div
+                  className={`souls-potion-hud${hud.drinking ? ' is-drinking' : ''}${hud.flask === 0 ? ' is-empty' : ''}`}
+                  role="status"
+                  aria-label={`Potion de vie : ${potionCountLabel}`}
+                  title={`Potion de vie : ${hud.flask}/${hud.maxFlask} — ${potionCountLabel}`}
+                >
+                  <img src={GOLDEN_POTION_IMAGE} alt="" aria-hidden="true" draggable="false" />
+                  <span className="souls-potion-readout" aria-hidden="true">
+                    <strong>{hud.flask}<small>/{hud.maxFlask}</small></strong>
+                    <em>FIOLES</em>
+                  </span>
                 </div>
                 {hud.drinking && (
                   <div className="souls-drink" role="status">
