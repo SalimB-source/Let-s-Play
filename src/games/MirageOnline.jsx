@@ -529,6 +529,14 @@ export default function MirageOnline({
           <Link className="mirage-back-link" to="/quizz">← RETOUR AUX JEUX</Link>
         </div>
 
+        {/* Même affiche d'avis de recherche que la page du jeu : le lobby en
+            ligne appartient au même univers graphique. */}
+        <div className="mirage-poster">
+          <span className="mirage-poster-word">Avis de recherche</span>
+          <strong className="mirage-poster-title">Mirage En Ligne</strong>
+          <span className="mirage-poster-reward">Récompense · <b>10 000 $</b> — mort ou vif</span>
+        </div>
+
         <div className="mirage-mode-tabs" aria-label="Boutons de mode Mirage">
           <button
             type="button"

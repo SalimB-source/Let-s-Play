@@ -1,0 +1,1065 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   MIRAGE RUSH — habillage « AVIS DE RECHERCHE » (western)
+
+   Le jeu n'est pas touché : ni le moteur 3D, ni la piste, ni les règles.
+   Seule l'INTERFACE change de peau — la page du jeu, la coque, les overlays
+   d'intro / de pause / de résultat, le HUD, la barre d'objets et le panneau
+   latéral prennent l'allure d'un avis de recherche placardé dans un saloon :
+   papier vieilli, cuir, bois, laiton et tampon à l'encre rouge.
+
+   Le fichier est importé APRÈS `mirage-rush.css` (MirageRushPage.jsx) : à
+   spécificité égale, il gagne, et les règles existantes n'ont pas à bouger.
+   Deux leviers suffisent pour l'essentiel :
+
+     1. les jetons `--mirage-*` sont redéfinis ici — tout ce que l'ancienne
+        feuille peint déjà avec eux (encre, or, menthe, ligne, rayons)
+        bascule d'un coup ;
+     2. les surfaces qui posaient une couleur en dur (verre violet, néon
+        rose) reçoivent leur équivalent papier / cuir / laiton.
+
+   Rien ici ne dépend du thème clair ou sombre : la page du jeu est un
+   écran, sombre dans les deux thèmes (comme le HUD d'appel) — ses encres
+   sont donc posées en dur, exactement comme dans `mirage-rush.css`.
+
+   Polices : deux familles chargées ici seulement (elles ne concernent que
+   cette page), pour ne pas alourdir le reste du site — « Rye » (affiches,
+   titres, chiffres géants) et « Special Elite » (machine à écrire : les
+   petits libellés qui étaient en chasse fixe). `mirage-rush.css` garde
+   Google Sans pour tout le texte de lecture.
+   ═══════════════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap');
+
+.mirage-page {
+  /* ── Jetons « western » ───────────────────────────────────────────── */
+  --w-paper: #f4e3c0;
+  --w-paper-2: #e7cfa4;
+  --w-paper-3: #d5b98a;
+  --w-ink: #3b2414;
+  --w-ink-soft: rgba(59, 36, 20, .74);
+  --w-ink-dim: rgba(59, 36, 20, .52);
+  --w-leather: #2c1a11;
+  --w-leather-2: #190e07;
+  --w-wood: #55341e;
+  --w-wood-2: #38200f;
+  --w-brass: #c9a227;
+  --w-brass-2: #8b6914;
+  --w-brass-soft: rgba(201, 162, 39, .34);
+  --w-rust: #a8342a;
+  --w-rust-deep: #79221a;
+  --w-sage: #76854f;
+  --w-rope: #c2a06a;
+  --w-font-poster: 'Rye', 'Orbitron', Georgia, 'Times New Roman', serif;
+  --w-font-type: 'Special Elite', 'Courier New', monospace;
+
+  /* ── Les jetons de l'ancienne feuille, reversés au nouveau monde ──── */
+  --mirage-ink: var(--w-ink);
+  --mirage-dim: var(--w-ink-soft);
+  --mirage-line: rgba(59, 36, 20, .2);
+  --mirage-gold: var(--w-brass);
+  --mirage-gold-soft: var(--w-brass-soft);
+  --mirage-pink: var(--w-rust);          /* étoiles ✦, accents « em » */
+  --mirage-mint: var(--w-sage);          /* point « EN PARTIE » */
+  --mirage-panel: var(--w-leather);
+  --mirage-radius-lg: 6px;
+  --mirage-radius: 5px;
+  --mirage-radius-sm: 4px;
+
+  /* ── La feuille : papier jauni, fibre, taches, soleil ─────────────── */
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255, 250, 232, .55), transparent 62%),
+    radial-gradient(38% 30% at 12% 22%, rgba(139, 105, 46, .16), transparent 70%),
+    radial-gradient(30% 26% at 88% 64%, rgba(120, 84, 40, .14), transparent 72%),
+    radial-gradient(26% 22% at 34% 92%, rgba(146, 110, 52, .12), transparent 74%),
+    repeating-linear-gradient(92deg, rgba(122, 88, 44, .055) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(2deg, rgba(122, 88, 44, .045) 0 1px, transparent 1px 5px),
+    linear-gradient(178deg, #f7ead0 0%, #ecd8b1 46%, #dcc298 100%);
+  color: var(--w-ink);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   1. EN-TÊTE — l'avis de recherche placardé
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-heading { align-items: center; gap: 20px; padding: 0 0 14px; }
+.mirage-eyebrow {
+  color: var(--w-rust);
+  font-family: var(--w-font-type);
+  letter-spacing: .22em;
+}
+.mirage-live-dot { background: var(--w-rust); box-shadow: 0 0 8px rgba(168, 52, 42, .55); }
+.mirage-eyebrow-divider { color: var(--w-ink-dim); }
+.mirage-back-link {
+  color: var(--w-ink-soft);
+  font-family: var(--w-font-type);
+  letter-spacing: .14em;
+}
+.mirage-back-link:hover { color: var(--w-rust); }
+
+/* L'affiche elle-même : titre en « Rye », filets d'imprimeur, tampon. */
+.mirage-poster {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 18px 12px;
+  border: 1px solid rgba(59, 36, 20, .34);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 230, .7), rgba(233, 212, 172, .5)),
+    repeating-linear-gradient(0deg, rgba(122, 88, 44, .05) 0 1px, transparent 1px 4px);
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 249, 232, .55),
+    inset 0 0 0 5px rgba(59, 36, 20, .18),
+    0 6px 16px rgba(59, 36, 20, .14);
+  transform: rotate(-.5deg);
+}
+.mirage-poster::before,
+.mirage-poster::after {
+  /* Deux clous de laiton dans les coins hauts, comme une affiche punaisée. */
+  content: "";
+  position: absolute;
+  top: 7px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #f2dd9c, var(--w-brass-2));
+  box-shadow: 0 1px 2px rgba(40, 22, 10, .5);
+}
+.mirage-poster::before { left: 8px; }
+.mirage-poster::after { right: 8px; }
+.mirage-poster-word {
+  color: var(--w-rust);
+  font: 700 10px var(--w-font-type);
+  letter-spacing: .34em;
+  text-transform: uppercase;
+}
+.mirage-poster-title {
+  color: var(--w-ink);
+  font: 400 clamp(22px, 3.4vw, 40px)/1 var(--w-font-poster);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 250, 236, .7);
+}
+.mirage-poster-reward {
+  color: var(--w-ink-soft);
+  font: 700 9px var(--w-font-type);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.mirage-poster-reward b { color: var(--w-rust); font-weight: 700; }
+
+/* ════════════════════════════════════════════════════════════════════
+   2. LA COQUE — cadre de bois, barre de cuir
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-game-shell,
+.panel-frame {
+  background:
+    linear-gradient(160deg, rgba(70, 43, 24, .96), rgba(28, 16, 9, .99)),
+    var(--w-wood-2);
+  border: 1px solid rgba(201, 162, 39, .26);
+  border-radius: 8px;
+  box-shadow:
+    0 22px 60px rgba(43, 24, 11, .42),
+    inset 0 1px rgba(255, 236, 196, .08),
+    inset 0 0 0 4px rgba(20, 11, 5, .5);
+}
+.mirage-game-topbar {
+  height: 52px;
+  gap: 12px;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(201, 162, 39, .22);
+  background:
+    linear-gradient(180deg, rgba(58, 35, 19, .96), rgba(34, 19, 10, .96)),
+    var(--w-leather);
+  box-shadow: inset 0 -1px rgba(20, 10, 4, .6), inset 0 1px rgba(255, 232, 190, .06);
+}
+/* Surpiqûre du sellier : le petit pointillé qui court au-dessus de la barre. */
+.mirage-game-topbar::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 4px;
+  height: 1px;
+  background-image: linear-gradient(90deg, var(--w-rope) 45%, transparent 45%);
+  background-size: 9px 1px;
+  opacity: .35;
+  pointer-events: none;
+}
+.mirage-game-topbar { position: relative; }
+.mirage-game-brand {
+  color: rgba(246, 226, 188, .78);
+  font-family: var(--w-font-type);
+  font-size: 9px;
+  letter-spacing: .2em;
+}
+.mirage-brand-gem { color: var(--w-brass); text-shadow: 0 0 10px rgba(201, 162, 39, .6); }
+.mirage-live-pill { font-family: var(--w-font-type); letter-spacing: .16em; }
+.mirage-live-pill.is-paused { color: var(--w-brass); }
+.mirage-live-pill.is-paused i { background: var(--w-brass); box-shadow: 0 0 10px rgba(201, 162, 39, .6); }
+
+/* Boutons de la barre : plaquettes de bois clair, vis de laiton, lettrage
+   à la machine à écrire. */
+.mirage-sound-button,
+.mirage-pause-button,
+.mirage-fullscreen-button,
+.mirage-graphics-button {
+  border-radius: 5px;
+  border: 1px solid rgba(201, 162, 39, .34);
+  background: linear-gradient(180deg, rgba(94, 60, 33, .9), rgba(52, 30, 15, .92));
+  color: rgba(246, 228, 194, .8);
+  font-family: var(--w-font-type);
+  letter-spacing: .14em;
+  box-shadow: inset 0 1px rgba(255, 236, 196, .16), 0 2px 0 rgba(15, 8, 3, .8);
+}
+.mirage-sound-button:hover,
+.mirage-pause-button:hover,
+.mirage-fullscreen-button:hover,
+.mirage-graphics-button:hover {
+  border-color: var(--w-brass);
+  color: #fff2cf;
+  background: linear-gradient(180deg, rgba(120, 78, 42, .95), rgba(64, 38, 19, .95));
+}
+.mirage-sound-button.is-on,
+.mirage-fullscreen-button.is-on,
+.mirage-graphics-button.is-on {
+  color: #ffdf94;
+  border-color: rgba(201, 162, 39, .7);
+  background: linear-gradient(180deg, rgba(132, 90, 38, .95), rgba(74, 46, 18, .95));
+}
+.mirage-pause-button { border-color: rgba(201, 162, 39, .5); color: #ffe1a4; }
+.mirage-pause-button.is-resume {
+  border-color: rgba(118, 133, 79, .8);
+  background: linear-gradient(180deg, rgba(76, 88, 48, .9), rgba(42, 52, 26, .92));
+  color: #e6f0c8;
+}
+.mirage-pause-button.is-resume:hover { border-color: var(--w-sage); color: #f4f9e2; }
+
+/* ════════════════════════════════════════════════════════════════════
+   3. LA FENÊTRE DE JEU — planches, grain d'époque, tampon
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-viewport { background: #2a1a10; }
+.mirage-viewport::after {
+  /* Grain de pellicule sépia au lieu de la trame de points. */
+  opacity: .5;
+  mix-blend-mode: multiply;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(120, 84, 42, .05) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 100% at 50% 40%, transparent 46%, rgba(58, 32, 14, .5) 100%);
+}
+.mirage-viewport::before {
+  /* Encadrement : deux planches de bois et un filet de laiton. */
+  content: "";
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 5px rgba(46, 27, 13, .95),
+    inset 0 0 0 6px rgba(201, 162, 39, .3),
+    inset 0 0 90px rgba(30, 15, 5, .5);
+}
+.mirage-viewport.is-live::before {
+  box-shadow:
+    inset 0 0 0 5px rgba(46, 27, 13, .95),
+    inset 0 0 0 6px rgba(201, 162, 39, .3),
+    inset 0 0 90px rgba(30, 15, 5, .45);
+}
+.mirage-sun-glare {
+  background: linear-gradient(180deg, rgba(58, 34, 14, .22), transparent 40%, rgba(38, 20, 8, .42));
+}
+
+/* Le tampon « RÉCOMPENSE », à l'encre rouge, posé de travers sur l'affiche.
+   Il s'efface dès que la course est lancée (classe `is-running`). */
+.mirage-wanted-stamp {
+  position: absolute;
+  z-index: 3;
+  right: 22px;
+  bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 16px;
+  border: 3px solid rgba(168, 52, 42, .82);
+  border-radius: 4px;
+  color: rgba(168, 52, 42, .92);
+  text-align: center;
+  transform: rotate(-7deg);
+  mix-blend-mode: multiply;
+  opacity: .88;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.mirage-wanted-stamp::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(168, 52, 42, .55);
+  border-radius: 2px;
+}
+.mirage-wanted-stamp span { font: 700 8px var(--w-font-type); letter-spacing: .3em; }
+.mirage-wanted-stamp strong { font: 400 24px var(--w-font-poster); letter-spacing: .04em; }
+.mirage-wanted-stamp i { font: 700 7px var(--w-font-type); letter-spacing: .18em; font-style: normal; }
+.mirage-game-shell.is-running .mirage-wanted-stamp { opacity: 0; }
+
+/* ════════════════════════════════════════════════════════════════════
+   4. LE HUD — des étiquettes de papier sur la piste
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-hud-card {
+  padding: 9px 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(59, 36, 20, .5);
+  background:
+    linear-gradient(180deg, rgba(247, 235, 209, .95), rgba(226, 205, 167, .93));
+  color: var(--w-ink);
+  backdrop-filter: none;
+  box-shadow:
+    0 8px 20px rgba(30, 15, 5, .38),
+    inset 0 1px rgba(255, 253, 244, .8);
+}
+.mirage-hud-card small {
+  color: rgba(59, 36, 20, .6);
+  font-family: var(--w-font-type);
+  letter-spacing: .2em;
+}
+.mirage-hud-card strong { color: var(--w-rust); font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-hud-card > span { color: var(--w-ink-soft); font-family: var(--w-font-type); }
+.mirage-hud-streak strong { color: var(--w-ink); }
+.mirage-hud-streak > span { color: var(--w-rust); }
+.mirage-hud-streak > span i { color: rgba(59, 36, 20, .22); }
+.mirage-chip {
+  border-radius: 3px;
+  font-family: var(--w-font-type);
+  letter-spacing: .1em;
+}
+.mirage-chip.is-gem { background: rgba(59, 36, 20, .08); border-color: rgba(59, 36, 20, .3); color: #7a4a12; }
+.mirage-chip.is-power-ready {
+  background: linear-gradient(135deg, #f6dfa0, var(--w-brass));
+  border-color: #fff4d0;
+  color: #2c1a0c;
+  box-shadow: 0 0 12px rgba(201, 162, 39, .55);
+}
+.mirage-chip.is-slow.is-mud { background: rgba(120, 78, 40, .22); border-color: rgba(120, 78, 40, .5); color: #6b441f; }
+.mirage-clock { font-family: var(--w-font-poster); font-weight: 400; color: #fff3d6; text-shadow: 0 2px 10px rgba(25, 12, 4, .9); }
+.mirage-clock small { font-family: var(--w-font-type); color: rgba(255, 240, 210, .8); }
+.mirage-rank-badge {
+  border-radius: 3px;
+  background: rgba(247, 235, 209, .92);
+  border-color: rgba(59, 36, 20, .5);
+  color: #7a2419;
+  font-family: var(--w-font-type);
+}
+.mirage-rank-badge.is-lead { background: rgba(118, 133, 79, .9); border-color: rgba(59, 36, 20, .5); color: #f6f7e6; }
+.mirage-time-track { background: rgba(30, 15, 5, .55); border-radius: 2px; }
+.mirage-time-track i { background: linear-gradient(90deg, var(--w-brass-2), var(--w-brass)); border-radius: 2px; }
+.mirage-race-track {
+  border-radius: 2px;
+  background: rgba(30, 15, 5, .55);
+  box-shadow: inset 0 0 0 1px rgba(201, 162, 39, .3);
+}
+.mirage-race-track > i { border-radius: 2px; background: linear-gradient(90deg, rgba(201, 162, 39, .5), var(--w-brass)); }
+.mirage-race-dot { border-radius: 2px; border-color: rgba(38, 20, 8, .9); transform: translate(-50%, -50%) rotate(45deg); }
+.mirage-race-dot.is-you { background: var(--w-brass); box-shadow: 0 0 10px rgba(201, 162, 39, .9); }
+.mirage-race-dot.is-rival-1 { background: var(--w-rust); box-shadow: 0 0 10px rgba(168, 52, 42, .8); }
+.mirage-race-dot.is-rival-2 { background: var(--w-sage); box-shadow: 0 0 10px rgba(118, 133, 79, .8); }
+.mirage-race-dot.is-rival-3 { background: #6b8391; box-shadow: 0 0 10px rgba(107, 131, 145, .8); }
+.mirage-live-callout { font-family: var(--w-font-type); color: #ffe9b0; text-shadow: 0 2px 10px rgba(25, 12, 4, .95); }
+.mirage-live-callout b { color: #fff6dd; }
+.mirage-power-toast {
+  border: 1px solid rgba(59, 36, 20, .5);
+  background: linear-gradient(180deg, rgba(247, 235, 209, .96), rgba(228, 208, 170, .95));
+  color: var(--w-ink);
+  font-family: var(--w-font-type);
+  letter-spacing: .06em;
+  box-shadow: 0 10px 24px rgba(28, 14, 4, .4);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   5. LES OVERLAYS — l'affiche, le carton, le tableau
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-overlay { backdrop-filter: blur(6px) sepia(.25); }
+.mirage-overlay-kicker {
+  color: var(--w-brass);
+  font-family: var(--w-font-type);
+  letter-spacing: .26em;
+}
+.mirage-overlay-kicker span { color: var(--w-pink, var(--w-rust)); }
+
+/* L'intro est une AFFICHE : papier plein cadre, encre brune, tampon rouge. */
+.mirage-intro-overlay {
+  background:
+    radial-gradient(120% 90% at 50% -8%, rgba(255, 250, 232, .6), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(122, 88, 44, .05) 0 1px, transparent 1px 4px),
+    linear-gradient(178deg, rgba(246, 232, 203, .97), rgba(224, 202, 164, .97));
+  color: var(--w-ink);
+  box-shadow: inset 0 0 0 6px rgba(46, 27, 13, .92), inset 0 0 0 7px rgba(201, 162, 39, .3);
+}
+.mirage-intro-overlay .mirage-overlay-kicker { color: var(--w-rust); }
+.mirage-intro-overlay h2 {
+  color: var(--w-ink);
+  font-family: var(--w-font-poster);
+  font-weight: 400;
+  letter-spacing: .03em;
+  text-shadow: 0 1px 0 rgba(255, 252, 240, .8);
+}
+.mirage-intro-overlay h2 em { color: var(--w-rust); }
+.mirage-intro-overlay > p { color: var(--w-ink-soft); }
+.mirage-intro-lead { color: var(--w-ink-soft); }
+.mirage-overlay-hint { color: var(--w-ink-dim); font-family: var(--w-font-type); letter-spacing: .2em; }
+.mirage-intro-overlay .mirage-overlay-hint { color: rgba(59, 36, 20, .5); }
+.mirage-intro-overlay .mirage-overlay-hint span { color: var(--w-rust); }
+.mirage-selected-mode-pill {
+  border-radius: 3px;
+  border-color: rgba(59, 36, 20, .45);
+  background: rgba(59, 36, 20, .07);
+  color: #6b4412;
+  font-family: var(--w-font-type);
+}
+.mirage-selected-mode-pill i { color: var(--w-rust); }
+.mirage-secondary-button {
+  border-radius: 4px;
+  border-color: rgba(59, 36, 20, .45);
+  background: rgba(255, 250, 236, .6);
+  color: var(--w-ink-soft);
+  font-family: var(--w-font-type);
+  letter-spacing: .14em;
+}
+.mirage-secondary-button:hover {
+  border-color: var(--w-rust);
+  background: rgba(255, 252, 240, .9);
+  color: var(--w-rust);
+}
+.mirage-duel-warning { color: var(--w-rust) !important; }
+.mirage-intro-overlay small { color: var(--w-ink-dim); }
+
+/* Les cartes de mode : quatre petits avis de recherche cloués en grille. */
+.mirage-mode-picker button,
+.mirage-map-card {
+  border-radius: 3px;
+  border: 1px solid rgba(59, 36, 20, .35);
+  background: linear-gradient(180deg, rgba(252, 245, 228, .96), rgba(233, 214, 178, .96));
+  color: var(--w-ink);
+  box-shadow: 0 6px 16px rgba(59, 36, 20, .16), inset 0 0 0 3px rgba(255, 251, 240, .6);
+}
+.mirage-mode-picker button[aria-pressed="true"],
+.mirage-map-card[aria-pressed="true"] {
+  border-color: var(--w-rust);
+  background: linear-gradient(180deg, rgba(255, 249, 233, .98), rgba(238, 219, 182, .98));
+  box-shadow: inset 0 0 0 3px rgba(255, 251, 240, .7), 0 8px 22px rgba(59, 36, 20, .24), 0 0 0 2px rgba(168, 52, 42, .28);
+}
+.mirage-mode-picker.is-actions .mirage-mode-action::after {
+  background: radial-gradient(120px 80px at 92% 10%, rgba(168, 52, 42, .09), transparent 72%);
+}
+.mirage-mode-copy strong { color: var(--w-ink); font-family: var(--w-font-poster); font-weight: 400; letter-spacing: .02em; }
+.mirage-mode-copy > span { color: var(--w-ink-soft); }
+.mirage-mode-copy small { color: var(--w-ink-dim); font-family: var(--w-font-type); }
+.mirage-mode-symbol { color: var(--w-rust); background: rgba(59, 36, 20, .06); border-radius: 3px; }
+.mirage-mode-picker button[aria-pressed="true"] .mirage-mode-symbol { color: var(--w-rust); background: rgba(168, 52, 42, .1); }
+.mirage-mode-cta {
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--w-brass), var(--w-brass-2));
+  color: #221405;
+  font-family: var(--w-font-type);
+  letter-spacing: .16em;
+  box-shadow: 0 6px 16px rgba(139, 105, 20, .3);
+}
+.mirage-mode-picker.is-actions .mirage-mode-action:hover .mirage-mode-cta {
+  background: linear-gradient(135deg, #f0d271, var(--w-brass));
+}
+.mirage-choice-dot { border-radius: 2px; border-color: rgba(59, 36, 20, .5); }
+.mirage-mode-picker button[aria-pressed="true"] .mirage-choice-dot { background: var(--w-rust); border-color: var(--w-rust); color: #fff3df; }
+.mirage-picker-label { color: var(--w-ink-dim); font-family: var(--w-font-type); letter-spacing: .2em; }
+.mirage-picker-label > span:last-child { color: rgba(59, 36, 20, .38); }
+
+/* Les cartes de map : plaques photographiques, cadre de carton. */
+.mirage-map-visual { background: #6b4a2a; }
+.mirage-map-visual::after {
+  background: linear-gradient(180deg, rgba(59, 36, 20, .12), transparent 42%, rgba(59, 36, 20, .3));
+  box-shadow: inset 0 0 0 1px rgba(59, 36, 20, .35), inset 0 -1px rgba(255, 245, 225, .3);
+}
+.mirage-map-art { filter: sepia(.42) saturate(.86) contrast(1.04); }
+.mirage-map-number,
+.mirage-map-check {
+  background: rgba(244, 227, 192, .9);
+  color: var(--w-ink);
+  border-radius: 2px;
+  font-family: var(--w-font-type);
+  backdrop-filter: none;
+}
+.mirage-map-card[aria-pressed="true"] .mirage-map-check { background: var(--w-rust); color: #fff3df; }
+.mirage-map-copy strong { color: var(--w-ink); font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-map-copy > span { color: var(--w-ink-soft); }
+.mirage-map-copy small { color: var(--w-ink-dim); font-family: var(--w-font-type); }
+.mirage-map-selected { border-top-color: rgba(59, 36, 20, .12); color: var(--w-ink-dim); font-family: var(--w-font-type); }
+.mirage-map-card[aria-pressed="true"] .mirage-map-selected { background: rgba(168, 52, 42, .1); color: var(--w-rust); }
+.mirage-stage-locked {
+  border-radius: 3px;
+  border-color: rgba(59, 36, 20, .4);
+  background: rgba(59, 36, 20, .06);
+}
+.mirage-stage-locked p { color: var(--w-ink-soft); }
+.mirage-stage-locked strong { color: var(--w-rust); }
+.mirage-stage-locked-icon { background: rgba(168, 52, 42, .12); border-radius: 3px; }
+
+/* Sélecteur de coupe : même papier, en-tête au fer à marquer. */
+.mirage-cup-card {
+  border-radius: 3px;
+  border-color: rgba(59, 36, 20, .35);
+  background: linear-gradient(180deg, rgba(252, 245, 228, .96), rgba(232, 213, 176, .96));
+  color: var(--w-ink);
+}
+.mirage-cup-card[aria-pressed="true"] { border-color: var(--w-rust); box-shadow: 0 0 0 2px rgba(168, 52, 42, .3); }
+.mirage-cup-card-title strong { color: var(--w-ink); font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-cup-stop strong { color: var(--w-ink); }
+.mirage-cup-stop-number { color: var(--w-rust); font-family: var(--w-font-type); }
+.mirage-cup-route { color: rgba(59, 36, 20, .3); }
+.mirage-cup-points > span { border-color: rgba(59, 36, 20, .3); color: var(--w-ink-soft); font-family: var(--w-font-type); }
+.mirage-cup-points > span b { color: var(--w-rust); }
+.mirage-cup-name-field input {
+  border-radius: 3px;
+  border-color: rgba(59, 36, 20, .38);
+  background: rgba(255, 252, 240, .75);
+  color: var(--w-ink);
+}
+.mirage-cup-name-field small { color: var(--w-ink-dim); }
+
+/* Boutons principaux : plaque de laiton, lettres gravées. */
+.mirage-start-button {
+  border-radius: 4px;
+  border: 1px solid #f0dca0;
+  background: linear-gradient(180deg, #edcd7c, var(--w-brass) 42%, var(--w-brass-2) 100%);
+  color: #241605;
+  font-family: var(--w-font-type);
+  letter-spacing: .16em;
+  box-shadow: 0 5px 0 rgba(90, 66, 12, .85), 0 12px 26px rgba(139, 105, 20, .35), inset 0 1px rgba(255, 250, 226, .7);
+}
+.mirage-start-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 rgba(90, 66, 12, .85), 0 16px 32px rgba(139, 105, 20, .42), inset 0 1px rgba(255, 250, 226, .8);
+}
+.mirage-fullscreen-launch,
+.mirage-share-button {
+  border-radius: 4px;
+  border-color: rgba(201, 162, 39, .5);
+  background: linear-gradient(180deg, rgba(94, 60, 33, .92), rgba(52, 30, 15, .94));
+  color: #ffe6ac;
+  font-family: var(--w-font-type);
+  letter-spacing: .14em;
+}
+.mirage-fullscreen-launch:hover:not(:disabled),
+.mirage-share-button:hover {
+  border-color: var(--w-brass);
+  background: linear-gradient(180deg, rgba(120, 78, 42, .95), rgba(64, 38, 19, .95));
+  color: #fff4d6;
+}
+.mirage-share-status { color: #ffe6ac; }
+
+/* Raccourcis clavier : touches de machine à écrire. */
+.mirage-keys-hint { color: rgba(59, 36, 20, .62); font-family: var(--w-font-type); }
+.mirage-keys-hint kbd {
+  border-radius: 3px;
+  border: 1px solid rgba(59, 36, 20, .45);
+  border-bottom-width: 2px;
+  background: linear-gradient(180deg, rgba(255, 252, 242, .9), rgba(232, 214, 178, .9));
+  color: var(--w-ink);
+  font-family: var(--w-font-type);
+  box-shadow: 0 1px 0 rgba(59, 36, 20, .25);
+}
+
+/* Compte à rebours : chiffres de saloon sur cuir. */
+.mirage-countdown-overlay {
+  background: radial-gradient(60% 60% at 50% 46%, rgba(40, 22, 10, .45), rgba(26, 14, 6, .82));
+}
+.mirage-countdown-number {
+  font-family: var(--w-font-poster);
+  font-weight: 400;
+  color: #ffe6a8;
+  text-shadow: 0 0 40px rgba(201, 162, 39, .55), 0 8px 34px rgba(20, 10, 3, .9);
+}
+.mirage-countdown-go {
+  font-family: var(--w-font-poster);
+  font-weight: 400;
+  background: linear-gradient(120deg, #ffe6a8, #d98a4a, #ffe6a8);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.mirage-countdown-overlay .mirage-overlay-kicker { color: #ffd98a; }
+.mirage-countdown-overlay .mirage-overlay-hint { color: rgba(255, 236, 200, .6); }
+
+/* Pause et résultats : le grand carton de papier. */
+.mirage-pause-overlay,
+.mirage-result-overlay {
+  background:
+    repeating-linear-gradient(0deg, rgba(122, 88, 44, .05) 0 1px, transparent 1px 4px),
+    linear-gradient(178deg, rgba(245, 231, 201, .97), rgba(223, 201, 163, .97));
+  color: var(--w-ink);
+  box-shadow: inset 0 0 0 6px rgba(46, 27, 13, .9), inset 0 0 0 7px rgba(201, 162, 39, .3);
+}
+.mirage-pause-overlay h2,
+.mirage-result-overlay h2 {
+  color: var(--w-ink);
+  font-family: var(--w-font-poster);
+  font-weight: 400;
+  letter-spacing: .03em;
+  text-shadow: 0 1px 0 rgba(255, 252, 240, .8);
+}
+.mirage-pause-overlay h2 em,
+.mirage-result-overlay h2 em { color: var(--w-rust); }
+.mirage-pause-overlay .mirage-overlay-kicker,
+.mirage-result-overlay .mirage-overlay-kicker { color: var(--w-rust); }
+.mirage-pause-overlay .mirage-overlay-hint,
+.mirage-result-overlay .mirage-overlay-hint { color: rgba(59, 36, 20, .5); }
+.mirage-result-overlay > p { color: var(--w-ink-soft); }
+.mirage-pause-stats span {
+  border-radius: 3px;
+  border-color: rgba(59, 36, 20, .35);
+  background: rgba(255, 251, 240, .6);
+  color: var(--w-ink-dim);
+  font-family: var(--w-font-type);
+}
+.mirage-pause-stats b { color: var(--w-rust); font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-result-stats span {
+  border-radius: 3px;
+  border-color: rgba(59, 36, 20, .35);
+  background: rgba(255, 251, 240, .6);
+  color: var(--w-ink-soft);
+  font-family: var(--w-font-type);
+}
+.mirage-final-score {
+  color: var(--w-rust);
+  font-family: var(--w-font-poster);
+  font-weight: 400;
+  text-shadow: 0 2px 0 rgba(255, 250, 232, .75);
+}
+.mirage-record-badge {
+  border-radius: 3px;
+  background: linear-gradient(120deg, var(--w-brass), #e0b45a, var(--w-brass));
+  background-size: 200% 100%;
+  color: #241605;
+  font-family: var(--w-font-type);
+  letter-spacing: .24em;
+  box-shadow: 0 0 24px rgba(201, 162, 39, .45);
+}
+.mirage-save-note { color: var(--w-ink-soft); }
+.mirage-save-note.is-success { color: #4f6430; }
+.mirage-save-note a { color: var(--w-rust); }
+.mirage-xp-award { color: var(--w-ink-soft); font-family: var(--w-font-type); }
+.mirage-xp-award strong { color: var(--w-rust); }
+.mirage-xp-award span { color: #4f6430; }
+.mirage-xp-award em { color: var(--w-rust); }
+.mirage-coin-gain { color: #8b6914; }
+.mirage-results-dialog {
+  border-radius: 6px;
+  background: linear-gradient(178deg, rgba(246, 233, 205, .98), rgba(226, 205, 167, .98));
+  color: var(--w-ink);
+  box-shadow: 0 24px 60px rgba(20, 10, 3, .5), inset 0 0 0 5px rgba(46, 27, 13, .85), inset 0 0 0 6px rgba(201, 162, 39, .3);
+}
+.mirage-results-dialog .mirage-overlay-kicker { color: var(--w-rust); }
+.mirage-results-dialog h2 { color: var(--w-ink); font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-results-dialog .mirage-overlay-hint { color: rgba(59, 36, 20, .5); }
+.mirage-game-popup-backdrop { background: rgba(26, 14, 6, .7); }
+.mirage-room-waiting-panel { color: var(--w-ink); }
+.mirage-room-waiting-panel h2 em { color: var(--w-rust); }
+.mirage-room-waiting-panel p { color: var(--w-ink-soft); }
+.mirage-waiting-sun { color: var(--w-brass); }
+
+/* ════════════════════════════════════════════════════════════════════
+   6. PANNEAU LATÉRAL — le registre du shérif
+   ════════════════════════════════════════════════════════════════════ */
+.panel-frame { padding: 18px 16px 16px; }
+.mirage-panel-kicker { color: var(--w-brass); font-family: var(--w-font-type); letter-spacing: .24em; }
+.mirage-panel-heading h2 { color: #f6e6c4; font-family: var(--w-font-poster); font-weight: 400; letter-spacing: .02em; }
+.mirage-panel-heading h2 em { color: var(--w-brass); }
+.mirage-trophy { color: var(--w-brass); text-shadow: 0 0 14px rgba(201, 162, 39, .35); }
+.mirage-board-subtitle { color: rgba(240, 222, 186, .6); }
+.mirage-wallet {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .5);
+  background: rgba(201, 162, 39, .14);
+  color: rgba(255, 236, 196, .82);
+  font-family: var(--w-font-type);
+}
+.mirage-wallet b { color: #ffe08a; font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-coin {
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #fff3c9, #d8b24a 46%, #7d5a12);
+  box-shadow: inset 0 0 0 1px rgba(70, 44, 4, .5), 0 0 8px rgba(201, 162, 39, .35);
+}
+.mirage-settings-tabs {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .22);
+  background: rgba(20, 11, 5, .5);
+  gap: 4px;
+}
+.mirage-settings-tabs button {
+  border-radius: 2px;
+  color: rgba(240, 222, 186, .6);
+  font-family: var(--w-font-type);
+  letter-spacing: .12em;
+}
+.mirage-settings-tabs button:hover { color: #fff0cd; background: rgba(201, 162, 39, .1); }
+.mirage-settings-tabs button.is-active {
+  border-color: rgba(201, 162, 39, .7);
+  background: linear-gradient(180deg, rgba(201, 162, 39, .26), rgba(120, 84, 40, .18));
+  color: #ffe1a2;
+  box-shadow: inset 0 1px rgba(255, 236, 196, .16);
+}
+.mirage-settings-info .mirage-howto + .mirage-howto { border-top-color: rgba(201, 162, 39, .18); }
+.mirage-board-message {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .28);
+  color: #f6e6c4;
+}
+.mirage-board-message small { color: rgba(240, 222, 186, .6); }
+.mirage-offline-mark { color: var(--w-brass); }
+.mirage-board-list li { border-radius: 3px; background: rgba(255, 240, 210, .05); }
+.mirage-board-list li.is-rank-1 { background: rgba(201, 162, 39, .14); border-color: rgba(201, 162, 39, .34); }
+.mirage-board-list li.is-mine { border-color: rgba(118, 133, 79, .6); background: rgba(118, 133, 79, .12); }
+.mirage-board-rank { color: rgba(240, 222, 186, .5); font-family: var(--w-font-type); }
+.mirage-board-avatar {
+  border-radius: 3px;
+  background: linear-gradient(140deg, var(--w-wood), var(--w-rust));
+  font-family: var(--w-font-poster);
+  font-weight: 400;
+}
+.mirage-board-name { color: rgba(246, 232, 206, .88); }
+.mirage-board-name i { color: var(--w-sage); font-family: var(--w-font-type); }
+.mirage-board-list li > strong { color: #f0cf82; font-family: var(--w-font-type); }
+.mirage-board-footer { border-top-color: rgba(201, 162, 39, .18); color: rgba(240, 222, 186, .45); font-family: var(--w-font-type); }
+.mirage-board-footer i { background: var(--w-brass); box-shadow: none; }
+.mirage-board-footer .is-online i { background: var(--w-sage); box-shadow: 0 0 8px rgba(118, 133, 79, .7); }
+.mirage-board-footer button { color: var(--w-brass); }
+
+.mirage-xp-track {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .3);
+  background: rgba(20, 11, 5, .55);
+}
+.mirage-xp-track > i { border-radius: 3px; background: linear-gradient(90deg, var(--w-brass-2), var(--w-brass)); }
+.mirage-xp-track > span { color: #fff0cd; font-family: var(--w-font-type); }
+.mirage-skin-chip {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .2);
+  background: rgba(255, 240, 210, .04);
+  color: #f6e6c4;
+}
+.mirage-skin-chip:hover:not(:disabled) { border-color: rgba(201, 162, 39, .6); }
+.mirage-skin-chip.is-selected { border-color: var(--w-brass); background: rgba(201, 162, 39, .14); }
+.mirage-skin-chip.is-selected small { color: var(--w-sage); }
+.mirage-skin-stage {
+  border-radius: 3px;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 100%, rgba(224, 168, 96, .42), transparent 70%),
+    linear-gradient(180deg, rgba(96, 68, 60, .5), rgba(168, 106, 70, .3) 68%, rgba(224, 186, 122, .24));
+}
+.mirage-skin-chip.is-selected .mirage-skin-stage { box-shadow: inset 0 0 0 1px rgba(201, 162, 39, .5), 0 0 16px rgba(201, 162, 39, .14); }
+.mirage-skin-tags i { border-radius: 2px; background: rgba(255, 240, 210, .07); border-color: rgba(255, 240, 210, .14); color: rgba(246, 232, 206, .82); font-family: var(--w-font-type); }
+.mirage-skin-name { color: #f8ebcd; font-family: var(--w-font-type); }
+.mirage-shop-card { border-radius: 3px; border-color: rgba(201, 162, 39, .2); background: rgba(255, 240, 210, .04); }
+.mirage-shop-card.is-selected { border-color: var(--w-brass); background: rgba(201, 162, 39, .14); }
+.mirage-shop-card.is-cloud-showcase .mirage-skin-name { color: #ffe07a; }
+
+.mirage-rule strong { color: #f8ebcd; }
+.mirage-rule small { color: rgba(240, 222, 186, .58); }
+.mirage-rule-icon.is-gold { color: var(--w-brass); }
+.mirage-rule-icon.is-red { color: var(--w-rust); }
+.mirage-rule-icon.is-green { color: var(--w-sage); }
+.mirage-rule-icon.is-pink { color: #c07a52; }
+.mirage-rule-powers-grid span,
+.mirage-rule-power-pill { border-radius: 3px; }
+.mirage-cup-points-pill { border-radius: 3px; }
+.mirage-score-tip {
+  border-radius: 3px;
+  border-left-color: var(--w-rust);
+  background: rgba(168, 52, 42, .09);
+  color: rgba(240, 222, 186, .7);
+}
+.mirage-score-tip > span { color: var(--w-brass); font-family: var(--w-font-type); }
+.mirage-community-note { color: rgba(240, 222, 186, .6); }
+.mirage-community-note > span { color: var(--w-brass); }
+.mirage-community-note strong { color: rgba(246, 232, 206, .86); }
+.mirage-graphics-switch-title { color: #f6e6c4; font-family: var(--w-font-type); letter-spacing: .16em; }
+.mirage-graphics-note { color: rgba(240, 222, 186, .6); }
+.mirage-graphics-choice {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .28);
+  background: rgba(255, 240, 210, .04);
+  color: rgba(246, 232, 206, .78);
+  font-family: var(--w-font-type);
+}
+.mirage-graphics-choice[aria-pressed="true"] { border-color: var(--w-brass); background: rgba(201, 162, 39, .16); color: #ffe1a2; }
+
+/* ════════════════════════════════════════════════════════════════════
+   7. BARRE D'OBJETS — quatre leviers en bois et cuivre
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-powerup-btn {
+  border-radius: 5px;
+  border-color: rgba(201, 162, 39, .3);
+  background: linear-gradient(180deg, #6b4527 0%, #4a2d17 52%, #2b190c 100%);
+  color: #e6d3b0;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 196, .24),
+    inset 0 -10px 14px rgba(0, 0, 0, .34),
+    0 4px 0 #150b04,
+    0 10px 20px rgba(0, 0, 0, .45);
+}
+.mirage-powerup-key {
+  border-radius: 3px;
+  background: rgba(255, 240, 210, .12);
+  border-color: rgba(255, 240, 210, .22);
+  color: #ffd98a;
+  font-family: var(--w-font-type);
+}
+.mirage-powerup-btn-name { color: #f8ebcd; font-family: var(--w-font-type); }
+.mirage-powerup-count { color: rgba(230, 211, 176, .8); font-family: var(--w-font-type); }
+.mirage-powerup-progress-bg { background: rgba(15, 8, 3, .7); }
+
+/* ════════════════════════════════════════════════════════════════════
+   8. TABLEAU DES POSITIONS ET TROPHÉES — ardoise et laiton
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-scoreboard th { color: var(--w-ink-dim); font-family: var(--w-font-type); letter-spacing: .16em; }
+.mirage-scoreboard td {
+  border-top-color: rgba(59, 36, 20, .3);
+  border-bottom-color: rgba(59, 36, 20, .3);
+  background: rgba(255, 251, 240, .55);
+  color: var(--w-ink);
+}
+.mirage-scoreboard td:first-child { border-left-color: rgba(59, 36, 20, .3); border-radius: 3px 0 0 3px; }
+.mirage-scoreboard td:last-child { border-right-color: rgba(59, 36, 20, .3); border-radius: 0 3px 3px 0; }
+.mirage-sb-name { color: var(--w-ink); }
+.mirage-sb-pos { font-family: var(--w-font-type); }
+.mirage-sb-medal { filter: sepia(.35) saturate(.9); }
+.mirage-sb-time,
+.mirage-sb-pts { font-family: var(--w-font-type); }
+.mirage-standings-list li { border-radius: 3px; }
+.mirage-standing-rank { font-family: var(--w-font-type); color: var(--w-brass); }
+.mirage-room-panel .mirage-scoreboard { border-collapse: separate; }
+.mirage-trophy-title { color: var(--w-brass); }
+.mirage-trophy-name { color: #f8ebcd; font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-trophy-lede { color: rgba(240, 222, 186, .68); }
+.mirage-trophy-panel { border-radius: 4px; }
+.mirage-trophy-fallback-cup { color: var(--w-brass); }
+
+/* ════════════════════════════════════════════════════════════════════
+   9. LOBBY EN LIGNE — saloon : bois, cartes, papiers punaisés
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-online { color: var(--w-ink); }
+.mirage-lobby-toolbar,
+.mirage-create-room-panel,
+.mirage-rooms-browser,
+.mirage-room-header-panel,
+.mirage-room-chat-panel,
+.mirage-room-waiting-panel { color: var(--w-ink); }
+.mirage-pseudo-avatar { border-radius: 3px; }
+.mirage-pseudo-display { color: #f8ebcd; font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-pseudo-label { color: rgba(240, 222, 186, .6); }
+.mirage-pseudo-label input {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .35);
+  background: rgba(20, 11, 5, .55);
+  color: #f8ebcd;
+  font-family: var(--w-font-type);
+}
+.mirage-online-status-pill {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .34);
+  background: rgba(255, 240, 210, .05);
+  color: rgba(246, 232, 206, .8);
+  font-family: var(--w-font-type);
+}
+.mirage-create-room-btn {
+  border-radius: 4px;
+  border-color: #f0dca0;
+  background: linear-gradient(180deg, #edcd7c, var(--w-brass) 44%, var(--w-brass-2));
+  color: #241605;
+  font-family: var(--w-font-type);
+  letter-spacing: .14em;
+  box-shadow: 0 4px 0 rgba(90, 66, 12, .85), 0 10px 22px rgba(139, 105, 20, .3);
+}
+.mirage-create-room-btn:hover:not(:disabled) { filter: brightness(1.06); }
+.mirage-rooms-count-pill,
+.mirage-room-lock-badge,
+.mirage-room-stage-badge,
+.mirage-host-tag,
+.mirage-ready-status-badge,
+.mirage-chat-badge {
+  border-radius: 3px;
+  font-family: var(--w-font-type);
+}
+.mirage-rooms-count-pill i { background: var(--w-sage); box-shadow: 0 0 8px rgba(118, 133, 79, .7); }
+.mirage-refresh-rooms-btn { border-radius: 3px; border-color: rgba(201, 162, 39, .34); color: var(--w-brass); }
+.mirage-room-card {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .24);
+  background: linear-gradient(180deg, rgba(70, 43, 24, .7), rgba(38, 21, 10, .82));
+}
+.mirage-room-card:hover { border-color: var(--w-brass); transform: translateY(-2px); }
+.mirage-room-card-title { color: #f8ebcd; font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-room-card-meta { color: rgba(240, 222, 186, .66); font-family: var(--w-font-type); }
+.mirage-room-card-meta b { color: #ffe1a2; }
+.mirage-join-room-btn {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .5);
+  background: linear-gradient(180deg, rgba(94, 60, 33, .92), rgba(52, 30, 15, .94));
+  color: #ffe6ac;
+  font-family: var(--w-font-type);
+}
+.mirage-join-room-btn:hover:not(:disabled) { border-color: var(--w-brass); color: #fff4d6; }
+.mirage-rooms-empty,
+.mirage-room-error { color: rgba(240, 222, 186, .68); }
+.mirage-browser-header h2 { color: #f6e6c4; font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-browser-header h2 em { color: var(--w-brass); }
+.mirage-form-field select,
+.mirage-form-field input,
+.mirage-room-chat-form input,
+.mirage-direct-code-inputs input,
+.mirage-room-password-prompt input {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .32);
+  background: rgba(20, 11, 5, .6);
+  color: #f8ebcd;
+  font-family: var(--w-font-type);
+}
+.mirage-field-label,
+.mirage-form-field small,
+.mirage-direct-code-label { color: rgba(240, 222, 186, .66); font-family: var(--w-font-type); }
+.mirage-player-slot-card {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .3);
+  background: linear-gradient(180deg, rgba(70, 43, 24, .68), rgba(38, 21, 10, .8));
+}
+.mirage-player-slot-card.is-player-ready { border-color: var(--w-sage); box-shadow: 0 0 0 1px rgba(118, 133, 79, .3); }
+.mirage-player-slot-card[data-slot="1"] { border-left-color: var(--w-rust); }
+.mirage-player-slot-card[data-slot="2"] { border-left-color: var(--w-sage); }
+.mirage-player-slot-card[data-slot="3"] { border-left-color: #6b8391; }
+.mirage-player-identity strong { color: #f8ebcd; }
+.mirage-player-mount { color: rgba(240, 222, 186, .62); font-family: var(--w-font-type); }
+.mirage-ready-toggle-btn {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .4);
+  background: rgba(255, 240, 210, .06);
+  color: rgba(246, 232, 206, .82);
+  font-family: var(--w-font-type);
+}
+.mirage-ready-toggle-btn.is-ready { border-color: var(--w-sage); background: rgba(118, 133, 79, .2); color: #eef4d8; }
+.mirage-launch-party-btn {
+  border-radius: 4px;
+  border-color: rgba(201, 162, 39, .4);
+  background: linear-gradient(180deg, #6b4527, #3d2311);
+  color: #ffe6ac;
+  font-family: var(--w-font-type);
+}
+.mirage-launch-party-btn.is-ready-to-launch {
+  border-color: #f0dca0;
+  background: linear-gradient(180deg, #edcd7c, var(--w-brass) 44%, var(--w-brass-2));
+  color: #241605;
+  box-shadow: 0 4px 0 rgba(90, 66, 12, .85), 0 12px 26px rgba(139, 105, 20, .34);
+}
+.mirage-launch-party-copy strong { font-family: var(--w-font-poster); font-weight: 400; }
+.mirage-launch-party-copy small { color: rgba(240, 222, 186, .66); }
+.mirage-room-countdown-banner {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .4);
+  background: rgba(20, 11, 5, .72);
+  color: #ffe6ac;
+}
+.mirage-room-countdown-banner strong { font-family: var(--w-font-poster); font-weight: 400; color: var(--w-brass); }
+.mirage-room-chat-messages { border-radius: 3px; background: rgba(20, 11, 5, .42); }
+.mirage-chat-bubble {
+  border-radius: 3px;
+  border-left-width: 3px;
+  background: rgba(255, 240, 210, .06);
+  color: rgba(246, 232, 206, .9);
+}
+.mirage-chat-bubble[data-slot="1"] { border-left-color: var(--w-rust); }
+.mirage-chat-bubble[data-slot="2"] { border-left-color: var(--w-sage); }
+.mirage-chat-bubble[data-slot="3"] { border-left-color: #6b8391; }
+.mirage-chat-bubble.is-mine { background: rgba(201, 162, 39, .14); }
+.mirage-chat-meta strong { color: #f8ebcd; }
+.mirage-chat-meta time { color: rgba(240, 222, 186, .5); font-family: var(--w-font-type); }
+.mirage-chat-quick-chip {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .28);
+  background: rgba(255, 240, 210, .05);
+  color: rgba(246, 232, 206, .8);
+  font-family: var(--w-font-type);
+}
+.mirage-chat-quick-chip:hover:not(:disabled) { border-color: var(--w-brass); color: #fff0cd; }
+.mirage-chat-send-btn {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .5);
+  background: linear-gradient(180deg, #edcd7c, var(--w-brass-2));
+  color: #241605;
+}
+.mirage-room-code { color: #ffe1a2; }
+.mirage-copy-code-btn { border-radius: 3px; }
+.mirage-add-bot-btn { border-radius: 3px; border-color: rgba(201, 162, 39, .3); color: rgba(246, 232, 206, .8); background: rgba(255, 240, 210, .05); }
+.mirage-add-bot-btn:hover:not(:disabled) { border-color: var(--w-brass); color: #fff0cd; }
+.mirage-share-button.is-danger { border-color: rgba(168, 52, 42, .6); color: #ffbdb2; }
+.mirage-share-button.is-danger:hover { border-color: var(--w-rust); color: #ffd9d1; }
+.mirage-mode-tabs {
+  border-radius: 3px;
+  border-color: rgba(201, 162, 39, .28);
+  background: rgba(20, 11, 5, .6);
+}
+.mirage-mode-tab {
+  border-radius: 2px;
+  color: rgba(246, 232, 206, .76);
+  font-family: var(--w-font-type);
+  letter-spacing: .14em;
+}
+.mirage-mode-tab:hover { color: #fff0cd; background: rgba(201, 162, 39, .12); }
+.mirage-mode-tab.is-active {
+  background: linear-gradient(180deg, #edcd7c, var(--w-brass-2));
+  border-color: #f0dca0;
+  color: #241605;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   10. PIED DE PAGE ET BANDES DE CONSIGNE
+   ════════════════════════════════════════════════════════════════════ */
+.mirage-game-foot {
+  border-top: 1px solid rgba(201, 162, 39, .2);
+  background: linear-gradient(180deg, rgba(46, 27, 13, .9), rgba(26, 14, 6, .92));
+  color: rgba(240, 222, 186, .55);
+  font-family: var(--w-font-type);
+  letter-spacing: .16em;
+}
+.mirage-game-foot b { color: var(--w-brass); }
+.mirage-foot-touch { color: var(--w-brass); }
+.mirage-page-footer { color: rgba(59, 36, 20, .5); font-family: var(--w-font-type); }
+.mirage-page-footer a { color: var(--w-rust); }
+.mirage-page-footer i { color: var(--w-ink-dim); }
+
+/* ════════════════════════════════════════════════════════════════════
+   11. TÉLÉPHONE — l'affiche se resserre
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .mirage-heading { flex-wrap: wrap; gap: 10px; }
+  .mirage-poster { flex: 1 1 100%; padding: 8px 12px 10px; transform: none; }
+  .mirage-poster-title { font-size: 24px; }
+  .mirage-poster-word { font-size: 8px; letter-spacing: .24em; }
+  .mirage-poster-reward { font-size: 8px; letter-spacing: .14em; }
+  .mirage-wanted-stamp { right: 12px; bottom: 12px; padding: 7px 11px; }
+  .mirage-wanted-stamp strong { font-size: 17px; }
+  .mirage-wanted-stamp span,
+  .mirage-wanted-stamp i { font-size: 6px; }
+  .mirage-intro-overlay { box-shadow: inset 0 0 0 4px rgba(46, 27, 13, .9), inset 0 0 0 5px rgba(201, 162, 39, .3); }
+  .mirage-pause-overlay,
+  .mirage-result-overlay { box-shadow: inset 0 0 0 4px rgba(46, 27, 13, .9), inset 0 0 0 5px rgba(201, 162, 39, .3); }
+  .mirage-hud-card { padding: 7px 8px; }
+  .mirage-hud-card strong { font-size: 17px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   12. MOUVEMENT RÉDUIT — on garde la peau, on coupe le papier qui bouge
+   ════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .mirage-wanted-stamp { transition: none; }
+  .mirage-mode-picker button,
+  .mirage-map-card { transition: none; }
+}
