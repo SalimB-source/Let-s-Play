@@ -20,10 +20,16 @@ const EXIT_FALLBACK_MS = 1000;
  *
  * - `active` : vrai tant que le bloc doit occuper tout l'écran (plein écran
  *   natif **ou** couche fixe) — c'est lui qui pose la classe `is-immersive`.
- * - `enter({ pinned })` : ouvre le plein écran. À appeler dans un geste de
- *   l'utilisateur. `pinned` dit que le joueur l'a **demandé** : le jeu ne le
- *   referme pas de lui-même (voir `isPinned`). Sans lui, c'est une ouverture
- *   automatique (téléphone, application) que le jeu referme au retour à l'intro.
+ * - `enter({ pinned, native })` : ouvre le plein écran. Pour le natif, à
+ *   appeler dans un geste de l'utilisateur (le navigateur refuse sinon).
+ *   `pinned` dit que le joueur l'a **demandé** : le jeu ne le referme pas de
+ *   lui-même (voir `isPinned`). Sans lui, c'est une ouverture automatique
+ *   (téléphone, application) que le jeu referme au retour à l'intro.
+ *   `native: false` pose seulement la couche fixe, sans demande au navigateur :
+ *   c'est le plein écran « de base » au montage de la page, avant tout geste.
+ *   Rappelé alors que la couche est déjà posée mais pas le natif (le premier
+ *   geste du joueur), `enter` demande le plein écran natif — la couche « monte »
+ *   en vrai plein écran.
  * - `exit()` : le referme. Sans effet s'il est déjà fermé.
  * - `toggle()` : bouton et touche F — une demande explicite, donc `pinned`.
  * - `onNativeExit` : appelée quand le **navigateur** referme le plein écran
@@ -68,11 +74,20 @@ export default function useMirageFullscreen(targetRef, { onNativeExit } = {}) {
     exitNativeFullscreen();
   }, [settle]);
 
-  const enter = useCallback(({ pinned = false } = {}) => {
+  const enter = useCallback(({ pinned = false, native = true } = {}) => {
     const target = targetRef.current;
     if (!target || typeof document === 'undefined') return false;
     if (activeRef.current) {
       if (pinned) pinnedRef.current = true;
+      // La couche fixe est déjà posée sans le plein écran natif (plein écran
+      // « de base » au montage de la page, avant tout geste) : le premier
+      // geste du joueur passe ici et demande le vrai plein écran. On n'insiste
+      // pas pendant une sortie en cours.
+      if (native && !nativeFullscreenElement() && !exitTimerRef.current) {
+        requestNativeFullscreen(target).then(() => {
+          if (!activeRef.current) exitNativeFullscreen();
+        });
+      }
       return true;
     }
     if (exitTimerRef.current) return false;
@@ -82,12 +97,16 @@ export default function useMirageFullscreen(targetRef, { onNativeExit } = {}) {
     document.body.classList.add(FULLSCREEN_LOCK_CLASS);
     // Appel synchrone, dans le geste de l'utilisateur. La couche fixe est déjà
     // posée : si le navigateur refuse, le jeu occupe quand même tout l'écran.
-    requestNativeFullscreen(target).then(() => {
-      // Refermé avant que le navigateur ait répondu (double clic) : sans cette
-      // reprise, la page resterait en plein écran natif avec la mise en page
-      // fenêtrée.
-      if (!activeRef.current) exitNativeFullscreen();
-    });
+    // `native: false` saute la demande (montage de la page, hors de tout geste :
+    // le navigateur la refuserait) — elle partira au premier geste.
+    if (native) {
+      requestNativeFullscreen(target).then(() => {
+        // Refermé avant que le navigateur ait répondu (double clic) : sans cette
+        // reprise, la page resterait en plein écran natif avec la mise en page
+        // fenêtrée.
+        if (!activeRef.current) exitNativeFullscreen();
+      });
+    }
     return true;
   }, [targetRef]);
 

@@ -154,23 +154,24 @@ sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
 
 ## Mirage Rush : le plein écran
 
-Le jeu (`/jeu/mirage-rush`) peut occuper tout l'écran, sur ordinateur comme sur
-téléphone.
+Le jeu (`/jeu/mirage-rush`) **se lance en plein écran de base**, sur ordinateur
+comme sur téléphone.
 
 | Geste | Effet |
 |---|---|
+| Ouverture de la page | l'interface occupe tout de suite tout l'écran (couche fixe, sans geste) ; le navigateur exige un geste pour le plein écran natif : il part au **premier clic ou à la première touche** du joueur |
 | Bouton **PLEIN ÉCRAN** de la barre du jeu | ouvre ou ferme, à tout moment (choix du mode, course, pause) |
-| **LANCER EN PLEIN ÉCRAN** (écran du terrain) | lance la course directement en plein écran — ordinateur seulement, ailleurs le clic sur une carte le fait déjà |
+| **LANCER EN PLEIN ÉCRAN** (écran du terrain) | n'apparaît qu'une fois le plein écran quitté : lance alors la course directement en plein écran |
 | Touche **F** | ouvre ou ferme (Ctrl/Cmd/Alt + F restent au navigateur ; un « f » tapé dans un champ de saisie ne fait rien) |
 | **Échap**, ou le geste « retour » d'Android | le navigateur referme le plein écran : la course se met **en pause** |
 
-- **Qui l'ouvre tout seul ?** Téléphone, tablette et application Android : le clic
-  sur une carte de map (ou de coupe) ouvre le plein écran (un doigt joue mieux sur
-  tout l'écran) et le retour au choix du mode le referme. Ordinateur : jamais sans
-  demande. Un plein
-  écran demandé (bouton, F, « LANCER EN PLEIN ÉCRAN ») reste ouvert d'une course à
-  l'autre ; le bouton, F ou, en plein écran natif, Échap le ferment (sur la seule
-  couche fixe, Échap met simplement la course en pause).
+- **Plein écran de base.** La couche fixe (qui couvre tout le viewport) est posée
+  au montage de la page, et le choix est « épinglé » : intro, courses et arrivées
+  le gardent jusqu'à ce que le joueur le quitte (bouton de la barre, touche F,
+  Échap ou geste « retour » du navigateur). Téléphone, tablette et application
+  Android : le clic sur une carte de map (ou de coupe) demande en plus le natif
+  dans le geste (`opensFullscreenOnLaunch()`), ce qui rouvre un plein écran
+  quitté. Sur la seule couche fixe, Échap met simplement la course en pause.
 - **Course en ligne** : la fenêtre de course a son propre bouton et la touche F.
   Jamais d'ouverture automatique — le départ vient du serveur, sans geste du
   joueur, et le navigateur refuserait. Pas de pause non plus : une course en
@@ -250,7 +251,7 @@ carte elle-même qui démarre la partie.
 ```bash
 npm run check:mirage-flow         # clic sur une carte = partie lancée, ✓ vert des maps et des coupes
 npm run check:mirage-cup          # coupe lancée au clic, relance d'une coupe terminée
-npm run check:mirage-fullscreen   # clic = plein écran sur téléphone, jamais sur ordinateur
+npm run check:mirage-fullscreen   # plein écran de base au lancement, natif au premier geste, commandes F / bouton / « LANCER EN PLEIN ÉCRAN »
 ```
 
 ## Mirage Rush : les bruitages des techniques de Cloud
