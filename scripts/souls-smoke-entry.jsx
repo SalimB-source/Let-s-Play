@@ -177,7 +177,7 @@ console.log('240 frames OK — ready =', readyFired, '| hud samples =', hudSampl
 // La vérification protège la pose deux mains et son ouverture en silhouette.
 try {
   const p = world.debug.warrior.userData.parts;
-  if (!p.offhandGrip) fail('PRISE À DEUX MAINS ABSENTE — repère de main gauche manquant');
+  if (!p.offhandGrip || !p.offhandClasp || !p.offhandClasp.visible) fail('PRISE À DEUX MAINS ABSENTE — poignée ou main gauche manquante');
   world.debug.warrior.updateMatrixWorld(true);
   const palm = new THREE.Vector3(0, -0.3, 0);
   const grip = new THREE.Vector3();

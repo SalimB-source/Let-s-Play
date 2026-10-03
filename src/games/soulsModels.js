@@ -1643,6 +1643,18 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     color: palette.vein, transparent: true, opacity: corrupted || boss ? 0.82 : 0.74,
     blending: THREE.AdditiveBlending, depthWrite: false,
   });
+  // Rehaut réservé au bras qui soutient le glaive : il reste lisible dans la
+  // vue de dos, même quand les ailes et le thorax passent devant sa silhouette.
+  const offhandHighlight = new THREE.MeshStandardMaterial({
+    color: palette.light, emissive: palette.lightEmissive,
+    emissiveIntensity: boss ? 1.35 : 1.05, roughness: 0.24, metalness: 0.28,
+    transparent: true, opacity: 0.96, depthTest: false, depthWrite: false,
+  });
+  const offhandClaw = new THREE.MeshStandardMaterial({
+    color: palette.gold, emissive: boss ? 0x8d3d58 : 0x5c3512,
+    emissiveIntensity: 0.72, roughness: 0.22, metalness: 0.64,
+    transparent: true, opacity: 0.96, depthTest: false, depthWrite: false,
+  });
 
   const ellipsoid = (r, material, sx = 1, sy = 1, sz = 1, segments = 18) => {
     const mesh = new THREE.Mesh(new THREE.SphereGeometry(r, segments, Math.max(10, Math.round(segments * 0.72))), material);
@@ -1760,6 +1772,15 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     const upperBand = ring(0.067, 0.011, gold);
     upperBand.position.y = -0.26;
     arm.add(upper, shoulder, upperBand);
+    if (side < 0) {
+      // Plaque lumineuse sur l'extérieur du bras gauche : une vraie pièce de
+      // carapace (pas une main dessinée à plat), rendue au-dessus des ailes.
+      const upperSignal = ellipsoid(0.052, offhandHighlight, 0.78, 2.25, 0.34, 14);
+      upperSignal.position.set(0, -0.145, 0.074);
+      upperSignal.renderOrder = 6;
+      upperSignal.userData.noCast = true;
+      arm.add(upperSignal);
+    }
 
     const elbow = new THREE.Group();
     elbow.position.y = -0.31;
@@ -1773,6 +1794,13 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     const palm = ellipsoid(0.052, chitinDark, 0.94, 1.12, 0.82);
     palm.position.y = -0.3;
     elbow.add(joint, forearm, forePlate, wristBand, palm);
+    if (side < 0) {
+      const foreSignal = ellipsoid(0.043, offhandHighlight, 0.72, 2.35, 0.34, 13);
+      foreSignal.position.set(0, -0.145, 0.071);
+      foreSignal.renderOrder = 6;
+      foreSignal.userData.noCast = true;
+      elbow.add(foreSignal);
+    }
     for (let i = 0; i < 3; i++) {
       const claw = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.068, 5), gold);
       claw.rotation.x = -Math.PI / 2;
@@ -1921,6 +1949,36 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   offhandWrap.position.set(-0.56, 0.375, 0);
   const offhandCap = ellipsoid(0.058, gold, 0.9, 1, 0.8);
   offhandCap.position.set(-0.69, 0.36, 0);
+  // Main d'appui lisible : la vraie main gauche du rig arrive ici, et ce
+  // gant de chitine la rend immédiatement identifiable depuis la caméra arrière
+  // (paume turquoise + trois griffes qui entourent la poignée horizontale).
+  const offhandClasp = new THREE.Group();
+  offhandClasp.name = 'visible-offhand-clasp';
+  offhandClasp.position.set(-0.62, 0.37, 0);
+  const claspPalm = ellipsoid(0.096, offhandHighlight, 1.02, 0.94, 0.64, 16);
+  claspPalm.position.z = 0.108;
+  claspPalm.renderOrder = 7;
+  claspPalm.userData.noCast = true;
+  const claspKnuckle = ellipsoid(0.068, offhandHighlight, 1.3, 0.54, 0.55, 13);
+  claspKnuckle.position.set(0, 0.012, 0.145);
+  claspKnuckle.renderOrder = 7;
+  claspKnuckle.userData.noCast = true;
+  offhandClasp.add(claspPalm, claspKnuckle);
+  for (const y of [-0.031, 0, 0.031]) {
+    const clawCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.018, y, 0.108),
+      new THREE.Vector3(-0.012, y - 0.007, 0.044),
+      new THREE.Vector3(-0.016, y, -0.025),
+    ]);
+    offhandClasp.add(new THREE.Mesh(
+      new THREE.TubeGeometry(clawCurve, 8, 0.016, 6, false), offhandClaw,
+    ));
+  }
+  offhandClasp.traverse((part) => {
+    if (!part.isMesh) return;
+    part.renderOrder = 7;
+    part.userData.noCast = true;
+  });
   const pommel = ellipsoid(0.072, gold, 1, 1, 0.8);
   pommel.position.y = 0.45;
   // Repère non rendu : SoulsWorld aligne précisément la paume gauche au bout
@@ -1930,7 +1988,7 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   offhandGrip.position.set(-0.62, 0.37, 0);
   weapon.add(shaft, shaftBandA, shaftBandB, crescent, edge,
     lowerGrip, upperGrip, upperGripBand, offhandBranch, offhandWrap,
-    offhandCap, pommel, offhandGrip);
+    offhandCap, offhandClasp, pommel, offhandGrip);
   weapon.scale.setScalar(0.85);
   weapon.rotation.z = -0.35;
   weapon.rotation.x = 0.1;
@@ -1956,7 +2014,7 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
     armL: armL.arm, armR: armR.arm, elbowL: armL.elbow, elbowR: armR.elbow,
     legL: legL.leg, legR: legR.leg, kneeL: legL.knee, kneeR: legR.knee,
     footL: legL.foot, footR: legR.foot,
-    cape, wings: [wingL, wingR], visor, weapon, offhandGrip, strands, potion,
+    cape, wings: [wingL, wingR], visor, weapon, offhandGrip, offhandClasp, strands, potion,
   };
   return warrior;
 }

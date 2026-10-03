@@ -1627,6 +1627,9 @@ function makeWorld(mount, callbacks) {
     // autres états, la paume gauche reste réellement calée sur son enroulement.
     const holdingGlaiveWithBothHands = !dead && combat.action !== 'drink' && combat.action !== 'dodge'
       && lockOffhandToGlaive(parts);
+    // Le gant de lisibilité est la surface visible de cette même main : il
+    // disparaît dès que le Gardien lâche le glaive pour boire, rouler ou mourir.
+    if (parts.offhandClasp) parts.offhandClasp.visible = holdingGlaiveWithBothHands;
     if (!holdingGlaiveWithBothHands) {
       // Le solveur écrit un quaternion complet. Hors prise, le rig retrouve
       // ses axes historiques afin que la potion, le roulé et la mort gardent
