@@ -73,6 +73,8 @@ import {
   chooseCityRushTrafficEscapeLane,
   cityRushHelicopterTarget,
   cityRushIsAhead,
+  cityRushStraightShotRetaliation,
+  cityRushStraightShotSweptHit,
   cityRushStraightShotTarget,
   cityRushStunSpin,
   detectCityRushTrafficImpacts,
@@ -1295,12 +1297,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         ? isVisibleInPlayerCamera(target.mesh)
         : Boolean(target.mesh?.visible),
     }));
-    return cityRushStraightShotTarget({
+    const ahead = cityRushStraightShotTarget({
       attackerDistance: attacker.distance,
       attackerLane: attacker.lane,
       targets,
       maxDistance: CITY_RUSH_BLUE_SHOT_MAX_RANGE,
     });
+    if (ahead) return ahead;
+    // Personne dans la voie devant : comme la rafale rouge et l'hélico, le tir
+    // droit peut se retourner contre la berline la plus proche de sa voie,
+    // même collée au pare-chocs arrière. C'est le seul moyen de toucher
+    // l'escouade, qui attaque dans le dos du pilote.
+    const squad = cityRushStraightShotRetaliation({
+      pursuers: activePursuers(),
+      attackerDistance: attacker.distance,
+      attackerLane: attacker.lane,
+      excludeId: attackerId,
+    });
+    return squad ? getRaceVehicleState(squad.id) : null;
   }
 
   // Placement stéréo d'un bruitage : la voie de la voiture, ramenée à un
@@ -1550,8 +1564,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const attacker = getRaceVehicleState(attackerId);
     if (!attacker) return false;
     const muzzleOffset = 1.12;
-    const startTrackDistance = attacker.distance + muzzleOffset / SCALE;
+    // Riposte : une berline déjà dépassée reçoit le projectile dans le sens de
+    // la marche inversé — il sort du pare-chocs arrière et remonte la voie,
+    // comme les balles de la rafale rouge.
+    const direction = Number.isFinite(Number(target?.distance)) && Number(target.distance) < attacker.distance ? -1 : 1;
+    const startTrackDistance = attacker.distance + (direction * muzzleOffset) / SCALE;
     const mesh = makeBulletTracer({ coreColor: 0xe7faff, trailColor: 0x48b9ff, burstColor: 0x9be5ff });
+    // La traînée reste derrière la balle : un tir vers l'arrière pivote.
+    mesh.rotation.y = direction > 0 ? 0 : Math.PI;
     scene.add(mesh);
     straightShots.push({
       mesh,
@@ -1559,10 +1579,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       targetId: target?.id || null,
       lane: attacker.lane,
       x: CITY_RUSH_LANE_X[attacker.lane],
+      direction,
       startTrackDistance,
       previousTrackDistance: startTrackDistance,
       trackDistance: startTrackDistance,
-      maxTrackDistance: startTrackDistance + CITY_RUSH_BLUE_SHOT_MAX_RANGE,
+      maxTrackDistance: startTrackDistance + direction * CITY_RUSH_BLUE_SHOT_MAX_RANGE,
       previousTargetDistance: Number.isFinite(Number(target?.distance)) ? Number(target.distance) : null,
       age: 0,
       phase: 'flight',
@@ -1588,6 +1609,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // Une berline encaisse un point de dégât : il en faut deux pour la
       // faire exploser (ou une rafale rouge, ou un tir d'hélico).
       damagePolice(target.racer, CITY_RUSH_POWERS.BLUE_SHOT, attackerId);
+      // La berline touchée mais encore debout se raconte au pilote : sans ce
+      // retour, un tir droit qui abîme une voiture de police passe inaperçu
+      // (la destruction, elle, a déjà son propre bandeau).
+      if (attackerId === 'player' && target.racer.health > 0) {
+        getCallbacks().effect?.({
+          type: 'police-hit',
+          police: target.name,
+          health: target.racer.health,
+          maxHealth: CITY_RUSH_POLICE_HEALTH,
+          source: CITY_RUSH_POWERS.BLUE_SHOT,
+        });
+      }
     } else if (target.racer) {
       target.racer.blueShotSlowLeft = Math.max(target.racer.blueShotSlowLeft || 0, duration);
       target.racer.skidLeft = duration;
@@ -1639,7 +1672,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function destroyPolice(police, source, attackerId) {
-    if (!police || police.health <= 0) return;
+    // Garde d'idempotence : `active` passe à false ici même, et une berline
+    // jamais entrée en course ne l'est pas non plus. La vie ne peut pas servir
+    // de garde — `damagePolice` la met à zéro AVANT d'appeler cette fonction,
+    // et le test sur la vie faisait alors sortir sans explosion : la berline
+    // restait en piste, barre vide, insensible à tous les tirs suivants.
+    if (!police || police.active === false) return;
     police.health = 0;
     police.healthFlash = 0;
     const byPlayer = attackerId === 'player';
@@ -1760,29 +1798,69 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const shot = straightShots[index];
       if (shot.phase === 'flight') {
         shot.age += dt;
+        const direction = shot.direction || 1;
         const previousProjectileDistance = shot.trackDistance;
         const previousTargetDistance = shot.previousTargetDistance;
         shot.previousTrackDistance = previousProjectileDistance;
-        shot.trackDistance = Math.min(
-          shot.maxTrackDistance,
-          shot.startTrackDistance + CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED * shot.age,
-        );
+        // Sens de marche : +1 vers l'avant, −1 pour une riposte sur une
+        // berline déjà dépassée.
+        shot.trackDistance = direction > 0
+          ? Math.min(
+            shot.maxTrackDistance,
+            shot.startTrackDistance + CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED * shot.age,
+          )
+          : Math.max(
+            shot.maxTrackDistance,
+            shot.startTrackDistance - CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED * shot.age,
+          );
         const target = shot.targetId ? getRaceVehicleState(shot.targetId) : null;
+        // La cible est croisée quand elle passe de « devant la balle » à
+        // « derrière la balle », dans le sens de marche du projectile.
         const crossedTarget = target
           && Number.isFinite(previousTargetDistance)
-          && previousTargetDistance - previousProjectileDistance > 0
-          && target.distance - shot.trackDistance <= 0;
+          && (previousTargetDistance - previousProjectileDistance) * direction > 0
+          && (target.distance - shot.trackDistance) * direction <= 0;
 
-        if (crossedTarget) {
+        // Les berlines de police ne sont jamais verrouillées au tir : elles
+        // changent de voie en permanence pour rafler les bonus. Le projectile
+        // balaie donc le segment de voie qu'il vient de parcourir et toute
+        // berline de sa voie l'encaisse, y compris celle qui s'est rabattue
+        // devant lui après le départ du coup. C'est ce qui rend le tir bleu
+        // capable de toucher — puis de détruire — les voitures de police.
+        const policeCrossed = cityRushStraightShotSweptHit({
+          lane: shot.lane,
+          fromDistance: Math.min(previousProjectileDistance, shot.trackDistance),
+          toDistance: Math.max(previousProjectileDistance, shot.trackDistance),
+          targets: activePursuers()
+            .filter((police) => police.id !== shot.attackerId && police.id !== target?.id)
+            .map((police) => getRaceVehicleState(police.id))
+            .filter(Boolean),
+        });
+        // La balle s'arrête sur le premier obstacle de sa voie : si une
+        // berline est plus proche du canon que la cible verrouillée, c'est
+        // elle qui prend le tir.
+        const hitByPolice = Boolean(policeCrossed)
+          && (!crossedTarget
+            || Math.abs(Number(policeCrossed.distance) - previousProjectileDistance)
+              <= Math.abs(Number(target.distance) - previousProjectileDistance));
+        // Impact commun : la balle s'arrête, son noyau s'efface et l'éclat
+        // prend le relais à l'endroit du choc.
+        const resolveImpact = (hitTarget) => {
+          applyStraightShotHit(hitTarget, shot.attackerId);
+          shot.phase = 'impact';
+          shot.age = 0;
+          shot.hitPoint.copy(hitTarget.mesh.position).add(new THREE.Vector3(0, 0.85, 0));
+          shot.mesh.position.copy(shot.hitPoint);
+          shot.mesh.userData.core.visible = false;
+          shot.mesh.userData.trail.visible = false;
+          shot.mesh.userData.burst.visible = true;
+        };
+
+        if (hitByPolice) {
+          resolveImpact(policeCrossed);
+        } else if (crossedTarget) {
           if (target.lane === shot.lane) {
-            applyStraightShotHit(target, shot.attackerId);
-            shot.phase = 'impact';
-            shot.age = 0;
-            shot.hitPoint.copy(target.mesh.position).add(new THREE.Vector3(0, 0.85, 0));
-            shot.mesh.position.copy(shot.hitPoint);
-            shot.mesh.userData.core.visible = false;
-            shot.mesh.userData.trail.visible = false;
-            shot.mesh.userData.burst.visible = true;
+            resolveImpact(target);
           } else {
             // Si la cible quitte la voie avant l'impact, la balle continue son
             // trajet rectiligne : elle ne la suit pas.
@@ -1796,8 +1874,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         if (shot.phase === 'flight') {
           shot.previousTargetDistance = target ? target.distance : null;
           shot.mesh.position.set(shot.x, 0.82, PLAYER_Z - (shot.trackDistance - distance) * SCALE);
-          shot.mesh.rotation.set(0, 0, 0);
-          const flightRange = Math.max(0.001, shot.maxTrackDistance - shot.startTrackDistance);
+          // La traînée reste derrière la balle, y compris en riposte.
+          shot.mesh.rotation.set(0, direction > 0 ? 0 : Math.PI, 0);
+          // Portée signée : un tir vers l'arrière a une portée négative, le
+          // rapport reste donc une progression de 0 à 1.
+          const flightRange = direction * Math.max(0.001, Math.abs(shot.maxTrackDistance - shot.startTrackDistance));
           const progress = clamp((shot.trackDistance - shot.startTrackDistance) / flightRange, 0, 1);
           shot.mesh.scale.setScalar(0.92 + Math.sin(shot.age * 48) * 0.08);
           if (progress >= 1) {
@@ -1937,7 +2018,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         getCallbacks().effect?.({ type: 'rival-boost', rival: racer.name });
       } else if (type === CITY_RUSH_POWERS.BLUE_SHOT) {
         fireStraightShot(racer.id, target);
-        getCallbacks().effect?.({ type: 'rival-blue-shot', rival: racer.name });
+        // Riposte : le rival peut tirer vers l'arrière sur une berline déjà
+        // dépassée, comme le pilote.
+        getCallbacks().effect?.({
+          type: 'rival-blue-shot',
+          rival: racer.name,
+          backward: Number(target.distance) < Number(racer.distance),
+        });
       } else if (type === 'pistol') {
         fireMachineGun(racer.id, target.id);
         if (target.id === 'player') {
