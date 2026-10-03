@@ -1,10 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushStoryScene from './CityRushStoryScene';
 import CityRushMinimap from './CityRushMinimap';
+import FullscreenIcon from './FullscreenIcon';
 import { CityRushAudio } from './cityRushAudio';
+import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
+import useGameFullscreen from './useGameFullscreen';
 import {
   CITY_RUSH_CARS,
   CITY_RUSH_CITIES,
@@ -198,21 +201,32 @@ export default function ViceCityRushPage() {
   const [toast, setToast] = useState(null);
   const [lapBanner, setLapBanner] = useState(null);
   const [worldError, setWorldError] = useState('');
-  const [immersive, setImmersive] = useState(false);
-  const [isTouch, setIsTouch] = useState(false);
   const [soundOn, setSoundOn] = useState(readSoundPref);
   const audioRef = useRef(null);
   const soundOnRef = useRef(soundOn);
   const actionsRef = useRef(null);
   const shellRef = useRef(null);
-  const immersiveRef = useRef(false);
   const phaseRef = useRef(phase);
   const toastTimerRef = useRef(null);
   const lapTimerRef = useRef(null);
   const startRaceRef = useRef(null);
-  const isTouchRef = useRef(isTouch);
+  // Phase à rendre à « REPRENDRE » quand c'est le navigateur (Échap, geste
+  // « retour » d'Android) qui a refermé le plein écran : une pause décidée par
+  // le système doit rendre au jeu l'écran qu'il avait quitté — compte à
+  // rebours ou course.
+  const resumePhaseRef = useRef('playing');
+  // La sortie « native » (Échap, geste retour) est branchée sur la pause plus
+  // loin, une fois `pauseRace` défini : d'où la référence.
+  const nativeExitRef = useRef(null);
+  // Plein écran de la coque du jeu (voir la section « Plein écran » plus bas).
+  const {
+    active: immersive,
+    enter: enterImmersive,
+    exit: exitImmersive,
+    toggle: toggleImmersive,
+    isPinned: immersivePinned,
+  } = useGameFullscreen(shellRef, { onNativeExit: () => nativeExitRef.current?.() });
   phaseRef.current = phase;
-  isTouchRef.current = isTouch;
   soundOnRef.current = soundOn;
 
   const city = useMemo(() => CITY_RUSH_CITIES.find((item) => item.id === cityId) || CITY_RUSH_CITIES[0], [cityId]);
@@ -258,58 +272,55 @@ export default function ViceCityRushPage() {
     setPlayerDriverId(nextDriver.id);
   };
 
+  // ── Plein écran ────────────────────────────────────────────────────────
+  // Le mécanisme (Fullscreen API, couche fixe en repli, verrou de défilement)
+  // vit dans useGameFullscreen / gameFullscreen.js, partagé avec Mirage Rush.
+  // Ici, les règles du jeu :
+  //   - l'interface SE LANCE EN PLEIN ÉCRAN DE BASE : la couche fixe (classe
+  //     `is-immersive`), qui couvre tout le viewport, est posée dès le montage
+  //     de la page ; le plein écran natif — que le navigateur refuse hors d'un
+  //     geste — part au tout premier geste du joueur (clic, touche). Le choix
+  //     est « épinglé » : intro, cinématiques, courses et arrivées le gardent
+  //     jusqu'à ce que le joueur le quitte (bouton de la barre, touche F, Échap
+  //     ou geste « retour » du navigateur) ;
+  //   - téléphone, tablette, application : le lancement d'une course demande
+  //     aussi le natif dans le geste (voir `opensFullscreenOnLaunch()`), ce qui
+  //     relance un plein écran quitté ;
+  //   - si le navigateur le referme (Échap, geste « retour »), la course en cours
+  //     est mise en pause plutôt que jouée à moitié dans la page.
   useEffect(() => {
-    if (typeof window.matchMedia !== 'function') return undefined;
-    const media = window.matchMedia('(pointer: coarse)');
-    setIsTouch(media.matches);
-    const onChange = (event) => setIsTouch(event.matches);
-    media.addEventListener?.('change', onChange);
-    return () => media.removeEventListener?.('change', onChange);
-  }, []);
+    // Plein écran « de base » : la couche fixe se pose sans geste. `native` est
+    // faux car le navigateur refuserait une demande hors geste — le natif part
+    // au premier geste (effet suivant).
+    enterImmersive({ pinned: true, native: false });
+  }, [enterImmersive]);
 
-  const enterImmersive = () => {
-    const shell = shellRef.current;
-    if (!shell || immersiveRef.current || (!isTouchRef.current && !window.LetsPlayAndroid)) return;
-    immersiveRef.current = true;
-    setImmersive(true);
-    document.body.classList.add('city-rush-lock');
-    try {
-      const request = shell.requestFullscreen || shell.webkitRequestFullscreen;
-      const done = request?.call(shell);
-      done?.catch?.(() => {});
-    } catch {}
-  };
-  const exitImmersive = () => {
-    if (!immersiveRef.current) return;
-    immersiveRef.current = false;
-    setImmersive(false);
-    document.body.classList.remove('city-rush-lock');
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
-      try {
-        const done = (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
-        done?.catch?.(() => {});
-      } catch {}
-    }
-  };
+  // Le navigateur exige un geste pour le vrai plein écran : le premier clic ou
+  // la première touche (hors champs de saisie) le demande. Le natif posé — ou
+  // le plein écran quitté — l'écoute s'arrête d'elle-même.
   useEffect(() => {
-    const onFullscreenChange = () => {
-      if (immersiveRef.current && !document.fullscreenElement && !document.webkitFullscreenElement) {
-        immersiveRef.current = false;
-        setImmersive(false);
-        document.body.classList.remove('city-rush-lock');
-      }
+    if (!immersive) return undefined;
+    const upgrade = (event) => {
+      if (nativeFullscreenElement()) return;
+      const tag = event.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      enterImmersive({ pinned: true });
     };
-    document.addEventListener('fullscreenchange', onFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+    window.addEventListener('pointerdown', upgrade, true);
+    window.addEventListener('keydown', upgrade, true);
     return () => {
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
-      document.body.classList.remove('city-rush-lock');
+      window.removeEventListener('pointerdown', upgrade, true);
+      window.removeEventListener('keydown', upgrade, true);
     };
-  }, []);
+  }, [immersive, enterImmersive]);
+
+  // Une ouverture automatique (téléphone, application) ne survit pas au retour
+  // à l'intro ni à l'arrivée : le joueur y retrouve la page. Un plein écran
+  // demandé, lui, reste (le jeu ne le referme pas de lui-même).
   useEffect(() => {
+    if (immersivePinned()) return;
     if (phase === 'intro' || phase === 'finished' || phase === 'cinematic') exitImmersive();
-  }, [phase]);
+  }, [phase, exitImmersive, immersivePinned]);
 
   useEffect(() => {
     audioRef.current = new CityRushAudio();
@@ -347,6 +358,19 @@ export default function ViceCityRushPage() {
   };
   toggleSoundRef.current = toggleSound;
 
+  // Le navigateur vient de refermer le plein écran (Échap, geste « retour »
+  // d'Android) : en pleine course, on suspend plutôt que de laisser la voiture
+  // rouler pendant que la page se remet en forme. Hors course, il n'y a rien à
+  // suspendre. `resumeRace` rend l'écran quitté — compte à rebours ou course.
+  const pauseRace = useCallback(() => {
+    const current = phaseRef.current;
+    if (current !== 'playing' && current !== 'countdown') return;
+    resumePhaseRef.current = current;
+    setPhase('paused');
+  }, []);
+  const resumeRace = useCallback(() => setPhase(resumePhaseRef.current || 'playing'), []);
+  nativeExitRef.current = pauseRace;
+
   useEffect(() => {
     if (phase !== 'countdown') return undefined;
     if (countdown > 0) {
@@ -362,12 +386,17 @@ export default function ViceCityRushPage() {
       const target = event.target?.tagName;
       if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
       const key = event.key.toLowerCase();
-      if ((key === 'escape' || key === 'p') && phaseRef.current === 'playing') {
+      if (isFullscreenShortcut(event)) {
+        // F : plein écran natif (la couche fixe sert déjà de repli). Voir aussi
+        // le bouton « Plein écran » de la barre.
         event.preventDefault();
-        setPhase('paused');
+        toggleImmersive();
+      } else if ((key === 'escape' || key === 'p') && phaseRef.current === 'playing') {
+        event.preventDefault();
+        pauseRace();
       } else if ((key === 'escape' || key === 'p') && phaseRef.current === 'paused') {
         event.preventDefault();
-        setPhase('playing');
+        resumeRace();
       } else if (key === 'escape' && phaseRef.current === 'countdown') {
         event.preventDefault();
         setPhase('intro');
@@ -381,7 +410,7 @@ export default function ViceCityRushPage() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [phase]);
+  }, [phase, pauseRace, resumeRace, toggleImmersive]);
 
   useEffect(() => () => {
     window.clearTimeout(toastTimerRef.current);
@@ -406,7 +435,13 @@ export default function ViceCityRushPage() {
     window.clearTimeout(lapTimerRef.current);
     setCountdown(3);
     setRunId((value) => value + 1);
-    enterImmersive();
+    // Clic sur « LANCER » (« REJOUER », « CHAPITRE SUIVANT ») ou touche Entrée :
+    // sur téléphone et dans l'application, la course s'ouvre en plein écran
+    // natif, demandé ici — synchronement dans le geste, sinon le navigateur le
+    // refuse. Sur ordinateur, un lancement ordinaire laisse l'écran comme il
+    // est : le plein écran de base est déjà là, sinon c'est le bouton de la
+    // barre ou la touche F qui le rouvre.
+    if (opensFullscreenOnLaunch()) enterImmersive();
     if (soundOnRef.current) audioRef.current?.start();
     setPhase('countdown');
   }
@@ -575,14 +610,31 @@ export default function ViceCityRushPage() {
               <button type="button" className={`city-rush-top-button city-rush-sound-button${soundOn ? ' is-on' : ''}`} onClick={toggleSound} aria-pressed={soundOn} title={soundOn ? 'Couper son (M)' : 'Activer son (M)'} aria-label={soundOn ? 'Couper le son' : 'Activer le son'}>
                 <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span>
               </button>
+              <button
+                type="button"
+                className={`city-rush-top-button city-rush-fullscreen-button${immersive ? ' is-on' : ''}`}
+                onClick={(event) => {
+                  toggleImmersive();
+                  // Après un clic (souris ou doigt), le bouton rend le focus : un
+                  // bouton qui le garde recevrait aussi Espace et Entrée (relancer
+                  // depuis l'arrivée). Au clavier (detail 0), le focus reste où il est.
+                  if (event.detail > 0) event.currentTarget.blur();
+                }}
+                aria-pressed={immersive}
+                aria-label="Plein écran"
+                title={immersive ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+              >
+                <FullscreenIcon exit={immersive} />
+                <span className="city-rush-fullscreen-label">PLEIN ÉCRAN</span>
+              </button>
               {phase === 'playing' && <>
                 <span className="city-rush-live-pill"><i /> {activeModeName} · EN COURSE</span>
-                <button type="button" className="city-rush-top-button" onClick={() => setPhase('paused')}>Ⅱ PAUSE</button>
+                <button type="button" className="city-rush-top-button" onClick={pauseRace}>Ⅱ PAUSE</button>
                 <button type="button" className="city-rush-top-button is-quiet" onClick={() => { setStoryMode(false); setPhase('intro'); setIntroStep('mode'); }}>↶ MENU</button>
               </>}
               {phase === 'paused' && <>
                 <span className="city-rush-live-pill is-paused"><i /> PAUSE</span>
-                <button type="button" className="city-rush-top-button is-resume" onClick={() => setPhase('playing')}>▶ REPRENDRE</button>
+                <button type="button" className="city-rush-top-button is-resume" onClick={resumeRace}>▶ REPRENDRE</button>
               </>}
               <span className="city-rush-top-flag"><i /> {currentLaps} TOUR{currentLaps > 1 ? 'S' : ''} · 4 VOIES</span>
             </div>
@@ -883,6 +935,7 @@ export default function ViceCityRushPage() {
                   <span>A Z E R · POUVOIRS</span>
                   <span>{currentLaps} TOURS · {currentDistance} M</span>
                   <span>M · SON</span>
+                  <span>F · PLEIN ÉCRAN</span>
                 </div>
               </div>
             )}
@@ -924,7 +977,7 @@ export default function ViceCityRushPage() {
                 <span className="city-rush-overlay-kicker">COURSE SUSPENDUE · {activeModeName}</span>
                 <h2>REPRENDS<br /><em>LE VOLANT.</em></h2>
                 <div className="city-rush-overlay-buttons">
-                  <button type="button" className="city-rush-start-button" onClick={() => setPhase('playing')}>REPRENDRE <span>▶</span></button>
+                  <button type="button" className="city-rush-start-button" onClick={resumeRace}>REPRENDRE <span>▶</span></button>
                   <button type="button" className="city-rush-text-button" onClick={() => { setStoryMode(false); setPhase('intro'); setIntroStep('mode'); }}>MENU PRINCIPAL</button>
                 </div>
                 <small>{city.name} · {activeModeLabel} · la route attend.</small>
@@ -975,7 +1028,7 @@ export default function ViceCityRushPage() {
 
           <div className="city-rush-shell-footer">
             <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {currentLaps} × {CITY_RUSH_LAP_LENGTH} M</span>
-            <span className="city-rush-desktop-hint">← → / Q D : VOIES <b>·</b> Z / R : TIRS <b>·</b> A / E : AUTO <b>·</b> P : PAUSE <b>·</b> M : SON</span>
+            <span className="city-rush-desktop-hint">← → / Q D : VOIES <b>·</b> Z / R : TIRS <b>·</b> A / E : AUTO <b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN</span>
             <span className="city-rush-mobile-hint">GLISSE GAUCHE / DROITE · OBJETS EN BAS</span>
           </div>
         </section>

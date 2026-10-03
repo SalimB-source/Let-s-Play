@@ -143,7 +143,7 @@ const OPEN = { native: true, layer: true, locked: true, pressed: 'true' };
 const CLOSED = { native: false, layer: false, locked: false, pressed: 'false' };
 const LAYER_ONLY = { native: false, layer: true, locked: true, pressed: 'true' };
 
-const locked = () => document.body.classList.contains('mirage-immersive-lock');
+const locked = () => document.body.classList.contains('game-immersive-lock');
 const shellOf = (node) => node.querySelector('.mirage-game-shell');
 const toggleOf = (node) => node.querySelector('.mirage-game-controls-top .mirage-fullscreen-button');
 const launchFullscreenOf = (node) => node.querySelector('.mirage-stage-actions .mirage-fullscreen-launch');
@@ -208,7 +208,7 @@ export async function checkMirageFullscreen(assert) {
       assert.equal(toggle.getAttribute('aria-pressed'), 'true', 'le bouton de la barre reflète le plein écran de base');
       assert.equal(toggle.getAttribute('aria-label'), 'Plein écran');
       assert.equal(squash(toggle.textContent), 'PLEIN ÉCRAN');
-      assert.ok(toggle.querySelector('svg.mirage-fullscreen-icon'), 'icône dessinée en SVG (pas de glyphe absent des polices)');
+      assert.ok(toggle.querySelector('svg.game-fullscreen-icon'), 'icône dessinée en SVG (pas de glyphe absent des polices)');
       assert.match(toggle.title, /\(F\)/, 'l’infobulle annonce la touche F');
       assert.ok(!launchFullscreenOf(node), 'déjà en plein écran : pas de bouton « LANCER EN PLEIN ÉCRAN »');
 

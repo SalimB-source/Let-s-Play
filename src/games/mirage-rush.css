@@ -69,7 +69,7 @@
 .mirage-game-shell { min-width: 0; overflow: hidden; }
 /* ── Plein écran (tous appareils) ─────────────────────────────────────────
    L'interface se lance en plein écran de base : cette couche fixe (classe
-   `is-immersive`, posée par useMirageFullscreen dès le montage de la page)
+   `is-immersive`, posée par useGameFullscreen dès le montage de la page)
    couvre tout le viewport sans attendre de geste, et le plein écran natif part
    au premier geste du joueur. Le bouton « Plein écran » de la barre du jeu,
    « LANCER EN PLEIN ÉCRAN » et la touche F font pareil : le plein écran natif
@@ -77,7 +77,7 @@
    (iOS Safari, WebViews sans Fullscreen API, iframe sans autorisation — dans
    l'APK, l'event fullscreenchange repart de la même couche). Elle règle aussi
    la mise en page en plein écran natif. */
-body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
+body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-game-shell.is-immersive {
   position: fixed;
   inset: 0;
@@ -135,7 +135,7 @@ body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Plein écran : l'icône change (coins qui s'écartent / se rapprochent) et le bouton
    s'allume tant qu'on y est, comme SON. Le libellé reste « PLEIN ÉCRAN » dans les
    deux états : c'est un interrupteur (aria-pressed), pas deux actions. */
-.mirage-fullscreen-icon { flex: none; width: 14px; height: 14px; }
+.game-fullscreen-icon { flex: none; width: 14px; height: 14px; }
 .mirage-fullscreen-button.is-on { color: #f5d276; border-color: rgba(245, 210, 118, .34); background: rgba(245, 210, 118, .08); }
 /* Graphismes baissés : un interrupteur (aria-pressed) comme Plein écran. L'icône
    (trois barres de signal) ne garde que la première allumée quand ils sont
@@ -459,7 +459,7 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
   font: 900 11px var(--mono); letter-spacing: .12em; cursor: pointer;
   transition: transform .18s, background .18s, border-color .18s, color .18s;
 }
-.mirage-fullscreen-launch .mirage-fullscreen-icon { width: 17px; height: 17px; }
+.mirage-fullscreen-launch .game-fullscreen-icon { width: 17px; height: 17px; }
 .mirage-fullscreen-launch:hover:not(:disabled) { transform: translateY(-2px); border-color: #ffe29a; background: rgba(255, 215, 107, .14); color: #fff1cc; }
 .mirage-fullscreen-launch:active:not(:disabled) { transform: translateY(0); }
 .mirage-fullscreen-launch:disabled { opacity: .55; cursor: wait; }
