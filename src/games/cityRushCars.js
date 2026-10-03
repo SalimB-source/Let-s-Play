@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
 import { createBatch } from './cityRushBuilder.js';
-import { makeCarPlateTexture, makeRacingNumberTexture, makeTrafficDecalAtlas, makeSmokeTexture } from './cityRushTextures.js';
+import { makeCarPlateTexture, makeTrafficDecalAtlas, makeSmokeTexture } from './cityRushTextures.js';
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const lerp = (a, b, amount) => a + (b - a) * amount;
@@ -29,6 +29,57 @@ const STEERING = new THREE.TorusGeometry(0.17, 0.028, 6, 18);
 const UNIT_PLANE = new THREE.PlaneGeometry(1, 1);
 const UNIT_SPHERE = new THREE.SphereGeometry(1, 14, 10);
 const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
+
+// Coque continue en sections transversales : capot bas, épaules larges et pavillon
+// qui s'affine en fonction du type de voiture. Ce volume lisse remplace la caisse
+// en empilement de blocs sans ajouter de texture externe.
+function makeCarShell(profile) {
+  const archetype = profile.archetype || 'ferrari';
+  const roofHeight = archetype === 'volkswagen' ? 1.25
+    : archetype === 'bmw' || archetype === 'porsche' ? 1.18
+      : archetype === 'lamborghini' || archetype === 'audi' ? 1.14 : 1.2;
+  const sections = [
+    [-1.66, 0.58, 0.39, 0.57], [-1.48, 0.82, 0.48, 0.72],
+    [-1.1, 0.9, 0.52, 0.78], [-0.62, 0.91, 0.54, 0.79],
+    [-0.3, 0.88, 0.8, roofHeight], [0.28, 0.84, 0.78, roofHeight],
+    [0.68, 0.88, 0.78, 0.89], [1.08, 0.91, 0.76, 0.79],
+    [1.48, 0.82, 0.58, 0.82], [1.7, 0.55, 0.48, 0.55],
+  ];
+  const positions = [];
+  const indices = [];
+  const sides = 12;
+  sections.forEach(([z, width, lower, upper], sectionIndex) => {
+    // Le pavillon retombe vers l'avant et l'arrière : silhouettes distinctes
+    // berlinette, coupé fastback, compacte et supercar à nez en coin.
+    let top = upper;
+    if (sectionIndex === 4 || sectionIndex === 5) top = roofHeight;
+    if (archetype === 'lamborghini' && sectionIndex < 4) top -= 0.035;
+    const cabinFactor = z > -0.4 && z < 0.9 ? (archetype === 'volkswagen' ? 0.76 : 0.62) : 0.96;
+    for (let side = 0; side < sides; side += 1) {
+      const angle = (side / sides) * Math.PI * 2;
+      const sin = Math.sin(angle);
+      const cos = Math.cos(angle);
+      const x = sin * width * (cos < -0.45 ? cabinFactor : 1);
+      const y = lower + ((cos + 1) / 2) * (top - lower);
+      positions.push(x, y, z);
+    }
+  });
+  for (let section = 0; section < sections.length - 1; section += 1) {
+    for (let side = 0; side < sides; side += 1) {
+      const a = section * sides + side;
+      const b = section * sides + (side + 1) % sides;
+      const c = (section + 1) * sides + side;
+      const d = (section + 1) * sides + (side + 1) % sides;
+      // Normale orientée vers l'extérieur (peinture visible côté caméra).
+      indices.push(a, c, b, c, d, b);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 let smokeTexture = null;
 let trafficDecals = null;
@@ -131,53 +182,57 @@ export function makeRacerCar(profile, options = {}) {
     flameInner: new THREE.MeshBasicMaterial({ color: 0xfff2ad, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
     wheel: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: 0.45 }),
     plate: new THREE.MeshBasicMaterial({ map: makeCarPlateTexture(profile, number), toneMapped: false }),
-    roundel: new THREE.MeshBasicMaterial({ map: makeRacingNumberTexture(profile, number), transparent: true, depthWrite: false, toneMapped: false }),
   };
   const id = profile.id;
-  const isGt = id === 'turbo-gt';
-  const isMuscle = id === 'muscle-86' || id === 'vega-gt-67';
-  const isComet = id === 'night-comet';
-  const isRoadster = id === 'vice-roadster';
+  const archetype = profile.archetype || 'ferrari';
+  const isGt = archetype === 'porsche';
+  const isMuscle = archetype === 'bmw';
+  const isComet = archetype === 'volkswagen';
+  const isRoadster = archetype === 'ferrari';
+  const isWedge = archetype === 'lamborghini' || archetype === 'audi';
   const b = createBatch();
   const box = (material, position, size, rotation = null) => b.box(material, position, size, rotation);
 
   // ── Caisse ───────────────────────────────────────────────────────────
   box(m.black, [0, 0.3, 0], [1.74, 0.14, 3.24]);
-  box(m.body, [0, 0.54, 0.05], [1.86, 0.44, 3.14]);
-  box(m.body, [0, 0.74, 0.35], [1.8, 0.1, 1.5]); // rebord de l'habitacle
+  const shell = new THREE.Mesh(makeCarShell(profile), m.body);
+  shell.name = `${id}-sculpted-body`;
+  shell.castShadow = true;
+  body.add(shell);
   box(m.carbon, [0, 0.34, 0.1], [1.94, 0.08, 2.3]); // bas de caisse
   for (const side of [-1, 1]) {
     box(m.trim, [side * 0.96, 0.4, 0.1], [0.06, 0.07, 2.1]); // jupe
-    box(m.body, [side * 0.945, 0.6, 0.3], [0.05, 0.3, 1.08]); // panneau de porte
-    box(m.black, [side * 0.975, 0.6, -0.26], [0.01, 0.3, 0.02]); // ligne de porte
+    // Jonction de porte et poignées, posées comme de vrais éléments de carrosserie.
+    box(m.black, [side * 0.89, 0.6, -0.26], [0.018, 0.22, 0.02]);
     box(m.chrome, [side * 0.985, 0.66, 0.5], [0.03, 0.04, 0.22]); // poignée
-    b.plane(m.roundel, [side * 0.99, 0.6, 0.3], 0.4, 0.4, [0, side * Math.PI / 2, 0]); // numéro de course
     box(m.chrome, [side * 0.96, 0.84, -0.46], [0.16, 0.04, 0.05]); // tige de rétro
     box(m.body, [side * 1.05, 0.9, -0.44], [0.14, 0.12, 0.2]); // rétroviseur
-    for (const z of [-1.05, 1.05]) box(m.body, [side * 0.92, 0.72, z], [0.74, 0.12, 0.76], [0, 0, side * 0.08]); // ailes
+    // Lèvre d'aile discrète au-dessus des pneus, sans élargir artificiellement la coque.
   }
 
   // ── Capot / nez ──────────────────────────────────────────────────────
   const hoodLength = isGt ? 1.34 : 1.18;
-  box(m.body, [0, 0.79, -0.92 - (isGt ? 0.08 : 0)], [1.74, 0.18, hoodLength], [0.045, 0, 0]);
-  box(m.body, [0, 0.64, -1.5], [1.76, 0.3, 0.42], [-0.32, 0, 0]); // pente du nez
+  // Nervures de capot fines : la pente du nez est déjà sculptée dans la coque.
+  for (const side of [-1, 1]) box(m.trim, [side * 0.42, 0.805, -0.94], [0.025, 0.012, hoodLength * 0.72], [0.045, 0, 0]);
   box(m.carbon, [0, 0.42, -1.62], [1.88, 0.18, 0.24]); // bouclier
   box(m.black, [0, 0.31, -1.66], [1.92, 0.05, 0.3]); // lame avant
   box(m.black, [0, 0.56, -1.7], [0.92, 0.14, 0.05]); // calandre
   for (const y of [0.52, 0.58]) box(m.chrome, [0, y, -1.72], [0.9, 0.015, 0.02]);
-  b.plane(m.roundel, [0, 0.885, -0.9], 0.56, 0.56, [-Math.PI / 2 + 0.045, 0, 0]);
   if (isRoadster) {
     for (const side of [-1, 1]) box(m.trim, [side * 0.6, 0.86, -1.3], [0.42, 0.06, 0.34]); // phares escamotables
     box(m.chrome, [0, 0.47, -1.74], [1.9, 0.05, 0.02]);
   }
   if (isMuscle) {
-    box(m.trim, [0, 0.92, -0.86], [0.72, 0.14, 0.5]); // prise d'air
-    box(m.black, [0, 0.95, -1.08], [0.56, 0.08, 0.06]);
-    for (const x of [-0.24, 0.24]) {
-      box(m.trim, [x, 0.885, -0.92], [0.16, 0.012, 1.14], [0.045, 0, 0]);
-      box(m.trim, [x, 0.9, 1.15], [0.16, 0.012, 0.84]);
+    // ADN coupé allemand : doubles nervures discrètes et grille sombre verticale.
+    for (const x of [-0.16, 0.16]) box(m.black, [x, 0.56, -1.725], [0.09, 0.12, 0.025]);
+    for (const x of [-0.3, 0.3]) box(m.trim, [x, 0.885, -0.92], [0.025, 0.01, 1.0], [0.045, 0, 0]);
+  }
+  if (isWedge) {
+    // Supercar à nez bas : splitters latéraux et prises d'air anguleuses.
+    for (const side of [-1, 1]) {
+      box(m.black, [side * 0.7, 0.48, -1.46], [0.3, 0.09, 0.08], [0, 0, side * 0.16]);
+      box(m.carbon, [side * 0.91, 0.55, 0.5], [0.035, 0.22, 0.42], [0.18, 0, 0]);
     }
-    box(m.chrome, [0, 0.44, -1.66], [1.92, 0.12, 0.08]);
   }
   if (isGt) {
     for (const side of [-1, 1]) {
@@ -213,9 +268,7 @@ export function makeRacerCar(profile, options = {}) {
     headlightCones.push(cone);
   }
 
-  // Arrière.
-  box(m.body, [0, 0.78, 1.12], [1.76, 0.22, 0.96]); // malle
-  box(m.body, [0, 0.6, 1.62], [1.84, 0.3, 0.12]);
+  // Arrière : diffuseur, feux et sorties d'échappement intégrés à la coque.
   box(m.carbon, [0, 0.42, 1.66], [1.88, 0.14, 0.2]);
   for (const x of [-0.5, -0.2, 0.2, 0.5]) box(m.black, [x, 0.34, 1.7], [0.04, 0.12, 0.2]); // diffuseur
   if (isMuscle) {
@@ -252,8 +305,28 @@ export function makeRacerCar(profile, options = {}) {
   // ── Habitacle ────────────────────────────────────────────────────────
   box(m.carbon, [0, 0.9, -0.3], [1.62, 0.2, 0.36]); // planche de bord
   box(m.trim, [0, 0.98, -0.3], [1.2, 0.03, 0.18]);
-  box(m.glass, [0, 1.06, -0.4], [1.58, 0.44, 0.03], [0.46, 0, 0]); // pare-brise
-  for (const side of [-1, 1]) box(m.chrome, [side * 0.78, 1.06, -0.4], [0.04, 0.46, 0.05], [0.46, 0, 0]);
+  const windshieldGeometry = new THREE.BufferGeometry();
+  windshieldGeometry.setAttribute('position', new THREE.Float32BufferAttribute([
+    -0.71, 0.86, -0.82, 0.71, 0.86, -0.82, -0.57, 1.17, -0.34,
+    0.71, 0.86, -0.82, 0.57, 1.17, -0.34, -0.57, 1.17, -0.34,
+  ], 3));
+  windshieldGeometry.computeVertexNormals();
+  const windshield = new THREE.Mesh(windshieldGeometry, m.glass);
+  windshield.name = `${id}-windscreen`;
+  body.add(windshield);
+  const sideWindowGeometry = new THREE.BufferGeometry();
+  const sideWindowVertices = [];
+  for (const side of [-1, 1]) {
+    sideWindowVertices.push(
+      side * 0.84, 0.83, -0.25, side * 0.82, 0.84, 0.38, side * 0.57, 1.16, -0.24,
+      side * 0.82, 0.84, 0.38, side * 0.56, 1.16, 0.28, side * 0.57, 1.16, -0.24,
+    );
+  }
+  sideWindowGeometry.setAttribute('position', new THREE.Float32BufferAttribute(sideWindowVertices, 3));
+  sideWindowGeometry.computeVertexNormals();
+  const sideWindow = new THREE.Mesh(sideWindowGeometry, m.glass);
+  sideWindow.name = `${id}-side-glass`;
+  body.add(sideWindow);
   box(m.chrome, [0, 1.26, -0.31], [1.6, 0.04, 0.05]);
   const hoopWidth = isComet ? 1.6 : 1.0;
   for (const side of [-1, 1]) box(m.chrome, [side * hoopWidth / 2, 1.0, 0.72], [0.07, 0.56, 0.07]); // arceau

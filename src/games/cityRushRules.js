@@ -27,34 +27,40 @@ export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la plac
 // différents. Les barres sont aussi reliées aux multiplicateurs ci-dessous.
 export const CITY_RUSH_CARS = Object.freeze([
   Object.freeze({
-    id: 'vice-roadster', name: 'SUNSET ROADSTER', className: 'CABRIOLET ÉQUILIBRÉ',
-    bodyColor: 0xf66b9e, trimColor: 0x42ead6, driverColor: 0xf3c9a8, accent: '#ff5db8',
+    id: 'vice-roadster', archetype: 'ferrari', name: 'CAVALLO F8 GTB', className: 'BERLINETTA V8 · BI-TURBO ITALIENNE',
+    bodyColor: 0xd91424, trimColor: 0xffd000, driverColor: 0x1e222d, accent: '#ef233c',
     power: 82, powerMultiplier: 1, acceleration: 83, accelerationRate: 9.1, recovery: 82, hitRecoveryMultiplier: 0.96,
     widthScale: 1, heightScale: 1, lengthScale: 1,
   }),
   Object.freeze({
-    id: 'turbo-gt', name: 'TURBO GT', className: 'GRAND TOURISME · BASSE ET LONGUE',
-    bodyColor: 0x49d7d0, trimColor: 0xefffff, driverColor: 0xffb38c, accent: '#43ead5',
+    id: 'turbo-gt', archetype: 'porsche', name: 'KRONOS 930 TURBO', className: 'FLAT-SIX BI-TURBO · COUPÉ SPORT',
+    bodyColor: 0xcfd8e3, trimColor: 0xe63946, driverColor: 0x1a202c, accent: '#38bdf8',
     power: 94, powerMultiplier: 1.04, acceleration: 72, accelerationRate: 8.6, recovery: 74, hitRecoveryMultiplier: 1.06,
     widthScale: 1.02, heightScale: 0.95, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'muscle-86', name: 'MUSCLE 86', className: 'MUSCLE CAR · LARGE ET PUISSANTE',
-    bodyColor: 0xffc653, trimColor: 0xffffff, driverColor: 0x9fcbff, accent: '#ffc653',
+    id: 'muscle-86', archetype: 'audi', name: 'VORTEX RS-10', className: 'SUPERCAR V10 · TRANSMISSION INTÉGRALE',
+    bodyColor: 0x1e64c8, trimColor: 0xd8e2ec, driverColor: 0x1c2430, accent: '#60a5fa',
     power: 88, powerMultiplier: 1.02, acceleration: 95, accelerationRate: 9.8, recovery: 70, hitRecoveryMultiplier: 1.08,
     widthScale: 1.07, heightScale: 1.03, lengthScale: 1.08,
   }),
   Object.freeze({
-    id: 'night-comet', name: 'NIGHT COMET', className: 'COMPACTE · REPRISE RAPIDE',
-    bodyColor: 0x9b7bff, trimColor: 0x62e7dc, driverColor: 0xf3c9a8, accent: '#a78bff',
+    id: 'night-comet', archetype: 'volkswagen', name: 'WOLFSBURG GT-R', className: 'COMPACTE TURBO · HOT HATCH SPORT',
+    bodyColor: 0x2244c8, trimColor: 0xff2a4b, driverColor: 0x1f2433, accent: '#818cf8',
     power: 78, powerMultiplier: 0.98, acceleration: 87, accelerationRate: 9.5, recovery: 94, hitRecoveryMultiplier: 0.88,
     widthScale: 0.94, heightScale: 0.95, lengthScale: 0.94,
   }),
   Object.freeze({
-    id: 'vega-gt-67', name: 'VEGA GT ’67', className: 'MUSCLE CAR NOIRE · ÉDITION NICO',
-    bodyColor: 0x11131a, trimColor: 0xc83a4b, driverColor: 0xc98c68, accent: '#e04455',
-    power: 92, powerMultiplier: 1.03, acceleration: 86, accelerationRate: 9.4, recovery: 76, hitRecoveryMultiplier: 1.0,
+    id: 'vega-gt-67', archetype: 'bmw', name: 'BAVARIA M-CS', className: 'COUPÉ MOTORSPORT · ÉDITION NICO',
+    bodyColor: 0x11131a, trimColor: 0x38bdf8, driverColor: 0x181c26, accent: '#e04455',
+    power: 91, powerMultiplier: 1.03, acceleration: 85, accelerationRate: 9.3, recovery: 76, hitRecoveryMultiplier: 1.0,
     widthScale: 1.08, heightScale: 1.02, lengthScale: 1.1,
+  }),
+  Object.freeze({
+    id: 'toro-v12', archetype: 'lamborghini', name: 'TEMPESTA LP-780', className: 'SUPERCAR V12 · PROFIL EN COIN',
+    bodyColor: 0xffaa00, trimColor: 0x14161f, driverColor: 0x1b1d26, accent: '#ffb703',
+    power: 93, powerMultiplier: 1.035, acceleration: 90, accelerationRate: 9.6, recovery: 72, hitRecoveryMultiplier: 1.07,
+    widthScale: 1.06, heightScale: 0.92, lengthScale: 1.09,
   }),
 ]);
 
@@ -75,7 +81,7 @@ export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'police', name: 'Voiture de police', speed: 6.4, width: 1.94, length: 3.8 }),
   Object.freeze({ id: 'ambulance', name: 'Ambulance', speed: 5.3, width: 1.98, length: 4.0 }),
   Object.freeze({ id: 'garbage-truck', name: 'Camion-poubelle', speed: 4.4, width: 2.12, length: 4.6 }),
-  Object.freeze({ id: 'white-lambo', name: 'Lamborghini blanche', speed: 7.2, width: 1.92, length: 3.8 }),
+  Object.freeze({ id: 'white-lambo', name: 'Tempesta V12 blanche', speed: 7.2, width: 1.92, length: 3.8 }),
 ]);
 
 // Un choc avec le trafic ne retire pas de vie : il crée un court moment de
