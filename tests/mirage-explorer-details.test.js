@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import * as THREE from 'three';
 import { CHARACTER_NAMES, CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX, LINK_EPONA_INDEX } from '../src/games/mirageCharacters.js';
 import { disposeExplorer, makeExplorer, paintModel } from '../src/games/mirageExplorer.js';
 
@@ -105,15 +106,39 @@ test('le relief de la robe suit la palette : les tons dérivés se recalculent a
   }
 });
 
-test('le détail est fusionné : un cavalier reste à une quarantaine d’appels de dessin', () => {
+test('le détail est fusionné : un cavalier tient sous cinquante appels de dessin', () => {
   const model = makeExplorer(false, CHARACTER_PALETTES[0]);
   try {
     const parts = model.userData.parts;
     // Un mesh par matière dans le corps et la tête : les blocs fixes sont soudés.
     assert.equal(meshCount(parts.horseBody), colorsOf(parts.horseBody).size);
     assert.equal(meshCount(parts.horseHead), colorsOf(parts.horseHead).size);
-    assert.equal(meshCount(model), 40, 'les jambes, la queue, la cape, les bras et le chapeau restent à part');
-    assert.ok(triangleCount(model) >= 900, '…sans avoir perdu le détail');
+    assert.equal(meshCount(model), 44, 'les jambes, la queue, la cape, les bras et le chapeau restent à part');
+    assert.ok(triangleCount(model) >= 1000, '…sans avoir perdu le détail');
+  } finally {
+    disposeExplorer(model);
+  }
+});
+
+test('chaque jambe a un genou : le sabot se replie au galop sans passer sous le sol', () => {
+  const model = makeExplorer(false, CHARACTER_PALETTES[0]);
+  try {
+    const legs = model.userData.parts.legs;
+    assert.equal(legs.length, 4);
+    for (const leg of legs) {
+      assert.ok(leg.userData.knee, 'la cuisse porte son genou');
+      assert.equal(leg.userData.knee.name, 'horse-knee');
+      assert.equal(leg.userData.knee.parent, leg);
+    }
+    const box = new THREE.Box3();
+    model.updateMatrixWorld(true);
+    model.traverse((node) => { if (node.isMesh) box.expandByObject(node); });
+    assert.ok(box.min.y > 0.02 && box.min.y < 0.05, 'les sabots reposent au sol, comme avant le genou');
+    const knee = legs[0].userData.knee;
+    knee.rotation.x = 0.6;
+    model.updateMatrixWorld(true);
+    const hoof = new THREE.Box3().setFromObject(knee);
+    assert.ok(hoof.min.y > 0, 'un genou plié lève le sabot, il ne le plante pas dans la piste');
   } finally {
     disposeExplorer(model);
   }
@@ -137,7 +162,7 @@ test('les pièces animées ne sont jamais soudées : queue, pan de cape, bras et
 });
 
 test('les skins de la boutique restent sous le plafond de coût (jusqu’à huit cavaliers à l’écran)', () => {
-  const ceilings = [[0, 42], [4, 58], [5, 98], [6, 146]];
+  const ceilings = [[0, 46], [4, 62], [5, 102], [6, 150]];
   for (const [index, ceiling] of ceilings) {
     const model = makeExplorer(false, CHARACTER_PALETTES[index]);
     try {
@@ -151,6 +176,7 @@ test('les skins de la boutique restent sous le plafond de coût (jusqu’à huit
 test('câblage : le monde anime la tête, les rênes et le pan de cape, joueur comme rivaux', () => {
   assert.match(world, /if \(parts\.horseHead\?\.visible\)/, 'la tête ne hoche pas sous Cloud ou Link');
   assert.match(world, /parts\.armGroup\.rotation\.x/, 'les bras tirent sur les rênes');
+  assert.match(world, /const knee = leg\.userData\.knee/, 'le genou se plie à chaque foulée');
   assert.match(world, /parts\.capeFlap\.rotation\.x/, 'le pan de cape bat au rythme du galop');
   assert.match(world, /if \(rivalParts\.horseHead\?\.visible\)/, 'et les rivaux ont la même vie');
   assert.match(world, /rivalParts\.capeFlap\.rotation\.x/);
@@ -160,6 +186,7 @@ test('câblage : les vignettes de skin animent les mêmes pièces, sans écraser
   assert.match(preview, /capeFlap, horseHead, armGroup/, 'les pièces sont récupérées des parts');
   assert.match(preview, /capeFlap\.rotation\.x/);
   assert.match(preview, /horseHead\.rotation\.x/);
+  assert.match(preview, /leg\.userData\.knee\.rotation\.x/);
   assert.match(preview, /tail\.rotation\.x = -0\.35 \+ Math\.sin/, 'la queue garde sa base de −0,35');
 });
 
@@ -167,4 +194,5 @@ test('câblage : le vainqueur de la coupe salue lui aussi', () => {
   assert.match(trophy, /parts\.horseHead\?\.visible/, 'la tête hoche sur le podium');
   assert.match(trophy, /parts\.capeFlap\.rotation\.x/);
   assert.match(trophy, /parts\.armGroup\.rotation\.x/);
+  assert.match(trophy, /leg\.userData\.knee\.rotation\.x/);
 });

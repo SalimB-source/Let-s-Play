@@ -3107,8 +3107,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     const gallopRate = turboActive ? 0.026 : mudSlowed ? 0.011 : 0.018;
     const runWave = Math.sin(time * (running ? gallopRate : 0.002));
     const galloping = running && playerStun <= 0;
+    // Deux segments par jambe : la cuisse balance, le genou se plie quand la
+    // jambe repart vers l'avant (et se replie sous le corps au saut).
     parts.legs.forEach((leg, index) => {
-      leg.rotation.x = jumpLeft > 0 ? (index < 2 ? -0.7 : 0.65) : galloping ? Math.sin(time * gallopRate + index * 2.2) * (turboActive ? 0.82 : mudSlowed ? 0.45 : 0.65) : 0;
+      const knee = leg.userData.knee;
+      if (jumpLeft > 0) {
+        leg.rotation.x = index < 2 ? -0.7 : 0.65;
+        if (knee) knee.rotation.x = index < 2 ? 0.35 : 0.9;
+      } else if (galloping) {
+        leg.rotation.x = Math.sin(time * gallopRate + index * 2.2) * (turboActive ? 0.82 : mudSlowed ? 0.45 : 0.65);
+        if (knee) knee.rotation.x = Math.max(0, Math.sin(time * gallopRate + index * 2.2 + 1.5)) * (turboActive ? 0.75 : mudSlowed ? 0.35 : 0.55);
+      } else {
+        leg.rotation.x = 0;
+        if (knee) knee.rotation.x = 0;
+      }
     });
     poseRider(player, playerStun, playerStunSide);
     if (turboActive) {
@@ -3234,7 +3246,11 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       const phaseOffset = 1.3 + idx * 0.9;
       const rivalGallopRate = rivalTurbo ? 0.026 : 0.018;
       rivalParts.legs.forEach((leg, index) => {
+        const knee = leg.userData.knee;
         leg.rotation.x = running && rivalStun <= 0 ? Math.sin(time * rivalGallopRate + index * 2.2 + phaseOffset) * (rivalTurbo ? 0.82 : 0.65) : 0;
+        if (knee) knee.rotation.x = running && rivalStun <= 0
+          ? Math.max(0, Math.sin(time * rivalGallopRate + index * 2.2 + phaseOffset + 1.5)) * (rivalTurbo ? 0.75 : 0.55)
+          : 0;
       });
       poseRider(rivalMesh, rivalStun, r.stunSide || 1);
       if (rivalTurbo) {
@@ -3259,7 +3275,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         rivalMesh.position.x = r.x;
         rivalMesh.position.y = jumpHeight(r.jumpLeft);
         rivalMesh.scale.setScalar(1);
-        if (r.jumpLeft > 0) rivalParts.legs.forEach((leg, index) => { leg.rotation.x = index < 2 ? -0.7 : 0.65; });
+        if (r.jumpLeft > 0) rivalParts.legs.forEach((leg, index) => {
+          leg.rotation.x = index < 2 ? -0.7 : 0.65;
+          if (leg.userData.knee) leg.userData.knee.rotation.x = index < 2 ? 0.35 : 0.9;
+        });
         if (r.slowTimer > 0) {
           rivalMesh.position.y += Math.sin(time * 0.02 + idx) * 0.06;
         }

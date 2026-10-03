@@ -118,7 +118,10 @@ function frame(now) {
     const { legs, tail, wings = [], capeFlap, horseHead, armGroup, rider, masterSword, hylianShield } = model.userData.parts;
     const isLink = model.userData.accessoryKind === 'link-epona';
     const gallop = isLink ? 7.4 : 7;
-    legs.forEach((leg, i) => { leg.rotation.x = Math.sin(t * gallop + i * 2.2) * (isLink ? 0.5 : 0.45); });
+    legs.forEach((leg, i) => {
+      leg.rotation.x = Math.sin(t * gallop + i * 2.2) * (isLink ? 0.5 : 0.45);
+      if (leg.userData.knee) leg.userData.knee.rotation.x = Math.max(0, Math.sin(t * gallop + i * 2.2 + 1.5)) * 0.5;
+    });
     tail.rotation.x = -0.35 + Math.sin(t * gallop) * (isLink ? 0.16 : 0.12);
     wings.forEach((wing, index) => { wing.rotation.z = Math.sin(t * 7 + index * Math.PI) * 0.12; });
     // La silhouette bouge aussi : pan de cape, hochement de tête, rênes.

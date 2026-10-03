@@ -176,15 +176,25 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   block(cube, mane, horseHead, [0, -0.12, -0.2], [0.28, 0.34, 0.32]);
   mergeStaticBlocks(horseHead);
 
+  // Chaque jambe a deux segments : la cuisse part de la hanche, le genou se plie
+  // (voir `leg.userData.knee`) et le sabot se replie au galop — c'est ce qui
+  // distingue un galop d'un pendule.
   const horseLegs = [];
   for (const z of [-0.56, 0.56]) for (const x of [-0.29, 0.29]) {
     const leg = new THREE.Group();
+    leg.name = 'horse-leg';
     leg.position.set(x, 0.85, z);
     horseMount.add(leg);
-    block(cube, coat, leg, [0, -0.35, 0], [0.2, 0.7, 0.23]);
+    block(cube, coat, leg, [0, -0.18, 0], [0.21, 0.37, 0.25]);
+    const knee = new THREE.Group();
+    knee.name = 'horse-knee';
+    knee.position.set(0, -0.35, 0);
+    leg.add(knee);
+    leg.userData.knee = knee;
+    block(cube, coat, knee, [0, -0.18, 0], [0.19, 0.37, 0.22]);
     // Balzane (chaussette) au-dessus du sabot.
-    block(cube, marks, leg, [0, -0.53, 0], [0.215, 0.26, 0.245]);
-    block(cube, mane, leg, [0, -0.73, -0.03], [0.23, 0.17, 0.3]);
+    block(cube, marks, knee, [0, -0.26, 0], [0.205, 0.22, 0.235]);
+    block(cube, mane, knee, [0, -0.38, -0.03], [0.22, 0.17, 0.29]);
     horseLegs.push(leg);
   }
 
