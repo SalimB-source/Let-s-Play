@@ -307,7 +307,8 @@ export function forestTrees() {
   const { bounds } = STAGE;
   const rnd = lcg(20261001);
   const trees = [];
-  const cell = 4.2;
+  // Une lisière aérée garde la route lisible sans créer un mur de troncs.
+  const cell = 5.6;
   for (let x = bounds.minX + 2; x < bounds.maxX - 1; x += cell) {
     for (let z = bounds.northZ + 2; z < bounds.southZ - 3; z += cell) {
       const tx = x + (rnd() - 0.5) * 3.4;
@@ -322,7 +323,7 @@ export function forestTrees() {
   // Lisière : épaisse et haute, pour fermer le monde.
   const ring = (x0, z0, x1, z1) => {
     const len = Math.hypot(x1 - x0, z1 - z0);
-    const n = Math.max(1, Math.round(len / 2.3));
+    const n = Math.max(1, Math.round(len / 3.2));
     for (let i = 0; i < n; i++) {
       const u = (i + rnd() * 0.6) / n;
       const tx = x0 + (x1 - x0) * u + (rnd() - 0.5) * 1.2;

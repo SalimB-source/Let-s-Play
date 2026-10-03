@@ -151,13 +151,15 @@ function makeWorld(mount, callbacks) {
   // ── Le Chemin du Roi : route, chapelle + coffre, forêt, château, nef ──
   const trees = forestTrees();
   const levelGroup = new THREE.Group();
-  const roadPath = makeStonePath(STAGE.road, { width: 3.4, step: 0.7 });
-  const spurPath = makeStonePath(STAGE.spur, { width: 2.6, step: 0.7 });
+  const roadPath = makeStonePath(STAGE.road, { width: 3.4, step: 1.25 });
+  roadPath.group.name = 'main-road-path';
+  const spurPath = makeStonePath(STAGE.spur, { width: 2.6, step: 1.15 });
+  spurPath.group.name = 'chapel-spur-path';
   const forecourt = makeForecourt();
   const chapel = makeChapel();
   const chest = makeChest();
   const forest = makeForest(trees);
-  const forestFloor = makeForestFloor(trees);
+  const forestFloor = makeForestFloor(trees, { detailCount: 46 });
   const castle = makeCastle();
   const hall = makeThroneHall();
   levelGroup.add(makeOuterGround(), roadPath.group, spurPath.group, forecourt.group,
@@ -274,34 +276,32 @@ function makeWorld(mount, callbacks) {
   }
 
   // Braises flottantes autour des sources de feu.
-  const ashField = makeAshField([[0, 0], [-5.4, -3.8], [5.4, -3.8], [-5.4, 4.2], [5.4, 4.2]]);
+  const ashField = makeAshField([[0, 0], [-5.4, -3.8], [5.4, -3.8], [-5.4, 4.2], [5.4, 4.2]], 52);
+  ashField.points.name = 'camp-embers';
   scene.add(ashField.points);
   // Braises des feux éloignés : chapelle, parvis, nef, second feu de camp.
   const levelAsh = makeAshField([
     [-26, -28.1], [-26, -33.9], [-6.4, -86], [6.4, -86], [seuilSpec.x, seuilSpec.z],
     ...STAGE.hall.braziers,
-  ]);
+  ], 54);
+  levelAsh.points.name = 'level-embers';
   scene.add(levelAsh.points);
 
   // ── Ambiance remaster : ciel, étoiles, halo lunaire, brumes ──────
   // Le ciel suit le joueur : la carte fait 130 m, pas question de sortir du dôme.
   const skyRig = new THREE.Group();
-  skyRig.add(makeSkyDome(140), makeStars(460, 132), makeMoonGlow(-46, 34, -70, 36), makeMoon());
+  skyRig.add(makeSkyDome(140), makeStars(300, 132), makeMoonGlow(-46, 34, -70, 36), makeMoon());
   scene.add(skyRig);
   const mist = makeMistPatches([
-    [-8, -12, 13, 4.5, 0.12], [9, 11, 12, 4, 0.1],
-    [-12, 6, 10, 3.6, 0.09], [11, -7, 11, 3.8, 0.1],
-    [0, -15, 14, 4.2, 0.08],
-    // Forêt : brumes basses le long de la route
-    [3, -38, 14, 3.6, 0.1], [12, -52, 16, 4, 0.11], [-8, -58, 15, 4, 0.1],
-    [16, -70, 14, 3.6, 0.1], [-14, -74, 14, 3.8, 0.1], [0, -80, 16, 3.6, 0.09],
-    [28, -44, 14, 3.6, 0.1], [-22, -44, 14, 3.6, 0.1], [-4, -45, 12, 3.2, 0.09],
+    [-8, -12, 13, 4.5, 0.08], [9, 11, 12, 4, 0.07], [0, -15, 14, 4.2, 0.07],
+    // Repères espacés le long de la route, à hauteur du sol.
+    [3, -38, 14, 3.6, 0.08], [12, -52, 16, 4, 0.08], [0, -80, 16, 3.6, 0.07],
   ]);
   scene.add(mist);
 
   // Faisceaux de lumière au-dessus des flammes (pilotés par le flicker).
   const shafts = [];
-  for (const [x, z] of [[-5.4, -3.8], [5.4, -3.8], [-5.4, 4.2], [5.4, 4.2]]) {
+  for (const [x, z] of [[-5.4, -3.8], [5.4, -3.8]]) {
     const shaft = makeLightShaft(x, 1.2, z, { height: 4.6, rTop: 0.85, opacity: 0.12 });
     shafts.push(shaft);
     scene.add(shaft);
@@ -377,9 +377,9 @@ function makeWorld(mount, callbacks) {
   for (const [x, z, s] of [[-15.2, -4.5, 1.1], [15.4, 10.5, 1], [-6.8, 14.8, 0.9], [5.5, 15.2, 1.05]]) {
     scene.add(makeBush(x, z, s));
   }
-  const grass = makeGrassField(colliders, 900);
+  const grass = makeGrassField(colliders, 280);
   scene.add(grass);
-  const flowers = makeFlowerField(colliders, 40);
+  const flowers = makeFlowerField(colliders, 14);
   scene.add(flowers);
 
   // ── Joueur : le Gardien Chitine, guerrier insecte anime ───────────

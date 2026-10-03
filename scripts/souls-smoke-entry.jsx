@@ -173,6 +173,64 @@ try {
 }
 console.log('240 frames OK — ready =', readyFired, '| hud samples =', hudSamples.length);
 
+// Décor : la passe d’allègement conserve les repères de niveau, mais limite
+// les surcouches qui masquaient le chemin. Les brumes et fleurs doivent être
+// réellement posées au sol ; les bordures du chemin ne peuvent plus traverser
+// les dalles principales (source de scintillement en mouvement).
+try {
+  const scene = world.debug.scene;
+  const mist = scene.getObjectByName('ground-mist-patches');
+  const grass = scene.getObjectByName('camp-grass-clumps');
+  const flowers = scene.getObjectByName('grounded-night-flowers');
+  const forestFloor = scene.getObjectByName('sparse-forest-floor');
+  const campEmbers = scene.getObjectByName('camp-embers');
+  const levelEmbers = scene.getObjectByName('level-embers');
+  const road = scene.getObjectByName('main-road-path');
+  if (!mist || mist.children.length !== 6 || mist.children.some((o) => Math.abs(o.position.y - 0.28) > 1e-6)) {
+    fail('BRUME DE CARTE MAL POSÉE', mist?.children.map((o) => o.position.y));
+  }
+  if (!grass || grass.count > 280 || !flowers || flowers.count > 14) {
+    fail('VÉGÉTATION DE CARTE TROP DENSE', `${grass?.count ?? 'absent'} herbes / ${flowers?.count ?? 'absent'} fleurs`);
+  }
+  const instancedPosition = new THREE.Vector3();
+  const matrix = new THREE.Matrix4();
+  flowers.geometry.computeBoundingBox();
+  if (flowers.geometry.boundingBox.min.y < -1e-6) fail('FLEURS SOUS LE SOL');
+  for (let i = 0; i < flowers.count; i++) {
+    flowers.getMatrixAt(i, matrix);
+    instancedPosition.setFromMatrixPosition(matrix);
+    if (instancedPosition.y < 0 || instancedPosition.y > 0.012) {
+      fail('FLEUR FLOTTANTE', instancedPosition.y.toFixed(3));
+    }
+  }
+  if (!forestFloor || forestFloor.children.length > 48) {
+    fail('SOUS-BOIS TROP DENSE', forestFloor?.children.length);
+  }
+  if (campEmbers?.geometry?.attributes?.position?.count !== 52
+    || levelEmbers?.geometry?.attributes?.position?.count !== 54) {
+    fail('BRAISES DE CARTE TROP DENSES');
+  }
+  if (!road) fail('CHEMIN PRINCIPAL ABSENT');
+  const slabs = road.children.filter((o) => o.isMesh);
+  const base = slabs.filter((o) => Math.abs(o.position.y - 0.052) < 1e-5);
+  const rims = slabs.filter((o) => Math.abs(o.position.y - 0.116) < 1e-5);
+  const bounds = (mesh) => {
+    mesh.geometry.computeBoundingBox();
+    return {
+      bottom: mesh.position.y + mesh.geometry.boundingBox.min.y,
+      top: mesh.position.y + mesh.geometry.boundingBox.max.y,
+    };
+  };
+  if (!base.length || !rims.length || Math.min(...rims.map(bounds).map((b) => b.bottom)) <= Math.max(...base.map(bounds).map((b) => b.top))) {
+    fail('BORDURES DE CHEMIN COPLANAIRES');
+  }
+  console.log(`Décor allégé OK — ${mist.children.length} brumes, ${grass.count} herbes, ${flowers.count} fleurs, ${forestFloor.children.length} sous-bois.`);
+} catch (e) {
+  if (/BRUME DE CARTE|VÉGÉTATION DE CARTE|FLEURS SOUS LE SOL|FLEUR FLOTTANTE|SOUS-BOIS TROP DENSE|BRAISES DE CARTE|CHEMIN PRINCIPAL|BORDURES DE CHEMIN/.test(e?.message || '')) throw e;
+  console.error('DÉCOR ALLÉGÉ FAILED:', e);
+  process.exit(3);
+}
+
 // Garde de l’épée : les deux vraies paumes rejoignent deux points de la
 // même poignée. La garde doit être centrale, levée et devant le thorax : ce
 // contrôle prévient le retour d'une arme latérale ou d'une fausse main.

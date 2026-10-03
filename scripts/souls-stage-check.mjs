@@ -160,8 +160,8 @@ assert.ok(!fromGateOpen(0, -125.2), 'mais pas derrière le trône');
 
 // ── 6. Forêt ───────────────────────────────────────────────────────────────
 assert.deepEqual(forestTrees(), trees, 'forêt déterministe');
-assert.ok(trees.length >= 300, `forêt dense (${trees.length} arbres)`);
-assert.ok(trees.filter((t) => t.solid).length >= 200, 'assez de troncs solides');
+assert.ok(trees.length >= 180 && trees.length <= 250, `forêt allégée (${trees.length} arbres)`);
+assert.ok(trees.filter((t) => t.solid).length >= 100, 'assez de troncs solides pour délimiter la forêt');
 for (const t of trees) {
   if (!t.solid) continue;
   assert.ok(distToPolyline(t.x, t.z, STAGE.road) > 3.2, 'aucun arbre sur la route');

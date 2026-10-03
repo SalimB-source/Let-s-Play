@@ -988,8 +988,7 @@ export function makeMoon() {
  * autour des sources (feu, braseros). `update(timeMs)` à appeler chaque
  * frame depuis soulsWorld.
  */
-export function makeAshField(sources) {
-  const count = 110;
+export function makeAshField(sources, count = 56) {
   const positions = new Float32Array(count * 3);
   const seeds = [];
   for (let i = 0; i < count; i++) {
@@ -2240,7 +2239,7 @@ function radialSpriteTexture(size, stops) {
 // ── Chemin du Roi : dalles peintes à la main ─────────────────────────
 
 /** Dalles irrégulières, rehaussées de lavis indigo et de bordures claires. */
-export function makeStonePath(points, { width = 2.4, step = 0.62 } = {}) {
+export function makeStonePath(points, { width = 2.4, step = 0.95 } = {}) {
   const group = new THREE.Group();
   const stone = animeMaterial('stone', { color: 0xb3b7e0, tile: 1.45 });
   const dark = animeMaterial('slate', { color: 0x8589b1, tile: 1.45 });
@@ -2250,8 +2249,8 @@ export function makeStonePath(points, { width = 2.4, step = 0.62 } = {}) {
     seed = (seed * 1103515245 + 12345) & 0x7fffffff;
     return seed / 0x7fffffff;
   };
-  const addSlab = (material, w, d, px, pz, yaw, y = 0.05) => {
-    const geo = scaleBoxUV(new THREE.BoxGeometry(w, 0.1, d), { x: w, y: 0.1, z: d }, material.userData.tile);
+  const addSlab = (material, w, d, px, pz, yaw, { y = 0.052, height = 0.1 } = {}) => {
+    const geo = scaleBoxUV(new THREE.BoxGeometry(w, height, d), { x: w, y: height, z: d }, material.userData.tile);
     const slab = new THREE.Mesh(geo, material);
     slab.position.set(px, y, pz);
     slab.rotation.y = yaw;
@@ -2275,15 +2274,16 @@ export function makeStonePath(points, { width = 2.4, step = 0.62 } = {}) {
       const pz = z0 + dz * u + (rnd() - 0.5) * 0.16;
       addSlab(
         rnd() > 0.72 ? dark : stone,
-        width * (0.72 + rnd() * 0.4), (len / n) * (0.7 + rnd() * 0.3),
+        width * (0.76 + rnd() * 0.18), (len / n) * (0.64 + rnd() * 0.18),
         px, pz, yaw + (rnd() - 0.5) * 0.22,
       );
-      // Bordure : pierres plus petites de part et d'autre (chemin lisible).
+      // Bordure légèrement au-dessus des dalles : aucune face ne les traverse,
+      // donc pas de scintillement de profondeur quand la caméra se déplace.
       if (j % 2 === 0) {
         for (const side of [-1, 1]) {
           addSlab(edge, 0.36, 0.4,
             px + nx * side * (width * 0.56), pz + nz * side * (width * 0.56),
-            yaw + rnd() * 0.7, 0.035);
+            yaw + rnd() * 0.7, { y: 0.116, height: 0.022 });
         }
       }
     }
@@ -2502,16 +2502,20 @@ export function makeMistPatches(list) {
     [1, 'rgba(54, 62, 122, 0)'],
   ]);
   const group = new THREE.Group();
+  group.name = 'ground-mist-patches';
   for (const [x, z, sx, sy, opacity] of list) {
     const material = new THREE.SpriteMaterial({
       map: texture,
       transparent: true,
       opacity,
       depthWrite: false,
+      depthTest: true,
       color: 0x847aa8,
     });
     const sprite = new THREE.Sprite(material);
-    sprite.position.set(x, 1.1, z);
+    // Centre bas : la brume ne flotte plus à hauteur de buste.
+    sprite.name = 'ground-mist-patch';
+    sprite.position.set(x, 0.28, z);
     sprite.scale.set(sx, sy, 1);
     sprite.userData.baseX = x;
     sprite.userData.baseZ = z;
@@ -2560,13 +2564,14 @@ export function makeLightShaft(x, y, z, { color = 0xff8ac5, height = 4.2, rBotto
  * végétales, jamais sur le cercle du feu ni sur les colliders.
  * @param {Array} colliders obstacles à éviter (resolveCollisions compat)
  */
-export function makeGrassField(colliders, count = 900) {
+export function makeGrassField(colliders, count = 320) {
   const geometry = new THREE.ConeGeometry(0.032, 0.24, 4);
   geometry.translate(0, 0.12, 0);
   const material = new THREE.MeshStandardMaterial({
     color: 0xffffff, flatShading: true, roughness: 1,
   });
   const mesh = new THREE.InstancedMesh(geometry, material, count);
+  mesh.name = 'camp-grass-clumps';
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   const blocked = (x, z) => {
@@ -2589,7 +2594,7 @@ export function makeGrassField(colliders, count = 900) {
     const nearEdge = Math.min(17 - Math.abs(x), 17 - Math.abs(z)) < 4.2;
     if (!nearEdge && Math.random() > 0.3) continue; // touffes éparses ailleurs
     if (blocked(x, z)) continue;
-    dummy.position.set(x, 0, z);
+    dummy.position.set(x, 0.006, z);
     dummy.rotation.y = Math.random() * Math.PI * 2;
     dummy.rotation.x = (Math.random() - 0.5) * 0.25;
     const scale = 0.65 + Math.random() * 0.9;
@@ -2608,8 +2613,10 @@ export function makeGrassField(colliders, count = 900) {
 }
 
 /** Petites fleurs nocturnes phosphorescentes (bloom les fait scintiller). */
-export function makeFlowerField(colliders, count = 40) {
+export function makeFlowerField(colliders, count = 16) {
   const geometry = new THREE.SphereGeometry(0.035, 6, 5);
+  // Le bas de la corolle devient l'origine : l'échelle ne la fera plus flotter.
+  geometry.translate(0, 0.035, 0);
   const material = new THREE.MeshStandardMaterial({
     color: 0x1c3a2a,
     emissive: 0x7dffb8,
@@ -2617,6 +2624,7 @@ export function makeFlowerField(colliders, count = 40) {
     roughness: 0.6,
   });
   const mesh = new THREE.InstancedMesh(geometry, material, count);
+  mesh.name = 'grounded-night-flowers';
   const dummy = new THREE.Object3D();
   const color = new THREE.Color();
   let placed = 0;
@@ -2633,7 +2641,7 @@ export function makeFlowerField(colliders, count = 40) {
       if (c.kind !== 'circle' && x > c.minX - 0.15 && x < c.maxX + 0.15 && z > c.minZ - 0.15 && z < c.maxZ + 0.15) { blocked = true; break; }
     }
     if (blocked) continue;
-    dummy.position.set(x, 0.1 + Math.random() * 0.1, z);
+    dummy.position.set(x, 0.008, z);
     const scale = 0.7 + Math.random() * 0.8;
     dummy.scale.setScalar(scale);
     dummy.updateMatrix();

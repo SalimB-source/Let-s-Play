@@ -210,9 +210,9 @@ try {
   let lights = 0;
   for (const grp of [chapel.group, castle.group, hall.group]) grp.traverse((o) => { if (o.isLight) lights++; });
   assert.equal(lights, 0, 'lumières mutualisées par le monde');
-  // 6 torchères + 10 appliques murales dans la nef (aucune n'embarque de
+  // 6 torchères + 6 appliques espacées dans la nef (aucune n'embarque de
   // PointLight : seule leur flamme vacille, les lumières restent mutualisées).
-  assert.ok(castle.flickerables.length === 2 && hall.flickerables.length === 16 && chapel.flickerables.length === 2,
+  assert.ok(castle.flickerables.length === 2 && hall.flickerables.length === 12 && chapel.flickerables.length === 2,
     `vacillements ${castle.flickerables.length}/${hall.flickerables.length}/${chapel.flickerables.length}`);
   assert.equal(hall.flickerables.filter((f) => f.light).length, 0, 'les appliques n’ajoutent pas de lumière');
 
