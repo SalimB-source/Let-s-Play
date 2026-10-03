@@ -41,6 +41,8 @@ import {
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_LANES,
   CITY_RUSH_TRAFFIC_TYPES,
+  CITY_RUSH_ONCOMING_COUNT,
+  CITY_RUSH_ONCOMING_LANES,
   CITY_RUSH_DRIVERS,
   selectCityRushRacers,
   cityRushMinimapPoint,
@@ -120,7 +122,13 @@ test('twelve slow traffic cars span four distinct types and safely block racers'
   assert.equal(CITY_RUSH_TRAFFIC_COUNT % CITY_RUSH_TRAFFIC_TYPES.length, 0);
   assert.equal(CITY_RUSH_TRAFFIC_LANES.length, CITY_RUSH_TRAFFIC_COUNT);
   assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => lane >= 0 && lane < CITY_RUSH_LANE_X.length));
-  assert.deepEqual(CITY_RUSH_LANE_X.map((_, lane) => CITY_RUSH_TRAFFIC_LANES.filter((value) => value === lane).length), [3, 3, 3, 3]);
+  // La route est à double sens : le trafic lent roule dans le sens de la
+  // course sur les deux voies de droite, les deux voies de gauche étant
+  // réservées au trafic venant en face.
+  assert.deepEqual(CITY_RUSH_LANE_X.map((_, lane) => CITY_RUSH_TRAFFIC_LANES.filter((value) => value === lane).length), [0, 0, 6, 6]);
+  assert.ok(CITY_RUSH_TRAFFIC_LANES.every((lane) => lane >= 2), 'le trafic lent reste sur les voies de droite');
+  assert.equal(CITY_RUSH_ONCOMING_COUNT, 6);
+  assert.deepEqual([...CITY_RUSH_ONCOMING_LANES], [0, 1]);
   assert.deepEqual(CITY_RUSH_TRAFFIC_TYPES.map((vehicle) => vehicle.id), [
     'police', 'ambulance', 'garbage-truck', 'white-lambo',
   ]);
@@ -192,6 +200,45 @@ test('rivals plan lane changes to collect bonuses and avoid traffic safely', () 
     availableLanes: [1],
     pickups: [{ lane: 2, distance: 40, type: 'cash' }],
   }), 1, 'le rival ne tente pas de changer vers une voie bloquée');
+});
+
+test('oncoming traffic on the left lanes is dodged like a wall, never rammed', () => {
+  // Un véhicule marqué `oncoming` (vitesse négative) arrive face au pilote :
+  // même un bonus ne justifie pas de se jeter sous son capot.
+  assert.equal(chooseCityRushAiLane({
+    currentLane: 2,
+    distance: 0,
+    speed: 28,
+    pickups: [{ lane: 1, distance: 40, type: 'cash' }],
+    traffic: [{ lane: 1, distance: 45, speed: -6, oncoming: true }],
+  }), 2, 'le bonus passe derrière un véhicule venant en face');
+
+  // Une fois le véhicule croisé (derrière), la voie redevient prenable.
+  assert.equal(chooseCityRushAiLane({
+    currentLane: 2,
+    distance: 0,
+    speed: 28,
+    pickups: [{ lane: 1, distance: 40, type: 'cash' }],
+    traffic: [{ lane: 1, distance: -10, speed: -6, oncoming: true }],
+  }), 1, 'une voie dégagée reste une voie de dépassement');
+
+  // Déjà engagé sur une voie en sens inverse quand un véhicule approche :
+  // le rabat se fait vers les voies de droite, pas vers l'autre voie inverse.
+  assert.equal(chooseCityRushAiLane({
+    currentLane: 1,
+    distance: 0,
+    speed: 28,
+    traffic: [{ lane: 1, distance: 90, speed: -6, oncoming: true }],
+  }), 2, 'le rabat fuit vers le sens de la course');
+
+  // Les voies en sens inverse gardent un léger malus : à égalité, un pilote
+  // reste du côté de la course.
+  assert.equal(chooseCityRushAiLane({
+    currentLane: 2,
+    distance: 0,
+    speed: 28,
+    oncomingLanes: CITY_RUSH_ONCOMING_LANES,
+  }), 2, 'sans raison d’aller à gauche, on reste à droite');
 });
 
 test('rivals pursue visible bonus pickups above hazards, even when a matching bar is full', () => {
