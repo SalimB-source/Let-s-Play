@@ -120,6 +120,27 @@ test('le détail est fusionné : un cavalier tient sous cinquante appels de dess
   }
 });
 
+test('les sabots sont de la corne, pas des crins : une robe à crins clairs garde ses sabots sombres', () => {
+  // L'Ombre (crins argentés) et Sauge (crins bruns) : la palette ne doit pas
+  // décider de la couleur du sabot.
+  for (const index of [1, 2]) {
+    const model = makeExplorer(false, CHARACTER_PALETTES[index]);
+    try {
+      const hooves = new Set();
+      for (const leg of model.userData.parts.legs) {
+        for (const mesh of leg.userData.knee.children) {
+          if (mesh.isMesh) hooves.add(mesh.material.color.getHex());
+        }
+      }
+      assert.ok(hooves.has(0x2e1d16), `sabot de corne attendu sur ${CHARACTER_NAMES[index]}`);
+      const mane = model.userData.materials[1].color.getHex();
+      assert.equal(hooves.has(mane), false, 'et surtout pas la couleur des crins');
+    } finally {
+      disposeExplorer(model);
+    }
+  }
+});
+
 test('chaque jambe a un genou : le sabot se replie au galop sans passer sous le sol', () => {
   const model = makeExplorer(false, CHARACTER_PALETTES[0]);
   try {

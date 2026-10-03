@@ -121,6 +121,10 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   // yeux clairs, et le cheval n'aurait plus de regard).
   const eyeWhite = new THREE.MeshStandardMaterial({ color: 0xfdf6e6, roughness: 0.42, flatShading: true });
   const eyeDark = new THREE.MeshStandardMaterial({ color: 0x1b1417, roughness: 0.35, flatShading: true });
+  // Les sabots non plus ne viennent pas de la palette : une robe à crins clairs
+  // (L'Ombre, Sauge) donnerait des sabots clairs. C'est la corne, comme sur
+  // Épona — un brun presque noir, un peu plus lisse que le poil.
+  const hoof = new THREE.MeshStandardMaterial({ color: 0x2e1d16, roughness: 0.42, flatShading: true });
 
   // Keep the original horse in its own group so a shop skin can swap the
   // mount for a chocobo without changing the common rider / race animations.
@@ -161,19 +165,23 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
   block(cube, coat, horseHead, [0, 0.6, -0.42], [0.46, 0.46, 0.82]);
   block(cube, coatLight, horseHead, [0, 0.53, -0.94], [0.42, 0.34, 0.24]); // museau
   for (const side of [-1, 1]) {
-    block(cube, eyeDark, horseHead, [side * 0.13, 0.49, -1.03], [0.08, 0.06, 0.03]); // naseau
-    block(cube, eyeWhite, horseHead, [side * 0.235, 0.64, -0.65], [0.02, 0.18, 0.22]);
-    block(cube, eyeDark, horseHead, [side * 0.246, 0.64, -0.69], [0.02, 0.12, 0.13]);
+    // Naseau en relief sur le bout du museau (sinon il est noyé dans le bloc).
+    block(cube, eyeDark, horseHead, [side * 0.13, 0.5, -1.075], [0.08, 0.05, 0.03]);
+    // L'œil : un blanc, et la pupille au milieu (elle déborde d'un millimètre).
+    block(cube, eyeWhite, horseHead, [side * 0.235, 0.64, -0.65], [0.02, 0.19, 0.22]);
+    block(cube, eyeDark, horseHead, [side * 0.245, 0.645, -0.65], [0.022, 0.14, 0.14]);
     block(cube, coat, horseHead, [side * 0.17, 0.91, -0.28], [0.13, 0.34, 0.16]); // oreille
   }
   // Liste (bande claire sur le chanfrein) — même couleur que la robe par défaut.
   block(cube, marks, horseHead, [0, 0.62, -0.836], [0.15, 0.36, 0.02]);
   block(cube, marks, horseHead, [0, 0.75, -0.6], [0.15, 0.02, 0.46]);
-  // Crinière en trois mèches le long de la crête de l'encolure : elle se lit de
-  // profil et de derrière, et suit le hochement de tête.
-  block(cube, mane, horseHead, [0, 0.72, 0.04], [0.26, 0.3, 0.34]);
-  block(cube, mane, horseHead, [0, 0.25, -0.04], [0.26, 0.36, 0.3]);
-  block(cube, mane, horseHead, [0, -0.12, -0.2], [0.28, 0.34, 0.32]);
+  // Crinière en trois mèches le long de la crête de l'encolure. Elle déborde
+  // un peu de chaque côté du chanfrein : c'est ce qui la fait lire **de profil**
+  // (une mèche plus étroite que l'encolure disparaît derrière lui) et de
+  // derrière. Elle suit le hochement de tête puisque le groupe hoche.
+  block(cube, mane, horseHead, [0, 0.74, 0.1], [0.5, 0.32, 0.42]);
+  block(cube, mane, horseHead, [0, 0.27, 0.03], [0.5, 0.36, 0.4]);
+  block(cube, mane, horseHead, [0, -0.12, -0.12], [0.52, 0.36, 0.42]);
   mergeStaticBlocks(horseHead);
 
   // Chaque jambe a deux segments : la cuisse part de la hanche, le genou se plie
@@ -194,7 +202,7 @@ export function makeExplorer(rival = false, palette = null, accessories = undefi
     block(cube, coat, knee, [0, -0.18, 0], [0.19, 0.37, 0.22]);
     // Balzane (chaussette) au-dessus du sabot.
     block(cube, marks, knee, [0, -0.26, 0], [0.205, 0.22, 0.235]);
-    block(cube, mane, knee, [0, -0.38, -0.03], [0.22, 0.17, 0.29]);
+    block(cube, hoof, knee, [0, -0.38, -0.03], [0.22, 0.17, 0.29]);
     horseLegs.push(leg);
   }
 
