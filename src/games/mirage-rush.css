@@ -1006,6 +1006,11 @@ body:has(.mirage-world[data-stage='snakeway'])::after { display: none; }
 .mirage-map-card[aria-pressed="true"] .mirage-map-check { background: #ffdb87; color: #302232; }
 .mirage-map-card:disabled { cursor: not-allowed; }
 .mirage-map-card:disabled:not([aria-pressed="true"]) { opacity: .5; }
+.mirage-map-card.is-locked { border-color: rgba(182, 160, 195, .16); background: #1c1522; opacity: .76; }
+.mirage-map-card.is-locked .mirage-map-art { filter: grayscale(.82) brightness(.44); }
+.mirage-map-card.is-locked .mirage-map-check { background: rgba(18, 13, 26, .88); border: 1px solid rgba(255, 224, 166, .24); color: #ffdc85; font-size: 9px; }
+.mirage-map-card.is-locked .mirage-map-selected { color: #cbb6c4; letter-spacing: .05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mirage-map-lock { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; font-size: 17px; color: #ffdc85; text-shadow: 0 2px 10px rgba(0, 0, 0, .85); background: radial-gradient(circle, rgba(15, 11, 24, .58) 0%, rgba(15, 11, 24, .22) 70%); pointer-events: none; }
 .mirage-mode-picker button:focus-visible, .mirage-map-card:focus-visible { outline: 2px solid #fff1c9; outline-offset: 3px; }
 @media (hover: hover) {
   .mirage-mode-picker button:hover, .mirage-map-card:hover:not(:disabled) { transform: translateY(-2px); border-color: #f6cd72; }
@@ -2806,15 +2811,30 @@ img.mirage-powerup-icon {
 }
 .mirage-cup-card[aria-pressed="true"] .mirage-choice-dot { background: var(--cup-trophy-accent); border-color: var(--cup-trophy-accent); }
 .mirage-cup-card:focus-visible { outline: 3px solid #fff1c9; outline-offset: 4px; }
-.mirage-cup-card:active { transform: translateY(4px) scale(.99); border-bottom-width: 1px; box-shadow: 0 2px 0 rgba(9, 5, 16, .78), 0 5px 10px rgba(0, 0, 0, .28); }
+.mirage-cup-card:active:not(:disabled) { transform: translateY(4px) scale(.99); border-bottom-width: 1px; box-shadow: 0 2px 0 rgba(9, 5, 16, .78), 0 5px 10px rgba(0, 0, 0, .28); }
+.mirage-cup-card:disabled { cursor: not-allowed; }
+.mirage-cup-card.is-locked {
+  opacity: .68;
+  border-color: rgba(182, 160, 195, .24);
+  border-bottom-color: rgba(120, 102, 138, .45);
+  background: linear-gradient(145deg, rgba(38, 28, 46, .94), rgba(18, 14, 26, .96));
+  filter: saturate(.55);
+}
 .mirage-cup-card-head { display: flex; align-items: center; gap: 9px; min-height: 54px; padding-right: 21px; }
 .mirage-cup-emblem {
+  position: relative;
   display: grid; place-items: center; width: 43px; height: 43px; flex-shrink: 0; border-radius: 13px;
   border: 1px solid rgba(var(--cup-trophy-glow), .34);
   background: radial-gradient(circle at 50% 30%, rgba(var(--cup-trophy-glow), .34), rgba(var(--cup-trophy-glow), .07));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 4px 0 rgba(7, 4, 13, .34);
 }
 .mirage-cup-emblem svg { display: block; width: 31px; height: 31px; filter: drop-shadow(0 2px 6px rgba(var(--cup-trophy-glow), .42)); }
+.mirage-cup-card.is-locked .mirage-cup-emblem svg { opacity: .35; filter: grayscale(.8); }
+.mirage-cup-lock { position: absolute; inset: 0; display: grid; place-items: center; font-size: 17px; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .78)); pointer-events: none; }
+.mirage-cup-card.is-locked .mirage-choice-dot { border-color: rgba(255, 224, 166, .28); background: rgba(15, 11, 24, .75); color: #ffdc85; font-size: 9px; line-height: 15px; }
+.mirage-cup-card.is-locked .mirage-cup-reward { animation: none; border-color: rgba(255, 220, 114, .28); }
+.mirage-cup-card.is-locked .mirage-cup-card-action { color: rgba(255, 232, 196, .62); }
+.mirage-cup-card.is-locked .mirage-cup-card-action b { background: rgba(255, 255, 255, .1); color: #ffdc85; box-shadow: none; }
 .mirage-cup-card-title { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .mirage-cup-card-title strong { font: 900 13px/1.2 var(--font-gaming); letter-spacing: .025em; }
 .mirage-cup-card-title span { color: #ead7c7; font-size: 9px; line-height: 1.25; }
@@ -2863,7 +2883,7 @@ img.mirage-powerup-icon {
 .mirage-cup-name-field input::placeholder { color: rgba(255, 242, 221, .38); }
 .mirage-cup-name-field input:focus-visible { outline: 2px solid #ffdb76; outline-offset: 2px; }
 @media (hover: hover) {
-  .mirage-cup-card:hover {
+  .mirage-cup-card:hover:not(:disabled) {
     transform: translateY(-4px) rotateX(2deg); border-color: var(--cup-trophy-accent);
     box-shadow: 0 10px 0 rgba(9, 5, 16, .78), 0 20px 30px rgba(0, 0, 0, .4),
       0 0 26px rgba(var(--cup-trophy-glow), .18), inset 0 1px 0 rgba(255, 255, 255, .22);

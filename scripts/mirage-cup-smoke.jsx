@@ -184,6 +184,25 @@ export async function checkMirageCup(assert) {
     'chaque coupe affiche les 10 OR gagnés par victoire');
     assert.ok([...node.querySelectorAll('.mirage-cup-card')].every((card) => !card.querySelector('.mirage-cup-route')),
       'aucune coupe ne détaille son parcours dans l’aperçu');
+
+    // Au départ, seule la 1ʳᵉ coupe (`desert`) est débloquée ; les 3 suivantes ont un cadenas.
+    const initialDesertCard = node.querySelector('.mirage-cup-card.is-desert');
+    const initialWindsCard = node.querySelector('.mirage-cup-card.is-winds');
+    const initialTourCard = node.querySelector('.mirage-cup-card.is-worldtour');
+    const initialLegendsCard = node.querySelector('.mirage-cup-card.is-legends');
+    assert.equal(initialDesertCard.disabled, false, 'la 1ʳᵉ coupe est ouverte dès le départ');
+    assert.equal(initialDesertCard.classList.contains('is-locked'), false);
+    assert.equal(initialDesertCard.querySelector('.mirage-cup-lock'), null);
+    for (const lockedCard of [initialWindsCard, initialTourCard, initialLegendsCard]) {
+      assert.equal(lockedCard.disabled, true, 'toutes les coupes suivantes sont verrouillées au départ');
+      assert.equal(lockedCard.classList.contains('is-locked'), true);
+      assert.equal(text(lockedCard.querySelector('.mirage-cup-lock')), '🔒', 'chaque coupe verrouillée porte un cadenas');
+      assert.match(text(lockedCard.querySelector('.mirage-cup-card-action')), /🔒 FINIR /);
+      await click(lockedCard);
+      assert.equal(lockedCard.getAttribute('aria-pressed'), 'false', 'cliquer une coupe verrouillée ne la sélectionne pas');
+    }
+    assert.equal(initialDesertCard.getAttribute('aria-pressed'), 'true');
+
     await typeName(node.querySelector('.mirage-cup-name-field input'), 'Salim');
     assert.equal(window.localStorage.getItem('letsplay_mirage_cup_name_v1'), 'Salim', 'le nom du trophée est mémorisé');
     await startCupFromIntro(node);
@@ -392,70 +411,19 @@ export async function checkMirageCup(assert) {
     setLaneCount(4);
   }
 
-  // ── 5. Grand Tour : son globe suit toute la coupe, puis le retour au Désert ──
+  // ── 5. Coupe des Vents (débloquée après la 1ʳᵉ coupe) : 3 cartes, 3 victoires, 30 OR ──
   const tourTimers = patchTimers();
   const tour = await mountPage('/jeu?mode=cup');
   try {
     const desertIcon = tour.node.querySelector('.mirage-cup-card.is-desert svg').innerHTML;
-    const tourCard = tour.node.querySelector('.mirage-cup-card.is-worldtour');
-    const tourIcon = tourCard.querySelector('svg').innerHTML;
-    assert.match(text(tourCard.querySelector('.mirage-cup-card-title small')), /Globe des Horizons/);
-    await click(tourCard);
-    assert.equal(tourCard.getAttribute('aria-pressed'), 'true');
-    await startCupFromIntro(tour.node);
-    const stages = ['sardinia', 'alger', 'japan', 'airbase'];
-    let results;
-    for (let race = 0; race < stages.length; race++) {
-      if (race > 0) await click(nextButton(tour.node));
-      await waitForCountdown(tour.node);
-      await waitForRace(tour.node);
-      assert.equal(worldProbe.props.stage, stages[race], 'les quatre courses du Grand Tour restent dans l’ordre');
-      assert.deepEqual(worldProbe.props.race.cup, { id: 'worldtour', index: race, total: 4 });
-      assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'worldtour', 'le HUD montre le globe, pas la coupe dorée');
-      await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
-      results = await waitForResults(tour.node);
-    }
-    assert.deepEqual(standings(results), ['Salim 40', `${ombre} 28`, `${sauge} 16`, `${amethyste} 8`]);
-    assert.equal(tour.node.querySelectorAll('.mirage-profile-trophy-card').length, 2, 'la collection conserve un trophée par coupe remportée');
-    const collectedGlobe = tour.node.querySelector('.mirage-profile-trophy-card[data-cup-id="worldtour"] svg');
-    assert.equal(collectedGlobe.dataset.trophy, 'worldtour');
-    assert.equal(collectedGlobe.innerHTML, tourIcon, 'la collection partage le globe du sélecteur et du podium');
-    const savedCollection = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
-    assert.deepEqual(savedCollection.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert', 'worldtour']);
-    assert.equal(nextButton(tour.node).querySelector('svg').dataset.trophy, 'worldtour', 'le bouton du podium annonce le même globe');
-    await click(nextButton(tour.node));
-    const trophy = await until(() => tour.node.querySelector('.mirage-trophy-screen'), 'le podium du Grand Tour');
-    await until(() => trophy.querySelector('.mirage-trophy-fallback'), 'le globe sans WebGL');
-    assert.equal(trophy.dataset.trophy, 'worldtour');
-    assert.equal(text(trophy.querySelector('.mirage-trophy-design')), 'Globe des Horizons');
-    assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').dataset.trophy, 'worldtour');
-    assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').innerHTML, tourIcon, 'le podium conserve exactement le design du sélecteur');
-    assert.notEqual(trophy.querySelector('.mirage-trophy-fallback svg').innerHTML, desertIcon);
-    assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe Grand Tour avec 40 points/);
-    assert.equal(text(trophy.querySelector('.mirage-trophy-purse')), '● OR GAGNÉS EN COURSE · +40 OR MAX. 40 OR SI TOUTES LES COURSES SONT GAGNÉES', 'les quatre victoires du Grand Tour créditent 40 OR');
-    assert.ok(trophy.querySelector('.mirage-trophy-purse').classList.contains('is-won'));
-    assert.equal(worldProbe.mounted, 0, 'le moteur de course est démonté sur le podium du globe');
-
-    await click(trophy.querySelector('.mirage-start-button'));
-    await waitForCountdown(tour.node);
-    await waitForRace(tour.node);
-    assert.equal(text(tour.node.querySelector('.mirage-chip.is-cup')), 'COURSE 1/4 · 0 PTS', 'rejouer le Grand Tour repart de zéro');
-    assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'worldtour', 'rejouer garde le design du Grand Tour');
-    await press('Escape');
-    await click(tour.node.querySelector('.mirage-pause-overlay .mirage-share-button'));
-    await openCupFromModes(tour.node, assert);
-    await click(tour.node.querySelector('.mirage-cup-card.is-desert'));
-    await startCupFromIntro(tour.node);
-    await waitForCountdown(tour.node);
-    await waitForRace(tour.node);
-    assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'desert', 'changer de coupe ne conserve pas le globe précédent');
-
-    // ── 6. Coupe des Vents : trois cartes, trois victoires, 30 OR ──────────
-    await press('Escape');
-    await click(tour.node.querySelector('.mirage-pause-overlay .mirage-share-button'));
-    await openCupFromModes(tour.node, assert);
     const windsCard = tour.node.querySelector('.mirage-cup-card.is-winds');
-    assert.ok(windsCard, 'la Coupe des Vents est sélectionnable');
+    const lockedTourCard = tour.node.querySelector('.mirage-cup-card.is-worldtour');
+    const lockedLegendsCard = tour.node.querySelector('.mirage-cup-card.is-legends');
+    assert.ok(windsCard, 'la Coupe des Vents est proposée');
+    assert.equal(windsCard.disabled, false, 'finir la 1ʳᵉ coupe a débloqué la 2ᵉ coupe (Coupe des Vents)');
+    assert.equal(windsCard.classList.contains('is-locked'), false);
+    assert.equal(lockedTourCard.disabled, true, 'la 3ᵉ coupe reste verrouillée tant que la 2ᵉ n’est pas terminée');
+    assert.equal(lockedLegendsCard.disabled, true, 'la 4ᵉ coupe reste verrouillée');
     assert.equal(text(windsCard.querySelector('.mirage-cup-reward-copy > strong')), '+30 OR');
     const windsIcon = windsCard.querySelector('svg').innerHTML;
     await click(windsCard);
@@ -480,12 +448,12 @@ export async function checkMirageCup(assert) {
     }
     assert.equal(windsGold, 30, 'trois victoires rapportent exactement 30 OR');
     assert.deepEqual(standings(windsResults), ['Salim 30', `${ombre} 21`, `${sauge} 12`, `${amethyste} 6`]);
-    assert.equal(tour.node.querySelectorAll('.mirage-profile-trophy-card').length, 3, 'la victoire ajoute la Rose des Vents sans perdre les trophées précédents');
+    assert.equal(tour.node.querySelectorAll('.mirage-profile-trophy-card').length, 2, 'la victoire ajoute la Rose des Vents sans perdre le trophée précédent');
     const collectedWinds = tour.node.querySelector('.mirage-profile-trophy-card[data-cup-id="winds"] svg');
     assert.equal(collectedWinds.dataset.trophy, 'winds');
     assert.equal(collectedWinds.innerHTML, windsIcon, 'la collection partage la Rose des Vents du sélecteur');
     const savedWindsCollection = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
-    assert.deepEqual(savedWindsCollection.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert', 'winds', 'worldtour']);
+    assert.deepEqual(savedWindsCollection.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert', 'winds']);
     await click(nextButton(tour.node));
     const windsTrophy = await until(() => tour.node.querySelector('.mirage-trophy-screen'), 'le podium de la Coupe des Vents');
     await until(() => windsTrophy.querySelector('.mirage-trophy-fallback'), 'la Rose des Vents sans WebGL');
@@ -495,6 +463,69 @@ export async function checkMirageCup(assert) {
     assert.notEqual(windsTrophy.querySelector('.mirage-trophy-fallback svg').innerHTML, desertIcon);
     assert.match(text(windsTrophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe des Vents avec 30 points/);
     assert.equal(text(windsTrophy.querySelector('.mirage-trophy-purse')), '● OR GAGNÉS EN COURSE · +30 OR MAX. 30 OR SI TOUTES LES COURSES SONT GAGNÉES');
+
+    // ── 6. Grand Tour (débloqué après la 2ᵉ coupe) : son globe suit toute la coupe ──
+    await click(windsTrophy.querySelector('.mirage-share-button'));
+    await openCupFromModes(tour.node, assert);
+    const tourCard = tour.node.querySelector('.mirage-cup-card.is-worldtour');
+    const legendsCardBefore = tour.node.querySelector('.mirage-cup-card.is-legends');
+    assert.equal(tourCard.disabled, false, 'finir la 2ᵉ coupe a débloqué la 3ᵉ coupe (Coupe Grand Tour)');
+    assert.equal(tourCard.classList.contains('is-locked'), false);
+    assert.equal(legendsCardBefore.disabled, true, 'la 4ᵉ coupe reste verrouillée tant que la 3ᵉ n’est pas terminée');
+    const tourIcon = tourCard.querySelector('svg').innerHTML;
+    assert.match(text(tourCard.querySelector('.mirage-cup-card-title small')), /Globe des Horizons/);
+    await click(tourCard);
+    assert.equal(tourCard.getAttribute('aria-pressed'), 'true');
+    await startCupFromIntro(tour.node);
+    const stages = ['sardinia', 'alger', 'japan', 'airbase'];
+    let results;
+    for (let race = 0; race < stages.length; race++) {
+      if (race > 0) await click(nextButton(tour.node));
+      await waitForCountdown(tour.node);
+      await waitForRace(tour.node);
+      assert.equal(worldProbe.props.stage, stages[race], 'les quatre courses du Grand Tour restent dans l’ordre');
+      assert.deepEqual(worldProbe.props.race.cup, { id: 'worldtour', index: race, total: 4 });
+      assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'worldtour', 'le HUD montre le globe, pas la coupe dorée');
+      await finishRace(['player', 'ombre', 'sauge', 'amethyste']);
+      results = await waitForResults(tour.node);
+    }
+    assert.deepEqual(standings(results), ['Salim 40', `${ombre} 28`, `${sauge} 16`, `${amethyste} 8`]);
+    assert.equal(tour.node.querySelectorAll('.mirage-profile-trophy-card').length, 3, 'la collection conserve un trophée par coupe remportée');
+    const collectedGlobe = tour.node.querySelector('.mirage-profile-trophy-card[data-cup-id="worldtour"] svg');
+    assert.equal(collectedGlobe.dataset.trophy, 'worldtour');
+    assert.equal(collectedGlobe.innerHTML, tourIcon, 'la collection partage le globe du sélecteur et du podium');
+    const savedCollection = JSON.parse(window.localStorage.getItem(`${STORAGE_KEY}:guest`));
+    assert.deepEqual(savedCollection.sets[MIRAGE_CUP_TROPHIES_KEY], ['desert', 'winds', 'worldtour']);
+    assert.equal(nextButton(tour.node).querySelector('svg').dataset.trophy, 'worldtour', 'le bouton du podium annonce le même globe');
+    await click(nextButton(tour.node));
+    const trophy = await until(() => tour.node.querySelector('.mirage-trophy-screen'), 'le podium du Grand Tour');
+    await until(() => trophy.querySelector('.mirage-trophy-fallback'), 'le globe sans WebGL');
+    assert.equal(trophy.dataset.trophy, 'worldtour');
+    assert.equal(text(trophy.querySelector('.mirage-trophy-design')), 'Globe des Horizons');
+    assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').dataset.trophy, 'worldtour');
+    assert.equal(trophy.querySelector('.mirage-trophy-fallback svg').innerHTML, tourIcon, 'le podium conserve exactement le design du sélecteur');
+    assert.notEqual(trophy.querySelector('.mirage-trophy-fallback svg').innerHTML, desertIcon);
+    assert.match(text(trophy.querySelector('.mirage-trophy-lede')), /Tu remportes la Coupe Grand Tour avec 40 points/);
+    assert.equal(text(trophy.querySelector('.mirage-trophy-purse')), '● OR GAGNÉS EN COURSE · +40 OR MAX. 40 OR SI TOUTES LES COURSES SONT GAGNÉES', 'les quatre victoires du Grand Tour créditent 40 OR');
+    assert.ok(trophy.querySelector('.mirage-trophy-purse').classList.contains('is-won'));
+    assert.equal(worldProbe.mounted, 0, 'le moteur de course est démonté sur le podium du globe');
+
+    await click(trophy.querySelector('.mirage-start-button'));
+    await waitForCountdown(tour.node);
+    await waitForRace(tour.node);
+    assert.equal(text(tour.node.querySelector('.mirage-chip.is-cup')), 'COURSE 1/4 · 0 PTS', 'rejouer le Grand Tour repart de zéro');
+    assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'worldtour', 'rejouer garde le design du Grand Tour');
+    await press('Escape');
+    await click(tour.node.querySelector('.mirage-pause-overlay .mirage-share-button'));
+    await openCupFromModes(tour.node, assert);
+    const legendsCardAfter = tour.node.querySelector('.mirage-cup-card.is-legends');
+    assert.equal(legendsCardAfter.disabled, false, 'finir la 3ᵉ coupe a débloqué la 4ᵉ coupe (Coupe des Légendes)');
+    assert.equal(legendsCardAfter.classList.contains('is-locked'), false);
+    await click(tour.node.querySelector('.mirage-cup-card.is-desert'));
+    await startCupFromIntro(tour.node);
+    await waitForCountdown(tour.node);
+    await waitForRace(tour.node);
+    assert.equal(tour.node.querySelector('.mirage-chip.is-cup svg').dataset.trophy, 'desert', 'changer de coupe ne conserve pas le globe précédent');
   } finally {
     tourTimers.restore();
     await tour.unmount();

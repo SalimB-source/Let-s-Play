@@ -83,6 +83,35 @@ export function getCup(cupId) {
 }
 
 /**
+ * Coupe précédente à terminer pour débloquer `cupId` : `null` pour la
+ * première coupe (ouverte dès le départ), `undefined` si l’identifiant est
+ * inconnu.
+ */
+export function cupRequirement(cupId) {
+  const index = CUPS.findIndex((cup) => cup.id === cupId);
+  if (index < 0) return undefined;
+  return index > 0 ? CUPS[index - 1] : null;
+}
+
+/**
+ * La coupe `cupId` est-elle débloquée ? Seule la 1ʳᵉ coupe (`desert`) est
+ * ouverte d’office ; il faut finir la 1ʳᵉ pour débloquer la 2ᵉ, finir la 2ᵉ
+ * pour débloquer la 3ᵉ, et ainsi de suite dans l’ordre de `CUPS`.
+ */
+export function isCupUnlocked(cupId, completedCups = []) {
+  const index = CUPS.findIndex((cup) => cup.id === cupId);
+  if (index < 0) return false;
+  if (index === 0) return true;
+  const done = new Set(Array.isArray(completedCups) ? completedCups : []);
+  return CUPS.slice(0, index).every((cup) => done.has(cup.id));
+}
+
+/** Liste des coupes actuellement débloquées, dans l’ordre du catalogue. */
+export function unlockedCups(completedCups = []) {
+  return CUPS.filter((cup) => isCupUnlocked(cup.id, completedCups));
+}
+
+/**
  * Maximum d’or disponible sur l’ensemble d’une coupe (identifiant ou entrée
  * de `CUPS`). Il est gagné au fil des victoires de course : 10 OR par victoire,
  * sans prime supplémentaire au podium. Zéro pour une coupe inconnue.

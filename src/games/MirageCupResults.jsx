@@ -1,7 +1,7 @@
 import React from 'react';
 import MirageCupStandings, { formatRaceLine } from './MirageCupStandings';
 import MirageTrophyIcon from './MirageTrophyIcon';
-import { cupStandings, placeLabel } from './mirageCup';
+import { cupStandings, getCup, placeLabel } from './mirageCup';
 import { stageName } from './MirageCoursePicker';
 
 // Titre de l’overlay selon ta place dans la course (1ᵉʳ → 4ᵉ).
@@ -44,7 +44,16 @@ export default function MirageCupResults({ cup, run, award, onNext, onQuit }) {
           <span>{placeLabel(mine?.place ?? 4)} · {stageName(last.stage)} · {formatRaceLine(mine)}</span>
         </p>
         <MirageCupStandings standings={standings} run={run} mode="race" />
-        {award && <p className="mirage-xp-award" role="status"><strong>+{award.xpGained} XP</strong>{award.coinsGained > 0 && <b className="mirage-coin-gain">+{award.coinsGained} OR</b>}{award.leveledUp && <span>NIVEAU {award.level} !</span>}{award.unlocked.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map((skin) => skin.name).join(' · ')}</em>}</p>}
+        {award && (
+          <p className="mirage-xp-award" role="status">
+            <strong>+{award.xpGained} XP</strong>
+            {award.coinsGained > 0 && <b className="mirage-coin-gain">+{award.coinsGained} OR</b>}
+            {award.leveledUp && <span>NIVEAU {award.level} !</span>}
+            {award.unlocked?.length > 0 && <em>SKIN DÉBLOQUÉ : {award.unlocked.map((skin) => skin.name).join(' · ')}</em>}
+            {award.newlyUnlockedStages?.length > 0 && <em>CARTE DÉBLOQUÉE : {award.newlyUnlockedStages.map((id) => stageName(id)).join(' · ')}</em>}
+            {award.newlyUnlockedCups?.length > 0 && <em>COUPE DÉBLOQUÉE : {award.newlyUnlockedCups.map((id) => getCup(id)?.name || id).join(' · ')}</em>}
+          </p>
+        )}
         <div className="mirage-result-actions">
           <button type="button" className="mirage-start-button" onClick={onNext}>
             {finished ? <>VOIR LE PODIUM <MirageTrophyIcon cupId={cup.id} className="mirage-inline-trophy" /></> : <>COURSE SUIVANTE · {nextStage.toUpperCase()} <span aria-hidden="true">↗</span></>}

@@ -15,11 +15,14 @@ import {
   cupStandings,
   cupWinner,
   cupGoldMaximum,
+  cupRequirement,
   getCup,
   isCupComplete,
+  isCupUnlocked,
   placeLabel,
   pointsForPlace,
   recordCupRace,
+  unlockedCups,
 } from '../src/games/mirageCup.js';
 import { DUEL_DISTANCE, DUEL_RIVALS, duelRivalsForTrack, laneCount, setLaneCount } from '../src/games/mirageRules.js';
 import { CHARACTER_PALETTES } from '../src/games/mirageCharacters.js';
@@ -463,3 +466,39 @@ test('riders keep the hat and markings of a seven-slot palette for the trophy ho
   assert.deepEqual(createCupRun('desert', { playerColors: [1, 2, 3, 4, 5, 6] }).riders[0].colors, [1, 2, 3, 4, 5, 6]);
   assert.deepEqual(createCupRun('desert', { playerColors: [1, 2, 3, 4, 5, 6, 'x'] }).riders[0].colors, [1, 2, 3, 4, 5]);
 });
+
+test('cups unlock sequentially: only the 1st cup is open initially, and each finished cup unlocks the next', () => {
+  assert.equal(cupRequirement('desert'), null);
+  assert.equal(cupRequirement('winds')?.id, 'desert');
+  assert.equal(cupRequirement('worldtour')?.id, 'winds');
+  assert.equal(cupRequirement('legends')?.id, 'worldtour');
+  assert.equal(cupRequirement('unknown'), undefined);
+
+  // Au départ, seule la 1ʳᵉ coupe (`desert`) est débloquée.
+  assert.equal(isCupUnlocked('desert', []), true);
+  assert.equal(isCupUnlocked('winds', []), false);
+  assert.equal(isCupUnlocked('worldtour', []), false);
+  assert.equal(isCupUnlocked('legends', []), false);
+  assert.equal(isCupUnlocked('unknown', []), false);
+  assert.deepEqual(unlockedCups([]).map((c) => c.id), ['desert']);
+
+  // Finir la 1ʳᵉ coupe débloque la 2ᵉ (`winds`), pas la 3ᵉ ni la 4ᵉ.
+  assert.equal(isCupUnlocked('winds', ['desert']), true);
+  assert.equal(isCupUnlocked('worldtour', ['desert']), false);
+  assert.equal(isCupUnlocked('legends', ['desert']), false);
+  assert.deepEqual(unlockedCups(['desert']).map((c) => c.id), ['desert', 'winds']);
+
+  // Finir la 2ᵉ coupe débloque la 3ᵉ (`worldtour`), mais pas si la 1ʳᵉ manque.
+  assert.equal(isCupUnlocked('worldtour', ['winds']), false);
+  assert.equal(isCupUnlocked('worldtour', ['desert', 'winds']), true);
+  assert.equal(isCupUnlocked('legends', ['desert', 'winds']), false);
+  assert.deepEqual(unlockedCups(['desert', 'winds']).map((c) => c.id), ['desert', 'winds', 'worldtour']);
+
+  // Finir la 3ᵉ coupe débloque la 4ᵉ (`legends`).
+  assert.equal(isCupUnlocked('legends', ['desert', 'winds', 'worldtour']), true);
+  assert.deepEqual(
+    unlockedCups(['desert', 'winds', 'worldtour']).map((c) => c.id),
+    ['desert', 'winds', 'worldtour', 'legends'],
+  );
+});
+

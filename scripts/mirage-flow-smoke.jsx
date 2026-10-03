@@ -177,6 +177,16 @@ function assertCupIntro(assert, node) {
   assert.notEqual(desertIcon.innerHTML, worldtourIcon.innerHTML, 'chaque coupe garde son propre trophée');
   assert.notEqual(legendsIcon.innerHTML, worldtourIcon.innerHTML, 'le blason des Légendes est distinct du globe');
 
+  // Par défaut, seule la 1ʳᵉ coupe (`desert`) est débloquée ; les suivantes portent un cadenas.
+  assert.equal(desertCard.disabled, false, 'la 1ʳᵉ coupe est débloquée par défaut');
+  assert.equal(desertCard.classList.contains('is-locked'), false);
+  assert.equal(desertCard.querySelector('.mirage-cup-lock'), null);
+  for (const lockedCard of [windsCard, worldtourCard, legendsCard]) {
+    assert.equal(lockedCard.disabled, true, 'les coupes suivantes sont bloquées par un cadenas');
+    assert.equal(lockedCard.classList.contains('is-locked'), true);
+    assert.equal(lockedCard.querySelector('.mirage-cup-lock')?.textContent, '🔒');
+  }
+
   const introCopy = intro.querySelector(':scope > p');
   assert.ok(introCopy?.textContent.includes('jusqu’à +30 OR'), 'le texte de présentation rappelle le gain en or');
   assert.ok(raceNames.every((name) => !intro.textContent.includes(name)),
@@ -272,25 +282,23 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-start-button').textContent.includes('LANCER LA PARTIE') || page.node.querySelector('.mirage-start-button').textContent.includes('CHARGEMENT'),
       'le bouton propose « LANCER LA PARTIE » (ou l’attente du rendu 3D)');
 
-    for (const card of maps) {
+    // Au départ, seules les 3 premières cartes sont débloquées ; les cartes 4 à 10 sont bloquées par un cadenas.
+    for (const card of maps.slice(0, 3)) {
+      assert.equal(card.disabled, false, 'les 3 premières cartes sont débloquées au départ');
+      assert.equal(card.classList.contains('is-locked'), false);
+      assert.equal(card.querySelector('.mirage-map-lock'), null);
       await act(async () => { card.click(); });
-      assert.equal(card.getAttribute('aria-pressed'), 'true', 'chaque miniature permet de sélectionner son terrain');
+      assert.equal(card.getAttribute('aria-pressed'), 'true', 'chaque carte débloquée est sélectionnable');
       assert.equal(maps.filter((map) => map.getAttribute('aria-pressed') === 'true').length, 1,
         'un seul terrain sélectionné à la fois');
     }
-
-    const algerCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
-    assert.ok(algerCard, 'la carte Alger la Blanche est proposée');
-    await act(async () => { algerCard.click(); });
-    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('ALGER LA BLANCHE'),
-      'choisir Alger la Blanche met à jour le bandeau (ZONE 05 · ALGER LA BLANCHE)');
-    const snakewayCard = maps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Chemin du Serpent');
-    assert.ok(snakewayCard, 'la Route du Serpent est sélectionnable');
-    await act(async () => { snakewayCard.click(); });
-    assert.ok(page.node.querySelector('.mirage-game-brand').textContent.includes('CHEMIN DU SERPENT'),
-      'choisir la nouvelle map met à jour le bandeau (ZONE 10 · CHEMIN DU SERPENT)');
-    assert.ok(page.node.querySelector('.mirage-intro-overlay p').textContent.includes('Dragon Ball Z'),
-      'la description de la map signale clairement son inspiration');
+    for (const lockedCard of maps.slice(3)) {
+      assert.equal(lockedCard.disabled, true, 'les cartes 4 à 10 sont verrouillées au départ');
+      assert.equal(lockedCard.classList.contains('is-locked'), true);
+      assert.equal(lockedCard.querySelector('.mirage-map-lock')?.textContent, '🔒', 'un cadenas bloque la miniature');
+      await act(async () => { lockedCard.click(); });
+      assert.equal(lockedCard.getAttribute('aria-pressed'), 'false', 'cliquer une carte verrouillée ne la sélectionne pas');
+    }
 
     /* ---------------- 4. Retour puis clic DUEL : maps + consignes ------- */
     const backToModes = page.node.querySelector('.mirage-secondary-button');
@@ -514,5 +522,56 @@ export async function checkMirageFlow(assert) {
     await buyer.unmount();
     if (previousProgress === null) window.localStorage.removeItem(PROGRESSION_KEY);
     else window.localStorage.setItem(PROGRESSION_KEY, previousProgress);
+  }
+
+  /* ------- 9. Déblocage progressif des cartes (1ᵉʳ sur les 3 premières -> 4ᵉ, etc.) --- */
+  const savedBeforeMaps = window.localStorage.getItem(PROGRESSION_KEY);
+  window.localStorage.setItem(PROGRESSION_KEY, JSON.stringify({
+    xp: 0, runs: 3, coins: 30, skinId: 'desert', ownedSkins: [],
+    wonStages: ['desert', 'western', 'prairie'],
+    completedCups: [],
+  }));
+  const stageFourPage = await mountPage('/jeu');
+  try {
+    await openMode(assert, stageFourPage.node, 'RUÉE');
+    const mapsAfterThree = assertTenMaps(assert, stageFourPage.node);
+    assert.equal(mapsAfterThree[3].disabled, false, 'finir les 3 premières cartes en 1ᵉʳ débloque la 4ᵉ (Costa Omertà)');
+    assert.equal(mapsAfterThree[3].classList.contains('is-locked'), false);
+    for (const stillLocked of mapsAfterThree.slice(4)) {
+      assert.equal(stillLocked.disabled, true, 'les cartes 5 à 10 restent verrouillées tant que la 4ᵉ n’est pas gagnée');
+      assert.equal(stillLocked.classList.contains('is-locked'), true);
+    }
+  } finally {
+    await stageFourPage.unmount();
+  }
+
+  window.localStorage.setItem(PROGRESSION_KEY, JSON.stringify({
+    xp: 0, runs: 9, coins: 90, skinId: 'desert', ownedSkins: [],
+    wonStages: ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 'ramparts', 'infinity', 'airbase'],
+    completedCups: [],
+  }));
+  const allMapsPage = await mountPage('/jeu');
+  try {
+    await openMode(assert, allMapsPage.node, 'RUÉE');
+    const unlockedMaps = assertTenMaps(assert, allMapsPage.node);
+    for (const card of unlockedMaps) {
+      assert.equal(card.disabled, false, 'toutes les cartes sont débloquées après avoir gagné les 9 premières');
+      await act(async () => { card.click(); });
+      assert.equal(card.getAttribute('aria-pressed'), 'true', 'chaque miniature débloquée permet de sélectionner son terrain');
+    }
+    const algerCard = unlockedMaps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Alger la Blanche');
+    await act(async () => { algerCard.click(); });
+    assert.ok(allMapsPage.node.querySelector('.mirage-game-brand').textContent.includes('ALGER LA BLANCHE'),
+      'choisir Alger la Blanche met à jour le bandeau (ZONE 05 · ALGER LA BLANCHE)');
+    const snakewayCard = unlockedMaps.find((card) => card.querySelector('.mirage-map-copy strong')?.textContent === 'Chemin du Serpent');
+    await act(async () => { snakewayCard.click(); });
+    assert.ok(allMapsPage.node.querySelector('.mirage-game-brand').textContent.includes('CHEMIN DU SERPENT'),
+      'choisir la 10ᵉ map débloquée met à jour le bandeau (ZONE 10 · CHEMIN DU SERPENT)');
+    assert.ok(allMapsPage.node.querySelector('.mirage-intro-overlay p').textContent.includes('Dragon Ball Z'),
+      'la description de la map signale clairement son inspiration');
+  } finally {
+    await allMapsPage.unmount();
+    if (savedBeforeMaps === null) window.localStorage.removeItem(PROGRESSION_KEY);
+    else window.localStorage.setItem(PROGRESSION_KEY, savedBeforeMaps);
   }
 }
