@@ -256,15 +256,34 @@ const assertAnimatedTwoHandGrip = (label) => {
 };
 const swordDiagonalPose = () => {
   const p = world.debug.warrior.userData.parts;
+  world.debug.warrior.updateMatrixWorld(true);
+  const blade = p.weapon.getObjectByName('two-handed-sword-blade');
+  const bladeBox = new THREE.Box3().setFromObject(blade);
+  let frontZ = Infinity;
+  for (const x of [bladeBox.min.x, bladeBox.max.x]) {
+    for (const y of [bladeBox.min.y, bladeBox.max.y]) {
+      for (const z of [bladeBox.min.z, bladeBox.max.z]) {
+        frontZ = Math.min(frontZ, p.torso.worldToLocal(new THREE.Vector3(x, y, z)).z);
+      }
+    }
+  }
   return {
     x: p.weaponMount.position.x, y: p.weaponMount.position.y,
-    z: p.weaponMount.position.z, roll: p.weapon.rotation.z,
+    z: p.weaponMount.position.z, roll: p.weapon.rotation.z, pitch: p.weapon.rotation.x,
+    tipZ: frontZ,
   };
 };
 const assertForwardStart = (rest, windup, label) => {
   // −Z est l'avant du Gardien : la charge doit projeter l'épée vers la cible.
   if (windup.z > rest.z - 0.085) {
     fail('DÉPART D’ÉPÉE PAS ASSEZ FRONTAL', `${label} : repos z = ${rest.z.toFixed(3)}, charge z = ${windup.z.toFixed(3)}`);
+  }
+};
+const assertForwardThrust = (rest, strike, label) => {
+  // À l'impact, le pivot et la pointe doivent partir vers l'ennemi plutôt que
+  // simplement retomber en diagonale près du torse.
+  if (strike.z > rest.z - 0.16 || strike.pitch > -0.68 || strike.tipZ > rest.tipZ - 0.32) {
+    fail('ESTOC PAS ASSEZ FRONTALE', `${label} : pivot ${rest.z.toFixed(3)} → ${strike.z.toFixed(3)}, pointe ${rest.tipZ.toFixed(3)} → ${strike.tipZ.toFixed(3)}, inclinaison = ${strike.pitch.toFixed(3)}`);
   }
 };
 const assertWideDiagonal = (windup, strike) => {
@@ -286,6 +305,7 @@ try {
   for (let i = 8; i < 16; i++) stepFrame();
   const lightStrike = swordDiagonalPose();
   assertAnimatedTwoHandGrip('frappe légère');
+  assertForwardThrust(swordRest, lightStrike, 'attaque légère');
   assertWideDiagonal(lightWindup, lightStrike);
   for (let i = 16; i < 60; i++) stepFrame();
   fire('keydown', 'KeyK');              // attaque lourde
@@ -296,6 +316,7 @@ try {
   for (let i = 22; i < 36; i++) stepFrame();
   const heavyStrike = swordDiagonalPose();
   assertAnimatedTwoHandGrip('frappe lourde');
+  assertForwardThrust(swordRest, heavyStrike, 'attaque lourde');
   assertWideDiagonal(heavyWindup, heavyStrike);
   fire('keydown', 'Space');             // esquive en fin de récupération (annulation)
   for (let i = 0; i < 40; i++) stepFrame();

@@ -1400,10 +1400,10 @@ function makeWorld(mount, callbacks) {
       const uR = smooth(rawR);
       const uRArm = smooth(clamp01((t - spec.windup - spec.active - 0.03)
         / Math.max(0.05, spec.recover * 0.85)));
-      // Grand diagonal : la lame se charge haut à droite puis traverse
-      // franchement vers la hanche gauche. Le pivot suit lui aussi cette
-      // diagonale (pas une rotation décorative sur place), tandis que les deux
-      // repères de prise restent solidaires de la même poignée.
+      // Grand diagonal qui finit en estoc : la lame se charge haut à droite,
+      // traverse vers la hanche gauche puis se projette franchement vers la
+      // cible. Le pivot et la pointe avancent ensemble en −Z, tandis que les
+      // deux repères de prise restent solidaires de la même poignée.
       if (parts.weaponMount && swordMountRest) {
         const windup = {
           x: swordMountRest.x + (over ? 0.16 : 0.12),
@@ -1417,9 +1417,11 @@ function makeWorld(mount, callbacks) {
         const strike = {
           x: swordMountRest.x - (over ? 0.17 : 0.14),
           y: swordMountRest.y - (over ? 0.20 : 0.18),
-          z: swordMountRest.z - (over ? 0.07 : 0.06),
+          // L'impact devient une vraie estoc : le centre de l'épée avance
+          // d'environ 22 cm et la pointe bascule nettement vers −Z.
+          z: swordMountRest.z - (over ? 0.23 : 0.21),
           roll: raisedWeaponZ + (over ? 1.00 : 0.78),
-          pitch: over ? -0.45 : -0.35,
+          pitch: over ? -1.08 : -0.96,
         };
         if (t < spec.windup) {
           tWeaponMountX = mix(swordMountRest.x, windup.x, uW);
