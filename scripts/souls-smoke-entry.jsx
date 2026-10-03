@@ -188,7 +188,10 @@ try {
   const elbow = new THREE.Vector3();
   p.elbowL.getWorldPosition(elbow);
   const elbowInTorso = p.torso.worldToLocal(elbow.clone());
-  if (elbowInTorso.x > -0.06 || elbowInTorso.z < 0.08) {
+  // Hors du thorax et des ailes : depuis la caméra arrière, le bras gauche
+  // doit réellement déborder sur la silhouette, pas seulement être relié à
+  // l'arme dans les calculs 3D.
+  if (elbowInTorso.x > -0.3 || elbowInTorso.z < 0.13) {
     fail('PRISE À DEUX MAINS MASQUÉE', `coude local = ${elbowInTorso.toArray().map((v) => v.toFixed(3)).join(', ')}`);
   }
   console.log('Prise à deux mains OK — paume gauche à', `${gripGap.toFixed(3)} m`, 'de la contreprise, coude lisible.');

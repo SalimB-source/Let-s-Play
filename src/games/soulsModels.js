@@ -1903,23 +1903,34 @@ export function makeInsectWarrior({ corrupted = false, boss = false } = {}) {
   upperGrip.position.y = 0.34;
   const upperGripBand = ring(0.051, 0.008, gold);
   upperGripBand.position.y = 0.205;
-  // Poignée latérale de contreprise : elle sort de la hampe sous le pommeau
-  // et ouvre la posture du bras gauche sur la silhouette du Gardien. Cette
-  // garde en aile est volontairement asymétrique, comme une patte de scarabée.
-  const offhandWrap = capsule(0.043, 0.20, cloth);
+  // Poignée latérale de contreprise : une branche de chitine en aile sort de
+  // la hampe sous le pommeau. Elle écarte volontairement le bras gauche du
+  // dos et des ailes, pour que les deux mains soient nettement lisibles depuis
+  // la caméra de poursuite placée derrière le Gardien.
+  const offhandBranchCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.015, 0.35, 0),
+    new THREE.Vector3(-0.18, 0.43, 0.028),
+    new THREE.Vector3(-0.43, 0.42, 0.05),
+    new THREE.Vector3(-0.66, 0.36, 0),
+  ]);
+  const offhandBranch = new THREE.Mesh(
+    new THREE.TubeGeometry(offhandBranchCurve, 18, 0.031, 7, false), chitinDark,
+  );
+  const offhandWrap = capsule(0.047, 0.18, cloth);
   offhandWrap.rotation.z = Math.PI / 2;
-  offhandWrap.position.set(-0.14, 0.36, 0);
-  const offhandCap = ellipsoid(0.052, gold, 0.9, 1, 0.8);
-  offhandCap.position.set(-0.265, 0.36, 0);
+  offhandWrap.position.set(-0.56, 0.375, 0);
+  const offhandCap = ellipsoid(0.058, gold, 0.9, 1, 0.8);
+  offhandCap.position.set(-0.69, 0.36, 0);
   const pommel = ellipsoid(0.072, gold, 1, 1, 0.8);
   pommel.position.y = 0.45;
   // Repère non rendu : SoulsWorld aligne précisément la paume gauche au bout
   // de la contreprise, y compris pendant les attaques.
   const offhandGrip = new THREE.Object3D();
   offhandGrip.name = 'glaive-offhand-grip';
-  offhandGrip.position.set(-0.25, 0.36, 0);
+  offhandGrip.position.set(-0.62, 0.37, 0);
   weapon.add(shaft, shaftBandA, shaftBandB, crescent, edge,
-    lowerGrip, upperGrip, upperGripBand, offhandWrap, offhandCap, pommel, offhandGrip);
+    lowerGrip, upperGrip, upperGripBand, offhandBranch, offhandWrap,
+    offhandCap, pommel, offhandGrip);
   weapon.scale.setScalar(0.85);
   weapon.rotation.z = -0.35;
   weapon.rotation.x = 0.1;
