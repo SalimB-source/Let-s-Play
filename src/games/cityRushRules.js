@@ -148,7 +148,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#48b9ff',
     key: 'A',
     automatic: false,
-    description: `Tire droit sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. Voie libre devant ? Le tir part vers l'arrière contre la berline de police la plus proche. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s. Deux tirs bleus détruisent une berline de police.`,
+    description: `Tire droit sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. Voie libre devant ? Le tir part vers l'arrière contre la berline de police la plus proche. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s. Trois tirs bleus détruisent une berline de police.`,
     duration: CITY_RUSH_BLUE_SHOT_DURATION,
     speedFactor: CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   }),
@@ -160,7 +160,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#ff526e',
     key: 'Z',
     automatic: false,
-    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche — une seule rafale la détruit.',
+    description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche — deux rafales la détruisent.',
     duration: 2,
   }),
   [CITY_RUSH_POWERS.CASH]: Object.freeze({
@@ -904,20 +904,24 @@ export function selectCityRushRacers({
 }
 
 // ── L'escouade de police du dernier tour ────────────────────────────────────
-// Au passage du dernier tour, deux berlines d'interception entrent en piste
+// Au passage du dernier tour, trois berlines d'interception entrent en piste
 // juste derrière le premier du classement. Elles ne sont **pas classées** :
 // `rankCityRushRacers` ne les voit jamais et l'écran d'arrivée les ignore.
 // Leur seule mission est de nuire au leader — elles raflent **en priorité les
 // bonus rouges (mitrailleuse) et jaunes (hélicoptère)** pour l'empêcher de
-// s'armer, puis ouvrent le feu sur lui dès qu'une jauge rouge est pleine.
+// s'armer, puis ouvrent le feu sur lui. Elles **entrent en piste armées** :
+// jauges bleue et rouge chargées, jaune vide (voir
+// `CITY_RUSH_POLICE_START_CHARGES`) — la première rafale part donc tout de
+// suite, sans attendre un bonus volé.
 //
 // Contrairement aux autres voitures de course, une berline est **solide** :
 // elle ne se traverse pas. Elle peut donc se rabattre devant le leader puis
 // lever le pied pour le retenir — un barrage roulant, exactement l'effet
 // d'une voiture lente percutée — avant de repartir et de revenir à la charge.
-export const CITY_RUSH_POLICE_COUNT = 2;
-// Voies extérieures : l'escouade encadre le leader au lieu de lui barrer la route.
-export const CITY_RUSH_POLICE_LANES = Object.freeze([0, 3]);
+export const CITY_RUSH_POLICE_COUNT = 3;
+// Les deux voies extérieures d'abord : l'escouade encadre le leader au lieu de
+// lui barrer la route ; la troisième berline se cale sur une voie intérieure.
+export const CITY_RUSH_POLICE_LANES = Object.freeze([0, 3, 2]);
 // Les deux bonus de tir, ceux que la police convoite avant tous les autres.
 export const CITY_RUSH_POLICE_HUNT_TYPES = Object.freeze([CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]);
 export const CITY_RUSH_POLICE_HUNT_WEIGHT = 5; // un bonus rouge/jaune vaut cinq bonus ordinaires
@@ -932,13 +936,15 @@ export const CITY_RUSH_POLICE_FIRE_COOLDOWN = 2.2; // s : délai entre deux rafa
 export const CITY_RUSH_POLICE_VIEW_BEHIND = 22; // m : une berline reste dessinée un peu derrière nous
 export const CITY_RUSH_POLICE_BLOCK_RANGE = 40; // m : au-delà, la voie est considérée bouchée
 
-// Les berlines de l'escouade ont une petite barre de vie : deux tirs droits
-// bleus, OU une seule rafale rouge, OU un seul missile d'hélicoptère les
-// détruisent. Le barème des dégâts est pur, donc testable hors de three.js.
-export const CITY_RUSH_POLICE_HEALTH = 2;
+// Les berlines de l'escouade ont une barre de vie : **trois tirs droits bleus**
+// (2 points chacun), OU **deux rafales rouges** (3 points chacune), OU **un
+// seul missile d'hélicoptère** (6 points) les détruisent. Le barème est en
+// points plutôt qu'en coups — un tir bleu ne compte pas comme une rafale
+// rouge — et reste pur, donc testable hors de three.js.
+export const CITY_RUSH_POLICE_HEALTH = 6;
 export const CITY_RUSH_POLICE_DAMAGE = Object.freeze({
-  [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // deux tirs droits bleus
-  [CITY_RUSH_POWERS.PISTOL]: CITY_RUSH_POLICE_HEALTH, // une rafale rouge suffit
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // trois tirs droits bleus (2 · 3 = 6)
+  [CITY_RUSH_POWERS.PISTOL]: 3, // deux rafales rouges (3 · 2 = 6)
   [CITY_RUSH_POWERS.RADIO]: CITY_RUSH_POLICE_HEALTH, // un tir d'hélicoptère suffit
 });
 
@@ -949,8 +955,33 @@ export function cityRushPoliceDamage(health = CITY_RUSH_POLICE_HEALTH, source = 
   return Math.max(0, safeHealth - damage);
 }
 
+// Combien de tirs de cette arme reste-t-il avant l'explosion ? Sert au bandeau
+// « berline touchée » : « encore deux tirs bleus » plutôt qu'une barre brute.
+export function cityRushPoliceShotsLeft(health = CITY_RUSH_POLICE_HEALTH, source = CITY_RUSH_POWERS.BLUE_SHOT) {
+  const safeHealth = Math.max(0, Math.trunc(Number(health) || 0));
+  const damage = Number(CITY_RUSH_POLICE_DAMAGE[source]);
+  if (!safeHealth || !Number.isFinite(damage) || damage <= 0) return 0;
+  return Math.ceil(safeHealth / damage);
+}
+
 // Prime de destruction : le pilote qui fait exploser une berline la touche.
 export const CITY_RUSH_POLICE_DESTROY_SCORE = 200;
+
+// ── Berlines armées dès l'entrée en piste ───────────────────────────────────
+// L'escouade ne démarre pas les mains vides : le tir droit (bleu) et la
+// mitrailleuse (rouge) sont chargés dès le départ de la chasse, l'hélicoptère
+// (jaune) reste à zéro — il faut le voler sur la piste. À elles deux, les deux
+// armes de départ couvrent tout le dernier tour sans dépendre du hasard des
+// bonus, et le jaune reste la récompense d'un vol réussi.
+export const CITY_RUSH_POLICE_START_CHARGES = Object.freeze([CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL]);
+
+export function createCityRushPoliceInventory() {
+  const inventory = createCityRushInventory();
+  for (const type of CITY_RUSH_POLICE_START_CHARGES) {
+    inventory[type] = CITY_RUSH_POWER_CHARGE_COST[type];
+  }
+  return inventory;
+}
 
 // ── Barrage roulant : la berline coupe la route au leader ───────────────────
 // Une berline qui se retrouve devant le leader, dans sa voie, lève le pied au
@@ -1241,8 +1272,8 @@ export function chooseCityRushPoliceLane({
       greed += CITY_RUSH_POLICE_INTERCEPT_WEIGHT * (22 + urgency * 10);
     }
     // À défaut de bonus, une berline se rabat volontiers dans la voie du
-    // leader ou dans sa voie d'entrée : les deux berlines encadrent la piste
-    // au lieu de rouler en file indienne.
+    // leader ou dans sa voie d'entrée : l'escouade encadre la piste au lieu
+    // de rouler en file indienne.
     const targetBonus = huntedLane !== null && candidate === huntedLane ? 3 : 0;
     const homeBonus = homeLane !== null && homeLane !== undefined && candidate === clampCityRushLane(homeLane, laneCount) ? 2.5 : 0;
     const score = greed * 100 + safetyScore + targetBonus + homeBonus;
@@ -1488,6 +1519,8 @@ export function buildCityRushMinimapState(
         // Barre de vie : la mini-carte la dessine sous la pastille.
         health: Number.isFinite(Number(police.health)) ? Number(police.health) : null,
         maxHealth: Number.isFinite(Number(police.maxHealth)) ? Number(police.maxHealth) : null,
+        // Armement : bleu et rouge chargés dès l'entrée en piste, jaune vide.
+        armed: police.armed && typeof police.armed === 'object' ? { ...police.armed } : null,
         distance: Math.round(distance),
         lane,
         x: point.x,

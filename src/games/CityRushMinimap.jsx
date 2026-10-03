@@ -44,6 +44,9 @@ export default function CityRushMinimap({
   const police = minimap.pursuers || [];
   const blockers = police.filter((car) => car.blocking).length;
   const rallied = police.filter((car) => car.rallied).length;
+  // Une berline « armée » porte encore son tir bleu ou sa rafale rouge : elle
+  // peut tirer sur son pilote sans rien voler sur la route.
+  const armed = police.filter((car) => car.armed && (car.armed['blue-shot'] || car.armed.pistol)).length;
 
   return (
     <aside
@@ -56,8 +59,8 @@ export default function CityRushMinimap({
         </span>
         <span className="city-rush-minimap-badges">
           {police.length > 0 && (
-            <span className="city-rush-minimap-police" title={`Poursuivants hors classement, solides : ils se rabattent devant leur pilote pour le bloquer.${rallied > 0 ? ' La police routière a été percutée : elle chasse celui qui l’a touchée.' : ''}`}>
-              🚨 POLICE ×{police.length}{rallied > 0 ? ` · ${rallied} ROUTIÈRE${rallied > 1 ? 'S' : ''}` : ''}{blockers > 0 ? ` · ${blockers} EN BARRAGE` : ''}
+            <span className="city-rush-minimap-police" title={`Poursuivants hors classement, solides : ils se rabattent devant leur pilote pour le bloquer. Elles sont armées (tir bleu et rafale rouge) en entrant en piste ; l’hélicoptère, elles doivent le voler. Trois tirs bleus, deux rafales rouges ou un missile les détruisent.${rallied > 0 ? ' La police routière a été percutée : elle chasse celui qui l’a touchée.' : ''}`}>
+              🚨 POLICE ×{police.length}{rallied > 0 ? ` · ${rallied} ROUTIÈRE${rallied > 1 ? 'S' : ''}` : ''}{blockers > 0 ? ` · ${blockers} EN BARRAGE` : ''}{armed > 0 ? ` · ${armed} ARMÉE${armed > 1 ? 'S' : ''}` : ''}
             </span>
           )}
           <span className="city-rush-minimap-lap">

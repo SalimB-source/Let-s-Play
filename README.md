@@ -632,13 +632,17 @@ de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   · TOUR 2/5 » (puis « DERNIER TOUR » en doré), la carte TOUR du HUD avance, les
   rivaux annoncent leur dernier tour. Le dernier passage termine la course.
 - **L'escouade de police du dernier tour.** Dès que le **premier du classement**
-  attaque le cinquième et dernier tour, **deux berlines d'interception entrent
-  en piste juste derrière lui** (30 m et 38 m, sirène allumée) et roulent pour
-  lui nuire : elles changent de voie pour **rafler en priorité les bonus rouges
-  (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir vaut cinq bonus
-  ordinaires dans leur choix (`CITY_RUSH_POLICE_HUNT_TYPES`,
-  `chooseCityRushPoliceLane`) — puis **ouvrent le feu sur le leader** dès qu'une
-  jauge rouge est pleine. Elles **ne sont pas classées** : `rankCityRushRacers`
+  attaque le cinquième et dernier tour, **trois berlines d'interception entrent
+  en piste juste derrière lui** (30 m, 38 m et 46 m, sirène allumée) et roulent
+  pour lui nuire : elles changent de voie pour **rafler en priorité les bonus
+  rouges (mitrailleuse) et jaunes (hélicoptère)** — un bonus de tir vaut cinq
+  bonus ordinaires dans leur choix (`CITY_RUSH_POLICE_HUNT_TYPES`,
+  `chooseCityRushPoliceLane`) — et **ouvrent le feu sur le leader**. Elles
+  **entrent armées** : le tir droit (bleu) et la mitrailleuse (rouge) sont
+  chargés dès l'entrée en piste, seul l'hélicoptère (jaune) reste à voler
+  (`CITY_RUSH_POLICE_START_CHARGES`, `createCityRushPoliceInventory`) ; la
+  berline tire la rafale rouge dès que son client est devant elle, et le tir
+  bleu couvre le temps de recharge du rouge. Elles **ne sont pas classées** : `rankCityRushRacers`
   ne les voit jamais, la grille reste à quatre, et le HUD les affiche à part
   (`hud.police`, marqueurs rouge et bleu de la mini-carte). La même escouade
   opère sur les cinq circuits. Elle choisit les voies dégagées
@@ -655,9 +659,11 @@ de 600 m** (3 000 m) : la ville est une boucle qu'on reparcourt, et l'on repasse
   balle l'encaisse même sans verrou (`cityRushStraightShotSweptHit`,
   `CITY_RUSH_POLICE_*`, `cityRushRules.js`). **Les berlines sont
   destructibles.** Chacune porte une barre de vie au-dessus du toit (reprise
-  sur les pastilles de la mini-carte) : **deux tirs droits bleus, OU une rafale
-  rouge, OU un tir d'hélicoptère** la détruisent
-  (`CITY_RUSH_POLICE_HEALTH = 2`, barème pur `cityRushPoliceDamage`). À la
+  sur les pastilles de la mini-carte) : **trois tirs droits bleus (2 points
+  chacun), OU deux rafales rouges (3 points chacune), OU un tir d'hélicoptère**
+  la détruisent
+  (`CITY_RUSH_POLICE_HEALTH = 6`, barème pur `cityRushPoliceDamage`, et
+  `cityRushPoliceShotsLeft` pour le bandeau « encore deux tirs bleus »). À la
   destruction : explosion complète, retrait immédiat de la course et de la
   mini-carte, **+200 pts** pour le pilote qui l'abat
   (`CITY_RUSH_POLICE_DESTROY_SCORE`), et la sirène s'éteint quand la dernière
@@ -807,8 +813,9 @@ Le smoke remplace `WebGLRenderer` par une doublure et pompe la boucle d'animatio
 à 30 Hz avec un pilote naïf : il vérifie les passages de ligne (tour 2, dernier
 tour), l’arrivée après 5 tours, le HUD, le nombre de meshes affichés, la
 visibilité des éclatements de bonus et le rejeu après `reset()`. Il vérifie
-aussi l'**escouade de police** : une seule entrée en piste, deux berlines
-arrivées derrière le leader (jamais devant, jamais à plus de 140 m), qui
+aussi l'**escouade de police** : une seule entrée en piste, trois berlines
+arrivées derrière le leader (jamais devant, jamais à plus de 140 m) **et armées
+bleu et rouge — jamais jaune**, qui
 rejoignent le leader à moins de 30 m, **restent dans son sillage** sur chaque
 circuit (au moins la moitié du dernier tour à moins de 60 m du leader, jamais
 plus de 175 m de retard — seuils calibrés sur 200 courses, avec une large marge),
