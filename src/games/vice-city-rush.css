@@ -1426,7 +1426,7 @@
 
 .city-rush-car-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -2274,7 +2274,7 @@
   .city-rush-hud-top { grid-template-columns: 120px minmax(160px, 1fr) 120px; }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .city-rush-page { padding: 84px 0 24px; }
   .city-rush-page .wrap { width: min(100% - 20px, 1440px); }
   .city-rush-heading { flex-direction: column; align-items: flex-start; gap: 14px; padding-bottom: 16px; }
@@ -2374,7 +2374,7 @@
   .city-rush-page-footer > span { font-size: 8px; text-align: left; }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 380px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .city-rush-page .wrap { width: calc(100% - 16px); }
   .city-rush-city-picker { grid-template-columns: 1fr 1fr; }
   .city-rush-power-button { gap: 2px; }
@@ -2618,7 +2618,7 @@
   display: inline-block;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
   .city-rush-mode-picker { grid-template-columns: 1fr; gap: 10px; }
   .city-rush-mode-card { min-height: 0; padding: 16px 14px; }
   .city-rush-city-picker.is-large { grid-template-columns: 1fr 1fr; }
@@ -2723,3 +2723,136 @@
   background: rgba(255, 255, 255, 0.92);
   border-color: rgba(20, 18, 50, 0.08);
 }
+
+/* ── Mode Histoire · Nico Vega — intégration interface ── */
+.city-rush-stepper-item.is-story {
+  background: linear-gradient(135deg, rgba(255, 93, 126, 0.16), rgba(224, 68, 85, 0.08));
+  border-color: rgba(255, 93, 126, 0.34);
+  color: #ffc2d0;
+}
+
+.city-rush-stepper-item.is-story i {
+  background: rgba(255, 93, 126, 0.24);
+  border-color: rgba(255, 93, 126, 0.45);
+  color: #ff7894;
+}
+
+.city-rush-stepper-item.is-story:hover {
+  background: linear-gradient(135deg, rgba(255, 93, 126, 0.26), rgba(224, 68, 85, 0.14));
+  border-color: rgba(255, 93, 126, 0.56);
+  color: #ffffff;
+}
+
+.city-rush-story-banner {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 18px;
+  width: min(840px, 100%);
+  padding: 14px;
+  border-radius: 16px;
+  background:
+    radial-gradient(480px 220px at 0% 0%, rgba(255, 93, 126, 0.2), transparent 65%),
+    linear-gradient(135deg, rgba(22, 18, 38, 0.92), rgba(12, 15, 30, 0.94));
+  border: 1px solid rgba(255, 93, 126, 0.36);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.34), 0 0 28px rgba(255, 93, 126, 0.12);
+  text-align: left;
+}
+
+.city-rush-story-banner-visual {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 120px;
+  background: #10131e;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.city-rush-story-banner-visual img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 45%;
+}
+
+.city-rush-story-banner-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(8, 10, 20, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffd37a;
+  font: 800 8px/1 var(--mono, monospace);
+  letter-spacing: 0.12em;
+  backdrop-filter: blur(8px);
+}
+
+.city-rush-story-banner-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.city-rush-story-banner-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.city-rush-story-banner-meta small {
+  color: rgba(247, 247, 255, 0.68);
+  font: 700 9px var(--mono, monospace);
+  letter-spacing: 0.08em;
+}
+
+.city-rush-story-banner-body > b {
+  color: #ffffff;
+  font: 900 18px/1.1 var(--display, system-ui, sans-serif);
+  letter-spacing: -0.01em;
+}
+
+.city-rush-story-banner-body > p {
+  margin: 0;
+  color: rgba(240, 239, 247, 0.78);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.city-rush-story-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.city-rush-story-start-btn {
+  height: 40px;
+  padding: 0 18px;
+  background: linear-gradient(100deg, #ff5d7e, #ff9966);
+  color: #0b0d18;
+  box-shadow: 0 8px 24px rgba(255, 93, 126, 0.28), inset 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.city-rush-story-banner-actions small {
+  color: #b8bac8;
+  font: 600 10px var(--mono, monospace);
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait) {
+  .city-rush-story-banner {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+  .city-rush-story-banner-visual {
+    height: 128px;
+  }
+}
+
