@@ -31,6 +31,8 @@ export const LINK_BOOMERANG_RANGE = 5 * LANE_SPACING;
 export const LINK_BOOMERANG_OUT_DURATION = 0.36;
 export const LINK_BOOMERANG_RETURN_DURATION = 0.42;
 export const LINK_BOOMERANG_HIT_RADIUS = 1.35;
+/** Link ralentit un peu plus longtemps que le lasso standard. */
+export const LINK_BOOMERANG_SLOW_DURATION = 2.4;
 /** Deux lancers par barre jaune pleine. */
 export const LINK_BOOMERANG_THROWS = 2;
 /** Anciens noms : le grappin a cédé la place au boomerang. */
