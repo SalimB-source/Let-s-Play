@@ -62,12 +62,14 @@ export const CITY_RUSH_CARS = Object.freeze([
 // La route est à double sens : le trafic lent roule dans le sens de la course
 // sur les deux voies de droite ; les deux voies de gauche sont réservées au
 // trafic venant en face (voir CITY_RUSH_ONCOMING_*).
-export const CITY_RUSH_TRAFFIC_COUNT = 12;
-export const CITY_RUSH_TRAFFIC_LANES = Object.freeze([3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2]);
+// Trafic allégé pour laisser respirer la course (demande : moins de trafic).
+export const CITY_RUSH_TRAFFIC_COUNT = 8;
+export const CITY_RUSH_TRAFFIC_LANES = Object.freeze([3, 2, 3, 2, 3, 2, 3, 2]);
 
 // Trafic venant en face : les véhicules des deux voies de gauche roulent vers
 // le joueur, croisent la course, puis reparaissent au loin une fois passés.
-export const CITY_RUSH_ONCOMING_COUNT = 6;
+// Réduit aussi pour éviter l'effet embouteillage, mais avec collision solide.
+export const CITY_RUSH_ONCOMING_COUNT = 4;
 export const CITY_RUSH_ONCOMING_LANES = Object.freeze([0, 1]);
 export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'police', name: 'Voiture de police', speed: 6.4, width: 1.94, length: 3.8 }),
