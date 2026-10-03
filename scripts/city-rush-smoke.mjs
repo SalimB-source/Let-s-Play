@@ -1,9 +1,10 @@
 // ════════════════════════════════════════════════════════════════════
 // Smoke « Vice City Rush » : construit le monde pour de vrai (décor de la
 // boucle, zone de départ, voitures, trafic) avec un WebGLRenderer factice,
-// joue une course complète (5 tours) en pompant la boucle animate, et
-// échoue si une frame lève une exception, si les passages de ligne ne
-// sont pas détectés ou si l'arrivée n'est jamais atteinte.
+// joue une course complète (5 tours, dont un grand dernier tour de 1 200 m)
+// en pompant la boucle animate, et échoue si une frame lève une exception, si
+// les passages de ligne ne sont pas détectés ou si l'arrivée n'est jamais
+// atteinte.
 //   node scripts/city-rush-smoke.mjs            (ville par défaut : vice-city)
 //   node scripts/city-rush-smoke.mjs --all      (les cinq villes)
 // ════════════════════════════════════════════════════════════════════

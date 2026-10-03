@@ -1,6 +1,8 @@
 // Smoke « Vice City Rush » : exécute createCityRushWorld (vrai code) avec un
 // faux WebGLRenderer, pompe la boucle animate à 30 Hz et joue une course
-// complète (5 tours × 600 m) pour chaque ville demandée.
+// complète pour chaque ville demandée : 5 tours, soit quatre boucles de 600 m
+// puis un grand dernier tour de 1 200 m (deux boucles, le portique est recroisé
+// à mi-parcours) — 3 600 m en tout.
 const ctx2d = () => {
   const g = { addColorStop() {} };
   return {
@@ -71,9 +73,17 @@ Object.defineProperty(globalThis, 'performance', { value: { now: () => virtualNo
 const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
-  CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_DISTANCE, CITY_RUSH_POWER_RULES,
+  CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_FINAL_LAP_LENGTH, CITY_RUSH_POWER_RULES,
   CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
+  CITY_RUSH_FINAL_LAP_LOOPS, cityRushRaceDistance,
 } = await import('../src/games/cityRushRules.js');
+
+// Tours de la course jouée : 5 par défaut (la plus longue, 3 600 m) ;
+// `CITY_RUSH_SMOKE_LAPS=4` joue un Circuit (3 000 m). Au moins 3 : en dessous,
+// la course est trop courte pour que le pilote d'essai croise l'escouade du
+// dernier tour et ramasse un bonus de chaque couleur.
+const RACE_LAPS = Math.max(3, Math.floor(Number(process.env.CITY_RUSH_SMOKE_LAPS) || CITY_RUSH_LAPS));
+const RACE_DISTANCE = cityRushRaceDistance(RACE_LAPS);
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
 const FRAME_MS = 1000 / 30;
@@ -120,13 +130,16 @@ const AUDIO_METHODS = [
 ];
 
 // L'escouade du dernier tour doit coller au leader sur les cinq circuits. Seuils
-// calibrés sur 200 courses de ce même pilote (5 villes × 40, hasard non
-// fixé) : avec le dégagement du trafic, au pire 104 m de retard et 73 % du
-// tour dans les 60 m ; engluée derrière un camion, elle allait jusqu'à 314 m
-// de retard et ne passait que 17 % du tour dans les 60 m. Marges larges.
+// calibrés sur ce même pilote (5 villes, hasard non fixé) : avec le dégagement
+// du trafic, au pire 104 m de retard et 73 % du tour dans les 60 m sur le
+// dernier tour de 600 m ; engluée derrière un camion, elle allait jusqu'à
+// 314 m de retard et ne passait que 17 % du tour dans les 60 m. Le dernier tour
+// compte maintenant 1 200 m (l'escouade y reste deux fois plus longtemps, ~42 s
+// au lieu de ~21 s) : sur plus de 700 courses, au pire 164 m de retard et 61 %
+// du tour dans les 60 m, d'où un retard toléré porté de 175 à 200 m.
 const POLICE_ENGAGE_RANGE = 60; // m
 const POLICE_MIN_ENGAGED_SHARE = 0.5;
-const POLICE_MAX_LAG = 175; // m
+const POLICE_MAX_LAG = 200; // m
 
 for (const [index, city] of cities.entries()) {
   const car = CITY_RUSH_CARS[index % CITY_RUSH_CARS.length];
@@ -161,7 +174,7 @@ for (const [index, city] of cities.entries()) {
       pickup: (p) => { callbacks.pickups.push(p); },
       effect: (e) => { callbacks.effects.push(e); },
       lap: (l) => { callbacks.laps.push(l); },
-    }), car.id, audioRef);
+    }), car.id, audioRef, null, RACE_LAPS);
   } catch (e) {
     console.error(`[${city.id}] createCityRushWorld A LEVÉ :`);
     console.error(e);
@@ -225,10 +238,21 @@ for (const [index, city] of cities.entries()) {
   world.start();
   const hudBefore = callbacks.huds.length;
   const lapSeen = new Set();
+  // Dernier tour : le compteur de tour court sur toute sa longueur (1 200 m) —
+  // « mètres du tour = distance − début du dernier tour », à l'arrondi près — et
+  // ne retombe pas à zéro quand on recroise le portique à mi-parcours, qui n'est
+  // pas une nouvelle boucle. (La distance du pilote peut reculer de quelques
+  // mètres sous un choc : on ne juge donc pas une jauge « croissante ».)
+  let finalLapHudFrames = 0;
+  let finalLapBadGauge = 0;
+  let finalLapBadLength = 0;
+  const finalLapGaugeSamples = [];
   let frames = 0;
   let maxVisible = 0;
   let maxTriangles = 0;
-  const maxFrames = 30 * 240; // 4 minutes virtuelles, large.
+  // 5 minutes virtuelles, large : la course de 3 600 m la plus longue de 200
+  // essais (police sur tout le dernier tour de 1 200 m) a duré 185 s.
+  const maxFrames = 30 * 300;
   let steer = 'left';
   let slowFrames = 0;
   // Escouade de police : première image où elle apparaît dans le HUD, temps
@@ -331,6 +355,16 @@ for (const [index, city] of cities.entries()) {
       }
     }
     if (hud?.lap) lapSeen.add(hud.lap);
+    if (hud && hud.lap === hud.laps) {
+      finalLapHudFrames += 1;
+      // (Recalé derrière la ligne par un choc frontal, le joueur est à 0 m du tour.)
+      const expectedLapDistance = Math.max(0, Math.min(CITY_RUSH_FINAL_LAP_LENGTH, hud.distance - (RACE_LAPS - 1) * CITY_RUSH_LAP_LENGTH));
+      if (Math.abs(hud.lapDistance - expectedLapDistance) > 1) {
+        finalLapBadGauge += 1;
+        if (finalLapGaugeSamples.length < 5) finalLapGaugeSamples.push({ frame: frames, distance: hud.distance, lapDistance: hud.lapDistance, expectedLapDistance, lapProgress: hud.lapProgress });
+      }
+      if (hud.lapLength !== CITY_RUSH_FINAL_LAP_LENGTH || hud.lapDistance > hud.lapLength) finalLapBadLength += 1;
+    }
     if (hud?.police?.length) {
       // L'escouade du dernier tour, distincte de la police du trafic rappelée
       // par un contact (`rallied`) : le suivi d'engagement ne juge qu'elle.
@@ -425,7 +459,7 @@ for (const [index, city] of cities.entries()) {
   const finish = callbacks.finish;
   const oncomingImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact' && effect.oncoming && effect.pushedAside && effect.pushDirection === 'left');
   if (!oncomingImpacts.length) fail('aucune collision frontale n’a poussé la voiture touchée vers la gauche', callbacks.effects.filter((effect) => effect.type === 'traffic-impact'));
-  if (finish.laps !== CITY_RUSH_LAPS) fail('finish.laps ≠ CITY_RUSH_LAPS', finish);
+  if (finish.laps !== RACE_LAPS) fail('finish.laps ≠ nombre de tours de la course', finish);
   if (!Array.isArray(finish.racers) || finish.racers.length !== 3) fail('chaque course doit finir avec exactement trois pilotes', finish.racers);
   if (!Array.isArray(callbacks.huds.at(-1)?.racers) || callbacks.huds.at(-1).racers.length !== 3) {
     fail('le HUD ne contient pas exactement trois pilotes', callbacks.huds.at(-1));
@@ -434,24 +468,64 @@ for (const [index, city] of cities.entries()) {
   for (const field of ['lap', 'laps', 'lapProgress', 'lapDistance', 'lapLength', 'distance', 'speed', 'rank', 'racers']) {
     if (!(field in lastHud)) fail(`champ HUD manquant : ${field}`, Object.keys(lastHud));
   }
-  if (lastHud.laps !== CITY_RUSH_LAPS || lastHud.lapLength !== CITY_RUSH_LAP_LENGTH) fail('HUD laps/lapLength incohérents', lastHud);
-  const playerLaps = callbacks.laps.map((l) => l.lap);
+  // Au dernier tour, la « longueur du tour » du HUD est celle du grand tour.
+  const expectedLapLength = lastHud.lap >= RACE_LAPS ? CITY_RUSH_FINAL_LAP_LENGTH : CITY_RUSH_LAP_LENGTH;
+  if (lastHud.laps !== RACE_LAPS || lastHud.lapLength !== expectedLapLength) fail('HUD laps/lapLength incohérents', lastHud);
+  if (lastHud.totalDistance !== RACE_DISTANCE) fail('HUD totalDistance ≠ distance de la course', lastHud);
+  if (finalLapBadGauge) fail(`le compteur du dernier tour est faux sur ${finalLapBadGauge} images (il doit courir sur 1 200 m)`, { finalLapHudFrames, samples: finalLapGaugeSamples });
+  if (finalLapBadLength) fail('longueur de tour incohérente au dernier tour (attendu 1 200 m, compteur ≤ longueur)', { finalLapBadLength, finalLapHudFrames });
+  if ([...lapSeen].some((lap) => lap < 1 || lap > RACE_LAPS)) fail('le HUD a affiché un tour hors course', [...lapSeen]);
+  // Passages de ligne du joueur : les débuts de tour 2 … LAPS, puis (au plus) un
+  // point de passage au milieu du grand dernier tour — il ne lance aucun tour.
+  const checkpoints = callbacks.laps.filter((l) => l.checkpoint);
+  const playerLaps = callbacks.laps.filter((l) => !l.checkpoint).map((l) => l.lap);
+  const expectedRemaining = RACE_DISTANCE - RACE_LAPS * CITY_RUSH_LAP_LENGTH;
+  if (checkpoints.length > 1) fail('plus d’un point de passage au dernier tour', checkpoints);
+  for (const checkpoint of checkpoints) {
+    if (checkpoint.lap !== RACE_LAPS || !checkpoint.final || checkpoint.remaining !== expectedRemaining) {
+      fail('point de passage incohérent (dernier tour, reste à courir)', { checkpoint, expectedRemaining });
+    }
+  }
+  // Le point de passage vient après le début du dernier tour, jamais avant.
+  const lapOrder = callbacks.laps.map((l) => (l.checkpoint ? 'C' : l.lap));
+  if (checkpoints.length && lapOrder.at(-1) !== 'C') fail('le point de passage précède un début de tour', lapOrder);
+  if (callbacks.laps.some((l) => l.lap > l.laps)) fail('un passage de ligne annonce un tour au-delà de la course', callbacks.laps);
+  if (callbacks.laps.some((l) => !l.checkpoint && l.remaining !== RACE_DISTANCE - (l.lap - 1) * CITY_RUSH_LAP_LENGTH)) {
+    fail('le reste à courir annoncé à un passage de ligne est faux', callbacks.laps);
+  }
+  const checkpointEffects = callbacks.effects.filter((e) => e.type === 'lap-checkpoint');
+  if (checkpointEffects.length !== checkpoints.length) fail('effet lap-checkpoint et passage de ligne divergent', { checkpointEffects, checkpoints });
+  // Les débuts de tour se suivent : 2, 3, 4 … sans doublon ni saut.
+  if (playerLaps.some((lap, i) => lap !== i + 2)) fail('les débuts de tour ne se suivent pas (2, 3, 4 …)', callbacks.laps);
+  // Une ligne est annoncée si, et seulement si, le joueur est allé jusque-là
+  // (15 m de marge : le HUD n'est émis que toutes les 120 ms). Lignes 1 …
+  // LAPS − 1 : débuts de tour ; au-delà : points de passage du dernier tour.
+  const playerReach = Math.max(...callbacks.huds.map((h) => h.distance || 0));
+  const callbackLines = Array.from({ length: RACE_LAPS - 2 + CITY_RUSH_FINAL_LAP_LOOPS }, (_, i) => (i + 1) * CITY_RUSH_LAP_LENGTH);
+  const surelyCrossed = callbackLines.filter((at) => at + 15 <= playerReach).length;
+  const maybeCrossed = callbackLines.filter((at) => at - 15 <= playerReach).length;
+  if (callbacks.laps.length < surelyCrossed || callbacks.laps.length > maybeCrossed) {
+    fail(`passages de ligne annoncés (${callbacks.laps.length}) incohérents avec la distance du joueur (${playerReach} m)`, { surelyCrossed, maybeCrossed, laps: callbacks.laps });
+  }
   const winnerIsPlayer = finish.racers?.find((r) => r.player)?.rank === 1 || finish.rank === 1;
   if (winnerIsPlayer) {
-    const expectedLaps = Array.from({ length: CITY_RUSH_LAPS - 1 }, (_, i) => i + 2);
+    const expectedLaps = Array.from({ length: RACE_LAPS - 1 }, (_, i) => i + 2);
     const joined = playerLaps.join(',');
-    if (joined !== expectedLaps.join(',') && joined !== [...expectedLaps, CITY_RUSH_LAPS + 1].join(',')) {
+    if (joined !== expectedLaps.join(',') && joined !== [...expectedLaps, RACE_LAPS + 1].join(',')) {
       fail(`passages de ligne du joueur inattendus (attendu tours ${expectedLaps.join(', ')})`, callbacks.laps);
     }
     const finalLapEffect = callbacks.effects.find((e) => e.type === 'final-lap');
     if (!finalLapEffect) fail('effet final-lap jamais émis', callbacks.effects.map((e) => e.type));
-    if (![...lapSeen].includes(CITY_RUSH_LAPS)) fail('le HUD n’a jamais affiché le dernier tour', [...lapSeen]);
+    if (![...lapSeen].includes(RACE_LAPS)) fail('le HUD n’a jamais affiché le dernier tour', [...lapSeen]);
+    // Le vainqueur recroise le portique au milieu du dernier tour : un point de
+    // passage, et un seul.
+    if (checkpoints.length !== 1) fail('le vainqueur n’a pas passé le point de passage du dernier tour', callbacks.laps);
   } else if (!callbacks.laps.length && !callbacks.effects.some((e) => e.type === 'rival-final-lap')) {
     fail('aucun passage de ligne détecté (ni joueur ni rival)', callbacks.effects.map((e) => e.type));
   }
   // Bande-son : le moteur suit la course image par image, les feux sonnent
-  // quatre fois (3 · 2 · 1 · GO), le joueur passe deux lignes et l'arrivée ne
-  // sonne qu'une fois.
+  // quatre fois (3 · 2 · 1 · GO), chaque passage de ligne du joueur a sa cloche
+  // (point de passage compris) et l'arrivée ne sonne qu'une fois.
   if ((audioCalls.engine || 0) < frames) fail('le moteur n’est pas piloté à chaque image', audioCalls);
   // Quatre au premier départ (3 · 2 · 1 · GO) ; le rejeu en remet un.
   if ((audioCalls.countdownBeep || 0) < 4) fail('les feux de départ n’ont pas sonné 3 · 2 · 1 · GO', audioCalls);
@@ -474,7 +548,7 @@ for (const [index, city] of cities.entries()) {
   if (!audioCalls.pickup) fail('aucun bip de ramassage alors que des bonus ont été pris', audioCalls);
 
   const maxDistance = Math.max(...finish.racers.map((r) => r.distance ?? 0));
-  if (maxDistance < CITY_RUSH_DISTANCE - 1) fail('le vainqueur n’a pas parcouru toute la distance', finish.racers);
+  if (maxDistance < RACE_DISTANCE - 1) fail('le vainqueur n’a pas parcouru toute la distance', finish.racers);
   if (maxVisible > 600) fail(`trop de meshes visibles : ${maxVisible}`);
   if (callbacks.pickups.length && !burstNodes.length) fail('aucun objet d’éclatement de bonus dans la scène');
   if (callbacks.pickups.length && !burstFrames) fail('bonus ramassés sans aucun éclatement visible', callbacks.pickups.length);
@@ -630,5 +704,5 @@ for (const [index, city] of cities.entries()) {
     ` · sons ${AUDIO_METHODS.filter((name) => audioCalls[name]).map((name) => `${name} ${audioCalls[name]}`).join(' / ')}`,
   );
 }
-console.log(`SMOKE OK — ${cities.length} ville(s), ${CITY_RUSH_LAPS} tours × ${CITY_RUSH_LAP_LENGTH} m · tirs bleus de la police sur le joueur ${policeBlueHitTotal}`);
+console.log(`SMOKE OK — ${cities.length} ville(s), ${RACE_LAPS} tours (${RACE_DISTANCE} m, dernier tour ${CITY_RUSH_FINAL_LAP_LENGTH} m) · tirs bleus de la police sur le joueur ${policeBlueHitTotal}`);
 process.exit(0);

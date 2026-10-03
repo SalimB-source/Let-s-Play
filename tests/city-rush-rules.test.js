@@ -4,6 +4,8 @@ import {
   CITY_RUSH_CITIES,
   CITY_RUSH_CARS,
   CITY_RUSH_DISTANCE,
+  CITY_RUSH_FINAL_LAP_LENGTH,
+  CITY_RUSH_FINAL_LAP_LOOPS,
   CITY_RUSH_LAPS,
   CITY_RUSH_LAP_LENGTH,
   CITY_RUSH_TRACK_BEHIND,
@@ -92,8 +94,11 @@ import {
   cityRushStunSpin,
   CITY_RUSH_STUN_SPIN_TURNS,
   cityRushLapForDistance,
+  cityRushLapLength,
   cityRushLapProgress,
   cityRushLapCrossings,
+  cityRushLineKind,
+  cityRushRaceDistance,
   cityRushPickupBurstShards,
   cityRushPickupFlashState,
   cityRushPickupPopScale,
@@ -404,7 +409,7 @@ test('car profiles change top speed, acceleration, and recovery after a hit', ()
 });
 
 test('three stored powers, a one-pickup blue shot, and ground boosts match the race rules', () => {
-  assert.equal(CITY_RUSH_DISTANCE, 3000);
+  assert.equal(CITY_RUSH_DISTANCE, 3600); // 5 tours : 4 boucles + un dernier tour de 2 boucles
   assert.equal(CITY_RUSH_PLAYER_SPEED, 29);
   assert.deepEqual(CITY_RUSH_POWER_CHARGE_COST, { 'blue-shot': 1, pistol: 3, radio: 4 });
   assert.deepEqual(Object.fromEntries(Object.entries(CITY_RUSH_POWER_RULES).map(([type, rule]) => [type, rule.key])), {
@@ -1205,18 +1210,26 @@ test('race standings identify the leader and player position, including ties', (
   assert.deepEqual(board.ordered.map((racer) => racer.id), ['rival-a', 'player', 'rival-c', 'rival-b']);
 });
 
-test('a race is five laps of the same 600 m loop', () => {
+test('a race is N laps of the same 600 m loop, the last lap running the loop twice', () => {
   assert.equal(CITY_RUSH_LAPS, 5);
   assert.equal(CITY_RUSH_LAP_LENGTH, 600);
-  assert.equal(CITY_RUSH_DISTANCE, CITY_RUSH_LAPS * CITY_RUSH_LAP_LENGTH);
+  assert.equal(CITY_RUSH_FINAL_LAP_LOOPS, 2);
+  assert.equal(CITY_RUSH_FINAL_LAP_LENGTH, 1200);
+  // Cinq tours : quatre boucles, puis un grand dernier tour de deux boucles.
+  assert.equal(CITY_RUSH_DISTANCE, 4 * CITY_RUSH_LAP_LENGTH + CITY_RUSH_FINAL_LAP_LENGTH);
+  assert.equal(CITY_RUSH_DISTANCE, cityRushRaceDistance(CITY_RUSH_LAPS));
 
   assert.equal(cityRushLapForDistance(0), 1);
   assert.equal(cityRushLapForDistance(599.9), 1);
   assert.equal(cityRushLapForDistance(600), 2);
   assert.equal(cityRushLapForDistance(1250), 3);
-  // Le compteur reste borné une fois l'arrivée franchie (ou avec une entrée invalide).
   assert.equal(cityRushLapForDistance(1800), 4);
+  assert.equal(cityRushLapForDistance(2399), 4);
+  // Le dernier tour court jusqu'à l'arrivée : le compteur y reste plafonné,
+  // y compris quand on recroise le portique à mi-parcours (3 000 m).
+  assert.equal(cityRushLapForDistance(2400), 5);
   assert.equal(cityRushLapForDistance(3000), 5);
+  assert.equal(cityRushLapForDistance(3599), 5);
   assert.equal(cityRushLapForDistance(4000), 5);
   assert.equal(cityRushLapForDistance(-20), 1);
   assert.equal(cityRushLapForDistance(Number.NaN), 1);
@@ -1226,25 +1239,107 @@ test('a race is five laps of the same 600 m loop', () => {
   assert.equal(cityRushLapProgress(600), 0);
   assert.equal(cityRushLapProgress(1500), 0.5);
   assert.equal(cityRushLapProgress(1800), 0);
-  assert.equal(cityRushLapProgress(3000), 1);
+  assert.equal(cityRushLapProgress(2400), 0, 'le dernier tour repart de zéro');
+  // La jauge du dernier tour court sur ses 1 200 m : elle ne retombe pas à zéro
+  // quand on recroise le portique.
+  assert.equal(cityRushLapProgress(3000), 0.5);
+  assert.equal(cityRushLapProgress(3300), 0.75);
   assert.equal(cityRushLapProgress(3600), 1);
+  assert.equal(cityRushLapProgress(4200), 1);
+  // Le même calcul, pour une course de trois tours (600 + 600 + 1 200 = 2 400 m).
+  assert.equal(cityRushLapProgress(1200, CITY_RUSH_LAP_LENGTH, 3), 0);
+  assert.equal(cityRushLapProgress(1800, CITY_RUSH_LAP_LENGTH, 3), 0.5);
+  assert.equal(cityRushLapProgress(2400, CITY_RUSH_LAP_LENGTH, 3), 1);
+  // Un dernier tour d'une seule boucle redonne l'ancien comportement.
+  assert.equal(cityRushLapProgress(3000, CITY_RUSH_LAP_LENGTH, 5, 1), 1);
+  assert.equal(cityRushLapProgress(2700, CITY_RUSH_LAP_LENGTH, 5, 1), 0.5);
 });
 
-test('crossing the start line is detected once per lap, the last crossing being the finish', () => {
+test('the last lap is longer than the others, and so is the whole race', () => {
+  // Tous les tours font une boucle, sauf le dernier qui en enchaîne deux.
+  assert.equal(cityRushLapLength(1, 4), 600);
+  assert.equal(cityRushLapLength(3, 4), 600);
+  assert.equal(cityRushLapLength(4, 4), 1200);
+  assert.equal(cityRushLapLength(1, 1), 1200, 'le tour unique du sprint est le dernier tour');
+  assert.equal(cityRushLapLength(4, 4, CITY_RUSH_LAP_LENGTH, 1), 600);
+  assert.equal(cityRushLapLength(4, 4, 100, 3), 300);
+
+  assert.equal(cityRushRaceDistance(1), 1200);
+  assert.equal(cityRushRaceDistance(3), 2400);
+  assert.equal(cityRushRaceDistance(4), 3000);
+  assert.equal(cityRushRaceDistance(5), 3600);
+  assert.equal(cityRushRaceDistance(), CITY_RUSH_DISTANCE);
+  // La distance est la somme des longueurs de tour.
+  for (const laps of [1, 2, 3, 4, 5, 6]) {
+    const total = Array.from({ length: laps }, (_, index) => cityRushLapLength(index + 1, laps))
+      .reduce((sum, length) => sum + length, 0);
+    assert.equal(cityRushRaceDistance(laps), total);
+    // L'arrivée tombe pile sur une ligne (le portique est dans le décor), et le
+    // dernier tour est le plus long.
+    assert.equal(cityRushRaceDistance(laps) % CITY_RUSH_LAP_LENGTH, 0);
+    assert.equal(cityRushTrackGap(0, cityRushRaceDistance(laps)), 0);
+    assert.ok(cityRushLapLength(laps, laps) > cityRushLapLength(1, laps) || laps === 1);
+    // Chaque course est plus longue qu'avant (laps × 600 m) : de la boucle en plus.
+    assert.equal(cityRushRaceDistance(laps), laps * CITY_RUSH_LAP_LENGTH + (CITY_RUSH_FINAL_LAP_LOOPS - 1) * CITY_RUSH_LAP_LENGTH);
+  }
+  assert.equal(cityRushRaceDistance(3, 100, 3), 500, 'boucle de 100 m, dernier tour de trois boucles : 100 + 100 + 300');
+  assert.equal(cityRushRaceDistance(3, CITY_RUSH_LAP_LENGTH, 1), 1800, 'un dernier tour d’une boucle : l’ancienne durée');
+  // Entrées invalides : on retombe sur la course par défaut.
+  assert.equal(cityRushRaceDistance(Number.NaN), CITY_RUSH_DISTANCE);
+  assert.equal(cityRushRaceDistance(0), CITY_RUSH_DISTANCE);
+  assert.equal(cityRushRaceDistance(3, Number.NaN), 2400);
+  assert.equal(cityRushRaceDistance(3, CITY_RUSH_LAP_LENGTH, 0), 3 * 600 - 600 + 1200);
+});
+
+test('crossing the start line is detected once per pass: lap starts, a checkpoint, then the finish', () => {
   assert.deepEqual(cityRushLapCrossings(0, 20), []);
   assert.deepEqual(cityRushLapCrossings(590, 605), [1]);
   assert.deepEqual(cityRushLapCrossings(600, 600), []);
   assert.deepEqual(cityRushLapCrossings(599, 600), [1]);
   assert.deepEqual(cityRushLapCrossings(1190, 1210), [2]);
   assert.deepEqual(cityRushLapCrossings(1799, 1830), [3]);
+  // Cinq tours : les lignes 1 à 4 lancent les tours 2 à 5, la ligne 5 est le
+  // point de passage du dernier tour et la ligne 6 l'arrivée.
+  assert.deepEqual(cityRushLapCrossings(2390, 2410), [4]);
   assert.deepEqual(cityRushLapCrossings(2990, 3010), [5]);
+  assert.deepEqual(cityRushLapCrossings(3590, 3610), [6]);
   // Un très grand pas de simulation ne saute aucune ligne, et rien au-delà de l'arrivée.
-  assert.deepEqual(cityRushLapCrossings(10, 3100), [1, 2, 3, 4, 5]);
-  assert.deepEqual(cityRushLapCrossings(3000, 3600), []);
+  assert.deepEqual(cityRushLapCrossings(10, 3700), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(cityRushLapCrossings(3600, 4200), []);
   // Reculer (ou rester immobile) ne compte jamais de passage.
   assert.deepEqual(cityRushLapCrossings(620, 580), []);
   // Une boucle personnalisée suit les mêmes règles.
   assert.deepEqual(cityRushLapCrossings(95, 205, 100, 5), [1, 2]);
+  // Une course de trois tours s'arrête à la ligne 4 (600 + 600 + 1 200 m).
+  assert.deepEqual(cityRushLapCrossings(0, 9999, CITY_RUSH_LAP_LENGTH, 3), [1, 2, 3, 4]);
+  // Dernier tour d'une seule boucle : la dernière ligne est directement l'arrivée.
+  assert.deepEqual(cityRushLapCrossings(10, 3100, CITY_RUSH_LAP_LENGTH, 5, 1), [1, 2, 3, 4, 5]);
+  assert.deepEqual(cityRushLapCrossings(3000, 3600, CITY_RUSH_LAP_LENGTH, 5, 1), []);
+});
+
+test('a line is a lap start, a checkpoint in the long last lap, or the finish', () => {
+  // Quatre tours : lignes 1-3 = début des tours 2-4, ligne 4 = point de passage, ligne 5 = arrivée.
+  assert.deepEqual([1, 2, 3, 4, 5].map((line) => cityRushLineKind(line, 4)), ['lap', 'lap', 'lap', 'checkpoint', 'finish']);
+  // Sprint (un tour) : on part dans le dernier tour ; la ligne 1 est un point de passage.
+  assert.deepEqual([1, 2].map((line) => cityRushLineKind(line, 1)), ['checkpoint', 'finish']);
+  // Dernier tour d'une seule boucle : jamais de point de passage.
+  assert.deepEqual([1, 2, 3].map((line) => cityRushLineKind(line, 3, 1)), ['lap', 'lap', 'finish']);
+  // Trois boucles au dernier tour : deux points de passage avant l'arrivée.
+  assert.deepEqual([1, 2, 3, 4].map((line) => cityRushLineKind(line, 2, 3)), ['lap', 'checkpoint', 'checkpoint', 'finish']);
+  assert.equal(cityRushLineKind(Number.NaN, 4), 'lap');
+
+  // Sur chaque course : exactement une arrivée, en dernier, laps − 1 débuts de
+  // tour, et un point de passage par boucle supplémentaire du dernier tour.
+  for (const laps of [1, 2, 3, 4, 5]) {
+    const lines = cityRushLapCrossings(0, cityRushRaceDistance(laps) + 50, CITY_RUSH_LAP_LENGTH, laps);
+    const kinds = lines.map((line) => cityRushLineKind(line, laps));
+    assert.equal(kinds.at(-1), 'finish');
+    assert.equal(kinds.filter((kind) => kind === 'finish').length, 1);
+    assert.equal(kinds.filter((kind) => kind === 'lap').length, laps - 1);
+    assert.equal(kinds.filter((kind) => kind === 'checkpoint').length, CITY_RUSH_FINAL_LAP_LOOPS - 1);
+    // L'arrivée est franchie à la distance totale de la course, pas avant.
+    assert.deepEqual(cityRushLapCrossings(0, cityRushRaceDistance(laps) - 1, CITY_RUSH_LAP_LENGTH, laps).map((line) => cityRushLineKind(line, laps)).includes('finish'), false);
+  }
 });
 
 test('track elements fold onto the loop so the start line comes back ahead every lap', () => {
@@ -1369,6 +1464,34 @@ test('la mini-carte dessine l’escouade de police à part des trois pilotes', (
   assert.equal(buildCityRushMinimapState([]).pursuers.length, 0);
 });
 
+
+test('la mini-carte suit la course réelle : tours, progression et dernier tour long', () => {
+  const player = (distance) => ({ id: 'player', distance });
+  const playerOf = (state) => state.racers.find((racer) => racer.isPlayer);
+  // Trois tours = 600 + 600 + 1 200 m : la distance totale se déduit des tours.
+  assert.equal(playerOf(buildCityRushMinimapState([player(0)], { laps: 3 })).progress, 0);
+  const mid = buildCityRushMinimapState([player(1800)], { laps: 3 });
+  assert.equal(playerOf(mid).lap, 3);
+  // On vient de recroiser le portique au milieu du dernier tour : la jauge de
+  // tour est à 50 % (elle ne retombe pas à zéro) et la course aux trois quarts.
+  assert.equal(playerOf(mid).lapProgress, 0.5);
+  assert.equal(playerOf(mid).progress, 0.75);
+  assert.equal(mid.focus.lap, 3);
+  // Au-delà de l'arrivée, la progression reste plafonnée à 100 %.
+  const done = buildCityRushMinimapState([player(5000)], { laps: 3 });
+  assert.equal(playerOf(done).lap, 3);
+  assert.equal(playerOf(done).progress, 1);
+  assert.equal(playerOf(done).lapProgress, 1);
+  // Une distance totale explicite l'emporte sur celle que déduisent les tours.
+  assert.equal(playerOf(buildCityRushMinimapState([player(1000)], { laps: 3, totalDistance: 4000 })).progress, 0.25);
+  // Sans rien préciser : la course par défaut (CITY_RUSH_LAPS tours).
+  assert.equal(playerOf(buildCityRushMinimapState([player(CITY_RUSH_DISTANCE)])).progress, 1);
+  // Le point sur la mini-carte suit la boucle de 600 m, y compris au dernier
+  // tour : après 600 m de dernier tour, le pilote est revenu sur la ligne.
+  const finalLapStart = cityRushMinimapPoint(1200, 0);
+  const finalLapMid = cityRushMinimapPoint(1800, 0);
+  assert.ok(Math.abs(finalLapStart.x - finalLapMid.x) < 1e-6 && Math.abs(finalLapStart.y - finalLapMid.y) < 1e-6);
+});
 
 test('a car recovers its speed faster after being held behind traffic', () => {
   assert.ok(CITY_RUSH_TRAFFIC_RECOVERY_BOOST > 1);
