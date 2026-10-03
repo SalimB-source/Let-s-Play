@@ -12,7 +12,7 @@ import { MirageCupPicker, MirageStagePicker, stageName } from './MirageCoursePic
 import MirageCupResults from './MirageCupResults';
 import MirageCupTrophy from './MirageCupTrophy';
 import MirageTrophyIcon from './MirageTrophyIcon';
-import MirageFullscreenIcon from './MirageFullscreenIcon';
+import FullscreenIcon from './FullscreenIcon';
 import MirageDesertAtmosphere from './MirageDesertAtmosphere';
 import MirageGraphicsButton, { MirageGraphicsSwitch } from './MirageGraphicsToggle';
 import useMirageGraphics from './useMirageGraphics';
@@ -26,8 +26,8 @@ import {
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
 import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, isShopSkin, isSkinUnlocked, isStageUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
-import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './mirageFullscreen';
-import useMirageFullscreen from './useMirageFullscreen';
+import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
+import useGameFullscreen from './useGameFullscreen';
 import './mirage-rush.css';
 // Habillage sable doré et fragments cristallins du jeu.
 import './mirage-western.css';
@@ -239,7 +239,7 @@ export default function MirageRushPage() {
     exit: exitImmersive,
     toggle: toggleImmersive,
     isPinned: immersivePinned,
-  } = useMirageFullscreen(shellRef, { onNativeExit: () => nativeExitRef.current?.() });
+  } = useGameFullscreen(shellRef, { onNativeExit: () => nativeExitRef.current?.() });
   // Option « Graphismes baissés » : la coque en porte la classe, qui retire les
   // flous et autres effets de l'habillage (voir mirage-rush.css, section Graphismes
   // baissés). Le moteur 3D lit le même choix de son côté.
@@ -293,7 +293,7 @@ export default function MirageRushPage() {
 
   // ── Plein écran ────────────────────────────────────────────────────────
   // Le mécanisme (Fullscreen API, couche fixe en repli, verrou de défilement)
-  // vit dans useMirageFullscreen / mirageFullscreen.js. Ici, les règles du jeu :
+  // vit dans useGameFullscreen / gameFullscreen.js. Ici, les règles du jeu :
   //   - l'interface SE LANCE EN PLEIN ÉCRAN DE BASE, sur tous les appareils :
   //     la couche fixe (qui couvre tout le viewport) est posée dès le montage
   //     de la page, et le plein écran natif — que le navigateur refuse hors
@@ -936,7 +936,7 @@ export default function MirageRushPage() {
                 aria-label="Plein écran"
                 title={immersive ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
               >
-                <MirageFullscreenIcon exit={immersive} />
+                <FullscreenIcon exit={immersive} />
                 <span className="mirage-fullscreen-label">PLEIN ÉCRAN</span>
               </button>
             </div>
@@ -1351,7 +1351,7 @@ export default function MirageRushPage() {
                           onClick={() => startRun({ fullscreen: true })}
                           disabled={!ready}
                         >
-                          <MirageFullscreenIcon /> LANCER EN PLEIN ÉCRAN
+                          <FullscreenIcon /> LANCER EN PLEIN ÉCRAN
                         </button>
                       )}
                     </div>

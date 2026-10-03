@@ -8,11 +8,11 @@ import MiragePowerIcon from './MiragePowerIcon';
 import { CHARACTER_NAMES, CHARACTER_PALETTES, CLOUD_CHOCOBO_INDEX, LOBBY_CHARACTER_INDICES } from './mirageCharacters';
 import { Link } from 'react-router-dom';
 import MirageWorld from './MirageWorld';
-import MirageFullscreenIcon from './MirageFullscreenIcon';
+import FullscreenIcon from './FullscreenIcon';
 import MirageDesertAtmosphere from './MirageDesertAtmosphere';
 import MirageGraphicsButton from './MirageGraphicsToggle';
-import { isFullscreenShortcut } from './mirageFullscreen';
-import useMirageFullscreen from './useMirageFullscreen';
+import { isFullscreenShortcut } from './gameFullscreen';
+import useGameFullscreen from './useGameFullscreen';
 import useMirageGraphics from './useMirageGraphics';
 import {
   broadcastRoomEvent,
@@ -439,7 +439,7 @@ export default function MirageOnline({
     active: popupImmersive,
     exit: exitPopupFullscreen,
     toggle: togglePopupFullscreen,
-  } = useMirageFullscreen(racePopupRef);
+  } = useGameFullscreen(racePopupRef);
   // « Graphismes baissés » : le même choix que la page solo (mémorisé sur
   // l'appareil), appliqué à la piste de la course en ligne et à son habillage.
   const { low: lowGraphics } = useMirageGraphics();
@@ -1267,7 +1267,7 @@ export default function MirageOnline({
                           aria-label="Plein écran"
                           title={popupImmersive ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
                         >
-                          <MirageFullscreenIcon exit={popupImmersive} />
+                          <FullscreenIcon exit={popupImmersive} />
                           <span className="mirage-fullscreen-label">PLEIN ÉCRAN</span>
                         </button>
                         <button

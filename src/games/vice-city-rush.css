@@ -350,6 +350,20 @@
   color: #ffd37a;
 }
 
+.city-rush-fullscreen-button .game-fullscreen-icon {
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+
+/* Le bouton dit l'état du plein écran : allumé tant que la coque occupe tout
+   l'écran (plein écran natif ou couche fixe), comme le bouton SON. */
+.city-rush-fullscreen-button.is-on {
+  background: color-mix(in srgb, var(--city-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--city-accent) 32%, transparent);
+  color: var(--city-accent);
+}
+
 .city-rush-top-flag {
   display: inline-flex;
   align-items: center;
@@ -2246,13 +2260,21 @@
 
 .city-rush-page-footer > span i { color: var(--city-accent); font-style: normal; }
 
-/* Immersive */
-.city-rush-lock { overflow: hidden; overscroll-behavior: none; }
+/* ── Plein écran (tous appareils) ─────────────────────────────────────────
+   L'interface se lance en plein écran de base : cette couche fixe (classe
+   `is-immersive`, posée par useGameFullscreen dès le montage de la page) couvre
+   tout le viewport sans attendre de geste, et le plein écran natif part au
+   premier geste du joueur. Le bouton « Plein écran » de la barre du jeu et la
+   touche F font pareil : le plein écran natif quand la plateforme l'accepte, et
+   cette couche fixe comme repli universel (iOS Safari, WebViews sans Fullscreen
+   API, iframe sans autorisation — dans l'APK, l'event fullscreenchange repart de
+   la même couche). Elle règle aussi la mise en page en plein écran natif. */
+body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 .city-rush-shell.is-immersive {
   position: fixed;
   inset: 0;
-  z-index: 1500;
+  z-index: 1500; /* au-dessus de la nav fixe (1000) et du menu mobile (1300) */
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top, 0px);
@@ -2261,6 +2283,10 @@
   background: #070a14;
   box-shadow: none;
 }
+
+/* Le liseré décoratif de la coque (::before) suivrait le bord de l'écran : en
+   plein écran, il n'y a plus de fenêtre à encadrer. */
+.city-rush-shell.is-immersive::before { display: none; }
 
 .city-rush-shell.is-immersive .city-rush-viewport {
   flex: 1 1 auto;
@@ -2297,7 +2323,10 @@
   .city-rush-topbar { height: 56px; padding: 0 12px; }
   .city-rush-location-mark { width: 32px; height: 32px; }
   .city-rush-top-flag { display: none; }
-  .city-rush-top-button span { display: none; }
+  /* Barre étroite : le bouton de plein écran ne garde que son icône (le libellé
+     part, comme sur la barre de Mirage). Le glyphe du bouton SON, lui, reste :
+     c'est l'unique contenu de son bouton. */
+  .city-rush-fullscreen-label { display: none; }
   .city-rush-live-pill { padding: 6px 10px; font-size: 8px; }
 
   .city-rush-viewport { height: min(78vh, 640px); min-height: 520px; }

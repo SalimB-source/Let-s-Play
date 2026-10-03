@@ -6,7 +6,7 @@ import {
   nativeFullscreenElement,
   opensFullscreenOnLaunch,
   requestNativeFullscreen,
-} from '../src/games/mirageFullscreen.js';
+} from '../src/games/gameFullscreen.js';
 import { MAX_PIXEL_RATIO, MAX_RENDER_PIXELS, renderPixelRatio } from '../src/games/miragePixelBudget.js';
 
 // ── Touche F ────────────────────────────────────────────────────────────────

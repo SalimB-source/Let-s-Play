@@ -4,7 +4,7 @@ import {
   exitNativeFullscreen,
   nativeFullscreenElement,
   requestNativeFullscreen,
-} from './mirageFullscreen';
+} from './gameFullscreen';
 
 /**
  * Au bout de ce délai (ms), on cesse d'attendre l'évènement `fullscreenchange`
@@ -14,9 +14,10 @@ import {
 const EXIT_FALLBACK_MS = 1000;
 
 /**
- * Plein écran d'un bloc de la page (`targetRef`) : le jeu solo (`<section>` du
- * jeu) et la fenêtre de course en ligne. Le gros des gestes est dans
- * `mirageFullscreen.js` ; ici, l'état React et le cycle de vie.
+ * Plein écran d'un bloc de la page (`targetRef`) : la coque d'un jeu d'arcade —
+ * Mirage Rush (`<section>` du jeu, fenêtre de course en ligne) et Vice City Rush
+ * (`<section id="vice-city-rush-console">`). Le gros des gestes est dans
+ * `gameFullscreen.js` ; ici, l'état React et le cycle de vie.
  *
  * - `active` : vrai tant que le bloc doit occuper tout l'écran (plein écran
  *   natif **ou** couche fixe) — c'est lui qui pose la classe `is-immersive`.
@@ -44,7 +45,7 @@ const EXIT_FALLBACK_MS = 1000;
  * jusqu'à `fullscreenchange` (ou `EXIT_FALLBACK_MS`) ; pendant ce court délai
  * `enter()` est ignoré (F pressée deux fois de suite).
  */
-export default function useMirageFullscreen(targetRef, { onNativeExit } = {}) {
+export default function useGameFullscreen(targetRef, { onNativeExit } = {}) {
   const [active, setActive] = useState(false);
   // `activeRef` : le plein écran est voulu (la logique). `active` : la mise en page
   // plein écran est posée (l'affichage) — elle garde un instant de retard à la sortie.

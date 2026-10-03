@@ -1,5 +1,6 @@
 /**
- * `mirageFullscreen` — le plein écran de Mirage Rush, côté navigateur (sans React).
+ * `gameFullscreen` — le plein écran des jeux d'arcade (Mirage Rush, Vice City
+ * Rush), côté navigateur (sans React).
  *
  * Deux couches, toujours posées ensemble :
  *
@@ -7,10 +8,11 @@
  *     plateforme l'accepte : Chrome, Edge, Firefox et Safari sur ordinateur,
  *     Chrome Android, et la WebView de l'application (son `onShowCustomView`
  *     pose alors le plein écran immersif du système, masque barres comprises) ;
- *   - une **couche fixe** (classe `is-immersive`, voir `mirage-rush.css`) qui
- *     couvre tout le viewport. C'est elle qui règle la mise en page du jeu en
- *     plein écran natif, et c'est elle qui reste quand l'API manque ou refuse
- *     (iPhone, iframe sans `allowfullscreen`, politique du navigateur).
+ *   - une **couche fixe** (classe `is-immersive` sur la coque du jeu, voir
+ *     `mirage-rush.css` et `vice-city-rush.css`) qui couvre tout le viewport.
+ *     C'est elle qui règle la mise en page du jeu en plein écran natif, et c'est
+ *     elle qui reste quand l'API manque ou refuse (iPhone, iframe sans
+ *     `allowfullscreen`, politique du navigateur).
  *
  * Qui ouvre le plein écran :
  *
@@ -18,22 +20,24 @@
  *     fixe couvre tout le viewport dès l'ouverture de la page (aucun geste
  *     n'est exigé pour elle) ; le plein écran natif, que le navigateur refuse
  *     hors d'un geste, est demandé au tout premier geste du joueur — voir
- *     `MirageRushPage.jsx`. Le choix est « épinglé » : il reste jusqu'à ce que
- *     le joueur le quitte (bouton de la barre, touche F, Échap) ;
- *   - **téléphone, tablette, application** : le clic sur une carte de map (ou
- *     de coupe) demande aussi le natif dans le geste — un doigt joue mieux sur
- *     tout l'écran — voir `opensFullscreenOnLaunch()` ;
+ *     `MirageRushPage.jsx` et `ViceCityRushPage.jsx`. Le choix est « épinglé » :
+ *     il reste jusqu'à ce que le joueur le quitte (bouton de la barre, touche F,
+ *     Échap) ;
+ *   - **téléphone, tablette, application** : le lancement d'une partie (clic sur
+ *     une carte de map ou de coupe, bouton « LANCER ») demande aussi le natif
+ *     dans le geste — un doigt joue mieux sur tout l'écran — voir
+ *     `opensFullscreenOnLaunch()` ;
  *   - **sinon** : bouton « Plein écran » de la barre du jeu, bouton « LANCER
- *     EN PLEIN ÉCRAN » (une fois le plein écran quitté), ou la touche F.
+ *     EN PLEIN ÉCRAN » de Mirage (une fois le plein écran quitté), ou la touche F.
  *
  * Ce module ne contient que les gestes du navigateur et cette règle ; l'état
- * React (classe, verrou de défilement, fermeture au retour de l'intro) vit dans
- * `useMirageFullscreen.js`.
+ * React (classe, verrou de défilement, sortie différée, fermeture au retour de
+ * l'intro) vit dans `useGameFullscreen.js`.
  */
 import { runningInAndroidApp } from './mirageLanes.js';
 
 /** Classe posée sur `<body>` pendant le plein écran : la page derrière ne défile plus. */
-export const FULLSCREEN_LOCK_CLASS = 'mirage-immersive-lock';
+export const FULLSCREEN_LOCK_CLASS = 'game-immersive-lock';
 
 /** Document courant, ou `null` hors navigateur (tests purs, rendu serveur). */
 function currentDocument() {
@@ -84,10 +88,10 @@ function coarsePointer() {
 }
 
 /**
- * Vrai quand un lancement (clic sur une carte de map ou de coupe) ouvre le
- * plein écran sans qu'on le demande : appareil tactile (téléphone, tablette) ou
- * application Android. Sur ordinateur, c'est faux — il faut le bouton, la
- * touche F ou « LANCER EN PLEIN ÉCRAN ».
+ * Vrai quand un lancement de partie (clic sur une carte, bouton « LANCER »)
+ * ouvre le plein écran sans qu'on le demande : appareil tactile (téléphone,
+ * tablette) ou application Android. Sur ordinateur, c'est faux — il faut le
+ * bouton, la touche F ou « LANCER EN PLEIN ÉCRAN ».
  */
 export function opensFullscreenOnLaunch() {
   return runningInAndroidApp() || coarsePointer();
