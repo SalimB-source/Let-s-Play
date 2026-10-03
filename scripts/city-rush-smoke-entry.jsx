@@ -423,7 +423,7 @@ for (const [index, city] of cities.entries()) {
   if (callbacks.errors.length) fail('erreurs remontées', callbacks.errors);
 
   const finish = callbacks.finish;
-  const oncomingImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact' && effect.oncoming && effect.pushedAside && effect.shoulder === 'left');
+  const oncomingImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact' && effect.oncoming && effect.pushedAside && effect.pushDirection === 'left');
   if (!oncomingImpacts.length) fail('aucune collision frontale n’a poussé la voiture touchée vers la gauche', callbacks.effects.filter((effect) => effect.type === 'traffic-impact'));
   if (finish.laps !== CITY_RUSH_LAPS) fail('finish.laps ≠ CITY_RUSH_LAPS', finish);
   if (!Array.isArray(finish.racers) || finish.racers.length !== 3) fail('chaque course doit finir avec exactement trois pilotes', finish.racers);

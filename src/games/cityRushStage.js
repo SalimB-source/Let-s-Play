@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import {
   CITY_RUSH_LAP_LENGTH,
+  CITY_RUSH_ROAD_HALF_WIDTH,
   CITY_RUSH_SCROLL_SCALE,
 } from './cityRushRules.js';
 import { createBatch, cloneBatchGroup, seededRandom, hexToRgb, SignAtlas, drawNeonSignCell } from './cityRushBuilder.js';
@@ -23,7 +24,7 @@ const LAP = CITY_RUSH_LAP_LENGTH;
 export const START_ZONE_HALF = 34; // m : tribunes et portique autour de la ligne
 export const GATE_TRACK_POSITION = LAP / 2;
 export const LANDMARK_TRACK_POSITION = LAP * 0.27;
-const ROAD_HALF = 6.7;
+const ROAD_HALF = CITY_RUSH_ROAD_HALF_WIDTH;
 const SIDEWALK_OUTER = 9.85;
 export const ROAD_TILE_LENGTH = 26.8;
 

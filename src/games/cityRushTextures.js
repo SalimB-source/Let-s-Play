@@ -3,6 +3,7 @@
 // panneaux du portique et décalcomanies des voitures. Tout est dessiné sur
 // canvas au chargement : aucune image externe.
 import * as THREE from 'three';
+import { CITY_RUSH_LANE_X, CITY_RUSH_ROAD_WIDTH } from './cityRushRules.js';
 import { makeCanvasTexture, neonText } from './cityRushBuilder.js';
 
 const FACADE_TILE_PX = { width: 256, height: 288 };
@@ -213,7 +214,7 @@ export function makeShopAtlas(theme) {
 }
 
 export function makeRoadTexture(theme, random) {
-  // Un carreau = 13.4 unités de large sur 26.8 de long, répété le long de la route.
+  // Le carreau garde la largeur réelle de la chaussée et se répète en longueur.
   const width = 512;
   const height = 1024;
   const base = new THREE.Color(theme.roadTint);
@@ -226,20 +227,23 @@ export function makeRoadTexture(theme, random) {
       ctx.fillStyle = `rgba(${Math.round(base.r * 255 * shade + 18)}, ${Math.round(base.g * 255 * shade + 18)}, ${Math.round(base.b * 255 * shade + 22)}, ${0.18 + random() * 0.25})`;
       ctx.fillRect(random() * width, random() * height, 2 + random() * 5, 2 + random() * 5);
     }
-    // Traces de pneus sur les voies.
+    const laneToPixel = (laneX) => width / 2 + (laneX / CITY_RUSH_ROAD_WIDTH) * width;
+    // Traces de pneus dans les six voies.
     ctx.fillStyle = 'rgba(0, 0, 0, .14)';
-    for (const laneCenter of [-3.15, -1.05, 1.05, 3.15]) {
-      const px = width / 2 + (laneCenter / 13.4) * width;
+    for (const laneCenter of CITY_RUSH_LANE_X) {
+      const px = laneToPixel(laneCenter);
       ctx.fillRect(px - 26, 0, 14, height);
       ctx.fillRect(px + 12, 0, 14, height);
     }
-    // Lignes de séparation discontinues entre voies de même sens et bandes de
-    // rive. La ligne jaune continue au milieu sépare le double sens : les deux
-    // voies de gauche viennent en face, on ne la traverse jamais.
+    // Séparations discontinues dans chaque sens ; la ligne jaune continue
+    // au milieu distingue les trois voies venant en face.
     const dashLength = height / 8;
     ctx.fillStyle = theme.laneColor;
-    for (const separator of [-2.1, 2.1]) {
-      const px = width / 2 + (separator / 13.4) * width;
+    const separators = CITY_RUSH_LANE_X.slice(1)
+      .map((laneCenter, index) => (CITY_RUSH_LANE_X[index] + laneCenter) / 2)
+      .filter((separator) => Math.abs(separator) > 1e-9);
+    for (const separator of separators) {
+      const px = laneToPixel(separator);
       for (let y = 0; y < height; y += dashLength) ctx.fillRect(px - 2, y + dashLength * 0.12, 4, dashLength * 0.4);
     }
     ctx.fillStyle = theme.centerLineColor || '#f5b81e';
@@ -247,11 +251,11 @@ export function makeRoadTexture(theme, random) {
     ctx.fillStyle = 'rgba(255,255,255,.72)';
     ctx.fillRect(width * 0.012, 0, 4, height);
     ctx.fillRect(width * 0.988 - 4, 0, 4, height);
-    // Flèches de voie au sol, une par carreau. Les deux voies de gauche sont
+    // Flèches de voie au sol, une par carreau. Les voies de gauche sont
     // en sens inverse : leurs flèches pointent vers le joueur.
     ctx.fillStyle = 'rgba(255,255,255,.26)';
-    for (const laneCenter of [-3.15, -1.05, 1.05, 3.15]) {
-      const px = width / 2 + (laneCenter / 13.4) * width;
+    for (const laneCenter of CITY_RUSH_LANE_X) {
+      const px = laneToPixel(laneCenter);
       const oncoming = laneCenter < 0;
       ctx.beginPath();
       if (oncoming) {

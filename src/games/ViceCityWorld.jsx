@@ -17,6 +17,7 @@ import {
   CITY_RUSH_TRACK_BOOST_COLOR,
   CITY_RUSH_RACER_VIEW_DISTANCE,
   CITY_RUSH_LANE_X,
+  CITY_RUSH_DEFAULT_LANES,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_TRAFFIC_COUNT,
   CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN,
@@ -103,6 +104,7 @@ import { animateRacerCar, createSmokePool, makeRacerCar, makeTrafficVehicle } fr
 import { makePickupMaterial } from './cityRushTextures';
 
 const PLAYER_Z = 3.1;
+const PLAYER_START_LANE = CITY_RUSH_DEFAULT_LANES[0];
 const PLAYER_SPEED = CITY_RUSH_PLAYER_SPEED;
 const SCALE = CITY_RUSH_SCROLL_SCALE;
 const LAP_UNITS = CITY_RUSH_LAP_LENGTH * SCALE;
@@ -696,7 +698,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const playerProfile = CITY_RUSH_CARS.find((car) => car.id === selectedCarId) || CITY_RUSH_CARS[0];
   const rivalProfiles = CITY_RUSH_CARS.filter((car) => car.id !== playerProfile.id);
   const playerCar = makeRacerCar(playerProfile, { player: true, number: CITY_RUSH_CARS.indexOf(playerProfile) + 1, daylight });
-  playerCar.position.set(CITY_RUSH_LANE_X[1], 0, PLAYER_Z);
+  playerCar.position.set(CITY_RUSH_LANE_X[PLAYER_START_LANE], 0, PLAYER_Z);
   scene.add(playerCar);
 
   let currentRoster = Array.isArray(initialRoster) && initialRoster.length === 3
@@ -705,8 +707,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let playerDriver = currentRoster.find((item) => item.id === 'player') || currentRoster[0];
 
   const racerSpecs = [
-    { id: 'nova', lane: 3, phase: 0.6, changeIn: 1.4, skidSide: 1 },
-    { id: 'juno', lane: 0, phase: 2.4, changeIn: 2.1, skidSide: -1 },
+    { id: 'nova', lane: CITY_RUSH_DEFAULT_LANES[1], phase: 0.6, changeIn: 1.4, skidSide: 1 },
+    { id: 'juno', lane: CITY_RUSH_DEFAULT_LANES[2], phase: 2.4, changeIn: 2.1, skidSide: -1 },
   ];
   const racers = racerSpecs.map((spec, index) => {
     const profile = rivalProfiles[index];
@@ -792,9 +794,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   });
 
   // ── Trafic venant en face ─────────────────────────────────────────────
-  // Les deux voies de gauche sont en sens inverse : ces véhicules arrivent
+  // Les trois voies de gauche sont en sens inverse : ces véhicules arrivent
   // face à la course, puis reparaissent au loin une fois passés derrière les
-  // pilotes. Au choc, la voiture venant en face est poussée vers l'accotement gauche.
+  // pilotes. Un véhicule percuté dévie vers le bord sans quitter la chaussée.
   const oncomingCars = Array.from({ length: CITY_RUSH_ONCOMING_COUNT }, (_, index) => {
     const spec = CITY_RUSH_TRAFFIC_TYPES[(index + 2) % CITY_RUSH_TRAFFIC_TYPES.length];
     const mesh = makeTrafficVehicle(spec.id);
@@ -874,8 +876,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // collée devant le leader).
       blockLeft: 0,
       blockArmed: true,
-      // Voie de repli préférée : les deux voies extérieures pour l'escouade,
-      // aucune pour la police du trafic (elle vient de sa propre voie).
+      // Voie de repli préférée : sa voie de départ pour l'escouade, aucune
+      // pour la police du trafic (elle vient de sa propre voie).
       homeLane: lane,
       width: Number(mesh.userData.width) || 1.94,
       lastPassGap: undefined,
@@ -928,7 +930,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   let clockTime = 0;
   let distance = 0;
   let lap = 1;
-  let playerLane = 1;
+  let playerLane = PLAYER_START_LANE;
   let playerX = CITY_RUSH_LANE_X[playerLane];
   let playerSlowLeft = 0;
   let playerBlueShotSlowLeft = 0;
@@ -1153,7 +1155,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     elapsed = 0;
     distance = 0;
     lap = 1;
-    playerLane = 1;
+    playerLane = PLAYER_START_LANE;
     playerX = CITY_RUSH_LANE_X[playerLane];
     playerSlowLeft = 0;
     playerBlueShotSlowLeft = 0;
@@ -1191,7 +1193,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       racer.lap = 1;
       racer.finalLapAnnounced = false;
       racer.currentSpeed = 0;
-      racer.lane = [3, 0, 2][index];
+      racer.lane = CITY_RUSH_DEFAULT_LANES[index + 1];
       racer.currentX = CITY_RUSH_LANE_X[racer.lane];
       racer.changeIn = 0.22 + index * 0.08;
       racer.slowLeft = 0;
@@ -2144,7 +2146,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // n'existe que pendant la course : aucune place au classement final. Depuis
   // le barrage, une berline est aussi **solide** : elle ne se traverse pas et
   // se rabat devant le leader pour le retenir.
-  const packLeader = { id: 'player', name: 'TOI', isPlayer: true, distance: 0, lane: 1, x: 0, width: 1.9, speed: 0, racer: null };
+  const packLeader = { id: 'player', name: 'TOI', isPlayer: true, distance: 0, lane: PLAYER_START_LANE, x: CITY_RUSH_LANE_X[PLAYER_START_LANE], width: 1.9, speed: 0, racer: null };
 
   // Largeurs de collision : exactement celles engagées dans la résolution de
   // mouvement des voitures, pour que le barrage se juge pare-chocs contre
@@ -2766,8 +2768,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   // ── Choc frontal avec le trafic venant en face ────────────────────────
-  // Collision solide : le pilote est ralenti et la voiture adverse est écartée
-  // progressivement vers l'accotement gauche au lieu de rester dans la voie.
+  // Collision solide : le pilote est ralenti et la voiture adverse dévie d'une
+  // voie au plus, en restant sur la chaussée.
   function applyOncomingImpact(actorId, oncoming) {
     oncoming.impactCooldownLeft = CITY_RUSH_TRAFFIC_IMPACT_COOLDOWN * 1.15;
     if (!oncoming.pushedAside) {
@@ -2838,7 +2840,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       isPlayer: actorId === 'player',
       oncoming: true,
       pushedAside: true,
-      shoulder: 'left',
+      pushDirection: 'left',
     });
   }
 
@@ -2884,7 +2886,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function respawnOncomingAhead(oncoming) {
-    // Réapparaît loin devant, sur l'une des deux voies de gauche, sans se
+    // Réapparaît loin devant, sur l'une des trois voies de gauche, sans se
     // coller à un autre véhicule venant en face dans la même voie.
     const lane = CITY_RUSH_ONCOMING_LANES[Math.floor(Math.random() * CITY_RUSH_ONCOMING_LANES.length)];
     let nextDistance = distance + randomRange(150, 235);
@@ -3646,7 +3648,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
       }
 
-      // Trafic venant en face : il roule vers la course sur les deux voies de
+      // Trafic venant en face : il roule vers la course sur les trois voies de
       // gauche, croise les pilotes, puis reparaît au loin une fois passé.
       // Collision frontale solide : détection balayée pour éviter le tunneling.
       const priorActorDistancesForOncoming = new Map([
@@ -3663,7 +3665,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         oncoming.currentSpeed = requestedOncomingSpeed;
         if (oncoming.pushedAside) {
           oncoming.pushAsideElapsed += dt;
-          oncoming.currentX = cityRushOncomingImpactX(oncoming.pushAsideStartX, oncoming.pushAsideElapsed);
+          oncoming.currentX = cityRushOncomingImpactX(oncoming.pushAsideStartX, oncoming.pushAsideElapsed, oncoming.width);
         } else {
           oncoming.currentX = lerp(oncoming.currentX, CITY_RUSH_LANE_X[oncoming.lane], Math.min(1, dt * 3.4));
         }
