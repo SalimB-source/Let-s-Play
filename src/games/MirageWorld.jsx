@@ -2035,7 +2035,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     if (!active) return;
     active = false;
     if (race.mode === 'online') {
-      callbacks.finish?.({ mode: 'online', score, gems, duration: elapsed, distance: DUEL_DISTANCE, lane: laneIndex, jump: 0 });
+      callbacks.finish?.({ mode: 'online', stage, score, gems, duration: elapsed, distance: DUEL_DISTANCE, lane: laneIndex, jump: 0 });
     } else if (race.mode !== 'rush') {
       trace.push(DUEL_DISTANCE);
       const leadingRival = getLeadingRival();
@@ -2067,7 +2067,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         stage,
         rivalName: leadingRival ? getRivalDisplayName(leadingRival) : (race.challenge?.name || 'L’OMBRE'),
       });
-    } else callbacks.finish?.({ mode: 'rush', score, gems, duration: Math.max(1, Math.round(elapsed)) });
+    } else callbacks.finish?.({ mode: 'rush', stage, score, gems, duration: Math.max(1, Math.round(elapsed)) });
   };
 
   const reset = () => {
