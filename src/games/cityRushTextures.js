@@ -233,28 +233,44 @@ export function makeRoadTexture(theme, random) {
       ctx.fillRect(px - 26, 0, 14, height);
       ctx.fillRect(px + 12, 0, 14, height);
     }
-    // Lignes de séparation discontinues et bandes de rive.
+    // Lignes de séparation discontinues entre voies de même sens et bandes de
+    // rive. La ligne jaune continue au milieu sépare le double sens : les deux
+    // voies de gauche viennent en face, on ne la traverse jamais.
     const dashLength = height / 8;
     ctx.fillStyle = theme.laneColor;
-    for (const separator of [-2.1, 0, 2.1]) {
+    for (const separator of [-2.1, 2.1]) {
       const px = width / 2 + (separator / 13.4) * width;
       for (let y = 0; y < height; y += dashLength) ctx.fillRect(px - 2, y + dashLength * 0.12, 4, dashLength * 0.4);
     }
+    ctx.fillStyle = theme.centerLineColor || '#f5b81e';
+    ctx.fillRect(width / 2 - 4, 0, 8, height);
     ctx.fillStyle = 'rgba(255,255,255,.72)';
     ctx.fillRect(width * 0.012, 0, 4, height);
     ctx.fillRect(width * 0.988 - 4, 0, 4, height);
-    // Flèches de voie au sol, une par carreau.
+    // Flèches de voie au sol, une par carreau. Les deux voies de gauche sont
+    // en sens inverse : leurs flèches pointent vers le joueur.
     ctx.fillStyle = 'rgba(255,255,255,.26)';
     for (const laneCenter of [-3.15, -1.05, 1.05, 3.15]) {
       const px = width / 2 + (laneCenter / 13.4) * width;
+      const oncoming = laneCenter < 0;
       ctx.beginPath();
-      ctx.moveTo(px, 120);
-      ctx.lineTo(px + 14, 170);
-      ctx.lineTo(px + 5, 170);
-      ctx.lineTo(px + 5, 230);
-      ctx.lineTo(px - 5, 230);
-      ctx.lineTo(px - 5, 170);
-      ctx.lineTo(px - 14, 170);
+      if (oncoming) {
+        ctx.moveTo(px, 230);
+        ctx.lineTo(px + 14, 180);
+        ctx.lineTo(px + 5, 180);
+        ctx.lineTo(px + 5, 120);
+        ctx.lineTo(px - 5, 120);
+        ctx.lineTo(px - 5, 180);
+        ctx.lineTo(px - 14, 180);
+      } else {
+        ctx.moveTo(px, 120);
+        ctx.lineTo(px + 14, 170);
+        ctx.lineTo(px + 5, 170);
+        ctx.lineTo(px + 5, 230);
+        ctx.lineTo(px - 5, 230);
+        ctx.lineTo(px - 5, 170);
+        ctx.lineTo(px - 14, 170);
+      }
       ctx.closePath();
       ctx.fill();
     }

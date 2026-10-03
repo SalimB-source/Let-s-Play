@@ -59,8 +59,16 @@ export const CITY_RUSH_CARS = Object.freeze([
 ]);
 
 // Le trafic d'obstacle roule nettement moins vite que les voitures de course.
+// La route est à double sens : le trafic lent roule dans le sens de la course
+// sur les deux voies de droite ; les deux voies de gauche sont réservées au
+// trafic venant en face (voir CITY_RUSH_ONCOMING_*).
 export const CITY_RUSH_TRAFFIC_COUNT = 12;
-export const CITY_RUSH_TRAFFIC_LANES = Object.freeze([3, 0, 2, 1, 3, 1, 0, 2, 1, 3, 2, 0]);
+export const CITY_RUSH_TRAFFIC_LANES = Object.freeze([3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2]);
+
+// Trafic venant en face : les véhicules des deux voies de gauche roulent vers
+// le joueur, croisent la course, puis reparaissent au loin une fois passés.
+export const CITY_RUSH_ONCOMING_COUNT = 6;
+export const CITY_RUSH_ONCOMING_LANES = Object.freeze([0, 1]);
 export const CITY_RUSH_TRAFFIC_TYPES = Object.freeze([
   Object.freeze({ id: 'police', name: 'Voiture de police', speed: 6.4, width: 1.94, length: 3.8 }),
   Object.freeze({ id: 'ambulance', name: 'Ambulance', speed: 5.3, width: 1.98, length: 4.0 }),
@@ -693,6 +701,9 @@ export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE
 
 // Choisit une prochaine voie en équilibrant les bonus à portée et les
 // menaces lentes, parmi les changements de voie effectivement disponibles.
+// `oncomingLanes` liste les voies en sens inverse : y rouler coûte un petit
+// malus permanent (le danger peut surgir de face à tout instant), si bien
+// qu'à danger égal un pilote se rabat toujours vers le sens de la course.
 export function chooseCityRushAiLane({
   currentLane = 0,
   laneCount = CITY_RUSH_LANE_X.length,
@@ -702,6 +713,7 @@ export function chooseCityRushAiLane({
   pickups = [],
   slowZones = [],
   traffic = [],
+  oncomingLanes = CITY_RUSH_ONCOMING_LANES,
   lookAheadDistance = 145,
 } = {}) {
   const lane = clampCityRushLane(currentLane, laneCount);
@@ -712,11 +724,14 @@ export function chooseCityRushAiLane({
     .filter((nextLane) => nextLane >= 0 && nextLane < laneCount && allowed.has(nextLane));
   const lookAhead = Math.max(1, Number(lookAheadDistance) || 145);
   const racerSpeed = Math.max(0, Number(speed) || 0);
+  const oncoming = new Set((Array.isArray(oncomingLanes) ? oncomingLanes : [])
+    .map((oncomingLane) => clampCityRushLane(oncomingLane, laneCount)));
   let bestLane = lane;
   let bestScore = -Infinity;
 
   for (const candidate of candidates) {
     let safetyScore = -Math.abs(candidate - lane) * 1.25;
+    if (oncoming.has(candidate)) safetyScore -= 6;
     let pickupPriority = 0;
     for (const pickup of pickups) {
       const gap = Number(pickup.distance) - Number(distance);
@@ -740,9 +755,15 @@ export function chooseCityRushAiLane({
     for (const vehicle of traffic) {
       const gap = Number(vehicle.distance) - Number(distance);
       if (vehicle.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
-      const closingSpeed = Math.max(1, racerSpeed - Math.max(0, Number(vehicle.speed) || 0));
+      // Une vitesse négative signale un véhicule venant en face : la vitesse
+      // de fermeture est alors la somme des deux vitesses. Marqué `oncoming`,
+      // le danger passe à l'échelle des bonus : un pilote ne se jette pas
+      // sous un capot qui arrive, il double dès que la voie se dégage.
+      const vehicleSpeed = Math.max(-racerSpeed, Number(vehicle.speed) || 0);
+      const closingSpeed = Math.max(1, racerSpeed - vehicleSpeed);
       const timeToReach = gap / closingSpeed;
-      safetyScore -= timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5;
+      const hazardWeight = vehicle.oncoming ? 130 : 1;
+      safetyScore -= hazardWeight * (timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5);
     }
     // Sépare explicitement les objectifs des risques : aucune pénalité de
     // circulation ne doit rendre un bonus moins intéressant qu'une voie vide.
@@ -1213,7 +1234,10 @@ export function chooseCityRushPoliceLane({
     for (const vehicle of traffic) {
       const gap = Number(vehicle.distance) - Number(distance);
       if (vehicle.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
-      const closingSpeed = Math.max(1, racerSpeed - Math.max(0, Number(vehicle.speed) || 0));
+      // Une vitesse négative signale un véhicule venant en face : la vitesse
+      // de fermeture est alors la somme des deux vitesses.
+      const vehicleSpeed = Math.max(-racerSpeed, Number(vehicle.speed) || 0);
+      const closingSpeed = Math.max(1, racerSpeed - vehicleSpeed);
       const timeToReach = gap / closingSpeed;
       safetyScore -= timeToReach < 1.5 ? 24 : timeToReach < 3 ? 17 : timeToReach < 5.5 ? 10 : 4.5;
       // Embouteillage : une berline engluée derrière un véhicule lent cherche
