@@ -592,42 +592,39 @@
 /* ── HUD façon console de jeu : radar + compteurs (mobile) ── */
 /* Desktop : le wrapper radar est transparent et les compteurs dédiés au mobile restent cachés */
 .city-rush-radar { display: contents; }
-.city-rush-gta-bars { display: none; }
 .city-rush-gta-cash { display: none; }
 
 @keyframes crWantedPulse {
   50% { opacity: 0.72; }
 }
 
-/* ── Minimap — modern glass card ── */
-.city-rush-minimap {
+/* ── Classement compact dans le HUD ─────────────────────────────── */
+.city-rush-race-list {
   position: absolute;
   z-index: 3;
   top: 88px;
   left: 16px;
   width: 240px;
-  display: grid;
-  gap: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   background: rgba(10, 14, 30, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.36), inset 0 1px rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(20px) saturate(1.2);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.36), inset 0 1px rgba(255,255,255,0.06);
-  overflow: hidden;
   pointer-events: none;
 }
 
-.city-rush-minimap-head {
+.city-rush-race-list-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 10px 12px;
-  background: rgba(255,255,255,0.04);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.city-rush-minimap-title {
+.city-rush-race-list-title {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -636,7 +633,7 @@
   letter-spacing: 0.12em;
 }
 
-.city-rush-minimap-title i {
+.city-rush-race-list-title i {
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -645,277 +642,110 @@
   animation: crLivePulse 1.5s infinite;
 }
 
-.city-rush-minimap-badges {
-  display: flex;
+.city-rush-race-list-badges {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
 }
 
-.city-rush-minimap-police,
-.city-rush-minimap-lap {
-  padding: 3px 8px;
+.city-rush-race-list-badges b,
+.city-rush-race-list-badges em {
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--cr-radius-pill);
+  color: var(--cr-muted);
+  background: rgba(255, 255, 255, 0.06);
   font: 700 8px var(--mono, monospace);
+  font-style: normal;
   letter-spacing: 0.06em;
+  white-space: nowrap;
 }
 
-.city-rush-minimap-police {
+.city-rush-race-list-badges b {
+  border-color: rgba(255, 82, 110, 0.32);
   background: linear-gradient(135deg, rgba(255, 43, 69, 0.2), rgba(43, 107, 255, 0.2));
-  border: 1px solid rgba(255, 82, 110, 0.32);
   color: #ff9aa8;
 }
 
-.city-rush-minimap-lap {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: var(--cr-muted);
-}
-
-.city-rush-minimap-focus {
-  display: grid;
-  grid-template-columns: 36px minmax(0,1fr) auto;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  background: linear-gradient(135deg, rgba(67, 234, 213, 0.1), rgba(255, 93, 184, 0.06));
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-
-.city-rush-minimap-focus-avatar {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.24);
-}
-
-.city-rush-minimap-focus-flag {
-  position: absolute;
-  right: -2px;
-  bottom: -2px;
-  font-size: 12px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-}
-
-.city-rush-minimap-focus-copy {
-  min-width: 0;
-  display: grid;
-  gap: 2px;
-}
-
-.city-rush-minimap-focus-name {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.city-rush-minimap-focus-name b {
-  color: var(--cr-text);
-  font: 800 11px var(--mono, monospace);
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.city-rush-minimap-focus-copy small {
-  color: var(--cr-muted);
-  font: 600 9px var(--mono, monospace);
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.city-rush-minimap-focus-copy small i {
-  color: var(--city-accent);
-  font-style: normal;
-  margin-inline: 3px;
-}
-
-.city-rush-minimap-focus-rank {
-  color: #43ead5;
-  font: 900 16px var(--mono, monospace);
-  line-height: 1;
-}
-
-.city-rush-minimap-focus-rank small {
-  color: var(--cr-faint);
-  font-size: 9px;
-}
-
-.city-rush-minimap-stage {
-  position: relative;
-  height: 120px;
-  background: radial-gradient(circle at 50% 50%, rgba(67, 234, 213, 0.08), rgba(7, 11, 22, 0.92) 76%);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-
-.city-rush-minimap-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.city-rush-minimap-grid line {
-  stroke: rgba(67, 234, 213, 0.12);
-  stroke-width: 0.45;
-  stroke-dasharray: 1.8 1.8;
-}
-
-.city-rush-minimap-road-edge {
-  fill: none;
-  stroke: rgba(255, 93, 184, 0.28);
-  stroke-width: 9.2;
-  stroke-linejoin: round;
-}
-
-.city-rush-minimap-road-asphalt {
-  fill: none;
-  stroke: #171f36;
-  stroke-width: 7.4;
-  stroke-linejoin: round;
-}
-
-.city-rush-minimap-road-lanes {
-  fill: none;
-  stroke: rgba(230, 238, 255, 0.22);
-  stroke-width: 0.65;
-  stroke-dasharray: 2.6 2.4;
-}
-
-.city-rush-minimap-tunnel-vault {
-  fill: rgba(9, 12, 22, 0.84);
-  stroke: color-mix(in srgb, var(--city-accent, #ffd24f) 55%, transparent);
-  stroke-width: 0.5;
-}
-
-.city-rush-minimap-tunnel-wall {
-  fill: color-mix(in srgb, var(--city-accent, #ffd24f) 88%, #14161f);
-  stroke: rgba(12, 15, 26, 0.85);
-  stroke-width: 0.3;
-}
-
-.city-rush-minimap-gate line {
-  stroke: rgba(255, 212, 79, 0.75);
-  stroke-width: 1.1;
-}
-
-.city-rush-minimap-start rect {
-  fill: #ffffff;
-  stroke: #ff5db8;
-  stroke-width: 0.6;
-}
-
-.city-rush-minimap-start line {
-  stroke: #0c1020;
-  stroke-width: 0.9;
-  stroke-dasharray: 1.3 1.3;
-}
-
-.city-rush-minimap-focus-ring {
-  fill: none;
-  stroke: #43ead5;
-  stroke-width: 0.85;
-  stroke-dasharray: 2.4 1.8;
-  opacity: 0.85;
-}
-
-.city-rush-minimap-focus-cone path {
-  fill: rgba(67, 234, 213, 0.18);
-  stroke: rgba(67, 234, 213, 0.36);
-  stroke-width: 0.45;
-}
-
-.city-rush-minimap-pursuer-halo {
-  fill: rgba(255, 43, 69, 0.14);
-  stroke: rgba(43, 107, 255, 0.4);
-  stroke-width: 0.5;
-}
-
-.city-rush-minimap-pursuer-body {
-  fill: #0d1424;
-  stroke: #ffffff;
-  stroke-width: 0.7;
-}
-
-.city-rush-minimap-pursuer-light {
-  fill: #ff2b45;
-}
-
-.city-rush-minimap-pursuer-light.is-blue {
-  fill: #2b6bff;
-}
-
-.city-rush-minimap-pursuer-health-bg {
-  fill: rgba(6, 10, 20, 0.9);
-  stroke: rgba(255, 255, 255, 0.35);
-  stroke-width: 0.35;
-}
-
-.city-rush-minimap-pursuer-health-fill {
-  fill: #2be06a;
-}
-
-.city-rush-minimap-pursuer-health-fill.is-low {
-  fill: #ffa53d;
-}
-
-.city-rush-minimap-marker { transition: transform 0.1s linear; }
-.city-rush-minimap-Pointer { fill: var(--marker-color, #43ead5); }
-.city-rush-minimap-dot { fill: #0b1122; stroke: var(--marker-color, #43ead5); stroke-width: 1.6; }
-.city-rush-minimap-marker.is-player .city-rush-minimap-dot {
-  fill: #07262c;
-  stroke: #43ead5;
-  stroke-width: 2.1;
-  filter: drop-shadow(0 0 4px #43ead5);
-}
-.city-rush-minimap-pin-code { fill: #ffffff; font: 900 3.2px var(--mono, monospace); }
-.city-rush-minimap-marker.is-player .city-rush-minimap-pin-code { fill: #9ffcf0; font-size: 3.4px; }
-
-.city-rush-minimap-roster {
+.city-rush-race-list-rows {
   display: grid;
   gap: 1px;
   padding: 6px;
-  background: rgba(0,0,0,0.16);
-  max-height: 160px;
-  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.16);
 }
 
-.city-rush-minimap-racer {
+.city-rush-race-list-row {
   display: grid;
-  grid-template-columns: 18px 24px minmax(0, 1fr);
+  grid-template-columns: 18px 24px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
+  min-height: 38px;
   padding: 6px 8px;
+  border: 1px solid transparent;
   border-radius: 8px;
-  background: rgba(255,255,255,0.02);
-  transition: background 0.2s var(--cr-ease);
+  background: rgba(255, 255, 255, 0.02);
 }
 
-.city-rush-minimap-racer.is-player {
+.city-rush-race-list-row.is-player {
+  border-color: rgba(67, 234, 213, 0.22);
   background: rgba(67, 234, 213, 0.1);
-  border: 1px solid rgba(67, 234, 213, 0.22);
 }
 
-.city-rush-minimap-racer-rank {
+.city-rush-race-list-rank {
   color: var(--cr-faint);
   font: 800 9px var(--mono, monospace);
   text-align: center;
 }
 
-.city-rush-minimap-racer.is-player .city-rush-minimap-racer-rank { color: #43ead5; }
-.city-rush-minimap-racer-avatar { width: 24px; height: 24px; border-radius: 6px; overflow: hidden; }
-.city-rush-minimap-racer-body { min-width: 0; display: grid; gap: 4px; }
-.city-rush-minimap-racer-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
-.city-rush-minimap-racer-name { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow: hidden; }
-.city-rush-minimap-flag { font-size: 10px; line-height: 1; }
-.city-rush-minimap-racer-name b { color: #f3f5ff; font: 700 9px var(--mono, monospace); letter-spacing: 0.04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.city-rush-minimap-racer.is-player .city-rush-minimap-racer-name b { color: #43ead5; }
-.city-rush-minimap-racer-gap { color: var(--cr-faint); font: 700 8px var(--mono, monospace); white-space: nowrap; }
-.city-rush-minimap-racer-bar { position: relative; height: 2px; border-radius: var(--cr-radius-pill); background: rgba(255,255,255,0.08); }
-.city-rush-minimap-racer-bar i { position: absolute; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--racer-accent, #a9b9ce); border: 1px solid rgba(255,255,255,0.8); transform: translateX(-50%); }
+.city-rush-race-list-row.is-player .city-rush-race-list-rank { color: #43ead5; }
+
+.city-rush-race-list-avatar {
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.city-rush-race-list-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.city-rush-race-list-copy b {
+  overflow: hidden;
+  color: #f3f5ff;
+  font: 700 9px var(--mono, monospace);
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-rush-race-list-row.is-player .city-rush-race-list-copy b { color: #43ead5; }
+
+.city-rush-race-list-copy b em {
+  margin-left: 4px;
+  color: #43ead5;
+  font-size: 7px;
+  font-style: normal;
+}
+
+.city-rush-race-list-copy small {
+  overflow: hidden;
+  color: var(--cr-faint);
+  font: 600 8px var(--mono, monospace);
+  letter-spacing: 0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.city-rush-race-list-gap {
+  color: var(--cr-faint);
+  font: 700 8px var(--mono, monospace);
+  white-space: nowrap;
+}
+
+.city-rush-race-list-row.is-player .city-rush-race-list-gap { color: #9ffcf0; }
 
 /* ── Status / Toast / Lap banner ── */
 .city-rush-status-pill {
@@ -2370,18 +2200,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .city-rush-gta-wanted i { font-style: normal; font-size: 14px; line-height: 1; color: rgba(255, 255, 255, 0.26); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
   .city-rush-gta-wanted i.is-on { color: #fff; text-shadow: 0 0 8px rgba(255, 255, 255, 0.9), 0 0 18px rgba(255, 196, 84, 0.55); animation: crWantedPulse 1.5s ease-in-out infinite; }
 
-  /* Radar façon console : mini-carte carrée en bas à gauche + jauges sous la carte */
-  .city-rush-radar { display: flex; flex-direction: column; position: absolute; z-index: 5; left: calc(10px + env(safe-area-inset-left, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: 138px; border-radius: 12px; background: rgba(4, 7, 14, 0.72); border: 2px solid rgba(238, 240, 244, 0.78); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); overflow: hidden; pointer-events: none; backdrop-filter: blur(6px); }
-  .city-rush-radar .city-rush-minimap { position: static; width: auto; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
-  .city-rush-radar .city-rush-minimap-head,
-  .city-rush-radar .city-rush-minimap-focus,
-  .city-rush-radar .city-rush-minimap-roster { display: none; }
-  .city-rush-radar .city-rush-minimap-stage { height: 116px; border-bottom: 1px solid rgba(255, 255, 255, 0.16); background: radial-gradient(circle at 50% 50%, rgba(67, 234, 213, 0.1), rgba(4, 7, 14, 0.96) 78%); }
-  .city-rush-gta-bars { display: flex; flex-direction: column; gap: 4px; padding: 7px 8px 8px; }
-  .city-rush-gta-bar { position: relative; display: block; height: 7px; border-radius: 2px; background: rgba(255, 255, 255, 0.16); overflow: hidden; }
-  .city-rush-gta-bar i { position: absolute; top: 0; bottom: 0; left: 0; width: 0; transition: width 0.25s ease; }
-  .city-rush-gta-bar.is-tour i { background: linear-gradient(90deg, #4fae63, #8ce99a); }
-  .city-rush-gta-bar.is-turbo i { background: linear-gradient(90deg, #2fb7c9, #43ead5); }
+  /* Classement compact, à la place de l'ancienne mini-carte. */
+  .city-rush-radar { display: block; position: absolute; z-index: 5; left: calc(10px + env(safe-area-inset-left, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); width: 160px; pointer-events: none; }
+  .city-rush-radar .city-rush-race-list { position: static; width: auto; border-radius: 12px; background: rgba(4, 7, 14, 0.72); border: 1px solid rgba(238, 240, 244, 0.5); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); backdrop-filter: blur(6px); }
+  .city-rush-radar .city-rush-race-list-head { padding: 7px 8px; }
+  .city-rush-radar .city-rush-race-list-rows { gap: 0; padding: 3px; }
+  .city-rush-radar .city-rush-race-list-row { grid-template-columns: 14px 20px minmax(0, 1fr); gap: 5px; min-height: 29px; padding: 4px; }
+  .city-rush-radar .city-rush-race-list-avatar { width: 20px; height: 20px; }
+  .city-rush-radar .city-rush-race-list-copy small,
+  .city-rush-radar .city-rush-race-list-gap { display: none; }
+  .city-rush-radar .city-rush-race-list-copy b { font-size: 8px; }
+  .city-rush-radar .city-rush-race-list-rank { font-size: 8px; }
+  .city-rush-radar .city-rush-race-list-badges b { display: none; }
 
   .city-rush-status-pill { top: 78px; font-size: 8px; padding: 6px 10px; max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .city-rush-toast { top: 110px; font-size: 9px; padding: 8px 12px; }
@@ -2793,7 +2623,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 :root[data-theme='light'] .city-rush-hud-card,
-:root[data-theme='light'] .city-rush-minimap,
+:root[data-theme='light'] .city-rush-race-list,
 :root[data-theme='light'] .city-rush-status-pill,
 :root[data-theme='light'] .city-rush-toast,
 :root[data-theme='light'] .city-rush-steering,
