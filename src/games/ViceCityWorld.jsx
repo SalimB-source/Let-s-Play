@@ -67,7 +67,9 @@ import {
   cityRushLaneAfterAction,
   cityRushLapCrossings,
   cityRushLapForDistance,
+  cityRushLapLength,
   cityRushLapProgress,
+  cityRushLineKind,
   cityRushPackLeader,
   cityRushPickupBurstShards,
   cityRushPickupFlashState,
@@ -79,6 +81,7 @@ import {
   cityRushPolicePace,
   cityRushPoliceShotsLeft,
   cityRushPoliceTarget,
+  cityRushRaceDistance,
   cityRushTrackElevation,
   cityRushTrackGap,
   cityRushTrackOffset,
@@ -577,7 +580,9 @@ function disposeScene(scene, renderer) {
  */
 export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false) {
   const effectiveLaps = Number.isFinite(raceLaps) && raceLaps > 0 ? Math.floor(raceLaps) : CITY_RUSH_LAPS;
-  const effectiveDistance = effectiveLaps * CITY_RUSH_LAP_LENGTH;
+  // Le dernier tour enchaîne plusieurs boucles : la course est plus longue que
+  // `laps` × la boucle. Le décor, lui, reste une boucle de 600 m qui se répète.
+  const effectiveDistance = cityRushRaceDistance(effectiveLaps);
   const effectivePoliceFromStart = Boolean(policeFromStart);
   const theme = cityRushTheme(city.id);
   const lightRig = cityRushLightRig(theme, city);
@@ -944,6 +949,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   const trackPitch = (trackDistance) => cityRushTrackPitch(trackDistance);
   const trackYaw = (trackDistance) => cityRushTrackYaw(trackDistance);
   let lap = 1;
+  // Dernière ligne annoncée (1 = fin du tour 1 …) : un choc frontal peut recaler
+  // le joueur derrière une ligne qu'il vient de franchir ; en la repassant il ne
+  // doit pas déclencher une seconde fois bannière, cloche et tableau.
+  let lastLineCrossed = 0;
   let playerLane = PLAYER_START_LANE;
   let playerX = CITY_RUSH_LANE_X[playerLane];
   let playerSlowLeft = 0;
@@ -1054,15 +1063,24 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     if (!force && now - lastHudAt < 100) return;
     lastHudAt = now;
     const standings = rankCityRushRacers(makeRacerRows());
+    // `lap` ne recule jamais : un choc frontal peut recaler le joueur juste
+    // derrière la ligne qu'il vient de franchir. Il est alors à 0 m de son tour,
+    // pas à 99 % du précédent.
+    const lapProgress = distance < (lap - 1) * CITY_RUSH_LAP_LENGTH
+      ? 0
+      : cityRushLapProgress(distance, CITY_RUSH_LAP_LENGTH, effectiveLaps);
+    // Longueur du tour en cours : une boucle, mais tout le grand dernier tour au
+    // dernier tour — la jauge et le compteur « 412 / 1200 m » suivent.
+    const currentLapLength = cityRushLapLength(lap, effectiveLaps);
     getCallbacks().hud?.({
       distance: Math.max(0, Math.round(distance)),
       totalDistance: effectiveDistance,
       progress: clamp(distance / effectiveDistance, 0, 1),
       lap,
       laps: effectiveLaps,
-      lapLength: CITY_RUSH_LAP_LENGTH,
-      lapProgress: cityRushLapProgress(distance),
-      lapDistance: Math.max(0, Math.round(Math.min(distance, effectiveDistance) % CITY_RUSH_LAP_LENGTH)),
+      lapLength: currentLapLength,
+      lapProgress,
+      lapDistance: Math.max(0, Math.round(lapProgress * currentLapLength)),
       elapsed,
       speed: Math.max(0, Math.round(currentSpeed * 3.6)),
       rank: standings.rank,
@@ -1080,8 +1098,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         rawDistance: Math.max(0, Math.min(effectiveDistance, racer.distance)),
         distance: Math.max(0, Math.min(effectiveDistance, Math.round(racer.distance))),
         progress: clamp(racer.distance / effectiveDistance, 0, 1),
-        lap: racer.lap || cityRushLapForDistance(racer.distance),
-        lapProgress: cityRushLapProgress(racer.distance),
+        lap: racer.lap || cityRushLapForDistance(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps),
+        lapProgress: cityRushLapProgress(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps),
         rank: index + 1,
         lane: racer.lane,
         x: racer.x,
@@ -1182,6 +1200,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     elapsed = 0;
     distance = 0;
     lap = 1;
+    lastLineCrossed = 0;
     playerLane = PLAYER_START_LANE;
     playerX = CITY_RUSH_LANE_X[playerLane];
     playerSlowLeft = 0;
@@ -3335,10 +3354,29 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
 
   function handleLapCrossings(priorDistance) {
-    const crossings = cityRushLapCrossings(priorDistance, distance);
+    const crossings = cityRushLapCrossings(priorDistance, distance, CITY_RUSH_LAP_LENGTH, effectiveLaps);
     for (const line of crossings) {
-      if (line >= effectiveLaps) {
+      if (line <= lastLineCrossed) continue;
+      lastLineCrossed = line;
+      const kind = cityRushLineKind(line, effectiveLaps);
+      if (kind === 'finish') {
         startLine.onCross({ final: true });
+        continue;
+      }
+      // Mètres qu'il reste à courir une fois cette ligne franchie.
+      const remaining = Math.max(0, Math.round(effectiveDistance - line * CITY_RUSH_LAP_LENGTH));
+      if (kind === 'checkpoint') {
+        // Le portique est fixe dans le décor : on le recroise au milieu du grand
+        // dernier tour. Ce n'est qu'un point de passage — aucun tour ne
+        // commence, la course continue — mais on le signale (tableau, bannière,
+        // cloche) pour que personne ne le prenne pour l'arrivée.
+        startLine.onCross({ final: false });
+        startLine.setBoard(`TOUR ${effectiveLaps}/${effectiveLaps}`, `PLUS QUE ${remaining} M`, '#ffffff');
+        startLine.setFinalLap(true);
+        cameraKick = Math.max(cameraKick, 0.3);
+        audioRef?.current?.lap(false);
+        getCallbacks().lap?.({ lap: effectiveLaps, laps: effectiveLaps, final: true, checkpoint: true, remaining, elapsed });
+        getCallbacks().effect?.({ type: 'lap-checkpoint', lap: effectiveLaps, laps: effectiveLaps, remaining });
         continue;
       }
       lap = line + 1;
@@ -3348,11 +3386,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       if (finalLap) startLine.setFinalLap(true);
       cameraKick = Math.max(cameraKick, 0.45);
       audioRef?.current?.lap(finalLap);
-      getCallbacks().lap?.({ lap, laps: effectiveLaps, final: finalLap, elapsed });
+      getCallbacks().lap?.({ lap, laps: effectiveLaps, final: finalLap, remaining, elapsed });
       getCallbacks().effect?.({ type: finalLap ? 'final-lap' : 'lap', lap, laps: effectiveLaps });
     }
     for (const racer of racers) {
-      const racerLap = cityRushLapForDistance(racer.distance);
+      const racerLap = cityRushLapForDistance(racer.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps);
       if (racerLap !== racer.lap) {
         racer.lap = racerLap;
         if (racerLap === effectiveLaps && !racer.finalLapAnnounced) {
@@ -3778,7 +3816,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       const leader = refreshPackLeader();
       if (!policeDeployed) {
       if (effectivePoliceFromStart && leader.distance > 8) deployPolice(leader);
-      else if (cityRushLapForDistance(leader.distance) >= effectiveLaps) deployPolice(leader);
+      else if (cityRushLapForDistance(leader.distance, CITY_RUSH_LAP_LENGTH, effectiveLaps) >= effectiveLaps) deployPolice(leader);
       }
       updatePolice(dt, leader);
       handleLapCrossings(priorDistance);

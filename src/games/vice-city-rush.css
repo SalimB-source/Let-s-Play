@@ -543,15 +543,18 @@
   color: #ffd37a;
 }
 
+/* Un segment par tour, de largeur égale — sauf le dernier, plus long : la page
+   lui donne un `flex-grow` égal à son nombre de boucles. */
 .city-rush-lap-track {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   gap: 6px;
   margin-top: 10px;
 }
 
 .city-rush-lap-track > span {
   position: relative;
+  flex: 1 1 0;
+  min-width: 0;
   height: 4px;
   border-radius: var(--cr-radius-pill);
   background: rgba(255, 255, 255, 0.1);

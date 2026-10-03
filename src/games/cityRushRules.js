@@ -1,12 +1,25 @@
 // Règles pures de Vice City Rush : séparées du rendu Three.js pour garder
 // les durées, les voies et la génération de rue faciles à vérifier.
 //
-// La course se joue en circuit : cinq tours d'une boucle de 600 m. Le décor
-// est généré une fois pour la boucle et se répète, si bien que l'on repasse
-// sous le portique de départ (tribunes, feux, ligne à damier) à chaque tour.
-export const CITY_RUSH_LAPS = 5;
+// La course se joue en circuit : plusieurs tours d'une boucle de 600 m. Le
+// décor est généré une fois pour la boucle et se répète, si bien que l'on
+// repasse sous le portique de départ (tribunes, feux, ligne à damier) à chaque
+// tour.
+//
+// **Le dernier tour est plus long que les autres** : il enchaîne
+// `CITY_RUSH_FINAL_LAP_LOOPS` boucles (deux, soit 1 200 m) au lieu d'une. Le
+// portique est fixe dans le décor : on le recroise donc en cours de dernier
+// tour (à mi-parcours avec deux boucles). Ce passage n'est qu'un point de
+// passage (`'checkpoint'`, voir `cityRushLineKind`) — il ne lance aucun tour —
+// et seule la ligne qui clôt la dernière boucle est l'arrivée. Rien d'autre ne
+// change : le décor reste une boucle de 600 m, seule la distance à parcourir
+// s'allonge.
+export const CITY_RUSH_LAPS = 5; // nombre de tours par défaut (les modes de jeu fixent le leur)
 export const CITY_RUSH_LAP_LENGTH = 600;
-export const CITY_RUSH_DISTANCE = CITY_RUSH_LAPS * CITY_RUSH_LAP_LENGTH;
+export const CITY_RUSH_FINAL_LAP_LOOPS = 2; // le dernier tour fait deux fois la boucle
+export const CITY_RUSH_FINAL_LAP_LENGTH = CITY_RUSH_LAP_LENGTH * CITY_RUSH_FINAL_LAP_LOOPS;
+// Distance de la course par défaut (`CITY_RUSH_LAPS` tours, dernier tour long).
+export const CITY_RUSH_DISTANCE = cityRushRaceDistance();
 // La ligne peinte est dessinée quelques mètres devant le centre de la voiture
 // pour que les capots s'alignent sur le damier au départ.
 export const CITY_RUSH_START_LINE_LEAD = 3;
@@ -417,8 +430,36 @@ export function clampCityRushLane(lane, laneCount = CITY_RUSH_LANE_X.length) {
   return Math.max(0, Math.min(laneCount - 1, parsed));
 }
 
-// Tour en cours (1 à CITY_RUSH_LAPS) pour une distance parcourue. La ligne
-// d'arrivée est franchie au début du « tour » LAPS + 1, que l'on plafonne.
+// Nombre de tours d'une course : un entier d'au moins 1.
+function safeLapCount(laps) {
+  const count = Math.floor(Number(laps));
+  return Number.isFinite(count) && count >= 1 ? count : CITY_RUSH_LAPS;
+}
+
+// Nombre de boucles que compte le dernier tour : un entier d'au moins 1
+// (1 redonne l'ancien dernier tour, d'une seule boucle).
+function safeFinalLapLoops(finalLapLoops) {
+  const loops = Math.floor(Number(finalLapLoops));
+  return Number.isFinite(loops) && loops >= 1 ? loops : CITY_RUSH_FINAL_LAP_LOOPS;
+}
+
+// Distance d'une course de `laps` tours : chaque tour fait une boucle, sauf le
+// dernier qui en enchaîne `finalLapLoops`. Trois tours donnent ainsi
+// 600 + 600 + 1 200 = 2 400 m.
+export function cityRushRaceDistance(laps = CITY_RUSH_LAPS, lapLength = CITY_RUSH_LAP_LENGTH, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  return (safeLapCount(laps) - 1 + safeFinalLapLoops(finalLapLoops)) * safeLap;
+}
+
+// Longueur du tour `lap` (1 … laps) : une boucle, sauf le dernier tour.
+export function cityRushLapLength(lap, laps = CITY_RUSH_LAPS, lapLength = CITY_RUSH_LAP_LENGTH, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
+  const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
+  return (Number(lap) || 1) >= safeLapCount(laps) ? safeLap * safeFinalLapLoops(finalLapLoops) : safeLap;
+}
+
+// Tour en cours (1 à `laps`) pour une distance parcourue. Le dernier tour court
+// jusqu'à l'arrivée, même s'il compte plusieurs boucles : le compteur y reste
+// plafonné et ne passe pas à « laps + 1 » quand on recroise le portique.
 export function cityRushLapForDistance(distance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS) {
   const safeDistance = Math.max(0, Number(distance) || 0);
   const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
@@ -426,26 +467,46 @@ export function cityRushLapForDistance(distance, lapLength = CITY_RUSH_LAP_LENGT
 }
 
 // Progression (0 → 1) à l'intérieur du tour courant ; vaut 1 une fois la
-// course bouclée pour que la jauge reste pleine sur l'écran d'arrivée.
-export function cityRushLapProgress(distance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS) {
+// course bouclée pour que la jauge reste pleine sur l'écran d'arrivée. Au
+// dernier tour la jauge court sur toute sa longueur (1 200 m), pas sur une
+// seule boucle : elle ne retombe pas à 0 quand on recroise le portique.
+export function cityRushLapProgress(distance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
   const safeDistance = Math.max(0, Number(distance) || 0);
   const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
-  if (safeDistance >= safeLap * laps) return 1;
-  return Math.max(0, Math.min(1, (safeDistance % safeLap) / safeLap));
+  const finalStart = (safeLapCount(laps) - 1) * safeLap;
+  const finalLength = safeLap * safeFinalLapLoops(finalLapLoops);
+  if (safeDistance >= finalStart + finalLength) return 1;
+  if (safeDistance >= finalStart) return clamp01((safeDistance - finalStart) / finalLength);
+  return clamp01((safeDistance % safeLap) / safeLap);
 }
 
-// Numéros des lignes (1 … laps) franchies entre deux distances successives.
-// Franchir la ligne k < laps lance le tour k + 1 ; la ligne `laps` est l'arrivée.
-export function cityRushLapCrossings(previousDistance, nextDistance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS) {
+// Numéros des lignes (1 … laps − 1 + finalLapLoops) franchies entre deux
+// distances successives. Franchir la ligne k < laps lance le tour k + 1 ; les
+// lignes suivantes jalonnent le dernier tour (points de passage) et la
+// dernière est l'arrivée — voir `cityRushLineKind`.
+export function cityRushLapCrossings(previousDistance, nextDistance, lapLength = CITY_RUSH_LAP_LENGTH, laps = CITY_RUSH_LAPS, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
   const before = Math.max(0, Number(previousDistance) || 0);
   const after = Math.max(0, Number(nextDistance) || 0);
   const safeLap = Math.max(1, Number(lapLength) || CITY_RUSH_LAP_LENGTH);
   if (after <= before) return [];
+  const lastLine = safeLapCount(laps) - 1 + safeFinalLapLoops(finalLapLoops);
   const crossings = [];
-  for (let line = Math.floor(before / safeLap) + 1; line <= laps && line * safeLap <= after; line += 1) {
+  for (let line = Math.floor(before / safeLap) + 1; line <= lastLine && line * safeLap <= after; line += 1) {
     crossings.push(line);
   }
   return crossings;
+}
+
+// Ce que marque la ligne n° `line` : le début d'un tour (`'lap'`), un simple
+// point de passage dans le dernier tour (`'checkpoint'`, la course continue)
+// ou l'arrivée (`'finish'`). Sans dernier tour long (une seule boucle), il n'y
+// a jamais de point de passage.
+export function cityRushLineKind(line, laps = CITY_RUSH_LAPS, finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS) {
+  const count = safeLapCount(laps);
+  const finishLine = count - 1 + safeFinalLapLoops(finalLapLoops);
+  const number = Math.floor(Number(line)) || 0;
+  if (number >= finishLine) return 'finish';
+  return number >= count ? 'checkpoint' : 'lap';
 }
 
 // Écart (en mètres, signé) entre un élément fixe du circuit et le joueur,
@@ -1554,7 +1615,8 @@ export function buildCityRushMinimapState(
     playerDriverId = null,
     lapLength = CITY_RUSH_LAP_LENGTH,
     laps = CITY_RUSH_LAPS,
-    totalDistance = CITY_RUSH_DISTANCE,
+    finalLapLoops = CITY_RUSH_FINAL_LAP_LOOPS,
+    totalDistance = cityRushRaceDistance(laps, lapLength, finalLapLoops),
     pursuers = [],
   } = {},
 ) {
@@ -1569,7 +1631,7 @@ export function buildCityRushMinimapState(
     const distance = Math.max(0, Math.min(totalDistance, Math.round(rawDistance)));
     const lane = raw.lane !== undefined ? clampCityRushLane(raw.lane) : slotProfile.lane;
     const lap = raw.lap ? Math.max(1, Math.min(laps, Number(raw.lap))) : cityRushLapForDistance(rawDistance, lapLength, laps);
-    const lapProgress = cityRushLapProgress(rawDistance, lapLength, laps);
+    const lapProgress = cityRushLapProgress(rawDistance, lapLength, laps, finalLapLoops);
     const progress = clamp01(rawDistance / Math.max(1, totalDistance));
     return {
       ...slotProfile,
