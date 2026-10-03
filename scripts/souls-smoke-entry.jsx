@@ -212,6 +212,8 @@ try {
   }
   const forecourt = scene.getObjectByName('flush-forecourt');
   const paving = scene.getObjectByName('forecourt-paving');
+  const campWalls = scene.getObjectByName('camp-wall-ring');
+  const campGate = campWalls?.getObjectByName('camp-gate-open-arch');
   const luminance = (color) => color.r * 0.2126 + color.g * 0.7152 + color.b * 0.0722;
   const roadRibbon = road?.getObjectByName('flush-stone-road');
   if (!road || !roadRibbon || road.children.length !== 1
@@ -221,6 +223,11 @@ try {
     fail('CHEMIN EN PLAQUES', road?.children.length);
   }
   if (!forecourt || !paving) fail('PARVIS ABSENT');
+  if (!campGate || campWalls.getObjectByName('camp-gate-lintel')
+    || campWalls.getObjectByName('camp-gate-portcullis')
+    || luminance(campGate.material.color) < 0.45) {
+    fail('PORTAIL DE COUR EN PLAQUE', campGate?.name);
+  }
   paving.geometry.computeBoundingBox();
   const pavingTop = paving.position.y + paving.geometry.boundingBox.max.y;
   if (pavingTop > 0.002 || luminance(paving.material.color) < 0.45) {
@@ -228,7 +235,7 @@ try {
   }
   console.log(`Décor allégé OK — ${mist.children.length} brumes, ${grass.count} herbes, ${flowers.count} fleurs, ${forestFloor.children.length} sous-bois ; chemin affleurant.`);
 } catch (e) {
-  if (/BRUME DE CARTE|VÉGÉTATION DE CARTE|FLEURS SOUS LE SOL|FLEUR FLOTTANTE|SOUS-BOIS TROP DENSE|BRAISES DE CARTE|CHEMIN EN PLAQUES|PARVIS ABSENT|PARVIS SURÉLEVÉ OU NOIR/.test(e?.message || '')) throw e;
+  if (/BRUME DE CARTE|VÉGÉTATION DE CARTE|FLEURS SOUS LE SOL|FLEUR FLOTTANTE|SOUS-BOIS TROP DENSE|BRAISES DE CARTE|CHEMIN EN PLAQUES|PARVIS ABSENT|PORTAIL DE COUR EN PLAQUE|PARVIS SURÉLEVÉ OU NOIR/.test(e?.message || '')) throw e;
   console.error('DÉCOR ALLÉGÉ FAILED:', e);
   process.exit(3);
 }

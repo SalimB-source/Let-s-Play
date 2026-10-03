@@ -474,6 +474,7 @@ export function makeFloor(size = 44) {
  */
 export function makeWalls(half = 17, height = 3.4, thickness = 1) {
   const group = new THREE.Group();
+  group.name = 'camp-wall-ring';
   const blockers = [];
   const colliders = [];
   const { map, normalMap } = masonryMaps(6);
@@ -577,26 +578,24 @@ export function makeWalls(half = 17, height = 3.4, thickness = 1) {
   addWall(-half, 0, t, half * 2 - t, 'z', +1);   // ouest
   addWall(half, 0, t, half * 2 - t, 'z', -1);    // est
 
-  // ── Porte nord : arc de pierre + herses ferrées (visual only)
-  const archBig = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.26, 10, 26, Math.PI), stoneMat);
+  // ── Porte nord : arcade OUVERTE. La herse et le linteau cubique ont été
+  // retirés : ils ne faisaient pas partie des colliders du passage et se
+  // lisaient comme une plaque noire traversable au portail de la cour.
+  const gateMat = animeMaterial('stone', {
+    color: 0xb9c5e4,
+    emissive: 0x10182a,
+    emissiveIntensity: 0.24,
+    tile: 1.8,
+  });
+  const archBig = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.22, 10, 26, Math.PI), gateMat);
+  archBig.name = 'camp-gate-open-arch';
   archBig.position.set(0, 2.1, -half + 0.55);
   track(archBig);
   for (const side of [-1, 1]) {
-    const jamb = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.3, 2.1, 12), stoneMat);
-    jamb.position.set(side * 2.05, 1.05, -half + 0.55);
+    const jamb = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.25, 2.1, 12), gateMat);
+    jamb.name = side < 0 ? 'camp-gate-left-jamb' : 'camp-gate-right-jamb';
+    jamb.position.set(side * 2.12, 1.05, -half + 0.55);
     track(jamb);
-  }
-  // Linteau : masse de pierre au-dessus de l'ouverture (la voie est libre).
-  const lintel = new THREE.Mesh(cube, trimMat);
-  lintel.scale.set(gh * 2 + 0.7, 0.7, t + 0.3);
-  lintel.position.set(0, height - 0.35, -half);
-  track(lintel);
-  // Herse relevée : barres pendantes au ras du linteau.
-  for (let i = 0; i < 7; i++) {
-    const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.5, 6), mat(0x0e0f13, { metalness: 0.8, roughness: 0.4 }));
-    tooth.rotation.x = Math.PI;
-    tooth.position.set(-1.44 + i * 0.48, height - 0.95, -half + 0.06);
-    group.add(tooth);
   }
 
   // ── Tours d'angle : cylindres ronds + toits en cône + machicolations
