@@ -173,31 +173,59 @@ try {
 }
 console.log('240 frames OK — ready =', readyFired, '| hud samples =', hudSamples.length);
 
-// Prise du glaive : la vraie paume gauche atteint le repère de contreprise.
-// La vérification protège la pose deux mains et son ouverture en silhouette.
+// Garde du glaive : les deux vraies paumes rejoignent deux points de la
+// même hampe. La garde doit être centrale, levée et devant le thorax : ce
+// contrôle prévient le retour d'une arme latérale ou d'une fausse main.
 try {
   const p = world.debug.warrior.userData.parts;
-  if (!p.offhandGrip || !p.offhandClasp || !p.offhandClasp.visible) fail('PRISE À DEUX MAINS ABSENTE — poignée ou main gauche manquante');
-  world.debug.warrior.updateMatrixWorld(true);
-  const palm = new THREE.Vector3(0, -0.3, 0);
-  const grip = new THREE.Vector3();
-  p.elbowL.localToWorld(palm);
-  p.offhandGrip.getWorldPosition(grip);
-  const gripGap = palm.distanceTo(grip);
-  if (gripGap > 0.025) fail('PRISE À DEUX MAINS DÉCALÉE', `paume → contreprise = ${gripGap.toFixed(3)} m`);
-  const elbow = new THREE.Vector3();
-  p.elbowL.getWorldPosition(elbow);
-  const elbowInTorso = p.torso.worldToLocal(elbow.clone());
-  // Hors du thorax et des ailes : depuis la caméra arrière, le bras gauche
-  // doit réellement déborder sur la silhouette, pas seulement être relié à
-  // l'arme dans les calculs 3D.
-  if (elbowInTorso.x > -0.3 || elbowInTorso.z < 0.13) {
-    fail('PRISE À DEUX MAINS MASQUÉE', `coude local = ${elbowInTorso.toArray().map((v) => v.toFixed(3)).join(', ')}`);
+  if (!p.weaponMount || !p.rightGrip || !p.offhandGrip) {
+    fail('GARDE À DEUX MAINS ABSENTE — pivot central ou poignées manquants');
   }
-  console.log('Prise à deux mains OK — paume gauche à', `${gripGap.toFixed(3)} m`, 'de la contreprise, coude lisible.');
+  if (p.weapon.parent !== p.weaponMount) {
+    fail('GLAIVE HORS DU PIVOT CENTRAL — l’arme ne doit pas être attachée à un coude');
+  }
+  world.debug.warrior.updateMatrixWorld(true);
+  const palmLocal = new THREE.Vector3(0, -0.3, 0);
+  const rightPalm = p.elbowR.localToWorld(palmLocal.clone());
+  const leftPalm = p.elbowL.localToWorld(palmLocal.clone());
+  const rightGrip = new THREE.Vector3();
+  const leftGrip = new THREE.Vector3();
+  p.rightGrip.getWorldPosition(rightGrip);
+  p.offhandGrip.getWorldPosition(leftGrip);
+  const rightGap = rightPalm.distanceTo(rightGrip);
+  const leftGap = leftPalm.distanceTo(leftGrip);
+  if (rightGap > 0.026 || leftGap > 0.026) {
+    fail('PRISE À DEUX MAINS DÉCALÉE', `droite = ${rightGap.toFixed(3)} m, gauche = ${leftGap.toFixed(3)} m`);
+  }
+
+  const mountWorld = new THREE.Vector3();
+  p.weaponMount.getWorldPosition(mountWorld);
+  const mountInTorso = p.torso.worldToLocal(mountWorld.clone());
+  if (Math.abs(mountInTorso.x) > 0.09 || mountInTorso.z > -0.17 || mountInTorso.y < 0.22) {
+    fail('GLAIVE NON CENTRAL OU NON FRONTAL', `pivot thorax = ${mountInTorso.toArray().map((v) => v.toFixed(3)).join(', ')}`);
+  }
+
+  const elbowL = p.torso.worldToLocal(p.elbowL.getWorldPosition(new THREE.Vector3()));
+  const elbowR = p.torso.worldToLocal(p.elbowR.getWorldPosition(new THREE.Vector3()));
+  // −Z est la face du personnage. Les coudes doivent sortir à l'avant et sur
+  // les côtés, afin qu'aucun bras ne reparte derrière le dos ou les ailes.
+  if (elbowL.z >= -0.025 || elbowR.z >= -0.025 || elbowL.x > -0.12 || elbowR.x < 0.12) {
+    fail('COUDES HORS DE LA GARDE FRONTALE', `gauche = ${elbowL.toArray().map((v) => v.toFixed(3)).join(', ')}, droite = ${elbowR.toArray().map((v) => v.toFixed(3)).join(', ')}`);
+  }
+  if (leftPalm.x >= 0 || rightPalm.x <= 0) {
+    fail('BRAS CROISÉS DEVANT LE GLAIVE', `paume gauche x = ${leftPalm.x.toFixed(3)}, droite x = ${rightPalm.x.toFixed(3)}`);
+  }
+
+  const weaponBox = new THREE.Box3().setFromObject(p.weapon);
+  const highestPalm = Math.max(leftPalm.y, rightPalm.y);
+  if (weaponBox.max.y < highestPalm + 0.34) {
+    fail('LAME NON LEVÉE', `sommet lame = ${weaponBox.max.y.toFixed(3)}, paume haute = ${highestPalm.toFixed(3)}`);
+  }
+  console.log('Garde à deux mains OK — paumes', `${rightGap.toFixed(3)} / ${leftGap.toFixed(3)} m`,
+    '| coudes frontaux', `${elbowL.z.toFixed(3)} / ${elbowR.z.toFixed(3)}`, '| lame levée.');
 } catch (e) {
-  if (e?.message?.startsWith?.('PRISE À DEUX MAINS')) throw e;
-  console.error('PRISE À DEUX MAINS FAILED:', e);
+  if (/GARDE À DEUX MAINS|GLAIVE|PRISE À DEUX MAINS|COUDES|BRAS CROISÉS|LAME NON LEVÉE/.test(e?.message || '')) throw e;
+  console.error('GARDE À DEUX MAINS FAILED:', e);
   process.exit(3);
 }
 
@@ -207,13 +235,31 @@ const fire = (type, code) => {
   for (const fn of listeners.window[type] || []) fn(ev);
   for (const fn of listeners.document[type] || []) fn(ev);
 };
+const assertAnimatedTwoHandGrip = (label) => {
+  const p = world.debug.warrior.userData.parts;
+  world.debug.warrior.updateMatrixWorld(true);
+  const palmCenter = new THREE.Vector3(0, -0.3, 0);
+  const rightPalm = p.elbowR.localToWorld(palmCenter.clone());
+  const leftPalm = p.elbowL.localToWorld(palmCenter.clone());
+  const rightGrip = p.rightGrip.getWorldPosition(new THREE.Vector3());
+  const leftGrip = p.offhandGrip.getWorldPosition(new THREE.Vector3());
+  const rightGap = rightPalm.distanceTo(rightGrip);
+  const leftGap = leftPalm.distanceTo(leftGrip);
+  if (p.weapon.parent !== p.weaponMount || rightGap > 0.028 || leftGap > 0.028) {
+    fail('PRISE À DEUX MAINS PERDUE EN ANIMATION', `${label} : droite = ${rightGap.toFixed(3)} m, gauche = ${leftGap.toFixed(3)} m`);
+  }
+};
 try {
   world.start();
   const home = { x: world.debug.state.x, z: world.debug.state.z };
   fire('keydown', 'KeyJ');              // attaque légère
-  for (let i = 0; i < 60; i++) stepFrame();
+  for (let i = 0; i < 12; i++) stepFrame();
+  assertAnimatedTwoHandGrip('attaque légère');
+  for (let i = 12; i < 60; i++) stepFrame();
   fire('keydown', 'KeyK');              // attaque lourde
-  for (let i = 0; i < 35; i++) stepFrame();
+  for (let i = 0; i < 12; i++) stepFrame();
+  assertAnimatedTwoHandGrip('attaque lourde');
+  for (let i = 12; i < 35; i++) stepFrame();
   fire('keydown', 'Space');             // esquive en fin de récupération (annulation)
   for (let i = 0; i < 40; i++) stepFrame();
   fire('keydown', 'Tab');               // lock-on (hors portée ici : cible null)

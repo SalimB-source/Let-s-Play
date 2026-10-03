@@ -452,11 +452,20 @@ function makeWorld(mount, callbacks) {
   const healMotes = makeHealMotes();
   scene.add(healMotes.points);
 
-  // Repose d'épée : dos (initiale) → main de l'avant-bras droit.
+  // Garde à deux mains : le glaive du héros reste levé au centre du thorax.
+  // Les ennemis gardent leur reparentage main droite ci-dessus, mais le joueur
+  // utilise son pivot central afin que les deux bras puissent serrer la hampe.
   const weaponState = { drawn: false };
   const setWeaponDrawn = (drawn) => {
     if (weaponState.drawn === drawn) return;
     weaponState.drawn = drawn;
+    if (parts.weaponMount) {
+      parts.weapon.visible = drawn;
+      parts.weapon.position.set(0, 0, 0);
+      parts.weapon.rotation.set(0.06, 0, Math.PI + 0.04);
+      parts.weaponMount.add(parts.weapon);
+      return;
+    }
     if (drawn) {
       parts.weapon.position.set(0.01, -0.24, -0.03);
       parts.weapon.rotation.set(0.18, 0, 0.06);
@@ -468,12 +477,11 @@ function makeWorld(mount, callbacks) {
     }
   };
 
-  // ── Prise à deux mains ─────────────────────────────────────────────
-  // La hampe reste attachée à l'avant-bras droit : les courbes d'attaque
-  // existantes gardent ainsi leur poids et leur portée. Plutôt que d'ajouter
-  // une seconde main décorative, ce petit solveur à deux segments conduit la
-  // vraie paume gauche jusqu'au repère posé sur le glaive.
-  const lockOffhandToGlaive = (() => {
+  // ── Prise à deux mains, devant le thorax ───────────────────────────
+  // Les deux paumes sont résolues vers les deux repères de la même hampe.
+  // Le coude part vers l'extérieur ET vers l'avant (−Z local), jamais derrière
+  // les ailes : le glaive levé est une garde frontale, pas une arme de dos.
+  const lockTwoHandedGlaive = (() => {
     const shoulder = new THREE.Vector3();
     const grip = new THREE.Vector3();
     const axis = new THREE.Vector3();
@@ -482,7 +490,7 @@ function makeWorld(mount, callbacks) {
     const elbow = new THREE.Vector3();
     const upperDirection = new THREE.Vector3();
     const lowerDirection = new THREE.Vector3();
-    const supportSide = new THREE.Vector3();
+    const frontOut = new THREE.Vector3();
     const scale = new THREE.Vector3();
     const parentQuaternion = new THREE.Quaternion();
     const worldQuaternion = new THREE.Quaternion();
@@ -497,23 +505,15 @@ function makeWorld(mount, callbacks) {
       joint.quaternion.copy(localQuaternion);
     };
 
-    return (rig) => {
-      const { armL, elbowL, elbowR, torso, weapon, offhandGrip } = rig;
-      // L'arme ne doit être visée que lorsqu'elle a quitté le dos.
-      if (!offhandGrip || weapon.parent !== elbowR) return false;
-
-      torso.updateWorldMatrix(true, true);
-      armL.getWorldPosition(shoulder);
-      offhandGrip.getWorldPosition(grip);
+    const solveArm = (arm, elbowJoint, gripAnchor, side) => {
+      arm.getWorldPosition(shoulder);
+      gripAnchor.getWorldPosition(grip);
       axis.copy(grip).sub(shoulder);
       const distance = axis.length();
       if (distance < 1e-4) return false;
       axis.multiplyScalar(1 / distance);
 
-      // Les deux pivots sont séparés de 31 cm puis 30 cm dans le rig. La
-      // longueur monde suit automatiquement la taille de chaque guerrier,
-      // sans étirer ses bras ni casser les poses du contrôleur.
-      armL.getWorldScale(scale);
+      arm.getWorldScale(scale);
       const upperLength = 0.31 * scale.y;
       const lowerLength = 0.3 * scale.y;
       const reach = THREE.MathUtils.clamp(
@@ -524,28 +524,39 @@ function makeWorld(mount, callbacks) {
       const along = (upperLength * upperLength - lowerLength * lowerLength + reach * reach) / (2 * reach);
       const height = Math.sqrt(Math.max(0, upperLength * upperLength - along * along));
 
-      // La caméra suit le Gardien depuis le dos. Le coude d'appui s'ouvre donc
-      // sur la gauche et légèrement vers l'arrière : les deux bras restent
-      // lisibles en silhouette, au lieu de cacher la seconde main derrière le
-      // thorax. On retire la composante parallèle à la cible pour former le
-      // plan stable du coude.
-      torso.getWorldQuaternion(torsoQuaternion);
-      supportSide.set(-0.88, 0, 0.48).normalize().applyQuaternion(torsoQuaternion);
-      bend.copy(supportSide).addScaledVector(axis, -supportSide.dot(axis));
+      // `side` garde les coudes séparés ; −Z les place clairement devant le
+      // buste, entre les épaules et la garde, au lieu de les cacher derrière.
+      frontOut.set(side * 0.9, 0, -0.78).normalize().applyQuaternion(torsoQuaternion);
+      bend.copy(frontOut).addScaledVector(axis, -frontOut.dot(axis));
       if (bend.lengthSq() < 1e-5) {
-        supportSide.set(0, 0, 1).applyQuaternion(torsoQuaternion);
-        bend.copy(supportSide).addScaledVector(axis, -supportSide.dot(axis));
+        frontOut.set(side, 0, 0).applyQuaternion(torsoQuaternion);
+        bend.copy(frontOut).addScaledVector(axis, -frontOut.dot(axis));
       }
       bend.normalize();
       elbowTarget.copy(shoulder).addScaledVector(axis, along).addScaledVector(bend, height);
 
       upperDirection.copy(elbowTarget).sub(shoulder).normalize();
-      pointJointAt(armL, upperDirection);
-      armL.updateWorldMatrix(true, true);
-      elbowL.getWorldPosition(elbow);
+      pointJointAt(arm, upperDirection);
+      arm.updateWorldMatrix(true, true);
+      elbowJoint.getWorldPosition(elbow);
       lowerDirection.copy(grip).sub(elbow).normalize();
-      pointJointAt(elbowL, lowerDirection);
+      pointJointAt(elbowJoint, lowerDirection);
       return true;
+    };
+
+    return (rig) => {
+      const {
+        armL, armR, elbowL, elbowR, torso, weapon, weaponMount, rightGrip, offhandGrip,
+      } = rig;
+      if (!weaponMount || !rightGrip || !offhandGrip || weapon.parent !== weaponMount) return false;
+      torso.updateWorldMatrix(true, true);
+      torso.getWorldQuaternion(torsoQuaternion);
+      // Droite basse puis gauche haute : les deux mains encadrent la hampe.
+      const rightHeld = solveArm(armR, elbowR, rightGrip, 1);
+      torso.updateWorldMatrix(true, true);
+      torso.getWorldQuaternion(torsoQuaternion);
+      const leftHeld = solveArm(armL, elbowL, offhandGrip, -1);
+      return rightHeld && leftHeld;
     };
   })();
 
@@ -1303,12 +1314,19 @@ function makeWorld(mount, callbacks) {
         : Math.sin(time * 0.0021) * 0.035);
     const tCapeZ = moving ? Math.sin(gaitPhase + 1.3) * 0.06 * walkIn
       : Math.sin(time * 0.0017) * 0.025;
-    // Lame au dos : se redresse légèrement en course + tressaille.
-    const tWeaponZ = -0.35 + (moving
-      ? Math.sin(gaitPhase + 1.6) * 0.035 * walkIn
-      : Math.sin(time * 0.0013) * 0.01);
-    const tWeaponX = 0.1 + runFactor * 0.08
-      + (moving ? Math.abs(sL) * 0.03 * runFactor : 0);
+    // Glaive central et levé : la lame demeure devant le torse, avec une
+    // respiration discrète qui ne casse pas l'alignement des deux poignées.
+    const raisedWeaponZ = Math.PI + 0.04;
+    let tWeaponZ = parts.weaponMount
+      ? raisedWeaponZ + (moving
+        ? Math.sin(gaitPhase + 1.6) * 0.024 * walkIn
+        : Math.sin(time * 0.0013) * 0.008)
+      : -0.35 + (moving
+        ? Math.sin(gaitPhase + 1.6) * 0.035 * walkIn
+        : Math.sin(time * 0.0013) * 0.01);
+    let tWeaponX = parts.weaponMount
+      ? 0.06 + runFactor * 0.025 + (moving ? Math.abs(sL) * 0.014 * runFactor : 0)
+      : 0.1 + runFactor * 0.08 + (moving ? Math.abs(sL) * 0.03 * runFactor : 0);
 
     // ── Poses de combat M1 (réécrivent les cibles du cycle de foulée) ─
     const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
@@ -1371,6 +1389,25 @@ function makeWorld(mount, callbacks) {
       const uR = smooth(rawR);
       const uRArm = smooth(clamp01((t - spec.windup - spec.active - 0.03)
         / Math.max(0.05, spec.recover * 0.85)));
+      // La hampe reste sur son pivot de poitrine. On ne la rend jamais à
+      // l'ancien angle latéral : le coup est une petite fauchée de la garde
+      // levée, suivie par les deux mains via leurs repères de prise.
+      if (parts.weaponMount) {
+        const windupLean = over ? 0.42 : 0.28;
+        const strikeLean = over ? -0.48 : -0.34;
+        const windupPitch = over ? 0.19 : 0.12;
+        const strikePitch = over ? -0.15 : -0.09;
+        if (t < spec.windup) {
+          tWeaponZ = mix(tWeaponZ, raisedWeaponZ + windupLean, uW);
+          tWeaponX = mix(tWeaponX, 0.06 + windupPitch, uW);
+        } else if (t < spec.windup + spec.active) {
+          tWeaponZ = mix(raisedWeaponZ + windupLean, raisedWeaponZ + strikeLean, uArm);
+          tWeaponX = mix(0.06 + windupPitch, 0.06 + strikePitch, uArm);
+        } else {
+          tWeaponZ = mix(raisedWeaponZ + strikeLean, tWeaponZ, uR);
+          tWeaponX = mix(0.06 + strikePitch, tWeaponX, uR);
+        }
+      }
       if (t < spec.windup) {
         if (over) {
           // Lame au-dessus de la tête, poids en arrière (élan sagittal).
@@ -1623,20 +1660,19 @@ function makeWorld(mount, callbacks) {
       aim(parts.wings[0].rotation, 'z', -0.08 - flutter, 7);
       aim(parts.wings[1].rotation, 'z', 0.08 + flutter, 7);
     }
-    // Boire et rouler demandent de lâcher le haut de la hampe ; dans tous les
-    // autres états, la paume gauche reste réellement calée sur son enroulement.
+    // Boire et rouler demandent de lâcher les deux poignées ; dans tous les
+    // autres états, les deux vraies paumes serrent la hampe frontale.
     const holdingGlaiveWithBothHands = !dead && combat.action !== 'drink' && combat.action !== 'dodge'
-      && lockOffhandToGlaive(parts);
-    // Le gant de lisibilité est la surface visible de cette même main : il
-    // disparaît dès que le Gardien lâche le glaive pour boire, rouler ou mourir.
-    if (parts.offhandClasp) parts.offhandClasp.visible = holdingGlaiveWithBothHands;
+      && lockTwoHandedGlaive(parts);
     if (!holdingGlaiveWithBothHands) {
-      // Le solveur écrit un quaternion complet. Hors prise, le rig retrouve
-      // ses axes historiques afin que la potion, le roulé et la mort gardent
-      // leurs poses explicites sans torsion résiduelle du coude gauche.
+      // Le solveur écrit des quaternions complets. Hors prise, les deux bras
+      // retrouvent leurs axes historiques pour la potion, le roulé et la mort.
       parts.armL.rotation.y = 0;
+      parts.armR.rotation.y = 0;
       parts.elbowL.rotation.y = 0;
       parts.elbowL.rotation.z = 0;
+      parts.elbowR.rotation.y = 0;
+      parts.elbowR.rotation.z = 0;
     }
 
     // ── Ennemi : bipède + télégraphes (windup lisible) ──────────────
