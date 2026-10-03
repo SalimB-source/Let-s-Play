@@ -45,7 +45,7 @@ import {
 import {
   disposeLinkPower, makeLinkBomb, makeLinkBoomerang, makeLinkTriforce,
   updateLinkBombVisual, updateLinkBoomerangVisual, updateLinkTriforceVisual,
-  LINK_BOMB_AOE_RADIUS, LINK_BOOMERANG_HIT_RADIUS, LINK_BOOMERANG_THROWS,
+  LINK_BOMB_AOE_RADIUS, LINK_BOOMERANG_HIT_RADIUS, LINK_BOOMERANG_SLOW_DURATION, LINK_BOOMERANG_THROWS,
 } from './mirageLinkPowers';
 
 // La largeur de la piste n'est plus une constante de module : elle dépend du
@@ -1672,15 +1672,15 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     callbacks.powerUp?.({ type: POWER_UPS.SHIELD, action: 'consumed' });
   };
 
-  const applyPlayerSlow = (fromNetwork = false) => {
+  const applyPlayerSlow = (fromNetwork = false, effect = 'lasso') => {
     if (shieldActive) {
       consumeShield();
       return false;
     }
-    playerSlowTimer = LASSO_SLOW_DURATION;
+    playerSlowTimer = effect === 'link-boomerang' ? LINK_BOOMERANG_SLOW_DURATION : LASSO_SLOW_DURATION;
     playerSlowFactor = LASSO_SLOW_FACTOR;
     playerSlowKind = 'lasso';
-    playerSlowEffect = 'lasso';
+    playerSlowEffect = effect;
     invulnerable = Math.max(invulnerable, 0.2);
     crashAnimation = 0.32;
     if (!fromNetwork) callbacks.lassoHit?.({ target: 'player' });
@@ -1695,7 +1695,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       targetNpc.shieldBubble.visible = false;
       return false;
     }
-    targetNpc.slowTimer = LASSO_SLOW_DURATION;
+    targetNpc.slowTimer = effect === 'link-boomerang' ? LINK_BOOMERANG_SLOW_DURATION : LASSO_SLOW_DURATION;
     targetNpc.slowFactor = LASSO_SLOW_FACTOR;
     targetNpc.slowEffect = effect;
     targetNpc.invulnerable = Math.max(targetNpc.invulnerable, 0.2);
@@ -2578,7 +2578,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
             const newSlow = slowedUntil !== lastNetworkSlow;
             if (playerSlowTimer <= 0 || newSlow) {
               lastNetworkSlow = slowedUntil;
-              const connected = applyPlayerSlow(true);
+              const connected = applyPlayerSlow(true, slowEffect);
               playerSlowTimer = connected ? (slowedUntil - now) / 1000 : 0;
               if (slowEffect === 'cloud-wave') {
                 callbacks.lassoHit?.({ target: 'player', from: 'online', cloud: true, blocked: !connected });
@@ -2972,6 +2972,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     poseRider(player, playerStun, playerStunSide);
     if (turboActive) {
       parts.rider.rotation.x -= 0.18;
+    }
+    // Link accompagne le galop d’un léger transfert de poids : la posture,
+    // le bouclier et la lame restent vivants même entre deux pouvoirs.
+    if (isLinkRider() && playerStun <= 0) {
+      parts.rider.rotation.y = runWave * 0.035;
+      parts.rider.position.y += Math.abs(runWave) * 0.018;
+      if (parts.hylianShield) parts.hylianShield.rotation.y = runWave * 0.06;
     }
     parts.tail.rotation.z = runWave * (turboActive ? 0.28 : 0.18);
     parts.wings?.forEach((wing, index) => {

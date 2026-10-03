@@ -11,6 +11,7 @@ import {
   LINK_BOOMERANG_OUT_DURATION,
   LINK_BOOMERANG_RANGE,
   LINK_BOOMERANG_RETURN_DURATION,
+  LINK_BOOMERANG_SLOW_DURATION,
   LINK_BOOMERANG_THROWS,
   LINK_TRIFORCE_FLIGHT_DURATION,
   LINK_TRIFORCE_IMPACT_DURATION,
@@ -66,7 +67,7 @@ test('la bombe explose au bout de 1,5 s et balaie 2 cases', () => {
 });
 
 test('le boomerang va tout droit quelques mètres puis revient à la main', () => {
-  assert.equal(LINK_BOOMERANG_RANGE, 4 * LANE_SPACING, 'portée de 4 cases');
+  assert.equal(LINK_BOOMERANG_RANGE, 5 * LANE_SPACING, 'portée de 5 cases');
   assert.equal(LINK_BOOMERANG_THROWS, 2, 'deux lancers par charge');
 
   const visual = makeLinkBoomerang();
@@ -88,6 +89,11 @@ test('le boomerang va tout droit quelques mètres puis revient à la main', () =
   assert.ok(visual.position.distanceTo(hand) < 0.08, 'le boomerang revient dans la main');
   assert.ok(projectile.apex.z < -LINK_BOOMERANG_RANGE * 0.9, 'il est allé tout droit devant');
   disposeLinkPower(visual);
+});
+
+test('le boomerang ralentit plus longtemps que le lasso standard', () => {
+  assert.equal(LINK_BOOMERANG_SLOW_DURATION, 2.4);
+  assert.ok(LINK_BOOMERANG_SLOW_DURATION > 1.5);
 });
 
 test('la barre jaune de Link donne deux lancers de boomerang', () => {

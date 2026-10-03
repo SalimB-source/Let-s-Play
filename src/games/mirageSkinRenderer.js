@@ -115,11 +115,26 @@ function frame(now) {
     const model = p.model;
     model.rotation.y = p.phase + t * SPIN_SPEED;
     // Petit galop sur place : jambes, queue et léger rebond.
-    const { legs, tail, wings = [] } = model.userData.parts;
-    legs.forEach((leg, i) => { leg.rotation.x = Math.sin(t * 7 + i * 2.2) * 0.45; });
-    tail.rotation.x = -0.35 + Math.sin(t * 7) * 0.12;
+    const { legs, tail, wings = [], rider, masterSword, hylianShield } = model.userData.parts;
+    const isLink = model.userData.accessoryKind === 'link-epona';
+    const gallop = isLink ? 7.4 : 7;
+    legs.forEach((leg, i) => { leg.rotation.x = Math.sin(t * gallop + i * 2.2) * (isLink ? 0.5 : 0.45); });
+    tail.rotation.x = -0.35 + Math.sin(t * gallop) * (isLink ? 0.16 : 0.12);
     wings.forEach((wing, index) => { wing.rotation.z = Math.sin(t * 7 + index * Math.PI) * 0.12; });
-    model.position.y = Math.abs(Math.sin(t * 7)) * 0.06;
+    model.position.y = Math.abs(Math.sin(t * gallop)) * (isLink ? 0.075 : 0.06);
+    // Link garde une vraie posture de cavalier : son épée et son bouclier
+    // répondent au galop au lieu de rester figés comme des accessoires.
+    if (isLink) {
+      const beat = Math.sin(t * gallop);
+      rider.rotation.z = beat * 0.035;
+      rider.rotation.x = -0.025 + Math.abs(beat) * 0.025;
+      if (masterSword) {
+        const baseZ = masterSword.userData.baseRotationZ ?? 0.16;
+        masterSword.rotation.z = baseZ + beat * 0.1;
+        masterSword.rotation.x = (masterSword.userData.baseRotationX ?? -0.2) + Math.cos(t * gallop) * 0.05;
+      }
+      if (hylianShield) hylianShield.rotation.y = Math.sin(t * gallop + 0.8) * 0.05;
+    }
 
     s.camera.aspect = p.w / p.h;
     s.camera.updateProjectionMatrix();

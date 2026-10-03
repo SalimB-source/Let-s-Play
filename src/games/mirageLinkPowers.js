@@ -27,10 +27,12 @@ export const LINK_BOMB_AOE_TILES = 2;
 /** Portée de l'explosion en unités monde : 2 × l'écart entre deux voies. */
 export const LINK_BOMB_AOE_RADIUS = LINK_BOMB_AOE_TILES * LANE_SPACING;
 /** Le boomerang part tout droit, puis revient à la main. */
-export const LINK_BOOMERANG_RANGE = 4 * LANE_SPACING;
+export const LINK_BOOMERANG_RANGE = 5 * LANE_SPACING;
 export const LINK_BOOMERANG_OUT_DURATION = 0.36;
 export const LINK_BOOMERANG_RETURN_DURATION = 0.42;
 export const LINK_BOOMERANG_HIT_RADIUS = 1.35;
+/** Link ralentit un peu plus longtemps que le lasso standard. */
+export const LINK_BOOMERANG_SLOW_DURATION = 2.4;
 /** Deux lancers par barre jaune pleine. */
 export const LINK_BOOMERANG_THROWS = 2;
 /** Anciens noms : le grappin a cédé la place au boomerang. */
@@ -264,18 +266,19 @@ export function makeLinkBoomerang() {
 
   const makeWing = (sign) => {
     const wing = new THREE.Group();
-    const blade = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.58, 6, 10), ivory);
+    const blade = new THREE.Mesh(new THREE.CapsuleGeometry(0.095, 0.72, 6, 10), ivory);
     blade.rotation.z = Math.PI / 2;
-    blade.position.x = 0.32;
+    blade.position.x = 0.39;
     wing.add(blade);
-    const edge = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.5, 4, 8), rim);
+    const edge = new THREE.Mesh(new THREE.CapsuleGeometry(0.052, 0.64, 4, 8), rim);
     edge.rotation.z = Math.PI / 2;
-    edge.position.set(0.34, 0.05, 0);
+    edge.position.set(0.42, 0.06, 0);
     wing.add(edge);
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), ivory);
-    tip.position.x = 0.64;
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(0.115, 10, 8), ivory);
+    tip.position.x = 0.78;
     wing.add(tip);
     wing.rotation.z = sign * 0.62;
+    wing.scale.setScalar(1.08);
     return wing;
   };
   body.add(makeWing(-1), makeWing(1));
@@ -283,12 +286,12 @@ export function makeLinkBoomerang() {
   hub.rotation.x = Math.PI / 2;
   body.add(hub);
   const glow = new THREE.Mesh(
-    new THREE.SphereGeometry(0.28, 12, 10),
+    new THREE.SphereGeometry(0.34, 12, 10),
     basic(0xe8f2ff, 0.45, 'glow', { blending: THREE.AdditiveBlending }),
   );
   body.add(glow);
   const trail = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.18, 1.15),
+    new THREE.PlaneGeometry(0.24, 1.45),
     basic(0xf5fbff, 0.35, 'trail', { blending: THREE.AdditiveBlending, side: THREE.DoubleSide }),
   );
   trail.rotation.x = Math.PI / 2;
@@ -332,7 +335,8 @@ export function updateLinkBoomerangVisual(visual, projectile, dt, handPoint, hoo
     const progress = Math.min(1, projectile.age / LINK_BOOMERANG_OUT_DURATION);
     const eased = 1 - (1 - progress) ** 2;
     visual.position.copy(projectile.start).addScaledVector(forward, LINK_BOOMERANG_RANGE * eased);
-    visual.position.y += Math.sin(progress * Math.PI) * 0.2;
+    visual.position.y += Math.sin(progress * Math.PI) * 0.28;
+    visual.rotation.x = Math.sin(progress * Math.PI) * 0.12;
     parts.trail.scale.set(1, 0.4 + progress * 1.4, 1);
     parts.trail.position.z = 0.2 + progress * 0.55;
     fadeLinkMaterials(parts.materials, 'trail', 0.35 + progress * 0.45);
@@ -349,6 +353,8 @@ export function updateLinkBoomerangVisual(visual, projectile, dt, handPoint, hoo
   const eased = progress ** 1.15;
   const from = projectile.apex || visual.position;
   visual.position.copy(from).lerp(handPoint, eased);
+  visual.position.y += Math.sin(progress * Math.PI) * 0.22;
+  visual.rotation.x = Math.sin(progress * Math.PI) * -0.16;
   parts.trail.scale.set(1, Math.max(0.2, 1.6 - progress * 1.3), 1);
   fadeLinkMaterials(parts.materials, 'glow', progress > 0.75 ? (1 - progress) / 0.25 : 1);
   fadeLinkMaterials(parts.materials, 'trail', progress > 0.7 ? (1 - progress) / 0.3 : 0.55);

@@ -3,6 +3,7 @@ import {
 } from './mirageRules.js';
 import { supabase } from '../lib/supabase.js';
 import { CLOUD_CHOCOBO_INDEX, LINK_EPONA_INDEX, LOBBY_CHARACTER_INDICES } from './mirageCharacters.js';
+import { LINK_BOOMERANG_SLOW_DURATION } from './mirageLinkPowers.js';
 
 const STORAGE_KEY = 'letsplay_mirage_online_rooms_v2';
 const GUEST_KEY = 'letsplay_mirage_guest_profile_v1';
@@ -859,7 +860,10 @@ export function localRoomAction(action, code = null, extras = {}, player = null)
         created_at: nowIso,
       });
     } else {
-      const slowedUntil = new Date(nowMs + Math.round(LASSO_SLOW_DURATION * 1000)).toISOString();
+      const slowDuration = existingPlayer.character === LINK_EPONA_INDEX
+        ? LINK_BOOMERANG_SLOW_DURATION
+        : LASSO_SLOW_DURATION;
+      const slowedUntil = new Date(nowMs + Math.round(slowDuration * 1000)).toISOString();
       target.slowed_until = slowedUntil;
       target.slow_effect = slowEffectFor(existingPlayer.character);
       room.messages.push({
