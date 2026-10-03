@@ -15,10 +15,11 @@
  *      directement ;
  *   4. un lien de défi ouvre directement l'écran des maps, verrouillé sur le
  *      terrain imposé — sa carte reste jouable et lance le duel ;
- *   5. le panneau latéral est regroupé dans PARAMÈTRES avec quatre onglets :
- *      La communauté, Ton cavalier, Boutique, Informations (les règles de la
- *      COUPE y figurent ; Gyro coûte 200 OR et Cloud est offert temporairement
- *      à tous, avec son prix habituel de 280 OR conservé) ;
+ *   5. un bouton PARAMÈTRES sur l’écran de choix du mode ouvre le menu du jeu
+ *      (plus de panneau latéral) avec quatre onglets : La communauté, Ton
+ *      cavalier, Boutique, Informations (les règles de la COUPE y figurent ;
+ *      Gyro coûte 200 OR et Cloud est offert temporairement à tous, avec son
+ *      prix habituel de 280 OR conservé) ;
  *   6. le lobby EN LIGNE (?mode=online) garde sa barre de boutons de mode
  *      (RUÉE, DUEL, COUPE, EN LIGNE) : le bouton COUPE ramène à la coupe ;
  *   7. la piste du téléphone (trois voies, `setLaneCount(3)`) fait suivre
@@ -123,6 +124,21 @@ async function openMode(assert, node, label) {
   assert.notEqual(button.getAttribute('role'), 'tab', `${label} n'est pas exposé comme un onglet`);
   await act(async () => { button.click(); });
   await act(async () => { await sleep(0); });
+}
+
+async function openSettingsFromIntro(node) {
+  const launch = node.querySelector('.mirage-settings-launch') || node.querySelector('.mirage-settings-open');
+  await act(async () => { launch.click(); });
+}
+
+async function closeSettingsMenu(node) {
+  const close = node.querySelector('.mirage-settings-close');
+  if (close) await act(async () => { close.click(); });
+}
+
+async function selectSettingsTab(node, label) {
+  const tab = [...node.querySelectorAll('.mirage-settings-tabs button')].find((button) => button.textContent === label);
+  await act(async () => { tab.click(); });
 }
 
 function assertTenMaps(assert, node) {
@@ -262,9 +278,24 @@ export async function checkMirageFlow(assert) {
     assert.ok(page.node.querySelector('.mirage-overlay-hint').textContent.includes('ÉCRAN 01'),
       'l’écran annonce bien la première étape');
 
-    /* ------------------ 2. Paramètres : 4 onglets rangés ---------------- */
+    /* ------------------ 2. Paramètres : bouton du choix de mode --------- */
+    assert.equal(page.node.querySelectorAll('.mirage-side-panel').length, 0,
+      'le panneau latéral a disparu : communauté, cavalier, boutique et infos sont dans Paramètres');
+    assert.equal(page.node.querySelectorAll('.mirage-settings').length, 0,
+      'le menu Paramètres n’est pas ouvert tant qu’on n’a pas cliqué le bouton');
+    const settingsLaunch = intro.querySelector('.mirage-settings-launch');
+    assert.ok(settingsLaunch, 'un bouton Paramètres est proposé dans le choix du mode');
+    assert.equal(settingsLaunch.tagName, 'BUTTON', 'Paramètres est un vrai bouton');
+    assert.match(settingsLaunch.textContent, /PARAMÈTRES/, 'le bouton s’appelle Paramètres');
+    assert.match(settingsLaunch.textContent, /Communauté/, 'le bouton annonce l’onglet Communauté');
+    assert.match(settingsLaunch.textContent, /Cavalier/, 'le bouton annonce l’onglet Cavalier');
+    assert.match(settingsLaunch.textContent, /Boutique/, 'le bouton annonce l’onglet Boutique');
+    assert.match(settingsLaunch.textContent, /Informations/, 'le bouton annonce l’onglet Informations');
+    await act(async () => { settingsLaunch.click(); });
+    assert.ok(page.node.querySelector('.mirage-intro-overlay').classList.contains('is-settings-step'),
+      'le bouton Paramètres ouvre le menu du jeu');
     const settings = page.node.querySelector('.mirage-settings');
-    assert.ok(settings, 'un panneau PARAMÈTRES regroupe les informations latérales');
+    assert.ok(settings, 'un panneau PARAMÈTRES regroupe communauté, cavalier, boutique et infos');
     assert.ok(settings.textContent.includes('PARAMÈTRES'), 'le panneau est titré Paramètres');
     const settingsTabs = [...settings.querySelectorAll('.mirage-settings-tabs button')];
     assert.deepEqual(settingsTabs.map((tab) => tab.textContent), ['La communauté', 'Ton cavalier', 'Boutique', 'Informations'],
@@ -296,7 +327,9 @@ export async function checkMirageFlow(assert) {
     assert.equal(settingsTabs[3].getAttribute('aria-selected'), 'true', 'l’onglet Informations s’active au clic');
 
     /* ---------------- 3. Clic RUÉE : écran suivant avec maps ------------ */
-    await act(async () => { settingsTabs[0].click(); });
+    await act(async () => { page.node.querySelector('.mirage-settings-close').click(); });
+    assert.ok(page.node.querySelector('.mirage-intro-overlay').classList.contains('is-mode-step'),
+      'fermer Paramètres ramène au choix du mode');
     await openMode(assert, page.node, 'RUÉE');
     let stageIntro = page.node.querySelector('.mirage-intro-overlay');
     assert.ok(stageIntro.classList.contains('is-stage-step'), 'cliquer RUÉE ouvre l’écran 02 des maps');
@@ -356,9 +389,12 @@ export async function checkMirageFlow(assert) {
     const keyPowerIcons = [...page.node.querySelectorAll('.mirage-keys-hint [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
     assert.deepEqual(keyPowerIcons, ['shield', 'lasso', 'boost', 'pistol'],
       'les 4 icônes vectorielles des objets spéciaux sont affichées dans les raccourcis duel');
+    await openSettingsFromIntro(page.node);
+    await selectSettingsTab(page.node, 'Informations');
     const rulePowerIcons = [...page.node.querySelectorAll('.mirage-rule-powers-grid [data-power-icon]')].map((el) => el.getAttribute('data-power-icon'));
     assert.deepEqual(rulePowerIcons, ['shield', 'lasso', 'boost', 'pistol'],
       'les 4 icônes vectorielles des objets spéciaux restent dans l’onglet Informations');
+    await closeSettingsMenu(page.node);
 
     /* ------- 4 bis. Clic COUPE : la Coupe du Désert remplace les maps ---- */
     await act(async () => { page.node.querySelector('.mirage-secondary-button').click(); });
@@ -373,9 +409,12 @@ export async function checkMirageFlow(assert) {
       'les trois rivaux de la piste à quatre voies sont nommés');
     assert.ok(cupIntro.textContent.includes('Chaque victoire rapporte +10 OR') && cupIntro.textContent.includes('jusqu’à +30 OR'),
       'la présentation distingue l’or gagné par victoire du maximum de la coupe');
+    await openSettingsFromIntro(page.node);
+    await selectSettingsTab(page.node, 'Informations');
     const cupRules = page.node.querySelector('#mirage-panel-info .mirage-cup-rules');
     assert.ok(cupRules, 'les règles de la coupe sont rangées dans Informations');
     assert.ok(cupRules.textContent.includes('MODE COUPE · 4 CAVALIERS'), 'le panneau des règles annonce quatre cavaliers en coupe');
+    await closeSettingsMenu(page.node);
 
     /* ---------------- 5. Clic EN LIGNE : maps avant lobby -------------- */
     await act(async () => { page.node.querySelector('.mirage-secondary-button').click(); });
@@ -478,12 +517,15 @@ export async function checkMirageFlow(assert) {
       'deux rivaux entrent en piste à trois voies, Améthyste reste au vestiaire');
     assert.ok(app.node.querySelector('.mirage-overlay-hint').textContent.includes('3 CAVALIERS'),
       'le rappel de départ compte trois cavaliers (toi + deux rivaux)');
+    await openSettingsFromIntro(app.node);
+    await selectSettingsTab(app.node, 'Informations');
     const duelRules = [...app.node.querySelectorAll('.mirage-howto')]
       .find((section) => section.textContent.includes('MODE DUEL'));
     assert.ok(duelRules.textContent.includes('MODE DUEL · 3 CAVALIERS'),
       'le panneau des règles annonce trois cavaliers');
     assert.ok(duelRules.textContent.includes('2 cavaliers rivaux'),
       'le panneau des règles annonce deux rivaux');
+    await closeSettingsMenu(app.node);
 
     // La coupe suit le duel à trois voies ; son gain d’or dépend des victoires, pas du nombre de rivaux.
     await act(async () => { app.node.querySelector('.mirage-secondary-button').click(); });
@@ -497,6 +539,8 @@ export async function checkMirageFlow(assert) {
     assert.ok(!threeCupIntro.textContent.includes('Améthyste'), 'Améthyste reste au vestiaire');
     assert.equal(threeCupCard.querySelector('.mirage-cup-reward-copy > strong')?.textContent.replace(/\s+/g, ' ').trim(), '+30 OR',
       'le gain maximal reste 30 OR sur une piste à trois cavaliers');
+    await openSettingsFromIntro(app.node);
+    await selectSettingsTab(app.node, 'Informations');
     const threeCupRules = app.node.querySelector('.mirage-cup-rules');
     assert.ok(threeCupRules.textContent.includes('MODE COUPE · 3 CAVALIERS'), 'le panneau des règles annonce trois cavaliers en coupe');
     assert.equal(threeCupRules.querySelectorAll('.mirage-cup-points-pill').length, 3, 'trois places au barème du panneau des règles');
@@ -548,6 +592,7 @@ export async function checkMirageFlow(assert) {
   }));
   const buyer = await mountPage('/jeu');
   try {
+    await act(async () => { buyer.node.querySelector('.mirage-settings-launch').click(); });
     const shopTab = [...buyer.node.querySelectorAll('.mirage-settings-tabs button')]
       .find((button) => button.textContent === 'Boutique');
     await act(async () => { shopTab.click(); });

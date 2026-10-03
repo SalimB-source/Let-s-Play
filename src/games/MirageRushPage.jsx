@@ -170,6 +170,10 @@ export default function MirageRushPage() {
   const [introStep, setIntroStep] = useState(() => (challenge || initialModeParam === 'online' || initialModeParam === 'cup' || initialStageParam ? 'stage' : 'mode'));
   const [onlineOpen, setOnlineOpen] = useState(initialModeParam === 'online');
   const [settingsTab, setSettingsTab] = useState('community');
+  // Boutique, cavalier, communauté et infos vivent dans un bouton Paramètres
+  // de l’écran de choix du mode (plus de panneau latéral : en plein écran,
+  // c’était hors de la coquille et donc invisible).
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const currentUserName = useMemo(
     () =>
       user?.user_metadata?.gamertag
@@ -248,8 +252,10 @@ export default function MirageRushPage() {
   const toastTimer = useRef(null);
   const phaseRef = useRef(phase);
   const musicOnRef = useRef(musicOn);
+  const settingsOpenRef = useRef(settingsOpen);
   phaseRef.current = phase;
   musicOnRef.current = musicOn;
+  settingsOpenRef.current = settingsOpen;
   const connected = Boolean(user?.id) && !isDemo;
   const backendEnabled = mirageApiEnabled();
 
@@ -485,7 +491,10 @@ export default function MirageRushPage() {
         return;
       }
       if (key === 'escape' || key === 'p') {
-        if (phaseRef.current === 'playing') { event.preventDefault(); pauseGame(); }
+        if (phaseRef.current === 'intro' && settingsOpenRef.current && key === 'escape') {
+          event.preventDefault();
+          setSettingsOpen(false);
+        } else if (phaseRef.current === 'playing') { event.preventDefault(); pauseGame(); }
         else if (phaseRef.current === 'paused') { event.preventDefault(); resumeGame(); }
         else if (phaseRef.current === 'countdown') { event.preventDefault(); cancelCountdown(); }
       }
@@ -526,6 +535,7 @@ export default function MirageRushPage() {
     audioRef.current?.stop();
     clearCup();
     setOnlineOpen(false);
+    setSettingsOpen(false);
     setSelectedMode(mode);
     setIntroStep('stage');
   }, [clearCup]);
@@ -536,12 +546,14 @@ export default function MirageRushPage() {
     exitImmersive();
     setPhase('intro');
     audioRef.current?.stop();
+    setSettingsOpen(false);
     setOnlineOpen(true);
   }, [exitImmersive]);
 
   const backToCoursePicker = () => {
     setPhase('intro');
     setOnlineOpen(false);
+    setSettingsOpen(false);
     setIntroStep('mode');
     setHud(EMPTY_HUD);
     setJustFinished(null);
@@ -550,6 +562,22 @@ export default function MirageRushPage() {
     audioRef.current?.stop();
     clearCup(); // quitter en cours de route = abandonner la coupe
   };
+
+  const openSettingsMenu = useCallback((tab) => {
+    if (tab) {
+      setSettingsTab(tab);
+      if (tab === 'shop') setShopNotice('');
+    }
+    setSettingsOpen(true);
+  }, []);
+
+  const closeSettingsMenu = useCallback(() => {
+    setSettingsOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (phase !== 'intro') setSettingsOpen(false);
+  }, [phase]);
 
   const chooseCup = useCallback((nextCupId) => {
     if (isCupUnlocked(nextCupId, progressRef.current.completedCups)) {
@@ -861,6 +889,7 @@ export default function MirageRushPage() {
         onSelectMode={chooseMode}
         onBack={() => {
           setOnlineOpen(false);
+          setSettingsOpen(false);
           setSelectedMode('rush');
           setIntroStep('mode');
         }}
@@ -1270,11 +1299,54 @@ export default function MirageRushPage() {
             )}
 
             {phase === 'intro' && (
-              <div className={`mirage-overlay mirage-intro-overlay is-${introStep}-step`}>
-                {introStep === 'mode' ? <>
+              <div className={`mirage-overlay mirage-intro-overlay ${settingsOpen ? 'is-settings-step' : `is-${introStep}-step`}`}>
+                {settingsOpen ? <>
+                  <div className="mirage-overlay-kicker"><span>✦</span> PARAMÈTRES <span>✦</span></div>
+                  <div className="mirage-intro-toolbar">
+                    <span className="mirage-selected-mode-pill"><i aria-hidden="true">⚙</i> MENU DU JEU</span>
+                    <button type="button" className="mirage-secondary-button mirage-settings-close" onClick={closeSettingsMenu} autoFocus>← FERMER</button>
+                  </div>
+                  <MirageSettingsPanel
+                    settingsTab={settingsTab}
+                    setSettingsTab={setSettingsTab}
+                    setShopNotice={setShopNotice}
+                    progression={progression}
+                    levelInfo={levelInfo}
+                    boardState={boardState}
+                    leaderboard={leaderboard}
+                    refreshLeaderboard={refreshLeaderboard}
+                    shopNotice={shopNotice}
+                    chooseSkin={chooseSkin}
+                    purchaseSkin={purchaseSkin}
+                    isCloudRider={isCloudRider}
+                    cloudPowerVariant={cloudPowerVariant}
+                    yellowPowerLabel={yellowPowerLabel}
+                    redPowerLabel={redPowerLabel}
+                    rivalCount={rivalCount}
+                    riderCount={riderCount}
+                    rivalNameList={rivalNameList}
+                    trackLanes={trackLanes}
+                  />
+                  <div className="mirage-overlay-hint">ÉCHAP POUR FERMER · COMMUNAUTÉ · CAVALIER · BOUTIQUE · INFOS</div>
+                </> : introStep === 'mode' ? <>
                   <div className="mirage-overlay-kicker"><span>✦</span> CHOISIS TON MODE <span>✦</span></div>
                   <h2>MIRAGE <em>RUSH.</em></h2>
                   <p className="mirage-intro-lead">Sélectionne un vrai bouton de mode : les maps — ou les coupes — s’ouvrent à l’écran suivant, et un simple clic sur la carte lance la partie. Aucun bouton de lancement à chercher.</p>
+                  <button
+                    type="button"
+                    className="mirage-settings-launch"
+                    onClick={() => openSettingsMenu()}
+                    aria-haspopup="dialog"
+                    aria-expanded={false}
+                    aria-controls="mirage-settings-dialog"
+                  >
+                    <span className="mirage-settings-launch-icon" aria-hidden="true">⚙</span>
+                    <span className="mirage-settings-launch-copy">
+                      <strong>PARAMÈTRES</strong>
+                      <small>Communauté · Cavalier · Boutique · Informations</small>
+                    </span>
+                    <span className="mirage-settings-launch-cta" aria-hidden="true">OUVRIR</span>
+                  </button>
                   <div className="mirage-mode-section">
                     <div className="mirage-picker-label"><span>01 / TON MODE</span><span>BOUTONS DE DÉPART</span></div>
                     <div className="mirage-mode-picker is-actions" role="group" aria-label="Choisir un mode Mirage">
@@ -1297,7 +1369,10 @@ export default function MirageRushPage() {
                   <div className="mirage-overlay-kicker"><span>✦</span> {introKicker} <span>✦</span></div>
                   <div className="mirage-intro-toolbar">
                     <span className="mirage-selected-mode-pill"><i aria-hidden="true">{selectedModeChoice.icon}</i> MODE {selectedModeChoice.name}</span>
-                    <button type="button" className="mirage-secondary-button" onClick={backToCoursePicker}>← CHANGER DE MODE</button>
+                    <div className="mirage-intro-toolbar-actions">
+                      <button type="button" className="mirage-secondary-button" onClick={backToCoursePicker}>← CHANGER DE MODE</button>
+                      <button type="button" className="mirage-secondary-button mirage-settings-open" onClick={() => openSettingsMenu()} aria-haspopup="dialog" aria-controls="mirage-settings-dialog">⚙ PARAMÈTRES</button>
+                    </div>
                   </div>
                   <h2>{introTitle[0]} <em>{introTitle[1]}</em></h2>
                   {/* Les modes sont de vrais boutons sur l'écran précédent ;
@@ -1463,9 +1538,36 @@ export default function MirageRushPage() {
 
           <div className="mirage-game-foot"><span className="mirage-foot-touch">TÉLÉPHONE &amp; APPLICATION : GLISSE ← → POUR CHANGER DE VOIE <b>·</b> GLISSE ↑ OU TAPE POUR SAUTER <b>·</b> OBJETS : BARRE EN BAS</span><span className="mirage-foot-keys">FLÈCHES <b>·</b> SAUT (ESPACE/↑){race.mode === 'duel' ? <> <b>·</b> POUVOIRS (QWER / AZER)</> : ''} <b>·</b> PLEIN ÉCRAN (F)</span><span>{race.mode === 'duel' ? 'DUEL : CRISTAUX = VITESSE & CHARGE D’OBJETS' : 'UN RUN = UN RECORD · PAS DE PAY-TO-WIN'}</span></div>
         </section>
+      </div>
+      <footer className="mirage-page-footer wrap"><Link to="/jeu">← Retour aux jeux</Link><span>LET’S PLAY ARCADE <i>·</i> MIRAGE RUSH — ALGERIA</span></footer>
+    </div>
+  );
+}
 
-        <aside className="mirage-side-panel">
-          <section className="mirage-settings panel-frame" aria-label="Paramètres Mirage Rush">
+function MirageSettingsPanel({
+  settingsTab,
+  setSettingsTab,
+  setShopNotice,
+  progression,
+  levelInfo,
+  boardState,
+  leaderboard,
+  refreshLeaderboard,
+  shopNotice,
+  chooseSkin,
+  purchaseSkin,
+  isCloudRider,
+  cloudPowerVariant,
+  yellowPowerLabel,
+  redPowerLabel,
+  rivalCount,
+  riderCount,
+  rivalNameList,
+  trackLanes,
+}) {
+  const activeSkin = skinFor(progression);
+  return (
+          <section id="mirage-settings-dialog" className="mirage-settings panel-frame" role="dialog" aria-modal="true" aria-label="Paramètres Mirage Rush">
             <div className="mirage-panel-heading mirage-settings-heading">
               <div><span className="mirage-panel-kicker">PARAMÈTRES</span><h2>MENU <em>DU JEU</em></h2></div>
               <MirageWallet coins={progression.coins} />
@@ -1686,9 +1788,5 @@ export default function MirageRushPage() {
               <div className="mirage-community-note"><span>✧</span><p>Un même désert, un même défi. <strong>Le sommet du classement t’attend.</strong></p></div>
             </div>
           </section>
-        </aside>
-      </div>
-      <footer className="mirage-page-footer wrap"><Link to="/jeu">← Retour aux jeux</Link><span>LET’S PLAY ARCADE <i>·</i> MIRAGE RUSH — ALGERIA</span></footer>
-    </div>
   );
 }
