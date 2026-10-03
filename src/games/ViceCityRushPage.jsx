@@ -15,6 +15,8 @@ import {
   CITY_RUSH_DRIVERS,
   CITY_RUSH_LAPS,
   CITY_RUSH_LAP_LENGTH,
+  CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
+  CITY_RUSH_CLEAN_LINE_MAX_BONUS,
   CITY_RUSH_POWER_RULES,
   CITY_RUSH_POWERS,
   CITY_RUSH_PICKUPS,
@@ -1084,7 +1086,7 @@ export default function ViceCityRushPage() {
 
           <section className="city-rush-no-collision-note">
             <span className="city-rush-no-collision-icon">◎</span>
-            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque sans dégâts.</p></div>
+            <div><b>MODE {activeModeName} · {activeModeLabel}</b><p>{storyMode ? `${currentStoryRace?.race?.name || city.name} : ${currentStoryRace?.text || ''}` : mode.desc} Distance totale : {currentDistance} m. Le trafic bloque sans dégâts. Conduite propre : chaque changement de voie ralentit légèrement (−{Math.round((1 - CITY_RUSH_LANE_CHANGE_SLOW_FACTOR) * 100)} % un instant) ; tenir sa voie sans zigzaguer fait accélérer (jusqu’à +{Math.round((CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * 100)} % de vitesse).</p></div>
           </section>
 
           <section className="city-rush-no-collision-note is-police">

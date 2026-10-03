@@ -68,6 +68,11 @@ import {
   approachCityRushSpeed,
   cityRushTrafficRecoveryRate,
   CITY_RUSH_TRAFFIC_RECOVERY_BOOST,
+  CITY_RUSH_LANE_CHANGE_SLOW_DURATION,
+  CITY_RUSH_LANE_CHANGE_SLOW_FACTOR,
+  CITY_RUSH_CLEAN_LINE_RAMP_DURATION,
+  CITY_RUSH_CLEAN_LINE_MAX_BONUS,
+  cityRushCleanLineFactor,
   chooseCityRushAiLane,
   chooseCityRushTrafficEscapeLane,
   cityRushHitDuration,
@@ -1338,6 +1343,33 @@ test('a car recovers its speed faster after being held behind traffic', () => {
   const normal = approachCityRushSpeed(5, 29, cityRushTrafficRecoveryRate(9, 0), 1);
   const recovering = approachCityRushSpeed(5, 29, cityRushTrafficRecoveryRate(9, 1), 1);
   assert.ok(recovering > normal + 10);
+});
+
+test('changer de voie ralentit légèrement, tenir sa voie fait accélérer', () => {
+  // Le freinage d'un écart reste bref et léger, sans être négligeable.
+  assert.ok(CITY_RUSH_LANE_CHANGE_SLOW_DURATION > 0.3 && CITY_RUSH_LANE_CHANGE_SLOW_DURATION < 2);
+  assert.ok(CITY_RUSH_LANE_CHANGE_SLOW_FACTOR < 1 && CITY_RUSH_LANE_CHANGE_SLOW_FACTOR > 0.75);
+  // Ligne propre : aucun bonus au départ, puis la vitesse monte avec le
+  // temps de voie tenue, sans bouger du guidon.
+  assert.equal(cityRushCleanLineFactor(0), 1);
+  assert.ok(CITY_RUSH_CLEAN_LINE_MAX_BONUS > 1 && CITY_RUSH_CLEAN_LINE_MAX_BONUS < 1.3);
+  const half = cityRushCleanLineFactor(CITY_RUSH_CLEAN_LINE_RAMP_DURATION / 2);
+  assert.ok(half > 1 && half < CITY_RUSH_CLEAN_LINE_MAX_BONUS);
+  assert.ok(Math.abs(half - (1 + (CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) / 2)) < 1e-9);
+  // Au bout de la rampe (et au-delà), le bonus est plafonné.
+  assert.equal(cityRushCleanLineFactor(CITY_RUSH_CLEAN_LINE_RAMP_DURATION), CITY_RUSH_CLEAN_LINE_MAX_BONUS);
+  assert.equal(cityRushCleanLineFactor(CITY_RUSH_CLEAN_LINE_RAMP_DURATION * 5), CITY_RUSH_CLEAN_LINE_MAX_BONUS);
+  // Entrées invalides : aucun bonus, jamais de NaN.
+  assert.equal(cityRushCleanLineFactor(-4), 1);
+  assert.equal(cityRushCleanLineFactor('abc'), 1);
+  assert.equal(cityRushCleanLineFactor(undefined), 1);
+  // Combiné : après un écart, la voiture roule sous sa vitesse de base ;
+  // après une longue voie tenue, elle la dépasse.
+  const baseTarget = CITY_RUSH_PLAYER_SPEED;
+  const afterChange = baseTarget * CITY_RUSH_LANE_CHANGE_SLOW_FACTOR * cityRushCleanLineFactor(0);
+  const afterCleanHold = baseTarget * cityRushCleanLineFactor(CITY_RUSH_CLEAN_LINE_RAMP_DURATION * 3);
+  assert.ok(afterChange < baseTarget);
+  assert.ok(afterCleanHold > baseTarget);
 });
 
 test('la toupie du stun héliporté boucle des tours entiers face à la route', () => {
