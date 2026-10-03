@@ -1,0 +1,95 @@
+/* Original illustrated street-racing skin. Mechanics and city colors stay intact. */
+.city-rush-page.city-rush-page {
+  --cr-bg: #121411;
+  --cr-bg-2: #1b1e19;
+  --cr-panel: rgba(25, 29, 24, .94);
+  --cr-panel-2: #252a22;
+  --cr-panel-solid: #1b201a;
+  --cr-text: #f5f2e9;
+  --cr-muted: #b6b9ad;
+  --cr-radius-xl: 4px;
+  --cr-radius-lg: 3px;
+  --cr-radius-md: 3px;
+  --cr-radius-sm: 2px;
+  background: #121411;
+}
+.city-rush-page::before { background: none; }
+.city-rush-page .city-rush-heading {
+  position: relative;
+  isolation: isolate;
+  min-height: 440px;
+  padding: 48px;
+  margin-bottom: 28px;
+  align-items: center;
+  border-bottom: 4px solid #b2c785;
+  background: #252e29;
+  overflow: hidden;
+}
+.city-rush-heading::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, rgba(12,19,16,.94), rgba(12,19,16,.70) 30%, rgba(12,19,16,.06) 70%), url('../../public/vice-city-rush-keyart.jpg') center 54% / cover;
+}
+.city-rush-page .city-rush-eyebrow {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #d0d7b9;
+  backdrop-filter: none;
+  letter-spacing: .16em;
+}
+.city-rush-page .city-rush-heading h1 {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin: 18px 0;
+  font-family: Impact, 'Arial Black', sans-serif;
+  font-size: clamp(54px, 7vw, 96px);
+  font-weight: 900;
+  line-height: .86;
+  letter-spacing: -.025em;
+  color: #fffdf2;
+  text-shadow: 3px 4px 0 #101611, -1px -1px 0 #101611;
+}
+.city-rush-page .city-rush-heading h1 em {
+  color: #b9cb8e;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  font-style: normal;
+  letter-spacing: .035em;
+}
+.city-rush-page .city-rush-lede { max-width: 390px; color: #e0e0d5; font-size: 14px; line-height: 1.7; }
+.city-rush-hero-details { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-top: 26px; font: 700 9px/1.5 ui-monospace, monospace; letter-spacing: .12em; color: #c7d2b2; }
+.city-rush-page .city-rush-back { position: absolute; top: 20px; right: 22px; background: #151c16db; color: #fffdf2; border-radius: 2px; }
+.city-rush-page .city-rush-shell,
+.city-rush-page .city-rush-side-card { background: #191d18; border-color: #ffffff21; box-shadow: 0 12px 32px #0004; }
+.city-rush-page .city-rush-topbar,
+.city-rush-page .city-rush-shell-footer { background: #20261e; }
+.city-rush-page .city-rush-overlay { background: linear-gradient(135deg, rgba(27,33,26,.96), rgba(13,17,14,.96)); }
+.city-rush-page .city-rush-intro h2,
+.city-rush-page .city-rush-pause-overlay h2,
+.city-rush-page .city-rush-result-overlay h2 { font-family: Impact, 'Arial Black', sans-serif; letter-spacing: .01em; font-weight: 900; }
+.city-rush-page .city-rush-intro h2 em,
+.city-rush-page .city-rush-pause-overlay h2 em,
+.city-rush-page .city-rush-result-overlay h2 em { color: #bdcf94; background: none; -webkit-text-fill-color: currentColor; }
+.city-rush-page .city-rush-start-button { background: #bbcd91; color: #172013; border: 1px solid #d4dfb6; border-radius: 2px; box-shadow: 0 4px 0 #080c08; text-shadow: none; }
+.city-rush-page .city-rush-start-button:hover { background: #d7e5b6; box-shadow: 0 4px 0 #080c08; }
+.city-rush-page .city-rush-mode-card { background: #242b21; border-radius: 2px; box-shadow: none; }
+.city-rush-page .city-rush-mode-card::before { background: none; }
+.city-rush-page .city-rush-mode-card.is-selected { border-color: #bdcf94; background: #303c28; box-shadow: inset 0 3px #bdcf94; }
+.city-rush-page .city-rush-mode-card b { font-family: Impact, 'Arial Black', sans-serif; letter-spacing: .045em; }
+.city-rush-page .city-rush-story-banner { background: #272e23; border-color: #aebd7c55; border-radius: 3px; box-shadow: none; }
+.city-rush-page .city-rush-story-banner-visual { border-radius: 2px; }
+.city-rush-page .city-rush-stepper-item.is-active { background: #bbcd91; color: #172013; border-color: #bbcd91; box-shadow: none; }
+.city-rush-page :is(button, a):focus-visible { outline: 3px solid #e6f4c1; outline-offset: 4px; }
+@media (max-width: 700px) {
+  .city-rush-page .city-rush-heading { min-height: 420px; padding: 64px 22px 28px; }
+  .city-rush-heading::before { background-position: 62% center; background-image: linear-gradient(90deg, #0c1310e8, #0c131079), url('../../public/vice-city-rush-keyart.jpg'); }
+  .city-rush-page .city-rush-lede { max-width: 290px; }
+  .city-rush-hero-details { max-width: 300px; gap: 8px 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .city-rush-page *, .city-rush-page *::before, .city-rush-page *::after { animation: none !important; transition: none !important; }
+}

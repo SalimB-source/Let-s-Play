@@ -20,6 +20,7 @@ import {
 } from './cityRushRules';
 import { cityRushTheme } from './cityRushThemes';
 import './vice-city-rush.css';
+import './vice-city-rush-cinematic.css';
 
 const BEST_KEY = 'letsplay_vice_city_rush_bests_v1';
 const SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
@@ -529,11 +530,12 @@ export default function ViceCityRushPage() {
     <div className={`city-rush-page${immersive ? ' is-immersive' : ''}`} style={{ '--city-accent': city.accent, '--city-secondary': city.secondary, '--mode-accent': mode.accent, '--mode-secondary': mode.secondary }}>
       <header className="city-rush-heading wrap">
         <div>
-          <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <span style={{ opacity: 0.4, margin: '0 6px' }}>/</span> STREET RALLY 3D</p>
-          <h1>VICE CITY <em>RUSH</em></h1>
+          <p className="city-rush-eyebrow"><span className="city-rush-live-dot" /> LET’S PLAY ARCADE <span style={{ opacity: 0.4, margin: '0 6px' }}>/</span> UNE VILLE. AUCUNE LIMITE.</p>
+          <h1><span>VICE CITY</span><em>RUSH</em></h1>
           <p className="city-rush-lede">
-            Arcade néon 1986. {activeModeName} · {city.name}. Campagne scénarisée avec Nico Vega ou course libre : choisis ton mode, ta ville, ton cabriolet. {currentLaps} tour{currentLaps > 1 ? 's' : ''} de {CITY_RUSH_LAP_LENGTH} m, trafic sans dégâts, bonus tactiques et police qui chasse le leader.
+            Le soleil a ses ombres. La rue a ses règles. Incarne Nico Vega dans une course à la revanche, ou impose ton rythme sur cinq circuits.
           </p>
+          <div className="city-rush-hero-details"><span>1986 / OCEAN DRIVE</span><span>5 VILLES</span><span>3 MODES DE COURSE</span></div>
         </div>
         <Link to="/jeu" className="city-rush-back">← RETOUR AUX JEUX</Link>
       </header>
