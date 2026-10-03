@@ -112,16 +112,26 @@ test('the five city routes have a distinct identity and complete palettes', () =
 });
 
 test('the selectable cars have distinct handling trade-offs and physical silhouettes', () => {
-  assert.equal(CITY_RUSH_CARS.length, 5);
+  assert.equal(CITY_RUSH_CARS.length, 6);
   assert.equal(CITY_RUSH_CARS.find((car) => car.id === 'vega-gt-67')?.bodyColor, 0x11131a);
   assert.equal(new Set(CITY_RUSH_CARS.map((car) => car.id)).size, CITY_RUSH_CARS.length);
+  assert.deepEqual(
+    new Set(CITY_RUSH_CARS.map((car) => car.archetype)),
+    new Set(['ferrari', 'porsche', 'audi', 'volkswagen', 'bmw', 'lamborghini']),
+  );
+  const forbiddenBrandNames = /\b(ferrari|porsche|lamborghini|lambo|bmw|audi|volkswagen)\b/i;
   for (const car of CITY_RUSH_CARS) {
     assert.ok(car.name && car.className && car.accent.startsWith('#'));
+    assert.ok(!forbiddenBrandNames.test(car.name), `nom de marque réel interdit dans car.name : ${car.name}`);
+    assert.ok(!forbiddenBrandNames.test(car.className), `nom de marque réel interdit dans car.className : ${car.className}`);
     for (const stat of ['power', 'acceleration', 'recovery']) assert.ok(car[stat] >= 0 && car[stat] <= 100);
     assert.ok(car.powerMultiplier > 0);
     assert.ok(car.accelerationRate > 0);
     assert.ok(car.hitRecoveryMultiplier > 0);
     assert.ok(car.widthScale > 0 && car.heightScale > 0 && car.lengthScale > 0);
+  }
+  for (const vehicle of CITY_RUSH_TRAFFIC_TYPES) {
+    assert.ok(!forbiddenBrandNames.test(vehicle.name), `nom de marque réel interdit dans traffic.name : ${vehicle.name}`);
   }
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.widthScale)).size > 1);
   assert.ok(new Set(CITY_RUSH_CARS.map((car) => car.powerMultiplier)).size > 1);

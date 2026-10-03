@@ -871,20 +871,24 @@ export default function ViceCityRushPage() {
                     <div className="city-rush-intro-copy">
                       <span className="city-rush-overlay-kicker"><i /> 03 / GARAGE · {city.district} · {mode.name}</span>
                       <h2>PRÊT À<br /><em>ROULER.</em></h2>
-                      <p>Cabriolet et pilote. Chaque voiture a sa conduite, chaque pilote son pays. Tu peux encore changer de ville ou de mode avant le départ.</p>
+                      <p>Choisis ta machine, son caractère et ton pilote. Six sportives aux silhouettes inspirées des grands coupés européens, sans logos ni noms de constructeurs réels.</p>
                     </div>
 
                     <section className="city-rush-car-select" aria-labelledby="city-rush-car-title">
                       <div className="city-rush-car-select-heading">
-                        <span id="city-rush-car-title">CABRIOLET</span>
-                        <small>{selectedCar.name} · stats sur 100</small>
+                        <span id="city-rush-car-title">GARAGE · 6 SPORTIVES</span>
+                        <small>{selectedCar.name} · {selectedCar.className}</small>
                       </div>
                       <div className="city-rush-car-grid" role="group" aria-label="Choisir une voiture">
                         {CITY_RUSH_CARS.map((car, index) => (
                           <button key={car.id} type="button" className={`city-rush-car-card${carId === car.id ? ' is-selected' : ''}`} style={{ '--car-accent': car.accent }} onClick={() => setCarId(car.id)} aria-pressed={carId === car.id}>
                             <span className="city-rush-car-card-top">
                               <span className={`city-rush-car-silhouette is-${car.id}`} aria-hidden="true">
-                                <svg viewBox="0 0 54 28"><path d="M5 17h3l4-7h25l7 7h3v7H6z" /><path d="m16 10 4-5h14l5 5z" /><circle cx="15" cy="23" r="3.5" /><circle cx="39" cy="23" r="3.5" /></svg>
+                                <svg viewBox="0 0 72 32" aria-hidden="true">
+                                  <path d={car.archetype === 'volkswagen' ? 'M4 19 8 17 13 11 24 10 30 5 47 5 55 12 66 15 69 20 66 25 6 25Z' : car.archetype === 'porsche' ? 'M4 20 9 17 15 12 26 10 33 5 48 5 56 11 65 14 69 19 67 25 5 25Z' : car.archetype === 'lamborghini' || car.archetype === 'audi' ? 'M3 21 8 18 14 15 22 13 33 6 50 7 59 13 68 16 70 22 66 25 5 25Z' : car.archetype === 'bmw' ? 'M4 20 9 17 15 11 26 10 33 6 49 6 57 12 66 15 69 20 66 25 5 25Z' : 'M3 21 9 18 15 12 27 10 34 5 49 6 58 13 67 16 70 21 67 25 5 25Z'} />
+                                  <path d="M18 12 27 11 34 6 46 7 53 13Z" />
+                                  <circle cx="18" cy="24" r="4" /><circle cx="56" cy="24" r="4" />
+                                </svg>
                               </span>
                               <span className="city-rush-car-number">0{index + 1}</span>
                             </span>
