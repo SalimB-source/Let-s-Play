@@ -19,7 +19,7 @@ import '../games/games.css';
 // posée dans /public/mirage-rush-thumb.jpg.
 const MIRAGE_THUMB = `${import.meta.env.BASE_URL}mirage-rush-thumb.jpg`;
 // Miniatures des autres jeux jouables.
-const VICE_CITY_THUMB = `${import.meta.env.BASE_URL}vice-city-rush-thumb.svg`;
+const VICE_CITY_THUMB = `${import.meta.env.BASE_URL}vice-city-rush-keyart.jpg`;
 const CENDRE_THUMB = `${import.meta.env.BASE_URL}la-cendre-thumb.jpg`;
 
 const GAMES = [
@@ -55,7 +55,7 @@ const GAMES = [
     subtitle: '3D ARCADE RALLY · SUN & NEON',
     description: 'Une décapotable, un pilote et cinq circuits : Vice City en plein soleil sur le front de mer, puis New York, Tokyo, Paris et Londres de nuit. Ramasse des objets, déclenche tes pouvoirs et vise la première place — sans collision.',
     thumb: VICE_CITY_THUMB,
-    alt: 'Vice City Rush — cabriolet rose sur Ocean Drive en plein jour, entre plage, mer turquoise, palmiers et façades Art déco pastel',
+    alt: 'Vice City Rush — pilote et cabriolet corail sur Ocean Drive, illustration cinématographique entre palmiers et façades Art déco',
     route: '/jeu/vice-city-rush',
     badge: 'JOUABLE',
     tone: 'vice',
