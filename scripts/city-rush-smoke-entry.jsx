@@ -72,7 +72,7 @@ const THREE = await import('three');
 const { createCityRushWorld } = await import('../src/games/ViceCityWorld.jsx');
 const {
   CITY_RUSH_CITIES, CITY_RUSH_CARS, CITY_RUSH_LAPS, CITY_RUSH_LAP_LENGTH, CITY_RUSH_DISTANCE, CITY_RUSH_POWER_RULES,
-  CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS,
+  CITY_RUSH_LANE_X, CITY_RUSH_CAR_GAP, CITY_RUSH_POLICE_COUNT, CITY_RUSH_POWERS, CITY_RUSH_PICKUPS,
 } = await import('../src/games/cityRushRules.js');
 
 const fail = (msg, extra) => { console.error('ÉCHEC :', msg, extra ?? ''); process.exit(3); };
@@ -179,13 +179,15 @@ for (const [index, city] of cities.entries()) {
   // 30 Hz) plus tard sur sa rangée.
   const burstNodes = [];
   const pickupSlots = [];
+  let slowZoneNodes = 0;
   // Berlines de police du trafic : le pilote d'essai les vise pour provoquer le
   // scénario « on percute un agent » (voir la boucle de course).
   const policeTrafficNodes = [];
   scene?.traverse((object) => {
     if (object.name === 'pickup-burst') burstNodes.push(object);
     if (object.name === 'traffic-police') policeTrafficNodes.push(object);
-    if (object.userData?.icon && object.userData?.ring && object.userData?.beam && object.userData?.halo) {
+    if (object.userData?.type === 'slow-zone') slowZoneNodes += 1;
+    if (object.userData?.icon && object.userData?.ring && object.userData?.beam && object.userData?.halo && object.userData?.pad) {
       pickupSlots.push(object);
     }
   });
@@ -207,6 +209,8 @@ for (const [index, city] of cities.entries()) {
   runFrames(45, 'intro');
   // ready() est émis par le wrapper React, pas par le monde : on vérifie le HUD initial.
   if (!callbacks.huds.length) fail('aucun HUD émis après la construction (reset initial)');
+  if (slowZoneNodes) fail('une zone d’huile ou de ralentissement est encore rendue', slowZoneNodes);
+  if (!pickupSlots.some((slot) => slot.userData.type === CITY_RUSH_PICKUPS.BOOST)) fail('aucun pad turbo vert n’est placé sur la piste');
   const introStats = scene ? countVisible(scene) : null;
 
   // Compte à rebours : 3 → 2 → 1 → GO.
@@ -265,6 +269,7 @@ for (const [index, city] of cities.entries()) {
 
   while (!callbacks.finish && frames < maxFrames) {
     const hud = callbacks.huds[callbacks.huds.length - 1];
+    if (frames === 0) world.action('left'); // provoque un face-à-face contrôlé dans la voie inverse
     // Pilote naïf : si on traîne derrière le trafic, on tente de changer de voie ;
     // on déclenche chaque pouvoir dès qu'il est chargé. Tant qu'aucun contact
     // n'a eu lieu, il vise délibérément une berline de police du trafic : c'est
@@ -278,7 +283,7 @@ for (const [index, city] of cities.entries()) {
       }
     }
     if (hud && hud.speed < 70) slowFrames += 1; else slowFrames = 0;
-    if (slowFrames > 12 && !rallyTarget) {
+    if (slowFrames > 12 && !rallyTarget && frames > 110) {
       world.action(steer);
       steer = steer === 'left' ? 'right' : 'left';
       slowFrames = 0;
@@ -293,7 +298,7 @@ for (const [index, city] of cities.entries()) {
       if (targetLane !== hud.playerLane) world.action(targetLane < hud.playerLane ? 'left' : 'right');
     }
     if (hud && frames % 15 === 0) {
-      for (const type of ['cash', 'blue-shot', 'pistol', 'radio']) {
+      for (const type of [CITY_RUSH_POWERS.BLUE_SHOT, CITY_RUSH_POWERS.PISTOL, CITY_RUSH_POWERS.RADIO]) {
         if ((hud.inventory?.[type] || 0) >= (CITY_RUSH_POWER_RULES[type]?.chargeCost ?? 99)) world.action(type);
       }
     }
@@ -418,8 +423,13 @@ for (const [index, city] of cities.entries()) {
   if (callbacks.errors.length) fail('erreurs remontées', callbacks.errors);
 
   const finish = callbacks.finish;
+  const oncomingImpacts = callbacks.effects.filter((effect) => effect.type === 'traffic-impact' && effect.oncoming && effect.pushedAside && effect.shoulder === 'left');
+  if (!oncomingImpacts.length) fail('aucune collision frontale n’a poussé la voiture touchée vers la gauche', callbacks.effects.filter((effect) => effect.type === 'traffic-impact'));
   if (finish.laps !== CITY_RUSH_LAPS) fail('finish.laps ≠ CITY_RUSH_LAPS', finish);
-  if (!Array.isArray(finish.racers) || finish.racers.length < 2) fail('finish.racers invalide', finish);
+  if (!Array.isArray(finish.racers) || finish.racers.length !== 3) fail('chaque course doit finir avec exactement trois pilotes', finish.racers);
+  if (!Array.isArray(callbacks.huds.at(-1)?.racers) || callbacks.huds.at(-1).racers.length !== 3) {
+    fail('le HUD ne contient pas exactement trois pilotes', callbacks.huds.at(-1));
+  }
   const lastHud = callbacks.huds.at(-1);
   for (const field of ['lap', 'laps', 'lapProgress', 'lapDistance', 'lapLength', 'distance', 'speed', 'rank', 'racers']) {
     if (!(field in lastHud)) fail(`champ HUD manquant : ${field}`, Object.keys(lastHud));
@@ -567,11 +577,19 @@ for (const [index, city] of cities.entries()) {
   if (lastHud.police?.length) fail('l’escouade reste en piste après l’arrivée', lastHud.police);
   if (!audioCalls.policeSiren) fail('la sirène de police n’a jamais sonné', audioCalls);
 
-  const automaticCash = callbacks.pickups.filter((pickup) => pickup.type === 'cash' && pickup.autoActivated).length;
-  if (callbacks.pickups.some((pickup) => pickup.autoActivated && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
-    fail('un bonus manuel a été signalé comme activation automatique', callbacks.pickups.filter((pickup) => pickup.autoActivated));
+  const groundBoosts = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_PICKUPS.BOOST);
+  if (!groundBoosts.length) fail('le pilote n’a pas ramassé de pad turbo pendant la course', callbacks.pickups);
+  if (groundBoosts.some((pickup) => !pickup.autoActivated || pickup.chargeCost !== 1)) {
+    fail('un pad turbo ne s’est pas activé automatiquement au ramassage', groundBoosts);
   }
-  if ((audioCalls.boost || 0) < automaticCash) fail('un boost vert chargé ne s’est pas activé automatiquement', { automaticCash, audioCalls });
+  if ((audioCalls.boost || 0) < groundBoosts.length) fail('un pad turbo ramassé n’a pas déclenché son boost sonore', { groundBoosts: groundBoosts.length, audioCalls });
+  const bluePickups = callbacks.pickups.filter((pickup) => pickup.type === CITY_RUSH_POWERS.BLUE_SHOT);
+  if (!bluePickups.length || bluePickups.some((pickup) => pickup.chargeCost !== 1 || pickup.progress < 1)) {
+    fail('un unique bonus bleu ne charge pas un tir droit', bluePickups);
+  }
+  if (callbacks.pickups.some((pickup) => pickup.autoActivated && pickup.type !== CITY_RUSH_PICKUPS.BOOST && !CITY_RUSH_POWER_RULES[pickup.type]?.automatic)) {
+    fail('un pouvoir manuel a été signalé comme activation automatique', callbacks.pickups.filter((pickup) => pickup.autoActivated));
+  }
   const blueShotEffects = new Set(['blue-shot-hit', 'blue-shot-hit-player', 'blue-shot-miss', 'rival-blue-shot']);
   const blueShotsUsed = callbacks.effects.filter((effect) => blueShotEffects.has(effect.type)).length;
   if (!blueShotsUsed) fail('aucun tir droit bleu n’a été testé', callbacks.effects);

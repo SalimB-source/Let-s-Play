@@ -222,7 +222,7 @@ test('tir, dérapage et explosion programment du son, et se taisent quand le son
     audio.skid();
     audio.explosion();
     audio.missileLaunch();
-    audio.pickup('cash');
+    audio.pickup('boost');
     audio.lap(true);
     audio.finish(1);
     audio.countdownBeep(3);

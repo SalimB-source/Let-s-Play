@@ -17,8 +17,23 @@ export const CITY_RUSH_LANE_X = Object.freeze([-3.15, -1.05, 1.05, 3.15]);
 export const CITY_RUSH_SCROLL_SCALE = 0.72;
 export const CITY_RUSH_CAR_GAP = 4.8;
 export const CITY_RUSH_RACER_VIEW_DISTANCE = 120; // m : portée avant où un rival est rendu à l'écran
-export const CITY_RUSH_BLUE_SHOT_DURATION = 0.3; // s : dérapage léger du tir bleu
-export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.85; // le tir ralentit légèrement la voiture
+export const CITY_RUSH_BLUE_SHOT_DURATION = 1.8; // s : ralentissement bien visible après un tir bleu
+export const CITY_RUSH_BLUE_SHOT_SPEED_FACTOR = 0.55; // la cible ne garde que 55 % de sa vitesse
+export const CITY_RUSH_TRACK_BOOST_DURATION = 3; // s : durée du turbo ramassé au sol
+export const CITY_RUSH_TRACK_BOOST_SPEED_FACTOR = 1.46; // × vitesse du joueur sous un pad turbo
+export const CITY_RUSH_RIVAL_BOOST_SPEED_FACTOR = 1.38; // × vitesse des rivaux sous un pad turbo
+export const CITY_RUSH_TRACK_BOOST_COLOR = '#50e48a';
+export const CITY_RUSH_ONCOMING_SHOULDER_X = -5.55; // accotement gauche, hors des voies de course
+export const CITY_RUSH_ONCOMING_EJECT_DURATION = 0.72; // s : la voiture heurtée s'écarte vers l'accotement
+
+export function cityRushOncomingImpactX(startX, elapsed) {
+  const start = Number.isFinite(Number(startX)) ? Number(startX) : CITY_RUSH_LANE_X[0];
+  const age = Math.max(0, Number(elapsed) || 0);
+  const progress = Math.max(0, Math.min(1, age / CITY_RUSH_ONCOMING_EJECT_DURATION));
+  const eased = 1 - (1 - progress) ** 3;
+  return start + (CITY_RUSH_ONCOMING_SHOULDER_X - start) * eased;
+}
+
 export const CITY_RUSH_BLUE_SHOT_MAX_RANGE = CITY_RUSH_RACER_VIEW_DISTANCE;
 export const CITY_RUSH_BLUE_SHOT_PROJECTILE_SPEED = 300; // m/s : projectile droit, sans guidage
 export const CITY_RUSH_BLUE_SHOT_MIN_GAP = 2; // m : le canon doit avoir la place de tirer devant le capot
@@ -137,15 +152,16 @@ export function cityRushStunSpin(stunLeft, stunTotal, turns = CITY_RUSH_STUN_SPI
 export const CITY_RUSH_POWERS = Object.freeze({
   BLUE_SHOT: 'blue-shot',
   PISTOL: 'pistol',
-  CASH: 'cash',
   RADIO: 'radio',
 });
 
-// Chaque bonus charge une jauge dédiée : bleu 2, rouge 3, vert 2, jaune 4.
+// Le turbo n'est plus un pouvoir à charger : c'est un pad lumineux au sol.
+export const CITY_RUSH_PICKUPS = Object.freeze({ BOOST: 'boost' });
+
+// Chaque bonus charge une jauge dédiée : un seul bleu, trois rouges, quatre jaunes.
 export const CITY_RUSH_POWER_CHARGE_COST = Object.freeze({
-  [CITY_RUSH_POWERS.BLUE_SHOT]: 2, // bleu · tir droit
+  [CITY_RUSH_POWERS.BLUE_SHOT]: 1, // bleu · un bonus pour un tir droit
   [CITY_RUSH_POWERS.PISTOL]: 3, // rouge · pistolet
-  [CITY_RUSH_POWERS.CASH]: 2, // vert · boisson énergisante
   [CITY_RUSH_POWERS.RADIO]: 4, // jaune · talkie-walkie
 });
 
@@ -158,7 +174,7 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     color: '#48b9ff',
     key: 'A',
     automatic: false,
-    description: `Tire droit sans viser : au plus un adversaire sur ta voie et dans ton champ de vision. Voie libre devant ? Le tir part vers l'arrière contre la berline de police la plus proche. La voiture touchée dérape et ralentit légèrement pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s. Trois tirs bleus détruisent une berline de police.`,
+    description: `Un seul bonus bleu suffit pour charger ce tir droit, sans viser : il touche au plus un adversaire sur ta voie et dans ton champ de vision. La voiture touchée perd près de la moitié de sa vitesse pendant ${CITY_RUSH_BLUE_SHOT_DURATION} s, avec un dérapage bien visible. Trois tirs bleus détruisent une berline de police.`,
     duration: CITY_RUSH_BLUE_SHOT_DURATION,
     speedFactor: CITY_RUSH_BLUE_SHOT_SPEED_FACTOR,
   }),
@@ -172,17 +188,6 @@ export const CITY_RUSH_POWER_RULES = Object.freeze({
     automatic: false,
     description: 'Tire une courte rafale sur le rival qui est devant toi ; il dérape (2 s de base). Au dernier tour, si personne n’est devant, la rafale peut se retourner contre la berline de police la plus proche — deux rafales la détruisent.',
     duration: 2,
-  }),
-  [CITY_RUSH_POWERS.CASH]: Object.freeze({
-    id: CITY_RUSH_POWERS.CASH,
-    name: 'Boisson énergisante',
-    shortName: 'Énergie',
-    chargeCost: CITY_RUSH_POWER_CHARGE_COST[CITY_RUSH_POWERS.CASH],
-    color: '#50e48a',
-    key: 'E',
-    automatic: true,
-    description: 'Déclenche automatiquement un boost de vitesse pendant 1,5 seconde dès que la jauge est pleine.',
-    duration: 1.5,
   }),
   [CITY_RUSH_POWERS.RADIO]: Object.freeze({
     id: CITY_RUSH_POWERS.RADIO,
@@ -666,14 +671,11 @@ export function chooseCityRushTrafficEscapeLane({
 }
 
 /**
- * Génère une rangée de bonus et sa zone de ralentissement au sol.
- * Les véhicules lents du trafic sont gérés séparément par le monde 3D.
+ * Génère une rangée de bonus sans flaques ni zones de ralentissement.
+ * Le turbo apparaît sous forme de pad posé sur la chaussée.
  */
 export function createCityRushEncounter(random = Math.random) {
-  const laneCount = CITY_RUSH_LANE_X.length;
-  const allLanes = Array.from({ length: laneCount }, (_, lane) => lane);
-  const slowLane = random() < 0.24 ? Math.floor(random() * laneCount) : null;
-  const available = allLanes.filter((lane) => lane !== slowLane);
+  const available = Array.from({ length: CITY_RUSH_LANE_X.length }, (_, lane) => lane);
   // Les bonus sont fréquents et les rangées vides sont rares; les duos
   // restent limités pour garder les voies lisibles.
   const pickupCount = random() < 0.1 ? 0 : Math.min(available.length, random() < 0.85 ? 1 : 2);
@@ -683,16 +685,16 @@ export function createCityRushEncounter(random = Math.random) {
     const slot = Math.floor(random() * available.length);
     const [lane] = available.splice(slot, 1);
     const roll = random();
-    // L'hélico jaune est volontairement rare (10 % des bonus posés) ; les
-    // trois autres couleurs se partagent le reste de façon équilibrée.
-    const type = roll < 0.36 ? 'cash'
+    // Le boost au sol remplace l'ancien pouvoir vert (36 %) ; l'hélico jaune
+    // reste rare (10 %) et les deux armes se partagent le reste.
+    const type = roll < 0.36 ? CITY_RUSH_PICKUPS.BOOST
       : roll < 0.64 ? CITY_RUSH_POWERS.BLUE_SHOT
-        : roll < 0.90 ? 'pistol'
-          : 'radio';
+        : roll < 0.90 ? CITY_RUSH_POWERS.PISTOL
+          : CITY_RUSH_POWERS.RADIO;
     pickups.push({ lane, type });
   }
 
-  return { pickups, slowLane };
+  return { pickups };
 }
 
 export function cityRushLaneAfterAction(lane, action, laneCount = CITY_RUSH_LANE_X.length) {
@@ -713,7 +715,6 @@ export function chooseCityRushAiLane({
   speed = 24,
   availableLanes,
   pickups = [],
-  slowZones = [],
   traffic = [],
   oncomingLanes = CITY_RUSH_ONCOMING_LANES,
   lookAheadDistance = 145,
@@ -743,16 +744,10 @@ export function chooseCityRushAiLane({
       if (laneAffinity === 0) continue;
       const urgency = 1 - gap / lookAhead;
       // Ramasser passe avant le confort de conduite : à voie disponible, le
-      // rival vise le bonus même si une zone ou un autre pilote le gêne. La
-      // disponibilité des voies garde toutefois la sécurité du trafic lent.
-      // Même avec une jauge pleine, le rival continue de viser les bonus au
-      // lieu de les ignorer dès que son pouvoir est chargé.
+      // rival vise le bonus même si un autre pilote le gêne. La disponibilité
+      // des voies garde toutefois la sécurité du trafic lent.
+      // Même avec une jauge pleine, il continue de viser les bonus à portée.
       pickupPriority += (22 + urgency * 8) * laneAffinity;
-    }
-    for (const zone of slowZones) {
-      const gap = Number(zone.distance) - Number(distance);
-      if (zone.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
-      safetyScore -= 5 + (1 - gap / lookAhead) * 11;
     }
     for (const vehicle of traffic) {
       const gap = Number(vehicle.distance) - Number(distance);
@@ -779,9 +774,9 @@ export function chooseCityRushAiLane({
 }
 
 // ── Pilotes internationaux & avatars distincts ──────────────────────────────
-// Chaque course réunit 4 pilotes (notre joueur + 3 rivaux) dotés chacun d'un
-// avatar unique et d'un prénom issu d'un pays différent autour du monde.
-export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno', 'ace']);
+// Chaque course réunit 3 pilotes : notre joueur et 2 rivaux, chacun avec un
+// avatar et un prénom issus d'un pays différent autour du monde.
+export const CITY_RUSH_RACER_SLOTS = Object.freeze(['player', 'nova', 'juno']);
 
 export const CITY_RUSH_DRIVERS = Object.freeze([
   Object.freeze({
@@ -870,8 +865,8 @@ export const CITY_RUSH_DRIVERS = Object.freeze([
   }),
 ]);
 
-// Sélectionne 4 pilotes distincts (un pour notre joueur et un par rival) avec
-// des avatars et des pays tous différents.
+// Sélectionne 3 pilotes distincts (notre joueur et deux rivaux) avec des
+// avatars et des pays tous différents.
 export function selectCityRushRacers({
   cityId = 'vice-city',
   carId = CITY_RUSH_CARS[0].id,
@@ -905,7 +900,7 @@ export function selectCityRushRacers({
     cursor = (cursor + stride) % total;
   }
 
-  const defaultLanes = [1, 3, 0, 2];
+  const defaultLanes = [1, 3, 0];
   return CITY_RUSH_RACER_SLOTS.map((slotId, index) => {
     const driver = chosen[index];
     return {
@@ -1194,7 +1189,6 @@ export function chooseCityRushPoliceLane({
   speed = CITY_RUSH_PLAYER_SPEED,
   availableLanes,
   pickups = [],
-  slowZones = [],
   traffic = [],
   racers = [],
   targetLane = null,
@@ -1258,11 +1252,6 @@ export function chooseCityRushPoliceLane({
       // Un bonus de tir vaut cinq bonus ordinaires : l'escouade traverse la
       // route pour le rafler avant le leader.
       greed += (hunted ? CITY_RUSH_POLICE_HUNT_WEIGHT : 1) * (24 + urgency * 10) * laneAffinity;
-    }
-    for (const zone of slowZones) {
-      const gap = Number(zone.distance) - Number(distance);
-      if (zone.lane !== candidate || !Number.isFinite(gap) || gap < -3 || gap > lookAhead) continue;
-      safetyScore -= 5 + (1 - gap / lookAhead) * 11;
     }
     for (const vehicle of traffic) {
       const gap = Number(vehicle.distance) - Number(distance);
@@ -1425,7 +1414,7 @@ export function cityRushMinimapTrackPath(steps = 72, { lapLength = CITY_RUSH_LAP
   return commands.join(' ');
 }
 
-// Construit l'état complet de la mini-carte : position des 4 pilotes sur le
+// Construit l'état complet de la mini-carte : position des 3 pilotes sur le
 // circuit, avatars/pays distincts et focus caméra + télémétrie sur notre joueur.
 export function buildCityRushMinimapState(
   racers = [],
@@ -1510,7 +1499,7 @@ export function buildCityRushMinimapState(
 
   const focusedPlayer = enriched.find((racer) => racer.isPlayer) || enriched[0];
   // La caméra de la mini-carte suit notre joueur (focus) tout en gardant
-  // l'intégralité de la boucle et les 3 rivaux dans le cadre.
+  // l'intégralité de la boucle et les 2 rivaux dans le cadre.
   const cameraX = 50 + (focusedPlayer.x - 50) * 0.32;
   const cameraY = 50 + (focusedPlayer.y - 50) * 0.32;
   const viewWidth = 96;
@@ -1526,7 +1515,7 @@ export function buildCityRushMinimapState(
   ];
 
   // L'escouade de police n'est pas classée : elle est projetée à part, pour
-  // que la mini-carte puisse la montrer sans la mêler aux quatre pilotes.
+  // que la mini-carte puisse la montrer sans la mêler aux trois pilotes.
   const pursued = (Array.isArray(pursuers) ? pursuers : [])
     .filter((police) => police && police.active !== false)
     .map((police, index) => {

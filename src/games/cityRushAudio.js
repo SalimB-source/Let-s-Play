@@ -947,9 +947,9 @@ export class CityRushAudio {
 
   // ── Petits bruitages de course ──────────────────────────────────────
   /** Bonus ramassé : un bip par couleur, un accord quand la jauge est pleine. */
-  pickup(type = 'cash', { ready = false } = {}) {
+  pickup(type = 'boost', { ready = false } = {}) {
     if (!this.ready()) return;
-    const root = { 'blue-shot': 60, pistol: 64, cash: 69, radio: 74 }[type] ?? 69;
+    const root = { 'blue-shot': 60, pistol: 64, boost: 69, radio: 74 }[type] ?? 69;
     const time = this.context.currentTime + 0.005;
     const out = this.sfxBus;
     this.tone(midiToFrequency(root + 12), time, 0.1, 'triangle', 0.14, { destination: out });

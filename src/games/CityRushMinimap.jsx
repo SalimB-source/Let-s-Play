@@ -22,9 +22,9 @@ function formatRelativeGap(racer) {
 
 /**
  * Mini-carte en direct de Vice City Rush :
- * - affiche le circuit en boucle de 600 m et l'emplacement temps réel des 4 joueurs ;
+ * - affiche le circuit en boucle de 600 m et les positions des trois pilotes ;
  * - centre l'attention (caméra + cône de visée + halo radar + écarts relatifs) sur notre joueur ;
- * - associe à chacun des 4 pilotes son avatar distinct et son pays ;
+ * - associe à chaque pilote son avatar distinct et son pays ;
  * - montre à part l'escouade de police du dernier tour (`pursuers`), qui
  *   n'est jamais classée.
  */
@@ -41,6 +41,7 @@ export default function CityRushMinimap({
     [racers, cityId, carId, runId, playerDriverId, pursuers],
   );
   const { focus, markers, startLine, midGate } = minimap;
+  const racerCount = minimap.racers.length || 3;
   const police = minimap.pursuers || [];
   const blockers = police.filter((car) => car.blocking).length;
   const rallied = police.filter((car) => car.rallied).length;
@@ -51,7 +52,7 @@ export default function CityRushMinimap({
   return (
     <aside
       className="city-rush-minimap"
-      aria-label={`Mini-carte de la course : focus sur ${focus.displayName} (${focus.country}), ${ordinal(focus.rank)} sur 4${police.length ? `, ${police.length} berlines de police en piste` : ''}`}
+      aria-label={`Mini-carte de la course : focus sur ${focus.displayName} (${focus.country}), ${ordinal(focus.rank)} sur ${racerCount}${police.length ? `, ${police.length} berlines de police en piste` : ''}`}
     >
       <div className="city-rush-minimap-head">
         <span className="city-rush-minimap-title">
@@ -81,7 +82,7 @@ export default function CityRushMinimap({
           </div>
           <small>{focus.flag} {focus.country.toUpperCase()} <i>·</i> VOIE {(focus.lane ?? 1) + 1}/4</small>
         </div>
-        <strong className="city-rush-minimap-focus-rank">{ordinal(focus.rank)}<small>/4</small></strong>
+        <strong className="city-rush-minimap-focus-rank">{ordinal(focus.rank)}<small>/{racerCount}</small></strong>
       </div>
 
       <div className="city-rush-minimap-stage">
@@ -89,7 +90,7 @@ export default function CityRushMinimap({
           className="city-rush-minimap-svg"
           viewBox={focus.viewBox}
           role="img"
-          aria-label="Tracé du circuit avec les 4 joueurs et le focus sur notre voiture"
+          aria-label={`Tracé du circuit avec ${racerCount} pilotes et le focus sur notre voiture`}
         >
           <defs>
             <radialGradient id="city-rush-focus-glow" cx="50%" cy="50%" r="50%">
@@ -170,7 +171,7 @@ export default function CityRushMinimap({
             </g>
           ))}
 
-          {/* Emplacement des 4 joueurs sur le circuit (notre joueur dessiné au-dessus) */}
+          {/* Emplacement des trois pilotes sur le circuit (notre joueur dessiné au-dessus) */}
           {markers.map((marker) => (
             <g
               key={marker.id}
@@ -200,7 +201,7 @@ export default function CityRushMinimap({
         </svg>
       </div>
 
-      <div className="city-rush-minimap-roster" role="list" aria-label="Emplacement des 4 pilotes">
+      <div className="city-rush-minimap-roster" role="list" aria-label={`Emplacement des ${racerCount} pilotes`}>
         {minimap.racers.map((racer) => {
           const progressPct = Math.round(Math.max(0, Math.min(1, Number(racer.progress) || 0)) * 100);
           return (
