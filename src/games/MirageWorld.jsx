@@ -166,8 +166,11 @@ function makeCrystal(tier, glowTexture) {
 }
 
 const GEM_BURST_POOL = 7;
+// Le halo d'un ramassage : large, mais il ne vit que le temps de l'éclair (0,52 s).
+const GEM_BURST_HALO_SIZE = 3.2;
+const GEM_BURST_HALO_OPACITY = 0.5;
 
-function makeGemBurst() {
+function makeGemBurst(glowTexture) {
   const group = new THREE.Group();
   const shardGeometry = new THREE.OctahedronGeometry(0.17);
   const shardMaterial = new THREE.MeshStandardMaterial({
@@ -196,8 +199,13 @@ function makeGemBurst() {
   const core = new THREE.Mesh(new THREE.OctahedronGeometry(0.33), flashMaterial);
   core.renderOrder = 3;
   group.add(core);
+  // L'éclat lui-même : un halo qui prend la couleur du ramassage et suit la vie de
+  // l'éclair — c'est ce qui fait « pop » le cristal (et la flaque de boue).
+  const halo = makeHalo(glowTexture, { color: 0xffffff, size: GEM_BURST_HALO_SIZE, opacity: 0 });
+  halo.visible = false;
+  group.add(halo);
   group.visible = false;
-  group.userData = { shards, shardMaterial, flashMaterial, ring, core, specs: [], age: 0, active: false, tier: 0 };
+  group.userData = { shards, shardMaterial, flashMaterial, ring, core, halo, specs: [], age: 0, active: false, tier: 0 };
   return group;
 }
 
@@ -1064,7 +1072,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   const reduceMotion = Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches);
   const gemBursts = [];
   for (let i = 0; i < GEM_BURST_POOL; i += 1) {
-    const burst = makeGemBurst();
+    const burst = makeGemBurst(glowTexture);
     scene.add(burst);
     gemBursts.push(burst);
   }
@@ -1095,6 +1103,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     data.age += dt;
     const flash = gemFlashState(data.age, data.tier);
     data.flashMaterial.opacity = flash.opacity;
+    // Le halo vit et meurt avec l'éclair (graphismes baissés : il n'y en a pas).
+    data.halo.material.color.copy(data.flashMaterial.color);
+    data.halo.material.opacity = flash.opacity * GEM_BURST_HALO_OPACITY;
+    data.halo.visible = glowHalos && flash.opacity > 0.02;
     data.ring.scale.setScalar(flash.scale);
     data.core.scale.setScalar(Math.max(0.001, (1 - flash.life) * 0.9));
     data.shards.forEach((shard, index) => {

@@ -463,6 +463,7 @@ dans un halo ; les cavaliers projettent une ombre douce au sol.
 |---|---|
 | Ciel du désert (`desertTerrain.js`) | **rayons** du soleil (six faisceaux qui battent lentement), **traînée** horizontale à la hauteur du disque, **coup de chaleur** juste au-dessus de la ligne d'horizon |
 | Cristaux (`MirageWorld.jsx`, `mirageGlow.js`) | un halo additif devant chaque gemme, qui respire à sa propre phase ; couleur du palier (rose, bleu, vert, or) |
+| Ramassage (`MirageWorld.jsx`) | l'éclair d'un cristal ramassé — ou la gerbe d'une flaque de boue — s'entoure d'un halo qui prend sa couleur et vit ses 0,52 s |
 | Cavaliers (`MirageWorld.jsx`) | une ombre douce au sol sous le joueur, sous les rivaux du duel et sous les cavaliers de la course en ligne ; elle pâlit quand ils sautent et suit le clignotement d'invulnérabilité |
 
 **Pas de post-traitement, et c'est un choix.** Le ciel et le sable du désert
