@@ -41,11 +41,11 @@ import {
   disposeCloudPower, makeCloudLightningBolt, makeCloudSwordWave,
   updateCloudLightningVisual, updateCloudWaveVisual,
 } from './mirageCloudPowers';
-// Effets des trois techniques de Link : bombe, grappin et Triforce.
+// Effets des trois techniques de Link : bombe, boomerang et Triforce.
 import {
-  disposeLinkPower, makeLinkBomb, makeLinkHook, makeLinkTriforce,
-  updateLinkBombVisual, updateLinkHookVisual, updateLinkTriforceVisual,
-  LINK_BOMB_AOE_RADIUS,
+  disposeLinkPower, makeLinkBomb, makeLinkBoomerang, makeLinkTriforce,
+  updateLinkBombVisual, updateLinkBoomerangVisual, updateLinkTriforceVisual,
+  LINK_BOMB_AOE_RADIUS, LINK_BOOMERANG_HIT_RADIUS, LINK_BOOMERANG_THROWS,
 } from './mirageLinkPowers';
 
 // La largeur de la piste n'est plus une constante de module : elle dépend du
@@ -1125,7 +1125,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
 
   const lassoProjectiles = [];
   const cloudShockwaves = [];
-  // Techniques de Link : bombes posées, grappins lancés, Triforces en vol.
+  // Techniques de Link : bombes posées, boomerangs lancés, Triforces en vol.
   const linkPowers = [];
   // Avance de la piste sur la frame (la bombe reste posée : elle recule avec le décor).
   let frameAdvance = 0;
@@ -1206,7 +1206,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       phase: 'flight',
     });
   };
-  /** Main du cavalier : le grappin en part, la chaîne y reste accrochée. */
+  /** Main du cavalier : le boomerang en part et y revient. */
   const linkHandOrigin = () => new THREE.Vector3(player.position.x + 0.36, player.position.y + 2.16, -0.5);
   /** La Triforce jaillit devant la poitrine, puis fonce sur l'adversaire. */
   const linkTriforceOrigin = () => new THREE.Vector3(player.position.x, player.position.y + 2.05, -0.9);
@@ -1288,18 +1288,43 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     if (hits === 0) callbacks.pistolHit?.({ target: null, link: 'bomb' });
   };
 
-  /** Le crochet se plante dans le dos : la cible est ralentie. */
-  const resolveLinkHookHit = (projectile) => {
-    const target = projectile.target;
-    if (target?.kind === 'rival') {
-      const targetNpc = target.npc || duelRivals[0];
-      const connected = applyNpcSlow(targetNpc, 'link-hook');
-      callbacks.lassoHit?.({ target: 'rival', name: getRivalDisplayName(targetNpc), blocked: !connected, link: true });
+  /** Le boomerang blesse au passage : chaque adversaire n'est ralenti qu'une fois. */
+  const resolveLinkBoomerangSweep = (projectile) => {
+    if (!projectile.hitIds) projectile.hitIds = new Set();
+    const origin = projectile.visual.position;
+    const markHit = (id) => {
+      if (projectile.hitIds.has(id)) return false;
+      projectile.hitIds.add(id);
+      return true;
+    };
+    if (race.mode === 'duel') {
+      for (const rival of duelRivals) {
+        if (!rival?.mesh || isGhostRival(rival) || rival.finishedAt !== null) continue;
+        if (!markHit(rival.id)) continue;
+        const dx = rival.mesh.position.x - origin.x;
+        const dz = rival.mesh.position.z - origin.z;
+        if (Math.hypot(dx, dz) > LINK_BOOMERANG_HIT_RADIUS) {
+          projectile.hitIds.delete(rival.id);
+          continue;
+        }
+        const connected = applyNpcSlow(rival, 'link-boomerang');
+        callbacks.lassoHit?.({ target: 'rival', name: getRivalDisplayName(rival), blocked: !connected, link: true });
+      }
       return;
     }
-    if (target?.kind === 'online') {
-      callbacks.lasso?.(target.player);
-      callbacks.lassoHit?.({ target: 'online', player: target.player, link: true });
+    if (race.mode === 'online') {
+      const net = getNetwork?.();
+      for (const peer of net?.players || []) {
+        if (!peer || peer.user_id === net.userId || peer.finished_at) continue;
+        if (!markHit(peer.user_id)) continue;
+        const point = cloudTargetPosition({ kind: 'online', player: peer }, linkTargetScratch);
+        if (Math.hypot(point.x - origin.x, point.z - origin.z) > LINK_BOOMERANG_HIT_RADIUS) {
+          projectile.hitIds.delete(peer.user_id);
+          continue;
+        }
+        callbacks.lasso?.(peer);
+        callbacks.lassoHit?.({ target: 'online', player: peer, link: true });
+      }
     }
   };
 
@@ -1328,10 +1353,20 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
 
   const launchLinkPower = (kind, targetInfo) => {
     const start = kind === 'red' ? linkTriforceOrigin() : linkHandOrigin();
-    const visual = kind === 'yellow' ? makeLinkHook() : makeLinkTriforce();
+    const visual = kind === 'yellow' ? makeLinkBoomerang() : makeLinkTriforce();
     visual.position.copy(start);
     scene.add(visual);
-    linkPowers.push({ visual, kind, target: targetInfo, start, phase: 'flight', age: 0, spin: 0 });
+    linkPowers.push({
+      visual,
+      kind,
+      target: targetInfo,
+      start: start.clone(),
+      phase: 'flight',
+      age: 0,
+      spin: 0,
+      forward: new THREE.Vector3(0, 0, -1),
+      hitIds: new Set(),
+    });
   };
 
   const updateLinkPowers = (dt) => {
@@ -1351,16 +1386,10 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
           },
         });
       } else if (projectile.kind === 'yellow') {
-        // La main bouge avec le galop : la chaîne suit le cavalier.
-        projectile.start.copy(linkHandOrigin());
-        done = updateLinkHookVisual(
-          projectile.visual,
-          projectile,
-          dt,
-          projectile.start,
-          cloudTargetPosition(projectile.target, linkTargetScratch),
-          { onAttach: () => resolveLinkHookHit(projectile) },
-        );
+        // Tout droit, puis retour à la main qui galope.
+        const hand = linkHandOrigin();
+        done = updateLinkBoomerangVisual(projectile.visual, projectile, dt, hand);
+        if (!done) resolveLinkBoomerangSweep(projectile);
       } else {
         done = updateLinkTriforceVisual(
           projectile.visual,
@@ -1674,6 +1703,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
   };
 
   const fireLasso = (targetInfo) => {
+    // Link : le boomerang blanc part tout droit et revient à la main.
+    if (isLinkRider()) {
+      swingRiderSword('yellow');
+      launchLinkPower('yellow', targetInfo);
+      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo, link: true });
+      return;
+    }
     if (!targetInfo) {
       callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: null });
       return;
@@ -1682,13 +1718,6 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
       swingRiderSword('yellow');
       launchCloudPower('yellow', targetInfo);
       callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo, cloud: true });
-      return;
-    }
-    // Link : le grappin part de sa main et s'accroche dans le dos de la cible.
-    if (isLinkRider()) {
-      swingRiderSword('yellow');
-      launchLinkPower('yellow', targetInfo);
-      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'fired', target: targetInfo, link: true });
       return;
     }
     const rope = acquireRope();
@@ -1914,6 +1943,16 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
 
   const useLasso = () => {
     if (!powerUpsEnabled(race.mode) || (powerState.lassoCharges || 0) <= 0) return;
+    // Le boomerang de Link va tout droit : pas besoin d'une cible pour le lancer.
+    if (isLinkRider()) {
+      const res = consumePowerUp(powerState, POWER_UPS.LASSO);
+      if (!res.used) return;
+      powerState = res.state;
+      fireLasso(null);
+      callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'used', chargesLeft: powerState.lassoCharges || 0, resetAll: false, link: true });
+      emitHud(true);
+      return;
+    }
     const target = findLassoTarget();
     if (!target) {
       callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'no_target' });
@@ -1923,7 +1962,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     if (!res.used) return;
     powerState = res.state;
     fireLasso(target);
-    callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'used', chargesLeft: 0, resetAll: false });
+    callbacks.powerUp?.({ type: POWER_UPS.LASSO, action: 'used', chargesLeft: powerState.lassoCharges || 0, resetAll: false });
     emitHud(true);
   };
 
@@ -2543,7 +2582,7 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
               playerSlowTimer = connected ? (slowedUntil - now) / 1000 : 0;
               if (slowEffect === 'cloud-wave') {
                 callbacks.lassoHit?.({ target: 'player', from: 'online', cloud: true, blocked: !connected });
-              } else if (slowEffect === 'link-hook') {
+              } else if (slowEffect === 'link-hook' || slowEffect === 'link-boomerang') {
                 callbacks.lassoHit?.({ target: 'player', from: 'online', link: true, blocked: !connected });
               }
             }
@@ -2721,14 +2760,18 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
             if (powerUpsEnabled(race.mode)) {
               const chargeResult = chargePowerUps(powerState, tier);
               powerState = chargeResult.state;
+              if (isLinkRider() && chargeResult.charged.includes(POWER_UPS.LASSO)) {
+                powerState.lassoCharges = LINK_BOOMERANG_THROWS;
+              }
               // Shield & Boost have no target: they fire the moment their bar is full.
               const { auto, manual } = splitChargedPowers(chargeResult.charged);
               if (manual.length > 0) {
+                const chargedType = manual[manual.length - 1];
                 callbacks.powerUp?.({
-                  type: manual[manual.length - 1],
+                  type: chargedType,
                   action: 'charged',
                   chargedTypes: manual,
-                  charges: 1,
+                  charges: chargedType === POWER_UPS.LASSO && isLinkRider() ? LINK_BOOMERANG_THROWS : 1,
                 });
               }
               for (const type of auto) {
@@ -2976,8 +3019,8 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
         const hasShield = shieldUntil > now;
         const isSlowed = slowedUntil > now;
         const cloudWaveSlow = isSlowed && peer.slow_effect === 'cloud-wave';
-        // Un cavalier agrippé au grappin tire sur la chaîne : il tangue plus sec.
-        const hookedSlow = isSlowed && peer.slow_effect === 'link-hook';
+        // Un cavalier touché par le boomerang tangue, plus léger que le grappin.
+        const hookedSlow = isSlowed && (peer.slow_effect === 'link-hook' || peer.slow_effect === 'link-boomerang');
         rider.rotation.z = cloudWaveSlow
           ? Math.sin(time * 0.078 + slot * 1.7) * 0.12
           : hookedSlow ? Math.sin(time * 0.16 + slot * 2.4) * 0.07 : 0;

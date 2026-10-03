@@ -665,7 +665,7 @@ export async function checkMirageFlow(assert) {
     await act(async () => { infoTab.click(); });
     const infoPanel = linkBuyer.node.querySelector('#mirage-panel-info');
     assert.ok(infoPanel.textContent.includes('Bombe'), 'le pouvoir bleu devient la bombe');
-    assert.ok(infoPanel.textContent.includes('Grappin'), 'le pouvoir jaune devient le grappin');
+    assert.ok(infoPanel.textContent.includes('Boomerang'), 'le pouvoir jaune devient le boomerang');
     assert.ok(infoPanel.textContent.includes('Triforce'), 'le pouvoir rouge devient la Triforce');
     assert.ok(/2 cases/.test(infoPanel.textContent), 'la portée de 2 cases de l’explosion est annoncée');
   } finally {

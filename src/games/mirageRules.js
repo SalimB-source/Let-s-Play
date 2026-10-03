@@ -547,17 +547,17 @@ export function consumePowerUp(state = createPowerUpState(), type) {
   };
 
   if (type === POWER_UPS.SHIELD) {
-    nextState.shieldCharges = 0;
-    nextState.shieldChargePoints = 0;
+    nextState.shieldCharges = Math.max(0, nextState.shieldCharges - 1);
+    if (nextState.shieldCharges === 0) nextState.shieldChargePoints = 0;
   } else if (type === POWER_UPS.LASSO) {
-    nextState.lassoCharges = 0;
-    nextState.lassoChargePoints = 0;
+    nextState.lassoCharges = Math.max(0, nextState.lassoCharges - 1);
+    if (nextState.lassoCharges === 0) nextState.lassoChargePoints = 0;
   } else if (type === POWER_UPS.PISTOL) {
-    nextState.pistolCharges = 0;
-    nextState.pistolChargePoints = 0;
+    nextState.pistolCharges = Math.max(0, nextState.pistolCharges - 1);
+    if (nextState.pistolCharges === 0) nextState.pistolChargePoints = 0;
   } else if (type === POWER_UPS.BOOST) {
-    nextState.boostCharges = 0;
-    nextState.boostChargePoints = 0;
+    nextState.boostCharges = Math.max(0, nextState.boostCharges - 1);
+    if (nextState.boostCharges === 0) nextState.boostChargePoints = 0;
   }
 
   return {

@@ -628,18 +628,18 @@ test('les bruitages de Cloud et de Link sont branchés sur le monde et les deux 
   assert.match(world, /cloudStrike: \(info\) => callbackRefs\.current\.onCloudStrike\?\.\(info\)/);
   // Sur les deux pages, le chocobo doré remplace le lasso et le pistolet par ses
   // techniques ; Link intercale (ou précède) les siennes dans la même chaîne.
-  assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudSwordWave\?\.\(\);(\s*else if \(isLinkRider\) audioRef\.current\?\.linkHookThrow\?\.\(\);)?\s*else audioRef\.current\?\.lassoThrow\?\.\(\);/);
+  assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudSwordWave\?\.\(\);(\s*else if \(isLinkRider\) audioRef\.current\?\.linkBoomerangThrow\?\.\(\);)?\s*else audioRef\.current\?\.lassoThrow\?\.\(\);/);
   assert.match(rushPage, /if \(isCloudRider\) audioRef\.current\?\.cloudStormCharge\?\.\(\);(\s*else if \(isLinkRider\) audioRef\.current\?\.linkTriforce\?\.\(\);)?\s*else audioRef\.current\?\.gunshot[?.]*\(\);/);
-  assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudSwordWave\?\.\(\);(\s*else if \(isLinkRider\) audio\.current\?\.linkHookThrow\?\.\(\);)?\s*else audio\.current\?\.lassoThrow\?\.\(\);/);
+  assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudSwordWave\?\.\(\);(\s*else if \(isLinkRider\) audio\.current\?\.linkBoomerangThrow\?\.\(\);)?\s*else audio\.current\?\.lassoThrow\?\.\(\);/);
   assert.match(onlinePage, /if \(isCloudRider\) audio\.current\?\.cloudStormCharge\?\.\(\);(\s*else if \(isLinkRider\) audio\.current\?\.linkTriforce\?\.\(\);)?\s*else audio\.current\?\.gunshot[?.]*\(\);/);
-  // …et Link pose sa bombe, lance son grappin, puis sa Triforce.
+  // …et Link pose sa bombe, lance son boomerang, puis sa Triforce.
   for (const [name, page, audio] of [['MirageRushPage', rushPage, 'audioRef.current'], ['MirageOnline', onlinePage, 'audio.current']]) {
-    for (const method of ['linkBombDrop', 'linkHookThrow', 'linkTriforce']) {
+    for (const method of ['linkBombDrop', 'linkBoomerangThrow', 'linkTriforce']) {
       assert.ok(page.includes(`${audio}?.${method}?.();`), `${name} joue ${method}()`);
     }
     assert.ok(page.includes('isLinkRider'), `${name} distingue le cavalier Link`);
   }
-  for (const method of ['linkBombDrop', 'linkBombExplosion', 'linkHookThrow', 'linkTriforce', 'linkTriforceImpact']) {
+  for (const method of ['linkBombDrop', 'linkBombExplosion', 'linkBoomerangThrow', 'linkTriforce', 'linkTriforceImpact']) {
     assert.ok(audioModule.includes(`${method}()`), `${method}() existe dans arcadeAudio.js`);
   }
   assert.match(world, /callbacks\.linkStrike\?\.\(\{ kind: 'bomb' \}\);/);

@@ -418,7 +418,7 @@ export default function MirageOnline({
   const powerVariant = isCloudRider ? 'cloud' : isLinkRider ? 'link' : 'standard';
   const cloudPowerVariant = powerVariant;
   const bluePowerLabel = isLinkRider ? 'Bombe' : 'Bouclier';
-  const yellowPowerLabel = isCloudRider ? 'Onde d’épée' : isLinkRider ? 'Grappin' : 'Lasso';
+  const yellowPowerLabel = isCloudRider ? 'Onde d’épée' : isLinkRider ? 'Boomerang' : 'Lasso';
   const redPowerLabel = isCloudRider ? 'Éclair' : isLinkRider ? 'Triforce' : 'Pistolet';
   const isHost = Boolean(
     room && (room.host_id === effectivePlayer.id || String(room.host_id).startsWith('bot-')),
@@ -1343,7 +1343,7 @@ export default function MirageOnline({
                             if (info.type === 'lasso') {
                               setPowerToast(isCloudRider
                                 ? '⚔ Aucun cavalier devant toi pour l’onde dorée !'
-                                : isLinkRider ? '🪝 Aucun cavalier à portée du grappin !' : '🪢 Aucun cavalier devant toi !');
+                                : isLinkRider ? '🪃 Le boomerang revient sans avoir touché personne.' : '🪢 Aucun cavalier devant toi !');
                             } else if (info.type === 'pistol') {
                               setPowerToast(isCloudRider
                                 ? '⚡ Aucune cible devant toi pour l’éclair !'
@@ -1363,9 +1363,9 @@ export default function MirageOnline({
                             } else if (info.type === 'lasso') {
                               // Cloud lance son onde d'épée : la rafale de vent, pas le lasso.
                               if (isCloudRider) audio.current?.cloudSwordWave?.();
-                              else if (isLinkRider) audio.current?.linkHookThrow?.();
+                              else if (isLinkRider) audio.current?.linkBoomerangThrow?.();
                               else audio.current?.lassoThrow?.();
-                              setPowerToast(isCloudRider ? '⚔ Onde de choc dorée lancée !' : isLinkRider ? '🪝 Grappin lancé !' : '🪢 Lasso envoyé !');
+                              setPowerToast(isCloudRider ? '⚔ Onde de choc dorée lancée !' : isLinkRider ? '🪃 Boomerang lancé !' : '🪢 Lasso envoyé !');
                             } else if (info.type === 'pistol') {
                               // Cloud appelle la foudre : l'orage gronde avant la frappe.
                               if (isCloudRider) audio.current?.cloudStormCharge?.();
@@ -1383,7 +1383,7 @@ export default function MirageOnline({
                             if (info.type === 'lasso') {
                               setPowerToast(isCloudRider
                                 ? '⚡ ⚔ ONDE D’ÉPÉE PRÊTE ! Appuie sur W / Z ou clique !'
-                                : isLinkRider ? '⚡ 🪝 GRAPPIN PRÊT ! Appuie sur W / Z ou clique !' : '⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
+                                : isLinkRider ? '⚡ 🪃 BOOMERANG PRÊT ×2 ! Appuie sur W / Z ou clique !' : '⚡ 🪢 LASSO PRÊT ! Appuie sur W / Z ou clique !');
                             } else if (info.type === 'pistol') {
                               setPowerToast(isCloudRider
                                 ? '⚡ 🌩 ÉCLAIR PRÊT ! Appuie sur R ou clique !'
@@ -1401,7 +1401,7 @@ export default function MirageOnline({
                           setPowerToast(isCloudRider
                             ? `⚔ Onde dorée envoyée sur ${targetPlayer.name} !`
                             : isLinkRider
-                              ? `🪝 Grappin accroché au dos de ${targetPlayer.name} !`
+                              ? `🪃 Boomerang lancé sur ${targetPlayer.name} !`
                               : `🪢 Lasso lancé sur ${targetPlayer.name} !`);
                           setTimeout(()=> setPowerToast(null), 2500);
                           return result;
@@ -1468,10 +1468,10 @@ export default function MirageOnline({
                         }}
                         onLassoHit={(info) => {
                           if (info?.target === 'player' && info.link) {
-                            audio.current?.linkHookThrow?.();
+                            audio.current?.linkBoomerangThrow?.();
                             setPowerToast(info.blocked
-                              ? `🛡️ Grappin bloqué par ton bouclier !`
-                              : `🪝 Le grappin t’attrape par le dos : ralenti ${LASSO_SLOW_DURATION}s…`);
+                              ? `🛡️ Boomerang bloqué par ton bouclier !`
+                              : `🪃 Le boomerang te touche : ralenti ${LASSO_SLOW_DURATION}s…`);
                             setTimeout(()=> setPowerToast(null), 2500);
                             return;
                           }
@@ -1558,7 +1558,9 @@ export default function MirageOnline({
                               disabled={(hud.lassoCharges || 0) <= 0}
                               title={isCloudRider
                                 ? `Onde de choc à l’épée (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes. Secoue et ralentit la cible pendant ${LASSO_SLOW_DURATION}s.`
-                                : `Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
+                                : isLinkRider
+                                  ? `Boomerang (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes. Il part tout droit, revient, ralentit ${LASSO_SLOW_DURATION}s, deux lancers.`
+                                  : `Lasso (W / Z) — ${POWER_UP_DIAMOND_COST[POWER_UPS.LASSO]} diamants jaunes pour remplir la barre. Cible uniquement devant toi. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">
                                 <MiragePowerIcon type={POWER_UPS.LASSO} variant={powerVariant} className="mirage-powerup-icon" />

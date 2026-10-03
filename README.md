@@ -314,12 +314,12 @@ diamants chargent les mêmes barres, aux mêmes touches) :
 | Couleur | Touche | Standard | Link |
 |---|---|---|---|
 | Bleu | AUTO | Bouclier | **Bombe** : sphère noire posée derrière Épona, mèche allumée de 1,5 s, puis explosion de zone qui fait tomber tout ennemi à **2 cases** |
-| Jaune | W / Z | Lasso | **Grappin** : le crochet s'envole, s'accroche dans le dos de la cible et la ralentit |
+| Jaune | W / Z | Lasso | **Boomerang** : blanc, va tout droit sur quelques mètres puis revient ; un adversaire touché est ralenti ; **deux lancers** par charge |
 | Rouge | R | Pistolet | **Triforce** : le triangle d'or fonce sur l'adversaire **juste devant** et le fait tomber |
 | Vert | AUTO | Turbo | Turbo (inchangé) |
 
 En ligne, la victime reçoit l'effet qui correspond à la technique subie
-(`link-hook`, `link-triforce`, `link-bomb`) : le message du salon et le
+(`link-boomerang`, `link-triforce`, `link-bomb`) : le message du salon et le
 tangage du cavalier touché s'adaptent. La bombe emprunte le canal réseau du
 tir avec une cause `link-bomb` pour rester reconnaissable.
 
@@ -327,17 +327,18 @@ tir avec une cause `link-bomb` pour rester reconnaissable.
 
 - `src/games/mirageLinkPowers.js` — les trois effets 3D (pur three.js,
   testable) : `makeLinkBomb()` / `updateLinkBombVisual()` (mèche
-  `LINK_BOMB_FUSE_DURATION`, portée `LINK_BOMB_AOE_TILES`), `makeLinkHook()` /
-  `updateLinkHookVisual()`, `makeLinkTriforce()` / `updateLinkTriforceVisual()` ;
+  `LINK_BOMB_FUSE_DURATION`, portée `LINK_BOMB_AOE_TILES`), `makeLinkBoomerang()` /
+  `updateLinkBoomerangVisual()` (portée `LINK_BOOMERANG_RANGE`, deux lancers),
+  `makeLinkTriforce()` / `updateLinkTriforceVisual()` ;
 - `src/games/MirageWorld.jsx` — `isLinkRider()`, `dropLinkBomb()`,
   `launchLinkPower()`, `findTriforceTarget()` (l'adversaire juste devant) et
   `linkBombVictims()` (rayon de 2 cases) ; la bombe recule avec le décor ;
 - `src/games/mirageRooms.js` — `slowEffectFor()` / `stunEffectFor()` /
   `slowHitMessage()` / `stunHitMessage()` : effets et messages côté salon ;
 - `src/games/arcadeAudio.js` — `linkBombDrop()`, `linkBombExplosion()`,
-  `linkHookThrow()`, `linkTriforce()` et `linkTriforceImpact()` ;
+  `linkBoomerangThrow()`, `linkTriforce()` et `linkTriforceImpact()` ;
 - `src/games/miragePowerIcons.js` + `public/icons/mirage-rush/link-*.svg` et
-  `src/games/MiragePowerIcon.jsx` — icônes « Bombe / Grappin / Triforce » ;
+  `src/games/MiragePowerIcon.jsx` — icônes « Bombe / Boomerang / Triforce » ;
 - `src/games/mirageCharacters.js` — palette, nom, accessoire `link-epona` et
   prix (index `LINK_EPONA_INDEX`) ; le personnage est aussi ajouté au lobby en
   ligne (`LOBBY_CHARACTER_INDICES`) ;
@@ -353,7 +354,7 @@ tir avec une cause `link-bomb` pour rester reconnaissable.
 ### Vérifications
 
 ```bash
-npm run check:mirage-link    # personnage, fenêtre de 3 jours, retour au prix de 320 OR, bombe / grappin / Triforce
+npm run check:mirage-link    # personnage, fenêtre de 3 jours, retour au prix de 320 OR, bombe / boomerang / Triforce
 npm run check:mirage-flow    # la boutique affiche les trois skins, leurs prix et les techniques de Link dans les règles
 ```
 
