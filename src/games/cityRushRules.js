@@ -165,6 +165,23 @@ export function cityRushTrafficRecoveryRate(accelerationRate, recoveryLeft) {
   return Number(recoveryLeft) > 0 ? rate * CITY_RUSH_TRAFFIC_RECOVERY_BOOST : rate;
 }
 
+// ── Stabilité de voie : écart coûteux, ligne propre récompensée ─────────────
+// Changer de voie fait glisser la voiture latéralement : elle ralentit
+// légèrement pendant un court instant. À l'inverse, tenir sa voie sans bouger
+// charge progressivement un bonus de vitesse « ligne propre », perdu dès le
+// prochain changement de voie.
+export const CITY_RUSH_LANE_CHANGE_SLOW_DURATION = 0.8; // s : léger coup de frein après un changement de voie
+export const CITY_RUSH_LANE_CHANGE_SLOW_FACTOR = 0.9; // la voiture ne garde que 90 % de sa vitesse
+export const CITY_RUSH_CLEAN_LINE_RAMP_DURATION = 3.5; // s de voie tenue pour charger le bonus au maximum
+export const CITY_RUSH_CLEAN_LINE_MAX_BONUS = 1.12; // × vitesse au bout d'une voie tenue longtemps
+
+export function cityRushCleanLineFactor(cleanLineTime) {
+  const held = Math.max(0, Number(cleanLineTime) || 0);
+  if (CITY_RUSH_CLEAN_LINE_RAMP_DURATION <= 0) return CITY_RUSH_CLEAN_LINE_MAX_BONUS;
+  const progress = Math.min(1, held / CITY_RUSH_CLEAN_LINE_RAMP_DURATION);
+  return 1 + (CITY_RUSH_CLEAN_LINE_MAX_BONUS - 1) * progress;
+}
+
 export function cityRushHitDuration(baseDuration, carProfile) {
   const duration = Math.max(0, Number(baseDuration) || 0);
   const multiplier = Number(carProfile?.hitRecoveryMultiplier);
