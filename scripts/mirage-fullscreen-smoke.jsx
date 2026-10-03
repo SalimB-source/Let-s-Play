@@ -9,7 +9,11 @@
  * instant plus tard, puis `fullscreenchange` part), qu'on peut aussi faire
  * refuser, faire attendre (`hold`) ou fermer « de l'extérieur » (Échap).
  *
- *   1. Ordinateur : le clic sur une carte de map ne touche pas à l'écran.
+ *   0. Plein écran « de base » : l'interface se lance en plein écran (couche
+ *      fixe posée au montage, sans geste) ; le premier geste du joueur demande
+ *      le plein écran natif ; le bouton de la barre le referme.
+ *   1. Ordinateur : une fois le plein écran de base quitté, le clic sur une
+ *      carte de map ne touche pas à l'écran.
  *   2. « LANCER EN PLEIN ÉCRAN » (Rapide, puis Coupe) : plein écran natif sur la
  *      coque du jeu, couche fixe, verrou de défilement, bouton de la barre
  *      allumé. Le navigateur le referme (Échap) : la course passe en pause, la
@@ -30,10 +34,12 @@
  *      écran), une nouvelle bascule est ignorée, et un navigateur muet est
  *      rattrapé par le délai de sécurité.
  *   9. Téléphone (pointeur grossier) et application Android : le clic sur une
- *      carte ouvre le plein écran tout seul, sans second bouton ; le retour à
- *      l'intro le referme — sauf si le joueur l'avait demandé.
+ *      carte ouvre le plein écran natif tout seul, sans second bouton ; le
+ *      plein écran de base reste au retour à l'intro ; sorti à la main, un
+ *      nouveau clic sur une carte le rouvre.
  *  10. Course en ligne : bouton et touche F sur la fenêtre de course, plein
- *      écran refermé quand la fenêtre disparaît (arrivée).
+ *      écran refermé quand la fenêtre disparaît (arrivée). La fenêtre de course
+ *      ne part jamais en plein écran de base (la coquille n'existe pas).
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -189,24 +195,42 @@ export async function checkMirageFullscreen(assert) {
   const api = installFullscreenApi();
   const timers = patchTimers();
   try {
-    // ── 1-5. Ordinateur ─────────────────────────────────────────────────────
+    // ── 0-5. Ordinateur ─────────────────────────────────────────────────────
     {
       const { node, unmount } = await mountPage('/jeu');
-      assert.deepEqual(shellState(node, api), CLOSED, 'la page s’ouvre en fenêtre, jamais en plein écran');
+      // 0. Plein écran « de base » : la couche fixe couvre tout le viewport dès
+      // l'ouverture de la page ; le natif attend le premier geste du joueur
+      // (le navigateur refuse une demande hors geste).
+      assert.deepEqual(shellState(node, api), LAYER_ONLY, 'l’interface se lance en plein écran de base (couche fixe)');
+      assert.equal(api.requests, 0, 'aucune demande native avant un geste du joueur');
       const toggle = toggleOf(node);
       assert.ok(toggle, 'le bouton « Plein écran » est dans la barre du jeu dès l’intro');
+      assert.equal(toggle.getAttribute('aria-pressed'), 'true', 'le bouton de la barre reflète le plein écran de base');
       assert.equal(toggle.getAttribute('aria-label'), 'Plein écran');
       assert.equal(squash(toggle.textContent), 'PLEIN ÉCRAN');
       assert.ok(toggle.querySelector('svg.mirage-fullscreen-icon'), 'icône dessinée en SVG (pas de glyphe absent des polices)');
       assert.match(toggle.title, /\(F\)/, 'l’infobulle annonce la touche F');
+      assert.ok(!launchFullscreenOf(node), 'déjà en plein écran : pas de bouton « LANCER EN PLEIN ÉCRAN »');
 
-      // 1. Toucher une carte ne touche pas à l'écran, sur ordinateur.
+      // Le premier geste du joueur demande le plein écran natif.
+      await act(async () => {
+        node.querySelector('.mirage-mode-action').dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+      });
+      await settle();
+      assert.deepEqual(shellState(node, api), OPEN, 'le premier geste ouvre le plein écran natif');
+      assert.equal(api.requests, 1, 'une demande native au premier geste');
+
+      // Sortie explicite : la suite vérifie les commandes depuis la page en fenêtre.
+      await click(toggleOf(node));
+      assert.deepEqual(shellState(node, api), CLOSED, 'le bouton de la barre referme le plein écran de base');
+
+      // 1. Une fois le plein écran quitté, toucher une carte ne le rouvre pas, sur ordinateur.
       await openStage(node, 0);
       const secondary = launchFullscreenOf(node);
       assert.equal(startOf(node), null, 'plus de bouton « LANCER LA PARTIE » : la carte est le bouton');
       assert.ok(mapCardOf(node), 'les cartes de map sont affichées');
       assert.ok(node.querySelector('.mirage-picker-hint'), 'la consigne annonce que le clic lance la partie');
-      assert.ok(secondary, 'ordinateur : un second bouton lance directement en plein écran');
+      assert.ok(secondary, 'plein écran quitté : un second bouton lance directement en plein écran');
       assert.match(squash(secondary.textContent), /^LANCER EN PLEIN ÉCRAN$/);
       assert.equal(secondary.disabled, false, 'actif dès que le moteur est prêt');
       assert.ok(!secondary.classList.contains('mirage-start-button'), 'bouton à part : le lancement direct en plein écran reste une option');
@@ -214,15 +238,16 @@ export async function checkMirageFullscreen(assert) {
       await click(mapCardOf(node));
       await waitForRace(node);
       assert.deepEqual(shellState(node, api), CLOSED, 'le clic sur une carte : la course part dans la page');
-      assert.equal(api.requests, 0, 'aucune demande de plein écran sans qu’on l’ait faite');
+      assert.equal(api.requests, 1, 'aucune nouvelle demande de plein écran sans qu’on l’ait faite');
       await click(backOf(node));
       await waitForIntroStep(node, 'mode');
 
       // 2. « LANCER EN PLEIN ÉCRAN » : natif + couche fixe + verrou, la course part.
       await openStage(node, 0);
+      const beforeLaunch = mark(api);
       await click(launchFullscreenOf(node));
       assert.deepEqual(shellState(node, api), OPEN, 'plein écran natif sur la coque, couche fixe, verrou, bouton allumé');
-      assert.equal(api.requests, 1);
+      assert.deepEqual(since(api, beforeLaunch), { requests: 1, exits: 0 });
       assert.equal(toggleOf(node).querySelector('svg path').getAttribute('d').startsWith('M6 2'), true, 'l’icône passe à « réduire »');
       assert.ok(!launchFullscreenOf(node), 'le second bouton disparaît une fois en plein écran');
       await waitForCountdown(node);
@@ -308,9 +333,13 @@ export async function checkMirageFullscreen(assert) {
       await unmount();
     }
 
-    // 2 bis. Coupe : « LANCER EN PLEIN ÉCRAN » lance la coupe en plein écran.
+    // 2 bis. Coupe : plein écran de base dès l'ouverture ; « LANCER EN PLEIN
+    // ÉCRAN » (une fois le plein écran quitté) lance la coupe en plein écran.
     {
       const { node, unmount } = await mountPage('/jeu?mode=cup');
+      assert.deepEqual(shellState(node, api), LAYER_ONLY, 'Coupe : l’interface se lance aussi en plein écran de base');
+      await click(toggleOf(node));
+      assert.deepEqual(shellState(node, api), CLOSED, 'sortie explicite pour retrouver le bouton de lancement');
       await until(() => launchFullscreenOf(node), 'le bouton de plein écran de la coupe');
       await click(launchFullscreenOf(node));
       assert.deepEqual(shellState(node, api), OPEN, 'Coupe : plein écran');
@@ -327,7 +356,11 @@ export async function checkMirageFullscreen(assert) {
       const { node, unmount } = await mountPage('/jeu');
       await openStage(node, 0);
 
-      // 6. Sans Fullscreen API : la couche fixe seule suffit.
+      // 6. Sans Fullscreen API (demande refusée) : la couche fixe seule suffit.
+      // Le plein écran de base est posé au montage : on le quitte, puis on le
+      // redemande pendant que le navigateur refuse.
+      await click(toggleOf(node));
+      assert.deepEqual(shellState(node, api), CLOSED, 'le bouton de la barre referme le plein écran de base');
       api.refuse = true;
       let before = mark(api);
       await click(toggleOf(node));
@@ -335,7 +368,7 @@ export async function checkMirageFullscreen(assert) {
       assert.deepEqual(shellState(node, api), LAYER_ONLY, 'demande refusée : le jeu occupe quand même tout l’écran');
       await press('f');
       assert.deepEqual(shellState(node, api), CLOSED, 'F referme la couche fixe');
-      assert.deepEqual(since(api, before), { requests: 1, exits: 0 }, 'sans plein écran natif, pas d’appel à exitFullscreen');
+      assert.deepEqual(since(api, before), { requests: 2, exits: 0 }, 'sans plein écran natif, pas d’appel à exitFullscreen (une demande refusée par geste)');
       api.refuse = false;
 
       // 7. Double bascule avant la réponse du navigateur.
@@ -395,30 +428,28 @@ export async function checkMirageFullscreen(assert) {
       install();
       try {
         const { node, unmount } = await mountPage('/jeu');
+        assert.deepEqual(shellState(node, api), LAYER_ONLY, `${label} : l’interface se lance en plein écran de base (couche fixe)`);
         await openStage(node, 0);
         assert.ok(!launchFullscreenOf(node), `${label} : pas de second bouton, toucher une carte ouvre déjà le plein écran`);
         const before = mark(api);
         await click(mapCardOf(node));
-        assert.deepEqual(shellState(node, api), OPEN, `${label} : toucher une carte ouvre le plein écran tout seul`);
+        assert.deepEqual(shellState(node, api), OPEN, `${label} : toucher une carte ouvre le plein écran natif tout seul`);
         assert.equal(since(api, before).requests, 1);
         await waitForRace(node);
         await click(backOf(node));
         await waitForIntroStep(node, 'mode');
         await settle();
-        assert.deepEqual(shellState(node, api), CLOSED, `${label} : le retour à l’intro referme le plein écran ouvert automatiquement`);
-        assert.equal(since(api, before).exits, 1);
+        assert.deepEqual(shellState(node, api), OPEN, `${label} : plein écran de base — il reste au retour à l’intro`);
+        assert.equal(since(api, before).exits, 0, `${label} : aucune sortie demandée au navigateur`);
 
-        // Un plein écran demandé à la main, lui, reste.
+        // Sorti à la main, le plein écran se referme ; un nouveau clic sur une
+        // carte le rouvre (téléphone et application lancent toujours en plein écran).
         await click(toggleOf(node));
-        assert.deepEqual(shellState(node, api), OPEN);
+        assert.deepEqual(shellState(node, api), CLOSED, `${label} : le bouton de la barre referme`);
         await openStage(node, 0);
         await click(mapCardOf(node));
         await waitForRace(node);
-        await click(backOf(node));
-        await waitForIntroStep(node, 'mode');
-        assert.deepEqual(shellState(node, api), OPEN, `${label} : demandé par le bouton, le plein écran reste à l’intro`);
-        await click(toggleOf(node));
-        assert.deepEqual(shellState(node, api), CLOSED);
+        assert.deepEqual(shellState(node, api), OPEN, `${label} : le lancement rouvre le plein écran`);
         await unmount();
       } finally {
         uninstall();

@@ -14,11 +14,17 @@
  *
  * Qui ouvre le plein écran :
  *
- *   - **téléphone, tablette, application** : le clic sur une carte de map (ou de
- *     coupe) l'ouvre tout seul — un doigt joue mieux sur tout l'écran — voir
- *     `opensFullscreenOnLaunch()` ;
- *   - **ordinateur** : jamais sans qu'on le demande. Bouton « Plein écran » de
- *     la barre du jeu, bouton « LANCER EN PLEIN ÉCRAN », ou la touche F.
+ *   - **partout** : l'interface se lance en plein écran **de base**. La couche
+ *     fixe couvre tout le viewport dès l'ouverture de la page (aucun geste
+ *     n'est exigé pour elle) ; le plein écran natif, que le navigateur refuse
+ *     hors d'un geste, est demandé au tout premier geste du joueur — voir
+ *     `MirageRushPage.jsx`. Le choix est « épinglé » : il reste jusqu'à ce que
+ *     le joueur le quitte (bouton de la barre, touche F, Échap) ;
+ *   - **téléphone, tablette, application** : le clic sur une carte de map (ou
+ *     de coupe) demande aussi le natif dans le geste — un doigt joue mieux sur
+ *     tout l'écran — voir `opensFullscreenOnLaunch()` ;
+ *   - **sinon** : bouton « Plein écran » de la barre du jeu, bouton « LANCER
+ *     EN PLEIN ÉCRAN » (une fois le plein écran quitté), ou la touche F.
  *
  * Ce module ne contient que les gestes du navigateur et cette règle ; l'état
  * React (classe, verrou de défilement, fermeture au retour de l'intro) vit dans

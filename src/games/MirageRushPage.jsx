@@ -25,7 +25,7 @@ import {
 } from './mirageCup';
 import { buildDuelStandings, rankLabel } from './mirageStandings';
 import { CLOUD_CHOCOBO_ID, CLOUD_CHOCOBO_TEMPORARILY_FREE, SKINS, SHOP_SKINS, WIN_COINS, applyRun, buySkin, equipSkin, isShopSkin, isSkinUnlocked, isStageUnlocked, levelProgress, loadProgress, saveProgress, skinFor } from './mirageProgression';
-import { isFullscreenShortcut, opensFullscreenOnLaunch } from './mirageFullscreen';
+import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './mirageFullscreen';
 import useMirageFullscreen from './useMirageFullscreen';
 import './mirage-rush.css';
 // Habillage PlayStation 5 (next-gen) : importé après la feuille
@@ -294,15 +294,45 @@ export default function MirageRushPage() {
   // ── Plein écran ────────────────────────────────────────────────────────
   // Le mécanisme (Fullscreen API, couche fixe en repli, verrou de défilement)
   // vit dans useMirageFullscreen / mirageFullscreen.js. Ici, les règles du jeu :
+  //   - l'interface SE LANCE EN PLEIN ÉCRAN DE BASE, sur tous les appareils :
+  //     la couche fixe (qui couvre tout le viewport) est posée dès le montage
+  //     de la page, et le plein écran natif — que le navigateur refuse hors
+  //     d'un geste — part au tout premier geste du joueur (clic, touche). Le
+  //     choix est « épinglé » : intro, courses et arrivées le gardent jusqu'à
+  //     ce que le joueur le quitte (bouton de la barre, touche F, Échap ou
+  //     geste « retour » du navigateur) ;
   //   - téléphone, tablette, application : le clic sur une carte de map (ou de
-  //     coupe) ouvre le plein écran tout seul (le doigt joue mieux sur tout
-  //     l'écran) et la page le referme dès qu'elle revient à l'intro — c'est le
-  //     comportement d'origine ;
-  //   - ordinateur : jamais sans demande. Bouton « Plein écran » de la barre du
-  //     jeu, « LANCER EN PLEIN ÉCRAN » ou touche F. Demandé ainsi, il reste ouvert
-  //     d'une course à l'autre (intro comprise) jusqu'à ce qu'on le quitte ;
+  //     coupe) demande aussi le natif dans le geste (voir
+  //     `opensFullscreenOnLaunch()`), ce qui relance un plein écran quitté ;
   //   - si le navigateur le referme (Échap, geste « retour »), la course en cours
   //     est mise en pause plutôt que jouée à moitié dans la page.
+  useEffect(() => {
+    // Plein écran « de base » : la couche fixe se pose sans geste. `native`
+    // est faux car le navigateur refuserait une demande hors geste — le natif
+    // part au premier geste (effet suivant). En ligne d'entrée de jeu, la
+    // coquille n'existe pas encore : l'appel ne fait rien.
+    enterImmersive({ pinned: true, native: false });
+  }, [enterImmersive]);
+
+  // Le navigateur exige un geste pour le vrai plein écran : le premier clic ou
+  // la première touche (hors champs de saisie) le demande. Le natif posé — ou
+  // le plein écran quitté — l'écoute s'arrête d'elle-même.
+  useEffect(() => {
+    if (!immersive) return undefined;
+    const upgrade = (event) => {
+      if (nativeFullscreenElement()) return;
+      const tag = event.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      enterImmersive({ pinned: true });
+    };
+    window.addEventListener('pointerdown', upgrade, true);
+    window.addEventListener('keydown', upgrade, true);
+    return () => {
+      window.removeEventListener('pointerdown', upgrade, true);
+      window.removeEventListener('keydown', upgrade, true);
+    };
+  }, [immersive, enterImmersive]);
+
   useEffect(() => {
     if (phase === 'intro' && !immersivePinned()) exitImmersive();
   }, [phase, exitImmersive, immersivePinned]);
@@ -729,8 +759,9 @@ export default function MirageRushPage() {
         ? `${riderCount} CAVALIERS · DÉPART → ${DUEL_DISTANCE} M · LE PLUS RAPIDE GAGNE`
         : '60 SECONDES · 3 VIES · MULTIPLICATEUR DE COMBO · RECORD À BATTRE';
   // Sous les cartes de l'écran 02, il ne reste que deux options : l'attente du
-  // moteur 3D et, sur ordinateur, le lancement direct en plein écran (chaque
-  // carte démarre sa partie d'un clic).
+  // moteur 3D et le lancement direct en plein écran — celui-ci ne s'affiche
+  // qu'une fois le plein écran de base quitté (chaque carte démarre sa partie
+  // d'un clic, et l'interface se lance déjà en plein écran).
   const showStageLoading = !ready && selectedMode !== 'online';
   const showFullscreenLaunch = selectedMode !== 'online' && !launchesFullscreen && !immersive;
   const gameBrandLabel = phase === 'intro' && introStep === 'stage' && isCup
@@ -1231,8 +1262,9 @@ export default function MirageRushPage() {
                   {challengeCode && !challenge && <p className="mirage-duel-warning">Lien de défi invalide. Tu peux quand même défier les {rivalCount} PNJ.</p>}
                   <p className="mirage-stage-description">{stageIntroText}</p>
                   {/* Plus de bouton « LANCER » : chaque carte démarre sa partie.
-                      Il ne reste ici que l’attente du moteur 3D et, sur
-                      ordinateur, le lancement direct en plein écran. */}
+                      Il ne reste ici que l’attente du moteur 3D et, une fois le
+                      plein écran de base quitté, le lancement direct en plein
+                      écran. */}
                   {(showStageLoading || showFullscreenLaunch) && (
                     <div className="mirage-stage-actions">
                       {showStageLoading && (

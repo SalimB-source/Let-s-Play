@@ -68,14 +68,15 @@
 }
 .mirage-game-shell { min-width: 0; overflow: hidden; }
 /* ── Plein écran (tous appareils) ─────────────────────────────────────────
-   Sur mobile et dans l'APK, « LANCER LA PARTIE » bascule cette coquille en
-   plein écran ; sur ordinateur, le bouton « Plein écran » de la barre du jeu,
-   « LANCER EN PLEIN ÉCRAN » et la touche F font la même chose (classe
-   `is-immersive`, posée par useMirageFullscreen au moment du geste) : le plein
-   écran natif quand la plateforme l'accepte, et cette couche fixe comme repli
-   universel (iOS Safari, WebViews sans Fullscreen API, iframe sans autorisation —
-   dans l'APK, l'event fullscreenchange repart de la même couche). Elle règle
-   aussi la mise en page en plein écran natif. */
+   L'interface se lance en plein écran de base : cette couche fixe (classe
+   `is-immersive`, posée par useMirageFullscreen dès le montage de la page)
+   couvre tout le viewport sans attendre de geste, et le plein écran natif part
+   au premier geste du joueur. Le bouton « Plein écran » de la barre du jeu,
+   « LANCER EN PLEIN ÉCRAN » et la touche F font pareil : le plein écran natif
+   quand la plateforme l'accepte, et cette couche fixe comme repli universel
+   (iOS Safari, WebViews sans Fullscreen API, iframe sans autorisation — dans
+   l'APK, l'event fullscreenchange repart de la même couche). Elle règle aussi
+   la mise en page en plein écran natif. */
 body.mirage-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .mirage-game-shell.is-immersive {
   position: fixed;
