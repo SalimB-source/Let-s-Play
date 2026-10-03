@@ -2973,6 +2973,13 @@ function makeWorld(mount, callbacks, getRace, stage, getNetwork, getSkin, initia
     if (turboActive) {
       parts.rider.rotation.x -= 0.18;
     }
+    // Link accompagne le galop d’un léger transfert de poids : la posture,
+    // le bouclier et la lame restent vivants même entre deux pouvoirs.
+    if (isLinkRider() && playerStun <= 0) {
+      parts.rider.rotation.y = runWave * 0.035;
+      parts.rider.position.y += Math.abs(runWave) * 0.018;
+      if (parts.hylianShield) parts.hylianShield.rotation.y = runWave * 0.06;
+    }
     parts.tail.rotation.z = runWave * (turboActive ? 0.28 : 0.18);
     parts.wings?.forEach((wing, index) => {
       wing.rotation.z = Math.sin(time * (running ? 0.018 : 0.006) + index * Math.PI) * (running ? 0.16 : 0.06);

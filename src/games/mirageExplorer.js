@@ -584,7 +584,15 @@ function attachLinkEpona(model) {
   for (const x of [-0.24, 0.24]) block(cube, shieldRim, shield, [x, 0, 0.005], [0.06, 0.52, 0.11]);
   block(cube, shieldRim, shield, [0, 0.06, 0.055], [0.09, 0.36, 0.02]);
   block(cube, shieldRim, shield, [0, -0.04, 0.055], [0.3, 0.09, 0.02]);
-  block(cube, gold, shield, [0, 0.21, 0.055], [0.15, 0.15, 0.02]);
+  // Petit blason de la Triforce : trois pointes dorées rendent le bouclier
+  // immédiatement lisible, même dans la vignette de sélection.
+  const crestGeometry = new THREE.ConeGeometry(0.085, 0.035, 3);
+  for (const [x, y] of [[0, 0.18], [-0.085, 0.04], [0.085, 0.04]]) {
+    const crest = new THREE.Mesh(crestGeometry, gold);
+    crest.position.set(x, y, 0.082);
+    crest.rotation.x = Math.PI / 2;
+    shield.add(crest);
+  }
   for (const x of [-0.15, 0.15]) block(cube, shieldRed, shield, [x, -0.2, 0.055], [0.1, 0.1, 0.02]);
   block(cube, shieldRim, shield, [0, 0, 0.062], [0.09, 0.09, 0.02]);
 

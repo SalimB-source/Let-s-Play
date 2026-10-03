@@ -1,28 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="24%" r="84%">
-      <stop offset="0" stop-color="#5a4310"/>
-      <stop offset="1" stop-color="#170f04"/>
-    </radialGradient>
-    <linearGradient id="ivory" x1="14" y1="12" x2="52" y2="50" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#ffffff"/>
-      <stop offset=".45" stop-color="#e8eef8"/>
-      <stop offset="1" stop-color="#9aa6b8"/>
-    </linearGradient>
-    <linearGradient id="edge" x1="18" y1="18" x2="46" y2="46" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#c5d0e0"/>
-    </linearGradient>
-  </defs>
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)" stroke="#ffcf5c" stroke-width="2" stroke-opacity=".85"/>
-  <rect x="5" y="5" width="54" height="54" rx="11" stroke="#ffe9ad" stroke-opacity=".2"/>
-  <circle cx="32" cy="32" r="22" stroke="#ffd15c" stroke-width="1.2" stroke-dasharray="3 4" stroke-opacity=".45"/>
-  <!-- Sillage du lancer aller-retour -->
-  <path d="M12 44 Q22 28 32 32 Q42 36 52 20" stroke="#ffe9ad" stroke-width="1.6" stroke-linecap="round" stroke-opacity=".45" stroke-dasharray="3 3"/>
-  <path d="M48 16 L54 12 M50 22 L56 20" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-opacity=".55"/>
-  <!-- Boomerang blanc en V -->
-  <path d="M18 42 C20 28 26 18 36 16 C40 15 44 16 48 20 C44 18 40 20 38 26 C36 34 40 40 48 44 C40 42 32 40 28 36 C24 40 22 46 22 52 C20 46 18 44 18 42 Z" fill="url(#ivory)" stroke="#3a4454" stroke-width="1.8" stroke-linejoin="round"/>
-  <path d="M24 40 C26 30 30 22 38 20" stroke="url(#edge)" stroke-width="2.2" stroke-linecap="round" stroke-opacity=".85"/>
-  <circle cx="36" cy="28" r="3.2" fill="#fff" stroke="#3a4454" stroke-width="1.2"/>
-  <circle cx="36" cy="28" r="1.2" fill="#d7deea"/>
+ <defs>
+  <radialGradient id="b" cx="50%" cy="20%" r="90%"><stop stop-color="#164d60"/><stop offset="1" stop-color="#07151e"/></radialGradient>
+  <linearGradient id="g" x1="12" y1="12" x2="51" y2="52" gradientUnits="userSpaceOnUse"><stop stop-color="#fffbe8"/><stop offset=".42" stop-color="#91f3ff"/><stop offset="1" stop-color="#287a9b"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="2.2"/></filter>
+ </defs>
+ <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#b)" stroke="#72edff" stroke-width="2"/>
+ <circle cx="32" cy="32" r="23" stroke="#7beeff" stroke-opacity=".3" stroke-dasharray="2 4"/>
+ <path d="M10 48 Q27 35 48 13 M17 55 Q31 42 55 38" stroke="#8ff4ff" stroke-width="2" opacity=".35" stroke-linecap="round"/>
+ <!-- large returning boomerang silhouette -->
+ <path d="M15 44 C18 28 26 16 39 13 C45 12 51 15 54 20 C47 18 42 20 39 27 C36 35 41 43 51 47 C41 47 32 43 27 37 C24 43 23 50 24 55 C19 52 16 49 15 44Z" fill="url(#g)" stroke="#d8fbff" stroke-width="1.5" stroke-linejoin="round"/>
+ <path d="M21 43 C24 31 31 21 41 18" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".8"/>
+ <circle cx="37" cy="28" r="4" fill="#0b3140" stroke="#d8fbff" stroke-width="1.5"/><circle cx="37" cy="28" r="1.4" fill="#fff"/>
+ <path d="M47 10l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff7be"/>
 </svg>

@@ -1,31 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="26%" r="84%">
-      <stop offset="0" stop-color="#5e1220"/>
-      <stop offset="1" stop-color="#180509"/>
-    </radialGradient>
-    <linearGradient id="gold" x1="20" y1="10" x2="46" y2="54" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#fff6cf"/>
-      <stop offset=".4" stop-color="#ffd75e"/>
-      <stop offset="1" stop-color="#c8891f"/>
-    </linearGradient>
-    <radialGradient id="halo" cx="50%" cy="48%" r="52%">
-      <stop offset="0" stop-color="#fff3c4" stop-opacity=".75"/>
-      <stop offset="1" stop-color="#ffb545" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)" stroke="#ff6e66" stroke-width="2" stroke-opacity=".8"/>
-  <rect x="5" y="5" width="54" height="54" rx="11" stroke="#ffc9c4" stroke-opacity=".2"/>
-  <circle cx="32" cy="32" r="22" stroke="#ff8a80" stroke-width="1.2" stroke-dasharray="3 4" stroke-opacity=".45"/>
-  <circle cx="32" cy="33" r="21" fill="url(#halo)"/>
-  <!-- Triforce classique : trois triangles vers le haut -->
-  <g fill="url(#gold)" stroke="#5c3a08" stroke-width="1.5" stroke-linejoin="round">
-    <path d="M32 10 L42 28 H22 Z"/>
-    <path d="M22 30 L32 48 H12 Z"/>
-    <path d="M42 30 L52 48 H32 Z"/>
-  </g>
-  <path d="M32 13 L40 27 H24 Z" fill="none" stroke="#fff8dc" stroke-width="1.3" stroke-opacity=".55" stroke-linejoin="round"/>
-  <path d="M22 33 L30 46 H14 Z" fill="none" stroke="#fff8dc" stroke-width="1.2" stroke-opacity=".4" stroke-linejoin="round"/>
-  <path d="M42 33 L50 46 H34 Z" fill="none" stroke="#fff8dc" stroke-width="1.2" stroke-opacity=".4" stroke-linejoin="round"/>
-  <path d="M32 6 L32 9 M10 44 L14 42 M54 44 L50 42" stroke="#ffe9a8" stroke-width="1.8" stroke-linecap="round" stroke-opacity=".7"/>
+ <defs>
+  <radialGradient id="r" cx="50%" cy="24%" r="88%"><stop stop-color="#71350e"/><stop offset="1" stop-color="#20070a"/></radialGradient>
+  <linearGradient id="gold" x1="17" y1="8" x2="48" y2="55" gradientUnits="userSpaceOnUse"><stop stop-color="#fffbd5"/><stop offset=".32" stop-color="#ffe66d"/><stop offset=".72" stop-color="#e0a62e"/><stop offset="1" stop-color="#8f5412"/></linearGradient>
+  <filter id="shine"><feGaussianBlur stdDeviation="1.8"/></filter>
+ </defs>
+ <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#r)" stroke="#ffd86b" stroke-width="2"/>
+ <circle cx="32" cy="32" r="23" stroke="#ffdc6c" stroke-opacity=".32" stroke-dasharray="2 4"/>
+ <circle cx="32" cy="32" r="17" fill="#ffe58a" opacity=".16" filter="url(#shine)"/>
+ <g fill="url(#gold)" stroke="#6b3b0b" stroke-width="1.3" stroke-linejoin="round">
+  <path d="M32 8 L44 29 H20 Z"/><path d="M20 30 L32 51 H8 Z"/><path d="M44 30 L56 51 H32 Z"/>
+ </g>
+ <g fill="none" stroke="#fff8c7" stroke-linecap="round" opacity=".8">
+  <path d="M32 12l8 15H24" stroke-width="1.6"/><path d="M20 34l8 14H12"/><path d="M44 34l8 14H36"/>
+ </g>
+ <path d="M32 5v5M7 48l6-3M57 48l-6-3" stroke="#fff3ac" stroke-width="2" stroke-linecap="round"/>
+ <circle cx="32" cy="30" r="2" fill="#fffbdc"/>
 </svg>

@@ -66,7 +66,7 @@ test('la bombe explose au bout de 1,5 s et balaie 2 cases', () => {
 });
 
 test('le boomerang va tout droit quelques mètres puis revient à la main', () => {
-  assert.equal(LINK_BOOMERANG_RANGE, 4 * LANE_SPACING, 'portée de 4 cases');
+  assert.equal(LINK_BOOMERANG_RANGE, 5 * LANE_SPACING, 'portée de 5 cases');
   assert.equal(LINK_BOOMERANG_THROWS, 2, 'deux lancers par charge');
 
   const visual = makeLinkBoomerang();
