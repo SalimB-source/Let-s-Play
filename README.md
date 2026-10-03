@@ -313,7 +313,7 @@ diamants chargent les mêmes barres, aux mêmes touches) :
 
 | Couleur | Touche | Standard | Link |
 |---|---|---|---|
-| Bleu | AUTO | Bouclier | **Bombe** : sphère noire posée derrière Épona, mèche allumée de 1,5 s, puis explosion de zone qui fait tomber tout ennemi à **2 cases** |
+| Bleu | AUTO | Bouclier | **Bombe** : sphère noire posée derrière Épona, mèche allumée de 1,5 s, puis explosion de zone qui fait tomber tout ennemi à **2 cases** ; un adversaire qui la **touche** la fait sauter avant la fin de la mèche |
 | Jaune | W / Z | Lasso | **Boomerang** : blanc, va tout droit sur quelques mètres puis revient ; un adversaire touché est ralenti ; **deux lancers** par charge |
 | Rouge | R | Pistolet | **Triforce** : le triangle d'or fonce sur l'adversaire **juste devant** et le fait tomber |
 | Vert | AUTO | Turbo | Turbo (inchangé) |
@@ -327,12 +327,16 @@ tir avec une cause `link-bomb` pour rester reconnaissable.
 
 - `src/games/mirageLinkPowers.js` — les trois effets 3D (pur three.js,
   testable) : `makeLinkBomb()` / `updateLinkBombVisual()` (mèche
-  `LINK_BOMB_FUSE_DURATION`, portée `LINK_BOMB_AOE_TILES`), `makeLinkBoomerang()` /
+  `LINK_BOMB_FUSE_DURATION`, portée `LINK_BOMB_AOE_TILES`), `detonateLinkBomb()`
+  (détonation au contact, rayon `LINK_BOMB_TOUCH_RADIUS`) / `linkBombTouched()`,
+  `makeLinkBoomerang()` /
   `updateLinkBoomerangVisual()` (portée `LINK_BOOMERANG_RANGE`, deux lancers),
   `makeLinkTriforce()` / `updateLinkTriforceVisual()` ;
 - `src/games/MirageWorld.jsx` — `isLinkRider()`, `dropLinkBomb()`,
-  `launchLinkPower()`, `findTriforceTarget()` (l'adversaire juste devant) et
-  `linkBombVictims()` (rayon de 2 cases) ; la bombe recule avec le décor ;
+  `launchLinkPower()`, `findTriforceTarget()` (l'adversaire juste devant),
+  `linkBombVictims()` (rayon de 2 cases) et `explodeLinkBomb()` ; la bombe
+  recule avec le décor et saute dès qu'un adversaire la touche
+  (`linkBombRiderPoints()`) ;
 - `src/games/mirageRooms.js` — `slowEffectFor()` / `stunEffectFor()` /
   `slowHitMessage()` / `stunHitMessage()` : effets et messages côté salon ;
 - `src/games/arcadeAudio.js` — `linkBombDrop()`, `linkBombExplosion()`,

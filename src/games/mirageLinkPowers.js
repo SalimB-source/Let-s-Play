@@ -7,7 +7,8 @@
  *
  * - Bombe (bleu) : sphère noire posée derrière le cavalier, mèche allumée qui
  *   brûle 1,5 s, puis déflagration de zone — tout ennemi à portée (2 cases)
- *   tombe de cheval.
+ *   tombe de cheval. Un adversaire qui la touche pendant la mèche la fait
+ *   sauter sur-le-champ (voir `detonateLinkBomb()`).
  * - Boomerang (jaune) : disque blanc lancé tout droit sur quelques mètres,
  *   puis il revient à la main. Deux lancers par charge. Un adversaire touché
  *   est ralenti.
@@ -26,6 +27,12 @@ export const LINK_BOMB_BLAST_DURATION = 0.62;
 export const LINK_BOMB_AOE_TILES = 2;
 /** Portée de l'explosion en unités monde : 2 × l'écart entre deux voies. */
 export const LINK_BOMB_AOE_RADIUS = LINK_BOMB_AOE_TILES * LANE_SPACING;
+/**
+ * Rayon de contact : un adversaire qui arrive à cette distance du centre de la
+ * bombe la touche et la fait détoner avant la fin de la mèche. Une demi-voie :
+ * la sphère (0,34 de rayon) et le cavalier se frôlent vraiment.
+ */
+export const LINK_BOMB_TOUCH_RADIUS = LANE_SPACING / 2;
 /** Le boomerang part tout droit, puis revient à la main. */
 export const LINK_BOOMERANG_RANGE = 5 * LANE_SPACING;
 export const LINK_BOOMERANG_OUT_DURATION = 0.36;
@@ -184,6 +191,47 @@ export function makeLinkBomb() {
 }
 
 /**
+ * Fait détoner la bombe sur-le-champ : un adversaire l'a touchée avant que la
+ * mèche n'atteigne la poudre. Sans effet si la bombe a déjà explosé, pour que
+ * la fin de mèche et le contact ne comptent qu'une seule déflagration.
+ *
+ * @param {THREE.Group} visual groupe renvoyé par `makeLinkBomb()`
+ * @param {{age:number, phase:string}} projectile état mutable
+ * @param {{onExplode?: () => void}} hooks même rappel que la fin de mèche
+ * @returns {boolean} true si la déflagration part maintenant
+ */
+export function detonateLinkBomb(visual, projectile, hooks = {}) {
+  if (projectile.phase !== 'fuse') return false;
+  const parts = visual.userData;
+  projectile.phase = 'blast';
+  projectile.age = 0;
+  parts.bomb.visible = false;
+  parts.ground.visible = false;
+  parts.blast.visible = true;
+  hooks.onExplode?.();
+  return true;
+}
+
+/**
+ * Un adversaire touche-t-il la bombe ? On compare la distance au sol de chaque
+ * cavalier au rayon de contact (`LINK_BOMB_TOUCH_RADIUS`) — mêmes coordonnées
+ * que la portée de l'explosion, la hauteur ne compte pas.
+ *
+ * @param {{x:number, z:number}} origin centre de la bombe
+ * @param {Array<{x:number, z:number}>} riders positions au sol des adversaires
+ * @returns {boolean} true si l'un d'eux touche la bombe
+ */
+export function linkBombTouched(origin, riders) {
+  for (const rider of riders || []) {
+    if (!rider) continue;
+    const dx = rider.x - origin.x;
+    const dz = rider.z - origin.z;
+    if (Math.hypot(dx, dz) <= LINK_BOMB_TOUCH_RADIUS) return true;
+  }
+  return false;
+}
+
+/**
  * Avance la bombe d'une frame : la mèche brûle, puis la déflagration éclate.
  *
  * @param {THREE.Group} visual groupe renvoyé par `makeLinkBomb()`
@@ -211,12 +259,7 @@ export function updateLinkBombVisual(visual, projectile, dt, hooks = {}) {
     parts.fuse.position.y = 0.36 - progress * 0.15;
     fadeLinkMaterials(parts.materials, 'spark', flicker);
     if (projectile.age >= LINK_BOMB_FUSE_DURATION) {
-      projectile.phase = 'blast';
-      projectile.age = 0;
-      parts.bomb.visible = false;
-      parts.ground.visible = false;
-      parts.blast.visible = true;
-      hooks.onExplode?.();
+      detonateLinkBomb(visual, projectile, hooks);
     }
     return false;
   }

@@ -1355,7 +1355,7 @@ export default function MirageOnline({
                               // Link ne lève pas de bouclier : il pose sa bombe.
                               if (isLinkRider) {
                                 audio.current?.linkBombDrop?.();
-                                setPowerToast(`💥 Bombe posée derrière toi ! Explosion dans ${LINK_BOMB_FUSE_DURATION} s…`);
+                                setPowerToast(`💥 Bombe posée derrière toi ! Explosion dans ${LINK_BOMB_FUSE_DURATION} s — ou tout de suite si un adversaire la touche…`);
                               } else {
                                 audio.current?.shieldGravity?.();
                                 setPowerToast('🛡️ Bouclier activé automatiquement !');
@@ -1531,7 +1531,7 @@ export default function MirageOnline({
                               onClick={triggerPowerClick('use_shield')}
                               disabled={(hud.shieldCharges || 0) <= 0}
                               title={isLinkRider
-                                ? `Bombe (AUTO) — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Link la pose derrière Épona : ${LINK_BOMB_FUSE_DURATION} s de mèche, puis tout cavalier à ${LINK_BOMB_AOE_TILES} cases tombe. Utiliser cet objet ne décharge pas les autres.`
+                                ? `Bombe (AUTO) — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Link la pose derrière Épona : ${LINK_BOMB_FUSE_DURATION} s de mèche, et un adversaire qui la touche la fait sauter aussitôt ; tout cavalier à ${LINK_BOMB_AOE_TILES} cases tombe. Utiliser cet objet ne décharge pas les autres.`
                                 : `Bouclier — ${POWER_UP_DIAMOND_COST[POWER_UPS.SHIELD]} diamants bleus pour remplir la barre. Il s’active tout seul dès qu’elle est pleine. Utiliser cet objet ne décharge pas les autres.`}
                             >
                               <div className="mirage-powerup-btn-top">

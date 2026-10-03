@@ -9,6 +9,7 @@ import {
   LINK_BOMB_AOE_TILES,
   LINK_BOMB_BLAST_DURATION,
   LINK_BOMB_FUSE_DURATION,
+  LINK_BOMB_TOUCH_RADIUS,
   LINK_BOOMERANG_OUT_DURATION,
   LINK_BOOMERANG_RANGE,
   LINK_BOOMERANG_RETURN_DURATION,
@@ -16,7 +17,9 @@ import {
   LINK_BOOMERANG_THROWS,
   LINK_TRIFORCE_FLIGHT_DURATION,
   LINK_TRIFORCE_IMPACT_DURATION,
+  detonateLinkBomb,
   disposeLinkPower,
+  linkBombTouched,
   makeLinkBomb,
   makeLinkBoomerang,
   makeLinkTriforce,
@@ -64,6 +67,46 @@ test('la bombe explose au bout de 1,5 s et balaie 2 cases', () => {
     `l’effet dure mèche + explosion (${elapsed.toFixed(2)} s)`);
   assert.equal(visual.userData.bomb.visible, false, 'la bombe disparaît dans l’explosion');
   assert.ok(visual.userData.ring.scale.x > LANE_SPACING, 'l’anneau marque la portée de 2 cases');
+  disposeLinkPower(visual);
+});
+
+test('un adversaire qui touche la bombe la fait sauter avant la fin de la mèche', () => {
+  assert.ok(LINK_BOMB_TOUCH_RADIUS > 0 && LINK_BOMB_TOUCH_RADIUS < LINK_BOMB_AOE_RADIUS,
+    'le contact est plus court que la portée de l’explosion');
+  // Le contact se juge sur la distance au sol : un demi-écart de voie.
+  const origin = { x: 0, z: 4 };
+  const front = { x: 0, z: origin.z - LINK_BOMB_TOUCH_RADIUS + 0.01 };
+  const beside = { x: LINK_BOMB_TOUCH_RADIUS - 0.01, z: origin.z };
+  const far = { x: 0, z: origin.z - LINK_BOMB_AOE_RADIUS };
+  assert.equal(linkBombTouched(origin, [front]), true, 'un cavalier qui arrive dessus la touche');
+  assert.equal(linkBombTouched(origin, [beside]), true, 'de côté aussi');
+  assert.equal(linkBombTouched(origin, [far]), false, 'à portée d’explosion, ce n’est pas un contact');
+  assert.equal(linkBombTouched(origin, []), false, 'personne sur la piste');
+  assert.equal(linkBombTouched(origin, undefined), false, 'pas de liste du tout');
+
+  // Le contact allume la mèche d'un coup : la déflagration part tout de suite.
+  const visual = makeLinkBomb();
+  const projectile = { age: 0.42, phase: 'fuse' };
+  const fired = [];
+  const started = detonateLinkBomb(visual, projectile, { onExplode: () => fired.push(projectile.age) });
+  assert.equal(started, true, 'la bombe détonne au contact');
+  assert.equal(projectile.phase, 'blast', 'elle passe en déflagration');
+  assert.equal(projectile.age, 0, 'la déflagration repart de zéro');
+  assert.equal(visual.userData.bomb.visible, false, 'la sphère a disparu');
+  assert.equal(visual.userData.ground.visible, false, 'le halo au sol aussi');
+  assert.equal(visual.userData.blast.visible, true, 'l’explosion est révélée');
+  assert.deepEqual(fired, [0], 'un seul rappel de déflagration');
+  // Un second contact ne fait pas sauter deux fois la même bombe.
+  assert.equal(detonateLinkBomb(visual, projectile, { onExplode: () => fired.push('bis') }), false);
+  assert.equal(fired.length, 1);
+  // La déflagration se termine normalement, comme après une mèche brûlée.
+  const { elapsed } = runEffect(
+    visual,
+    projectile,
+    (v, p, dt, hooks) => updateLinkBombVisual(v, p, dt, hooks),
+  );
+  assert.ok(Math.abs(elapsed - LINK_BOMB_BLAST_DURATION) < 0.05,
+    `le contact laisse l’explosion finir (${elapsed.toFixed(2)} s)`);
   disposeLinkPower(visual);
 });
 
@@ -146,6 +189,20 @@ test('les trois techniques de Link ont leurs icônes dédiées', () => {
   assert.equal(miragePowerIcon(POWER_UPS.BOOST, 'link').variant, undefined);
   assert.equal(miragePowerIcon(POWER_UPS.LASSO, 'standard').label, 'Lasso');
   assert.equal(miragePowerIcon(POWER_UPS.LASSO, 'cloud').label, 'Onde d’épée dorée');
+});
+
+test('le monde guette le contact avec la bombe à chaque frame de mèche', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const world = await readFile(new URL('../src/games/MirageWorld.jsx', import.meta.url), 'utf8');
+  // Le contact se juge sur les positions au sol des adversaires, à chaque frame…
+  assert.match(world, /projectile\.phase === 'fuse' && linkBombTouched\(projectile\.origin, linkBombRiderPoints\(\)\)/);
+  assert.match(world, /rival\.mesh\.position\.x/);
+  assert.match(world, /rival\.mesh\.position\.z/);
+  assert.match(world, /peer\.user_id === net\.userId/);
+  // …et la détonation emprunte le même chemin que la fin de mèche.
+  assert.match(world, /detonateLinkBomb\(projectile\.visual, projectile, \{/);
+  assert.match(world, /onExplode: \(\) => explodeLinkBomb\(projectile\)/);
+  assert.match(world, /callbacks\.linkStrike\?\.\(\{ kind: 'bomb' \}\);/);
 });
 
 test('en ligne, la victime voit la bonne technique de Link', () => {
